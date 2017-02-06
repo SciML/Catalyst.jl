@@ -1,5 +1,6 @@
 using BiologicalModels
 using Base.Test
 
-# write your own tests here
-@test 1 == 2
+tic()
+@time @testset "Gillespie Tests" begin include("gillespie.jl") end
+toc()
