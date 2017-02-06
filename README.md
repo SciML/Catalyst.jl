@@ -1,4 +1,4 @@
-# BiologicalModels
+# BiologicalDiffEq.jl
 
 [![Build Status](https://travis-ci.org/ChrisRackauckas/BiologicalModels.jl.svg?branch=master)](https://travis-ci.org/JuliaDiffEq/BiologicalDiffEq.jl)
 [![Build status](https://ci.appveyor.com/api/projects/status/y62d627e5hd513wf?svg=true)](https://ci.appveyor.com/project/ChrisRackauckas/biologicaldiffeq-jl)
