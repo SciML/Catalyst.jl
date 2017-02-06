@@ -1,4 +1,4 @@
-module BiologicalDiffEq
+module DiffEqBiological
 
 using JumpDiffEq
 
