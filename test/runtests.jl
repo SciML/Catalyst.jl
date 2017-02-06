@@ -1,4 +1,4 @@
-using BiologicalModels
+using DiffEqBiological
 using Base.Test
 
 tic()
