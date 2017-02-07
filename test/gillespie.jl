@@ -1,4 +1,4 @@
-using BiologicalModels, JumpDiffEq, DiffEqBase, OrdinaryDiffEq
+using DiffEqBiological, DiffEqJump, DiffEqBase, OrdinaryDiffEq
 
 r1 = Reaction(1e-4,(1,2),((1,-1),(2,1)))
 r2 = Reaction(0.01,[2],[(2,-1),(3,1)])

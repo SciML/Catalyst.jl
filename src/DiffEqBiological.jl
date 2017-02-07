@@ -1,6 +1,6 @@
 module DiffEqBiological
 
-using JumpDiffEq
+using DiffEqJump
 
 include("reactions.jl")
 include("problem.jl")
