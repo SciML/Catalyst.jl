@@ -1,4 +1,5 @@
 using DiffEqBiological, DiffEqJump, DiffEqBase, OrdinaryDiffEq, StochasticDiffEq
+using Base.Test
 
 r1 = VariableRateReaction(1e-4,(1,2),((1,-1),(2,1)))
 r2 = VariableRateReaction(0.01,[2],[(2,-1),(3,1)])
@@ -45,10 +46,10 @@ jump_prob = GillespieProblem(prob,Direct(),r1,r2,r3)
 sol = solve(jump_prob,Tsit5())
 
 g = function (t,u,du)
-  du[4] = 0.1u[4]
+  du[4] = 0.05u[4]
 end
 
-srand(330)
+srand(331)
 println("Turn Gillespie Problem into SDE")
 prob = SDEProblem(f,g,[999.0,3.0,0.0,1.0],(0.0,250.0))
 jump_prob = GillespieProblem(prob,Direct(),r1,r2,r3)
@@ -59,5 +60,6 @@ println("Now mix constant rate reactions")
 r1 = Reaction(1e-4,(1,2),((1,-1),(2,1)))
 r2 = Reaction(0.01,[2],[(2,-1),(3,1)])
 jump_prob = GillespieProblem(prob,Direct(),r1,r2,r3)
-sol = solve(jump_prob,SRIW1())
+integrator = init(jump_prob,SRIW1())
+solve!(integrator)
 @test 650 <= sol[end][3] <= 1500
