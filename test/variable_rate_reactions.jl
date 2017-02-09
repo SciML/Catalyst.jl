@@ -3,7 +3,7 @@ using DiffEqBiological, DiffEqJump, DiffEqBase, OrdinaryDiffEq, StochasticDiffEq
 r1 = VariableRateReaction(1e-4,(1,2),((1,-1),(2,1)))
 r2 = VariableRateReaction(0.01,[2],[(2,-1),(3,1)])
 
-prob = DiscreteProblem([999.0,1.0,0],(0.0,250.0))
+prob = DiscreteProblem([999.0,3.0,0],(0.0,250.0))
 jump_prob = GillespieProblem(prob,Direct(),r1,r2)
 
 jump_prob = JumpProblem(prob,Direct(),build_jumps_from_reaction(r1),build_jumps_from_reaction(r2))
@@ -31,7 +31,7 @@ f = function (t,u,du)
   du[4] = u[2]*u[3]/100000 - u[1]*u[2]/100000
 end
 
-prob = ODEProblem(f,[999.0,1.0,0.0,100.0],(0.0,250.0))
+prob = ODEProblem(f,[999.0,3.0,0.0,100.0],(0.0,250.0))
 jump_prob = GillespieProblem(prob,Direct(),r1,r2)
 
 srand(230)
@@ -40,7 +40,7 @@ sol = solve(jump_prob,Tsit5())
 @test 650 <= sol[end][3] <= 900
 
 r3 = VariableRateReaction(1e-2,[4],[(2,-1),(3,1)])
-prob = ODEProblem(f,[999.0,1.0,0.0,1.0],(0.0,250.0))
+prob = ODEProblem(f,[999.0,3.0,0.0,1.0],(0.0,250.0))
 jump_prob = GillespieProblem(prob,Direct(),r1,r2,r3)
 sol = solve(jump_prob,Tsit5())
 
@@ -50,7 +50,7 @@ end
 
 srand(330)
 println("Turn Gillespie Problem into SDE")
-prob = SDEProblem(f,g,[999.0,1.0,0.0,1.0],(0.0,250.0))
+prob = SDEProblem(f,g,[999.0,3.0,0.0,1.0],(0.0,250.0))
 jump_prob = GillespieProblem(prob,Direct(),r1,r2,r3)
 sol = solve(jump_prob,SRIW1())
 @test 650 <= sol[end][3] <= 1500
