@@ -1,3 +1,5 @@
+# Not actually used: just for comparison
+
 using Gillespie
 using Gadfly
 
