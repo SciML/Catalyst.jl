@@ -16,7 +16,7 @@ nums = Int[]
   sol = solve(jump_prob,Discrete())
   push!(nums,sol[end][3])
 end
-mean(nums)
+@test mean(nums) - 740 < 20
 
 f = function (t,u,du)
   du[4] = u[2]*u[3]/100000 - u[1]*u[2]/100000
