@@ -1,9 +1,13 @@
 # DiffEqBiological.jl
 
+[![Join the chat at https://gitter.im/JuliaDiffEq/Lobby](https://badges.gitter.im/JuliaDiffEq/Lobby.svg)](https://gitter.im/JuliaDiffEq/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/JuliaDiffEq/DiffEqBiological.jl.svg?branch=master)](https://travis-ci.org/JuliaDiffEq/DiffEqBiological.jl)
 [![Build status](https://ci.appveyor.com/api/projects/status/y62d627e5hd513wf?svg=true)](https://ci.appveyor.com/project/ChrisRackauckas/diffeqbiological-jl)
 [![Coverage Status](https://coveralls.io/repos/ChrisRackauckas/DiffEqBiological.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/JuliaDiffEq/DiffEqBiological.jl?branch=master)
 [![codecov.io](http://codecov.io/github/ChrisRackauckas/DiffEqBiological.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaDiffEq/DiffEqBiological.jl?branch=master)
+
+[![DiffEqBiological](http://pkg.julialang.org/badges/DiffEqBiological_0.5.svg)](http://pkg.julialang.org/?pkg=DiffEqBiological)
+[![DiffEqBiological](http://pkg.julialang.org/badges/DiffEqBiological_0.6.svg)](http://pkg.julialang.org/?pkg=DiffEqBiological)
 
 This repository holds functionality for easily building systems biological models
 for the DifferentialEquations ecosystem. This has tools for developing chemical
