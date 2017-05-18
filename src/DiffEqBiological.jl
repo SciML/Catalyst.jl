@@ -4,7 +4,8 @@ module DiffEqBiological
 
 using DiffEqJump
 
-abstract AbstractReaction
+using Compat
+@compat abstract type AbstractReaction end
 
 include("reactions.jl")
 include("problem.jl")
