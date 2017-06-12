@@ -59,13 +59,13 @@ ReactionSet(args...) = ReactionSet(tuple(args...))
 function build_jumps_from_reaction(r::Reaction;save_positions=(false,true))
   rate = function (t,u)
     val = r.rate_constant
-    @inbounds for i in eachindex(r.reactants)
+    @fastmath @inbounds for i in eachindex(r.reactants)
       val *= u[r.reactants[i]]
     end
     val
   end
   affect! = function (integrator)
-    @inbounds for i in eachindex(r.stoichiometry)
+    @fastmath @inbounds for i in eachindex(r.stoichiometry)
       integrator.u[r.stoichiometry[i][1]] += r.stoichiometry[i][2]
     end
   end
@@ -75,13 +75,13 @@ end
 function build_jumps_from_reaction(r::VariableRateReaction;save_positions=(false,true))
   rate = function (t,u)
     val = r.rate_constant
-    @inbounds for i in eachindex(r.reactants)
+    @fastmath @inbounds for i in eachindex(r.reactants)
       val *= u[r.reactants[i]]
     end
     val
   end
   affect! = function (integrator)
-    @inbounds for i in eachindex(r.stoichiometry)
+    @fastmath @inbounds for i in eachindex(r.stoichiometry)
       integrator.u[r.stoichiometry[i][1]] += r.stoichiometry[i][2]
     end
   end
