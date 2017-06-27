@@ -101,3 +101,88 @@ function build_jumps_from_reaction(r::ReactionSet;save_positions=(false,true))
   end
   JumpSet(jumps...)
 end
+
+
+macro reaction_network(ex)
+  def_reaction_network(ex)
+end
+
+function def_reaction_network(ex::Expr)
+  reactions = :([])
+  mapping = OrderedDict{Symbol,Int}()
+
+  for line in ex.args
+    if line.head == :tuple
+      rate = line.args[1]
+      eqn  = line.args[2]
+
+      reactants = :([])     # indices
+      stoichiometry = :([]) # net stoichiometry
+
+      reacs, prods = parse_reaction(eqn, mapping)
+
+      for (id, ix) in mapping
+        if haskey(reacs, id)
+          push!(reactants.args, ix)
+        end
+
+        net = get(prods, id, 0) - get(reacs, id, 0)
+
+        if net != 0
+          push!(stoichiometry.args, :(($ix, $net)))
+        end
+      end
+
+      push!(reactions.args, :(Reaction($rate, $reactants, $stoichiometry)))
+    end
+  end
+
+  return :(ReactionSet($reactions...))
+end
+
+function parse_reaction(ex::Expr, mapping)
+  reactants = Dict{Symbol,Int}()
+  products  = Dict{Symbol,Int}()
+
+  if ex.head == :-->
+    exr = ex.args[1] # LHS
+    exp = ex.args[2] # RHS
+
+    add_participants!(reactants, exr, mapping)
+    add_participants!(products,  exp, mapping)
+  else
+    throw("malformed reaction")
+  end
+
+  return reactants, products
+end
+
+function add_participants!(dict, ex, mapping)
+  # found a species symbol
+  if isa(ex, Symbol)
+    if !haskey(mapping, ex)
+      mapping[ex] = length(mapping) + 1
+    end
+
+    id = ex
+    val = get(dict, id, 0)
+
+    dict[id] = val + 1
+  # species symbol has a coefficient
+  elseif isa(ex, Expr) && ex.args[1] == :*
+    id    = ex.args[3]
+    coeff = ex.args[2]
+
+    if !haskey(mapping, id)
+      mapping[id] = length(mapping) + 1
+    end
+
+    val = get(dict, id, 0)
+    dict[id] = val + coeff
+  # found something else, probably of the form (a A + b B)
+  elseif isa(ex, Expr)
+    for i in 2:length(ex.args)
+      add_participants!(dict, ex.args[i], mapping)
+    end
+  end
+end
