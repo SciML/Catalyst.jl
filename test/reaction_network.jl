@@ -1,4 +1,4 @@
-using DifferentialEquations
+using DiffEqBiological
 
 # Birth-Death-Immigration Process
 bdip = @reaction_network begin
