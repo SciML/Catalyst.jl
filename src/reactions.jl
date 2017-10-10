@@ -60,15 +60,17 @@ function build_jumps_from_reaction(r::Reaction;save_positions=(false,true))
   rate = function (t,u)
     val = r.rate_constant
     # for higher order interactions i.e. reactants [1,1] vaule = k*u[1]*(u[1]-1)
-    # Since a single entitiy cannot interact with it self! 
-    k = 0
+    # Since a single entitiy cannot interact with it self!
+    k = 0.0
     prev_reactant = -1
     @fastmath @inbounds for i in eachindex(r.reactants)
       if prev_reactant == r.reactants[i]
-        k += 1
+        k += 1.0
+      else
+        k = 0.0
       end
       val *= (u[r.reactants[i]] - k)
-      prev_reactant = r.reactants[i]    
+      prev_reactant = r.reactants[i]
     end
     val
   end
@@ -84,15 +86,17 @@ function build_jumps_from_reaction(r::VariableRateReaction;save_positions=(false
   rate = function (t,u)
     val = r.rate_constant
     # for higher order interactions i.e. reactants [1,1] vaule = k*u[1]*(u[1]-1)
-    # Since a single entitiy cannot interact with it self! 
-    k = 0
+    # Since a single entitiy cannot interact with it self!
+    k = 0.0
     prev_reactant = -1
     @fastmath @inbounds for i in eachindex(r.reactants)
       if prev_reactant == r.reactants[i]
-        k += 1
+        k += 1.0
+      else
+        k = 0.0
       end
       val *= (u[r.reactants[i]] - k)
-      prev_reactant = r.reactants[i]    
+      prev_reactant = r.reactants[i]
     end
     val
   end
