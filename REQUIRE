@@ -1,5 +1,5 @@
-julia 0.5
+julia 0.6
 DiffEqJump
-DiffEqBase
+DiffEqBase 3.0.0
 Compat 0.17.0
 DataStructures 0.4.6

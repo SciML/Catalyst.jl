@@ -18,7 +18,7 @@ nums = Int[]
 end
 @test mean(nums) - 740 < 20
 
-f = function (t,u,du)
+f = function (du,u,p,t)
   du[4] = u[2]*u[3]/100000 - u[1]*u[2]/100000
 end
 

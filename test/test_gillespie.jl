@@ -21,14 +21,14 @@ println("Reaction DSL: $(mean(nums))")
 using DiffEqJump, DiffEqBase, OrdinaryDiffEq
 using Base.Test
 
-rate = (t,u) -> (0.1/1000.0)*u[1]*u[2]
+rate = (u,p,t) -> (0.1/1000.0)*u[1]*u[2]
 affect! = function (integrator)
   integrator.u[1] -= 1
   integrator.u[2] += 1
 end
 jump = ConstantRateJump(rate,affect!;save_positions=(false,true))
 
-rate = (t,u) -> 0.01u[2]
+rate = (u,p,t) -> 0.01u[2]
 affect! = function (integrator)
   integrator.u[2] -= 1
   integrator.u[3] += 1

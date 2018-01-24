@@ -57,7 +57,7 @@ end
 ReactionSet(args...) = ReactionSet(tuple(args...))
 
 function build_jumps_from_reaction(r::Reaction;save_positions=(false,true))
-  rate = function (t,u)
+  rate = function (u,p,t)
     val = r.rate_constant
     # for higher order interactions i.e. reactants [1,1] vaule = k*u[1]*(u[1]-1)
     # Since a single entitiy cannot interact with it self!
@@ -83,7 +83,7 @@ function build_jumps_from_reaction(r::Reaction;save_positions=(false,true))
 end
 
 function build_jumps_from_reaction(r::VariableRateReaction;save_positions=(false,true))
-  rate = function (t,u)
+  rate = function (u,p,t)
     val = r.rate_constant
     # for higher order interactions i.e. reactants [1,1] vaule = k*u[1]*(u[1]-1)
     # Since a single entitiy cannot interact with it self!

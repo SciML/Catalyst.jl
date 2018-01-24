@@ -28,7 +28,7 @@ end
 @test mean(nums) - 740 < 20
 =#
 
-f = function (t,u,du)
+f = function (du,u,p,t)
   du[4] = u[2]*u[3]/100000 - u[1]*u[2]/100000
 end
 
@@ -45,7 +45,7 @@ prob = ODEProblem(f,[999.0,3.0,0.0,1.0],(0.0,250.0))
 jump_prob = GillespieProblem(prob,Direct(),r1,r2,r3)
 sol = solve(jump_prob,Tsit5())
 
-g = function (t,u,du)
+g = function (du,u,p,t)
   du[4] = 0.05u[4]
 end
 
