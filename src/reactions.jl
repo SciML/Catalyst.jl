@@ -1,4 +1,4 @@
-immutable Reaction{T,T2,N,N2} <: AbstractReaction
+struct Reaction{T,T2,N,N2} <: AbstractReaction
   rate_constant::T
   reactants::NTuple{N,Int}
   stoichiometry::NTuple{N2,NTuple{2,T2}}
@@ -16,7 +16,7 @@ function Reaction(rate_constant,reactants::AbstractArray,stoichiometry::Abstract
   Reaction(rate_constant,tuple(reactants...),tuple(stoichiometry...))
 end
 
-immutable VariableRateReaction{T,T2,I,N,N2} <: AbstractReaction
+struct VariableRateReaction{T,T2,I,N,N2} <: AbstractReaction
   rate_constant::T
   reactants::NTuple{N,Int}
   stoichiometry::NTuple{N2,NTuple{2,T2}}
@@ -50,7 +50,7 @@ function VariableRateReaction(rate_constant,reactants::Tuple,stoichiometry::Tupl
                        abstol,reltol)
 end
 
-immutable ReactionSet{T}
+struct ReactionSet{T}
   reactions::T
 end
 

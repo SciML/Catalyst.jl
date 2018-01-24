@@ -5,7 +5,7 @@ module DiffEqBiological
 using DiffEqJump
 
 using Compat
-@compat abstract type AbstractReaction end
+abstract type AbstractReaction end
 
 import DataStructures: OrderedDict
 
