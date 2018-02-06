@@ -8,12 +8,12 @@ GillespieProblem(prob,aggregator::AbstractAggregatorAlgorithm,
 
 ### Added by Me ###
 ### ODEProblem ###
-newODEProblem(rn::ReactionNetwork,u0,tspan) =
-                 ODEProblem(rn.f,u0,tspan)
+newODEProblem(rn::ReactionNetwork, args...; kwargs...) =
+                 ODEProblem(rn.f, args...; kwargs...)
 
 ### SDEProblem ###
-newSDEProblem(rn::ReactionNetwork,u0,tspan) =
-                 SDEProblem(rn.f,rn.g,u0,tspan,noise_rate_prototype=rn.p_matrix)
+newSDEProblem(rn::ReactionNetwork, args...; kwargs...) =
+                 SDEProblem(rn.f,rn.g, args...;noise_rate_prototype=rn.p_matrix, kwargs...)
 
 ### JumpProblem ###
 newJumpProblem(prob,aggregator::Direct,rn::ReactionNetwork) =
