@@ -4,7 +4,7 @@
 module tmpMod
 using DiffEqJump
 
-using DifferentialEquations #Added, need access to constant rate jump because it is used in the jump part of the ReactionNetwork. Probably a better way to get this though.
+using DiffEqBase
 
 using Compat
 abstract type AbstractReaction end
@@ -25,6 +25,5 @@ export newODEProblem, newSDEProblem, newJumpProblem
 #New exports
 export @reaction_network_new
 export ReactionNetwork
-export hill, mm
 
 end # module
