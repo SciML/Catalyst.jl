@@ -6,20 +6,6 @@
 #     Low prio.
 # - Add support for converting to polynomials and use algebraic methods (fincing equilibirumpoints etc.)
 #     Long term.
-"""
-Function for debugging purpose. Returns the "functions" as expressions. This way the output functions can actually be invesitgated.
-Replacing "reactants = get_reactants(reactions)" with an empty dict will ensure that you get 'X' and 'Y' instead of u[1], u[2] etc. Depending on intentions this might be good/bad.
-Could also be used to generate LaTeX code of the system using e.g. Latexify package.
-"""
-function debug_func(ex)
-    reactions = get_reactions(ex)           ::Vector{ReactionStruct}
-    reactants = get_reactants(reactions)    ::Dict{Symbol,Int64}
-
-    f = recursive_equify!(get_f(reactions, reactants), reactants)       ::Expr
-    g = recursive_equify!(get_g(reactions, reactants), reactants)       ::Expr
-    jumps = recursive_equify!(get_jumps(reactions, reactants), reactants)  ::Expr
-    return (f, g, jumps)
-end
 
 #Declare various arrow types symbols used for the empty set (also 0).
 empty_set = Set{Symbol}([:∅])
@@ -40,16 +26,28 @@ Example system:
 Note that while --> is a correct arrow, neither <-- nor <--> works.
 """
 #Macro to create a reaction network model. Generates expressions for the various things you might want. Last line is executed and constructions a ReactionNetwork structure containing the infromation,
-macro reaction_network_new(ex::Expr)
+macro reaction_network_new(ex::Expr, p...)
     reactions = get_reactions(ex)           ::Vector{ReactionStruct}
     reactants = get_reactants(reactions)    ::Dict{Symbol,Int64}
+    parameters = get_parameters(p)          ::Dict{Symbol,Int64}
 
-    f = recursive_equify!(get_f(reactions, reactants), reactants)       ::Expr      #For ODEs
-    g = recursive_equify!(get_g(reactions, reactants), reactants)       ::Expr      #For SDEs
-    jumps = recursive_equify!(get_jumps(reactions, reactants), reactants)  ::Expr   #For Gillespie Simulations
-    #Escaping the entire output might not be the most optimal way to use it. Without esc variables declared in main script will not be seen and reaction rates like kD cannot be used (will rather have to write in full, e.g. 2.8).
-    #This seems to work well, but in the future I might learn how to do it better.
-    return esc(:(ReactionNetwork($f, $g, $jumps,zeros($(length(reactants)),$(length(reactions))))))
+    f = recursive_equify!(get_f(reactions, reactants), reactants, parameters)                                                ::Expr   #For ODEs
+    f_expr = Expr(:quote,recursive_equify!(get_f(reactions, reactants), Dict{Symbol,Int64}(), Dict{Symbol,Int64}()))         ::Expr   #For ODEs
+    g = recursive_equify!(get_g(reactions, reactants), reactants, parameters)                                                ::Expr   #For SDEs
+    g_expr = Expr(:quote,recursive_equify!(get_g(reactions, reactants), Dict{Symbol,Int64}(), Dict{Symbol,Int64}()))         ::Expr   #For SDEs
+    jumps = recursive_equify!(get_jumps(reactions, reactants), reactants, parameters)                                        ::Expr   #For Gillespie Simulations
+    jumps_expr = Expr(:quote,recursive_equify!(get_jumps(reactions, reactants), Dict{Symbol,Int64}(), Dict{Symbol,Int64}())) ::Expr   #For Gillespie Simulations
+    return :(ReactionNetwork($f, $f_expr, $g, $g_expr, $jumps, $jumps_expr, zeros($(length(reactants)),$(length(reactions)))))
+end
+
+#Generates a dictionary with all parameters.
+function get_parameters(p)
+    parameters = Dict{Symbol,Int64}()
+    p_count = 0    ::Int64
+    for parameter in p
+        (!haskey(parameters,parameter)) && (parameters[parameter] = p_count += 1)
+    end
+    return parameters
 end
 
 #Generates a vector containing a number of reaction structures, each containing the infromation about one reaction.
@@ -67,12 +65,12 @@ function get_reactions(ex::Expr)
         #Checks what type of arrow we have (what direction) and generates reactions accordingly.
         arrow = r_line.args[1]  ::Symbol
         if in(arrow,double_arrows)
-            push!(reactions, ReactionStruct(r_line,rate.args[1],!in(arrow,no_mass_arrows),true))
-            push!(reactions, ReactionStruct(r_line,rate.args[2],!in(arrow,no_mass_arrows),false))
+            push!(reactions, ReactionStruct(r_line.args[2],r_line.args[3],rate.args[1],!in(arrow,no_mass_arrows)))
+            push!(reactions, ReactionStruct(r_line.args[3],r_line.args[2],rate.args[2],!in(arrow,no_mass_arrows)))
         elseif in(arrow,fwd_arrows)
-            push!(reactions, ReactionStruct(r_line,rate,!in(arrow,no_mass_arrows),true))
+            push!(reactions, ReactionStruct(r_line.args[2],r_line.args[3],rate,!in(arrow,no_mass_arrows)))
         elseif in(arrow,bwd_arrows)
-            push!(reactions, ReactionStruct(r_line,rate,!in(arrow,no_mass_arrows),false))
+            push!(reactions, ReactionStruct(r_line.args[3],r_line.args[2],rate,!in(arrow,no_mass_arrows)))
         else
             throw("malformed reaction")
         end
@@ -94,14 +92,9 @@ struct ReactionStruct
     #Construction. Genearates a reaction from one line of expression.
     #use_mass_kin = true will multiple the reaction rate by the concentration of the substrates (one usually want this).
     #direction says which direction the reaction goes in (X --> Y is true, X <-- Y is false. For X <--> Y this will be called in each direction).
-    function ReactionStruct(ex::Any, rate::Any, use_mass_kin::Bool, direction::Bool)
-        if direction
-            sub = add_reactants!(ex.args[2],1,Vector{ReactantStruct}(0))
-            prod = add_reactants!(ex.args[3],1,Vector{ReactantStruct}(0))
-        else
-            sub = add_reactants!(ex.args[3],1,Vector{ReactantStruct}(0))
-            prod = add_reactants!(ex.args[2],1,Vector{ReactantStruct}(0))
-        end
+    function ReactionStruct(sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
+        sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(0))
+        prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(0))
         use_mass_kin && (rate = mass_rate(sub,rate))
         new(sub,prod,rate)
     end
@@ -217,12 +210,13 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::Dict{Symbol,Int
 end
 
 #Recursive function that replaces all X, Y etc. with du[1], du[2] etc. Also removes stuff like 1*u[1]^1, this to make it easier to understand the equations if you print them.
-function recursive_equify!(expr::Any, reactants::Dict{Symbol,Int64})
+function recursive_equify!(expr::Any, reactants::Dict{Symbol,Int64}, parameters::Dict{Symbol,Int64})
     if typeof(expr) == Symbol           #If we have a symbol, check if it is one of the reactants. If so replace it accordingly.
         (haskey(reactants,expr)) && (return :(u[$(reactants[expr])]))
+        (haskey(parameters,expr)) && (return :(p[$(parameters[expr])]))
     elseif typeof(expr) == Expr         #If we have an expression, do recursion on its parts.
         for i = 1:length(expr.args)
-            expr.args[i] = recursive_equify!(expr.args[i], reactants::Dict{Symbol,Int64})
+            expr.args[i] = recursive_equify!(expr.args[i], reactants, parameters)
         end
         (expr.args[1] == :^) && (expr.args[3] == 1) && (return expr.args[2])    #If we have to the power of 1, skip that.
         if expr.args[1] == :*
@@ -232,6 +226,10 @@ function recursive_equify!(expr::Any, reactants::Dict{Symbol,Int64})
             (length(expr.args) == 2) && (return expr.args[2])                   # We have a multiplication of only one thing, return only that thing.
             (length(expr.args) == 1) && (return 1)                              #We have only * and no real argumenys.
         end
+        if expr.head == :call
+            in(expr.args[1],hill_name) && return hill(expr)
+            (in(expr.args[1],mm_name)) && (return mm(expr))
+        end
     end
     return expr
 end
@@ -239,17 +237,23 @@ end
 #The output structure, contains all the interesting information in the system.
 struct ReactionNetwork
     f::Function
+    f_expr::Expr
     g::Function
+    g_expr::Expr
     jumps::Tuple{ConstantRateJump,Vararg{ConstantRateJump}}
+    jumps_expr::Expr
     p_matrix::Array{Float64,2}
 end
 
-#hill function made avaiable.
-function hill(x,n,v,K)
-    return v*(x^n)/(K^n+x^n)
+
+#hill function made avaiable
+hill_name = Set{Symbol}([:hill, :Hill, :h, :H, :HILL])
+function hill(expr::Expr)
+    return :($(expr.args[4])*($(expr.args[2])^$(expr.args[3]))/($(expr.args[5])^$(expr.args[3])+$(expr.args[2])^$(expr.args[3])))
 end
 
 #michaelis menten function made avaiable.
-function mm(x,v,K)
-    return hill(x,1,v,K)
+mm_name = Set{Symbol}([:MM, :mm, :Mm, :mM, :M, :m])
+function mm(expr::Expr)
+    return :($(expr.args[3])*$(expr.args[2])/($(expr.args[4])+$(expr.args[2])))
 end
