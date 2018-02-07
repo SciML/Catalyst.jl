@@ -35,24 +35,18 @@ function coordinate(ex::Expr, p)
     reactants = get_reactants(reactions)    ::OrderedDict{Symbol,Int64}
     parameters = get_parameters(p)          ::OrderedDict{Symbol,Int64}
 
-
     syms = collect(keys(reactants))
     params = collect(keys(parameters))
-    #f_expr = deepcopy(Expr(:quote,get_f(reactions, reactants)) )        ::Expr   #For ODEs
-    #f_expr = Expr(:quote,get_f(reactions, reactants))         ::Expr   #For ODEs
 
-    f = recursive_equify!(get_f(reactions, reactants), reactants, parameters)                                                ::Expr   #For ODEs
+    f_expr = get_f(reactions, reactants)
+    f = make_func(f_expr, reactants, parameters)
+    g_expr = get_g(reactions, reactants)
+    g = make_func(g_expr, reactants, parameters)
 
-    f_expr = get_expression_array(reactions, reactants)
-    symjac = Expr(:quote, calculate_jac(f_expr, syms))
+    symjac = Expr(:quote, calculate_jac([element.args[2] for element in f_expr], syms))
 
-    #f_expr = Expr(:quote,recursive_equify!(get_f(reactions, reactants), OrderedDict{Symbol,Int64}(), OrderedDict{Symbol,Int64}(); replace_u=false, replace_p=false))         ::Expr   #For ODEs
-    g = recursive_equify!(get_g(reactions, reactants), reactants, parameters)                                                ::Expr   #For SDEs
-    g_expr = Expr(:quote,recursive_equify!(get_g(reactions, reactants), OrderedDict{Symbol,Int64}(), OrderedDict{Symbol,Int64}()))         ::Expr   #For SDEs
-    jumps = recursive_equify!(get_jumps(reactions, reactants), reactants, parameters)                                        ::Expr   #For Gillespie Simulations
+    jumps = recursive_equify!(get_jumps(reactions, reactants), reactants, parameters)::Expr   #For Gillespie Simulations
     jumps_expr = Expr(:quote,recursive_equify!(get_jumps(reactions, reactants), OrderedDict{Symbol,Int64}(), OrderedDict{Symbol,Int64}())) ::Expr   #For Gillespie Simulations
-
-    #ReactionNetwork(f, f_expr, g, g_expr, jumps, jumps_expr, zeros((length(reactants)),(length(reactions))))
 
     :(ReactionNetwork($f, $f_expr, $g, $g_expr, $jumps, $jumps_expr,
         zeros($(length(reactants)), $(length(reactions))), $syms, $params, $symjac))
@@ -66,18 +60,6 @@ function get_parameters(p)
         (!haskey(parameters,parameter)) && (parameters[parameter] = p_count += 1)
     end
     return parameters
-end
-
-
-"""
-    get_expression_array(reactions, reactants)
-
-An ugly hack to get an array of expressions. The array represents the
-right-hand-side of the ODE.
-"""
-function get_expression_array(reactions, reactants)
-    expr = recursive_equify!(get_f(reactions, reactants), OrderedDict{Symbol,Int64}(), OrderedDict{Symbol,Int64}(); replace_u=false, replace_p=false)
-    [ex.args[2] for ex in expr.args[2].args[2].args]
 end
 
 function calculate_jac(f_expr::Vector{Expr}, syms)
@@ -205,39 +187,30 @@ end
 
 #From the reactions and reactants generates f, the functions describing the deterministic time evolution of the system.
 function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
-    #Generates the system base.
-    system = Expr(:block)
-
-    #Ensures every line start something like du[2] = ...
-    #Here ... is a sum of some terms (to be added to expression in the next step).
-    for i = 1:length(reactants)
-        line = :(du[$i] = $(Expr(:call, :+)))
-        push!(system.args,line)
+    f = Vector{Expr}(length(reactants))
+    for i = 1:length(f)
+        f[i] = :(du[$i] = $(Expr(:call, :+)))
     end
 
     #Loops through all reactions. For all products and substrates loops ads their rate of change to the corresponding line in the system (off differential equations).
     for reaction in reactions
         for prod in reaction.products
-            push!(system.args[reactants[prod.reactant]].args[2].args, :($(reaction.rate) * $(prod.stoichiometry)))
+            push!(f[reactants[prod.reactant]].args[2].args, recursive_clean!(deepcopy(:($(reaction.rate) * $(prod.stoichiometry)))))
         end
         for sub in reaction.substrates
-            push!(system.args[reactants[sub.reactant]].args[2].args, :(-$(reaction.rate) * $(sub.stoichiometry)))
+            push!(f[reactants[sub.reactant]].args[2].args, recursive_clean!(deepcopy(:(-$(reaction.rate) * $(sub.stoichiometry)))))
         end
     end
-    return :((du,u,p,t) -> $system)
+    return f
 end
 
-
-#From the reactions and reactants generates g, the functions describing the noise of the system for Gillespie SDE simulations (noise multiplies by sqrt of reaction rate and the stochiometric change due to a certain reaction).
 function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
-    system = Expr(:block)               #Creates an empty system to put the equations in.
-    for reactant in keys(reactants)     #For every reactan.
-        for i = 1:length(reactions)     #For every reaction.
-            line = :(du[$(reactants[reactant]),$i] = $(get_stoch_diff(reactions[i],reactant)) * sqrt($(reactions[i].rate)))     #Get and inserts an entry corresponding to the noise rate for that reactant in that reaction (0 of reactant not part of reaction).
-            push!(system.args,line)
-        end
+    g = Vector{Expr}(length(reactions)*length(reactants))
+    idx = 0
+    for reactant in keys(reactants), i = 1:length(reactions)
+            g[idx += 1] = recursive_clean!(deepcopy(:(du[$(reactants[reactant]),$i] = $(get_stoch_diff(reactions[i],reactant)) * sqrt($(reactions[i].rate)))))
     end
-    return :((du,u,p,t) -> $system)
+    return g
 end
 
 #Computes how much the stoichiometry in a single reactant changes for a reaction. Only really interesting if the reactant is both a product and substrate.
@@ -250,6 +223,14 @@ function get_stoch_diff(reaction::ReactionStruct, reactant::Symbol)
         (reactant == sub.reactant) && (stoch -= sub.stoichiometry)
     end
     return stoch
+end
+
+function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int64},parameters::OrderedDict{Symbol,Int64})
+    system = Expr(:block)
+    for func_line in func_expr
+        push!(system.args, recursive_replace!(deepcopy(func_line), (reactants,:u), (parameters, :p)))
+    end
+    return :((du,u,p,t) -> $system)
 end
 
 #Generates a tuple of constant rate jumps to be used for Gillespie simulations.
@@ -269,27 +250,34 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
     return return_tuple
 end
 
-#Recursive function that replaces all X, Y etc. with du[1], du[2] etc. Also removes stuff like 1*u[1]^1, this to make it easier to understand the equations if you print them.
-function recursive_equify!(expr::Any, reactants::OrderedDict{Symbol,Int64}, parameters::OrderedDict{Symbol,Int64}; replace_u=true, replace_p=true)
-    expr = deepcopy(expr)
-    if typeof(expr) == Symbol           #If we have a symbol, check if it is one of the reactants. If so replace it accordingly.
-        replace_u && (haskey(reactants,expr)) && (return :(u[$(reactants[expr])]))
-        replace_p && (haskey(parameters,expr)) && (return :(p[$(parameters[expr])]))
-    elseif typeof(expr) == Expr         #If we have an expression, do recursion on its parts.
+function recursive_clean!(expr::Any)
+    (typeof(expr)!=Expr) && (return expr)
+    for i = 1:length(expr.args)
+        expr.args[i] = recursive_clean!(expr.args[i])
+    end
+    (expr.args[1] == :^) && (expr.args[3] == 1) && (return expr.args[2])
+    if expr.args[1] == :*
+        for i = length(expr.args):-1:2
+            (expr.args[i] == 1) && deleteat!(expr.args,i)                   #Removes all multiplications by 1.
+        end
+        (length(expr.args) == 2) && (return expr.args[2])                   # We have a multiplication of only one thing, return only that thing.
+        (length(expr.args) == 1) && (return 1)                              #We have only * and no real argumenys.
+    end
+    if expr.head == :call
+        in(expr.args[1],hill_name) && return hill(expr)
+        (in(expr.args[1],mm_name)) && (return mm(expr))
+    end
+    return expr
+end
+
+function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbol,Int64},Symbol}...)
+    if typeof(expr) == Symbol
+        for rr in replace_requests
+            (haskey(rr[1],expr)) && (return :($(rr[2])[$(rr[1][expr])]))
+        end
+    elseif typeof(expr) == Expr
         for i = 1:length(expr.args)
-            expr.args[i] = recursive_equify!(expr.args[i], reactants, parameters)
-        end
-        (expr.args[1] == :^) && (expr.args[3] == 1) && (return expr.args[2])    #If we have to the power of 1, skip that.
-        if expr.args[1] == :*
-            for i = length(expr.args):-1:2
-                (expr.args[i] == 1) && deleteat!(expr.args,i)                   #Removes all multiplications by 1.
-            end
-            (length(expr.args) == 2) && (return expr.args[2])                   # We have a multiplication of only one thing, return only that thing.
-            (length(expr.args) == 1) && (return 1)                              #We have only * and no real argumenys.
-        end
-        if expr.head == :call
-            in(expr.args[1],hill_name) && return hill(expr)
-            (in(expr.args[1],mm_name)) && (return mm(expr))
+            expr.args[i] = recursive_replace!(expr.args[i], replace_requests...)
         end
     end
     return expr
@@ -308,7 +296,6 @@ struct ReactionNetwork
     params::Vector{Symbol}
     symjac::Array{SymEngine.Basic,2}
 end
-
 
 #hill function made avaiable
 hill_name = Set{Symbol}([:hill, :Hill, :h, :H, :HILL])
