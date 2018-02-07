@@ -1,3 +1,25 @@
+"""
+Macro that inputs an expression corresponding to a reaction network and output a Reaction Network Structure that can be used as input to generation of SDE and ODE and Jump problems.
+Most arrows accepted (both right, left and bi drectional arrows).
+Note that while --> is a correct arrow, neither <-- nor <--> works.
+Using non-filled arrows (⇐, ⟽, ⇒, ⟾, ⇔, ⟺) will disable mass kinetics and lets you cutomize reaction rates yourself.
+Use 0 or ∅ for degradation/creation to/from nothing.
+Example system:
+    2.0, X + Y --> XY                  #This will have reaction rate corresponding to 2.0*[X][Y]
+    2.0, XY ← X + Y                    #Identical to 2.0, X + Y --> XY
+    2.0X, X + Y ⟾ XY                  #This will have reaction rate corresponding to 2.0*[X]
+    (hill(X,2,2,2),kD), X + Y ⟷ XY    #Reaction in forward direction is activated by X according to a hill function. Reaction in backward direction have a rate according to constant kD, declared elsewere in your program.
+    kDeg, (X,Y) --> 0                  #This corresponds to both X and Y degrading at rate kDeg.
+    (dX, dY), (X,Y) --> 0              #This corresponds to X and Y degrading at rates dX and dY, respectively.
+    k, (X1,Y1) --> (X2,Y2)             #X1 and Y1 becomes X2 and Y2, respectively, at rate k.
+
+Note that while --> is a correct arrow, neither <-- nor <--> works.
+"""
+#Macro to create a reaction network model. Generates expressions for the various things you might want. Last line is executed and constructions a ReactionNetwork structure containing the infromation,
+macro reaction_network_new(name, ex::Expr, p...)
+    coordinate(name, ex, p)
+end
+
 #Declare various arrow types symbols used for the empty set (also 0).
 empty_set = Set{Symbol}([:∅])
 fwd_arrows = Set{Symbol}([:>, :→, :↣, :↦, :⇾, :⟶, :⟼, :⥟, :⥟, :⇀, :⇁, :⇒, :⟾])
@@ -5,21 +27,6 @@ bwd_arrows = Set{Symbol}([:<, :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :�
 double_arrows = Set{Symbol}([:↔, :⟷, :⥎, :⥐, :⇄, :⇆, :⇋, :⇌, :⇔, :⟺])
 no_mass_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])      #Using this arrows will disable the program from multiplying reaction rates with the substrate concentrations. GIves user full control of reaction rates.
 disallowed_reactants = Set{Symbol}([:du, :u, :p, :t])           #These are not allowed since they are used in "return :((du,u,p,t) -> $system)", if a variable these gets replaced with e.g. u[1], which is bad.
-
-"""
-Macro that inputs an expression corresponding to a reaction entwork and output a Reaction Netqork Structure that can be used as input to generation of SDE and ODE and Jump problems.
-Must arrows accepted (both right, left and bi drectional arrows).
-Using arrows no fileld arrows (⇐, ⟽, ⇒, ⟾, ⇔, ⟺) will disable mass kinetics and lets you cutomize reaction rates yourself.
-Example system:
-    2.0, X + Y --> XY       #This will have reaction rate corresponding to 2.0*[X][Y]
-    2.0X, X + Y ⟾ XY       #This will have reaction rate corresponding to 2.0*[X]
-    (hill(X,2,2,2),kD), X + Y ⟷ XY    #Reaction in forward direction is activated by X according to a hill function. Reaction in backward direction have a rate according to constant kD, declared elsewere in your program.
-Note that while --> is a correct arrow, neither <-- nor <--> works.
-"""
-#Macro to create a reaction network model. Generates expressions for the various things you might want. Last line is executed and constructions a ReactionNetwork structure containing the infromation,
-macro reaction_network_new(name, ex::Expr, p...)
-    coordinate(name, ex, p)
-end
 
 function coordinate(name, ex::Expr, p)
     reactions = get_reactions(ex)           ::Vector{ReactionStruct}
@@ -39,9 +46,9 @@ function coordinate(name, ex::Expr, p)
     (jump_rate_expr, jump_affect_expr) = get_jump_expr(reactions, reactants)
     jumps = get_jumps(jump_rate_expr, jump_affect_expr,reactants,reactants)
 
-    symjac = Expr(:quote, calculate_jac([element.args[2] for element in f_expr], syms))
-
-    f_symfuncs = Array{SymEngine.Basic,2}()
+    f_rhs = [element.args[2] for element in f_expr]
+    symjac = Expr(:quote, calculate_jac(f_rhs, syms))
+    f_symfuncs = hcat([SymEngine.Basic(f) for f in f_rhs])
 
     # Build the type
     exprs = Vector{Expr}(0)
@@ -258,12 +265,15 @@ function get_jump_expr(reactions::Vector{ReactionStruct}, reactants::OrderedDict
 end
 
 function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,Int64},parameters::OrderedDict{Symbol,Int64})
-    jumps = fill(Expr(:call,:ConstantRateJump),length(rates))
-    for i = 1:length(jumps)
-        push!(jumps[i].args, :((u,p,t) -> $(recursive_replace!(deepcopy(rates[i]), (reactants,:u), (parameters, :p)))))
-        push!(jumps[i].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[i])))))
+    jumps = Expr(:tuple)
+    for i = 1:length(rates)
+        push!(jumps.args,Expr(:call,:ConstantRateJump))
     end
-    return Tuple(jumps)
+    for i = 1:length(rates)
+        push!(jumps.args[i].args, :((u,p,t) -> $(recursive_replace!(deepcopy(rates[i]), (reactants,:u), (parameters, :p)))))
+        push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[i])))))
+    end
+    return jumps
 end
 
 function recursive_clean!(expr::Any)
