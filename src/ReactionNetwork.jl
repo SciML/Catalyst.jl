@@ -26,11 +26,11 @@ Example system:
 Note that while --> is a correct arrow, neither <-- nor <--> works.
 """
 #Macro to create a reaction network model. Generates expressions for the various things you might want. Last line is executed and constructions a ReactionNetwork structure containing the infromation,
-macro reaction_network_new(ex::Expr, p...)
-    coordinate(ex, p)
+macro reaction_network_new(name, ex::Expr, p...)
+    coordinate(name, ex, p)
 end
 
-function coordinate(ex::Expr, p)
+function coordinate(name, ex::Expr, p)
     reactions = get_reactions(ex)           ::Vector{ReactionStruct}
     reactants = get_reactants(reactions)    ::OrderedDict{Symbol,Int64}
     parameters = get_parameters(p)          ::OrderedDict{Symbol,Int64}
@@ -43,13 +43,38 @@ function coordinate(ex::Expr, p)
     g_expr = get_g(reactions, reactants)
     g = make_func(g_expr, reactants, parameters)
 
-    symjac = Expr(:quote, calculate_jac([element.args[2] for element in f_expr], syms))
+    f_expr = get_expression_array(reactions, reactants)
+    f_symfuncs = hcat([SymEngine.Basic(f) for f in f_expr])
 
-    jumps = recursive_equify!(get_jumps(reactions, reactants), reactants, parameters)::Expr   #For Gillespie Simulations
+    symjac = Expr(:quote, calculate_jac(f_expr, syms))
+
+    p_matrix = zeros(length(reactants), length(reactions))
+
+    g = recursive_equify!(get_g(reactions, reactants), reactants, parameters)                                                ::Expr   #For SDEs
+    g_expr = Expr(:quote,recursive_equify!(get_g(reactions, reactants), OrderedDict{Symbol,Int64}(), OrderedDict{Symbol,Int64}()))         ::Expr   #For SDEs
+    jumps = recursive_equify!(get_jumps(reactions, reactants), reactants, parameters)                                        ::Expr   #For Gillespie Simulations
     jumps_expr = Expr(:quote,recursive_equify!(get_jumps(reactions, reactants), OrderedDict{Symbol,Int64}(), OrderedDict{Symbol,Int64}())) ::Expr   #For Gillespie Simulations
 
-    :(ReactionNetwork($f, $f_expr, $g, $g_expr, $jumps, $jumps_expr,
-        zeros($(length(reactants)), $(length(reactions))), $syms, $params, $symjac))
+    #ReactionNetwork(f, f_expr, g, g_expr, jumps, jumps_expr, zeros((length(reactants)),(length(reactions))))
+
+    # Build the type
+    exprs = Vector{Expr}(0)
+
+    typeex,constructorex = maketype(name, f, f_expr, f_symfuncs, g, g_expr, jumps, jumps_expr, p_matrix, syms; params=params, symjac=symjac)
+    push!(exprs,typeex)
+    push!(exprs,constructorex)
+
+    # export type constructor
+    def_const_ex = :(($name)()) |> esc
+    push!(exprs,def_const_ex)
+
+    expr_arr_to_block(exprs)
+end
+
+function expr_arr_to_block(exprs)
+  block = :(begin end)
+  foreach(expr -> push!(block.args, expr), exprs)
+  block
 end
 
 #Generates a dictionary with all parameters.
@@ -283,19 +308,6 @@ function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbo
     return expr
 end
 
-#The output structure, contains all the interesting information in the system.
-struct ReactionNetwork
-    f::Function
-    f_expr::Vector{Expr}
-    g::Function
-    g_expr::Expr
-    jumps::Tuple{ConstantRateJump,Vararg{ConstantRateJump}}
-    jumps_expr::Expr
-    p_matrix::Array{Float64,2}
-    syms::Vector{Symbol}
-    params::Vector{Symbol}
-    symjac::Array{SymEngine.Basic,2}
-end
 
 #hill function made avaiable
 hill_name = Set{Symbol}([:hill, :Hill, :h, :H, :HILL])
