@@ -3,8 +3,9 @@
 #module DiffEqBiological
 module tmpMod
 using DiffEqJump
-
 using DiffEqBase
+using SymEngine
+using DataStructures
 
 using Compat
 abstract type AbstractReaction end

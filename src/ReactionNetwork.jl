@@ -27,27 +27,68 @@ Note that while --> is a correct arrow, neither <-- nor <--> works.
 """
 #Macro to create a reaction network model. Generates expressions for the various things you might want. Last line is executed and constructions a ReactionNetwork structure containing the infromation,
 macro reaction_network_new(ex::Expr, p...)
+    coordinate(ex, p)
+end
+
+function coordinate(ex::Expr, p)
     reactions = get_reactions(ex)           ::Vector{ReactionStruct}
-    reactants = get_reactants(reactions)    ::Dict{Symbol,Int64}
-    parameters = get_parameters(p)          ::Dict{Symbol,Int64}
+    reactants = get_reactants(reactions)    ::OrderedDict{Symbol,Int64}
+    parameters = get_parameters(p)          ::OrderedDict{Symbol,Int64}
+
+
+    syms = collect(keys(reactants))
+    params = collect(keys(parameters))
+    #f_expr = deepcopy(Expr(:quote,get_f(reactions, reactants)) )        ::Expr   #For ODEs
+    #f_expr = Expr(:quote,get_f(reactions, reactants))         ::Expr   #For ODEs
 
     f = recursive_equify!(get_f(reactions, reactants), reactants, parameters)                                                ::Expr   #For ODEs
-    f_expr = Expr(:quote,recursive_equify!(get_f(reactions, reactants), Dict{Symbol,Int64}(), Dict{Symbol,Int64}()))         ::Expr   #For ODEs
+
+    f_expr = get_expression_array(reactions, reactants)
+    symjac = Expr(:quote, calculate_jac(f_expr, syms))
+
+    #f_expr = Expr(:quote,recursive_equify!(get_f(reactions, reactants), OrderedDict{Symbol,Int64}(), OrderedDict{Symbol,Int64}(); replace_u=false, replace_p=false))         ::Expr   #For ODEs
     g = recursive_equify!(get_g(reactions, reactants), reactants, parameters)                                                ::Expr   #For SDEs
-    g_expr = Expr(:quote,recursive_equify!(get_g(reactions, reactants), Dict{Symbol,Int64}(), Dict{Symbol,Int64}()))         ::Expr   #For SDEs
+    g_expr = Expr(:quote,recursive_equify!(get_g(reactions, reactants), OrderedDict{Symbol,Int64}(), OrderedDict{Symbol,Int64}()))         ::Expr   #For SDEs
     jumps = recursive_equify!(get_jumps(reactions, reactants), reactants, parameters)                                        ::Expr   #For Gillespie Simulations
-    jumps_expr = Expr(:quote,recursive_equify!(get_jumps(reactions, reactants), Dict{Symbol,Int64}(), Dict{Symbol,Int64}())) ::Expr   #For Gillespie Simulations
-    return :(ReactionNetwork($f, $f_expr, $g, $g_expr, $jumps, $jumps_expr, zeros($(length(reactants)),$(length(reactions)))))
+    jumps_expr = Expr(:quote,recursive_equify!(get_jumps(reactions, reactants), OrderedDict{Symbol,Int64}(), OrderedDict{Symbol,Int64}())) ::Expr   #For Gillespie Simulations
+
+    #ReactionNetwork(f, f_expr, g, g_expr, jumps, jumps_expr, zeros((length(reactants)),(length(reactions))))
+
+    :(ReactionNetwork($f, $f_expr, $g, $g_expr, $jumps, $jumps_expr,
+        zeros($(length(reactants)), $(length(reactions))), $syms, $params, $symjac))
 end
 
 #Generates a dictionary with all parameters.
 function get_parameters(p)
-    parameters = Dict{Symbol,Int64}()
+    parameters = OrderedDict{Symbol,Int64}()
     p_count = 0    ::Int64
     for parameter in p
         (!haskey(parameters,parameter)) && (parameters[parameter] = p_count += 1)
     end
     return parameters
+end
+
+
+"""
+    get_expression_array(reactions, reactants)
+
+An ugly hack to get an array of expressions. The array represents the
+right-hand-side of the ODE.
+"""
+function get_expression_array(reactions, reactants)
+    expr = recursive_equify!(get_f(reactions, reactants), OrderedDict{Symbol,Int64}(), OrderedDict{Symbol,Int64}(); replace_u=false, replace_p=false)
+    [ex.args[2] for ex in expr.args[2].args[2].args]
+end
+
+function calculate_jac(f_expr::Vector{Expr}, syms)
+    symjac = Matrix{SymEngine.Basic}( length(syms), length(syms))
+    symfuncs = [SymEngine.Basic(f) for f in f_expr]
+    for i in eachindex(f_expr)
+        for j in eachindex(syms)
+          symjac[i,j] = diff(symfuncs[i],syms[j])
+        end
+    end
+    symjac
 end
 
 #Generates a vector containing a number of reaction structures, each containing the infromation about one reaction.
@@ -148,7 +189,7 @@ end
 
 #From the vector with all reactions, generates a dictionary with all reactants. Each reactant will point to a number so that X --> means X will be replaced with u[1] in the equations.
 function get_reactants(reactions::Vector{ReactionStruct})
-    reactants = Dict{Symbol,Int64}()
+    reactants = OrderedDict{Symbol,Int64}()
     r_count = 0    ::Int64
     #For all reactions, checks all products and substrates. Add them to the dictionary (if not already in it) and updates countr of number of reactant types.
     for reaction in reactions
@@ -163,7 +204,7 @@ function get_reactants(reactions::Vector{ReactionStruct})
 end
 
 #From the reactions and reactants generates f, the functions describing the deterministic time evolution of the system.
-function get_f(reactions::Vector{ReactionStruct}, reactants::Dict{Symbol,Int64})
+function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
     #Generates the system base.
     system = Expr(:block)
 
@@ -186,8 +227,9 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::Dict{Symbol,Int64})
     return :((du,u,p,t) -> $system)
 end
 
+
 #From the reactions and reactants generates g, the functions describing the noise of the system for Gillespie SDE simulations (noise multiplies by sqrt of reaction rate and the stochiometric change due to a certain reaction).
-function get_g(reactions::Vector{ReactionStruct}, reactants::Dict{Symbol,Int64})
+function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
     system = Expr(:block)               #Creates an empty system to put the equations in.
     for reactant in keys(reactants)     #For every reactan.
         for i = 1:length(reactions)     #For every reaction.
@@ -211,7 +253,7 @@ function get_stoch_diff(reaction::ReactionStruct, reactant::Symbol)
 end
 
 #Generates a tuple of constant rate jumps to be used for Gillespie simulations.
-function get_jumps(reactions::Vector{ReactionStruct}, reactants::Dict{Symbol,Int64})
+function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
     return_tuple = :(())            #Expression for a tuple, contains all the ConatantRateJumps we create.
     for reaction in reactions
         system = Expr(:block)       #System corresponding to the affect functions changes in the integrator.
@@ -228,10 +270,11 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::Dict{Symbol,Int
 end
 
 #Recursive function that replaces all X, Y etc. with du[1], du[2] etc. Also removes stuff like 1*u[1]^1, this to make it easier to understand the equations if you print them.
-function recursive_equify!(expr::Any, reactants::Dict{Symbol,Int64}, parameters::Dict{Symbol,Int64})
+function recursive_equify!(expr::Any, reactants::OrderedDict{Symbol,Int64}, parameters::OrderedDict{Symbol,Int64}; replace_u=true, replace_p=true)
+    expr = deepcopy(expr)
     if typeof(expr) == Symbol           #If we have a symbol, check if it is one of the reactants. If so replace it accordingly.
-        (haskey(reactants,expr)) && (return :(u[$(reactants[expr])]))
-        (haskey(parameters,expr)) && (return :(p[$(parameters[expr])]))
+        replace_u && (haskey(reactants,expr)) && (return :(u[$(reactants[expr])]))
+        replace_p && (haskey(parameters,expr)) && (return :(p[$(parameters[expr])]))
     elseif typeof(expr) == Expr         #If we have an expression, do recursion on its parts.
         for i = 1:length(expr.args)
             expr.args[i] = recursive_equify!(expr.args[i], reactants, parameters)
@@ -255,12 +298,15 @@ end
 #The output structure, contains all the interesting information in the system.
 struct ReactionNetwork
     f::Function
-    f_expr::Expr
+    f_expr::Vector{Expr}
     g::Function
     g_expr::Expr
     jumps::Tuple{ConstantRateJump,Vararg{ConstantRateJump}}
     jumps_expr::Expr
     p_matrix::Array{Float64,2}
+    syms::Vector{Symbol}
+    params::Vector{Symbol}
+    symjac::Array{SymEngine.Basic,2}
 end
 
 
