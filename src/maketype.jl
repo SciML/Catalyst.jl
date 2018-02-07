@@ -5,7 +5,8 @@ function maketype(name,
                   g,
                   g_funcs,
                   jumps,
-                  jumps_expr,
+                  jump_rate_expr,
+                  jump_affect_expr,
                   p_matrix,
                   syms;
                   params = Symbol[],
@@ -20,7 +21,8 @@ function maketype(name,
         g::Function
         g_funcs::Expr
         jumps::Tuple{ConstantRateJump,Vararg{ConstantRateJump}}
-        jumps_expr::Expr
+        jump_rate_expr::Tuple{Expr,Vararg{Expr}}
+        jump_affect_expr::Tuple{Vector{Expr},Vararg{Vector{Expr}}}
         p_matrix::Array{Float64,2}
         syms::Vector{Symbol}
         params::Vector{Symbol}
@@ -33,7 +35,8 @@ function maketype(name,
                   $(Expr(:kw,:g,g)),
                   $(Expr(:kw,:g_funcs,g_funcs)),
                   $(Expr(:kw,:jumps,jumps)),
-                  $(Expr(:kw,:jumps_expr,jumps_expr)),
+                  $(Expr(:kw,:jump_rate_expr,jump_affect_expr)),
+                  $(Expr(:kw,:jump_affect_expr,jump_affect_expr)),
                   $(Expr(:kw,:p_matrix,p_matrix)),
                   $(Expr(:kw,:f_symfuncs,f_symfuncs)),
                   $(Expr(:kw,:syms,syms)),
@@ -46,7 +49,8 @@ function maketype(name,
                       g,
                       g_funcs,
                       jumps,
-                      jumps_expr,
+                      jump_affect_expr,
+                      jump_affect_expr,
                       p_matrix,
                       syms,
                       params,

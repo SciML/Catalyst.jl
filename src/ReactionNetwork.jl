@@ -1,12 +1,3 @@
-#To Do:
-# - Allow for several functions in one line, e.g:
-#     kDeg, (X,Y,Z) --> ∅
-#     (kDegX, kDegY, kDegZ), (X,Y,Z) --> ∅
-# - Modify variable replacement so that p, t, u and du can be used as input variable names or reaction rates.
-#     Low prio.
-# - Add support for converting to polynomials and use algebraic methods (fincing equilibirumpoints etc.)
-#     Long term.
-
 #Declare various arrow types symbols used for the empty set (also 0).
 empty_set = Set{Symbol}([:∅])
 fwd_arrows = Set{Symbol}([:>, :→, :↣, :↦, :⇾, :⟶, :⟼, :⥟, :⥟, :⇀, :⇁, :⇒, :⟾])
@@ -40,27 +31,22 @@ function coordinate(name, ex::Expr, p)
 
     f_expr = get_f(reactions, reactants)
     f = make_func(f_expr, reactants, parameters)
+
     g_expr = get_g(reactions, reactants)
     g = make_func(g_expr, reactants, parameters)
-
-    f_expr = get_expression_array(reactions, reactants)
-    f_symfuncs = hcat([SymEngine.Basic(f) for f in f_expr])
-
-    symjac = Expr(:quote, calculate_jac(f_expr, syms))
-
     p_matrix = zeros(length(reactants), length(reactions))
 
-    g = recursive_equify!(get_g(reactions, reactants), reactants, parameters)                                                ::Expr   #For SDEs
-    g_expr = Expr(:quote,recursive_equify!(get_g(reactions, reactants), OrderedDict{Symbol,Int64}(), OrderedDict{Symbol,Int64}()))         ::Expr   #For SDEs
-    jumps = recursive_equify!(get_jumps(reactions, reactants), reactants, parameters)                                        ::Expr   #For Gillespie Simulations
-    jumps_expr = Expr(:quote,recursive_equify!(get_jumps(reactions, reactants), OrderedDict{Symbol,Int64}(), OrderedDict{Symbol,Int64}())) ::Expr   #For Gillespie Simulations
+    (jump_rate_expr, jump_affect_expr) = get_jump_expr(reactions, reactants)
+    jumps = get_jumps(jump_rate_expr, jump_affect_expr,reactants,reactants)
 
-    #ReactionNetwork(f, f_expr, g, g_expr, jumps, jumps_expr, zeros((length(reactants)),(length(reactions))))
+    symjac = Expr(:quote, calculate_jac([element.args[2] for element in f_expr], syms))
+
+    f_symfuncs = Array{SymEngine.Basic,2}()
 
     # Build the type
     exprs = Vector{Expr}(0)
 
-    typeex,constructorex = maketype(name, f, f_expr, f_symfuncs, g, g_expr, jumps, jumps_expr, p_matrix, syms; params=params, symjac=symjac)
+    typeex,constructorex = maketype(name, f, Meta.quot(f_expr), f_symfuncs, g, Meta.quot(g_expr), jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params, symjac=symjac)
     push!(exprs,typeex)
     push!(exprs,constructorex)
 
@@ -258,21 +244,26 @@ function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int64},
     return :((du,u,p,t) -> $system)
 end
 
-#Generates a tuple of constant rate jumps to be used for Gillespie simulations.
-function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
-    return_tuple = :(())            #Expression for a tuple, contains all the ConatantRateJumps we create.
-    for reaction in reactions
-        system = Expr(:block)       #System corresponding to the affect functions changes in the integrator.
-        #Loops through all substrates and products in the reaction and gets their stoichiometry change.
-        for prod in reaction.products
-            push!(system.args,:(integrator.u[$(reactants[prod.reactant])] += $(prod.stoichiometry)))
-        end
-        for sub in reaction.substrates
-            push!(system.args,:(integrator.u[$(reactants[sub.reactant])] -= $(sub.stoichiometry)))
-        end
-        push!(return_tuple.args, :(ConstantRateJump((u,p,t) -> $(reaction.rate),integrator -> $system)))    #Adding a reaction to the return tuple. Contains the rate function and the affect function.
+function get_jump_expr(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
+    rates = Vector{Any}(length(reactions))
+    affects = Vector{Vector{Expr}}(length(reactions))
+    idx = 0
+    for reaction in deepcopy(reactions)
+        rates[idx += 1] = recursive_clean!(reaction.rate)
+        affects[idx] = Vector{Expr}(0)
+        foreach(prod -> push!(affects[idx],:(integrator.u[$(reactants[prod.reactant])] += $(prod.stoichiometry))), reaction.products)
+        foreach(sub -> push!(affects[idx],:(integrator.u[$(reactants[sub.reactant])] -= $(sub.stoichiometry))), reaction.substrates)
     end
-    return return_tuple
+    return (Tuple(rates),Tuple(affects))
+end
+
+function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,Int64},parameters::OrderedDict{Symbol,Int64})
+    jumps = fill(Expr(:call,:ConstantRateJump),length(rates))
+    for i = 1:length(jumps)
+        push!(jumps[i].args, :((u,p,t) -> $(recursive_replace!(deepcopy(rates[i]), (reactants,:u), (parameters, :p)))))
+        push!(jumps[i].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[i])))))
+    end
+    return Tuple(jumps)
 end
 
 function recursive_clean!(expr::Any)
@@ -307,7 +298,6 @@ function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbo
     end
     return expr
 end
-
 
 #hill function made avaiable
 hill_name = Set{Symbol}([:hill, :Hill, :h, :H, :HILL])
