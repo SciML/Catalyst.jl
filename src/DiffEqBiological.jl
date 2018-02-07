@@ -15,6 +15,7 @@ import DataStructures: OrderedDict
 include("reactions.jl")
 include("ReactionNetwork.jl")   # New stuff
 include("problem.jl")
+include("maketype.jl")
 
 export GillespieProblem
 
