@@ -65,12 +65,12 @@ function get_reactions(ex::Expr)
         #Checks what type of arrow we have (what direction) and generates reactions accordingly.
         arrow = r_line.args[1]  ::Symbol
         if in(arrow,double_arrows)
-            push!(reactions, ReactionStruct(r_line.args[2],r_line.args[3],rate.args[1],!in(arrow,no_mass_arrows)))
-            push!(reactions, ReactionStruct(r_line.args[3],r_line.args[2],rate.args[2],!in(arrow,no_mass_arrows)))
+            push_reactions(reactions::Vector{ReactionStruct}, r_line.args[2], r_line.args[3], rate.args[1], !in(arrow,no_mass_arrows))
+            push_reactions(reactions::Vector{ReactionStruct}, r_line.args[3], r_line.args[2], rate.args[2], !in(arrow,no_mass_arrows))
         elseif in(arrow,fwd_arrows)
-            push!(reactions, ReactionStruct(r_line.args[2],r_line.args[3],rate,!in(arrow,no_mass_arrows)))
+            push_reactions(reactions::Vector{ReactionStruct}, r_line.args[2], r_line.args[3], rate, !in(arrow,no_mass_arrows))
         elseif in(arrow,bwd_arrows)
-            push!(reactions, ReactionStruct(r_line.args[3],r_line.args[2],rate,!in(arrow,no_mass_arrows)))
+            push_reactions(reactions::Vector{ReactionStruct}, r_line.args[3], r_line.args[2], rate, !in(arrow,no_mass_arrows))
         else
             throw("malformed reaction")
         end
@@ -107,6 +107,24 @@ function mass_rate(substrates::Vector{ReactantStruct},old_rate::Any)
         push!(rate.args,Expr(:call, :^, sub.reactant, sub.stoichiometry))
     end
     return rate
+end
+
+function tup_leng(ex::Any)
+    (typeof(ex)==Expr && ex.head == :tuple) && (return length(ex.args))
+    return 1
+end
+
+function get_tup_arg(ex::Any,i::Int)
+    (tup_leng(ex) == 1) && (return ex)
+    return ex.args[i]
+end
+
+function push_reactions(reactions::Vector{ReactionStruct}, sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
+    lengs = [tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate)]
+    (count(lengs.==1) + count(lengs.==maximum(lengs)) < 3) && (throw("malformed reaction"))
+    for i = 1:maximum(lengs)
+        push!(reactions, ReactionStruct(get_tup_arg(sub_line,i), get_tup_arg(prod_line,i), get_tup_arg(rate,i), use_mass_kin))
+    end
 end
 
 #Recursive function that loops through the reactants in an reaction line and finds the reactants and their stochiometry. Recursion makes it able to handle e.g. 2(X+Y+3(Z+XY)) (probably one will not need it though).
