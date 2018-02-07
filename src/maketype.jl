@@ -1,9 +1,9 @@
 function maketype(name,
                   f,
-                  f_funcs,
+                  f_expr,
                   f_symfuncs,
                   g,
-                  g_funcs,
+                  g_expr,
                   jumps,
                   jump_rate_expr,
                   jump_affect_expr,
@@ -16,10 +16,10 @@ function maketype(name,
 
     typeex = :(mutable struct $name <: AbstractReaction
         f::Function
-        f_funcs::Vector{Expr}
+        f_expr::Vector{Expr}
         f_symfuncs::Matrix{SymEngine.Basic}
         g::Function
-        g_funcs::Expr
+        g_expr::Expr
         jumps::Tuple{ConstantRateJump,Vararg{ConstantRateJump}}
         jump_rate_expr::Tuple{Expr,Vararg{Expr}}
         jump_affect_expr::Tuple{Vector{Expr},Vararg{Vector{Expr}}}
@@ -31,9 +31,9 @@ function maketype(name,
     # Make the default constructor
     constructorex = :($(name)(;
                   $(Expr(:kw,:f,f)),
-                  $(Expr(:kw,:f_funcs,f_funcs)),
+                  $(Expr(:kw,:f_expr,f_expr)),
                   $(Expr(:kw,:g,g)),
-                  $(Expr(:kw,:g_funcs,g_funcs)),
+                  $(Expr(:kw,:g_expr,g_expr)),
                   $(Expr(:kw,:jumps,jumps)),
                   $(Expr(:kw,:jump_rate_expr,jump_affect_expr)),
                   $(Expr(:kw,:jump_affect_expr,jump_affect_expr)),
@@ -44,10 +44,10 @@ function maketype(name,
                   $(Expr(:kw,:symjac,symjac))) =
                   $(name)(
                       f,
-                      f_funcs,
+                      f_expr,
                       f_symfuncs,
                       g,
-                      g_funcs,
+                      g_expr,
                       jumps,
                       jump_affect_expr,
                       jump_affect_expr,
