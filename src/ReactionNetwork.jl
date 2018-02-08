@@ -113,11 +113,12 @@ struct ReactionStruct
     substrates::Vector{ReactantStruct}
     products::Vector{ReactantStruct}
     rate
+    use_mass_kin::Bool
+    input_rate
     function ReactionStruct(sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
         sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(0))
         prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(0))
-        use_mass_kin && (rate = mass_rate(sub,rate))
-        new(sub,prod,rate)
+        new(sub,prod,use_mass_kin ? mass_rate(sub,rate) : rate, use_mass_kin, rate)
     end
 end
 
@@ -200,11 +201,8 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
         f[i] = :(internal_var___du[$i] = $(Expr(:call, :+)))
     end
     for reaction in deepcopy(reactions)
-        for prod in reaction.products
-            push!(f[reactants[prod.reactant]].args[2].args, recursive_clean!(:($(reaction.rate) * $(prod.stoichiometry))))
-        end
-        for sub in reaction.substrates
-            push!(f[reactants[sub.reactant]].args[2].args, recursive_clean!(:(-$(reaction.rate) * $(sub.stoichiometry))))
+        for reactant in union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant))
+            push!(f[reactants[reactant]].args[2].args, recursive_clean!(:($(get_stoch_diff(reaction,reactant)) * $(reaction.rate))))
         end
     end
     return f
@@ -247,7 +245,12 @@ function get_jump_expr(reactions::Vector{ReactionStruct}, reactants::OrderedDict
     affects = Vector{Vector{Expr}}(length(reactions))
     idx = 0
     for reaction in deepcopy(reactions)
-        rates[idx += 1] = recursive_clean!(reaction.rate)
+        rate = reaction.input_rate
+        if reaction.use_mass_kin
+            rate = Expr(:call,:*,rate)
+            foreach(sub -> push!(rate.args, :(binomial($(sub.reactant),$(sub.stoichiometry)))),reaction.substrates)
+        end
+        rates[idx += 1] = recursive_clean!(rate)
         affects[idx] = Vector{Expr}(0)
         foreach(prod -> push!(affects[idx],:(integrator.u[$(reactants[prod.reactant])] += $(prod.stoichiometry))), reaction.products)
         foreach(sub -> push!(affects[idx],:(integrator.u[$(reactants[sub.reactant])] -= $(sub.stoichiometry))), reaction.substrates)
@@ -281,10 +284,13 @@ function recursive_clean!(expr::Any)
         end
         (length(expr.args) == 2) && (return expr.args[2])                   # We have a multiplication of only one thing, return only that thing.
         (length(expr.args) == 1) && (return 1)                              #We have only * and no real argumenys.
+        (length(expr.args) == 3) && (expr.args[2] == -1) && return :(-$(expr.args[3]))
+        (length(expr.args) == 3) && (expr.args[3] == -1) && return :(-$(expr.args[2]))
     end
     if expr.head == :call
         in(expr.args[1],hill_name) && return hill(expr)
-        (in(expr.args[1],mm_name)) && (return mm(expr))
+        in(expr.args[1],mm_name) && return mm(expr)
+        (expr.args[1] == :binomial) && (expr.args[3] == 1) && return expr.args[2]
     end
     return expr
 end
@@ -312,14 +318,14 @@ function calculate_jac(f_expr::Vector{Expr}, syms)
           symjac[i,j] = diff(symfuncs[i],syms[j])
         end
     end
-    symjac
+    return symjac
 end
 
 #Turns an array of expressions to a expression block with corresponding expressions.
 function expr_arr_to_block(exprs)
   block = :(begin end)
   foreach(expr -> push!(block.args, expr), exprs)
-  block
+  return block
 end
 
 ### Pre Defined Functions that can be inserted into the reaction rates ###
