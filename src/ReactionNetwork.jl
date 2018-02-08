@@ -35,7 +35,6 @@ fwd_arrows = Set{Symbol}([:>, :→, :↣, :↦, :⇾, :⟶, :⟼, :⥟, :⥟, :�
 bwd_arrows = Set{Symbol}([:<, :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :↼, :↽, :⇐, :⟽])
 double_arrows = Set{Symbol}([:↔, :⟷, :⥎, :⥐, :⇄, :⇆, :⇋, :⇌, :⇔, :⟺])
 no_mass_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])      #Using this arrows will disable the program from multiplying reaction rates with the substrate concentrations. Gives user full control of reaction rates.
-disallowed_reactants = Set{Symbol}([:du, :u, :p, :t])           #These are not allowed since they are used in "return :((du,u,p,t) -> $system)", if a variable these gets replaced with e.g. u[1], which is bad. To Do: Make change so that these can be used.
 
 #Coordination function, actually does all the work of the macro.
 function coordinate(name, ex::Expr, p)
@@ -84,7 +83,6 @@ function get_reactions(ex::Expr)
     for line in ex.args
         (line.head != :tuple) && (continue)
         (rate,r_line) = line.args
-
         if r_line.head  == :-->
             r_line = Expr(:call,:→,r_line.args[1],r_line.args[2])
         end
@@ -157,7 +155,6 @@ end
 function add_reactants!(ex::Any, mult::Int64, reactants::Vector{ReactantStruct})
     if typeof(ex)!=Expr
         (ex == 0 || in(ex,empty_set)) && (return reactants)
-        in(ex,disallowed_reactants) && throw("Can not use reactant names: u, du, p, t. These are used in function arguments.")
         push!(reactants, ReactantStruct(ex,mult))
     elseif ex.args[1] == :*
         add_reactants!(ex.args[3],mult*ex.args[2],reactants)
@@ -191,7 +188,6 @@ function get_parameters(p)
     parameters = OrderedDict{Symbol,Int64}()
     p_count = 0    ::Int64
     for parameter in p
-        in(parameter,[:u, :du]) && throw("Cannot use parmater names 'u' or 'du'.")
         (!haskey(parameters,parameter)) && (parameters[parameter] = p_count += 1)
     end
     return parameters
@@ -201,7 +197,7 @@ end
 function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
     f = Vector{Expr}(length(reactants))
     for i = 1:length(f)
-        f[i] = :(du[$i] = $(Expr(:call, :+)))
+        f[i] = :(internal_var___du[$i] = $(Expr(:call, :+)))
     end
     for reaction in deepcopy(reactions)
         for prod in reaction.products
@@ -219,7 +215,7 @@ function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     g = Vector{Expr}(length(reactions)*length(reactants))
     idx = 0
     for reactant in keys(reactants), i = 1:length(reactions)
-            g[idx += 1] = recursive_clean!(:(du[$(reactants[reactant]),$i] = $(get_stoch_diff(reactions[i],reactant)) * sqrt($(deepcopy(reactions[i].rate)))))
+            g[idx += 1] = recursive_clean!(:(internal_var___du[$(reactants[reactant]),$i] = $(get_stoch_diff(reactions[i],reactant)) * sqrt($(deepcopy(reactions[i].rate)))))
     end
     return g
 end
@@ -240,9 +236,9 @@ end
 function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int64},parameters::OrderedDict{Symbol,Int64})
     system = Expr(:block)
     for func_line in deepcopy(func_expr)
-        push!(system.args, recursive_replace!(func_line, (reactants,:u), (parameters, :p)))
+        push!(system.args, recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p)))
     end
-    return :((du,u,p,t) -> $system)
+    return :((internal_var___du,internal_var___u,internal_var___p,internal_var___t) -> $system)
 end
 
 #Generates two tuples, each with N entries corresponding to the N reactions in the reaction network. The first tuple contains expressions corresponding to reaction rates, the second contains arrays of expressions corresponding to the affect functions. These expressions can be used for debugging, making LaTex code, or creating Cosnstant Rate Jumps for Guilespie simulations.
@@ -266,7 +262,7 @@ function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,In
         push!(jumps.args,Expr(:call,:ConstantRateJump))
     end
     for i = 1:length(rates)
-        push!(jumps.args[i].args, :((u,p,t) -> $(recursive_replace!(deepcopy(rates[i]), (reactants,:u), (parameters, :p)))))
+        push!(jumps.args[i].args, :((internal_var___u,internal_var___p,internal_var___t) -> $(recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
         push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[i])))))
     end
     return jumps
