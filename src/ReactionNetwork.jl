@@ -112,7 +112,7 @@ end
 struct ReactionStruct
     substrates::Vector{ReactantStruct}
     products::Vector{ReactantStruct}
-    rate::Any
+    rate
     function ReactionStruct(sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
         sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(0))
         prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(0))
