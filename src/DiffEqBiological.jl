@@ -2,10 +2,11 @@ __precompile__()
 
 module DiffEqBiological
 
-using DiffEqJump
+using Reexport
 using DiffEqBase                # New stuff
 using SymEngine
 using DataStructures            # New stuff
+@reexport using DiffEqJump
 
 using Compat
 abstract type AbstractReaction end
@@ -17,7 +18,7 @@ include("problem.jl")
 
 export GillespieProblem
 
-export VariableRateReaction, Reaction, ReactionSet, build_jumps_from_reaction
+export VariableRateReaction, Reaction, ReactionSet, build_jumps_from_reaction, AbstractReaction
 
 export @reaction_network
 
