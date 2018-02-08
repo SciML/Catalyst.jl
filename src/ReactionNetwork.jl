@@ -35,6 +35,7 @@ fwd_arrows = Set{Symbol}([:>, :→, :↣, :↦, :⇾, :⟶, :⟼, :⥟, :⥟, :�
 bwd_arrows = Set{Symbol}([:<, :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :↼, :↽, :⇐, :⟽])
 double_arrows = Set{Symbol}([:↔, :⟷, :⥎, :⥐, :⇄, :⇆, :⇋, :⇌, :⇔, :⟺])
 no_mass_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])      #Using this arrows will disable the program from multiplying reaction rates with the substrate concentrations. Gives user full control of reaction rates.
+disallowed_reactants = Set{Symbol}([:du, :u, :p, :t])           #These are not allowed since they are used in "return :((du,u,p,t) -> $system)", if a variable these gets replaced with e.g. u[1], which is bad. To Do: Make change so that these can be used.
 
 #Coordination function, actually does all the work of the macro.
 function coordinate(name, ex::Expr, p)
@@ -156,6 +157,7 @@ end
 function add_reactants!(ex::Any, mult::Int64, reactants::Vector{ReactantStruct})
     if typeof(ex)!=Expr
         (ex == 0 || in(ex,empty_set)) && (return reactants)
+        in(ex,disallowed_reactants) && throw("Can not use reactant names: u, du, p, t. These are used in function arguments.")
         push!(reactants, ReactantStruct(ex,mult))
     elseif ex.args[1] == :*
         add_reactants!(ex.args[3],mult*ex.args[2],reactants)
@@ -189,6 +191,7 @@ function get_parameters(p)
     parameters = OrderedDict{Symbol,Int64}()
     p_count = 0    ::Int64
     for parameter in p
+        in(parameter,[:u, :du]) && throw("Cannot use parmater names 'u' or 'du'.")
         (!haskey(parameters,parameter)) && (parameters[parameter] = p_count += 1)
     end
     return parameters
