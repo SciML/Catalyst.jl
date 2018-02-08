@@ -4,6 +4,7 @@ module DiffEqBiological
 
 using Reexport
 using DiffEqBase
+using DiffEqJump
 using SymEngine
 using DataStructures
 @reexport using DiffEqJump
@@ -24,6 +25,6 @@ export @reaction_network
 
 #New exports
 export @reaction_network_new
-export newODEProblem, newSDEProblem, newJumpProblem     #Temorary Solution.
+export ODEProblem, SDEProblem, JumpProblem
 
 end # module

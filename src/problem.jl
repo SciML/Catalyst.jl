@@ -8,13 +8,13 @@ GillespieProblem(prob,aggregator::AbstractAggregatorAlgorithm,
 
 ### Added by Me ###
 ### ODEProblem ###
-newODEProblem(ar::AbstractReaction, args...; kwargs...) =
+DiffEqBase.ODEProblem(ar::AbstractReaction, args...; kwargs...) =
                  ODEProblem(ar.f, args...; kwargs...)
 
 ### SDEProblem ###
-newSDEProblem(ar::AbstractReaction, args...; kwargs...) =
+DiffEqBase.SDEProblem(ar::AbstractReaction, args...; kwargs...) =
                  SDEProblem(ar.f,ar.g, args...;noise_rate_prototype=rn.p_matrix, kwargs...)
 
 ### JumpProblem ###
-newJumpProblem(prob,aggregator::Direct,ar::AbstractReaction) =
+DiffEqJump.JumpProblem(prob,aggregator::Direct,ar::AbstractReaction) =
                  JumpProblem(prob,aggregator::Direct,ar.jumps...)
