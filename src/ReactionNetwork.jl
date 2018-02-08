@@ -4,18 +4,27 @@ Most arrows accepted (both right, left and bi drectional arrows).
 Note that while --> is a correct arrow, neither <-- nor <--> works.
 Using non-filled arrows (⇐, ⟽, ⇒, ⟾, ⇔, ⟺) will disable mass kinetics and lets you cutomize reaction rates yourself.
 Use 0 or ∅ for degradation/creation to/from nothing.
-Example system:
-    2.0, X + Y --> XY                  #This will have reaction rate corresponding to 2.0*[X][Y]
-    2.0, XY ← X + Y                    #Identical to 2.0, X + Y --> XY
-    2.0X, X + Y ⟾ XY                  #This will have reaction rate corresponding to 2.0*[X]
-    (hill(X,2,2,2),kD), X + Y ⟷ XY    #Reaction in forward direction is activated by X according to a hill function. Reaction in backward direction have a rate according to constant kD, declared elsewere in your program.
-    kDeg, (X,Y) --> 0                  #This corresponds to both X and Y degrading at rate kDeg.
-    (dX, dY), (X,Y) --> 0              #This corresponds to X and Y degrading at rates dX and dY, respectively.
-    k, (X1,Y1) --> (X2,Y2)             #X1 and Y1 becomes X2 and Y2, respectively, at rate k.
+Example systems:
+    rn = @reaction_network_new rType begin  #Creates a reaction network of type rType.
+        2.0, X + Y --> XY                  #This will have reaction rate corresponding to 2.0*[X][Y]
+        2.0, XY ← X + Y                    #Identical to 2.0, X + Y --> XY
+        (2.0,1.0), XY ← X + Y              #Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
+        2.0, X + Y ⟾ XY                   #Ignores mass kinetics. This will have reaction rate corresponding to 2.0*[X].
+        hill(XY,2,2,2), X + Y --> XY       #Reaction inis activated by XY according to a hill function.
+        mm(XY,2,2), X + Y --> XY           #Reaction inis activated by XY according to a michaelis menten function.
+        2.0, (X,Y) --> 0                   #This corresponds to both X and Y degrading at rate 2.0.
+        (2.0, 1.0), (X,Y) --> 0            #This corresponds to X and Y degrading at rates 2.0 and 1.0, respectively.
+        2.0, (X1,Y1) --> (X2,Y2)           #X1 and Y1 becomes X2 and Y2, respectively, at rate 2.0.
+    end
 
-Note that while --> is a correct arrow, neither <-- nor <--> works.
+    kB = 2.0; kD = 1.0
+    p = [kB, kD]
+    p = []
+    rn = @reaction_network_new type begin
+        (kB, kD), X + Y --> XY            #Lets you define parameters outside on network. Parameters can be changed without recalling the network.
+    end kB, kD
 """
-#Macro to create a reaction network model. Generates expressions for the various things you might want. Last line is executed and constructions a ReactionNetwork structure containing the infromation,
+#Macro to create a reaction network model.
 macro reaction_network_new(name, ex::Expr, p...)
     coordinate(name, ex, p)
 end
@@ -25,9 +34,10 @@ empty_set = Set{Symbol}([:∅])
 fwd_arrows = Set{Symbol}([:>, :→, :↣, :↦, :⇾, :⟶, :⟼, :⥟, :⥟, :⇀, :⇁, :⇒, :⟾])
 bwd_arrows = Set{Symbol}([:<, :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :↼, :↽, :⇐, :⟽])
 double_arrows = Set{Symbol}([:↔, :⟷, :⥎, :⥐, :⇄, :⇆, :⇋, :⇌, :⇔, :⟺])
-no_mass_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])      #Using this arrows will disable the program from multiplying reaction rates with the substrate concentrations. GIves user full control of reaction rates.
-disallowed_reactants = Set{Symbol}([:du, :u, :p, :t])           #These are not allowed since they are used in "return :((du,u,p,t) -> $system)", if a variable these gets replaced with e.g. u[1], which is bad.
+no_mass_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])      #Using this arrows will disable the program from multiplying reaction rates with the substrate concentrations. Gives user full control of reaction rates.
+disallowed_reactants = Set{Symbol}([:du, :u, :p, :t])           #These are not allowed since they are used in "return :((du,u,p,t) -> $system)", if a variable these gets replaced with e.g. u[1], which is bad. To Do: Make change so that these can be used.
 
+#Coordination function, actually does all the work of the macro.
 function coordinate(name, ex::Expr, p)
     reactions = get_reactions(ex)           ::Vector{ReactionStruct}
     reactants = get_reactants(reactions)    ::OrderedDict{Symbol,Int64}
@@ -64,6 +74,7 @@ function coordinate(name, ex::Expr, p)
     expr_arr_to_block(exprs)
 end
 
+#Turns an array of expressions to a expression block with corresponding expressions.
 function expr_arr_to_block(exprs)
   block = :(begin end)
   foreach(expr -> push!(block.args, expr), exprs)
@@ -80,6 +91,7 @@ function get_parameters(p)
     return parameters
 end
 
+#Makes the Jacobian
 function calculate_jac(f_expr::Vector{Expr}, syms)
     symjac = Matrix{SymEngine.Basic}( length(syms), length(syms))
     symfuncs = [SymEngine.Basic(f) for f in f_expr]
@@ -93,17 +105,15 @@ end
 
 #Generates a vector containing a number of reaction structures, each containing the infromation about one reaction.
 function get_reactions(ex::Expr)
-    reactions = Vector{ReactionStruct}(0)      ::Vector{ReactionStruct}     #The reactions are saved here.
+    reactions = Vector{ReactionStruct}(0)      ::Vector{ReactionStruct}
     for line in ex.args
         (line.head != :tuple) && (continue)
         (rate,r_line) = line.args
 
-        #Allows --> to be used in addition to normal arrows. This gives a different expression so have to be thrown around a little. Arrows  <--> and <-- do not yield correct expressions and cannot be used.
         if r_line.head  == :-->
             r_line = Expr(:call,:→,r_line.args[1],r_line.args[2])
         end
 
-        #Checks what type of arrow we have (what direction) and generates reactions accordingly.
         arrow = r_line.args[1]  ::Symbol
         if in(arrow,double_arrows)
             push_reactions(reactions::Vector{ReactionStruct}, r_line.args[2], r_line.args[3], rate.args[1], !in(arrow,no_mass_arrows))
@@ -125,14 +135,11 @@ struct ReactantStruct
     stoichiometry::Int64
 end
 
-#Structure containing information about one Reaction. Contain all its substrates and products as well as its rate.
+#Structure containing information about one Reaction. Contain all its substrates and products as well as its rate. Contains an specialized constructor.
 struct ReactionStruct
     substrates::Vector{ReactantStruct}
     products::Vector{ReactantStruct}
     rate::Any
-    #Construction. Genearates a reaction from one line of expression.
-    #use_mass_kin = true will multiple the reaction rate by the concentration of the substrates (one usually want this).
-    #direction says which direction the reaction goes in (X --> Y is true, X <-- Y is false. For X <--> Y this will be called in each direction).
     function ReactionStruct(sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
         sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(0))
         prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(0))
@@ -141,7 +148,7 @@ struct ReactionStruct
     end
 end
 
-#If we want to use mass kinetics, fixes that.
+#If we want to use mass kinetics, modifies rate accordingly. Called in ReactionStruct constructor if use_mass_kin is true.
 function mass_rate(substrates::Vector{ReactantStruct},old_rate::Any)
     rate = Expr(:call, :*, old_rate)
     for sub in substrates
@@ -150,16 +157,19 @@ function mass_rate(substrates::Vector{ReactantStruct},old_rate::Any)
     return rate
 end
 
+#Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a  Symbol/Numerical).
 function tup_leng(ex::Any)
     (typeof(ex)==Expr && ex.head == :tuple) && (return length(ex.args))
     return 1
 end
 
+#Gets the i'th element in a expression tuple, or return the input itself if it is not an expression tuple (probably a  Symbol/Numerical).
 function get_tup_arg(ex::Any,i::Int)
     (tup_leng(ex) == 1) && (return ex)
     return ex.args[i]
 end
 
+#Takes a reaction line and creates reactions from it and pushes those to the reaction array. Used to creat multiple reactions from e.g. 1.0, (X,Y) --> 0.
 function push_reactions(reactions::Vector{ReactionStruct}, sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
     lengs = [tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate)]
     (count(lengs.==1) + count(lengs.==maximum(lengs)) < 3) && (throw("malformed reaction"))
@@ -170,14 +180,13 @@ end
 
 #Recursive function that loops through the reactants in an reaction line and finds the reactants and their stochiometry. Recursion makes it able to handle e.g. 2(X+Y+3(Z+XY)) (probably one will not need it though).
 function add_reactants!(ex::Any, mult::Int64, reactants::Vector{ReactantStruct})
-    #We have a symbol (or 0), we have found a reactant or possibly the empty set.
     if typeof(ex)!=Expr
         (ex == 0 || in(ex,empty_set)) && (return reactants)
         in(ex,disallowed_reactants) && throw("Can not use reactant names: u, du, p, t. These are used in function arguments.")
         push!(reactants, ReactantStruct(ex,mult))
-    elseif ex.args[1] == :*         #We have found something on the form 2X, gets the stochiometry and recal. The recal will be on a sybol. Alterantive is that we have e.g. 2(X+3Y) for this reason stochiometry is stored in recall.
+    elseif ex.args[1] == :*
         add_reactants!(ex.args[3],mult*ex.args[2],reactants)
-    elseif ex.args[1] == :+            # We have a sum of reactants, loops through all reactants.
+    elseif ex.args[1] == :+
         for i = 2:length(ex.args)
             add_reactants!(ex.args[i],mult,reactants)
         end
@@ -191,7 +200,6 @@ end
 function get_reactants(reactions::Vector{ReactionStruct})
     reactants = OrderedDict{Symbol,Int64}()
     r_count = 0    ::Int64
-    #For all reactions, checks all products and substrates. Add them to the dictionary (if not already in it) and updates countr of number of reactant types.
     for reaction in reactions
         for sub in reaction.substrates
             (!haskey(reactants,sub.reactant)) && (reactants[sub.reactant] = r_count += 1)
