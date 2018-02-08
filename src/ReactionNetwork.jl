@@ -5,7 +5,7 @@ Note that while --> is a correct arrow, neither <-- nor <--> works.
 Using non-filled arrows (⇐, ⟽, ⇒, ⟾, ⇔, ⟺) will disable mass kinetics and lets you cutomize reaction rates yourself.
 Use 0 or ∅ for degradation/creation to/from nothing.
 Example systems:
-    rn = @reaction_network_new rType begin  #Creates a reaction network of type rType.
+    rn = @reaction_network_new rType begin #Creates a reaction network of type rType.
         2.0, X + Y --> XY                  #This will have reaction rate corresponding to 2.0*[X][Y]
         2.0, XY ← X + Y                    #Identical to 2.0, X + Y --> XY
         (2.0,1.0), X + Y ↔ XY              #Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
@@ -196,7 +196,7 @@ function get_parameters(p)
     return parameters
 end
 
-#
+#Produces an array of expressions. Each entry corresponds to a line in the function f, which constitutes the deterministic part of the system. The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
 function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
     f = Vector{Expr}(length(reactants))
     for i = 1:length(f)
@@ -213,6 +213,7 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     return f
 end
 
+#Produces an array of expressions. Each entry corresponds to a line in the function g, which constitutes the stochastic part of the system. Uses the Guillespie Approach for creating Langevin equations.  The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
 function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
     g = Vector{Expr}(length(reactions)*length(reactants))
     idx = 0
@@ -234,6 +235,7 @@ function get_stoch_diff(reaction::ReactionStruct, reactant::Symbol)
     return stoch
 end
 
+#Creates an expression which can be evaluated to an actual function. Input is an array of expression were each entry is a line in the function. Uses the array of expressions generated in either get_f or get_g.
 function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int64},parameters::OrderedDict{Symbol,Int64})
     system = Expr(:block)
     for func_line in deepcopy(func_expr)
@@ -242,6 +244,7 @@ function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int64},
     return :((du,u,p,t) -> $system)
 end
 
+#Generates two tuples, each with N entries corresponding to the N reactions in the reaction network. The first tuple contains expressions corresponding to reaction rates, the second contains arrays of expressions corresponding to the affect functions. These expressions can be used for debugging, making LaTex code, or creating Cosnstant Rate Jumps for Guilespie simulations.
 function get_jump_expr(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
     rates = Vector{Any}(length(reactions))
     affects = Vector{Vector{Expr}}(length(reactions))
@@ -255,6 +258,7 @@ function get_jump_expr(reactions::Vector{ReactionStruct}, reactants::OrderedDict
     return (Tuple(rates),Tuple(affects))
 end
 
+#From the tuples created in get_jump_expr, generates an expression which when evaluated will become a tuple of ConstantRateJumps to be used for Guillespie Simulations.
 function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,Int64},parameters::OrderedDict{Symbol,Int64})
     jumps = Expr(:tuple)
     for i = 1:length(rates)
@@ -267,6 +271,7 @@ function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,In
     return jumps
 end
 
+#Recursively traverses an expression and removes things like X^1, 1*X. Will not actually have any affect on the expression when used as a function, but will make it much easier to look at it for debugging, as well as if it is transformed to LaTeX code.
 function recursive_clean!(expr::Any)
     (typeof(expr)!=Expr) && (return expr)
     for i = 1:length(expr.args)
@@ -287,6 +292,7 @@ function recursive_clean!(expr::Any)
     return expr
 end
 
+#Recursively traverses an expression and replace instances of variables and parmaters with things that the DifferentialEquations packakes simulation algorithms can understand. E.g. X --> u[1], kB1 --> p[1] etc.
 function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbol,Int64},Symbol}...)
     if typeof(expr) == Symbol
         for rr in replace_requests
@@ -300,7 +306,7 @@ function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbo
     return expr
 end
 
-#Makes the Jacobian
+#Makes the Jacobian.
 function calculate_jac(f_expr::Vector{Expr}, syms)
     symjac = Matrix{SymEngine.Basic}( length(syms), length(syms))
     symfuncs = [SymEngine.Basic(f) for f in f_expr]
@@ -319,13 +325,15 @@ function expr_arr_to_block(exprs)
   block
 end
 
-#hill function made avaiable
+### Pre Defined Functions that can be inserted into the reaction rates ###
+
+#Hill function made avaiable
 hill_name = Set{Symbol}([:hill, :Hill, :h, :H, :HILL])
 function hill(expr::Expr)
     return :($(expr.args[3])*($(expr.args[2])^$(expr.args[5]))/($(expr.args[4])^$(expr.args[5])+$(expr.args[2])^$(expr.args[5])))
 end
 
-#michaelis menten function made avaiable.
+#Michaelis menten function made avaiable.
 mm_name = Set{Symbol}([:MM, :mm, :Mm, :mM, :M, :m])
 function mm(expr::Expr)
     return :($(expr.args[3])*$(expr.args[2])/($(expr.args[4])+$(expr.args[2])))
