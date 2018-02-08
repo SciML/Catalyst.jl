@@ -63,7 +63,11 @@ function coordinate(name, ex::Expr, p)
     # Build the type
     exprs = Vector{Expr}(0)
 
-    typeex,constructorex = maketype(name, f, Meta.quote(f_expr), f_symfuncs, g, Meta.quote(g_expr), jumps, Meta.quote(jump_rate_expr), Meta.quote(jump_affect_expr), p_matrix, syms; params=params, symjac=symjac)
+    ## only get the right-hand-side of the equations.
+    f_funcs = [element.args[2] for element in f_expr]
+    g_funcs = [element.args[2] for element in g_expr]
+
+    typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params, symjac=symjac)
     push!(exprs,typeex)
     push!(exprs,constructorex)
 
