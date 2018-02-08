@@ -10,8 +10,8 @@ Example systems:
         2.0, XY ← X + Y                    #Identical to 2.0, X + Y --> XY
         (2.0,1.0), XY ← X + Y              #Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
         2.0, X + Y ⟾ XY                   #Ignores mass kinetics. This will have reaction rate corresponding to 2.0*[X].
-        hill(XY,2,2,2), X + Y --> XY       #Reaction inis activated by XY according to a hill function.
-        mm(XY,2,2), X + Y --> XY           #Reaction inis activated by XY according to a michaelis menten function.
+        hill(XY,2,2,2), X + Y --> XY       #Reaction inis activated by XY according to a hill function. hill(x,v,K,N).
+        mm(XY,2,2), X + Y --> XY           #Reaction inis activated by XY according to a michaelis menten function. mm(x,v,K).
         2.0, (X,Y) --> 0                   #This corresponds to both X and Y degrading at rate 2.0.
         (2.0, 1.0), (X,Y) --> 0            #This corresponds to X and Y degrading at rates 2.0 and 1.0, respectively.
         2.0, (X1,Y1) --> (X2,Y2)           #X1 and Y1 becomes X2 and Y2, respectively, at rate 2.0.
@@ -63,7 +63,7 @@ function coordinate(name, ex::Expr, p)
     # Build the type
     exprs = Vector{Expr}(0)
 
-    typeex,constructorex = maketype(name, f, Meta.quot(f_expr), f_symfuncs, g, Meta.quot(g_expr), jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params, symjac=symjac)
+    typeex,constructorex = maketype(name, f, Meta.quote(f_expr), f_symfuncs, g, Meta.quote(g_expr), jumps, Meta.quote(jump_rate_expr), Meta.quote(jump_affect_expr), p_matrix, syms; params=params, symjac=symjac)
     push!(exprs,typeex)
     push!(exprs,constructorex)
 
@@ -320,7 +320,7 @@ end
 #hill function made avaiable
 hill_name = Set{Symbol}([:hill, :Hill, :h, :H, :HILL])
 function hill(expr::Expr)
-    return :($(expr.args[4])*($(expr.args[2])^$(expr.args[3]))/($(expr.args[5])^$(expr.args[3])+$(expr.args[2])^$(expr.args[3])))
+    return :($(expr.args[3])*($(expr.args[2])^$(expr.args[5]))/($(expr.args[4])^$(expr.args[5])+$(expr.args[2])^$(expr.args[5])))
 end
 
 #michaelis menten function made avaiable.
