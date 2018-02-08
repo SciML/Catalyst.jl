@@ -191,6 +191,7 @@ function get_parameters(p)
     parameters = OrderedDict{Symbol,Int64}()
     p_count = 0    ::Int64
     for parameter in p
+        in(parameter,[:u, :du]) && throw("Cannot use parmater names 'u' or 'du'.")
         (!haskey(parameters,parameter)) && (parameters[parameter] = p_count += 1)
     end
     return parameters
