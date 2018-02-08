@@ -196,14 +196,12 @@ function get_parameters(p)
     return parameters
 end
 
-#From the reactions and reactants generates f, the functions describing the deterministic time evolution of the system.
+#
 function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
     f = Vector{Expr}(length(reactants))
     for i = 1:length(f)
         f[i] = :(du[$i] = $(Expr(:call, :+)))
     end
-
-    #Loops through all reactions. For all products and substrates loops ads their rate of change to the corresponding line in the system (off differential equations).
     for reaction in deepcopy(reactions)
         for prod in reaction.products
             push!(f[reactants[prod.reactant]].args[2].args, recursive_clean!(:($(reaction.rate) * $(prod.stoichiometry))))
