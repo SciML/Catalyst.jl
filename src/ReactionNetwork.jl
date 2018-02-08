@@ -8,7 +8,7 @@ Example systems:
     rn = @reaction_network_new rType begin  #Creates a reaction network of type rType.
         2.0, X + Y --> XY                  #This will have reaction rate corresponding to 2.0*[X][Y]
         2.0, XY ← X + Y                    #Identical to 2.0, X + Y --> XY
-        (2.0,1.0), XY ← X + Y              #Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
+        (2.0,1.0), X + Y ↔ XY              #Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
         2.0, X + Y ⟾ XY                   #Ignores mass kinetics. This will have reaction rate corresponding to 2.0*[X].
         hill(XY,2,2,2), X + Y --> XY       #Reaction inis activated by XY according to a hill function. hill(x,v,K,N).
         mm(XY,2,2), X + Y --> XY           #Reaction inis activated by XY according to a michaelis menten function. mm(x,v,K).

@@ -1,20 +1,18 @@
-#__precompile__()
+__precompile__()
 
-#module DiffEqBiological
-module tmpMod
+module DiffEqBiological
+
 using DiffEqJump
-using DiffEqBase
+using DiffEqBase                # New stuff
 using SymEngine
-using DataStructures
+using DataStructures            # New stuff
 
 using Compat
 abstract type AbstractReaction end
 
-import DataStructures: OrderedDict
-
 include("reactions.jl")
 include("ReactionNetwork.jl")   # New stuff
-include("maketype.jl")
+include("maketype.jl")          # New stuff
 include("problem.jl")
 
 export GillespieProblem
@@ -22,9 +20,9 @@ export GillespieProblem
 export VariableRateReaction, Reaction, ReactionSet, build_jumps_from_reaction
 
 export @reaction_network
-export newODEProblem, newSDEProblem, newJumpProblem
 
 #New exports
 export @reaction_network_new
+export ODEProblem, SDEProblem, JumpProblem
 
 end # module
