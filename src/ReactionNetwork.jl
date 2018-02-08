@@ -74,35 +74,6 @@ function coordinate(name, ex::Expr, p)
     expr_arr_to_block(exprs)
 end
 
-#Turns an array of expressions to a expression block with corresponding expressions.
-function expr_arr_to_block(exprs)
-  block = :(begin end)
-  foreach(expr -> push!(block.args, expr), exprs)
-  block
-end
-
-#Generates a dictionary with all parameters.
-function get_parameters(p)
-    parameters = OrderedDict{Symbol,Int64}()
-    p_count = 0    ::Int64
-    for parameter in p
-        (!haskey(parameters,parameter)) && (parameters[parameter] = p_count += 1)
-    end
-    return parameters
-end
-
-#Makes the Jacobian
-function calculate_jac(f_expr::Vector{Expr}, syms)
-    symjac = Matrix{SymEngine.Basic}( length(syms), length(syms))
-    symfuncs = [SymEngine.Basic(f) for f in f_expr]
-    for i in eachindex(f_expr)
-        for j in eachindex(syms)
-          symjac[i,j] = diff(symfuncs[i],syms[j])
-        end
-    end
-    symjac
-end
-
 #Generates a vector containing a number of reaction structures, each containing the infromation about one reaction.
 function get_reactions(ex::Expr)
     reactions = Vector{ReactionStruct}(0)      ::Vector{ReactionStruct}
@@ -211,6 +182,16 @@ function get_reactants(reactions::Vector{ReactionStruct})
     return reactants
 end
 
+#Generates a dictionary with all parameters.
+function get_parameters(p)
+    parameters = OrderedDict{Symbol,Int64}()
+    p_count = 0    ::Int64
+    for parameter in p
+        (!haskey(parameters,parameter)) && (parameters[parameter] = p_count += 1)
+    end
+    return parameters
+end
+
 #From the reactions and reactants generates f, the functions describing the deterministic time evolution of the system.
 function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
     f = Vector{Expr}(length(reactants))
@@ -219,12 +200,12 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     end
 
     #Loops through all reactions. For all products and substrates loops ads their rate of change to the corresponding line in the system (off differential equations).
-    for reaction in reactions
+    for reaction in deepcopy(reactions)
         for prod in reaction.products
-            push!(f[reactants[prod.reactant]].args[2].args, recursive_clean!(deepcopy(:($(reaction.rate) * $(prod.stoichiometry)))))
+            push!(f[reactants[prod.reactant]].args[2].args, recursive_clean!(:($(reaction.rate) * $(prod.stoichiometry))))
         end
         for sub in reaction.substrates
-            push!(f[reactants[sub.reactant]].args[2].args, recursive_clean!(deepcopy(:(-$(reaction.rate) * $(sub.stoichiometry)))))
+            push!(f[reactants[sub.reactant]].args[2].args, recursive_clean!(:(-$(reaction.rate) * $(sub.stoichiometry))))
         end
     end
     return f
@@ -234,7 +215,7 @@ function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     g = Vector{Expr}(length(reactions)*length(reactants))
     idx = 0
     for reactant in keys(reactants), i = 1:length(reactions)
-            g[idx += 1] = recursive_clean!(deepcopy(:(du[$(reactants[reactant]),$i] = $(get_stoch_diff(reactions[i],reactant)) * sqrt($(reactions[i].rate)))))
+            g[idx += 1] = recursive_clean!(:(du[$(reactants[reactant]),$i] = $(get_stoch_diff(reactions[i],reactant)) * sqrt($(deepcopy(reactions[i].rate)))))
     end
     return g
 end
@@ -253,8 +234,8 @@ end
 
 function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int64},parameters::OrderedDict{Symbol,Int64})
     system = Expr(:block)
-    for func_line in func_expr
-        push!(system.args, recursive_replace!(deepcopy(func_line), (reactants,:u), (parameters, :p)))
+    for func_line in deepcopy(func_expr)
+        push!(system.args, recursive_replace!(func_line, (reactants,:u), (parameters, :p)))
     end
     return :((du,u,p,t) -> $system)
 end
@@ -315,6 +296,25 @@ function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbo
         end
     end
     return expr
+end
+
+#Makes the Jacobian
+function calculate_jac(f_expr::Vector{Expr}, syms)
+    symjac = Matrix{SymEngine.Basic}( length(syms), length(syms))
+    symfuncs = [SymEngine.Basic(f) for f in f_expr]
+    for i in eachindex(f_expr)
+        for j in eachindex(syms)
+          symjac[i,j] = diff(symfuncs[i],syms[j])
+        end
+    end
+    symjac
+end
+
+#Turns an array of expressions to a expression block with corresponding expressions.
+function expr_arr_to_block(exprs)
+  block = :(begin end)
+  foreach(expr -> push!(block.args, expr), exprs)
+  block
 end
 
 #hill function made avaiable
