@@ -36,6 +36,7 @@ bwd_arrows = Set{Symbol}([:<, :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :�
 double_arrows = Set{Symbol}([:↔, :⟷, :⥎, :⥐, :⇄, :⇆, :⇋, :⇌, :⇔, :⟺])
 no_mass_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])      #Using this arrows will disable the program from multiplying reaction rates with the substrate concentrations. Gives user full control of reaction rates.
 
+const funcdict = Dict{Symbol, Function}()
 #Coordination function, actually does all the work of the macro.
 function coordinate(name, ex::Expr, p)
     reactions = get_reactions(ex)           ::Vector{ReactionStruct}
@@ -291,6 +292,7 @@ function recursive_clean!(expr::Any)
         in(expr.args[1],hill_name) && return hill(expr)
         in(expr.args[1],mm_name) && return mm(expr)
         (expr.args[1] == :binomial) && (expr.args[3] == 1) && return expr.args[2]
+        haskey(funcdict, expr.args[1]) && return funcdict[expr.args[1]](expr.args[2:end])
     end
     return expr
 end
@@ -340,4 +342,17 @@ end
 mm_name = Set{Symbol}([:MM, :mm, :Mm, :mM, :M, :m])
 function mm(expr::Expr)
     return :($(expr.args[3])*$(expr.args[2])/($(expr.args[4])+$(expr.args[2])))
+end
+
+function replace_names(expr, old_names, new_names)
+    mapping = Dict(zip(old_names, new_names))
+    MacroTools.postwalk( x -> x in old_names ? x= mapping[x] : x, expr)
+end
+
+macro add_reaction_func(expr)
+    name = expr.args[1].args[1]
+    args = expr.args[1].args[2:end]
+    maths = expr.args[2].args[2]
+
+    funcdict[name]  = x -> replace_names(maths, args, x)
 end

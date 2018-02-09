@@ -5,3 +5,4 @@ Compat 0.17.0
 DataStructures 0.4.6
 Reexport 0.1.0
 SymEngine 0.3.0
+MacroTools 0.4.0
