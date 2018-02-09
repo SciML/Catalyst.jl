@@ -293,6 +293,7 @@ function recursive_clean!(expr::Any)
         in(expr.args[1],mm_name) && return mm(expr)
         (expr.args[1] == :binomial) && (expr.args[3] == 1) && return expr.args[2]
         haskey(funcdict, expr.args[1]) && return funcdict[expr.args[1]](expr.args[2:end])
+        isdefined(expr.args[1]) || error("Function $(expr.args[1]) not defined.")
     end
     return expr
 end
