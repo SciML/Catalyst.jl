@@ -25,7 +25,7 @@ export VariableRateReaction, Reaction, ReactionSet, build_jumps_from_reaction, A
 export @reaction_network
 
 #New exports
-export @reaction_network_new, @add_reaction_func
+export @reaction_network_new, @reaction_func
 export ODEProblem, SDEProblem, JumpProblem
 
 end # module

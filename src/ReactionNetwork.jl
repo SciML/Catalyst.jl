@@ -371,7 +371,7 @@ function mm(expr::Expr)
 end
 
 #Allows the user to define new function and enable the @reaction_network macro to see them.
-macro add_reaction_func(expr)
+macro reaction_func(expr)
     name = expr.args[1].args[1]
     args = expr.args[1].args[2:end]
     maths = expr.args[2].args[2]
