@@ -6,13 +6,13 @@ Using non-filled arrows (⇐, ⟽, ⇒, ⟾, ⇔, ⟺) will disable mass kinetic
 Use 0 or ∅ for degradation/creation to/from nothing.
 Example systems:
     ### Basic Usage ###
-    rn = @reaction_network_new rType begin #Creates a reaction network of type rType.
+    rn = @reaction_network rType begin #Creates a reaction network of type rType.
         2.0, X + Y --> XY                  #This will have reaction rate corresponding to 2.0*[X][Y]
         2.0, XY ← X + Y                    #Identical to 2.0, X + Y --> XY
     end
 
     ### Manipulating Reaction Rates ###
-    rn = @reaction_network_new rType begin
+    rn = @reaction_network rType begin
         2.0, X + Y ⟾ XY                   #Ignores mass kinetics. This will have reaction rate corresponding to 2.0.
         2.0X, X + Y --> XY                 #Reaction rate needs not be constant. This will have reaction rate corresponding to 2.0*[X]*[X]*[Y].
         XY+log(X)^2, X + Y --> XY          #Reaction rate accepts quite complicated expressions (user defined functions must first be registered using the @reaction_func macro).
@@ -21,7 +21,7 @@ Example systems:
     end
 
     ### Multipple Reactions on a SIngle Line ###
-    rn = @reaction_network_new rType begin
+    rn = @reaction_network rType begin
         (2.0,1.0), X + Y ↔ XY              #Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
         2.0, (X,Y) --> 0                   #This corresponds to both X and Y degrading at rate 2.0.
         (2.0, 1.0), (X,Y) --> 0            #This corresponds to X and Y degrading at rates 2.0 and 1.0, respectively.
@@ -32,13 +32,13 @@ Example systems:
     kB = 2.0; kD = 1.0
     p = [kB, kD]
     p = []
-    rn = @reaction_network_new type begin
+    rn = @reaction_network type begin
         (kB, kD), X + Y ↔ XY            #Lets you define parameters outside on network. Parameters can be changed without recalling the network.
     end kB, kD
 
     ### Defining New Functions ###
     @reaction_func my_hill_repression(x, v, k, n) = v*k^n/(k^n+x^n)     #Creates and adds a new function that the @reaction_network macro can see.
-    r = @reaction_network_new MyReactionType begin
+    r = @reaction_network MyReactionType begin
         my_hill_repression(x, v_x, k_x, n_x), 0 --> x                       #After it has been added in @reaction_func the function can be used when defining new reaction networks.
     end v_x k_x n_x
 
@@ -49,7 +49,7 @@ Example systems:
 """
 
 #Macro to create a reaction network model.
-macro reaction_network_new(name, ex::Expr, p...)
+macro reaction_network(name, ex::Expr, p...)
     coordinate(name, ex, p)
 end
 
