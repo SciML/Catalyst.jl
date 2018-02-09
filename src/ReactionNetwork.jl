@@ -9,7 +9,8 @@ Example systems:
         2.0, X + Y --> XY                  #This will have reaction rate corresponding to 2.0*[X][Y]
         2.0, XY ← X + Y                    #Identical to 2.0, X + Y --> XY
         (2.0,1.0), X + Y ↔ XY              #Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
-        2.0, X + Y ⟾ XY                   #Ignores mass kinetics. This will have reaction rate corresponding to 2.0*[X].
+        2.0, X + Y ⟾ XY                   #Ignores mass kinetics. This will have reaction rate corresponding to 2.0.
+        2.0X, X + Y --> XY                 #Reaction rate needs not be constant. This will have reaction rate corresponding to 2.0*[X]*[X]*[Y].
         hill(XY,2,2,2), X + Y --> XY       #Reaction inis activated by XY according to a hill function. hill(x,v,K,N).
         mm(XY,2,2), X + Y --> XY           #Reaction inis activated by XY according to a michaelis menten function. mm(x,v,K).
         2.0, (X,Y) --> 0                   #This corresponds to both X and Y degrading at rate 2.0.
@@ -36,7 +37,8 @@ bwd_arrows = Set{Symbol}([:<, :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :�
 double_arrows = Set{Symbol}([:↔, :⟷, :⥎, :⥐, :⇄, :⇆, :⇋, :⇌, :⇔, :⟺])
 no_mass_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])      #Using this arrows will disable the program from multiplying reaction rates with the substrate concentrations. Gives user full control of reaction rates.
 
-const funcdict = Dict{Symbol, Function}()
+funcdict = Dict{Symbol, Function}()                             #Stores user defined functions.
+
 #Coordination function, actually does all the work of the macro.
 function coordinate(name, ex::Expr, p)
     reactions = get_reactions(ex)           ::Vector{ReactionStruct}
