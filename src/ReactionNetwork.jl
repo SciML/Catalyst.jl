@@ -15,7 +15,7 @@ Example systems:
     rn = @reaction_network_new rType begin
         2.0, X + Y ⟾ XY                   #Ignores mass kinetics. This will have reaction rate corresponding to 2.0.
         2.0X, X + Y --> XY                 #Reaction rate needs not be constant. This will have reaction rate corresponding to 2.0*[X]*[X]*[Y].
-        XY+log(X)^2, X + Y --> XY          #Reaction rate accepts quite complicated expressions (user defined functions must first be registered using the @add_reaction_func macro).
+        XY+log(X)^2, X + Y --> XY          #Reaction rate accepts quite complicated expressions (user defined functions must first be registered using the @reaction_func macro).
         hill(XY,2,2,2), X + Y --> XY       #Reaction inis activated by XY according to a hill function. hill(x,v,K,N).
         mm(XY,2,2), X + Y --> XY           #Reaction inis activated by XY according to a michaelis menten function. mm(x,v,K).
     end
@@ -37,9 +37,9 @@ Example systems:
     end kB, kD
 
     ### Defining New Functions ###
-    @add_reaction_func my_hill_repression(x, v, k, n) = v*k^n/(k^n+x^n)     #Creates and adds a new function that the @reaction_network macro can see.
+    @reaction_func my_hill_repression(x, v, k, n) = v*k^n/(k^n+x^n)     #Creates and adds a new function that the @reaction_network macro can see.
     r = @reaction_network_new MyReactionType begin
-        my_hill_repression(x, v_x, k_x, n_x), 0 --> x                       #After it has been added in @add_reaction_func the function can be used when defining new reaction networks.
+        my_hill_repression(x, v_x, k_x, n_x), 0 --> x                       #After it has been added in @reaction_func the function can be used when defining new reaction networks.
     end v_x k_x n_x
 
     ### Simulating Reaction Networks ###
