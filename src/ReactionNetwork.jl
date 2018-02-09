@@ -5,26 +5,49 @@ Note that while --> is a correct arrow, neither <-- nor <--> works.
 Using non-filled arrows (⇐, ⟽, ⇒, ⟾, ⇔, ⟺) will disable mass kinetics and lets you cutomize reaction rates yourself.
 Use 0 or ∅ for degradation/creation to/from nothing.
 Example systems:
+    ### Basic Usage ###
     rn = @reaction_network_new rType begin #Creates a reaction network of type rType.
         2.0, X + Y --> XY                  #This will have reaction rate corresponding to 2.0*[X][Y]
         2.0, XY ← X + Y                    #Identical to 2.0, X + Y --> XY
-        (2.0,1.0), X + Y ↔ XY              #Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
+    end
+
+    ### Manipulating Reaction Rates ###
+    rn = @reaction_network_new rType begin
         2.0, X + Y ⟾ XY                   #Ignores mass kinetics. This will have reaction rate corresponding to 2.0.
         2.0X, X + Y --> XY                 #Reaction rate needs not be constant. This will have reaction rate corresponding to 2.0*[X]*[X]*[Y].
+        XY+log(X)^2, X + Y --> XY          #Reaction rate accepts quite complicated expressions (user defined functions must first be registered using the @add_reaction_func macro).
         hill(XY,2,2,2), X + Y --> XY       #Reaction inis activated by XY according to a hill function. hill(x,v,K,N).
         mm(XY,2,2), X + Y --> XY           #Reaction inis activated by XY according to a michaelis menten function. mm(x,v,K).
+    end
+
+    ### Multipple Reactions on a SIngle Line ###
+    rn = @reaction_network_new rType begin
+        (2.0,1.0), X + Y ↔ XY              #Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
         2.0, (X,Y) --> 0                   #This corresponds to both X and Y degrading at rate 2.0.
         (2.0, 1.0), (X,Y) --> 0            #This corresponds to X and Y degrading at rates 2.0 and 1.0, respectively.
         2.0, (X1,Y1) --> (X2,Y2)           #X1 and Y1 becomes X2 and Y2, respectively, at rate 2.0.
     end
 
+    ### Adding Parameters ###
     kB = 2.0; kD = 1.0
     p = [kB, kD]
     p = []
     rn = @reaction_network_new type begin
         (kB, kD), X + Y ↔ XY            #Lets you define parameters outside on network. Parameters can be changed without recalling the network.
     end kB, kD
+
+    ### Defining New Functions ###
+    @add_reaction_func my_hill_repression(x, v, k, n) = v*k^n/(k^n+x^n)     #Creates and adds a new function that the @reaction_network macro can see.
+    r = @reaction_network_new MyReactionType begin
+        my_hill_repression(x, v_x, k_x, n_x), 0 --> x                       #After it has been added in @add_reaction_func the function can be used when defining new reaction networks.
+    end v_x k_x n_x
+
+    ### Simulating Reaction Networks ###
+    probODE = ODEProblem(rn, args...; kwargs...)        #Using multiple dispatch the reaction network can be used as input to create ODE, SDE and Jump problems.
+    probSDE = SDEProblem(rn, args...; kwargs...)
+    probJump = JumpProblem(prob,aggregator::Direct,rn)
 """
+
 #Macro to create a reaction network model.
 macro reaction_network_new(name, ex::Expr, p...)
     coordinate(name, ex, p)
@@ -347,15 +370,17 @@ function mm(expr::Expr)
     return :($(expr.args[3])*$(expr.args[2])/($(expr.args[4])+$(expr.args[2])))
 end
 
-function replace_names(expr, old_names, new_names)
-    mapping = Dict(zip(old_names, new_names))
-    MacroTools.postwalk( x -> x in old_names ? x= mapping[x] : x, expr)
-end
-
+#Allows the user to define new function and enable the @reaction_network macro to see them.
 macro add_reaction_func(expr)
     name = expr.args[1].args[1]
     args = expr.args[1].args[2:end]
     maths = expr.args[2].args[2]
 
     funcdict[name]  = x -> replace_names(maths, args, x)
+end
+
+#This will be called whenever a function stored in funcdict is called.
+function replace_names(expr, old_names, new_names)
+    mapping = Dict(zip(old_names, new_names))
+    MacroTools.postwalk( x -> x in old_names ? x= mapping[x] : x, expr)
 end
