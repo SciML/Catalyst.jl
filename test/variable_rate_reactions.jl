@@ -1,6 +1,4 @@
 using DiffEqBiological, DiffEqJump, DiffEqBase, OrdinaryDiffEq, StochasticDiffEq
-using Base.Test
-using tmpMod
 
 sir_model = @reaction_network rn begin
     0.1/1000, s + i --> 2i
