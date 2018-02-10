@@ -51,3 +51,28 @@ nums = Int[]
   push!(nums,sol[end][3])
 end
 println("Direct Jumps: $(mean(nums))")
+
+
+using Gillespie
+
+function F(x,parms)
+  (S,I,R) = x
+  (beta,gamma) = parms
+  infection = beta*S*I
+  recovery = gamma*I
+  [infection,recovery]
+end
+
+x0 = [999,1,0]
+nu = [[-1 1 0];[0 -1 1]]
+parms = [0.1/1000.0,0.01]
+tf = 250.0
+srand(1234)
+
+nums = Int[]
+@time for i in 1:100000
+  result = ssa(x0,F,nu,parms,tf)
+  data = ssa_data(result)
+  push!(nums,data[:x3][end])
+end
+println("Gillespie: $(mean(nums))")
