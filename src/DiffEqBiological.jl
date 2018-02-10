@@ -13,7 +13,6 @@ using DataStructures
 using Compat
 abstract type AbstractReaction end
 
-include("reactions.jl")
 include("ReactionNetwork.jl")
 include("maketype.jl")
 include("problem.jl")
