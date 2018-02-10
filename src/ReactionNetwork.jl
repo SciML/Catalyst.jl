@@ -317,6 +317,7 @@ function recursive_clean!(expr::Any)
     end
     (expr.args[1] == :^) && (expr.args[3] == 1) && (return expr.args[2])
     if expr.args[1] == :*
+        in(0,expr.args) && (return 0)
         for i = length(expr.args):-1:2
             (expr.args[i] == 1) && deleteat!(expr.args,i)                   #Removes all multiplications by 1.
         end

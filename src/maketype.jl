@@ -19,7 +19,7 @@ function maketype(name,
         f_func::Vector{Expr}
         f_symfuncs::Matrix{SymEngine.Basic}
         g::Function
-        g_func::Vector{Expr}
+        g_func::Vector{Any}
         jumps::Tuple{ConstantRateJump,Vararg{ConstantRateJump}}
         jump_rate_expr::Tuple{Any,Vararg{Any}}
         jump_affect_expr::Tuple{Vector{Expr},Vararg{Vector{Expr}}}
