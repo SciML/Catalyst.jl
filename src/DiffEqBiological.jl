@@ -22,7 +22,7 @@ export AbstractReaction
 export @reaction_network, @reaction_func
 export ODEProblem, SDEProblem, JumpProblem
 
-Reaction(args...) = warn("""
+Reaction(args...) = error("""
 The old Reaction DSL is deprecated for a new 
 macro-based DSL which supports parameters, regulation,
 etc. Please see the documentation for details
