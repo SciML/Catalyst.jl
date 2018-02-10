@@ -50,7 +50,13 @@ Example systems:
 
 #Macro to create a reaction network model.
 macro reaction_network(name, ex::Expr, p...)
-    coordinate(name, ex, p)
+    coordinate(name, ex, p, :no___noise___scaling)
+end
+
+#Macro to create a reaction network model. Multiple dispatch is used to allow for SDE noise scalling.
+macro reaction_network(name, scale_noise, ex::Expr, p...)
+    in(scale_noise, p) || (p = (p..., scale_noise))
+    coordinate(name, ex, p, scale_noise)
 end
 
 #Used to give a warning if someone uses the old macro.
@@ -68,7 +74,7 @@ no_mass_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])      #Using t
 funcdict = Dict{Symbol, Function}()                             #Stores user defined functions.
 
 #Coordination function, actually does all the work of the macro.
-function coordinate(name, ex::Expr, p)
+function coordinate(name, ex::Expr, p, scale_noise)
     reactions = get_reactions(ex)           ::Vector{ReactionStruct}
     reactants = get_reactants(reactions)    ::OrderedDict{Symbol,Int64}
     parameters = get_parameters(p)          ::OrderedDict{Symbol,Int64}
@@ -79,7 +85,7 @@ function coordinate(name, ex::Expr, p)
     f_expr = get_f(reactions, reactants)
     f = make_func(f_expr, reactants, parameters)
 
-    g_expr = get_g(reactions, reactants)
+    g_expr = get_g(reactions, reactants, scale_noise)
     g = make_func(g_expr, reactants, parameters)
     p_matrix = zeros(length(reactants), length(reactions))
 
@@ -240,11 +246,11 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
 end
 
 #Produces an array of expressions. Each entry corresponds to a line in the function g, which constitutes the stochastic part of the system. Uses the Guillespie Approach for creating Langevin equations.  The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
-function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
+function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64}, scale_noise::Symbol)
     g = Vector{Expr}(length(reactions)*length(reactants))
     idx = 0
     for reactant in keys(reactants), i = 1:length(reactions)
-            g[idx += 1] = recursive_clean!(:(internal_var___du[$(reactants[reactant]),$i] = $(get_stoch_diff(reactions[i],reactant)) * sqrt($(deepcopy(reactions[i].rate)))))
+            g[idx += 1] = recursive_clean!(:(internal_var___du[$(reactants[reactant]),$i] = $scale_noise * $(get_stoch_diff(reactions[i],reactant)) * sqrt($(deepcopy(reactions[i].rate)))))
     end
     return g
 end
@@ -304,6 +310,7 @@ end
 
 #Recursively traverses an expression and removes things like X^1, 1*X. Will not actually have any affect on the expression when used as a function, but will make it much easier to look at it for debugging, as well as if it is transformed to LaTeX code.
 function recursive_clean!(expr::Any)
+    (expr == :no___noise___scaling) && (return 1)
     (typeof(expr)!=Expr) && (return expr)
     for i = 1:length(expr.args)
         expr.args[i] = recursive_clean!(expr.args[i])
