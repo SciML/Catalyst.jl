@@ -53,6 +53,11 @@ macro reaction_network(name, ex::Expr, p...)
     coordinate(name, ex, p)
 end
 
+#Used to give a warning if someone uses the old macro.
+macro reaction_network(ex::Expr)
+    error("The Reaction Network DSL have been deprecated in favor for a new one. With only slight modification old code can be made to work with the new DSL. In addition the new one provides lots of additional functionality. Please view the documentation for more information.")
+end
+
 #Declare various arrow types symbols used for the empty set (also 0).
 empty_set = Set{Symbol}([:∅])
 fwd_arrows = Set{Symbol}([:>, :→, :↣, :↦, :⇾, :⟶, :⟼, :⥟, :⥟, :⇀, :⇁, :⇒, :⟾])
