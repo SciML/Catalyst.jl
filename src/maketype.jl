@@ -14,7 +14,7 @@ function maketype(name,
                   symjac=Matrix{SymEngine.Basic}(0,0),
                   )
 
-    typeex = :(mutable struct $name <: AbstractReaction
+    typeex = :(mutable struct $name <: AbstractReactionNetwork
         f::Function
         f_func::Vector{Expr}
         f_symfuncs::Matrix{SymEngine.Basic}
