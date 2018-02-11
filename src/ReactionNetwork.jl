@@ -152,7 +152,7 @@ struct ReactionStruct
     products::Vector{ReactantStruct}
     rate
     use_mass_kin::Bool
-    input_rate
+    input_rate                                                                  #Saved and used when making jump, since (discrete) jumps make reaction rate differently from ODE/SDE.
     function ReactionStruct(sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
         sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(0))
         prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(0))
@@ -164,7 +164,8 @@ end
 function mass_rate(substrates::Vector{ReactantStruct},old_rate::Any)
     rate = Expr(:call, :*, old_rate)
     for sub in substrates
-        push!(rate.args,Expr(:call, :^, sub.reactant, sub.stoichiometry))
+        push!(rate.args,:($(Expr(:call, :^, sub.reactant, sub.stoichiometry))/$(factorial(sub.stoichiometry))))
+        #push!(rate.args, :($(1//factorial(sub.stoichiometry))))
     end
     return rate
 end
@@ -194,7 +195,12 @@ end
 function add_reactants!(ex::Any, mult::Int64, reactants::Vector{ReactantStruct})
     if typeof(ex)!=Expr
         (ex == 0 || in(ex,empty_set)) && (return reactants)
-        push!(reactants, ReactantStruct(ex,mult))
+        if in(ex, getfield.(reactants,:reactant))
+            idx = find(x -> x==ex ,getfield.(reactants,:reactant))[1]
+            reactants[idx] = ReactantStruct(ex,mult+reactants[idx].stoichiometry)
+        else
+            push!(reactants, ReactantStruct(ex,mult))
+        end
     elseif ex.args[1] == :*
         add_reactants!(ex.args[3],mult*ex.args[2],reactants)
     elseif ex.args[1] == :+
@@ -319,8 +325,17 @@ function recursive_clean!(expr::Any)
     (expr.args[1] == :^) && (expr.args[3] == 1) && (return expr.args[2])
     if expr.args[1] == :*
         in(0,expr.args) && (return 0)
+        i = 1
+        while (i = i + 1) <= length(expr.args)
+             if (typeof(expr.args[i]) == Expr) && (expr.args[i].head == :call) && (expr.args[i].args[1] == :*)
+                 for arg in expr.args[i].args
+                     (arg != :*) && push!(expr.args, arg)
+                 end
+             end
+        end
         for i = length(expr.args):-1:2
-            (expr.args[i] == 1) && deleteat!(expr.args,i)                   #Removes all multiplications by 1.
+            (typeof(expr.args[i]) == Expr) && (expr.args[i].head == :call) && (expr.args[i].args[1] == :*) && deleteat!(expr.args,i)
+            (expr.args[i] == 1) && deleteat!(expr.args,i)
         end
         (length(expr.args) == 2) && (return expr.args[2])                   # We have a multiplication of only one thing, return only that thing.
         (length(expr.args) == 1) && (return 1)                              #We have only * and no real argumenys.
@@ -328,6 +343,7 @@ function recursive_clean!(expr::Any)
         (length(expr.args) == 3) && (expr.args[3] == -1) && return :(-$(expr.args[2]))
     end
     if expr.head == :call
+        (expr.args[1] == :/) && (expr.args[3] == 1) && (return expr.args[2])
         haskey(funcdict, expr.args[1]) && return funcdict[expr.args[1]](expr.args[2:end])
         in(expr.args[1],hill_name) && return hill(expr)
         in(expr.args[1],mm_name) && return mm(expr)
