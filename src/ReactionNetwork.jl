@@ -126,6 +126,7 @@ function get_reactions(ex::Expr)
 
         arrow = r_line.args[1]  ::Symbol
         if in(arrow,double_arrows)
+            (typeof(rate) == Expr && rate.head == :tuple) || error("Error: Must provide a tuple of reaction rates when declaring a bi-directional reaction.")
             push_reactions(reactions::Vector{ReactionStruct}, r_line.args[2], r_line.args[3], rate.args[1], !in(arrow,no_mass_arrows))
             push_reactions(reactions::Vector{ReactionStruct}, r_line.args[3], r_line.args[2], rate.args[2], !in(arrow,no_mass_arrows))
         elseif in(arrow,fwd_arrows)
