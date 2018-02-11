@@ -1,20 +1,41 @@
 struct Reaction{T,T2,N,N2} <: AbstractReaction
   rate_constant::T
   reactants::NTuple{N,Int}
+  orders::NTuple{N2,NTuple{2,T2}}
   stoichiometry::NTuple{N2,NTuple{2,T2}}
 end
 
-function Reaction(rate_constant,reactants::AbstractArray,stoichiometry)
-  Reaction(rate_constant,tuple(reactants...),stoichiometry)
+function Reaction(rate_constant,reactants::AbstractArray,orders,stoichiometry)
+  Reaction(rate_constant,tuple(reactants...),orders,stoichiometry)
 end
 
-function Reaction(rate_constant,reactants,stoichiometry::AbstractArray)
-  Reaction(rate_constant,reactants,tuple(stoichiometry...))
+function Reaction(rate_constant,reactants,orders::AbstractArray,stoichiometry)
+  Reaction(rate_constant,reactans,tuple(orders...),stoichiometry)
 end
 
-function Reaction(rate_constant,reactants::AbstractArray,stoichiometry::AbstractArray)
-  Reaction(rate_constant,tuple(reactants...),tuple(stoichiometry...))
+function Reaction(rate_constant,reactants,orders,stoichiometry::AbstractArray)
+  Reaction(rate_constant,reactants,orders,tuple(stoichiometry...))
 end
+
+function Reaction(rate_constant,reactants::AbstractArray,orders::AbstractArray,stoichiometry)
+  Reaction(rate_constant,tuple(reactants...),tuple(orders...),stoichiometry)
+end
+
+function Reaction(rate_constant,reactants,orders::AbstractArray,stoichiometry::AbstractArray)
+  Reaction(rate_constant,reactants,tuple(orders...),tuple(stoichiometry...))
+end
+
+function Reaction(rate_constant,reactants::AbstractArray,orders,stoichiometry::AbstractArray)
+  Reaction(rate_constant,tuple(reactants...), orders,tuple(stoichiometry...))
+end
+
+
+function Reaction(rate_constant,reactants::AbstractArray,orders::AbstractArray,stoichiometry::AbstractArray)
+  Reaction(rate_constant,tuple(reactants...),tuple(orders...),tuple(stoichiometry...))
+end
+
+
+
 
 struct VariableRateReaction{T,T2,I,N,N2} <: AbstractReaction
   rate_constant::T
@@ -137,6 +158,7 @@ function def_reaction_network(ex::Expr)
       eqn  = line.args[2]
 
       reactants = :([])     # indices
+      orders =  :([])
       stoichiometry = :([]) # net stoichiometry
 
       reacs, prods = parse_reaction(eqn, mapping)
@@ -144,6 +166,12 @@ function def_reaction_network(ex::Expr)
       for (id, ix) in mapping
         if haskey(reacs, id)
           push!(reactants.args, ix)
+        end
+        
+        order = get(reacs, id, 0)
+        
+        if order != 0
+          push!(orders.args, :(($ix, $order))
         end
 
         net = get(prods, id, 0) - get(reacs, id, 0)
