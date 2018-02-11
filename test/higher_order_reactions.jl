@@ -1,40 +1,36 @@
-using DiffEqBiological, DiffEqJump, DiffEqBase, OrdinaryDiffEq
+using DifferentialEquations
+function tmp_sol2vec(sol,j)
+    vect = Vector{Float64}(length(sol.u))
+    for i = 1:length(sol.u)
+        vect[i] = sol.u[i][j]
+    end
+    return vect
+end
 
-k = rand()
-# First order
-r1 = Reaction(k,[1],((1,-1),(2,1)))
-jump = build_jumps_from_reaction(r1)
-@test  jump.rate([1,0],nothing,0.0) == k
+ho_model1 = @reaction_network rn begin
+    (1.0,1.0), X + 2X ↔ Y + X
+end
+ho_model2 = @reaction_network rn begin
+    (X^3/6,Y + X), X + 2X ⟺ Y + X
+end
+ho_model3 = @reaction_network rn begin
+    (X*(X-1)*(X-2)/6,Y + X), X + 2X ⟺ Y+ X
+end
+u0 = [1000.,1000.]
+tspan = (0.,1000.)
 
+prob_det1 = ODEProblem(ho_model1, u0, tspan)
+prob_det2 = ODEProblem(ho_model2, u0, tspan)
+sol_det1 = solve(prob_det1)
+sol_det2 = solve(prob_det2)
+@test (tmp_sol2vec(sol_det1,1) == tmp_sol2vec(sol_det2,1))
+@test (tmp_sol2vec(sol_det1,2) == tmp_sol2vec(sol_det2,2))
 
-# Second order
-r2 = Reaction(k,[1,1],((1,-2),(2,1)))
-jump2 = build_jumps_from_reaction(r2)
-@test  jump2.rate([1,0],nothing,0.0) == 0
-@test  jump2.rate([2,0],nothing,0.0) == k*2*1
+disc_prob =  DiscreteProblem([1000,1000],(0.,1000.))
+jump_prob1 = JumpProblem(disc_prob,Direct(),ho_model1)
+jump_prob2 = JumpProblem(disc_prob,Direct(),ho_model2)
+sol_jump1 = solve(jump_prob1,Discrete())
+sol_jump2 = solve(jump_prob2,Discrete())
 
-# Thrid order
-r3 = Reaction(k,[1,1,1],((1,-3),(2,1)))
-jump3 = build_jumps_from_reaction(r3)
-@test  jump3.rate([1,0],nothing,0.0) == 0
-@test  jump3.rate([2,0],nothing,0.0) == 0
-@test  jump3.rate([3,0],nothing,0.0) == k*3*2*1
-
-# Mixed Third order
-r21 = Reaction(k ,[1,1,2],((1,-2),(2,-1)))
-jump21 = build_jumps_from_reaction(r21)
-@test  jump21.rate([1,1],nothing,0.0) == 0
-@test  jump21.rate([2,1],nothing,0.0) == k*2*1*1
-
-# Mixed Third order different order
-r12 = Reaction(k ,[2,1,1],((1,-2),(2,-1)))
-jump12 = build_jumps_from_reaction(r12)
-  jump12.rate([1,1],nothing,0.0) == 0
-@test  jump12.rate([2,1],nothing,0.0) == k*2*1*1
-
-
-# Solve the dimerization problem
-prob = DiscreteProblem([1,0],(0.0,250.0))
-jump_prob = GillespieProblem(prob,Direct(),r2)
-sol = solve(jump_prob,Discrete())
-@test find( x-> x!=0 ,[u[2] for u in sol.u]) == []
+@test (0.9 < std(tmp_sol2vec(sol_jump1,1)) / std(tmp_sol2vec(sol_jump2,1)))
+@test (0.9 < std(tmp_sol2vec(sol_jump1,2)) / std(tmp_sol2vec(sol_jump2,2)))
