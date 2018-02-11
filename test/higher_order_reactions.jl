@@ -1,4 +1,6 @@
 using DifferentialEquations
+using Base.Test
+using tmpMod
 function tmp_sol2vec(sol,j)
     vect = Vector{Float64}(length(sol.u))
     for i = 1:length(sol.u)
@@ -11,20 +13,20 @@ ho_model1 = @reaction_network rn begin
     (1.0,1.0), X + 2X ↔ Y + X
 end
 ho_model2 = @reaction_network rn begin
-    (X^3/6,Y + X), X + 2X ⟺ Y + X
+    (X^3/6,Y * X), X + 2X ⟺ Y + X
 end
 ho_model3 = @reaction_network rn begin
-    (X*(X-1)*(X-2)/6,Y + X), X + 2X ⟺ Y+ X
+    (X*(X-1)*(X-2)/6,Y * X), X + 2X ⟺ Y+ X
 end
 u0 = [1000.,1000.]
-tspan = (0.,1000.)
+tspan = (0.,100.)
 
 prob_det1 = ODEProblem(ho_model1, u0, tspan)
 prob_det2 = ODEProblem(ho_model2, u0, tspan)
 sol_det1 = solve(prob_det1)
 sol_det2 = solve(prob_det2)
-@test (tmp_sol2vec(sol_det1,1) == tmp_sol2vec(sol_det2,1))
-@test (tmp_sol2vec(sol_det1,2) == tmp_sol2vec(sol_det2,2))
+@test tmp_sol2vec(sol_det1,1) == tmp_sol2vec(sol_det2,1)
+@test tmp_sol2vec(sol_det1,2) == tmp_sol2vec(sol_det2,2)
 
 disc_prob =  DiscreteProblem([1000,1000],(0.,1000.))
 jump_prob1 = JumpProblem(disc_prob,Direct(),ho_model1)
@@ -32,5 +34,5 @@ jump_prob2 = JumpProblem(disc_prob,Direct(),ho_model2)
 sol_jump1 = solve(jump_prob1,Discrete())
 sol_jump2 = solve(jump_prob2,Discrete())
 
-@test (0.9 < std(tmp_sol2vec(sol_jump1,1)) / std(tmp_sol2vec(sol_jump2,1)))
-@test (0.9 < std(tmp_sol2vec(sol_jump1,2)) / std(tmp_sol2vec(sol_jump2,2)))
+@test 0.95 < std(tmp_sol2vec(sol_jump1,1)) / std(tmp_sol2vec(sol_jump2,1)) < 1.05
+@test 0.95 < std(tmp_sol2vec(sol_jump1,2)) / std(tmp_sol2vec(sol_jump2,2)) < 1.05
