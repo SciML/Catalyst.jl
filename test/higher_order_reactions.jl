@@ -28,8 +28,8 @@ sol_det2 = solve(prob_det2)
 disc_prob =  DiscreteProblem([1000,1000],(0.,1000.))
 jump_prob1 = JumpProblem(disc_prob,Direct(),ho_model1)
 jump_prob2 = JumpProblem(disc_prob,Direct(),ho_model2)
-sol_jump1 = solve(jump_prob1,Discrete())
-sol_jump2 = solve(jump_prob2,Discrete())
+sol_jump1 = solve(jump_prob1,FunctionMap())
+sol_jump2 = solve(jump_prob2,FunctionMap())
 
 @test 0.95 < std(tmp_sol2vec(sol_jump1,1)) / std(tmp_sol2vec(sol_jump2,1)) < 1.05
 @test 0.95 < std(tmp_sol2vec(sol_jump1,2)) / std(tmp_sol2vec(sol_jump2,2)) < 1.05
