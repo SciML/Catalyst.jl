@@ -1,6 +1,3 @@
-using DifferentialEquations
-using Base.Test
-using tmpMod
 function tmp_sol2vec(sol,j)
     vect = Vector{Float64}(length(sol.u))
     for i = 1:length(sol.u)
