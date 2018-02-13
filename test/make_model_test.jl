@@ -70,7 +70,7 @@ for i = 1:100
     du4 = 3*rand(4); du5 = du4;
     du4g = 2.5*rand(4,3); du5g = du4g;
     t = 9*rand(1)[1]
-    p1 = 2*rand(1)[1]; p =[p1]
+    p12 = 2*rand(1)[1]; p =[p12]
 
     @test network4.f(du4,u,p,t) == network5.f(du5,u,p,t)
     @test network4.g(du4g,u,p,t) == network5.g(du5g,u,p,t)
