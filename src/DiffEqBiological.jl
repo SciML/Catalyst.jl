@@ -2,20 +2,27 @@ __precompile__()
 
 module DiffEqBiological
 
+using Reexport
+using DiffEqBase
 using DiffEqJump
+using SymEngine
+using MacroTools
+using DataStructures
+@reexport using DiffEqJump
 
 using Compat
-abstract type AbstractReaction end
 
-import DataStructures: OrderedDict
-
-include("reactions.jl")
+include("reaction_network.jl")
+include("maketype.jl")
 include("problem.jl")
 
-export GillespieProblem
+export @reaction_network, @reaction_func
+export ODEProblem, SDEProblem, JumpProblem
 
-export VariableRateReaction, Reaction, ReactionSet, build_jumps_from_reaction
-
-export @reaction_network
+Reaction(args...) = error("""
+ The old Reaction DSL is deprecated for a new
+ macro-based DSL which supports parameters, regulation,
+ etc. Please see the documentation for details
+""")
 
 end # module

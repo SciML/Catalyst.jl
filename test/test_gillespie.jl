@@ -1,9 +1,11 @@
-using DifferentialEquations
+using DiffEqBiological, OrdinaryDiffEq, Base.Test
 
-infection = Reaction(0.1/1000,[1,2],[(1,-1),(2,1)])
-recovery = Reaction(0.01,[2],[(2,-1),(3,1)])
+sir_model = @reaction_network rn begin
+    0.1/1000, s + i --> 2i
+    0.01, i --> r
+end
 sir_prob = DiscreteProblem([999,1,0],(0.0,250.0))
-sir_jump_prob = GillespieProblem(sir_prob,Direct(),infection,recovery)
+sir_jump_prob = JumpProblem(sir_prob,Direct(),sir_model)
 
 sir_sol = solve(sir_jump_prob,Discrete())
 
@@ -16,10 +18,6 @@ nums = Int[]
   push!(nums,sir_sol[end][3])
 end
 println("Reaction DSL: $(mean(nums))")
-
-
-using DiffEqJump, DiffEqBase, OrdinaryDiffEq
-using Base.Test
 
 rate = (u,p,t) -> (0.1/1000.0)*u[1]*u[2]
 affect! = function (integrator)

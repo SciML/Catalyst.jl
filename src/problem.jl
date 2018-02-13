@@ -1,7 +1,11 @@
-GillespieProblem(prob,aggregator::AbstractAggregatorAlgorithm,
-                 rs::AbstractReaction...;kwargs...) =
-                 JumpProblem(prob,aggregator,build_jumps_from_reaction(rs...);kwargs...)
-                 
-GillespieProblem(prob,aggregator::AbstractAggregatorAlgorithm,
-                 r::ReactionSet;kwargs...) =
-                 JumpProblem(prob,aggregator,build_jumps_from_reaction(r);kwargs...)
+### ODEProblem ###
+DiffEqBase.ODEProblem(rn::AbstractReactionNetwork, args...; kwargs...) =
+                 ODEProblem(rn.f, args...; kwargs...)
+
+### SDEProblem ###
+DiffEqBase.SDEProblem(rn::AbstractReactionNetwork, args...; kwargs...) =
+                 SDEProblem(rn.f,rn.g, args...;noise_rate_prototype=rn.p_matrix, kwargs...)
+
+### JumpProblem ###
+DiffEqJump.JumpProblem(prob,aggregator::Direct,rn::AbstractReactionNetwork) =
+                 JumpProblem(prob,aggregator::Direct,rn.jumps...)
