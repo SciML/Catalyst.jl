@@ -1,3 +1,5 @@
+using DiffEqBiological, OrdinaryDiffEq, Base.Test
+
 sir_model = @reaction_network rn begin
     0.1/1000, s + i --> 2i
     0.01, i --> r

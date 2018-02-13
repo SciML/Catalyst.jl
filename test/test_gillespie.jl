@@ -1,3 +1,5 @@
+using DiffEqBiological, OrdinaryDiffEq, Base.Test
+
 sir_model = @reaction_network rn begin
     0.1/1000, s + i --> 2i
     0.01, i --> r
@@ -16,10 +18,6 @@ nums = Int[]
   push!(nums,sir_sol[end][3])
 end
 println("Reaction DSL: $(mean(nums))")
-
-
-using DiffEqJump, DiffEqBase, OrdinaryDiffEq
-using Base.Test
 
 rate = (u,p,t) -> (0.1/1000.0)*u[1]*u[2]
 affect! = function (integrator)
