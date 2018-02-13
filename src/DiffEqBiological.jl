@@ -12,7 +12,7 @@ using DataStructures
 
 using Compat
 
-include("ReactionNetwork.jl")
+include("reaction_network.jl")
 include("maketype.jl")
 include("problem.jl")
 
