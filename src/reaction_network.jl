@@ -76,8 +76,8 @@ funcdict = Dict{Symbol, Function}()                             #Stores user def
 #Coordination function, actually does all the work of the macro.
 function coordinate(name, ex::Expr, p, scale_noise)
     reactions = get_reactions(ex)           ::Vector{ReactionStruct}
-    reactants = get_reactants(reactions)    ::OrderedDict{Symbol,Int64}
-    parameters = get_parameters(p)          ::OrderedDict{Symbol,Int64}
+    reactants = get_reactants(reactions)    ::OrderedDict{Symbol,Int}
+    parameters = get_parameters(p)          ::OrderedDict{Symbol,Int}
 
     syms = collect(keys(reactants))
     params = collect(keys(parameters))
@@ -143,7 +143,7 @@ end
 #Structure containing information about one reactant in one reaction.
 struct ReactantStruct
     reactant::Symbol
-    stoichiometry::Int64
+    stoichiometry::Int
 end
 
 #Structure containing information about one Reaction. Contain all its substrates and products as well as its rate. Contains an specialized constructor.
@@ -193,7 +193,7 @@ function push_reactions(reactions::Vector{ReactionStruct}, sub_line::Any, prod_l
 end
 
 #Recursive function that loops through the reactants in an reaction line and finds the reactants and their stochiometry. Recursion makes it able to handle e.g. 2(X+Y+3(Z+XY)) (probably one will not need it though).
-function add_reactants!(ex::Any, mult::Int64, reactants::Vector{ReactantStruct})
+function add_reactants!(ex::Any, mult::Int, reactants::Vector{ReactantStruct})
     if typeof(ex)!=Expr
         (ex == 0 || in(ex,empty_set)) && (return reactants)
         if in(ex, getfield.(reactants,:reactant))
@@ -216,8 +216,8 @@ end
 
 #From the vector with all reactions, generates a dictionary with all reactants. Each reactant will point to a number so that X --> means X will be replaced with u[1] in the equations.
 function get_reactants(reactions::Vector{ReactionStruct})
-    reactants = OrderedDict{Symbol,Int64}()
-    r_count = 0    ::Int64
+    reactants = OrderedDict{Symbol,Int}()
+    r_count = 0    ::Int
     for reaction in reactions
         for sub in reaction.substrates
             (!haskey(reactants,sub.reactant)) && (reactants[sub.reactant] = r_count += 1)
@@ -231,8 +231,8 @@ end
 
 #Generates a dictionary with all parameters.
 function get_parameters(p)
-    parameters = OrderedDict{Symbol,Int64}()
-    p_count = 0    ::Int64
+    parameters = OrderedDict{Symbol,Int}()
+    p_count = 0    ::Int
     for parameter in p
         (!haskey(parameters,parameter)) && (parameters[parameter] = p_count += 1)
     end
@@ -240,7 +240,7 @@ function get_parameters(p)
 end
 
 #Produces an array of expressions. Each entry corresponds to a line in the function f, which constitutes the deterministic part of the system. The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
-function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
+function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int})
     f = Vector{Expr}(length(reactants))
     for i = 1:length(f)
         f[i] = :(internal_var___du[$i] = $(Expr(:call, :+)))
@@ -254,7 +254,7 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
 end
 
 #Produces an array of expressions. Each entry corresponds to a line in the function g, which constitutes the stochastic part of the system. Uses the Guillespie Approach for creating Langevin equations.  The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
-function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64}, scale_noise::Symbol)
+function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, scale_noise::Symbol)
     g = Vector{Expr}(length(reactions)*length(reactants))
     idx = 0
     for reactant in keys(reactants), i = 1:length(reactions)
@@ -276,7 +276,7 @@ function get_stoch_diff(reaction::ReactionStruct, reactant::Symbol)
 end
 
 #Creates an expression which can be evaluated to an actual function. Input is an array of expression were each entry is a line in the function. Uses the array of expressions generated in either get_f or get_g.
-function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int64},parameters::OrderedDict{Symbol,Int64})
+function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int},parameters::OrderedDict{Symbol,Int})
     system = Expr(:block)
     for func_line in deepcopy(func_expr)
         push!(system.args, recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p)))
@@ -285,7 +285,7 @@ function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int64},
 end
 
 #Generates two tuples, each with N entries corresponding to the N reactions in the reaction network. The first tuple contains expressions corresponding to reaction rates, the second contains arrays of expressions corresponding to the affect functions. These expressions can be used for debugging, making LaTex code, or creating Cosnstant Rate Jumps for Guilespie simulations.
-function get_jump_expr(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int64})
+function get_jump_expr(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int})
     rates = Vector{Any}(length(reactions))
     affects = Vector{Vector{Expr}}(length(reactions))
     idx = 0
@@ -304,7 +304,7 @@ function get_jump_expr(reactions::Vector{ReactionStruct}, reactants::OrderedDict
 end
 
 #From the tuples created in get_jump_expr, generates an expression which when evaluated will become a tuple of ConstantRateJumps to be used for Guillespie Simulations.
-function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,Int64},parameters::OrderedDict{Symbol,Int64})
+function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,Int},parameters::OrderedDict{Symbol,Int})
     jumps = Expr(:tuple)
     for i = 1:length(rates)
         push!(jumps.args,Expr(:call,:ConstantRateJump))
@@ -355,7 +355,7 @@ function recursive_clean!(expr::Any)
 end
 
 #Recursively traverses an expression and replace instances of variables and parmaters with things that the DifferentialEquations packakes simulation algorithms can understand. E.g. X --> u[1], kB1 --> p[1] etc.
-function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbol,Int64},Symbol}...)
+function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbol,Int},Symbol}...)
     if typeof(expr) == Symbol
         for rr in replace_requests
             (haskey(rr[1],expr)) && (return :($(rr[2])[$(rr[1][expr])]))
