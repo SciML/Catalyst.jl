@@ -27,11 +27,11 @@ sol_det2 = solve(prob_det2,Tsit5())
 @test tmp_sol2vec(sol_det1,1) == tmp_sol2vec(sol_det2,1)
 @test tmp_sol2vec(sol_det1,2) == tmp_sol2vec(sol_det2,2)
 
-disc_prob =  DiscreteProblem([1000,1000],(0.,100.))
+disc_prob =  DiscreteProblem([1000,1000],(0.,1.))
 jump_prob1 = JumpProblem(disc_prob,Direct(),ho_model1)
 jump_prob2 = JumpProblem(disc_prob,Direct(),ho_model2)
-sol_jump1 = solve(jump_prob1,FunctionMap(),maxiters = 1e8)
-sol_jump2 = solve(jump_prob2,FunctionMap(),maxiters = 1e8)
+sol_jump1 = solve(jump_prob1,FunctionMap(),maxiters = 1e6)
+sol_jump2 = solve(jump_prob2,FunctionMap(),maxiters = 1e6)
 
 @test 0.95 < std(tmp_sol2vec(sol_jump1,1)) / std(tmp_sol2vec(sol_jump2,1)) < 1.05
 @test 0.95 < std(tmp_sol2vec(sol_jump1,2)) / std(tmp_sol2vec(sol_jump2,2)) < 1.05
