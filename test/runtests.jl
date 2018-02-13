@@ -1,10 +1,10 @@
-using DifferentialEquations
+using DiffEqBiological
 using Base.Test
 
 tic()
-@time @testset "Test the model creation macro" begin include("make_model.jl") end
+@time @testset "Model Macro" begin include("make_model_test.jl") end
 @time @testset "Gillespie Tests" begin include("gillespie.jl") end
-@time @testset "Tests the solver methods when run on the reaction networks" begin include("solver_test.jl") end
-@time @testset "Higher order reaction Tests" begin include("higher_order_reactions.jl") end
-@time @testset "Tests some of the additional functionalities" begin include("func_test.jl") end
+@time @testset "Test Solvers" begin include("solver_test.jl") end
+@time @testset "Higher Order" begin include("higher_order_reactions.jl") end
+@time @testset "Additional Functions" begin include("func_test.jl") end
 toc()
