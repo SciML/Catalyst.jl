@@ -90,7 +90,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     p_matrix = zeros(length(reactants), length(reactions))
 
     (jump_rate_expr, jump_affect_expr) = get_jump_expr(reactions, reactants)
-    jumps = get_jumps(jump_rate_expr, jump_affect_expr,reactants,reactants)
+    jumps = get_jumps(jump_rate_expr, jump_affect_expr,reactants,parameters)
 
     f_rhs = [element.args[2] for element in f_expr]
     symjac = Expr(:quote, calculate_jac(f_rhs, syms))
