@@ -7,5 +7,5 @@ DiffEqBase.SDEProblem(rn::AbstractReactionNetwork, args...; kwargs...) =
                  SDEProblem(rn.f,rn.g, args...;noise_rate_prototype=rn.p_matrix, kwargs...)
 
 ### JumpProblem ###
-DiffEqJump.JumpProblem(prob,aggregator::Direct,rn::AbstractReactionNetwork) =
-                 JumpProblem(prob,aggregator::Direct,rn.jumps...)
+DiffEqJump.JumpProblem(prob,aggregator::Direct,rn::AbstractReactionNetwork; kwargs...) =
+                 JumpProblem(prob,aggregator::Direct,rn.jumps...;kwargs...)
