@@ -6,9 +6,6 @@
 [![Coverage Status](https://coveralls.io/repos/ChrisRackauckas/DiffEqBiological.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/JuliaDiffEq/DiffEqBiological.jl?branch=master)
 [![codecov.io](http://codecov.io/github/ChrisRackauckas/DiffEqBiological.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaDiffEq/DiffEqBiological.jl?branch=master)
 
-[![DiffEqBiological](http://pkg.julialang.org/badges/DiffEqBiological_0.5.svg)](http://pkg.julialang.org/?pkg=DiffEqBiological)
-[![DiffEqBiological](http://pkg.julialang.org/badges/DiffEqBiological_0.6.svg)](http://pkg.julialang.org/?pkg=DiffEqBiological)
-
 Full documentation is in the
 [DifferentialEquations.jl models documentation](http://docs.juliadiffeq.org/latest/models/biological.html)
 
