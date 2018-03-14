@@ -297,8 +297,8 @@ function get_jump_expr(reactions::Vector{ReactionStruct}, reactants::OrderedDict
         end
         rates[idx += 1] = recursive_clean!(rate)
         affects[idx] = Vector{Expr}(0)
-        foreach(prod -> push!(affects[idx],:(integrator.u[$(reactants[prod.reactant])] += $(prod.stoichiometry))), reaction.products)
-        foreach(sub -> push!(affects[idx],:(integrator.u[$(reactants[sub.reactant])] -= $(sub.stoichiometry))), reaction.substrates)
+        foreach(prod -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[prod.reactant])] += $(prod.stoichiometry))), reaction.products)
+        foreach(sub -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[sub.reactant])] -= $(sub.stoichiometry))), reaction.substrates)
     end
     return (Tuple(rates),Tuple(affects))
 end
