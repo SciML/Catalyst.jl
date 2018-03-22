@@ -30,3 +30,14 @@ for i in [1., 2., 3., 4., 5.]
     sol = solve(prob, EM(), dt = 0.0001)
     @test sol[end][1] < 2000
 end
+
+#Tests time dependence
+equi_model = @reaction_network rn begin
+    100*(tanh(t-100)+2), 0 --> X
+    1, X --> 0
+end
+prob1 = ODEProblem(equi_model,[100.],(0.,100.))
+sol1 = solve(prob1,Tsit5())
+prob2 = ODEProblem(equi_model,[100.],(0.,200.))
+sol2 = solve(prob2,Tsit5())
+@test 1.5*sol1[end][1] < sol2[end][1]
