@@ -7,4 +7,5 @@ tic()
 @time @testset "Test Solvers" begin include("solver_test.jl") end
 @time @testset "Higher Order" begin include("higher_order_reactions.jl") end
 @time @testset "Additional Functions" begin include("func_test.jl") end
+@time @testset "Steady state solver" begin include("steady_state.jl") end
 toc()
