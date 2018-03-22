@@ -81,7 +81,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
 
     syms = collect(keys(reactants))
     params = collect(keys(parameters))
-    (in(:t,union(syms,params))) && error("t is reserved for the time variable and may neither me used as a reactant or reactant")
+    (in(:t,union(syms,params))) && error("t is reserved for the time variable and may neither be used as a reactant nor a parameter")
 
     f_expr = get_f(reactions, reactants)
     f = make_func(f_expr, reactants, parameters)
