@@ -81,6 +81,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
 
     syms = collect(keys(reactants))
     params = collect(keys(parameters))
+    (in(:t,union(syms,params))) && error("t is reserved for the time variable and may neither me used as a reactant or reactant")
 
     f_expr = get_f(reactions, reactants)
     f = make_func(f_expr, reactants, parameters)
@@ -281,7 +282,7 @@ function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int},pa
     for func_line in deepcopy(func_expr)
         push!(system.args, recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p)))
     end
-    return :((internal_var___du,internal_var___u,internal_var___p,internal_var___t) -> $system)
+    return :((internal_var___du,internal_var___u,internal_var___p,t) -> $system)
 end
 
 #Generates two tuples, each with N entries corresponding to the N reactions in the reaction network. The first tuple contains expressions corresponding to reaction rates, the second contains arrays of expressions corresponding to the affect functions. These expressions can be used for debugging, making LaTex code, or creating Cosnstant Rate Jumps for Guilespie simulations.
@@ -310,7 +311,7 @@ function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,In
         push!(jumps.args,Expr(:call,:ConstantRateJump))
     end
     for i = 1:length(rates)
-        push!(jumps.args[i].args, :((internal_var___u,internal_var___p,internal_var___t) -> $(recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
+        push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> $(recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
         push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[i])))))
     end
     return jumps
