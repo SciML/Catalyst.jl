@@ -1,5 +1,4 @@
 using DiffEqBiological, SteadyStateDiffEq, Base.Test
-using DifferentialEquations
 
 model = @reaction_network SSTest begin
     (d_x, d_y), (x, y) --> 0
