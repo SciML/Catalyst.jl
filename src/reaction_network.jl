@@ -94,7 +94,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     jumps = get_jumps(jump_rate_expr, jump_affect_expr,reactants,parameters)
 
     f_rhs = [element.args[2] for element in f_expr]
-    symjac = Expr(:quote, calculate_jac(f_rhs, syms))
+    #symjac = Expr(:quote, calculate_jac(f_rhs, syms))
     f_symfuncs = hcat([SymEngine.Basic(f) for f in f_rhs])
 
     # Build the type
@@ -104,7 +104,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     f_funcs = [element.args[2] for element in f_expr]
     g_funcs = [element.args[2] for element in g_expr]
 
-    typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params, symjac=symjac)
+    typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params)
     push!(exprs,typeex)
     push!(exprs,constructorex)
 
