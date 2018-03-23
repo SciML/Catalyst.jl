@@ -369,6 +369,15 @@ function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbo
     return expr
 end
 
+#Recursive Contains, checks whenever an expression contains a certain symbol.
+function recursive_contains(s,ex)
+    (typeof(ex)!=Expr) && (return s==ex)
+    for arg in ex.args
+        recursive_contains(s,arg) && (return true)
+    end
+    return false
+end
+
 #Makes the Jacobian.
 function calculate_jac(f_expr::Vector{Expr}, syms)
     symjac = Matrix{SymEngine.Basic}( length(syms), length(syms))
