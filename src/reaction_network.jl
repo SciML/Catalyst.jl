@@ -308,9 +308,7 @@ end
 function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,Int},parameters::OrderedDict{Symbol,Int})
     jumps = Expr(:tuple)
     for i = 1:length(rates)
-        push!(jumps.args,Expr(:call,:ConstantRateJump))
-    end
-    for i = 1:length(rates)
+        recursive_contains(:t,rates[i]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
         push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> $(recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
         push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[i])))))
     end
@@ -367,6 +365,15 @@ function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbo
         end
     end
     return expr
+end
+
+#Recursive Contains, checks whenever an expression contains a certain symbol.
+function recursive_contains(s,ex)
+    (typeof(ex)!=Expr) && (return s==ex)
+    for arg in ex.args
+        recursive_contains(s,arg) && (return true)
+    end
+    return false
 end
 
 #Makes the Jacobian.
