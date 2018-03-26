@@ -312,7 +312,7 @@ function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,In
         push!(jumps.args,Expr(:call,:ConstantRateJump))
     end
     for i = 1:length(rates)
-        push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> $(@inbounds recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
+        push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> @inbounds $(recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
         push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(map(x->:(@inbounds $x),deepcopy(affects[i]))))))
     end
     return jumps
