@@ -82,16 +82,17 @@ function coordinate(name, ex::Expr, p, scale_noise)
     syms = collect(keys(reactants))
     params = collect(keys(parameters))
     (in(:t,union(syms,params))) && error("t is reserved for the time variable and may neither be used as a reactant nor a parameter")
-    println("HERE1")
+
     f_expr = get_f(reactions, reactants)
     f = make_func(f_expr, reactants, parameters)
-    println("HERE2")    g_expr = get_g(reactions, reactants, scale_noise)
+
+    g_expr = get_g(reactions, reactants, scale_noise)
     g = make_func(g_expr, reactants, parameters)
     p_matrix = zeros(length(reactants), length(reactions))
-    println("HERE3")
+
     (jump_rate_expr, jump_affect_expr) = get_jump_expr(reactions, reactants)
     jumps = get_jumps(jump_rate_expr, jump_affect_expr,reactants,parameters)
-    println("HERE4")
+
     f_rhs = [element.args[2] for element in f_expr]
     symjac = Expr(:quote, calculate_jac(f_rhs, syms))
     f_symfuncs = hcat([SymEngine.Basic(f) for f in f_rhs])
@@ -311,11 +312,8 @@ function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,In
         push!(jumps.args,Expr(:call,:ConstantRateJump))
     end
     for i = 1:length(rates)
-        new_rate = recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p))
-        foreach(expr -> expr = :(@inbounds $expr), new_rate)
-        println(typeof(new_rate))
-        push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> $new_rate))
-        push!(jumps.args[i].args, :(integrator -> @inbounds $(expr_arr_to_block(deepcopy(affects[i])))))
+        push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> $(@inbounds recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
+        push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(map(x->:(@inbounds $x),deepcopy(affects[i]))))))
     end
     return jumps
 end
