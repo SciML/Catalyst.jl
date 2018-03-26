@@ -280,7 +280,8 @@ end
 function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int},parameters::OrderedDict{Symbol,Int})
     system = Expr(:block)
     for func_line in deepcopy(func_expr)
-        push!(system.args, recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p)))
+        tmp_line = recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p))
+        push!(system.args, :(@inbounds $tmp_line))
     end
     return :((internal_var___du,internal_var___u,internal_var___p,t) -> $system)
 end
