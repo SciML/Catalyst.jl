@@ -281,7 +281,7 @@ function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int},pa
     system = Expr(:block)
     for func_line in deepcopy(func_expr)
         tmp_line = recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p))
-        push!(system.args, :(inbounds_func($tmp_line)))
+        push!(system.args, :(@inbounds $tmp_line))
     end
     return :((internal_var___du,internal_var___u,internal_var___p,t) -> $system)
 end
@@ -312,8 +312,8 @@ function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,In
         push!(jumps.args,Expr(:call,:ConstantRateJump))
     end
     for i = 1:length(rates)
-        push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> inbounds_func($(recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p))))))
-        push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(map(x->:(inbounds_func($x)),deepcopy(affects[i]))))))
+        push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> @inbounds $(recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
+        push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(map(x->:(@inbounds $x),deepcopy(affects[i]))))))
     end
     return jumps
 end
@@ -387,12 +387,6 @@ function expr_arr_to_block(exprs)
   block = :(begin end)
   foreach(expr -> push!(block.args, expr), exprs)
   return block
-end
-
-#Function to make the @inbounds macro work.
-function inbounds_func(A)
-  @inbounds x = A[1]
-  return x
 end
 
 ### Pre Defined Functions that can be inserted into the reaction rates ###
