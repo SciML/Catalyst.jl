@@ -94,7 +94,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     jumps = get_jumps(jump_rate_expr, jump_affect_expr,reactants,parameters)
 
     f_rhs = [element.args[2] for element in f_expr]
-    symjac = Expr(:quote, calculate_jac(f_rhs, syms))
+    #symjac = Expr(:quote, calculate_jac(f_rhs, syms))
     f_symfuncs = hcat([SymEngine.Basic(f) for f in f_rhs])
 
     # Build the type
@@ -104,7 +104,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     f_funcs = [element.args[2] for element in f_expr]
     g_funcs = [element.args[2] for element in g_expr]
 
-    typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params, symjac=symjac)
+    typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params)
     push!(exprs,typeex)
     push!(exprs,constructorex)
 
@@ -309,11 +309,17 @@ end
 function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,Int},parameters::OrderedDict{Symbol,Int})
     jumps = Expr(:tuple)
     for i = 1:length(rates)
+<<<<<<< HEAD
         push!(jumps.args,Expr(:call,:ConstantRateJump))
     end
     for i = 1:length(rates)
         push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> inbounds_func($(recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p))))))
         push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(map(x->:(inbounds_func($x)),deepcopy(affects[i]))))))
+=======
+        recursive_contains(:t,rates[i]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
+        push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> @inbounds $(recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
+        push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(map(x->:(@inbounds $x),deepcopy(affects[i]))))))
+>>>>>>> af29d657b3e059433f8a0a9a319fc23850bd9c23
     end
     return jumps
 end
@@ -368,6 +374,15 @@ function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbo
         end
     end
     return expr
+end
+
+#Recursive Contains, checks whenever an expression contains a certain symbol.
+function recursive_contains(s,ex)
+    (typeof(ex)!=Expr) && (return s==ex)
+    for arg in ex.args
+        recursive_contains(s,arg) && (return true)
+    end
+    return false
 end
 
 #Makes the Jacobian.
