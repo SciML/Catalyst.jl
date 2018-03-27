@@ -309,17 +309,9 @@ end
 function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,Int},parameters::OrderedDict{Symbol,Int})
     jumps = Expr(:tuple)
     for i = 1:length(rates)
-<<<<<<< HEAD
-        push!(jumps.args,Expr(:call,:ConstantRateJump))
-    end
-    for i = 1:length(rates)
-        push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> inbounds_func($(recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p))))))
-        push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(map(x->:(inbounds_func($x)),deepcopy(affects[i]))))))
-=======
-        recursive_contains(:t,rates[i]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
+    recursive_contains(:t,rates[i]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
         push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> @inbounds $(recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
         push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(map(x->:(@inbounds $x),deepcopy(affects[i]))))))
->>>>>>> af29d657b3e059433f8a0a9a319fc23850bd9c23
     end
     return jumps
 end
