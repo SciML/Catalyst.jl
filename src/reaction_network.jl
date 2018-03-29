@@ -54,7 +54,7 @@ macro reaction_network(sym, ex::Expr, p...)
 end
 
 #Macro to create a reaction network model. Multiple dispatch is used to allow for SDE noise scalling.
-macro reaction_network(name, scale_noise, ex::Expr, p...)
+macro reaction_network(sym1, sym2, ex::Expr, p...)
     in(sym1,p) $ in(sym2,p) || error("Two initial options have been given (designating type and noise scaling). However, exactly one of these must also be given as a parameter")
     in(sym1,p) && coordinate(sym2,ex,p,sym1) : coordinate(sym1,ex,p,sym2)
 end
