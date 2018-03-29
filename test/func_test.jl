@@ -34,10 +34,10 @@ model1 = @reaction_network rn begin
 end
 model2 = @reaction_network rn η begin
     (5,5000), X ↔ 0
-end
+end η
 model3 = @reaction_network rn η begin
     (1,5000), X ↔ 0
-end
+end η
 function tmp_std(sol)
     vect = Vector{Float64}(length(sol.u))
     for i = 1:length(sol.u)
