@@ -49,14 +49,14 @@ Example systems:
 """
 
 #Macro to create a reaction network model.
-macro reaction_network(name, ex::Expr, p...)
-    coordinate(name, ex, p, :no___noise___scaling)
+macro reaction_network(sym, ex::Expr, p...)
+    in(sym,p) ? coordinate(:reaction_network,ex,p,sym) : coordinate(sym,ex,p,:no___noise___scaling)
 end
 
 #Macro to create a reaction network model. Multiple dispatch is used to allow for SDE noise scalling.
 macro reaction_network(name, scale_noise, ex::Expr, p...)
-    in(scale_noise, p) || (p = (p..., scale_noise))
-    coordinate(name, ex, p, scale_noise)
+    in(sym1,p) $ in(sym2,p) || error("Two initial options have been given (designating type and noise scaling). However, exactly one of these must also be given as a parameter")
+    in(sym1,p) && coordinate(sym2,ex,p,sym1) : coordinate(sym1,ex,p,sym2)
 end
 
 #Used to give a warning if someone uses the old macro.
