@@ -60,8 +60,8 @@ macro reaction_network(name, scale_noise, ex::Expr, p...)
 end
 
 #Used to give a warning if someone uses the old macro.
-macro reaction_network(ex::Expr)
-    error("The Reaction Network DSL have been deprecated in favor for a new one. With only slight modification old code can be made to work with the new DSL. In addition the new one provides lots of additional functionality. Please view the documentation for more information.")
+macro reaction_network(ex::Expr, p...)
+    coordinate(:reaction_network, ex, p, :no___noise___scaling)
 end
 
 #Declare various arrow types symbols used for the empty set (also 0).
