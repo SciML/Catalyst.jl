@@ -83,6 +83,8 @@ function coordinate(name, ex::Expr, p, scale_noise)
     params = collect(keys(parameters))
     (in(:t,union(syms,params))) && error("t is reserved for the time variable and may neither be used as a reactant nor a parameter")
 
+    set_dependencies(reactions,syms)
+
     f_expr = get_f(reactions, reactants)
     f = make_func(f_expr, reactants, parameters)
 
@@ -241,6 +243,11 @@ function get_parameters(p)
     return parameters
 end
 
+#For each reaction, sets its dependencies.
+function set_dependencies(reactions::Vector{ReactionStruct},syms::Vector{Symbol})
+    foreach(reaction -> reaction.dependencies = recursive_content(reaction.rate_DE,syms,Set{Symbol}([])), reactions)
+end
+
 #Produces an array of expressions. Each entry corresponds to a line in the function f, which constitutes the deterministic part of the system. The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
 function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int})
     f = Vector{Expr}(length(reactants))
@@ -375,6 +382,16 @@ function recursive_contains(s,ex)
         recursive_contains(s,arg) && (return true)
     end
     return false
+end
+
+#Parses an expression, and returns a set with all symbols in the expression, which is also a part of the provided vector with symbols (syms).
+function recursive_content!(ex,syms::Vector{Symbol},content::Set{Symbol})
+    if typeof(ex)!=Expr
+        in(ex,syms) && push!(content,ex)
+    else
+        foreach(arg -> recursive_content!(arg,syms,content), ex.args)
+    end
+    return content
 end
 
 #Makes the Jacobian.
