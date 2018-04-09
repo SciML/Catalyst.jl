@@ -154,10 +154,12 @@ end
 struct ReactionStruct
     substrates::Vector{ReactantStruct}
     products::Vector{ReactantStruct}
-    rate
-    use_mass_kin::Bool
-    input_rate #Saved and used when making jump, since (discrete) jumps make
-               #reaction rates differently from ODE/SDE.
+    rate_org
+    rate_DE
+    rate_SSA
+    is_pure_mass_action::Boolean
+    dependants::Vector{Symbol}
+
     function ReactionStruct(sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
         sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(0))
         prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(0))
