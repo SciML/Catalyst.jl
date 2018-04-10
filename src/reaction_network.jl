@@ -167,7 +167,7 @@ struct ReactionStruct
         rate_DE = mass_rate_DE(sub, use_mass_kin, rate)
         rate_SSA =  mass_rate_SSA(sub, use_mass_kin, rate)
         is_pure_mass_action = !(use_mass_kin) && (length(recursive_content(reaction.rate_DE,syms,Set{Symbol}([]))))
-        new(sub, prod, rate, rate_DE, rate_SSA, nothing, use_mass_kin)
+        new(sub, prod, rate, rate_DE, rate_SSA, [], use_mass_kin)
     end
     function ReactionStruct(r::ReactionStruct, syms::Vector{Symbol})
         deps = recursive_content(reaction.rate_DE,syms,Set{Symbol}([]))
@@ -186,7 +186,7 @@ end
 #Calculates the rate used by SSAs. If we want to use masskinetics we have to include substrate concentration, taking higher order terms into account.
 function mass_rate_SSA(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, old_rate::Any)
     rate = Expr(:call, :*, old_rate)
-    use_mass_kin && foreach(sub -> push!(rate.args, :(binomial($(sub.reactant),$(sub.stoichiometry)))),reaction.substrates)
+    use_mass_kin && foreach(sub -> push!(rate.args, :(binomial($(sub.reactant),$(sub.stoichiometry)))), substrates)
     return rate
 end
 
