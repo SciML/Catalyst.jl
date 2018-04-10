@@ -317,12 +317,7 @@ function get_jump_expr(reactions::Vector{ReactionStruct}, reactants::OrderedDict
     affects = Vector{Vector{Expr}}(length(reactions))
     idx = 0
     for reaction in deepcopy(reactions)
-        rate = reaction.input_rate
-        if reaction.use_mass_kin
-            rate = Expr(:call,:*,rate)
-            foreach(sub -> push!(rate.args, :(binomial($(sub.reactant),$(sub.stoichiometry)))),reaction.substrates)
-        end
-        rates[idx += 1] = recursive_clean!(rate)
+        rates[idx += 1] = recursive_clean!(reaction.rate_SSA)
         affects[idx] = Vector{Expr}(0)
         foreach(prod -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[prod.reactant])] += $(prod.stoichiometry))), reaction.products)
         foreach(sub -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[sub.reactant])] -= $(sub.stoichiometry))), reaction.substrates)
@@ -339,6 +334,31 @@ function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,In
         push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[i])))))
     end
     return jumps
+end
+
+function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int})
+    rates = Vector{Any}(length(reactions))
+    affects = Vector{Vector{Expr}}(length(reactions))
+    jumps = Expr(:tuple)
+    idx = 0
+    for reaction in deepcopy(reactions)
+        rates[idx += 1] = recursive_clean!(reaction.rate_SSA)
+        affects[idx] = Vector{Expr}(0)
+        foreach(prod -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[prod.reactant])] += $(prod.stoichiometry))), reaction.products)
+        foreach(sub -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[sub.reactant])] -= $(sub.stoichiometry))), reaction.substrates)
+        if reaction.is_pure_mass_action
+            ma_sub_stoch = :(reactant_stoich = [[]])
+            ma_stoch_change = :(reactant_stoich = [[]])
+            foreach(sub -> push!(ma_sub_stoch.args[2].args[1].args),:($(reactants[sub.reactant])=>$(sub.stoichiometry)),reaction.substrates)
+            foreach(reactant -> push!(ma_stoch_change.args[2].args[1].args),:($(reactants[reactant.reactant])=>$(get_stoch_diff(reaction,reactant))),reaction.substrates)
+            push!(jumps.args,:(MassActionJump($(reaction.rate_org),$(ma_sub_stoch),$(ma_stoch_change))))
+        else
+            recursive_contains(:t,rates[i]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
+            push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> $(recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
+            push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[i])))))
+        end
+    end
+    return (Tuple(rates),Tuple(affects),jumps)
 end
 
 #Recursively traverses an expression and removes things like X^1, 1*X. Will not actually have any affect on the expression when used as a function, but will make it much easier to look at it for debugging, as well as if it is transformed to LaTeX code.
