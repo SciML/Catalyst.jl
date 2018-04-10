@@ -353,8 +353,8 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
             push!(jumps.args,:(MassActionJump($(reaction.rate_org),$(ma_sub_stoch),$(ma_stoch_change))))
         else
             recursive_contains(:t,rates[i]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
-            push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> $(recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
-            push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[i])))))
+            push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> $(recursive_replace!(deepcopy(rates[idx]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
+            push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[idx])))))
         end
     end
     return (Tuple(rates),Tuple(affects),jumps)
