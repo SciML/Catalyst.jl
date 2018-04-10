@@ -165,8 +165,8 @@ struct ReactionStruct
         prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(0))
         #new(sub,prod,use_mass_kin ? mass_rate(sub,rate) : rate, use_mass_kin, rate)
 
-        rate_DE =  Expr(:call, :*, rate, mass_rate_DE(sub, use_mass_kin))
-        rate_SSA =  Expr(:call, :*, rate, mass_rate_SSA(sub, use_mass_kin))
+        rate_DE = mass_rate_DE(sub, use_mass_kin, rate)
+        rate_SSA =  mass_rate_SSA(sub, use_mass_kin, rate)
         is_pure_mass_action = !(use_mass_kin) && (length(recursive_content(reaction.rate_DE,syms,Set{Symbol}([]))))
         new(sub, prod, rate, rate_DE, rate_SSA, nothing, use_mass_kin)
     end
@@ -177,13 +177,17 @@ struct ReactionStruct
     end
 end
 
-#If we want to use mass kinetics, modifies rate accordingly. Called in ReactionStruct constructor if use_mass_kin is true.
-function mass_rate(substrates::Vector{ReactantStruct},old_rate::Any)
+#Calculates the rate used by ODEs and SDEs. If we want to use masskinetics we have to include substrate concentration, taking higher order terms into account.
+function mass_rate_DE(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, old_rate::Any)
     rate = Expr(:call, :*, old_rate)
-    for sub in substrates
-        push!(rate.args,:($(Expr(:call, :^, sub.reactant, sub.stoichiometry))/$(factorial(sub.stoichiometry))))
-        #push!(rate.args, :($(1//factorial(sub.stoichiometry))))
-    end
+    use_mass_kin && foreach(sub -> push!(rate.args,:($(Expr(:call, :^, sub.reactant, sub.stoichiometry))/$(factorial(sub.stoichiometry)))), substrates)
+    return rate
+end
+
+#Calculates the rate used by SSAs. If we want to use masskinetics we have to include substrate concentration, taking higher order terms into account.
+function mass_rate_SSA(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, old_rate::Any)
+    rate = Expr(:call, :*, old_rate)
+    use_mass_kin && foreach(sub -> push!(rate.args, :(binomial($(sub.reactant),$(sub.stoichiometry)))),reaction.substrates)
     return rate
 end
 
