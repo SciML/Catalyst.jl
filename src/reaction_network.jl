@@ -166,12 +166,12 @@ struct ReactionStruct
 
         rate_DE = mass_rate_DE(sub, use_mass_kin, rate)
         rate_SSA =  mass_rate_SSA(sub, use_mass_kin, rate)
-        is_pure_mass_action = !(use_mass_kin) && (length(recursive_content(reaction.rate_DE,syms,Set{Symbol}([]))))
+        is_pure_mass_action = !(use_mass_kin) && (length(recursive_content(reaction.rate_DE,syms,Vector{Symbol}())))
         new(sub, prod, rate, rate_DE, rate_SSA, [], use_mass_kin)
     end
     function ReactionStruct(r::ReactionStruct, syms::Vector{Symbol})
-        deps = recursive_content(reaction.rate_DE,syms,Set{Symbol}([]))
-        is_ma = r.is_pure_mass_action && (length(recursive_content(reaction.rate_org,syms,Set{Symbol}([])))==0)
+        deps = recursive_content(r.rate_DE,syms,Vector{Symbol}())
+        is_ma = r.is_pure_mass_action && (length(recursive_content(r.rate_org,syms,Vector{Symbol}()))==0)
         new(r.substrates, r.products, r.rate_org, r.rate_DE, r.rate_SSA, deps, is_ma)
     end
 end
@@ -302,7 +302,7 @@ function get_stoch_diff(reaction::ReactionStruct, reactant::Symbol)
 end
 
 #Creates an expression which can be evaluated to an actual function. Input is an array of expression were each entry is a line in the function. Uses the array of expressions generated in either get_f or get_g.
-function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int},parameters::OrderedDict{Symbol,Int})
+function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     system = Expr(:block)
     for func_line in deepcopy(func_expr)
         push!(system.args, recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p)))
@@ -311,7 +311,7 @@ function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int},pa
 end
 
 #Creates expressions for jump affects and rates. Also creates and array with MassAction, ConstantRate and VariableRate Jumps.
-function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int})
+function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     rates = Vector{Any}(length(reactions))
     affects = Vector{Vector{Expr}}(length(reactions))
     jumps = Expr(:tuple)
@@ -328,9 +328,9 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
         #    foreach(reactant -> push!(ma_stoch_change.args[2].args[1].args),:($(reactants[reactant.reactant])=>$(get_stoch_diff(reaction,reactant))),reaction.substrates)
         #    push!(jumps.args,:(MassActionJump($(reaction.rate_org),$(ma_sub_stoch),$(ma_stoch_change))))
         #else
-            recursive_contains(:t,rates[i]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
-            push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> $(recursive_replace!(deepcopy(rates[idx]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
-            push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[idx])))))
+            recursive_contains(:t,rates[idx]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
+            push!(jumps.args[idx].args, :((internal_var___u,internal_var___p,t) -> $(recursive_replace!(deepcopy(rates[idx]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
+            push!(jumps.args[idx].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[idx])))))
         #end
     end
     return (Tuple(rates),Tuple(affects),jumps)
@@ -398,11 +398,11 @@ function recursive_contains(s,ex)
 end
 
 #Parses an expression, and returns a set with all symbols in the expression, which is also a part of the provided vector with symbols (syms).
-function recursive_content!(ex,syms::Vector{Symbol},content::Set{Symbol})
+function recursive_content(ex,syms::Vector{Symbol},content::Vector{Symbol}
     if typeof(ex)!=Expr
         in(ex,syms) && push!(content,ex)
     else
-        foreach(arg -> recursive_content!(arg,syms,content), ex.args)
+        foreach(arg -> recursive_content(arg,syms,content), ex.args)
     end
     return content
 end
