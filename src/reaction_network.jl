@@ -398,7 +398,7 @@ function recursive_contains(s,ex)
 end
 
 #Parses an expression, and returns a set with all symbols in the expression, which is also a part of the provided vector with symbols (syms).
-function recursive_content(ex,syms::Vector{Symbol},content::Vector{Symbol}
+function recursive_content(ex,syms::Vector{Symbol},content::Vector{Symbol})
     if typeof(ex)!=Expr
         in(ex,syms) && push!(content,ex)
     else
