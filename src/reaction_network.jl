@@ -154,11 +154,11 @@ end
 struct ReactionStruct
     substrates::Vector{ReactantStruct}
     products::Vector{ReactantStruct}
-    rate_org
-    rate_DE
-    rate_SSA
+    rate_org::Any
+    rate_DE::Any
+    rate_SSA::Any
     dependants::Vector{Symbol}
-    is_pure_mass_action::Boolean
+    is_pure_mass_action::Bool
 
     function ReactionStruct(sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
         sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(0))
