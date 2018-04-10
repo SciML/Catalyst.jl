@@ -310,6 +310,7 @@ function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int},pa
     return :((internal_var___du,internal_var___u,internal_var___p,t) -> $system)
 end
 
+#Creates expressions for jump affects and rates. Also creates and array with MassAction, ConstantRate and VariableRate Jumps.
 function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int})
     rates = Vector{Any}(length(reactions))
     affects = Vector{Vector{Expr}}(length(reactions))
