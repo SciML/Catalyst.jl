@@ -321,17 +321,17 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
         affects[idx] = Vector{Expr}(0)
         foreach(prod -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[prod.reactant])] += $(prod.stoichiometry))), reaction.products)
         foreach(sub -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[sub.reactant])] -= $(sub.stoichiometry))), reaction.substrates)
-        if reaction.is_pure_mass_action
-            ma_sub_stoch = :(reactant_stoich = [[]])
-            ma_stoch_change = :(reactant_stoich = [[]])
-            foreach(sub -> push!(ma_sub_stoch.args[2].args[1].args),:($(reactants[sub.reactant])=>$(sub.stoichiometry)),reaction.substrates)
-            foreach(reactant -> push!(ma_stoch_change.args[2].args[1].args),:($(reactants[reactant.reactant])=>$(get_stoch_diff(reaction,reactant))),reaction.substrates)
-            push!(jumps.args,:(MassActionJump($(reaction.rate_org),$(ma_sub_stoch),$(ma_stoch_change))))
-        else
+        #if reaction.is_pure_mass_action
+        #    ma_sub_stoch = :(reactant_stoich = [[]])
+        #    ma_stoch_change = :(reactant_stoich = [[]])
+        #    foreach(sub -> push!(ma_sub_stoch.args[2].args[1].args),:($(reactants[sub.reactant])=>$(sub.stoichiometry)),reaction.substrates)
+        #    foreach(reactant -> push!(ma_stoch_change.args[2].args[1].args),:($(reactants[reactant.reactant])=>$(get_stoch_diff(reaction,reactant))),reaction.substrates)
+        #    push!(jumps.args,:(MassActionJump($(reaction.rate_org),$(ma_sub_stoch),$(ma_stoch_change))))
+        #else
             recursive_contains(:t,rates[i]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
             push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> $(recursive_replace!(deepcopy(rates[idx]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
             push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[idx])))))
-        end
+        #end
     end
     return (Tuple(rates),Tuple(affects),jumps)
 end
