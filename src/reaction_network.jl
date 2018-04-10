@@ -83,7 +83,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     params = collect(keys(parameters))
     (in(:t,union(syms,params))) && error("t is reserved for the time variable and may neither be used as a reactant nor a parameter")
 
-    set_dependencies(reactions,syms)
+    update_reaction_info(reactions,syms)
 
     f_expr = get_f(reactions, reactants)
     f = make_func(f_expr, reactants, parameters)
@@ -157,8 +157,8 @@ struct ReactionStruct
     rate_org
     rate_DE
     rate_SSA
-    is_pure_mass_action::Boolean
     dependants::Vector{Symbol}
+    is_pure_mass_action::Boolean
 
     function ReactionStruct(sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
         sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(0))
@@ -168,7 +168,12 @@ struct ReactionStruct
         rate_DE =  Expr(:call, :*, rate, mass_rate_DE(sub, use_mass_kin))
         rate_SSA =  Expr(:call, :*, rate, mass_rate_SSA(sub, use_mass_kin))
         is_pure_mass_action = !(use_mass_kin) && (length(recursive_content(reaction.rate_DE,syms,Set{Symbol}([]))))
-        new(sub, prod, rate, rate_DE, rate_SSA, use_mass_kin, nothing)
+        new(sub, prod, rate, rate_DE, rate_SSA, nothing, use_mass_kin)
+    end
+    function ReactionStruct(r::ReactionStruct, syms::Vector{Symbol})
+        deps = recursive_content(reaction.rate_DE,syms,Set{Symbol}([]))
+        is_ma = r.is_pure_mass_action && (length(recursive_content(reaction.rate_org,syms,Set{Symbol}([])))==0)
+        new(r.substrates, r.products, r.rate_org, r.rate_DE, r.rate_SSA, deps, is_ma)
     end
 end
 
@@ -250,9 +255,11 @@ function get_parameters(p)
     return parameters
 end
 
-#For each reaction, sets its dependencies.
-function set_dependencies(reactions::Vector{ReactionStruct},syms::Vector{Symbol})
-    foreach(reaction -> reaction.dependencies = recursive_content(reaction.rate_DE,syms,Set{Symbol}([])), reactions)
+#For each reaction, sets its dependencies and whenever it is a pure mass action reaction.
+function update_reaction_info(reactions::Vector{ReactionStruct},syms::Vector{Symbol})
+    for i = 1:length(reactions)
+        reactions[i] = ReactionStruct(reactions[i],syms)
+    end
 end
 
 #Produces an array of expressions. Each entry corresponds to a line in the function f, which constitutes the deterministic part of the system. The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
@@ -263,7 +270,7 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     end
     for reaction in deepcopy(reactions)
         for reactant in union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant))
-            push!(f[reactants[reactant]].args[2].args, recursive_clean!(:($(get_stoch_diff(reaction,reactant)) * $(reaction.rate))))
+            push!(f[reactants[reactant]].args[2].args, recursive_clean!(:($(get_stoch_diff(reaction,reactant)) * $(reaction.rate_DE))))
         end
     end
     return f
@@ -274,7 +281,7 @@ function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     g = Vector{Expr}(length(reactions)*length(reactants))
     idx = 0
     for reactant in keys(reactants), i = 1:length(reactions)
-            g[idx += 1] = recursive_clean!(:(internal_var___du[$(reactants[reactant]),$i] = $scale_noise * $(get_stoch_diff(reactions[i],reactant)) * sqrt($(deepcopy(reactions[i].rate)))))
+            g[idx += 1] = recursive_clean!(:(internal_var___du[$(reactants[reactant]),$i] = $scale_noise * $(get_stoch_diff(reactions[i],reactant)) * sqrt($(deepcopy(reactions[i].rate_DE)))))
     end
     return g
 end
