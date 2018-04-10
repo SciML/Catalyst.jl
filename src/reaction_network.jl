@@ -163,7 +163,12 @@ struct ReactionStruct
     function ReactionStruct(sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
         sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(0))
         prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(0))
-        new(sub,prod,use_mass_kin ? mass_rate(sub,rate) : rate, use_mass_kin, rate)
+        #new(sub,prod,use_mass_kin ? mass_rate(sub,rate) : rate, use_mass_kin, rate)
+
+        rate_DE =  Expr(:call, :*, rate, mass_rate_DE(sub, use_mass_kin))
+        rate_SSA =  Expr(:call, :*, rate, mass_rate_SSA(sub, use_mass_kin))
+        is_pure_mass_action = !(use_mass_kin) && (length(recursive_content(reaction.rate_DE,syms,Set{Symbol}([]))))
+        new(sub, prod, rate, rate_DE, rate_SSA, use_mass_kin, nothing)
     end
 end
 
