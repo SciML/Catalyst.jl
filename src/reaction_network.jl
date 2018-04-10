@@ -310,31 +310,6 @@ function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int},pa
     return :((internal_var___du,internal_var___u,internal_var___p,t) -> $system)
 end
 
-#Generates two tuples, each with N entries corresponding to the N reactions in the reaction network. The first tuple contains expressions corresponding to reaction rates, the second contains arrays of expressions corresponding to the affect functions. These expressions can be used for debugging, making LaTex code, or creating Cosnstant Rate Jumps for Guilespie simulations.
-function get_jump_expr(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int})
-    rates = Vector{Any}(length(reactions))
-    affects = Vector{Vector{Expr}}(length(reactions))
-    idx = 0
-    for reaction in deepcopy(reactions)
-        rates[idx += 1] = recursive_clean!(reaction.rate_SSA)
-        affects[idx] = Vector{Expr}(0)
-        foreach(prod -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[prod.reactant])] += $(prod.stoichiometry))), reaction.products)
-        foreach(sub -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[sub.reactant])] -= $(sub.stoichiometry))), reaction.substrates)
-    end
-    return (Tuple(rates),Tuple(affects))
-end
-
-#From the tuples created in get_jump_expr, generates an expression which when evaluated will become a tuple of ConstantRateJumps to be used for Guillespie Simulations.
-function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,Int},parameters::OrderedDict{Symbol,Int})
-    jumps = Expr(:tuple)
-    for i = 1:length(rates)
-        recursive_contains(:t,rates[i]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
-        push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> $(recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
-        push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[i])))))
-    end
-    return jumps
-end
-
 function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int})
     rates = Vector{Any}(length(reactions))
     affects = Vector{Vector{Expr}}(length(reactions))
