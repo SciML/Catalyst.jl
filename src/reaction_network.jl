@@ -93,7 +93,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     p_matrix = zeros(length(reactants), length(reactions))
 
     (jump_rate_expr, jump_affect_expr, jumps) = get_jumps(reactions, reactants,parameters)
-    regular_jumps = get_regular_jumps(jump_rate_expr, jump_affect_expr)
+    regular_jumps = get_regular_jumps(jump_rate_expr, jump_affect_expr, p_matrix)
 
     f_rhs = [element.args[2] for element in f_expr]
     #symjac = Expr(:quote, calculate_jac(f_rhs, syms))
@@ -335,8 +335,12 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
     return (Tuple(rates),Tuple(affects),jumps)
 end
 
-function  get_regular_jumps(jump_rate_expr::Tuple{Any,Vararg{Any}}, jump_affect_expr::Tuple{Vector{Expr},Vararg{Vector{Expr}}})
+function  get_regular_jumps(jump_rate_expr::Tuple{Any,Vararg{Any}}, jump_affect_expr::Tuple{Vector{Expr},Vararg{Vector{Expr}}},template_matrix::Array{Float64,2})
+    rates = Expr(:block)
+    c = Expr(:block)
+    dc = :(zeros($(size(template_matrix)[1]),$(size(template_matrix)[2])))
 
+    return :(RegularJump((out,u,p,t)->$rates,(dc,u,p,t,mark)->c,$dc;constant_c=true))
 end
 
 #Recursively traverses an expression and removes things like X^1, 1*X. Will not actually have any affect on the expression when used as a function, but will make it much easier to look at it for debugging, as well as if it is transformed to LaTeX code.
