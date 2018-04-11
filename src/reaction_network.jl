@@ -83,6 +83,8 @@ function coordinate(name, ex::Expr, p, scale_noise)
     params = collect(keys(parameters))
     (in(:t,union(syms,params))) && error("t is reserved for the time variable and may neither be used as a reactant nor a parameter")
 
+    update_reaction_info(reactions,syms)
+
     f_expr = get_f(reactions, reactants)
     f = make_func(f_expr, reactants, parameters)
 
@@ -90,8 +92,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     g = make_func(g_expr, reactants, parameters)
     p_matrix = zeros(length(reactants), length(reactions))
 
-    (jump_rate_expr, jump_affect_expr) = get_jump_expr(reactions, reactants)
-    jumps = get_jumps(jump_rate_expr, jump_affect_expr,reactants,parameters)
+    (jump_rate_expr, jump_affect_expr, jumps) = get_jumps(reactions, reactants,parameters)
 
     f_rhs = [element.args[2] for element in f_expr]
     #symjac = Expr(:quote, calculate_jac(f_rhs, syms))
@@ -152,24 +153,38 @@ end
 struct ReactionStruct
     substrates::Vector{ReactantStruct}
     products::Vector{ReactantStruct}
-    rate
-    use_mass_kin::Bool
-    input_rate #Saved and used when making jump, since (discrete) jumps make
-               #reaction rates differently from ODE/SDE.
+    rate_org::Any
+    rate_DE::Any
+    rate_SSA::Any
+    dependants::Vector{Symbol}
+    is_pure_mass_action::Bool
+
     function ReactionStruct(sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
         sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(0))
         prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(0))
-        new(sub,prod,use_mass_kin ? mass_rate(sub,rate) : rate, use_mass_kin, rate)
+
+        rate_DE = mass_rate_DE(sub, use_mass_kin, rate)
+        rate_SSA =  mass_rate_SSA(sub, use_mass_kin, rate)
+        new(sub, prod, rate, rate_DE, rate_SSA, [], use_mass_kin)
+    end
+    function ReactionStruct(r::ReactionStruct, syms::Vector{Symbol})
+        deps = recursive_content(r.rate_DE,syms,Vector{Symbol}())
+        is_ma = r.is_pure_mass_action && (length(recursive_content(r.rate_org,syms,Vector{Symbol}()))==0)
+        new(r.substrates, r.products, r.rate_org, r.rate_DE, r.rate_SSA, deps, is_ma)
     end
 end
 
-#If we want to use mass kinetics, modifies rate accordingly. Called in ReactionStruct constructor if use_mass_kin is true.
-function mass_rate(substrates::Vector{ReactantStruct},old_rate::Any)
+#Calculates the rate used by ODEs and SDEs. If we want to use masskinetics we have to include substrate concentration, taking higher order terms into account.
+function mass_rate_DE(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, old_rate::Any)
     rate = Expr(:call, :*, old_rate)
-    for sub in substrates
-        push!(rate.args,:($(Expr(:call, :^, sub.reactant, sub.stoichiometry))/$(factorial(sub.stoichiometry))))
-        #push!(rate.args, :($(1//factorial(sub.stoichiometry))))
-    end
+    use_mass_kin && foreach(sub -> push!(rate.args,:($(Expr(:call, :^, sub.reactant, sub.stoichiometry))/$(factorial(sub.stoichiometry)))), substrates)
+    return rate
+end
+
+#Calculates the rate used by SSAs. If we want to use masskinetics we have to include substrate concentration, taking higher order terms into account.
+function mass_rate_SSA(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, old_rate::Any)
+    rate = Expr(:call, :*, old_rate)
+    use_mass_kin && foreach(sub -> push!(rate.args, :(binomial($(sub.reactant),$(sub.stoichiometry)))), substrates)
     return rate
 end
 
@@ -241,6 +256,13 @@ function get_parameters(p)
     return parameters
 end
 
+#For each reaction, sets its dependencies and whenever it is a pure mass action reaction.
+function update_reaction_info(reactions::Vector{ReactionStruct},syms::Vector{Symbol})
+    for i = 1:length(reactions)
+        reactions[i] = ReactionStruct(reactions[i],syms)
+    end
+end
+
 #Produces an array of expressions. Each entry corresponds to a line in the function f, which constitutes the deterministic part of the system. The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
 function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int})
     f = Vector{Expr}(length(reactants))
@@ -249,7 +271,7 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     end
     for reaction in deepcopy(reactions)
         for reactant in union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant))
-            push!(f[reactants[reactant]].args[2].args, recursive_clean!(:($(get_stoch_diff(reaction,reactant)) * $(reaction.rate))))
+            push!(f[reactants[reactant]].args[2].args, recursive_clean!(:($(get_stoch_diff(reaction,reactant)) * $(reaction.rate_DE))))
         end
     end
     return f
@@ -260,7 +282,7 @@ function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     g = Vector{Expr}(length(reactions)*length(reactants))
     idx = 0
     for reactant in keys(reactants), i = 1:length(reactions)
-            g[idx += 1] = recursive_clean!(:(internal_var___du[$(reactants[reactant]),$i] = $scale_noise * $(get_stoch_diff(reactions[i],reactant)) * sqrt($(deepcopy(reactions[i].rate)))))
+            g[idx += 1] = recursive_clean!(:(internal_var___du[$(reactants[reactant]),$i] = $scale_noise * $(get_stoch_diff(reactions[i],reactant)) * sqrt($(deepcopy(reactions[i].rate_DE)))))
     end
     return g
 end
@@ -278,7 +300,7 @@ function get_stoch_diff(reaction::ReactionStruct, reactant::Symbol)
 end
 
 #Creates an expression which can be evaluated to an actual function. Input is an array of expression were each entry is a line in the function. Uses the array of expressions generated in either get_f or get_g.
-function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int},parameters::OrderedDict{Symbol,Int})
+function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     system = Expr(:block)
     for func_line in deepcopy(func_expr)
         push!(system.args, recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p)))
@@ -286,34 +308,30 @@ function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int},pa
     return :((internal_var___du,internal_var___u,internal_var___p,t) -> $system)
 end
 
-#Generates two tuples, each with N entries corresponding to the N reactions in the reaction network. The first tuple contains expressions corresponding to reaction rates, the second contains arrays of expressions corresponding to the affect functions. These expressions can be used for debugging, making LaTex code, or creating Cosnstant Rate Jumps for Guilespie simulations.
-function get_jump_expr(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int})
+#Creates expressions for jump affects and rates. Also creates and array with MassAction, ConstantRate and VariableRate Jumps.
+function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     rates = Vector{Any}(length(reactions))
     affects = Vector{Vector{Expr}}(length(reactions))
+    jumps = Expr(:tuple)
     idx = 0
     for reaction in deepcopy(reactions)
-        rate = reaction.input_rate
-        if reaction.use_mass_kin
-            rate = Expr(:call,:*,rate)
-            foreach(sub -> push!(rate.args, :(binomial($(sub.reactant),$(sub.stoichiometry)))),reaction.substrates)
-        end
-        rates[idx += 1] = recursive_clean!(rate)
+        rates[idx += 1] = recursive_clean!(reaction.rate_SSA)
         affects[idx] = Vector{Expr}(0)
         foreach(prod -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[prod.reactant])] += $(prod.stoichiometry))), reaction.products)
         foreach(sub -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[sub.reactant])] -= $(sub.stoichiometry))), reaction.substrates)
+        #if reaction.is_pure_mass_action
+        #    ma_sub_stoch = :(reactant_stoich = [[]])
+        #    ma_stoch_change = :(reactant_stoich = [[]])
+        #    foreach(sub -> push!(ma_sub_stoch.args[2].args[1].args),:($(reactants[sub.reactant])=>$(sub.stoichiometry)),reaction.substrates)
+        #    foreach(reactant -> push!(ma_stoch_change.args[2].args[1].args),:($(reactants[reactant.reactant])=>$(get_stoch_diff(reaction,reactant))),reaction.substrates)
+        #    push!(jumps.args,:(MassActionJump($(reaction.rate_org),$(ma_sub_stoch),$(ma_stoch_change))))
+        #else
+            recursive_contains(:t,rates[idx]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
+            push!(jumps.args[idx].args, :((internal_var___u,internal_var___p,t) -> $(recursive_replace!(deepcopy(rates[idx]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
+            push!(jumps.args[idx].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[idx])))))
+        #end
     end
-    return (Tuple(rates),Tuple(affects))
-end
-
-#From the tuples created in get_jump_expr, generates an expression which when evaluated will become a tuple of ConstantRateJumps to be used for Guillespie Simulations.
-function get_jumps(rates::Tuple, affects::Tuple,reactants::OrderedDict{Symbol,Int},parameters::OrderedDict{Symbol,Int})
-    jumps = Expr(:tuple)
-    for i = 1:length(rates)
-        recursive_contains(:t,rates[i]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
-        push!(jumps.args[i].args, :((internal_var___u,internal_var___p,t) -> $(recursive_replace!(deepcopy(rates[i]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
-        push!(jumps.args[i].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[i])))))
-    end
-    return jumps
+    return (Tuple(rates),Tuple(affects),jumps)
 end
 
 #Recursively traverses an expression and removes things like X^1, 1*X. Will not actually have any affect on the expression when used as a function, but will make it much easier to look at it for debugging, as well as if it is transformed to LaTeX code.
@@ -375,6 +393,16 @@ function recursive_contains(s,ex)
         recursive_contains(s,arg) && (return true)
     end
     return false
+end
+
+#Parses an expression, and returns a set with all symbols in the expression, which is also a part of the provided vector with symbols (syms).
+function recursive_content(ex,syms::Vector{Symbol},content::Vector{Symbol})
+    if typeof(ex)!=Expr
+        in(ex,syms) && push!(content,ex)
+    else
+        foreach(arg -> recursive_content(arg,syms,content), ex.args)
+    end
+    return content
 end
 
 #Makes the Jacobian.
