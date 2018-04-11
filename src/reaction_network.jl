@@ -92,8 +92,8 @@ function coordinate(name, ex::Expr, p, scale_noise)
     g = make_func(g_expr, reactants, parameters)
     p_matrix = zeros(length(reactants), length(reactions))
 
-    (jump_rate_expr, jump_affect_expr, jumps) = get_jumps(reactions, reactants,parameters)
-    regular_jumps = get_regular_jumps(jump_rate_expr, jump_affect_expr, p_matrix)
+    (jump_rate_expr, jump_affect_expr, jumps) = get_jumps(reactions, reactants, parameters)
+    regular_jumps = get_regular_jumps(jump_rate_expr, jump_affect_expr, p_matrix, reactants, parameters)
 
     f_rhs = [element.args[2] for element in f_expr]
     #symjac = Expr(:quote, calculate_jac(f_rhs, syms))
@@ -335,11 +335,12 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
     return (Tuple(rates),Tuple(affects),jumps)
 end
 
-function  get_regular_jumps(jump_rate_expr::Tuple{Any,Vararg{Any}}, jump_affect_expr::Tuple{Vector{Expr},Vararg{Vector{Expr}}},template_matrix::Array{Float64,2})
+#Generates a RegularJump corresponding to the reactions.
+function  get_regular_jumps(jump_rate_expr::Tuple{Any,Vararg{Any}}, jump_affect_expr::Tuple{Vector{Expr},Vararg{Vector{Expr}}},template_matrix::Array{Float64,2}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     rates = Expr(:block)
     c = Expr(:block)
     dc = :(zeros($(size(template_matrix)[1]),$(size(template_matrix)[2])))
-
+    foreach(r -> , jump_rate_expr)
     return :(RegularJump((out,u,p,t)->$rates,(dc,u,p,t,mark)->c,$dc;constant_c=true))
 end
 
