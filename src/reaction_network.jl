@@ -92,7 +92,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     g = make_func(g_expr, reactants, parameters)
     p_matrix = zeros(length(reactants), length(reactions))
 
-    (jump_rate_expr, jump_affect_expr, jumps) = get_jumps(reactions, reactants, parameters)
+    (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, reactants, parameters)
 
     f_rhs = [element.args[2] for element in f_expr]
     #symjac = Expr(:quote, calculate_jac(f_rhs, syms))
@@ -313,11 +313,15 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
     rates = Vector{Any}(length(reactions))
     affects = Vector{Vector{Expr}}(length(reactions))
     jumps = Expr(:tuple)
+    reg_rates = Expr(:block)
+    reg_c = Expr(:block)
     idx = 0
     for reaction in deepcopy(reactions)
         rates[idx += 1] = recursive_clean!(reaction.rate_SSA)
         affects[idx] = Vector{Expr}(0)
-        foreach(r -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[r])] += $(get_stoch_diff(reaction,r)))), union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant)))
+        reactant_set = union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant))
+        foreach(r -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[r])] += $(get_stoch_diff(reaction,r)))), reactant_set)
+        syntax_rate = recursive_replace!(deepcopy(rates[idx]), (reactants,:internal_var___u), (parameters, :internal_var___p))
         #if reaction.is_pure_mass_action
         #    ma_sub_stoch = :(reactant_stoich = [[]])
         #    ma_stoch_change = :(reactant_stoich = [[]])
@@ -326,11 +330,14 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
         #    push!(jumps.args,:(MassActionJump($(reaction.rate_org),$(ma_sub_stoch),$(ma_stoch_change))))
         #else
             recursive_contains(:t,rates[idx]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
-            push!(jumps.args[idx].args, :((internal_var___u,internal_var___p,t) -> $(recursive_replace!(deepcopy(rates[idx]), (reactants,:internal_var___u), (parameters, :internal_var___p)))))
+            push!(jumps.args[idx].args, :((internal_var___u,internal_var___p,t) -> $syntax_rate))
             push!(jumps.args[idx].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[idx])))))
         #end
+        push!(reg_rates,:(internal_var___out[$idx]=$syntax_rate))
+        foreach(r -> push!(reg_c,:(internal_var___dc[$(reactants[r]),$idx])=$(get_stoch_diff(reaction,r)))), reactant_set)
     end
-    return (Tuple(rates),Tuple(affects),jumps)
+    reg_jumps = :(RegularJump((internal_var___out,internal_var___u,internal_var___p,t)->$rates,(internal_var___dc,internal_var___u,internal_var___p,t,internal_var___mark)->c,zeros($(length(reactants)),$(length(reactions)));constant_c=true))
+    return (Tuple(rates),Tuple(affects),jumps,reg_jumps)
 end
 
 #Generates a RegularJump corresponding to the reactions.
