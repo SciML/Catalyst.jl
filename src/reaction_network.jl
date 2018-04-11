@@ -93,7 +93,6 @@ function coordinate(name, ex::Expr, p, scale_noise)
     p_matrix = zeros(length(reactants), length(reactions))
 
     (jump_rate_expr, jump_affect_expr, jumps) = get_jumps(reactions, reactants, parameters)
-    regular_jumps = get_regular_jumps(jump_rate_expr, jump_affect_expr, p_matrix, reactants, parameters)
 
     f_rhs = [element.args[2] for element in f_expr]
     #symjac = Expr(:quote, calculate_jac(f_rhs, syms))
@@ -318,8 +317,7 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
     for reaction in deepcopy(reactions)
         rates[idx += 1] = recursive_clean!(reaction.rate_SSA)
         affects[idx] = Vector{Expr}(0)
-        foreach(prod -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[prod.reactant])] += $(prod.stoichiometry))), reaction.products)
-        foreach(sub -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[sub.reactant])] -= $(sub.stoichiometry))), reaction.substrates)
+        foreach(r -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[r])] += $(get_stoch_diff(reaction,r)))), union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant)))
         #if reaction.is_pure_mass_action
         #    ma_sub_stoch = :(reactant_stoich = [[]])
         #    ma_stoch_change = :(reactant_stoich = [[]])
@@ -340,7 +338,6 @@ function  get_regular_jumps(jump_rate_expr::Tuple{Any,Vararg{Any}}, jump_affect_
     rates = Expr(:block)
     c = Expr(:block)
     dc = :(zeros($(size(template_matrix)[1]),$(size(template_matrix)[2])))
-    foreach(r -> , jump_rate_expr)
     return :(RegularJump((out,u,p,t)->$rates,(dc,u,p,t,mark)->c,$dc;constant_c=true))
 end
 
