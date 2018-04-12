@@ -340,14 +340,6 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
     return (Tuple(rates),Tuple(affects),jumps,reg_jumps)
 end
 
-#Generates a RegularJump corresponding to the reactions.
-function  get_regular_jumps(jump_rate_expr::Tuple{Any,Vararg{Any}}, jump_affect_expr::Tuple{Vector{Expr},Vararg{Vector{Expr}}},template_matrix::Array{Float64,2}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
-    rates = Expr(:block)
-    c = Expr(:block)
-    dc = :(zeros($(size(template_matrix)[1]),$(size(template_matrix)[2])))
-    return :(RegularJump((out,u,p,t)->$rates,(dc,u,p,t,mark)->c,$dc;constant_c=true))
-end
-
 #Recursively traverses an expression and removes things like X^1, 1*X. Will not actually have any affect on the expression when used as a function, but will make it much easier to look at it for debugging, as well as if it is transformed to LaTeX code.
 function recursive_clean!(expr::Any)
     (expr == :no___noise___scaling) && (return 1)
