@@ -336,7 +336,7 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
         push!(reg_rates.args,:(internal_var___out[$idx]=$syntax_rate))
         foreach(r -> push!(reg_c.args,:(internal_var___dc[$(reactants[r]),$idx]=$(get_stoch_diff(reaction,r)))), reactant_set)
     end
-    reg_jumps = :(RegularJump((internal_var___out,internal_var___u,internal_var___p,t)->$rates,(internal_var___dc,internal_var___u,internal_var___p,t,internal_var___mark)->c,zeros($(length(reactants)),$(length(reactions)));constant_c=true))
+    reg_jumps = :(RegularJump((internal_var___out,internal_var___u,internal_var___p,t)->$reg_rates,(internal_var___dc,internal_var___u,internal_var___p,t,internal_var___mark)->$reg_c,zeros($(length(reactants)),$(length(reactions)));constant_c=true))
     return (Tuple(rates),Tuple(affects),jumps,reg_jumps)
 end
 
