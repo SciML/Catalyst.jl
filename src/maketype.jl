@@ -5,6 +5,7 @@ function maketype(name,
                   g,
                   g_func,
                   jumps,
+                  regular_jumps,
                   jump_rate_expr,
                   jump_affect_expr,
                   p_matrix,
@@ -22,6 +23,7 @@ function maketype(name,
         g::Function
         g_func::Vector{Any}
         jumps::Tuple{AbstractJump,Vararg{AbstractJump}}
+        regular_jumps::RegularJump
         jump_rate_expr::Tuple{Any,Vararg{Any}}
         jump_affect_expr::Tuple{Vector{Expr},Vararg{Vector{Expr}}}
         p_matrix::Array{Float64,2}
@@ -37,6 +39,7 @@ function maketype(name,
                   $(Expr(:kw,:g,g)),
                   $(Expr(:kw,:g_func,g_func)),
                   $(Expr(:kw,:jumps,jumps)),
+                  $(Expr(:kw,:regular_jumps,regular_jumps)),
                   $(Expr(:kw,:jump_rate_expr,jump_rate_expr)),
                   $(Expr(:kw,:jump_affect_expr,jump_affect_expr)),
                   $(Expr(:kw,:p_matrix,p_matrix)),
@@ -52,6 +55,7 @@ function maketype(name,
                       g,
                       g_func,
                       jumps,
+                      regular_jumps,
                       jump_rate_expr,
                       jump_affect_expr,
                       p_matrix,
