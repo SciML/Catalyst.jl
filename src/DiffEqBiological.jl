@@ -17,7 +17,7 @@ include("maketype.jl")
 include("problem.jl")
 
 export @reaction_network, @reaction_func
-export ODEProblem, SDEProblem, JumpProblem, SteadyStateProblem
+export SDEProblem, JumpProblem, SteadyStateProblem
 
 Reaction(args...) = error("""
  The old Reaction DSL is deprecated for a new
