@@ -9,7 +9,7 @@
 Full documentation is in the
 [DifferentialEquations.jl models documentation](http://docs.juliadiffeq.org/latest/models/biological.html)
 
-##The Reaction DSL
+## The Reaction DSL
 
 The `@reaction_network` DSL allows you to define reaction networks in a more scientific format. Its input is a set of chemical reactions and from them it generates a reaction network object which can be used as input to `ODEProblem`, `SDEProblem` and `JumpProblem` constructors.
 
