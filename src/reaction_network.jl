@@ -110,6 +110,14 @@ function coordinate(name, ex::Expr, p, scale_noise)
     push!(exprs,typeex)
     push!(exprs,constructorex)
 
+    ## Overload the type so that it can act as a function.
+    overloadex = :(((f::$name))(du, u, p, t::Number) = f.f(du, u, p, t)) |> esc
+    push!(exprs,overloadex)
+
+    ## Add a method which allocates the `du` and returns it instead of being inplace
+    overloadex = :(((f::$name))(u,p,t::Number) = (du=similar(u); f(du,u,p,t); du)) |> esc
+    push!(exprs,overloadex)
+
     # export type constructor
     def_const_ex = :(($name)()) |> esc
     push!(exprs,def_const_ex)
