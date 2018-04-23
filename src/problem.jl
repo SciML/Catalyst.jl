@@ -9,13 +9,13 @@ function DiffEqJump.JumpProblem(prob,aggregator,rn::AbstractReactionNetwork; kwa
     end
 
     # map from species symbol to index of species
-    spec_to_sym = species_to_indices(rn)
+    spec_to_idx = species_to_indices(rn)
 
     # map from parameter symbol to index of parameter in prob.p
     param_to_idx = rate_to_indices(rn)
 
     # get a JumpSet of the possible jumps
-    jset = network_to_jumpset(rn, spec_to_sym, param_to_idx, prob.p)
+    jset = network_to_jumpset(rn, spec_to_idx, param_to_idx, prob.p)
 
     JumpProblem(prob, aggregator, jset; kwargs...)
 end
