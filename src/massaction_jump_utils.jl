@@ -48,12 +48,12 @@ function make_majump(rs, specmap, ratemap, params)
     elseif typeof(rs.rate_org) == Expr
         rateconst = eval(rs.rate_org)
     elseif typeof(rs.rate_org) <: Number
-        rateconst = Float64(rs.rate_org)
+        rateconst = rs.rate_org
     else
         error("reaction_network.reactions.rate_org must have a type of Symbol, Expr, or Number.")
     end
 
-    MassActionJump(rateconst, reactant_stoich, net_stoich)
+    MassActionJump(Float64(rateconst), reactant_stoich, net_stoich)
 end
 
 # given a reaction network and species map, split the ConstantRateJumps and MassActionJumps
