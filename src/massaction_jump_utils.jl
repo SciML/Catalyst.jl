@@ -23,6 +23,7 @@ function make_majump(rs, specmap, ratemap, params)
         specpair = specmap[substrate.reactant] => -substrate.stoichiometry
         push!(nsdict, specpair)
     end
+    sort!(reactant_stoich)
 
     for product in rs.products
         prodidx = specmap[product.reactant]
