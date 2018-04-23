@@ -13,7 +13,7 @@ function rate_to_indices(network)
     Dict( rates[i] => i for i in eachindex(rates) )
 end
 
-# given a ReactantStruct and a species map construct a MassActionJump
+# given a ReactionStruct and a species map construct a MassActionJump
 function make_majump(rs, specmap, ratemap, params)
     reactant_stoich = Vector{Pair{Int,Int}}()
     nsdict = Dict{Int,Int}()
