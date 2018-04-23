@@ -3,11 +3,18 @@ DiffEqBase.SDEProblem(rn::AbstractReactionNetwork, u0::Union{AbstractArray, Numb
     SDEProblem(rn, rn.g, u0, args...;noise_rate_prototype=rn.p_matrix, kwargs...)
 
 ### JumpProblem ###
-function DiffEqJump.JumpProblem(prob,aggregator::Direct,rn::AbstractReactionNetwork; kwargs...)
+function DiffEqJump.JumpProblem(prob,aggregator,rn::AbstractReactionNetwork; kwargs...)
     if typeof(prob)<:DiscreteProblem && any(issubtype.(typeof.(rn.jumps),VariableRateJump))
         error("When using time dependant reaction rates a DiscreteProblem should not be used (try an ODEProblem). Also, use a continious solver.")
     end
-    JumpProblem(prob,aggregator::Direct,rn.jumps...;kwargs...)
+
+    # map from species symbol to index of species
+    spec_to_sym = species_to_indices(rn)
+
+    # get a JumpSet of the possible jumps
+    jset = network_to_jumpset(rn, spec_to_sym)
+
+    JumpProblem(prob, aggregator, jset; kwargs...)
 end
 
 ### SteadyStateProblem ###

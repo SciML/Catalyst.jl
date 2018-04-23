@@ -14,6 +14,7 @@ using Compat
 
 include("reaction_network.jl")
 include("maketype.jl")
+include("massaction_jump_utils.jl")
 include("problem.jl")
 
 export @reaction_network, @reaction_func
