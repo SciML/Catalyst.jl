@@ -1,8 +1,8 @@
 julia 0.6
 DiffEqJump 4.2.0
-DiffEqBase 3.4.0
+DiffEqBase 3.11.0
 Compat 0.17.0
-DataStructures 0.4.6
+DataStructures 0.8.1
 Reexport 0.1.0
-SymEngine 0.3.0
+SymEngine 0.4.0
 MacroTools 0.4.0
