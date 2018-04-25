@@ -8,4 +8,5 @@ tic()
 @time @testset "Higher Order" begin include("higher_order_reactions.jl") end
 @time @testset "Additional Functions" begin include("func_test.jl") end
 @time @testset "Steady state solver" begin include("steady_state.jl") end
+@time @testset "Mass Action Jumps" begin include("mass_act_jump_tests.jl") end
 toc()
