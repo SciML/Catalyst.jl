@@ -24,7 +24,7 @@ function execute_test(u0, tf, rates, rs, Nsims, expected_avg, idx, test_name)
         
         if dotestmean
             if doprintmeans
-                println(test_name, "method = ", typeof(method), ", mean = ", avg_val, ", act_mean = ", expected_avg)
+                println(test_name, ", method = ", typeof(method), ", mean = ", avg_val, ", act_mean = ", expected_avg)
             end
             @test abs(avg_val - expected_avg) < reltol * expected_avg
         end
@@ -59,11 +59,28 @@ rs = @reaction_network ptype begin
 end k1 k2 k3 k4 k5 k6
 Nsims        = 8000
 tf           = 1000.0
-u0           = [1,0,0,0]
+u0           = [1,0,0,0]  
 expected_avg = 5.926553750000000e+02
 rates = [.5, (20*log(2.)/120.), (log(2.)/120.), (log(2.)/600.), .025, 1.]
 execute_test(u0, tf, rates, rs, Nsims, expected_avg, 3, "DNA test")
 
+
+# DNA repression model, mix of jump types
+rs = @reaction_network ptype begin
+    k1*DNA, 0 --> mRNA
+    k2*mRNA, 0 --> P
+    k3, mRNA --> 0
+    k4, P --> 0
+    k5, DNA + P --> DNAR
+    k6, DNAR --> DNA + P
+end k1 k2 k3 k4 k5 k6
+Nsims        = 8000
+tf           = 1000.0
+u0           = [0,0,0,0]
+u0[findfirst(rs.syms, :DNA)] = 1
+expected_avg = 5.926553750000000e+02
+rates = [.5, (20*log(2.)/120.), (log(2.)/120.), (log(2.)/600.), .025, 1.]
+execute_test(u0, tf, rates, rs, Nsims, expected_avg, findfirst(rs.syms, :P), "DNA mixed jump test")
 
 # simple constant production with degratation
 rs = @reaction_network pdtype begin

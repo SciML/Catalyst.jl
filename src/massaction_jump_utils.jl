@@ -43,7 +43,9 @@ function get_net_stoich(rs, specmap)
 
     net_stoich = Vector{Pair{Int,Int}}()
     for stoich_map in sort(collect(nsdict))
-        push!(net_stoich, stoich_map)
+        if stoich_map[2] != zero(Int)
+            push!(net_stoich, stoich_map)
+        end
     end
 
     net_stoich
