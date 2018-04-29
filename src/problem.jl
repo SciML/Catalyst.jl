@@ -17,7 +17,14 @@ function DiffEqJump.JumpProblem(prob,aggregator,rn::AbstractReactionNetwork; kwa
     # get a JumpSet of the possible jumps
     jset = network_to_jumpset(rn, spec_to_idx, param_to_idx, prob.p)
 
-    JumpProblem(prob, aggregator, jset; kwargs...)
+    # # construct dependency graph if needed by aggregator
+    if needs_depgraph(aggregator)
+        dep_graph = depgraph_from_network(rn, spec_to_idx, jset)
+    else
+        dep_graph = nothing
+    end
+
+    JumpProblem(prob, aggregator, jset; dep_graph=dep_graph, kwargs...)
 end
 
 ### SteadyStateProblem ###

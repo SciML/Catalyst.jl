@@ -3,6 +3,7 @@ using DiffEqBiological, DiffEqJump, DiffEqBase, Base.Test
 dotestmean   = true
 doprintmeans = false
 reltol       = .01          # required test accuracy
+methods      = (Direct(), SortingDirect())
 
 # run the given number of SSAs and return the mean
 function runSSAs(jump_prob, Nsims, idx)
@@ -16,14 +17,17 @@ end
 
 function execute_test(u0, tf, rates, rs, Nsims, expected_avg, idx, test_name)
     prob = DiscreteProblem(u0, (0.0, tf), rates)
-    jump_prob = JumpProblem(prob, Direct(), rs)
-    avg_val = runSSAs(jump_prob, Nsims, idx)
-    
-    if dotestmean
-        if doprintmeans
-            println(test_name, ": mean = ", avg_val, ", act_mean = ", expected_avg)
+
+    for method in methods
+        jump_prob = JumpProblem(prob, method, rs)
+        avg_val = runSSAs(jump_prob, Nsims, idx)
+        
+        if dotestmean
+            if doprintmeans
+                println(test_name, "method = ", typeof(method), ", mean = ", avg_val, ", act_mean = ", expected_avg)
+            end
+            @test abs(avg_val - expected_avg) < reltol * expected_avg
         end
-        @test abs(avg_val - expected_avg) < reltol * expected_avg
     end
     
 end
@@ -88,5 +92,7 @@ network = @reaction_network rnType  begin
     0.05, SP2 --> 0
 end;
 prob = DiscreteProblem([200.,60.,120.,100.,50.,50.,50.], (0.,4000.))
-jump_prob = JumpProblem(prob, Direct(), network)
-sol = solve(jump_prob,SSAStepper());
+for method in methods
+    jump_prob = JumpProblem(prob, method, network)
+    sol = solve(jump_prob,SSAStepper());
+end

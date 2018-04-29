@@ -13,17 +13,24 @@ function rate_to_indices(network)
     Dict( rates[i] => i for i in eachindex(rates) )
 end
 
-# given a ReactionStruct and a species map construct a MassActionJump
-function make_majump(rs, specmap, ratemap, params)
+# get substrate stoichiometry for a reaction 
+function get_substrate_stoich(rs, specmap)
     reactant_stoich = Vector{Pair{Int,Int}}()
-    nsdict = Dict{Int,Int}()
     for substrate in rs.substrates
         specpair = specmap[substrate.reactant] => substrate.stoichiometry
         push!(reactant_stoich, specpair)
+    end
+    sort!(reactant_stoich)
+    reactant_stoich
+end
+
+# get the net stoichiometry for a reaction
+function get_net_stoich(rs, specmap)
+    nsdict = Dict{Int,Int}()
+    for substrate in rs.substrates
         specpair = specmap[substrate.reactant] => -substrate.stoichiometry
         push!(nsdict, specpair)
     end
-    sort!(reactant_stoich)
 
     for product in rs.products
         prodidx = specmap[product.reactant]
@@ -39,6 +46,13 @@ function make_majump(rs, specmap, ratemap, params)
         push!(net_stoich, stoich_map)
     end
 
+    net_stoich
+end
+
+# given a ReactionStruct and a species map construct a MassActionJump
+function make_majump(rs, specmap, ratemap, params)
+    reactant_stoich = get_substrate_stoich(rs, specmap)
+    net_stoich      = get_net_stoich(rs, specmap)
     if isempty(net_stoich)
         error("Empty net stoichiometry vectors for mass action reactions are not allowed.")
     end
@@ -76,4 +90,81 @@ function network_to_jumpset(rn, specmap, ratemap, params)
     else
         return JumpSet((), cjumpvec, nothing, majumpvec)
     end
+end
+
+
+######################### dependency graph utilities #########################
+
+# map from a reaction index to the corresponding jump index
+# assumes all mass action jumps are ordered before constant rate jumps
+function rxidxs_to_jidxs_map(rn, num_majumps)
+    majidx = 1
+    cjidx  = num_majumps + 1
+    numrxs = length(rn.reactions)
+    rxi_to_ji = zeros(Int, numrxs)
+    for i = 1:numrxs 
+        if rn.reactions[i].is_pure_mass_action
+            rxi_to_ji[i] = majidx
+            majidx      += 1
+        else
+            rxi_to_ji[i] = cjidx
+            cjidx       += 1
+        end
+    end
+    rxi_to_ji
+end
+
+# map from species to Set of jumps depending on that species
+function spec_to_dep_jumps_map(rn, specmap, rxidxs_to_jidxs)
+
+    numrxs  = length(rn.reactions)
+    numspec = length(specmap)
+
+    # map from a species to jumps that depend on it
+    spec_to_dep_jumps = [Set{Int}() for n = 1:numspec]
+    for rx in 1:numrxs                    
+        for specsym in rn.reactions[rx].dependants
+            push!(spec_to_dep_jumps[specmap[specsym]], rxidxs_to_jidxs[rx])
+        end
+    end
+
+    spec_to_dep_jumps
+end
+
+# given a reaction network and species map, construct a jump dependency graph
+function depgraph_from_network(rn, specmap, jset)
+
+    numrxs          = length(rn.reactions)
+    numspec         = length(specmap)
+    num_majumps     = get_num_majumps(jset.massaction_jump)
+
+    # map reaction indices to jump indices
+    rxidxs_to_jidxs = rxidxs_to_jidxs_map(rn, num_majumps)
+
+    # map from species to jumps that depend on it
+    spec_to_dep_jumps = spec_to_dep_jumps_map(rn, specmap, rxidxs_to_jidxs)
+
+    # create map from a jump to jumps depending on it
+    dep_sets = [SortedSet{Int}() for n = 1:numrxs]
+    for rx in 1:numrxs        
+        jidx = rxidxs_to_jidxs[rx]
+
+        # get the net reaction stoichiometry
+        net_stoich = get_net_stoich(rn.reactions[rx], specmap)
+        
+        # rx changes spec, hence rxs depending on spec depend on rx
+        for (spec,stoch) in net_stoich
+            for dependent_jump in spec_to_dep_jumps[spec]
+                push!(dep_sets[jidx], dependent_jump)
+            end
+        end
+    end
+
+    # convert to Vectors of Vectors
+    dep_graph = Vector{Vector{Int}}(numrxs)
+    for jidx in 1:numrxs
+        dep_graph[jidx] = [dep for dep in dep_sets[jidx]]
+    end
+
+    dep_graph
 end
