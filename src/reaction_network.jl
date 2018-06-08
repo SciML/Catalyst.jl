@@ -50,13 +50,13 @@ Example systems:
 
 #Macro to create a reaction network model.
 macro reaction_network(name, ex::Expr, p...)
-    coordinate(name, ex, p, :no___noise___scaling)
+    coordinate(name, MacroTools.prettify(ex), p, :no___noise___scaling)
 end
 
 #Macro to create a reaction network model. Multiple dispatch is used to allow for SDE noise scalling.
 macro reaction_network(name, scale_noise, ex::Expr, p...)
     in(scale_noise, p) || (p = (p..., scale_noise))
-    coordinate(name, ex, p, scale_noise)
+    coordinate(name, MacroTools.prettify(ex), p, scale_noise)
 end
 
 #Used to give a warning if someone uses the old macro.
