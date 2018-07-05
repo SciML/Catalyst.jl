@@ -16,13 +16,13 @@ function maketype(name,
                   reactions=Vector{ReactionStruct}()
                   )
 
-    typeex = :(mutable struct $name <: AbstractReactionNetwork
+    typeex = :(mutable struct $name <: DiffEqBase.AbstractReactionNetwork
         f::Function
         f_func::Vector{Expr}
         f_symfuncs::Matrix{SymEngine.Basic}
         g::Function
         g_func::Vector{Any}
-        jumps::Tuple{AbstractJump,Vararg{AbstractJump}}
+        jumps::Tuple{DiffEqJump.AbstractJump,Vararg{DiffEqJump.AbstractJump}}
         regular_jumps::RegularJump
         jump_rate_expr::Tuple{Any,Vararg{Any}}
         jump_affect_expr::Tuple{Vector{Expr},Vararg{Vector{Expr}}}
