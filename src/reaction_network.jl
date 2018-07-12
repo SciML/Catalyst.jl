@@ -95,7 +95,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, reactants, parameters)
 
     f_rhs = [element.args[2] for element in f_expr]
-    #symjac = Expr(:quote, calculate_jac(f_rhs, syms))
+    symjac = Expr(:quote, calculate_jac(f_rhs, syms))
     f_symfuncs = hcat([SymEngine.Basic(f) for f in f_rhs])
 
     # Build the type
