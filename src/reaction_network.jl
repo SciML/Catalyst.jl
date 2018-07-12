@@ -20,7 +20,7 @@ Example systems:
         mm(XY,2,2), X + Y --> XY           #Reaction inis activated by XY according to a michaelis menten function. mm(x,v,K).
     end
 
-    ### Multipple Reactions on a SIngle Line ###
+    ### Multipple Reactions on a Single Line ###
     rn = @reaction_network rType begin
         (2.0,1.0), X + Y ↔ XY              #Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
         2.0, (X,Y) --> 0                   #This corresponds to both X and Y degrading at rate 2.0.
