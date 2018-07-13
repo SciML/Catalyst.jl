@@ -400,6 +400,18 @@ function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbo
     return expr
 end
 
+#Recursively traverses an expression and replaces a symbol with another.
+function recursive_replace!(expr::Any, replace_requests::OrderedDict{Symbol,Symbol})
+    if typeof(expr) == Symbol
+        haskey(replace_requests,expr) && return replace_requests[expr]
+    elseif typeof(expr) == Expr
+        for i = 1:length(expr.args)
+            expr.args[i] = recursive_replace!(expr.args[i], replace_requests)
+        end
+    end
+    return expr
+end
+
 #Recursive Contains, checks whenever an expression contains a certain symbol.
 function recursive_contains(s,ex)
     (typeof(ex)!=Expr) && (return s==ex)
@@ -421,13 +433,14 @@ end
 
 #Makes the Jacobian.
 function calculate_jac(f_expr::Vector{Expr}, syms)
-    symjac = Matrix{SymEngine.Basic}( length(syms), length(syms))
-    symfuncs = [SymEngine.Basic(f) for f in f_expr]
-    for i in eachindex(f_expr)
-        for j in eachindex(syms)
-          symjac[i,j] = diff(symfuncs[i],syms[j])
-        end
+    n = length(syms); symjac = Matrix{SymEngine.Basic}(n, n);
+    symfuncs = [SymEngine.Basic(f) for f in deepcopy(f_expr)]
+    foreach(symfunc -> recursive_replace!(sym_func,Dict(zip(syms,[Symbol(:internal_variable___,var) for var in syms]))), symfuncs)
+    for i = 1:n, j = 1:n
+        recursive_replace!(symjac[i,j],)
+        symjac[i,j] = diff(symfuncs[i],syms[j])
     end
+    foreach(symentry -> recursive_replace!(symentry,Dict(zip([Symbol(:internal_variable___,var) for var in syms],syms))), symjac)
     return symjac
 end
 
