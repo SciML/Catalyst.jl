@@ -20,7 +20,7 @@ Example systems:
         mm(XY,2,2), X + Y --> XY           #Reaction inis activated by XY according to a michaelis menten function. mm(x,v,K).
     end
 
-    ### Multipple Reactions on a SIngle Line ###
+    ### Multipple Reactions on a Single Line ###
     rn = @reaction_network rType begin
         (2.0,1.0), X + Y ↔ XY              #Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
         2.0, (X,Y) --> 0                   #This corresponds to both X and Y degrading at rate 2.0.
@@ -95,7 +95,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, reactants, parameters)
 
     f_rhs = [element.args[2] for element in f_expr]
-    #symjac = Expr(:quote, calculate_jac(f_rhs, syms))
+    symjac = Expr(:quote, calculate_jac(deepcopy(f_rhs), syms))
     f_symfuncs = hcat([SymEngine.Basic(f) for f in f_rhs])
 
     # Build the type
@@ -105,7 +105,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     f_funcs = [element.args[2] for element in f_expr]
     g_funcs = [element.args[2] for element in g_expr]
 
-    typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params, reactions=reactions)
+    typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params, symjac=symjac, reactions=reactions)
 
     push!(exprs,typeex)
     push!(exprs,constructorex)
@@ -400,6 +400,18 @@ function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbo
     return expr
 end
 
+#Recursively traverses an expression and replaces a symbol with another.
+function recursive_replace!(expr::Any, replace_requests::Dict{Symbol,Symbol})
+    if typeof(expr) == Symbol
+        haskey(replace_requests,expr) && return replace_requests[expr]
+    elseif typeof(expr) == Expr
+        for i = 1:length(expr.args)
+            expr.args[i] = recursive_replace!(expr.args[i], replace_requests)
+        end
+    end
+    return expr
+end
+
 #Recursive Contains, checks whenever an expression contains a certain symbol.
 function recursive_contains(s,ex)
     (typeof(ex)!=Expr) && (return s==ex)
@@ -421,13 +433,13 @@ end
 
 #Makes the Jacobian.
 function calculate_jac(f_expr::Vector{Expr}, syms)
-    symjac = Matrix{SymEngine.Basic}( length(syms), length(syms))
-    symfuncs = [SymEngine.Basic(f) for f in f_expr]
-    for i in eachindex(f_expr)
-        for j in eachindex(syms)
-          symjac[i,j] = diff(symfuncs[i],syms[j])
-        end
+    n = length(syms); internal_vars = [Symbol(:internal_variable___,var) for var in syms]
+    symjac = Matrix{SymEngine.Basic}(n, n);
+    symfuncs = [SymEngine.Basic(recursive_replace!(f,Dict(zip(syms,internal_vars)))) for f in f_expr]
+    for i = 1:n, j = 1:n
+        symjac[i,j] = diff(symfuncs[i],internal_vars[j])
     end
+    map!(symentry -> SymEngine.Basic(recursive_replace!(parse(string(symentry)),Dict(zip(internal_vars,syms)))),symjac)
     return symjac
 end
 
