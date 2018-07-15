@@ -1,4 +1,4 @@
-using DiffEqBiological, DiffEqJump, DiffEqBase, Base.Test
+using DiffEqBiological, DiffEqJump, DiffEqBase, Test
 
 dotestmean   = true
 doprintmeans = false

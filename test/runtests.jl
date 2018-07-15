@@ -1,5 +1,5 @@
 using DiffEqBiological
-using Base.Test
+using Test
 
 tic()
 @time @testset "Model Macro" begin include("make_model_test.jl") end
