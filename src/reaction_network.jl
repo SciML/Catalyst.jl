@@ -47,8 +47,6 @@ Example systems:
     probSDE = SDEProblem(rn, args...; kwargs...)
     probJump = JumpProblem(prob,aggregator::Direct,rn)
 """
-
-#Macro to create a reaction network model.
 macro reaction_network(name, ex::Expr, p...)
     coordinate(name, MacroTools.striplines(ex), p, :no___noise___scaling)
 end
