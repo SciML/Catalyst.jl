@@ -20,10 +20,4 @@ include("problem.jl")
 export @reaction_network, @reaction_func
 export SDEProblem, JumpProblem, SteadyStateProblem
 
-Reaction(args...) = error("""
- The old Reaction DSL is deprecated for a new
- macro-based DSL which supports parameters, regulation,
- etc. Please see the documentation for details
-""")
-
 end # module
