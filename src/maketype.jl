@@ -11,9 +11,9 @@ function maketype(name,
                   p_matrix,
                   syms;
                   params = Symbol[],
-                  pfuncs=Vector{Expr}(0),
-                  symjac=Matrix{SymEngine.Basic}(0,0),
-                  reactions=Vector{ReactionStruct}()
+                  pfuncs=Vector{Expr}(undef,0),
+                  symjac=Matrix{SymEngine.Basic}(undef,0,0),
+                  reactions=Vector{ReactionStruct}(undef,0)
                   )
 
     typeex = :(mutable struct $name <: DiffEqBase.AbstractReactionNetwork

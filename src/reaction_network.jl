@@ -93,7 +93,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, reactants, parameters)
 
     f_rhs = [element.args[2] for element in f_expr]
-    symjac = Expr(:quote, calculate_jac(deepcopy(f_rhs), syms))
+    #symjac = Expr(:quote, calculate_jac(deepcopy(f_rhs), syms))
     f_symfuncs = hcat([SymEngine.Basic(f) for f in f_rhs])
 
     # Build the type
@@ -103,7 +103,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     f_funcs = [element.args[2] for element in f_expr]
     g_funcs = [element.args[2] for element in g_expr]
 
-    typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params, symjac=symjac, reactions=reactions)
+    typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params, reactions=reactions)#, symjac=symjac)
 
     push!(exprs,typeex)
     push!(exprs,constructorex)
@@ -379,7 +379,7 @@ function recursive_clean!(expr::Any)
         in(expr.args[1],hill_name) && return hill(expr)
         in(expr.args[1],mm_name) && return mm(expr)
         (expr.args[1] == :binomial) && (expr.args[3] == 1) && return expr.args[2]
-        isdefined(expr.args[1]) || error("Function $(expr.args[1]) not defined.")
+        #@isdefined($(expr.args[1])) || error("Function $(expr.args[1]) not defined.")
     end
     return expr
 end
@@ -432,11 +432,12 @@ end
 #Makes the Jacobian.
 function calculate_jac(f_expr::Vector{Expr}, syms)
     n = length(syms); internal_vars = [Symbol(:internal_variable___,var) for var in syms]
-    symjac = Matrix{SymEngine.Basic}(n, n);
+    symjac = Matrix{SymEngine.Basic}(undef, n, n);
     symfuncs = [SymEngine.Basic(recursive_replace!(f,Dict(zip(syms,internal_vars)))) for f in f_expr]
     for i = 1:n, j = 1:n
         symjac[i,j] = diff(symfuncs[i],internal_vars[j])
     end
+    @show symjac
     map!(symentry -> SymEngine.Basic(recursive_replace!(parse(string(symentry)),Dict(zip(internal_vars,syms)))),symjac)
     return symjac
 end
