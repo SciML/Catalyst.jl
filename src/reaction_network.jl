@@ -220,7 +220,7 @@ function add_reactants!(ex::Any, mult::Int, reactants::Vector{ReactantStruct})
     if typeof(ex)!=Expr
         (ex == 0 || in(ex,empty_set)) && (return reactants)
         if in(ex, getfield.(reactants,:reactant))
-            idx = find(x -> x==ex ,getfield.(reactants,:reactant))[1]
+            idx = findall(x -> x==ex ,getfield.(reactants,:reactant))[1]
             reactants[idx] = ReactantStruct(ex,mult+reactants[idx].stoichiometry)
         else
             push!(reactants, ReactantStruct(ex,mult))
