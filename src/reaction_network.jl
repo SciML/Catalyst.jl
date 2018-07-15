@@ -438,7 +438,7 @@ function calculate_jac(f_expr::Vector{Expr}, syms)
         symjac[i,j] = diff(symfuncs[i],internal_vars[j])
     end
     @show symjac
-    map!(symentry -> SymEngine.Basic(recursive_replace!(parse(string(symentry)),Dict(zip(internal_vars,syms)))),symjac)
+    map!(symentry -> SymEngine.Basic(recursive_replace!(Meta.parse(string(symentry)),Dict(zip(internal_vars,syms)))),symjac)
     return symjac
 end
 
