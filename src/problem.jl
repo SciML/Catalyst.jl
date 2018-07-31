@@ -4,7 +4,7 @@ DiffEqBase.SDEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{Abstract
 
 ### JumpProblem ###
 function DiffEqJump.JumpProblem(prob,aggregator,rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
-    if typeof(prob)<:DiscreteProblem && any(issubtype.(typeof.(rn.jumps),VariableRateJump))
+    if typeof(prob)<:DiscreteProblem && any(x->typeof(x) <: VariableRateJump, rn.jumps)
         error("When using time dependant reaction rates a DiscreteProblem should not be used (try an ODEProblem). Also, use a continious solver.")
     end
 

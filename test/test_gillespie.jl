@@ -11,7 +11,7 @@ sir_sol = solve(sir_jump_prob,FunctionMap())
 
 using Plots; plot(sir_sol)
 
-srand(1234)
+Random.seed!(1234)
 nums = Int[]
 @time for i in 1:100000
   sir_sol = solve(sir_jump_prob,FunctionMap())
@@ -62,7 +62,7 @@ x0 = [999,1,0]
 nu = [[-1 1 0];[0 -1 1]]
 parms = [0.1/1000.0,0.01]
 tf = 250.0
-srand(1234)
+Random.seed!(1234)
 
 nums = Int[]
 @time for i in 1:100000

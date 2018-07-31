@@ -26,7 +26,7 @@ model = @reaction_network rn begin
     (d,1000), X ↔ 0
 end d
 for i in [1., 2., 3., 4., 5.]
-    prob = SDEProblem(model,[1000.+i],(0.,200.),[i])
+    prob = SDEProblem(model,[1000.0+i],(0.,200.),[i])
     sol = solve(prob, EM(), dt = 0.0001)
     @test sol[end][1] < 2000
 end
