@@ -1,9 +1,9 @@
-using DiffEqBiological, DiffEqJump, DiffEqBase, Test
+using DiffEqBiological, DiffEqJump, DiffEqBase, Test, Statistics
 
 dotestmean   = true
 doprintmeans = false
 reltol       = .01          # required test accuracy
-methods      = (Direct(), SortingDirect())
+algs      = (Direct(),)# SortingDirect())
 
 # run the given number of SSAs and return the mean
 function runSSAs(jump_prob, Nsims, idx)
@@ -18,10 +18,10 @@ end
 function execute_test(u0, tf, rates, rs, Nsims, expected_avg, idx, test_name)
     prob = DiscreteProblem(u0, (0.0, tf), rates)
 
-    for method in methods
+    for method in algs
         jump_prob = JumpProblem(prob, method, rs)
         avg_val = runSSAs(jump_prob, Nsims, idx)
-        
+
         if dotestmean
             if doprintmeans
                 println(test_name, ", method = ", typeof(method), ", mean = ", avg_val, ", act_mean = ", expected_avg)
@@ -29,7 +29,7 @@ function execute_test(u0, tf, rates, rs, Nsims, expected_avg, idx, test_name)
             @test abs(avg_val - expected_avg) < reltol * expected_avg
         end
     end
-    
+
 end
 
 # nonlinear reaction test
@@ -39,7 +39,7 @@ u0 = [200, 100, 150]
 expected_avg = 84.876015624999994
 rs = @reaction_network dtype begin
     k1, 2A --> B
-    k2, B --> 2A 
+    k2, B --> 2A
     k3, A + B --> C
     k4, C --> A + B
     k5, 3C --> 3A
@@ -48,7 +48,7 @@ rates = [1., 2., .5, .75, .25]
 execute_test(u0, tf, rates, rs, Nsims, expected_avg, 1, "Nonlinear rx test")
 
 
-# DNA repression model 
+# DNA repression model
 rs = @reaction_network ptype begin
     k1, DNA --> mRNA + DNA
     k2, mRNA --> mRNA + P
@@ -59,7 +59,7 @@ rs = @reaction_network ptype begin
 end k1 k2 k3 k4 k5 k6
 Nsims        = 8000
 tf           = 1000.0
-u0           = [1,0,0,0]  
+u0           = [1,0,0,0]
 expected_avg = 5.926553750000000e+02
 rates = [.5, (20*log(2.)/120.), (log(2.)/120.), (log(2.)/600.), .025, 1.]
 execute_test(u0, tf, rates, rs, Nsims, expected_avg, 3, "DNA test")
@@ -109,7 +109,7 @@ network = @reaction_network rnType  begin
     0.05, SP2 --> 0
 end;
 prob = DiscreteProblem([200.,60.,120.,100.,50.,50.,50.], (0.,4000.))
-for method in methods
+for method in algs
     jump_prob = JumpProblem(prob, method, network)
     sol = solve(jump_prob,SSAStepper());
 end

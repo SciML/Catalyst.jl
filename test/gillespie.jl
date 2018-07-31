@@ -1,4 +1,4 @@
-using DiffEqBiological, OrdinaryDiffEq, Test, Statistics
+using DiffEqBiological, OrdinaryDiffEq, Test, Statistics, Random
 
 sir_model = @reaction_network rn begin
     0.1/1000, s + i --> 2i

@@ -1,4 +1,4 @@
-using DiffEqBiological, StochasticDiffEq
+using DiffEqBiological, StochasticDiffEq, Statistics
 
 @reaction_func new_hill(x, v, k, n) = v*x^n/(k^n+x^n)
 @reaction_func new_poly(x) = 3x^2+1
@@ -19,7 +19,7 @@ for i = 1:100
     u = 5*rand(5)
     du1 = 3*rand(5); du2 = du1;
     du1g = 2.5*rand(5,3); du2g = du1g;
-    t = 9*rand(1)[1]
+    t = 9*rand()
     p = []
 
     @test network1.f(du1,u,p,t) == network2.f(du2,u,p,t)
@@ -39,7 +39,7 @@ model3 = @reaction_network rn η begin
     (1,5000), X ↔ 0
 end
 function tmp_std(sol)
-    vect = Vector{Float64}(length(sol.u))
+    vect = Vector{Float64}(undef,length(sol.u))
     for i = 1:length(sol.u)
         vect[i] = sol.u[i][1]
     end

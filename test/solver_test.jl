@@ -25,6 +25,7 @@ end
 model = @reaction_network rn begin
     (d,1000), X ↔ 0
 end d
+
 for i in [1., 2., 3., 4., 5.]
     prob = SDEProblem(model,[1000.0+i],(0.,200.),[i])
     sol = solve(prob, EM(), dt = 0.0001)
@@ -42,4 +43,4 @@ prob2 = ODEProblem(equi_model,[100.],(0.,200.))
 sol2 = solve(prob2,Tsit5())
 @test 1.5*sol1[end][1] < sol2[end][1]
 
-@test sol1.prob.f isa AbstractReactionNetwork
+@test sol1.prob.f.f isa DiffEqBase.AbstractReactionNetwork
