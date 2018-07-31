@@ -78,3 +78,17 @@ for i = 1:100
     @test network4.jumps[2].rate(u,p,t) == network5.jumps[2].rate(u,p,t)
     @test network4.jumps[3].rate(u,p,t) == network5.jumps[3].rate(u,p,t)
 end
+
+network6 = @reaction_network begin
+    p2, X + Y --> XY
+    p1, XY ← X + Y
+    (1,X), Z ↔ Z1 + Z2
+end p1 p2
+
+@test length(network6.f_func) == 6
+@test length(network6.g_func) == 24
+@test size(network6.p_matrix) == (6,4)
+@test length(network6.params) == 2
+@test length(network6.syms) == 6
+@test typeof(network6) <: DiffEqBase.AbstractReactionNetwork
+@test typeof(network6) == reaction_network
