@@ -77,10 +77,10 @@ end k1 k2 k3 k4 k5 k6
 Nsims        = 8000
 tf           = 1000.0
 u0           = [0,0,0,0]
-u0[findfirst(rs.syms, :DNA)] = 1
+u0[something(findfirst(isequal(:DNA),rs.syms),0)] = 1
 expected_avg = 5.926553750000000e+02
 rates = [.5, (20*log(2.)/120.), (log(2.)/120.), (log(2.)/600.), .025, 1.]
-execute_test(u0, tf, rates, rs, Nsims, expected_avg, findfirst(rs.syms, :P), "DNA mixed jump test")
+execute_test(u0, tf, rates, rs, Nsims, expected_avg, something(findfirst(isequal(:P),rs.syms), 0), "DNA mixed jump test")
 
 # simple constant production with degratation
 rs = @reaction_network pdtype begin
