@@ -91,7 +91,7 @@ rates = nothing
 Nsims        = 16000
 tf           = 1.0
 u0           = [0]
-expected_avg = 1000./10*(1. - exp(-10*tf))
+expected_avg = 1000.0 /10*(1. - exp(-10*tf))
 execute_test(u0, tf, rates, rs, Nsims, expected_avg, 1, "Zero order test")
 
 
