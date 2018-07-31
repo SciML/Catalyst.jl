@@ -26,9 +26,16 @@ model = @reaction_network rn begin
     (d,1000), X ↔ 0
 end d
 
+## For Julialang/julia#28356
+i = 1.0
+prob = SDEProblem(model,[1000.0+i],(0.,200.),[i])
+sol = solve(prob, EM(), dt = 0.01)
+@test sol[end][1] < 2000
+##
+
 for i in [1., 2., 3., 4., 5.]
     prob = SDEProblem(model,[1000.0+i],(0.,200.),[i])
-    sol = solve(prob, EM(), dt = 0.0001)
+    sol = solve(prob, EM(), dt = 0.01)
     @test sol[end][1] < 2000
 end
 
