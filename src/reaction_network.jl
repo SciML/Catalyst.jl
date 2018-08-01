@@ -57,9 +57,9 @@ macro reaction_network(name, scale_noise, ex::Expr, p...)
     coordinate(name, MacroTools.striplines(ex), p, scale_noise)
 end
 
-#Used to give a warning if someone uses the old macro.
-macro reaction_network(ex::Expr)
-    error("The Reaction Network DSL have been deprecated in favor for a new one. With only slight modification old code can be made to work with the new DSL. In addition the new one provides lots of additional functionality. Please view the documentation for more information.")
+#If no type name is given, creates a network with a default name.
+macro reaction_network(ex::Expr, p...)
+    coordinate(:reaction_network, MacroTools.striplines(ex), p, :no___noise___scaling)
 end
 
 #Declare various arrow types symbols used for the empty set (also 0).
