@@ -1,4 +1,4 @@
-using DiffEqBiological, Test
+using DiffEqBiological, Test, DiffEqBase
 
 network1 = @reaction_network rn begin
     2.0, X + Y --> XY
