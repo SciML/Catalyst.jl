@@ -1,7 +1,7 @@
-using DiffEqBiological, OrdinaryDiffEq, Base.Test
+using DiffEqBiological, OrdinaryDiffEq, Test
 
 function tmp_sol2vec(sol,j)
-    vect = Vector{Float64}(length(sol.u))
+    vect = Vector{Float64}(undef,length(sol.u))
     for i = 1:length(sol.u)
         vect[i] = sol.u[i][j]
     end

@@ -20,7 +20,7 @@ Example systems:
         mm(XY,2,2), X + Y --> XY           #Reaction inis activated by XY according to a michaelis menten function. mm(x,v,K).
     end
 
-    ### Multipple Reactions on a SIngle Line ###
+    ### Multipple Reactions on a Single Line ###
     rn = @reaction_network rType begin
         (2.0,1.0), X + Y ↔ XY              #Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
         2.0, (X,Y) --> 0                   #This corresponds to both X and Y degrading at rate 2.0.
@@ -47,8 +47,6 @@ Example systems:
     probSDE = SDEProblem(rn, args...; kwargs...)
     probJump = JumpProblem(prob,aggregator::Direct,rn)
 """
-
-#Macro to create a reaction network model.
 macro reaction_network(name, ex::Expr, p...)
     coordinate(name, MacroTools.striplines(ex), p, :no___noise___scaling)
 end
@@ -95,17 +93,17 @@ function coordinate(name, ex::Expr, p, scale_noise)
     (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, reactants, parameters)
 
     f_rhs = [element.args[2] for element in f_expr]
-    #symjac = Expr(:quote, calculate_jac(f_rhs, syms))
+    #symjac = Expr(:quote, calculate_jac(deepcopy(f_rhs), syms))
     f_symfuncs = hcat([SymEngine.Basic(f) for f in f_rhs])
 
     # Build the type
-    exprs = Vector{Expr}(0)
+    exprs = Vector{Expr}(undef,0)
 
     ## only get the right-hand-side of the equations.
     f_funcs = [element.args[2] for element in f_expr]
     g_funcs = [element.args[2] for element in g_expr]
 
-    typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params, reactions=reactions)
+    typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params, reactions=reactions)#, symjac=symjac)
 
     push!(exprs,typeex)
     push!(exprs,constructorex)
@@ -127,7 +125,7 @@ end
 
 #Generates a vector containing a number of reaction structures, each containing the infromation about one reaction.
 function get_reactions(ex::Expr)
-    reactions = Vector{ReactionStruct}(0)      ::Vector{ReactionStruct}
+    reactions = Vector{ReactionStruct}(undef,0)
     for line in ex.args
         (line.head != :tuple) && (continue)
         (rate,r_line) = line.args
@@ -138,12 +136,12 @@ function get_reactions(ex::Expr)
         arrow = r_line.args[1]  ::Symbol
         if in(arrow,double_arrows)
             (typeof(rate) == Expr && rate.head == :tuple) || error("Error: Must provide a tuple of reaction rates when declaring a bi-directional reaction.")
-            push_reactions(reactions::Vector{ReactionStruct}, r_line.args[2], r_line.args[3], rate.args[1], !in(arrow,no_mass_arrows))
-            push_reactions(reactions::Vector{ReactionStruct}, r_line.args[3], r_line.args[2], rate.args[2], !in(arrow,no_mass_arrows))
+            push_reactions(reactions, r_line.args[2], r_line.args[3], rate.args[1], !in(arrow,no_mass_arrows))
+            push_reactions(reactions, r_line.args[3], r_line.args[2], rate.args[2], !in(arrow,no_mass_arrows))
         elseif in(arrow,fwd_arrows)
-            push_reactions(reactions::Vector{ReactionStruct}, r_line.args[2], r_line.args[3], rate, !in(arrow,no_mass_arrows))
+            push_reactions(reactions, r_line.args[2], r_line.args[3], rate, !in(arrow,no_mass_arrows))
         elseif in(arrow,bwd_arrows)
-            push_reactions(reactions::Vector{ReactionStruct}, r_line.args[3], r_line.args[2], rate, !in(arrow,no_mass_arrows))
+            push_reactions(reactions, r_line.args[3], r_line.args[2], rate, !in(arrow,no_mass_arrows))
         else
             throw("malformed reaction")
         end
@@ -168,8 +166,8 @@ struct ReactionStruct
     is_pure_mass_action::Bool
 
     function ReactionStruct(sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
-        sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(0))
-        prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(0))
+        sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(undef,0))
+        prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(undef,0))
 
         rate_DE = mass_rate_DE(sub, use_mass_kin, rate)
         rate_SSA =  mass_rate_SSA(sub, use_mass_kin, rate)
@@ -222,7 +220,7 @@ function add_reactants!(ex::Any, mult::Int, reactants::Vector{ReactantStruct})
     if typeof(ex)!=Expr
         (ex == 0 || in(ex,empty_set)) && (return reactants)
         if in(ex, getfield.(reactants,:reactant))
-            idx = find(x -> x==ex ,getfield.(reactants,:reactant))[1]
+            idx = findall(x -> x==ex ,getfield.(reactants,:reactant))[1]
             reactants[idx] = ReactantStruct(ex,mult+reactants[idx].stoichiometry)
         else
             push!(reactants, ReactantStruct(ex,mult))
@@ -273,7 +271,7 @@ end
 
 #Produces an array of expressions. Each entry corresponds to a line in the function f, which constitutes the deterministic part of the system. The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
 function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int})
-    f = Vector{Expr}(length(reactants))
+    f = Vector{Expr}(undef,length(reactants))
     for i = 1:length(f)
         f[i] = :(internal_var___du[$i] = $(Expr(:call, :+)))
     end
@@ -287,7 +285,7 @@ end
 
 #Produces an array of expressions. Each entry corresponds to a line in the function g, which constitutes the stochastic part of the system. Uses the Guillespie Approach for creating Langevin equations.  The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
 function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, scale_noise::Symbol)
-    g = Vector{Expr}(length(reactions)*length(reactants))
+    g = Vector{Expr}(undef,length(reactions)*length(reactants))
     idx = 0
     for reactant in keys(reactants), i = 1:length(reactions)
             g[idx += 1] = recursive_clean!(:(internal_var___du[$(reactants[reactant]),$i] = $scale_noise * $(get_stoch_diff(reactions[i],reactant)) * sqrt($(deepcopy(reactions[i].rate_DE)))))
@@ -318,15 +316,15 @@ end
 
 #Creates expressions for jump affects and rates. Also creates and array with MassAction, ConstantRate and VariableRate Jumps.
 function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
-    rates = Vector{Any}(length(reactions))
-    affects = Vector{Vector{Expr}}(length(reactions))
+    rates = Vector{Any}(undef,length(reactions))
+    affects = Vector{Vector{Expr}}(undef,length(reactions))
     jumps = Expr(:tuple)
     reg_rates = Expr(:block)
     reg_c = Expr(:block)
     idx = 0
     for reaction in deepcopy(reactions)
         rates[idx += 1] = recursive_clean!(reaction.rate_SSA)
-        affects[idx] = Vector{Expr}(0)
+        affects[idx] = Vector{Expr}(undef,0)
         reactant_set = union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant))
         foreach(r -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[r])] += $(get_stoch_diff(reaction,r)))), reactant_set)
         syntax_rate = recursive_replace!(deepcopy(rates[idx]), (reactants,:internal_var___u), (parameters, :internal_var___p))
@@ -381,7 +379,7 @@ function recursive_clean!(expr::Any)
         in(expr.args[1],hill_name) && return hill(expr)
         in(expr.args[1],mm_name) && return mm(expr)
         (expr.args[1] == :binomial) && (expr.args[3] == 1) && return expr.args[2]
-        isdefined(expr.args[1]) || error("Function $(expr.args[1]) not defined.")
+        #@isdefined($(expr.args[1])) || error("Function $(expr.args[1]) not defined.")
     end
     return expr
 end
@@ -395,6 +393,18 @@ function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbo
     elseif typeof(expr) == Expr
         for i = 1:length(expr.args)
             expr.args[i] = recursive_replace!(expr.args[i], replace_requests...)
+        end
+    end
+    return expr
+end
+
+#Recursively traverses an expression and replaces a symbol with another.
+function recursive_replace!(expr::Any, replace_requests::Dict{Symbol,Symbol})
+    if typeof(expr) == Symbol
+        haskey(replace_requests,expr) && return replace_requests[expr]
+    elseif typeof(expr) == Expr
+        for i = 1:length(expr.args)
+            expr.args[i] = recursive_replace!(expr.args[i], replace_requests)
         end
     end
     return expr
@@ -421,13 +431,14 @@ end
 
 #Makes the Jacobian.
 function calculate_jac(f_expr::Vector{Expr}, syms)
-    symjac = Matrix{SymEngine.Basic}( length(syms), length(syms))
-    symfuncs = [SymEngine.Basic(f) for f in f_expr]
-    for i in eachindex(f_expr)
-        for j in eachindex(syms)
-          symjac[i,j] = diff(symfuncs[i],syms[j])
-        end
+    n = length(syms); internal_vars = [Symbol(:internal_variable___,var) for var in syms]
+    symjac = Matrix{SymEngine.Basic}(undef, n, n);
+    symfuncs = [SymEngine.Basic(recursive_replace!(f,Dict(zip(syms,internal_vars)))) for f in f_expr]
+    for i = 1:n, j = 1:n
+        symjac[i,j] = diff(symfuncs[i],internal_vars[j])
     end
+    @show symjac
+    map!(symentry -> SymEngine.Basic(recursive_replace!(Meta.parse(string(symentry)),Dict(zip(internal_vars,syms)))),symjac)
     return symjac
 end
 

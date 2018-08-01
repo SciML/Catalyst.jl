@@ -1,4 +1,4 @@
-using DiffEqBiological, OrdinaryDiffEq, Base.Test
+using DiffEqBiological, OrdinaryDiffEq, Test, Statistics, Random
 
 sir_model = @reaction_network rn begin
     0.1/1000, s + i --> 2i
@@ -12,7 +12,7 @@ sir_sol = solve(sir_jump_prob,FunctionMap())
 prob = DiscreteProblem([999,1,0],(0.0,250.0))
 jump_prob = JumpProblem(prob,Direct(),sir_model)
 
-srand(100)
+Random.seed!(100)
 sol = solve(jump_prob,FunctionMap())
 
 nums = Int[]
