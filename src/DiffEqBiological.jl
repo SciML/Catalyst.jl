@@ -5,7 +5,6 @@ module DiffEqBiological
 using Reexport
 using DiffEqBase
 using DiffEqJump
-using SymEngine
 using MacroTools
 using DataStructures
 @reexport using DiffEqJump

@@ -94,7 +94,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
 
     f_rhs = [element.args[2] for element in f_expr]
     #symjac = Expr(:quote, calculate_jac(deepcopy(f_rhs), syms))
-    f_symfuncs = hcat([SymEngine.Basic(f) for f in f_rhs])
+    f_symfuncs = nothing
 
     # Build the type
     exprs = Vector{Expr}(undef,0)
@@ -431,15 +431,7 @@ end
 
 #Makes the Jacobian.
 function calculate_jac(f_expr::Vector{Expr}, syms)
-    n = length(syms); internal_vars = [Symbol(:internal_variable___,var) for var in syms]
-    symjac = Matrix{SymEngine.Basic}(undef, n, n);
-    symfuncs = [SymEngine.Basic(recursive_replace!(f,Dict(zip(syms,internal_vars)))) for f in f_expr]
-    for i = 1:n, j = 1:n
-        symjac[i,j] = diff(symfuncs[i],internal_vars[j])
-    end
-    @show symjac
-    map!(symentry -> SymEngine.Basic(recursive_replace!(Meta.parse(string(symentry)),Dict(zip(internal_vars,syms)))),symjac)
-    return symjac
+    nothing
 end
 
 #Turns an array of expressions to a expression block with corresponding expressions.

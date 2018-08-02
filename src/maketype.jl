@@ -12,14 +12,14 @@ function maketype(name,
                   syms;
                   params = Symbol[],
                   pfuncs=Vector{Expr}(undef,0),
-                  symjac=Matrix{SymEngine.Basic}(undef,0,0),
+                  symjac=nothing,
                   reactions=Vector{ReactionStruct}(undef,0)
                   )
 
     typeex = :(mutable struct $name <: DiffEqBase.AbstractReactionNetwork
         f::Function
         f_func::Vector{Expr}
-        f_symfuncs::Matrix{SymEngine.Basic}
+        f_symfuncs::Nothing
         g::Function
         g_func::Vector{Any}
         jumps::Tuple{DiffEqJump.AbstractJump,Vararg{DiffEqJump.AbstractJump}}
@@ -29,7 +29,7 @@ function maketype(name,
         p_matrix::Array{Float64,2}
         syms::Vector{Symbol}
         params::Vector{Symbol}
-        symjac::Matrix{SymEngine.Basic}
+        symjac::Nothing
         reactions::Vector{ReactionStruct}
     end)
     # Make the default constructor
@@ -51,7 +51,7 @@ function maketype(name,
                   $(name)(
                       f,
                       f_func,
-                      f_symfuncs,
+                      nothing,
                       g,
                       g_func,
                       jumps,
@@ -61,7 +61,7 @@ function maketype(name,
                       p_matrix,
                       syms,
                       params,
-                      symjac,
+                      nothing,
                       reactions
                       )) |> esc
 
