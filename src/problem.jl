@@ -1,6 +1,6 @@
 ### SDEProblem ###
 DiffEqBase.SDEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) =
-    SDEProblem(rn, rn.g, u0, args...;noise_rate_prototype=rn.p_matrix, kwargs...)
+    SDEProblem(rn, rn.g::Function, u0, args...;noise_rate_prototype=rn.p_matrix, kwargs...)
 
 ### JumpProblem ###
 function DiffEqJump.JumpProblem(prob,aggregator,rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
