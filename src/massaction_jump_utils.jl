@@ -163,7 +163,7 @@ function depgraph_from_network(rn, specmap, jset)
     end
 
     # convert to Vectors of Vectors
-    dep_graph = Vector{Vector{Int}}(numrxs)
+    dep_graph = Vector{Vector{Int}}(undef,numrxs)
     for jidx in 1:numrxs
         dep_graph[jidx] = [dep for dep in dep_sets[jidx]]
     end

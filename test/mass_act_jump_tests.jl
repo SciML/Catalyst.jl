@@ -3,7 +3,7 @@ using DiffEqBiological, DiffEqJump, DiffEqBase, Test, Statistics
 dotestmean   = true
 doprintmeans = false
 reltol       = .01          # required test accuracy
-algs      = (Direct(),)# SortingDirect())
+algs      = (Direct(),SortingDirect())
 
 # run the given number of SSAs and return the mean
 function runSSAs(jump_prob, Nsims, idx)
