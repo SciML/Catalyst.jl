@@ -34,7 +34,7 @@ function DiffEqJump.JumpProblem(prob,aggregator,rn::DiffEqBase.AbstractReactionN
     end
 
     JumpProblem(prob, aggregator, jset; dep_graph=dep_graph,
-                                        spec_to_dep_jumps=spec_to_dep_jumps,
+                                        varstojumps_map=spec_to_dep_jumps,
                                         kwargs...)
 end
 
