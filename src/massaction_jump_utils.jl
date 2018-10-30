@@ -116,9 +116,24 @@ function rxidxs_to_jidxs_map(rn, num_majumps)
     rxi_to_ji
 end
 
+# map from jump to vector of species it changes
+function jump_to_dep_specs_map(rn, specmap, rxidxs_jidxs)
+    numrxs  = length(rn.reactions)
+    numspec = length(specmap)
+
+    # map from a jump to species that depend on it
+    jtos_vec = Vector{Vector{valtype(specmap)}}(undef, numrxs)
+    for rx in 1:numrxs
+        jidx = rxidxs_jidxs[rx]
+        jtos_vec[jidx] = [specmap[specsym] for specsym in rn.reactions[rx].dependants]
+        sort!(jtos_vec[jidx])
+    end
+
+    jtos_vec
+end
+
 # map from species to Set of jumps depending on that species
 function spec_to_dep_jumps_map(rn, specmap, rxidxs_to_jidxs)
-
     numrxs  = length(rn.reactions)
     numspec = length(specmap)
 
