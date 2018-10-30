@@ -125,8 +125,7 @@ function jump_to_dep_specs_map(rn, specmap, rxidxs_jidxs)
     jtos_vec = Vector{Vector{valtype(specmap)}}(undef, numrxs)
     for rx in 1:numrxs
         jidx = rxidxs_jidxs[rx]
-        jtos_vec[jidx] = [specmap[specsym] for specsym in rn.reactions[rx].dependants]
-        sort!(jtos_vec[jidx])
+        jtos_vec[jidx] = sort!( [specmap[specsym] for specsym in rn.reactions[rx].dependants] )
     end
 
     jtos_vec

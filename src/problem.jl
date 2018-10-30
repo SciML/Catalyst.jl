@@ -22,7 +22,7 @@ function DiffEqJump.JumpProblem(prob,aggregator,rn::DiffEqBase.AbstractReactionN
         rxidxs_to_jidxs   = rxidxs_to_jidxs_map(rn, get_num_majumps(jset))
         spec_to_jumps_set = spec_to_dep_jumps_map(rn, spec_to_idx, rxidxs_to_jidxs)
         spec_to_jumps_vec = [sort!(collect(specset)) for specset in spec_to_jumps_set]
-        jump_to_specs_vec  = jump_to_dep_specs_map(rn, spec_to_idx, rxidxs_jidxs)
+        jump_to_specs_vec = jump_to_dep_specs_map(rn, spec_to_idx, rxidxs_to_jidxs)
     else
         rxidxs_to_jidxs   = nothing
         spec_to_jumps_set = nothing
