@@ -121,11 +121,11 @@ function jump_to_dep_specs_map(rn, specmap, rxidxs_jidxs)
     numrxs  = length(rn.reactions)
     numspec = length(specmap)
 
-    # map from a jump to species that depend on it
+    # map from a jump to vector of species that depend on it
     jtos_vec = Vector{Vector{valtype(specmap)}}(undef, numrxs)
     for rx in 1:numrxs
-        jidx = rxidxs_jidxs[rx]
-        jtos_vec[jidx] = sort!( [specmap[specsym] for specsym in rn.reactions[rx].dependants] )
+        jidx           = rxidxs_jidxs[rx]
+        jtos_vec[jidx] = sort!( [ns.first for ns in get_net_stoich(rn.reactions[rx], specmap)] )
     end
 
     jtos_vec
