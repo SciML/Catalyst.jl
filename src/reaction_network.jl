@@ -437,7 +437,7 @@ function calculate_jac(f_expr::Vector{Expr}, syms)
     for i = 1:n, j = 1:n
         symjac[i,j] = diff(symfuncs[i],internal_vars[j])
     end
-    return map(sym_entry -> :(1*$(recursive_replace!(Meta.parse(string(sym_entry)),Dict(zip(internal_vars,syms))),symjac)))
+    return map(sym_entry -> :(1*$(recursive_replace!(Meta.parse(string(sym_entry)),Dict(zip(internal_vars,syms))))),symjac)
 end
 
 #Turns an array of expressions to a expression block with corresponding expressions.
