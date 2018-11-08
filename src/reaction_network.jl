@@ -93,7 +93,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, reactants, parameters)
 
     f_rhs = [element.args[2] for element in f_expr]
-    #symjac = Expr(:quote, calculate_jac(deepcopy(f_rhs), syms))
+    symjac = Expr(:quote, calculate_jac(deepcopy(f_rhs), syms))
     f_symfuncs = hcat([SymEngine.Basic(f) for f in f_rhs])
 
     # Build the type
@@ -103,7 +103,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     f_funcs = [element.args[2] for element in f_expr]
     g_funcs = [element.args[2] for element in g_expr]
 
-    typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params, reactions=reactions)#, symjac=symjac)
+    typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params, reactions=reactions, symjac=symjac)
 
     push!(exprs,typeex)
     push!(exprs,constructorex)
@@ -437,9 +437,7 @@ function calculate_jac(f_expr::Vector{Expr}, syms)
     for i = 1:n, j = 1:n
         symjac[i,j] = diff(symfuncs[i],internal_vars[j])
     end
-    @show symjac
-    map!(symentry -> SymEngine.Basic(recursive_replace!(Meta.parse(string(symentry)),Dict(zip(internal_vars,syms)))),symjac)
-    return symjac
+    return map(sym_entry -> :(1*$(recursive_replace!(Meta.parse(string(sym_entry)),Dict(zip(internal_vars,syms))))),symjac)
 end
 
 #Turns an array of expressions to a expression block with corresponding expressions.
