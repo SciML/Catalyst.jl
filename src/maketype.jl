@@ -12,7 +12,7 @@ function maketype(name,
                   syms;
                   params = Symbol[],
                   pfuncs=Vector{Expr}(undef,0),
-                  symjac=Matrix{SymEngine.Basic}(undef,0,0),
+                  symjac=Matrix{Expr}(undef,0,0),
                   reactions=Vector{ReactionStruct}(undef,0)
                   )
 
@@ -29,7 +29,7 @@ function maketype(name,
         p_matrix::Array{Float64,2}
         syms::Vector{Symbol}
         params::Vector{Symbol}
-        symjac::Matrix{SymEngine.Basic}
+        symjac::Matrix{Expr}
         reactions::Vector{ReactionStruct}
     end)
     # Make the default constructor
