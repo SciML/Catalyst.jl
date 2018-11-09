@@ -17,14 +17,30 @@ function DiffEqJump.JumpProblem(prob,aggregator,rn::DiffEqBase.AbstractReactionN
     # get a JumpSet of the possible jumps
     jset = network_to_jumpset(rn, spec_to_idx, param_to_idx, prob.p)
 
-    # # construct dependency graph if needed by aggregator
+    # construct map from species index to indices of reactions that depend on it
+    if needs_vartojumps_map(aggregator) || needs_depgraph(aggregator)
+        rxidxs_to_jidxs   = rxidxs_to_jidxs_map(rn, get_num_majumps(jset))
+        spec_to_jumps_set = spec_to_dep_jumps_map(rn, spec_to_idx, rxidxs_to_jidxs)
+        spec_to_jumps_vec = [sort!(collect(specset)) for specset in spec_to_jumps_set]
+        jump_to_specs_vec = jump_to_dep_specs_map(rn, spec_to_idx, rxidxs_to_jidxs)
+    else
+        rxidxs_to_jidxs   = nothing
+        spec_to_jumps_set = nothing
+        spec_to_jumps_vec = nothing
+        jump_to_specs_vec = nothing
+    end
+
+    # construct reaction dependency graph
     if needs_depgraph(aggregator)
-        dep_graph = depgraph_from_network(rn, spec_to_idx, jset)
+        dep_graph = depgraph_from_network(rn, spec_to_idx, jset, rxidxs_to_jidxs, spec_to_jumps_set)
     else
         dep_graph = nothing
     end
 
-    JumpProblem(prob, aggregator, jset; dep_graph=dep_graph, kwargs...)
+    JumpProblem(prob, aggregator, jset; dep_graph=dep_graph,
+                                        vartojumps_map=spec_to_jumps_vec,
+                                        jumptovars_map=jump_to_specs_vec,
+                                        kwargs...)
 end
 
 ### SteadyStateProblem ###
