@@ -8,11 +8,13 @@ network1 = @reaction_network rn begin
     hill(X,4,3,2), X + Y --> Z1
     3X^2+1, X + Y --> Z2
     exp(Y), X + Y --> Z3
+    hillR(X,2.0,3.0,2), X + Y --> Z4
 end
 network2 = @reaction_network rn begin
     new_hill(X,4,3,2), X + Y --> Z1
     new_poly(X), X + Y --> Z2
     new_exp(Y), X + Y --> Z3
+    2.0*(3.0^2)/(3.0^2+X^2), X + Y --> Z4
 end
 
 for i = 1:100

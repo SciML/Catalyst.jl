@@ -377,7 +377,9 @@ function recursive_clean!(expr::Any)
         (expr.args[1] == :/) && (expr.args[3] == 1) && (return expr.args[2])
         haskey(funcdict, expr.args[1]) && return funcdict[expr.args[1]](expr.args[2:end])
         in(expr.args[1],hill_name) && return hill(expr)
+        in(expr.args[1],hillR_name) && return hillR(expr)
         in(expr.args[1],mm_name) && return mm(expr)
+        in(expr.args[1],mmR_name) && return mmR(expr)
         (expr.args[1] == :binomial) && (expr.args[3] == 1) && return expr.args[2]
         #@isdefined($(expr.args[1])) || error("Function $(expr.args[1]) not defined.")
     end
@@ -454,11 +456,20 @@ hill_name = Set{Symbol}([:hill, :Hill, :h, :H, :HILL])
 function hill(expr::Expr)
     return :($(expr.args[3])*($(expr.args[2])^$(expr.args[5]))/($(expr.args[4])^$(expr.args[5])+$(expr.args[2])^$(expr.args[5])))
 end
+hillR_name = Set{Symbol}([:hill_repressor, :hillr, :hillR, :HillR, :hR, :hR, :Hr, :HR, :HILLR])
+function hillR(expr::Expr)
+    return :($(expr.args[3])*($(expr.args[4])^$(expr.args[5]))/($(expr.args[4])^$(expr.args[5])+$(expr.args[2])^$(expr.args[5])))
+end
 
 #Michaelis menten function made avaiable.
 mm_name = Set{Symbol}([:MM, :mm, :Mm, :mM, :M, :m])
 function mm(expr::Expr)
     return :($(expr.args[3])*$(expr.args[2])/($(expr.args[4])+$(expr.args[2])))
+end
+#Michaelis menten function made avaiable.
+mmR_name = Set{Symbol}([:mm_repressor, :MMR, :mmr, :mmR, :MmR, :mMr, :MR, :mr, :Mr, :mR])
+function mmR(expr::Expr)
+    return :($(expr.args[3])*$(expr.args[4])/($(expr.args[4])+$(expr.args[2])))
 end
 
 #Allows the user to define new function and enable the @reaction_network macro to see them.
