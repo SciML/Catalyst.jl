@@ -6,19 +6,25 @@ using DiffEqBiological, StochasticDiffEq, Statistics
 
 network1 = @reaction_network rn begin
     hill(X,4,3,2), X + Y --> Z1
-    3X^2+1, X + Y --> Z2
-    exp(Y), X + Y --> Z3
+    mm(X,4.0,3), X + Y --> Z2
+    3X^2+1, X + Y --> Z3
+    exp(Y), X + Y --> Z4
+    hillR(X,2.0,3.0,2), X + Y --> Z5
+    mmR(X,4.0,1), X + Y --> Z6
 end
 network2 = @reaction_network rn begin
     new_hill(X,4,3,2), X + Y --> Z1
-    new_poly(X), X + Y --> Z2
-    new_exp(Y), X + Y --> Z3
+    4.0*X/(X+3), X + Y --> Z2
+    new_poly(X), X + Y --> Z3
+    new_exp(Y), X + Y --> Z4
+    2.0*(3.0^2)/(3.0^2+X^2), X + Y --> Z5
+    4.0*1/(X+1), X + Y --> Z6
 end
 
 for i = 1:100
-    u = 5*rand(5)
-    du1 = 3*rand(5); du2 = du1;
-    du1g = 2.5*rand(5,3); du2g = du1g;
+    u = 5*rand(length(network1.syms))
+    du1 = 3*rand(length(network1.syms)); du2 = du1;
+    du1g = 2.5*rand(length(network1.syms),length(network1.reactions)); du2g = du1g;
     t = 9*rand()
     p = []
 
