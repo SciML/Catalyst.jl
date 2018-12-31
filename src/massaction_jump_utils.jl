@@ -59,10 +59,17 @@ function make_majump(rs, specmap, ratemap, params)
         error("Empty net stoichiometry vectors for mass action reactions are not allowed.")
     end
 
+    # populate dummy context with params as local variables
+    Dummy = Module()
+    for (param, index) in ratemap
+        Base.eval(Dummy, :($param = $(params[index])))
+    end
+
     if typeof(rs.rate_org) == Symbol
         rateconst = params[ratemap[rs.rate_org]]
     elseif typeof(rs.rate_org) == Expr
-        rateconst = eval(rs.rate_org)
+        # eval in Dummy, in case Expr depends on params
+        rateconst = Base.eval(Dummy, rs.rate_org)
     elseif typeof(rs.rate_org) <: Number
         rateconst = rs.rate_org
     else
