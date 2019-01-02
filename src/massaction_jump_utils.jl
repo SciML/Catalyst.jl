@@ -52,24 +52,18 @@ function get_net_stoich(rs, specmap)
 end
 
 # given a ReactionStruct and a species map construct a MassActionJump
-function make_majump(rs, specmap, ratemap, params)
+function make_majump(rs, specmap, ratemap, params, param_context)
     reactant_stoich = get_substrate_stoich(rs, specmap)
     net_stoich      = get_net_stoich(rs, specmap)
     if isempty(net_stoich)
         error("Empty net stoichiometry vectors for mass action reactions are not allowed.")
     end
 
-    # populate dummy context with params as local variables
-    Dummy = Module()
-    for (param, index) in ratemap
-        Base.eval(Dummy, :($param = $(params[index])))
-    end
-
     if typeof(rs.rate_org) == Symbol
         rateconst = params[ratemap[rs.rate_org]]
     elseif typeof(rs.rate_org) == Expr
-        # eval in Dummy, in case Expr depends on params
-        rateconst = Base.eval(Dummy, rs.rate_org)
+        # eval in param_context, in case Expr depends on params
+        rateconst = Base.eval(param_context, rs.rate_org)
     elseif typeof(rs.rate_org) <: Number
         rateconst = rs.rate_org
     else
@@ -86,9 +80,16 @@ function network_to_jumpset(rn, specmap, ratemap, params)
     majumpvec    = Vector{typeof(empty_majump)}()
     cjumpvec     = Vector{ConstantRateJump}()
 
+    # populate dummy module with params as local variables
+    # (for eval-ing parameter expressions)
+    param_context = Module()
+    for (param, index) in ratemap
+        Base.eval(param_context, :($param = $(params[index])))
+    end
+
     for (i,rs) in enumerate(rn.reactions)
         if rs.is_pure_mass_action
-            push!(majumpvec, make_majump(rs, specmap, ratemap, params))
+            push!(majumpvec, make_majump(rs, specmap, ratemap, params, param_context))
         else
             push!(cjumpvec, rn.jumps[i])
         end
