@@ -113,3 +113,22 @@ for method in algs
     jump_prob = JumpProblem(prob, method, network)
     sol = solve(jump_prob,SSAStepper());
 end
+
+# make sure problem instantiation works when mass action jumps
+# rate consts are a nontrivial expression on the params
+network = @reaction_network begin
+    1, X --> 2*X
+    1/K, 2X --> X
+end K
+p = [1000.]
+prob = DiscreteProblem([500.], (0.,100.), p)
+jump_prob = JumpProblem(prob, Direct(), network)
+
+
+# same as above
+network = @reaction_network begin
+    p1*p2, X --> Y
+end p1 p2
+p = [1.,2.]
+prob = DiscreteProblem([10.,10.],(0.,10.), p)
+jump_prob = JumpProblem(prob, Direct(), network)
