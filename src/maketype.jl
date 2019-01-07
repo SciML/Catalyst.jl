@@ -70,3 +70,32 @@ function maketype(name,
     # Make the type instance using the default constructor
     typeex,constructorex
 end
+
+# short version
+function maketype(name,
+    syms;
+    params = Symbol[],
+    reactions=Vector{ReactionStruct}(undef,0)
+    )
+
+typeex = :(mutable struct $name <: DiffEqBase.AbstractReactionNetwork
+syms::Vector{Symbol}
+params::Vector{Symbol}
+reactions::Vector{ReactionStruct}
+end)
+# Make the default constructor
+constructorex = :($(name)(;
+    $(Expr(:kw,:syms,syms)),
+    $(Expr(:kw,:params,params)),
+    $(Expr(:kw,:reactions,reactions))) =
+    $(name)(
+        syms,
+        params,
+        reactions
+        )) |> esc
+
+        #f_funcs,symfuncs,pfuncs,syms,symjac) |> esc
+
+# Make the type instance using the default constructor
+typeex,constructorex
+end
