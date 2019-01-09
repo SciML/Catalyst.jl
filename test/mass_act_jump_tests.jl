@@ -1,7 +1,7 @@
 using DiffEqBiological, DiffEqJump, DiffEqBase, Test, Statistics
 
 dotestmean   = true
-doprintmeans = false
+doprintmeans = true
 reltol       = .01          # required test accuracy
 algs      = (Direct(),SortingDirect())
 
@@ -66,7 +66,7 @@ execute_test(u0, tf, rates, rs, Nsims, expected_avg, 3, "DNA test")
 
 
 # DNA repression model, mix of jump types
-rs = @reaction_network ptype begin
+rs1 = @reaction_network ptype begin
     k1*DNA, 0 --> mRNA
     k2*mRNA, 0 --> P
     k3, mRNA --> 0
@@ -80,7 +80,7 @@ u0           = [0,0,0,0]
 u0[something(findfirst(isequal(:DNA),rs.syms),0)] = 1
 expected_avg = 5.926553750000000e+02
 rates = [.5, (20*log(2.)/120.), (log(2.)/120.), (log(2.)/600.), .025, 1.]
-execute_test(u0, tf, rates, rs, Nsims, expected_avg, something(findfirst(isequal(:P),rs.syms), 0), "DNA mixed jump test")
+execute_test(u0, tf, rates, rs1, Nsims, expected_avg, something(findfirst(isequal(:P),rs.syms), 0), "DNA mixed jump test")
 
 # simple constant production with degratation
 rs = @reaction_network pdtype begin

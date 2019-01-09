@@ -91,7 +91,7 @@ function network_to_jumpset(rn, specmap, ratemap, params)
         if rs.is_pure_mass_action
             push!(majumpvec, make_majump(rs, specmap, ratemap, params, param_context))
         else
-            push!(cjumpvec, rn.jumps[i])
+            push!(cjumpvec, rn.properties[:jumps][i])
         end
     end
 

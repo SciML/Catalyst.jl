@@ -12,7 +12,12 @@ end
 
 ### JumpProblem ###
 function DiffEqJump.JumpProblem(prob,aggregator,rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
-    if typeof(prob)<:DiscreteProblem && any(x->typeof(x) <: VariableRateJump, rn.jumps)
+
+    if !haskey(rn.properties,:jumps)
+        gen_jumpfun!(rn)
+    end
+
+    if typeof(prob)<:DiscreteProblem && any(x->typeof(x) <: VariableRateJump, rn.properties[:jumps])
         error("When using time dependant reaction rates a DiscreteProblem should not be used (try an ODEProblem). Also, use a continious solver.")
     end
 
@@ -53,8 +58,8 @@ end
 
 ### SteadyStateProblem ###
 DiffEqBase.SteadyStateProblem(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) =
-    SteadyStateProblem(rn.f, args...; kwargs...)
+    SteadyStateProblem(get_odefun!(rn).f, args...; kwargs...)
 
 function DiffEqBase.SteadyStateProblem{isinplace}(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) where isinplace
-    SteadyStateProblem{isinplace}(rn.f, args...; kwargs...)
+    SteadyStateProblem{isinplace}(get_odefun!(rn).f, args...; kwargs...)
 end

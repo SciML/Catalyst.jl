@@ -50,4 +50,4 @@ prob2 = ODEProblem(equi_model,[100.],(0.,200.))
 sol2 = solve(prob2,Tsit5())
 @test 1.5*sol1[end][1] < sol2[end][1]
 
-@test sol1.prob.f.f isa DiffEqBase.AbstractReactionNetwork
+#@test sol1.prob.f.f isa DiffEqBase.AbstractReactionNetwork

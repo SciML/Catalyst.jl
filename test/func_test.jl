@@ -12,6 +12,10 @@ network1 = @reaction_network rn begin
     hillR(X,2.0,3.0,2), X + Y --> Z5
     mmR(X,4.0,1), X + Y --> Z6
 end
+get_odefun!(network1)
+get_sdefun!(network1)
+gen_jumpfun!(network1)
+
 network2 = @reaction_network rn begin
     new_hill(X,4,3,2), X + Y --> Z1
     4.0*X/(X+3), X + Y --> Z2
@@ -20,6 +24,9 @@ network2 = @reaction_network rn begin
     2.0*(3.0^2)/(3.0^2+X^2), X + Y --> Z5
     4.0*1/(X+1), X + Y --> Z6
 end
+get_odefun!(network2)
+get_sdefun!(network2)
+gen_jumpfun!(network2)
 
 for i = 1:100
     u = 5*rand(length(network1.syms))
@@ -28,11 +35,11 @@ for i = 1:100
     t = 9*rand()
     p = []
 
-    @test network1.f(du1,u,p,t) == network2.f(du2,u,p,t)
-    @test network1.g(du1g,u,p,t) == network2.g(du2g,u,p,t)
-    @test network1.jumps[1].rate(u,p,t) == network2.jumps[1].rate(u,p,t)
-    @test network1.jumps[2].rate(u,p,t) == network2.jumps[2].rate(u,p,t)
-    @test network1.jumps[3].rate(u,p,t) == network2.jumps[3].rate(u,p,t)
+    @test network1.properties[:f](du1,u,p,t) == network2.properties[:f](du2,u,p,t)
+    @test network1.properties[:g](du1g,u,p,t) == network2.properties[:g](du2g,u,p,t)
+    @test network1.properties[:jumps][1].rate(u,p,t) == network2.properties[:jumps][1].rate(u,p,t)
+    @test network1.properties[:jumps][2].rate(u,p,t) == network2.properties[:jumps][2].rate(u,p,t)
+    @test network1.properties[:jumps][3].rate(u,p,t) == network2.properties[:jumps][3].rate(u,p,t)
 end
 
 model1 = @reaction_network rn begin
