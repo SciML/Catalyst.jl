@@ -83,38 +83,11 @@ function coordinate(name, ex::Expr, p, scale_noise)
 
     update_reaction_info(reactions,syms)
 
-    f_expr = get_f(reactions, reactants)
-    f = make_func(f_expr, reactants, parameters)
-
-    g_expr = get_g(reactions, reactants, scale_noise)
-    g = make_func(g_expr, reactants, parameters)
-    p_matrix = zeros(length(reactants), length(reactions))
-
-    (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, reactants, parameters)
-
-    f_rhs = [element.args[2] for element in f_expr]
-    symjac = Expr(:quote, calculate_jac(deepcopy(f_rhs), syms))
-    f_symfuncs = hcat([SymEngine.Basic(f) for f in f_rhs])
-
     # Build the type
     exprs = Vector{Expr}(undef,0)
-
-    ## only get the right-hand-side of the equations.
-    f_funcs = [element.args[2] for element in f_expr]
-    g_funcs = [element.args[2] for element in g_expr]
-
-    typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params, reactions=reactions, symjac=symjac)
-
+    typeex,constructorex = maketype(name, syms, scale_noise; params=params, reactions=reactions, syms_to_ints=reactants, params_to_ints=parameters)
     push!(exprs,typeex)
     push!(exprs,constructorex)
-
-    ## Overload the type so that it can act as a function.
-    overloadex = :(((f::$name))(du, u, p, t::Number) = f.f(du, u, p, t)) |> esc
-    push!(exprs,overloadex)
-
-    ## Add a method which allocates the `du` and returns it instead of being inplace
-    overloadex = :(((f::$name))(u,p,t::Number) = (du=similar(u); f(du,u,p,t); du)) |> esc
-    push!(exprs,overloadex)
 
     # export type constructor
     def_const_ex = :(($name)()) |> esc
@@ -122,6 +95,58 @@ function coordinate(name, ex::Expr, p, scale_noise)
 
     expr_arr_to_block(exprs)
 end
+
+# #Coordination function, actually does all the work of the macro.
+# function coordinate(name, ex::Expr, p, scale_noise)
+#     reactions = get_reactions(ex)           ::Vector{ReactionStruct}
+#     reactants = get_reactants(reactions)    ::OrderedDict{Symbol,Int}
+#     parameters = get_parameters(p)          ::OrderedDict{Symbol,Int}
+
+#     syms = collect(keys(reactants))
+#     params = collect(keys(parameters))
+#     (in(:t,union(syms,params))) && error("t is reserved for the time variable and may neither be used as a reactant nor a parameter")
+
+#     update_reaction_info(reactions,syms)
+
+#     f_expr = get_f(reactions, reactants)
+#     f = make_func(f_expr, reactants, parameters)
+
+#     g_expr = get_g(reactions, reactants, scale_noise)
+#     g = make_func(g_expr, reactants, parameters)
+#     p_matrix = zeros(length(reactants), length(reactions))
+
+#     (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, reactants, parameters)
+
+#     f_rhs = [element.args[2] for element in f_expr]
+#     symjac = Expr(:quote, calculate_jac(deepcopy(f_rhs), syms))
+#     f_symfuncs = hcat([SymEngine.Basic(f) for f in f_rhs])
+
+#     # Build the type
+#     exprs = Vector{Expr}(undef,0)
+
+#     ## only get the right-hand-side of the equations.
+#     f_funcs = [element.args[2] for element in f_expr]
+#     g_funcs = [element.args[2] for element in g_expr]
+
+#     typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms; params=params, reactions=reactions, symjac=symjac)
+
+#     push!(exprs,typeex)
+#     push!(exprs,constructorex)
+
+#     ## Overload the type so that it can act as a function.
+#     overloadex = :(((f::$name))(du, u, p, t::Number) = f.f(du, u, p, t)) |> esc
+#     push!(exprs,overloadex)
+
+#     ## Add a method which allocates the `du` and returns it instead of being inplace
+#     overloadex = :(((f::$name))(u,p,t::Number) = (du=similar(u); f(du,u,p,t); du)) |> esc
+#     push!(exprs,overloadex)
+
+#     # export type constructor
+#     def_const_ex = :(($name)()) |> esc
+#     push!(exprs,def_const_ex)
+
+#     expr_arr_to_block(exprs)
+# end
 
 #Generates a vector containing a number of reaction structures, each containing the infromation about one reaction.
 function get_reactions(ex::Expr)
