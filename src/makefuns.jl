@@ -2,9 +2,11 @@
 function gen_odefun_inplace!(rn::DiffEqBase.AbstractReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints = rn
     
-    f_expr            = get_f(reactions, syms_to_ints)
-    rn.properties[:f] = eval(make_func(f_expr, syms_to_ints, params_to_ints))
-
+    f_expr                 = get_f(reactions, syms_to_ints)
+    rn.properties[:f]      = eval(make_func(f_expr, syms_to_ints, params_to_ints))
+    rn.properties[:f_func] = [eval(element.args[2]) for element in f_expr]    
+    rn.properties[:symjac] = eval(Expr(:quote, calculate_jac(deepcopy(f_rhs), syms))
+    
     nothing
 end
 
