@@ -1,24 +1,12 @@
 ### ODEProblem from AbstractReactionNetwork ###
 function DiffEqBase.ODEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...)
-    if !haskey(rn.properties,:f) 
-        rn.properties[:f] = gen_odefun_inplace(rn)
-    end
-    ODEProblem(rn.properties[:f]::Function, u0::Union{AbstractArray, Number}, args...; kwargs...)
+    ODEProblem(get_odefun!(rn)::Function, u0::Union{AbstractArray, Number}, args...; kwargs...)
 end
 
 ### SDEProblem ###
 function DiffEqBase.SDEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
-    if !haskey(rn.properties,:f) 
-        rn.properties[:f] = gen_odefun_inplace(rn)
-    end
 
-    if !haskey(rn.properties,:g) 
-        g,p_matrix = gen_noisefun(rn)
-        rn.properties[:g] = g
-        rn.properties[:p_matrix] = p_matrix
-    end
-
-    SDEProblem(rn.properties[:f]::Function, rn.properties[:g]::Function, u0, args...; 
+    SDEProblem(get_sdefun!(rn)::Function, rn.properties[:g]::Function, u0, args...; 
             noise_rate_prototype=rn.properties[:p_matrix]::Array{Float64,2}, kwargs...)
 end
 

@@ -16,13 +16,13 @@ function maketype(name, syms, scale_noise; params = Symbol[],
     # Make the default constructor
     constructorex = :($(name)(;
                     $(Expr(:kw, :syms, syms)),
-                    $(Expr(:kw, :scale_noise, scale_noise)),
+                    $(Expr(:kw, :scale_noise, Meta.quot(scale_noise))),
                     $(Expr(:kw, :params, params)),
                     $(Expr(:kw, :reactions, reactions)),
                     $(Expr(:kw, :syms_to_ints, syms_to_ints)),
                     $(Expr(:kw, :params_to_ints, params_to_ints)),
                     $(Expr(:kw, :properties, properties))) =
-                    $(name)(syms, params, reactions, syms_to_ints, params_to_ints)) |> esc
+                    $(name)(syms, scale_noise, params, reactions, syms_to_ints, params_to_ints, properties)) |> esc
 
     # Make the type instance using the default constructor
     typeex, constructorex
