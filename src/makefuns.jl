@@ -35,10 +35,10 @@ end
 function gen_noisefun!(rn::DiffEqBase.AbstractReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints, scale_noise = rn
 
-    g_expr                   = get_g(reactions, syms_to_ints, scale_noise)
-    g                        = make_func(g_expr, syms_to_ints, params_to_ints)
-    g_funcs                  = [element.args[2] for element in g_expr]
-    p_matrix                 = zeros(length(syms_to_ints), length(reactions))
+    g_expr   = get_g(reactions, syms_to_ints, scale_noise)
+    g        = make_func(g_expr, syms_to_ints, params_to_ints)
+    g_funcs  = [element.args[2] for element in g_expr]
+    p_matrix = zeros(length(syms_to_ints), length(reactions))
 
     rn.properties[:g]        = eval(g)
     rn.properties[:p_matrix] = p_matrix
