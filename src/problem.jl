@@ -3,21 +3,30 @@ function DiffEqBase.ODEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union
     ODEProblem(get_odefun!(rn)::Function, u0::Union{AbstractArray, Number}, args...; kwargs...)
 end
 
-### SDEProblem ###
+### ODEProblem from ODEReactionNetwork ###
+function DiffEqBase.ODEProblem(odern::ODEReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...)
+    ODEProblem(odern.f::Function, u0::Union{AbstractArray, Number}, args...; kwargs...)
+end
+
+
+### SDEProblem from AbstractReactNetwork ###
 function DiffEqBase.SDEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
 
     SDEProblem(get_sdefun!(rn)::Function, rn.properties[:g]::Function, u0, args...; 
             noise_rate_prototype=rn.properties[:p_matrix]::Array{Float64,2}, kwargs...)
 end
 
+### SDEProblem from SDEReactionNetwork ###
+function DiffEqBase.SDEProblem(sdern::SDEReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
+
+    SDEProblem(sdern.odern.f::Function, sdern.g::Function, u0, args...; 
+            noise_rate_prototype=sdern.p_matrix::Array{Float64,2}, kwargs...)
+end
+
+
 ### JumpProblem ###
-function DiffEqJump.JumpProblem(prob,aggregator,rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
-
-    if !haskey(rn.properties,:jumps)
-        gen_jumpfun!(rn)
-    end
-
-    if typeof(prob)<:DiscreteProblem && any(x->typeof(x) <: VariableRateJump, rn.properties[:jumps])
+function build_jump_problem(prob, aggregator; rn::DiffEqBase.AbstractReactionNetwork, jumps, kwargs...)    
+    if typeof(prob)<:DiscreteProblem && any(x->typeof(x) <: VariableRateJump, jumps)
         error("When using time dependant reaction rates a DiscreteProblem should not be used (try an ODEProblem). Also, use a continious solver.")
     end
 
@@ -28,7 +37,7 @@ function DiffEqJump.JumpProblem(prob,aggregator,rn::DiffEqBase.AbstractReactionN
     param_to_idx = rate_to_indices(rn)
 
     # get a JumpSet of the possible jumps
-    jset = network_to_jumpset(rn, spec_to_idx, param_to_idx, prob.p)
+    jset = network_to_jumpset(rn, spec_to_idx, param_to_idx, prob.p, jumps)
 
     # construct map from species index to indices of reactions that depend on it
     if needs_vartojumps_map(aggregator) || needs_depgraph(aggregator)
@@ -54,12 +63,35 @@ function DiffEqJump.JumpProblem(prob,aggregator,rn::DiffEqBase.AbstractReactionN
                                         vartojumps_map=spec_to_jumps_vec,
                                         jumptovars_map=jump_to_specs_vec,
                                         kwargs...)
+
 end
 
-### SteadyStateProblem ###
+### JumpProblem from AbstractReactNetwork
+function DiffEqJump.JumpProblem(prob, aggregator, rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
+    if !haskey(rn.properties,:jumps)
+        gen_jumpfun!(rn)
+    end
+
+    build_jump_problem(prob, aggregator; rn=rn, jumps=rn.properties[:jumps], kwargs...)
+end
+
+### JumpProblem from JumpReactionNetwork
+function DiffEqJump.JumpProblem(prob, aggregator, jumprn::JumpReactionNetwork; kwargs...)
+    build_jump_problem(prob, aggregator; rn=jumprn.rn, jumps=jumprn.jumps, kwargs...)
+end
+
+### SteadyStateProblem from AbstractReactionNetwork ###
 DiffEqBase.SteadyStateProblem(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) =
     SteadyStateProblem(get_odefun!(rn).f, args...; kwargs...)
 
 function DiffEqBase.SteadyStateProblem{isinplace}(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) where isinplace
     SteadyStateProblem{isinplace}(get_odefun!(rn).f, args...; kwargs...)
+end
+
+### SteadyStateProblem from ODEReactionNetwork ###
+DiffEqBase.SteadyStateProblem(odern::ODEReactionNetwork, args...; kwargs...) =
+    SteadyStateProblem(odern.f, args...; kwargs...)
+
+function DiffEqBase.SteadyStateProblem{isinplace}(odern::ODEReactionNetwork, args...; kwargs...) where isinplace
+    SteadyStateProblem{isinplace}(odern.f, args...; kwargs...)
 end

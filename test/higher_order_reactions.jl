@@ -1,4 +1,4 @@
-using DiffEqBiological, OrdinaryDiffEq, Test
+using DiffEqBiological, OrdinaryDiffEq, Test, Statistics
 
 function tmp_sol2vec(sol,j)
     vect = Vector{Float64}(undef,length(sol.u))
