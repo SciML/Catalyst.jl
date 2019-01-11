@@ -83,5 +83,5 @@ function JumpReactionNetwork(rn, args...)
     # parse the jumps
     (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, syms_to_ints, params_to_ints)
 
-    JumpReactionNetwork(jump_rate_expr, jump_affect_expr, jumps, regular_jumps, rn)
+    JumpReactionNetwork(jump_rate_expr, jump_affect_expr, eval(jumps), eval(regular_jumps), rn)
 end
