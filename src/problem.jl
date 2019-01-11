@@ -1,16 +1,10 @@
 ### ODEProblem from ODEReactionNetwork ###
-function DiffEqBase.ODEProblem(odern::ODEReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...)
+DiffEqBase.ODEProblem(odern::ODEReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) = 
     ODEProblem(odern.f::Function, u0::Union{AbstractArray, Number}, args...; kwargs...)
-end
-
 
 ### SDEProblem from SDEReactionNetwork ###
-function DiffEqBase.SDEProblem(sdern::SDEReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
-
-    SDEProblem(sdern.odern.f::Function, sdern.g::Function, u0, args...; 
-            noise_rate_prototype=sdern.p_matrix::Array{Float64,2}, kwargs...)
-end
-
+DiffEqBase.SDEProblem(sdern::SDEReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) =
+    SDEProblem(sdern.odern.f::Function, sdern.g::Function, u0, args...; noise_rate_prototype=sdern.p_matrix::Array{Float64,2}, kwargs...)
 
 ### JumpProblem ###
 function build_jump_problem(prob, aggregator; rn::DiffEqBase.AbstractReactionNetwork, jumps, kwargs...)    
@@ -51,14 +45,12 @@ function build_jump_problem(prob, aggregator; rn::DiffEqBase.AbstractReactionNet
                                         vartojumps_map=spec_to_jumps_vec,
                                         jumptovars_map=jump_to_specs_vec,
                                         kwargs...)
-
 end
-
 
 ### JumpProblem from JumpReactionNetwork
-function DiffEqJump.JumpProblem(prob, aggregator, jumprn::JumpReactionNetwork; kwargs...)
+DiffEqJump.JumpProblem(prob, aggregator, jumprn::JumpReactionNetwork; kwargs...) = 
     build_jump_problem(prob, aggregator; rn=jumprn.rn, jumps=jumprn.jumps, kwargs...)
-end
+
 
 ### SteadyStateProblem from ODEReactionNetwork ###
 DiffEqBase.SteadyStateProblem(odern::ODEReactionNetwork, args...; kwargs...) =
