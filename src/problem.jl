@@ -1,20 +1,8 @@
-### ODEProblem from AbstractReactionNetwork ###
-function DiffEqBase.ODEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...)
-    ODEProblem(get_odefun!(rn)::Function, u0::Union{AbstractArray, Number}, args...; kwargs...)
-end
-
 ### ODEProblem from ODEReactionNetwork ###
 function DiffEqBase.ODEProblem(odern::ODEReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...)
     ODEProblem(odern.f::Function, u0::Union{AbstractArray, Number}, args...; kwargs...)
 end
 
-
-### SDEProblem from AbstractReactNetwork ###
-function DiffEqBase.SDEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
-
-    SDEProblem(get_sdefun!(rn)::Function, rn.properties[:g]::Function, u0, args...; 
-            noise_rate_prototype=rn.properties[:p_matrix]::Array{Float64,2}, kwargs...)
-end
 
 ### SDEProblem from SDEReactionNetwork ###
 function DiffEqBase.SDEProblem(sdern::SDEReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
@@ -66,26 +54,10 @@ function build_jump_problem(prob, aggregator; rn::DiffEqBase.AbstractReactionNet
 
 end
 
-### JumpProblem from AbstractReactNetwork
-function DiffEqJump.JumpProblem(prob, aggregator, rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
-    if !haskey(rn.properties,:jumps)
-        gen_jumpfun!(rn)
-    end
-
-    build_jump_problem(prob, aggregator; rn=rn, jumps=rn.properties[:jumps], kwargs...)
-end
 
 ### JumpProblem from JumpReactionNetwork
 function DiffEqJump.JumpProblem(prob, aggregator, jumprn::JumpReactionNetwork; kwargs...)
     build_jump_problem(prob, aggregator; rn=jumprn.rn, jumps=jumprn.jumps, kwargs...)
-end
-
-### SteadyStateProblem from AbstractReactionNetwork ###
-DiffEqBase.SteadyStateProblem(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) =
-    SteadyStateProblem(get_odefun!(rn).f, args...; kwargs...)
-
-function DiffEqBase.SteadyStateProblem{isinplace}(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) where isinplace
-    SteadyStateProblem{isinplace}(get_odefun!(rn).f, args...; kwargs...)
 end
 
 ### SteadyStateProblem from ODEReactionNetwork ###

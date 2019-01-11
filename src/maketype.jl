@@ -1,8 +1,7 @@
 function maketype(name, syms, scale_noise; params = Symbol[], 
                 reactions = Vector{ReactionStruct}(undef, 0),
                 syms_to_ints = OrderedDict{Symbol,Int}(),
-                params_to_ints = OrderedDict{Symbol,Int}(),
-                properties = Dict{Symbol,Any}())
+                params_to_ints = OrderedDict{Symbol,Int}())
     typeex = :(mutable struct $name <: DiffEqBase.AbstractReactionNetwork
         syms::Vector{Symbol}
         scale_noise::Symbol
@@ -10,7 +9,6 @@ function maketype(name, syms, scale_noise; params = Symbol[],
         reactions::Vector{ReactionStruct}
         syms_to_ints::OrderedDict{Symbol,Int}
         params_to_ints::OrderedDict{Symbol,Int}
-        properties::Dict{Symbol,Any}
     end)
 
     # Make the default constructor
@@ -20,9 +18,8 @@ function maketype(name, syms, scale_noise; params = Symbol[],
                     $(Expr(:kw, :params, params)),
                     $(Expr(:kw, :reactions, reactions)),
                     $(Expr(:kw, :syms_to_ints, syms_to_ints)),
-                    $(Expr(:kw, :params_to_ints, params_to_ints)),
-                    $(Expr(:kw, :properties, properties))) =
-                    $(name)(syms, scale_noise, params, reactions, syms_to_ints, params_to_ints, properties)) |> esc
+                    $(Expr(:kw, :params_to_ints, params_to_ints))) =
+                    $(name)(syms, scale_noise, params, reactions, syms_to_ints, params_to_ints)) |> esc
 
     # Make the type instance using the default constructor
     typeex, constructorex
@@ -80,11 +77,11 @@ mutable struct JumpReactionNetwork{Q,R,S,T,U <: DiffEqBase.AbstractReactionNetwo
     rn::U
 end
 
-function JumpReactionNetwork(rn::DiffEqBase.AbstractReactionNetwork)
+function JumpReactionNetwork(rn, args...)
     @unpack reactions, syms_to_ints, params_to_ints = rn
 
     # parse the jumps
     (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, syms_to_ints, params_to_ints)
 
-    JumpReactionNetwork(jump_rate_expr, jump_affect_expr, eval(jumps), eval(regular_jumps), rn)
+    JumpReactionNetwork(jump_rate_expr, jump_affect_expr, jumps, regular_jumps, rn)
 end

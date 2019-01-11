@@ -19,7 +19,9 @@ function execute_test(u0, tf, rates, rs, Nsims, expected_avg, idx, test_name)
     prob = DiscreteProblem(u0, (0.0, tf), rates)
 
     for method in algs
-        jump_prob = JumpProblem(prob, method, rs)
+        jump_rn = DiffEqBiological.@JumpReactionNetwork(rs)
+        jump_prob = JumpProblem(prob, method, jump_rn)
+        #jump_prob = JumpProblem(prob, method, rs)
         avg_val = runSSAs(jump_prob, Nsims, idx)
 
         if dotestmean
