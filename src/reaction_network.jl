@@ -85,7 +85,6 @@ function coordinate(name, ex::Expr, p, scale_noise)
 
     # Build the type
     exprs = Vector{Expr}(undef,0)
-    #typeex,constructorex = maketype(name, syms, scale_noise; params=params, reactions=reactions, syms_to_ints=reactants, params_to_ints=parameters)
     typeex,constructorex = maketype(name, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, syms, scale_noise; params=params, reactions=reactions, symjac=nothing, syms_to_ints=reactants, params_to_ints=parameters)
     
     push!(exprs,typeex)
