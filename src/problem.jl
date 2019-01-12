@@ -1,10 +1,10 @@
-### ODEProblem from ODEReactionNetwork ###
+### ODEProblem from AbstractReactionNetwork ###
 function DiffEqBase.ODEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
     (rn.f == nothing) && gen_ode!(rn)
     ODEProblem( rn.f::Function, u0::Union{AbstractArray, Number}, args...; kwargs...)
 end
 
-### SDEProblem from SDEReactionNetwork ###
+### SDEProblem from AbstractReactionNetwork ###
 function DiffEqBase.SDEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
     (rn.g == nothing) && gen_sde!(rn)
     SDEProblem( rn.f::Function, rn.g::Function, u0, args...; noise_rate_prototype=rn.p_matrix::Array{Float64,2}, kwargs...)
@@ -51,14 +51,14 @@ function build_jump_problem(prob, aggregator, rn::DiffEqBase.AbstractReactionNet
                                         kwargs...)
 end
 
-### JumpProblem from JumpReactionNetwork
+### JumpProblem from AbstractReactionNetwork
 function DiffEqJump.JumpProblem(prob, aggregator, rn::DiffEqBase.AbstractReactionNetwork; kwargs...) 
     (rn.jumps == nothing) && gen_jumps!(rn)
     build_jump_problem(prob, aggregator, rn, rn.jumps, kwargs...)
 end
 
 
-### SteadyStateProblem from ODEReactionNetwork ###
+### SteadyStateProblem from AbstractReactionNetwork ###
 function DiffEqBase.SteadyStateProblem(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) 
     (rn.f == nothing) && gen_ode!(rn)
     SteadyStateProblem(rn.f, args...; kwargs...)
