@@ -19,7 +19,7 @@ include("massaction_jump_utils.jl")
 include("problem.jl")
 
 export @reaction_network, @reaction_func
-export ODEReactionNetwork, SDEReactionNetwork, JumpReactionNetwork
+export gen_ode!, gen_sde!, gen_jumps!
 export SDEProblem, JumpProblem, SteadyStateProblem
 
 end # module

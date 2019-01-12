@@ -1,13 +1,17 @@
 ### ODEProblem from ODEReactionNetwork ###
-DiffEqBase.ODEProblem(odern::ODEReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) = 
-    ODEProblem(odern.f::Function, u0::Union{AbstractArray, Number}, args...; kwargs...)
+function DiffEqBase.ODEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
+    (rn.f == nothing) && gen_ode!(rn)
+    ODEProblem( rn.f::Function, u0::Union{AbstractArray, Number}, args...; kwargs...)
+end
 
 ### SDEProblem from SDEReactionNetwork ###
-DiffEqBase.SDEProblem(sdern::SDEReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) =
-    SDEProblem(sdern.odern.f::Function, sdern.g::Function, u0, args...; noise_rate_prototype=sdern.p_matrix::Array{Float64,2}, kwargs...)
+function DiffEqBase.SDEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
+    (rn.g == nothing) && gen_sde!(rn)
+    SDEProblem( rn.f::Function, rn.g::Function, u0, args...; noise_rate_prototype=rn.p_matrix::Array{Float64,2}, kwargs...)
+end
 
 ### JumpProblem ###
-function build_jump_problem(prob, aggregator; rn::DiffEqBase.AbstractReactionNetwork, jumps, kwargs...)    
+function build_jump_problem(prob, aggregator, rn::DiffEqBase.AbstractReactionNetwork, jumps, kwargs...)    
     if typeof(prob)<:DiscreteProblem && any(x->typeof(x) <: VariableRateJump, jumps)
         error("When using time dependant reaction rates a DiscreteProblem should not be used (try an ODEProblem). Also, use a continious solver.")
     end
@@ -48,14 +52,19 @@ function build_jump_problem(prob, aggregator; rn::DiffEqBase.AbstractReactionNet
 end
 
 ### JumpProblem from JumpReactionNetwork
-DiffEqJump.JumpProblem(prob, aggregator, jumprn::JumpReactionNetwork; kwargs...) = 
-    build_jump_problem(prob, aggregator; rn=jumprn.rn, jumps=jumprn.jumps, kwargs...)
+function DiffEqJump.JumpProblem(prob, aggregator, rn::DiffEqBase.AbstractReactionNetwork; kwargs...) 
+    (rn.jumps == nothing) && gen_jumps!(rn)
+    build_jump_problem(prob, aggregator, rn, rn.jumps, kwargs...)
+end
 
 
 ### SteadyStateProblem from ODEReactionNetwork ###
-DiffEqBase.SteadyStateProblem(odern::ODEReactionNetwork, args...; kwargs...) =
-    SteadyStateProblem(odern.f, args...; kwargs...)
+function DiffEqBase.SteadyStateProblem(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) 
+    (rn.f == nothing) && gen_ode!(rn)
+    SteadyStateProblem(rn.f, args...; kwargs...)
+end
 
-function DiffEqBase.SteadyStateProblem{isinplace}(odern::ODEReactionNetwork, args...; kwargs...) where isinplace
-    SteadyStateProblem{isinplace}(odern.f, args...; kwargs...)
+function DiffEqBase.SteadyStateProblem{isinplace}(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) where isinplace
+    (rn.f == nothing) && gen_ode!(rn)
+    SteadyStateProblem{isinplace}(rn.f, args...; kwargs...)
 end
