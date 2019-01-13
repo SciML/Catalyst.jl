@@ -20,6 +20,6 @@ include("problem.jl")
 
 export @reaction_network, @reaction_func
 export gen_ode!, gen_sde!, gen_jumps!
-export SDEProblem, JumpProblem, SteadyStateProblem
+export ODEProblem, SDEProblem, JumpProblem, SteadyStateProblem
 
 end # module
