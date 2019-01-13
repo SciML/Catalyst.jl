@@ -80,6 +80,7 @@ u0           = [0,0,0,0]
 u0[something(findfirst(isequal(:DNA),rs.syms),0)] = 1
 expected_avg = 5.926553750000000e+02
 rates = [.5, (20*log(2.)/120.), (log(2.)/120.), (log(2.)/600.), .025, 1.]
+gen_jumps!(rs)
 execute_test(u0, tf, rates, rs, Nsims, expected_avg, something(findfirst(isequal(:P),rs.syms), 0), "DNA mixed jump test")
 
 # simple constant production with degratation

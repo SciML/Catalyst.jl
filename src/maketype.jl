@@ -124,4 +124,3 @@ function gen_jumps!(rn::DiffEqBase.AbstractReactionNetwork)
 
     nothing
 end
-
