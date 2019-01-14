@@ -3,8 +3,8 @@ DiffEqBase.SDEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{Abstract
     SDEProblem(rn, rn.g::Function, u0, args...;noise_rate_prototype=rn.p_matrix, kwargs...)
 
 ### JumpProblem ###
-function DiffEqJump.JumpProblem(prob,aggregator,rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
-    if typeof(prob)<:DiscreteProblem && any(x->typeof(x) <: VariableRateJump, rn.jumps)
+function build_jump_problem(prob, aggregator, rn::DiffEqBase.AbstractReactionNetwork, jumps, kwargs...)
+    if typeof(prob)<:DiscreteProblem && any(x->typeof(x) <: VariableRateJump, jumps)
         error("When using time dependant reaction rates a DiscreteProblem should not be used (try an ODEProblem). Also, use a continious solver.")
     end
 
@@ -15,7 +15,7 @@ function DiffEqJump.JumpProblem(prob,aggregator,rn::DiffEqBase.AbstractReactionN
     param_to_idx = rate_to_indices(rn)
 
     # get a JumpSet of the possible jumps
-    jset = network_to_jumpset(rn, spec_to_idx, param_to_idx, prob.p)
+    jset = network_to_jumpset(rn, spec_to_idx, param_to_idx, prob.p, jumps)
 
     # construct map from species index to indices of reactions that depend on it
     if needs_vartojumps_map(aggregator) || needs_depgraph(aggregator)
@@ -41,6 +41,11 @@ function DiffEqJump.JumpProblem(prob,aggregator,rn::DiffEqBase.AbstractReactionN
                                         vartojumps_map=spec_to_jumps_vec,
                                         jumptovars_map=jump_to_specs_vec,
                                         kwargs...)
+end
+
+### JumpProblem from AbstractReactionNetwork
+function DiffEqJump.JumpProblem(prob, aggregator, rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
+    build_jump_problem(prob, aggregator, rn, rn.jumps, kwargs...)
 end
 
 ### SteadyStateProblem ###
