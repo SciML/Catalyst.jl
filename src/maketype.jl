@@ -1,4 +1,5 @@
-function maketype(name,
+function maketype(abstracttype, 
+                  name,
                   f,
                   f_func,
                   f_symfuncs,
@@ -19,7 +20,7 @@ function maketype(name,
                   params_to_ints = OrderedDict{Symbol,Int}()              
                   )
 
-    typeex = :(mutable struct $name <: DiffEqBase.AbstractReactionNetwork
+    typeex = :(mutable struct $name <: $(abstracttype)
         f::Union{Function,Nothing}
         f_func::Union{Vector{Expr},Nothing}
         f_symfuncs::Union{Matrix{SymEngine.Basic},Nothing}
@@ -81,7 +82,7 @@ function maketype(name,
     typeex,constructorex
 end
 
-function gen_ode!(rn::DiffEqBase.AbstractReactionNetwork)
+function gen_ode!(rn::MinReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints = rn
 
     f_expr        = get_f(reactions, syms_to_ints)
@@ -93,7 +94,7 @@ function gen_ode!(rn::DiffEqBase.AbstractReactionNetwork)
     nothing
 end
 
-function gen_sde!(rn::DiffEqBase.AbstractReactionNetwork)
+function gen_sde!(rn::MinReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints, scale_noise = rn
 
     # first construct an ODE reaction network
@@ -109,7 +110,7 @@ function gen_sde!(rn::DiffEqBase.AbstractReactionNetwork)
     nothing
 end
 
-function gen_jumps!(rn::DiffEqBase.AbstractReactionNetwork)
+function gen_jumps!(rn::MinReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints = rn
 
     # parse the jumps

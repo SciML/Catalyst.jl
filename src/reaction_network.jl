@@ -62,6 +62,25 @@ macro reaction_network(ex::Expr, p...)
     coordinate(:reaction_network, MacroTools.striplines(ex), p, :no___noise___scaling)
 end
 
+################# query-based macros:
+macro min_reaction_network(name, ex::Expr, p...)
+    min_coordinate(name, MacroTools.striplines(ex), p, :no___noise___scaling)
+end
+
+#Macro to create a reaction network model. Multiple dispatch is used to allow for SDE noise scalling.
+macro min_reaction_network(name, scale_noise, ex::Expr, p...)
+    in(scale_noise, p) || (p = (p..., scale_noise))
+    min_coordinate(name, MacroTools.striplines(ex), p, scale_noise)
+end
+
+#If no type name is given, creates a network with a default name.
+macro min_reaction_network(ex::Expr, p...)
+    min_coordinate(:min_reaction_network, MacroTools.striplines(ex), p, :no___noise___scaling)
+end
+
+
+#################
+
 #Declare various arrow types symbols used for the empty set (also 0).
 empty_set = Set{Symbol}([:∅])
 fwd_arrows = Set{Symbol}([:>, :→, :↣, :↦, :⇾, :⟶, :⟼, :⥟, :⥟, :⇀, :⇁, :⇒, :⟾])
@@ -103,7 +122,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     f_funcs = [element.args[2] for element in f_expr]
     g_funcs = [element.args[2] for element in g_expr]
 
-    typeex,constructorex = maketype(name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters)
+    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters)
 
     push!(exprs,typeex)
     push!(exprs,constructorex)
@@ -115,6 +134,32 @@ function coordinate(name, ex::Expr, p, scale_noise)
     ## Add a method which allocates the `du` and returns it instead of being inplace
     overloadex = :(((f::$name))(u,p,t::Number) = (du=similar(u); f(du,u,p,t); du)) |> esc
     push!(exprs,overloadex)
+
+    # export type constructor
+    def_const_ex = :(($name)()) |> esc
+    push!(exprs,def_const_ex)
+
+    expr_arr_to_block(exprs)
+end
+
+# min_reaction_network coordination function, actually does all the work of the macro.
+function min_coordinate(name, ex::Expr, p, scale_noise)
+    reactions = get_reactions(ex)           ::Vector{ReactionStruct}
+    reactants = get_reactants(reactions)    ::OrderedDict{Symbol,Int}
+    parameters = get_parameters(p)          ::OrderedDict{Symbol,Int}
+
+    syms = collect(keys(reactants))
+    params = collect(keys(parameters))
+    (in(:t,union(syms,params))) && error("t is reserved for the time variable and may neither be used as a reactant nor a parameter")
+
+    update_reaction_info(reactions,syms)
+
+    # Build the type
+    exprs = Vector{Expr}(undef,0)
+    typeex,constructorex = maketype(MinReactionNetwork, name, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, syms, scale_noise; params=params, reactions=reactions, symjac=nothing, syms_to_ints=reactants, params_to_ints=parameters)
+    
+    push!(exprs,typeex)
+    push!(exprs,constructorex)
 
     # export type constructor
     def_const_ex = :(($name)()) |> esc
