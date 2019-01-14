@@ -20,7 +20,7 @@ include("maketype.jl")
 include("massaction_jump_utils.jl")
 include("problem.jl")
 
-export @reaction_network, @reaction_func
+export @reaction_network, @reaction_func, @min_reaction_network
 export add_ode_funs!, add_sde_funs!, add_jump_funs!
 export SDEProblem, JumpProblem, SteadyStateProblem
 

@@ -1,9 +1,21 @@
-### SDEProblem ###
+### ODEProblem from MinReactionNetwork ###
+function DiffEqBase.ODEProblem(rn::MinReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
+    isa(rn.f, Function) || error("Call add_ode_funs! before constructing ODEProblems")
+    ODEProblem( rn.f::Function, u0::Union{AbstractArray, Number}, args...; kwargs...)
+end
+
+### SDEProblem from AbstractReactionNetwork ###
 DiffEqBase.SDEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) =
     SDEProblem(rn, rn.g::Function, u0, args...;noise_rate_prototype=rn.p_matrix, kwargs...)
 
+### SDEProblem from MinReactionNetwork ###
+function DiffEqBase.SDEProblem(rn::MinReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
+    isa(rn.g, Function) || error("Call add_sde_funs! before constructing SDEProblems")
+    SDEProblem( rn.f::Function, rn.g::Function, u0, args...; noise_rate_prototype=rn.p_matrix::Array{Float64,2}, kwargs...)
+end
+
 ### JumpProblem ###
-function build_jump_problem(prob, aggregator, rn::DiffEqBase.AbstractReactionNetwork, jumps, kwargs...)
+function build_jump_problem(prob, aggregator, rn, jumps, kwargs...)
     if typeof(prob)<:DiscreteProblem && any(x->typeof(x) <: VariableRateJump, jumps)
         error("When using time dependant reaction rates a DiscreteProblem should not be used (try an ODEProblem). Also, use a continious solver.")
     end
@@ -43,15 +55,33 @@ function build_jump_problem(prob, aggregator, rn::DiffEqBase.AbstractReactionNet
                                         kwargs...)
 end
 
-### JumpProblem from AbstractReactionNetwork
+### JumpProblem from AbstractReactionNetwork ###
 function DiffEqJump.JumpProblem(prob, aggregator, rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     build_jump_problem(prob, aggregator, rn, rn.jumps, kwargs...)
 end
 
-### SteadyStateProblem ###
+### JumpProblem from MinReactionNetwork ###
+function DiffEqJump.JumpProblem(prob, aggregator, rn::MinReactionNetwork; kwargs...) 
+    (rn.jumps != nothing) || error("Call add_jump_funs! before constructing SDEProblems")
+    build_jump_problem(prob, aggregator, rn, rn.jumps, kwargs...)
+end
+
+
+### SteadyStateProblem from AbstractReactionNetwork ###
 DiffEqBase.SteadyStateProblem(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) =
     SteadyStateProblem(rn.f, args...; kwargs...)
 
 function DiffEqBase.SteadyStateProblem{isinplace}(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) where isinplace
+    SteadyStateProblem{isinplace}(rn.f, args...; kwargs...)
+end
+
+### SteadyStateProblem from MinReactionNetwork ###
+function DiffEqBase.SteadyStateProblem(rn::MinReactionNetwork, args...; kwargs...) 
+    isa(rn.f, Function) || error("Call add_ode_funs! before constructing SteadyStateProblems")
+    SteadyStateProblem(rn.f, args...; kwargs...)
+end
+
+function DiffEqBase.SteadyStateProblem{isinplace}(rn::MinReactionNetwork, args...; kwargs...) where isinplace
+    isa(rn.f, Function) || error("Call add_ode_funs! before constructing SteadyStateProblems")
     SteadyStateProblem{isinplace}(rn.f, args...; kwargs...)
 end

@@ -99,7 +99,7 @@ function add_sde_funs!(rn::MinReactionNetwork)
 
     # first construct an ODE reaction network
     if rn.f == nothing 
-        gen_ode!(rn)
+        add_ode_funs!(rn)
     end
 
     g_expr      = get_g(reactions, syms_to_ints, scale_noise)
