@@ -82,7 +82,7 @@ function maketype(abstracttype,
     typeex,constructorex
 end
 
-function gen_ode!(rn::MinReactionNetwork)
+function add_ode_funs!(rn::MinReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints = rn
 
     f_expr        = get_f(reactions, syms_to_ints)
@@ -94,7 +94,7 @@ function gen_ode!(rn::MinReactionNetwork)
     nothing
 end
 
-function gen_sde!(rn::MinReactionNetwork)
+function add_sde_funs!(rn::MinReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints, scale_noise = rn
 
     # first construct an ODE reaction network
@@ -110,7 +110,7 @@ function gen_sde!(rn::MinReactionNetwork)
     nothing
 end
 
-function gen_jumps!(rn::MinReactionNetwork)
+function add_jump_funs!(rn::MinReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints = rn
 
     # parse the jumps
