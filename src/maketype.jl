@@ -17,7 +17,9 @@ function maketype(abstracttype,
                   symjac=Matrix{Expr}(undef,0,0),
                   reactions=Vector{ReactionStruct}(undef,0),
                   syms_to_ints = OrderedDict{Symbol,Int}(),
-                  params_to_ints = OrderedDict{Symbol,Int}()              
+                  params_to_ints = OrderedDict{Symbol,Int}(),
+                  odefun = nothing,
+                  sdefun = nothing
                   )
 
     typeex = :(mutable struct $name <: $(abstracttype)
@@ -38,6 +40,8 @@ function maketype(abstracttype,
         syms_to_ints::OrderedDict{Symbol,Int}
         params_to_ints::OrderedDict{Symbol,Int}
         scale_noise::Symbol
+        odefun::Union{ODEFunction,Nothing}
+        sdefun::Union{SDEFunction,Nothing}
     end)
     # Make the default constructor
     constructorex = :($(name)(;
@@ -57,7 +61,9 @@ function maketype(abstracttype,
                 $(Expr(:kw,:reactions,reactions)),
                 $(Expr(:kw,:syms_to_ints, syms_to_ints)),
                 $(Expr(:kw,:params_to_ints, params_to_ints)), 
-                $(Expr(:kw,:scale_noise, Meta.quot(scale_noise)))) =
+                $(Expr(:kw,:scale_noise, Meta.quot(scale_noise))),
+                $(Expr(:kw,:odefun, odefun)), 
+                $(Expr(:kw,:sdefun, sdefun))) =
                 $(name)(
                         f,
                         f_func,
@@ -75,14 +81,16 @@ function maketype(abstracttype,
                         reactions,
                         syms_to_ints,
                         params_to_ints,
-                        scale_noise
+                        scale_noise,
+                        odefun,
+                        sdefun
                         )) |> esc
 
     # Make the type instance using the default constructor
     typeex,constructorex
 end
 
-function add_ode_funs!(rn::MinReactionNetwork)
+function addodes!(rn::MinReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints = rn
 
     f_expr        = get_f(reactions, syms_to_ints)
@@ -90,27 +98,32 @@ function add_ode_funs!(rn::MinReactionNetwork)
     rn.f_func     = [element.args[2] for element in f_expr]
     rn.symjac     = eval( Expr(:quote, calculate_jac(deepcopy(rn.f_func), rn.syms)) )
     rn.f_symfuncs = hcat([SymEngine.Basic(f) for f in rn.f_func])
+    rn.odefun     = ODEFunction(rn.f; syms=rn.syms)
+
+    # functor for evaluating f
+    eval( :(((f::typeof($rn)))(du, u, p, t::Number) = f.f(du, u, p, t)) )
 
     nothing
 end
 
-function add_sde_funs!(rn::MinReactionNetwork)
+function addsdes!(rn::MinReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints, scale_noise = rn
 
     # first construct an ODE reaction network
     if rn.f == nothing 
-        add_ode_funs!(rn)
+        addodes!(rn)
     end
 
     g_expr      = get_g(reactions, syms_to_ints, scale_noise)
     rn.g        = eval(make_func(g_expr, syms_to_ints, params_to_ints))
     rn.g_func   = [element.args[2] for element in g_expr]
     rn.p_matrix = zeros(length(syms_to_ints), length(reactions))
+    rn.sdefun   = SDEFunction(rn.f, rn.g; syms=rn.syms)
 
     nothing
 end
 
-function add_jump_funs!(rn::MinReactionNetwork)
+function addjumps!(rn::MinReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints = rn
 
     # parse the jumps

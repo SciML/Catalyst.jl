@@ -13,7 +13,7 @@ using Parameters
 
 using Compat
 
-abstract type MinReactionNetwork end
+abstract type MinReactionNetwork <: DiffEqBase.AbstractReactionNetwork end
 
 include("reaction_network.jl")
 include("maketype.jl")
@@ -21,7 +21,7 @@ include("massaction_jump_utils.jl")
 include("problem.jl")
 
 export @reaction_network, @reaction_func, @min_reaction_network
-export add_ode_funs!, add_sde_funs!, add_jump_funs!
+export addodes!, addsdes!, addjumps!
 export ODEProblem, SDEProblem, JumpProblem, SteadyStateProblem
 
 end # module

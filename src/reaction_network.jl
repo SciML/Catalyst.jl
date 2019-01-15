@@ -122,7 +122,9 @@ function coordinate(name, ex::Expr, p, scale_noise)
     f_funcs = [element.args[2] for element in f_expr]
     g_funcs = [element.args[2] for element in g_expr]
 
-    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters)
+    odefun = :(ODEFunction(f; syms=$syms))
+    sdefun = :(SDEFunction(f, g; syms=$syms))
+    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters, odefun=odefun, sdefun=sdefun)
 
     push!(exprs,typeex)
     push!(exprs,constructorex)

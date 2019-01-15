@@ -1,18 +1,14 @@
-### ODEProblem from MinReactionNetwork ###
-function DiffEqBase.ODEProblem(rn::MinReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
-    isa(rn.f, Function) || error("Call add_ode_funs! before constructing ODEProblems")
-    ODEProblem( rn.f::Function, u0::Union{AbstractArray, Number}, args...; kwargs...)
+### ODEProblem from AbstractReactionNetwork ###
+function DiffEqBase.ODEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
+    isa(rn.odefun, ODEFunction) || error("Call addodes! before constructing ODEProblems")
+    ODEProblem(rn.odefun, u0::Union{AbstractArray, Number}, args...; kwargs...)
 end
 
 ### SDEProblem from AbstractReactionNetwork ###
-DiffEqBase.SDEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) =
-    SDEProblem(rn, rn.g::Function, u0, args...;noise_rate_prototype=rn.p_matrix, kwargs...)
-
-### SDEProblem from MinReactionNetwork ###
-function DiffEqBase.SDEProblem(rn::MinReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
-    isa(rn.g, Function) || error("Call add_sde_funs! before constructing SDEProblems")
-    SDEProblem( rn.f::Function, rn.g::Function, u0, args...; noise_rate_prototype=rn.p_matrix::Array{Float64,2}, kwargs...)
-end
+function DiffEqBase.SDEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
+    isa(rn.sdefun, SDEFunction) || error("Call addsdes! before constructing SDEProblems")
+    SDEProblem(rn.sdefun, rn.g::Function, u0, args...;noise_rate_prototype=rn.p_matrix, kwargs...)
+end 
 
 ### JumpProblem ###
 function build_jump_problem(prob, aggregator, rn, jumps, kwargs...)
@@ -57,31 +53,17 @@ end
 
 ### JumpProblem from AbstractReactionNetwork ###
 function DiffEqJump.JumpProblem(prob, aggregator, rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
+    (rn.jumps != nothing) || error("Call addjumps! before constructing JumpProblems")
     build_jump_problem(prob, aggregator, rn, rn.jumps, kwargs...)
 end
 
-### JumpProblem from MinReactionNetwork ###
-function DiffEqJump.JumpProblem(prob, aggregator, rn::MinReactionNetwork; kwargs...) 
-    (rn.jumps != nothing) || error("Call add_jump_funs! before constructing SDEProblems")
-    build_jump_problem(prob, aggregator, rn, rn.jumps, kwargs...)
+### SteadyStateProblems from AbstractReactionNetwork ###
+function DiffEqBase.SteadyStateProblem(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) 
+    isa(rn.odefun, ODEFunction) || error("Call addodes! before constructing SteadyStateProblems")
+    SteadyStateProblem(rn.odefun, args...; kwargs...)
 end
-
-
-### SteadyStateProblem from AbstractReactionNetwork ###
-DiffEqBase.SteadyStateProblem(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) =
-    SteadyStateProblem(rn.f, args...; kwargs...)
 
 function DiffEqBase.SteadyStateProblem{isinplace}(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) where isinplace
-    SteadyStateProblem{isinplace}(rn.f, args...; kwargs...)
-end
-
-### SteadyStateProblem from MinReactionNetwork ###
-function DiffEqBase.SteadyStateProblem(rn::MinReactionNetwork, args...; kwargs...) 
-    isa(rn.f, Function) || error("Call add_ode_funs! before constructing SteadyStateProblems")
-    SteadyStateProblem(rn.f, args...; kwargs...)
-end
-
-function DiffEqBase.SteadyStateProblem{isinplace}(rn::MinReactionNetwork, args...; kwargs...) where isinplace
-    isa(rn.f, Function) || error("Call add_ode_funs! before constructing SteadyStateProblems")
-    SteadyStateProblem{isinplace}(rn.f, args...; kwargs...)
+    isa(rn.odefun, ODEFunction) || error("Call addodes! before constructing SteadyStateProblems")
+    SteadyStateProblem{isinplace}(rn.odefun, args...; kwargs...)
 end
