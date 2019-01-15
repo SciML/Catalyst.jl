@@ -90,7 +90,7 @@ function maketype(abstracttype,
     typeex,constructorex
 end
 
-function addodes!(rn::MinReactionNetwork)
+function addodes!(rn::DiffEqBase.AbstractReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints = rn
 
     f_expr        = get_f(reactions, syms_to_ints)
@@ -106,7 +106,7 @@ function addodes!(rn::MinReactionNetwork)
     nothing
 end
 
-function addsdes!(rn::MinReactionNetwork)
+function addsdes!(rn::DiffEqBase.AbstractReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints, scale_noise = rn
 
     # first construct an ODE reaction network
@@ -123,7 +123,7 @@ function addsdes!(rn::MinReactionNetwork)
     nothing
 end
 
-function addjumps!(rn::MinReactionNetwork)
+function addjumps!(rn::DiffEqBase.AbstractReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints = rn
 
     # parse the jumps

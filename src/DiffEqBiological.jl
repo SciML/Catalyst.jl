@@ -13,8 +13,6 @@ using Parameters
 
 using Compat
 
-abstract type MinReactionNetwork <: DiffEqBase.AbstractReactionNetwork end
-
 include("reaction_network.jl")
 include("maketype.jl")
 include("massaction_jump_utils.jl")
