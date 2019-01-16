@@ -28,7 +28,7 @@ function maketype(abstracttype,
         f_symfuncs::Union{Matrix{SymEngine.Basic},Nothing}
         g::Union{Function,Nothing}
         g_func::Union{Vector{Any},Nothing}
-        jumps::Union{Tuple{DiffEqJump.AbstractJump,Vararg{DiffEqJump.AbstractJump}},Nothing}
+        jumps::Union{Tuple{Vararg{DiffEqJump.AbstractJump}},Nothing}
         regular_jumps::Union{RegularJump,Nothing}
         jump_rate_expr::Union{Tuple{Any,Vararg{Any}},Nothing}
         jump_affect_expr::Union{Tuple{Vector{Expr},Vararg{Vector{Expr}}},Nothing}
@@ -90,19 +90,52 @@ function maketype(abstracttype,
     typeex,constructorex
 end
 
-function addodes!(rn::DiffEqBase.AbstractReactionNetwork)
-    @unpack reactions, syms_to_ints, params_to_ints = rn
+# type function expressions
+function gentypefun_exprs(name; esc_exprs=true, gen_inplace=true, gen_outofplace=true, gen_constructor=true)
+    exprs = Vector{Expr}(undef,0)     
 
-    f_expr        = get_f(reactions, syms_to_ints)
-    rn.f          = eval(make_func(f_expr, syms_to_ints, params_to_ints))
-    rn.f_func     = [element.args[2] for element in f_expr]
-    rn.symjac     = eval( Expr(:quote, calculate_jac(deepcopy(rn.f_func), rn.syms)) )
-    rn.f_symfuncs = hcat([SymEngine.Basic(f) for f in rn.f_func])
+    ## Overload the type so that it can act as a function.
+    if gen_inplace
+        overloadex = :(((f::$name))(du, u, p, t::Number) = (f.f(du, u, p, t); nothing))
+        push!(exprs,overloadex)
+    end
+
+    ## Add a method which allocates the `du` and returns it instead of being inplace
+    if gen_outofplace
+        overloadex = :(((f::$name))(u,p,t::Number) = (du=similar(u); f(du,u,p,t); du)) 
+        push!(exprs,overloadex)
+    end
+
+    # export type constructor
+    if gen_constructor
+        def_const_ex = :(($name)()) 
+        push!(exprs,def_const_ex)
+    end
+
+    # escape expressions for macros
+    if esc_exprs
+        for i in eachindex(exprs)
+            exprs[i] = exprs[i] |> esc
+        end
+    end
+
+    exprs
+end
+
+function addodes!(rn::DiffEqBase.AbstractReactionNetwork)
+    @unpack reactions, syms_to_ints, params_to_ints, syms = rn
+
+    (f_expr, f, f_rhs, symjac, f_symfuncs) = genode_exprs(reactions, syms_to_ints, params_to_ints, syms)
+    rn.f          = eval(f)
+    rn.f_func     = f_rhs
+    rn.symjac     = eval(symjac)
+    rn.f_symfuncs = f_symfuncs
     rn.odefun     = ODEFunction(rn.f; syms=rn.syms)
 
     # functor for evaluating f
-    eval( :(((f::typeof($rn)))(du, u, p, t::Number) = f.f(du, u, p, t)) )
-
+    functor_exprs = gentypefun_exprs(typeof(rn), esc_exprs=false, gen_constructor=false)
+    eval( expr_arr_to_block(functor_exprs) )
+    
     nothing
 end
 
@@ -114,25 +147,32 @@ function addsdes!(rn::DiffEqBase.AbstractReactionNetwork)
         addodes!(rn)
     end
 
-    g_expr      = get_g(reactions, syms_to_ints, scale_noise)
-    rn.g        = eval(make_func(g_expr, syms_to_ints, params_to_ints))
-    rn.g_func   = [element.args[2] for element in g_expr]
-    rn.p_matrix = zeros(length(syms_to_ints), length(reactions))
+    (g_expr, g, g_funcs, p_matrix) = gensde_exprs(reactions, syms_to_ints, params_to_ints, scale_noise)
+    rn.g        = eval(g)
+    rn.g_func   = g_funcs
+    rn.p_matrix = p_matrix
     rn.sdefun   = SDEFunction(rn.f, rn.g; syms=rn.syms)
 
     nothing
 end
 
-function addjumps!(rn::DiffEqBase.AbstractReactionNetwork)
+function addjumps!(rn::DiffEqBase.AbstractReactionNetwork; 
+                                    build_jumps=true, 
+                                    build_regular_jumps=true,
+                                    minimal_jumps=false)
+
     @unpack reactions, syms_to_ints, params_to_ints = rn
 
     # parse the jumps
-    (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, syms_to_ints, params_to_ints)
+    (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, 
+                                                                    syms_to_ints, 
+                                                                    params_to_ints; 
+                                                                    minimal_jumps=minimal_jumps)
 
     rn.jump_rate_expr   = jump_rate_expr
     rn.jump_affect_expr = jump_affect_expr
-    rn.jumps            = eval(jumps)
-    rn.regular_jumps    = eval(regular_jumps)
+    rn.jumps            = build_jumps ? eval(jumps) : nothing
+    rn.regular_jumps    = build_regular_jumps ? eval(regular_jumps) : nothing
 
     nothing
 end

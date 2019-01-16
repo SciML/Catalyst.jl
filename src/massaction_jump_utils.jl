@@ -87,11 +87,13 @@ function network_to_jumpset(rn, specmap, ratemap, params, jumps)
         Base.eval(param_context, :($param = $(params[index])))
     end
 
+    idx = 1
     for (i,rs) in enumerate(rn.reactions)
         if rs.is_pure_mass_action
             push!(majumpvec, make_majump(rs, specmap, ratemap, params, param_context))
         else
-            push!(cjumpvec, jumps[i])
+            push!(cjumpvec, jumps[idx])
+            idx += 1
         end
     end
 

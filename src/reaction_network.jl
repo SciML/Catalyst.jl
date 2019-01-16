@@ -92,60 +92,76 @@ funcdict = Dict{Symbol, Function}()                             #Stores user def
 
 #Coordination function, actually does all the work of the macro.
 function coordinate(name, ex::Expr, p, scale_noise)
-    reactions = get_reactions(ex)           ::Vector{ReactionStruct}
-    reactants = get_reactants(reactions)    ::OrderedDict{Symbol,Int}
-    parameters = get_parameters(p)          ::OrderedDict{Symbol,Int}
+    
+    # minimal reaction network components
+    (reactions, reactants, parameters, syms, params) = get_minnetwork(ex, p)
+    
+    # expressions for ODEs
+    (f_expr, f, f_rhs, symjac, f_symfuncs) = genode_exprs(reactions, reactants, parameters, syms)
+    odefun = :(ODEFunction(f; syms=$syms))
 
-    syms = collect(keys(reactants))
-    params = collect(keys(parameters))
-    (in(:t,union(syms,params))) && error("t is reserved for the time variable and may neither be used as a reactant nor a parameter")
+    # expressions for SDEs
+    (g_expr, g, g_funcs, p_matrix) = gensde_exprs(reactions, reactants, parameters, scale_noise)
+    sdefun = :(SDEFunction(f, g; syms=$syms))
 
-    update_reaction_info(reactions,syms)
-
-    f_expr = get_f(reactions, reactants)
-    f = make_func(f_expr, reactants, parameters)
-
-    g_expr = get_g(reactions, reactants, scale_noise)
-    g = make_func(g_expr, reactants, parameters)
-    p_matrix = zeros(length(reactants), length(reactions))
-
+    # expressions for jumps
     (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, reactants, parameters)
 
-    f_rhs = [element.args[2] for element in f_expr]
-    symjac = Expr(:quote, calculate_jac(deepcopy(f_rhs), syms))
-    f_symfuncs = hcat([SymEngine.Basic(f) for f in f_rhs])
-
     # Build the type
-    exprs = Vector{Expr}(undef,0)
-
-    ## only get the right-hand-side of the equations.
-    f_funcs = [element.args[2] for element in f_expr]
-    g_funcs = [element.args[2] for element in g_expr]
-
-    odefun = :(ODEFunction(f; syms=$syms))
-    sdefun = :(SDEFunction(f, g; syms=$syms))
-    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, f, f_funcs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters, odefun=odefun, sdefun=sdefun)
-
+    exprs = Vector{Expr}(undef,0)     
+    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, f, f_rhs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters, odefun=odefun, sdefun=sdefun)
     push!(exprs,typeex)
     push!(exprs,constructorex)
 
-    ## Overload the type so that it can act as a function.
-    overloadex = :(((f::$name))(du, u, p, t::Number) = f.f(du, u, p, t)) |> esc
-    push!(exprs,overloadex)
+    # add type functions
+    append!(exprs, gentypefun_exprs(name))
 
-    ## Add a method which allocates the `du` and returns it instead of being inplace
-    overloadex = :(((f::$name))(u,p,t::Number) = (du=similar(u); f(du,u,p,t); du)) |> esc
-    push!(exprs,overloadex)
-
-    # export type constructor
-    def_const_ex = :(($name)()) |> esc
-    push!(exprs,def_const_ex)
-
+    # return as one expression block
     expr_arr_to_block(exprs)
 end
 
 # min_reaction_network coordination function, actually does all the work of the macro.
 function min_coordinate(name, ex::Expr, p, scale_noise)
+
+    # minimal reaction network components
+    (reactions, reactants, parameters, syms, params) = get_minnetwork(ex, p)
+
+    # Build the type
+    exprs = Vector{Expr}(undef,0)
+    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, syms, scale_noise; params=params, reactions=reactions, symjac=nothing, syms_to_ints=reactants, params_to_ints=parameters)    
+    push!(exprs,typeex)
+    push!(exprs,constructorex)
+
+    # add type functions
+    append!(exprs, gentypefun_exprs(name, gen_inplace=false, gen_outofplace=false))
+
+    # return as one expression block
+    expr_arr_to_block(exprs)
+end
+
+# SDE expressions
+function gensde_exprs(reactions, reactants, parameters, scale_noise)
+    g_expr   = get_g(reactions, reactants, scale_noise)
+    g        = make_func(g_expr, reactants, parameters)
+    g_funcs  = [element.args[2] for element in g_expr]
+    p_matrix = zeros(length(reactants), length(reactions))
+
+    (g_expr,g,g_funcs,p_matrix)
+end
+
+# ODE expressions
+function genode_exprs(reactions, reactants, parameters, syms)
+    f_expr     = get_f(reactions, reactants)
+    f          = make_func(f_expr, reactants, parameters)
+    f_rhs      = [element.args[2] for element in f_expr]
+    symjac     = Expr(:quote, calculate_jac(deepcopy(f_rhs), syms))
+    f_symfuncs = hcat([SymEngine.Basic(f) for f in f_rhs])
+
+    (f_expr,f,f_rhs,symjac,f_symfuncs)
+end
+
+# generate the minimal network components
+function get_minnetwork(ex::Expr, p)
     reactions = get_reactions(ex)           ::Vector{ReactionStruct}
     reactants = get_reactants(reactions)    ::OrderedDict{Symbol,Int}
     parameters = get_parameters(p)          ::OrderedDict{Symbol,Int}
@@ -156,18 +172,7 @@ function min_coordinate(name, ex::Expr, p, scale_noise)
 
     update_reaction_info(reactions,syms)
 
-    # Build the type
-    exprs = Vector{Expr}(undef,0)
-    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, syms, scale_noise; params=params, reactions=reactions, symjac=nothing, syms_to_ints=reactants, params_to_ints=parameters)
-    
-    push!(exprs,typeex)
-    push!(exprs,constructorex)
-
-    # export type constructor
-    def_const_ex = :(($name)()) |> esc
-    push!(exprs,def_const_ex)
-
-    expr_arr_to_block(exprs)
+    (reactions,reactants,parameters,syms,params)
 end
 
 #Generates a vector containing a number of reaction structures, each containing the infromation about one reaction.
@@ -362,7 +367,7 @@ function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int}, p
 end
 
 #Creates expressions for jump affects and rates. Also creates and array with MassAction, ConstantRate and VariableRate Jumps.
-function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
+function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int}; minimal_jumps=false)
     rates = Vector{Any}(undef,length(reactions))
     affects = Vector{Vector{Expr}}(undef,length(reactions))
     jumps = Expr(:tuple)
@@ -375,17 +380,19 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
         reactant_set = union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant))
         foreach(r -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[r])] += $(get_stoch_diff(reaction,r)))), reactant_set)
         syntax_rate = recursive_replace!(deepcopy(rates[idx]), (reactants,:internal_var___u), (parameters, :internal_var___p))
-        #if reaction.is_pure_mass_action
+        
+        if minimal_jumps && reaction.is_pure_mass_action
+            recursive_contains(:t,rates[idx]) && push!(jumps.args,Expr(:call,:VariableRateJump)) 
         #    ma_sub_stoch = :(reactant_stoich = [[]])
         #    ma_stoch_change = :(reactant_stoich = [[]])
         #    foreach(sub -> push!(ma_sub_stoch.args[2].args[1].args),:($(reactants[sub.reactant])=>$(sub.stoichiometry)),reaction.substrates)
         #    foreach(reactant -> push!(ma_stoch_change.args[2].args[1].args),:($(reactants[reactant.reactant])=>$(get_stoch_diff(reaction,reactant))),reaction.substrates)
         #    push!(jumps.args,:(MassActionJump($(reaction.rate_org),$(ma_sub_stoch),$(ma_stoch_change))))
-        #else
+        else
             recursive_contains(:t,rates[idx]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
             push!(jumps.args[idx].args, :((internal_var___u,internal_var___p,t) -> $syntax_rate))
             push!(jumps.args[idx].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[idx])))))
-        #end
+        end
         push!(reg_rates.args,:(internal_var___out[$idx]=$syntax_rate))
         foreach(r -> push!(reg_c.args,:(internal_var___dc[$(reactants[r]),$idx]=$(get_stoch_diff(reaction,r)))), reactant_set)
     end
