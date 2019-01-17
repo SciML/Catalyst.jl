@@ -74,7 +74,7 @@ function make_majump(rs, specmap, ratemap, params, param_context)
 end
 
 # given a reaction network and species map, split the ConstantRateJumps and MassActionJumps
-function network_to_jumpset(rn, specmap, ratemap, params)
+function network_to_jumpset(rn, specmap, ratemap, params, jumps)
 
     empty_majump = MassActionJump(0.0, [0=>1], [1=>1])
     majumpvec    = Vector{typeof(empty_majump)}()
@@ -87,11 +87,13 @@ function network_to_jumpset(rn, specmap, ratemap, params)
         Base.eval(param_context, :($param = $(params[index])))
     end
 
+    idx = 1
     for (i,rs) in enumerate(rn.reactions)
         if rs.is_pure_mass_action
             push!(majumpvec, make_majump(rs, specmap, ratemap, params, param_context))
         else
-            push!(cjumpvec, rn.jumps[i])
+            push!(cjumpvec, jumps[idx])
+            idx += 1
         end
     end
 

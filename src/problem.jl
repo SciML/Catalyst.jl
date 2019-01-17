@@ -1,10 +1,18 @@
-### SDEProblem ###
-DiffEqBase.SDEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) =
-    SDEProblem(rn, rn.g::Function, u0, args...;noise_rate_prototype=rn.p_matrix, kwargs...)
+### ODEProblem from AbstractReactionNetwork ###
+function DiffEqBase.ODEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
+    isa(rn.odefun, ODEFunction) || error("Call addodes! before constructing ODEProblems")
+    ODEProblem(rn.odefun, u0::Union{AbstractArray, Number}, args...; kwargs...)
+end
+
+### SDEProblem from AbstractReactionNetwork ###
+function DiffEqBase.SDEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union{AbstractArray, Number}, args...; kwargs...) 
+    isa(rn.sdefun, SDEFunction) || error("Call addsdes! before constructing SDEProblems")
+    SDEProblem(rn.sdefun, rn.g::Function, u0, args...;noise_rate_prototype=rn.p_matrix, kwargs...)
+end 
 
 ### JumpProblem ###
-function DiffEqJump.JumpProblem(prob,aggregator,rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
-    if typeof(prob)<:DiscreteProblem && any(x->typeof(x) <: VariableRateJump, rn.jumps)
+function build_jump_problem(prob, aggregator, rn, jumps, kwargs...)
+    if typeof(prob)<:DiscreteProblem && any(x->typeof(x) <: VariableRateJump, jumps)
         error("When using time dependant reaction rates a DiscreteProblem should not be used (try an ODEProblem). Also, use a continious solver.")
     end
 
@@ -15,7 +23,7 @@ function DiffEqJump.JumpProblem(prob,aggregator,rn::DiffEqBase.AbstractReactionN
     param_to_idx = rate_to_indices(rn)
 
     # get a JumpSet of the possible jumps
-    jset = network_to_jumpset(rn, spec_to_idx, param_to_idx, prob.p)
+    jset = network_to_jumpset(rn, spec_to_idx, param_to_idx, prob.p, jumps)
 
     # construct map from species index to indices of reactions that depend on it
     if needs_vartojumps_map(aggregator) || needs_depgraph(aggregator)
@@ -43,10 +51,19 @@ function DiffEqJump.JumpProblem(prob,aggregator,rn::DiffEqBase.AbstractReactionN
                                         kwargs...)
 end
 
-### SteadyStateProblem ###
-DiffEqBase.SteadyStateProblem(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) =
-    SteadyStateProblem(rn.f, args...; kwargs...)
+### JumpProblem from AbstractReactionNetwork ###
+function DiffEqJump.JumpProblem(prob, aggregator, rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
+    (rn.jumps != nothing) || error("Call addjumps! before constructing JumpProblems")
+    build_jump_problem(prob, aggregator, rn, rn.jumps, kwargs...)
+end
+
+### SteadyStateProblems from AbstractReactionNetwork ###
+function DiffEqBase.SteadyStateProblem(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) 
+    isa(rn.odefun, ODEFunction) || error("Call addodes! before constructing SteadyStateProblems")
+    SteadyStateProblem(rn.odefun, args...; kwargs...)
+end
 
 function DiffEqBase.SteadyStateProblem{isinplace}(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...) where isinplace
-    SteadyStateProblem{isinplace}(rn.f, args...; kwargs...)
+    isa(rn.odefun, ODEFunction) || error("Call addodes! before constructing SteadyStateProblems")
+    SteadyStateProblem{isinplace}(rn.odefun, args...; kwargs...)
 end
