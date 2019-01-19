@@ -9,7 +9,7 @@ using SymEngine
 using MacroTools
 using DataStructures
 using Parameters
-@reexport using DiffEqJump
+@reexport using DiffEqBase, DiffEqJump
 
 using Compat
 
