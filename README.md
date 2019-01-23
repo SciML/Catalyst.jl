@@ -89,11 +89,12 @@ rn = @reaction_network rType begin
 end
 will both have reaction rate equal to 2[X][Y].
 
-Once a reaction network has been created it can be passed as input to either one of the `ODEProblem`, `SDEProblem` or `JumpProblem` constructors.
+Once a reaction network has been created it can be passed as input to either one of the `ODEProblem`, `SteadyStateProblem`, `SDEProblem` or `JumpProblem` constructors.
 ```julia
   probODE = ODEProblem(rn, args...; kwargs...)      
+  probSS = SteadyStateProblem(rn, args...; kwargs...)
   probSDE = SDEProblem(rn, args...; kwargs...)
-  probJump = JumpProblem(prob,aggregator::Direct,rn)
+  probJump = JumpProblem(prob, Direct(), rn)
 ```
 the output problems may then be used as normal input to the solvers of the `DifferentialEquations` package.
 
