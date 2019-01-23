@@ -94,7 +94,7 @@ Once a reaction network has been created it can be passed as input to either one
   probODE = ODEProblem(rn, args...; kwargs...)      
   probSS = SteadyStateProblem(rn, args...; kwargs...)
   probSDE = SDEProblem(rn, args...; kwargs...)
-  probJump = JumpProblem(prob,aggregator::Direct,rn)
+  probJump = JumpProblem(prob, Direct(), rn)
 ```
 the output problems may then be used as normal input to the solvers of the `DifferentialEquations` package.
 
