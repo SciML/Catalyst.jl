@@ -12,7 +12,7 @@ documentation](http://docs.juliadiffeq.org/latest/models/biological.html).
 
 ## The Reaction DSL
 
-The `@reaction_network` DSL allows the definition reaction networks using a simple format. Its input is a set of chemical reactions, from which it generates a reaction network object which can be used as input to `ODEProblem`, `SteadyStateProblem`, `SDEProblem` and `JumpProblem` constructors.
+The `@reaction_network` DSL allows for the definition reaction networks using a simple format. Its input is a set of chemical reactions, from which it generates a reaction network object which can be used as input to `ODEProblem`, `SteadyStateProblem`, `SDEProblem` and `JumpProblem` constructors.
 
 The basic syntax is
 ```julia
