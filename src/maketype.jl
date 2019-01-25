@@ -122,10 +122,10 @@ function gentypefun_exprs(name; esc_exprs=true, gen_inplace=true, gen_outofplace
     exprs
 end
 
-function addodes!(rn::DiffEqBase.AbstractReactionNetwork)
+function addodes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     @unpack reactions, syms_to_ints, params_to_ints, syms = rn
 
-    (f_expr, f, f_rhs, symjac, f_symfuncs) = genode_exprs(reactions, syms_to_ints, params_to_ints, syms)
+    (f_expr, f, f_rhs, symjac, f_symfuncs) = genode_exprs(reactions, syms_to_ints, params_to_ints, syms; kwargs...)
     rn.f          = eval(f)
     rn.f_func     = f_rhs
     rn.symjac     = eval(symjac)
