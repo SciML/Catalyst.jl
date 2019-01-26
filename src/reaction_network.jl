@@ -150,12 +150,13 @@ function gensde_exprs(reactions, reactants, parameters, scale_noise)
 end
 
 # ODE expressions
-function genode_exprs(reactions, reactants, parameters, syms)
+function genode_exprs(reactions, reactants, parameters, syms; build_symjac=true, 
+                                                              build_symfuncs=true)
     f_expr     = get_f(reactions, reactants)
     f          = make_func(f_expr, reactants, parameters)
     f_rhs      = [element.args[2] for element in f_expr]
-    symjac     = Expr(:quote, calculate_jac(deepcopy(f_rhs), syms))
-    f_symfuncs = hcat([SymEngine.Basic(f) for f in f_rhs])
+    symjac     = build_symjac ? Expr(:quote, calculate_jac(deepcopy(f_rhs), syms)) : nothing
+    f_symfuncs = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
 
     (f_expr,f,f_rhs,symjac,f_symfuncs)
 end
