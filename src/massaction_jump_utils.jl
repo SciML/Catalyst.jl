@@ -87,10 +87,14 @@ function network_to_jumpset(rn, specmap, ratemap, params, jumps)
         Base.eval(param_context, :($param = $(params[index])))
     end
 
+    # check if a (non-mass action) jump is defined for all reactions:
+    alljumps = (length(rn.reactions) == length(rn.jumps))
+    
     idx = 1
-    for (i,rs) in enumerate(rn.reactions)
+    for rs in rn.reactions
         if rs.is_pure_mass_action
             push!(majumpvec, make_majump(rs, specmap, ratemap, params, param_context))
+            alljumps && (idx += 1)
         else
             push!(cjumpvec, jumps[idx])
             idx += 1
