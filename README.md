@@ -99,7 +99,7 @@ the output problems may then be used as normal input to the solvers of the `Diff
 
 The noise used by the SDEProblem will correspond to the Chemical Langevin Equations. However it is possible to scale the amount of noise be declaring a noise parameter. This will be done after declaring the type but before the network.
 ```julia
-rn = @reaction_network \eta begin
+rn = @reaction_network η begin
     2.0, X + Y ↔ XY
 end
 p = [0.5]
