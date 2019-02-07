@@ -21,7 +21,7 @@ function maketype(abstracttype,
                   odefun = nothing,
                   sdefun = nothing,
                   make_polynomial = nothing,
-                  fixed_concentrations = nothing,
+                  fixed_concentrations = Dict{Int64,Polynomial}(),
                   homotopy_continuation_template = nothing,
                   equilibratium_polynomial = nothing
                   )
@@ -47,7 +47,7 @@ function maketype(abstracttype,
         odefun::Union{ODEFunction,Nothing}
         sdefun::Union{SDEFunction,Nothing}
         make_polynomial::Union{Function,Nothing}
-        fixed_concentrations::Union{Dict{Int64,Polynomial},Nothing}
+        fixed_concentrations::Dict{Int64,Polynomial}
         homotopy_continuation_template::Union{Vector{Float64},Nothing}
         equilibratium_polynomial::Union{Vector,Nothing}
     end)
