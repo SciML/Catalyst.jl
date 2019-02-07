@@ -1,4 +1,4 @@
-function maketype(abstracttype, 
+function maketype(abstracttype,
                   name,
                   f,
                   f_func,
@@ -13,13 +13,17 @@ function maketype(abstracttype,
                   syms,
                   scale_noise;
                   params = Symbol[],
-                  pfuncs=Vector{Expr}(undef,0),
-                  symjac=Matrix{Expr}(undef,0,0),
-                  reactions=Vector{ReactionStruct}(undef,0),
+                  pfuncs = Vector{Expr}(undef,0),
+                  symjac = Matrix{Expr}(undef,0,0),
+                  reactions = Vector{ReactionStruct}(undef,0),
                   syms_to_ints = OrderedDict{Symbol,Int}(),
                   params_to_ints = OrderedDict{Symbol,Int}(),
                   odefun = nothing,
-                  sdefun = nothing
+                  sdefun = nothing,
+                  make_polynomial = nothing,
+                  fixed_concentrations = nothing,
+                  homotopy_continuation_template = nothing,
+                  equilibratium_polynomial = nothing
                   )
 
     typeex = :(mutable struct $name <: $(abstracttype)
@@ -42,6 +46,10 @@ function maketype(abstracttype,
         scale_noise::Symbol
         odefun::Union{ODEFunction,Nothing}
         sdefun::Union{SDEFunction,Nothing}
+        make_polynomial::Union{Function,Nothing}
+        fixed_concentrations::Union{Dict{Int64,Polynomial},Nothing}
+        homotopy_continuation_template::Union{Vector{Float64},Nothing}
+        equilibratium_polynomial::Union{Vector,Nothing}
     end)
     # Make the default constructor
     constructorex = :($(name)(;
@@ -60,10 +68,14 @@ function maketype(abstracttype,
                 $(Expr(:kw,:symjac,symjac)),
                 $(Expr(:kw,:reactions,reactions)),
                 $(Expr(:kw,:syms_to_ints, syms_to_ints)),
-                $(Expr(:kw,:params_to_ints, params_to_ints)), 
+                $(Expr(:kw,:params_to_ints, params_to_ints)),
                 $(Expr(:kw,:scale_noise, Meta.quot(scale_noise))),
-                $(Expr(:kw,:odefun, odefun)), 
-                $(Expr(:kw,:sdefun, sdefun))) =
+                $(Expr(:kw,:odefun, odefun)),
+                $(Expr(:kw,:sdefun, sdefun))),
+                $(Expr(:kw,:make_polynomial, make_polynomial))),
+                $(Expr(:kw,:fixed_concentrations, fixed_concentrations))),
+                $(Expr(:kw,:homotopy_continuation_template, homotopy_continuation_template))),
+                $(Expr(:kw,:equilibratium_polynomial, equilibratium_polynomial))) =
                 $(name)(
                         f,
                         f_func,
@@ -83,7 +95,11 @@ function maketype(abstracttype,
                         params_to_ints,
                         scale_noise,
                         odefun,
-                        sdefun
+                        sdefun,
+                        make_polynomial,
+                        fixed_concentrations,
+                        homotopy_continuation_template,
+                        equilibratium_polynomial
                         )) |> esc
 
     # Make the type instance using the default constructor
@@ -92,7 +108,7 @@ end
 
 # type function expressions
 function gentypefun_exprs(name; esc_exprs=true, gen_inplace=true, gen_outofplace=true, gen_constructor=true)
-    exprs = Vector{Expr}(undef,0)     
+    exprs = Vector{Expr}(undef,0)
 
     ## Overload the type so that it can act as a function.
     if gen_inplace
@@ -102,13 +118,13 @@ function gentypefun_exprs(name; esc_exprs=true, gen_inplace=true, gen_outofplace
 
     ## Add a method which allocates the `du` and returns it instead of being inplace
     if gen_outofplace
-        overloadex = :(((f::$name))(u,p,t::Number) = (du=similar(u); f(du,u,p,t); du)) 
+        overloadex = :(((f::$name))(u,p,t::Number) = (du=similar(u); f(du,u,p,t); du))
         push!(exprs,overloadex)
     end
 
     # export type constructor
     if gen_constructor
-        def_const_ex = :(($name)()) 
+        def_const_ex = :(($name)())
         push!(exprs,def_const_ex)
     end
 
@@ -135,7 +151,7 @@ function addodes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     # functor for evaluating f
     functor_exprs = gentypefun_exprs(typeof(rn), esc_exprs=false, gen_constructor=false)
     eval( expr_arr_to_block(functor_exprs) )
-    
+
     nothing
 end
 
@@ -143,7 +159,7 @@ function addsdes!(rn::DiffEqBase.AbstractReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints, scale_noise = rn
 
     # first construct an ODE reaction network
-    if rn.f == nothing 
+    if rn.f == nothing
         addodes!(rn)
     end
 
@@ -156,17 +172,17 @@ function addsdes!(rn::DiffEqBase.AbstractReactionNetwork)
     nothing
 end
 
-function addjumps!(rn::DiffEqBase.AbstractReactionNetwork; 
-                                    build_jumps=true, 
+function addjumps!(rn::DiffEqBase.AbstractReactionNetwork;
+                                    build_jumps=true,
                                     build_regular_jumps=true,
                                     minimal_jumps=false)
 
     @unpack reactions, syms_to_ints, params_to_ints = rn
 
     # parse the jumps
-    (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, 
-                                                                    syms_to_ints, 
-                                                                    params_to_ints; 
+    (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions,
+                                                                    syms_to_ints,
+                                                                    params_to_ints;
                                                                     minimal_jumps=minimal_jumps)
 
     rn.jump_rate_expr   = jump_rate_expr
