@@ -9,6 +9,7 @@ using SymEngine
 using MacroTools
 using DataStructures
 using Parameters
+using DynamicPolynomials
 @reexport using DiffEqBase, DiffEqJump
 
 using Compat
