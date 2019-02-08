@@ -10,6 +10,13 @@ function DiffEqBase.SDEProblem(rn::DiffEqBase.AbstractReactionNetwork, u0::Union
     SDEProblem(rn.sdefun, rn.g::Function, u0, args...;noise_rate_prototype=rn.p_matrix, kwargs...)
 end 
 
+### DiscreteProblem, passing through syms
+function DiffEqBase.DiscreteProblem(rn::DiffEqBase.AbstractReactionNetwork, u0, tspan::Tuple, p=nothing; kwargs...)
+    f = DiffEqBase.DISCRETE_INPLACE_DEFAULT
+    df = DiscreteFunction{true,typeof(f),Nothing,typeof(rn.syms)}(f,nothing,rn.syms)
+    DiscreteProblem(df, u0, tspan, p; kwargs...)
+end
+
 ### JumpProblem ###
 function build_jump_problem(prob, aggregator, rn, jumps, kwargs...)
     if typeof(prob)<:DiscreteProblem && any(x->typeof(x) <: VariableRateJump, jumps)
