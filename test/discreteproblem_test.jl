@@ -17,7 +17,7 @@ end
 
 function execute_test(prob, u0, tf, rates, rs, Nsims, expected_avg, idx, test_name)
     for method in algs
-        jump_prob = JumpProblem(prob, method, rs)
+        jump_prob = JumpProblem(prob, method, rs, save_positions=(false,false))
         avg_val = runSSAs(jump_prob, Nsims, idx)
 
         if dotestmean
