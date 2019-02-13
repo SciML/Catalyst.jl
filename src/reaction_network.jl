@@ -150,13 +150,13 @@ function gensde_exprs(reactions, reactants, parameters, scale_noise)
 end
 
 # ODE expressions
-function genode_exprs(reactions, reactants, parameters, syms; build_symjac=true,
+function genode_exprs(reactions, reactants, parameters, syms; build_jac=true,
                                                               build_symfuncs=true)
-    f_expr     = get_f(reactions, reactants)
-    f          = make_func(f_expr, reactants, parameters)
-    f_rhs      = [element.args[2] for element in f_expr]
-    symjac     = build_symjac ? Expr(:quote, calculate_symjac(deepcopy(f_rhs), syms)) : nothing
-    f_symfuncs = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
+    f_expr      = get_f(reactions, reactants)
+    f           = make_func(f_expr, reactants, parameters)
+    f_rhs       = [element.args[2] for element in f_expr]
+    jac, symjac = build_jac ? Expr(:quote, calculate_symjac(deepcopy(f_rhs), syms)) : (nothing,nothing)
+    f_symfuncs  = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
 
     (f_expr,f,f_rhs,symjac,f_symfuncs)
 end
@@ -498,7 +498,7 @@ function calculate_symjac(f_expr::Vector{Expr}, syms)
 end
 
 #Makes the Jacobian.
-function get_jac(symjac::Matrix{Expr}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int}))
+function calculate_jac(symjac::Matrix{Expr}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int}))
     func_body = Expr(:block)
     for i = 1:length(symjac) j = 1:length(symjac)
         push!(func_body,internal___var___J[$i,$j] = $(recursive_replace(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p))))
