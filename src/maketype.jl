@@ -21,9 +21,10 @@ function maketype(abstracttype,
                   odefun = nothing,
                   sdefun = nothing,
                   make_polynomial = nothing,
-                  fixed_concentrations = Dict{Int64,Polynomial}(),
+                  fixed_concentrations = Dict{Symbol,Polynomial}(),
                   homotopy_continuation_template = nothing,
-                  equilibratium_polynomial = nothing
+                  equilibratium_polynomial = nothing,
+                  is_polynomial_system = make_poly_system()
                   )
 
     typeex = :(mutable struct $name <: $(abstracttype)
@@ -47,9 +48,10 @@ function maketype(abstracttype,
         odefun::Union{ODEFunction,Nothing}
         sdefun::Union{SDEFunction,Nothing}
         make_polynomial::Union{Function,Nothing}
-        fixed_concentrations::Dict{Int64,Polynomial}
+        fixed_concentrations::Dict{Symbol,Polynomial}
         homotopy_continuation_template::Union{Vector{Float64},Nothing}
         equilibratium_polynomial::Union{Vector,Nothing}
+        is_polynomial_system::Bool
     end)
     # Make the default constructor
     constructorex = :($(name)(;
@@ -71,11 +73,12 @@ function maketype(abstracttype,
                 $(Expr(:kw,:params_to_ints, params_to_ints)),
                 $(Expr(:kw,:scale_noise, Meta.quot(scale_noise))),
                 $(Expr(:kw,:odefun, odefun)),
-                $(Expr(:kw,:sdefun, sdefun))),
-                $(Expr(:kw,:make_polynomial, make_polynomial))),
-                $(Expr(:kw,:fixed_concentrations, fixed_concentrations))),
-                $(Expr(:kw,:homotopy_continuation_template, homotopy_continuation_template))),
-                $(Expr(:kw,:equilibratium_polynomial, equilibratium_polynomial))) =
+                $(Expr(:kw,:sdefun, sdefun)),
+                $(Expr(:kw,:make_polynomial, make_polynomial)),
+                $(Expr(:kw,:fixed_concentrations, fixed_concentrations)),
+                $(Expr(:kw,:homotopy_continuation_template, homotopy_continuation_template)),
+                $(Expr(:kw,:equilibratium_polynomial, equilibratium_polynomial)),
+                $(Expr(:kw,:is_polynomial_system, is_polynomial_system))) =
                 $(name)(
                         f,
                         f_func,
@@ -99,7 +102,8 @@ function maketype(abstracttype,
                         make_polynomial,
                         fixed_concentrations,
                         homotopy_continuation_template,
-                        equilibratium_polynomial
+                        equilibratium_polynomial,
+                        is_polynomial_system
                         )) |> esc
 
     # Make the type instance using the default constructor
