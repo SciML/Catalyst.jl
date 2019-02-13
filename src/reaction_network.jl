@@ -158,7 +158,7 @@ function genode_exprs(reactions, reactants, parameters, syms; build_jac=true,
     jac, symjac = build_jac ? get_jac(deepcopy(f_expr), syms, reactants, parameters) : (nothing,nothing)
     f_symfuncs  = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
 
-    (f_expr,f,f_rhs,symjac,f_symfuncs)
+    (f_expr,f,f_rhs,jac,symjac,f_symfuncs)
 end
 
 # generate the minimal network components
