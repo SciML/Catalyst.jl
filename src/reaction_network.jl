@@ -155,7 +155,7 @@ function genode_exprs(reactions, reactants, parameters, syms; build_jac=true,
     f_expr      = get_f(reactions, reactants)
     f           = make_func(f_expr, reactants, parameters)
     f_rhs       = [element.args[2] for element in f_expr]
-    jac, symjac = build_jac ? Expr(:quote, calculate_symjac(deepcopy(f_rhs), syms)) : (nothing,nothing)
+    jac, symjac = build_jac ? get_jac(deepcopy(f_expr), syms, reactants, parameters) : (nothing,nothing)
     f_symfuncs  = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
 
     (f_expr,f,f_rhs,symjac,f_symfuncs)
