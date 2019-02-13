@@ -133,9 +133,10 @@ end
 function addodes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     @unpack reactions, syms_to_ints, params_to_ints, syms = rn
 
-    (f_expr, f, f_rhs, symjac, f_symfuncs) = genode_exprs(reactions, syms_to_ints, params_to_ints, syms; kwargs...)
+    (f_expr, f, f_rhs, jac, symjac, f_symfuncs) = genode_exprs(reactions, syms_to_ints, params_to_ints, syms; kwargs...)
     rn.f          = eval(f)
     rn.f_func     = f_rhs
+    rn.jac        = eval(jac)
     rn.symjac     = eval(symjac)
     rn.f_symfuncs = f_symfuncs
     rn.odefun     = ODEFunction(rn.f; syms=rn.syms)
