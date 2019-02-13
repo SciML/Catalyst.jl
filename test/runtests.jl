@@ -9,6 +9,7 @@ using Test
   @time @testset "Additional Functions" begin include("func_test.jl") end
   @time @testset "Steady state solver" begin include("steady_state.jl") end
   @time @testset "Mass Action Jumps" begin include("mass_act_jump_tests.jl") end
+  @time @testset "Other Tests" begin include("misc_tests.jl") end
 end
 
 @time begin
