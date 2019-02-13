@@ -497,6 +497,15 @@ function calculate_symjac(f_expr::Vector{Expr}, syms)
     return map(sym_entry -> :(1*$(recursive_replace!(Meta.parse(string(sym_entry)),Dict(zip(internal_vars,syms))))),symjac)
 end
 
+#Makes the Jacobian.
+function get_jac(symjac::Matrix{Expr}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int}))
+    func_body = Expr(:block)
+    for i = 1:length(symjac) j = 1:length(symjac)
+        push!(func_body,internal___var___J[$i,$j] = $(recursive_replace(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p))))
+    end
+    return :((internal___var___J,internal___var___u,internal___var___p,t) -> $func_body)
+end
+
 #Turns an array of expressions to a expression block with corresponding expressions.
 function expr_arr_to_block(exprs)
   block = :(begin end)
