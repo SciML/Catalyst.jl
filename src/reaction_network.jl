@@ -97,7 +97,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     (reactions, reactants, parameters, syms, params) = get_minnetwork(ex, p)
 
     # expressions for ODEs
-    (f_expr, f, f_rhs, jac, symjac, f_symfuncs) = genode_exprs(reactions, reactants, parameters, syms)
+    (f_expr, f, f_rhs, symjac, jac, f_symfuncs) = genode_exprs(reactions, reactants, parameters, syms)
     odefun = :(ODEFunction(f; syms=$syms))
 
     # expressions for SDEs
@@ -155,10 +155,10 @@ function genode_exprs(reactions, reactants, parameters, syms; build_jac=true,
     f_expr      = get_f(reactions, reactants)
     f           = make_func(f_expr, reactants, parameters)
     f_rhs       = [element.args[2] for element in f_expr]
-    jac, symjac = build_jac ? get_jac(deepcopy(f_expr), syms, reactants, parameters) : (nothing,nothing)
+    symjac, jac = build_jac ? get_jacs(deepcopy(f_rhs), syms, reactants, parameters) : (nothing,nothing)
     f_symfuncs  = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
 
-    (f_expr,f,f_rhs,jac,symjac,f_symfuncs)
+    (f_expr,f,f_rhs,symjac,jac,f_symfuncs)
 end
 
 # generate the minimal network components
@@ -487,17 +487,17 @@ function recursive_content(ex,syms::Vector{Symbol},content::Vector{Symbol})
 end
 
 #Makes the various jacobian elements required.
-function get_jacs(f_expr::Vector{Expr}, syms::Vector{Symbol}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
+function get_jacs(f_rhs::Vector{Expr}, syms::Vector{Symbol}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     symjac = calculate_symjac(f_rhs, syms)
-    jac = calculate_jac(symjac, reactants, parameters)
+    jac = calculate_jac(deepcopy(symjac), reactants, parameters)
     return (Expr(:quote, symjac), jac)
 end
 
 #Makes the Symbolic Jacobian.
-function calculate_symjac(f_expr::Vector{Expr}, syms)
+function calculate_symjac(f_rhs::Vector{Expr}, syms)
     n = length(syms); internal_vars = [Symbol(:internal_variable___,var) for var in syms]
     symjac = Matrix{SymEngine.Basic}(undef, n, n);
-    symfuncs = [SymEngine.Basic(recursive_replace!(f,Dict(zip(syms,internal_vars)))) for f in f_expr]
+    symfuncs = [SymEngine.Basic(recursive_replace!(f,Dict(zip(syms,internal_vars)))) for f in f_rhs]
     for i = 1:n, j = 1:n
         symjac[i,j] = diff(symfuncs[i],internal_vars[j])
     end
@@ -505,10 +505,10 @@ function calculate_symjac(f_expr::Vector{Expr}, syms)
 end
 
 #Makes the Jacobian.
-function calculate_jac(symjac::Matrix{Expr}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int}))
+function calculate_jac(symjac::Matrix{Expr}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     func_body = Expr(:block)
-    for i = 1:length(symjac) j = 1:length(symjac)
-        push!(func_body,internal___var___J[$i,$j] = $(recursive_replace(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p))))
+    for i = 1:size(symjac)[1], j = 1:size(symjac)[2]
+        push!(func_body.args,:(internal___var___J[$i,$j] = $(recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p)))))
     end
     return :((internal___var___J,internal___var___u,internal___var___p,t) -> $func_body)
 end
