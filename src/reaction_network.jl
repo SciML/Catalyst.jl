@@ -487,8 +487,8 @@ function recursive_content(ex,syms::Vector{Symbol},content::Vector{Symbol})
 end
 
 #Makes the various jacobian elements required.
-function get_jacs(f_expr::Vector{Expr}, syms::Vector{Symbol}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int}))
-    symjac = calculate_symjac(f_rhs, syms))
+function get_jacs(f_expr::Vector{Expr}, syms::Vector{Symbol}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
+    symjac = calculate_symjac(f_rhs, syms)
     jac = calculate_jac(symjac, reactants, parameters)
     return (Expr(:quote, symjac), jac)
 end
