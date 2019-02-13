@@ -97,7 +97,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     (reactions, reactants, parameters, syms, params) = get_minnetwork(ex, p)
 
     # expressions for ODEs
-    (f_expr, f, f_rhs, symjac, f_symfuncs) = genode_exprs(reactions, reactants, parameters, syms)
+    (f_expr, f, f_rhs, jac, symjac, f_symfuncs) = genode_exprs(reactions, reactants, parameters, syms)
     odefun = :(ODEFunction(f; syms=$syms))
 
     # expressions for SDEs
@@ -109,7 +109,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
 
     # Build the type
     exprs = Vector{Expr}(undef,0)
-    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, f, f_rhs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters, odefun=odefun, sdefun=sdefun)
+    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, f, f_rhs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, jac=jac, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters, odefun=odefun, sdefun=sdefun)
     push!(exprs,typeex)
     push!(exprs,constructorex)
 
