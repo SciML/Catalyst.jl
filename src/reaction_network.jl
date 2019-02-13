@@ -510,6 +510,7 @@ function calculate_jac(symjac::Matrix{Expr}, reactants::OrderedDict{Symbol,Int},
     for i = 1:size(symjac)[1], j = 1:size(symjac)[2]
         push!(func_body.args,:(internal___var___J[$i,$j] = $(recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p)))))
     end
+    push!(func_body.args,:(return internal___var___J))
     return :((internal___var___J,internal___var___u,internal___var___p,t) -> $func_body)
 end
 
