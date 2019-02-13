@@ -108,13 +108,17 @@ function coordinate(name, ex::Expr, p, scale_noise)
     (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, reactants, parameters)
 
     # expression for equilibration functionality
-    equilibrate_polynomial_maker = get_equilibration(params,f_expr)
+    equilibrate_polynomial_maker = get_equilibration(params,reactants,[expr.args[2] for expr in f_expr])
 
     # Build the type
     exprs = Vector{Expr}(undef,0)
     typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, f, f_rhs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters, odefun=odefun, sdefun=sdefun, make_polynomial=equilibrate_polynomial_maker)
     push!(exprs,typeex)
     push!(exprs,constructorex)
+
+    # declares the polynomial variables
+    push!(exprs,Expr(:escape, :(@polyvar internal___polyvar___p[1:$(length(parameters))])))
+    push!(exprs,Expr(:escape, :(@polyvar internal___polyvar___x[1:$(length(reactants))])))
 
     # add type functions
     append!(exprs, gentypefun_exprs(name))
