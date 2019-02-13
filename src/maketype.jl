@@ -24,6 +24,7 @@ function maketype(abstracttype,
                   fixed_concentrations = Dict{Symbol,Polynomial}(),
                   homotopy_continuation_template = nothing,
                   equilibratium_polynomial = nothing,
+                  test_f = nothing,
                   is_polynomial_system = make_poly_system()
                   )
 
@@ -49,8 +50,9 @@ function maketype(abstracttype,
         sdefun::Union{SDEFunction,Nothing}
         make_polynomial::Union{Function,Nothing}
         fixed_concentrations::Dict{Symbol,Polynomial}
-        homotopy_continuation_template::Union{Vector{Float64},Nothing}
+        homotopy_continuation_template::Union{Tuple{Array{Complex{Float64},1},Array{Array{Complex{Float64},1},1}},Nothing}
         equilibratium_polynomial::Union{Vector,Nothing}
+        test_f::Any
         is_polynomial_system::Bool
     end)
     # Make the default constructor
@@ -78,6 +80,7 @@ function maketype(abstracttype,
                 $(Expr(:kw,:fixed_concentrations, fixed_concentrations)),
                 $(Expr(:kw,:homotopy_continuation_template, homotopy_continuation_template)),
                 $(Expr(:kw,:equilibratium_polynomial, equilibratium_polynomial)),
+                $(Expr(:kw,:test_f, test_f)),
                 $(Expr(:kw,:is_polynomial_system, is_polynomial_system))) =
                 $(name)(
                         f,
@@ -103,6 +106,7 @@ function maketype(abstracttype,
                         fixed_concentrations,
                         homotopy_continuation_template,
                         equilibratium_polynomial,
+                        test_f,
                         is_polynomial_system
                         )) |> esc
 
