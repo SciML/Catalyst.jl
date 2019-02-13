@@ -92,10 +92,10 @@ funcdict = Dict{Symbol, Function}()                             #Stores user def
 
 #Coordination function, actually does all the work of the macro.
 function coordinate(name, ex::Expr, p, scale_noise)
-    
+
     # minimal reaction network components
     (reactions, reactants, parameters, syms, params) = get_minnetwork(ex, p)
-    
+
     # expressions for ODEs
     (f_expr, f, f_rhs, symjac, f_symfuncs) = genode_exprs(reactions, reactants, parameters, syms)
     odefun = :(ODEFunction(f; syms=$syms))
@@ -108,7 +108,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, reactants, parameters)
 
     # Build the type
-    exprs = Vector{Expr}(undef,0)     
+    exprs = Vector{Expr}(undef,0)
     typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, f, f_rhs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters, odefun=odefun, sdefun=sdefun)
     push!(exprs,typeex)
     push!(exprs,constructorex)
@@ -128,7 +128,7 @@ function min_coordinate(name, ex::Expr, p, scale_noise)
 
     # Build the type
     exprs = Vector{Expr}(undef,0)
-    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, syms, scale_noise; params=params, reactions=reactions, symjac=nothing, syms_to_ints=reactants, params_to_ints=parameters)    
+    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, syms, scale_noise; params=params, reactions=reactions, symjac=nothing, syms_to_ints=reactants, params_to_ints=parameters)
     push!(exprs,typeex)
     push!(exprs,constructorex)
 
@@ -150,12 +150,12 @@ function gensde_exprs(reactions, reactants, parameters, scale_noise)
 end
 
 # ODE expressions
-function genode_exprs(reactions, reactants, parameters, syms; build_symjac=true, 
+function genode_exprs(reactions, reactants, parameters, syms; build_symjac=true,
                                                               build_symfuncs=true)
     f_expr     = get_f(reactions, reactants)
     f          = make_func(f_expr, reactants, parameters)
     f_rhs      = [element.args[2] for element in f_expr]
-    symjac     = build_symjac ? Expr(:quote, calculate_jac(deepcopy(f_rhs), syms)) : nothing
+    symjac     = build_symjac ? Expr(:quote, calculate_symjac(deepcopy(f_rhs), syms)) : nothing
     f_symfuncs = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
 
     (f_expr,f,f_rhs,symjac,f_symfuncs)
@@ -381,9 +381,9 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
         reactant_set = union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant))
         foreach(r -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[r])] += $(get_stoch_diff(reaction,r)))), reactant_set)
         syntax_rate = recursive_replace!(deepcopy(rates[idx]), (reactants,:internal_var___u), (parameters, :internal_var___p))
-        
+
         if minimal_jumps && reaction.is_pure_mass_action
-            recursive_contains(:t,rates[idx]) && push!(jumps.args,Expr(:call,:VariableRateJump)) 
+            recursive_contains(:t,rates[idx]) && push!(jumps.args,Expr(:call,:VariableRateJump))
         #    ma_sub_stoch = :(reactant_stoich = [[]])
         #    ma_stoch_change = :(reactant_stoich = [[]])
         #    foreach(sub -> push!(ma_sub_stoch.args[2].args[1].args),:($(reactants[sub.reactant])=>$(sub.stoichiometry)),reaction.substrates)
@@ -486,8 +486,8 @@ function recursive_content(ex,syms::Vector{Symbol},content::Vector{Symbol})
     return content
 end
 
-#Makes the Jacobian.
-function calculate_jac(f_expr::Vector{Expr}, syms)
+#Makes the Symbolic Jacobian.
+function calculate_symjac(f_expr::Vector{Expr}, syms)
     n = length(syms); internal_vars = [Symbol(:internal_variable___,var) for var in syms]
     symjac = Matrix{SymEngine.Basic}(undef, n, n);
     symfuncs = [SymEngine.Basic(recursive_replace!(f,Dict(zip(syms,internal_vars)))) for f in f_expr]
