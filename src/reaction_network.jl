@@ -488,10 +488,10 @@ end
 
 #Makes the various jacobian elements required.
 function get_jacs(f_rhs::Vector{Expr}, syms::Vector{Symbol}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
-    symjac = calculate_symjac(f_rhs, syms)
+    symjac = calculate_symjac(deepcopy(f_rhs), syms)
     jac = calculate_jac(deepcopy(symjac), reactants, parameters)
-    paramjac = calculate_paramjac(f_rhs, reactants, parameters)
-    return (Expr(:quote, symjac), jac)
+    paramjac = calculate_paramjac(deepcopy(f_rhs), reactants, parameters)
+    return (Expr(:quote, symjac), jac, paramjac)
 end
 
 #Makes the Symbolic Jacobian.
