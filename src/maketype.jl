@@ -39,6 +39,7 @@ function maketype(abstracttype,
         syms::Vector{Symbol}
         params::Vector{Symbol}
         jac::Union{Function,Nothing}
+        paramjac::Union{Function,Nothing}
         jac_prototype::Nothing
         symjac::Union{Matrix{Expr},Nothing}
         reactions::Vector{ReactionStruct}
@@ -64,6 +65,7 @@ function maketype(abstracttype,
                 $(Expr(:kw,:params,params)),
                 $(Expr(:kw,:symjac,symjac)),
                 $(Expr(:kw,:jac,jac)),
+                $(Expr(:kw,:paramjac,paramjac)),
                 $(Expr(:kw,:jac_prototype,jac_prototype)),
                 $(Expr(:kw,:reactions,reactions)),
                 $(Expr(:kw,:syms_to_ints, syms_to_ints)),
@@ -85,6 +87,7 @@ function maketype(abstracttype,
                         syms,
                         params,
                         jac,
+                        paramjac,
                         jac_prototype,
                         symjac,
                         reactions,
@@ -134,10 +137,11 @@ end
 function addodes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     @unpack reactions, syms_to_ints, params_to_ints, syms = rn
 
-    (f_expr, f, f_rhs, symjac, jac, f_symfuncs) = genode_exprs(reactions, syms_to_ints, params_to_ints, syms; kwargs...)
+    (f_expr, f, f_rhs, symjac, jac, paramjac, f_symfuncs) = genode_exprs(reactions, syms_to_ints, params_to_ints, syms; kwargs...)
     rn.f          = eval(f)
     rn.f_func     = f_rhs
     rn.jac        = eval(jac)
+    rn.paramjac   = eval(paramjac)
     rn.symjac     = eval(symjac)
     rn.f_symfuncs = f_symfuncs
     rn.odefun     = ODEFunction(rn.f; syms=rn.syms)
