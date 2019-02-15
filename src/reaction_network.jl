@@ -98,11 +98,11 @@ function coordinate(name, ex::Expr, p, scale_noise)
 
     # expressions for ODEs
     (f_expr, f, f_rhs, symjac, jac, paramjac, f_symfuncs) = genode_exprs(reactions, reactants, parameters, syms)
-    odefun = :(ODEFunction(f; syms=$syms))
+    odefun = :(ODEFunction(f; jac=$jac, jac_prototype=nothing, paramjac=$paramjac, syms=$syms))
 
     # expressions for SDEs
     (g_expr, g, g_funcs, p_matrix) = gensde_exprs(reactions, reactants, parameters, scale_noise)
-    sdefun = :(SDEFunction(f, g; syms=$syms))
+    sdefun = :(SDEFunction(f, g; jac=$jac, jac_prototype=nothing, paramjac=$paramjac, syms=$syms))
 
     # expressions for jumps
     (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, reactants, parameters)
