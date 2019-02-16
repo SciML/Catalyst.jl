@@ -176,11 +176,7 @@ function gensde_exprs(reactions, reactants, parameters, scale_noise)
 end
 
 # ODE expressions
-<<<<<<< HEAD
-function genode_exprs(reactions, reactants, parameters, syms; build_symjac=true,
-=======
 function genode_exprs(reactions, reactants, parameters, syms; build_jac=true,
->>>>>>> master
                                                               build_symfuncs=true)
     f_expr                = get_f(reactions, reactants)
     f                     = make_func(f_expr, reactants, parameters)

@@ -13,18 +13,12 @@ function maketype(abstracttype,
                   syms,
                   scale_noise;
                   params = Symbol[],
-<<<<<<< HEAD
-                  pfuncs = Vector{Expr}(undef,0),
-                  symjac = Matrix{Expr}(undef,0,0),
-                  reactions = Vector{ReactionStruct}(undef,0),
-=======
                   pfuncs=Vector{Expr}(undef,0),
                   jac = nothing,
                   paramjac = nothing,
                   jac_prototype = nothing,
                   symjac=Matrix{Expr}(undef,0,0),
                   reactions=Vector{ReactionStruct}(undef,0),
->>>>>>> master
                   syms_to_ints = OrderedDict{Symbol,Int}(),
                   params_to_ints = OrderedDict{Symbol,Int}(),
                   odefun = nothing,
@@ -90,7 +84,6 @@ function maketype(abstracttype,
                 $(Expr(:kw,:params_to_ints, params_to_ints)),
                 $(Expr(:kw,:scale_noise, Meta.quot(scale_noise))),
                 $(Expr(:kw,:odefun, odefun)),
-<<<<<<< HEAD
                 $(Expr(:kw,:sdefun, sdefun)),
                 $(Expr(:kw,:make_polynomial, make_polynomial)),
                 $(Expr(:kw,:fixed_concentrations, fixed_concentrations)),
@@ -98,9 +91,6 @@ function maketype(abstracttype,
                 $(Expr(:kw,:equilibratium_polynomial, equilibratium_polynomial)),
                 $(Expr(:kw,:test_f, test_f)),
                 $(Expr(:kw,:is_polynomial_system, is_polynomial_system))) =
-=======
-                $(Expr(:kw,:sdefun, sdefun))) =
->>>>>>> master
                 $(name)(
                         f,
                         f_func,
