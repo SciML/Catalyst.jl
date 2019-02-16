@@ -23,7 +23,11 @@ include("equilibrate_utils.jl")
 
 export @reaction_network, @reaction_func, @min_reaction_network
 export addodes!, addsdes!, addjumps!
+<<<<<<< HEAD
 export ODEProblem, SDEProblem, JumpProblem, SteadyStateProblem
 export @fixed_concentration, add_fixed_concentration, fix_parameters, @make_hc_template, make_hc_template, steady_states
+=======
+export ODEProblem, SDEProblem, DiscreteProblem, JumpProblem, SteadyStateProblem
+>>>>>>> master
 
 end # module

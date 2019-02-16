@@ -13,9 +13,18 @@ function maketype(abstracttype,
                   syms,
                   scale_noise;
                   params = Symbol[],
+<<<<<<< HEAD
                   pfuncs = Vector{Expr}(undef,0),
                   symjac = Matrix{Expr}(undef,0,0),
                   reactions = Vector{ReactionStruct}(undef,0),
+=======
+                  pfuncs=Vector{Expr}(undef,0),
+                  jac = nothing,
+                  paramjac = nothing,
+                  jac_prototype = nothing,
+                  symjac=Matrix{Expr}(undef,0,0),
+                  reactions=Vector{ReactionStruct}(undef,0),
+>>>>>>> master
                   syms_to_ints = OrderedDict{Symbol,Int}(),
                   params_to_ints = OrderedDict{Symbol,Int}(),
                   odefun = nothing,
@@ -41,6 +50,9 @@ function maketype(abstracttype,
         p_matrix::Union{Array{Float64,2},Nothing}
         syms::Vector{Symbol}
         params::Vector{Symbol}
+        jac::Union{Function,Nothing}
+        paramjac::Union{Function,Nothing}
+        jac_prototype::Nothing
         symjac::Union{Matrix{Expr},Nothing}
         reactions::Vector{ReactionStruct}
         syms_to_ints::OrderedDict{Symbol,Int}
@@ -70,11 +82,15 @@ function maketype(abstracttype,
                 $(Expr(:kw,:syms,syms)),
                 $(Expr(:kw,:params,params)),
                 $(Expr(:kw,:symjac,symjac)),
+                $(Expr(:kw,:jac,jac)),
+                $(Expr(:kw,:paramjac,paramjac)),
+                $(Expr(:kw,:jac_prototype,jac_prototype)),
                 $(Expr(:kw,:reactions,reactions)),
                 $(Expr(:kw,:syms_to_ints, syms_to_ints)),
                 $(Expr(:kw,:params_to_ints, params_to_ints)),
                 $(Expr(:kw,:scale_noise, Meta.quot(scale_noise))),
                 $(Expr(:kw,:odefun, odefun)),
+<<<<<<< HEAD
                 $(Expr(:kw,:sdefun, sdefun)),
                 $(Expr(:kw,:make_polynomial, make_polynomial)),
                 $(Expr(:kw,:fixed_concentrations, fixed_concentrations)),
@@ -82,6 +98,9 @@ function maketype(abstracttype,
                 $(Expr(:kw,:equilibratium_polynomial, equilibratium_polynomial)),
                 $(Expr(:kw,:test_f, test_f)),
                 $(Expr(:kw,:is_polynomial_system, is_polynomial_system))) =
+=======
+                $(Expr(:kw,:sdefun, sdefun))) =
+>>>>>>> master
                 $(name)(
                         f,
                         f_func,
@@ -95,6 +114,9 @@ function maketype(abstracttype,
                         p_matrix,
                         syms,
                         params,
+                        jac,
+                        paramjac,
+                        jac_prototype,
                         symjac,
                         reactions,
                         syms_to_ints,
@@ -149,12 +171,14 @@ end
 function addodes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     @unpack reactions, syms_to_ints, params_to_ints, syms = rn
 
-    (f_expr, f, f_rhs, symjac, f_symfuncs) = genode_exprs(reactions, syms_to_ints, params_to_ints, syms; kwargs...)
+    (f_expr, f, f_rhs, symjac, jac, paramjac, f_symfuncs) = genode_exprs(reactions, syms_to_ints, params_to_ints, syms; kwargs...)
     rn.f          = eval(f)
     rn.f_func     = f_rhs
+    rn.jac        = eval(jac)
+    rn.paramjac   = eval(paramjac)
     rn.symjac     = eval(symjac)
     rn.f_symfuncs = f_symfuncs
-    rn.odefun     = ODEFunction(rn.f; syms=rn.syms)
+    rn.odefun     = ODEFunction(rn.f; jac=rn.jac, jac_prototype=nothing, paramjac=rn.paramjac, syms=rn.syms)
 
     # functor for evaluating f
     functor_exprs = gentypefun_exprs(typeof(rn), esc_exprs=false, gen_constructor=false)
@@ -175,7 +199,7 @@ function addsdes!(rn::DiffEqBase.AbstractReactionNetwork)
     rn.g        = eval(g)
     rn.g_func   = g_funcs
     rn.p_matrix = p_matrix
-    rn.sdefun   = SDEFunction(rn.f, rn.g; syms=rn.syms)
+    rn.sdefun   = SDEFunction(rn.f, rn.g; jac=rn.jac, jac_prototype=nothing, paramjac=rn.paramjac, syms=rn.syms)
 
     nothing
 end
