@@ -53,9 +53,6 @@ end
 #Solves the system once using ranomd parameters. Saves the solution as a template to be used for further solving.
 function make_hc_template(reaction_network::DiffEqBase.AbstractReactionNetwork)
     check_polynomial(reaction_network)
-    println("\n\n\n")
-    println(InteractiveUtils.varinfo())
-    println("\n\n\n")
     p_template = randn(ComplexF64, length(reaction_network.params))
     f_template = DynamicPolynomials.subs.(reaction_network.equilibratium_polynomial, Ref(internal___polyvar___p => p_template))
     result_template = HomotopyContinuation.solve(f_template, report_progress=false)
