@@ -13,17 +13,22 @@ end
 
 #Adds information about some fixed concentration to the network. Macro for simplification
 macro fixed_concentration(reaction_network,fixed_conc...)
-    func_expr = :(add_fixed_concentration($reaction_network))
-    foreach(fc -> push!(func_expr.args,fc),fixed_conc)
+    func_expr = Expr(:escape,:(add_fixed_concentration($reaction_network)))
+    foreach(fc -> push!(func_expr.args[1].args,:(recursive_replace!(balance_poly(fc),(reaction_network.syms_to_ints,:internal___polyvar___x),(reaction_network.params_to_ints,:internal___polyvar___p))),fixed_conc))
     return func_expr
 end
 
+function balance_poly(poly::Expr)
+    (poly.head != :call) && (return :($(poly.args[1])-$(poly.args[2])))
+    return poly
+end
+
 #Function which does the actual work of adding the fixed concentration information. Can be called directly by inputting polynomials.
-function add_fixed_concentration(reaction_network::DiffEqBase.AbstractReactionNetwork,fixed_conc::Polynomial...)
+function add_fixed_concentration(reaction_network::DiffEqBase.AbstractReactionNetwork,fixed_concentrations::Polynomial...)
     check_polynomial(reaction_network)
-    replaced = keys(reaction_network.fixed_concentrations)
+    replaced = Set(keys(reaction_network.fixed_concentrations))
     for fc in fixed_concentrations
-        intersection = intersect(setdiff(reaction_network.syms,replaced),Symbil.(variables(fc)))
+        intersection = intersect(setdiff(reaction_network.syms,replaced),Symbol.(variables(fc)))
         (length(intersection)==0) && (@warn "Unable to replace a polynomial"; continue;)
         next_replace = intersection[1]
         push!(replaced,next_replace)
@@ -36,7 +41,8 @@ end
 #
 function fix_parameters(reaction_network::DiffEqBase.AbstractReactionNetwork;kwargs...)
     check_polynomial(reaction_network)
-    reaction_network.equilibratium_polynomial = [pol.num for pol in reaction_network.make_polynomial(;kwargs...)]
+    reaction_network.equilibratium_polynomial = reaction_network.make_polynomial(;kwargs...)
+    !(typeof(reaction_network.equilibratium_polynomial[1])<:Polynomial) && (reaction_network.equilibratium_polynomial = map(pol->pol.num,reaction_network.equilibratium_polynomial))
     foreach(sym -> reaction_network.equilibratium_polynomial[findfirst(reaction_network.syms.==sym)] = reaction_network.fixed_concentrations[sym], keys(reaction_network.fixed_concentrations))
 end
 
