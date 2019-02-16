@@ -144,7 +144,7 @@ function addodes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     rn.paramjac   = eval(paramjac)
     rn.symjac     = eval(symjac)
     rn.f_symfuncs = f_symfuncs
-    rn.odefun     = ODEFunction(rn.f; jac=jac, jac_prototype=nothing, paramjac=paramjac, syms=rn.syms)
+    rn.odefun     = ODEFunction(rn.f; jac=rn.jac, jac_prototype=nothing, paramjac=rn.paramjac, syms=rn.syms)
 
     # functor for evaluating f
     functor_exprs = gentypefun_exprs(typeof(rn), esc_exprs=false, gen_constructor=false)
@@ -165,7 +165,7 @@ function addsdes!(rn::DiffEqBase.AbstractReactionNetwork)
     rn.g        = eval(g)
     rn.g_func   = g_funcs
     rn.p_matrix = p_matrix
-    rn.sdefun   = SDEFunction(rn.f, rn.g; jac=jac, jac_prototype=nothing, paramjac=paramjac, syms=rn.syms)
+    rn.sdefun   = SDEFunction(rn.f, rn.g; jac=rn.jac, jac_prototype=nothing, paramjac=rn.paramjac, syms=rn.syms)
 
     nothing
 end
