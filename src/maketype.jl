@@ -28,7 +28,9 @@ function maketype(abstracttype,
                   homotopy_continuation_template = nothing,
                   equilibratium_polynomial = nothing,
                   test_f = nothing,
-                  is_polynomial_system = make_poly_system()
+                  is_polynomial_system = make_poly_system(),
+                  polyvars_vars = nothing,
+                  polyvars_params = nothing
                   )
 
     typeex = :(mutable struct $name <: $(abstracttype)
@@ -60,6 +62,8 @@ function maketype(abstracttype,
         equilibratium_polynomial::Union{Vector,Nothing}
         test_f::Any
         is_polynomial_system::Bool
+        polyvars_vars::Union{Vector{PolyVar{true}},Nothing}
+        polyvars_params::Union{Vector{PolyVar{true}},Nothing}
     end)
     # Make the default constructor
     constructorex = :($(name)(;
@@ -90,7 +94,9 @@ function maketype(abstracttype,
                 $(Expr(:kw,:homotopy_continuation_template, homotopy_continuation_template)),
                 $(Expr(:kw,:equilibratium_polynomial, equilibratium_polynomial)),
                 $(Expr(:kw,:test_f, test_f)),
-                $(Expr(:kw,:is_polynomial_system, is_polynomial_system))) =
+                $(Expr(:kw,:is_polynomial_system, is_polynomial_system)),
+                $(Expr(:kw,:polyvars_vars, polyvars_vars)),
+                $(Expr(:kw,:polyvars_params, polyvars_params))) =
                 $(name)(
                         f,
                         f_func,
@@ -119,7 +125,9 @@ function maketype(abstracttype,
                         homotopy_continuation_template,
                         equilibratium_polynomial,
                         test_f,
-                        is_polynomial_system
+                        is_polynomial_system,
+                        polyvars_vars,
+                        polyvars_params
                         )) |> esc
 
     # Make the type instance using the default constructor
