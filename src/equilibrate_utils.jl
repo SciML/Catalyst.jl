@@ -1,20 +1,20 @@
 #Generates the expression which is then converted into a function which generates polynomials for given parameters. Parameters not given can be given at a later stage, but parameters in the exponential must be given here.
 function get_equilibration(params::Vector{Symbol},reactants::OrderedDict{Symbol,Int},f_expr::Vector{Expr})
     func_body = Expr(:block)
-    push!(func_body.args,:(@polyvar internal___polyvar___x[1:$(length(reactants))]))
-    push!(func_body.args,:(@polyvar internal___polyvar___p[1:$(length(params))]))
+    #push!(func_body.args,:(@polyvar internal___polyvar___x[1:$(length(reactants))]))
     push!(func_body.args,:([]))
-    foreach(poly->push!(func_body.args[3].args,recursive_replace!(poly,(reactants,:internal___polyvar___x))), deepcopy(f_expr))
+    foreach(poly->push!(func_body.args[1].args,recursive_replace!(poly,(reactants,:internal___polyvar___x))), deepcopy(f_expr))
     func_expr = :((;TO___BE___REMOVED=to___be___removed) -> $func_body)
     foreach(i -> push!(func_expr.args[1].args[1].args,Expr(:kw,params[i],:(internal___polyvar___p[$i]))), 1:length(params))
     deleteat!(func_expr.args[1].args[1].args,1)
+    push!(func_expr.args[1].args,:internal___polyvar___x)
     return func_expr
 end
 
 #Adds information about some fixed concentration to the network. Macro for simplification
 macro fixed_concentration(reaction_network,fixed_conc...)
     func_expr = Expr(:escape,:(add_fixed_concentration($reaction_network)))
-    foreach(fc -> push!(func_expr.args[1].args,:(recursive_replace!(balance_poly(fc),(reaction_network.syms_to_ints,:internal___polyvar___x),(reaction_network.params_to_ints,:internal___polyvar___p))),fixed_conc))
+    foreach(fc -> push!(func_expr.args[1].args,recursive_replace_vars!(balance_poly(fc), reaction_network)),fixed_conc)
     return func_expr
 end
 
@@ -23,12 +23,23 @@ function balance_poly(poly::Expr)
     return poly
 end
 
+function recursive_replace_vars!(expr::Any, rn::Symbol)
+    if (typeof(expr) == Symbol)&&(expr!=:+)&&(expr!=:-)&&(expr!=:*)&&(expr!=:^)&&(expr!=:/)
+        return :(in($(QuoteNode(expr)),$(rn).syms) ? $(rn).polyvars_vars[$(rn).syms_to_ints[$(QuoteNode(expr))]] : $(rn).polyvars_params[$(rn).params_to_ints[$(QuoteNode(expr))]])
+    elseif typeof(expr) == Expr
+        foreach(i -> expr.args[i] = recursive_replace_vars!(expr.args[i], rn), 1:length(expr.args))
+    end
+    return expr
+end
+
 #Function which does the actual work of adding the fixed concentration information. Can be called directly by inputting polynomials.
 function add_fixed_concentration(reaction_network::DiffEqBase.AbstractReactionNetwork,fixed_concentrations::Polynomial...)
     check_polynomial(reaction_network)
     replaced = Set(keys(reaction_network.fixed_concentrations))
     for fc in fixed_concentrations
-        intersection = intersect(setdiff(reaction_network.syms,replaced),Symbol.(variables(fc)))
+        vars_in_fc = []
+        foreach(v -> in(v,reaction_network.polyvars_vars) && push!(vars_in_fc,reaction_network.syms[findfirst(v.==reaction_network.polyvars_vars)]), variables(fc))
+        intersection = intersect(setdiff(reaction_network.syms,replaced),vars_in_fc)
         (length(intersection)==0) && (@warn "Unable to replace a polynomial"; continue;)
         next_replace = intersection[1]
         push!(replaced,next_replace)
@@ -41,7 +52,7 @@ end
 #
 function fix_parameters(reaction_network::DiffEqBase.AbstractReactionNetwork;kwargs...)
     check_polynomial(reaction_network)
-    reaction_network.equilibratium_polynomial = reaction_network.make_polynomial(;kwargs...)
+    reaction_network.equilibratium_polynomial = reaction_network.make_polynomial(reaction_network.polyvars_vars;kwargs...)
     !(typeof(reaction_network.equilibratium_polynomial[1])<:Polynomial) && (reaction_network.equilibratium_polynomial = map(pol->pol.num,reaction_network.equilibratium_polynomial))
     foreach(sym -> reaction_network.equilibratium_polynomial[findfirst(reaction_network.syms.==sym)] = reaction_network.fixed_concentrations[sym], keys(reaction_network.fixed_concentrations))
 end
@@ -60,23 +71,9 @@ end
 function make_hc_template(reaction_network::DiffEqBase.AbstractReactionNetwork)
     check_polynomial(reaction_network)
     p_template = randn(ComplexF64, length(reaction_network.params))
-    pvars, pars = find_param_vars(reaction_network.equilibratium_polynomial,p_template)
-    f_template = DynamicPolynomials.subs.(reaction_network.equilibratium_polynomial, Ref(pvars => pars))
+    f_template = DynamicPolynomials.subs.(reaction_network.equilibratium_polynomial, Ref(reaction_network.polyvars_params => p_template))
     result_template = HomotopyContinuation.solve(f_template, report_progress=false)
-    reaction_network.homotopy_continuation_template = (pars,solutions(result_template))
-end
-
-#Finds all (parameter) varriables in a polynomial and returns them and their respective parameter value.
-function find_param_vars(polys,pars)
-    vars = union(variables.(polys)...)
-    vars_new = Vector{PolyVar{true}}(); pars_new = Vector{Complex{Float64}}();
-    for var in vars
-        if (length(var.name)>24)&&(var.name[1:23]=="internal___polyvar___p[")&&(var.name[end]==']')&&(!in(var,vars_new))
-            push!(vars_new,var)
-            push!(pars_new,pars[parse(Int64,var.name[24:end-1])])
-        end
-    end
-    return (vars_new,pars_new)
+    reaction_network.homotopy_continuation_template = (p_template,solutions(result_template))
 end
 
 #
@@ -90,10 +87,9 @@ function make_poly_system()
 end
 
 #
-function steady_states(reaction_network::DiffEqBase.AbstractReactionNetwork,pars::Vector{Float64})
+function steady_states(reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64})
     (reaction_network.homotopy_continuation_template==nothing) ? make_hc_template(reaction_network) : check_polynomial(reaction_network)
-    pvars, pars = find_param_vars(reaction_network.equilibratium_polynomial,Complex{Float64}.(pars))
-    result = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=pvars, p₁=reaction_network.homotopy_continuation_template[1], p₀=pars)
+    result = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=params)
     filter(realsolutions(result)) do x
             all(xᵢ -> xᵢ ≥ -0.001, x)
     end
