@@ -114,9 +114,16 @@ struct bifur_path
     vals::Vector{Vector{Float64}}
     jac_eigenvals::Vector{Vector{ComplexF64}}
     leng::Int64
-    function bifur_path(path,param,r1,r2,reaction_network,params)
-        this(param, r1 .+ ((r2-r1) .* path[1]), path[2], length(range[2]), stabilities(path[2],param,r1 .+ ((r2-r1) .* path[1]),reaction_network,params))
+end
+
+function bifur_paths(paths,param,r1,r2,reaction_network,params)
+    bps = Vector{bifur_path}()
+    for path in paths
+        (length(path[1])==0) && continue
+        (abs(1-path[1][1]/path[1][end])<0.0001) && continue
+        push!(bps,bifur_path(param, r1 .+ ((r2-r1) .* path[1]), path[2], stabilities(path[2],param,r1 .+ ((r2-r1) .* path[1]),reaction_network,params), length(path[1])))
     end
+    return bps
 end
 
 function split_bifur_path!(bp,pos)
@@ -130,8 +137,8 @@ function split_stability(bps)
     for bp in bps
         stab_type = stability_type(bp.jac_eigenvals[1])
         for i = 2:bp.leng
-            if stability_type(bp.jac_eigenvals[i]!=stab_type)
-                (bp1,bp2) = split_bifur_path(bp,i)
+            if stability_type(bp.jac_eigenvals[i])!=stab_type
+                (bp1,bp2) = split_bifur_path!(bp,i)
                 push!(new_bps,bp1)
                 push!(bps,bp2)
                 continue
@@ -155,13 +162,13 @@ function stab_color(stab_type)
     (stab_type==3) && (return :green)
 end
 
-function stabilities(values,param,param_vals,reaction_network,params)
-    stabs = Vector{ComplexF64}()
-    Jac_temp = zeros(length(values),length(values))
-    for i = 1:length(values)
+function stabilities(vals,param,param_vals,reaction_network,params)
+    stabs = Vector{Vector{Any}}()
+    Jac_temp = zeros(length(vals[1]),length(vals[1]))
+    for i = 1:length(vals)
         params_i = copy(params)
         params_i[reaction_network.params_to_ints[param]] = param_vals[i]
-        push!(stabs,eigen(reaction_network.jac(Jac_temp,values[i],params_i,0.)).values)
+        push!(stabs,eigen(reaction_network.jac(Jac_temp,vals[i],params_i,0.)).values)
     end
     return stabs
 end
@@ -170,8 +177,8 @@ function bifurcations(reaction_network::DiffEqBase.AbstractReactionNetwork,param
     (reaction_network.homotopy_continuation_template==nothing) ? make_hc_template(reaction_network) : check_polynomial(reaction_network)
     p1 = copy(params); p1[reaction_network.params_to_ints[param]] = range[1];
     p2 = copy(params); p2[reaction_network.params_to_ints[param]] = range[2];
-    result1 = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p1)
-    result2 = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p2)
+    result1 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p1))
+    result2 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p2))
     tracker1 = pathtracker_startsolutions(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p1, p₀=p2)[1]
     tracker2 = pathtracker_startsolutions(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p2, p₀=p1)[1]
     paths_complete = Vector{bifur_path}()
@@ -186,12 +193,12 @@ function bifurcations(reaction_network::DiffEqBase.AbstractReactionNetwork,param
         end
     end
     for result in result2
-        path = track_solution(tracker1,result)
-        (currstatus(tracker1) == PathTrackerStatus.success)&&remove_path!(bifur_paths_incomplete,path[2][end])
-        push!(paths,(1 .- path[1],reverse(path[2])))
+        path = track_solution(tracker2,result)
+        (currstatus(tracker2) == PathTrackerStatus.success)&&remove_path!(paths_incomplete,path[2][end])
+        push!(paths_complete,(1 .- path[1],path[2]))
     end
-    append!(paths_completepaths_incomplete)
-    return split_stability(bifur_path.(positive_real_projection.(path),param,range[1],range[2],reaction_network,params))
+    append!(paths_complete,paths_incomplete)
+    return split_stability(bifur_paths(positive_real_projection.(paths_complete),param,range[1],range[2],reaction_network,params))
 end
 
 function remove_sol!(results,path_fin)
@@ -206,7 +213,7 @@ end
 function remove_path!(paths,path_fin)
     for i = length(paths):-1:1
         if maximum(abs.([imag.(path_fin.-paths[i][2][1])..., real.(path_fin.-paths[i][2][1])...]))<0.0000001
-            deleteat!(results,i)
+            deleteat!(paths,i)
             return
         end
     end
@@ -222,9 +229,9 @@ end
 
 function positive_real_projection(track_result)
     T = []; X = [];
-    for i = 1:length(track_result)
-        if (minimum(real.(track_result[2][i]))>-0.0001)&&(maximum(imag.(track_result[2][i]))<0.0001)
-            push!(T,track_result[1]); push!(X,track_result[2]);
+    for i = 1:length(track_result[1])
+        if (minimum(real.(track_result[2][i]))>-0.0001)&&(maximum(abs.(imag.(track_result[2][i])))<0.0001)
+            push!(T,track_result[1][i]); push!(X,real.(track_result[2][i]))
         end
     end
     return (T,X)
@@ -236,8 +243,8 @@ function plot_bifs(bps)
 end
 function plot_bifs!(bps,val=1)
     for bp in bps
-        color = stab_color(stability_type(bp.values[1]))
-        plot(bp.p_vals,getindex.(bp.values,val),color=color,label="")
+        color = stab_color(stability_type(bp.vals[1]))
+        plot!(bp.p_vals,getindex.(bp.vals,val),color=color,label="")
     end
     plot!()
 end
