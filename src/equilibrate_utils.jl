@@ -113,6 +113,7 @@ struct bifur_path
     p_vals::Vector{Float64}
     vals::Vector{Vector{Float64}}
     jac_eigenvals::Vector{Vector{ComplexF64}}
+    stability_types::Int64
     leng::Int64
 end
 
@@ -121,7 +122,8 @@ function bifur_paths(paths,param,r1,r2,reaction_network,params)
     for path in paths
         (length(path[1])==0) && continue
         (abs(1-path[1][1]/path[1][end])<0.0001) && continue
-        push!(bps,bifur_path(param, r1 .+ ((r2-r1) .* path[1]), path[2], stabilities(path[2],param,r1 .+ ((r2-r1) .* path[1]),reaction_network,params), length(path[1])))
+        jac_eigenvals = stabilities(path[2],param,r1 .+ ((r2-r1) .* path[1]),reaction_network,params)
+        push!(bps,bifur_path(param, r1 .+ ((r2-r1) .* path[1]), path[2], jac_eigenvals, stability_type.(jac_eigenvals), length(path[1])))
     end
     return bps
 end
@@ -130,22 +132,6 @@ function split_bifur_path!(bp,pos)
     bp1 = bifur_path(bp.param,bp.p_vals[1:pos],bp.vals[1:pos],bp.jac_eigenvals[1:pos],pos)
     bp2 = bifur_path(bp.param,bp.p_vals[pos:end],bp.vals[pos:end],bp.jac_eigenvals[pos:end],bp.leng-pos+1)
     return (bp1,bp2)
-end
-
-function split_stability(bps)
-    new_bps = Vector{bifur_path}()
-    for bp in bps
-        stab_type = stability_type(bp.jac_eigenvals[1])
-        for i = 2:bp.leng
-            if stability_type(bp.jac_eigenvals[i])!=stab_type
-                (bp1,bp2) = split_bifur_path!(bp,i)
-                push!(new_bps,bp1)
-                push!(bps,bp2)
-                continue
-            end
-        end
-    end
-    return new_bps
 end
 
 function stability_type(eigenvalues)
@@ -243,8 +229,8 @@ function plot_bifs(bps)
 end
 function plot_bifs!(bps,val=1)
     for bp in bps
-        color = stab_color(stability_type(bp.vals[1]))
-        plot!(bp.p_vals,getindex.(bp.vals,val),color=color,label="")
+        color = stab_color(stability_type(bp.jac_eigenvals[1]))
+        plot!(bp.p_vals,getindex.(bp.vals,val),color=stab_color.(bp.stability_types),label="")
     end
     plot!()
 end
