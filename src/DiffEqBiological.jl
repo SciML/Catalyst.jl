@@ -14,6 +14,7 @@ using DynamicPolynomials
 using HomotopyContinuation
 @reexport using DiffEqBase, DiffEqJump
 using Compat
+using LinearAlgebra
 
 include("reaction_network.jl")
 include("maketype.jl")
