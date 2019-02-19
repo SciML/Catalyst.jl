@@ -15,6 +15,7 @@ using HomotopyContinuation
 @reexport using DiffEqBase, DiffEqJump
 using Compat
 using LinearAlgebra
+using Plots
 
 include("reaction_network.jl")
 include("maketype.jl")
