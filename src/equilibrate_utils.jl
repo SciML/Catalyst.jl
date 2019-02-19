@@ -113,7 +113,7 @@ struct bifur_path
     p_vals::Vector{Float64}
     vals::Vector{Vector{Float64}}
     jac_eigenvals::Vector{Vector{ComplexF64}}
-    stability_types::Int64
+    stability_types::Vector{Int64}
     leng::Int64
 end
 
@@ -167,24 +167,24 @@ function bifurcations(reaction_network::DiffEqBase.AbstractReactionNetwork,param
     result2 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p2))
     tracker1 = pathtracker_startsolutions(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p1, p₀=p2)[1]
     tracker2 = pathtracker_startsolutions(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p2, p₀=p1)[1]
-    paths_complete = Vector{bifur_path}()
-    paths_incomplete = Vector{bifur_path}()
+    paths_complete = Vector{Any}()
+    paths_incomplete = Vector{Any}()
     for result in result1
         path = track_solution(tracker1,result)
         if (currstatus(tracker1) == PathTrackerStatus.success)
             remove_sol!(result2,path[2][end])
-            push!(paths_complete,path)
+            push!(paths_complete,(1. .- path[1],path[2]))
         else
-            push!(paths_incomplete,path)
+            push!(paths_incomplete,(1. .-path[1],path[2]))
         end
     end
     for result in result2
         path = track_solution(tracker2,result)
         (currstatus(tracker2) == PathTrackerStatus.success)&&remove_path!(paths_incomplete,path[2][end])
-        push!(paths_complete,(1 .- path[1],path[2]))
+        push!(paths_complete,path)
     end
     append!(paths_complete,paths_incomplete)
-    return split_stability(bifur_paths(positive_real_projection.(paths_complete),param,range[1],range[2],reaction_network,params))
+    return bifur_paths(positive_real_projection.(paths_complete),param,range[1],range[2],reaction_network,params)
 end
 
 function remove_sol!(results,path_fin)
