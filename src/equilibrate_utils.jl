@@ -33,7 +33,7 @@ end
 
 #Calls the internal make_polynomial function to create a polynomial. Used to model creation (will succced unless there is parameters in the exponents). Input include list of parameters to fix. All parameters occuring as exponent must be here (none other is required at this stage). Will insert fixed concentrations if such exists.
 function fix_parameters(reaction_network::DiffEqBase.AbstractReactionNetwork;kwargs...)
-    check_polynomial(reaction_network)
+    check_is_polynomial(reaction_network)
     reaction_network.equilibratium_polynomial = reaction_network.make_polynomial(reaction_network.polyvars_vars;kwargs...)
     !(typeof(reaction_network.equilibratium_polynomial[1])<:Polynomial) && (reaction_network.equilibratium_polynomial = map(pol->pol.num,reaction_network.equilibratium_polynomial))
     foreach(sym -> reaction_network.equilibratium_polynomial[findfirst(reaction_network.syms.==sym)] = reaction_network.fixed_concentrations[sym], keys(reaction_network.fixed_concentrations))
@@ -61,7 +61,7 @@ function recursive_replace_vars!(expr::Any, rn::Symbol)
 end
 #Function which does the actual work of adding the fixed concentration information. Not meant to be called directly, but is called through the fixed_concentration macro.
 function internal___fix___concentrations(reaction_network::DiffEqBase.AbstractReactionNetwork,fixed_concentrations::Polynomial...)
-    check_polynomial(reaction_network)
+    check_is_polynomial(reaction_network)
     replaced = Set(keys(reaction_network.fixed_concentrations))
     for fc in fixed_concentrations
         vars_in_fc = []
@@ -78,7 +78,8 @@ end
 
 #Can be called separatly, but will otherwise be called first time a steady state is to be found. Solves the system once using random parameters. Saves the solution as a template to be used for further solving.
 function make_hc_template(reaction_network::DiffEqBase.AbstractReactionNetwork)
-    check_polynomial(reaction_network)
+    check_is_polynomial(reaction_network)
+    check_exists_polynomial(reaction_network)
     p_template = randn(ComplexF64, length(reaction_network.params))
     f_template = DynamicPolynomials.subs.(reaction_network.equilibratium_polynomial, Ref(reaction_network.polyvars_params => p_template))
     result_template = HomotopyContinuation.solve(f_template, report_progress=false)
@@ -91,6 +92,7 @@ end
 
 #Checks that the reaction network is a polynomial system.
 check_is_polynomial(reaction_network::DiffEqBase.AbstractReactionNetwork) = (!reaction_network.is_polynomial_system) && (error("This reaction network does not correspond to a polynomial system. Some of the reaction rate must contain non polynomial terms."))
+#Checks that a polynomial have been created for the reaction network.
 check_exists_polynomial(reaction_network::DiffEqBase.AbstractReactionNetwork) = (reaction_network.equilibratium_polynomial==nothing) && (error("No equilibrium polynomial have been created. Please use the @fix_concentration macro to do so."))
 
 
@@ -98,7 +100,7 @@ check_exists_polynomial(reaction_network::DiffEqBase.AbstractReactionNetwork) = 
 
 #
 function steady_states(reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64})
-    (reaction_network.homotopy_continuation_template==nothing) ? make_hc_template(reaction_network) : check_polynomial(reaction_network)
+    (reaction_network.homotopy_continuation_template==nothing) ? make_hc_template(reaction_network) : check_is_polynomial(reaction_network)
     result = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=params)
     filter(realsolutions(result)) do x
             all(xᵢ -> xᵢ ≥ -0.001, x)
@@ -132,7 +134,7 @@ end
 
 
 function bifurcations(reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64},param::Symbol,range::Tuple{Float64,Float64})
-    (reaction_network.homotopy_continuation_template==nothing) ? make_hc_template(reaction_network) : check_polynomial(reaction_network)
+    (reaction_network.homotopy_continuation_template==nothing) ? make_hc_template(reaction_network) : check_is_polynomial(reaction_network)
     p1 = copy(params); p1[reaction_network.params_to_ints[param]] = range[1];
     p2 = copy(params); p2[reaction_network.params_to_ints[param]] = range[2];
     result1 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p1))
