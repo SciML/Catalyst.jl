@@ -9,11 +9,10 @@ using SymEngine
 using MacroTools
 using DataStructures
 using Parameters
-@reexport using DynamicPolynomials
-using DynamicPolynomials
-using HomotopyContinuation
 @reexport using DiffEqBase, DiffEqJump
 using Compat
+@reexport using DynamicPolynomials
+using HomotopyContinuation
 using LinearAlgebra
 using Plots
 
