@@ -108,11 +108,11 @@ function coordinate(name, ex::Expr, p, scale_noise)
     (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, reactants, parameters)
 
     # expression for equilibration functionality
-    equipol_maker = get_equilibration(params,reactants,[expr.args[2] for expr in f_expr])
+    (equipol_maker, is_pol) = get_equilibration(params,reactants,[expr.args[2] for expr in f_expr])
 
     # Build the type
     exprs = Vector{Expr}(undef,0)
-    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, f, f_rhs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, jac=jac, paramjac=paramjac, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters, odefun=odefun, sdefun=sdefun, make_polynomial=equipol_maker, polyvars_vars=:internal___polyvar___x, polyvars_params=:internal___polyvar___p)
+    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, f, f_rhs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, jac=jac, paramjac=paramjac, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters, odefun=odefun, sdefun=sdefun, make_polynomial=equipol_maker, is_polynomial_system=is_pol, polyvars_vars=:internal___polyvar___x, polyvars_params=:internal___polyvar___p)
     push!(exprs,typeex)
     push!(exprs,constructorex)
 
