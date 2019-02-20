@@ -27,7 +27,7 @@ function maketype(abstracttype,
                   fixed_concentrations = Dict{Symbol,Polynomial}(),
                   homotopy_continuation_template = nothing,
                   equilibratium_polynomial = nothing,
-                  is_polynomial_system = make_poly_system(),
+                  is_polynomial_system = false,
                   polyvars_vars = nothing,
                   polyvars_params = nothing
                   )
