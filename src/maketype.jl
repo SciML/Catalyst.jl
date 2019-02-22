@@ -27,7 +27,7 @@ function maketype(abstracttype,
                   fixed_concentrations = Dict{Symbol,Polynomial}(),
                   homotopy_continuation_template = nothing,
                   equilibratium_polynomial = nothing,
-                  is_polynomial_system = false,
+                  is_polynomial_system = true,
                   polyvars_vars = nothing,
                   polyvars_params = nothing
                   )
@@ -227,10 +227,9 @@ function addequi!(rn::DiffEqBase.AbstractReactionNetwork)
         addodes!(rn)
     end
 
-    (equipol_maker, is_pol) = get_equilibration(params,syms_to_ints,rn.f_func)
+    equipol_maker = get_equilibration(params,syms_to_ints,rn.f_func)
 
     rn.make_polynomial = eval(equipol_maker)
-    rn.is_polynomial_system = eval(is_pol)
 
     @polyvar internal___polyvar___p[1:length(params)]
     @polyvar internal___polyvar___x[1:length(syms_to_ints)]

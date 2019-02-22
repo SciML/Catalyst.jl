@@ -5,31 +5,28 @@
 #Generates the expression which is then converted into a function which generates polynomials for given parameters. Parameters not given can be given at a later stage, but parameters in the exponential must be given here. Also checks whenever the system is polynomial.
 function get_equilibration(params::Vector{Symbol}, reactants::OrderedDict{Symbol,Int}, f_expr::Vector{Expr})
     func_body = Expr(:block)
+    push!(func_body.args,Expr(:if,:(length(internal___var___polyvector) != 0),Expr(:block)))
+    foreach(i -> push!(func_body.args[1].args[2].args, :($(params[i])=internal___var___polyvector[$i])), 1:length(params))
     push!(func_body.args,:([]))
-    foreach(poly->push!(func_body.args[1].args,recursive_replace!(poly,(reactants,:internal___polyvar___x))), deepcopy(f_expr))
+    foreach(poly -> push!(func_body.args[2].args, recursive_replace!(poly,(reactants,:internal___polyvar___x))), deepcopy(f_expr))
     func_expr = :((;TO___BE___REMOVED=to___be___removed) -> $(deepcopy(func_body)))
-    foreach(i -> push!(func_expr.args[1].args[1].args,Expr(:kw,params[i],:(internal___reaction_network.polyvars_params[$i]))), 1:length(params))
+    foreach(i -> push!(func_expr.args[1].args[1].args,Expr(:kw,params[i],:(internal___reaction___network.polyvars_params[$i]))), 1:length(params))
+    push!(func_expr.args[1].args[1].args,Expr(:kw,:internal___var___polyvector,:([])))
     deleteat!(func_expr.args[1].args[1].args,1)
-    push!(func_expr.args[1].args,:internal___reaction_network)
-    push!(func_expr.args[1].args,Expr(:kw,:internal___polyvar___x,:(internal___reaction_network.polyvars_vars)))
-
-    is_pol_code = :([])
-    foreach(poly->push!(is_pol_code.args,recursive_replace!(poly,(reactants,:internal___ispoly___polyvar___x))), deepcopy(f_expr))
-    foreach(i->is_pol_code.args[i] = recursive_replace!(is_pol_code.args[i], (OrderedDict(zip(params,1:length(params))),:internal___var___ones)), 1:length(is_pol_code.args))
-    is_pol = quote
-        @polyvar internal___ispoly___polyvar___x[1:$(length(reactants))]
-        internal___var___ones = fill(1,$(length(params)))
-        try
-            $is_pol_code
-            true
-        catch
-            false
-    end end
-    return (func_expr, is_pol)
+    push!(func_expr.args[1].args,:internal___reaction___network)
+    push!(func_expr.args[1].args,Expr(:kw,:internal___polyvar___x,:(internal___reaction___network.polyvars_vars)))
+    push!(func_expr.args[1].args,Expr(:kw,:print_msg,1))
+    return func_expr
 end
 
 #Manages post creation modification to a reaction network with respect to utility needed for equilibrium calculations. Attempts to make an equilibrium polynomial.
 function manage_equilibrium_functionality!(reaction_network::DiffEqBase.AbstractReactionNetwork)
+    reaction_network.is_polynomial_system = try
+        fix_parameters(reaction_network,fill(1,length(reaction_network.params)))
+        true
+    catch
+        false
+    end
     reaction_network.is_polynomial_system && (try fix_parameters(reaction_network) catch end)
 end
 
@@ -38,9 +35,9 @@ end
 ## Functions required for the preparation to use homotopy continuation to find fixed points.
 
 #Calls the internal make_polynomial function to create a polynomial. Used to model creation (will succced unless there is parameters in the exponents). Input include list of parameters to fix. All parameters occuring as exponent must be here (none other is required at this stage). Will insert fixed concentrations if such exists.
-function fix_parameters(reaction_network::DiffEqBase.AbstractReactionNetwork; kwargs...)
+function fix_parameters(reaction_network::DiffEqBase.AbstractReactionNetwork, params=Vector{Number}()::Vector{Number}; kwargs...)
     check_is_polynomial(reaction_network)
-    reaction_network.equilibratium_polynomial = reaction_network.make_polynomial(reaction_network;kwargs...)
+    reaction_network.equilibratium_polynomial = reaction_network.make_polynomial(reaction_network;internal___var___polyvector=params,kwargs...)
     !(typeof(reaction_network.equilibratium_polynomial[1])<:Polynomial) && (reaction_network.equilibratium_polynomial = map(pol->pol.num,reaction_network.equilibratium_polynomial))
     foreach(sym -> reaction_network.equilibratium_polynomial[findfirst(reaction_network.syms.==sym)] = reaction_network.fixed_concentrations[sym], keys(reaction_network.fixed_concentrations))
 end
@@ -106,22 +103,26 @@ check_exists_polynomial(reaction_network::DiffEqBase.AbstractReactionNetwork) = 
 ### Functions for finding single steady states of fixed points, and for analysing their stability..
 
 #Finds the steady states of a reaction network
-function steady_states(reaction_network::DiffEqBase.AbstractReactionNetwork, params::Vector{Float64}, solver=HcSteadyStateSolver::Function)
+function steady_states(reaction_network::DiffEqBase.AbstractReactionNetwork, params=Vector{Float64}()::Vector{Float64}, solver=HcSteadyStateSolver::Function)
     return solver(reaction_network,params)::Vector{Vector{Float64}}
 end
 
 #Finds steady states of a system using homotopy continuation.
 function HcSteadyStateSolver(reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64})
-    (reaction_network.homotopy_continuation_template==nothing) && make_hc_template(reaction_network)
-    result = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=params, report_progress=false)
+    if length(params)==0
+        result = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, report_progress=false)
+    else
+        (reaction_network.homotopy_continuation_template==nothing) && make_hc_template(reaction_network)
+        result = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=params, report_progress=false)
+    end
     filter(realsolutions(result)) do x
             all(xᵢ -> xᵢ ≥ -0.001, x)
     end
 end
 
 #Returns a boolean which will be true if the given fixed point is stable.
-function stability(solution::Vector{Float64}, pars::Vector{Float64}, reaction_network::DiffEqBase.AbstractReactionNetwork, t=0.::Float64)
-    return maximum(eigen(reaction_network.jac(zeros(length(reaction_network.syms),length(reaction_network.syms)),solution,pars,t)).values)<0.
+function stability(solution::Vector{Float64}, params::Vector{Float64}, reaction_network::DiffEqBase.AbstractReactionNetwork, t=0.::Float64)
+    return maximum(real.(eigen(reaction_network.jac(zeros(length(reaction_network.syms),length(reaction_network.syms)),solution,params,t)).values))<0.
 end
 
 
@@ -194,7 +195,7 @@ function bifurcations_grid(reaction_network::DiffEqBase.AbstractReactionNetwork,
     for i = 1:length(range1)
         params_i=copy(params); params_i[reaction_network.params_to_ints[param]]=range1[i];
         ss = solver(reaction_network,params_i)
-        jac_eigenvals = stabilities(map(s->ComplexF64.(s),ss),param,fill(range1[i],length(ss)),reaction_network,params)
+        jac_eigenvals = get_jac_eigenvals(map(s->ComplexF64.(s),ss),param,fill(range1[i],length(ss)),reaction_network,params)
         grid_points[i] = bifurcation_point(ss,jac_eigenvals,stability_type.(jac_eigenvals))
     end
     return bifurcation_grid(param,range1,Vector{bifurcation_point}(grid_points),length(range1))
@@ -208,7 +209,7 @@ function bifurcations_grid_2d(reaction_network::DiffEqBase.AbstractReactionNetwo
         params_ij[reaction_network.params_to_ints[param1]] = range1[i];
         params_ij[reaction_network.params_to_ints[param2]] = range2[j];
         ss = solver(reaction_network,params_ij)
-        jac_eigenvals = stabilities(map(s->ComplexF64.(s),ss),param1,fill(range1[i],length(ss)),reaction_network,params)
+        jac_eigenvals = get_jac_eigenvals(map(s->ComplexF64.(s),ss),param1,fill(range1[i],length(ss)),reaction_network,params)
         grid_points[i,j] = bifurcation_point(ss,jac_eigenvals,stability_type.(jac_eigenvals))
     end
     return bifurcation_grid_2d(param1,range1,param2,range2,Matrix{bifurcation_point}(grid_points),(length(range1),length(range2)))
@@ -229,6 +230,7 @@ end
 
 ### Homotopy continuation based method for making bifurcation diagrams. Only works for polynomial systems and contains some heuretics for dealing with certain bifurcation points. ###
 
+#Creates a bifurcation diagram by tracking using homotopy continuation. Might have problems with certain bifurcations (which might be fixed by introducing a few heuristics).
 function HcBifurcationSolver(reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64},param::Symbol,range::Tuple{Float64,Float64};stepsize=0.01::Float64)
     (reaction_network.homotopy_continuation_template==nothing) ? make_hc_template(reaction_network) : check_is_polynomial(reaction_network)
     p1 = copy(params); p1[reaction_network.params_to_ints[param]] = range[1];
@@ -275,7 +277,6 @@ function remove_path!(paths::Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF
         end
     end
 end
-
 #For a given tracker and solution, tries to track the solution from t=1 to t=0.
 function track_solution(tracker::PathTracker,sol::Vector{ComplexF64})
     T = Vector{Float64}(); X = Vector{Vector{ComplexF64}}();
@@ -284,7 +285,6 @@ function track_solution(tracker::PathTracker,sol::Vector{ComplexF64})
     end
     return (T,X)
 end
-
 #For a given path, filters away all biologically unplausible values (negative and imaginary).
 function positive_real_projection(track_result::Tuple{Vector{Float64},Vector{Vector{ComplexF64}}})
     T = Vector{Float64}(); X = Vector{Vector{ComplexF64}}();
@@ -295,14 +295,13 @@ function positive_real_projection(track_result::Tuple{Vector{Float64},Vector{Vec
     end
     return (T,X)
 end
-
 #Takes a set of paths as tracked by homotopy continuation and turns them into a vector of bifurcation paths.
 function bifurcation_paths(paths::Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}},param::Symbol,r1::Number,r2::Number,reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64})
     bps = Vector{bifurcation_path}()
     for path in paths
         (length(path[1])==0) && continue
         (abs(1-path[1][1]/path[1][end])<0.0001) && continue
-        jac_eigenvals = stabilities(path[2],param,r1 .+ ((r2-r1) .* path[1]),reaction_network,params)
+        jac_eigenvals = get_jac_eigenvals(path[2],param,r1 .+ ((r2-r1) .* path[1]),reaction_network,params)
         push!(bps,bifurcation_path(r1 .+ ((r2-r1) .* path[1]), path[2], jac_eigenvals, stability_type.(jac_eigenvals), length(path[1])))
     end
     return bps
@@ -315,7 +314,6 @@ function stability_type(eigenvalues::Vector{Any})
     any(imag(eigenvalues).>1e-6)&&(stab_type+=2)
     return stab_type
 end
-
 #For a specific stability types, returns a color (to be used to distinguish the types in plots).
 function stab_color(stab_type::Int8)
     (stab_type==0) && (return :red)
@@ -323,9 +321,8 @@ function stab_color(stab_type::Int8)
     (stab_type==2) && (return :orange)
     (stab_type==3) && (return :cyan)
 end
-
 #For a set of fixed points, return a corresponding set with the eigen values of the jacobian at the specified points.
-function stabilities(vals::Vector{Vector{ComplexF64}},param::Symbol,param_vals::Vector{Float64},reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64})
+function get_jac_eigenvals(vals::Vector{Vector{ComplexF64}},param::Symbol,param_vals::Vector{Float64},reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64})
     stabs = Vector{Vector{Any}}()
     (length(vals)==0)&&(return stabs)
     Jac_temp = zeros(length(vals[1]),length(vals[1]))
