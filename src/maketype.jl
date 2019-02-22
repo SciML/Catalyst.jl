@@ -239,6 +239,5 @@ function addequi!(rn::DiffEqBase.AbstractReactionNetwork)
 
     manage_equilibrium_functionality!(rn)
 
-    #return(internal___polyvar___x, internal___polyvar___p)
     nothing
 end
