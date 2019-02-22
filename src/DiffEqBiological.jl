@@ -26,6 +26,7 @@ export @reaction_network, @reaction_func, @min_reaction_network
 export addodes!, addsdes!, addjumps!
 export ODEProblem, SDEProblem, DiscreteProblem, JumpProblem, SteadyStateProblem
 export @fixed_concentration, internal___fix___concentrations, fix_parameters, @make_hc_template, make_hc_template, steady_states
-export bifurcations, plot_bifs, plot_bifs!
+export bifurcations, bifurcations_grid, bifurcations_grid_2d, bifurcations_diagram_grid
+export bif_plot, bif_plot!, bif_scatter, bif_scatter!
 
 end # module
