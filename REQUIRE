@@ -7,3 +7,5 @@ Reexport 0.1.0
 SymEngine 0.4.0
 MacroTools 0.4.0
 Parameters 0.10.3
+DynamicPolynomials 0.1.3
+HomotopyContinuation 0.5.2
