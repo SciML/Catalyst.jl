@@ -120,7 +120,7 @@ ssol  = solve(sprob, EM(), dt=.01)
 
 # solve JumpProblem
 u0 = [5]
-dprob = DiscreteProblem(u0, tspan, params)
+dprob = DiscreteProblem(rs, u0, tspan, params)
 jprob = JumpProblem(dprob, Direct(), rs)
 jsol = solve(jprob, SSAStepper())
 ```
