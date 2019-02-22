@@ -108,7 +108,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, reactants, parameters)
 
     # expression for equilibration functionality
-    (equipol_maker, is_pol) = get_equilibration(params,reactants,[expr.args[2] for expr in f_expr])
+    (equipol_maker, is_pol) = get_equilibration(params,reactants,f_rhs)
 
     # Build the type
     exprs = Vector{Expr}(undef,0)

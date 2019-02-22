@@ -218,3 +218,26 @@ function addjumps!(rn::DiffEqBase.AbstractReactionNetwork;
 
     nothing
 end
+
+function addequi!(rn::DiffEqBase.AbstractReactionNetwork)
+    @unpack reactions, syms_to_ints, params_to_ints, scale_noise = rn
+
+    # first construct an ODE reaction network (required for getting f_func).
+    if rn.f == nothing
+        addodes!(rn)
+    end
+
+    (equipol_maker, is_pol) = get_equilibration(params,reactants,rn.f_func)
+
+    rn.equipol.make_polynomial = eval(equipol_maker)
+    rn.is_polynomial_system = eval(is_pol)
+
+    @polyvar internal___polyvar___p[1:length(parameters)]
+    @polyvar internal___polyvar___x[1:length(reactants)]
+    rn.polyvars_vars = internal___polyvar___x
+    rn.polyvars_params = internal___polyvar___p
+
+    manage_equilibrium_functionality!(rn)
+
+    return(internal___polyvar___x, internal___polyvar___p)
+end
