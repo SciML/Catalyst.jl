@@ -8,16 +8,22 @@ function get_equilibration(params::Vector{Symbol}, reactants::OrderedDict{Symbol
     push!(func_body.args,:([]))
     foreach(poly->push!(func_body.args[1].args,recursive_replace!(poly,(reactants,:internal___polyvar___x))), deepcopy(f_expr))
     func_expr = :((;TO___BE___REMOVED=to___be___removed) -> $(deepcopy(func_body)))
-    foreach(i -> push!(func_expr.args[1].args[1].args,Expr(:kw,params[i],:(internal___polyvar___p[$i]))), 1:length(params))
+    foreach(i -> push!(func_expr.args[1].args[1].args,Expr(:kw,params[i],:(internal___reaction_network.polyvars_params[$i]))), 1:length(params))
     deleteat!(func_expr.args[1].args[1].args,1)
-    push!(func_expr.args[1].args,:internal___polyvar___x)
-    is_pol_func = :((internal___polyvar___x,internal___polyvar___dummy=1) -> $(deepcopy(func_body)))
-    foreach(p -> push!(is_pol_func.args[1].args,:($p = 1)),params)
-    is_pol = quote try
-        $(is_pol_func)(internal___polyvar___x)
-        true
-    catch
-        false
+    push!(func_expr.args[1].args,:internal___reaction_network)
+    push!(func_expr.args[1].args,Expr(:kw,:internal___polyvar___x,:(internal___reaction_network.polyvars_vars)))
+
+    is_pol_code = :([])
+    foreach(poly->push!(is_pol_code.args,recursive_replace!(poly,(reactants,:internal___ispoly___polyvar___x))), deepcopy(f_expr))
+    foreach(i->is_pol_code.args[i] = recursive_replace!(is_pol_code.args[i], (OrderedDict(zip(params,1:length(params))),:internal___var___ones)), 1:length(is_pol_code.args))
+    is_pol = quote
+        @polyvar internal___ispoly___polyvar___x[1:$(length(reactants))]
+        internal___var___ones = fill(1,$(length(params)))
+        try
+            $is_pol_code
+            true
+        catch
+            false
     end end
     return (func_expr, is_pol)
 end
@@ -34,7 +40,7 @@ end
 #Calls the internal make_polynomial function to create a polynomial. Used to model creation (will succced unless there is parameters in the exponents). Input include list of parameters to fix. All parameters occuring as exponent must be here (none other is required at this stage). Will insert fixed concentrations if such exists.
 function fix_parameters(reaction_network::DiffEqBase.AbstractReactionNetwork; kwargs...)
     check_is_polynomial(reaction_network)
-    reaction_network.equilibratium_polynomial = reaction_network.make_polynomial(reaction_network.polyvars_vars;kwargs...)
+    reaction_network.equilibratium_polynomial = reaction_network.make_polynomial(reaction_network;kwargs...)
     !(typeof(reaction_network.equilibratium_polynomial[1])<:Polynomial) && (reaction_network.equilibratium_polynomial = map(pol->pol.num,reaction_network.equilibratium_polynomial))
     foreach(sym -> reaction_network.equilibratium_polynomial[findfirst(reaction_network.syms.==sym)] = reaction_network.fixed_concentrations[sym], keys(reaction_network.fixed_concentrations))
 end

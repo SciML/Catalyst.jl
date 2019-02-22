@@ -11,7 +11,7 @@ using DataStructures
 using Parameters
 @reexport using DiffEqBase, DiffEqJump
 using Compat
-@reexport using DynamicPolynomials
+using DynamicPolynomials
 using HomotopyContinuation
 using LinearAlgebra
 using Plots
