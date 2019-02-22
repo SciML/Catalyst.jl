@@ -13,7 +13,8 @@ end
 ### DiscreteProblem, passing through syms
 function DiffEqBase.DiscreteProblem(rn::DiffEqBase.AbstractReactionNetwork, u0, tspan::Tuple, p=nothing; kwargs...)
     f = DiffEqBase.DISCRETE_INPLACE_DEFAULT
-    df = DiscreteFunction{true,typeof(f),Nothing,typeof(rn.syms)}(f,nothing,rn.syms)
+    #df = DiscreteFunction{true,typeof(f),Nothing,typeof(rn.syms)}(f,nothing,rn.syms)
+    df = DiscreteFunction(f,syms=rn.syms)
     DiscreteProblem(df, u0, tspan, p; kwargs...)
 end
 
