@@ -107,7 +107,7 @@ end
 #Finds steady states of a system using homotopy continuation.
 function HcSteadyStateSolver(reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64})
     (reaction_network.homotopy_continuation_template==nothing) && make_hc_template(reaction_network)
-    result = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=params)
+    result = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=params, report_progress=false)
     filter(realsolutions(result)) do x
             all(xᵢ -> xᵢ ≥ -0.001, x)
     end
@@ -227,8 +227,8 @@ function HcBifurcationSolver(reaction_network::DiffEqBase.AbstractReactionNetwor
     (reaction_network.homotopy_continuation_template==nothing) ? make_hc_template(reaction_network) : check_is_polynomial(reaction_network)
     p1 = copy(params); p1[reaction_network.params_to_ints[param]] = range[1];
     p2 = copy(params); p2[reaction_network.params_to_ints[param]] = range[2];
-    result1 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p1))
-    result2 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p2))
+    result1 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p1, report_progress=false))
+    result2 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p2, report_progress=false))
     tracker1 = pathtracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p1, p₀=p2, maximal_step_size=stepsize)
     tracker2 = pathtracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p2, p₀=p1, maximal_step_size=stepsize)
     paths_complete = Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}}()
