@@ -230,7 +230,6 @@ function addequi!(rn::DiffEqBase.AbstractReactionNetwork)
     equipol_maker = get_equilibration(params,syms_to_ints,rn.f_func)
 
     rn.make_polynomial = eval(equipol_maker)
-
     rn.polyvars_vars = (@polyvar internal___polyvar___x[1:length(syms_to_ints)])[1]
     rn.polyvars_params = (@polyvar internal___polyvar___p[1:length(params)])[1]
 
