@@ -231,12 +231,8 @@ function addequi!(rn::DiffEqBase.AbstractReactionNetwork)
 
     rn.make_polynomial = eval(equipol_maker)
 
-    @polyvar internal___polyvar___p[1:length(params)]
-    @polyvar internal___polyvar___x[1:length(syms_to_ints)]
-    rn.polyvars_vars = internal___polyvar___x
-    rn.polyvars_params = internal___polyvar___p
-
-    manage_equilibrium_functionality!(rn)
+    rn.polyvars_vars = (@polyvar internal___polyvar___x[1:length(syms_to_ints)])[1]
+    rn.polyvars_params = (@polyvar internal___polyvar___p[1:length(params)])[1]
 
     nothing
 end

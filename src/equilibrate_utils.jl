@@ -21,6 +21,7 @@ end
 
 #Manages post creation modification to a reaction network with respect to utility needed for equilibrium calculations. Attempts to make an equilibrium polynomial.
 function manage_equilibrium_functionality!(reaction_network::DiffEqBase.AbstractReactionNetwork)
+    fix_parameters(reaction_network,fill(1,length(reaction_network.params)))
     reaction_network.is_polynomial_system = try
         fix_parameters(reaction_network,fill(1,length(reaction_network.params)))
         true

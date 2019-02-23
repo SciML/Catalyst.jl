@@ -6,6 +6,7 @@
 reaction_networks_standard = Vector{DiffEqBase.AbstractReactionNetwork}(undef,10)
 reaction_networks_hill = Vector{DiffEqBase.AbstractReactionNetwork}(undef,10)
 reaction_networks_fixed_conc = Vector{DiffEqBase.AbstractReactionNetwork}(undef,10)
+min_reaction_networks_standard = Vector{DiffEqBase.AbstractReactionNetwork}(undef,10)
 
 #Standard reaction networks.
 reaction_networks_standard[1] = @reaction_network begin
@@ -250,3 +251,81 @@ reaction_networks_fixed_conc_10 = @reaction_network rnType begin
 end kBw kDw kD kB1 kB2 kB3 kB4 kB5 kD1 kD2 kD3 kD4 kD5 kK1 kK2 kP kDeg v0 F K λW λV pTot;
 @fixed_concentration reaction_networks_fixed_conc_10 vPp+phos=pTot
 reaction_networks_fixed_conc[10] = reaction_networks_fixed_conc_10
+
+#Minimal reaction network version of the standard reaction networks.
+min_reaction_networks_standard[1] = @min_reaction_network begin
+    (p1,p2,p3), ∅ → (X1,X2,X3)
+    (k1,k2), X2 ⟷ X1 + 2X3
+    (k3,k4), X1 ⟷ X3
+    (d1,d2,d3), (X1,X2,X3) → ∅
+end p1 p2 p3 k1 k2 k3 k4 d1 d2 d3
+
+min_reaction_networks_standard[2] = @min_reaction_network begin
+    mmR(X2,v1,K1), ∅ → X1
+    mm(X1,v2,K2), ∅ → X2
+    d, X1+X2 → ∅
+end v1 K1 v2 K2 d
+
+min_reaction_networks_standard[3] = @min_reaction_network begin
+    mm(X2,v1,K1), ∅ → X1
+    mm(X3,v2,K2), ∅ → X2
+    (k1,k2), X1 ⟷ X4
+    (k3,k4), X4 + X2 ⟷ X3 +X1
+    d, (X1,X2,X3,X4) → ∅
+end v1 K1 v2 K2 k1 k2 k3 k4 d
+
+min_reaction_networks_standard[4] = @min_reaction_network begin
+    mmR(X4,v1,K1), ∅ → X1
+    mmR(X1,v2,K2), ∅ → X2
+    mmR(X2,v3,K3), ∅ → X3
+    mmR(X3,v4,K4), ∅ → X4
+    (d1,d2,d3,d4), (X1,X2,X3,X4) → ∅
+end v1 K1 v2 K2 v3 K3 v4 K4 d1 d2 d3 d4
+
+min_reaction_networks_standard[5] = @min_reaction_network begin
+    p, ∅ → X1
+    (k1,k2), X1 ⟷ X2
+    (k3,k4), X2 ⟷ X3
+    (k5,k6), X3 ⟷ X4
+    d, X4 → ∅
+end p k1 k2 k3 k4 k5 k6 d
+
+min_reaction_networks_standard[6] = @min_reaction_network begin
+    (p1,p2), ∅ → (X1,X2)
+    (k1,k2), 2X1 ⟷ X3
+    (k3,k4), X2 + X3 ⟷ 4X4
+    (k5,k6), X4 + X1 ⟷ 2X3
+    d, (X1,X2,X3,X4) → ∅
+end p1 p2 k1 k2 k3 k4 k5 k6 d
+
+min_reaction_networks_standard[7] = @min_reaction_network begin
+    (p1,p2,p3,p4,p5), ∅ → (X1,X2,X3,X4,X5)
+    (k1,k2), X1 + 3X2 ⟷ 2X3 + 2X4
+    (k3,k4), X2 + X3 ⟷ X5
+    (mm(X1,v1,K1),k5), X5 ⟷ X1
+    (mm(X2,v2,K2),k6), X1 ⟷ X2
+    (d1,d2,d3,d4,d5), (X1,X2,X3,X4,X5) → ∅
+end p1 p2 p3 p4 p5 k1 k2 k3 k4 k5 k6 v1 K1 v2 K2 d1 d2 d3 d4 d5
+
+min_reaction_networks_standard[8] = @min_reaction_network begin
+    p, ∅ → 2X1
+    k1, X1 → X2
+    (k2, k3), X2 → X3
+    d, X3 → ∅
+end p k1 k2 k3 d
+
+min_reaction_networks_standard[9] = @min_reaction_network begin
+    (p1,p2,p3), ∅ ⟶ (X1,X2,X3)
+    (d1,d2,d3), (X1,X2,X3) ⟶ ∅
+    (k1,k2), X1 + X2 ⟷ X3
+    (k3,k4), X3 ⟷ X4
+    (k5,k6), X4 ⟷ X1 + X2
+end p1 p2 p3 d1 d2 d3 k1 k2 k3 k4 k5 k6
+
+min_reaction_networks_standard[10] = @min_reaction_network begin
+    p, ∅ ⟶ X1
+    (k1,k2), X1 ⟷ 3X3+ 2X2
+    (k3,k4), 2X2 ⟷ X4
+    (k5,k6), 3X3 + X4 ⟷ X5
+    d, X5  ⟶ ∅
+end p k1 k2 k3 k4 k5 k6 d

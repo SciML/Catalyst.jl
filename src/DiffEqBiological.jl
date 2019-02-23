@@ -23,7 +23,7 @@ include("problem.jl")
 include("equilibrate_utils.jl")
 
 export @reaction_network, @reaction_func, @min_reaction_network
-export addodes!, addsdes!, addjumps!, addequi!
+export addodes!, addsdes!, addjumps!, addequi!, manage_reaction_network!
 export ODEProblem, SDEProblem, DiscreteProblem, JumpProblem, SteadyStateProblem
 export @fixed_concentration, internal___fix___concentrations, fix_parameters, @make_hc_template, make_hc_template, steady_states, stability
 export bifurcations, bifurcations_grid, bifurcations_grid_2d, bifurcations_diagram_grid
