@@ -1,4 +1,5 @@
 using DiffEqBiological
+using DifferentialEquations
 using Test
 
 # imports a ffew test networks.
