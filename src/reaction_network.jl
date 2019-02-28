@@ -112,7 +112,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
 
     # Build the type
     exprs = Vector{Expr}(undef,0)
-    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, f, f_rhs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, jac=jac, paramjac=paramjac, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters, odefun=odefun, sdefun=sdefun, make_polynomial=equipol_maker, polyvars_vars=:((@polyvar internal___polyvar___x[1:$(length(reactants))])[1]), polyvars_params=:((@polyvar internal___polyvar___p[1:$(length(parameters))])[1]))
+    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, f, f_rhs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, jac=jac, paramjac=paramjac, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters, odefun=odefun, sdefun=sdefun, make_polynomial=equipol_maker, polyvars_vars=:((@polyvar internal___polyvar___x[1:$(length(reactants))])[1]), polyvars_t=:((@polyvar internal___polyvar___t)[1]), polyvars_params=:((@polyvar internal___polyvar___p[1:$(length(parameters))])[1]))
     push!(exprs,typeex)
     push!(exprs,constructorex)
 
