@@ -29,6 +29,7 @@ function maketype(abstracttype,
                   equilibratium_polynomial = nothing,
                   is_polynomial_system = true,
                   polyvars_vars = nothing,
+                  polyvars_t = nothing,
                   polyvars_params = nothing
                   )
 
@@ -61,6 +62,7 @@ function maketype(abstracttype,
         equilibratium_polynomial::Union{Vector,Nothing}
         is_polynomial_system::Bool
         polyvars_vars::Union{Vector{PolyVar{true}},Nothing}
+        polyvars_t::Union{PolyVar{true},Nothing}
         polyvars_params::Union{Vector{PolyVar{true}},Nothing}
     end)
     # Make the default constructor
@@ -93,6 +95,7 @@ function maketype(abstracttype,
                 $(Expr(:kw,:equilibratium_polynomial, equilibratium_polynomial)),
                 $(Expr(:kw,:is_polynomial_system, is_polynomial_system)),
                 $(Expr(:kw,:polyvars_vars, polyvars_vars)),
+                $(Expr(:kw,:polyvars_t, polyvars_t)),
                 $(Expr(:kw,:polyvars_params, polyvars_params))) =
                 $(name)(
                         f,
@@ -123,6 +126,7 @@ function maketype(abstracttype,
                         equilibratium_polynomial,
                         is_polynomial_system,
                         polyvars_vars,
+                        polyvars_t,
                         polyvars_params
                         )) |> esc
 
@@ -231,6 +235,7 @@ function addequi!(rn::DiffEqBase.AbstractReactionNetwork)
 
     rn.make_polynomial = eval(equipol_maker)
     rn.polyvars_vars = (@polyvar internal___polyvar___x[1:length(syms_to_ints)])[1]
+    rn.polyvars_t = (@polyvar internal___polyvar___t)[1]
     rn.polyvars_params = (@polyvar internal___polyvar___p[1:length(params)])[1]
 
     nothing
