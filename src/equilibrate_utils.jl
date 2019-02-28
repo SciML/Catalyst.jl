@@ -44,8 +44,8 @@ function fix_parameters(reaction_network::DiffEqBase.AbstractReactionNetwork, pa
 end
 
 #In some networks some linear combinations of concentrations remain fixed. This supplies this information directly to the network.
-macro fixed_concentration(reaction_network::Symbol, fixed_conc::Expr...)
-    func_expr = Expr(:escape,:(internal___fix___concentrations($reaction_network)))
+macro add_constraint(reaction_network::Symbol, fixed_conc::Expr...)
+    func_expr = Expr(:escape,:(internal___add___constraint($reaction_network)))
     foreach(fc -> push!(func_expr.args[1].args,recursive_replace_vars!(balance_poly(fc), reaction_network)),fixed_conc)
     return func_expr
 end
@@ -64,7 +64,7 @@ function recursive_replace_vars!(expr::Any, rn::Symbol)
     return expr
 end
 #Function which does the actual work of adding the fixed concentration information. Not meant to be called directly, but is called through the fixed_concentration macro.
-function internal___fix___concentrations(reaction_network::DiffEqBase.AbstractReactionNetwork, fixed_concentrations::Polynomial...)
+function internal___add___constraint(reaction_network::DiffEqBase.AbstractReactionNetwork, fixed_concentrations::Polynomial...)
     check_is_polynomial(reaction_network)
     replaced = Set(keys(reaction_network.fixed_concentrations))
     for fc in fixed_concentrations
@@ -78,6 +78,15 @@ function internal___fix___concentrations(reaction_network::DiffEqBase.AbstractRe
     end
     (reaction_network.equilibratium_polynomial==nothing) && return
     foreach(sym -> reaction_network.equilibratium_polynomial[findfirst(reaction_network.syms.==sym)] = reaction_network.fixed_concentrations[sym], keys(reaction_network.fixed_concentrations))
+end
+#In some networks some linear combinations of concentrations remain fixed. This supplies this information directly to the network.
+macro add_constraints(reaction_network::Symbol, constraints::Expr...)
+    output = Expr(:block)
+    for constraint in MacroTools.striplines(constraints...).args
+        push!(output.args,Expr(:escape,:(internal___add___constraint($reaction_network))))
+        push!(output.args[end].args[1].args,recursive_replace_vars!(balance_poly(constraint), reaction_network))
+    end
+    return output
 end
 
 #Can be called separatly, but will otherwise be called first time a steady state is to be found. Solves the system once using random parameters. Saves the solution as a template to be used for further solving.

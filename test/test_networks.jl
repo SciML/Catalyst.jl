@@ -167,7 +167,7 @@ reaction_networks_fixed_conc_1 = @reaction_network begin
     (k3,k4), X2 ↔ X3
     (k5,k6), X3 ↔ X1
 end k1 k2 k3 k4 k5 k6 FC
-@fixed_concentration reaction_networks_fixed_conc_1 X1+X2+X3=FC
+@add_constraint reaction_networks_fixed_conc_1 X1+X2+X3=FC
 reaction_networks_fixed_conc[1] = reaction_networks_fixed_conc_1
 
 
@@ -176,7 +176,7 @@ reaction_networks_fixed_conc_2 = @reaction_network begin
     (k3,k4), X1 + X2 ↔ X3
     (k5,k6), X3 ↔ X2
 end k1 k2 k3 k4 k5 k6 FC
-@fixed_concentration reaction_networks_fixed_conc_2 X2+X3=FC
+@add_constraint reaction_networks_fixed_conc_2 X2+X3=FC
 reaction_networks_fixed_conc[2] = reaction_networks_fixed_conc_2
 
 reaction_networks_fixed_conc_3 = @reaction_network begin
@@ -184,14 +184,20 @@ reaction_networks_fixed_conc_3 = @reaction_network begin
     (k3*X5,k4), X3 ↔ X4
     (p+k5*X2*X3,d), ∅ ↔ X5
 end k1 k2 k3 k4 p k5 d FC1 FC2
-@fixed_concentration reaction_networks_fixed_conc_3 X1+X2=FC1 X3+X4=FC2
+@add_constraints reaction_networks_fixed_conc_3 begin
+    X1+X2=FC1
+    X3+X4=FC2
+end
 reaction_networks_fixed_conc[3] = reaction_networks_fixed_conc_3
 
 reaction_networks_fixed_conc_4 = @reaction_network begin
     (k1,k2), X1 + X2 ↔ X3
     (mm(X3,v,K),d), ∅ ↔ X4
 end k1 k2 v K d FC1 FC2
-@fixed_concentration reaction_networks_fixed_conc_4 X1+X3=FC1 X2+X3=FC2
+@add_constraints reaction_networks_fixed_conc_4 begin
+    X1+X3=FC1
+    X2+X3=FC2
+end
 reaction_networks_fixed_conc[4] = reaction_networks_fixed_conc_4
 
 reaction_networks_fixed_conc_5 = @reaction_network begin
@@ -199,7 +205,7 @@ reaction_networks_fixed_conc_5 = @reaction_network begin
     (k3,k4), 2X2 ↔ 3X3
     (k5,k6), 3X3 ↔ 4X4
 end k1 k2 k3 k4 k5 k6 FC
-@fixed_concentration reaction_networks_fixed_conc_5 24X1+12X2+8X3+6X4=FC
+@add_constraint reaction_networks_fixed_conc_5 24X1+12X2+8X3+6X4=FC
 reaction_networks_fixed_conc[5] = reaction_networks_fixed_conc_5
 
 reaction_networks_fixed_conc_6 = @reaction_network begin
@@ -207,7 +213,7 @@ reaction_networks_fixed_conc_6 = @reaction_network begin
     mmR(X2,v2,K2), X2 → X3
     mmR(X3,v3,K3), X3 → X1
 end v1 K1 v2 K2 v3 K3 FC
-@fixed_concentration reaction_networks_fixed_conc_6 X1+X2+X3=FC
+@add_constraint reaction_networks_fixed_conc_6 X1+X2+X3=FC
 reaction_networks_fixed_conc[6] = reaction_networks_fixed_conc_6
 
 reaction_networks_fixed_conc_7 = @reaction_network begin
@@ -215,14 +221,17 @@ reaction_networks_fixed_conc_7 = @reaction_network begin
     (mm(X3,v,K),d), ∅ ↔ X2
     (k3,k4), X2 ↔ X4
 end k1 k2 k3 k4 v K d FC
-@fixed_concentration reaction_networks_fixed_conc_7 X1+X3=FC
+@add_constraint reaction_networks_fixed_conc_7 X1+X3=FC
 reaction_networks_fixed_conc[7] = reaction_networks_fixed_conc_7
 
 reaction_networks_fixed_conc_8 = @reaction_network begin
     (k1,k2), X1 + X2 ↔ X3
     (mm(X3,v1,K1),mm(X4,v2,K2)), X3 ↔ X4
 end k1 k2 v1 K1 v2 K2 FC1 FC2
-@fixed_concentration reaction_networks_fixed_conc_8 X1+X2+X4=FC1 X2+X3+X4=FC2
+@add_constraints reaction_networks_fixed_conc_8 begin
+    X1+X2+X4=FC1
+    X2+X3+X4=FC2
+end
 reaction_networks_fixed_conc[8] = reaction_networks_fixed_conc_8
 
 reaction_networks_fixed_conc_9 = @reaction_network begin
@@ -230,7 +239,12 @@ reaction_networks_fixed_conc_9 = @reaction_network begin
     (k3,k4), X3 + X4 ↔ X5
     (k5,k6), X5 + X6 ↔ X7
 end k1 k2 k3 k4 k5 k6 FC1 FC2 FC3 FC4
-@fixed_concentration reaction_networks_fixed_conc_9 X1+X3+X5+X7=FC1 X2+X3+X5+X7=FC2 X4+X5+X7=FC3 X6+X7=FC4
+@add_constraints reaction_networks_fixed_conc_9 begin
+    X1+X3+X5+X7=FC1
+    X2+X3+X5+X7=FC2
+    X4+X5+X7=FC3
+    X6+X7=FC4
+end
 reaction_networks_fixed_conc[9] = reaction_networks_fixed_conc_9
 
 reaction_networks_fixed_conc_10 = @reaction_network rnType begin
@@ -249,7 +263,7 @@ reaction_networks_fixed_conc_10 = @reaction_network rnType begin
     λW*v0*((1+F*σB)/(K+σB)),  ∅ ⟶ w
     λV*v0*((1+F*σB)/(K+σB)),  ∅ ⟶ v
 end kBw kDw kD kB1 kB2 kB3 kB4 kB5 kD1 kD2 kD3 kD4 kD5 kK1 kK2 kP kDeg v0 F K λW λV pTot;
-@fixed_concentration reaction_networks_fixed_conc_10 vPp+phos=pTot
+@add_constraint reaction_networks_fixed_conc_10 vPp+phos=pTot
 reaction_networks_fixed_conc[10] = reaction_networks_fixed_conc_10
 
 #Minimal reaction network version of the standard reaction networks.
