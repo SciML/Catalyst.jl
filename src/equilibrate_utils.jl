@@ -8,12 +8,13 @@ function get_equilibration(params::Vector{Symbol}, reactants::OrderedDict{Symbol
     push!(func_body.args,Expr(:if,:(length(internal___var___polyvector) != 0),Expr(:block)))
     foreach(i -> push!(func_body.args[1].args[2].args, :($(params[i])=internal___var___polyvector[$i])), 1:length(params))
     push!(func_body.args,:([]))
-    foreach(poly -> push!(func_body.args[2].args, recursive_replace!(poly,(reactants,:internal___polyvar___x))), deepcopy(f_expr))
+    foreach(poly -> push!(func_body.args[2].args, recursive_replace!(poly,(reactants,:internal___polyvar___x),(OrderedDict(:t=>1),:internal___polyvar___t))), deepcopy(f_expr))
     func_expr = :((;TO___BE___REMOVED=to___be___removed) -> $(deepcopy(func_body)))
     foreach(i -> push!(func_expr.args[1].args[1].args,Expr(:kw,params[i],:(internal___reaction___network.polyvars_params[$i]))), 1:length(params))
     push!(func_expr.args[1].args[1].args,Expr(:kw,:internal___var___polyvector,:([])))
     deleteat!(func_expr.args[1].args[1].args,1)
     push!(func_expr.args[1].args,:internal___reaction___network)
+    push!(func_expr.args[1].args,:internal___polyvar___t)
     push!(func_expr.args[1].args,Expr(:kw,:internal___polyvar___x,:(internal___reaction___network.polyvars_vars)))
     push!(func_expr.args[1].args,Expr(:kw,:print_msg,1))
     return func_expr
@@ -21,9 +22,8 @@ end
 
 #Manages post creation modification to a reaction network with respect to utility needed for equilibrium calculations. Attempts to make an equilibrium polynomial.
 function manage_equilibrium_functionality!(reaction_network::DiffEqBase.AbstractReactionNetwork)
-    fix_parameters(reaction_network,fill(1,length(reaction_network.params)))
     reaction_network.is_polynomial_system = try
-        fix_parameters(reaction_network,fill(1,length(reaction_network.params)))
+        fix_parameters(reaction_network,fill(1,length(reaction_network.params)),t=1)
         true
     catch
         false
@@ -36,9 +36,9 @@ end
 ## Functions required for the preparation to use homotopy continuation to find fixed points.
 
 #Calls the internal make_polynomial function to create a polynomial. Used to model creation (will succced unless there is parameters in the exponents). Input include list of parameters to fix. All parameters occuring as exponent must be here (none other is required at this stage). Will insert fixed concentrations if such exists.
-function fix_parameters(reaction_network::DiffEqBase.AbstractReactionNetwork, params=Vector{Number}()::Vector{Number}; kwargs...)
+function fix_parameters(reaction_network::DiffEqBase.AbstractReactionNetwork, params=Vector{Number}()::Vector{Number}; t=reaction_network.polyvars_t, kwargs...)
     check_is_polynomial(reaction_network)
-    reaction_network.equilibratium_polynomial = reaction_network.make_polynomial(reaction_network;internal___var___polyvector=params,kwargs...)
+    reaction_network.equilibratium_polynomial = reaction_network.make_polynomial(reaction_network,[t];internal___var___polyvector=params,kwargs...)
     !(typeof(reaction_network.equilibratium_polynomial[1])<:Polynomial) && (reaction_network.equilibratium_polynomial = map(pol->pol.num,reaction_network.equilibratium_polynomial))
     foreach(sym -> reaction_network.equilibratium_polynomial[findfirst(reaction_network.syms.==sym)] = reaction_network.fixed_concentrations[sym], keys(reaction_network.fixed_concentrations))
 end
