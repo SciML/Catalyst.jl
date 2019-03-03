@@ -1,56 +1,6 @@
 # collection of utility functions for getting mass action jumps out of
 # DiffEqBiological reaction network structures
 
-# return a map from species symbol to species index
-function species_to_indices(network)
-    specs = network.syms
-    Dict( specs[i] => i for i in eachindex(specs) )
-end
-
-# return a map from reaction param symbol to rate index
-function rate_to_indices(network)
-    rates = network.params
-    Dict( rates[i] => i for i in eachindex(rates) )
-end
-
-# get substrate stoichiometry for a reaction
-function get_substrate_stoich(rs, specmap)
-    reactant_stoich = Vector{Pair{Int,Int}}()
-    for substrate in rs.substrates
-        specpair = specmap[substrate.reactant] => substrate.stoichiometry
-        push!(reactant_stoich, specpair)
-    end
-    sort!(reactant_stoich)
-    reactant_stoich
-end
-
-# get the net stoichiometry for a reaction
-function get_net_stoich(rs, specmap)
-    nsdict = Dict{Int,Int}()
-    for substrate in rs.substrates
-        specpair = specmap[substrate.reactant] => -substrate.stoichiometry
-        push!(nsdict, specpair)
-    end
-
-    for product in rs.products
-        prodidx = specmap[product.reactant]
-        if haskey(nsdict, prodidx)
-            nsdict[prodidx] += product.stoichiometry
-        else
-            push!(nsdict, prodidx => product.stoichiometry)
-        end
-    end
-
-    net_stoich = Vector{Pair{Int,Int}}()
-    for stoich_map in sort(collect(nsdict))
-        if stoich_map[2] != zero(Int)
-            push!(net_stoich, stoich_map)
-        end
-    end
-
-    net_stoich
-end
-
 # given a ReactionStruct and a species map construct a MassActionJump
 function make_majump(rs, specmap, ratemap, params, param_context)
     reactant_stoich = get_substrate_stoich(rs, specmap)
@@ -74,11 +24,13 @@ function make_majump(rs, specmap, ratemap, params, param_context)
 end
 
 # given a reaction network and species map, split the ConstantRateJumps and MassActionJumps
-function network_to_jumpset(rn, specmap, ratemap, params, jumps)
-
+function network_to_jumpset(rn, params)
+    jumps        = rn.jumps
     empty_majump = MassActionJump(0.0, [0=>1], [1=>1])
     majumpvec    = Vector{typeof(empty_majump)}()
     cjumpvec     = Vector{ConstantRateJump}()
+    specmap      = speciesmap(rn)
+    ratemap      = paramsmap(rn)
 
     # populate dummy module with params as local variables
     # (for eval-ing parameter expressions)
@@ -88,7 +40,7 @@ function network_to_jumpset(rn, specmap, ratemap, params, jumps)
     end
 
     # check if a (non-mass action) jump is defined for all reactions:
-    alljumps = (length(rn.reactions) == length(rn.jumps))
+    alljumps = (length(rn.reactions) == length(jumps))
     
     idx = 1
     for rs in rn.reactions
@@ -109,7 +61,7 @@ function network_to_jumpset(rn, specmap, ratemap, params, jumps)
 end
 
 
-######################### dependency graph utilities #########################
+######################### jump dependency graph utilities #########################
 
 # map from a reaction index to the corresponding jump index
 # assumes all mass action jumps are ordered before constant rate jumps
@@ -131,8 +83,9 @@ function rxidxs_to_jidxs_map(rn, num_majumps)
 end
 
 # map from jump to vector of species it changes
-function jump_to_dep_specs_map(rn, specmap, rxidxs_jidxs)
+function jump_to_dep_specs_map(rn, rxidxs_jidxs)
     numrxs  = length(rn.reactions)
+    specmap = speciesmap(rn)
     numspec = length(specmap)
 
     # map from a jump to vector of species that depend on it
@@ -146,8 +99,9 @@ function jump_to_dep_specs_map(rn, specmap, rxidxs_jidxs)
 end
 
 # map from species to Set of jumps depending on that species
-function spec_to_dep_jumps_map(rn, specmap, rxidxs_to_jidxs)
+function spec_to_dep_jumps_map(rn, rxidxs_to_jidxs)
     numrxs  = length(rn.reactions)
+    specmap = speciesmap(rn)
     numspec = length(specmap)
 
     # map from a species to jumps that depend on it
@@ -162,7 +116,7 @@ function spec_to_dep_jumps_map(rn, specmap, rxidxs_to_jidxs)
 end
 
 # given a reaction network and species map, construct a jump dependency graph
-function depgraph_from_network(rn, specmap, jset, rxidxs_to_jidxs, spec_to_dep_jumps)
+function depgraph_from_network(rn, jset, rxidxs_to_jidxs, spec_to_dep_jumps)
 
     # create map from a jump to jumps depending on it
     numrxs   = length(rn.reactions)
@@ -171,7 +125,7 @@ function depgraph_from_network(rn, specmap, jset, rxidxs_to_jidxs, spec_to_dep_j
         jidx = rxidxs_to_jidxs[rx]
 
         # get the net reaction stoichiometry
-        net_stoich = get_net_stoich(rn.reactions[rx], specmap)
+        net_stoich = get_net_stoich(rn.reactions[rx], speciesmap(rn))
 
         # rx changes spec, hence rxs depending on spec depend on rx
         for (spec,stoch) in net_stoich
