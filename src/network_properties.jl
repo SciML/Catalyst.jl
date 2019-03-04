@@ -18,7 +18,7 @@ end
 
 """
 Return a Vector of pairs, mapping ids of species that serve as substrates 
-in the reaction to the corresponding stoichiometric coefficiant as a substrate.
+in the reaction to the corresponding stoichiometric coefficient as a substrate.
 """
 function get_substrate_stoich(rs::ReactionStruct, specmap)
     reactant_stoich = [specmap[s.reactant] => s.stoichiometry for s in rs.substrates]
@@ -28,7 +28,7 @@ end
 
 """
 Return a Vector of pairs, mapping ids of species that participate in the 
-reaction to the net stoichiometric coefficiant of the species (i.e. net change
+reaction to the net stoichiometric coefficient of the species (i.e. net change
 in the species due to the reaction).
 """
 function get_net_stoich(rs::ReactionStruct, specmap)
