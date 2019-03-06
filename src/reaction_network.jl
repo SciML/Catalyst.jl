@@ -364,6 +364,7 @@ function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int}, p
     for func_line in deepcopy(func_expr)
         push!(system.args, recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p)))
     end
+    push!(system.args, :(nothing))
     return :((internal_var___du,internal_var___u,internal_var___p,t) -> $system)
 end
 
