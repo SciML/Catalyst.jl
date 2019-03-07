@@ -358,11 +358,22 @@ function get_stoch_diff(reaction::ReactionStruct, reactant::Symbol)
     return stoch
 end
 
+function splitplus!(ex)
+  dosplit = ex.head == :(=) && ex.args[2] isa Expr && ex.args[2].head == :call && ex.args[2].args[1] == :(+)
+  if dosplit
+    summands = ex.args[2].args[2:end]
+    ex.args[2] = foldl((x,y)->(:(($x + $y))), summands)
+  end
+  dosplit
+end
+
 #Creates an expression which can be evaluated to an actual function. Input is an array of expression were each entry is a line in the function. Uses the array of expressions generated in either get_f or get_g.
 function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     system = Expr(:block)
     for func_line in deepcopy(func_expr)
-        push!(system.args, recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p)))
+        ex = recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p))
+        splitplus!(ex)
+        push!(system.args,ex)
     end
     push!(system.args, :(nothing))
     return :((internal_var___du,internal_var___u,internal_var___p,t) -> @inbounds $system)
