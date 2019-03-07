@@ -359,7 +359,7 @@ function get_stoch_diff(reaction::ReactionStruct, reactant::Symbol)
 end
 
 function splitplus!(ex)
-  dosplit = ex.head == :(=) && ex.args[2].head == :call && ex.args[2].args[1] == :(+)
+  dosplit = ex.head == :(=) && ex.args[2] isa Expr && ex.args[2].head == :call && ex.args[2].args[1] == :(+)
   if dosplit
     summands = ex.args[2].args[2:end]
     ex.args[2] = foldl((x,y)->(:(($x + $y))), summands)
