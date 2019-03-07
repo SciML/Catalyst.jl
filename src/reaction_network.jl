@@ -154,6 +154,9 @@ function genode_exprs(reactions, reactants, parameters, syms; build_jac=true,
                                                               build_symfuncs=true)
     f_expr                = get_f(reactions, reactants)
     f                     = make_func(f_expr, reactants, parameters)
+    open("test","w") do io
+        println(io, f)
+    end
     f_rhs                 = [element.args[2] for element in f_expr]
     symjac, jac, paramjac = build_jac ? get_jacs(f_rhs, syms, reactants, parameters) : (nothing,nothing,nothing)
     f_symfuncs            = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
@@ -358,11 +361,22 @@ function get_stoch_diff(reaction::ReactionStruct, reactant::Symbol)
     return stoch
 end
 
+function splitplus!(ex)
+  dosplit = ex.head == :(=) && ex.args[2].head == :call && ex.args[2].args[1] == :(+)
+  if dosplit
+    summands = ex.args[2].args[2:end]
+    ex.args[2] = foldl((x,y)->(:(($x + $y))), summands)
+  end
+  dosplit
+end
+
 #Creates an expression which can be evaluated to an actual function. Input is an array of expression were each entry is a line in the function. Uses the array of expressions generated in either get_f or get_g.
 function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     system = Expr(:block)
     for func_line in deepcopy(func_expr)
-        push!(system.args, recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p)))
+        ex = recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p))
+        splitplus!(ex)
+        push!(system.args,ex)
     end
     push!(system.args, :(nothing))
     return :((internal_var___du,internal_var___u,internal_var___p,t) -> @inbounds $system)
