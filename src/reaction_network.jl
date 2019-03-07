@@ -365,7 +365,7 @@ function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int}, p
         push!(system.args, recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p)))
     end
     push!(system.args, :(nothing))
-    return :((internal_var___du,internal_var___u,internal_var___p,t) -> $system)
+    return :((internal_var___du,internal_var___u,internal_var___p,t) -> @inbounds $system)
 end
 
 #Creates expressions for jump affects and rates. Also creates and array with MassAction, ConstantRate and VariableRate Jumps.
@@ -513,7 +513,7 @@ function calculate_jac(symjac::Matrix{Expr}, reactants::OrderedDict{Symbol,Int},
         push!(func_body.args,:(internal___var___pJ[$i,$j] = $(recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p)))))
     end
     push!(func_body.args,:(return internal___var___pJ))
-    return :((internal___var___pJ,internal___var___u,internal___var___p,t) -> $func_body)
+    return :((internal___var___pJ,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
 end
 
 #Makes the Jacobian, with respect to parameter values.
@@ -524,7 +524,7 @@ function calculate_paramjac(f_rhs::Vector{Expr}, reactants::OrderedDict{Symbol,I
         push!(func_body.args,:(internal___var___J[$i,$j] = $(recursive_replace!(paramjac_entry,(reactants,:internal___var___u), (parameters, :internal___var___p)))))
     end
     push!(func_body.args,:(return internal___var___J))
-    return :((internal___var___J,internal___var___u,internal___var___p,t) -> $func_body)
+    return :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
 end
 
 #Turns an array of expressions to a expression block with corresponding expressions.
