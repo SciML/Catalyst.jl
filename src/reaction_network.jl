@@ -330,9 +330,13 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     end
     for reaction in deepcopy(reactions)
         for reactant in union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant))
-            push!(f[reactants[reactant]].args[2].args, recursive_clean!(:($(get_stoch_diff(reaction,reactant)) * $(reaction.rate_DE))))
+            ex = recursive_clean!(:($(get_stoch_diff(reaction,reactant)) * $(reaction.rate_DE)))
+            !(ex isa Number && iszero(ex)) && push!(f[reactants[reactant]].args[2].args, ex)
         end
     end
+
+    foreach(line -> line.args[2] = clean_subtractions(line.args[2]), f)
+
     return f
 end
 
@@ -403,14 +407,47 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
         #    push!(jumps.args,:(MassActionJump($(reaction.rate_org),$(ma_sub_stoch),$(ma_stoch_change))))
         else
             recursive_contains(:t,rates[idx]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
-            push!(jumps.args[idx].args, :((internal_var___u,internal_var___p,t) -> $syntax_rate))
+            push!(jumps.args[idx].args, :((internal_var___u,internal_var___p,t) -> @inbounds $syntax_rate))
             push!(jumps.args[idx].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[idx])))))
         end
-        push!(reg_rates.args,:(internal_var___out[$idx]=$syntax_rate))
-        foreach(r -> push!(reg_c.args,:(internal_var___dc[$(reactants[r]),$idx]=$(get_stoch_diff(reaction,r)))), reactant_set)
+        push!(reg_rates.args,:(@inbounds internal_var___out[$idx]= $syntax_rate))
+        foreach(r -> push!(reg_c.args,:(@inbounds internal_var___dc[$(reactants[r]),$idx]=$(get_stoch_diff(reaction,r)))), reactant_set)
     end
     reg_jumps = :(RegularJump((internal_var___out,internal_var___u,internal_var___p,t)->$reg_rates,(internal_var___dc,internal_var___u,internal_var___p,t,internal_var___mark)->$reg_c,zeros($(length(reactants)),$(length(reactions)));constant_c=true))
     return (Tuple(rates),Tuple(affects),jumps,reg_jumps)
+end
+
+"""
+clean_subtractions(ex::Expr)
+Replace additions of negative terms with subtractions.
+This is a fairly stupid function which is designed for a specific problem
+with reaction networks. It is neither recursive nor very general.
+Return :: cleaned out expression
+
+From Latexify.jl with permission:
+[see](https://github.com/JuliaDiffEq/DiffEqBiological.jl/issues/89#issuecomment-462147882)
+"""
+function clean_subtractions(ex::Expr)
+    ex.args[1] != :+ && return ex
+
+    term = ex.args[2]
+
+    ### Sort out the first term
+    if term isa Expr && length(term.args) >= 3 && term.args[1:2] == [:*, -1]
+        result = :(- *($(term.args[3:end]...)))
+    else
+        result = :($term)
+    end
+
+    ### Sort out the other terms
+    for term in ex.args[3:end]
+        if term isa Expr && length(term.args) >= 3 && term.args[1:2] == [:*, -1]
+            result = :($result - *($(term.args[3:end]...)))
+        else
+            result = :($result + $term)
+        end
+    end
+    return result
 end
 
 #Recursively traverses an expression and removes things like X^1, 1*X. Will not actually have any affect on the expression when used as a function, but will make it much easier to look at it for debugging, as well as if it is transformed to LaTeX code.
