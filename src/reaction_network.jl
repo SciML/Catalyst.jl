@@ -558,7 +558,7 @@ end
 #Makes the Jacobian.
 function calculate_jac(symjac::Matrix{Union{Expr,Symbol,Number}}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     func_body = Expr(:block)
-    for j = 1:size(symjac)[1], i = 1:size(symjac)[2]
+    for j = 1:size(symjac)[2], i = 1:size(symjac)[1]
         push!(func_body.args, :(internal___var___J[$i,$j] = $(recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p)))))        
     end
     push!(func_body.args,:(return internal___var___J))
