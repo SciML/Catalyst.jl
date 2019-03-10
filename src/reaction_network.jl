@@ -451,7 +451,7 @@ function clean_subtractions(ex::Expr)
 end
 
 #Recursively traverses an expression and removes things like X^1, 1*X. Will not actually have any affect on the expression when used as a function, but will make it much easier to look at it for debugging, as well as if it is transformed to LaTeX code.
-function recursive_clean!(expr::Any)
+function recursive_clean!(expr::Union{Expr,Symbol,Number})
     (expr == :no___noise___scaling) && (return 1)
     (typeof(expr)!=Expr) && (return expr)
     for i = 1:length(expr.args)
@@ -491,7 +491,7 @@ function recursive_clean!(expr::Any)
 end
 
 #Recursively traverses an expression and replace instances of variables and parmaters with things that the DifferentialEquations packakes simulation algorithms can understand. E.g. X --> u[1], kB1 --> p[1] etc.
-function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbol,Int},Symbol}...)
+function recursive_replace!(expr::Union{Expr,Symbol,Number}, replace_requests::Tuple{OrderedDict{Symbol,Int},Symbol}...)
     if typeof(expr) == Symbol
         for rr in replace_requests
             (haskey(rr[1],expr)) && (return :($(rr[2])[$(rr[1][expr])]))
@@ -505,7 +505,7 @@ function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbo
 end
 
 #Recursively traverses an expression and replaces a symbol with another.
-function recursive_replace!(expr::Any, replace_requests::Dict{Symbol,Symbol})
+function recursive_replace!(expr::Union{Expr,Symbol,Number}, replace_requests::Dict{Symbol,Symbol})
     if typeof(expr) == Symbol
         haskey(replace_requests,expr) && return replace_requests[expr]
     elseif typeof(expr) == Expr
