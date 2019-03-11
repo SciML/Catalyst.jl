@@ -27,7 +27,7 @@ jprob = JumpProblem(prob, NRM(), rn)
 @test all(DiffEqBiological.rxtorx_depgraph(rn) .== jprob.discrete_jump_aggregation.dep_gr)
 
 # pure ConstantRateJump
-rn = @reaction_network begin
+rn2 = @reaction_network begin
     hillr(m₃,α,K,n), ∅ --> m₁
     hillr(m₁,α,K,n), ∅ --> m₂
     hill(m₂,α,K,n), ∅ --> m₃
@@ -35,10 +35,10 @@ end α K η
 p = (1.,1.,1.)
 u0 = [10,10,10]
 tf = 10.
-prob = DiscreteProblem(rn, u0, (0.0, tf), rnpar)
-jprob = JumpProblem(prob, RSSA(), rn)
-@test all(rxtospecies_depgraph(rn) .== jprob.discrete_jump_aggregation.jumptovars_map)
-@test all(speciestorx_depgraph(rn) .== jprob.discrete_jump_aggregation.vartojumps_map)
+prob = DiscreteProblem(rn2, u0, (0.0, tf), rnpar)
+jprob = JumpProblem(prob, RSSA(), rn2)
+@test all(rxtospecies_depgraph(rn2) .== jprob.discrete_jump_aggregation.jumptovars_map)
+@test all(speciestorx_depgraph(rn2) .== jprob.discrete_jump_aggregation.vartojumps_map)
 
-jprob = JumpProblem(prob, NRM(), rn)
-@test all(DiffEqBiological.rxtorx_depgraph(rn) .== jprob.discrete_jump_aggregation.dep_gr)
+jprob = JumpProblem(prob, NRM(), rn2)
+@test all(DiffEqBiological.rxtorx_depgraph(rn2) .== jprob.discrete_jump_aggregation.dep_gr)
