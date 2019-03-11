@@ -90,6 +90,8 @@ no_mass_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])      #Using t
 
 funcdict = Dict{Symbol, Function}()                             #Stores user defined functions.
 
+const ExprValues = Union{Expr,Symbol,Number}                    #Generalised type for expression.
+
 #Coordination function, actually does all the work of the macro.
 function coordinate(name, ex::Expr, p, scale_noise)
 
@@ -212,13 +214,13 @@ end
 struct ReactionStruct
     substrates::Vector{ReactantStruct}
     products::Vector{ReactantStruct}
-    rate_org::Any
-    rate_DE::Any
-    rate_SSA::Any
+    rate_org::ExprValues
+    rate_DE::ExprValues
+    rate_SSA::ExprValues
     dependants::Vector{Symbol}
     is_pure_mass_action::Bool
 
-    function ReactionStruct(sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
+    function ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, use_mass_kin::Bool)
         sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(undef,0))
         prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(undef,0))
 
@@ -234,33 +236,33 @@ struct ReactionStruct
 end
 
 #Calculates the rate used by ODEs and SDEs. If we want to use masskinetics we have to include substrate concentration, taking higher order terms into account.
-function mass_rate_DE(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, old_rate::Any)
+function mass_rate_DE(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, old_rate::ExprValues)
     rate = Expr(:call, :*, old_rate)
     use_mass_kin && foreach(sub -> push!(rate.args,:($(Expr(:call, :^, sub.reactant, sub.stoichiometry))/$(factorial(sub.stoichiometry)))), substrates)
     return rate
 end
 
 #Calculates the rate used by SSAs. If we want to use masskinetics we have to include substrate concentration, taking higher order terms into account.
-function mass_rate_SSA(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, old_rate::Any)
+function mass_rate_SSA(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, old_rate::ExprValues)
     rate = Expr(:call, :*, old_rate)
     use_mass_kin && foreach(sub -> push!(rate.args, :(binomial($(sub.reactant),$(sub.stoichiometry)))), substrates)
     return rate
 end
 
 #Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a  Symbol/Numerical).
-function tup_leng(ex::Any)
+function tup_leng(ex::ExprValues)
     (typeof(ex)==Expr && ex.head == :tuple) && (return length(ex.args))
     return 1
 end
 
 #Gets the i'th element in a expression tuple, or return the input itself if it is not an expression tuple (probably a  Symbol/Numerical).
-function get_tup_arg(ex::Any,i::Int)
+function get_tup_arg(ex::ExprValues,i::Int)
     (tup_leng(ex) == 1) && (return ex)
     return ex.args[i]
 end
 
 #Takes a reaction line and creates reactions from it and pushes those to the reaction array. Used to creat multiple reactions from e.g. 1.0, (X,Y) --> 0.
-function push_reactions(reactions::Vector{ReactionStruct}, sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
+function push_reactions(reactions::Vector{ReactionStruct}, sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, use_mass_kin::Bool)
     lengs = [tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate)]
     (count(lengs.==1) + count(lengs.==maximum(lengs)) < 3) && (throw("malformed reaction"))
     for i = 1:maximum(lengs)
@@ -269,7 +271,7 @@ function push_reactions(reactions::Vector{ReactionStruct}, sub_line::Any, prod_l
 end
 
 #Recursive function that loops through the reactants in an reaction line and finds the reactants and their stochiometry. Recursion makes it able to handle e.g. 2(X+Y+3(Z+XY)) (probably one will not need it though).
-function add_reactants!(ex::Any, mult::Int, reactants::Vector{ReactantStruct})
+function add_reactants!(ex::ExprValues, mult::Int, reactants::Vector{ReactantStruct})
     if typeof(ex)!=Expr
         (ex == 0 || in(ex,empty_set)) && (return reactants)
         if in(ex, getfield.(reactants,:reactant))
@@ -559,7 +561,7 @@ end
 function calculate_jac(symjac::Matrix{Union{Expr,Symbol,Number}}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     func_body = Expr(:block)
     for j = 1:size(symjac)[2], i = 1:size(symjac)[1]
-        push!(func_body.args, :(internal___var___J[$i,$j] = $(recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p)))))        
+        push!(func_body.args, :(internal___var___J[$i,$j] = $(recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p)))))
     end
     push!(func_body.args,:(return internal___var___J))
     return :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
