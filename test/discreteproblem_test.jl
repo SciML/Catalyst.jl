@@ -1,5 +1,3 @@
-using DiffEqBase, DiffEqBiological, DiffEqJump, Statistics
-
 dotestmean   = true
 doprintmeans = false
 reltol       = .01          # required test accuracy
@@ -63,4 +61,3 @@ execute_test(prob, u0, tf, rates, rs, Nsims, expected_avg, 1, "Nonlinear rx test
 
 prob = DiscreteProblem(rs, u0, (0.0, tf), rates)
 execute_test(prob, u0, tf, rates, rs, Nsims, expected_avg, 1, "Nonlinear rx test, min network (syms)")
-
