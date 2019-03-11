@@ -56,6 +56,3 @@ sol1 = solve(prob1, ImplicitEM())
 sol2 = solve(prob2, ImplicitEM())
 sol3 = solve(prob3,  ImplicitEM())
 @test tmp_std(sol2) < tmp_std(sol1) < tmp_std(sol3)
-
-10e8
-1e4
