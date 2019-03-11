@@ -1,5 +1,6 @@
-using DiffEqBiological
-using Test
+using Test, Statistics, Random
+using DiffEqBiological, DiffEqBase
+using OrdinaryDiffEq, StochasticDiffEq, DiffEqJump, SteadyStateDiffEq
 
 # full macro tests
 @time begin

@@ -1,5 +1,3 @@
-using DiffEqBiological, Test, DiffEqBase
-
 network1 = @reaction_network rn begin
     2.0, X + Y --> XY
     1.0, XY ← X + Y
