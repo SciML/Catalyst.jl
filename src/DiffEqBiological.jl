@@ -24,7 +24,10 @@ include("problem.jl")
 export @reaction_network, @reaction_func, @min_reaction_network
 
 # functions to query network properties
-export speciesmap, paramsmap, get_substrate_stoich, get_net_stoich
+export speciesmap, paramsmap, numspecies, numreactions, numparams
+export odeexprs, jacobianexprs, noiseexprs, jumpexprs
+export get_substrate_stoich, get_net_stoich
+export rxtospecies_depgraph, speciestorx_depgraph, rxtorx_depgraph
 
 # functions to add mathematical equations to the network
 export addodes!, addsdes!, addjumps!
