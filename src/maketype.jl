@@ -16,7 +16,7 @@ function maketype(abstracttype,
                   jac = nothing,
                   paramjac = nothing,
                   jac_prototype = nothing,
-                  symjac=Matrix{Union{Expr,Symbol,Number}}(undef,0,0),
+                  symjac=Matrix{ExprValues}(undef,0,0),
                   reactions=Vector{ReactionStruct}(undef,0),
                   syms_to_ints = OrderedDict{Symbol,Int}(),
                   params_to_ints = OrderedDict{Symbol,Int}(),
@@ -26,13 +26,13 @@ function maketype(abstracttype,
 
     typeex = :(mutable struct $name <: $(abstracttype)
         f::Union{Function,Nothing}
-        f_func::Union{Vector{Union{Expr,Symbol,Number}},Nothing}
+        f_func::Union{Vector{ExprValues},Nothing}
         f_symfuncs::Union{Matrix{SymEngine.Basic},Nothing}
         g::Union{Function,Nothing}
-        g_func::Union{Vector{Union{Expr,Symbol,Number}},Nothing}
+        g_func::Union{Vector{ExprValues},Nothing}
         jumps::Union{Tuple{Vararg{DiffEqJump.AbstractJump}},Nothing}
         regular_jumps::Union{RegularJump,Nothing}
-        jump_rate_expr::Union{Tuple{Union{Expr,Symbol,Number},Vararg{Union{Expr,Symbol,Number}}},Nothing}
+        jump_rate_expr::Union{Tuple{ExprValues,Vararg{ExprValues}},Nothing}
         jump_affect_expr::Union{Tuple{Vector{Expr},Vararg{Vector{Expr}}},Nothing}
         p_matrix::Union{Array{Float64,2},Nothing}
         syms::Vector{Symbol}
@@ -40,7 +40,7 @@ function maketype(abstracttype,
         jac::Union{Function,Nothing}
         paramjac::Union{Function,Nothing}
         jac_prototype::Nothing
-        symjac::Union{Matrix{Union{Expr,Symbol,Number}},Nothing}
+        symjac::Union{Matrix{ExprValues},Nothing}
         reactions::Vector{ReactionStruct}
         syms_to_ints::OrderedDict{Symbol,Int}
         params_to_ints::OrderedDict{Symbol,Int}

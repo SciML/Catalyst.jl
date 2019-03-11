@@ -145,7 +145,7 @@ end
 function gensde_exprs(reactions, reactants, parameters, scale_noise)
     g_expr   = get_g(reactions, reactants, scale_noise)
     g        = make_func(g_expr, reactants, parameters)
-    g_funcs  = Union{Expr,Symbol,Number}[element.args[2] for element in g_expr]
+    g_funcs  = ExprValues[element.args[2] for element in g_expr]
     p_matrix = zeros(length(reactants), length(reactions))
 
     (g_expr,g,g_funcs,p_matrix)
@@ -156,7 +156,7 @@ function genode_exprs(reactions, reactants, parameters, syms; build_jac=true,
                                                               build_symfuncs=true)
     f_expr                = get_f(reactions, reactants)
     f                     = make_func(f_expr, reactants, parameters)
-    f_rhs                 = Union{Expr,Symbol,Number}[element.args[2] for element in f_expr]
+    f_rhs                 = ExprValues[element.args[2] for element in f_expr]
     symjac, jac, paramjac = build_jac ? get_jacs(f_rhs, syms, reactants, parameters) : (nothing,nothing,nothing)
     f_symfuncs            = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
 
@@ -387,7 +387,7 @@ end
 
 #Creates expressions for jump affects and rates. Also creates and array with MassAction, ConstantRate and VariableRate Jumps.
 function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int}; minimal_jumps=false)
-    rates = Vector{Union{Expr,Symbol,Number}}(undef,length(reactions))
+    rates = Vector{ExprValues}(undef,length(reactions))
     affects = Vector{Vector{Expr}}(undef,length(reactions))
     jumps = Expr(:tuple)
     reg_rates = Expr(:block)
@@ -453,7 +453,7 @@ function clean_subtractions(ex::Expr)
 end
 
 #Recursively traverses an expression and removes things like X^1, 1*X. Will not actually have any affect on the expression when used as a function, but will make it much easier to look at it for debugging, as well as if it is transformed to LaTeX code.
-function recursive_clean!(expr::Union{Expr,Symbol,Number})
+function recursive_clean!(expr::ExprValues)
     (expr == :no___noise___scaling) && (return 1)
     (typeof(expr)!=Expr) && (return expr)
     for i = 1:length(expr.args)
@@ -493,7 +493,7 @@ function recursive_clean!(expr::Union{Expr,Symbol,Number})
 end
 
 #Recursively traverses an expression and replace instances of variables and parmaters with things that the DifferentialEquations packakes simulation algorithms can understand. E.g. X --> u[1], kB1 --> p[1] etc.
-function recursive_replace!(expr::Union{Expr,Symbol,Number}, replace_requests::Tuple{OrderedDict{Symbol,Int},Symbol}...)
+function recursive_replace!(expr::ExprValues, replace_requests::Tuple{OrderedDict{Symbol,Int},Symbol}...)
     if typeof(expr) == Symbol
         for rr in replace_requests
             (haskey(rr[1],expr)) && (return :($(rr[2])[$(rr[1][expr])]))
@@ -507,7 +507,7 @@ function recursive_replace!(expr::Union{Expr,Symbol,Number}, replace_requests::T
 end
 
 #Recursively traverses an expression and replaces a symbol with another.
-function recursive_replace!(expr::Union{Expr,Symbol,Number}, replace_requests::Dict{Symbol,Symbol})
+function recursive_replace!(expr::ExprValues, replace_requests::Dict{Symbol,Symbol})
     if typeof(expr) == Symbol
         haskey(replace_requests,expr) && return replace_requests[expr]
     elseif typeof(expr) == Expr
@@ -538,7 +538,7 @@ function recursive_content(ex,syms::Vector{Symbol},content::Vector{Symbol})
 end
 
 #Makes the various jacobian elements required.
-function get_jacs(f_rhs::Vector{Union{Expr,Symbol,Number}}, syms::Vector{Symbol}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
+function get_jacs(f_rhs::Vector{ExprValues}, syms::Vector{Symbol}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     symjac = calculate_symjac(deepcopy(f_rhs), syms)
     jac = calculate_jac(deepcopy(symjac), reactants, parameters)
     paramjac = calculate_paramjac(deepcopy(f_rhs), reactants, parameters)
@@ -546,10 +546,10 @@ function get_jacs(f_rhs::Vector{Union{Expr,Symbol,Number}}, syms::Vector{Symbol}
 end
 
 #Makes the Symbolic Jacobian.
-function calculate_symjac(f_rhs::Vector{Union{Expr,Symbol,Number}}, syms)
+function calculate_symjac(f_rhs::Vector{ExprValues}, syms)
     n = length(syms); internal_vars = [Symbol(:internal_variable___,var) for var in syms]
     symfuncs = [SymEngine.Basic(recursive_replace!(f,Dict(zip(syms,internal_vars)))) for f in f_rhs]
-    jacexprs = Matrix{Union{Expr,Symbol,Number}}(undef, n, n)
+    jacexprs = Matrix{ExprValues}(undef, n, n)
     for j = 1:n, i = 1:n
         symjacij = diff(symfuncs[i],internal_vars[j])
         jacexprs[i,j] = :($(recursive_replace!(Meta.parse(string(symjacij)),Dict(zip(internal_vars,syms)))))
@@ -558,7 +558,7 @@ function calculate_symjac(f_rhs::Vector{Union{Expr,Symbol,Number}}, syms)
 end
 
 #Makes the Jacobian.
-function calculate_jac(symjac::Matrix{Union{Expr,Symbol,Number}}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
+function calculate_jac(symjac::Matrix{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     func_body = Expr(:block)
     for j = 1:size(symjac)[2], i = 1:size(symjac)[1]
         push!(func_body.args, :(internal___var___J[$i,$j] = $(recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p)))))
@@ -568,7 +568,7 @@ function calculate_jac(symjac::Matrix{Union{Expr,Symbol,Number}}, reactants::Ord
 end
 
 #Makes the Jacobian, with respect to parameter values.
-function calculate_paramjac(f_rhs::Vector{Union{Expr,Symbol,Number}}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
+function calculate_paramjac(f_rhs::Vector{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     func_body = Expr(:block)
     for j = 1:length(parameters), i = 1:length(reactants)
         paramjac_entry = Meta.parse(string(diff(SymEngine.Basic(f_rhs[i]), parameters.keys[j])))
