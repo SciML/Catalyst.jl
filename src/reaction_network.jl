@@ -90,8 +90,6 @@ no_mass_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])      #Using t
 
 funcdict = Dict{Symbol, Function}()                             #Stores user defined functions.
 
-const ExprValues = Union{Expr,Symbol,Number}                    #Generalised type for expression.
-
 #Coordination function, actually does all the work of the macro.
 function coordinate(name, ex::Expr, p, scale_noise)
 
