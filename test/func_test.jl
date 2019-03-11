@@ -54,7 +54,7 @@ prob2 = SDEProblem(model2,[1000.],(0.,200.), 0.1)
 prob3 = SDEProblem(model3,[1000.],(0.,200.),10)
 sol1 = solve(prob1, ImplicitEM())
 sol2 = solve(prob2, ImplicitEM())
-sol3 = solve(prob3, EM(), ImplicitEM())
+sol3 = solve(prob3,  ImplicitEM())
 @test tmp_std(sol2) < tmp_std(sol1) < tmp_std(sol3)
 
 10e8
