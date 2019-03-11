@@ -4,7 +4,7 @@ using DiffEqBiological, DiffEqJump, Test
 # mixed systems will be reordered when generating jump problems!
 
 # pure mass action
-rnm = @reaction_network rnmtype begin
+dnanetwork = @reaction_network begin
     c1, G --> G + M
     c2, M --> M + P
     c3, M --> 0
@@ -18,16 +18,16 @@ rnpar = [.09, .05, .001, .0009, .00001, .0005, .005, .9]
 varlabels = ["G", "M", "P", "P2","P2G"]
 u0 = [1000, 0, 0, 0,0]
 tf = 4000.
-prob = DiscreteProblem(rnm, u0, (0.0, tf), rnpar)
-jprob = JumpProblem(prob, RSSA(), rnm)
-@test all(rxtospecies_depgraph(rnm) .== jprob.discrete_jump_aggregation.jumptovars_map)
-@test all(speciestorx_depgraph(rnm) .== jprob.discrete_jump_aggregation.vartojumps_map)
+prob = DiscreteProblem(dnanetwork, u0, (0.0, tf), rnpar)
+jprob = JumpProblem(prob, RSSA(), dnanetwork)
+@test all(rxtospecies_depgraph(dnanetwork) .== jprob.discrete_jump_aggregation.jumptovars_map)
+@test all(speciestorx_depgraph(dnanetwork) .== jprob.discrete_jump_aggregation.vartojumps_map)
 
-jprob = JumpProblem(prob, NRM(), rnm)
-@test all(DiffEqBiological.rxtorx_depgraph(rnm) .== jprob.discrete_jump_aggregation.dep_gr)
+jprob = JumpProblem(prob, NRM(), dnanetwork)
+@test all(DiffEqBiological.rxtorx_depgraph(dnanetwork) .== jprob.discrete_jump_aggregation.dep_gr)
 
 # pure ConstantRateJump
-rnc = @reaction_network rnctype begin
+hillnetwork = @reaction_network begin
     hillr(m₃,α,K,n), ∅ --> m₁
     hillr(m₁,α,K,n), ∅ --> m₂
     hill(m₂,α,K,n), ∅ --> m₃
@@ -35,10 +35,10 @@ end α K η
 p = (1.,1.,1.)
 u0 = [10,10,10]
 tf = 10.
-prob = DiscreteProblem(rnc, u0, (0.0, tf), rnpar)
-jprob = JumpProblem(prob, RSSA(), rnc)
-@test all(rxtospecies_depgraph(rnc) .== jprob.discrete_jump_aggregation.jumptovars_map)
-@test all(speciestorx_depgraph(rnc) .== jprob.discrete_jump_aggregation.vartojumps_map)
+prob = DiscreteProblem(hillnetwork, u0, (0.0, tf), rnpar)
+jprob = JumpProblem(prob, RSSA(), hillnetwork)
+@test all(rxtospecies_depgraph(hillnetwork) .== jprob.discrete_jump_aggregation.jumptovars_map)
+@test all(speciestorx_depgraph(hillnetwork) .== jprob.discrete_jump_aggregation.vartojumps_map)
 
-jprob = JumpProblem(prob, NRM(), rnc)
-@test all(DiffEqBiological.rxtorx_depgraph(rnc) .== jprob.discrete_jump_aggregation.dep_gr)
+jprob = JumpProblem(prob, NRM(), hillnetwork)
+@test all(DiffEqBiological.rxtorx_depgraph(hillnetwork) .== jprob.discrete_jump_aggregation.dep_gr)
