@@ -18,26 +18,20 @@ function DiffEqBase.DiscreteProblem(rn::DiffEqBase.AbstractReactionNetwork, u0, 
 end
 
 ### JumpProblem ###
-function build_jump_problem(prob, aggregator, rn, jumps, kwargs...)
-    if typeof(prob)<:DiscreteProblem && any(x->typeof(x) <: VariableRateJump, jumps)
+function build_jump_problem(prob, aggregator, rn, kwargs...)
+    if typeof(prob)<:DiscreteProblem && any(x->typeof(x) <: VariableRateJump, rn.jumps)
         error("When using time dependant reaction rates a DiscreteProblem should not be used (try an ODEProblem). Also, use a continious solver.")
     end
 
-    # map from species symbol to index of species
-    spec_to_idx = species_to_indices(rn)
-
-    # map from parameter symbol to index of parameter in prob.p
-    param_to_idx = rate_to_indices(rn)
-
     # get a JumpSet of the possible jumps
-    jset = network_to_jumpset(rn, spec_to_idx, param_to_idx, prob.p, jumps)
+    jset = network_to_jumpset(rn, prob.p)
 
     # construct map from species index to indices of reactions that depend on it
     if needs_vartojumps_map(aggregator) || needs_depgraph(aggregator)
         rxidxs_to_jidxs   = rxidxs_to_jidxs_map(rn, get_num_majumps(jset))
-        spec_to_jumps_set = spec_to_dep_jumps_map(rn, spec_to_idx, rxidxs_to_jidxs)
+        spec_to_jumps_set = spec_to_dep_jumps_map(rn, rxidxs_to_jidxs)
         spec_to_jumps_vec = [sort!(collect(specset)) for specset in spec_to_jumps_set]
-        jump_to_specs_vec = jump_to_dep_specs_map(rn, spec_to_idx, rxidxs_to_jidxs)
+        jump_to_specs_vec = jump_to_dep_specs_map(rn, rxidxs_to_jidxs)
     else
         rxidxs_to_jidxs   = nothing
         spec_to_jumps_set = nothing
@@ -47,7 +41,7 @@ function build_jump_problem(prob, aggregator, rn, jumps, kwargs...)
 
     # construct reaction dependency graph
     if needs_depgraph(aggregator)
-        dep_graph = depgraph_from_network(rn, spec_to_idx, jset, rxidxs_to_jidxs, spec_to_jumps_set)
+        dep_graph = depgraph_from_network(rn, jset, rxidxs_to_jidxs, spec_to_jumps_set)
     else
         dep_graph = nothing
     end
@@ -60,8 +54,8 @@ end
 
 ### JumpProblem from AbstractReactionNetwork ###
 function DiffEqJump.JumpProblem(prob, aggregator, rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
-    (rn.jumps != nothing) || error("Call addjumps! before constructing JumpProblems")
-    build_jump_problem(prob, aggregator, rn, rn.jumps, kwargs...)
+    (rn.jumps !== nothing) || error("Call addjumps! before constructing JumpProblems")
+    build_jump_problem(prob, aggregator, rn, kwargs...)
 end
 
 ### SteadyStateProblems from AbstractReactionNetwork ###

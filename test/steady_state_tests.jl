@@ -6,7 +6,7 @@ for rn in reaction_networks_standard
         stab = map(fp->stability(fp,p,rn), fps)
         for i=1:length(fps)
             stab[i] ? (tend = 10) : (tend = -10)
-            end_point = DifferentialEquations.solve(ODEProblem(rn,fps[i],(0.,tend),p),Rosenbrock23())[end]
+            end_point = OrdinaryDiffEq.solve(ODEProblem(rn,fps[i],(0.,tend),p),Rosenbrock23())[end]
             @test maximum(end_point-fps[i])<0.0001
         end
     end
@@ -21,7 +21,7 @@ for rn in reaction_networks_hill
         stab = map(fp->stability(fp,Float64.(p),rn), fps)
         for i=1:length(fps)
             stab[i] ? (tend = 10) : (tend = -10)
-            end_point = DifferentialEquations.solve(ODEProblem(rn,fps[i],(0.,tend),p),Rosenbrock23())[end]
+            end_point = OrdinaryDiffEq.solve(ODEProblem(rn,fps[i],(0.,tend),p),Rosenbrock23())[end]
             @test maximum(end_point-fps[i])<0.0001
         end
     end
@@ -35,7 +35,7 @@ for rn in reaction_networks_fixed_conc
         stab = map(fp->stability(fp,p,rn), fps)
         for i=1:length(fps)
             stab[i] ? (tend = 10) : (tend = -10)
-            end_point = DifferentialEquations.solve(ODEProblem(rn,fps[i],(0.,tend),p),Rosenbrock23())[end]
+            end_point = OrdinaryDiffEq.solve(ODEProblem(rn,fps[i],(0.,tend),p),Rosenbrock23())[end]
             @test maximum(end_point-fps[i])<0.0001
         end
     end

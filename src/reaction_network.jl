@@ -154,7 +154,7 @@ end
 function gensde_exprs(reactions, reactants, parameters, scale_noise)
     g_expr   = get_g(reactions, reactants, scale_noise)
     g        = make_func(g_expr, reactants, parameters)
-    g_funcs  = [element.args[2] for element in g_expr]
+    g_funcs  = ExprValues[element.args[2] for element in g_expr]
     p_matrix = zeros(length(reactants), length(reactions))
 
     (g_expr,g,g_funcs,p_matrix)
@@ -165,7 +165,7 @@ function genode_exprs(reactions, reactants, parameters, syms; build_jac=true,
                                                               build_symfuncs=true)
     f_expr                = get_f(reactions, reactants)
     f                     = make_func(f_expr, reactants, parameters)
-    f_rhs                 = [element.args[2] for element in f_expr]
+    f_rhs                 = ExprValues[element.args[2] for element in f_expr]
     symjac, jac, paramjac = build_jac ? get_jacs(f_rhs, syms, reactants, parameters) : (nothing,nothing,nothing)
     f_symfuncs            = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
 
@@ -223,13 +223,13 @@ end
 struct ReactionStruct
     substrates::Vector{ReactantStruct}
     products::Vector{ReactantStruct}
-    rate_org::Any
-    rate_DE::Any
-    rate_SSA::Any
+    rate_org::ExprValues
+    rate_DE::ExprValues
+    rate_SSA::ExprValues
     dependants::Vector{Symbol}
     is_pure_mass_action::Bool
 
-    function ReactionStruct(sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
+    function ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, use_mass_kin::Bool)
         sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(undef,0))
         prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(undef,0))
 
@@ -245,33 +245,33 @@ struct ReactionStruct
 end
 
 #Calculates the rate used by ODEs and SDEs. If we want to use masskinetics we have to include substrate concentration, taking higher order terms into account.
-function mass_rate_DE(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, old_rate::Any)
+function mass_rate_DE(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, old_rate::ExprValues)
     rate = Expr(:call, :*, old_rate)
     use_mass_kin && foreach(sub -> push!(rate.args,:($(Expr(:call, :^, sub.reactant, sub.stoichiometry))/$(factorial(sub.stoichiometry)))), substrates)
     return rate
 end
 
 #Calculates the rate used by SSAs. If we want to use masskinetics we have to include substrate concentration, taking higher order terms into account.
-function mass_rate_SSA(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, old_rate::Any)
+function mass_rate_SSA(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, old_rate::ExprValues)
     rate = Expr(:call, :*, old_rate)
     use_mass_kin && foreach(sub -> push!(rate.args, :(binomial($(sub.reactant),$(sub.stoichiometry)))), substrates)
     return rate
 end
 
 #Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a  Symbol/Numerical).
-function tup_leng(ex::Any)
+function tup_leng(ex::ExprValues)
     (typeof(ex)==Expr && ex.head == :tuple) && (return length(ex.args))
     return 1
 end
 
 #Gets the i'th element in a expression tuple, or return the input itself if it is not an expression tuple (probably a  Symbol/Numerical).
-function get_tup_arg(ex::Any,i::Int)
+function get_tup_arg(ex::ExprValues,i::Int)
     (tup_leng(ex) == 1) && (return ex)
     return ex.args[i]
 end
 
 #Takes a reaction line and creates reactions from it and pushes those to the reaction array. Used to creat multiple reactions from e.g. 1.0, (X,Y) --> 0.
-function push_reactions(reactions::Vector{ReactionStruct}, sub_line::Any, prod_line::Any, rate::Any, use_mass_kin::Bool)
+function push_reactions(reactions::Vector{ReactionStruct}, sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, use_mass_kin::Bool)
     lengs = [tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate)]
     (count(lengs.==1) + count(lengs.==maximum(lengs)) < 3) && (throw("malformed reaction"))
     for i = 1:maximum(lengs)
@@ -280,7 +280,7 @@ function push_reactions(reactions::Vector{ReactionStruct}, sub_line::Any, prod_l
 end
 
 #Recursive function that loops through the reactants in an reaction line and finds the reactants and their stochiometry. Recursion makes it able to handle e.g. 2(X+Y+3(Z+XY)) (probably one will not need it though).
-function add_reactants!(ex::Any, mult::Int, reactants::Vector{ReactantStruct})
+function add_reactants!(ex::ExprValues, mult::Int, reactants::Vector{ReactantStruct})
     if typeof(ex)!=Expr
         (ex == 0 || in(ex,empty_set)) && (return reactants)
         if in(ex, getfield.(reactants,:reactant))
@@ -341,9 +341,13 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     end
     for reaction in deepcopy(reactions)
         for reactant in union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant))
-            push!(f[reactants[reactant]].args[2].args, recursive_clean!(:($(get_stoch_diff(reaction,reactant)) * $(reaction.rate_DE))))
+            ex = recursive_clean!(:($(get_stoch_diff(reaction,reactant)) * $(reaction.rate_DE)))
+            !(ex isa Number && iszero(ex)) && push!(f[reactants[reactant]].args[2].args, ex)
         end
     end
+
+    foreach(line -> line.args[2] = clean_subtractions(line.args[2]), f)
+
     return f
 end
 
@@ -352,7 +356,7 @@ function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     g = Vector{Expr}(undef,length(reactions)*length(reactants))
     idx = 0
     for reactant in keys(reactants), i = 1:length(reactions)
-            g[idx += 1] = recursive_clean!(:(internal_var___du[$(reactants[reactant]),$i] = $scale_noise * $(get_stoch_diff(reactions[i],reactant)) * sqrt(abs($(deepcopy(reactions[i].rate_DE))))))
+        g[idx += 1] = recursive_clean!(:(internal_var___du[$(reactants[reactant]),$i] = $scale_noise * $(get_stoch_diff(reactions[i],reactant)) * sqrt(abs($(deepcopy(reactions[i].rate_DE))))))
     end
     return g
 end
@@ -369,18 +373,30 @@ function get_stoch_diff(reaction::ReactionStruct, reactant::Symbol)
     return stoch
 end
 
+function splitplus!(ex)
+  dosplit = ex.head == :(=) && ex.args[2] isa Expr && ex.args[2].head == :call && ex.args[2].args[1] == :(+)
+  if dosplit
+    summands = ex.args[2].args[2:end]
+    ex.args[2] = foldl((x,y)->(:(($x + $y))), summands)
+  end
+  dosplit
+end
+
 #Creates an expression which can be evaluated to an actual function. Input is an array of expression were each entry is a line in the function. Uses the array of expressions generated in either get_f or get_g.
 function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     system = Expr(:block)
     for func_line in deepcopy(func_expr)
-        push!(system.args, recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p)))
+        ex = recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p))
+        splitplus!(ex)
+        push!(system.args,ex)
     end
-    return :((internal_var___du,internal_var___u,internal_var___p,t) -> $system)
+    push!(system.args, :(nothing))
+    return :((internal_var___du,internal_var___u,internal_var___p,t) -> @inbounds $system)
 end
 
 #Creates expressions for jump affects and rates. Also creates and array with MassAction, ConstantRate and VariableRate Jumps.
 function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int}; minimal_jumps=false)
-    rates = Vector{Any}(undef,length(reactions))
+    rates = Vector{ExprValues}(undef,length(reactions))
     affects = Vector{Vector{Expr}}(undef,length(reactions))
     jumps = Expr(:tuple)
     reg_rates = Expr(:block)
@@ -390,7 +406,7 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
         rates[idx += 1] = recursive_clean!(reaction.rate_SSA)
         affects[idx] = Vector{Expr}(undef,0)
         reactant_set = union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant))
-        foreach(r -> push!(affects[idx],:(@inbounds integrator.u[$(reactants[r])] += $(get_stoch_diff(reaction,r)))), reactant_set)
+        foreach(r -> push!(affects[idx], :(integrator.u[$(reactants[r])] += $(get_stoch_diff(reaction,r)))), reactant_set)
         syntax_rate = recursive_replace!(deepcopy(rates[idx]), (reactants,:internal_var___u), (parameters, :internal_var___p))
 
         if minimal_jumps && reaction.is_pure_mass_action
@@ -402,18 +418,51 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
         #    push!(jumps.args,:(MassActionJump($(reaction.rate_org),$(ma_sub_stoch),$(ma_stoch_change))))
         else
             recursive_contains(:t,rates[idx]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
-            push!(jumps.args[idx].args, :((internal_var___u,internal_var___p,t) -> $syntax_rate))
-            push!(jumps.args[idx].args, :(integrator -> $(expr_arr_to_block(deepcopy(affects[idx])))))
+            push!(jumps.args[idx].args, :((internal_var___u,internal_var___p,t) -> @inbounds $syntax_rate))
+            push!(jumps.args[idx].args, :(integrator -> @inbounds $(expr_arr_to_block(deepcopy(affects[idx])))))
         end
-        push!(reg_rates.args,:(internal_var___out[$idx]=$syntax_rate))
-        foreach(r -> push!(reg_c.args,:(internal_var___dc[$(reactants[r]),$idx]=$(get_stoch_diff(reaction,r)))), reactant_set)
+        push!(reg_rates.args,:(@inbounds internal_var___out[$idx]= $syntax_rate))
+        foreach(r -> push!(reg_c.args,:(@inbounds internal_var___dc[$(reactants[r]),$idx]=$(get_stoch_diff(reaction,r)))), reactant_set)
     end
     reg_jumps = :(RegularJump((internal_var___out,internal_var___u,internal_var___p,t)->$reg_rates,(internal_var___dc,internal_var___u,internal_var___p,t,internal_var___mark)->$reg_c,zeros($(length(reactants)),$(length(reactions)));constant_c=true))
     return (Tuple(rates),Tuple(affects),jumps,reg_jumps)
 end
 
+"""
+clean_subtractions(ex::Expr)
+Replace additions of negative terms with subtractions.
+This is a fairly stupid function which is designed for a specific problem
+with reaction networks. It is neither recursive nor very general.
+Return :: cleaned out expression
+
+From Latexify.jl with permission:
+[see](https://github.com/JuliaDiffEq/DiffEqBiological.jl/issues/89#issuecomment-462147882)
+"""
+function clean_subtractions(ex::Expr)
+    ex.args[1] != :+ && return ex
+
+    term = ex.args[2]
+
+    ### Sort out the first term
+    if term isa Expr && length(term.args) >= 3 && term.args[1:2] == [:*, -1]
+        result = :(- *($(term.args[3:end]...)))
+    else
+        result = :($term)
+    end
+
+    ### Sort out the other terms
+    for term in ex.args[3:end]
+        if term isa Expr && length(term.args) >= 3 && term.args[1:2] == [:*, -1]
+            result = :($result - *($(term.args[3:end]...)))
+        else
+            result = :($result + $term)
+        end
+    end
+    return result
+end
+
 #Recursively traverses an expression and removes things like X^1, 1*X. Will not actually have any affect on the expression when used as a function, but will make it much easier to look at it for debugging, as well as if it is transformed to LaTeX code.
-function recursive_clean!(expr::Any)
+function recursive_clean!(expr::ExprValues)
     (expr == :no___noise___scaling) && (return 1)
     (typeof(expr)!=Expr) && (return expr)
     for i = 1:length(expr.args)
@@ -453,7 +502,7 @@ function recursive_clean!(expr::Any)
 end
 
 #Recursively traverses an expression and replace instances of variables and parmaters with things that the DifferentialEquations packakes simulation algorithms can understand. E.g. X --> u[1], kB1 --> p[1] etc.
-function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbol,Int},Symbol}...)
+function recursive_replace!(expr::ExprValues, replace_requests::Tuple{OrderedDict{Symbol,Int},Symbol}...)
     if typeof(expr) == Symbol
         for rr in replace_requests
             (haskey(rr[1],expr)) && (return :($(rr[2])[$(rr[1][expr])]))
@@ -467,7 +516,7 @@ function recursive_replace!(expr::Any, replace_requests::Tuple{OrderedDict{Symbo
 end
 
 #Recursively traverses an expression and replaces a symbol with another.
-function recursive_replace!(expr::Any, replace_requests::Dict{Symbol,Symbol})
+function recursive_replace!(expr::ExprValues, replace_requests::Dict{Symbol,Symbol})
     if typeof(expr) == Symbol
         haskey(replace_requests,expr) && return replace_requests[expr]
     elseif typeof(expr) == Expr
@@ -498,7 +547,7 @@ function recursive_content(ex,syms::Vector{Symbol},content::Vector{Symbol})
 end
 
 #Makes the various jacobian elements required.
-function get_jacs(f_rhs::Vector{Expr}, syms::Vector{Symbol}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
+function get_jacs(f_rhs::Vector{ExprValues}, syms::Vector{Symbol}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     symjac = calculate_symjac(deepcopy(f_rhs), syms)
     jac = calculate_jac(deepcopy(symjac), reactants, parameters)
     paramjac = calculate_paramjac(deepcopy(f_rhs), reactants, parameters)
@@ -506,35 +555,36 @@ function get_jacs(f_rhs::Vector{Expr}, syms::Vector{Symbol}, reactants::OrderedD
 end
 
 #Makes the Symbolic Jacobian.
-function calculate_symjac(f_rhs::Vector{Expr}, syms)
+function calculate_symjac(f_rhs::Vector{ExprValues}, syms)
     n = length(syms); internal_vars = [Symbol(:internal_variable___,var) for var in syms]
-    symjac = Matrix{SymEngine.Basic}(undef, n, n);
     symfuncs = [SymEngine.Basic(recursive_replace!(f,Dict(zip(syms,internal_vars)))) for f in f_rhs]
-    for i = 1:n, j = 1:n
-        symjac[i,j] = diff(symfuncs[i],internal_vars[j])
+    jacexprs = Matrix{ExprValues}(undef, n, n)
+    for j = 1:n, i = 1:n
+        symjacij = diff(symfuncs[i],internal_vars[j])
+        jacexprs[i,j] = :($(recursive_replace!(Meta.parse(string(symjacij)),Dict(zip(internal_vars,syms)))))
     end
-    return map(sym_entry -> :(1*$(recursive_replace!(Meta.parse(string(sym_entry)),Dict(zip(internal_vars,syms))))),symjac)
+    jacexprs
 end
 
 #Makes the Jacobian.
-function calculate_jac(symjac::Matrix{Expr}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
+function calculate_jac(symjac::Matrix{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     func_body = Expr(:block)
-    for i = 1:size(symjac)[1], j = 1:size(symjac)[2]
-        push!(func_body.args,:(internal___var___pJ[$i,$j] = $(recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p)))))
+    for j = 1:size(symjac)[2], i = 1:size(symjac)[1]
+        push!(func_body.args, :(internal___var___J[$i,$j] = $(recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p)))))
     end
-    push!(func_body.args,:(return internal___var___pJ))
-    return :((internal___var___pJ,internal___var___u,internal___var___p,t) -> $func_body)
+    push!(func_body.args,:(return internal___var___J))
+    return :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
 end
 
 #Makes the Jacobian, with respect to parameter values.
-function calculate_paramjac(f_rhs::Vector{Expr}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
+function calculate_paramjac(f_rhs::Vector{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     func_body = Expr(:block)
-    for i = 1:length(reactants), j = 1:length(parameters)
+    for j = 1:length(parameters), i = 1:length(reactants)
         paramjac_entry = Meta.parse(string(diff(SymEngine.Basic(f_rhs[i]), parameters.keys[j])))
-        push!(func_body.args,:(internal___var___J[$i,$j] = $(recursive_replace!(paramjac_entry,(reactants,:internal___var___u), (parameters, :internal___var___p)))))
+        push!(func_body.args, :(internal___var___pJ[$i,$j] = $(recursive_replace!(paramjac_entry,(reactants,:internal___var___u), (parameters, :internal___var___p)))))
     end
-    push!(func_body.args,:(return internal___var___J))
-    return :((internal___var___J,internal___var___u,internal___var___p,t) -> $func_body)
+    push!(func_body.args,:(return internal___var___pJ))
+    return :((internal___var___pJ,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
 end
 
 #Turns an array of expressions to a expression block with corresponding expressions.

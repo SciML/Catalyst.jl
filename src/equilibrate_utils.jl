@@ -3,7 +3,7 @@
 ### Functions used during the construction of the reaction network. ###
 
 #Generates the expression which is then converted into a function which generates polynomials for given parameters. Parameters not given can be given at a later stage, but parameters in the exponential must be given here. Also checks whenever the system is polynomial.
-function get_equilibration(params::Vector{Symbol}, reactants::OrderedDict{Symbol,Int}, f_expr::Vector{Expr})
+function get_equilibration(params::Vector{Symbol}, reactants::OrderedDict{Symbol,Int}, f_expr::Vector{ExprValues})
     func_body = Expr(:block)
     push!(func_body.args,Expr(:if,:(length(internal___var___polyvector) != 0),Expr(:block)))
     foreach(i -> push!(func_body.args[1].args[2].args, :($(params[i])=internal___var___polyvector[$i])), 1:length(params))
@@ -55,7 +55,7 @@ function balance_poly(poly::Expr)
     return poly
 end
 #Complicated function which replaces the named varriables in the expression supplied to @fix_concentration with the corresponding polyvar stored in the reaction network.
-function recursive_replace_vars!(expr::Any, rn::Symbol)
+function recursive_replace_vars!(expr::Union{ExprValues,LineNumberNode}, rn::Symbol)
     if (typeof(expr) == Symbol)&&(expr!=:+)&&(expr!=:-)&&(expr!=:*)&&(expr!=:^)&&(expr!=:/)
         return :(in($(QuoteNode(expr)),$(rn).syms) ? $(rn).polyvars_vars[$(rn).syms_to_ints[$(QuoteNode(expr))]] : $(rn).polyvars_params[$(rn).params_to_ints[$(QuoteNode(expr))]])
     elseif typeof(expr) == Expr
