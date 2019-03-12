@@ -91,7 +91,7 @@ Given an `AbstractReactionNetwork`, return a function, `pjac(pJ,u,p,t)`, that
 evaluates the current parameter Jacobian matrix, `pJ`, of the ODE model, ``du/dt = f(u,t)``. 
 The parameter Jacobian matrix has entries 
 
-``pJ_{i,j} = \partial f_i(u,t) / \partial p_j``.
+``pJ_{i,j} = \\partial f_i(u,t) / \\partial p_j``.
 
 *Note* for a network generated with the `@min_reaction_network` macro `addodes!` 
 must be called first.
@@ -164,7 +164,7 @@ end
 
 Given an `AbstractReactionNetwork`, return a `RegularJump` encoding a
 stochastical chemical kinetics representation of the reaction network for use in
-$\tau$-leaping approximations.
+``\\tau``-leaping approximations.
 
 *Note* for a network generated with the `@min_reaction_network` macro `addjumps!` 
 must be called first.
@@ -300,8 +300,7 @@ Given an `AbstractReactionNetwork` and a reaction index, `rxidx`, return a
 vector of pairs, mapping ids of species that serve as substrates in the reaction
 to the corresponding stoichiometric coefficient as a substrate. 
 """ 
-function
-substratestoich(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
+function substratestoich(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
     substratestoich(rn.reactions[rxidx], speciesmap(rn))
 end
 
@@ -368,14 +367,41 @@ function ismassaction(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
     rn.reactions[rxidx].is_pure_mass_action
 end
 
+
+"""
+    dependents(network, rxidx)
+
+Given an `AbstractReactionNetwork` and a reaction index, `rxidx`, return a
+vector of symbols of species the *reaction rate law* depends on. i.e. for
+
+`k*W, 2X + 3Y --> 5Z + W`
+
+the returned vector would be `[:W,:X,:Y]`.
+"""
 function dependents(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
     rn.reactions[rxidx].dependants
 end
 
+"""
+    dependants(network, rxidx)
+
+See documentation for [`dependents(network, rxidx)`](@ref).
+"""
 function dependants(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
     dependents(rn, rxidx)
 end
 
+"""
+    substrates(network, rxidx)
+
+Given an `AbstractReactionNetwork` and a reaction index, `rxidx`, return a
+vector of symbols of species that correspond to substrates in the reaction. 
+i.e. for
+
+`k*W, X + 3Y --> X + W`
+
+the returned vector would be `[:X,:Y]`.
+"""
 function substrates(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
     rn.reactions[rxidx].substrates
 end
