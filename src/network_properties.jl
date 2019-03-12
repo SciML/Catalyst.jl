@@ -406,6 +406,17 @@ function substrates(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
     rn.reactions[rxidx].substrates
 end
 
+"""
+    products(network, rxidx)
+
+Given an `AbstractReactionNetwork` and a reaction index, `rxidx`, return a
+vector of symbols of species that correspond to products in the reaction. 
+i.e. for
+
+`k*W, X + 3Y --> X + W`
+
+the returned vector would be `[:X,:W]`.
+"""
 function products(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
     rn.reactions[rxidx].products
 end
@@ -413,8 +424,10 @@ end
 ######### Network Properties: #########
 
 """
-Returns a Vector{Vector{Int}} mapping a reaction index 
-to the indices of species that depend on it.
+    rxtospecies_depgraph(network)
+
+Given an `AbstractReactionNetwork`, returns a Vector{Vector{Int}} mapping a
+reaction index to the indices of species that depend on it.
 """
 function rxtospecies_depgraph(network)
     specmap = speciesmap(network)
@@ -424,8 +437,10 @@ function rxtospecies_depgraph(network)
 end
 
 """
-Returns a Vector{Vector{Int}} mapping a species index 
-to the indices of reactions that depend on it.
+    speciestorx_depgraph(network)
+
+Given an `AbstractReactionNetwork`, returns a Vector{Vector{Int}} mapping a
+species index to the indices of reactions that depend on it.
 """
 function speciestorx_depgraph(network)
     numrxs  = numreactions(network)    
@@ -444,8 +459,10 @@ function speciestorx_depgraph(network)
 end
 
 """
-Returns a Vector{Vector{Int}} mapping a reaction index
-to the indices of reactions that depend on it.
+    rxtorx_depgraph(network)
+
+Given an `AbstractReactionNetwork`, returns a Vector{Vector{Int}} mapping a
+reaction index to the indices of reactions that depend on it.
 """
 function rxtorx_depgraph(network, sptorxs=speciestorx_depgraph(network))
     numrxs = numreactions(network)
