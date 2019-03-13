@@ -190,7 +190,7 @@ function odeexprs(network)
 end
 
 """
-    odeexprs(network)
+    jacobianexprs(network)
 
 Given an `AbstractReactionNetwork`, return a matrix with the ODE Jacobian
 expressions.
