@@ -136,16 +136,16 @@ end
 ######################## functions to extend a network ####################
 
 """
-    addspecies!(network, species::Symbol)
+    addspecies!(network, speciessym::Symbol)
 
 Given an AbstractReaction network, add the species corresponding to the passed
 in symbol to the network (if it is not already defined). 
 """ 
-function addspecies!(rn::DiffEqBase.AbstractReactionNetwork, species::Symbol)
-    if !haskey(speciesmap(rn), species)        
-        push!(species(rn), species)
+function addspecies!(rn::DiffEqBase.AbstractReactionNetwork, sp::Symbol)
+    if !haskey(speciesmap(rn), sp)        
+        push!(species(rn), sp)
         sidx = numspecies(rn) + 1
-        push!(speciesmap(rn), species => sidx)
+        push!(speciesmap(rn), sp => sidx)
     end
     nothing
 end
@@ -226,10 +226,12 @@ k, X+X --> Z
 `````
 would have `rateexpr=:k` and `rxexpr=:(X+X --> Z)`.
 
-All normal DSL type functions should be supported.
+All normal DSL reaction definition notation should be supported.
 """
 function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateexpr::ExprValues, rxexpr::Expr)
-   nothing 
+    ex = Expr(:block, :(($rateexpr, $rxexpr)))
+    newrxs = get_reactions(ex)
+    foreach(rx -> push!(rn.reactions,ReactionStruct(rx, species(rn))), newrxs)
 end
 
 ############## Adding ODES/SDE/Jumps for problems ################

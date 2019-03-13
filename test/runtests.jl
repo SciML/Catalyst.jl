@@ -29,4 +29,5 @@ end
 # tests that handle both macros
 @time begin
   @time @testset "Discrete Problem" begin include("discreteproblem_test.jl") end
+  @time @testset "Add Reactions API" begin include("addreactions_test.jl") end
 end
