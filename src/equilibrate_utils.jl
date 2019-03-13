@@ -28,7 +28,10 @@ function manage_equilibrium_functionality!(reaction_network::DiffEqBase.Abstract
     catch
         false
     end
-    reaction_network.is_polynomial_system && (try fix_parameters(reaction_network) catch end)
+    reaction_network.is_polynomial_system && try fix_parameters(reaction_network)
+    catch
+        (reaction_network.equilibratium_polynomial = nothing)
+    end
 end
 
 
