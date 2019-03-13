@@ -239,7 +239,7 @@ reaction with index `rxidx`. Note, for a reaction defined by
 `k*X*Y, X+Z --> 2X + Y`
 
 the expression that is returned will be `:(k*X*Y)`, while the *rate law* used in
-ODEs, SDEs and jumps would be `k*X^2*Y*Z`.
+ODEs and SDEs would be `k*X^2*Y*Z`.
 """
 function rateexpr(network, rxidx)
     network.reactions[rxidx].rate_org
@@ -424,7 +424,7 @@ end
 """
     rxtospecies_depgraph(network)
 
-Given an `AbstractReactionNetwork`, returns a Vector{Vector{Int}} mapping a
+Given an `AbstractReactionNetwork`, returns a `Vector{Vector{Int}}` mapping each
 reaction index to the indices of species that depend on it.
 """
 function rxtospecies_depgraph(network)
@@ -437,7 +437,7 @@ end
 """
     speciestorx_depgraph(network)
 
-Given an `AbstractReactionNetwork`, returns a Vector{Vector{Int}} mapping a
+Given an `AbstractReactionNetwork`, returns a `Vector{Vector{Int}}` mapping each
 species index to the indices of reactions that depend on it.
 """
 function speciestorx_depgraph(network)
@@ -459,7 +459,7 @@ end
 """
     rxtorx_depgraph(network)
 
-Given an `AbstractReactionNetwork`, returns a Vector{Vector{Int}} mapping a
+Given an `AbstractReactionNetwork`, returns a `Vector{Vector{Int}}` mapping each
 reaction index to the indices of reactions that depend on it.
 """
 function rxtorx_depgraph(network, sptorxs=speciestorx_depgraph(network))
