@@ -240,7 +240,7 @@ end
     addodes!(network; build_jac=true, build_symfuncs=true)
 
 Extend an `AbstractReactionNetwork` generated with the `@min_reaction_network`
-macro with everything needed to use ODE solvers.
+or `@empty_reaction_network` macros with everything needed to use ODE solvers.
 
 Optional kwargs can be used to disable the construction of additional ODE solver
 components.
@@ -268,8 +268,8 @@ end
     addsdes!(network; build_jac=true, build_symfuncs=true)
 
 Extend an `AbstractReactionNetwork` generated with the `@min_reaction_network`
-macro with everything needed to use SDE solvers.
-
+or `@empty_reaction_network` macros with everything needed to use SDE solvers.
+    
 Optional kwargs can be used to disable the construction of additional SDE solver
 components.
 """
@@ -294,8 +294,8 @@ end
     addjumps!(network; build_jumps=true, build_regular_jumps=true, minimal_jumps=false)
 
 Extend an `AbstractReactionNetwork` generated with the `@min_reaction_network`
-macro with everything needed to use jump SSA solvers.
-
+or `@empty_reaction_network` macros with everything needed to use jump SSA solvers.
+    
 Optional kwargs can be used to disable the construction of additional jump solver
 components.
 
