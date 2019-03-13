@@ -133,6 +133,15 @@ function gentypefun_exprs(name; esc_exprs=true, gen_inplace=true, gen_outofplace
     exprs
 end
 
+"""
+    addodes!(network; build_jac=true, build_symfuncs=true)
+
+Extend an `AbstractReactionNetwork` generated with the `@min_reaction_network`
+macro with everything needed to use ODE solvers.
+
+Optional kwargs can be used to disable the construction of additional ODE solver
+components.
+"""
 function addodes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     @unpack reactions, syms_to_ints, params_to_ints, syms = rn
 
@@ -152,6 +161,15 @@ function addodes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     nothing
 end
 
+"""
+    addsdes!(network; build_jac=true, build_symfuncs=true)
+
+Extend an `AbstractReactionNetwork` generated with the `@min_reaction_network`
+macro with everything needed to use SDE solvers.
+
+Optional kwargs can be used to disable the construction of additional SDE solver
+components.
+"""
 function addsdes!(rn::DiffEqBase.AbstractReactionNetwork)
     @unpack reactions, syms_to_ints, params_to_ints, scale_noise = rn
 
@@ -169,6 +187,30 @@ function addsdes!(rn::DiffEqBase.AbstractReactionNetwork)
     nothing
 end
 
+"""
+    addjumps!(network; build_jumps=true, build_regular_jumps=true, minimal_jumps=false)
+
+Extend an `AbstractReactionNetwork` generated with the `@min_reaction_network`
+macro with everything needed to use jump SSA solvers.
+
+Optional kwargs can be used to disable the construction of additional jump solver
+components.
+
+Keyword arguments:
+
+* `build_jumps`: if true jump rates and affects will be calculated for use in
+  DiffEqJump SSAs.
+
+* `build_regular_jumps`: if true a `RegularJump` representation of the
+  stochastic chemical kinetics model will be calculated for use in τ-leaping
+  methods.
+
+* `minimal_jumps`: if true `ConstantRate` jumps are only constructed for
+  non-mass action jumps. (Note, mass action jumps are still resolved within any
+  jump simulation. This option simply speeds up the construction of the jump
+  problem since it avoids building redundant `ConstantRate` jumps that encode
+  `MassActionJump`s, which are subsequently ignored within jump simulations.)
+""" 
 function addjumps!(rn::DiffEqBase.AbstractReactionNetwork;
                                     build_jumps=true,
                                     build_regular_jumps=true,

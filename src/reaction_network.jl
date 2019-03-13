@@ -47,6 +47,14 @@ Example systems:
     probSDE = SDEProblem(rn, args...; kwargs...)
     probJump = JumpProblem(prob,aggregator::Direct,rn)
 """
+
+"""
+    @reaction_network
+
+Generates a subtype of an `AbstractReactionNetwork` that encodes a chemical
+reaction network, and complete ODE, SDE and jump representations
+of the system.
+"""
 macro reaction_network(name, ex::Expr, p...)
     coordinate(name, MacroTools.striplines(ex), p, :no___noise___scaling)
 end
@@ -63,6 +71,14 @@ macro reaction_network(ex::Expr, p...)
 end
 
 ################# query-based macros:
+
+"""
+    @min_reaction_network
+
+Generates a subtype of an `AbstractReactionNetwork` that only encodes a chemical
+reaction network. Use [`addodes!`](@ref), [`addsdes!`](@ref) or
+[`addjumps!`](@ref) to complete the network for specific problem types.
+"""
 macro min_reaction_network(name, ex::Expr, p...)
     min_coordinate(name, MacroTools.striplines(ex), p, :no___noise___scaling)
 end
