@@ -133,6 +133,107 @@ function gentypefun_exprs(name; esc_exprs=true, gen_inplace=true, gen_outofplace
     exprs
 end
 
+######################## functions to extend a network ####################
+
+"""
+    addspecies!(network, species::Symbol)
+
+Given an AbstractReaction network, add the species corresponding to the passed
+in symbol to the network (if it is not already defined). 
+""" 
+function addspecies!(rn::DiffEqBase.AbstractReactionNetwork, species::Symbol)
+    if !haskey(speciesmap(rn), species)        
+        push!(species(rn), species)
+        sidx = numspecies(rn) + 1
+        push!(speciesmap(rn), species => sidx)
+    end
+    nothing
+end
+
+"""
+    addspecies!(network, speciesname::String)
+
+Given an AbstractReaction network, add the species with name given by the passed
+in string to the network (if it is not already defined.
+"""
+addspecies!(rn::DiffEqBase.AbstractReactionNetwork, speciesname::String) = addspecies!(rn, Symbol(speciesname))
+
+"""
+    addparam!(network, param::Symbol)
+
+Given an AbstractReaction network, add the parameter corresponding to the passed
+in symbol to the network (if it is not already defined).
+"""
+function addparam!(rn::DiffEqBase.AbstractReactionNetwork, param::Symbol)
+    if !haskey(paramsmap(rn), param)
+        push!(params(rn), param)
+        pidx = numparams(rn) + 1
+        push!(paramsmap(rn), param => pidx)
+    end
+    nothing
+end
+
+"""
+    addparam!(network, paramname::String)
+
+Given an AbstractReaction network, add the parameter with name given by the
+passed in string to the network (if it is not already defined).
+"""
+addparam!(rn::DiffEqBase.AbstractReactionNetwork, param::String) = addparam!(rn, Symbol(param))
+
+"""
+    add_scale_noise_param!(network, scale_noise::Symbol)
+
+Given an AbstractReaction network, add the parameter corresponding to the passed
+in symbol to the network (if it is not already defined), and register it as the
+noise scaling coefficient.
+"""
+function add_scale_noise_param!(rn::DiffEqBase.AbstractReactionNetwork, scale_noise::Symbol)    
+    rn.scale_noise = scale_noise
+
+    if !haskey(paramsmap(rn), scale_noise)
+        push!(params(rn), scale_noise)
+        pidx = numparams(rn) + 1
+        push!(paramsmap(rn), scale_noise => pidx)
+    end
+    nothing
+end
+
+"""
+    add_scale_noise_param!(network, scale_noise_name::String)
+
+Given an AbstractReaction network, add the parameter with the passed in string
+as its name to the network (if it is not already defined), and register it as
+the noise scaling coefficient.
+"""
+add_scale_noise_param!(rn::DiffEqBase.AbstractReactionNetwork, scale_noise_name::String) = add_scale_noise_param!(rn, Symbol(scale_noise_name))
+
+"""
+    addreaction!(network, rateexpr::Union{Expr,Symbol,Int,Float64}, rxexpr::Expr)
+
+Given an AbstractReaction network, add a reaction with the passed in rate and
+reaction expressions. i.e. a reaction of the form
+```julia
+k*X, 2X + Y --> 2W
+```
+would have `rateexpr=:(k*X)` and `rxexpr=:(2X + Y --> W)`, 
+```julia
+10.5, 0 --> X
+````
+would have `rateexpr=10.5` and `rxexpr=:(0 --> X)`, and
+```julia
+k, X+X --> Z
+`````
+would have `rateexpr=:k` and `rxexpr=:(X+X --> Z)`.
+
+All normal DSL type functions should be supported.
+"""
+function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateexpr::ExprValues, rxexpr::Expr)
+   nothing 
+end
+
+############## Adding ODES/SDE/Jumps for problems ################
+
 """
     addodes!(network; build_jac=true, build_symfuncs=true)
 

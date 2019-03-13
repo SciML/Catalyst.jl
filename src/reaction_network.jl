@@ -94,6 +94,9 @@ macro min_reaction_network(ex::Expr, p...)
     min_coordinate(:min_reaction_network, MacroTools.striplines(ex), p, :no___noise___scaling)
 end
 
+macro empty_reaction_network(name::Symbol=:min_reaction_network)
+    min_coordinate(name, MacroTools.striplines(:(begin end)), (), :no___noise___scaling)
+end
 
 #################
 
@@ -144,7 +147,11 @@ function min_coordinate(name, ex::Expr, p, scale_noise)
 
     # Build the type
     exprs = Vector{Expr}(undef,0)
-    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, syms, scale_noise; params=params, reactions=reactions, symjac=nothing, syms_to_ints=reactants, params_to_ints=parameters)
+    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, nothing, nothing, 
+                                    nothing, nothing, nothing, nothing, nothing, nothing, 
+                                    nothing, nothing, syms, scale_noise; params=params, 
+                                    reactions=reactions, symjac=nothing, syms_to_ints=reactants, 
+                                    params_to_ints=parameters)
     push!(exprs,typeex)
     push!(exprs,constructorex)
 
@@ -193,8 +200,7 @@ function get_minnetwork(ex::Expr, p)
 end
 
 #Generates a vector containing a number of reaction structures, each containing the infromation about one reaction.
-function get_reactions(ex::Expr)
-    reactions = Vector{ReactionStruct}(undef,0)
+function get_reactions(ex::Expr, reactions = Vector{ReactionStruct}(undef,0))    
     for line in ex.args
         (line.head != :tuple) && (continue)
         (rate,r_line) = line.args

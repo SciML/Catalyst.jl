@@ -3,6 +3,22 @@
 ######### Accessors: #########
 
 """
+    species(network)
+Given an `AbstractReactionNetwork`, return a vector of species symbols.
+"""
+function species(network)
+    network.syms
+end
+
+"""
+    params(network)
+Given an `AbstractReactionNetwork`, return a vector of parameter symbols.
+"""
+function params(network)
+    network.params
+end
+
+"""
     speciesmap(network)
 
 Given an `AbstractReactionNetwork`, return a Dictionary mapping from species
