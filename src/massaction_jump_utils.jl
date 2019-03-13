@@ -3,8 +3,8 @@
 
 # given a ReactionStruct and a species map construct a MassActionJump
 function make_majump(rs, specmap, ratemap, params, param_context)
-    reactant_stoich = get_substrate_stoich(rs, specmap)
-    net_stoich      = get_net_stoich(rs, specmap)
+    reactant_stoich = substratestoich(rs, specmap)
+    net_stoich      = netstoich(rs, specmap)
     if isempty(net_stoich)
         error("Empty net stoichiometry vectors for mass action reactions are not allowed.")
     end
@@ -92,7 +92,7 @@ function jump_to_dep_specs_map(rn, rxidxs_jidxs)
     jtos_vec = Vector{Vector{valtype(specmap)}}(undef, numrxs)
     for rx in 1:numrxs
         jidx           = rxidxs_jidxs[rx]
-        jtos_vec[jidx] = sort!( [ns.first for ns in get_net_stoich(rn.reactions[rx], specmap)] )
+        jtos_vec[jidx] = sort!( [ns.first for ns in netstoich(rn.reactions[rx], specmap)] )
     end
 
     jtos_vec
@@ -125,7 +125,7 @@ function depgraph_from_network(rn, jset, rxidxs_to_jidxs, spec_to_dep_jumps)
         jidx = rxidxs_to_jidxs[rx]
 
         # get the net reaction stoichiometry
-        net_stoich = get_net_stoich(rn.reactions[rx], speciesmap(rn))
+        net_stoich = netstoich(rn.reactions[rx], speciesmap(rn))
 
         # rx changes spec, hence rxs depending on spec depend on rx
         for (spec,stoch) in net_stoich

@@ -25,8 +25,9 @@ export @reaction_network, @reaction_func, @min_reaction_network
 
 # functions to query network properties
 export speciesmap, paramsmap, numspecies, numreactions, numparams
-export odeexprs, jacobianexprs, noiseexprs, jumpexprs
-export get_substrate_stoich, get_net_stoich
+export oderhsfun, jacfun, paramjacfun, odefun, noisefun, sdefun, jumps, regularjumps
+export odeexprs, jacobianexprs, noiseexprs, jumpexprs, rateexpr, oderatelawexpr, ssaratelawexpr
+export substratestoich, productstoich, netstoich, ismassaction, dependants, dependents, substrates, products
 export rxtospecies_depgraph, speciestorx_depgraph, rxtorx_depgraph
 
 # functions to add mathematical equations to the network
