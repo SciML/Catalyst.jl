@@ -199,17 +199,17 @@ components.
 Keyword arguments:
 
 * `build_jumps`: if true jump rates and affects will be calculated for use in
-DiffEqJump SSAs.
+  DiffEqJump SSAs.
 
 * `build_regular_jumps`: if true a `RegularJump` representation of the
-stochastic chemical kinetics model will be calculated for use in τ-leaping
-methods.
+  stochastic chemical kinetics model will be calculated for use in τ-leaping
+  methods.
 
 * `minimal_jumps`: if true `ConstantRate` jumps are only constructed for
-non-mass action jumps. (Note, mass action jumps are still resolved within any
-jump simulation. This option simply speeds up the construction of the jump
-problem since it avoids building redundant `ConstantRate` jumps that encode
-`MassActionJump`s, which are subsequently ignored within jump simulations.)
+  non-mass action jumps. (Note, mass action jumps are still resolved within any
+  jump simulation. This option simply speeds up the construction of the jump
+  problem since it avoids building redundant `ConstantRate` jumps that encode
+  `MassActionJump`s, which are subsequently ignored within jump simulations.)
 """ 
 function addjumps!(rn::DiffEqBase.AbstractReactionNetwork;
                                     build_jumps=true,
