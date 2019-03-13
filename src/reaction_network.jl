@@ -227,7 +227,7 @@ struct ReactionStruct
         new(sub, prod, rate, rate_DE, rate_SSA, [], use_mass_kin)
     end
     function ReactionStruct(r::ReactionStruct, syms::Vector{Symbol})
-        deps = recursive_content(r.rate_DE,syms,Vector{Symbol}())
+        deps = sort!(unique!(recursive_content(r.rate_DE,syms,Vector{Symbol}())))
         is_ma = r.is_pure_mass_action && (length(recursive_content(r.rate_org,syms,Vector{Symbol}()))==0)
         new(r.substrates, r.products, r.rate_org, r.rate_DE, r.rate_SSA, deps, is_ma)
     end
@@ -335,7 +335,14 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
         end
     end
 
-    foreach(line -> line.args[2] = clean_subtractions(line.args[2]), f)
+    for line in f        
+        if length(line.args[2].args) == 1
+            @assert line.args[2].args[1] == :+
+            line.args[2] = 0
+        else 
+            line.args[2] = clean_subtractions(line.args[2])
+        end
+    end
 
     return f
 end
