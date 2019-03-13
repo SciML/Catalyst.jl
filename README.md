@@ -14,7 +14,7 @@ Langevin SDE models, and stochastic chemical kinetics jump models. These
 generated models can also be used in higher level DifferentialEquations.jl
 packages (e.g. for sensitivity analysis, parameter estimation, etc).
 
-Here we give a brief introduction to using the `DiffEqBiological` package, with
+Here we give a brief introduction to using the DiffEqBiological package, with
 a focus on how to define reaction networks, and a minimal example showing how to
 create and solve ODE, SDE and jump models.
 
