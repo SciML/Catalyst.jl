@@ -8,7 +8,6 @@
 Given an `AbstractReactionNetwork`, return a Dictionary mapping from species
 symbol to species index. 
 """
-
 function speciesmap(network)
     network.syms_to_ints
 end
@@ -59,7 +58,7 @@ Given an `AbstractReactionNetwork`, return a function, `f!(du,u,p,t)`, that
 evaluates the current value of the ODE model derivative functions, ``du/dt = f(u,t)``, 
 within `du`.
 
-*Note* for a network generated with the `@min_reaction_network` macro `addodes!`
+*Note,* for a network generated with the `@min_reaction_network` macro `addodes!`
 must be called first.
 """
 function oderhsfun(network)
@@ -76,7 +75,7 @@ The Jacobian matrix has entries
 
 ``J_{i,j} = \\partial f_i(u,t) / \\partial u_j``.
 
-*Note* for a network generated with the `@min_reaction_network` macro `addodes!` 
+*Note,* for a network generated with the `@min_reaction_network` macro `addodes!` 
 must be called first.
 """
 function jacfun(network)
@@ -93,7 +92,7 @@ The parameter Jacobian matrix has entries
 
 ``pJ_{i,j} = \\partial f_i(u,t) / \\partial p_j``.
 
-*Note* for a network generated with the `@min_reaction_network` macro `addodes!` 
+*Note,* for a network generated with the `@min_reaction_network` macro `addodes!` 
 must be called first.
 """
 function paramjacfun(network)
@@ -107,7 +106,7 @@ end
 Given an `AbstractReactionNetwork`, return a `DiffEqBase.ODEFunction` encoding
 an ODE model for the reaction network. 
 
-*Note* for a network generated with the `@min_reaction_network` macro `addodes!` 
+*Note,* for a network generated with the `@min_reaction_network` macro `addodes!` 
 must be called first.
 """
 function odefun(network)
@@ -122,7 +121,7 @@ Given an `AbstractReactionNetwork`, return a function, `g(η,u,p,t)`, that
 evaluates the current noise coefficients for each reaction in the Chemical
 Langevin Equation representation within `η`.
 
-*Note* for a network generated with the `@min_reaction_network` macro `addsdes!` 
+*Note,* for a network generated with the `@min_reaction_network` macro `addsdes!` 
 must be called first.
 """
 function noisefun(network)
@@ -136,7 +135,7 @@ end
 Given an `AbstractReactionNetwork`, return a `DiffEqBase.SDEFunction` encoding
 a Chemical Langevin Equation SDE model for the reaction network. 
 
-*Note* for a network generated with the `@min_reaction_network` macro `addsdes!` 
+*Note,* for a network generated with the `@min_reaction_network` macro `addsdes!` 
 must be called first.
 """
 function sdefun(network)
@@ -150,7 +149,7 @@ end
 Given an `AbstractReactionNetwork`, return a tuple of `AbstractJumps` encoding
 a stochastical chemical kinetics representation for the reaction network.
 
-*Note* for a network generated with the `@min_reaction_network` macro `addjumps!` 
+*Note,* for a network generated with the `@min_reaction_network` macro `addjumps!` 
 must be called first.
 """
 function jumps(network)
@@ -165,7 +164,7 @@ Given an `AbstractReactionNetwork`, return a `RegularJump` encoding a
 stochastical chemical kinetics representation of the reaction network for use in
 ``\\tau``-leaping approximations.
 
-*Note* for a network generated with the `@min_reaction_network` macro `addjumps!` 
+*Note,* for a network generated with the `@min_reaction_network` macro `addjumps!` 
 must be called first.
 """
 function regularjumps(network)
@@ -181,7 +180,7 @@ end
 
 Given an `AbstractReactionNetwork`, return a vector of the ODE expressions.
 
-*Note* for a network generated with the `@min_reaction_network` macro `addodes!` 
+*Note,* for a network generated with the `@min_reaction_network` macro `addodes!` 
 must be called first.
 """
 function odeexprs(network)
@@ -195,7 +194,7 @@ end
 Given an `AbstractReactionNetwork`, return a matrix with the ODE Jacobian
 expressions.
 
-*Note* for a network generated with the `@min_reaction_network` macro `addodes!` 
+*Note,* for a network generated with the `@min_reaction_network` macro `addodes!` 
 must be called first.
 """
 function jacobianexprs(network)
@@ -209,7 +208,7 @@ end
 Given an `AbstractReactionNetwork`, return a vector of the SDE noise expressions
 for each reaction.
 
-*Note* for a network generated with the `@min_reaction_network` macro `addsdes!` 
+*Note,* for a network generated with the `@min_reaction_network` macro `addsdes!` 
 must be called first.
 """
 function noiseexprs(network)
@@ -223,7 +222,7 @@ end
 Given an `AbstractReactionNetwork`, return a tuple of the jump rates and affects
 expressions.
 
-*Note* for a network generated with the `@min_reaction_network` macro `addjumps!` 
+*Note,* for a network generated with the `@min_reaction_network` macro `addjumps!` 
 must be called first.
 """
 function jumpexprs(network)
