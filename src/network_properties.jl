@@ -115,7 +115,6 @@ function odefun(network)
     network.odefun
 end
 
-
 """
     noisefun(network)
 
