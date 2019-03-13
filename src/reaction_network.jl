@@ -52,7 +52,7 @@ Example systems:
     @reaction_network
 
 Generates a subtype of an `AbstractReactionNetwork` that encodes a chemical
-reaction network, and corresponding ODE, SDE and jump representations
+reaction network, and complete ODE, SDE and jump representations
 of the system.
 """
 macro reaction_network(name, ex::Expr, p...)
