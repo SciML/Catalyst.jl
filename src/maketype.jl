@@ -232,6 +232,7 @@ function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateexpr::ExprValu
     ex = Expr(:block, :(($rateexpr, $rxexpr)))
     newrxs = get_reactions(ex)
     foreach(rx -> push!(rn.reactions,ReactionStruct(rx, species(rn))), newrxs)
+    nothing
 end
 
 """
@@ -289,6 +290,7 @@ function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateexpr::ExprValu
     end
     
     push!(rn.reactions, ReactionStruct(substrates, products, rateexpr, rate_DE, rate_SSA, dependents, ismassaction))
+    nothing
 end
 
 
