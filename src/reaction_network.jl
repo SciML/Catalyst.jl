@@ -52,8 +52,10 @@ Example systems:
     @reaction_network
 
 Generates a subtype of an `AbstractReactionNetwork` that encodes a chemical
-reaction network, and complete ODE, SDE and jump representations
-of the system.
+reaction network, and complete ODE, SDE and jump representations of the system.
+See the [Chemical Reaction Model
+docs](http://docs.juliadiffeq.org/latest/models/biological.html) for details on
+parameters to the macro.
 """
 macro reaction_network(name, ex::Expr, p...)
     coordinate(name, MacroTools.striplines(ex), p, :no___noise___scaling)
@@ -73,11 +75,12 @@ end
 ################# query-based macros:
 
 """
-    @min_reaction_network
+    @min_reaction_network 
 
 Generates a subtype of an `AbstractReactionNetwork` that only encodes a chemical
 reaction network. Use [`addodes!`](@ref), [`addsdes!`](@ref) or
-[`addjumps!`](@ref) to complete the network for specific problem types.
+[`addjumps!`](@ref) to complete the network for specific problem types. It accepts
+the same arguments as [`@reaction_network`](@ref).
 """
 macro min_reaction_network(name, ex::Expr, p...)
     min_coordinate(name, MacroTools.striplines(ex), p, :no___noise___scaling)
@@ -94,6 +97,16 @@ macro min_reaction_network(ex::Expr, p...)
     min_coordinate(:min_reaction_network, MacroTools.striplines(ex), p, :no___noise___scaling)
 end
 
+"""
+    @empty_reaction_network networktype
+
+Generates a subtype of an `AbstractReactionNetwork` that encodes an empty
+chemical reaction network. `networktype` is an optional parameter that specifies
+the type of the generated network. Use [`addspecies!`(@ref), [`addparam!`](@ref)
+and [`addreaction!`](@ref) to extend the network.  Use [`addodes!`](@ref),
+[`addsdes!`](@ref) or [`addjumps!`](@ref) to complete the network for specific
+problem types.
+"""
 macro empty_reaction_network(name::Symbol=:min_reaction_network)
     min_coordinate(name, MacroTools.striplines(:(begin end)), (), :no___noise___scaling)
 end
