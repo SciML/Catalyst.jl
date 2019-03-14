@@ -240,6 +240,12 @@ struct ReactionStruct
     dependants::Vector{Symbol}
     is_pure_mass_action::Bool
 
+    function ReactionStruct(s::Vector{ReactantStruct}, p::Vector{ReactantStruct}, 
+                            ro::ExprValues, rde::ExprValues, rssa::ExprValues, 
+                            dep::Vector{Symbol}, isma::Bool)
+        new(s,p,ro,rde,rssa,dep,isma)
+    end
+
     function ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, use_mass_kin::Bool)
         sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(undef,0))
         prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(undef,0))
@@ -249,7 +255,7 @@ struct ReactionStruct
         new(sub, prod, rate, rate_DE, rate_SSA, [], use_mass_kin)
     end
     function ReactionStruct(r::ReactionStruct, syms::Vector{Symbol})
-        deps = sort!(unique!(recursive_content(r.rate_DE,syms,Vector{Symbol}())))
+        deps = unique!(recursive_content(r.rate_DE,syms,Vector{Symbol}()))
         is_ma = r.is_pure_mass_action && (length(recursive_content(r.rate_org,syms,Vector{Symbol}()))==0)
         new(r.substrates, r.products, r.rate_org, r.rate_DE, r.rate_SSA, deps, is_ma)
     end

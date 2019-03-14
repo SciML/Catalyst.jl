@@ -234,6 +234,64 @@ function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateexpr::ExprValu
     foreach(rx -> push!(rn.reactions,ReactionStruct(rx, species(rn))), newrxs)
 end
 
+"""
+    addreaction!(network, rateexpr::Union{Expr,Symbol,Int,Float64}, rxexpr::Expr, substrates, products)
+
+Given an AbstractReaction network, add a reaction with the passed in rate and
+expression, substrate stoichiometry, and product stoichiometry. Stoichiometries
+are represented as tuples of `Pair{Symbol,Int}`. i.e. a reaction of the form
+```julia
+k*X, 2X + Y --> 2W
+```
+would have `rateexpr=:(k*X)`, substrates=(:X=>2, :Y=>2) and `products=(W=>2,)`, 
+```julia
+10.5, 0 --> X
+````
+would have `rateexpr=10.5`, `substrates=()` and `products=(:X=>1,)`, and
+```julia
+k, X+X --> Z
+`````
+would have `rateexpr=:k`, `substrates=(:X=>2,)` and `products=(:Z=>2,)`.
+
+All normal DSL reaction definition notation should be supported for the
+`rxexpr`.
+"""
+function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateexpr::ExprValues, 
+                                        subs::Tuple{Vararg{Pair{Symbol,Int}}}, 
+                                        prods::Tuple{Vararg{Pair{Symbol,Int}}}) where {T <: Number}
+
+    substrates = ReactantStruct[ReactantStruct(p[1],p[2]) for p in subs]
+    dependents = Symbol[p[1] for p in subs]
+    products = ReactantStruct[ReactantStruct(p[1],p[2]) for p in prods]
+    rate_DE = mass_rate_DE(substrates, true, rateexpr)
+    rate_SSA = mass_rate_SSA(substrates, true, rateexpr)   
+    
+    # resolve dependents from rateexpr
+    if rateexpr isa Number
+        ismassaction = true        
+    elseif rateexpr isa Symbol
+        if haskey(speciesmap(rn), rateexpr)
+            ismassaction = false
+            if rateexpr ∉ dependents
+                push!(dependents, rateexpr)
+            end
+        elseif haskey(paramsmap(rn), rateexpr)
+            ismassaction = true
+        else
+            error("rateexpr is a symbol that is neither a species or parameter.")
+        end
+    else # isa Expr
+
+        # mimicing ReactionStruct constructor for now, but this should be optimized...
+        newdeps = unique!(recursive_content(rate_DE, species(rn), Vector{Symbol}()))
+        ismassaction = length(newdeps)==length(intersect!(dependents, newdeps)) ? true : false
+        dependents = newdeps
+    end
+    
+    push!(rn.reactions, ReactionStruct(substrates, products, rateexpr, rate_DE, rate_SSA, dependents, ismassaction))
+end
+
+
 ############## Adding ODES/SDE/Jumps for problems ################
 
 """
