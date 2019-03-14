@@ -219,11 +219,11 @@ k*X, 2X + Y --> 2W
 would have `rateexpr=:(k*X)` and `rxexpr=:(2X + Y --> W)`, 
 ```julia
 10.5, 0 --> X
-````
+```
 would have `rateexpr=10.5` and `rxexpr=:(0 --> X)`, and
 ```julia
 k, X+X --> Z
-`````
+```
 would have `rateexpr=:k` and `rxexpr=:(X+X --> Z)`.
 
 All normal DSL reaction definition notation should be supported.
@@ -236,26 +236,27 @@ function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateexpr::ExprValu
 end
 
 """
-    addreaction!(network, rateexpr::Union{Expr,Symbol,Int,Float64}, rxexpr::Expr, substrates, products)
+    addreaction!(network, rateexpr::Union{Expr,Symbol,Int,Float64}, substrates, products)
 
-Given an AbstractReaction network, add a reaction with the passed in rate and
-expression, substrate stoichiometry, and product stoichiometry. Stoichiometries
+Given an AbstractReaction network, add a reaction with the passed in rate,
+`rateexpr`, substrate stoichiometry, and product stoichiometry. Stoichiometries
 are represented as tuples of `Pair{Symbol,Int}`. i.e. a reaction of the form
 ```julia
 k*X, 2X + Y --> 2W
 ```
-would have `rateexpr=:(k*X)`, substrates=(:X=>2, :Y=>2) and `products=(W=>2,)`, 
+would have `rateexpr=:(k*X)`, `substrates=(:X=>2, :Y=>2)`` and
+`products=(W=>2,)`, 
 ```julia
 10.5, 0 --> X
-````
+```
 would have `rateexpr=10.5`, `substrates=()` and `products=(:X=>1,)`, and
 ```julia
 k, X+X --> Z
-`````
+```
 would have `rateexpr=:k`, `substrates=(:X=>2,)` and `products=(:Z=>2,)`.
 
 All normal DSL reaction definition notation should be supported for the
-`rxexpr`.
+`rateexpr`.
 """
 function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateexpr::ExprValues, 
                                         subs::Tuple{Vararg{Pair{Symbol,Int}}}, 
