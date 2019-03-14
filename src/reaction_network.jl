@@ -102,7 +102,7 @@ end
 
 Generates a subtype of an `AbstractReactionNetwork` that encodes an empty
 chemical reaction network. `networktype` is an optional parameter that specifies
-the type of the generated network. Use [`addspecies!`(@ref), [`addparam!`](@ref)
+the type of the generated network. Use [`addspecies!`](@ref), [`addparam!`](@ref)
 and [`addreaction!`](@ref) to extend the network.  Use [`addodes!`](@ref),
 [`addsdes!`](@ref) or [`addjumps!`](@ref) to complete the network for specific
 problem types.
