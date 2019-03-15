@@ -27,6 +27,7 @@ function maketype(abstracttype,
                   homotopy_continuation_template = nothing,
                   equilibratium_polynomial = nothing,
                   is_polynomial_system = true,
+                  has_temporary_polynomial = true,
                   polyvars_vars = nothing,
                   polyvars_t = nothing,
                   polyvars_params = nothing
@@ -60,6 +61,7 @@ function maketype(abstracttype,
         homotopy_continuation_template::Union{Tuple{Array{Complex{Float64},1},Array{Array{Complex{Float64},1},1}},Nothing}
         equilibratium_polynomial::Union{Vector,Nothing}
         is_polynomial_system::Bool
+        has_temporary_polynomial::Bool
         polyvars_vars::Union{Vector{PolyVar{true}},Nothing}
         polyvars_t::Union{PolyVar{true},Nothing}
         polyvars_params::Union{Vector{PolyVar{true}},Nothing}
@@ -93,6 +95,7 @@ function maketype(abstracttype,
                 $(Expr(:kw,:homotopy_continuation_template, homotopy_continuation_template)),
                 $(Expr(:kw,:equilibratium_polynomial, equilibratium_polynomial)),
                 $(Expr(:kw,:is_polynomial_system, is_polynomial_system)),
+                $(Expr(:kw,:has_temporary_polynomial, has_temporary_polynomial)),
                 $(Expr(:kw,:polyvars_vars, polyvars_vars)),
                 $(Expr(:kw,:polyvars_t, polyvars_t)),
                 $(Expr(:kw,:polyvars_params, polyvars_params))) =
@@ -124,6 +127,7 @@ function maketype(abstracttype,
                         homotopy_continuation_template,
                         equilibratium_polynomial,
                         is_polynomial_system,
+                        has_temporary_polynomial,
                         polyvars_vars,
                         polyvars_t,
                         polyvars_params

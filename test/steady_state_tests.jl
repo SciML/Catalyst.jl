@@ -1,4 +1,3 @@
-#Tests on the standard networks.
 for rn in reaction_networks_standard
     p_vals = map(amp->amp*rand(length(rn.params)),[1.,10.,100.])
     for p in p_vals
