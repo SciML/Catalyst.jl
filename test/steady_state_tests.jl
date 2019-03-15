@@ -1,10 +1,3 @@
-using Test, Statistics, Random, LinearAlgebra
-using DiffEqBiological, DiffEqBase
-using OrdinaryDiffEq, StochasticDiffEq, DiffEqJump, SteadyStateDiffEq
-
-# fetches a set of networks which can be used for tests.
-include("test_networks.jl")
-
 for rn in reaction_networks_standard
     println("\n")
     p_vals = map(amp->amp*rand(length(rn.params)),[1.,10.,100.])
