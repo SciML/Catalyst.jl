@@ -240,7 +240,7 @@ function bifurcations_grid_2d(reaction_network::DiffEqBase.AbstractReactionNetwo
 end
 
 #Generates a grid of bifurcation diagram.
-function bifurcations_diagram_grid(reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64},param1::Symbol,range1::AbstractRange,param2::Symbol,range2::Tuple{Float64,Float64};solver=HcBifurcationSolver1::Function,stepsize=0.01::Float64)
+function bifurcations_diagram_grid(reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64},param1::Symbol,range1::AbstractRange,param2::Symbol,range2::Tuple{Float64,Float64};solver=HcBifurcationSolver1y::Function,stepsize=0.01::Float64)
     diagram_grid = Vector{Union{bifurcation_diagram,Nothing}}(fill(nothing,length(range1)))
     for i = 1:length(range1)
         params_i=copy(params); params_i[reaction_network.params_to_ints[param1]]=range1[i];
