@@ -1,4 +1,4 @@
-using Test, Statistics, Random
+using Test, Statistics, Random, LinearAlgebra
 using DiffEqBiological, DiffEqBase
 using OrdinaryDiffEq, StochasticDiffEq, DiffEqJump, SteadyStateDiffEq
 
@@ -29,4 +29,5 @@ end
 # tests that handle both macros
 @time begin
   @time @testset "Discrete Problem" begin include("discreteproblem_test.jl") end
+  @time @testset "Add Reactions API" begin include("addreactions_test.jl") end
 end
