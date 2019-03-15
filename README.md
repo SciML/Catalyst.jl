@@ -2,17 +2,44 @@
 
 [![Join the chat at https://gitter.im/JuliaDiffEq/Lobby](https://badges.gitter.im/JuliaDiffEq/Lobby.svg)](https://gitter.im/JuliaDiffEq/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/JuliaDiffEq/DiffEqBiological.jl.svg?branch=master)](https://travis-ci.org/JuliaDiffEq/DiffEqBiological.jl)
-[![Build status](https://ci.appveyor.com/api/projects/status/y62d627e5hd513wf?svg=true)](https://ci.appveyor.com/project/ChrisRackauckas/diffeqbiological-jl)
+[![Build status](https://ci.appveyor.com/api/projects/status/github/JuliaDiffEq/DiffEqBiological.jl?branch=master&svg=true)](https://ci.appveyor.com/project/ChrisRackauckas/diffeqbiological-jl/branch/master)
+<!-- [![Build status](https://ci.appveyor.com/api/projects/status/y62d627e5hd513wf/branch/master?svg=true)](https://ci.appveyor.com/project/ChrisRackauckas/diffeqbiological-jl/branch/master) -->
 <!-- [![Coverage Status](https://coveralls.io/repos/ChrisRackauckas/DiffEqBiological.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/JuliaDiffEq/DiffEqBiological.jl?branch=master)
 [![codecov.io](http://codecov.io/github/ChrisRackauckas/DiffEqBiological.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaDiffEq/DiffEqBiological.jl?branch=master) -->
 
-Here we give a brief introduction to using the `DiffEqBiological` package. Full
-documentation is in the [DifferentialEquations.jl Chemical Reaction Models
-documentation](http://docs.juliadiffeq.org/latest/models/biological.html).
+DiffEqBiological.jl provides a domain specific language (DSL) for defining
+chemical reaction networks in Julia. It interfaces with the broader
+[DifferentialEquations.jl](http://juliadiffeq.org) infrastructure to enable the
+easy generation and solution of corresponding mass action ODE models, Chemical
+Langevin SDE models, and stochastic chemical kinetics jump models. These
+generated models can also be used in higher level DifferentialEquations.jl
+packages (e.g. for sensitivity analysis, parameter estimation, etc).
+
+Here we give a brief introduction to using the DiffEqBiological package, with
+a focus on how to define reaction networks, and a minimal example showing how to
+create and solve ODE, SDE and jump models.
+
+More detailed documentation is available from:
+1. A DiffEqBiological tutorial showing how to specify and solve both ODE and
+   stochastic versions of the
+   [repressilator](https://en.wikipedia.org/wiki/Repressilator) is available as
+   part of the
+   [DiffEqTutorials](https://github.com/JuliaDiffEq/DiffEqTutorials.jl) Modeling
+   Examples. Both html and interactive IJulia notebook versions are provided there.
+2. Full documentation of the DSL syntax, with information on the generated rate
+   functions and models is available in the [DifferentialEquations.jl Chemical
+   Reaction Models
+   documentation](http://docs.juliadiffeq.org/latest/models/biological.html).
+3. API documentation showing how to retrieve network information from a
+   generated `reaction_network` is available
+   [here](http://docs.juliadiffeq.org/latest/apis/diffeqbio.html).
 
 ## The Reaction DSL
 
-The `@reaction_network` DSL allows for the definition of reaction networks using a simple format. Its input is a set of chemical reactions, from which it generates a reaction network object which can be used as input to `ODEProblem`, `SteadyStateProblem`, `SDEProblem` and `JumpProblem` constructors.
+The `@reaction_network` DSL allows for the definition of reaction networks using
+a simple format. Its input is a set of chemical reactions, from which it
+generates a reaction network object which can be used as input to `ODEProblem`,
+`SteadyStateProblem`, `SDEProblem` and `JumpProblem` constructors.
 
 The basic syntax is
 ```julia
@@ -21,10 +48,13 @@ rn = @reaction_network rType begin
   1.0, XY --> Z            
 end
 ```
-where each line corresponds to a chemical reaction. The (optional) input `rType` designates the type of this instance (all instances will inherit from the abstract type `AbstractReactionNetwork`).
+where each line corresponds to a chemical reaction. The (optional) input `rType`
+designates the type of this instance (all instances will inherit from the
+abstract type `AbstractReactionNetwork`).
 
 The DSL has many features:
-* It supports many different arrow types, corresponding to different directions of reactions and different rate laws:
+* It supports many different arrow types, corresponding to different directions
+  of reactions and different rate laws:
   ```julia
   rn = @reaction_network begin
     1.0, X + Y --> XY               
@@ -33,8 +63,8 @@ The DSL has many features:
     2.0, X + Y ↔ XY               
   end
   ```
-* It allows multiple reactions to be defined simultaneously on one line. The following two networks
-are equivalent:
+* It allows multiple reactions to be defined simultaneously on one line. The
+  following two networks are equivalent:
   ```julia
   rn1 = @reaction_network begin
     (1.0,2.0), (S1,S2) → P             
@@ -44,7 +74,9 @@ are equivalent:
     2.0, S2 → P
   end
   ```
-* It allows the use of symbols to represent reaction rate parameters, with their numeric values specified during problem construction. i.e., the previous example could be given by
+* It allows the use of symbols to represent reaction rate parameters, with their
+  numeric values specified during problem construction. i.e., the previous
+  example could be given by
   ```julia
   rn2 = @reaction_network begin
     k1, S1 → P     
@@ -74,26 +106,56 @@ are equivalent:
     pi*X/Y, Y → ∅
   end
   ```
-* It is possible to access expressions corresponding to the functions determining the deterministic and stochastic terms within resulting ODE, SDE or jump models using
-  ```julia
-    f_expr = rn.f_func
-    g_expr = rn.g_func
-    affects = rn.jump_affect_expr
-    rates = rn.jump_rate_expr
-  ```
-  These can be used to generate LaTeX code corresponding to the system using packages such as [`Latexify`](https://github.com/korsbo/Latexify.jl).
 
+## DiffEqBiological API for Querying Network Information
+
+A variety of network information is calculated by the `reaction_network` macro,
+and can then be retrieved using the [DiffEqBiological
+API](http://docs.juliadiffeq.org/latest/apis/diffeqbio.html). This includes
+
+* Orderings of species and reactions
+  ```julia
+    speciesmap(rn)
+    paramsmap(rn)
+  ```
+* Reaction stoichiometries
+  ```julia
+    substratestoich(rn, rxidx)
+    productstoich(rn, rxidx)
+    netstoich(rn, rxidx)
+  ```
+* Expressions corresponding to the functions determining the deterministic and
+  stochastic terms within resulting ODE, SDE or jump models
+  ```julia
+    ode_exprs = odeexprs(rn)
+    jacobian_exprs = jacobianexprs(rn)
+    noise_expr = noiseexprs(rn)
+    rate_exprs,affect_exprs = jumpexprs(rn)  
+  ```
+  These can be used to generate LaTeX expressions corresponding to the system
+  using packages such as [`Latexify`](https://github.com/korsbo/Latexify.jl).
+* Dependency graphs
+  ```julia
+    rxtospecies_depgraph(rn)
+    speciestorx_depgraph(rn)
+    rxtorx_depgraph(rn)
+  ```
+and more.
 
 ## Simulating ODE, Steady-State, SDE and Jump Problems
 
-Once a reaction network has been created it can be passed as input to either one of the `ODEProblem`, `SteadyStateProblem`, `SDEProblem` or `JumpProblem` constructors.
+Once a reaction network has been created it can be passed as input to either one
+of the `ODEProblem`, `SteadyStateProblem`, `SDEProblem` or `JumpProblem`
+constructors.
 ```julia
   probODE = ODEProblem(rn, args...; kwargs...)      
   probSS = SteadyStateProblem(rn, args...; kwargs...)
   probSDE = SDEProblem(rn, args...; kwargs...)
   probJump = JumpProblem(prob, Direct(), rn)
 ```
-The output problems may then be used as input to the solvers of [DifferentialEquations.jl](http://juliadiffeq.org/). *Note*, the noise used by the `SDEProblem` will correspond to the Chemical Langevin Equations. 
+The output problems may then be used as input to the solvers of
+[DifferentialEquations.jl](http://juliadiffeq.org/). *Note*, the noise used by
+the `SDEProblem` will correspond to the Chemical Langevin Equations. 
 
 As an example, consider models for a simple birth-death process:
 ```julia

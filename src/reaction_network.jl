@@ -47,6 +47,16 @@ Example systems:
     probSDE = SDEProblem(rn, args...; kwargs...)
     probJump = JumpProblem(prob,aggregator::Direct,rn)
 """
+
+"""
+    @reaction_network
+
+Generates a subtype of an `AbstractReactionNetwork` that encodes a chemical
+reaction network, and complete ODE, SDE and jump representations of the system.
+See the [Chemical Reaction Model
+docs](http://docs.juliadiffeq.org/latest/models/biological.html) for details on
+parameters to the macro.
+"""
 macro reaction_network(name, ex::Expr, p...)
     coordinate(name, MacroTools.striplines(ex), p, :no___noise___scaling)
 end
@@ -63,6 +73,15 @@ macro reaction_network(ex::Expr, p...)
 end
 
 ################# query-based macros:
+
+"""
+    @min_reaction_network 
+
+Generates a subtype of an `AbstractReactionNetwork` that only encodes a chemical
+reaction network. Use [`addodes!`](@ref), [`addsdes!`](@ref) or
+[`addjumps!`](@ref) to complete the network for specific problem types. It accepts
+the same arguments as [`@reaction_network`](@ref).
+"""
 macro min_reaction_network(name, ex::Expr, p...)
     min_coordinate(name, MacroTools.striplines(ex), p, :no___noise___scaling)
 end
@@ -78,6 +97,19 @@ macro min_reaction_network(ex::Expr, p...)
     min_coordinate(:min_reaction_network, MacroTools.striplines(ex), p, :no___noise___scaling)
 end
 
+"""
+    @empty_reaction_network networktype
+
+Generates a subtype of an `AbstractReactionNetwork` that encodes an empty
+chemical reaction network. `networktype` is an optional parameter that specifies
+the type of the generated network. Use [`addspecies!`](@ref), [`addparam!`](@ref)
+and [`addreaction!`](@ref) to extend the network.  Use [`addodes!`](@ref),
+[`addsdes!`](@ref) or [`addjumps!`](@ref) to complete the network for specific
+problem types.
+"""
+macro empty_reaction_network(name::Symbol=:min_reaction_network)
+    min_coordinate(name, MacroTools.striplines(:(begin end)), (), :no___noise___scaling)
+end
 
 #################
 
@@ -132,7 +164,11 @@ function min_coordinate(name, ex::Expr, p, scale_noise)
 
     # Build the type
     exprs = Vector{Expr}(undef,0)
-    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing, syms, scale_noise; params=params, reactions=reactions, symjac=nothing, syms_to_ints=reactants, params_to_ints=parameters)
+    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, nothing, nothing, 
+                                    nothing, nothing, nothing, nothing, nothing, nothing, 
+                                    nothing, nothing, syms, scale_noise; params=params, 
+                                    reactions=reactions, symjac=nothing, syms_to_ints=reactants, 
+                                    params_to_ints=parameters)
     push!(exprs,typeex)
     push!(exprs,constructorex)
 
@@ -188,8 +224,7 @@ function get_minnetwork(ex::Expr, p)
 end
 
 #Generates a vector containing a number of reaction structures, each containing the infromation about one reaction.
-function get_reactions(ex::Expr)
-    reactions = Vector{ReactionStruct}(undef,0)
+function get_reactions(ex::Expr, reactions = Vector{ReactionStruct}(undef,0))    
     for line in ex.args
         (line.head != :tuple) && (continue)
         (rate,r_line) = line.args
@@ -229,6 +264,12 @@ struct ReactionStruct
     dependants::Vector{Symbol}
     is_pure_mass_action::Bool
 
+    function ReactionStruct(s::Vector{ReactantStruct}, p::Vector{ReactantStruct}, 
+                            ro::ExprValues, rde::ExprValues, rssa::ExprValues, 
+                            dep::Vector{Symbol}, isma::Bool)
+        new(s,p,ro,rde,rssa,dep,isma)
+    end
+
     function ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, use_mass_kin::Bool)
         sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(undef,0))
         prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(undef,0))
@@ -238,7 +279,7 @@ struct ReactionStruct
         new(sub, prod, rate, rate_DE, rate_SSA, [], use_mass_kin)
     end
     function ReactionStruct(r::ReactionStruct, syms::Vector{Symbol})
-        deps = recursive_content(r.rate_DE,syms,Vector{Symbol}())
+        deps = unique!(recursive_content(r.rate_DE,syms,Vector{Symbol}()))
         is_ma = r.is_pure_mass_action && (length(recursive_content(r.rate_org,syms,Vector{Symbol}()))==0)
         new(r.substrates, r.products, r.rate_org, r.rate_DE, r.rate_SSA, deps, is_ma)
     end
@@ -346,7 +387,14 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
         end
     end
 
-    foreach(line -> line.args[2] = clean_subtractions(line.args[2]), f)
+    for line in f        
+        if length(line.args[2].args) == 1
+            @assert line.args[2].args[1] == :+
+            line.args[2] = 0
+        else 
+            line.args[2] = clean_subtractions(line.args[2])
+        end
+    end
 
     return f
 end
