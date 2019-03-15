@@ -2,7 +2,8 @@
 
 [![Join the chat at https://gitter.im/JuliaDiffEq/Lobby](https://badges.gitter.im/JuliaDiffEq/Lobby.svg)](https://gitter.im/JuliaDiffEq/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/JuliaDiffEq/DiffEqBiological.jl.svg?branch=master)](https://travis-ci.org/JuliaDiffEq/DiffEqBiological.jl)
-[![Build status](https://ci.appveyor.com/api/projects/status/y62d627e5hd513wf/branch/master?svg=true)](https://ci.appveyor.com/project/ChrisRackauckas/diffeqbiological-jl/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/github/JuliaDiffEq/DiffEqBiological.jl?branch=master&svg=true)](https://ci.appveyor.com/project/ChrisRackauckas/diffeqbiological-jl/branch/master)
+<!-- [![Build status](https://ci.appveyor.com/api/projects/status/y62d627e5hd513wf/branch/master?svg=true)](https://ci.appveyor.com/project/ChrisRackauckas/diffeqbiological-jl/branch/master) -->
 <!-- [![Coverage Status](https://coveralls.io/repos/ChrisRackauckas/DiffEqBiological.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/JuliaDiffEq/DiffEqBiological.jl?branch=master)
 [![codecov.io](http://codecov.io/github/ChrisRackauckas/DiffEqBiological.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaDiffEq/DiffEqBiological.jl?branch=master) -->
 
