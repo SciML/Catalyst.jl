@@ -285,7 +285,7 @@ function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateexpr::ExprValu
     else # isa Expr
 
         # mimicing ReactionStruct constructor for now, but this should be optimized...
-        newdeps = unique!(recursive_content(rate_DE, species(rn), Vector{Symbol}()))
+        newdeps = unique!(recursive_content(rate_DE, speciesmap(rn), Vector{Symbol}()))
         ismassaction = length(newdeps)==length(intersect!(dependents, newdeps)) ? true : false
         dependents = newdeps
     end

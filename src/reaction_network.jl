@@ -75,7 +75,7 @@ end
 ################# query-based macros:
 
 """
-    @min_reaction_network 
+    @min_reaction_network
 
 Generates a subtype of an `AbstractReactionNetwork` that only encodes a chemical
 reaction network. Use [`addodes!`](@ref), [`addsdes!`](@ref) or
@@ -160,10 +160,10 @@ function min_coordinate(name, ex::Expr, p, scale_noise)
 
     # Build the type
     exprs = Vector{Expr}(undef,0)
-    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, nothing, nothing, 
-                                    nothing, nothing, nothing, nothing, nothing, nothing, 
-                                    nothing, nothing, syms, scale_noise; params=params, 
-                                    reactions=reactions, symjac=nothing, syms_to_ints=reactants, 
+    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, nothing, nothing,
+                                    nothing, nothing, nothing, nothing, nothing, nothing,
+                                    nothing, nothing, syms, scale_noise; params=params,
+                                    reactions=reactions, symjac=nothing, syms_to_ints=reactants,
                                     params_to_ints=parameters)
     push!(exprs,typeex)
     push!(exprs,constructorex)
@@ -213,7 +213,7 @@ function get_minnetwork(ex::Expr, p)
 end
 
 #Generates a vector containing a number of reaction structures, each containing the infromation about one reaction.
-function get_reactions(ex::Expr, reactions = Vector{ReactionStruct}(undef,0))    
+function get_reactions(ex::Expr, reactions = Vector{ReactionStruct}(undef,0))
     for line in ex.args
         (line.head != :tuple) && (continue)
         (rate,r_line) = line.args
@@ -253,8 +253,8 @@ struct ReactionStruct
     dependants::Vector{Symbol}
     is_pure_mass_action::Bool
 
-    function ReactionStruct(s::Vector{ReactantStruct}, p::Vector{ReactantStruct}, 
-                            ro::ExprValues, rde::ExprValues, rssa::ExprValues, 
+    function ReactionStruct(s::Vector{ReactantStruct}, p::Vector{ReactantStruct},
+                            ro::ExprValues, rde::ExprValues, rssa::ExprValues,
                             dep::Vector{Symbol}, isma::Bool)
         new(s,p,ro,rde,rssa,dep,isma)
     end
@@ -331,6 +331,13 @@ function add_reactants!(ex::ExprValues, mult::Int, reactants::Vector{ReactantStr
     return reactants
 end
 
+#For each reaction, sets its dependencies and whenever it is a pure mass action reaction.
+function update_reaction_info(reactions::Vector{ReactionStruct},syms::Vector{Symbol})
+    for i = 1:length(reactions)
+        reactions[i] = ReactionStruct(reactions[i],syms)
+    end
+end
+
 #From the vector with all reactions, generates a dictionary with all reactants. Each reactant will point to a number so that X --> means X will be replaced with u[1] in the equations.
 function get_reactants(reactions::Vector{ReactionStruct})
     reactants = OrderedDict{Symbol,Int}()
@@ -356,13 +363,6 @@ function get_parameters(p)
     return parameters
 end
 
-#For each reaction, sets its dependencies and whenever it is a pure mass action reaction.
-function update_reaction_info(reactions::Vector{ReactionStruct},syms::Vector{Symbol})
-    for i = 1:length(reactions)
-        reactions[i] = ReactionStruct(reactions[i],syms)
-    end
-end
-
 #Produces an array of expressions. Each entry corresponds to a line in the function f, which constitutes the deterministic part of the system. The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
 function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int})
     f = Vector{Expr}(undef,length(reactants))
@@ -376,11 +376,11 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
         end
     end
 
-    for line in f        
+    for line in f
         if length(line.args[2].args) == 1
             @assert line.args[2].args[1] == :+
             line.args[2] = 0
-        else 
+        else
             line.args[2] = clean_subtractions(line.args[2])
         end
     end
@@ -575,10 +575,19 @@ end
 
 #Parses an expression, and returns a set with all symbols in the expression, which is also a part of the provided vector with symbols (syms).
 function recursive_content(ex,syms::Vector{Symbol},content::Vector{Symbol})
-    if typeof(ex)!=Expr
+    if ex isa Symbol
         in(ex,syms) && push!(content,ex)
-    else
+    elseif ex isa Expr
         foreach(arg -> recursive_content(arg,syms,content), ex.args)
+    end
+    return content
+end
+
+function recursive_content(ex,symsmap::OrderedDict{Symbol,Int},content::Vector{Symbol})
+    if ex isa Symbol        
+        haskey(symsmap,ex) && push!(content,ex)
+    elseif ex isa Expr  
+        foreach(arg -> recursive_content(arg,symsmap,content), ex.args)
     end
     return content
 end
