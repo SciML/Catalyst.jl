@@ -14,7 +14,10 @@ include("test_networks.jl")
   @time @testset "Additional Functions" begin include("func_test.jl") end
   @time @testset "Steady State Solver" begin include("steady_state.jl") end
   @time @testset "Mass Action Jumps" begin include("mass_act_jump_tests.jl") end
-  @time @testset "Steady States" begin include("steady_state_tests.jl") end
+  @time @testset "Equilibrate (1)" begin include("equilibrate_test_1.jl") end
+  @time @testset "Equilibrate (2)" begin include("equilibrate_test_2.jl") end
+  @time @testset "Equilibrate (3)" begin include("equilibrate_test_3.jl") end
+  @time @testset "Equilibrate (4)" begin include("equilibrate_test_4.jl") end
   @time @testset "Other Tests" begin include("misc_tests.jl") end
   @time @testset "Network query tests" begin include("networkquery_test.jl") end
 end
