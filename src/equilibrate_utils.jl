@@ -261,8 +261,8 @@ function HcBifurcationSolver1(reaction_network::DiffEqBase.AbstractReactionNetwo
     p2 = copy(params); p2[reaction_network.params_to_ints[param]] = range[2];
     result1 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p1, report_progress=false))
     result2 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p2, report_progress=false))
-    tracker1 = pathtracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p1, p₀=p2, maximal_step_size=stepsize)
-    tracker2 = pathtracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p2, p₀=p1, maximal_step_size=stepsize)
+    tracker1 = pathtracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p1, p₀=p2, max_step_size=stepsize)
+    tracker2 = pathtracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p2, p₀=p1, max_step_size=stepsize)
     paths_complete = Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}}()
     paths_incomplete = Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}}()
     for result in result1
@@ -309,7 +309,7 @@ function HcBifurcationSolver2(reaction_network::DiffEqBase.AbstractReactionNetwo
     p_end = copy(params); p_end[reaction_network.params_to_ints[param]] = range[2];
     function make_pathtracker(p_start)
         pars = copy(params); pars[reaction_network.params_to_ints[param]] = p_start;
-        pathtracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=pars, p₀=p_end, maximal_step_size=stepsize)
+        pathtracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=pars, p₀=p_end, max_step_size=stepsize)
     end
     function solve_system(p)
         pars = copy(params); pars[reaction_network.params_to_ints[param]] = p;
