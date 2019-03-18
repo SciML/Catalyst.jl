@@ -237,78 +237,78 @@ the noise scaling coefficient.
 add_scale_noise_param!(rn::DiffEqBase.AbstractReactionNetwork, scale_noise_name::String) = add_scale_noise_param!(rn, Symbol(scale_noise_name))
 
 """
-    addreaction!(network, rateexpr::Union{Expr,Symbol,Int,Float64}, rxexpr::Expr)
+    addreaction!(network, rateex::Union{Expr,Symbol,Int,Float64}, rxexpr::Expr)
 
 Given an AbstractReaction network, add a reaction with the passed in rate and
 reaction expressions. i.e. a reaction of the form
 ```julia
 k*X, 2X + Y --> 2W
 ```
-would have `rateexpr=:(k*X)` and `rxexpr=:(2X + Y --> W)`, 
+would have `rateex=:(k*X)` and `rxexpr=:(2X + Y --> W)`, 
 ```julia
 10.5, 0 --> X
 ```
-would have `rateexpr=10.5` and `rxexpr=:(0 --> X)`, and
+would have `rateex=10.5` and `rxexpr=:(0 --> X)`, and
 ```julia
 k, X+X --> Z
 ```
-would have `rateexpr=:k` and `rxexpr=:(X+X --> Z)`.
+would have `rateex=:k` and `rxexpr=:(X+X --> Z)`.
 
 All normal DSL reaction definition notation should be supported.
 """
-function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateexpr::ExprValues, rxexpr::Expr)
-    ex = Expr(:block, :(($rateexpr, $rxexpr)))
+function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues, rxexpr::Expr)
+    ex = Expr(:block, :(($rateex, $rxexpr)))
     newrxs = get_reactions(ex)
     foreach(rx -> push!(rn.reactions,ReactionStruct(rx, species(rn))), newrxs)
     nothing
 end
 
 """
-    addreaction!(network, rateexpr::Union{Expr,Symbol,Int,Float64}, substrates, products)
+    addreaction!(network, rateex::Union{Expr,Symbol,Int,Float64}, substrates, products)
 
 Given an AbstractReaction network, add a reaction with the passed in rate,
-`rateexpr`, substrate stoichiometry, and product stoichiometry. Stoichiometries
+`rateex`, substrate stoichiometry, and product stoichiometry. Stoichiometries
 are represented as tuples of `Pair{Symbol,Int}`. i.e. a reaction of the form
 ```julia
 k*X, 2X + Y --> 2W
 ```
-would have `rateexpr=:(k*X)`, `substrates=(:X=>2, :Y=>2)`` and
+would have `rateex=:(k*X)`, `substrates=(:X=>2, :Y=>2)`` and
 `products=(W=>2,)`, 
 ```julia
 10.5, 0 --> X
 ```
-would have `rateexpr=10.5`, `substrates=()` and `products=(:X=>1,)`, and
+would have `rateex=10.5`, `substrates=()` and `products=(:X=>1,)`, and
 ```julia
 k, X+X --> Z
 ```
-would have `rateexpr=:k`, `substrates=(:X=>2,)` and `products=(:Z=>2,)`.
+would have `rateex=:k`, `substrates=(:X=>2,)` and `products=(:Z=>2,)`.
 
 All normal DSL reaction definition notation should be supported for the
-`rateexpr`.
+`rateex`.
 """
-function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateexpr::ExprValues, 
+function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues, 
                                         subs::Tuple{Vararg{Pair{Symbol,Int}}}, 
                                         prods::Tuple{Vararg{Pair{Symbol,Int}}}) where {T <: Number}
 
     substrates = ReactantStruct[ReactantStruct(p[1],p[2]) for p in subs]
     dependents = Symbol[p[1] for p in subs]
     products = ReactantStruct[ReactantStruct(p[1],p[2]) for p in prods]
-    rate_DE = mass_rate_DE(substrates, true, rateexpr)
-    rate_SSA = mass_rate_SSA(substrates, true, rateexpr)   
+    rate_DE = mass_rate_DE(substrates, true, rateex)
+    rate_SSA = mass_rate_SSA(substrates, true, rateex)   
     
-    # resolve dependents from rateexpr
-    if rateexpr isa Number
+    # resolve dependents from rateex
+    if rateex isa Number
         ismassaction = true        
-    elseif rateexpr isa Symbol
-        if haskey(speciesmap(rn), rateexpr)
+    elseif rateex isa Symbol
+        if haskey(speciesmap(rn), rateex)
             ismassaction = false
-            if rateexpr ∉ dependents
-                push!(dependents, rateexpr)
+            if rateex ∉ dependents
+                push!(dependents, rateex)
             end
-        elseif haskey(paramsmap(rn), rateexpr)
+        elseif haskey(paramsmap(rn), rateex)
             ismassaction = true
         else
-            error("rateexpr is a symbol that is neither a species or parameter.")
+            error("rateex is a symbol that is neither a species or parameter.")
         end
     else # isa Expr
 
@@ -318,7 +318,7 @@ function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateexpr::ExprValu
         dependents = newdeps
     end
     
-    push!(rn.reactions, ReactionStruct(substrates, products, rateexpr, rate_DE, rate_SSA, dependents, ismassaction))
+    push!(rn.reactions, ReactionStruct(substrates, products, rateex, rate_DE, rate_SSA, dependents, ismassaction))
     nothing
 end
 
