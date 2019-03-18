@@ -12,6 +12,8 @@ using Parameters
 @reexport using DiffEqBase, DiffEqJump
 using Compat
 
+import Base: (==)
+
 const ExprValues = Union{Expr,Symbol,Float64,Int}                   
 
 include("reaction_network.jl")

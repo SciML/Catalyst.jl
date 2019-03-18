@@ -133,6 +133,34 @@ function gentypefun_exprs(name; esc_exprs=true, gen_inplace=true, gen_outofplace
     exprs
 end
 
+######################## reaction network operators #######################
+
+# note, this is allocating, and could potentially be made more efficient by iterating
+# through reaction components directly...
+"""
+    ==(rn1::DiffEqBase.AbstractReactionNetwork, rn2::DiffEqBase.AbstractReactionNetwork)
+
+Tests whether the underlying species symbols, parameter symbols and reactions
+are the same in the two networks. Ignores order network components were defined,
+so the integer id of any individual species/parameters/reactions may be
+different between the two networks. *Does not* currently account for reaction
+definitions, so "k, X+Y --> Y + Z" will not be the same as "k, Y+X --> Y + Z"
+"""
+function (==)(rn1::DiffEqBase.AbstractReactionNetwork, rn2::DiffEqBase.AbstractReactionNetwork)
+    issetequal(species(rn1), species(rn2)) || return false
+    issetequal(params(rn1), params(rn2)) || return false
+    nr1 = numreactions(rn1)
+    nr2 = numreactions(rn2)
+    (nr1 == nr2) || return false
+    idx1 = 1:nr1
+    idx2 = 1:nr2
+    issetequal(substrates.(rn1, idx1), substrates.(rn2, idx2)) || return false
+    issetequal(products.(rn1, idx1), products.(rn2, idx2)) || return false
+    issetequal(dependants.(rn1, idx1), dependants.(rn2, idx2)) || return false
+    issetequal(rateexpr.(rn1, idx1), rateexpr.(rn2, idx2)) || return false
+    issetequal(ismassaction.(rn1, idx1), ismassaction.(rn2, idx2)) || return false
+end
+
 ######################## functions to extend a network ####################
 
 """
@@ -286,7 +314,7 @@ function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateexpr::ExprValu
 
         # mimicing ReactionStruct constructor for now, but this should be optimized...
         newdeps = unique!(recursive_content(rate_DE, speciesmap(rn), Vector{Symbol}()))
-        ismassaction = length(newdeps)==length(intersect!(dependents, newdeps)) ? true : false
+        ismassaction = issetequal(dependents,newdeps) 
         dependents = newdeps
     end
     
