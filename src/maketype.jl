@@ -143,7 +143,7 @@ end
 Tests whether the underlying species symbols, parameter symbols and reactions
 are the same in the two networks. Ignores order network components were defined,
 so the integer id of any individual species/parameters/reactions may be
-different between the two networks. *Does not* currently account for differences
+different between the two networks. *Does not* currently account for different
 reaction definitions, so "k, X+Y --> Y + Z" will not be the same as "k, Y+X -->
 Y + Z"
 """
