@@ -313,11 +313,25 @@ end
 Given an `AbstractReactionNetwork` and a reaction index, `rxidx`, return a
 vector of pairs, mapping ids of species that serve as substrates in the reaction
 to the corresponding stoichiometric coefficient as a substrate. 
+
+Allocates a new vector to store the pairs.
 """ 
 function substratestoich(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
     substratestoich(rn.reactions[rxidx], speciesmap(rn))
 end
 
+"""
+    substratesymstoich(network, rxidx)
+
+Given an `AbstractReactionNetwork` and a reaction index, `rxidx`, return a
+`ReactantStruct`, mapping the symbols of species that serve as substrates in the
+reaction to the corresponding stoichiometric coefficient as a substrate. 
+
+Non-allocating, returns underlying field within the reaction_network.
+""" 
+function substratesymstoich(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
+    rn.reactions[rxidx].substrates
+end
 
 function productstoich(rs::ReactionStruct, specmap)
     sort( [specmap[p.reactant] => p.stoichiometry for p in rs.products] )    
@@ -329,9 +343,24 @@ end
 Given an `AbstractReactionNetwork` and a reaction index, `rxidx`, return a
 vector of pairs, mapping ids of species that are products in the reaction to the
 corresponding stoichiometric coefficient as a product.
+
+Allocates a new vector to store the pairs.
 """
 function productstoich(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
     productstoich(rn.reactions[rxidx], speciesmap(rn))
+end
+
+"""
+    productsymstoich(network, rxidx)
+
+Given an `AbstractReactionNetwork` and a reaction index, `rxidx`, return a
+`ReactantStruct`, mapping the symbols of species that are products in the
+reaction to the corresponding stoichiometric coefficient as a product. 
+
+Non-allocating, returns underlying field within the reaction_network.
+""" 
+function productsymstoich(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
+    rn.reactions[rxidx].products
 end
 
 function netstoich(rs::ReactionStruct, specmap)
@@ -357,6 +386,8 @@ Given an `AbstractReactionNetwork` and a reaction index, `rxidx`, return a
 vector of pairs, mapping ids of species that participate in the reaction to the
 net stoichiometric coefficient of the species (i.e. net change in the species
 due to the reaction).
+
+Allocates a new vector to store the pairs.
 """
 function netstoich(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
     netstoich(rn.reactions[rxidx], speciesmap(rn))
@@ -376,6 +407,8 @@ would return true, while reactions with state-dependent rates like
 `k*X, X + Y --> Z`
 
 would return false.
+
+Non-allocating, returns underlying field within the reaction_network.
 """
 function ismassaction(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
     rn.reactions[rxidx].is_pure_mass_action
@@ -391,6 +424,8 @@ vector of symbols of species the *reaction rate law* depends on. i.e. for
 `k*W, 2X + 3Y --> 5Z + W`
 
 the returned vector would be `[:W,:X,:Y]`.
+
+Non-allocating, returns underlying field within the reaction_network.
 """
 function dependents(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
     rn.reactions[rxidx].dependants
@@ -415,9 +450,11 @@ i.e. for
 `k*W, X + 3Y --> X + W`
 
 the returned vector would be `[:X,:Y]`.
+
+Allocates a new vector to store the symbols.
 """
 function substrates(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
-    rn.reactions[rxidx].substrates
+    [sub.reactant for sub in rn.reactions[rxidx].substrates]
 end
 
 """
@@ -430,9 +467,11 @@ i.e. for
 `k*W, X + 3Y --> X + W`
 
 the returned vector would be `[:X,:W]`.
+
+Allocates a new vector to store the symbols.
 """
 function products(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
-    rn.reactions[rxidx].products
+    [prod.reactant for prod in rn.reactions[rxidx].products]
 end
 
 ######### Network Properties: #########
