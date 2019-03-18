@@ -435,7 +435,7 @@ function bif_plot!(bif_dia_grid::bifurcation_diagram_grid, var=1::Int64, args...
     for i = 1:bif_dia_grid.length
         foreach(bp -> plot!(fill(bif_dia_grid.range1[i],bp.length),bp.p_vals,getindex.(bp.vals,var), args...; label="", color=stab_color.(bp.stability_types), kwargs...), bif_dia_grid.bifurcation_diagrams[i].paths)
     end
-    plot!(args...; xlabel=bif_dia_grid.param1, zlabel=bif_dia_grid.param2, kwargs...)
+    plot!(args...; xlabel=String(bfg.param1), zlabel=String(bfg.param2), kwargs...)
 end
 #Makes a scatter type of plot versio for the bifurcation grid diagrams.
 function bif_scatter(bif_dia_grid::bifurcation_diagram_grid, var=1::Int64, args...; kwargs...)
