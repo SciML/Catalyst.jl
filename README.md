@@ -191,10 +191,10 @@ jprob = JumpProblem(dprob, Direct(), rs)
 jsol = solve(jprob, SSAStepper())
 ```
 
-## Loading Predefined Networks
+## Importing Pre-defined Networks 
 [ReactionNetworkImporters.jl](https://github.com/isaacsas/ReactionNetworkImporters.jl)
-can load several different types of file formats into DiffEqBiological
-`reaction_network`s. These include a subset of BioNetGen .net files that can be
-generated from a .bngl using the `generate_network` command in BioNetGen. It can
-also import reaction networks specified by dense or sparse matrices encoding the
-stoichiometry of substrates and products within each reaction.
+can load several different types of pre-defined networks into DiffEqBiological
+`reaction_network`s. These include 
+  * A subset of BioNetGen .net files that can be generated from a BioNetGen language file (.bngl). (.net files can be generated using the `generate_network` command within BioNetGen.) 
+  * Reaction networks specified by dense or sparse matrices encoding the stoichiometry of substrates and products within each reaction.
+  * Networks defined by the basic file format used by the [RSSA](https://www.cosbi.eu/research/prototypes/rssa) group at COSBI in their [model collection](https://www.cosbi.eu/prototypes/jLiexDeBIgFV4zxwnKiW97oc4BjTtIoRGajqdUz4.zip).
