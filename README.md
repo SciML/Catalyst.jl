@@ -20,19 +20,23 @@ a focus on how to define reaction networks, and a minimal example showing how to
 create and solve ODE, SDE and jump models.
 
 More detailed documentation is available from:
-1. A DiffEqBiological tutorial showing how to specify and solve both ODE and
-   stochastic versions of the
-   [repressilator](https://en.wikipedia.org/wiki/Repressilator) is available as
-   part of the
-   [DiffEqTutorials](https://github.com/JuliaDiffEq/DiffEqTutorials.jl) Modeling
-   Examples. Both html and interactive IJulia notebook versions are provided there.
-2. Full documentation of the DSL syntax, with information on the generated rate
-   functions and models is available in the [DifferentialEquations.jl Chemical
-   Reaction Models
-   documentation](http://docs.juliadiffeq.org/latest/models/biological.html).
-3. API documentation showing how to retrieve network information from a
-   generated `reaction_network` is available
-   [here](http://docs.juliadiffeq.org/latest/apis/diffeqbio.html).
+* Several DiffEqBiological tutorials are available as part of the
+  [DiffEqTutorials Modeling
+  Examples](https://github.com/JuliaDiffEq/DiffEqTutorials.jl). Both html and
+  interactive IJulia notebook versions are provided there. These include
+  * An introductory tutorial showing how to specify and solve both ODE and
+  stochastic versions of the
+  [repressilator](https://en.wikipedia.org/wiki/Repressilator).
+  * A tutorial exploring the DiffEqBiological API for querying network
+    properties, which also illustrates how to programmatically construct and
+    solve a network model using the API.
+* Full documentation of the DSL syntax, with information on the generated rate
+  functions and models is available in the [DifferentialEquations.jl Chemical
+  Reaction Models
+  documentation](http://docs.juliadiffeq.org/latest/models/biological.html).
+* API documentation showing how to retrieve network information from a
+  generated `reaction_network` is available
+  [here](http://docs.juliadiffeq.org/latest/apis/diffeqbio.html).
 
 ## The Reaction DSL
 
@@ -187,3 +191,10 @@ jprob = JumpProblem(dprob, Direct(), rs)
 jsol = solve(jprob, SSAStepper())
 ```
 
+## Loading Predefined Networks
+[ReactionNetworkImporters.jl](https://github.com/isaacsas/ReactionNetworkImporters.jl)
+can load several different types of file formats into DiffEqBiological
+`reaction_network`s. These include a subset of BioNetGen .net files that can be
+generated from a .bngl using the `generate_network` command in BioNetGen. It can
+also import reaction networks specified by dense or sparse matrices encoding the
+stoichiometry of substrates and products within each reaction.
