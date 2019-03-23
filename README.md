@@ -184,16 +184,16 @@ sssol  = solve(ssprob, SSRootfind())
 sprob = SDEProblem(rs, u0, tspan, params)
 ssol  = solve(sprob, EM(), dt=.01)
 
-# solve JumpProblem
+# solve JumpProblem using Gillespie's Direct Method
 u0 = [5]
 dprob = DiscreteProblem(rs, u0, tspan, params)
 jprob = JumpProblem(dprob, Direct(), rs)
 jsol = solve(jprob, SSAStepper())
 ```
 
-## Importing Pre-defined Networks 
+## Importing Predefined Networks 
 [ReactionNetworkImporters.jl](https://github.com/isaacsas/ReactionNetworkImporters.jl)
-can load several different types of pre-defined networks into DiffEqBiological
+can load several different types of predefined networks into DiffEqBiological
 `reaction_network`s. These include 
   * A subset of BioNetGen .net files that can be generated from a BioNetGen language file (.bngl). (.net files can be generated using the `generate_network` command within BioNetGen.) 
   * Reaction networks specified by dense or sparse matrices encoding the stoichiometry of substrates and products within each reaction.
