@@ -16,6 +16,8 @@ using HomotopyContinuation
 using LinearAlgebra
 using Plots
 
+import Base: (==)
+
 const ExprValues = Union{Expr,Symbol,Float64,Int}
 
 include("reaction_network.jl")
@@ -32,7 +34,7 @@ export @reaction_network, @reaction_func, @min_reaction_network, @empty_reaction
 export species, params, speciesmap, paramsmap, numspecies, numreactions, numparams
 export oderhsfun, jacfun, paramjacfun, odefun, noisefun, sdefun, jumps, regularjumps
 export odeexprs, jacobianexprs, noiseexprs, jumpexprs, rateexpr, oderatelawexpr, ssaratelawexpr
-export substratestoich, productstoich, netstoich, ismassaction, dependants, dependents, substrates, products
+export substratestoich, productstoich, netstoich, ismassaction, dependants, dependents, substrates, products, substratesymstoich, productsymstoich
 export rxtospecies_depgraph, speciestorx_depgraph, rxtorx_depgraph
 
 # functions to extend empty_ and min_ reaction_networks
