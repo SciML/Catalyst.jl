@@ -400,18 +400,18 @@ end
 #- SHOULD BECOME A PROPER OVERLOAD OF PLOT AT SOME POINT, RATHER THAN A SEPARATE FUNCTION -#
 
 #Normal plot overlaods into the plot!, same for all.
-function bif_plot(bif_dia::Union{bifurcation_diagram,bifurcation_grid,bifurcation_grid_2d,bifurcation_diagram_grid}, var=1, args...; kwargs...)
+function bif_plot(bif_dia::Union{bifurcation_diagram,bifurcation_grid,bifurcation_grid_2d,bifurcation_diagram_grid}, var=1::Integer, args...; kwargs...)
     plot(); bif_plot!(bif_dia, var, args...; kwargs...)
 end
 
 #Plots a bifurcation diagram.
-function bif_plot!(bif_dia::bifurcation_diagram, var=1::Int64, args...; kwargs...)
+function bif_plot!(bif_dia::bifurcation_diagram, var=1::Integer, args...; kwargs...)
     foreach(bp -> plot!(bp.p_vals,getindex.(bp.vals,var), args...; label="", color=stab_color.(bp.stability_types), kwargs...), bif_dia.paths)
     plot!(args...; xlabel=bif_dia.param, kwargs...)
 end
 
 #Plots a bifurcation grid.
-function bif_plot!(bif_grid::bifurcation_grid, var=1::Int64, args...; kwargs...)
+function bif_plot!(bif_grid::bifurcation_grid, var=1::Integer, args...; kwargs...)
     for i = 1:bif_grid.length
         for k = 1:length(bif_grid.grid_points[i].vals)
             scatter!((bif_grid.range[i],bif_grid.grid_points[i].vals[k][var]), args...; label="", color=stab_color(bif_grid.grid_points[i].stability_types[k]), kwargs...)
@@ -421,7 +421,7 @@ function bif_plot!(bif_grid::bifurcation_grid, var=1::Int64, args...; kwargs...)
 end
 
 #Plots a two-dimensional bifurcation grid.
-function bif_plot!(bif_grid_2d::bifurcation_grid_2d, var=1::Int64, args...; kwargs...)
+function bif_plot!(bif_grid_2d::bifurcation_grid_2d, var=1::Integer, args...; kwargs...)
     for i = 1:bif_grid_2d.size[1], j = 1:bif_grid_2d.size[2]
         for k = 1:length(bif_grid_2d.grid_points[i,j].vals)
             scatter!((bif_grid_2d.range1[i],bif_grid_2d.range2[j],bif_grid_2d.grid_points[i,j].vals[k][var]), args...; label="", color=stab_color(bif_grid_2d.grid_points[i,j].stability_types[k]), kwargs...)
@@ -431,17 +431,17 @@ function bif_plot!(bif_grid_2d::bifurcation_grid_2d, var=1::Int64, args...; kwar
 end
 
 #Plots a grid of bifurcation diagrams.
-function bif_plot!(bif_dia_grid::bifurcation_diagram_grid, var=1::Int64, args...; kwargs...)
+function bif_plot!(bif_dia_grid::bifurcation_diagram_grid, var=1::Integer, args...; kwargs...)
     for i = 1:bif_dia_grid.length
         foreach(bp -> plot!(fill(bif_dia_grid.range1[i],bp.length),bp.p_vals,getindex.(bp.vals,var), args...; label="", color=stab_color.(bp.stability_types), kwargs...), bif_dia_grid.bifurcation_diagrams[i].paths)
     end
     plot!(args...; xlabel=String(bif_dia_grid.param1), zlabel=String(bif_dia_grid.param2), kwargs...)
 end
 #Makes a scatter type of plot versio for the bifurcation grid diagrams.
-function bif_scatter(bif_dia_grid::bifurcation_diagram_grid, var=1::Int64, args...; kwargs...)
+function bif_scatter(bif_dia_grid::bifurcation_diagram_grid, var=1::Integer, args...; kwargs...)
     scatter(); bif_scatter!(bif_dia_grid, var, args...; kwargs...)
 end
-function bif_scatter!(bif_dia_grid::bifurcation_diagram_grid, var=1, args...; kwargs...)
+function bif_scatter!(bif_dia_grid::bifurcation_diagram_grid, var=1::Integer, args...; kwargs...)
     for i = 1:bif_dia_grid.length
         for bp in bif_dia_grid.bifurcation_diagrams[i].paths
             for j = 1:bp.length
