@@ -247,31 +247,53 @@ end
 struct ReactionStruct
     substrates::Vector{ReactantStruct}
     products::Vector{ReactantStruct}
+    netstoich::Vector{ReactantStruct}
     rate_org::ExprValues
     rate_DE::ExprValues
     rate_SSA::ExprValues
     dependants::Vector{Symbol}
     is_pure_mass_action::Bool
 
-    function ReactionStruct(s::Vector{ReactantStruct}, p::Vector{ReactantStruct},
+    function ReactionStruct(s::Vector{ReactantStruct}, p::Vector{ReactantStruct}, 
+                            ns::Vector{ReactantStruct},
                             ro::ExprValues, rde::ExprValues, rssa::ExprValues,
                             dep::Vector{Symbol}, isma::Bool)
-        new(s,p,ro,rde,rssa,dep,isma)
+        new(s,p,ns,ro,rde,rssa,dep,isma)
     end
 
     function ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, use_mass_kin::Bool)
         sub = add_reactants!(sub_line,1,Vector{ReactantStruct}(undef,0))
         prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(undef,0))
+        ns = netstoich(sub, prod)
 
         rate_DE = mass_rate_DE(sub, use_mass_kin, rate)
         rate_SSA =  mass_rate_SSA(sub, use_mass_kin, rate)
-        new(sub, prod, rate, rate_DE, rate_SSA, [], use_mass_kin)
+        new(sub, prod, ns, rate, rate_DE, rate_SSA, [], use_mass_kin)
     end
     function ReactionStruct(r::ReactionStruct, syms::Vector{Symbol})
         deps = unique!(recursive_content(r.rate_DE,syms,Vector{Symbol}()))
         is_ma = r.is_pure_mass_action && (length(recursive_content(r.rate_org,syms,Vector{Symbol}()))==0)
-        new(r.substrates, r.products, r.rate_org, r.rate_DE, r.rate_SSA, deps, is_ma)
+        new(r.substrates, r.products, r.netstoich, r.rate_org, r.rate_DE, r.rate_SSA, deps, is_ma)
     end
+end
+
+# calculates the net stoichiometry of a reaction
+function netstoich(substrates::Vector{ReactantStruct}, products::Vector{ReactantStruct})
+    # switch to LittleDict when it is released?
+    nsdict = Dict{Symbol,Int}(s.reactant => -s.stoichiometry for s in substrates)
+
+    for prod in products
+        rsym = prod.reactant
+        rcoef = prod.stoichiometry
+        nsdict[rsym] = haskey(nsdict, rsym) ? nsdict[rsym] + rcoef : rcoef
+    end
+
+    net_stoich = Vector{ReactantStruct}()
+    for (specsym,coef) in nsdict
+        (coef != zero(Int)) && push!(net_stoich, ReactantStruct(specsym,coef))
+    end
+
+    net_stoich
 end
 
 #Calculates the rate used by ODEs and SDEs. If we want to use masskinetics we have to include substrate concentration, taking higher order terms into account.
@@ -605,18 +627,42 @@ function calculate_symjac(f_rhs::Vector{ExprValues}, syms)
     n = length(syms); internal_vars = [Symbol(:internal_variable___,var) for var in syms]
     symfuncs = [SymEngine.Basic(recursive_replace!(f,Dict(zip(syms,internal_vars)))) for f in f_rhs]
     jacexprs = Matrix{ExprValues}(undef, n, n)
-    for j = 1:n, i = 1:n
+    @inbounds for j = 1:n, i = 1:n
         symjacij = diff(symfuncs[i],internal_vars[j])
         jacexprs[i,j] = :($(recursive_replace!(Meta.parse(string(symjacij)),Dict(zip(internal_vars,syms)))))
     end
     jacexprs
 end
 
+# function calculate_symjac2(reactions, reactants, parameters, syms)
+#     nspecs = length(syms) 
+#     jacexprs = Matrix{ExprValues}(undef, nspecs, nspecs)
+#     fill!(jacexprs, 0)
+
+#     nrxs = length(reactants)
+#     @inbounds for rx in reactions        
+#         # if rx.is_pure_mass_action
+            
+#         # else
+#         ratelaw = SymEngine.Basic(rx.rate_DE)
+#         for dep in rx.dependants
+#             dratelaw = diff(ratelaw, dep)
+#             j = reactants[dep]
+
+#             jacexprs[i,j] = :($(Meta.parse(string(symjacij))))
+#         # end
+#     end
+
+#     jacexprs
+# end
+
+
 #Makes the Jacobian.
 function calculate_jac(symjac::Matrix{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     func_body = Expr(:block)
-    for j = 1:size(symjac)[2], i = 1:size(symjac)[1]
-        push!(func_body.args, :(internal___var___J[$i,$j] = $(recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p)))))
+    @inbounds for j = 1:size(symjac)[2], i = 1:size(symjac)[1]
+        ex =  (symjac[i,j] isa Number) ? symjac[i,j] : recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p))
+        push!(func_body.args, :(internal___var___J[$i,$j] = $(ex)))
     end
     push!(func_body.args,:(return internal___var___J))
     return :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
