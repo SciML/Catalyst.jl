@@ -391,10 +391,12 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     for i = 1:length(f)
         f[i] = :(internal_var___du[$i] = $(Expr(:call, :+)))
     end
-    for reaction in deepcopy(reactions)
-        for reactant in union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant))
-            ex = recursive_clean!(:($(get_stoch_diff(reaction,reactant)) * $(reaction.rate_DE)))
-            !(ex isa Number && iszero(ex)) && push!(f[reactants[reactant]].args[2].args, ex)
+    for reaction in reactions
+        for r in reaction.netstoich
+            sidx = reactants[r.reactant]
+            scoef = r.stoichiometry
+            ex = recursive_clean!(:($scoef * $(deepcopy(reaction.rate_DE))))
+            !(ex isa Number && iszero(ex)) && push!(f[sidx].args[2].args, ex)
         end
     end
 
@@ -412,11 +414,25 @@ end
 
 #Produces an array of expressions. Each entry corresponds to a line in the function g, which constitutes the stochastic part of the system. Uses the Guillespie Approach for creating Langevin equations.  The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
 function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, scale_noise::Symbol)
-    g = Vector{Expr}(undef,length(reactions)*length(reactants))
+    numspec = length(reactants)
+    numrxs = length(reactions)
+    g = Vector{Expr}(undef,numspec*numrxs)
     idx = 0
-    for reactant in keys(reactants), i = 1:length(reactions)
-        g[idx += 1] = recursive_clean!(:(internal_var___du[$(reactants[reactant]),$i] = $scale_noise * $(get_stoch_diff(reactions[i],reactant)) * sqrt(abs($(deepcopy(reactions[i].rate_DE))))))
+    for k = 1:numrxs        
+        # initialize to zero for all reactions
+        for (ssym,sidx) in reactants
+            g[idx += 1] = :(internal_var___du[$sidx,$k] = 0)
+        end
+
+        ns = reactions[k].netstoich
+        for r in ns
+            sidx = reactants[r.reactant]
+            scoef = r.stoichiometry
+            ex = recursive_clean!( :($scoef * $scale_noise * sqrt(abs($(deepcopy(reactions[k].rate_DE))))) )
+            g[sidx + (k-1)*numspec] = :(internal_var___du[$sidx,$k] = $ex)
+        end
     end
+
     return g
 end
 
