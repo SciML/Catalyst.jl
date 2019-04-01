@@ -388,11 +388,11 @@ end
 #Produces an array of expressions. Each entry corresponds to a line in the function f, which constitutes the deterministic part of the system. The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
 function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int})
     f = Vector{Expr}(undef,length(reactants))
-    for i = 1:length(f)
+    @inbounds for i = 1:length(f)
         f[i] = :(internal_var___du[$i] = $(Expr(:call, :+)))
     end
-    for reaction in reactions
-        for r in reaction.netstoich
+    @inbounds for reaction in reactions
+        @inbounds for r in reaction.netstoich
             sidx = reactants[r.reactant]
             scoef = r.stoichiometry
             ex = recursive_clean!(:($scoef * $(deepcopy(reaction.rate_DE))))
@@ -400,7 +400,7 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
         end
     end
 
-    for line in f
+    @inbounds for line in f
         if length(line.args[2].args) == 1
             @assert line.args[2].args[1] == :+
             line.args[2] = 0
@@ -418,14 +418,14 @@ function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     numrxs = length(reactions)
     g = Vector{Expr}(undef,numspec*numrxs)
     idx = 0
-    for k = 1:numrxs        
+    @inbounds for k = 1:numrxs        
         # initialize to zero for all reactions
-        for (ssym,sidx) in reactants
+        @inbounds for (ssym,sidx) in reactants
             g[idx += 1] = :(internal_var___du[$sidx,$k] = 0)
         end
 
         ns = reactions[k].netstoich
-        for r in ns
+        @inbounds for r in ns
             sidx = reactants[r.reactant]
             scoef = r.stoichiometry
             ex = recursive_clean!( :($scoef * $scale_noise * sqrt(abs($(deepcopy(reactions[k].rate_DE))))) )
@@ -486,11 +486,6 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
 
         if minimal_jumps && reaction.is_pure_mass_action
             recursive_contains(:t,rates[idx]) && push!(jumps.args,Expr(:call,:VariableRateJump))
-        #    ma_sub_stoch = :(reactant_stoich = [[]])
-        #    ma_stoch_change = :(reactant_stoich = [[]])
-        #    foreach(sub -> push!(ma_sub_stoch.args[2].args[1].args),:($(reactants[sub.reactant])=>$(sub.stoichiometry)),reaction.substrates)
-        #    foreach(reactant -> push!(ma_stoch_change.args[2].args[1].args),:($(reactants[reactant.reactant])=>$(get_stoch_diff(reaction,reactant))),reaction.substrates)
-        #    push!(jumps.args,:(MassActionJump($(reaction.rate_org),$(ma_sub_stoch),$(ma_stoch_change))))
         else
             recursive_contains(:t,rates[idx]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
             push!(jumps.args[idx].args, :((internal_var___u,internal_var___p,t) -> @inbounds $syntax_rate))
