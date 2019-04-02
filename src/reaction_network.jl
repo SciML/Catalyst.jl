@@ -474,21 +474,18 @@ end
 
 #Creates expressions for jump affects and rates. Also creates and array with MassAction, ConstantRate and VariableRate Jumps.
 function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int}; minimal_jumps=false)
-    rates = Vector{ExprValues}(undef,length(reactions))
-    affects = Vector{Vector{Expr}}(undef,length(reactions))
+    rates = Vector{ExprValues}()
+    affects = Vector{Vector{Expr}}()
     jumps = Expr(:tuple)
     idx = 0
-    for reaction in deepcopy(reactions)
-        rates[idx += 1] = recursive_clean!(reaction.rate_SSA)
-        affects[idx] = Vector{Expr}(undef,0)
-        reactant_set = union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant))
-        foreach(r -> push!(affects[idx], :(integrator.u[$(reactants[r])] += $(get_stoch_diff(reaction,r)))), reactant_set)
-        syntax_rate = recursive_replace!(deepcopy(rates[idx]), (reactants,:internal_var___u), (parameters, :internal_var___p))
-
-        if minimal_jumps && reaction.is_pure_mass_action
-            recursive_contains(:t,rates[idx]) && push!(jumps.args,Expr(:call,:VariableRateJump))
-        else
-            recursive_contains(:t,rates[idx]) ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
+    for reaction in reactions
+        hastime = recursive_contains(:t,reaction.rate_SSA)
+        if !minimal_jumps || !reaction.is_pure_mass_action || hastime
+            idx += 1
+            push!(rates, recursive_clean!(deepcopy(reaction.rate_SSA)))
+            push!(affects, Expr[:(integrator.u[$(reactants[r.reactant])] += $(r.stoichiometry)) for r in reaction.netstoich])
+            syntax_rate = recursive_replace!(deepcopy(rates[idx]), (reactants, :internal_var___u), (parameters, :internal_var___p))
+            hastime ? push!(jumps.args,Expr(:call,:VariableRateJump)) : push!(jumps.args,Expr(:call,:ConstantRateJump))
             push!(jumps.args[idx].args, :((internal_var___u,internal_var___p,t) -> @inbounds $syntax_rate))
             push!(jumps.args[idx].args, :(integrator -> @inbounds $(expr_arr_to_block(deepcopy(affects[idx])))))
         end
@@ -501,12 +498,11 @@ function get_regularjumps(reactions::Vector{ReactionStruct}, reactants::OrderedD
     reg_rates = Expr(:block)
     reg_c = Expr(:block)
     idx = 0
-    for reaction in deepcopy(reactions)
-        rate = recursive_clean!(reaction.rate_SSA)
-        reactant_set = union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant))
-        syntax_rate = recursive_replace!(deepcopy(rate), (reactants,:internal_var___u), (parameters, :internal_var___p))
-        push!(reg_rates.args,:(@inbounds internal_var___out[$idx]= $syntax_rate))
-        foreach(r -> push!(reg_c.args,:(@inbounds internal_var___dc[$(reactants[r]),$idx]=$(get_stoch_diff(reaction,r)))), reactant_set)
+    for reaction in reactions
+        rate = recursive_clean!(deepcopy(reaction.rate_SSA))
+        syntax_rate = recursive_replace!(rate, (reactants,:internal_var___u), (parameters, :internal_var___p))
+        push!(reg_rates.args, :(@inbounds internal_var___out[$idx]= $syntax_rate))
+        foreach(r -> push!(reg_c.args,:(@inbounds internal_var___dc[$(reactants[r.reactant]),$idx]=$(r.stoichiometry))), reaction.netstoich)
     end
     reg_jumps = :(RegularJump((internal_var___out,internal_var___u,internal_var___p,t)->$reg_rates,(internal_var___dc,internal_var___u,internal_var___p,t,internal_var___mark)->$reg_c,zeros($(length(reactants)),$(length(reactions)));constant_c=true))
     return reg_jumps
