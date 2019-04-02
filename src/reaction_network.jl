@@ -137,7 +137,10 @@ function coordinate(name, ex::Expr, p, scale_noise)
     sdefun = :(SDEFunction(f, g; jac=$jac, jac_prototype=nothing, paramjac=$paramjac, syms=$syms))
 
     # expressions for jumps
-    (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions, reactants, parameters)
+    (jump_rate_expr, jump_affect_expr, jumps) = get_jumps(reactions, reactants, parameters)
+
+    # expressions for regular jumps
+    regular_jumps = get_regularjumps(reactions, reactants, parameters)
 
     # Build the type
     exprs = Vector{Expr}(undef,0)
@@ -474,8 +477,6 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
     rates = Vector{ExprValues}(undef,length(reactions))
     affects = Vector{Vector{Expr}}(undef,length(reactions))
     jumps = Expr(:tuple)
-    reg_rates = Expr(:block)
-    reg_c = Expr(:block)
     idx = 0
     for reaction in deepcopy(reactions)
         rates[idx += 1] = recursive_clean!(reaction.rate_SSA)
@@ -491,11 +492,24 @@ function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Sym
             push!(jumps.args[idx].args, :((internal_var___u,internal_var___p,t) -> @inbounds $syntax_rate))
             push!(jumps.args[idx].args, :(integrator -> @inbounds $(expr_arr_to_block(deepcopy(affects[idx])))))
         end
+    end
+    return (Tuple(rates),Tuple(affects),jumps)
+end
+
+# generates regular jumps representation
+function get_regularjumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int}; minimal_jumps=false)
+    reg_rates = Expr(:block)
+    reg_c = Expr(:block)
+    idx = 0
+    for reaction in deepcopy(reactions)
+        rate = recursive_clean!(reaction.rate_SSA)
+        reactant_set = union(getfield.(reaction.products, :reactant),getfield.(reaction.substrates, :reactant))
+        syntax_rate = recursive_replace!(deepcopy(rate), (reactants,:internal_var___u), (parameters, :internal_var___p))
         push!(reg_rates.args,:(@inbounds internal_var___out[$idx]= $syntax_rate))
         foreach(r -> push!(reg_c.args,:(@inbounds internal_var___dc[$(reactants[r]),$idx]=$(get_stoch_diff(reaction,r)))), reactant_set)
     end
     reg_jumps = :(RegularJump((internal_var___out,internal_var___u,internal_var___p,t)->$reg_rates,(internal_var___dc,internal_var___u,internal_var___p,t,internal_var___mark)->$reg_c,zeros($(length(reactants)),$(length(reactions)));constant_c=true))
-    return (Tuple(rates),Tuple(affects),jumps,reg_jumps)
+    return reg_jumps
 end
 
 """
@@ -679,7 +693,7 @@ function calculate_jac(symjac::Matrix{ExprValues}, reactants::OrderedDict{Symbol
     return :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
 end
 
-#Makes the Jacobian, with respect to parameter values.
+#Makes the Jacobian, with respect to parameter values. 
 function calculate_paramjac(f_rhs::Vector{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     func_body = Expr(:block)
     for j = 1:length(parameters), i = 1:length(reactants)
@@ -687,7 +701,7 @@ function calculate_paramjac(f_rhs::Vector{ExprValues}, reactants::OrderedDict{Sy
         push!(func_body.args, :(internal___var___pJ[$i,$j] = $(recursive_replace!(paramjac_entry,(reactants,:internal___var___u), (parameters, :internal___var___p)))))
     end
     push!(func_body.args,:(return internal___var___pJ))
-    return :((internal___var___pJ,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
+    return :((internal___var___pJ,internal___var___u,internal___var___p,t) -> @inbounds $func_body) 
 end
 
 #Turns an array of expressions to a expression block with corresponding expressions.
