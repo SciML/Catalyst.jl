@@ -497,8 +497,7 @@ end
 function get_regularjumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int}; minimal_jumps=false)
     reg_rates = Expr(:block)
     reg_c = Expr(:block)
-    idx = 0
-    for reaction in reactions
+    @inbounds for (idx,reaction) in enumerate(reactions)
         rate = recursive_clean!(deepcopy(reaction.rate_SSA))
         syntax_rate = recursive_replace!(rate, (reactants,:internal_var___u), (parameters, :internal_var___p))
         push!(reg_rates.args, :(@inbounds internal_var___out[$idx]= $syntax_rate))
