@@ -16,6 +16,7 @@ import Base: (==)
 
 const ExprValues = Union{Expr,Symbol,Float64,Int}                   
 
+include("expression_utils.jl")
 include("reaction_network.jl")
 include("maketype.jl")
 include("network_properties.jl")

@@ -178,6 +178,18 @@ function min_coordinate(name, ex::Expr, p, scale_noise)
     expr_arr_to_block(exprs)
 end
 
+# ODE expressions
+function genode_exprs(reactions, reactants, parameters, syms; build_jac=true,
+                                                              build_symfuncs=true)
+    f_expr                = get_f(reactions, reactants)
+    f                     = make_func(f_expr, reactants, parameters)
+    f_rhs                 = ExprValues[element.args[2] for element in f_expr]
+    symjac, jac, paramjac = build_jac ? get_jacs(f_rhs, syms, reactions, reactants, parameters) : (nothing,nothing,nothing)
+    f_symfuncs            = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
+
+    (f_expr,f,f_rhs,symjac,jac,paramjac,f_symfuncs)
+end
+
 # SDE expressions
 function gensde_exprs(reactions, reactants, parameters, scale_noise)
     g_expr   = get_g(reactions, reactants, scale_noise)
@@ -186,18 +198,6 @@ function gensde_exprs(reactions, reactants, parameters, scale_noise)
     p_matrix = zeros(length(reactants), length(reactions))
 
     (g_expr,g,g_funcs,p_matrix)
-end
-
-# ODE expressions
-function genode_exprs(reactions, reactants, parameters, syms; build_jac=true,
-                                                              build_symfuncs=true)
-    f_expr                = get_f(reactions, reactants)
-    f                     = make_func(f_expr, reactants, parameters)
-    f_rhs                 = ExprValues[element.args[2] for element in f_expr]
-    symjac, jac, paramjac = build_jac ? get_jacs(f_rhs, syms, reactants, parameters) : (nothing,nothing,nothing)
-    f_symfuncs            = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
-
-    (f_expr,f,f_rhs,symjac,jac,paramjac,f_symfuncs)
 end
 
 # generate the minimal network components
@@ -313,18 +313,6 @@ function mass_rate_SSA(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, o
     return rate
 end
 
-#Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a  Symbol/Numerical).
-function tup_leng(ex::ExprValues)
-    (typeof(ex)==Expr && ex.head == :tuple) && (return length(ex.args))
-    return 1
-end
-
-#Gets the i'th element in a expression tuple, or return the input itself if it is not an expression tuple (probably a  Symbol/Numerical).
-function get_tup_arg(ex::ExprValues,i::Int)
-    (tup_leng(ex) == 1) && (return ex)
-    return ex.args[i]
-end
-
 #Takes a reaction line and creates reactions from it and pushes those to the reaction array. Used to creat multiple reactions from e.g. 1.0, (X,Y) --> 0.
 function push_reactions(reactions::Vector{ReactionStruct}, sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, use_mass_kin::Bool)
     lengs = [tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate)]
@@ -334,7 +322,7 @@ function push_reactions(reactions::Vector{ReactionStruct}, sub_line::ExprValues,
     end
 end
 
-#Recursive function that loops through the reactants in an reaction line and finds the reactants and their stochiometry. Recursion makes it able to handle e.g. 2(X+Y+3(Z+XY)) (probably one will not need it though).
+#Recursive function that loops through the reactants in an reaction line and finds the reactants and their stoichiometry. Recursion makes it able to handle e.g. 2(X+Y+3(Z+XY)) (probably one will not need it though).
 function add_reactants!(ex::ExprValues, mult::Int, reactants::Vector{ReactantStruct})
     if typeof(ex)!=Expr
         (ex == 0 || in(ex,empty_set)) && (return reactants)
@@ -398,7 +386,7 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
         @inbounds for r in reaction.netstoich
             sidx = reactants[r.reactant]
             scoef = r.stoichiometry
-            ex = recursive_clean!(:($scoef * $(deepcopy(reaction.rate_DE))))
+            ex = deepcopy(recursive_clean!(:($scoef * $(reaction.rate_DE))))
             !(ex isa Number && iszero(ex)) && push!(f[sidx].args[2].args, ex)
         end
     end
@@ -413,6 +401,21 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     end
 
     return f
+end
+
+# generate the noise expression for one specific species and one specific reaction
+function get_gexpr(sidx, scoef, rate_DE, scale_noise)
+    isnegone = (scoef == -one(scoef))
+    isnegone && (scoef = -scoef)
+    ex = :(sqrt(abs($(deepcopy(rate_DE)))))
+    if scale_noise == :no___noise___scaling
+        (scoef != one(scoef)) && (ex = :($scoef * $ex))
+    else
+        ex = (scoef == one(scoef)) ? :($scale_noise * $ex) : :($scoef * $scale_noise * $ex)
+    end
+    isnegone && (ex = :(-$ex))
+    
+    ex
 end
 
 #Produces an array of expressions. Each entry corresponds to a line in the function g, which constitutes the stochastic part of the system. Uses the Guillespie Approach for creating Langevin equations.  The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
@@ -430,8 +433,7 @@ function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
         ns = reactions[k].netstoich
         @inbounds for r in ns
             sidx = reactants[r.reactant]
-            scoef = r.stoichiometry
-            ex = recursive_clean!( :($scoef * $scale_noise * sqrt(abs($(deepcopy(reactions[k].rate_DE))))) )
+            ex = get_gexpr(sidx, r.stoichiometry, reactions[k].rate_DE, scale_noise)            
             g[sidx + (k-1)*numspec] = :(internal_var___du[$sidx,$k] = $ex)
         end
     end
@@ -451,26 +453,93 @@ function get_stoch_diff(reaction::ReactionStruct, reactant::Symbol)
     return stoch
 end
 
-function splitplus!(ex)
-  dosplit = ex.head == :(=) && ex.args[2] isa Expr && ex.args[2].head == :call && ex.args[2].args[1] == :(+)
-  if dosplit
-    summands = ex.args[2].args[2:end]
-    ex.args[2] = foldl((x,y)->(:(($x + $y))), summands)
-  end
-  dosplit
+#Makes the various jacobian elements required.
+function get_jacs(f_rhs::Vector{ExprValues}, syms::Vector{Symbol}, reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
+    symjac = calculate_symjac(deepcopy(f_rhs), syms)
+    #symjac = calculate_symjac2(reactions, reactants, parameters, syms)
+    jac = calculate_jac(deepcopy(symjac), reactants, parameters)
+    paramjac = calculate_paramjac(deepcopy(f_rhs), reactants, parameters)
+    return (Expr(:quote, symjac), jac, paramjac)
 end
 
-#Creates an expression which can be evaluated to an actual function. Input is an array of expression were each entry is a line in the function. Uses the array of expressions generated in either get_f or get_g.
-function make_func(func_expr::Vector{Expr},reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
-    system = Expr(:block)
-    for func_line in deepcopy(func_expr)
-        ex = recursive_replace!(func_line, (reactants,:internal_var___u), (parameters, :internal_var___p))
-        splitplus!(ex)
-        push!(system.args,ex)
+#Makes the Symbolic Jacobian.
+function calculate_symjac(f_rhs::Vector{ExprValues}, syms)
+    n = length(syms); internal_vars = [Symbol(:internal_variable___,var) for var in syms]
+    symfuncs = [SymEngine.Basic(recursive_replace!(f,Dict(zip(syms,internal_vars)))) for f in f_rhs]
+    jacexprs = Matrix{ExprValues}(undef, n, n)
+    @inbounds for j = 1:n, i = 1:n
+        symjacij = diff(symfuncs[i],internal_vars[j])
+        jacexprs[i,j] = :($(recursive_replace!(Meta.parse(string(symjacij)),Dict(zip(internal_vars,syms)))))
     end
-    push!(system.args, :(nothing))
-    return :((internal_var___du,internal_var___u,internal_var___p,t) -> @inbounds $system)
+    jacexprs
 end
+
+function calculate_symjac2(reactions, reactants, parameters, syms)
+    nspecs = length(syms) 
+    jacexprs = Matrix{ExprValues}(undef, nspecs, nspecs)
+    fill!(jacexprs, 0)
+
+    nrxs = length(reactants)
+    @inbounds for rx in reactions        
+        # if rx.is_pure_mass_action
+            
+        # else
+        ratelaw = SymEngine.Basic(rx.rate_DE)
+        for dep in rx.dependants
+            dratelaw = diff(ratelaw, dep)
+            j = reactants[dep]
+
+            for ns in rx.netstoich
+                i = reactants[ns.reactant]
+                scoef = ns.stoichiometry
+                if (jacexprs[i,j] isa Number) && iszero(jacexprs[i,j])
+                    jacexprs[i,j] = Meta.parse(string(scoef*dratelaw))
+                else
+                    if scoef < 0 
+                        jacexprs[i,j] = :($(jacexprs[i,j]) - $(Meta.parse(string(-scoef*dratelaw))))
+                    else
+                        jacexprs[i,j] = :($(jacexprs[i,j]) + $(Meta.parse(string(scoef*dratelaw))))
+                    end
+                end
+                # if scoef < 0
+                #     scoef = -scoef
+                #     ex = scoef == 1 ? drlex : :($(scoef)*$(dratelaw))
+                #     jacexprs[i,j] = (jacexprs[i,j] isa Number) && iszero(jacexprs[i,j]) ? :(-$ex) : :($(jacexprs[i,j]) - $ex)
+                # else
+                    #ex = ns.stoichiometry == 1 ? dratelaw : :($(ns.stoichiometry)*$(dratelaw))
+                    #jacexprs[i,j] = (jacexprs[i,j] isa Number) && iszero(jacexprs[i,j]) ? ex : :($(jacexprs[i,j]) + $ex)
+                #end                
+            end
+        end
+    end
+
+    jacexprs
+end
+
+#Makes the Jacobian.
+function calculate_jac(symjac::Matrix{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
+    func_body = Expr(:block)
+    @inbounds for j = 1:size(symjac)[2], i = 1:size(symjac)[1]
+        ex =  (symjac[i,j] isa Number) ? symjac[i,j] : recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p))
+        push!(func_body.args, :(internal___var___J[$i,$j] = $(ex)))
+    end
+    push!(func_body.args,:(return internal___var___J))
+    return :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
+end
+
+#Makes the Jacobian, with respect to parameter values. 
+function calculate_paramjac(f_rhs::Vector{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
+    func_body = Expr(:block)
+    for j = 1:length(parameters), i = 1:length(reactants)
+        paramjac_entry = Meta.parse(string(diff(SymEngine.Basic(f_rhs[i]), parameters.keys[j])))
+        push!(func_body.args, :(internal___var___pJ[$i,$j] = $(recursive_replace!(paramjac_entry,(reactants,:internal___var___u), (parameters, :internal___var___p)))))
+    end
+    push!(func_body.args,:(return internal___var___pJ))
+    return :((internal___var___pJ,internal___var___u,internal___var___p,t) -> @inbounds $func_body) 
+end
+
+
+### Jump related functions ###
 
 #Creates expressions for jump affects and rates. Also creates and array with MassAction, ConstantRate and VariableRate Jumps.
 function get_jumps(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int}; minimal_jumps=false)
@@ -507,204 +576,6 @@ function get_regularjumps(reactions::Vector{ReactionStruct}, reactants::OrderedD
     return reg_jumps
 end
 
-"""
-clean_subtractions(ex::Expr)
-Replace additions of negative terms with subtractions.
-This is a fairly stupid function which is designed for a specific problem
-with reaction networks. It is neither recursive nor very general.
-Return :: cleaned out expression
-
-From Latexify.jl with permission:
-[see](https://github.com/JuliaDiffEq/DiffEqBiological.jl/issues/89#issuecomment-462147882)
-"""
-function clean_subtractions(ex::Expr)
-    ex.args[1] != :+ && return ex
-
-    term = ex.args[2]
-
-    ### Sort out the first term
-    if term isa Expr && length(term.args) >= 3 && term.args[1:2] == [:*, -1]
-        result = :(- *($(term.args[3:end]...)))
-    else
-        result = :($term)
-    end
-
-    ### Sort out the other terms
-    for term in ex.args[3:end]
-        if term isa Expr && length(term.args) >= 3 && term.args[1:2] == [:*, -1]
-            result = :($result - *($(term.args[3:end]...)))
-        else
-            result = :($result + $term)
-        end
-    end
-    return result
-end
-
-#Recursively traverses an expression and removes things like X^1, 1*X. Will not actually have any affect on the expression when used as a function, but will make it much easier to look at it for debugging, as well as if it is transformed to LaTeX code.
-function recursive_clean!(expr::ExprValues)
-    (expr == :no___noise___scaling) && (return 1)
-    (typeof(expr)!=Expr) && (return expr)
-    for i = 1:length(expr.args)
-        expr.args[i] = recursive_clean!(expr.args[i])
-    end
-    (expr.args[1] == :^) && (expr.args[3] == 1) && (return expr.args[2])
-    if expr.args[1] == :*
-        in(0,expr.args) && (return 0)
-        i = 1
-        while (i = i + 1) <= length(expr.args)
-             if (typeof(expr.args[i]) == Expr) && (expr.args[i].head == :call) && (expr.args[i].args[1] == :*)
-                 for arg in expr.args[i].args
-                     (arg != :*) && push!(expr.args, arg)
-                 end
-             end
-        end
-        for i = length(expr.args):-1:2
-            (typeof(expr.args[i]) == Expr) && (expr.args[i].head == :call) && (expr.args[i].args[1] == :*) && deleteat!(expr.args,i)
-            (expr.args[i] == 1) && deleteat!(expr.args,i)
-        end
-        (length(expr.args) == 2) && (return expr.args[2])                   # We have a multiplication of only one thing, return only that thing.
-        (length(expr.args) == 1) && (return 1)                              #We have only * and no real argumenys.
-        (length(expr.args) == 3) && (expr.args[2] == -1) && return :(-$(expr.args[3]))
-        (length(expr.args) == 3) && (expr.args[3] == -1) && return :(-$(expr.args[2]))
-    end
-    if expr.head == :call
-        (expr.args[1] == :/) && (expr.args[3] == 1) && (return expr.args[2])
-        haskey(funcdict, expr.args[1]) && return funcdict[expr.args[1]](expr.args[2:end])
-        in(expr.args[1],hill_name) && return hill(expr)
-        in(expr.args[1],hillR_name) && return hillR(expr)
-        in(expr.args[1],mm_name) && return mm(expr)
-        in(expr.args[1],mmR_name) && return mmR(expr)
-        (expr.args[1] == :binomial) && (expr.args[3] == 1) && return expr.args[2]
-        #@isdefined($(expr.args[1])) || error("Function $(expr.args[1]) not defined.")
-    end
-    return expr
-end
-
-#Recursively traverses an expression and replace instances of variables and parmaters with things that the DifferentialEquations packakes simulation algorithms can understand. E.g. X --> u[1], kB1 --> p[1] etc.
-function recursive_replace!(expr::ExprValues, replace_requests::Tuple{OrderedDict{Symbol,Int},Symbol}...)
-    if typeof(expr) == Symbol
-        for rr in replace_requests
-            (haskey(rr[1],expr)) && (return :($(rr[2])[$(rr[1][expr])]))
-        end
-    elseif typeof(expr) == Expr
-        for i = 1:length(expr.args)
-            expr.args[i] = recursive_replace!(expr.args[i], replace_requests...)
-        end
-    end
-    return expr
-end
-
-#Recursively traverses an expression and replaces a symbol with another.
-function recursive_replace!(expr::ExprValues, replace_requests::Dict{Symbol,Symbol})
-    if typeof(expr) == Symbol
-        haskey(replace_requests,expr) && return replace_requests[expr]
-    elseif typeof(expr) == Expr
-        for i = 1:length(expr.args)
-            expr.args[i] = recursive_replace!(expr.args[i], replace_requests)
-        end
-    end
-    return expr
-end
-
-#Recursive Contains, checks whenever an expression contains a certain symbol.
-function recursive_contains(s,ex)
-    (typeof(ex)!=Expr) && (return s==ex)
-    for arg in ex.args
-        recursive_contains(s,arg) && (return true)
-    end
-    return false
-end
-
-#Parses an expression, and returns a set with all symbols in the expression, which is also a part of the provided vector with symbols (syms).
-function recursive_content(ex,syms::Vector{Symbol},content::Vector{Symbol})
-    if ex isa Symbol
-        in(ex,syms) && push!(content,ex)
-    elseif ex isa Expr
-        foreach(arg -> recursive_content(arg,syms,content), ex.args)
-    end
-    return content
-end
-
-function recursive_content(ex,symsmap::OrderedDict{Symbol,Int},content::Vector{Symbol})
-    if ex isa Symbol        
-        haskey(symsmap,ex) && push!(content,ex)
-    elseif ex isa Expr  
-        foreach(arg -> recursive_content(arg,symsmap,content), ex.args)
-    end
-    return content
-end
-
-#Makes the various jacobian elements required.
-function get_jacs(f_rhs::Vector{ExprValues}, syms::Vector{Symbol}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
-    symjac = calculate_symjac(deepcopy(f_rhs), syms)
-    jac = calculate_jac(deepcopy(symjac), reactants, parameters)
-    paramjac = calculate_paramjac(deepcopy(f_rhs), reactants, parameters)
-    return (Expr(:quote, symjac), jac, paramjac)
-end
-
-#Makes the Symbolic Jacobian.
-function calculate_symjac(f_rhs::Vector{ExprValues}, syms)
-    n = length(syms); internal_vars = [Symbol(:internal_variable___,var) for var in syms]
-    symfuncs = [SymEngine.Basic(recursive_replace!(f,Dict(zip(syms,internal_vars)))) for f in f_rhs]
-    jacexprs = Matrix{ExprValues}(undef, n, n)
-    @inbounds for j = 1:n, i = 1:n
-        symjacij = diff(symfuncs[i],internal_vars[j])
-        jacexprs[i,j] = :($(recursive_replace!(Meta.parse(string(symjacij)),Dict(zip(internal_vars,syms)))))
-    end
-    jacexprs
-end
-
-# function calculate_symjac2(reactions, reactants, parameters, syms)
-#     nspecs = length(syms) 
-#     jacexprs = Matrix{ExprValues}(undef, nspecs, nspecs)
-#     fill!(jacexprs, 0)
-
-#     nrxs = length(reactants)
-#     @inbounds for rx in reactions        
-#         # if rx.is_pure_mass_action
-            
-#         # else
-#         ratelaw = SymEngine.Basic(rx.rate_DE)
-#         for dep in rx.dependants
-#             dratelaw = diff(ratelaw, dep)
-#             j = reactants[dep]
-
-#             jacexprs[i,j] = :($(Meta.parse(string(symjacij))))
-#         # end
-#     end
-
-#     jacexprs
-# end
-
-
-#Makes the Jacobian.
-function calculate_jac(symjac::Matrix{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
-    func_body = Expr(:block)
-    @inbounds for j = 1:size(symjac)[2], i = 1:size(symjac)[1]
-        ex =  (symjac[i,j] isa Number) ? symjac[i,j] : recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p))
-        push!(func_body.args, :(internal___var___J[$i,$j] = $(ex)))
-    end
-    push!(func_body.args,:(return internal___var___J))
-    return :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
-end
-
-#Makes the Jacobian, with respect to parameter values. 
-function calculate_paramjac(f_rhs::Vector{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
-    func_body = Expr(:block)
-    for j = 1:length(parameters), i = 1:length(reactants)
-        paramjac_entry = Meta.parse(string(diff(SymEngine.Basic(f_rhs[i]), parameters.keys[j])))
-        push!(func_body.args, :(internal___var___pJ[$i,$j] = $(recursive_replace!(paramjac_entry,(reactants,:internal___var___u), (parameters, :internal___var___p)))))
-    end
-    push!(func_body.args,:(return internal___var___pJ))
-    return :((internal___var___pJ,internal___var___u,internal___var___p,t) -> @inbounds $func_body) 
-end
-
-#Turns an array of expressions to a expression block with corresponding expressions.
-function expr_arr_to_block(exprs)
-  block = :(begin end)
-  foreach(expr -> push!(block.args, expr), exprs)
-  return block
-end
 
 ### Pre Defined Functions that can be inserted into the reaction rates ###
 
@@ -738,8 +609,3 @@ macro reaction_func(expr)
     funcdict[name]  = x -> replace_names(maths, args, x)
 end
 
-#This will be called whenever a function stored in funcdict is called.
-function replace_names(expr, old_names, new_names)
-    mapping = Dict(zip(old_names, new_names))
-    MacroTools.postwalk( x -> x in old_names ? x= mapping[x] : x, expr)
-end
