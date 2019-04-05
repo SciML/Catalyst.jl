@@ -376,17 +376,35 @@ function get_parameters(p)
     return parameters
 end
 
+# function multby_stochcoef(scoef, rateexpr::ExprValues)
+#     isnegone = (scoef == -one(scoef))
+#     isnegone && (scoef = -scoef)
+    
+#     if rateexpr isa Number 
+#         ex = -rateexpr
+#     elseif rateexpr isa Symbol
+#         ex = :(-$rateexpr)
+#     else
+#         ex = deepcopy(rateexpr)
+#         @assert ex.args[1] == :* 
+#         (scoef != one(scoef)) && insert!(ex.args, 2, scoef)
+#         isnegone && (ex.args[2] = :(-$(ex.args[2])))
+#     end
+#     ex
+# end
+
+
 #Produces an array of expressions. Each entry corresponds to a line in the function f, which constitutes the deterministic part of the system. The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
 function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int})
     f = Vector{Expr}(undef,length(reactants))
     @inbounds for i = 1:length(f)
         f[i] = :(internal_var___du[$i] = $(Expr(:call, :+)))
     end
-    @inbounds for reaction in reactions
+    @inbounds for reaction in reactions        
         @inbounds for r in reaction.netstoich
             sidx = reactants[r.reactant]
             scoef = r.stoichiometry
-            ex = deepcopy(recursive_clean!(:($scoef * $(reaction.rate_DE))))
+            ex = recursive_clean!(:($scoef * $(deepcopy(reaction.rate_DE))))
             !(ex isa Number && iszero(ex)) && push!(f[sidx].args[2].args, ex)
         end
     end
@@ -430,10 +448,12 @@ function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
             g[idx += 1] = :(internal_var___du[$sidx,$k] = 0)
         end
 
-        ns = reactions[k].netstoich
+        ns = reactions[k].netstoich        
         @inbounds for r in ns
             sidx = reactants[r.reactant]
-            ex = get_gexpr(sidx, r.stoichiometry, reactions[k].rate_DE, scale_noise)            
+            scoef = r.stoichiometry
+            ex = recursive_clean!( :($scoef * $scale_noise * sqrt(abs($(deepcopy(reactions[k].rate_DE))))) )
+            #ex = recursive_clean!(get_gexpr(sidx, r.stoichiometry, reactions[k].rate_DE, scale_noise))
             g[sidx + (k-1)*numspec] = :(internal_var___du[$sidx,$k] = $ex)
         end
     end
@@ -455,8 +475,8 @@ end
 
 #Makes the various jacobian elements required.
 function get_jacs(f_rhs::Vector{ExprValues}, syms::Vector{Symbol}, reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
-    symjac = calculate_symjac(deepcopy(f_rhs), syms)
-    #symjac = calculate_symjac2(reactions, reactants, parameters, syms)
+    #symjac = calculate_symjac(deepcopy(f_rhs), syms)
+    symjac = calculate_symjac2(reactions, reactants, parameters, syms)
     jac = calculate_jac(deepcopy(symjac), reactants, parameters)
     paramjac = calculate_paramjac(deepcopy(f_rhs), reactants, parameters)
     return (Expr(:quote, symjac), jac, paramjac)
@@ -484,7 +504,7 @@ function calculate_symjac2(reactions, reactants, parameters, syms)
         # if rx.is_pure_mass_action
             
         # else
-        ratelaw = SymEngine.Basic(rx.rate_DE)
+        ratelaw = SymEngine.Basic(recursive_clean!(deepcopy(rx.rate_DE)))
         for dep in rx.dependants
             dratelaw = diff(ratelaw, dep)
             j = reactants[dep]
@@ -501,14 +521,6 @@ function calculate_symjac2(reactions, reactants, parameters, syms)
                         jacexprs[i,j] = :($(jacexprs[i,j]) + $(Meta.parse(string(scoef*dratelaw))))
                     end
                 end
-                # if scoef < 0
-                #     scoef = -scoef
-                #     ex = scoef == 1 ? drlex : :($(scoef)*$(dratelaw))
-                #     jacexprs[i,j] = (jacexprs[i,j] isa Number) && iszero(jacexprs[i,j]) ? :(-$ex) : :($(jacexprs[i,j]) - $ex)
-                # else
-                    #ex = ns.stoichiometry == 1 ? dratelaw : :($(ns.stoichiometry)*$(dratelaw))
-                    #jacexprs[i,j] = (jacexprs[i,j] isa Number) && iszero(jacexprs[i,j]) ? ex : :($(jacexprs[i,j]) + $ex)
-                #end                
             end
         end
     end
@@ -530,7 +542,7 @@ end
 #Makes the Jacobian, with respect to parameter values. 
 function calculate_paramjac(f_rhs::Vector{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     func_body = Expr(:block)
-    for j = 1:length(parameters), i = 1:length(reactants)
+    for j = 1:length(parameters), i = 1:length(reactants)    
         paramjac_entry = Meta.parse(string(diff(SymEngine.Basic(f_rhs[i]), parameters.keys[j])))
         push!(func_body.args, :(internal___var___pJ[$i,$j] = $(recursive_replace!(paramjac_entry,(reactants,:internal___var___u), (parameters, :internal___var___p)))))
     end
