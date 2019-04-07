@@ -269,8 +269,8 @@ struct ReactionStruct
         prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(undef,0))
         ns = netstoich(sub, prod)
 
-        rate_DE = mass_rate_DE(sub, use_mass_kin, rate)
-        rate_SSA =  mass_rate_SSA(sub, use_mass_kin, rate)
+        rate_DE = isempty(sub) ? rate : mass_rate_DE(sub, use_mass_kin, rate)
+        rate_SSA =  isempty(sub) ? rate : mass_rate_SSA(sub, use_mass_kin, rate)
         new(sub, prod, ns, rate, rate_DE, rate_SSA, [], use_mass_kin)
     end
     function ReactionStruct(r::ReactionStruct, syms::Vector{Symbol})
@@ -302,7 +302,16 @@ end
 #Calculates the rate used by ODEs and SDEs. If we want to use masskinetics we have to include substrate concentration, taking higher order terms into account.
 function mass_rate_DE(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, old_rate::ExprValues)
     rate = Expr(:call, :*, old_rate)
-    use_mass_kin && foreach(sub -> push!(rate.args,:($(Expr(:call, :^, sub.reactant, sub.stoichiometry))/$(factorial(sub.stoichiometry)))), substrates)
+    #use_mass_kin && foreach(sub -> push!(rate.args,:($(Expr(:call, :^, sub.reactant, sub.stoichiometry))/$(factorial(sub.stoichiometry)))), substrates)
+    coef = one(typeof(substrates[1].stoichiometry))
+    if use_mass_kin
+        for sub in substrates
+            stoich = sub.stoichiometry
+            coef *= factorial(stoich)
+            push!(rate.args, stoich > one(stoich) ? Expr(:call, :^, sub.reactant, stoich) : sub.reactant)
+        end
+        (coef > one(coef)) && (rate.args[2] = :($old_rate / $coef))
+    end
     return rate
 end
 
@@ -377,18 +386,18 @@ function get_parameters(p)
 end
 
 # function multby_stochcoef(scoef, rateexpr::ExprValues)
-#     isnegone = (scoef == -one(scoef))
-#     isnegone && (scoef = -scoef)
+#     #isnegone = (scoef == -one(scoef))
+#     #isnegone && (scoef = -scoef)
     
-#     if rateexpr isa Number 
-#         ex = -rateexpr
+#     if (rateexpr isa Number) 
+#         ex = (scoef == one(scoef)) ? rateexpr : scoef*rateexpr
 #     elseif rateexpr isa Symbol
-#         ex = :(-$rateexpr)
+#         ex = (scoef == one(scoef)) ? rateexpr : :($scoef * $rateexpr)
 #     else
 #         ex = deepcopy(rateexpr)
 #         @assert ex.args[1] == :* 
 #         (scoef != one(scoef)) && insert!(ex.args, 2, scoef)
-#         isnegone && (ex.args[2] = :(-$(ex.args[2])))
+#         #isnegone && (ex.args[2] = :(-$(ex.args[2])))
 #     end
 #     ex
 # end
@@ -400,11 +409,14 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     @inbounds for i = 1:length(f)
         f[i] = :(internal_var___du[$i] = $(Expr(:call, :+)))
     end
-    @inbounds for reaction in reactions        
+    @inbounds for reaction in reactions
+        rl = recursive_clean!(reaction.rate_DE)        
         @inbounds for r in reaction.netstoich
             sidx = reactants[r.reactant]
             scoef = r.stoichiometry
             ex = recursive_clean!(:($scoef * $(deepcopy(reaction.rate_DE))))
+            #ex = scoef == one(scoef) ? deepcopy(reaction.rate_DE) : :($scoef * $(deepcopy(reaction.rate_DE)))
+            #ex = multby_stochcoef(scoef, reaction.rate_DE)
             !(ex isa Number && iszero(ex)) && push!(f[sidx].args[2].args, ex)
         end
     end
@@ -476,53 +488,61 @@ end
 #Makes the various jacobian elements required.
 function get_jacs(f_rhs::Vector{ExprValues}, syms::Vector{Symbol}, reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     #symjac = calculate_symjac(deepcopy(f_rhs), syms)
-    symjac = calculate_symjac2(reactions, reactants, parameters, syms)
+    symjac = calculate_symjac(reactions, reactants, parameters, syms)
     jac = calculate_jac(deepcopy(symjac), reactants, parameters)
     paramjac = calculate_paramjac(deepcopy(f_rhs), reactants, parameters)
     return (Expr(:quote, symjac), jac, paramjac)
 end
 
 #Makes the Symbolic Jacobian.
-function calculate_symjac(f_rhs::Vector{ExprValues}, syms)
-    n = length(syms); internal_vars = [Symbol(:internal_variable___,var) for var in syms]
-    symfuncs = [SymEngine.Basic(recursive_replace!(f,Dict(zip(syms,internal_vars)))) for f in f_rhs]
-    jacexprs = Matrix{ExprValues}(undef, n, n)
-    @inbounds for j = 1:n, i = 1:n
-        symjacij = diff(symfuncs[i],internal_vars[j])
-        jacexprs[i,j] = :($(recursive_replace!(Meta.parse(string(symjacij)),Dict(zip(internal_vars,syms)))))
-    end
-    jacexprs
-end
+# function calculate_symjac(f_rhs::Vector{ExprValues}, syms)
+#     n = length(syms); internal_vars = [Symbol(:internal_variable___,var) for var in syms]
+#     symfuncs = [SymEngine.Basic(recursive_replace!(f,Dict(zip(syms,internal_vars)))) for f in f_rhs]
+#     jacexprs = Matrix{ExprValues}(undef, n, n)
+#     @inbounds for j = 1:n, i = 1:n
+#         symjacij = diff(symfuncs[i],internal_vars[j])
+#         jacexprs[i,j] = :($(recursive_replace!(Meta.parse(string(symjacij)),Dict(zip(internal_vars,syms)))))
+#     end
+#     jacexprs
+# end
 
-function calculate_symjac2(reactions, reactants, parameters, syms)
+function calculate_symjac(reactions, reactants, parameters, syms)
     nspecs = length(syms) 
     jacexprs = Matrix{ExprValues}(undef, nspecs, nspecs)
     fill!(jacexprs, 0)
 
     nrxs = length(reactants)
     @inbounds for rx in reactions        
-        # if rx.is_pure_mass_action
-            
+        # if rx.is_pure_mass_action            
+        #     if isempty(rx.substrates)
+        #         ex = rx.rate_org
+        #     else
+        #         ex = Expr(:call, :*, rx.rate_org)
+        #         for sub in rx.substrates
+                     
+        #         end            
+        #     end
         # else
-        ratelaw = SymEngine.Basic(recursive_clean!(deepcopy(rx.rate_DE)))
-        for dep in rx.dependants
-            dratelaw = diff(ratelaw, dep)
-            j = reactants[dep]
+            ratelaw = SymEngine.Basic(recursive_clean!(deepcopy(rx.rate_DE)))
+            @inbounds for dep in rx.dependants
+                dratelaw = diff(ratelaw, dep)
+                j = reactants[dep]
 
-            for ns in rx.netstoich
-                i = reactants[ns.reactant]
-                scoef = ns.stoichiometry
-                if (jacexprs[i,j] isa Number) && iszero(jacexprs[i,j])
-                    jacexprs[i,j] = Meta.parse(string(scoef*dratelaw))
-                else
-                    if scoef < 0 
-                        jacexprs[i,j] = :($(jacexprs[i,j]) - $(Meta.parse(string(-scoef*dratelaw))))
+                @inbounds for ns in rx.netstoich
+                    i = reactants[ns.reactant]
+                    scoef = ns.stoichiometry
+                    if (jacexprs[i,j] isa Number) && iszero(jacexprs[i,j])
+                        jacexprs[i,j] = Meta.parse(string(scoef*dratelaw))
                     else
-                        jacexprs[i,j] = :($(jacexprs[i,j]) + $(Meta.parse(string(scoef*dratelaw))))
+                        if scoef < 0 
+                            jacexprs[i,j] = :($(jacexprs[i,j]) - $(Meta.parse(string(-scoef*dratelaw))))
+                        else
+                            jacexprs[i,j] = :($(jacexprs[i,j]) + $(Meta.parse(string(scoef*dratelaw))))
+                        end
                     end
                 end
             end
-        end
+        # end
     end
 
     jacexprs

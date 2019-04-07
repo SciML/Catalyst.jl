@@ -296,8 +296,8 @@ function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues
     dependents = Symbol[p[1] for p in subs]
     products = ReactantStruct[ReactantStruct(p[1],p[2]) for p in prods]
     ns = netstoich(substrates, products)
-    rate_DE = mass_rate_DE(substrates, true, rateex)
-    rate_SSA = mass_rate_SSA(substrates, true, rateex)   
+    rate_DE = isempty(subs) ? rateex : mass_rate_DE(substrates, true, rateex)
+    rate_SSA = isempty(subs) ? rateex : mass_rate_SSA(substrates, true, rateex)   
     
     # resolve dependents from rateex
     if rateex isa Number
