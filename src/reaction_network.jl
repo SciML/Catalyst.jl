@@ -506,6 +506,34 @@ end
 #     jacexprs
 # end
 
+function massaction_ratelaw_deriv(spec::Symbol, scoef::Int, rate::ExprValues, subs::Vector{ReactantStruct})
+    # only case where we should get a constant derivative
+    ((length(subs) == 1) && (subs[1].stoichiometry == one(scoef))) && (return rate)
+
+    # otherwise have non-constant derivative
+    rl = Expr(:call, :*, rate)
+    denom = one(scoef)
+    for sub in subs
+        name = sub.reactant
+        stoich = sub.stoichiometry        
+        if name == spec
+            expon = stoich - one(stoich)
+            denom *= factorial(stoich-one(stoich))
+            if expon == one(expon)
+                push!(rl.args, name)
+            elseif expon > one(expon)
+                push!(rl.args, :($name^$expon))
+            end
+        else
+            denom *= factorial(stoich)
+            push!(rl.args, stoich > one(stoich) ? Expr(:call, :^, name, stoich) : name)
+        end
+    end
+    (denom != one(denom)) && (rl.args[2] = :($(rl.args[2])/$denom))
+
+    rl
+end
+
 function calculate_symjac(reactions, reactants, parameters, syms)
     nspecs = length(syms) 
     jacexprs = Matrix{ExprValues}(undef, nspecs, nspecs)
@@ -513,16 +541,39 @@ function calculate_symjac(reactions, reactants, parameters, syms)
 
     nrxs = length(reactants)
     @inbounds for rx in reactions        
-        # if rx.is_pure_mass_action            
-        #     if isempty(rx.substrates)
-        #         ex = rx.rate_org
-        #     else
-        #         ex = Expr(:call, :*, rx.rate_org)
-        #         for sub in rx.substrates
-                     
-        #         end            
-        #     end
-        # else
+        if rx.is_pure_mass_action && !isempty(rx.substrates)
+            for sub in rx.substrates
+                spec  = sub.reactant
+                scoef = sub.stoichiometry
+                j     = reactants[spec]
+
+                # derivative with respect to this species
+                dratelaw = massaction_ratelaw_deriv(spec, scoef, rx.rate_org, rx.substrates)
+
+                # determine stoichiometric coefficent to multiply by 
+                @inbounds for ns in rx.netstoich
+                    drl    = deepcopy(dratelaw)
+                    i      = reactants[ns.reactant]
+                    nscoef = ns.stoichiometry
+                    if (jacexprs[i,j] isa Number) && iszero(jacexprs[i,j])
+                        if nscoef < zero(nscoef)
+                            jacexprs[i,j] = (nscoef == -one(nscoef)) ? :(-$drl) : :($nscoef * $drl)
+                        else
+                            jacexprs[i,j] = (nscoef == one(nscoef)) ? drl : :($nscoef * $drl)
+                        end
+                    else                        
+                        if nscoef < zero(nscoef)
+                            nscoef = -nscoef
+                            ex = (nscoef == one(nscoef)) ? drl : :($nscoef * $drl)
+                            jacexprs[i,j] = :($(jacexprs[i,j]) - $ex)
+                        else
+                            ex = (nscoef == one(nscoef)) ? drl : :($nscoef * $drl)
+                            jacexprs[i,j] = :($(jacexprs[i,j]) + $ex)
+                        end
+                    end    
+                end
+            end            
+        else
             ratelaw = SymEngine.Basic(recursive_clean!(deepcopy(rx.rate_DE)))
             @inbounds for dep in rx.dependants
                 dratelaw = diff(ratelaw, dep)
@@ -542,7 +593,7 @@ function calculate_symjac(reactions, reactants, parameters, syms)
                     end
                 end
             end
-        # end
+        end
     end
 
     jacexprs
