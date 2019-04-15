@@ -294,7 +294,7 @@ function netstoich(substrates::Vector{ReactantStruct}, products::Vector{Reactant
 
     net_stoich = Vector{ReactantStruct}()
     for (specsym,coef) in nsdict
-        (coef != zero(Int)) && push!(net_stoich, ReactantStruct(specsym,coef))
+        (coef != zero(coef)) && push!(net_stoich, ReactantStruct(specsym,coef))
     end
 
     net_stoich
@@ -303,7 +303,6 @@ end
 #Calculates the rate used by ODEs and SDEs. If we want to use masskinetics we have to include substrate concentration, taking higher order terms into account.
 function mass_rate_DE(substrates::Vector{ReactantStruct}, use_mass_kin::Bool, old_rate::ExprValues)
     rate = Expr(:call, :*, old_rate)
-    #use_mass_kin && foreach(sub -> push!(rate.args,:($(Expr(:call, :^, sub.reactant, sub.stoichiometry))/$(factorial(sub.stoichiometry)))), substrates)
     coef = one(typeof(substrates[1].stoichiometry))
     if use_mass_kin
         for sub in substrates
