@@ -495,43 +495,70 @@ function massaction_ratelaw_deriv(spec::Symbol, scoef::Int, rate::ExprValues, su
     rl
 end
 
+# given an expression representing a running sum, a ratelaw like expression, 
+# and a stoichiometric coefficient, update the running sum with the coef
+# times the rate law. specialized for mass action reactions
+@inline function addstoich_to_exprsum(ex::ExprValues, rl::ExprValues, scoef)
+    if (ex isa Number) && iszero(ex)
+        if scoef < zero(scoef)
+            newex = (scoef == -one(scoef)) ? :(-$rl) : :($scoef * $rl)
+        else
+            newex = (scoef == one(scoef)) ? rl : :($scoef * $rl)
+        end
+    else                        
+        if scoef < zero(scoef)
+            scoef = -scoef
+            newex = (scoef == one(scoef)) ? rl : :($scoef * $rl)
+            newex = :($ex - $newex)
+        else
+            newex = (scoef == one(scoef)) ? rl : :($scoef * $rl)
+            newex = :($ex + $newex)
+        end
+    end    
+    newex
+end
+
+# given an expression representing a running sum, a ratelaw like expression, 
+# and a stoichiometric coefficient, update the running sum with the coef
+# times the rate law. Specialized for SymEngine ratelaws.
+@inline function addstoich_to_exprsum(ex::ExprValues, rl::SymEngine.Basic, scoef)
+    if (ex isa Number) && iszero(ex)
+        newex = Meta.parse(string(scoef*rl))
+    else
+        if scoef < zero(scoef)
+            newex = :($ex - $(Meta.parse(string(-scoef*rl))))
+        else
+            newex = :($ex + $(Meta.parse(string(scoef*rl))))
+        end
+    end
+    newex
+end
+
+
 function calculate_symjac(reactions, reactants, parameters, syms)
     nspecs = length(syms) 
     jacexprs = Matrix{ExprValues}(undef, nspecs, nspecs)
     fill!(jacexprs, 0)
 
     nrxs = length(reactants)
-    @inbounds for rx in reactions        
-        if rx.is_pure_mass_action && !isempty(rx.substrates)
+    @inbounds for rx in reactions 
+        
+        # if no substrates there is no contribution to calculate
+        isempty(rx.substrates) && continue     
+
+        if rx.is_pure_mass_action 
             for sub in rx.substrates
                 spec  = sub.reactant
                 scoef = sub.stoichiometry
-                j     = reactants[spec]
+                @inbounds j = reactants[spec]
 
                 # derivative with respect to this species
                 dratelaw = massaction_ratelaw_deriv(spec, scoef, rx.rate_org, rx.substrates)
 
                 # determine stoichiometric coefficent to multiply by 
                 @inbounds for ns in rx.netstoich
-                    drl    = deepcopy(dratelaw)
-                    i      = reactants[ns.reactant]
-                    nscoef = ns.stoichiometry
-                    if (jacexprs[i,j] isa Number) && iszero(jacexprs[i,j])
-                        if nscoef < zero(nscoef)
-                            jacexprs[i,j] = (nscoef == -one(nscoef)) ? :(-$drl) : :($nscoef * $drl)
-                        else
-                            jacexprs[i,j] = (nscoef == one(nscoef)) ? drl : :($nscoef * $drl)
-                        end
-                    else                        
-                        if nscoef < zero(nscoef)
-                            nscoef = -nscoef
-                            ex = (nscoef == one(nscoef)) ? drl : :($nscoef * $drl)
-                            jacexprs[i,j] = :($(jacexprs[i,j]) - $ex)
-                        else
-                            ex = (nscoef == one(nscoef)) ? drl : :($nscoef * $drl)
-                            jacexprs[i,j] = :($(jacexprs[i,j]) + $ex)
-                        end
-                    end    
+                    i = reactants[ns.reactant]
+                    jacexprs[i,j] = addstoich_to_exprsum(jacexprs[i,j], deepcopy(dratelaw), ns.stoichiometry)
                 end
             end            
         else
@@ -542,16 +569,7 @@ function calculate_symjac(reactions, reactants, parameters, syms)
 
                 @inbounds for ns in rx.netstoich
                     i = reactants[ns.reactant]
-                    scoef = ns.stoichiometry
-                    if (jacexprs[i,j] isa Number) && iszero(jacexprs[i,j])
-                        jacexprs[i,j] = Meta.parse(string(scoef*dratelaw))
-                    else
-                        if scoef < 0 
-                            jacexprs[i,j] = :($(jacexprs[i,j]) - $(Meta.parse(string(-scoef*dratelaw))))
-                        else
-                            jacexprs[i,j] = :($(jacexprs[i,j]) + $(Meta.parse(string(scoef*dratelaw))))
-                        end
-                    end
+                    jacexprs[i,j] = addstoich_to_exprsum(jacexprs[i,j], dratelaw, ns.stoichiometry)
                 end
             end
         end
