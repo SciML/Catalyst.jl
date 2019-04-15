@@ -283,13 +283,12 @@ end
 
 # calculates the net stoichiometry of a reaction
 function netstoich(substrates::Vector{ReactantStruct}, products::Vector{ReactantStruct})
-    # switch to LittleDict when it is released?
     nsdict = Dict{Symbol,Int}(s.reactant => -s.stoichiometry for s in substrates)
 
     for prod in products
         rsym = prod.reactant
         rcoef = prod.stoichiometry
-        nsdict[rsym] = haskey(nsdict, rsym) ? nsdict[rsym] + rcoef : rcoef
+        @inbounds nsdict[rsym] = haskey(nsdict, rsym) ? nsdict[rsym] + rcoef : rcoef
     end
 
     net_stoich = Vector{ReactantStruct}()
