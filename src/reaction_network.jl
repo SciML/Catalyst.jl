@@ -180,11 +180,12 @@ end
 
 # ODE expressions
 function genode_exprs(reactions, reactants, parameters, syms; build_jac=true,
+                                                              build_paramjac=true,
                                                               build_symfuncs=true)
     f_expr                = get_f(reactions, reactants)
     f                     = make_func(f_expr, reactants, parameters)
     f_rhs                 = ExprValues[element.args[2] for element in f_expr]
-    symjac, jac, paramjac = build_jac ? get_jacs(f_rhs, syms, reactions, reactants, parameters) : (nothing,nothing,nothing)
+    symjac, jac, paramjac = get_jacs(f_rhs, syms, reactions, reactants, parameters; build_jac=build_jac, build_paramjac=build_paramjac)
     f_symfuncs            = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
 
     (f_expr,f,f_rhs,symjac,jac,paramjac,f_symfuncs)
@@ -385,24 +386,6 @@ function get_parameters(p)
     return parameters
 end
 
-# function multby_stochcoef(scoef, rateexpr::ExprValues)
-#     #isnegone = (scoef == -one(scoef))
-#     #isnegone && (scoef = -scoef)
-    
-#     if (rateexpr isa Number) 
-#         ex = (scoef == one(scoef)) ? rateexpr : scoef*rateexpr
-#     elseif rateexpr isa Symbol
-#         ex = (scoef == one(scoef)) ? rateexpr : :($scoef * $rateexpr)
-#     else
-#         ex = deepcopy(rateexpr)
-#         @assert ex.args[1] == :* 
-#         (scoef != one(scoef)) && insert!(ex.args, 2, scoef)
-#         #isnegone && (ex.args[2] = :(-$(ex.args[2])))
-#     end
-#     ex
-# end
-
-
 #Produces an array of expressions. Each entry corresponds to a line in the function f, which constitutes the deterministic part of the system. The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
 function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int})
     f = Vector{Expr}(undef,length(reactants))
@@ -415,8 +398,6 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
             sidx = reactants[r.reactant]
             scoef = r.stoichiometry
             ex = recursive_clean!(:($scoef * $(deepcopy(reaction.rate_DE))))
-            #ex = scoef == one(scoef) ? deepcopy(reaction.rate_DE) : :($scoef * $(deepcopy(reaction.rate_DE)))
-            #ex = multby_stochcoef(scoef, reaction.rate_DE)
             !(ex isa Number && iszero(ex)) && push!(f[sidx].args[2].args, ex)
         end
     end
@@ -431,21 +412,6 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     end
 
     return f
-end
-
-# generate the noise expression for one specific species and one specific reaction
-function get_gexpr(sidx, scoef, rate_DE, scale_noise)
-    isnegone = (scoef == -one(scoef))
-    isnegone && (scoef = -scoef)
-    ex = :(sqrt(abs($(deepcopy(rate_DE)))))
-    if scale_noise == :no___noise___scaling
-        (scoef != one(scoef)) && (ex = :($scoef * $ex))
-    else
-        ex = (scoef == one(scoef)) ? :($scale_noise * $ex) : :($scoef * $scale_noise * $ex)
-    end
-    isnegone && (ex = :(-$ex))
-    
-    ex
 end
 
 #Produces an array of expressions. Each entry corresponds to a line in the function g, which constitutes the stochastic part of the system. Uses the Guillespie Approach for creating Langevin equations.  The Expressions can be used for debugging, making LaTex code, or creating the real f function for simulating the network.
@@ -465,7 +431,6 @@ function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
             sidx = reactants[r.reactant]
             scoef = r.stoichiometry
             ex = recursive_clean!( :($scoef * $scale_noise * sqrt(abs($(deepcopy(reactions[k].rate_DE))))) )
-            #ex = recursive_clean!(get_gexpr(sidx, r.stoichiometry, reactions[k].rate_DE, scale_noise))
             g[sidx + (k-1)*numspec] = :(internal_var___du[$sidx,$k] = $ex)
         end
     end
@@ -486,26 +451,23 @@ function get_stoch_diff(reaction::ReactionStruct, reactant::Symbol)
 end
 
 #Makes the various jacobian elements required.
-function get_jacs(f_rhs::Vector{ExprValues}, syms::Vector{Symbol}, reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
-    #symjac = calculate_symjac(deepcopy(f_rhs), syms)
-    symjac = calculate_symjac(reactions, reactants, parameters, syms)
-    jac = calculate_jac(deepcopy(symjac), reactants, parameters)
-    paramjac = calculate_paramjac(deepcopy(f_rhs), reactants, parameters)
-    return (Expr(:quote, symjac), jac, paramjac)
+function get_jacs(f_rhs::Vector{ExprValues}, syms::Vector{Symbol}, reactions::Vector{ReactionStruct}, 
+                                                                   reactants::OrderedDict{Symbol,Int}, 
+                                                                   parameters::OrderedDict{Symbol,Int};
+                                                                   build_jac = true,
+                                                                   build_paramjac = true)
+    symjac = build_jac ? calculate_symjac(reactions, reactants, parameters, syms) : nothing
+    jac = build_jac ? calculate_jac(deepcopy(symjac), reactants, parameters) : nothing    
+    paramjac = build_paramjac ? calculate_paramjac(deepcopy(f_rhs), reactants, parameters) : nothing
+
+    if isnothing(symjac)
+        return (symjac, jac, paramjac) 
+    else
+        return (Expr(:quote, symjac), jac, paramjac)
+    end
 end
 
-#Makes the Symbolic Jacobian.
-# function calculate_symjac(f_rhs::Vector{ExprValues}, syms)
-#     n = length(syms); internal_vars = [Symbol(:internal_variable___,var) for var in syms]
-#     symfuncs = [SymEngine.Basic(recursive_replace!(f,Dict(zip(syms,internal_vars)))) for f in f_rhs]
-#     jacexprs = Matrix{ExprValues}(undef, n, n)
-#     @inbounds for j = 1:n, i = 1:n
-#         symjacij = diff(symfuncs[i],internal_vars[j])
-#         jacexprs[i,j] = :($(recursive_replace!(Meta.parse(string(symjacij)),Dict(zip(internal_vars,syms)))))
-#     end
-#     jacexprs
-# end
-
+# assumes subs is non-empty!
 function massaction_ratelaw_deriv(spec::Symbol, scoef::Int, rate::ExprValues, subs::Vector{ReactantStruct})
     # only case where we should get a constant derivative
     ((length(subs) == 1) && (subs[1].stoichiometry == one(scoef))) && (return rate)
@@ -522,7 +484,7 @@ function massaction_ratelaw_deriv(spec::Symbol, scoef::Int, rate::ExprValues, su
             if expon == one(expon)
                 push!(rl.args, name)
             elseif expon > one(expon)
-                push!(rl.args, :($name^$expon))
+                push!(rl.args, Expr(:call, :^, name, expon))
             end
         else
             denom *= factorial(stoich)

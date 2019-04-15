@@ -365,12 +365,12 @@ or `@empty_reaction_network` macros with everything needed to use SDE solvers.
 Optional kwargs can be used to disable the construction of additional SDE solver
 components.
 """
-function addsdes!(rn::DiffEqBase.AbstractReactionNetwork)
+function addsdes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     @unpack reactions, syms_to_ints, params_to_ints, scale_noise = rn
 
     # first construct an ODE reaction network
     if rn.f == nothing
-        addodes!(rn)
+        addodes!(rn; kwargs...)
     end
 
     (g_expr, g, g_funcs, p_matrix) = gensde_exprs(reactions, syms_to_ints, params_to_ints, scale_noise)
