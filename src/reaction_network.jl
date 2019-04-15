@@ -479,7 +479,7 @@ function massaction_ratelaw_deriv(spec::Symbol, scoef::Int, rate::ExprValues, su
         stoich = sub.stoichiometry        
         if name == spec
             expon = stoich - one(stoich)
-            denom *= factorial(stoich-one(stoich))
+            denom *= factorial(expon)
             if expon == one(expon)
                 push!(rl.args, name)
             elseif expon > one(expon)
