@@ -541,11 +541,7 @@ function calculate_symjac(reactions, reactants, parameters, syms)
     fill!(jacexprs, 0)
 
     nrxs = length(reactants)
-    @inbounds for rx in reactions 
-        
-        # if no substrates there is no contribution to calculate
-        isempty(rx.substrates) && continue     
-
+    @inbounds for rx in reactions         
         if rx.is_pure_mass_action 
             for sub in rx.substrates
                 spec  = sub.reactant
