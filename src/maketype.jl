@@ -340,14 +340,14 @@ components.
 function addodes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     @unpack reactions, syms_to_ints, params_to_ints, syms = rn
 
-    (f_expr, f, f_rhs, symjac, jac, paramjac, f_symfuncs) = genode_exprs(reactions, syms_to_ints, params_to_ints, syms; kwargs...)
+    (f_expr, f, f_rhs, symjac, jac, paramjac, f_symfuncs, jac_prototype) = genode_exprs(reactions, syms_to_ints, params_to_ints, syms; kwargs...)
     rn.f          = eval(f)
     rn.f_func     = f_rhs
     rn.jac        = eval(jac)
     rn.paramjac   = eval(paramjac)
     rn.symjac     = eval(symjac)
     rn.f_symfuncs = f_symfuncs
-    rn.odefun     = ODEFunction(rn.f; jac=rn.jac, jac_prototype=nothing, paramjac=rn.paramjac, syms=rn.syms)
+    rn.odefun     = ODEFunction(rn.f; jac=rn.jac, jac_prototype=jac_prototype, paramjac=rn.paramjac, syms=rn.syms)
 
     # functor for evaluating f
     functor_exprs = gentypefun_exprs(typeof(rn), esc_exprs=false, gen_constructor=false)
