@@ -666,9 +666,16 @@ end
 #Makes the Jacobian.
 function calculate_jac(symjac::Matrix{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     func_body = Expr(:block)
-    @inbounds for j = 1:size(symjac)[2], i = 1:size(symjac)[1]
-        ex =  (symjac[i,j] isa Number) ? symjac[i,j] : recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p))
-        push!(func_body.args, :(internal___var___J[$i,$j] = $(ex)))
+    push!(func_body.args, :(fill!(internal___var___J, zero(eltype(internal___var___J)))))
+    @inbounds for j = 1:size(symjac)[2], i = 1:size(symjac)[1]        
+        if symjac[i,j] isa Number
+            ex = symjac[i,j]
+            !iszero(ex) && push!(func_body.args, :(internal___var___J[$i,$j] = $(ex)))
+        else
+            ex = recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p))
+            splitplus!(ex)
+            push!(func_body.args, :(internal___var___J[$i,$j] = $(ex)))
+        end
     end
     push!(func_body.args,:(return internal___var___J))
     return :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
