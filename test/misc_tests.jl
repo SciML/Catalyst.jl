@@ -68,7 +68,22 @@ dua = zeros(3); n4f(dua,u,p,t);
 J   = zeros(3,3); network4.jac(J,u,p,t);
 Ja  = zeros(3,3); n4Jac(Ja,u,p,t);
 @test maximum(abs.(du .- dua)) < 10*eps(Float64)
-@test maximum(abs.(J[:] .- Ja[:])) < 10*eps(Float64)
+@test maximum(abs.(J .- Ja)) < 10*eps(Float64)
+
+# Test the sparse jacobian
+network5 = @min_reaction_network begin
+    k1, 2A --> B
+    k2, B --> 2A
+    k3, A + B --> C
+    k4, C --> A + B
+    k5, 3C --> 3A
+    k6, 0 --> 2B
+    hill(A,k7,k8,2), ∅ --> B 
+end k1 k2 k3 k4 k5 k6 k7 k8
+addodes!(network5, sparse_jac=true)
+Js = sparse(ones(3,3))
+network5.jac(Js, u, p, t)
+@test maximum(abs.(Matrix(Js) .- Ja)) < 10*eps(Float64)
 
 #Tests the parameter jacobian.
 network1 = @reaction_network begin

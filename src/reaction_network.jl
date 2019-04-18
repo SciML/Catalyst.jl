@@ -182,12 +182,13 @@ end
 function genode_exprs(reactions, reactants, parameters, syms; build_jac=true,
                                                               build_paramjac=true,
                                                               sparse_jac=false,
-                                                              build_symfuncs=true)
+                                                              build_symfuncs=true,
+                                                              zero_fill=true)
     f_expr     = get_f(reactions, reactants)
     f          = make_func(f_expr, reactants, parameters)
     f_rhs      = ExprValues[element.args[2] for element in f_expr]
     f_symfuncs = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
-    symjac, jac, jac_protoype, paramjac = get_jacs(f_rhs, syms, reactions, reactants, parameters; build_jac=build_jac, sparse_jac=sparse_jac, build_paramjac=build_paramjac)
+    symjac, jac, jac_protoype, paramjac = get_jacs(f_rhs, syms, reactions, reactants, parameters; build_jac=build_jac, sparse_jac=sparse_jac, build_paramjac=build_paramjac, zero_fill=zero_fill)
 
     (f_expr,f,f_rhs,symjac,jac,paramjac,f_symfuncs, jac_protoype)
 end
@@ -455,7 +456,8 @@ function get_jacs(f_rhs::Vector{ExprValues}, syms::Vector{Symbol}, reactions::Ve
                                                                    parameters::OrderedDict{Symbol,Int};
                                                                    build_jac = true,                                                                   
                                                                    build_paramjac = true,
-                                                                   sparse_jac = false)
+                                                                   sparse_jac = false,
+                                                                   zero_fill = false)
     # jacobian logic                                                               
     if build_jac
         if sparse_jac
@@ -463,7 +465,7 @@ function get_jacs(f_rhs::Vector{ExprValues}, syms::Vector{Symbol}, reactions::Ve
             symjac = nothing
         else
             symjac = calculate_symjac(reactions, reactants, parameters, syms) 
-            jac = calculate_jac(deepcopy(symjac), reactants, parameters) 
+            jac = calculate_jac(deepcopy(symjac), reactants, parameters, zero_fill) 
             jac_prototype = nothing
         end
     else
@@ -586,6 +588,29 @@ function calculate_symjac(reactions, reactants, parameters, syms)
     jacexprs
 end
 
+#Makes the Jacobian.
+# zero_fill kwarg controls whether to first fill the matrix with zeros and then only fill in non-zero entries
+# vs looping through and putting expressions for entries that are always zero.
+# This is needed for sufficiently large dense matrices to allow compilation. (e.g. 1000x1000)
+function calculate_jac(symjac::Matrix{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int}, zero_fill=false)
+    func_body = Expr(:block)
+    zero_fill && push!(func_body.args, :(fill!(internal___var___J, zero(eltype(internal___var___J)))))
+    @inbounds for j = 1:size(symjac)[2], i = 1:size(symjac)[1]        
+        if symjac[i,j] isa Number
+            ex = symjac[i,j]
+            (!zero_fill || !iszero(ex)) && push!(func_body.args, :(internal___var___J[$i,$j] = $(ex)))
+        else
+            ex = recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p))
+            splitplus!(ex)
+            push!(func_body.args, :(internal___var___J[$i,$j] = $(ex)))
+        end
+    end
+    push!(func_body.args,:(return internal___var___J))
+
+    return :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
+end
+
+
 function dict_to_sparsemat(d; vals=nothing)
     V   = isnothing(vals) ? collect(values(d)) : vals
     len = length(d)
@@ -597,7 +622,6 @@ function dict_to_sparsemat(d; vals=nothing)
     end    
     return sparse(I,J,V)
 end
-
 
 # create a sparse Jacobian
 function calculate_sparse_symjac(reactions, reactants, parameters, syms)
@@ -661,24 +685,6 @@ function calculate_sparse_symjac(reactions, reactants, parameters, syms)
     jfunex = :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $jfun)
     
     return jac_prototype, jfunex
-end
-
-#Makes the Jacobian.
-function calculate_jac(symjac::Matrix{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
-    func_body = Expr(:block)
-    push!(func_body.args, :(fill!(internal___var___J, zero(eltype(internal___var___J)))))
-    @inbounds for j = 1:size(symjac)[2], i = 1:size(symjac)[1]        
-        if symjac[i,j] isa Number
-            ex = symjac[i,j]
-            !iszero(ex) && push!(func_body.args, :(internal___var___J[$i,$j] = $(ex)))
-        else
-            ex = recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p))
-            splitplus!(ex)
-            push!(func_body.args, :(internal___var___J[$i,$j] = $(ex)))
-        end
-    end
-    push!(func_body.args,:(return internal___var___J))
-    return :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
 end
 
 #Makes the Jacobian, with respect to parameter values. 
