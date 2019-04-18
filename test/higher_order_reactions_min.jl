@@ -26,8 +26,11 @@ prob_det1 = ODEProblem(ho_model1, u0, tspan)
 prob_det2 = ODEProblem(ho_model2, u0, tspan)
 sol_det1 = solve(prob_det1,Tsit5())
 sol_det2 = solve(prob_det2,Tsit5())
-@test tmp_sol2vec(sol_det1,1) == tmp_sol2vec(sol_det2,1)
-@test tmp_sol2vec(sol_det1,2) == tmp_sol2vec(sol_det2,2)
+# @test tmp_sol2vec(sol_det1,1) == tmp_sol2vec(sol_det2,1)
+# @test tmp_sol2vec(sol_det1,2) == tmp_sol2vec(sol_det2,2)
+@test isapprox(tmp_sol2vec(sol_det1,1), tmp_sol2vec(sol_det2,1), atol=1e-7)
+@test isapprox(tmp_sol2vec(sol_det1,2), tmp_sol2vec(sol_det2,2), atol=1e-7)
+
 
 disc_prob =  DiscreteProblem([1000,1000],(0.,1.))
 jump_prob1 = JumpProblem(disc_prob,Direct(),ho_model1)

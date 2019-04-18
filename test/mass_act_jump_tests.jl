@@ -17,7 +17,7 @@ function execute_test(u0, tf, rates, rs, Nsims, expected_avg, idx, test_name)
     prob = DiscreteProblem(u0, (0.0, tf), rates)
 
     for method in algs
-        jump_prob = JumpProblem(prob, method, rs)
+        jump_prob = JumpProblem(prob, method, rs, save_positions=(false,false))
         avg_val = runSSAs(jump_prob, Nsims, idx)
 
         if dotestmean
@@ -27,7 +27,6 @@ function execute_test(u0, tf, rates, rs, Nsims, expected_avg, idx, test_name)
             @test abs(avg_val - expected_avg) < reltol * expected_avg
         end
     end
-
 end
 
 # nonlinear reaction test
