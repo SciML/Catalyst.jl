@@ -548,7 +548,7 @@ end
 
 # generate Jacobian. Using preceding functions it supports jacexprs as
 # a Dict mapping (i,j) => ExprValues or as a dense matrix of ExprValues
-function jac_as_exprvalues(jacexprs, reactions, reactants) 
+function jac_as_exprvalues!(jacexprs, reactions, reactants) 
 
    @inbounds for rx in reactions         
         if rx.is_pure_mass_action 
@@ -595,7 +595,7 @@ function calculate_symjac(reactions, reactants)
     nspecs   = length(reactants) 
     jacexprs = Matrix{ExprValues}(undef, nspecs, nspecs)
     fill!(jacexprs, 0)
-    jac_as_exprvalues(jacexprs, reactions, reactants)
+    jac_as_exprvalues!(jacexprs, reactions, reactants)
     jacexprs
 end
 
@@ -639,7 +639,7 @@ function calculate_sparse_jac(reactions, reactants, parameters)
 
     # get the elements and structure of sparse matrix
     jacexprs = Dict{Tuple{Int,Int},ExprValues}()
-    jac_as_exprvalues(jacexprs, reactions, reactants)
+    jac_as_exprvalues!(jacexprs, reactions, reactants)
     jac_prototype = dict_to_sparsemat(jacexprs, vals=ones(length(jacexprs)))
 
     # build the function
