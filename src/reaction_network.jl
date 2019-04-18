@@ -616,9 +616,9 @@ function calculate_jac(symjac::Matrix{ExprValues}, reactants::OrderedDict{Symbol
             push!(func_body.args, :(internal___var___J[$i,$j] = $(ex)))
         end
     end
-    push!(func_body.args,:(return internal___var___J))
+    push!(func_body.args,:(return nothing))
 
-    return :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
+    return :(myjac(internal___var___J,internal___var___u,internal___var___p,t) = @inbounds $func_body)
 end
 
 # convert Dict mapping (i,j) => val to sparse matrix
@@ -654,7 +654,7 @@ function calculate_sparse_jac(reactions, reactants, parameters)
             push!(jfun.args, :(internal___var___Jvals[$k] = $ex))
         end
     end
-    push!(jfun.args, :(return internal___var___J))
+    push!(jfun.args, :(return nothing))
     jfunex = :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $jfun)
     
     return jac_prototype, jfunex
