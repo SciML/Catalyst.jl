@@ -129,7 +129,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
     (reactions, reactants, parameters, syms, params) = get_minnetwork(ex, p)
 
     # expressions for ODEs
-    (f_expr, f, f_rhs, symjac, jac, paramjac, f_symfuncs) = genode_exprs(reactions, reactants, parameters, syms)
+    (f_expr, f, f_rhs, symjac, jac, paramjac, f_symfuncs, jac_prototype) = genode_exprs(reactions, reactants, parameters, syms)
     odefun = :(ODEFunction(f; jac=$jac, jac_prototype=nothing, paramjac=$paramjac, syms=$syms))
 
     # expressions for SDEs
@@ -181,14 +181,16 @@ end
 # ODE expressions
 function genode_exprs(reactions, reactants, parameters, syms; build_jac=true,
                                                               build_paramjac=true,
-                                                              build_symfuncs=true)
-    f_expr                = get_f(reactions, reactants)
-    f                     = make_func(f_expr, reactants, parameters)
-    f_rhs                 = ExprValues[element.args[2] for element in f_expr]
-    symjac, jac, paramjac = get_jacs(f_rhs, syms, reactions, reactants, parameters; build_jac=build_jac, build_paramjac=build_paramjac)
-    f_symfuncs            = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
+                                                              sparse_jac=false,
+                                                              build_symfuncs=true,
+                                                              zeroout_jac=false)
+    f_expr     = get_f(reactions, reactants)
+    f          = make_func(f_expr, reactants, parameters)
+    f_rhs      = ExprValues[element.args[2] for element in f_expr]
+    f_symfuncs = build_symfuncs ? hcat([SymEngine.Basic(f) for f in f_rhs]) : nothing
+    symjac, jac, jac_protoype, paramjac = get_jacs(f_rhs, syms, reactions, reactants, parameters; build_jac=build_jac, sparse_jac=sparse_jac, build_paramjac=build_paramjac, zeroout_jac=zeroout_jac)
 
-    (f_expr,f,f_rhs,symjac,jac,paramjac,f_symfuncs)
+    (f_expr,f,f_rhs,symjac,jac,paramjac,f_symfuncs, jac_protoype)
 end
 
 # SDE expressions
@@ -436,32 +438,34 @@ function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     return g
 end
 
-#Computes how much the stoichiometry in a single reactant changes for a reaction. Only really interesting if the reactant is both a product and substrate.
-function get_stoch_diff(reaction::ReactionStruct, reactant::Symbol)
-    stoch = 0
-    for prod in reaction.products
-        (reactant == prod.reactant) && (stoch += prod.stoichiometry)
-    end
-    for sub in reaction.substrates
-        (reactant == sub.reactant) && (stoch -= sub.stoichiometry)
-    end
-    return stoch
-end
-
 #Makes the various jacobian elements required.
 function get_jacs(f_rhs::Vector{ExprValues}, syms::Vector{Symbol}, reactions::Vector{ReactionStruct}, 
                                                                    reactants::OrderedDict{Symbol,Int}, 
                                                                    parameters::OrderedDict{Symbol,Int};
-                                                                   build_jac = true,
-                                                                   build_paramjac = true)
-    symjac = build_jac ? calculate_symjac(reactions, reactants, parameters, syms) : nothing
-    jac = build_jac ? calculate_jac(deepcopy(symjac), reactants, parameters) : nothing    
+                                                                   build_jac = true,                                                                   
+                                                                   build_paramjac = true,
+                                                                   sparse_jac = false,
+                                                                   zeroout_jac = false)
+    # jacobian logic                                                               
+    if build_jac
+        if sparse_jac
+            jac_prototype, jac = calculate_sparse_jac(reactions, reactants, parameters)
+            symjac = nothing
+        else
+            symjac = calculate_symjac(reactions, reactants) 
+            jac = calculate_jac(deepcopy(symjac), reactants, parameters, zeroout_jac) 
+            jac_prototype = nothing
+        end
+    else
+        jac_prototype = jac = symjac = nothing
+    end
+    
     paramjac = build_paramjac ? calculate_paramjac(deepcopy(f_rhs), reactants, parameters) : nothing
 
     if isnothing(symjac)
-        return (symjac, jac, paramjac) 
+        return (symjac, jac, jac_prototype, paramjac) 
     else
-        return (Expr(:quote, symjac), jac, paramjac)
+        return (Expr(:quote, symjac), jac, jac_prototype, paramjac)
     end
 end
 
@@ -533,13 +537,20 @@ end
     newex
 end
 
+# get the correct index type for a dict mapping (i,j) to ExprValues, 
+# or for a Matrix of ExprValues
+@inline getkeytype(d::Dict)                       = keytype(d)
+@inline getkeytype(d::Matrix)                     = CartesianIndex{2}
+@inline resolveindex(T::Type,i,j)                 = T(i,j)
+@inline resolveindex(T::Type{Tuple{Int,Int}},i,j) = (i,j)
+@inline checkforkey(d::Dict, key)                 = haskey(d, key)
+@inline checkforkey(d::Matrix, key)               = true
 
-function calculate_symjac(reactions, reactants, parameters, syms)
-    nspecs = length(syms) 
-    jacexprs = Matrix{ExprValues}(undef, nspecs, nspecs)
-    fill!(jacexprs, 0)
+# generate Jacobian. Using preceding functions it supports jacexprs as
+# a Dict mapping (i,j) => ExprValues or as a dense matrix of ExprValues
+function jac_as_exprvalues!(jacexprs, reactions, reactants) 
 
-    @inbounds for rx in reactions         
+   @inbounds for rx in reactions         
         if rx.is_pure_mass_action 
             for sub in rx.substrates
                 spec  = sub.reactant
@@ -551,8 +562,12 @@ function calculate_symjac(reactions, reactants, parameters, syms)
 
                 # determine stoichiometric coefficent to multiply by 
                 @inbounds for ns in rx.netstoich
-                    i = reactants[ns.reactant]
-                    jacexprs[i,j] = addstoich_to_exprsum(jacexprs[i,j], deepcopy(dratelaw), ns.stoichiometry)
+                    key = resolveindex(getkeytype(jacexprs), reactants[ns.reactant], j)
+                    if checkforkey(jacexprs, key) 
+                        jacexprs[key] = addstoich_to_exprsum(jacexprs[key], deepcopy(dratelaw), ns.stoichiometry)
+                    else
+                        jacexprs[key] = addstoich_to_exprsum(0, deepcopy(dratelaw), ns.stoichiometry)
+                    end
                 end
             end            
         else
@@ -562,25 +577,87 @@ function calculate_symjac(reactions, reactants, parameters, syms)
                 j = reactants[dep]
 
                 @inbounds for ns in rx.netstoich
-                    i = reactants[ns.reactant]
-                    jacexprs[i,j] = addstoich_to_exprsum(jacexprs[i,j], dratelaw, ns.stoichiometry)
+                    key = resolveindex(getkeytype(jacexprs), reactants[ns.reactant], j)
+                    if checkforkey(jacexprs, key) 
+                        jacexprs[key] = addstoich_to_exprsum(jacexprs[key], dratelaw, ns.stoichiometry)
+                    else
+                        jacexprs[key] = addstoich_to_exprsum(0, dratelaw, ns.stoichiometry)
+                    end
                 end
             end
         end
     end
+    nothing
+end
 
+# generate a dense matrix of ExprValues representing the Jacobian
+function calculate_symjac(reactions, reactants)
+    nspecs   = length(reactants) 
+    jacexprs = Matrix{ExprValues}(undef, nspecs, nspecs)
+    fill!(jacexprs, 0)
+    jac_as_exprvalues!(jacexprs, reactions, reactants)
     jacexprs
 end
 
-#Makes the Jacobian.
-function calculate_jac(symjac::Matrix{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
+# Generate the Jacobian evaluation function as a single expression.
+# zeroout_jac kwarg controls whether to first fill the matrix with zeros and then only fill in non-zero entries
+# vs looping through and putting expressions for entries that are always zero.
+# This is needed for sufficiently large dense matrices to allow compilation. (e.g. 1000x1000)
+function calculate_jac(symjac::Matrix{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int}, zeroout_jac=false)
     func_body = Expr(:block)
-    @inbounds for j = 1:size(symjac)[2], i = 1:size(symjac)[1]
-        ex =  (symjac[i,j] isa Number) ? symjac[i,j] : recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p))
-        push!(func_body.args, :(internal___var___J[$i,$j] = $(ex)))
+    zeroout_jac && push!(func_body.args, :(fill!(internal___var___J, zero(eltype(internal___var___J)))))
+    @inbounds for j = 1:size(symjac)[2], i = 1:size(symjac)[1]        
+        if symjac[i,j] isa Number
+            ex = symjac[i,j]
+            (!zeroout_jac || !iszero(ex)) && push!(func_body.args, :(internal___var___J[$i,$j] = $(ex)))
+        else
+            ex = recursive_replace!(symjac[i,j],(reactants,:internal___var___u), (parameters, :internal___var___p))
+            splitplus!(ex)
+            push!(func_body.args, :(internal___var___J[$i,$j] = $(ex)))
+        end
     end
-    push!(func_body.args,:(return internal___var___J))
-    return :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
+    push!(func_body.args,:(return nothing))
+
+    return :(myjac(internal___var___J,internal___var___u,internal___var___p,t) = @inbounds $func_body)
+end
+
+# convert Dict mapping (i,j) => val to sparse matrix
+function dict_to_sparsemat(d; vals=nothing)
+    V   = isnothing(vals) ? collect(values(d)) : vals
+    len = length(d)
+    I   = Vector{Int}(undef,len)
+    J   = Vector{Int}(undef,len)
+    for (i,k) in enumerate(keys(d))
+        I[i] = k[1]
+        J[i] = k[2]
+    end    
+    return sparse(I,J,V)
+end
+
+# create a sparse Jacobian
+function calculate_sparse_jac(reactions, reactants, parameters)
+
+    # get the elements and structure of sparse matrix
+    jacexprs = Dict{Tuple{Int,Int},ExprValues}()
+    jac_as_exprvalues!(jacexprs, reactions, reactants)
+    jac_prototype = dict_to_sparsemat(jacexprs, vals=ones(length(jacexprs)))
+
+    # build the function
+    jfun = Expr(:block)
+    nspecs = length(reactants)
+    push!(jfun.args, :(internal___var___Jvals = nonzeros(internal___var___J)))
+    rows = rowvals(jac_prototype)
+    @inbounds for j = 1:nspecs
+        @inbounds for k in nzrange(jac_prototype,j)
+            i = rows[k]
+            ex = (jacexprs[(i,j)] isa Number) ? jacexprs[(i,j)] : recursive_replace!(jacexprs[(i,j)],(reactants,:internal___var___u), (parameters,:internal___var___p))
+            push!(jfun.args, :(internal___var___Jvals[$k] = $ex))
+        end
+    end
+    push!(jfun.args, :(return nothing))
+    jfunex = :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $jfun)
+    
+    return jac_prototype, jfunex
 end
 
 #Makes the Jacobian, with respect to parameter values. 

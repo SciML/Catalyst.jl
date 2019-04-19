@@ -1,4 +1,4 @@
-using Test, Statistics, Random, LinearAlgebra
+using Test, Statistics, Random, LinearAlgebra, SparseArrays
 using DiffEqBiological, DiffEqBase
 using OrdinaryDiffEq, StochasticDiffEq, DiffEqJump, SteadyStateDiffEq
 
