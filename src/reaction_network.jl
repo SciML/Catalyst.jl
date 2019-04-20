@@ -130,11 +130,11 @@ function coordinate(name, ex::Expr, p, scale_noise)
 
     # expressions for ODEs
     (f_expr, f, f_rhs, symjac, jac, paramjac, f_symfuncs, jac_prototype) = genode_exprs(reactions, reactants, parameters, syms)
-    odefun = :(ODEFunction(f; jac=$jac, jac_prototype=nothing, paramjac=$paramjac, syms=$syms))
+    odefun = :(ODEFunction(f; jac=$jac, jac_prototype=$jac_prototype, paramjac=$paramjac, syms=$syms))
 
     # expressions for SDEs
     (g_expr, g, g_funcs, p_matrix) = gensde_exprs(reactions, reactants, parameters, scale_noise)
-    sdefun = :(SDEFunction(f, g; jac=$jac, jac_prototype=nothing, paramjac=$paramjac, syms=$syms))
+    sdefun = :(SDEFunction(f, g; jac=$jac, jac_prototype=$jac_prototype, paramjac=$paramjac, syms=$syms))
 
     # expressions for jumps
     (jump_rate_expr, jump_affect_expr, jumps) = get_jumps(reactions, reactants, parameters)
@@ -618,7 +618,7 @@ function calculate_jac(symjac::Matrix{ExprValues}, reactants::OrderedDict{Symbol
     end
     push!(func_body.args,:(return nothing))
 
-    return :(myjac(internal___var___J,internal___var___u,internal___var___p,t) = @inbounds $func_body)
+    return :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
 end
 
 # convert Dict mapping (i,j) => val to sparse matrix
