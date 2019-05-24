@@ -96,7 +96,7 @@ function make_hc_template(reaction_network::DiffEqBase.AbstractReactionNetwork)
     check_exists_polynomial(reaction_network)
     p_template = randn(ComplexF64, length(reaction_network.params))
     f_template = DynamicPolynomials.subs.(reaction_network.equilibratium_polynomial, Ref(reaction_network.polyvars_params => p_template))
-    result_template = HomotopyContinuation.solve(f_template, report_progress=false)
+    result_template = HomotopyContinuation.solve(f_template, show_progress=false)
     reaction_network.homotopy_continuation_template = (p_template,solutions(result_template))
 end
 #Macro running the HC template function.
@@ -133,10 +133,10 @@ end
 function HcSteadyStateSolver(reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64})
     set_temporary_polynomial!(reaction_network, params)
     if length(params)==0
-        result = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, report_progress=false)
+        result = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, show_progress=false)
     else
         (reaction_network.homotopy_continuation_template==nothing) && make_hc_template(reaction_network)
-        result = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=params, report_progress=false)
+        result = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=params, show_progress=false)
     end
     reset_temporary_polynomial!(reaction_network)
     filter(realsolutions(result)) do x
@@ -259,15 +259,15 @@ function HcBifurcationSolver1(reaction_network::DiffEqBase.AbstractReactionNetwo
     (reaction_network.homotopy_continuation_template==nothing) ? make_hc_template(reaction_network) : check_is_polynomial(reaction_network)
     p1 = copy(params); p1[reaction_network.params_to_ints[param]] = range[1];
     p2 = copy(params); p2[reaction_network.params_to_ints[param]] = range[2];
-    result1 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p1, report_progress=false))
-    result2 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p2, report_progress=false))
-    tracker1 = pathtracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p1, p₀=p2, max_step_size=stepsize)
-    tracker2 = pathtracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p2, p₀=p1, max_step_size=stepsize)
+    result1 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p1, show_progress=false))
+    result2 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p2, show_progress=false))
+    tracker1 = coretracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p1, p₀=p2, max_step_size=stepsize)
+    tracker2 = coretracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p2, p₀=p1, max_step_size=stepsize)
     paths_complete = Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}}()
     paths_incomplete = Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}}()
     for result in result1
         path = track_solution(tracker1,result)
-        if (currstatus(tracker1) == PathTrackerStatus.success)
+        if (currstatus(tracker1) == CoreTrackerStatus.success)
             remove_sol!(result2,path[2][end])
             push!(paths_complete,(1. .- path[1],path[2]))
         else
@@ -276,7 +276,7 @@ function HcBifurcationSolver1(reaction_network::DiffEqBase.AbstractReactionNetwo
     end
     for result in result2
         path = track_solution(tracker2,result)
-        (currstatus(tracker2) == PathTrackerStatus.success)&&remove_path!(paths_incomplete,path[2][end])
+        (currstatus(tracker2) == CoreTrackerStatus.success)&&remove_path!(paths_incomplete,path[2][end])
         push!(paths_complete,path)
     end
     append!(paths_complete,paths_incomplete)
@@ -307,27 +307,27 @@ end
 function HcBifurcationSolver2(reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64},param::Symbol,range::Tuple{Float64,Float64};stepsize=0.01::Float64,p_skip=0.001::Float64,thres1=0.0001::Float64,thres2=0.2::Float64)
     (reaction_network.homotopy_continuation_template==nothing) ? make_hc_template(reaction_network) : check_is_polynomial(reaction_network)
     p_end = copy(params); p_end[reaction_network.params_to_ints[param]] = range[2];
-    function make_pathtracker(p_start)
+    function make_coretracker(p_start)
         pars = copy(params); pars[reaction_network.params_to_ints[param]] = p_start;
-        pathtracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=pars, p₀=p_end, max_step_size=stepsize)
+        coretracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=pars, p₀=p_end, max_step_size=stepsize)
     end
     function solve_system(p)
         pars = copy(params); pars[reaction_network.params_to_ints[param]] = p;
-        solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=pars, report_progress=false))
+        solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=pars, show_progress=false))
     end
     results = solve_system(range[1])
     paths_complete = Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}}()
     breakpoints = Vector{Vector{ComplexF64}}()
     for result in results
-        recursive_track_solutions!(result,range[1],paths_complete,breakpoints,make_pathtracker,solve_system,range[2],p_skip=0.0001,thres1=0.0001,thres2=0.1)
+        recursive_track_solutions!(result,range[1],paths_complete,breakpoints,make_coretracker,solve_system,range[2],p_skip=0.0001,thres1=0.0001,thres2=0.1)
     end
     reset_temporary_polynomial!(reaction_network)
     return bifurcation_paths(positive_real_projection.(paths_complete),param,range[1],range[2],reaction_network,params)
 end
 #Recursively creates new paths. required when one path splits into several.
-function recursive_track_solutions!(start_point::Vector{ComplexF64},start_p::Float64,paths_complete::Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}},breakpoints::Vector{Vector{ComplexF64}},make_pathtracker::Function,solve_system::Function,p_end::Float64;p_skip=0.0001::Float64,thres1=0.0001::Float64,thres2=0.1::Float64)
+function recursive_track_solutions!(start_point::Vector{ComplexF64},start_p::Float64,paths_complete::Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}},breakpoints::Vector{Vector{ComplexF64}},make_coretracker::Function,solve_system::Function,p_end::Float64;p_skip=0.0001::Float64,thres1=0.0001::Float64,thres2=0.1::Float64)
     any(map(bp->maximum(abs.([start_p,start_point...].-bp))<thres1, breakpoints)) && return
-    path = track_solution(make_pathtracker(start_p),start_point)
+    path = track_solution(make_coretracker(start_p),start_point)
     push!(paths_complete,(1. .- path[1],path[2]))
     (path[1][end]==0.0) && return
     push!(breakpoints,[path[1][end],path[2][end]...])
@@ -335,12 +335,12 @@ function recursive_track_solutions!(start_point::Vector{ComplexF64},start_p::Flo
     skip_sols = solve_system(p_skip)
     for sol in skip_sols
         (maximum(abs.(path[2][end].-sol))>thres2) && continue
-        recursive_track_solutions!(sol,p_skip,paths_complete,breakpoints,make_pathtracker,solve_system,p_end,p_skip=0.0001,thres1=0.0001,thres2=0.1)
+        recursive_track_solutions!(sol,p_skip,paths_complete,breakpoints,make_coretracker,solve_system,p_end,p_skip=0.0001,thres1=0.0001,thres2=0.1)
     end
 end
 
 #For a given tracker and solution, tries to track the solution from t=1 to t=0.
-function track_solution(tracker::PathTracker,sol::Vector{ComplexF64})
+function track_solution(tracker::CoreTracker,sol::Vector{ComplexF64})
     T = Vector{Float64}(); X = Vector{Vector{ComplexF64}}();
     for (x,t) in iterator(tracker, sol)
         push!(T,t); push!(X,x);
