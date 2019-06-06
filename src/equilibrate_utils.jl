@@ -325,7 +325,7 @@ function HcBifurcationSolver2(reaction_network::DiffEqBase.AbstractReactionNetwo
     return bifurcation_paths(positive_real_projection.(paths_complete),param,range[1],range[2],reaction_network,params)
 end
 #Recursively creates new paths. required when one path splits into several.
-function recursive_track_solutions!(start_point::Vector{ComplexF64},start_p::Float64,paths_complete::Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}},breakpoints::Vector{Vector{ComplexF64}},make_coretracker::Function,solve_system::Function,p_end::Float64;p_skip=0.0001::Float64,thres1=0.0001::Float64,thres2=0.1::Float64)
+function recursive_track_solutions!(start_point::Vector{ComplexF64},start_p::Float64,paths_complete::Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}},breakpoints::Vector{Vector{ComplexF64}},make_cotracker::Function,solve_system::Function,p_end::Float64;p_skip=0.0001::Float64,thres1=0.0001::Float64,thres2=0.1::Float64)
     any(map(bp->maximum(abs.([start_p,start_point...].-bp))<thres1, breakpoints)) && return
     path = track_solution(make_coretracker(start_p),start_point)
     push!(paths_complete,(1. .- path[1],path[2]))
