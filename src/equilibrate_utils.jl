@@ -67,18 +67,21 @@ end
 #Function which does the actual work of adding the fixed concentration information. Not meant to be called directly, but is called through the fixed_concentration macro.
 function internal___add___constraint(reaction_network::DiffEqBase.AbstractReactionNetwork, fixed_concentrations::Polynomial...)
     check_is_polynomial(reaction_network)
-    replaced = Set(keys(reaction_network.fixed_concentrations))
     for fc in fixed_concentrations
-        vars_in_fc = []
-        foreach(v -> in(v,reaction_network.polyvars_vars) && push!(vars_in_fc,reaction_network.syms[findfirst(v.==reaction_network.polyvars_vars)]), variables(fc))
-        intersection = intersect(setdiff(reaction_network.syms,replaced),vars_in_fc)
-        (length(intersection)==0) && (@warn "Unable to replace a polynomial"; continue;)
-        next_replace = intersection[1]
-        push!(replaced,next_replace)
-        push!(reaction_network.fixed_concentrations,next_replace=>fc)
+        reaction_network.fixed_concentrations = [reaction_network.fixed_concentrations...,fc]
     end
-    (reaction_network.equilibratium_polynomial==nothing) && return
-    foreach(sym -> reaction_network.equilibratium_polynomial[findfirst(reaction_network.syms.==sym)] = reaction_network.fixed_concentrations[sym], keys(reaction_network.fixed_concentrations))
+    #replaced = Set(keys(reaction_network.fixed_concentrations))
+    #for fc in fixed_concentrations
+    #    vars_in_fc = []
+    #    foreach(v -> in(v,reaction_network.polyvars_vars) && push!(vars_in_fc,reaction_network.syms[findfirst(v.==reaction_network.polyvars_vars)]), variables(fc))
+    #    intersection = intersect(setdiff(reaction_network.syms,replaced),vars_in_fc)
+    #    (length(intersection)==0) && (@warn "Unable to replace a polynomial"; continue;)
+    #    next_replace = intersection[1]
+    #    push!(replaced,next_replace)
+    #    push!(reaction_network.fixed_concentrations,next_replace=>fc)
+    #end
+    #(reaction_network.equilibratium_polynomial==nothing) && return
+    #foreach(sym -> reaction_network.equilibratium_polynomial[findfirst(reaction_network.syms.==sym)] = reaction_network.fixed_concentrations[sym], keys(reaction_network.fixed_concentrations))
 end
 #In some networks some linear combinations of concentrations remain fixed. This supplies this information directly to the network.
 macro add_constraints(reaction_network::Symbol, constraints::Expr...)
@@ -95,7 +98,7 @@ function make_hc_template(reaction_network::DiffEqBase.AbstractReactionNetwork)
     check_is_polynomial(reaction_network)
     check_exists_polynomial(reaction_network)
     p_template = randn(ComplexF64, length(reaction_network.params))
-    f_template = DynamicPolynomials.subs.(reaction_network.equilibratium_polynomial, Ref(reaction_network.polyvars_params => p_template))
+    f_template = DynamicPolynomials.subs.([reaction_network.equilibratium_polynomial...,reaction_network.fixed_concentrations...], Ref(reaction_network.polyvars_params => p_template))
     result_template = HomotopyContinuation.solve(f_template, show_progress=false)
     reaction_network.homotopy_continuation_template = (p_template,solutions(result_template))
 end
@@ -133,10 +136,10 @@ end
 function HcSteadyStateSolver(reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64})
     set_temporary_polynomial!(reaction_network, params)
     if length(params)==0
-        result = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, show_progress=false)
+        result = HomotopyContinuation.solve([reaction_network.equilibratium_polynomial...,reaction_network.fixed_concentrations...], show_progress=false)
     else
         (reaction_network.homotopy_continuation_template==nothing) && make_hc_template(reaction_network)
-        result = HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=params, show_progress=false)
+        result = HomotopyContinuation.solve([reaction_network.equilibratium_polynomial...,reaction_network.fixed_concentrations...], reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=params, show_progress=false)
     end
     reset_temporary_polynomial!(reaction_network)
     filter(realsolutions(result)) do x
@@ -259,8 +262,8 @@ function HcBifurcationSolver1(reaction_network::DiffEqBase.AbstractReactionNetwo
     (reaction_network.homotopy_continuation_template==nothing) ? make_hc_template(reaction_network) : check_is_polynomial(reaction_network)
     p1 = copy(params); p1[reaction_network.params_to_ints[param]] = range[1];
     p2 = copy(params); p2[reaction_network.params_to_ints[param]] = range[2];
-    result1 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p1, show_progress=false))
-    result2 = solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p2, show_progress=false))
+    result1 = solutions(HomotopyContinuation.solve([reaction_network.equilibratium_polynomial...,reaction_network.fixed_concentrations...], reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p1, show_progress=false))
+    result2 = solutions(HomotopyContinuation.solve([reaction_network.equilibratium_polynomial...,reaction_network.fixed_concentrations...], reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p2, show_progress=false))
     tracker1 = coretracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p1, p₀=p2, max_step_size=stepsize)
     tracker2 = coretracker(reaction_network.equilibratium_polynomial, parameters=reaction_network.polyvars_params, p₁=p2, p₀=p1, max_step_size=stepsize)
     paths_complete = Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}}()
@@ -313,7 +316,7 @@ function HcBifurcationSolver2(reaction_network::DiffEqBase.AbstractReactionNetwo
     end
     function solve_system(p)
         pars = copy(params); pars[reaction_network.params_to_ints[param]] = p;
-        solutions(HomotopyContinuation.solve(reaction_network.equilibratium_polynomial, reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=pars, show_progress=false))
+        solutions(HomotopyContinuation.solve([reaction_network.equilibratium_polynomial...,reaction_network.fixed_concentrations...], reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=pars, show_progress=false))
     end
     results = solve_system(range[1])
     paths_complete = Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}}()
@@ -325,7 +328,7 @@ function HcBifurcationSolver2(reaction_network::DiffEqBase.AbstractReactionNetwo
     return bifurcation_paths(positive_real_projection.(paths_complete),param,range[1],range[2],reaction_network,params)
 end
 #Recursively creates new paths. required when one path splits into several.
-function recursive_track_solutions!(start_point::Vector{ComplexF64},start_p::Float64,paths_complete::Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}},breakpoints::Vector{Vector{ComplexF64}},make_cotracker::Function,solve_system::Function,p_end::Float64;p_skip=0.0001::Float64,thres1=0.0001::Float64,thres2=0.1::Float64)
+function recursive_track_solutions!(start_point::Vector{ComplexF64},start_p::Float64,paths_complete::Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}},breakpoints::Vector{Vector{ComplexF64}},make_coretracker::Function,solve_system::Function,p_end::Float64;p_skip=0.0001::Float64,thres1=0.0001::Float64,thres2=0.1::Float64)
     any(map(bp->maximum(abs.([start_p,start_point...].-bp))<thres1, breakpoints)) && return
     path = track_solution(make_coretracker(start_p),start_point)
     push!(paths_complete,(1. .- path[1],path[2]))
@@ -357,6 +360,16 @@ function positive_real_projection(track_result::Tuple{Vector{Float64},Vector{Vec
     end
     return (T,X)
 end
+#For a given path, filters away all biologically unplausible values (negative and imaginary).
+function positive_real_projection(track_result::NamedTuple{(:p, :x),Tuple{Array{Float64,1},Array{Array{Complex{Float64},1},1}}})
+    T = Vector{Float64}(); X = Vector{Vector{ComplexF64}}();
+    for i = 1:length(track_result.p)
+        if (minimum(real.(track_result.x[i]))>-0.0001)&&(maximum(abs.(imag.(track_result.x[i])))<0.0001)
+            push!(T,track_result.p[i]); push!(X,real.(track_result.x[i]))
+        end
+    end
+    return (p=T,x=X)
+end
 #Takes a set of paths as tracked by homotopy continuation and turns them into a vector of bifurcation paths.
 function bifurcation_paths(paths::Vector{Tuple{Vector{Float64},Vector{Vector{ComplexF64}}}},param::Symbol,r1::Number,r2::Number,reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64})
     bps = Vector{bifurcation_path}()
@@ -368,6 +381,109 @@ function bifurcation_paths(paths::Vector{Tuple{Vector{Float64},Vector{Vector{Com
     end
     return bps
 end
+#Takes a set of paths as tracked by homotopy continuation and turns them into a vector of bifurcation paths.
+function bifurcation_paths(paths::Vector{NamedTuple{(:p, :x),Tuple{Array{Float64,1},Array{Array{Complex{Float64},1},1}}}},param::Symbol,r1::Number,r2::Number,reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64})
+    bps = Vector{bifurcation_path}()
+    for path in paths
+        (length(path.p)==0) && continue
+        (abs(1-path.p[1]/path.p[end])<0.0001) && continue
+        jac_eigenvals = get_jac_eigenvals(path.x,param,r1 .+ ((r2-r1) .* path.p),reaction_network,params)
+        push!(bps,bifurcation_path(path.p, path.x, jac_eigenvals, stability_type.(jac_eigenvals), length(path.p)))
+    end
+    return bps
+end
+
+function HcBifurcationSolver3(reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64},param::Symbol,range::Tuple{Float64,Float64};stepsize=0.01::Float64,Δp=0.01::Float64,Δx=0.01::Float64)
+    uses_temp_polynomial = temp_initialise_solver(reaction_network,params)
+    parameters(p_val) = (p = copy(params); p[reaction_network.params_to_ints[param]] = p_val; return p;)
+    p_cur = range[1]; paths = Vector{NamedTuple{(:p, :x),Tuple{Array{Float64,1},Array{Array{Complex{Float64},1},1}}}}();
+    while p_cur < range[2]
+        sol = solve_at(reaction_network,parameters(p_cur))
+        substract_sols!(sol,p_cur,paths,Δx)
+        ct1 = make_coretracker(reaction_network,sol,parameters(p_cur),parameters(range[1]),stepsize)
+        ct2 = make_coretracker(reaction_network,sol,parameters(p_cur),parameters(range[2]),stepsize)
+        new_paths = track_path_two_ways(sol,ct1,ct2,p_cur,range)
+        paths = combine_paths(paths,new_paths,p_cur,Δx)
+        println("\n",p_cur)
+        for path in new_paths
+            println(path.p[1]," ",path.p[end],"\t",path.x[1][1]," ",path.x[end][1])
+        end
+        p_cur = minimum(map(path->path.p[end],paths)) + Δp
+        println(p_cur)
+    end
+    temp_finalise_solver(uses_temp_polynomial,reaction_network)
+    return bifurcation_paths(positive_real_projection.(paths),param,range[1],range[2],reaction_network,params)
+end
+function solve_at(reaction_network,p)
+    return solutions(HomotopyContinuation.solve([reaction_network.equilibratium_polynomial...,reaction_network.fixed_concentrations...], reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=p, show_progress=false))
+end
+function t2p(t::AbstractFloat,range::Tuple{Float64,Float64})
+    return range[1] + t*(range[2]-range[1])
+end
+function make_coretracker(reaction_network,solution,p1,p2,max_step_size)
+    return coretracker([reaction_network.equilibratium_polynomial...,reaction_network.fixed_concentrations...], solution, parameters=reaction_network.polyvars_params, p₁=p1, p₀=p2, max_step_size=max_step_size)
+end
+function track_path_two_ways(start_points,coretracker1,coretracker2,p_cur,range)
+    paths = Vector{NamedTuple{(:p, :x),Tuple{Array{Float64,1},Array{Array{Complex{Float64},1},1}}}}();
+    for sp in start_points
+        (P1,X1) = track_path(sp,coretracker1,p_cur,range[1])
+        (P2,X2) = track_path(sp,coretracker2,p_cur,range[2])
+        push!(paths,(p=[reverse(P1)...,reverse(P2)...],x=[X1...,X2...]))
+    end
+    return compress_path!.(paths)
+end
+function track_path(solution,coretracker,p_start,p_end)
+    P = Vector{Float64}(); X = Vector{Vector{ComplexF64}}();
+    for (x,t) in iterator(coretracker, solution)
+        push!(P,t2p(t,p_start,p_end)); push!(X,x);
+    end
+    return (p=P,x=X)
+end
+function compress_path!(path)
+    for i = length(path.p):-1:2
+        if (path.p[i]==path.p[i-1]) && (path.x[i]==path.x[i-1])
+            deleteat!(path.p,i); deleteat!(path.x,i);
+        end
+    end
+    return path
+end
+function t2p(t,p_start,p_end)
+    return p_start + t*(p_end-p_start)
+end
+function substract_sols!(solutions,p,paths,Δx)
+    for path in paths
+        idx = findfirst(path.p .> p)
+        p_pre = path.p[idx-1]; p_post = path.p[idx];
+        f1 = (p_post-p)/(p_post-p_pre); f2 = (p_post-p)/(p_post-p_pre);
+        path_value_at_p = f1*path.x[idx-1]+f2*path.x[idx]
+        closest_sol = argmin(map(sol->norm(sol-path_value_at_p),solutions))
+        (norm(solutions[closest_sol]-path_value_at_p) < Δx) && deleteat!(solutions,closest_sol)
+    end
+end
+function combine_paths(paths_old,paths_new,p,Δx)
+    output_paths = copy(paths_new)
+    first_vals = map(path -> path.x[1],paths_new)
+    midpoint_vals = map(path -> path.x[findfirst(path.p .> p/2)],paths_new)
+    for path in paths_old
+        any(norm.(map(fv->fv-path.x[1],first_vals)) .< Δx) || any(norm.(map(mv->mv-path.x[findfirst(path.p .> p/2)],midpoint_vals)) .< Δx) && continue
+        push!(output_paths,path)
+    end
+    return output_paths
+end
+function temp_initialise_solver(reaction_network::DiffEqBase.AbstractReactionNetwork, params::Vector{Float64})
+    check_is_polynomial(reaction_network)
+    using_temp_poly = (reaction_network.equilibratium_polynomial==nothing)
+    using_temp_poly && fix_parameters(reaction_network, params)
+    (reaction_network.homotopy_continuation_template==nothing) && make_hc_template(reaction_network)
+    return using_temp_poly
+end
+function temp_finalise_solver(uses_temporary_polynomial::Bool,reaction_network::DiffEqBase.AbstractReactionNetwork)
+    !uses_temporary_polynomial && return
+    reaction_network.equilibratium_polynomial = nothing
+    reaction_network.homotopy_continuation_template = nothing
+end
+
+
 
 #Generates a number between 0 and 3 corresponing to some stability type (0=unstable, 1=stable, 2=unstable with imaginary eigenvalues, 3=stable with imaginary eigenvalues).
 function stability_type(eigenvalues::Vector{Any})

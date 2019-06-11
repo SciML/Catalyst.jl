@@ -23,7 +23,7 @@ function maketype(abstracttype,
                   odefun = nothing,
                   sdefun = nothing,
                   make_polynomial = nothing,
-                  fixed_concentrations = Dict{Symbol,Polynomial}(),
+                  fixed_concentrations = Vector{Polynomial{true,Float64}}(),
                   homotopy_continuation_template = nothing,
                   equilibratium_polynomial = nothing,
                   is_polynomial_system = true,
@@ -57,7 +57,7 @@ function maketype(abstracttype,
         odefun::Union{ODEFunction,Nothing}
         sdefun::Union{SDEFunction,Nothing}
         make_polynomial::Union{Function,Nothing}
-        fixed_concentrations::Dict{Symbol,Polynomial}
+        fixed_concentrations::Vector{Polynomial{true,Float64}}
         homotopy_continuation_template::Union{Tuple{Array{Complex{Float64},1},Array{Array{Complex{Float64},1},1}},Nothing}
         equilibratium_polynomial::Union{Vector,Nothing}
         is_polynomial_system::Bool
@@ -204,10 +204,10 @@ end
     addspecies!(network, speciessym::Symbol)
 
 Given an AbstractReaction network, add the species corresponding to the passed
-in symbol to the network (if it is not already defined). 
-""" 
+in symbol to the network (if it is not already defined).
+"""
 function addspecies!(rn::DiffEqBase.AbstractReactionNetwork, sp::Symbol)
-    if !haskey(speciesmap(rn), sp)        
+    if !haskey(speciesmap(rn), sp)
         push!(species(rn), sp)
         sidx = numspecies(rn) + 1
         push!(speciesmap(rn), sp => sidx)
@@ -253,7 +253,7 @@ Given an AbstractReaction network, add the parameter corresponding to the passed
 in symbol to the network (if it is not already defined), and register it as the
 noise scaling coefficient.
 """
-function add_scale_noise_param!(rn::DiffEqBase.AbstractReactionNetwork, scale_noise::Symbol)    
+function add_scale_noise_param!(rn::DiffEqBase.AbstractReactionNetwork, scale_noise::Symbol)
     rn.scale_noise = scale_noise
 
     if !haskey(paramsmap(rn), scale_noise)
@@ -281,7 +281,7 @@ reaction expressions. i.e. a reaction of the form
 ```julia
 k*X, 2X + Y --> 2W
 ```
-would have `rateex=:(k*X)` and `rxexpr=:(2X + Y --> W)`, 
+would have `rateex=:(k*X)` and `rxexpr=:(2X + Y --> W)`,
 ```julia
 10.5, 0 --> X
 ```
@@ -310,7 +310,7 @@ are represented as tuples of `Pair{Symbol,Int}`. i.e. a reaction of the form
 k*X, 2X + Y --> 2W
 ```
 would have `rateex=:(k*X)`, `substrates=(:X=>2, :Y=>2)`` and
-`products=(W=>2,)`, 
+`products=(W=>2,)`,
 ```julia
 10.5, 0 --> X
 ```
@@ -323,19 +323,19 @@ would have `rateex=:k`, `substrates=(:X=>2,)` and `products=(:Z=>2,)`.
 All normal DSL reaction definition notation should be supported for the
 `rateex`.
 """
-function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues, 
-                                        subs::Tuple{Vararg{Pair{Symbol,Int}}}, 
+function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues,
+                                        subs::Tuple{Vararg{Pair{Symbol,Int}}},
                                         prods::Tuple{Vararg{Pair{Symbol,Int}}}) where {T <: Number}
 
     substrates = ReactantStruct[ReactantStruct(p[1],p[2]) for p in subs]
     dependents = Symbol[p[1] for p in subs]
     products = ReactantStruct[ReactantStruct(p[1],p[2]) for p in prods]
     rate_DE = mass_rate_DE(substrates, true, rateex)
-    rate_SSA = mass_rate_SSA(substrates, true, rateex)   
-    
+    rate_SSA = mass_rate_SSA(substrates, true, rateex)
+
     # resolve dependents from rateex
     if rateex isa Number
-        ismassaction = true        
+        ismassaction = true
     elseif rateex isa Symbol
         if haskey(speciesmap(rn), rateex)
             ismassaction = false
@@ -351,10 +351,10 @@ function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues
 
         # mimicing ReactionStruct constructor for now, but this should be optimized...
         newdeps = unique!(recursive_content(rate_DE, speciesmap(rn), Vector{Symbol}()))
-        ismassaction = issetequal(dependents,newdeps) 
+        ismassaction = issetequal(dependents,newdeps)
         dependents = newdeps
     end
-    
+
     push!(rn.reactions, ReactionStruct(substrates, products, rateex, rate_DE, rate_SSA, dependents, ismassaction))
     nothing
 end
@@ -395,7 +395,7 @@ end
 
 Extend an `AbstractReactionNetwork` generated with the `@min_reaction_network`
 or `@empty_reaction_network` macros with everything needed to use SDE solvers.
-    
+
 Optional kwargs can be used to disable the construction of additional SDE solver
 components.
 """
@@ -421,7 +421,7 @@ end
 
 Extend an `AbstractReactionNetwork` generated with the `@min_reaction_network`
 or `@empty_reaction_network` macros with everything needed to use jump SSA solvers.
-    
+
 Optional kwargs can be used to disable the construction of additional jump solver
 components.
 
@@ -439,7 +439,7 @@ Keyword arguments:
   jump simulation. This option simply speeds up the construction of the jump
   problem since it avoids building redundant `ConstantRate` jumps that encode
   `MassActionJump`s, which are subsequently ignored within jump simulations.)
-""" 
+"""
 function addjumps!(rn::DiffEqBase.AbstractReactionNetwork;
                                     build_jumps=true,
                                     build_regular_jumps=true,
