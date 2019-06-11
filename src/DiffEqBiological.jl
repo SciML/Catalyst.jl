@@ -15,6 +15,7 @@ using Compat
 using HomotopyContinuation
 using LinearAlgebra
 using Plots
+using RecipesBase
 
 import Base: (==)
 
@@ -26,6 +27,7 @@ include("network_properties.jl")
 include("massaction_jump_utils.jl")
 include("problem.jl")
 include("equilibrate_utils.jl")
+include("plot_recipes.jl")
 
 # reaction network macro
 export @reaction_network, @reaction_func, @min_reaction_network, @empty_reaction_network
