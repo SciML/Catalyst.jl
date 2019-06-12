@@ -2,46 +2,71 @@
 
 ### Functions used during the construction of the reaction network. ###
 
+#Equilibrate content structure, with all the stuff required for homotopy continuation base equilibration calculations.
+mutable struct EquilibrateContent
+    make_polynomial::Function
+    constraints::Vector{Polynomial{true,Float64}}
+    homotopy_continuation_templates::Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}
+    equilibrium_polynomial::Union{Vector{Polynomial{true,Int64}},Nothing}
+    is_polynomial_system::Bool
+    polyvars::NamedTuple{(:x, :t, :p),Tuple{Vector{PolyVar{true}},PolyVar{true},Vector{PolyVar{true}}}}
+    function EquilibrateContent(make_polynomial,pvxs,pvt,pvps)
+        is_polynomial_system = try
+            make_polynomial(pvxs,pvt,pvps,internal___var___paramvals=fill(1,length(pvps)))
+            true
+        catch; false; end
+        equilibrium_polynomial = try
+            tmp_pol = make_polynomial(pvxs,pvt,pvps);
+            (typeof(tmp_pol[1])<:Polynomial) ? tmp_pol : map(pol->pol.num,tmp_pol)
+        catch; nothing; end
+        new(make_polynomial,Vector{Polynomial{true,Float64}}(),Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}(),equilibrium_polynomial,is_polynomial_system,(x=pvxs,t=pvt,p=pvps))
+    end
+end
+
+#Getters
+get_equi_poly(rn::DiffEqBase.AbstractReactionNetwork) = (return rn.equilibrate_content.equilibrium_polynomial)
+has_equi_poly(rn::DiffEqBase.AbstractReactionNetwork) = (return rn.equilibrate_content.equilibrium_polynomial != nothing)
+is_poly(rn::DiffEqBase.AbstractReactionNetwork) = (return rn.equilibrate_content.is_polynomial_system)
+get_polyvars(rn::DiffEqBase.AbstractReactionNetwork) = (return rn.equilibrate_content.polyvars)
+get_hc_templates(rn::DiffEqBase.AbstractReactionNetwork) = (return rn.equilibrate_content.homotopy_continuation_templates)
+has_hc_templates(rn::DiffEqBase.AbstractReactionNetwork) = (return length(rn.equilibrate_content.homotopy_continuation_templates)!=0)
+
+push_hc_template!(rn::DiffEqBase.AbstractReactionNetwork,p_template,sol_template) = (push!(rn.equilibrate_content.homotopy_continuation_templates,(p=p_template,sol=sol_template)))
+set_equi_poly!(rn::DiffEqBase.AbstractReactionNetwork,t;kwargs...) = (rn.equilibrate_content.equilibrium_polynomial = rn.equilibrate_content.make_polynomial(rn.equilibrate_content.polyvars.x,t,rn.equilibrate_content.polyvars.p;kwargs...))
+derationalise_equi_poly!(rn::DiffEqBase.AbstractReactionNetwork) = (!(typeof(rn.equilibrate_content.equilibrium_polynomial[1])<:Polynomial) && (rn.equilibrate_content.equilibrium_polynomial = map(pol->pol.num,rn.equilibrate_content.equilibrium_polynomial)))
+
+reset_equi_poly!(rn::DiffEqBase.AbstractReactionNetwork) = (rn.equilibrate_content.equilibrium_polynomial = nothing)
+reset_hc_templates!(rn::DiffEqBase.AbstractReactionNetwork) = (rn.equilibrate_content.homotopy_continuation_templates = nothing)
+
+
 #Generates the expression which is then converted into a function which generates polynomials for given parameters. Parameters not given can be given at a later stage, but parameters in the exponential must be given here. Also checks whenever the system is polynomial.
 function get_equilibration(params::Vector{Symbol}, reactants::OrderedDict{Symbol,Int}, f_expr::Vector{ExprValues})
     func_body = Expr(:block)
-    push!(func_body.args,Expr(:if,:(length(internal___var___polyvector) != 0),Expr(:block)))
-    foreach(i -> push!(func_body.args[1].args[2].args, :($(params[i])=internal___var___polyvector[$i])), 1:length(params))
+    push!(func_body.args,Expr(:if,:(length(internal___var___paramvals) != 0),Expr(:block)))
+    for i = 1:length(params)
+        push!(func_body.args[1].args[2].args, :((internal___var___paramvals___exemption!=$i) && ($(params[i])=internal___var___paramvals[$i])))
+    end
     push!(func_body.args,:([]))
     foreach(poly -> push!(func_body.args[2].args, recursive_replace!(poly,(reactants,:internal___polyvar___x),(OrderedDict(:t=>1),:internal___polyvar___t))), deepcopy(f_expr))
     func_expr = :((;TO___BE___REMOVED=to___be___removed) -> $(deepcopy(func_body)))
-    foreach(i -> push!(func_expr.args[1].args[1].args,Expr(:kw,params[i],:(internal___reaction___network.polyvars_params[$i]))), 1:length(params))
-    push!(func_expr.args[1].args[1].args,Expr(:kw,:internal___var___polyvector,:([])))
+    foreach(i -> push!(func_expr.args[1].args[1].args,Expr(:kw,params[i],:(internal___polyvar___p[$i]))), 1:length(params))
+    push!(func_expr.args[1].args[1].args,Expr(:kw,:internal___var___paramvals,:([])))
+    push!(func_expr.args[1].args[1].args,Expr(:kw,:internal___var___paramvals___exemption,-1))
     deleteat!(func_expr.args[1].args[1].args,1)
-    push!(func_expr.args[1].args,:internal___reaction___network)
+    push!(func_expr.args[1].args,:internal___polyvar___x)
     push!(func_expr.args[1].args,:internal___polyvar___t)
-    push!(func_expr.args[1].args,Expr(:kw,:internal___polyvar___x,:(internal___reaction___network.polyvars_vars)))
-    push!(func_expr.args[1].args,Expr(:kw,:print_msg,1))
+    push!(func_expr.args[1].args,:internal___polyvar___p)
     return func_expr
 end
 
-#Manages post creation modification to a reaction network with respect to utility needed for equilibrium calculations. Attempts to make an equilibrium polynomial.
-function manage_equilibrium_functionality!(reaction_network::DiffEqBase.AbstractReactionNetwork)
-    reaction_network.is_polynomial_system = try
-        fix_parameters(reaction_network,fill(1,length(reaction_network.params)),t=1)
-        true
-    catch
-        false
-    end
-    reaction_network.is_polynomial_system && try fix_parameters(reaction_network)
-    catch
-        (reaction_network.equilibratium_polynomial = nothing)
-    end
-end
 
 ## Functions required for the preparation to use homotopy continuation to find fixed points.
 
 #Calls the internal make_polynomial function to create a polynomial. Used to model creation (will succced unless there is parameters in the exponents). Input include list of parameters to fix. All parameters occuring as exponent must be here (none other is required at this stage). Will insert fixed concentrations if such exists.
-function fix_parameters(reaction_network::DiffEqBase.AbstractReactionNetwork, params=Vector{Number}()::Vector{Number}; t=reaction_network.polyvars_t, kwargs...)
-    check_is_polynomial(reaction_network)
-    reaction_network.equilibratium_polynomial = reaction_network.make_polynomial(reaction_network,[t];internal___var___polyvector=params,kwargs...)
-    !(typeof(reaction_network.equilibratium_polynomial[1])<:Polynomial) && (reaction_network.equilibratium_polynomial = map(pol->pol.num,reaction_network.equilibratium_polynomial))
-    foreach(sym -> reaction_network.equilibratium_polynomial[findfirst(reaction_network.syms.==sym)] = reaction_network.fixed_concentrations[sym], keys(reaction_network.fixed_concentrations))
+function fix_parameters(rn::DiffEqBase.AbstractReactionNetwork, params=Vector{Number}()::Vector{Number}; t=get_polyvars(rn).t, full_vector_exemption=-1,kwargs...)
+    check_is_polynomial(rn)
+    set_polynomial!(rn,t;internal___var___paramvals=params,internal___var___paramvals___exemption=full_vector_exemption,kwargs...)
+    derationalise_equi_poly!(rn)
 end
 
 #In some networks some linear combinations of concentrations remain fixed. This supplies this information directly to the network.
@@ -102,13 +127,23 @@ function make_hc_template(reaction_network::DiffEqBase.AbstractReactionNetwork)
     result_template = HomotopyContinuation.solve(f_template, show_progress=false)
     reaction_network.homotopy_continuation_template = (p_template,solutions(result_template))
 end
+#Can be called separatly, but will otherwise be called first time a steady state is to be found. Solves the system once using random parameters. Saves the solution as a template to be used for further solving.
+function add_hc_template(rn::DiffEqBase.AbstractReactionNetwork)
+    #
+    # Make stuff which checks that new solution is of equal length, and discard the shorter set if that is not the case.
+    #
+    p_template = randn(ComplexF64, length(rn.params))
+    f_template = DynamicPolynomials.subs.(get_equi_poly(rn), Ref(get_polyvars(rn).p => p_template))
+    solution_template = solutions(HomotopyContinuation.solve(f_template, show_progress=false))
+    push_hc_template!(rn,p_template,solution_template)
+end
 #Macro running the HC template function.
 macro make_hc_template(reaction_network::Symbol)
     return Expr(:escape,:(make_hc_template($reaction_network)))
 end
 
 #Checks that the reaction network is a polynomial system.
-check_is_polynomial(reaction_network::DiffEqBase.AbstractReactionNetwork) = (!reaction_network.is_polynomial_system) && (error("This reaction network does not correspond to a polynomial system. Some of the reaction rate must contain non polynomial terms."))
+check_is_polynomial(rn::DiffEqBase.AbstractReactionNetwork) = (!is_poly(rn)) && (error("This reaction network does not correspond to a polynomial system. Some of the reaction rate must contain non polynomial terms."))
 #Checks that a polynomial have been created for the reaction network.
 check_exists_polynomial(reaction_network::DiffEqBase.AbstractReactionNetwork) = (reaction_network.equilibratium_polynomial==nothing) && (error("No equilibrium polynomial have been created. Please use the @fix_concentration macro to do so."))
 #If not avaiable, ensures a temporary polynomial is set.
@@ -128,23 +163,49 @@ end
 ### Functions for finding single steady states of fixed points, and for analysing their stability..
 
 #Finds the steady states of a reaction network
-function steady_states(reaction_network::DiffEqBase.AbstractReactionNetwork, params=Vector{Float64}()::Vector{Float64}, solver=HcSteadyStateSolver::Function)
-    return solver(reaction_network,params)::Vector{Vector{Float64}}
+function steady_states(rn::DiffEqBase.AbstractReactionNetwork, p=Vector{Float64}()::Vector{Float64}; solver=HcSteadyStateSolver::Function)
+    return solver(rn,p)::Vector{Vector{Float64}}
 end
 
 #Finds steady states of a system using homotopy continuation.
-function HcSteadyStateSolver(reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64})
-    set_temporary_polynomial!(reaction_network, params)
-    if length(params)==0
-        result = HomotopyContinuation.solve([reaction_network.equilibratium_polynomial...,reaction_network.fixed_concentrations...], show_progress=false)
-    else
-        (reaction_network.homotopy_continuation_template==nothing) && make_hc_template(reaction_network)
-        result = HomotopyContinuation.solve([reaction_network.equilibratium_polynomial...,reaction_network.fixed_concentrations...], reaction_network.homotopy_continuation_template[2], parameters=reaction_network.polyvars_params, p₁=reaction_network.homotopy_continuation_template[1], p₀=params, show_progress=false)
+function HcSteadyStateSolver(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64})
+    using_temp_poly  = temp_initialise_solver!(rn,p)
+    (length(p)==0) && (return positive_real_solutions(HomotopyContinuation.solve(get_equi_poly(rn),show_progress=false)))
+    result = hc_solve_at(rn,p)
+    using_temp_poly && temp_finalise_solver!(rn)
+    return positive_real_solutions(result)
+end
+
+function hc_solve_at(rn,p)
+    for hc_template in get_hc_templates(rn)
+        result = solutions(HomotopyContinuation.solve(get_equi_poly(rn), hc_template.sol, parameters=get_polyvars(rn).p, p₁=hc_template.p, p₀=p, show_progress=false))
+        (length(result) == length(hc_template.sol)) && (return result)
     end
-    reset_temporary_polynomial!(reaction_network)
-    filter(realsolutions(result)) do x
-            all(xᵢ -> xᵢ ≥ -0.001, x)
+    @warn "While solving the system using homotopy continuation some solutions were lost."
+    best_length = 0; best_solution = [];
+    for hc_template in get_hc_templates(rn)
+        result = solutions(HomotopyContinuation.solve(get_equi_poly(rn), hc_template.sol, parameters=get_polyvars(rn).p, p₁=hc_template.p, p₀=p, show_progress=false))
+        (length(result) > best_length) && (best_length = length(result); best_solution = result;)
     end
+    return best_solution
+end
+
+function temp_initialise_solver!(rn::DiffEqBase.AbstractReactionNetwork, p::Vector{Float64})
+    check_is_polynomial(rn)
+    using_temp_poly = !has_equi_poly(rn)
+    using_temp_poly && fix_parameters(rn, p)
+    !has_hc_templates(rn) && add_hc_template(rn)
+    return using_temp_poly
+end
+function temp_finalise_solver!(rn::DiffEqBase.AbstractReactionNetwork)
+    reset_equi_poly!(rn); reset_hc_templates!(rn);
+end
+
+function positive_real_solutions(result)
+    tmp_sol = filter(result) do y
+        all(yᵢ -> abs(imag(yᵢ)) < 0.001, y)&&all(yᵢ -> real(yᵢ) ≥ -0.001, y)
+    end
+    return map(x->real.(x),tmp_sol)
 end
 
 #Returns a boolean which will be true if the given fixed point is stable.

@@ -144,7 +144,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
 
     # Build the type
     exprs = Vector{Expr}(undef,0)
-    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, f, f_rhs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, jac=jac, paramjac=paramjac, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters, odefun=odefun, sdefun=sdefun, make_polynomial=equipol_maker, polyvars_vars=:((@polyvar internal___polyvar___x[1:$(length(reactants))])[1]), polyvars_t=:((@polyvar internal___polyvar___t)[1]), polyvars_params=:((@polyvar internal___polyvar___p[1:$(length(parameters))])[1]))
+    typeex,constructorex = maketype(DiffEqBase.AbstractReactionNetwork, name, f, f_rhs, f_symfuncs, g, g_funcs, jumps, regular_jumps, Meta.quot(jump_rate_expr), Meta.quot(jump_affect_expr), p_matrix, syms, scale_noise; params=params, reactions=reactions, jac=jac, paramjac=paramjac, symjac=symjac, syms_to_ints=reactants, params_to_ints=parameters, odefun=odefun, sdefun=sdefun, equilibrate_content=:(EquilibrateContent($equipol_maker,(@polyvar internal___polyvar___x[1:$(length(reactants))])[1],(@polyvar internal___polyvar___t)[1],(@polyvar internal___polyvar___p[1:$(length(parameters))])[1])))
     push!(exprs,typeex)
     push!(exprs,constructorex)
 
@@ -182,7 +182,7 @@ end
 #Function which will act on the finished reaction network (before it is returned). Allows to do manipulations on the actual content, instead of on expressions.
 #Right now only relevant for normal reaction networks, if to be used for minimal ones needs further modifications.
 function manage_reaction_network!(reaction_network::DiffEqBase.AbstractReactionNetwork)
-    manage_equilibrium_functionality!(reaction_network)
+    #manage_equilibrium_functionality!(reaction_network)
     return reaction_network
 end
 
@@ -595,9 +595,9 @@ function recursive_content(ex,syms::Vector{Symbol},content::Vector{Symbol})
 end
 
 function recursive_content(ex,symsmap::OrderedDict{Symbol,Int},content::Vector{Symbol})
-    if ex isa Symbol        
+    if ex isa Symbol
         haskey(symsmap,ex) && push!(content,ex)
-    elseif ex isa Expr  
+    elseif ex isa Expr
         foreach(arg -> recursive_content(arg,symsmap,content), ex.args)
     end
     return content

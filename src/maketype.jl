@@ -22,15 +22,7 @@ function maketype(abstracttype,
                   params_to_ints = OrderedDict{Symbol,Int}(),
                   odefun = nothing,
                   sdefun = nothing,
-                  make_polynomial = nothing,
-                  fixed_concentrations = Vector{Polynomial{true,Float64}}(),
-                  homotopy_continuation_template = nothing,
-                  equilibratium_polynomial = nothing,
-                  is_polynomial_system = true,
-                  has_temporary_polynomial = true,
-                  polyvars_vars = nothing,
-                  polyvars_t = nothing,
-                  polyvars_params = nothing
+                  equilibrate_content = nothing
                   )
 
     typeex = :(mutable struct $name <: $(abstracttype)
@@ -56,15 +48,7 @@ function maketype(abstracttype,
         scale_noise::Symbol
         odefun::Union{ODEFunction,Nothing}
         sdefun::Union{SDEFunction,Nothing}
-        make_polynomial::Union{Function,Nothing}
-        fixed_concentrations::Vector{Polynomial{true,Float64}}
-        homotopy_continuation_template::Union{Tuple{Array{Complex{Float64},1},Array{Array{Complex{Float64},1},1}},Nothing}
-        equilibratium_polynomial::Union{Vector,Nothing}
-        is_polynomial_system::Bool
-        has_temporary_polynomial::Bool
-        polyvars_vars::Union{Vector{PolyVar{true}},Nothing}
-        polyvars_t::Union{PolyVar{true},Nothing}
-        polyvars_params::Union{Vector{PolyVar{true}},Nothing}
+        equilibrate_content::Union{EquilibrateContent,Nothing}
     end)
     # Make the default constructor
     constructorex = :($(name)(;
@@ -90,15 +74,7 @@ function maketype(abstracttype,
                 $(Expr(:kw,:scale_noise, Meta.quot(scale_noise))),
                 $(Expr(:kw,:odefun, odefun)),
                 $(Expr(:kw,:sdefun, sdefun)),
-                $(Expr(:kw,:make_polynomial, make_polynomial)),
-                $(Expr(:kw,:fixed_concentrations, fixed_concentrations)),
-                $(Expr(:kw,:homotopy_continuation_template, homotopy_continuation_template)),
-                $(Expr(:kw,:equilibratium_polynomial, equilibratium_polynomial)),
-                $(Expr(:kw,:is_polynomial_system, is_polynomial_system)),
-                $(Expr(:kw,:has_temporary_polynomial, has_temporary_polynomial)),
-                $(Expr(:kw,:polyvars_vars, polyvars_vars)),
-                $(Expr(:kw,:polyvars_t, polyvars_t)),
-                $(Expr(:kw,:polyvars_params, polyvars_params))) =
+                $(Expr(:kw,:equilibrate_content, equilibrate_content))) =
                 $(name)(
                         f,
                         f_func,
@@ -122,15 +98,7 @@ function maketype(abstracttype,
                         scale_noise,
                         odefun,
                         sdefun,
-                        make_polynomial,
-                        fixed_concentrations,
-                        homotopy_continuation_template,
-                        equilibratium_polynomial,
-                        is_polynomial_system,
-                        has_temporary_polynomial,
-                        polyvars_vars,
-                        polyvars_t,
-                        polyvars_params
+                        equilibrate_content
                         )) |> esc
 
     # Make the type instance using the default constructor
@@ -469,12 +437,12 @@ function addequi!(rn::DiffEqBase.AbstractReactionNetwork)
         addodes!(rn)
     end
 
-    equipol_maker = get_equilibration(params,syms_to_ints,rn.f_func)
+    equilibrium_polynomial_maker = eval(get_equilibration(params,syms_to_ints,rn.f_func))
+    pvxs = (@polyvar internal___polyvar___x[1:length(syms_to_ints)])[1]
+    pvt = (@polyvar internal___polyvar___t)[1]
+    pvps = (@polyvar internal___polyvar___p[1:length(params)])[1]
 
-    rn.make_polynomial = eval(equipol_maker)
-    rn.polyvars_vars = (@polyvar internal___polyvar___x[1:length(syms_to_ints)])[1]
-    rn.polyvars_t = (@polyvar internal___polyvar___t)[1]
-    rn.polyvars_params = (@polyvar internal___polyvar___p[1:length(params)])[1]
+    rn.equilibrate_content = EquilibrateContent(equilibrium_polynomial_maker,pvxs,pvt,pvps)
 
     nothing
 end

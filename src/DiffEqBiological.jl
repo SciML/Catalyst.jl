@@ -49,6 +49,7 @@ export addodes!, addsdes!, addjumps!, addequi!, manage_reaction_network!
 export ODEProblem, SDEProblem, DiscreteProblem, JumpProblem, SteadyStateProblem
 
 # tolls for finding equilibrium solutions and bifurcation diagrams.
+export EquilibrateContent
 export @add_constraint, @add_constraints, internal___add___constraint, fix_parameters, @make_hc_template, make_hc_template, steady_states, stability
 export HcBifurcationSolver1, HcBifurcationSolver2, HcBifurcationSolver3
 export bifurcations, bifurcations_grid, bifurcations_grid_2d, bifurcations_diagram_grid
