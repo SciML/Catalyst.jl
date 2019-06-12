@@ -80,7 +80,7 @@ end p1 p2 p3 d1 d2 d3 k1 k2 k3 k4 k5 k6
 
 reaction_networks_standard[10] = @reaction_network begin
     p, ∅ ⟶ X1
-    (k1,k2), X1 ⟷ 3X3+ 2X2
+    (k1,k2), X1 ⟷ 3X3 + 2X2
     (k3,k4), 2X2 ⟷ X4
     (k5,k6), 3X3 + X4 ⟷ X5
     d, X5  ⟶ ∅
