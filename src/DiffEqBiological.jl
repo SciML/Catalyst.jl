@@ -2,13 +2,13 @@ __precompile__()
 
 module DiffEqBiological
 
-using Compat, DataStructures, MacroTools, Parameters, Reexport, SparseArrays, SymEngine
+using DataStructures, MacroTools, Parameters, Reexport, SparseArrays, SymEngine
 using DiffEqBase, DiffEqJump
 @reexport using DiffEqBase, DiffEqJump
 
 import Base: (==)
 
-const ExprValues = Union{Expr,Symbol,Float64,Int}                   
+const ExprValues = Union{Expr,Symbol,Float64,Int}
 
 include("expression_utils.jl")
 include("reaction_network.jl")
