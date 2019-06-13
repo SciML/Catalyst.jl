@@ -14,7 +14,6 @@ using Compat
 @reexport using DynamicPolynomials
 using HomotopyContinuation
 using LinearAlgebra
-using Plots
 using RecipesBase
 
 import Base: (==)
