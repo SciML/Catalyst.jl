@@ -2,7 +2,7 @@ __precompile__()
 
 module DiffEqBiological
 
-using DataStructures, MacroTools, Parameters, Reexport, SparseArrays, SymEngine
+using Compat, DataStructures, MacroTools, Parameters, Reexport, SparseArrays, SymEngine
 using DiffEqBase, DiffEqJump
 @reexport using DiffEqBase, DiffEqJump
 
