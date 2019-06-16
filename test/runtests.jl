@@ -30,7 +30,7 @@ end
   @time @testset "Higher Order (Min)" begin include("higher_order_reactions_min.jl") end
   @time @testset "Additional Functions (Min)" begin include("func_test_min.jl") end
   @time @testset "Steady State Solver (Min)" begin include("steady_state_min.jl") end
-  @time @testset "Steady States (Min)" begin include("steady_states_min.jl") end
+  @time @testset "Equilibrate (Min)" begin include("equilibrate_test_min.jl") end
   @time @testset "Mass Action Jumps (Min)" begin include("mass_act_jump_tests_min.jl") end
 end
 

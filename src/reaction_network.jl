@@ -150,7 +150,7 @@ function coordinate(name, ex::Expr, p, scale_noise)
 
     # add type functions
     append!(exprs, gentypefun_exprs(name))
-    exprs[end] = :(manage_reaction_network!($(exprs[end])))
+    exprs[end] = :($(exprs[end]))
 
     # return as one expression block
     expr_arr_to_block(exprs)
@@ -177,13 +177,6 @@ function min_coordinate(name, ex::Expr, p, scale_noise)
 
     # return as one expression block
     expr_arr_to_block(exprs)
-end
-
-#Function which will act on the finished reaction network (before it is returned). Allows to do manipulations on the actual content, instead of on expressions.
-#Right now only relevant for normal reaction networks, if to be used for minimal ones needs further modifications.
-function manage_reaction_network!(reaction_network::DiffEqBase.AbstractReactionNetwork)
-    #manage_equilibrium_functionality!(reaction_network)
-    return reaction_network
 end
 
 # SDE expressions
