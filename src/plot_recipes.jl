@@ -5,13 +5,13 @@ length(p::bifurcation_diagram_grid) = p.length
 
 @recipe function f(path::bifurcation_path, var=1)
     linewidth --> 4
-    color --> Int64.(path.stability_types)
+    color --> stab_color.(path.stability_types)
     path.p_vals, getindex.(path.vals, var)
 end
 
 @recipe function f(path::bifurcation_path, var, z_val)
     linewidth --> 4
-    color --> Int64.(path.stability_types)
+    color --> stab_color.(path.stability_types)
     fill(z_val, length(path.p_vals)), path.p_vals, getindex.(path.vals, var)
 end
 
@@ -25,7 +25,7 @@ end
     end
 end
 
-@recipe function f(bif::bifurcation_diagram, var=1) 
+@recipe function f(bif::bifurcation_diagram, var=1)
     xlabel --> string(bif.param)
     for (i, path) in enumerate(bif.paths)
         @series begin
@@ -49,7 +49,7 @@ end
 
 @recipe function f(x, point::bifurcation_point)
     seriestype := :scatter
-    color --> Int64.(point.stability_types)
+    color --> stab_color.(point.stability_types)
     fill(x, length(point.vals[1])), point.vals
 end
 

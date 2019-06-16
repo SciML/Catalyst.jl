@@ -392,7 +392,7 @@ function track_path_two_ways(start_points,coretracker1,coretracker2,p_cur,range)
         (P2,X2) = track_path(sp,coretracker2,p_cur,range[2])
         push!(paths,(p=[P1...,P2...],x=[X1...,X2...]))
     end
-    return compress_path!.(paths)
+    return paths
 end
 #For a given solution at a certain parameter value, remove those solutions already present in the given paths.
 function substract_sols!(solutions,p,paths,Δx)
@@ -485,4 +485,3 @@ function get_jac_eigenvals(vals::Vector{Vector{ComplexF64}},param::Symbol,param_
     end
     return stabs
 end
-
