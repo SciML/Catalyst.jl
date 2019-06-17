@@ -429,7 +429,8 @@ function addjumps!(rn::DiffEqBase.AbstractReactionNetwork;
     nothing
 end
 
-function addequi!(rn::DiffEqBase.AbstractReactionNetwork)
+#Adds stuff required to do homotopy continuation based equilibration calculations.
+function addequi1!(rn::DiffEqBase.AbstractReactionNetwork)
     @unpack params, reactions, syms_to_ints, params_to_ints, scale_noise = rn
 
     # first construct an ODE reaction network (required for getting f_func).
@@ -442,7 +443,15 @@ function addequi!(rn::DiffEqBase.AbstractReactionNetwork)
     pvt = (@polyvar internal___polyvar___t)[1]
     pvps = (@polyvar internal___polyvar___p[1:length(params)])[1]
 
-    rn.equilibrate_content = EquilibrateContent(equilibrium_polynomial_maker,pvxs,pvt,pvps)
+    rn.equilibrate_content = EquilibrateContent(equilibrium_polynomial_maker,Vector{Polynomial{true,Float64}}(),Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}(),nothing,false,(x=pvxs,t=pvt,p=pvps))
 
+    nothing
+end
+function addequi2!(rn::DiffEqBase.AbstractReactionNetwork)
+    # first construct an ODE reaction network (required for getting f_func).
+    if rn.equilibrate_content == nothing
+        error("equilibrate_content fiel empty. Have to use addequi1!(), before addequi2!() can be used.")
+    end
+    rn.equilibrate_content = EquilibrateContent(rn.equilibrate_content.make_polynomial,rn.equilibrate_content.polyvars...)
     nothing
 end

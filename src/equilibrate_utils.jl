@@ -21,6 +21,9 @@ mutable struct EquilibrateContent
         catch; nothing; end
         new(make_polynomial,Vector{Polynomial{true,Float64}}(),Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}(),equilibrium_polynomial,is_polynomial_system,(x=pvxs,t=pvt,p=pvps))
     end
+    function EquilibrateContent(mp,cs,hcts,ep,ips,pvs) #only for use in addequi1!()
+        return new(mp,cs,hcts,ep,ips,pvs)
+    end
 end
 #Various Functions for accessing and updating an EquilibrateContent structure.
 get_equi_poly(rn::DiffEqBase.AbstractReactionNetwork) = (return rn.equilibrate_content.equilibrium_polynomial)

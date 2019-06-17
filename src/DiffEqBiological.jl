@@ -42,7 +42,7 @@ export rxtospecies_depgraph, speciestorx_depgraph, rxtorx_depgraph
 export addspecies!, addparam!, add_scale_noise_param!, addreaction!
 
 # functions to add mathematical equations to the network
-export addodes!, addsdes!, addjumps!, addequi!
+export addodes!, addsdes!, addjumps!, addequi1!, addequi2!
 
 # problems that can be solved from the network
 export ODEProblem, SDEProblem, DiscreteProblem, JumpProblem, SteadyStateProblem
