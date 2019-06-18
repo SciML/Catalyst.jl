@@ -80,18 +80,18 @@ end
 #--- Adds additional constraints to the system, typically a fixed concentration such as in the system X <--> Y.
 #In some networks some linear combinations of concentrations remain fixed. This supplies this information directly to the network.
 macro add_constraint(rn::Symbol, constraints::Expr...)
-    func_expr = Expr(:escape,:(internal___add___constraint($rn)))
+    func_expr = Expr(:escape,:(internal___add___constraint!($rn)))
     foreach(constraint -> push!(func_expr.args[1].args,recursive_replace_vars!(balance_poly(constraint), rn)),constraints)
     return func_expr
 end
 #In some networks some linear combinations of concentrations remain fixed. This supplies this information directly to the network.
 macro add_constraints(rn::Symbol, constraints::Expr...)
-    func_expr = Expr(:escape,:(internal___add___constraint($rn)))
+    func_expr = Expr(:escape,:(internal___add___constraint!($rn)))
     foreach(constraint -> push!(func_expr.args[1].args,recursive_replace_vars!(balance_poly(constraint), rn)),MacroTools.striplines(constraints...).args)
     return func_expr
     output = Expr(:block)
     for constraint in MacroTools.striplines(constraints...).args
-        push!(output.args,Expr(:escape,:(internal___add___constraint($rn))))
+        push!(output.args,Expr(:escape,:(internal___add___constraint!($rn))))
         push!(output.args[end].args[1].args,recursive_replace_vars!(balance_poly(constraint), rn))
     end
     return output
@@ -111,9 +111,17 @@ function recursive_replace_vars!(expr::Union{ExprValues,LineNumberNode}, rn::Sym
     return expr
 end
 #Function which does the actual work of adding the fixed concentration information. Not meant to be called directly, but is called through the fixed_concentration macro.
-function internal___add___constraint(rn::DiffEqBase.AbstractReactionNetwork, constraints::Polynomial...)
+function internal___add___constraint!(rn::DiffEqBase.AbstractReactionNetwork, constraints::Polynomial...)
     check_is_polynomial(rn)
     foreach(constraint -> push_constraint!(rn,constraint),constraints)
+    remove_replicate_polys!(rn)
+end
+#Replicate polynomials might be bad for HomotopyContinuation, this function removes them when they might occur.
+function remove_replicate_polys!(rn::DiffEqBase.AbstractReactionNetwork)
+    for i = length(get_equi_poly(rn)):-1:2, j = (i-1):-1:1
+        (get_equi_poly(rn)[i]==get_equi_poly(rn)[j])&&deleteat!(get_equi_poly(rn),i)
+        (get_equi_poly(rn)[i]==-get_equi_poly(rn)[j])&&deleteat!(get_equi_poly(rn),i)
+    end
 end
 
 #--- Makes homotopy continuation templates to be used at a later stage when solving for fixed points ---#
