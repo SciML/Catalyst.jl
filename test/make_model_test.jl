@@ -90,3 +90,16 @@ end p1 p2
 @test length(network6.syms) == 6
 @test typeof(network6) <: DiffEqBase.AbstractReactionNetwork
 @test typeof(network6) == reaction_network
+
+# test that can we construct a network that involves symengine constants as species names
+symengnet = @reaction_network begin
+    k1, I + E --> 2*A
+    k2, 2I --> 2E
+    k4*E*A, E + A ⇒ 0
+end k1 k2 k4
+realjac = DiffEqBiological.ExprValues[  
+    :(-(k1 * E) - 2 * (k2 * I))  :(-(k1 * I))  0
+    :(-(k1 * E) + 2 * (k2 * I))  :(-(k1 * I) - k4 * A)      :(-k4 * E)  
+    :(2 * (k1 * E))              :(2 * (k1 * I) - k4 * A)   :(-k4 * E)
+]
+@assert realjac == jacobianexprs(symengnet)

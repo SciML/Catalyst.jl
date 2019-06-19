@@ -12,7 +12,7 @@ using OrdinaryDiffEq, StochasticDiffEq, DiffEqJump, SteadyStateDiffEq
   @time @testset "Steady state solver" begin include("steady_state.jl") end
   @time @testset "Mass Action Jumps" begin include("mass_act_jump_tests.jl") end
   @time @testset "Other Tests" begin include("misc_tests.jl") end
-  @time @testset "Network query tests" begin include("networkquery_test.jl") end
+  @time @testset "Network query tests" begin include("networkquery_test.jl") end  
 end
 
 # min macro tests

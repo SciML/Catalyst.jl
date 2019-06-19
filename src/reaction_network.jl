@@ -549,8 +549,11 @@ end
 # generate Jacobian. Using preceding functions it supports jacexprs as
 # a Dict mapping (i,j) => ExprValues or as a dense matrix of ExprValues
 function jac_as_exprvalues!(jacexprs, reactions, reactants) 
+    internal_vars = [Symbol(:internal_variable___,var) for var in keys(reactants)]
+    ivtosym = Dict(zip(internal_vars, keys(reactants)))
+    symtoiv = Dict(zip(keys(reactants), internal_vars))
 
-   @inbounds for rx in reactions         
+    @inbounds for rx in reactions         
         if rx.is_pure_mass_action 
             for sub in rx.substrates
                 spec  = sub.reactant
@@ -571,9 +574,10 @@ function jac_as_exprvalues!(jacexprs, reactions, reactants)
                 end
             end            
         else
-            ratelaw = SymEngine.Basic(recursive_clean!(deepcopy(rx.rate_DE)))
+            ratelaw = SymEngine.Basic(recursive_replace!(recursive_clean!(deepcopy(rx.rate_DE)), symtoiv))
             @inbounds for dep in rx.dependants
-                dratelaw = diff(ratelaw, dep)
+                #dratelaw = diff(ratelaw, dep)
+                dratelaw = diff(ratelaw, symtoiv[dep])
                 j = reactants[dep]
 
                 @inbounds for ns in rx.netstoich
@@ -583,6 +587,7 @@ function jac_as_exprvalues!(jacexprs, reactions, reactants)
                     else
                         jacexprs[key] = addstoich_to_exprsum(0, dratelaw, ns.stoichiometry)
                     end
+                    jacexprs[key] = recursive_replace!(jacexprs[key], ivtosym)
                 end
             end
         end
