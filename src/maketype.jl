@@ -15,7 +15,6 @@ function maketype(abstracttype,
                   params = Symbol[],
                   jac = nothing,
                   paramjac = nothing,
-                  jac_prototype = nothing,
                   symjac=Matrix{ExprValues}(undef,0,0),
                   reactions=Vector{ReactionStruct}(undef,0),
                   syms_to_ints = OrderedDict{Symbol,Int}(),
@@ -39,7 +38,6 @@ function maketype(abstracttype,
         params::Vector{Symbol}
         jac::Union{Function,Nothing}
         paramjac::Union{Function,Nothing}
-        jac_prototype::Nothing
         symjac::Union{Matrix{ExprValues},Nothing}
         reactions::Vector{ReactionStruct}
         syms_to_ints::OrderedDict{Symbol,Int}
@@ -65,7 +63,6 @@ function maketype(abstracttype,
                 $(Expr(:kw,:symjac,symjac)),
                 $(Expr(:kw,:jac,jac)),
                 $(Expr(:kw,:paramjac,paramjac)),
-                $(Expr(:kw,:jac_prototype,jac_prototype)),
                 $(Expr(:kw,:reactions,reactions)),
                 $(Expr(:kw,:syms_to_ints, syms_to_ints)),
                 $(Expr(:kw,:params_to_ints, params_to_ints)),
@@ -87,7 +84,6 @@ function maketype(abstracttype,
                         params,
                         jac,
                         paramjac,
-                        jac_prototype,
                         symjac,
                         reactions,
                         syms_to_ints,
@@ -341,13 +337,13 @@ function addodes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     @unpack reactions, syms_to_ints, params_to_ints, syms = rn
 
     (f_expr, f, f_rhs, symjac, jac, paramjac, f_symfuncs, jac_prototype) = genode_exprs(reactions, syms_to_ints, params_to_ints, syms; kwargs...)
-    rn.f          = eval(f)
-    rn.f_func     = f_rhs
-    rn.jac        = eval(jac)
-    rn.paramjac   = eval(paramjac)
-    rn.symjac     = eval(symjac)
-    rn.f_symfuncs = f_symfuncs
-    rn.odefun     = ODEFunction(rn.f; jac=rn.jac, jac_prototype=jac_prototype, paramjac=rn.paramjac, syms=rn.syms)
+    rn.f             = eval(f)
+    rn.f_func        = f_rhs
+    rn.jac           = eval(jac)
+    rn.paramjac      = eval(paramjac)
+    rn.symjac        = eval(symjac)
+    rn.f_symfuncs    = f_symfuncs    
+    rn.odefun        = ODEFunction(rn.f; jac=rn.jac, jac_prototype=jac_prototype, paramjac=rn.paramjac, syms=rn.syms)
 
     # functor for evaluating f
     functor_exprs = gentypefun_exprs(typeof(rn), esc_exprs=false, gen_constructor=false)

@@ -103,3 +103,17 @@ realjac = DiffEqBiological.ExprValues[
     :(2 * (k1 * E))              :(2 * (k1 * I) - k4 * A)   :(-k4 * E)
 ]
 @assert realjac == jacobianexprs(symengnet)
+
+
+# test that we can construct a network that involves a singular Jacobian
+network7 = @reaction_network begin
+    k1, I + E --> 2*B
+    k2, 2I --> 2E
+    k4*E*A, E + A ⇒ 0
+end k1 k2 k4
+network8 = @min_reaction_network begin
+    k1, I + E --> 2*B
+    k2, 2I --> 2E
+    k4*E*A, E + A ⇒ 0
+end k1 k2 k4
+addodes!(network8, sparse_jac=true)

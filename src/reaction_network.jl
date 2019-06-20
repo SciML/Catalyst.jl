@@ -627,7 +627,7 @@ function calculate_jac(symjac::Matrix{ExprValues}, reactants::OrderedDict{Symbol
 end
 
 # convert Dict mapping (i,j) => val to sparse matrix
-function dict_to_sparsemat(d; vals=nothing)
+function dict_to_sparsemat(d, m, n; vals=nothing)
     V   = isnothing(vals) ? collect(values(d)) : vals
     len = length(d)
     I   = Vector{Int}(undef,len)
@@ -636,7 +636,7 @@ function dict_to_sparsemat(d; vals=nothing)
         I[i] = k[1]
         J[i] = k[2]
     end    
-    return sparse(I,J,V)
+    return sparse(I,J,V,m,n)
 end
 
 # create a sparse Jacobian
@@ -645,7 +645,7 @@ function calculate_sparse_jac(reactions, reactants, parameters)
     # get the elements and structure of sparse matrix
     jacexprs = Dict{Tuple{Int,Int},ExprValues}()
     jac_as_exprvalues!(jacexprs, reactions, reactants)
-    jac_prototype = dict_to_sparsemat(jacexprs, vals=ones(length(jacexprs)))
+    jac_prototype = dict_to_sparsemat(jacexprs, length(reactants), length(reactants), vals=ones(length(jacexprs)))
 
     # build the function
     jfun = Expr(:block)
