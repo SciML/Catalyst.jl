@@ -264,7 +264,7 @@ struct ReactionStruct
     dependants::Vector{Symbol}
     is_pure_mass_action::Bool
 
-    function ReactionStruct(s::Vector{ReactantStruct}, p::Vector{ReactantStruct}, 
+    function ReactionStruct(s::Vector{ReactantStruct}, p::Vector{ReactantStruct},
                             ns::Vector{ReactantStruct},
                             ro::ExprValues, rde::ExprValues, rssa::ExprValues,
                             dep::Vector{Symbol}, isma::Bool)
@@ -397,7 +397,7 @@ function get_f(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
         f[i] = :(internal_var___du[$i] = $(Expr(:call, :+)))
     end
     @inbounds for reaction in reactions
-        rl = recursive_clean!(reaction.rate_DE)        
+        rl = recursive_clean!(reaction.rate_DE)
         @inbounds for r in reaction.netstoich
             sidx = reactants[r.reactant]
             scoef = r.stoichiometry
@@ -424,13 +424,13 @@ function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
     numrxs = length(reactions)
     g = Vector{Expr}(undef,numspec*numrxs)
     idx = 0
-    @inbounds for k = 1:numrxs        
+    @inbounds for k = 1:numrxs
         # initialize to zero for all reactions
         @inbounds for (ssym,sidx) in reactants
             g[idx += 1] = :(internal_var___du[$sidx,$k] = 0)
         end
 
-        ns = reactions[k].netstoich        
+        ns = reactions[k].netstoich
         @inbounds for r in ns
             sidx = reactants[r.reactant]
             scoef = r.stoichiometry
@@ -443,31 +443,31 @@ function get_g(reactions::Vector{ReactionStruct}, reactants::OrderedDict{Symbol,
 end
 
 #Makes the various jacobian elements required.
-function get_jacs(f_rhs::Vector{ExprValues}, syms::Vector{Symbol}, reactions::Vector{ReactionStruct}, 
-                                                                   reactants::OrderedDict{Symbol,Int}, 
+function get_jacs(f_rhs::Vector{ExprValues}, syms::Vector{Symbol}, reactions::Vector{ReactionStruct},
+                                                                   reactants::OrderedDict{Symbol,Int},
                                                                    parameters::OrderedDict{Symbol,Int};
-                                                                   build_jac = true,                                                                   
+                                                                   build_jac = true,
                                                                    build_paramjac = true,
                                                                    sparse_jac = false,
                                                                    zeroout_jac = false)
-    # jacobian logic                                                               
+    # jacobian logic
     if build_jac
         if sparse_jac
             jac_prototype, jac = calculate_sparse_jac(reactions, reactants, parameters)
             symjac = nothing
         else
-            symjac = calculate_symjac(reactions, reactants) 
-            jac = calculate_jac(deepcopy(symjac), reactants, parameters, zeroout_jac) 
+            symjac = calculate_symjac(reactions, reactants)
+            jac = calculate_jac(deepcopy(symjac), reactants, parameters, zeroout_jac)
             jac_prototype = nothing
         end
     else
         jac_prototype = jac = symjac = nothing
     end
-    
+
     paramjac = build_paramjac ? calculate_paramjac(deepcopy(f_rhs), reactants, parameters) : nothing
 
     if isnothing(symjac)
-        return (symjac, jac, jac_prototype, paramjac) 
+        return (symjac, jac, jac_prototype, paramjac)
     else
         return (Expr(:quote, symjac), jac, jac_prototype, paramjac)
     end
@@ -483,7 +483,7 @@ function massaction_ratelaw_deriv(spec::Symbol, scoef::Int, rate::ExprValues, su
     denom = one(scoef)
     for sub in subs
         name = sub.reactant
-        stoich = sub.stoichiometry        
+        stoich = sub.stoichiometry
         if name == spec
             expon = stoich - one(stoich)
             denom *= factorial(expon)
@@ -502,7 +502,7 @@ function massaction_ratelaw_deriv(spec::Symbol, scoef::Int, rate::ExprValues, su
     rl
 end
 
-# given an expression representing a running sum, a ratelaw like expression, 
+# given an expression representing a running sum, a ratelaw like expression,
 # and a stoichiometric coefficient, update the running sum with the coef
 # times the rate law. specialized for mass action reactions
 @inline function addstoich_to_exprsum(ex::ExprValues, rl::ExprValues, scoef)
@@ -512,7 +512,7 @@ end
         else
             newex = (scoef == one(scoef)) ? rl : :($scoef * $rl)
         end
-    else                        
+    else
         if scoef < zero(scoef)
             scoef = -scoef
             newex = (scoef == one(scoef)) ? rl : :($scoef * $rl)
@@ -521,11 +521,11 @@ end
             newex = (scoef == one(scoef)) ? rl : :($scoef * $rl)
             newex = :($ex + $newex)
         end
-    end    
+    end
     newex
 end
 
-# given an expression representing a running sum, a ratelaw like expression, 
+# given an expression representing a running sum, a ratelaw like expression,
 # and a stoichiometric coefficient, update the running sum with the coef
 # times the rate law. Specialized for SymEngine ratelaws.
 @inline function addstoich_to_exprsum(ex::ExprValues, rl::SymEngine.Basic, scoef)
@@ -541,7 +541,7 @@ end
     newex
 end
 
-# get the correct index type for a dict mapping (i,j) to ExprValues, 
+# get the correct index type for a dict mapping (i,j) to ExprValues,
 # or for a Matrix of ExprValues
 @inline getkeytype(d::Dict)                       = keytype(d)
 @inline getkeytype(d::Matrix)                     = CartesianIndex{2}
@@ -552,13 +552,13 @@ end
 
 # generate Jacobian. Using preceding functions it supports jacexprs as
 # a Dict mapping (i,j) => ExprValues or as a dense matrix of ExprValues
-function jac_as_exprvalues!(jacexprs, reactions, reactants) 
+function jac_as_exprvalues!(jacexprs, reactions, reactants)
     internal_vars = [Symbol(:internal_variable___,var) for var in keys(reactants)]
     ivtosym = Dict(zip(internal_vars, keys(reactants)))
     symtoiv = Dict(zip(keys(reactants), internal_vars))
 
-    @inbounds for rx in reactions         
-        if rx.is_pure_mass_action 
+    @inbounds for rx in reactions
+        if rx.is_pure_mass_action
             for sub in rx.substrates
                 spec  = sub.reactant
                 scoef = sub.stoichiometry
@@ -567,16 +567,16 @@ function jac_as_exprvalues!(jacexprs, reactions, reactants)
                 # derivative with respect to this species
                 dratelaw = massaction_ratelaw_deriv(spec, scoef, rx.rate_org, rx.substrates)
 
-                # determine stoichiometric coefficent to multiply by 
+                # determine stoichiometric coefficent to multiply by
                 @inbounds for ns in rx.netstoich
                     key = resolveindex(getkeytype(jacexprs), reactants[ns.reactant], j)
-                    if checkforkey(jacexprs, key) 
+                    if checkforkey(jacexprs, key)
                         jacexprs[key] = addstoich_to_exprsum(jacexprs[key], deepcopy(dratelaw), ns.stoichiometry)
                     else
                         jacexprs[key] = addstoich_to_exprsum(0, deepcopy(dratelaw), ns.stoichiometry)
                     end
                 end
-            end            
+            end
         else
             ratelaw = SymEngine.Basic(recursive_replace!(recursive_clean!(deepcopy(rx.rate_DE)), symtoiv))
             @inbounds for dep in rx.dependants
@@ -586,7 +586,7 @@ function jac_as_exprvalues!(jacexprs, reactions, reactants)
 
                 @inbounds for ns in rx.netstoich
                     key = resolveindex(getkeytype(jacexprs), reactants[ns.reactant], j)
-                    if checkforkey(jacexprs, key) 
+                    if checkforkey(jacexprs, key)
                         jacexprs[key] = addstoich_to_exprsum(jacexprs[key], dratelaw, ns.stoichiometry)
                     else
                         jacexprs[key] = addstoich_to_exprsum(0, dratelaw, ns.stoichiometry)
@@ -601,7 +601,7 @@ end
 
 # generate a dense matrix of ExprValues representing the Jacobian
 function calculate_symjac(reactions, reactants)
-    nspecs   = length(reactants) 
+    nspecs   = length(reactants)
     jacexprs = Matrix{ExprValues}(undef, nspecs, nspecs)
     fill!(jacexprs, 0)
     jac_as_exprvalues!(jacexprs, reactions, reactants)
@@ -615,7 +615,7 @@ end
 function calculate_jac(symjac::Matrix{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int}, zeroout_jac=false)
     func_body = Expr(:block)
     zeroout_jac && push!(func_body.args, :(fill!(internal___var___J, zero(eltype(internal___var___J)))))
-    @inbounds for j = 1:size(symjac)[2], i = 1:size(symjac)[1]        
+    @inbounds for j = 1:size(symjac)[2], i = 1:size(symjac)[1]
         if symjac[i,j] isa Number
             ex = symjac[i,j]
             (!zeroout_jac || !iszero(ex)) && push!(func_body.args, :(internal___var___J[$i,$j] = $(ex)))
@@ -639,18 +639,21 @@ function dict_to_sparsemat(d, m, n; vals=nothing)
     for (i,k) in enumerate(keys(d))
         I[i] = k[1]
         J[i] = k[2]
-    end    
+    end
     return sparse(I,J,V,m,n)
 end
 
 function recursive_content(ex,symsmap::OrderedDict{Symbol,Int},content::Vector{Symbol})
-    if ex isa Symbol        
+    if ex isa Symbol
         haskey(symsmap,ex) && push!(content,ex)
-    elseif ex isa Expr  
+    elseif ex isa Expr
         foreach(arg -> recursive_content(arg,symsmap,content), ex.args)
     end
     return content
 end
+
+# create a sparse Jacobian
+function calculate_sparse_jac(reactions, reactants, parameters)
 
     # get the elements and structure of sparse matrix
     jacexprs = Dict{Tuple{Int,Int},ExprValues}()
@@ -671,19 +674,19 @@ end
     end
     push!(jfun.args, :(return nothing))
     jfunex = :((internal___var___J,internal___var___u,internal___var___p,t) -> @inbounds $jfun)
-    
+
     return jac_prototype, jfunex
 end
 
-#Makes the Jacobian, with respect to parameter values. 
+#Makes the Jacobian, with respect to parameter values.
 function calculate_paramjac(f_rhs::Vector{ExprValues}, reactants::OrderedDict{Symbol,Int}, parameters::OrderedDict{Symbol,Int})
     func_body = Expr(:block)
-    for j = 1:length(parameters), i = 1:length(reactants)    
+    for j = 1:length(parameters), i = 1:length(reactants)
         paramjac_entry = Meta.parse(string(diff(SymEngine.Basic(f_rhs[i]), parameters.keys[j])))
         push!(func_body.args, :(internal___var___pJ[$i,$j] = $(recursive_replace!(paramjac_entry,(reactants,:internal___var___u), (parameters, :internal___var___p)))))
     end
     push!(func_body.args,:(return internal___var___pJ))
-    return :((internal___var___pJ,internal___var___u,internal___var___p,t) -> @inbounds $func_body) 
+    return :((internal___var___pJ,internal___var___u,internal___var___p,t) -> @inbounds $func_body)
 end
 
 
@@ -756,4 +759,3 @@ macro reaction_func(expr)
 
     funcdict[name]  = x -> replace_names(maths, args, x)
 end
-
