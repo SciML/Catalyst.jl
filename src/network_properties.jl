@@ -324,8 +324,9 @@ end
     substratesymstoich(network, rxidx)
 
 Given an `AbstractReactionNetwork` and a reaction index, `rxidx`, return a
-`ReactantStruct`, mapping the symbols of species that serve as substrates in the
-reaction to the corresponding stoichiometric coefficient as a substrate. 
+Vector of `ReactantStruct`s, mapping the symbols of species that serve as
+substrates in the reaction to the corresponding stoichiometric coefficient as a
+substrate. 
 
 Non-allocating, returns underlying field within the reaction_network.
 """ 
@@ -354,8 +355,8 @@ end
     productsymstoich(network, rxidx)
 
 Given an `AbstractReactionNetwork` and a reaction index, `rxidx`, return a
-`ReactantStruct`, mapping the symbols of species that are products in the
-reaction to the corresponding stoichiometric coefficient as a product. 
+Vector of `ReactantStruct`s, mapping the symbols of species that are products in
+the reaction to the corresponding stoichiometric coefficient as a product. 
 
 Non-allocating, returns underlying field within the reaction_network.
 """ 
@@ -364,33 +365,35 @@ function productsymstoich(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
 end
 
 function netstoich(rs::ReactionStruct, specmap)
-    nsdict = Dict{Int,Int}(specmap[s.reactant] => -s.stoichiometry for s in rs.substrates)
-
-    for prod in rs.products
-        pidx = specmap[prod.reactant]
-        nsdict[pidx] = haskey(nsdict, pidx) ? nsdict[pidx] + prod.stoichiometry : prod.stoichiometry
-    end
-
-    net_stoich = Vector{Pair{Int,Int}}()
-    for stoich_map in sort(collect(nsdict))
-        (stoich_map[2] != zero(Int)) && push!(net_stoich, stoich_map)
-    end
-
-    net_stoich
+    sort!([specmap[ns.reactant] => ns.stoichiometry for ns in rs.netstoich])
 end
 
 """
     netstoich(network, rxidx)
 
 Given an `AbstractReactionNetwork` and a reaction index, `rxidx`, return a
-vector of pairs, mapping ids of species that participate in the reaction to the
-net stoichiometric coefficient of the species (i.e. net change in the species
-due to the reaction).
+vector of pairs, mapping ids of species that change numbers due to the reaction
+to the net stoichiometric coefficient of the species (i.e. net change in the
+species due to the reaction).
 
 Allocates a new vector to store the pairs.
 """
 function netstoich(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
     netstoich(rn.reactions[rxidx], speciesmap(rn))
+end
+
+"""
+    netsymstoich(network, rxidx)
+
+Given an `AbstractReactionNetwork` and a reaction index, `rxidx`, return a
+Vector of `ReactantStruct`s, mapping the symbols of species that change numbers
+due to the reaction to the net stoichiometric coefficient of the species (i.e.
+net change in the species due to the reaction).
+
+Non-allocating, returns underlying field within the reaction_network.
+"""
+function netsymstoich(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
+    rn.reactions[rxidx].netstoich
 end
 
 """
@@ -413,7 +416,6 @@ Non-allocating, returns underlying field within the reaction_network.
 function ismassaction(rn::DiffEqBase.AbstractReactionNetwork, rxidx)
     rn.reactions[rxidx].is_pure_mass_action
 end
-
 
 """
     dependents(network, rxidx)

@@ -15,7 +15,6 @@ function maketype(abstracttype,
                   params = Symbol[],
                   jac = nothing,
                   paramjac = nothing,
-                  jac_prototype = nothing,
                   symjac=Matrix{ExprValues}(undef,0,0),
                   reactions=Vector{ReactionStruct}(undef,0),
                   syms_to_ints = OrderedDict{Symbol,Int}(),
@@ -40,7 +39,6 @@ function maketype(abstracttype,
         params::Vector{Symbol}
         jac::Union{Function,Nothing}
         paramjac::Union{Function,Nothing}
-        jac_prototype::Nothing
         symjac::Union{Matrix{ExprValues},Nothing}
         reactions::Vector{ReactionStruct}
         syms_to_ints::OrderedDict{Symbol,Int}
@@ -67,7 +65,6 @@ function maketype(abstracttype,
                 $(Expr(:kw,:symjac,symjac)),
                 $(Expr(:kw,:jac,jac)),
                 $(Expr(:kw,:paramjac,paramjac)),
-                $(Expr(:kw,:jac_prototype,jac_prototype)),
                 $(Expr(:kw,:reactions,reactions)),
                 $(Expr(:kw,:syms_to_ints, syms_to_ints)),
                 $(Expr(:kw,:params_to_ints, params_to_ints)),
@@ -90,7 +87,6 @@ function maketype(abstracttype,
                         params,
                         jac,
                         paramjac,
-                        jac_prototype,
                         symjac,
                         reactions,
                         syms_to_ints,
@@ -159,8 +155,9 @@ function (==)(rn1::DiffEqBase.AbstractReactionNetwork, rn2::DiffEqBase.AbstractR
     (nr1 == nr2) || return false
     idx1 = 1:nr1
     idx2 = 1:nr2
-    issetequal(substrates.(rn1, idx1), substrates.(rn2, idx2)) || return false
-    issetequal(products.(rn1, idx1), products.(rn2, idx2)) || return false
+    issetequal(substratesymstoich.(rn1, idx1), substratesymstoich.(rn2, idx2)) || return false
+    issetequal(productsymstoich.(rn1, idx1), productsymstoich.(rn2, idx2)) || return false
+    issetequal(netsymstoich.(rn1, idx1), netsymstoich.(rn2, idx2)) || return false
     issetequal(dependants.(rn1, idx1), dependants.(rn2, idx2)) || return false
     issetequal(rateexpr.(rn1, idx1), rateexpr.(rn2, idx2)) || return false
     issetequal(ismassaction.(rn1, idx1), ismassaction.(rn2, idx2)) || return false
@@ -298,9 +295,10 @@ function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues
     substrates = ReactantStruct[ReactantStruct(p[1],p[2]) for p in subs]
     dependents = Symbol[p[1] for p in subs]
     products = ReactantStruct[ReactantStruct(p[1],p[2]) for p in prods]
-    rate_DE = mass_rate_DE(substrates, true, rateex)
-    rate_SSA = mass_rate_SSA(substrates, true, rateex)
-
+    ns = netstoich(substrates, products)
+    rate_DE = isempty(subs) ? rateex : mass_rate_DE(substrates, true, rateex)
+    rate_SSA = isempty(subs) ? rateex : mass_rate_SSA(substrates, true, rateex)   
+    
     # resolve dependents from rateex
     if rateex isa Number
         ismassaction = true
@@ -322,7 +320,7 @@ function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues
         ismassaction = issetequal(dependents,newdeps)
         dependents = newdeps
     end
-
+    
     push!(rn.reactions, ReactionStruct(substrates, products, rateex, rate_DE, rate_SSA, dependents, ismassaction))
     nothing
 end
@@ -342,14 +340,14 @@ components.
 function addodes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     @unpack reactions, syms_to_ints, params_to_ints, syms = rn
 
-    (f_expr, f, f_rhs, symjac, jac, paramjac, f_symfuncs) = genode_exprs(reactions, syms_to_ints, params_to_ints, syms; kwargs...)
-    rn.f          = eval(f)
-    rn.f_func     = f_rhs
-    rn.jac        = eval(jac)
-    rn.paramjac   = eval(paramjac)
-    rn.symjac     = eval(symjac)
-    rn.f_symfuncs = f_symfuncs
-    rn.odefun     = ODEFunction(rn.f; jac=rn.jac, jac_prototype=nothing, paramjac=rn.paramjac, syms=rn.syms)
+    (f_expr, f, f_rhs, symjac, jac, paramjac, f_symfuncs, jac_prototype) = genode_exprs(reactions, syms_to_ints, params_to_ints, syms; kwargs...)
+    rn.f             = eval(f)
+    rn.f_func        = f_rhs
+    rn.jac           = eval(jac)
+    rn.paramjac      = eval(paramjac)
+    rn.symjac        = eval(symjac)
+    rn.f_symfuncs    = f_symfuncs    
+    rn.odefun        = ODEFunction(rn.f; jac=rn.jac, jac_prototype=jac_prototype, paramjac=rn.paramjac, syms=rn.syms)
 
     # functor for evaluating f
     functor_exprs = gentypefun_exprs(typeof(rn), esc_exprs=false, gen_constructor=false)
@@ -367,12 +365,12 @@ or `@empty_reaction_network` macros with everything needed to use SDE solvers.
 Optional kwargs can be used to disable the construction of additional SDE solver
 components.
 """
-function addsdes!(rn::DiffEqBase.AbstractReactionNetwork)
+function addsdes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     @unpack reactions, syms_to_ints, params_to_ints, scale_noise = rn
 
     # first construct an ODE reaction network
     if rn.f == nothing
-        addodes!(rn)
+        addodes!(rn; kwargs...)
     end
 
     (g_expr, g, g_funcs, p_matrix) = gensde_exprs(reactions, syms_to_ints, params_to_ints, scale_noise)
@@ -416,15 +414,15 @@ function addjumps!(rn::DiffEqBase.AbstractReactionNetwork;
     @unpack reactions, syms_to_ints, params_to_ints = rn
 
     # parse the jumps
-    (jump_rate_expr, jump_affect_expr, jumps, regular_jumps) = get_jumps(reactions,
-                                                                    syms_to_ints,
-                                                                    params_to_ints;
-                                                                    minimal_jumps=minimal_jumps)
-
+    (jump_rate_expr, jump_affect_expr, jumps) = get_jumps(reactions,
+                                                          syms_to_ints,
+                                                          params_to_ints;
+                                                          minimal_jumps=minimal_jumps)
+    
     rn.jump_rate_expr   = jump_rate_expr
     rn.jump_affect_expr = jump_affect_expr
     rn.jumps            = build_jumps ? eval(jumps) : nothing
-    rn.regular_jumps    = build_regular_jumps ? eval(regular_jumps) : nothing
+    rn.regular_jumps    = build_regular_jumps ? eval(get_regularjumps(reactions, syms_to_ints, params_to_ints)) : nothing
 
     nothing
 end

@@ -1,0 +1,28 @@
+name = "DiffEqBiological"
+uuid = "eb300fae-53e8-50a0-950c-e21f52c2b7e0"
+version = "3.8.2"
+
+[deps]
+Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
+DiffEqJump = "c894b116-72e5-5b58-be3c-e6d8d4ac2b12"
+MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+SymEngine = "123dc426-2d89-5057-bbad-38513e3affd8"
+
+[compat]
+DiffEqBase = "5"
+DiffEqJump = "6"
+julia = "1"
+
+[extras]
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+SteadyStateDiffEq = "9672c7b4-1e72-59bd-8a11-6ac3964bc41f"
+StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test", "OrdinaryDiffEq", "StochasticDiffEq", "SteadyStateDiffEq"]
