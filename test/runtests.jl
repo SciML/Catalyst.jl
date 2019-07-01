@@ -1,4 +1,4 @@
-using Test, Statistics, Random, LinearAlgebra, SparseArrays
+using Test, Statistics, Random, LinearAlgebra, SparseArrays, Plots
 using DiffEqBiological, DiffEqBase
 using OrdinaryDiffEq, StochasticDiffEq, DiffEqJump, SteadyStateDiffEq
 
@@ -24,7 +24,7 @@ include("test_networks.jl")
   @time @testset "Equilibrate (3)" begin include("equilibrate_test_3.jl") end
   @time @testset "Equilibrate (4)" begin include("equilibrate_test_4.jl") end
   @time @testset "Other Tests" begin include("misc_tests.jl") end
-  @time @testset "Network query tests" begin include("networkquery_test.jl") end  
+  @time @testset "Network query tests" begin include("networkquery_test.jl") end
 end
 
 # min macro tests
