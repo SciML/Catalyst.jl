@@ -7,10 +7,9 @@ for rn in reaction_networks_standard
     range1 = 1.: rand(5.:10.)
     range2 = 1.: rand(5.:10.)
     for p in p_vals
-        plot(bifurcations(rn,p,param1,range_tupple))
-        plot(bifurcations_grid(rn,p,param1,range1))
-        plot(bifurcations_grid_2d(rn,p,param1,range1,param2,range2))
-        bdg = bifurcations_diagram_grid(rn,p,param1,range1,param2,range_tupple)
-        plot(bdg);
+        plot(bifurcations(rn,p,param1,range_tupple));
+        plot(bifurcations_grid(rn,p,param1,range1));
+        plot(bifurcations_grid_2d(rn,p,param1,range1,param2,range2));
+        plot(bifurcations_diagram_grid(rn,p,param1,range1,param2,range_tupple));
     end
 end

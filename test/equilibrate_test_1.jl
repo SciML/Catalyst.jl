@@ -1,10 +1,3 @@
-using Test, Statistics, Random, LinearAlgebra
-using DiffEqBiological, DiffEqBase
-using OrdinaryDiffEq, StochasticDiffEq, DiffEqJump, SteadyStateDiffEq
-
-# fetches a set of networks which can be used for tests.
-include("test_networks.jl")
-
 #Tests on the normal reaction networks.
 for rn in reaction_networks_standard
     p_vals = map(amp->amp*rand(length(rn.params)),[1.,10.,100.])
@@ -23,21 +16,3 @@ for rn in reaction_networks_standard
         #end
     end
 end
-
-using DifferentialEquations
-using DiffEqBiological
-rn = reaction_networks_standard[10]
-p_vals = map(amp->amp*rand(length(rn.params)),[1.,10.,100.])
-p = p_vals[1]
-fps = steady_states(rn,p)
-stab = map(fp->stability(fp,p,rn), fps)
-for i=1:length(fps)
-    stab[i] ? (tend = 10) : (tend = -10)
-    end_point = OrdinaryDiffEq.solve(ODEProblem(rn,fps[i],(0.,tend),p),Rosenbrock23())[end]
-    @test maximum(abs.(end_point-fps[i]))<0.0001
-end
-#start_points = map(amp->amp*rand(length(rn.syms)),[1.,10.,100.])
-#for sp in start_points
-#    end_point = OrdinaryDiffEq.solve(ODEProblem(rn,sp,(0.,1000.),p),Rosenbrock23())[end]
-#    @test any(map(fp->maximum(abs.(fp-end_point)),fps) .< 0.001)
-#end

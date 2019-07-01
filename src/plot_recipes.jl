@@ -53,11 +53,33 @@ end
     fill(x, length(point.vals[1])), point.vals
 end
 
+@recipe function f(x, y, point::bifurcation_point)
+    seriestype := :scatter
+    color --> stab_color.(point.stability_types)
+    fill(x, length(point.vals[1])), fill(y, length(point.vals[1])), point.vals
+end
+
 @recipe function f(grid::bifurcation_grid)
+    label --> ""
+    ylabel --> "Concentration"
+    xlabel --> string(grid.param)
     for (i, point) in enumerate(grid.grid_points)
         @series begin
             primary --> i==1
             grid.range[i], point
+        end
+    end
+end
+
+@recipe function f(grid::bifurcation_grid_2d)
+    label --> ""
+    zlabel --> "Concentration"
+    ylabel --> string(grid.param1)
+    xlabel --> string(grid.param2)
+    for i = 1:length(grid.range1), j = 1:length(grid.range2)
+        @series begin
+            primary --> i==1
+            grid.range1[i], grid.range2[j], grid.grid_points[i,j]
         end
     end
 end

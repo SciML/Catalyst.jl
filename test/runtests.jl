@@ -1,9 +1,14 @@
-using Test, Statistics, Random, LinearAlgebra
+using Test, Statistics, Random, LinearAlgebra, Plots
 using DiffEqBiological, DiffEqBase
 using OrdinaryDiffEq, StochasticDiffEq, DiffEqJump, SteadyStateDiffEq
 
 # fetches a set of networks which can be used for tests.
 include("test_networks.jl")
+
+@time @testset "Equilibrate (1)" begin include("equilibrate_test_1.jl") end
+@time @testset "Equilibrate (2)" begin include("equilibrate_test_2.jl") end
+@time @testset "Equilibrate (3)" begin include("equilibrate_test_3.jl") end
+@time @testset "Equilibrate (4)" begin include("equilibrate_test_4.jl") end
 
 # full macro tests
 @time begin
