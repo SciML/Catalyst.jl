@@ -15,7 +15,7 @@ SymEngine = "123dc426-2d89-5057-bbad-38513e3affd8"
 HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
 DynamicPolynomials = "7c1d4256-1411-5781-91ec-d7bc3513ac07"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-
+RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 [compat]
 DiffEqBase = "5"
 DiffEqJump = "6"
