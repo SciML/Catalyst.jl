@@ -55,13 +55,11 @@ reaction_networks_standard[6] = @reaction_network begin
 end p1 p2 k1 k2 k3 k4 k5 k6 d
 
 reaction_networks_standard[7] = @reaction_network begin
-    (p1,p2,p3,p4,p5), ∅ → (X1,X2,X3,X4,X5)
-    (k1,k2), X1 + 3X2 ⟷ 2X3 + 2X4
-    (k3,k4), X2 + X3 ⟷ X5
-    (mm(X1,v1,K1),k5), X5 ⟷ X1
-    (mm(X2,v2,K2),k6), X1 ⟷ X2
+    (p1,p2,p3), ∅ → (X1,X2,X3)
+    (k1,k2), X1 + 2X2 ⟷ X4
+    (mm(X3,v1,K1),k3), X4 ⟷ X5
     (d1,d2,d3,d4,d5), (X1,X2,X3,X4,X5) → ∅
-end p1 p2 p3 p4 p5 k1 k2 k3 k4 k5 k6 v1 K1 v2 K2 d1 d2 d3 d4 d5
+end p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
 
 reaction_networks_standard[8] = @reaction_network begin
     p, ∅ → 2X1
@@ -80,10 +78,10 @@ end p1 p2 p3 d1 d2 d3 k1 k2 k3 k4 k5 k6
 
 reaction_networks_standard[10] = @reaction_network begin
     p, ∅ ⟶ X1
-    (k1,k2), X1 ⟷ X2
-    (k3,k4), X2 ⟷ X3
-    (k5,k6), X3 ⟷ X4
-    (k7,k8), X4 ⟷ X5
+    (k1,k2), X1 → X2
+    (k3,k4), X2 → X3
+    (k5,k6), X3 → X4
+    (k7,k8), X4 → X5
     d, X5  ⟶ ∅
 end p k1 k2 k3 k4 k5 k6 k7 k8 d
 
