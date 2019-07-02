@@ -139,7 +139,6 @@ end
 # through reaction components directly...
 """
     ==(rn1::DiffEqBase.AbstractReactionNetwork, rn2::DiffEqBase.AbstractReactionNetwork)
-
 Tests whether the underlying species symbols, parameter symbols and reactions
 are the same in the two networks. Ignores order network components were defined,
 so the integer id of any individual species/parameters/reactions may be
@@ -167,7 +166,6 @@ end
 
 """
     addspecies!(network, speciessym::Symbol)
-
 Given an AbstractReaction network, add the species corresponding to the passed
 in symbol to the network (if it is not already defined).
 """
@@ -182,7 +180,6 @@ end
 
 """
     addspecies!(network, speciesname::String)
-
 Given an AbstractReaction network, add the species with name given by the passed
 in string to the network (if it is not already defined.
 """
@@ -190,7 +187,6 @@ addspecies!(rn::DiffEqBase.AbstractReactionNetwork, speciesname::String) = addsp
 
 """
     addparam!(network, param::Symbol)
-
 Given an AbstractReaction network, add the parameter corresponding to the passed
 in symbol to the network (if it is not already defined).
 """
@@ -205,7 +201,6 @@ end
 
 """
     addparam!(network, paramname::String)
-
 Given an AbstractReaction network, add the parameter with name given by the
 passed in string to the network (if it is not already defined).
 """
@@ -213,7 +208,6 @@ addparam!(rn::DiffEqBase.AbstractReactionNetwork, param::String) = addparam!(rn,
 
 """
     add_scale_noise_param!(network, scale_noise::Symbol)
-
 Given an AbstractReaction network, add the parameter corresponding to the passed
 in symbol to the network (if it is not already defined), and register it as the
 noise scaling coefficient.
@@ -231,7 +225,6 @@ end
 
 """
     add_scale_noise_param!(network, scale_noise_name::String)
-
 Given an AbstractReaction network, add the parameter with the passed in string
 as its name to the network (if it is not already defined), and register it as
 the noise scaling coefficient.
@@ -240,7 +233,6 @@ add_scale_noise_param!(rn::DiffEqBase.AbstractReactionNetwork, scale_noise_name:
 
 """
     addreaction!(network, rateex::Union{Expr,Symbol,Int,Float64}, rxexpr::Expr)
-
 Given an AbstractReaction network, add a reaction with the passed in rate and
 reaction expressions. i.e. a reaction of the form
 ```julia
@@ -255,7 +247,6 @@ would have `rateex=10.5` and `rxexpr=:(0 --> X)`, and
 k, X+X --> Z
 ```
 would have `rateex=:k` and `rxexpr=:(X+X --> Z)`.
-
 All normal DSL reaction definition notation should be supported.
 """
 function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues, rxexpr::Expr)
@@ -267,7 +258,6 @@ end
 
 """
     addreaction!(network, rateex::Union{Expr,Symbol,Int,Float64}, substrates, products)
-
 Given an AbstractReaction network, add a reaction with the passed in rate,
 `rateex`, substrate stoichiometry, and product stoichiometry. Stoichiometries
 are represented as tuples of `Pair{Symbol,Int}`. i.e. a reaction of the form
@@ -284,7 +274,6 @@ would have `rateex=10.5`, `substrates=()` and `products=(:X=>1,)`, and
 k, X+X --> Z
 ```
 would have `rateex=:k`, `substrates=(:X=>2,)` and `products=(:Z=>2,)`.
-
 All normal DSL reaction definition notation should be supported for the
 `rateex`.
 """
@@ -297,8 +286,8 @@ function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues
     products = ReactantStruct[ReactantStruct(p[1],p[2]) for p in prods]
     ns = netstoich(substrates, products)
     rate_DE = isempty(subs) ? rateex : mass_rate_DE(substrates, true, rateex)
-    rate_SSA = isempty(subs) ? rateex : mass_rate_SSA(substrates, true, rateex)   
-    
+    rate_SSA = isempty(subs) ? rateex : mass_rate_SSA(substrates, true, rateex)
+
     # resolve dependents from rateex
     if rateex isa Number
         ismassaction = true
@@ -320,8 +309,8 @@ function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues
         ismassaction = issetequal(dependents,newdeps)
         dependents = newdeps
     end
-    
-    push!(rn.reactions, ReactionStruct(substrates, products, rateex, rate_DE, rate_SSA, dependents, ismassaction))
+
+    push!(rn.reactions, ReactionStruct(substrates, products, ns, rateex, rate_DE, rate_SSA, dependents, ismassaction))
     nothing
 end
 
@@ -346,7 +335,7 @@ function addodes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     rn.jac           = eval(jac)
     rn.paramjac      = eval(paramjac)
     rn.symjac        = eval(symjac)
-    rn.f_symfuncs    = f_symfuncs    
+    rn.f_symfuncs    = f_symfuncs
     rn.odefun        = ODEFunction(rn.f; jac=rn.jac, jac_prototype=jac_prototype, paramjac=rn.paramjac, syms=rn.syms)
 
     # functor for evaluating f
@@ -418,7 +407,7 @@ function addjumps!(rn::DiffEqBase.AbstractReactionNetwork;
                                                           syms_to_ints,
                                                           params_to_ints;
                                                           minimal_jumps=minimal_jumps)
-    
+
     rn.jump_rate_expr   = jump_rate_expr
     rn.jump_affect_expr = jump_affect_expr
     rn.jumps            = build_jumps ? eval(jumps) : nothing
