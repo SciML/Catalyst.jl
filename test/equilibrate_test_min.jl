@@ -1,7 +1,7 @@
 #Tests steady state finders for minimal reaction network.
 for rn in min_reaction_networks_standard
-    addequi!(rn)
-    manage_reaction_network!(rn)
+    addequi1!(rn)
+    addequi2!(rn)
     p_vals = map(amp->amp*rand(length(rn.params)),[1.,10.,100.])
     for p in p_vals
         fps = steady_states(rn,p)

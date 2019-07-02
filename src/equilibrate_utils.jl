@@ -217,8 +217,10 @@ function positive_real_solutions(result)
 end
 
 #Returns a boolean which will be true if the given fixed point is stable.
-function stability(solution::Vector{Float64}, params::Vector{Float64}, reaction_network::DiffEqBase.AbstractReactionNetwork, t=0.::Float64)
-    return maximum(real.(eigen(reaction_network.jac(zeros(length(reaction_network.syms),length(reaction_network.syms)),solution,params,t)).values))<0.
+function stability(solution::Vector{Float64}, params::Vector{Float64}, rn::DiffEqBase.AbstractReactionNetwork, t=0.::Float64)
+    jac = zeros(length(rn.syms),length(rn.syms))
+    rn.jac(jac,solution,params,t)
+    return maximum(real.(eigen(jac).values))<0.
 end
 
 
@@ -492,7 +494,8 @@ function get_jac_eigenvals(vals::Vector{Vector{ComplexF64}},param::Symbol,param_
     for i = 1:length(vals)
         params_i = copy(params)
         params_i[reaction_network.params_to_ints[param]] = param_vals[i]
-        push!(stabs,eigen(reaction_network.jac(Jac_temp,vals[i],params_i,0.)).values)
+        reaction_network.jac(Jac_temp,vals[i],params_i,0.)
+        push!(stabs,eigen(Jac_temp).values)
     end
     return stabs
 end

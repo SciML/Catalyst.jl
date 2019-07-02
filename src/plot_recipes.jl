@@ -50,13 +50,13 @@ end
 @recipe function f(x, point::bifurcation_point)
     seriestype := :scatter
     color --> stab_color.(point.stability_types)
-    fill(x, length(point.vals[1])), point.vals
+    fill(x, length(point.vals)), point.vals
 end
 
 @recipe function f(x, y, point::bifurcation_point)
     seriestype := :scatter
     color --> stab_color.(point.stability_types)
-    fill(x, length(point.vals[1])), fill(y, length(point.vals[1])), point.vals
+    fill(x, length(point.vals)), fill(y, length(point.vals)), point.vals
 end
 
 @recipe function f(grid::bifurcation_grid)
