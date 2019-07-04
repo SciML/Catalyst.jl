@@ -351,7 +351,7 @@ function HcBifurcationSolverSimple(rn::DiffEqBase.AbstractReactionNetwork,p::Vec
     end
     for sol in sol2
         path = track_path(sol,tracker2,reverse(range)...)
-        (currstatus(tracker2) == CoreTrackerStatus.success) && remove_path!(paths_incomplete,path.x[end],d_sol)
+        (tracker2.state.status == CoreTrackerStatus.success) && remove_path!(paths_incomplete,path.x[end],d_sol)
         push!(paths_complete,path)
     end
     append!(paths_complete,paths_incomplete)
