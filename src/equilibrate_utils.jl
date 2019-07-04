@@ -342,7 +342,7 @@ function HcBifurcationSolverSimple(rn::DiffEqBase.AbstractReactionNetwork,p::Vec
     paths_incomplete = Vector{NamedTuple{(:p, :x),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}}()
     for sol in sol1
         path = track_path(sol,tracker1,range...)
-        if (currstatus(tracker1) == CoreTrackerStatus.success)
+        if (tracker1.state.status == CoreTrackerStatus.success)
             remove_sol!(sol2,path.x[end],d_sol)
             push!(paths_complete,path)
         else
