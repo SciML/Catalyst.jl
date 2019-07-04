@@ -197,7 +197,7 @@ function hc_solve_at(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64})
 end
 
 #Prepares the reaction network for being solved with Homotopy Continuation, in case some initialising operations have not been done yet.
-function initialise_solver!(rn::DiffEqBase.AbstractReactionNetwork, p::Vector{Float64}, bifurcation_exception_parameter::Int64=-1)
+function initialise_solver!(rn::DiffEqBase.AbstractReactionNetwork, p::Vector{Float64}, bifurcation_exception_parameter::Integer=-1)
     check_is_polynomial(rn)
     using_temp_poly = !has_equi_poly(rn)
     using_temp_poly && fix_parameters(rn, p, full_vector_exemption=bifurcation_exception_parameter)
