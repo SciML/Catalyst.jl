@@ -401,9 +401,9 @@ end
 function track_path_two_ways(start_points,coretracker1,coretracker2,p_cur,range)
     paths = Vector{NamedTuple{(:p, :x),Tuple{Array{Float64,1},Array{Array{Complex{Float64},1},1}}}}();
     for sp in start_points
-        (P1,X1) = track_path(sp,coretracker1,range[1],p_cur)
+        (P1,X1) = track_path(sp,coretracker1,p_cur,range[1])
         (P2,X2) = track_path(sp,coretracker2,p_cur,range[2])
-        push!(paths,(p=[P1...,P2...],x=[X1...,X2...]))
+        push!(paths,(p=[reverse(P1)...,P2...],x=[reverse(X1)...,X2...]))
     end
     return paths
 end
