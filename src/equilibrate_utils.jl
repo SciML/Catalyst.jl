@@ -424,8 +424,8 @@ function combine_paths(paths_old,paths_new,p,Δx)
     first_vals = map(path -> path.x[1],paths_new)
     midpoint_vals = map(path -> path.x[findfirst(path.p .> p/2)],paths_new)
     for path in paths_old
-        (typeof(path) == Core.Box)
-        any(norm.(map(fv->fv-path.x[1],first_vals)) .< Δx) || any(norm.(map(mv->mv-path.x[findfirst(path.p .> p/2)],midpoint_vals)) .< Δx) && continue
+        any(norm.(map(fv->fv-path.x[1],first_vals)) .< Δx) && continue
+        (findfirst(path.p .> p/2)==nothing) || any(norm.(map(mv->mv-path.x[findfirst(path.p .> p/2)],midpoint_vals)) .< Δx) && continue
         push!(output_paths,path)
     end
     return output_paths
