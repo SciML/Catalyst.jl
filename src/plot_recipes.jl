@@ -12,7 +12,7 @@ end
 @recipe function f(path::bifurcation_path, var, z_val)
     linewidth --> 4
     color --> stab_color.(path.stability_types)
-    fill(z_val, length(path.p_vals)), path.p_vals, getindex.(path.vals, var)
+    fill(z_val, length(path)), path.p_vals, getindex.(path.vals, var)
 end
 
 @recipe function f(bif::bifurcation_diagram, var, z_val)

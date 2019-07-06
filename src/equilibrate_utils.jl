@@ -38,10 +38,12 @@ push_constraint!(rn::DiffEqBase.AbstractReactionNetwork,constraint) = (push!(rn.
 set_equi_poly!(rn::DiffEqBase.AbstractReactionNetwork,t;kwargs...) = (rn.equilibrate_content.equilibrium_polynomial = derationalise_polys(rn.equilibrate_content.make_polynomial(rn.equilibrate_content.polyvars.x,t,rn.equilibrate_content.polyvars.p;kwargs...)))
 derationalise_polys(polys) = (typeof(polys[1])<:Polynomial) ? (return polys) : (return map(pol->pol.num,polys))
 add_constraints!(rn::DiffEqBase.AbstractReactionNetwork) = (has_equi_poly(rn) && foreach(constraint -> push!(rn.equilibrate_content.equilibrium_polynomial,constraint), rn.equilibrate_content.constraints))
-derationalise_equi_poly!(rn::DiffEqBase.AbstractReactionNetwork) = (!(typeof(rn.equilibrate_content.equilibrium_polynomial[1])<:Polynomial) && (rn.equilibrate_content.equilibrium_polynomial = map(pol->pol.num,rn.equilibrate_content.equilibrium_polynomial)))
 
 reset_equi_poly!(rn::DiffEqBase.AbstractReactionNetwork) = (rn.equilibrate_content.equilibrium_polynomial = nothing)
 reset_hc_templates!(rn::DiffEqBase.AbstractReactionNetwork) = (rn.equilibrate_content.homotopy_continuation_templates = Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}())
+
+check_is_polynomial(rn::DiffEqBase.AbstractReactionNetwork) = (!is_poly(rn)) && (error("This reaction network does not correspond to a polynomial system. Some of the reaction rate must contain non polynomial terms."))
+check_has_polynomial(rn::DiffEqBase.AbstractReactionNetwork) = (!has_equi_poly(rn)) && (error("No equilibrium polynomial have been created. Please use the @fix_concentration macro to do so."))
 
 
 #Generates the expression which is then converted into a function which generates polynomials for given parameters. Parameters not given can be given at a later stage, but parameters in the exponential must be given here. Also checks whenever the system is polynomial.
@@ -73,7 +75,6 @@ function fix_parameters(rn::DiffEqBase.AbstractReactionNetwork, params=Vector{Nu
     check_is_polynomial(rn)
     set_equi_poly!(rn,t;internal___var___paramvals=params,internal___var___paramvals___exemption=full_vector_exemption,kwargs...)
     add_constraints!(rn)
-    #derationalise_equi_poly!(rn)
     return nothing
 end
 
@@ -126,13 +127,14 @@ end
 
 #--- Makes homotopy continuation templates to be used at a later stage when solving for fixed points ---#
 #Can be called separatly, but will otherwise be called first time a steady state is to be found. Solves the system once using random parameters. Saves the solution as a template to be used for further solving.
-function make_hc_template(reaction_network::DiffEqBase.AbstractReactionNetwork)
-    check_is_polynomial(reaction_network)
-    check_exists_polynomial(reaction_network)
-    p_template = randn(ComplexF64, length(reaction_network.params))
-    f_template = DynamicPolynomials.subs.([reaction_network.equilibratium_polynomial...,reaction_network.fixed_concentrations...], Ref(reaction_network.polyvars_params => p_template))
-    result_template = HomotopyContinuation.solve(f_template, show_progress=false)
-    reaction_network.homotopy_continuation_template = (p_template,solutions(result_template))
+function make_hc_template(rn::DiffEqBase.AbstractReactionNetwork)
+    check_is_polynomial(rn)
+    check_has_polynomial(rn)
+    p_template = randn(ComplexF64, length(rn.params))
+    f_template = DynamicPolynomials.subs.(get_equi_poly(rn), Ref(get_polyvars(rn).p => p_template))
+    solution_template = solutions(HomotopyContinuation.solve(f_template, show_progress=false))
+    reset_hc_templates!(rn)
+    push_hc_template!(rn,p_template,solution_template)
 end
 #Similar to make_hc_template, but if a template is already presence this will add another one (as opposed to make which creates one and discard previous ones). Having several templates might add some robustness.
 function add_hc_template(rn::DiffEqBase.AbstractReactionNetwork)
@@ -150,20 +152,13 @@ function add_hc_template(rn::DiffEqBase.AbstractReactionNetwork)
     end
 end
 #Macro running the HC template function.
-macro make_hc_template(reaction_network::Symbol)
-    return Expr(:escape,:(make_hc_template($reaction_network)))
+macro make_hc_template(rn::Symbol)
+    return Expr(:escape,:(make_hc_template($rn)))
 end
 #Macro running the HC template function.
-macro add_hc_template(reaction_network::Symbol)
-    return Expr(:escape,:(add_hc_template($reaction_network)))
+macro add_hc_template(rn::Symbol)
+    return Expr(:escape,:(add_hc_template($rn)))
 end
-
-#--- Check whenever there currently is a polynomial, ot whenever such a polynomial is even possible. Returns corresponding error messages. ---#
-#Checks that the reaction network is a polynomial system.
-check_is_polynomial(rn::DiffEqBase.AbstractReactionNetwork) = (!is_poly(rn)) && (error("This reaction network does not correspond to a polynomial system. Some of the reaction rate must contain non polynomial terms."))
-#Checks that a polynomial have been created for the reaction network.
-check_exists_polynomial(reaction_network::DiffEqBase.AbstractReactionNetwork) = (reaction_network.equilibratium_polynomial==nothing) && (error("No equilibrium polynomial have been created. Please use the @fix_concentration macro to do so."))
-
 
 
 ### Functions for finding single steady states of fixed points, and for analysing their stability. ###
@@ -201,7 +196,7 @@ function initialise_solver!(rn::DiffEqBase.AbstractReactionNetwork, p::Vector{Fl
     check_is_polynomial(rn)
     using_temp_poly = !has_equi_poly(rn)
     using_temp_poly && fix_parameters(rn, p, full_vector_exemption=bifurcation_exception_parameter)
-    !has_hc_templates(rn) && add_hc_template(rn)
+    !has_hc_templates(rn) && make_hc_template(rn)
     return using_temp_poly
 end
 # In case a temporary equilibrium polynomial were used, this one resets it.
@@ -459,12 +454,12 @@ function positive_real_projection(track_result::NamedTuple{(:p, :x),Tuple{Array{
     return (p=T,x=X)
 end
 #Takes a set of paths as tracked by homotopy continuation and turns them into a vector of bifurcation paths.
-function bifurcation_paths(paths::Vector{NamedTuple{(:p, :x),Tuple{Array{Float64,1},Array{Array{Complex{Float64},1},1}}}},param::Symbol,r1::Number,r2::Number,reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64})
+function bifurcation_paths(paths::Vector{NamedTuple{(:p, :x),Tuple{Array{Float64,1},Array{Array{Complex{Float64},1},1}}}},param::Symbol,r1::Number,r2::Number,rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64})
     bps = Vector{bifurcation_path}()
     for path in paths
         (length(path.p)==0) && continue
         (abs(1-path.p[1]/path.p[end])<0.0001) && continue
-        jac_eigenvals = get_jac_eigenvals(path.x,param,path.p,reaction_network,params)
+        jac_eigenvals = get_jac_eigenvals(path.x,param,path.p,rn,p)
         push!(bps,bifurcation_path(path.p, path.x, jac_eigenvals, stability_type.(jac_eigenvals), length(path.p)))
     end
     return bps
@@ -488,14 +483,14 @@ function stab_color(stab_type::Int8)
     (stab_type==3) && (return :cyan)
 end
 #For a set of fixed points, return a corresponding set with the eigen values of the jacobian at the specified points.
-function get_jac_eigenvals(vals::Vector{Vector{ComplexF64}},param::Symbol,param_vals::Vector{Float64},reaction_network::DiffEqBase.AbstractReactionNetwork,params::Vector{Float64})
+function get_jac_eigenvals(vals::Vector{Vector{ComplexF64}},param::Symbol,param_vals::Vector{Float64},rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64})
     stabs = Vector{Vector{Any}}()
     (length(vals)==0)&&(return stabs)
     Jac_temp = zeros(length(vals[1]),length(vals[1]))
     for i = 1:length(vals)
-        params_i = copy(params)
-        params_i[reaction_network.params_to_ints[param]] = param_vals[i]
-        reaction_network.jac(Jac_temp,vals[i],params_i,0.)
+        params_i = copy(p)
+        params_i[rn.params_to_ints[param]] = param_vals[i]
+        rn.jac(Jac_temp,vals[i],params_i,0.)
         push!(stabs,eigen(Jac_temp).values)
     end
     return stabs

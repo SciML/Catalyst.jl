@@ -15,3 +15,46 @@ for rn in reaction_networks_standard
         plot(bif1); plot(bif2); plot(bif_grid); plot(bif_grid_2d); plot(bif_grid_dia);
     end
 end
+
+#More extensive tests on familiar networks.
+brusselator_network = @reaction_network begin
+    A, ∅ → X
+    1, 2X + Y → 3X
+    B, X → Y
+    1, X → ∅
+end A B;
+brusselator_p = [1.,4.]
+brusselator_network.equilibrate_content
+@make_hc_template brusselator_network
+@add_hc_template brusselator_network
+bif_brusselator = bifurcations(brusselator_network,brusselator_p,:B,(1.,4.))
+@test length(bif_brusselator.paths) == 1
+
+σ_network = @reaction_network begin
+    v0 + hill(σ,v,K,n), ∅ → (σ+A)
+    deg, (σ,A,Aσ) → ∅
+    (kB,kD), A + σ ↔ Aσ
+    S*kC, Aσ → σ
+end v0 v K n kD kB kC deg S;
+fix_parameters(σ_network,n=4)
+σ_p = [0.005, 0.1, 2.8, 4, 10, 100, 0.1, 0.01, 0.]
+make_hc_template(σ_network)
+add_hc_template(σ_network)
+ss_σ = steady_states(σ_network,σ_p)
+bif_σ = bifurcations(σ_network,σ_p,:S,(0.,2.))
+@test length(bif_σ.paths) == 3
+
+cc_network = @reaction_network begin
+  k1, 0 --> Y
+  k2p, Y --> 0
+  k2pp*P, Y --> 0
+  (k3p+k3pp*A)/(J3+Po), Po-->P
+  (k4*m)/(J4+P), Y + P --> Y + Po
+end k1 k2p k2pp k3p k3pp A J3 k4 m J4
+cc_p = [0.04,0.04,1.,1.,10.0,0.,0.04,35.,.1,.04]
+@add_constraint cc_network P+Po=1
+add_hc_template(cc_network)
+@add_hc_template cc_network
+ss_cc = steady_states(cc_network,cc_p)
+bif_cc = bifurcations(cc_network,cc_p,:m,(.01,.65))
+@test length(bif_cc.paths) == 3

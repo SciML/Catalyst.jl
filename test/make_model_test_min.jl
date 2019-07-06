@@ -5,13 +5,14 @@ network1 = @min_reaction_network rnm begin
 end
 addsdes!(network1)
 addjumps!(network1)
+add_scale_noise_param!(network1,:η)
 
 @test length(network1.f_func) == 6
 @test typeof(network1.f) <: Function
 @test length(network1.g_func) == 24
 @test typeof(network1.g) <: Function
 @test size(network1.p_matrix) == (6,4)
-@test length(network1.params) == 0
+@test length(network1.params) == 1
 @test length(network1.syms) == 6
 @test typeof(network1.jumps[1]) <:ConstantRateJump
 @test length(network1.jump_rate_expr) == 4
@@ -91,11 +92,12 @@ network6 = @min_reaction_network begin
     (1,X), Z ↔ Z1 + Z2
 end p1 p2
 addsdes!(network6)
+add_scale_noise_param!(network6,:η)
 
 @test length(network6.f_func) == 6
 @test length(network6.g_func) == 24
 @test size(network6.p_matrix) == (6,4)
-@test length(network6.params) == 2
+@test length(network6.params) == 3
 @test length(network6.syms) == 6
 @test typeof(network6) <: DiffEqBase.AbstractReactionNetwork
 @test typeof(network6) == min_reaction_network
