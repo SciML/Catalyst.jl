@@ -25,6 +25,12 @@ mutable struct EquilibrateContent
         return new(mp,cs,hcts,ep,ips,pvs)
     end
 end
+
+
+abstract type AbstractBifurcationSolver end
+struct SimpleHCBifurcationSolver <: AbstractBifurcationSolver end
+struct HCBifurcationSolver <: AbstractBifurcationSolver end
+
 #Various Functions for accessing and updating an EquilibrateContent structure.
 get_equi_poly(rn::DiffEqBase.AbstractReactionNetwork) = (return rn.equilibrate_content.equilibrium_polynomial)
 has_equi_poly(rn::DiffEqBase.AbstractReactionNetwork) = (return rn.equilibrate_content.equilibrium_polynomial != nothing)
@@ -278,8 +284,27 @@ end
 #Generates a bifurcation diagram for a given reaction network and between two given parameter values. Does so by tracking paths
 
 #Generates a bifurcation diagram.
-function bifurcations(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param::Symbol,range::Tuple{Float64,Float64};solver=HcBifurcationSolver::Function,dp=(range[2]-range[1])/200.::Float64)
-    return bifurcation_diagram(param,range,solver(rn,p,param,range,dp=dp))
+"""
+    bifurcations([solver], reaction_network, parameter_values, parameter_symbol, parameter_range; kwargs...)
+
+Get a bifurcation diagram of the specified system.
+
+## args
+-  solver (optional): a subtype of AbstractBifurcationSolver that specifies how to solve the bifurcation diagram. Default is HCBifurcationSolver.
+-  reaction_network: a reaction network.
+-  parameter_values: a vector which specifies the point in parameter space around which the bifurcation diagram is evaluated.
+-  parameter_symbol: the parameter which is varied, given as a symbol.
+-  parameter_range: the range over which the specified parameter is varied.
+
+## kwargs
+-  dp=(parameter_range[2] - parameter_range[1])/200: The distance to jump after finding a bifurcation. After discovering a bifurcation, the solver jumps ahead a distance `dp` and starts back-tracking. If this distance is too small, the method may error or cause visible artifiacts in the bifurcation diagram. If it is too large, then you might jump over another bifurcation and it will be missed (this should also be farily obvious in a plot). Only applicable for the HCBifurcationSolver.
+"""
+function bifurcations(solver::AbstractBifurcationSolver, rn::DiffEqBase.AbstractReactionNetwork, p, param::Symbol,range; kwargs...)
+    return bifurcation_diagram(param,range,solve_bifurcation(solver,rn,p,param,range; kwargs...))
+end
+
+function bifurcations(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...)
+    return bifurcations(HCBifurcationSolver(), rn, args...; kwargs...)
 end
 
 #Generates a grid of bifurcation points, using a given steady state method.
@@ -309,11 +334,11 @@ function bifurcations_grid_2d(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{F
 end
 
 #Generates a grid of bifurcation diagram.
-function bifurcations_diagram_grid(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param1::Symbol,range1::AbstractRange,param2::Symbol,range2::Tuple{Float64,Float64};solver=HcBifurcationSolver::Function,dp=(range2[2]-range2[1])/200.::Float64)
+function bifurcations_diagram_grid(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param1::Symbol,range1::AbstractRange,param2::Symbol,range2::Tuple{Float64,Float64};solver=HCBifurcationSolver()::AbstractBifurcationSolver,dp=(range2[2]-range2[1])/200.::Float64)
     diagram_grid = Vector{Union{bifurcation_diagram,Nothing}}(fill(nothing,length(range1)))
     for i = 1:length(range1)
         p_i=copy(p); p_i[rn.params_to_ints[param1]]=range1[i];
-        diagram_grid[i] = bifurcations(rn,p_i,param2,range2,solver=solver,dp=dp)
+        diagram_grid[i] = bifurcations(solver, rn,p_i,param2,range2;dp=dp)
     end
     return bifurcation_diagram_grid(param1,range1,param2,range2,Vector{bifurcation_diagram}(diagram_grid),length(range1))
 end
@@ -325,7 +350,24 @@ end
 
 #--- Function for the simple HC bifurcation solver ---#
 #Simple bifurcation solver which tracks the path from both sides. Might have problem with some diagrams with several bifurcation points.
-function HcBifurcationSolverSimple(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param::Symbol,range::Tuple{Float64,Float64};dp=(range[2]-range[1])/200.::Float64,d_sol=0.0000001)
+
+function solve_bifurcation(
+        rn::DiffEqBase.AbstractReactionNetwork,
+        args...; 
+        kwargs...,
+    )
+    return solve_bifurcation(BifurcationSolver(), rn, args...; kwargs...)
+end
+
+function solve_bifurcation(
+        ::SimpleHCBifurcationSolver,
+        rn::DiffEqBase.AbstractReactionNetwork,
+        p::Vector{Float64},
+        param::Symbol,
+        range::Tuple{Float64,Float64};
+        dp=(range[2]-range[1])/200.::Float64,
+        d_sol=1e-7,
+    )
     using_temp_poly = initialise_solver!(rn,p,rn.params_to_ints[param])
     p1 = copy(p); p1[rn.params_to_ints[param]] = range[1];
     p2 = copy(p); p2[rn.params_to_ints[param]] = range[2];
@@ -376,7 +418,18 @@ end
 #Main bifurcation solver. Track paths from the first to the last parameter values. Detects whenever a solution is lost due to a complicated bifurcation. In this case it resumes the path tracking just after that bifurcation.
 #Δp = how long step in parameter value to take after a bifrucation is encountered (should be smaller than the minimum expected distance between two bifurcations).
 #Δx = distance between two solutions for them to be considered identical. Should larger than the distance between two solutions.
-function HcBifurcationSolver(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param::Symbol,range::Tuple{Float64,Float64};dp=(range[2]-range[1])/200.::Float64,Δp=0.01::Float64,Δx=0.01::Float64)
+
+function solve_bifurcation(
+        ::HCBifurcationSolver,
+        rn::DiffEqBase.AbstractReactionNetwork,
+        p::Vector{Float64},
+        param::Symbol,
+        range::Tuple{Float64,Float64};
+        dp=(range[2]-range[1])/200.::Float64,
+        Δp=0.01::Float64,
+        Δx=0.01::Float64,
+    )
+#= function HcBifurcationSolver(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param::Symbol,range::Tuple{Float64,Float64};dp=(range[2]-range[1])/200.::Float64,Δp=0.01::Float64,Δx=0.01::Float64) =#
     using_temp_poly = initialise_solver!(rn,p,rn.params_to_ints[param])
     parameters(p_val) = (p = copy(p); p[rn.params_to_ints[param]] = p_val; return p;)
     p_cur = range[1]; paths = Vector{NamedTuple{(:p, :x),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}}();

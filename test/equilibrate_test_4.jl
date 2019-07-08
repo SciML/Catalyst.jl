@@ -8,7 +8,7 @@ for rn in reaction_networks_standard
     range2 = 1.: rand(5.:10.)
     for p in p_vals
         bif1 = bifurcations(rn,p,param1,range_tupple)
-        bif2 = bifurcations(rn,p,param1,range_tupple,solver=HcBifurcationSolverSimple)
+        bif2 = bifurcations(SimpleHCBifurcationSolver(), rn,p,param1,range_tupple)
         bif_grid = bifurcations_grid(rn,p,param1,range1)
         bif_grid_2d = bifurcations_grid_2d(rn,p,param1,range1,param2,range2)
         bif_grid_dia = bifurcations_diagram_grid(rn,p,param1,range1,param2,range_tupple)

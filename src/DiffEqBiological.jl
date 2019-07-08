@@ -44,6 +44,6 @@ export ODEProblem, SDEProblem, DiscreteProblem, JumpProblem, SteadyStateProblem
 export EquilibrateContent
 export @add_constraint, @add_constraints, internal___add___constraint!, fix_parameters, @make_hc_template, make_hc_template, @add_hc_template, add_hc_template
 export steady_states, stability, HcBifurcationSolverSimple, HcBifurcationSolver
-export bifurcations, bifurcations_grid, bifurcations_grid_2d, bifurcations_diagram_grid
+export bifurcations, bifurcations_grid, bifurcations_grid_2d, bifurcations_diagram_grid, SimpleHCBifurcationSolver, HCBifurcationSolver
 
 end # module
