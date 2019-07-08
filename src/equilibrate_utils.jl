@@ -179,7 +179,6 @@ function steady_states(rn::DiffEqBase.AbstractReactionNetwork, args...)
 end
 
 #Finds steady states of a system using homotopy continuation.
-#= function HcSteadyStateSolver(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64}) =#
 function steady_states(::HCSteadyStateSolver, rn::DiffEqBase.AbstractReactionNetwork,p=Vector{Float64}())
     using_temp_poly  = initialise_solver!(rn,p)
     (length(p)==0) && (return positive_real_solutions(solutions(HomotopyContinuation.solve(get_equi_poly(rn),show_progress=false))))
@@ -302,9 +301,9 @@ Get a bifurcation diagram of the specified system.
 -  parameter_range: the range over which the specified parameter is varied.
 
 ## kwargs
--  dp=(parameter\_range[2] - parameter\_range[1])/200: The distance to jump after finding a bifurcation. After discovering a bifurcation, the solver jumps ahead a distance `dp` and starts back-tracking. If this distance is too small, the method may error or cause visible artifiacts in the bifurcation diagram. If it is too large, then you might jump over another bifurcation and it will be missed (this should also be farily obvious in a plot). Only applicable for the HCBifurcationSolver.
+-  dp=(parameter_range[2] - parameter_range[1])/200: The distance to jump after finding a bifurcation. After discovering a bifurcation, the solver jumps ahead a distance `dp` and starts back-tracking. If this distance is too small, the method may error or cause visible artifiacts in the bifurcation diagram. If it is too large, then you might jump over another bifurcation and it will be missed (this should also be farily obvious in a plot). Only applicable for the HCBifurcationSolver.
 """
-function bifurcations(solver::AbstractBifurcationSolver, rn::DiffEqBase.AbstractReactionNetwork, p, param::Symbol,range; kwargs...)
+function bifurcations(solver::AbstractBifurcationSolver, rn::DiffEqBase.AbstractReactionNetwork, p, param::Symbol, range; kwargs...)
     return BifurcationDiagram(param,range,solve_bifurcation(solver,rn,p,param,range; kwargs...))
 end
 
