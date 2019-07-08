@@ -31,6 +31,10 @@ abstract type AbstractBifurcationSolver end
 struct SimpleHCBifurcationSolver <: AbstractBifurcationSolver end
 struct HCBifurcationSolver <: AbstractBifurcationSolver end
 
+
+abstract type AbstractSteadyStateSolver end
+struct HCSteadyStateSolver <: AbstractSteadyStateSolver end
+
 #Various Functions for accessing and updating an EquilibrateContent structure.
 get_equi_poly(rn::DiffEqBase.AbstractReactionNetwork) = (return rn.equilibrate_content.equilibrium_polynomial)
 has_equi_poly(rn::DiffEqBase.AbstractReactionNetwork) = (return rn.equilibrate_content.equilibrium_polynomial != nothing)
@@ -170,12 +174,13 @@ end
 ### Functions for finding single steady states of fixed points, and for analysing their stability. ###
 
 #Finds the steady states of a reaction network
-function steady_states(rn::DiffEqBase.AbstractReactionNetwork, p=Vector{Float64}()::Vector{Float64}; solver=HcSteadyStateSolver::Function)
-    return solver(rn,p)
+function steady_states(rn::DiffEqBase.AbstractReactionNetwork, args...) 
+    return steady_states(HCSteadyStateSolver(), rn, args...)
 end
 
 #Finds steady states of a system using homotopy continuation.
-function HcSteadyStateSolver(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64})
+#= function HcSteadyStateSolver(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64}) =#
+function steady_states(::HCSteadyStateSolver, rn::DiffEqBase.AbstractReactionNetwork,p=Vector{Float64}())
     using_temp_poly  = initialise_solver!(rn,p)
     (length(p)==0) && (return positive_real_solutions(solutions(HomotopyContinuation.solve(get_equi_poly(rn),show_progress=false))))
     result = hc_solve_at(rn,p)
@@ -297,7 +302,7 @@ Get a bifurcation diagram of the specified system.
 -  parameter_range: the range over which the specified parameter is varied.
 
 ## kwargs
--  dp=(parameter_range[2] - parameter_range[1])/200: The distance to jump after finding a bifurcation. After discovering a bifurcation, the solver jumps ahead a distance `dp` and starts back-tracking. If this distance is too small, the method may error or cause visible artifiacts in the bifurcation diagram. If it is too large, then you might jump over another bifurcation and it will be missed (this should also be farily obvious in a plot). Only applicable for the HCBifurcationSolver.
+-  dp=(parameter\_range[2] - parameter\_range[1])/200: The distance to jump after finding a bifurcation. After discovering a bifurcation, the solver jumps ahead a distance `dp` and starts back-tracking. If this distance is too small, the method may error or cause visible artifiacts in the bifurcation diagram. If it is too large, then you might jump over another bifurcation and it will be missed (this should also be farily obvious in a plot). Only applicable for the HCBifurcationSolver.
 """
 function bifurcations(solver::AbstractBifurcationSolver, rn::DiffEqBase.AbstractReactionNetwork, p, param::Symbol,range; kwargs...)
     return bifurcation_diagram(param,range,solve_bifurcation(solver,rn,p,param,range; kwargs...))
@@ -308,11 +313,15 @@ function bifurcations(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...
 end
 
 #Generates a grid of bifurcation points, using a given steady state method.
-function bifurcations_grid(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param::Symbol,range::AbstractRange;solver=HcSteadyStateSolver::Function)
+function bifurcations_grid(rn::DiffEqBase.AbstractReactionNetwork, args...)
+    return bifurcations_grid(HCSteadyStateSolver(), rn, args...)
+end
+
+function bifurcations_grid(solver::AbstractSteadyStateSolver, rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param::Symbol,range::AbstractRange)
     grid_points = Vector{Union{bifurcation_point,Nothing}}(fill(nothing,length(range)))
     for i = 1:length(range)
         p_i=copy(p); p_i[rn.params_to_ints[param]]=range[i];
-        sol = solver(rn,p_i)
+        sol = steady_states(solver, rn, p_i)
         jac_eigenvals = get_jac_eigenvals(map(s->ComplexF64.(s),sol),param,fill(range[i],length(sol)),rn,p)
         grid_points[i] = bifurcation_point(sol,jac_eigenvals,stability_type.(jac_eigenvals))
     end
@@ -320,13 +329,17 @@ function bifurcations_grid(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Floa
 end
 
 #Generates a 2d grid of bifurcation points, using a given steady state method.
-function bifurcations_grid_2d(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param1::Symbol,range1::AbstractRange,param2::Symbol,range2::AbstractRange;solver=HcSteadyStateSolver::Function)
+function bifurcations_grid_2d(rn::DiffEqBase.AbstractReactionNetwork, args...)
+    return bifurcations_grid_2d(HCSteadyStateSolver(), rn, args...)
+end
+
+function bifurcations_grid_2d(solver::AbstractSteadyStateSolver, rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param1::Symbol,range1::AbstractRange,param2::Symbol,range2::AbstractRange)
     grid_points = Matrix{Union{bifurcation_point,Nothing}}(fill(nothing,length(range1),length(range2)))
     for i = 1:length(range1), j = 1:length(range2)
         p_ij = copy(p);
         p_ij[rn.params_to_ints[param1]] = range1[i];
         p_ij[rn.params_to_ints[param2]] = range2[j];
-        sol = solver(rn,p_ij)
+        sol = steady_states(solver, rn,p_ij)
         jac_eigenvals = get_jac_eigenvals(map(s->ComplexF64.(s),sol),param1,fill(range1[i],length(sol)),rn,p)
         grid_points[i,j] = bifurcation_point(sol,jac_eigenvals,stability_type.(jac_eigenvals))
     end
