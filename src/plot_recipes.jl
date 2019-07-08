@@ -1,21 +1,21 @@
 import Base: length
-length(p::bifurcation_path) = length(p.p_vals)
-length(p::bifurcation_diagram_grid) = p.length
+length(p::BifurcationPath) = length(p.p_vals)
+length(p::BifurcationDiagramGrid) = p.length
 
 
-@recipe function f(path::bifurcation_path, var=1)
+@recipe function f(path::BifurcationPath, var=1)
     linewidth --> 4
     color --> stab_color.(path.stability_types)
     path.p_vals, getindex.(path.vals, var)
 end
 
-@recipe function f(path::bifurcation_path, var, z_val)
+@recipe function f(path::BifurcationPath, var, z_val)
     linewidth --> 4
     color --> stab_color.(path.stability_types)
     fill(z_val, length(path)), path.p_vals, getindex.(path.vals, var)
 end
 
-@recipe function f(bif::bifurcation_diagram, var, z_val)
+@recipe function f(bif::BifurcationDiagram, var, z_val)
     xlabel --> string(bif.param)
     for (i, path) in enumerate(bif.paths)
         @series begin
@@ -25,7 +25,7 @@ end
     end
 end
 
-@recipe function f(bif::bifurcation_diagram, var=1)
+@recipe function f(bif::BifurcationDiagram, var=1)
     xlabel --> string(bif.param)
     for (i, path) in enumerate(bif.paths)
         @series begin
@@ -35,7 +35,7 @@ end
     end
 end
 
-@recipe function f(grid::bifurcation_diagram_grid, var=1)
+@recipe function f(grid::BifurcationDiagramGrid, var=1)
     label --> ""
     zlabel --> "Concentration"
     ylabel --> string(grid.param2)
@@ -47,19 +47,19 @@ end
     end
 end
 
-@recipe function f(x, point::bifurcation_point)
+@recipe function f(x, point::BifurcationPoint)
     seriestype := :scatter
     color --> stab_color.(point.stability_types)
     fill(x, length(point.vals)), point.vals
 end
 
-@recipe function f(x, y, point::bifurcation_point)
+@recipe function f(x, y, point::BifurcationPoint)
     seriestype := :scatter
     color --> stab_color.(point.stability_types)
     fill(x, length(point.vals)), fill(y, length(point.vals)), point.vals
 end
 
-@recipe function f(grid::bifurcation_grid)
+@recipe function f(grid::BifurcationGrid)
     label --> ""
     ylabel --> "Concentration"
     xlabel --> string(grid.param)
@@ -71,7 +71,7 @@ end
     end
 end
 
-@recipe function f(grid::bifurcation_grid_2d)
+@recipe function f(grid::BifurcationGrid2D)
     label --> ""
     zlabel --> "Concentration"
     ylabel --> string(grid.param1)

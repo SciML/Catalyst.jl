@@ -236,7 +236,7 @@ end
 ### Bifurcation Diagrams Structures###
 
 #Contains information from a single bifurcation line. A bifurcation plot would typically contain several such lines. These are the results from a method which tracks a solution through parameter space.
-struct bifurcation_path
+struct BifurcationPath
     p_vals::Vector{Float64}
     vals::Vector{Vector{Float64}}
     jac_eigenvals::Vector{Vector{ComplexF64}}
@@ -244,42 +244,42 @@ struct bifurcation_path
     length::Int64
 end
 #A bifurcation diagram, contains a set of bifurcation paths.
-struct bifurcation_diagram
+struct BifurcationDiagram
     param::Symbol
     range::Tuple{Float64,Float64}
-    paths::Vector{bifurcation_path}
+    paths::Vector{BifurcationPath}
 end
 
 #This is a single point in a grid like bifurcation scheme. It contains a parameter value and corresponding fixed points, as well as stability information.
-struct bifurcation_point
+struct BifurcationPoint
     vals::Vector{Vector{Float64}}
     jac_eigenvals::Vector{Vector{ComplexF64}}
     stability_types::Vector{Int8}
 end
 #Contains a grid like bifurgation diagrams with a vector of bifurcation points.
-struct bifurcation_grid
+struct BifurcationGrid
     param::Symbol
     range::AbstractRange
-    grid_points::Vector{bifurcation_point}
+    grid_points::Vector{BifurcationPoint}
     length::Int64
 end
 #Contains a grid like bifurgation diagrams over 2 parameters. The bifurcation points are contained in a matrix.
-struct bifurcation_grid_2d
+struct BifurcationGrid2D
     param1::Symbol
     range1::AbstractRange
     param2::Symbol
     range2::AbstractRange
-    grid_points::Matrix{bifurcation_point}
+    grid_points::Matrix{BifurcationPoint}
     size::Tuple{Int64,Int64}
 end
 
 #A 2d hybrid of grid and diagram. Contains a 1d grid of bifurcation diargam.
-struct bifurcation_diagram_grid
+struct BifurcationDiagramGrid
     param1::Symbol
     range1::AbstractRange
     param2::Symbol
     range2::Tuple{Float64,Float64}
-    bifurcation_diagrams::Vector{bifurcation_diagram}
+    bifurcation_diagrams::Vector{BifurcationDiagram}
     length::Int64
 end
 
@@ -305,7 +305,7 @@ Get a bifurcation diagram of the specified system.
 -  dp=(parameter\_range[2] - parameter\_range[1])/200: The distance to jump after finding a bifurcation. After discovering a bifurcation, the solver jumps ahead a distance `dp` and starts back-tracking. If this distance is too small, the method may error or cause visible artifiacts in the bifurcation diagram. If it is too large, then you might jump over another bifurcation and it will be missed (this should also be farily obvious in a plot). Only applicable for the HCBifurcationSolver.
 """
 function bifurcations(solver::AbstractBifurcationSolver, rn::DiffEqBase.AbstractReactionNetwork, p, param::Symbol,range; kwargs...)
-    return bifurcation_diagram(param,range,solve_bifurcation(solver,rn,p,param,range; kwargs...))
+    return BifurcationDiagram(param,range,solve_bifurcation(solver,rn,p,param,range; kwargs...))
 end
 
 function bifurcations(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...)
@@ -318,14 +318,14 @@ function bifurcations_grid(rn::DiffEqBase.AbstractReactionNetwork, args...)
 end
 
 function bifurcations_grid(solver::AbstractSteadyStateSolver, rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param::Symbol,range::AbstractRange)
-    grid_points = Vector{Union{bifurcation_point,Nothing}}(fill(nothing,length(range)))
+    grid_points = Vector{Union{BifurcationPoint,Nothing}}(fill(nothing,length(range)))
     for i = 1:length(range)
         p_i=copy(p); p_i[rn.params_to_ints[param]]=range[i];
         sol = steady_states(solver, rn, p_i)
         jac_eigenvals = get_jac_eigenvals(map(s->ComplexF64.(s),sol),param,fill(range[i],length(sol)),rn,p)
-        grid_points[i] = bifurcation_point(sol,jac_eigenvals,stability_type.(jac_eigenvals))
+        grid_points[i] = BifurcationPoint(sol,jac_eigenvals,stability_type.(jac_eigenvals))
     end
-    return bifurcation_grid(param,range,Vector{bifurcation_point}(grid_points),length(range))
+    return BifurcationGrid(param,range,Vector{BifurcationPoint}(grid_points),length(range))
 end
 
 #Generates a 2d grid of bifurcation points, using a given steady state method.
@@ -334,26 +334,26 @@ function bifurcations_grid_2d(rn::DiffEqBase.AbstractReactionNetwork, args...)
 end
 
 function bifurcations_grid_2d(solver::AbstractSteadyStateSolver, rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param1::Symbol,range1::AbstractRange,param2::Symbol,range2::AbstractRange)
-    grid_points = Matrix{Union{bifurcation_point,Nothing}}(fill(nothing,length(range1),length(range2)))
+    grid_points = Matrix{Union{BifurcationPoint,Nothing}}(fill(nothing,length(range1),length(range2)))
     for i = 1:length(range1), j = 1:length(range2)
         p_ij = copy(p);
         p_ij[rn.params_to_ints[param1]] = range1[i];
         p_ij[rn.params_to_ints[param2]] = range2[j];
         sol = steady_states(solver, rn,p_ij)
         jac_eigenvals = get_jac_eigenvals(map(s->ComplexF64.(s),sol),param1,fill(range1[i],length(sol)),rn,p)
-        grid_points[i,j] = bifurcation_point(sol,jac_eigenvals,stability_type.(jac_eigenvals))
+        grid_points[i,j] = BifurcationPoint(sol,jac_eigenvals,stability_type.(jac_eigenvals))
     end
-    return bifurcation_grid_2d(param1,range1,param2,range2,Matrix{bifurcation_point}(grid_points),(length(range1),length(range2)))
+    return BifurcationGrid2D(param1,range1,param2,range2,Matrix{BifurcationPoint}(grid_points),(length(range1),length(range2)))
 end
 
 #Generates a grid of bifurcation diagram.
 function bifurcations_diagram_grid(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param1::Symbol,range1::AbstractRange,param2::Symbol,range2::Tuple{Float64,Float64};solver=HCBifurcationSolver()::AbstractBifurcationSolver,dp=(range2[2]-range2[1])/200.::Float64)
-    diagram_grid = Vector{Union{bifurcation_diagram,Nothing}}(fill(nothing,length(range1)))
+    diagram_grid = Vector{Union{BifurcationDiagram,Nothing}}(fill(nothing,length(range1)))
     for i = 1:length(range1)
         p_i=copy(p); p_i[rn.params_to_ints[param1]]=range1[i];
         diagram_grid[i] = bifurcations(solver, rn,p_i,param2,range2;dp=dp)
     end
-    return bifurcation_diagram_grid(param1,range1,param2,range2,Vector{bifurcation_diagram}(diagram_grid),length(range1))
+    return BifurcationDiagramGrid(param1,range1,param2,range2,Vector{BifurcationDiagram}(diagram_grid),length(range1))
 end
 
 
@@ -521,12 +521,12 @@ function positive_real_projection(track_result::NamedTuple{(:p, :x),Tuple{Array{
 end
 #Takes a set of paths as tracked by homotopy continuation and turns them into a vector of bifurcation paths.
 function bifurcation_paths(paths::Vector{NamedTuple{(:p, :x),Tuple{Array{Float64,1},Array{Array{Complex{Float64},1},1}}}},param::Symbol,r1::Number,r2::Number,rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64})
-    bps = Vector{bifurcation_path}()
+    bps = Vector{BifurcationPath}()
     for path in paths
         (length(path.p)==0) && continue
         (abs(1-path.p[1]/path.p[end])<0.0001) && continue
         jac_eigenvals = get_jac_eigenvals(path.x,param,path.p,rn,p)
-        push!(bps,bifurcation_path(path.p, path.x, jac_eigenvals, stability_type.(jac_eigenvals), length(path.p)))
+        push!(bps,BifurcationPath(path.p, path.x, jac_eigenvals, stability_type.(jac_eigenvals), length(path.p)))
     end
     return bps
 end
