@@ -10,20 +10,26 @@ mutable struct EquilibrateContent
     equilibrium_polynomial::Union{Vector{Polynomial{true,Float64}},Nothing}
     is_polynomial_system::Bool
     polyvars::NamedTuple{(:x, :t, :p),Tuple{Vector{PolyVar{true}},PolyVar{true},Vector{PolyVar{true}}}}
-    function EquilibrateContent(make_polynomial,pvxs,pvt,pvps)
-        is_polynomial_system = try
-            make_polynomial(pvxs,pvt,pvps,internal___var___paramvals=fill(1,length(pvps)))
-            true
-        catch; false; end
-        equilibrium_polynomial = try
-            tmp_pol = make_polynomial(pvxs,pvt,pvps);
-            (typeof(tmp_pol[1])<:Polynomial) ? tmp_pol : map(pol->pol.num,tmp_pol)
-        catch; nothing; end
-        new(make_polynomial,Vector{Polynomial{true,Float64}}(),Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}(),equilibrium_polynomial,is_polynomial_system,(x=pvxs,t=pvt,p=pvps))
-    end
-    function EquilibrateContent(mp,cs,hcts,ep,ips,pvs) #only for use in addequi1!()
-        return new(mp,cs,hcts,ep,ips,pvs)
-    end
+end
+
+function EquilibrateContent(make_polynomial,pvxs,pvt,pvps)
+    is_polynomial_system = try
+        make_polynomial(pvxs,pvt,pvps,internal___var___paramvals=fill(1,length(pvps)))
+        true
+    catch; false; end
+    equilibrium_polynomial = try
+        tmp_pol = make_polynomial(pvxs,pvt,pvps);
+        (typeof(tmp_pol[1])<:Polynomial) ? tmp_pol : map(pol->pol.num,tmp_pol)
+    catch; nothing; end
+
+    return EqulibrateContent(
+        make_polynomial,
+        Vector{Polynomial{true,Float64}}(),
+        Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}(),
+        equilibrium_polynomial,
+        is_polynomial_system,
+        (x=pvxs,t=pvt,p=pvps),
+    )
 end
 
 
