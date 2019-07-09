@@ -22,7 +22,7 @@ function EquilibrateContent(make_polynomial,pvxs,pvt,pvps)
         (typeof(tmp_pol[1])<:Polynomial) ? tmp_pol : map(pol->pol.num,tmp_pol)
     catch; nothing; end
 
-    return EqulibrateContent(
+    return EquilibrateContent(
         make_polynomial,
         Vector{Polynomial{true,Float64}}(),
         Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}(),
