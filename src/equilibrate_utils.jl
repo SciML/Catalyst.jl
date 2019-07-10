@@ -139,7 +139,8 @@ end
 ## args
 -  reaction_network: a reaction network.
 -  constraints: Constraints, typically given as X + Y = C. Both parameters, varriables, and numbers can be given. However, parameters much be declared previously in the reaction network.
-"""macro add_constraints(rn::Symbol, constraints::Expr...)
+"""
+macro add_constraints(rn::Symbol, constraints::Expr...)
     func_expr = Expr(:escape,:(internal___add___constraint!($rn)))
     foreach(constraint -> push!(func_expr.args[1].args,recursive_replace_vars!(balance_poly(constraint), rn)),MacroTools.striplines(constraints...).args)
     return func_expr
