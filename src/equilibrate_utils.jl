@@ -339,7 +339,7 @@ end
 - t (optional): the value of t, for which the stability is calculated.
 """
 function stability(solutions::Vector{Vector{Float64}}, rn::DiffEqBase.AbstractReactionNetwork, p::Vector{Float64}, t=0.::Float64)
-    return map(sol->stability(fp,rn,p,t=t), solutions)
+    return map(sol->stability(sol,rn,p,t), solutions)
 end
 
 
@@ -548,7 +548,7 @@ function solve_bifurcation(
     p2 = copy(p); p2[rn.params_to_ints[param]] = range[2];
     sol1 = hc_solve_at(rn, p1)
     sol2 = hc_solve_at(rn, p2)
-    d_sol = minimum(d_sol,minimum.(minimum.([sol1...,sol2...]))/10.)
+    d_sol = min(d_sol,sort(norm.([sol1...,sol2...]))[2]/10.)
     tracker1 = make_coretracker(rn,sol1,p1,p2,dp/(range[2]-range[1]))
     tracker2 = make_coretracker(rn,sol2,p2,p1,dp/(range[2]-range[1]))
     paths_complete   = Vector{NamedTuple{(:p, :x),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}}()
