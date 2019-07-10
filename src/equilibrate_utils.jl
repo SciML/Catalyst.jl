@@ -87,6 +87,22 @@ end
 
 #--- Fixes parameters, required when some exponents contain parameters. --#
 #Calls the internal make_polynomial function to create a polynomial. Used to model creation (will succced unless there is parameters in the exponents). Input include list of parameters to fix. All parameters occuring as exponent must be here (none other is required at this stage). Will insert fixed concentrations if such exists.
+"""
+    fix_parameters(reaction_network, [parameter_values]; t=get_polyvars(rn).t, kwargs...)
+
+Fixes certain parameters of a reaction network, preparing it for homotopy continuation.
+
+In the polynomial needed to be solved by homotopy continuation to find steady states solutions, both varriables and parameters are initially represented as polynomial varriables. If a parameter exists in an exponent (e.g. X^n), that parameter might be needed to be fixed to a desired value before solving. Fixing is not required, but if you solve a polynomial several times, it might increase performance.
+
+
+## args
+-  reaction_network: a reaction network.
+-  parameter_values: An entire vector can be given, fixing all parameters. Generaly you do not want to do this.
+-  t=get_polyvars(rn).t: If you want to fix the time value.
+
+## kwargs
+-  How parameters generally are fixed. Write e.g. n=4 to fix the parameter value of n.
+"""
 function fix_parameters(rn::DiffEqBase.AbstractReactionNetwork, params=Vector{Number}()::Vector{Number}; t=get_polyvars(rn).t, full_vector_exemption=-1, kwargs...)
     check_is_polynomial(rn)
     set_equi_poly!(rn,t;internal___var___paramvals=params,internal___var___paramvals___exemption=full_vector_exemption,kwargs...)
@@ -96,13 +112,34 @@ end
 
 #--- Adds additional constraints to the system, typically a fixed concentration such as in the system X <--> Y.
 #In some networks some linear combinations of concentrations remain fixed. This supplies this information directly to the network.
+"""
+    @add_contraint(reaction_network, constraints)
+
+Some networks (like X ↔ Y) have an infinite number of potential steady states, depending on initial conditions. For these some additional contraint(s) is required. Typically in the form of fixed concentrations.
+
+## args
+-  reaction_network: a reaction network.
+-  constraints: Constraints, typically given as X + Y = C. Both parameters, varriables, and numbers can be given. However, parameters much be declared previously in the reaction network.
+"""
 macro add_constraint(rn::Symbol, constraints::Expr...)
     func_expr = Expr(:escape,:(internal___add___constraint!($rn)))
     foreach(constraint -> push!(func_expr.args[1].args,recursive_replace_vars!(balance_poly(constraint), rn)),constraints)
     return func_expr
 end
 #In some networks some linear combinations of concentrations remain fixed. This supplies this information directly to the network.
-macro add_constraints(rn::Symbol, constraints::Expr...)
+"""
+    @add_contraints(reaction_network, constraints)
+
+Same as @add_constraint, but a more natural way of adding several contraints such as:
+@add_contraints rn begin
+    X1 + Y1 = C1
+    X2 + Y2 = C2
+end
+
+## args
+-  reaction_network: a reaction network.
+-  constraints: Constraints, typically given as X + Y = C. Both parameters, varriables, and numbers can be given. However, parameters much be declared previously in the reaction network.
+"""macro add_constraints(rn::Symbol, constraints::Expr...)
     func_expr = Expr(:escape,:(internal___add___constraint!($rn)))
     foreach(constraint -> push!(func_expr.args[1].args,recursive_replace_vars!(balance_poly(constraint), rn)),MacroTools.striplines(constraints...).args)
     return func_expr
@@ -143,6 +180,14 @@ end
 
 #--- Makes homotopy continuation templates to be used at a later stage when solving for fixed points ---#
 #Can be called separatly, but will otherwise be called first time a steady state is to be found. Solves the system once using random parameters. Saves the solution as a template to be used for further solving.
+"""
+    make_hc_template(reaction_network)
+
+    Makes a template for solving the riven reaction networks steady states using homotopy continuation. Generally not needed as this is genrated automatically when netowkr is first solved *if one does not already exists). However, it can be sued to replace the current template, for whatever reason.
+
+## args
+-  reaction_network: a reaction network.
+"""
 function make_hc_template(rn::DiffEqBase.AbstractReactionNetwork)
     check_is_polynomial(rn)
     check_has_polynomial(rn)
@@ -153,6 +198,14 @@ function make_hc_template(rn::DiffEqBase.AbstractReactionNetwork)
     push_hc_template!(rn,p_template,solution_template)
 end
 #Similar to make_hc_template, but if a template is already presence this will add another one (as opposed to make which creates one and discard previous ones). Having several templates might add some robustness.
+"""
+    add_hc_template(reaction_network)
+
+    Adds another hc template to the network. Having more HC templates might increase run time a little bit, but might give some additional certainity that all solutions are found (this should generally not be a problem anyway)
+
+## args
+-  reaction_network: a reaction network.
+"""
 function add_hc_template(rn::DiffEqBase.AbstractReactionNetwork)
     p_template = randn(ComplexF64, length(rn.params))
     f_template = DynamicPolynomials.subs.(get_equi_poly(rn), Ref(get_polyvars(rn).p => p_template))
@@ -168,10 +221,26 @@ function add_hc_template(rn::DiffEqBase.AbstractReactionNetwork)
     end
 end
 #Macro running the HC template function.
+"""
+    @make_hc_template(reaction_network)
+
+    Calls the "make_hc_template function on the given reaction network."
+
+## args
+-  reaction_network: a reaction network.
+"""
 macro make_hc_template(rn::Symbol)
     return Expr(:escape,:(make_hc_template($rn)))
 end
 #Macro running the HC template function.
+"""
+    @make_hc_template(reaction_network)
+
+    Calls the "add_hc_template function on the given reaction network."
+
+## args
+-  reaction_network: a reaction network.
+"""
 macro add_hc_template(rn::Symbol)
     return Expr(:escape,:(add_hc_template($rn)))
 end
@@ -180,10 +249,22 @@ end
 ### Functions for finding single steady states of fixed points, and for analysing their stability. ###
 
 #Finds the steady states of a reaction network
-function steady_states(rn::DiffEqBase.AbstractReactionNetwork, args...) 
+"""
+    steady_states([solver], reaction_network, [parameter_values]; kwargs...)
+
+Finds the steady states of a given reaction network, at given parameter values.
+
+## args
+-  solver (optional): a subtype of AbstractSteadyStateSolver that specifies how to solve the bifurcation diagram. Default is HCSteadyStateSolver (currently only solver avaiable).
+-  reaction_network: a reaction network.
+-  parameter_values: a vector which specifies the parameter values for which the steady states are to be found. Not required in case the reaction network lacks steady states.
+
+## kwargs
+ - potential arguments for steady state solvers (however, only current solver does not have any such arguments).
+"""
+function steady_states(rn::DiffEqBase.AbstractReactionNetwork, args...)
     return steady_states(HCSteadyStateSolver(), rn, args...)
 end
-
 #Finds steady states of a system using homotopy continuation.
 function steady_states(::HCSteadyStateSolver, rn::DiffEqBase.AbstractReactionNetwork,p=Vector{Float64}())
     using_temp_poly  = initialise_solver!(rn,p)
@@ -371,7 +452,7 @@ end
 
 function solve_bifurcation(
         rn::DiffEqBase.AbstractReactionNetwork,
-        args...; 
+        args...;
         kwargs...,
     )
     return solve_bifurcation(BifurcationSolver(), rn, args...; kwargs...)
