@@ -4,7 +4,7 @@ for rn in reaction_networks_hill
     for p in p_vals
         fix_parameters(rn,p)
         fps = steady_states(rn,Vector{Float64}())
-        stab = map(fp->stability(fp,Float64.(p),rn), fps)
+        stab = map(fp->stability(fp,rn,Float64.(p)), fps)
         for i=1:length(fps)
             stab[i] ? (tend = 10) : (tend = -10)
             end_point = OrdinaryDiffEq.solve(ODEProblem(rn,fps[i],(0.,tend),p),Rosenbrock23())[end]
