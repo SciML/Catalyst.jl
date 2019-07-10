@@ -41,6 +41,7 @@ fix_parameters(σ_network,n=4)
 make_hc_template(σ_network)
 add_hc_template(σ_network)
 ss_σ = steady_states(σ_network,σ_p)
+stabs_σ = stability(ss_σ,σ_network,σ_p)
 bif_σ = bifurcations(σ_network,σ_p,:S,(0.,2.))
 @test length(bif_σ.paths) == 3
 

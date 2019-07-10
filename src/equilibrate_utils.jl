@@ -309,10 +309,36 @@ function positive_real_solutions(result)
 end
 
 #Returns a boolean which will be true if the given fixed point is stable.
-function stability(solution::Vector{Float64}, params::Vector{Float64}, rn::DiffEqBase.AbstractReactionNetwork, t=0.::Float64)
+"""
+    stability(solution,reaction_network, parameter_values,  t=0.)
+
+    Gives the steady stability of the steady state of a certain network. Returns true if the point is stable, false if it is not.
+
+## args
+- solution: the values of the reactants in the steady state.
+- parameter_values: the parameter values in for which the steady state was calculated.
+- reaction_network: a reaction network.
+- t (optional): the value of t, for which the stability is calculated.
+"""
+function stability(solution::Vector{Float64}, p::Vector{Float64}, rn::DiffEqBase.AbstractReactionNetwork, t=0.::Float64)
     jac = zeros(length(rn.syms),length(rn.syms))
-    rn.jac(jac,solution,params,t)
+    rn.jac(jac,solution,p,t)
     return maximum(real.(eigen(jac).values))<0.
+end
+#Runs stability on an vector of steady states.
+"""
+    stability(solutions,reaction_network, parameter_values,  t=0.)
+
+    Gives the steady stability of the steady state of a certain network.
+
+## args
+- solutions: An array of steady states (which each in turn, is an array of reactant concentrations in the steady state).
+- parameter_values: the parameter values in for which the steady state was calculated.
+- reaction_network: a reaction network.
+- t (optional): the value of t, for which the stability is calculated.
+"""
+function stability(solutions::Vector{Vector{Float64}}, p::Vector{Float64}, rn::DiffEqBase.AbstractReactionNetwork, t=0.::Float64)
+    return map(sol->stability(fp,p,rn,t=t), solutions)
 end
 
 
