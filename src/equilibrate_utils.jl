@@ -7,7 +7,7 @@ mutable struct EquilibrateContent
     make_polynomial::Function
     constraints::Vector{Polynomial{true,Float64}}
     homotopy_continuation_templates::Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}
-    equilibrium_polynomial::Union{Vector{Polynomial{true,Float64}},Vector{Polynomial{true,Int64}},Nothing}
+    equilibrium_polynomial#::Union{Vector{Polynomial{true,Float64}},Vector{Polynomial{true,Int64}},Nothing}
     is_polynomial_system::Bool
     polyvars::NamedTuple{(:u, :t, :p),Tuple{Vector{PolyVar{true}},PolyVar{true},Vector{PolyVar{true}}}}
 end
