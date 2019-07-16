@@ -439,6 +439,6 @@ function addequi2!(rn::DiffEqBase.AbstractReactionNetwork)
     if rn.equilibrate_content == nothing
         error("equilibrate_content field is empty. Have to use addequi1!(), before addequi2!() can be used.")
     end
-    rn.equilibrate_content = EquilibrateContent(rn.equilibrate_content.make_polynomial,rn.equilibrate_content.polyvars...)
+    rn.equilibrate_content = EquilibrateContent(rn.equilibrate_content.make_polynomial,length(rn.syms),length(rn.params))
     nothing
 end

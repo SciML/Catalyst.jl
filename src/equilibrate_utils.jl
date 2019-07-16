@@ -7,12 +7,15 @@ mutable struct EquilibrateContent
     make_polynomial::Function
     constraints::Vector{Polynomial{true,Float64}}
     homotopy_continuation_templates::Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}
-    equilibrium_polynomial::Union{Vector{Polynomial{true,Float64}},Nothing}
+    equilibrium_polynomial::Union{Vector{Polynomial{true,Float64}},Vector{Polynomial{true,Int64}},Nothing}
     is_polynomial_system::Bool
     polyvars::NamedTuple{(:x, :t, :p),Tuple{Vector{PolyVar{true}},PolyVar{true},Vector{PolyVar{true}}}}
 end
 
-function EquilibrateContent(make_polynomial,pvxs,pvt,pvps)
+function EquilibrateContent(make_polynomial,n_vars,n_params)
+    pvxs = (@polyvar internal___polyvar___x[1:n_vars])[1]
+    pvps = (@polyvar internal___polyvar___p[1:n_params])[1]
+    pvt = (@polyvar internal___polyvar___t)[1]
     is_polynomial_system = try
         make_polynomial(pvxs,pvt,pvps,internal___var___paramvals=fill(1,length(pvps)))
         true

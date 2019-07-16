@@ -6,7 +6,6 @@ using Compat, DataStructures, MacroTools, Parameters, Reexport, SparseArrays, Sy
 using DiffEqBase, DiffEqJump
 @reexport using DiffEqBase, DiffEqJump
 using HomotopyContinuation, DynamicPolynomials, LinearAlgebra, RecipesBase
-@reexport using DynamicPolynomials
 
 import Base: (==)
 
