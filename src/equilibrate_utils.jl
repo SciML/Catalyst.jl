@@ -187,7 +187,7 @@ end
 """
     make_hc_template(reaction_network)
 
-    Makes a template for solving the riven reaction networks steady states using homotopy continuation. Generally not needed as this is genrated automatically when netowkr is first solved *if one does not already exists). However, it can be sued to replace the current template, for whatever reason.
+    Makes a template for solving for the given reaction networks steady states using homotopy continuation. Generally not needed as this is genrated automatically when netowkr is first solved *if one does not already exists). However, it can be sued to replace the current template, for whatever reason.
 
 ## args
 -  reaction_network: a reaction network.
