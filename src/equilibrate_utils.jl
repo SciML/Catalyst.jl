@@ -254,23 +254,23 @@ end
 
 #Finds the steady states of a reaction network
 """
-    steady_states([solver], reaction_network, [parameter_values]; kwargs...)
+    steady_states(reaction_network, [solver], [parameter_values]; kwargs...)
 
 Finds the steady states of a given reaction network, at given parameter values.
 
 ## args
--  solver (optional): a subtype of AbstractSteadyStateSolver that specifies how to solve the bifurcation diagram. Default is HCSteadyStateSolver (currently only solver avaiable).
 -  reaction_network: a reaction network.
+-  solver (optional): a subtype of AbstractSteadyStateSolver that specifies how to solve the bifurcation diagram. Default is HCSteadyStateSolver (currently only solver avaiable).
 -  parameter_values: a vector which specifies the parameter values for which the steady states are to be found. Not required in case the reaction network lacks steady states.
 
 ## kwargs
  - potential arguments for steady state solvers (however, only current solver does not have any such arguments).
 """
 function steady_states(rn::DiffEqBase.AbstractReactionNetwork, args...)
-    return steady_states(HCSteadyStateSolver(), rn, args...)
+    return steady_states(rn, HCSteadyStateSolver(), args...)
 end
 #Finds steady states of a system using homotopy continuation.
-function steady_states(::HCSteadyStateSolver, rn::DiffEqBase.AbstractReactionNetwork,p=Vector{Float64}())
+function steady_states(rn::DiffEqBase.AbstractReactionNetwork, solver::HCSteadyStateSolver, p=Vector{Float64}())
     using_temp_poly  = initialise_solver!(rn,p)
     (length(p)==0) && (return positive_real_solutions(solutions(HomotopyContinuation.solve(get_equi_poly(rn),show_progress=false))))
     result = hc_solve_at(rn,p)
@@ -406,13 +406,13 @@ end
 
 #Generates a bifurcation diagram.
 """
-    bifurcations([solver], reaction_network, parameter_values, parameter_symbol, parameter_range; kwargs...)
+    bifurcations(reaction_network, [solver], parameter_values, parameter_symbol, parameter_range; kwargs...)
 
 Get a bifurcation diagram of the specified system.
 
 ## args
--  solver (optional): a subtype of AbstractBifurcationSolver that specifies how to solve the bifurcation diagram. Default is HCBifurcationSolver.
 -  reaction_network: a reaction network.
+-  solver (optional): a subtype of AbstractBifurcationSolver that specifies how to solve the bifurcation diagram. Default is HCBifurcationSolver.
 -  parameter_values: a vector which specifies the point in parameter space around which the bifurcation diagram is evaluated.
 -  parameter_symbol: the parameter which is varied, given as a symbol.
 -  parameter_range: the range over which the specified parameter is varied.
@@ -421,23 +421,22 @@ Get a bifurcation diagram of the specified system.
 -  dp=(parameter_range[2] - parameter_range[1])/200: The distance to jump after finding a bifurcation. After discovering a bifurcation, the solver jumps ahead a distance `dp` and starts back-tracking. If this distance is too small, the method may error or cause visible artifiacts in the bifurcation diagram. If it is too large, then you might jump over another bifurcation and it will be missed (this should also be farily obvious in a plot). Only applicable for the HCBifurcationSolver.
 - d_sol = 1e-7: (alternatively reduced to a tenth of the minimum value of any initial solutions) used by algorithm to determine if two points are identical. Set this to less than the expected minimum distance between two different solutions.
 """
-function bifurcations(solver::AbstractBifurcationSolver, rn::DiffEqBase.AbstractReactionNetwork, p, param::Symbol, range; kwargs...)
-    return BifurcationDiagram(param,range,solve_bifurcation(solver,rn,p,param,range; kwargs...))
-end
-
 function bifurcations(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...)
-    return bifurcations(HCBifurcationSolver(), rn, args...; kwargs...)
+    return bifurcations(rn, HCBifurcationSolver(), args...; kwargs...)
+end
+function bifurcations(rn::DiffEqBase.AbstractReactionNetwork, solver::AbstractBifurcationSolver, p, param::Symbol, range; kwargs...)
+    return BifurcationDiagram(param,range,solve_bifurcation(solver,rn,p,param,range; kwargs...))
 end
 
 #Generates a grid of bifurcation points, using a given steady state method.
 """
-    bifurcation_grid([solver], reaction_network, parameter_values, parameter_symbol, parameter_range; kwargs...)
+    bifurcation_grid(reaction_network, [solver], parameter_values, parameter_symbol, parameter_range; kwargs...)
 
     Solves the steady states of a system for every parameter values in a given range of values. Returns a bifurcation grid type object (which can be plotted).
 
 ## args
- - solver (optional): a subtype of AbstractSteadyStateSolver that specifies how to solve the bifurcation diagram. Default is HCSteadyStateSolver (currently only solver avaiable).
  - reaction_network: a reaction network.
+ - solver (optional): a subtype of AbstractSteadyStateSolver that specifies how to solve the bifurcation diagram. Default is HCSteadyStateSolver (currently only solver avaiable).
  - parameter_values: a vector which specifies the parameter values for which the steady states are to be found. Not required in case the reaction network lacks steady states.
  - parameter_symbol: the parameter which is to be varried.
  - parameter_range: a range with all the values of the parameter for which steady states are to be solved.
@@ -446,13 +445,13 @@ end
  - potential arguments for steady state solvers (however, only current solver does not have any such arguments).
 """
 function bifurcations_grid(rn::DiffEqBase.AbstractReactionNetwork, args...)
-    return bifurcations_grid(HCSteadyStateSolver(), rn, args...)
+    return bifurcations_grid(rn, HCSteadyStateSolver(), args...)
 end
-function bifurcations_grid(solver::AbstractSteadyStateSolver, rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param::Symbol,range::AbstractRange)
+function bifurcations_grid(rn::DiffEqBase.AbstractReactionNetwork, solver::AbstractSteadyStateSolver, p::Vector{Float64}, param::Symbol, range::AbstractRange)
     grid_points = Vector{Union{BifurcationPoint,Nothing}}(fill(nothing,length(range)))
     for i = 1:length(range)
         p_i=copy(p); p_i[rn.params_to_ints[param]]=range[i];
-        sol = steady_states(solver, rn, p_i)
+        sol = steady_states(rn, solver, p_i)
         jac_eigenvals = get_jac_eigenvals(map(s->ComplexF64.(s),sol),param,fill(range[i],length(sol)),rn,p)
         grid_points[i] = BifurcationPoint(sol,jac_eigenvals,stability_type.(jac_eigenvals))
     end
@@ -461,13 +460,13 @@ end
 
 #Generates a 2d grid of bifurcation points, using a given steady state method.
 """
-    bifurcation_grid_2d([solver], reaction_network, parameter_values, parameter_symbol1, parameter_range1, parameter_symbol2, parameter_range2; kwargs...)
+    bifurcation_grid_2d(reaction_network, [solver], parameter_values, parameter_symbol1, parameter_range1, parameter_symbol2, parameter_range2; kwargs...)
 
     Ad bifurcation grid, but varries two different parameters. Returning a 2d grid with steady states in each grid point.
 
 ## args
- - solver (optional): a subtype of AbstractSteadyStateSolver that specifies how to solve the bifurcation diagram. Default is HCSteadyStateSolver (currently only solver avaiable).
  - reaction_network: a reaction network.
+ - solver (optional): a subtype of AbstractSteadyStateSolver that specifies how to solve the bifurcation diagram. Default is HCSteadyStateSolver (currently only solver avaiable).
  - parameter_values: a vector which specifies the parameter values for which the steady states are to be found. Not required in case the reaction network lacks steady states.
  - parameter_symbo1l: the first parameter which is to be varried.
  - parameter_range1: a range with all the values of the first parameter for which steady states are to be solved.
@@ -478,15 +477,15 @@ end
  - potential arguments for steady state solvers (however, only current solver does not have any such arguments).
 """
 function bifurcations_grid_2d(rn::DiffEqBase.AbstractReactionNetwork, args...)
-    return bifurcations_grid_2d(HCSteadyStateSolver(), rn, args...)
+    return bifurcations_grid_2d(rn, HCSteadyStateSolver(), args...)
 end
-function bifurcations_grid_2d(solver::AbstractSteadyStateSolver, rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param1::Symbol,range1::AbstractRange,param2::Symbol,range2::AbstractRange)
+function bifurcations_grid_2d(rn::DiffEqBase.AbstractReactionNetwork, solver::AbstractSteadyStateSolver, p::Vector{Float64}, param1::Symbol, range1::AbstractRange, param2::Symbol, range2::AbstractRange)
     grid_points = Matrix{Union{BifurcationPoint,Nothing}}(fill(nothing,length(range1),length(range2)))
     for i = 1:length(range1), j = 1:length(range2)
         p_ij = copy(p);
         p_ij[rn.params_to_ints[param1]] = range1[i];
         p_ij[rn.params_to_ints[param2]] = range2[j];
-        sol = steady_states(solver, rn,p_ij)
+        sol = steady_states(rn, solver, p_ij)
         jac_eigenvals = get_jac_eigenvals(map(s->ComplexF64.(s),sol),param1,fill(range1[i],length(sol)),rn,p)
         grid_points[i,j] = BifurcationPoint(sol,jac_eigenvals,stability_type.(jac_eigenvals))
     end
@@ -495,13 +494,13 @@ end
 
 #Generates a grid of bifurcation diagram.
 """
-    bifurcations_diagram_grid([solver], reaction_network, parameter_values, parameter_symbol1, parameter_range1, parameter_symbol2, parameter_range2; kwargs...)
+    bifurcations_diagram_grid(reaction_network, [solver], parameter_values, parameter_symbol1, parameter_range1, parameter_symbol2, parameter_range2; kwargs...)
 
     Varries a first parameter over a range of discrete values, for each values makes a bifurcation diagram over a second, continious range. Allows to vsiualise changes ins steady states over two parameters.
 
 ## args
-- solver (optional): a subtype of AbstractBifurcationSolver that specifies how to solve the bifurcation diagram. Default is HCBifurcationSolver.
 - reaction_network: a reaction network.
+- solver (optional): a subtype of AbstractBifurcationSolver that specifies how to solve the bifurcation diagram. Default is HCBifurcationSolver.
 - parameter_values: a vector which specifies the point in parameter space around which the bifurcation diagram is evaluated.
 - parameter_symbol1: the first parameter which is varied, given as a symbol.
 - parameter_range1: the range over which the first parameter is varied (this is a range of discrete numbers).
@@ -512,11 +511,14 @@ end
 - dp=(parameter_range[2] - parameter_range[1])/200: The distance to jump after finding a bifurcation. After discovering a bifurcation, the solver jumps ahead a distance `dp` and starts back-tracking. If this distance is too small, the method may error or cause visible artifiacts in the bifurcation diagram. If it is too large, then you might jump over another bifurcation and it will be missed (this should also be farily obvious in a plot). Only applicable for the HCBifurcationSolver.
 - d_sol = 1e-7: (alternatively reduced to a tenth of the minimum value of any initial solutions) used by algorithm to determine if two points are identical. Set this to less than the expected minimum distance between two different solutions.
 """
-function bifurcations_diagram_grid(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param1::Symbol,range1::AbstractRange,param2::Symbol,range2::Tuple{Float64,Float64};solver=HCBifurcationSolver()::AbstractBifurcationSolver,dp=(range2[2]-range2[1])/200.::Float64)
+function bifurcations_diagram_grid(rn::DiffEqBase.AbstractReactionNetwork, args...)
+    bifurcations_diagram_grid(rn, HCBifurcationSolver(), args...)
+end
+function bifurcations_diagram_grid(rn::DiffEqBase.AbstractReactionNetwork, solver::AbstractBifurcationSolver, p::Vector{Float64}, param1::Symbol, range1::AbstractRange, param2::Symbol, range2::Tuple{Float64,Float64}; dp=(range2[2]-range2[1])/200.::Float64)
     diagram_grid = Vector{Union{BifurcationDiagram,Nothing}}(fill(nothing,length(range1)))
     for i = 1:length(range1)
         p_i=copy(p); p_i[rn.params_to_ints[param1]]=range1[i];
-        diagram_grid[i] = bifurcations(solver, rn,p_i,param2,range2;dp=dp)
+        diagram_grid[i] = bifurcations(rn, solver, p_i, param2, range2; dp=dp)
     end
     return BifurcationDiagramGrid(param1,range1,param2,range2,Vector{BifurcationDiagram}(diagram_grid),length(range1))
 end
@@ -596,7 +598,7 @@ end
 #--- Function for the main HC bifurcation solver ---#
 #Main bifurcation solver. Track paths from the first to the last parameter values. Detects whenever a solution is lost due to a complicated bifurcation. In this case it resumes the path tracking just after that bifurcation.
 #Δp = how long step in parameter value to take after a bifrucation is encountered (should be smaller than the minimum expected distance between two bifurcations).
-#Δx = distance between two solutions for them to be considered identical. Should larger than the distance between two solutions.
+#Δu = distance between two solutions for them to be considered identical. Should larger than the distance between two solutions.
 
 function solve_bifurcation(
         ::HCBifurcationSolver,
