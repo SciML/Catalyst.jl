@@ -83,3 +83,11 @@ end
         end
     end
 end
+
+#For a specific stability types, returns a color (to be used to distinguish the types in plots).
+function stab_color(stab_type::Int8)
+    (stab_type==0) && (return :red)
+    (stab_type==1) && (return :blue)
+    (stab_type==2) && (return :orange)
+    (stab_type==3) && (return :cyan)
+end
