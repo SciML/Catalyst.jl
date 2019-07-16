@@ -426,11 +426,11 @@ function addequi1!(rn::DiffEqBase.AbstractReactionNetwork)
     end
 
     equilibrium_polynomial_maker = eval(get_equilibration(params,syms_to_ints,rn.f_func))
-    pvxs = (@polyvar internal___polyvar___x[1:length(syms_to_ints)])[1]
+    pvus = (@polyvar internal___polyvar___u[1:length(syms_to_ints)])[1]
     pvt = (@polyvar internal___polyvar___t)[1]
     pvps = (@polyvar internal___polyvar___p[1:length(params)])[1]
 
-    rn.equilibrate_content = EquilibrateContent(equilibrium_polynomial_maker,Vector{Polynomial{true,Float64}}(),Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}(),nothing,false,(x=pvxs,t=pvt,p=pvps))
+    rn.equilibrate_content = EquilibrateContent(equilibrium_polynomial_maker,Vector{Polynomial{true,Float64}}(),Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}(),nothing,false,(u=pvus,t=pvt,p=pvps))
 
     nothing
 end

@@ -9,19 +9,19 @@ mutable struct EquilibrateContent
     homotopy_continuation_templates::Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}
     equilibrium_polynomial::Union{Vector{Polynomial{true,Float64}},Vector{Polynomial{true,Int64}},Nothing}
     is_polynomial_system::Bool
-    polyvars::NamedTuple{(:x, :t, :p),Tuple{Vector{PolyVar{true}},PolyVar{true},Vector{PolyVar{true}}}}
+    polyvars::NamedTuple{(:u, :t, :p),Tuple{Vector{PolyVar{true}},PolyVar{true},Vector{PolyVar{true}}}}
 end
 
 function EquilibrateContent(make_polynomial,n_vars,n_params)
-    pvxs = (@polyvar internal___polyvar___x[1:n_vars])[1]
+    pvus = (@polyvar internal___polyvar___u[1:n_vars])[1]
     pvps = (@polyvar internal___polyvar___p[1:n_params])[1]
     pvt = (@polyvar internal___polyvar___t)[1]
     is_polynomial_system = try
-        make_polynomial(pvxs,pvt,pvps,internal___var___paramvals=fill(1,length(pvps)))
+        make_polynomial(pvus,pvt,pvps,internal___var___paramvals=fill(1,length(pvps)))
         true
     catch; false; end
     equilibrium_polynomial = try
-        tmp_pol = make_polynomial(pvxs,pvt,pvps);
+        tmp_pol = make_polynomial(pvus,pvt,pvps);
         (typeof(tmp_pol[1])<:Polynomial) ? tmp_pol : map(pol->pol.num,tmp_pol)
     catch; nothing; end
 
@@ -31,7 +31,7 @@ function EquilibrateContent(make_polynomial,n_vars,n_params)
         Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}(),
         equilibrium_polynomial,
         is_polynomial_system,
-        (x=pvxs,t=pvt,p=pvps),
+        (u=pvus,t=pvt,p=pvps),
     )
 end
 
@@ -54,7 +54,7 @@ has_hc_templates(rn::DiffEqBase.AbstractReactionNetwork) = (return length(rn.equ
 
 push_hc_template!(rn::DiffEqBase.AbstractReactionNetwork,p_template,sol_template) = (push!(rn.equilibrate_content.homotopy_continuation_templates,(p=p_template,sol=sol_template)))
 push_constraint!(rn::DiffEqBase.AbstractReactionNetwork,constraint) = (push!(rn.equilibrate_content.constraints,constraint); has_equi_poly(rn) && push!(rn.equilibrate_content.equilibrium_polynomial,constraint);)
-set_equi_poly!(rn::DiffEqBase.AbstractReactionNetwork,t;kwargs...) = (rn.equilibrate_content.equilibrium_polynomial = derationalise_polys(rn.equilibrate_content.make_polynomial(rn.equilibrate_content.polyvars.x,t,rn.equilibrate_content.polyvars.p;kwargs...)))
+set_equi_poly!(rn::DiffEqBase.AbstractReactionNetwork,t;kwargs...) = (rn.equilibrate_content.equilibrium_polynomial = derationalise_polys(rn.equilibrate_content.make_polynomial(rn.equilibrate_content.polyvars.u,t,rn.equilibrate_content.polyvars.p;kwargs...)))
 derationalise_polys(polys) = (typeof(polys[1])<:Polynomial) ? (return polys) : (return map(pol->pol.num,polys))
 add_constraints!(rn::DiffEqBase.AbstractReactionNetwork) = (has_equi_poly(rn) && foreach(constraint -> push!(rn.equilibrate_content.equilibrium_polynomial,constraint), rn.equilibrate_content.constraints))
 
@@ -73,13 +73,13 @@ function get_equilibration(params::Vector{Symbol}, reactants::OrderedDict{Symbol
         push!(func_body.args[1].args[2].args, :((internal___var___paramvals___exemption!=$i) && ($(params[i])=(isinteger(internal___var___paramvals[$i]) ? Int64(internal___var___paramvals[$i]) : internal___var___paramvals[$i]))))
     end
     push!(func_body.args,:([]))
-    foreach(poly -> push!(func_body.args[2].args, recursive_replace!(poly,(reactants,:internal___polyvar___x),(OrderedDict(:t=>1),:internal___polyvar___t))), deepcopy(f_expr))
+    foreach(poly -> push!(func_body.args[2].args, recursive_replace!(poly,(reactants,:internal___polyvar___u),(OrderedDict(:t=>1),:internal___polyvar___t))), deepcopy(f_expr))
     func_expr = :((;TO___BE___REMOVED=to___be___removed) -> $(deepcopy(func_body)))
     foreach(i -> push!(func_expr.args[1].args[1].args,Expr(:kw,params[i],:(internal___polyvar___p[$i]))), 1:length(params))
     push!(func_expr.args[1].args[1].args,Expr(:kw,:internal___var___paramvals,:([])))
     push!(func_expr.args[1].args[1].args,Expr(:kw,:internal___var___paramvals___exemption,-1))
     deleteat!(func_expr.args[1].args[1].args,1)
-    push!(func_expr.args[1].args,:internal___polyvar___x)
+    push!(func_expr.args[1].args,:internal___polyvar___u)
     push!(func_expr.args[1].args,:internal___polyvar___t)
     push!(func_expr.args[1].args,:internal___polyvar___p)
     return func_expr
@@ -162,7 +162,7 @@ end
 #Complicated function which replaces the named varriables in the expression supplied to @fix_concentration with the corresponding polyvar stored in the reaction network.
 function recursive_replace_vars!(expr::Union{ExprValues,LineNumberNode}, rn::Symbol)
     if (typeof(expr) == Symbol)&&(expr!=:+)&&(expr!=:-)&&(expr!=:*)&&(expr!=:^)&&(expr!=:/)
-        return :(in($(QuoteNode(expr)),$(rn).syms) ? $(rn).equilibrate_content.polyvars.x[$(rn).syms_to_ints[$(QuoteNode(expr))]] : $(rn).equilibrate_content.polyvars.p[$(rn).params_to_ints[$(QuoteNode(expr))]])
+        return :(in($(QuoteNode(expr)),$(rn).syms) ? $(rn).equilibrate_content.polyvars.u[$(rn).syms_to_ints[$(QuoteNode(expr))]] : $(rn).equilibrate_content.polyvars.p[$(rn).params_to_ints[$(QuoteNode(expr))]])
     elseif typeof(expr) == Expr
         foreach(i -> expr.args[i] = recursive_replace_vars!(expr.args[i], rn), 1:length(expr.args))
     end
@@ -309,7 +309,7 @@ function positive_real_solutions(result)
     tmp_sol = filter(result) do y
         all(yᵢ -> abs(imag(yᵢ)) < 0.001, y)&&all(yᵢ -> real(yᵢ) ≥ -0.001, y)
     end
-    return map(x->real.(x),tmp_sol)
+    return map(u->real.(u),tmp_sol)
 end
 
 #Returns a boolean which will be true if the given fixed point is stable.
@@ -554,12 +554,12 @@ function solve_bifurcation(
     d_sol = min(d_sol,sort(norm.([sol1...,sol2...]))[2]/10.)
     tracker1 = make_coretracker(rn,sol1,p1,p2,dp/(range[2]-range[1]))
     tracker2 = make_coretracker(rn,sol2,p2,p1,dp/(range[2]-range[1]))
-    paths_complete   = Vector{NamedTuple{(:p, :x),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}}()
-    paths_incomplete = Vector{NamedTuple{(:p, :x),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}}()
+    paths_complete   = Vector{NamedTuple{(:p, :u),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}}()
+    paths_incomplete = Vector{NamedTuple{(:p, :u),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}}()
     for sol in sol1
         path = track_path(sol,tracker1,range...)
         if (tracker1.state.status == CoreTrackerStatus.success)
-            remove_sol!(sol2,path.x[end],d_sol)
+            remove_sol!(sol2,path.u[end],d_sol)
             push!(paths_complete,path)
         else
             push!(paths_incomplete,path)
@@ -567,7 +567,7 @@ function solve_bifurcation(
     end
     for sol in sol2
         path = track_path(sol,tracker2,reverse(range)...)
-        (tracker2.state.status == CoreTrackerStatus.success) && remove_path!(paths_incomplete,path.x[end],d_sol)
+        (tracker2.state.status == CoreTrackerStatus.success) && remove_path!(paths_incomplete,path.u[end],d_sol)
         push!(paths_complete,path)
     end
     append!(paths_complete,paths_incomplete)
@@ -584,7 +584,7 @@ function remove_sol!(results::Vector{Vector{ComplexF64}},path_fin::Vector{Comple
     end
 end
 #Used in the homotopy continuation bifurcation traces heuristics. Similar to the previous but removes an unfinished path.
-function remove_path!(paths::Vector{NamedTuple{(:p, :x),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}},path_fin::Vector{ComplexF64},d_sol::Float64)
+function remove_path!(paths::Vector{NamedTuple{(:p, :u),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}},path_fin::Vector{ComplexF64},d_sol::Float64)
     for i = length(paths):-1:1
         if maximum(abs.([imag.(path_fin.-paths[i][2][1])..., real.(path_fin.-paths[i][2][1])...]))<d_sol
             deleteat!(paths,i)
@@ -606,19 +606,19 @@ function solve_bifurcation(
         range::Tuple{Float64,Float64};
         dp=(range[2]-range[1])/200.::Float64,
         Δp=0.01::Float64,
-        Δx=0.01::Float64,
+        Δu=0.01::Float64,
     )
 #= function HcBifurcationSolver(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param::Symbol,range::Tuple{Float64,Float64};dp=(range[2]-range[1])/200.::Float64,Δp=0.01::Float64,Δx=0.01::Float64) =#
     using_temp_poly = initialise_solver!(rn,p,rn.params_to_ints[param])
     parameters(p_val) = (p = copy(p); p[rn.params_to_ints[param]] = p_val; return p;)
-    p_cur = range[1]; paths = Vector{NamedTuple{(:p, :x),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}}();
+    p_cur = range[1]; paths = Vector{NamedTuple{(:p, :u),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}}();
     while p_cur < range[2]
         sol = hc_solve_at(rn, parameters(p_cur))
-        substract_sols!(sol,p_cur,paths,Δx)
+        substract_sols!(sol,p_cur,paths,Δu)
         ct1 = make_coretracker(rn,sol,parameters(p_cur),parameters(range[1]),dp/(range[2]-range[1]))
         ct2 = make_coretracker(rn,sol,parameters(p_cur),parameters(range[2]),dp/(range[2]-range[1]))
         new_paths = track_path_two_ways(sol,ct1,ct2,p_cur,range)
-        paths = combine_paths(paths,new_paths,p_cur,Δx)
+        paths = combine_paths(paths,new_paths,p_cur,Δu)
         p_cur = minimum(map(path->path.p[end],new_paths)) + Δp
     end
     using_temp_poly && finalise_solver!(rn)
@@ -626,33 +626,33 @@ function solve_bifurcation(
 end
 #Tracks a given solution in both directions, and combines the paths together.
 function track_path_two_ways(start_points,coretracker1,coretracker2,p_cur,range)
-    paths = Vector{NamedTuple{(:p, :x),Tuple{Array{Float64,1},Array{Array{Complex{Float64},1},1}}}}();
+    paths = Vector{NamedTuple{(:p, :u),Tuple{Array{Float64,1},Array{Array{Complex{Float64},1},1}}}}();
     for sp in start_points
-        (P1,X1) = track_path(sp,coretracker1,p_cur,range[1])
-        (P2,X2) = track_path(sp,coretracker2,p_cur,range[2])
-        push!(paths,(p=[reverse(P1)...,P2...],x=[reverse(X1)...,X2...]))
+        (P1,U1) = track_path(sp,coretracker1,p_cur,range[1])
+        (P2,U2) = track_path(sp,coretracker2,p_cur,range[2])
+        push!(paths,(p=[reverse(P1)...,P2...],u=[reverse(U1)...,U2...]))
     end
     return paths
 end
 #For a given solution at a certain parameter value, remove those solutions already present in the given paths.
-function substract_sols!(solutions,p,paths,Δx)
+function substract_sols!(solutions,p,paths,Δu)
     for path in filter(path -> path.p[end]≥p, paths)
         idx = findfirst(path.p .> p)
         p_pre = path.p[idx-1]; p_post = path.p[idx];
         f1 = (p_post-p)/(p_post-p_pre); f2 = (p_post-p)/(p_post-p_pre);
-        path_value_at_p = f1*path.x[idx-1]+f2*path.x[idx]
+        path_value_at_p = f1*path.u[idx-1]+f2*path.u[idx]
         closest_sol = argmin(map(sol->norm(sol-path_value_at_p),solutions))
-        (norm(solutions[closest_sol]-path_value_at_p) < Δx) && deleteat!(solutions,closest_sol)
+        (norm(solutions[closest_sol]-path_value_at_p) < Δu) && deleteat!(solutions,closest_sol)
     end
 end
 #For two sets of paths, removes the paths in the old path vector which seems to be similar to those in the new (starts in the same point).
-function combine_paths(paths_old,paths_new,p,Δx)
+function combine_paths(paths_old,paths_new,p,Δu)
     output_paths = copy(paths_new)
-    first_vals = map(path -> path.x[1],paths_new)
-    midpoint_vals = map(path -> path.x[findfirst(path.p .> p/2)],paths_new)
+    first_vals = map(path -> path.u[1],paths_new)
+    midpoint_vals = map(path -> path.u[findfirst(path.p .> p/2)],paths_new)
     for path in paths_old
-        any(norm.(map(fv->fv-path.x[1],first_vals)) .< Δx) && continue
-        (findfirst(path.p .> p/2)==nothing) || any(norm.(map(mv->mv-path.x[findfirst(path.p .> p/2)],midpoint_vals)) .< Δx) && continue
+        any(norm.(map(fv->fv-path.u[1],first_vals)) .< Δu) && continue
+        (findfirst(path.p .> p/2)==nothing) || any(norm.(map(mv->mv-path.x[findfirst(path.p .> p/2)],midpoint_vals)) .< Δu) && continue
         push!(output_paths,path)
     end
     return output_paths
@@ -665,34 +665,34 @@ function make_coretracker(rn,sol,p1,p2,Δt)
 end
 #Tracks a path for the given coretracker, returns the path.
 function track_path(solution,coretracker,p_start,p_end)
-    P = Vector{Float64}(); X = Vector{Vector{ComplexF64}}();
-    for (x,t) in iterator(coretracker, solution)
-        push!(P,t2p(t,p_start,p_end)); push!(X,x);
+    P = Vector{Float64}(); U = Vector{Vector{ComplexF64}}();
+    for (u,t) in iterator(coretracker, solution)
+        push!(P,t2p(t,p_start,p_end)); push!(U,u);
     end
-    return (p=P,x=X)
+    return (p=P,u=U)
 end
 #Coverts a given t value (as used by homotopy continuation, 0<=t<=1), to the corresponding parameter value.
 function t2p(t,p_start,p_end)
     return p_start + (1-t)*(p_end-p_start)
 end
 #For a given path, filters away all biologically unplausible values (negative and imaginary).
-function positive_real_projection(track_result::NamedTuple{(:p, :x),Tuple{Array{Float64,1},Array{Array{Complex{Float64},1},1}}})
-    T = Vector{Float64}(); X = Vector{Vector{ComplexF64}}();
+function positive_real_projection(track_result::NamedTuple{(:p, :u),Tuple{Array{Float64,1},Array{Array{Complex{Float64},1},1}}})
+    P = Vector{Float64}(); U = Vector{Vector{ComplexF64}}();
     for i = 1:length(track_result.p)
-        if (minimum(real.(track_result.x[i]))>-0.0001)&&(maximum(abs.(imag.(track_result.x[i])))<0.0001)
-            push!(T,track_result.p[i]); push!(X,real.(track_result.x[i]))
+        if (minimum(real.(track_result.u[i]))>-0.0001)&&(maximum(abs.(imag.(track_result.u[i])))<0.0001)
+            push!(P,track_result.p[i]); push!(U,real.(track_result.u[i]))
         end
     end
-    return (p=T,x=X)
+    return (p=P,u=U)
 end
 #Takes a set of paths as tracked by homotopy continuation and turns them into a vector of bifurcation paths.
-function bifurcation_paths(paths::Vector{NamedTuple{(:p, :x),Tuple{Array{Float64,1},Array{Array{Complex{Float64},1},1}}}},param::Symbol,r1::Number,r2::Number,rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64})
+function bifurcation_paths(paths::Vector{NamedTuple{(:p, :u),Tuple{Array{Float64,1},Array{Array{Complex{Float64},1},1}}}},param::Symbol,r1::Number,r2::Number,rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64})
     bps = Vector{BifurcationPath}()
     for path in paths
         (length(path.p)==0) && continue
         (abs(1-path.p[1]/path.p[end])<0.0001) && continue
-        jac_eigenvals = get_jac_eigenvals(path.x,param,path.p,rn,p)
-        push!(bps,BifurcationPath(path.p, path.x, jac_eigenvals, stability_type.(jac_eigenvals), length(path.p)))
+        jac_eigenvals = get_jac_eigenvals(path.u,param,path.p,rn,p)
+        push!(bps,BifurcationPath(path.p, path.u, jac_eigenvals, stability_type.(jac_eigenvals), length(path.p)))
     end
     return bps
 end
