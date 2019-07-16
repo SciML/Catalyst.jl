@@ -652,7 +652,7 @@ function combine_paths(paths_old,paths_new,p,Δu)
     midpoint_vals = map(path -> path.u[findfirst(path.p .> p/2)],paths_new)
     for path in paths_old
         any(norm.(map(fv->fv-path.u[1],first_vals)) .< Δu) && continue
-        (findfirst(path.p .> p/2)==nothing) || any(norm.(map(mv->mv-path.x[findfirst(path.p .> p/2)],midpoint_vals)) .< Δu) && continue
+        (findfirst(path.p .> p/2)==nothing) || any(norm.(map(mv->mv-path.u[findfirst(path.p .> p/2)],midpoint_vals)) .< Δu) && continue
         push!(output_paths,path)
     end
     return output_paths
