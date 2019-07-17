@@ -1,5 +1,3 @@
-using DiffEqBiological, DiffEqJump, Test
-
 # only should agree for pure MassAction or pure ConstantRateJumps
 # mixed systems will be reordered when generating jump problems!
 

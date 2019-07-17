@@ -5,6 +5,7 @@ module DiffEqBiological
 using Compat, DataStructures, MacroTools, Parameters, Reexport, SparseArrays, SymEngine
 using DiffEqBase, DiffEqJump
 @reexport using DiffEqBase, DiffEqJump
+using HomotopyContinuation, DynamicPolynomials, LinearAlgebra, RecipesBase
 
 import Base: (==)
 
@@ -16,6 +17,8 @@ include("maketype.jl")
 include("network_properties.jl")
 include("massaction_jump_utils.jl")
 include("problem.jl")
+include("equilibrate_utils.jl")
+include("plot_recipes.jl")
 
 # reaction network macro
 export @reaction_network, @reaction_func, @min_reaction_network, @empty_reaction_network
@@ -31,9 +34,15 @@ export rxtospecies_depgraph, speciestorx_depgraph, rxtorx_depgraph
 export addspecies!, addparam!, add_scale_noise_param!, addreaction!
 
 # functions to add mathematical equations to the network
-export addodes!, addsdes!, addjumps!
+export addodes!, addsdes!, addjumps!, addequi1!, addequi2!
 
 # problems that can be solved from the network
 export ODEProblem, SDEProblem, DiscreteProblem, JumpProblem, SteadyStateProblem
+
+# tolls for finding equilibrium solutions and bifurcation diagrams.
+export EquilibrateContent
+export @add_constraint, @add_constraints, internal___add___constraint!, fix_parameters, @make_hc_template, make_hc_template, @add_hc_template, add_hc_template
+export steady_states, stability
+export bifurcations, bifurcations_grid, bifurcations_grid_2d, bifurcations_diagram_grid, SimpleHCBifurcationSolver, HCBifurcationSolver, HCSteadyStateSolver
 
 end # module

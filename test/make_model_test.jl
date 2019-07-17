@@ -17,11 +17,11 @@ end
 
 network2 = @reaction_network rn begin
     1.0, ∅ > X1
-    X, 0 → X1
+    X1, 0 → X1
     (1.0,X1,X2), (X1,X2,X3) --> (X1,X2,X3)
     (1.0,X2,X1), (X2,X1,X3) --> X1
-    ((1.0,2,3.), (P1,X2,X1)), X2 ↔ (X2+X4,X1,X2)
-    hill(P2,2.,1,1), asdasdrqr < X1
+    ((1.0,2,3.), (X1,X2,X1)), X2 ↔ (X2+X4,X1,X2)
+    hill(X1,2.,1,1), asdasdrqr < X1
     mm(X1,2.,1), X1 ⟾ X5
 end
 

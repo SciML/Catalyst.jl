@@ -20,7 +20,8 @@ function maketype(abstracttype,
                   syms_to_ints = OrderedDict{Symbol,Int}(),
                   params_to_ints = OrderedDict{Symbol,Int}(),
                   odefun = nothing,
-                  sdefun = nothing
+                  sdefun = nothing,
+                  equilibrate_content = nothing
                   )
 
     typeex = :(mutable struct $name <: $(abstracttype)
@@ -45,6 +46,7 @@ function maketype(abstracttype,
         scale_noise::Symbol
         odefun::Union{ODEFunction,Nothing}
         sdefun::Union{SDEFunction,Nothing}
+        equilibrate_content::Union{EquilibrateContent,Nothing}
     end)
     # Make the default constructor
     constructorex = :($(name)(;
@@ -68,7 +70,8 @@ function maketype(abstracttype,
                 $(Expr(:kw,:params_to_ints, params_to_ints)),
                 $(Expr(:kw,:scale_noise, Meta.quot(scale_noise))),
                 $(Expr(:kw,:odefun, odefun)),
-                $(Expr(:kw,:sdefun, sdefun))) =
+                $(Expr(:kw,:sdefun, sdefun)),
+                $(Expr(:kw,:equilibrate_content, equilibrate_content))) =
                 $(name)(
                         f,
                         f_func,
@@ -90,7 +93,8 @@ function maketype(abstracttype,
                         params_to_ints,
                         scale_noise,
                         odefun,
-                        sdefun
+                        sdefun,
+                        equilibrate_content
                         )) |> esc
 
     # Make the type instance using the default constructor
@@ -135,7 +139,6 @@ end
 # through reaction components directly...
 """
     ==(rn1::DiffEqBase.AbstractReactionNetwork, rn2::DiffEqBase.AbstractReactionNetwork)
-
 Tests whether the underlying species symbols, parameter symbols and reactions
 are the same in the two networks. Ignores order network components were defined,
 so the integer id of any individual species/parameters/reactions may be
@@ -163,12 +166,11 @@ end
 
 """
     addspecies!(network, speciessym::Symbol)
-
 Given an AbstractReaction network, add the species corresponding to the passed
-in symbol to the network (if it is not already defined). 
-""" 
+in symbol to the network (if it is not already defined).
+"""
 function addspecies!(rn::DiffEqBase.AbstractReactionNetwork, sp::Symbol)
-    if !haskey(speciesmap(rn), sp)        
+    if !haskey(speciesmap(rn), sp)
         push!(species(rn), sp)
         sidx = numspecies(rn) + 1
         push!(speciesmap(rn), sp => sidx)
@@ -178,7 +180,6 @@ end
 
 """
     addspecies!(network, speciesname::String)
-
 Given an AbstractReaction network, add the species with name given by the passed
 in string to the network (if it is not already defined.
 """
@@ -186,7 +187,6 @@ addspecies!(rn::DiffEqBase.AbstractReactionNetwork, speciesname::String) = addsp
 
 """
     addparam!(network, param::Symbol)
-
 Given an AbstractReaction network, add the parameter corresponding to the passed
 in symbol to the network (if it is not already defined).
 """
@@ -201,7 +201,6 @@ end
 
 """
     addparam!(network, paramname::String)
-
 Given an AbstractReaction network, add the parameter with name given by the
 passed in string to the network (if it is not already defined).
 """
@@ -209,12 +208,11 @@ addparam!(rn::DiffEqBase.AbstractReactionNetwork, param::String) = addparam!(rn,
 
 """
     add_scale_noise_param!(network, scale_noise::Symbol)
-
 Given an AbstractReaction network, add the parameter corresponding to the passed
 in symbol to the network (if it is not already defined), and register it as the
 noise scaling coefficient.
 """
-function add_scale_noise_param!(rn::DiffEqBase.AbstractReactionNetwork, scale_noise::Symbol)    
+function add_scale_noise_param!(rn::DiffEqBase.AbstractReactionNetwork, scale_noise::Symbol)
     rn.scale_noise = scale_noise
 
     if !haskey(paramsmap(rn), scale_noise)
@@ -227,7 +225,6 @@ end
 
 """
     add_scale_noise_param!(network, scale_noise_name::String)
-
 Given an AbstractReaction network, add the parameter with the passed in string
 as its name to the network (if it is not already defined), and register it as
 the noise scaling coefficient.
@@ -236,13 +233,12 @@ add_scale_noise_param!(rn::DiffEqBase.AbstractReactionNetwork, scale_noise_name:
 
 """
     addreaction!(network, rateex::Union{Expr,Symbol,Int,Float64}, rxexpr::Expr)
-
 Given an AbstractReaction network, add a reaction with the passed in rate and
 reaction expressions. i.e. a reaction of the form
 ```julia
 k*X, 2X + Y --> 2W
 ```
-would have `rateex=:(k*X)` and `rxexpr=:(2X + Y --> W)`, 
+would have `rateex=:(k*X)` and `rxexpr=:(2X + Y --> W)`,
 ```julia
 10.5, 0 --> X
 ```
@@ -251,7 +247,6 @@ would have `rateex=10.5` and `rxexpr=:(0 --> X)`, and
 k, X+X --> Z
 ```
 would have `rateex=:k` and `rxexpr=:(X+X --> Z)`.
-
 All normal DSL reaction definition notation should be supported.
 """
 function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues, rxexpr::Expr)
@@ -263,7 +258,6 @@ end
 
 """
     addreaction!(network, rateex::Union{Expr,Symbol,Int,Float64}, substrates, products)
-
 Given an AbstractReaction network, add a reaction with the passed in rate,
 `rateex`, substrate stoichiometry, and product stoichiometry. Stoichiometries
 are represented as tuples of `Pair{Symbol,Int}`. i.e. a reaction of the form
@@ -271,7 +265,7 @@ are represented as tuples of `Pair{Symbol,Int}`. i.e. a reaction of the form
 k*X, 2X + Y --> 2W
 ```
 would have `rateex=:(k*X)`, `substrates=(:X=>2, :Y=>2)`` and
-`products=(W=>2,)`, 
+`products=(W=>2,)`,
 ```julia
 10.5, 0 --> X
 ```
@@ -280,12 +274,11 @@ would have `rateex=10.5`, `substrates=()` and `products=(:X=>1,)`, and
 k, X+X --> Z
 ```
 would have `rateex=:k`, `substrates=(:X=>2,)` and `products=(:Z=>2,)`.
-
 All normal DSL reaction definition notation should be supported for the
 `rateex`.
 """
-function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues, 
-                                        subs::Tuple{Vararg{Pair{Symbol,Int}}}, 
+function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues,
+                                        subs::Tuple{Vararg{Pair{Symbol,Int}}},
                                         prods::Tuple{Vararg{Pair{Symbol,Int}}}) where {T <: Number}
 
     substrates = ReactantStruct[ReactantStruct(p[1],p[2]) for p in subs]
@@ -293,11 +286,11 @@ function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues
     products = ReactantStruct[ReactantStruct(p[1],p[2]) for p in prods]
     ns = netstoich(substrates, products)
     rate_DE = isempty(subs) ? rateex : mass_rate_DE(substrates, true, rateex)
-    rate_SSA = isempty(subs) ? rateex : mass_rate_SSA(substrates, true, rateex)   
-    
+    rate_SSA = isempty(subs) ? rateex : mass_rate_SSA(substrates, true, rateex)
+
     # resolve dependents from rateex
     if rateex isa Number
-        ismassaction = true        
+        ismassaction = true
     elseif rateex isa Symbol
         if haskey(speciesmap(rn), rateex)
             ismassaction = false
@@ -313,10 +306,10 @@ function addreaction!(rn::DiffEqBase.AbstractReactionNetwork, rateex::ExprValues
 
         # mimicing ReactionStruct constructor for now, but this should be optimized...
         newdeps = unique!(recursive_content(rate_DE, speciesmap(rn), Vector{Symbol}()))
-        ismassaction = issetequal(dependents,newdeps) 
+        ismassaction = issetequal(dependents,newdeps)
         dependents = newdeps
     end
-    
+
     push!(rn.reactions, ReactionStruct(substrates, products, ns, rateex, rate_DE, rate_SSA, dependents, ismassaction))
     nothing
 end
@@ -342,7 +335,7 @@ function addodes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     rn.jac           = eval(jac)
     rn.paramjac      = eval(paramjac)
     rn.symjac        = eval(symjac)
-    rn.f_symfuncs    = f_symfuncs    
+    rn.f_symfuncs    = f_symfuncs
     rn.odefun        = ODEFunction(rn.f; jac=rn.jac, jac_prototype=jac_prototype, paramjac=rn.paramjac, syms=rn.syms)
 
     # functor for evaluating f
@@ -357,7 +350,7 @@ end
 
 Extend an `AbstractReactionNetwork` generated with the `@min_reaction_network`
 or `@empty_reaction_network` macros with everything needed to use SDE solvers.
-    
+
 Optional kwargs can be used to disable the construction of additional SDE solver
 components.
 """
@@ -383,7 +376,7 @@ end
 
 Extend an `AbstractReactionNetwork` generated with the `@min_reaction_network`
 or `@empty_reaction_network` macros with everything needed to use jump SSA solvers.
-    
+
 Optional kwargs can be used to disable the construction of additional jump solver
 components.
 
@@ -401,7 +394,7 @@ Keyword arguments:
   jump simulation. This option simply speeds up the construction of the jump
   problem since it avoids building redundant `ConstantRate` jumps that encode
   `MassActionJump`s, which are subsequently ignored within jump simulations.)
-""" 
+"""
 function addjumps!(rn::DiffEqBase.AbstractReactionNetwork;
                                     build_jumps=true,
                                     build_regular_jumps=true,
@@ -414,11 +407,38 @@ function addjumps!(rn::DiffEqBase.AbstractReactionNetwork;
                                                           syms_to_ints,
                                                           params_to_ints;
                                                           minimal_jumps=minimal_jumps)
-    
+
     rn.jump_rate_expr   = jump_rate_expr
     rn.jump_affect_expr = jump_affect_expr
     rn.jumps            = build_jumps ? eval(jumps) : nothing
     rn.regular_jumps    = build_regular_jumps ? eval(get_regularjumps(reactions, syms_to_ints, params_to_ints)) : nothing
 
+    nothing
+end
+
+#Adds stuff required to do homotopy continuation based equilibration calculations.
+function addequi1!(rn::DiffEqBase.AbstractReactionNetwork)
+    @unpack params, reactions, syms_to_ints, params_to_ints, scale_noise = rn
+
+    # first construct an ODE reaction network (required for getting f_func).
+    if rn.f == nothing
+        addodes!(rn)
+    end
+
+    equilibrium_polynomial_maker = eval(get_equilibration(params,syms_to_ints,rn.f_func))
+    pvus = (@polyvar internal___polyvar___u[1:length(syms_to_ints)])[1]
+    pvt = (@polyvar internal___polyvar___t)[1]
+    pvps = (@polyvar internal___polyvar___p[1:length(params)])[1]
+
+    rn.equilibrate_content = EquilibrateContent(equilibrium_polynomial_maker,Vector{Polynomial{true,Float64}}(),Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}(),nothing,false,(u=pvus,t=pvt,p=pvps))
+
+    nothing
+end
+function addequi2!(rn::DiffEqBase.AbstractReactionNetwork)
+    # first construct an ODE reaction network (required for getting f_func).
+    if rn.equilibrate_content == nothing
+        error("equilibrate_content field is empty. Have to use addequi1!(), before addequi2!() can be used.")
+    end
+    rn.equilibrate_content = EquilibrateContent(rn.equilibrate_content.make_polynomial,length(rn.syms),length(rn.params))
     nothing
 end
