@@ -7,7 +7,7 @@ mutable struct EquilibrateContent
     make_polynomial::Function
     constraints::Vector{Polynomial{true,Float64}}
     homotopy_continuation_templates::Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}
-    equilibrium_polynomial#::Union{Vector{Polynomial{true,Float64}},Vector{Polynomial{true,Int64}},Nothing}
+    equilibrium_polynomial::Union{Vector{Polynomial{true,Float64}},Nothing}
     is_polynomial_system::Bool
     polyvars::NamedTuple{(:u, :t, :p),Tuple{Vector{PolyVar{true}},PolyVar{true},Vector{PolyVar{true}}}}
 end
@@ -293,7 +293,7 @@ function hc_solve_at(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64})
 end
 
 #Prepares the reaction network for being solved with Homotopy Continuation, in case some initialising operations have not been done yet.
-function initialise_solver!(rn::DiffEqBase.AbstractReactionNetwork, p::Vector{Float64}, bifurcation_exception_parameter::Integer=-1)
+function initialise_solver!(rn::DiffEqBase.AbstractReactionNetwork, p::Vector{Float64}, bifurcation_exception_parameter::Int=-1)
     check_is_polynomial(rn)
     using_temp_poly = !has_equi_poly(rn)
     using_temp_poly && fix_parameters(rn, p, full_vector_exemption=bifurcation_exception_parameter)
@@ -357,7 +357,7 @@ struct BifurcationPath
     vals::Vector{Vector{Float64}}
     jac_eigenvals::Vector{Vector{ComplexF64}}
     stability_types::Vector{Int8}
-    length::Int64
+    length::Int
 end
 #A bifurcation diagram, contains a set of bifurcation paths.
 struct BifurcationDiagram
@@ -377,7 +377,7 @@ struct BifurcationGrid
     param::Symbol
     range::AbstractRange
     grid_points::Vector{BifurcationPoint}
-    length::Int64
+    length::Int
 end
 #Contains a grid like bifurgation diagrams over 2 parameters. The bifurcation points are contained in a matrix.
 struct BifurcationGrid2D
@@ -396,7 +396,7 @@ struct BifurcationDiagramGrid
     param2::Symbol
     range2::Tuple{Float64,Float64}
     bifurcation_diagrams::Vector{BifurcationDiagram}
-    length::Int64
+    length::Int
 end
 
 
