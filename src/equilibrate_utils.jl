@@ -7,7 +7,7 @@ mutable struct EquilibrateContent
     make_polynomial::Function
     constraints::Vector{Polynomial{true,Float64}}
     homotopy_continuation_templates::Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}
-    equilibrium_polynomial#::Union{Vector{Polynomial{true,Float64}},Vector{Polynomial{true,Int64}},Nothing}
+    equilibrium_polynomial::Union{Vector{Polynomial{true,Float64}},Nothing}
     is_polynomial_system::Bool
     polyvars::NamedTuple{(:u, :t, :p),Tuple{Vector{PolyVar{true}},PolyVar{true},Vector{PolyVar{true}}}}
 end
@@ -357,7 +357,7 @@ struct BifurcationPath
     vals::Vector{Vector{Float64}}
     jac_eigenvals::Vector{Vector{ComplexF64}}
     stability_types::Vector{Int8}
-    length::Int64
+    length::Integer
 end
 #A bifurcation diagram, contains a set of bifurcation paths.
 struct BifurcationDiagram
@@ -377,7 +377,7 @@ struct BifurcationGrid
     param::Symbol
     range::AbstractRange
     grid_points::Vector{BifurcationPoint}
-    length::Int64
+    length::Integer
 end
 #Contains a grid like bifurgation diagrams over 2 parameters. The bifurcation points are contained in a matrix.
 struct BifurcationGrid2D
@@ -396,7 +396,7 @@ struct BifurcationDiagramGrid
     param2::Symbol
     range2::Tuple{Float64,Float64}
     bifurcation_diagrams::Vector{BifurcationDiagram}
-    length::Int64
+    length::Integer
 end
 
 
