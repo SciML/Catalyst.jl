@@ -207,7 +207,7 @@ can load several different types of predefined networks into DiffEqBiological
   * Networks defined by the basic file format used by the [RSSA](https://www.cosbi.eu/research/prototypes/rssa) group at COSBI in their [model collection](https://www.cosbi.eu/prototypes/jLiexDeBIgFV4zxwnKiW97oc4BjTtIoRGajqdUz4.zip).
 
 ## Finding steady states
-The steady states of a reaction network can be found using homotopy continuation (as implemented by [HomotopyContinuation.jl](https://github.com/isaacsas/ReactionNetworkImporters.jl)). This method is limited to polynomial system, which includes reaction network not containing non-polynomial rates in the reaction rates (such as logarithms and non integer exponents).
+The steady states of a reaction network can be found using homotopy continuation (as implemented by [HomotopyContinuation.jl](https://github.com/isaacsas/ReactionNetworkImporters.jl)). This method is limited to polynomial systems, which includes reaction network not containing non-polynomial rates in the reaction rates (such as logarithms and non integer exponents).
 
 The basic syntax is
 ```julia
@@ -229,7 +229,7 @@ the stability of a steady state (or a vector of several) can be determined by th
 stability(ss,rn,params)
 ```
 
-Here the `@reaction_network` creates a multivariate polynomial and stores in the `equilibrate_content` field in the reaction network structure. The `steady_state` method the inserts the corresponding parameter values and solves the polynomial system. The exception is if there exists a parameter as an exponent (typically `n` in a hill function). In this case the steady state polynomial can first be created in the `steady_state` method. If one plan to solve a polynomial a large number of time, but for the same value of `n`, one can get a speed-up by first fixing that value using the `fix_parameters` function:
+Here the `@reaction_network` creates a multivariate polynomial and stores in the `equilibrate_content` field in the reaction network structure. The `steady_state` method the inserts the corresponding parameter values and solves the polynomial system. The exception is if there exists a parameter as an exponent (typically `n` in a hill function). In this case the steady state polynomial can first be created in the `steady_state` method. If one plans to solve a polynomial a large number of times with the same value of `n`, then one can get a speed-up by first fixing that value using the `fix_parameters` function:
 ```julia
 rn = @reaction_network begin 
   (hill(X,v,K,n),d), 0 ↔ X               
@@ -240,7 +240,7 @@ for i = 1:10000
   ss = steady_states(rn,params)
 ```
 
-Some network may have an infinite set of steady states, and which one is interested in depends on the initial conditions. For these network some additional information is required (typically some concentrations which sums to a fixed value). This information can be added through the `@add_constraint` macro.
+Some networks may have an infinite set of steady states, and which one is interested in depends on the initial conditions. For these networks some additional information is required (typically some concentrations which sums to a fixed value). This information can be added through the `@add_constraint` macro:
 ```julia
 rn = @reaction_network begin 
   (k1,k2), X ↔ Y              
