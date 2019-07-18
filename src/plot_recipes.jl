@@ -1,6 +1,6 @@
 import Base: length
 length(p::BifurcationPath) = length(p.p_vals)
-length(p::BifurcationDiagramGrid) = p.length
+length(p::BifurcationGridDiagram) = p.length
 
 
 @recipe function f(path::BifurcationPath, var=1)
@@ -35,7 +35,7 @@ end
     end
 end
 
-@recipe function f(grid::BifurcationDiagramGrid, var=1)
+@recipe function f(grid::BifurcationGridDiagram, var=1)
     label --> ""
     zlabel --> "Concentration"
     ylabel --> string(grid.param2)
