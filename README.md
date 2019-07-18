@@ -205,3 +205,106 @@ can load several different types of predefined networks into DiffEqBiological
   * A subset of BioNetGen .net files that can be generated from a BioNetGen language file (.bngl). (.net files can be generated using the `generate_network` command within BioNetGen.) 
   * Reaction networks specified by dense or sparse matrices encoding the stoichiometry of substrates and products within each reaction.
   * Networks defined by the basic file format used by the [RSSA](https://www.cosbi.eu/research/prototypes/rssa) group at COSBI in their [model collection](https://www.cosbi.eu/prototypes/jLiexDeBIgFV4zxwnKiW97oc4BjTtIoRGajqdUz4.zip).
+
+## Finding steady states
+The steady states of a reaction network can be found using homotopy continuation (as implemented by [HomotopyContinuation.jl](https://github.com/isaacsas/ReactionNetworkImporters.jl)). This method is limited to polynomial systems, which includes reaction network not containing non-polynomial rates in the reaction rates (such as logarithms and non integer exponents).
+
+The basic syntax is
+```julia
+rn = @reaction_network begin 
+  (1.,2.), 0 ↔ X               
+end
+ss = steady_states(rn,params)
+```
+and with parameters
+```julia
+rn = @reaction_network begin 
+  (p,d), 0 ↔ X               
+end p d
+params = [1., 2.]
+ss = steady_states(rn,params)
+```
+the stability of a steady state (or a vector of several) can be determined by the `stability` function:
+```julia
+stability(ss,rn,params)
+```
+
+Here the `@reaction_network` creates a multivariate polynomial and stores in the `equilibrate_content` field in the reaction network structure. The `steady_state` method the inserts the corresponding parameter values and solves the polynomial system. The exception is if there exists a parameter as an exponent (typically `n` in a hill function). In this case the steady state polynomial can first be created in the `steady_state` method. If one plans to solve a polynomial a large number of times with the same value of `n`, then one can get a speed-up by first fixing that value using the `fix_parameters` function:
+```julia
+rn = @reaction_network begin 
+  (hill(X,v,K,n),d), 0 ↔ X               
+end v K n d
+fix_parameters(rn,n=4)
+for i = 1:10000
+  params = [i, 2.5, 4, 0.1]    #The value of 'n' here doesn't really matter, however, the field must exist.
+  ss = steady_states(rn,params)
+```
+
+Some networks may have an infinite set of steady states, and which one is interested in depends on the initial conditions. For these networks some additional information is required (typically some concentrations which sums to a fixed value). This information can be added through the `@add_constraint` macro:
+```julia
+rn = @reaction_network begin 
+  (k1,k2), X ↔ Y              
+end k1 k2
+params = [2.,1.]
+@add_constraint X+Y=2.
+steady_states(rn,params)
+```
+The `@add_constraint` macro may contain parameters, as long as these are declared in the network.
+```julia
+rn = @reaction_network begin 
+  (k1,k2), X ↔ Y              
+end k1 k2 C_tot
+params = [2.,1.,2.]
+@add_constraint X+Y=C_tot
+steady_states(rn,params)
+```
+The `@add_constraints` macro can be used to add several constraints at the same time.
+```julia
+rn = @reaction_network begin 
+  (k1,k2), X ↔ Y        
+  (k3,k4), V ↔ W              
+end k1 k2 k3 k4
+params = [2.,1.,1.,2.]
+@add_constraints begin
+  X + Y = 2.
+  V + W = 4.
+end
+steady_states(rn,params)
+```
+
+## Making bifurcation diagram
+For any system for which we can find steady states, we can also make bifurcation diagrams.
+```julia
+rn = @reaction_network begin 
+  (p,d), 0 ↔ X               
+end p d
+params = [1.,2.] #The value of 'p' here doesn't really matter, however, the field must exist.
+bif = bifurcations(rn, params, :p, (0.1,5.))
+```
+These can then be plotted.
+```julia
+plot(bif)
+```
+In the plot blue values correspond to stable steady states, red to unstable. Also, cyan correspond to stable steady states with imaginary eigen values and orange to unstable steady states with imaginary eigen values.
+
+In addition to the normal bifurcation diagram (varying a single parameter over a continuous range) there are three more types available.
+
+A bifurcation grid varies a single parameter over a set of discrete values
+```julia
+bif_grid = bifurcation_grid(rn, params, :p, 1.:5.)
+```
+A two dimensional bifurcation grid varies two different parameters over a grid of discrete values.
+```julia
+bif_grid_2d = bifurcation_grid_2d(rn, params, :p, 1.:5. :d, 2.:10.)
+```
+A bifurcation diagram grid first varies a single variable over a discrete grid of values. Then, for each such value, in varies a second variable over a continuous interval to create a bifurcation grid.
+```julia
+bif_grid_dia = bifurcation_grid_diagram(rn, params, :p, 1.:5. :d, (2.,10.))
+```
+All of these can be plotted.
+```julia
+plot(bif_grid)
+plot(bif_grid_2d)
+plot(bif_grid_dia)
+```
+```
