@@ -390,7 +390,7 @@ struct BifurcationGrid2D
 end
 
 #A 2d hybrid of grid and diagram. Contains a 1d grid of bifurcation diargam.
-struct BifurcationDiagramGrid
+struct BifurcationGridDiagram
     param1::Symbol
     range1::AbstractRange
     param2::Symbol
@@ -444,10 +444,10 @@ end
 ## kwargs
  - potential arguments for steady state solvers (however, only current solver does not have any such arguments).
 """
-function bifurcations_grid(rn::DiffEqBase.AbstractReactionNetwork, args...)
-    return bifurcations_grid(rn, HCSteadyStateSolver(), args...)
+function bifurcation_grid(rn::DiffEqBase.AbstractReactionNetwork, args...)
+    return bifurcation_grid(rn, HCSteadyStateSolver(), args...)
 end
-function bifurcations_grid(rn::DiffEqBase.AbstractReactionNetwork, solver::AbstractSteadyStateSolver, p::Vector{Float64}, param::Symbol, range::AbstractRange)
+function bifurcation_grid(rn::DiffEqBase.AbstractReactionNetwork, solver::AbstractSteadyStateSolver, p::Vector{Float64}, param::Symbol, range::AbstractRange)
     grid_points = Vector{Union{BifurcationPoint,Nothing}}(fill(nothing,length(range)))
     for i = 1:length(range)
         p_i=copy(p); p_i[rn.params_to_ints[param]]=range[i];
@@ -476,10 +476,10 @@ end
 ## kwargs
  - potential arguments for steady state solvers (however, only current solver does not have any such arguments).
 """
-function bifurcations_grid_2d(rn::DiffEqBase.AbstractReactionNetwork, args...)
-    return bifurcations_grid_2d(rn, HCSteadyStateSolver(), args...)
+function bifurcation_grid_2d(rn::DiffEqBase.AbstractReactionNetwork, args...)
+    return bifurcation_grid_2d(rn, HCSteadyStateSolver(), args...)
 end
-function bifurcations_grid_2d(rn::DiffEqBase.AbstractReactionNetwork, solver::AbstractSteadyStateSolver, p::Vector{Float64}, param1::Symbol, range1::AbstractRange, param2::Symbol, range2::AbstractRange)
+function bifurcation_grid_2d(rn::DiffEqBase.AbstractReactionNetwork, solver::AbstractSteadyStateSolver, p::Vector{Float64}, param1::Symbol, range1::AbstractRange, param2::Symbol, range2::AbstractRange)
     grid_points = Matrix{Union{BifurcationPoint,Nothing}}(fill(nothing,length(range1),length(range2)))
     for i = 1:length(range1), j = 1:length(range2)
         p_ij = copy(p);
@@ -494,7 +494,7 @@ end
 
 #Generates a grid of bifurcation diagram.
 """
-    bifurcations_diagram_grid(reaction_network, [solver], parameter_values, parameter_symbol1, parameter_range1, parameter_symbol2, parameter_range2; kwargs...)
+    bifurcation_grid_diagram(reaction_network, [solver], parameter_values, parameter_symbol1, parameter_range1, parameter_symbol2, parameter_range2; kwargs...)
 
     Varries a first parameter over a range of discrete values, for each values makes a bifurcation diagram over a second, continious range. Allows to vsiualise changes ins steady states over two parameters.
 
@@ -511,16 +511,16 @@ end
 - dp=(parameter_range[2] - parameter_range[1])/200: The distance to jump after finding a bifurcation. After discovering a bifurcation, the solver jumps ahead a distance `dp` and starts back-tracking. If this distance is too small, the method may error or cause visible artifiacts in the bifurcation diagram. If it is too large, then you might jump over another bifurcation and it will be missed (this should also be farily obvious in a plot). Only applicable for the HCBifurcationSolver.
 - d_sol = 1e-7: (alternatively reduced to a tenth of the minimum value of any initial solutions) used by algorithm to determine if two points are identical. Set this to less than the expected minimum distance between two different solutions.
 """
-function bifurcations_diagram_grid(rn::DiffEqBase.AbstractReactionNetwork, args...)
-    bifurcations_diagram_grid(rn, HCBifurcationSolver(), args...)
+function bifurcation_grid_diagram(rn::DiffEqBase.AbstractReactionNetwork, args...)
+    bifurcation_grid_diagram(rn, HCBifurcationSolver(), args...)
 end
-function bifurcations_diagram_grid(rn::DiffEqBase.AbstractReactionNetwork, solver::AbstractBifurcationSolver, p::Vector{Float64}, param1::Symbol, range1::AbstractRange, param2::Symbol, range2::Tuple{Float64,Float64}; dp=(range2[2]-range2[1])/200.::Float64)
+function bifurcation_grid_diagram(rn::DiffEqBase.AbstractReactionNetwork, solver::AbstractBifurcationSolver, p::Vector{Float64}, param1::Symbol, range1::AbstractRange, param2::Symbol, range2::Tuple{Float64,Float64}; dp=(range2[2]-range2[1])/200.::Float64)
     diagram_grid = Vector{Union{BifurcationDiagram,Nothing}}(fill(nothing,length(range1)))
     for i = 1:length(range1)
         p_i=copy(p); p_i[rn.params_to_ints[param1]]=range1[i];
         diagram_grid[i] = bifurcations(rn, solver, p_i, param2, range2; dp=dp)
     end
-    return BifurcationDiagramGrid(param1,range1,param2,range2,Vector{BifurcationDiagram}(diagram_grid),length(range1))
+    return BifurcationGridDiagram(param1,range1,param2,range2,Vector{BifurcationDiagram}(diagram_grid),length(range1))
 end
 
 

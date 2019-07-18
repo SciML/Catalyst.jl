@@ -9,9 +9,9 @@ for rn in reaction_networks_standard
     for p in p_vals
         bif1 = bifurcations(rn,p,param1,range_tupple)
         bif2 = bifurcations(rn,SimpleHCBifurcationSolver(),p,param1,range_tupple)
-        bif_grid = bifurcations_grid(rn,p,param1,range1)
-        bif_grid_2d = bifurcations_grid_2d(rn,p,param1,range1,param2,range2)
-        bif_grid_dia = bifurcations_diagram_grid(rn,p,param1,range1,param2,range_tupple)
+        bif_grid = bifurcation_grid(rn,p,param1,range1)
+        bif_grid_2d = bifurcation_grid_2d(rn,p,param1,range1,param2,range2)
+        bif_grid_dia = bifurcation_grid_diagram(rn,p,param1,range1,param2,range_tupple)
         plot(bif1); plot(bif2); plot(bif_grid); plot(bif_grid_2d); plot(bif_grid_dia);
     end
 end
