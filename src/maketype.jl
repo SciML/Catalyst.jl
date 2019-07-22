@@ -408,8 +408,9 @@ function addjumps!(rn::DiffEqBase.AbstractReactionNetwork;
                                                           params_to_ints;
                                                           minimal_jumps=minimal_jumps)
 
-    rn.jump_rate_expr   = jump_rate_expr
-    rn.jump_affect_expr = jump_affect_expr
+    
+    rn.jump_rate_expr   = length(jump_rate_expr) == 0 ? nothing : jump_rate_expr
+    rn.jump_affect_expr = length(jump_affect_expr) == 0 ? nothing : jump_affect_expr
     rn.jumps            = build_jumps ? eval(jumps) : nothing
     rn.regular_jumps    = build_regular_jumps ? eval(get_regularjumps(reactions, syms_to_ints, params_to_ints)) : nothing
 
