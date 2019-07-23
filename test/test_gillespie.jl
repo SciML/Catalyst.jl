@@ -5,7 +5,7 @@ end
 sir_prob = DiscreteProblem([999,1,0],(0.0,250.0))
 sir_jump_prob = JumpProblem(sir_prob,Direct(),sir_model)
 
-sir_sol = DiffEqJump.DiffEqJump.solve(sir_jump_prob,FunctionMap())
+sir_sol = DiffEqJump.solve(sir_jump_prob,FunctionMap())
 
 using Plots; plot(sir_sol)
 
