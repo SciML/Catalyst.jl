@@ -7,7 +7,7 @@ algs      = (Direct(),)
 function runSSAs(jump_prob, Nsims, idx)
     Psamp = zeros(Int, Nsims)
     for i in 1:Nsims
-        sol = solve(jump_prob, SSAStepper())
+        sol = DiffEqJump.solve(jump_prob, SSAStepper())
         Psamp[i] = sol[idx,end]
     end
     mean(Psamp)

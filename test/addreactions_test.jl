@@ -38,7 +38,7 @@ addreaction!(rmin, :((δ,γ)), :(m₃ ↔ ∅) )
 addreaction!(rmin, :β, :(m₁ --> m₁ + P₁) )
 addreaction!(rmin, 10., :(m₃ --> m₃ + P₃) )
 addreaction!(rmin, 2, :(P₁ --> ∅) )
-addreaction!(rmin, :(β*P₂), :(2m₁ + 3P₁ --> P₂) )  
+addreaction!(rmin, :(β*P₂), :(2m₁ + 3P₁ --> P₂) )
 testnetwork(rmin, repressilator)
 
 # empty network stoichiometry interface
@@ -54,7 +54,7 @@ addreaction!(rmin, :γ, (), (:m₃ => 1,))
 addreaction!(rmin, :β, (:m₁=>1,), (:m₁=>1, :P₁=>1) )
 addreaction!(rmin, 10., (:m₃=>1,), (:m₃=>1, :P₃=>1) )
 addreaction!(rmin, 2, (:P₁=>1,),() )
-addreaction!(rmin, :(β*P₂), (:m₁=>2,:P₁=>3), (:P₂=>1,) )  
+addreaction!(rmin, :(β*P₂), (:m₁=>2,:P₁=>3), (:P₂=>1,) )
 testnetwork(rmin, repressilator)
 
 
@@ -70,7 +70,7 @@ end α K n δ γ β;
 foreach(param -> addparam!(rmin2, param), params(repressilator))
 foreach(spec -> addspecies!(rmin2, spec), species(repressilator))
 addreaction!(rmin2, 2, :(P₁ --> ∅) )
-addreaction!(rmin2, :(β*P₂), :(2m₁ + 3P₁ --> P₂) )  
+addreaction!(rmin2, :(β*P₂), :(2m₁ + 3P₁ --> P₂) )
 testnetwork(rmin2, repressilator)
 
 # partial min_reaction_network, stoichiometry interface
@@ -85,7 +85,7 @@ end α K n δ γ β;
 foreach(param -> addparam!(rmin2, param), params(repressilator))
 foreach(spec -> addspecies!(rmin2, spec), species(repressilator))
 addreaction!(rmin2, 2, (:P₁=>1,), ())
-addreaction!(rmin2, :(β*P₂), (:m₁=>2,:P₁=>3), (:P₂=>1,) )  
+addreaction!(rmin2, :(β*P₂), (:m₁=>2,:P₁=>3), (:P₂=>1,) )
 testnetwork(rmin2, repressilator)
 
 
@@ -97,7 +97,7 @@ p = (1/6,)
 u0 = [1000.,1000.]
 tspan = (0.,5e-4)
 foprob = ODEProblem(fullrn, u0, tspan, p)
-fsol = solve(foprob,Tsit5(), abstol=1e-10, reltol=1e-10)
+fsol = OrdinaryDiffEq.solve(foprob,Tsit5(), abstol=1e-10, reltol=1e-10)
 
 emptyrn = @empty_reaction_network
 addspecies!(emptyrn, :X)
@@ -106,7 +106,7 @@ addparam!(emptyrn, :k)
 addreaction!(emptyrn, :((k*X*(X-1)*(X-2),Y * X)), :(X + 2X ⟺ Y+ X))
 addodes!(emptyrn)
 eoprob = ODEProblem(emptyrn, u0, tspan, p)
-esol = solve(eoprob,Tsit5(), abstol=1e-10, reltol=1e-10)
+esol = OrdinaryDiffEq.solve(eoprob,Tsit5(), abstol=1e-10, reltol=1e-10)
 @test norm(esol .- fsol, Inf) < 1e-7
 
 minrn = @min_reaction_network begin
@@ -116,7 +116,7 @@ addparam!(minrn, "k")
 addreaction!(minrn, :(k*X*(X-1)*(X-2)), :(X + 2X ⟾ Y + X))
 addodes!(minrn)
 moprob = ODEProblem(minrn, u0, tspan, p)
-msol = solve(moprob,Tsit5(), abstol=1e-10, reltol=1e-10)
+msol = OrdinaryDiffEq.solve(moprob,Tsit5(), abstol=1e-10, reltol=1e-10)
 @test norm(msol .- fsol, Inf) < 1e-7
 
 
@@ -128,7 +128,7 @@ end
 u0 = [1000.,1000.]
 tspan = (0.,5e-4)
 foprob = ODEProblem(fullrn, u0, tspan)
-fsol = solve(foprob,Tsit5(), abstol=1e-10, reltol=1e-10)
+fsol = OrdinaryDiffEq.solve(foprob,Tsit5(), abstol=1e-10, reltol=1e-10)
 
 emptyrn = @empty_reaction_network
 addspecies!(emptyrn, :X)
@@ -137,5 +137,5 @@ addreaction!(emptyrn, :(X^2/6), (:X=>1,), (:X=>1, :Y=>1))
 addreaction!(emptyrn, 1.0, (:X=>1,:Y=>1), (:X=>1,))
 addodes!(emptyrn)
 eoprob = ODEProblem(emptyrn, u0, tspan)
-esol = solve(eoprob,Tsit5(), abstol=1e-10, reltol=1e-10)
+esol = OrdinaryDiffEq.solve(eoprob,Tsit5(), abstol=1e-10, reltol=1e-10)
 @test norm(esol .- fsol, Inf) < 1e-7

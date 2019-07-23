@@ -6,14 +6,14 @@ addjumps!(sir_model)
 sir_prob = DiscreteProblem([999,1,0],(0.0,250.0))
 sir_jump_prob = JumpProblem(sir_prob,Direct(),sir_model)
 
-sir_sol = solve(sir_jump_prob,FunctionMap())
+sir_sol = DiffEqJump.solve(sir_jump_prob,FunctionMap())
 
 using Plots; plot(sir_sol)
 
 Random.seed!(1234)
 nums = Int[]
 @time for i in 1:100000
-  sir_sol = solve(sir_jump_prob,FunctionMap())
+  sir_sol = DiffEqJump.solve(sir_jump_prob,FunctionMap())
   push!(nums,sir_sol[end][3])
 end
 println("Reaction DSL: $(mean(nums))")
@@ -35,13 +35,13 @@ jump2 = ConstantRateJump(rate,affect!)
 
 prob = DiscreteProblem([999.0,1.0,0.0],(0.0,250.0))
 jump_prob = JumpProblem(prob,Direct(),jump,jump2)
-sol = solve(jump_prob,FunctionMap())
+sol = DiffEqJump.solve(jump_prob,FunctionMap())
 
 using Plots; plot(sol)
 
 nums = Int[]
 @time for i in 1:100000
-  sol = solve(jump_prob,SSAStepper())
+  sol = DiffEqJump.solve(jump_prob,SSAStepper())
   push!(nums,sol[end][3])
 end
 println("Direct Jumps: $(mean(nums))")

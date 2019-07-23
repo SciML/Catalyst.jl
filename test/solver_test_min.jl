@@ -15,9 +15,9 @@ for i = 1:100
     tspan = (0.,10. + 5 * rand(1)[1])
 
     prob1 = ODEProblem(sir_model,u0,tspan,p)
-    sol1 = solve(prob1,Tsit5())
+    sol1 = OrdinaryDiffEq.solve(prob1,Tsit5())
     prob2 = ODEProblem(sir_f,u0,tspan,p)
-    sol2 = solve(prob2,Tsit5())
+    sol2 = OrdinaryDiffEq.solve(prob2,Tsit5())
     @test sol1[end][1] == sol2[end][1]
 end
 
@@ -29,13 +29,13 @@ addsdes!(model)
 ## For Julialang/julia#28356
 i = 1.0
 prob = SDEProblem(model,[1000.0+i],(0.,200.),[i])
-sol = solve(prob, EM(), dt = 0.01)
+sol = StochasticDiffEq.solve(prob, EM(), dt = 0.01)
 @test sol[end][1] < 2000
 ##
 
 for i in [1., 2., 3., 4., 5.]
     prob = SDEProblem(model,[1000.0+i],(0.,200.),[i])
-    sol = solve(prob, EM(), dt = 0.01)
+    sol = StochasticDiffEq.solve(prob, EM(), dt = 0.01)
     @test sol[end][1] < 2000
 end
 
@@ -46,7 +46,7 @@ equi_model = @min_reaction_network rn begin
 end
 addodes!(equi_model)
 prob1 = ODEProblem(equi_model,[100.],(0.,100.))
-sol1 = solve(prob1,Tsit5())
+sol1 = OrdinaryDiffEq.solve(prob1,Tsit5())
 prob2 = ODEProblem(equi_model,[100.],(0.,200.))
-sol2 = solve(prob2,Tsit5())
+sol2 = OrdinaryDiffEq.solve(prob2,Tsit5())
 @test 1.5*sol1[end][1] < sol2[end][1]

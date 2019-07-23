@@ -7,7 +7,7 @@ algs      = (Direct(),SortingDirect())
 function runSSAs(jump_prob, Nsims, idx)
     Psamp = zeros(Int, Nsims)
     for i in 1:Nsims
-        sol = solve(jump_prob, SSAStepper())
+        sol = DiffEqJump.solve(jump_prob, SSAStepper())
         Psamp[i] = sol[idx,end]
     end
     mean(Psamp)
@@ -114,7 +114,7 @@ addjumps!(network)
 prob = DiscreteProblem([200.,60.,120.,100.,50.,50.,50.], (0.,4000.))
 for method in algs
     jump_prob = JumpProblem(prob, method, network)
-    sol = solve(jump_prob,SSAStepper());
+    sol = DiffEqJump.solve(jump_prob,SSAStepper());
 end
 
 # make sure problem instantiation works when mass action jumps

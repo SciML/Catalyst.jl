@@ -8,10 +8,10 @@ u0 = [0.1, 0.1]
 p = [1., 1.]
 
 prob = SteadyStateProblem{true}(model, u0, p)
-sol = solve(prob, SSRootfind())
+sol = SteadyStateDiffEq.solve(prob, SSRootfind())
 @test sol.u ≈ [1, 1]
 
 u0 = [0.1, 0.1]
 prob = SteadyStateProblem(model, u0, p)
-sol = solve(prob, SSRootfind())
+sol = SteadyStateDiffEq.solve(prob, SSRootfind())
 @test sol.u ≈ [1, 1]
