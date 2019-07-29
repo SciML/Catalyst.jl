@@ -192,7 +192,7 @@ end
 ## args
 -  reaction_network: a reaction network.
 """
-function make_hc_template(rn::DiffEqBase.AbstractReactionNetwork)
+function make_hc_template!(rn::DiffEqBase.AbstractReactionNetwork)
     check_is_polynomial(rn)
     check_has_polynomial(rn)
     p_template = randn(ComplexF64, length(rn.params))
@@ -210,7 +210,7 @@ end
 ## args
 -  reaction_network: a reaction network.
 """
-function add_hc_template(rn::DiffEqBase.AbstractReactionNetwork)
+function add_hc_template!(rn::DiffEqBase.AbstractReactionNetwork)
     p_template = randn(ComplexF64, length(rn.params))
     f_template = DynamicPolynomials.subs.(get_equi_poly(rn), Ref(get_polyvars(rn).p => p_template))
     solution_template = solutions(HomotopyContinuation.solve(f_template, show_progress=false))
