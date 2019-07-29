@@ -234,7 +234,7 @@ end
 -  reaction_network: a reaction network.
 """
 macro make_hc_template(rn::Symbol)
-    return Expr(:escape,:(make_hc_template($rn)))
+    return Expr(:escape,:(make_hc_template!($rn)))
 end
 #Macro running the HC template function.
 """
@@ -246,7 +246,7 @@ end
 -  reaction_network: a reaction network.
 """
 macro add_hc_template(rn::Symbol)
-    return Expr(:escape,:(add_hc_template($rn)))
+    return Expr(:escape,:(add_hc_template!($rn)))
 end
 
 
@@ -297,7 +297,7 @@ function initialise_solver!(rn::DiffEqBase.AbstractReactionNetwork, p::Vector{Fl
     check_is_polynomial(rn)
     using_temp_poly = !has_equi_poly(rn)
     using_temp_poly && fix_parameters(rn, p, full_vector_exemption=bifurcation_exception_parameter)
-    !has_hc_templates(rn) && make_hc_template(rn)
+    !has_hc_templates(rn) && make_hc_template!(rn)
     return using_temp_poly
 end
 # In case a temporary equilibrium polynomial were used, this one resets it.
