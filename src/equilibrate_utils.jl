@@ -668,7 +668,7 @@ end
 #Tracks a path for the given coretracker, returns the path.
 function track_path(solution,coretracker,p_start,p_end)
     P = Vector{Float64}(); U = Vector{Vector{ComplexF64}}();
-    for (u,t) in iterator(coretracker, solution)
+    for (u,t) in HomotopyContinuation.iterator(coretracker, solution)
         push!(P,t2p(t,p_start,p_end)); push!(U,u);
     end
     return (p=P,u=U)
