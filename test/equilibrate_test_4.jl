@@ -58,7 +58,7 @@ cc_network = @reaction_network begin
 end k1 k2p k2pp k3p k3pp A J3 k4 m J4
 cc_p = [0.04,0.04,1.,1.,10.0,0.,0.04,35.,.3,.04]
 @add_constraint cc_network P+Po=1
-add_hc_template(cc_network)
+add_hc_template!(cc_network)
 @add_hc_template cc_network
 ss_cc = steady_states(cc_network,cc_p)
 @test(length(ss_cc)==3)
