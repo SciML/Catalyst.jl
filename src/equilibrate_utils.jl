@@ -197,7 +197,7 @@ function make_hc_template(rn::DiffEqBase.AbstractReactionNetwork)
     check_has_polynomial(rn)
     p_template = randn(ComplexF64, length(rn.params))
     f_template = DynamicPolynomials.subs.(get_equi_poly(rn), Ref(get_polyvars(rn).p => p_template))
-    solution_template = solutions(HomotopyContinuation.solve(f_template, show_progress=false))
+    solution_template = HomotopyContinuation.solutions(HomotopyContinuation.solve(f_template, show_progress=false))
     reset_hc_templates!(rn)
     push_hc_template!(rn,p_template,solution_template)
 end
@@ -213,7 +213,7 @@ end
 function add_hc_template(rn::DiffEqBase.AbstractReactionNetwork)
     p_template = randn(ComplexF64, length(rn.params))
     f_template = DynamicPolynomials.subs.(get_equi_poly(rn), Ref(get_polyvars(rn).p => p_template))
-    solution_template = solutions(HomotopyContinuation.solve(f_template, show_progress=false))
+    solution_template = HomotopyContinuation.solutions(HomotopyContinuation.solve(f_template, show_progress=false))
     if (isempty(get_hc_templates(rn))) || (length(solution_template) == length(get_hc_templates(rn)[1]))
         push_hc_template!(rn,p_template,solution_template)
     elseif length(solution_template) > length(get_hc_templates(rn)[1])
@@ -272,7 +272,7 @@ end
 #Finds steady states of a system using homotopy continuation.
 function steady_states(rn::DiffEqBase.AbstractReactionNetwork, solver::HCSteadyStateSolver, p=Vector{Float64}())
     using_temp_poly  = initialise_solver!(rn,p)
-    (length(p)==0) && (return positive_real_solutions(solutions(HomotopyContinuation.solve(get_equi_poly(rn),show_progress=false))))
+    (length(p)==0) && (return positive_real_solutions(HomotopyContinuation.solutions(HomotopyContinuation.solve(get_equi_poly(rn),show_progress=false))))
     result = hc_solve_at(rn,p)
     using_temp_poly && finalise_solver!(rn)
     return positive_real_solutions(result)
@@ -280,13 +280,13 @@ end
 # Solves the reaction networks at the specific parameter values using Homotopy Continuation.
 function hc_solve_at(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64})
     for hc_template in get_hc_templates(rn)
-        result = solutions(HomotopyContinuation.solve(get_equi_poly(rn), hc_template.sol, parameters=get_polyvars(rn).p, p₁=hc_template.p, p₀=p, show_progress=false))
+        result = HomotopyContinuation.solutions(HomotopyContinuation.solve(get_equi_poly(rn), hc_template.sol, parameters=get_polyvars(rn).p, p₁=hc_template.p, p₀=p, show_progress=false))
         (length(result) == length(hc_template.sol)) && (return result)
     end
     @warn "While solving the system using homotopy continuation some solutions were lost."
     best_length = 0; best_solution = [];
     for hc_template in get_hc_templates(rn)
-        result = solutions(HomotopyContinuation.solve(get_equi_poly(rn), hc_template.sol, parameters=get_polyvars(rn).p, p₁=hc_template.p, p₀=p, show_progress=false))
+        result = HomotopyContinuation.solutions(HomotopyContinuation.solve(get_equi_poly(rn), hc_template.sol, parameters=get_polyvars(rn).p, p₁=hc_template.p, p₀=p, show_progress=false))
         (length(result) > best_length) && (best_length = length(result); best_solution = result;)
     end
     return best_solution
