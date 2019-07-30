@@ -38,8 +38,8 @@ bif_brusselator = bifurcations(brusselator_network,brusselator_p,:B,(1.,4.))
 end v0 v K n kD kB kC deg S;
 fix_parameters(σ_network,n=4)
 σ_p = [0.005, 0.1, 2.8, 4, 10, 100, 0.1, 0.01, 0.5]
-make_hc_template(σ_network)
-add_hc_template(σ_network)
+make_hc_template!(σ_network)
+add_hc_template!(σ_network)
 ss_σ = steady_states(σ_network,σ_p)
 @test(length(ss_σ)==3)
 stabs_σ = stability(ss_σ,σ_network,σ_p)
@@ -58,7 +58,7 @@ cc_network = @reaction_network begin
 end k1 k2p k2pp k3p k3pp A J3 k4 m J4
 cc_p = [0.04,0.04,1.,1.,10.0,0.,0.04,35.,.3,.04]
 @add_constraint cc_network P+Po=1
-add_hc_template(cc_network)
+add_hc_template!(cc_network)
 @add_hc_template cc_network
 ss_cc = steady_states(cc_network,cc_p)
 @test(length(ss_cc)==3)

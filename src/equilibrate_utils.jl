@@ -192,7 +192,7 @@ end
 ## args
 -  reaction_network: a reaction network.
 """
-function make_hc_template(rn::DiffEqBase.AbstractReactionNetwork)
+function make_hc_template!(rn::DiffEqBase.AbstractReactionNetwork)
     check_is_polynomial(rn)
     check_has_polynomial(rn)
     p_template = randn(ComplexF64, length(rn.params))
@@ -210,7 +210,7 @@ end
 ## args
 -  reaction_network: a reaction network.
 """
-function add_hc_template(rn::DiffEqBase.AbstractReactionNetwork)
+function add_hc_template!(rn::DiffEqBase.AbstractReactionNetwork)
     p_template = randn(ComplexF64, length(rn.params))
     f_template = DynamicPolynomials.subs.(get_equi_poly(rn), Ref(get_polyvars(rn).p => p_template))
     solution_template = solutions(HomotopyContinuation.solve(f_template, show_progress=false))
@@ -234,7 +234,7 @@ end
 -  reaction_network: a reaction network.
 """
 macro make_hc_template(rn::Symbol)
-    return Expr(:escape,:(make_hc_template($rn)))
+    return Expr(:escape,:(make_hc_template!($rn)))
 end
 #Macro running the HC template function.
 """
@@ -246,7 +246,7 @@ end
 -  reaction_network: a reaction network.
 """
 macro add_hc_template(rn::Symbol)
-    return Expr(:escape,:(add_hc_template($rn)))
+    return Expr(:escape,:(add_hc_template!($rn)))
 end
 
 
@@ -297,7 +297,7 @@ function initialise_solver!(rn::DiffEqBase.AbstractReactionNetwork, p::Vector{Fl
     check_is_polynomial(rn)
     using_temp_poly = !has_equi_poly(rn)
     using_temp_poly && fix_parameters(rn, p, full_vector_exemption=bifurcation_exception_parameter)
-    !has_hc_templates(rn) && make_hc_template(rn)
+    !has_hc_templates(rn) && make_hc_template!(rn)
     return using_temp_poly
 end
 # In case a temporary equilibrium polynomial were used, this one resets it.
