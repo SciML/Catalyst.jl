@@ -5,7 +5,9 @@ module DiffEqBiological
 using Compat, DataStructures, MacroTools, Parameters, Reexport, SparseArrays, SymEngine
 using DiffEqBase, DiffEqJump
 @reexport using DiffEqBase, DiffEqJump
-using HomotopyContinuation, DynamicPolynomials, LinearAlgebra, RecipesBase
+using DynamicPolynomials, LinearAlgebra, RecipesBase
+
+import HomotopyContinuation
 
 import Base: (==)
 

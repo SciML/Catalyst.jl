@@ -13,9 +13,9 @@ mutable struct EquilibrateContent
 end
 
 function EquilibrateContent(make_polynomial,n_vars,n_params)
-    pvus = (@polyvar internal___polyvar___u[1:n_vars])[1]
-    pvps = (@polyvar internal___polyvar___p[1:n_params])[1]
-    pvt = (@polyvar internal___polyvar___t)[1]
+    pvus = (HomotopyContinuation.@polyvar internal___polyvar___u[1:n_vars])[1]
+    pvps = (HomotopyContinuation.@polyvar internal___polyvar___p[1:n_params])[1]
+    pvt = (HomotopyContinuation.@polyvar internal___polyvar___t)[1]
     is_polynomial_system = try
         make_polynomial(pvus,pvt,pvps,internal___var___paramvals=fill(1,length(pvps)))
         true
