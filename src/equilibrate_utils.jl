@@ -560,7 +560,7 @@ function solve_bifurcation(
     paths_incomplete = Vector{NamedTuple{(:p, :u),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}}()
     for sol in sol1
         path = track_path(sol,tracker1,range...)
-        if (tracker1.state.status == CoreTrackerStatus.success)
+        if (tracker1.state.status == HomotopyContinuation.CoreTrackerStatus.success)
             remove_sol!(sol2,path.u[end],d_sol)
             push!(paths_complete,path)
         else
@@ -569,7 +569,7 @@ function solve_bifurcation(
     end
     for sol in sol2
         path = track_path(sol,tracker2,reverse(range)...)
-        (tracker2.state.status == CoreTrackerStatus.success) && remove_path!(paths_incomplete,path.u[end],d_sol)
+        (tracker2.state.status == HomotopyContinuation.CoreTrackerStatus.success) && remove_path!(paths_incomplete,path.u[end],d_sol)
         push!(paths_complete,path)
     end
     append!(paths_complete,paths_incomplete)
@@ -663,7 +663,7 @@ end
 #--- Bifurcation functions used by both solvers ---#
 #Makes a coretracker from the given information
 function make_coretracker(rn,sol,p1,p2,Δt)
-    return coretracker(get_equi_poly(rn), sol, parameters=get_polyvars(rn).p, p₁=p1, p₀=p2, max_step_size=Δt)
+    return HomotopyContinuation.coretracker(get_equi_poly(rn), sol, parameters=get_polyvars(rn).p, p₁=p1, p₀=p2, max_step_size=Δt)
 end
 #Tracks a path for the given coretracker, returns the path.
 function track_path(solution,coretracker,p_start,p_end)
