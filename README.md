@@ -246,7 +246,7 @@ rn = @reaction_network begin
   (k1,k2), X ↔ Y              
 end k1 k2
 params = [2.,1.]
-@add_constraint X+Y=2.
+@add_constraint rn X+Y=2.
 steady_states(rn,params)
 ```
 The `@add_constraint` macro may contain parameters, as long as these are declared in the network.
@@ -255,7 +255,7 @@ rn = @reaction_network begin
   (k1,k2), X ↔ Y              
 end k1 k2 C_tot
 params = [2.,1.,2.]
-@add_constraint X+Y=C_tot
+@add_constraint rn X+Y=C_tot
 steady_states(rn,params)
 ```
 The `@add_constraints` macro can be used to add several constraints at the same time.
@@ -265,7 +265,7 @@ rn = @reaction_network begin
   (k3,k4), V ↔ W              
 end k1 k2 k3 k4
 params = [2.,1.,1.,2.]
-@add_constraints begin
+@add_constraints rn begin
   X + Y = 2.
   V + W = 4.
 end
