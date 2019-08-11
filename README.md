@@ -295,11 +295,11 @@ bif_grid = bifurcation_grid(rn, params, :p, 1.:5.)
 ```
 A two dimensional bifurcation grid varies two different parameters over a grid of discrete values.
 ```julia
-bif_grid_2d = bifurcation_grid_2d(rn, params, :p, 1.:5. :d, 2.:10.)
+bif_grid_2d = bifurcation_grid_2d(rn, params, :p, 1.:5., :d, 2.:10.)
 ```
 A bifurcation diagram grid first varies a single variable over a discrete grid of values. Then, for each such value, in varies a second variable over a continuous interval to create a bifurcation grid.
 ```julia
-bif_grid_dia = bifurcation_grid_diagram(rn, params, :p, 1.:5. :d, (2.,10.))
+bif_grid_dia = bifurcation_grid_diagram(rn, params, :p, 1.:5., :d, (2.,10.))
 ```
 All of these can be plotted.
 ```julia
