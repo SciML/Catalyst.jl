@@ -706,7 +706,7 @@ end
 #Generates a number between 0 and 3 corresponing to some stability type (0=unstable, 1=stable, 2=unstable with imaginary eigenvalues, 3=stable with imaginary eigenvalues).
 function stability_type(eigenvalues::Vector{Any},nbr_of_constraints)
     stab_type = Int8(0)
-    (sort(real(eigenvalues))[nbr_of_constraints]<1e-6)&&(stab_type+=1)
+    (sort(real(eigenvalues))[end-nbr_of_constraints]<1e-6)&&(stab_type+=1)
     any(imag(eigenvalues).>1e-6)&&(stab_type+=2)
     return stab_type
 end
