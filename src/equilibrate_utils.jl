@@ -57,6 +57,7 @@ push_constraint!(rn::DiffEqBase.AbstractReactionNetwork,constraint) = (push!(rn.
 set_equi_poly!(rn::DiffEqBase.AbstractReactionNetwork,t;kwargs...) = (rn.equilibrate_content.equilibrium_polynomial = derationalise_polys(rn.equilibrate_content.make_polynomial(rn.equilibrate_content.polyvars.u,t,rn.equilibrate_content.polyvars.p;kwargs...)))
 derationalise_polys(polys) = (typeof(polys[1])<:Polynomial) ? (return polys) : (return map(pol->pol.num,polys))
 add_constraints!(rn::DiffEqBase.AbstractReactionNetwork) = (has_equi_poly(rn) && foreach(constraint -> push!(rn.equilibrate_content.equilibrium_polynomial,constraint), rn.equilibrate_content.constraints))
+number_of_constraints(rn::DiffEqBase.AbstractReactionNetwork) = return length(rn.equilibrate_content.constraints)
 
 reset_equi_poly!(rn::DiffEqBase.AbstractReactionNetwork) = (rn.equilibrate_content.equilibrium_polynomial = nothing)
 reset_hc_templates!(rn::DiffEqBase.AbstractReactionNetwork) = (rn.equilibrate_content.homotopy_continuation_templates = Vector{NamedTuple{(:p, :sol),Tuple{Vector{Complex{Float64}},Vector{Vector{Complex{Float64}}}}}}())
@@ -327,7 +328,8 @@ end
 function stability(solution::Vector{Float64}, rn::DiffEqBase.AbstractReactionNetwork, p::Vector{Float64}, t=0.::Float64)
     jac = zeros(length(rn.syms),length(rn.syms))
     rn.jac(jac,solution,p,t)
-    return maximum(real.(eigen(jac).values))<0.
+    #return maximum(real.(eigen(jac).values))<0.
+    return sort(real.(eigen(jac).values))[end-number_of_constraints(rn)]<0.
 end
 #Runs stability on an vector of steady states.
 """
