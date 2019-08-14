@@ -454,7 +454,7 @@ function bifurcation_grid(rn::DiffEqBase.AbstractReactionNetwork, solver::Abstra
         p_i=copy(p); p_i[rn.params_to_ints[param]]=range[i];
         sol = steady_states(rn, solver, p_i)
         jac_eigenvals = get_jac_eigenvals(map(s->ComplexF64.(s),sol),param,fill(range[i],length(sol)),rn,p)
-        grid_points[i] = BifurcationPoint(sol,jac_eigenvals,stability_type.(jac_eigenvals))
+        grid_points[i] = BifurcationPoint(sol,jac_eigenvals,stability_type.(jac_eigenvals,number_of_constraints(rn)))
     end
     return BifurcationGrid(param,range,Vector{BifurcationPoint}(grid_points),length(range))
 end
@@ -488,7 +488,7 @@ function bifurcation_grid_2d(rn::DiffEqBase.AbstractReactionNetwork, solver::Abs
         p_ij[rn.params_to_ints[param2]] = range2[j];
         sol = steady_states(rn, solver, p_ij)
         jac_eigenvals = get_jac_eigenvals(map(s->ComplexF64.(s),sol),param1,fill(range1[i],length(sol)),rn,p)
-        grid_points[i,j] = BifurcationPoint(sol,jac_eigenvals,stability_type.(jac_eigenvals))
+        grid_points[i,j] = BifurcationPoint(sol,jac_eigenvals,stability_type.(jac_eigenvals,number_of_constraints(rn)))
     end
     return BifurcationGrid2D(param1,range1,param2,range2,Matrix{BifurcationPoint}(grid_points),(length(range1),length(range2)))
 end
@@ -695,7 +695,7 @@ function bifurcation_paths(paths::Vector{NamedTuple{(:p, :u),Tuple{Array{Float64
         (length(path.p)==0) && continue
         (abs(1-path.p[1]/path.p[end])<0.0001) && continue
         jac_eigenvals = get_jac_eigenvals(path.u,param,path.p,rn,p)
-        push!(bps,BifurcationPath(path.p, path.u, jac_eigenvals, stability_type.(jac_eigenvals), length(path.p)))
+        push!(bps,BifurcationPath(path.p, path.u, jac_eigenvals, stability_type.(jac_eigenvals,number_of_constraints(rn)), length(path.p)))
     end
     return bps
 end
@@ -704,9 +704,9 @@ end
 #---Functions relating to the detection of stability in bifurcation diagrams -###
 
 #Generates a number between 0 and 3 corresponing to some stability type (0=unstable, 1=stable, 2=unstable with imaginary eigenvalues, 3=stable with imaginary eigenvalues).
-function stability_type(eigenvalues::Vector{Any})
+function stability_type(eigenvalues::Vector{Any},nbr_of_constraints)
     stab_type = Int8(0)
-    (maximum(real(eigenvalues))<1e-6)&&(stab_type+=1)
+    (sort(real(eigenvalues))[nbr_of_constraints]<1e-6)&&(stab_type+=1)
     any(imag(eigenvalues).>1e-6)&&(stab_type+=2)
     return stab_type
 end
