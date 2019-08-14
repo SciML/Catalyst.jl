@@ -358,7 +358,7 @@ function addsdes!(rn::DiffEqBase.AbstractReactionNetwork; kwargs...)
     @unpack reactions, syms_to_ints, params_to_ints, scale_noise = rn
 
     # first construct an ODE reaction network
-    if rn.f == nothing
+    if rn.f === nothing
         addodes!(rn; kwargs...)
     end
 
@@ -422,7 +422,7 @@ function addequi1!(rn::DiffEqBase.AbstractReactionNetwork)
     @unpack params, reactions, syms_to_ints, params_to_ints, scale_noise = rn
 
     # first construct an ODE reaction network (required for getting f_func).
-    if rn.f == nothing
+    if rn.f === nothing
         addodes!(rn)
     end
 
@@ -437,7 +437,7 @@ function addequi1!(rn::DiffEqBase.AbstractReactionNetwork)
 end
 function addequi2!(rn::DiffEqBase.AbstractReactionNetwork)
     # first construct an ODE reaction network (required for getting f_func).
-    if rn.equilibrate_content == nothing
+    if rn.equilibrate_content === nothing
         error("equilibrate_content field is empty. Have to use addequi1!(), before addequi2!() can be used.")
     end
     rn.equilibrate_content = EquilibrateContent(rn.equilibrate_content.make_polynomial,length(rn.syms),length(rn.params))

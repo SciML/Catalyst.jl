@@ -643,16 +643,6 @@ function dict_to_sparsemat(d, m, n; vals=nothing)
     return sparse(I,J,V,m,n)
 end
 
-#ALready present once?
-#function recursive_content(ex,symsmap::OrderedDict{Symbol,Int},content::Vector{Symbol})
-#    if ex isa Symbol
-#        haskey(symsmap,ex) && push!(content,ex)
-#    elseif ex isa Expr
-#        foreach(arg -> recursive_content(arg,symsmap,content), ex.args)
-#    end
-#    return content
-#end
-
 # create a sparse Jacobian
 function calculate_sparse_jac(reactions, reactants, parameters)
 
