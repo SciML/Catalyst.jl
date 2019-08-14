@@ -328,7 +328,6 @@ end
 function stability(solution::Vector{Float64}, rn::DiffEqBase.AbstractReactionNetwork, p::Vector{Float64}, t=0.::Float64)
     jac = zeros(length(rn.syms),length(rn.syms))
     rn.jac(jac,solution,p,t)
-    #return maximum(real.(eigen(jac).values))<0.
     return sort(real.(eigen(jac).values))[end-number_of_constraints(rn)]<0.
 end
 #Runs stability on an vector of steady states.
