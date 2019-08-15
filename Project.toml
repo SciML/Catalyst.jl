@@ -1,6 +1,6 @@
 name = "DiffEqBiological"
 uuid = "eb300fae-53e8-50a0-950c-e21f52c2b7e0"
-version = "3.9.0"
+version = "3.9.1"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
