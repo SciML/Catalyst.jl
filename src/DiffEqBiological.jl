@@ -1,5 +1,3 @@
-__precompile__()
-
 module DiffEqBiological
 
 using Compat, DataStructures, MacroTools, Parameters, Reexport, SparseArrays, SymEngine
