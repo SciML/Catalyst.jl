@@ -1,6 +1,6 @@
 name = "DiffEqBiological"
 uuid = "eb300fae-53e8-50a0-950c-e21f52c2b7e0"
-version = "3.9.1"
+version = "3.10.0"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
@@ -17,7 +17,7 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 SymEngine = "123dc426-2d89-5057-bbad-38513e3affd8"
 
 [compat]
-DiffEqBase = "5"
+DiffEqBase = "6"
 DiffEqJump = "6"
 julia = "1.1"
 
