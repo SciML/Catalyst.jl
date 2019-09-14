@@ -1,7 +1,7 @@
 module DiffEqBiological
 
 using DataStructures, MacroTools, Parameters, Reexport, SparseArrays, SymEngine
-using DiffEqBase, DiffEqJump
+using DiffEqBase, DiffEqJump, Compat
 @reexport using DiffEqBase, DiffEqJump
 using DynamicPolynomials, LinearAlgebra, RecipesBase
 
