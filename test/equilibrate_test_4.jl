@@ -24,7 +24,6 @@ brusselator_network = @reaction_network begin
     1, X → ∅
 end A B;
 brusselator_p = [1.,4.]
-brusselator_network.equilibrate_content
 @make_hc_template brusselator_network
 @add_hc_template brusselator_network
 bif_brusselator = bifurcations(brusselator_network,brusselator_p,:B,(1.,4.))
@@ -47,8 +46,6 @@ stabs_σ = stability(ss_σ,σ_network,σ_p)
 bif_σ = bifurcations(σ_network,σ_p,:S,(0.,2.))
 @test length(bif_σ.paths) == 3
 
-[vcat(ss_σ...)...,vcat(ss_σ...)...]
-
 cc_network = @reaction_network begin
   k1, 0 --> Y
   k2p, Y --> 0
@@ -64,5 +61,15 @@ ss_cc = steady_states(cc_network,cc_p)
 @test(length(ss_cc)==3)
 stabs_cc = stability(ss_σ,σ_network,σ_p)
 @test(sum(stabs_cc.==true)==2)
-bif_cc = bifurcations(cc_network,cc_p,:m,(.01,.65))
+bif_cc = bifurcations(cc_network,cc_p,:m,(.01,.65),Δu=0.0001)
 @test length(bif_cc.paths) == 3
+plot(bif_cc)
+
+bs_network = @reaction_network begin
+    d,    (X,Y) → ∅
+    hillR(Y,v1,K1,n1), ∅ → X
+    hillR(X,v2,K2,n2), ∅ → Y
+end d v1 K1 n1 v2 K2 n2
+bs_p = [0.01, 1. , 30., 3, 1., 30, 3];
+bif_bs = bifurcations(bs_network, bs_p,:v1,(.1,10.),Δu = 0.001)
+@test length(bif_bs.paths) == 3
