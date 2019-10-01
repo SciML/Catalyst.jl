@@ -83,3 +83,10 @@ raw"\begin{align}
 \end{align}
 "
 
+@test latexify(r; bracket=true) == 
+raw"\begin{align}
+\mathrm{\mathrm{d}\left[A\right]}\left( t \right) =& \frac{p_{a} \cdot \left[ B \right]^{n}}{k^{n} + \left[ B \right]^{n}} - d_{a} \cdot \left[ A \right] + \frac{r_{a}}{6} \cdot \left[ B \right]^{3} - r_{b} \cdot \left[ A \right] \\
+\mathrm{\mathrm{d}\left[B\right]}\left( t \right) =& p_{b} - d_{b} \cdot \left[ B \right] -3 \cdot \frac{r_{a}}{6} \cdot \left[ B \right]^{3} + 3 \cdot r_{b} \cdot \left[ A \right]
+\end{align}
+"
+
