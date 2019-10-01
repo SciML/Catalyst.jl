@@ -48,7 +48,6 @@ r = @reaction_network begin
     (r_a, r_b), 3B ↔ A
 end p_a k n d_a p_b d_b r_a r_b
 
-copy_to_clipboard(true)
 latexify(r; noise=true) 
 
 @test latexify(r; noise=true) == 
