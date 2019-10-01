@@ -27,7 +27,7 @@ brusselator_p = [1.,4.]
 @make_hc_template brusselator_network
 @add_hc_template brusselator_network
 bif_brusselator = bifurcations(brusselator_network,brusselator_p,:B,(1.,4.))
-if VERSION>=VersionNumber("1.1")
+if VERSION >=  v"1.1"
     @test length(bif_brusselator.paths) == 1
 else
     @warn "Some test for bifurcation diagram path numbers are disabled for Julia 1.0 versions. Bifurcation diagrams might contain slight errors for tehse versions."
