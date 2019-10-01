@@ -39,3 +39,8 @@ end
   @time @testset "Discrete Problem" begin include("discreteproblem_test.jl") end
   @time @testset "Add Reactions API" begin include("addreactions_test.jl") end
 end
+
+# Test integration with latexify.
+@time begin
+    @time @testset "Latexify recipe" begin include("latexify_test.jl") end
+end
