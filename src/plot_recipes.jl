@@ -17,6 +17,7 @@ end
 
 @recipe function f(bif::BifurcationDiagram, var, z_val)
     xlabel --> string(bif.param)
+        label --> ""
     for (i, path) in enumerate(bif.paths)
         @series begin
             primary --> i==1
@@ -27,6 +28,7 @@ end
 
 @recipe function f(bif::BifurcationDiagram, var=1)
     xlabel --> string(bif.param)
+        label --> ""
     for (i, path) in enumerate(bif.paths)
         @series begin
             primary --> i==1
@@ -47,39 +49,39 @@ end
     end
 end
 
-@recipe function f(u, point::BifurcationPoint)
+@recipe function f(u, point::BifurcationPoint, var)
     seriestype := :scatter
     color --> stab_color.(point.stability_types)
-    fill(u, length(point.vals)), point.vals
+    fill(u, length(point.vals)), getindex.(point.vals,var)
 end
 
-@recipe function f(u, y, point::BifurcationPoint)
+@recipe function f(u, y, point::BifurcationPoint, var)
     seriestype := :scatter
     color --> stab_color.(point.stability_types)
-    fill(u, length(point.vals)), fill(y, length(point.vals)), point.vals
+    fill(u, length(point.vals)), fill(y, length(point.vals)), getindex.(point.vals,var)
 end
 
-@recipe function f(grid::BifurcationGrid)
+@recipe function f(grid::BifurcationGrid, var=1)
     label --> ""
     ylabel --> "Concentration"
     xlabel --> string(grid.param)
     for (i, point) in enumerate(grid.grid_points)
         @series begin
             primary --> i==1
-            grid.range[i], point
+            grid.range[i], point, var
         end
     end
 end
 
-@recipe function f(grid::BifurcationGrid2D)
+@recipe function f(grid::BifurcationGrid2D, var=1)
     label --> ""
     zlabel --> "Concentration"
-    ylabel --> string(grid.param1)
-    xlabel --> string(grid.param2)
+    ylabel --> string(grid.param2)
+    xlabel --> string(grid.param1)
     for i = 1:length(grid.range1), j = 1:length(grid.range2)
         @series begin
             primary --> i==1
-            grid.range1[i], grid.range2[j], grid.grid_points[i,j]
+            grid.range1[i], grid.range2[j], grid.grid_points[i,j], var
         end
     end
 end
