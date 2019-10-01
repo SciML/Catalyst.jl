@@ -1,14 +1,10 @@
-@latexrecipe function f(r::DiffEqBase.AbstractReactionNetwork; bracket=false, noise=false, noise_only=false, symbolic=false, noise_var=:W)
+@latexrecipe function f(r::DiffEqBase.AbstractReactionNetwork; bracket=false, noise=false, noise_only=false, noise_var=:W)
 
     env --> :align
 
     lhs = [Meta.parse("d$x(t)") for x in r.syms]
 
-    if symbolic
-        rhs = r.f_symfuncs
-    else
-        rhs = r.f_func
-    end
+    rhs = r.f_func
 
     if noise || noise_only
         noise_matrix = reshape(r.g_func, length(r.syms), :)
@@ -20,16 +16,12 @@
             [join(noise_matrix[i,:], " + ") for i in 1:size(noise_matrix,1)]
             )
 
-        if symbolic
-            noise_rhs = [SymEngine.Basic(ex) for ex in expr_arr]
-        else
-            for i in 1:length(expr_arr)
-                ## Clean out terms which are either zero or multiplied by zero.
-                filter!(x -> x != 0, expr_arr[i].args)
-                filter!(x -> hasfield(typeof(x), :args) ? x.args[1:2] != [:*, 0] : true, expr_arr[i].args)
-            end
-            noise_rhs = expr_arr
+        for i in 1:length(expr_arr)
+            ## Clean out terms which are either zero or multiplied by zero.
+            filter!(x -> x != 0, expr_arr[i].args)
+            filter!(x -> hasfield(typeof(x), :args) ? x.args[1:2] != [:*, 0] : true, expr_arr[i].args)
         end
+        noise_rhs = expr_arr
     end
 
     if noise
@@ -38,6 +30,7 @@
 
     if noise_only
         rhs = noise_rhs
+        separator --> " ∝& "
     end
 
     if bracket
