@@ -19,7 +19,7 @@ using DiffEqBiological
 ### will cause issues with Travis.
 
 
-rn = @reaction_network begin
+r = @reaction_network begin
     hillR(X2,v1,K1,n1)*hill(X4,v1,K1,n1), ∅ → X1
     hill(X5,v2,K2,n2), ∅ → X2
     hill(X3,v3,K3,n3), ∅ → X3
@@ -32,7 +32,7 @@ rn = @reaction_network begin
 end v1 K1 n1 v2 K2 n2 v3 K3 n3 v4 K4 n4 v5 K5 n5 k1 k2 k3 k4 k5 k6 d1 d2 d3 d4 d5
 
 
-@test latexify(rn; noise=true) == 
+@test latexify(r; noise=true) == 
 raw"\begin{align}
 \frac{dX1}{dt} =& \frac{v1 \cdot K1^{n1}}{K1^{n1} + X2^{n1}} \cdot \frac{v1 \cdot X4^{n1}}{K1^{n1} + X4^{n1}} + k1 \cdot X2 - \frac{k2}{2} \cdot X1 \cdot X4^{2} - \frac{k5}{6} \cdot X5^{3} \cdot X1 + k6 \cdot X2 - d1 \cdot X1 + \sqrt{\left\|\frac{v1 \cdot K1^{n1}}{K1^{n1} + X2^{n1}} \cdot \frac{v1 \cdot X4^{n1}}{K1^{n1} + X4^{n1}}\right\|} \cdot W_{1} + \sqrt{\left\|k1 \cdot X2\right\|} \cdot W_{6} - \sqrt{\left\|\frac{k2}{2} \cdot X1 \cdot X4^{2}\right\|} \cdot W_{7} - \sqrt{\left\|\frac{k5}{6} \cdot X5^{3} \cdot X1\right\|} \cdot W_{10} + \sqrt{\left\|k6 \cdot X2\right\|} \cdot W_{11} - \sqrt{\left\|d1 \cdot X1\right\|} \cdot W_{12} \\
 \frac{dX2}{dt} =& \frac{v2 \cdot X5^{n2}}{K2^{n2} + X5^{n2}} - k1 \cdot X2 + \frac{k2}{2} \cdot X1 \cdot X4^{2} + \frac{k5}{6} \cdot X5^{3} \cdot X1 - k6 \cdot X2 - d2 \cdot X2 + \sqrt{\left\|\frac{v2 \cdot X5^{n2}}{K2^{n2} + X5^{n2}}\right\|} \cdot W_{2} - \sqrt{\left\|k1 \cdot X2\right\|} \cdot W_{6} + \sqrt{\left\|\frac{k2}{2} \cdot X1 \cdot X4^{2}\right\|} \cdot W_{7} + \sqrt{\left\|\frac{k5}{6} \cdot X5^{3} \cdot X1\right\|} \cdot W_{10} - \sqrt{\left\|k6 \cdot X2\right\|} \cdot W_{11} - \sqrt{\left\|d2 \cdot X2\right\|} \cdot W_{13} \\
@@ -48,6 +48,8 @@ r = @reaction_network begin
     (r_a, r_b), 3B ↔ A
 end p_a k n d_a p_b d_b r_a r_b
 
+copy_to_clipboard(true)
+latexify(r; noise=true) 
 
 @test latexify(r; noise=true) == 
 raw"\begin{align}
