@@ -83,7 +83,7 @@ bs_network = @reaction_network begin
 end d v1 K1 n1 v2 K2 n2
 bs_p = [0.01, 1. , 30., 3, 1., 30, 3];
 bif_bs = bifurcations(bs_network, bs_p,:v1,(.1,10.))
-if VERSION>=VersionNumber("1.1")
+if VERSION >= v"1.1"
     @test length(bif_bs.paths) == 3
     @test sum(map(p->median(p.stability_types),bif_bs.paths))==2
 else
