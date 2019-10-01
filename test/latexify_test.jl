@@ -32,8 +32,6 @@ r = @reaction_network begin
 end v1 K1 n1 v2 K2 n2 v3 K3 n3 v4 K4 n4 v5 K5 n5 k1 k2 k3 k4 k5 k6 d1 d2 d3 d4 d5
 
 
-
-
 @test latexify(r; noise=true, cdot=false) == 
 raw"\begin{align}
 \mathrm{dX1}\left( t \right) =& \left( \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}} \frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} + k1 X2 - \frac{k2}{2} X1 X4^{2} - \frac{k5}{6} X5^{3} X1 + k6 X2 - d1 X1 \right) dt + \sqrt{\left\|\frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}} \frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}}\right\|} \mathrm{dW_1}\left( t \right) + \sqrt{\left\|k1 X2\right\|} \mathrm{dW_6}\left( t \right) - \sqrt{\left\|\frac{k2}{2} X1 X4^{2}\right\|} \mathrm{dW_7}\left( t \right) - \sqrt{\left\|\frac{k5}{6} X5^{3} X1\right\|} \mathrm{dW_10}\left( t \right) + \sqrt{\left\|k6 X2\right\|} \mathrm{dW_11}\left( t \right) - \sqrt{\left\|d1 X1\right\|} \mathrm{dW_12}\left( t \right) \\
@@ -83,10 +81,20 @@ raw"\begin{align}
 \end{align}
 "
 
+
 @test latexify(r; bracket=true) == 
 raw"\begin{align}
-\mathrm{\mathrm{d}\left[A\right]}\left( t \right) =& \frac{p_{a} \cdot \left[ B \right]^{n}}{k^{n} + \left[ B \right]^{n}} - d_{a} \cdot \left[ A \right] + \frac{r_{a}}{6} \cdot \left[ B \right]^{3} - r_{b} \cdot \left[ A \right] \\
-\mathrm{\mathrm{d}\left[B\right]}\left( t \right) =& p_{b} - d_{b} \cdot \left[ B \right] -3 \cdot \frac{r_{a}}{6} \cdot \left[ B \right]^{3} + 3 \cdot r_{b} \cdot \left[ A \right]
+\frac{d\left[ A \right](t)}{dt} =& \frac{p_{a} \cdot \left[ B \right]^{n}}{k^{n} + \left[ B \right]^{n}} - d_{a} \cdot \left[ A \right] + \frac{r_{a}}{6} \cdot \left[ B \right]^{3} - r_{b} \cdot \left[ A \right] \\
+\frac{d\left[ B \right](t)}{dt} =& p_{b} - d_{b} \cdot \left[ B \right] -3 \cdot \frac{r_{a}}{6} \cdot \left[ B \right]^{3} + 3 \cdot r_{b} \cdot \left[ A \right]
 \end{align}
 "
+
+
+@test latexify(r; bracket=false) == 
+raw"\begin{align}
+\frac{dA(t)}{dt} =& \frac{p_{a} \cdot B^{n}}{k^{n} + B^{n}} - d_{a} \cdot A + \frac{r_{a}}{6} \cdot B^{3} - r_{b} \cdot A \\
+\frac{dB(t)}{dt} =& p_{b} - d_{b} \cdot B -3 \cdot \frac{r_{a}}{6} \cdot B^{3} + 3 \cdot r_{b} \cdot A
+\end{align}
+"
+
 
