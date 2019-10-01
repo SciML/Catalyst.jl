@@ -3,7 +3,7 @@ module DiffEqBiological
 using DataStructures, MacroTools, Parameters, Reexport, SparseArrays, SymEngine
 using DiffEqBase, DiffEqJump, Compat
 @reexport using DiffEqBase, DiffEqJump
-using DynamicPolynomials, LinearAlgebra, RecipesBase
+using DynamicPolynomials, LinearAlgebra, RecipesBase, Latexify
 
 import HomotopyContinuation
 
@@ -19,6 +19,7 @@ include("massaction_jump_utils.jl")
 include("problem.jl")
 include("equilibrate_utils.jl")
 include("plot_recipes.jl")
+include("latexify_recipes.jl")
 
 # reaction network macro
 export @reaction_network, @reaction_func, @min_reaction_network, @empty_reaction_network
