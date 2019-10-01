@@ -70,7 +70,7 @@ ss_cc = steady_states(cc_network,cc_p)
 stabs_cc = stability(ss_σ,σ_network,σ_p)
 @test(sum(stabs_cc.==true)==2)
 bif_cc = bifurcations(cc_network,cc_p,:m,(.01,.65))
-if VERSION>=VersionNumber("1.1")
+if VERSION>= v"1.1"
     @test length(bif_cc.paths) == 3
 else
     @warn "Some test for bifurcation diagram path numbers are disabled for Julia 1.0 versions. Bifurcation diagrams might contain slight errors for tehse versions."
