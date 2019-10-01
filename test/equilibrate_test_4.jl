@@ -27,7 +27,11 @@ brusselator_p = [1.,4.]
 @make_hc_template brusselator_network
 @add_hc_template brusselator_network
 bif_brusselator = bifurcations(brusselator_network,brusselator_p,:B,(1.,4.))
-@test length(bif_brusselator.paths) == 1
+if VERSION>=VersionNumber("1.1")
+    @test length(bif_brusselator.paths) == 1
+else
+    @warn "Some test for bifurcation diagram path numbers are disabled for Julia 1.0 versions. Bifurcation diagrams might contain slight errors for tehse versions."
+end
 
 σ_network = @reaction_network begin
     v0 + hill(σ,v,K,n), ∅ → (σ+A)
@@ -44,7 +48,11 @@ ss_σ = steady_states(σ_network,σ_p)
 stabs_σ = stability(ss_σ,σ_network,σ_p)
 @test(sum(stabs_σ.==true)==2)
 bif_σ = bifurcations(σ_network,σ_p,:S,(0.,2.))
-@test length(bif_σ.paths) == 3
+if VERSION>=VersionNumber("1.1")
+    @test length(bif_σ.paths) == 3
+else
+    @warn "Some test for bifurcation diagram path numbers are disabled for Julia 1.0 versions. Bifurcation diagrams might contain slight errors for tehse versions."
+end
 
 cc_network = @reaction_network begin
   k1, 0 --> Y
@@ -62,7 +70,11 @@ ss_cc = steady_states(cc_network,cc_p)
 stabs_cc = stability(ss_σ,σ_network,σ_p)
 @test(sum(stabs_cc.==true)==2)
 bif_cc = bifurcations(cc_network,cc_p,:m,(.01,.65))
-@test length(bif_cc.paths) == 3
+if VERSION>=VersionNumber("1.1")
+    @test length(bif_cc.paths) == 3
+else
+    @warn "Some test for bifurcation diagram path numbers are disabled for Julia 1.0 versions. Bifurcation diagrams might contain slight errors for tehse versions."
+end
 
 bs_network = @reaction_network begin
     d,    (X,Y) → ∅
@@ -71,5 +83,9 @@ bs_network = @reaction_network begin
 end d v1 K1 n1 v2 K2 n2
 bs_p = [0.01, 1. , 30., 3, 1., 30, 3];
 bif_bs = bifurcations(bs_network, bs_p,:v1,(.1,10.))
-@test length(bif_bs.paths) == 3
-@test sum(map(p->median(p.stability_types),bif_bs.paths))==2
+if VERSION>=VersionNumber("1.1")
+    @test length(bif_bs.paths) == 3
+    @test sum(map(p->median(p.stability_types),bif_bs.paths))==2
+else
+    @warn "Some test for bifurcation diagram path numbers are disabled for Julia 1.0 versions. Bifurcation diagrams might contain slight errors for tehse versions."
+end
