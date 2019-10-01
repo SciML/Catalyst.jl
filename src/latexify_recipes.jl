@@ -2,9 +2,7 @@
 
     env --> :align
 
-    lhs = [Meta.parse("d$x(t)") for x in r.syms]
 
-    rhs = r.f_func
 
     if noise || noise_only
         noise_matrix = reshape(r.g_func, length(r.syms), :)
@@ -24,14 +22,18 @@
         noise_rhs = expr_arr
     end
 
-    if noise
-        rhs = Expr.(:call, :+, Expr.(:call, :*, rhs, :dt), noise_rhs)
-    end
-
     if noise_only
+        lhs = [Meta.parse("d$x(t)") for x in r.syms]
         rhs = noise_rhs
         separator --> " ∝& "
+    elseif noise
+        rhs = Expr.(:call, :+, Expr.(:call, :*, r.f_func, :dt), noise_rhs)
+        lhs = [Meta.parse("d$x(t)") for x in r.syms]
+    else
+        rhs = r.f_func
+        lhs = [Meta.parse("d$x(t)/dt") for x in r.syms]
     end
+
 
     if bracket
         rhs = Latexify.add_brackets(rhs, r.syms)
