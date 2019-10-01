@@ -2,7 +2,7 @@
 
     env --> :align
 
-    lhs = [Meta.parse("d$x/dt") for x in r.syms]
+    lhs = [Meta.parse("d$x(t)") for x in r.syms]
 
     if symbolic
         rhs = r.f_symfuncs
@@ -13,7 +13,7 @@
     if noise || noise_only
         noise_matrix = reshape(r.g_func, length(r.syms), :)
 
-        w = [Symbol("$(noise_var)_$i") for _ in 1:size(noise_matrix, 1), i in 1:size(noise_matrix,2)]
+        w = [Symbol("d$(noise_var)_$(i)(t)") for _ in 1:size(noise_matrix, 1), i in 1:size(noise_matrix,2)]
         noise_matrix = Expr.(:call, :*, noise_matrix, w)
 
         expr_arr = Meta.parse.(
@@ -33,7 +33,7 @@
     end
 
     if noise
-        rhs = Expr.(:call, :+, rhs, noise_rhs)
+        rhs = Expr.(:call, :+, Expr.(:call, :*, rhs, :dt), noise_rhs)
     end
 
     if noise_only
@@ -42,7 +42,7 @@
 
     if bracket
         rhs = Latexify.add_brackets(rhs, r.syms)
-        lhs = [:(d[$x]/dt) for x in r.syms]
+        lhs = [Meta.parse("d[$x](t)") for x in r.syms]
     end
 
     return lhs, rhs
