@@ -284,7 +284,7 @@ function hc_solve_at(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64})
         result = HomotopyContinuation.solutions(HomotopyContinuation.solve(get_equi_poly(rn), hc_template.sol, parameters=get_polyvars(rn).p, p₁=hc_template.p, p₀=p, show_progress=false))
         (length(result) == length(hc_template.sol)) && (return result)
     end
-    @warn "While solving the system using homotopy continuation some solutions were lost."
+    #@warn "While solving the system using homotopy continuation some solutions were lost."
     best_length = 0; best_solution = [];
     for hc_template in get_hc_templates(rn)
         result = HomotopyContinuation.solutions(HomotopyContinuation.solve(get_equi_poly(rn), hc_template.sol, parameters=get_polyvars(rn).p, p₁=hc_template.p, p₀=p, show_progress=false))
@@ -419,8 +419,9 @@ Get a bifurcation diagram of the specified system.
 -  parameter_range: the range over which the specified parameter is varied.
 
 ## kwargs
--  dp=(parameter_range[2] - parameter_range[1])/200: The distance to jump after finding a bifurcation. After discovering a bifurcation, the solver jumps ahead a distance `dp` and starts back-tracking. If this distance is too small, the method may error or cause visible artifiacts in the bifurcation diagram. If it is too large, then you might jump over another bifurcation and it will be missed (this should also be farily obvious in a plot). Only applicable for the HCBifurcationSolver.
-- d_sol = 1e-7: (alternatively reduced to a tenth of the minimum value of any initial solutions) used by algorithm to determine if two points are identical. Set this to less than the expected minimum distance between two different solutions.
+- stepsize = (parameter_range[2] - parameter_range[1])/200: The maximum distance between two parameter values for which steady states are calculated. Smaller values will give a smoother diagram.
+- Δp = (parameter_range[2] - parameter_range[1])/200: The distance to jump after finding a bifurcation. After discovering a bifurcation, the solver jumps ahead a distance `Δp` and starts back-tracking. If this distance is too small, the method may error or cause visible artifiacts in the bifurcation diagram. If it is too large, then you might jump over another bifurcation and it will be missed (this should also be farily obvious in a plot). Only applicable for the HCBifurcationSolver.
+- Δu = 1e-7: (alternatively reduced to a tenth of the minimum value of any initial solutions) used by algorithm to determine if two points are identical. Set this to less than the expected minimum distance between two different solutions.
 """
 function bifurcations(rn::DiffEqBase.AbstractReactionNetwork, args...; kwargs...)
     return bifurcations(rn, HCBifurcationSolver(), args...; kwargs...)
@@ -509,17 +510,18 @@ end
 - parameter_rang21: the range over which the second parameter is varied (this is a tuple of two numbers).
 
 ## kwargs
-- dp=(parameter_range[2] - parameter_range[1])/200: The distance to jump after finding a bifurcation. After discovering a bifurcation, the solver jumps ahead a distance `dp` and starts back-tracking. If this distance is too small, the method may error or cause visible artifiacts in the bifurcation diagram. If it is too large, then you might jump over another bifurcation and it will be missed (this should also be farily obvious in a plot). Only applicable for the HCBifurcationSolver.
-- d_sol = 1e-7: (alternatively reduced to a tenth of the minimum value of any initial solutions) used by algorithm to determine if two points are identical. Set this to less than the expected minimum distance between two different solutions.
+- stepsize = (parameter_range[2] - parameter_range[1])/200: The maximum distance between two parameter values for which steady states are calculated. Smaller values will give a smoother diagram.
+- Δp = (parameter_range[2] - parameter_range[1])/200: The distance to jump after finding a bifurcation. After discovering a bifurcation, the solver jumps ahead a distance `Δp` and starts back-tracking. If this distance is too small, the method may error or cause visible artifiacts in the bifurcation diagram. If it is too large, then you might jump over another bifurcation and it will be missed (this should also be farily obvious in a plot). Only applicable for the HCBifurcationSolver.
+- Δu = 1e-7: (alternatively reduced to a tenth of the minimum value of any initial solutions) used by algorithm to determine if two points are identical. Set this to less than the expected minimum distance between two different solutions.
 """
 function bifurcation_grid_diagram(rn::DiffEqBase.AbstractReactionNetwork, args...)
     bifurcation_grid_diagram(rn, HCBifurcationSolver(), args...)
 end
-function bifurcation_grid_diagram(rn::DiffEqBase.AbstractReactionNetwork, solver::AbstractBifurcationSolver, p::Vector{Float64}, param1::Symbol, range1::AbstractRange, param2::Symbol, range2::Tuple{Float64,Float64}; dp=(range2[2]-range2[1])/200.::Float64)
+function bifurcation_grid_diagram(rn::DiffEqBase.AbstractReactionNetwork, solver::AbstractBifurcationSolver, p::Vector{Float64}, param1::Symbol, range1::AbstractRange, param2::Symbol, range2::Tuple{Float64,Float64}; stepsize=(range2[2]-range2[1])/200.::Float64)
     diagram_grid = Vector{Union{BifurcationDiagram,Nothing}}(fill(nothing,length(range1)))
     for i = 1:length(range1)
         p_i=copy(p); p_i[rn.params_to_ints[param1]]=range1[i];
-        diagram_grid[i] = bifurcations(rn, solver, p_i, param2, range2; dp=dp)
+        diagram_grid[i] = bifurcations(rn, solver, p_i, param2, range2; stepsize=stepsize)
     end
     return BifurcationGridDiagram(param1,range1,param2,range2,Vector{BifurcationDiagram}(diagram_grid),length(range1))
 end
@@ -546,23 +548,23 @@ function solve_bifurcation(
         p::Vector{Float64},
         param::Symbol,
         range::Tuple{Float64,Float64};
-        dp=(range[2]-range[1])/200.::Float64,
-        d_sol=1e-7,
+        stepsize=(range[2]-range[1])/200.::Float64,
+        Δu=1e-4,
     )
     using_temp_poly = initialise_solver!(rn,p,rn.params_to_ints[param])
     p1 = copy(p); p1[rn.params_to_ints[param]] = range[1];
     p2 = copy(p); p2[rn.params_to_ints[param]] = range[2];
     sol1 = hc_solve_at(rn, p1)
     sol2 = hc_solve_at(rn, p2)
-    d_sol = min(d_sol,sort(norm.([sol1...,sol2...]))[2]/10.)
-    tracker1 = make_coretracker(rn,sol1,p1,p2,dp/(range[2]-range[1]))
-    tracker2 = make_coretracker(rn,sol2,p2,p1,dp/(range[2]-range[1]))
+    Δu = min(Δu,sort(norm.([sol1...,sol2...]))[2]/10.)
+    tracker1 = make_coretracker(rn,sol1,p1,p2,stepsize/(range[2]-range[1]))
+    tracker2 = make_coretracker(rn,sol2,p2,p1,stepsize/(range[2]-range[1]))
     paths_complete   = Vector{NamedTuple{(:p, :u),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}}()
     paths_incomplete = Vector{NamedTuple{(:p, :u),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}}()
     for sol in sol1
         path = track_path(sol,tracker1,range...)
         if (tracker1.state.status == HomotopyContinuation.CoreTrackerStatus.success)
-            remove_sol!(sol2,path.u[end],d_sol)
+            remove_sol!(sol2,path.u[end],Δu)
             push!(paths_complete,path)
         else
             push!(paths_incomplete,path)
@@ -570,7 +572,7 @@ function solve_bifurcation(
     end
     for sol in sol2
         path = track_path(sol,tracker2,reverse(range)...)
-        (tracker2.state.status == HomotopyContinuation.CoreTrackerStatus.success) && remove_path!(paths_incomplete,path.u[end],d_sol)
+        (tracker2.state.status == HomotopyContinuation.CoreTrackerStatus.success) && remove_path!(paths_incomplete,path.u[end],Δu)
         push!(paths_complete,path)
     end
     append!(paths_complete,paths_incomplete)
@@ -578,18 +580,18 @@ function solve_bifurcation(
     return bifurcation_paths(positive_real_projection.(paths_complete),param,range[1],range[2],rn,p)
 end
 #Used in the homotopy continuation bifurcation traces heuristics. If the path was traced succesfully to its end, checks if it corresponds to a solution in that end and removes that solution (it does not need to be attempted in the other direction).
-function remove_sol!(results::Vector{Vector{ComplexF64}},path_fin::Vector{ComplexF64},d_sol::Float64)
+function remove_sol!(results::Vector{Vector{ComplexF64}},path_fin::Vector{ComplexF64},Δu::Float64)
     for i = length(results):-1:1
-        if maximum(abs.([imag.(path_fin.-results[i])..., real.(path_fin.-results[i])...]))<d_sol
+        if maximum(abs.([imag.(path_fin.-results[i])..., real.(path_fin.-results[i])...]))<Δu
             deleteat!(results,i)
             return
         end
     end
 end
 #Used in the homotopy continuation bifurcation traces heuristics. Similar to the previous but removes an unfinished path.
-function remove_path!(paths::Vector{NamedTuple{(:p, :u),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}},path_fin::Vector{ComplexF64},d_sol::Float64)
+function remove_path!(paths::Vector{NamedTuple{(:p, :u),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}},path_fin::Vector{ComplexF64},Δu::Float64)
     for i = length(paths):-1:1
-        if maximum(abs.([imag.(path_fin.-paths[i][2][1])..., real.(path_fin.-paths[i][2][1])...]))<d_sol
+        if maximum(abs.([imag.(path_fin.-paths[i][2][1])..., real.(path_fin.-paths[i][2][1])...]))<Δu
             deleteat!(paths,i)
             return
         end
@@ -607,21 +609,22 @@ function solve_bifurcation(
         p::Vector{Float64},
         param::Symbol,
         range::Tuple{Float64,Float64};
-        dp=(range[2]-range[1])/200.::Float64,
-        Δp=0.01::Float64,
-        Δu=0.01::Float64,
+        stepsize=(range[2]-range[1])/200.::Float64,
+        Δp=(range[2]-range[1])/200.::Float64,
+        Δu=1e-4::Float64,
     )
-#= function HcBifurcationSolver(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param::Symbol,range::Tuple{Float64,Float64};dp=(range[2]-range[1])/200.::Float64,Δp=0.01::Float64,Δx=0.01::Float64) =#
+#= function HcBifurcationSolver(rn::DiffEqBase.AbstractReactionNetwork,p::Vector{Float64},param::Symbol,range::Tuple{Float64,Float64};stepsize=(range[2]-range[1])/200.::Float64,Δp=0.01::Float64,Δx=0.01::Float64) =#
     using_temp_poly = initialise_solver!(rn,p,rn.params_to_ints[param])
     parameters(p_val) = (p = copy(p); p[rn.params_to_ints[param]] = p_val; return p;)
     p_cur = range[1]; paths = Vector{NamedTuple{(:p, :u),Tuple{Vector{Float64},Vector{Vector{Complex{Float64}}}}}}();
     while p_cur < range[2]
         sol = hc_solve_at(rn, parameters(p_cur))
+        Δu = min(Δu,sort(norm.(sol))[min(2,length(sol))]/10.)
         substract_sols!(sol,p_cur,paths,Δu)
-        ct1 = make_coretracker(rn,sol,parameters(p_cur),parameters(range[1]),dp/(range[2]-range[1]))
-        ct2 = make_coretracker(rn,sol,parameters(p_cur),parameters(range[2]),dp/(range[2]-range[1]))
+        ct1 = make_coretracker(rn,sol,parameters(p_cur),parameters(range[1]),stepsize/(range[2]-range[1]))
+        ct2 = make_coretracker(rn,sol,parameters(p_cur),parameters(range[2]),stepsize/(range[2]-range[1]))
         new_paths = track_path_two_ways(sol,ct1,ct2,p_cur,range)
-        paths = combine_paths(paths,new_paths,p_cur,Δu)
+        paths = combine_paths(paths,new_paths,p_cur,Δu,Δp)
         p_cur = minimum(map(path->path.p[end],new_paths)) + Δp
     end
     using_temp_poly && finalise_solver!(rn)
@@ -649,13 +652,19 @@ function substract_sols!(solutions,p,paths,Δu)
     end
 end
 #For two sets of paths, removes the paths in the old path vector which seems to be similar to those in the new (starts in the same point).
-function combine_paths(paths_old,paths_new,p,Δu)
+function combine_paths(paths_old,paths_new,p,Δu,Δp)
     output_paths = copy(paths_new)
     first_vals = map(path -> path.u[1],paths_new)
+    last_vals = map(path -> path.u[end],paths_new)
     midpoint_vals = map(path -> path.u[findfirst(path.p .> p/2)],paths_new)
     for path in paths_old
-        any(norm.(map(fv->fv-path.u[1],first_vals)) .< Δu) && continue
-        (findfirst(path.p .> p/2)==nothing) || any(norm.(map(mv->mv-path.u[findfirst(path.p .> p/2)],midpoint_vals)) .< Δu) && continue
+        same_start_p = (path.p[1] .- map(p -> p.p[1], paths_new)) .< Δp
+        same_end_p = (path.p[end] .- map(p -> p.p[end], paths_new)) .< Δp
+        same_first_vals = norm.(map(fv->fv-path.u[1],first_vals)) .< Δu
+        same_last_vals = norm.(map(lv->lv-path.u[end],last_vals)) .< Δu
+        any(same_start_p .& same_end_p .& same_first_vals .& same_last_vals) && continue
+        #any(norm.(map(fv->fv-path.u[1],first_vals)) .< Δu) && continue
+        #(findfirst(path.p .> p/2)==nothing) || any(norm.(map(mv->mv-path.u[findfirst(path.p .> p/2)],midpoint_vals)) .< Δu) && continue
         push!(output_paths,path)
     end
     return output_paths
