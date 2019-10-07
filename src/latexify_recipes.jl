@@ -4,9 +4,17 @@
     noise=false,
     noise_only=false,
     noise_var=:W,
+    env=:align,
 )
 
-    env --> :align
+    env := env
+    ## DiffEqBio's chemical arrow notation support is not yet migrated outside 
+    ## of Latexify.jl. If used, simply pass the reaction network object on and 
+    ## set the appropriate kwargs.
+    if env in [:arrows, :chem, :chemical, :arrow] 
+        bracket := bracket
+        return r
+    end
 
     ### Get the noise terms.
     if noise || noise_only
