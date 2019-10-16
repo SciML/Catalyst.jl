@@ -1,6 +1,6 @@
 name = "DiffEqBiological"
 uuid = "eb300fae-53e8-50a0-950c-e21f52c2b7e0"
-version = "4.0.1"
+version = "4.0.2"
 
 [deps]
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
@@ -22,7 +22,7 @@ SymEngine = "123dc426-2d89-5057-bbad-38513e3affd8"
 DiffEqBase = "6"
 DiffEqJump = "6"
 julia = "1"
-Latexify = "0.11.0, 2"
+Latexify = ">= 0.11"
 
 [extras]
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
