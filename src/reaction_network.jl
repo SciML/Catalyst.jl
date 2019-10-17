@@ -250,7 +250,7 @@ end
 #Structure containing information about one reactant in one reaction.
 struct ReactantStruct
     reactant::Symbol
-    stoichiometry::Int
+    stoichiometry::Float64
 end
 
 #Structure containing information about one Reaction. Contain all its substrates and products as well as its rate. Contains an specialized constructor.
@@ -276,8 +276,24 @@ struct ReactionStruct
         prod = add_reactants!(prod_line,1,Vector{ReactantStruct}(undef,0))
         ns = netstoich(sub, prod)
 
+        # check if stoichiometric constants are true Floats or Integers in disguise.
+        # substrates do not support decimal coefficients due to the ambiguity in
+        # definition for the reaction rates. but production should not be a problem
+        # caveat: mass kinetics are disabled if this route is proceeded
+        # we verify the constants based on ns ReactantStructs
+        if count(rs -> rs.stoichiometry > 0 && !isinteger(rs.stoichiometry), ns) > 0
+            use_mass_kin = false
+        end
+
+        if count(rs -> rs.stoichiometry < 0 && !isinteger(rs.stoichiometry), ns) > 0
+            # fail: we do not support true "Float64" in stoichiometric coeffs
+            # in reactants
+            error("decimal coefficients are not supported for coefficients in reactants")
+        end
+
         rate_DE = isempty(sub) ? rate : mass_rate_DE(sub, use_mass_kin, rate)
         rate_SSA =  isempty(sub) ? rate : mass_rate_SSA(sub, use_mass_kin, rate)
+
         new(sub, prod, ns, rate, rate_DE, rate_SSA, [], use_mass_kin)
     end
     function ReactionStruct(r::ReactionStruct, syms::Vector{Symbol})
@@ -289,7 +305,7 @@ end
 
 # calculates the net stoichiometry of a reaction
 function netstoich(substrates::Vector{ReactantStruct}, products::Vector{ReactantStruct})
-    nsdict = Dict{Symbol,Int}(s.reactant => -s.stoichiometry for s in substrates)
+    nsdict = Dict{Symbol,Float64}(s.reactant => -s.stoichiometry for s in substrates)
 
     for prod in products
         rsym = prod.reactant
@@ -337,7 +353,7 @@ function push_reactions(reactions::Vector{ReactionStruct}, sub_line::ExprValues,
 end
 
 #Recursive function that loops through the reactants in an reaction line and finds the reactants and their stoichiometry. Recursion makes it able to handle e.g. 2(X+Y+3(Z+XY)) (probably one will not need it though).
-function add_reactants!(ex::ExprValues, mult::Int, reactants::Vector{ReactantStruct})
+function add_reactants!(ex::ExprValues, mult::Float64, reactants::Vector{ReactantStruct})
     if typeof(ex)!=Expr
         (ex == 0 || in(ex,empty_set)) && (return reactants)
         if in(ex, getfield.(reactants,:reactant))
@@ -356,6 +372,10 @@ function add_reactants!(ex::ExprValues, mult::Int, reactants::Vector{ReactantStr
         throw("malformed reaction")
     end
     return reactants
+end
+
+function add_reactants!(ex::ExprValues, mult::Int, reactants::Vector{ReactantStruct})
+    return add_reactants!(ex,convert(Float64,mult),reactants)
 end
 
 #For each reaction, sets its dependencies and whenever it is a pure mass action reaction.
@@ -561,7 +581,7 @@ function jac_as_exprvalues!(jacexprs, reactions, reactants)
         if rx.is_pure_mass_action
             for sub in rx.substrates
                 spec  = sub.reactant
-                scoef = sub.stoichiometry
+                scoef = trunc(Int, sub.stoichiometry)
                 @inbounds j = reactants[spec]
 
                 # derivative with respect to this species
