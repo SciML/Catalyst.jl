@@ -279,12 +279,6 @@ struct ReactionStruct
         # check if stoichiometric constants are true Floats or Integers in disguise.
         # substrates do not support decimal coefficients due to the ambiguity in
         # definition for the reaction rates. but production should not be a problem
-        # caveat: mass kinetics are disabled if this route is proceeded
-        # we verify the constants based on ns ReactantStructs
-        if count(rs -> rs.stoichiometry > 0 && !isinteger(rs.stoichiometry), ns) > 0
-            use_mass_kin = false
-        end
-
         if count(rs -> rs.stoichiometry < 0 && !isinteger(rs.stoichiometry), ns) > 0
             # fail: we do not support true "Float64" in stoichiometric coeffs
             # in reactants
