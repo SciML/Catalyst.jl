@@ -54,7 +54,7 @@ Example systems:
 Generates a subtype of an `AbstractReactionNetwork` that encodes a chemical
 reaction network, and complete ODE, SDE and jump representations of the system.
 See the [Chemical Reaction Model
-docs](http://docs.juliadiffeq.org/latest/models/biological.html) for details on
+docs](http://docs.juliadiffeq.org/dev/models/biological.html) for details on
 parameters to the macro.
 """
 macro reaction_network(name, ex::Expr, p...)
