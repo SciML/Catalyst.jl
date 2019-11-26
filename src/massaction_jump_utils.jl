@@ -20,14 +20,14 @@ function make_majump(rs, specmap, ratemap, params, param_context)
         error("reaction_network.reactions.rate_org must have a type of Symbol, Expr, or Number.")
     end
 
-    MassActionJump(Float64(rateconst), reactant_stoich, net_stoich)
+    MassActionJump(float(rateconst), reactant_stoich, net_stoich)
 end
 
 # given a reaction network and species map, split the ConstantRateJumps and MassActionJumps
 function network_to_jumpset(rn, params)
     jumps        = rn.jumps
     empty_majump = MassActionJump(0.0, [0=>1], [1=>1])
-    majumpvec    = Vector{typeof(empty_majump)}()
+    majumpvec    = Vector{Any}()
     cjumpvec     = Vector{ConstantRateJump}()
     specmap      = speciesmap(rn)
     ratemap      = paramsmap(rn)
@@ -41,7 +41,7 @@ function network_to_jumpset(rn, params)
 
     # check if a (non-mass action) jump is defined for all reactions:
     alljumps = (length(rn.reactions) == length(jumps))
-    
+
     idx = 1
     for rs in rn.reactions
         if rs.is_pure_mass_action
@@ -53,10 +53,13 @@ function network_to_jumpset(rn, params)
         end
     end
 
-    if isempty(majumpvec)
+    # Concretize
+    _majumpvec = map(i->majumpvec[i],1:length(majumpvec))
+
+    if isempty(_majumpvec)
         return JumpSet((), cjumpvec, nothing, nothing)
     else
-        return JumpSet((), cjumpvec, nothing, majumpvec)
+        return JumpSet((), cjumpvec, nothing, _majumpvec)
     end
 end
 
