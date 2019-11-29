@@ -39,9 +39,9 @@
         end
     else
         if bracket
-            lhs = [Latexify.LaTeXString("\\frac{d\\left[ $x \\right](t)}{dt}") for x in r.syms]
+            lhs = [Latexify.LaTeXString("\\frac{d\\left[ $(Latexify.latexify(x; env=:raw)) \\right](t)}{dt}") for x in r.syms]
         else
-            lhs = [Latexify.LaTeXString("\\frac{d$x(t)}{dt}") for x in r.syms]
+            lhs = [Latexify.LaTeXString("\\frac{d$(Latexify.latexify(x; env=:raw))(t)}{dt}") for x in r.syms]
         end
     end
 
