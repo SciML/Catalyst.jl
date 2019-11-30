@@ -1,3 +1,5 @@
+using DiffEqBiological, Test
+
 dotestmean   = true
 doprintmeans = false
 reltol       = .01          # required test accuracy

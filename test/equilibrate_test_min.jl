@@ -1,3 +1,5 @@
+using DiffEqBiological, Test
+
 #Tests steady state finders for minimal reaction network.
 for rn in min_reaction_networks_standard
     addequi1!(rn)

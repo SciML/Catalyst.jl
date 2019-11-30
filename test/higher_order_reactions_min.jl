@@ -1,3 +1,5 @@
+using DiffEqBiological, Test
+
 function tmp_sol2vec(sol,j)
     vect = Vector{Float64}(undef,length(sol.u))
     for i = 1:length(sol.u)

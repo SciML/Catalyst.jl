@@ -1,3 +1,5 @@
+using DiffEqBiological, Test
+
 function testnetwork(rn, rn2)
     rxids = 1:numreactions(rn)
     rxids2 = 1:numreactions(rn2)
@@ -38,7 +40,7 @@ addreaction!(rmin, :((δ,γ)), :(m₃ ↔ ∅) )
 addreaction!(rmin, :β, :(m₁ --> m₁ + P₁) )
 addreaction!(rmin, 10., :(m₃ --> m₃ + P₃) )
 addreaction!(rmin, 2, :(P₁ --> ∅) )
-addreaction!(rmin, :(β*P₂), :(2m₁ + 3P₁ --> P₂) )  
+addreaction!(rmin, :(β*P₂), :(2m₁ + 3P₁ --> P₂) )
 testnetwork(rmin, repressilator)
 
 # empty network stoichiometry interface
@@ -54,7 +56,7 @@ addreaction!(rmin, :γ, (), (:m₃ => 1,))
 addreaction!(rmin, :β, (:m₁=>1,), (:m₁=>1, :P₁=>1) )
 addreaction!(rmin, 10., (:m₃=>1,), (:m₃=>1, :P₃=>1) )
 addreaction!(rmin, 2, (:P₁=>1,),() )
-addreaction!(rmin, :(β*P₂), (:m₁=>2,:P₁=>3), (:P₂=>1,) )  
+addreaction!(rmin, :(β*P₂), (:m₁=>2,:P₁=>3), (:P₂=>1,) )
 testnetwork(rmin, repressilator)
 
 
@@ -70,7 +72,7 @@ end α K n δ γ β;
 foreach(param -> addparam!(rmin2, param), params(repressilator))
 foreach(spec -> addspecies!(rmin2, spec), species(repressilator))
 addreaction!(rmin2, 2, :(P₁ --> ∅) )
-addreaction!(rmin2, :(β*P₂), :(2m₁ + 3P₁ --> P₂) )  
+addreaction!(rmin2, :(β*P₂), :(2m₁ + 3P₁ --> P₂) )
 testnetwork(rmin2, repressilator)
 
 # partial min_reaction_network, stoichiometry interface
@@ -85,7 +87,7 @@ end α K n δ γ β;
 foreach(param -> addparam!(rmin2, param), params(repressilator))
 foreach(spec -> addspecies!(rmin2, spec), species(repressilator))
 addreaction!(rmin2, 2, (:P₁=>1,), ())
-addreaction!(rmin2, :(β*P₂), (:m₁=>2,:P₁=>3), (:P₂=>1,) )  
+addreaction!(rmin2, :(β*P₂), (:m₁=>2,:P₁=>3), (:P₂=>1,) )
 testnetwork(rmin2, repressilator)
 
 

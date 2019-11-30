@@ -1,46 +1,51 @@
-using Test, Statistics, Random, LinearAlgebra, SparseArrays, Plots
-using DiffEqBiological, DiffEqBase
-using OrdinaryDiffEq, StochasticDiffEq, DiffEqJump, SteadyStateDiffEq
+using SafeTestsets
 
-# fetches a set of networks which can be used for tests.
-include("test_networks.jl")
+const GROUP = get(ENV, "GROUP", "All")
+const is_APPVEYOR = Sys.iswindows() && haskey(ENV,"APPVEYOR")
+const is_TRAVIS = haskey(ENV,"TRAVIS")
 
 # full macro tests
 @time begin
-  @time @testset "Model Macro" begin include("make_model_test.jl") end
-  @time @testset "Gillespie Tests" begin include("gillespie.jl") end
-  @time @testset "Test Solvers" begin include("solver_test.jl") end
-  @time @testset "Higher Order" begin include("higher_order_reactions.jl") end
-  @time @testset "Additional Functions" begin include("func_test.jl") end
-  @time @testset "Steady State Solver" begin include("steady_state.jl") end
-  @time @testset "Mass Action Jumps" begin include("mass_act_jump_tests.jl") end
-  @time @testset "Equilibrate (1)" begin include("equilibrate_test_1.jl") end
-  @time @testset "Equilibrate (2)" begin include("equilibrate_test_2.jl") end
-  @time @testset "Equilibrate (3)" begin include("equilibrate_test_3.jl") end
-  @time @testset "Equilibrate (4)" begin include("equilibrate_test_4.jl") end
-  @time @testset "Other Tests" begin include("misc_tests.jl") end
-  @time @testset "Network query tests" begin include("networkquery_test.jl") end
+
+if GROUP == "All" || GROUP == "Core"
+  @time @safetestset "Model Macro" begin include("make_model_test.jl") end
+  @time @safetestset "Gillespie Tests" begin include("gillespie.jl") end
+  @time @safetestset "Test Solvers" begin include("solver_test.jl") end
+  @time @safetestset "Higher Order" begin include("higher_order_reactions.jl") end
+  @time @safetestset "Additional Functions" begin include("func_test.jl") end
+  @time @safetestset "Steady State Solver" begin include("steady_state.jl") end
+  @time @safetestset "Mass Action Jumps" begin include("mass_act_jump_tests.jl") end
+  @time @safetestset "Other Tests" begin include("misc_tests.jl") end
+  @time @safetestset "Network query tests" begin include("networkquery_test.jl") end
+end
+
+if !is_APPVEYOR && (GROUP == "All" || GROUP == "EquibrilateI")
+  @time @safetestset "Equilibrate (1)" begin include("equilibrate_test_1.jl") end
+  @time @safetestset "Equilibrate (2)" begin include("equilibrate_test_2.jl") end
+end
+
+if !is_APPVEYOR && (GROUP == "All" || GROUP == "EquibrilateII")
+  @time @safetestset "Equilibrate (3)" begin include("equilibrate_test_3.jl") end
+  @time @safetestset "Equilibrate (4)" begin include("equilibrate_test_4.jl") end
 end
 
 # min macro tests
-@time begin
-  @time @testset "Model Macro (Min)" begin include("make_model_test_min.jl") end
-  @time @testset "Gillespie Tests (Min)" begin include("gillespie_min.jl") end
-  @time @testset "Test Solvers (Min)" begin include("solver_test_min.jl") end
-  @time @testset "Higher Order (Min)" begin include("higher_order_reactions_min.jl") end
-  @time @testset "Additional Functions (Min)" begin include("func_test_min.jl") end
-  @time @testset "Steady State Solver (Min)" begin include("steady_state_min.jl") end
-  @time @testset "Equilibrate (Min)" begin include("equilibrate_test_min.jl") end
-  @time @testset "Mass Action Jumps (Min)" begin include("mass_act_jump_tests_min.jl") end
+if !is_APPVEYOR && (GROUP == "All" || GROUP == "Min")
+  @time @safetestset "Model Macro (Min)" begin include("make_model_test_min.jl") end
+  @time @safetestset "Gillespie Tests (Min)" begin include("gillespie_min.jl") end
+  @time @safetestset "Test Solvers (Min)" begin include("solver_test_min.jl") end
+  @time @safetestset "Higher Order (Min)" begin include("higher_order_reactions_min.jl") end
+  @time @safetestset "Additional Functions (Min)" begin include("func_test_min.jl") end
+  @time @safetestset "Steady State Solver (Min)" begin include("steady_state_min.jl") end
+  @time @safetestset "Equilibrate (Min)" begin include("equilibrate_test_min.jl") end
+  @time @safetestset "Mass Action Jumps (Min)" begin include("mass_act_jump_tests_min.jl") end
 end
 
 # tests that handle both macros
-@time begin
-  @time @testset "Discrete Problem" begin include("discreteproblem_test.jl") end
-  @time @testset "Add Reactions API" begin include("addreactions_test.jl") end
+if GROUP == "All" || GROUP == "Misc"
+  @time @safetestset "Discrete Problem" begin include("discreteproblem_test.jl") end
+  @time @safetestset "Add Reactions API" begin include("addreactions_test.jl") end
+  @time @safetestset "Latexify recipe" begin include("latexify_test.jl") end
 end
 
-# Test integration with latexify.
-@time begin
-    @time @testset "Latexify recipe" begin include("latexify_test.jl") end
-end
+end # @time

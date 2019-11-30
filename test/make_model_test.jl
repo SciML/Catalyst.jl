@@ -1,3 +1,5 @@
+using DiffEqBiological, Test
+
 network1 = @reaction_network rn begin
     2.0, X + Y --> XY
     1.0, XY ← X + Y
@@ -97,9 +99,9 @@ symengnet = @reaction_network begin
     k2, 2I --> 2E
     k4*E*A, E + A ⇒ 0
 end k1 k2 k4
-realjac = DiffEqBiological.ExprValues[  
+realjac = DiffEqBiological.ExprValues[
     :(-(k1 * E) - 2 * (k2 * I))  :(-(k1 * I))  0
-    :(-(k1 * E) + 2 * (k2 * I))  :(-(k1 * I) - k4 * A)      :(-k4 * E)  
+    :(-(k1 * E) + 2 * (k2 * I))  :(-(k1 * I) - k4 * A)      :(-k4 * E)
     :(2 * (k1 * E))              :(2 * (k1 * I) - k4 * A)   :(-k4 * E)
 ]
 @assert realjac == jacobianexprs(symengnet)

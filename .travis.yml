@@ -10,6 +10,12 @@ julia:
 matrix:
   allow_failures:
     - julia: nightly
+env:
+  - GROUP=Core
+  - GROUP=Min
+  - GROUP=EquibrilateI
+  - GROUP=EquibrilateII
+  - GROUP=Misc
 notifications:
   email: false
 # uncomment the following lines to override the default test script
