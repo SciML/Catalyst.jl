@@ -1,4 +1,4 @@
-using DiffEqBiological, Test
+using DiffEqBiological, SparseArrays, Test
 
 #Tests the jacobian
 network1 = @reaction_network begin
