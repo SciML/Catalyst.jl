@@ -1,4 +1,4 @@
-using DiffEqBiological, OrdinaryDiffEq, Test
+using DiffEqBiological, OrdinaryDiffEq, LinearAlgebra, Test
 
 function testnetwork(rn, rn2)
     rxids = 1:numreactions(rn)
