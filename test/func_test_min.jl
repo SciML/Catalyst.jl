@@ -1,4 +1,4 @@
-using DiffEqBiological, StochasticDiffEq, Test
+using DiffEqBiological, StochasticDiffEq, Statistics, Test
 
 @reaction_func new_hill(x, v, k, n) = v*x^n/(k^n+x^n)
 @reaction_func new_poly(x) = 3x^2+1

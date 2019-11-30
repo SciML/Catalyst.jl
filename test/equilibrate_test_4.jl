@@ -1,4 +1,4 @@
-using DiffEqBiological, Plots, Test
+using DiffEqBiological, Plots, Statistics, Test
 
 cd(@__DIR__)
 include("test_networks.jl")
