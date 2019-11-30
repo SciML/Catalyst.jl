@@ -3,13 +3,22 @@ language: julia
 os:
   - linux
 #  - osx
+# avoid duplicate tests in PRs
+branches:
+  only:
+    - master
 julia:
   - 1
   - 1.3
-  - nightly
 matrix:
   allow_failures:
     - julia: nightly
+env:
+  - GROUP=Core
+  - GROUP=Min
+  - GROUP=EquibrilateI
+  - GROUP=EquibrilateII
+  - GROUP=Misc
 notifications:
   email: false
 # uncomment the following lines to override the default test script

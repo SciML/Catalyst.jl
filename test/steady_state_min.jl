@@ -1,3 +1,5 @@
+using DiffEqBiological, SteadyStateDiffEq, Test
+
 model = @min_reaction_network SSTest begin
     (d_x, d_y), (x, y) --> 0
     mm(y, 2, 1), 0 --> x

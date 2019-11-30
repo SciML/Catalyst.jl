@@ -1,3 +1,5 @@
+using DiffEqBiological
+
 ### File declaring all the various reaction networks the package is tested on ###
 #A large number of reaction networks are added to test as many different cases as possible.
 #More test networks can be added favourably.

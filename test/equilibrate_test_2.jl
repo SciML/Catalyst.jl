@@ -1,3 +1,8 @@
+using DiffEqBiological, OrdinaryDiffEq, Test
+
+cd(@__DIR__)
+include("test_networks.jl")
+
 #Tests on the networks containing hill functions.
 for rn in reaction_networks_hill
     p_vals = map(amp->rand(1:amp,length(rn.params)),[2,3,6])

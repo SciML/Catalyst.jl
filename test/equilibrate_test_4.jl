@@ -1,3 +1,8 @@
+using DiffEqBiological, Plots, Statistics, Test
+
+cd(@__DIR__)
+include("test_networks.jl")
+
 #Tests various bifurcation capabilities.
 for rn in reaction_networks_standard
     p_vals = map(amp->amp*rand(length(rn.params)),[1.,10.,100.])

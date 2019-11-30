@@ -1,3 +1,5 @@
+using DiffEqBiological, SparseArrays, Test
+
 #Tests the jacobian
 network1 = @reaction_network begin
     (2.0,1.0),   ∅ ↔ X
@@ -38,7 +40,7 @@ network4 = @reaction_network begin
     k4, C --> A + B
     k5, 3C --> 3A
     k6, 0 --> 2B
-    hill(A,k7,k8,2), ∅ --> B 
+    hill(A,k7,k8,2), ∅ --> B
 end k1 k2 k3 k4 k5 k6 k7 k8
 p = rand(8)
 u = rand(3)
@@ -53,7 +55,7 @@ end
 function n4Jac(J, u, p, t)
     A = u[1]; B = u[2]; C = u[3];
     k1 = p[1]; k2 = p[2]; k3 = p[3]; k4 = p[4]; k5 = p[5]; k6 = p[6]; k7 = p[7]; k8 = p[8]
-    J[1,1] = -2*k1*A - k3*B 
+    J[1,1] = -2*k1*A - k3*B
     J[1,2] = 2*k2 - k3*A
     J[1,3] = k4 + 3*k5*C^2 / 2
     J[2,1] = k1*A -k3*B + 2*k7*k8^2*A/(k8^2+A^2)^2
@@ -78,7 +80,7 @@ network5 = @min_reaction_network begin
     k4, C --> A + B
     k5, 3C --> 3A
     k6, 0 --> 2B
-    hill(A,k7,k8,2), ∅ --> B 
+    hill(A,k7,k8,2), ∅ --> B
 end k1 k2 k3 k4 k5 k6 k7 k8
 addodes!(network5, sparse_jac=true)
 Js = sparse(ones(3,3))

@@ -1,3 +1,8 @@
+using DiffEqBiological, OrdinaryDiffEq, Test
+
+cd(@__DIR__)
+include("test_networks.jl")
+
 #Tests on the normal reaction networks.
 for rn in reaction_networks_standard
     p_vals = map(amp->amp*rand(length(rn.params)),[1.,10.,100.])
