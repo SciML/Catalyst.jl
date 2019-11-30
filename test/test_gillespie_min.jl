@@ -1,4 +1,4 @@
-using DiffEqBiological, OrdinaryDiffEq, Test
+using DiffEqBiological, OrdinaryDiffEq, Random, Statistics, Test
 #using Plots
 
 sir_model = @min_reaction_network rn begin

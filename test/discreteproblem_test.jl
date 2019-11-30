@@ -1,4 +1,4 @@
-using DiffEqBiological, DiffEqJump, Test
+using DiffEqBiological, DiffEqJump, Statistics, Test
 
 dotestmean   = true
 doprintmeans = false
