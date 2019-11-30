@@ -1,4 +1,4 @@
-using DiffEqBiological, Test
+using DiffEqBiological, DiffEqJump, OrdinaryDiffEq, Test
 
 sir_model = @min_reaction_network rnm begin
     0.1/1000, s + i --> 2i

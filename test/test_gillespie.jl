@@ -1,4 +1,5 @@
-using DiffEqBiological, Test
+using DiffEqBiological, OrdinaryDiffEq, Test
+#using Plots
 
 sir_model = @reaction_network rn begin
     0.1/1000, s + i --> 2i
@@ -9,7 +10,7 @@ sir_jump_prob = JumpProblem(sir_prob,Direct(),sir_model)
 
 sir_sol = solve(sir_jump_prob,FunctionMap())
 
-using Plots; plot(sir_sol)
+#using Plots; plot(sir_sol)
 
 Random.seed!(1234)
 nums = Int[]
@@ -38,7 +39,7 @@ prob = DiscreteProblem([999.0,1.0,0.0],(0.0,250.0))
 jump_prob = JumpProblem(prob,Direct(),jump,jump2)
 sol = solve(jump_prob,FunctionMap())
 
-using Plots; plot(sol)
+#using Plots; plot(sol)
 
 nums = Int[]
 @time for i in 1:100000

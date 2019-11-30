@@ -3,6 +3,10 @@ language: julia
 os:
   - linux
 #  - osx
+# avoid duplicate tests in PRs
+branches:
+  only:
+    - master
 julia:
   - 1
   - 1.3

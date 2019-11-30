@@ -1,4 +1,4 @@
-using DiffEqBiological, Test
+using DiffEqBiological, OrdinaryDiffEq, Test
 
 #Tests steady state finders for minimal reaction network.
 for rn in min_reaction_networks_standard
