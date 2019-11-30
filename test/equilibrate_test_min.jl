@@ -1,5 +1,8 @@
 using DiffEqBiological, OrdinaryDiffEq, Test
 
+cd(@__DIR__)
+include("test_networks.jl")
+
 #Tests steady state finders for minimal reaction network.
 for rn in min_reaction_networks_standard
     addequi1!(rn)
