@@ -27,8 +27,10 @@ More detailed documentation is available from:
   stochastic versions of the
   [repressilator](https://en.wikipedia.org/wiki/Repressilator).
   * A tutorial exploring the DiffEqBiological API for querying network
-    properties, which also illustrates how to programmatically construct and
+    properties, which also illustrates how to programmatically and incrementally construct and
     solve a network model using the API.
+  * A tutorial showing how to use the wrapped [HomotopyContinuation.jl](https://www.juliahomotopycontinuation.org/)
+    functionality to find steady-states and make bifurcation plots.
 * Full documentation of the DSL syntax, with information on the generated rate
   functions and models is available in the [DifferentialEquations.jl Chemical
   Reaction Models
