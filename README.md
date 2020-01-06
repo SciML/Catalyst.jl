@@ -34,10 +34,10 @@ More detailed documentation is available from:
 * Full documentation of the DSL syntax, with information on the generated rate
   functions and models is available in the [DifferentialEquations.jl Chemical
   Reaction Models
-  documentation](http://docs.juliadiffeq.org/dev/models/biological.html).
+  documentation](http://docs.juliadiffeq.org/dev/models/biological).
 * API documentation showing how to retrieve network information from a
   generated `reaction_network` is available
-  [here](http://docs.juliadiffeq.org/dev/apis/diffeqbio.html).
+  [here](http://docs.juliadiffeq.org/dev/apis/diffeqbio).
 
 ## The Reaction DSL
 
@@ -117,14 +117,14 @@ specify some reactions through a programmatic API. For this reason the
 `@min_reaction_network` and `@empty_reaction_network` macros, along with the
 corresponding `addspecies!`, `addparam!` and `addreaction!` modifier functions,
 are provided in the
-[API](http://docs.juliadiffeq.org/dev/apis/diffeqbio.html#Functions-to-Add-Species,-Parameters-and-Reactions-to-a-Network-1).
+[API](http://docs.juliadiffeq.org/dev/apis/diffeqbio#Functions-to-Add-Species,-Parameters-and-Reactions-to-a-Network-1).
 
 
 ## DiffEqBiological API for Querying Network Information
 
 A variety of network information is calculated by the `reaction_network` macro,
 and can then be retrieved using the [DiffEqBiological
-API](http://docs.juliadiffeq.org/dev/apis/diffeqbio.html). This includes
+API](http://docs.juliadiffeq.org/dev/apis/diffeqbio). This includes
 
 * Orderings of species and reactions
   ```julia
