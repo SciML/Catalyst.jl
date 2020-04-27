@@ -21,6 +21,9 @@ include("equilibrate_utils.jl")
 include("plot_recipes.jl")
 include("latexify_recipes.jl")
 
+include("MT_tmp/reaction_network.jl")
+include("MT_tmp/maketype.jl")
+
 # reaction network macro
 export @reaction_network, @reaction_func, @min_reaction_network, @empty_reaction_network
 
@@ -45,5 +48,8 @@ export EquilibrateContent
 export @add_constraint, @add_constraints, internal___add___constraint!, fix_parameters, @make_hc_template, make_hc_template!, @add_hc_template, add_hc_template!
 export steady_states, stability
 export bifurcations, bifurcation_grid, bifurcation_grid_2d, bifurcation_grid_diagram, SimpleHCBifurcationSolver, HCBifurcationSolver, HCSteadyStateSolver
+
+# Temporary MT stuff
+export @MT_reaction_network
 
 end # module
