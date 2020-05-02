@@ -5,6 +5,8 @@ using DiffEqBase, DiffEqJump, Compat
 @reexport using DiffEqBase, DiffEqJump
 using DynamicPolynomials, LinearAlgebra, RecipesBase, Latexify
 
+@reexport using ModelingToolkit
+
 import HomotopyContinuation
 
 import Base: (==)
@@ -23,6 +25,7 @@ include("latexify_recipes.jl")
 
 include("MT_tmp/reaction_network.jl")
 include("MT_tmp/maketype.jl")
+include("MT_tmp/problem.jl")
 
 # reaction network macro
 export @reaction_network, @reaction_func, @min_reaction_network, @empty_reaction_network
@@ -50,6 +53,6 @@ export steady_states, stability
 export bifurcations, bifurcation_grid, bifurcation_grid_2d, bifurcation_grid_diagram, SimpleHCBifurcationSolver, HCBifurcationSolver, HCSteadyStateSolver
 
 # Temporary MT stuff
-export @MT_reaction_network
+export @MT_reaction_network, MT_ODEProblem
 
 end # module
