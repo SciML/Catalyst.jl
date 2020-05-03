@@ -57,12 +57,17 @@ See the [Chemical Reaction Model
 docs](http://docs.juliadiffeq.org/dev/models/biological.html) for details on
 parameters to the macro.
 """
+
 # Declare various arrow types symbols used for the empty set (also 0).
 empty_set = Set{Symbol}([:∅])
 fwd_arrows = Set{Symbol}([:>, :→, :↣, :↦, :⇾, :⟶, :⟼, :⥟, :⥟, :⇀, :⇁, :⇒, :⟾])
 bwd_arrows = Set{Symbol}([:<, :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :↼, :↽, :⇐, :⟽])
 double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇔, :⟺])
 pure_rate_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
+
+
+
+### The main macro, and its coordination function ###
 
 # Main macro, takes a designated type name and a reaction network, returns the reaction network structure.
 macro MT_reaction_network(name, ex::Expr, parameters...)
@@ -93,6 +98,10 @@ function MT_coordinate(name, ex::Expr, parameters)
     expr_arr_to_block(exprs)
 end
 
+
+
+### Functions that extract the reactions and reactants from the input form ###
+
 # Function  coordinating the extracting reactions and reactants.
 function extract_reactions(ex::Expr, parameters)
     reactions = MT_get_reactions(ex)
@@ -101,24 +110,23 @@ function extract_reactions(ex::Expr, parameters)
     return (reactions,reactants)
 end
 
+#Structure containing information about one reactant in one reaction.
+struct MT_ReactantStruct
+    reactant::Symbol
+    stoichiometry::Number
+end
 #Structure containing information about one Reaction. Contain all its substrates and products as well as its rate. Contains an specialized constructor.
 struct MT_ReactionStruct
-    substrates::Vector{ReactantStruct}
-    products::Vector{ReactantStruct}
+    substrates::Vector{MT_ReactantStruct}
+    products::Vector{MT_ReactantStruct}
     rate::ExprValues
     only_use_rate::Bool
 
     function MT_ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, only_use_rate::Bool)
-        sub = recursive_find_reactants!(sub_line,1,Vector{ReactantStruct}(undef,0))
-        prod = recursive_find_reactants!(prod_line,1,Vector{ReactantStruct}(undef,0))
+        sub = recursive_find_reactants!(sub_line,1,Vector{MT_ReactantStruct}(undef,0))
+        prod = recursive_find_reactants!(prod_line,1,Vector{MT_ReactantStruct}(undef,0))
         new(sub, prod, rate, only_use_rate)
     end
-end
-
-#Structure containing information about one reactant in one reaction.
-struct ReactantStruct
-    reactant::Symbol
-    stoichiometry::Number
 end
 
 #Generates a vector containing a number of reaction structures, each containing the infromation about one reaction.
@@ -154,20 +162,20 @@ function push_reactions!(reactions::Vector{MT_ReactionStruct}, sub_line::ExprVal
 end
 
 #Recursive function that loops through the reaction line and finds the reactants and their stoichiometry. Recursion makes it able to handle werid cases like 2(X+Y+3(Z+XY)).
-function recursive_find_reactants!(ex::ExprValues, mult::Int, reactants::Vector{ReactantStruct})
+function recursive_find_reactants!(ex::ExprValues, mult::Int, reactants::Vector{MT_ReactantStruct})
     if typeof(ex)!=Expr
         (ex == 0 || in(ex,empty_set)) && (return reactants)
         if in(ex, getfield.(reactants,:reactant))
             idx = findall(x -> x==ex ,getfield.(reactants,:reactant))[1]
-            reactants[idx] = ReactantStruct(ex,mult+reactants[idx].stoichiometry)
+            reactants[idx] = MT_ReactantStruct(ex,mult+reactants[idx].stoichiometry)
         else
-            push!(reactants, ReactantStruct(ex,mult))
+            push!(reactants, MT_ReactantStruct(ex,mult))
         end
     elseif ex.args[1] == :*
-        add_reactants!(ex.args[3],mult*ex.args[2],reactants)
+        recursive_find_reactants!(ex.args[3],mult*ex.args[2],reactants)
     elseif ex.args[1] == :+
         for i = 2:length(ex.args)
-            add_reactants!(ex.args[i],mult,reactants)
+            recursive_find_reactants!(ex.args[i],mult,reactants)
         end
     else
         throw("malformed reaction")
@@ -183,6 +191,10 @@ function MT_get_reactants(reactions::Vector{MT_ReactionStruct})
     end
     return reactants
 end
+
+
+
+### Function for creating a expression which will generate an reaction system ###
 
 # Takes the reactions, and rephrases it as a "ReactionSystem" call, as designated by the ModelingToolkit IR.
 function rephrase_reactions(reactions, reactants, parameters)
