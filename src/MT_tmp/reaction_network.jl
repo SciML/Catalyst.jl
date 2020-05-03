@@ -76,7 +76,7 @@ end
 # Coordination function, coordinates the various functions creating the reaction network structure.
 function MT_coordinate(name, ex::Expr, parameters)
     # Prepares the reaction network system.
-    (reactions, reactants) = extract_reactants(ex, parameters)
+    (reactions, reactants) = extract_reactions(ex, parameters)
     reaction_system = rephrase_reactions(reactions,reactants,parameters)
 
     # Puts everything in the maketype function.
@@ -94,7 +94,7 @@ function MT_coordinate(name, ex::Expr, parameters)
 end
 
 # Function  coordinating the extracting reactions and reactants.
-function extract_reactants(ex::Expr, parameters)
+function extract_reactions(ex::Expr, parameters)
     reactions = MT_get_reactions(ex)
     reactants = MT_get_reactants(reactions)
     (in(:t,union(reactants,parameters))) && error("t is reserved for the time variable and may neither be used as a reactant nor a parameter")
@@ -109,8 +109,8 @@ struct MT_ReactionStruct
     only_use_rate::Bool
 
     function MT_ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, only_use_rate::Bool)
-        sub = recursive_add_reactants!(sub_line,1,Vector{ReactantStruct}(undef,0))
-        prod = recursive_add_reactants!(prod_line,1,Vector{ReactantStruct}(undef,0))
+        sub = recursive_find_reactants!(sub_line,1,Vector{ReactantStruct}(undef,0))
+        prod = recursive_find_reactants!(prod_line,1,Vector{ReactantStruct}(undef,0))
         new(sub, prod, rate, only_use_rate)
     end
 end
@@ -153,8 +153,8 @@ function push_reactions!(reactions::Vector{MT_ReactionStruct}, sub_line::ExprVal
     end
 end
 
-#Recursive function that loops through the reactants in an reaction line and finds the reactants and their stoichiometry. Recursion makes it able to handle werid cases like 2(X+Y+3(Z+XY)).
-function recursive_add_reactants!(ex::ExprValues, mult::Int, reactants::Vector{ReactantStruct})
+#Recursive function that loops through the reaction line and finds the reactants and their stoichiometry. Recursion makes it able to handle werid cases like 2(X+Y+3(Z+XY)).
+function recursive_find_reactants!(ex::ExprValues, mult::Int, reactants::Vector{ReactantStruct})
     if typeof(ex)!=Expr
         (ex == 0 || in(ex,empty_set)) && (return reactants)
         if in(ex, getfield.(reactants,:reactant))
