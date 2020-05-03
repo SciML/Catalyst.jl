@@ -1,7 +1,8 @@
 function MT_maketype(abstracttype,
                   name,
                   reaction_system;
-                  ode_system = nothing
+                  ode_system = nothing,
+                  sde_system = nothing
                   # f,
                   # f_func,
                   # f_symfuncs,
@@ -29,6 +30,7 @@ function MT_maketype(abstracttype,
     typeex = :(mutable struct $name <: $(abstracttype)
         reaction_system::ReactionSystem
         ode_system::Union{ODESystem,Nothing}
+        sde_system::Union{SDESystem,Nothing}
         # f::Union{Function,Nothing}
         # f_func::Union{Vector{ExprValues},Nothing}
         # f_symfuncs::Union{Matrix{SymEngine.Basic},Nothing}
@@ -55,7 +57,8 @@ function MT_maketype(abstracttype,
     # Make the default constructor
     constructorex = :($(name)(;
                 $(Expr(:kw,:reaction_system, reaction_system)),
-                $(Expr(:kw,:ode_system,ode_system))) =
+                $(Expr(:kw,:ode_system,ode_system)),
+                $(Expr(:kw,:sde_system,sde_system))) =
                 # $(Expr(:kw,:f,f)),
                 # $(Expr(:kw,:f_func,f_func)),
                 # $(Expr(:kw,:g,g)),
@@ -80,7 +83,8 @@ function MT_maketype(abstracttype,
                 # $(Expr(:kw,:equilibrate_content, equilibrate_content))) =
                 $(name)(
                         reaction_system,
-                        ode_system
+                        ode_system,
+                        sde_system
                         # f,
                         # f_func,
                         # f_symfuncs,
