@@ -115,10 +115,12 @@ struct MT_ReactionStruct
     end
 end
 
+typeof((reactant=:A,stoichiometry=2))
+
 #Structure containing information about one reactant in one reaction.
 struct ReactantStruct
     reactant::Symbol
-    stoichiometry::Int
+    stoichiometry::Number
 end
 
 #Generates a vector containing a number of reaction structures, each containing the infromation about one reaction.
