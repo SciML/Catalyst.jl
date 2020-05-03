@@ -131,12 +131,12 @@ function MT_get_reactions(ex::Expr, reactions = Vector{MT_ReactionStruct}(undef,
         arrow = r_line.args[1]
         if in(arrow,double_arrows)
             (typeof(rate) == Expr && rate.head == :tuple) || error("Error: Must provide a tuple of reaction rates when declaring a bi-directional reaction.")
-            push_reactions!(reactions, r_line.args[2], r_line.args[3], rate.args[1], !in(arrow,pure_rate_arrows))
-            push_reactions!(reactions, r_line.args[3], r_line.args[2], rate.args[2], !in(arrow,pure_rate_arrows))
+            push_reactions!(reactions, r_line.args[2], r_line.args[3], rate.args[1], in(arrow,pure_rate_arrows))
+            push_reactions!(reactions, r_line.args[3], r_line.args[2], rate.args[2], in(arrow,pure_rate_arrows))
         elseif in(arrow,fwd_arrows)
-            push_reactions!(reactions, r_line.args[2], r_line.args[3], rate, !in(arrow,pure_rate_arrows))
+            push_reactions!(reactions, r_line.args[2], r_line.args[3], rate, in(arrow,pure_rate_arrows))
         elseif in(arrow,bwd_arrows)
-            push_reactions!(reactions, r_line.args[3], r_line.args[2], rate, !in(arrow,pure_rate_arrows))
+            push_reactions!(reactions, r_line.args[3], r_line.args[2], rate, in(arrow,pure_rate_arrows))
         else
             throw("malformed reaction")
         end
@@ -194,7 +194,7 @@ function rephrase_reactions(reactions, reactants, parameters)
     for reaction in reactions
         subs_init = isempty(reaction.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
         prod_init = isempty(reaction.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
-        reaction_func = :(Reaction($(recursive_expand_functions!(reaction.rate)), $subs_init, $prod_init, $subs_stoich_init, $prod_stoich_init))
+        reaction_func = :(Reaction($(recursive_expand_functions!(reaction.rate)), $subs_init, $prod_init, $subs_stoich_init, $prod_stoich_init, only_use_rate=$(reaction.only_use_rate)))
         for sub in reaction.substrates
             push!(reaction_func.args[3].args, sub.reactant)
             push!(reaction_func.args[5].args, sub.stoichiometry)
@@ -207,6 +207,8 @@ function rephrase_reactions(reactions, reactants, parameters)
     end
     return network_code
 end
+
+
 
 ### Functionality for expanding function call to actualy full functions ###
 
