@@ -86,7 +86,7 @@ function MT_coordinate(name, ex::Expr, parameters)
 
     # Puts everything in the maketype function.
     exprs = Vector{Expr}(undef,0)
-    typeex,constructorex = MT_maketype(DiffEqBase.AbstractReactionNetwork, name, reaction_system)
+    typeex,constructorex = MT_maketype(DiffEqBase.AbstractReactionNetwork, name, reactants, collect(parameters), reaction_system)
     push!(exprs,typeex)
     push!(exprs,constructorex)
 

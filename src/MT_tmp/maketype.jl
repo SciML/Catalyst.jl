@@ -1,5 +1,7 @@
 function MT_maketype(abstracttype,
                   name,
+                  vars,
+                  params,
                   reaction_system;
                   ode_system = nothing,
                   sde_system = nothing
@@ -28,6 +30,8 @@ function MT_maketype(abstracttype,
                   )
 
     typeex = :(mutable struct $name <: $(abstracttype)
+        vars::Vector{Symbol}
+        params::Vector{Symbol}
         reaction_system::ReactionSystem
         ode_system::Union{ODESystem,Nothing}
         sde_system::Union{SDESystem,Nothing}
@@ -56,6 +60,8 @@ function MT_maketype(abstracttype,
     end)
     # Make the default constructor
     constructorex = :($(name)(;
+                $(Expr(:kw,:vars,vars)),
+                $(Expr(:kw,:params,params)),
                 $(Expr(:kw,:reaction_system, reaction_system)),
                 $(Expr(:kw,:ode_system,ode_system)),
                 $(Expr(:kw,:sde_system,sde_system))) =
@@ -82,6 +88,8 @@ function MT_maketype(abstracttype,
                 # $(Expr(:kw,:sdefun, sdefun)),
                 # $(Expr(:kw,:equilibrate_content, equilibrate_content))) =
                 $(name)(
+                        vars,
+                        params,
                         reaction_system,
                         ode_system,
                         sde_system
