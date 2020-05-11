@@ -4,7 +4,8 @@ function MT_maketype(abstracttype,
                   params,
                   reaction_system;
                   ode_system = nothing,
-                  sde_system = nothing
+                  sde_system = nothing,
+                  jump_system = nothing
                   # f,
                   # f_func,
                   # f_symfuncs,
@@ -35,6 +36,7 @@ function MT_maketype(abstracttype,
         reaction_system::ReactionSystem
         ode_system::Union{ODESystem,Nothing}
         sde_system::Union{SDESystem,Nothing}
+        jump_system::Union{JumpSystem,Nothing}
         # f::Union{Function,Nothing}
         # f_func::Union{Vector{ExprValues},Nothing}
         # f_symfuncs::Union{Matrix{SymEngine.Basic},Nothing}
@@ -64,7 +66,8 @@ function MT_maketype(abstracttype,
                 $(Expr(:kw,:params,params)),
                 $(Expr(:kw,:reaction_system, reaction_system)),
                 $(Expr(:kw,:ode_system,ode_system)),
-                $(Expr(:kw,:sde_system,sde_system))) =
+                $(Expr(:kw,:sde_system,sde_system)),
+                $(Expr(:kw,:jump_system,jump_system))) =
                 # $(Expr(:kw,:f,f)),
                 # $(Expr(:kw,:f_func,f_func)),
                 # $(Expr(:kw,:g,g)),
@@ -92,7 +95,8 @@ function MT_maketype(abstracttype,
                         params,
                         reaction_system,
                         ode_system,
-                        sde_system
+                        sde_system,
+                        jump_system
                         # f,
                         # f_func,
                         # f_symfuncs,
