@@ -16,9 +16,6 @@ const ExprValues = Union{Expr,Symbol,Float64,Int}
 include("expression_utils.jl")
 include("reaction_network.jl")
 
-include("MT_tmp/reaction_network.jl")
-include("MT_tmp/maketype.jl")
-
 # reaction network macro
 export @reaction_network
 export @reaction_func
