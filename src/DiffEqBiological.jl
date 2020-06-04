@@ -19,9 +19,12 @@ include("reaction_network.jl")
 # reaction network macro
 export @reaction_network
 export @reaction_func
-
 end # module
 
+### Things possibly added back later. ###
+
+#include("modify_reaction_network.jl")
+#export @add_reactions, @add_reactions!
 
 #include("network_properties.jl")
 
