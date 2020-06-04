@@ -67,24 +67,13 @@ pure_rate_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
 
 
-### The main macro, and its coordination function ###
-
-# Main macro, takes reaction network notation and returns a ReactionSystem..
+### The main macro, takes reaction network notation and returns a ReactionSystem. ###
 macro MT_reaction_network(ex::Expr, parameters...)
-    rephrase_reactions(MacroTools.striplines(ex), parameters)
+    make_reaction_system(MacroTools.striplines(ex), parameters)
 end
 
 
-
-### Functions that extract the reactions and reactants from the input form ###
-
-# Function  coordinating the extracting reactions and reactants.
-function extract_reactions(ex::Expr, parameters)
-    reactions = MT_get_reactions(ex)
-    reactants = MT_get_reactants(reactions)
-    (in(:t,union(reactants,parameters))) && error("t is reserved for the time variable and may neither be used as a reactant nor a parameter")
-    return (reactions,reactants)
-end
+### Sturctures containing information about a reactant, and a reaction, respectively.
 
 #Structure containing information about one reactant in one reaction.
 struct MT_ReactantStruct
@@ -103,6 +92,37 @@ struct MT_ReactionStruct
         prod = recursive_find_reactants!(prod_line,1,Vector{MT_ReactantStruct}(undef,0))
         new(sub, prod, rate, only_use_rate)
     end
+end
+
+
+### Functions that processes the input and rephrases it as a reaction system ###
+
+# Takes the reactions, and rephrases it as a "ReactionSystem" call, as designated by the ModelingToolkit IR.
+function make_reaction_system(ex::Expr, parameters)
+    reactions = MT_get_reactions(ex)
+    reactants = MT_get_reactants(reactions)
+    (in(:t,union(reactants,parameters))) && error("t is reserved for the time variable and may neither be used as a reactant nor a parameter")
+
+    network_code = Expr(:block,:(@parameters t),:(@variables), :(ReactionSystem([],t,[],[])))
+    foreach(parameter-> push!(network_code.args[1].args, parameter), parameters)
+    foreach(reactant -> push!(network_code.args[2].args, Expr(:call,reactant,:t)), reactants)
+    foreach(parameter-> push!(network_code.args[3].args[5].args, parameter), parameters)
+    foreach(reactant -> push!(network_code.args[3].args[4].args, reactant), reactants)
+    for reaction in reactions
+        subs_init = isempty(reaction.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
+        prod_init = isempty(reaction.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
+        reaction_func = :(Reaction($(recursive_expand_functions!(reaction.rate)), $subs_init, $prod_init, $subs_stoich_init, $prod_stoich_init, only_use_rate=$(reaction.only_use_rate)))
+        for sub in reaction.substrates
+            push!(reaction_func.args[3].args, sub.reactant)
+            push!(reaction_func.args[5].args, sub.stoichiometry)
+        end
+        for prod in reaction.products
+            push!(reaction_func.args[4].args, prod.reactant)
+            push!(reaction_func.args[6].args, prod.stoichiometry)
+        end
+        push!(network_code.args[3].args[2].args,reaction_func)
+    end
+    return network_code
 end
 
 #Generates a vector containing a number of reaction structures, each containing the infromation about one reaction.
@@ -169,38 +189,7 @@ function MT_get_reactants(reactions::Vector{MT_ReactionStruct})
 end
 
 
-
-### Function for creating a expression which will generate an reaction system ###
-
-# Takes the reactions, and rephrases it as a "ReactionSystem" call, as designated by the ModelingToolkit IR.
-function rephrase_reactions(ex::Expr, parameters)
-    (reactions, reactants) = extract_reactions(ex, parameters)
-
-    network_code = Expr(:block,:(@parameters t),:(@variables), :(ReactionSystem([],t,[],[])))
-    foreach(parameter-> push!(network_code.args[1].args, parameter), parameters)
-    foreach(reactant -> push!(network_code.args[2].args, Expr(:call,reactant,:t)), reactants)
-    foreach(parameter-> push!(network_code.args[3].args[5].args, parameter), parameters)
-    foreach(reactant -> push!(network_code.args[3].args[4].args, reactant), reactants)
-    for reaction in reactions
-        subs_init = isempty(reaction.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
-        prod_init = isempty(reaction.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
-        reaction_func = :(Reaction($(recursive_expand_functions!(reaction.rate)), $subs_init, $prod_init, $subs_stoich_init, $prod_stoich_init, only_use_rate=$(reaction.only_use_rate)))
-        for sub in reaction.substrates
-            push!(reaction_func.args[3].args, sub.reactant)
-            push!(reaction_func.args[5].args, sub.stoichiometry)
-        end
-        for prod in reaction.products
-            push!(reaction_func.args[4].args, prod.reactant)
-            push!(reaction_func.args[6].args, prod.stoichiometry)
-        end
-        push!(network_code.args[3].args[2].args,reaction_func)
-    end
-    return network_code
-end
-
-
-
-### Functionality for expanding function call to actualy full functions ###
+### Functionality for expanding function call to custom and specific functions ###
 
 #Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.
 function recursive_expand_functions!(expr::ExprValues)
