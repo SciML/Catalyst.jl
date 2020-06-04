@@ -69,33 +69,9 @@ pure_rate_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
 ### The main macro, and its coordination function ###
 
-# Main macro, takes a designated type name and a reaction network, returns the reaction network structure.
-macro MT_reaction_network(name, ex::Expr, parameters...)
-    MT_coordinate(name, MacroTools.striplines(ex), parameters)
-end
-# If no type name is given, creates a network of the default type.
+# Main macro, takes reaction network notation and returns a ReactionSystem..
 macro MT_reaction_network(ex::Expr, parameters...)
-    MT_coordinate(:MT_reaction_network, MacroTools.striplines(ex), parameters)
-end
-
-# Coordination function, coordinates the various functions creating the reaction network structure.
-function MT_coordinate(name, ex::Expr, parameters)
-    # Prepares the reaction network system.
-    (reactions, reactants) = extract_reactions(ex, parameters)
-    reaction_system = rephrase_reactions(reactions,reactants,parameters)
-
-    # Puts everything in the maketype function.
-    exprs = Vector{Expr}(undef,0)
-    typeex,constructorex = MT_maketype(DiffEqBase.AbstractReactionNetwork, name, reactants, collect(parameters), reaction_system)
-    push!(exprs,typeex)
-    push!(exprs,constructorex)
-
-    # Add type functions
-    append!(exprs, gentypefun_exprs(name))
-    exprs[end] = :($(exprs[end]))
-
-    # Return as one expression block
-    expr_arr_to_block(exprs)
+    rephrase_reactions(MacroTools.striplines(ex), parameters)
 end
 
 
@@ -197,7 +173,9 @@ end
 ### Function for creating a expression which will generate an reaction system ###
 
 # Takes the reactions, and rephrases it as a "ReactionSystem" call, as designated by the ModelingToolkit IR.
-function rephrase_reactions(reactions, reactants, parameters)
+function rephrase_reactions(ex::Expr, parameters)
+    (reactions, reactants) = extract_reactions(ex, parameters)
+
     network_code = Expr(:block,:(@parameters t),:(@variables), :(ReactionSystem([],t,[],[])))
     foreach(parameter-> push!(network_code.args[1].args, parameter), parameters)
     foreach(reactant -> push!(network_code.args[2].args, Expr(:call,reactant,:t)), reactants)

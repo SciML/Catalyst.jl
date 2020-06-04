@@ -25,7 +25,6 @@ include("latexify_recipes.jl")
 
 include("MT_tmp/reaction_network.jl")
 include("MT_tmp/maketype.jl")
-include("MT_tmp/problem.jl")
 
 # reaction network macro
 export @reaction_network, @reaction_func, @min_reaction_network, @empty_reaction_network
