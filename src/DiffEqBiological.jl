@@ -51,7 +51,4 @@ export @add_constraint, @add_constraints, internal___add___constraint!, fix_para
 export steady_states, stability
 export bifurcations, bifurcation_grid, bifurcation_grid_2d, bifurcation_grid_diagram, SimpleHCBifurcationSolver, HCBifurcationSolver, HCSteadyStateSolver
 
-# Temporary MT stuff
-export @MT_reaction_network, MT_ODEProblem, MT_SDEProblem, MT_DiscreteProblem, MT_JumpProblem
-
 end # module
