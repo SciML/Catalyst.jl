@@ -133,7 +133,7 @@ reaction_networks_hill[6] = @reaction_network begin
 end v K n d
 
 reaction_networks_hill[7] = @reaction_network begin
-    v/10 + hill(X1,v,K,n), ∅ → X1+X2
+    v/10 + hill(X1,v,K,n), ∅ → X1 + X2
     (k1,k2), X1 + X2 ↔ X3
     k3, X3 → X1
     d, (X1,X2,X3) → ∅
@@ -297,7 +297,7 @@ end d v1 K1 n1 v2 K2 n2
 
 reaction_networks_weird[1] = @reaction_network begin
     exp(p), ∅ → X
-    exp(X), X → ∅
+    d*exp(X), X → ∅
 end p d
 
 reaction_networks_weird[2] = @reaction_network begin
