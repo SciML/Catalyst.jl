@@ -27,8 +27,8 @@ end
 
 # Tests relating to modification an already created model.
 if GROUP == "All" || GROUP == "Model Modifcations"
-  @time @safetestset "" begin include(".jl") end
-  @time @safetestset "" begin include(".jl") end
+  #@time @safetestset "" begin include(".jl") end
+  #@time @safetestset "" begin include(".jl") end
 end
 
 # Tests related to solving Ordinary Differential Equations.
@@ -44,14 +44,13 @@ end
 
 # Tests related to solvingJump Systems.
 if GROUP == "All" || GROUP == "Jump Problems"
-  @time @safetestset "" begin include("latexify.jl") end
-  @time @safetestset "" begin include("tests.jl") end
+  @time @safetestset "" begin include("solve_jumps.jl") end
 end
 
 # Miscellaneous tests.
 if GROUP == "All" || GROUP == "Miscellaneous"
-  @time @safetestset "" begin include(".jl") end
-  #@time @safetestset "" begin include("latexify.jl") end
+  @time @safetestset "Basic Plotting" begin include("plotting.jl") end
+  #@time @safetestset "Latexify" begin include("latexify.jl") end
 end
 
 end # @time
