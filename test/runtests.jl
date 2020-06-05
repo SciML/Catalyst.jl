@@ -20,7 +20,7 @@ const is_TRAVIS = haskey(ENV,"TRAVIS")
 if GROUP == "All" || GROUP == "Core"
   @time @safetestset "Model Macro" begin include("make_model.jl") end
   @time @safetestset "Custom Functions" begin include("custom_functions.jl") end
-  @time @safetestset "Higher Order" begin include("higher_order.jl") end
+  @time @safetestset "Higher Order" begin include("higher_order_reactions.jl") end
 end
 
 # Tests relating to modification an already created model.

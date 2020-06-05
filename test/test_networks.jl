@@ -317,14 +317,14 @@ end d v1 K1 n1 v2 K2 n2
 reaction_networks_weird[4] = @reaction_network begin
     p, ∅ → X1
     (k1,X2^X3), X1 ⟷ X2
-    (X2/X5,k4), X2 ⟷ X3
+    (X2/X4,k4), X2 ⟷ X3
     (k5,X1*X2*X4), X3 ⟷ X4
     d*X2, X4 → ∅
 end p k1 k2 k3 k4 k5 k6 d
 
 reaction_networks_weird[5] = @reaction_network begin
     (k1*tanh(X1),k2), X1 ↔ 2X1
-    (2+sin(X1),3+sin(k31)), X1 + X2 ↔ X3
+    (2+sin(X1),3+sin(k3)), X1 + X2 ↔ X3
     (k5,4+cos(X3+X1)+sin(X2)), X3 ↔ X2
 end k1 k2 k3 k4 k5 k6
 
