@@ -81,8 +81,8 @@ using UnPack
 @test length(states) == 3
 @test all(getproperty.(states,:name) .== [:X1,:X2,:X3])
 @test all_reactants(eqs) == Set([:X1,:X2,:X3])
-@test length(ps) == 7
-@test all(getproperty.(ps,:name) .== [:k1,:k2,:k3,:k4,:k5,:k6,:FC])
+@test length(ps) == 6
+@test all(getproperty.(ps,:name) .== [:k1,:k2,:k3,:k4,:k5,:k6])
 
 @unpack eqs,iv,states,ps,name,systems = reaction_networks_real[1]
 @test length(eqs) == 4
@@ -156,7 +156,6 @@ different_arrow_8 = @reaction_network begin
     d, ∅ ↼ X3
 end p k1 k2 k3 d
 push!(identical_networks_1, reaction_networks_standard[8] => different_arrow_8)
-identical_networks[1][1]
 
 for networks in identical_networks_1
     f1 = ODEFunction(convert(ODESystem,networks[1]),jac=true)
@@ -165,8 +164,8 @@ for networks in identical_networks_1
         u0 = factor*rand(length(networks[1].states))
         p = factor*rand(length(networks[1].ps))
         t = rand()
-        @test all((f1(u0,p,t) .- f2(u0,p,t)) .< 100*eps())
-        @test all((f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 100*eps())
+        @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 100*eps())
+        @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 100*eps())
     end
 end
 
@@ -217,8 +216,8 @@ for networks in identical_networks_2
         u0 = factor*rand(length(networks[1].states))
         p = factor*rand(length(networks[1].ps))
         t = rand()
-        @test all((f1(u0,p,t) .- f2(u0,p,t)) .< 100*eps())
-        @test all((f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 100*eps())
+        @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 100*eps())
+        @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 100*eps())
     end
 end
 
@@ -255,8 +254,8 @@ for (i,networks) in enumerate(identical_networks_3)
     for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
         u0 = factor*rand(length(networks[1].states))
         t = rand()
-        @test all((f1(u0,parameter_sets[i],t) .- f2(u0,[],t)) .< 100*eps())
-        @test all((f1.jac(u0,parameter_sets[i],t) .- f2.jac(u0,[],t)) .< 100*eps())
+        @test all(abs.(f1(u0,parameter_sets[i],t) .- f2(u0,[],t)) .< 100*eps())
+        @test all(abs.(f1.jac(u0,parameter_sets[i],t) .- f2.jac(u0,[],t)) .< 100*eps())
     end
 end
 
@@ -273,12 +272,12 @@ end k2 k3 k6
 f1 = ODEFunction(convert(ODESystem,reaction_networks_constraint[1]),jac=true)
 f2 = ODEFunction(convert(ODESystem,time_network),jac=true)
 for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-    u0 = factor*rand(length(networks[1].states))
+    u0 = factor*rand(length(time_network.states))
     k2 = factor*rand(); k3 = factor*rand(); k6 = factor*rand();
     t = rand()
     p1 = [t, k2, k3, t, t, k6]; p2 = [k2, k3, k6];
-    @test all((f1(u0,p1,t) .- f2(u0,p2,t)) .< 100*eps())
-    @test all((f1.jac(u0,p1,t) .- f2.jac(u0,p2,t)) .< 100*eps())
+    @test all(abs.(f1(u0,p1,t) .- f2(u0,p2,t)) .< 100*eps())
+    @test all(abs.(f1.jac(u0,p1,t) .- f2.jac(u0,p2,t)) .< 100*eps())
 end
 
 
