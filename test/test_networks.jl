@@ -8,7 +8,6 @@ reaction_networks_real = Vector{ReactionSystem}(undef,4)
 reaction_networks_weird = Vector{ReactionSystem}(undef,10)
 
 
-
 ### Standard reaction networks. ###
 reaction_networks_standard[1] = @reaction_network begin
     (p1,p2,p3), ∅ → (X1,X2,X3)
@@ -238,7 +237,7 @@ end k1 k2 k3 k4 k5 k6
 #    X6+X7=FC4
 #end
 
-reaction_networks_constraint[10] = @reaction_network rnType begin
+reaction_networks_constraint[10] = @reaction_network begin
     kDeg,       (w,w2,w2v,v,w2v2,vP,σB,w2σB) ⟶ ∅
     kDeg,       vPp ⟶ phos
     (kBw,kDw),  2w ⟷ w2
@@ -277,15 +276,15 @@ reaction_networks_real[2] = @reaction_network begin
 end v0 v K n kD kB kC deg S;
 
 # A cell cycle model
-cc_network = @reaction_network begin
+reaction_networks_real[3] = @reaction_network begin
   k1, 0 --> Y
   k2p, Y --> 0
   k2pp*P, Y --> 0
   (k3p+k3pp*A)/(J3+Po), Po-->P
   (k4*m)/(J4+P), Y + P --> Y + Po
 end k1 k2p k2pp k3p k3pp A J3 k4 m J4
-@add_constraint cc_network P+Po=1
-reaction_networks_real[3] = cc_network
+#@add_constraint cc_network P+Po=1
+#reaction_networks_real[3] = cc_network
 
 # A bistable switch
 reaction_networks_real[4] = @reaction_network begin
@@ -364,7 +363,6 @@ end p v1 K1 n1 v2 K2 n2 v3 K3 n3 v4 K4 n4
 reaction_networks_weird[10] = @reaction_network begin
     d, 5X1 → 4X1
 end d
-
 
 
 ### Gathers all netowkrs in a simgle array ###
