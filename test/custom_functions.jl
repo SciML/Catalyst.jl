@@ -22,7 +22,7 @@ end v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4
 
 f1 = ODEFunction(convert(ODESystem,network_1),jac=true)
 f2 = ODEFunction(convert(ODESystem,network_2),jac=true)
-for factor in [1e-2, 1e0, 1e1, 1e2, 1e3]
+for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
     u0 = factor*rand(length(network_1.states))
     p = factor*rand(length(network_1.ps))
     t = rand()

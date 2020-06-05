@@ -26,7 +26,7 @@ f1 = ODEFunction(convert(ODESystem,higher_order_network_1),jac=true)
 f2 = ODEFunction(convert(ODESystem,higher_order_network_2),jac=true)
 g1 = SDEFunction(convert(SDESystem,higher_order_network_1))
 g2 = SDEFunction(convert(SDESystem,higher_order_network_2))
-for factor in [1e-2, 1e0, 1e1, 1e2, 1e3]
+for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
     u0 = factor*rand(length(higher_order_network_1.states))
     p = factor*rand(length(higher_order_network_2.ps))
     t = rand()
