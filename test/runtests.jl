@@ -2,8 +2,8 @@
 using DiffEqBiological, ModelingToolkit
 using OrdinaryDiffEq, StochasticDiffEq, DiffEqJump
 using Test, SafeTestsets
-using LinearAlgebra, Random, Statistics
-using UnPack, SparseArrays, Plots
+using UnPack, LinearAlgebra, Random, Statistics
+using Latexify, Plots
 
 
 ### Decalre constants realted to groups.
@@ -51,7 +51,7 @@ end
 # Miscellaneous tests.
 if GROUP == "All" || GROUP == "Miscellaneous"
   @time @safetestset "" begin include(".jl") end
-  @time @safetestset "" begin include(".jl") end
+  #@time @safetestset "" begin include("latexify.jl") end
 end
 
 
