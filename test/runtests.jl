@@ -3,7 +3,7 @@ using DiffEqBiological, ModelingToolkit
 using OrdinaryDiffEq, StochasticDiffEq, DiffEqJump
 using Test, SafeTestsets
 using LinearAlgebra, Random, Statistics
-using UnPack, SparseArrays
+using UnPack, SparseArrays, Plots
 
 
 ### Decalre constants realted to groups.
@@ -12,6 +12,8 @@ const is_APPVEYOR = Sys.iswindows() && haskey(ENV,"APPVEYOR")
 const is_TRAVIS = haskey(ENV,"TRAVIS")
 
 
+### Fetched the set of test networks ###
+include("test_networks.jl")
 
 ### Ruyn the tests ###
 @time begin
@@ -30,21 +32,20 @@ if GROUP == "All" || GROUP == "Model Modifcations"
 end
 
 # Tests related to solving Ordinary Differential Equations.
-if GROUP == "All" || GROUP == "ODE Problems"
-  @time @safetestset "" begin include(".jl") end
-  @time @safetestset "" begin include(".jl") end
+if GROUP == "All" || GROUP == "Deterministic Tests"
+  @time @safetestset "" begin include("solve_ODEs.jl") end
+  @time @safetestset "" begin include("make_jacobian.jl") end
 end
 
 # Tests related to solving Stochastic Differential Equations.
 if GROUP == "All" || GROUP == "SDE Problems"
-  @time @safetestset "" begin include(".jl") end
-  @time @safetestset "" begin include(".jl") end
+  @time @safetestset "" begin include("solve_SDEs.jl") end
 end
 
 # Tests related to solvingJump Systems.
 if GROUP == "All" || GROUP == "Jump Problems"
-  @time @safetestset "" begin include(".jl") end
-  @time @safetestset "" begin include(".jl") end
+  @time @safetestset "" begin include("latexify.jl") end
+  @time @safetestset "" begin include("tests.jl") end
 end
 
 # Miscellaneous tests.
