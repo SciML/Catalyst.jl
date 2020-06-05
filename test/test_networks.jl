@@ -1,11 +1,11 @@
 ### File declaring various reaction networks for the tests to be run on ###
 
 #Declares the vectors which contains the various test sets.
-reaction_networks_standard = Vector{DiffEqBase.AbstractReactionNetwork}(undef,10)
-reaction_networks_hill = Vector{DiffEqBase.AbstractReactionNetwork}(undef,10)
-reaction_networks_constraint = Vector{DiffEqBase.AbstractReactionNetwork}(undef,10)
-reaction_networks_real = Vector{DiffEqBase.AbstractReactionNetwork}(undef,4)
-reaction_networks_weird = Vector{DiffEqBase.AbstractReactionNetwork}(undef,10)
+reaction_networks_standard = Vector{ReactionSystem}(undef,10)
+reaction_networks_hill = Vector{ReactionSystem}(undef,10)
+reaction_networks_constraint = Vector{ReactionSystem}(undef,10)
+reaction_networks_real = Vector{ReactionSystem}(undef,4)
+reaction_networks_weird = Vector{ReactionSystem}(undef,10)
 
 
 
@@ -26,8 +26,8 @@ end v1 K1 v2 K2 d
 reaction_networks_standard[3] = @reaction_network begin
     mm(X2,v1,K1), ∅ → X1
     mm(X3,v2,K2), ∅ → X2
-    (k1,k2), X1 ⟷ X4
-    (k3,k4), X4 + X2 ⟷ X3 +X1
+    (k1,k2), X1 ⟷ X3
+    (k3,k4), X3 + X2 ⟷ X4 +X1
     d, (X1,X2,X3,X4) → ∅
 end v1 K1 v2 K2 k1 k2 k3 k4 d
 
@@ -163,91 +163,82 @@ end v1 K1 n1 v2 K2 n2 k1 k2 k3 k4 k5 k6 d1 d2
 
 
 ### Reaction networks were some linnear combination concentrations remain fixed (steady state values depends on initial conditions).
-reaction_networks_constraint_1 = @reaction_network begin
+reaction_networks_constraint[1] = @reaction_network begin
     (k1,k2), X1 ↔ X2
     (k3,k4), X2 ↔ X3
     (k5,k6), X3 ↔ X1
-end k1 k2 k3 k4 k5 k6 FC
+end k1 k2 k3 k4 k5 k6
 #@add_constraint reaction_networks_constraint_1 X1+X2+X3=FC
-reaction_networks_constraint[1] = reaction_networks_constraint_1
 
-reaction_networks_constraint_2 = @reaction_network begin
+reaction_networks_constraint[2] = @reaction_network begin
     (k1,k2), X1 ↔ 2X1
     (k3,k4), X1 + X2 ↔ X3
     (k5,k6), X3 ↔ X2
-end k1 k2 k3 k4 k5 k6 FC
+end k1 k2 k3 k4 k5 k6
 #@add_constraint reaction_networks_constraint_2 X2+X3=FC
-reaction_networks_constraint[2] = reaction_networks_constraint_2
 
-reaction_networks_constraint_3 = @reaction_network begin
+reaction_networks_constraint[3] = @reaction_network begin
     (k1,k2*X5), X1 ↔ X2
     (k3*X5,k4), X3 ↔ X4
     (p+k5*X2*X3,d), ∅ ↔ X5
-end k1 k2 k3 k4 p k5 d FC1 FC2
+end k1 k2 k3 k4 p k5 d
 #@add_constraints reaction_networks_constraint_3 begin
 #    X1+X2=FC1
 #    X3+X4=FC2
 #end
-reaction_networks_constraint[3] = reaction_networks_constraint_3
 
-reaction_networks_constraint_4 = @reaction_network begin
+reaction_networks_constraint[4] = @reaction_network begin
     (k1,k2), X1 + X2 ↔ X3
     (mm(X3,v,K),d), ∅ ↔ X4
-end k1 k2 v K d FC1 FC2
+end k1 k2 v K d
 #@add_constraints reaction_networks_constraint_4 begin
 #    X1+X3=FC1
 #    X2+X3=FC2
 #end
-reaction_networks_constraint[4] = reaction_networks_constraint_4
 
-reaction_networks_constraint_5 = @reaction_network begin
+reaction_networks_constraint[5] = @reaction_network begin
     (k1,k2), X1 ↔ 2X2
     (k3,k4), 2X2 ↔ 3X3
     (k5,k6), 3X3 ↔ 4X4
-end k1 k2 k3 k4 k5 k6 FC
+end k1 k2 k3 k4 k5 k6
 #@add_constraint reaction_networks_constraint_5 24X1+12X2+8X3+6X4=FC
-reaction_networks_constraint[5] = reaction_networks_constraint_5
 
-reaction_networks_constraint_6 = @reaction_network begin
+reaction_networks_constraint[6] = @reaction_network begin
     mmR(X1,v1,K1), X1 → X2
     mmR(X2,v2,K2), X2 → X3
     mmR(X3,v3,K3), X3 → X1
-end v1 K1 v2 K2 v3 K3 FC
+end v1 K1 v2 K2 v3 K3
 #@add_constraint reaction_networks_constraint_6 X1+X2+X3=FC
-reaction_networks_constraint[6] = reaction_networks_constraint_6
 
-reaction_networks_constraint_7 = @reaction_network begin
+reaction_networks_constraint[7] = @reaction_network begin
     (k1,k2), X1 + X2 ↔ X3
     (mm(X3,v,K),d), ∅ ↔ X2
     (k3,k4), X2 ↔ X4
-end k1 k2 k3 k4 v K d FC
+end k1 k2 k3 k4 v K d
 #@add_constraint reaction_networks_constraint_7 X1+X3=FC
-reaction_networks_constraint[7] = reaction_networks_constraint_7
 
-reaction_networks_constraint_8 = @reaction_network begin
+reaction_networks_constraint[8] = @reaction_network begin
     (k1,k2), X1 + X2 ↔ X3
     (mm(X3,v1,K1),mm(X4,v2,K2)), X3 ↔ X4
-end k1 k2 v1 K1 v2 K2 FC1 FC2
+end k1 k2 v1 K1 v2 K2
 #@add_constraints reaction_networks_constraint_8 begin
 #    X1+X2+X4=FC1
 #    X2+X3+X4=FC2
 #end
-reaction_networks_constraint[8] = reaction_networks_constraint_8
 
-reaction_networks_constraint_9 = @reaction_network begin
+reaction_networks_constraint[9] = @reaction_network begin
     (k1,k2), X1 + X2 ↔ X3
     (k3,k4), X3 + X4 ↔ X5
     (k5,k6), X5 + X6 ↔ X7
-end k1 k2 k3 k4 k5 k6 FC1 FC2 FC3 FC4
+end k1 k2 k3 k4 k5 k6
 #@add_constraints reaction_networks_constraint_9 begin
 #    X1+X3+X5+X7=FC1
 #    X2+X3+X5+X7=FC2
 #    X4+X5+X7=FC3
 #    X6+X7=FC4
 #end
-reaction_networks_constraint[9] = reaction_networks_constraint_9
 
-reaction_networks_constraint_10 = @reaction_network rnType begin
+reaction_networks_constraint[10] = @reaction_network rnType begin
     kDeg,       (w,w2,w2v,v,w2v2,vP,σB,w2σB) ⟶ ∅
     kDeg,       vPp ⟶ phos
     (kBw,kDw),  2w ⟷ w2
@@ -262,9 +253,8 @@ reaction_networks_constraint_10 = @reaction_network rnType begin
     v0*((1+F*σB)/(K+σB)),     ∅ ⟶ σB
     λW*v0*((1+F*σB)/(K+σB)),  ∅ ⟶ w
     λV*v0*((1+F*σB)/(K+σB)),  ∅ ⟶ v
-end kBw kDw kD kB1 kB2 kB3 kB4 kB5 kD1 kD2 kD3 kD4 kD5 kK1 kK2 kP kDeg v0 F K λW λV pTot;
+end kBw kDw kD kB1 kB2 kB3 kB4 kB5 kD1 kD2 kD3 kD4 kD5 kK1 kK2 kP kDeg v0 F K λW λV;
 #@add_constraint reaction_networks_constraint_10 vPp+phos=pTot
-reaction_networks_constraint[10] = reaction_networks_constraint_10
 
 
 
@@ -314,8 +304,8 @@ end p d
 reaction_networks_weird[2] = @reaction_network begin
     k1, ∅ → X
     k2*log(12+X), X → Y
-    k3*ln(3+Y), Y → Z
-    logk(5,6+k4), Z → ∅
+    k3*log(3+Y), Y → Z
+    log(5,6+k4), Z → ∅
 end k1 k2 k3 k4
 
 reaction_networks_weird[3] = @reaction_network begin

@@ -3,7 +3,7 @@ using DiffEqBiological, ModelingToolkit
 using OrdinaryDiffEq, StochasticDiffEq, DiffEqJump
 using Test, SafeTestsets
 using LinearAlgebra, Random, Statistics
-using SparseArrays
+using UnPack, SparseArrays
 
 
 ### Decalre constants realted to groups.
@@ -18,8 +18,9 @@ const is_TRAVIS = haskey(ENV,"TRAVIS")
 
 # Standard tests realting to the model.
 if GROUP == "All" || GROUP == "Core"
-  @time @safetestset "" begin include(".jl") end
-  @time @safetestset "" begin include(".jl") end
+  @time @safetestset "Model Macro" begin include("make_model.jl") end
+  @time @safetestset "Custom Functions" begin include("custom_functions.jl") end
+  @time @safetestset "Higher Order" begin include("higher_order.jl") end
 end
 
 # Tests relating to modification an already created model.
