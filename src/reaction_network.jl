@@ -65,6 +65,8 @@ bwd_arrows = Set{Symbol}([:<, :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :�
 double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇔, :⟺])
 pure_rate_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
+# Declares symbols which may neither be used as paraemters not varriables.
+forbidden_symbols = Set{Symbol}([:t, :π, :pi, :ℯ, :im, :I, :nothing, :∅])
 
 
 ### The main macro, takes reaction network notation and returns a ReactionSystem. ###
@@ -101,7 +103,7 @@ end
 function make_reaction_system(ex::Expr, parameters)
     reactions = get_reactions(ex)
     reactants = get_reactants(reactions)
-    (in(:t,union(reactants,parameters))) && error("t is reserved for the time variable and may neither be used as a reactant nor a parameter")
+    !isempty(intersect(forbidden_symbols,union(reactants,parameters))) && error("The following symbol(s) are used as reactants or parameters: "*((string.(intersect(forbidden_symbols,union(reactants,parameters))) .* ", ")...)*"this is not permited.")
 
     network_code = Expr(:block,:(@parameters t),:(@variables), :(ReactionSystem([],t,[],[])))
     foreach(parameter-> push!(network_code.args[1].args, parameter), parameters)
