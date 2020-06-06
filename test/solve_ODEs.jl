@@ -15,7 +15,7 @@ for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
     prob = ODEProblem(exponential_decay,u0,(0.,100/factor),p)
     sol = solve(prob,Rosenbrock23(),saveat=range(0.,100/factor,length=101))
     analytic_sol = map(t -> u0[1]*exp(-p[1]*t),range(0.,100/factor,length=101))
-    all(abs(first.(sol.u) .- analytic_sol) .< 1e-8)
+    all(abs.(first.(sol.u) .- analytic_sol) .< 1e-8)
 end
 
 # Networks with know equilibrium

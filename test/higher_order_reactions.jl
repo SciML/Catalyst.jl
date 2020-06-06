@@ -19,7 +19,7 @@ higher_order_network_2 = @reaction_network begin
     r1*X1^2/factorial(2),                                       2X1 ⟾ 3X2
     mm(X1,r2,K)*X2^3/factorial(3),                              3X2 ⟾ X3 + 2X4
     r3*X3*X4^2/factorial(2),                                    X3 + 2X4 ⟾ 3X5 + 3X6
-    r4*X2*X5^3*X6^3/(factorial(3)*factorial(3)),                   3X5 + 3X6 ⟾ 3X5 + 2X7 + 4X8
+    r4*X2*X5^3*X6^3/(factorial(3)*factorial(3)),                3X5 + 3X6 ⟾ 3X5 + 2X7 + 4X8
     r5*X5^3*X7^2*X8^4/(factorial(3)*factorial(2)*factorial(4)), 3X5 + 2X7 + 4X8 ⟾ 10X9
     r6*X9^10/factorial(10),                                     10X9 ⟾ X10
     d*X10^2/factorial(2),                                       2X10 ⟾ ∅
