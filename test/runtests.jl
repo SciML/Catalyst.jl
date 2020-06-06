@@ -1,19 +1,11 @@
 ### Fecth the require packages ###
-using DiffEqBiological, ModelingToolkit
-using OrdinaryDiffEq, StochasticDiffEq, DiffEqJump
-using Test, SafeTestsets
-using UnPack, LinearAlgebra, Random, Statistics
-using Latexify, Plots
+using SafeTestsets
 
 
 ### Decalre constants realted to groups.
 const GROUP = get(ENV, "GROUP", "All")
 const is_APPVEYOR = Sys.iswindows() && haskey(ENV,"APPVEYOR")
 const is_TRAVIS = haskey(ENV,"TRAVIS")
-
-
-### Fetched the set of test networks ###
-include("test_networks.jl")
 
 
 ### Ruyn the tests ###

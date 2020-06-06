@@ -1,5 +1,5 @@
 ### Fetch required packages and reaction networks ###
-using DiffEqBiological, DiffEqJump, OrdinaryDiffEq, Random, Test
+using DiffEqBiological, DiffEqJump, OrdinaryDiffEq, Random, Statistics, Test
 include("test_networks.jl")
 
 ### Tests various ways to input u0 and p for various functions ###
@@ -9,7 +9,7 @@ test_network = reaction_networks_standard[7]
 @variables X1 X2 X3 X4 X5 X6 X
 @parameters p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
 
-for factor in [1e-1, 1e0, 1e1]
+for factor in [1e0, 1e1]
     u0_1 = factor*rand(length(test_network.states))
     u0_2 = [X1=>u0_1[1], X2=>u0_1[2], X3=>u0_1[3], X4=>u0_1[4], X5=>u0_1[5]]
     u0_3 = [X2=>u0_1[2], X5=>u0_1[5], X4=>u0_1[4], X3=>u0_1[3], X1=>u0_1[1]]
