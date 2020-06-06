@@ -1,8 +1,7 @@
-### Fetch required packages and reaction networks ###
-using DiffEqBase, DiffEqBiological, Test, Random
+### Fetch required packages ###
+using DiffEqBase, DiffEqBiological, DiffEqJump, Test, Random
 
-
-### Tests that two networks are identical (one with higher order rates described implicitly, one excplicitly) ###
+### Declares a test network. ###
 higher_order_network_1 = @reaction_network begin
     p,                                                          ∅ ⟼ X1
     r1,                                                         2X1 ⟼ 3X2
@@ -13,6 +12,9 @@ higher_order_network_1 = @reaction_network begin
     r6,                                                         10X9 ⟼ X10
     d,                                                          2X10 ⟼ ∅
 end p r1 r2 K r3 r4 r5 r6 d
+
+
+### Tests that deterministic and stochastic differential functions are identical. ###
 
 higher_order_network_2 = @reaction_network begin
     p,                                                          ∅ ⟾ X1
@@ -25,7 +27,6 @@ higher_order_network_2 = @reaction_network begin
     d*X10^2/factorial(2),                                       2X10 ⟾ ∅
 end p r1 r2 K r3 r4 r5 r6 d
 
-### Tests that deterministic and stochastic differential functions are identical. ###
 f1 = ODEFunction(convert(ODESystem,higher_order_network_1),jac=true)
 f2 = ODEFunction(convert(ODESystem,higher_order_network_2),jac=true)
 g1 = SDEFunction(convert(SDESystem,higher_order_network_1))
@@ -40,17 +41,32 @@ for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
 end
 
 
-### Tests that the discrete jump fucntions are equal. ###
+### Tests that the discrete jump systems are equal. ###
+higher_order_network_3 = @reaction_network begin
+    p,                                                  ∅ ⟾ X1
+    r1*binomial(X1,2),                                  2X1 ⟾ 3X2
+    mm(X1,r2,K)*binomial(X2,3),                         3X2 ⟾ X3 + 2X4
+    r3*binomial(X3,1)*binomial(X4,2),                   X3 + 2X4 ⟾ 3X5 + 3X6
+    r4*X2*binomial(X5,3)*binomial(X6,3),                3X5 + 3X6 ⟾ 3X5 + 2X7 + 4X8
+    r5*binomial(X5,3)*binomial(X7,2)*binomial(X8,4),    3X5 + 2X7 + 4X8 ⟾ 10X9
+    r6*binomial(X9,10),                                 10X9 ⟾ X10
+    d*binomial(X10,2),                                  2X10 ⟾ ∅
+end p r1 r2 K r3 r4 r5 r6 d
 
-# This yields error "MethodError: no method matching binomial(::Operation, ::Int64)"
-# Will update tests when/if ModelingToolkit enables binomial(::Operation, ::Int64).
-#higher_order_network_3 = @reaction_network begin
-#    p,                                                          ∅ ⟾ X1
-#    r1*binomial(X1,2),                                         2X1 ⟾ 3X2
-#    mm(X1,r2,K)*binomial(X2,3),                                3X2 ⟾ X3 + 2X4
-#    r3*binomial(X3,1)*binomial(X4,2),                         X3 + 2X4 ⟾ 3X5 + 3X6
-#    r4*X2*binomial(X5,3)*binomial(X6,3),                      3X5 + 3X6 ⟾ 3X5 + 2X7 + 4X8
-#    r5*binomial(X5,3)*binomial(X7,2)*binomial(X8,4),         3X5 + 2X7 + 4X8 ⟾ 10X9
-#    r6*binomial(X9,10),                                        10X9 ⟾ X10
-#    d*binomial(X10,2),                                         2X10 ⟾ ∅
-#end p r1 r2 K r3 r4 r5 r6 d
+@test_broken if false
+    for factor in [1e-1, 1e0, 1e1, 1e2], repeat = 1:5
+        println(factor)
+        u0 = rand(1:Int64(factor*100),length(higher_order_network_1.states))
+        p = factor*rand(length(higher_order_network_3.ps))
+        prob1 = JumpProblem(higher_order_network_1,DiscreteProblem(higher_order_network_1,u0,(0.,1000.),p),Direct())
+        sol1 = solve(prob1,SSAStepper())
+        prob2 = JumpProblem(higher_order_network_3,DiscreteProblem(higher_order_network_3,u0,(0.,1000.),p),Direct())
+        sol2 = solve(prob2,SSAStepper())   #This line gives weird error.
+        for i = 1:length(u0)
+            vals1 = getindex.(sol1.u,i);
+            vals2 = getindex.(sol1.u,i);
+            (mean(vals2)>0.001) && @test 0.8 < mean(vals1)/mean(vals2) < 1.25
+            (std(vals2)>0.001) && @test 0.8 < std(vals1)/std(vals2) < 1.25
+        end
+    end
+end
