@@ -1,5 +1,5 @@
 ### Compares to the manually calcualted function ###
-identical_networks_1 = Vector{Pair}()
+identical_networks = Vector{Pair}()
 
 function real_f_1(du,u,p,t)
     X1,X2,X3 = u
@@ -27,7 +27,7 @@ function real_g_1(du,u,p,t)
     du[3,4] = sqrt(k3*X2)
     du[3,5] = -sqrt(d*X3)
 end
-push!(identical_networks_1, reaction_networks_standard[8] => (real_f_1,real_g_1))
+push!(identical_networks, reaction_networks_standard[8] => (real_f_1,real_g_1))
 
 function real_f_2(du,u,p,t)
     X1, = u
@@ -40,7 +40,7 @@ function real_g_2(du,u,p,t)
     du[1,1] = sqrt(v/10+hill(X1,v,K,n))
     du[1,2] = -sqrt(d*X1)
 end
-push!(identical_networks_1, reaction_networks_hill[6] => (real_f_2,real_g_2))
+push!(identical_networks, reaction_networks_hill[6] => (real_f_2,real_g_2))
 
 function real_f_3(du,u,p,t)
     X1,X2,X3,X4,X5 = u
@@ -66,9 +66,9 @@ function real_g_3(du,u,p,t)
     du[5,5] = sqrt(p+k5*X2*X3)
     du[5,6] = -sqrt(d*X5)
 end
-push!(identical_networks_1, reaction_networks_constraint[3] => (real_f_3,real_g_3))
+push!(identical_networks, reaction_networks_constraint[3] => (real_f_3,real_g_3))
 
-for (i,networks) in enumerate(identical_networks_1)
+for (i,networks) in enumerate(identical_networks)
     for factor in [1e-2, 1e-1, 1e0, 1e1], repeat = 1:5
         u0 = 100. .+ factor*rand(length(networks[1].states))
         p = 0.01 .+ factor*rand(length(networks[1].ps))
