@@ -1,5 +1,6 @@
 module DiffEqBiological
 
+using Reexport
 using MacroTools, LinearAlgebra, DataStructures
 using RecipesBase, Latexify
 
