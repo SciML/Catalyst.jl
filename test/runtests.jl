@@ -23,6 +23,7 @@ if GROUP == "All" || GROUP == "Core"
   @time @safetestset "Model Macro" begin include("make_model.jl") end
   @time @safetestset "Custom Functions" begin include("custom_functions.jl") end
   @time @safetestset "Higher Order" begin include("higher_order_reactions.jl") end
+  #@time @safetestset "Property Query" begin include("property_query.jl") end
 end
 
 # Tests relating to modification an already created model.
