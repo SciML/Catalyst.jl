@@ -95,7 +95,7 @@ end
 
 
 ### Tries solving a large number of problem, ensuring there are no errors. ###
-@time for reaction_network in reaction_networks_all
+for reaction_network in reaction_networks_all
     for factor in [1e-2, 1e-1, 1e0, 1e1]
         u0 = factor*rand(length(reaction_network.states))
         p = factor*rand(length(reaction_network.ps))
