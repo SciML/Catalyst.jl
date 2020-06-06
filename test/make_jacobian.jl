@@ -1,3 +1,7 @@
+### Fetch required packages and reaction networks ###
+using DiffEqBiological, DiffEqBase, Random, Test
+
+
 ### Checks that the jacobian is correct for networks without parameters ###
 jacobian_network_1 = @reaction_network begin
     (2.0,1.0),   ∅ ↔ X

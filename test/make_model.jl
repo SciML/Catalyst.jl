@@ -1,3 +1,7 @@
+### Fetch required packages and reaction networks ###
+using DiffEqBase, DiffEqBiological, Random, Test, UnPack
+include("test_networks.jl")
+
 
 ### Debugg functions ###
 

@@ -1,3 +1,7 @@
+### Fetch required packages and reaction networks ###
+using DiffEqBiological, OrdinaryDiffEq, Random, Test
+include("test_networks.jl")
+
 ### Checks the solutions of specific problems ###
 
 # Exponential decay, should be identical to the (known) analytical solution.

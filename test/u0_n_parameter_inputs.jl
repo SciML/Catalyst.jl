@@ -1,3 +1,7 @@
+### Fetch required packages and reaction networks ###
+using DiffEqBiological, DiffEqJump, OrdinaryDiffEq, Random, Test
+include("test_networks.jl")
+
 ### Tests various ways to input u0 and p for various functions ###
 
 # Tests for reaction_networks_standard[7]

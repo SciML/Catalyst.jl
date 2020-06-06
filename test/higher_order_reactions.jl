@@ -1,3 +1,7 @@
+### Fetch required packages and reaction networks ###
+using DiffEqBase, DiffEqBiological, Test, Random
+
+
 ### Tests that two networks are identical (one with higher order rates described implicitly, one excplicitly) ###
 higher_order_network_1 = @reaction_network begin
     p,                                                          ∅ ⟼ X1

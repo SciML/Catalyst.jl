@@ -1,3 +1,9 @@
+### Fetch required packages and reaction networks ###
+using DiffEqBase, DiffEqBiological, Random, Test
+
+
+### Tests various cutom made functions ###
+
 @reaction_func new_hill(x, v, k, n) = v*x^n/(k^n+x^n)
 @reaction_func new_poly(x,p1,p2) = p1*x^2+p2
 @reaction_func new_exp(x,p) = exp(-p*x)

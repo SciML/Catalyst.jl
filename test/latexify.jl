@@ -1,3 +1,6 @@
+### Fetch required packages and reaction networks ###
+using DiffEqBiological, Latexify
+
 ############################
 ### CURRENTLY NOT ACITVE ###
 ### REQUIRES REWRITING   ###

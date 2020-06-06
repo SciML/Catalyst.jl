@@ -1,3 +1,7 @@
+### Fetch required packages and reaction networks ###
+using DiffEqBiological, Random, StochasticDiffEq, Test
+include("test_networks.jl")
+
 ### Compares to the manually calcualted function ###
 identical_networks = Vector{Pair}()
 
