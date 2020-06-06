@@ -1,5 +1,6 @@
 ### Fetch required packages ###
-using DiffEqBase, DiffEqBiological, DiffEqJump, Test, Random
+using DiffEqBase, DiffEqBiological, DiffEqJump, Random, Statistics, Test
+
 
 ### Declares a test network. ###
 higher_order_network_1 = @reaction_network begin
@@ -43,7 +44,7 @@ end
 
 ### Tests that the discrete jump systems are equal. ###
 higher_order_network_3 = @reaction_network begin
-    p,                                                  ∅ ⟾ X1
+    p,                                                  ∅ ⟼ X1
     r1*binomial(X1,2),                                  2X1 ⟾ 3X2
     mm(X1,r2,K)*binomial(X2,3),                         3X2 ⟾ X3 + 2X4
     r3*binomial(X3,1)*binomial(X4,2),                   X3 + 2X4 ⟾ 3X5 + 3X6
@@ -53,20 +54,17 @@ higher_order_network_3 = @reaction_network begin
     d*binomial(X10,2),                                  2X10 ⟾ ∅
 end p r1 r2 K r3 r4 r5 r6 d
 
-@test_broken if false
-    for factor in [1e-1, 1e0, 1e1, 1e2], repeat = 1:5
-        println(factor)
-        u0 = rand(1:Int64(factor*100),length(higher_order_network_1.states))
-        p = factor*rand(length(higher_order_network_3.ps))
-        prob1 = JumpProblem(higher_order_network_1,DiscreteProblem(higher_order_network_1,u0,(0.,1000.),p),Direct())
-        sol1 = solve(prob1,SSAStepper())
-        prob2 = JumpProblem(higher_order_network_3,DiscreteProblem(higher_order_network_3,u0,(0.,1000.),p),Direct())
-        sol2 = solve(prob2,SSAStepper())   #This line gives weird error.
-        for i = 1:length(u0)
-            vals1 = getindex.(sol1.u,i);
-            vals2 = getindex.(sol1.u,i);
-            (mean(vals2)>0.001) && @test 0.8 < mean(vals1)/mean(vals2) < 1.25
-            (std(vals2)>0.001) && @test 0.8 < std(vals1)/std(vals2) < 1.25
-        end
+for factor in [1e-1, 1e0], repeat = 1:5
+    u0 = rand(1:Int64(factor*100),length(higher_order_network_1.states))
+    p = factor*rand(length(higher_order_network_3.ps))
+    prob1 = JumpProblem(higher_order_network_1,DiscreteProblem(higher_order_network_1,u0,(0.,1000.),p),Direct())
+    sol1 = solve(prob1,SSAStepper())
+    prob2 = JumpProblem(higher_order_network_3,DiscreteProblem(higher_order_network_3,u0,(0.,1000.),p),Direct())
+    sol2 = solve(prob2,SSAStepper())  
+    for i = 1:length(u0)
+        vals1 = getindex.(sol1.u,i);
+        vals2 = getindex.(sol1.u,i);
+        (mean(vals2)>0.001) && @test 0.8 < mean(vals1)/mean(vals2) < 1.25
+        (std(vals2)>0.001) && @test 0.8 < std(vals1)/std(vals2) < 1.25
     end
 end
