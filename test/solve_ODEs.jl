@@ -59,7 +59,7 @@ end
 push!(identical_networks_1, reaction_networks_standard[2] => real_functions_2)
 
 function real_functions_3(du,u,p,t)
-X1,X2,X3 = u
+    X1,X2,X3 = u
     v1,v2,v3,K1,K2,K3,n1,n2,n3,d1,d2,d3 = p
     du[1] = v1*K1^n1/(K1^n1+X3^n1) - d1*X1
     du[1] = v2*K2^n2/(K2^n2+X1^n2) - d2*X3
@@ -68,7 +68,7 @@ end
 push!(identical_networks_1, reaction_networks_hill[2] => real_functions_3)
 
 function real_functions_4(du,u,p,t)
-X1,X2,X3 = u
+    X1,X2,X3 = u
     k1,k2,k3,k4,k5,k6 = p
     du[1] = -k1*X1 + k2*X2 + k5*X3 - k6*X1
     du[2] = -k3*X2 + k4*X3 + k1*X1 - k2*X2

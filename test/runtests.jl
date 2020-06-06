@@ -15,7 +15,7 @@ const is_TRAVIS = haskey(ENV,"TRAVIS")
 if GROUP == "All" || GROUP == "Network Creation & Modification"
   @time @safetestset "Model Construction" begin include("make_model.jl") end
   @time @safetestset "Custom Functions" begin include("custom_functions.jl") end
-  @time @safetestset "Model Modification" begin include("model_modification.jl") end
+  #@time @safetestset "Model Modification" begin include("model_modification.jl") end
 end
 
 # Tests various core properties of the package.
