@@ -86,7 +86,7 @@ end
 push!(identical_networks_1, reaction_networks_weird[2] => real_functions_5)
 
 for networks in identical_networks_1
-    for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
+    for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
         u0 = factor*rand(length(networks[1].states))
         p = factor*rand(length(networks[1].ps))
         prob1 = ODEProblem(networks[1],u0,(0.,100.),p)

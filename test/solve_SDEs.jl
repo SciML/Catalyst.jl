@@ -47,44 +47,54 @@ end
 push!(identical_networks, reaction_networks_hill[6] => (real_f_2,real_g_2))
 
 function real_f_3(du,u,p,t)
-    X1,X2,X3,X4,X5 = u
-    k1,k2,k3,k4,p,k5,d = p
-    du[1] = -k1*X1 + k2*X2*X5
-    du[2] = k1*X1 - k2*X2*X5
-    du[3] = -k3*X5*X3 + k4*X4
-    du[4] = k3*X5*X3 - k4*X4
-    du[5] = p+k5*X2*X3 - d*X5
+    X1,X2,X3,X4,X5,X6,X7 = u
+    k1,k2,k3,k4,k5,k6 = p
+    du[1] = -k1*X1*X2 + k2*X3
+    du[2] = -k1*X1*X2 + k2*X3
+    du[3] = k1*X1*X2 - k2*X3 - k3*X3*X4 + k4*X5
+    du[4] = -k3*X3*X4 + k4*X5
+    du[5] = k3*X3*X4 - k4*X5 - k5*X5*X6 + k6*X7
+    du[6] = -k5*X5*X6 + k6*X7
+    du[6] = k5*X5*X6 - k6*X7
 end
 function real_g_3(du,u,p,t)
-    X1,X2,X3,X4,X5 = u
-    k1,k2,k3,k4,p,k5,d = p
-    du = zeros(5,6)
-    du[1,1] = -sqrt(k1*X1)
-    du[1,2] = sqrt(k2*X2*X5)
-    du[2,1] = sqrt(k1*X1)
-    du[2,2] = -sqrt(k2*X2*X5)
-    du[3,3] = -sqrt(k3*X5*X3)
-    du[3,4] = sqrt(k4*X4)
-    du[4,3] = sqrt(k3*X5*X3)
-    du[4,4] = -sqrt(k4*X4)
-    du[5,5] = sqrt(p+k5*X2*X3)
-    du[5,6] = -sqrt(d*X5)
+    X1,X2,X3 = u
+    k1,k2,k3,k4,k5,k6 = p
+    du = zeros(7,6)
+    du[1,1] = -sqrt(k1*X1*X2)
+    du[1,2] = sqrt(k2*X3)
+    du[2,1] = -sqrt(k1*X1*X2)
+    du[2,2] = sqrt(k2*X3)
+    du[3,1] = sqrt(k1*X1*X2)
+    du[3,2] = -sqrt(k2*X3)
+    du[3,3] = -sqrt(k3*X3*X4)
+    du[3,4] = sqrt(k4*X5)
+    du[4,3] = -sqrt(k3*X3*X4)
+    du[4,4] = sqrt(k4*X5)
+    du[5,3] = sqrt(k3*X3*X4)
+    du[5,4] = -sqrt(k4*X5)
+    du[5,5] = -sqrt(k5*X5*X6)
+    du[5,6] = sqrt(k6*X7)
+    du[6,5] = -sqrt(k5*X5*X6)
+    du[6,6] = sqrt(k6*X7)
+    du[7,5] = sqrt(k5*X5*X6)
+    du[7,6] = -sqrt(k6*X7)
 end
-push!(identical_networks, reaction_networks_constraint[3] => (real_f_3,real_g_3))
+push!(identical_networks, reaction_networks_constraint[9] => (real_f_3,real_g_3))
 
 for (i,networks) in enumerate(identical_networks)
-    for factor in [1e-2, 1e-1, 1e0, 1e1], repeat = 1:5
+    for factor in [1e-1, 1e0, 1e1], repeat in 1:5
         u0 = 100. .+ factor*rand(length(networks[1].states))
         p = 0.01 .+ factor*rand(length(networks[1].ps))
         (i==2) && (u0[1] += 1000.)
-        (i==3) ? (p[5] += 100.; p[2] /= 100; p[3] /= 100;) : p[1] += 500.
-        prob1 = SDEProblem(networks[1],u0,(0.,1000.),p)
-        sol1 = solve(prob1,ImplicitEM(),saveat=0.01)
-        prob2 = SDEProblem(networks[2][1],networks[2][2],u0,(0.,1000.),p)
-        sol2 = solve(prob1,ImplicitEM(),saveat=0.01)
+        (i==3) ? (p[2:2:6] .*= 100.) : (p[1] += 500.)
+        prob1 = SDEProblem(networks[1],u0,(0.,100.),p)
+        sol1 = solve(prob1,ImplicitEM(),saveat=0.01,maxiters=1e7)
+        prob2 = SDEProblem(networks[2][1],networks[2][2],u0,(0.,100.),p)
+        sol2 = solve(prob1,ImplicitEM(),saveat=0.01,maxiters=1e7)
         for i = 1:length(u0)
-            vals1 = getindex.(sol1.u[10000:end],i);
-            vals2 = getindex.(sol1.u[10000:end],i);
+            vals1 = getindex.(sol1.u[1000:end],i);
+            vals2 = getindex.(sol1.u[1000:end],i);
             @test 0.8 < mean(vals1)/mean(vals2) < 1.25
             @test 0.8 < std(vals1)/std(vals2) < 1.25
         end
