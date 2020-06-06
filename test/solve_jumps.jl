@@ -87,8 +87,8 @@ for networks in identical_networks
         for i = 1:length(u0)
             vals1 = getindex.(sol1.u,i);
             vals2 = getindex.(sol1.u,i);
-            @test 0.8 < mean(vals1)/mean(vals2) < 1.25
-            @test 0.8 < std(vals1)/std(vals2) < 1.25
+            (mean(vals2)>0.001) && @test 0.8 < mean(vals1)/mean(vals2) < 1.25
+            (std(vals2)>0.001) && @test 0.8 < std(vals1)/std(vals2) < 1.25
         end
     end
 end
@@ -96,8 +96,7 @@ end
 
 ### Tries solving a large number of problem, ensuring there are no errors. ###
 for reaction_network in reaction_networks_all
-    println("HERE")
-    for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
+    for factor in [1e-1, 1e0, 1e1]
         u0 = rand(1:Int64(factor*100),length(reaction_network.states))
         p = factor*rand(length(reaction_network.ps))
         prob1 = JumpProblem(reaction_network,DiscreteProblem(reaction_network,u0,(0.,1.),p),Direct())
