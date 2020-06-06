@@ -1,13 +1,10 @@
 module DiffEqBiological
 
-using DataStructures, MacroTools, Parameters, Reexport, SparseArrays, SymEngine
-using DiffEqBase, DiffEqJump, Compat
-@reexport using DiffEqBase, DiffEqJump
-using DynamicPolynomials, LinearAlgebra, RecipesBase, Latexify
+using MacroTools, LinearAlgebra, DataStructures
+using RecipesBase, Latexify
 
-@reexport using ModelingToolkit
-
-import HomotopyContinuation
+using DiffEqBase, DiffEqJump, ModelingToolkit
+@reexport using DiffEqBase, DiffEqJump, ModelingToolkit
 
 import Base: (==)
 
@@ -19,6 +16,7 @@ include("reaction_network.jl")
 # reaction network macro
 export @reaction_network
 export @reaction_func
+
 end # module
 
 ### Things possibly added back later. ###
