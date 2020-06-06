@@ -66,12 +66,21 @@ double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇔, :⟺])
 pure_rate_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
 # Declares symbols which may neither be used as paraemters not varriables.
-forbidden_symbols = Set{Symbol}([:t, :π, :pi, :ℯ, :im, :I, :nothing, :∅])
+forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :I, :nothing, :∅]
 
 
 ### The main macro, takes reaction network notation and returns a ReactionSystem. ###
 macro reaction_network(ex::Expr, parameters...)
     make_reaction_system(MacroTools.striplines(ex), parameters)
+end
+
+# Returns a empty network (with, or without, parameters decalred)
+macro reaction_network(parameters...)
+    !isempty(intersect(forbidden_symbols,parameters)) && error("The following symbol(s) are used as parameter(s): "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,parameters))...))*"this is not permited.")
+    network_code = Expr(:block,:(@parameters t),[], :(ReactionSystem([],t,[],[])))
+    foreach(parameter-> push!(network_code.args[1].args, parameter), parameters)
+    foreach(parameter-> push!(network_code.args[3].args[5].args, parameter), parameters)
+    return network_code
 end
 
 
@@ -103,7 +112,7 @@ end
 function make_reaction_system(ex::Expr, parameters)
     reactions = get_reactions(ex)
     reactants = get_reactants(reactions)
-    !isempty(intersect(forbidden_symbols,union(reactants,parameters))) && error("The following symbol(s) are used as reactants or parameters: "*((string.(intersect(forbidden_symbols,union(reactants,parameters))) .* ", ")...)*"this is not permited.")
+    !isempty(intersect(forbidden_symbols,union(reactants,parameters))) && error("The following symbol(s) are used as reactants or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(reactants,parameters)))...))*"this is not permited.")
 
     network_code = Expr(:block,:(@parameters t),:(@variables), :(ReactionSystem([],t,[],[])))
     foreach(parameter-> push!(network_code.args[1].args, parameter), parameters)
