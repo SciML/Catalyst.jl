@@ -100,3 +100,13 @@ for (i,networks) in enumerate(identical_networks)
         end
     end
 end
+
+
+### Tries to create a large number of problem, ensuring there are no errors (cannot solve as solution likely to go into negatives). ###
+for reaction_network in reaction_networks_all
+    for factor in [1e-2, 1e-1, 1e0, 1e1]
+        u0 = factor*rand(length(reaction_network.states))
+        p = factor*rand(length(reaction_network.ps))
+        prob = SDEProblem(reaction_network,u0,(0.,1.),p)
+    end
+end
