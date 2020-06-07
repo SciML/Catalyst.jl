@@ -29,5 +29,4 @@ using SafeTestsets
 @time @safetestset "Basic Plotting" begin include("plotting.jl") end
 #@time @safetestset "Latexify" begin include("latexify.jl") end
 
-
 end # @time
