@@ -350,8 +350,8 @@ reaction_networks_weird[8] = @reaction_network begin
     X6/k4, X4 → X5
     k5^X7, X5 → X6
     X8^k6, X6 → X7
-    sqrt(k7*X9), X7 → X8
-    cbrt(k8+X1), X8 → X9
+    sqrt(abs(k7*X9)), X7 → X8
+    cbrt(abs(k8+X1)), X8 → X9
     X2^3+2X2^2+k9, X9 → X1
 end k1 k2 k3 k4 k5 k6 k7 k8 k9
 
