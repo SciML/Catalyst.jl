@@ -104,7 +104,7 @@ for (i,reaction_network) in enumerate(reaction_networks_all)
     for factor in [1e-2, 1e-1, 1e0, 1e1]
         u0 = factor*rand(length(reaction_network.states))
         p = factor*rand(length(reaction_network.ps))
-        in(i,[[21:30...]...,34,37]) && (p = min.(round.(p).+1,10))  #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
+        in(i,[[11:20...]...,34,37]) && (p = min.(round.(p).+1,10))  #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
         prob = ODEProblem(reaction_network,u0,(0.,1.),p)
         solve(prob,Rosenbrock23())
     end
