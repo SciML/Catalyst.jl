@@ -25,7 +25,7 @@ for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2], repeat = 1:10
     p = factor*rand(3)
     test_jac = ODEFunction(convert(ODESystem,jacobian_network_2),jac=true).jac(u,p,0.)
     real_jac = [-1-2*p[3]*u[2]*u[1] -p[3]*u[1]*u[1] 1.; -2*p[3]*u[2]*u[1] -1-p[3]*u[1]*u[1] 1; 2*p[3]*u[2]*u[1] p[3]*u[1]*u[1] -1.]
-    @test all(abs.(test_jac .- real_jac) .< 10000*eps())
+    @test all(abs.(test_jac .- real_jac) .< 1e-9)
 end
 
 jacobian_network_3 = @reaction_network begin
