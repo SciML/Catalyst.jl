@@ -85,10 +85,11 @@ function real_functions_5(du,u,p,t)
 end
 push!(identical_networks_1, reaction_networks_weird[2] => real_functions_5)
 
-for networks in identical_networks_1
+for (i,networks) in enumerate(identical_networks_1)
     for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
         u0 = factor*rand(length(networks[1].states))
         p = factor*rand(length(networks[1].ps))
+        (i==3) && (p = min.(round.(p).+1,10))                      #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
         prob1 = ODEProblem(networks[1],u0,(0.,100.),p)
         sol1 = solve(prob1,Rosenbrock23(),saveat=1.)
         prob2 = ODEProblem(networks[2],u0,(0.,100.),p)
@@ -99,10 +100,11 @@ end
 
 
 ### Tries solving a large number of problem, ensuring there are no errors. ###
-for reaction_network in reaction_networks_all
+for (i,reaction_network) in enumerate(reaction_networks_all)
     for factor in [1e-2, 1e-1, 1e0, 1e1]
         u0 = factor*rand(length(reaction_network.states))
         p = factor*rand(length(reaction_network.ps))
+        in(i,[[21:30...]...,34,37]) && (p = min.(round.(p).+1,10))  #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
         prob = ODEProblem(reaction_network,u0,(0.,1.),p)
         solve(prob,Rosenbrock23())
     end
