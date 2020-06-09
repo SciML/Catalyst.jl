@@ -95,7 +95,7 @@ for (i,networks) in enumerate(identical_networks_1)
         prob1 = ODEProblem(networks[1],u0,(0.,100.),p)
         sol1 = solve(prob1,Rosenbrock23(),saveat=1.)
         prob2 = ODEProblem(networks[2],u0,(0.,100.),p)
-        sol2 = solve(prob1,Rosenbrock23(),saveat=1.)
+        sol2 = solve(prob2,Rosenbrock23(),saveat=1.)
         @test all(abs.(hcat((sol1.u .- sol2.u)...)) .< 100*eps())
     end
 end

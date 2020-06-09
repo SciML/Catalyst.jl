@@ -91,7 +91,7 @@ for (i,networks) in enumerate(identical_networks)
         prob1 = SDEProblem(networks[1],u0,(0.,100.),p)
         sol1 = solve(prob1,ImplicitEM(),saveat=0.01,maxiters=1e7)
         prob2 = SDEProblem(networks[2][1],networks[2][2],u0,(0.,100.),p)
-        sol2 = solve(prob1,ImplicitEM(),saveat=0.01,maxiters=1e7)
+        sol2 = solve(prob2,ImplicitEM(),saveat=0.01,maxiters=1e7)
         for i = 1:length(u0)
             vals1 = getindex.(sol1.u[1000:end],i);
             vals2 = getindex.(sol1.u[1000:end],i);
