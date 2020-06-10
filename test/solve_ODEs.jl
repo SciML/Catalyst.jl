@@ -87,7 +87,7 @@ push!(identical_networks_1, reaction_networks_weird[2] => real_functions_5)
 
 for (i,networks) in enumerate(identical_networks_1)
     print("\n",i)
-    for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
+    for factor in [1e-2, 1e-1, 1e0, 1e1]
         print("   ",factor)
         u0 = factor*rand(length(networks[1].states))
         p = factor*rand(length(networks[1].ps))
@@ -105,7 +105,7 @@ end
 ### Tries solving a large number of problem, ensuring there are no errors. ###
 for (i,reaction_network) in enumerate(reaction_networks_all)
     print("\n",i)
-    for factor in [1e-2, 1e-1, 1e0, 1e1]
+    for factor in [1e-2, 1e-1, 1e0]
         print("   ",factor)
         u0 = factor*rand(length(reaction_network.states))
         p = factor*rand(length(reaction_network.ps))
