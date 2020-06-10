@@ -42,19 +42,19 @@ end
 identical_networks_1 = Vector{Pair}()
 
 function real_functions_1(du,u,p,t)
-    X1,X2,X2 = u
+    X1,X2,X3 = u
     p1,p2,p3,k1,k2,k3,k4,d1,d2,d3 = p
     du[1] = p1 + k1*X2 - k2*X1*X3^2/factorial(2) - k3*X1 + k4*X3 - d1*X1
     du[2] = p2 - k1*X2 + k2*X1*X3^2/factorial(2) - d2*X2
-    du[3] = p3 + 2*k1*X2 - 2*k2*X1*X3^2/factorial(2) + k3*X1 - k4*X3 - d3*X1
+    du[3] = p3 + 2*k1*X2 - 2*k2*X1*X3^2/factorial(2) + k3*X1 - k4*X3 - d3*X3
 end
 push!(identical_networks_1, reaction_networks_standard[1] => real_functions_1)
 
 function real_functions_2(du,u,p,t)
     X1,X2 = u
     v1,K1,v2,K2,d = p
-    du[1] = v1*K1/(K1+X2) - d*X1
-    du[2] = v2*K2/(K2+X1) - d*X2
+    du[1] = v1*K1/(K1+X2) - d*X1*X2
+    du[2] = v2*X1/(K2+X1) - d*X1*X2
 end
 push!(identical_networks_1, reaction_networks_standard[2] => real_functions_2)
 
@@ -62,8 +62,8 @@ function real_functions_3(du,u,p,t)
     X1,X2,X3 = u
     v1,v2,v3,K1,K2,K3,n1,n2,n3,d1,d2,d3 = p
     du[1] = v1*K1^n1/(K1^n1+X3^n1) - d1*X1
-    du[1] = v2*K2^n2/(K2^n2+X1^n2) - d2*X3
-    du[1] = v3*K3^n3/(K3^n3+X2^n3) - d3*X3
+    du[2] = v2*K2^n2/(K2^n2+X1^n2) - d2*X2
+    du[3] = v3*K3^n3/(K3^n3+X2^n3) - d3*X3
 end
 push!(identical_networks_1, reaction_networks_hill[2] => real_functions_3)
 
@@ -77,8 +77,8 @@ end
 push!(identical_networks_1, reaction_networks_constraint[1] => real_functions_4)
 
 function real_functions_5(du,u,p,t)
-    k1,k2,k3,k4 = p
     X,Y,Z = u
+    k1,k2,k3,k4 = p
     du[1] = k1 - k2*log(12+X)*X
     du[2] = k2*log(12+X)*X - k3*log(3+Y)*Y
     du[3] = k3*log(3+Y)*Y - log(5,6+k4)*Z
@@ -92,13 +92,14 @@ for (i,networks) in enumerate(identical_networks_1)
         u0 = factor*rand(length(networks[1].states))
         p = factor*rand(length(networks[1].ps))
         (i==3) && (p = min.(round.(p).+1,10))                      #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
-        prob1 = ODEProblem(networks[1],u0,(0.,100.),p)
+        prob1 = ODEProblem(networks[1],u0,(0.,10000.),p)
         sol1 = solve(prob1,Rosenbrock23(),saveat=1.)
-        prob2 = ODEProblem(networks[2],u0,(0.,100.),p)
+        prob2 = ODEProblem(networks[2],u0,(0.,10000.),p)
         sol2 = solve(prob2,Rosenbrock23(),saveat=1.)
-        @test all(abs.(hcat((sol1.u .- sol2.u)...)) .< 100*eps())
+        @test all(abs.(hcat((sol1.u .- sol2.u)...)) .< 1e-7)
     end
 end
+
 
 
 ### Tries solving a large number of problem, ensuring there are no errors. ###
