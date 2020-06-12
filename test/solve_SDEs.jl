@@ -13,8 +13,8 @@ function real_f_1(du,u,p,t)
     du[3] = k2*X2 + k3*X2 - d*X3
 end
 function real_g_1(du,u,p,t)
-    p,k1,k2,k3,d = p
     X1,X2,X3 = u
+    p,k1,k2,k3,d = p
     du[1,1] = 2*sqrt(p)
     du[1,2] = -sqrt(k1*X1)
     du[1,3] = 0
@@ -31,20 +31,20 @@ function real_g_1(du,u,p,t)
     du[3,4] = sqrt(k3*X2)
     du[3,5] = -sqrt(d*X3)
 end
-push!(identical_networks, reaction_networks_standard[8] => (real_f_1,real_g_1))
+push!(identical_networks, reaction_networks_standard[8] => (real_f_1,real_g_1,zeros(3,5)))
 
 function real_f_2(du,u,p,t)
     X1, = u
     v,K,n,d = p
-    du[1] = v/10+hill(X1,v,K,n) - d*X1
+    du[1] = v/10+v*X1^n/(X1^n+K^n) - d*X1
 end
 function real_g_2(du,u,p,t)
     X1, = u
     v,K,n,d = p
-    du[1,1] = sqrt(v/10+hill(X1,v,K,n))
+    du[1,1] = sqrt(v/10+v*X1^n/(X1^n+K^n))
     du[1,2] = -sqrt(d*X1)
 end
-push!(identical_networks, reaction_networks_hill[6] => (real_f_2,real_g_2))
+push!(identical_networks, reaction_networks_hill[6] => (real_f_2,real_g_2,zeros(1,2)))
 
 function real_f_3(du,u,p,t)
     X1,X2,X3,X4,X5,X6,X7 = u
@@ -58,7 +58,7 @@ function real_f_3(du,u,p,t)
     du[6] = k5*X5*X6 - k6*X7
 end
 function real_g_3(du,u,p,t)
-    X1,X2,X3 = u
+    X1,X2,X3,X4,X5,X6,X7 = u
     k1,k2,k3,k4,k5,k6 = p
     du = zeros(7,6)
     du[1,1] = -sqrt(k1*X1*X2)
@@ -80,17 +80,17 @@ function real_g_3(du,u,p,t)
     du[7,5] = sqrt(k5*X5*X6)
     du[7,6] = -sqrt(k6*X7)
 end
-push!(identical_networks, reaction_networks_constraint[9] => (real_f_3,real_g_3))
+push!(identical_networks, reaction_networks_constraint[9] => (real_f_3,real_g_3,zeros(7,6)))
 
 for (i,networks) in enumerate(identical_networks)
-    for factor in [1e-1, 1e0, 1e1], repeat in 1:5
+    for factor in [1e-1, 1e0, 1e1], repeat in 1:3
         u0 = 100. .+ factor*rand(length(networks[1].states))
         p = 0.01 .+ factor*rand(length(networks[1].ps))
         (i==2) && (u0[1] += 1000.)
-        (i==3) ? (p[2:2:6] .*= 100.) : (p[1] += 500.)
+        (i==3) ? (p[2:2:6] .*= 100.; u0 .+= 1000) : (p[1] += 500.)
         prob1 = SDEProblem(networks[1],u0,(0.,100.),p)
         sol1 = solve(prob1,ImplicitEM(),saveat=0.01,maxiters=1e7)
-        prob2 = SDEProblem(networks[2][1],networks[2][2],u0,(0.,100.),p)
+        prob2 = SDEProblem(networks[2][1],networks[2][2],u0,(0.,100.),p,noise_rate_prototype=networks[2][3])
         sol2 = solve(prob2,ImplicitEM(),saveat=0.01,maxiters=1e7)
         for i = 1:length(u0)
             vals1 = getindex.(sol1.u[1000:end],i);
