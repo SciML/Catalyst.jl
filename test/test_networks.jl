@@ -26,7 +26,7 @@ reaction_networks_standard[3] = @reaction_network begin
     mm(X2,v1,K1), ∅ → X1
     mm(X3,v2,K2), ∅ → X2
     (k1,k2), X1 ⟷ X3
-    (k3,k4), X3 + X2 ⟷ X4 +X1
+    (k3,k4), X3 + X2 ⟷ X4 + X1
     d, (X1,X2,X3,X4) → ∅
 end v1 K1 v2 K2 k1 k2 k3 k4 d
 

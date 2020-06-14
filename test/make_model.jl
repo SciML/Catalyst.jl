@@ -161,20 +161,18 @@ different_arrow_8 = @reaction_network begin
 end p k1 k2 k3 d
 push!(identical_networks_1, reaction_networks_standard[8] => different_arrow_8)
 
-@test_broken if false # Causes weird error, see ModelingToolkit issue #450.
-    for networks in identical_networks_1
-        f1 = ODEFunction(convert(ODESystem,networks[1]),jac=true)
-        f2 = ODEFunction(convert(ODESystem,networks[2]),jac=true)
-        g1 = SDEFunction(convert(SDESystem,networks[1]))
-        g2 = SDEFunction(convert(SDESystem,networks[2]))
-        for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0 = factor*rand(length(networks[1].states))
-            p = factor*rand(length(networks[1].ps))
-            t = rand()
-            @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 100*eps())
-            @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 100*eps())
-            @test all(abs.(g1(u0,p,t) .- g2(u0,p,t)) .< 100*eps())
-        end
+for networks in identical_networks_1
+    f1 = ODEFunction(convert(ODESystem,networks[1]),jac=true)
+    f2 = ODEFunction(convert(ODESystem,networks[2]),jac=true)
+    g1 = SDEFunction(convert(SDESystem,networks[1]))
+    g2 = SDEFunction(convert(SDESystem,networks[2]))
+    for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
+        u0 = factor*rand(length(networks[1].states))
+        p = factor*rand(length(networks[1].ps))
+        t = rand()
+        @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 100*eps())
+        @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 100*eps())
+        @test all(abs.(g1(u0,p,t) .- g2(u0,p,t)) .< 100*eps())
     end
 end
 
@@ -218,20 +216,18 @@ differently_written_7 = @reaction_network begin
 end p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
 push!(identical_networks_2, reaction_networks_standard[7] => differently_written_7)
 
-@test_broken if false # Causes weird error, see ModelingToolkit issue #450.
-    for networks in identical_networks_2
-        f1 = ODEFunction(convert(ODESystem,networks[1]),jac=true)
-        f2 = ODEFunction(convert(ODESystem,networks[2]),jac=true)
-        g1 = SDEFunction(convert(SDESystem,networks[1]))
-        g2 = SDEFunction(convert(SDESystem,networks[2]))
-        for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0 = factor*rand(length(networks[1].states))
-            p = factor*rand(length(networks[1].ps))
-            t = rand()
-            @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 100*eps())
-            @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 100*eps())
-            @test all(abs.(g1(u0,p,t) .- g2(u0,p,t)) .< 100*eps())
-        end
+for networks in identical_networks_2
+    f1 = ODEFunction(convert(ODESystem,networks[1]),jac=true)
+    f2 = ODEFunction(convert(ODESystem,networks[2]),jac=true)
+    g1 = SDEFunction(convert(SDESystem,networks[1]))
+    g2 = SDEFunction(convert(SDESystem,networks[2]))
+    for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
+        u0 = factor*rand(length(networks[1].states))
+        p = factor*rand(length(networks[1].ps))
+        t = rand()
+        @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 100*eps())
+        @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 100*eps())
+        @test all(abs.(g1(u0,p,t) .- g2(u0,p,t)) .< 100*eps())
     end
 end
 
@@ -262,50 +258,96 @@ end
 push!(identical_networks_3, reaction_networks_standard[10] => no_parameters_10)
 push!(parameter_sets, [0.01,3.1,3.2,0.,2.1,901.,63.5,7,8,1.])
 
-@test_broken if false # Causes weird error, see ModelingToolkit issue #450.
-    for (i,networks) in enumerate(identical_networks_3)
-        f1 = ODEFunction(convert(ODESystem,networks[1]),jac=true)
-        f2 = ODEFunction(convert(ODESystem,networks[2]),jac=true)
-        g1 = SDEFunction(convert(SDESystem,networks[1]))
-        g2 = SDEFunction(convert(SDESystem,networks[2]))
-        for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0 = factor*rand(length(networks[1].states))
-            t = rand()
-            @test all(abs.(f1(u0,parameter_sets[i],t) .- f2(u0,[],t)) .< 100*eps())
-            @test all(abs.(f1.jac(u0,parameter_sets[i],t) .- f2.jac(u0,[],t)) .< 100*eps())
-            @test all(abs.(g1(u0,parameter_sets[i],t) .- g2(u0,[],t)) .< 100*eps())
-        end
+for (i,networks) in enumerate(identical_networks_3)
+    f1 = ODEFunction(convert(ODESystem,networks[1]),jac=true)
+    f2 = ODEFunction(convert(ODESystem,networks[2]),jac=true)
+    g1 = SDEFunction(convert(SDESystem,networks[1]))
+    g2 = SDEFunction(convert(SDESystem,networks[2]))
+    for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
+        u0 = factor*rand(length(networks[1].states))
+        t = rand()
+        @test all(abs.(f1(u0,parameter_sets[i],t) .- f2(u0,[],t)) .< 100*eps())
+        @test all(abs.(f1.jac(u0,parameter_sets[i],t) .- f2.jac(u0,[],t)) .< 100*eps())
+        @test all(abs.(g1(u0,parameter_sets[i],t) .- g2(u0,[],t)) .< 100*eps())
+    end
+end
+
+
+### Tests that Reaction System created manually and through macro are identical ###
+identical_networks_4 = Vector{Pair}()
+@parameters v1 K1 v2 K2 k1 k2 k3 k4 k5 p d t
+@variables X1(t) X2(t) X3(t) X4(t) X5(t)
+
+rxs_1 = [Reaction(v1*X2/(K1+X2), nothing, [X1], nothing, [1]),
+       Reaction(v2*X3/(K2+X3), nothing, [X2], nothing, [1]),
+       Reaction(k1, [X1], [X3], [1], [1]),
+       Reaction(k2, [X3], [X1], [1], [1]),
+       Reaction(k3, [X3,X2], [X4,X1], [1,1], [1,1]),
+       Reaction(k4, [X4,X1], [X3,X2], [1,1], [1,1]),
+       Reaction(d, [X1], nothing, [1], nothing),
+       Reaction(d, [X2], nothing, [1], nothing),
+       Reaction(d, [X3], nothing, [1], nothing),
+       Reaction(d, [X4], nothing, [1], nothing)]
+rs_1 = ReactionSystem(rxs_1 , t, [X1,X2,X3,X4], [v1,K1,v2,K2,k1,k2,k3,k4,d])
+push!(identical_networks_4, reaction_networks_standard[3] => rs_1)
+
+rxs_2 = [Reaction(k1, [X1], [X2], [1], [1]),
+         Reaction(k2*X5, [X2], [X1], [1], [1]),
+         Reaction(k3*X5, [X3], [X4], [1], [1]),
+         Reaction(k4, [X4], [X3], [1], [1]),
+         Reaction(p+k5*X2*X3, nothing, [X5], nothing, [1]),
+         Reaction(d, [X5], nothing, [1], nothing)]
+rs_2 = ReactionSystem(rxs_2, t, [X1,X2,X3,X4,X5], [k1,k2,k3,k4,p,k5,d])
+push!(identical_networks_4, reaction_networks_constraint[3] => rs_2)
+
+rxs_3 = [Reaction(k1, [X1], [X2], [1], [1]),
+         Reaction(0, [X2], [X3], [1], [1]),
+         Reaction(k2, [X3], [X4], [1], [1]),
+         Reaction(k3, [X4], [X5], [1], [1])]
+rs_3 = ReactionSystem(rxs_3, t, [X1,X2,X3,X4,X5], [k1,k2,k3])
+push!(identical_networks_4, reaction_networks_weird[7] => rs_3)
+
+for networks in identical_networks_4
+    @test networks[1].iv == networks[2].iv
+    @test networks[1].states == networks[2].states
+    @test networks[1].ps == networks[2].ps
+    @test networks[1].systems == networks[2].systems
+    @test length(networks[1].eqs) == length(networks[2].eqs)
+    for (e1,e2) in zip(networks[1].eqs,networks[2].eqs)
+        @test isequal(e1.rate,e2.rate)
+        @test isequal(e1.substrates,e2.substrates)
+        @test isequal(e1.products,e2.products)
+        @test isequal(e1.substoich,e2.substoich)
+        @test isequal(e1.prodstoich,e2.prodstoich)
+        @test isequal(e1.netstoich,e2.netstoich)
+        @test isequal(e1.only_use_rate,e2.only_use_rate)
     end
 end
 
 
 ### Tests that time is handled properly ###
-
 time_network = @reaction_network begin
     (t,k2), X1 ↔ X2
     (k3,t), X2 ↔ X3
     (t,k6), X3 ↔ X1
 end k2 k3 k6
 
-@test_broken if false # Causes weird error, see ModelingToolkit issue #450.
-    f1 = ODEFunction(convert(ODESystem,reaction_networks_constraint[1]),jac=true)
-    f2 = ODEFunction(convert(ODESystem,time_network),jac=true)
-    g1 = SDEFunction(convert(SDESystem,reaction_networks_constraint[1]))
-    g2 = SDEFunction(convert(SDESystem,time_network))
-    for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-        u0 = factor*rand(length(time_network.states))
-        k2 = factor*rand(); k3 = factor*rand(); k6 = factor*rand();
-        t = rand()
-        p1 = [t, k2, k3, t, t, k6]; p2 = [k2, k3, k6];
-        @test all(abs.(f1(u0,p1,t) .- f2(u0,p2,t)) .< 100*eps())
-        @test all(abs.(f1.jac(u0,p1,t) .- f2.jac(u0,p2,t)) .< 100*eps())
-        @test all(abs.(g1(u0,p1,t) .- g2(u0,p2,t)) .< 100*eps())
-    end
+f1 = ODEFunction(convert(ODESystem,reaction_networks_constraint[1]),jac=true)
+f2 = ODEFunction(convert(ODESystem,time_network),jac=true)
+g1 = SDEFunction(convert(SDESystem,reaction_networks_constraint[1]))
+g2 = SDEFunction(convert(SDESystem,time_network))
+for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
+    u0 = factor*rand(length(time_network.states))
+    k2 = factor*rand(); k3 = factor*rand(); k6 = factor*rand();
+    t = rand()
+    p1 = [t, k2, k3, t, t, k6]; p2 = [k2, k3, k6];
+    @test all(abs.(f1(u0,p1,t) .- f2(u0,p2,t)) .< 100*eps())
+    @test all(abs.(f1.jac(u0,p1,t) .- f2.jac(u0,p2,t)) .< 100*eps())
+    @test all(abs.(g1(u0,p1,t) .- g2(u0,p2,t)) .< 100*eps())
 end
 
 
 ### Test various names as varriables ###
-
 test_network = @reaction_network begin
     (a,A),  n ⟷ N
     (b,B),  o ⟷ O

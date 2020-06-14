@@ -78,35 +78,31 @@ jump_3_6 = ConstantRateJump(rate_3_6,affect_3_6!)
 jumps_3 = (jump_3_1,jump_3_2,jump_3_3,jump_3_4,jump_3_5,jump_3_6)
 push!(identical_networks, reaction_networks_constraint[5] => jumps_3)
 
-@test_broken if false # Causes weird error, see ModelingToolkit issue #450.
-    for (i,networks) in enumerate(identical_networks)
-        for factor in [1e-2, 1e-1, 1e0, 1e1], repeat = 1:3
-            (i==3) && (factor > 1e-1) && continue   # Large numbers seems to crash it.
-            u0 = rand(1:Int64(factor*100),length(networks[1].states))
-            p = factor*rand(length(networks[1].ps))
-            prob1 = JumpProblem(networks[1],DiscreteProblem(networks[1],u0,(0.,1000.),p),Direct())
-            sol1 = solve(prob1,SSAStepper())
-            prob2 = JumpProblem(DiscreteProblem(u0,(0.,1000.),p),Direct(),networks[2]...)
-            sol2 = solve(prob2,SSAStepper())
-            for i = 1:length(u0)
-                vals1 = getindex.(sol1.u,i);
-                vals2 = getindex.(sol1.u,i);
-                (mean(vals2)>0.001) && @test 0.8 < mean(vals1)/mean(vals2) < 1.25
-                (std(vals2)>0.001) && @test 0.8 < std(vals1)/std(vals2) < 1.25
-            end
+for (i,networks) in enumerate(identical_networks)
+    for factor in [1e-2, 1e-1, 1e0, 1e1], repeat = 1:3
+        (i==3) && (factor > 1e-1) && continue   # Large numbers seems to crash it.
+        u0 = rand(1:Int64(factor*100),length(networks[1].states))
+        p = factor*rand(length(networks[1].ps))
+        prob1 = JumpProblem(networks[1],DiscreteProblem(networks[1],u0,(0.,1000.),p),Direct())
+        sol1 = solve(prob1,SSAStepper())
+        prob2 = JumpProblem(DiscreteProblem(u0,(0.,1000.),p),Direct(),networks[2]...)
+        sol2 = solve(prob2,SSAStepper())
+        for i = 1:length(u0)
+            vals1 = getindex.(sol1.u,i);
+            vals2 = getindex.(sol1.u,i);
+            (mean(vals2)>0.001) && @test 0.8 < mean(vals1)/mean(vals2) < 1.25
+            (std(vals2)>0.001) && @test 0.8 < std(vals1)/std(vals2) < 1.25
         end
     end
 end
 
 
 ### Tries solving a large number of problem, ensuring there are no errors. ###
-@test_broken if false
-    for network in reaction_networks_all
-        for factor in [1e-1, 1e0, 1e1]
-            u0 = rand(1:Int64(factor*100),length(network.states))
-            p = factor*rand(length(network.ps))
-            prob1 = JumpProblem(network,DiscreteProblem(network,u0,(0.,1.),p),Direct())
-            sol1 = solve(prob1,SSAStepper())
-        end
+for network in reaction_networks_all
+    for factor in [1e-1, 1e0, 1e1]
+        u0 = rand(1:Int64(factor*100),length(network.states))
+        p = factor*rand(length(network.ps))
+        prob1 = JumpProblem(network,DiscreteProblem(network,u0,(0.,1.),p),Direct())
+        sol1 = solve(prob1,SSAStepper())
     end
 end

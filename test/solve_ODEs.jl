@@ -85,31 +85,27 @@ function real_functions_5(du,u,p,t)
 end
 push!(identical_networks_1, reaction_networks_weird[2] => real_functions_5)
 
-@test_broken if false # Causes weird error, see ModelingToolkit issue #450.
-    for (i,networks) in enumerate(identical_networks_1)
-        for factor in [1e-2, 1e-1, 1e0, 1e1]
-            u0 = factor*rand(length(networks[1].states))
-            p = factor*rand(length(networks[1].ps))
-            (i==3) && (p = min.(round.(p).+1,10))                      #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
-            prob1 = ODEProblem(networks[1],u0,(0.,10000.),p)
-            sol1 = solve(prob1,Rosenbrock23(),saveat=1.)
-            prob2 = ODEProblem(networks[2],u0,(0.,10000.),p)
-            sol2 = solve(prob2,Rosenbrock23(),saveat=1.)
-            @test all(abs.(hcat((sol1.u .- sol2.u)...)) .< 1e-7)
-        end
+for (i,networks) in enumerate(identical_networks_1)
+    for factor in [1e-2, 1e-1, 1e0, 1e1]
+        u0 = factor*rand(length(networks[1].states))
+        p = factor*rand(length(networks[1].ps))
+        (i==3) && (p = min.(round.(p).+1,10))                      #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
+        prob1 = ODEProblem(networks[1],u0,(0.,10000.),p)
+        sol1 = solve(prob1,Rosenbrock23(),saveat=1.)
+        prob2 = ODEProblem(networks[2],u0,(0.,10000.),p)
+        sol2 = solve(prob2,Rosenbrock23(),saveat=1.)
+        @test all(abs.(hcat((sol1.u .- sol2.u)...)) .< 1e-7)
     end
 end
 
 
 ### Tries solving a large number of problem, ensuring there are no errors. ###
-@test_broken if false # Causes weird error, see ModelingToolkit issue #450.
-    for (i,network) in enumerate(reaction_networks_all)
-        for factor in [1e-2, 1e-1, 1e0]
-            u0 = factor*rand(length(network.states))
-            p = factor*rand(length(network.ps))
-            in(i,[[11:20...]...,34,37]) && (p = min.(round.(p).+1,10))  #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
-            prob = ODEProblem(network,u0,(0.,1.),p)
-            solve(prob,Rosenbrock23())
-        end
+for (i,network) in enumerate(reaction_networks_all)
+    for factor in [1e-2, 1e-1, 1e0]
+        u0 = factor*rand(length(network.states))
+        p = factor*rand(length(network.ps))
+        in(i,[[11:20...]...,34,37]) && (p = min.(round.(p).+1,10))  #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
+        prob = ODEProblem(network,u0,(0.,1.),p)
+        solve(prob,Rosenbrock23())
     end
 end
