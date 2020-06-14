@@ -98,11 +98,11 @@ end
 
 
 ### Tries solving a large number of problem, ensuring there are no errors. ###
-for network in reaction_networks_all
+for (i,network) in enumerate(reaction_networks_all)
     for factor in [1e-1, 1e0, 1e1]
         u0 = rand(1:Int64(factor*100),length(network.states))
         p = factor*rand(length(network.ps))
-        prob1 = JumpProblem(network,DiscreteProblem(network,u0,(0.,1.),p),Direct())
-        sol1 = solve(prob1,SSAStepper())
+        prob = JumpProblem(network,DiscreteProblem(network,u0,(0.,1.),p),Direct())
+        @test solve(prob,SSAStepper()).retcode == :Default
     end
 end

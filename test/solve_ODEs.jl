@@ -9,13 +9,13 @@ exponential_decay = @reaction_network begin
     d, X → ∅
 end d
 
-for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
+for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
     u0 = factor*rand(length(exponential_decay.states))
     p = factor*rand(length(exponential_decay.ps))
     prob = ODEProblem(exponential_decay,u0,(0.,100/factor),p)
     sol = solve(prob,Rosenbrock23(),saveat=range(0.,100/factor,length=101))
     analytic_sol = map(t -> u0[1]*exp(-p[1]*t),range(0.,100/factor,length=101))
-    all(abs.(first.(sol.u) .- analytic_sol) .< 1e-8)
+    @test all(abs.(first.(sol.u) .- analytic_sol) .< 0.1)
 end
 
 # Networks with know equilibrium
@@ -101,11 +101,11 @@ end
 
 ### Tries solving a large number of problem, ensuring there are no errors. ###
 for (i,network) in enumerate(reaction_networks_all)
-    for factor in [1e-2, 1e-1, 1e0]
+    for factor in [1e-1, 1e0, 1e1]
         u0 = factor*rand(length(network.states))
         p = factor*rand(length(network.ps))
-        in(i,[[11:20...]...,34,37]) && (p = min.(round.(p).+1,10))  #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
+        in(i,[[11:20...]...,34,37,42]) && (p = min.(round.(p).+1,10))  #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
         prob = ODEProblem(network,u0,(0.,1.),p)
-        solve(prob,Rosenbrock23())
+        @test solve(prob,Rosenbrock23()).retcode == :Success
     end
 end
