@@ -99,6 +99,7 @@ end
 
 ### Tries solving a large number of problem, ensuring there are no errors. ###
 for (i,network) in enumerate(reaction_networks_all)
+    (i%5 == 0) && println("Iteration "*string(i)*" at line 102 in file solve_jumps.jl")
     for factor in [1e-1, 1e0, 1e1]
         u0 = rand(1:Int64(factor*100),length(network.states))
         p = factor*rand(length(network.ps))
