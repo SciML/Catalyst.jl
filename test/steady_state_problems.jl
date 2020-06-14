@@ -28,12 +28,15 @@ steady_state_network_2 = @reaction_network begin
 end v K n d
 
 for factor in [1e-1, 1e1, 1e1], repeat = 1:3
-    u0 = factor*rand(length(steady_state_network_2.states))
+    u0_small = factor*rand(length(steady_state_network_2.states))/100
+    u0_large = factor*rand(length(steady_state_network_2.states))*100
     p = factor*rand(length(steady_state_network_2.ps))
     p[3] = round(p[3])+1
-    prob = SteadyStateProblem(steady_state_network_2,u0,p)
-    sol = solve(prob,SSRootfind()).u[1]
-    @test_broken abs(p[1]/10 + p[1]*(sol^p[3])/(sol^p[3]+p[2]^p[3]) - p[4]*sol) < 1e-8
+    sol1 = solve(SteadyStateProblem(steady_state_network_2,u0_small,p),SSRootfind()).u[1]
+    sol2 = solve(SteadyStateProblem(steady_state_network_2,u0_large,p),SSRootfind()).u[1]
+    diff1 = abs(p[1]/10 + p[1]*(sol1^p[3])/(sol1^p[3]+p[2]^p[3]) - p[4]*sol1)
+    diff2 = abs(p[1]/10 + p[1]*(sol2^p[3])/(sol2^p[3]+p[2]^p[3]) - p[4]*sol2)
+    @test (diff1 < 1e-8) || (diff2 < 1e-8)
 end
 
 
