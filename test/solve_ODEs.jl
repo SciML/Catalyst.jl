@@ -31,10 +31,10 @@ for factor in [1e-1, 1e0, 1e1, 1e2, 1e3]
     p = 0.01 .+ factor*rand(length(known_equilibrium.ps))
     prob = ODEProblem(known_equilibrium,u0,(0.,1000000.),p)
     sol = solve(prob,Rosenbrock23())
-    @test abs.(sol.u[end][1]/sol.u[end][2] - p[2]/p[1]) < 100*eps()
-    @test abs.(sol.u[end][3]*sol.u[end][4]/sol.u[end][5] - p[4]/p[3]) < 100*eps()
+    @test abs.(sol.u[end][1]/sol.u[end][2] - p[2]/p[1]) < 10000*eps()
+    @test abs.(sol.u[end][3]*sol.u[end][4]/sol.u[end][5] - p[4]/p[3]) < 10000*eps()
     @test abs.((sol.u[end][6]^2/factorial(2))/(sol.u[end][7]^3/factorial(3))- p[6]/p[5]) < 1e-8
-    @test abs.(sol.u[end][8]  - p[7]/p[8]) < 100*eps()
+    @test abs.(sol.u[end][8]  - p[7]/p[8]) < 10000*eps()
 end
 
 
