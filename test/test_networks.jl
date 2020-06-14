@@ -346,7 +346,7 @@ end k1 k2 k3
 reaction_networks_weird[8] = @reaction_network begin
     k1+X3, X1 → X2
     k2*X4, X2 → X3
-    k3/X5, X3 → X4
+    k3/(X5+0.01), X3 → X4
     X6/k4, X4 → X5
     X7^k5, X5 → X6
     X8^k6, X6 → X7
