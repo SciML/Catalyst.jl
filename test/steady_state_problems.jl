@@ -16,10 +16,10 @@ for factor in [1e-1, 1e0, 1e1], repeat = 1:5
     p = 0.01 .+ factor*rand(length(steady_state_network_1.ps))
     prob = SteadyStateProblem(steady_state_network_1,u0,p)
     sol = solve(prob,SSRootfind()).u
-    (sol[1] > 1e-7) && (@test abs.(sol[1]/sol[2] - p[2]/p[1]) < 1e-8)
-    (sol[3] > 1e-7) && (@test abs.(sol[3]*sol[4]/sol[5] - p[4]/p[3]) < 1e-4)
-    (sol[6] > 1e-7) && (@test abs.((sol[6]^2/factorial(2))/(sol[7]^3/factorial(3))- p[6]/p[5]) < 1e-2)
-    (sol[8] > 1e-7) && (@test abs.(sol[8] - p[7]/p[8]) < 1e-8)
+    (minimum(sol[1:2]) > 1e-5) && (@test abs.(sol[1]/sol[2] - p[2]/p[1]) < 1e-8)
+    (minimum(sol[3:5]) > 1e-5) && (@test abs.(sol[3]*sol[4]/sol[5] - p[4]/p[3]) < 1e-4)
+    (minimum(sol[6:7]) > 1e-5) && (@test abs.((sol[6]^2/factorial(2))/(sol[7]^3/factorial(3))- p[6]/p[5]) < 1e-1)
+    (sol[8] > 1e-6) && (@test abs.(sol[8] - p[7]/p[8]) < 1e-8)
 end
 
 steady_state_network_2 = @reaction_network begin
