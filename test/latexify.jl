@@ -1,4 +1,10 @@
-using DiffEqBiological, Test, Latexify
+### Fetch required packages and reaction networks ###
+using DiffEqBiological, Latexify
+
+############################
+### CURRENTLY NOT ACITVE ###
+### REQUIRES REWRITING   ###
+############################
 
 ### Tips for generating latex tests:
 ### Latexify has an unexported macro:
@@ -15,7 +21,6 @@ using DiffEqBiological, Test, Latexify
 ###
 ### Just be sure to remove all such macros before you commit a change since it
 ### will cause issues with Travis.
-
 
 r = @reaction_network begin
     hillR(X2,v1,K1,n1)*hill(X4,v1,K1,n1), ∅ → X1
