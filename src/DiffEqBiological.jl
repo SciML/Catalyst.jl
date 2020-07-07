@@ -22,7 +22,9 @@ export @reaction_func
 # functions to query network properties
 include("networkapi.jl")
 export species, params, speciesmap, paramsmap, numspecies, numreactions, numparams
-export addspecies!, addparam!
+export addspecies!, addparam!, addreaction!
+
+# depreciated currently
 #export oderhsfun, jacfun, paramjacfun, odefun, noisefun, sdefun, jumps, regularjumps
 #export odeexprs, jacobianexprs, noiseexprs, jumpexprs, rateexpr, oderatelawexpr, ssaratelawexpr
 #export substratestoich, productstoich, netstoich, ismassaction, dependants, dependents, substrates, products, substratesymstoich, productsymstoich

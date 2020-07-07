@@ -84,11 +84,31 @@ end
 ######################## reaction network operators #######################
 
 """
-    ==(rn1::ModelingToolki.ReactionSystem, rn2::ModelingToolkit.ReactionSystem)
+    ==(rn1::ModelingToolkit.Reaction, rn2::ModelingToolkit.Reaction)
+
+Tests whether two `ModelingToolkit.Reaction`s are identical. 
+
+Notes:
+- Ignores the order in which stoichiometry components are listed. 
+- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
+considered different than `(A+1)^2`.
+"""
+function (==)(rn1::Reaction, rn2::Reaction)
+    isequal(rn1.rate, rn2.rate) || return false
+    issetequal(zip(rn1.substrates,rn1.substoich), zip(rn2.substrates,rn2.substoich)) || return false
+    issetequal(zip(rn1.products,rn1.prodstoich), zip(rn2.products,rn2.prodstoich)) || return false
+    issetequal(rn1.netstoich, rn2.netstoich)
+end
+
+
+"""
+    ==(rn1::ReactionSystem, rn2::ReactionSystem)
 
 Tests whether the underlying species `Variables`s, parameter `Variables`s and reactions
 are the same in the two networks. Ignores order network components were defined. 
-*Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be considered
+
+Notes:
+- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be considered
 different than `(A+1)^2`.
 """
 function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
@@ -96,9 +116,7 @@ function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
     issetequal(params(rn1), params(rn2)) || return false
     isequal(rn1.iv, rn2.iv) || return false
     (numreactions(rn1) == numreactions(rn2)) || return false
-    for eq1 in equations(rn1), eq2 in equations(rn2)
-        isequal(eq1, eq2) || return false
-    end
+    issetequal(equations(rn1), equations(rn2))
     for sys1 in rn1.systems, sys2 in rn2.systems
         (sy1 == sys2) || return false
     end
@@ -107,143 +125,75 @@ end
 ######################## functions to extend a network ####################
 
 """
-    addspecies!(network, s::Variable)
+    addspecies!(network::ReactionSystem, s::Variable)
 
 Given a `ReactionSystem`, add the species corresponding to the variable `s`
 to the network (if it is not already defined). Returns the integer id 
 of the species within the system.
 """
-function addspecies!(rn::ReactionSystem, s::Variable)
-    curidx = findfirst(S -> isequal(S, s), species(rn))
+function addspecies!(network::ReactionSystem, s::Variable)
+    curidx = findfirst(S -> isequal(S, s), species(network))
     if curidx === nothing
-        push!(rn.states, s)
-        return length(species(rn))
+        push!(network.states, s)
+        return length(species(network))
     else
         return curidx
     end    
 end
 
 """
-    addspecies!(network, speciesop::Operation)
+    addspecies!(network::ReactionSystem, speciesop::Operation)
 
 Given a `ReactionSystem`, add the species corresponding to the variable `s`
 to the network (if it is not already defined). Returns the integer id 
 of the species within the system.
 """
-function addspecies!(rn::ReactionSystem, s::Operation) 
+function addspecies!(network::ReactionSystem, s::Operation) 
     !(s.op isa Variable) && error("If the passed in species is an Operation, it must correspond to an underlying Variable.")        
-    addspecies!(rn, convert(Variable,s))    
+    addspecies!(network, convert(Variable,s))    
 end
 
 """
-    addparam!(network, p::Variable)
+    addparam!(network::ReactionSystem, p::Variable)
 
 Given a `ReactionSystem`, add the parameter corresponding to the variable `p`
 to the network (if it is not already defined). Returns the integer id 
 of the parameter within the system.
 """
-function addparam!(rn::ReactionSystem, p::Variable)
-    curidx = findfirst(S -> isequal(S, p), params(rn))
+function addparam!(network::ReactionSystem, p::Variable)
+    curidx = findfirst(S -> isequal(S, p), params(network))
     if curidx === nothing
-        push!(rn.ps, p)
-        return length(params(rn))
+        push!(network.ps, p)
+        return length(params(network))
     else
         return curidx
     end    
 end
 
 """
-    addparams!(network, p::Operation)
+    addparam!(network::ReactionSystem, p::Operation)
 
 Given a `ReactionSystem`, add the parameter corresponding to the variable `p`
 to the network (if it is not already defined). Returns the integer id 
 of the parameter within the system.
 """
-function addparam!(rn::ReactionSystem, p::Operation) 
+function addparam!(network::ReactionSystem, p::Operation) 
     !(p.op isa Variable) && error("If the passed in parameter is an Operation, it must correspond to an underlying Variable.")        
-    addparam!(rn, convert(Variable,p))    
+    addparam!(network, convert(Variable,p))    
 end
 
-# """
-#     addreaction!(network, rateex::Union{Expr,Symbol,Int,Float64}, rxexpr::Expr)
-# Given an AbstractReaction network, add a reaction with the passed in rate and
-# reaction expressions. i.e. a reaction of the form
-# ```julia
-# k*X, 2X + Y --> 2W
-# ```
-# would have `rateex=:(k*X)` and `rxexpr=:(2X + Y --> W)`,
-# ```julia
-# 10.5, 0 --> X
-# ```
-# would have `rateex=10.5` and `rxexpr=:(0 --> X)`, and
-# ```julia
-# k, X+X --> Z
-# ```
-# would have `rateex=:k` and `rxexpr=:(X+X --> Z)`.
-# All normal DSL reaction definition notation should be supported.
-# """
-# function addreaction!(rn::DiffEqBase.ReactionSystem, rateex::ExprValues, rxexpr::Expr)
-#     ex = Expr(:block, :(($rateex, $rxexpr)))
-#     newrxs = get_reactions(ex)
-#     foreach(rx -> push!(rn.reactions,ReactionStruct(rx, species(rn))), newrxs)
-#     nothing
-# end
+"""
+    addreaction!(network::ReactionSystem, rx::Reaction)
 
-# """
-#     addreaction!(network, rateex::Union{Expr,Symbol,Int,Float64}, substrates, products)
-# Given an AbstractReaction network, add a reaction with the passed in rate,
-# `rateex`, substrate stoichiometry, and product stoichiometry. Stoichiometries
-# are represented as tuples of `Pair{Symbol,Int}`. i.e. a reaction of the form
-# ```julia
-# k*X, 2X + Y --> 2W
-# ```
-# would have `rateex=:(k*X)`, `substrates=(:X=>2, :Y=>2)`` and
-# `products=(W=>2,)`,
-# ```julia
-# 10.5, 0 --> X
-# ```
-# would have `rateex=10.5`, `substrates=()` and `products=(:X=>1,)`, and
-# ```julia
-# k, X+X --> Z
-# ```
-# would have `rateex=:k`, `substrates=(:X=>2,)` and `products=(:Z=>2,)`.
-# All normal DSL reaction definition notation should be supported for the
-# `rateex`.
-# """
-# function addreaction!(rn::DiffEqBase.ReactionSystem, rateex::ExprValues,
-#                                         subs::Tuple{Vararg{Pair{Symbol,Int}}},
-#                                         prods::Tuple{Vararg{Pair{Symbol,Int}}}) where {T <: Number}
+Add the passed in reaction to the `ReactionSystem`. Returns the integer
+id of `rx` in list of `Reaction`s within `network`.
 
-#     substrates = ReactantStruct[ReactantStruct(p[1],p[2]) for p in subs]
-#     dependents = Symbol[p[1] for p in subs]
-#     products = ReactantStruct[ReactantStruct(p[1],p[2]) for p in prods]
-#     ns = netstoich(substrates, products)
-#     rate_DE = isempty(subs) ? rateex : mass_rate_DE(substrates, true, rateex)
-#     rate_SSA = isempty(subs) ? rateex : mass_rate_SSA(substrates, true, rateex)
-
-#     # resolve dependents from rateex
-#     if rateex isa Number
-#         ismassaction = true
-#     elseif rateex isa Symbol
-#         if haskey(speciesmap(rn), rateex)
-#             ismassaction = false
-#             if rateex ∉ dependents
-#                 push!(dependents, rateex)
-#             end
-#         elseif haskey(paramsmap(rn), rateex)
-#             ismassaction = true
-#         else
-#             error("rateex is a symbol that is neither a species or parameter.")
-#         end
-#     else # isa Expr
-
-#         # mimicing ReactionStruct constructor for now, but this should be optimized...
-#         newdeps = unique!(recursive_content(rate_DE, speciesmap(rn), Vector{Symbol}()))
-#         ismassaction = issetequal(dependents,newdeps)
-#         dependents = newdeps
-#     end
-
-#     push!(rn.reactions, ReactionStruct(substrates, products, ns, rateex, rate_DE, rate_SSA, dependents, ismassaction))
-#     nothing
-# end
+Notes: 
+- Any new species or parameters used in `rx` should be separately added
+to `network` using [`addspecies!`](@ref) and [`addparams!`](@ref).
+"""
+function addreaction!(network::ReactionSystem, rx::Reaction)    
+    push!(network.equations, rx)
+    length(equations(network))
+end
 
