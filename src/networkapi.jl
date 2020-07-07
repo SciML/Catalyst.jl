@@ -142,7 +142,7 @@ function addspecies!(network::ReactionSystem, s::Variable)
 end
 
 """
-    addspecies!(network::ReactionSystem, speciesop::Operation)
+    addspecies!(network::ReactionSystem, s::Operation)
 
 Given a `ReactionSystem`, add the species corresponding to the variable `s`
 to the network (if it is not already defined). Returns the integer id 
