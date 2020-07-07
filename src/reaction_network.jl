@@ -1,5 +1,6 @@
 """
-Macro that inputs an expression corresponding to a reaction network and output a Reaction Network Structure that can be used as input to generation of SDE and ODE and Jump problems.
+Macro that inputs an expression corresponding to a reaction network and output a `ModelingToolkit.ReactionNetwork` that can be used as input to generation of ODE, SDE and Jump problems.
+
 Most arrows accepted (both right, left and bi drectional arrows).
 Note that while --> is a correct arrow, neither <-- nor <--> works.
 Using non-filled arrows (⇐, ⟽, ⇒, ⟾, ⇔, ⟺) will disable mass kinetics and lets you cutomize reaction rates yourself.
@@ -20,7 +21,7 @@ Example systems:
         mm(XY,2,2), X + Y --> XY           #Reaction inis activated by XY according to a michaelis menten function. mm(x,v,K).
     end
 
-    ### Multipple Reactions on a Single Line ###
+    ### Multiple Reactions on a Single Line ###
     rn = @reaction_network rType begin
         (2.0,1.0), X + Y ↔ XY              #Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
         2.0, (X,Y) --> 0                   #This corresponds to both X and Y degrading at rate 2.0.
@@ -51,11 +52,10 @@ Example systems:
 """
     @reaction_network
 
-Generates a subtype of an `AbstractReactionNetwork` that encodes a chemical
-reaction network, and complete ODE, SDE and jump representations of the system.
-See the [Chemical Reaction Model
-docs](http://docs.juliadiffeq.org/dev/models/biological.html) for details on
-parameters to the macro.
+Generates a `ModelingToolkit.ReactionSystem` that encodes a chemical reaction network.
+
+See the [Chemical Reaction Model docs](http://docs.sciml.ai/dev/models/biological.html) 
+for details on parameters to the macro.
 """
 
 # Declare various arrow types symbols used for the empty set (also 0).
@@ -74,7 +74,7 @@ macro reaction_network(ex::Expr, parameters...)
     make_reaction_system(MacroTools.striplines(ex), parameters)
 end
 
-# Returns a empty network (with, or without, parameters decalred)
+# Returns a empty network (with, or without, parameters declared)
 macro reaction_network(parameters...)
     !isempty(intersect(forbidden_symbols,parameters)) && error("The following symbol(s) are used as parameter(s): "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,parameters))...))*"this is not permited.")
     network_code = Expr(:block,:(@parameters t),[], :(ReactionSystem([],t,[],[])))
