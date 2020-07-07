@@ -18,18 +18,15 @@ include("reaction_network.jl")
 export @reaction_network
 export @reaction_func
 
-end # module
-
-### Things possibly added back later. ###
-
-#include("modify_reaction_network.jl")
-#export @add_reactions, @add_reactions!
-
-#include("network_properties.jl")
 
 # functions to query network properties
-#export species, params, speciesmap, paramsmap, numspecies, numreactions, numparams
+include("networkapi.jl")
+export species, params, speciesmap, paramsmap, numspecies, numreactions, numparams
+export addspecies!, addparam!
 #export oderhsfun, jacfun, paramjacfun, odefun, noisefun, sdefun, jumps, regularjumps
 #export odeexprs, jacobianexprs, noiseexprs, jumpexprs, rateexpr, oderatelawexpr, ssaratelawexpr
 #export substratestoich, productstoich, netstoich, ismassaction, dependants, dependents, substrates, products, substratesymstoich, productsymstoich
 #export rxtospecies_depgraph, speciestorx_depgraph, rxtorx_depgraph
+#export @add_reactions, @add_reactions!
+
+end # module
