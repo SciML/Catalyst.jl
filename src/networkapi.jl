@@ -95,8 +95,9 @@ considered different than `(A+1)^2`.
 """
 function (==)(rn1::Reaction, rn2::Reaction)
     isequal(rn1.rate, rn2.rate) || return false
-    issetequal(zip(rn1.substrates,rn1.substoich), zip(rn2.substrates,rn2.substoich)) || return false
-    issetequal(zip(rn1.products,rn1.prodstoich), zip(rn2.products,rn2.prodstoich)) || return false
+    opit = sv -> (s.op for s in sv)
+    issetequal(zip(opit(rn1.substrates),rn1.substoich), zip(opit(rn2.substrates),rn2.substoich)) || return false
+    issetequal(zip(opit(rn1.products),rn1.prodstoich), zip(opit(rn2.products),rn2.prodstoich)) || return false
     issetequal(rn1.netstoich, rn2.netstoich)
 end
 
@@ -116,12 +117,17 @@ function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
     issetequal(params(rn1), params(rn2)) || return false
     isequal(rn1.iv, rn2.iv) || return false
     (numreactions(rn1) == numreactions(rn2)) || return false
-    issetequal(equations(rn1), equations(rn2))
-    for sys1 in rn1.systems, sys2 in rn2.systems
-        (sy1 == sys2) || return false
-    end
+    
+    # the following fails for some reason, so need to use issubset
+    #issetequal(equations(rn1), equations(rn2)) || return false    
+    (issubset(equations(rn1),equations(rn2)) && issubset(equations(rn2),equations(rn1))) || return false
+    
+    #issetequal(rn1.systems, rn2.systems) || return false    
+    sys1 = rn1.systems; sys2 = rn2.systems
+    (issubset(sys1,sys2) && issubset(sys2,sys1)) || return false
     true
 end
+
 
 ######################## functions to extend a network ####################
 
