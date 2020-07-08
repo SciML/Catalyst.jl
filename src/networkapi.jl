@@ -126,11 +126,11 @@ end
 ######################## functions to extend a network ####################
 
 """
-    make_empty_network(; iv=(Variable(:t)()))
+    make_empty_network(; iv=Variable(:t))
 
 Construct an empty `ReactionSystem`. `iv` is the independent variable, usually time.
 """
-function make_empty_network(; iv=(Variable(:t)()))
+function make_empty_network(; iv=Variable(:t))
     ReactionSystem(Reaction[], iv, Operation[], Operation[], gensym(:ReactionSystem), ReactionSystem[])
 end
 
