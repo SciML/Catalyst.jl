@@ -9,6 +9,9 @@ using SafeTestsets
 @time @safetestset "Custom Functions" begin include("custom_functions.jl") end
 #@time @safetestset "Model Modification" begin include("model_modification.jl") end
 
+# Test api
+@time @safetestset "API" begin include("api.jl") end
+
 # Tests various core properties of the package.
 @time @safetestset "Higher Order" begin include("higher_order_reactions.jl") end
 @time @safetestset "U0 and Parameters Input Types" begin include("u0_n_parameter_inputs.jl") end
