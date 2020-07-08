@@ -120,9 +120,19 @@ function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
     for sys1 in rn1.systems, sys2 in rn2.systems
         (sy1 == sys2) || return false
     end
+    true
 end
 
 ######################## functions to extend a network ####################
+
+"""
+    make_empty_network(; iv=(Variable(:t)()))
+
+Construct an empty `ReactionSystem`. `iv` is the independent variable, usually time.
+"""
+function make_empty_network(; iv=(Variable(:t)()))
+    ReactionSystem(Reaction[], iv, Operation[], Operation[], gensym(:ReactionSystem), ReactionSystem[])
+end
 
 """
     addspecies!(network::ReactionSystem, s::Variable)
@@ -193,7 +203,26 @@ Notes:
 to `network` using [`addspecies!`](@ref) and [`addparams!`](@ref).
 """
 function addreaction!(network::ReactionSystem, rx::Reaction)    
-    push!(network.equations, rx)
+    push!(network.eqs, rx)
     length(equations(network))
 end
 
+
+"""
+    merge!(network1::ReactionSystem, network2::ReactionSystem)
+
+Merge `network2` into `network1`.
+
+Notes:
+- Duplicate reactions between the two networks are not filtered out.
+- `Reaction`s are not deepcopied to minimize allocations, so both networks will share underlying data arrays.
+"""
+function merge!(network1::ReactionSystem, network2::ReactionSystem)
+    isequal(network1.iv, network2.iv) || error("Reaction networks must have the same independent variable to be mergable.")
+    specs = species(network1)
+    foreach(spec -> !(spec in specs) && push!(specs, spec), species(network2))
+    ps = params(network1)
+    foreach(p -> !(p in ps) && push!(ps, p), params(network2))
+    append!(network1.eqs, network2.eqs)
+    append!(network1.systems, network2.systems)
+end

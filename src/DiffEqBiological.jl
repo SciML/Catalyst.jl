@@ -7,7 +7,7 @@ using RecipesBase, Latexify
 using DiffEqBase, DiffEqJump, ModelingToolkit
 @reexport using DiffEqBase, DiffEqJump, ModelingToolkit
 
-import Base: (==)
+import Base: (==), merge!
 
 const ExprValues = Union{Expr,Symbol,Float64,Int}
 
@@ -22,7 +22,7 @@ export @reaction_func
 # functions to query network properties
 include("networkapi.jl")
 export species, params, speciesmap, paramsmap, numspecies, numreactions, numparams
-export addspecies!, addparam!, addreaction!
+export make_empty_network, addspecies!, addparam!, addreaction!
 
 # depreciated currently
 #export oderhsfun, jacfun, paramjacfun, odefun, noisefun, sdefun, jumps, regularjumps
