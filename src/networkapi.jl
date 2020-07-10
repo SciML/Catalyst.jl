@@ -170,26 +170,6 @@ function addspecies!(network::ReactionSystem, s::Operation)
 end
 
 """
-    addspecies!(network::ReactionSystem, ss::Union(Vector{Variable},Tuple{Variable}))
-
-Given a `ReactionSystem`, add all the species corresponding to the variables in `ss`
-to the network (if it is not already defined). Returns nothing.
-"""
-function addspecies!(network::ReactionSystem, ss::Union(Vector{Variable},Tuple{Variable}))
-    foreach(s -> addspecies!(network,s), ss)
-end
-
-"""
-    addspecies!(network::ReactionSystem, ss::Union(Vector{Operation},Tuple{Operation}))
-
-Given a `ReactionSystem`, add all the species corresponding to the variables in `ss`
-to the network (if it is not already defined). Returns nothing.
-"""
-function addspecies!(network::ReactionSystem, ss::Union(Vector{Operation},Tuple{Operation}))
-    foreach(s -> addspecies!(network,s), ss)
-end
-
-"""
     addparam!(network::ReactionSystem, p::Variable)
 
 Given a `ReactionSystem`, add the parameter corresponding to the variable `p`
@@ -216,26 +196,6 @@ of the parameter within the system.
 function addparam!(network::ReactionSystem, p::Operation)
     !(p.op isa Variable) && error("If the passed in parameter is an Operation, it must correspond to an underlying Variable.")
     addparam!(network, convert(Variable,p))
-end
-
-"""
-    addparam!(network::ReactionSystem, ps::Union(Vector{Variable},Tuple{Variable}))
-
-Given a `ReactionSystem`, add all the parameters corresponding to the variables in `ps`
-to the network (if it is not already defined). Returns nothing.
-"""
-function addparam!(network::ReactionSystem, ps::Union(Vector{Variable},Tuple{Variable}))
-    foreach(p -> addparam!(network,p), ps)
-end
-
-"""
-    addparam!(network::ReactionSystem, ps::Union(Vector{Operation},Tuple{Operation}))
-
-Given a `ReactionSystem`, add all the parameters corresponding to the variables in `ps`
-to the network (if it is not already defined). Returns nothing.
-"""
-function addparam!(network::ReactionSystem, ps::Union(Vector{Operation},Tuple{Operation}))
-    foreach(p -> addparam!(network,p), ps)
 end
 
 """
