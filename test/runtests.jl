@@ -15,7 +15,6 @@ using SafeTestsets
 # Tests various core properties of the package.
 @time @safetestset "Higher Order" begin include("higher_order_reactions.jl") end
 @time @safetestset "U0 and Parameters Input Types" begin include("u0_n_parameter_inputs.jl") end
-#@time @safetestset "Network Property Queries" begin include("property_query.jl") end
 
 # Tests related to solving Ordinary Differential Equations.
 @time @safetestset "ODE System Solving" begin include("solve_ODEs.jl") end
