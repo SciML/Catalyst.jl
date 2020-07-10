@@ -78,8 +78,8 @@ end
 
 #Returns a empty network (with, or without, parameters declared)
 macro reaction_network(parameters...)
-    !isempty(intersect(forbidden_symbols,parameters)) && error("The following symbol(s) are used as reactants or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,parameters))...))*"this is not permited.")
-    return :(ReactionSystem(Reaction[], Variable(:t), Operation[], Variable.(collect(parameters)), gensym(:ReactionSystem), ReactionSystem[]))
+    !isempty(intersect(forbidden_symbols,parameters)) && error("The following symbol(s) are used as reactants or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,reactants,parameters))...))*"this is not permited.")
+    return Expr(:block,:(@parameters $((:t,parameters...)...)), :(ReactionSystem(Reaction[], t, Operation[], [$(parameters...)] , gensym(:ReactionSystem), ReactionSystem[])))
 end
 
 # Adds the reactions declared to a preexisting network. All parameters used in the added reactions needs to be declared after the reactions.
