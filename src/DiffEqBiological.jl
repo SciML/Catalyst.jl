@@ -15,7 +15,7 @@ include("expression_utils.jl")
 include("reaction_network.jl")
 
 # reaction network macro
-export @reaction_network
+export @reaction_network, @add_reactions
 export @reaction_func
 
 
