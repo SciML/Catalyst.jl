@@ -54,7 +54,7 @@ Example systems:
 
 Generates a `ModelingToolkit.ReactionSystem` that encodes a chemical reaction network.
 
-See the [Chemical Reaction Model docs](http://docs.sciml.ai/dev/models/biological.html) 
+See the [Chemical Reaction Model docs](http://docs.sciml.ai/dev/models/biological.html)
 for details on parameters to the macro.
 """
 
@@ -74,14 +74,19 @@ macro reaction_network(ex::Expr, parameters...)
     make_reaction_system(MacroTools.striplines(ex), parameters)
 end
 
-# Returns a empty network (with, or without, parameters declared)
+### Macros used for manipulating, and successively builing up, reaction systems. ###
+
+#Returns a empty network (with, or without, parameters declared)
 macro reaction_network(parameters...)
-    !isempty(intersect(forbidden_symbols,parameters)) && error("The following symbol(s) are used as parameter(s): "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,parameters))...))*"this is not permited.")
-    network_code = Expr(:block,:(@parameters t),[], :(ReactionSystem([],t,[],[])))
-    foreach(parameter-> push!(network_code.args[1].args, parameter), parameters)
-    foreach(parameter-> push!(network_code.args[3].args[5].args, parameter), parameters)
-    return network_code
+    !isempty(intersect(forbidden_symbols,parameters)) && error("The following symbol(s) are used as reactants or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,reactants,parameters))...))*"this is not permited.")
+    return Expr(:block,:(@parameters $((:t,parameters...)...)), :(ReactionSystem(Reaction[], t, Operation[], [$(parameters...)] , gensym(:ReactionSystem), ReactionSystem[])))
 end
+
+# Adds the reactions declared to a preexisting network. All parameters used in the added reactions needs to be declared after the reactions.
+macro add_reactions(rn::Symbol, ex::Expr, parameters...)
+    :(merge!($(esc(rn)),$(make_reaction_system(MacroTools.striplines(ex), parameters))))
+end
+
 
 
 ### Sturctures containing information about a reactant, and a reaction, respectively.

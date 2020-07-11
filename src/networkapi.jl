@@ -86,10 +86,10 @@ end
 """
     ==(rn1::ModelingToolkit.Reaction, rn2::ModelingToolkit.Reaction)
 
-Tests whether two `ModelingToolkit.Reaction`s are identical. 
+Tests whether two `ModelingToolkit.Reaction`s are identical.
 
 Notes:
-- Ignores the order in which stoichiometry components are listed. 
+- Ignores the order in which stoichiometry components are listed.
 - *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
 considered different than `(A+1)^2`.
 """
@@ -106,7 +106,7 @@ end
     ==(rn1::ReactionSystem, rn2::ReactionSystem)
 
 Tests whether the underlying species `Variables`s, parameter `Variables`s and reactions
-are the same in the two networks. Ignores order network components were defined. 
+are the same in the two networks. Ignores order network components were defined.
 
 Notes:
 - *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be considered
@@ -117,12 +117,12 @@ function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
     issetequal(params(rn1), params(rn2)) || return false
     isequal(rn1.iv, rn2.iv) || return false
     (numreactions(rn1) == numreactions(rn2)) || return false
-    
+
     # the following fails for some reason, so need to use issubset
-    #issetequal(equations(rn1), equations(rn2)) || return false    
+    #issetequal(equations(rn1), equations(rn2)) || return false
     (issubset(equations(rn1),equations(rn2)) && issubset(equations(rn2),equations(rn1))) || return false
-    
-    #issetequal(rn1.systems, rn2.systems) || return false    
+
+    #issetequal(rn1.systems, rn2.systems) || return false
     sys1 = rn1.systems; sys2 = rn2.systems
     (issubset(sys1,sys2) && issubset(sys2,sys1)) || return false
     true
@@ -144,7 +144,7 @@ end
     addspecies!(network::ReactionSystem, s::Variable)
 
 Given a `ReactionSystem`, add the species corresponding to the variable `s`
-to the network (if it is not already defined). Returns the integer id 
+to the network (if it is not already defined). Returns the integer id
 of the species within the system.
 """
 function addspecies!(network::ReactionSystem, s::Variable)
@@ -154,26 +154,26 @@ function addspecies!(network::ReactionSystem, s::Variable)
         return length(species(network))
     else
         return curidx
-    end    
+    end
 end
 
 """
     addspecies!(network::ReactionSystem, s::Operation)
 
 Given a `ReactionSystem`, add the species corresponding to the variable `s`
-to the network (if it is not already defined). Returns the integer id 
+to the network (if it is not already defined). Returns the integer id
 of the species within the system.
 """
-function addspecies!(network::ReactionSystem, s::Operation) 
-    !(s.op isa Variable) && error("If the passed in species is an Operation, it must correspond to an underlying Variable.")        
-    addspecies!(network, convert(Variable,s))    
+function addspecies!(network::ReactionSystem, s::Operation)
+    !(s.op isa Variable) && error("If the passed in species is an Operation, it must correspond to an underlying Variable.")
+    addspecies!(network, convert(Variable,s))
 end
 
 """
     addparam!(network::ReactionSystem, p::Variable)
 
 Given a `ReactionSystem`, add the parameter corresponding to the variable `p`
-to the network (if it is not already defined). Returns the integer id 
+to the network (if it is not already defined). Returns the integer id
 of the parameter within the system.
 """
 function addparam!(network::ReactionSystem, p::Variable)
@@ -183,19 +183,19 @@ function addparam!(network::ReactionSystem, p::Variable)
         return length(params(network))
     else
         return curidx
-    end    
+    end
 end
 
 """
     addparam!(network::ReactionSystem, p::Operation)
 
 Given a `ReactionSystem`, add the parameter corresponding to the variable `p`
-to the network (if it is not already defined). Returns the integer id 
+to the network (if it is not already defined). Returns the integer id
 of the parameter within the system.
 """
-function addparam!(network::ReactionSystem, p::Operation) 
-    !(p.op isa Variable) && error("If the passed in parameter is an Operation, it must correspond to an underlying Variable.")        
-    addparam!(network, convert(Variable,p))    
+function addparam!(network::ReactionSystem, p::Operation)
+    !(p.op isa Variable) && error("If the passed in parameter is an Operation, it must correspond to an underlying Variable.")
+    addparam!(network, convert(Variable,p))
 end
 
 """
@@ -204,11 +204,11 @@ end
 Add the passed in reaction to the `ReactionSystem`. Returns the integer
 id of `rx` in the list of `Reaction`s within `network`.
 
-Notes: 
+Notes:
 - Any new species or parameters used in `rx` should be separately added
 to `network` using [`addspecies!`](@ref) and [`addparams!`](@ref).
 """
-function addreaction!(network::ReactionSystem, rx::Reaction)    
+function addreaction!(network::ReactionSystem, rx::Reaction)
     push!(network.eqs, rx)
     length(equations(network))
 end

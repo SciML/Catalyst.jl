@@ -1,25 +1,43 @@
 ### Fetch required packages and reaction networks ###
 using DiffEqBiological, Test, UnPack
+include("test_networks.jl")
+
 
 ### Tests construction of empty reaction networks ###
 empty_network_1 = @reaction_network
-@unpack eqs,iv,states,ps,name,systems = empty_network_1
+@unpack eqs,iv,ps,name,systems = empty_network_1
 @test length(eqs) == 0
 @test iv.name == :t
-@test length(states) == 0
+@test length(empty_network_1.states) == 0
 @test length(ps) == 0
 
 empty_network_2 = @reaction_network p1 p2 p3 p4 p5
-@unpack eqs,iv,states,ps,name,systems = empty_network_2
+@unpack eqs,iv,ps,name,systems = empty_network_2
 @test length(eqs) == 0
 @test iv.name == :t
-@test length(states) == 0
+@test length(empty_network_2.states) == 0
 @test length(ps) == 5
 @test all(getproperty.(ps,:name) .== [:p1,:p2,:p3,:p4,:p5])
 
 
+### Tests creating a network and adding reactions ###
+unfinished_network = @reaction_network begin
+    (k1,k2), X1 ↔ X2
+    (k3,k4), X3 ↔ X4
+end k0 k1 k2 k3 k4
+@add_reactions unfinished_network begin
+    (k3,k4), X3 ↔ X4
+    (k5,k6), X5 ↔ X6
+end k0 k3 k4 k5 k6
+@add_reactions unfinished_network begin
+    (k5,k6), X5 ↔ X6
+    (k7,k8), X7 ↔ X8
+end k0 k5 k6 k7 k8
+@test length(unfinished_network.states) == 8
+@test length(unfinished_network.ps) == 9
+
 ### Compares test network to identical network constructed via @add_reactions ###
-identical_networks_ = Vector{Pair}()
+identical_networks = Vector{Pair}()
 
 step_by_step_network_1 = @reaction_network begin
     p, ∅ → X1
@@ -38,9 +56,9 @@ step_by_step_network_2 = @reaction_network begin
     (p1,p2,p3), ∅ → (X1,X2,X3)
 end p1 p2 p3
 @add_reactions step_by_step_network_2 begin
-(k1,k2), X1 + 2X2 ⟷ X4
-(mm(X3,v1,K1),k3), X4 ⟷ X5
-(d1,d2,d3,d4,d5), (X1,X2,X3,X4,X5) → ∅
+    (k1,k2), X1 + 2X2 ⟷ X4
+    (mm(X3,v1,K1),k3), X4 ⟷ X5
+    (d1,d2,d3,d4,d5), (X1,X2,X3,X4,X5) → ∅
 end k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
 push!(identical_networks, reaction_networks_standard[7] => step_by_step_network_2)
 
@@ -75,8 +93,8 @@ step_by_step_network_5 = @reaction_network begin
     (k1,k2), X1 ↔ X2
     (k3,k4), X2 ↔ X3
 end k1 k2 k3 k4 k5 k6
-@add_reactions step_by_step_network_45 begin
-    k5, X3 + X1
+@add_reactions step_by_step_network_5 begin
+    k5, X3 → X1
 end k5
 @add_reactions step_by_step_network_5 begin
     k6, X1 → X3
@@ -95,28 +113,28 @@ end k5 k6
 push!(identical_networks, reaction_networks_constraint[5] => step_by_step_network_6)
 
 step_by_step_network_7 = @reaction_network begin
-    deg, (σ,A,Aσ) → ∅
-end deg
+    k2p, Y → 0
+end k1 k2p k2pp k3p k3pp A J3 k4 m J4
 @add_reactions step_by_step_network_7 begin
-    S*kC, Aσ → σ
-    kD, Aσ → A + σ
-end kC kD S
+    (k3p+k3pp*A)/(J3+Po), Po → P
+    k2pp*P, Y → 0
+end k3p k3pp A J3 k2pp
 @add_reactions step_by_step_network_7 begin
-    kB, A + σ → Aσ
-end kB kD
+    k1, 0 → Y
+end k1
 @add_reactions step_by_step_network_7 begin
-    v0 + hill(σ,v,K,n), ∅ → (σ+A)
-end v0 v K n
-push!(identical_networks, reaction_networks_real[2] => step_by_step_network_7)
+    (k4*m)/(J4+P), Y + P → Y + Po
+end k4 m J4
+push!(identical_networks, reaction_networks_real[3] => step_by_step_network_7)
 
 step_by_step_network_8 = @reaction_network k1
 @add_reactions step_by_step_network_8 begin
     k1, X1 → X2
     0, X2 → X3
-end
+end k1
 @add_reactions step_by_step_network_8 begin
-k2, X3 → X4
-k3, X4 → X5
+    k2, X3 → X4
+    k3, X4 → X5
 end k2 k3
 push!(identical_networks, reaction_networks_weird[7] => step_by_step_network_8)
 
@@ -131,12 +149,15 @@ for networks in identical_networks
     f2 = ODEFunction(convert(ODESystem,networks[2]),jac=true)
     g1 = SDEFunction(convert(SDESystem,networks[1]))
     g2 = SDEFunction(convert(SDESystem,networks[2]))
-    for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
+    @test networks[1] == networks[2]
+    for factor in [1e-2, 1e-1, 1e0, 1e1]
         u0 = factor*rand(length(networks[1].states))
         p = factor*rand(length(networks[1].ps))
         t = rand()
-        @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 100*eps())
-        @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 100*eps())
-        @test all(abs.(g1(u0,p,t) .- g2(u0,p,t)) .< 100*eps())
+        @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 1000*eps())
+        @test all(abs.(g1(u0,p,t) .- g2(u0,p,t)) .< 1000*eps())
+        @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 1000*eps())
+        @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 1000*eps())
+        @test all(abs.(g1(u0,p,t) .- g2(u0,p,t)) .< 1000*eps())
     end
 end
