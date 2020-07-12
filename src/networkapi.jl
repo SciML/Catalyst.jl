@@ -67,19 +67,120 @@ function numparams(network)
     length(params(network))
 end
 
+"""
+    rateexpr(network, rxidx)
 
-### Macros for using DSL notation to modify an already created network. ###
+Given a `ReactionSystem`, return the ModelingToolkit reaction rate
+`Operation` for the reaction with index `rxidx`. Note, for a reaction
+defined by
 
-# # Creates a new network by making addition to an already existing one.
-# macro add_reactions(network, ex::Expr, parameters...)
-#     #To be written
-# end
+`k*X*Y, X+Z --> 2X + Y`
 
-# # modifies an already existing reaction network by adding new reactions.
-# macro add_reactions!(network, ex::Expr, parameters...)
-#     #To be written
-# end
+the expression that is returned will be `k*X*Y`, while the *rate law* used in
+ODEs and SDEs would be `k*X^2*Y*Z`.
+"""
+function rateexpr(network, rxidx)
+    equations(network)[rxidx].rate
+end
 
+"""
+    oderatelawexpr(network, rxidx)
+
+Given a `ReactionSystem`, return the ModelingToolkit reaction rate law
+`Operation` used in generated ODEs for the reaction with index `rxidx`.
+Note, for a reaction defined by
+
+`k*X*Y, X+Z --> 2X + Y`
+
+the expression that is returned will be `k*X^2*Y*Z`. For a reaction of
+the form 
+
+`k, 2X+3Y --> Z`
+
+the `Operation` that is returned will be `k * (X(t)^2/2) * (Y(t)^3/6)`. 
+
+Notes:
+- Allocates
+""" 
+function oderatelawexpr(network, rxidx)
+    ModelingToolkit.oderatelaw(equations(network)[rxidx])
+end
+
+"""
+    ssaratelawexpr(network, rxidx)
+
+Given a `ReactionSystem`, return the ModelingToolkit reaction rate law
+`Operation` used in generated stochastic chemical kinetics model SSAs for the
+reaction with index `rxidx`. Note, for a reaction defined by
+
+`k*X*Y, X+Z --> 2X + Y`
+
+the expression that is returned will be `:(k*X^2*Y*Z)`. For a reaction of
+the form 
+
+`k, 2X+3Y --> Z`
+
+the `Operation` that is returned will be `:(k * binomial(X,2) *
+binomial(Y,3))`.
+
+Notes:
+- Allocates
+""" 
+function ssaratelawexpr(network, rxidx)
+    ModelingToolkit.jumpratelaw(equations(network)[rxidx])
+end
+
+"""
+    ismassaction(network::ReactionSystem, rxidx; kwargs...)
+
+Given a `ReactionSystem` and a reaction index, `rxidx`, return a boolean
+indicating whether the given reaction is of mass action form. For example,
+the reaction
+
+`2*k, 2X + 3Y --> 5Z + W`
+
+would return true, while reactions with state-dependent rates like
+
+`k*X, X + Y --> Z`
+
+would return false. `kwargs` can be any options given by
+[`ModelingToolkit.ismassaction`](https://mtk.sciml.ai/stable/systems/ReactionSystem/#ModelingToolkit.ismassaction).
+
+Notes:
+- Allocates unless all `ModelingToolkit.ismassaction` `kwargs` are provided.
+"""
+function ismassaction(network::ReactionSystem, rxidx::Int; kwargs...)
+    ModelingToolkit.ismassaction(equations(network)[rxidx], network; kwargs...)
+end
+
+"""
+    dependents(network, rxidx)
+
+Given a `ReactionSystem` and a reaction index, `rxidx`, return a vector of
+`ModelingToolkit` `Operations`s corresponding to species the *reaction rate
+law* depends on. i.e. for
+
+`k*W, 2X + 3Y --> 5Z + W`
+
+the returned vector would be `[W(t),X(t),Y(t)]`.
+
+Notes:
+- Allocates
+"""
+function dependents(network, rxidx)
+    rx = equations(network)[rxidx]
+    rvars = ModelingToolkit.get_variables(rx.rate, states(network))
+    return union!(rvars, rx.substrates)
+end
+
+"""
+    dependants(network, rxidx)
+
+See documentation for [`dependents(network, rxidx)`](@ref).
+"""
+function dependants(network, rxidx)
+    dependents(network, rxidx)
+end
 
 ######################## reaction network operators #######################
 
@@ -222,6 +323,7 @@ Merge `network2` into `network1`.
 Notes:
 - Duplicate reactions between the two networks are not filtered out.
 - `Reaction`s are not deepcopied to minimize allocations, so both networks will share underlying data arrays.
+- Returns `network1`
 """
 function merge!(network1::ReactionSystem, network2::ReactionSystem)
     isequal(network1.iv, network2.iv) || error("Reaction networks must have the same independent variable to be mergable.")
@@ -231,4 +333,23 @@ function merge!(network1::ReactionSystem, network2::ReactionSystem)
     foreach(p -> !(p in ps) && push!(ps, p), params(network2))
     append!(network1.eqs, network2.eqs)
     append!(network1.systems, network2.systems)
+    network1
 end
+
+"""
+    merge(network1::ReactionSystem, network2::ReactionSystem)
+
+Create a new network merging `network1` and `network2`.
+
+Notes:
+- Duplicate reactions between the two networks are not filtered out.
+- `Reaction`s are not deepcopied to minimize allocations, so the new network will share underlying data arrays.
+- Returns the merged network.
+"""
+function merge(network1::ReactionSystem, network2::ReactionSystem)
+    network = make_empty_network()
+    merge!(network, network1)
+    merge!(network, network2)
+    network
+end
+
