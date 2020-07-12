@@ -36,3 +36,9 @@ addparam!(rs2, k4.op)
 addreaction!(rs2, Reaction(k3, [S], [D]))
 addreaction!(rs2, Reaction(k4, [S,I], [D]))
 @test rs2 == rs
+
+rxs = [Reaction(k1*S, [S,I], [I], [2,3], [2]),
+       Reaction(k2*R, [I], [R]) ]
+rs = ReactionSystem(rxs, t, [S,I,R], [k1,k2])
+deps = [s.op for s in dependents(rxs[2], rs)]
+@test isequal(deps, [R.op,I.op])

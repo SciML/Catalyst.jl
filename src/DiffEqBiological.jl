@@ -23,8 +23,6 @@ export @reaction_func
 include("networkapi.jl")
 export species, params, speciesmap, paramsmap, numspecies, numreactions, numparams
 export make_empty_network, addspecies!, addparam!, addreaction!
-export rateexpr, oderatelawexpr, ssaratelawexpr
-export ismassaction, dependants, dependents
-#export rxtospecies_depgraph, speciestorx_depgraph, rxtorx_depgraph
+export dependants, dependents
 
 end # module

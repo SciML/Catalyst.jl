@@ -68,95 +68,9 @@ function numparams(network)
 end
 
 """
-    rateexpr(network, rxidx)
+    dependents(rx, network)
 
-Given a `ReactionSystem`, return the ModelingToolkit reaction rate
-`Operation` for the reaction with index `rxidx`. Note, for a reaction
-defined by
-
-`k*X*Y, X+Z --> 2X + Y`
-
-the expression that is returned will be `k*X*Y`, while the *rate law* used in
-ODEs and SDEs would be `k*X^2*Y*Z`.
-"""
-function rateexpr(network, rxidx)
-    equations(network)[rxidx].rate
-end
-
-"""
-    oderatelawexpr(network, rxidx)
-
-Given a `ReactionSystem`, return the ModelingToolkit reaction rate law
-`Operation` used in generated ODEs for the reaction with index `rxidx`.
-Note, for a reaction defined by
-
-`k*X*Y, X+Z --> 2X + Y`
-
-the expression that is returned will be `k*X^2*Y*Z`. For a reaction of
-the form 
-
-`k, 2X+3Y --> Z`
-
-the `Operation` that is returned will be `k * (X(t)^2/2) * (Y(t)^3/6)`. 
-
-Notes:
-- Allocates
-""" 
-function oderatelawexpr(network, rxidx)
-    ModelingToolkit.oderatelaw(equations(network)[rxidx])
-end
-
-"""
-    ssaratelawexpr(network, rxidx)
-
-Given a `ReactionSystem`, return the ModelingToolkit reaction rate law
-`Operation` used in generated stochastic chemical kinetics model SSAs for the
-reaction with index `rxidx`. Note, for a reaction defined by
-
-`k*X*Y, X+Z --> 2X + Y`
-
-the expression that is returned will be `:(k*X^2*Y*Z)`. For a reaction of
-the form 
-
-`k, 2X+3Y --> Z`
-
-the `Operation` that is returned will be `:(k * binomial(X,2) *
-binomial(Y,3))`.
-
-Notes:
-- Allocates
-""" 
-function ssaratelawexpr(network, rxidx)
-    ModelingToolkit.jumpratelaw(equations(network)[rxidx])
-end
-
-"""
-    ismassaction(network::ReactionSystem, rxidx; kwargs...)
-
-Given a `ReactionSystem` and a reaction index, `rxidx`, return a boolean
-indicating whether the given reaction is of mass action form. For example,
-the reaction
-
-`2*k, 2X + 3Y --> 5Z + W`
-
-would return true, while reactions with state-dependent rates like
-
-`k*X, X + Y --> Z`
-
-would return false. `kwargs` can be any options given by
-[`ModelingToolkit.ismassaction`](https://mtk.sciml.ai/stable/systems/ReactionSystem/#ModelingToolkit.ismassaction).
-
-Notes:
-- Allocates unless all `ModelingToolkit.ismassaction` `kwargs` are provided.
-"""
-function ismassaction(network::ReactionSystem, rxidx::Int; kwargs...)
-    ModelingToolkit.ismassaction(equations(network)[rxidx], network; kwargs...)
-end
-
-"""
-    dependents(network, rxidx)
-
-Given a `ReactionSystem` and a reaction index, `rxidx`, return a vector of
+Given a `Reaction` and a `ReactionSystem`, return a vector of
 `ModelingToolkit` `Operations`s corresponding to species the *reaction rate
 law* depends on. i.e. for
 
@@ -167,8 +81,7 @@ the returned vector would be `[W(t),X(t),Y(t)]`.
 Notes:
 - Allocates
 """
-function dependents(network, rxidx)
-    rx = equations(network)[rxidx]
+function dependents(rx, network)
     rvars = ModelingToolkit.get_variables(rx.rate, states(network))
     return union!(rvars, rx.substrates)
 end
