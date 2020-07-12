@@ -82,8 +82,12 @@ Notes:
 - Allocates
 """
 function dependents(rx, network)
-    rvars = ModelingToolkit.get_variables(rx.rate, states(network))
-    return union!(rvars, rx.substrates)
+    if rx.rate isa Operation
+        rvars = ModelingToolkit.get_variables(rx.rate, states(network))
+        return union!(rvars, rx.substrates)
+    end
+    
+    rx.substrates
 end
 
 """
