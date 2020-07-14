@@ -39,7 +39,7 @@ end
 
 
 ### For a couple of networks, test that the steady state solution is identical to the long term ODE solution. ###
-steady_state_test_networks = [reaction_networks_standard[8], reaction_networks_real[1], reaction_networks_weird[1]]
+steady_state_test_networks = [reaction_networks_standard[8], reaction_networks_standard[10], reaction_networks_weird[1]]
 for network in steady_state_test_networks, factor in [1e-1, 1e0, 1e1]
     u0 = factor*rand(length(network.states))
     p = factor*rand(length(network.ps))

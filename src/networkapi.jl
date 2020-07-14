@@ -67,19 +67,37 @@ function numparams(network)
     length(params(network))
 end
 
+"""
+    dependents(rx, network)
 
-### Macros for using DSL notation to modify an already created network. ###
+Given a `Reaction` and a `ReactionSystem`, return a vector of
+`ModelingToolkit` `Operations`s corresponding to species the *reaction rate
+law* depends on. i.e. for
 
-# # Creates a new network by making addition to an already existing one.
-# macro add_reactions(network, ex::Expr, parameters...)
-#     #To be written
-# end
+`k*W, 2X + 3Y --> 5Z + W`
 
-# # modifies an already existing reaction network by adding new reactions.
-# macro add_reactions!(network, ex::Expr, parameters...)
-#     #To be written
-# end
+the returned vector would be `[W(t),X(t),Y(t)]`.
 
+Notes:
+- Allocates
+"""
+function dependents(rx, network)
+    if rx.rate isa Operation
+        rvars = ModelingToolkit.get_variables(rx.rate, states(network))
+        return union!(rvars, rx.substrates)
+    end
+    
+    rx.substrates
+end
+
+"""
+    dependants(network, rxidx)
+
+See documentation for [`dependents(network, rxidx)`](@ref).
+"""
+function dependants(network, rxidx)
+    dependents(network, rxidx)
+end
 
 ######################## reaction network operators #######################
 
@@ -222,6 +240,7 @@ Merge `network2` into `network1`.
 Notes:
 - Duplicate reactions between the two networks are not filtered out.
 - `Reaction`s are not deepcopied to minimize allocations, so both networks will share underlying data arrays.
+- Returns `network1`
 """
 function merge!(network1::ReactionSystem, network2::ReactionSystem)
     isequal(network1.iv, network2.iv) || error("Reaction networks must have the same independent variable to be mergable.")
@@ -231,4 +250,23 @@ function merge!(network1::ReactionSystem, network2::ReactionSystem)
     foreach(p -> !(p in ps) && push!(ps, p), params(network2))
     append!(network1.eqs, network2.eqs)
     append!(network1.systems, network2.systems)
+    network1
 end
+
+"""
+    merge(network1::ReactionSystem, network2::ReactionSystem)
+
+Create a new network merging `network1` and `network2`.
+
+Notes:
+- Duplicate reactions between the two networks are not filtered out.
+- `Reaction`s are not deepcopied to minimize allocations, so the new network will share underlying data arrays.
+- Returns the merged network.
+"""
+function merge(network1::ReactionSystem, network2::ReactionSystem)
+    network = make_empty_network()
+    merge!(network, network1)
+    merge!(network, network2)
+    network
+end
+
