@@ -130,9 +130,10 @@ The DSL has many features:
   ```
 
 For sufficiently large and structured network models it can often be easier to
-specify some reactions through a programmatic API. In this case one can 
-directly construct ModelingToolkit `Reaction`s and `ReactionSystem`s, or 
-construct an empty reaction network using
+specify some reactions through a programmatic
+[API](http://docs.sciml.ai/dev/apis/diffeqbio#Functions-to-Add-Species,-Parameters-and-Reactions-to-a-Network-1).
+In this case one can directly construct ModelingToolkit `Reaction`s and
+`ReactionSystem`s, or construct an empty reaction network using
 ```julia
 rn = make_empty_network()
 ```
@@ -140,10 +141,9 @@ or
 ```julia 
 rn = @reaction_network
 ```
-This can then be filled in using the
- [API](http://docs.sciml.ai/dev/apis/diffeqbio#Functions-to-Add-Species,-Parameters-and-Reactions-to-a-Network-1)
- `addspecies!`, `addparam!` and `addreaction!` modifier functions. `merge` and
- `merge!` are also supported for constructing composed networks.
+This can then be filled in using the API `addspecies!`, `addparam!` and
+ `addreaction!` modifier functions. `merge` and `merge!` are also supported for
+ constructing composed networks.
 
 
 ## DiffEqBiological API for Querying Network Information
