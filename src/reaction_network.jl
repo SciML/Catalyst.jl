@@ -1,5 +1,7 @@
 """
-Macro that inputs an expression corresponding to a reaction network and output a `ModelingToolkit.ReactionNetwork` that can be used as input to generation of ODE, SDE and Jump problems.
+Macro that inputs an expression corresponding to a reaction network and outputs
+a `ModelingToolkit.ReactionNetwork` that can be used as input to generation of
+ODE, SDE and Jump problems.
 
 Most arrows accepted (both right, left and bi drectional arrows).
 Note that while --> is a correct arrow, neither <-- nor <--> works.
@@ -7,56 +9,49 @@ Using non-filled arrows (⇐, ⟽, ⇒, ⟾, ⇔, ⟺) will disable mass kinetic
 Use 0 or ∅ for degradation/creation to/from nothing.
 Example systems:
     ### Basic Usage ###
-    rn = @reaction_network rType begin #Creates a reaction network of type rType.
-        2.0, X + Y --> XY                  #This will have reaction rate corresponding to 2.0*[X][Y]
-        2.0, XY ← X + Y                    #Identical to 2.0, X + Y --> XY
+    rn = @reaction_network begin           # Creates a ReactionSystem.
+        2.0, X + Y --> XY                  # This will have reaction rate corresponding to 2.0*[X][Y]
+        2.0, XY ← X + Y                    # Identical to 2.0, X + Y --> XY
     end
 
     ### Manipulating Reaction Rates ###
-    rn = @reaction_network rType begin
-        2.0, X + Y ⟾ XY                   #Ignores mass kinetics. This will have reaction rate corresponding to 2.0.
-        2.0X, X + Y --> XY                 #Reaction rate needs not be constant. This will have reaction rate corresponding to 2.0*[X]*[X]*[Y].
-        XY+log(X)^2, X + Y --> XY          #Reaction rate accepts quite complicated expressions (user defined functions must first be registered using the @reaction_func macro).
-        hill(XY,2,2,2), X + Y --> XY       #Reaction inis activated by XY according to a hill function. hill(x,v,K,N).
-        mm(XY,2,2), X + Y --> XY           #Reaction inis activated by XY according to a michaelis menten function. mm(x,v,K).
+    rn = @reaction_network begin
+        2.0, X + Y ⟾ XY                   # Ignores mass kinetics. This will have reaction rate corresponding to 2.0.
+        2.0X, X + Y --> XY                 # Reaction rate needs not be constant. This will have reaction rate corresponding to 2.0*[X]*[X]*[Y].
+        XY+log(X)^2, X + Y --> XY          # Reaction rate accepts quite complicated expressions (user defined functions must first be registered using the @reaction_func macro).
+        hill(XY,2,2,2), X + Y --> XY       # Reaction inis activated by XY according to a hill function. hill(x,v,K,N).
+        mm(XY,2,2), X + Y --> XY           # Reaction inis activated by XY according to a michaelis menten function. mm(x,v,K).
     end
 
     ### Multiple Reactions on a Single Line ###
-    rn = @reaction_network rType begin
-        (2.0,1.0), X + Y ↔ XY              #Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
-        2.0, (X,Y) --> 0                   #This corresponds to both X and Y degrading at rate 2.0.
-        (2.0, 1.0), (X,Y) --> 0            #This corresponds to X and Y degrading at rates 2.0 and 1.0, respectively.
-        2.0, (X1,Y1) --> (X2,Y2)           #X1 and Y1 becomes X2 and Y2, respectively, at rate 2.0.
+    rn = @reaction_network begin
+        (2.0,1.0), X + Y ↔ XY              # Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
+        2.0, (X,Y) --> 0                   # This corresponds to both X and Y degrading at rate 2.0.
+        (2.0, 1.0), (X,Y) --> 0            # This corresponds to X and Y degrading at rates 2.0 and 1.0, respectively.
+        2.0, (X1,Y1) --> (X2,Y2)           # X1 and Y1 becomes X2 and Y2, respectively, at rate 2.0.
     end
 
     ### Adding Parameters ###
     kB = 2.0; kD = 1.0
     p = [kB, kD]
     p = []
-    rn = @reaction_network type begin
-        (kB, kD), X + Y ↔ XY            #Lets you define parameters outside on network. Parameters can be changed without recalling the network.
+    rn = @reaction_network begin
+        (kB, kD), X + Y ↔ XY               # Lets you define parameters outside on network. Parameters can be changed without recalling the network.
     end kB, kD
 
     ### Defining New Functions ###
-    @reaction_func my_hill_repression(x, v, k, n) = v*k^n/(k^n+x^n)     #Creates and adds a new function that the @reaction_network macro can see.
+    @reaction_func my_hill_repression(x, v, k, n) = v*k^n/(k^n+x^n)     # Creates and adds a new function that the @reaction_network macro can see.
     r = @reaction_network MyReactionType begin
-        my_hill_repression(x, v_x, k_x, n_x), 0 --> x                       #After it has been added in @reaction_func the function can be used when defining new reaction networks.
+        my_hill_repression(x, v_x, k_x, n_x), 0 --> x                    # After it has been added in @reaction_func the function can be used when defining new reaction networks.
     end v_x k_x n_x
 
     ### Simulating Reaction Networks ###
-    probODE = ODEProblem(rn, args...; kwargs...)        #Using multiple dispatch the reaction network can be used as input to create ODE, SDE and Jump problems.
+    probODE = ODEProblem(rn, args...; kwargs...)        # Using multiple dispatch the reaction network can be used as input to create ODE, SDE and Jump problems.
     probSDE = SDEProblem(rn, args...; kwargs...)
     probJump = JumpProblem(prob,aggregator::Direct,rn)
 """
 
-"""
-    @reaction_network
 
-Generates a `ModelingToolkit.ReactionSystem` that encodes a chemical reaction network.
-
-See the [Chemical Reaction Model docs](http://docs.sciml.ai/dev/models/biological.html)
-for details on parameters to the macro.
-"""
 
 # Declare various arrow types symbols used for the empty set (also 0).
 empty_set = Set{Symbol}([:∅])
@@ -70,6 +65,13 @@ forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :I, :nothing, :∅]
 
 
 ### The main macro, takes reaction network notation and returns a ReactionSystem. ###
+"""
+    @reaction_network
+
+Generates a [`ReactionSystem`](@ref) that encodes a chemical reaction network.
+
+See the [Chemical Reaction Models](@ref) for details on parameters to the macro.
+"""
 macro reaction_network(ex::Expr, parameters...)
     make_reaction_system(MacroTools.striplines(ex), parameters)
 end
@@ -82,7 +84,15 @@ macro reaction_network(parameters...)
     return Expr(:block,:(@parameters $((:t,parameters...)...)), :(ReactionSystem(Reaction[], t, Operation[], [$(parameters...)] , gensym(:ReactionSystem), ReactionSystem[])))
 end
 
-# Adds the reactions declared to a preexisting network. All parameters used in the added reactions needs to be declared after the reactions.
+"""
+    @add_reactions
+
+Adds the reactions declared to a preexisting [`ReactionSystem`](@ref). All
+parameters used in the added reactions need to be declared after the
+reactions.
+
+See the [Chemical Reaction Models](@ref) for details on parameters to the macro.
+"""
 macro add_reactions(rn::Symbol, ex::Expr, parameters...)
     :(merge!($(esc(rn)),$(make_reaction_system(MacroTools.striplines(ex), parameters))))
 end

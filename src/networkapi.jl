@@ -5,7 +5,7 @@
 """
     species(network)
 
-Given an `ReactionSystem`, return a vector of species `Variable`s.
+Given an [`ReactionSystem`](@ref), return a vector of species `Variable`s.
 """
 function species(network)
     states(network)
@@ -14,7 +14,7 @@ end
 """
     params(network)
 
-Given an `ReactionSystem`, return a vector of parameter `Variable`s.
+Given an [`ReactionSystem`](@ref), return a vector of parameter `Variable`s.
 """
 function params(network)
     parameters(network)
@@ -23,7 +23,7 @@ end
 """
     speciesmap(network)
 
-Given an `ReactionSystem`, return a Dictionary mapping from species
+Given an [`ReactionSystem`](@ref), return a Dictionary mapping from species
 `Variable`s to species indices. (Allocates)
 """
 function speciesmap(network)
@@ -33,7 +33,7 @@ end
 """
     paramsmap(network)
 
-Given an `ReactionSystem`, return a Dictionary mapping from parameter
+Given an [`ReactionSystem`](@ref), return a Dictionary mapping from parameter
 `Variable`s to parameter indices. (Allocates)
 """
 function paramsmap(network)
@@ -43,7 +43,7 @@ end
 """
     numspecies(network)
 
-Return the number of species within the given `ReactionSystem`.
+Return the number of species within the given [`ReactionSystem`](@ref).
 """
 function numspecies(network)
     length(species(network))
@@ -52,7 +52,7 @@ end
 """
     numreactions(network)
 
-Return the number of reactions within the given `ReactionSystem`.
+Return the number of reactions within the given [`ReactionSystem`](@ref).
 """
 function numreactions(network)
     length(equations(network))
@@ -61,7 +61,7 @@ end
 """
     numparams(network)
 
-Return the number of parameters within the given `ReactionSystem`.
+Return the number of parameters within the given [`ReactionSystem`](@ref).
 """
 function numparams(network)
     length(params(network))
@@ -70,8 +70,8 @@ end
 """
     dependents(rx, network)
 
-Given a `Reaction` and a `ReactionSystem`, return a vector of
-`ModelingToolkit` `Operations`s corresponding to species the *reaction rate
+Given a [`Reaction`](@ref) and a [`ReactionSystem`](@ref), return a vector of
+`ModelingToolkit.Operation`s corresponding to species the *reaction rate
 law* depends on. i.e. for
 
 `k*W, 2X + 3Y --> 5Z + W`
@@ -91,9 +91,9 @@ function dependents(rx, network)
 end
 
 """
-    dependants(network, rxidx)
+    dependents(rx, network)
 
-See documentation for [`dependents(network, rxidx)`](@ref).
+See documentation for [`dependents`](@ref).
 """
 function dependants(network, rxidx)
     dependents(network, rxidx)
@@ -102,14 +102,14 @@ end
 ######################## reaction network operators #######################
 
 """
-    ==(rn1::ModelingToolkit.Reaction, rn2::ModelingToolkit.Reaction)
+    ==(rn1::Reaction, rn2::Reaction)
 
-Tests whether two `ModelingToolkit.Reaction`s are identical.
+Tests whether two [`Reaction`](@ref)s are identical.
 
 Notes:
 - Ignores the order in which stoichiometry components are listed.
 - *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
-considered different than `(A+1)^2`.
+    considered different than `(A+1)^2`.
 """
 function (==)(rn1::Reaction, rn2::Reaction)
     isequal(rn1.rate, rn2.rate) || return false
@@ -123,12 +123,13 @@ end
 """
     ==(rn1::ReactionSystem, rn2::ReactionSystem)
 
-Tests whether the underlying species `Variables`s, parameter `Variables`s and reactions
-are the same in the two networks. Ignores order network components were defined.
+Tests whether the underlying species `Variables`s, parameter `Variables`s
+and reactions are the same in the two [`ReactionSystem`](@ref)s. Ignores
+order network components were defined.
 
 Notes:
-- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be considered
-different than `(A+1)^2`.
+- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
+    considered different than `(A+1)^2`.
 """
 function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
     issetequal(species(rn1), species(rn2)) || return false
@@ -152,7 +153,7 @@ end
 """
     make_empty_network(; iv=Variable(:t))
 
-Construct an empty `ReactionSystem`. `iv` is the independent variable, usually time.
+Construct an empty [`ReactionSystem`](@ref). `iv` is the independent variable, usually time.
 """
 function make_empty_network(; iv=Variable(:t))
     ReactionSystem(Reaction[], iv, Operation[], Operation[], gensym(:ReactionSystem), ReactionSystem[])
@@ -161,9 +162,9 @@ end
 """
     addspecies!(network::ReactionSystem, s::Variable)
 
-Given a `ReactionSystem`, add the species corresponding to the variable `s`
-to the network (if it is not already defined). Returns the integer id
-of the species within the system.
+Given a [`ReactionSystem`](@ref), add the species corresponding to the
+variable `s` to the network (if it is not already defined). Returns the
+integer id of the species within the system.
 """
 function addspecies!(network::ReactionSystem, s::Variable)
     curidx = findfirst(S -> isequal(S, s), species(network))
@@ -178,9 +179,9 @@ end
 """
     addspecies!(network::ReactionSystem, s::Operation)
 
-Given a `ReactionSystem`, add the species corresponding to the variable `s`
-to the network (if it is not already defined). Returns the integer id
-of the species within the system.
+Given a [`ReactionSystem`](@ref), add the species corresponding to the
+variable `s` to the network (if it is not already defined). Returns the
+integer id of the species within the system.
 """
 function addspecies!(network::ReactionSystem, s::Operation)
     !(s.op isa Variable) && error("If the passed in species is an Operation, it must correspond to an underlying Variable.")
@@ -190,9 +191,9 @@ end
 """
     addparam!(network::ReactionSystem, p::Variable)
 
-Given a `ReactionSystem`, add the parameter corresponding to the variable `p`
-to the network (if it is not already defined). Returns the integer id
-of the parameter within the system.
+Given a [`ReactionSystem`](@ref), add the parameter corresponding to the
+variable `p` to the network (if it is not already defined). Returns the
+integer id of the parameter within the system.
 """
 function addparam!(network::ReactionSystem, p::Variable)
     curidx = findfirst(S -> isequal(S, p), params(network))
@@ -207,9 +208,9 @@ end
 """
     addparam!(network::ReactionSystem, p::Operation)
 
-Given a `ReactionSystem`, add the parameter corresponding to the variable `p`
-to the network (if it is not already defined). Returns the integer id
-of the parameter within the system.
+Given a [`ReactionSystem`](@ref), add the parameter corresponding to the
+variable `p` to the network (if it is not already defined). Returns the
+integer id of the parameter within the system.
 """
 function addparam!(network::ReactionSystem, p::Operation)
     !(p.op isa Variable) && error("If the passed in parameter is an Operation, it must correspond to an underlying Variable.")
@@ -219,12 +220,12 @@ end
 """
     addreaction!(network::ReactionSystem, rx::Reaction)
 
-Add the passed in reaction to the `ReactionSystem`. Returns the integer
-id of `rx` in the list of `Reaction`s within `network`.
+Add the passed in reaction to the [`ReactionSystem`](@ref). Returns the
+integer id of `rx` in the list of `Reaction`s within `network`.
 
 Notes:
-- Any new species or parameters used in `rx` should be separately added
-to `network` using [`addspecies!`](@ref) and [`addparams!`](@ref).
+- Any new species or parameters used in `rx` should be separately added to
+    `network` using [`addspecies!`](@ref) and [`addparam!`](@ref).
 """
 function addreaction!(network::ReactionSystem, rx::Reaction)
     push!(network.eqs, rx)
@@ -239,7 +240,7 @@ Merge `network2` into `network1`.
 
 Notes:
 - Duplicate reactions between the two networks are not filtered out.
-- `Reaction`s are not deepcopied to minimize allocations, so both networks will share underlying data arrays.
+- [`Reaction`](@ref)s are not deepcopied to minimize allocations, so both networks will share underlying data arrays.
 - Returns `network1`
 """
 function merge!(network1::ReactionSystem, network2::ReactionSystem)
@@ -260,7 +261,7 @@ Create a new network merging `network1` and `network2`.
 
 Notes:
 - Duplicate reactions between the two networks are not filtered out.
-- `Reaction`s are not deepcopied to minimize allocations, so the new network will share underlying data arrays.
+- [`Reaction`](@ref)s are not deepcopied to minimize allocations, so the new network will share underlying data arrays.
 - Returns the merged network.
 """
 function merge(network1::ReactionSystem, network2::ReactionSystem)
