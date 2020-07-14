@@ -68,7 +68,7 @@ forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :I, :nothing, :∅]
 """
     @reaction_network
 
-Generates a `ModelingToolkit.ReactionSystem` that encodes a chemical reaction network.
+Generates a [`ReactionSystem`](@ref) that encodes a chemical reaction network.
 
 See the [Chemical Reaction Models](@ref) for details on parameters to the macro.
 """
@@ -87,7 +87,7 @@ end
 """
     @add_reactions
 
-Adds the reactions declared to a preexisting `ReactionSystem`. All
+Adds the reactions declared to a preexisting [`ReactionSystem`](@ref). All
 parameters used in the added reactions need to be declared after the
 reactions.
 
