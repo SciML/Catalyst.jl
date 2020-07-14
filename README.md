@@ -5,6 +5,11 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/github/JuliaDiffEq/DiffEqBiological.jl?branch=master&svg=true)](https://ci.appveyor.com/project/ChrisRackauckas/diffeqbiological-jl/branch/master)
 [![Coverage Status](https://coveralls.io/repos/github/JuliaDiffEq/DiffEqBiological.jl/badge.svg?branch=master)](https://coveralls.io/github/JuliaDiffEq/DiffEqBiological.jl?branch=master)
 [![codecov.io](https://codecov.io/gh/JuliaDiffEq/DiffEqBiological.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaDiffEq/DiffEqBiological.jl)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/stable/models/biological/)
+[![API Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/stable/models/biological/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/latest/models/biological/)
+[![API Dev](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/latest/models/biological/)
+
 
 DiffEqBiological.jl provides a domain specific language (DSL) for defining
 chemical reaction networks in Julia. It interfaces with the broader
