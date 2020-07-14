@@ -12,20 +12,33 @@
 [![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://docs.sciml.ai/latest/apis/diffeqbio/)
 
 
+**Note for pre-version 5 users**: *Versions 5 and up are a breaking release,
+with the DSL now generating `ModelingToolkit.ReactionSystem`s.  As such, the
+`@reaction_network` macro no longer allows the generation of custom types.
+Please see the updated documentation to understand changes to the API and
+functionality. In particular, the earlier bifurcation functionality has not yet
+been updated to the new system. If you rely on this functionality please do not
+update at this time, or consider using
+[BifurcationKit.jl](https://github.com/rveltz/BifurcationKit.jl).*
+
 DiffEqBiological.jl provides a domain specific language (DSL) for defining
-chemical reaction networks in Julia. It interfaces with the broader
-[DifferentialEquations.jl](http://juliadiffeq.org) infrastructure to enable the
-easy generation and solution of corresponding mass action ODE models, Chemical
-Langevin SDE models, and stochastic chemical kinetics jump models. These
-generated models can also be used in higher level DifferentialEquations.jl
-packages (e.g. for sensitivity analysis, parameter estimation, etc).
+chemical reaction networks in Julia, generating
+[ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl)
+`ReactionSystem`s, which can be converted to systems of ODEs, SDEs, jump
+processes and more. This allows for the easy generation and solution of mass
+action ODE models, Chemical Langevin SDE models, and stochastic chemical kinetics
+jump process models, leveraging the broader [SciML](https://sciml.ai)
+ecosystem. These generated models can also be used in higher level SciML
+packages (e.g. for sensitivity analysis, parameter estimation, machine learning
+applications, etc).
 
-Here we give a brief introduction to using the DiffEqBiological package, with
-a focus on how to define reaction networks, and a minimal example showing how to
-create and solve ODE, SDE and jump models.
+Here we give a brief introduction to using the DiffEqBiological package, with a
+focus on how to define reaction networks, basic properties of the generated
+`ReactionSystem`s, and a minimal example showing how to create and solve ODE,
+SDE and jump models.
 
-More detailed documentation is available from:
-* Several DiffEqBiological tutorials are available as part of the
+More detailed documentation is available:
+<!-- * Several DiffEqBiological tutorials are available as part of the
   [DiffEqTutorials Modeling
   Examples](https://github.com/JuliaDiffEq/DiffEqTutorials.jl). Both html and
   interactive IJulia notebook versions are provided there. These include
@@ -36,32 +49,30 @@ More detailed documentation is available from:
     properties, which also illustrates how to programmatically and incrementally construct and
     solve a network model using the API.
   * A tutorial showing how to use the wrapped [HomotopyContinuation.jl](https://www.juliahomotopycontinuation.org/)
-    functionality to find steady-states and make bifurcation plots.
-* Full documentation of the DSL syntax, with information on the generated rate
-  functions and models is available in the [DifferentialEquations.jl Chemical
-  Reaction Models
-  documentation](http://docs.juliadiffeq.org/dev/models/biological).
+    functionality to find steady-states and make bifurcation plots. -->
+* A full introduction to the DSL, with information on the generated `ReactionSystem`s and their
+  conversion to ODE/SDE/jump process models is available in the [DifferentialEquations.jl Chemical
+  Reaction Models documentation](http://docs.sciml.ai/latest/models/biological).
 * API documentation showing how to retrieve network information from a
-  generated `reaction_network` is available
-  [here](http://docs.juliadiffeq.org/dev/apis/diffeqbio).
+  generated `reaction_network` is also available
+  [here](http://docs.sciml.ai/latest/apis/diffeqbio).
 
 ## The Reaction DSL
 
 The `@reaction_network` DSL allows for the definition of reaction networks using
 a simple format. Its input is a set of chemical reactions, from which it
-generates a reaction network object which can be used as input to `ODEProblem`,
-`SteadyStateProblem`, `SDEProblem` and `JumpProblem` constructors.
+generates a `ModelingToolkit.ReactionSystem`. The latter can be converted to a
+ModelingToolkit `ODESystem`, `SDESystem`, `JumpSystem` and more, which can
+be used as input to building `Problem`s for use in corresponding solvers.
 
 The basic syntax is
 ```julia
-rn = @reaction_network rType begin
+rn = @reaction_network begin
   2.0, X + Y --> XY               
   1.0, XY --> Z            
 end
 ```
-where each line corresponds to a chemical reaction. The (optional) input `rType`
-designates the type of this instance (all instances will inherit from the
-abstract type `AbstractReactionNetwork`).
+where each line corresponds to a chemical reaction. 
 
 The DSL has many features:
 * It supports many different arrow types, corresponding to different directions
@@ -73,7 +84,7 @@ The DSL has many features:
     1.0, XY ← X + Y      
     2.0, X + Y ↔ XY               
   end
-  ```
+  ```  
 * It allows multiple reactions to be defined simultaneously on one line. The
   following two networks are equivalent:
   ```julia
@@ -119,27 +130,37 @@ The DSL has many features:
   ```
 
 For sufficiently large and structured network models it can often be easier to
-specify some reactions through a programmatic API. For this reason the
-`@min_reaction_network` and `@empty_reaction_network` macros, along with the
-corresponding `addspecies!`, `addparam!` and `addreaction!` modifier functions,
-are provided in the
-[API](http://docs.juliadiffeq.org/dev/apis/diffeqbio#Functions-to-Add-Species,-Parameters-and-Reactions-to-a-Network-1).
+specify some reactions through a programmatic API. In this case one can 
+directly construct ModelingToolkit `Reaction`s and `ReactionSystem`s, or 
+construct an empty reaction network using
+```julia
+rn = make_empty_network()
+```
+or
+```julia 
+rn = @reaction_network
+```
+This can then be filled in using the
+ [API](http://docs.sciml.ai/dev/apis/diffeqbio#Functions-to-Add-Species,-Parameters-and-Reactions-to-a-Network-1)
+ `addspecies!`, `addparam!` and `addreaction!` modifier functions. `merge` and
+ `merge!` are also supported for constructing composed networks.
 
 
 ## DiffEqBiological API for Querying Network Information
 
 A variety of network information is calculated by the `reaction_network` macro,
 and can then be retrieved using the [DiffEqBiological
-API](http://docs.juliadiffeq.org/dev/apis/diffeqbio). This includes
+API](http://docs.juliadiffeq.org/dev/apis/diffeqbio) or fields within the
+generated `ReactionSystem`. This includes
 
 * Orderings of species and reactions
   ```julia
     speciesmap(rn)
     paramsmap(rn)
   ```
-* Reaction stoichiometries
+* Reaction stoichiometries. Given a `Reaction` within a `ReactionSystem` ###########################
   ```julia
-    substratestoich(rn, rxidx)
+    rn.
     productstoich(rn, rxidx)
     netstoich(rn, rxidx)
   ```
