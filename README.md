@@ -6,9 +6,9 @@
 [![Coverage Status](https://coveralls.io/repos/github/JuliaDiffEq/DiffEqBiological.jl/badge.svg?branch=master)](https://coveralls.io/github/JuliaDiffEq/DiffEqBiological.jl?branch=master)
 [![codecov.io](https://codecov.io/gh/JuliaDiffEq/DiffEqBiological.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaDiffEq/DiffEqBiological.jl)
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/stable/models/biological/)
-[![API Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/stable/models/biological/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/latest/models/biological/)
-[![API Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/latest/models/biological/)
+[![API Stable](https://img.shields.io/badge/API-stable-blue.svg)](https://docs.sciml.ai/stable/models/biological/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/stable/apis/diffeqbio/)
+[![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://docs.sciml.ai/latest/apis/diffeqbio/)
 
 
 DiffEqBiological.jl provides a domain specific language (DSL) for defining
