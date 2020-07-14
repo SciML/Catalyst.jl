@@ -224,7 +224,7 @@ id of `rx` in the list of `Reaction`s within `network`.
 
 Notes:
 - Any new species or parameters used in `rx` should be separately added
-to `network` using [`addspecies!`](@ref) and [`addparams!`](@ref).
+to `network` using [`addspecies!`](@ref) and [`addparam!`](@ref).
 """
 function addreaction!(network::ReactionSystem, rx::Reaction)
     push!(network.eqs, rx)
