@@ -8,7 +8,7 @@
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/stable/models/biological/)
 [![API Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/stable/models/biological/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/latest/models/biological/)
-[![API Dev](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/latest/models/biological/)
+[![API Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/latest/models/biological/)
 
 
 DiffEqBiological.jl provides a domain specific language (DSL) for defining
