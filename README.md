@@ -26,11 +26,23 @@ chemical reaction networks in Julia, generating
 [ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl)
 `ReactionSystem`s, which can be converted to systems of ODEs, SDEs, jump
 processes and more. This allows for the easy generation and solution of mass
-action ODE models, Chemical Langevin SDE models, and stochastic chemical kinetics
-jump process models, leveraging the broader [SciML](https://sciml.ai)
-ecosystem. These generated models can also be used in higher level SciML
-packages (e.g. for sensitivity analysis, parameter estimation, machine learning
-applications, etc).
+action ODE models, Chemical Langevin SDE models, stochastic chemical kinetics
+jump process models, and more. The generated models can then be used with
+solvers throughout the broader [SciML](https://sciml.ai) ecosystem, and in
+higher level SciML packages (e.g. for sensitivity analysis, parameter
+estimation, machine learning applications, etc).
+
+Here is a simple example of generating and solving an SIR ODE model:
+```julia
+using DiffEqBiological, DiffEqBase, OrdinaryDiffEq
+rn = @reaction_network begin
+    k1, S + I --> R
+    k2, I --> R
+    end k1 k2
+p   = [k1 => .1/1000, k2 => .01]; tspan = (0.0,250.0); u0 = [999.0,1.0,0.0]
+op  = ODEProblem(rn,u0,t,p)
+sol = solve(op)
+```
 
 Here we give a brief introduction to using the DiffEqBiological package, with a
 focus on how to define reaction networks, basic properties of the generated
@@ -158,28 +170,46 @@ generated `ReactionSystem`. This includes
     speciesmap(rn)
     paramsmap(rn)
   ```
-* Reaction stoichiometries. Given a `Reaction` within a `ReactionSystem` ###########################
+* Reaction information. Given a `Reaction` within a `ReactionSystem`, `rx`, we can
+extract basic information such as substrates and stoichiometries:
   ```julia
-    rn.
-    productstoich(rn, rxidx)
-    netstoich(rn, rxidx)
+    rx = equations(rn)[1]       # first reaction in rn
+    rx.rate                     # ModelingToolki Operation representing the rate expression
+    rx.substrates               # ModelingToolkit variables for each substrate
+    rx.substoich                # vector of stoichiometric coefs for substrates
+    rx.products
+    rx.prodstoich
+    rx.netstoich                # vector of Pairs of the form [X=>1]
   ```
+* Properties of reactions:
+```julia
+ismassaction(rx)                
+dependents(rx)                  # species the full rate law of rx depends on
+```
+* Functions and macros for extending and combining networks
+```julia
+@parameter k
+@variable S
+addspecies!(rn,S)
+addparam!(S, k)
+addreaction!(rn, Reaction(k, [S], nothing))   # add S --> 0 into rn
+@add_reactions rn begin                       # add S --> 0 into rn
+  k, S --> 0
+end
+merge!(rn, rn2)                               # merge rn2 into rn1
+rn3 = merge(rn, rn2)
+```
+
+In addition, `Modelingtoolkit` provides functionality to extract
+* Convert `ReactionSystem`s to ODE, SDE, jump process models and more.
+* These models can take advantage of Modelingtoolkit features for calculating Jacobians,
+  sparse Jacobians, multithreaded ODE derivatives, encoding jumps into optimal types, etc.
 * Expressions corresponding to the functions determining the deterministic and
-  stochastic terms within resulting ODE, SDE or jump models
-  ```julia
-    ode_exprs = odeexprs(rn)
-    jacobian_exprs = jacobianexprs(rn)
-    noise_expr = noiseexprs(rn)
-    rate_exprs,affect_exprs = jumpexprs(rn)  
-  ```
-  These can be used to generate LaTeX expressions corresponding to the system
+  stochastic terms within resulting ODE, SDE or jump models.
+* These can be used to generate LaTeX expressions corresponding to the system
   using packages such as [`Latexify`](https://github.com/korsbo/Latexify.jl).
-* Dependency graphs
-  ```julia
-    rxtospecies_depgraph(rn)
-    speciestorx_depgraph(rn)
-    rxtorx_depgraph(rn)
-  ```
+* Dependency graphs.
+
 and more.
 
 ## Simulating ODE, Steady-State, SDE and Jump Problems
