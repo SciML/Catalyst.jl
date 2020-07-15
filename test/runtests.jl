@@ -27,8 +27,8 @@ using SafeTestsets
 # Tests related to solvingJump Systems.
 @time @safetestset "Jump System Solving" begin include("solve_jumps.jl") end
 
-# Miscellaneous tests.
-@time @safetestset "Basic Plotting" begin include("plotting.jl") end
+# Miscellaneous tests
+#@time @safetestset "Basic Plotting" begin include("plotting.jl") end
 #@time @safetestset "Latexify" begin include("latexify.jl") end
 
 end # @time
