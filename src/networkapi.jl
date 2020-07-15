@@ -21,6 +21,15 @@ function params(network)
 end
 
 """
+    reactions(network)
+
+Given an [`ReactionSystem`](@ref), return a vector of all `Reactions` in the system.
+"""
+function reactions(network)
+    equations(network)
+end
+
+"""
     speciesmap(network)
 
 Given an [`ReactionSystem`](@ref), return a Dictionary mapping from species
