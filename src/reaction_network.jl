@@ -61,7 +61,7 @@ double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇔, :⟺])
 pure_rate_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
 # Declares symbols which may neither be used as paraemters not varriables.
-forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :I, :nothing, :∅]
+forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅]
 
 
 ### The main macro, takes reaction network notation and returns a ReactionSystem. ###

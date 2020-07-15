@@ -388,4 +388,11 @@ test_network = @reaction_network begin
     (μ,Μ), ω ⟷ Ω
 end α Α β Β γ Γ δ Δ ϵ Ε ζ Ζ η Η θ Θ ι Ι κ Κ λ Λ μ Μ
 
-# Networks containing t, I, im, and π should generate errors.
+# Networks containing t, im, and π should generate errors.
+
+# test I works
+rn = @reaction_network begin
+    k1, S + I --> 2I
+    k2, I --> R
+end k1 k2
+@test isequal(species(rn)[2].name,:I)
