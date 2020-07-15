@@ -24,12 +24,12 @@ update at this time, or consider using
 DiffEqBiological.jl provides a domain specific language (DSL) for defining
 chemical reaction networks in Julia, generating
 [ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl)
-`ReactionSystem`s, which can be converted to systems of ODEs, SDEs, jump
-processes and more. This allows for the easy generation and solution of mass
-action ODE models, Chemical Langevin SDE models, stochastic chemical kinetics
-jump process models, and more. The generated models can then be used with
-solvers throughout the broader [SciML](https://sciml.ai) ecosystem, and in
-higher level SciML packages (e.g. for sensitivity analysis, parameter
+`ReactionSystem`s. These can be converted to ModelingToolkit-based systems of
+ODEs, SDEs, jump processes and more. This allows for the easy generation and
+solution of mass action ODE models, Chemical Langevin SDE models, stochastic
+chemical kinetics jump process models, and more. The generated models can then
+be used with solvers throughout the broader [SciML](https://sciml.ai) ecosystem,
+including higher level SciML packages (e.g. for sensitivity analysis, parameter
 estimation, machine learning applications, etc).
 
 Here is a simple example of generating and solving an SIR ODE model:
