@@ -6,10 +6,10 @@
 [![codecov.io](https://codecov.io/gh/JuliaDiffEq/Catalyst.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaDiffEq/Catalyst.jl)
 
 <!--- [![Build status](https://ci.appveyor.com/api/projects/status/github/SciML/Catalyst.jl?branch=master&svg=true)](https://ci.appveyor.com/project/ChrisRackauckas/Catalyst-jl/branch/master) --->
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/stable/models/biological/)
-[![API Stable](https://img.shields.io/badge/API-stable-blue.svg)](https://docs.sciml.ai/stable/apis/diffeqbio/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/latest/models/biological/)
-[![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://docs.sciml.ai/latest/apis/diffeqbio/)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/stable/models/catalyst/)
+[![API Stable](https://img.shields.io/badge/API-stable-blue.svg)](https://docs.sciml.ai/stable/apis/catalyst_api/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/latest/models/catalyst/)
+[![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://docs.sciml.ai/latest/apis/catalyst_api/)
 
 
 **Note for pre-version 5 users**: *Version 5 is a breaking release, with the DSL
