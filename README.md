@@ -12,7 +12,7 @@
 [![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://docs.sciml.ai/latest/apis/diffeqbio/)
 
 
-**Note for pre-version 5 users**: *Versions 5 and up are a breaking release,
+**Note for pre-version 5 users**: *Version 5 is a breaking release,
 with the DSL now generating `ModelingToolkit.ReactionSystem`s.  As such, the
 `@reaction_network` macro no longer allows the generation of custom types.
 Please see the updated documentation to understand changes to the API and
@@ -193,7 +193,9 @@ extract basic information such as substrates and stoichiometries:
 * Properties of reactions:
   ```julia
   ismassaction(rx)                
-  dependents(rx)                # species the full rate law of rx depends on
+  dependents(rx)                # species the full rate law for rx depends on
+  oderatelaw(rx)
+  jumpratelaw(rx)
   ```
 * Functions and macros for extending and combining networks
   ```julia
@@ -272,17 +274,31 @@ problem. For example
 ```julia
 osys = convert(ODESystem, rs)     
 oprob = ODEProblem(osys, Pair.(species(rs),u0), tspan, Pair.(params(rs),p))
+osol  = solve(oprob, Tsit5())
+```
+would be equivalent to solving via the direct `ODEProblem` construction above.
+Using an `ODESystem` intermediate allows the possibility to modify the system
+with further terms that are difficult to encode as a chemical reaction. For
+example, suppose we wish to add a forcing term, `10*sin(10*t)`, to the ODE for
+`dX/dt`. We can do so as:
+```julia
+dXdteq = equations(osys)[1]           
+t      = independent_variable(osys)()    
+dXdteq = Equation(dXdteq.lhs, dXdteq.rhs + 10*sin(10*t))   
+osys2  = ODESystem([dXdteq], t, states(osys), parameters(osys))
+oprob  = ODEProblem(osys2, Pair.(species(rs),u0), tspan, Pair.(params(rs),p))
+osol   = solve(oprob, Tsit5())
 ```
 
-## Importing Predefined Networks 
+<!-- ## Importing Predefined Networks 
 [ReactionNetworkImporters.jl](https://github.com/isaacsas/ReactionNetworkImporters.jl)
-can load several different types of predefined networks into DiffEqBiological
-`reaction_network`s. These include 
+can load several different types of predefined networks directly into
+`ReactionSystem`s. These include 
   * A subset of BioNetGen .net files that can be generated from a BioNetGen language file (.bngl). (.net files can be generated using the `generate_network` command within BioNetGen.) 
   * Reaction networks specified by dense or sparse matrices encoding the stoichiometry of substrates and products within each reaction.
-  * Networks defined by the basic file format used by the [RSSA](https://www.cosbi.eu/research/prototypes/rssa) group at COSBI in their [model collection](https://www.cosbi.eu/prototypes/jLiexDeBIgFV4zxwnKiW97oc4BjTtIoRGajqdUz4.zip).
+  * Networks defined by the basic file format used by the [RSSA](https://www.cosbi.eu/research/prototypes/rssa) group at COSBI in their [model collection](https://www.cosbi.eu/prototypes/jLiexDeBIgFV4zxwnKiW97oc4BjTtIoRGajqdUz4.zip). -->
 
-## Finding steady states
+<!-- ## Finding steady states
 The steady states of a reaction network can be found using homotopy continuation (as implemented by [HomotopyContinuation.jl](https://github.com/isaacsas/ReactionNetworkImporters.jl)). This method is limited to polynomial systems, which includes reaction network not containing non-polynomial rates in the reaction rates (such as logarithms and non integer exponents). *Note, both the steady-state and the bifurcation diagram functionality only fully support Julia 1.1 and greater.*
 
 The basic syntax is
@@ -383,4 +399,4 @@ plot(bif_grid)
 plot(bif_grid_2d)
 plot(bif_grid_dia)
 ```
-```
+``` -->
