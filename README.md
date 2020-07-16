@@ -233,7 +233,7 @@ constructors.
   probODE = ODEProblem(rn, args...; kwargs...)      
   probSS = SteadyStateProblem(rn, args...; kwargs...)
   probSDE = SDEProblem(rn, args...; kwargs...)
-  probJump = JumpProblem(prob, Direct(), rn)
+  probJump = JumpProblem(rn, prob, Direct())
 ```
 The output problems may then be used as input to the solvers of
 [DifferentialEquations.jl](http://juliadiffeq.org/). *Note*, the noise used by
@@ -265,7 +265,7 @@ ssol  = solve(sprob, EM(), dt=.01)
 # solve JumpProblem using Gillespie's Direct Method
 u0 = [5]
 dprob = DiscreteProblem(rs, u0, tspan, p)
-jprob = JumpProblem(dprob, Direct(), rs)
+jprob = JumpProblem(rs, dprob, Direct())
 jsol = solve(jprob, SSAStepper())
 ```
 
