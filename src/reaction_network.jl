@@ -68,9 +68,11 @@ forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅]
 """
     @reaction_network
 
-Generates a [`ReactionSystem`](@ref) that encodes a chemical reaction network.
+Generates a [`ReactionSystem`](@ref) that encodes a chemical reaction
+network.
 
-See the [Chemical Reaction Models](@ref) for details on parameters to the macro.
+See the [Catalyst.jl for Reaction Models](@ref) documentation for details on
+parameters to the macro.
 """
 macro reaction_network(ex::Expr, parameters...)
     make_reaction_system(MacroTools.striplines(ex), parameters)
@@ -91,7 +93,8 @@ Adds the reactions declared to a preexisting [`ReactionSystem`](@ref). All
 parameters used in the added reactions need to be declared after the
 reactions.
 
-See the [Chemical Reaction Models](@ref) for details on parameters to the macro.
+See the [Catalyst.jl for Reaction Models](@ref) documentation for details on
+parameters to the macro.
 """
 macro add_reactions(rn::Symbol, ex::Expr, parameters...)
     :(merge!($(esc(rn)),$(make_reaction_system(MacroTools.striplines(ex), parameters))))
