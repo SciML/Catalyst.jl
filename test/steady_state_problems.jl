@@ -1,5 +1,5 @@
 ### Fetch required packages and reaction networks ###
-using DiffEqBiological, OrdinaryDiffEq, Random, SteadyStateDiffEq, Test
+using Catalyst, OrdinaryDiffEq, Random, SteadyStateDiffEq, Test
 include("test_networks.jl")
 
 

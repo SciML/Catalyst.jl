@@ -1,4 +1,4 @@
-using DiffEqBiological, DiffEqBase, ModelingToolkit, Test
+using Catalyst, DiffEqBase, ModelingToolkit, Test
 
 @parameters t k1 k2
 @variables S I R

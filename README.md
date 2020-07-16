@@ -1,11 +1,11 @@
 # Catalyst.jl
 
 [![Join the chat at https://gitter.im/JuliaDiffEq/Lobby](https://badges.gitter.im/JuliaDiffEq/Lobby.svg)](https://gitter.im/JuliaDiffEq/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.com/SciML/DiffEqBiological.jl.svg?branch=master)](https://travis-ci.com/SciML/DiffEqBiological.jl)
-[![Coverage Status](https://coveralls.io/repos/github/JuliaDiffEq/DiffEqBiological.jl/badge.svg?branch=master)](https://coveralls.io/github/JuliaDiffEq/DiffEqBiological.jl?branch=master)
-[![codecov.io](https://codecov.io/gh/JuliaDiffEq/DiffEqBiological.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaDiffEq/DiffEqBiological.jl)
+[![Build Status](https://travis-ci.com/SciML/Catalyst.jl.svg?branch=master)](https://travis-ci.com/SciML/Catalyst.jl)
+[![Coverage Status](https://coveralls.io/repos/github/JuliaDiffEq/Catalyst.jl/badge.svg?branch=master)](https://coveralls.io/github/JuliaDiffEq/Catalyst.jl?branch=master)
+[![codecov.io](https://codecov.io/gh/JuliaDiffEq/Catalyst.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaDiffEq/Catalyst.jl)
 
-<!--- [![Build status](https://ci.appveyor.com/api/projects/status/github/SciML/DiffEqBiological.jl?branch=master&svg=true)](https://ci.appveyor.com/project/ChrisRackauckas/diffeqbiological-jl/branch/master) --->
+<!--- [![Build status](https://ci.appveyor.com/api/projects/status/github/SciML/Catalyst.jl?branch=master&svg=true)](https://ci.appveyor.com/project/ChrisRackauckas/Catalyst-jl/branch/master) --->
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/stable/models/biological/)
 [![API Stable](https://img.shields.io/badge/API-stable-blue.svg)](https://docs.sciml.ai/stable/apis/diffeqbio/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/latest/models/biological/)
@@ -38,7 +38,7 @@ using Catalyst, DiffEqBase, OrdinaryDiffEq
 rn = @reaction_network begin
     k1, S + I --> R
     k2, I --> R
-    end k1 k2
+end k1 k2
 p     = [.1/1000, .01]           # [k1,k2]
 tspan = (0.0,250.0) 
 u0    = [999.0,1.0,0.0]          # [S,I,R] at t=0
@@ -179,8 +179,8 @@ API](http://docs.juliadiffeq.org/dev/apis/diffeqbio), the
     speciesmap(rn)
     paramsmap(rn)
   ```
-* Reaction information. Given a `Reaction` within a `ReactionSystem`, `rx`, we can
-extract basic information such as substrates and stoichiometries:
+* Reaction information. Given a `Reaction` within a `ReactionSystem`, `rx`, we
+  can extract basic information such as substrates and stoichiometries:
   ```julia
     rx = reactions(rn)[1]       # first reaction in rn
     rx.rate                     # ModelingToolki Operation representing the rate expression
@@ -268,7 +268,7 @@ jprob = JumpProblem(dprob, Direct(), rs)
 jsol = solve(jprob, SSAStepper())
 ```
 
-Finer control over the generation of such models can be obtained explicitly
+Finer control over the generation of such models can be obtained by explicitly
 converting the `ReactionSystem` to another system type and then constructing a
 problem. For example
 ```julia

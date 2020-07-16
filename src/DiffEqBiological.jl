@@ -1,4 +1,4 @@
-module DiffEqBiological
+module Catalyst
 
 using Reexport, ModelingToolkit
 @reexport using ModelingToolkit

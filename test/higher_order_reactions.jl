@@ -1,5 +1,5 @@
 ### Fetch required packages ###
-using DiffEqBase, DiffEqBiological, DiffEqJump, Random, Statistics, Test
+using DiffEqBase, Catalyst, DiffEqJump, Random, Statistics, Test
 
 
 ### Declares a test network. ###
