@@ -1,6 +1,6 @@
 ### Not currently run by runtests 
 ### Fetch required packages and reaction networks ###
-using DiffEqBiological, DiffEqJump, OrdinaryDiffEq, Plots, Random, Test
+using Catalyst, DiffEqJump, OrdinaryDiffEq, Plots, Random, Test
 include("test_networks.jl")
 
 

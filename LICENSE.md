@@ -1,4 +1,4 @@
-The DiffEqBiological.jl package is licensed under the MIT "Expat" License:
+The Catalyst.jl package is licensed under the MIT "Expat" License:
 
 > Copyright (c) 2017-20: Christopher Rackauckas, Julia Computing.
 >

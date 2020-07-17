@@ -1,5 +1,5 @@
 ### Fetch required packages and reaction networks ###
-using DiffEqBiological, DiffEqBase, Random, Test
+using Catalyst, DiffEqBase, Random, Test
 
 
 ### Checks that the jacobian is correct for networks without parameters ###

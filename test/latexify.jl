@@ -1,5 +1,5 @@
 ### Fetch required packages and reaction networks ###
-using DiffEqBiological, Latexify
+using Catalyst, Latexify
 
 ############################
 ### CURRENTLY NOT ACITVE ###

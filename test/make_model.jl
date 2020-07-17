@@ -1,5 +1,5 @@
 ### Fetch required packages and reaction networks ###
-using DiffEqBase, DiffEqBiological, Random, Test, UnPack
+using DiffEqBase, Catalyst, Random, Test, UnPack
 include("test_networks.jl")
 
 

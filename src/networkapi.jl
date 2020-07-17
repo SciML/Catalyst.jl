@@ -5,7 +5,7 @@
 """
     species(network)
 
-Given an [`ReactionSystem`](@ref), return a vector of species `Variable`s.
+Given a [`ReactionSystem`](@ref), return a vector of species `Variable`s.
 """
 function species(network)
     states(network)
@@ -14,16 +14,25 @@ end
 """
     params(network)
 
-Given an [`ReactionSystem`](@ref), return a vector of parameter `Variable`s.
+Given a [`ReactionSystem`](@ref), return a vector of parameter `Variable`s.
 """
 function params(network)
     parameters(network)
 end
 
 """
+    reactions(network)
+
+Given a [`ReactionSystem`](@ref), return a vector of all `Reactions` in the system.
+"""
+function reactions(network)
+    equations(network)
+end
+
+"""
     speciesmap(network)
 
-Given an [`ReactionSystem`](@ref), return a Dictionary mapping from species
+Given a [`ReactionSystem`](@ref), return a Dictionary mapping from species
 `Variable`s to species indices. (Allocates)
 """
 function speciesmap(network)
@@ -33,7 +42,7 @@ end
 """
     paramsmap(network)
 
-Given an [`ReactionSystem`](@ref), return a Dictionary mapping from parameter
+Given a [`ReactionSystem`](@ref), return a Dictionary mapping from parameter
 `Variable`s to parameter indices. (Allocates)
 """
 function paramsmap(network)

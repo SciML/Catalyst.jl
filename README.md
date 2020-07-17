@@ -1,67 +1,93 @@
-# DiffEqBiological.jl
+# Catalyst.jl
 
 [![Join the chat at https://gitter.im/JuliaDiffEq/Lobby](https://badges.gitter.im/JuliaDiffEq/Lobby.svg)](https://gitter.im/JuliaDiffEq/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.com/SciML/DiffEqBiological.jl.svg?branch=master)](https://travis-ci.com/SciML/DiffEqBiological.jl)
-[![Coverage Status](https://coveralls.io/repos/github/JuliaDiffEq/DiffEqBiological.jl/badge.svg?branch=master)](https://coveralls.io/github/JuliaDiffEq/DiffEqBiological.jl?branch=master)
-[![codecov.io](https://codecov.io/gh/JuliaDiffEq/DiffEqBiological.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaDiffEq/DiffEqBiological.jl)
+[![Build Status](https://travis-ci.com/SciML/Catalyst.jl.svg?branch=master)](https://travis-ci.com/SciML/Catalyst.jl)
+[![Coverage Status](https://coveralls.io/repos/github/JuliaDiffEq/Catalyst.jl/badge.svg?branch=master)](https://coveralls.io/github/JuliaDiffEq/Catalyst.jl?branch=master)
+[![codecov.io](https://codecov.io/gh/JuliaDiffEq/Catalyst.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaDiffEq/Catalyst.jl)
 
-<!--- [![Build status](https://ci.appveyor.com/api/projects/status/github/SciML/DiffEqBiological.jl?branch=master&svg=true)](https://ci.appveyor.com/project/ChrisRackauckas/diffeqbiological-jl/branch/master) --->
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/stable/models/biological/)
-[![API Stable](https://img.shields.io/badge/API-stable-blue.svg)](https://docs.sciml.ai/stable/apis/diffeqbio/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/latest/models/biological/)
-[![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://docs.sciml.ai/latest/apis/diffeqbio/)
+<!--- [![Build status](https://ci.appveyor.com/api/projects/status/github/SciML/Catalyst.jl?branch=master&svg=true)](https://ci.appveyor.com/project/ChrisRackauckas/Catalyst-jl/branch/master) --->
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/stable/models/catalyst/)
+[![API Stable](https://img.shields.io/badge/API-stable-blue.svg)](https://docs.sciml.ai/stable/apis/catalyst_api/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/latest/models/catalyst/)
+[![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://docs.sciml.ai/latest/apis/catalyst_api/)
 
 
-DiffEqBiological.jl provides a domain specific language (DSL) for defining
-chemical reaction networks in Julia. It interfaces with the broader
-[DifferentialEquations.jl](http://juliadiffeq.org) infrastructure to enable the
-easy generation and solution of corresponding mass action ODE models, Chemical
-Langevin SDE models, and stochastic chemical kinetics jump models. These
-generated models can also be used in higher level DifferentialEquations.jl
-packages (e.g. for sensitivity analysis, parameter estimation, etc).
+**Note for pre-version 5 users**: *Version 5 is a breaking release, with the DSL
+now generating `ModelingToolkit.ReactionSystem`s and DiffEqBiological being
+renamed to Catalyst.  As such, the `@reaction_network` macro no longer allows
+the generation of custom types. Please see the updated documentation to
+understand changes to the API and functionality. In particular, the earlier
+bifurcation functionality has not yet been updated to the new system. If you
+rely on this functionality please do not update at this time, or consider using
+[BifurcationKit.jl](https://github.com/rveltz/BifurcationKit.jl).*
 
-Here we give a brief introduction to using the DiffEqBiological package, with
-a focus on how to define reaction networks, and a minimal example showing how to
-create and solve ODE, SDE and jump models.
+Catalyst.jl provides a domain specific language (DSL) for defining
+chemical reaction networks in Julia, generating
+[ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl)
+`ReactionSystem`s. These can be converted to ModelingToolkit-based systems of
+ODEs, SDEs, jump processes and more. This allows for the easy generation and
+solution of mass action ODE models, Chemical Langevin SDE models, stochastic
+chemical kinetics jump process models, and more. The generated models can then
+be used with solvers throughout the broader [SciML](https://sciml.ai) ecosystem,
+including higher level SciML packages (e.g. for sensitivity analysis, parameter
+estimation, machine learning applications, etc).
 
-More detailed documentation is available from:
-* Several DiffEqBiological tutorials are available as part of the
+Here is a simple example of generating and solving an SIR ODE model:
+```julia
+using Catalyst, DiffEqBase, OrdinaryDiffEq
+rn = @reaction_network begin
+    k1, S + I --> R
+    k2, I --> R
+end k1 k2
+p     = [.1/1000, .01]           # [k1,k2]
+tspan = (0.0,250.0) 
+u0    = [999.0,1.0,0.0]          # [S,I,R] at t=0
+op    = ODEProblem(rn, u0, t, p)
+sol   = solve(op, Tsit5())       # use Tsit5 ODE solver
+```
+
+Here we give a brief introduction to using the Catalyst package, with a
+focus on how to define reaction networks, basic properties of the generated
+`ReactionSystem`s, and a minimal example showing how to create and solve ODE,
+SDE and jump models.
+
+More detailed documentation includes:
+<!-- * Several Catalyst tutorials are available as part of the
   [DiffEqTutorials Modeling
   Examples](https://github.com/JuliaDiffEq/DiffEqTutorials.jl). Both html and
   interactive IJulia notebook versions are provided there. These include
   * An introductory tutorial showing how to specify and solve both ODE and
   stochastic versions of the
   [repressilator](https://en.wikipedia.org/wiki/Repressilator).
-  * A tutorial exploring the DiffEqBiological API for querying network
+  * A tutorial exploring the Catalyst API for querying network
     properties, which also illustrates how to programmatically and incrementally construct and
     solve a network model using the API.
   * A tutorial showing how to use the wrapped [HomotopyContinuation.jl](https://www.juliahomotopycontinuation.org/)
-    functionality to find steady-states and make bifurcation plots.
-* Full documentation of the DSL syntax, with information on the generated rate
-  functions and models is available in the [DifferentialEquations.jl Chemical
-  Reaction Models
-  documentation](http://docs.juliadiffeq.org/dev/models/biological).
+    functionality to find steady-states and make bifurcation plots. -->
+* A full introduction to the DSL, with information on the generated
+  `ReactionSystem`s and their conversion to ODE/SDE/jump process models is
+  available in the [DifferentialEquations.jl Catalyst
+  documentation](http://docs.sciml.ai/latest/models/catalyst).
 * API documentation showing how to retrieve network information from a
-  generated `reaction_network` is available
-  [here](http://docs.juliadiffeq.org/dev/apis/diffeqbio).
+  generated `reaction_network` is also available
+  [here](http://docs.sciml.ai/latest/apis/catalyst_api).
 
 ## The Reaction DSL
 
 The `@reaction_network` DSL allows for the definition of reaction networks using
 a simple format. Its input is a set of chemical reactions, from which it
-generates a reaction network object which can be used as input to `ODEProblem`,
-`SteadyStateProblem`, `SDEProblem` and `JumpProblem` constructors.
+generates a `ModelingToolkit.ReactionSystem`. The latter can be converted to a
+ModelingToolkit `ODESystem`, `SDESystem`, `JumpSystem` and more, which can
+be used as input to building problems for use in corresponding solvers.
 
 The basic syntax is
 ```julia
-rn = @reaction_network rType begin
+rn = @reaction_network begin
   2.0, X + Y --> XY               
   1.0, XY --> Z            
 end
 ```
-where each line corresponds to a chemical reaction. The (optional) input `rType`
-designates the type of this instance (all instances will inherit from the
-abstract type `AbstractReactionNetwork`).
+where each line corresponds to a chemical reaction. 
 
 The DSL has many features:
 * It supports many different arrow types, corresponding to different directions
@@ -73,7 +99,7 @@ The DSL has many features:
     1.0, XY ← X + Y      
     2.0, X + Y ↔ XY               
   end
-  ```
+  ```  
 * It allows multiple reactions to be defined simultaneously on one line. The
   following two networks are equivalent:
   ```julia
@@ -119,46 +145,83 @@ The DSL has many features:
   ```
 
 For sufficiently large and structured network models it can often be easier to
-specify some reactions through a programmatic API. For this reason the
-`@min_reaction_network` and `@empty_reaction_network` macros, along with the
-corresponding `addspecies!`, `addparam!` and `addreaction!` modifier functions,
-are provided in the
-[API](http://docs.juliadiffeq.org/dev/apis/diffeqbio#Functions-to-Add-Species,-Parameters-and-Reactions-to-a-Network-1).
+specify some reactions through a programmatic
+[API](http://docs.sciml.ai/dev/catalyst_api/index.html#Functions-to-extend-a-Network).
+In this case one can directly construct ModelingToolkit `Reaction`s and
+`ReactionSystem`s, or construct an empty reaction network using
+```julia
+rn = make_empty_network()
+```
+or
+```julia 
+rn = @reaction_network
+```
+This can then be filled in using the API `addspecies!`, `addparam!` and
+ `addreaction!` modifier functions. `merge` and `merge!` are also supported for
+ constructing composed networks.
 
 
-## DiffEqBiological API for Querying Network Information
+## Catalyst API for Querying Network Information
 
-A variety of network information is calculated by the `reaction_network` macro,
-and can then be retrieved using the [DiffEqBiological
-API](http://docs.juliadiffeq.org/dev/apis/diffeqbio). This includes
+A variety of network information is generated by the `reaction_network` macro,
+and can then be retrieved using the [Catalyst
+API](http://docs.sciml.ai/dev/apis/catalyst_api/), the
+`ModelingToolkit.AbstractSystem` API, or fields within the generated
+`ReactionSystem` and `Reaction`s. The Catalyst API includes
 
-* Orderings of species and reactions
+* Basic properties of the `ReactionSystem`
+  ```julia
+    species(rn)              # vector of ModelingToolkit.Variables
+    params(rn)               # vector of ModelingToolkit.Variables
+    reactions(rn)            # vector of all Reactions within the system
+  ```
+* Integer ids of species and parameters
   ```julia
     speciesmap(rn)
     paramsmap(rn)
   ```
-* Reaction stoichiometries
+* Reaction information. Given a `Reaction` within a `ReactionSystem`, `rx`, we
+  can extract basic information such as substrates and stoichiometries:
   ```julia
-    substratestoich(rn, rxidx)
-    productstoich(rn, rxidx)
-    netstoich(rn, rxidx)
+    rx = reactions(rn)[1]       # first reaction in rn
+    rx.rate                     # ModelingToolki Operation representing the rate expression
+    rx.substrates               # ModelingToolkit variables for each substrate
+    rx.substoich                # vector of stoichiometric coefs for substrates
+    rx.products
+    rx.prodstoich
+    rx.netstoich                # vector of Pairs of the form [X=>1]
   ```
-* Expressions corresponding to the functions determining the deterministic and
-  stochastic terms within resulting ODE, SDE or jump models
+* Properties of reactions:
   ```julia
-    ode_exprs = odeexprs(rn)
-    jacobian_exprs = jacobianexprs(rn)
-    noise_expr = noiseexprs(rn)
-    rate_exprs,affect_exprs = jumpexprs(rn)  
+  ismassaction(rx)                
+  dependents(rx)                # species the full rate law for rx depends on
+  oderatelaw(rx)
+  jumpratelaw(rx)
   ```
-  These can be used to generate LaTeX expressions corresponding to the system
-  using packages such as [`Latexify`](https://github.com/korsbo/Latexify.jl).
-* Dependency graphs
+* Functions and macros for extending and combining networks
   ```julia
-    rxtospecies_depgraph(rn)
-    speciestorx_depgraph(rn)
-    rxtorx_depgraph(rn)
+  @parameter k                                  # create a ModelingToolkit parameter
+  @variable S                                   # create a ModelingToolkit variable
+  addspecies!(rn, S)
+  addparam!(rn, k)
+  addreaction!(rn, Reaction(k, [S], nothing))   # add S --> 0 into rn
+  @add_reactions rn begin                       # add S --> 0 into rn
+    k2, S --> 2S
+    k3, 2S --> S
+  end k2 k3
+  merge!(rn, rn2)                               # merge rn2 into rn1
+  rn3 = merge(rn, rn2)
   ```
+In addition, leveraging `Modelingtoolkit` we can
+* Convert `ReactionSystem`s to ODE, SDE, jump process models and more.
+* Take advantage of Modelingtoolkit features for calculating Jacobians,
+  sparse Jacobians, multithreaded ODE derivatives, encoding jumps into optimal types, etc.
+* Obtain Julia `Expr`s corresponding to the functions determining the deterministic and
+  stochastic terms within resulting ODE, SDE or jump models.
+* Use [`Latexify`](https://github.com/korsbo/Latexify.jl) to generate LaTeX
+  expressions corresponding to a given generated mathematical model.
+* Obtain dependency graphs showing the relationship between reactions, species and parameters.
+
 and more.
 
 ## Simulating ODE, Steady-State, SDE and Jump Problems
@@ -170,7 +233,7 @@ constructors.
   probODE = ODEProblem(rn, args...; kwargs...)      
   probSS = SteadyStateProblem(rn, args...; kwargs...)
   probSDE = SDEProblem(rn, args...; kwargs...)
-  probJump = JumpProblem(prob, Direct(), rn)
+  probJump = JumpProblem(rn, prob, Direct())
 ```
 The output problems may then be used as input to the solvers of
 [DifferentialEquations.jl](http://juliadiffeq.org/). *Note*, the noise used by
@@ -183,38 +246,60 @@ rs = @reaction_network begin
   c2, X --> 0
   c3, 0 --> X
 end c1 c2 c3
-params = (1.0,2.0,50.)
+p = (1.0,2.0,50.)
 tspan = (0.,4.)
 u0 = [5.]
 
 # solve ODEs
-oprob = ODEProblem(rs, u0, tspan, params)
+oprob = ODEProblem(rs, u0, tspan, p)
 osol  = solve(oprob, Tsit5())
 
 # solve for Steady-States
-ssprob = SteadyStateProblem(rs, u0, params)
+ssprob = SteadyStateProblem(rs, u0, p)
 sssol  = solve(ssprob, SSRootfind())
 
 # solve Chemical Langevin SDEs
-sprob = SDEProblem(rs, u0, tspan, params)
+sprob = SDEProblem(rs, u0, tspan, p)
 ssol  = solve(sprob, EM(), dt=.01)
 
 # solve JumpProblem using Gillespie's Direct Method
 u0 = [5]
-dprob = DiscreteProblem(rs, u0, tspan, params)
-jprob = JumpProblem(dprob, Direct(), rs)
+dprob = DiscreteProblem(rs, u0, tspan, p)
+jprob = JumpProblem(rs, dprob, Direct())
 jsol = solve(jprob, SSAStepper())
 ```
 
-## Importing Predefined Networks 
+Finer control over the generation of such models can be obtained by explicitly
+converting the `ReactionSystem` to another system type and then constructing a
+problem. For example
+```julia
+osys = convert(ODESystem, rs)     
+oprob = ODEProblem(osys, Pair.(species(rs),u0), tspan, Pair.(params(rs),p))
+osol  = solve(oprob, Tsit5())
+```
+would be equivalent to solving via the direct `ODEProblem` construction above.
+Using an `ODESystem` intermediate allows the possibility to modify the system
+with further terms that are difficult to encode as a chemical reaction. For
+example, suppose we wish to add a forcing term, `10*sin(10*t)`, to the ODE for
+`dX/dt`. We can do so as:
+```julia
+dXdteq = equations(osys)[1]           
+t      = independent_variable(osys)()    
+dXdteq = Equation(dXdteq.lhs, dXdteq.rhs + 10*sin(10*t))   
+osys2  = ODESystem([dXdteq], t, states(osys), parameters(osys))
+oprob  = ODEProblem(osys2, Pair.(species(rs),u0), tspan, Pair.(params(rs),p))
+osol   = solve(oprob, Tsit5())
+```
+
+<!-- ## Importing Predefined Networks 
 [ReactionNetworkImporters.jl](https://github.com/isaacsas/ReactionNetworkImporters.jl)
-can load several different types of predefined networks into DiffEqBiological
-`reaction_network`s. These include 
+can load several different types of predefined networks directly into
+`ReactionSystem`s. These include 
   * A subset of BioNetGen .net files that can be generated from a BioNetGen language file (.bngl). (.net files can be generated using the `generate_network` command within BioNetGen.) 
   * Reaction networks specified by dense or sparse matrices encoding the stoichiometry of substrates and products within each reaction.
-  * Networks defined by the basic file format used by the [RSSA](https://www.cosbi.eu/research/prototypes/rssa) group at COSBI in their [model collection](https://www.cosbi.eu/prototypes/jLiexDeBIgFV4zxwnKiW97oc4BjTtIoRGajqdUz4.zip).
+  * Networks defined by the basic file format used by the [RSSA](https://www.cosbi.eu/research/prototypes/rssa) group at COSBI in their [model collection](https://www.cosbi.eu/prototypes/jLiexDeBIgFV4zxwnKiW97oc4BjTtIoRGajqdUz4.zip). -->
 
-## Finding steady states
+<!-- ## Finding steady states
 The steady states of a reaction network can be found using homotopy continuation (as implemented by [HomotopyContinuation.jl](https://github.com/isaacsas/ReactionNetworkImporters.jl)). This method is limited to polynomial systems, which includes reaction network not containing non-polynomial rates in the reaction rates (such as logarithms and non integer exponents). *Note, both the steady-state and the bifurcation diagram functionality only fully support Julia 1.1 and greater.*
 
 The basic syntax is
@@ -315,4 +400,4 @@ plot(bif_grid)
 plot(bif_grid_2d)
 plot(bif_grid_dia)
 ```
-```
+``` -->

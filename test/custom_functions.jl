@@ -1,5 +1,5 @@
 ### Fetch required packages and reaction networks ###
-using DiffEqBase, DiffEqBiological, Random, Test
+using DiffEqBase, Catalyst, Random, Test
 
 
 ### Tests various cutom made functions ###

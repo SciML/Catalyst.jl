@@ -1,4 +1,4 @@
-module DiffEqBiological
+module Catalyst
 
 using Reexport, ModelingToolkit
 @reexport using ModelingToolkit
@@ -17,7 +17,7 @@ export @reaction_func
 
 # functions to query network properties
 include("networkapi.jl")
-export species, params, speciesmap, paramsmap, numspecies, numreactions, numparams
+export species, params, reactions, speciesmap, paramsmap, numspecies, numreactions, numparams
 export make_empty_network, addspecies!, addparam!, addreaction!
 export dependants, dependents
 

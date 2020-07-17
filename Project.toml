@@ -1,6 +1,6 @@
-name = "DiffEqBiological"
+name = "Catalyst"
 uuid = "eb300fae-53e8-50a0-950c-e21f52c2b7e0"
-version = "4.3.0"
+version = "5.0"
 
 [deps]
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"

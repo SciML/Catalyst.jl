@@ -47,7 +47,7 @@ end
 # Return :: cleaned out expression
 
 # From Latexify.jl with permission:
-# [see](https://github.com/JuliaDiffEq/DiffEqBiological.jl/issues/89#issuecomment-462147882)
+# [see](https://github.com/JuliaDiffEq/Catalyst.jl/issues/89#issuecomment-462147882)
 # """
 # function clean_subtractions(ex::Expr)
 #     ex.args[1] != :+ && return ex

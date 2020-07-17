@@ -1,5 +1,5 @@
 ### Fetch required packages and reaction networks ###
-using DiffEqBiological, OrdinaryDiffEq, Random, Test
+using Catalyst, OrdinaryDiffEq, Random, Test
 include("test_networks.jl")
 
 ### Tests various ways to input u0 and p for various functions ###
