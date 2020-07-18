@@ -9,7 +9,7 @@ makedocs(
     doctest = false,
     clean = true,
     pages = Any[
-        "Home" => "index.md"#,
+        "Home" => "index.md",
         "API" => Any[
             "api/catalyst_api.md"
         ]
