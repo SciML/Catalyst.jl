@@ -6,10 +6,10 @@
 [![codecov.io](https://codecov.io/gh/SciML/Catalyst.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/SciML/Catalyst.jl)
 
 <!--- [![Build status](https://ci.appveyor.com/api/projects/status/github/SciML/Catalyst.jl?branch=master&svg=true)](https://ci.appveyor.com/project/ChrisRackauckas/Catalyst-jl/branch/master) --->
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/stable/models/catalyst/)
-[![API Stable](https://img.shields.io/badge/API-stable-blue.svg)](https://docs.sciml.ai/stable/apis/catalyst_api/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/latest/models/catalyst/)
-[![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://docs.sciml.ai/latest/apis/catalyst_api/)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://catalyst.sciml.ai/stable/)
+[![API Stable](https://img.shields.io/badge/API-stable-blue.svg)](https://catalyst.sciml.ai/stable/api/catalyst_api/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://catalyst.sciml.ai/dev/)
+[![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://catalyst.sciml.ai/dev/api/catalyst_api/)
 
 **Note for pre-version 5 users**: *Version 5 is a breaking release, with the DSL
 now generating `ModelingToolkit.ReactionSystem`s and DiffEqBiological being
