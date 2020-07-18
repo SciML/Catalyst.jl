@@ -35,15 +35,21 @@ Here is a simple example of generating and solving an SIR ODE model:
 ```julia
 using Catalyst, DiffEqBase, OrdinaryDiffEq
 rn = @reaction_network begin
-    k1, S + I --> R
+    k1, S + I --> 2I
     k2, I --> R
 end k1 k2
-p     = [.1/1000, .01]           # [k1,k2]
+p     = [.1/1000, .01]               # [k1,k2]
 tspan = (0.0,250.0) 
-u0    = [999.0,1.0,0.0]          # [S,I,R] at t=0
-op    = ODEProblem(rn, u0, t, p)
-sol   = solve(op, Tsit5())       # use Tsit5 ODE solver
+u0    = [999.0,1.0,0.0]              # [S,I,R] at t=0
+op    = ODEProblem(rn, u0, tspan, p)
+sol   = solve(op, Tsit5())           # use Tsit5 ODE solver
 ```
+We can plot the solution as
+```julia
+using Plots
+plot(sol)
+```
+![SIR Solution](docs/src/assets/SIR.svg)
 
 Here we give a brief introduction to using the Catalyst package, with a
 focus on how to define reaction networks, basic properties of the generated
@@ -65,11 +71,10 @@ More detailed documentation includes:
     functionality to find steady-states and make bifurcation plots. -->
 * A full introduction to the DSL, with information on the generated
   `ReactionSystem`s and their conversion to ODE/SDE/jump process models is
-  available in the [DifferentialEquations.jl Catalyst
-  documentation](http://docs.sciml.ai/latest/models/catalyst).
+  available in the [Catalyst documentation](http://catalyst.sciml.ai/dev/).
 * API documentation showing how to retrieve network information from a
   generated `reaction_network` is also available
-  [here](http://docs.sciml.ai/latest/apis/catalyst_api).
+  [here](http://catalyst.sciml.ai/dev/api/catalyst_api).
 
 ## The Reaction DSL
 

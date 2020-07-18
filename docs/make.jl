@@ -10,6 +10,14 @@ makedocs(
     clean = true,
     pages = Any[
         "Home" => "index.md",
+        "Tutorials" => Any[
+            "tutorials/basics.md",
+            "tutorials/models.md",
+            "tutorials/basic_examples.md",
+            "tutorials/advanced.md",
+            "tutorials/generated_systems.md",
+            "tutorials/advanced_examples.md"
+        ],
         "API" => Any[
             "api/catalyst_api.md"
         ]
