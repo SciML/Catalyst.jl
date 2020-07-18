@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Home · Catalyst.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Catalyst.jl</span></div><form class="docs-search" action="search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>Home</a><ul class="internal"><li><a class="tocitem" href="#Installation"><span>Installation</span></a></li><li><a class="tocitem" href="#The-Reaction-DSL-Basics"><span>The Reaction DSL - Basics</span></a></li><li><a class="tocitem" href="#Model-Simulation"><span>Model Simulation</span></a></li><li><a class="tocitem" href="#Basic-Chemical-Reaction-Network-Examples"><span>Basic Chemical Reaction Network Examples</span></a></li><li><a class="tocitem" href="#The-Reaction-DSL-Advanced"><span>The Reaction DSL - Advanced</span></a></li><li><a class="tocitem" href="#The-generated-[ReactionSystem](@ref)-and-[Reaction](@ref)s"><span>The generated <code>ReactionSystem</code> and <code>Reaction</code>s</span></a></li><li><a class="tocitem" href="#Advanced-Chemical-Reaction-Network-Examples"><span>Advanced Chemical Reaction Network Examples</span></a></li></ul></li><li><span class="tocitem">API</span><ul><li><a class="tocitem" href="api/catalyst_api/">Catalyst.jl API</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Home</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Home</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/SciML/Catalyst.jl/blob/master/docs/src/index.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Catalyst.jl-for-Reaction-Models"><a class="docs-heading-anchor" href="#Catalyst.jl-for-Reaction-Models">Catalyst.jl for Reaction Models</a><a id="Catalyst.jl-for-Reaction-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Catalyst.jl-for-Reaction-Models" title="Permalink"></a></h1><p><code>Catalyst.jl</code> is a domain specific language (DSL) for easily specifying chemical reactions and generating corresponding <a href="api/catalyst_api/#ModelingToolkit.ReactionSystem"><code>ModelingToolkit.ReactionSystem</code></a>s to encode the models. It helps users quickly build discrete stochastic and differential equation based representations of biological and chemical models, which can then be solved and analyzing using <a href="https://sciml.ai">SciML</a> packages. These tools allow one to define the models at a high level by specifying reactions and rate constants, with the creation of the actual SciML <code>Problem</code>s then handled by <a href="https://github.com/SciML/ModelingToolkit.jl">ModelingToolkit</a>.</p><h2 id="Installation"><a class="docs-heading-anchor" href="#Installation">Installation</a><a id="Installation-1"></a><a class="docs-heading-anchor-permalink" href="#Installation" title="Permalink"></a></h2><p>Catalyst can be installed through the Julia package manager:</p><pre><code class="language-julia">]add Catalyst
+using Catalyst</code></pre><h2 id="The-Reaction-DSL-Basics"><a class="docs-heading-anchor" href="#The-Reaction-DSL-Basics">The Reaction DSL - Basics</a><a id="The-Reaction-DSL-Basics-1"></a><a class="docs-heading-anchor-permalink" href="#The-Reaction-DSL-Basics" title="Permalink"></a></h2><p>This section covers some of the basic syntax for building chemical reaction network models. Examples showing how to both construct and solve network models are provided in <a href="#Basic-Chemical-Reaction-Network-Examples">Basic Chemical Reaction Network Examples</a>.</p><h4 id="Basic-syntax"><a class="docs-heading-anchor" href="#Basic-syntax">Basic syntax</a><a id="Basic-syntax-1"></a><a class="docs-heading-anchor-permalink" href="#Basic-syntax" title="Permalink"></a></h4><p>The <code>@reaction_network</code> macro allows the (symbolic) specification of reaction networks with a simple format. Its input is a set of chemical reactions, and from them it generates a <a href="api/catalyst_api/#ModelingToolkit.ReactionSystem"><code>ReactionSystem</code></a> reaction network object. The <code>ReactionSystem</code> can be used as input to <code>ODEProblem</code>, <code>SteadyStateProblem</code>, <code>SDEProblem</code>, <code>JumpProblem</code> and more. <code>ReactionSystem</code>s can also be incrementally extended as needed, allowing for programmatic construction of networks and network composition.</p><p>The basic syntax is:</p><pre><code class="language-julia">rn = @reaction_network begin
+  2.0, X + Y --&gt; XY               
+  1.0, XY --&gt; Z1 + Z2            
+end</code></pre><p>where each line corresponds to a chemical reaction. Each reaction consists of a reaction rate (the expression on the left hand side of  <code>,</code>), a set of substrates (the expression in-between <code>,</code> and <code>--&gt;</code>), and a set of products (the expression on the right hand side of <code>--&gt;</code>). The substrates and the products may contain one or more reactants, separated by <code>+</code>.  The naming convention for these are the same as for normal variables in Julia.</p><p>The chemical reaction model is generated by the <code>@reaction_network</code> macro and stored in the <code>rn</code> variable (a normal Julia variable, which does not need to be called <code>rn</code>). The generated <code>ReactionSystem</code> can be converted to a differential equation model via</p><pre><code class="language-julia">osys = convert(ODESystem, rn)
+oprob = ODEProblem(osys, Pair.(species(rn),u0), t, Pair.(params(rn),p))</code></pre><p>or more directly via</p><pre><code class="language-julia">oprob = ODEProblem(rn, u0, t, p)</code></pre><p>See the detailed examples below. The generated differential equations use the law of mass action. For the above example the ODEs are then</p><div>\[\frac{d[X]}{dt} = -2 [X] [Y]\\
+\frac{d[Y]}{dt} = -2 [X] [Y]\\
+\frac{d[XY]}{dt} = 2 [X] [Y] - [XY]\\
+\frac{d[Z1]}{dt}= [XY]\\
+\frac{d[Z2]}{dt} = [XY]\]</div><h4 id="Arrow-variants"><a class="docs-heading-anchor" href="#Arrow-variants">Arrow variants</a><a id="Arrow-variants-1"></a><a class="docs-heading-anchor-permalink" href="#Arrow-variants" title="Permalink"></a></h4><p>A variety of unicode arrows are accepted by the DSL in addition to <code>--&gt;</code>. All of these work:  <code>&gt;</code>, <code>→</code> <code>↣</code>, <code>↦</code>, <code>⇾</code>, <code>⟶</code>, <code>⟼</code>, <code>⥟</code>, <code>⥟</code>, <code>⇀</code>, <code>⇁</code>. Backwards arrows can also be used to write the reaction in the opposite direction. For example, these three reactions are equivalent:</p><pre><code class="language-julia">rn = @reaction_network begin
+  1.0, X + Y --&gt; XY               
+  1.0, X + Y → XY      
+  1.0, XY ← X + Y      
+end</code></pre><p><em>Note, currently Julia&#39;s parser does not support <code>&lt;--</code>, <code>&lt;-&gt;</code> or <code>&lt;--&gt;</code>, so that <code>--&gt;</code> is the only supported plain text arrow.</em></p><h4 id="Using-bi-directional-arrows"><a class="docs-heading-anchor" href="#Using-bi-directional-arrows">Using bi-directional arrows</a><a id="Using-bi-directional-arrows-1"></a><a class="docs-heading-anchor-permalink" href="#Using-bi-directional-arrows" title="Permalink"></a></h4><p>Bi-directional unicode arrows can be used to designate a reaction that goes two ways. These two models are equivalent:</p><pre><code class="language-julia">rn = @reaction_network begin
+  2.0, X + Y → XY             
+  2.0, X + Y ← XY          
+end
+rn = @reaction_network begin
+  2.0, X + Y ↔ XY               
+end</code></pre><p>If the reaction rates in the backward and forward directions are different they can be designated in the following way:</p><pre><code class="language-julia">rn = @reaction_network begin
+  (2.0,1.0) X + Y ↔ XY               
+end</code></pre><p>which is identical to</p><pre><code class="language-julia">rn = @reaction_network begin
+  2.0, X + Y → XY             
+  1.0, X + Y ← XY          
+end</code></pre><h4 id="Combining-several-reactions-in-one-line"><a class="docs-heading-anchor" href="#Combining-several-reactions-in-one-line">Combining several reactions in one line</a><a id="Combining-several-reactions-in-one-line-1"></a><a class="docs-heading-anchor-permalink" href="#Combining-several-reactions-in-one-line" title="Permalink"></a></h4><p>Several similar reactions can be combined in one line by providing a tuple of reaction rates and/or substrates and/or products. If several tuples are provided they must all be of identical length. These pairs of reaction networks are all identical:</p><pre><code class="language-julia">rn1 = @reaction_network begin
+  1.0, S → (P1,P2)               
+end
+rn2 = @reaction_network begin
+  1.0, S → P1     
+  1.0, S → P2
+end</code></pre><pre><code class="language-julia">rn1 = @reaction_network begin
+  (1.0,2.0), (S1,S2) → P             
+end
+rn2 = @reaction_network begin
+  1.0, S1 → P     
+  2.0, S2 → P
+end</code></pre><pre><code class="language-julia">rn1 = @reaction_network begin
+  (1.0,2.0,3.0), (S1,S2,S3) → (P1,P2,P3)        
+end
+rn2 = @reaction_network begin
+  1.0, S1 → P1
+  2.0, S2 → P2   
+  3.0, S3 → P3  
+end</code></pre><p>This can also be combined with bi-directional arrows, in which case separate tuples can be provided for the backward and forward reaction rates. These reaction networks are identical</p><pre><code class="language-julia">rn1 = @reaction_network begin
+ (1.0,(1.0,2.0)), S ↔ (P1,P2)  
+end
+rn2 = @reaction_network begin
+  1.0, S → P1
+  1.0, S → P2
+  1.0, P1 → S   
+  2.0, P2 → S
+end</code></pre><h4 id="Production-and-Destruction-and-Stoichiometry"><a class="docs-heading-anchor" href="#Production-and-Destruction-and-Stoichiometry">Production and Destruction and Stoichiometry</a><a id="Production-and-Destruction-and-Stoichiometry-1"></a><a class="docs-heading-anchor-permalink" href="#Production-and-Destruction-and-Stoichiometry" title="Permalink"></a></h4><p>Sometimes reactants are produced/destroyed from/to nothing. This can be designated using either <code>0</code> or <code>∅</code>:</p><pre><code class="language-julia">rn = @reaction_network begin
+  2.0, 0 → X
+  1.0, X → ∅
+end</code></pre><p>If several molecules of the same reactant are involved in a reaction, the stoichiometry of a reactant in a reaction can be set using a number. Here two molecules of species <code>X</code> form the dimer <code>X2</code>:</p><pre><code class="language-julia">rn = @reaction_network begin
+  1.0, 2X → X2
+end</code></pre><p>this corresponds to the differential equation:</p><div>\[\frac{d[X]}{dt} = -[X]^2\\
+\frac{d[X2]}{dt} = \frac{1}{2!} [X]^2\]</div><p>Other numbers than 2 can be used, and parenthesis can be used to reuse the same stoichiometry for several reactants:</p><pre><code class="language-julia">rn = @reaction_network begin
+  1.0, X + 2(Y + Z) → XY2Z2
+end</code></pre><h4 id="Variable-reaction-rates"><a class="docs-heading-anchor" href="#Variable-reaction-rates">Variable reaction rates</a><a id="Variable-reaction-rates-1"></a><a class="docs-heading-anchor-permalink" href="#Variable-reaction-rates" title="Permalink"></a></h4><p>Reaction rates do not need to be constant, but can also depend on the current concentration of the various reactants (when e.g. one reactant can activate the production of another). E.g. this is a valid notation:</p><pre><code class="language-julia">rn = @reaction_network begin
+  X, Y → ∅
+end</code></pre><p>and will have <code>Y</code> degraded at rate</p><div>\[\frac{d[Y]}{dt} = -[X][Y]\]</div><p>Note that this is actually equivalent to the reaction</p><pre><code class="language-julia">rn = @reaction_network begin
+  1.0, X + Y → X
+end</code></pre><p><em>except</em> that the latter will be classified as <code>ismassaction</code> and the former will not, which can impact optimizations used in generating <code>JumpSystem</code>s. For this reason, it is recommended to use the latter representation when possible.</p><p>Most expressions and functions are valid reaction rates, e.g:</p><pre><code class="language-julia">rn = @reaction_network begin
+  2.0*X^2, 0 → X + Y
+  gamma(Y)/5, X → ∅
+  pi*X/Y, Y → ∅
+end</code></pre><p>but please note that user defined functions cannot be called directly (see later section <a href="#User-defined-functions-in-reaction-rates">User defined functions in reaction rates</a>).</p><h4 id="Defining-parameters"><a class="docs-heading-anchor" href="#Defining-parameters">Defining parameters</a><a id="Defining-parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-parameters" title="Permalink"></a></h4><p>Parameter values do not need to be set when the model is created. Components can be designated as symbolic parameters by declaring them at the end:</p><pre><code class="language-julia">rn = @reaction_network begin
+  p, ∅ → X
+  d, X → ∅
+end p d</code></pre><p>Parameters can only exist in the reaction rates (where they can be mixed with reactants). All variables not declared after <code>end</code> will be treated as a chemical species, and may lead to undefined behavior if unchanged by <em>all</em> reactions.</p><h4 id="Pre-defined-functions"><a class="docs-heading-anchor" href="#Pre-defined-functions">Pre-defined functions</a><a id="Pre-defined-functions-1"></a><a class="docs-heading-anchor-permalink" href="#Pre-defined-functions" title="Permalink"></a></h4><p>Hill functions and a Michaelis-Menten function are pre-defined and can be used as rate laws. Below, the pair of reactions within <code>rn1</code> are equivalent, as are the pair of reactions within <code>rn2</code>:</p><pre><code class="language-julia">rn1 = @reaction_network begin
+  hill(X,v,K,n), ∅ → X
+  v*X^n/(X^n+K^n), ∅ → X
+end v K n
+rn2 = @reaction_network begin
+  mm(X,v,K), ∅ → X
+  v*X/(X+K), ∅ → X
+end v K</code></pre><p>Repressor Hill (<code>hillr</code>) and Michaelis-Menten (<code>mmr</code>) functions are also provided:</p><pre><code class="language-julia">rn1 = @reaction_network begin
+  hillr(X,v,K,n), ∅ → X
+  v*K^n/(X^n+K^n), ∅ → X
+end v K n
+rn2 = @reaction_network begin
+  mmr(X,v,K), ∅ → X
+  v*K/(X+K), ∅ → X
+end v K</code></pre><h2 id="Model-Simulation"><a class="docs-heading-anchor" href="#Model-Simulation">Model Simulation</a><a id="Model-Simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Model-Simulation" title="Permalink"></a></h2><p>Once created, a reaction network can be used as input to various problem types which can be solved by <a href="https://github.com/JuliaDiffEq/DifferentialEquations.jl/">DifferentialEquations.jl</a>, and more broadly used within <a href="https://sciml.ai">SciML</a> packages.</p><h4 id="Deterministic-simulations-using-ODEs"><a class="docs-heading-anchor" href="#Deterministic-simulations-using-ODEs">Deterministic simulations using ODEs</a><a id="Deterministic-simulations-using-ODEs-1"></a><a class="docs-heading-anchor-permalink" href="#Deterministic-simulations-using-ODEs" title="Permalink"></a></h4><p>A reaction network can be used as input to an <code>ODEProblem</code> instead of a function, using </p><pre><code class="language-julia">odeprob = ODEProblem(rn, args...; kwargs...) </code></pre><p>E.g. a model can be created and simulated using:</p><pre><code class="language-julia">using DiffEqBase, OrdinaryDiffEq
+rn = @reaction_network begin
+  p, ∅ → X
+  d, X → ∅
+end p d
+p = [1.0,2.0]
+u0 = [0.1]
+tspan = (0.,1.)
+prob = ODEProblem(rn,u0,tspan,p)
+sol = solve(prob, Tsit5())</code></pre><p>Here the order of unknowns in <code>u0</code> and <code>p</code> matches the order that species and parameters first appear within the DSL. They can also be determined by examining the ordering within the <code>species(rn)</code> and <code>params(rn)</code> vectors, or accessed more explicitly through the <code>speciesmap(rn)</code> and <code>paramsmap(rn)</code> dictionaries, which map the ModelingToolkit <code>Variable</code>s corresponding to each species or parameter to their integer id. Note, if no parameters are given in the <code>@reaction_network</code> then <code>p</code> does not need to be provided.</p><p>To solve for a steady-state starting from the guess <code>u0</code>, one can use</p><pre><code class="language-julia">using SteadyStateDiffEq
+prob = SteadyStateProblem(rn,u0,p)
+sol = solve(prob, SSRootfind())</code></pre><p>or</p><pre><code class="language-julia">prob = SteadyStateProblem(rn,u0,p)
+sol = solve(prob, DynamicSS(Tsit5()))</code></pre><h4 id="Stochastic-simulations-using-SDEs"><a class="docs-heading-anchor" href="#Stochastic-simulations-using-SDEs">Stochastic simulations using SDEs</a><a id="Stochastic-simulations-using-SDEs-1"></a><a class="docs-heading-anchor-permalink" href="#Stochastic-simulations-using-SDEs" title="Permalink"></a></h4><p>In a similar way an SDE can be created using </p><pre><code class="language-julia">using StochasticDiffEq
+sdeprob = SDEProblem(rn, args...; kwargs...)</code></pre><p>In this case the chemical Langevin equations (as derived in Gillespie, J. Chem. Phys. 2000) will be used to generate stochastic differential equations.</p><h4 id="Stochastic-simulations-using-discrete-stochastic-simulation-algorithms"><a class="docs-heading-anchor" href="#Stochastic-simulations-using-discrete-stochastic-simulation-algorithms">Stochastic simulations using discrete stochastic simulation algorithms</a><a id="Stochastic-simulations-using-discrete-stochastic-simulation-algorithms-1"></a><a class="docs-heading-anchor-permalink" href="#Stochastic-simulations-using-discrete-stochastic-simulation-algorithms" title="Permalink"></a></h4><p>Instead of solving SDEs one can create a stochastic jump process model using integer copy numbers and a discrete stochastic simulation algorithm (i.e. Gillespie Method or Kinetic Monte Carlo). This can be done using:</p><pre><code class="language-julia">using DiffEqJump
+rn = @reaction_network begin
+  p, ∅ → X
+  d, X → ∅
+end p d
+p = [1.0,2.0]
+u0 = [10]
+tspan = (0.,1.)
+discrete_prob = DiscreteProblem(rn, u0, tspan, p)
+jump_prob = JumpProblem(rn, discrete_prob, Direct())
+sol = solve(jump_prob, SSAStepper())</code></pre><p>Here we used Gillespie&#39;s <code>Direct</code> method as the underlying stochastic simulation algorithm.</p><h4 id="Reaction-rate-laws-used-in-simulations"><a class="docs-heading-anchor" href="#Reaction-rate-laws-used-in-simulations">Reaction rate laws used in simulations</a><a id="Reaction-rate-laws-used-in-simulations-1"></a><a class="docs-heading-anchor-permalink" href="#Reaction-rate-laws-used-in-simulations" title="Permalink"></a></h4><p>In generating mathematical models from a <a href="api/catalyst_api/#ModelingToolkit.ReactionSystem"><code>ReactionSystem</code></a>, reaction rates are treated as <em>microscopic</em> rates. That is, for a general mass action reaction of the form <span>$n_1 S_1 + n_2 S_2 + \dots n_M S_M \to \dots$</span> with stoichiometric substrate coefficients <span>$\{n_i\}_{i=1}^M$</span> and rate constant <span>$k$</span>, the corresponding ODE rate law is taken to be</p><div>\[k \prod_{i=1}^M \frac{(S_i)^{n_i}}{n_i!},\]</div><p>while the jump process transition rate (i.e. propensity function) is</p><div>\[k \prod_{i=1}^M \frac{S_i (S_i-1) \dots (S_i-n_i+1)}{n_i!}.\]</div><p>For example, the ODE model of the reaction <span>$2X + 3Y \to Z$</span> with rate constant <span>$k$</span> would be</p><div>\[\frac{dX}{dt} =  -2 k \frac{X^2}{2!} \frac{Y^3}{3!} = -k \frac{X^2 Y^3}{3!} \\
+\frac{dY}{dt} =  -3 k \frac{X^2}{2!} \frac{Y^3}{3!} = -k \frac{X^2 Y^3}{4} \\
+\frac{dZ}{dt} = k \frac{X^2}{2!} \frac{Y^3}{3!}.\]</div><h2 id="Basic-Chemical-Reaction-Network-Examples"><a class="docs-heading-anchor" href="#Basic-Chemical-Reaction-Network-Examples">Basic Chemical Reaction Network Examples</a><a id="Basic-Chemical-Reaction-Network-Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Basic-Chemical-Reaction-Network-Examples" title="Permalink"></a></h2><h4 id="Example:-Birth-Death-Process"><a class="docs-heading-anchor" href="#Example:-Birth-Death-Process">Example: Birth-Death Process</a><a id="Example:-Birth-Death-Process-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-Birth-Death-Process" title="Permalink"></a></h4><pre><code class="language-julia">rs = @reaction_network begin
+  c1, X --&gt; 2X
+  c2, X --&gt; 0
+  c3, 0 --&gt; X
+end c1 c2 c3
+p = (1.0,2.0,50.) # [c1,c2,c3]
+tspan = (0.,4.)
+u0 = [5.]         # [X]
+
+# solve ODEs
+oprob = ODEProblem(rs, u0, tspan, p)
+osol  = solve(oprob, Tsit5())
+
+# solve for Steady-States
+ssprob = SteadyStateProblem(rs, u0, p)
+sssol  = solve(ssprob, SSRootfind())
+
+# solve SDEs
+sprob = SDEProblem(rs, u0, tspan, p)
+ssol  = solve(sprob, EM(), dt=.01)
+
+# solve JumpProblem
+u0 = [5]
+dprob = DiscreteProblem(rs, u0, tspan, p)
+jprob = JumpProblem(rs, dprob, Direct())
+jsol = solve(jprob, SSAStepper())</code></pre><h4 id="Example:-Michaelis-Menten-Enzyme-Kinetics"><a class="docs-heading-anchor" href="#Example:-Michaelis-Menten-Enzyme-Kinetics">Example: Michaelis-Menten Enzyme Kinetics</a><a id="Example:-Michaelis-Menten-Enzyme-Kinetics-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-Michaelis-Menten-Enzyme-Kinetics" title="Permalink"></a></h4><pre><code class="language-julia">rs = @reaction_network begin
+  c1, S + E --&gt; SE
+  c2, SE --&gt; S + E
+  c3, SE --&gt; P + E
+end c1 c2 c3
+p = (0.00166,0.0001,0.1)   # [c1,c2,c3]
+tspan = (0., 100.)
+u0 = [301., 100., 0., 0.]  # [S,E,SE,P]
+
+# solve ODEs
+oprob = ODEProblem(rs, u0, tspan, p)
+osol  = solve(oprob, Tsit5())
+
+# solve JumpProblem
+u0 = [301, 100, 0, 0] 
+dprob = DiscreteProblem(rs, u0, tspan, p)
+jprob = JumpProblem(rs, dprob, Direct())
+jsol = solve(jprob, SSAStepper())</code></pre><h2 id="The-Reaction-DSL-Advanced"><a class="docs-heading-anchor" href="#The-Reaction-DSL-Advanced">The Reaction DSL - Advanced</a><a id="The-Reaction-DSL-Advanced-1"></a><a class="docs-heading-anchor-permalink" href="#The-Reaction-DSL-Advanced" title="Permalink"></a></h2><p>This section covers some of the more advanced syntax and features for building chemical reaction network models (still not very complicated!).</p><h4 id="User-defined-functions-in-reaction-rates"><a class="docs-heading-anchor" href="#User-defined-functions-in-reaction-rates">User defined functions in reaction rates</a><a id="User-defined-functions-in-reaction-rates-1"></a><a class="docs-heading-anchor-permalink" href="#User-defined-functions-in-reaction-rates" title="Permalink"></a></h4><p>The reaction network DSL cannot &quot;see&quot; user defined functions. E.g. this is not correct syntax:</p><pre><code class="language-julia">myHill(x) = 2.0*x^3/(x^3+1.5^3)
+rn = @reaction_network begin
+  myHill(X), ∅ → X
+end</code></pre><p>However, it is possible to define functions in such a way that the DSL can see them using the <code>@reaction_func</code> macro:</p><pre><code class="language-julia">@reaction_func myHill(x) = 2.0*x^3/(x^3+1.5^3)
+rn = @reaction_network begin
+  myHill(X), ∅ → X
+end</code></pre><h4 id="Ignoring-mass-action-kinetics"><a class="docs-heading-anchor" href="#Ignoring-mass-action-kinetics">Ignoring mass action kinetics</a><a id="Ignoring-mass-action-kinetics-1"></a><a class="docs-heading-anchor-permalink" href="#Ignoring-mass-action-kinetics" title="Permalink"></a></h4><p>While generally one wants the reaction rate to use the law of mass action, so the reaction</p><pre><code class="language-julia">rn = @reaction_network begin
+  k, X → ∅
+end k</code></pre><p>occurs at the rate <span>$d[X]/dt = -k[X]$</span>, it is possible to ignore this by using any of the following non-filled arrows when declaring the reaction: <code>⇐</code>, <code>⟽</code>, <code>⇒</code>, <code>⟾</code>, <code>⇔</code>, <code>⟺</code>. This means that the reaction</p><pre><code class="language-julia">rn = @reaction_network begin
+  k, X ⇒ ∅
+end k</code></pre><p>will occur at rate <span>$d[X]/dt = -k$</span> (which might become a problem since <span>$[X]$</span> will be degraded at a constant rate even when very small or equal to 0.</p><h2 id="The-generated-[ReactionSystem](@ref)-and-[Reaction](@ref)s"><a class="docs-heading-anchor" href="#The-generated-[ReactionSystem](@ref)-and-[Reaction](@ref)s">The generated <a href="api/catalyst_api/#ModelingToolkit.ReactionSystem"><code>ReactionSystem</code></a> and <a href="api/catalyst_api/#ModelingToolkit.Reaction"><code>Reaction</code></a>s</a><a id="The-generated-[ReactionSystem](@ref)-and-[Reaction](@ref)s-1"></a><a class="docs-heading-anchor-permalink" href="#The-generated-[ReactionSystem](@ref)-and-[Reaction](@ref)s" title="Permalink"></a></h2><p>The <code>@reaction_network</code> macro generates a <a href="api/catalyst_api/#ModelingToolkit.ReactionSystem"><code>ReactionSystem</code></a> object, which has a number of fields that can be accessed directly or via the <a href="api/catalyst_api/#Catalyst.jl-API">Catalyst.jl API</a> (the recommended route). Below we list these components, with the recommended API method listed first:</p><ul><li><code>species(rn)</code>, <code>states(rn)</code> and <code>rn.states</code> is a vector of all the chemical species within the system, each represented as a <code>ModelingToolkit.Variable</code>.</li><li><code>params(rn)</code>, <code>parameters(rn)</code> and <code>rn.ps</code> is a vector of all the parameters within the system, each represented as a <code>ModelingToolkit.Variable</code>.</li><li><code>reactions(rn)</code>, <code>equations(rn)</code> and <code>rn.eqs</code> is a vector of all the <code>Reaction</code>s within the system.</li><li><code>independent_variable(rn)</code> and <code>rn.iv</code> are the independent variable of the system , usually <code>t</code> for time, represented as a <code>ModelingToolkit.Variable</code>. </li></ul><p>Each <code>Reaction</code> within <code>reactions(rn)</code> has a number of subfields. For <code>rx</code> a <code>Reaction</code> we have</p><ul><li><code>rx.substrates</code>, a vector of <code>ModelingToolkit.Operation</code>s storing each substrate variable.</li><li><code>rx.products</code>, a vector of <code>ModelingToolkit.Operation</code>s storing each product variable.</li><li><code>rx.substoich</code>, a vector storing the corresponding integer stoichiometry of each substrate species in <code>rx.substrates</code>.</li><li><code>rx.prodstoich</code>, a vector storing the corresponding integer stoichiometry of each product species in <code>rx.products</code>.</li><li><code>rx.rate</code>, a <code>ModelingToolkit.Operation</code> representing the reaction rate. e.g. for a reaction like <code>k*X, Y --&gt; X+Y</code> we&#39;d have <code>rate = k*X</code>.</li><li><code>rx.netstoich</code>, a vector of pairs mapping the <code>ModelingToolkit.Variable</code> for each species that changes numbers by the reaction to how much it changes. E.g. for <code>k, X + 2Y --&gt; X + W</code> we&#39;d have <code>rx.netstoich = [Y =&gt; -2, W =&gt; 1]</code>. </li><li><code>rx.only_use_rate</code>, a boolean that is <code>true</code> if the reaction was made with non-filled arrows and should ignore mass action kinetics. <code>false</code> by default.</li></ul><p>Empty <code>ReactionSystem</code>s can be generated via <a href="api/catalyst_api/#Catalyst.make_empty_network"><code>make_empty_network</code></a> or <a href="api/catalyst_api/#Catalyst.@reaction_network"><code>@reaction_network</code></a> with no arguments. <code>ReactionSystem</code>s can be programmatically extended using <a href="api/catalyst_api/#Catalyst.addspecies!"><code>addspecies!</code></a>, <a href="api/catalyst_api/#Catalyst.addparam!"><code>addparam!</code></a>, <a href="api/catalyst_api/#Catalyst.addreaction!"><code>addreaction!</code></a>, <a href="api/catalyst_api/#Catalyst.@add_reactions"><code>@add_reactions</code></a>, or composed using <code>merge</code> and <code>merge!</code>.</p><h2 id="Advanced-Chemical-Reaction-Network-Examples"><a class="docs-heading-anchor" href="#Advanced-Chemical-Reaction-Network-Examples">Advanced Chemical Reaction Network Examples</a><a id="Advanced-Chemical-Reaction-Network-Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Advanced-Chemical-Reaction-Network-Examples" title="Permalink"></a></h2><p>For additional flexibility we can convert the generated <code>ReactionSystem</code> first to another <code>ModelingToolkit.AbstractSystem</code>, e.g. an <code>ODESystem</code>, <code>SDESystem</code>, <code>JumpSystem</code>, etc. These systems can then be used in problem generation. Please also see the <a href="http://mtk.sciml.ai/stable/">ModelingToolkit</a> docs, which give many options for optimized problem generation (i.e. generating dense or sparse Jacobians with or without threading and/or parallelization), creating LaTeX representations for systems, etc.</p><p>Note, when generating problems from other system types, <code>u0</code> and <code>p</code> must provide vectors of <code>Pair</code>s that map each <code>Variable</code> corresponding to a species or parameter to their numerical value. E.g. for the Michaelis-Menten example above we&#39;d use</p><pre><code class="language-julia">rs = @reaction_network begin
+  c1, X --&gt; 2X
+  c2, X --&gt; 0
+  c3, 0 --&gt; X
+end c1 c2 c3
+p     = (1.0,2.0,50.) 
+tspan = (0.,4.)
+u0    = [5.]   
+osys  = convert(ODESystem, rs)
+u0map = map((x,y) -&gt; Pair(x,y), species(rs), u0)
+pmap  = map((x,y) -&gt; Pair(x,y), params(rs), p)
+oprob = ODEProblem(osys, u0map, tspan, pmap)
+sol   = solve(oprob, Tsit5())</code></pre><h4 id="Example:-Disabling-rescaling-of-reaction-rates"><a class="docs-heading-anchor" href="#Example:-Disabling-rescaling-of-reaction-rates">Example: Disabling rescaling of reaction rates</a><a id="Example:-Disabling-rescaling-of-reaction-rates-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-Disabling-rescaling-of-reaction-rates" title="Permalink"></a></h4><p>As explained in the <a href="#Reaction-rate-laws-used-in-simulations">Reaction rate laws used in simulations</a> section, for a reaction such as <code>k, 2X --&gt; 0</code>, the generated rate law will rescale the rate constant, giving <code>k*X^2/2</code> instead of <code>k*X^2</code> for ODEs and <code>k*X*(X-1)/2</code> instead of <code>k*X*(X-1)</code> for jumps. This can be disabled when directly <code>convert</code>ing a <a href="api/catalyst_api/#ModelingToolkit.ReactionSystem"><code>ReactionSystem</code></a>. If <code>rn</code> is a generated <a href="api/catalyst_api/#ModelingToolkit.ReactionSystem"><code>ReactionSystem</code></a> we can do</p><pre><code class="language-julia">osys = convert(ODESystem, rn; combinatoric_ratelaws=false)</code></pre><p>Disabling these rescalings should work for all conversions of <code>ReactionSystem</code>s to other <code>ModelingToolkit.AbstractSystem</code>s.</p><h4 id="Example:-Modifying-generated-ODEs-by-adding-forcing"><a class="docs-heading-anchor" href="#Example:-Modifying-generated-ODEs-by-adding-forcing">Example: Modifying generated ODEs by adding forcing</a><a id="Example:-Modifying-generated-ODEs-by-adding-forcing-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-Modifying-generated-ODEs-by-adding-forcing" title="Permalink"></a></h4><p>Conversion to other <code>ModelingToolkit.AbstractSystem</code>s allows the possibility to modify the system with further terms that are difficult to encode as a chemical reaction. For example, suppose we wish to add a forcing term, <span>$10\sin(10t)$</span>, to the ODE for <code>dX/dt</code> above. We can do so as:</p><pre><code class="language-julia">dXdteq = equations(osys)[1]           
+t      = independent_variable(osys)()    
+dXdteq = Equation(dXdteq.lhs, dXdteq.rhs + 10*sin(10*t))   
+osys2  = ODESystem([dXdteq], t, states(osys), parameters(osys))
+oprob  = ODEProblem(osys2, u0map, tspan, pmap)
+osol   = solve(oprob, Tsit5())</code></pre><p>We can add <span>$e^{-X}$</span> to <span>$dX/dt$</span> as a forcing term by</p><pre><code class="language-julia">dXdteq = equations(osys)[1]           
+@variables X
+dXdteq = Equation(dXdteq.lhs, dXdteq.rhs + exp(-X))   
+osys2  = ODESystem([dXdteq], t, states(osys), parameters(osys))
+oprob  = ODEProblem(osys2, u0map, tspan, pmap)
+osol   = solve(oprob, Tsit5())</code></pre></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="api/catalyst_api/">Catalyst.jl API »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Saturday 18 July 2020 17:40">Saturday 18 July 2020</span>. Using Julia version 1.4.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
