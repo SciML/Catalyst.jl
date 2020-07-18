@@ -11,7 +11,6 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/latest/models/catalyst/)
 [![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://docs.sciml.ai/latest/apis/catalyst_api/)
 
-
 **Note for pre-version 5 users**: *Version 5 is a breaking release, with the DSL
 now generating `ModelingToolkit.ReactionSystem`s and DiffEqBiological being
 renamed to Catalyst.  As such, the `@reaction_network` macro no longer allows
