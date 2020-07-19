@@ -35,7 +35,7 @@ to be provided.
 We can then plot the solution using the solution plotting receipe:
 ```julia
 using Plots
-plot(sol)
+plot(sol, lw=2)
 ```
 ![models1](../assets/models1.svg)
 
@@ -80,7 +80,7 @@ sol = solve(jump_prob, SSAStepper())
 Here we used Gillespie's `Direct` method as the underlying stochastic simulation
 algorithm. We get
 ```julia
-plot(sol)
+plot(sol, lw=2)
 ```
 ![models2](../assets/models2.svg)
 
