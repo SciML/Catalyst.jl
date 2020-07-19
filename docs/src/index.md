@@ -1,13 +1,17 @@
 # Catalyst.jl for Reaction Models
 
-`Catalyst.jl` is a domain specific language (DSL) for easily specifying chemical
-reactions and generating corresponding [`ModelingToolkit.ReactionSystem`](@ref)s
-to encode the models. It helps users quickly build discrete stochastic and
-differential equation based representations of biological and chemical models,
-which can then be solved and analyzed using [SciML](https://sciml.ai) packages.
-These tools allow one to define the models at a high level by specifying
-reactions and rate constants, with the creation of the actual SciML `Problem`s
-then handled by [ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl).
+Catalyst.jl is a domain specific language (DSL) for high performance
+simulation and model of chemical reaction networks. Catalyst utilizes
+[`ModelingToolkit.ReactionSystem`](@ref)s for auto-vectorization and
+parallelism in the generated networks to scale large-scale simulations.
+This system can generate ModelingToolkit-based systems of ODEs, SDEs,
+jump processes and more. This allows for the easy simulation and
+parameter estimation on mass action ODE models, Chemical Langevin SDE
+models, stochastic chemical kinetics jump process models, and more.
+The generated models can then be used with solvers throughout the broader
+[SciML](https://sciml.ai) ecosystem, including higher level SciML
+packages (e.g. for sensitivity analysis, parameter estimation,
+machine learning applications, etc).
 
 ## Features
 - DSL provides a simple and readable format for manually specifying chemical reactions.
@@ -35,7 +39,7 @@ rn = @reaction_network begin
     k2, I --> R
 end k1 k2
 p     = [.1/1000, .01]           # [k1,k2]
-tspan = (0.0,250.0) 
+tspan = (0.0,250.0)
 u0    = [999.0,1.0,0.0]          # [S,I,R] at t=0
 op    = ODEProblem(rn, u0, tspan, p)
 sol   = solve(op, Tsit5())       # use Tsit5 ODE solver
@@ -46,4 +50,3 @@ using Plots
 plot(sol)
 ```
 ![SIR Solution](assets/SIR.svg)
-
