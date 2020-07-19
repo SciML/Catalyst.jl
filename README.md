@@ -34,6 +34,8 @@ The generated models can then be used with solvers throughout the broader
 packages (e.g. for sensitivity analysis, parameter estimation,
 machine learning applications, etc).
 
+## Tutorials and Documentation
+
 For information on using the package,
 [see the stable documentation](https://catalyst.sciml.ai/stable/). Use the
 [in-development documentation](https://catalyst.sciml.ai/dev/) for the version of
