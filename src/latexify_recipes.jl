@@ -68,19 +68,21 @@ function chemical_arrows(rn::ModelingToolkit.ReactionSystem;
         str *= join(substrates, " + ")
 
         ### Generate reaction arrows
+        prestr  = mathjax ? "[" : "[\$"
+        poststr = mathjax ? "]" : "\$]"    
         if i + 1 <= length(rxs) && issetequal(r.products,rxs[i+1].substrates) && issetequal(r.substrates,rxs[i+1].products)
             ### Bi-directional arrows
             rate_backwards = Expr(rxs[i+1].rate)
             expand && (rate_backwards = recursive_clean!(rate_backwards))
             expand && (rate_backwards = recursive_clean!(rate_backwards))
             str *= " &<=>"
-            str *= "[" * latexraw(rate; kwargs...) * "]"
-            str *= "[" * latexraw(rate_backwards; kwargs...) * "] "
+            str *= prestr * latexraw(rate; kwargs...) * poststr
+            str *= prestr * latexraw(rate_backwards; kwargs...) * poststr * " "
             backwards_reaction = true
         else
             ### Uni-directional arrows
             str *= " &->"
-            str *= "[" * latexraw(rate; kwargs...) * "] "
+            str *= prestr * latexraw(rate; kwargs...) * poststr * " "
         end
 
         ### Generate formatted string of products
