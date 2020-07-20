@@ -35,7 +35,8 @@ estimation, machine learning applications, etc).
 - Julia `Expr`s can be obtained for all rate laws and functions determining the
   deterministic and stochastic terms within resulting ODE, SDE or jump models.
 - [`Latexify`](https://github.com/korsbo/Latexify.jl) can be used to generate
-  LaTeX expressions corresponding to generated mathematical models.
+  LaTeX expressions corresponding to generated mathematical models or the
+  underlying set of reactions.
 
 ## Installation
 Catalyst can be installed through the Julia package manager:
@@ -46,15 +47,19 @@ using Catalyst
 ```
 
 ## Illustrative Example
-Here is a simple example of generating and solving an SIR ODE model:
-
+Here is a simple example of generating and solving an SIR ODE model. We first
+define the SIR reaction model using Catalyst
 ```julia
-using Catalyst, DiffEqBase, OrdinaryDiffEq
+using Catalyst
 rn = @reaction_network begin
-    k1, S + I --> 2I
-    k2, I --> R
-end k1 k2
-p     = [.1/1000, .01]           # [k1,k2]
+    α, S + I --> 2I
+    β, I --> R
+end α β
+```
+To generate and solve a mass action ODE version of the model we use
+```julia
+using DiffEqBase, OrdinaryDiffEq
+p     = [.1/1000, .01]           # [α,β]
 tspan = (0.0,250.0)
 u0    = [999.0,1.0,0.0]          # [S,I,R] at t=0
 op    = ODEProblem(rn, u0, tspan, p)
@@ -66,3 +71,4 @@ using Plots
 plot(sol, lw=2)
 ```
 ![SIR Solution](assets/SIR.svg)
+
