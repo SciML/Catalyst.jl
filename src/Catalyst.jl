@@ -25,4 +25,6 @@ export dependants, dependents
 # for Latex printing of ReactionSystems
 include("latexify_recipes.jl")
 
+include("graphs.jl")
+
 end # module
