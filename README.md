@@ -62,7 +62,8 @@ the current master branch.
 - Julia `Expr`s can be obtained for all rate laws and functions determining the
   deterministic and stochastic terms within resulting ODE, SDE or jump models.
 - [`Latexify`](https://github.com/korsbo/Latexify.jl) can be used to generate
-  LaTeX expressions corresponding to generated mathematical models.
+  LaTeX expressions corresponding to generated mathematical models or the
+  underlying set of reactions.
 
 ## Illustrative Examples
 #### Gillespie Simulations of Michaelis-Menten Enzyme Kinetics
