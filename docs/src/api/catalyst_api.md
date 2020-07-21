@@ -77,3 +77,20 @@ ModelingToolkit.jumpratelaw
 ==(rn1::ReactionSystem, rn2::ReactionSystem)
 ==(rn1::Reaction, rn2::Reaction)
 ```
+
+## Displaying Networks
+[Latexify](https://github.com/korsbo/Latexify.jl) can be used to convert
+networks to LaTeX mhchem equations by
+```julia
+using Latexify
+latexify(rn)
+```
+
+If [Graphviz](https://graphviz.org/) and
+[Catlab.jl](https://github.com/AlgebraicJulia/Catlab.jl/) are installed, they
+can be used to create and save Graphviz network diagrams using [`Graph`](@ref)
+and [`savegraph`](@ref).
+```@docs
+Graph
+savegraph
+```
