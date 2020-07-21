@@ -1,3 +1,5 @@
+# adapted from Petri.jl
+# https://github.com/mehalter/Petri.jl
 
 graph_attrs = Attributes(:rankdir=>"LR")
 node_attrs  = Attributes(:shape=>"plain", :style=>"filled", :color=>"white")
