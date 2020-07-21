@@ -30,6 +30,6 @@ import Base.Iterators: flatten
 using Catlab.Graphics.Graphviz
 import Catlab.Graphics.Graphviz: Graph, Edge
 include("graphs.jl")
-export savegraph
+export Graph, savegraph
 
 end # module
