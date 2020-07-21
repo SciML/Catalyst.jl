@@ -1,6 +1,3 @@
-import Base.Iterators: flatten
-using Catlab.Graphics.Graphviz
-import Catlab.Graphics.Graphviz: Graph, Edge
 
 graph_attrs = Attributes(:rankdir=>"LR")
 node_attrs  = Attributes(:shape=>"plain", :style=>"filled", :color=>"white")
@@ -25,7 +22,7 @@ convert a Model into a GraphViz Graph. Transition are green boxes and states are
 function Graph(model::ReactionSystem)
     rxs = reactions(model)
     statenodes = [Node(string(s.name), Attributes(:shape=>"circle", :color=>"#6C9AC3")) for s in species(model)]
-    transnodes = [Node(string("rx_$i"), Attributes(:shape=>"square", :color=>"#E28F41")) for (i,r) in enumerate(rxs)]
+    transnodes = [Node(string("rx_$i"), Attributes(:shape=>"point", :color=>"#E28F41", :width=>".1")) for (i,r) in enumerate(rxs)]
 
     stmts = vcat(statenodes, transnodes)
     edges = map(enumerate(rxs)) do (i,r)
@@ -35,4 +32,12 @@ function Graph(model::ReactionSystem)
     stmts = vcat(stmts, edges)
     g = Graphviz.Graph("G", true, stmts, graph_attrs, node_attrs,edge_attrs)
     return g
+end
+
+
+function savegraph(g::Graph, fname, fmt="png")
+    open(fname, "w") do io
+        run_graphviz(io, g, format=fmt)
+    end 
+    nothing
 end

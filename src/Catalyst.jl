@@ -25,6 +25,11 @@ export dependants, dependents
 # for Latex printing of ReactionSystems
 include("latexify_recipes.jl")
 
+# for making and saving graphs
+import Base.Iterators: flatten
+using Catlab.Graphics.Graphviz
+import Catlab.Graphics.Graphviz: Graph, Edge
 include("graphs.jl")
+export savegraph
 
 end # module
