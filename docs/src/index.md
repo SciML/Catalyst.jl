@@ -66,7 +66,7 @@ network can be visualized using the [`Graph`](@ref) command
 using Catlab.Graphics.Graphviz
 Graph(rn)
 ```
-which will give the figure
+which in Jupyter notebooks will give the figure
 
 ![SIR Network Graph](assets/SIR_rn.svg)
 
