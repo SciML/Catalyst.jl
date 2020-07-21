@@ -169,14 +169,20 @@ function make_empty_network(; iv=Variable(:t))
 end
 
 """
-    addspecies!(network::ReactionSystem, s::Variable)
+    addspecies!(network::ReactionSystem, s::Variable; disablechecks=false)
 
-Given a [`ReactionSystem`](@ref), add the species corresponding to the
-variable `s` to the network (if it is not already defined). Returns the
-integer id of the species within the system.
+Given a [`ReactionSystem`](@ref), add the species corresponding to the variable
+`s` to the network (if it is not already defined). Returns the integer id of the
+species within the system.
+
+Notes:
+- `disablechecks` will disable checking for whether the passed in variable is
+  already defined, which is useful when adding many new variables to the system.
+  *Do not disable checks* unless you are sure the passed in variable is a new
+  variable, as this will potentially leave the system in an undefined state.
 """
-function addspecies!(network::ReactionSystem, s::Variable)
-    curidx = findfirst(S -> isequal(S, s), species(network))
+function addspecies!(network::ReactionSystem, s::Variable; disablechecks=false)
+    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), species(network))
     if curidx === nothing
         push!(network.states, s)
         return length(species(network))
@@ -186,26 +192,36 @@ function addspecies!(network::ReactionSystem, s::Variable)
 end
 
 """
-    addspecies!(network::ReactionSystem, s::Operation)
+    addspecies!(network::ReactionSystem, s::Operation; disablechecks=false)
 
 Given a [`ReactionSystem`](@ref), add the species corresponding to the
 variable `s` to the network (if it is not already defined). Returns the
 integer id of the species within the system.
+
+- `disablechecks` will disable checking for whether the passed in variable is
+  already defined, which is useful when adding many new variables to the system.
+  *Do not disable checks* unless you are sure the passed in variable is a new
+  variable, as this will potentially leave the system in an undefined state.
 """
-function addspecies!(network::ReactionSystem, s::Operation)
+function addspecies!(network::ReactionSystem, s::Operation; disablechecks=false)
     !(s.op isa Variable) && error("If the passed in species is an Operation, it must correspond to an underlying Variable.")
-    addspecies!(network, convert(Variable,s))
+    addspecies!(network, convert(Variable,s); disablechecks=disablechecks)
 end
 
 """
-    addparam!(network::ReactionSystem, p::Variable)
+    addparam!(network::ReactionSystem, p::Variable; disablechecks=false)
 
 Given a [`ReactionSystem`](@ref), add the parameter corresponding to the
-variable `p` to the network (if it is not already defined). Returns the
-integer id of the parameter within the system.
+variable `p` to the network (if it is not already defined). Returns the integer
+id of the parameter within the system.
+
+- `disablechecks` will disable checking for whether the passed in variable is
+  already defined, which is useful when adding many new variables to the system.
+  *Do not disable checks* unless you are sure the passed in variable is a new
+  variable, as this will potentially leave the system in an undefined state.
 """
-function addparam!(network::ReactionSystem, p::Variable)
-    curidx = findfirst(S -> isequal(S, p), params(network))
+function addparam!(network::ReactionSystem, p::Variable; disablechecks=false)
+    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, p), params(network))
     if curidx === nothing
         push!(network.ps, p)
         return length(params(network))
@@ -215,15 +231,20 @@ function addparam!(network::ReactionSystem, p::Variable)
 end
 
 """
-    addparam!(network::ReactionSystem, p::Operation)
+    addparam!(network::ReactionSystem, p::Operation; disablechecks=false)
 
 Given a [`ReactionSystem`](@ref), add the parameter corresponding to the
 variable `p` to the network (if it is not already defined). Returns the
 integer id of the parameter within the system.
+
+- `disablechecks` will disable checking for whether the passed in variable is
+  already defined, which is useful when adding many new variables to the system.
+  *Do not disable checks* unless you are sure the passed in variable is a new
+  variable, as this will potentially leave the system in an undefined state.
 """
-function addparam!(network::ReactionSystem, p::Operation)
+function addparam!(network::ReactionSystem, p::Operation; disablechecks=false)
     !(p.op isa Variable) && error("If the passed in parameter is an Operation, it must correspond to an underlying Variable.")
-    addparam!(network, convert(Variable,p))
+    addparam!(network, convert(Variable,p); disablechecks=disablechecks)
 end
 
 """
