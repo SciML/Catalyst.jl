@@ -16,21 +16,36 @@ function edgify(δ, i, reverse::Bool)
     end
 end
 
+# make distinguished edge based on rate constant
+function edgifyrates(rn)    
+    es = Edge[]
+    for (i,rx) in enumerate(reactions(rn))
+        deps = get_variables(rx.rate, states(rn))
+        for dep in deps
+            val = String(dep.op.name)
+            attr = Attributes(:color => "#d91111", :style => "dashed")
+            e = Edge(["$val", "rx_$i"], attr)
+            push!(es, e)
+        end
+    end
+    es
+end
 """
     Graph(rn::ReactionSystem)
 
 Converts a [`ReactionSystem`](@ref) into a
 [Catlab.jl](https://github.com/AlgebraicJulia/Catlab.jl/) Graphviz graph.
-Reactions correspond to small green circles, and species to blue circles. Arrows
-from species to reactions indicate reactants, and are labelled with their input
-stoichiometry. Arrows from reactions to species indicate products, and are
-labelled with their output stoichiometry. 
+Reactions correspond to small green circles, and species to blue circles. 
 
-*Note*, arrows only indicate species with defined input or output stoichiometry
-within a given `Reaction` in the `ReactionSystem`. The do not account for
-species that appear only in a rate. i.e., for `k*A*C, A --> B` the arrow from
-`A` to the reaction would have stoichiometry one, and there would be no arrow
-from `C` to the reaction. 
+Notes:
+- Black arrows from species to reactions indicate reactants, and are labelled
+  with their input stoichiometry. 
+- Black arrows from reactions to species indicate products, and are labelled
+  with their output stoichiometry. 
+- Red arrows from species to reactions indicate that species is used within the
+  rate expression. For example in the reaction `k*A, B --> C`, there would be a
+  red arrow from `A` to the reaction node. In `k*A, A+B --> C` there would be
+  red and black arrows from `A` to the reaction node.
 """
 function Graph(rn::ReactionSystem)
     rxs = reactions(rn)
@@ -41,8 +56,11 @@ function Graph(rn::ReactionSystem)
     edges = map(enumerate(rxs)) do (i,r)
       vcat(edgify(zip(r.substrates,r.substoich), i, false),
            edgify(zip(r.products,r.prodstoich), i, true))
-    end |> flatten |> collect
-    stmts = vcat(stmts, edges)
+    end
+    es = edgifyrates(rn)
+    (!isempty(es)) && push!(edges, edgifyrates(rn))
+
+    stmts = vcat(stmts, collect(flatten(edges)))
     g = Graphviz.Graph("G", true, stmts, graph_attrs, node_attrs,edge_attrs)
     return g
 end
