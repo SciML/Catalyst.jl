@@ -116,7 +116,7 @@ noise_scaling_network = @reaction_network begin
 end k1 k2
 for repeat = 1:5
     p = 1. .+ rand(2)
-    u0 = 1000*(1. .+ rand(2))
+    u0 = 10000*(1. .+ rand(2))
     sol001 = solve(SDEProblem(noise_scaling_network,u0,(0.,1000.),vcat(p,0.01),noise_scaling=(@variables η1)[1]),ImplicitEM())
     sol01 = solve(SDEProblem(noise_scaling_network,u0,(0.,1000.),vcat(p,0.1),noise_scaling=(@variables η1)[1]),ImplicitEM())
     sol1 = solve(SDEProblem(noise_scaling_network,u0,(0.,1000.),vcat(p,1.),noise_scaling=(@variables η2)[1]),ImplicitEM())
