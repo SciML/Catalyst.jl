@@ -58,8 +58,6 @@ function Graph(rn::ReactionSystem)
            edgify(zip(r.products,r.prodstoich), i, true))
     end
     es = edgifyrates(rn)
-    @show es
-    println(typeof(es))
     (!isempty(es)) && push!(edges, edgifyrates(rn))
 
     stmts = vcat(stmts, collect(flatten(edges)))
