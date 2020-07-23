@@ -35,19 +35,17 @@ end
 
 Converts a [`ReactionSystem`](@ref) into a
 [Catlab.jl](https://github.com/AlgebraicJulia/Catlab.jl/) Graphviz graph.
-Reactions correspond to small green circles, and species to blue circles. Black
-arrows from species to reactions indicate reactants, and are labelled with their
-input stoichiometry. Black arrows from reactions to species indicate products,
-and are labelled with their output stoichiometry. Red arrows from species to
-reactions indicate that species is used within the rate expression, but is not a
-reactant with defined stoichiometry. For example in the reaction `k*A, B --> C`,
-there would be a red arrow from `A` to the reaction node.
+Reactions correspond to small green circles, and species to blue circles. 
 
-*Note*, arrows only indicate species with defined input or output stoichiometry
-within a given `Reaction` in the `ReactionSystem`. The do not account for
-species that appear only in a rate. i.e., for `k*A*C, A --> B` the arrow from
-`A` to the reaction would have stoichiometry one, and there would be no arrow
-from `C` to the reaction. 
+Notes:
+- Black arrows from species to reactions indicate reactants, and are labelled
+  with their input stoichiometry. 
+- Black arrows from reactions to species indicate products, and are labelled
+  with their output stoichiometry. 
+- Red arrows from species to reactions indicate that species is used within the
+  rate expression. For example in the reaction `k*A, B --> C`, there would be a
+  red arrow from `A` to the reaction node. In `k*A, A+B --> C` there would be
+  red and black arrows from `A` to the reaction node.
 """
 function Graph(rn::ReactionSystem)
     rxs = reactions(rn)
