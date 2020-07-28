@@ -20,7 +20,7 @@ using Catalyst, ModelingToolkit
 #     ))
 #     push!(r, Documenter.Utilities.JSDependencies.Snippet(
 #         ["jquery", "katex", "mhchem", "katex-auto-render"],
-#         ["\$", "katex", "renderMathInElement"],
+#         ["\$", "katex", "mhchem", "renderMathInElement"],
 #         """
 #         \$(document).ready(function() {
 #           renderMathInElement(
@@ -35,13 +35,14 @@ using Catalyst, ModelingToolkit
 makedocs(
     sitename = "Catalyst.jl",
     authors = "Samuel Isaacson",
-    format = Documenter.HTML(prettyurls = (get(ENV, "CI", nothing) == "true")),
+    format = Documenter.HTML(mathengine=Documenter.Writers.HTMLWriter.MathJax(), prettyurls = (get(ENV, "CI", nothing) == "true")),
     modules = [Catalyst,ModelingToolkit],
     doctest = false,
     clean = true,
     pages = Any[
         "Home" => "index.md",
         "Tutorials" => Any[
+            "tutorials/using_catalyst.md",
             "tutorials/basics.md",
             "tutorials/models.md",
             "tutorials/basic_examples.md",

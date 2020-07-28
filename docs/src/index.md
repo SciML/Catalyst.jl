@@ -87,3 +87,4 @@ plot(sol, lw=2)
 
 ![SIR Solution](assets/SIR.svg)
 
+
