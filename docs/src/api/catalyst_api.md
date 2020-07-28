@@ -29,7 +29,6 @@ as here `X` is never defined as either a species or parameter.
 ```@docs
 @reaction_network
 make_empty_network
-@add_reactions
 ModelingToolkit.Reaction
 ModelingToolkit.ReactionSystem
 ```
@@ -55,6 +54,7 @@ dependants
 
 ## Functions to extend a Network
 ```@docs
+@add_reactions
 addspecies!
 addparam!
 addreaction!
