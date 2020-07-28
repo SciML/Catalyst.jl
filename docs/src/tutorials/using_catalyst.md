@@ -8,9 +8,9 @@ We first import the basic packages we'll need:
 
 ```julia
 # If not already installed, first hit "]" within a Julia REPL. Then type:
-# add DiffEqBase OrdinaryDiffEq StochasticDiffEq DiffEqJump ModelingToolkit Catalyst Plots Latexify 
+# add Catalyst DifferentialEquations Plots Latexify 
 
-using Catalyst
+using Catalyst, DifferentialEquations, Plots, Latexify
 ```
 
 We now construct the reaction network. The basic types of arrows and predefined
@@ -179,9 +179,6 @@ Knowing these orderings we can create parameter and initial condition vectors,
 and then setup the `ODEProblem` we want to solve:
 
 ```julia
-# import the relevant packages for solving ODEs:
-using DiffEqBase, OrdinaryDiffEq
-
 # parameters [α,K,n,δ,γ,β,μ]
 p = (.5, 40, 2, log(2)/120, 5e-3, 20*log(2)/120, log(2)/60)
 
@@ -208,14 +205,13 @@ oprob2 = ODEProblem(osys, u₀map, tspan, pmap)
 underlying problem. 
 
 At this point we are all set to solve the ODEs. We can now use any ODE solver
-from within the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl)
+from within the
+[DifferentialEquations.jl](https://diffeq.sciml.ai/latest/solvers/ode_solve/)
 package. We'll use the recommended default explicit solver, `Tsit5()`, and then
 plot the solutions:
 
 ```julia
 sol = solve(oprob, Tsit5(), saveat=10.)
-
-using Plots
 plot(sol)
 ```
 ![Repressilator ODE Solutions](../assets/repressilator_odes.svg)
@@ -234,9 +230,6 @@ Gillespie's `Direct` method, and then solve it to generate one realization of
 the jump process:
 
 ```julia
-# first we load DiffEqJump
-using DiffEqJump
-
 # redefine the initial condition to be integer valued
 u₀ = [0,0,0,20,0,0]
 
@@ -289,9 +282,6 @@ model by creating an `SDEProblem` and solving it similar to what we did for ODEs
 above:
 
 ```julia
-# first we load StochasticDiffEq
-using StochasticDiffEq
-
 # SDEProblem for CLE
 sprob = SDEProblem(bdp, u₀, tspan, p)
 
@@ -303,7 +293,7 @@ plot(sol)
 ![CLE Solution](../assets/birthdeath_cle.svg)
 
 We again have complete freedom to select any of the
-StochasticDifferentialEquations.jl SDE solvers, see the
+StochasticDiffEq.jl SDE solvers, see the
 [documentation](https://diffeq.sciml.ai/dev/solvers/sde_solve/). 
 
 ---
