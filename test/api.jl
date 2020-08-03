@@ -12,7 +12,7 @@ specset = Set([S.op =>1, I.op => 2, R.op => 3])
 pset = Set([k1.op => 1, k2.op => 2])
 @test issetequal(pset, paramsmap(rs))
 
-rxs2 = [Reaction(k2, [I], [R], [1], [1]), 
+rxs2 = [Reaction(k2, [I], [R], [1], [1]),
         Reaction(k1, [S,I], [I], [1,1], [2])]
 rs2 = ReactionSystem(rxs2, t, [R,I,S], [k2,k1])
 @test rs == rs2
@@ -43,10 +43,10 @@ rs = ReactionSystem(rxs, t, [S,I,R], [k1,k2])
 deps = [s.op for s in dependents(rxs[2], rs)]
 @test isequal(deps, [R.op,I.op])
 addspecies!(rs, Variable(:S))
-@test length(species(rs)) == 3
+@test numspecies(rs) == 3
 addspecies!(rs, Variable(:S), disablechecks=true)
-@test length(species(rs)) == 4
+@test numspecies(rs) == 4
 addparam!(rs, Variable(:k1))
-@test length(params(rs)) == 2
+@test numparams(rs) == 2
 addparam!(rs, Variable(:k1), disablechecks=true)
-@test length(params(rs)) == 3
+@test numparams(rs) == 3
