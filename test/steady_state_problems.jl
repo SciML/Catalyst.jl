@@ -58,5 +58,5 @@ end
 for factor in [1e0, 1e1, 1e2]
     u0 = factor*rand(length(no_param_network.states))
     sol_ss = solve(SteadyStateProblem(no_param_network,u0),SSRootfind())
-    @test abs.(sol_ss.u[1]-0.6/3.2) < 10000000*eps()
+    @test abs.(sol_ss.u[1]-0.6/3.2) < 1e-8
 end

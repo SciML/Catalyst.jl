@@ -121,5 +121,5 @@ for factor in [1e0, 1e1, 1e2]
     u0 = factor*rand(length(no_param_network.states))
     prob = ODEProblem(no_param_network,u0,(0.,1000.))
     sol = solve(prob,Rosenbrock23())
-    @test abs.(sol.u[end][1] - 1.5/2) < 1000000*eps()
+    @test abs.(sol.u[end][1] - 1.5/2) < 1e-8
 end
