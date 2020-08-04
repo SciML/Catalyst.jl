@@ -138,3 +138,18 @@ for reaction_network in reaction_networks_all
         prob = SDEProblem(reaction_network,u0,(0.,1.),p)
     end
 end
+
+
+### No parameter test ###
+
+no_param_network = @reaction_network begin
+    (1.2,5), X1 ↔ X2
+end
+for factor in [1e3, 1e4]
+    u0 = factor*(1. .+ rand(length(no_param_network.states)))
+    prob = SDEProblem(no_param_network,u0,(0.,1000.))
+    sol = solve(prob,ImplicitEM())
+    vals1 = getindex.(sol.u[1:end],1)
+    vals2 = getindex.(sol.u[1:end],2)
+    @test mean(vals1) > mean(vals2)
+end

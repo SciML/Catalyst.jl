@@ -48,3 +48,15 @@ for network in steady_state_test_networks, factor in [1e-1, 1e0, 1e1]
 
     @test all(abs.(sol_ode.u[end] .- sol_ss.u) .< 1e-4)
 end
+
+
+### No parameter test ###
+
+no_param_network = @reaction_network begin
+    (0.6,3.2), ∅ ↔ X
+end
+for factor in [1e0, 1e1, 1e2]
+    u0 = factor*rand(length(no_param_network.states))
+    sol_ss = solve(SteadyStateProblem(no_param_network,u0),SSRootfind())
+    @test abs.(sol_ss.u[1]-0.6/3.2) < 10000000*eps()
+end
