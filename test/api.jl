@@ -37,6 +37,19 @@ addreaction!(rs2, Reaction(k3, [S], [D]))
 addreaction!(rs2, Reaction(k4, [S,I], [D]))
 @test rs2 == rs
 
+rxs = [Reaction(k1, [S,I], [I], [1,1], [2]),
+       Reaction(k2, [I], [R]) ]
+rs = ReactionSystem(rxs, t, [S,I,R], [k1,k2])
+rs3 = make_empty_network()
+addspecies!(rs3, S)
+addspecies!(rs3, D.op)
+addparam!(rs3, k3)
+addparam!(rs3, k4.op)
+addreaction!(rs3, Reaction(k3, [S], [D]))
+addreaction!(rs3, Reaction(k4, [S,I], [D]))
+rs4 = merge(rs, rs3)
+@test rs2 == rs4
+
 rxs = [Reaction(k1*S, [S,I], [I], [2,3], [2]),
        Reaction(k2*R, [I], [R]) ]
 rs = ReactionSystem(rxs, t, [S,I,R], [k1,k2])

@@ -6,6 +6,9 @@
     species(network)
 
 Given a [`ReactionSystem`](@ref), return a vector of species `Variable`s.
+
+Notes:
+- May allocate a copy, and includes subsystem species.
 """
 function species(network)
     states(network)
@@ -15,6 +18,9 @@ end
     params(network)
 
 Given a [`ReactionSystem`](@ref), return a vector of parameter `Variable`s.
+
+Notes:
+- May allocate a copy, and includes subsystem parameters.
 """
 function params(network)
     parameters(network)
@@ -24,6 +30,9 @@ end
     reactions(network)
 
 Given a [`ReactionSystem`](@ref), return a vector of all `Reactions` in the system.
+
+Notes:
+- May allocate a copy, and includes subsystem equations.
 """
 function reactions(network)
     equations(network)
@@ -55,7 +64,11 @@ end
 Return the number of species within the given [`ReactionSystem`](@ref).
 """
 function numspecies(network)
-    length(species(network))
+    ns = length(network.states)
+    for sys in network.systems
+        ns += numspecies(ns)
+    end
+    ns
 end
 
 """
@@ -64,7 +77,11 @@ end
 Return the number of reactions within the given [`ReactionSystem`](@ref).
 """
 function numreactions(network)
-    length(equations(network))
+    nr = length(network.eqs)
+    for sys in network.systems
+        nr += numreactions(sys)
+    end
+    nr
 end
 
 """
@@ -73,7 +90,11 @@ end
 Return the number of parameters within the given [`ReactionSystem`](@ref).
 """
 function numparams(network)
-    length(params(network))
+    np = length(network.ps)
+    for sys in network.systems
+        np += numparams(ns)
+    end
+    np
 end
 
 """
@@ -89,10 +110,11 @@ the returned vector would be `[W(t),X(t),Y(t)]`.
 
 Notes:
 - Allocates
+- Does not check for dependents within any subsystems.
 """
 function dependents(rx, network)
     if rx.rate isa Operation
-        rvars = ModelingToolkit.get_variables(rx.rate, states(network))
+        rvars = ModelingToolkit.get_variables(rx.rate, network.states)
         return union!(rvars, rx.substrates)
     end
     
@@ -139,6 +161,7 @@ order network components were defined.
 Notes:
 - *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
     considered different than `(A+1)^2`.
+- Flattens subsystems, and hence allocates, when checking equality.
 """
 function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
     issetequal(species(rn1), species(rn2)) || return false
@@ -150,9 +173,10 @@ function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
     #issetequal(equations(rn1), equations(rn2)) || return false
     (issubset(equations(rn1),equations(rn2)) && issubset(equations(rn2),equations(rn1))) || return false
 
+    # BELOW SHOULD NOT BE NEEDED as species, params and equations flatten
     #issetequal(rn1.systems, rn2.systems) || return false
-    sys1 = rn1.systems; sys2 = rn2.systems
-    (issubset(sys1,sys2) && issubset(sys2,sys1)) || return false
+    # sys1 = rn1.systems; sys2 = rn2.systems
+    # (issubset(sys1,sys2) && issubset(sys2,sys1)) || return false
     true
 end
 
@@ -165,7 +189,7 @@ end
 Construct an empty [`ReactionSystem`](@ref). `iv` is the independent variable, usually time.
 """
 function make_empty_network(; iv=Variable(:t))
-    ReactionSystem(Reaction[], iv, Operation[], Operation[], gensym(:ReactionSystem), ReactionSystem[])
+    ReactionSystem(Reaction[], iv, Operation[], Operation[], Variable[], Equation[], gensym(:ReactionSystem), ReactionSystem[])
 end
 
 """
@@ -180,12 +204,15 @@ Notes:
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
   variable, as this will potentially leave the system in an undefined state.
+- Disabling checks for large systems may substantially decrease memory allocations.
 """
 function addspecies!(network::ReactionSystem, s::Variable; disablechecks=false)
-    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), species(network))
+
+    # we don't check subsystems since we will add it to the top level system...
+    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), network.states)
     if curidx === nothing
         push!(network.states, s)
-        return length(species(network))
+        return length(network.states)
     else
         return curidx
     end
@@ -202,6 +229,7 @@ integer id of the species within the system.
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
   variable, as this will potentially leave the system in an undefined state.
+- Disabling checks for large systems may substantially decrease memory allocations.
 """
 function addspecies!(network::ReactionSystem, s::Operation; disablechecks=false)
     !(s.op isa Variable) && error("If the passed in species is an Operation, it must correspond to an underlying Variable.")
@@ -219,12 +247,15 @@ id of the parameter within the system.
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
   variable, as this will potentially leave the system in an undefined state.
+- Disabling checks for large systems may substantially decrease memory allocations.
 """
 function addparam!(network::ReactionSystem, p::Variable; disablechecks=false)
-    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, p), params(network))
+
+    # we don't check subsystems since we will add it to the top level system...
+    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, p), network.ps)
     if curidx === nothing
         push!(network.ps, p)
-        return length(params(network))
+        return length(network.ps)
     else
         return curidx
     end
@@ -241,6 +272,7 @@ integer id of the parameter within the system.
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
   variable, as this will potentially leave the system in an undefined state.
+- Disabling checks for large systems may substantially decrease memory allocations.
 """
 function addparam!(network::ReactionSystem, p::Operation; disablechecks=false)
     !(p.op isa Variable) && error("If the passed in parameter is an Operation, it must correspond to an underlying Variable.")
@@ -259,7 +291,7 @@ Notes:
 """
 function addreaction!(network::ReactionSystem, rx::Reaction)
     push!(network.eqs, rx)
-    length(equations(network))
+    length(network.eqs)
 end
 
 
@@ -271,14 +303,15 @@ Merge `network2` into `network1`.
 Notes:
 - Duplicate reactions between the two networks are not filtered out.
 - [`Reaction`](@ref)s are not deepcopied to minimize allocations, so both networks will share underlying data arrays.
+- Subsystems are not deepcopied between the two networks and will hence be shared.
 - Returns `network1`
 """
 function merge!(network1::ReactionSystem, network2::ReactionSystem)
     isequal(network1.iv, network2.iv) || error("Reaction networks must have the same independent variable to be mergable.")
-    specs = species(network1)
-    foreach(spec -> !(spec in specs) && push!(specs, spec), species(network2))
-    ps = params(network1)
-    foreach(p -> !(p in ps) && push!(ps, p), params(network2))
+    specs = network1.states
+    foreach(spec -> !(spec in specs) && push!(specs, spec), network2.states)
+    ps = network1.ps
+    foreach(p -> !(p in ps) && push!(ps, p), network2.ps)
     append!(network1.eqs, network2.eqs)
     append!(network1.systems, network2.systems)
     network1
@@ -292,6 +325,7 @@ Create a new network merging `network1` and `network2`.
 Notes:
 - Duplicate reactions between the two networks are not filtered out.
 - [`Reaction`](@ref)s are not deepcopied to minimize allocations, so the new network will share underlying data arrays.
+- Subsystems are not deepcopied between the two networks and will hence be shared.
 - Returns the merged network.
 """
 function merge(network1::ReactionSystem, network2::ReactionSystem)

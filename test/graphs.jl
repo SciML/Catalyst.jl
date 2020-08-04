@@ -10,5 +10,6 @@ gr = Graph(rn)
 
 # check can save a graph
 fname = Base.Filesystem.tempname()
+fname = "/Users/isaacsas/Desktop/blah"
 savegraph(gr, fname, "png")
 
