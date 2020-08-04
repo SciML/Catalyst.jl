@@ -10,6 +10,5 @@ gr = Graph(rn)
 
 # check can save a graph
 fname = Base.Filesystem.tempname()
-#println("tempname = $fname")
 savegraph(gr, fname, "png")
 
