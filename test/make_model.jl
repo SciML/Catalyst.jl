@@ -338,12 +338,12 @@ g1 = SDEFunction(convert(SDESystem,reaction_networks_constraint[1]))
 g2 = SDEFunction(convert(SDESystem,time_network))
 for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
     u0 = factor*rand(length(time_network.states))
-    k2 = factor*rand(); k3 = factor*rand(); k6 = factor*rand();
-    t = rand()
-    p1 = [t, k2, k3, t, t, k6]; p2 = [k2, k3, k6];
-    @test all(abs.(f1(u0,p1,t) .- f2(u0,p2,t)) .< 100*eps())
-    @test all(abs.(f1.jac(u0,p1,t) .- f2.jac(u0,p2,t)) .< 100*eps())
-    @test all(abs.(g1(u0,p1,t) .- g2(u0,p2,t)) .< 100*eps())
+    κ2 = factor*rand(); κ3 = factor*rand(); κ6 = factor*rand();
+    τ = rand()
+    p1 = [τ, κ2, κ3, τ, τ, κ6]; p2 = [κ2, κ3, κ6];
+    @test all(abs.(f1(u0,p1,τ) .- f2(u0,p2,τ)) .< 100*eps())
+    @test all(abs.(f1.jac(u0,p1,τ) .- f2.jac(u0,p2,τ)) .< 100*eps())
+    @test all(abs.(g1(u0,p1,τ) .- g2(u0,p2,τ)) .< 100*eps())
 end
 
 
