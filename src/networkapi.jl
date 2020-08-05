@@ -8,10 +8,11 @@
 Given a [`ReactionSystem`](@ref), return a vector of species `Variable`s.
 
 Notes:
-- May allocate a copy, and includes subsystem species.
+- If `network.systems` is not empty may allocate. Otherwise returns
+  `network.states`.
 """
 function species(network)
-    states(network)
+    isempty(network.systems) ? network.states : states(network)
 end
 
 """
@@ -20,10 +21,11 @@ end
 Given a [`ReactionSystem`](@ref), return a vector of parameter `Variable`s.
 
 Notes:
-- May allocate a copy, and includes subsystem parameters.
+- If `network.systems` is not empty may allocate. Otherwise returns
+  `network.ps`.
 """
 function params(network)
-    parameters(network)
+    isempty(network.systems) ? network.ps : parameters(network) 
 end
 
 """
@@ -32,10 +34,11 @@ end
 Given a [`ReactionSystem`](@ref), return a vector of all `Reactions` in the system.
 
 Notes:
-- May allocate a copy, and includes subsystem equations.
+- If `network.systems` is not empty may allocate. Otherwise returns
+  `network.eqs`.
 """
 function reactions(network)
-    equations(network)
+    isempty(network.systems) ? networks.eqs : equations(network)
 end
 
 """
