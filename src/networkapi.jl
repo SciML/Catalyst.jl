@@ -164,7 +164,7 @@ order network components were defined.
 Notes:
 - *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
     considered different than `(A+1)^2`.
-- Flattens subsystems, and hence allocates, when checking equality.
+- Flattens subsystems, and hence may allocate, when checking equality.
 """
 function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
     issetequal(species(rn1), species(rn2)) || return false
@@ -207,7 +207,6 @@ Notes:
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
   variable, as this will potentially leave the system in an undefined state.
-- Disabling checks for large systems may substantially decrease memory allocations.
 """
 function addspecies!(network::ReactionSystem, s::Variable; disablechecks=false)
 
@@ -232,7 +231,6 @@ integer id of the species within the system.
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
   variable, as this will potentially leave the system in an undefined state.
-- Disabling checks for large systems may substantially decrease memory allocations.
 """
 function addspecies!(network::ReactionSystem, s::Operation; disablechecks=false)
     !(s.op isa Variable) && error("If the passed in species is an Operation, it must correspond to an underlying Variable.")
@@ -250,7 +248,6 @@ id of the parameter within the system.
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
   variable, as this will potentially leave the system in an undefined state.
-- Disabling checks for large systems may substantially decrease memory allocations.
 """
 function addparam!(network::ReactionSystem, p::Variable; disablechecks=false)
 
@@ -275,7 +272,6 @@ integer id of the parameter within the system.
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
   variable, as this will potentially leave the system in an undefined state.
-- Disabling checks for large systems may substantially decrease memory allocations.
 """
 function addparam!(network::ReactionSystem, p::Operation; disablechecks=false)
     !(p.op isa Variable) && error("If the passed in parameter is an Operation, it must correspond to an underlying Variable.")
