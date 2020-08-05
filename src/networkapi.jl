@@ -38,7 +38,7 @@ Notes:
   `network.eqs`.
 """
 function reactions(network)
-    isempty(network.systems) ? networks.eqs : equations(network)
+    isempty(network.systems) ? network.eqs : equations(network)
 end
 
 """
