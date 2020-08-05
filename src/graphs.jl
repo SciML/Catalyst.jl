@@ -17,10 +17,10 @@ function edgify(δ, i, reverse::Bool)
 end
 
 # make distinguished edge based on rate constant
-function edgifyrates(rn)    
+function edgifyrates(rxs, specs)    
     es = Edge[]
-    for (i,rx) in enumerate(reactions(rn))
-        deps = get_variables(rx.rate, states(rn))
+    for (i,rx) in enumerate(rxs)
+        deps = get_variables(rx.rate, specs)
         for dep in deps
             val = String(dep.op.name)
             attr = Attributes(:color => "#d91111", :style => "dashed")
@@ -48,8 +48,9 @@ Notes:
   red and black arrows from `A` to the reaction node.
 """
 function Graph(rn::ReactionSystem)
-    rxs = reactions(rn)
-    statenodes = [Node(string(s.name), Attributes(:shape=>"circle", :color=>"#6C9AC3")) for s in species(rn)]
+    rxs   = reactions(rn)
+    specs = species(rn)
+    statenodes = [Node(string(s.name), Attributes(:shape=>"circle", :color=>"#6C9AC3")) for s in specs]
     transnodes = [Node(string("rx_$i"), Attributes(:shape=>"point", :color=>"#E28F41", :width=>".1")) for (i,r) in enumerate(rxs)]
 
     stmts = vcat(statenodes, transnodes)
@@ -57,11 +58,11 @@ function Graph(rn::ReactionSystem)
       vcat(edgify(zip(r.substrates,r.substoich), i, false),
            edgify(zip(r.products,r.prodstoich), i, true))
     end
-    es = edgifyrates(rn)
-    (!isempty(es)) && push!(edges, edgifyrates(rn))
+    es = edgifyrates(rxs, specs)
+    (!isempty(es)) && push!(edges, es)
 
     stmts = vcat(stmts, collect(flatten(edges)))
-    g = Graphviz.Graph("G", true, stmts, graph_attrs, node_attrs,edge_attrs)
+    g = Graphviz.Digraph("G", stmts; graph_attrs=graph_attrs, node_attrs=node_attrs, edge_attrs=edge_attrs)
     return g
 end
 
