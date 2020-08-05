@@ -117,7 +117,7 @@ Notes:
 """
 function dependents(rx, network)
     if rx.rate isa Operation
-        rvars = ModelingToolkit.get_variables(rx.rate, network.states)
+        rvars = ModelingToolkit.get_variables(rx.rate, species(network))
         return union!(rvars, rx.substrates)
     end
     
@@ -174,7 +174,7 @@ function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
 
     # the following fails for some reason, so need to use issubset
     #issetequal(equations(rn1), equations(rn2)) || return false
-    (issubset(equations(rn1),equations(rn2)) && issubset(equations(rn2),equations(rn1))) || return false
+    (issubset(reactions(rn1),reactions(rn2)) && issubset(reactions(rn2),reactions(rn1))) || return false
 
     # BELOW SHOULD NOT BE NEEDED as species, params and equations flatten
     #issetequal(rn1.systems, rn2.systems) || return false
