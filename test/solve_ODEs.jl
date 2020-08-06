@@ -110,3 +110,16 @@ for (i,network) in enumerate(reaction_networks_all)
         @test solve(prob,Rosenbrock23()).retcode == :Success
     end
 end
+
+
+### No parameter test ###
+
+no_param_network = @reaction_network begin
+    (1.5,2), ∅ ↔ X
+end
+for factor in [1e0, 1e1, 1e2]
+    u0 = factor*rand(length(no_param_network.states))
+    prob = ODEProblem(no_param_network,u0,(0.,1000.))
+    sol = solve(prob,Rosenbrock23())
+    @test abs.(sol.u[end][1] - 1.5/2) < 1e-8
+end

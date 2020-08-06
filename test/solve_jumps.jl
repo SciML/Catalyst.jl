@@ -107,3 +107,15 @@ for (i,network) in enumerate(reaction_networks_all)
         @test solve(prob,SSAStepper()).retcode == :Default
     end
 end
+
+no_param_network = @reaction_network begin
+    (1.2,5), X1 ↔ X2
+end
+for factor in [1e1, 1e2]
+    u0 = rand(1:Int64(factor*100),length(no_param_network.states))
+    prob = JumpProblem(no_param_network,DiscreteProblem(no_param_network,u0,(0.,1000.)),Direct())
+    sol = solve(prob,SSAStepper())
+    vals1 = getindex.(sol.u[1:end],1)
+    vals2 = getindex.(sol.u[1:end],2)
+    @test mean(vals1) > mean(vals2)
+end
