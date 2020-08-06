@@ -55,6 +55,7 @@ rxs = [Reaction(k1*S, [S,I], [I], [2,3], [2]),
 rs = ReactionSystem(rxs, t, [S,I,R], [k1,k2])
 deps = [s.op for s in dependents(rxs[2], rs)]
 @test isequal(deps, [R.op,I.op])
+@test isequal(dependents(rxs[1], rs), dependants(rxs[1], rs))
 addspecies!(rs, Variable(:S))
 @test numspecies(rs) == 3
 addspecies!(rs, Variable(:S), disablechecks=true)
