@@ -20,7 +20,7 @@ end
 function edgifyrates(rxs, specs)    
     es = Edge[]
     for (i,rx) in enumerate(rxs)
-        deps = get_variables(rx.rate, specs)
+        deps = rx.rate isa Operation ? get_variables(rx.rate, specs) : Operation[]        
         for dep in deps
             val = String(dep.op.name)
             attr = Attributes(:color => "#d91111", :style => "dashed")
@@ -30,6 +30,7 @@ function edgifyrates(rxs, specs)
     end
     es
 end
+
 """
     Graph(rn::ReactionSystem)
 

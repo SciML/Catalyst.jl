@@ -57,7 +57,7 @@ function chemical_arrows(rn::ModelingToolkit.ReactionSystem;
         str *= "\\ce{ "
 
         ### Expand functions to maths expressions
-        rate = Expr(r.rate)
+        rate = r.rate isa Operation ? Expr(r.rate) : r.rate
         expand && (rate = recursive_clean!(rate))
         expand && (rate = recursive_clean!(rate))
 
