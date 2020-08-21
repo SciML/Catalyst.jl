@@ -46,9 +46,18 @@ function chemical_arrows(rn::ModelingToolkit.ReactionSystem;
 
     mathjax && (str *= "\\require{mhchem}\n")
 
+    println(kwargs)
 
     backwards_reaction = false
     rxs = ModelingToolkit.equations(rn)
+    @variables t
+    
+    # this should replace A(t) with A in equations however, currently substituter rewrites 
+    # things like x/y as inv(y)*x^1 which looks worse... for now we leave a stub that can 
+    # be updated when substitution preserves expressions better.
+    # subber = ModelingToolkit.substituter([s(t) => s() for s in states(rn)])        
+    subber = x -> x
+
     for (i, r) in enumerate(rxs)
         if backwards_reaction
             backwards_reaction = false
@@ -57,7 +66,7 @@ function chemical_arrows(rn::ModelingToolkit.ReactionSystem;
         str *= "\\ce{ "
 
         ### Expand functions to maths expressions
-        rate = r.rate isa Operation ? Expr(r.rate) : r.rate
+        rate = r.rate isa Operation ? Expr(subber(r.rate)) : r.rate
         expand && (rate = recursive_clean!(rate))
         expand && (rate = recursive_clean!(rate))
 
@@ -72,7 +81,7 @@ function chemical_arrows(rn::ModelingToolkit.ReactionSystem;
         poststr = mathjax ? "]" : "\$]"    
         if i + 1 <= length(rxs) && issetequal(r.products,rxs[i+1].substrates) && issetequal(r.substrates,rxs[i+1].products)
             ### Bi-directional arrows
-            rate_backwards = Expr(rxs[i+1].rate)
+            rate_backwards = rxs[i+1].rate isa Operation ? Expr(subber(rxs[i+1].rate)) : rxs[i+1].rate             
             expand && (rate_backwards = recursive_clean!(rate_backwards))
             expand && (rate_backwards = recursive_clean!(rate_backwards))
             str *= " &<=>"
