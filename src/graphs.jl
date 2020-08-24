@@ -63,7 +63,7 @@ function Graph(rn::ReactionSystem)
     (!isempty(es)) && push!(edges, es)
 
     stmts = vcat(stmts, collect(flatten(edges)))
-    g = Graphviz.Digraph("G", stmts; graph_attrs=graph_attrs, node_attrs=node_attrs, edge_attrs=edge_attrs)
+    g = Digraph("G", stmts; graph_attrs=graph_attrs, node_attrs=node_attrs, edge_attrs=edge_attrs)
     return g
 end
 
