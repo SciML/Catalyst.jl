@@ -45,9 +45,6 @@ function chemical_arrows(rn::ModelingToolkit.ReactionSystem;
     eol = double_linebreak ? "\\\\\\\\\n" : "\\\\\n"
 
     mathjax && (str *= "\\require{mhchem}\n")
-
-    println(kwargs)
-
     backwards_reaction = false
     rxs = ModelingToolkit.equations(rn)
     @variables t
