@@ -11,7 +11,7 @@ Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 
 [compat]
 Catlab = "0.7.3"
-Latexify = "0.13.5"
+Latexify = "0.13.5, 0.14"
 MacroTools = "0.5.5"
 ModelingToolkit = "3.14.2"
 Reexport = "0.2"
