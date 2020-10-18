@@ -8,7 +8,7 @@
 Given a [`ReactionSystem`](@ref), return a vector of species `Variable`s.
 
 Notes:
-- If `network.systems` is not empty may allocate. Otherwise returns
+- If `network.systems` is not empty, may allocate. Otherwise returns
   `network.states`.
 """
 function species(network)
@@ -21,11 +21,11 @@ end
 Given a [`ReactionSystem`](@ref), return a vector of parameter `Variable`s.
 
 Notes:
-- If `network.systems` is not empty may allocate. Otherwise returns
+- If `network.systems` is not empty, may allocate. Otherwise returns
   `network.ps`.
 """
 function params(network)
-    isempty(network.systems) ? network.ps : parameters(network) 
+    isempty(network.systems) ? network.ps : parameters(network)
 end
 
 """
@@ -34,7 +34,7 @@ end
 Given a [`ReactionSystem`](@ref), return a vector of all `Reactions` in the system.
 
 Notes:
-- If `network.systems` is not empty may allocate. Otherwise returns
+- If `network.systems` is not empty, may allocate. Otherwise returns
   `network.eqs`.
 """
 function reactions(network)
@@ -105,7 +105,7 @@ end
 
 Given a [`Reaction`](@ref) and a [`ReactionSystem`](@ref), return a vector of
 `ModelingToolkit.Operation`s corresponding to species the *reaction rate
-law* depends on. i.e. for
+law* depends on. E.g., for
 
 `k*W, 2X + 3Y --> 5Z + W`
 
@@ -120,7 +120,7 @@ function dependents(rx, network)
         rvars = ModelingToolkit.get_variables(rx.rate, species(network))
         return union!(rvars, rx.substrates)
     end
-    
+
     rx.substrates
 end
 
@@ -210,7 +210,7 @@ Notes:
 """
 function addspecies!(network::ReactionSystem, s::Variable; disablechecks=false)
 
-    # we don't check subsystems since we will add it to the top level system...
+    # we don't check subsystems since we will add it to the top-level system...
     curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), network.states)
     if curidx === nothing
         push!(network.states, s)
@@ -251,7 +251,7 @@ id of the parameter within the system.
 """
 function addparam!(network::ReactionSystem, p::Variable; disablechecks=false)
 
-    # we don't check subsystems since we will add it to the top level system...
+    # we don't check subsystems since we will add it to the top-level system...
     curidx = disablechecks ? nothing : findfirst(S -> isequal(S, p), network.ps)
     if curidx === nothing
         push!(network.ps, p)
@@ -303,7 +303,7 @@ Notes:
 - Duplicate reactions between the two networks are not filtered out.
 - [`Reaction`](@ref)s are not deepcopied to minimize allocations, so both networks will share underlying data arrays.
 - Subsystems are not deepcopied between the two networks and will hence be shared.
-- Returns `network1`
+- Returns `network1`.
 """
 function merge!(network1::ReactionSystem, network2::ReactionSystem)
     isequal(network1.iv, network2.iv) || error("Reaction networks must have the same independent variable to be mergable.")
@@ -333,4 +333,3 @@ function merge(network1::ReactionSystem, network2::ReactionSystem)
     merge!(network, network2)
     network
 end
-

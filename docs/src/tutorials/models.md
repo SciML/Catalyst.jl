@@ -1,16 +1,16 @@
 # Model Simulation
-Once created, a reaction network can be used as input to various problem types
+Once created, a reaction network can be used as input to various problem types,
 which can be solved by
 [DifferentialEquations.jl](https://github.com/JuliaDiffEq/DifferentialEquations.jl/),
 and more broadly used within [SciML](https://sciml.ai) packages.
 
 #### Deterministic simulations using ODEs
 A reaction network can be used as input to an `ODEProblem` instead of a
-function, using 
+function, using
 ```julia
-odeprob = ODEProblem(rn, args...; kwargs...) 
-``` 
-E.g. a model can be created and solved using:
+odeprob = ODEProblem(rn, args...; kwargs...)
+```
+E.g., a model can be created and solved using:
 ```julia
 using DiffEqBase, OrdinaryDiffEq
 rn = @reaction_network begin
@@ -23,16 +23,16 @@ tspan = (0.,1.)
 prob = ODEProblem(rn,u0,tspan,p)
 sol = solve(prob, Tsit5())
 ```
-Here the order of unknowns in `u0` and `p` matches the order that species and
+Here, the order of unknowns in `u0` and `p` matches the order that species and
 parameters first appear within the DSL. They can also be determined by examining
 the ordering within the [`species(rn)`](@ref) and [`params(rn)`](@ref) vectors,
 or accessed more explicitly through the [`speciesmap(rn)`](@ref) and
 [`paramsmap(rn)`](@ref) dictionaries, which map the ModelingToolkit `Variable`s
 corresponding to each species or parameter to their integer id. Note, if no
-parameters are given in the [`@reaction_network`](@ref) then `p` does not need
+parameters are given in the [`@reaction_network`](@ref), then `p` does not need
 to be provided.
 
-We can then plot the solution using the solution plotting receipe:
+We can then plot the solution using the solution plotting recipe:
 ```julia
 using Plots
 plot(sol, lw=2)
@@ -52,7 +52,7 @@ sol = solve(prob, DynamicSS(Tsit5()))
 ```
 
 #### Stochastic simulations using SDEs
-In a similar way an SDE can be created using 
+In a similar way an SDE can be created using
 ```julia
 using StochasticDiffEq
 sdeprob = SDEProblem(rn, args...; kwargs...)
@@ -61,8 +61,8 @@ In this case the chemical Langevin equations (as derived in Gillespie, J. Chem.
 Phys. 2000) will be used to generate stochastic differential equations.
 
 #### Stochastic simulations using discrete stochastic simulation algorithms
-Instead of solving SDEs one can create a stochastic jump process model using
-integer copy numbers and a discrete stochastic simulation algorithm (i.e.
+Instead of solving SDEs, one can create a stochastic jump process model using
+integer copy numbers and a discrete stochastic simulation algorithm (i.e.,
 Gillespie Method or Kinetic Monte Carlo). This can be done using:
 ```julia
 using DiffEqJump
@@ -77,8 +77,8 @@ discrete_prob = DiscreteProblem(rn, u0, tspan, p)
 jump_prob = JumpProblem(rn, discrete_prob, Direct())
 sol = solve(jump_prob, SSAStepper())
 ```
-Here we used Gillespie's `Direct` method as the underlying stochastic simulation
-algorithm. We get
+Here, we used Gillespie's `Direct` method as the underlying stochastic simulation
+algorithm. We get:
 ```julia
 plot(sol, lw=2)
 ```
@@ -93,7 +93,7 @@ the corresponding ODE rate law is taken to be
 ```math
 k \prod_{i=1}^M \frac{(S_i)^{n_i}}{n_i!},
 ```
-while the jump process transition rate (i.e. propensity function) is
+while the jump process transition rate (i.e., the propensity function) is
 ```math
 k \prod_{i=1}^M \frac{S_i (S_i-1) \dots (S_i-n_i+1)}{n_i!}.
 ```

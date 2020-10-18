@@ -1,4 +1,4 @@
-# #Recursively traverses an expression and removes things like X^1, 1*X. Will not actually have any affect on the expression when used as a function, but will make it much easier to look at it for debugging, as well as if it is transformed to LaTeX code.
+#Recursively traverses an expression and removes things like X^1, 1*X. Will not actually have any effect on the expression when used as a function, but will make it much easier to look at it for debugging, as well as if it is transformed to LaTeX code.
 function recursive_clean!(expr)
     (expr isa Symbol) && (expr == :no___noise___scaling) && (return 1)
     (typeof(expr)!=Expr) && (return expr)
@@ -21,7 +21,7 @@ function recursive_clean!(expr)
             (expr.args[i] == 1) && deleteat!(expr.args,i)
         end
         (length(expr.args) == 2) && (return expr.args[2])                   # We have a multiplication of only one thing, return only that thing.
-        (length(expr.args) == 1) && (return 1)                              #We have only * and no real argumenys.
+        (length(expr.args) == 1) && (return 1)                              # We have only * and no real arguments.
         (length(expr.args) == 3) && (expr.args[2] == -1) && return :(-$(expr.args[3]))
         (length(expr.args) == 3) && (expr.args[3] == -1) && return :(-$(expr.args[2]))
     end
@@ -48,11 +48,11 @@ function chemical_arrows(rn::ModelingToolkit.ReactionSystem;
     backwards_reaction = false
     rxs = ModelingToolkit.equations(rn)
     @variables t
-    
-    # this should replace A(t) with A in equations however, currently substituter rewrites 
-    # things like x/y as inv(y)*x^1 which looks worse... for now we leave a stub that can 
+
+    # this should replace A(t) with A in equations however, currently substituter rewrites
+    # things like x/y as inv(y)*x^1, which looks worse... for now we leave a stub that can
     # be updated when substitution preserves expressions better.
-    # subber = ModelingToolkit.substituter([s(t) => s() for s in states(rn)])        
+    # subber = ModelingToolkit.substituter([s(t) => s() for s in states(rn)])
     subber = x -> x
 
     for (i, r) in enumerate(rxs)
@@ -75,10 +75,10 @@ function chemical_arrows(rn::ModelingToolkit.ReactionSystem;
 
         ### Generate reaction arrows
         prestr  = mathjax ? "[" : "[\$"
-        poststr = mathjax ? "]" : "\$]"    
+        poststr = mathjax ? "]" : "\$]"
         if i + 1 <= length(rxs) && issetequal(r.products,rxs[i+1].substrates) && issetequal(r.substrates,rxs[i+1].products)
             ### Bi-directional arrows
-            rate_backwards = rxs[i+1].rate isa Operation ? Expr(subber(rxs[i+1].rate)) : rxs[i+1].rate             
+            rate_backwards = rxs[i+1].rate isa Operation ? Expr(subber(rxs[i+1].rate)) : rxs[i+1].rate
             expand && (rate_backwards = recursive_clean!(rate_backwards))
             expand && (rate_backwards = recursive_clean!(rate_backwards))
             str *= " &<=>"

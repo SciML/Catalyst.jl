@@ -11,10 +11,10 @@ API method listed first:
 * [`reactions(rn)`](@ref), `equations(rn)` and `rn.eqs` is a vector of all the
   `Reaction`s within the system.
 * `independent_variable(rn)` and `rn.iv` are the independent variable of the
-  system , usually `t` for time, represented as a `ModelingToolkit.Variable`. 
+  system, usually `t` for time, represented as a `ModelingToolkit.Variable`.
 
 Each `Reaction` within `reactions(rn)` has a number of subfields. For `rx` a
-`Reaction` we have
+`Reaction` we have:
 * `rx.substrates`, a vector of `ModelingToolkit.Operation`s storing each
   substrate variable.
 * `rx.products`, a vector of `ModelingToolkit.Operation`s storing each product
@@ -23,11 +23,11 @@ Each `Reaction` within `reactions(rn)` has a number of subfields. For `rx` a
   each substrate species in `rx.substrates`.
 * `rx.prodstoich`, a vector storing the corresponding integer stoichiometry of
   each product species in `rx.products`.
-* `rx.rate`, a `ModelingToolkit.Operation` representing the reaction rate. e.g.
-  for a reaction like `k*X, Y --> X+Y` we'd have `rate = k*X`.
+* `rx.rate`, a `ModelingToolkit.Operation` representing the reaction rate. E.g.,
+  for a reaction like `k*X, Y --> X+Y`, we'd have `rate = k*X`.
 * `rx.netstoich`, a vector of pairs mapping the `ModelingToolkit.Variable` for
-  each species that changes numbers by the reaction to how much it changes. E.g.
-  for `k, X + 2Y --> X + W` we'd have `rx.netstoich = [Y => -2, W => 1]`. 
+  each species that changes numbers by the reaction to how much it changes. E.g.,
+  for `k, X + 2Y --> X + W`, we'd have `rx.netstoich = [Y => -2, W => 1]`.
 * `rx.only_use_rate`, a boolean that is `true` if the reaction was made with
   non-filled arrows and should ignore mass action kinetics. `false` by default.
 
