@@ -1,11 +1,11 @@
 """
 Macro that inputs an expression corresponding to a reaction network and outputs
 a `ModelingToolkit.ReactionNetwork` that can be used as input to generation of
-ODE, SDE and Jump problems.
+ODE, SDE, and Jump problems.
 
-Most arrows accepted (both right, left and bi drectional arrows).
+Most arrows accepted (both right, left, and bi-drectional arrows).
 Note that while --> is a correct arrow, neither <-- nor <--> works.
-Using non-filled arrows (⇐, ⟽, ⇒, ⟾, ⇔, ⟺) will disable mass kinetics and lets you cutomize reaction rates yourself.
+Using non-filled arrows (⇐, ⟽, ⇒, ⟾, ⇔, ⟺) will disable mass kinetics and let you cutomize reaction rates yourself.
 Use 0 or ∅ for degradation/creation to/from nothing.
 Example systems:
     ### Basic Usage ###
@@ -18,7 +18,7 @@ Example systems:
     rn = @reaction_network begin
         2.0, X + Y ⟾ XY                   # Ignores mass kinetics. This will have reaction rate corresponding to 2.0.
         2.0X, X + Y --> XY                 # Reaction rate needs not be constant. This will have reaction rate corresponding to 2.0*[X]*[X]*[Y].
-        XY+log(X)^2, X + Y --> XY          # Reaction rate accepts quite complicated expressions (user defined functions must first be registered using the @reaction_func macro).
+        XY+log(X)^2, X + Y --> XY          # Reaction rate accepts quite complicated expressions (user-defined functions must first be registered using the @reaction_func macro).
         hill(XY,2,2,2), X + Y --> XY       # Reaction inis activated by XY according to a hill function. hill(x,v,K,N).
         mm(XY,2,2), X + Y --> XY           # Reaction inis activated by XY according to a michaelis menten function. mm(x,v,K).
     end
@@ -42,7 +42,7 @@ Example systems:
     ### Defining New Functions ###
     @reaction_func my_hill_repression(x, v, k, n) = v*k^n/(k^n+x^n)     # Creates and adds a new function that the @reaction_network macro can see.
     r = @reaction_network MyReactionType begin
-        my_hill_repression(x, v_x, k_x, n_x), 0 --> x                    # After it has been added in @reaction_func the function can be used when defining new reaction networks.
+        my_hill_repression(x, v_x, k_x, n_x), 0 --> x                    # After it has been added in @reaction_func, the function can be used when defining new reaction networks.
     end v_x k_x n_x
 
     ### Simulating Reaction Networks ###
@@ -60,7 +60,7 @@ bwd_arrows = Set{Symbol}([:<, :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :�
 double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :⟺])
 pure_rate_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
-# Declares symbols which may neither be used as paraemters not varriables.
+# Declares symbols which may neither be used as parameters not varriables.
 forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅]
 
 
@@ -109,7 +109,7 @@ struct ReactantStruct
     reactant::Symbol
     stoichiometry::Number
 end
-#Structure containing information about one Reaction. Contain all its substrates and products as well as its rate. Contains an specialized constructor.
+#Structure containing information about one Reaction. Contain all its substrates and products as well as its rate. Contains a specialized constructor.
 struct ReactionStruct
     substrates::Vector{ReactantStruct}
     products::Vector{ReactantStruct}
@@ -124,7 +124,7 @@ struct ReactionStruct
 end
 
 
-### Functions that processes the input and rephrases it as a reaction system ###
+### Functions that process the input and rephrase it as a reaction system ###
 
 # Takes the reactions, and rephrases it as a "ReactionSystem" call, as designated by the ModelingToolkit IR.
 function make_reaction_system(ex::Expr, parameters)
@@ -154,7 +154,7 @@ function make_reaction_system(ex::Expr, parameters)
     return network_code
 end
 
-#Generates a vector containing a number of reaction structures, each containing the infromation about one reaction.
+#Generates a vector containing a number of reaction structures, each containing the information about one reaction.
 function get_reactions(ex::Expr, reactions = Vector{ReactionStruct}(undef,0))
     for line in ex.args
         (line.head != :tuple) && (continue)
@@ -177,7 +177,7 @@ function get_reactions(ex::Expr, reactions = Vector{ReactionStruct}(undef,0))
     return reactions
 end
 
-#Takes a reaction line and creates reactions from it and pushes those to the reaction array. Used to creat multiple reactions from e.g. 1.0, (X,Y) --> 0.
+#Takes a reaction line and creates reactions from it and pushes those to the reaction array. Used to create multiple reactions from, for instance, 1.0, (X,Y) --> 0.
 function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, only_use_rate::Bool)
     lengs = [tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate)]
     (count(lengs.==1) + count(lengs.==maximum(lengs)) < 3) && (throw("malformed reaction"))
@@ -186,7 +186,7 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
     end
 end
 
-#Recursive function that loops through the reaction line and finds the reactants and their stoichiometry. Recursion makes it able to handle werid cases like 2(X+Y+3(Z+XY)).
+#Recursive function that loops through the reaction line and finds the reactants and their stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
 function recursive_find_reactants!(ex::ExprValues, mult::Int, reactants::Vector{ReactantStruct})
     if typeof(ex)!=Expr
         (ex == 0 || in(ex,empty_set)) && (return reactants)
@@ -240,14 +240,14 @@ hill(expr::Expr) = :($(expr.args[3])*($(expr.args[2])^$(expr.args[5]))/($(expr.a
 hillR_name = Set{Symbol}([:hill_repressor, :hillr, :hillR, :HillR, :hR, :hR, :Hr, :HR, :HILLR])
 hillR(expr::Expr) = :($(expr.args[3])*($(expr.args[4])^$(expr.args[5]))/($(expr.args[4])^$(expr.args[5])+$(expr.args[2])^$(expr.args[5])))
 
-#Michaelis menten function made avaiable (activation and repression).
+#Michaelis-Menten function made available (activation and repression).
 mm_name = Set{Symbol}([:MM, :mm, :Mm, :mM, :M, :m])
 mm(expr::Expr) = :($(expr.args[3])*$(expr.args[2])/($(expr.args[4])+$(expr.args[2])))
 mmR_name = Set{Symbol}([:mm_repressor, :MMR, :mmr, :mmR, :MmR, :mMr, :MR, :mr, :Mr, :mR])
 mmR(expr::Expr) = :($(expr.args[3])*$(expr.args[4])/($(expr.args[4])+$(expr.args[2])))
 
-#Allows the user to define new function and enable the @reaction_network macro to see them.
-funcdict = Dict{Symbol, Function}()     # Stores user defined functions.
+#Allows the user to define new functions and enables the @reaction_network macro to see them.
+funcdict = Dict{Symbol, Function}()     # Stores user-defined functions.
 macro reaction_func(expr)
     name = expr.args[1].args[1]
     args = expr.args[1].args[2:end]

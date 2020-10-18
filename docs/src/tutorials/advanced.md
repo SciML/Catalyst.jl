@@ -3,7 +3,7 @@ This section covers some of the more advanced syntax and features for building
 chemical reaction network models (still not very complicated!).
 
 #### User defined functions in reaction rates
-The reaction network DSL cannot "see" user defined functions. E.g. this is not
+The reaction network DSL cannot "see" user defined functions. E.g., this is not
 correct syntax:
 
 ```julia
@@ -41,4 +41,4 @@ end k
 ```
 
 will occur at rate ``d[X]/dt = -k`` (which might become a problem since ``[X]``
-will be degraded at a constant rate even when very small or equal to 0.
+will be degraded at a constant rate even when very small or equal to 0).

@@ -1,21 +1,21 @@
 # Using Catalyst
 In this tutorial we'll provide an introduction to using Catalyst to specify
-chemical reaction networks, and then to solve ODE, jump and SDE models generated
+chemical reaction networks, and then to solve ODE, jump, and SDE models generated
 from them. Let's start by using the Catalyst [`@reaction_network`](@ref) macro
-to specify a simply chemical reaction network; the well-known repressilator.
+to specify a simply chemical reaction network: the well-known repressilator.
 
 We first import the basic packages we'll need:
 
 ```julia
 # If not already installed, first hit "]" within a Julia REPL. Then type:
-# add Catalyst DifferentialEquations Plots Latexify 
+# add Catalyst DifferentialEquations Plots Latexify
 
 using Catalyst, DifferentialEquations, Plots, Latexify
 ```
 
 We now construct the reaction network. The basic types of arrows and predefined
 rate laws one can use are discussed in detail within the next tutorial, [The
-Reaction DSL](@ref). Here we use a mix of first order, zero order and repressive
+Reaction DSL](@ref). Here, we use a mix of first order, zero order, and repressive
 Hill function rate laws. Note, $\varnothing$ corresponds to the empty state, and
 is used for zeroth order production and first order degradation reactions:
 
@@ -35,7 +35,7 @@ repressilator = @reaction_network begin
     μ, P₃ --> ∅
 end α K n δ γ β μ;
 ```
-[`@reaction_network`](@ref) returns a [`ModelingToolkit.ReactionSystem`](@ref)
+[`@reaction_network`](@ref) returns a [`ModelingToolkit.ReactionSystem`](@ref),
 which can be converted to a variety of other mathematical models represented as
 `ModelingToolkit.AbstractSystem`s.
 
@@ -97,7 +97,7 @@ by
 ```julia
 odesys = convert(ODESystem, repressilator)
 ```
-We can once again use Latexify to look at the corresponding ODE model 
+We can once again use Latexify to look at the corresponding ODE model
 ```julia; results="hidden";
 latexify(odesys)
 ```
@@ -111,7 +111,7 @@ latexify(odesys)
 \frac{dP_3(t)}{dt} =& \beta \mathrm{m_3}\left( t \right) - \mu \mathrm{P_3}\left( t \right)
 \end{aligned}
 ```
-(Note, there is a Latexify bug currently that causes different fonts to be used
+(Note, there is currently a Latexify bug that causes different fonts to be used
 for the species symbols on each side of the equations.)
 
 Before we can solve the ODEs, we need to specify the values of the parameters in
@@ -148,7 +148,7 @@ Dict{Variable{ModelingToolkit.Parameter{Number}},Int64} with 7 entries:
   n => 3
   K => 2
 ```
-which are consistent with the API functions: 
+which are consistent with the API functions:
 ```julia
 species(repressilator)
 ```
@@ -175,8 +175,8 @@ params(repressilator)
  β
  μ
 ```
-Knowing these orderings we can create parameter and initial condition vectors,
-and then setup the `ODEProblem` we want to solve:
+Knowing these orderings, we can create parameter and initial condition vectors,
+and then set up the `ODEProblem` we want to solve:
 
 ```julia
 # parameters [α,K,n,δ,γ,β,μ]
@@ -202,7 +202,7 @@ pmap   = Pair.(params(repressilator), p)
 oprob2 = ODEProblem(osys, u₀map, tspan, pmap)
 ```
 `oprob` and `oprob2` are functionally equivalent, each representing the same
-underlying problem. 
+underlying problem.
 
 At this point we are all set to solve the ODEs. We can now use any ODE solver
 from within the
@@ -216,7 +216,7 @@ plot(sol)
 ```
 ![Repressilator ODE Solutions](../assets/repressilator_odes.svg)
 
-We see the well-known oscillatory behavior of the repressilator! For more on
+We see the well-known oscillatory behavior of the repressilator! For more on the
 choices of ODE solvers, see the [DifferentialEquations.jl
 documentation](https://diffeq.sciml.ai/dev/solvers/ode_solve/).
 
@@ -224,7 +224,7 @@ documentation](https://diffeq.sciml.ai/dev/solvers/ode_solve/).
 
 ## Stochastic Simulation Algorithms (SSAs) for Stochastic Chemical Kinetics
 Let's now look at a stochastic chemical kinetics model of the repressilator,
-modeling it with jump processes. Here we will construct a
+modeling it with jump processes. Here, we will construct a
 [DiffEqJump](https://github.com/SciML/DiffEqJump.jl) `JumpProblem` that uses
 Gillespie's `Direct` method, and then solve it to generate one realization of
 the jump process:
@@ -236,10 +236,10 @@ u₀ = [0,0,0,20,0,0]
 # next we create a discrete problem to encode that our species are integer valued:
 dprob = DiscreteProblem(repressilator, u₀, tspan, p)
 
-# now we create a JumpProblem, and specify Gillespie's Direct Method as the solver:
+# now, we create a JumpProblem, and specify Gillespie's Direct Method as the solver:
 jprob = JumpProblem(repressilator, dprob, Direct(), save_positions=(false,false))
 
-# now let's solve and plot the jump process:
+# now, let's solve and plot the jump process:
 sol = solve(jprob, SSAStepper(), saveat=10.)
 plot(sol)
 ```
@@ -247,7 +247,7 @@ plot(sol)
 
 We see that oscillations remain, but become much noisier. Note, in constructing
 the `JumpProblem` we could have used any of the SSAs that are part of DiffEqJump
-instead of the `Direct` method, see the list of SSAs (i.e. constant rate jump
+instead of the `Direct` method, see the list of SSAs (i.e., constant rate jump
 aggregators) in the
 [documentation](https://diffeq.sciml.ai/dev/types/jump_types/#Constant-Rate-Jump-Aggregators-1).
 
@@ -278,7 +278,7 @@ dX(t) = \left( c_1 X\left( t \right) - c_2 X\left( t \right) + c_3 \right) dt + 
 ```
 
 where each $W_i(t)$ denotes an independent Brownian Motion. We can solve the CLE
-model by creating an `SDEProblem` and solving it similar to what we did for ODEs
+model by creating an `SDEProblem` and solving it similarly to what we did for ODEs
 above:
 
 ```julia
@@ -294,12 +294,12 @@ plot(sol)
 
 We again have complete freedom to select any of the
 StochasticDiffEq.jl SDE solvers, see the
-[documentation](https://diffeq.sciml.ai/dev/solvers/sde_solve/). 
+[documentation](https://diffeq.sciml.ai/dev/solvers/sde_solve/).
 
 ---
 ## Notes
-1. For each of the preceding models we converted the `ReactionSystem` to, i.e.
-   ODEs, jumps or SDEs, we had two paths for conversion:
+1. For each of the preceding models we converted the `ReactionSystem` to, i.e.,
+   ODEs, jumps, or SDEs, we had two paths for conversion:
 
     a. Convert to the corresponding ModelingToolkit system and then use it in
        creating the corresponding problem.

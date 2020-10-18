@@ -8,23 +8,23 @@ Catalyst provides the [`@reaction_network`](@ref) macro for generating a
 complete network, stored as a [`ModelingToolkit.ReactionSystem`](@ref), which in
 turn is composed of [`ModelingToolkit.Reaction`](@ref)s. `ReactionSystem`s can
 be converted to other `ModelingToolkit.AbstractSystem`s, including a
-`ModelingToolkit.ODESystem`, `ModelingToolkit.SDESystem` or
-`ModelingToolkit.JumpSystem`. 
+`ModelingToolkit.ODESystem`, `ModelingToolkit.SDESystem`, or
+`ModelingToolkit.JumpSystem`.
 
 An empty network can be generated using [`@reaction_network`](@ref) with no arguments or
 the [`make_empty_network`](@ref) function. These can then be extended
 programmatically using [`addspecies!`](@ref), [`addparam!`](@ref), and
-[`addreaction!`](@ref). 
+[`addreaction!`](@ref).
 
 It is important to note for [`@reaction_network`](@ref) that species which are
 used *within the macro* as part of a rate expression, but not as a substrate or
-product of some reaction, may lead to undefined behavior. i.e. avoid
+product of some reaction, may lead to undefined behavior, i.e., avoid
 ```julia
 rn = @reaction_network begin
     k*X, Y --> W
 end k
 ```
-as here `X` is never defined as either a species or parameter. 
+as here `X` is never defined as either a species or parameter.
 
 ```@docs
 @reaction_network
@@ -38,9 +38,9 @@ ModelingToolkit.ReactionSystem
 species
 speciesmap
 params
-paramsmap 
+paramsmap
 reactions
-numspecies 
+numspecies
 numparams
 numreactions
 ```
