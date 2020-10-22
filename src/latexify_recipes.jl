@@ -63,7 +63,7 @@ function chemical_arrows(rn::ModelingToolkit.ReactionSystem;
         str *= "\\ce{ "
 
         ### Expand functions to maths expressions
-        rate = r.rate isa Operation ? Expr(subber(r.rate)) : r.rate
+        rate = r.rate isa Symbolic ? Expr(subber(r.rate)) : r.rate
         expand && (rate = recursive_clean!(rate))
         expand && (rate = recursive_clean!(rate))
 
@@ -78,7 +78,7 @@ function chemical_arrows(rn::ModelingToolkit.ReactionSystem;
         poststr = mathjax ? "]" : "\$]"
         if i + 1 <= length(rxs) && issetequal(r.products,rxs[i+1].substrates) && issetequal(r.substrates,rxs[i+1].products)
             ### Bi-directional arrows
-            rate_backwards = rxs[i+1].rate isa Operation ? Expr(subber(rxs[i+1].rate)) : rxs[i+1].rate
+            rate_backwards = rxs[i+1].rate isa Symbolic ? Expr(subber(rxs[i+1].rate)) : rxs[i+1].rate
             expand && (rate_backwards = recursive_clean!(rate_backwards))
             expand && (rate_backwards = recursive_clean!(rate_backwards))
             str *= " &<=>"

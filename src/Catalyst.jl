@@ -1,6 +1,7 @@
 module Catalyst
 
 using Reexport, ModelingToolkit
+using ModelingToolkit: Symbolic
 @reexport using ModelingToolkit
 import MacroTools
 import Base: (==), merge!, merge
