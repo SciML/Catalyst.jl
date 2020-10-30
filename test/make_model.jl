@@ -274,9 +274,9 @@ for (i,networks) in enumerate(identical_networks_3)
     for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
         u0 = factor*rand(length(networks[1].states))
         t = rand()
-        @test all(abs.(f1(u0,parameter_sets[i],t) .- f2(u0,[],t)) .< 100*eps())
-        @test all(abs.(f1.jac(u0,parameter_sets[i],t) .- f2.jac(u0,[],t)) .< 100*eps())
-        @test all(abs.(g1(u0,parameter_sets[i],t) .- g2(u0,[],t)) .< 100*eps())
+        @test f1(u0,parameter_sets[i],t) ≈ f2(u0,[],t)
+        @test f1.jac(u0,parameter_sets[i],t) ≈ f2.jac(u0,[],t)
+        @test g1(u0,parameter_sets[i],t) ≈ g2(u0,[],t)
     end
 end
 
@@ -317,8 +317,8 @@ push!(identical_networks_4, reaction_networks_weird[7] => rs_3)
 
 for networks in identical_networks_4
     @test networks[1].iv == networks[2].iv
-    @test alleq(networks[1], networks[2])
-    @test networks[1].ps == networks[2].ps
+    @test alleq(networks[1].states, networks[2].states)
+    @test alleq(networks[1].ps, networks[2].ps)
     @test networks[1].systems == networks[2].systems
     @test length(networks[1].eqs) == length(networks[2].eqs)
     for (e1,e2) in zip(networks[1].eqs,networks[2].eqs)

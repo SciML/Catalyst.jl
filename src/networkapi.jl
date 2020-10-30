@@ -116,12 +116,12 @@ Notes:
 - Does not check for dependents within any subsystems.
 """
 function dependents(rx, network)
-    if rx.rate isa Num
+    if rx.rate isa Number
+        return rx.substrates
+    else
         rvars = ModelingToolkit.get_variables(rx.rate, species(network))
         return union!(rvars, rx.substrates)
     end
-
-    rx.substrates
 end
 
 """
@@ -147,9 +147,8 @@ Notes:
 """
 function (==)(rn1::Reaction, rn2::Reaction)
     isequal(rn1.rate, rn2.rate) || return false
-    opit = sv -> (s.op for s in sv)
-    issetequal(zip(opit(rn1.substrates),rn1.substoich), zip(opit(rn2.substrates),rn2.substoich)) || return false
-    issetequal(zip(opit(rn1.products),rn1.prodstoich), zip(opit(rn2.products),rn2.prodstoich)) || return false
+    issetequal(zip(rn1.substrates,rn1.substoich), zip(rn2.substrates,rn2.substoich)) || return false
+    issetequal(zip(rn1.products,rn1.prodstoich), zip(rn2.products,rn2.prodstoich)) || return false
     issetequal(rn1.netstoich, rn2.netstoich)
 end
 
@@ -187,16 +186,16 @@ end
 ######################## functions to extend a network ####################
 
 """
-    make_empty_network(; iv=Variable(:t))
+    make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t))
 
 Construct an empty [`ReactionSystem`](@ref). `iv` is the independent variable, usually time.
 """
-function make_empty_network(; iv=Variable(:t))
+function make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t))
     ReactionSystem(Reaction[], iv, Num[], Num[], Sym[], Equation[], gensym(:ReactionSystem), ReactionSystem[])
 end
 
 """
-    addspecies!(network::ReactionSystem, s::Variable; disablechecks=false)
+    addspecies!(network::ReactionSystem, s::Symbolic; disablechecks=false)
 
 Given a [`ReactionSystem`](@ref), add the species corresponding to the variable
 `s` to the network (if it is not already defined). Returns the integer id of the
@@ -208,7 +207,7 @@ Notes:
   *Do not disable checks* unless you are sure the passed in variable is a new
   variable, as this will potentially leave the system in an undefined state.
 """
-function addspecies!(network::ReactionSystem, s::Variable; disablechecks=false)
+function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks=false)
 
     # we don't check subsystems since we will add it to the top-level system...
     curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), network.states)
@@ -219,6 +218,7 @@ function addspecies!(network::ReactionSystem, s::Variable; disablechecks=false)
         return curidx
     end
 end
+
 
 """
     addspecies!(network::ReactionSystem, s::Num; disablechecks=false)
@@ -232,17 +232,12 @@ integer id of the species within the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
   variable, as this will potentially leave the system in an undefined state.
 """
-function addspecies!(network::ReactionSystem, s::Term; disablechecks=false)
-    !(s.op isa Sym) && error("If the passed in species is an Num, it must correspond to an underlying Variable.")
-    addspecies!(network, value(s); disablechecks=disablechecks)
-end
-
 function addspecies!(network::ReactionSystem, s::Num; disablechecks=false)
     addspecies!(network, value(s), disablechecks=disablechecks)
 end
 
 """
-    addparam!(network::ReactionSystem, p::Variable; disablechecks=false)
+    addparam!(network::ReactionSystem, p::Symbolic; disablechecks=false)
 
 Given a [`ReactionSystem`](@ref), add the parameter corresponding to the
 variable `p` to the network (if it is not already defined). Returns the integer
@@ -255,6 +250,9 @@ id of the parameter within the system.
 """
 function addparam!(network::ReactionSystem, p::Symbolic; disablechecks=false)
     # we don't check subsystems since we will add it to the top-level system...
+    if p isa Term && !(p.op isa Sym)
+        error("If the passed in parameter is an expression, it must correspond to an underlying Variable.")
+    end
     curidx = disablechecks ? nothing : findfirst(S -> isequal(S, p), network.ps)
     if curidx === nothing
         push!(network.ps, p)
@@ -277,7 +275,6 @@ integer id of the parameter within the system.
   variable, as this will potentially leave the system in an undefined state.
 """
 function addparam!(network::ReactionSystem, p::Num; disablechecks=false)
-    !(p.op isa Sym) && error("If the passed in parameter is an expression, it must correspond to an underlying Variable.")
     addparam!(network, value(p); disablechecks=disablechecks)
 end
 
