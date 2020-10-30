@@ -83,7 +83,15 @@ end
 #Returns a empty network (with, or without, parameters declared)
 macro reaction_network(parameters...)
     !isempty(intersect(forbidden_symbols,parameters)) && error("The following symbol(s) are used as reactants or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,reactants,parameters))...))*"this is not permited.")
-    return Expr(:block,:(@parameters $((:t,parameters...)...)), :(ReactionSystem(Reaction[], t, Operation[], [$(parameters...)] , Variable[], Equation[], gensym(:ReactionSystem), ReactionSystem[])))
+    return Expr(:block,:(@parameters $((:t,parameters...)...)),
+                :(ReactionSystem(Reaction[],
+                                 t,
+                                 [],
+                                 [$(parameters...)],
+                                 [],
+                                 Equation[],
+                                 gensym(:ReactionSystem),
+                                 ReactionSystem[])))
 end
 
 """
@@ -180,8 +188,8 @@ end
 #Takes a reaction line and creates reactions from it and pushes those to the reaction array. Used to create multiple reactions from, for instance, 1.0, (X,Y) --> 0.
 function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, only_use_rate::Bool)
     lengs = [tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate)]
-    (count(lengs.==1) + count(lengs.==maximum(lengs)) < 3) && (throw("malformed reaction"))
     for i = 1:maximum(lengs)
+        (count(lengs.==1) + count(lengs.==maximum(lengs)) < 3) && (throw("malformed reaction"))
         push!(reactions, ReactionStruct(get_tup_arg(sub_line,i), get_tup_arg(prod_line,i), get_tup_arg(rate,i), only_use_rate))
     end
 end
