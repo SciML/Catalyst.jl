@@ -44,8 +44,8 @@ end
 """
     speciesmap(network)
 
-Given a [`ReactionSystem`](@ref), return a Dictionary mapping from species
-`Variable`s to species indices. (Allocates)
+Given a [`ReactionSystem`](@ref), return a Dictionary mapping from species to
+species indices. (Allocates)
 """
 function speciesmap(network)
     Dict(S => i for (i,S) in enumerate(species(network)))
@@ -54,8 +54,8 @@ end
 """
     paramsmap(network)
 
-Given a [`ReactionSystem`](@ref), return a Dictionary mapping from parameter
-`Variable`s to parameter indices. (Allocates)
+Given a [`ReactionSystem`](@ref), return a Dictionary mapping from parameters to
+parameter indices. (Allocates)
 """
 function paramsmap(network)
     Dict(p => i for (i,p) in enumerate(params(network)))
@@ -133,6 +133,39 @@ function dependants(network, rxidx)
     dependents(network, rxidx)
 end
 
+
+"""
+    substoichmat(rn; smap=speciesmap(rn))
+
+Returns the substrate stoichiometry matrix
+"""
+function substoichmat(rn; smap=speciesmap(rn))
+    smat = zeros(Int,(numreactions(rn),numspecies(rn)))
+    for (k,rx) in enumerate(reactions(rn))
+        stoich = rx.substoich
+        for (i,sub) in enumerate(rx.substrates)
+            smat[k,smap[sub]] = stoich[i]
+        end
+    end
+    smat
+end
+
+"""
+    prodstoichmat(rn; smap=speciesmap(rn))
+
+Returns the product stoichiometry matrix
+"""
+function prodstoichmat(rn; smap=speciesmap(rn))
+    pmat = zeros(Int,(numreactions(rn),numspecies(rn)))
+    for (k,rx) in enumerate(reactions(rn))
+        stoich = rx.prodstoich
+        for (i,prod) in enumerate(rx.products)
+            pmat[k,smap[prod]] = stoich[i]
+        end
+    end
+    pmat
+end
+
 ######################## reaction network operators #######################
 
 """
@@ -156,9 +189,9 @@ end
 """
     ==(rn1::ReactionSystem, rn2::ReactionSystem)
 
-Tests whether the underlying species `Variables`s, parameter `Variables`s
-and reactions are the same in the two [`ReactionSystem`](@ref)s. Ignores
-order network components were defined.
+Tests whether the underlying species, parameters and reactions are the same in
+the two [`ReactionSystem`](@ref)s. Ignores order network components were
+defined.
 
 Notes:
 - *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
@@ -188,7 +221,8 @@ end
 """
     make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t))
 
-Construct an empty [`ReactionSystem`](@ref). `iv` is the independent variable, usually time.
+Construct an empty [`ReactionSystem`](@ref). `iv` is the independent variable,
+usually time.
 """
 function make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t))
     ReactionSystem(Reaction[], iv, Num[], Num[], Sym[], Equation[], gensym(:ReactionSystem), ReactionSystem[])
@@ -301,18 +335,19 @@ Merge `network2` into `network1`.
 
 Notes:
 - Duplicate reactions between the two networks are not filtered out.
-- [`Reaction`](@ref)s are not deepcopied to minimize allocations, so both networks will share underlying data arrays.
-- Subsystems are not deepcopied between the two networks and will hence be shared.
+- [`Reaction`](@ref)s are not deepcopied to minimize allocations, so both
+  networks will share underlying data arrays.
+- Subsystems are not deepcopied between the two networks and will hence be
+  shared.
 - Returns `network1`.
+- Does not currently handle pins.
 """
 function merge!(network1::ReactionSystem, network2::ReactionSystem)
     isequal(network1.iv, network2.iv) || error("Reaction networks must have the same independent variable to be mergable.")
     union!(network1.states, network2.states)
     union!(network1.ps, network2.ps)
-
     append!(network1.eqs, network2.eqs)
     append!(network1.systems, network2.systems)
-
     network1
 end
 
@@ -323,9 +358,12 @@ Create a new network merging `network1` and `network2`.
 
 Notes:
 - Duplicate reactions between the two networks are not filtered out.
-- [`Reaction`](@ref)s are not deepcopied to minimize allocations, so the new network will share underlying data arrays.
-- Subsystems are not deepcopied between the two networks and will hence be shared.
+- [`Reaction`](@ref)s are not deepcopied to minimize allocations, so the new
+  network will share underlying data arrays.
+- Subsystems are not deepcopied between the two networks and will hence be
+  shared.
 - Returns the merged network.
+- Does not currently handle pins.
 """
 function merge(network1::ReactionSystem, network2::ReactionSystem)
     network = make_empty_network()

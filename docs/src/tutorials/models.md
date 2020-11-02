@@ -27,10 +27,10 @@ Here, the order of unknowns in `u0` and `p` matches the order that species and
 parameters first appear within the DSL. They can also be determined by examining
 the ordering within the [`species(rn)`](@ref) and [`params(rn)`](@ref) vectors,
 or accessed more explicitly through the [`speciesmap(rn)`](@ref) and
-[`paramsmap(rn)`](@ref) dictionaries, which map the ModelingToolkit `Variable`s
-corresponding to each species or parameter to their integer id. Note, if no
-parameters are given in the [`@reaction_network`](@ref), then `p` does not need
-to be provided.
+[`paramsmap(rn)`](@ref) dictionaries, which map the ModelingToolkit `Term`s
+and/or `Sym`s corresponding to each species or parameter to their integer id.
+Note, if no parameters are given in the [`@reaction_network`](@ref), then `p`
+does not need to be provided.
 
 We can then plot the solution using the solution plotting recipe:
 ```julia
@@ -103,3 +103,6 @@ For example, the ODE model of the reaction $2X + 3Y \to Z$ with rate constant $k
 \frac{dY}{dt} =  -3 k \frac{X^2}{2!} \frac{Y^3}{3!} = -k \frac{X^2 Y^3}{4} \\
 \frac{dZ}{dt} = k \frac{X^2}{2!} \frac{Y^3}{3!}.
 ```
+This implicit rescaling of rate constants can be disabled through explicit
+conversion of a [`ReactionSystem`](@ref) to another system via
+[`Base.convert`](@ref), and using the `combinatoric_ratelaws=false` kwarg.
