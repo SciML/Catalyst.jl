@@ -35,11 +35,11 @@ called `rn`). The generated `ReactionSystem` can be converted to a differential
 equation model via
 ```julia
 osys = convert(ODESystem, rn)
-oprob = ODEProblem(osys, Pair.(species(rn),u0), t, Pair.(params(rn),p))
+oprob = ODEProblem(osys, Pair.(species(rn),u0), tspan, Pair.(params(rn),p))
 ```
 or more directly via
 ```julia
-oprob = ODEProblem(rn, u0, t, p)
+oprob = ODEProblem(rn, u0, tspan, p)
 ```
 For more detailed examples, see the [Basic Chemical Reaction Network Examples](@ref).
 The generated differential equations use the law of mass action. For the above

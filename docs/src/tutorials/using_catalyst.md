@@ -126,47 +126,47 @@ orderings using the `speciesmap` and `paramsmap` functions:
 speciesmap(repressilator)
 ```
 ```julia
-Dict{Variable{Number},Int64} with 6 entries:
-  P₂ => 5
-  m₁ => 1
-  m₂ => 2
-  P₁ => 4
-  P₃ => 6
-  m₃ => 3
+Dict{Term{Real},Int64} with 6 entries:
+  P₃(t) => 6
+  m₃(t) => 3
+  P₂(t) => 5
+  P₁(t) => 4
+  m₁(t) => 1
+  m₂(t) => 2
 ```
 
 ```julia
 paramsmap(repressilator)
 ```
 ```julia
-Dict{Variable{ModelingToolkit.Parameter{Number}},Int64} with 7 entries:
-  γ => 5
+Dict{Sym{ModelingToolkit.Parameter{Real}},Int64} with 7 entries:
+  μ => 7
   β => 6
   α => 1
   δ => 4
-  μ => 7
-  n => 3
   K => 2
+  n => 3
+  γ => 5
+
 ```
 which are consistent with the API functions:
 ```julia
 species(repressilator)
 ```
 ```julia
-6-element Array{Variable,1}:
- m₁
- m₂
- m₃
- P₁
- P₂
- P₃
+6-element Array{Term{Real},1}:
+ m₁(t)
+ m₂(t)
+ m₃(t)
+ P₁(t)
+ P₂(t)
+ P₃(t)
 ```
 ```julia
 params(repressilator)
 ```
 ```julia
-params(repressilator)
-7-element Array{Variable,1}:
+7-element Array{Sym{ModelingToolkit.Parameter{Real}},1}:
  α
  K
  n
@@ -268,7 +268,7 @@ bdp = @reaction_network begin
 end c₁ c₂ c₃
 p = (1.0,2.0,50.)
 u₀ = [5.]
-tspan = (0.,4.);
+tspan = (0.,4.)
 ```
 
 The corresponding Chemical Langevin Equation SDE is then

@@ -63,7 +63,6 @@ Assuming [Graphviz](https://graphviz.org/) and
 [Catlab.jl](https://github.com/AlgebraicJulia/Catlab.jl/) are installed, the
 network can be visualized using the [`Graph`](@ref) command
 ```julia
-using Catlab.Graphics.Graphviz
 Graph(rn)
 ```
 which in Jupyter notebooks will give the figure
