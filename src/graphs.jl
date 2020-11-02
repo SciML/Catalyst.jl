@@ -7,8 +7,8 @@ edge_attrs  = Attributes(:splines=>"splines")
 
 function edgify(δ, i, reverse::Bool)
     attr = Attributes()
-    return map(δ) do p
-        val = String(p[1].op.name)
+    return map(δ) do p        
+        val = String(p[1].f.name)
       weight = "$(p[2])"
       attr = Attributes(:label=>weight, :labelfontsize=>"6")
       return Edge(reverse ? ["rx_$i", "$val"] :
@@ -20,9 +20,9 @@ end
 function edgifyrates(rxs, specs)
     es = Edge[]
     for (i,rx) in enumerate(rxs)
-        deps = rx.rate isa Operation ? get_variables(rx.rate, specs) : Operation[]
+        deps = rx.rate isa Number ? Any[] : get_variables(rx.rate, specs) 
         for dep in deps
-            val = String(dep.op.name)
+            val = String(dep.f.name)
             attr = Attributes(:color => "#d91111", :style => "dashed")
             e = Edge(["$val", "rx_$i"], attr)
             push!(es, e)
@@ -51,7 +51,7 @@ Notes:
 function Graph(rn::ReactionSystem)
     rxs   = reactions(rn)
     specs = species(rn)
-    statenodes = [Node(string(s.name), Attributes(:shape=>"circle", :color=>"#6C9AC3")) for s in specs]
+    statenodes = [Node(string(s.f.name), Attributes(:shape=>"circle", :color=>"#6C9AC3")) for s in specs]
     transnodes = [Node(string("rx_$i"), Attributes(:shape=>"point", :color=>"#E28F41", :width=>".1")) for (i,r) in enumerate(rxs)]
 
     stmts = vcat(statenodes, transnodes)
