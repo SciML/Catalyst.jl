@@ -63,12 +63,13 @@ function chemical_arrows(rn::ModelingToolkit.ReactionSystem;
         str *= "\\ce{ "
 
         ### Expand functions to maths expressions
-        rate = r.rate isa Symbolic ? Expr(subber(r.rate)) : r.rate
+        rate =  ModelingToolkit.prettify_expr(toexpr(r.rate))
+        #rate = r.rate isa Symbolic ? Expr(subber(r.rate)) : r.rate
         expand && (rate = recursive_clean!(rate))
         expand && (rate = recursive_clean!(rate))
 
         ### Generate formatted string of substrates
-        substrates = [latexraw("$(substrate[2]== 1 ? "" : "$(substrate[2]) * ") $(substrate[1].op.name)"; kwargs...) for substrate in zip(r.substrates,r.substoich)]
+        substrates = [latexraw("$(substrate[2]== 1 ? "" : "$(substrate[2]) * ") $(substrate[1].f.name)"; kwargs...) for substrate in zip(r.substrates,r.substoich)]
         isempty(substrates) && (substrates = ["\\varnothing"])
 
         str *= join(substrates, " + ")
@@ -78,7 +79,8 @@ function chemical_arrows(rn::ModelingToolkit.ReactionSystem;
         poststr = mathjax ? "]" : "\$]"
         if i + 1 <= length(rxs) && issetequal(r.products,rxs[i+1].substrates) && issetequal(r.substrates,rxs[i+1].products)
             ### Bi-directional arrows
-            rate_backwards = rxs[i+1].rate isa Symbolic ? Expr(subber(rxs[i+1].rate)) : rxs[i+1].rate
+            rate_backwards = ModelingToolkit.prettify_expr(toexpr(rxs[i+1].rate))
+            #rate_backwards = rxs[i+1].rate isa Symbolic ? Expr(subber(rxs[i+1].rate)) : rxs[i+1].rate
             expand && (rate_backwards = recursive_clean!(rate_backwards))
             expand && (rate_backwards = recursive_clean!(rate_backwards))
             str *= " &<=>"
@@ -92,7 +94,7 @@ function chemical_arrows(rn::ModelingToolkit.ReactionSystem;
         end
 
         ### Generate formatted string of products
-        products = [latexraw("$(product[2]== 1 ? "" : "$(product[2]) * ") $(product[1].op.name)"; kwargs...) for product in zip(r.products,r.prodstoich) ]
+        products = [latexraw("$(product[2]== 1 ? "" : "$(product[2]) * ") $(product[1].f.name)"; kwargs...) for product in zip(r.products,r.prodstoich) ]
         isempty(products) && (products = ["\\varnothing"])
         str *= join(products, " + ")
         str *= "}$eol"
