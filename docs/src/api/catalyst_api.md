@@ -50,6 +50,8 @@ numreactions
 ModelingToolkit.ismassaction
 dependents
 dependants
+substoichmat
+prodstoichmat
 ```
 
 ## Functions to extend a Network

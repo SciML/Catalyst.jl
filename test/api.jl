@@ -66,3 +66,16 @@ addparam!(rs, Sym{Parameter{Real}}(:k1))
 @test numparams(rs) == 2
 addparam!(rs, Variable{Parameter{Real}}(:k1), disablechecks=true)
 @test numparams(rs) == 3
+
+
+rnmat = @reaction_network begin
+       α, S + 2I --> 2I
+       β, 3I --> 2R + S
+   end α β
+
+smat = [1 2 0;
+        0 3 0]
+pmat = [0 2 0;
+        1 0 2]
+@test all(smat .== substoichmat(rnmat))
+@test all(pmat .== prodstoichmat(rnmat))

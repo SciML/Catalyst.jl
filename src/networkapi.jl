@@ -133,6 +133,39 @@ function dependants(network, rxidx)
     dependents(network, rxidx)
 end
 
+
+"""
+    substoichmat(rn; smap=speciesmap(rn))
+
+Returns the substrate stoichiometry matrix
+"""
+function substoichmat(rn; smap=speciesmap(rn))
+    smat = zeros(Int,(numreactions(rn),numspecies(rn)))
+    for (k,rx) in enumerate(reactions(rn))
+        stoich = rx.substoich
+        for (i,sub) in enumerate(rx.substrates)
+            smat[k,smap[sub]] = stoich[i]
+        end
+    end
+    smat
+end
+
+"""
+    prodstoichmat(rn; smap=speciesmap(rn))
+
+Returns the product stoichiometry matrix
+"""
+function prodstoichmat(rn; smap=speciesmap(rn))
+    pmat = zeros(Int,(numreactions(rn),numspecies(rn)))
+    for (k,rx) in enumerate(reactions(rn))
+        stoich = rx.prodstoich
+        for (i,prod) in enumerate(rx.products)
+            pmat[k,smap[prod]] = stoich[i]
+        end
+    end
+    pmat
+end
+
 ######################## reaction network operators #######################
 
 """
