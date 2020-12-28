@@ -4,7 +4,7 @@ using DiffEqBase, Catalyst, Random, Test
 
 ### Tests various cutom made functions ###
 new_hill(x, v, k, n) = v*x^n/(k^n+x^n)
-new_poly(x,p1,p2) = p1*x^2+p2
+new_poly(x,p1,p2) = .5*p1*x^2
 new_exp(x,p) = exp(-p*x)
 
 custom_function_network_1 = @reaction_network begin
@@ -19,7 +19,7 @@ end v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4
 custom_function_network_2 = @reaction_network begin
     new_hill(X,v1,K1,2), X + Y --> Z1
     v2*X/(X+K2), X + Y --> Z2
-    new_poly(X,p1,p2), X + Y --> Z3
+    2*new_poly(X,p1,p2)+p2, X + Y --> Z3
     new_exp(Y,p3), X + Y --> Z4
     v3*(K3^2)/(K3^2+X^2), X + Y --> Z5
     v4*K4/(X+K4), X + Y --> Z6
