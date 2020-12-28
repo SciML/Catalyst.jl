@@ -4,9 +4,15 @@ using DiffEqBase, Catalyst, Random, Test
 
 ### Tests various cutom made functions ###
 
-@reaction_func new_hill(x, v, k, n) = v*x^n/(k^n+x^n)
-@reaction_func new_poly(x,p1,p2) = p1*x^2+p2
-@reaction_func new_exp(x,p) = exp(-p*x)
+# @reaction_func new_hill(x, v, k, n) = v*x^n/(k^n+x^n)
+# @reaction_func new_poly(x,p1,p2) = p1*x^2+p2
+# @reaction_func new_exp(x,p) = exp(-p*x)
+new_hill(x, v, k, n) = v*x^n/(k^n+x^n)
+@register new_hill(x,v,k,n)
+new_poly(x,p1,p2) = p1*x^2+p2
+@register new_poly(x,p1,p2)
+new_exp(x,p) = exp(-p*x)
+@register new_exp(x,p)
 
 custom_function_network_1 = @reaction_network begin
     hill(X,v1,K1,2), X + Y --> Z1
@@ -31,9 +37,9 @@ f2 = ODEFunction(convert(ODESystem,custom_function_network_2),jac=true)
 g1 = SDEFunction(convert(SDESystem,custom_function_network_1))
 g2 = SDEFunction(convert(SDESystem,custom_function_network_2))
 for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-    u0 = factor*rand(length(custom_function_network_1.states))
-    p = factor*rand(length(custom_function_network_2.ps))
-    t = rand()
+    local u0 = factor*rand(length(custom_function_network_1.states))
+    local p = factor*rand(length(custom_function_network_2.ps))
+    local t = rand()
     @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 100*eps())
     @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 100*eps())
     @test all(abs.(g1(u0,p,t) .- g2(u0,p,t)) .< 100*eps())
