@@ -34,7 +34,8 @@ r = @reaction_network begin
     (d1,d2,d3,d4,d5), (X1,X2,X3,X4,X5)  ⟶ ∅
 end v1 K1 n1 v2 K2 n2 v3 K3 n3 v4 K4 n4 v5 K5 n5 k1 k2 k3 k4 k5 k6 d1 d2 d3 d4 d5
 
-@test latexify(r) == 
+# Latexify.@generate_test latexify(r)
+@test latexify(r) == replace(
 raw"\begin{align}
 \require{mhchem}
 \ce{ \varnothing &->[\frac{v1 K1^{n1}}{K1^{n1} + \left( \mathrm{X2}\left( t \right) \right)^{n1}} \frac{v1 \left( \mathrm{X4}\left( t \right) \right)^{n1}}{K1^{n1} + \left( \mathrm{X4}\left( t \right) \right)^{n1}}] X1}\\
@@ -51,9 +52,11 @@ raw"\begin{align}
 \ce{ X4 &->[d4] \varnothing}\\
 \ce{ X5 &->[d5] \varnothing}
 \end{align}
-"
+", "\r\n"=>"\n")
 
-@test latexify(r, mathjax = false) == 
+
+# Latexify.@generate_test latexify(r, mathjax=false)
+@test latexify(r, mathjax = false) == replace(
 raw"\begin{align}
 \ce{ \varnothing &->[$\frac{v1 K1^{n1}}{K1^{n1} + \left( \mathrm{X2}\left( t \right) \right)^{n1}} \frac{v1 \left( \mathrm{X4}\left( t \right) \right)^{n1}}{K1^{n1} + \left( \mathrm{X4}\left( t \right) \right)^{n1}}$] X1}\\
 \ce{ \varnothing &->[$\frac{v2 \left( \mathrm{X5}\left( t \right) \right)^{n2}}{K2^{n2} + \left( \mathrm{X5}\left( t \right) \right)^{n2}}$] X2}\\
@@ -69,7 +72,7 @@ raw"\begin{align}
 \ce{ X4 &->[$d4$] \varnothing}\\
 \ce{ X5 &->[$d5$] \varnothing}
 \end{align}
-"
+", "\r\n"=>"\n")
 
 
 r = @reaction_network begin
@@ -78,20 +81,21 @@ r = @reaction_network begin
     (r_a, r_b), 3B ↔ A
 end p_a k n d_a p_b d_b r_a r_b
 
-@test latexify(r) == 
+# Latexify.@generate_test latexify(r)
+@test latexify(r) == replace(
 raw"\begin{align}
 \require{mhchem}
-\ce{ \varnothing &<=>[\frac{p_{a} \left( \mathrm{B}\left( t \right) \right)^{n}}{k^{n} + \left( \mathrm{B}\left( t \right) \right)^{n}}][d_{a}] A}\\
+\ce{ \varnothing &<=>[\frac{p_{a} \left( B\left( t \right) \right)^{n}}{k^{n} + \left( B\left( t \right) \right)^{n}}][d_{a}] A}\\
 \ce{ \varnothing &<=>[p_{b}][d_{b}] B}\\
 \ce{ 3 B &<=>[r_{a}][r_{b}] A}
 \end{align}
-"
+", "\r\n"=>"\n")
 
-@test latexify(r, mathjax = false) == 
+# Latexify.@generate_test latexify(r, mathjax=false)
+@test latexify(r, mathjax = false) == replace(
 raw"\begin{align}
-\ce{ \varnothing &<=>[$\frac{p_{a} \left( \mathrm{B}\left( t \right) \right)^{n}}{k^{n} + \left( \mathrm{B}\left( t \right) \right)^{n}}$][$d_{a}$] A}\\
+\ce{ \varnothing &<=>[$\frac{p_{a} \left( B\left( t \right) \right)^{n}}{k^{n} + \left( B\left( t \right) \right)^{n}}$][$d_{a}$] A}\\
 \ce{ \varnothing &<=>[$p_{b}$][$d_{b}$] B}\\
 \ce{ 3 B &<=>[$r_{a}$][$r_{b}$] A}
 \end{align}
-"
-
+", "\r\n"=>"\n")
