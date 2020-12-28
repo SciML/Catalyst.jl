@@ -4,11 +4,8 @@ using DiffEqBase, Catalyst, Random, Test
 
 ### Tests various cutom made functions ###
 new_hill(x, v, k, n) = v*x^n/(k^n+x^n)
-@register new_hill(x,v,k,n)
 new_poly(x,p1,p2) = p1*x^2+p2
-@register new_poly(x,p1,p2)
 new_exp(x,p) = exp(-p*x)
-@register new_exp(x,p)
 
 custom_function_network_1 = @reaction_network begin
     hill(X,v1,K1,2), X + Y --> Z1
