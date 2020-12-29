@@ -14,8 +14,6 @@ include("reaction_network.jl")
 
 # reaction network macro
 export @reaction_network, @add_reactions
-export @reaction_func
-
 
 # functions to query network properties
 include("networkapi.jl")
