@@ -12,7 +12,7 @@
 
 **Note for pre-version 6.2 users**: *Version 6.2 is a breaking release, with
 Catalyst no longer needing `@reaction_func` to support user-defined functions. 
-Please see the latest docs for details.*
+Please see [the latest docs for details](https://catalyst.sciml.ai/dev/tutorials/advanced/#User-defined-functions-in-reaction-rates).*
 
 Catalyst.jl is a domain-specific language (DSL) for high-performance simulation
 and modeling of chemical reaction networks. Catalyst utilizes
