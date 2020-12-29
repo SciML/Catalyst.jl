@@ -44,7 +44,7 @@ Example systems:
 
     # may be necessary to 
     # @register my_hill_repression(x, v, k, n)
-    # see https://mtk.sciml.ai/stable/IR/#Function-Registration-1
+    # see https://mtk.sciml.ai/stable/tutorials/symbolic_functions/#Registering-Functions-1
 
     r = @reaction_network MyReactionType begin
         my_hill_repression(x, v_x, k_x, n_x), 0 --> x
