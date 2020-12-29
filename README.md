@@ -10,10 +10,9 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://catalyst.sciml.ai/dev/)
 [![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://catalyst.sciml.ai/dev/api/catalyst_api/)
 
-**Note for pre-version 6 users**: *Version 6 is a breaking release, with
-Catalyst now using ModelingToolkit version 4.0+ which changes the underlying
-types for variables and parameters. Please see
-[ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl) for details.*
+**Note for pre-version 6.2 users**: *Version 6.2 is a breaking release, with
+Catalyst no longer needing `@reaction_func` to support user-defined functions. 
+Please see the latest docs for details.*
 
 Catalyst.jl is a domain-specific language (DSL) for high-performance simulation
 and modeling of chemical reaction networks. Catalyst utilizes
