@@ -233,11 +233,12 @@ function recursive_expand_functions!(expr::ExprValues)
     (typeof(expr)!=Expr) && (return expr)
     foreach(i -> expr.args[i] = recursive_expand_functions!(expr.args[i]), 1:length(expr.args))
     if expr.head == :call
-        haskey(funcdict, expr.args[1]) && return funcdict[expr.args[1]](expr.args[2:end])
         in(expr.args[1],hill_name) && return hill(expr)
         in(expr.args[1],hillR_name) && return hillR(expr)
         in(expr.args[1],mm_name) && return mm(expr)
         in(expr.args[1],mmR_name) && return mmR(expr)
+
+        !isdefined(Catalyst,expr.args[1]) && (expr.args[1] = esc(expr.args[1]))
     end
     return expr
 end
@@ -254,12 +255,3 @@ mm(expr::Expr) = :($(expr.args[3])*$(expr.args[2])/($(expr.args[4])+$(expr.args[
 mmR_name = Set{Symbol}([:mm_repressor, :MMR, :mmr, :mmR, :MmR, :mMr, :MR, :mr, :Mr, :mR])
 mmR(expr::Expr) = :($(expr.args[3])*$(expr.args[4])/($(expr.args[4])+$(expr.args[2])))
 
-#Allows the user to define new functions and enables the @reaction_network macro to see them.
-funcdict = Dict{Symbol, Function}()     # Stores user-defined functions.
-macro reaction_func(expr)
-    name = expr.args[1].args[1]
-    args = expr.args[1].args[2:end]
-    maths = expr.args[2].args[2]
-
-    funcdict[name]  = x -> replace_names(maths, args, x)
-end

@@ -27,7 +27,6 @@ function recursive_clean!(expr)
     end
     if expr.head == :call
         (expr.args[1] == :/) && (expr.args[3] == 1) && (return expr.args[2])
-        haskey(funcdict, expr.args[1]) && return funcdict[expr.args[1]](expr.args[2:end])
         in(expr.args[1],hill_name) && return hill(expr)
         in(expr.args[1],hillR_name) && return hillR(expr)
         in(expr.args[1],mm_name) && return mm(expr)

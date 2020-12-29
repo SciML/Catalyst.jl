@@ -11,10 +11,10 @@ function get_tup_arg(ex::ExprValues,i::Int)
 end
 
 #This will be called whenever a function stored in funcdict is called.
-function replace_names(expr, old_names, new_names)
-    mapping = Dict(zip(old_names, new_names))
-    MacroTools.postwalk( x -> x in old_names ? x= mapping[x] : x, expr)
-end
+# function replace_names(expr, old_names, new_names)
+#     mapping = Dict(zip(old_names, new_names))
+#     MacroTools.postwalk( x -> x in old_names ? x= mapping[x] : x, expr)
+# end
 
 # below are currently not used
 
