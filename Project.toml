@@ -1,6 +1,6 @@
 name = "Catalyst"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
-version = "6.2.0"
+version = "6.2.1"
 
 [deps]
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
@@ -13,7 +13,7 @@ Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Catlab = "0.7.3, 0.8, 0.9, 0.10"
 Latexify = "0.13.5, 0.14"
 MacroTools = "0.5.5"
-ModelingToolkit = "4.0.1"
+ModelingToolkit = "4.4.0"
 Reexport = "0.2, 1.0"
 julia = "1.3"
 
