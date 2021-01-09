@@ -1,15 +1,15 @@
 ### Fetch required packages and reaction networks ###
 using DiffEqBase, Catalyst, Random, Test, UnPack
-using ModelingToolkit: operation, Sym, Term
+using ModelingToolkit: operation, Sym, istree
 include("test_networks.jl")
 
 
 ### Debugg functions ###
 
-function opname(x::Term)
-    nameof(operation(x))
+function opname(x)
+    istree(x) && return nameof(operation(x))
+    nameof(s)
 end
-opname(s::Sym) = nameof(s)
 
 alleq(xs,ys) = all(isequal(x,y) for (x, y) in zip(xs, ys))
 

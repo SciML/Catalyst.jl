@@ -284,7 +284,7 @@ id of the parameter within the system.
 """
 function addparam!(network::ReactionSystem, p::Symbolic; disablechecks=false)
     # we don't check subsystems since we will add it to the top-level system...
-    if p isa Term && !(p.op isa Sym)
+    if istree(p) && !(operation(p) isa Sym)
         error("If the passed in parameter is an expression, it must correspond to an underlying Variable.")
     end
     curidx = disablechecks ? nothing : findfirst(S -> isequal(S, p), network.ps)
