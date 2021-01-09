@@ -6,10 +6,7 @@ include("test_networks.jl")
 
 ### Debugg functions ###
 
-function opname(x)
-    istree(x) && return nameof(operation(x))
-    nameof(s)
-end
+opname(x) = istree(x) ? nameof(operation(x)) : nameof(x)
 
 alleq(xs,ys) = all(isequal(x,y) for (x, y) in zip(xs, ys))
 
