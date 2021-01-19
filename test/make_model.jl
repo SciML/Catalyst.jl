@@ -175,9 +175,9 @@ for networks in identical_networks_1
         u0 = factor*rand(length(networks[1].states))
         p = factor*rand(length(networks[1].ps))
         t = rand()
-        @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 100*eps())
-        @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 100*eps())
-        @test all(abs.(g1(u0,p,t) .- g2(u0,p,t)) .< 100*eps())
+        @test all(abs.(f1(u0,p,t) .≈ f2(u0,p,t)))
+        @test all(abs.(f1.jac(u0,p,t) .≈ f2.jac(u0,p,t)))
+        @test all(abs.(g1(u0,p,t) .≈ g2(u0,p,t)))
     end
 end
 
@@ -230,9 +230,9 @@ for networks in identical_networks_2
         u0 = factor*rand(length(networks[1].states))
         p = factor*rand(length(networks[1].ps))
         t = rand()
-        @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 100*eps())
-        @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 100*eps())
-        @test all(abs.(g1(u0,p,t) .- g2(u0,p,t)) .< 100*eps())
+        @test all(f1(u0,p,t) .≈ f2(u0,p,t))
+        @test all(f1.jac(u0,p,t) .≈ f2.jac(u0,p,t))
+        @test all(g1(u0,p,t) .≈ g2(u0,p,t))
     end
 end
 
@@ -346,9 +346,9 @@ for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
     κ2 = factor*rand(); κ3 = factor*rand(); κ6 = factor*rand();
     τ = rand()
     p1 = [τ, κ2, κ3, τ, τ, κ6]; p2 = [κ2, κ3, κ6];
-    @test all(abs.(f1(u0,p1,τ) .- f2(u0,p2,τ)) .< 100*eps())
-    @test all(abs.(f1.jac(u0,p1,τ) .- f2.jac(u0,p2,τ)) .< 100*eps())
-    @test all(abs.(g1(u0,p1,τ) .- g2(u0,p2,τ)) .< 100*eps())
+    @test all(f1(u0,p1,τ) .≈ f2(u0,p2,τ))
+    @test all(f1.jac(u0,p1,τ) .≈ f2.jac(u0,p2,τ))
+    @test all(g1(u0,p1,τ) .≈ g2(u0,p2,τ))
 end
 
 
