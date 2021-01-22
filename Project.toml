@@ -1,6 +1,6 @@
 name = "Catalyst"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
-version = "6.3.1"
+version = "6.4.1"
 
 [deps]
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
