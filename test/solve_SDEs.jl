@@ -95,15 +95,14 @@ for (i,networks) in enumerate(identical_networks)
         (i==2) && (u0[1] += 1000.)
         (i==3) ? (p[2:2:6] .*= 1000.; u0 .+= 1000) : (p[1] += 500.)
         prob1 = SDEProblem(networks[1],u0,(0.,100.),p)
-        sol1 = solve(prob1,ImplicitEM(),saveat=0.01,maxiters=1e7)
         prob2 = SDEProblem(networks[2][1],networks[2][2],u0,(0.,100.),p,noise_rate_prototype=networks[2][3])
-        sol2 = solve(prob2,ImplicitEM(),saveat=0.01,maxiters=1e7)
-        for i = 1:length(u0)
-            vals1 = getindex.(sol1.u[1000:end],i);
-            vals2 = getindex.(sol1.u[1000:end],i);
-            @test 0.8 < mean(vals1)/mean(vals2) < 1.25
-            @test 0.8 < std(vals1)/std(vals2) < 1.25
-        end
+        du1 = similar(u0); du2 = similar(u0);
+        prob1.f.f(du1,u0,p,0.0); prob2.f.f(du2,u0,p,0.0)
+        @test all(isapprox.(du1,du2))
+        g1 = zeros(numspecies(networks[1]),numreactions(networks[1]))
+        g2 = copy(g1)
+        prob1.f.g(g1,u0,p,0.0); prob2.f.g(g2,u0,p,0.0)
+        @test all(isapprox.(g1,g2))
     end
 end
 
