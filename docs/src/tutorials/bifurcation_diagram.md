@@ -40,6 +40,7 @@ opts = ContinuationPar( dsmax = 0.05,        # Maximum arclength value of the ps
                         pMax = p_span[2],    # Maximum p-vale (if hit, the method stops).
                         detectBifurcation=3, # Value in {0,1,2,3} determening to what extent bofurcation points are detected (0 means nothing is done, 3 both them and there localisation are detected).
                         newtonOptions = NewtonPar(tol = 1e-9, verbose = false, maxIter = 15)) #Parameters to the newton solver (when finding fixed points) see BifurcationKit documentation.
+                        
 DO = DeflationOperator( 2.0,    # Algorithm parameter required when using deflated continuation, see BifurcationKit documentation.
                         dot,    # Algorithm parameter required when using deflated continuation, see BifurcationKit documentation.
                         1.,     # Algorithm parameter required when using deflated continuation, see BifurcationKit documentation.
@@ -48,7 +49,7 @@ DO = DeflationOperator( 2.0,    # Algorithm parameter required when using deflat
 ```
 With all this done, we can compute the bifurcations:
 ```julia
-params_input = setindex!(copy(params),p_span[1],p_idx)    # The input parameter values have to start at the first index of our parameter span.
+params_input = setindex!(copy(params),p_span[1],p_idx)                                # The input parameter values have to start at the first index of our parameter span.
 branches, = continuation(F, J, params_input, (@lens _[p_idx]) ,opts , DO,             # Gives our input.
     verbosity = 0, showplot=false,                                                    # We do not want to display, or plot, intermediary results.
     printSolution=(x, p) -> x[plot_var_idx],                                          # How we wish to print the output in the diagram. Here we simply want the value of the target varriable.
