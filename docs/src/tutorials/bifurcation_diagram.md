@@ -26,6 +26,10 @@ p_span = (0.1,20.)   # The parameter range for the bifurcation diagram.
 plot_var_idx = 1     # The index of the variable we plot in the bifurcation diagram.
 ```
 
+Now we need to fetch the required packages to create the bifurcation diagram.
+```julia
+using BifurcationKit, Plots, LinearAlgebra, Setfield
+```
 Next, we need to specify the input options for the pseudo-arclength continuation method which produces the diagram. We will use a [deflated continuation](https://rveltz.github.io/BifurcationKit.jl/dev/DeflatedContinuation/).
 ```julia
 opts = ContinuationPar( dsmax = 0.05,        # Maximum arclength value of the pseudo-arc length continuation method.
