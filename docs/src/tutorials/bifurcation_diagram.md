@@ -1,7 +1,7 @@
 # Bifurcation Diagrams
 Bifurcation diagrams can be produced from Catalyst generated models through the use of the [BifurcationKit.jl](https://github.com/rveltz/BifurcationKit.jl/) package. This tutorial gives a simple example of how to create such a bifurcation diagram.
 
-First we declare our model. For our example we will use a bistable switch, but which also contains a Hopf bifurcation.
+First, we declare our model. For our example we will use a bistable switch, but which also contains a Hopf bifurcation.
 ```julia
 using Catalyst
 rn = @reaction_network begin
@@ -15,15 +15,15 @@ odefun = ODEFunction(convert(ODESystem,rn),jac=true)
 F = (u,p) -> odefun(u,p,0)      
 J = (u,p) -> odefun.jac(u,p,0)
 ```
-We also need to specify the system parameters for which we wishes to plot the bifurcation diagram:
+We also need to specify the system parameters for which we wish to plot the bifurcation diagram:
 ```julia
 params = [1.,9.,0.001,0.01,2.,20.,3,0.05]
 ```
-Finally, we also need to set the input required to make the diagram. This is the index (in the parameter array) of the bifurcation parameter, the range over which we wishes to plot the bifurcation diagram, as well as for which varriable we wish to plot the steady state values in the diagram.
+Finally, we also need to set the input required to make the diagram. This is the index (in the parameter array) of the bifurcation parameter, the range over which we wish to plot the bifurcation diagram, as well as for which variable we wish to plot the steady state values in the diagram.
 ```julia
 p_idx = 1            # The index of the bifurcation parameter.
 p_span = (0.1,20.)   # The parameter range for the bifurcation diagram.
-plot_var_idx = 1     # The index of the varriable we plot in the bifurcation diagram.
+plot_var_idx = 1     # The index of the variable we plot in the bifurcation diagram.
 ```
 
 Next, we need to specify the input options for the pseudo-arclength continuation method which produces the diagram. We will use a [deflated continuation](https://rveltz.github.io/BifurcationKit.jl/dev/DeflatedContinuation/).
@@ -51,3 +51,20 @@ branches, = continuation(F, J, params_input, (@lens _[p_idx]) ,opts , DO,       
     perturbSolution = (x,p,id) -> (x  .+ 0.8 .* rand(length(x))),                     # Parameter for the continuation method, see BifurcationKit documentation.
     callbackN = (x, f, J, res, iteration, itlinear, options; kwargs...) -> res <1e7)  # Parameter for the continuation method, see BifurcationKit documentation.
 ```
+which can then be plotted using
+```julia
+plot(branches...,xlabel=rn.ps[1],ylabel=Symbol(rn.states[1].f),markersize=4,
+     ylim=(0.,Inf),                                  # This ensures we do not display negative solutions.
+     color=:blue,                                    # Otherwise each individual branch will have their separate colors.
+     plotbifpoints = false, putbifptlegend = false,  # Plots the bifurcation point(s).
+     linewidthstable=4, linewidthunstable=1)         # Stable/unstable values are distinguised by line thickness.
+```
+![bifurcation_diagram1](../assets/bifurcation_diagram1.svg)
+Here the Hopf bifurcation is amrked with a blue square. The region with a thiner linewidth corresponds to unstable steady states. If one wishes to mark these differently it is possible to plot the individual brances separatly:
+```julia
+plot(branches[1],lw=4,color=map(i->(i==0) ? :blue : :red, getproperty.(branches[1].branch,:n_unstable)))
+plot!(branches[3],lw=4,color=map(i->(i==0) ? :blue : :red, getproperty.(branches[3].branch,:n_unstable)))
+plot!(branches[4],lw=4,color=map(i->(i==0) ? :blue : :red, getproperty.(branches[4].branch,:n_unstable)),plotbifpoints = false,xlabel=rn.ps[1],ylabel=Symbol(rn.states[1].f))
+```
+![bifurcation_diagram2](../assets/bifurcation_diagram2.svg)
+(Note that the second branch corresponds to a negative steady state, which is biological irrelevant, and we hence do not plot)
