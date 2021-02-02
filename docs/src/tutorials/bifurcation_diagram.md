@@ -64,6 +64,7 @@ plot(branches...,xlabel=rn.ps[1],ylabel=Symbol(rn.states[1].f),markersize=4,
      linewidthstable=4, linewidthunstable=1)         # Stable/unstable values are distinguised by line thickness.
 ```
 ![bifurcation_diagram1](../assets/bifurcation_diagram1.svg)
+
 Here the Hopf bifurcation is amrked with a blue square. The region with a thiner linewidth corresponds to unstable steady states. If one wishes to mark these differently it is possible to plot the individual brances separatly:
 ```julia
 plot(branches[1],lw=4,color=map(i->(i==0) ? :blue : :red, getproperty.(branches[1].branch,:n_unstable)))
@@ -71,4 +72,5 @@ plot!(branches[3],lw=4,color=map(i->(i==0) ? :blue : :red, getproperty.(branches
 plot!(branches[4],lw=4,color=map(i->(i==0) ? :blue : :red, getproperty.(branches[4].branch,:n_unstable)),plotbifpoints = false,xlabel=rn.ps[1],ylabel=Symbol(rn.states[1].f))
 ```
 ![bifurcation_diagram2](../assets/bifurcation_diagram2.svg)
+
 (Note that the second branch corresponds to a negative steady state, which is biological irrelevant, and we hence do not plot)
