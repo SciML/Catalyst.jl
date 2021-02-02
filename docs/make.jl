@@ -48,7 +48,8 @@ makedocs(
             "tutorials/basic_examples.md",
             "tutorials/advanced.md",
             "tutorials/generated_systems.md",
-            "tutorials/advanced_examples.md"
+            "tutorials/advanced_examples.md",
+            "tutorials/bifurcation_diagram.md"
         ],
         "API" => Any[
             "api/catalyst_api.md"
