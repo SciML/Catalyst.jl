@@ -225,7 +225,7 @@ Construct an empty [`ReactionSystem`](@ref). `iv` is the independent variable,
 usually time.
 """
 function make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t))
-    ReactionSystem(Reaction[], iv, Num[], Num[], Sym[], Equation[], gensym(:ReactionSystem), ReactionSystem[])
+    ReactionSystem(Reaction[], iv, [], [], Equation[], gensym(:ReactionSystem), ReactionSystem[])
 end
 
 """
