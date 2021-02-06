@@ -25,9 +25,9 @@ export dependants, dependents, substoichmat, prodstoichmat
 include("latexify_recipes.jl")
 
 # for making and saving graphs
-import Base.Iterators: flatten
-import Catlab.Graphics.Graphviz: Graph, Edge, Attributes, Node, Digraph, run_graphviz
-include("graphs.jl")
-export Graph, savegraph
+#import Base.Iterators: flatten
+#import Catlab.Graphics.Graphviz: Graph, Edge, Attributes, Node, Digraph, run_graphviz
+#include("graphs.jl")
+#export Graph, savegraph
 
 end # module
