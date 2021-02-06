@@ -92,8 +92,7 @@ macro reaction_network(parameters...)
                 :(ReactionSystem(Reaction[],
                                  t,
                                  [],
-                                 [$(parameters...)],
-                                 [],
+                                 [$(parameters...)], 
                                  Equation[],
                                  gensym(:ReactionSystem),
                                  ReactionSystem[])))
