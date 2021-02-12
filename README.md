@@ -10,10 +10,6 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://catalyst.sciml.ai/dev/)
 [![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://catalyst.sciml.ai/dev/api/catalyst_api/)
 
-**Note for pre-version 6.2 users**: *Version 6.2 is a breaking release, with
-Catalyst no longer needing `@reaction_func` to support user-defined functions. 
-Please see [the latest docs for details](https://catalyst.sciml.ai/dev/tutorials/advanced/#User-defined-functions-in-reaction-rates).*
-
 Catalyst.jl is a domain-specific language (DSL) for high-performance simulation
 and modeling of chemical reaction networks. Catalyst utilizes
 [ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl)
@@ -58,9 +54,6 @@ the current master branch.
 - [Latexify](https://github.com/korsbo/Latexify.jl) can be used to generate
   LaTeX expressions corresponding to generated mathematical models or the
   underlying set of reactions.
-- [Graphviz](https://graphviz.org/) can be used through
-  [Catlab.jl](https://github.com/AlgebraicJulia/Catlab.jl/) to generate and
-  visualize reaction network graphs.
 
 ## Illustrative Examples
 #### Gillespie Simulations of Michaelis-Menten Enzyme Kinetics
