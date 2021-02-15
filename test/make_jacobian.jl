@@ -1,6 +1,8 @@
 ### Fetch required packages and reaction networks ###
 using Catalyst, DiffEqBase, Random, Test
 
+using StableRNGs
+rng = StableRNG(12345)
 
 ### Checks that the jacobian is correct for networks without parameters ###
 jacobian_network_1 = @reaction_network begin
@@ -20,8 +22,8 @@ jacobian_network_2 = @reaction_network begin
     (p3*X,1.0), X + Y ↔ XY
 end p1 p2 p3
 for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2], repeat = 1:10
-    u = factor*rand(3)
-    p = factor*rand(3)
+    u = factor*rand(rng,3)
+    p = factor*rand(rng,3)
     test_jac = ODEFunction(convert(ODESystem,jacobian_network_2),jac=true).jac(u,p,0.)
     real_jac = [-1-2*p[3]*u[2]*u[1] -p[3]*u[1]*u[1] 1.; -2*p[3]*u[2]*u[1] -1-p[3]*u[1]*u[1] 1; 2*p[3]*u[2]*u[1] p[3]*u[1]*u[1] -1.]
     @test all(abs.(test_jac .- real_jac) .< 1e-9)
@@ -37,7 +39,7 @@ jacobian_network_3 = @reaction_network begin
     hill(A,k7,k8,2), ∅ → B
 end k1 k2 k3 k4 k5 k6 k7 k8
 for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2], repeat = 1:10
-    u = factor*rand(3); p = factor*rand(8);
+    u = factor*rand(rng,3); p = factor*rand(rng,8);
     A,B,C = u
     k1,k2,k3,k4,k5,k6,k7,k8 = p
     test_jac = ODEFunction(convert(ODESystem,jacobian_network_3),jac=true).jac(u,p,0.)
