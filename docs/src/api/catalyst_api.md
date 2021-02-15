@@ -92,10 +92,9 @@ using Latexify
 latexify(rn)
 ```
 
-If [Graphviz](https://graphviz.org/) and
-[Catlab.jl](https://github.com/AlgebraicJulia/Catlab.jl/) are installed, they
-can be used to create and save Graphviz network diagrams using [`Graph`](@ref)
-and [`savegraph`](@ref).
+If [Graphviz](https://graphviz.org/) is installed and commandline accessible, it
+can be used to create and save network diagrams using [`Graph`](@ref) and
+[`savegraph`](@ref).
 ```@docs
 Graph
 savegraph
