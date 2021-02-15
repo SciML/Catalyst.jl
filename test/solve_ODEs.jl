@@ -2,6 +2,9 @@
 using Catalyst, OrdinaryDiffEq, Random, Test
 include("test_networks.jl")
 
+using StableRNGs
+rng = StableRNG(12345)
+
 ### Checks the solutions of specific problems ###
 
 # Exponential decay, should be identical to the (known) analytical solution.
@@ -10,8 +13,8 @@ exponential_decay = @reaction_network begin
 end d
 
 for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
-    u0 = factor*rand(length(exponential_decay.states))
-    p = factor*rand(length(exponential_decay.ps))
+    u0 = factor*rand(rng, length(exponential_decay.states))
+    p = factor*rand(rng, length(exponential_decay.ps))
     prob = ODEProblem(exponential_decay,u0,(0.,100/factor),p)
     sol = solve(prob,Rosenbrock23(),saveat=range(0.,100/factor,length=101))
     analytic_sol = map(t -> u0[1]*exp(-p[1]*t),range(0.,100/factor,length=101))
@@ -27,8 +30,8 @@ known_equilibrium = @reaction_network begin
 end k1 k2 k3 k4 k5 k6 k7 k8
 
 for factor in [1e-1, 1e0, 1e1, 1e2, 1e3]
-    u0 = factor*rand(length(known_equilibrium.states))
-    p = 0.01 .+ factor*rand(length(known_equilibrium.ps))
+    u0 = factor*rand(rng,length(known_equilibrium.states))
+    p = 0.01 .+ factor*rand(rng,length(known_equilibrium.ps))
     prob = ODEProblem(known_equilibrium,u0,(0.,1000000.),p)
     sol = solve(prob,Rosenbrock23())
     @test abs.(sol.u[end][1]/sol.u[end][2] - p[2]/p[1]) < 10000*eps()
@@ -87,8 +90,8 @@ push!(identical_networks_1, reaction_networks_weird[2] => real_functions_5)
 
 for (i,networks) in enumerate(identical_networks_1)
     for factor in [1e-2, 1e-1, 1e0, 1e1]
-        u0 = factor*rand(length(networks[1].states))
-        p = factor*rand(length(networks[1].ps))
+        u0 = factor*rand(rng,length(networks[1].states))
+        p = factor*rand(rng,length(networks[1].ps))
         (i==3) && (p = min.(round.(p).+1,10))                      #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
         prob1 = ODEProblem(networks[1],u0,(0.,10000.),p)
         sol1 = solve(prob1,Rosenbrock23(),saveat=1.)
@@ -103,8 +106,8 @@ end
 for (i,network) in enumerate(reaction_networks_all)
     (i%5 == 0) && println("Iteration "*string(i)*" at line 104 in file solve_ODEs.jl")
     for factor in [1e-1, 1e0, 1e1]
-        u0 = factor*rand(length(network.states))
-        p = factor*rand(length(network.ps))
+        u0 = factor*rand(rng,length(network.states))
+        p = factor*rand(rng,length(network.ps))
         in(i,[[11:20...]...,34,37,42]) && (p = min.(round.(p).+1,10))  #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
         prob = ODEProblem(network,u0,(0.,1.),p)
         @test solve(prob,Rosenbrock23()).retcode == :Success
@@ -118,7 +121,7 @@ no_param_network = @reaction_network begin
     (1.5,2), ∅ ↔ X
 end
 for factor in [1e0, 1e1, 1e2]
-    u0 = factor*rand(length(no_param_network.states))
+    u0 = factor*rand(rng,length(no_param_network.states))
     prob = ODEProblem(no_param_network,u0,(0.,1000.))
     sol = solve(prob,Rosenbrock23())
     @test abs.(sol.u[end][1] - 1.5/2) < 1e-8

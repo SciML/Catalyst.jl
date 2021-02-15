@@ -2,6 +2,8 @@
 using Catalyst, Test, UnPack
 include("test_networks.jl")
 
+using StableRNGs
+rng = StableRNG(12345)
 
 ### Tests construction of empty reaction networks ###
 empty_network_1 = @reaction_network
@@ -151,9 +153,9 @@ for networks in identical_networks
     g2 = SDEFunction(convert(SDESystem,networks[2]))
     @test networks[1] == networks[2]
     for factor in [1e-2, 1e-1, 1e0, 1e1]
-        u0 = factor*rand(length(networks[1].states))
-        p = factor*rand(length(networks[1].ps))
-        t = rand()
+        u0 = factor*rand(rng,length(networks[1].states))
+        p = factor*rand(rng,length(networks[1].ps))
+        t = rand(rng)
         @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 1000*eps())
         @test all(abs.(g1(u0,p,t) .- g2(u0,p,t)) .< 1000*eps())
         @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 1000*eps())

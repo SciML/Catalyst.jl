@@ -2,6 +2,9 @@
 using Catalyst, Random, Statistics, StochasticDiffEq, Test
 include("test_networks.jl")
 
+using StableRNGs
+rng = StableRNG(12345)
+
 ### Compares to the manually calcualted function ###
 identical_networks = Vector{Pair}()
 
@@ -90,8 +93,8 @@ push!(identical_networks, reaction_networks_constraint[9] => (real_f_3,real_g_3,
 
 for (i,networks) in enumerate(identical_networks)
     for factor in [1e-1, 1e0, 1e1], repeat in 1:3
-        u0 = 100. .+ factor*rand(length(networks[1].states))
-        p = 0.01 .+ factor*rand(length(networks[1].ps))
+        u0 = 100. .+ factor*rand(rng,length(networks[1].states))
+        p = 0.01 .+ factor*rand(rng,length(networks[1].ps))
         (i==2) && (u0[1] += 1000.)
         (i==3) ? (p[2:2:6] .*= 1000.; u0 .+= 1000) : (p[1] += 500.)
         prob1 = SDEProblem(networks[1],u0,(0.,100.),p)
@@ -114,8 +117,8 @@ noise_scaling_network = @reaction_network begin
     (k1,k2), X1 ↔ X2
 end k1 k2
 for repeat = 1:5
-    p = 1. .+ rand(2)
-    u0 = 10000*(1. .+ rand(2))
+    p = 1. .+ rand(rng,2)
+    u0 = 10000*(1. .+ rand(rng,2))
     sol001 = solve(SDEProblem(noise_scaling_network,u0,(0.,1000.),vcat(p,0.01),noise_scaling=(@variables η1)[1]),ImplicitEM())
     sol01 = solve(SDEProblem(noise_scaling_network,u0,(0.,1000.),vcat(p,0.1),noise_scaling=(@variables η1)[1]),ImplicitEM())
     sol1 = solve(SDEProblem(noise_scaling_network,u0,(0.,1000.),vcat(p,1.),noise_scaling=(@variables η2)[1]),ImplicitEM())
@@ -132,8 +135,8 @@ end
 ### Tries to create a large number of problem, ensuring there are no errors (cannot solve as solution likely to go into negatives). ###
 for reaction_network in reaction_networks_all
     for factor in [1e-2, 1e-1, 1e0, 1e1]
-        u0 = factor*rand(length(reaction_network.states))
-        p = factor*rand(length(reaction_network.ps))
+        u0 = factor*rand(rng,length(reaction_network.states))
+        p = factor*rand(rng,length(reaction_network.ps))
         prob = SDEProblem(reaction_network,u0,(0.,1.),p)
     end
 end
@@ -145,7 +148,7 @@ no_param_network = @reaction_network begin
     (1.2,5), X1 ↔ X2
 end
 for factor in [1e3, 1e4]
-    u0 = factor*(1. .+ rand(length(no_param_network.states)))
+    u0 = factor*(1. .+ rand(rng,length(no_param_network.states)))
     prob = SDEProblem(no_param_network,u0,(0.,1000.))
     sol = solve(prob,ImplicitEM())
     vals1 = getindex.(sol.u[1:end],1)
