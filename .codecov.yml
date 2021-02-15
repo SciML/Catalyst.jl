@@ -1,1 +1,3 @@
 comment: false
+ignore:
+  - "src/graphs.jl"         # ignore graphs for testing until GraphViz jll works robustly
