@@ -54,6 +54,10 @@ the current master branch.
 - [Latexify](https://github.com/korsbo/Latexify.jl) can be used to generate
   LaTeX expressions corresponding to generated mathematical models or the
   underlying set of reactions.
+- [Graphviz](https://graphviz.org/) can be used through to generate and
+  visualize reaction network graphs. (Reusing the Graphviz interface created in
+  [Catlab.jl](https://github.com/AlgebraicJulia/Catlab.jl/).)
+
 
 ## Illustrative Examples
 #### Gillespie Simulations of Michaelis-Menten Enzyme Kinetics
