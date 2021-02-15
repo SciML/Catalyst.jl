@@ -28,4 +28,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [targets]
-test = ["DiffEqBase", "DiffEqJump", "OrdinaryDiffEq", "Random", "SafeTestsets", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "UnPack"]
+test = ["DiffEqBase", "DiffEqJump", "OrdinaryDiffEq", "Random", "SafeTestsets", "StableRNGs", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "UnPack"]
