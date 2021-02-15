@@ -63,8 +63,8 @@ latexify(repressilator)
 \end{align*}
 ```
 
-Assuming [Graphviz](https://graphviz.org/) is installed, within a Jupyter
-notebook we can also graph the reaction network by
+Assuming [Graphviz](https://graphviz.org/) is installed and commandline
+accessible, within a Jupyter notebook we can also graph the reaction network by
 ```julia
 g = Graph(repressilator)
 ```
