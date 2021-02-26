@@ -133,20 +133,21 @@ else
     end
 end
 # plotting normalised concentration vs analytical solution
-plot(ϕ, jsol[1,:]/uₒ, lw = 2, xlabel = "Time (sec)",label = string("X",1))
+scatter(ϕ, jsol[1,:]/uₒ, lw = 2, xlabel = "Time (sec)",label = string("X",1))
 plot!(ϕ, sol[1,:]/Nₒ, lw = 2, line = (:dot, 4) ,
         label = string("Analytical sol", "--X",1))
 
-plot!(ϕ, jsol[2,:]/uₒ, lw = 2, xlabel = "Time (sec)",label = string("X",2))
+scatter!(ϕ, jsol[2,:]/uₒ, lw = 2, xlabel = "Time (sec)",label = string("X",2))
 plot!(ϕ, sol[2,:]/Nₒ, lw = 2, line = (:dot, 4) ,
         label = string("Analytical sol", "--X",2))
 
-plot!(ϕ, jsol[3,:]/uₒ, lw = 2, xlabel = "Time (sec)",label = string("X",3))
+scatter!(ϕ, jsol[3,:]/uₒ, lw = 2, xlabel = "Time (sec)",label = string("X",3))
 plot!(ϕ, sol[3,:]/Nₒ, lw = 2, line = (:dot, 4) ,ylabel = "N(i,t)/N(1,0)"
         ,label = string("Analytical sol", "--X",3))
 
-
 ```
+- **9.)** Example plot for **additive kernel** 
+               ![](https://github.com/yewalenikhil65/Catalyst.jl/blob/master/docs/src/assets/additive_kernel.png)
 
 ## Sources
 1. https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation
