@@ -43,7 +43,7 @@ volᵢ = Vₒ*vᵢ;    # cm⁻³
 volⱼ = Vₒ*vⱼ;    # cm⁻³
 sum_vᵢvⱼ = @. vᵢ + vⱼ;  # Product index
 ```
-  - **4.)**  Specifying rate(kernel) at which reactants collide to form product. For simplicity we have used additive kernel, multiplicative kernel and constant kernel. The constants(`B`,`b` and `C`) used are adopted from the Scotts paper 
+  - **4.)**  Specifying rate(kernel) at which reactants collide to form product. For simplicity we have used additive kernel, multiplicative kernel and constant kernel. The constants(`B`,`b` and `C`) used are adopted from the Scotts paper [2](https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml)
 ```julia
 i = parse(Int, input("Enter 1 for additive kernel,
                 2 for Multiplicative, 3 for constant"))
@@ -147,8 +147,6 @@ plot!(ϕ, sol[3,:]/Nₒ, lw = 2, line = (:dot, 4) ,ylabel = "N(i,t)/N(1,0)"
 
 
 ```
-**Benchmarking PBE** - Credits to [SciMLBenchmarks](https://benchmarks.sciml.ai/) for the elegant codes for the purpose of benchmarking
-click [here](https://github.com/yewalenikhil65/Population-balance-equation/blob/main/Figs/benchmarking_PBE.png) to see how different Jump algorithms fare for solving PBE stochastically
 
 ## Sources
 1. https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation
