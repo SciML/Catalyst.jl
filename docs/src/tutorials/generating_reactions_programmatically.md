@@ -93,7 +93,7 @@ net_stoich = Array{Array{Pair{Int64,Int64},1},1}(undef,nr);
 end
 rs = ReactionSystem(rx, t, X, k);
 ```
-  - **7.)**  Convert the reactionSystem into a JumpSystema and solve it using standard Jump solvers such as Gillespie process. For details, take a look at [DifferentialEquations](https://diffeq.sciml.ai/stable/) documentation 
+  - **7.)**  Convert the reactionSystem into a JumpSystems and solve it using standard Jump solvers such as Gillespie process. For details, take a look at [DifferentialEquations](https://diffeq.sciml.ai/stable/) documentation 
 ```julia
 ## solving the system
 jumpsys = convert(JumpSystem, rs; combinatoric_ratelaws = true);
