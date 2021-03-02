@@ -1,34 +1,31 @@
-## Population balance equation
-**Implementation of population balance equation- by programmatically generating the reactions using ReactionSystems** 
+## Population balance equations of the Smoluchowski coagulation model
+This tutorial shows how to programmatically construct a `ReactionSystem` corresponding to the chemistry underlying the [Smoluchowski coagulation model](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation) using [ModelingToolkit](https://mtk.sciml.ai/stable/)/[Catalyst](https://catalyst.sciml.ai/dev/). A jump process version of the model is then constructed from the `ReactionSystem`, and compared to the model's analytical solution obtained by the [method of Scott](https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml) (see also mentioned in reference [3](https://doi.org/10.1006/jcph.2002.7017).
 
-Smoluchowski coagulation equation is a population balance equation that describes the system of reactions in which ,say Singlets collide to form doublets, singlets and doublets collide to form triplets and so on. This models many chemical/physical processes such as polymerization, flocculation etc.
+The Smoluchowski coagulation equation describes a system of reactions in which single particles (singlets) may collide to form doublets, singlets and doublets may collide to form triplets, and so on. This models a variety of chemical/physical processes, including polymerization and flocculation.
 
-This is a short tutorial on implementation of [Smoluchowski coagulation equation](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation) using [ModelingToolkit](https://mtk.sciml.ai/stable/)/[Catalyst](https://catalyst.sciml.ai/dev/) framework and it's comparison with analytical solution obtained by [Method of scotts](https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml) that is also mentioned in reference [3](https://doi.org/10.1006/jcph.2002.7017)
-
-  - **1.)**  Importing some important packages.
+We begin by importing some necessary packages.
 ```julia
 using ModelingToolkit, LinearAlgebra
-using DiffEqBase ,DiffEqJump, OrdinaryDiffEq
+using DiffEqBase, DiffEqJump, OrdinaryDiffEq
 using LoopVectorization, Plots
 using BenchmarkTools
 using SpecialFunctions
-plotly()
 ```
-  - **2.)**  Lets say there are `N` number of cluster size particles in the system. Lets initialise the system with some initial concentration `C`, initial number of singlets `uₒ` in the system. Since its a bimolecular chain of Reaction system(`nr` number of reactions), the bulk volume `V` of the system in which these binary collisions occur is important in the calculation of rate laws.
+Suppose the maximum cluster size is `N`. Lets initialize the system with some initial concentration `C`, initial number of singlets `uₒ` in the system. Since its a bimolecular chain of Reaction system(`nr` number of reactions), the bulk volume `V` of the system in which these binary collisions occur is important in the calculation of rate laws.
   
 ```julia
 ## Parameter
-N = 10;         # Number of clusters
-Vₒ = (4π/3)*(10e-06*100)^3;  # volume of a singlet/monomer in cm³
-Nₒ = 1e-06/Vₒ;   # initial conc. = (No. of init. monomers) / Volume of the bulk system
-uₒ = 10000;    # No. of singlets initially
-V = uₒ/Nₒ;      # Bulk volume of system in cm³
+N = 10                       # maximum clusters size
+Vₒ = (4π/3)*(10e-06*100)^3   # volume of a singlet/monomer in cm³
+Nₒ = 1e-06/Vₒ                # initial conc. = (No. of init. monomers) / Volume of the bulk system
+uₒ = 10000                   # No. of singlets initially
+V = uₒ/Nₒ                    # Bulk volume of system in cm³
 
 integ(x) = Int(floor(x));
-n = integ(N/2);
-nr = N%2 == 0 ? (n*(n + 1) - n) : (n*(n + 1)); # No. of forward reactions
+n        = integ(N/2);
+nr       = N%2 == 0 ? (n*(n + 1) - n) : (n*(n + 1)); # No. of forward reactions
 ```
-  - **3.)**  Check the figure on [Smoluchowski coagulation equation](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation) page, the `pair` of reactants that collide can be easily generated for `N` cluster size particles in the system. We also initialise the volumes of these colliding clusters as `volᵢ` and `volⱼ` for the reactants
+Check the figure on [Smoluchowski coagulation equation](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation) page, the `pair` of reactants that collide can be easily generated for `N` cluster size particles in the system. We also initialise the volumes of these colliding clusters as `volᵢ` and `volⱼ` for the reactants
   
 ```julia
 ## pairs of reactants
