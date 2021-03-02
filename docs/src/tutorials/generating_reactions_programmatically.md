@@ -1,7 +1,7 @@
 ## Population balance equations of the Smoluchowski coagulation model
 This tutorial shows how to programmatically construct a `ReactionSystem` corresponding to the chemistry underlying the [Smoluchowski coagulation model](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation) using [ModelingToolkit](https://mtk.sciml.ai/stable/)/[Catalyst](https://catalyst.sciml.ai/dev/). A jump process version of the model is then constructed from the `ReactionSystem`, and compared to the model's analytical solution obtained by the [method of Scott](https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml) (see also mentioned in reference [3](https://doi.org/10.1006/jcph.2002.7017).
 
-The Smoluchowski coagulation equation describes a system of reactions in which single particles (singlets) may collide to form doublets, singlets and doublets may collide to form triplets, and so on. This models a variety of chemical/physical processes, including polymerization and flocculation.
+The Smoluchowski coagulation equation describes a system of reactions in which monomers may collide to form dimers, monomers and dimers may collide to form trimers, and so on. This models a variety of chemical/physical processes, including polymerization and flocculation.
 
 We begin by importing some necessary packages.
 ```julia
@@ -11,14 +11,14 @@ using LoopVectorization, Plots
 using BenchmarkTools
 using SpecialFunctions
 ```
-Suppose the maximum cluster size is `N`. Lets initialize the system with some initial concentration `C`, initial number of singlets `uₒ` in the system. Since its a bimolecular chain of Reaction system(`nr` number of reactions), the bulk volume `V` of the system in which these binary collisions occur is important in the calculation of rate laws.
+Suppose the maximum cluster size is `N`. Lets initialize the system with some initial concentration `Nₒ`, initial number of monomers `uₒ` in the system. Since its a bimolecular chain of Reaction system(`nr` number of reactions), the bulk volume `V` of the system in which these binary collisions occur is important in the calculation of rate laws.
   
 ```julia
 ## Parameter
 N = 10                       # maximum clusters size
-Vₒ = (4π/3)*(10e-06*100)^3   # volume of a singlet/monomer in cm³
+Vₒ = (4π/3)*(10e-06*100)^3   # volume of a monomers in cm³
 Nₒ = 1e-06/Vₒ                # initial conc. = (No. of init. monomers) / Volume of the bulk system
-uₒ = 10000                   # No. of singlets initially
+uₒ = 10000                   # No. of monomers initially
 V = uₒ/Nₒ                    # Bulk volume of system in cm³
 
 integ(x) = Int(floor(x));
@@ -55,7 +55,7 @@ else
     kₛ = @. C/V;
 end
 ```
-  - **5.)**  Lets write-off the rates in `pₘₐₚ` as Pairs and initial condition with only singlets present initially in `u₀map` that we  will use in creating JumpSystems with massaction.
+  - **5.)**  Lets write-off the rates in `pₘₐₚ` as Pairs and initial condition with only monomers present initially in `u₀map` that we  will use in creating JumpSystems with massaction.
 ```julia
 ## Writing-off the parameter in Pairs in Sequence
 @variables k[1:nr];   pₘₐₚ = Pair.(k, kₛ);
@@ -106,7 +106,7 @@ jsol = @btime solve(jprob, stepper, saveat = 1.);
 ```
   - **8.)**  Lets check the results for only first three polymers/cluster sizes. The result is compared with analytical solution obtained for this system with additive, multiplicative and constant kernels(rate at which reactants collide)
 ```julia
-## Results for first three polymers
+## Results for first three polymers...i.e. monomers, dimers and trimers
 v_res = [1;2;3]
 
 ## comparsion with analytical solution
