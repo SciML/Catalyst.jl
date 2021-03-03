@@ -6,9 +6,8 @@ The Smoluchowski coagulation equation describes a system of reactions in which m
 We begin by importing some necessary packages.
 ```julia
 using ModelingToolkit, Catalyst, LinearAlgebra
-using DiffEqBase, DiffEqJump, OrdinaryDiffEq
-using LoopVectorization, Plots
-using SpecialFunctions
+using DiffEqBase, DiffEqJump
+using Plots, SpecialFunctions
 ```
 Suppose the maximum cluster size is `N`. We assume an initial concentration of monomers, `Nₒ`, and let `uₒ` denote the initial number of monomers in the system. We have `nr` total reactions, and label by `V` the bulk volume of the system (which plays an important role in the calculation of rate laws since we have bimolecular reactions). Our basic parameters are then  
 ```julia
