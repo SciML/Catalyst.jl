@@ -8,11 +8,11 @@
 Given a [`ReactionSystem`](@ref), return a vector of species `Variable`s.
 
 Notes:
-- If `network.systems` is not empty, may allocate. Otherwise returns
-  `network.states`.
+- If `ModelingToolkit.get_systems(network)` is not empty, may allocate. Otherwise returns
+  `ModelingToolkit.ModelingToolkit.get_states(network)`.
 """
 function species(network)
-    isempty(network.systems) ? network.states : states(network)
+    isempty(ModelingToolkit.get_systems(network)) ? ModelingToolkit.ModelingToolkit.get_states(network) : states(network)
 end
 
 """
@@ -21,11 +21,11 @@ end
 Given a [`ReactionSystem`](@ref), return a vector of parameter `Variable`s.
 
 Notes:
-- If `network.systems` is not empty, may allocate. Otherwise returns
-  `network.ps`.
+- If `ModelingToolkit.get_systems(network)` is not empty, may allocate. Otherwise returns
+  `ModelingToolkit.get_ps(network)`.
 """
 function params(network)
-    isempty(network.systems) ? network.ps : parameters(network)
+    isempty(ModelingToolkit.get_systems(network)) ? ModelingToolkit.get_ps(network) : parameters(network)
 end
 
 """
@@ -34,11 +34,11 @@ end
 Given a [`ReactionSystem`](@ref), return a vector of all `Reactions` in the system.
 
 Notes:
-- If `network.systems` is not empty, may allocate. Otherwise returns
-  `network.eqs`.
+- If `ModelingToolkit.get_systems(network)` is not empty, may allocate. Otherwise returns
+  `ModelingToolkit.get_eqs(network)`.
 """
 function reactions(network)
-    isempty(network.systems) ? network.eqs : equations(network)
+    isempty(ModelingToolkit.get_systems(network)) ? ModelingToolkit.get_eqs(network) : equations(network)
 end
 
 """
@@ -67,8 +67,8 @@ end
 Return the number of species within the given [`ReactionSystem`](@ref).
 """
 function numspecies(network)
-    ns = length(network.states)
-    for sys in network.systems
+    ns = length(ModelingToolkit.ModelingToolkit.get_states(network))
+    for sys in ModelingToolkit.get_systems(network)
         ns += numspecies(ns)
     end
     ns
@@ -80,8 +80,8 @@ end
 Return the number of reactions within the given [`ReactionSystem`](@ref).
 """
 function numreactions(network)
-    nr = length(network.eqs)
-    for sys in network.systems
+    nr = length(ModelingToolkit.get_eqs(network))
+    for sys in ModelingToolkit.get_systems(network)
         nr += numreactions(sys)
     end
     nr
@@ -93,8 +93,8 @@ end
 Return the number of parameters within the given [`ReactionSystem`](@ref).
 """
 function numparams(network)
-    np = length(network.ps)
-    for sys in network.systems
+    np = length(ModelingToolkit.get_ps(network))
+    for sys in ModelingToolkit.get_systems(network)
         np += numparams(ns)
     end
     np
@@ -201,7 +201,7 @@ Notes:
 function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
     issetequal(species(rn1), species(rn2)) || return false
     issetequal(params(rn1), params(rn2)) || return false
-    isequal(rn1.iv, rn2.iv) || return false
+    isequal(ModelingToolkit.independent_variable(rn1), ModelingToolkit.independent_variable(rn2)) || return false
     (numreactions(rn1) == numreactions(rn2)) || return false
 
     # the following fails for some reason, so need to use issubset
@@ -244,10 +244,10 @@ Notes:
 function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks=false)
 
     # we don't check subsystems since we will add it to the top-level system...
-    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), network.states)
+    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), ModelingToolkit.ModelingToolkit.get_states(network))
     if curidx === nothing
-        push!(network.states, s)
-        return length(network.states)
+        push!(ModelingToolkit.ModelingToolkit.get_states(network), s)
+        return length(ModelingToolkit.ModelingToolkit.get_states(network))
     else
         return curidx
     end
@@ -287,10 +287,10 @@ function addparam!(network::ReactionSystem, p::Symbolic; disablechecks=false)
     if istree(p) && !(operation(p) isa Sym)
         error("If the passed in parameter is an expression, it must correspond to an underlying Variable.")
     end
-    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, p), network.ps)
+    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, p), ModelingToolkit.get_ps(network))
     if curidx === nothing
-        push!(network.ps, p)
-        return length(network.ps)
+        push!(ModelingToolkit.get_ps(network), p)
+        return length(ModelingToolkit.get_ps(network))
     else
         return curidx
     end
@@ -323,8 +323,8 @@ Notes:
     `network` using [`addspecies!`](@ref) and [`addparam!`](@ref).
 """
 function addreaction!(network::ReactionSystem, rx::Reaction)
-    push!(network.eqs, rx)
-    length(network.eqs)
+    push!(ModelingToolkit.get_eqs(network), rx)
+    length(ModelingToolkit.get_eqs(network))
 end
 
 
@@ -343,7 +343,8 @@ Notes:
 - Does not currently handle pins.
 """
 function merge!(network1::ReactionSystem, network2::ReactionSystem)
-    isequal(network1.iv, network2.iv) || error("Reaction networks must have the same independent variable to be mergable.")
+    isequal(ModelingToolkit.independent_variable(network1),
+            ModelingToolkit.independent_variable(network2)) || error("Reaction networks must have the same independent variable to be mergable.")
     union!(network1.states, network2.states)
     union!(network1.ps, network2.ps)
     append!(network1.eqs, network2.eqs)
