@@ -50,7 +50,7 @@ makedocs(
             "tutorials/generated_systems.md",
             "tutorials/advanced_examples.md",
             "tutorials/bifurcation_diagram.md",
-            "tutorials/parameter_estimation.md"
+            "tutorials/parameter_estimation.md",
             "tutorials/generating_reactions_programmatically.md"
         ],
         "API" => Any[
