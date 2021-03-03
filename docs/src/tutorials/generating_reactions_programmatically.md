@@ -68,7 +68,7 @@ u₀    = zeros(Int64, N)
 u₀[1] = uₒ  
 u₀map = Pair.(X, u₀)   # map variable to its initial value
 ```
-Here we generate the reactions programmatically. We systematically create Catalyst `Reaction`s for each possible reaction shown in the figure on [Wikipedia](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation). When `vᵢ[n] == vⱼ[n]`, we set the stoichiometric coefficient of reactant in Reaction to 2.
+Here we generate the reactions programmatically. We systematically create Catalyst `Reaction`s for each possible reaction shown in the figure on [Wikipedia](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation). When `vᵢ[n] == vⱼ[n]`, we set the stoichiometric coefficient of the reactant multimer to two.
 ```julia
 # vector to store the Reactions in
 rx = []              
