@@ -77,19 +77,13 @@ Here we generate the reactions programmatically. We systematically create Cataly
 ```julia
 # vector to store the Reactions in
 rx = []              
-reactant_stoich = Vector{Vector{Pair{Int64,Int64}}}(undef,nr)
-net_stoich = similar(reactant_stoich)
 for n = 1:nr
     # for clusters of the same size, double the rate
     if (vᵢ[n] == vⱼ[n]) 
         push!(rx, Reaction(k[n], [X[vᵢ[n]]], [X[sum_vᵢvⱼ[n]]], [2], [1]))
-        reactant_stoich[n] = [vᵢ[n] => 2]
-        net_stoich[n] = [vᵢ[n] => -2, sum_vᵢvⱼ[n] => 1]
     else
         push!(rx, Reaction(k[n], [X[vᵢ[n]], X[vⱼ[n]]], [X[sum_vᵢvⱼ[n]]], 
                            [1, 1], [1]))
-        reactant_stoich[n] = [vᵢ[n] => 1, vⱼ[n] => 1]
-        net_stoich[n] = [vᵢ[n] => -1, vⱼ[n] => -1, sum_vᵢvⱼ[n] => 1]
     end
 end
 rs = ReactionSystem(rx, t, X, k)
