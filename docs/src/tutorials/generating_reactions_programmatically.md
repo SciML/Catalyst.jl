@@ -11,54 +11,53 @@ using LoopVectorization, Plots
 using BenchmarkTools
 using SpecialFunctions
 ```
-Suppose the maximum cluster size is `N`. Lets initialize the system with some initial concentration `Nₒ`, initial number of monomers `uₒ` in the system. Since its a bimolecular chain of Reaction system(`nr` number of reactions), the bulk volume `V` of the system in which these binary collisions occur is important in the calculation of rate laws.
-  
+Suppose the maximum cluster size is `N`. We assume an initial concentration of monomers, `Nₒ`, and let `uₒ` denote the initial number of monomers in the system. We have `nr` total reactions, and label by `V` the bulk volume of the system (which plays an important role in the calculation of rate laws since we have bimolecular reactions). Our basic parameters are then  
 ```julia
 ## Parameter
-N = 10                       # maximum clusters size
+N = 10                       # maximum cluster size
 Vₒ = (4π/3)*(10e-06*100)^3   # volume of a monomers in cm³
-Nₒ = 1e-06/Vₒ                # initial conc. = (No. of init. monomers) / Volume of the bulk system
+Nₒ = 1e-06/Vₒ                # initial conc. = (No. of init. monomers) / bulk volume
 uₒ = 10000                   # No. of monomers initially
 V = uₒ/Nₒ                    # Bulk volume of system in cm³
 
-integ(x) = Int(floor(x));
-n        = integ(N/2);
-nr       = N%2 == 0 ? (n*(n + 1) - n) : (n*(n + 1)); # No. of forward reactions
+integ(x) = Int(floor(x))
+n        = integ(N/2)
+nr       = N%2 == 0 ? (n*(n + 1) - n) : (n*(n + 1)) # No. of forward reactions
 ```
-Check the figure on [Smoluchowski coagulation equation](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation) page, the `pair` of reactants that collide can be easily generated for `N` cluster size particles in the system. We also initialise the volumes of these colliding clusters as `volᵢ` and `volⱼ` for the reactants
+As illustrated on the [Smoluchowski coagulation equation](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation) Wikipedia page, we can easily enumerate the `pair`s of multimer reactants that can combine when allowing multimers of up to `N` monomers. We initialize the volumes of the reactant multimers as `volᵢ` and `volⱼ`
   
 ```julia
-## pairs of reactants
-pair = [];
+## pairs of reactant multimers
+pair = []
 for i = 2:N
     push!(pair,[1:integ(i/2)  i .- (1:integ(i/2))])
 end
-pair = vcat(pair...);
-vᵢ = @view pair[:,1];  # Reactant 1 index
-vⱼ = @view pair[:,2];  # Reactant 2 index
-volᵢ = Vₒ*vᵢ;    # cm⁻³
-volⱼ = Vₒ*vⱼ;    # cm⁻³
-sum_vᵢvⱼ = @. vᵢ + vⱼ;  # Product index
+pair = vcat(pair...)
+vᵢ = @view pair[:,1]   # Reactant 1 indices
+vⱼ = @view pair[:,2]   # Reactant 2 indices
+volᵢ = Vₒ*vᵢ           # cm⁻³
+volⱼ = Vₒ*vⱼ           # cm⁻³
+sum_vᵢvⱼ = @. vᵢ + vⱼ  # Product index
 ```
-  - **4.)**  Specifying rate(kernel) at which reactants collide to form product. For simplicity we have used additive kernel, multiplicative kernel and constant kernel. The constants(`B`,`b` and `C`) used are adopted from the Scotts paper [2](https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml)
+We next specify the rates (i.e. kernel) at which reactants collide to form products. For simplicity, we allow a user-selected additive kernel, multiplicative kernel, or constant kernel. The constants(`B`,`b` and `C`) are adopted from the Scott's paper [2](https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml)
 ```julia
-i = parse(Int, input("Enter 1 for additive kernel,
-                2 for Multiplicative, 3 for constant"))
+str = "Enter 1 for additive kernel, 2 for Multiplicative, 3 for constant"
+i = parse(Int, input(str))
 if i==1
-    B = 1.53e03;    # s⁻¹
-    kₛ = @. B*(volᵢ + volⱼ)/V;    # dividing by volume as its a bi-molecular reaction chain
+    B = 1.53e03                # s⁻¹
+    kv = @. B*(volᵢ + volⱼ)/V  # dividing by volume as its a bi-molecular reaction chain
 elseif i==2
-    b = 3.8e11;     #  cm⁻³ s⁻¹
-    kₛ = @. b*(volᵢ*volⱼ)/V;
+    b = 3.8e11                 #  cm⁻³ s⁻¹
+    kv = @. b*(volᵢ*volⱼ)/V
 else
-    C = 1.84e-04;   # cm³ s⁻¹
-    kₛ = @. C/V;
+    C = 1.84e-04               # cm³ s⁻¹
+    kv = @. C/V
 end
 ```
-  - **5.)**  Lets write-off the rates in `pₘₐₚ` as Pairs and initial condition with only monomers present initially in `u₀map` that we  will use in creating JumpSystems with massaction.
+We'll store the rates in `params` as `Pair`s, and choose the initial condition that only monomers are present initially in `u₀map` that we  will use in creating JumpSystems with massaction.
 ```julia
 ## Writing-off the parameter in Pairs in Sequence
-@variables k[1:nr];   pₘₐₚ = Pair.(k, kₛ);
+@variables k[1:nr];   params = Pair.(k, kv);
 @parameters t;        @variables X[collect(1:N)](t);
 if i == 1
     tspan = (0. ,2000.)   # time-span
@@ -97,10 +96,10 @@ rs = ReactionSystem(rx, t, X, k);
 ```julia
 ## solving the system
 jumpsys = convert(JumpSystem, rs; combinatoric_ratelaws = true);
-dprob = DiscreteProblem(jumpsys, u₀map, tspan, pₘₐₚ; parallel = true);
+dprob = DiscreteProblem(jumpsys, u₀map, tspan, params; parallel = true);
 alg = Direct();
 stepper = SSAStepper();
-mass_act_jump = MassActionJump(kₛ ,reactant_stoich, net_stoich);
+mass_act_jump = MassActionJump(kv ,reactant_stoich, net_stoich);
 jprob = @btime JumpProblem(dprob, alg ,mass_act_jump ,save_positions=(false,false));
 jsol = @btime solve(jprob, stepper, saveat = 1.);
 ```
