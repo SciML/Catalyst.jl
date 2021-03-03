@@ -38,7 +38,7 @@ volᵢ = Vₒ*vᵢ           # cm⁻³
 volⱼ = Vₒ*vⱼ           # cm⁻³
 sum_vᵢvⱼ = @. vᵢ + vⱼ  # Product index
 ```
-We next specify the rates (i.e. kernel) at which reactants collide to form products. For simplicity, we allow a user-selected additive kernel, multiplicative kernel, or constant kernel. The constants(`B`,`b` and `C`) are adopted from the Scott's paper [2](https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml)
+We next specify the rates (i.e. kernel) at which reactants collide to form products. For simplicity, we allow a user-selected additive kernel, multiplicative kernel, or constant kernel. The constants(`B`,`b` and `C`) are adopted from Scott's paper [2](https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml)
 ```julia
 # set i to  1 for additive kernel, 2 for multiplicative, 3 for constant
 i = 1
