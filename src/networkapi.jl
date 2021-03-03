@@ -8,11 +8,11 @@
 Given a [`ReactionSystem`](@ref), return a vector of species `Variable`s.
 
 Notes:
-- If `network.systems` is not empty, may allocate. Otherwise returns
-  `network.states`.
+- If `get_systems(network)` is not empty, may allocate. Otherwise returns
+  `get_states(network)`.
 """
 function species(network)
-    isempty(network.systems) ? network.states : states(network)
+    isempty(get_systems(network)) ? get_states(network) : states(network)
 end
 
 """
@@ -21,11 +21,11 @@ end
 Given a [`ReactionSystem`](@ref), return a vector of parameter `Variable`s.
 
 Notes:
-- If `network.systems` is not empty, may allocate. Otherwise returns
-  `network.ps`.
+- If `get_systems(network)` is not empty, may allocate. Otherwise returns
+  `get_ps(network)`.
 """
 function params(network)
-    isempty(network.systems) ? network.ps : parameters(network)
+    isempty(get_systems(network)) ? get_ps(network) : parameters(network)
 end
 
 """
@@ -34,11 +34,11 @@ end
 Given a [`ReactionSystem`](@ref), return a vector of all `Reactions` in the system.
 
 Notes:
-- If `network.systems` is not empty, may allocate. Otherwise returns
-  `network.eqs`.
+- If `get_systems(network)` is not empty, may allocate. Otherwise returns
+  `get_eqs(network)`.
 """
 function reactions(network)
-    isempty(network.systems) ? network.eqs : equations(network)
+    isempty(get_systems(network)) ? get_eqs(network) : equations(network)
 end
 
 """
@@ -67,8 +67,8 @@ end
 Return the number of species within the given [`ReactionSystem`](@ref).
 """
 function numspecies(network)
-    ns = length(network.states)
-    for sys in network.systems
+    ns = length(get_states(network))
+    for sys in get_systems(network)
         ns += numspecies(ns)
     end
     ns
@@ -80,8 +80,8 @@ end
 Return the number of reactions within the given [`ReactionSystem`](@ref).
 """
 function numreactions(network)
-    nr = length(network.eqs)
-    for sys in network.systems
+    nr = length(get_eqs(network))
+    for sys in get_systems(network)
         nr += numreactions(sys)
     end
     nr
@@ -93,8 +93,8 @@ end
 Return the number of parameters within the given [`ReactionSystem`](@ref).
 """
 function numparams(network)
-    np = length(network.ps)
-    for sys in network.systems
+    np = length(get_ps(network))
+    for sys in get_systems(network)
         np += numparams(ns)
     end
     np
@@ -244,10 +244,10 @@ Notes:
 function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks=false)
 
     # we don't check subsystems since we will add it to the top-level system...
-    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), network.states)
+    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), get_states(network))
     if curidx === nothing
-        push!(network.states, s)
-        return length(network.states)
+        push!(get_states(network), s)
+        return length(get_states(network))
     else
         return curidx
     end
@@ -287,10 +287,10 @@ function addparam!(network::ReactionSystem, p::Symbolic; disablechecks=false)
     if istree(p) && !(operation(p) isa Sym)
         error("If the passed in parameter is an expression, it must correspond to an underlying Variable.")
     end
-    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, p), network.ps)
+    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, p), get_ps(network))
     if curidx === nothing
-        push!(network.ps, p)
-        return length(network.ps)
+        push!(get_ps(network), p)
+        return length(get_ps(network))
     else
         return curidx
     end
@@ -323,8 +323,8 @@ Notes:
     `network` using [`addspecies!`](@ref) and [`addparam!`](@ref).
 """
 function addreaction!(network::ReactionSystem, rx::Reaction)
-    push!(network.eqs, rx)
-    length(network.eqs)
+    push!(get_eqs(network), rx)
+    length(get_eqs(network))
 end
 
 
