@@ -37,17 +37,14 @@ volᵢ = Vₒ*vᵢ           # cm⁻³
 volⱼ = Vₒ*vⱼ           # cm⁻³
 sum_vᵢvⱼ = @. vᵢ + vⱼ  # Product index
 ```
-We next specify the rates (i.e. kernel) at which reactants collide to form products. For simplicity, we allow a user-selected additive kernel, multiplicative kernel, or constant kernel. The constants(`B`,`b` and `C`) are adopted from Scott's paper [2](https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml)
+We next specify the rates (i.e. kernel) at which reactants collide to form products. For simplicity, we allow a user-selected additive kernel or constant kernel. The constants(`B and `C`) are adopted from Scott's paper [2](https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml)
 ```julia
-# set i to  1 for additive kernel, 2 for multiplicative, 3 for constant
+# set i to  1 for additive kernel, 2  for constant
 i = 1
 if i==1
     B = 1.53e03                # s⁻¹
     kv = @. B*(volᵢ + volⱼ)/V  # dividing by volume as its a bi-molecular reaction chain
 elseif i==2
-    b = 3.8e11                 #  cm⁻³ s⁻¹
-    kv = @. b*(volᵢ*volⱼ)/V
-else
     C = 1.84e-04               # cm³ s⁻¹
     kv = fill(C/V, nr) 
 end
@@ -63,8 +60,6 @@ pars = Pair.(k, kv)
 if i == 1
     tspan = (0. ,2000.)   
 elseif i == 2
-    tspan = (0. ,3000.)
-else
     tspan = (0. ,350.)
 end
 
@@ -73,7 +68,7 @@ u₀    = zeros(Int64, N)
 u₀[1] = uₒ  
 u₀map = Pair.(X, u₀)   # map variable to its initial value
 ```
-Here we generate the reactions programmatically. We systematically create Catalyst `Reaction`s for each possible reaction shown in the figure on [Wikipedia](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation). When `vᵢ[n] == vⱼ[n]`, we set the rate to be `2*k[n]`, using the relationship between the coagulation kernel and the deterministic rate-law form (see [Laurenzi et.al](https://www.sciencedirect.com/science/article/pii/S0021999102970178))
+Here we generate the reactions programmatically. We systematically create Catalyst `Reaction`s for each possible reaction shown in the figure on [Wikipedia](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation). When `vᵢ[n] == vⱼ[n]`, we set the stoichiometric coefficient of reactant in Reaction to 2.
 ```julia
 # vector to store the Reactions in
 rx = []              
@@ -112,11 +107,6 @@ if i == 1
         sol[j,:] = @. Nₒ*(1 - ϕ)*(((j*ϕ)^(j-1))/gamma(j+1))*exp(-j*ϕ)
     end
 elseif i == 2
-    ϕ = @. (b*Nₒ*Vₒ*Vₒ*t)
-    for j in v_res
-        sol[j,:] = @. Nₒ*(((j*ϕ)^(j-1))/(j*gamma(j+1)))*exp(-j*ϕ)
-    end
-else
     ϕ = @. (C*Nₒ*t)
     for j in v_res
         sol[j,:] = @. 4Nₒ*((ϕ^(j-1))/((ϕ + 2)^(j+1)))
