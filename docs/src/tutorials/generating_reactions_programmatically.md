@@ -51,7 +51,7 @@ elseif i==2
     kv = @. b*(volᵢ*volⱼ)/V
 else
     C = 1.84e-04               # cm³ s⁻¹
-    kv = @. C/V
+    kv = fill(C/V, nr) 
 end
 ```
 We'll store the rates in `params` as `Pair`s, and choose the initial condition that only monomers are present initially in `u₀map` that we  will use in creating JumpSystems with massaction.
