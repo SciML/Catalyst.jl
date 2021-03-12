@@ -1,4 +1,5 @@
-using Catalyst
+using Catalyst, Graphviz_jll 
+
 rn = @reaction_network begin
     α, S + I --> 2I
     β, I --> R

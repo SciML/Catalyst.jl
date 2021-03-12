@@ -4,6 +4,9 @@ using SafeTestsets
 ### Run the tests ###
 @time begin
 
+# the following can't really be run until there is an artifact for Graphviz
+@time @safetestset "Graphs" begin include("graphs.jl") end
+
 # Tests all features realted to constructing a model
 @time @safetestset "Model Construction" begin include("make_model.jl") end
 @time @safetestset "Custom Functions" begin include("custom_functions.jl") end
@@ -30,8 +33,5 @@ using SafeTestsets
 # Miscellaneous tests
 #@time @safetestset "Basic Plotting" begin include("plotting.jl") end
 @time @safetestset "Latexify" begin include("latexify.jl") end
-
-# the following can't really be run until there is an artifact for Graphviz
-@time @safetestset "Graphs" begin include("graphs.jl") end
 
 end # @time
