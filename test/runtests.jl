@@ -32,6 +32,6 @@ using SafeTestsets
 @time @safetestset "Latexify" begin include("latexify.jl") end
 
 # the following can't really be run until there is an artifact for Graphviz
-#@time @safetestset "Graphs" begin include("graphs.jl") end
+@time @safetestset "Graphs" begin include("graphs.jl") end
 
 end # @time
