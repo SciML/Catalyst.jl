@@ -7,6 +7,7 @@ import MacroTools
 import Base: (==), merge!, merge
 using Latexify, Requires
 
+# as used in Catlab
 const USE_GV_JLL = Ref(false)
 function __init__()
     @require Graphviz_jll="3c863552-8265-54e4-a6dc-903eb78fde85" begin
