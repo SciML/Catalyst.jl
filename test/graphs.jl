@@ -1,4 +1,5 @@
-using Catalyst
+using Catalyst, Graphviz_jll 
+
 rn = @reaction_network begin
     α, S + I --> 2I
     β, I --> R
@@ -10,5 +11,5 @@ gr = Graph(rn)
 
 # check can save a graph
 fname = Base.Filesystem.tempname()
-savegraph(gr, fname, "png")
+savegraph(gr, fname, "svg")
 
