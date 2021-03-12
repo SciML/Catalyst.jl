@@ -11,5 +11,5 @@ gr = Graph(rn)
 
 # check can save a graph
 fname = Base.Filesystem.tempname()
-savegraph(gr, fname, "png")
+savegraph(gr, fname, "svg")
 
