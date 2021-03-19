@@ -232,30 +232,36 @@ end
 
 ### Functionality for expanding function call to custom and specific functions ###
 
-#Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.
+# Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.
 function recursive_expand_functions!(expr::ExprValues)
     (typeof(expr)!=Expr) && (return expr)
     foreach(i -> expr.args[i] = recursive_expand_functions!(expr.args[i]), 1:length(expr.args))
     if expr.head == :call
         in(expr.args[1],hill_name) && return hill(expr)
         in(expr.args[1],hillR_name) && return hillR(expr)
+        in(expr.args[1],hillC_name) && return hillC(expr)
         in(expr.args[1],mm_name) && return mm(expr)
         in(expr.args[1],mmR_name) && return mmR(expr)
+        in(expr.args[1],mmC_name) && return mmC(expr)
 
         !isdefined(Catalyst,expr.args[1]) && (expr.args[1] = esc(expr.args[1]))
     end
     return expr
 end
 
-#Hill function made avaiable (activation and repression).
+# Hill function made avaiable (activation, repression, and combined).
 hill_name = Set{Symbol}([:hill, :Hill, :h, :H, :HILL])
 hill(expr::Expr) = :($(expr.args[3])*($(expr.args[2])^$(expr.args[5]))/($(expr.args[4])^$(expr.args[5])+$(expr.args[2])^$(expr.args[5])))
 hillR_name = Set{Symbol}([:hill_repressor, :hillr, :hillR, :HillR, :hR, :hR, :Hr, :HR, :HILLR])
 hillR(expr::Expr) = :($(expr.args[3])*($(expr.args[4])^$(expr.args[5]))/($(expr.args[4])^$(expr.args[5])+$(expr.args[2])^$(expr.args[5])))
+hillC_name = Set{Symbol}([:hillC, :HillC, :hC, :HC, :HILLC, :hillAR, :HillAR, :hAR, :HAR, :HILLAR]) 
+hillC(expr::Expr) = :($(expr.args[4])*($(expr.args[2])^$(expr.args[6]))/($(expr.args[5])^$(expr.args[6])+$(expr.args[2])^$(expr.args[6]+$(expr.args[3])^$(expr.args[6])))
 
-#Michaelis-Menten function made available (activation and repression).
+# Michaelis-Menten function made available (activation, repression, and combined).
 mm_name = Set{Symbol}([:MM, :mm, :Mm, :mM, :M, :m])
 mm(expr::Expr) = :($(expr.args[3])*$(expr.args[2])/($(expr.args[4])+$(expr.args[2])))
 mmR_name = Set{Symbol}([:mm_repressor, :MMR, :mmr, :mmR, :MmR, :mMr, :MR, :mr, :Mr, :mR])
 mmR(expr::Expr) = :($(expr.args[3])*$(expr.args[4])/($(expr.args[4])+$(expr.args[2])))
+mmC_name = Set{Symbol}([:MMC, :mmC, :MmC, :mMC, :MC, :mAR, :MMAR, :mmAR, :MmAR, :mMAR, :MAR, :mAR])
+mmC(expr::Expr) = :($(expr.args[4])*$(expr.args[2])/($(expr.args[5])+$(expr.args[2])+$(expr.args[3])))
 
