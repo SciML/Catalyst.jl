@@ -1,5 +1,9 @@
+"""
+$(DocStringExtensions.README)
+"""
 module Catalyst
 
+using DocStringExtensions
 using Reexport, ModelingToolkit
 using ModelingToolkit: Symbolic, value, istree
 @reexport using ModelingToolkit
