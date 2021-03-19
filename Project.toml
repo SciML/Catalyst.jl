@@ -4,6 +4,7 @@ version = "6.9.0"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 Latexify = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
