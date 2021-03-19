@@ -255,7 +255,7 @@ hill(expr::Expr) = :($(expr.args[3])*($(expr.args[2])^$(expr.args[5]))/($(expr.a
 hillR_name = Set{Symbol}([:hill_repressor, :hillr, :hillR, :HillR, :hR, :hR, :Hr, :HR, :HILLR])
 hillR(expr::Expr) = :($(expr.args[3])*($(expr.args[4])^$(expr.args[5]))/($(expr.args[4])^$(expr.args[5])+$(expr.args[2])^$(expr.args[5])))
 hillC_name = Set{Symbol}([:hillC, :HillC, :hC, :HC, :HILLC, :hillAR, :HillAR, :hAR, :HAR, :HILLAR]) 
-hillC(expr::Expr) = :($(expr.args[4])*($(expr.args[2])^$(expr.args[6]))/($(expr.args[5])^$(expr.args[6])+$(expr.args[2])^$(expr.args[6]+$(expr.args[3])^$(expr.args[6])))
+hillC(expr::Expr) = :($(expr.args[4])*($(expr.args[2])^$(expr.args[6]))/($(expr.args[5])^$(expr.args[6])+$(expr.args[2])^$(expr.args[6])+$(expr.args[3])^$(expr.args[6])))
 
 # Michaelis-Menten function made available (activation, repression, and combined).
 mm_name = Set{Symbol}([:MM, :mm, :Mm, :mM, :M, :m])
