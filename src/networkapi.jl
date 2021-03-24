@@ -69,7 +69,7 @@ Return the number of species within the given [`ReactionSystem`](@ref).
 function numspecies(network)
     ns = length(ModelingToolkit.ModelingToolkit.get_states(network))
     for sys in ModelingToolkit.get_systems(network)
-        ns += numspecies(ns)
+        ns += numspecies(sys)
     end
     ns
 end
@@ -95,7 +95,7 @@ Return the number of parameters within the given [`ReactionSystem`](@ref).
 function numparams(network)
     np = length(ModelingToolkit.get_ps(network))
     for sys in ModelingToolkit.get_systems(network)
-        np += numparams(ns)
+        np += numparams(sys)
     end
     np
 end
