@@ -8,10 +8,8 @@ rng = StableRNG(12345)
 include("test_networks.jl")
 
 
-### Debugg functions ###
-
+### Debug functions ###
 opname(x) = istree(x) ? nameof(operation(x)) : nameof(x)
-
 alleq(xs,ys) = all(isequal(x,y) for (x, y) in zip(xs, ys))
 
 # Gets all the reactants in a set of equations.
@@ -405,3 +403,13 @@ rn = @reaction_network begin
     k2, I --> R
 end k1 k2
 @test isequal(opname(species(rn)[2]),:I)
+
+
+# test names work
+rn = @reaction_network SIR1 begin
+    k1, S + I --> 2I
+    k2, I --> R
+end k1 k2
+@test nameof(rn) == :SIR1
+
+
