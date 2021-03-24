@@ -69,7 +69,7 @@ Return the number of species within the given [`ReactionSystem`](@ref).
 function numspecies(network)
     ns = length(ModelingToolkit.ModelingToolkit.get_states(network))
     for sys in ModelingToolkit.get_systems(network)
-        ns += numspecies(ns)
+        ns += numspecies(sys)
     end
     ns
 end
@@ -95,7 +95,7 @@ Return the number of parameters within the given [`ReactionSystem`](@ref).
 function numparams(network)
     np = length(ModelingToolkit.get_ps(network))
     for sys in ModelingToolkit.get_systems(network)
-        np += numparams(ns)
+        np += numparams(sys)
     end
     np
 end
@@ -219,13 +219,14 @@ end
 ######################## functions to extend a network ####################
 
 """
-    make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t))
+    make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t), 
+                         name=gensym(:ReactionSystem))
 
 Construct an empty [`ReactionSystem`](@ref). `iv` is the independent variable,
-usually time.
+usually time, and `name` is the name to give the `ReactionSystem`.
 """
-function make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t))
-    ReactionSystem(Reaction[], iv, [], [], Equation[], gensym(:ReactionSystem), ReactionSystem[])
+function make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t), name=gensym(:ReactionSystem))
+    ReactionSystem(Reaction[], iv, [], [], Equation[], name, ReactionSystem[])
 end
 
 """
@@ -244,10 +245,10 @@ Notes:
 function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks=false)
 
     # we don't check subsystems since we will add it to the top-level system...
-    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), ModelingToolkit.ModelingToolkit.get_states(network))
+    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), ModelingToolkit.get_states(network))
     if curidx === nothing
-        push!(ModelingToolkit.ModelingToolkit.get_states(network), s)
-        return length(ModelingToolkit.ModelingToolkit.get_states(network))
+        push!(ModelingToolkit.get_states(network), s)
+        return length(ModelingToolkit.get_states(network))
     else
         return curidx
     end

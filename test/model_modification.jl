@@ -13,7 +13,13 @@ empty_network_1 = @reaction_network
 @test length(empty_network_1.states) == 0
 @test length(ps) == 0
 
-empty_network_2 = @reaction_network p1 p2 p3 p4 p5
+empty_network_2 = @reaction_network 
+@variables p1 p2 p3 p4 p5
+addparam!(empty_network_2, p1)
+addparam!(empty_network_2, p2)
+addparam!(empty_network_2, p3)
+addparam!(empty_network_2, p4)
+addparam!(empty_network_2, p5)
 @unpack eqs,iv,ps,name,systems = empty_network_2
 @test length(eqs) == 0
 @test iv.name == :t
@@ -129,7 +135,9 @@ end k1
 end k4 m J4
 push!(identical_networks, reaction_networks_real[3] => step_by_step_network_7)
 
-step_by_step_network_8 = @reaction_network k1
+step_by_step_network_8 = @reaction_network 
+@parameters k1
+addparam!(step_by_step_network_8,k1)
 @add_reactions step_by_step_network_8 begin
     k1, X1 → X2
     0, X2 → X3

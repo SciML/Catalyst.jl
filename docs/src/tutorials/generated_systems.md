@@ -33,7 +33,7 @@ Each `Reaction` within `reactions(rn)` has a number of subfields. For `rx` a
   non-filled arrows and should ignore mass action kinetics. `false` by default.
 
 Empty `ReactionSystem`s can be generated via [`make_empty_network`](@ref) or
-[`@reaction_network`](@ref) with no arguments. `ReactionSystem`s can be
-programmatically extended using [`addspecies!`](@ref), [`addparam!`](@ref),
-[`addreaction!`](@ref), [`@add_reactions`](@ref), or composed using `merge` and
-`merge!`.
+[`@reaction_network`](@ref) with no arguments (giving one argument to the latter
+will specify a system name). `ReactionSystem`s can be programmatically extended
+using [`addspecies!`](@ref), [`addparam!`](@ref), [`addreaction!`](@ref),
+[`@add_reactions`](@ref), or composed using `merge` and `merge!`.
