@@ -65,6 +65,14 @@ bwd_arrows = Set{Symbol}([:<, :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :�
 double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :⟺])
 pure_rate_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
+# unfortunately the following doesn't seem to work on 1.5, so supporting these 
+# operators seems to require us to only support 1.6 and up...
+# @static if VERSION >= v"1.6.0"
+#     push!(bwd_arrows, :<--)
+#     push!(double_arrows, :<-->)
+# end
+
+
 # Declares symbols which may neither be used as parameters not varriables.
 forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅]
 
@@ -78,6 +86,27 @@ network.
 
 See the [Catalyst.jl for Reaction Models](@ref) documentation for details on
 parameters to the macro.
+
+Examples:
+```julia
+# a basic SIR model, with name SIR
+sir_model = @reaction_network SIR begin
+    c1, s + i --> 2i
+    c2, i --> r
+end c1 c2
+
+# a basic SIR model, with random generated name
+sir_model = @reaction_network begin
+    c1, s + i --> 2i
+    c2, i --> r
+end c1 c2
+
+# an empty network with name empty
+emptyrn = @reaction_network empty
+
+# an empty network with random generated name
+emptyrn = @reaction_network 
+```
 """
 macro reaction_network(name::Symbol, ex::Expr, parameters...)
     make_reaction_system(MacroTools.striplines(ex), parameters; name=name)
@@ -87,10 +116,7 @@ macro reaction_network(ex::Expr, parameters...)
     make_reaction_system(MacroTools.striplines(ex), parameters)
 end
 
-
-### Macros used for manipulating, and successively builing up, reaction systems. ###
-
-#Returns a empty network (with, or without, parameters declared)
+#Returns a empty network (with, or without, a declared name)
 macro reaction_network(name::Symbol=gensym(:ReactionSystem))
     return Expr(:block,:(@parameters t),
                 :(ReactionSystem(Reaction[],
@@ -101,6 +127,8 @@ macro reaction_network(name::Symbol=gensym(:ReactionSystem))
                                  $(QuoteNode(name)),
                                  ReactionSystem[])))
 end
+
+### Macros used for manipulating, and successively builing up, reaction systems. ###
 
 """
     @add_reactions

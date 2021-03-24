@@ -219,10 +219,11 @@ end
 ######################## functions to extend a network ####################
 
 """
-    make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t), name=gensym(:ReactionSystem))
+    make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t), 
+                         name=gensym(:ReactionSystem))
 
 Construct an empty [`ReactionSystem`](@ref). `iv` is the independent variable,
-usually time.
+usually time, and `name` is the name to give the `ReactionSystem`.
 """
 function make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t), name=gensym(:ReactionSystem))
     ReactionSystem(Reaction[], iv, [], [], Equation[], name, ReactionSystem[])

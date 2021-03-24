@@ -11,8 +11,9 @@ be converted to other `ModelingToolkit.AbstractSystem`s, including a
 `ModelingToolkit.ODESystem`, `ModelingToolkit.SDESystem`, or
 `ModelingToolkit.JumpSystem`.
 
-An empty network can be generated using [`@reaction_network`](@ref) with no arguments or
-the [`make_empty_network`](@ref) function. These can then be extended
+An empty network can be generated using [`@reaction_network`](@ref) with no
+arguments (or one argument to name the system), or the
+[`make_empty_network`](@ref) function. These can then be extended
 programmatically using [`addspecies!`](@ref), [`addparam!`](@ref), and
 [`addreaction!`](@ref).
 
