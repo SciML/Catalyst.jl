@@ -91,15 +91,14 @@ end
 ### Macros used for manipulating, and successively builing up, reaction systems. ###
 
 #Returns a empty network (with, or without, parameters declared)
-macro reaction_network(parameters...)
-    !isempty(intersect(forbidden_symbols,parameters)) && error("The following symbol(s) are used as reactants or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,reactants,parameters))...))*"this is not permited.")
-    return Expr(:block,:(@parameters $((:t,parameters...)...)),
+macro reaction_network(name::Symbol=gensym(:ReactionSystem))
+    return Expr(:block,:(@parameters t),
                 :(ReactionSystem(Reaction[],
                                  t,
                                  [],
-                                 [$(parameters...)], 
+                                 [], 
                                  Equation[],
-                                 gensym(:ReactionSystem),
+                                 $(QuoteNode(name)),
                                  ReactionSystem[])))
 end
 
