@@ -219,13 +219,13 @@ end
 ######################## functions to extend a network ####################
 
 """
-    make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t))
+    make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t), name=gensym(:ReactionSystem))
 
 Construct an empty [`ReactionSystem`](@ref). `iv` is the independent variable,
 usually time.
 """
-function make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t))
-    ReactionSystem(Reaction[], iv, [], [], Equation[], gensym(:ReactionSystem), ReactionSystem[])
+function make_empty_network(; iv=Sym{ModelingToolkit.Parameter{Real}}(:t), name=gensym(:ReactionSystem))
+    ReactionSystem(Reaction[], iv, [], [], Equation[], name, ReactionSystem[])
 end
 
 """
@@ -244,10 +244,10 @@ Notes:
 function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks=false)
 
     # we don't check subsystems since we will add it to the top-level system...
-    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), ModelingToolkit.ModelingToolkit.get_states(network))
+    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), ModelingToolkit.get_states(network))
     if curidx === nothing
-        push!(ModelingToolkit.ModelingToolkit.get_states(network), s)
-        return length(ModelingToolkit.ModelingToolkit.get_states(network))
+        push!(ModelingToolkit.get_states(network), s)
+        return length(ModelingToolkit.get_states(network))
     else
         return curidx
     end
