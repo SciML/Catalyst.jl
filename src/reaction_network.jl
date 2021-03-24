@@ -79,9 +79,14 @@ network.
 See the [Catalyst.jl for Reaction Models](@ref) documentation for details on
 parameters to the macro.
 """
+macro reaction_network(name::Symbol, ex::Expr, parameters...)
+    make_reaction_system(MacroTools.striplines(ex), parameters; name=name)
+end
+
 macro reaction_network(ex::Expr, parameters...)
     make_reaction_system(MacroTools.striplines(ex), parameters)
 end
+
 
 ### Macros used for manipulating, and successively builing up, reaction systems. ###
 
@@ -139,16 +144,15 @@ end
 ### Functions that process the input and rephrase it as a reaction system ###
 
 # Takes the reactions, and rephrases it as a "ReactionSystem" call, as designated by the ModelingToolkit IR.
-function make_reaction_system(ex::Expr, parameters)
+function make_reaction_system(ex::Expr, parameters; name=gensym(:ReactionSystem))
     reactions = get_reactions(ex)
     reactants = get_reactants(reactions)
-    !isempty(intersect(forbidden_symbols,union(reactants,parameters))) && error("The following symbol(s) are used as reactants or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(reactants,parameters)))...))*"this is not permited.")
-
-    network_code = Expr(:block,:(@parameters t),:(@variables), :(ReactionSystem([],t,[],[])))
+    !isempty(intersect(forbidden_symbols,union(reactants,parameters))) && error("The following symbol(s) are used as reactants or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(reactants,parameters)))...))*"this is not permited.")    
+    network_code = Expr(:block,:(@parameters t),:(@variables), :(ReactionSystem([],t,[],[]; name=$(QuoteNode(name)))))
     foreach(parameter-> push!(network_code.args[1].args, parameter), parameters)
     foreach(reactant -> push!(network_code.args[2].args, Expr(:call,reactant,:t)), reactants)
-    foreach(parameter-> push!(network_code.args[3].args[5].args, parameter), parameters)
-    foreach(reactant -> push!(network_code.args[3].args[4].args, reactant), reactants)
+    foreach(parameter-> push!(network_code.args[3].args[6].args, parameter), parameters)
+    foreach(reactant -> push!(network_code.args[3].args[5].args, reactant), reactants)
     for reaction in reactions
         subs_init = isempty(reaction.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
         prod_init = isempty(reaction.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
@@ -161,7 +165,7 @@ function make_reaction_system(ex::Expr, parameters)
             push!(reaction_func.args[4].args, prod.reactant)
             push!(reaction_func.args[6].args, prod.stoichiometry)
         end
-        push!(network_code.args[3].args[2].args,reaction_func)
+        push!(network_code.args[3].args[3].args,reaction_func)
     end
     return network_code
 end

@@ -1,6 +1,6 @@
 name = "Catalyst"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
-version = "6.9.0"
+version = "6.10.0"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
@@ -17,7 +17,7 @@ DataStructures = "0.18"
 DocStringExtensions = "0.8"
 Latexify = "0.14"
 MacroTools = "0.5.5"
-ModelingToolkit = "5.12.0"
+ModelingToolkit = "5.13.0"
 Parameters = "0.12"
 Reexport = "0.2, 1.0"
 Requires = "1.0"
