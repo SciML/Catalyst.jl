@@ -59,13 +59,13 @@ function get_edge_iter(i::Symbol, j::Symbol, dim::Int64, grid::PeriodicGrid)
                                for sgn in [-1,+1])
 end
 
-function graph_iterator(grid::PeriodicGrid, idcs::Set{Symbol})
+function graph_iterator(grid::PeriodicGrid{N}, idcs::Set{Symbol}) where N
     if length(idcs) == 1
         idx = first(idcs)
         return ( Dict(idx => coord_to_str(coords)) for coords in grid_coords(grid) ) 
     elseif length(idcs) == 2
         i, j = collect(idcs)
-        return Iterators.flatten(get_edge_iter(i, j, dim, graph) for dim in 1:N)
+        return Iterators.flatten(get_edge_iter(i, j, dim, grid) for dim in 1:N if grid.size[dim] != 1)
     end
     
     return nothing
@@ -80,7 +80,7 @@ function get_idx_dict(exprs)::Dict{Symbol,Any}
     for idx_map in exprs
         (isa(idx_map, Expr) && idx_map.head == :ref) || throw("malformed index assignment: $(idx_map)")
         graph_name = idx_map.args[1]
-        graph = Base.MainInclude.eval(graph_name)
+        graph = Base.eval(@__MODULE__, graph_name)
         idcs = idx_map.args[2:end]
         
         for idx in idcs
@@ -106,7 +106,7 @@ function iterate_idcs(idcs::Set{Symbol}, idx_dict::AbstractDict)
         push!(iterators, iterator)
     end
     
-    return (merge(dicts...) for dicts in Iterators.product(iterators...))
+    ( merge(dicts...) for dicts in Iterators.product(iterators...) )
 end
 
 # Get indices occurring in a reaction
@@ -204,7 +204,11 @@ function get_spatial_reactions(ex::Expr, idx_dict::AbstractDict)
     Expr(:block, reactions...)
 end
         
-macro spatial_reaction_network(ex::Expr, graphs...)
+function make_spatial_reaction_network(ex::Expr, graphs)
     idx_dict = get_idx_dict(graphs)
-    esc(get_spatial_reactions(MacroTools.striplines(ex), idx_dict))
+    get_spatial_reactions(MacroTools.striplines(ex), idx_dict)
+end
+
+macro spatial_reaction_network(ex::Expr, graphs...)
+    esc(make_spatial_reaction_network(ex, graphs))
 end

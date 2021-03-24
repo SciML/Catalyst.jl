@@ -32,4 +32,8 @@ using SafeTestsets
 @time @safetestset "Latexify" begin include("latexify.jl") end
 @time @safetestset "Graphs" begin include("graphs.jl") end
 
+# Spatial reaction networks
+@time @safetestset "Spatial Network Backcompatibility" begin include("spatial_compat.jl") end
+@time @safetestset "Spatial Networks" begin include("spatial_systems.jl") end
+
 end # @time
