@@ -1,15 +1,20 @@
 ### Fetch required packages and reaction networks ###
-using Catalyst, Test, UnPack
+using Catalyst, Test
+using ModelingToolkit: get_ps, get_states, get_eqs, get_systems
 include("test_networks.jl")
 
 using StableRNGs
 rng = StableRNG(12345)
 
+function unpacksys(sys)
+    get_eqs(sys),independent_variable(sys),get_ps(sys),nameof(sys),get_systems(sys)
+end
+
 ### Tests construction of empty reaction networks ###
 empty_network_1 = @reaction_network
-@unpack eqs,iv,ps,name,systems = empty_network_1
+eqs,iv,ps,name,systems = unpacksys(empty_network_1)
 @test length(eqs) == 0
-@test iv.name == :t
+@test nameof(iv) == :t
 @test length(get_states(empty_network_1)) == 0
 @test length(ps) == 0
 
@@ -20,9 +25,9 @@ addparam!(empty_network_2, p2)
 addparam!(empty_network_2, p3)
 addparam!(empty_network_2, p4)
 addparam!(empty_network_2, p5)
-@unpack eqs,iv,ps,name,systems = empty_network_2
+eqs,iv,ps,name,systems = unpacksys(empty_network_2)
 @test length(eqs) == 0
-@test iv.name == :t
+@test nameof(iv) == :t
 @test length(get_states(empty_network_2)) == 0
 @test length(ps) == 5
 @test all(getproperty.(ps,:name) .== [:p1,:p2,:p3,:p4,:p5])

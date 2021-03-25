@@ -349,7 +349,7 @@ function Base.merge!(network1::ReactionSystem, network2::ReactionSystem)
     union!(get_states(network1), get_states(network2))
     union!(get_ps(network1), get_ps(network2))
     append!(get_eqs(network1), get_eqs(network2))
-    append!(get_systems(network1), get_systems(network2.systems))
+    append!(get_systems(network1), get_systems(network2))
     network1
 end
 

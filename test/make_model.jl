@@ -1,5 +1,5 @@
 ### Fetch required packages and reaction networks ###
-using DiffEqBase, Catalyst, Random, Test, UnPack
+using DiffEqBase, Catalyst, Random, Test
 using ModelingToolkit: operation, Sym, istree, get_states, get_ps, get_eqs
 
 using StableRNGs
@@ -7,6 +7,9 @@ rng = StableRNG(12345)
 
 include("test_networks.jl")
 
+function unpacksys(sys)
+    get_eqs(sys),independent_variable(sys),get_ps(sys),nameof(sys),get_systems(sys)
+end
 
 ### Debug functions ###
 opname(x) = istree(x) ? nameof(operation(x)) : nameof(x)
@@ -30,7 +33,7 @@ using UnPack
 
 
 ### Test basic properties of networks ###
-@unpack eqs,iv,states,ps,name,systems = reaction_networks_standard[1]
+eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_standard[1])
 @test length(eqs) == 10
 @test opname(iv) == :t
 @test length(states) == 3
@@ -40,7 +43,7 @@ using UnPack
 @test all(map(opname, ps) .== [:p1,:p2,:p3,:k1,:k2,:k3,:k4,:d1,:d2,:d3])
 @test all_parameters(eqs) == Set([:p1,:p2,:p3,:k1,:k2,:k3,:k4,:d1,:d2,:d3])
 
-@unpack eqs,iv,states,ps,name,systems = reaction_networks_standard[2]
+eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_standard[2])
 @test length(eqs) == 3
 @test opname(iv) == :t
 @test length(states) == 2
@@ -49,7 +52,7 @@ using UnPack
 @test length(ps) == 5
 @test all(opname.(ps) .== [:v1,:K1,:v2,:K2,:d])
 
-@unpack eqs,iv,states,ps,name,systems = reaction_networks_standard[3]
+eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_standard[3])
 @test length(eqs) == 10
 @test opname(iv) == :t
 @test length(states) == 4
@@ -58,7 +61,7 @@ using UnPack
 @test length(ps) == 9
 @test all(opname.(ps) .== [:v1,:K1,:v2,:K2,:k1,:k2,:k3,:k4,:d])
 
-@unpack eqs,iv,states,ps,name,systems = reaction_networks_standard[4]
+eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_standard[4])
 @test length(eqs) == 8
 @test opname(iv) == :t
 @test length(states) == 4
@@ -67,7 +70,7 @@ using UnPack
 @test length(ps) == 12
 @test all(opname.(ps) .== [:v1,:K1,:v2,:K2,:v3,:K3,:v4,:K4,:d1,:d2,:d3,:d4])
 
-@unpack eqs,iv,states,ps,name,systems = reaction_networks_standard[5]
+eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_standard[5])
 @test length(eqs) == 8
 @test opname(iv) == :t
 @test length(states) == 4
@@ -77,7 +80,7 @@ using UnPack
 @test all(opname.(ps) .== [:p,:k1,:k2,:k3,:k4,:k5,:k6,:d])
 @test all_parameters(eqs) == Set([:p,:k1,:k2,:k3,:k4,:k5,:k6,:d])
 
-@unpack eqs,iv,states,ps,name,systems = reaction_networks_hill[1]
+eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_hill[1])
 @test length(eqs) == 4
 @test opname(iv) == :t
 @test length(states) == 2
@@ -86,7 +89,7 @@ using UnPack
 @test length(ps) == 8
 @test all(opname.(ps) .== [:v1,:v2,:K1,:K2,:n1,:n2,:d1,:d2])
 
-@unpack eqs,iv,states,ps,name,systems = reaction_networks_constraint[1]
+eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_constraint[1])
 @test length(eqs) == 6
 @test opname(iv) == :t
 @test length(states) == 3
@@ -95,7 +98,7 @@ using UnPack
 @test length(ps) == 6
 @test all(opname.(ps) .== [:k1,:k2,:k3,:k4,:k5,:k6])
 
-@unpack eqs,iv,states,ps,name,systems = reaction_networks_real[1]
+eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_real[1])
 @test length(eqs) == 4
 @test opname(iv) == :t
 @test length(states) == 2
@@ -104,7 +107,7 @@ using UnPack
 @test length(ps) == 2
 @test all(opname.(ps) .== [:A,:B])
 
-@unpack eqs,iv,states,ps,name,systems = reaction_networks_weird[1]
+eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_weird[1])
 @test length(eqs) == 2
 @test opname(iv) == :t
 @test length(states) == 1
@@ -113,7 +116,7 @@ using UnPack
 @test length(ps) == 2
 @test all(opname.(ps) .== [:p,:d])
 
-@unpack eqs,iv,states,ps,name,systems = reaction_networks_weird[2]
+eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_weird[2])
 @test length(eqs) == 4
 @test opname(iv) == :t
 @test length(states) == 3
@@ -315,10 +318,10 @@ rs_3 = ReactionSystem(rxs_3, t, [X1,X2,X3,X4,X5], [k1,k2,k3])
 push!(identical_networks_4, reaction_networks_weird[7] => rs_3)
 
 for networks in identical_networks_4
-    @test networks[1].iv == networks[2].iv
+    @test independent_variable(networks[1]) == independent_variable(networks[2])
     @test alleq(get_states(networks[1]), get_states(networks[2]))
     @test alleq(get_ps(networks[1]), get_ps(networks[2]))
-    @test networks[1].systems == networks[2].systems
+    @test ModelingToolkit.get_systems(networks[1]) == ModelingToolkit.get_systems(networks[2])
     @test length(get_eqs(networks[1])) == length(get_eqs(networks[2]))
     for (e1,e2) in zip(get_eqs(networks[1]),get_eqs(networks[2]))
         @test isequal(e1.rate,e2.rate)
