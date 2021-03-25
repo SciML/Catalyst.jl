@@ -29,8 +29,6 @@ end
 function all_parameters(eqs)
     return Set(unique(map(eq -> opname(eq.rate),eqs)))
 end
-using UnPack
-
 
 ### Test basic properties of networks ###
 eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_standard[1])
