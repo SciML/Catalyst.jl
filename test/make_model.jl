@@ -8,7 +8,7 @@ rng = StableRNG(12345)
 include("test_networks.jl")
 
 function unpacksys(sys)
-    get_eqs(sys),independent_variable(sys),get_ps(sys),nameof(sys),get_systems(sys)
+    get_eqs(sys),independent_variable(sys),get_states(sys),get_ps(sys),nameof(sys),get_systems(sys)
 end
 
 ### Debug functions ###
