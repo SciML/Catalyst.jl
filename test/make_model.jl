@@ -1,6 +1,6 @@
 ### Fetch required packages and reaction networks ###
 using DiffEqBase, Catalyst, Random, Test, UnPack
-using ModelingToolkit: operation, Sym, istree
+using ModelingToolkit: operation, Sym, istree, get_states, get_ps, get_eqs
 
 using StableRNGs
 rng = StableRNG(12345)
@@ -174,8 +174,8 @@ for networks in identical_networks_1
     g1 = SDEFunction(convert(SDESystem,networks[1]))
     g2 = SDEFunction(convert(SDESystem,networks[2]))
     for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-        u0 = factor*rand(rng,length(networks[1].states))
-        p = factor*rand(rng,length(networks[1].ps))
+        u0 = factor*rand(rng,length(get_states(networks[1])))
+        p = factor*rand(rng,length(get_ps(networks[1])))
         t = rand(rng)
         @test all(abs.(f1(u0,p,t) .≈ f2(u0,p,t)))
         @test all(abs.(f1.jac(u0,p,t) .≈ f2.jac(u0,p,t)))
@@ -229,8 +229,8 @@ for networks in identical_networks_2
     g1 = SDEFunction(convert(SDESystem,networks[1]))
     g2 = SDEFunction(convert(SDESystem,networks[2]))
     for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-        u0 = factor*rand(rng,length(networks[1].states))
-        p = factor*rand(rng,length(networks[1].ps))
+        u0 = factor*rand(rng,length(get_states(networks[1])))
+        p = factor*rand(rng,length(get_ps(networks[1])))
         t = rand(rng)
         @test all(f1(u0,p,t) .≈ f2(u0,p,t))
         @test all(f1.jac(u0,p,t) .≈ f2.jac(u0,p,t))
@@ -271,7 +271,7 @@ for (i,networks) in enumerate(identical_networks_3)
     g1 = SDEFunction(convert(SDESystem,networks[1]))
     g2 = SDEFunction(convert(SDESystem,networks[2]))
     for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-        u0 = factor*rand(rng,length(networks[1].states))
+        u0 = factor*rand(rng,length(get_states(networks[1])))
         t = rand(rng)
         @test f1(u0,parameter_sets[i],t) ≈ f2(u0,[],t)
         @test f1.jac(u0,parameter_sets[i],t) ≈ f2.jac(u0,[],t)
@@ -316,11 +316,11 @@ push!(identical_networks_4, reaction_networks_weird[7] => rs_3)
 
 for networks in identical_networks_4
     @test networks[1].iv == networks[2].iv
-    @test alleq(networks[1].states, networks[2].states)
-    @test alleq(networks[1].ps, networks[2].ps)
+    @test alleq(get_states(networks[1]), get_states(networks[2]))
+    @test alleq(get_ps(networks[1]), get_ps(networks[2]))
     @test networks[1].systems == networks[2].systems
-    @test length(networks[1].eqs) == length(networks[2].eqs)
-    for (e1,e2) in zip(networks[1].eqs,networks[2].eqs)
+    @test length(get_eqs(networks[1])) == length(get_eqs(networks[2]))
+    for (e1,e2) in zip(get_eqs(networks[1]),get_eqs(networks[2]))
         @test isequal(e1.rate,e2.rate)
         @test isequal(e1.substrates,e2.substrates)
         @test isequal(e1.products,e2.products)
@@ -344,7 +344,7 @@ f2 = ODEFunction(convert(ODESystem,time_network),jac=true)
 g1 = SDEFunction(convert(SDESystem,reaction_networks_constraint[1]))
 g2 = SDEFunction(convert(SDESystem,time_network))
 for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-    u0 = factor*rand(rng,length(time_network.states))
+    u0 = factor*rand(rng,length(get_states(time_network)))
     κ2 = factor*rand(rng); κ3 = factor*rand(rng); κ6 = factor*rand(rng);
     τ = rand(rng)
     p1 = [τ, κ2, κ3, τ, τ, κ6]; p2 = [κ2, κ3, κ6];

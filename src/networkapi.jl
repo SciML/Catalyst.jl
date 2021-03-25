@@ -343,13 +343,13 @@ Notes:
 - Returns `network1`.
 - Does not currently handle pins.
 """
-function merge!(network1::ReactionSystem, network2::ReactionSystem)
+function Base.merge!(network1::ReactionSystem, network2::ReactionSystem)
     isequal(ModelingToolkit.independent_variable(network1),
             ModelingToolkit.independent_variable(network2)) || error("Reaction networks must have the same independent variable to be mergable.")
-    union!(network1.states, network2.states)
-    union!(network1.ps, network2.ps)
-    append!(network1.eqs, network2.eqs)
-    append!(network1.systems, network2.systems)
+    union!(get_states(network1), get_states(network2))
+    union!(get_ps(network1), get_ps(network2))
+    append!(get_eqs(network1), get_eqs(network2))
+    append!(get_systems(network1), get_systems(network2.systems))
     network1
 end
 
@@ -367,7 +367,7 @@ Notes:
 - Returns the merged network.
 - Does not currently handle pins.
 """
-function merge(network1::ReactionSystem, network2::ReactionSystem)
+function Base.merge(network1::ReactionSystem, network2::ReactionSystem)
     network = make_empty_network()
     merge!(network, network1)
     merge!(network, network2)

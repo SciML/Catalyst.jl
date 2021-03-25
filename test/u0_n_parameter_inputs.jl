@@ -1,5 +1,6 @@
 ### Fetch required packages and reaction networks ###
 using Catalyst, OrdinaryDiffEq, Random, Test
+using ModelingToolkit: get_states, get_ps
 include("test_networks.jl")
 
 using StableRNGs
@@ -13,10 +14,10 @@ test_network = reaction_networks_standard[7]
 @variables X1(t) X2(t) X3(t) X4(t) X5(t) X6(t) X(t)
 
 for factor = [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-    u0_1 = factor*rand(rng,length(test_network.states))
+    u0_1 = factor*rand(rng,length(get_states(test_network)))
     u0_2 = [X1=>u0_1[1], X2=>u0_1[2], X3=>u0_1[3], X4=>u0_1[4], X5=>u0_1[5]]
     u0_3 = [X2=>u0_1[2], X5=>u0_1[5], X4=>u0_1[4], X3=>u0_1[3], X1=>u0_1[1]]
-    p_1 = 0.01 .+ factor*rand(rng,length(test_network.ps))
+    p_1 = 0.01 .+ factor*rand(rng,length(get_ps(test_network)))
     p_2 = [p1=>p_1[1], p2=>p_1[2], p3=>p_1[3], k1=>p_1[4], k2=>p_1[5], k3=>p_1[6], v1=>p_1[7], K1=>p_1[8], d1=>p_1[9], d2=>p_1[10], d3=>p_1[11], d4=>p_1[12], d5=>p_1[13]]
     p_3 = [k2=>p_1[5], k3=>p_1[6], v1=>p_1[7], d5=>p_1[13], p2=>p_1[2], p1=>p_1[1], d2=>p_1[10], K1=>p_1[8], d1=>p_1[9], d4=>p_1[12], d3=>p_1[11], p3=>p_1[3], k1=>p_1[4]]
 
@@ -36,7 +37,7 @@ for factor = [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
         @test abs(maximum(getindex.(ends,1))-minimum(first.(getindex.(ends,1)))) < 1e-5
     end
 
-    u0_1 = rand(rng,1:Int64(factor*100),length(test_network.states))
+    u0_1 = rand(rng,1:Int64(factor*100),length(get_states(test_network)))
     u0_2 = [X1=>u0_1[1], X2=>u0_1[2], X3=>u0_1[3], X4=>u0_1[4], X5=>u0_1[5]]
     u0_3 = [X2=>u0_1[2], X5=>u0_1[5], X4=>u0_1[4], X3=>u0_1[3], X1=>u0_1[1]]
 

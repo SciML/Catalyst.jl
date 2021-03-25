@@ -1,5 +1,6 @@
 ### Fetch required packages and reaction networks ###
 using DiffEqBase, Catalyst, Random, Test
+using ModelingToolkit: get_states, get_ps
 
 using StableRNGs
 rng = StableRNG(12345)
@@ -32,8 +33,8 @@ f2 = ODEFunction(convert(ODESystem,custom_function_network_2),jac=true)
 g1 = SDEFunction(convert(SDESystem,custom_function_network_1))
 g2 = SDEFunction(convert(SDESystem,custom_function_network_2))
 for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-    u0 = factor*rand(rng,length(custom_function_network_1.states))
-    p = factor*rand(rng,length(custom_function_network_2.ps))
+    u0 = factor*rand(rng,length(get_states(custom_function_network_1)))
+    p = factor*rand(rng,length(get_ps(custom_function_network_2)))
     t = rand(rng)
     @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 100*eps())
     @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 100*eps())
