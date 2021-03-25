@@ -293,8 +293,10 @@ function Graph(rn::ReactionSystem)
     es = edgifyrates(rxs, specs)
     (!isempty(es)) && push!(edges, es)
 
-    stmts = vcat(stmts, collect(flatten(edges)))
-    g = Digraph("G", stmts; graph_attrs=graph_attrs, node_attrs=node_attrs, edge_attrs=edge_attrs)
+    stmts2 = Vector{Statement}()
+    append!(stmts2, stmts)
+    append!(stmts2, collect(flatten(edges)))
+    g = Digraph("G", stmts2; graph_attrs=graph_attrs, node_attrs=node_attrs, edge_attrs=edge_attrs)
     return g
 end
 
