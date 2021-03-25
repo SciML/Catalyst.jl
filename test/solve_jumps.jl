@@ -1,5 +1,6 @@
 ### Fetch required packages and reaction networks ###
 using Catalyst, DiffEqJump, Random, Statistics, Test
+using ModelingToolkit: get_states, get_ps
 include("test_networks.jl")
 
 using StableRNGs
@@ -83,8 +84,8 @@ push!(identical_networks, reaction_networks_constraint[5] => jumps_3)
 for (i,networks) in enumerate(identical_networks)
     for factor in [1e-2, 1e-1, 1e0, 1e1], repeat = 1:3
         (i==3) && (factor > 1e-1) && continue   # Large numbers seems to crash it.
-        u0 = rand(rng,1:Int64(factor*100),length(networks[1].states))
-        p = factor*rand(rng,length(networks[1].ps))
+        u0 = rand(rng,1:Int64(factor*100),length(get_states(networks[1])))
+        p = factor*rand(rng,length(get_ps(networks[1])))
         prob1 = JumpProblem(networks[1],DiscreteProblem(networks[1],u0,(0.,1000.),p),Direct())
         sol1 = solve(prob1,SSAStepper())
         prob2 = JumpProblem(DiscreteProblem(u0,(0.,1000.),p),Direct(),networks[2]...)
@@ -103,8 +104,8 @@ end
 for (i,network) in enumerate(reaction_networks_all)
     (i%5 == 0) && println("Iteration "*string(i)*" at line 102 in file solve_jumps.jl")
     for factor in [1e-1, 1e0, 1e1]
-        u0 = rand(rng,1:Int64(factor*100),length(network.states))
-        p = factor*rand(rng,length(network.ps))
+        u0 = rand(rng,1:Int64(factor*100),length(get_states(network)))
+        p = factor*rand(rng,length(get_ps(network)))
         prob = JumpProblem(network,DiscreteProblem(network,u0,(0.,1.),p),Direct())
         @test solve(prob,SSAStepper()).retcode == :Default
     end
@@ -114,7 +115,7 @@ no_param_network = @reaction_network begin
     (1.2,5), X1 ↔ X2
 end
 for factor in [1e1, 1e2]
-    u0 = rand(rng,1:Int64(factor*100),length(no_param_network.states))
+    u0 = rand(rng,1:Int64(factor*100),length(get_states(no_param_network)))
     prob = JumpProblem(no_param_network,DiscreteProblem(no_param_network,u0,(0.,1000.)),Direct())
     sol = solve(prob,SSAStepper())
     vals1 = getindex.(sol.u[1:end],1)

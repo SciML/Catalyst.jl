@@ -67,10 +67,10 @@ pure_rate_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
 # unfortunately the following doesn't seem to work on 1.5, so supporting these 
 # operators seems to require us to only support 1.6 and up...
-# @static if VERSION >= v"1.6.0"
-#     push!(bwd_arrows, :<--)
-#     push!(double_arrows, :<-->)
-# end
+@static if VERSION >= v"1.6.0"
+    push!(bwd_arrows, Symbol("<--"))
+    push!(double_arrows, Symbol("<-->"))
+end
 
 
 # Declares symbols which may neither be used as parameters not varriables.

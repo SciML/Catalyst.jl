@@ -5,7 +5,7 @@ module Catalyst
 
 using DocStringExtensions
 using Reexport, ModelingToolkit
-using ModelingToolkit: Symbolic, value, istree
+using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems, get_eqs
 @reexport using ModelingToolkit
 import MacroTools
 import Base: (==), merge!, merge
