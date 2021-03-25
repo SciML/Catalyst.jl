@@ -22,6 +22,34 @@ be used with solvers throughout the broader [SciML](https://sciml.ai) ecosystem,
 including higher-level SciML packages (e.g., for sensitivity analysis, parameter
 estimation, machine learning applications, etc.).
 
+## New in 6.11
+*1.* Plain text arrows "<--" and "<-->" for backward and reversible reactions are
+   available if using Julia 1.6:
+```julia
+rn = @reaction_network begin 
+  (k1,k2), A + B <--> C
+  k3, 0 <-- C
+end k1 k2 k3
+```
+*2.* Reaction networks can be named
+```julia
+rn = @reaction_network Reversible_Reaction begin
+  k1, A --> B
+  k2, B --> A
+  end k1 k2 
+nameof(rn) == :Reversible_Reaction
+```
+Note, empty networks can no longer be created with parameters, i.e. only
+```julia
+rn = @reaction_network          # uses a randomly generated name
+rn = @reaction_network MyName   # is named MyName
+```
+are allowed.
+
+*3.* Compositional modeling with generated `ODESystem`s, see
+[here](https://github.com/SciML/ModelingToolkit.jl/blob/master/test/reactionsystem_components.jl)
+for an example that composes three gene modules to make the repressilator.
+
 ## Tutorials and Documentation
 
 For information on using the package, [see the stable
