@@ -15,7 +15,7 @@ Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 [compat]
 DataStructures = "0.18"
 DocStringExtensions = "0.8"
-Latexify = "0.14"
+Latexify = "0.15"
 MacroTools = "0.5.5"
 ModelingToolkit = "5.13.0"
 Parameters = "0.12"

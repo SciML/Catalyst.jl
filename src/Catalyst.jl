@@ -36,7 +36,7 @@ export @reaction_network, @add_reactions
 include("networkapi.jl")
 export species, params, reactions, speciesmap, paramsmap, numspecies, numreactions, numparams
 export make_empty_network, addspecies!, addparam!, addreaction!
-export dependants, dependents, substoichmat, prodstoichmat
+export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 
 # for Latex printing of ReactionSystems
 include("latexify_recipes.jl")

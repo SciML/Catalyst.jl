@@ -53,6 +53,7 @@ dependents
 dependants
 substoichmat
 prodstoichmat
+netstoichmat
 ```
 
 ## Functions to extend a Network

@@ -166,6 +166,23 @@ function prodstoichmat(rn; smap=speciesmap(rn))
     pmat
 end
 
+
+"""
+    netstoichmat(rn; smap=speciesmap(rn))
+
+Returns the net stoichiometry matrix
+"""
+function netstoichmat(rn; smap=speciesmap(rn))
+    nmat = zeros(Int,(numreactions(rn),numspecies(rn)))
+    for (k,rx) in enumerate(reactions(rn))
+        for (i,p) in enumerate(rx.netstoich)
+            nmat[k,smap[p[1]]] = p[2]
+        end
+    end
+    nmat
+end
+
+
 ######################## reaction network operators #######################
 
 """
