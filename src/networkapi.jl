@@ -174,9 +174,9 @@ Returns the net stoichiometry matrix
 """
 function netstoichmat(rn; smap=speciesmap(rn))
     nmat = zeros(Int,(numreactions(rn),numspecies(rn)))
-    for (k,rx) in enumerate(reactions(rn))
-        for (i,p) in enumerate(rx.netstoich)
-            nmat[k,smap[p[1]]] = p[2]
+    for (k,rx) in pairs(reactions(rn))
+        for (spec,coef) in rx.netstoich
+            nmat[k,smap[spec]] = coef
         end
     end
     nmat
