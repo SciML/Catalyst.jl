@@ -33,6 +33,10 @@ include("reaction_network.jl")
 # reaction network macro
 export @reaction_network, @add_reactions
 
+include("spatial_network.jl")
+export @spatial_reaction_network
+export graph_iterator
+
 # functions to query network properties
 include("networkapi.jl")
 export species, params, reactions, speciesmap, paramsmap, numspecies, numreactions, numparams
