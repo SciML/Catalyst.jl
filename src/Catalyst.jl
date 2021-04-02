@@ -6,6 +6,7 @@ module Catalyst
 using DocStringExtensions
 using Reexport, ModelingToolkit
 using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems, get_eqs
+const DEFAULT_IV = (@parameters t)[1]
 @reexport using ModelingToolkit
 import MacroTools
 import Base: (==), merge!, merge
