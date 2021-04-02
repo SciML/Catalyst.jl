@@ -316,7 +316,7 @@ rs_3 = ReactionSystem(rxs_3, t, [X1,X2,X3,X4,X5], [k1,k2,k3])
 push!(identical_networks_4, reaction_networks_weird[7] => rs_3)
 
 for networks in identical_networks_4
-    @test independent_variable(networks[1]) == independent_variable(networks[2])
+    @test isequal(independent_variable(networks[1]), independent_variable(networks[2]))
     @test alleq(get_states(networks[1]), get_states(networks[2]))
     @test alleq(get_ps(networks[1]), get_ps(networks[2]))
     @test ModelingToolkit.get_systems(networks[1]) == ModelingToolkit.get_systems(networks[2])
