@@ -1,6 +1,6 @@
 using Catalyst, DiffEqBase, ModelingToolkit, Test
 
-using ModelingToolkit: value, Parameter
+using ModelingToolkit: value
 
 @parameters t k1 k2
 @variables S I R
@@ -62,9 +62,9 @@ addspecies!(rs, Variable(:S))
 @test numspecies(rs) == 3
 addspecies!(rs, Variable(:S), disablechecks=true)
 @test numspecies(rs) == 4
-addparam!(rs, Sym{Parameter{Real}}(:k1))
+addparam!(rs, k1)
 @test numparams(rs) == 2
-addparam!(rs, Variable{Parameter{Real}}(:k1), disablechecks=true)
+addparam!(rs, k1, disablechecks=true)
 @test numparams(rs) == 3
 
 

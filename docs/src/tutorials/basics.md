@@ -65,12 +65,13 @@ rn = @reaction_network begin
   1.0, XY ← X + Y      
 end
 ```
-*Note, currently Julia's parser does not support `<--`, `<->` or `<-->`, so that
-`-->` is the only supported plain text arrow.*
+*On Julia 1.6 and up the plain text arrows `<--` (for backward reactions) and
+`<-->` (for reversible reactions) also work. Note, these are not available on
+earlier Julia versions.*
 
 #### Using bi-directional arrows
 Bi-directional unicode arrows can be used to designate a reaction that goes two
-ways. These two models are equivalent:
+ways. These three models are equivalent:
 ```julia
 rn = @reaction_network begin
   2.0, X + Y → XY             

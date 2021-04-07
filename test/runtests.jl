@@ -5,6 +5,9 @@ using SafeTestsets
 @time begin
 
 # Tests all features realted to constructing a model
+if VERSION >= v"1.6.0"
+    @time @safetestset "1.6 Arrows" begin include("newarrows.jl") end
+end
 @time @safetestset "Model Construction" begin include("make_model.jl") end
 @time @safetestset "Custom Functions" begin include("custom_functions.jl") end
 @time @safetestset "Model Modification" begin include("model_modification.jl") end
@@ -30,8 +33,6 @@ using SafeTestsets
 # Miscellaneous tests
 #@time @safetestset "Basic Plotting" begin include("plotting.jl") end
 @time @safetestset "Latexify" begin include("latexify.jl") end
-
-# the following can't really be run until there is an artifact for Graphviz
-#@time @safetestset "Graphs" begin include("graphs.jl") end
+@time @safetestset "Graphs" begin include("graphs.jl") end
 
 end # @time

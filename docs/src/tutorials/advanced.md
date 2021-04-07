@@ -12,8 +12,8 @@ rn = @reaction_network begin
 end
 ```
 In some cases, it may be necessary or desirable to register functions with
-ModelingToolkit before their use in Catalyst, see the discussion
-[here](https://mtk.sciml.ai/stable/tutorials/symbolic_functions/#Registering-Functions-1).
+Symbolics.jl before their use in Catalyst, see the discussion
+[here](https://symbolics.juliasymbolics.org/dev/manual/functions/).
 
 #### Ignoring mass action kinetics
 While generally one wants the reaction rate to use the law of mass action, so

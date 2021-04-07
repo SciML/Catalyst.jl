@@ -4,13 +4,13 @@ has a number of fields that can be accessed directly or via the [Catalyst.jl
 API](@ref) (the recommended route). Below we list these components, with the recommended
 API method listed first:
 
-* [`species(rn)`](@ref), `states(rn)` and `rn.states` is a vector of all the chemical
+* [`species(rn)`](@ref) and `states(rn)` is a vector of all the chemical
   species within the system, each represented as a `ModelingToolkit.Term`.
-* [`params(rn)`](@ref), `parameters(rn)` and `rn.ps` is a vector of all the parameters
+* [`params(rn)`](@ref) and `parameters(rn)` is a vector of all the parameters
   within the system, each represented as a `ModelingToolkit.Sym`.
-* [`reactions(rn)`](@ref), `equations(rn)` and `rn.eqs` is a vector of all the
+* [`reactions(rn)`](@ref) and `equations(rn)` is a vector of all the
   `Reaction`s within the system.
-* `independent_variable(rn)` and `rn.iv` are the independent variable of the
+* `independent_variable(rn)` and `ModelingToolkit.get_iv(rn)` are the independent variable of the
   system, usually `t` for time, represented as a `ModelingToolkit.Sym`.
 
 Each `Reaction` within `reactions(rn)` has a number of subfields. For `rx` a
@@ -33,7 +33,7 @@ Each `Reaction` within `reactions(rn)` has a number of subfields. For `rx` a
   non-filled arrows and should ignore mass action kinetics. `false` by default.
 
 Empty `ReactionSystem`s can be generated via [`make_empty_network`](@ref) or
-[`@reaction_network`](@ref) with no arguments. `ReactionSystem`s can be
-programmatically extended using [`addspecies!`](@ref), [`addparam!`](@ref),
-[`addreaction!`](@ref), [`@add_reactions`](@ref), or composed using `merge` and
-`merge!`.
+[`@reaction_network`](@ref) with no arguments (giving one argument to the latter
+will specify a system name). `ReactionSystem`s can be programmatically extended
+using [`addspecies!`](@ref), [`addparam!`](@ref), [`addreaction!`](@ref),
+[`@add_reactions`](@ref), or composed using `merge` and `merge!`.

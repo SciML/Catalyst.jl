@@ -1,23 +1,34 @@
 ### Fetch required packages and reaction networks ###
-using Catalyst, Test, UnPack
+using Catalyst, Test
+using ModelingToolkit: get_ps, get_states, get_eqs, get_systems
 include("test_networks.jl")
 
 using StableRNGs
 rng = StableRNG(12345)
 
+function unpacksys(sys)
+    get_eqs(sys),independent_variable(sys),get_ps(sys),nameof(sys),get_systems(sys)
+end
+
 ### Tests construction of empty reaction networks ###
 empty_network_1 = @reaction_network
-@unpack eqs,iv,ps,name,systems = empty_network_1
+eqs,iv,ps,name,systems = unpacksys(empty_network_1)
 @test length(eqs) == 0
-@test iv.name == :t
-@test length(empty_network_1.states) == 0
+@test nameof(iv) == :t
+@test length(get_states(empty_network_1)) == 0
 @test length(ps) == 0
 
-empty_network_2 = @reaction_network p1 p2 p3 p4 p5
-@unpack eqs,iv,ps,name,systems = empty_network_2
+empty_network_2 = @reaction_network 
+@variables p1 p2 p3 p4 p5
+addparam!(empty_network_2, p1)
+addparam!(empty_network_2, p2)
+addparam!(empty_network_2, p3)
+addparam!(empty_network_2, p4)
+addparam!(empty_network_2, p5)
+eqs,iv,ps,name,systems = unpacksys(empty_network_2)
 @test length(eqs) == 0
-@test iv.name == :t
-@test length(empty_network_2.states) == 0
+@test nameof(iv) == :t
+@test length(get_states(empty_network_2)) == 0
 @test length(ps) == 5
 @test all(getproperty.(ps,:name) .== [:p1,:p2,:p3,:p4,:p5])
 
@@ -35,8 +46,8 @@ end k0 k3 k4 k5 k6
     (k5,k6), X5 ↔ X6
     (k7,k8), X7 ↔ X8
 end k0 k5 k6 k7 k8
-@test length(unfinished_network.states) == 8
-@test length(unfinished_network.ps) == 9
+@test length(get_states(unfinished_network)) == 8
+@test length(get_ps(unfinished_network)) == 9
 
 ### Compares test network to identical network constructed via @add_reactions ###
 identical_networks = Vector{Pair}()
@@ -129,7 +140,9 @@ end k1
 end k4 m J4
 push!(identical_networks, reaction_networks_real[3] => step_by_step_network_7)
 
-step_by_step_network_8 = @reaction_network k1
+step_by_step_network_8 = @reaction_network 
+@parameters k1
+addparam!(step_by_step_network_8,k1)
 @add_reactions step_by_step_network_8 begin
     k1, X1 → X2
     0, X2 → X3
@@ -153,8 +166,8 @@ for networks in identical_networks
     g2 = SDEFunction(convert(SDESystem,networks[2]))
     @test networks[1] == networks[2]
     for factor in [1e-2, 1e-1, 1e0, 1e1]
-        u0 = factor*rand(rng,length(networks[1].states))
-        p = factor*rand(rng,length(networks[1].ps))
+        u0 = factor*rand(rng,length(get_states(networks[1])))
+        p = factor*rand(rng,length(get_ps(networks[1])))
         t = rand(rng)
         @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 1000*eps())
         @test all(abs.(g1(u0,p,t) .- g2(u0,p,t)) .< 1000*eps())

@@ -1,11 +1,29 @@
+"""
+$(DocStringExtensions.README)
+"""
 module Catalyst
 
+using DocStringExtensions
 using Reexport, ModelingToolkit
-using ModelingToolkit: Symbolic, value, istree
+using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems, get_eqs
+const DEFAULT_IV = (@parameters t)[1]
 @reexport using ModelingToolkit
 import MacroTools
 import Base: (==), merge!, merge
-using Latexify
+using Latexify, Requires
+
+# as used in Catlab
+const USE_GV_JLL = Ref(false)
+function __init__()
+    @require Graphviz_jll="3c863552-8265-54e4-a6dc-903eb78fde85" begin
+      USE_GV_JLL[] = true
+      let cfg = joinpath(Graphviz_jll.artifact_dir, "lib", "graphviz", "config6")
+        if !isfile(cfg)
+          Graphviz_jll.dot(path -> run(`$path -c`))
+        end
+      end
+    end
+  end
 
 const ExprValues = Union{Expr,Symbol,Float64,Int}
 
@@ -19,7 +37,7 @@ export @reaction_network, @add_reactions
 include("networkapi.jl")
 export species, params, reactions, speciesmap, paramsmap, numspecies, numreactions, numparams
 export make_empty_network, addspecies!, addparam!, addreaction!
-export dependants, dependents, substoichmat, prodstoichmat
+export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 
 # for Latex printing of ReactionSystems
 include("latexify_recipes.jl")

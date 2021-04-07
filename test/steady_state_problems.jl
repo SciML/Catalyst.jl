@@ -1,5 +1,6 @@
 ### Fetch required packages and reaction networks ###
 using Catalyst, OrdinaryDiffEq, Random, SteadyStateDiffEq, Test
+using ModelingToolkit: get_states, get_ps
 include("test_networks.jl")
 
 using StableRNGs
@@ -13,8 +14,8 @@ steady_state_network_1 = @reaction_network begin
 end k1 k2 k3 k4 k5 k6
 
 for factor in [1e-1, 1e0, 1e1], repeat = 1:3
-    u0 = factor*rand(rng,length(steady_state_network_1.states)); u0[4] = u0[3];
-    p = 0.01 .+ factor*rand(rng,length(steady_state_network_1.ps))
+    u0 = factor*rand(rng,length(get_states(steady_state_network_1))); u0[4] = u0[3];
+    p = 0.01 .+ factor*rand(rng,length(get_ps(steady_state_network_1)))
     prob = SteadyStateProblem(steady_state_network_1,u0,p)
     sol = solve(prob,SSRootfind()).u
     (minimum(sol[1:1]) > 1e-2) && (@test abs.(sol[1] - p[1]/p[2]) < 0.01)
@@ -28,9 +29,9 @@ steady_state_network_2 = @reaction_network begin
 end v K n d
 
 for factor in [1e-1, 1e1, 1e1], repeat = 1:3
-    u0_small = factor*rand(rng,length(steady_state_network_2.states))/100
-    u0_large = factor*rand(rng,length(steady_state_network_2.states))*100
-    p = factor*rand(rng,length(steady_state_network_2.ps))
+    u0_small = factor*rand(rng,length(get_states(steady_state_network_2)))/100
+    u0_large = factor*rand(rng,length(get_states(steady_state_network_2)))*100
+    p = factor*rand(rng,length(get_ps(steady_state_network_2)))
     p[3] = round(p[3])+1
     sol1 = solve(SteadyStateProblem(steady_state_network_2,u0_small,p),SSRootfind()).u[1]
     sol2 = solve(SteadyStateProblem(steady_state_network_2,u0_large,p),SSRootfind()).u[1]
@@ -43,8 +44,8 @@ end
 ### For a couple of networks, test that the steady state solution is identical to the long term ODE solution. ###
 steady_state_test_networks = [reaction_networks_standard[8], reaction_networks_standard[10], reaction_networks_weird[1]]
 for network in steady_state_test_networks, factor in [1e-1, 1e0, 1e1]
-    u0 = factor*rand(rng,length(network.states))
-    p = factor*rand(rng,length(network.ps))
+    u0 = factor*rand(rng,length(get_states(network)))
+    p = factor*rand(rng,length(get_ps(network)))
     sol_ode = solve(ODEProblem(network,u0,(0.,1000000),p),Rosenbrock23())
     sol_ss = solve(SteadyStateProblem(network,u0,p),SSRootfind())
 
@@ -58,7 +59,7 @@ no_param_network = @reaction_network begin
     (0.6,3.2), ∅ ↔ X
 end
 for factor in [1e0, 1e1, 1e2]
-    u0 = factor*rand(rng,length(no_param_network.states))
+    u0 = factor*rand(rng,length(get_states(no_param_network)))
     sol_ss = solve(SteadyStateProblem(no_param_network,u0),SSRootfind(),abstol=1e-11)
     @test abs.(sol_ss.u[1]-0.6/3.2) < 1e-8
 end

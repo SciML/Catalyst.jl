@@ -36,11 +36,11 @@ as_attributes(d::AbstractDict) =
 @with_kw_noshow struct Graph <: Expression
   name::String
   directed::Bool
-  prog::String="dot"
-  stmts::Vector{Statement}=Statement[]
-  graph_attrs::Attributes=Attributes()
-  node_attrs::Attributes=Attributes()
-  edge_attrs::Attributes=Attributes()
+  prog::String = "dot"
+  stmts::Vector{Statement} = Statement[]
+  graph_attrs::Attributes = Attributes()
+  node_attrs::Attributes = Attributes()
+  edge_attrs::Attributes = Attributes()
 end
 
 Graph(name::String, stmts::Vector{Statement}; kw...) =
@@ -53,11 +53,11 @@ Digraph(name::String, stmts::Vararg{Statement}; kw...) =
   Graph(; name=name, directed=true, stmts=collect(stmts), kw...)
 
 @with_kw_noshow struct Subgraph <: Statement
-  name::String="" # Subgraphs can be anonymous
-  stmts::Vector{Statement}=Statement[]
-  graph_attrs::Attributes=Attributes()
-  node_attrs::Attributes=Attributes()
-  edge_attrs::Attributes=Attributes()
+  name::String = "" # Subgraphs can be anonymous
+  stmts::Vector{Statement} = Statement[]
+  graph_attrs::Attributes = Attributes()
+  node_attrs::Attributes = Attributes()
+  edge_attrs::Attributes = Attributes()
 end
 
 Subgraph(stmts::Vector{Statement}; kw...) = Subgraph(; stmts=stmts, kw...)
@@ -106,11 +106,16 @@ For bindings to the Graphviz C API, see the the package
 GraphViz.jl is unmaintained.
 """
 function run_graphviz(io::IO, graph::Graph; prog::Union{String,Nothing}=nothing,
-                      format::String="json0")
+  format::String="json0")
   if isnothing(prog)
     prog = graph.prog
   end
-  @assert prog in ("dot","neato","fdp","sfdp","twopi","circo")
+  @assert prog in ("dot", "neato", "fdp", "sfdp", "twopi", "circo")
+  if USE_GV_JLL[]
+    print("here!!!")
+    fun = getfield(Graphviz_jll, Symbol(prog))
+    prog = fun(identity)
+  end
   open(`$prog -T$format`, io, write=true) do gv
     pprint(gv, graph)
   end
@@ -138,11 +143,11 @@ function pprint(io::IO, graph::Graph, n::Int)
   print(io, graph.directed ? "digraph " : "graph ")
   print(io, graph.name)
   println(io, " {")
-  pprint_attrs(io, graph.graph_attrs, n+2; pre="graph", post=";\n")
-  pprint_attrs(io, graph.node_attrs, n+2; pre="node", post=";\n")
-  pprint_attrs(io, graph.edge_attrs, n+2; pre="edge", post=";\n")
+  pprint_attrs(io, graph.graph_attrs, n + 2; pre="graph", post=";\n")
+  pprint_attrs(io, graph.node_attrs, n + 2; pre="node", post=";\n")
+  pprint_attrs(io, graph.edge_attrs, n + 2; pre="edge", post=";\n")
   for stmt in graph.stmts
-    pprint(io, stmt, n+2, directed=graph.directed)
+    pprint(io, stmt, n + 2, directed=graph.directed)
     println(io)
   end
   indent(io, n)
@@ -153,16 +158,16 @@ function pprint(io::IO, subgraph::Subgraph, n::Int; directed::Bool=false)
   indent(io, n)
   if isempty(subgraph.name)
     println(io, "{")
-  else
+        else
     print(io, "subgraph ")
     print(io, subgraph.name)
     println(io, " {")
   end
-  pprint_attrs(io, subgraph.graph_attrs, n+2; pre="graph", post=";\n")
-  pprint_attrs(io, subgraph.node_attrs, n+2; pre="node", post=";\n")
-  pprint_attrs(io, subgraph.edge_attrs, n+2; pre="edge", post=";\n")
+  pprint_attrs(io, subgraph.graph_attrs, n + 2; pre="graph", post=";\n")
+  pprint_attrs(io, subgraph.node_attrs, n + 2; pre="node", post=";\n")
+  pprint_attrs(io, subgraph.edge_attrs, n + 2; pre="edge", post=";\n")
   for stmt in subgraph.stmts
-    pprint(io, stmt, n+2, directed=directed)
+    pprint(io, stmt, n + 2, directed=directed)
     println(io)
   end
   indent(io, n)
@@ -185,7 +190,7 @@ function pprint(io::IO, node::NodeID, n::Int)
   if !isempty(node.anchor)
     print(io, ":")
     print(io, node.anchor)
-  end
+end
 end
 
 function pprint(io::IO, edge::Edge, n::Int; directed::Bool=false)
@@ -204,7 +209,7 @@ function pprint_attrs(io::IO, attrs::Attributes, n::Int=0;
                       pre::String="", post::String="")
   if !isempty(attrs)
     indent(io, n)
-    print(io, pre)
+        print(io, pre)
     print(io, " [")
     for (i, (key, value)) in enumerate(attrs)
       if (i > 1) print(io, ",") end
@@ -227,16 +232,16 @@ indent(io::IO, n::Int) = print(io, " "^n)
 # https://github.com/mehalter/Petri.jl
 #######################################################################
 
-graph_attrs = Attributes(:rankdir=>"LR")
-node_attrs  = Attributes(:shape=>"plain", :style=>"filled", :color=>"white")
-edge_attrs  = Attributes(:splines=>"splines")
+graph_attrs = Attributes(:rankdir => "LR")
+node_attrs  = Attributes(:shape => "plain", :style => "filled", :color => "white")
+edge_attrs  = Attributes(:splines => "splines")
 
 function edgify(δ, i, reverse::Bool)
     attr = Attributes()
     return map(δ) do p        
         val = String(p[1].f.name)
       weight = "$(p[2])"
-      attr = Attributes(:label=>weight, :labelfontsize=>"6")
+      attr = Attributes(:label => weight, :labelfontsize => "6")
       return Edge(reverse ? ["rx_$i", "$val"] :
                             ["$val", "rx_$i"], attr)
     end
@@ -245,7 +250,7 @@ end
 # make distinguished edge based on rate constant
 function edgifyrates(rxs, specs)
     es = Edge[]
-    for (i,rx) in enumerate(rxs)
+    for (i, rx) in enumerate(rxs)
         deps = rx.rate isa Number ? Any[] : get_variables(rx.rate, specs) 
         for dep in deps
             val = String(dep.f.name)
@@ -277,19 +282,21 @@ Notes:
 function Graph(rn::ReactionSystem)
     rxs   = reactions(rn)
     specs = species(rn)
-    statenodes = [Node(string(s.f.name), Attributes(:shape=>"circle", :color=>"#6C9AC3")) for s in specs]
-    transnodes = [Node(string("rx_$i"), Attributes(:shape=>"point", :color=>"#E28F41", :width=>".1")) for (i,r) in enumerate(rxs)]
+    statenodes = [Node(string(s.f.name), Attributes(:shape => "circle", :color => "#6C9AC3")) for s in specs]
+    transnodes = [Node(string("rx_$i"), Attributes(:shape => "point", :color => "#E28F41", :width => ".1")) for (i, r) in enumerate(rxs)]
 
     stmts = vcat(statenodes, transnodes)
-    edges = map(enumerate(rxs)) do (i,r)
-      vcat(edgify(zip(r.substrates,r.substoich), i, false),
-           edgify(zip(r.products,r.prodstoich), i, true))
+    edges = map(enumerate(rxs)) do (i, r)
+      vcat(edgify(zip(r.substrates, r.substoich), i, false),
+           edgify(zip(r.products, r.prodstoich), i, true))
     end
     es = edgifyrates(rxs, specs)
     (!isempty(es)) && push!(edges, es)
 
-    stmts = vcat(stmts, collect(flatten(edges)))
-    g = Digraph("G", stmts; graph_attrs=graph_attrs, node_attrs=node_attrs, edge_attrs=edge_attrs)
+    stmts2 = Vector{Statement}()
+    append!(stmts2, stmts)
+    append!(stmts2, collect(flatten(edges)))
+    g = Digraph("G", stmts2; graph_attrs=graph_attrs, node_attrs=node_attrs, edge_attrs=edge_attrs)
     return g
 end
 

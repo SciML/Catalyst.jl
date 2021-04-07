@@ -1,6 +1,6 @@
 ### Fetch required packages ###
 using DiffEqBase, Catalyst, DiffEqJump, Random, Statistics, Test
-
+using ModelingToolkit: get_states, get_ps
 using StableRNGs
 rng = StableRNG(12345)
 
@@ -35,8 +35,8 @@ f2 = ODEFunction(convert(ODESystem,higher_order_network_2),jac=true)
 g1 = SDEFunction(convert(SDESystem,higher_order_network_1))
 g2 = SDEFunction(convert(SDESystem,higher_order_network_2))
 for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-    u0 = factor*rand(rng,length(higher_order_network_1.states))
-    p = factor*rand(rng,length(higher_order_network_2.ps))
+    u0 = factor*rand(rng,length(get_states(higher_order_network_1)))
+    p = factor*rand(rng,length(get_ps(higher_order_network_2)))
     t = rand(rng)
     @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 100*eps())
     @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 100*eps())
@@ -56,8 +56,8 @@ higher_order_network_3 = @reaction_network begin
 end p r1 r2 K r3 r4 r5 r6 d
 
 for factor in [1e-1, 1e0], repeat = 1:5
-    u0 = rand(rng,1:Int64(factor*100),length(higher_order_network_1.states))
-    p = factor*rand(rng,length(higher_order_network_3.ps))
+    u0 = rand(rng,1:Int64(factor*100),length(get_states(higher_order_network_1)))
+    p = factor*rand(rng,length(get_ps(higher_order_network_3)))
     prob1 = JumpProblem(higher_order_network_1,DiscreteProblem(higher_order_network_1,u0,(0.,1000.),p),Direct())
     sol1 = solve(prob1,SSAStepper())
     prob2 = JumpProblem(higher_order_network_3,DiscreteProblem(higher_order_network_3,u0,(0.,1000.),p),Direct())

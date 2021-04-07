@@ -24,8 +24,8 @@ end p1 p2 p3
 for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2], repeat = 1:10
     u = factor*rand(rng,3)
     p = factor*rand(rng,3)
-    test_jac = ODEFunction(convert(ODESystem,jacobian_network_2),jac=true).jac(u,p,0.)
-    real_jac = [-1-2*p[3]*u[2]*u[1] -p[3]*u[1]*u[1] 1.; -2*p[3]*u[2]*u[1] -1-p[3]*u[1]*u[1] 1; 2*p[3]*u[2]*u[1] p[3]*u[1]*u[1] -1.]
+    local test_jac = ODEFunction(convert(ODESystem,jacobian_network_2),jac=true).jac(u,p,0.)
+    local real_jac = [-1-2*p[3]*u[2]*u[1] -p[3]*u[1]*u[1] 1.; -2*p[3]*u[2]*u[1] -1-p[3]*u[1]*u[1] 1; 2*p[3]*u[2]*u[1] p[3]*u[1]*u[1] -1.]
     @test all(abs.(test_jac .- real_jac) .< 1e-9)
 end
 
@@ -42,7 +42,7 @@ for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2], repeat = 1:10
     u = factor*rand(rng,3); p = factor*rand(rng,8);
     A,B,C = u
     k1,k2,k3,k4,k5,k6,k7,k8 = p
-    test_jac = ODEFunction(convert(ODESystem,jacobian_network_3),jac=true).jac(u,p,0.)
-    real_jac = [-2*k1*A-k3*B 2*k2-k3*A k4+3*k5*C^2/2; k1*A-k3*B+2*k7*k8^2*A/(k8^2+A^2)^2 -k2-k3*A k4; k3*B k3*A -k4-3*k5*C^2/2]
+    local test_jac = ODEFunction(convert(ODESystem,jacobian_network_3),jac=true).jac(u,p,0.)
+    local real_jac = [-2*k1*A-k3*B 2*k2-k3*A k4+3*k5*C^2/2; k1*A-k3*B+2*k7*k8^2*A/(k8^2+A^2)^2 -k2-k3*A k4; k3*B k3*A -k4-3*k5*C^2/2]
     @test all(abs.(test_jac .- real_jac) .< 10e-9)
 end
