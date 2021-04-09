@@ -126,14 +126,21 @@ function create_graph(incidence::Array{Int,2})
     end
     return graph
 end
-graph = create_graph(Array(B'))
+G = create_graph(Array(B'))
 
 complexes_names  = []
 for i ∈ 1:nc
-    push!(complexes_names ,sum(complexes_mat[i][:,1].*complexes_mat[i][:,2]))
+    if complexes_mat[i] == [Term[] Int64[]]   # taking care of  `Nothing` or `0` species
+        push!(complexes_names, 0)
+    else
+        push!(complexes_names ,
+                sum(complexes_mat[i][:,1].*complexes_mat[i][:,2]))
+    end
+
 end
 
-graphplot(graph,names=string.(complexes_names),
+
+graphplot(G,names=string.(complexes_names),
         nodesize=0.1,nodeshape=:circle,
         curves = false)
 ```
