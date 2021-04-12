@@ -194,7 +194,7 @@ complexes_mat --> unique intermediate complexes that define the system,
 
 We can define a laplacian matrix from these returned arrays from complexstoichmat as,
 KD = diagm((map(Num, kd)))
-L = B*KD*Δ', and rewrite the ODESystem as x' = -Z*L*-Z*L*exp.(Z'*log.(states(rn)))
+L = B*KD*Δ', and rewrite the ODESystem as x' = -Z*L*exp.(Z'*log.(states(rn)))
 
 and/or also check that, netstoichmat(rn) == Z*B 
 """
