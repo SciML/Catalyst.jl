@@ -183,6 +183,63 @@ function netstoichmat(rn; smap=speciesmap(rn))
 end
 
 
+"""
+    complexstoichmat(rn; smap=speciesmap(rn))
+Returns, 
+Z --> complex composition matrix/complex stoichiometeric matrix
+B --> Incidence matrix
+Δ --> Outgoing matrix
+kd --> Array of rate of reactions
+complexes_mat --> unique intermediate complexes that define the system,
+
+We can define a laplacian matrix from these returned arrays from complexstoichmat as,
+KD = diagm((map(Num, kd)))
+L = B*KD*Δ', and rewrite the ODESystem as x' = -Z*L*-Z*L*exp.(Z'*log.(states(rn)))
+
+and/or also check that, netstoichmat(rn) == Z*B 
+"""
+function complexstoichmat(rn; smap=speciesmap(rn))
+    r = reactions(rn);
+    nr = numreactions(rn);  ns = numspecies(rn);
+
+    complexes_mat = [];
+    for i ∈ 1:numreactions(rn)
+        push!(complexes_mat, [r[i].substrates r[i].substoich])
+        push!(complexes_mat, [r[i].products r[i].prodstoich])
+    end
+    complexes_mat = unique(complexes_mat)
+    nc = length(complexes_mat)  # Number of unique complexes
+
+    # complex composition matrix/complex stoichiometeric matrix
+    Z = zeros(Int, ns, nc);
+    for i ∈ 1:nc
+        for j in 1:length(complexes_mat[i][:,1])
+            Z[smap[complexes_mat[i][:,1][j]] ,i] = complexes_mat[i][:,2][j]
+        end
+    end
+
+    B = zeros(Int, nc, nr);     # Incidence matrix
+    kd = [];
+    for i ∈ 1:nr
+        for j ∈ 1:nc
+            if isequal([r[i].substrates r[i].substoich], complexes_mat[j])
+                B[j, i] = -1;    # found the reactant as complexes
+                continue;
+            end
+            if isequal([r[i].products r[i].prodstoich], complexes_mat[j])
+                B[j, i] = 1;     # found the product as complexes
+                continue;
+            end
+        end
+        push!(kd, r[i].rate)
+    end
+
+    ## Outgoing matrix
+    Δ = copy(B)
+    Δ[Δ.==1] .= 0
+    return Z, B , Δ ,kd ,complexes_mat
+end
+
 ######################## reaction network operators #######################
 
 """
