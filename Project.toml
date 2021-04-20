@@ -11,6 +11,7 @@ ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
 DataStructures = "0.18"
@@ -21,6 +22,7 @@ ModelingToolkit = "5.14.0"
 Parameters = "0.12"
 Reexport = "0.2, 1.0"
 Requires = "1.0"
+Symbolics = "0.1.22"
 julia = "1.5"
 
 [extras]
