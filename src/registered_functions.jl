@@ -26,17 +26,17 @@ MMR(X,v,K) = v*K / (X + K)
 
 @register mmR(X,v,K); @register MmR(X,v,K); @register MMR(X,v,K);
 
-Symbolics.derivative(::typeof(mmR), args::NTuple{3,Any}, ::Val{1}) = (args[2]*args[3]) / (args[1]+args[3])^2
+Symbolics.derivative(::typeof(mmR), args::NTuple{3,Any}, ::Val{1}) = - (args[2]*args[3]) / (args[1]+args[3])^2
 Symbolics.derivative(::typeof(mmR), args::NTuple{3,Any}, ::Val{2}) = args[3]/(args[1]+args[3])
-Symbolics.derivative(::typeof(mmR), args::NTuple{3,Any}, ::Val{3}) = - args[2]*args[1]/(args[1]+args[3])^2
+Symbolics.derivative(::typeof(mmR), args::NTuple{3,Any}, ::Val{3}) = args[2]*args[1]/(args[1]+args[3])^2
 
-Symbolics.derivative(::typeof(MmR), args::NTuple{3,Any}, ::Val{1}) = (args[2]*args[3]) / (args[1]+args[3])^2
+Symbolics.derivative(::typeof(MmR), args::NTuple{3,Any}, ::Val{1}) = - (args[2]*args[3]) / (args[1]+args[3])^2
 Symbolics.derivative(::typeof(MmR), args::NTuple{3,Any}, ::Val{2}) = args[3]/(args[1]+args[3])
-Symbolics.derivative(::typeof(MmR), args::NTuple{3,Any}, ::Val{3}) = - args[2]*args[1]/(args[1]+args[3])^2
+Symbolics.derivative(::typeof(MmR), args::NTuple{3,Any}, ::Val{3}) = args[2]*args[1]/(args[1]+args[3])^2
 
-Symbolics.derivative(::typeof(MMR), args::NTuple{3,Any}, ::Val{1}) = (args[2]*args[3]) / (args[1]+args[3])^2
+Symbolics.derivative(::typeof(MMR), args::NTuple{3,Any}, ::Val{1}) = - (args[2]*args[3]) / (args[1]+args[3])^2
 Symbolics.derivative(::typeof(MMR), args::NTuple{3,Any}, ::Val{2}) = args[3]/(args[1]+args[3])
-Symbolics.derivative(::typeof(MMR), args::NTuple{3,Any}, ::Val{3}) = - args[2]*args[1]/(args[1]+args[3])^2
+Symbolics.derivative(::typeof(MMR), args::NTuple{3,Any}, ::Val{3}) = args[2]*args[1]/(args[1]+args[3])^2
 
 
 # Registers the Hill function.
