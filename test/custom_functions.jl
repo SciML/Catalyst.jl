@@ -16,7 +16,8 @@ custom_function_network_1 = @reaction_network begin
     exp(-p3*Y), X + Y --> Z4
     hillR(X,v3,K3,2), X + Y --> Z5
     mmR(X,v4,K4), X + Y --> Z6
-end v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4
+    hillAR(X,Y,v5,K5,2), X + Y --> Z7
+end v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4 v5 K5
 
 custom_function_network_2 = @reaction_network begin
     new_hill(X,v1,K1,2), X + Y --> Z1
@@ -25,7 +26,8 @@ custom_function_network_2 = @reaction_network begin
     new_exp(Y,p3), X + Y --> Z4
     v3*(K3^2)/(K3^2+X^2), X + Y --> Z5
     v4*K4/(X+K4), X + Y --> Z6
-end v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4
+    v5*(X^2)/(K5^2+X^2+Y^2), X + Y --> Z7
+end v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4 v5 K5
 
 f1 = ODEFunction(convert(ODESystem,custom_function_network_1),jac=true)
 f2 = ODEFunction(convert(ODESystem,custom_function_network_2),jac=true)
