@@ -32,7 +32,7 @@ end
 
 # Miscellaneous tests
 #@time @safetestset "Basic Plotting" begin include("plotting.jl") end
-#@time @safetestset "Latexify" begin include("latexify.jl") end
+@time @safetestset "Latexify" begin include("latexify.jl") end
 @time @safetestset "Graphs" begin include("graphs.jl") end
 
 end # @time
