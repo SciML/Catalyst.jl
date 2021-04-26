@@ -286,18 +286,13 @@ identical_networks_4 = Vector{Pair}()
 @parameters v1 K1 v2 K2 k1 k2 k3 k4 k5 p d t
 @variables X1(t) X2(t) X3(t) X4(t) X5(t)
 
-rxs_1 = [Reaction(v1*X2/(K1+X2), nothing, [X1], nothing, [1]),
-       Reaction(v2*X3/(K2+X3), nothing, [X2], nothing, [1]),
-       Reaction(k1, [X1], [X3], [1], [1]),
-       Reaction(k2, [X3], [X1], [1], [1]),
-       Reaction(k3, [X3,X2], [X4,X1], [1,1], [1,1]),
-       Reaction(k4, [X4,X1], [X3,X2], [1,1], [1,1]),
-       Reaction(d, [X1], nothing, [1], nothing),
-       Reaction(d, [X2], nothing, [1], nothing),
-       Reaction(d, [X3], nothing, [1], nothing),
-       Reaction(d, [X4], nothing, [1], nothing)]
-rs_1 = ReactionSystem(rxs_1 , t, [X1,X2,X3,X4], [v1,K1,v2,K2,k1,k2,k3,k4,d])
-push!(identical_networks_4, reaction_networks_standard[3] => rs_1)
+rxs_1 = [Reaction(p, nothing, [X1], nothing, [2]),
+       Reaction(k1, [X1], [X2], [1], [1]),
+       Reaction(k2, [X2], [X3], [1], [1]),
+       Reaction(k3, [X2], [X3], [1], [1]),
+       Reaction(d, [X3], nothing, [1], nothing)]
+rs_1 = ReactionSystem(rxs_1 , t, [X1,X2,X3], [p,k1,k2,k3,d])
+push!(identical_networks_4, reaction_networks_standard[8] => rs_1)
 
 rxs_2 = [Reaction(k1, [X1], [X2], [1], [1]),
          Reaction(k2*X5, [X2], [X1], [1], [1]),

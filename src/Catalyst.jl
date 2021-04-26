@@ -10,6 +10,7 @@ const DEFAULT_IV = (@parameters t)[1]
 @reexport using ModelingToolkit
 import MacroTools
 import Base: (==), merge!, merge
+using Symbolics
 using Latexify, Requires
 
 # as used in Catlab
@@ -32,6 +33,9 @@ include("reaction_network.jl")
 
 # reaction network macro
 export @reaction_network, @add_reactions
+
+# registers CRN specific functions using Symbolics.jl
+include("registered_functions.jl")
 
 # functions to query network properties
 include("networkapi.jl")
