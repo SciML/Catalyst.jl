@@ -35,4 +35,6 @@ end
 @time @safetestset "Latexify" begin include("latexify.jl") end
 @time @safetestset "Graphs" begin include("graphs.jl") end
 
+@time @safetestset "Conservation Laws" begin include("conslaws.jl") end
+
 end # @time

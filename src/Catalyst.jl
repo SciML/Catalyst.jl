@@ -12,6 +12,7 @@ import MacroTools
 import Base: (==), merge!, merge
 using Symbolics
 using Latexify, Requires
+using AbstractAlgebra
 
 # as used in Catlab
 const USE_GV_JLL = Ref(false)
@@ -42,6 +43,7 @@ include("networkapi.jl")
 export species, params, reactions, speciesmap, paramsmap, numspecies, numreactions, numparams
 export make_empty_network, addspecies!, addparam!, addreaction!
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
+export conservationlaws, conservedquantities
 
 # for Latex printing of ReactionSystems
 include("latexify_recipes.jl")
