@@ -145,13 +145,12 @@ end
 Creates reduced reaction system, eliminating the given species simultaneously. Returns a reduced
 reaction system and the matrix of conservation laws of the original system.
 
-TODO: Add support for `rn.observed` and `rn.systems`.
+TODO: Add support for `rn.systems`.
 """
 function reducereacsys(rn::ReactionSystem, elided_species::AbstractVector; combinatoric_ratelaw=true)
     S = netstoichmat(rn)
     C = Int.(conservationlaws(S))
     
-    @assert isempty(rn.observed)
     @assert isempty(rn.systems)
     
     canelide(C, elided_species) || error("Cannot elide selected species in reaction system")
@@ -165,8 +164,11 @@ function reducereacsys(rn::ReactionSystem, elided_species::AbstractVector; combi
     name_new = Symbol(rn.name, "_R")
     
     subs = getsubsdict(rn, C, elided_species, syms_cons)
+    observed_new = [ rn.observed; (key ~ value for (key, value) in pairs(subs))... ]
+
     reactions_new = reducedreactions(rn, C, elided_species, syms_cons; 
                                      combinatoric_ratelaw=combinatoric_ratelaw)
     
-    (ReactionSystem(reactions_new, rn.iv, states_new, ps_new, rn.observed, name_new, rn.systems), C)
+    (ReactionSystem(reactions_new, rn.iv, states_new, ps_new, observed_new, 
+                    name_new, rn.systems), C)
 end
