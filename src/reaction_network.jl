@@ -268,25 +268,9 @@ function recursive_expand_functions!(expr::ExprValues)
     (typeof(expr)!=Expr) && (return expr)
     foreach(i -> expr.args[i] = recursive_expand_functions!(expr.args[i]), 1:length(expr.args))
     if expr.head == :call
-        in(expr.args[1],hill_name) && return hill(expr)
-        in(expr.args[1],hillR_name) && return hillR(expr)
-        in(expr.args[1],mm_name) && return mm(expr)
-        in(expr.args[1],mmR_name) && return mmR(expr)
-
         !isdefined(Catalyst,expr.args[1]) && (expr.args[1] = esc(expr.args[1]))
     end
     return expr
 end
 
-#Hill function made avaiable (activation and repression).
-hill_name = Set{Symbol}([:hill, :Hill, :h, :H, :HILL])
-hill(expr::Expr) = :($(expr.args[3])*($(expr.args[2])^$(expr.args[5]))/($(expr.args[4])^$(expr.args[5])+$(expr.args[2])^$(expr.args[5])))
-hillR_name = Set{Symbol}([:hill_repressor, :hillr, :hillR, :HillR, :hR, :hR, :Hr, :HR, :HILLR])
-hillR(expr::Expr) = :($(expr.args[3])*($(expr.args[4])^$(expr.args[5]))/($(expr.args[4])^$(expr.args[5])+$(expr.args[2])^$(expr.args[5])))
-
-#Michaelis-Menten function made available (activation and repression).
-mm_name = Set{Symbol}([:MM, :mm, :Mm, :mM, :M, :m])
-mm(expr::Expr) = :($(expr.args[3])*$(expr.args[2])/($(expr.args[4])+$(expr.args[2])))
-mmR_name = Set{Symbol}([:mm_repressor, :MMR, :mmr, :mmR, :MmR, :mMr, :MR, :mr, :Mr, :mR])
-mmR(expr::Expr) = :($(expr.args[3])*$(expr.args[4])/($(expr.args[4])+$(expr.args[2])))
 
