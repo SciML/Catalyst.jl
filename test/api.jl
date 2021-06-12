@@ -128,9 +128,9 @@ B = [-1 0 0 1; 1 0 0 0; 0 -1 1 0; 0 1 -1 0; 0 0 0 -1]
 
 # repressilator
 rn[4]  = @reaction_network begin
-   hillr(P₃,α,K,n), ∅ --> m₁
-   hillr(P₁,α,K,n), ∅ --> m₂
-   hillr(P₂,α,K,n), ∅ --> m₃
+   hillR(P₃,α,K,n), ∅ --> m₁
+   hillR(P₁,α,K,n), ∅ --> m₂
+   hillR(P₂,α,K,n), ∅ --> m₃
    (δ,γ), m₁ ↔ ∅
    (δ,γ), m₂ ↔ ∅
    (δ,γ), m₃ ↔ ∅
