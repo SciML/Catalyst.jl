@@ -339,7 +339,6 @@ end
 Compute conserved quantities for a system with the given conservation laws.
 """
 conservedquantities(state, cons_laws) = cons_laws * state
->>>>>>> 6e08e674b67d63ff5e85429d415093d9623acfce
 
 ######################## reaction network operators #######################
 
