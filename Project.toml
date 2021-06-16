@@ -15,7 +15,7 @@ Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
-AbstractAlgebra = "0.17"
+AbstractAlgebra = "0.17, 0.18"
 DataStructures = "0.18"
 DocStringExtensions = "0.8"
 Latexify = "0.14, 0.15"
