@@ -3,7 +3,7 @@ using Catalyst, DiffEqBase, ModelingToolkit, Test
 using ModelingToolkit: value
 
 @parameters t k1 k2
-@variables S I R
+@variables S(t) I(t) R(t)
 rxs = [Reaction(k1, [S,I], [I], [1,1], [2]),
        Reaction(k2, [I], [R]) ]
 rs = ReactionSystem(rxs, t, [S,I,R], [k1,k2])
@@ -21,7 +21,7 @@ rs2 = ReactionSystem(rxs2, t, [R,I,S], [k2,k1])
 
 rs3 = make_empty_network()
 @parameters k3 k4
-@variables D
+@variables D(t)
 addspecies!(rs3, S)
 addspecies!(rs3, D)
 addparam!(rs3, k3)
