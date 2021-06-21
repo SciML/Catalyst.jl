@@ -58,9 +58,9 @@ rs = ReactionSystem(rxs, t, [S,I,R], [k1,k2])
 deps = dependents(rxs[2], rs)
 @test isequal(deps, [R,I])
 @test isequal(dependents(rxs[1], rs), dependants(rxs[1], rs))
-addspecies!(rs, Variable(:S))
+addspecies!(rs, S)
 @test numspecies(rs) == 3
-addspecies!(rs, Variable(:S), disablechecks=true)
+addspecies!(rs, S, disablechecks=true)
 @test numspecies(rs) == 4
 addparam!(rs, k1)
 @test numparams(rs) == 2
