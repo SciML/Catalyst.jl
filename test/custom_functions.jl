@@ -14,9 +14,9 @@ custom_function_network_1 = @reaction_network begin
     mm(X2,v2,K2), X2 + Y2 --> Z2
     p1*X3^2+p2, X3 + Y3 --> Z3
     exp(-p3*Y4), X4 + Y4 --> Z4
-    hillR(X5,v3,K3,2), X5 + Y5 --> Z5
-    mmR(X6,v4,K4), X6 + Y6 --> Z6
-    hillAR(X7,Y7,v5,K5,2), X7 + Y7 --> Z7
+    hillr(X5,v3,K3,2), X5 + Y5 --> Z5
+    mmr(X6,v4,K4), X6 + Y6 --> Z6
+    hillar(X7,Y7,v5,K5,2), X7 + Y7 --> Z7
 end v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4 v5 K5
 
 custom_function_network_2 = @reaction_network begin
@@ -48,8 +48,8 @@ end
 mm_network = @reaction_network begin
     (1.,1.), 0 ↔ X
     mm(X,v,K), 0 --> X1
-    Mm(X,v,K), 0 --> X2
-    MM(X,v,K), 0 --> X3
+    mm(X,v,K), 0 --> X2
+    mm(X,v,K), 0 --> X3
 end v K
 f_mm = ODEFunction(convert(ODESystem,mm_network),jac=true)
 
@@ -65,9 +65,9 @@ f_mm_jac_output = f_mm.jac(u0,p,t)[2:end,1]
 # Repressing Michaelis-Menten function.
 mmR_network = @reaction_network begin
     (1.,1.), 0 ↔ X
-    mmR(X,v,K), 0 --> X1
-    MmR(X,v,K), 0 --> X2
-    MMR(X,v,K), 0 --> X3
+    mmr(X,v,K), 0 --> X1
+    mmr(X,v,K), 0 --> X2
+    mmr(X,v,K), 0 --> X3
 end v K
 f_mmR = ODEFunction(convert(ODESystem,mmR_network),jac=true)
 
@@ -84,7 +84,7 @@ f_mmR_jac_output = f_mmR.jac(u0,p,t)[2:end,1]
 hill_network = @reaction_network begin
     (1.,1.), 0 ↔ X
     hill(X,v,K,2), 0 --> X1
-    Hill(X,v,K,2), 0 --> X2
+    hill(X,v,K,2), 0 --> X2
 end v K
 f_hill = ODEFunction(convert(ODESystem,hill_network),jac=true)
 
@@ -100,8 +100,8 @@ f_hill_jac_output = f_hill.jac(u0,p,t)[2:end,1]
 # Repressing Hill function.
 hillR_network = @reaction_network begin
     (1.,1.), 0 ↔ X
-    hillR(X,v,K,2), 0 --> X1
-    HillR(X,v,K,2), 0 --> X2
+    hillr(X,v,K,2), 0 --> X1
+    hillr(X,v,K,2), 0 --> X2
 end v K
 f_hillR = ODEFunction(convert(ODESystem,hillR_network),jac=true)
 
@@ -117,10 +117,10 @@ f_hillR_jac_output = f_hillR.jac(u0,p,t)[2:end,1]
 # Activation/repressing Hill function.
 hillAR_network = @reaction_network begin
     (1.,1.), 0 ↔ (X,Y)
-    hillC(X,Y,v,K,2), 0 --> X1
-    HillC(X,Y,v,K,2), 0 --> X2
-    hillAR(X,Y,v,K,2), 0 --> X3
-    HillAR(X,Y,v,K,2), 0 --> X4
+    hillar(X,Y,v,K,2), 0 --> X1
+    hillar(X,Y,v,K,2), 0 --> X2
+    hillar(X,Y,v,K,2), 0 --> X3
+    hillar(X,Y,v,K,2), 0 --> X4
 end v K
 f_hillAR = ODEFunction(convert(ODESystem,hillAR_network),jac=true)
 
