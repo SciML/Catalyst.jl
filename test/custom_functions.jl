@@ -63,22 +63,22 @@ f_mm_jac_output = f_mm.jac(u0,p,t)[2:end,1]
 @test (maximum(f_mm_jac_output) - minimum(f_mm_jac_output)) .< 100*eps()
 
 # Repressing Michaelis-Menten function.
-mmR_network = @reaction_network begin
+mmr_network = @reaction_network begin
     (1.,1.), 0 ↔ X
     mmr(X,v,K), 0 --> X1
     mmr(X,v,K), 0 --> X2
     mmr(X,v,K), 0 --> X3
 end v K
-f_mmR = ODEFunction(convert(ODESystem,mmR_network),jac=true)
+f_mmr = ODEFunction(convert(ODESystem,mmr_network),jac=true)
 
-u0 = 10*rand(rng,length(get_states(mmR_network)))
-p = 10*rand(rng,length(get_ps(mmR_network)))
+u0 = 10*rand(rng,length(get_states(mmr_network)))
+p = 10*rand(rng,length(get_ps(mmr_network)))
 t = 10*rand(rng)
 
-f_mmR_output = f_mmR(u0,p,t)[2:end]
-f_mmR_jac_output = f_mmR.jac(u0,p,t)[2:end,1]
-@test (maximum(f_mmR_output) - minimum(f_mmR_output)) .< 100*eps()
-@test (maximum(f_mmR_jac_output) - minimum(f_mmR_jac_output)) .< 100*eps()
+f_mmr_output = f_mmr(u0,p,t)[2:end]
+f_mmr_jac_output = f_mmr.jac(u0,p,t)[2:end,1]
+@test (maximum(f_mmr_output) - minimum(f_mmr_output)) .< 100*eps()
+@test (maximum(f_mmr_jac_output) - minimum(f_mmr_jac_output)) .< 100*eps()
 
 # Hill function.
 hill_network = @reaction_network begin
@@ -98,37 +98,37 @@ f_hill_jac_output = f_hill.jac(u0,p,t)[2:end,1]
 @test (maximum(f_hill_jac_output) - minimum(f_hill_jac_output)) .< 100*eps()
 
 # Repressing Hill function.
-hillR_network = @reaction_network begin
+hillr_network = @reaction_network begin
     (1.,1.), 0 ↔ X
     hillr(X,v,K,2), 0 --> X1
     hillr(X,v,K,2), 0 --> X2
 end v K
-f_hillR = ODEFunction(convert(ODESystem,hillR_network),jac=true)
+f_hillr = ODEFunction(convert(ODESystem,hillr_network),jac=true)
 
-u0 = 10*rand(rng,length(get_states(hillR_network)))
-p = 10*rand(rng,length(get_ps(hillR_network)))
+u0 = 10*rand(rng,length(get_states(hillr_network)))
+p = 10*rand(rng,length(get_ps(hillr_network)))
 t = 10*rand(rng)
 
-f_hillR_output = f_hillR(u0,p,t)[2:end]
-f_hillR_jac_output = f_hillR.jac(u0,p,t)[2:end,1]
-@test (maximum(f_hillR_output) - minimum(f_hillR_output)) .< 100*eps()
-@test (maximum(f_hillR_jac_output) - minimum(f_hillR_jac_output)) .< 100*eps()
+f_hillr_output = f_hillr(u0,p,t)[2:end]
+f_hillr_jac_output = f_hillr.jac(u0,p,t)[2:end,1]
+@test (maximum(f_hillr_output) - minimum(f_hillr_output)) .< 100*eps()
+@test (maximum(f_hillr_jac_output) - minimum(f_hillr_jac_output)) .< 100*eps()
 
 # Activation/repressing Hill function.
-hillAR_network = @reaction_network begin
+hillar_network = @reaction_network begin
     (1.,1.), 0 ↔ (X,Y)
     hillar(X,Y,v,K,2), 0 --> X1
     hillar(X,Y,v,K,2), 0 --> X2
     hillar(X,Y,v,K,2), 0 --> X3
     hillar(X,Y,v,K,2), 0 --> X4
 end v K
-f_hillAR = ODEFunction(convert(ODESystem,hillAR_network),jac=true)
+f_hillar = ODEFunction(convert(ODESystem,hillar_network),jac=true)
 
-u0 = 10*rand(rng,length(get_states(hillAR_network)))
-p = 10*rand(rng,length(get_ps(hillAR_network)))
+u0 = 10*rand(rng,length(get_states(hillar_network)))
+p = 10*rand(rng,length(get_ps(hillar_network)))
 t = 10*rand(rng)
 
-f_hillAR_output = f_hillAR(u0,p,t)[3:end]
-f_hillAR_jac_output = f_hillAR.jac(u0,p,t)[3:end,1]
-@test (maximum(f_hillAR_output) - minimum(f_hillAR_output)) .< 100*eps()
-@test (maximum(f_hillAR_jac_output) - minimum(f_hillAR_jac_output)) .< 100*eps()
+f_hillar_output = f_hillar(u0,p,t)[3:end]
+f_hillar_jac_output = f_hillar.jac(u0,p,t)[3:end,1]
+@test (maximum(f_hillar_output) - minimum(f_hillar_output)) .< 100*eps()
+@test (maximum(f_hillar_jac_output) - minimum(f_hillar_jac_output)) .< 100*eps()

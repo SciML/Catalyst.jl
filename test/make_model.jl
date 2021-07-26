@@ -136,7 +136,7 @@ end p1 p2 p3 k1 k2 k3 k4 d1 d2 d3
 push!(identical_networks_1, reaction_networks_standard[1] => different_arrow_1)
 
 different_arrow_2 = @reaction_network begin
-    mmR(X2,v1,K1), ∅ → X1
+    mmr(X2,v1,K1), ∅ → X1
     mm(X1,v2,K2), ∅ ↣ X2
     d, X1+X2 ↦ ∅
 end v1 K1 v2 K2 d
@@ -152,10 +152,10 @@ end v1 K1 v2 K2 k1 k2 k3 k4 d
 push!(identical_networks_1, reaction_networks_standard[3] => different_arrow_3)
 
 different_arrow_4 = @reaction_network begin
-    mmR(X4,v1,K1), ∅ ⥟ X1
-    mmR(X1,v2,K2), ∅ ⥟ X2
-    mmR(X2,v3,K3), ∅ ⇀ X3
-    mmR(X3,v4,K4), ∅ ⇁ X4
+    mmr(X4,v1,K1), ∅ ⥟ X1
+    mmr(X1,v2,K2), ∅ ⥟ X2
+    mmr(X2,v3,K3), ∅ ⇀ X3
+    mmr(X3,v4,K4), ∅ ⇁ X4
     (d1,d2,d3,d4), (X1,X2,X3,X4) --> ∅
 end v1 K1 v2 K2 v3 K3 v4 K4 d1 d2 d3 d4
 push!(identical_networks_1, reaction_networks_standard[4] => different_arrow_4)
