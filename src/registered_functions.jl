@@ -23,8 +23,11 @@ Symbolics.derivative(::typeof(MM), args::NTuple{3,Any}, ::Val{3}) = - args[2]*ar
 mmR(X,v,K) = v*K / (X + K)
 MmR(X,v,K) = v*K / (X + K)
 MMR(X,v,K) = v*K / (X + K)
+mmr(X,v,K) = v*K / (X + K)
+Mmr(X,v,K) = v*K / (X + K)
+MMr(X,v,K) = v*K / (X + K)
 
-@register mmR(X,v,K); @register MmR(X,v,K); @register MMR(X,v,K);
+@register mmR(X,v,K); @register MmR(X,v,K); @register MMR(X,v,K); @register mmr(X,v,K); @register Mmr(X,v,K); @register MMr(X,v,K);
 
 Symbolics.derivative(::typeof(mmR), args::NTuple{3,Any}, ::Val{1}) = - (args[2]*args[3]) / (args[1]+args[3])^2
 Symbolics.derivative(::typeof(mmR), args::NTuple{3,Any}, ::Val{2}) = args[3]/(args[1]+args[3])
@@ -37,6 +40,18 @@ Symbolics.derivative(::typeof(MmR), args::NTuple{3,Any}, ::Val{3}) = args[2]*arg
 Symbolics.derivative(::typeof(MMR), args::NTuple{3,Any}, ::Val{1}) = - (args[2]*args[3]) / (args[1]+args[3])^2
 Symbolics.derivative(::typeof(MMR), args::NTuple{3,Any}, ::Val{2}) = args[3]/(args[1]+args[3])
 Symbolics.derivative(::typeof(MMR), args::NTuple{3,Any}, ::Val{3}) = args[2]*args[1]/(args[1]+args[3])^2
+
+Symbolics.derivative(::typeof(mmr), args::NTuple{3,Any}, ::Val{1}) = - (args[2]*args[3]) / (args[1]+args[3])^2
+Symbolics.derivative(::typeof(mmr), args::NTuple{3,Any}, ::Val{2}) = args[3]/(args[1]+args[3])
+Symbolics.derivative(::typeof(mmr), args::NTuple{3,Any}, ::Val{3}) = args[2]*args[1]/(args[1]+args[3])^2
+
+Symbolics.derivative(::typeof(Mmr), args::NTuple{3,Any}, ::Val{1}) = - (args[2]*args[3]) / (args[1]+args[3])^2
+Symbolics.derivative(::typeof(Mmr), args::NTuple{3,Any}, ::Val{2}) = args[3]/(args[1]+args[3])
+Symbolics.derivative(::typeof(Mmr), args::NTuple{3,Any}, ::Val{3}) = args[2]*args[1]/(args[1]+args[3])^2
+
+Symbolics.derivative(::typeof(MMr), args::NTuple{3,Any}, ::Val{1}) = - (args[2]*args[3]) / (args[1]+args[3])^2
+Symbolics.derivative(::typeof(MMr), args::NTuple{3,Any}, ::Val{2}) = args[3]/(args[1]+args[3])
+Symbolics.derivative(::typeof(MMr), args::NTuple{3,Any}, ::Val{3}) = args[2]*args[1]/(args[1]+args[3])^2
 
 
 # Registers the Hill function.
@@ -59,8 +74,10 @@ Symbolics.derivative(::typeof(Hill), args::NTuple{4,Any}, ::Val{4}) = args[2] * 
 # Registers the repressing hill function (alterantive to negative n).
 hillR(X,v,K,n) = v*(K^n) / (X^n + K^n)
 HillR(X,v,K,n) = v*(K^n) / (X^n + K^n)
+hillr(X,v,K,n) = v*(K^n) / (X^n + K^n)
+Hillr(X,v,K,n) = v*(K^n) / (X^n + K^n)
 
-@register hillR(X,v,K,n); @register HillR(X,v,K,n);
+@register hillR(X,v,K,n); @register HillR(X,v,K,n); @register hillr(X,v,K,n); @register Hillr(X,v,K,n);
 
 Symbolics.derivative(::typeof(hillR), args::NTuple{4,Any}, ::Val{1}) = - args[2] * args[4] * (args[3]^args[4]) * (args[1]^(args[4]-1))  /  (args[1]^args[4] + args[3]^args[4])^2
 Symbolics.derivative(::typeof(hillR), args::NTuple{4,Any}, ::Val{2}) = (args[3]^args[4])  /  (args[1]^args[4] + args[3]^args[4])
@@ -72,14 +89,28 @@ Symbolics.derivative(::typeof(HillR), args::NTuple{4,Any}, ::Val{2}) = (args[3]^
 Symbolics.derivative(::typeof(HillR), args::NTuple{4,Any}, ::Val{3}) = args[2] * args[4] * (args[1]^args[4]) * (args[3]^(args[4]-1))  /  (args[1]^args[4] + args[3]^args[4])^2
 Symbolics.derivative(::typeof(HillR), args::NTuple{4,Any}, ::Val{4}) = args[2] * (args[1]^args[4]) * (args[3]^args[4]) * (log(args[3])-log(args[1]))  /  (args[1]^args[4] + args[3]^args[4])^2
 
+Symbolics.derivative(::typeof(hillr), args::NTuple{4,Any}, ::Val{1}) = - args[2] * args[4] * (args[3]^args[4]) * (args[1]^(args[4]-1))  /  (args[1]^args[4] + args[3]^args[4])^2
+Symbolics.derivative(::typeof(hillr), args::NTuple{4,Any}, ::Val{2}) = (args[3]^args[4])  /  (args[1]^args[4] + args[3]^args[4])
+Symbolics.derivative(::typeof(hillr), args::NTuple{4,Any}, ::Val{3}) = args[2] * args[4] * (args[1]^args[4]) * (args[3]^(args[4]-1))  /  (args[1]^args[4] + args[3]^args[4])^2
+Symbolics.derivative(::typeof(hillr), args::NTuple{4,Any}, ::Val{4}) = args[2] * (args[1]^args[4]) * (args[3]^args[4]) * (log(args[3])-log(args[1]))  /  (args[1]^args[4] + args[3]^args[4])^2
+
+Symbolics.derivative(::typeof(Hillr), args::NTuple{4,Any}, ::Val{1}) = - args[2] * args[4] * (args[3]^args[4]) * (args[1]^(args[4]-1))  /  (args[1]^args[4] + args[3]^args[4])^2
+Symbolics.derivative(::typeof(Hillr), args::NTuple{4,Any}, ::Val{2}) = (args[3]^args[4])  /  (args[1]^args[4] + args[3]^args[4])
+Symbolics.derivative(::typeof(Hillr), args::NTuple{4,Any}, ::Val{3}) = args[2] * args[4] * (args[1]^args[4]) * (args[3]^(args[4]-1))  /  (args[1]^args[4] + args[3]^args[4])^2
+Symbolics.derivative(::typeof(Hillr), args::NTuple{4,Any}, ::Val{4}) = args[2] * (args[1]^args[4]) * (args[3]^args[4]) * (log(args[3])-log(args[1]))  /  (args[1]^args[4] + args[3]^args[4])^2
 
 # Registers the activation/repressing hill function.
 hillC(X,Y,v,K,n) = v*(X^n) / (X^n + Y^n + K^n)
 hillAR(X,Y,v,K,n) = v*(X^n) / (X^n + Y^n + K^n)
 HillC(X,Y,v,K,n) = v*(X^n) / (X^n + Y^n + K^n)
 HillAR(X,Y,v,K,n) = v*(X^n) / (X^n + Y^n + K^n)
+hillc(X,Y,v,K,n) = v*(X^n) / (X^n + Y^n + K^n)
+hillar(X,Y,v,K,n) = v*(X^n) / (X^n + Y^n + K^n)
+Hillc(X,Y,v,K,n) = v*(X^n) / (X^n + Y^n + K^n)
+Hillar(X,Y,v,K,n) = v*(X^n) / (X^n + Y^n + K^n)
 
 @register hillC(X,Y,v,K,n); @register hillAR(X,Y,v,K,n); @register HillC(X,Y,v,K,n); @register HillAR(X,Y,v,K,n);
+@register hillc(X,Y,v,K,n); @register hillar(X,Y,v,K,n); @register Hillc(X,Y,v,K,n); @register Hillar(X,Y,v,K,n);
 
 Symbolics.derivative(::typeof(hillC), args::NTuple{5,Any}, ::Val{1}) = args[3] * args[5] * (args[1]^(args[5]-1)) * (args[2]^args[5]+args[4]^args[5])  /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
 Symbolics.derivative(::typeof(hillC), args::NTuple{5,Any}, ::Val{2}) = - args[3] * args[5] * (args[2]^(args[5]-1)) * (args[1]^args[5])  /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
@@ -104,3 +135,27 @@ Symbolics.derivative(::typeof(HillAR), args::NTuple{5,Any}, ::Val{2}) = - args[3
 Symbolics.derivative(::typeof(HillAR), args::NTuple{5,Any}, ::Val{3}) = (args[1]^args[5])   /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])
 Symbolics.derivative(::typeof(HillAR), args::NTuple{5,Any}, ::Val{4}) = - args[3] * args[5] * (args[3]^(args[5]-1)) * (args[1]^args[5])  /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
 Symbolics.derivative(::typeof(HillAR), args::NTuple{5,Any}, ::Val{5}) = args[3] * (args[1]^args[5])  *  (log(args[1])*(args[2]^args[5] + args[4]^args[5]) - (args[2]^args[5])*log(args[2]) - (args[4]^args[5])*log(args[4]))   /   (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+
+Symbolics.derivative(::typeof(hillc), args::NTuple{5,Any}, ::Val{1}) = args[3] * args[5] * (args[1]^(args[5]-1)) * (args[2]^args[5]+args[4]^args[5])  /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+Symbolics.derivative(::typeof(hillc), args::NTuple{5,Any}, ::Val{2}) = - args[3] * args[5] * (args[2]^(args[5]-1)) * (args[1]^args[5])  /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+Symbolics.derivative(::typeof(hillc), args::NTuple{5,Any}, ::Val{3}) = (args[1]^args[5])   /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])
+Symbolics.derivative(::typeof(hillc), args::NTuple{5,Any}, ::Val{4}) = - args[3] * args[5] * (args[3]^(args[5]-1)) * (args[1]^args[5])  /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+Symbolics.derivative(::typeof(hillc), args::NTuple{5,Any}, ::Val{5}) = args[3] * (args[1]^args[5])  *  (log(args[1])*(args[2]^args[5] + args[4]^args[5]) - (args[2]^args[5])*log(args[2]) - (args[4]^args[5])*log(args[4]))   /   (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+
+Symbolics.derivative(::typeof(hillar), args::NTuple{5,Any}, ::Val{1}) = args[3] * args[5] * (args[1]^(args[5]-1)) * (args[2]^args[5]+args[4]^args[5])  /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+Symbolics.derivative(::typeof(hillar), args::NTuple{5,Any}, ::Val{2}) = - args[3] * args[5] * (args[2]^(args[5]-1)) * (args[1]^args[5])  /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+Symbolics.derivative(::typeof(hillar), args::NTuple{5,Any}, ::Val{3}) = (args[1]^args[5])   /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])
+Symbolics.derivative(::typeof(hillar), args::NTuple{5,Any}, ::Val{4}) = - args[3] * args[5] * (args[3]^(args[5]-1)) * (args[1]^args[5])  /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+Symbolics.derivative(::typeof(hillar), args::NTuple{5,Any}, ::Val{5}) = args[3] * (args[1]^args[5])  *  (log(args[1])*(args[2]^args[5] + args[4]^args[5]) - (args[2]^args[5])*log(args[2]) - (args[4]^args[5])*log(args[4]))   /   (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+
+Symbolics.derivative(::typeof(Hillc), args::NTuple{5,Any}, ::Val{1}) = args[3] * args[5] * (args[1]^(args[5]-1)) * (args[2]^args[5]+args[4]^args[5])  /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+Symbolics.derivative(::typeof(Hillc), args::NTuple{5,Any}, ::Val{2}) = - args[3] * args[5] * (args[2]^(args[5]-1)) * (args[1]^args[5])  /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+Symbolics.derivative(::typeof(Hillc), args::NTuple{5,Any}, ::Val{3}) = (args[1]^args[5])   /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])
+Symbolics.derivative(::typeof(Hillc), args::NTuple{5,Any}, ::Val{4}) = - args[3] * args[5] * (args[3]^(args[5]-1)) * (args[1]^args[5])  /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+Symbolics.derivative(::typeof(Hillc), args::NTuple{5,Any}, ::Val{5}) = args[3] * (args[1]^args[5])  *  (log(args[1])*(args[2]^args[5] + args[4]^args[5]) - (args[2]^args[5])*log(args[2]) - (args[4]^args[5])*log(args[4]))   /   (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+
+Symbolics.derivative(::typeof(Hillar), args::NTuple{5,Any}, ::Val{1}) = args[3] * args[5] * (args[1]^(args[5]-1)) * (args[2]^args[5]+args[4]^args[5])  /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+Symbolics.derivative(::typeof(Hillar), args::NTuple{5,Any}, ::Val{2}) = - args[3] * args[5] * (args[2]^(args[5]-1)) * (args[1]^args[5])  /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+Symbolics.derivative(::typeof(Hillar), args::NTuple{5,Any}, ::Val{3}) = (args[1]^args[5])   /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])
+Symbolics.derivative(::typeof(Hillar), args::NTuple{5,Any}, ::Val{4}) = - args[3] * args[5] * (args[3]^(args[5]-1)) * (args[1]^args[5])  /  (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
+Symbolics.derivative(::typeof(Hillar), args::NTuple{5,Any}, ::Val{5}) = args[3] * (args[1]^args[5])  *  (log(args[1])*(args[2]^args[5] + args[4]^args[5]) - (args[2]^args[5])*log(args[2]) - (args[4]^args[5])*log(args[4]))   /   (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
