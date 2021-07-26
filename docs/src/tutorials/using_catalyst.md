@@ -21,9 +21,9 @@ is used for zeroth order production and first order degradation reactions:
 
 ```julia
 repressilator = @reaction_network begin
-    hillr(P₃,α,K,n), ∅ --> m₁
-    hillr(P₁,α,K,n), ∅ --> m₂
-    hillr(P₂,α,K,n), ∅ --> m₃
+    hillR(P₃,α,K,n), ∅ --> m₁
+    hillR(P₁,α,K,n), ∅ --> m₂
+    hillR(P₂,α,K,n), ∅ --> m₃
     (δ,γ), m₁ ↔ ∅
     (δ,γ), m₂ ↔ ∅
     (δ,γ), m₃ ↔ ∅
@@ -80,9 +80,9 @@ labelled with their output stoichiometry. In contrast, red arrows from a species
 to reactions indicate the species is used within the reactions' rate
 expressions. For the repressilator, the reactions
 ```julia
-hillr(P₃,α,K,n), ∅ --> m₁
-hillr(P₁,α,K,n), ∅ --> m₂
-hillr(P₂,α,K,n), ∅ --> m₃
+hillR(P₃,α,K,n), ∅ --> m₁
+hillR(P₁,α,K,n), ∅ --> m₂
+hillR(P₂,α,K,n), ∅ --> m₃
 ```
 have rates that depend on the proteins, and hence lead to red arrows from each
 `Pᵢ`.
