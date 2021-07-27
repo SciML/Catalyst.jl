@@ -23,10 +23,10 @@ using Catalyst, Latexify
 ### will cause issues with Travis.
 
 r = @reaction_network begin
-    hillR(X2,v1,K1,n1)*hill(X4,v1,K1,n1), ∅ → X1
+    hillr(X2,v1,K1,n1)*hill(X4,v1,K1,n1), ∅ → X1
     hill(X5,v2,K2,n2), ∅ → X2
     hill(X3,v3,K3,n3), ∅ → X3
-    hillR(X1,v4,K4,n4), ∅ → X4
+    hillr(X1,v4,K4,n4), ∅ → X4
     hill(X2,v5,K5,n5), ∅ → X5
     (k1,k2), X2 ⟷ X1 + 2X4
     (k3,k4), X4 ⟷ X3

@@ -18,7 +18,7 @@ reaction_networks_standard[1] = @reaction_network begin
 end p1 p2 p3 k1 k2 k3 k4 d1 d2 d3
 
 reaction_networks_standard[2] = @reaction_network begin
-    mmR(X2,v1,K1), ∅ → X1
+    mmr(X2,v1,K1), ∅ → X1
     mm(X1,v2,K2), ∅ → X2
     d, X1+X2 → ∅
 end v1 K1 v2 K2 d
@@ -32,10 +32,10 @@ reaction_networks_standard[3] = @reaction_network begin
 end v1 K1 v2 K2 k1 k2 k3 k4 d
 
 reaction_networks_standard[4] = @reaction_network begin
-    mmR(X4,v1,K1), ∅ → X1
-    mmR(X1,v2,K2), ∅ → X2
-    mmR(X2,v3,K3), ∅ → X3
-    mmR(X3,v4,K4), ∅ → X4
+    mmr(X4,v1,K1), ∅ → X1
+    mmr(X1,v2,K2), ∅ → X2
+    mmr(X2,v3,K3), ∅ → X3
+    mmr(X3,v4,K4), ∅ → X4
     (d1,d2,d3,d4), (X1,X2,X3,X4) → ∅
 end v1 K1 v2 K2 v3 K3 v4 K4 d1 d2 d3 d4
 
@@ -91,36 +91,36 @@ end p k1 k2 k3 k4 k5 k6 k7 k8 d
 ### Network with hill functions ###.
 
 reaction_networks_hill[1] = @reaction_network begin
-    hillR(X2,v1,K1,n1),   ∅ → X1
-    hillR(X1,v2,K2,n2),   ∅ → X2
+    hillr(X2,v1,K1,n1),   ∅ → X1
+    hillr(X1,v2,K2,n2),   ∅ → X2
     (d1,d2),          (X1,X2) → ∅
 end v1 v2 K1 K2 n1 n2 d1 d2
 
 reaction_networks_hill[2] = @reaction_network begin
-    hillR(X3,v1,K1,n1),   ∅ → X1
-    hillR(X1,v2,K2,n2),   ∅ → X2
-    hillR(X2,v3,K3,n3),   ∅ → X3
+    hillr(X3,v1,K1,n1),   ∅ → X1
+    hillr(X1,v2,K2,n2),   ∅ → X2
+    hillr(X2,v3,K3,n3),   ∅ → X3
     (d1,d2,d3),          (X1,X2,X3) → ∅
 end v1 v2 v3 K1 K2 K3 n1 n2 n3 d1 d2 d3
 
 reaction_networks_hill[3] = @reaction_network begin
-    hillR(X2,v1,K1,n1), ∅ → X1
+    hillr(X2,v1,K1,n1), ∅ → X1
     hill(X1,v2,K2,n2), ∅ → X2
     d, X1+X2 → ∅
 end v1 K1 n1 v2 K2 n2 d
 
 reaction_networks_hill[4] = @reaction_network begin
-    hillR(X2,v1,K1,n1)*hillR(X3,v1,K1,n1), ∅ → X1
-    hillR(X1,v2,K2,n2)*hillR(X3,v2,K2,n2), ∅ → X2
-    hillR(X1,v3,K3,n3)*hillR(X2,v3,K3,n3), ∅ → X3
+    hillr(X2,v1,K1,n1)*hillr(X3,v1,K1,n1), ∅ → X1
+    hillr(X1,v2,K2,n2)*hillr(X3,v2,K2,n2), ∅ → X2
+    hillr(X1,v3,K3,n3)*hillr(X2,v3,K3,n3), ∅ → X3
     (d1,d2,d3), (X1,X2,X3)  ⟶ ∅
 end v1 K1 n1 v2 K2 n2 v3 K3 n3 d1 d2 d3
 
 reaction_networks_hill[5] = @reaction_network begin
-    hillR(X2,v1,K1,n1)*hill(X4,v1,K1,n1), ∅ → X1
+    hillr(X2,v1,K1,n1)*hill(X4,v1,K1,n1), ∅ → X1
     hill(X5,v2,K2,n2), ∅ → X2
     hill(X3,v3,K3,n3), ∅ → X3
-    hillR(X1,v4,K4,n4), ∅ → X4
+    hillr(X1,v4,K4,n4), ∅ → X4
     hill(X2,v5,K5,n5), ∅ → X5
     (k1,k2), X2 ⟷ X1 + 2X4
     (k3,k4), X4 ⟷ X3
@@ -142,19 +142,19 @@ end v K n k1 k2 k3 d
 
 reaction_networks_hill[8] = @reaction_network begin
     hill(X2,v1,K1,n1), ∅ → X1
-    hillR(X1,v2,K2,n2)*hill(X3,v3,K3,n3), ∅ → X2
+    hillr(X1,v2,K2,n2)*hill(X3,v3,K3,n3), ∅ → X2
     hill(X2,v4,K4,n4), ∅ → X3
     (d1,d2,d3), (X1,X2,X3) → ∅
 end v1 K1 n1 v2 K2 n2 v3 K3 n3 v4 K4 n4 d1 d2 d3
 
 reaction_networks_hill[9] = @reaction_network begin
-    hill(X1,v1,K1,n1)*hillR(X1,v2,K2,n2), ∅ → X1
+    hill(X1,v1,K1,n1)*hillr(X1,v2,K2,n2), ∅ → X1
     d, X1 → ∅
 end v1 K1 n1 v2 K2 n2 d
 
 reaction_networks_hill[10] = @reaction_network begin
     hill(X2,v1,K1,n1), ∅ → X1
-    hillR(X4,v2,K2,n2), ∅ → X2
+    hillr(X4,v2,K2,n2), ∅ → X2
     (k1,k2), 2X1 + X2 ⟷ X3
     (k3,k4), 2X2 + X3 ⟷ X4
     (k5,k6), X1 + X2 + X3 + X4 ⟷ X5 + X6
@@ -199,9 +199,9 @@ end k1 k2 k3 k4 k5 k6
 reaction_network_constraints[5] = [12 6 4 3]
 
 reaction_networks_constraint[6] = @reaction_network begin
-    mmR(X1,v1,K1), X1 → X2
-    mmR(X2,v2,K2), X2 → X3
-    mmR(X3,v3,K3), X3 → X1
+    mmr(X1,v1,K1), X1 → X2
+    mmr(X2,v2,K2), X2 → X3
+    mmr(X3,v3,K3), X3 → X1
 end v1 K1 v2 K2 v3 K3
 reaction_network_constraints[6] = [1 1 1]
 
@@ -275,8 +275,8 @@ end k1 k2p k2pp k3p k3pp A J3 k4 m J4
 # A bistable switch
 reaction_networks_real[4] = @reaction_network begin
     d,    (X,Y) → ∅
-    hillR(Y,v1,K1,n1), ∅ → X
-    hillR(X,v2,K2,n2), ∅ → Y
+    hillr(Y,v1,K1,n1), ∅ → X
+    hillr(X,v2,K2,n2), ∅ → Y
 end d v1 K1 n1 v2 K2 n2
 
 ### Reaction networks that contain weird functions, stuff, and other oddities ###
@@ -295,8 +295,8 @@ end k1 k2 k3 k4
 
 reaction_networks_weird[3] = @reaction_network begin
     d,    (X,Y) → ∅
-    hillR(hill(Y,v2,K2,n2),v1,K1,n1), ∅ → X
-    hillR(hill(X,v1,K1,n1),v2,K2,n2), ∅ → Y
+    hillr(hill(Y,v2,K2,n2),v1,K1,n1), ∅ → X
+    hillr(hill(X,v1,K1,n1),v2,K2,n2), ∅ → Y
 end d v1 K1 n1 v2 K2 n2
 
 reaction_networks_weird[4] = @reaction_network begin
