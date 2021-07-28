@@ -10,7 +10,9 @@ const DEFAULT_IV = (@parameters t)[1]
 @reexport using ModelingToolkit
 import MacroTools
 import Base: (==), merge!, merge
+using Symbolics
 using Latexify, Requires
+using AbstractAlgebra
 
 # as used in Catlab
 const USE_GV_JLL = Ref(false)
@@ -33,11 +35,15 @@ include("reaction_network.jl")
 # reaction network macro
 export @reaction_network, @add_reactions
 
+# registers CRN specific functions using Symbolics.jl
+include("registered_functions.jl")
+
 # functions to query network properties
 include("networkapi.jl")
 export species, params, reactions, speciesmap, paramsmap, numspecies, numreactions, numparams
 export make_empty_network, addspecies!, addparam!, addreaction!
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
+export conservationlaws, conservedquantities
 
 # for Latex printing of ReactionSystems
 include("latexify_recipes.jl")

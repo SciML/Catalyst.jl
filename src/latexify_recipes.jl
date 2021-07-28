@@ -1,3 +1,17 @@
+# Implements handling of registered functions.
+mm_names = ([:mm])
+mmr_names = ([:mmr])
+hill_names = ([:hill])
+hillr_names = ([:hillr])
+hillar_names = ([:hillar])
+
+make_mm_exp(expr::Expr) = :($(expr.args[3])*$(expr.args[2])/($(expr.args[4])+$(expr.args[2])))
+make_mmr_exp(expr::Expr) = :($(expr.args[3])*$(expr.args[4])/($(expr.args[4])+$(expr.args[2])))
+make_hill_exp(expr::Expr) = :($(expr.args[3])*($(expr.args[2])^$(expr.args[5]))/($(expr.args[4])^$(expr.args[5])+$(expr.args[2])^$(expr.args[5])))
+make_hillr_exp(expr::Expr) = :($(expr.args[3])*($(expr.args[4])^$(expr.args[5]))/($(expr.args[4])^$(expr.args[5])+$(expr.args[2])^$(expr.args[5])))
+make_hillar_exp(expr::Expr) = :($(expr.args[4])*($(expr.args[2])^$(expr.args[6]))/($(expr.args[5])^$(expr.args[6])+$(expr.args[2])^$(expr.args[6])+$(expr.args[3])^$(expr.args[6])))
+
+
 #Recursively traverses an expression and removes things like X^1, 1*X. Will not actually have any effect on the expression when used as a function, but will make it much easier to look at it for debugging, as well as if it is transformed to LaTeX code.
 function recursive_clean!(expr)
     (expr isa Symbol) && (expr == :no___noise___scaling) && (return 1)
@@ -27,10 +41,11 @@ function recursive_clean!(expr)
     end
     if expr.head == :call
         (expr.args[1] == :/) && (expr.args[3] == 1) && (return expr.args[2])
-        in(expr.args[1],hill_name) && return hill(expr)
-        in(expr.args[1],hillR_name) && return hillR(expr)
-        in(expr.args[1],mm_name) && return mm(expr)
-        in(expr.args[1],mmR_name) && return mmR(expr)
+        in(expr.args[1],mm_names) && return make_mm_exp(expr)
+        in(expr.args[1],mmr_names) && return make_mmr_exp(expr)
+        in(expr.args[1],hill_names) && return make_hill_exp(expr)
+        in(expr.args[1],hillr_names) && return make_hillr_exp(expr)
+        in(expr.args[1],hillar_names) && return make_hillar_exp(expr)
         (expr.args[1] == :binomial) && (expr.args[3] == 1) && return expr.args[2]
         #@isdefined($(expr.args[1])) || error("Function $(expr.args[1]) not defined.")
     end

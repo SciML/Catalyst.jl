@@ -112,12 +112,16 @@ function run_graphviz(io::IO, graph::Graph; prog::Union{String,Nothing}=nothing,
   end
   @assert prog in ("dot", "neato", "fdp", "sfdp", "twopi", "circo")
   if USE_GV_JLL[]
-    print("here!!!")
     fun = getfield(Graphviz_jll, Symbol(prog))
-    prog = fun(identity)
-  end
-  open(`$prog -T$format`, io, write=true) do gv
-    pprint(gv, graph)
+    fun() do exe 
+      open(`$exe -T$format`, io, write=true) do gv
+        pprint(gv, graph)
+      end
+    end
+  else
+    open(`$prog -T$format`, io, write=true) do gv
+      pprint(gv, graph)
+    end
   end
 end
 function run_graphviz(graph::Graph; kw...)
