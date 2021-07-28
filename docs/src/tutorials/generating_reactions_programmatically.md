@@ -53,8 +53,8 @@ We'll store the reaction rates in `pars` as `Pair`s, and set the initial conditi
 ```julia
 # state variables are X, pars stores rate parameters for each rx
 @parameters t       
-@variables k[1:nr]  X[collect(1:N)](t)
-pars = Pair.(k, kv)
+@variables k[1:nr]  X[1:N](t)
+pars = Pair.(collect(k), kv)
 
 # time-span
 if i == 1
@@ -66,7 +66,7 @@ end
  # initial condition of monomers
 u₀    = zeros(Int64, N)
 u₀[1] = uₒ  
-u₀map = Pair.(X, u₀)   # map variable to its initial value
+u₀map = Pair.(collect(X), u₀)   # map variable to its initial value
 ```
 Here we generate the reactions programmatically. We systematically create Catalyst `Reaction`s for each possible reaction shown in the figure on [Wikipedia](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation). When `vᵢ[n] == vⱼ[n]`, we set the stoichiometric coefficient of the reactant multimer to two.
 ```julia
@@ -81,7 +81,7 @@ for n = 1:nr
                            [1, 1], [1]))
     end
 end
-rs = ReactionSystem(rx, t, X, k)
+rs = ReactionSystem(rx, t, collect(X), collect(k))
 ```
 We now convert the `ReactionSystem` into a `JumpSystem`, and solve it using Gillespie's direct method. For details on other possible solvers (SSAs), see the [DifferentialEquations.jl](https://diffeq.sciml.ai/latest/types/jump_types/) documentation 
 ```julia
