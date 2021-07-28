@@ -183,6 +183,47 @@ function netstoichmat(rn; smap=speciesmap(rn))
 end
 
 
+######################## conservation laws ###############################
+
+""" 
+    conservationlaws(netstoichmat::AbstractMatrix)::Matrix
+
+Given the net stoichiometry matrix of a reaction system, computes a matrix
+of conservation laws, each represented as a row in the output. 
+"""
+function conservationlaws(nsm::AbstractMatrix)::Matrix
+    n_reac, n_spec = size(nsm)
+    
+    # We basically have to compute the left null space of the matrix
+    # over the integers; this is best done using its Smith Normal Form.
+    nsm_conv = AbstractAlgebra.matrix(AbstractAlgebra.ZZ, nsm)
+    S, T, U = AbstractAlgebra.snf_with_transform(nsm_conv)
+    
+    # Zero columns of S (which occur after nonzero columns in SNF)
+    # correspond to conserved quantities
+    n = findfirst(i -> all(S[:,i] .== 0), 1:n_spec)
+    if n === nothing
+        return zeros(Int, 0, n_spec)
+    end
+    
+    ret = Matrix(U[:,n:end]')
+    
+    # If all coefficients for a conservation law are negative
+    # we might as well flip them to become positive
+    for i in 1:size(ret,1)
+        all(ret[i,:] .<= 0) && (ret[i,:] .*= -1)
+    end
+    
+    ret
+end
+
+"""
+    conservedquantities(state, cons_laws)
+
+Compute conserved quantities for a system with the given conservation laws.
+"""
+conservedquantities(state, cons_laws) = cons_laws * state
+
 ######################## reaction network operators #######################
 
 """
@@ -242,7 +283,7 @@ Construct an empty [`ReactionSystem`](@ref). `iv` is the independent variable,
 usually time, and `name` is the name to give the `ReactionSystem`.
 """
 function make_empty_network(; iv=DEFAULT_IV, name=gensym(:ReactionSystem))
-    ReactionSystem(Reaction[], iv, [], [], Equation[], name, ReactionSystem[])
+    ReactionSystem(Reaction[], iv, [], [], Equation[], name, ReactionSystem[], Dict())
 end
 
 """
