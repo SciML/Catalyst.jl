@@ -126,7 +126,8 @@ macro reaction_network(name::Symbol=gensym(:ReactionSystem))
                                  Equation[],
                                  $(QuoteNode(name)),
                                  ReactionSystem[],
-                                 Dict())))
+                                 Dict(), 
+                                 nothing)))
 end
 
 ### Macros used for manipulating, and successively builing up, reaction systems. ###
