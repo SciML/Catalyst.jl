@@ -227,12 +227,9 @@ compositon of the reaction complex
 """
 function complex_stoich_matrix(rn; cmp_mat = reaction_complexes(rn))
     Z = zeros(Int64, numspecies(rn), length(cmp_mat));
+    comp = collect.(cmp_mat)
     for i in 1:length(cmp_mat)
-        for j in 1:length(cmp_mat[i])
-            if collect(cmp_mat[i])[j].first != Int64[] # NOT A NULL COMPLEX
-                Z[collect(cmp_mat[i])[j].first, i] = collect(cmp_mat[i])[j].second
-            end
-        end
+        Z[map(first,comp[i]),i] = map(last,comp[i])
     end
     return Z
 end
