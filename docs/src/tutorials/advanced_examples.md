@@ -48,7 +48,7 @@ the ODE for `dX/dt` above. We can do so as:
 dXdteq = equations(osys)[1]           
 t      = get_iv(osys)    
 dXdteq = Equation(dXdteq.lhs, dXdteq.rhs + 10*sin(10*t))   
-osys2  = ODESystem([dXdteq], t, states(osys), parameters(osys))
+@named osys2  = ODESystem([dXdteq], t, states(osys), parameters(osys))
 oprob  = ODEProblem(osys2, u0map, tspan, pmap)
 osol   = solve(oprob, Tsit5())
 ```
@@ -57,7 +57,7 @@ We can add $e^{-X}$ to $dX/dt$ as a forcing term by
 dXdteq = equations(osys)[1]           
 @variables X(t)
 dXdteq = Equation(dXdteq.lhs, dXdteq.rhs + exp(-X))   
-osys2  = ODESystem([dXdteq], t, states(osys), parameters(osys))
+@named osys2  = ODESystem([dXdteq], t, states(osys), parameters(osys))
 oprob  = ODEProblem(osys2, u0map, tspan, pmap)
 osol   = solve(oprob, Tsit5())
 ```

@@ -35,8 +35,8 @@ repressilator = @reaction_network begin
     μ, P₃ --> ∅
 end α K n δ γ β μ;
 ```
-[`@reaction_network`](@ref) returns a [`ModelingToolkit.ReactionSystem`](@ref),
-which can be converted to a variety of other mathematical models represented as
+[`@reaction_network`](@ref) returns a [`ReactionSystem`](@ref), which can be
+converted to a variety of other mathematical models represented as
 `ModelingToolkit.AbstractSystem`s.
 
 We can use Latexify to look at the corresponding reactions and understand the

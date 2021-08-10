@@ -54,7 +54,6 @@ makedocs(
             "tutorials/generating_reactions_programmatically.md"
         ],
         "API" => Any[
-            "api/ReactionSystem.md",
             "api/catalyst_api.md"
         ]
     ]
