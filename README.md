@@ -22,7 +22,12 @@ be used with solvers throughout the broader [SciML](https://sciml.ai) ecosystem,
 including higher-level SciML packages (e.g., for sensitivity analysis, parameter
 estimation, machine learning applications, etc.).
 
-## New in 6.11
+## Note for version 8.0
+Version 8.0 is a breaking release, moving to the Catalyst modulate the basic
+reaction system functionality that was previously in ModelingToolkit (i.e.
+`ReactionSystem`, `Reaction`, and other function). 
+
+## New as of 6.11
 *1.* Plain text arrows "<--" and "<-->" for backward and reversible reactions are
    available if using Julia 1.6:
 ```julia
@@ -47,7 +52,7 @@ rn = @reaction_network MyName   # is named MyName
 are allowed.
 
 *3.* Compositional modeling with generated `ODESystem`s, see
-[here](https://github.com/SciML/ModelingToolkit.jl/blob/master/test/reactionsystem_components.jl)
+[here](https://github.com/SciML/Catalyst.jl/blob/master/test/reactionsystem_components.jl)
 for an example that composes three gene modules to make the repressilator.
 
 ## Tutorials and Documentation

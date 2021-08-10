@@ -5,11 +5,10 @@ CurrentModule = Catalyst
 
 ## Reaction Network Generation and Representation
 Catalyst provides the [`@reaction_network`](@ref) macro for generating a
-complete network, stored as a [`ModelingToolkit.ReactionSystem`](@ref), which in
-turn is composed of [`ModelingToolkit.Reaction`](@ref)s. `ReactionSystem`s can
-be converted to other `ModelingToolkit.AbstractSystem`s, including a
-`ModelingToolkit.ODESystem`, `ModelingToolkit.SDESystem`, or
-`ModelingToolkit.JumpSystem`.
+complete network, stored as a [`ReactionSystem`](@ref), which in turn is
+composed of [`Reaction`](@ref)s. `ReactionSystem`s can be converted to other
+`ModelingToolkit.AbstractSystem`s, including a `ModelingToolkit.ODESystem`,
+`ModelingToolkit.SDESystem`, or `ModelingToolkit.JumpSystem`.
 
 An empty network can be generated using [`@reaction_network`](@ref) with no
 arguments (or one argument to name the system), or the

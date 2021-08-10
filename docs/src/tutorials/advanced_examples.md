@@ -46,7 +46,7 @@ reaction. For example, suppose we wish to add a forcing term, $10\sin(10t)$, to
 the ODE for `dX/dt` above. We can do so as:
 ```julia
 dXdteq = equations(osys)[1]           
-t      = independent_variable(osys)    
+t      = get_iv(osys)    
 dXdteq = Equation(dXdteq.lhs, dXdteq.rhs + 10*sin(10*t))   
 osys2  = ODESystem([dXdteq], t, states(osys), parameters(osys))
 oprob  = ODEProblem(osys2, u0map, tspan, pmap)
