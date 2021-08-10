@@ -82,7 +82,7 @@ forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅]
 Generates a [`ReactionSystem`](@ref) that encodes a chemical reaction
 network.
 
-See the [Catalyst.jl for Reaction Models](@ref) documentation for details on
+See the [The Reaction DSL](@ref) documentation for details on
 parameters to the macro.
 
 Examples:

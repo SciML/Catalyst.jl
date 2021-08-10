@@ -402,7 +402,7 @@ end
 ```julia
 Base.convert(::Type{<:ODESystem},rs::ReactionSystem)
 ```
-Convert a [`ReactionSystem`](@ref) to an [`ODESystem`](@ref).
+Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.ODESystem`.
 
 Notes:
 - `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate
@@ -422,7 +422,7 @@ end
 Base.convert(::Type{<:NonlinearSystem},rs::ReactionSystem)
 ```
 
-Convert a [`ReactionSystem`](@ref) to an [`NonlinearSystem`](@ref).
+Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.NonlinearSystem`.
 
 Notes:
 - `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate
@@ -442,7 +442,7 @@ end
 Base.convert(::Type{<:SDESystem},rs::ReactionSystem)
 ```
 
-Convert a [`ReactionSystem`](@ref) to an [`SDESystem`](@ref).
+Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.SDESystem`.
 
 Notes:
 - `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate
@@ -491,7 +491,7 @@ end
 Base.convert(::Type{<:JumpSystem},rs::ReactionSystem; combinatoric_ratelaws=true)
 ```
 
-Convert a [`ReactionSystem`](@ref) to an [`JumpSystem`](@ref).
+Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.JumpSystem`.
 
 Notes:
 - `combinatoric_ratelaws=true` uses binomials in calculating the rate law, i.e. for `2S ->
