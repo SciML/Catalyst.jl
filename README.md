@@ -23,7 +23,7 @@ including higher-level SciML packages (e.g., for sensitivity analysis, parameter
 estimation, machine learning applications, etc.).
 
 ## Note for version 8.0
-Version 8.0 is a breaking release, moving to the Catalyst modulate the basic
+Version 8.0 is a breaking release, moving to the Catalyst module the basic
 reaction system functionality that was previously in ModelingToolkit (i.e.
 `ReactionSystem`, `Reaction`, and other function). 
 
