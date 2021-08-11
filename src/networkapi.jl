@@ -277,7 +277,7 @@ end
 Given a [`ReactionSystem`](@ref), returns a vector of the symbolic reaction rates for each reaction.
 """
 function reactionrates(rn)
-    return [r.rate for r in reactions(rn)]
+    [r.rate for r in reactions(rn)]
 end
 
 
@@ -296,7 +296,7 @@ function complexstoichmat(rn; rcs=reactioncomplexes(rn)[1])
             Z[rcel.speciesid,i] = rcel.speciesstoich
         end
     end
-    return Z
+    Z
 end
 
 """
@@ -312,8 +312,10 @@ Notes
 """
 function complexoutgoingmat(rn; B=reactioncomplexes(rn)[2])
     Δ = copy(B)
-    Δ[Δ .== 1] .= 0
-    return Δ
+    for (I,b) in pairs(Δ)
+        (b == 1) && (Δ[I] = 0)
+    end
+    Δ
 end
 
 

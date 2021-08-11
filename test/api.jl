@@ -419,8 +419,8 @@ end d v1 K1 n1 v2 K2 n2
 
 myrn = [reaction_networks_standard;reaction_networks_hill;reaction_networks_real]
 for i in 1:length(myrn)
-    rcs,B = reactioncomplexes(myrn[i])
-    Z = complexstoichmat(myrn[i])
+    local rcs,B = reactioncomplexes(myrn[i])
+    local Z = complexstoichmat(myrn[i])
     @test Z*B == (netstoichmat(myrn[i])')
 end
 
