@@ -11,9 +11,8 @@
 [![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://catalyst.sciml.ai/dev/api/catalyst_api/)
 
 Catalyst.jl is a domain-specific language (DSL) for high-performance simulation
-and modeling of chemical reaction networks. Catalyst utilizes
-[ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl)
-`ReactionSystem`s, leveraging ModelingToolkit to enable large-scale simulations
+and modeling of chemical reaction networks. Catalyst utilizes Symbolic 
+`ReactionSystem`s, leveraging [ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl) to enable large-scale simulations
 through auto-vectorization and parallelism. `ReactionSystem`s can be used to
 generate ModelingToolkit-based models, allowing easy simulation and
 parameter estimation of mass action ODE models, Chemical Langevin SDE models,
