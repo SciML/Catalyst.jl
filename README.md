@@ -11,9 +11,8 @@
 [![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://catalyst.sciml.ai/dev/api/catalyst_api/)
 
 Catalyst.jl is a domain-specific language (DSL) for high-performance simulation
-and modeling of chemical reaction networks. Catalyst utilizes
-[ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl)
-`ReactionSystem`s, leveraging ModelingToolkit to enable large-scale simulations
+and modeling of chemical reaction networks. Catalyst utilizes Symbolic 
+`ReactionSystem`s, leveraging [ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl) to enable large-scale simulations
 through auto-vectorization and parallelism. `ReactionSystem`s can be used to
 generate ModelingToolkit-based models, allowing easy simulation and
 parameter estimation of mass action ODE models, Chemical Langevin SDE models,
@@ -22,9 +21,14 @@ be used with solvers throughout the broader [SciML](https://sciml.ai) ecosystem,
 including higher-level SciML packages (e.g., for sensitivity analysis, parameter
 estimation, machine learning applications, etc.).
 
-## New in 6.11
+## Note for version 8.0
+Version 8.0 is a breaking release, moving to Catalyst the basic
+reaction system functionality that was previously in ModelingToolkit (i.e.
+`ReactionSystem`, `Reaction`, and other functions). 
+
+## New as of 6.11
 *1.* Plain text arrows "<--" and "<-->" for backward and reversible reactions are
-   available if using Julia 1.6:
+   available if using Julia 1.6 or higher:
 ```julia
 rn = @reaction_network begin 
   (k1,k2), A + B <--> C
@@ -47,7 +51,7 @@ rn = @reaction_network MyName   # is named MyName
 are allowed.
 
 *3.* Compositional modeling with generated `ODESystem`s, see
-[here](https://github.com/SciML/ModelingToolkit.jl/blob/master/test/reactionsystem_components.jl)
+[here](https://github.com/SciML/Catalyst.jl/blob/master/test/reactionsystem_components.jl)
 for an example that composes three gene modules to make the repressilator.
 
 ## Tutorials and Documentation

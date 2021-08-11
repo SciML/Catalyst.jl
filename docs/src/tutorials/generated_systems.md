@@ -10,8 +10,9 @@ API method listed first:
   within the system, each represented as a `ModelingToolkit.Sym`.
 * [`reactions(rn)`](@ref) and `equations(rn)` is a vector of all the
   `Reaction`s within the system.
-* `independent_variable(rn)` and `ModelingToolkit.get_iv(rn)` are the independent variable of the
-  system, usually `t` for time, represented as a `ModelingToolkit.Sym`.
+* `independent_variables(rn)` and `ModelingToolkit.get_iv(rn)` are the
+  independent variable of the system, usually `t` for time, represented as a
+  `ModelingToolkit.Sym`.
 
 Each `Reaction` within `reactions(rn)` has a number of subfields. For `rx` a
 `Reaction` we have:

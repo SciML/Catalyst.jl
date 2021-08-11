@@ -4,6 +4,10 @@ using SafeTestsets
 ### Run the tests ###
 @time begin
 
+# system type tests
+@time @safetestset "ReactionSystem Test" begin include("reactionsystem.jl") end
+@time @safetestset "ReactionSystem Components Test" begin include("reactionsystem_components.jl") end
+
 # Tests all features realted to constructing a model
 if VERSION >= v"1.6.0"
     @time @safetestset "1.6 Arrows" begin include("newarrows.jl") end
@@ -22,7 +26,7 @@ end
 # Tests related to solving Ordinary Differential Equations.
 @time @safetestset "ODE System Solving" begin include("solve_ODEs.jl") end
 @time @safetestset "Make Jacobian" begin include("make_jacobian.jl") end
-@time @safetestset "DiffEq Steady State Solving" begin include("steady_state_problems.jl") end
+#@time @safetestset "DiffEq Steady State Solving" begin include("steady_state_problems.jl") end
 
 # Tests related to solving Stochastic Differential Equations.
 @time @safetestset "SDE System Solving" begin include("solve_SDEs.jl") end

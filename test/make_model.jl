@@ -1,6 +1,6 @@
 ### Fetch required packages and reaction networks ###
 using DiffEqBase, Catalyst, Random, Test
-using ModelingToolkit: operation, Sym, istree, get_states, get_ps, get_eqs, get_systems
+using ModelingToolkit: operation, Sym, istree, get_states, get_ps, get_eqs, get_systems, get_iv
 
 using StableRNGs
 rng = StableRNG(12345)
@@ -8,7 +8,7 @@ rng = StableRNG(12345)
 include("test_networks.jl")
 
 function unpacksys(sys)
-    get_eqs(sys),independent_variable(sys),get_states(sys),get_ps(sys),nameof(sys),get_systems(sys)
+    get_eqs(sys),get_iv(sys),get_states(sys),get_ps(sys),nameof(sys),get_systems(sys)
 end
 
 ### Debug functions ###
@@ -291,7 +291,7 @@ rxs_1 = [Reaction(p, nothing, [X1], nothing, [2]),
        Reaction(k2, [X2], [X3], [1], [1]),
        Reaction(k3, [X2], [X3], [1], [1]),
        Reaction(d, [X3], nothing, [1], nothing)]
-rs_1 = ReactionSystem(rxs_1 , t, [X1,X2,X3], [p,k1,k2,k3,d])
+@named rs_1 = ReactionSystem(rxs_1 , t, [X1,X2,X3], [p,k1,k2,k3,d])
 push!(identical_networks_4, reaction_networks_standard[8] => rs_1)
 
 rxs_2 = [Reaction(k1, [X1], [X2], [1], [1]),
@@ -300,18 +300,18 @@ rxs_2 = [Reaction(k1, [X1], [X2], [1], [1]),
          Reaction(k4, [X4], [X3], [1], [1]),
          Reaction(p+k5*X2*X3, nothing, [X5], nothing, [1]),
          Reaction(d, [X5], nothing, [1], nothing)]
-rs_2 = ReactionSystem(rxs_2, t, [X1,X2,X3,X4,X5], [k1,k2,k3,k4,p,k5,d])
+@named rs_2 = ReactionSystem(rxs_2, t, [X1,X2,X3,X4,X5], [k1,k2,k3,k4,p,k5,d])
 push!(identical_networks_4, reaction_networks_constraint[3] => rs_2)
 
 rxs_3 = [Reaction(k1, [X1], [X2], [1], [1]),
          Reaction(0, [X2], [X3], [1], [1]),
          Reaction(k2, [X3], [X4], [1], [1]),
          Reaction(k3, [X4], [X5], [1], [1])]
-rs_3 = ReactionSystem(rxs_3, t, [X1,X2,X3,X4,X5], [k1,k2,k3])
+@named rs_3 = ReactionSystem(rxs_3, t, [X1,X2,X3,X4,X5], [k1,k2,k3])
 push!(identical_networks_4, reaction_networks_weird[7] => rs_3)
 
 for networks in identical_networks_4
-    @test isequal(independent_variable(networks[1]), independent_variable(networks[2]))
+    @test isequal(get_iv(networks[1]), get_iv(networks[2]))
     @test alleq(get_states(networks[1]), get_states(networks[2]))
     @test alleq(get_ps(networks[1]), get_ps(networks[2]))
     @test ModelingToolkit.get_systems(networks[1]) == ModelingToolkit.get_systems(networks[2])
