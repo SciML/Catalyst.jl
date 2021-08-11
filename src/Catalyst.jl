@@ -4,15 +4,21 @@ $(DocStringExtensions.README)
 module Catalyst
 
 using DocStringExtensions
-using Reexport, ModelingToolkit
-using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems, get_eqs
+using DiffEqBase, Reexport, ModelingToolkit, DiffEqJump
+using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems, get_eqs, get_defaults, toparam
+import ModelingToolkit: get_variables, namespace_expr
+import ModelingToolkit: namespace_equation, get_variables!, modified_states!
+
+# internal but needed ModelingToolkit functions
+import ModelingToolkit: check_variables, check_parameters, _iszero, _merge
+
 const DEFAULT_IV = (@parameters t)[1]
 @reexport using ModelingToolkit
 import MacroTools
 import Base: (==), merge!, merge
 using Symbolics
 using Latexify, Requires
-using AbstractAlgebra
+import AbstractAlgebra
 
 # as used in Catlab
 const USE_GV_JLL = Ref(false)
@@ -26,6 +32,11 @@ function __init__()
       end
     end
   end
+
+# base system type and features
+include("reactionsystem.jl")
+export Reaction, ReactionSystem, ismassaction, oderatelaw, jumpratelaw
+export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem, SteadyStateProblem
 
 const ExprValues = Union{Expr,Symbol,Float64,Int}
 

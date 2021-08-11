@@ -53,14 +53,14 @@ function recursive_clean!(expr)
 end
 
 
-function chemical_arrows(rn::ModelingToolkit.ReactionSystem;
+function chemical_arrows(rn::ReactionSystem;
     expand = true, double_linebreak=false, mathjax=true, starred=false, kwargs...)
     str = starred ? "\\begin{align*}\n" : "\\begin{align}\n"
     eol = double_linebreak ? "\\\\\\\\\n" : "\\\\\n"
 
     mathjax && (str *= "\\require{mhchem}\n")
     backwards_reaction = false
-    rxs = ModelingToolkit.equations(rn)
+    rxs = equations(rn)
     @variables t
 
     # this should replace A(t) with A in equations however, currently substituter rewrites
@@ -123,7 +123,7 @@ function chemical_arrows(rn::ModelingToolkit.ReactionSystem;
 end
 
 
-@latexrecipe function f(sys::ModelingToolkit.ReactionSystem)
+@latexrecipe function f(sys::ReactionSystem)
     # Set default option values.
     env --> :chem
     cdot --> false
