@@ -185,21 +185,33 @@ end
 
 ######################## some reacion complexes matrices and reaction rates ###############################
 """
-    reaction_complexes(network)
-Given a [`ReactionSystem`](@ref), return a vector of set of pairs ,
-where pair consists on (species indicies) => (stoichiometric coefficients)
-denoting the composition of reaction complexes
-Notes:
-- Empty pair denotes 𝛷 complex.
+$(TYPEDEF)
+One reaction complex element
+
+# Fields
+$(FIELDS)
 """
 struct ReactionComplexElement{T}
+    """The integer id of the species representing this element."""
     speciesid::Int
+    """The stoichiometric coefficient of this species."""
     speciesstoich::T
 end
+
+"""
+$(TYPEDEF)
+One reaction complex.
+
+# Fields
+$(FIELDS)
+"""
 struct ReactionComplex{V<:Integer} <: AbstractVector{ReactionComplexElement{V}}
+    """The integer ids of all species participating in this complex."""
     speciesids::Vector{Int}
+    """The stoichiometric coefficients of all species participating in this complex."""
     speciesstoichs::Vector{V}
 end
+
 function (==)(a::ReactionComplex{V},b::ReactionComplex{V}) where {V <: Integer} 
     (a.speciesids == b.speciesids) &&
     (a.speciesstoichs == b.speciesstoichs) 
@@ -215,13 +227,18 @@ Base.isless(a::ReactionComplexElement, b::ReactionComplexElement) = isless(a.spe
 Base.Sort.defalg(::ReactionComplex{T}) where {T <: Integer} = Base.DEFAULT_UNSTABLE
 
 """
-Given a [`ReactionSystem`](@ref), return a matrix of size,
-num_of_complexes x num_of_reactions, where ,
-Bᵢⱼ = -1, if the i'th complex is the substrate of the j'th reaction,
-       1, if the i'th complex is the product of the j'th reaction,
-       0, otherwise
+    reaction_complexes(network, smap=speciesmap(rn))
+
+Calculate the reaction complexes and complex incidence matrix for the given [`ReactionSystem`](@ref). 
+
+Notes:
+- returns a pair of a vector of [`ReactionComplex`](@ref)s and the complex incidence matrix.
+- An empty [`ReactionComplex`](@ref) denotes the null (∅) state (from reactions like ∅ -> A or A -> ∅).
+- The complex incidence matrix, B, is number of complexes by number of reactions with
+    Bᵢⱼ = -1, if the i'th complex is the substrate of the j'th reaction,
+           1, if the i'th complex is the product of the j'th reaction,
+           0, otherwise
 """
-# returns reaction complexes and reaction incidence matrix
 function reaction_complexes(rn; smap=speciesmap(rn))
     rxs = reactions(rn)
     numreactions(rn) > 0 || error("There must be at least one reaction to find reaction complexes.")
@@ -264,11 +281,12 @@ end
 
 
 """
-    complex_stoich_matrix(network)
-Given a [`ReactionSystem`](@ref), return a matrix with positive entries of size,
-num_of_species x num_of_complexes, where the non-zero positive entries in the k'th
-column denote stoichiometric coefficients of the species participating in
-compositon of the reaction complex
+    complex_stoich_matrix(network; rcs=reaction_complexes(rn)[1]))
+
+Given a [`ReactionSystem`](@ref) and vector of reaction complexes, return a
+matrix with positive entries of size num_of_species x num_of_complexes, where
+the non-zero positive entries in the kth column denote stoichiometric
+coefficients of the species participating in the kth reaction complex.
 """
 function complex_stoich_matrix(rn; rcs=reaction_complexes(rn)[1])
     Z = zeros(Int64, numspecies(rn), length(rcs));
@@ -280,45 +298,16 @@ function complex_stoich_matrix(rn; rcs=reaction_complexes(rn)[1])
     return Z
 end
 
-
-
 """
-    complex_incidence_matrix(network)
-Given a [`ReactionSystem`](@ref), return a matrix of size,
-num_of_complexes x num_of_reactions, where ,
-Bᵢⱼ = -1, if the i'th complex is the substrate of the j'th reaction,
-       1, if the i'th complex is the product of the j'th reaction,
-       0, otherwise
-# """
-# function complex_incidence_matrix(rn; cmp_mat = reaction_complexes(rn))
-#     r = reactions(rn);
-#     smap = speciesmap(rn);
-#     B = zeros(Int64, length(cmp_mat), numreactions(rn));
-#     for i in 1:numreactions(rn)
-#         substrates_pair = Set(Pair.([getindex(smap,
-#                     r[i].substrates[j]) for j in 1:length(r[i].substrates)],
-#                     r[i].substoich))
+    complex_outgoing_matrix(network; B=reaction_complexes(rn)[2])
 
-#         products_pair = Set(Pair.([getindex(smap,
-#                     r[i].products[j]) for j in 1:length(r[i].products)],
-#                     r[i].prodstoich))
+Given a [`ReactionSystem`](@ref) and complex incidence matrix, B, return a matrix
+of size num_of_complexes x num_of_reactions.
 
-#         substrates_cmp_index = findall( x -> x == substrates_pair, cmp_mat)
-#         products_cmp_index = findall(x -> x == products_pair, cmp_mat)
-#         B[substrates_cmp_index,i] .= -1
-#         B[products_cmp_index,i] .= 1
-#     end
-#     return B
-# end
-
-
-"""
-    complex_incidence_matrix(network)
-Given a [`ReactionSystem`](@ref), return a matrix of size,
-num_of_complexes x num_of_reactions, where ,
-where,  (Bᵢⱼ being complex_incidence_matrix(network))
-Δᵢⱼ = 0,    if Bᵢⱼ =1
-      Bᵢⱼ,  otherwise
+Notes
+- The complex outgoing matrix, Δ, is defined by 
+    Δᵢⱼ = 0,    if Bᵢⱼ = 1 
+    Δᵢⱼ = Bᵢⱼ,  otherwise
 """
 function complex_outgoing_matrix(rn; B=reaction_complexes(rn)[2])
     Δ = copy(B)
