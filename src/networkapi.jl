@@ -185,128 +185,101 @@ end
 
 ######################## some reacion complexes matrices and reaction rates ###############################
 """
-reaction_complexes(rn)
-The function returns a matrix of unique complexes
-    that represent the reaction network,
-reaction_complexes(rn)[:,1] returns Vector of
-complexes and corresponding stoichiometric coefficient
-
-reaction_complexes(rn)[:,2] returns a vector of linear combination of complexes(coefficients being corresponding stoichiometric coefficient)
+    reaction_complexes(network)
+Given a [`ReactionSystem`](@ref), return a vector of set of pairs ,
+where pair consists on (species indicies) => (stoichiometric coefficients)
+denoting the composition of reaction complexes
+Notes:
+- Empty pair denotes 𝛷 complex.
 """
 function reaction_complexes(rn)
-    complexes_mat = [];         complexes = [];
     r = reactions(rn);
+    smap = speciesmap(rn);
+    complexes_mat = Set{Pair{Int64, Int64}}[]
     for i in 1:numreactions(rn)
-        push!(complexes_mat, [r[i].substrates r[i].substoich])
-        push!(complexes_mat, [r[i].products r[i].prodstoich])
-        if r[i].substrates == Any[]
-            push!(complexes, 0)
-            push!(complexes, sum(r[i].products.*r[i].prodstoich))
-        elseif r[i].products == Any[]
-            push!(complexes, sum(r[i].substrates.*r[i].substoich))
-            push!(complexes, 0)
-        else
-            push!(complexes, sum(r[i].substrates.*r[i].substoich))
-            push!(complexes, sum(r[i].products.*r[i].prodstoich))
-        end
+        push!(complexes_mat, Set(Pair.([getindex(smap,
+                r[i].substrates[j]) for j in 1:length(r[i].substrates)],
+                    r[i].substoich)));
+
+        push!(complexes_mat, Set(Pair.([getindex(smap,
+                r[i].products[j]) for j in 1:length(r[i].products)],
+                    r[i].prodstoich)))
     end
-    return [complexes_mat[unique(i -> complexes[i] , eachindex(complexes))] unique(complexes)]
+    return unique!(complexes_mat) # deleting duplicate complexes
 end
 
 
 """
-reaction_rates(rn)
-The function returns a vector of rate of the
-    reactions
+    reaction_rates(network)
+Given a [`ReactionSystem`](@ref), returns a vector of rate of reactions
 """
 function reaction_rates(rn)
-    kd = [];
-    r  = reactions(rn)
-    for i in 1:numreactions(rn)
-        push!(kd, r[i].rate)
-    end
-    return kd
+    return [r.rate for r in reactions(rn)]
 end
 
 
 """
-The function complex_stoich_matrix(rn) returns a
-    complex stoichiometric matrix of size
-    numspecies x num_complexes
-
-    The k'th column of the matrix denotes the composition of the k-th complex
+    complex_stoich_matrix(network)
+Given a [`ReactionSystem`](@ref), return a matrix with positive entries of size,
+num_of_species x num_of_complexes, where the non-zero positive entries in the k'th
+column denote stoichiometric coefficients of the species participating in
+compositon of the reaction complex
 """
-function complex_stoich_matrix(rn; cmp_mat = reaction_complexes(rn)[:,1],
-                                                smap = speciesmap(rn))
-    Z = zeros(Int, numspecies(rn), length(cmp_mat));
+function complex_stoich_matrix(rn; cmp_mat = reaction_complexes(rn))
+    Z = zeros(Int64, numspecies(rn), length(cmp_mat));
     for i in 1:length(cmp_mat)
-        for j in 1:length(cmp_mat[i][:,1])
-            Z[smap[cmp_mat[i][:,1][j]] ,i] = cmp_mat[i][:,2][j]
+        for j in 1:length(cmp_mat[i])
+            if collect(cmp_mat[i])[j].first != Int64[] # NOT A NULL COMPLEX
+                Z[collect(cmp_mat[i])[j].first, i] = collect(cmp_mat[i])[j].second
+            end
         end
     end
     return Z
 end
 
 
-"""
-The function complex_incidence_matrix(rn) returns a
-    complex incidence matrix of size
-    num_complexes x numreactions
 
-    where,
-    Bᵢⱼ= -1, if the ith complex is the substrate of the j'th reaction,
-         1,if the ith complex is the product of the j'th reaction,
-         0, otherwise
 """
-function complex_incidence_matrix(rn; cmp_mat = reaction_complexes(rn)[:,2])
+    complex_incidence_matrix(network)
+Given a [`ReactionSystem`](@ref), return a matrix of size,
+num_of_complexes x num_of_reactions, where ,
+Bᵢⱼ = -1, if the i'th complex is the substrate of the j'th reaction,
+       1, if the i'th complex is the product of the j'th reaction,
+       0, otherwise
+"""
+function complex_incidence_matrix(rn; cmp_mat = reaction_complexes(rn))
     r = reactions(rn);
-    B = zeros(Int, length(cmp_mat), numreactions(rn));
+    smap = speciesmap(rn);
+    B = zeros(Int64, length(cmp_mat), numreactions(rn));
     for i in 1:numreactions(rn)
-        if r[i].substrates == Any[] && r[i].products != Any[]
-            sub_index = findall(x -> isequal(x ,0) ,cmp_mat)[1]
+        substrates_pair = Set(Pair.([getindex(smap,
+                    r[i].substrates[j]) for j in 1:length(r[i].substrates)],
+                    r[i].substoich))
 
-            prod_index = findall(x -> isequal(x, sum(r[i].products.*r[i].prodstoich))
-                                                ,cmp_mat)[1]
+        products_pair = Set(Pair.([getindex(smap,
+                    r[i].products[j]) for j in 1:length(r[i].products)],
+                    r[i].prodstoich))
 
-        elseif r[i].substrates != Any[] && r[i].products == Any[]
-            sub_index = findall(x -> isequal(x, sum(r[i].substrates.*r[i].substoich))
-                                                ,cmp_mat)[1]
-            prod_index = findall(x -> isequal(x ,0) ,cmp_mat)[1]
-
-        elseif (r[i].substrates != Any[] && r[i].products != Any[])
-            sub_index = findall(x -> isequal(x, sum(r[i].substrates.*r[i].substoich))
-                                                ,cmp_mat)[1]
-
-            prod_index = findall(x -> isequal(x, sum(r[i].products.*r[i].prodstoich))
-                                                ,cmp_mat)[1]
-        end
-        B[sub_index, i] = -1;
-        B[prod_index, i] = 1;
+        substrates_cmp_index = findall( x -> x == substrates_pair, cmp_mat)
+        products_cmp_index = findall(x -> x == products_pair, cmp_mat)
+        B[substrates_cmp_index,i] .= -1
+        B[products_cmp_index,i] .= 1
     end
     return B
 end
 
-"""
-The function complex_outgoing_matrix(rn) returns a
-    complex outgoing matrix of size
-    num_complexes x numreactions
 
-    where,
-    Δᵢⱼ= 0, if Bᵢⱼ =1
-         Bᵢⱼ, otherwise
 """
-function complex_outgoing_matrix(rn, cmp_mat = reaction_complexes(rn)[:,2])
-    r = reactions(rn);
-    Δ = zeros(Int, length(cmp_mat), numreactions(rn));
-    for i in 1:numreactions(rn)
-        if r[i].substrates == Any[]
-            sub_index = findall(x -> isequal(x ,0) ,cmp_mat)[1]
-        else
-            sub_index = findall(x -> isequal(x, sum(r[i].substrates.*r[i].substoich))
-                                                ,cmp_mat)[1]
-        end
-        Δ[sub_index, i] = -1;
-    end
+    complex_incidence_matrix(network)
+Given a [`ReactionSystem`](@ref), return a matrix of size,
+num_of_complexes x num_of_reactions, where ,
+where,  (Bᵢⱼ being complex_incidence_matrix(network))
+Δᵢⱼ = 0,    if Bᵢⱼ =1
+      Bᵢⱼ,  otherwise
+"""
+function complex_outgoing_matrix(rn)
+    Δ = copy(complex_incidence_matrix(rn))
+    Δ[Δ .== 1] .= 0
     return Δ
 end
 
