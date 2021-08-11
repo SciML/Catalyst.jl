@@ -28,7 +28,7 @@ reaction system functionality that was previously in ModelingToolkit (i.e.
 
 ## New as of 6.11
 *1.* Plain text arrows "<--" and "<-->" for backward and reversible reactions are
-   available if using Julia 1.6:
+   available if using Julia 1.6 or higher:
 ```julia
 rn = @reaction_network begin 
   (k1,k2), A + B <--> C
