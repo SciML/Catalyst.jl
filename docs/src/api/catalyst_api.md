@@ -95,6 +95,7 @@ dependants
 substoichmat
 prodstoichmat
 netstoichmat
+reactionrates
 ```
 
 ## Composition and Accessor Functions for `ReactionSystem`s
@@ -128,6 +129,17 @@ jumpratelaw
 ```@docs
 ==(rn1::ReactionSystem, rn2::ReactionSystem)
 ==(rn1::Reaction, rn2::Reaction)
+```
+
+## Network Analysis and Representations
+```@docs
+conservationlaws
+conservedquantities
+ReactionComplexElement
+ReactionComplex
+reactioncomplexes
+complexstoichmat
+complexoutgoingmat
 ```
 
 ## Transformations

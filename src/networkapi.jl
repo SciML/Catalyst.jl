@@ -183,6 +183,143 @@ function netstoichmat(rn; smap=speciesmap(rn))
 end
 
 
+######################## some reacion complexes matrices and reaction rates ###############################
+"""
+$(TYPEDEF)
+One reaction complex element
+
+# Fields
+$(FIELDS)
+"""
+struct ReactionComplexElement{T}
+    """The integer id of the species representing this element."""
+    speciesid::Int
+    """The stoichiometric coefficient of this species."""
+    speciesstoich::T
+end
+
+"""
+$(TYPEDEF)
+One reaction complex.
+
+# Fields
+$(FIELDS)
+"""
+struct ReactionComplex{V<:Integer} <: AbstractVector{ReactionComplexElement{V}}
+    """The integer ids of all species participating in this complex."""
+    speciesids::Vector{Int}
+    """The stoichiometric coefficients of all species participating in this complex."""
+    speciesstoichs::Vector{V}
+end
+
+function (==)(a::ReactionComplex{V},b::ReactionComplex{V}) where {V <: Integer} 
+    (a.speciesids == b.speciesids) &&
+    (a.speciesstoichs == b.speciesstoichs) 
+end
+hash(rc::ReactionComplex,h::UInt) = Base.hash(rc.speciesids,Base.hash(rc.speciesstoichs,h))
+Base.size(rc::ReactionComplex) = size(rc.speciesids)
+Base.length(rc::ReactionComplex) = length(rc.speciesids)
+Base.getindex(rc::ReactionComplex, i...) = 
+        ReactionComplexElement(getindex(rc.speciesids, i...), getindex(rc.speciesstoichs, i...))
+Base.setindex!(rc::ReactionComplex, t::ReactionComplexElement, i...) = 
+    (setindex!(rc.speciesids, t.speciesid, i...); setindex!(rc.speciesstoichs, t.speciesstoich, i...); rc) 
+Base.isless(a::ReactionComplexElement, b::ReactionComplexElement) = isless(a.speciesid, b.speciesid)
+Base.Sort.defalg(::ReactionComplex{T}) where {T <: Integer} = Base.DEFAULT_UNSTABLE
+
+"""
+    reactioncomplexes(network, smap=speciesmap(rn))
+
+Calculate the reaction complexes and complex incidence matrix for the given [`ReactionSystem`](@ref). 
+
+Notes:
+- returns a pair of a vector of [`ReactionComplex`](@ref)s and the complex incidence matrix.
+- An empty [`ReactionComplex`](@ref) denotes the null (∅) state (from reactions like ∅ -> A or A -> ∅).
+- The complex incidence matrix, B, is number of complexes by number of reactions with
+    Bᵢⱼ = -1, if the i'th complex is the substrate of the j'th reaction,
+           1, if the i'th complex is the product of the j'th reaction,
+           0, otherwise
+"""
+function reactioncomplexes(rn; smap=speciesmap(rn))
+    rxs = reactions(rn)
+    numreactions(rn) > 0 || error("There must be at least one reaction to find reaction complexes.")
+    complextorxsmap = OrderedDict{ReactionComplex{eltype(rxs[1].substoich)},Vector{Pair{Int,Int}}}()
+    for (i,rx) in enumerate(rxs)
+        reactantids = isempty(rx.substrates) ? Vector{Int}() : [smap[sub] for sub in rx.substrates]
+        subrc = sort!(ReactionComplex(reactantids, copy(rx.substoich)))
+        if haskey(complextorxsmap, subrc)
+            push!(complextorxsmap[subrc], i => -1)
+        else
+            complextorxsmap[subrc] = [i => -1]
+        end
+
+        productids = isempty(rx.products) ? Vector{Int}() : [smap[prod] for prod in rx.products]
+        prodrc = sort!(ReactionComplex(productids, copy(rx.prodstoich)))
+        if haskey(complextorxsmap, prodrc)
+            push!(complextorxsmap[prodrc], i => 1)
+        else
+            complextorxsmap[prodrc] = [i => 1]
+        end
+    end
+    
+    complexes = collect(keys(complextorxsmap))
+    B = zeros(Int64, length(complexes), numreactions(rn));
+    for (i,c) in enumerate(complexes)
+        for (j,σ) in complextorxsmap[c]
+            B[i,j] = σ
+        end
+    end
+    complexes,B
+end
+
+"""
+    reaction_rates(network)
+
+Given a [`ReactionSystem`](@ref), returns a vector of the symbolic reaction rates for each reaction.
+"""
+function reactionrates(rn)
+    [r.rate for r in reactions(rn)]
+end
+
+
+"""
+    complexstoichmat(network; rcs=reactioncomplexes(rn)[1]))
+
+Given a [`ReactionSystem`](@ref) and vector of reaction complexes, return a
+matrix with positive entries of size num_of_species x num_of_complexes, where
+the non-zero positive entries in the kth column denote stoichiometric
+coefficients of the species participating in the kth reaction complex.
+"""
+function complexstoichmat(rn; rcs=reactioncomplexes(rn)[1])
+    Z = zeros(Int64, numspecies(rn), length(rcs));
+    for (i,rc) in enumerate(rcs)
+        for rcel in rc
+            Z[rcel.speciesid,i] = rcel.speciesstoich
+        end
+    end
+    Z
+end
+
+"""
+    complexoutgoingmat(network; B=reactioncomplexes(rn)[2])
+
+Given a [`ReactionSystem`](@ref) and complex incidence matrix, B, return a matrix
+of size num_of_complexes x num_of_reactions.
+
+Notes
+- The complex outgoing matrix, Δ, is defined by 
+    Δᵢⱼ = 0,    if Bᵢⱼ = 1 
+    Δᵢⱼ = Bᵢⱼ,  otherwise
+"""
+function complexoutgoingmat(rn; B=reactioncomplexes(rn)[2])
+    Δ = copy(B)
+    for (I,b) in pairs(Δ)
+        (b == 1) && (Δ[I] = 0)
+    end
+    Δ
+end
+
+
+################################################################################################
 ######################## conservation laws ###############################
 
 """ 
