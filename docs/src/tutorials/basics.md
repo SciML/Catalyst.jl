@@ -197,9 +197,10 @@ rn = @reaction_network begin
   1.0, X + Y → X
 end
 ```
-*except* that the latter will be classified as `ismassaction` and the former
-will not, which can impact optimizations used in generating `JumpSystem`s. For
-this reason, it is recommended to use the latter representation when possible.
+*except* that the latter will be classified as [`ismassaction`](@ref) and the
+former will not, which can impact optimizations used in generating
+`JumpSystem`s. For this reason, it is recommended to use the latter
+representation when possible.
 
 Most expressions and functions are valid reaction rates, e.g.:
 ```julia
@@ -224,6 +225,18 @@ end p d
 Parameters can only exist in the reaction rates (where they can be mixed with
 reactants). All variables not declared after `end` will be treated as a chemical
 species, and may lead to undefined behavior if unchanged by *all* reactions.
+
+#### Naming the generated `ReactionSystem`
+ModelingToolkit uses system names to allow for compositional and hierarchical
+models. To specify a name for the generated `ReactionSystem` via the
+`reaction_network` macro, just place the name before `begin`:
+```julia
+rn = @reaction_network production_degradation begin
+  p, ∅ → X
+  d, X → ∅
+end p d
+ModelingToolkit.nameof(rn) == :production_degradation
+```
 
 #### Pre-defined functions
 Hill functions and a Michaelis-Menten function are pre-defined and can be used

@@ -1,13 +1,13 @@
 ### Fetch required packages and reaction networks ###
 using Catalyst, Test
-using ModelingToolkit: get_ps, get_states, get_eqs, get_systems
+using ModelingToolkit: get_ps, get_states, get_eqs, get_systems, get_iv
 include("test_networks.jl")
 
 using StableRNGs
 rng = StableRNG(12345)
 
 function unpacksys(sys)
-    get_eqs(sys),independent_variable(sys),get_ps(sys),nameof(sys),get_systems(sys)
+    get_eqs(sys),get_iv(sys),get_ps(sys),nameof(sys),get_systems(sys)
 end
 
 ### Tests construction of empty reaction networks ###

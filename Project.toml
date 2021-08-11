@@ -1,10 +1,12 @@
 name = "Catalyst"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
-version = "7.0.0"
+version = "8.0.1"
 
 [deps]
 AbstractAlgebra = "c3fe647b-3220-5bb0-a1ea-a7954cac585d"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
+DiffEqJump = "c894b116-72e5-5b58-be3c-e6d8d4ac2b12"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 Latexify = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
@@ -17,19 +19,19 @@ Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 [compat]
 AbstractAlgebra = "0.19, 0.21"
 DataStructures = "0.18"
+DiffEqBase = "6.54.0"
+DiffEqJump = "7.0"
 DocStringExtensions = "0.8"
 Latexify = "0.14, 0.15"
 MacroTools = "0.5.5"
-ModelingToolkit = "5.21"
+ModelingToolkit = "6.2"
 Parameters = "0.12"
 Reexport = "0.2, 1.0"
 Requires = "1.0"
-Symbolics = "0.1.22, 1.0"
+Symbolics = "3.0"
 julia = "1.5"
 
 [extras]
-DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
-DiffEqJump = "c894b116-72e5-5b58-be3c-e6d8d4ac2b12"
 Graphviz_jll = "3c863552-8265-54e4-a6dc-903eb78fde85"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
@@ -42,4 +44,4 @@ StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["DiffEqBase", "DiffEqJump", "Graphviz_jll", "LinearAlgebra", "OrdinaryDiffEq", "Random", "SafeTestsets", "StableRNGs", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test"]
+test = ["Graphviz_jll", "LinearAlgebra", "OrdinaryDiffEq", "Random", "SafeTestsets", "StableRNGs", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test"]

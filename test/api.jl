@@ -6,7 +6,7 @@ using ModelingToolkit: value
 @variables S(t) I(t) R(t)
 rxs = [Reaction(k1, [S,I], [I], [1,1], [2]),
        Reaction(k2, [I], [R]) ]
-rs = ReactionSystem(rxs, t, [S,I,R], [k1,k2])
+@named rs = ReactionSystem(rxs, t, [S,I,R], [k1,k2])
 
 specset = Set([value(S) =>1, value(I) => 2, value(R) => 3])
 @test issetequal(specset, speciesmap(rs))
@@ -16,7 +16,7 @@ pset = Set([value(k1) => 1, value(k2) => 2])
 
 rxs2 = [Reaction(k2, [I], [R], [1], [1]),
         Reaction(k1, [S,I], [I], [1,1], [2])]
-rs2 = ReactionSystem(rxs2, t, [R,I,S], [k2,k1])
+@named rs2 = ReactionSystem(rxs2, t, [R,I,S], [k2,k1])
 @test rs == rs2
 
 rs3 = make_empty_network()
@@ -41,7 +41,7 @@ addreaction!(rs2, Reaction(k4, [S,I], [D]))
 
 rxs = [Reaction(k1, [S,I], [I], [1,1], [2]),
        Reaction(k2, [I], [R]) ]
-rs = ReactionSystem(rxs, t, [S,I,R], [k1,k2])
+@named rs = ReactionSystem(rxs, t, [S,I,R], [k1,k2])
 rs3 = make_empty_network()
 addspecies!(rs3, S)
 addspecies!(rs3, D)
@@ -54,7 +54,7 @@ rs4 = merge(rs, rs3)
 
 rxs = [Reaction(k1*S, [S,I], [I], [2,3], [2]),
        Reaction(k2*R, [I], [R]) ]
-rs = ReactionSystem(rxs, t, [S,I,R], [k1,k2])
+@named rs = ReactionSystem(rxs, t, [S,I,R], [k1,k2])
 deps = dependents(rxs[2], rs)
 @test isequal(deps, [R,I])
 @test isequal(dependents(rxs[1], rs), dependants(rxs[1], rs))
