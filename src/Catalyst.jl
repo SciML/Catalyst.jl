@@ -55,7 +55,7 @@ export species, params, reactions, speciesmap, paramsmap, numspecies, numreactio
 export make_empty_network, addspecies!, addparam!, addreaction!
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export conservationlaws, conservedquantities
-export reaction_complexes, reaction_rates, complex_stoich_matrix, complex_incidence_matrix, complex_outgoing_matrix
+export reactioncomplexes, reactionrates, complexstoichmat, complexoutgoingmat
     
 # for Latex printing of ReactionSystems
 include("latexify_recipes.jl")

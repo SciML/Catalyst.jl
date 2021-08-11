@@ -227,7 +227,7 @@ Base.isless(a::ReactionComplexElement, b::ReactionComplexElement) = isless(a.spe
 Base.Sort.defalg(::ReactionComplex{T}) where {T <: Integer} = Base.DEFAULT_UNSTABLE
 
 """
-    reaction_complexes(network, smap=speciesmap(rn))
+    reactioncomplexes(network, smap=speciesmap(rn))
 
 Calculate the reaction complexes and complex incidence matrix for the given [`ReactionSystem`](@ref). 
 
@@ -239,7 +239,7 @@ Notes:
            1, if the i'th complex is the product of the j'th reaction,
            0, otherwise
 """
-function reaction_complexes(rn; smap=speciesmap(rn))
+function reactioncomplexes(rn; smap=speciesmap(rn))
     rxs = reactions(rn)
     numreactions(rn) > 0 || error("There must be at least one reaction to find reaction complexes.")
     complextorxsmap = OrderedDict{ReactionComplex{eltype(rxs[1].substoich)},Vector{Pair{Int,Int}}}()
@@ -273,22 +273,23 @@ end
 
 """
     reaction_rates(network)
-Given a [`ReactionSystem`](@ref), returns a vector of rate of reactions
+
+Given a [`ReactionSystem`](@ref), returns a vector of the symbolic reaction rates for each reaction.
 """
-function reaction_rates(rn)
+function reactionrates(rn)
     return [r.rate for r in reactions(rn)]
 end
 
 
 """
-    complex_stoich_matrix(network; rcs=reaction_complexes(rn)[1]))
+    complexstoichmat(network; rcs=reactioncomplexes(rn)[1]))
 
 Given a [`ReactionSystem`](@ref) and vector of reaction complexes, return a
 matrix with positive entries of size num_of_species x num_of_complexes, where
 the non-zero positive entries in the kth column denote stoichiometric
 coefficients of the species participating in the kth reaction complex.
 """
-function complex_stoich_matrix(rn; rcs=reaction_complexes(rn)[1])
+function complexstoichmat(rn; rcs=reactioncomplexes(rn)[1])
     Z = zeros(Int64, numspecies(rn), length(rcs));
     for (i,rc) in enumerate(rcs)
         for rcel in rc
@@ -299,7 +300,7 @@ function complex_stoich_matrix(rn; rcs=reaction_complexes(rn)[1])
 end
 
 """
-    complex_outgoing_matrix(network; B=reaction_complexes(rn)[2])
+    complexoutgoingmat(network; B=reactioncomplexes(rn)[2])
 
 Given a [`ReactionSystem`](@ref) and complex incidence matrix, B, return a matrix
 of size num_of_complexes x num_of_reactions.
@@ -309,7 +310,7 @@ Notes
     Δᵢⱼ = 0,    if Bᵢⱼ = 1 
     Δᵢⱼ = Bᵢⱼ,  otherwise
 """
-function complex_outgoing_matrix(rn; B=reaction_complexes(rn)[2])
+function complexoutgoingmat(rn; B=reactioncomplexes(rn)[2])
     Δ = copy(B)
     Δ[Δ .== 1] .= 0
     return Δ
