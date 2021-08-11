@@ -102,9 +102,10 @@ B = [-1 0 0 0;
       0 0 0 -1;
       0 0 0 1]
 Δ = [-1 0 0 0; 0 0 0 0; 0 -1 0 0; 0 0 -1 0; 0 0 0 0; 0 0 0 -1; 0 0 0 0]
-@test all(Z .== complex_stoich_matrix(rns[1]))
-@test all(B .== complex_incidence_matrix(rns[1]))
-@test all(Δ .== complex_outgoing_matrix(rns[1]))
+rcs,B2 = reaction_complexes(rns[1])
+@test B == B2
+@test Z == complex_stoich_matrix(rns[1])
+@test Δ == complex_outgoing_matrix(rns[1])
 
 # mass-action rober
 rns[2] = @reaction_network begin
@@ -121,9 +122,10 @@ B = [-1 0 0;
       0 1 -1;
       0 0 1]
 Δ = [-1 0 0; 0 0 0; 0 -1 0; 0 0 -1; 0 0 0]
-@test all(Z .== complex_stoich_matrix(rns[2]))
-@test all(B .== complex_incidence_matrix(rns[2]))
-@test all(Δ .== complex_outgoing_matrix(rns[2]))
+rcs,B2 = reaction_complexes(rns[2])
+@test B == B2
+@test Z == complex_stoich_matrix(rns[2])
+@test Δ == complex_outgoing_matrix(rns[2])
 
 
 #  some rational functions as rates
@@ -142,10 +144,10 @@ B = [-1 0 0 1;
       0 1 -1 0;
       0 0 0 -1]
 Δ = [-1 0 0 0; 0 0 0 0; 0 -1 0 0; 0 0 -1 0; 0 0 0 -1]
-@test all(Z .== complex_stoich_matrix(rns[3]))
-@test all(B .== complex_incidence_matrix(rns[3]))
-@test all(Δ .== complex_outgoing_matrix(rns[3]))
-
+rcs,B2 = reaction_complexes(rns[3])
+@test B == B2
+@test Z == complex_stoich_matrix(rns[3])
+@test Δ == complex_outgoing_matrix(rns[3])
 
 # repressilator
 rns[4]  = @reaction_network begin
@@ -181,11 +183,10 @@ B = [-1 -1 -1 1 -1 1 -1 1 -1 0 0 0 1 1 1;
 Δ = [-1 -1 -1 0 -1 0 -1 0 -1 0 0 0 0 0 0; 0 0 0 -1 0 0 0 0 0 -1 0 0 0 0 0; 0 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0;
        0 0 0 0 0 0 0 -1 0 0 0 -1 0 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
        0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1]
-
-@test all(Z .== complex_stoich_matrix(rns[4]))
-@test all(B .== complex_incidence_matrix(rns[4]))
-@test all(Δ .== complex_outgoing_matrix(rns[4]))
-
+rcs,B2 = reaction_complexes(rns[4])
+@test B == B2
+@test Z == complex_stoich_matrix(rns[4])
+@test Δ == complex_outgoing_matrix(rns[4])
 
 #brusselator
 rns[5] = @reaction_network begin
@@ -202,11 +203,10 @@ B = [-1 0 0 1;
       0 1 0 0;
       0 0 1 0]
 Δ = [-1 0 0 0; 0 0 -1 -1; 0 -1 0 0; 0 0 0 0; 0 0 0 0]
-@test all(Z .== complex_stoich_matrix(rns[5]))
-@test all(B .== complex_incidence_matrix(rns[5]))
-@test all(Δ .== complex_outgoing_matrix(rns[5]))
-
-
+rcs,B2 = reaction_complexes(rns[5])
+@test B == B2
+@test Z == complex_stoich_matrix(rns[5])
+@test Δ == complex_outgoing_matrix(rns[5])
 
 # some rational functions as rates
 rns[6] = @reaction_network begin
@@ -231,9 +231,10 @@ B = [-1 1 0 0 0 0;
       0 0 0 0 -1 1;
       0 0 0 0 1 -1]
 Δ = [-1 0 0 0 0 0; 0 -1 0 0 0 0; 0 0 -1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 -1 0; 0 0 0 0 0 -1]
-@test all(Z .== complex_stoich_matrix(rns[6]))
-@test all(B .== complex_incidence_matrix(rns[6]))
-@test all(Δ .== complex_outgoing_matrix(rns[6]))
+rcs,B2 = reaction_complexes(rns[6])
+@test all(B .== B2)
+@test Z == complex_stoich_matrix(rns[6])
+@test Δ == complex_outgoing_matrix(rns[6])
                      
 
 reaction_networks_standard = Vector{ReactionSystem}(undef,10)
@@ -418,9 +419,9 @@ end d v1 K1 n1 v2 K2 n2
 
 myrn = [reaction_networks_standard;reaction_networks_hill;reaction_networks_real]
 for i in 1:length(myrn)
+    rcs,B = reaction_complexes(myrn[i])
     Z = complex_stoich_matrix(myrn[i])
-    B = complex_incidence_matrix(myrn[i])
-    @test all(Z*B .== netstoichmat(myrn[i])')
+    @test Z*B == (netstoichmat(myrn[i])')
 end
 
 

@@ -192,22 +192,67 @@ denoting the composition of reaction complexes
 Notes:
 - Empty pair denotes 𝛷 complex.
 """
-function reaction_complexes(rn)
-    r = reactions(rn);
-    smap = speciesmap(rn);
-    complexes_mat = Set{Pair{Int64, Int64}}[]
-    for i in 1:numreactions(rn)
-        push!(complexes_mat, Set(Pair.([getindex(smap,
-                r[i].substrates[j]) for j in 1:length(r[i].substrates)],
-                    r[i].substoich)));
-
-        push!(complexes_mat, Set(Pair.([getindex(smap,
-                r[i].products[j]) for j in 1:length(r[i].products)],
-                    r[i].prodstoich)))
-    end
-    return unique!(complexes_mat) # deleting duplicate complexes
+struct ReactionComplexElement{T}
+    speciesid::Int
+    speciesstoich::T
 end
+struct ReactionComplex{V<:Integer} <: AbstractVector{ReactionComplexElement{V}}
+    speciesids::Vector{Int}
+    speciesstoichs::Vector{V}
+end
+function (==)(a::ReactionComplex{V},b::ReactionComplex{V}) where {V <: Integer} 
+    (a.speciesids == b.speciesids) &&
+    (a.speciesstoichs == b.speciesstoichs) 
+end
+hash(rc::ReactionComplex,h::UInt) = Base.hash(rc.speciesids,Base.hash(rc.speciesstoichs,h))
+Base.size(rc::ReactionComplex) = size(rc.speciesids)
+Base.length(rc::ReactionComplex) = length(rc.speciesids)
+Base.getindex(rc::ReactionComplex, i...) = 
+        ReactionComplexElement(getindex(rc.speciesids, i...), getindex(rc.speciesstoichs, i...))
+Base.setindex!(rc::ReactionComplex, t::ReactionComplexElement, i...) = 
+    (setindex!(rc.speciesids, t.speciesid, i...); setindex!(rc.speciesstoichs, t.speciesstoich, i...); rc) 
+Base.isless(a::ReactionComplexElement, b::ReactionComplexElement) = isless(a.speciesid, b.speciesid)
+Base.Sort.defalg(::ReactionComplex{T}) where {T <: Integer} = Base.DEFAULT_UNSTABLE
 
+"""
+Given a [`ReactionSystem`](@ref), return a matrix of size,
+num_of_complexes x num_of_reactions, where ,
+Bᵢⱼ = -1, if the i'th complex is the substrate of the j'th reaction,
+       1, if the i'th complex is the product of the j'th reaction,
+       0, otherwise
+"""
+# returns reaction complexes and reaction incidence matrix
+function reaction_complexes(rn; smap=speciesmap(rn))
+    rxs = reactions(rn)
+    numreactions(rn) > 0 || error("There must be at least one reaction to find reaction complexes.")
+    complextorxsmap = OrderedDict{ReactionComplex{eltype(rxs[1].substoich)},Vector{Pair{Int,Int}}}()
+    for (i,rx) in enumerate(rxs)
+        reactantids = isempty(rx.substrates) ? Vector{Int}() : [smap[sub] for sub in rx.substrates]
+        subrc = sort!(ReactionComplex(reactantids, copy(rx.substoich)))
+        if haskey(complextorxsmap, subrc)
+            push!(complextorxsmap[subrc], i => -1)
+        else
+            complextorxsmap[subrc] = [i => -1]
+        end
+
+        productids = isempty(rx.products) ? Vector{Int}() : [smap[prod] for prod in rx.products]
+        prodrc = sort!(ReactionComplex(productids, copy(rx.prodstoich)))
+        if haskey(complextorxsmap, prodrc)
+            push!(complextorxsmap[prodrc], i => 1)
+        else
+            complextorxsmap[prodrc] = [i => 1]
+        end
+    end
+    
+    complexes = collect(keys(complextorxsmap))
+    B = zeros(Int64, length(complexes), numreactions(rn));
+    for (i,c) in enumerate(complexes)
+        for (j,σ) in complextorxsmap[c]
+            B[i,j] = σ
+        end
+    end
+    complexes,B
+end
 
 """
     reaction_rates(network)
@@ -225,13 +270,11 @@ num_of_species x num_of_complexes, where the non-zero positive entries in the k'
 column denote stoichiometric coefficients of the species participating in
 compositon of the reaction complex
 """
-function complex_stoich_matrix(rn; cmp_mat = reaction_complexes(rn))
-    Z = zeros(Int64, numspecies(rn), length(cmp_mat));
-    for i in 1:length(cmp_mat)
-        for j in 1:length(cmp_mat[i])
-            if collect(cmp_mat[i])[j].first != Int64[] # NOT A NULL COMPLEX
-                Z[collect(cmp_mat[i])[j].first, i] = collect(cmp_mat[i])[j].second
-            end
+function complex_stoich_matrix(rn; rcs=reaction_complexes(rn)[1])
+    Z = zeros(Int64, numspecies(rn), length(rcs));
+    for (i,rc) in enumerate(rcs)
+        for rcel in rc
+            Z[rcel.speciesid,i] = rcel.speciesstoich
         end
     end
     return Z
@@ -246,27 +289,27 @@ num_of_complexes x num_of_reactions, where ,
 Bᵢⱼ = -1, if the i'th complex is the substrate of the j'th reaction,
        1, if the i'th complex is the product of the j'th reaction,
        0, otherwise
-"""
-function complex_incidence_matrix(rn; cmp_mat = reaction_complexes(rn))
-    r = reactions(rn);
-    smap = speciesmap(rn);
-    B = zeros(Int64, length(cmp_mat), numreactions(rn));
-    for i in 1:numreactions(rn)
-        substrates_pair = Set(Pair.([getindex(smap,
-                    r[i].substrates[j]) for j in 1:length(r[i].substrates)],
-                    r[i].substoich))
+# """
+# function complex_incidence_matrix(rn; cmp_mat = reaction_complexes(rn))
+#     r = reactions(rn);
+#     smap = speciesmap(rn);
+#     B = zeros(Int64, length(cmp_mat), numreactions(rn));
+#     for i in 1:numreactions(rn)
+#         substrates_pair = Set(Pair.([getindex(smap,
+#                     r[i].substrates[j]) for j in 1:length(r[i].substrates)],
+#                     r[i].substoich))
 
-        products_pair = Set(Pair.([getindex(smap,
-                    r[i].products[j]) for j in 1:length(r[i].products)],
-                    r[i].prodstoich))
+#         products_pair = Set(Pair.([getindex(smap,
+#                     r[i].products[j]) for j in 1:length(r[i].products)],
+#                     r[i].prodstoich))
 
-        substrates_cmp_index = findall( x -> x == substrates_pair, cmp_mat)
-        products_cmp_index = findall(x -> x == products_pair, cmp_mat)
-        B[substrates_cmp_index,i] .= -1
-        B[products_cmp_index,i] .= 1
-    end
-    return B
-end
+#         substrates_cmp_index = findall( x -> x == substrates_pair, cmp_mat)
+#         products_cmp_index = findall(x -> x == products_pair, cmp_mat)
+#         B[substrates_cmp_index,i] .= -1
+#         B[products_cmp_index,i] .= 1
+#     end
+#     return B
+# end
 
 
 """
@@ -277,8 +320,8 @@ where,  (Bᵢⱼ being complex_incidence_matrix(network))
 Δᵢⱼ = 0,    if Bᵢⱼ =1
       Bᵢⱼ,  otherwise
 """
-function complex_outgoing_matrix(rn)
-    Δ = copy(complex_incidence_matrix(rn))
+function complex_outgoing_matrix(rn; B=reaction_complexes(rn)[2])
+    Δ = copy(B)
     Δ[Δ .== 1] .= 0
     return Δ
 end

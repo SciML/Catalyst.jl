@@ -9,7 +9,7 @@ using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_
 const DEFAULT_IV = (@parameters t)[1]
 @reexport using ModelingToolkit
 import MacroTools
-import Base: (==), merge!, merge
+import Base: (==), merge!, merge, hash, size, getindex, setindex, isless, Sort.defalg, length
 using Symbolics
 using Latexify, Requires
 using AbstractAlgebra
@@ -51,7 +51,7 @@ include("latexify_recipes.jl")
 
 # for making and saving graphs
 import Base.Iterators: flatten
-import DataStructures: OrderedDict
+import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 include("graphs.jl")
 export Graph, savegraph

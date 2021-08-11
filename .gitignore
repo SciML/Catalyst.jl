@@ -5,3 +5,7 @@ Manifest.toml
 
 # Vim files
 *.swp
+
+# vscode stuff
+.vscode
+.vscode/*
