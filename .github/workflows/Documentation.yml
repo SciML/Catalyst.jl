@@ -7,6 +7,9 @@ on:
     tags: '*'
   pull_request:
 
+env:
+    - JULIA_PKG_SERVER=""
+
 jobs:
   build:
     runs-on: ubuntu-latest
