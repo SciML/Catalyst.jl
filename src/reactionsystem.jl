@@ -552,7 +552,7 @@ function ModelingToolkit.get_variables!(deps::Set, rx::Reaction, variables)
     deps
 end
 
-Modelingtoolkit.validate(eq::Reaction; info::String = "") = ModelingToolkit._validate([oderatelaw(eq)], ["reaction ",], info = info)
+ModelingToolkit.validate(eq::Reaction; info::String = "") = ModelingToolkit._validate([oderatelaw(eq)], ["reaction ",], info = info)
 
 # determine which species a reaction modifies
 function ModelingToolkit.modified_states!(mstates, rx::Reaction, sts::Set)
