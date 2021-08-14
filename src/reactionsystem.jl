@@ -174,10 +174,11 @@ function ReactionSystem(eqs, iv, species, params;
                         default_u0=Dict(),
                         default_p=Dict(),
                         defaults=_merge(Dict(default_u0), Dict(default_p)),
-                        connection_type=nothing)
+                        connection_type=nothing,
+                        checks = true)
     name === nothing && throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     #isempty(species) && error("ReactionSystems require at least one species.")
-    ReactionSystem(eqs, iv, species, params, observed, name, systems, defaults, connection_type)
+    ReactionSystem(eqs, iv, species, params, observed, name, systems, defaults, connection_type, checks = checks)
 end
 
 function ReactionSystem(iv; kwargs...)
@@ -416,7 +417,7 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem;
                       name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true, kwargs...)
     eqs     = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, include_zero_odes=include_zero_odes)
     systems = map(sys -> (sys isa ODESystem) ? sys : convert(ODESystem, sys), get_systems(rs))
-    ODESystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, defaults=get_defaults(rs), kwargs...)
+    ODESystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, defaults=get_defaults(rs), checks = false, kwargs...)
 end
 
 """
@@ -433,10 +434,10 @@ law, i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. If
 ignored.
 """
 function Base.convert(::Type{<:NonlinearSystem},rs::ReactionSystem;
-                      name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true, kwargs...)
+                      name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true, checks = false, kwargs...)
     eqs     = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, as_odes=false, include_zero_odes=include_zero_odes)
     systems = convert.(NonlinearSystem, get_systems(rs))
-    NonlinearSystem(eqs, get_states(rs), get_ps(rs); name=name, systems=systems, defaults=get_defaults(rs), kwargs...)
+    NonlinearSystem(eqs, get_states(rs), get_ps(rs); name=name, systems=systems, defaults=get_defaults(rs), checks = checks, kwargs...)
 end
 
 """
@@ -462,7 +463,7 @@ This input may contain repeat parameters.
 """
 function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       noise_scaling=nothing, name=nameof(rs), combinatoric_ratelaws=true, 
-                      include_zero_odes=true, kwargs...)
+                      include_zero_odes=true, checks = false, kwargs...)
 
     if noise_scaling isa AbstractArray
         (length(noise_scaling)!=length(equations(rs))) &&
@@ -484,7 +485,8 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
               (noise_scaling===nothing) ? get_ps(rs) : union(get_ps(rs), toparam(noise_scaling));
               name=name, 
               systems=systems,
-              defaults=get_defaults(rs), 
+              defaults=get_defaults(rs),
+              checks = checks,
               kwargs...)
 end
 
@@ -502,10 +504,10 @@ Notes:
   factor.
 """
 function Base.convert(::Type{<:JumpSystem},rs::ReactionSystem; 
-                      name=nameof(rs), combinatoric_ratelaws=true, kwargs...)
+                      name=nameof(rs), combinatoric_ratelaws=true, checks = false, kwargs...)
     eqs     = assemble_jumps(rs; combinatoric_ratelaws=combinatoric_ratelaws)
     systems = convert.(JumpSystem, get_systems(rs))
-    JumpSystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, defaults=get_defaults(rs), kwargs...)
+    JumpSystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, defaults=get_defaults(rs), checks = checks, kwargs...)
 end
 
 
