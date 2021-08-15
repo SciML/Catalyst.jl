@@ -1,6 +1,6 @@
 name = "Catalyst"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
-version = "8.1"
+version = "8.2"
 
 [deps]
 AbstractAlgebra = "c3fe647b-3220-5bb0-a1ea-a7954cac585d"
@@ -24,7 +24,7 @@ DiffEqJump = "7.0"
 DocStringExtensions = "0.8"
 Latexify = "0.14, 0.15"
 MacroTools = "0.5.5"
-ModelingToolkit = "6.2"
+ModelingToolkit = "6.3"
 Parameters = "0.12"
 Reexport = "0.2, 1.0"
 Requires = "1.0"
