@@ -251,6 +251,9 @@ instead of the `Direct` method, see the list of SSAs (i.e., constant rate jump
 aggregators) in the
 [documentation](https://diffeq.sciml.ai/dev/types/jump_types/#Constant-Rate-Jump-Aggregators-1).
 
+Common questions that arise in using the DiffEqJump SSAs (i.e. Gillespie methods) 
+are collated in the [DiffEqJump FAQ](https://diffeq.sciml.ai/latest/tutorials/discrete_stochastic_example/#FAQ).
+
 ---
 ## Chemical Langevin Equation (CLE) Stochastic Differential Equation (SDE) Models
 At an intermediate physical scale between macroscopic ODE models and microscopic
