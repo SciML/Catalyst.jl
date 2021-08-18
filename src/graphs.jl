@@ -277,10 +277,6 @@ end
 # modify vector of string of complexes into graphviz compatible strings
 function modifystrcomp(strcomp::Vector{String})
   for i in 1:length(strcomp)
-    #   cannot allow + as per graphviz
-      if occursin("+",strcomp[i])
-          strcomp[i] = replace(strcomp[i], "+" => "₊");
-      end
     #   cannot allow (t) as per graphviz
       if occursin("(t)",strcomp[i])
           strcomp[i] = replace(strcomp[i], "(t)" => "")
@@ -289,12 +285,8 @@ function modifystrcomp(strcomp::Vector{String})
       if occursin("0",strcomp[i])
           strcomp[i] = replace(strcomp[i], "0" => "∅")
       end
-  #   cannot allow spaces as per graphviz
-      strcomp[i] = filter(x -> !isspace(x),strcomp[i])
   end
-#   numbers cannot be at the start of string as per graphviz,
-#  so lets prettify by prefixing complex as  "ℂ∷""
-  strcomp = "ℂ∷".*strcomp
+  strcomp = "<".*strcomp.*">"
 end
 
 """
@@ -303,13 +295,12 @@ Converts a [`ReactionSystem`](@ref) into a Graphviz graph.
 Reactions correspond black arrows and Reaction complexes  to blue circles.
 Notes:
 - Black arrows from complexes to complexes indicate reactions.
-- ℂ∷ is a prefix to complex's name
 - Requires Graphviz to be installed and commandline accessible.
 """
-function GraphComplexNetwork(rn::ReactionSystem)
+function GraphComplexNetwork(rn::ReactionSystem; complexdata = reactioncomplexes(rn))
     rxs   = reactions(rn);
     specs = species(rn);
-    complexes, B = reactioncomplexes(rn);
+    complexes, B = complexdata;
     fun = rcel -> specs[rcel.speciesid]*rcel.speciesstoich;
     compfun(rc) = rc == Catalyst.ReactionComplex{Int64}[] ? 0 : sum(fun, rc);
 
