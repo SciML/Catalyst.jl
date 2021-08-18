@@ -266,6 +266,72 @@ function edgifyrates(rxs, specs)
     es
 end
 
+# create edges from one reaction complex to another reaction complex
+function edgifycomplex(δ)
+    attr = Attributes()
+    return map(δ) do p
+        return Edge([p[1], p[2]] , attr)
+    end
+end
+
+# modify vector of string of complexes into graphviz compatible strings
+function modifystrcomp(strcomp::Vector{String})
+  for i in 1:length(strcomp)
+    #   cannot allow + as per graphviz
+      if occursin("+",strcomp[i])
+          strcomp[i] = replace(strcomp[i], "+" => "₊");
+      end
+    #   cannot allow (t) as per graphviz
+      if occursin("(t)",strcomp[i])
+          strcomp[i] = replace(strcomp[i], "(t)" => "")
+      end
+      #   prettify NUll with ∅
+      if occursin("0",strcomp[i])
+          strcomp[i] = replace(strcomp[i], "0" => "∅")
+      end
+  #   cannot allow spaces as per graphviz
+      strcomp[i] = filter(x -> !isspace(x),strcomp[i])
+  end
+#   numbers cannot be at the start of string as per graphviz,
+#  so lets prettify by prefixing complex as  "ℂ∷""
+  strcomp = "ℂ∷".*strcomp
+end
+
+"""
+    GraphComplexNetwork(rn::ReactionSystem)
+Converts a [`ReactionSystem`](@ref) into a Graphviz graph.
+Reactions correspond black arrows and Reaction complexes  to blue circles.
+Notes:
+- Black arrows from complexes to complexes indicate reactions.
+- ℂ∷ is a prefix to complex's name
+- Requires Graphviz to be installed and commandline accessible.
+"""
+function GraphComplexNetwork(rn::ReactionSystem)
+    rxs   = reactions(rn);
+    specs = species(rn);
+    complexes, B = reactioncomplexes(rn);
+    fun = rcel -> specs[rcel.speciesid]*rcel.speciesstoich;
+    compfun(rc) = rc == Catalyst.ReactionComplex{Int64}[] ? 0 : sum(fun, rc);
+
+    strcomp = [string(compfun(rc)) for rc in complexes];
+
+    newstrcomp = modifystrcomp(strcomp)
+    compnodes = [Node(str, Attributes(:shape => "circle",
+                :color => "#6C9AC3")) for str in newstrcomp]
+
+    edges = map(enumerate(rxs)) do (i, r)
+        subcomp = newstrcomp[argmin(B[:,i])]
+        prodcomp = newstrcomp[argmax(B[:,i])]
+        edgifycomplex(zip([subcomp],[prodcomp]))
+    end
+    stmts2 = Vector{Statement}()
+    append!(stmts2, compnodes)
+    append!(stmts2, collect(flatten(edges)))
+    g = Digraph("G", stmts2; graph_attrs=graph_attrs,
+                  node_attrs=node_attrs,edge_attrs=edge_attrs)
+    return g
+end
+    
 """
     Graph(rn::ReactionSystem)
 
