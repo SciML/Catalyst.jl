@@ -311,8 +311,8 @@ function GraphComplexNetwork(rn::ReactionSystem; complexdata = reactioncomplexes
                 :color => "#6C9AC3")) for str in newstrcomp]
 
     edges = map(enumerate(rxs)) do (i, r)
-        subcomp = newstrcomp[argmin(B[:,i])]
-        prodcomp = newstrcomp[argmax(B[:,i])]
+        subcomp = newstrcomp[argmin(@view B[:,i])]
+        prodcomp = newstrcomp[argmax(@view B[:,i])]
         edgifycomplex(zip([subcomp],[prodcomp]))
     end
     stmts2 = Vector{Statement}()
