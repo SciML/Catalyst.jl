@@ -289,7 +289,7 @@ function modifystrcomp(strcomp::Vector{String})
 end
 
 """
-    GraphComplexNetwork(rn::ReactionSystem)
+    ReactionComplexesGraph(rn::ReactionSystem)
 Converts a [`ReactionSystem`](@ref) into a Graphviz graph.
 Reactions correspond black arrows and Reaction complexes  to blue circles.
 Notes:
@@ -297,7 +297,7 @@ Notes:
 - Red dashed arrows complexes to complexes indicate reactions whose rate depend on species
 - Requires Graphviz to be installed and commandline accessible.
 """
-function GraphComplexNetwork(rn::ReactionSystem; complexdata = reactioncomplexes(rn))
+function ReactionComplexesGraph(rn::ReactionSystem; complexdata = reactioncomplexes(rn))
     rxs   = reactions(rn);
     specs = species(rn);
     complexes, B = complexdata;
