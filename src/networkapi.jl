@@ -611,7 +611,7 @@ function validate(rs::ReactionSystem, info::String="")
     for spec in specs
         if get_unit(spec) != specunits
             validated = false 
-            @warn("Species are expected to have the same units of $specunits, however, species $spec has units $(get_unit(spec)).")
+            @warn("Species are expected to have units of $specunits, however, species $spec has units $(get_unit(spec)).")
         end
     end
     timeunits = get_unit(get_iv(rs))
