@@ -65,6 +65,6 @@ import Base.Iterators: flatten
 import DataStructures: OrderedDict
 import Parameters: @with_kw_noshow
 include("graphs.jl")
-export Graph, savegraph
+export Graph, savegraph, ReactionComplexesGraph
 
 end # module
