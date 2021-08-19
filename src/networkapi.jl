@@ -592,11 +592,9 @@ function validate(rx::Reaction; info::String = "")
         end
     end
 
-    if (subunits !== nothing) && (produnits !== nothing)
-        if subunits != produnits
-            validated = false
-            @warn("in $rxstr, the substrate units are not consistent with the product units.")
-        end
+    if (subunits !== nothing) && (produnits !== nothing) && (subunits != produnits)
+        validated = false
+        @warn("in $rxstr, the substrate units are not consistent with the product units.")
     end
 
     validated
