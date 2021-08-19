@@ -267,8 +267,7 @@ function edgifyrates(rxs, specs)
 end
 
 # create edges from one reaction complex to another reaction complex
-function edgifycomplex(δ)
-    attr = Attributes()
+function edgifycomplex(δ,attr)
     return map(δ) do p
         return Edge([p[1], p[2]] , attr)
     end
@@ -294,7 +293,8 @@ end
 Converts a [`ReactionSystem`](@ref) into a Graphviz graph.
 Reactions correspond black arrows and Reaction complexes  to blue circles.
 Notes:
-- Black arrows from complexes to complexes indicate reactions.
+- Black arrows from complexes to complexes indicate reactions whose rate is parameter or a Number
+- Red dashed arrows complexes to complexes indicate reactions whose rate depend on species
 - Requires Graphviz to be installed and commandline accessible.
 """
 function GraphComplexNetwork(rn::ReactionSystem; complexdata = reactioncomplexes(rn))
@@ -307,19 +307,25 @@ function GraphComplexNetwork(rn::ReactionSystem; complexdata = reactioncomplexes
     strcomp = [string(compfun(rc)) for rc in complexes];
 
     newstrcomp = modifystrcomp(strcomp)
-    compnodes = [Node(str, Attributes(:shape => "circle",
-                :color => "#6C9AC3")) for str in newstrcomp]
+    compnodes = [Node(str, Attributes(:shape => "circle",:color => "#6C9AC3")) for str in newstrcomp]
 
-    edges = map(enumerate(rxs)) do (i, r)
+    edges = []
+    for (i,r) in enumerate(rxs)
         subcomp = newstrcomp[argmin(@view B[:,i])]
         prodcomp = newstrcomp[argmax(@view B[:,i])]
-        edgifycomplex(zip([subcomp],[prodcomp]))
+        deps = get_variables(r.rate, specs)
+        if deps != Any[]
+            attr = Attributes(:color => "#d91111", :style => "dashed")   
+            push!(edges, edgifycomplex(zip([subcomp],[prodcomp]),attr))
+        else
+            attr = Attributes()
+            push!(edges,edgifycomplex(zip([subcomp],[prodcomp]),attr))
+        end
     end
     stmts2 = Vector{Statement}()
     append!(stmts2, compnodes)
     append!(stmts2, collect(flatten(edges)))
-    g = Digraph("G", stmts2; graph_attrs=graph_attrs,
-                  node_attrs=node_attrs,edge_attrs=edge_attrs)
+    g = Digraph("G", stmts2; graph_attrs=graph_attrs, node_attrs=node_attrs,edge_attrs=edge_attrs)
     return g
 end
     
