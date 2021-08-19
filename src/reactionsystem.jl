@@ -157,11 +157,11 @@ Continuing from the example in the [`Reaction`](@ref) definition:
 @named rs = ReactionSystem(rxs, t, [A,B,C,D], k)
 
 Notes:
-- ReactionSystems currently do rudimentary unit checking by generating for all 
-  reactions the corresponding ODE rate expressions, and making sure they are 
-  independently self-consistent. Note, this does not check that all the ODE 
-  rate laws actually have the same units, just that they do not involve sums
-  with differing units.
+- ReactionSystems currently do rudimentary unit checking, requiring that
+  all species have the same units, and all reactions have rate laws with 
+  units of (species units) / (time units). Unit checking can be disabled
+  by passing the keyword argument `checks=false`.
+
 ```
 """
 struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
