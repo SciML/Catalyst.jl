@@ -183,7 +183,7 @@ function netstoichmat(rn; smap=speciesmap(rn))
 end
 
 
-######################## some reacion complexes matrices and reaction rates ###############################
+######################## reaction complexes and reaction rates ###############################
 """
 $(TYPEDEF)
 One reaction complex element
@@ -566,4 +566,70 @@ function Base.merge(network1::ReactionSystem, network2::ReactionSystem)
     merge!(network, network1)
     merge!(network, network2)
     network
+end
+
+
+###############################   units   #####################################
+
+# right now we just check the rate is valid and species have the same units
+function validate(rx::Reaction; info::String = "")     
+    rxstr = string(rx)
+    validated = ModelingToolkit._validate([rx.rate], ["$rxstr: rate",], info = info)
+    
+    subunits = isempty(rx.substrates) ? nothing : get_unit(rx.substrates[1])
+    for i in 2:length(rx.substrates)
+        if get_unit(rx.substrates[i]) != subunits
+            validated = false
+            @warn("In $rxstr, the substrates have differing units.")
+        end
+    end
+
+    produnits = isempty(rx.products) ? nothing : get_unit(rx.products[1])
+    for i in 2:length(rx.products)
+        if get_unit(rx.products[i]) != produnits
+            validated = false
+            @warn("In $rxstr, the products have differing units.")
+        end
+    end
+
+    if (subunits !== nothing) && (produnits !== nothing)
+        if subunits != produnits
+            validated = false
+            @warn("in $rxstr, the substrate units are not consistent with the product units.")
+        end
+    end
+
+    validated
+end
+
+function validate(rs::ReactionSystem, info::String="")
+    specs = get_states(rs)
+
+    # if there are no species we don't check units on the system
+    isempty(specs) && return true   
+
+    specunits = get_unit(specs[1])
+    validated = true
+    for spec in specs
+        if get_unit(spec) != specunits
+            validated = false 
+            @warn("Species are expected to have the same units of $specunits, however, species $spec has units $(get_unit(spec)).")
+        end
+    end
+    timeunits = get_unit(get_iv(rs))
+    rateunits = specunits / timeunits
+
+    for rx in get_eqs(rs)
+        rxunits = get_unit(rx.rate)
+        for (i,sub) in enumerate(rx.substrates)
+            rxunits *= get_unit(sub) ^ rx.substoich[i]
+        end
+
+        if rxunits != rateunits
+            validated = false
+            @warn("Reaction rate laws are expected to have units of $(rateunits), however, $(rx) has units of $rxunits.")
+        end
+    end
+
+    validated
 end

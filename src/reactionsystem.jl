@@ -93,6 +93,33 @@ function Reaction(rate, subs, prods; kwargs...)
     Reaction(rate, subs, prods, sstoich, pstoich; kwargs...)
 end
 
+function print_rxside(io::IO, specs, stoich)
+    # reactants/substrates
+    if isempty(specs)
+        print(io, "∅")
+    else
+        for (i,spec) in enumerate(specs)
+            if stoich[1] == 1
+                print(io, "$(ModelingToolkit.operation(spec))")
+            else
+                print(io, "$(stoich[i])$(ModelingToolkit.operation(spec))")
+            end
+
+            (i < length(specs)) && print(io, " + ")
+        end
+    end
+    nothing
+end
+
+function Base.show(io::IO, rx::Reaction)
+    summary(io,rx)
+    print(io, ": ", rx.rate, ", ")
+    print_rxside(io, rx.substrates, rx.substoich)
+    arrow = rx.only_use_rate ? "⇒" : "-->"
+    print(io, " ", arrow, " ")
+    print_rxside(io, rx.products, rx.prodstoich)
+end
+
 function ModelingToolkit.namespace_equation(rx::Reaction, name, iv)
     Reaction(namespace_expr(rx.rate, name, iv), 
              namespace_expr(rx.substrates, name, iv),
@@ -128,6 +155,13 @@ $(FIELDS)
 Continuing from the example in the [`Reaction`](@ref) definition:
 ```julia
 @named rs = ReactionSystem(rxs, t, [A,B,C,D], k)
+
+Notes:
+- ReactionSystems currently do rudimentary unit checking by generating for all 
+  reactions the corresponding ODE rate expressions, and making sure they are 
+  independently self-consistent. Note, this does not check that all the ODE 
+  rate laws actually have the same units, just that they do not involve sums
+  with differing units.
 ```
 """
 struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
@@ -155,15 +189,20 @@ struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
     connection_type::Any
 
     function ReactionSystem(eqs, iv, states, ps, observed, name, systems, defaults, connection_type; checks::Bool = true)
+
+        iv′ = value(iv)
+        states′ = value.(states)
+        ps′ = value.(ps)
+
         if checks
-            iv′ = value(iv)
-            states′ = value.(states)
-            ps′ = value.(ps)
             check_variables(states′, iv′)
             check_parameters(ps′, iv′)
-            ModelingToolkit.check_units(eqs)
+            # check_units(eqs)    # disable as check the newly generated system below
         end
-        new(collect(eqs), iv′, states′, ps′, observed, name, systems, defaults, connection_type)
+        rs = new(collect(eqs), iv′, states′, ps′, observed, name, systems, defaults, connection_type)
+        checks && validate(rs)
+
+        rs
     end
 end
 
@@ -177,7 +216,7 @@ function ReactionSystem(eqs, iv, species, params;
                         connection_type=nothing,
                         checks = true)
     name === nothing && throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
-    #isempty(species) && error("ReactionSystems require at least one species.")
+
     ReactionSystem(eqs, iv, species, params, observed, name, systems, defaults, connection_type, checks = checks)
 end
 
@@ -414,10 +453,13 @@ law, i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. If
 ignored.
 """
 function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; 
-                      name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true, kwargs...)
-    eqs     = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, include_zero_odes=include_zero_odes)
+                      name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true, 
+                      checks=false, kwargs...)
+    eqs     = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, 
+                                 include_zero_odes=include_zero_odes)
     systems = map(sys -> (sys isa ODESystem) ? sys : convert(ODESystem, sys), get_systems(rs))
-    ODESystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, defaults=get_defaults(rs), checks = false, kwargs...)
+    ODESystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, 
+              defaults=get_defaults(rs), checks=checks, kwargs...)
 end
 
 """
@@ -434,10 +476,13 @@ law, i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. If
 ignored.
 """
 function Base.convert(::Type{<:NonlinearSystem},rs::ReactionSystem;
-                      name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true, checks = false, kwargs...)
-    eqs     = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, as_odes=false, include_zero_odes=include_zero_odes)
+                      name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true, 
+                      checks = false, kwargs...)
+    eqs     = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, as_odes=false, 
+                                 include_zero_odes=include_zero_odes)
     systems = convert.(NonlinearSystem, get_systems(rs))
-    NonlinearSystem(eqs, get_states(rs), get_ps(rs); name=name, systems=systems, defaults=get_defaults(rs), checks = checks, kwargs...)
+    NonlinearSystem(eqs, get_states(rs), get_ps(rs); name=name, systems=systems, 
+                    defaults=get_defaults(rs), checks = checks, kwargs...)
 end
 
 """
@@ -507,7 +552,8 @@ function Base.convert(::Type{<:JumpSystem},rs::ReactionSystem;
                       name=nameof(rs), combinatoric_ratelaws=true, checks = false, kwargs...)
     eqs     = assemble_jumps(rs; combinatoric_ratelaws=combinatoric_ratelaws)
     systems = convert.(JumpSystem, get_systems(rs))
-    JumpSystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, defaults=get_defaults(rs), checks = checks, kwargs...)
+    JumpSystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, 
+               defaults=get_defaults(rs), checks = checks, kwargs...)
 end
 
 
@@ -515,25 +561,29 @@ end
 
 
 # ODEProblem from AbstractReactionNetwork
-function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan, p=DiffEqBase.NullParameters(), args...; check_length=false, kwargs...)
+function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan, p=DiffEqBase.NullParameters(), args...; 
+                               check_length=false, kwargs...)
     return ODEProblem(convert(ODESystem,rs; kwargs...),u0,tspan,p, args...; check_length, kwargs...)
 end
 
 # NonlinearProblem from AbstractReactionNetwork
-function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0, p=DiffEqBase.NullParameters(), args...; check_length=false, kwargs...)
+function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0, p=DiffEqBase.NullParameters(), args...; 
+                                     check_length=false, kwargs...)
     return NonlinearProblem(convert(NonlinearSystem,rs; kwargs...), u0, p, args...; check_length, kwargs...)
 end
 
 
 # SDEProblem from AbstractReactionNetwork
-function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan, p=DiffEqBase.NullParameters(), args...; noise_scaling=nothing, kwargs...)
+function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan, p=DiffEqBase.NullParameters(), args...; 
+                               noise_scaling=nothing, kwargs...)
     sde_sys  = convert(SDESystem,rs;noise_scaling=noise_scaling, kwargs...)
     p_matrix = zeros(length(get_states(rs)), length(get_eqs(rs)))
     return SDEProblem(sde_sys,u0,tspan,p,args...; noise_rate_prototype=p_matrix,kwargs...)
 end
 
 # DiscreteProblem from AbstractReactionNetwork
-function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple, p=DiffEqBase.NullParameters(), args...; kwargs...)
+function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple, p=DiffEqBase.NullParameters(), 
+                                    args...; kwargs...)
     return DiscreteProblem(convert(JumpSystem,rs; kwargs...), u0,tspan,p, args...; kwargs...)
 end
 
@@ -543,7 +593,8 @@ function DiffEqJump.JumpProblem(rs::ReactionSystem, prob, aggregator, args...; k
 end
 
 # SteadyStateProblem from AbstractReactionNetwork
-function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0, p=DiffEqBase.NullParameters(), args...; kwargs...)
+function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0, p=DiffEqBase.NullParameters(), args...; 
+                                       kwargs...)
     return SteadyStateProblem(ODEFunction(convert(ODESystem,rs; kwargs...)),u0,p, args...; kwargs...)
 end
 
@@ -555,8 +606,6 @@ function ModelingToolkit.get_variables!(deps::Set, rx::Reaction, variables)
     end
     deps
 end
-
-ModelingToolkit.validate(eq::Reaction; info::String = "") = ModelingToolkit._validate([oderatelaw(eq)], ["reaction ",], info = info)
 
 # determine which species a reaction modifies
 function ModelingToolkit.modified_states!(mstates, rx::Reaction, sts::Set)
