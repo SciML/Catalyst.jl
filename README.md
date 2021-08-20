@@ -48,9 +48,12 @@ which gives
 
 ![rn_complexes](https://user-images.githubusercontent.com/9385167/130252763-4418ba5a-164f-47f7-b512-a768e4f73834.png)
 
-*2.* Support for units via ModelingToolkit in directly constructed
+*2.* Support for units via ModelingToolkit and 
+[Uniftul.jl](https://github.com/PainterQubits/Unitful.jl) in directly constructed
 `ReactionSystem`s:
 ```julia
+# ]add Unitful
+using Unitful 
 @parameters α [unit=u"μM/s"] β [unit=u"s"^(-1)] γ [unit=u"μM*s"^(-1)]
 @variables t [unit=u"s"] A(t) [unit=u"μM"] B(t) [unit=u"μM"] C(t) [unit=u"μM"]
 rxs = [Reaction(α, nothing, [A]),
