@@ -34,7 +34,7 @@ etc).
 - Generated systems can be solved using any
   [DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl)
   ODE/SDE/jump solver, and can be used within `EnsembleProblem`s for carrying
-  out GPU-parallelized parameter sweeps and statistical sampling. Plot recipes
+  out parallelized parameter sweeps and statistical sampling. Plot recipes
   are available for visualizing the solutions.
 - Julia `Expr`s can be obtained for all rate laws and functions determining the
   deterministic and stochastic terms within resulting ODE, SDE or jump models.
