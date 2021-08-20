@@ -30,15 +30,19 @@ reaction system functionality that was previously in ModelingToolkit (i.e.
 *1.* Network representations for the reaction complexes of a system along with
 associated graph functionality:
 ```julia
-sir = @reaction_network begin
-  β, S + I --> 2I
-  ν, I --> R
-end β ν
-smap  = speciesmap(sir)
-rcs,B = reactioncomplexes(sir; smap=smap)
-Z     = complexstoichmat(sir; rcs=rcs)
-Δ     = complexoutgoingmat(sir; B=B)
-complexgraph(sir; complexdata=(rcs,B))
+rn = @reaction_network begin
+           k₁, 2A --> B
+           k₂, A --> C
+           k₃, C --> D
+           k₄, B + D --> E
+           k₅, B --> E
+           k₆, D --> C
+     end k₁ k₂ k₃ k₄ k₅ k₆
+smap  = speciesmap(rn)
+rcs,B = reactioncomplexes(rn; smap=smap)
+Z     = complexstoichmat(rn; rcs=rcs)
+Δ     = complexoutgoingmat(rn; B=B)
+complexgraph(rn; complexdata=(rcs,B))
 ```
 which gives
 
