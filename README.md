@@ -46,6 +46,8 @@ complexgraph(rn; complexdata=(rcs,B))
 ```
 which gives
 
+![rn_complexes](https://user-images.githubusercontent.com/9385167/130252763-4418ba5a-164f-47f7-b512-a768e4f73834.png)
+
 *2.* Support for units via ModelingToolkit in directly constructed
 `ReactionSystem`s:
 ```julia
