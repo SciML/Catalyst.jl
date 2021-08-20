@@ -573,14 +573,13 @@ end
 
 # right now we just check the rate is valid and species have the same units
 function validate(rx::Reaction; info::String = "")     
-    rxstr = string(rx)
-    validated = ModelingToolkit._validate([rx.rate], ["$rxstr: rate",], info = info)
+    validated = ModelingToolkit._validate([rx.rate], [string(rx, ": rate")], info = info)
     
     subunits = isempty(rx.substrates) ? nothing : get_unit(rx.substrates[1])
     for i in 2:length(rx.substrates)
         if get_unit(rx.substrates[i]) != subunits
             validated = false
-            @warn("In $rxstr, the substrates have differing units.")
+            @warn(string("In ", rx, " the substrates have differing units."))
         end
     end
 
@@ -588,13 +587,13 @@ function validate(rx::Reaction; info::String = "")
     for i in 2:length(rx.products)
         if get_unit(rx.products[i]) != produnits
             validated = false
-            @warn("In $rxstr, the products have differing units.")
+            @warn(string("In ", rx, " the products have differing units."))
         end
     end
 
     if (subunits !== nothing) && (produnits !== nothing) && (subunits != produnits)
         validated = false
-        @warn("in $rxstr, the substrate units are not consistent with the product units.")
+        @warn(string("in ", rx, " the substrate units are not consistent with the product units."))
     end
 
     validated
@@ -611,7 +610,7 @@ function validate(rs::ReactionSystem, info::String="")
     for spec in specs
         if get_unit(spec) != specunits
             validated = false 
-            @warn("Species are expected to have units of $specunits, however, species $spec has units $(get_unit(spec)).")
+            @warn(string("Species are expected to have units of ", specunits, " however, species ", spec, " has units ", get_unit(spec), "."))
         end
     end
     timeunits = get_unit(get_iv(rs))
@@ -625,7 +624,7 @@ function validate(rs::ReactionSystem, info::String="")
 
         if rxunits != rateunits
             validated = false
-            @warn("Reaction rate laws are expected to have units of $(rateunits), however, $(rx) has units of $rxunits.")
+            @warn(string("Reaction rate laws are expected to have units of ", rateunits, " however, ", rx, " has units of ", rxunits, "."))
         end
     end
 
