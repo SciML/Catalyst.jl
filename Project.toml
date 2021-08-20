@@ -1,6 +1,6 @@
 name = "Catalyst"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
-version = "8.2"
+version = "8.2.0"
 
 [deps]
 AbstractAlgebra = "c3fe647b-3220-5bb0-a1ea-a7954cac585d"
@@ -42,6 +42,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 SteadyStateDiffEq = "9672c7b4-1e72-59bd-8a11-6ac3964bc41f"
 StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [targets]
-test = ["Graphviz_jll", "LinearAlgebra", "OrdinaryDiffEq", "Random", "SafeTestsets", "StableRNGs", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test"]
+test = ["Graphviz_jll", "LinearAlgebra", "OrdinaryDiffEq", "Random", "SafeTestsets", "StableRNGs", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "Unitful"]

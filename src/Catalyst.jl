@@ -5,17 +5,20 @@ module Catalyst
 
 using DocStringExtensions
 using DiffEqBase, Reexport, ModelingToolkit, DiffEqJump
-using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems, get_eqs, get_defaults, toparam
-import ModelingToolkit: get_variables, namespace_expr
-import ModelingToolkit: namespace_equation, get_variables!, modified_states!
+
+# ModelingToolkit imports and convenience functions we use
+using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems, 
+                       get_eqs, get_defaults, toparam
+import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!, 
+                        modified_states!, validate
 
 # internal but needed ModelingToolkit functions
-import ModelingToolkit: check_variables, check_parameters, _iszero, _merge
+import ModelingToolkit: check_variables, check_parameters, _iszero, _merge, check_units, get_unit
 
 const DEFAULT_IV = (@parameters t)[1]
 @reexport using ModelingToolkit
 import MacroTools
-import Base: (==), merge!, merge, hash, size, getindex, setindex, isless, Sort.defalg, length
+import Base: (==), merge!, merge, hash, size, getindex, setindex, isless, Sort.defalg, length, show
 using Symbolics
 using Latexify, Requires
 import AbstractAlgebra
@@ -38,12 +41,10 @@ include("reactionsystem.jl")
 export Reaction, ReactionSystem, ismassaction, oderatelaw, jumpratelaw
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem, SteadyStateProblem
 
+# reaction_network macro
 const ExprValues = Union{Expr,Symbol,Float64,Int}
-
 include("expression_utils.jl")
 include("reaction_network.jl")
-
-# reaction network macro
 export @reaction_network, @add_reactions
 
 # registers CRN specific functions using Symbolics.jl

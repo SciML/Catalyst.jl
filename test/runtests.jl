@@ -40,5 +40,5 @@ end
 @time @safetestset "Graphs" begin include("graphs.jl") end
 
 @time @safetestset "Conservation Laws" begin include("conslaws.jl") end
-
+@time @safetestset "Units" begin include("units.jl") end
 end # @time
