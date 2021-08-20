@@ -13,6 +13,11 @@ gr = Graph(rn)
 fname = Base.Filesystem.tempname()
 savegraph(gr, "$fname.svg", "svg")
 
+rcgr = ReactionComplexesGraph(rn)
+fname = Base.Filesystem.tempname()
+savegraph(rcgr, "$fname.svg", "svg")
+
+
 # this are broken in the jll, see
 # https://github.com/JuliaPackaging/Yggdrasil/issues/1428
 # savegraph(gr, "$fname.pdf", "pdf")
