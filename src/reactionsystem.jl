@@ -155,14 +155,13 @@ $(FIELDS)
 Continuing from the example in the [`Reaction`](@ref) definition:
 ```julia
 @named rs = ReactionSystem(rxs, t, [A,B,C,D], k)
+```
 
 Notes:
 - ReactionSystems currently do rudimentary unit checking, requiring that
   all species have the same units, and all reactions have rate laws with 
   units of (species units) / (time units). Unit checking can be disabled
   by passing the keyword argument `checks=false`.
-
-```
 """
 struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
     """The reactions defining the system."""
@@ -173,19 +172,18 @@ struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
     states::Vector
     """Parameter variables. Must not contain the independent variable."""
     ps::Vector
+    """Equations for observed variables."""
     observed::Vector{Equation}
     """The name of the system"""
     name::Symbol
-    """systems: The internal systems"""
+    """Internal sub-systems"""
     systems::Vector
     """
-    defaults: The default values to use when initial conditions and/or
+    The default values to use when initial conditions and/or
     parameters are not supplied in `ODEProblem`.
     """
     defaults::Dict
-    """
-    type: type of the system
-    """
+    """Type of the system"""
     connection_type::Any
 
     function ReactionSystem(eqs, iv, states, ps, observed, name, systems, defaults, connection_type; checks::Bool = true)

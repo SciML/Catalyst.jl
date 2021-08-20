@@ -571,7 +571,15 @@ end
 
 ###############################   units   #####################################
 
-# right now we just check the rate is valid and species have the same units
+"""
+    validate(rx::Reaction; info::String = "")     
+
+Check that all substrates and products within the given [`Reaction`](@ref) have
+the same units, and that the units of the reaction's rate expression are
+internally consistent (i.e. if the rate involves sums, each term in the sum has
+the same units).
+
+"""
 function validate(rx::Reaction; info::String = "")     
     validated = ModelingToolkit._validate([rx.rate], [string(rx, ": rate")], info = info)
     
@@ -599,6 +607,13 @@ function validate(rx::Reaction; info::String = "")
     validated
 end
 
+"""
+    validate(rs::ReactionSystem, info::String="")
+
+Check that all species in the [`ReactionSystem`](@ref) have the same units, and
+that the rate laws of all reactions reduce to units of (species units) / (time
+units).
+"""
 function validate(rs::ReactionSystem, info::String="")
     specs = get_states(rs)
 
