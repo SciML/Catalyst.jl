@@ -75,7 +75,7 @@ Reaction
 ReactionSystem
 ```
 
-## Basic properties
+## Basic System Properties
 ```@docs
 species
 speciesmap
@@ -87,7 +87,7 @@ numparams
 numreactions
 ```
 
-## Reaction Properties
+## Basic Reaction Properties
 ```@docs
 ismassaction
 dependents
@@ -98,15 +98,14 @@ netstoichmat
 reactionrates
 ```
 
-## Composition and Accessor Functions for `ReactionSystem`s
-
+## Composition and Accessor Functions for [`ReactionSystem`](@ref)s
 - `ModelingToolkit.get_eqs(sys)` or `equations(sys)`: The reactions that define the system.
 - `ModelingToolkit.get_states(sys)` or `states(sys)`: The set of chemical species in the system.
 - `ModelingToolkit.get_ps(sys)` or `parameters(sys)`: The parameters of the system.
 - `ModelingToolkit.get_iv(sys)`: The independent variable of the reaction
   system, usually time.
 
-## Functions to extend a Network
+## Functions to Extend a Network
 ```@docs
 @add_reactions
 addspecies!
@@ -114,21 +113,6 @@ addparam!
 addreaction!
 merge!(network1::ReactionSystem, network2::ReactionSystem)
 merge(network1::ReactionSystem, network2::ReactionSystem)
-```
-
-## Rate Law Expressions
-As the underlying [`ReactionSystem`](@ref) is comprised of `ModelingToolkit`
-expressions, one can directly access the generated rate laws, and using
-`ModelingToolkit` tooling generate functions or Julia `Expr`s from them.
-```@docs
-oderatelaw
-jumpratelaw
-```
-
-## Network Comparison Functions
-```@docs
-==(rn1::ReactionSystem, rn2::ReactionSystem)
-==(rn1::Reaction, rn2::Reaction)
 ```
 
 ## Network Analysis and Representations
@@ -142,13 +126,13 @@ complexstoichmat
 complexoutgoingmat
 ```
 
-## Transformations
+## Network Comparison 
 ```@docs
-Base.convert
-ModelingToolkit.structural_simplify
+==(rn1::ReactionSystem, rn2::ReactionSystem)
+==(rn1::Reaction, rn2::Reaction)
 ```
 
-## Displaying Networks
+## Network Visualization
 [Latexify](https://github.com/korsbo/Latexify.jl) can be used to convert
 networks to LaTeX mhchem equations by
 ```julia
@@ -161,5 +145,27 @@ can be used to create and save network diagrams using [`Graph`](@ref) and
 [`savegraph`](@ref).
 ```@docs
 Graph
+complexgraph
 savegraph
+```
+
+## Rate Law Expressions
+As the underlying [`ReactionSystem`](@ref) is comprised of `ModelingToolkit`
+expressions, one can directly access the generated rate laws, and using
+`ModelingToolkit` tooling generate functions or Julia `Expr`s from them.
+```@docs
+oderatelaw
+jumpratelaw
+```
+
+## Transformations
+```@docs
+Base.convert
+ModelingToolkit.structural_simplify
+```
+
+## Unit Validation
+```@docs
+validate(rx::Reaction; info::String = "")
+validate(rs::ReactionSystem, info::String="")
 ```

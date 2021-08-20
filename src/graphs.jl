@@ -289,18 +289,23 @@ function modifystrcomp(strcomp::Vector{String})
 end
 
 """
-    ReactionComplexesGraph(rn::ReactionSystem)
-Converts a [`ReactionSystem`](@ref) into a Graphviz graph.
-Reactions correspond black arrows and Reaction complexes  to blue circles.
+    complexgraph(rn::ReactionSystem; complexdata=reactioncomplexes(rn))
+
+Creates a Graphviz graph of the [`ReactionComplex`](@ref)s in `rn`. Reactions
+correspond to arrows and reaction complexes to blue circles. 
+
 Notes:
-- Black arrows from complexes to complexes indicate reactions whose rate is parameter or a Number
-- Red dashed arrows complexes to complexes indicate reactions whose rate depend on species
-- Requires Graphviz to be installed and commandline accessible.
+- Black arrows from complexes to complexes indicate reactions whose rate is a
+  parameter or a `Number`. i.e. `k, A --> B`.
+- Red dashed arrows from complexes to complexes indicate reactions whose rate
+  depends on species. i.e. `k*C, A --> B` for `C` a species.
+- Requires the Graphviz jll to be installed, or Graphviz to be installed and
+  commandline accessible.
 """
-function ReactionComplexesGraph(rn::ReactionSystem; complexdata = reactioncomplexes(rn))
+function complexgraph(rn::ReactionSystem; complexdata=reactioncomplexes(rn))
     rxs   = reactions(rn);
     specs = species(rn);
-    complexes, B = complexdata;
+    complexes,B = complexdata;
     fun = rcel -> specs[rcel.speciesid]*rcel.speciesstoich;
     compfun(rc) = rc == Catalyst.ReactionComplex{Int64}[] ? 0 : sum(fun, rc);
 
@@ -344,7 +349,8 @@ Notes:
   rate expression. For example, in the reaction `k*A, B --> C`, there would be a
   red arrow from `A` to the reaction node. In `k*A, A+B --> C`, there would be
   red and black arrows from `A` to the reaction node.
-- Requires Graphviz to be installed and commandline accessible.
+- Requires the Graphviz jll to be installed, or Graphviz to be installed and
+  commandline accessible.
 """
 function Graph(rn::ReactionSystem)
     rxs   = reactions(rn)
@@ -376,7 +382,7 @@ name `fname` and extension `fmt`.
 
 Notes:
 - `fmt="png"` is the default output format.
-- Requires Graphviz to be installed and commandline accessible.
+- Requires the Graphviz jll to be installed, or Graphviz to be installed and commandline accessible.
 """
 function savegraph(g::Graph, fname, fmt="png")
     open(fname, "w") do io
