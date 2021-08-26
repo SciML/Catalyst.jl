@@ -14,6 +14,7 @@ ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
@@ -43,6 +44,7 @@ SteadyStateDiffEq = "9672c7b4-1e72-59bd-8a11-6ac3964bc41f"
 StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [targets]
-test = ["Graphviz_jll", "LinearAlgebra", "OrdinaryDiffEq", "Random", "SafeTestsets", "StableRNGs", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "Unitful"]
+test = ["Graphviz_jll", "LinearAlgebra", "OrdinaryDiffEq", "Random", "SafeTestsets", "StableRNGs", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "Unitful","SparseArrays"]
