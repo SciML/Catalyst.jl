@@ -1,5 +1,5 @@
 using Catalyst, DiffEqBase, ModelingToolkit, Test
-
+using SparseArrays
 using ModelingToolkit: value
 
 @parameters t k1 k2
