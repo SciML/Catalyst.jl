@@ -5,7 +5,7 @@ module Catalyst
 
 using DocStringExtensions
 using DiffEqBase, Reexport, ModelingToolkit, DiffEqJump
-
+using SparseArrays
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems, 
                        get_eqs, get_defaults, toparam
