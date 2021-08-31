@@ -121,6 +121,7 @@ conservationlaws
 conservedquantities
 ReactionComplexElement
 ReactionComplex
+reactioncomplexmap
 reactioncomplexes
 complexstoichmat
 complexoutgoingmat
