@@ -21,81 +21,9 @@ be used with solvers throughout the broader [SciML](https://sciml.ai) ecosystem,
 including higher-level SciML packages (e.g., for sensitivity analysis, parameter
 estimation, machine learning applications, etc.).
 
-## Note for version 8.0
-Version 8.0 is a breaking release, moving to Catalyst the basic
-reaction system functionality that was previously in ModelingToolkit (i.e.
-`ReactionSystem`, `Reaction`, and other functions). 
-
-## New as of 8.3
-*1.* Network representations for the reaction complexes of a system along with
-associated graph functionality:
-```julia
-rn = @reaction_network begin
-           k₁, 2A --> B
-           k₂, A --> C
-           k₃, C --> D
-           k₄, B + D --> E
-           k₅, B --> E
-           k₆, D --> C
-     end k₁ k₂ k₃ k₄ k₅ k₆
-smap  = speciesmap(rn)
-rcs,B = reactioncomplexes(rn; smap=smap)
-Z     = complexstoichmat(rn; rcs=rcs)
-Δ     = complexoutgoingmat(rn; B=B)
-complexgraph(rn; complexdata=(rcs,B))
-```
-which gives
-
-![rn_complexes](https://user-images.githubusercontent.com/9385167/130252763-4418ba5a-164f-47f7-b512-a768e4f73834.png)
-
-*2.* Support for units via ModelingToolkit and 
-[Uniftul.jl](https://github.com/PainterQubits/Unitful.jl) in directly constructed
-`ReactionSystem`s:
-```julia
-# ]add Unitful
-using Unitful 
-@parameters α [unit=u"μM/s"] β [unit=u"s"^(-1)] γ [unit=u"μM*s"^(-1)]
-@variables t [unit=u"s"] A(t) [unit=u"μM"] B(t) [unit=u"μM"] C(t) [unit=u"μM"]
-rxs = [Reaction(α, nothing, [A]),
-       Reaction(β, [A], [B]),
-       Reaction(γ, [A,B], [B], [1,1], [2])]
-@named rs = ReactionSystem(rxs, t, [A,B,C], [α,β,γ])
-```
-By default, during construction of `rs` Catalyst will call
-```julia
-validate(rs)
-```
-which will print warnings and return `false` if either
-1. The `species(rs)` do not all have the same units.
-2. The implicit (ODE) rate laws for each reaction do not have units of (species
-   units) / (time units), where the time units are the units of `t`.
-
-(Note, at this time the `@reaction_network` macro does not support units.)
-
-*3.* Calculation of conservation laws 
-```julia
-rn = @reaction_network begin
-  (k₊,k₋), A + B <--> C
-  end k₊ k₋
-clawmat = conservationlaws(netstoichmat(rn))
-```
-giving
-```
- 1  -1  0
- 0   1  1
-```
-and
-```julia
-cquants = conservedquantities(species(rn), clawmat)
-```
-giving
-```
- A(t) - B(t)
- B(t) + C(t)
-```
-
-See the [API docs](https://catalyst.sciml.ai/dev/api/catalyst_api/) for more
-details about each of these new features.
+## Changes for for current and past releases
+New functionality and breaking changes are summarized in the
+[HISTORY.md](HISTORY.md) file.
 
 ## Tutorials and Documentation
 
