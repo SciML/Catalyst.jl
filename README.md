@@ -21,8 +21,8 @@ be used with solvers throughout the broader [SciML](https://sciml.ai) ecosystem,
 including higher-level SciML packages (e.g., for sensitivity analysis, parameter
 estimation, machine learning applications, etc.).
 
-## Changes for for current and past releases
-New functionality and breaking changes are summarized in the
+## Breaking Changes and New Features 
+Breaking changes and new functionality are summarized in the
 [HISTORY.md](HISTORY.md) file.
 
 ## Tutorials and Documentation
