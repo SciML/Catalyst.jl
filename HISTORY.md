@@ -1,4 +1,4 @@
-# Breaking update and feature summaries across releases.
+# Breaking updates and feature summaries across releases.
 
 ## Catalyst unreleased (master branch) 
 
