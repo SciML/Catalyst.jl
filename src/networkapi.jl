@@ -135,105 +135,108 @@ end
 
 
 """
-    substoichmat(rn,sparsity=false; smap=speciesmap(rn))
+    substoichmat(rn; sparse=false, smap=speciesmap(rn))
 
-Returns the substrate stoichiometry matrix
+Returns the substrate stoichiometry matrix, S, with Sᵢⱼ the stoichiometric
+coefficient of the ith substrate within the jth reaction.
 
 Note:
-- Set sparsity=true for sparse representation
+- Set sparse=true for a sparse matrix representation
 """
-function substoichmat(::Type{SparseMatrixCSC}, rn::ReactionSystem; smap=speciesmap(rn))
-    Is=Int64[];  Js=Int64[];  Vs=Int64[];
+function substoichmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem; smap=speciesmap(rn))
+    Is=Int[];  Js=Int[];  Vs=Int[];
     for (k,rx) in enumerate(reactions(rn))
         stoich = rx.substoich
         for (i,sub) in enumerate(rx.substrates)
-            push!(Is,k)
-            push!(Js, smap[sub])
+            push!(Js, k)
+            push!(Is, smap[sub])
             push!(Vs, stoich[i])
         end
     end
-    smat = sparse(Is,Js,Vs,numreactions(rn),numspecies(rn))
+    sparse(Is,Js,Vs,numspecies(rn),numreactions(rn))
 end
-function substoichmat(::Type{Matrix},rn::ReactionSystem; smap=speciesmap(rn))
-    smat = zeros(Int,numreactions(rn),numspecies(rn))
+function substoichmat(::Type{Matrix{Int}},rn::ReactionSystem; smap=speciesmap(rn))
+    smat = zeros(Int, numspecies(rn), numreactions(rn))
     for (k,rx) in enumerate(reactions(rn))
         stoich = rx.substoich
         for (i,sub) in enumerate(rx.substrates)
-            smat[k,smap[sub]] = stoich[i]
+            smat[smap[sub],k] = stoich[i]
         end
     end
     smat
 end
-function substoichmat(rn::ReactionSystem, sparsity::Bool=false; smap=speciesmap(rn))
-	sparsity ? substoichmat(SparseMatrixCSC, rn; smap=smap) : substoichmat(Matrix, rn; smap=smap)
+function substoichmat(rn::ReactionSystem; sparse::Bool=false; smap=speciesmap(rn))
+	sparse ? substoichmat(SparseMatrixCSC{Int,Int}, rn; smap=smap) : substoichmat(Matrix{Int}, rn; smap=smap)
 end
 
 
 """
-    prodstoichmat(rn,sparsity=false; smap=speciesmap(rn))
+    prodstoichmat(rn; sparse=false, smap=speciesmap(rn))
 
-Returns the product stoichiometry matrix
+Returns the product stoichiometry matrix, P, with Pᵢⱼ the stoichiometric
+coefficient of the ith product within the jth reaction.
 
 Note:
-- Set sparsity=true for sparse representation
+- Set sparse=true for a sparse matrix representation
 """
-function prodstoichmat(::Type{SparseMatrixCSC},rn::ReactionSystem; smap=speciesmap(rn))
-    Is=Int64[];  Js=Int64[];  Vs=Int64[];
+function prodstoichmat(::Type{SparseMatrixCSC{Int}}, rn::ReactionSystem; smap=speciesmap(rn))
+    Is=Int[];  Js=Int[];  Vs=Int[];
     for (k,rx) in enumerate(reactions(rn))
         stoich = rx.prodstoich
         for (i,prod) in enumerate(rx.products)
-			push!(Is,k)
-			push!(Js, smap[prod])
+			push!(Js, k)
+			push!(Is, smap[prod])
 			push!(Vs, stoich[i])
         end
     end
-    smat = sparse(Is,Js,Vs,numreactions(rn),numspecies(rn))
+    sparse(Is,Js,Vs,numspecies(rn),numreactions(rn))
 end
-function prodstoichmat(::Type{Matrix},rn::ReactionSystem; smap=speciesmap(rn))
-    pmat = zeros(Int,(numreactions(rn),numspecies(rn)))
+function prodstoichmat(::Type{Matrix{Int}},rn::ReactionSystem; smap=speciesmap(rn))
+    pmat = zeros(Int, numspecies(rn), numreactions(rn))
     for (k,rx) in enumerate(reactions(rn))
         stoich = rx.prodstoich
         for (i,prod) in enumerate(rx.products)
-            pmat[k,smap[prod]] = stoich[i]
+            pmat[smap[prod],k] = stoich[i]
         end
     end
     pmat
 end
-function prodstoichmat(rn::ReactionSystem, sparsity::Bool=false; smap=speciesmap(rn))
-	sparsity ? prodstoichmat(SparseMatrixCSC, rn; smap=smap) : prodstoichmat(Matrix, rn; smap=smap)
+function prodstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
+	sparse ? prodstoichmat(SparseMatrixCSC{Int,Int}, rn; smap=smap) : prodstoichmat(Matrix{Int}, rn; smap=smap)
 end
 
 
 """
     netstoichmat(rn,sparsity=false; smap=speciesmap(rn))
 
-Returns the net stoichiometry matrix
+Returns the net stoichiometry matrix, N, with Nᵢⱼ the net stoichiometric
+coefficient of the ith species within the jth reaction.
 
 Note:
-- Set sparsity=true for sparse representation
+- Set sparse=true for a sparse matrix representation
 """
-function netstoichmat(::Type{SparseMatrixCSC},rn::ReactionSystem; smap=speciesmap(rn))
-    Is=Int64[];  Js=Int64[];  Vs=Int64[];
+function netstoichmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem; smap=speciesmap(rn))
+    Is=Int[];  Js=Int[];  Vs=Int[];
     for (k,rx) in pairs(reactions(rn))
         for (spec,coef) in rx.netstoich
-			push!(Is,k)
-			push!(Js, smap[spec])
+			push!(Js, k)
+			push!(Is, smap[spec])
 			push!(Vs, coef)
         end
     end
-    nmat = sparse(Is,Js,Vs,numreactions(rn),numspecies(rn))
+    sparse(Is,Js,Vs,numspecies(rn),numreactions(rn))
 end
-function netstoichmat(::Type{Matrix},rn::ReactionSystem; smap=speciesmap(rn))
-    nmat = zeros(Int,(numreactions(rn),numspecies(rn)))
+function netstoichmat(::Type{Matrix{Int}},rn::ReactionSystem; smap=speciesmap(rn))
+    nmat = zeros(Int,numspecies(rn),numreactions(rn))
     for (k,rx) in pairs(reactions(rn))
         for (spec,coef) in rx.netstoich
-            nmat[k,smap[spec]] = coef
+            nmat[smap[spec],k] = coef
         end
     end
     nmat
 end
-function netstoichmat(rn::ReactionSystem, sparsity::Bool=false; smap=speciesmap(rn))
-	sparsity ? netstoichmat(SparseMatrixCSC, rn; smap=smap) : netstoichmat(Matrix, rn; smap=smap)
+function netstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
+	sparse ? netstoichmat(SparseMatrixCSC{Int,Int}, rn; smap=smap) : netstoichmat(Matrix{Int}, rn; smap=smap)
 end
 
 
@@ -295,7 +298,7 @@ Notes:
            0, otherwise
 - Set sparsity=true for sparse representation of incidence matrix
 """
-function reactioncomplexes(::Type{SparseMatrixCSC},rn::ReactionSystem; smap=speciesmap(rn))
+function reactioncomplexes(::Type{SparseMatrixCSC{Int,Int}},rn::ReactionSystem; smap=speciesmap(rn))
     rxs = reactions(rn)
     numreactions(rn) > 0 || error("There must be at least one reaction to find reaction complexes.")
     complextorxsmap = OrderedDict{ReactionComplex{eltype(rxs[1].substoich)},Vector{Pair{Int,Int}}}()
@@ -327,10 +330,10 @@ function reactioncomplexes(::Type{SparseMatrixCSC},rn::ReactionSystem; smap=spec
 			push!(Vs, σ)
         end
     end
-	B = sparse(Is,Js,Vs,length(complexes), numreactions(rn))
+	B = sparse(Is,Js,Vs,length(complexes),numreactions(rn))
     complexes,B
 end
-function reactioncomplexes(::Type{Matrix},rn::ReactionSystem; smap=speciesmap(rn))
+function reactioncomplexes(::Type{Matrix{Int}},rn::ReactionSystem; smap=speciesmap(rn))
     rxs = reactions(rn)
     numreactions(rn) > 0 || error("There must be at least one reaction to find reaction complexes.")
     complextorxsmap = OrderedDict{ReactionComplex{eltype(rxs[1].substoich)},Vector{Pair{Int,Int}}}()
@@ -361,8 +364,8 @@ function reactioncomplexes(::Type{Matrix},rn::ReactionSystem; smap=speciesmap(rn
     end
     complexes,B
 end
-function reactioncomplexes(rn::ReactionSystem,sparsity::Bool=false; smap=speciesmap(rn))
-	sparsity ? reactioncomplexes(SparseMatrixCSC,rn;smap=smap) : reactioncomplexes(Matrix,rn;smap=smap)
+function reactioncomplexes(rn::ReactionSystem; sparse=false; smap=speciesmap(rn))
+	sparse ? reactioncomplexes(SparseMatrixCSC{Int,Int},rn;smap=smap) : reactioncomplexes(Matrix{Int},rn;smap=smap)
 end
 
 
