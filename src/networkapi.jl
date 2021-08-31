@@ -283,9 +283,46 @@ Base.setindex!(rc::ReactionComplex, t::ReactionComplexElement, i...) =
 Base.isless(a::ReactionComplexElement, b::ReactionComplexElement) = isless(a.speciesid, b.speciesid)
 Base.Sort.defalg(::ReactionComplex{T}) where {T <: Integer} = Base.DEFAULT_UNSTABLE
 
+"""
+    reactioncomplexmap(rn::ReactionSystem; smap=speciesmap(rn))
+
+Find each [`ReactionComplex`](@ref) within the specified system, constructing a
+mapping from the complex to vectors that indicate which reactions it appears in
+as substrates and products.
+
+Notes:
+- Each [`ReactionComplex`](@ref) is mapped to a vector of pairs, with each pair
+  having the form `reactionidx => ± 1`, where `1` indicates the complex appears
+  as a substrate and `+1` as a product in the reaction with integer label
+  `reactionidx`.
+"""
+function reactioncomplexmap(rn::ReactionSystem; smap=speciesmap(rn))
+    rxs = reactions(rn)
+    numreactions(rn) > 0 || error("There must be at least one reaction to find reaction complexes.")
+    complextorxsmap = OrderedDict{ReactionComplex{eltype(rxs[1].substoich)},Vector{Pair{Int,Int}}}()
+    for (i,rx) in enumerate(rxs)
+        reactantids = isempty(rx.substrates) ? Vector{Int}() : [smap[sub] for sub in rx.substrates]
+        subrc = sort!(ReactionComplex(reactantids, copy(rx.substoich)))
+        if haskey(complextorxsmap, subrc)
+            push!(complextorxsmap[subrc], i => -1)
+        else
+            complextorxsmap[subrc] = [i => -1]
+        end
+
+        productids = isempty(rx.products) ? Vector{Int}() : [smap[prod] for prod in rx.products]
+        prodrc = sort!(ReactionComplex(productids, copy(rx.prodstoich)))
+        if haskey(complextorxsmap, prodrc)
+            push!(complextorxsmap[prodrc], i => 1)
+        else
+            complextorxsmap[prodrc] = [i => 1]
+        end
+    end
+    complextorxsmap
+end
+
 
 """
-    reactioncomplexes(network,sparsity=false; smap=speciesmap(rn))
+    reactioncomplexes(network; sparse=false, smap=speciesmap(rn))
 
 Calculate the reaction complexes and complex incidence matrix for the given [`ReactionSystem`](@ref). 
 
@@ -296,33 +333,12 @@ Notes:
     Bᵢⱼ = -1, if the i'th complex is the substrate of the j'th reaction,
            1, if the i'th complex is the product of the j'th reaction,
            0, otherwise
-- Set sparsity=true for sparse representation of incidence matrix
+- Set sparse=true for a sparse matrix representation of the incidence matrix
 """
-function reactioncomplexes(::Type{SparseMatrixCSC{Int,Int}},rn::ReactionSystem; smap=speciesmap(rn))
-    rxs = reactions(rn)
-    numreactions(rn) > 0 || error("There must be at least one reaction to find reaction complexes.")
-    complextorxsmap = OrderedDict{ReactionComplex{eltype(rxs[1].substoich)},Vector{Pair{Int,Int}}}()
-    for (i,rx) in enumerate(rxs)
-        reactantids = isempty(rx.substrates) ? Vector{Int}() : [smap[sub] for sub in rx.substrates]
-        subrc = sort!(ReactionComplex(reactantids, copy(rx.substoich)))
-        if haskey(complextorxsmap, subrc)
-            push!(complextorxsmap[subrc], i => -1)
-        else
-            complextorxsmap[subrc] = [i => -1]
-        end
-
-        productids = isempty(rx.products) ? Vector{Int}() : [smap[prod] for prod in rx.products]
-        prodrc = sort!(ReactionComplex(productids, copy(rx.prodstoich)))
-        if haskey(complextorxsmap, prodrc)
-            push!(complextorxsmap[prodrc], i => 1)
-        else
-            complextorxsmap[prodrc] = [i => 1]
-        end
-    end
-
+function reactioncomplexes(::Type{SparseMatrixCSC{Int,Int}},rn::ReactionSystem; 
+                            smap=speciesmap(rn), complextorxsmap=reactioncomplexmap(rn; smap=smap))
     complexes = collect(keys(complextorxsmap))
-
-    Is=Int64[];  Js=Int64[];  Vs=Int64[];
+    Is=Int[];  Js=Int[];  Vs=Int[];
 	for (i,c) in enumerate(complexes)
         for (j,σ) in complextorxsmap[c]
 			push!(Is, i)
@@ -333,30 +349,10 @@ function reactioncomplexes(::Type{SparseMatrixCSC{Int,Int}},rn::ReactionSystem; 
 	B = sparse(Is,Js,Vs,length(complexes),numreactions(rn))
     complexes,B
 end
-function reactioncomplexes(::Type{Matrix{Int}},rn::ReactionSystem; smap=speciesmap(rn))
-    rxs = reactions(rn)
-    numreactions(rn) > 0 || error("There must be at least one reaction to find reaction complexes.")
-    complextorxsmap = OrderedDict{ReactionComplex{eltype(rxs[1].substoich)},Vector{Pair{Int,Int}}}()
-    for (i,rx) in enumerate(rxs)
-        reactantids = isempty(rx.substrates) ? Vector{Int}() : [smap[sub] for sub in rx.substrates]
-        subrc = sort!(ReactionComplex(reactantids, copy(rx.substoich)))
-        if haskey(complextorxsmap, subrc)
-            push!(complextorxsmap[subrc], i => -1)
-        else
-            complextorxsmap[subrc] = [i => -1]
-        end
-
-        productids = isempty(rx.products) ? Vector{Int}() : [smap[prod] for prod in rx.products]
-        prodrc = sort!(ReactionComplex(productids, copy(rx.prodstoich)))
-        if haskey(complextorxsmap, prodrc)
-            push!(complextorxsmap[prodrc], i => 1)
-        else
-            complextorxsmap[prodrc] = [i => 1]
-        end
-    end
-
+function reactioncomplexes(::Type{Matrix{Int}},rn::ReactionSystem; 
+                            smap=speciesmap(rn), complextorxsmap=reactioncomplexmap(rn; smap=smap))
     complexes = collect(keys(complextorxsmap))
-    B = zeros(Int64, length(complexes), numreactions(rn));
+    B = zeros(Int, length(complexes), numreactions(rn));
     for (i,c) in enumerate(complexes)
         for (j,σ) in complextorxsmap[c]
             B[i,j] = σ
@@ -365,7 +361,7 @@ function reactioncomplexes(::Type{Matrix{Int}},rn::ReactionSystem; smap=speciesm
     complexes,B
 end
 function reactioncomplexes(rn::ReactionSystem; sparse=false; smap=speciesmap(rn))
-	sparse ? reactioncomplexes(SparseMatrixCSC{Int,Int},rn;smap=smap) : reactioncomplexes(Matrix{Int},rn;smap=smap)
+	sparse ? reactioncomplexes(SparseMatrixCSC{Int,Int}, rn; smap=smap) : reactioncomplexes(Matrix{Int}, rn; smap=smap)
 end
 
 
@@ -380,7 +376,7 @@ end
 
 
 """
-    complexstoichmat(network,sparsity=false; rcs=reactioncomplexes(rn)[1]))
+    complexstoichmat(network; sparse=false, rcs=keys(reactioncomplexmap(rn)))
 
 Given a [`ReactionSystem`](@ref) and vector of reaction complexes, return a
 matrix with positive entries of size num_of_species x num_of_complexes, where
@@ -388,21 +384,23 @@ the non-zero positive entries in the kth column denote stoichiometric
 coefficients of the species participating in the kth reaction complex.
 
 Note:
-- Set sparsity=true for sparse representation
+- `rcs` correspond to an iterable of the `ReactionComplexes`, i.e.
+  `rcs=keys(reactioncomplexmap(rn))` or `reactioncomplexes(rn)[1]`.
+- Set sparse=true for a sparse matrix representation
 """
-function complexstoichmat(::Type{SparseMatrixCSC},rn::ReactionSystem; rcs=reactioncomplexes(rn)[1])
-    Is=Int64[];  Js=Int64[];  Vs=Int64[];
+function complexstoichmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem; rcs=keys(reactioncomplexmap(rn)))
+    Is=Int[];  Js=Int[];  Vs=Int[];
     for (i,rc) in enumerate(rcs)
         for rcel in rc
-			push!(Is,rcel.speciesid)
+			push!(Is, rcel.speciesid)
 			push!(Js, i)
 			push!(Vs, rcel.speciesstoich)
         end
     end
     Z = sparse(Is,Js,Vs, numspecies(rn), length(rcs))
 end
-function complexstoichmat(::Type{Matrix},rn::ReactionSystem; rcs=reactioncomplexes(rn)[1])
-    Z=zeros(Int64, numspecies(rn), length(rcs))
+function complexstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem; rcs=keys(reactioncomplexmap(rn)))
+    Z=zeros(Int, numspecies(rn), length(rcs))
     for (i,rc) in enumerate(rcs)
         for rcel in rc
             Z[rcel.speciesid,i] = rcel.speciesstoich
@@ -410,45 +408,50 @@ function complexstoichmat(::Type{Matrix},rn::ReactionSystem; rcs=reactioncomplex
     end
     Z
 end
-function complexstoichmat(rn::ReactionSystem, sparsity::Bool=false; rcs=reactioncomplexes(rn,sparsity)[1])
-	sparsity ? complexstoichmat(SparseMatrixCSC,rn;rcs = rcs) : complexstoichmat(Matrix,rn;rcs=rcs)
+function complexstoichmat(rn::ReactionSystem; sparse=false, rcs=keys(reactioncomplexmap(rn)))
+	sparse ? complexstoichmat(SparseMatrixCSC{Int,Int}, rn; rcs=rcs) : complexstoichmat(Matrix{Int}, rn; rcs=rcs)
 end
 
 """
-    complexoutgoingmat(network,sparsity=false; B=reactioncomplexes(rn)[2])
+    complexoutgoingmat(network; sparse=false, B=reactioncomplexes(rn)[2])
 
 Given a [`ReactionSystem`](@ref) and complex incidence matrix, B, return a matrix
-of size num_of_complexes x num_of_reactions.
+of size num_of_complexes x num_of_reactions that identifies substrate complexes.
 
 Notes
 - The complex outgoing matrix, Δ, is defined by 
     Δᵢⱼ = 0,    if Bᵢⱼ = 1 
     Δᵢⱼ = Bᵢⱼ,  otherwise
-- Set sparsity=true for sparse representation
+- Set sparse=true for a sparse matrix representation
 """
-function complexoutgoingmat(::Type{SparseMatrixCSC}; B=reactioncomplexes(rn)[2])
-    Δ = copy(B)
-	n = size(Δ,2)
-	rows = rowvals(Δ)
-	vals = nonzeros(Δ)
+function complexoutgoingmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem; B=reactioncomplexes(rn,sparse=true)[2])    
+    n = size(B,2)
+	rows = rowvals(B)
+	vals = nonzeros(B)
+    Is = Int[]; Js = Int[]; Vs = Int[]
+    sizehint!(Is, div(length(vals),2))
+    sizehint!(Js, div(length(vals),2))
+    sizehint!(Vs, div(length(vals),2))
 	for j = 1:n
-	   for i in nzrange(Δ, j)
-	      if vals[i] == 1
-			  Δ[rows[i],j] = 0
-		  end
+	   for i in nzrange(B, j)
+	      if vals[i] != one(eltype(vals)) 
+            push!(Is, rows[i])
+            push!(Js, j) 
+            push!(Vs, vals[i])
+          end
 	   end
 	end
-    dropzeros(Δ)
+    sparse(Is,Js,Vs,size(B,1),size(B,2))
 end
-function complexoutgoingmat(::Type{Matrix}; B=reactioncomplexes(rn)[2])
+function complexoutgoingmat(::Type{Matrix{Int}}, rn::ReactionSystem; B=reactioncomplexes(rn,sparse=false)[2])
     Δ = copy(B)
     for (I,b) in pairs(Δ)
         (b == 1) && (Δ[I] = 0)
     end
     Δ
 end
-function complexoutgoingmat(rn::ReactionSystem, sparsity::Bool=false; B=reactioncomplexes(rn,sparsity)[2])
-	sparsity ? complexoutgoingmat(SparseMatrixCSC;B = B) : complexoutgoingmat(Matrix;B=B)
+function complexoutgoingmat(rn::ReactionSystem; sparse=false, B=reactioncomplexes(rn,sparse=sparse)[2])
+	sparse ? complexoutgoingmat(SparseMatrixCSC{Int,Int}, rn; B=B) : complexoutgoingmat(Matrix{Int}, rn; B=B)
 end
 
 
