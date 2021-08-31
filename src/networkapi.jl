@@ -137,8 +137,8 @@ end
 """
     substoichmat(rn; sparse=false, smap=speciesmap(rn))
 
-Returns the substrate stoichiometry matrix, S, with Sᵢⱼ the stoichiometric
-coefficient of the ith substrate within the jth reaction.
+Returns the substrate stoichiometry matrix, ``S``, with ``S_{i j}`` the
+stoichiometric coefficient of the ith substrate within the jth reaction.
 
 Note:
 - Set sparse=true for a sparse matrix representation
@@ -173,8 +173,8 @@ end
 """
     prodstoichmat(rn; sparse=false, smap=speciesmap(rn))
 
-Returns the product stoichiometry matrix, P, with Pᵢⱼ the stoichiometric
-coefficient of the ith product within the jth reaction.
+Returns the product stoichiometry matrix, ``P``, with ``P_{i j}`` the
+stoichiometric coefficient of the ith product within the jth reaction.
 
 Note:
 - Set sparse=true for a sparse matrix representation
@@ -209,8 +209,8 @@ end
 """
     netstoichmat(rn,sparsity=false; smap=speciesmap(rn))
 
-Returns the net stoichiometry matrix, N, with Nᵢⱼ the net stoichiometric
-coefficient of the ith species within the jth reaction.
+Returns the net stoichiometry matrix, ``N``, with ``N_{i j}`` the net
+stoichiometric coefficient of the ith species within the jth reaction.
 
 Note:
 - Set sparse=true for a sparse matrix representation
@@ -292,7 +292,7 @@ as substrates and products.
 
 Notes:
 - Each [`ReactionComplex`](@ref) is mapped to a vector of pairs, with each pair
-  having the form `reactionidx => ± 1`, where `1` indicates the complex appears
+  having the form `reactionidx => ± 1`, where `-1` indicates the complex appears
   as a substrate and `+1` as a product in the reaction with integer label
   `reactionidx`.
 """
@@ -321,7 +321,7 @@ function reactioncomplexmap(rn::ReactionSystem; smap=speciesmap(rn))
 end
 
 
-"""
+@doc raw"""
     reactioncomplexes(network; sparse=false, smap=speciesmap(rn))
 
 Calculate the reaction complexes and complex incidence matrix for the given [`ReactionSystem`](@ref). 
@@ -329,10 +329,14 @@ Calculate the reaction complexes and complex incidence matrix for the given [`Re
 Notes:
 - returns a pair of a vector of [`ReactionComplex`](@ref)s and the complex incidence matrix.
 - An empty [`ReactionComplex`](@ref) denotes the null (∅) state (from reactions like ∅ -> A or A -> ∅).
-- The complex incidence matrix, B, is number of complexes by number of reactions with
-    Bᵢⱼ = -1, if the i'th complex is the substrate of the j'th reaction,
-           1, if the i'th complex is the product of the j'th reaction,
-           0, otherwise
+- The complex incidence matrix, ``B``, is number of complexes by number of reactions with
+```math
+B_{i j} = \begin{cases}
+-1, &\text{if the i'th complex is the substrate of the j'th reaction},\\
+1, &\text{if the i'th complex is the product of the j'th reaction},\\
+0, &\text{otherwise.}
+\end{cases}
+```
 - Set sparse=true for a sparse matrix representation of the incidence matrix
 """
 function reactioncomplexes(::Type{SparseMatrixCSC{Int,Int}},rn::ReactionSystem; 
@@ -368,7 +372,8 @@ end
 """
     reaction_rates(network)
 
-Given a [`ReactionSystem`](@ref), returns a vector of the symbolic reaction rates for each reaction.
+Given a [`ReactionSystem`](@ref), returns a vector of the symbolic reaction
+rates for each reaction.
 """
 function reactionrates(rn)
     [r.rate for r in reactions(rn)]
@@ -383,7 +388,7 @@ matrix with positive entries of size num_of_species x num_of_complexes, where
 the non-zero positive entries in the kth column denote stoichiometric
 coefficients of the species participating in the kth reaction complex.
 
-Note:
+Notes:
 - `rcs` correspond to an iterable of the `ReactionComplexes`, i.e.
   `rcs=keys(reactioncomplexmap(rn))` or `reactioncomplexes(rn)[1]`.
 - Set sparse=true for a sparse matrix representation
@@ -412,16 +417,21 @@ function complexstoichmat(rn::ReactionSystem; sparse=false, rcs=keys(reactioncom
 	sparse ? complexstoichmat(SparseMatrixCSC{Int,Int}, rn; rcs=rcs) : complexstoichmat(Matrix{Int}, rn; rcs=rcs)
 end
 
-"""
+@doc raw"""
     complexoutgoingmat(network; sparse=false, B=reactioncomplexes(rn)[2])
 
-Given a [`ReactionSystem`](@ref) and complex incidence matrix, B, return a matrix
-of size num_of_complexes x num_of_reactions that identifies substrate complexes.
+Given a [`ReactionSystem`](@ref) and complex incidence matrix, ``B``, return a
+matrix of size num of complexes by num of reactions that identifies substrate
+complexes.
 
-Notes
-- The complex outgoing matrix, Δ, is defined by 
-    Δᵢⱼ = 0,    if Bᵢⱼ = 1 
-    Δᵢⱼ = Bᵢⱼ,  otherwise
+Notes:
+- The complex outgoing matrix, ``\Delta``, is defined by 
+```math
+\Delta_{i j} = \begin{cases}
+    = 0,    &\text{if } B_{i j} = 1, \\
+    = B_{i j}, &\text{otherwise.}
+\end{cases}
+```
 - Set sparse=true for a sparse matrix representation
 """
 function complexoutgoingmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem; B=reactioncomplexes(rn,sparse=true)[2])    
@@ -461,8 +471,8 @@ end
 """ 
     conservationlaws(netstoichmat::AbstractMatrix)::Matrix
 
-Given the net stoichiometry matrix of a reaction system, computes a matrix
-of conservation laws, each represented as a row in the output. 
+Given the net stoichiometry matrix of a reaction system, computes a matrix of
+conservation laws, each represented as a row in the output. 
 """
 function conservationlaws(nsm::AbstractMatrix)::Matrix
     n_spec,n_reac = size(nsm)
