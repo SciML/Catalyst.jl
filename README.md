@@ -22,6 +22,7 @@ including higher-level SciML packages (e.g., for sensitivity analysis, parameter
 estimation, machine learning applications, etc.).
 
 ## Breaking Changes and New Features 
+
 Breaking changes and new functionality are summarized in the
 [HISTORY.md](HISTORY.md) file.
 
@@ -33,6 +34,7 @@ documentation](https://catalyst.sciml.ai/dev/) describes unreleased features in
 the current master branch.
 
 ## Features
+
 - DSL provides a simple and readable format for manually specifying chemical
   reactions.
 - Catalyst `ReactionSystem`s provide a symbolic representation of reaction networks,
