@@ -465,11 +465,12 @@ Given the net stoichiometry matrix of a reaction system, computes a matrix
 of conservation laws, each represented as a row in the output. 
 """
 function conservationlaws(nsm::AbstractMatrix)::Matrix
-    n_reac, n_spec = size(nsm)
+    n_spec,n_reac = size(nsm)
     
     # We basically have to compute the left null space of the matrix
     # over the integers; this is best done using its Smith Normal Form.
-    nsm_conv = AbstractAlgebra.matrix(AbstractAlgebra.ZZ, nsm)
+    # note, we transpose as this was written when netstoichmat was reac by spec
+    nsm_conv = AbstractAlgebra.matrix(AbstractAlgebra.ZZ, nsm')
     S, T, U = AbstractAlgebra.snf_with_transform(nsm_conv)
     
     # Zero columns of S (which occur after nonzero columns in SNF)

@@ -77,8 +77,8 @@ smat = [1 2 0;
         0 3 0]
 pmat = [0 2 0;
         1 0 2]
-@test all(smat .== substoichmat(rnmat) .== Array(substoichmat(rnmat,true)))
-@test all(pmat .== prodstoichmat(rnmat) .== Array(prodstoichmat(rnmat,true)))
+@test smat == substoichmat(rnmat) == Matrix(substoichmat(rnmat, sparse=true))
+@test pmat == prodstoichmat(rnmat) == Matrix(prodstoichmat(rnmat, sparse=true))
               
 ############## testing newly added intermediate complexes reaction networks##############
 rns  = Vector{ReactionSystem}(undef,6)
@@ -103,9 +103,9 @@ B = [-1 0 0 0;
       0 0 0 1]
 Δ = [-1 0 0 0; 0 0 0 0; 0 -1 0 0; 0 0 -1 0; 0 0 0 0; 0 0 0 -1; 0 0 0 0]
 rcs,B2 = reactioncomplexes(rns[1])
-@test B == B2 == Array(reactioncomplexes(rns[1],true)[2])
-@test Z == complexstoichmat(rns[1]) == Array(complexstoichmat(rns[1],true))
-@test Δ == complexoutgoingmat(rns[1]) == Array(complexoutgoingmat(rns[1],true))
+@test B == B2 == Matrix(reactioncomplexes(rns[1], sparse=true)[2])
+@test Z == complexstoichmat(rns[1]) == Matrix(complexstoichmat(rns[1], sparse=true))
+@test Δ == complexoutgoingmat(rns[1]) == Matrix(complexoutgoingmat(rns[1], sparse=true))
 
 # mass-action rober
 rns[2] = @reaction_network begin
@@ -123,9 +123,9 @@ B = [-1 0 0;
       0 0 1]
 Δ = [-1 0 0; 0 0 0; 0 -1 0; 0 0 -1; 0 0 0]
 rcs,B2 = reactioncomplexes(rns[2])
-@test B == B2 == Array(reactioncomplexes(rns[2],true)[2])
-@test Z == complexstoichmat(rns[2]) == Array(complexstoichmat(rns[2],true))
-@test Δ == complexoutgoingmat(rns[2]) == Array(complexoutgoingmat(rns[2],true))
+@test B == B2 == Matrix(reactioncomplexes(rns[2], sparse=true)[2])
+@test Z == complexstoichmat(rns[2]) == Matrix(complexstoichmat(rns[2], sparse=true))
+@test Δ == complexoutgoingmat(rns[2]) == Matrix(complexoutgoingmat(rns[2], sparse=true))
 
 
 #  some rational functions as rates
@@ -145,9 +145,9 @@ B = [-1 0 0 1;
       0 0 0 -1]
 Δ = [-1 0 0 0; 0 0 0 0; 0 -1 0 0; 0 0 -1 0; 0 0 0 -1]
 rcs,B2 = reactioncomplexes(rns[3])
-@test B == B2 == Array(reactioncomplexes(rns[3],true)[2])
-@test Z == complexstoichmat(rns[3]) == Array(complexstoichmat(rns[3],true))
-@test Δ == complexoutgoingmat(rns[3]) ==  Array(complexoutgoingmat(rns[3],true))
+@test B == B2 == Matrix(reactioncomplexes(rns[3], sparse=true)[2])
+@test Z == complexstoichmat(rns[3]) == Matrix(complexstoichmat(rns[3], sparse=true))
+@test Δ == complexoutgoingmat(rns[3]) ==  Matrix(complexoutgoingmat(rns[3], sparse=true))
 
 # repressilator
 rns[4]  = @reaction_network begin
@@ -184,9 +184,9 @@ B = [-1 -1 -1 1 -1 1 -1 1 -1 0 0 0 1 1 1;
        0 0 0 0 0 0 0 -1 0 0 0 -1 0 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
        0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1]
 rcs,B2 = reactioncomplexes(rns[4])
-@test B == B2 == Array(reactioncomplexes(rns[4],true)[2])
-@test Z == complexstoichmat(rns[4]) == Array(complexstoichmat(rns[4],true))
-@test Δ == complexoutgoingmat(rns[4]) == Array(complexoutgoingmat(rns[4],true))
+@test B == B2 == Matrix(reactioncomplexes(rns[4], sparse=true)[2])
+@test Z == complexstoichmat(rns[4]) == Matrix(complexstoichmat(rns[4], sparse=true))
+@test Δ == complexoutgoingmat(rns[4]) == Matrix(complexoutgoingmat(rns[4], sparse=true))
 
 #brusselator
 rns[5] = @reaction_network begin
@@ -204,9 +204,9 @@ B = [-1 0 0 1;
       0 0 1 0]
 Δ = [-1 0 0 0; 0 0 -1 -1; 0 -1 0 0; 0 0 0 0; 0 0 0 0]
 rcs,B2 = reactioncomplexes(rns[5])
-@test B == B2 == Array(reactioncomplexes(rns[5],true)[2])
-@test Z == complexstoichmat(rns[5]) == Array(complexstoichmat(rns[5],true))
-@test Δ == complexoutgoingmat(rns[5]) == Array(complexoutgoingmat(rns[5],true))
+@test B == B2 == Matrix(reactioncomplexes(rns[5], sparse=true)[2])
+@test Z == complexstoichmat(rns[5]) == Matrix(complexstoichmat(rns[5], sparse=true))
+@test Δ == complexoutgoingmat(rns[5]) == Matrix(complexoutgoingmat(rns[5], sparse=true))
 
 # some rational functions as rates
 rns[6] = @reaction_network begin
@@ -232,15 +232,15 @@ B = [-1 1 0 0 0 0;
       0 0 0 0 1 -1]
 Δ = [-1 0 0 0 0 0; 0 -1 0 0 0 0; 0 0 -1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 -1 0; 0 0 0 0 0 -1]
 rcs,B2 = reactioncomplexes(rns[6])
-@test B == B2 == Array(reactioncomplexes(rns[6],true)[2])
-@test Z == complexstoichmat(rns[6]) == Array(complexstoichmat(rns[6],true))
-@test Δ == complexoutgoingmat(rns[6]) == Array(complexoutgoingmat(rns[6],true))
+@test B == B2 == Matrix(reactioncomplexes(rns[6], sparse=true)[2])
+@test Z == complexstoichmat(rns[6]) == Matrix(complexstoichmat(rns[6], sparse=true))
+@test Δ == complexoutgoingmat(rns[6]) == Matrix(complexoutgoingmat(rns[6], sparse=true))
                      
 
 reaction_networks_standard = Vector{ReactionSystem}(undef,10)
 reaction_networks_hill = Vector{ReactionSystem}(undef,10)
 reaction_networks_real = Vector{ReactionSystem}(undef,3)
-### some more networks to test whether Z*B == netstoichmat(rn)' or not. ###
+### some more networks to test whether Z*B == netstoichmat(rn) or not. ###
 reaction_networks_standard[1] = @reaction_network begin
     (p1,p2,p3), ∅ → (X1,X2,X3)
     (k1,k2), X2 ⟷ X1 + 2X3
@@ -420,10 +420,10 @@ end d v1 K1 n1 v2 K2 n2
 myrn = [reaction_networks_standard;reaction_networks_hill;reaction_networks_real]
 for i in 1:length(myrn)
     local rcs,B = reactioncomplexes(myrn[i])
-    @test B == Array(reactioncomplexes(myrn[i],true)[2])
+    @test B == Matrix(reactioncomplexes(myrn[i], sparse=true)[2])
     local Z = complexstoichmat(myrn[i])
-    @test Z == Array(complexstoichmat(myrn[i],true))
-    @test Z*B == (netstoichmat(myrn[i])') == Array(netstoichmat(myrn[i],true)')
+    @test Z == Matrix(complexstoichmat(myrn[i], sparse=true))
+    @test Z*B == netstoichmat(myrn[i]) == Matrix(netstoichmat(myrn[i], sparse=true))
 end
 
 
