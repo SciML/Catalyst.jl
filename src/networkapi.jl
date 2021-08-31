@@ -165,7 +165,7 @@ function substoichmat(::Type{Matrix{Int}},rn::ReactionSystem; smap=speciesmap(rn
     end
     smat
 end
-function substoichmat(rn::ReactionSystem; sparse::Bool=false; smap=speciesmap(rn))
+function substoichmat(rn::ReactionSystem; sparse::Bool=false, smap=speciesmap(rn))
 	sparse ? substoichmat(SparseMatrixCSC{Int,Int}, rn; smap=smap) : substoichmat(Matrix{Int}, rn; smap=smap)
 end
 
@@ -179,7 +179,7 @@ coefficient of the ith product within the jth reaction.
 Note:
 - Set sparse=true for a sparse matrix representation
 """
-function prodstoichmat(::Type{SparseMatrixCSC{Int}}, rn::ReactionSystem; smap=speciesmap(rn))
+function prodstoichmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem; smap=speciesmap(rn))
     Is=Int[];  Js=Int[];  Vs=Int[];
     for (k,rx) in enumerate(reactions(rn))
         stoich = rx.prodstoich
@@ -360,7 +360,7 @@ function reactioncomplexes(::Type{Matrix{Int}},rn::ReactionSystem;
     end
     complexes,B
 end
-function reactioncomplexes(rn::ReactionSystem; sparse=false; smap=speciesmap(rn))
+function reactioncomplexes(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
 	sparse ? reactioncomplexes(SparseMatrixCSC{Int,Int}, rn; smap=smap) : reactioncomplexes(Matrix{Int}, rn; smap=smap)
 end
 

@@ -73,10 +73,12 @@ rnmat = @reaction_network begin
        β, 3I --> 2R + S
    end α β
 
-smat = [1 2 0;
-        0 3 0]
-pmat = [0 2 0;
-        1 0 2]
+smat = [1 0;
+        2 3;
+        0 0]
+pmat = [0 1;
+        2 0;
+        0 2]
 @test smat == substoichmat(rnmat) == Matrix(substoichmat(rnmat, sparse=true))
 @test pmat == prodstoichmat(rnmat) == Matrix(prodstoichmat(rnmat, sparse=true))
               
