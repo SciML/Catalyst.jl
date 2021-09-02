@@ -464,6 +464,46 @@ function complexoutgoingmat(rn::ReactionSystem; sparse=false, B=reactioncomplexe
 	sparse ? complexoutgoingmat(SparseMatrixCSC{Int,Int}, rn; B=B) : complexoutgoingmat(Matrix{Int}, rn; B=B)
 end
 
+function incidencematgraph(incidencemat::Matrix{Int})
+   @assert all(∈([-1,0,1]) ,incidencemat)
+   n = size(incidencemat,1)  # no. of nodes/complexes
+   graph = LightGraphs.DiGraph(n)
+   for col in eachcol(incidencemat)
+      add_edge!(graph, findmin(col)[2],findmax(col)[2])
+   end
+   return graph
+end
+
+function incidencematgraph(incidencemat::SparseMatrixCSC{Int,Int})
+   @assert all(∈([-1,0,1]) ,incidencemat)
+   m,n = size(incidencemat)  
+   graph = LightGraphs.DiGraph(m)
+   rows = rowvals(incidencemat)
+   vals = nonzeros(incidencemat)
+   for j = 1:n
+      inds=nzrange(incidencemat, j)
+      row = rows[inds];
+      val = vals[inds];
+      if val[1] == -1
+         add_edge!(graph, row[1], row[2])
+      else
+         add_edge!(graph, row[2], row[1])
+      end
+   end
+   return graph
+end
+
+function linkageclasses(graph::SimpleDiGraph{Int64})
+   LightGraphs.connected_components(graph)
+end
+
+function deficiency(rs::ReactionSystem;sparse::Bool=false)
+   B = reactioncomplexes(rs;sparse)[2]
+   g = incidencematgraph(B)
+   lc = linkageclasses(g)
+   size(B,1) - length(lc) - AbstractAlgebra.rank(matrix(ZZ,netstoichmat(rs;sparse)))
+end
+
 
 ################################################################################################
 ######################## conservation laws ###############################
