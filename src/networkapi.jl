@@ -464,6 +464,16 @@ function complexoutgoingmat(rn::ReactionSystem; sparse=false, B=reactioncomplexe
 	sparse ? complexoutgoingmat(SparseMatrixCSC{Int,Int}, rn; B=B) : complexoutgoingmat(Matrix{Int}, rn; B=B)
 end
 
+
+"""
+   incidencematgraph(incidencemat::Matrix)
+   incidencematgraph(incidencemat::SparseMatrixCSC{Int,Int})
+
+Given an incidence matrix of reaction-network in dense or sparse matrix form,
+writtens a {n ,m} directed simple graph,
+where n is number of nodes(reaction-complexes)
+and m is number of edges(reactions)
+"""
 function incidencematgraph(incidencemat::Matrix{Int})
    @assert all(∈([-1,0,1]) ,incidencemat)
    n = size(incidencemat,1)  # no. of nodes/complexes
@@ -473,7 +483,6 @@ function incidencematgraph(incidencemat::Matrix{Int})
    end
    return graph
 end
-
 function incidencematgraph(incidencemat::SparseMatrixCSC{Int,Int})
    @assert all(∈([-1,0,1]) ,incidencemat)
    m,n = size(incidencemat)  
@@ -493,10 +502,23 @@ function incidencematgraph(incidencemat::SparseMatrixCSC{Int,Int})
    return graph
 end
 
+
+"""
+Given a directed simple graph ,created from incidence matrix
+of reaction network, returns Vector of indices of directly connected
+reaction-complexes(more precisely indices of reactioncomplexes(network)[1])
+in reactions
+"""
 function linkageclasses(graph::SimpleDiGraph{Int64})
    LightGraphs.connected_components(graph)
 end
 
+
+"""
+Given a ReactionSystem, returns deficiency of the reaction network
+defined as,
+deficiency = number of reaction complexes - number of linkage classes - dimension of stochiometric subspace
+"""
 function deficiency(rs::ReactionSystem;sparse::Bool=false)
    B = reactioncomplexes(rs;sparse)[2]
    g = incidencematgraph(B)
