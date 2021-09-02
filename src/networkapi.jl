@@ -523,7 +523,7 @@ function deficiency(rs::ReactionSystem;sparse::Bool=false)
    B = reactioncomplexes(rs;sparse)[2]
    g = incidencematgraph(B)
    lc = linkageclasses(g)
-   size(B,1) - length(lc) - AbstractAlgebra.rank(AbstractAlgebra.matrix(ZZ,netstoichmat(rs;sparse)))
+   size(B,1) - length(lc) - AbstractAlgebra.rank(AbstractAlgebra.matrix(AbstractAlgebra.ZZ, netstoichmat(rs;sparse)))
 end
 
 
