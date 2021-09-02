@@ -4,7 +4,7 @@ $(DocStringExtensions.README)
 module Catalyst
 
 using DocStringExtensions
-using SparseArrays, DiffEqBase, Reexport, ModelingToolkit, DiffEqJump
+using SparseArrays, DiffEqBase, Reexport, ModelingToolkit, DiffEqJump, LightGraphs
 
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems, 
@@ -57,7 +57,8 @@ export make_empty_network, addspecies!, addparam!, addreaction!
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export conservationlaws, conservedquantities
 export reactioncomplexmap, reactioncomplexes, reactionrates, complexstoichmat, complexoutgoingmat
-    
+export incidencematgraph, linkageclasses, deficiency
+  
 # for Latex printing of ReactionSystems
 include("latexify_recipes.jl")
 
