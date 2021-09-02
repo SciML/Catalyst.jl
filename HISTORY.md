@@ -3,7 +3,7 @@
 ## Catalyst unreleased (master branch) 
 
 ## Catalyst 9.0
-*1.* `netstoichmat`, `prodstoichmat` and `substoichmat` are now transposed to be
+*1.* **BREAKING:** `netstoichmat`, `prodstoichmat` and `substoichmat` are now transposed to be
 number of species by number of reactions. This is more consistent with the chemical
 reaction network literature for stoichiometry matrices.
 
@@ -95,7 +95,7 @@ and `complexoutgoingmat` are added to allow the calculation of reaction complex-
 network matrix representations.
 
 ## Catalyst 8.0
-This is a breaking release, with all ModelingToolkit `ReactionSystem` and
+**BREAKING:** This is a breaking release, with all ModelingToolkit `ReactionSystem` and
 `Reaction` functionality migrated to Catalyst. 
 
 ## Catalyst 6.11
@@ -107,7 +107,7 @@ rn = @reaction_network begin
   k3, 0 <-- C
 end k1 k2 k3
 ```
-*2.* Reaction networks can be named
+*2.* **BREAKING:** Reaction networks can be named
 ```julia
 rn = @reaction_network Reversible_Reaction begin
   k1, A --> B
