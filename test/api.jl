@@ -108,6 +108,8 @@ rcs,B2 = reactioncomplexes(rns[1])
 @test B == B2 == Matrix(reactioncomplexes(rns[1], sparse=true)[2])
 @test Z == complexstoichmat(rns[1]) == Matrix(complexstoichmat(rns[1], sparse=true))
 @test Δ == complexoutgoingmat(rns[1]) == Matrix(complexoutgoingmat(rns[1], sparse=true))
+@test linkageclasses(incidencematgraph(B)) == linkageclasses(incidencematgraph(sparse(B))) == [[1,2],[3,4,5],[6,7]]
+@test deficiency(rns[1]) == 0
 
 # mass-action rober
 rns[2] = @reaction_network begin
@@ -128,6 +130,9 @@ rcs,B2 = reactioncomplexes(rns[2])
 @test B == B2 == Matrix(reactioncomplexes(rns[2], sparse=true)[2])
 @test Z == complexstoichmat(rns[2]) == Matrix(complexstoichmat(rns[2], sparse=true))
 @test Δ == complexoutgoingmat(rns[2]) == Matrix(complexoutgoingmat(rns[2], sparse=true))
+@test linkageclasses(incidencematgraph(B))==linkageclasses(incidencematgraph(sparse(B))) == [[1,2],[3,4,5]]
+@test deficiency(rns[2]) == 1
+
 
 
 #  some rational functions as rates
@@ -150,6 +155,9 @@ rcs,B2 = reactioncomplexes(rns[3])
 @test B == B2 == Matrix(reactioncomplexes(rns[3], sparse=true)[2])
 @test Z == complexstoichmat(rns[3]) == Matrix(complexstoichmat(rns[3], sparse=true))
 @test Δ == complexoutgoingmat(rns[3]) ==  Matrix(complexoutgoingmat(rns[3], sparse=true))
+@test linkageclasses(incidencematgraph(B))==linkageclasses(incidencematgraph(sparse(B))) == [[1,2,5],[3,4]]
+@test deficiency(rns[3]) == 0
+
 
 # repressilator
 rns[4]  = @reaction_network begin
@@ -189,6 +197,9 @@ rcs,B2 = reactioncomplexes(rns[4])
 @test B == B2 == Matrix(reactioncomplexes(rns[4], sparse=true)[2])
 @test Z == complexstoichmat(rns[4]) == Matrix(complexstoichmat(rns[4], sparse=true))
 @test Δ == complexoutgoingmat(rns[4]) == Matrix(complexoutgoingmat(rns[4], sparse=true))
+@test linkageclasses(incidencematgraph(B)) ==linkageclasses(incidencematgraph(sparse(B)))==  [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
+@test deficiency(rns[4]) == 3
+
 
 #brusselator
 rns[5] = @reaction_network begin
@@ -209,6 +220,8 @@ rcs,B2 = reactioncomplexes(rns[5])
 @test B == B2 == Matrix(reactioncomplexes(rns[5], sparse=true)[2])
 @test Z == complexstoichmat(rns[5]) == Matrix(complexstoichmat(rns[5], sparse=true))
 @test Δ == complexoutgoingmat(rns[5]) == Matrix(complexoutgoingmat(rns[5], sparse=true))
+@test linkageclasses(incidencematgraph(B))==linkageclasses(incidencematgraph(sparse(B))) == [[1,2,5],[3,4]]
+@test deficiency(rns[5]) == 1
 
 # some rational functions as rates
 rns[6] = @reaction_network begin
@@ -237,6 +250,8 @@ rcs,B2 = reactioncomplexes(rns[6])
 @test B == B2 == Matrix(reactioncomplexes(rns[6], sparse=true)[2])
 @test Z == complexstoichmat(rns[6]) == Matrix(complexstoichmat(rns[6], sparse=true))
 @test Δ == complexoutgoingmat(rns[6]) == Matrix(complexoutgoingmat(rns[6], sparse=true))
+@test linkageclasses(incidencematgraph(B))==linkageclasses(incidencematgraph(sparse(B))) == [[1,2],[3,4],[5,6]]
+@test deficiency(rns[6]) == 0
                      
 
 reaction_networks_standard = Vector{ReactionSystem}(undef,10)
