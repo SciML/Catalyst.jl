@@ -479,8 +479,14 @@ function incidencematgraph(incidencemat::Matrix{Int})
    n = size(incidencemat,1)  # no. of nodes/complexes
    graph = LightGraphs.DiGraph(n)
    for col in eachcol(incidencemat)
-      add_edge!(graph, findmin(col)[2],findmax(col)[2])
-   end
+       src = 0; dst = 0;
+       for i in eachindex(col)
+              (col[i] == -1) && (src = i)
+              (col[i] == 1) && (dst = i)
+              (src != 0) && (dst != 0) && break
+       end
+       add_edge!(graph, src, dst)
+    end
    return graph
 end
 function incidencematgraph(incidencemat::SparseMatrixCSC{Int,Int})
@@ -504,26 +510,36 @@ end
 
 
 """
+      linkageclasses(incidencegraph)
+
 Given a directed simple graph ,created from incidence matrix
 of reaction network, returns Vector of indices of directly connected
 reaction-complexes(more precisely indices of reactioncomplexes(network)[1])
 in reactions
 """
-function linkageclasses(graph::SimpleDiGraph{Int64})
-   LightGraphs.connected_components(graph)
+function linkageclasses(incidencegraph::SimpleDiGraph{Int64})
+   LightGraphs.connected_components(incidencegraph)
 end
 
 
 """
+   deficiency(network ; sparse=false ,ns ,ig ,lc )
+
 Given a ReactionSystem, returns deficiency of the reaction network
 defined as,
 deficiency = number of reaction complexes - number of linkage classes - dimension of stochiometric subspace
+
+Note: The kwargs are as follows:
+- ns , netstoichmat of the network
+- ig, incidencegraph from incidence matrix of the network
+- lc , linkage classes from incidencegraph of the network
+- sparse, a Bool,defaulted as false, for constructing a dense or sparse netstoichmat ,incidence matrix, etc.
 """
-function deficiency(rs::ReactionSystem;sparse::Bool=false)
-   B = reactioncomplexes(rs;sparse)[2]
-   g = incidencematgraph(B)
-   lc = linkageclasses(g)
-   size(B,1) - length(lc) - AbstractAlgebra.rank(AbstractAlgebra.matrix(AbstractAlgebra.ZZ, netstoichmat(rs;sparse)))
+function deficiency(rs::ReactionSystem ; sparse::Bool=false, ns::AbstractMatrix = netstoichmat(rs;sparse=sparse),
+                        ig::SimpleDiGraph{Int64} = incidencematgraph(reactioncomplexes(rs;sparse=sparse)[2]),
+                        lc::Vector{Vector{Int64}} = linkageclasses(ig))
+
+   LightGraphs.nv(ig) - length(lc) - AbstractAlgebra.rank(AbstractAlgebra.matrix(AbstractAlgebra.ZZ,ns))
 end
 
 
