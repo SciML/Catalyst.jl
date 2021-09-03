@@ -512,7 +512,7 @@ end
 """
       linkageclasses(incidencegraph)
 
-Given a directed simple graph ,created from incidence matrix
+Given a directed simple graph created from the incidence matrix
 of reaction network, returns Vector of indices of directly connected
 reaction-complexes(more precisely indices of reactioncomplexes(network)[1])
 in reactions
