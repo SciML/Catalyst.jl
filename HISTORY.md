@@ -1,6 +1,7 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch) 
+- Added `incidencematgraph`, `linkageclasses` and `deficiency` API functions.
 
 ## Catalyst 9.0
 *1.* **BREAKING:** `netstoichmat`, `prodstoichmat` and `substoichmat` are now transposed to be
