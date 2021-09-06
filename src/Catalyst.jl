@@ -4,7 +4,7 @@ $(DocStringExtensions.README)
 module Catalyst
 
 using DocStringExtensions
-using SparseArrays, DiffEqBase, Reexport, ModelingToolkit, DiffEqJump
+using SparseArrays, DiffEqBase, Reexport, ModelingToolkit, DiffEqJump, LightGraphs
 
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems, 
@@ -21,7 +21,8 @@ import MacroTools
 import Base: (==), merge!, merge, hash, size, getindex, setindex, isless, Sort.defalg, length, show
 using Symbolics
 using Latexify, Requires
-import AbstractAlgebra
+import LightGraphs
+import AbstractAlgebra; const AA = AbstractAlgebra
 
 # as used in Catlab
 const USE_GV_JLL = Ref(false)
@@ -57,7 +58,8 @@ export make_empty_network, addspecies!, addparam!, addreaction!
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export conservationlaws, conservedquantities
 export reactioncomplexmap, reactioncomplexes, reactionrates, complexstoichmat, complexoutgoingmat
-    
+export incidencematgraph, linkageclasses, deficiency
+  
 # for Latex printing of ReactionSystems
 include("latexify_recipes.jl")
 

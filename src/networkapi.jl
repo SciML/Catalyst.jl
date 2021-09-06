@@ -133,6 +133,15 @@ function dependants(network, rxidx)
     dependents(network, rxidx)
 end
 
+"""
+    reaction_rates(network)
+
+Given a [`ReactionSystem`](@ref), returns a vector of the symbolic reaction
+rates for each reaction.
+"""
+function reactionrates(rn)
+    [r.rate for r in reactions(rn)]
+end
 
 """
     substoichmat(rn; sparse=false, smap=speciesmap(rn))
@@ -207,7 +216,7 @@ end
 
 
 """
-    netstoichmat(rn,sparsity=false; smap=speciesmap(rn))
+    netstoichmat(rn, sparsity=false; smap=speciesmap(rn))
 
 Returns the net stoichiometry matrix, ``N``, with ``N_{i j}`` the net
 stoichiometric coefficient of the ith species within the jth reaction.
@@ -238,7 +247,6 @@ end
 function netstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
 	sparse ? netstoichmat(SparseMatrixCSC{Int,Int}, rn; smap=smap) : netstoichmat(Matrix{Int}, rn; smap=smap)
 end
-
 
 ######################## reaction complexes and reaction rates ###############################
 """
@@ -321,26 +329,7 @@ function reactioncomplexmap(rn::ReactionSystem; smap=speciesmap(rn))
 end
 
 
-@doc raw"""
-    reactioncomplexes(network; sparse=false, smap=speciesmap(rn))
-
-Calculate the reaction complexes and complex incidence matrix for the given [`ReactionSystem`](@ref). 
-
-Notes:
-- returns a pair of a vector of [`ReactionComplex`](@ref)s and the complex incidence matrix.
-- An empty [`ReactionComplex`](@ref) denotes the null (∅) state (from reactions like ∅ -> A or A -> ∅).
-- The complex incidence matrix, ``B``, is number of complexes by number of reactions with
-```math
-B_{i j} = \begin{cases}
--1, &\text{if the i'th complex is the substrate of the j'th reaction},\\
-1, &\text{if the i'th complex is the product of the j'th reaction},\\
-0, &\text{otherwise.}
-\end{cases}
-```
-- Set sparse=true for a sparse matrix representation of the incidence matrix
-"""
-function reactioncomplexes(::Type{SparseMatrixCSC{Int,Int}},rn::ReactionSystem; 
-                            smap=speciesmap(rn), complextorxsmap=reactioncomplexmap(rn; smap=smap))
+function reactioncomplexes(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem, smap, complextorxsmap)
     complexes = collect(keys(complextorxsmap))
     Is=Int[];  Js=Int[];  Vs=Int[];
 	for (i,c) in enumerate(complexes)
@@ -353,8 +342,7 @@ function reactioncomplexes(::Type{SparseMatrixCSC{Int,Int}},rn::ReactionSystem;
 	B = sparse(Is,Js,Vs,length(complexes),numreactions(rn))
     complexes,B
 end
-function reactioncomplexes(::Type{Matrix{Int}},rn::ReactionSystem; 
-                            smap=speciesmap(rn), complextorxsmap=reactioncomplexmap(rn; smap=smap))
+function reactioncomplexes(::Type{Matrix{Int}}, rn::ReactionSystem, smap, complextorxsmap)
     complexes = collect(keys(complextorxsmap))
     B = zeros(Int, length(complexes), numreactions(rn));
     for (i,c) in enumerate(complexes)
@@ -364,36 +352,38 @@ function reactioncomplexes(::Type{Matrix{Int}},rn::ReactionSystem;
     end
     complexes,B
 end
-function reactioncomplexes(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
-	sparse ? reactioncomplexes(SparseMatrixCSC{Int,Int}, rn; smap=smap) : reactioncomplexes(Matrix{Int}, rn; smap=smap)
-end
 
+@doc raw"""
+    reactioncomplexes(network::ReactionSystem; sparse=false, smap=speciesmap(rn), 
+                      complextorxsmap=reactioncomplexmap(rn; smap=smap))
 
-"""
-    reaction_rates(network)
-
-Given a [`ReactionSystem`](@ref), returns a vector of the symbolic reaction
-rates for each reaction.
-"""
-function reactionrates(rn)
-    [r.rate for r in reactions(rn)]
-end
-
-
-"""
-    complexstoichmat(network; sparse=false, rcs=keys(reactioncomplexmap(rn)))
-
-Given a [`ReactionSystem`](@ref) and vector of reaction complexes, return a
-matrix with positive entries of size num_of_species x num_of_complexes, where
-the non-zero positive entries in the kth column denote stoichiometric
-coefficients of the species participating in the kth reaction complex.
+Calculate the reaction complexes and complex incidence matrix for the given
+[`ReactionSystem`](@ref). 
 
 Notes:
-- `rcs` correspond to an iterable of the `ReactionComplexes`, i.e.
-  `rcs=keys(reactioncomplexmap(rn))` or `reactioncomplexes(rn)[1]`.
-- Set sparse=true for a sparse matrix representation
+- returns a pair of a vector of [`ReactionComplex`](@ref)s and the complex
+  incidence matrix.
+- An empty [`ReactionComplex`](@ref) denotes the null (∅) state (from reactions
+  like ∅ -> A or A -> ∅).
+- The complex incidence matrix, ``B``, is number of complexes by number of
+  reactions with
+```math
+B_{i j} = \begin{cases}
+-1, &\text{if the i'th complex is the substrate of the j'th reaction},\\
+1, &\text{if the i'th complex is the product of the j'th reaction},\\
+0, &\text{otherwise.}
+\end{cases}
+```
+- Set sparse=true for a sparse matrix representation of the incidence matrix
 """
-function complexstoichmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem; rcs=keys(reactioncomplexmap(rn)))
+function reactioncomplexes(rn::ReactionSystem; sparse=false, smap=speciesmap(rn), 
+                           complextorxsmap=reactioncomplexmap(rn; smap=smap))
+	sparse ? reactioncomplexes(SparseMatrixCSC{Int,Int}, rn, smap, complextorxsmap) :
+           reactioncomplexes(Matrix{Int}, rn, smap, complextorxsmap)
+end
+
+
+function complexstoichmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem, rcs)
     Is=Int[];  Js=Int[];  Vs=Int[];
     for (i,rc) in enumerate(rcs)
         for rcel in rc
@@ -404,7 +394,7 @@ function complexstoichmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem; 
     end
     Z = sparse(Is,Js,Vs, numspecies(rn), length(rcs))
 end
-function complexstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem; rcs=keys(reactioncomplexmap(rn)))
+function complexstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem, rcs)
     Z=zeros(Int, numspecies(rn), length(rcs))
     for (i,rc) in enumerate(rcs)
         for rcel in rc
@@ -413,8 +403,51 @@ function complexstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem; rcs=keys(reac
     end
     Z
 end
+
+"""
+    complexstoichmat(network::ReactionSystem; sparse=false, rcs=keys(reactioncomplexmap(rn)))
+
+Given a [`ReactionSystem`](@ref) and vector of reaction complexes, return a
+matrix with positive entries of size number of species by number of complexes,
+where the non-zero positive entries in the kth column denote stoichiometric
+coefficients of the species participating in the kth reaction complex.
+
+Notes:
+- `rcs` correspond to an iterable of the `ReactionComplexes`, i.e.
+  `rcs=keys(reactioncomplexmap(rn))` or `reactioncomplexes(rn)[1]`.
+- Set sparse=true for a sparse matrix representation
+"""
 function complexstoichmat(rn::ReactionSystem; sparse=false, rcs=keys(reactioncomplexmap(rn)))
-	sparse ? complexstoichmat(SparseMatrixCSC{Int,Int}, rn; rcs=rcs) : complexstoichmat(Matrix{Int}, rn; rcs=rcs)
+	sparse ? complexstoichmat(SparseMatrixCSC{Int,Int}, rn, rcs) : 
+             complexstoichmat(Matrix{Int}, rn, rcs)
+end
+
+
+function complexoutgoingmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem, B)    
+    n = size(B,2)
+	rows = rowvals(B)
+	vals = nonzeros(B)
+    Is = Int[]; Js = Int[]; Vs = Int[]
+    sizehint!(Is, div(length(vals),2))
+    sizehint!(Js, div(length(vals),2))
+    sizehint!(Vs, div(length(vals),2))
+	for j = 1:n
+	   for i in nzrange(B, j)
+	      if vals[i] != one(eltype(vals)) 
+            push!(Is, rows[i])
+            push!(Js, j) 
+            push!(Vs, vals[i])
+          end
+	   end
+	end
+    sparse(Is,Js,Vs,size(B,1),size(B,2))
+end
+function complexoutgoingmat(::Type{Matrix{Int}}, rn::ReactionSystem, B)
+    Δ = copy(B)
+    for (I,b) in pairs(Δ)
+        (b == 1) && (Δ[I] = 0)
+    end
+    Δ
 end
 
 @doc raw"""
@@ -434,34 +467,111 @@ Notes:
 ```
 - Set sparse=true for a sparse matrix representation
 """
-function complexoutgoingmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem; B=reactioncomplexes(rn,sparse=true)[2])    
-    n = size(B,2)
-	rows = rowvals(B)
-	vals = nonzeros(B)
-    Is = Int[]; Js = Int[]; Vs = Int[]
-    sizehint!(Is, div(length(vals),2))
-    sizehint!(Js, div(length(vals),2))
-    sizehint!(Vs, div(length(vals),2))
-	for j = 1:n
-	   for i in nzrange(B, j)
-	      if vals[i] != one(eltype(vals)) 
-            push!(Is, rows[i])
-            push!(Js, j) 
-            push!(Vs, vals[i])
-          end
-	   end
-	end
-    sparse(Is,Js,Vs,size(B,1),size(B,2))
-end
-function complexoutgoingmat(::Type{Matrix{Int}}, rn::ReactionSystem; B=reactioncomplexes(rn,sparse=false)[2])
-    Δ = copy(B)
-    for (I,b) in pairs(Δ)
-        (b == 1) && (Δ[I] = 0)
-    end
-    Δ
-end
 function complexoutgoingmat(rn::ReactionSystem; sparse=false, B=reactioncomplexes(rn,sparse=sparse)[2])
-	sparse ? complexoutgoingmat(SparseMatrixCSC{Int,Int}, rn; B=B) : complexoutgoingmat(Matrix{Int}, rn; B=B)
+	sparse ? complexoutgoingmat(SparseMatrixCSC{Int,Int}, rn, B) : 
+             complexoutgoingmat(Matrix{Int}, rn, B)
+end
+
+
+"""
+    incidencematgraph(incidencemat)   
+
+Given an incidence matrix of a reaction-network, construct a directed simple
+graph where nodes correspond to reaction complexes and directed edges to
+reactions converting between two complexes.
+
+For example,
+```julia
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end β ν
+rcs,incidencemat = reactioncomplexes(sir)
+incidencegraph   = incidencematgraph(incidencemat)
+```
+"""
+function incidencematgraph(incidencemat::Matrix{Int})
+   @assert all(∈([-1,0,1]) ,incidencemat)
+   n = size(incidencemat,1)  # no. of nodes/complexes
+   graph = LightGraphs.DiGraph(n)
+   for col in eachcol(incidencemat)
+       src = 0; dst = 0;
+       for i in eachindex(col)
+              (col[i] == -1) && (src = i)
+              (col[i] == 1) && (dst = i)
+              (src != 0) && (dst != 0) && break
+       end
+       add_edge!(graph, src, dst)
+    end
+   return graph
+end
+function incidencematgraph(incidencemat::SparseMatrixCSC{Int,Int})
+   @assert all(∈([-1,0,1]) ,incidencemat)
+   m,n = size(incidencemat)  
+   graph = LightGraphs.DiGraph(m)
+   rows = rowvals(incidencemat)
+   vals = nonzeros(incidencemat)
+   for j = 1:n
+      inds=nzrange(incidencemat, j)
+      row = rows[inds];
+      val = vals[inds];
+      if val[1] == -1
+         add_edge!(graph, row[1], row[2])
+      else
+         add_edge!(graph, row[2], row[1])
+      end
+   end
+   return graph
+end
+
+
+"""
+    linkageclasses(incidencegraph)
+
+Given the incidence graph of a reaction network, return a vector of the
+connected components of the graph (i.e. sub-groups of reaction complexes that
+are connected in the incidence graph).
+
+For example, continuing the example from [`incidencematgraph`](@ref)
+```julia
+julia> linkageclasses(incidencegraph)
+2-element Vector{Vector{Int64}}:
+ [1, 2]
+ [3, 4]
+```
+"""
+function linkageclasses(incidencegraph::SimpleDiGraph{Int64})
+   LightGraphs.connected_components(incidencegraph)
+end
+
+
+@doc raw"""
+    deficiency(netstoich_mat, incidence_graph, linkage_classes)
+
+Calculate the deficiency of a reaction network. 
+
+Here the deficiency, ``\delta``, of a network with ``n`` reaction complexes, 
+``\ell`` linkage classes and a rank ``s`` stoichiometric matrix is
+
+```math
+\delta = n - \ell - s
+```
+
+For example, 
+```julia
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end β ν
+rcs,incidencemat = reactioncomplexes(sir)
+incidence_graph  = incidencematgraph(incidencemat)
+linkage_classes   = linkageclasses(ig)
+netstoich_mat    = netstoichmat(sir)
+δ = deficiency(netstoich_mat, incidence_graph, linkage_classes)
+```
+"""
+function deficiency(ns::AbstractMatrix, ig::SimpleDiGraph, lc::AbstractArray)
+   LightGraphs.nv(ig) - length(lc) - AA.rank(AA.matrix(AA.zz,ns))
 end
 
 
@@ -480,8 +590,8 @@ function conservationlaws(nsm::AbstractMatrix)::Matrix
     # We basically have to compute the left null space of the matrix
     # over the integers; this is best done using its Smith Normal Form.
     # note, we transpose as this was written when netstoichmat was reac by spec
-    nsm_conv = AbstractAlgebra.matrix(AbstractAlgebra.ZZ, nsm')
-    S, T, U = AbstractAlgebra.snf_with_transform(nsm_conv)
+    nsm_conv = AA.matrix(AA.ZZ, nsm')
+    S, T, U = AA.snf_with_transform(nsm_conv)
     
     # Zero columns of S (which occur after nonzero columns in SNF)
     # correspond to conserved quantities
