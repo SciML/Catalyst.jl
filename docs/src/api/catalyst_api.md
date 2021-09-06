@@ -125,6 +125,9 @@ reactioncomplexmap
 reactioncomplexes
 complexstoichmat
 complexoutgoingmat
+incidencematgraph
+linkageclasses
+deficiency
 ```
 
 ## Network Comparison 

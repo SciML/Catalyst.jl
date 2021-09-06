@@ -21,7 +21,8 @@ import MacroTools
 import Base: (==), merge!, merge, hash, size, getindex, setindex, isless, Sort.defalg, length, show
 using Symbolics
 using Latexify, Requires
-import AbstractAlgebra
+import LightGraphs
+import AbstractAlgebra; const AA = AbstractAlgebra
 
 # as used in Catlab
 const USE_GV_JLL = Ref(false)
