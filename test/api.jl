@@ -84,7 +84,7 @@ pmat = [0 1;
               
 ############## testing newly added intermediate complexes reaction networks##############
 
-function testnetwork(rn, B, Z, Δ, lcs, d)
+function testnetwork(rn, B, Z, Δ, lcs, d, subrn, lcd)
     B2 = reactioncomplexes(rn)[2]
     @test B == B2 == Matrix(reactioncomplexes(rn, sparse=true)[2])
     @test Z == complexstoichmat(rn) == Matrix(complexstoichmat(rn, sparse=true))
@@ -93,6 +93,9 @@ function testnetwork(rn, B, Z, Δ, lcs, d)
     lcs2 = linkageclasses(ig)
     @test lcs2 == linkageclasses(incidencematgraph(sparse(B))) == lcs
     @test deficiency(netstoichmat(rn), ig, lcs) == d   
+    @test subnetworks(rn, ig, lcs) == subrn
+    @test linkagedeficiency(subrn, ig, lcs) == lcd
+    @test sum(linkagedeficiency(subnetworks(rn, ig, lcs),ig,lc)) <= deficiency(netstoichmat(rn), ig, lcs)
 end
 
 rns  = Vector{ReactionSystem}(undef,6)
@@ -117,7 +120,10 @@ B = [-1 0 0 0;
       0 0 0 1]
 Δ = [-1 0 0 0; 0 0 0 0; 0 -1 0 0; 0 0 -1 0; 0 0 0 0; 0 0 0 -1; 0 0 0 0]
 lcs = [[1,2],[3,4,5],[6,7]]
-testnetwork(rns[1], B, Z, Δ, lcs, 0)
+r = reactions(rns[1])
+subrn = [[r[1]],[r[2],r[3]],[r[4]]]
+lcd  =[0,0,0]
+testnetwork(rns[1], B, Z, Δ, lcs, 0, subrn, lcd)
 
 # mass-action rober
 rns[2] = @reaction_network begin
@@ -135,7 +141,10 @@ B = [-1 0 0;
       0 0 1]
 Δ = [-1 0 0; 0 0 0; 0 -1 0; 0 0 -1; 0 0 0]
 lcs = [[1,2],[3,4,5]]
-testnetwork(rns[2], B, Z, Δ, lcs, 1)
+r = reactions(rns[2])
+subrn = [[r[1]],[r[2],r[3]]]
+lcd = [0,0]
+testnetwork(rns[2], B, Z, Δ, lcs, 1, subrn, lcd)
 
 #  some rational functions as rates
 rns[3] = @reaction_network begin
@@ -154,7 +163,10 @@ B = [-1 0 0 1;
       0 0 0 -1]
 Δ = [-1 0 0 0; 0 0 0 0; 0 -1 0 0; 0 0 -1 0; 0 0 0 -1]
 lcs = [[1,2,5],[3,4]]
-testnetwork(rns[3], B, Z, Δ, lcs, 0)
+r = reactions(rns[3])
+subrn = [[r[1],r[4]],[r[2],r[3]]]
+lcd = [0,0]
+testnetwork(rns[3], B, Z, Δ, lcs, 0, subrn, lcd)
 
 # repressilator
 rns[4]  = @reaction_network begin
@@ -191,7 +203,11 @@ B = [-1 -1 -1 1 -1 1 -1 1 -1 0 0 0 1 1 1;
        0 0 0 0 0 0 0 -1 0 0 0 -1 0 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
        0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1]
 lcs = [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
-testnetwork(rns[4], B, Z, Δ, lcs, 3)
+r = reactions(rns[4])
+subrn = [ [r[1],r[2],r[3],r[4],r[5],r[6],r[7],r[8],r[9],r[13],r[14],r[15],
+            r[10],r[11],r[12]] ]
+lcd = [3]
+testnetwork(rns[4], B, Z, Δ, lcs, 3,subrn,lcd)
 
 #brusselator
 rns[5] = @reaction_network begin
@@ -209,7 +225,10 @@ B = [-1 0 0 1;
       0 0 1 0]
 Δ = [-1 0 0 0; 0 0 -1 -1; 0 -1 0 0; 0 0 0 0; 0 0 0 0]
 lcs = [[1,2,5],[3,4]]
-testnetwork(rns[5], B, Z, Δ, lcs, 1)
+r = reactions(rns[5])
+subrn = [[r[1],r[4],r[3]], [r[2]]  ]
+lcd = [0,0]
+testnetwork(rns[5], B, Z, Δ, lcs, 1,subrn,lcd)
 
 # some rational functions as rates
 rns[6] = @reaction_network begin
@@ -235,7 +254,10 @@ B = [-1 1 0 0 0 0;
       0 0 0 0 1 -1]
 Δ = [-1 0 0 0 0 0; 0 -1 0 0 0 0; 0 0 -1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 -1 0; 0 0 0 0 0 -1]
 lcs = [[1,2],[3,4],[5,6]]
-testnetwork(rns[6], B, Z, Δ, lcs, 0)
+r = reactions(rns[6])
+subrn = [[r[1],r[2]], [r[3],r[4]] ,[r[5],r[6]] ]
+lcd=[0,0,0]
+testnetwork(rns[6], B, Z, Δ, lcs, 0,subrn,lcd)
 
 reaction_networks_standard = Vector{ReactionSystem}(undef,10)
 reaction_networks_hill = Vector{ReactionSystem}(undef,10)
