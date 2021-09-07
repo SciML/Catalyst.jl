@@ -94,8 +94,8 @@ function testnetwork(rn, B, Z, Δ, lcs, d, subrn, lcd)
     @test lcs2 == linkageclasses(incidencematgraph(sparse(B))) == lcs
     @test deficiency(netstoichmat(rn), ig, lcs) == d   
     @test subnetworks(rn, ig, lcs) == subrn
-    @test linkagedeficiency(subrn, ig, lcs) == lcd
-    @test sum(linkagedeficiency(subnetworks(rn, ig, lcs),ig,lc)) <= deficiency(netstoichmat(rn), ig, lcs)
+    @test linkagedeficiency(subnetworks(rn, ig, lcs) , ig, lcs) == lcd
+    @test sum(linkagedeficiency(subnetworks(rn, ig, lcs),ig,lcs)) <= deficiency(netstoichmat(rn), ig, lcs)
 end
 
 rns  = Vector{ReactionSystem}(undef,6)
