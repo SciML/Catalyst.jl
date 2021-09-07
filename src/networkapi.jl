@@ -574,6 +574,45 @@ function deficiency(ns::AbstractMatrix, ig::SimpleDiGraph, lc::AbstractArray)
    LightGraphs.nv(ig) - length(lc) - AA.rank(AA.matrix(AA.zz,ns))
 end
 
+	
+
+"""
+   subnetworks(network, incidence_graph, linkage_classes)
+
+Find subnetworks corresponding to the each linkage class of reaction network
+"""
+function subnetworks(rs::ReactionSystem, ig::SimpleDiGraph{Int64}, lc::Vector{Vector{Int64}})
+   rmap::Vector{Vector{Pair{Int64, Int64}}} = collect(values(reactioncomplexmap(rs)))
+   r::Vector{Reaction} = reactions(rs)
+   subreac = Vector{Vector{Reaction}}()
+   for i in 1:length(lc)
+      rxind = unique(vcat([map(first, rmap[lc[i]][j]) for j in 1:length(lc[i])]...))
+      push!(subreac , r[rxind])
+   end
+   subreac
+end
+
+
+
+"""
+   linkagedeficiency(subnetworks,incidence_graph ,linkage_classes )
+
+Calculates deficiency of each linkage class of reaction network,
+
+deficiency = (number of reaction complexes in linkage class - 1 - dim. of stochiometric subspace of linkage class)
+"""
+function linkagedeficiency(subrn::Vector{Vector{Reaction}} ,ig::SimpleDiGraph{Int64} ,lc::Vector{Vector{Int64}})
+   t = (@variables t)[1]
+   δ = zeros(Int,length(subrn))
+   for i in 1:length(subrn)
+      specs = unique(vcat([[subrn[i][j].substrates;subrn[i][j].products] for j in 1:length(subrn[i])]...))
+      @named rxs = ReactionSystem(subrn[i], t, specs, Any[])
+      ns_sub = netstoichmat(rxs)
+      δ[i] = length(lc[i]) - 1 - AA.rank(AA.matrix(AA.ZZ, ns_sub))
+   end
+   δ
+end
+	
 
 ################################################################################################
 ######################## conservation laws ###############################
