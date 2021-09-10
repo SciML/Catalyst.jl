@@ -493,7 +493,7 @@ incidencegraph   = incidencematgraph(incidencemat)
 function incidencematgraph(incidencemat::Matrix{Int})
    @assert all(∈([-1,0,1]) ,incidencemat)
    n = size(incidencemat,1)  # no. of nodes/complexes
-   graph = LightGraphs.DiGraph(n)
+   graph = LG.DiGraph(n)
    for col in eachcol(incidencemat)
        src = 0; dst = 0;
        for i in eachindex(col)
@@ -501,14 +501,14 @@ function incidencematgraph(incidencemat::Matrix{Int})
               (col[i] == 1) && (dst = i)
               (src != 0) && (dst != 0) && break
        end
-       add_edge!(graph, src, dst)
+       LG.add_edge!(graph, src, dst)
     end
    return graph
 end
 function incidencematgraph(incidencemat::SparseMatrixCSC{Int,Int})
    @assert all(∈([-1,0,1]) ,incidencemat)
    m,n = size(incidencemat)  
-   graph = LightGraphs.DiGraph(m)
+   graph = LG.DiGraph(m)
    rows = rowvals(incidencemat)
    vals = nonzeros(incidencemat)
    for j = 1:n
@@ -516,9 +516,9 @@ function incidencematgraph(incidencemat::SparseMatrixCSC{Int,Int})
       row = rows[inds];
       val = vals[inds];
       if val[1] == -1
-         add_edge!(graph, row[1], row[2])
+         LG.add_edge!(graph, row[1], row[2])
       else
-         add_edge!(graph, row[2], row[1])
+         LG.add_edge!(graph, row[2], row[1])
       end
    end
    return graph
@@ -540,8 +540,8 @@ julia> linkageclasses(incidencegraph)
  [3, 4]
 ```
 """
-function linkageclasses(incidencegraph::SimpleDiGraph{Int64})
-   LightGraphs.connected_components(incidencegraph)
+function linkageclasses(incidencegraph)
+   LG.connected_components(incidencegraph)
 end
 
 
@@ -570,8 +570,8 @@ netstoich_mat    = netstoichmat(sir)
 δ = deficiency(netstoich_mat, incidence_graph, linkage_classes)
 ```
 """
-function deficiency(ns::AbstractMatrix, ig::SimpleDiGraph, lc::AbstractArray)
-   LightGraphs.nv(ig) - length(lc) - AA.rank(AA.matrix(AA.zz,ns))
+function deficiency(ns, ig, lc)
+   LG.nv(ig) - length(lc) - rank(matrix(FlintZZ,ns))
 end
 
 
@@ -584,28 +584,20 @@ end
 Given the net stoichiometry matrix of a reaction system, computes a matrix of
 conservation laws, each represented as a row in the output. 
 """
-function conservationlaws(nsm::AbstractMatrix)::Matrix
-    n_spec,n_reac = size(nsm)
-    
+function conservationlaws(nsm::AbstractMatrix)
+
     # We basically have to compute the left null space of the matrix
-    # over the integers; this is best done using its Smith Normal Form.
-    # note, we transpose as this was written when netstoichmat was reac by spec
-    nsm_conv = AA.matrix(AA.ZZ, nsm')
-    S, T, U = AA.snf_with_transform(nsm_conv)
-    
-    # Zero columns of S (which occur after nonzero columns in SNF)
-    # correspond to conserved quantities
-    n = findfirst(i -> all(S[:,i] .== 0), 1:n_spec)
-    if n === nothing
-        return zeros(Int, 0, n_spec)
-    end
-    
-    ret = Matrix(U[:,n:end]')
-    
+    # over the integers. We do this using Nemo's Flint integer (ZZ) interface.
+    N = nullspace(matrix(FlintZZ, nsm'))[2]
+
+    # to save allocations we manually take the adjoint when converting back
+    # to a Julia integer matrix from the Nemo matrix. 
+    ret = [convert(Int,N[i,j]) for j=1:size(N,2), i=1:size(N,1)]  
+
     # If all coefficients for a conservation law are negative
     # we might as well flip them to become positive
-    for i in 1:size(ret,1)
-        all(ret[i,:] .<= 0) && (ret[i,:] .*= -1)
+    for retcol in eachcol(ret)
+        all(r -> r <= 0, retcol) && (retcol .*= -1)
     end
     
     ret
