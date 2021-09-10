@@ -626,7 +626,7 @@ function linkagedeficiency(subnets::Vector{ReactionSystem} ,lc::Vector{Vector{In
    δ = zeros(Int,length(lc))
    for i in 1:length(lc)
       ns_sub = netstoichmat(subnets[i])
-      δ[i] = length(lc[i]) - 1 - AA.rank(AA.matrix(AA.ZZ, ns_sub))
+      δ[i] = length(lc[i]) - 1 - rank(matrix(FlintZZ, ns_sub))
    end
    δ
 end
