@@ -4,9 +4,11 @@ $(DocStringExtensions.README)
 module Catalyst
 
 using DocStringExtensions
-using SparseArrays, DiffEqBase, Reexport, ModelingToolkit, DiffEqJump, LightGraphs
+using SparseArrays, DiffEqBase, Reexport, ModelingToolkit, DiffEqJump
+using Latexify, Requires
 
 # ModelingToolkit imports and convenience functions we use
+using Symbolics
 using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems, 
                        get_eqs, get_defaults, toparam
 import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!, 
@@ -17,12 +19,11 @@ import ModelingToolkit: check_variables, check_parameters, _iszero, _merge, chec
 
 const DEFAULT_IV = (@parameters t)[1]
 @reexport using ModelingToolkit
+
 import MacroTools
 import Base: (==), merge!, merge, hash, size, getindex, setindex, isless, Sort.defalg, length, show
-using Symbolics
-using Latexify, Requires
-import LightGraphs
-import AbstractAlgebra; const AA = AbstractAlgebra
+import LightGraphs; const LG = LightGraphs
+import Nemo: FlintZZ, rank, matrix, nullspace, snf_with_transform
 
 # as used in Catlab
 const USE_GV_JLL = Ref(false)
