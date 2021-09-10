@@ -584,7 +584,7 @@ end
 Given the net stoichiometry matrix of a reaction system, computes a matrix of
 conservation laws, each represented as a row in the output. 
 """
-function conservationlaws(nsm::AbstractMatrix)::Matrix
+function conservationlaws(nsm::AbstractMatrix)
 
     # We basically have to compute the left null space of the matrix
     # over the integers. We do this using Nemo's Flint integer (ZZ) interface.
