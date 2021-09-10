@@ -585,27 +585,19 @@ Given the net stoichiometry matrix of a reaction system, computes a matrix of
 conservation laws, each represented as a row in the output. 
 """
 function conservationlaws(nsm::AbstractMatrix)::Matrix
-    n_spec,n_reac = size(nsm)
-    
+
     # We basically have to compute the left null space of the matrix
-    # over the integers; this is best done using its Smith Normal Form.
-    # note, we transpose as this was written when netstoichmat was reac by spec
-    nsm_conv = matrix(FlintZZ, nsm')
-    S, T, U = snf_with_transform(nsm_conv)
-    
-    # Zero columns of S (which occur after nonzero columns in SNF)
-    # correspond to conserved quantities
-    n = findfirst(i -> all(S[:,i] .== 0), 1:n_spec)
-    if n === nothing
-        return zeros(Int, 0, n_spec)
-    end
-    
-    ret = Matrix(U[:,n:end]')
-    
+    # over the integers. We do this using Nemo's Flint integer (ZZ) interface.
+    N = nullspace(matrix(FlintZZ, nsm'))[2]
+
+    # to save allocations we manually take the adjoint when converting back
+    # to a Julia integer matrix from the Nemo matrix. 
+    ret = [convert(Int,N[i,j]) for j=1:size(N,2), i=1:size(N,1)]  
+
     # If all coefficients for a conservation law are negative
     # we might as well flip them to become positive
-    for i in 1:size(ret,1)
-        all(ret[i,:] .<= 0) && (ret[i,:] .*= -1)
+    for retcol in eachcol(ret)
+        all(r -> r <= 0, retcol) && (retcol .*= -1)
     end
     
     ret
