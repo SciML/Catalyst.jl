@@ -577,32 +577,36 @@ end
 	
 
 """
-	subnetworkmapping(network, linkageclass) is an intermediary function
+	`subnetworkmapping` is an intermediary function
 	required in `subnetworks(network, linkage_classes)`
 """
-function subnetworkmapping(rs::ReactionSystem, linkageclass::Vector{Int64})
-   r::Vector{Reaction} = reactions(rs)
-   rmap::Vector{Vector{Pair{Int64, Int64}}} = collect(values(reactioncomplexmap(rs)))
-   rxind = unique(vcat([map(first, rmap[linkageclass][j]) for j in 1:length(linkageclass)]...))
-   specs = unique(vcat([[r[rxind][j].substrates;r[rxind][j].products] for j in 1:length(r[rxind])]...))
-   ps = parameters(rs)
-   newps = Vector{eltype(ps)}()
+# intermediary function for subnetwork of a particular linkage class
+function subnetworkmapping(linkageclass::Vector{Int64}, r, reacmap, pars)
+   rxind = unique(vcat([map(first, reacmap[j]) for j in 1:length(linkageclass)]...))
+   specs = unique(vcat([[r[rxind][j].substrates ; r[rxind][j].products] for j in 1:length(r[rxind])]...))
+   newps = Vector{eltype(pars)}()
    for rx in r[rxind]
-       Symbolics.get_variables!(newps, rx.rate, ps)
+       Symbolics.get_variables!(newps, rx.rate, pars)
    end
    r[rxind], specs, newps   # reactions and species involved in reactions of subnetwork
 end
 	
 """
-   subnetworks(network, linkage_classes)
+   subnetworks(network, linkage_classes ; r = reactions(network),
+                     rmap = collect(values(reactioncomplexmap(network))),
+                     ps = parameters(network))
 
 Find subnetworks corresponding to the each linkage class of reaction network
 """
-function subnetworks(rs::ReactionSystem,lc::Vector{Vector{Int64}})
+function subnetworks(rs::ReactionSystem, lc::Vector{Vector{Int64}};
+                  r::Vector{Reaction} = reactions(rs),
+                  rmap::Vector{Vector{Pair{Int64, Int64}}} = collect(values(reactioncomplexmap(rs))),
+                  ps = parameters(rs))
+
    t = (@variables t)[1]
    subreac = Vector{ReactionSystem}()
    for i in 1:length(lc)
-      reacs, specs , newps= subnetworkmapping(rs, lc[i])
+      reacs, specs, newps = subnetworkmapping(lc[i], r, rmap[lc[i]] ,ps)
       push!(subreac , ReactionSystem(reacs, t, specs, newps;name = gensym(:ReactionSystem)))
    end
    subreac
