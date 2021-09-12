@@ -1,6 +1,7 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch) 
+- **BREAKING:** added a dependency on Nemo.jl for integer matrix linear algebra methods.
 - Added `incidencematgraph`, `linkageclasses` and `deficiency` API functions.
 
 ## Catalyst 9.0
