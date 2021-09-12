@@ -581,9 +581,9 @@ end
 	required in `subnetworks(network, linkage_classes)`
 """
 # intermediary function for subnetwork of a particular linkage class
-function subnetworkmapping(linkageclass::Vector{Int64}, r, reacmap, pars)
-   rxind = unique(vcat([map(first, reacmap[j]) for j in 1:length(linkageclass)]...))
-   specs = unique(vcat([[r[rxind][j].substrates ; r[rxind][j].products] for j in 1:length(r[rxind])]...))
+function subnetworkmapping(linkageclass, r, reacmap, pars)
+   rxind = collect(Set(vcat([map(first, reacmap[j]) for j in 1:length(linkageclass)]...)))
+   specs = collect(Set(vcat([[r[rxind][j].substrates ; r[rxind][j].products] for j in 1:length(r[rxind])]...)))
    newps = Vector{eltype(pars)}()
    for rx in r[rxind]
        Symbolics.get_variables!(newps, rx.rate, pars)
@@ -592,22 +592,28 @@ function subnetworkmapping(linkageclass::Vector{Int64}, r, reacmap, pars)
 end
 	
 """
-   subnetworks(network, linkage_classes ; r = reactions(network),
-                     rmap = collect(values(reactioncomplexmap(network))),
-                     ps = parameters(network))
+   subnetworks(network, linkage_classes ; rxs = reactions(network),
+                  complextorxmap = collect(values(reactioncomplexmap(network))),
+                  p = parameters(network))
 
 Find subnetworks corresponding to the each linkage class of reaction network
-"""
-function subnetworks(rs::ReactionSystem, lc::Vector{Vector{Int64}};
-                  r::Vector{Reaction} = reactions(rs),
-                  rmap::Vector{Vector{Pair{Int64, Int64}}} = collect(values(reactioncomplexmap(rs))),
-                  ps = parameters(rs))
 
-   t = (@variables t)[1]
+For example, continuing the example from [`deficiency`](@ref)
+```julia
+   subnets = subnetworks(sir, linkage_classes)
+```
+"""
+function subnetworks(rs::ReactionSystem, lcs::Vector{Vector{Int64}};
+                  rxs = reactions(rs),
+                  complextorxmap = collect(values(reactioncomplexmap(rs))),
+                  p = parameters(rs))
+
+   t = ModelingToolkit.get_iv(rs)
    subreac = Vector{ReactionSystem}()
-   for i in 1:length(lc)
-      reacs, specs, newps = subnetworkmapping(lc[i], r, rmap[lc[i]] ,ps)
-      push!(subreac , ReactionSystem(reacs, t, specs, newps;name = gensym(:ReactionSystem)))
+   for i in 1:length(lcs)
+      reacs, specs, newps = subnetworkmapping(lcs[i], rxs, complextorxmap[lcs[i]] ,p)
+      newname = Symbol(nameof(rs), "_", i)
+      push!(subreac , ReactionSystem(reacs, t, specs, newps;name = newname))
    end
    subreac
 end
@@ -621,12 +627,17 @@ Calculates deficiency of each linkage class of reaction network,
 
 deficiency = (number of reaction complexes in linkage class - 1 -
                   dim. of stochiometric subspace of linkage class)
+		
+For example, continuing the example from [`subnetworks`](@ref)
+```julia
+linkage_deficiencies  = linkagedeficiency(subnets, linkage_classes)
+```
 """
-function linkagedeficiency(subnets::Vector{ReactionSystem} ,lc::Vector{Vector{Int64}})
-   δ = zeros(Int,length(lc))
-   for i in 1:length(lc)
+function linkagedeficiency(subnets, lcs)
+   δ = zeros(Int,length(lcs))
+   for i in 1:length(lcs)
       ns_sub = netstoichmat(subnets[i])
-      δ[i] = length(lc[i]) - 1 - rank(matrix(FlintZZ, ns_sub))
+      δ[i] = length(lcs[i]) - 1 - rank(matrix(FlintZZ, ns_sub))
    end
    δ
 end
