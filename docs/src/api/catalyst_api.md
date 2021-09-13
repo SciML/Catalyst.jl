@@ -128,6 +128,8 @@ complexoutgoingmat
 incidencematgraph
 linkageclasses
 deficiency
+subnetworks
+linkagedeficiencies
 ```
 
 ## Network Comparison 
