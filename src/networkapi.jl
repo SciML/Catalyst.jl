@@ -565,7 +565,7 @@ sir = @reaction_network SIR begin
 end β ν
 rcs,incidencemat = reactioncomplexes(sir)
 incidence_graph  = incidencematgraph(incidencemat)
-linkage_classes   = linkageclasses(ig)
+linkage_classes   = linkageclasses(incidence_graph)
 netstoich_mat    = netstoichmat(sir)
 δ = deficiency(netstoich_mat, incidence_graph, linkage_classes)
 ```
