@@ -611,9 +611,9 @@ function subnetworks(rs::ReactionSystem, lcs::AbstractVector;
     t = get_iv(rs)
     subreac = Vector{ReactionSystem}()
     for i in 1:length(lcs)
-        reacs, specs, newps = subnetworkmapping(lcs[i], rxs, complextorxmap, p)
+        reacs,specs,newps = subnetworkmapping(lcs[i], rxs, complextorxmap, p)
         newname = Symbol(nameof(rs), "_", i)
-        push!(subreac , ReactionSystem(reacs, t, specs, newps; name=newname))
+        push!(subreac, ReactionSystem(reacs, t, specs, newps; name=newname))
     end
     subreac
 end
