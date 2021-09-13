@@ -465,7 +465,7 @@ Notes:
     = B_{i j}, &\text{otherwise.}
 \end{cases}
 ```
-- Set sparse=true for a spe matrix representation
+- Set sparse=true for a sparse matrix representation
 """
 function complexoutgoingmat(rn::ReactionSystem; sparse=false, B=reactioncomplexes(rn,sparse=sparse)[2])
 	sparse ? complexoutgoingmat(SparseMatrixCSC{Int,Int}, rn, B) : 
