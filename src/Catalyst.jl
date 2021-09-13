@@ -58,8 +58,10 @@ export species, params, reactions, speciesmap, paramsmap, numspecies, numreactio
 export make_empty_network, addspecies!, addparam!, addreaction!
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export conservationlaws, conservedquantities
+
+# network analysis functions
 export reactioncomplexmap, reactioncomplexes, reactionrates, complexstoichmat, complexoutgoingmat
-export incidencematgraph, linkageclasses, deficiency, subnetworks, linkagedeficiency
+export incidencematgraph, linkageclasses, deficiency, subnetworks, linkagedeficiencies
   
 # for Latex printing of ReactionSystems
 include("latexify_recipes.jl")

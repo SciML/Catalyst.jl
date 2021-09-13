@@ -93,7 +93,7 @@ function testnetwork(rn, B, Z, Δ, lcs, d, subrn, lcd)
     lcs2 = linkageclasses(ig)
     @test lcs2 == linkageclasses(incidencematgraph(sparse(B))) == lcs
     @test deficiency(netstoichmat(rn), ig, lcs) == d   
-    @test subrn == Set.(reactions.(subnetworks(rn, lcs)))
+    @test subrn == reactions.(subnetworks(rn, lcs))
     @test linkagedeficiency(subnetworks(rn, lcs) , lcs) == lcd
     @test sum(linkagedeficiency(subnetworks(rn, lcs),lcs)) <= deficiency(netstoichmat(rn), ig, lcs)
 end
@@ -121,7 +121,7 @@ B = [-1 0 0 0;
 Δ = [-1 0 0 0; 0 0 0 0; 0 -1 0 0; 0 0 -1 0; 0 0 0 0; 0 0 0 -1; 0 0 0 0]
 lcs = [[1,2],[3,4,5],[6,7]]
 r = reactions(rns[1])
-subrn = [Set([r[1]]), Set([r[2],r[3]]), Set([r[4]])]
+subrn = [[r[1]], [r[2],r[3]], [r[4]]]
 lcd  =[0,0,0]
 testnetwork(rns[1], B, Z, Δ, lcs, 0, subrn, lcd)
 
@@ -142,7 +142,7 @@ B = [-1 0 0;
 Δ = [-1 0 0; 0 0 0; 0 -1 0; 0 0 -1; 0 0 0]
 lcs = [[1,2],[3,4,5]]
 r = reactions(rns[2])
-subrn = [Set([r[1]]), Set([r[2],r[3]])]
+subrn = [[r[1]], [r[2],r[3]]]
 lcd = [0,0]
 testnetwork(rns[2], B, Z, Δ, lcs, 1, subrn, lcd)
 
@@ -164,7 +164,7 @@ B = [-1 0 0 1;
 Δ = [-1 0 0 0; 0 0 0 0; 0 -1 0 0; 0 0 -1 0; 0 0 0 -1]
 lcs = [[1,2,5],[3,4]]
 r = reactions(rns[3])
-subrn = [Set([r[1],r[4]]), Set([r[2],r[3]])]
+subrn = [[r[1],r[4]], [r[2],r[3]]]
 lcd = [0,0]
 testnetwork(rns[3], B, Z, Δ, lcs, 0, subrn, lcd)
 
@@ -204,8 +204,8 @@ B = [-1 -1 -1 1 -1 1 -1 1 -1 0 0 0 1 1 1;
        0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1]
 lcs = [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
 r = reactions(rns[4])
-subrn = [ Set([r[1],r[2],r[3],r[4],r[5],r[6],r[7],r[8],r[9],r[13],r[14],r[15],
-            r[10],r[11],r[12]]) ]
+subrn = [[r[1],r[2],r[3],r[4],r[5],r[6],r[7],r[8],r[9],r[13],r[14],r[15],
+            r[10],r[11],r[12]]]
 lcd = [3]
 testnetwork(rns[4], B, Z, Δ, lcs, 3,subrn,lcd)
 
@@ -226,7 +226,7 @@ B = [-1 0 0 1;
 Δ = [-1 0 0 0; 0 0 -1 -1; 0 -1 0 0; 0 0 0 0; 0 0 0 0]
 lcs = [[1,2,5],[3,4]]
 r = reactions(rns[5])
-subrn = [Set([r[1],r[4],r[3]]), Set([r[2]])]
+subrn = [[r[1],r[4],r[3]], [r[2]]]
 lcd = [0,0]
 testnetwork(rns[5], B, Z, Δ, lcs, 1,subrn,lcd)
 
@@ -255,7 +255,7 @@ B = [-1 1 0 0 0 0;
 Δ = [-1 0 0 0 0 0; 0 -1 0 0 0 0; 0 0 -1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 -1 0; 0 0 0 0 0 -1]
 lcs = [[1,2],[3,4],[5,6]]
 r = reactions(rns[6])
-subrn = [Set([r[1],r[2]]), Set([r[3],r[4]]), Set([r[5],r[6]])]
+subrn = [[r[1],r[2]], [r[3],r[4]], [r[5],r[6]]]
 lcd=[0,0,0]
 testnetwork(rns[6], B, Z, Δ, lcs, 0,subrn,lcd)
 
