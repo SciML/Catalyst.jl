@@ -592,7 +592,7 @@ function subnetworkmapping(linkageclass, allrxs, complextorxmap, p)
 end
 	
 """
-   subnetworks(network, linkage_classes ; rxs = reactions(network),
+    subnetworks(network, linkage_classes ; rxs = reactions(network),
                   complextorxmap = collect(values(reactioncomplexmap(network))),
                   p = parameters(network))
 
@@ -620,7 +620,7 @@ end
 
 
 """
-   linkagedeficiencies(subnetworks::AbstractVector, linkage_classes::AbstractVector)
+    linkagedeficiencies(subnetworks::AbstractVector, linkage_classes::AbstractVector)
 
 Calculates the deficiency of each sub-reaction network defined by a collection
 of linkage_classes.
