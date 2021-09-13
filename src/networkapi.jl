@@ -216,7 +216,7 @@ end
 
 
 """
-    netstoichmat(rn, sparsity=false; smap=speciesmap(rn))
+    netstoichmat(rn, sparse=false; smap=speciesmap(rn))
 
 Returns the net stoichiometry matrix, ``N``, with ``N_{i j}`` the net
 stoichiometric coefficient of the ith species within the jth reaction.
@@ -379,7 +379,7 @@ B_{i j} = \begin{cases}
 function reactioncomplexes(rn::ReactionSystem; sparse=false, smap=speciesmap(rn), 
                            complextorxsmap=reactioncomplexmap(rn; smap=smap))
 	sparse ? reactioncomplexes(SparseMatrixCSC{Int,Int}, rn, smap, complextorxsmap) :
-           reactioncomplexes(Matrix{Int}, rn, smap, complextorxsmap)
+             reactioncomplexes(Matrix{Int}, rn, smap, complextorxsmap)
 end
 
 
@@ -491,37 +491,37 @@ incidencegraph   = incidencematgraph(incidencemat)
 ```
 """
 function incidencematgraph(incidencemat::Matrix{Int})
-   @assert all(∈([-1,0,1]) ,incidencemat)
-   n = size(incidencemat,1)  # no. of nodes/complexes
-   graph = LG.DiGraph(n)
-   for col in eachcol(incidencemat)
-       src = 0; dst = 0;
-       for i in eachindex(col)
-              (col[i] == -1) && (src = i)
-              (col[i] == 1) && (dst = i)
-              (src != 0) && (dst != 0) && break
-       end
-       LG.add_edge!(graph, src, dst)
+    @assert all(∈([-1,0,1]) ,incidencemat)
+    n = size(incidencemat,1)  # no. of nodes/complexes
+    graph = LG.DiGraph(n)
+    for col in eachcol(incidencemat)
+        src = 0; dst = 0;
+        for i in eachindex(col)
+                (col[i] == -1) && (src = i)
+                (col[i] == 1) && (dst = i)
+                (src != 0) && (dst != 0) && break
+        end
+        LG.add_edge!(graph, src, dst)
     end
-   return graph
+    return graph
 end
 function incidencematgraph(incidencemat::SparseMatrixCSC{Int,Int})
-   @assert all(∈([-1,0,1]) ,incidencemat)
-   m,n = size(incidencemat)  
-   graph = LG.DiGraph(m)
-   rows = rowvals(incidencemat)
-   vals = nonzeros(incidencemat)
-   for j = 1:n
-      inds=nzrange(incidencemat, j)
-      row = rows[inds];
-      val = vals[inds];
-      if val[1] == -1
-         LG.add_edge!(graph, row[1], row[2])
-      else
-         LG.add_edge!(graph, row[2], row[1])
-      end
-   end
-   return graph
+    @assert all(∈([-1,0,1]) ,incidencemat)
+    m,n = size(incidencemat)  
+    graph = LG.DiGraph(m)
+    rows = rowvals(incidencemat)
+    vals = nonzeros(incidencemat)
+    for j = 1:n
+        inds=nzrange(incidencemat, j)
+        row = rows[inds];
+        val = vals[inds];
+        if val[1] == -1
+            LG.add_edge!(graph, row[1], row[2])
+        else
+            LG.add_edge!(graph, row[2], row[1])
+        end
+    end
+    return graph
 end
 
 
@@ -541,7 +541,7 @@ julia> linkageclasses(incidencegraph)
 ```
 """
 function linkageclasses(incidencegraph)
-   LG.connected_components(incidencegraph)
+    LG.connected_components(incidencegraph)
 end
 
 
@@ -571,9 +571,75 @@ netstoich_mat    = netstoichmat(sir)
 ```
 """
 function deficiency(ns, ig, lc)
-   LG.nv(ig) - length(lc) - rank(matrix(FlintZZ,ns))
+    LG.nv(ig) - length(lc) - rank(matrix(FlintZZ,ns))
 end
 
+function subnetworkmapping(linkageclass, allrxs, complextorxmap, p)
+    rxinds  = sort!(collect(Set(rxidx for rcidx in linkageclass for rxidx in complextorxmap[rcidx])))
+    rxs     = allrxs[rxinds]
+    specset = Set(substrate for rx in rxs for substrate in rx.substrates)
+    for rx in rxs
+        for product in rx.products
+            push!(specset, product)
+        end
+    end
+    specs = collect(specset)
+    newps = Vector{eltype(p)}()
+    for rx in rxs
+        Symbolics.get_variables!(newps, rx.rate, p)
+    end
+    rxs, specs, newps   # reactions and species involved in reactions of subnetwork
+end
+	
+"""
+   subnetworks(network, linkage_classes ; rxs = reactions(network),
+                  complextorxmap = collect(values(reactioncomplexmap(network))),
+                  p = parameters(network))
+
+Find subnetworks corresponding to the each linkage class of reaction network
+
+For example, continuing the example from [`deficiency`](@ref)
+```julia
+   subnets = subnetworks(sir, linkage_classes)
+```
+"""
+function subnetworks(rs::ReactionSystem, lcs::AbstractVector;
+                  rxs = reactions(rs),
+                  complextorxmap = [map(first,rcmap) for rcmap in values(reactioncomplexmap(rs))],
+                  p = parameters(rs))
+
+    t = get_iv(rs)
+    subreac = Vector{ReactionSystem}()
+    for i in 1:length(lcs)
+        reacs,specs,newps = subnetworkmapping(lcs[i], rxs, complextorxmap, p)
+        newname = Symbol(nameof(rs), "_", i)
+        push!(subreac, ReactionSystem(reacs, t, specs, newps; name=newname))
+    end
+    subreac
+end
+
+
+"""
+   linkagedeficiencies(subnetworks::AbstractVector, linkage_classes::AbstractVector)
+
+Calculates the deficiency of each sub-reaction network defined by a collection
+of linkage_classes.
+
+For example, continuing the example from [`deficiency`](@ref)
+```julia
+subnets = subnetworks(sir, linkage_classes)
+linkage_deficiencies = linkagedeficiency(subnets, linkage_classes)
+```
+"""
+function linkagedeficiencies(subnets, lcs)
+    δ = zeros(Int,length(lcs))
+    for (i,subnet) in enumerate(subnets)
+        ns_sub = netstoichmat(subnet)
+        δ[i] = length(lcs[i]) - 1 - rank(matrix(FlintZZ, ns_sub))
+    end
+    δ
+end
+	
 
 ################################################################################################
 ######################## conservation laws ###############################
