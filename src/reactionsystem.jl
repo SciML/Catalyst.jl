@@ -112,20 +112,21 @@ function print_rxside(io::IO, specs, stoich)
 end
 
 function Base.show(io::IO, rx::Reaction)
-    summary(io,rx)
-    print(io, ": ", rx.rate, ", ")
+    #summary(io,rx)
+    #print(io, ": ", rx.rate, ", ")
+    print(io, rx.rate, ", ")
     print_rxside(io, rx.substrates, rx.substoich)
     arrow = rx.only_use_rate ? "⇒" : "-->"
     print(io, " ", arrow, " ")
     print_rxside(io, rx.products, rx.prodstoich)
 end
 
-function ModelingToolkit.namespace_equation(rx::Reaction, name, iv)
-    Reaction(namespace_expr(rx.rate, name, iv), 
-             namespace_expr(rx.substrates, name, iv),
-             namespace_expr(rx.products, name, iv),
+function ModelingToolkit.namespace_equation(rx::Reaction, name)
+    Reaction(namespace_expr(rx.rate, name), 
+             namespace_expr(rx.substrates, name),
+             namespace_expr(rx.products, name),
              rx.substoich, rx.prodstoich,            
-             [namespace_expr(n[1],name,iv) => n[2] for n in rx.netstoich], rx.only_use_rate)
+             [namespace_expr(n[1],name) => n[2] for n in rx.netstoich], rx.only_use_rate)
 end
 
 # calculates the net stoichiometry of a reaction as a vector of pairs (sub,substoich)
@@ -220,6 +221,20 @@ end
 
 function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
+end
+
+function ModelingToolkit.equations(sys::ReactionSystem)
+    eqs = get_eqs(sys)
+    systems = get_systems(sys)
+    if isempty(systems)
+        return eqs
+    else
+        eqs = Any[eqs;
+               reduce(vcat,
+                      ModelingToolkit.namespace_equations.(get_systems(sys));
+                      init=Any[])]
+        return eqs
+    end
 end
 
 """
@@ -455,7 +470,16 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem;
                       checks=false, kwargs...)
     eqs     = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, 
                                  include_zero_odes=include_zero_odes)
-    systems = map(sys -> (sys isa ODESystem) ? sys : convert(ODESystem, sys), get_systems(rs))
+    systems = Vector{ODESystem}(undef, length(get_systems(rs)))
+    for (i,sys) in enumerate(get_systems(rs))
+        if sys isa ReactionSystem
+            systems[i] = convert(ODESystem, sys, include_zero_odes=include_zero_odes)
+        elseif sys isa ODESystem
+            systems[i] = sys
+        else
+            systems[i] = convert(ODESystem, sys)
+        end
+    end    
     ODESystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, 
               defaults=get_defaults(rs), checks=checks, kwargs...)
 end
