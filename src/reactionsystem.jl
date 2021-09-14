@@ -112,8 +112,6 @@ function print_rxside(io::IO, specs, stoich)
 end
 
 function Base.show(io::IO, rx::Reaction)
-    #summary(io,rx)
-    #print(io, ": ", rx.rate, ", ")
     print(io, rx.rate, ", ")
     print_rxside(io, rx.substrates, rx.substoich)
     arrow = rx.only_use_rate ? "⇒" : "-->"
