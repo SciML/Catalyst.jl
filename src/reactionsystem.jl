@@ -575,9 +575,8 @@ Notes:
 function Base.convert(::Type{<:JumpSystem},rs::ReactionSystem; 
                       name=nameof(rs), combinatoric_ratelaws=true, checks = false, kwargs...)
     eqs     = assemble_jumps(rs; combinatoric_ratelaws=combinatoric_ratelaws)
-
-    #systems = convert.(JumpSystem, get_systems(rs))
     isempty(get_systems(rs)) || error("Conversion to JumpSystems with subsystems is not currently supported.")
+    systems = convert.(JumpSystem, get_systems(rs))    
     JumpSystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, 
                defaults=get_defaults(rs), checks = checks, kwargs...)
 end
