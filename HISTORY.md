@@ -2,7 +2,7 @@
 
 ## Catalyst unreleased (master branch) 
 - **BREAKING:** added a dependency on Nemo.jl for integer matrix linear algebra methods.
-- Added `incidencematgraph`, `linkageclasses`, `deficiency`, `subnetworks`, `linkagedeficiency`, `is_reversible` and `is_weakly_reversible` API functions.
+- Added `incidencematgraph`, `linkageclasses`, `deficiency`, `subnetworks`, `linkagedeficiency`, `isreversible` and `isweaklyreversible` API functions.
 
 ## Catalyst 9.0
 *1.* **BREAKING:** `netstoichmat`, `prodstoichmat` and `substoichmat` are now transposed to be
