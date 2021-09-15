@@ -263,8 +263,8 @@ testnetwork(rns[6], B, Z, Δ, lcs, 0,subrn,lcd)
 function testreversibility(rn, B, rev, weak_rev)
     ig = incidencematgraph(B)
     subrn = subnetworks(rn, linkageclasses(ig))
-    @test is_reversible(ig) == rev
-    @test is_weakly_reversible(subrn) == weak_rev
+    @test isreversible(ig) == rev
+    @test isweaklyreversible(subrn) == weak_rev
 end
 rxs = Vector{ReactionSystem}(undef, 10)
 rxs[1] = @reaction_network begin
