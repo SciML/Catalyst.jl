@@ -640,7 +640,36 @@ function linkagedeficiencies(subnets, lcs)
     δ
 end
 	
+						
+"""
+    is_reversible(incidencegraph)
 
+Given an incidence graph of the reaction network, returns if the network is reversible or not.
+For example, continuing the example from [`linkagedeficiencies`](@ref)
+```julia
+is_reversible(incidence_graph)
+```
+"""
+function is_reversible(ig::LG.SimpleDiGraph)
+    LG.reverse(ig) == ig
+end
+
+"""
+    is_reversible(subnetworks)
+
+Given the subnetworks corresponding to the each linkage class of reaction network,
+determines if the reaction network is weakly reversible or not.
+For example, continuing the example from [`is_reversible`](@ref)
+```julia
+is_weakly_reversible(subnets)
+```
+"""
+function is_weakly_reversible(subnets::Vector{ReactionSystem})
+    igs = [incidencematgraph(reactioncomplexes(subrs)[2]) for subrs in subnets]
+    all([LG.is_strongly_connected(ig) for ig in igs])
+end
+								
+								
 ################################################################################################
 ######################## conservation laws ###############################
 
