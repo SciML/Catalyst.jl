@@ -259,6 +259,119 @@ subrn = [[r[1],r[2]], [r[3],r[4]], [r[5],r[6]]]
 lcd=[0,0,0]
 testnetwork(rns[6], B, Z, Δ, lcs, 0,subrn,lcd)
 
+###########Testing reversibility###############
+function testreversibility(rn, B, rev, weak_rev)
+    ig = incidencematgraph(B)
+    subrn = subnetworks(rn, linkageclasses(ig))
+    @test isreversible(ig) == rev
+    @test isweaklyreversible(subrn) == weak_rev
+end
+rxs = Vector{ReactionSystem}(undef, 10)
+rxs[1] = @reaction_network begin
+      (k2, k1), A1 <--> A2+A3
+      k3, A2+A3 --> A4
+      k4, A4 --> A5
+      (k6,k5), A5 <--> 2A6
+      k7, 2A6 --> A4
+      k8, A4 + A5 --> A7
+end k1 k2 k3 k4 k5 k6 k7 k8
+rev = false
+weak_rev = false
+testreversibility(rxs[1], reactioncomplexes(rxs[1])[2], rev, weak_rev)
+
+
+rxs[2] = @reaction_network begin
+      (k2, k1), A1 <--> A2+A3
+      k3, A2+A3 --> A4
+      k4, A4 --> A5
+      (k6,k5), A5 <--> 2A6
+      k7, A4 --> 2A6
+      (k9,k8), A4 + A5 <--> A7
+end k1 k2 k3 k4 k5 k6 k7 k8 k9
+rev = false
+weak_rev = false
+testreversibility(rxs[2], reactioncomplexes(rxs[2])[2], rev, weak_rev)
+
+
+rxs[3] = @reaction_network begin
+      k1, A --> B
+      k2, A --> C
+end k1 k2
+rev = false
+weak_rev = false
+testreversibility(rxs[3], reactioncomplexes(rxs[3])[2], rev, weak_rev)
+
+
+rxs[4] = @reaction_network begin
+      k1, A --> B
+      k2, A --> C
+      k3, B + C --> 2A
+end k1 k2 k3
+rev = false
+weak_rev = false
+testreversibility(rxs[4], reactioncomplexes(rxs[4])[2], rev, weak_rev)
+
+
+rxs[5] = @reaction_network begin
+      (k2,k1), A <--> 2B
+      (k4,k3), A + C --> D
+      k5, D --> B + E
+      k6, B + E --> A+C
+end k1 k2 k3 k4 k5 k6
+rev = false
+weak_rev = true
+testreversibility(rxs[5], reactioncomplexes(rxs[5])[2], rev, weak_rev)
+
+
+rxs[6] = @reaction_network begin
+      (k2,k1), A + E <--> AE
+      k3, AE --> B+E
+end k1 k2 k3
+rev = false
+weak_rev = false
+testreversibility(rxs[6], reactioncomplexes(rxs[6])[2], rev, weak_rev)
+
+
+rxs[7] = @reaction_network begin
+      (k2,k1), A + E <--> AE
+      (k4,k3), AE <--> B+E
+end k1 k2 k3 k4
+rev = true
+weak_rev = true
+testreversibility(rxs[7], reactioncomplexes(rxs[7])[2], rev, weak_rev)
+
+
+rxs[8] = @reaction_network begin
+      (k2,k1), A + B <--> 2A
+end k1 k2
+rev = true
+weak_rev = true
+testreversibility(rxs[8], reactioncomplexes(rxs[8])[2], rev, weak_rev)
+
+
+rxs[9] = @reaction_network begin
+    k1, A + B --> 3A
+    k2, 3A --> 2A + C
+    k3, 2A + C --> 2B
+    k4, 2B --> A + B
+end k1 k2 k3 k4
+rev = false
+weak_rev = true
+testreversibility(rxs[9], reactioncomplexes(rxs[9])[2], rev, weak_rev)
+
+
+rxs[10] = @reaction_network begin
+      (k2, k1), A + E <--> AE
+      (k4, k3), AE <--> B + E
+      k5, B --> 0
+      k6, 0 --> A
+end k1 k2 k3 k4 k5 k6
+rev = false
+weak_rev = false
+testreversibility(rxs[10], reactioncomplexes(rxs[10])[2], rev, weak_rev)
+##########################################################################
+
+
 reaction_networks_standard = Vector{ReactionSystem}(undef,10)
 reaction_networks_hill = Vector{ReactionSystem}(undef,10)
 reaction_networks_real = Vector{ReactionSystem}(undef,3)

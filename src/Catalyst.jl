@@ -61,7 +61,7 @@ export conservationlaws, conservedquantities
 
 # network analysis functions
 export reactioncomplexmap, reactioncomplexes, reactionrates, complexstoichmat, complexoutgoingmat
-export incidencematgraph, linkageclasses, deficiency, subnetworks, linkagedeficiencies
+export incidencematgraph, linkageclasses, deficiency, subnetworks, linkagedeficiencies, isreversible, isweaklyreversible
   
 # for Latex printing of ReactionSystems
 include("latexify_recipes.jl")
