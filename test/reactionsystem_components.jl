@@ -73,9 +73,9 @@ tvs = 0:1:tspan[end]
 @named sys₁ = ReactionSystem(rxs, t, specs, pars)
 @named sys₂ = ReactionSystem(rxs, t, specs, pars)
 @named sys₃ = ReactionSystem(rxs, t, specs, pars)
-connections = [0 ~ ParentScope(sys₁.R) - ParentScope(sys₃.P),
-               0 ~ ParentScope(sys₂.R) - ParentScope(sys₁.P),
-               0 ~ ParentScope(sys₃.R) - ParentScope(sys₂.P)]
+connections = [ParentScope(sys₁.R) ~ ParentScope(sys₃.P),
+               ParentScope(sys₂.R) ~ ParentScope(sys₁.P),
+               ParentScope(sys₃.R) ~ ParentScope(sys₂.P)]
 @named csys = ODESystem(connections, t, [], [])
 @named repressilator = ReactionSystem(t; systems=[csys,sys₁,sys₂,sys₃])
 @named oderepressilator2 = convert(ODESystem, repressilator, include_zero_odes=false)
