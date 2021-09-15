@@ -642,29 +642,29 @@ end
 	
 						
 """
-    is_reversible(incidencegraph)
+    isreversible(incidencegraph)
 
 Given an incidence graph of the reaction network, returns if the network is reversible or not.
 For example, continuing the example from [`linkagedeficiencies`](@ref)
 ```julia
-is_reversible(incidence_graph)
+isreversible(incidence_graph)
 ```
 """
-function is_reversible(ig::LG.SimpleDiGraph)
+function isreversible(ig::LG.SimpleDiGraph)
     LG.reverse(ig) == ig
 end
 
 """
-    is_reversible(subnetworks)
+    isweaklyreversible(subnetworks)
 
 Given the subnetworks corresponding to the each linkage class of reaction network,
 determines if the reaction network is weakly reversible or not.
 For example, continuing the example from [`is_reversible`](@ref)
 ```julia
-is_weakly_reversible(subnets)
+isweaklyreversible(subnets)
 ```
 """
-function is_weakly_reversible(subnets::Vector{ReactionSystem})
+function isweaklyreversible(subnets::Vector{ReactionSystem})
     igs = [incidencematgraph(reactioncomplexes(subrs)[2]) for subrs in subnets]
     all([LG.is_strongly_connected(ig) for ig in igs])
 end
