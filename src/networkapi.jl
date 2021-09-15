@@ -736,7 +736,8 @@ function (==)(rn1::Reaction, rn2::Reaction)
     isequal(rn1.rate, rn2.rate) || return false
     issetequal(zip(rn1.substrates,rn1.substoich), zip(rn2.substrates,rn2.substoich)) || return false
     issetequal(zip(rn1.products,rn1.prodstoich), zip(rn2.products,rn2.prodstoich)) || return false
-    issetequal(rn1.netstoich, rn2.netstoich)
+    issetequal(rn1.netstoich, rn2.netstoich) || return false
+    rn1.only_use_rate == rn2.only_use_rate
 end
 
 
