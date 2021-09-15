@@ -1,4 +1,4 @@
-using Catalyst, LinearAlgebra, OrdinaryDiffEq, Test
+using Catalyst, LinearAlgebra, OrdinaryDiffEq, Test, NonlinearSolve
 
 # Repressilator model
 @parameters t α₀ α K n δ β μ
@@ -73,9 +73,9 @@ tvs = 0:1:tspan[end]
 @named sys₁ = ReactionSystem(rxs, t, specs, pars)
 @named sys₂ = ReactionSystem(rxs, t, specs, pars)
 @named sys₃ = ReactionSystem(rxs, t, specs, pars)
-connections = [ParentScope(sys₁.R) ~ ParentScope(sys₃.P),
-               ParentScope(sys₂.R) ~ ParentScope(sys₁.P),
-               ParentScope(sys₃.R) ~ ParentScope(sys₂.P)]
+connections = [0 ~ ParentScope(sys₁.R) - ParentScope(sys₃.P),
+               0 ~ ParentScope(sys₂.R) - ParentScope(sys₁.P),
+               0 ~ ParentScope(sys₃.R) - ParentScope(sys₂.P)]
 @named csys = ODESystem(connections, t, [], [])
 @named repressilator = ReactionSystem(t; systems=[csys,sys₁,sys₂,sys₃])
 @named oderepressilator2 = convert(ODESystem, repressilator, include_zero_odes=false)
@@ -84,16 +84,31 @@ oprob = ODEProblem(sys2, u₀, tspan, pvals)
 sol = solve(oprob, Tsit5())
 @test all(isapprox.(sol(tvs,idxs=sys₁.P),sol2(tvs, idxs=4),atol=1e-4))
 
+# test conversion to nonlinear system 
+@named nsys = NonlinearSystem(connections, [], [])
+@named ssrepressilator = ReactionSystem(t; systems=[nsys,sys₁,sys₂,sys₃])
+@named nlrepressilator = convert(NonlinearSystem, ssrepressilator, include_zero_odes=false)
+sys2 = structural_simplify(nlrepressilator)
+@test length(equations(sys2)) == 6
+nlprob = NonlinearProblem(sys2, u₀, pvals)
+sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
+@test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
+@test sol[sys₁.m] ≈ sol[sys₂.m] ≈ sol[sys₃.m]
+@test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
+
+# TODO add conversion to SDE and JumpSystems once supported
+
 # adding algebraic constraints
 @parameters t, r₊, r₋, β
 @variables A(t), B(t), C(t), D(t)
 rxs = [Reaction(r₊, [A,B], [C]),
        Reaction(r₋, [C], [A,B])]
+@named rs = ReactionSystem(rxs, t, [A,B,C], [r₊, r₋])
 A2 = ModelingToolkit.ParentScope(A)
 B2 = ModelingToolkit.ParentScope(B)
-nseqs = [D ~ 2A2 + β*B2]
+nseqs = [D ~ 2*A2 + β*B2]
 @named ns = ODESystem(nseqs, t, [A2,B2,D], [β])
-@named rs = ReactionSystem(rxs, t, [A,B,C], [r₊, r₋], systems=[ns])
+rs = compose(rs, [ns])
 osys = convert(ODESystem, rs; include_zero_odes=false)
 p  = [r₊ => 1.0, r₋ => 2.0, ns.β => 3.0]
 u₀ = [A => 1.0, B => 2.0, C => 0.0]

@@ -451,6 +451,19 @@ function assemble_jumps(rs; combinatoric_ratelaws=true)
     vcat(meqs,ceqs,veqs)
 end
 
+function make_systems_with_type!(systems::Vector{T}, rs::ReactionSystem, include_zero_odes=true) where {T <: ModelingToolkit.AbstractSystem}
+    resize!(systems, length(get_systems(rs)))
+    for (i,sys) in enumerate(get_systems(rs))
+        if sys isa ReactionSystem
+            systems[i] = convert(T, sys, include_zero_odes=include_zero_odes)
+        elseif sys isa T
+            systems[i] = sys
+        else
+            error("ModelingToolkit does not currently support convert($(typeof(sys)), sys::$T)")
+        end
+    end    
+    systems
+end
 """
 ```julia
 Base.convert(::Type{<:ODESystem},rs::ReactionSystem)
@@ -468,16 +481,7 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem;
                       checks=false, kwargs...)
     eqs     = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, 
                                  include_zero_odes=include_zero_odes)
-    systems = Vector{ODESystem}(undef, length(get_systems(rs)))
-    for (i,sys) in enumerate(get_systems(rs))
-        if sys isa ReactionSystem
-            systems[i] = convert(ODESystem, sys, include_zero_odes=include_zero_odes)
-        elseif sys isa ODESystem
-            systems[i] = sys
-        else
-            systems[i] = convert(ODESystem, sys)
-        end
-    end    
+    systems = make_systems_with_type!(Vector{ODESystem}(), rs, include_zero_odes)
     ODESystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, 
               defaults=get_defaults(rs), checks=checks, kwargs...)
 end
@@ -500,7 +504,7 @@ function Base.convert(::Type{<:NonlinearSystem},rs::ReactionSystem;
                       checks = false, kwargs...)
     eqs     = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, as_odes=false, 
                                  include_zero_odes=include_zero_odes)
-    systems = convert.(NonlinearSystem, get_systems(rs))
+    systems = make_systems_with_type!(Vector{NonlinearSystem}(), rs, include_zero_odes)
     NonlinearSystem(eqs, get_states(rs), get_ps(rs); name=name, systems=systems, 
                     defaults=get_defaults(rs), checks = checks, kwargs...)
 end
@@ -545,7 +549,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                                   include_zero_odes=include_zero_odes)
     noiseeqs = assemble_diffusion(rs,noise_scaling;
                                   combinatoric_ratelaws=combinatoric_ratelaws)
-    systems  = convert.(SDESystem, get_systems(rs))
+    systems = make_systems_with_type!(Vector{SDESystem}(), rs, include_zero_odes)
     SDESystem(eqs, noiseeqs, get_iv(rs), get_states(rs),
               (noise_scaling===nothing) ? get_ps(rs) : union(get_ps(rs), toparam(noise_scaling));
               name=name, 
@@ -571,7 +575,9 @@ Notes:
 function Base.convert(::Type{<:JumpSystem},rs::ReactionSystem; 
                       name=nameof(rs), combinatoric_ratelaws=true, checks = false, kwargs...)
     eqs     = assemble_jumps(rs; combinatoric_ratelaws=combinatoric_ratelaws)
-    systems = convert.(JumpSystem, get_systems(rs))
+
+    #systems = convert.(JumpSystem, get_systems(rs))
+    isempty(get_systems(rs)) || error("Conversion to JumpSystems with subsystems is not currently supported.")
     JumpSystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, 
                defaults=get_defaults(rs), checks = checks, kwargs...)
 end
