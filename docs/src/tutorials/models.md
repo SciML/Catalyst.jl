@@ -25,7 +25,7 @@ sol = solve(prob, Tsit5())
 ```
 Here, the order of unknowns in `u0` and `p` matches the order that species and
 parameters first appear within the DSL. They can also be determined by examining
-the ordering within the [`species(rn)`](@ref) and [`params(rn)`](@ref) vectors,
+the ordering within the [`species(rn)`](@ref) and [`parameters(rn)`](@ref) vectors,
 or accessed more explicitly through the [`speciesmap(rn)`](@ref) and
 [`paramsmap(rn)`](@ref) dictionaries, which map the ModelingToolkit `Term`s
 and/or `Sym`s corresponding to each species or parameter to their integer id.

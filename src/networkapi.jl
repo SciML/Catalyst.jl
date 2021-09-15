@@ -1,31 +1,61 @@
 # Functions for querying network properties.
 
+# DEPRECIATED after v9.0
+function params(network)
+    Base.depwarn("`params` is deprecated, please use `ModelingToolkit.parameters` for all system and subsystem parameters, or `reactionparams` for all parameters within system and subsystem `Reaction`s.", :params, force=true)
+    parameters(network)
+end
+
+function numparams(network)
+    Base.depwarn("`numparams` is deprecated, please use `length(ModelingToolkit.parameters)` for the total number of parameters across all systems and subsystems, or `numreactionparams` for the number of parameters within system and subsystem `Reaction`s.", :params, force=true)
+    length(parameters(network))
+end
+
 ######### Accessors: #########
+
+function filter_nonrxsys(network)
+    systems   = get_systems(network)
+    rxsystems = ReactionSystem[]
+    for sys in systems
+        (sys isa ReactionSystem) && push!(rxsystems, sys)
+    end
+    rxsystems
+end
+
 
 """
     species(network)
 
-Given a [`ReactionSystem`](@ref), return a vector of species `Variable`s.
+Given a [`ReactionSystem`](@ref), return a vector of all species defined in the system
+and any subsystems that are of type `ReactionSystem`. To get the variables in the system
+and all subsystems, including non-`ReactionSystem` subsystems, uses `states(network)`.
 
 Notes:
-- If `ModelingToolkit.get_systems(network)` is not empty, may allocate. Otherwise returns
-  `ModelingToolkit.get_states(network)`.
+- If `ModelingToolkit.get_systems(network)` is non-empty will allocate.
 """
-function species(network)
-    isempty(get_systems(network)) ? get_states(network) : states(network)
+function species(network, usenamespace=false)
+    sts     = usenamespace ? namespace_variables(get_states(network)) : get_states(network)
+    systems = filter_nonrxsys(network)
+    isempty(systems) && return sts
+    unique([sts; reduce(vcat, species.(systems,true))])
 end
 
 """
-    params(network)
+    reactionparams(network)
 
-Given a [`ReactionSystem`](@ref), return a vector of parameter `Variable`s.
+Given a [`ReactionSystem`](@ref), return a vector of all parameters defined
+within the system and any subsystems that are of type `ReactionSystem`. To get
+the parameters in the system and all subsystems, including non-`ReactionSystem`
+subsystems, use `parameters(network)`.
 
 Notes:
-- If `ModelingToolkit.get_systems(network)` is not empty, may allocate. Otherwise returns
-  `ModelingToolkit.get_ps(network)`.
+- If `ModelingToolkit.get_systems(network)` is non-empty will allocate.
 """
-function params(network)
-    isempty(get_systems(network)) ? get_ps(network) : parameters(network)
+function reactionparams(network, usenamespace=false)
+    ps = usenamespace ? namespace_parameters(get_ps(network)) : get_ps(network)
+    systems = filter_nonrxsys(network)
+    isempty(systems) && return ps
+    unique([ps; reduce(vcat, reactionparams.(systems,true))])
 end
 
 """
@@ -37,15 +67,18 @@ Notes:
 - If `ModelingToolkit.get_systems(network)` is not empty, may allocate. Otherwise returns
   `ModelingToolkit.get_eqs(network)`.
 """
-function reactions(network)
-    isempty(get_systems(network)) ? get_eqs(network) : equations(network)
+function reactions(network, usenamespace=false)
+    rxs = usenamespace ? map(eq -> namespace_equation(eq,network), get_eqs(network)) : get_eqs(network)
+    systems = filter_nonrxsys(network)
+    isempty(systems) && return rxs
+    Reaction[rxs; reduce(vcat, reactions.(systems,true), init=Reaction[])]
 end
 
 """
     speciesmap(network)
 
-Given a [`ReactionSystem`](@ref), return a Dictionary mapping from species to
-species indices. (Allocates)
+Given a [`ReactionSystem`](@ref), return a Dictionary mapping species that
+participate in `Reaction`s to their index within [`species(networw)`](@ref).
 """
 function speciesmap(network)
     Dict(S => i for (i,S) in enumerate(species(network)))
@@ -54,24 +87,26 @@ end
 """
     paramsmap(network)
 
-Given a [`ReactionSystem`](@ref), return a Dictionary mapping from parameters to
-parameter indices. (Allocates)
+Given a [`ReactionSystem`](@ref), return a Dictionary mapping from parameters that
+appear within `Reaction`s to their index within [`reactionparams(network`](@ref).
 """
 function paramsmap(network)
-    Dict(p => i for (i,p) in enumerate(params(network)))
+    Dict(p => i for (i,p) in enumerate(reactionparams(network)))
 end
 
 """
     numspecies(network)
 
-Return the number of species within the given [`ReactionSystem`](@ref).
+Return the number of species within the given [`ReactionSystem`](@ref) that
+participate in `Reaction`s. 
+
+Notes
+- If there are no subsystems this will be fast.
+- As this calls [`species`](@ref), it can be slow and will allocate if there are
+  any subsystems. 
 """
 function numspecies(network)
-    ns = length(get_states(network))
-    for sys in get_systems(network)
-        ns += numspecies(sys)
-    end
-    ns
+    length(species(network))
 end
 
 """
@@ -82,22 +117,24 @@ Return the number of reactions within the given [`ReactionSystem`](@ref).
 function numreactions(network)
     nr = length(get_eqs(network))
     for sys in get_systems(network)
-        nr += numreactions(sys)
+        (sys isa ReactionSystem) && (nr += numreactions(sys))
     end
     nr
 end
 
 """
-    numparams(network)
+    numreactionparams(network)
 
-Return the number of parameters within the given [`ReactionSystem`](@ref).
+Return the number of parameters within the given [`ReactionSystem`](@ref) that
+participate in `Reaction`s.
+
+Notes
+- If there are no subsystems this will be fast.
+- As this calls [`reactionparams`](@ref), it can be slow and will allocate
+  if there are any subsystems. 
 """
-function numparams(network)
-    np = length(get_ps(network))
-    for sys in get_systems(network)
-        np += numparams(sys)
-    end
-    np
+function numreactionparams(network)
+    length(reactionparams(network))
 end
 
 """
@@ -175,6 +212,7 @@ function substoichmat(::Type{Matrix{Int}},rn::ReactionSystem; smap=speciesmap(rn
     smat
 end
 function substoichmat(rn::ReactionSystem; sparse::Bool=false, smap=speciesmap(rn))
+    isempty(get_systems(rn)) || error("substoichmat does not currently support subsystems.")
 	sparse ? substoichmat(SparseMatrixCSC{Int,Int}, rn; smap=smap) : substoichmat(Matrix{Int}, rn; smap=smap)
 end
 
@@ -211,6 +249,7 @@ function prodstoichmat(::Type{Matrix{Int}},rn::ReactionSystem; smap=speciesmap(r
     pmat
 end
 function prodstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
+    isempty(get_systems(rn)) || error("prodstoichmat does not currently support subsystems.")
 	sparse ? prodstoichmat(SparseMatrixCSC{Int,Int}, rn; smap=smap) : prodstoichmat(Matrix{Int}, rn; smap=smap)
 end
 
@@ -245,6 +284,7 @@ function netstoichmat(::Type{Matrix{Int}},rn::ReactionSystem; smap=speciesmap(rn
     nmat
 end
 function netstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
+    isempty(get_systems(rn)) || error("netstoichmat does not currently support subsystems.")
 	sparse ? netstoichmat(SparseMatrixCSC{Int,Int}, rn; smap=smap) : netstoichmat(Matrix{Int}, rn; smap=smap)
 end
 
@@ -305,6 +345,7 @@ Notes:
   `reactionidx`.
 """
 function reactioncomplexmap(rn::ReactionSystem; smap=speciesmap(rn))
+    isempty(get_systems(rn)) || error("reactioncomplexmap does not currently support subsystems.")
     rxs = reactions(rn)
     numreactions(rn) > 0 || error("There must be at least one reaction to find reaction complexes.")
     complextorxsmap = OrderedDict{ReactionComplex{eltype(rxs[1].substoich)},Vector{Pair{Int,Int}}}()
@@ -378,6 +419,7 @@ B_{i j} = \begin{cases}
 """
 function reactioncomplexes(rn::ReactionSystem; sparse=false, smap=speciesmap(rn), 
                            complextorxsmap=reactioncomplexmap(rn; smap=smap))
+    isempty(get_systems(rn)) || error("reactioncomplexes does not currently support subsystems.")
 	sparse ? reactioncomplexes(SparseMatrixCSC{Int,Int}, rn, smap, complextorxsmap) :
              reactioncomplexes(Matrix{Int}, rn, smap, complextorxsmap)
 end
@@ -418,7 +460,8 @@ Notes:
 - Set sparse=true for a sparse matrix representation
 """
 function complexstoichmat(rn::ReactionSystem; sparse=false, rcs=keys(reactioncomplexmap(rn)))
-	sparse ? complexstoichmat(SparseMatrixCSC{Int,Int}, rn, rcs) : 
+    isempty(get_systems(rn)) || error("complexstoichmat does not currently support subsystems.")
+    sparse ? complexstoichmat(SparseMatrixCSC{Int,Int}, rn, rcs) : 
              complexstoichmat(Matrix{Int}, rn, rcs)
 end
 
@@ -468,7 +511,8 @@ Notes:
 - Set sparse=true for a sparse matrix representation
 """
 function complexoutgoingmat(rn::ReactionSystem; sparse=false, B=reactioncomplexes(rn,sparse=sparse)[2])
-	sparse ? complexoutgoingmat(SparseMatrixCSC{Int,Int}, rn, B) : 
+    isempty(get_systems(rn)) || error("complexoutgoingmat does not currently support subsystems.")
+    sparse ? complexoutgoingmat(SparseMatrixCSC{Int,Int}, rn, B) : 
              complexoutgoingmat(Matrix{Int}, rn, B)
 end
 
@@ -607,7 +651,7 @@ function subnetworks(rs::ReactionSystem, lcs::AbstractVector;
                   rxs = reactions(rs),
                   complextorxmap = [map(first,rcmap) for rcmap in values(reactioncomplexmap(rs))],
                   p = parameters(rs))
-
+    isempty(get_systems(rs)) || error("subnetworks does not currently support subsystems.")
     t = get_iv(rs)
     subreac = Vector{ReactionSystem}()
     for i in 1:length(lcs)
@@ -710,7 +754,7 @@ Notes:
 """
 function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
     issetequal(species(rn1), species(rn2)) || return false
-    issetequal(params(rn1), params(rn2)) || return false
+    issetequal(parameters(rn1), parameters(rn2)) || return false
     isequal(get_iv(rn1), get_iv(rn2)) || return false
     (numreactions(rn1) == numreactions(rn2)) || return false
 
@@ -896,7 +940,7 @@ the same units).
 
 """
 function validate(rx::Reaction; info::String = "")     
-    validated = ModelingToolkit._validate([rx.rate], [string(rx, ": rate")], info = info)
+    validated = MT._validate([rx.rate], [string(rx, ": rate")], info = info)
     
     subunits = isempty(rx.substrates) ? nothing : get_unit(rx.substrates[1])
     for i in 2:length(rx.substrates)

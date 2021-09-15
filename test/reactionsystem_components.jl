@@ -101,9 +101,14 @@ sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
 # adding algebraic constraints
 @parameters t, r₊, r₋, β
 @variables A(t), B(t), C(t), D(t)
-rxs = [Reaction(r₊, [A,B], [C]),
-       Reaction(r₋, [C], [A,B])]
-@named rs = ReactionSystem(rxs, t, [A,B,C], [r₊, r₋])
+rxs1 = [Reaction(r₊, [A,B], [C])]
+rxs2 = [Reaction(r₋, [C], [A,B])]
+@named rs1 = ReactionSystem(rxs1, t, [A,B,C], [r₊])
+@named rs2 = ReactionSystem(rxs2, t, [A,B,C], [r₋])
+@named rs  = extend(rs1, rs2)
+@test issetequal(states(rs), [A,B,C])
+@test issetequal(parameters(rs), [r₊,r₋])
+@test issetequal(equations(rs), union(rxs1,rxs2))
 A2 = ModelingToolkit.ParentScope(A)
 B2 = ModelingToolkit.ParentScope(B)
 nseqs = [D ~ 2*A2 + β*B2]
@@ -115,3 +120,12 @@ u₀ = [A => 1.0, B => 2.0, C => 0.0]
 oprob = ODEProblem(structural_simplify(osys), u₀, (0.0,10.0), p)
 sol = solve(oprob, Tsit5())
 @test isapprox(0, norm(sol[ns.D] .- 2*sol[A] - 3*sol[B]), atol=(100*eps())) 
+
+# test API functions for composed model
+@test issetequal(species(rs), [A,B,C])
+@test issetequal(states(rs), [A,B,C,ns.D])
+@test issetequal(reactionparams(rs), [r₊,r₋])
+@test issetequal(parameters(rs), [r₊,r₋,ns.β])
+@test issetequal(reactions(rs), union(rxs1,rxs2))
+@test issetequal(filter(eq -> eq isa Reaction, equations(rs)), union(rxs1,rxs2))
+@test issetequal(filter(eq -> eq isa Equation, equations(rs)), [ModelingToolkit.namespace_equation(nseqs[1],ns)])

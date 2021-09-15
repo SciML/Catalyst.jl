@@ -21,7 +21,7 @@ tspan = (0.,4.)
 u0    = [5.]   
 osys  = convert(ODESystem, rs)
 u0map = map((x,y) -> Pair(x,y), species(rs), u0)
-pmap  = map((x,y) -> Pair(x,y), params(rs), p)
+pmap  = map((x,y) -> Pair(x,y), parameters(rs), p)
 oprob = ODEProblem(osys, u0map, tspan, pmap)
 sol   = solve(oprob, Tsit5())
 ```

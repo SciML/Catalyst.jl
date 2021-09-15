@@ -6,7 +6,7 @@ API method listed first:
 
 * [`species(rn)`](@ref) and `states(rn)` is a vector of all the chemical
   species within the system, each represented as a `ModelingToolkit.Term`.
-* [`params(rn)`](@ref) and `parameters(rn)` is a vector of all the parameters
+* [`parameters(rn)`](@ref) is a vector of all the parameters
   within the system, each represented as a `ModelingToolkit.Sym`.
 * [`reactions(rn)`](@ref) and `equations(rn)` is a vector of all the
   `Reaction`s within the system.

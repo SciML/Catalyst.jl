@@ -79,12 +79,13 @@ ReactionSystem
 ```@docs
 species
 speciesmap
-params
+ModelingToolkit.parameters
+reactionparams
 paramsmap
 reactions
 numspecies
 numparams
-numreactions
+numreactionparams
 ```
 
 ## Basic Reaction Properties
