@@ -1,4 +1,4 @@
-# The generated [`ReactionSystem`](@ref) and [`Reaction`](@ref)s
+# The generated `ReactionSystem` and `Reaction`s
 
 ### [`ReactionSystem`](@ref) Accessors
 

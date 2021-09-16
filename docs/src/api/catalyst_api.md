@@ -76,6 +76,8 @@ ReactionSystem
 ```
 
 ## Basic System Properties
+See [The generated `ReactionSystem` and `Reaction`s](@ref) for more details
+
 ```@docs
 species
 speciesmap
@@ -88,6 +90,8 @@ numreactionparams
 ```
 
 ## ModelingToolkit-Inherited Accessor Functions
+See [The generated `ReactionSystem` and `Reaction`s](@ref) for more details
+
 - `ModelingToolkit.get_eqs(sys)`: The reactions of the system (ignores subsystems).
 - `ModelingToolkit.equations(sys)`: Collects all reactions and equations from
   the system and all subsystems.
@@ -96,6 +100,8 @@ numreactionparams
 - `ModelingToolkit.get_ps(sys)`: The parameters of the system (ignores subsystems).
 - `ModelingToolkit.parameters(sys)`: Collects all parameters from the system and all subsystems.
 - `ModelingToolkit.get_iv(sys)`: The independent variable of the system, usually time.
+- `ModelingToolkit.get_systems(sys)`: The sub-systems of `sys`.
+- `ModelingToolkit.get_defaults(sys)`: The default values for parameters and initial conditions for `sys`.
 
 ## Basic Reaction Properties
 ```@docs
