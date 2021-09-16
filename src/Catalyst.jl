@@ -23,11 +23,12 @@ const DEFAULT_IV = (@parameters t)[1]
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, LightGraphs
-import Nemo: FlintZZ, matrix, nullspace, rank
-
-# convenience shorthands for packages
-const MT = ModelingToolkit
 const LG = LightGraphs
+const MT = ModelingToolkit
+
+import AbstractAlgebra; const AA = AbstractAlgebra
+
+
 
 # as used in Catlab
 const USE_GV_JLL = Ref(false)
