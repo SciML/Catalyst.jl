@@ -816,7 +816,7 @@ function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
 
     # subsystems
     (length(get_systems(rn1)) == length(get_systems(rn2))) || return false
-    issetequal(get_systems(rn1), get_systems(rn2))
+    issetequal(get_systems(rn1), get_systems(rn2)) || return false
 
     true
 end
