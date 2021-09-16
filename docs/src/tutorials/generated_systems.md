@@ -37,4 +37,5 @@ Empty `ReactionSystem`s can be generated via [`make_empty_network`](@ref) or
 [`@reaction_network`](@ref) with no arguments (giving one argument to the latter
 will specify a system name). `ReactionSystem`s can be programmatically extended
 using [`addspecies!`](@ref), [`addparam!`](@ref), [`addreaction!`](@ref),
-[`@add_reactions`](@ref), or composed using `merge` and `merge!`.
+[`@add_reactions`](@ref), or composed using [`ModelingToolkit.extend`](@ref) and
+`ModelingToolkit.compose`](@ref).

@@ -21,7 +21,7 @@ import ModelingToolkit: check_variables, check_parameters, _iszero, _merge, chec
 const DEFAULT_IV = (@parameters t)[1]
 @reexport using ModelingToolkit
 
-import Base: (==), merge!, merge, hash, size, getindex, setindex, isless, Sort.defalg, length, show
+import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, LightGraphs
 import Nemo: FlintZZ, matrix, nullspace, rank
 

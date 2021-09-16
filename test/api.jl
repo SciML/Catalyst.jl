@@ -49,7 +49,7 @@ addparam!(rs3, k3)
 addparam!(rs3, k4)
 addreaction!(rs3, Reaction(k3, [S], [D]))
 addreaction!(rs3, Reaction(k4, [S,I], [D]))
-rs4 = merge(rs, rs3)
+rs4 = extend(rs, rs3)
 @test rs2 == rs4
 
 rxs = [Reaction(k1*S, [S,I], [I], [2,3], [2]),

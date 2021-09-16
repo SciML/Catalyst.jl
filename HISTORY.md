@@ -10,6 +10,11 @@
   subsystems it is not currently possible to convert to a `JumpSystem`. It is
   also not possible to include either `SDESystem`s or `JumpSystems` as
   subsystems.
+- Depreciated `merge`, use `ModelingToolkit.extend` instead.
+- Depreciated `params` and `numparams` (use `ModelingToolkit.parameters` to get
+  all parameters of a system and all subsystems, or use `reactionparams` to get
+  all parameters of a system and all `ReactionSystem` subsystems. The latter
+  correspond to those parameters used within `Reaction`s.)
 
 ## Catalyst 9.0
 *1.* **BREAKING:** `netstoichmat`, `prodstoichmat` and `substoichmat` are now
