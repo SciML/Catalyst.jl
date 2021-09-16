@@ -76,16 +76,32 @@ ReactionSystem
 ```
 
 ## Basic System Properties
+See [The generated `ReactionSystem` and `Reaction`s](@ref) for more details
+
 ```@docs
 species
 speciesmap
-params
+reactionparams
 paramsmap
 reactions
 numspecies
-numparams
 numreactions
+numreactionparams
 ```
+
+## ModelingToolkit-Inherited Accessor Functions
+See [The generated `ReactionSystem` and `Reaction`s](@ref) for more details
+
+- `ModelingToolkit.get_eqs(sys)`: The reactions of the system (ignores subsystems).
+- `ModelingToolkit.equations(sys)`: Collects all reactions and equations from
+  the system and all subsystems.
+- `ModelingToolkit.get_states(sys)`: The set of chemical species in the system (ignores subsystems).
+- `ModelingToolkit.states(sys)`: Collects all species and states from the system and all subsystems.
+- `ModelingToolkit.get_ps(sys)`: The parameters of the system (ignores subsystems).
+- `ModelingToolkit.parameters(sys)`: Collects all parameters from the system and all subsystems.
+- `ModelingToolkit.get_iv(sys)`: The independent variable of the system, usually time.
+- `ModelingToolkit.get_systems(sys)`: The sub-systems of `sys`.
+- `ModelingToolkit.get_defaults(sys)`: The default values for parameters and initial conditions for `sys`.
 
 ## Basic Reaction Properties
 ```@docs
@@ -98,21 +114,15 @@ netstoichmat
 reactionrates
 ```
 
-## Composition and Accessor Functions for [`ReactionSystem`](@ref)s
-- `ModelingToolkit.get_eqs(sys)` or `equations(sys)`: The reactions that define the system.
-- `ModelingToolkit.get_states(sys)` or `states(sys)`: The set of chemical species in the system.
-- `ModelingToolkit.get_ps(sys)` or `parameters(sys)`: The parameters of the system.
-- `ModelingToolkit.get_iv(sys)`: The independent variable of the reaction
-  system, usually time.
-
 ## Functions to Extend a Network
 ```@docs
 @add_reactions
 addspecies!
 addparam!
 addreaction!
+ModelingToolkit.extend
+ModelingToolkit.compose
 merge!(network1::ReactionSystem, network2::ReactionSystem)
-merge(network1::ReactionSystem, network2::ReactionSystem)
 ```
 
 ## Network Analysis and Representations
@@ -136,8 +146,9 @@ isweaklyreversible
 
 ## Network Comparison 
 ```@docs
-==(rn1::ReactionSystem, rn2::ReactionSystem)
 ==(rn1::Reaction, rn2::Reaction)
+isequal_without_names
+==(rn1::ReactionSystem, rn2::ReactionSystem)
 ```
 
 ## Network Visualization

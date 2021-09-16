@@ -203,7 +203,7 @@ struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
     end
 end
 
-function ReactionSystem(eqs, iv, species, params;
+function ReactionSystem(eqs, iv, species, ps;
                         observed = [],
                         systems = [],
                         name = nothing,
@@ -214,7 +214,8 @@ function ReactionSystem(eqs, iv, species, params;
                         checks = true)
     name === nothing && throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
 
-    ReactionSystem(eqs, iv, species, params, observed, name, systems, defaults, connection_type, checks = checks)
+    ReactionSystem(eqs, iv, species, ps, observed, name, systems, defaults, connection_type, 
+                   checks = checks)
 end
 
 function ReactionSystem(iv; kwargs...)

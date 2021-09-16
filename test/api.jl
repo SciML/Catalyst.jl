@@ -16,7 +16,7 @@ pset = Set([value(k1) => 1, value(k2) => 2])
 
 rxs2 = [Reaction(k2, [I], [R], [1], [1]),
         Reaction(k1, [S,I], [I], [1,1], [2])]
-@named rs2 = ReactionSystem(rxs2, t, [R,I,S], [k2,k1])
+rs2 = ReactionSystem(rxs2, t, [R,I,S], [k2,k1], name=:rs)
 @test rs == rs2
 
 rs3 = make_empty_network()
@@ -27,7 +27,7 @@ addspecies!(rs3, D)
 addparam!(rs3, k3)
 addparam!(rs3, k4)
 @test issetequal(species(rs3), [S, D])
-@test issetequal(params(rs3), [k3, k4])
+@test issetequal(parameters(rs3), [k3, k4])
 addreaction!(rs3, Reaction(k3, [S], [D]))
 addreaction!(rs3, Reaction(k4, [S,I], [D]))
 merge!(rs, rs3)
@@ -49,7 +49,7 @@ addparam!(rs3, k3)
 addparam!(rs3, k4)
 addreaction!(rs3, Reaction(k3, [S], [D]))
 addreaction!(rs3, Reaction(k4, [S,I], [D]))
-rs4 = merge(rs, rs3)
+rs4 = extend(rs, rs3)
 @test rs2 == rs4
 
 rxs = [Reaction(k1*S, [S,I], [I], [2,3], [2]),
