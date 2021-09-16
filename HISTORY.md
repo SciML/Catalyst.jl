@@ -1,13 +1,19 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch) 
-- **BREAKING:** added a dependency on Nemo.jl for integer matrix linear algebra methods.
-- Added `incidencematgraph`, `linkageclasses`, `deficiency`, `subnetworks`, `linkagedeficiency`, `isreversible` and `isweaklyreversible` API functions.
+- Added `incidencematgraph`, `linkageclasses`, `deficiency`, `subnetworks`,
+  `linkagedeficiency`, `isreversible` and `isweaklyreversible` API functions.
+- Added the ability to compose `ReactionSystem`s via subsystems, and include
+  either `ODESystem`s or `NonlinearSystem`s as subsystems. Note, if using
+  subsystems it is not currently possible to convert to a `JumpSystem`. It is
+  also not possible to include either `SDESystem`s or `JumpSystems` as
+  subsystems.
 
 ## Catalyst 9.0
-*1.* **BREAKING:** `netstoichmat`, `prodstoichmat` and `substoichmat` are now transposed to be
-number of species by number of reactions. This is more consistent with the chemical
-reaction network literature for stoichiometry matrices.
+*1.* **BREAKING:** `netstoichmat`, `prodstoichmat` and `substoichmat` are now
+transposed to be number of species by number of reactions. This is more
+consistent with the chemical reaction network literature for stoichiometry
+matrices.
 
 *2.* `reactioncomplexmap` added to provide a mapping from reaction complexes to
 reactions they participate in.
