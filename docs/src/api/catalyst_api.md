@@ -112,8 +112,8 @@ reactionrates
 addspecies!
 addparam!
 addreaction!
-merge!(network1::ReactionSystem, network2::ReactionSystem)
-merge(network1::ReactionSystem, network2::ReactionSystem)
+ModelingToolkit.extend
+ModelingToolkit.compose
 ```
 
 ## Network Analysis and Representations
@@ -131,6 +131,8 @@ linkageclasses
 deficiency
 subnetworks
 linkagedeficiencies
+isreversible
+isweaklyreversible
 ```
 
 ## Network Comparison 

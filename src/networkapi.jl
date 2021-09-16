@@ -2,13 +2,34 @@
 
 # DEPRECIATED after v9.0
 function params(network)
-    Base.depwarn("`params` is deprecated, please use `ModelingToolkit.parameters` for all system and subsystem parameters, or `reactionparams` for all parameters within system and subsystem `Reaction`s.", :params, force=true)
+    Base.depwarn("`params` is depreciated, please use `ModelingToolkit.parameters` for all system and subsystem parameters, or `reactionparams` for all parameters within system and subsystem `Reaction`s.", :params, force=true)
     parameters(network)
 end
 
 function numparams(network)
-    Base.depwarn("`numparams` is deprecated, please use `length(ModelingToolkit.parameters)` for the total number of parameters across all systems and subsystems, or `numreactionparams` for the number of parameters within system and subsystem `Reaction`s.", :params, force=true)
+    Base.depwarn("`numparams` is depreciated, please use `length(ModelingToolkit.parameters)` for the total number of parameters across all systems and subsystems, or `numreactionparams` for the number of parameters within system and subsystem `Reaction`s.", :params, force=true)
     length(parameters(network))
+end
+
+"""
+    merge(network1::ReactionSystem, network2::ReactionSystem)
+
+Create a new network merging `network1` and `network2`.
+
+Notes:
+- Duplicate reactions between the two networks are not filtered out.
+- [`Reaction`](@ref)s are not deepcopied to minimize allocations, so the new
+  network will share underlying data arrays.
+- Subsystems are not deepcopied between the two networks and will hence be
+  shared.
+- Returns the merged network.
+"""
+function Base.merge(network1::ReactionSystem, network2::ReactionSystem)
+    Base.depwarn("`merge(sys1::ReactionSystem, sys2::ReactionNetwork)` is depreciated, please use `ModelingToolkit.extend` instead.", :merge, force=true)
+    network = make_empty_network()
+    merge!(network, network1)
+    merge!(network, network2)
+    network
 end
 
 ######### Accessors: #########
@@ -684,7 +705,36 @@ function linkagedeficiencies(subnets, lcs)
     δ
 end
 	
+						
+"""
+    isreversible(incidencegraph)
 
+Given an incidence graph of the reaction network, returns if the network is reversible or not.
+For example, continuing the example from [`linkagedeficiencies`](@ref)
+```julia
+isreversible(incidence_graph)
+```
+"""
+function isreversible(ig::LG.SimpleDiGraph)
+    LG.reverse(ig) == ig
+end
+
+"""
+    isweaklyreversible(subnetworks)
+
+Given the subnetworks corresponding to the each linkage class of reaction network,
+determines if the reaction network is weakly reversible or not.
+For example, continuing the example from [`is_reversible`](@ref)
+```julia
+isweaklyreversible(subnets)
+```
+"""
+function isweaklyreversible(subnets::Vector{ReactionSystem})
+    igs = [incidencematgraph(reactioncomplexes(subrs)[2]) for subrs in subnets]
+    all([LG.is_strongly_connected(ig) for ig in igs])
+end
+								
+								
 ################################################################################################
 ######################## conservation laws ###############################
 
@@ -736,7 +786,8 @@ function (==)(rn1::Reaction, rn2::Reaction)
     isequal(rn1.rate, rn2.rate) || return false
     issetequal(zip(rn1.substrates,rn1.substoich), zip(rn2.substrates,rn2.substoich)) || return false
     issetequal(zip(rn1.products,rn1.prodstoich), zip(rn2.products,rn2.prodstoich)) || return false
-    issetequal(rn1.netstoich, rn2.netstoich)
+    issetequal(rn1.netstoich, rn2.netstoich) || return false
+    rn1.only_use_rate == rn2.only_use_rate
 end
 
 
@@ -744,28 +795,29 @@ end
     ==(rn1::ReactionSystem, rn2::ReactionSystem)
 
 Tests whether the underlying species, parameters and reactions are the same in
-the two [`ReactionSystem`](@ref)s. Ignores order network components were
-defined.
+the two [`ReactionSystem`](@ref)s. 
 
 Notes:
 - *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
     considered different than `(A+1)^2`.
-- Flattens subsystems, and hence may allocate, when checking equality.
+- Does not include `defaults` in determining equality.
 """
 function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
-    issetequal(species(rn1), species(rn2)) || return false
-    issetequal(parameters(rn1), parameters(rn2)) || return false
+    (nameof(rn1) == nameof(rn2)) || return false
     isequal(get_iv(rn1), get_iv(rn2)) || return false
-    (numreactions(rn1) == numreactions(rn2)) || return false
+    issetequal(get_states(rn1), get_states(rn2)) || return false
+    issetequal(get_ps(rn1), get_ps(rn2)) || return false
+    issetequal(MT.get_observed(rn1), MT.get_observed(rn2))
+  
+    # reactions
+    # issetequal fails for some reason, so need to use issubset
+    (length(get_eqs(rn1)) == length(get_eqs(rn2))) || return false
+    issubset(get_eqs(rn1),get_eqs(rn2)) && issubset(get_eqs(rn2),get_eqs(rn1)) || return false
 
-    # the following fails for some reason, so need to use issubset
-    #issetequal(equations(rn1), equations(rn2)) || return false
-    (issubset(reactions(rn1),reactions(rn2)) && issubset(reactions(rn2),reactions(rn1))) || return false
+    # subsystems
+    (length(get_systems(rn1)) == length(get_systems(rn2))) || return false
+    issetequal(get_systems(rn1), get_systems(rn2))
 
-    # BELOW SHOULD NOT BE NEEDED as species, params and equations flatten
-    #issetequal(rn1.systems, rn2.systems) || return false
-    # sys1 = rn1.systems; sys2 = rn2.systems
-    # (issubset(sys1,sys2) && issubset(sys2,sys1)) || return false
     true
 end
 
@@ -881,7 +933,6 @@ function addreaction!(network::ReactionSystem, rx::Reaction)
     length(get_eqs(network))
 end
 
-
 """
     merge!(network1::ReactionSystem, network2::ReactionSystem)
 
@@ -894,37 +945,17 @@ Notes:
 - Subsystems are not deepcopied between the two networks and will hence be
   shared.
 - Returns `network1`.
-- Does not currently handle pins.
 """
 function Base.merge!(network1::ReactionSystem, network2::ReactionSystem)
     isequal(get_iv(network1), get_iv(network2)) || 
         error("Reaction networks must have the same independent variable to be mergable.")
+    append!(get_eqs(network1), get_eqs(network2))
     union!(get_states(network1), get_states(network2))
     union!(get_ps(network1), get_ps(network2))
-    append!(get_eqs(network1), get_eqs(network2))
+    append!(get_observed(network1), get_observed(network2))    
     append!(get_systems(network1), get_systems(network2))
+    merge!(get_defaults(network1), get_defaults(network2))
     network1
-end
-
-"""
-    merge(network1::ReactionSystem, network2::ReactionSystem)
-
-Create a new network merging `network1` and `network2`.
-
-Notes:
-- Duplicate reactions between the two networks are not filtered out.
-- [`Reaction`](@ref)s are not deepcopied to minimize allocations, so the new
-  network will share underlying data arrays.
-- Subsystems are not deepcopied between the two networks and will hence be
-  shared.
-- Returns the merged network.
-- Does not currently handle pins.
-"""
-function Base.merge(network1::ReactionSystem, network2::ReactionSystem)
-    network = make_empty_network()
-    merge!(network, network1)
-    merge!(network, network2)
-    network
 end
 
 
@@ -972,6 +1003,9 @@ end
 Check that all species in the [`ReactionSystem`](@ref) have the same units, and
 that the rate laws of all reactions reduce to units of (species units) / (time
 units).
+
+Notes:
+- Does not check subsystems too. 
 """
 function validate(rs::ReactionSystem, info::String="")
     specs = get_states(rs)
