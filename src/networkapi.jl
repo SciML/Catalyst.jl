@@ -571,7 +571,7 @@ netstoich_mat    = netstoichmat(sir)
 ```
 """
 function deficiency(ns, ig, lc)
-    LG.nv(ig) - length(lc) - rank(matrix(FlintZZ,ns))
+    LG.nv(ig) - length(lc) - AA.rank(AA.matrix(AA.ZZ,ns))
 end
 
 function subnetworkmapping(linkageclass, allrxs, complextorxmap, p)
@@ -635,7 +635,7 @@ function linkagedeficiencies(subnets, lcs)
     δ = zeros(Int,length(lcs))
     for (i,subnet) in enumerate(subnets)
         ns_sub = netstoichmat(subnet)
-        δ[i] = length(lcs[i]) - 1 - rank(matrix(FlintZZ, ns_sub))
+        δ[i] = length(lcs[i]) - 1 - AA.rank(AA.matrix(AA.ZZ, ns_sub))
     end
     δ
 end
@@ -682,17 +682,14 @@ conservation laws, each represented as a row in the output.
 function conservationlaws(nsm::AbstractMatrix)
 
     # We basically have to compute the left null space of the matrix
-    # over the integers. We do this using Nemo's Flint integer (ZZ) interface.
-    N = nullspace(matrix(FlintZZ, nsm'))[2]
-
-    # to save allocations we manually take the adjoint when converting back
-    # to a Julia integer matrix from the Nemo matrix. 
-    ret = [convert(Int,N[i,j]) for j=1:size(N,2), i=1:size(N,1)]  
+    # over the integers. We do this using AbstractAlgebra's integer (ZZ) interface.
+    N   = AA.left_kernel(AA.matrix(AA.ZZ, nsm))[2]
+    ret = convert.(Int,N) 
 
     # If all coefficients for a conservation law are negative
     # we might as well flip them to become positive
-    for retcol in eachcol(ret)
-        all(r -> r <= 0, retcol) && (retcol .*= -1)
+    for retrow in eachrow(ret)
+        all(r -> r <= 0, retrow) && (retrow .*= -1)
     end
     
     ret
