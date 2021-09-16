@@ -773,7 +773,7 @@ conservedquantities(state, cons_laws) = cons_laws * state
 ######################## reaction network operators #######################
 
 """
-    ==(rn1::Reaction, rn2::Reaction)
+    ==(rx1::Reaction, rx2::Reaction)
 
 Tests whether two [`Reaction`](@ref)s are identical.
 
@@ -782,28 +782,27 @@ Notes:
 - *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
     considered different than `(A+1)^2`.
 """
-function (==)(rn1::Reaction, rn2::Reaction)
-    isequal(rn1.rate, rn2.rate) || return false
-    issetequal(zip(rn1.substrates,rn1.substoich), zip(rn2.substrates,rn2.substoich)) || return false
-    issetequal(zip(rn1.products,rn1.prodstoich), zip(rn2.products,rn2.prodstoich)) || return false
-    issetequal(rn1.netstoich, rn2.netstoich) || return false
-    rn1.only_use_rate == rn2.only_use_rate
+function (==)(rx1::Reaction, rx2::Reaction)
+    isequal(rx1.rate, rx2.rate) || return false
+    issetequal(zip(rx1.substrates,rx1.substoich), zip(rx2.substrates,rx2.substoich)) || return false
+    issetequal(zip(rx1.products,rx1.prodstoich), zip(rx2.products,rx2.prodstoich)) || return false
+    issetequal(rx1.netstoich, rx2.netstoich) || return false
+    rx1.only_use_rate == rx2.only_use_rate
 end
 
-
 """
-    ==(rn1::ReactionSystem, rn2::ReactionSystem)
+    isequal_without_names(rn1::ReactionSystem, rn2::ReactionSystem)
 
 Tests whether the underlying species, parameters and reactions are the same in
-the two [`ReactionSystem`](@ref)s. 
+the two [`ReactionSystem`](@ref)s. Ignores the names of the systems in testing
+equality.
 
 Notes:
 - *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
     considered different than `(A+1)^2`.
 - Does not include `defaults` in determining equality.
 """
-function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
-    (nameof(rn1) == nameof(rn2)) || return false
+function isequal_without_names(rn1::ReactionSystem, rn2::ReactionSystem)
     isequal(get_iv(rn1), get_iv(rn2)) || return false
     issetequal(get_states(rn1), get_states(rn2)) || return false
     issetequal(get_ps(rn1), get_ps(rn2)) || return false
@@ -819,6 +818,23 @@ function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
     issetequal(get_systems(rn1), get_systems(rn2)) || return false
 
     true
+end
+
+"""
+    ==(rn1::ReactionSystem, rn2::ReactionSystem)
+
+Tests whether the underlying species, parameters and reactions are the same in
+the two [`ReactionSystem`](@ref)s. Requires the systems to have the same names
+too.
+
+Notes:
+- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
+    considered different than `(A+1)^2`.
+- Does not include `defaults` in determining equality.
+"""
+function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
+    (nameof(rn1) == nameof(rn2)) || return false
+    isequal_without_names(rn1,rn2)
 end
 
 
