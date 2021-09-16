@@ -11,7 +11,7 @@ using Latexify, Requires
 using ModelingToolkit; 
 using Symbolics
 using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems, 
-                       get_eqs, get_defaults, toparam
+                       get_eqs, get_defaults, toparam, get_defaults, get_observed
 import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!, 
                         modified_states!, validate, namespace_variables, namespace_parameters
 
