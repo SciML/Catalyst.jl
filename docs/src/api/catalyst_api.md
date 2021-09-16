@@ -130,6 +130,8 @@ linkageclasses
 deficiency
 subnetworks
 linkagedeficiencies
+isreversible
+isweaklyreversible
 ```
 
 ## Network Comparison 
