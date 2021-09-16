@@ -85,8 +85,7 @@ end
 Given a [`ReactionSystem`](@ref), return a vector of all `Reactions` in the system.
 
 Notes:
-- If `ModelingToolkit.get_systems(network)` is not empty, may allocate. Otherwise returns
-  `ModelingToolkit.get_eqs(network)`.
+- If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
 """
 function reactions(network, usenamespace=false)
     rxs = usenamespace ? map(eq -> namespace_equation(eq,network), get_eqs(network)) : get_eqs(network)
@@ -99,7 +98,7 @@ end
     speciesmap(network)
 
 Given a [`ReactionSystem`](@ref), return a Dictionary mapping species that
-participate in `Reaction`s to their index within [`species(networw)`](@ref).
+participate in `Reaction`s to their index within [`species(network)`](@ref).
 """
 function speciesmap(network)
     Dict(S => i for (i,S) in enumerate(species(network)))
@@ -109,7 +108,7 @@ end
     paramsmap(network)
 
 Given a [`ReactionSystem`](@ref), return a Dictionary mapping from parameters that
-appear within `Reaction`s to their index within [`reactionparams(network`](@ref).
+appear within `Reaction`s to their index within [`reactionparams(network)`](@ref).
 """
 function paramsmap(network)
     Dict(p => i for (i,p) in enumerate(reactionparams(network)))
@@ -118,8 +117,8 @@ end
 """
     numspecies(network)
 
-Return the number of species within the given [`ReactionSystem`](@ref) that
-participate in `Reaction`s. 
+Return the total number of species within the given [`ReactionSystem`](@ref) and
+subsystems that are `ReactionSystem`s. 
 
 Notes
 - If there are no subsystems this will be fast.
@@ -133,7 +132,8 @@ end
 """
     numreactions(network)
 
-Return the number of reactions within the given [`ReactionSystem`](@ref).
+Return the total number of reactions within the given [`ReactionSystem`](@ref)
+and subsystems that are `ReactionSystem`s.
 """
 function numreactions(network)
     nr = length(get_eqs(network))
@@ -146,13 +146,13 @@ end
 """
     numreactionparams(network)
 
-Return the number of parameters within the given [`ReactionSystem`](@ref) that
-participate in `Reaction`s.
+Return the total number of parameters within the given [`ReactionSystem`](@ref)
+and subsystems that are `ReactionSystem`s.
 
 Notes
 - If there are no subsystems this will be fast.
-- As this calls [`reactionparams`](@ref), it can be slow and will allocate
-  if there are any subsystems. 
+- As this calls [`reactionparams`](@ref), it can be slow and will allocate if
+  there are any subsystems. 
 """
 function numreactionparams(network)
     length(reactionparams(network))

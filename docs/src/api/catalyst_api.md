@@ -79,12 +79,11 @@ ReactionSystem
 ```@docs
 species
 speciesmap
-ModelingToolkit.parameters
 reactionparams
 paramsmap
 reactions
 numspecies
-numparams
+numreactions
 numreactionparams
 ```
 
@@ -117,6 +116,7 @@ addparam!
 addreaction!
 ModelingToolkit.extend
 ModelingToolkit.compose
+merge!
 ```
 
 ## Network Analysis and Representations
