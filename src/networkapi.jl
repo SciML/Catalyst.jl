@@ -683,8 +683,11 @@ function conservationlaws(nsm::AbstractMatrix)
 
     # We basically have to compute the left null space of the matrix
     # over the integers. We do this using AbstractAlgebra's integer (ZZ) interface.
-    N   = AA.left_kernel(AA.matrix(AA.ZZ, nsm))[2]
-    ret = convert.(Int,N) 
+    N   = AA.nullspace(AA.matrix(AA.ZZ, nsm'))[2]
+    
+    # to save allocations we manually take the adjoint when converting back
+    # to a Julia integer matrix from the Nemo matrix. 
+    ret = [convert(Int,N[i,j]) for j=1:size(N,2), i=1:size(N,1)]  
 
     # If all coefficients for a conservation law are negative
     # we might as well flip them to become positive
