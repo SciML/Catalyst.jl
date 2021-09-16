@@ -16,7 +16,7 @@ pset = Set([value(k1) => 1, value(k2) => 2])
 
 rxs2 = [Reaction(k2, [I], [R], [1], [1]),
         Reaction(k1, [S,I], [I], [1,1], [2])]
-@named rs2 = ReactionSystem(rxs2, t, [R,I,S], [k2,k1])
+rs2 = ReactionSystem(rxs2, t, [R,I,S], [k2,k1], name=:rs)
 @test rs == rs2
 
 rs3 = make_empty_network()
