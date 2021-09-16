@@ -116,7 +116,7 @@ addparam!
 addreaction!
 ModelingToolkit.extend
 ModelingToolkit.compose
-merge!
+merge!(network1::ReactionSystem, network2::ReactionSystem)
 ```
 
 ## Network Analysis and Representations

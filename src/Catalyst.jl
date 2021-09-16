@@ -8,7 +8,8 @@ using SparseArrays, DiffEqBase, Reexport, DiffEqJump
 using Latexify, Requires
 
 # ModelingToolkit imports and convenience functions we use
-using ModelingToolkit; 
+using ModelingToolkit; const MT = ModelingToolkit
+@reexport using ModelingToolkit
 using Symbolics
 using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems, 
                        get_eqs, get_defaults, toparam, get_defaults, get_observed
@@ -18,17 +19,13 @@ import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_v
 # internal but needed ModelingToolkit functions
 import ModelingToolkit: check_variables, check_parameters, _iszero, _merge, check_units, get_unit
 
-const DEFAULT_IV = (@parameters t)[1]
-@reexport using ModelingToolkit
-
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
-import MacroTools, LightGraphs
+import MacroTools, LightGraphs, AbstractAlgebra
+
+# globals for the modulate
 const LG = LightGraphs
-const MT = ModelingToolkit
-
-import AbstractAlgebra; const AA = AbstractAlgebra
-
-
+const AA = AbstractAlgebra
+const DEFAULT_IV = (@parameters t)[1]
 
 # as used in Catlab
 const USE_GV_JLL = Ref(false)
