@@ -2,7 +2,7 @@
 In this tutorial we'll provide an introduction to using Catalyst to specify
 chemical reaction networks, and then to solve ODE, jump, and SDE models generated
 from them. Let's start by using the Catalyst [`@reaction_network`](@ref) macro
-to specify a simply chemical reaction network: the well-known repressilator.
+to specify a simple chemical reaction network: the well-known repressilator.
 
 We first import the basic packages we'll need:
 
