@@ -225,15 +225,10 @@ end
 function ModelingToolkit.equations(sys::ReactionSystem)
     eqs = get_eqs(sys)
     systems = get_systems(sys)
-    if isempty(systems)
-        return eqs
-    else
-        eqs = Any[eqs;
-               reduce(vcat,
-                      ModelingToolkit.namespace_equations.(get_systems(sys));
-                      init=Any[])]
-        return eqs
+    if !isempty(systems)
+        eqs = Any[eqs; reduce(vcat, MT.namespace_equations.(systems); init=Any[])]
     end
+    eqs
 end
 
 """
@@ -465,7 +460,6 @@ function make_systems_with_type!(systems::Vector{T}, rs::ReactionSystem, include
     end    
     systems
 end
-
 """
 ```julia
 Base.convert(::Type{<:ODESystem},rs::ReactionSystem)

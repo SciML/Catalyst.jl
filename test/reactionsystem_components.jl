@@ -129,3 +129,25 @@ sol = solve(oprob, Tsit5())
 @test issetequal(reactions(rs), union(rxs1,rxs2))
 @test issetequal(filter(eq -> eq isa Reaction, equations(rs)), union(rxs1,rxs2))
 @test issetequal(filter(eq -> eq isa Equation, equations(rs)), [ModelingToolkit.namespace_equation(nseqs[1],ns)])
+
+# check several levels of nesting namespace and filter ok for the API functions
+@parameters t, p1, p2a, p2b, p3a, p3b
+@variables A1(t), A2a(t), A2b(t), A3a(t), A3b(t)
+rxs1 = [Reaction(p1, [A1], nothing)]
+rxs2 = [Reaction(p2a, [A2a], nothing), Reaction(p2b, [ParentScope(A1)], nothing)]
+eqs2 = [ParentScope(A1) ~ ParentScope(p1)*A2b]
+rxs3 = [Reaction(p3a, [A3a], nothing), Reaction(ParentScope(p2a), nothing, [ParentScope(A2a)])]
+eqs3 = [ParentScope(A2a) ~ p3b*A3b]
+
+@named rs3 = ReactionSystem(rxs3,t,[A3a,ParentScope(A2a)],[p3a,ParentScope(p2a)])
+@named ns3 = NonlinearSystem(eqs3,[ParentScope(A2a),A3b],[p3b])
+@named rs2 = ReactionSystem(rxs2,t,[A2a,ParentScope(A1)],[p2a,p2b], systems=[rs3,ns3])
+@named ns2 = NonlinearSystem(eqs2,[ParentScope(A1),A2b],[ParentScope(p1)])
+@named rs1 = ReactionSystem(rxs1,t,[A1],[p1],systems=[rs2,ns2])
+
+@test issetequal(states(rs1), [A1,rs2.A2a,ns2.A2b,rs2.rs3.A3a,rs2.ns3.A3b])
+@test issetequal(species(rs1), [A1,rs2.A2a,rs2.rs3.A3a])
+@test issetequal(parameters(rs1), [p1,rs2.p2a,rs2.p2b,rs2.rs3.p3a,rs2.ns3.p3b])
+@test issetequal(reactionparams(rs1), [p1, rs2.p2a, rs2.p2b, rs2.rs3.p3a])
+rxs = [rx for rx in Iterators.filter(eq -> eq isa Reaction, equations(rs1))]
+@test issubset(rxs, reactions(rs1)) && issubset(reactions(rs1), rxs)

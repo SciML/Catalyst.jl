@@ -44,6 +44,10 @@ function filter_nonrxsys(network)
 end
 
 
+function species(network::ReactionSystem, sts)
+    [MT.renamespace(network,st) for st in sts]
+end
+
 """
     species(network)
 
@@ -54,11 +58,11 @@ and all subsystems, including non-`ReactionSystem` subsystems, uses `states(netw
 Notes:
 - If `ModelingToolkit.get_systems(network)` is non-empty will allocate.
 """
-function species(network, usenamespace=false)
-    sts     = usenamespace ? namespace_variables(get_states(network)) : get_states(network)
+function species(network)
+    sts = get_states(network)
     systems = filter_nonrxsys(network)
     isempty(systems) && return sts
-    unique([sts; reduce(vcat, species.(systems,true))])
+    unique([sts; reduce(vcat, map(sys -> species(sys,species(sys)), systems))])
 end
 
 """
@@ -72,11 +76,17 @@ subsystems, use `parameters(network)`.
 Notes:
 - If `ModelingToolkit.get_systems(network)` is non-empty will allocate.
 """
-function reactionparams(network, usenamespace=false)
-    ps = usenamespace ? namespace_parameters(get_ps(network)) : get_ps(network)
+function reactionparams(network)
+    ps = get_ps(network)
     systems = filter_nonrxsys(network)
     isempty(systems) && return ps
-    unique([ps; reduce(vcat, reactionparams.(systems,true))])
+    unique([ps; reduce(vcat, map(sys -> species(sys,reactionparams(sys)), systems))])
+end
+
+function namespace_reactions(network::ReactionSystem)
+    rxs = reactions(network)
+    isempty(rxs) && return Reaction[]
+    map(rx -> namespace_equation(rx, network), rxs)
 end
 
 """
@@ -87,11 +97,11 @@ Given a [`ReactionSystem`](@ref), return a vector of all `Reactions` in the syst
 Notes:
 - If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
 """
-function reactions(network, usenamespace=false)
-    rxs = usenamespace ? map(eq -> namespace_equation(eq,network), get_eqs(network)) : get_eqs(network)
+function reactions(network)    
+    rxs = get_eqs(network)
     systems = filter_nonrxsys(network)
-    isempty(systems) && return rxs
-    Reaction[rxs; reduce(vcat, reactions.(systems,true), init=Reaction[])]
+    isempty(systems) && (return rxs)
+    [rxs; reduce(vcat, namespace_reactions.(systems); init=Reaction[])]
 end
 
 """
