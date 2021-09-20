@@ -68,7 +68,7 @@ the current master branch.
 - Catalyst [`ReactionSystem`](@ref)s can be imported from SBML files via 
   [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), and from BioNetGen .net 
   files and various matrix network representations using 
-  [ReactionNetworkImporters.jl](https://github.com/isaacsas/ReactionNetworkImporters.jl).
+  [ReactionNetworkImporters.jl](https://github.com/SciML/ReactionNetworkImporters.jl).
 
 
 ## Illustrative Examples
