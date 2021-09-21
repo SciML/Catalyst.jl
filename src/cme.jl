@@ -57,10 +57,9 @@ function ODESystem_cme(rs, u0; truncation=nothing, kwargs...)
 	rxns = reactions(rs)
 	M = numreactions(rs)
 	jump_rates = jumpratelaw.(rxns)
-    nsm = netstoichmat(rs)
-    species = states(rs)
+	nsm = netstoichmat(rs)
+	species = states(rs)
 	
-	# eqs = Equation[]
 	eqs = Vector{Equation}(undef, N)
 	for (i, x) in enumerate(state_space)
 		eq = Num(0)
@@ -71,7 +70,6 @@ function ODESystem_cme(rs, u0; truncation=nothing, kwargs...)
 			t2 = substitute(jump_rates[j], Dict(species .=> x)) * u[d[x]]
 			eq += t1 - t2
 		end 
-		# push!(eqs, D(u[d[x]]) ~ eq)
 		eqs[i] = D(u[d[x]]) ~ eq
 	end
 	ODESystem(eqs, t, u, parameters(rs); name=nameof(rs), kwargs...)

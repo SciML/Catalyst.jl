@@ -9,8 +9,6 @@ u0 = [10, 15, 3, 1]
 specmap = Num.(states(rs)) .=> u0
 state_space = Catalyst.traverse_reactionsystem(rs, u0)
 cmesys = Catalyst.ODESystem_cme(rs, u0)
-@benchmark Catalyst.ODESystem_cme(rs, u0)
-@benchmark Catalyst.ODESystem_cme2(rs, u0)
 prob = ODEProblem(cmesys, [], (0, 10.), [1., 2.])
 
 sol = solve(prob, Tsit5())
