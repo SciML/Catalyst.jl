@@ -6,6 +6,7 @@ module Catalyst
 using DocStringExtensions
 using SparseArrays, DiffEqBase, Reexport, DiffEqJump
 using Latexify, Requires
+using DataStructures
 
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit; const MT = ModelingToolkit
@@ -44,6 +45,9 @@ function __init__()
 include("reactionsystem.jl")
 export Reaction, ReactionSystem, ismassaction, oderatelaw, jumpratelaw
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem, SteadyStateProblem
+
+include("cme.jl")
+export ODESystem_cme
 
 # reaction_network macro
 const ExprValues = Union{Expr,Symbol,Float64,Int}
