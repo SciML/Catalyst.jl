@@ -306,7 +306,7 @@ function assemble_diffusion(rs, noise_scaling; combinatoric_ratelaws=true)
     eqs .= 0
     species_to_idx = Dict((x => i for (i,x) in enumerate(sts)))
 
-    for (j,rx) in enumerate(equations(rs))
+    for (j,rx) in enumerate(get_eqs(rs))
         rlsqrt = sqrt(abs(oderatelaw(rx; combinatoric_ratelaw=combinatoric_ratelaws)))
         (noise_scaling!==nothing) && (rlsqrt *= noise_scaling[j])
         for (spec,stoich) in rx.netstoich
@@ -417,8 +417,8 @@ function assemble_jumps(rs; combinatoric_ratelaws=true)
     rxvars = []
     ivname = nameof(get_iv(rs))
 
-    isempty(equations(rs)) && error("Must give at least one reaction before constructing a JumpSystem.")
-    for rx in equations(rs)
+    isempty(get_eqs(rs)) && error("Must give at least one reaction before constructing a JumpSystem.")
+    for rx in get_eqs(rs)
         empty!(rxvars)
         (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
         haveivdep = false
@@ -455,27 +455,19 @@ function make_systems_with_type!(systems::Vector{T}, rs::ReactionSystem, include
         elseif sys isa T
             systems[i] = sys
         else
-            error("ModelingToolkit does not currently support convert($(typeof(sys)), sys::$T)")
+            try 
+                if (T <: MT.AbstractTimeDependentSystem) && (sys isa MT.AbstractTimeIndependentSystem)
+                    systems[i] = MT.convert_system(T, sys, get_iv(rs))
+                else
+                    systems[i] = MT.convert_system(T, sys)
+                end
+            catch e
+                error("ModelingToolkit does not currently support convert_system($T, $(typeof(sys)))")
+            end
         end
     end    
     systems
 end
-
-# specialize conversion to ODESystems as MT provides convert_system here
-function make_systems_with_type!(systems::Vector{T}, rs::ReactionSystem, include_zero_odes=true) where {T <: ODESystem}
-    resize!(systems, length(get_systems(rs)))
-    for (i,sys) in enumerate(get_systems(rs))
-        if sys isa ReactionSystem
-            systems[i] = convert(T, sys, include_zero_odes=include_zero_odes)
-        elseif sys isa T
-            systems[i] = sys
-        else
-            systems[i] = MT.convert_system(T, sys, get_iv(rs))
-        end
-    end    
-    systems
-end
-
 
 """
 ```julia
@@ -548,14 +540,14 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       include_zero_odes=true, checks = false, kwargs...)
 
     if noise_scaling isa AbstractArray
-        (length(noise_scaling)!=length(equations(rs))) &&
+        (length(noise_scaling)!=numreactions(rs)) &&
         error("The number of elements in 'noise_scaling' must be equal " *
               "to the number of reactions in the reaction system.")
         if !(noise_scaling isa Symbolics.Arr)
             noise_scaling = value.(noise_scaling)
         end
     elseif !isnothing(noise_scaling)
-        noise_scaling = fill(value(noise_scaling),length(equations(rs)))
+        noise_scaling = fill(value(noise_scaling),numreactions(rs))
     end
 
     eqs      = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, 
