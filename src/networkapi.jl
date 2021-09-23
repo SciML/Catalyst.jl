@@ -800,8 +800,18 @@ function (==)(rx1::Reaction, rx2::Reaction)
     rx1.only_use_rate == rx2.only_use_rate
 end
 
+function hash(rx::Reaction, h::UInt) 
+    h = Base.hash(rx.rate, h)
+    h = Base.hash(rx.substrates, h)
+    h = Base.hash(rx.products, h)
+    h = Base.hash(rx.prodstoich, h)
+    h = Base.hash(rx.substoich, h)
+    h = Base.hash(rx.netstoich, h)
+    Base.hash(rx.only_use_rate, h)
+end
+
 """
-    isequal_without_names(rn1::ReactionSystem, rn2::ReactionSystem)
+    isequal_ignore_names(rn1::ReactionSystem, rn2::ReactionSystem)
 
 Tests whether the underlying species, parameters and reactions are the same in
 the two [`ReactionSystem`](@ref)s. Ignores the names of the systems in testing
@@ -812,16 +822,12 @@ Notes:
     considered different than `(A+1)^2`.
 - Does not include `defaults` in determining equality.
 """
-function isequal_without_names(rn1::ReactionSystem, rn2::ReactionSystem)
+function isequal_ignore_names(rn1::ReactionSystem, rn2::ReactionSystem)
     isequal(get_iv(rn1), get_iv(rn2)) || return false
     issetequal(get_states(rn1), get_states(rn2)) || return false
     issetequal(get_ps(rn1), get_ps(rn2)) || return false
     issetequal(MT.get_observed(rn1), MT.get_observed(rn2))
-  
-    # reactions
-    # issetequal fails for some reason, so need to use issubset
-    (length(get_eqs(rn1)) == length(get_eqs(rn2))) || return false
-    issubset(get_eqs(rn1),get_eqs(rn2)) && issubset(get_eqs(rn2),get_eqs(rn1)) || return false
+    issetequal(get_eqs(rn1), get_eqs(rn2))
 
     # subsystems
     (length(get_systems(rn1)) == length(get_systems(rn2))) || return false
@@ -844,7 +850,7 @@ Notes:
 """
 function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
     (nameof(rn1) == nameof(rn2)) || return false
-    isequal_without_names(rn1,rn2)
+    isequal_ignore_names(rn1,rn2)
 end
 
 

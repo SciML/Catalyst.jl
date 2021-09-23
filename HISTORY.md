@@ -13,6 +13,9 @@
   all parameters of a system and all subsystems, or use `reactionparams` to get
   all parameters of a system and all `ReactionSystem` subsystems. The latter
   correspond to those parameters used within `Reaction`s.)
+- Added a custom `hash` for `Reaction`s to ensure they work in `Dict`s and
+  `Set`s properly, and set-type comparisons between collections of `Reaction`s
+  work.
 
 ## Catalyst 9.0
 *1.* **BREAKING:** `netstoichmat`, `prodstoichmat` and `substoichmat` are now
