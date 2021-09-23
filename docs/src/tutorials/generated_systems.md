@@ -57,8 +57,9 @@ following ModelingToolkit functions provide this information
 * [`equations(rn)`](@ref) returns all [`Reaction`](@ref)s and all
   [`Equations`](@ref) defined across the system and *all sub-systems*.
 
-These accessors will allocate unless there are no subsystems. In the latter case
-they are equivalent to the corresponding `get_*` functions.
+`states` and `parameters` should be assumed to always allocate, while
+`equations` will allocate unless there are no subsystems. In the latter case
+`equations` is equivalent to `get_eqs`.
 
 Empty `ReactionSystem`s can be generated via [`make_empty_network`](@ref) or
 [`@reaction_network`](@ref) with no arguments (giving one argument to the latter
