@@ -147,7 +147,7 @@ isweaklyreversible
 ## Network Comparison 
 ```@docs
 ==(rn1::Reaction, rn2::Reaction)
-isequal_without_names
+isequal_ignore_names
 ==(rn1::ReactionSystem, rn2::ReactionSystem)
 ```
 

@@ -63,9 +63,9 @@ addspecies!(rs, S)
 addspecies!(rs, S, disablechecks=true)
 @test numspecies(rs) == 4
 addparam!(rs, k1)
-@test numparams(rs) == 2
+@test numreactionparams(rs) == 2
 addparam!(rs, k1, disablechecks=true)
-@test numparams(rs) == 3
+@test numreactionparams(rs) == 3
 
 
 rnmat = @reaction_network begin

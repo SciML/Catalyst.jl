@@ -56,10 +56,13 @@ include("registered_functions.jl")
 
 # functions to query network properties
 include("networkapi.jl")
-export species, reactionparams, reactions, speciesmap, paramsmap, numspecies, numreactions, numparams
+export species, reactionparams, reactions, speciesmap, paramsmap, numspecies, numreactions, numreactionparams
 export make_empty_network, addspecies!, addparam!, addreaction!
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export conservationlaws, conservedquantities
+
+# depreciated functions to remove in future releases
+export params, numparams
 
 # network analysis functions
 export reactioncomplexmap, reactioncomplexes, reactionrates, complexstoichmat, complexoutgoingmat
