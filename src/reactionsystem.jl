@@ -460,6 +460,23 @@ function make_systems_with_type!(systems::Vector{T}, rs::ReactionSystem, include
     end    
     systems
 end
+
+# specialize conversion to ODESystems as MT provides convert_system here
+function make_systems_with_type!(systems::Vector{T}, rs::ReactionSystem, include_zero_odes=true) where {T <: ODESystem}
+    resize!(systems, length(get_systems(rs)))
+    for (i,sys) in enumerate(get_systems(rs))
+        if sys isa ReactionSystem
+            systems[i] = convert(T, sys, include_zero_odes=include_zero_odes)
+        elseif sys isa T
+            systems[i] = sys
+        else
+            systems[i] = MT.convert_system(T, sys, get_iv(rs))
+        end
+    end    
+    systems
+end
+
+
 """
 ```julia
 Base.convert(::Type{<:ODESystem},rs::ReactionSystem)
