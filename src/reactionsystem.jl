@@ -184,8 +184,14 @@ struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
     defaults::Dict
     """Type of the system"""
     connection_type::Any
+    """Non-`Reaction` equations that further constrain the system"""
+    constraint_eqs::Vector{Equation}
+    """Non-`Reaction` states that appear in `constraint_eqs`"""
+    constraint_states::Vector
+    """Non-`Reaction` parameters that appear in `constraint_eqs`"""
+    constraint_ps::Vector
 
-    function ReactionSystem(eqs, iv, states, ps, observed, name, systems, defaults, connection_type; checks::Bool = true)
+    function ReactionSystem(eqs, iv, states, ps, observed, name, systems, defaults, connection_type, ceqs, csts, cps; checks::Bool = true)
 
         iv′ = value(iv)
         states′ = value.(states)
@@ -196,7 +202,7 @@ struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
             check_parameters(ps′, iv′)
             # check_units(eqs)    # disable as check the newly generated system below
         end
-        rs = new(collect(eqs), iv′, states′, ps′, observed, name, systems, defaults, connection_type)
+        rs = new(collect(eqs), iv′, states′, ps′, observed, name, systems, defaults, connection_type, ceqs, csts, cps)
         checks && validate(rs)
 
         rs
@@ -211,15 +217,28 @@ function ReactionSystem(eqs, iv, species, ps;
                         default_p=Dict(),
                         defaults=_merge(Dict(default_u0), Dict(default_p)),
                         connection_type=nothing,
-                        checks = true)
+                        checks = true, 
+                        constraint_eqs = Equation[],
+                        constraint_states = [],
+                        constraint_ps = [])
     name === nothing && throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
 
-    ReactionSystem(eqs, iv, species, ps, observed, name, systems, defaults, connection_type, 
-                   checks = checks)
+    ReactionSystem(eqs, iv, species, ps, observed, name, systems, 
+                   defaults, connection_type, constraint_eqs, constraint_states, 
+                   constraint_ps; checks = checks)
 end
 
 function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
+end
+
+for prop in (:constraint_eqs, :constraint_states, :constraint_ps)
+    fname1 = Symbol(:get_, prop)
+    fname2 = Symbol(:has_, prop)
+    @eval begin
+        $fname1(sys::ReactionSystem) = getfield(sys, $(QuoteNode(prop)))
+        $fname2(sys::ReactionSystem) = isdefined(sys, $(QuoteNode(prop)))
+    end
 end
 
 function ModelingToolkit.equations(sys::ReactionSystem)
@@ -642,4 +661,48 @@ function ModelingToolkit.modified_states!(mstates, rx::Reaction, sts::Set)
     for (species,stoich) in rx.netstoich
         (species in sts) && push!(mstates, species)
     end
+    mstates
+end
+
+
+########################## Compositional Tooling ###########################
+function getsubsystypes!(typeset::Set{Type}, sys::T) where {T <: MT.AbstractSystem}
+    push!(typeset, T)
+    for subsys in get_systems(sys)
+        getsubsystypes!(typeset, subsys)
+    end
+    typeset 
+end
+function getsubsystypes(sys)
+    typeset = Set{Type}()
+    getsubsystypes!(typeset, sys)
+    typeset
+end
+
+function flatten(rs::ReactionSystem)
+    systems = get_systems(rs)
+    isempty(systems) && return rs
+    
+    all(T -> T in (ReactionSystem,NonlinearSystem), getsubsystypes(rs)) || 
+        error("flattening is currently only supported for subsystems mixing ReactionSystems and NonlinearSystems.")
+    
+    specs      = species(rs)
+    sts        = states(rs)    
+    reactionps = reactionparams(rs)   
+    ps         = parameters(rs)
+    alleqs     = equations(rs)
+    rxs        = Reaction[rx for rx in alleqs if rx isa Reaction]
+
+    # constraints = states, parameters and equations that do not appear in Reactions
+    eqstates = setdiff(sts, specs)
+    eqps     = setdiff(ps, reactionps)
+    eqs      = Equation[eq for eq in alleqs if eq isa Equation]    
+    ReactionSystem(rxs, get_iv(rs), specs, reactionps;
+                   observed = MT.observed(rs),                    
+                   name = nameof(rs),
+                   defaults = MT.defaults(rs),
+                   checks = false,
+                   constraint_eqs = eqs,
+                   constraint_states = eqstates,
+                   constraint_ps = eqps)
 end
