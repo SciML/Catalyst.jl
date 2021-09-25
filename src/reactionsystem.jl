@@ -232,23 +232,43 @@ function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
 
-for prop in (:constraint_eqs, :constraint_states, :constraint_ps)
-    fname1 = Symbol(:get_, prop)
-    fname2 = Symbol(:has_, prop)
-    @eval begin
-        $fname1(sys::ReactionSystem) = getfield(sys, $(QuoteNode(prop)))
-        $fname2(sys::ReactionSystem) = isdefined(sys, $(QuoteNode(prop)))
-    end
+
+####################### ModelingToolkit inherited accessors #############################
+
+get_constraint_eqs(sys::ReactionSystem)    = getfield(sys, :constraint_eqs)
+get_constraint_states(sys::ReactionSystem) = getfield(sys, :constraint_states)
+get_constraint_ps(sys::ReactionSystem)     = getfield(sys, :constraint_ps)
+has_constraint_eqs(sys::ReactionSystem)    = isdefined(sys, :constraint_eqs)
+has_constraint_states(sys::ReactionSystem) = isdefined(sys, :constraint_states)
+has_constraint_ps(sys::ReactionSystem)     = isdefined(sys, :constraint_ps)
+
+function ModelingToolkit.states(sys::ReactionSystem)
+    csts    = get_constraint_states(sys)
+    sts     = isempty(csts) ? get_states(sys) : [get_states(sys); get_constraint_states(sys)]
+    systems = get_systems(sys)
+    unique(isempty(systems) ? sts : [sts; reduce(vcat,namespace_variables.(systems))])
+end
+
+function ModelingToolkit.parameters(sys::ReactionSystem)
+    cps     = get_constraint_ps(sys)
+    ps      = isempty(cps) ? get_ps(sys) : [get_ps(sys); get_constraint_ps(sys)]
+    systems = get_systems(sys)
+    unique(isempty(systems) ? ps : [ps; reduce(vcat,namespace_parameters.(systems))])
 end
 
 function ModelingToolkit.equations(sys::ReactionSystem)
-    eqs = get_eqs(sys)
+    eqs     = get_eqs(sys)
+    ceqs    = get_constraint_eqs(sys)
     systems = get_systems(sys)
-    if !isempty(systems)
-        eqs = Any[eqs; reduce(vcat, MT.namespace_equations.(systems); init=Any[])]
+    if isempty(systems)
+        alleqs = isempty(ceqs) ? eqs : Any[eqs; ceqs]
+    else
+        alleqs = Any[eqs; ceqs; reduce(vcat, MT.namespace_equations.(systems); init=Any[])]
     end
-    eqs
+    alleqs
 end
+
+######################## Conversion to ODEs/SDEs/jump, etc ##############################
 
 """
     oderatelaw(rx; combinatoric_ratelaw=true)
@@ -466,7 +486,8 @@ function assemble_jumps(rs; combinatoric_ratelaws=true)
     vcat(meqs,ceqs,veqs)
 end
 
-function make_systems_with_type!(systems::Vector{T}, rs::ReactionSystem, include_zero_odes=true) where {T <: ModelingToolkit.AbstractSystem}
+# convert subsystems to the system type T
+function make_systems_with_type!(systems::Vector{T}, rs::ReactionSystem, include_zero_odes=true) where {T <: MT.AbstractSystem}
     resize!(systems, length(get_systems(rs)))
     for (i,sys) in enumerate(get_systems(rs))
         if sys isa ReactionSystem
@@ -488,6 +509,22 @@ function make_systems_with_type!(systems::Vector{T}, rs::ReactionSystem, include
     systems
 end
 
+# merge constraint eqs, states and ps into the top-level eqs, states and ps
+function addconstraints!(eqs, rs::ReactionSystem)        
+    ceqs = get_constraint_eqs(rs)
+    !isempty(ceqs) && append!(eqs, ceqs)
+
+    sts  = get_states(rs)
+    csts = get_constraint_states(rs)
+    !isempty(csts) && (sts = [sts; csts])
+
+    ps  = get_ps(rs)
+    cps = get_constraint_ps(rs)
+    !isempty(cps) && (ps = [ps; cps])
+   
+    eqs,sts,ps
+end
+
 """
 ```julia
 Base.convert(::Type{<:ODESystem},rs::ReactionSystem)
@@ -503,10 +540,11 @@ ignored.
 function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; 
                       name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true, 
                       checks=false, kwargs...)
-    eqs     = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, 
-                                 include_zero_odes=include_zero_odes)
-    systems = make_systems_with_type!(Vector{ODESystem}(), rs, include_zero_odes)
-    ODESystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, 
+    eqs        = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, 
+                                    include_zero_odes=include_zero_odes)                                 
+    eqs,sts,ps = addconstraints!(eqs, rs)
+    systems    = make_systems_with_type!(Vector{ODESystem}(), rs, include_zero_odes)
+    ODESystem(eqs, get_iv(rs), sts, ps; name=name, systems=systems, 
               defaults=get_defaults(rs), checks=checks, kwargs...)
 end
 
@@ -526,11 +564,19 @@ ignored.
 function Base.convert(::Type{<:NonlinearSystem},rs::ReactionSystem;
                       name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true, 
                       checks = false, kwargs...)
-    eqs     = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, as_odes=false, 
-                                 include_zero_odes=include_zero_odes)
-    systems = make_systems_with_type!(Vector{NonlinearSystem}(), rs, include_zero_odes)
-    NonlinearSystem(eqs, get_states(rs), get_ps(rs); name=name, systems=systems, 
+    eqs        = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, as_odes=false, 
+                                    include_zero_odes=include_zero_odes)
+    eqs,sts,ps = addconstraints!(eqs, rs)
+    systems    = make_systems_with_type!(Vector{NonlinearSystem}(), rs, include_zero_odes)
+    NonlinearSystem(eqs, sts, ps; name=name, systems=systems, 
                     defaults=get_defaults(rs), checks = checks, kwargs...)
+end
+
+function error_if_constraints(::Type{T}, sys::ReactionSystem) where {T <: AbstractSystem}
+    (isempty(get_constraint_eqs(sys)) &&
+     isempty(get_constraint_states(sys)) &&
+     isempty(get_constraint_ps(sys))) ||
+    error("Can not convert to a system of type ", T, " when there are constraints.")
 end
 
 """
@@ -557,6 +603,8 @@ This input may contain repeat parameters.
 function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       noise_scaling=nothing, name=nameof(rs), combinatoric_ratelaws=true, 
                       include_zero_odes=true, checks = false, kwargs...)
+
+    error_if_constraints(SDESystem, rs)
 
     if noise_scaling isa AbstractArray
         (length(noise_scaling)!=numreactions(rs)) &&
@@ -598,8 +646,11 @@ Notes:
 """
 function Base.convert(::Type{<:JumpSystem},rs::ReactionSystem; 
                       name=nameof(rs), combinatoric_ratelaws=true, checks = false, kwargs...)
-    eqs     = assemble_jumps(rs; combinatoric_ratelaws=combinatoric_ratelaws)
+    
+    error_if_constraints(JumpSystem, rs)
     isempty(get_systems(rs)) || error("Conversion to JumpSystems with subsystems is not currently supported.")
+
+    eqs     = assemble_jumps(rs; combinatoric_ratelaws=combinatoric_ratelaws)
     systems = convert.(JumpSystem, get_systems(rs))    
     JumpSystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, 
                defaults=get_defaults(rs), checks = checks, kwargs...)
