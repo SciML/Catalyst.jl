@@ -740,11 +740,10 @@ end
 
 function MT.extend(sys::NonlinearSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
     csys = (get_constraints(rs) === nothing) ? sys : extend(sys, get_constraints(rs))       
-    ReactionSystem(get_eqs(rs), get_states(rs), get_ps(rs); 
+    ReactionSystem(get_eqs(rs), get_iv(rs), get_states(rs), get_ps(rs); 
                     observed = get_observed(rs), name = name, 
                     systems = get_systems(rs), defaults = get_defaults(rs), 
-                    connection_type=get_connection_type(sys), checks=false, 
-                    constraints=csys)
+                    checks=false, constraints=csys)
 end
 
 function MT.extend(sys::ReactionSystem, rs::ReactionSystem; name::Symbol=nameof(sys))

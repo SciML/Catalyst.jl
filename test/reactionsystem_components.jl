@@ -129,6 +129,19 @@ oprob = ODEProblem(sys2, u₀, tspan, pvals)
 sol = solve(oprob, Tsit5())
 @test all(isapprox.(sol(tvs,idxs=sys₁.P),sol2(tvs, idxs=4),atol=1e-4))
 
+# test extending with NonlinearSystem
+@named repressilator2 = ReactionSystem(t; systems=[sys₁,sys₂,sys₃])
+repressilator2 = Catalyst.flatten(repressilator2)
+repressilator2 = extend(csys, repressilator2)
+@named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes=false)
+sys2 = structural_simplify(nlrepressilator)
+@test length(equations(sys2)) == 6
+nlprob = NonlinearProblem(sys2, u₀, pvals)
+sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
+@test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
+@test sol[sys₁.m] ≈ sol[sys₂.m] ≈ sol[sys₃.m]
+@test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
+
 
 # TODO add conversion to SDE and JumpSystems once supported
 
