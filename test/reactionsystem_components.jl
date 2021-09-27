@@ -46,7 +46,7 @@ pvals = [sys₁.α₀ => 5e-4,
          sys₃.δ => (log(2)/120),
          sys₃.β => (20*log(2)/120),
          sys₃.μ => (log(2)/600)]
-u₀    = [sys₁.m => 0.0, sys₁.P => 20.0, sys₂.m => 0.0, sys₂.P => 0.0, sys₃.m => 0.0, sys₃.P => 0.0]
+u₀    = [sys₁.m => 0.0, sys₁.P => 20.0, sys₁.R => 0.0, sys₂.m => 0.0, sys₂.P => 0.0, sys₂.R => 0.0, sys₃.m => 0.0, sys₃.P => 0.0, sys₃.R => 0.0]
 tspan = (0.0, 100000.0)
 oprob = ODEProblem(oderepressilator, u₀, tspan, pvals)
 sol = solve(oprob, Tsit5())
@@ -96,7 +96,39 @@ sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
 @test sol[sys₁.m] ≈ sol[sys₂.m] ≈ sol[sys₃.m]
 @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
 
-# using ReactionSystem constraints
+# flattening
+fsys = Catalyst.flatten(ssrepressilator)
+@named nlrepressilator = convert(NonlinearSystem, fsys, include_zero_odes=false)
+sys2 = structural_simplify(nlrepressilator)
+@test length(equations(sys2)) == 6
+nlprob = NonlinearProblem(sys2, u₀, pvals)
+sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
+@test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
+@test sol[sys₁.m] ≈ sol[sys₂.m] ≈ sol[sys₃.m]
+@test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
+
+# test constraints
+connections = [sys₁.R ~ sys₃.P,
+               sys₂.R ~ sys₁.P,
+               sys₃.R ~ sys₂.P]
+@named csys = NonlinearSystem(connections, [sys₁.R,sys₃.P,sys₂.R,sys₁.P,sys₃.R,sys₂.P],[])
+@named repressilator2 = ReactionSystem(t; constraints=csys, systems=[sys₁,sys₂,sys₃])
+@named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes=false)
+sys2 = structural_simplify(nlrepressilator)
+@test length(equations(sys2)) == 6
+nlprob = NonlinearProblem(sys2, u₀, pvals)
+sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
+@test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
+@test sol[sys₁.m] ≈ sol[sys₂.m] ≈ sol[sys₃.m]
+@test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
+
+# test can make ODESystem
+@named oderepressilator = convert(ODESystem, repressilator2, include_zero_odes=false)
+sys2 = structural_simplify(oderepressilator)  # FAILS currently
+oprob = ODEProblem(sys2, u₀, tspan, pvals)
+sol = solve(oprob, Tsit5())
+@test all(isapprox.(sol(tvs,idxs=sys₁.P),sol2(tvs, idxs=4),atol=1e-4))
+
 
 # TODO add conversion to SDE and JumpSystems once supported
 

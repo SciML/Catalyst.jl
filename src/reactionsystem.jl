@@ -716,7 +716,7 @@ function flatten(rs::ReactionSystem)
     systems = get_systems(rs)
     isempty(systems) && return rs
     
-    all(T -> T in (ReactionSystem,NonlinearSystem), getsubsystypes(rs)) || 
+    all(T -> any(T .<: (ReactionSystem,NonlinearSystem)), getsubsystypes(rs)) || 
         error("flattening is currently only supported for subsystems mixing ReactionSystems and NonlinearSystems.")
     
     specs      = species(rs)
@@ -735,5 +735,5 @@ function flatten(rs::ReactionSystem)
                    name = nameof(rs),
                    defaults = MT.defaults(rs),
                    checks = false,
-                   constraints = NonlinearSystem(ceqs,csts,cps))
+                   constraints = NonlinearSystem(ceqs,csts,cps,name=nameof(rs)))
 end

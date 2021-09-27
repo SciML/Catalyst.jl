@@ -38,11 +38,11 @@ end v1 K1 n1 v2 K2 n2 v3 K3 n3 v4 K4 n4 v5 K5 n5 k1 k2 k3 k4 k5 k6 d1 d2 d3 d4 d
 @test latexify(r) == replace(
 raw"\begin{align}
 \require{mhchem}
-\ce{ \varnothing &->[\frac{v1 \left( \mathrm{X4}\left( t \right) \right)^{n1}}{K1^{n1} + \left( \mathrm{X4}\left( t \right) \right)^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + \left( \mathrm{X2}\left( t \right) \right)^{n1}}] X1}\\
-\ce{ \varnothing &->[\frac{v2 \left( \mathrm{X5}\left( t \right) \right)^{n2}}{K2^{n2} + \left( \mathrm{X5}\left( t \right) \right)^{n2}}] X2}\\
-\ce{ \varnothing &->[\frac{v3 \left( \mathrm{X3}\left( t \right) \right)^{n3}}{K3^{n3} + \left( \mathrm{X3}\left( t \right) \right)^{n3}}] X3}\\
-\ce{ \varnothing &->[\frac{v4 K4^{n4}}{K4^{n4} + \left( \mathrm{X1}\left( t \right) \right)^{n4}}] X4}\\
-\ce{ \varnothing &->[\frac{v5 \left( \mathrm{X2}\left( t \right) \right)^{n5}}{K5^{n5} + \left( \mathrm{X2}\left( t \right) \right)^{n5}}] X5}\\
+\ce{ \varnothing &->[\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}] X1}\\
+\ce{ \varnothing &->[\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}] X2}\\
+\ce{ \varnothing &->[\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}] X3}\\
+\ce{ \varnothing &->[\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}] X4}\\
+\ce{ \varnothing &->[\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}] X5}\\
 \ce{ X2 &<=>[k1][k2] X1 + 2 X4}\\
 \ce{ X4 &<=>[k3][k4] X3}\\
 \ce{ 3 X5 + X1 &<=>[k5][k6] X2}\\
@@ -54,15 +54,14 @@ raw"\begin{align}
 \end{align}
 ", "\r\n"=>"\n")
 
-
 # Latexify.@generate_test latexify(r, mathjax=false)
 @test latexify(r, mathjax = false) == replace(
 raw"\begin{align}
-\ce{ \varnothing &->[$\frac{v1 \left( \mathrm{X4}\left( t \right) \right)^{n1}}{K1^{n1} + \left( \mathrm{X4}\left( t \right) \right)^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + \left( \mathrm{X2}\left( t \right) \right)^{n1}}$] X1}\\
-\ce{ \varnothing &->[$\frac{v2 \left( \mathrm{X5}\left( t \right) \right)^{n2}}{K2^{n2} + \left( \mathrm{X5}\left( t \right) \right)^{n2}}$] X2}\\
-\ce{ \varnothing &->[$\frac{v3 \left( \mathrm{X3}\left( t \right) \right)^{n3}}{K3^{n3} + \left( \mathrm{X3}\left( t \right) \right)^{n3}}$] X3}\\
-\ce{ \varnothing &->[$\frac{v4 K4^{n4}}{K4^{n4} + \left( \mathrm{X1}\left( t \right) \right)^{n4}}$] X4}\\
-\ce{ \varnothing &->[$\frac{v5 \left( \mathrm{X2}\left( t \right) \right)^{n5}}{K5^{n5} + \left( \mathrm{X2}\left( t \right) \right)^{n5}}$] X5}\\
+\ce{ \varnothing &->[$\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}$] X1}\\
+\ce{ \varnothing &->[$\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}$] X2}\\
+\ce{ \varnothing &->[$\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}$] X3}\\
+\ce{ \varnothing &->[$\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}$] X4}\\
+\ce{ \varnothing &->[$\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}$] X5}\\
 \ce{ X2 &<=>[$k1$][$k2$] X1 + 2 X4}\\
 \ce{ X4 &<=>[$k3$][$k4$] X3}\\
 \ce{ 3 X5 + X1 &<=>[$k5$][$k6$] X2}\\
@@ -86,7 +85,7 @@ end p_a k n d_a p_b d_b r_a r_b
 @test latexify(r) == replace(
 raw"\begin{align}
 \require{mhchem}
-\ce{ \varnothing &<=>[\frac{p_{a} \left( B\left( t \right) \right)^{n}}{k^{n} + \left( B\left( t \right) \right)^{n}}][d_{a}] A}\\
+\ce{ \varnothing &<=>[\frac{p_{a} B^{n}}{k^{n} + B^{n}}][d_{a}] A}\\
 \ce{ \varnothing &<=>[p_{b}][d_{b}] B}\\
 \ce{ 3 B &<=>[r_{a}][r_{b}] A}
 \end{align}
@@ -95,7 +94,7 @@ raw"\begin{align}
 # Latexify.@generate_test latexify(r, mathjax=false)
 @test latexify(r, mathjax = false) == replace(
 raw"\begin{align}
-\ce{ \varnothing &<=>[$\frac{p_{a} \left( B\left( t \right) \right)^{n}}{k^{n} + \left( B\left( t \right) \right)^{n}}$][$d_{a}$] A}\\
+\ce{ \varnothing &<=>[$\frac{p_{a} B^{n}}{k^{n} + B^{n}}$][$d_{a}$] A}\\
 \ce{ \varnothing &<=>[$p_{b}$][$d_{b}$] B}\\
 \ce{ 3 B &<=>[$r_{a}$][$r_{b}$] A}
 \end{align}
