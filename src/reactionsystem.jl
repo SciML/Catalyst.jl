@@ -737,3 +737,32 @@ function flatten(rs::ReactionSystem)
                    checks = false,
                    constraints = NonlinearSystem(ceqs,csts,cps,name=nameof(rs)))
 end
+
+function MT.extend(sys::NonlinearSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
+    csys = (get_constraints(rs) === nothing) ? sys : extend(sys, get_constraints(rs))       
+    ReactionSystem(get_eqs(rs), get_states(rs), get_ps(rs); 
+                    observed = get_observed(rs), name = name, 
+                    systems = get_systems(rs), defaults = get_defaults(rs), 
+                    connection_type=get_connection_type(sys), checks=false, 
+                    constraints=csys)
+end
+
+function MT.extend(sys::ReactionSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
+    eqs  = union(get_eqs(rs), get_eqs(sys))
+    sts  = union(get_states(rs), get_states(sys))
+    ps   = union(get_ps(rs), get_ps(sys))
+    obs  = union(get_observed(rs), get_observed(sys))
+    defs = merge(get_defaults(rs), get_defaults(sys)) # prefer `sys`
+    syss = union(get_systems(rs), get_systems(sys))
+
+    csys = get_constraints(rs)
+    csys2 = get_constraints(sys)
+    if csys === nothing        
+        newcsys = csys2
+    else
+        newcsys = (csys2===nothing) ? csys : extend(csys2, csys, name)
+    end
+    
+    ReactionSystem(eqs, get_iv(rs), sts, ps; observed = obs, name = name, 
+                    systems = syss, defaults = defs, checks=false, constraints=csys)
+end
