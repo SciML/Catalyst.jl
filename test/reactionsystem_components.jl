@@ -96,6 +96,8 @@ sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
 @test sol[sys₁.m] ≈ sol[sys₂.m] ≈ sol[sys₃.m]
 @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
 
+# using ReactionSystem constraints
+
 # TODO add conversion to SDE and JumpSystems once supported
 
 # adding algebraic constraints
