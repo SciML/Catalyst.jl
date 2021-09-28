@@ -811,5 +811,5 @@ function ModelingToolkit.extend(sys::ReactionSystem, rs::ReactionSystem; name::S
     end
     
     ReactionSystem(eqs, get_iv(rs), sts, ps; observed = obs, name = name, 
-                    systems = syss, defaults = defs, checks=false, constraints=csys)
+                    systems = syss, defaults = defs, checks=false, constraints=newcsys)
 end
