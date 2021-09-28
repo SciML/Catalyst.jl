@@ -521,10 +521,13 @@ end
 
 function error_if_constraint_odes(::Type{T}, rs::ReactionSystem) where {T <: MT.AbstractSystem}
     csys = get_constraints(rs)    
-    structsys = MT.SystemStructures.initialize_system_structure(csys)
-    structure = MT.get_structure(structsys)
-    any(i -> MT.SystemStructures.isdiffeq(structure,i), eachindex(get_eqs(structsys))) &&
-        error("Cannot convert to system type $T when then there are ODE constraint equations.")
+    if csys !== nothing
+        structsys = MT.SystemStructures.initialize_system_structure(csys)
+        structure = MT.get_structure(structsys)
+        any(i -> MT.SystemStructures.isdiffeq(structure,i), eachindex(get_eqs(structsys))) &&
+            error("Cannot convert to system type $T when then there are ODE constraint equations.")
+    end
+    nothing
 end
 
 """
