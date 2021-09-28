@@ -50,12 +50,12 @@ algebraic constraints with a `NonlinearSystem`, it can also be convenient to
 collect all state variables (e.g. species and algebraic variables) and such. The
 following ModelingToolkit functions provide this information
 
-* [`states(rn)`](@ref) returns all species *and variables* across the system and
-  *all sub-systems*.
-* [`parameters(rn)`](@ref) returns all parameters across the system and *all
-  sub-systems*.
-* [`equations(rn)`](@ref) returns all [`Reaction`](@ref)s and all
-  [`Equations`](@ref) defined across the system and *all sub-systems*.
+* `ModelingToolkit.states(rn)` returns all species *and variables*
+  across the system and *all sub-systems*.
+* `ModelingToolkit.parameters(rn)` returns all parameters across the
+  system and *all sub-systems*.
+* `ModelingToolkit.equations(rn)` returns all [`Reaction`](@ref)s and
+  all `Equations` defined across the system and *all sub-systems*.
 
 `states` and `parameters` should be assumed to always allocate, while
 `equations` will allocate unless there are no subsystems. In the latter case

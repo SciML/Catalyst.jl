@@ -734,7 +734,7 @@ end
 
 Given the subnetworks corresponding to the each linkage class of reaction network,
 determines if the reaction network is weakly reversible or not.
-For example, continuing the example from [`is_reversible`](@ref)
+For example, continuing the example from [`isreversible`](@ref)
 ```julia
 isweaklyreversible(subnets)
 ```

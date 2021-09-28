@@ -228,6 +228,11 @@ end
 
 ####################### ModelingToolkit inherited accessors #############################
 
+""" 
+    get_constraints(sys::ReactionSystem)
+
+Return the current constraint subsystem, if none is defined will return `nothing`.
+"""
 get_constraints(sys::ReactionSystem) = getfield(sys, :constraints)
 has_constraints(sys::ReactionSystem) = isdefined(sys, :constraints)
 
@@ -712,6 +717,22 @@ function getsubsystypes(sys)
     typeset
 end
 
+"""
+    Catalyst.flatten(rs::ReactionSystem)
+
+Merges all subsystems of the given [`ReactionSystem`](@ref) up into `rs`. 
+
+Notes:
+- Returns a new `ReactionSystem` that represents the flattened system.
+- All `Reaction`s within subsystems are namespaced and merged into the list of
+  `Reactions` of `rs`. The merged list is then available as `reactions(rs)` or
+  `get_eqs(rs)`.
+- All algebraic equations are merged into a `NonlinearSystem` stored as
+  `get_constraints(rs)`. If `get_constraints !== nothing` then the algebraic
+  equations are merged with the current constraints.
+- Currently only `ReactionSystem`s and `NonlinearSystem`s are supported as
+  sub-systems when flattening.
+"""
 function flatten(rs::ReactionSystem)
     systems = get_systems(rs)
     isempty(systems) && return rs
@@ -730,6 +751,12 @@ function flatten(rs::ReactionSystem)
     csts = setdiff(sts, specs)
     cps  = setdiff(ps, reactionps)
     ceqs = Equation[eq for eq in alleqs if eq isa Equation]    
+    csys = get_constraints(rs)
+    if csys !== nothing
+        union!(csts, get_states(csys))
+        union!(cps, get_ps(csys))
+        append!(ceqs, get_eqs(csys))
+    end
     ReactionSystem(rxs, get_iv(rs), specs, reactionps;
                    observed = MT.observed(rs),                    
                    name = nameof(rs),
@@ -738,7 +765,17 @@ function flatten(rs::ReactionSystem)
                    constraints = NonlinearSystem(ceqs,csts,cps,name=nameof(rs)))
 end
 
-function MT.extend(sys::NonlinearSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
+"""
+    ModelingToolkit.extend(sys::NonlinearSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
+
+Extends the indicated [`ReactionSystem`](@ref) with a
+`ModelingToolkit.NonlinearSystem` which will be stored internally as constraint equations.
+
+Notes:
+- Returns a new `ReactionSystem` and does not modify `rs`.
+- By default, the new `ReactionSystem` will have the same name as the `NonlinearSystem`.
+"""
+function ModelingToolkit.extend(sys::NonlinearSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
     csys = (get_constraints(rs) === nothing) ? sys : extend(sys, get_constraints(rs))       
     ReactionSystem(get_eqs(rs), get_iv(rs), get_states(rs), get_ps(rs); 
                     observed = get_observed(rs), name = name, 
@@ -746,7 +783,18 @@ function MT.extend(sys::NonlinearSystem, rs::ReactionSystem; name::Symbol=nameof
                     checks=false, constraints=csys)
 end
 
-function MT.extend(sys::ReactionSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
+"""
+    ModelingToolkit.extend(sys::ReactionSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
+
+Extends the indicated [`ReactionSystem`](@ref) with another `ReactionSystem`.
+Similar to calling `merge!` except constraint systems are allowed (and will also
+be merged together).
+
+Notes:
+- Returns a new `ReactionSystem` and does not modify `rs`.
+- By default, the new `ReactionSystem` will have the same name as the `sys`.
+"""
+function ModelingToolkit.extend(sys::ReactionSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
     eqs  = union(get_eqs(rs), get_eqs(sys))
     sts  = union(get_states(rs), get_states(sys))
     ps   = union(get_ps(rs), get_ps(sys))
@@ -759,7 +807,7 @@ function MT.extend(sys::ReactionSystem, rs::ReactionSystem; name::Symbol=nameof(
     if csys === nothing        
         newcsys = csys2
     else
-        newcsys = (csys2===nothing) ? csys : extend(csys2, csys, name)
+        newcsys = (csys2 === nothing) ? csys : extend(csys2, csys, name)
     end
     
     ReactionSystem(eqs, get_iv(rs), sts, ps; observed = obs, name = name, 
