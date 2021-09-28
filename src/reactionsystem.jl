@@ -519,6 +519,14 @@ function error_if_constraints(::Type{T}, sys::ReactionSystem) where {T <: MT.Abs
             error("Can not convert to a system of type ", T, " when there are constraints.")
 end
 
+function error_if_constraint_odes(::Type{T}, rs::ReactionSystem) where {T <: MT.AbstractSystem}
+    csys = get_constraints(rs)    
+    structsys = MT.SystemStructures.initialize_system_structure(csys)
+    structure = MT.get_structure(structsys)
+    any(i -> MT.SystemStructures.isdiffeq(structure,i), eachindex(get_eqs(structsys))) &&
+        error("Cannot convert to system type $T when then there are ODE constraint equations.")
+end
+
 """
 ```julia
 Base.convert(::Type{<:ODESystem},rs::ReactionSystem)
@@ -560,6 +568,7 @@ function Base.convert(::Type{<:NonlinearSystem},rs::ReactionSystem;
                       checks = false, kwargs...)
     eqs        = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, as_odes=false, 
                                     include_zero_odes=include_zero_odes)
+    error_if_constraint_odes(NonlinearSystem, rs)
     eqs,sts,ps = addconstraints!(eqs, rs)
     systems    = make_systems_with_type!(Vector{NonlinearSystem}(), rs, include_zero_odes)
     NonlinearSystem(eqs, sts, ps; name=name, systems=systems, 
@@ -737,7 +746,7 @@ function flatten(rs::ReactionSystem)
     systems = get_systems(rs)
     isempty(systems) && return rs
     
-    all(T -> any(T .<: (ReactionSystem,NonlinearSystem)), getsubsystypes(rs)) || 
+    all(T -> any(T .<: (ReactionSystem,NonlinearSystem,ODESystem)), getsubsystypes(rs)) || 
         error("flattening is currently only supported for subsystems mixing ReactionSystems and NonlinearSystems.")
     
     specs      = species(rs)
@@ -752,30 +761,38 @@ function flatten(rs::ReactionSystem)
     cps  = setdiff(ps, reactionps)
     ceqs = Equation[eq for eq in alleqs if eq isa Equation]    
     csys = get_constraints(rs)
-    if csys !== nothing
+    if csys === nothing
+        newcsys = ODESystem(ceqs, get_iv(rs), csts, cps; name=nameof(rs))
+    else
         union!(csts, get_states(csys))
         union!(cps, get_ps(csys))
         append!(ceqs, get_eqs(csys))
+        T = SciMLBase.parameterless_type(csys)
+        newcsys = (T <: MT.AbstractTimeDependentSystem) ? 
+                    T(ceqs, get_iv(csys), csts, cps; name=nameof(csys)) :
+                    T(ceqs, csts, cps; name=nameof(csys))        
     end
-    ReactionSystem(rxs, get_iv(rs), specs, reactionps;
-                   observed = MT.observed(rs),                    
-                   name = nameof(rs),
-                   defaults = MT.defaults(rs),
-                   checks = false,
-                   constraints = NonlinearSystem(ceqs,csts,cps,name=nameof(rs)))
+
+    ReactionSystem(rxs, get_iv(rs), specs, reactionps; observed = MT.observed(rs),                    
+                                                       name = nameof(rs),
+                                                       defaults = MT.defaults(rs),
+                                                       checks = false,
+                                                       constraints = newcsys)
 end
 
 """
-    ModelingToolkit.extend(sys::NonlinearSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
+    ModelingToolkit.extend(sys::Union{NonlinearSystem,ODESystem}, rs::ReactionSystem; name::Symbol=nameof(sys))
 
 Extends the indicated [`ReactionSystem`](@ref) with a
-`ModelingToolkit.NonlinearSystem` which will be stored internally as constraint equations.
+`ModelingToolkit.NonlinearSystem` or `ModelingToolkit.ODESystem`, which will be
+stored internally as constraint equations.
 
 Notes:
 - Returns a new `ReactionSystem` and does not modify `rs`.
-- By default, the new `ReactionSystem` will have the same name as the `NonlinearSystem`.
+- By default, the new `ReactionSystem` will have the same name as the
+  `NonlinearSystem`.
 """
-function ModelingToolkit.extend(sys::NonlinearSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
+function ModelingToolkit.extend(sys::Union{NonlinearSystem,ODESystem}, rs::ReactionSystem; name::Symbol=nameof(sys))
     csys = (get_constraints(rs) === nothing) ? sys : extend(sys, get_constraints(rs))       
     ReactionSystem(get_eqs(rs), get_iv(rs), get_states(rs), get_ps(rs); 
                     observed = get_observed(rs), name = name, 

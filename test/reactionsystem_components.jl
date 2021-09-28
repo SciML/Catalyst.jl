@@ -198,3 +198,27 @@ eqs3 = [ParentScope(A2a) ~ p3b*A3b]
 @test issetequal(reactionparams(rs1), [p1, rs2.p2a, rs2.p2b, rs2.rs3.p3a])
 rxs = [rx for rx in Iterators.filter(eq -> eq isa Reaction, equations(rs1))]
 @test issubset(rxs, reactions(rs1)) && issubset(reactions(rs1), rxs)
+
+# test throw error if there are ODE constraints and convert to NonlinearSystem
+rn = @reaction_network rn begin
+    (k1,k2), A <--> B
+    end k1 k2
+@parameters a,b
+@variables t,A(t),C(t)
+D = Differential(t)
+eqs = [D(A) ~ -a*A + C, D(C) ~ -b*C + a*A]
+@named osys = ODESystem(eqs,t,[A,C],[a,b])
+rn2 = extend(osys,rn)
+rnodes = convert(ODESystem,rn2)
+@test_throws ErrorException convert(NonlinearSystem,rn2)
+
+# check conversions work with algebraic constraints
+eqs = [0 ~ -a*A + C, 0 ~ -b*C + a*A]
+@named nlsys = NonlinearSystem(eqs,[A,C],[a,b])
+rn2 = extend(nlsys,rn)
+rnodes = convert(ODESystem,rn2)
+rnnlsys = convert(NonlinearSystem,rn2)
+@named nlsys = ODESystem(eqs,t,[A,C],[a,b])
+rn2 = extend(nlsys,rn)
+rnodes = convert(ODESystem,rn2)
+rnnlsys = convert(NonlinearSystem,rn2)
