@@ -736,18 +736,20 @@ Notes:
 - All `Reaction`s within subsystems are namespaced and merged into the list of
   `Reactions` of `rs`. The merged list is then available as `reactions(rs)` or
   `get_eqs(rs)`.
-- All algebraic equations are merged into a `NonlinearSystem` stored as
-  `get_constraints(rs)`. If `get_constraints !== nothing` then the algebraic
-  equations are merged with the current constraints.
-- Currently only `ReactionSystem`s and `NonlinearSystem`s are supported as
-  sub-systems when flattening.
+- All algebraic equations are merged into a `NonlinearSystem` or `ODESystem`
+  stored as `get_constraints(rs)`. If `get_constraints !== nothing` then the
+  algebraic equations are merged with the current constraints in a system of the
+  same type as the current constraints, otherwise the new constraint system is
+  an `ODESystem`.
+- Currently only `ReactionSystem`s, `NonlinearSystem`s and `ODESystem`s are
+  supported as sub-systems when flattening.
 """
 function flatten(rs::ReactionSystem)
     systems = get_systems(rs)
     isempty(systems) && return rs
     
     all(T -> any(T .<: (ReactionSystem,NonlinearSystem,ODESystem)), getsubsystypes(rs)) || 
-        error("flattening is currently only supported for subsystems mixing ReactionSystems and NonlinearSystems.")
+        error("flattening is currently only supported for subsystems mixing ReactionSystems, NonlinearSystems and ODESystems.")
     
     specs      = species(rs)
     sts        = states(rs)    
@@ -789,8 +791,7 @@ stored internally as constraint equations.
 
 Notes:
 - Returns a new `ReactionSystem` and does not modify `rs`.
-- By default, the new `ReactionSystem` will have the same name as the
-  `NonlinearSystem`.
+- By default, the new `ReactionSystem` will have the same name as `sys`.
 """
 function ModelingToolkit.extend(sys::Union{NonlinearSystem,ODESystem}, rs::ReactionSystem; name::Symbol=nameof(sys))
     csys = (get_constraints(rs) === nothing) ? sys : extend(sys, get_constraints(rs))       
@@ -809,7 +810,7 @@ be merged together).
 
 Notes:
 - Returns a new `ReactionSystem` and does not modify `rs`.
-- By default, the new `ReactionSystem` will have the same name as the `sys`.
+- By default, the new `ReactionSystem` will have the same name as `sys`.
 """
 function ModelingToolkit.extend(sys::ReactionSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
     eqs  = union(get_eqs(rs), get_eqs(sys))
