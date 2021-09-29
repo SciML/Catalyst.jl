@@ -187,9 +187,9 @@ struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
 
     function ReactionSystem(eqs, iv, states, ps, observed, name, systems, defaults, connection_type; checks::Bool = true)
 
-        iv′ = value(iv)
-        states′ = value.(states)
-        ps′ = value.(ps)
+        iv′     = value(iv)        
+        states′ = any(sts -> sts isa Num, states) ? value.(states) : states
+        ps′     = any(p -> p isa Num, ps) ? value.(ps) : ps
 
         if checks
             check_variables(states′, iv′)
