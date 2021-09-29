@@ -142,6 +142,7 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     ns
 end
 
+
 """
 $(TYPEDEF)
 
@@ -185,11 +186,11 @@ struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
     """Type of the system"""
     connection_type::Any
 
-    function ReactionSystem(eqs, iv, states, ps, observed, name, systems, defaults, connection_type; checks::Bool = true)
-
-        iv′ = value(iv)
-        states′ = value.(states)
-        ps′ = value.(ps)
+    function ReactionSystem(eqs, iv, states, ps, observed, name, systems, defaults, connection_type; 
+                            checks::Bool=true, skipvalue=false)
+        iv′     = value(iv)        
+        states′ = skipvalue ? states : value.(MT.scalarize(states))
+        ps′     = skipvalue ? ps : value.(MT.scalarize(ps))
 
         if checks
             check_variables(states′, iv′)
@@ -198,7 +199,6 @@ struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
         end
         rs = new(collect(eqs), iv′, states′, ps′, observed, name, systems, defaults, connection_type)
         checks && validate(rs)
-
         rs
     end
 end
@@ -207,16 +207,41 @@ function ReactionSystem(eqs, iv, species, ps;
                         observed = [],
                         systems = [],
                         name = nothing,
-                        default_u0=Dict(),
-                        default_p=Dict(),
-                        defaults=_merge(Dict(default_u0), Dict(default_p)),
-                        connection_type=nothing,
-                        checks = true)
+                        default_u0 = Dict(),
+                        default_p = Dict(),
+                        defaults =_merge(Dict(default_u0), Dict(default_p)),
+                        connection_type = nothing,
+                        checks = true, 
+                        skipvalue = false)
     name === nothing && throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
 
     ReactionSystem(eqs, iv, species, ps, observed, name, systems, defaults, connection_type, 
-                   checks = checks)
+                   checks = checks, skipvalue = skipvalue)
 end
+
+function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)  
+    t   = value(iv)   
+    sts = Set(spec for rx in rxs for spec in rx.substrates)
+    foreach(v -> push!(sts,v), (prod for rx in rxs for prod in rx.products))
+
+    ps   = Set()
+    vars = Set()
+    for rx in rxs
+        MT.get_variables!(vars, rx.rate)
+        for var in vars
+            isequal(t,var) && continue
+            if MT.isparameter(var) 
+                push!(ps, var)
+            else
+                push!(sts, var)
+            end
+        end
+        empty!(vars)
+    end
+
+    ReactionSystem(rxs, t, collect(sts), collect(ps); skipvalue=true, kwargs...)
+end
+
 
 function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)

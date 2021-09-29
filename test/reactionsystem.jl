@@ -27,6 +27,10 @@ rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
 odesys = convert(ODESystem,rs)
 sdesys = convert(SDESystem,rs)
 
+# test equation only constructor
+@named rs2 = ReactionSystem(rxs,t)
+@test Catalyst.isequal_ignore_names(rs,rs2)
+
 # test show
 io = IOBuffer()
 show(io, rs)
@@ -272,3 +276,10 @@ js = convert(JumpSystem, rs)
 @test isequal2(equations(js)[1].scaled_rates, k1/12)
 js = convert(JumpSystem,rs; combinatoric_ratelaws=false)
 @test isequal2(equations(js)[1].scaled_rates, k1)
+
+# test building directly from rxs
+@parameters x,y
+rxs = [Reaction(x*t*A*B+y, [A], nothing)]
+@named rs1 = ReactionSystem(rxs, t, [A,B], [x,y])
+@named rs2 = ReactionSystem(rxs, t)
+@test Catalyst.isequal_ignore_names(rs1,rs2)
