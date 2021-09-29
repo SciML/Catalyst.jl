@@ -16,6 +16,12 @@
 - Added a custom `hash` for `Reaction`s to ensure they work in `Dict`s and
   `Set`s properly, and set-type comparisons between collections of `Reaction`s
   work.
+- Added `extend(sys, reactionnetwork, name=nameof(sys))` to extend
+  `ReactionSystem`s with constraint equations (algebraic equations or ODEs).
+  Constraints are stored as a `NonlinearSystem` or `ODESystem` within the
+  `ReactionSystem`, and accessible via `get_constraints(reactionnetwork)`.
+- Added `Catalyst.flatten(rn)` to allow flattening of a `ReactionSystem` with
+  sub-systems into one `ReactionSystem`.
 
 ## Catalyst 9.0
 *1.* **BREAKING:** `netstoichmat`, `prodstoichmat` and `substoichmat` are now
