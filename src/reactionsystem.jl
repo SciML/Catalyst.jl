@@ -239,7 +239,8 @@ function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)
         empty!(vars)
     end
 
-    ReactionSystem(rxs, value(iv), collect(sts), collect(ps); skipvalue=true, kwargs...)
+    ReactionSystem(rxs, t, collect(sts), collect(ps); skipvalue=true, kwargs...)
+
 end
 
 
