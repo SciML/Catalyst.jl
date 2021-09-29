@@ -142,6 +142,8 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     ns
 end
 
+arrtype(v::Symbolics.Arr{U}) where {U} = U
+
 """
 $(TYPEDEF)
 
@@ -185,11 +187,11 @@ struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
     """Type of the system"""
     connection_type::Any
 
-    function ReactionSystem(eqs, iv, states, ps, observed, name, systems, defaults, connection_type; checks::Bool = true)
-
+    function ReactionSystem(eqs, iv, states, ps, observed, name, systems, defaults, connection_type; 
+                            checks::Bool=true, skipvalue=false)
         iv′     = value(iv)        
-        states′ = any(sts -> sts isa Num, states) ? value.(states) : states
-        ps′     = any(p -> p isa Num, ps) ? value.(ps) : ps
+        states′ = skipvalue ? states : value.(MT.scalarize(states))
+        ps′     = skipvalue ? ps : value.(MT.scalarize(ps))
 
         if checks
             check_variables(states′, iv′)
@@ -198,7 +200,6 @@ struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
         end
         rs = new(collect(eqs), iv′, states′, ps′, observed, name, systems, defaults, connection_type)
         checks && validate(rs)
-
         rs
     end
 end
@@ -207,15 +208,16 @@ function ReactionSystem(eqs, iv, species, ps;
                         observed = [],
                         systems = [],
                         name = nothing,
-                        default_u0=Dict(),
-                        default_p=Dict(),
-                        defaults=_merge(Dict(default_u0), Dict(default_p)),
-                        connection_type=nothing,
-                        checks = true)
+                        default_u0 = Dict(),
+                        default_p = Dict(),
+                        defaults =_merge(Dict(default_u0), Dict(default_p)),
+                        connection_type = nothing,
+                        checks = true, 
+                        skipvalue = false)
     name === nothing && throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
 
     ReactionSystem(eqs, iv, species, ps, observed, name, systems, defaults, connection_type, 
-                   checks = checks)
+                   checks = checks, skipvalue = skipvalue)
 end
 
 function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)  
@@ -238,7 +240,7 @@ function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)
         empty!(vars)
     end
 
-    ReactionSystem(rxs, value(iv), collect(sts), collect(ps); kwargs...)
+    ReactionSystem(rxs, value(iv), collect(sts), collect(ps); skipvalue=true, kwargs...)
 end
 
 
