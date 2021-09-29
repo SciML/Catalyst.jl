@@ -218,6 +218,30 @@ function ReactionSystem(eqs, iv, species, ps;
                    checks = checks)
 end
 
+function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)  
+    t   = value(iv)   
+    sts = Set(spec for rx in rxs for spec in rx.substrates)
+    foreach(v -> push!(sts,v), (prod for rx in rxs for prod in rx.products))
+
+    ps   = Set()
+    vars = Set()
+    for rx in rxs
+        MT.get_variables!(vars, rx.rate)
+        for var in vars
+            isequal(t,var) && continue
+            if MT.isparameter(var) 
+                push!(ps, var)
+            else
+                push!(sts, var)
+            end
+        end
+        empty!(vars)
+    end
+
+    ReactionSystem(rxs, value(iv), collect(sts), collect(ps); kwargs...)
+end
+
+
 function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
