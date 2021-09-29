@@ -142,7 +142,6 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     ns
 end
 
-arrtype(v::Symbolics.Arr{U}) where {U} = U
 
 """
 $(TYPEDEF)
