@@ -163,7 +163,7 @@ Notes:
   units of (species units) / (time units). Unit checking can be disabled
   by passing the keyword argument `checks=false`.
 """
-struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
+struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem}} <: MT.AbstractTimeDependentSystem
     """The reactions defining the system."""
     eqs::Vector{Reaction}
     """Independent variable (usually time)."""
@@ -185,8 +185,10 @@ struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
     defaults::Dict
     """Type of the system"""
     connection_type::Any
+    """Non-`Reaction` equations that further constrain the system"""
+    constraints::U
 
-    function ReactionSystem(eqs, iv, states, ps, observed, name, systems, defaults, connection_type; 
+    function ReactionSystem(eqs, iv, states, ps, observed, name, systems, defaults, connection_type, csys; 
                             checks::Bool=true, skipvalue=false)
         iv′     = value(iv)        
         states′ = skipvalue ? states : value.(MT.scalarize(states))
@@ -197,7 +199,7 @@ struct ReactionSystem <: ModelingToolkit.AbstractTimeDependentSystem
             check_parameters(ps′, iv′)
             # check_units(eqs)    # disable as check the newly generated system below
         end
-        rs = new(collect(eqs), iv′, states′, ps′, observed, name, systems, defaults, connection_type)
+        rs = new{typeof(csys)}(collect(eqs), iv′, states′, ps′, observed, name, systems, defaults, connection_type, csys)
         checks && validate(rs)
         rs
     end
@@ -207,16 +209,17 @@ function ReactionSystem(eqs, iv, species, ps;
                         observed = [],
                         systems = [],
                         name = nothing,
-                        default_u0 = Dict(),
-                        default_p = Dict(),
-                        defaults =_merge(Dict(default_u0), Dict(default_p)),
-                        connection_type = nothing,
+                        default_u0=Dict(),
+                        default_p=Dict(),
+                        defaults=_merge(Dict(default_u0), Dict(default_p)),
+                        connection_type=nothing,
                         checks = true, 
+                        constraints = nothing,
                         skipvalue = false)
     name === nothing && throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
 
     ReactionSystem(eqs, iv, species, ps, observed, name, systems, defaults, connection_type, 
-                   checks = checks, skipvalue = skipvalue)
+                   constraints; checks = checks, skipvalue = skipvalue)
 end
 
 function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)  
@@ -247,14 +250,39 @@ function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
 
-function ModelingToolkit.equations(sys::ReactionSystem)
-    eqs = get_eqs(sys)
+
+####################### ModelingToolkit inherited accessors #############################
+
+""" 
+    get_constraints(sys::ReactionSystem)
+
+Return the current constraint subsystem, if none is defined will return `nothing`.
+"""
+get_constraints(sys::ReactionSystem) = getfield(sys, :constraints)
+has_constraints(sys::ReactionSystem) = isdefined(sys, :constraints)
+
+function MT.states(sys::ReactionSystem)
+    sts = (get_constraints(sys) === nothing) ? get_states(sys) : vcat(get_states(sys), get_states(get_constraints(sys)))       
     systems = get_systems(sys)
-    if !isempty(systems)
-        eqs = Any[eqs; reduce(vcat, MT.namespace_equations.(systems); init=Any[])]
-    end
-    eqs
+    unique(isempty(systems) ? sts : [sts; reduce(vcat,namespace_variables.(systems))])
 end
+
+function MT.parameters(sys::ReactionSystem)
+    ps = (get_constraints(sys) === nothing) ? get_ps(sys) : vcat(get_ps(sys), get_ps(get_constraints(sys)))
+    systems = get_systems(sys)
+    unique(isempty(systems) ? ps : [ps; reduce(vcat,namespace_parameters.(systems))])
+end
+
+function MT.equations(sys::ReactionSystem)
+    eqs = (get_constraints(sys) === nothing) ? get_eqs(sys) : Any[get_eqs(sys); get_eqs(get_constraints(sys))]
+    systems = get_systems(sys)
+    if !isempty(systems)        
+        return Any[eqs; reduce(vcat, MT.namespace_equations.(systems); init=Any[])]
+    end
+    return eqs
+end
+
+######################## Conversion to ODEs/SDEs/jump, etc ##############################
 
 """
     oderatelaw(rx; combinatoric_ratelaw=true)
@@ -472,7 +500,8 @@ function assemble_jumps(rs; combinatoric_ratelaws=true)
     vcat(meqs,ceqs,veqs)
 end
 
-function make_systems_with_type!(systems::Vector{T}, rs::ReactionSystem, include_zero_odes=true) where {T <: ModelingToolkit.AbstractSystem}
+# convert subsystems to the system type T
+function make_systems_with_type!(systems::Vector{T}, rs::ReactionSystem, include_zero_odes=true) where {T <: MT.AbstractSystem}
     resize!(systems, length(get_systems(rs)))
     for (i,sys) in enumerate(get_systems(rs))
         if sys isa ReactionSystem
@@ -494,6 +523,38 @@ function make_systems_with_type!(systems::Vector{T}, rs::ReactionSystem, include
     systems
 end
 
+# merge constraint eqs, states and ps into the top-level eqs, states and ps
+function addconstraints!(eqs, rs::ReactionSystem)   
+    csys = get_constraints(rs)     
+    sts  = get_states(rs); ps = get_ps(rs)
+
+    if csys !== nothing
+        csts = get_states(csys); cps = get_ps(csys); ceqs = get_eqs(csys)
+        sts  = isempty(csts) ? sts : [sts; csts]        
+        ps   = isempty(cps) ? ps : [ps; cps]
+        (!isempty(ceqs)) && append!(eqs,ceqs)
+    end
+
+    eqs,sts,ps
+end
+
+# used by systems that don't support constraint equations currently
+function error_if_constraints(::Type{T}, sys::ReactionSystem) where {T <: MT.AbstractSystem}
+    (get_constraints(sys) === nothing) || 
+            error("Can not convert to a system of type ", T, " when there are constraints.")
+end
+
+function error_if_constraint_odes(::Type{T}, rs::ReactionSystem) where {T <: MT.AbstractSystem}
+    csys = get_constraints(rs)    
+    if csys !== nothing
+        structsys = MT.SystemStructures.initialize_system_structure(csys)
+        structure = MT.get_structure(structsys)
+        any(i -> MT.SystemStructures.isdiffeq(structure,i), eachindex(get_eqs(structsys))) &&
+            error("Cannot convert to system type $T when then there are ODE constraint equations.")
+    end
+    nothing
+end
+
 """
 ```julia
 Base.convert(::Type{<:ODESystem},rs::ReactionSystem)
@@ -509,10 +570,11 @@ ignored.
 function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; 
                       name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true, 
                       checks=false, kwargs...)
-    eqs     = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, 
-                                 include_zero_odes=include_zero_odes)
-    systems = make_systems_with_type!(Vector{ODESystem}(), rs, include_zero_odes)
-    ODESystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, 
+    eqs        = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, 
+                                    include_zero_odes=include_zero_odes)                                 
+    eqs,sts,ps = addconstraints!(eqs, rs)
+    systems    = make_systems_with_type!(Vector{ODESystem}(), rs, include_zero_odes)
+    ODESystem(eqs, get_iv(rs), sts, ps; name=name, systems=systems, 
               defaults=get_defaults(rs), checks=checks, kwargs...)
 end
 
@@ -532,10 +594,12 @@ ignored.
 function Base.convert(::Type{<:NonlinearSystem},rs::ReactionSystem;
                       name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true, 
                       checks = false, kwargs...)
-    eqs     = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, as_odes=false, 
-                                 include_zero_odes=include_zero_odes)
-    systems = make_systems_with_type!(Vector{NonlinearSystem}(), rs, include_zero_odes)
-    NonlinearSystem(eqs, get_states(rs), get_ps(rs); name=name, systems=systems, 
+    eqs        = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, as_odes=false, 
+                                    include_zero_odes=include_zero_odes)
+    error_if_constraint_odes(NonlinearSystem, rs)
+    eqs,sts,ps = addconstraints!(eqs, rs)
+    systems    = make_systems_with_type!(Vector{NonlinearSystem}(), rs, include_zero_odes)
+    NonlinearSystem(eqs, sts, ps; name=name, systems=systems, 
                     defaults=get_defaults(rs), checks = checks, kwargs...)
 end
 
@@ -563,6 +627,8 @@ This input may contain repeat parameters.
 function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       noise_scaling=nothing, name=nameof(rs), combinatoric_ratelaws=true, 
                       include_zero_odes=true, checks = false, kwargs...)
+
+    error_if_constraints(SDESystem, rs)
 
     if noise_scaling isa AbstractArray
         (length(noise_scaling)!=numreactions(rs)) &&
@@ -604,8 +670,11 @@ Notes:
 """
 function Base.convert(::Type{<:JumpSystem},rs::ReactionSystem; 
                       name=nameof(rs), combinatoric_ratelaws=true, checks = false, kwargs...)
-    eqs     = assemble_jumps(rs; combinatoric_ratelaws=combinatoric_ratelaws)
+    
+    error_if_constraints(JumpSystem, rs)
     isempty(get_systems(rs)) || error("Conversion to JumpSystems with subsystems is not currently supported.")
+
+    eqs     = assemble_jumps(rs; combinatoric_ratelaws=combinatoric_ratelaws)
     systems = convert.(JumpSystem, get_systems(rs))    
     JumpSystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, 
                defaults=get_defaults(rs), checks = checks, kwargs...)
@@ -667,4 +736,126 @@ function ModelingToolkit.modified_states!(mstates, rx::Reaction, sts::Set)
     for (species,stoich) in rx.netstoich
         (species in sts) && push!(mstates, species)
     end
+    mstates
+end
+
+
+########################## Compositional Tooling ###########################
+function getsubsystypes!(typeset::Set{Type}, sys::T) where {T <: MT.AbstractSystem}
+    push!(typeset, T)
+    for subsys in get_systems(sys)
+        getsubsystypes!(typeset, subsys)
+    end
+    typeset 
+end
+function getsubsystypes(sys)
+    typeset = Set{Type}()
+    getsubsystypes!(typeset, sys)
+    typeset
+end
+
+"""
+    Catalyst.flatten(rs::ReactionSystem)
+
+Merges all subsystems of the given [`ReactionSystem`](@ref) up into `rs`. 
+
+Notes:
+- Returns a new `ReactionSystem` that represents the flattened system.
+- All `Reaction`s within subsystems are namespaced and merged into the list of
+  `Reactions` of `rs`. The merged list is then available as `reactions(rs)` or
+  `get_eqs(rs)`.
+- All algebraic equations are merged into a `NonlinearSystem` or `ODESystem`
+  stored as `get_constraints(rs)`. If `get_constraints !== nothing` then the
+  algebraic equations are merged with the current constraints in a system of the
+  same type as the current constraints, otherwise the new constraint system is
+  an `ODESystem`.
+- Currently only `ReactionSystem`s, `NonlinearSystem`s and `ODESystem`s are
+  supported as sub-systems when flattening.
+"""
+function flatten(rs::ReactionSystem)
+    systems = get_systems(rs)
+    isempty(systems) && return rs
+    
+    all(T -> any(T .<: (ReactionSystem,NonlinearSystem,ODESystem)), getsubsystypes(rs)) || 
+        error("flattening is currently only supported for subsystems mixing ReactionSystems, NonlinearSystems and ODESystems.")
+    
+    specs      = species(rs)
+    sts        = states(rs)    
+    reactionps = reactionparams(rs)   
+    ps         = parameters(rs)
+    alleqs     = equations(rs)
+    rxs        = Reaction[rx for rx in alleqs if rx isa Reaction]
+
+    # constraints = states, parameters and equations that do not appear in Reactions
+    csts = setdiff(sts, specs)
+    cps  = setdiff(ps, reactionps)
+    ceqs = Equation[eq for eq in alleqs if eq isa Equation]    
+    csys = get_constraints(rs)
+    if csys === nothing
+        newcsys = ODESystem(ceqs, get_iv(rs), csts, cps; name=nameof(rs))
+    else
+        union!(csts, get_states(csys))
+        union!(cps, get_ps(csys))
+        append!(ceqs, get_eqs(csys))
+        T = SciMLBase.parameterless_type(csys)
+        newcsys = (T <: MT.AbstractTimeDependentSystem) ? 
+                    T(ceqs, get_iv(csys), csts, cps; name=nameof(csys)) :
+                    T(ceqs, csts, cps; name=nameof(csys))        
+    end
+
+    ReactionSystem(rxs, get_iv(rs), specs, reactionps; observed = MT.observed(rs),                    
+                                                       name = nameof(rs),
+                                                       defaults = MT.defaults(rs),
+                                                       checks = false,
+                                                       constraints = newcsys)
+end
+
+"""
+    ModelingToolkit.extend(sys::Union{NonlinearSystem,ODESystem}, rs::ReactionSystem; name::Symbol=nameof(sys))
+
+Extends the indicated [`ReactionSystem`](@ref) with a
+`ModelingToolkit.NonlinearSystem` or `ModelingToolkit.ODESystem`, which will be
+stored internally as constraint equations.
+
+Notes:
+- Returns a new `ReactionSystem` and does not modify `rs`.
+- By default, the new `ReactionSystem` will have the same name as `sys`.
+"""
+function ModelingToolkit.extend(sys::Union{NonlinearSystem,ODESystem}, rs::ReactionSystem; name::Symbol=nameof(sys))
+    csys = (get_constraints(rs) === nothing) ? sys : extend(sys, get_constraints(rs))       
+    ReactionSystem(get_eqs(rs), get_iv(rs), get_states(rs), get_ps(rs); 
+                    observed = get_observed(rs), name = name, 
+                    systems = get_systems(rs), defaults = get_defaults(rs), 
+                    checks=false, constraints=csys)
+end
+
+"""
+    ModelingToolkit.extend(sys::ReactionSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
+
+Extends the indicated [`ReactionSystem`](@ref) with another `ReactionSystem`.
+Similar to calling `merge!` except constraint systems are allowed (and will also
+be merged together).
+
+Notes:
+- Returns a new `ReactionSystem` and does not modify `rs`.
+- By default, the new `ReactionSystem` will have the same name as `sys`.
+"""
+function ModelingToolkit.extend(sys::ReactionSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
+    eqs  = union(get_eqs(rs), get_eqs(sys))
+    sts  = union(get_states(rs), get_states(sys))
+    ps   = union(get_ps(rs), get_ps(sys))
+    obs  = union(get_observed(rs), get_observed(sys))
+    defs = merge(get_defaults(rs), get_defaults(sys)) # prefer `sys`
+    syss = union(get_systems(rs), get_systems(sys))
+
+    csys = get_constraints(rs)
+    csys2 = get_constraints(sys)
+    if csys === nothing        
+        newcsys = csys2
+    else
+        newcsys = (csys2 === nothing) ? csys : extend(csys2, csys, name)
+    end
+    
+    ReactionSystem(eqs, get_iv(rs), sts, ps; observed = obs, name = name, 
+                    systems = syss, defaults = defs, checks=false, constraints=newcsys)
 end

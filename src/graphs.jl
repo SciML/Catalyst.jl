@@ -329,7 +329,7 @@ function complexgraph(rn::ReactionSystem; complexdata=reactioncomplexes(rn))
     end
     stmts2 = Vector{Statement}()
     append!(stmts2, compnodes)
-    append!(stmts2, collect(flatten(edges)))
+    append!(stmts2, collect(Iterators.flatten(edges)))
     g = Digraph("G", stmts2; graph_attrs=graph_attrs, node_attrs=node_attrs,edge_attrs=edge_attrs)
     return g
 end
@@ -368,7 +368,7 @@ function Graph(rn::ReactionSystem)
 
     stmts2 = Vector{Statement}()
     append!(stmts2, stmts)
-    append!(stmts2, collect(flatten(edges)))
+    append!(stmts2, collect(Iterators.flatten(edges)))
     g = Digraph("G", stmts2; graph_attrs=graph_attrs, node_attrs=node_attrs, edge_attrs=edge_attrs)
     return g
 end

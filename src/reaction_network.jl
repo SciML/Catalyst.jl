@@ -107,14 +107,33 @@ emptyrn = @reaction_network
 ```
 """
 macro reaction_network(name::Symbol, ex::Expr, parameters...)
-    make_reaction_system(MacroTools.striplines(ex), parameters; name=name)
+    make_reaction_system(MacroTools.striplines(ex), parameters; name=:($(QuoteNode(name))))
 end
 
-macro reaction_network(ex::Expr, parameters...)
-    make_reaction_system(MacroTools.striplines(ex), parameters)
+# allows @reaction_network $name begin ... to interpolate variables storing a name
+macro reaction_network(name::Expr, ex::Expr, parameters...)
+    make_reaction_system(MacroTools.striplines(ex), parameters; name=:($(esc(name.args[1]))))
+end
+
+macro reaction_network(ex::Expr, parameters...) 
+    ex = MacroTools.striplines(ex)
+
+    # no name but equations: @reaction_network begin ... end ...
+    if ex.head == :block
+        make_reaction_system(ex, parameters)
+    else  # empty but has interpolated name: @reaction_network $name        
+        networkname = :($(esc(ex.args[1])))
+        return Expr(:block,:(@parameters t),
+                    :(ReactionSystem(Reaction[],
+                                    t,
+                                    [],
+                                    [];                                 
+                                    name=$networkname)))
+    end
 end
 
 #Returns a empty network (with, or without, a declared name)
+# @reaction_network name 
 macro reaction_network(name::Symbol=gensym(:ReactionSystem))
     return Expr(:block,:(@parameters t),
                 :(ReactionSystem(Reaction[],
@@ -167,11 +186,11 @@ end
 ### Functions that process the input and rephrase it as a reaction system ###
 
 # Takes the reactions, and rephrases it as a "ReactionSystem" call, as designated by the ModelingToolkit IR.
-function make_reaction_system(ex::Expr, parameters; name=gensym(:ReactionSystem))
+function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSystem)))
     reactions = get_reactions(ex)
     reactants = get_reactants(reactions)
     !isempty(intersect(forbidden_symbols,union(reactants,parameters))) && error("The following symbol(s) are used as reactants or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(reactants,parameters)))...))*"this is not permited.")    
-    network_code = Expr(:block,:(@parameters t),:(@variables), :(ReactionSystem([],t,[],[]; name=$(QuoteNode(name)))))
+    network_code = Expr(:block,:(@parameters t),:(@variables), :(ReactionSystem([],t,[],[]; name=$(name))))
     foreach(parameter-> push!(network_code.args[1].args, parameter), parameters)
     foreach(reactant -> push!(network_code.args[2].args, Expr(:call,reactant,:t)), reactants)
     foreach(parameter-> push!(network_code.args[3].args[6].args, parameter), parameters)

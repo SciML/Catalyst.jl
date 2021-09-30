@@ -197,8 +197,8 @@ end
 
 See documentation for [`dependents`](@ref).
 """
-function dependants(network, rxidx)
-    dependents(network, rxidx)
+function dependants(rx, network)
+    dependents(rx, network)
 end
 
 """
@@ -734,7 +734,7 @@ end
 
 Given the subnetworks corresponding to the each linkage class of reaction network,
 determines if the reaction network is weakly reversible or not.
-For example, continuing the example from [`is_reversible`](@ref)
+For example, continuing the example from [`isreversible`](@ref)
 ```julia
 isweaklyreversible(subnets)
 ```
@@ -826,8 +826,9 @@ function isequal_ignore_names(rn1::ReactionSystem, rn2::ReactionSystem)
     isequal(get_iv(rn1), get_iv(rn2)) || return false
     issetequal(get_states(rn1), get_states(rn2)) || return false
     issetequal(get_ps(rn1), get_ps(rn2)) || return false
-    issetequal(MT.get_observed(rn1), MT.get_observed(rn2))
-    issetequal(get_eqs(rn1), get_eqs(rn2))
+    issetequal(MT.get_observed(rn1), MT.get_observed(rn2)) || return false
+    issetequal(get_eqs(rn1), get_eqs(rn2)) || return false
+    (get_constraints(rn1) == get_constraints(rn2)) || return false
 
     # subsystems
     (length(get_systems(rn1)) == length(get_systems(rn2))) || return false
@@ -979,6 +980,8 @@ Notes:
 - Returns `network1`.
 """
 function Base.merge!(network1::ReactionSystem, network2::ReactionSystem)
+    ((get_constraints(network1) === nothing) && (get_constraints(network2) === nothing)) ||
+        error("merge! does not currently support ReactionSystems with constraints, consider ModelingToolkit.extend instead.")
     isequal(get_iv(network1), get_iv(network2)) || 
         error("Reaction networks must have the same independent variable to be mergable.")
     append!(get_eqs(network1), get_eqs(network2))

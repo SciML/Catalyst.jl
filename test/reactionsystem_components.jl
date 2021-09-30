@@ -46,7 +46,7 @@ pvals = [sys₁.α₀ => 5e-4,
          sys₃.δ => (log(2)/120),
          sys₃.β => (20*log(2)/120),
          sys₃.μ => (log(2)/600)]
-u₀    = [sys₁.m => 0.0, sys₁.P => 20.0, sys₂.m => 0.0, sys₂.P => 0.0, sys₃.m => 0.0, sys₃.P => 0.0]
+u₀    = [sys₁.m => 0.0, sys₁.P => 20.0, sys₁.R => 0.0, sys₂.m => 0.0, sys₂.P => 0.0, sys₂.R => 0.0, sys₃.m => 0.0, sys₃.P => 0.0, sys₃.R => 0.0]
 tspan = (0.0, 100000.0)
 oprob = ODEProblem(oderepressilator, u₀, tspan, pvals)
 sol = solve(oprob, Tsit5())
@@ -95,6 +95,53 @@ sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
 @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
 @test sol[sys₁.m] ≈ sol[sys₂.m] ≈ sol[sys₃.m]
 @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
+
+# flattening
+fsys = Catalyst.flatten(ssrepressilator)
+@named nlrepressilator = convert(NonlinearSystem, fsys, include_zero_odes=false)
+sys2 = structural_simplify(nlrepressilator)
+@test length(equations(sys2)) == 6
+nlprob = NonlinearProblem(sys2, u₀, pvals)
+sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
+@test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
+@test sol[sys₁.m] ≈ sol[sys₂.m] ≈ sol[sys₃.m]
+@test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
+
+# test constraints
+connections = [sys₁.R ~ sys₃.P,
+               sys₂.R ~ sys₁.P,
+               sys₃.R ~ sys₂.P]
+@named csys = NonlinearSystem(connections, [sys₁.R,sys₃.P,sys₂.R,sys₁.P,sys₃.R,sys₂.P],[])
+@named repressilator2 = ReactionSystem(t; constraints=csys, systems=[sys₁,sys₂,sys₃])
+@named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes=false)
+sys2 = structural_simplify(nlrepressilator)
+@test length(equations(sys2)) == 6
+nlprob = NonlinearProblem(sys2, u₀, pvals)
+sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
+@test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
+@test sol[sys₁.m] ≈ sol[sys₂.m] ≈ sol[sys₃.m]
+@test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
+
+# test can make ODESystem
+@named oderepressilator = convert(ODESystem, repressilator2, include_zero_odes=false)
+sys2 = structural_simplify(oderepressilator)  # FAILS currently
+oprob = ODEProblem(sys2, u₀, tspan, pvals)
+sol = solve(oprob, Tsit5())
+@test all(isapprox.(sol(tvs,idxs=sys₁.P),sol2(tvs, idxs=4),atol=1e-4))
+
+# test extending with NonlinearSystem
+@named repressilator2 = ReactionSystem(t; systems=[sys₁,sys₂,sys₃])
+repressilator2 = Catalyst.flatten(repressilator2)
+repressilator2 = extend(csys, repressilator2)
+@named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes=false)
+sys2 = structural_simplify(nlrepressilator)
+@test length(equations(sys2)) == 6
+nlprob = NonlinearProblem(sys2, u₀, pvals)
+sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
+@test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
+@test sol[sys₁.m] ≈ sol[sys₂.m] ≈ sol[sys₃.m]
+@test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
+
 
 # TODO add conversion to SDE and JumpSystems once supported
 
@@ -151,3 +198,27 @@ eqs3 = [ParentScope(A2a) ~ p3b*A3b]
 @test issetequal(reactionparams(rs1), [p1, rs2.p2a, rs2.p2b, rs2.rs3.p3a])
 rxs = [rx for rx in Iterators.filter(eq -> eq isa Reaction, equations(rs1))]
 @test issubset(rxs, reactions(rs1)) && issubset(reactions(rs1), rxs)
+
+# test throw error if there are ODE constraints and convert to NonlinearSystem
+rn = @reaction_network rn begin
+    (k1,k2), A <--> B
+    end k1 k2
+@parameters a,b
+@variables t,A(t),C(t)
+D = Differential(t)
+eqs = [D(A) ~ -a*A + C, D(C) ~ -b*C + a*A]
+@named osys = ODESystem(eqs,t,[A,C],[a,b])
+rn2 = extend(osys,rn)
+rnodes = convert(ODESystem,rn2)
+@test_throws ErrorException convert(NonlinearSystem,rn2)
+
+# check conversions work with algebraic constraints
+eqs = [0 ~ -a*A + C, 0 ~ -b*C + a*A]
+@named nlsys = NonlinearSystem(eqs,[A,C],[a,b])
+rn2 = extend(nlsys,rn)
+rnodes = convert(ODESystem,rn2)
+rnnlsys = convert(NonlinearSystem,rn2)
+@named nlsys = ODESystem(eqs,t,[A,C],[a,b])
+rn2 = extend(nlsys,rn)
+rnodes = convert(ODESystem,rn2)
+rnnlsys = convert(NonlinearSystem,rn2)

@@ -44,6 +44,7 @@ function __init__()
 include("reactionsystem.jl")
 export Reaction, ReactionSystem, ismassaction, oderatelaw, jumpratelaw
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem, SteadyStateProblem
+export get_constraints
 
 # reaction_network macro
 const ExprValues = Union{Expr,Symbol,Float64,Int}
@@ -72,7 +73,6 @@ export incidencematgraph, linkageclasses, deficiency, subnetworks, linkagedefici
 include("latexify_recipes.jl")
 
 # for making and saving graphs
-import Base.Iterators: flatten
 import DataStructures: OrderedDict
 import Parameters: @with_kw_noshow
 include("graphs.jl")

@@ -89,7 +89,7 @@ numreactions
 numreactionparams
 ```
 
-## ModelingToolkit-Inherited Accessor Functions
+## ModelingToolkit and Catalyst Accessor Functions
 See [The generated `ReactionSystem` and `Reaction`s](@ref) for more details
 
 - `ModelingToolkit.get_eqs(sys)`: The reactions of the system (ignores subsystems).
@@ -102,6 +102,8 @@ See [The generated `ReactionSystem` and `Reaction`s](@ref) for more details
 - `ModelingToolkit.get_iv(sys)`: The independent variable of the system, usually time.
 - `ModelingToolkit.get_systems(sys)`: The sub-systems of `sys`.
 - `ModelingToolkit.get_defaults(sys)`: The default values for parameters and initial conditions for `sys`.
+- `Catalyst.get_constraints(sys)`: Return the current constraint subsystem, if
+  none is defined will return `nothing`.
 
 ## Basic Reaction Properties
 ```@docs
@@ -122,6 +124,7 @@ addparam!
 addreaction!
 ModelingToolkit.extend
 ModelingToolkit.compose
+Catalyst.flatten
 merge!(network1::ReactionSystem, network2::ReactionSystem)
 ```
 
