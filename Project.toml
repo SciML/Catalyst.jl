@@ -19,7 +19,7 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
-AbstractAlgebra = "0.21"
+AbstractAlgebra = "0.21, 0.22"
 DataStructures = "0.18"
 DiffEqBase = "6.54.0"
 DiffEqJump = "7.0"

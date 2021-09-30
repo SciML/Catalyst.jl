@@ -14,8 +14,10 @@
   all parameters of a system and all `ReactionSystem` subsystems. The latter
   correspond to those parameters used within `Reaction`s.)
 - Added a custom `hash` for `Reaction`s to ensure they work in `Dict`s and
-  `Set`s properly, and set-type comparisons between collections of `Reaction`s
-  work.
+  `Set`s properly, ensuring set-type comparisons between collections of
+  `Reaction`s work.
+- `ReactionSystem(rxs::Vector{Reaction}, t)` should now work and will infer the
+  species and parameters.
 - Added `extend(sys, reactionnetwork, name=nameof(sys))` to extend
   `ReactionSystem`s with constraint equations (algebraic equations or ODEs).
   Constraints are stored as a `NonlinearSystem` or `ODESystem` within the
