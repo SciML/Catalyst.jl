@@ -171,13 +171,18 @@ complexgraph
 savegraph
 ```
 
-## Rate Law Expressions
+## Rate Laws
 As the underlying [`ReactionSystem`](@ref) is comprised of `ModelingToolkit`
 expressions, one can directly access the generated rate laws, and using
 `ModelingToolkit` tooling generate functions or Julia `Expr`s from them.
 ```@docs
 oderatelaw
 jumpratelaw
+mm
+mmr
+hill
+hillr
+hillar
 ```
 
 ## Transformations
