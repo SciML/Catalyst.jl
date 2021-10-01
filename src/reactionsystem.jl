@@ -744,17 +744,21 @@ end
 
 
 ########################## Compositional Tooling ###########################
-function getsubsystypes!(typeset::Set{Type}, sys::T) where {T <: MT.AbstractSystem}
-    push!(typeset, T)
-    for subsys in get_systems(sys)
-        getsubsystypes!(typeset, subsys)
+function getsubsyseqs!(eqs::Vector{Equation}, sys) 
+    if sys isa ReactionSystem
+        csys = get_constraints
+        push!(eqs, get_eqs(get_constraints(sys)))
+    else
+        push!(eqs, get_eqs(sys))
     end
-    typeset 
+
+    for subsys in get_systems(sys)
+        getsubsyseqs!(eqs, subsys)
+    end
+    eqs
 end
-function getsubsystypes(sys)
-    typeset = Set{Type}()
-    getsubsystypes!(typeset, sys)
-    typeset
+function getsubsyseqs(sys)    
+    getsubsyseqs!(Vector{Equation}(), sys)
 end
 
 """
@@ -775,13 +779,11 @@ Notes:
 - Currently only `ReactionSystem`s, `NonlinearSystem`s and `ODESystem`s are
   supported as sub-systems when flattening.
 """
-function flatten(rs::ReactionSystem)
+function flatten(rs::ReactionSystem, systype::Type{T}=ODESystem) where {T <: MT.AbstractSystem}
+    @show T
     systems = get_systems(rs)
     isempty(systems) && return rs
-    
-    all(T -> any(T .<: (ReactionSystem,NonlinearSystem,ODESystem)), getsubsystypes(rs)) || 
-        error("flattening is currently only supported for subsystems mixing ReactionSystems, NonlinearSystems and ODESystems.")
-    
+        
     specs      = species(rs)
     sts        = states(rs)    
     reactionps = reactionparams(rs)   
@@ -792,19 +794,27 @@ function flatten(rs::ReactionSystem)
     # constraints = states, parameters and equations that do not appear in Reactions
     csts = setdiff(sts, specs)
     cps  = setdiff(ps, reactionps)
-    ceqs = Equation[eq for eq in alleqs if eq isa Equation]    
+    ceqs = getsubsyseqs(rs) 
     csys = get_constraints(rs)
-    if csys === nothing
-        newcsys = ODESystem(ceqs, get_iv(rs), csts, cps; name=nameof(rs))
-    else
-        union!(csts, get_states(csys))
-        union!(cps, get_ps(csys))
-        append!(ceqs, get_eqs(csys))
-        T = SciMLBase.parameterless_type(csys)
-        newcsys = (T <: MT.AbstractTimeDependentSystem) ? 
-                    T(ceqs, get_iv(csys), csts, cps; name=nameof(csys)) :
-                    T(ceqs, csts, cps; name=nameof(csys))        
+    if csys !== nothing
+        try 
+            if (T <: MT.AbstractTimeDependentSystem) && (sys isa MT.AbstractTimeIndependentSystem)
+                csys_T = MT.convert_system(T, csys, get_iv(rs))
+            else
+                csys_T = MT.convert_system(T, csys)
+            end
+        catch e
+            error("ModelingToolkit does not currently support convert_system($T, $(typeof(csys))) which is needed to flatten.")
+        end
+
+        union!(csts, get_states(csys_T))
+        union!(cps, get_ps(csys_T))
+        append!(ceqs, get_eqs(csys_T))        
     end
+    newcsys = (T <: MT.AbstractTimeDependentSystem) ? 
+                T(ceqs, get_iv(rs), csts, cps; name=nameof(rs)) :
+                T(ceqs, csts, cps; name=nameof(rs))        
+
 
     ReactionSystem(rxs, get_iv(rs), specs, reactionps; observed = MT.observed(rs),                    
                                                        name = nameof(rs),
