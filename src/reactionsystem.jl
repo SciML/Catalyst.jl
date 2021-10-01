@@ -570,12 +570,13 @@ ignored.
 function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; 
                       name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true, 
                       checks=false, kwargs...)
-    eqs        = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, 
-                                    include_zero_odes=include_zero_odes)                                 
-    eqs,sts,ps = addconstraints!(eqs, rs)
-    systems    = make_systems_with_type!(Vector{ODESystem}(), rs, include_zero_odes)
-    ODESystem(eqs, get_iv(rs), sts, ps; name=name, systems=systems, 
-              defaults=get_defaults(rs), checks=checks, kwargs...)
+    fullrs = Catalyst.flatten(rs)
+    eqs = assemble_drift(fullrs; combinatoric_ratelaws=combinatoric_ratelaws, 
+                             include_zero_odes=include_zero_odes)                                 
+    eqs,sts,ps = addconstraints!(eqs, fullrs)
+    systems    = make_systems_with_type!(Vector{ODESystem}(), fullrs, include_zero_odes)
+    ODESystem(eqs, get_iv(fullrs), sts, ps; name=name, systems=systems, 
+              defaults=get_defaults(fullrs), checks=checks, kwargs...)
 end
 
 """
@@ -591,16 +592,17 @@ law, i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. If
 `combinatoric_ratelaws=false` then the ratelaw is `k*S^2`, i.e. the scaling factor is
 ignored.
 """
-function Base.convert(::Type{<:NonlinearSystem},rs::ReactionSystem;
+function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem;
                       name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true, 
                       checks = false, kwargs...)
-    eqs        = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, as_odes=false, 
-                                    include_zero_odes=include_zero_odes)
-    error_if_constraint_odes(NonlinearSystem, rs)
-    eqs,sts,ps = addconstraints!(eqs, rs)
-    systems    = make_systems_with_type!(Vector{NonlinearSystem}(), rs, include_zero_odes)
+    fullrs = Catalyst.flatten(rs)
+    eqs = assemble_drift(fullrs; combinatoric_ratelaws=combinatoric_ratelaws, as_odes=false, 
+                                 include_zero_odes=include_zero_odes)
+    error_if_constraint_odes(NonlinearSystem, fullrs)
+    eqs,sts,ps = addconstraints!(eqs, fullrs)
+    systems    = make_systems_with_type!(Vector{NonlinearSystem}(), fullrs, include_zero_odes)
     NonlinearSystem(eqs, sts, ps; name=name, systems=systems, 
-                    defaults=get_defaults(rs), checks = checks, kwargs...)
+                    defaults=get_defaults(fullrs), checks = checks, kwargs...)
 end
 
 """
@@ -628,29 +630,30 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       noise_scaling=nothing, name=nameof(rs), combinatoric_ratelaws=true, 
                       include_zero_odes=true, checks = false, kwargs...)
 
-    error_if_constraints(SDESystem, rs)
+    flatrs = Catalyst.flatten(rs)                      
+    error_if_constraints(SDESystem, flatrs)
 
     if noise_scaling isa AbstractArray
-        (length(noise_scaling)!=numreactions(rs)) &&
+        (length(noise_scaling)!=numreactions(flatrs)) &&
         error("The number of elements in 'noise_scaling' must be equal " *
-              "to the number of reactions in the reaction system.")
+              "to the number of reactions in the flattened reaction system.")
         if !(noise_scaling isa Symbolics.Arr)
             noise_scaling = value.(noise_scaling)
         end
     elseif !isnothing(noise_scaling)
-        noise_scaling = fill(value(noise_scaling),numreactions(rs))
+        noise_scaling = fill(value(noise_scaling),numreactions(flatrs))
     end
 
-    eqs      = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, 
-                                  include_zero_odes=include_zero_odes)
-    noiseeqs = assemble_diffusion(rs,noise_scaling;
+    eqs = assemble_drift(flatrs; combinatoric_ratelaws=combinatoric_ratelaws, 
+                                 include_zero_odes=include_zero_odes)
+    noiseeqs = assemble_diffusion(flatrs, noise_scaling;
                                   combinatoric_ratelaws=combinatoric_ratelaws)
-    systems = make_systems_with_type!(Vector{SDESystem}(), rs, include_zero_odes)
-    SDESystem(eqs, noiseeqs, get_iv(rs), get_states(rs),
-              (noise_scaling===nothing) ? get_ps(rs) : union(get_ps(rs), toparam(noise_scaling));
+    systems = make_systems_with_type!(Vector{SDESystem}(), flatrs, include_zero_odes)
+    SDESystem(eqs, noiseeqs, get_iv(flatrs), get_states(flatrs),
+              (noise_scaling===nothing) ? get_ps(flatrs) : union(get_ps(flatrs), toparam(noise_scaling));
               name=name, 
               systems=systems,
-              defaults=get_defaults(rs),
+              defaults=get_defaults(flatrs),
               checks = checks,
               kwargs...)
 end
@@ -671,8 +674,8 @@ Notes:
 function Base.convert(::Type{<:JumpSystem},rs::ReactionSystem; 
                       name=nameof(rs), combinatoric_ratelaws=true, checks = false, kwargs...)
     
-    error_if_constraints(JumpSystem, rs)
-    isempty(get_systems(rs)) || error("Conversion to JumpSystems with subsystems is not currently supported.")
+    flatrs = Catalyst.flatten(rs)
+    error_if_constraints(JumpSystem, flatrs)
 
     eqs     = assemble_jumps(rs; combinatoric_ratelaws=combinatoric_ratelaws)
     systems = convert.(JumpSystem, get_systems(rs))    
