@@ -5,9 +5,9 @@
   `linkagedeficiency`, `isreversible` and `isweaklyreversible` API functions.
 - Added the ability to compose `ReactionSystem`s via subsystems, and include
   either `ODESystem`s or `NonlinearSystem`s as subsystems. Note, if using
-  subsystems it is not currently possible to convert to a `JumpSystem`. It is
-  also not possible to include either `SDESystem`s or `JumpSystems` as
-  subsystems.
+  non-`ReactionSystem` subsystems it is not currently possible to convert to 
+  a `JumpSystem` or `SDESystem`. It is also not possible to include either 
+  `SDESystem`s or `JumpSystems` as subsystems.
 - Deprecated `merge`, use `ModelingToolkit.extend` instead.
 - Deprecated `params` and `numparams` (use `ModelingToolkit.parameters` to get
   all parameters of a system and all subsystems, or use `reactionparams` to get
