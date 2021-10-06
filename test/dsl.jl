@@ -48,3 +48,12 @@ emptyrntest(rn, :name)
 rn = @reaction_network $name
 emptyrntest(rn, :blah)
 
+# test variables that appear only in rates and aren't ps 
+# are categorized as species
+rn = @reaction_network begin
+    π*k*D*hill(B,k2,B*D*H,n), 3*A  --> 2*C
+end k k2 n
+@parameters k,k2,n
+@variables t,A(t),B(t),C(t),D(t),H(t)
+@test issetequal([A,B,C,D,H], species(rn))
+@test issetequal([k,k2,n], parameters(rn))
