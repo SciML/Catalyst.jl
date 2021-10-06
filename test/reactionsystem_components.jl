@@ -212,6 +212,13 @@ rn2 = extend(osys,rn)
 rnodes = convert(ODESystem,rn2)
 @test_throws ErrorException convert(NonlinearSystem,rn2)
 
+# ensure right number of equations are generated
+@variables G(t)
+eqs = [D(G) ~ -G]
+@named osys2 = ODESystem(eqs,t)
+rn3 = compose(rn2, osys2)
+@test length(equations(rn3)) == 5
+
 # check conversions work with algebraic constraints
 eqs = [0 ~ -a*A + C, 0 ~ -b*C + a*A]
 @named nlsys = NonlinearSystem(eqs,[A,C],[a,b])
@@ -222,3 +229,14 @@ rnnlsys = convert(NonlinearSystem,rn2)
 rn2 = extend(nlsys,rn)
 rnodes = convert(ODESystem,rn2)
 rnnlsys = convert(NonlinearSystem,rn2)
+
+# https://github.com/SciML/ModelingToolkit.jl/issues/1274
+@parameters p1 p2
+@variables t A(t) 
+rxs1 = [Reaction(p1, [A], nothing)]
+rxs2 = [Reaction(p2, [ParentScope(A)], nothing)]
+@named rs1 = ReactionSystem(rxs1, t)
+@named rs2 = ReactionSystem(rxs2, t)
+rsc = compose(rs1,[rs2])
+orsc = convert(ODESystem, rsc)
+@test length(equations(orsc)) == 1
