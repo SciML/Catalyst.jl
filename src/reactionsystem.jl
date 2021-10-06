@@ -813,11 +813,11 @@ function flatten(rs::ReactionSystem; name=nameof(rs))
         newcsys = nothing
     else
         if ODESystem in subsys_types
-            newcsys = ODESystem(ceqs, get_iv(rs), csts, cps; name=nameof(rs))
+            newcsys = ODESystem(ceqs, get_iv(rs), csts, cps; name=name)
         else # must be a NonlinearSystem
             any(T -> T <: NonlinearSystem, subsys_types) || 
                 error("Error, found constraint Equations but no ODESystem or NonlinearSystem associated with them.")
-            newcsys = NonlinearSystem(ceqs, csts, cps; name=nameof(rs))        
+            newcsys = NonlinearSystem(ceqs, csts, cps; name=name)        
         end
     end
 
