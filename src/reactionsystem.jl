@@ -258,15 +258,13 @@ function oderatelaw(rx; combinatoric_ratelaw=true)
     rl
 end
 
-function assemble_oderhs(rs; combinatoric_ratelaws=true)
-    sts = get_states(rs)
-    species_to_idx = Dict((x => i for (i,x) in enumerate(sts)))
-    rhsvec         = Any[0 for i in eachindex(sts)]
+function assemble_oderhs(rs; combinatoric_ratelaws=true, smap=speciesmap(rs))
+    rhsvec = Any[0 for i in eachindex(smap)]
 
     for rx in get_eqs(rs)
         rl = oderatelaw(rx; combinatoric_ratelaw=combinatoric_ratelaws)
         for (spec,stoich) in rx.netstoich
-            i = species_to_idx[spec]
+            i = smap[spec]
             if _iszero(rhsvec[i])
                 signedrl  = (stoich > zero(stoich)) ? rl : -rl
                 rhsvec[i] = isone(abs(stoich)) ? signedrl : stoich * rl
@@ -280,8 +278,8 @@ function assemble_oderhs(rs; combinatoric_ratelaws=true)
     rhsvec
 end
 
-function assemble_drift(rs; combinatoric_ratelaws=true, as_odes=true, include_zero_odes=true)
-    rhsvec = assemble_oderhs(rs; combinatoric_ratelaws=combinatoric_ratelaws)
+function assemble_drift(rs; combinatoric_ratelaws=true, smap=speciesmap(rs), as_odes=true, include_zero_odes=true)
+    rhsvec = assemble_oderhs(rs; combinatoric_ratelaws=combinatoric_ratelaws, smap=smap)
     if as_odes
         D   = Differential(get_iv(rs))
         eqs = [Equation(D(x),rhs) for (x,rhs) in zip(get_states(rs),rhsvec) if (include_zero_odes || (!_iszero(rhs)))]
@@ -451,12 +449,13 @@ law, i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. If
 ignored.
 """
 function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; 
-                      name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true, 
-                      checks=false, kwargs...)
-    eqs     = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, 
+                      name=nameof(rs), combinatoric_ratelaws=true, smap=speciesmap(rs),
+                      include_zero_odes=true, checks=false, kwargs...)
+    eqs     = assemble_drift(rs; combinatoric_ratelaws=combinatoric_ratelaws, smap=smap,
                                  include_zero_odes=include_zero_odes)
     systems = map(sys -> (sys isa ODESystem) ? sys : convert(ODESystem, sys), get_systems(rs))
-    ODESystem(eqs, get_iv(rs), get_states(rs), get_ps(rs); name=name, systems=systems, 
+    states = first.(sort(collect(smap), by = sp->sp[2]))
+    ODESystem(eqs, get_iv(rs), states, get_ps(rs); name=name, systems=systems,
               defaults=get_defaults(rs), checks=checks, kwargs...)
 end
 
