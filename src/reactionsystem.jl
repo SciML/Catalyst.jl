@@ -673,7 +673,7 @@ function Base.convert(::Type{<:JumpSystem},rs::ReactionSystem;
     flatrs = Catalyst.flatten(rs)
     error_if_constraints(JumpSystem, flatrs)
 
-    eqs = assemble_jumps(rs; combinatoric_ratelaws=combinatoric_ratelaws)
+    eqs = assemble_jumps(flatrs; combinatoric_ratelaws=combinatoric_ratelaws)
     JumpSystem(eqs, get_iv(flatrs), get_states(flatrs), get_ps(flatrs); name=name, 
                defaults=get_defaults(flatrs), checks = checks, kwargs...)
 end
