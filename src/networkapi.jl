@@ -910,6 +910,13 @@ function addspecies!(network::ReactionSystem, s::Num; disablechecks=false)
 end
 
 """
+    reorder_states!(rn, neworder)
+
+Given a [`ReactionSystem`](@ref) and a vector `neworder`, orders the states of `rn` accordingly to `neworder`.
+"""
+reorder_states!(rn, neworder) = permute!(get_states(rn), neworder)
+
+"""
     addparam!(network::ReactionSystem, p::Symbolic; disablechecks=false)
 
 Given a [`ReactionSystem`](@ref), add the parameter corresponding to the
