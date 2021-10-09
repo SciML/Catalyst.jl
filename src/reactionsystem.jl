@@ -99,7 +99,7 @@ function print_rxside(io::IO, specs, stoich)
         print(io, "∅")
     else
         for (i,spec) in enumerate(specs)
-            if stoich[1] == 1
+            if stoich[i] == 1
                 print(io, ModelingToolkit.operation(spec))
             else
                 print(io, stoich[i], ModelingToolkit.operation(spec))

@@ -57,3 +57,28 @@ end k k2 n
 @variables t,A(t),B(t),C(t),D(t),H(t)
 @test issetequal([A,B,C,D,H], species(rn))
 @test issetequal([k,k2,n], parameters(rn))
+
+# test interpolation within the DSL
+@parameters k
+@variables t, A(t), B(t), C(t), D(t)
+AA = A
+AAA = A^2 + B
+rn = @reaction_network rn begin
+    k*$AAA, C --> D    
+end k
+rn2 = ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn)
+@test rn == rn2
+
+rn = @reaction_network begin
+    k, $AA + C --> D
+end k
+rn2 = ReactionSystem([Reaction(AAA, [AA,C], [D])], t; name=:rn)
+@test rn == rn2
+
+BB = B; A2 = A
+rn = @reaction_network rn begin
+    k, C + $A2 + $BB + $A2 --> $BB + $BB    
+end k
+rn2 = ReactionSystem([Reaction(k, [C, A, B], [B], [1,2,1],[2])], t; name=:rn)
+@test rn == rn2
+
