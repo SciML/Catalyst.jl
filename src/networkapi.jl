@@ -1,31 +1,92 @@
 # Functions for querying network properties.
 
+# DEPRECIATED after v9.0
+function params(network)
+    Base.depwarn("`params` is depreciated, please use `ModelingToolkit.parameters` for all system and subsystem parameters, or `reactionparams` for all parameters within system and subsystem `Reaction`s.", :params, force=true)
+    parameters(network)
+end
+
+function numparams(network)
+    Base.depwarn("`numparams` is depreciated, please use `length(ModelingToolkit.parameters)` for the total number of parameters across all systems and subsystems, or `numreactionparams` for the number of parameters within system and subsystem `Reaction`s.", :params, force=true)
+    length(parameters(network))
+end
+
+"""
+    merge(network1::ReactionSystem, network2::ReactionSystem)
+
+Create a new network merging `network1` and `network2`.
+
+Notes:
+- Duplicate reactions between the two networks are not filtered out.
+- [`Reaction`](@ref)s are not deepcopied to minimize allocations, so the new
+  network will share underlying data arrays.
+- Subsystems are not deepcopied between the two networks and will hence be
+  shared.
+- Returns the merged network.
+"""
+function Base.merge(network1::ReactionSystem, network2::ReactionSystem)
+    Base.depwarn("`merge(sys1::ReactionSystem, sys2::ReactionNetwork)` is depreciated, please use `ModelingToolkit.extend` instead.", :merge, force=true)
+    network = make_empty_network()
+    merge!(network, network1)
+    merge!(network, network2)
+    network
+end
+
 ######### Accessors: #########
+
+function filter_nonrxsys(network)
+    systems   = get_systems(network)
+    rxsystems = ReactionSystem[]
+    for sys in systems
+        (sys isa ReactionSystem) && push!(rxsystems, sys)
+    end
+    rxsystems
+end
+
+
+function species(network::ReactionSystem, sts)
+    [MT.renamespace(network,st) for st in sts]
+end
 
 """
     species(network)
 
-Given a [`ReactionSystem`](@ref), return a vector of species `Variable`s.
+Given a [`ReactionSystem`](@ref), return a vector of all species defined in the system
+and any subsystems that are of type `ReactionSystem`. To get the variables in the system
+and all subsystems, including non-`ReactionSystem` subsystems, uses `states(network)`.
 
 Notes:
-- If `ModelingToolkit.get_systems(network)` is not empty, may allocate. Otherwise returns
-  `ModelingToolkit.get_states(network)`.
+- If `ModelingToolkit.get_systems(network)` is non-empty will allocate.
 """
 function species(network)
-    isempty(get_systems(network)) ? get_states(network) : states(network)
+    sts = get_states(network)
+    systems = filter_nonrxsys(network)
+    isempty(systems) && return sts
+    unique([sts; reduce(vcat, map(sys -> species(sys,species(sys)), systems))])
 end
 
 """
-    params(network)
+    reactionparams(network)
 
-Given a [`ReactionSystem`](@ref), return a vector of parameter `Variable`s.
+Given a [`ReactionSystem`](@ref), return a vector of all parameters defined
+within the system and any subsystems that are of type `ReactionSystem`. To get
+the parameters in the system and all subsystems, including non-`ReactionSystem`
+subsystems, use `parameters(network)`.
 
 Notes:
-- If `ModelingToolkit.get_systems(network)` is not empty, may allocate. Otherwise returns
-  `ModelingToolkit.get_ps(network)`.
+- If `ModelingToolkit.get_systems(network)` is non-empty will allocate.
 """
-function params(network)
-    isempty(get_systems(network)) ? get_ps(network) : parameters(network)
+function reactionparams(network)
+    ps = get_ps(network)
+    systems = filter_nonrxsys(network)
+    isempty(systems) && return ps
+    unique([ps; reduce(vcat, map(sys -> species(sys,reactionparams(sys)), systems))])
+end
+
+function namespace_reactions(network::ReactionSystem)
+    rxs = reactions(network)
+    isempty(rxs) && return Reaction[]
+    map(rx -> namespace_equation(rx, network), rxs)
 end
 
 """
@@ -34,18 +95,20 @@ end
 Given a [`ReactionSystem`](@ref), return a vector of all `Reactions` in the system.
 
 Notes:
-- If `ModelingToolkit.get_systems(network)` is not empty, may allocate. Otherwise returns
-  `ModelingToolkit.get_eqs(network)`.
+- If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
 """
-function reactions(network)
-    isempty(get_systems(network)) ? get_eqs(network) : equations(network)
+function reactions(network)    
+    rxs = get_eqs(network)
+    systems = filter_nonrxsys(network)
+    isempty(systems) && (return rxs)
+    [rxs; reduce(vcat, namespace_reactions.(systems); init=Reaction[])]
 end
 
 """
     speciesmap(network)
 
-Given a [`ReactionSystem`](@ref), return a Dictionary mapping from species to
-species indices. (Allocates)
+Given a [`ReactionSystem`](@ref), return a Dictionary mapping species that
+participate in `Reaction`s to their index within [`species(network)`](@ref).
 """
 function speciesmap(network)
     Dict(S => i for (i,S) in enumerate(species(network)))
@@ -54,50 +117,55 @@ end
 """
     paramsmap(network)
 
-Given a [`ReactionSystem`](@ref), return a Dictionary mapping from parameters to
-parameter indices. (Allocates)
+Given a [`ReactionSystem`](@ref), return a Dictionary mapping from parameters that
+appear within `Reaction`s to their index within [`reactionparams(network)`](@ref).
 """
 function paramsmap(network)
-    Dict(p => i for (i,p) in enumerate(params(network)))
+    Dict(p => i for (i,p) in enumerate(reactionparams(network)))
 end
 
 """
     numspecies(network)
 
-Return the number of species within the given [`ReactionSystem`](@ref).
+Return the total number of species within the given [`ReactionSystem`](@ref) and
+subsystems that are `ReactionSystem`s. 
+
+Notes
+- If there are no subsystems this will be fast.
+- As this calls [`species`](@ref), it can be slow and will allocate if there are
+  any subsystems. 
 """
 function numspecies(network)
-    ns = length(get_states(network))
-    for sys in get_systems(network)
-        ns += numspecies(sys)
-    end
-    ns
+    length(species(network))
 end
 
 """
     numreactions(network)
 
-Return the number of reactions within the given [`ReactionSystem`](@ref).
+Return the total number of reactions within the given [`ReactionSystem`](@ref)
+and subsystems that are `ReactionSystem`s.
 """
 function numreactions(network)
     nr = length(get_eqs(network))
     for sys in get_systems(network)
-        nr += numreactions(sys)
+        (sys isa ReactionSystem) && (nr += numreactions(sys))
     end
     nr
 end
 
 """
-    numparams(network)
+    numreactionparams(network)
 
-Return the number of parameters within the given [`ReactionSystem`](@ref).
+Return the total number of parameters within the given [`ReactionSystem`](@ref)
+and subsystems that are `ReactionSystem`s.
+
+Notes
+- If there are no subsystems this will be fast.
+- As this calls [`reactionparams`](@ref), it can be slow and will allocate if
+  there are any subsystems. 
 """
-function numparams(network)
-    np = length(get_ps(network))
-    for sys in get_systems(network)
-        np += numparams(sys)
-    end
-    np
+function numreactionparams(network)
+    length(reactionparams(network))
 end
 
 """
@@ -129,8 +197,8 @@ end
 
 See documentation for [`dependents`](@ref).
 """
-function dependants(network, rxidx)
-    dependents(network, rxidx)
+function dependants(rx, network)
+    dependents(rx, network)
 end
 
 """
@@ -175,6 +243,7 @@ function substoichmat(::Type{Matrix{Int}},rn::ReactionSystem; smap=speciesmap(rn
     smat
 end
 function substoichmat(rn::ReactionSystem; sparse::Bool=false, smap=speciesmap(rn))
+    isempty(get_systems(rn)) || error("substoichmat does not currently support subsystems.")
 	sparse ? substoichmat(SparseMatrixCSC{Int,Int}, rn; smap=smap) : substoichmat(Matrix{Int}, rn; smap=smap)
 end
 
@@ -211,12 +280,13 @@ function prodstoichmat(::Type{Matrix{Int}},rn::ReactionSystem; smap=speciesmap(r
     pmat
 end
 function prodstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
+    isempty(get_systems(rn)) || error("prodstoichmat does not currently support subsystems.")
 	sparse ? prodstoichmat(SparseMatrixCSC{Int,Int}, rn; smap=smap) : prodstoichmat(Matrix{Int}, rn; smap=smap)
 end
 
 
 """
-    netstoichmat(rn, sparsity=false; smap=speciesmap(rn))
+    netstoichmat(rn, sparse=false; smap=speciesmap(rn))
 
 Returns the net stoichiometry matrix, ``N``, with ``N_{i j}`` the net
 stoichiometric coefficient of the ith species within the jth reaction.
@@ -245,6 +315,7 @@ function netstoichmat(::Type{Matrix{Int}},rn::ReactionSystem; smap=speciesmap(rn
     nmat
 end
 function netstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
+    isempty(get_systems(rn)) || error("netstoichmat does not currently support subsystems.")
 	sparse ? netstoichmat(SparseMatrixCSC{Int,Int}, rn; smap=smap) : netstoichmat(Matrix{Int}, rn; smap=smap)
 end
 
@@ -305,6 +376,7 @@ Notes:
   `reactionidx`.
 """
 function reactioncomplexmap(rn::ReactionSystem; smap=speciesmap(rn))
+    isempty(get_systems(rn)) || error("reactioncomplexmap does not currently support subsystems.")
     rxs = reactions(rn)
     numreactions(rn) > 0 || error("There must be at least one reaction to find reaction complexes.")
     complextorxsmap = OrderedDict{ReactionComplex{eltype(rxs[1].substoich)},Vector{Pair{Int,Int}}}()
@@ -378,8 +450,9 @@ B_{i j} = \begin{cases}
 """
 function reactioncomplexes(rn::ReactionSystem; sparse=false, smap=speciesmap(rn), 
                            complextorxsmap=reactioncomplexmap(rn; smap=smap))
+    isempty(get_systems(rn)) || error("reactioncomplexes does not currently support subsystems.")
 	sparse ? reactioncomplexes(SparseMatrixCSC{Int,Int}, rn, smap, complextorxsmap) :
-           reactioncomplexes(Matrix{Int}, rn, smap, complextorxsmap)
+             reactioncomplexes(Matrix{Int}, rn, smap, complextorxsmap)
 end
 
 
@@ -418,7 +491,8 @@ Notes:
 - Set sparse=true for a sparse matrix representation
 """
 function complexstoichmat(rn::ReactionSystem; sparse=false, rcs=keys(reactioncomplexmap(rn)))
-	sparse ? complexstoichmat(SparseMatrixCSC{Int,Int}, rn, rcs) : 
+    isempty(get_systems(rn)) || error("complexstoichmat does not currently support subsystems.")
+    sparse ? complexstoichmat(SparseMatrixCSC{Int,Int}, rn, rcs) : 
              complexstoichmat(Matrix{Int}, rn, rcs)
 end
 
@@ -468,7 +542,8 @@ Notes:
 - Set sparse=true for a sparse matrix representation
 """
 function complexoutgoingmat(rn::ReactionSystem; sparse=false, B=reactioncomplexes(rn,sparse=sparse)[2])
-	sparse ? complexoutgoingmat(SparseMatrixCSC{Int,Int}, rn, B) : 
+    isempty(get_systems(rn)) || error("complexoutgoingmat does not currently support subsystems.")
+    sparse ? complexoutgoingmat(SparseMatrixCSC{Int,Int}, rn, B) : 
              complexoutgoingmat(Matrix{Int}, rn, B)
 end
 
@@ -491,37 +566,37 @@ incidencegraph   = incidencematgraph(incidencemat)
 ```
 """
 function incidencematgraph(incidencemat::Matrix{Int})
-   @assert all(∈([-1,0,1]) ,incidencemat)
-   n = size(incidencemat,1)  # no. of nodes/complexes
-   graph = LightGraphs.DiGraph(n)
-   for col in eachcol(incidencemat)
-       src = 0; dst = 0;
-       for i in eachindex(col)
-              (col[i] == -1) && (src = i)
-              (col[i] == 1) && (dst = i)
-              (src != 0) && (dst != 0) && break
-       end
-       add_edge!(graph, src, dst)
+    @assert all(∈([-1,0,1]) ,incidencemat)
+    n = size(incidencemat,1)  # no. of nodes/complexes
+    graph = LG.DiGraph(n)
+    for col in eachcol(incidencemat)
+        src = 0; dst = 0;
+        for i in eachindex(col)
+                (col[i] == -1) && (src = i)
+                (col[i] == 1) && (dst = i)
+                (src != 0) && (dst != 0) && break
+        end
+        LG.add_edge!(graph, src, dst)
     end
-   return graph
+    return graph
 end
 function incidencematgraph(incidencemat::SparseMatrixCSC{Int,Int})
-   @assert all(∈([-1,0,1]) ,incidencemat)
-   m,n = size(incidencemat)  
-   graph = LightGraphs.DiGraph(m)
-   rows = rowvals(incidencemat)
-   vals = nonzeros(incidencemat)
-   for j = 1:n
-      inds=nzrange(incidencemat, j)
-      row = rows[inds];
-      val = vals[inds];
-      if val[1] == -1
-         add_edge!(graph, row[1], row[2])
-      else
-         add_edge!(graph, row[2], row[1])
-      end
-   end
-   return graph
+    @assert all(∈([-1,0,1]) ,incidencemat)
+    m,n = size(incidencemat)  
+    graph = LG.DiGraph(m)
+    rows = rowvals(incidencemat)
+    vals = nonzeros(incidencemat)
+    for j = 1:n
+        inds=nzrange(incidencemat, j)
+        row = rows[inds];
+        val = vals[inds];
+        if val[1] == -1
+            LG.add_edge!(graph, row[1], row[2])
+        else
+            LG.add_edge!(graph, row[2], row[1])
+        end
+    end
+    return graph
 end
 
 
@@ -540,8 +615,8 @@ julia> linkageclasses(incidencegraph)
  [3, 4]
 ```
 """
-function linkageclasses(incidencegraph::SimpleDiGraph{Int64})
-   LightGraphs.connected_components(incidencegraph)
+function linkageclasses(incidencegraph)
+    LG.connected_components(incidencegraph)
 end
 
 
@@ -565,16 +640,111 @@ sir = @reaction_network SIR begin
 end β ν
 rcs,incidencemat = reactioncomplexes(sir)
 incidence_graph  = incidencematgraph(incidencemat)
-linkage_classes   = linkageclasses(ig)
+linkage_classes   = linkageclasses(incidence_graph)
 netstoich_mat    = netstoichmat(sir)
 δ = deficiency(netstoich_mat, incidence_graph, linkage_classes)
 ```
 """
-function deficiency(ns::AbstractMatrix, ig::SimpleDiGraph, lc::AbstractArray)
-   LightGraphs.nv(ig) - length(lc) - AA.rank(AA.matrix(AA.zz,ns))
+function deficiency(ns, ig, lc)
+    LG.nv(ig) - length(lc) - AA.rank(AA.matrix(AA.ZZ,ns))
+end
+
+function subnetworkmapping(linkageclass, allrxs, complextorxmap, p)
+    rxinds  = sort!(collect(Set(rxidx for rcidx in linkageclass for rxidx in complextorxmap[rcidx])))
+    rxs     = allrxs[rxinds]
+    specset = Set(substrate for rx in rxs for substrate in rx.substrates)
+    for rx in rxs
+        for product in rx.products
+            push!(specset, product)
+        end
+    end
+    specs = collect(specset)
+    newps = Vector{eltype(p)}()
+    for rx in rxs
+        Symbolics.get_variables!(newps, rx.rate, p)
+    end
+    rxs, specs, newps   # reactions and species involved in reactions of subnetwork
+end
+	
+"""
+    subnetworks(network, linkage_classes ; rxs = reactions(network),
+                  complextorxmap = collect(values(reactioncomplexmap(network))),
+                  p = parameters(network))
+
+Find subnetworks corresponding to the each linkage class of reaction network
+
+For example, continuing the example from [`deficiency`](@ref)
+```julia
+   subnets = subnetworks(sir, linkage_classes)
+```
+"""
+function subnetworks(rs::ReactionSystem, lcs::AbstractVector;
+                  rxs = reactions(rs),
+                  complextorxmap = [map(first,rcmap) for rcmap in values(reactioncomplexmap(rs))],
+                  p = parameters(rs))
+    isempty(get_systems(rs)) || error("subnetworks does not currently support subsystems.")
+    t = get_iv(rs)
+    subreac = Vector{ReactionSystem}()
+    for i in 1:length(lcs)
+        reacs,specs,newps = subnetworkmapping(lcs[i], rxs, complextorxmap, p)
+        newname = Symbol(nameof(rs), "_", i)
+        push!(subreac, ReactionSystem(reacs, t, specs, newps; name=newname))
+    end
+    subreac
 end
 
 
+"""
+    linkagedeficiencies(subnetworks::AbstractVector, linkage_classes::AbstractVector)
+
+Calculates the deficiency of each sub-reaction network defined by a collection
+of linkage_classes.
+
+For example, continuing the example from [`deficiency`](@ref)
+```julia
+subnets = subnetworks(sir, linkage_classes)
+linkage_deficiencies = linkagedeficiency(subnets, linkage_classes)
+```
+"""
+function linkagedeficiencies(subnets, lcs)
+    δ = zeros(Int,length(lcs))
+    for (i,subnet) in enumerate(subnets)
+        ns_sub = netstoichmat(subnet)
+        δ[i] = length(lcs[i]) - 1 - AA.rank(AA.matrix(AA.ZZ, ns_sub))
+    end
+    δ
+end
+	
+						
+"""
+    isreversible(incidencegraph)
+
+Given an incidence graph of the reaction network, returns if the network is reversible or not.
+For example, continuing the example from [`linkagedeficiencies`](@ref)
+```julia
+isreversible(incidence_graph)
+```
+"""
+function isreversible(ig::LG.SimpleDiGraph)
+    LG.reverse(ig) == ig
+end
+
+"""
+    isweaklyreversible(subnetworks)
+
+Given the subnetworks corresponding to the each linkage class of reaction network,
+determines if the reaction network is weakly reversible or not.
+For example, continuing the example from [`isreversible`](@ref)
+```julia
+isweaklyreversible(subnets)
+```
+"""
+function isweaklyreversible(subnets::Vector{ReactionSystem})
+    igs = [incidencematgraph(reactioncomplexes(subrs)[2]) for subrs in subnets]
+    all([LG.is_strongly_connected(ig) for ig in igs])
+end
+								
+								
 ################################################################################################
 ######################## conservation laws ###############################
 
@@ -584,28 +754,20 @@ end
 Given the net stoichiometry matrix of a reaction system, computes a matrix of
 conservation laws, each represented as a row in the output. 
 """
-function conservationlaws(nsm::AbstractMatrix)::Matrix
-    n_spec,n_reac = size(nsm)
-    
+function conservationlaws(nsm::AbstractMatrix)
+
     # We basically have to compute the left null space of the matrix
-    # over the integers; this is best done using its Smith Normal Form.
-    # note, we transpose as this was written when netstoichmat was reac by spec
-    nsm_conv = AA.matrix(AA.ZZ, nsm')
-    S, T, U = AA.snf_with_transform(nsm_conv)
+    # over the integers. We do this using AbstractAlgebra's integer (ZZ) interface.
+    N   = AA.nullspace(AA.matrix(AA.ZZ, nsm'))[2]
     
-    # Zero columns of S (which occur after nonzero columns in SNF)
-    # correspond to conserved quantities
-    n = findfirst(i -> all(S[:,i] .== 0), 1:n_spec)
-    if n === nothing
-        return zeros(Int, 0, n_spec)
-    end
-    
-    ret = Matrix(U[:,n:end]')
-    
+    # to save allocations we manually take the adjoint when converting back
+    # to a Julia integer matrix from the Nemo matrix. 
+    ret = [convert(Int,N[i,j]) for j=1:size(N,2), i=1:size(N,1)]  
+
     # If all coefficients for a conservation law are negative
     # we might as well flip them to become positive
-    for i in 1:size(ret,1)
-        all(ret[i,:] .<= 0) && (ret[i,:] .*= -1)
+    for retrow in eachrow(ret)
+        all(r -> r <= 0, retrow) && (retrow .*= -1)
     end
     
     ret
@@ -621,7 +783,7 @@ conservedquantities(state, cons_laws) = cons_laws * state
 ######################## reaction network operators #######################
 
 """
-    ==(rn1::Reaction, rn2::Reaction)
+    ==(rx1::Reaction, rx2::Reaction)
 
 Tests whether two [`Reaction`](@ref)s are identical.
 
@@ -630,41 +792,66 @@ Notes:
 - *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
     considered different than `(A+1)^2`.
 """
-function (==)(rn1::Reaction, rn2::Reaction)
-    isequal(rn1.rate, rn2.rate) || return false
-    issetequal(zip(rn1.substrates,rn1.substoich), zip(rn2.substrates,rn2.substoich)) || return false
-    issetequal(zip(rn1.products,rn1.prodstoich), zip(rn2.products,rn2.prodstoich)) || return false
-    issetequal(rn1.netstoich, rn2.netstoich)
+function (==)(rx1::Reaction, rx2::Reaction)
+    isequal(rx1.rate, rx2.rate) || return false
+    issetequal(zip(rx1.substrates,rx1.substoich), zip(rx2.substrates,rx2.substoich)) || return false
+    issetequal(zip(rx1.products,rx1.prodstoich), zip(rx2.products,rx2.prodstoich)) || return false
+    issetequal(rx1.netstoich, rx2.netstoich) || return false
+    rx1.only_use_rate == rx2.only_use_rate
 end
 
+function hash(rx::Reaction, h::UInt) 
+    h = Base.hash(rx.rate, h)
+    h = Base.hash(rx.substrates, h)
+    h = Base.hash(rx.products, h)
+    h = Base.hash(rx.prodstoich, h)
+    h = Base.hash(rx.substoich, h)
+    h = Base.hash(rx.netstoich, h)
+    Base.hash(rx.only_use_rate, h)
+end
+
+"""
+    isequal_ignore_names(rn1::ReactionSystem, rn2::ReactionSystem)
+
+Tests whether the underlying species, parameters and reactions are the same in
+the two [`ReactionSystem`](@ref)s. Ignores the names of the systems in testing
+equality.
+
+Notes:
+- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
+    considered different than `(A+1)^2`.
+- Does not include `defaults` in determining equality.
+"""
+function isequal_ignore_names(rn1::ReactionSystem, rn2::ReactionSystem)
+    isequal(get_iv(rn1), get_iv(rn2)) || return false
+    issetequal(get_states(rn1), get_states(rn2)) || return false
+    issetequal(get_ps(rn1), get_ps(rn2)) || return false
+    issetequal(MT.get_observed(rn1), MT.get_observed(rn2)) || return false
+    issetequal(get_eqs(rn1), get_eqs(rn2)) || return false
+    (get_constraints(rn1) == get_constraints(rn2)) || return false
+
+    # subsystems
+    (length(get_systems(rn1)) == length(get_systems(rn2))) || return false
+    issetequal(get_systems(rn1), get_systems(rn2)) || return false
+
+    true
+end
 
 """
     ==(rn1::ReactionSystem, rn2::ReactionSystem)
 
 Tests whether the underlying species, parameters and reactions are the same in
-the two [`ReactionSystem`](@ref)s. Ignores order network components were
-defined.
+the two [`ReactionSystem`](@ref)s. Requires the systems to have the same names
+too.
 
 Notes:
 - *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
     considered different than `(A+1)^2`.
-- Flattens subsystems, and hence may allocate, when checking equality.
+- Does not include `defaults` in determining equality.
 """
 function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
-    issetequal(species(rn1), species(rn2)) || return false
-    issetequal(params(rn1), params(rn2)) || return false
-    isequal(get_iv(rn1), get_iv(rn2)) || return false
-    (numreactions(rn1) == numreactions(rn2)) || return false
-
-    # the following fails for some reason, so need to use issubset
-    #issetequal(equations(rn1), equations(rn2)) || return false
-    (issubset(reactions(rn1),reactions(rn2)) && issubset(reactions(rn2),reactions(rn1))) || return false
-
-    # BELOW SHOULD NOT BE NEEDED as species, params and equations flatten
-    #issetequal(rn1.systems, rn2.systems) || return false
-    # sys1 = rn1.systems; sys2 = rn2.systems
-    # (issubset(sys1,sys2) && issubset(sys2,sys1)) || return false
-    true
+    (nameof(rn1) == nameof(rn2)) || return false
+    isequal_ignore_names(rn1,rn2)
 end
 
 
@@ -779,7 +966,6 @@ function addreaction!(network::ReactionSystem, rx::Reaction)
     length(get_eqs(network))
 end
 
-
 """
     merge!(network1::ReactionSystem, network2::ReactionSystem)
 
@@ -792,37 +978,19 @@ Notes:
 - Subsystems are not deepcopied between the two networks and will hence be
   shared.
 - Returns `network1`.
-- Does not currently handle pins.
 """
 function Base.merge!(network1::ReactionSystem, network2::ReactionSystem)
+    ((get_constraints(network1) === nothing) && (get_constraints(network2) === nothing)) ||
+        error("merge! does not currently support ReactionSystems with constraints, consider ModelingToolkit.extend instead.")
     isequal(get_iv(network1), get_iv(network2)) || 
         error("Reaction networks must have the same independent variable to be mergable.")
+    append!(get_eqs(network1), get_eqs(network2))
     union!(get_states(network1), get_states(network2))
     union!(get_ps(network1), get_ps(network2))
-    append!(get_eqs(network1), get_eqs(network2))
+    append!(get_observed(network1), get_observed(network2))    
     append!(get_systems(network1), get_systems(network2))
+    merge!(get_defaults(network1), get_defaults(network2))
     network1
-end
-
-"""
-    merge(network1::ReactionSystem, network2::ReactionSystem)
-
-Create a new network merging `network1` and `network2`.
-
-Notes:
-- Duplicate reactions between the two networks are not filtered out.
-- [`Reaction`](@ref)s are not deepcopied to minimize allocations, so the new
-  network will share underlying data arrays.
-- Subsystems are not deepcopied between the two networks and will hence be
-  shared.
-- Returns the merged network.
-- Does not currently handle pins.
-"""
-function Base.merge(network1::ReactionSystem, network2::ReactionSystem)
-    network = make_empty_network()
-    merge!(network, network1)
-    merge!(network, network2)
-    network
 end
 
 
@@ -838,7 +1006,7 @@ the same units).
 
 """
 function validate(rx::Reaction; info::String = "")     
-    validated = ModelingToolkit._validate([rx.rate], [string(rx, ": rate")], info = info)
+    validated = MT._validate([rx.rate], [string(rx, ": rate")], info = info)
     
     subunits = isempty(rx.substrates) ? nothing : get_unit(rx.substrates[1])
     for i in 2:length(rx.substrates)
@@ -870,6 +1038,9 @@ end
 Check that all species in the [`ReactionSystem`](@ref) have the same units, and
 that the rate laws of all reactions reduce to units of (species units) / (time
 units).
+
+Notes:
+- Does not check subsystems too. 
 """
 function validate(rs::ReactionSystem, info::String="")
     specs = get_states(rs)

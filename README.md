@@ -2,13 +2,14 @@
 
 <!-- [![Join the chat at https://gitter.im/JuliaDiffEq/Lobby](https://badges.gitter.im/JuliaDiffEq/Lobby.svg)](https://gitter.im/JuliaDiffEq/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) -->
 [![Build Status](https://github.com/SciML/Catalyst.jl/workflows/CI/badge.svg)](https://github.com/SciML/Catalyst.jl/actions?query=workflow%3ACI)
-[![Coverage Status](https://coveralls.io/repos/github/SciML/Catalyst.jl/badge.svg?branch=master)](https://coveralls.io/github/SciML/Catalyst.jl?branch=master)
 [![codecov.io](https://codecov.io/gh/SciML/Catalyst.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/SciML/Catalyst.jl)
-
+[![Coverage Status](https://coveralls.io/repos/github/SciML/Catalyst.jl/badge.svg?branch=master)](https://coveralls.io/github/SciML/Catalyst.jl?branch=master)
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://catalyst.sciml.ai/stable/)
 [![API Stable](https://img.shields.io/badge/API-stable-blue.svg)](https://catalyst.sciml.ai/stable/api/catalyst_api/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://catalyst.sciml.ai/dev/)
 [![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://catalyst.sciml.ai/dev/api/catalyst_api/)
+[![ColPrac: Contributor's Guide on Collaborative Practices for Community Packages](https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet)](https://github.com/SciML/ColPrac)
+
 
 Catalyst.jl is a domain-specific language (DSL) for high-performance simulation
 and modeling of chemical reaction networks. Catalyst utilizes Symbolic 
@@ -27,6 +28,9 @@ Breaking changes and new functionality are summarized in the
 [HISTORY.md](HISTORY.md) file.
 
 ## Tutorials and Documentation
+
+A short 15 minute overview of Catalyst is available in the talk 
+[Modeling Biochemical Systems with Catalyst.jl](https://www.youtube.com/watch?v=5p1PJE5A5Jw).
 
 For information on using the package, [see the stable
 documentation](https://catalyst.sciml.ai/stable/). The [in-development
@@ -68,7 +72,7 @@ the current master branch.
 - Catalyst [`ReactionSystem`](@ref)s can be imported from SBML files via 
   [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), and from BioNetGen .net 
   files and various matrix network representations using 
-  [ReactionNetworkImporters.jl](https://github.com/isaacsas/ReactionNetworkImporters.jl).
+  [ReactionNetworkImporters.jl](https://github.com/SciML/ReactionNetworkImporters.jl).
 
 
 ## Illustrative Examples

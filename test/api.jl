@@ -16,7 +16,7 @@ pset = Set([value(k1) => 1, value(k2) => 2])
 
 rxs2 = [Reaction(k2, [I], [R], [1], [1]),
         Reaction(k1, [S,I], [I], [1,1], [2])]
-@named rs2 = ReactionSystem(rxs2, t, [R,I,S], [k2,k1])
+rs2 = ReactionSystem(rxs2, t, [R,I,S], [k2,k1], name=:rs)
 @test rs == rs2
 
 rs3 = make_empty_network()
@@ -27,7 +27,7 @@ addspecies!(rs3, D)
 addparam!(rs3, k3)
 addparam!(rs3, k4)
 @test issetequal(species(rs3), [S, D])
-@test issetequal(params(rs3), [k3, k4])
+@test issetequal(parameters(rs3), [k3, k4])
 addreaction!(rs3, Reaction(k3, [S], [D]))
 addreaction!(rs3, Reaction(k4, [S,I], [D]))
 merge!(rs, rs3)
@@ -49,7 +49,7 @@ addparam!(rs3, k3)
 addparam!(rs3, k4)
 addreaction!(rs3, Reaction(k3, [S], [D]))
 addreaction!(rs3, Reaction(k4, [S,I], [D]))
-rs4 = merge(rs, rs3)
+rs4 = extend(rs, rs3)
 @test rs2 == rs4
 
 rxs = [Reaction(k1*S, [S,I], [I], [2,3], [2]),
@@ -63,9 +63,9 @@ addspecies!(rs, S)
 addspecies!(rs, S, disablechecks=true)
 @test numspecies(rs) == 4
 addparam!(rs, k1)
-@test numparams(rs) == 2
+@test numreactionparams(rs) == 2
 addparam!(rs, k1, disablechecks=true)
-@test numparams(rs) == 3
+@test numreactionparams(rs) == 3
 
 
 rnmat = @reaction_network begin
@@ -84,7 +84,7 @@ pmat = [0 1;
               
 ############## testing newly added intermediate complexes reaction networks##############
 
-function testnetwork(rn, B, Z, Δ, lcs, d)
+function testnetwork(rn, B, Z, Δ, lcs, d, subrn, lcd)
     B2 = reactioncomplexes(rn)[2]
     @test B == B2 == Matrix(reactioncomplexes(rn, sparse=true)[2])
     @test Z == complexstoichmat(rn) == Matrix(complexstoichmat(rn, sparse=true))
@@ -93,6 +93,9 @@ function testnetwork(rn, B, Z, Δ, lcs, d)
     lcs2 = linkageclasses(ig)
     @test lcs2 == linkageclasses(incidencematgraph(sparse(B))) == lcs
     @test deficiency(netstoichmat(rn), ig, lcs) == d   
+    @test all(issetequal.(subrn, reactions.(subnetworks(rn, lcs))))
+    @test linkagedeficiencies(subnetworks(rn, lcs), lcs) == lcd
+    @test sum(linkagedeficiencies(subnetworks(rn, lcs),lcs)) <= deficiency(netstoichmat(rn), ig, lcs)
 end
 
 rns  = Vector{ReactionSystem}(undef,6)
@@ -117,7 +120,10 @@ B = [-1 0 0 0;
       0 0 0 1]
 Δ = [-1 0 0 0; 0 0 0 0; 0 -1 0 0; 0 0 -1 0; 0 0 0 0; 0 0 0 -1; 0 0 0 0]
 lcs = [[1,2],[3,4,5],[6,7]]
-testnetwork(rns[1], B, Z, Δ, lcs, 0)
+r = reactions(rns[1])
+subrn = [[r[1]], [r[2],r[3]], [r[4]]]
+lcd  =[0,0,0]
+testnetwork(rns[1], B, Z, Δ, lcs, 0, subrn, lcd)
 
 # mass-action rober
 rns[2] = @reaction_network begin
@@ -135,7 +141,10 @@ B = [-1 0 0;
       0 0 1]
 Δ = [-1 0 0; 0 0 0; 0 -1 0; 0 0 -1; 0 0 0]
 lcs = [[1,2],[3,4,5]]
-testnetwork(rns[2], B, Z, Δ, lcs, 1)
+r = reactions(rns[2])
+subrn = [[r[1]], [r[2],r[3]]]
+lcd = [0,0]
+testnetwork(rns[2], B, Z, Δ, lcs, 1, subrn, lcd)
 
 #  some rational functions as rates
 rns[3] = @reaction_network begin
@@ -154,7 +163,10 @@ B = [-1 0 0 1;
       0 0 0 -1]
 Δ = [-1 0 0 0; 0 0 0 0; 0 -1 0 0; 0 0 -1 0; 0 0 0 -1]
 lcs = [[1,2,5],[3,4]]
-testnetwork(rns[3], B, Z, Δ, lcs, 0)
+r = reactions(rns[3])
+subrn = [[r[1],r[4]], [r[2],r[3]]]
+lcd = [0,0]
+testnetwork(rns[3], B, Z, Δ, lcs, 0, subrn, lcd)
 
 # repressilator
 rns[4]  = @reaction_network begin
@@ -191,7 +203,11 @@ B = [-1 -1 -1 1 -1 1 -1 1 -1 0 0 0 1 1 1;
        0 0 0 0 0 0 0 -1 0 0 0 -1 0 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
        0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1]
 lcs = [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
-testnetwork(rns[4], B, Z, Δ, lcs, 3)
+r = reactions(rns[4])
+subrn = [[r[1],r[2],r[3],r[4],r[5],r[6],r[7],r[8],r[9],r[13],r[14],r[15],
+            r[10],r[11],r[12]]]
+lcd = [3]
+testnetwork(rns[4], B, Z, Δ, lcs, 3,subrn,lcd)
 
 #brusselator
 rns[5] = @reaction_network begin
@@ -209,7 +225,10 @@ B = [-1 0 0 1;
       0 0 1 0]
 Δ = [-1 0 0 0; 0 0 -1 -1; 0 -1 0 0; 0 0 0 0; 0 0 0 0]
 lcs = [[1,2,5],[3,4]]
-testnetwork(rns[5], B, Z, Δ, lcs, 1)
+r = reactions(rns[5])
+subrn = [[r[1],r[4],r[3]], [r[2]]]
+lcd = [0,0]
+testnetwork(rns[5], B, Z, Δ, lcs, 1,subrn,lcd)
 
 # some rational functions as rates
 rns[6] = @reaction_network begin
@@ -235,7 +254,123 @@ B = [-1 1 0 0 0 0;
       0 0 0 0 1 -1]
 Δ = [-1 0 0 0 0 0; 0 -1 0 0 0 0; 0 0 -1 0 0 0; 0 0 0 -1 0 0; 0 0 0 0 -1 0; 0 0 0 0 0 -1]
 lcs = [[1,2],[3,4],[5,6]]
-testnetwork(rns[6], B, Z, Δ, lcs, 0)
+r = reactions(rns[6])
+subrn = [[r[1],r[2]], [r[3],r[4]], [r[5],r[6]]]
+lcd=[0,0,0]
+testnetwork(rns[6], B, Z, Δ, lcs, 0,subrn,lcd)
+
+###########Testing reversibility###############
+function testreversibility(rn, B, rev, weak_rev)
+    ig = incidencematgraph(B)
+    subrn = subnetworks(rn, linkageclasses(ig))
+    @test isreversible(ig) == rev
+    @test isweaklyreversible(subrn) == weak_rev
+end
+rxs = Vector{ReactionSystem}(undef, 10)
+rxs[1] = @reaction_network begin
+      (k2, k1), A1 <--> A2+A3
+      k3, A2+A3 --> A4
+      k4, A4 --> A5
+      (k6,k5), A5 <--> 2A6
+      k7, 2A6 --> A4
+      k8, A4 + A5 --> A7
+end k1 k2 k3 k4 k5 k6 k7 k8
+rev = false
+weak_rev = false
+testreversibility(rxs[1], reactioncomplexes(rxs[1])[2], rev, weak_rev)
+
+
+rxs[2] = @reaction_network begin
+      (k2, k1), A1 <--> A2+A3
+      k3, A2+A3 --> A4
+      k4, A4 --> A5
+      (k6,k5), A5 <--> 2A6
+      k7, A4 --> 2A6
+      (k9,k8), A4 + A5 <--> A7
+end k1 k2 k3 k4 k5 k6 k7 k8 k9
+rev = false
+weak_rev = false
+testreversibility(rxs[2], reactioncomplexes(rxs[2])[2], rev, weak_rev)
+
+
+rxs[3] = @reaction_network begin
+      k1, A --> B
+      k2, A --> C
+end k1 k2
+rev = false
+weak_rev = false
+testreversibility(rxs[3], reactioncomplexes(rxs[3])[2], rev, weak_rev)
+
+
+rxs[4] = @reaction_network begin
+      k1, A --> B
+      k2, A --> C
+      k3, B + C --> 2A
+end k1 k2 k3
+rev = false
+weak_rev = false
+testreversibility(rxs[4], reactioncomplexes(rxs[4])[2], rev, weak_rev)
+
+
+rxs[5] = @reaction_network begin
+      (k2,k1), A <--> 2B
+      (k4,k3), A + C --> D
+      k5, D --> B + E
+      k6, B + E --> A+C
+end k1 k2 k3 k4 k5 k6
+rev = false
+weak_rev = true
+testreversibility(rxs[5], reactioncomplexes(rxs[5])[2], rev, weak_rev)
+
+
+rxs[6] = @reaction_network begin
+      (k2,k1), A + E <--> AE
+      k3, AE --> B+E
+end k1 k2 k3
+rev = false
+weak_rev = false
+testreversibility(rxs[6], reactioncomplexes(rxs[6])[2], rev, weak_rev)
+
+
+rxs[7] = @reaction_network begin
+      (k2,k1), A + E <--> AE
+      (k4,k3), AE <--> B+E
+end k1 k2 k3 k4
+rev = true
+weak_rev = true
+testreversibility(rxs[7], reactioncomplexes(rxs[7])[2], rev, weak_rev)
+
+
+rxs[8] = @reaction_network begin
+      (k2,k1), A + B <--> 2A
+end k1 k2
+rev = true
+weak_rev = true
+testreversibility(rxs[8], reactioncomplexes(rxs[8])[2], rev, weak_rev)
+
+
+rxs[9] = @reaction_network begin
+    k1, A + B --> 3A
+    k2, 3A --> 2A + C
+    k3, 2A + C --> 2B
+    k4, 2B --> A + B
+end k1 k2 k3 k4
+rev = false
+weak_rev = true
+testreversibility(rxs[9], reactioncomplexes(rxs[9])[2], rev, weak_rev)
+
+
+rxs[10] = @reaction_network begin
+      (k2, k1), A + E <--> AE
+      (k4, k3), AE <--> B + E
+      k5, B --> 0
+      k6, 0 --> A
+end k1 k2 k3 k4 k5 k6
+rev = false
+weak_rev = false
+testreversibility(rxs[10], reactioncomplexes(rxs[10])[2], rev, weak_rev)
+##########################################################################
+
 
 reaction_networks_standard = Vector{ReactionSystem}(undef,10)
 reaction_networks_hill = Vector{ReactionSystem}(undef,10)

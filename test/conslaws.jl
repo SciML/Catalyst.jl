@@ -26,8 +26,7 @@ b = [ 0, 0, 0, 1, 1, 1, 1, 1, 0, 0 ]
 D = [ 1 -1 0 0 0 0 0 0 0 0;
       -1 1 0 0 0 0 0 0 0 0
       0  1 1 0 0 0 0 0 0 0 ]
-
-@test any(D[j,:] == C[i,:] for i in 1:size(C,1), j in size(D,1))
+@test any(D[j,:] == C[i,:] for i in 1:size(C,1), j in 1:size(D,1))
 
 Ss_standard = map(netstoichmat, reaction_networks_standard)
 Cs_standard = map(conservationlaws, Ss_standard)

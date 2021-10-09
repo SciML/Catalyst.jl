@@ -2,7 +2,7 @@
 In this tutorial we'll provide an introduction to using Catalyst to specify
 chemical reaction networks, and then to solve ODE, jump, and SDE models generated
 from them. Let's start by using the Catalyst [`@reaction_network`](@ref) macro
-to specify a simply chemical reaction network: the well-known repressilator.
+to specify a simple chemical reaction network: the well-known repressilator.
 
 We first import the basic packages we'll need:
 
@@ -163,7 +163,7 @@ species(repressilator)
  P₃(t)
 ```
 ```julia
-params(repressilator)
+parameters(repressilator)
 ```
 ```julia
 7-element Array{Sym{ModelingToolkit.Parameter{Real}},1}:
@@ -198,7 +198,7 @@ instead pass `odesys` directly, provided we construct mappings from each species
 to their initial value, and each parameter to their value like:
 ```julia
 u₀map  = Pair.(species(repressilator), u₀)
-pmap   = Pair.(params(repressilator), p)
+pmap   = Pair.(parameters(repressilator), p)
 oprob2 = ODEProblem(osys, u₀map, tspan, pmap)
 ```
 `oprob` and `oprob2` are functionally equivalent, each representing the same

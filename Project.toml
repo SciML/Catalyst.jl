@@ -19,7 +19,7 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
-AbstractAlgebra = "0.19, 0.21"
+AbstractAlgebra = "0.21, 0.22"
 DataStructures = "0.18"
 DiffEqBase = "6.54.0"
 DiffEqJump = "7.0"
@@ -37,6 +37,7 @@ julia = "1.5"
 [extras]
 Graphviz_jll = "3c863552-8265-54e4-a6dc-903eb78fde85"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
@@ -48,4 +49,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [targets]
-test = ["Graphviz_jll", "LinearAlgebra", "OrdinaryDiffEq", "Random", "SafeTestsets", "StableRNGs", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "Unitful"]
+test = ["Graphviz_jll", "LinearAlgebra", "NonlinearSolve", "OrdinaryDiffEq", "Random", "SafeTestsets", "StableRNGs", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "Unitful"]

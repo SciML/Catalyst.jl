@@ -1,12 +1,35 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch) 
-- Added `incidencematgraph`, `linkageclasses` and `deficiency` API functions.
+- Added `incidencematgraph`, `linkageclasses`, `deficiency`, `subnetworks`,
+  `linkagedeficiency`, `isreversible` and `isweaklyreversible` API functions.
+- Added the ability to compose `ReactionSystem`s via subsystems, and include
+  either `ODESystem`s or `NonlinearSystem`s as subsystems. Note, if using
+  non-`ReactionSystem` subsystems it is not currently possible to convert to 
+  a `JumpSystem` or `SDESystem`. It is also not possible to include either 
+  `SDESystem`s or `JumpSystems` as subsystems.
+- Deprecated `merge`, use `ModelingToolkit.extend` instead.
+- Deprecated `params` and `numparams` (use `ModelingToolkit.parameters` to get
+  all parameters of a system and all subsystems, or use `reactionparams` to get
+  all parameters of a system and all `ReactionSystem` subsystems. The latter
+  correspond to those parameters used within `Reaction`s.)
+- Added a custom `hash` for `Reaction`s to ensure they work in `Dict`s and
+  `Set`s properly, ensuring set-type comparisons between collections of
+  `Reaction`s work.
+- `ReactionSystem(rxs::Vector{Reaction}, t)` should now work and will infer the
+  species and parameters.
+- Added `extend(sys, reactionnetwork, name=nameof(sys))` to extend
+  `ReactionSystem`s with constraint equations (algebraic equations or ODEs).
+  Constraints are stored as a `NonlinearSystem` or `ODESystem` within the
+  `ReactionSystem`, and accessible via `get_constraints(reactionnetwork)`.
+- Added `Catalyst.flatten(rn)` to allow flattening of a `ReactionSystem` with
+  sub-systems into one `ReactionSystem`.
 
 ## Catalyst 9.0
-*1.* **BREAKING:** `netstoichmat`, `prodstoichmat` and `substoichmat` are now transposed to be
-number of species by number of reactions. This is more consistent with the chemical
-reaction network literature for stoichiometry matrices.
+*1.* **BREAKING:** `netstoichmat`, `prodstoichmat` and `substoichmat` are now
+transposed to be number of species by number of reactions. This is more
+consistent with the chemical reaction network literature for stoichiometry
+matrices.
 
 *2.* `reactioncomplexmap` added to provide a mapping from reaction complexes to
 reactions they participate in.

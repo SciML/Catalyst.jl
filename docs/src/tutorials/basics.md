@@ -35,7 +35,7 @@ called `rn`). The generated `ReactionSystem` can be converted to a differential
 equation model via
 ```julia
 osys = convert(ODESystem, rn)
-oprob = ODEProblem(osys, Pair.(species(rn),u0), tspan, Pair.(params(rn),p))
+oprob = ODEProblem(osys, Pair.(species(rn),u0), tspan, Pair.(parameters(rn),p))
 ```
 or more directly via
 ```julia

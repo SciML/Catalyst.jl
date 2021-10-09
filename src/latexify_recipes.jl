@@ -53,21 +53,28 @@ function recursive_clean!(expr)
 end
 
 
+function any_nonrx_subsys(rn::MT.AbstractSystem)
+    !(rn isa ReactionSystem) && (return true)
+    for subsys in get_systems(rn)
+        any_nonrx_subsys(subsys) && (return true)
+    end
+    false
+end
+
 function chemical_arrows(rn::ReactionSystem;
     expand = true, double_linebreak=false, mathjax=true, starred=false, kwargs...)
+
+    (get_constraints(rn) !== nothing) && (@warn "Latexify currently ignores constraint equations.")
+    any_nonrx_subsys(rn) && (@warn "Latexify currently ignores non-ReactionSystem subsystems.")
+
     str = starred ? "\\begin{align*}\n" : "\\begin{align}\n"
     eol = double_linebreak ? "\\\\\\\\\n" : "\\\\\n"
 
     mathjax && (str *= "\\require{mhchem}\n")
     backwards_reaction = false
-    rxs = equations(rn)
-    @variables t
+    rxs = reactions(rn)    
 
-    # this should replace A(t) with A in equations however, currently substituter rewrites
-    # things like x/y as inv(y)*x^1, which looks worse... for now we leave a stub that can
-    # be updated when substitution preserves expressions better.
-    # subber = ModelingToolkit.substituter([s(t) => s() for s in states(rn)])
-    subber = x -> x
+    subber = ModelingToolkit.substituter([s => MT.operation(s) for s in species(rn)])
 
     for (i, r) in enumerate(rxs)
         if backwards_reaction
@@ -77,9 +84,8 @@ function chemical_arrows(rn::ReactionSystem;
         str *= "\\ce{ "
 
         ### Expand functions to maths expressions
-        rate =  ModelingToolkit.prettify_expr(toexpr(r.rate))
-        #rate = r.rate isa Symbolic ? Expr(subber(r.rate)) : r.rate
-        expand && (rate = recursive_clean!(rate))
+        rate = r.rate isa Symbolic ? subber(r.rate) : r.rate
+        rate =  ModelingToolkit.prettify_expr(toexpr(rate))
         expand && (rate = recursive_clean!(rate))
 
         ### Generate formatted string of substrates
