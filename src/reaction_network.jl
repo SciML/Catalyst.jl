@@ -240,7 +240,6 @@ end
 
 function find_species_in_rate!(sset, rateex::ExprValues, ps)
     if rateex isa Symbol
-        @show rateex
         if !(rateex in forbidden_symbols) && !(rateex in ps) 
             push!(sset, rateex)
         end
