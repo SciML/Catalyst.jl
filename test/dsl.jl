@@ -69,10 +69,10 @@ end k
 rn2 = ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn)
 @test rn == rn2
 
-rn = @reaction_network begin
+rn = @reaction_network rn begin
     k, $AA + C --> D
 end k
-rn2 = ReactionSystem([Reaction(AAA, [AA,C], [D])], t; name=:rn)
+rn2 = ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn)
 @test rn == rn2
 
 BB = B; A2 = A
