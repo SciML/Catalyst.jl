@@ -84,3 +84,11 @@ rn2 = ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
                      t; name=:rn)
 @test rn == rn2
 
+kk1 = k^2*A
+kk2 = k1+k2
+rn = @reaction_network rn begin
+    α+$kk1*$kk2*$AA, 2*$AA + B --> $AA
+end α
+@parameters α
+rn2 = ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; name=:rn)
+@test rn == rn2

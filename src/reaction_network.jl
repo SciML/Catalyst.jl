@@ -206,7 +206,11 @@ function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSyste
     !isempty(intersect(forbidden_symbols,union(allspecies,parameters))) && 
         error("The following symbol(s) are used as species or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(species,parameters)))...))*"this is not permited.")    
     network_code = Expr(:block,:(@parameters),:(@variables t), :(ReactionSystem([],t,; name=$(name))))
-    foreach(parameter-> push!(network_code.args[1].args, parameter), parameters)
+    if isempty(parameters)
+        network_code.args[1] = :() 
+    else
+        foreach(parameter-> push!(network_code.args[1].args, parameter), parameters)
+    end
     foreach(species -> (species isa Symbol) && push!(network_code.args[2].args, Expr(:call,species,:t)), allspecies)
     for reaction in reactions
         subs_init = isempty(reaction.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
@@ -236,10 +240,12 @@ end
 
 function find_species_in_rate!(sset, rateex::ExprValues, ps)
     if rateex isa Symbol
+        @show rateex
         if !(rateex in forbidden_symbols) && !(rateex in ps) 
             push!(sset, rateex)
         end
-    elseif rateex isa Expr
+    elseif rateex isa Expr   
+        # note, this (correctly) skips $(...) expressions
         for i = 2:length(rateex.args)
             find_species_in_rate!(sset, rateex.args[i], ps)
         end
