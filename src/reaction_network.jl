@@ -287,24 +287,14 @@ function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSyste
         __internal_ps = $pexprs
         $sexprs
         __internal_rs = $rxexprs
+
+        # this is to allow declaring parameters that don't appear in reactions
         __internal__all_ps = Set(parameters(__internal_rs))
         for p in __internal_ps
             (p ∉ __internal__all_ps) && addparam!(__internal_rs, p)
         end
         __internal_rs
     end
-
-    # @show network_code
-    # !isempty(parameters) && push!(network_code.args, 
-    #         quote
-    #             for p in __internal_ps
-    #                 @show p
-    #                 addparam!(__internal_rs, p)
-    #             end
-    #             __internal_rs
-    #         end
-    #     )
-    
 end
 
 

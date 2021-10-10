@@ -179,6 +179,8 @@ for networks in identical_networks
     for factor in [1e-2, 1e-1, 1e0, 1e1]
         u0 = factor*rand(rng,length(get_states(networks[1])))
         p = factor*rand(rng,length(get_ps(networks[1])))
+
+        # hack because this code assumes an ordering of the parameters and species...
         p2 = permute_ps(p, networks[1], networks[2])
         t = rand(rng)
         @test all(abs.(f1(u0,p,t) .- f2(u0,p2,t)) .< 1000*eps())
