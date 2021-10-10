@@ -59,7 +59,7 @@ end k k2 n
 @test issetequal([k,k2,n], parameters(rn))
 
 # test interpolation within the DSL
-@parameters k
+@parameters k, k1, k2
 @variables t, A(t), B(t), C(t), D(t)
 AA = A
 AAA = A^2 + B
@@ -77,8 +77,10 @@ rn2 = ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn)
 
 BB = B; A2 = A
 rn = @reaction_network rn begin
-    k, C + $A2 + $BB + $A2 --> $BB + $BB    
-end k
-rn2 = ReactionSystem([Reaction(k, [C, A, B], [B], [1,2,1],[2])], t; name=:rn)
+    (k1,k2), C + $A2 + $BB + $A2 <--> $BB + $BB    
+end k1 k2
+rn2 = ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
+                      Reaction(k2, [B], [C, A, B], [2], [1,2,1])], 
+                     t; name=:rn)
 @test rn == rn2
 
