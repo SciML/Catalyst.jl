@@ -159,6 +159,17 @@ step_by_step_network_9 = @reaction_network rnw10
 end d
 push!(identical_networks, reaction_networks_weird[10] => step_by_step_network_9)
 
+function permute_ps(pvals, rn1, rn2)
+    ps1    = parameters(rn1)
+    ps2    = parameters(rn2)
+    pvals2 = similar(pvals)
+    for (i,p) in enumerate(ps2)
+        pidx      = findfirst(isequal(p), ps1)
+        pvals2[i] = pvals[pidx]
+    end
+    pvals2
+end
+
 for networks in identical_networks
     f1 = ODEFunction(convert(ODESystem,networks[1]),jac=true)
     f2 = ODEFunction(convert(ODESystem,networks[2]),jac=true)
@@ -168,11 +179,10 @@ for networks in identical_networks
     for factor in [1e-2, 1e-1, 1e0, 1e1]
         u0 = factor*rand(rng,length(get_states(networks[1])))
         p = factor*rand(rng,length(get_ps(networks[1])))
+        p2 = permute_ps(p, networks[1], networks[2])
         t = rand(rng)
-        @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 1000*eps())
-        @test all(abs.(g1(u0,p,t) .- g2(u0,p,t)) .< 1000*eps())
-        @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 1000*eps())
-        @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 1000*eps())
-        @test all(abs.(g1(u0,p,t) .- g2(u0,p,t)) .< 1000*eps())
+        @test all(abs.(f1(u0,p,t) .- f2(u0,p2,t)) .< 1000*eps())
+        @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p2,t)) .< 1000*eps())
+        @test all(abs.(g1(u0,p,t) .- g2(u0,p2,t)) .< 1000*eps())
     end
 end

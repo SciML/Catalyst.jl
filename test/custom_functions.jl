@@ -36,10 +36,13 @@ g2 = SDEFunction(convert(SDESystem,custom_function_network_2))
 for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
     u0 = factor*rand(rng,length(get_states(custom_function_network_1)))
     p = factor*rand(rng,length(get_ps(custom_function_network_2)))
-    t = rand(rng)
-    @test all(abs.(f1(u0,p,t) .- f2(u0,p,t)) .< 10e-10)
-    @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p,t)) .< 10e-10)
-    @test all(abs.(g1(u0,p,t) .- g2(u0,p,t)) .< 10e-10)
+    
+    # hack because this code assumes an ordering of the parameters and species...
+    p2 = copy(p); p2[10],p2[11] = p[11],p[10]
+    t = rand(rng)        
+    @test all(abs.(f1(u0,p,t) .- f2(u0,p2,t)) .< 10e-10)
+    @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p2,t)) .< 10e-10)
+    @test all(abs.(g1(u0,p,t) .- g2(u0,p2,t)) .< 10e-10)
 end
 
 ### Tests that the various notations gives identical results ###

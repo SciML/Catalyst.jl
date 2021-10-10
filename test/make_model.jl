@@ -31,97 +31,28 @@ function all_parameters(eqs)
 end
 
 ### Test basic properties of networks ###
-eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_standard[1])
-@test length(eqs) == 10
-@test opname(iv) == :t
-@test length(states) == 3
-@test all(map(opname, states) .== [:X1,:X2,:X3])
-@test all_reactants(eqs) == Set([:X1,:X2,:X3])
-@test length(ps) == 10
-@test all(map(opname, ps) .== [:p1,:p2,:p3,:k1,:k2,:k3,:k4,:d1,:d2,:d3])
-@test all_parameters(eqs) == Set([:p1,:p2,:p3,:k1,:k2,:k3,:k4,:d1,:d2,:d3])
-
-eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_standard[2])
-@test length(eqs) == 3
-@test opname(iv) == :t
-@test length(states) == 2
-@test all(opname.(states) .== [:X1,:X2])
-@test all_reactants(eqs) == Set([:X1,:X2])
-@test length(ps) == 5
-@test all(opname.(ps) .== [:v1,:K1,:v2,:K2,:d])
-
-eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_standard[3])
-@test length(eqs) == 10
-@test opname(iv) == :t
-@test length(states) == 4
-@test all(opname.(states) .== [:X1,:X2,:X3,:X4])
-@test all_reactants(eqs) == Set([:X1,:X2,:X3,:X4])
-@test length(ps) == 9
-@test all(opname.(ps) .== [:v1,:K1,:v2,:K2,:k1,:k2,:k3,:k4,:d])
-
-eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_standard[4])
-@test length(eqs) == 8
-@test opname(iv) == :t
-@test length(states) == 4
-@test all(opname.(states) .== [:X1,:X2,:X3,:X4])
-@test all_reactants(eqs) == Set([:X1,:X2,:X3,:X4])
-@test length(ps) == 12
-@test all(opname.(ps) .== [:v1,:K1,:v2,:K2,:v3,:K3,:v4,:K4,:d1,:d2,:d3,:d4])
-
-eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_standard[5])
-@test length(eqs) == 8
-@test opname(iv) == :t
-@test length(states) == 4
-@test all(opname.(states) .== [:X1,:X2,:X3,:X4])
-@test all_reactants(eqs) == Set([:X1,:X2,:X3,:X4])
-@test length(ps) == 8
-@test all(opname.(ps) .== [:p,:k1,:k2,:k3,:k4,:k5,:k6,:d])
-@test all_parameters(eqs) == Set([:p,:k1,:k2,:k3,:k4,:k5,:k6,:d])
-
-eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_hill[1])
-@test length(eqs) == 4
-@test opname(iv) == :t
-@test length(states) == 2
-@test all(opname.(states) .== [:X1,:X2])
-@test all_reactants(eqs) == Set([:X1,:X2])
-@test length(ps) == 8
-@test all(opname.(ps) .== [:v1,:v2,:K1,:K2,:n1,:n2,:d1,:d2])
-
-eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_constraint[1])
-@test length(eqs) == 6
-@test opname(iv) == :t
-@test length(states) == 3
-@test all(opname.(states) .== [:X1,:X2,:X3])
-@test all_reactants(eqs) == Set([:X1,:X2,:X3])
-@test length(ps) == 6
-@test all(opname.(ps) .== [:k1,:k2,:k3,:k4,:k5,:k6])
-
-eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_real[1])
-@test length(eqs) == 4
-@test opname(iv) == :t
-@test length(states) == 2
-@test all(opname.(states) .== [:X,:Y])
-@test all_reactants(eqs) == Set([:X,:Y])
-@test length(ps) == 2
-@test all(opname.(ps) .== [:A,:B])
-
-eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_weird[1])
-@test length(eqs) == 2
-@test opname(iv) == :t
-@test length(states) == 1
-@test all(opname.(states) .== [:X])
-@test all_reactants(eqs) == Set([:X])
-@test length(ps) == 2
-@test all(opname.(ps) .== [:p,:d])
-
-eqs,iv,states,ps,name,systems = unpacksys(reaction_networks_weird[2])
-@test length(eqs) == 4
-@test opname(iv) == :t
-@test length(states) == 3
-@test all(opname.(states) .== [:X,:Y,:Z])
-@test all_reactants(eqs) == Set([:X,:Y,:Z])
-@test length(ps) == 4
-@test all(opname.(ps) .== [:k1,:k2,:k3,:k4])
+function basic_test(rn, N, states_syms, p_syms)
+    eqs,iv,states,ps,name,systems = unpacksys(rn)
+    @test length(eqs) == N
+    @test opname(iv) == :t
+    @test length(states) == length(states_syms)
+    @test issetequal(map(opname, states), states_syms)
+    @test all_reactants(eqs) == Set(states_syms)
+    @test length(ps) == length(p_syms)
+    @test issetequal(map(opname, ps), p_syms)
+end
+basic_test(reaction_networks_standard[1], 10, [:X1,:X2,:X3], [:p1,:p2,:p3,:k1,:k2,:k3,:k4,:d1,:d2,:d3])
+@test all_parameters(get_eqs(reaction_networks_standard[1])) == Set([:p1,:p2,:p3,:k1,:k2,:k3,:k4,:d1,:d2,:d3])
+basic_test(reaction_networks_standard[2], 3, [:X1,:X2], [:v1,:K1,:v2,:K2,:d])   
+basic_test(reaction_networks_standard[3], 10, [:X1,:X2,:X3,:X4], [:v1,:K1,:v2,:K2,:k1,:k2,:k3,:k4,:d])
+basic_test(reaction_networks_standard[4], 8, [:X1,:X2,:X3,:X4], [:v1,:K1,:v2,:K2,:v3,:K3,:v4,:K4,:d1,:d2,:d3,:d4])
+basic_test(reaction_networks_standard[5], 8, [:X1,:X2,:X3,:X4], [:p,:k1,:k2,:k3,:k4,:k5,:k6,:d])
+@test all_parameters(get_eqs(reaction_networks_standard[5])) == Set([:p,:k1,:k2,:k3,:k4,:k5,:k6,:d])
+basic_test(reaction_networks_hill[1], 4, [:X1,:X2], [:v1,:v2,:K1,:K2,:n1,:n2,:d1,:d2])
+basic_test(reaction_networks_constraint[1], 6, [:X1,:X2,:X3], [:k1,:k2,:k3,:k4,:k5,:k6])
+basic_test(reaction_networks_real[1], 4, [:X,:Y], [:A,:B])
+basic_test(reaction_networks_weird[1], 2, [:X], [:p,:d])
+basic_test(reaction_networks_weird[2], 4, [:X,:Y,:Z], [:k1,:k2,:k3,:k4])
 
 
 ### Tries making various systems ###

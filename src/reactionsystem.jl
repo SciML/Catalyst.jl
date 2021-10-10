@@ -223,12 +223,10 @@ function ReactionSystem(eqs, iv, species, ps;
 end
 
 function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)  
-    t   = value(iv)   
-    sts = Set(spec for rx in rxs for spec in rx.substrates)
-    foreach(v -> push!(sts,v), (prod for rx in rxs for prod in rx.products))
-
-    ps   = Set()
-    vars = Set()
+    t    = value(iv)   
+    sts  = OrderedSet(spec for rx in rxs for spec in Iterators.flatten([rx.substrates,rx.products]))
+    ps   = OrderedSet()
+    vars = OrderedSet()
     for rx in rxs
         MT.get_variables!(vars, rx.rate)
         for var in vars
