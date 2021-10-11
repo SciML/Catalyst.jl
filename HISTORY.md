@@ -32,7 +32,7 @@
   `SDESystem`s or `JumpSystems` as subsystems.
 - Added `extend(sys, reactionnetwork, name=nameof(sys))` to extend
   `ReactionSystem`s with constraint equations (algebraic equations or ODEs), or
-  other `ReactionSystem`s. Constraints are stored as a `NonlinearSystem` or
+  other `ReactionSystem`s. Algebraic or differential constraints are stored as a `NonlinearSystem` or
   `ODESystem` within the `ReactionSystem`, and accessible via
   `get_constraints(reactionnetwork)`.
 - Added `Catalyst.flatten(rn)` to allow flattening of a `ReactionSystem` with
