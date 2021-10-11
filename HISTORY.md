@@ -36,7 +36,7 @@
   `ODESystem` within the `ReactionSystem`, and accessible via
   `get_constraints(reactionnetwork)`.
 - Added `Catalyst.flatten(rn)` to allow flattening of a `ReactionSystem` with
-  sub-systems into one `ReactionSystem`. Non-`ReactionSystem` subsystems a
+  sub-systems into one `ReactionSystem`. Non-`ReactionSystem` subsystems are
   merged into the constraints of the flattened `ReactionSystem`, and accessible
   via `get_constraints`.
 - **BREAKING:** `ReactionSystem`s are now always flattened when calling
