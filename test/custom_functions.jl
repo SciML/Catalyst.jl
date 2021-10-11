@@ -48,7 +48,7 @@ for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
     u0 = factor*rand(rng,length(get_states(custom_function_network_1)))
     p = factor*rand(rng,length(get_ps(custom_function_network_2)))
 
-    # hack because this code assumes an ordering of the parameters and species...
+    # needed as this code assumes an ordering of the parameters and species...
     p2 = permute_ps(p, custom_function_network_1, custom_function_network_2) 
     
     t = rand(rng)        

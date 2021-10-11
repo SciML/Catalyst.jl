@@ -198,52 +198,6 @@ function esc_dollars!(ex)
 end
 
 # Takes the reactions, and rephrases it as a "ReactionSystem" call, as designated by the ModelingToolkit IR.
-# function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSystem)))
-#     @show parameters
-#     ex = esc_dollars!(ex)
-#     reactions = get_reactions(ex)
-#     reactants = get_reactants(reactions)
-#     allspecies = union(reactants, get_rate_species(reactions,parameters))
-#     !isempty(intersect(forbidden_symbols,union(allspecies,parameters))) && 
-#         error("The following symbol(s) are used as species or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(species,parameters)))...))*"this is not permited.")    
-#     network_code = Expr(:block,:(@parameters),:(@variables t), :(__internal_rs = ReactionSystem([],t,; name=$(name))))
-#     @show network_code.args[1]
-#     @show network_code.args[2]
-#     @show network_code.args[3]
-#     if isempty(parameters)
-#         network_code.args[1] = :() 
-#     else
-#         foreach(parameter-> push!(network_code.args[1].args, parameter), parameters)
-#     end
-#     foreach(species -> (species isa Symbol) && push!(network_code.args[2].args, Expr(:call,species,:t)), allspecies)
-#     for reaction in reactions
-#         subs_init = isempty(reaction.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
-#         prod_init = isempty(reaction.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
-#         reaction_func = :(Reaction($(recursive_expand_functions!(reaction.rate)), $subs_init, $prod_init, $subs_stoich_init, $prod_stoich_init, only_use_rate=$(reaction.only_use_rate)))
-#         for sub in reaction.substrates
-#             push!(reaction_func.args[3].args, sub.reactant)
-#             push!(reaction_func.args[5].args, sub.stoichiometry)
-#         end
-#         for prod in reaction.products
-#             push!(reaction_func.args[4].args, prod.reactant)
-#             push!(reaction_func.args[6].args, prod.stoichiometry)
-#         end
-#         @show network_code
-#         push!(network_code.args[3].args[3].args,reaction_func)
-#     end
-#     # @show network_code
-#     # !isempty(parameters) && push!(network_code.args, 
-#     #         quote
-#     #             for p in __internal_ps
-#     #                 @show p
-#     #                 addparam!(__internal_rs, p)
-#     #             end
-#     #             __internal_rs
-#     #         end
-#     #     )
-#     return network_code
-# end
-
 function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSystem)))
 
     # handle interpolation of variables
@@ -284,16 +238,16 @@ function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSyste
     end
 
     quote
-        __internal_ps = $pexprs
+        _ps = $pexprs
         $sexprs
-        __internal_rs = $rxexprs
+        _rs = $rxexprs
 
         # this is to allow declaring parameters that don't appear in reactions
-        __internal__all_ps = Set(parameters(__internal_rs))
-        for p in __internal_ps
-            (p ∉ __internal__all_ps) && addparam!(__internal_rs, p)
+        _all_ps = Set(parameters(_rs))
+        for p in _ps
+            (p ∉ _all_ps) && addparam!(_rs, p)
         end
-        __internal_rs
+        _rs
     end
 end
 

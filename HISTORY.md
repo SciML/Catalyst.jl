@@ -11,7 +11,8 @@
   end k
   ```
 - **BREAKING:** Internal changes mean the order of species or parameters in
-  generated systems may have changed. Changes that induce different orders will not be considered breaking in the future.
+  generated systems may have changed. Changes that induce different orders will
+  not be considered breaking in the future.
 - Added interpolation in the DSL for species, variables, and the network name.
   i.e. this is now valid
   ```julia
@@ -35,8 +36,11 @@
   `ODESystem` within the `ReactionSystem`, and accessible via
   `get_constraints(reactionnetwork)`.
 - Added `Catalyst.flatten(rn)` to allow flattening of a `ReactionSystem` with
-  sub-systems into one `ReactionSystem`. Non-`ReactionSystem` subsystems a merged into the constraints of the flattened `ReactionSystem`, and accessible via `get_constraints`.
-- **BREAKING:** `ReactionSystem`s are now always flattened when calling `convert`. This should only affect models that use `subsystem`s.
+  sub-systems into one `ReactionSystem`. Non-`ReactionSystem` subsystems a
+  merged into the constraints of the flattened `ReactionSystem`, and accessible
+  via `get_constraints`.
+- **BREAKING:** `ReactionSystem`s are now always flattened when calling
+  `convert`. This should only affect models that use `subsystem`s.
 - Added `incidencematgraph`, `linkageclasses`, `deficiency`, `subnetworks`,
   `linkagedeficiency`, `isreversible` and `isweaklyreversible` API functions.
 - Deprecated `merge`, use `ModelingToolkit.extend` instead.
