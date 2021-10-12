@@ -179,13 +179,13 @@ rn = @reaction_network begin
 end
 ```
 
-## Variable reaction rates
-Reaction rates do not need to be constant, but can also depend on the current
-concentration of the various reactants (when, for example, one reactant can activate the
-production of another). For instance, this is a valid notation:
+## Variable reaction rate constants
+Reaction rate constants do not need to be constant, but can also depend on the
+current concentration of the various reactants (when, for example, one reactant
+can activate the production of another). For instance, this is a valid notation:
 ```julia
 rn = @reaction_network begin
-  X, Y → ∅
+  X, Y --> ∅
 end
 ```
 and will have `Y` degraded at rate
@@ -197,73 +197,78 @@ and will have `Y` degraded at rate
 Note that this is actually equivalent to the reaction
 ```julia
 rn = @reaction_network begin
-  1.0, X + Y → X
+  1.0, X + Y --> X
 end
 ```
-*except* that the latter will be classified as [`ismassaction`](@ref) and the
-former will not, which can impact optimizations used in generating
-`JumpSystem`s. For this reason, it is recommended to use the latter
-representation when possible.
+in any generated ODESystem, **however**, the latter `Reaction` will be
+classified as [`ismassaction`](@ref) and the former will not, which can impact
+optimizations used in generating `JumpSystem`s. For this reason, it is
+recommended to use the latter representation when possible.
 
 Most expressions and functions are valid reaction rates, e.g.:
 ```julia
+using SpecialFunctions
 rn = @reaction_network begin
-  2.0*X^2, 0 → X + Y
-  gamma(Y)/5, X → ∅
+  2.0*X^2, 0 --> X + Y
+  t*gamma(Y), X --> ∅
   pi*X/Y, Y → ∅
 end
 ```
-but please note that user-defined functions cannot be called directly ([see the
-faq](@ref user_functions)).
+where here `t` denotes the time variable. Please note that many user-defined
+functions can be called directly, but others will require registration with
+Symbolics.jl ([see the faq](@ref user_functions)).
 
-#### Defining parameters
+## Defining parameters and species
 Parameter values do not need to be set when the model is created. Components can
 be designated as symbolic parameters by declaring them at the end:
 ```julia
 rn = @reaction_network begin
-  p, ∅ → X
-  d, X → ∅
+  p, ∅ --> X
+  d, X --> ∅
 end p d
 ```
 Parameters can only exist in the reaction rates (where they can be mixed with
 reactants). All variables not declared after `end` will be treated as a chemical
-species, and may lead to undefined behavior if unchanged by *all* reactions.
+species.
 
-#### Naming the generated `ReactionSystem`
+## Naming the generated `ReactionSystem`
 ModelingToolkit uses system names to allow for compositional and hierarchical
 models. To specify a name for the generated `ReactionSystem` via the
 `reaction_network` macro, just place the name before `begin`:
 ```julia
 rn = @reaction_network production_degradation begin
-  p, ∅ → X
-  d, X → ∅
+  p, ∅ --> X
+  d, X --> ∅
 end p d
 ModelingToolkit.nameof(rn) == :production_degradation
 ```
 
-#### Pre-defined functions
+## Pre-defined functions
 Hill functions and a Michaelis-Menten function are pre-defined and can be used
 as rate laws. Below, the pair of reactions within `rn1` are equivalent, as are
 the pair of reactions within `rn2`:
 ```julia
 rn1 = @reaction_network begin
-  hill(X,v,K,n), ∅ → X
-  v*X^n/(X^n+K^n), ∅ → X
+  hill(X,v,K,n), ∅ --> X
+  v*X^n/(X^n+K^n), ∅ --> X
 end v K n
 rn2 = @reaction_network begin
-  mm(X,v,K), ∅ → X
-  v*X/(X+K), ∅ → X
+  mm(X,v,K), ∅ --> X
+  v*X/(X+K), ∅ --> X
 end v K
 ```
 Repressor Hill (`hillr`) and Michaelis-Menten (`mmr`) functions are also
 provided:
 ```julia
 rn1 = @reaction_network begin
-  hillr(X,v,K,n), ∅ → X
-  v*K^n/(X^n+K^n), ∅ → X
+  hillr(X,v,K,n), ∅ --> X
+  v*K^n/(X^n+K^n), ∅ --> X
 end v K n
 rn2 = @reaction_network begin
-  mmr(X,v,K), ∅ → X
-  v*K/(X+K), ∅ → X
+  mmr(X,v,K), ∅ --> X
+  v*K/(X+K), ∅ --> X
 end v K
 ```
+
+Please see the API [Rate Laws](@ref) section for the equations each of these
+functions correspond to.
