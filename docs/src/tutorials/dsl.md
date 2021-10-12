@@ -57,6 +57,59 @@ action. For the above example, the ODEs are then
 \frac{d[Z2]}{dt} = [XY]
 ```
 
+## Defining parameters and species
+Parameter values do not need to be set when the model is created. Components can
+be designated as symbolic parameters by declaring them at the end:
+```julia
+rn = @reaction_network begin
+  p, ∅ --> X
+  d, X --> ∅
+end p d
+```
+Parameters can only exist in the reaction rates (where they can be mixed with
+reactants). All variables not declared after `end` will be treated as a chemical
+species.
+
+## Production, Destruction and Stoichiometry
+Sometimes reactants are produced/destroyed from/to nothing. This can be
+designated using either `0` or `∅`:
+```julia
+rn = @reaction_network begin
+  2.0, 0 --> X
+  1.0, X --> ∅
+end
+```
+If several molecules of the same reactant are involved in a reaction, the
+stoichiometry of a reactant in a reaction can be set using a number. Here, two
+molecules of species `X` form the dimer `X2`:
+```julia
+rn = @reaction_network begin
+  1.0, 2X --> X2
+end
+```
+this corresponds to the differential equation:
+
+```math
+\frac{d[X]}{dt} = -[X]^2\\
+\frac{d[X2]}{dt} = \frac{1}{2!} [X]^2
+```
+
+Other numbers than 2 can be used, and parenthesis can be used to reuse the same
+stoichiometry for several reactants:
+```julia
+rn = @reaction_network begin
+  1.0, X + 2(Y + Z) --> XY2Z2
+end
+```
+
+Note, one can explicitly multiply by integer coefficients too, i.e.
+```julia
+rn = @reaction_network begin
+  1.0, X + 2*(Y + Z) --> XY2Z2
+end
+```
+
+
 ## Arrow variants
 A variety of unicode arrows are accepted by the DSL in addition to `-->`. All of
 these work:  `>`, `→` `↣`, `↦`, `⇾`, `⟶`, `⟼`, `⥟`, `⥟`, `⇀`, `⇁`. Backwards
@@ -71,7 +124,7 @@ rn = @reaction_network begin
 end
 ```
 
-## Using bi-directional arrows
+## Bi-directional arrows for reversible reactions
 Bi-directional arrows, including bidirectional unicode arrows like ↔, can be
 used to designate a reversible reaction. For example, these two models are
 equivalent:
@@ -147,60 +200,29 @@ rn2 = @reaction_network begin
 end
 ```
 
-## Production, Destruction and Stoichiometry
-Sometimes reactants are produced/destroyed from/to nothing. This can be
-designated using either `0` or `∅`:
+## Variable reaction rates
+Reaction rates do not need to be a single parameter or a number, but can also be
+expressions depending on time or the current concentration of other species
+(when, for example, one species can activate the production of another). For
+instance, this is a valid notation:
 ```julia
 rn = @reaction_network begin
-  2.0, 0 --> X
-  1.0, X --> ∅
-end
-```
-If several molecules of the same reactant are involved in a reaction, the
-stoichiometry of a reactant in a reaction can be set using a number. Here, two
-molecules of species `X` form the dimer `X2`:
-```julia
-rn = @reaction_network begin
-  1.0, 2X --> X2
-end
-```
-this corresponds to the differential equation:
-
-```math
-\frac{d[X]}{dt} = -[X]^2\\
-\frac{d[X2]}{dt} = \frac{1}{2!} [X]^2
-```
-
-Other numbers than 2 can be used, and parenthesis can be used to reuse the same
-stoichiometry for several reactants:
-```julia
-rn = @reaction_network begin
-  1.0, X + 2(Y + Z) --> XY2Z2
-end
-```
-
-## Variable reaction rate constants
-Reaction rate constants do not need to be constant, but can also depend on the
-current concentration of the various reactants (when, for example, one reactant
-can activate the production of another). For instance, this is a valid notation:
-```julia
-rn = @reaction_network begin
-  X, Y --> ∅
-end
+  k*X, Y --> ∅
+end k
 ```
 and will have `Y` degraded at rate
 
 ```math
-\frac{d[Y]}{dt} = -[X][Y]
+\frac{d[Y]}{dt} = -k[X][Y].
 ```
 
-Note that this is actually equivalent to the reaction
+Note, this is actually equivalent to the reaction
 ```julia
 rn = @reaction_network begin
-  1.0, X + Y --> X
-end
+  k, X + Y --> X
+end k
 ```
-in any generated ODESystem, **however**, the latter `Reaction` will be
+in the resulting generated ODESystem, **however**, the latter `Reaction` will be
 classified as [`ismassaction`](@ref) and the former will not, which can impact
 optimizations used in generating `JumpSystem`s. For this reason, it is
 recommended to use the latter representation when possible.
@@ -214,22 +236,9 @@ rn = @reaction_network begin
   pi*X/Y, Y → ∅
 end
 ```
-where here `t` denotes the time variable. Please note that many user-defined
-functions can be called directly, but others will require registration with
-Symbolics.jl ([see the faq](@ref user_functions)).
-
-## Defining parameters and species
-Parameter values do not need to be set when the model is created. Components can
-be designated as symbolic parameters by declaring them at the end:
-```julia
-rn = @reaction_network begin
-  p, ∅ --> X
-  d, X --> ∅
-end p d
-```
-Parameters can only exist in the reaction rates (where they can be mixed with
-reactants). All variables not declared after `end` will be treated as a chemical
-species.
+where here `t` always denotes Catalyst's time variable. Please note that many
+user-defined functions can be called directly, but others will require
+registration with Symbolics.jl ([see the faq](@ref user_functions)).
 
 ## Naming the generated `ReactionSystem`
 ModelingToolkit uses system names to allow for compositional and hierarchical
@@ -270,5 +279,39 @@ rn2 = @reaction_network begin
 end v K
 ```
 
-Please see the API [Rate Laws](@ref) section for the equations each of these
-functions correspond to.
+Please see the API [Rate Laws](@ref) section for more details.
+
+## Interpolation of Julia Variables 
+The DSL allows Julia variables to be interpolated for the network name, within rate constant expressions, or for species within the reaction. For example, 
+```julia
+@parameters k
+@variables t, A(t)
+spec = A
+rate = k*A
+name = :network
+rn = @reaction_network $name begin
+    $rate*B, 2*$spec + B --> $spec + C
+  end
+```
+gives
+```
+Model network with 1 equations
+States (3):
+  A(t)
+  B(t)
+  C(t)
+Parameters (1):
+  k
+```
+with 
+```julia
+reactions(rn)
+```
+giving
+```
+1-element Vector{Reaction}:
+ k*A(t)*B(t), 2A + B --> A + C
+```
+
+Note, when using interpolation expressions like `2$spec` won't work; the
+multiplication symbol must be explicitly included like `2*$spec`.
