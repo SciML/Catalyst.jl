@@ -89,7 +89,7 @@ tspan = (0., 100.)
 u0 = [301., 100., 0., 0.]  # [S,E,SE,P]
 
 # solve JumpProblem
-dprob = DiscreteProblem(rs, u0, tspan, p)
+dprob = DiscreteProblem(rs, species(rs) .=> u0, tspan, parameters(rs) .=> p)
 jprob = JumpProblem(rs, dprob, Direct())
 jsol = solve(jprob, SSAStepper())
 plot(jsol,lw=2,title="Gillespie: Michaelis-Menten Enzyme Kinetics")
@@ -109,7 +109,7 @@ end c1 c2 c3
 p = (1.0,2.0,50.) # [c1,c2,c3]
 tspan = (0.,10.)
 u0 = [5.]         # [X]
-sprob = SDEProblem(rs, u0, tspan, p)
+sprob = SDEProblem(rs, species(rs) .=> u0, tspan, parameters(rs) .=> p)
 ssol  = solve(sprob, LambaEM(), reltol=1e-3)
 plot(ssol,lw=2,title="Adaptive SDE: Birth-Death Process")
 ```

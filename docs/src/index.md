@@ -82,7 +82,7 @@ using DiffEqBase, OrdinaryDiffEq
 p     = [.1/1000, .01]           # [α,β]
 tspan = (0.0,250.0)
 u0    = [999.0,1.0,0.0]          # [S,I,R] at t=0
-op    = ODEProblem(rn, u0, tspan, p)
+op    = ODEProblem(rn, species(rn) .=> u0, tspan, parameters(rn) .=> p)
 sol   = solve(op, Tsit5())       # use Tsit5 ODE solver
 ```
 which we can plot as
