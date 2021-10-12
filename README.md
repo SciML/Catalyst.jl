@@ -117,4 +117,8 @@ plot(ssol,lw=2,title="Adaptive SDE: Birth-Death Process")
 ![](https://user-images.githubusercontent.com/1814174/87864113-3bf9dd00-c932-11ea-8275-f903eef90b91.png)
 
 ## Getting Help
-Catalyst developers are active on the [Julia Discourse](https://discourse.julialang.org/), and the [Julia Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sciml-sysbio. For bugs or feature requests [open an issue](https://github.com/SciML/Catalyst.jl/issues).
+Catalyst developers are active on the [Julia
+Discourse](https://discourse.julialang.org/), and the [Julia
+Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sciml-sysbio.
+For bugs or feature requests [open an
+issue](https://github.com/SciML/Catalyst.jl/issues).

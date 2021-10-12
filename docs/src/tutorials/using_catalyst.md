@@ -6,7 +6,7 @@ to specify a simple chemical reaction network: the well-known repressilator.
 
 We first import the basic packages we'll need:
 
-```julia
+```example ex
 # If not already installed, first hit "]" within a Julia REPL. Then type:
 # add Catalyst DifferentialEquations Plots Latexify
 
@@ -14,52 +14,101 @@ using Catalyst, DifferentialEquations, Plots, Latexify
 ```
 
 We now construct the reaction network. The basic types of arrows and predefined
-rate laws one can use are discussed in detail within the next tutorial, [The
+rate laws one can use are discussed in detail within the tutorial, [The
 Reaction DSL](@ref). Here, we use a mix of first order, zero order, and repressive
 Hill function rate laws. Note, $\varnothing$ corresponds to the empty state, and
 is used for zeroth order production and first order degradation reactions:
 
 ```julia
-repressilator = @reaction_network begin
+repressilator = @reaction_network Repressilator begin
     hillr(P₃,α,K,n), ∅ --> m₁
     hillr(P₁,α,K,n), ∅ --> m₂
     hillr(P₂,α,K,n), ∅ --> m₃
-    (δ,γ), m₁ ↔ ∅
-    (δ,γ), m₂ ↔ ∅
-    (δ,γ), m₃ ↔ ∅
+    (δ,γ), m₁ <--> ∅
+    (δ,γ), m₂ <--> ∅
+    (δ,γ), m₃ <--> ∅
     β, m₁ --> m₁ + P₁
     β, m₂ --> m₂ + P₂
     β, m₃ --> m₃ + P₃
     μ, P₁ --> ∅
     μ, P₂ --> ∅
     μ, P₃ --> ∅
-end α K n δ γ β μ;
+end α K n δ γ β μ
 ```
-[`@reaction_network`](@ref) returns a [`ReactionSystem`](@ref), which can be
-converted to a variety of other mathematical models represented as
-`ModelingToolkit.AbstractSystem`s.
+which gives
+```
+Model Repressilator with 15 equations
+States (6):
+  m₁(t)
+  m₂(t)
+  m₃(t)
+  P₁(t)
+  P₂(t)
+  P₃(t)
+Parameters (7):
+  α
+  K
+  n
+  δ
+  γ
+  β
+  μ
+```
+showing that we've created a new network model named `Repressilator` with the
+listed chemical species and states. [`@reaction_network`](@ref) returns a
+[`ReactionSystem`](@ref), which we saved in the `repressilator` variabled. It
+can be converted to a variety of other mathematical models represented as
+`ModelingToolkit.AbstractSystem`s, or analyzed in various ways using Catalyst's
+network API. 
 
-We can use Latexify to look at the corresponding reactions and understand the
-generated rates expressions for each reaction
+To see the reactions in the system we use
 
-```julia; results="hidden";
-latexify(repressilator)
+```julia
+reactions(repressilator)
+```
+
+which gives
+
+```
+15-element Vector{Reaction}:
+ Catalyst.hillr(P₃(t), α, K, n), ∅ --> m₁
+ Catalyst.hillr(P₁(t), α, K, n), ∅ --> m₂
+ Catalyst.hillr(P₂(t), α, K, n), ∅ --> m₃
+ δ, m₁ --> ∅
+ γ, ∅ --> m₁
+ δ, m₂ --> ∅
+ γ, ∅ --> m₂
+ δ, m₃ --> ∅
+ γ, ∅ --> m₃
+ β, m₁ --> m₁ + P₁
+ β, m₂ --> m₂ + P₂
+ β, m₃ --> m₃ + P₃
+ μ, P₁ --> ∅
+ μ, P₂ --> ∅
+ μ, P₃ --> ∅
+```
+
+We can also use Latexify to see the corresponding reactions, which shows what
+the `hillr` terms correspond to mathematically
+
+```julia
+latexify(repressilator, starred=true)
 ```
 ```math
 \begin{align*}
 \require{mhchem}
-\ce{ \varnothing &->[\frac{\alpha K^{n}}{K^{n} + \left( \mathrm{P_3}\left( t \right) \right)^{n}}] m_{1}}\\
-\ce{ \varnothing &->[\frac{\alpha K^{n}}{K^{n} + \left( \mathrm{P_1}\left( t \right) \right)^{n}}] m_{2}}\\
-\ce{ \varnothing &->[\frac{\alpha K^{n}}{K^{n} + \left( \mathrm{P_2}\left( t \right) \right)^{n}}] m_{3}}\\
-\ce{ m_{1} &<=>[\delta][\gamma] \varnothing}\\
-\ce{ m_{2} &<=>[\delta][\gamma] \varnothing}\\
-\ce{ m_{3} &<=>[\delta][\gamma] \varnothing}\\
-\ce{ m_{1} &->[\beta] m_{1} + P_{1}}\\
-\ce{ m_{2} &->[\beta] m_{2} + P_{2}}\\
-\ce{ m_{3} &->[\beta] m_{3} + P_{3}}\\
-\ce{ P_{1} &->[\mu] \varnothing}\\
-\ce{ P_{2} &->[\mu] \varnothing}\\
-\ce{ P_{3} &->[\mu] \varnothing}
+\ce{ \varnothing &->[\frac{\alpha K^{n}}{K^{n} + P{_3}^{n}}] m{_1}}\\
+\ce{ \varnothing &->[\frac{\alpha K^{n}}{K^{n} + P{_1}^{n}}] m{_2}}\\
+\ce{ \varnothing &->[\frac{\alpha K^{n}}{K^{n} + P{_2}^{n}}] m{_3}}\\
+\ce{ m{_1} &<=>[\delta][\gamma] \varnothing}\\
+\ce{ m{_2} &<=>[\delta][\gamma] \varnothing}\\
+\ce{ m{_3} &<=>[\delta][\gamma] \varnothing}\\
+\ce{ m{_1} &->[\beta] m{_1} + P{_1}}\\
+\ce{ m{_2} &->[\beta] m{_2} + P{_2}}\\
+\ce{ m{_3} &->[\beta] m{_3} + P{_3}}\\
+\ce{ P{_1} &->[\mu] \varnothing}\\
+\ce{ P{_2} &->[\mu] \varnothing}\\
+\ce{ P{_3} &->[\mu] \varnothing}
 \end{align*}
 ```
 
@@ -116,40 +165,10 @@ for the species symbols on each side of the equations.)
 
 Before we can solve the ODEs, we need to specify the values of the parameters in
 the model, the initial condition, and the time interval to solve the model on.
-To do this it helps to know the orderings of the parameters and the species.
-Parameters are ordered in the same order they appear after the `end` statement
-in the [`@reaction_network`](@ref) macro. Species are ordered in the order they
-first appear within the [`@reaction_network`](@ref) macro. We can see these
-orderings using the `speciesmap` and `paramsmap` functions:
-
-```julia
-speciesmap(repressilator)
-```
-```julia
-Dict{Term{Real},Int64} with 6 entries:
-  P₃(t) => 6
-  m₃(t) => 3
-  P₂(t) => 5
-  P₁(t) => 4
-  m₁(t) => 1
-  m₂(t) => 2
-```
-
-```julia
-paramsmap(repressilator)
-```
-```julia
-Dict{Sym{ModelingToolkit.Parameter{Real}},Int64} with 7 entries:
-  μ => 7
-  β => 6
-  α => 1
-  δ => 4
-  K => 2
-  n => 3
-  γ => 5
-
-```
-which are consistent with the API functions:
+To do this we need to build mappings from the parameters and the species to the
+corresponding numerical values for parameters and initial conditions. We can do
+this by using the `species` and `parameters` commands to get the corresponding
+symbolic variables:
 ```julia
 species(repressilator)
 ```
@@ -185,21 +204,38 @@ p = (.5, 40, 2, log(2)/120, 5e-3, 20*log(2)/120, log(2)/60)
 # initial condition [m₁,m₂,m₃,P₁,P₂,P₃]
 u₀ = [0.,0.,0.,20.,0.,0.]
 
+# mappings from symbolic variables to their values
+u₀map = species(repressilator) .=> u₀
+pmap  = parameters(repressilator) .=> p
+
 # time interval to solve on
 tspan = (0., 10000.)
 
 # create the ODEProblem we want to solve
-oprob = ODEProblem(repressilator, u₀, tspan, p)
+oprob = ODEProblem(repressilator, u₀map, tspan, pmap)
 ```
-
-Note, by passing `repressilator` directly to the `ODEProblem` ModelingToolkit
-has to (internally) call `convert(ODESystem, repressilator)` again. We could
-instead pass `odesys` directly, provided we construct mappings from each species
-to their initial value, and each parameter to their value like:
+Here 
 ```julia
-u₀map  = Pair.(species(repressilator), u₀)
-pmap   = Pair.(parameters(repressilator), p)
-oprob2 = ODEProblem(osys, u₀map, tspan, pmap)
+pmap
+```
+gives 
+```
+7-element Vector{Pair{Sym{Real, Base.ImmutableDict{DataType, Any}}, B} where B}:
+ α => 0.5
+ K => 40
+ n => 2
+ δ => 0.0057762265046662105
+ γ => 0.005
+ β => 0.11552453009332422
+ μ => 0.011552453009332421
+```
+a vector of `Pair`s, mapping each symbolic parameter to its numerical value.
+
+Note, by passing `repressilator` directly to the `ODEProblem`, Catalyst has to
+(internally) call `convert(ODESystem, repressilator)` again to generate the
+symbolic ODEs. We could instead pass `odesys` directly like
+```julia
+oprob2 = ODEProblem(odesys, u₀map, tspan, pmap)
 ```
 `oprob` and `oprob2` are functionally equivalent, each representing the same
 underlying problem.
@@ -233,8 +269,11 @@ the jump process:
 # redefine the initial condition to be integer valued
 u₀ = [0,0,0,20,0,0]
 
+# recreate the symbolic variable to value mapping since u₀ is now integer-valued
+u₀map = species(repressilator) .=> u₀
+
 # next we create a discrete problem to encode that our species are integer valued:
-dprob = DiscreteProblem(repressilator, u₀, tspan, p)
+dprob = DiscreteProblem(repressilator, u₀map, tspan, pmap)
 
 # now, we create a JumpProblem, and specify Gillespie's Direct Method as the solver:
 jprob = JumpProblem(repressilator, dprob, Direct(), save_positions=(false,false))
@@ -286,7 +325,7 @@ above:
 
 ```julia
 # SDEProblem for CLE
-sprob = SDEProblem(bdp, u₀, tspan, p)
+sprob = SDEProblem(bdp, species(bdp) .=> u₀, tspan, parameters(bdp) .=> p)
 
 # solve and plot, tstops is used to specify enough points
 # that the plot looks well-resolved

@@ -94,5 +94,9 @@ plot(sol, lw=2)
 ![SIR Solution](assets/SIR.svg)
 
 ## Getting Help
-Catalyst developers are active on the [Julia Discourse](https://discourse.julialang.org/), and the [Julia Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sciml-sysbio. For bugs or feature requests [open an issue](https://github.com/SciML/Catalyst.jl/issues).
+Catalyst developers are active on the [Julia
+Discourse](https://discourse.julialang.org/), and the [Julia
+Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sciml-sysbio.
+For bugs or feature requests [open an
+issue](https://github.com/SciML/Catalyst.jl/issues).
 
