@@ -1,14 +1,16 @@
 # Catalyst.jl for Reaction Models
 
-Catalyst.jl is a domain specific language (DSL) for high performance simulation
-and modeling of chemical reaction networks. Catalyst utilizes
-[ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl) to define
-symbolic [`ReactionSystem`](@ref)s, leveraging ModelingToolkit to enable
-large-scale simulations through auto-vectorization and parallelism.
-`ReactionSystems`s can be used to generate ModelingToolkit-based models,
-allowing the easy simulation and parameter estimation of mass action ODE models,
-Chemical Langevin SDE models, stochastic chemical kinetics jump process models,
-and more. Generated models can be used with solvers throughout the broader
+Catalyst.jl is a symbolic modeling package for analysis and high performance
+simulation of chemical reaction networks. Catalyst defines symbolic
+[`ReactionSystem`](@ref)s, which can be created programmatically or easily
+specified using Catalyst's domain specific language (DSL). Leveraging
+[ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl) and
+[Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl), Catalyst enables
+large-scale simulations through auto-vectorization and parallelism. Symbolic
+`ReactionSystem`s can be used to generate ModelingToolkit-based models, allowing
+the easy simulation and parameter estimation of mass action ODE models, Chemical
+Langevin SDE models, stochastic chemical kinetics jump process models, and more.
+Generated models can be used with solvers throughout the broader
 [SciML](https://sciml.ai) ecosystem, including higher level SciML packages (e.g.
 for sensitivity analysis, parameter estimation, machine learning applications,
 etc).
