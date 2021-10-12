@@ -83,25 +83,3 @@ plot(sol, lw=2)
 ```
 ![models2](../assets/models2.svg)
 
-#### Reaction rate laws used in simulations
-In generating mathematical models from a [`ReactionSystem`](@ref), reaction
-rates are treated as *microscopic* rates. That is, for a general mass action
-reaction of the form $n_1 S_1 + n_2 S_2 + \dots n_M S_M \to \dots$ with
-stoichiometric substrate coefficients $\{n_i\}_{i=1}^M$ and rate constant $k$,
-the corresponding ODE rate law is taken to be
-```math
-k \prod_{i=1}^M \frac{(S_i)^{n_i}}{n_i!},
-```
-while the jump process transition rate (i.e., the propensity function) is
-```math
-k \prod_{i=1}^M \frac{S_i (S_i-1) \dots (S_i-n_i+1)}{n_i!}.
-```
-For example, the ODE model of the reaction $2X + 3Y \to Z$ with rate constant $k$ would be
-```math
-\frac{dX}{dt} =  -2 k \frac{X^2}{2!} \frac{Y^3}{3!} = -k \frac{X^2 Y^3}{3!} \\
-\frac{dY}{dt} =  -3 k \frac{X^2}{2!} \frac{Y^3}{3!} = -k \frac{X^2 Y^3}{4} \\
-\frac{dZ}{dt} = k \frac{X^2}{2!} \frac{Y^3}{3!}.
-```
-This implicit rescaling of rate constants can be disabled through explicit
-conversion of a [`ReactionSystem`](@ref) to another system via
-[`Base.convert`](@ref), and using the `combinatoric_ratelaws=false` kwarg.

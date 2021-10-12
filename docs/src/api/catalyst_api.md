@@ -76,7 +76,7 @@ ReactionSystem
 ```
 
 ## Basic System Properties
-See [The generated `ReactionSystem` and `Reaction`s](@ref) for more details
+See [Symbolic Reaction Systems](@ref) for more details
 
 ```@docs
 species
@@ -91,7 +91,7 @@ numreactionparams
 ```
 
 ## ModelingToolkit and Catalyst Accessor Functions
-See [The generated `ReactionSystem` and `Reaction`s](@ref) for more details
+See [Symbolic Reaction Systems](@ref) for more details
 
 - `ModelingToolkit.get_eqs(sys)`: The reactions of the system (ignores subsystems).
 - `ModelingToolkit.equations(sys)`: Collects all reactions and equations from
