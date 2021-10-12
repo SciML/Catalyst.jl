@@ -18,7 +18,7 @@ fname = Base.Filesystem.tempname()
 savegraph(rcgr, "$fname.svg", "svg")
 
 
-# this are broken in the jll, see
+# these are broken in the jll, see
 # https://github.com/JuliaPackaging/Yggdrasil/issues/1428
 # savegraph(gr, "$fname.pdf", "pdf")
 # savegraph(gr, "$fname.png", "png")

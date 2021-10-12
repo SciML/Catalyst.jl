@@ -117,10 +117,22 @@ end
 """
     paramsmap(network)
 
+Given a [`ReactionSystem`](@ref), return a Dictionary mapping from all
+parameters that appear within the system to their index within
+[`parameters(network)`](@ref).
+"""
+function paramsmap(network)
+    Dict(p => i for (i,p) in enumerate(parameters(network)))
+end
+
+
+"""
+    reactionparamsmap(network)
+
 Given a [`ReactionSystem`](@ref), return a Dictionary mapping from parameters that
 appear within `Reaction`s to their index within [`reactionparams(network)`](@ref).
 """
-function paramsmap(network)
+function reactionparamsmap(network)
     Dict(p => i for (i,p) in enumerate(reactionparams(network)))
 end
 

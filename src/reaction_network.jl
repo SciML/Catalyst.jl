@@ -165,7 +165,7 @@ end
 
 #Structure containing information about one reactant in one reaction.
 struct ReactantStruct
-    reactant::Symbol
+    reactant::Union{Symbol,Expr}
     stoichiometry::Number
 end
 #Structure containing information about one Reaction. Contain all its substrates and products as well as its rate. Contains a specialized constructor.
@@ -184,19 +184,44 @@ end
 
 
 ### Functions that process the input and rephrase it as a reaction system ###
+function esc_dollars!(ex)
+    if ex isa Expr
+        if ex.head == :$
+            return esc(:($(ex.args[1])))
+        else
+            for i = 1:length(ex.args)
+                ex.args[i] = esc_dollars!(ex.args[i])
+            end            
+        end
+    end
+    ex
+end
 
 # Takes the reactions, and rephrases it as a "ReactionSystem" call, as designated by the ModelingToolkit IR.
 function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSystem)))
+
+    # handle interpolation of variables
+    ex = esc_dollars!(ex)
+
+    # parse DSL lines
     reactions = get_reactions(ex)
     reactants = get_reactants(reactions)
     allspecies = union(reactants, get_rate_species(reactions,parameters))
     !isempty(intersect(forbidden_symbols,union(allspecies,parameters))) && 
         error("The following symbol(s) are used as species or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(species,parameters)))...))*"this is not permited.")    
-    network_code = Expr(:block,:(@parameters t),:(@variables), :(ReactionSystem([],t,[],[]; name=$(name))))
-    foreach(parameter-> push!(network_code.args[1].args, parameter), parameters)
-    foreach(species -> push!(network_code.args[2].args, Expr(:call,species,:t)), allspecies)
-    foreach(parameter-> push!(network_code.args[3].args[6].args, parameter), parameters)
-    foreach(species -> push!(network_code.args[3].args[5].args, species), allspecies)
+    
+    # parameters
+    pexprs = isempty(parameters) ? :() : :(@parameters)
+    if !isempty(parameters)
+        foreach(parameter-> push!(pexprs.args, parameter), parameters)
+    end
+
+    # species
+    sexprs = :(@variables t)
+    foreach(species -> (species isa Symbol) && push!(sexprs.args, Expr(:call,species,:t)), allspecies)
+
+    # ReactionSystem
+    rxexprs = :(ReactionSystem([],t,; name=$(name)))
     for reaction in reactions
         subs_init = isempty(reaction.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
         prod_init = isempty(reaction.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
@@ -209,10 +234,23 @@ function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSyste
             push!(reaction_func.args[4].args, prod.reactant)
             push!(reaction_func.args[6].args, prod.stoichiometry)
         end
-        push!(network_code.args[3].args[3].args,reaction_func)
+        push!(rxexprs.args[3].args,reaction_func)
     end
-    return network_code
+
+    quote
+        _ps = $pexprs
+        $sexprs
+        _rs = $rxexprs
+
+        # this is to allow declaring parameters that don't appear in reactions
+        _all_ps = Set(parameters(_rs))
+        for p in _ps
+            (p ∉ _all_ps) && addparam!(_rs, p)
+        end
+        _rs
+    end
 end
+
 
 function get_rate_species(rxs, ps)
     pset = Set(ps)
@@ -228,7 +266,8 @@ function find_species_in_rate!(sset, rateex::ExprValues, ps)
         if !(rateex in forbidden_symbols) && !(rateex in ps) 
             push!(sset, rateex)
         end
-    elseif rateex isa Expr
+    elseif rateex isa Expr   
+        # note, this (correctly) skips $(...) expressions
         for i = 2:length(rateex.args)
             find_species_in_rate!(sset, rateex.args[i], ps)
         end
@@ -270,10 +309,10 @@ end
 
 #Recursive function that loops through the reaction line and finds the reactants and their stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
 function recursive_find_reactants!(ex::ExprValues, mult::Int, reactants::Vector{ReactantStruct})
-    if typeof(ex)!=Expr
+    if typeof(ex)!=Expr || (ex.head == :escape)        
         (ex == 0 || in(ex,empty_set)) && (return reactants)
         if in(ex, getfield.(reactants,:reactant))
-            idx = findall(x -> x==ex ,getfield.(reactants,:reactant))[1]
+            idx = findall(x -> x==ex, getfield.(reactants,:reactant))[1]
             reactants[idx] = ReactantStruct(ex,mult+reactants[idx].stoichiometry)
         else
             push!(reactants, ReactantStruct(ex,mult))
@@ -292,7 +331,7 @@ end
 
 # Extract the reactants from the set of reactions.
 function get_reactants(reactions::Vector{ReactionStruct})
-    reactants = Vector{Symbol}()
+    reactants = Vector{Union{Symbol,Expr}}()
     for reaction in reactions, reactant in union(reaction.substrates,reaction.products)
         !in(reactant.reactant,reactants) && push!(reactants,reactant.reactant)
     end

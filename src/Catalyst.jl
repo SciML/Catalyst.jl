@@ -58,7 +58,7 @@ export mm, mmr, hill, hillr, hillar
 
 # functions to query network properties
 include("networkapi.jl")
-export species, reactionparams, reactions, speciesmap, paramsmap, numspecies, numreactions, numreactionparams
+export species, reactionparams, reactions, speciesmap, paramsmap, reactionparamsmap, numspecies, numreactions, numreactionparams
 export make_empty_network, addspecies!, addparam!, addreaction!
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export conservationlaws, conservedquantities
@@ -74,7 +74,7 @@ export incidencematgraph, linkageclasses, deficiency, subnetworks, linkagedefici
 include("latexify_recipes.jl")
 
 # for making and saving graphs
-import DataStructures: OrderedDict
+import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 include("graphs.jl")
 export Graph, savegraph, complexgraph
