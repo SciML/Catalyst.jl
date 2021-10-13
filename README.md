@@ -33,7 +33,7 @@ Breaking changes and new functionality are summarized in the
 
 ## Tutorials and Documentation
 
-A short 15 minute overview of Catalyst is available in the talk 
+A short 15 minute overview of Catalyst as of version 6 is available in the talk 
 [Modeling Biochemical Systems with Catalyst.jl](https://www.youtube.com/watch?v=5p1PJE5A5Jw).
 
 For information on using the package, [see the stable
