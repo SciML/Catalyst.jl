@@ -1,6 +1,8 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch) 
+
+## Catalyst 10.0
 - `ReactionSystem(rxs::Vector{Reaction}, t)` should now work and will infer the
   species and parameters.
 - **BREAKING:** Any undeclared variables in the DSL are now inferred to be
@@ -51,6 +53,7 @@
 - **BREAKING:** Added a custom `hash` for `Reaction`s to ensure they work in
   `Dict`s and `Set`s properly, ensuring set-type comparisons between collections
   of `Reaction`s work.
+- Updated the docs and added a new tutorial on using compositional tooling.
 
 ## Catalyst 9.0
 *1.* **BREAKING:** `netstoichmat`, `prodstoichmat` and `substoichmat` are now
