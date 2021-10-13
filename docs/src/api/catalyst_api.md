@@ -121,6 +121,7 @@ reactionrates
 ```@docs
 @add_reactions
 addspecies!
+reorder_states!
 addparam!
 addreaction!
 ModelingToolkit.extend

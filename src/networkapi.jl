@@ -922,6 +922,20 @@ function addspecies!(network::ReactionSystem, s::Num; disablechecks=false)
 end
 
 """
+    reorder_states!(rn, neworder)
+
+Given a [`ReactionSystem`](@ref) and a vector `neworder`, orders the states of `rn` accordingly to `neworder`.
+
+Notes:
+- Currently only supports `ReactionSystem`s without constraints or subsystems.
+"""
+function reorder_states!(rn, neworder) 
+   (get_constraints(rn) === nothing) && isempty(get_systems(rn)) || 
+           error("Reordering of states is only supported for systems without constraints or subsystems.")
+    permute!(get_states(rn), neworder)
+end
+
+"""
     addparam!(network::ReactionSystem, p::Symbolic; disablechecks=false)
 
 Given a [`ReactionSystem`](@ref), add the parameter corresponding to the
