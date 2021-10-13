@@ -168,36 +168,54 @@ top-level `repressilator` system).
 
 ## Compartment-based Models
 Finally, let's see how we can make a compartment-based model. Let's create a
-simple eukaryotic gene expression model, composed of a transcription reaction in
-the nucleus, a translation reaction in the cytosol, and a nuclear export
-reaction. We'll include volume parameters for the nucleus and cytosol, and
-assuming we are working in local concentration units we'll add appropriate
-conversions for the export reaction
-```@example ex
-# transcription
-nuc = @reaction_network nuc begin
-        α, ∅ --> M
-      end α V
+simple eukaryotic gene expression model with negative feedback by protein
+dimers. Transcription and gene inhibition by the protein dimer occur in the
+nucleus, translation and dimerization occur in the cytosol, and nuclear import
+and export reactions couple the two compartments. We'll include volume
+parameters for the nucleus and cytosol, and assume we are working with species
+having units of number of molecules. Rate constants will have their common
+concentration units, i.e. if ``V`` denotes the volume of a compartment then
 
-# translation
+| Reaction Type | Example | Rate Constant Units | Effective rate constant (units of per time)
+|:----------:   | :----------: | :----------:  |:------------:|
+| Zero order | ``\varnothing \overset{\alpha}{\to} A`` | concentration / time | ``\alpha V`` |
+| First order | ``A \overset{\beta}{\to} B`` | (time)⁻¹ | ``\beta`` |
+| Second order | ``A + B \overset{\gamma}{\to} C`` | (concentration × time)⁻¹ | ``\gamma/V`` |
+
+In our model we'll therefore add the conversions of the last column to properly
+account for compartment volumes:
+```@example ex1
+# transcription and regulation
+nuc = @reaction_network nuc begin
+        α, G --> G + M
+        (κ₊/V,κ₋), D + G <--> DG
+      end α V κ₊ κ₋
+
+# translation and dimerization
 cyto = @reaction_network cyto begin
             β, M --> M + P
-        end β V
+            (k₊/V,k₋), 2P <--> D
+            σ, P --> 0
+            μ, M --> 0
+        end β k₊ k₋ V σ μ
 
-# export reaction, γ=probability per time one mRNA is exported
-# models export from V1 to V2 in the reaction M1 --> M2
-function exportmodel(; M1, M2, V1, V2, name)
-    @reaction_network $name begin
-        γ*$V1/$V2, $M1 --> $M2
-    end γ
-end
-@named model = exportmodel(; M1=nuc.M, M2=cyto.M, V1=nuc.V, V2=cyto.V)
+# export reactions, 
+# γ,δ=probability per time to be exported/imported
+model = @reaction_network model begin
+       γ, $(nuc.M) --> $(cyto.M)
+       δ, $(cyto.D) --> $(nuc.D)
+    end γ δ
 @named model = compose(model, [nuc, cyto])
+show(stdout, MIME"text/plain"(), model) # hide
+```
+```@example ex1
+reactions(model)
+show(stdout, MIME"text/plain"(), reactions(model)) # hide
 ```
 
+A graph of the resulting network is
 ```julia
-@parameters γ
-@variables t
-rxs = [Reaction(γ*nuc.V/cyto.V, [nuc.V], [cyto.V])]
-@named model = ReactionSystem(rxs, t; systems=[nuc,cyto])
+Graph(model)
 ```
+![graph of gene regulation model](../assets/compartment_gene_regulation.svg)
+
