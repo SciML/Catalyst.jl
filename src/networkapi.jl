@@ -914,7 +914,11 @@ end
 
 Given a [`ReactionSystem`](@ref) and a vector `neworder`, orders the states of `rn` accordingly to `neworder`.
 """
-reorder_states!(rn, neworder) = permute!(get_states(rn), neworder)
+function reorder_states!(rn, neworder) 
+   (get_constraints(rn) === nothing) && isempty(get_systems(rn)) || 
+           error("Reordering of states is only supported for systems without constraints or subsystems.")
+    permute!(get_states(rn), neworder)
+end
 
 """
     addparam!(network::ReactionSystem, p::Symbolic; disablechecks=false)
