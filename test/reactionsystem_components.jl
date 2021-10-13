@@ -192,12 +192,21 @@ eqs3 = [ParentScope(A2a) ~ p3b*A3b]
 @named ns2 = NonlinearSystem(eqs2,[ParentScope(A1),A2b],[ParentScope(p1)])
 @named rs1 = ReactionSystem(rxs1,t,[A1],[p1],systems=[rs2,ns2])
 
+# namespaced reactions
+nrxs1 = [Reaction(p1, [A1], nothing)]
+nrxs2 = [Reaction(rs2.p2a, [rs2.A2a], nothing), Reaction(rs2.p2b, [A1], nothing)]
+neqs2 = [0 ~ p1*ns2.A2b - A1]
+nrxs3 = [Reaction(rs2.rs3.p3a, [rs2.rs3.A3a], nothing), Reaction(rs2.p2a, nothing, [rs2.A2a])]
+neqs3 = [0 ~ rs2.ns3.p3b*rs2.ns3.A3b - rs2.A2a]
+rxs = vcat(nrxs1, nrxs2, nrxs3)
+eqs = vcat(nrxs1, nrxs2, neqs2, nrxs3, neqs3)
+
 @test issetequal(states(rs1), [A1,rs2.A2a,ns2.A2b,rs2.rs3.A3a,rs2.ns3.A3b])
 @test issetequal(species(rs1), [A1,rs2.A2a,rs2.rs3.A3a])
 @test issetequal(parameters(rs1), [p1,rs2.p2a,rs2.p2b,rs2.rs3.p3a,rs2.ns3.p3b])
 @test issetequal(reactionparams(rs1), [p1, rs2.p2a, rs2.p2b, rs2.rs3.p3a])
-rxs = [rx for rx in Iterators.filter(eq -> eq isa Reaction, equations(rs1))]
-@test issubset(rxs, reactions(rs1)) && issubset(reactions(rs1), rxs)
+@test issetequal(rxs, reactions(rs1)) 
+@test issetequal(eqs, equations(rs1))
 
 # test throw error if there are ODE constraints and convert to NonlinearSystem
 rn = @reaction_network rn begin
@@ -218,6 +227,7 @@ eqs = [D(G) ~ -G]
 @named osys2 = ODESystem(eqs,t)
 rn3 = compose(rn2, osys2)
 @test length(equations(rn3)) == 5
+
 
 # check conversions work with algebraic constraints
 eqs = [0 ~ -a*A + C, 0 ~ -b*C + a*A]
