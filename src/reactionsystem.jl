@@ -120,10 +120,10 @@ function Base.show(io::IO, rx::Reaction)
 end
 
 function ModelingToolkit.namespace_equation(rx::Reaction, name)
+    subs  = isempty(rx.substrates) ? rx.substrates : [namespace_expr(sub, name) for sub in rx.substrates]
+    prods = isempty(rx.products) ? rx.products : [namespace_expr(prod, name) for prod in rx.products]
     Reaction(namespace_expr(rx.rate, name), 
-             namespace_expr(rx.substrates, name),
-             namespace_expr(rx.products, name),
-             rx.substoich, rx.prodstoich,            
+             subs, prods, rx.substoich, rx.prodstoich,            
              [namespace_expr(n[1],name) => n[2] for n in rx.netstoich], rx.only_use_rate)
 end
 
