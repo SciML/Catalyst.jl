@@ -14,6 +14,14 @@ specset = Set([value(S) =>1, value(I) => 2, value(R) => 3])
 pset = Set([value(k1) => 1, value(k2) => 2])
 @test issetequal(pset, paramsmap(rs))
 
+Catalyst.reorder_states!(rs,[3,1,2])
+specset = Set([value(S) =>2, value(I) => 3, value(R) => 1])
+@test issetequal(specset, speciesmap(rs))
+
+
+rxs = [Reaction(k1, [S,I], [I], [1,1], [2]),
+       Reaction(k2, [I], [R]) ]
+@named rs = ReactionSystem(rxs, t, [S,I,R], [k1,k2])
 rxs2 = [Reaction(k2, [I], [R], [1], [1]),
         Reaction(k1, [S,I], [I], [1,1], [2])]
 rs2 = ReactionSystem(rxs2, t, [R,I,S], [k2,k1], name=:rs)
