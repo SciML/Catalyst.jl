@@ -312,6 +312,8 @@ giving
 1-element Vector{Reaction}:
  k*A(t)*B(t), 2A + B --> A + C
 ```
+*As the parameter `k` was pre-defined and appears via interpolation, we did not
+need to declare it at the end of the `@reaction_network` macro.*
 
 Note, when using interpolation expressions like `2$spec` won't work; the
 multiplication symbol must be explicitly included like `2*$spec`.
