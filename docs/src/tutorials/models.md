@@ -83,3 +83,24 @@ plot(sol, lw=2)
 ```
 ![models2](../assets/models2.svg)
 
+### [`Reaction`](@ref) fields
+
+Each `Reaction` within `reactions(rn)` has a number of subfields. For `rx` a
+`Reaction` we have:
+* `rx.substrates`, a vector of ModelingToolkit expressions storing each
+  substrate variable.
+* `rx.products`, a vector of ModelingToolkit expressions storing each product
+  variable.
+* `rx.substoich`, a vector storing the corresponding stoichiometry of each
+  substrate species in `rx.substrates`.
+* `rx.prodstoich`, a vector storing the corresponding stoichiometry of each
+  product species in `rx.products`.
+* `rx.rate`, a `Number`, `ModelingToolkit.Sym`, or ModelingToolkit expression
+  representing the reaction rate. E.g., for a reaction like `k*X, Y --> X+Y`,
+  we'd have `rate = k*X`.
+* `rx.netstoich`, a vector of pairs mapping the ModelingToolkit expression for
+  each species that changes numbers by the reaction to how much it changes. E.g.,
+  for `k, X + 2Y --> X + W`, we'd have `rx.netstoich = [Y(t) => -2, W(t) => 1]`.
+* `rx.only_use_rate`, a boolean that is `true` if the reaction was made with
+  non-filled arrows and should ignore mass action kinetics. `false` by default.
+

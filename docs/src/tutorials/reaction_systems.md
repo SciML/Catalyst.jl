@@ -8,15 +8,19 @@ within `ReactionSystem`s.
 
 ## Directly Building the Repressilator with `ReactionSystem`s
 We first load Catalyst
-```julia
+```@example ex
 using Catalyst
 ```
 and then define symbolic variables for each parameter and species in the system
 (the latter corresponding to a `variable` or `state` in ModelingToolkit
 terminology)
 ```julia
-@parameters α, K, n, δ, γ, β, μ
-@variables t, m₁(t), m₂(t), m₃(t), P₁(t), P₂(t), P₃(t)
+@parameters α, K, n, δ, γ, β, μ;
+@variables t, m₁(t), m₂(t), m₃(t), P₁(t), P₂(t), P₃(t);
+```
+```@setup ex
+@parameters α, K, n, δ, γ, β, μ;
+@variables t, m₁(t), m₂(t), m₃(t), P₁(t), P₂(t), P₃(t);
 ```
 *Note, each species is declared as a variable that is a function of time!*
 
@@ -39,29 +43,30 @@ rxs = [Reaction(hillr(P₃,α,K,n), nothing, [m₁]),
        Reaction(μ, [P₂], nothing),
        Reaction(μ, [P₃], nothing)]
 ```
+```@setup ex
+rxs = [Reaction(hillr(P₃,α,K,n), nothing, [m₁]),
+       Reaction(hillr(P₁,α,K,n), nothing, [m₂]),
+       Reaction(hillr(P₂,α,K,n), nothing, [m₃]),
+       Reaction(δ, [m₁], nothing),
+       Reaction(γ, nothing, [m₁]),
+       Reaction(δ, [m₂], nothing),
+       Reaction(γ, nothing, [m₂]),
+       Reaction(δ, [m₃], nothing),
+       Reaction(γ, nothing, [m₃]),       
+       Reaction(β, [m₁], [m₁,P₁]),
+       Reaction(β, [m₂], [m₂,P₂]),
+       Reaction(β, [m₃], [m₃,P₃]),
+       Reaction(μ, [P₁], nothing),
+       Reaction(μ, [P₂], nothing),
+       Reaction(μ, [P₃], nothing)]
+```
 Here we use `nothing` where the DSL used ``\varnothing``. Finally, we are ready
 to construct our [`ReactionSystem`](@ref) as
-```julia
+```@setup ex
 @named repressilator = ReactionSystem(rxs, t)
 ```
-giving
-```
-Model repressilator with 15 equations
-States (6):
-  m₁(t)
-  m₂(t)
-  m₃(t)
-  P₁(t)
-  P₂(t)
-  P₃(t)
-Parameters (7):
-  α
-  K
-  n
-  δ
-  γ
-  β
-  μ
+```julia
+@named repressilator = ReactionSystem(rxs, t)
 ```
 Notice, the model is named `repressilator`. A name must always be specified when
 directly constructing a `ReactionSystem` (the DSL will auto-generate one if
@@ -73,7 +78,7 @@ Alternatively, one can use the `name=:repressilator` keyword argument to the
 We can check that this is the same model as the one we defined via the DSL as
 follows (this requires that we use the same names for rates, species and the
 system)
-```julia
+```@example ex
 repressilator2 = @reaction_network repressilator begin
     hillr(P₃,α,K,n), ∅ --> m₁
     hillr(P₁,α,K,n), ∅ --> m₂
@@ -89,10 +94,6 @@ repressilator2 = @reaction_network repressilator begin
     μ, P₃ --> ∅
 end α K n δ γ β μ
 repressilator == repressilator2
-```
-which gives 
-```
-true
 ```
 
 For more options in building `ReactionSystem`s, see the [`ReactionSystem`](@ref) API docs.
@@ -134,67 +135,75 @@ rx = Reaction(α+β*t*A, [A], [B])
 [See the FAQs](@ref user_functions) for info on using general user-specified
 functions for the rate constant.
 
-## Querying ReactionSystems
+## Basic Querying of `ReactionSystems`
+
 The [Catalyst.jl API](@ref) provides a large variety of functionality for
 querying properties of a reaction network. Here we go over a few of the most
 useful basic functions. Given the `repressillator` defined above we have that 
-```julia
-julia> species(repressilator)
-6-element Vector{Any}:
- m₁(t)
- m₂(t)
- m₃(t)
- P₁(t)
- P₂(t)
- P₃(t)
-julia> parameters(repressilator)
-7-element Vector{Any}:
- α
- K
- n
- δ
- γ
- β
- μ
-julia> reactions(repressilator)
-15-element Vector{Reaction}:
- Catalyst.hillr(P₃(t), α, K, n), ∅ --> m₁
- Catalyst.hillr(P₁(t), α, K, n), ∅ --> m₂
- Catalyst.hillr(P₂(t), α, K, n), ∅ --> m₃
- δ, m₁ --> ∅
- γ, ∅ --> m₁
- δ, m₂ --> ∅
- γ, ∅ --> m₂
- δ, m₃ --> ∅
- γ, ∅ --> m₃
- β, m₁ --> m₁ + P₁
- β, m₂ --> m₂ + P₂
- β, m₃ --> m₃ + P₃
- μ, P₁ --> ∅
- μ, P₂ --> ∅
- μ, P₃ --> ∅
- ```
-return the basic set of species, parameters and `Reaction`s within the network.
+```@example ex
+species(repressilator)
+```
+```@example ex
+parameters(repressilator)
+```
+```@example ex
+reactions(repressilator)
+```
 
+We can test if a `Reaction` is mass action, i.e. the rate does not depend on `t`
+or other species, as
+```@example ex
+# Catalyst.hillr(P₃(t), α, K, n), ∅ --> m₁
+rx1 = reactions(repressilator)[1]
+ismassaction(rx1,repressilator)
+```
+while
+```@example ex
+# δ, m₁ --> ∅
+rx2 = reactions(repressilator)[4]
+ismassaction(rx2,repressilator)
+```
+Similarly, we can determine which species a reaction's rate law will depend on
+like
+```@example ex
+rn = @reaction_network begin
+       k*W, 2X + 3Y --> 5Z + W
+     end k
+dependents(reactions(rn)[1], rn)
+```
+Basic stoichiometry matrices can be obtained from a `ReactionSystem` as
+```@example ex
+substoichmat(repressilator)
+```
+```@example ex
+prodstoichmat(repressilator)
+```
+```@example ex
+netstoichmat(repressilator)
+```
+Here the ``(i,j)`` entry gives the corresponding stoichiometric coefficient
+of species ``i`` for reaction ``j``.
 
-### [`Reaction`](@ref) fields
+Finally, we can directly access fields of individual reactions like
+```@example ex
+rx1.rate
+```
+```@example ex
+rx1.substrates
+```
+```@example ex
+rx1.products
+```
+```@example ex
+rx1.substoich
+```
+```@example ex
+rx1.prodstoich
+```
+```@example ex
+rx1.netstoich
+```
 
-Each `Reaction` within `reactions(rn)` has a number of subfields. For `rx` a
-`Reaction` we have:
-* `rx.substrates`, a vector of ModelingToolkit expressions storing each
-  substrate variable.
-* `rx.products`, a vector of ModelingToolkit expressions storing each product
-  variable.
-* `rx.substoich`, a vector storing the corresponding stoichiometry of each
-  substrate species in `rx.substrates`.
-* `rx.prodstoich`, a vector storing the corresponding stoichiometry of each
-  product species in `rx.products`.
-* `rx.rate`, a `Number`, `ModelingToolkit.Sym`, or ModelingToolkit expression
-  representing the reaction rate. E.g., for a reaction like `k*X, Y --> X+Y`,
-  we'd have `rate = k*X`.
-* `rx.netstoich`, a vector of pairs mapping the ModelingToolkit expression for
-  each species that changes numbers by the reaction to how much it changes. E.g.,
-  for `k, X + 2Y --> X + W`, we'd have `rx.netstoich = [Y(t) => -2, W(t) => 1]`.
-* `rx.only_use_rate`, a boolean that is `true` if the reaction was made with
-  non-filled arrows and should ignore mass action kinetics. `false` by default.
+See the [Catalyst.jl API](@ref) for much more detail on the various querying and
+analysis functions provided by Catalyst.
 
