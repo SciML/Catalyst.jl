@@ -913,6 +913,9 @@ end
     reorder_states!(rn, neworder)
 
 Given a [`ReactionSystem`](@ref) and a vector `neworder`, orders the states of `rn` accordingly to `neworder`.
+
+Notes:
+- Currently only supports `ReactionSystem`s without constraints or subsystems.
 """
 function reorder_states!(rn, neworder) 
    (get_constraints(rn) === nothing) && isempty(get_systems(rn)) || 
