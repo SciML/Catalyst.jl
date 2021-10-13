@@ -46,6 +46,7 @@ makedocs(
             "tutorials/dsl.md",
             "tutorials/reaction_systems.md",
             "tutorials/basic_examples.md",
+            "tutorials/compositional_modeling.md",
             "tutorials/bifurcation_diagram.md",
             "tutorials/parameter_estimation.md",
             "tutorials/generating_reactions_programmatically.md"
