@@ -11,16 +11,20 @@
 [![ColPrac: Contributor's Guide on Collaborative Practices for Community Packages](https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet)](https://github.com/SciML/ColPrac)
 
 
-Catalyst.jl is a domain-specific language (DSL) for high-performance simulation
-and modeling of chemical reaction networks. Catalyst utilizes Symbolic 
-`ReactionSystem`s, leveraging [ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl) to enable large-scale simulations
-through auto-vectorization and parallelism. `ReactionSystem`s can be used to
-generate ModelingToolkit-based models, allowing easy simulation and
-parameter estimation of mass action ODE models, Chemical Langevin SDE models,
-stochastic chemical kinetics jump process models, and more. Generated models can
-be used with solvers throughout the broader [SciML](https://sciml.ai) ecosystem,
-including higher-level SciML packages (e.g., for sensitivity analysis, parameter
-estimation, machine learning applications, etc.).
+Catalyst.jl is a symbolic modeling package for analysis and high performance
+simulation of chemical reaction networks. Catalyst defines symbolic
+[`ReactionSystem`](@ref)s, which can be created programmatically or easily
+specified using Catalyst's domain specific language (DSL). Leveraging
+[ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl) and
+[Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl), Catalyst enables
+large-scale simulations through auto-vectorization and parallelism. Symbolic
+`ReactionSystem`s can be used to generate ModelingToolkit-based models, allowing
+the easy simulation and parameter estimation of mass action ODE models, Chemical
+Langevin SDE models, stochastic chemical kinetics jump process models, and more.
+Generated models can be used with solvers throughout the broader
+[SciML](https://sciml.ai) ecosystem, including higher level SciML packages (e.g.
+for sensitivity analysis, parameter estimation, machine learning applications,
+etc).
 
 ## Breaking Changes and New Features 
 
@@ -89,7 +93,7 @@ tspan = (0., 100.)
 u0 = [301., 100., 0., 0.]  # [S,E,SE,P]
 
 # solve JumpProblem
-dprob = DiscreteProblem(rs, u0, tspan, p)
+dprob = DiscreteProblem(rs, species(rs) .=> u0, tspan, parameters(rs) .=> p)
 jprob = JumpProblem(rs, dprob, Direct())
 jsol = solve(jprob, SSAStepper())
 plot(jsol,lw=2,title="Gillespie: Michaelis-Menten Enzyme Kinetics")
@@ -109,7 +113,7 @@ end c1 c2 c3
 p = (1.0,2.0,50.) # [c1,c2,c3]
 tspan = (0.,10.)
 u0 = [5.]         # [X]
-sprob = SDEProblem(rs, u0, tspan, p)
+sprob = SDEProblem(rs, species(rs) .=> u0, tspan, parameters(rs) .=> p)
 ssol  = solve(sprob, LambaEM(), reltol=1e-3)
 plot(ssol,lw=2,title="Adaptive SDE: Birth-Death Process")
 ```
@@ -117,4 +121,8 @@ plot(ssol,lw=2,title="Adaptive SDE: Birth-Death Process")
 ![](https://user-images.githubusercontent.com/1814174/87864113-3bf9dd00-c932-11ea-8275-f903eef90b91.png)
 
 ## Getting Help
-Catalyst developers are active on the [Julia Discourse](https://discourse.julialang.org/), and the [Julia Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sciml-sysbio. For bugs or feature requests [open an issue](https://github.com/SciML/Catalyst.jl/issues).
+Catalyst developers are active on the [Julia
+Discourse](https://discourse.julialang.org/), and the [Julia
+Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sciml-sysbio.
+For bugs or feature requests [open an
+issue](https://github.com/SciML/Catalyst.jl/issues).

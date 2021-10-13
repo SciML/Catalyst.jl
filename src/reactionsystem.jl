@@ -154,14 +154,30 @@ $(FIELDS)
 # Example
 Continuing from the example in the [`Reaction`](@ref) definition:
 ```julia
-@named rs = ReactionSystem(rxs, t, [A,B,C,D], k)
+# simple constructor that infers species and parameters
+@named rs = ReactionSystem(rxs, t)   
+
+# allows specification of species and parameters
+@named rs = ReactionSystem(rxs, t, [A,B,C,D], k) 
 ```
 
+Keyword Arguments:
+- `observed::Vector{Equation}`, equations specifying observed variables.
+- `systems::Vector{AbstractSystems}`, vector of sub-systems. Can be
+  `ReactionSystem`s, `ODESystem`s, or `NonlinearSystem`s.
+- `name::Symbol`, the name of the system (must be provided, or `@named` must be
+  used). 
+- `defaults::Dict`, a dictionary mapping parameters to their default values and
+  species to their default initial values.
+- `checks = true`, boolean for whether to check units.
+- `constraints = nothing`, a `NonlinearSystem` or `ODESystem` of coupled
+  constraint equations.
+
 Notes:
-- ReactionSystems currently do rudimentary unit checking, requiring that
-  all species have the same units, and all reactions have rate laws with 
-  units of (species units) / (time units). Unit checking can be disabled
-  by passing the keyword argument `checks=false`.
+- ReactionSystems currently do rudimentary unit checking, requiring that all
+  species have the same units, and all reactions have rate laws with units of
+  (species units) / (time units). Unit checking can be disabled by passing the
+  keyword argument `checks=false`.
 """
 struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem}} <: MT.AbstractTimeDependentSystem
     """The reactions defining the system."""

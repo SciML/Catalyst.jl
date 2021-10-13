@@ -43,16 +43,15 @@ makedocs(
         "Home" => "index.md",
         "Tutorials" => Any[
             "tutorials/using_catalyst.md",
-            "tutorials/basics.md",
-            "tutorials/models.md",
+            "tutorials/dsl.md",
+            "tutorials/reaction_systems.md",
             "tutorials/basic_examples.md",
-            "tutorials/advanced.md",
-            "tutorials/generated_systems.md",
-            "tutorials/advanced_examples.md",
+            "tutorials/compositional_modeling.md",
             "tutorials/bifurcation_diagram.md",
             "tutorials/parameter_estimation.md",
             "tutorials/generating_reactions_programmatically.md"
         ],
+        "FAQs" => "faqs.md",
         "API" => Any[
             "api/catalyst_api.md"
         ]
