@@ -13,7 +13,8 @@
 
 Catalyst.jl is a symbolic modeling package for analysis and high performance
 simulation of chemical reaction networks. Catalyst defines symbolic
-[`ReactionSystem`](@ref)s, which can be created programmatically or easily
+[`ReactionSystem`](https://catalyst.sciml.ai/dev/tutorials/reaction_systems/)s, 
+which can be created programmatically or easily
 specified using Catalyst's domain specific language (DSL). Leveraging
 [ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl) and
 [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl), Catalyst enables
