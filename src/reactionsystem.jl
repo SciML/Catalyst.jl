@@ -206,22 +206,13 @@ struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem}} <: MT.AbstractTimeD
     """Non-`Reaction` equations that further constrain the system"""
     constraints::U
 
-    function ReactionSystem(eqs, iv, states, ps, observed, name, systems, defaults, connection_type, csys; 
+    function ReactionSystem(eqs, iv, states, ps, var_to_name, observed, name, systems, defaults, connection_type, csys; 
                             checks::Bool=true, skipvalue=false)
-        iv′     = value(iv)        
-        states′ = skipvalue ? states : value.(MT.scalarize(states))
-        ps′     = skipvalue ? ps : value.(MT.scalarize(ps))
-
-        var_to_name = Dict()
-        MT.process_variables!(var_to_name, defaults, states′)
-        MT.process_variables!(var_to_name, defaults, ps′)
-        MT.collect_var_to_name!(var_to_name, (eq.lhs for eq in observed))
-
         if checks
-            check_variables(states′, iv′)
-            check_parameters(ps′, iv′)
+            check_variables(states, iv)
+            check_parameters(ps, iv)
         end
-        rs = new{typeof(csys)}(collect(eqs), iv′, states′, ps′, var_to_name, observed, name, systems, defaults, connection_type, csys)
+        rs = new{typeof(csys)}(eqs, iv, states, ps, var_to_name, observed, name, systems, defaults, connection_type, csys)
         checks && validate(rs)
         rs
     end
@@ -238,6 +229,7 @@ function ReactionSystem(eqs, iv, species, ps;
                         checks = true, 
                         constraints = nothing,
                         skipvalue = false)
+    
     name === nothing && throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     sysnames = nameof.(systems)
     (length(unique(sysnames)) == length(sysnames)) ||
@@ -246,12 +238,22 @@ function ReactionSystem(eqs, iv, species, ps;
     if !(isempty(default_u0) && isempty(default_p))
         Base.depwarn("`default_u0` and `default_p` are deprecated. Use `defaults` instead.", :ReactionSystem, force=true)
     end
-
     defaults = MT.todict(defaults)
     defaults = Dict{Any,Any}(value(k) => value(v) for (k, v) in pairs(defaults))
 
-    ReactionSystem(eqs, iv, species, ps, observed, name, systems, defaults, connection_type, 
-                   constraints; checks = checks, skipvalue = skipvalue)
+    iv′     = value(iv)        
+    states′ = skipvalue ? states : value.(MT.scalarize(states))
+    ps′     = skipvalue ? ps : value.(MT.scalarize(ps))
+    eqs′    = (eqs isa Vector) ? eqs : collect(eqs)
+
+    var_to_name = Dict()
+    MT.process_variables!(var_to_name, defaults, states′)
+    MT.process_variables!(var_to_name, defaults, ps′)
+    MT.collect_var_to_name!(var_to_name, (eq.lhs for eq in observed))
+    
+    ReactionSystem(eqs′, iv′, species′, ps′, var_to_name, observed, name, systems, 
+                   defaults, connection_type, constraints; 
+                   checks = checks, skipvalue = skipvalue)
 end
 
 function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)  
