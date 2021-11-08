@@ -684,7 +684,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
               (noise_scaling===nothing) ? get_ps(flatrs) : union(get_ps(flatrs), toparam(noise_scaling));
               name=name, 
               defaults=get_defaults(flatrs),
-              observed=get_observed(fullrs), 
+              observed=get_observed(flatrs), 
               checks = checks,
               kwargs...)
 end
@@ -710,7 +710,7 @@ function Base.convert(::Type{<:JumpSystem},rs::ReactionSystem;
 
     eqs = assemble_jumps(flatrs; combinatoric_ratelaws=combinatoric_ratelaws)
     JumpSystem(eqs, get_iv(flatrs), get_states(flatrs), get_ps(flatrs); name=name, 
-               defaults=get_defaults(flatrs), observed=get_observed(fullrs), 
+               defaults=get_defaults(flatrs), observed=get_observed(flatrs), 
                checks = checks, kwargs...)
 end
 
