@@ -218,7 +218,7 @@ struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem}} <: MT.AbstractTimeD
     end
 end
 
-function ReactionSystem(eqs, iv, species, ps;
+function ReactionSystem(eqs, iv, states, ps;
                         observed = [],
                         systems = [],
                         name = nothing,
@@ -251,7 +251,7 @@ function ReactionSystem(eqs, iv, species, ps;
     MT.process_variables!(var_to_name, defaults, ps′)
     MT.collect_var_to_name!(var_to_name, (eq.lhs for eq in observed))
     
-    ReactionSystem(eqs′, iv′, species′, ps′, var_to_name, observed, name, systems, 
+    ReactionSystem(eqs′, iv′, states′, ps′, var_to_name, observed, name, systems, 
                    defaults, connection_type, constraints; 
                    checks = checks, skipvalue = skipvalue)
 end
