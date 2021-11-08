@@ -1083,8 +1083,12 @@ function validate(rs::ReactionSystem, info::String="")
         end
     end
     timeunits = get_unit(get_iv(rs))
-    rateunits = specunits / timeunits
 
+    # no units for species, time or parameters then assume validated
+    (specunits in (MT.unitless,nothing)) && (timeunits in (MT.unitless,nothing)) && 
+        MT.all_dimensionless(get_ps(rs)) && return true
+
+    rateunits = specunits / timeunits
     for rx in get_eqs(rs)
         rxunits = get_unit(rx.rate)
         for (i,sub) in enumerate(rx.substrates)

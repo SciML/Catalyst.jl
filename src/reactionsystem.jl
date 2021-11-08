@@ -188,6 +188,8 @@ struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem}} <: MT.AbstractTimeD
     states::Vector
     """Parameter variables. Must not contain the independent variable."""
     ps::Vector
+    """Maps Symbol to corresponding variable."""
+    var_to_name::Dict{Symbol,Any}
     """Equations for observed variables."""
     observed::Vector{Equation}
     """The name of the system"""
@@ -204,24 +206,19 @@ struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem}} <: MT.AbstractTimeD
     """Non-`Reaction` equations that further constrain the system"""
     constraints::U
 
-    function ReactionSystem(eqs, iv, states, ps, observed, name, systems, defaults, connection_type, csys; 
+    function ReactionSystem(eqs, iv, states, ps, var_to_name, observed, name, systems, defaults, connection_type, csys; 
                             checks::Bool=true, skipvalue=false)
-        iv′     = value(iv)        
-        states′ = skipvalue ? states : value.(MT.scalarize(states))
-        ps′     = skipvalue ? ps : value.(MT.scalarize(ps))
-
         if checks
-            check_variables(states′, iv′)
-            check_parameters(ps′, iv′)
-            # check_units(eqs)    # disable as check the newly generated system below
+            check_variables(states, iv)
+            check_parameters(ps, iv)
         end
-        rs = new{typeof(csys)}(collect(eqs), iv′, states′, ps′, observed, name, systems, defaults, connection_type, csys)
+        rs = new{typeof(csys)}(eqs, iv, states, ps, var_to_name, observed, name, systems, defaults, connection_type, csys)
         checks && validate(rs)
         rs
     end
 end
 
-function ReactionSystem(eqs, iv, species, ps;
+function ReactionSystem(eqs, iv, states, ps;
                         observed = [],
                         systems = [],
                         name = nothing,
@@ -232,10 +229,31 @@ function ReactionSystem(eqs, iv, species, ps;
                         checks = true, 
                         constraints = nothing,
                         skipvalue = false)
+    
     name === nothing && throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
+    sysnames = nameof.(systems)
+    (length(unique(sysnames)) == length(sysnames)) ||
+        throw(ArgumentError("System names must be unique."))
 
-    ReactionSystem(eqs, iv, species, ps, observed, name, systems, defaults, connection_type, 
-                   constraints; checks = checks, skipvalue = skipvalue)
+    if !(isempty(default_u0) && isempty(default_p))
+        Base.depwarn("`default_u0` and `default_p` are deprecated. Use `defaults` instead.", :ReactionSystem, force=true)
+    end
+    defaults = MT.todict(defaults)
+    defaults = Dict{Any,Any}(value(k) => value(v) for (k, v) in pairs(defaults))
+
+    iv′     = value(iv)        
+    states′ = skipvalue ? states : value.(MT.scalarize(states))
+    ps′     = skipvalue ? ps : value.(MT.scalarize(ps))
+    eqs′    = (eqs isa Vector) ? eqs : collect(eqs)
+
+    var_to_name = Dict()
+    MT.process_variables!(var_to_name, defaults, states′)
+    MT.process_variables!(var_to_name, defaults, ps′)
+    MT.collect_var_to_name!(var_to_name, (eq.lhs for eq in observed))
+    
+    ReactionSystem(eqs′, iv′, states′, ps′, var_to_name, observed, name, systems, 
+                   defaults, connection_type, constraints; 
+                   checks = checks, skipvalue = skipvalue)
 end
 
 function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)  

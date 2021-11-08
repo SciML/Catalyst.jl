@@ -283,3 +283,10 @@ rxs = [Reaction(x*t*A*B+y, [A], nothing)]
 @named rs1 = ReactionSystem(rxs, t, [A,B], [x,y])
 @named rs2 = ReactionSystem(rxs, t)
 @test Catalyst.isequal_ignore_names(rs1,rs2)
+
+@variables t, L(t), H(t)
+obs = [Equation(L, 2*x + y)]
+@named rs3 = ReactionSystem(rxs, t; observed=obs)
+L2 = L
+@unpack L = rs3
+@test isequal(L,L2)
