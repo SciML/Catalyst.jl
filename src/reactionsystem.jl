@@ -188,7 +188,7 @@ struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem}} <: MT.AbstractTimeD
     states::Vector
     """Parameter variables. Must not contain the independent variable."""
     ps::Vector
-    """Array variables."""
+    """Maps Symbol to corresponding variable."""
     var_to_name::Dict{Symbol,Any}
     """Equations for observed variables."""
     observed::Vector{Equation}
