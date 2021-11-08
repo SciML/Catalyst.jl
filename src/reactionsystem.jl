@@ -244,7 +244,7 @@ function ReactionSystem(eqs, iv, species, ps;
         throw(ArgumentError("System names must be unique."))
 
     if !(isempty(default_u0) && isempty(default_p))
-        Base.depwarn("`default_u0` and `default_p` are deprecated. Use `defaults` instead.", :ODESystem, force=true)
+        Base.depwarn("`default_u0` and `default_p` are deprecated. Use `defaults` instead.", :ReactionSystem, force=true)
     end
 
     defaults = MT.todict(defaults)
