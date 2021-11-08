@@ -580,7 +580,7 @@ incidencegraph   = incidencematgraph(incidencemat)
 function incidencematgraph(incidencemat::Matrix{Int})
     @assert all(∈([-1,0,1]) ,incidencemat)
     n = size(incidencemat,1)  # no. of nodes/complexes
-    graph = LG.DiGraph(n)
+    graph = Graphs.DiGraph(n)
     for col in eachcol(incidencemat)
         src = 0; dst = 0;
         for i in eachindex(col)
@@ -588,14 +588,14 @@ function incidencematgraph(incidencemat::Matrix{Int})
                 (col[i] == 1) && (dst = i)
                 (src != 0) && (dst != 0) && break
         end
-        LG.add_edge!(graph, src, dst)
+        Graphs.add_edge!(graph, src, dst)
     end
     return graph
 end
 function incidencematgraph(incidencemat::SparseMatrixCSC{Int,Int})
     @assert all(∈([-1,0,1]) ,incidencemat)
     m,n = size(incidencemat)  
-    graph = LG.DiGraph(m)
+    graph = Graphs.DiGraph(m)
     rows = rowvals(incidencemat)
     vals = nonzeros(incidencemat)
     for j = 1:n
@@ -603,9 +603,9 @@ function incidencematgraph(incidencemat::SparseMatrixCSC{Int,Int})
         row = rows[inds];
         val = vals[inds];
         if val[1] == -1
-            LG.add_edge!(graph, row[1], row[2])
+            Graphs.add_edge!(graph, row[1], row[2])
         else
-            LG.add_edge!(graph, row[2], row[1])
+            Graphs.add_edge!(graph, row[2], row[1])
         end
     end
     return graph
@@ -628,7 +628,7 @@ julia> linkageclasses(incidencegraph)
 ```
 """
 function linkageclasses(incidencegraph)
-    LG.connected_components(incidencegraph)
+    Graphs.connected_components(incidencegraph)
 end
 
 
@@ -658,7 +658,7 @@ netstoich_mat    = netstoichmat(sir)
 ```
 """
 function deficiency(ns, ig, lc)
-    LG.nv(ig) - length(lc) - AA.rank(AA.matrix(AA.ZZ,ns))
+    Graphs.nv(ig) - length(lc) - AA.rank(AA.matrix(AA.ZZ,ns))
 end
 
 function subnetworkmapping(linkageclass, allrxs, complextorxmap, p)
@@ -737,8 +737,8 @@ For example, continuing the example from [`linkagedeficiencies`](@ref)
 isreversible(incidence_graph)
 ```
 """
-function isreversible(ig::LG.SimpleDiGraph)
-    LG.reverse(ig) == ig
+function isreversible(ig::Graphs.SimpleDiGraph)
+    Graphs.reverse(ig) == ig
 end
 
 """
@@ -753,7 +753,7 @@ isweaklyreversible(subnets)
 """
 function isweaklyreversible(subnets::Vector{ReactionSystem})
     igs = [incidencematgraph(reactioncomplexes(subrs)[2]) for subrs in subnets]
-    all([LG.is_strongly_connected(ig) for ig in igs])
+    all([Graphs.is_strongly_connected(ig) for ig in igs])
 end
 								
 								
