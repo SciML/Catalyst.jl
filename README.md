@@ -34,8 +34,9 @@ Breaking changes and new functionality are summarized in the
 
 ## Tutorials and Documentation
 
-A short 15 minute overview of Catalyst as of version 6 is available in the talk 
+- A short 15 minute overview of Catalyst as of version 6 is available in the talk 
 [Modeling Biochemical Systems with Catalyst.jl](https://www.youtube.com/watch?v=5p1PJE5A5Jw).
+- A short 13 minute overview of Catalyst when it was known as DiffEqBiological in older versions is available in the talk [Efficient Modelling of Biochemical Reaction Networks](https://www.youtube.com/watch?v=s1e72k5XD6s)
 
 For information on using the package, [see the stable
 documentation](https://catalyst.sciml.ai/stable/). The [in-development
