@@ -1,7 +1,13 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch) 
-- **BREAKING:** Added support for `@unpack observable_variable = rn` and `rn.observable_variable`. This requires a new inner constructor definition.
+
+## Catalyst 10.1
+- Added support for `@unpack observable_variable = rn` and
+  `rn.observable_variable`. This requires a new inner constructor definition for
+  `ReactionSystem`s, but is not considered breaking as the inner constructor is
+  considered private.
+- Support added for ModelingToolkit 7 and Symbolics 4.
 
 ## Catalyst 10.0
 - `ReactionSystem(rxs::Vector{Reaction}, t)` should now work and will infer the
