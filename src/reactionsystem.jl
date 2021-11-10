@@ -206,6 +206,7 @@ struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem}} <: MT.AbstractTimeD
     """Non-`Reaction` equations that further constrain the system"""
     constraints::U
 
+    # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, iv, states, ps, var_to_name, observed, name, systems, defaults, connection_type, csys; 
                             checks::Bool=true, skipvalue=false)
         if checks
