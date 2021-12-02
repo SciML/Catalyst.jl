@@ -32,7 +32,7 @@ Parameters = "0.12"
 Reexport = "0.2, 1.0"
 Requires = "1.0"
 Symbolics = "3.0, 4.0"
-julia = "1.5"
+julia = "1.6"
 
 [extras]
 Graphviz_jll = "3c863552-8265-54e4-a6dc-903eb78fde85"
