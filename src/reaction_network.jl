@@ -221,7 +221,8 @@ function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSyste
     foreach(species -> (species isa Symbol) && push!(sexprs.args, Expr(:call,species,:t)), allspecies)
 
     # ReactionSystem
-    rxexprs = :(ReactionSystem([],t,; name=$(name)))
+    rxexprs = :(make_ReactionSystem_internal([],t,nothing,[]; name=$(name)))    
+    foreach(parameter -> push!(rxexprs.args[6].args,parameter), parameters)
     for reaction in reactions
         subs_init = isempty(reaction.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
         prod_init = isempty(reaction.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
@@ -240,14 +241,7 @@ function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSyste
     quote
         _ps = $pexprs
         $sexprs
-        _rs = $rxexprs
-
-        # this is to allow declaring parameters that don't appear in reactions
-        _all_ps = Set(parameters(_rs))
-        for p in _ps
-            (p ∉ _all_ps) && addparam!(_rs, p)
-        end
-        _rs
+        $rxexprs
     end
 end
 

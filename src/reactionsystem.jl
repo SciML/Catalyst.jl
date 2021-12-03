@@ -278,6 +278,27 @@ function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)
     ReactionSystem(rxs, t, collect(sts), collect(ps); skipvalue=true, kwargs...)
 end
 
+function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothing, ps_in; kwargs...)  
+    t    = value(iv)   
+    sts  = OrderedSet(spec for rx in rxs for spec in Iterators.flatten((rx.substrates,rx.products)))
+    ps   = OrderedSet{Any}(ps_in)
+    vars = OrderedSet()
+    for rx in rxs
+        MT.get_variables!(vars, rx.rate)
+        for var in vars
+            isequal(t,var) && continue
+            if MT.isparameter(var) 
+                push!(ps, var)
+            else
+                push!(sts, var)
+            end
+        end
+        empty!(vars)
+    end
+
+    ReactionSystem(rxs, t, collect(sts), collect(ps); skipvalue=true, kwargs...)
+end
+
 
 function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
