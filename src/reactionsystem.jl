@@ -257,27 +257,11 @@ function ReactionSystem(eqs, iv, states, ps;
                    checks = checks, skipvalue = skipvalue)
 end
 
+
+# Previous function called by the macro, but still avaiable for general use.
 function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)  
-    t    = value(iv)   
-    sts  = OrderedSet(spec for rx in rxs for spec in Iterators.flatten((rx.substrates,rx.products)))
-    ps   = OrderedSet()
-    vars = OrderedSet()
-    for rx in rxs
-        MT.get_variables!(vars, rx.rate)
-        for var in vars
-            isequal(t,var) && continue
-            if MT.isparameter(var) 
-                push!(ps, var)
-            else
-                push!(sts, var)
-            end
-        end
-        empty!(vars)
-    end
-
-    ReactionSystem(rxs, t, collect(sts), collect(ps); skipvalue=true, kwargs...)
+    make_ReactionSystem_internal(rxs, iv, nothing, Vector{Num}(); kwargs...) 
 end
-
 
 # Only used internally by the @reaction_network macro. Permits giving an initial order to the parameters, and then adds additional ones found in the reaction. Name could be changed.
 function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothing, ps_in; kwargs...)  
