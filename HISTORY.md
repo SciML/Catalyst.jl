@@ -1,6 +1,14 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch) 
+- **BREAKING:** The order of the parameters in the `ReactionSystem`'s `.ps` field has been changed (only when created through the `@reaction_network` macro). Previously they were ordered acording to the order with which they appeared in the macro. Now they are ordered acoridng the to order with which the appeard after the `end` part. E.g. in
+  ```julia
+  rn = @reaction_network begin
+    (p,d), 0 <--> X
+  end d p
+  ```
+  previousl the order was `[p,d]`, which now it is `[d, p]`.
+
 
 ## Catalyst 10.1
 - Added support for `@unpack observable_variable = rn` and
