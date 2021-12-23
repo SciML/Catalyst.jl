@@ -1,3 +1,4 @@
+using Catalyst.Functions
 # Implements handling of registered functions.
 mm_names = ([:mm])
 mmr_names = ([:mmr])
