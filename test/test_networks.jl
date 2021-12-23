@@ -1,4 +1,5 @@
 ### File declaring various reaction networks for the tests to be run on ###
+using Catalyst.Functions
 
 #Declares the vectors which contains the various test sets.
 reaction_networks_standard = Vector{ReactionSystem}(undef,10)
