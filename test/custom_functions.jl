@@ -1,4 +1,4 @@
-using DiffEqBase, Catalyst, Random, Test
+using DiffEqBase, Catalyst, Catalyst.Functions, Random, Test
 using ModelingToolkit: get_states, get_ps
 
 using StableRNGs
