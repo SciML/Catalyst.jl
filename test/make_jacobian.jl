@@ -1,6 +1,6 @@
 ### Fetch required packages and reaction networks ###
 using Catalyst, DiffEqBase, Random, Test
-
+using Catalyst.Functions
 using StableRNGs
 rng = StableRNG(12345)
 
