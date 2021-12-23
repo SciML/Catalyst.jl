@@ -52,8 +52,11 @@ include("reaction_network.jl")
 export @reaction_network, @add_reactions
 
 # registers CRN specific functions using Symbolics.jl
-include("registered_functions.jl")
-export mm, mmr, hill, hillr, hillar
+module Functions
+    using Symbolics
+    include("registered_functions.jl")
+    export mm, mmr, hill, hillr, hillar
+end
 
 # functions to query network properties
 include("networkapi.jl")
