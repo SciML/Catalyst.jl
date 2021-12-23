@@ -1,6 +1,6 @@
 ### Fetch required packages and reaction networks ###
 using Catalyst, Latexify
-
+using Catalyst.Functions
 ############################
 ### CURRENTLY NOT ACITVE ###
 ### REQUIRES REWRITING   ###
