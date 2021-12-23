@@ -1,4 +1,4 @@
-using Catalyst, DiffEqBase, ModelingToolkit, Test
+using Catalyst,Catalyst.Functions ,DiffEqBase, ModelingToolkit, Test
 using SparseArrays
 using ModelingToolkit: value
 
