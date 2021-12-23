@@ -1,4 +1,5 @@
 using Catalyst, ModelingToolkit
+using Catalyst.Functions
 
 # naming tests
 @parameters k
