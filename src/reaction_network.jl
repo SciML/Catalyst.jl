@@ -7,10 +7,14 @@ Most arrows accepted (both right, left, and bi-drectional arrows). Note that
 while --> is a correct arrow, neither <-- nor <--> works. Using non-filled
 arrows (⇐, ⟽, ⇒, ⟾, ⇔, ⟺) will disable mass kinetics and let you cutomize
 reaction rates yourself. Use 0 or ∅ for degradation/creation to/from nothing.
-Example systems: ### Basic Usage ### rn = @reaction_network begin           #
-Creates a ReactionSystem. 2.0, X + Y --> XY                  # This will have
-reaction rate corresponding to 2.0*[X][Y] 2.0, XY ← X + Y                    #
-Identical to 2.0, X + Y --> XY end
+
+Example systems: 
+
+    ### Basic Usage ### 
+    rn = @reaction_network begin           # Creates a ReactionSystem. 
+        2.0, X + Y --> XY                  # This will have reaction rate corresponding to 2.0*[X][Y] 
+        2.0, XY ← X + Y                    # Identical to 2.0, X + Y --> XY 
+    end
 
     ### Manipulating Reaction Rates ###
     rn = @reaction_network begin
