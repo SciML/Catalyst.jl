@@ -33,6 +33,15 @@ eqs,iv,ps,name,systems = unpacksys(empty_network_2)
 @test all(getproperty.(ps,:name) .== [:p1,:p2,:p3,:p4,:p5])
 
 
+### Tests accessing parameters and species added with network API ###
+empty_network_3 = @reaction_network
+@variables x p
+addspecies!(empty_network_3, x)
+addparam!(empty_network_3, p)
+@test isequal(empty_network_3.x, states(empty_network_3, x))
+@test isequal(empty_network_3.p, parameters(empty_network_3, p))
+
+
 ### Tests creating a network and adding reactions ###
 unfinished_network = @reaction_network begin
     (k1,k2), X1 ↔ X2
