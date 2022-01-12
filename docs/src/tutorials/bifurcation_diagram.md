@@ -41,7 +41,7 @@ opts = ContinuationPar( dsmax = 0.05,        # Maximum arclength value of the ps
                         detectBifurcation=3, # Value in {0,1,2,3} determening to what extent bofurcation points are detected (0 means nothing is done, 3 both them and there localisation are detected).
                         newtonOptions = NewtonPar(tol = 1e-9, verbose = false, maxIter = 15)) #Parameters to the newton solver (when finding fixed points) see BifurcationKit documentation.
                         
-DO = DeflationOperator( 2.0,    # Algorithm parameter required when using deflated continuation, see BifurcationKit documentation.
+DO = DeflationOperator( 2,      # Algorithm parameter required when using deflated continuation, see BifurcationKit documentation.
                         dot,    # Algorithm parameter required when using deflated continuation, see BifurcationKit documentation.
                         1.,     # Algorithm parameter required when using deflated continuation, see BifurcationKit documentation.
                         [fill(0.,length(rn.states))]); # Guess(es) of the fixed point for the initial parameter set. Do not need to be exact.
@@ -52,7 +52,7 @@ With all this done, we can compute the bifurcations:
 params_input = setindex!(copy(params),p_span[1],p_idx)                                # The input parameter values have to start at the first index of our parameter span.
 branches, = continuation(F, J, params_input, (@lens _[p_idx]) ,opts , DO,             # Gives our input.
     verbosity = 0, showplot=false,                                                    # We do not want to display, or plot, intermediary results.
-    printSolution=(x, p) -> x[plot_var_idx],                                          # How we wish to print the output in the diagram. Here we simply want the value of the target varriable.
+    recordFromSolution = (x, p) -> x[plot_var_idx],                                   # How we wish to print the output in the diagram. Here we simply want the value of the target varriable.
     perturbSolution = (x,p,id) -> (x  .+ 0.8 .* rand(length(x))),                     # Parameter for the continuation method, see BifurcationKit documentation.
     callbackN = (x, f, J, res, iteration, itlinear, options; kwargs...) -> res <1e7)  # Parameter for the continuation method, see BifurcationKit documentation.
 ```
