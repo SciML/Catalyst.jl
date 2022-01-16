@@ -15,7 +15,7 @@ function emptyrntest(rn, name)
     @test nameof(rn) == name
     @test numreactions(rn) == 0
     @test numspecies(rn) == 0
-    @test numreactionparams(rn) == 0    
+    @test numreactionparams(rn) == 0
 end
 
 rn = @reaction_network name begin
@@ -48,7 +48,7 @@ emptyrntest(rn, :name)
 rn = @reaction_network $name
 emptyrntest(rn, :blah)
 
-# test variables that appear only in rates and aren't ps 
+# test variables that appear only in rates and aren't ps
 # are categorized as species
 rn = @reaction_network begin
     π*k*D*hill(B,k2,B*D*H,n), 3*A  --> 2*C
@@ -64,7 +64,7 @@ end k k2 n
 AA = A
 AAA = A^2 + B
 rn = @reaction_network rn begin
-    k*$AAA, C --> D    
+    k*$AAA, C --> D
 end k
 rn2 = ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn)
 @test rn == rn2
@@ -77,10 +77,10 @@ rn2 = ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn)
 
 BB = B; A2 = A
 rn = @reaction_network rn begin
-    (k1,k2), C + $A2 + $BB + $A2 <--> $BB + $BB    
+    (k1,k2), C + $A2 + $BB + $A2 <--> $BB + $BB
 end k1 k2
 rn2 = ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
-                      Reaction(k2, [B], [C, A, B], [2], [1,2,1])], 
+                      Reaction(k2, [B], [C, A, B], [2], [1,2,1])],
                      t; name=:rn)
 @test rn == rn2
 
