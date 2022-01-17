@@ -251,7 +251,12 @@ function ReactionSystem(eqs, iv, states, ps;
     MT.process_variables!(var_to_name, defaults, states′)
     MT.process_variables!(var_to_name, defaults, ps′)
     MT.collect_var_to_name!(var_to_name, (eq.lhs for eq in observed))
-    
+
+    if constraints != nothing
+        MT.process_variables!(var_to_name, defaults, get_ps(constraints))
+        MT.collect_var_to_name!(var_to_name, get_states(constraints))
+    end
+        
     ReactionSystem(eqs′, iv′, states′, ps′, var_to_name, observed, name, systems, 
                    defaults, connection_type, constraints; 
                    checks = checks, skipvalue = skipvalue)

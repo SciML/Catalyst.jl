@@ -1,4 +1,4 @@
-using Catalyst, LinearAlgebra, OrdinaryDiffEq, Test, NonlinearSolve
+using ModelingToolkit, Catalyst, LinearAlgebra, OrdinaryDiffEq, Test, NonlinearSolve
 
 # Repressilator model
 @parameters t α₀ α K n δ β μ
@@ -121,6 +121,16 @@ sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
 @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
 @test sol[sys₁.m] ≈ sol[sys₂.m] ≈ sol[sys₃.m]
 @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
+
+# test constraint system variables are accessible through Base.getproperty
+# even if they do not appear in the original ReactionSystem
+network = @reaction_network
+@parameters a
+@variables t x(t)
+@named constraints = NonlinearSystem([x ~ a], [x], [a])
+network = extend(constraints, network)
+@test isequal(a, @nonamespace network.a)
+@test isequal(x, @nonamespace network.x)
 
 # test can make ODESystem
 @named oderepressilator = convert(ODESystem, repressilator2, include_zero_odes=false)
