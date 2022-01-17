@@ -8,12 +8,12 @@ while --> is a correct arrow, neither <-- nor <--> works. Using non-filled
 arrows (⇐, ⟽, ⇒, ⟾, ⇔, ⟺) will disable mass kinetics and let you cutomize
 reaction rates yourself. Use 0 or ∅ for degradation/creation to/from nothing.
 
-Example systems: 
+Example systems:
 
-    ### Basic Usage ### 
-    rn = @reaction_network begin           # Creates a ReactionSystem. 
-        2.0, X + Y --> XY                  # This will have reaction rate corresponding to 2.0*[X][Y] 
-        2.0, XY ← X + Y                    # Identical to 2.0, X + Y --> XY 
+    ### Basic Usage ###
+    rn = @reaction_network begin           # Creates a ReactionSystem.
+        2.0, X + Y --> XY                  # This will have reaction rate corresponding to 2.0*[X][Y]
+        2.0, XY ← X + Y                    # Identical to 2.0, X + Y --> XY
     end
 
     ### Manipulating Reaction Rates ###
@@ -42,9 +42,9 @@ Example systems:
     end kB, kD
 
     ### Defining New Functions ###
-    my_hill_repression(x, v, k, n) = v*k^n/(k^n+x^n)  
+    my_hill_repression(x, v, k, n) = v*k^n/(k^n+x^n)
 
-    # may be necessary to 
+    # may be necessary to
     # @register my_hill_repression(x, v, k, n)
     # see https://mtk.sciml.ai/stable/tutorials/symbolic_functions/#Registering-Functions-1
 
@@ -67,7 +67,7 @@ bwd_arrows = Set{Symbol}([:<, :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :�
 double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :⟺])
 pure_rate_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
-# unfortunately the following doesn't seem to work on 1.5, so supporting these 
+# unfortunately the following doesn't seem to work on 1.5, so supporting these
 # operators seems to require us to only support 1.6 and up...
 @static if VERSION >= v"1.6.0"
     push!(bwd_arrows, Symbol("<--"))
@@ -107,7 +107,7 @@ end c1 c2
 emptyrn = @reaction_network empty
 
 # an empty network with random generated name
-emptyrn = @reaction_network 
+emptyrn = @reaction_network
 ```
 """
 macro reaction_network(name::Symbol, ex::Expr, parameters...)
@@ -119,31 +119,31 @@ macro reaction_network(name::Expr, ex::Expr, parameters...)
     make_reaction_system(MacroTools.striplines(ex), parameters; name=:($(esc(name.args[1]))))
 end
 
-macro reaction_network(ex::Expr, parameters...) 
+macro reaction_network(ex::Expr, parameters...)
     ex = MacroTools.striplines(ex)
 
     # no name but equations: @reaction_network begin ... end ...
     if ex.head == :block
         make_reaction_system(ex, parameters)
-    else  # empty but has interpolated name: @reaction_network $name        
+    else  # empty but has interpolated name: @reaction_network $name
         networkname = :($(esc(ex.args[1])))
         return Expr(:block,:(@parameters t),
                     :(ReactionSystem(Reaction[],
                                     t,
                                     [],
-                                    [];                                 
+                                    [];
                                     name=$networkname)))
     end
 end
 
 #Returns a empty network (with, or without, a declared name)
-# @reaction_network name 
+# @reaction_network name
 macro reaction_network(name::Symbol=gensym(:ReactionSystem))
     return Expr(:block,:(@parameters t),
                 :(ReactionSystem(Reaction[],
                                  t,
                                  [],
-                                 [];                                 
+                                 [];
                                  name=$(QuoteNode(name)))))
 end
 
@@ -195,7 +195,7 @@ function esc_dollars!(ex)
         else
             for i = 1:length(ex.args)
                 ex.args[i] = esc_dollars!(ex.args[i])
-            end            
+            end
         end
     end
     ex
@@ -211,9 +211,9 @@ function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSyste
     reactions = get_reactions(ex)
     reactants = get_reactants(reactions)
     allspecies = union(reactants, get_rate_species(reactions,parameters))
-    !isempty(intersect(forbidden_symbols,union(allspecies,parameters))) && 
-        error("The following symbol(s) are used as species or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(species,parameters)))...))*"this is not permited.")    
-    
+    !isempty(intersect(forbidden_symbols,union(allspecies,parameters))) &&
+        error("The following symbol(s) are used as species or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(species,parameters)))...))*"this is not permited.")
+
     # parameters
     pexprs = isempty(parameters) ? :() : :(@parameters)
     if !isempty(parameters)
@@ -225,7 +225,7 @@ function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSyste
     foreach(species -> (species isa Symbol) && push!(sexprs.args, Expr(:call,species,:t)), allspecies)
 
     # ReactionSystem
-    rxexprs = :(make_ReactionSystem_internal([],t,nothing,[]; name=$(name)))    
+    rxexprs = :($(make_ReactionSystem_internal)([],t,nothing,[]; name=$(name)))
     foreach(parameter -> push!(rxexprs.args[6].args,parameter), parameters)
     for reaction in reactions
         subs_init = isempty(reaction.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
@@ -261,10 +261,10 @@ end
 
 function find_species_in_rate!(sset, rateex::ExprValues, ps)
     if rateex isa Symbol
-        if !(rateex in forbidden_symbols) && !(rateex in ps) 
+        if !(rateex in forbidden_symbols) && !(rateex in ps)
             push!(sset, rateex)
         end
-    elseif rateex isa Expr   
+    elseif rateex isa Expr
         # note, this (correctly) skips $(...) expressions
         for i = 2:length(rateex.args)
             find_species_in_rate!(sset, rateex.args[i], ps)
@@ -307,7 +307,7 @@ end
 
 #Recursive function that loops through the reaction line and finds the reactants and their stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
 function recursive_find_reactants!(ex::ExprValues, mult::Int, reactants::Vector{ReactantStruct})
-    if typeof(ex)!=Expr || (ex.head == :escape)        
+    if typeof(ex)!=Expr || (ex.head == :escape)
         (ex == 0 || in(ex,empty_set)) && (return reactants)
         if in(ex, getfield.(reactants,:reactant))
             idx = findall(x -> x==ex, getfield.(reactants,:reactant))[1]
