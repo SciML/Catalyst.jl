@@ -92,3 +92,13 @@ end α
 @parameters α
 rn2 = ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; name=:rn)
 @test rn == rn2
+
+@testset "make_reaction_system can be called from another module" begin
+    ex = quote
+        (Ka, Depot --> Central)
+        (CL / Vc, Central --> 0)
+    end
+    # Line number nodes aren't ignored so have to be manually removed
+    Base.remove_linenums!(ex)
+    @test eval(Catalyst.make_reaction_system(ex, (:Ka, :Cl, :Vc))) isa ReactionSystem
+end
