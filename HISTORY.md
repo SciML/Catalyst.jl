@@ -1,6 +1,9 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch) 
+
+
+## Catalyst 10.3
 - **BREAKING:** The order of the parameters in the `ReactionSystem`'s `.ps` field has been changed (only when created through the `@reaction_network` macro). Previously they were ordered acording to the order with which they appeared in the macro. Now they are ordered acoridng the to order with which the appeard after the `end` part. E.g. in
   ```julia
   rn = @reaction_network begin
