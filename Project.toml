@@ -1,6 +1,6 @@
 name = "Catalyst"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
-version = "10.3.0"
+version = "10.3.1"
 
 [deps]
 AbstractAlgebra = "c3fe647b-3220-5bb0-a1ea-a7954cac585d"
@@ -19,7 +19,7 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
-AbstractAlgebra = "0.21, 0.22"
+AbstractAlgebra = "0.21, 0.22, 0.23"
 DataStructures = "0.18"
 DiffEqBase = "6.54.0"
 DiffEqJump = "7.0, 8.0"
