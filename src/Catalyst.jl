@@ -57,7 +57,8 @@ export mm, mmr, hill, hillr, hillar
 
 # functions to query network properties
 include("networkapi.jl")
-export species, reactionparams, reactions, speciesmap, paramsmap, reactionparamsmap, numspecies, numreactions, numreactionparams, setdefaults!
+export species, reactionparams, reactions, speciesmap, paramsmap, reactionparamsmap
+export numspecies, numreactions, numreactionparams, setdefaults!, unpacksys
 export make_empty_network, addspecies!, addparam!, addreaction!
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export conservationlaws, conservedquantities
@@ -66,7 +67,7 @@ export conservationlaws, conservedquantities
 export params, numparams
 
 # network analysis functions
-export reactioncomplexmap, reactioncomplexes, reactionrates, complexstoichmat, complexoutgoingmat, unpacksys
+export reactioncomplexmap, reactioncomplexes, reactionrates, complexstoichmat, complexoutgoingmat
 export incidencematgraph, linkageclasses, deficiency, subnetworks, linkagedeficiencies, isreversible, isweaklyreversible
   
 # for Latex printing of ReactionSystems

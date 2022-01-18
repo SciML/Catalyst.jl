@@ -381,7 +381,7 @@ will load the symbolic variables, `S`, `I`, `R`, `ν` and `β`
 Notes:
 - Can not be used to load species, variables, or parameters of subsystems.
 Either call `unpacksys` on those systems directly, or [`flatten`](@ref) to
-collate them into one system before setting defaults.
+collate them into one system before calling.
 """
 function unpacksys(rn::MT.AbstractSystem) 
     ex = :(begin end)
