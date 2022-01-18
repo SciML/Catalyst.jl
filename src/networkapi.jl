@@ -377,13 +377,18 @@ eval(ex)
 @show S
 ```
 will load the symbolic variables, `S`, `I`, `R`, `ν` and `β`
+
+Notes:
+- Can not be used to load species, variables, or parameters of subsystems.
+Either call `unpacksys` on those systems directly, or [`flatten`](@ref) to
+collate them into one system before setting defaults.
 """
-function unpacksys(rn::MT.AbstractSystem)
+function unpacksys(rn::MT.AbstractSystem) 
     ex = :(begin end)
-    for (key,val) in rn.var_to_name
+    for key in keys(rn.var_to_name)
         var = ModelingToolkit.getproperty(rn, key, namespace=false)
         push!(ex.args, :($key = $var))
-    end
+    end    
     ex
 end
 
