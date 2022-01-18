@@ -332,7 +332,7 @@ function netstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
 end
 
 """
-    setdefaults!(rn::MT.AbstractSystem, newdefs)
+    setdefaults!(rn::MT.AbstractSystem, newdefs::AbstractVector{Pair{Symbol,T}})
 
 Sets the default (initial) values of parameters and species in `rn`.
 
@@ -353,7 +353,7 @@ Notes:
 subsystems. Either set defaults for those systems directly, or [`flatten`](@ref)
 to collate them into one system before setting defaults.
 """
-function setdefaults!(rn::MT.AbstractSystem, newdefs)
+function setdefaults!(rn::MT.AbstractSystem, newdefs::AbstractVector{Pair{Symbol,T}}) where {T}
     rndefs = MT.get_defaults(rn)
     for (sym,val) in newdefs
         var = MT.getproperty(rn, sym, namespace=false)
