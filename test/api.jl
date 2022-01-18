@@ -1,4 +1,4 @@
-using Catalyst, DiffEqBase, ModelingToolkit, Test
+using Catalyst, DiffEqBase, ModelingToolkit, Test, OrdinaryDiffEq
 using SparseArrays
 using ModelingToolkit: value
 
