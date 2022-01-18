@@ -1,4 +1,5 @@
 using Catalyst, DiffEqBase, ModelingToolkit, Test, OrdinaryDiffEq
+using LinearAlgebra: norm
 using SparseArrays
 using ModelingToolkit: value
 
