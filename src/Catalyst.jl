@@ -66,7 +66,7 @@ export conservationlaws, conservedquantities
 export params, numparams
 
 # network analysis functions
-export reactioncomplexmap, reactioncomplexes, reactionrates, complexstoichmat, complexoutgoingmat
+export reactioncomplexmap, reactioncomplexes, reactionrates, complexstoichmat, complexoutgoingmat, unpacksys
 export incidencematgraph, linkageclasses, deficiency, subnetworks, linkagedeficiencies, isreversible, isweaklyreversible
   
 # for Latex printing of ReactionSystems

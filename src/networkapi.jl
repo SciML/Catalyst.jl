@@ -332,7 +332,7 @@ function netstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
 end
 
 """
-    setdefaults!(rn::MT.AbstractSystem, newdefs::AbstractVector{Pair{Symbol,T}})
+    setdefaults!(rn::ModelingToolkit.AbstractSystem, newdefs::AbstractVector{Pair{Symbol,T}})
 
 Sets the default (initial) values of parameters and species in `rn`.
 
@@ -358,6 +358,33 @@ function setdefaults!(rn::MT.AbstractSystem, newdefs::AbstractVector{Pair{Symbol
         rndefs[var] = val
     end
     nothing
+end
+
+"""
+    unpacksys(rn::ModelingToolkit.AbstractSystem)
+
+Generates an expression which if `eval`'ed will load all species, variables,
+parameters and observables defined in `rn` within the current context.
+
+For example,
+```julia
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end β ν
+ex = unpacksys(sir)
+eval(ex)
+@show S
+```
+will load the symbolic variables, `S`, `I`, `R`, `ν` and `β`
+"""
+function unpacksys(rn::MT.AbstractSystem)
+    ex = :(begin end)
+    for (key,val) in rn.var_to_name
+        var = ModelingToolkit.getproperty(rn, key, namespace=false)
+        push!(ex.args, :($key = $var))
+    end
+    ex
 end
 
 ######################## reaction complexes and reaction rates ###############################
