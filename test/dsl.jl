@@ -1,4 +1,4 @@
-using Catalyst, ModelingToolkit
+using Catalyst, ModelingToolkit, OrdinaryDiffEq, LinearAlgebra
 
 # naming tests
 @parameters k
@@ -102,3 +102,18 @@ rn2 = ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; nam
     Base.remove_linenums!(ex)
     @test eval(Catalyst.make_reaction_system(ex, (:Ka, :Cl, :Vc))) isa ReactionSystem
 end
+
+# test defaults
+rn = @reaction_network begin
+    α, S + I --> 2I
+    β, I --> R
+end α β
+p     = [.1/1000, .01]
+tspan = (0.0,250.0)
+u0    = [999.0,1.0,0.0]
+op    = ODEProblem(rn, species(rn) .=> u0, tspan, parameters(rn) .=> p)
+sol   = solve(op, Tsit5())  # old style 
+setdefaults!(rn, [:S => 999.0, :I => 1.0, :R => 0.0, :α => 1e-4, :β => .01])
+op = ODEProblem(rn, [], tspan, [])
+sol2 = solve(op, Tsit5())
+@test norm(sol.u - sol2.u) ≈ 0

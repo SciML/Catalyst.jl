@@ -331,6 +331,37 @@ function netstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
 	sparse ? netstoichmat(SparseMatrixCSC{Int,Int}, rn; smap=smap) : netstoichmat(Matrix{Int}, rn; smap=smap)
 end
 
+"""
+    setdefaults!(rn::MT.AbstractSystem, newdefs)
+
+Sets the default (initial) values of parameters and species in `rn`.
+
+For example,
+```julia
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end β ν
+
+setdefaults!(sir, [:S => 1.0, :I => 2.0, :β => 3.0])
+```
+gives initial/default values to each of `S`, `I` and `β`
+
+Notes:
+
+- Can not be used to set default values for species, variables or parameters of
+subsystems. Either set defaults for those systems directly, or [`flatten`](@ref)
+to collate them into one system before setting defaults.
+"""
+function setdefaults!(rn::MT.AbstractSystem, newdefs)
+    rndefs = MT.get_defaults(rn)
+    for (sym,val) in newdefs
+        var = MT.getproperty(rn, sym, namespace=false)
+        rndefs[var] = val
+    end
+    nothing
+end
+
 ######################## reaction complexes and reaction rates ###############################
 """
 $(TYPEDEF)
