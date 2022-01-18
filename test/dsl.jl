@@ -1,5 +1,4 @@
-using Catalyst, ModelingToolkit, OrdinaryDiffEq
-using LinearAlgebra: norm
+using Catalyst, ModelingToolkit
 
 # naming tests
 @parameters k
