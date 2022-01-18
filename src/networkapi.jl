@@ -342,13 +342,11 @@ sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end β ν
-
 setdefaults!(sir, [:S => 1.0, :I => 2.0, :β => 3.0])
 ```
 gives initial/default values to each of `S`, `I` and `β`
 
 Notes:
-
 - Can not be used to set default values for species, variables or parameters of
 subsystems. Either set defaults for those systems directly, or [`flatten`](@ref)
 to collate them into one system before setting defaults.
