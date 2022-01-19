@@ -386,7 +386,7 @@ collate them into one system before calling.
 function unpacksys(rn::MT.AbstractSystem) 
     ex = :(begin end)
     for key in keys(rn.var_to_name)
-        var = ModelingToolkit.getproperty(rn, key, namespace=false)
+        var = MT.getproperty(rn, key, namespace=false)
         push!(ex.args, :($key = $var))
     end    
     ex
