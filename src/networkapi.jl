@@ -385,7 +385,7 @@ collate them into one system before calling.
 """
 function unpacksys(rn::MT.AbstractSystem) 
     ex = :(begin end)
-    for key in keys(rn.var_to_name)
+    for key in keys(get_var_to_name(rn))
         var = MT.getproperty(rn, key, namespace=false)
         push!(ex.args, :($key = $var))
     end    
@@ -959,11 +959,7 @@ function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks=false)
     curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), get_states(network))
     if curidx === nothing
         push!(get_states(network), s)
-        MT.process_variables!(
-            MT.get_var_to_name(network),
-            get_defaults(network),
-            get_states(network)
-        )
+        MT.process_variables!(get_var_to_name(network), get_defaults(network), [s])
         return length(get_states(network))
     else
         return curidx
@@ -1021,11 +1017,7 @@ function addparam!(network::ReactionSystem, p::Symbolic; disablechecks=false)
     curidx = disablechecks ? nothing : findfirst(S -> isequal(S, p), get_ps(network))
     if curidx === nothing
         push!(get_ps(network), p)
-        MT.process_variables!(
-            MT.get_var_to_name(network),
-            get_defaults(network),
-            get_ps(network)
-        )
+        MT.process_variables!(get_var_to_name(network), get_defaults(network), [p])
         return length(get_ps(network))
     else
         return curidx
