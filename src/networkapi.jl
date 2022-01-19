@@ -354,8 +354,8 @@ to collate them into one system before setting defaults.
 function setdefaults!(rn::MT.AbstractSystem, newdefs::AbstractVector{Pair{Symbol,T}}) where {T}
     rndefs = MT.get_defaults(rn)
     for (sym,val) in newdefs
-        var = MT.getproperty(rn, sym, namespace=false)
-        rndefs[var] = val
+        var = value(MT.getproperty(rn, sym, namespace=false))
+        rndefs[var] = value(val)
     end
     nothing
 end
