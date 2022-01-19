@@ -348,8 +348,9 @@ gives initial/default values to each of `S`, `I` and `β`
 
 Notes:
 - Can not be used to set default values for species, variables or parameters of
-subsystems. Either set defaults for those systems directly, or [`flatten`](@ref)
-to collate them into one system before setting defaults.
+subsystems or constraint systems. Either set defaults for those systems
+directly, or [`flatten`](@ref) to collate them into one system before setting
+defaults.
 """
 function setdefaults!(rn::MT.AbstractSystem, newdefs::AbstractVector{Pair{Symbol,T}}) where {T}
     rndefs = MT.get_defaults(rn)
