@@ -250,11 +250,13 @@ function ReactionSystem(eqs, iv, states, ps;
     var_to_name = Dict()
     MT.process_variables!(var_to_name, defaults, states′)
     MT.process_variables!(var_to_name, defaults, ps′)
-    MT.collect_var_to_name!(var_to_name, (eq.lhs for eq in observed))
+    MT.collect_var_to_name!(var_to_name, eq.lhs for eq in observed)
 
     if constraints !== nothing
         MT.process_variables!(var_to_name, defaults, get_ps(constraints))
-        MT.collect_var_to_name!(var_to_name, get_states(constraints))
+        MT.process_variables!(var_to_name, defaults, get_states(constraints))
+        MT.collect_var_to_name!(var_to_name, eq.lhs for eq in get_observed(constraints))
+        append!(observed, get_observed(constraints))
     end
         
     ReactionSystem(eqs′, iv′, states′, ps′, var_to_name, observed, name, systems, 
