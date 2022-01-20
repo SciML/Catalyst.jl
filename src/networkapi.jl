@@ -388,9 +388,9 @@ end β ν
 will load the symbolic variables, `S`, `I`, `R`, `ν` and `β`.
 
 Notes:
-- Can not be used to load species, variables, or parameters of subsystems.
-Either call `@unpacksys` on those systems directly, or [`flatten`](@ref) to
-collate them into one system before calling.
+- Can not be used to load species, variables, or parameters of subsystems or
+constraints. Either call `@unpacksys` on those systems directly, or
+[`flatten`](@ref) to collate them into one system before calling.
 - Note that this places symbolic variables within the calling module's scope, so
 calling from a function defined in a script or the REPL will still result in the
 symbolic variables being defined in the `Main` module.
