@@ -361,30 +361,7 @@ function setdefaults!(rn::MT.AbstractSystem, newdefs::AbstractVector{Pair{Symbol
     nothing
 end
 
-"""
-    unpacksys(rn::ModelingToolkit.AbstractSystem)
-
-Generates an expression which if `eval`'ed will load all species, variables,
-parameters and observables defined in `rn` within the current context.
-
-For example,
-```julia
-sir = @reaction_network SIR begin
-    β, S + I --> 2I
-    ν, I --> R
-end β ν
-ex = unpacksys(sir)
-eval(ex)
-@show S
-```
-will load the symbolic variables, `S`, `I`, `R`, `ν` and `β`
-
-Notes:
-- Can not be used to load species, variables, or parameters of subsystems.
-Either call `unpacksys` on those systems directly, or [`flatten`](@ref) to
-collate them into one system before calling.
-"""
-function unpacksys(rn::MT.AbstractSystem) 
+function __unpacksys(rn::MT.AbstractSystem) 
     ex = :(begin end)
     for key in keys(get_var_to_name(rn))
         var = MT.getproperty(rn, key, namespace=false)
@@ -392,6 +369,112 @@ function unpacksys(rn::MT.AbstractSystem)
     end    
     ex
 end
+
+
+"""
+    @unpacksys sys::ModelingToolkit.AbstractSystem
+
+Loads all species, variables, parameters, and observables defined in `sys` as
+variables within the calling module.
+
+For example,
+```julia
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end β ν
+@unpacksys sir
+```
+will load the symbolic variables, `S`, `I`, `R`, `ν` and `β`.
+
+Notes:
+- Can not be used to load species, variables, or parameters of subsystems.
+Either call `@unpacksys` on those systems directly, or [`flatten`](@ref) to
+collate them into one system before calling.
+- Note that this places symbolic variables within the calling module's scope, so
+calling from a function defined in a script or the REPL will still result in the
+symbolic variables being defined in the `Main` module.
+"""
+macro unpacksys(rn)
+    quote
+    ex = Catalyst.__unpacksys($(esc(rn)))
+    Base.eval($(__module__), ex)
+    end
+end
+
+# convert symbol of the form :sys.a.b.c to a symbolic a.b.c
+function _symbol_to_var(sys, sym)
+    if hasproperty(sys, sym)    
+        var = getproperty(sys, sym, namespace=false)
+    else
+        strs = split(String(sym), "₊")   # need to check if this should be split of not!!!        
+        if length(strs) > 1
+            var = getproperty(sys, Symbol(strs[1]), namespace=false)
+            for str in view(strs, 2:length(strs))
+                var = getproperty(var, Symbol(str), namespace=true)
+            end
+        else
+            throw(ArgumentError("System $(nameof(sys)): variable $sym does not exist"))
+        end
+    end
+    var
+end
+
+"""
+    symmap_to_varmap(sys, symmap)
+
+Given a system and map of `Symbol`s to values, generates a map 
+from corresponding symbolic variables/parameters to the values
+that can be used to pass initial conditions and parameter mappings.
+
+For example,
+```julia
+sir = @reaction_network sir begin
+    β, S + I --> 2I
+    ν, I --> R
+end β ν
+subsys = @reaction_network subsys begin
+    k, A --> B
+end k
+@named sys = compose(sir, [subsys])
+```
+gives
+```
+Model sys with 3 equations
+States (5):
+  S(t)
+  I(t)
+  R(t)
+  subsys₊A(t)
+  subsys₊B(t)
+Parameters (3):
+  β
+  ν
+  subsys₊k
+```
+to specify initial condition and parameter mappings from *symbols* we can use
+```julia
+symmap = [:S => 1.0, :I => 1.0, :R => 1.0, :subsys₊A => 1.0, :subsys₊B => 1.0]
+u0map  = symmap_to_varmap(sys, symmap)
+pmap   = symmap_to_varmap(sys, [:β => 1.0, :ν => 1.0, :subsys₊k => 1.0])
+```
+`u0map` and `pmap` can then be used as input to various problem types.
+"""
+function symmap_to_varmap(sys, symmap::Tuple)
+    all(p -> p isa Pair{Symbol}, symmap) || error("All entries in the map must be of the form Symbol => value.")
+    ((_symbol_to_var(sys,sym) => val for (sym,val) in symmap)...,)
+end
+
+symmap_to_varmap(sys, symmap::AbstractArray{Pair{Symbol,T}}) where {T} = 
+    [_symbol_to_var(sys,sym) => val for (sym,val) in symmap]
+
+symmap_to_varmap(sys, symmap::Dict{Symbol,T}) where {T} = 
+    Dict(_symbol_to_var(sys,sym) => val for (sym,val) in symmap)
+
+# don't permute any other types, and let varmap_to_vars handle erroring
+symmap_to_varmap(sys, symmap) = symmap
+#error("symmap_to_varmap requires a Dict, AbstractArray or Tuple to map Symbols to values.")
+    
 
 ######################## reaction complexes and reaction rates ###############################
 """
