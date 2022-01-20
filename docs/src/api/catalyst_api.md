@@ -172,7 +172,7 @@ netstoichmat
 reactionrates
 ```
 
-## Functions to Extend a Network
+## Functions to Extend or Modify a Network
 `ReactionSystem`s can be programmatically extended using [`addspecies!`](@ref),
 [`addparam!`](@ref), [`addreaction!`](@ref), [`@add_reactions`](@ref), or
 composed using [`ModelingToolkit.extend`](@ref) and
@@ -184,6 +184,8 @@ addspecies!
 reorder_states!
 addparam!
 addreaction!
+setdefaults!
+symmap_to_varmap
 ModelingToolkit.extend
 ModelingToolkit.compose
 Catalyst.flatten

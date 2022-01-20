@@ -833,7 +833,7 @@ Notes:
 - Currently only `ReactionSystem`s, `NonlinearSystem`s and `ODESystem`s are
   supported as sub-systems when flattening.
 """
-function flatten(rs::ReactionSystem; name=nameof(rs))
+function MT.flatten(rs::ReactionSystem; name=nameof(rs))
 
     isempty(get_systems(rs)) && return rs
 
