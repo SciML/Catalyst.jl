@@ -185,6 +185,7 @@ reorder_states!
 addparam!
 addreaction!
 setdefaults!
+symmap_to_varmap
 ModelingToolkit.extend
 ModelingToolkit.compose
 Catalyst.flatten

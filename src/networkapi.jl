@@ -423,9 +423,9 @@ end
 """
     symmap_to_varmap(sys, symmap)
 
-Given a system and map of `Symbol`s to values, generates a map 
-from corresponding symbolic variables/parameters to the values
-that can be used to pass initial conditions and parameter mappings.
+Given a system and map of `Symbol`s to values, generates a map from
+corresponding symbolic variables/parameters to the values that can be used to
+pass initial conditions and parameter mappings.
 
 For example,
 ```julia
@@ -459,6 +459,10 @@ u0map  = symmap_to_varmap(sys, symmap)
 pmap   = symmap_to_varmap(sys, [:β => 1.0, :ν => 1.0, :subsys₊k => 1.0])
 ```
 `u0map` and `pmap` can then be used as input to various problem types.
+
+Notes:
+- Any `Symbol`, `sym`, within `symmap` must be a valid field of `sys`. i.e.
+  `sys.sym` must be defined.
 """
 function symmap_to_varmap(sys, symmap::Tuple)
     all(p -> p isa Pair{Symbol}, symmap) || error("All entries in the map must be of the form Symbol => value.")
@@ -471,7 +475,7 @@ symmap_to_varmap(sys, symmap::AbstractArray{Pair{Symbol,T}}) where {T} =
 symmap_to_varmap(sys, symmap::Dict{Symbol,T}) where {T} = 
     Dict(_symbol_to_var(sys,sym) => val for (sym,val) in symmap)
 
-# don't permute any other types, and let varmap_to_vars handle erroring
+# don't permute any other types and let varmap_to_vars handle erroring
 symmap_to_varmap(sys, symmap) = symmap
 #error("symmap_to_varmap requires a Dict, AbstractArray or Tuple to map Symbols to values.")
     

@@ -598,3 +598,24 @@ rn = @reaction_network begin
 end α1 β1
 sol3 = unpacktest(rn)
 @test norm(sol.u - sol3.u) ≈ 0
+
+# test symmap_to_varmap
+sir = @reaction_network sir begin
+    β, S + I --> 2I
+    ν, I --> R
+end β ν
+subsys = @reaction_network subsys begin
+    k, A --> B
+end k
+@named sys = compose(sir, [subsys])
+symmap = [:S => 1.0, :I => 1.0, :R => 1.0, :subsys₊A => 1.0, :subsys₊B => 1.0]
+u0map  = symmap_to_varmap(sys, symmap)
+pmap   = symmap_to_varmap(sys, [:β => 1.0, :ν => 1.0, :subsys₊k => 1.0])
+@test isequal(u0map[4][1], subsys.A)
+@test isequal(u0map[1][1], @nonamespace sir.S)
+
+u0map = symmap_to_varmap(sir, [:S => 999.0, :I => 1.0, :R => 0.0])
+pmap = symmap_to_varmap(sir, [:β => 1e-4, :ν => .01])
+op = ODEProblem(sir, u0map, tspan, pmap)
+sol4 = solve(op, Tsit5())
+@test norm(sol.u - sol4.u) ≈ 0
