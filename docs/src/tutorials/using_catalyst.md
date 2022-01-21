@@ -60,19 +60,43 @@ Parameters (7):
 ```
 showing that we've created a new network model named `Repressilator` with the
 listed chemical species and states. [`@reaction_network`](@ref) returns a
-[`ReactionSystem`](@ref), which we saved in the `repressilator` variabled. It
-can be converted to a variety of other mathematical models represented as
-`ModelingToolkit.AbstractSystem`s, or analyzed in various ways using Catalyst's
-network API. 
-
-To see the reactions in the system we use
-
+[`ReactionSystem`](@ref), which we saved in the `repressilator` variable. It can
+be converted to a variety of other mathematical models represented as
+`ModelingToolkit.AbstractSystem`s, or analyzed in various ways using the
+[Catalyst.jl API](@ref). For example, to see the chemical species, parameters,
+and reactions we can use
+```julia
+species(repressilator)
+```
+which gives
+```julia
+6-element Array{Term{Real},1}:
+ m₁(t)
+ m₂(t)
+ m₃(t)
+ P₁(t)
+ P₂(t)
+ P₃(t)
+```
+```julia
+parameters(repressilator)
+```
+which gives
+```julia
+7-element Array{Sym{ModelingToolkit.Parameter{Real}},1}:
+ α
+ K
+ n
+ δ
+ γ
+ β
+ μ
+```
+and
 ```julia
 reactions(repressilator)
 ```
-
 which gives
-
 ```
 15-element Vector{Reaction}:
  Catalyst.hillr(P₃(t), α, K, n), ∅ --> m₁
@@ -169,72 +193,34 @@ for the species symbols on each side of the equations.)
 
 Before we can solve the ODEs, we need to specify the values of the parameters in
 the model, the initial condition, and the time interval to solve the model on.
-To do this we need to build mappings from the parameters and the species to the
-corresponding numerical values for parameters and initial conditions. We can do
-this by using the `species` and `parameters` commands to get the corresponding
-symbolic variables:
+To do this we need to build mappings from the symbolic parameters and the
+species to the corresponding numerical values for parameters and initial
+conditions. We can build such mappings in several ways. One is to use Julia
+`Symbols` to specify the values like
 ```julia
-species(repressilator)
+pmap  = (:α => .5, :K => 40, :n => 2, :δ => log(2)/120, 
+         :γ => 5e-3, :β => log(2)/6, :μ => log(2)/60)
+u₀map = [:m₁ => 0., :m₂ => 0., :m₃ => 0., :P₁ => 20., :P₂ => 0., :P₃ => 0.]
 ```
+Alternatively, we can use ModelingToolkit symbolic variables to specify these
+mappings like
 ```julia
-6-element Array{Term{Real},1}:
- m₁(t)
- m₂(t)
- m₃(t)
- P₁(t)
- P₂(t)
- P₃(t)
+@parameters  α K n δ γ β μ
+@variables t m₁(t) m₂(t) m₃(t) P₁(t) P₂(t) P₃(t)
+pmap  = (α => .5, K => 40, n => 2, δ => log(2)/120, 
+         γ => 5e-3, β => 20*log(2)/120, μ => log(2)/60)
+u₀map = [m₁ => 0., m₂ => 0., m₃ => 0., P₁ => 20., P₂ => 0., P₃ => 0.]
+
 ```
-```julia
-parameters(repressilator)
-```
-```julia
-7-element Array{Sym{ModelingToolkit.Parameter{Real}},1}:
- α
- K
- n
- δ
- γ
- β
- μ
-```
-Knowing these orderings, we can create parameter and initial condition vectors,
-and then set up the `ODEProblem` we want to solve:
+Knowing these mappings we can set up the `ODEProblem` we want to solve:
 
 ```julia
-# parameters [α,K,n,δ,γ,β,μ]
-p = (.5, 40, 2, log(2)/120, 5e-3, 20*log(2)/120, log(2)/60)
-
-# initial condition [m₁,m₂,m₃,P₁,P₂,P₃]
-u₀ = [0.,0.,0.,20.,0.,0.]
-
-# mappings from symbolic variables to their values
-u₀map = species(repressilator) .=> u₀
-pmap  = parameters(repressilator) .=> p
-
 # time interval to solve on
 tspan = (0., 10000.)
 
 # create the ODEProblem we want to solve
 oprob = ODEProblem(repressilator, u₀map, tspan, pmap)
 ```
-Here 
-```julia
-pmap
-```
-gives 
-```
-7-element Vector{Pair{Sym{Real, Base.ImmutableDict{DataType, Any}}, B} where B}:
- α => 0.5
- K => 40
- n => 2
- δ => 0.0057762265046662105
- γ => 0.005
- β => 0.11552453009332422
- μ => 0.011552453009332421
-```
-a vector of `Pair`s, mapping each symbolic parameter to its numerical value.
-
 Note, by passing `repressilator` directly to the `ODEProblem`, Catalyst has to
 (internally) call `convert(ODESystem, repressilator)` again to generate the
 symbolic ODEs. We could instead pass `odesys` directly like
@@ -271,10 +257,7 @@ the jump process:
 
 ```julia
 # redefine the initial condition to be integer valued
-u₀ = [0,0,0,20,0,0]
-
-# recreate the symbolic variable to value mapping since u₀ is now integer-valued
-u₀map = species(repressilator) .=> u₀
+u₀map = [:m₁ => 0, :m₂ => 0, :m₃ => 0, :P₁ => 20, :P₂ => 0, :P₃ => 0]
 
 # next we create a discrete problem to encode that our species are integer valued:
 dprob = DiscreteProblem(repressilator, u₀map, tspan, pmap)
@@ -312,8 +295,8 @@ bdp = @reaction_network begin
   c₂, X --> 0
   c₃, 0 --> X
 end c₁ c₂ c₃
-p = (1.0,2.0,50.)
-u₀ = [5.]
+p = (:c₁ => 1.0, :c₂ => 2.0, :c₃ => 50.)
+u₀ = [:X => 5.]
 tspan = (0.,4.)
 ```
 
@@ -329,7 +312,7 @@ above:
 
 ```julia
 # SDEProblem for CLE
-sprob = SDEProblem(bdp, species(bdp) .=> u₀, tspan, parameters(bdp) .=> p)
+sprob = SDEProblem(bdp, u₀, tspan, p)
 
 # solve and plot, tstops is used to specify enough points
 # that the plot looks well-resolved

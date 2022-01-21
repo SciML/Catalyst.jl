@@ -332,9 +332,10 @@ function netstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
 end
 
 """
-    setdefaults!(rn::ModelingToolkit.AbstractSystem, newdefs)
+    setdefaults!(rn, newdefs)
 
-Sets the default (initial) values of parameters and species in `rn`.
+Sets the default (initial) values of parameters and species in the
+`ReactionSystem`, `rn`.
 
 For example,
 ```julia
@@ -359,7 +360,7 @@ Notes:
 - Defaults can be specified in any iterable container of symbols to value pairs
   or symbolics to value pairs.
 """
-function setdefaults!(rn::MT.AbstractSystem, newdefs) 
+function setdefaults!(rn, newdefs) 
     defs = eltype(newdefs) <: Pair{Symbol} ? symmap_to_varmap(rn,newdefs) : newdefs
     rndefs = MT.get_defaults(rn)
     for (var,val) in defs
@@ -368,7 +369,7 @@ function setdefaults!(rn::MT.AbstractSystem, newdefs)
     nothing
 end
 
-function __unpacksys(rn::MT.AbstractSystem) 
+function __unpacksys(rn) 
     ex = :(begin end)
     for key in keys(get_var_to_name(rn))
         var = MT.getproperty(rn, key, namespace=false)
