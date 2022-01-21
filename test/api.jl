@@ -585,6 +585,18 @@ op = ODEProblem(rn, [], tspan, [])
 sol2 = solve(op, Tsit5())
 @test norm(sol.u - sol2.u) ≈ 0
 
+rn = @reaction_network begin
+    α, S + I --> 2I
+    β, I --> R
+end α β
+@parameters α β
+@variables t S(t) I(t) R(t)
+setdefaults!(rn, [S => 999.0, I => 1.0, R => 0.0, α => 1e-4, β => .01])
+op = ODEProblem(rn, [], tspan, [])
+sol2 = solve(op, Tsit5())
+@test norm(sol.u - sol2.u) ≈ 0
+
+
 # test unpacking variables
 function unpacktest(rn)
     Catalyst.@unpacksys rn
