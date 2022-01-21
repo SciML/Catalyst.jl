@@ -93,7 +93,7 @@ rs = @reaction_network begin
 end c1 c2 c3
 p     = (:c1 => 0.00166, :c2 => 0.0001, :c3 => 0.1)   
 tspan = (0., 100.)
-u0    = [:S => 301., :E => 100., :SE => 0., :P => 0.]  
+u0    = [:S => 301, :E => 100, :SE => 0, :P => 0]  
 
 # solve JumpProblem
 dprob = DiscreteProblem(rs, u0, tspan, p)
