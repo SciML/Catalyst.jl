@@ -348,9 +348,9 @@ gives initial/default values to each of `S`, `I` and `β`
 
 Notes:
 - Can not be used to set default values for species, variables or parameters of
-subsystems or constraint systems. Either set defaults for those systems
-directly, or [`flatten`](@ref) to collate them into one system before setting
-defaults.
+  subsystems or constraint systems. Either set defaults for those systems
+  directly, or [`flatten`](@ref) to collate them into one system before setting
+  defaults.
 """
 function setdefaults!(rn::MT.AbstractSystem, newdefs::AbstractVector{Pair{Symbol,T}}) where {T}
     rndefs = MT.get_defaults(rn)
@@ -389,11 +389,11 @@ will load the symbolic variables, `S`, `I`, `R`, `ν` and `β`.
 
 Notes:
 - Can not be used to load species, variables, or parameters of subsystems or
-constraints. Either call `@unpacksys` on those systems directly, or
-[`flatten`](@ref) to collate them into one system before calling.
+  constraints. Either call `@unpacksys` on those systems directly, or
+  [`flatten`](@ref) to collate them into one system before calling.
 - Note that this places symbolic variables within the calling module's scope, so
-calling from a function defined in a script or the REPL will still result in the
-symbolic variables being defined in the `Main` module.
+  calling from a function defined in a script or the REPL will still result in
+  the symbolic variables being defined in the `Main` module.
 """
 macro unpacksys(rn)
     quote
