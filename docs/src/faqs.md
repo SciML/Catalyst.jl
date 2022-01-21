@@ -49,6 +49,31 @@ end β ν
 setdefaults!(sir, [:β => 1e-4, :ν => .01, :S => 999.0, :I => 1.0, :R => 0.0])
 ```
 
+## How to specify initial conditions and parameters values for `ODEProblem` and other problem types?
+To explicitly pass initial conditions and parameters we can use mappings from
+Julia `Symbol`s corresponding to each variable/parameter to values, or from
+ModelingToolkit symbolic variables to each variable/parameter. Using `Symbol`s
+we have
+```julia
+rn = @reaction_network begin
+    α, S + I --> 2I
+    β, I --> R
+end α β
+u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
+p  = (:α => 1e-4, :β => .01)
+op  = ODEProblem(rn, u0, (0.0,250.0), p)
+sol = solve(op, Tsit5())  
+```
+while using ModelingToolkit symbolic variables we have
+```julia
+@parameters α β
+@variables t S(t) I(t) R(t)
+u0 = [S => 999.0, I => 1.0, R => 0.0]
+p  = (α => 1e-4, β => .01)
+op  = ODEProblem(rn, u0, (0.0,250.0), p)
+sol = solve(op, Tsit5())  
+```
+
 ## How to modify generated ODEs?
 Conversion to other `ModelingToolkit.AbstractSystem`s allows the possibility to
 modify the system with further terms that are difficult to encode as a chemical
