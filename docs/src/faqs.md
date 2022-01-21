@@ -14,9 +14,9 @@ Disabling these rescalings should work for all conversions of `ReactionSystem`s
 to other `ModelingToolkit.AbstractSystem`s.
 
 ## How to set default values for initial conditions and parameters?
-When directly constructing a `ReactionSystem` these can be specified directly,
-and allow solving the system without needing initial condition or parameter vectors
-in the generated problem. For example
+When directly constructing a `ReactionSystem` these can be passed to the
+constructor, and allow solving the system without needing initial condition or
+parameter vectors in the generated problem. For example
 ```julia
 using Catalyst, Plots, OrdinaryDiffEq
 @parameters β ν
@@ -42,11 +42,11 @@ The `@reaction_network` macro does not currently provide a way to specify
 default values, however, they can be added after creating the system via the
 `setdefaults!` command, like
 ```julia
-sir = @reaction_network SIR begin
+sir = @reaction_network sir begin
     β, S + I --> 2I
     ν, I --> R
 end β ν
-setdefaults!(sir, [:S => 1.0, :I => 2.0, :β => 3.0])
+setdefaults!(sir, [:β => 1e-4, :ν => .01, :S => 999.0, :I => 1.0, :R => 0.0])
 ```
 
 ## How to modify generated ODEs?
