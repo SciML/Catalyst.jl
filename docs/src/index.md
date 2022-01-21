@@ -80,11 +80,11 @@ which in Jupyter notebooks will give the figure
 
 To generate and solve a mass action ODE version of the model we use
 ```julia
-using DiffEqBase, OrdinaryDiffEq
-p     = [.1/1000, .01]           # [α,β]
+using OrdinaryDiffEq
+p     = [:α => .1/1000, :β => .01]
 tspan = (0.0,250.0)
-u0    = [999.0,1.0,0.0]          # [S,I,R] at t=0
-op    = ODEProblem(rn, species(rn) .=> u0, tspan, parameters(rn) .=> p)
+u0    = [:S => 999.0, :I => 1.0, :R => 0.0]
+op    = ODEProblem(rn, u0, tspan, p)
 sol   = solve(op, Tsit5())       # use Tsit5 ODE solver
 ```
 which we can plot as

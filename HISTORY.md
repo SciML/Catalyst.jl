@@ -1,10 +1,47 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch) 
-- Added `symmap_to_varmap` and `setdefaults!` to allow setting initial conditions and parameter values using symbols.
+
+## Catalyst 10.4
+- Added `symmap_to_varmap`, `setdefaults!`, and updated all `*Problem(rn,...)`
+  calls to allow setting initial conditions and parameter values using symbol
+  maps. See the [Catalyst API](https://catalyst.sciml.ai/dev/) for details.
+  These allow using regular Julia `Symbols` to specify parameter values and
+  initial conditions. i.e. to set defaults we can do
+  ```julia
+  rn = @reaction_network begin
+      α, S + I --> 2I
+      β, I --> R
+  end α β
+  setdefaults!(rn, [:S => 999.0, :I => 1.0, :R => 0.0, :α => 1e-4, :β => .01])
+  op    = ODEProblem(rn, [], (0.0,250.0), [])
+  sol   = solve(op, Tsit5()) 
+  ```
+  To explicitly pass initial conditions and parameters using symbols we can do
+  ```julia
+  rn = @reaction_network begin
+      α, S + I --> 2I
+      β, I --> R
+  end α β
+  u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
+  p  = (:α => 1e-4, :β => .01)
+  op    = ODEProblem(rn, u0, (0.0,250.0), p)
+  sol   = solve(op, Tsit5())  
+  ```
+  In each case ModelingToolkit symbolic variables can be used instead of
+  `Symbol`s, e.g.
+  ```julia
+  @parameters α β
+  @variables t S(t) I(t) R(t)
+  setdefaults!(rn, [S => 999.0, I => 1.0, R => 0.0, α => 1e-4, β => .01])
+  ```
 
 ## Catalyst 10.3
-- **BREAKING:** The order of the parameters in the `ReactionSystem`'s `.ps` field has been changed (only when created through the `@reaction_network` macro). Previously they were ordered according to the order with which they appeared in the macro. Now they are ordered according the to order with which they appeard after the `end` part. E.g. in
+- **BREAKING:** The order of the parameters in the `ReactionSystem`'s `.ps`
+  field has been changed (only when created through the `@reaction_network`
+  macro). Previously they were ordered according to the order with which they
+  appeared in the macro. Now they are ordered according the to order with which
+  they appeard after the `end` part. E.g. in
   ```julia
   rn = @reaction_network begin
     (p,d), 0 <--> X

@@ -585,6 +585,19 @@ op = ODEProblem(rn, [], tspan, [])
 sol2 = solve(op, Tsit5())
 @test norm(sol.u - sol2.u) ≈ 0
 
+rn = @reaction_network begin
+    α, S + I --> 2I
+    β, I --> R
+end α β
+@parameters α β
+@variables t S(t) I(t) R(t)
+setdefaults!(rn, [S => 999.0, I => 1.0, R => 0.0, α => 1e-4, β => .01])
+op = ODEProblem(rn, [], tspan, [])
+sol2 = solve(op, Tsit5())
+@test norm(sol.u - sol2.u) ≈ 0
+
+
+# test unpacking variables
 function unpacktest(rn)
     Catalyst.@unpacksys rn
     u₀ = [S1 => 999.0, I1 => 1.0, R1 => 0.0]
@@ -619,3 +632,9 @@ pmap = symmap_to_varmap(sir, [:β => 1e-4, :ν => .01])
 op = ODEProblem(sir, u0map, tspan, pmap)
 sol4 = solve(op, Tsit5())
 @test norm(sol.u - sol4.u) ≈ 0
+
+u0map = [:S => 999.0, :I => 1.0, :R => 0.0]
+pmap = (:β => 1e-4, :ν => .01)
+op = ODEProblem(sir, u0map, tspan, pmap)
+sol5 = solve(op, Tsit5())
+@test norm(sol.u - sol5.u) ≈ 0

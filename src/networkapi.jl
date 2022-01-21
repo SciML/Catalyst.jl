@@ -332,9 +332,10 @@ function netstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
 end
 
 """
-    setdefaults!(rn::ModelingToolkit.AbstractSystem, newdefs::AbstractVector{Pair{Symbol,T}})
+    setdefaults!(rn, newdefs)
 
-Sets the default (initial) values of parameters and species in `rn`.
+Sets the default (initial) values of parameters and species in the
+`ReactionSystem`, `rn`.
 
 For example,
 ```julia
@@ -342,26 +343,33 @@ sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end β ν
-setdefaults!(sir, [:S => 1.0, :I => 2.0, :β => 3.0])
+setdefaults!(sir, [:S => 999.0, :I => 1.0, :R => 1.0, :β => 1e-4, :ν => .01])
+
+# or
+@parameter β ν
+@variables t S(t) I(t) R(t)
+setdefaults!(sir, [S => 999.0, I => 1.0, R => 0.0, β => 1e-4, ν => .01])
 ```
 gives initial/default values to each of `S`, `I` and `β`
 
 Notes:
 - Can not be used to set default values for species, variables or parameters of
-subsystems or constraint systems. Either set defaults for those systems
-directly, or [`flatten`](@ref) to collate them into one system before setting
-defaults.
+  subsystems or constraint systems. Either set defaults for those systems
+  directly, or [`flatten`](@ref) to collate them into one system before setting
+  defaults.
+- Defaults can be specified in any iterable container of symbols to value pairs
+  or symbolics to value pairs.
 """
-function setdefaults!(rn::MT.AbstractSystem, newdefs::AbstractVector{Pair{Symbol,T}}) where {T}
+function setdefaults!(rn, newdefs) 
+    defs = eltype(newdefs) <: Pair{Symbol} ? symmap_to_varmap(rn,newdefs) : newdefs
     rndefs = MT.get_defaults(rn)
-    for (sym,val) in newdefs
-        var = value(MT.getproperty(rn, sym, namespace=false))
+    for (var,val) in defs
         rndefs[var] = value(val)
     end
     nothing
 end
 
-function __unpacksys(rn::MT.AbstractSystem) 
+function __unpacksys(rn) 
     ex = :(begin end)
     for key in keys(get_var_to_name(rn))
         var = MT.getproperty(rn, key, namespace=false)
@@ -389,11 +397,11 @@ will load the symbolic variables, `S`, `I`, `R`, `ν` and `β`.
 
 Notes:
 - Can not be used to load species, variables, or parameters of subsystems or
-constraints. Either call `@unpacksys` on those systems directly, or
-[`flatten`](@ref) to collate them into one system before calling.
+  constraints. Either call `@unpacksys` on those systems directly, or
+  [`flatten`](@ref) to collate them into one system before calling.
 - Note that this places symbolic variables within the calling module's scope, so
-calling from a function defined in a script or the REPL will still result in the
-symbolic variables being defined in the `Main` module.
+  calling from a function defined in a script or the REPL will still result in
+  the symbolic variables being defined in the `Main` module.
 """
 macro unpacksys(rn)
     quote
@@ -465,8 +473,11 @@ Notes:
   `sys.sym` must be defined.
 """
 function symmap_to_varmap(sys, symmap::Tuple)
-    all(p -> p isa Pair{Symbol}, symmap) || error("All entries in the map must be of the form Symbol => value.")
-    ((_symbol_to_var(sys,sym) => val for (sym,val) in symmap)...,)
+    if all(p -> p isa Pair{Symbol}, symmap)
+        return ((_symbol_to_var(sys,sym) => val for (sym,val) in symmap)...,)
+    else  # if not all entries map a symbol to value pass through
+        return symmap
+    end
 end
 
 symmap_to_varmap(sys, symmap::AbstractArray{Pair{Symbol,T}}) where {T} = 
