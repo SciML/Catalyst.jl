@@ -465,8 +465,11 @@ Notes:
   `sys.sym` must be defined.
 """
 function symmap_to_varmap(sys, symmap::Tuple)
-    all(p -> p isa Pair{Symbol}, symmap) || error("All entries in the map must be of the form Symbol => value.")
-    ((_symbol_to_var(sys,sym) => val for (sym,val) in symmap)...,)
+    if all(p -> p isa Pair{Symbol}, symmap)
+        return ((_symbol_to_var(sys,sym) => val for (sym,val) in symmap)...,)
+    else  # if not all entries map a symbol to value pass through
+        return symmap
+    end
 end
 
 symmap_to_varmap(sys, symmap::AbstractArray{Pair{Symbol,T}}) where {T} = 

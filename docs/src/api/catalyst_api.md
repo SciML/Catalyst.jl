@@ -185,7 +185,6 @@ reorder_states!
 addparam!
 addreaction!
 setdefaults!
-symmap_to_varmap
 ModelingToolkit.extend
 ModelingToolkit.compose
 Catalyst.flatten
@@ -259,4 +258,9 @@ ModelingToolkit.structural_simplify
 ```@docs
 validate(rx::Reaction; info::String = "")
 validate(rs::ReactionSystem, info::String="")
+```
+
+## Utility Functions
+```@docs
+symmap_to_varmap
 ```

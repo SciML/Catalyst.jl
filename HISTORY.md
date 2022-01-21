@@ -1,10 +1,18 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch) 
-- Added `symmap_to_varmap` and `setdefaults!` to allow setting initial conditions and parameter values using symbols.
+
+## Catalyst 10.4
+- Added `symmap_to_varmap` and `setdefaults!` to allow setting initial
+  conditions and parameter values using symbols. See the [Catalyst
+  API](https://catalyst.sciml.ai/dev/) for details on usage.
 
 ## Catalyst 10.3
-- **BREAKING:** The order of the parameters in the `ReactionSystem`'s `.ps` field has been changed (only when created through the `@reaction_network` macro). Previously they were ordered according to the order with which they appeared in the macro. Now they are ordered according the to order with which they appeard after the `end` part. E.g. in
+- **BREAKING:** The order of the parameters in the `ReactionSystem`'s `.ps`
+  field has been changed (only when created through the `@reaction_network`
+  macro). Previously they were ordered according to the order with which they
+  appeared in the macro. Now they are ordered according the to order with which
+  they appeard after the `end` part. E.g. in
   ```julia
   rn = @reaction_network begin
     (p,d), 0 <--> X
