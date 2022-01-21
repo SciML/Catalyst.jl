@@ -4,9 +4,9 @@
   c2, X --&gt; 0
   c3, 0 --&gt; X
 end c1 c2 c3
-p = (1.0,2.0,50.) # [c1,c2,c3]
+p = (:c1 =&gt; 1.0, :c2 =&gt; 2.0, :c3 =&gt; 50.) 
 tspan = (0.,4.)
-u0 = [5.]         # [X]
+u0 = [:X =&gt; 5.]
 
 # solve ODEs
 oprob = ODEProblem(rs, u0, tspan, p)
@@ -21,7 +21,7 @@ sprob = SDEProblem(rs, u0, tspan, p)
 ssol  = solve(sprob, EM(), dt=.01)
 
 # solve JumpProblem
-u0 = [5]
+u0 = [:X =&gt; 5]
 dprob = DiscreteProblem(rs, u0, tspan, p)
 jprob = JumpProblem(rs, dprob, Direct())
 jsol = solve(jprob, SSAStepper())</code></pre><h4 id="Example:-Michaelis-Menten-Enzyme-Kinetics"><a class="docs-heading-anchor" href="#Example:-Michaelis-Menten-Enzyme-Kinetics">Example: Michaelis-Menten Enzyme Kinetics</a><a id="Example:-Michaelis-Menten-Enzyme-Kinetics-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-Michaelis-Menten-Enzyme-Kinetics" title="Permalink"></a></h4><pre><code class="language-julia hljs">rs = @reaction_network begin
@@ -29,16 +29,16 @@ jsol = solve(jprob, SSAStepper())</code></pre><h4 id="Example:-Michaelis-Menten-
   c2, SE --&gt; S + E
   c3, SE --&gt; P + E
 end c1 c2 c3
-p = (0.00166,0.0001,0.1)   # [c1,c2,c3]
+p = (:c1 =&gt; 0.00166, :c2 =&gt; 0.0001, :c3 =&gt; 0.1) 
 tspan = (0., 100.)
-u0 = [301., 100., 0., 0.]  # [S,E,SE,P]
+u0 = [:S =&gt; 301., :E =&gt; 100., :SE =&gt; 0., :P =&gt; 0.]  
 
 # solve ODEs
 oprob = ODEProblem(rs, u0, tspan, p)
 osol  = solve(oprob, Tsit5())
 
 # solve JumpProblem
-u0 = [301, 100, 0, 0] 
+u0 = [:S =&gt; 301, :E =&gt; 100, :SE =&gt; 0, :P =&gt; 0] 
 dprob = DiscreteProblem(rs, u0, tspan, p)
 jprob = JumpProblem(rs, dprob, Direct())
-jsol = solve(jprob, SSAStepper())</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../reaction_systems/">« Symbolic Reaction Systems</a><a class="docs-footer-nextpage" href="../compositional_modeling/">Compositional Modeling of Reaction Systems »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.12 on <span class="colophon-date" title="Thursday 20 January 2022 22:31">Thursday 20 January 2022</span>. Using Julia version 1.7.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+jsol = solve(jprob, SSAStepper())</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../reaction_systems/">« Symbolic Reaction Systems</a><a class="docs-footer-nextpage" href="../compositional_modeling/">Compositional Modeling of Reaction Systems »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.12 on <span class="colophon-date" title="Friday 21 January 2022 21:19">Friday 21 January 2022</span>. Using Julia version 1.7.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

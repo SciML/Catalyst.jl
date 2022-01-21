@@ -30,7 +30,20 @@ Parameters (7):
   δ
   γ
   β
-  μ</code></pre><p>showing that we&#39;ve created a new network model named <code>Repressilator</code> with the listed chemical species and states. <a href="../../api/catalyst_api/#Catalyst.@reaction_network"><code>@reaction_network</code></a> returns a <a href="../../api/catalyst_api/#Catalyst.ReactionSystem"><code>ReactionSystem</code></a>, which we saved in the <code>repressilator</code> variabled. It can be converted to a variety of other mathematical models represented as <code>ModelingToolkit.AbstractSystem</code>s, or analyzed in various ways using Catalyst&#39;s network API. </p><p>To see the reactions in the system we use</p><pre><code class="language-julia hljs">reactions(repressilator)</code></pre><p>which gives</p><pre><code class="nohighlight hljs">15-element Vector{Reaction}:
+  μ</code></pre><p>showing that we&#39;ve created a new network model named <code>Repressilator</code> with the listed chemical species and states. <a href="../../api/catalyst_api/#Catalyst.@reaction_network"><code>@reaction_network</code></a> returns a <a href="../../api/catalyst_api/#Catalyst.ReactionSystem"><code>ReactionSystem</code></a>, which we saved in the <code>repressilator</code> variable. It can be converted to a variety of other mathematical models represented as <code>ModelingToolkit.AbstractSystem</code>s, or analyzed in various ways using the <a href="../../api/catalyst_api/#Catalyst.jl-API">Catalyst.jl API</a>. For example, to see the chemical species, parameters, and reactions we can use</p><pre><code class="language-julia hljs">species(repressilator)</code></pre><p>which gives</p><pre><code class="language-julia hljs">6-element Array{Term{Real},1}:
+ m₁(t)
+ m₂(t)
+ m₃(t)
+ P₁(t)
+ P₂(t)
+ P₃(t)</code></pre><pre><code class="language-julia hljs">parameters(repressilator)</code></pre><p>which gives</p><pre><code class="language-julia hljs">7-element Array{Sym{ModelingToolkit.Parameter{Real}},1}:
+ α
+ K
+ n
+ δ
+ γ
+ β
+ μ</code></pre><p>and</p><pre><code class="language-julia hljs">reactions(repressilator)</code></pre><p>which gives</p><pre><code class="nohighlight hljs">15-element Vector{Reaction}:
  Catalyst.hillr(P₃(t), α, K, n), ∅ --&gt; m₁
  Catalyst.hillr(P₁(t), α, K, n), ∅ --&gt; m₂
  Catalyst.hillr(P₂(t), α, K, n), ∅ --&gt; m₃
@@ -68,46 +81,20 @@ hillr(P₂,α,K,n), ∅ --&gt; m₃</code></pre><p>have rates that depend on the
 \frac{dP_1(t)}{dt} =&amp; \beta \mathrm{m_1}\left( t \right) - \mu \mathrm{P_1}\left( t \right) \\
 \frac{dP_2(t)}{dt} =&amp; \beta \mathrm{m_2}\left( t \right) - \mu \mathrm{P_2}\left( t \right) \\
 \frac{dP_3(t)}{dt} =&amp; \beta \mathrm{m_3}\left( t \right) - \mu \mathrm{P_3}\left( t \right)
-\end{aligned}\]</p><p>(Note, there is currently a Latexify bug that causes different fonts to be used for the species symbols on each side of the equations.)</p><p>Before we can solve the ODEs, we need to specify the values of the parameters in the model, the initial condition, and the time interval to solve the model on. To do this we need to build mappings from the parameters and the species to the corresponding numerical values for parameters and initial conditions. We can do this by using the <code>species</code> and <code>parameters</code> commands to get the corresponding symbolic variables:</p><pre><code class="language-julia hljs">species(repressilator)</code></pre><pre><code class="language-julia hljs">6-element Array{Term{Real},1}:
- m₁(t)
- m₂(t)
- m₃(t)
- P₁(t)
- P₂(t)
- P₃(t)</code></pre><pre><code class="language-julia hljs">parameters(repressilator)</code></pre><pre><code class="language-julia hljs">7-element Array{Sym{ModelingToolkit.Parameter{Real}},1}:
- α
- K
- n
- δ
- γ
- β
- μ</code></pre><p>Knowing these orderings, we can create parameter and initial condition vectors, and then set up the <code>ODEProblem</code> we want to solve:</p><pre><code class="language-julia hljs"># parameters [α,K,n,δ,γ,β,μ]
-p = (.5, 40, 2, log(2)/120, 5e-3, 20*log(2)/120, log(2)/60)
-
-# initial condition [m₁,m₂,m₃,P₁,P₂,P₃]
-u₀ = [0.,0.,0.,20.,0.,0.]
-
-# mappings from symbolic variables to their values
-u₀map = species(repressilator) .=&gt; u₀
-pmap  = parameters(repressilator) .=&gt; p
-
-# time interval to solve on
+\end{aligned}\]</p><p>(Note, there is currently a Latexify bug that causes different fonts to be used for the species symbols on each side of the equations.)</p><p>Before we can solve the ODEs, we need to specify the values of the parameters in the model, the initial condition, and the time interval to solve the model on. To do this we need to build mappings from the symbolic parameters and the species to the corresponding numerical values for parameters and initial conditions. We can build such mappings in several ways. One is to use Julia <code>Symbols</code> to specify the values like</p><pre><code class="language-julia hljs">pmap  = (:α =&gt; .5, :K =&gt; 40, :n =&gt; 2, :δ =&gt; log(2)/120, 
+         :γ =&gt; 5e-3, :β =&gt; log(2)/6, :μ =&gt; log(2)/60)
+u₀map = [:m₁ =&gt; 0., :m₂ =&gt; 0., :m₃ =&gt; 0., :P₁ =&gt; 20., :P₂ =&gt; 0., :P₃ =&gt; 0.]</code></pre><p>Alternatively, we can use ModelingToolkit symbolic variables to specify these mappings like</p><pre><code class="language-julia hljs">@parameters  α K n δ γ β μ
+@variables t m₁(t) m₂(t) m₃(t) P₁(t) P₂(t) P₃(t)
+pmap  = (α =&gt; .5, K =&gt; 40, n =&gt; 2, δ =&gt; log(2)/120, 
+         γ =&gt; 5e-3, β =&gt; 20*log(2)/120, μ =&gt; log(2)/60)
+u₀map = [m₁ =&gt; 0., m₂ =&gt; 0., m₃ =&gt; 0., P₁ =&gt; 20., P₂ =&gt; 0., P₃ =&gt; 0.]
+</code></pre><p>Knowing these mappings we can set up the <code>ODEProblem</code> we want to solve:</p><pre><code class="language-julia hljs"># time interval to solve on
 tspan = (0., 10000.)
 
 # create the ODEProblem we want to solve
-oprob = ODEProblem(repressilator, u₀map, tspan, pmap)</code></pre><p>Here </p><pre><code class="language-julia hljs">pmap</code></pre><p>gives </p><pre><code class="nohighlight hljs">7-element Vector{Pair{Sym{Real, Base.ImmutableDict{DataType, Any}}, B} where B}:
- α =&gt; 0.5
- K =&gt; 40
- n =&gt; 2
- δ =&gt; 0.0057762265046662105
- γ =&gt; 0.005
- β =&gt; 0.11552453009332422
- μ =&gt; 0.011552453009332421</code></pre><p>a vector of <code>Pair</code>s, mapping each symbolic parameter to its numerical value.</p><p>Note, by passing <code>repressilator</code> directly to the <code>ODEProblem</code>, Catalyst has to (internally) call <code>convert(ODESystem, repressilator)</code> again to generate the symbolic ODEs. We could instead pass <code>odesys</code> directly like</p><pre><code class="language-julia hljs">oprob2 = ODEProblem(odesys, u₀map, tspan, pmap)</code></pre><p><code>oprob</code> and <code>oprob2</code> are functionally equivalent, each representing the same underlying problem.</p><p>At this point we are all set to solve the ODEs. We can now use any ODE solver from within the <a href="https://diffeq.sciml.ai/latest/solvers/ode_solve/">DifferentialEquations.jl</a> package. We&#39;ll use the recommended default explicit solver, <code>Tsit5()</code>, and then plot the solutions:</p><pre><code class="language-julia hljs">sol = solve(oprob, Tsit5(), saveat=10.)
+oprob = ODEProblem(repressilator, u₀map, tspan, pmap)</code></pre><p>Note, by passing <code>repressilator</code> directly to the <code>ODEProblem</code>, Catalyst has to (internally) call <code>convert(ODESystem, repressilator)</code> again to generate the symbolic ODEs. We could instead pass <code>odesys</code> directly like</p><pre><code class="language-julia hljs">oprob2 = ODEProblem(odesys, u₀map, tspan, pmap)</code></pre><p><code>oprob</code> and <code>oprob2</code> are functionally equivalent, each representing the same underlying problem.</p><p>At this point we are all set to solve the ODEs. We can now use any ODE solver from within the <a href="https://diffeq.sciml.ai/latest/solvers/ode_solve/">DifferentialEquations.jl</a> package. We&#39;ll use the recommended default explicit solver, <code>Tsit5()</code>, and then plot the solutions:</p><pre><code class="language-julia hljs">sol = solve(oprob, Tsit5(), saveat=10.)
 plot(sol)</code></pre><p><img src="../../assets/repressilator_odes.svg" alt="Repressilator ODE Solutions"/></p><p>We see the well-known oscillatory behavior of the repressilator! For more on the choices of ODE solvers, see the <a href="https://diffeq.sciml.ai/dev/solvers/ode_solve/">DifferentialEquations.jl documentation</a>.</p><hr/><h2 id="Stochastic-Simulation-Algorithms-(SSAs)-for-Stochastic-Chemical-Kinetics"><a class="docs-heading-anchor" href="#Stochastic-Simulation-Algorithms-(SSAs)-for-Stochastic-Chemical-Kinetics">Stochastic Simulation Algorithms (SSAs) for Stochastic Chemical Kinetics</a><a id="Stochastic-Simulation-Algorithms-(SSAs)-for-Stochastic-Chemical-Kinetics-1"></a><a class="docs-heading-anchor-permalink" href="#Stochastic-Simulation-Algorithms-(SSAs)-for-Stochastic-Chemical-Kinetics" title="Permalink"></a></h2><p>Let&#39;s now look at a stochastic chemical kinetics model of the repressilator, modeling it with jump processes. Here, we will construct a <a href="https://github.com/SciML/DiffEqJump.jl">DiffEqJump</a> <code>JumpProblem</code> that uses Gillespie&#39;s <code>Direct</code> method, and then solve it to generate one realization of the jump process:</p><pre><code class="language-julia hljs"># redefine the initial condition to be integer valued
-u₀ = [0,0,0,20,0,0]
-
-# recreate the symbolic variable to value mapping since u₀ is now integer-valued
-u₀map = species(repressilator) .=&gt; u₀
+u₀map = [:m₁ =&gt; 0, :m₂ =&gt; 0, :m₃ =&gt; 0, :P₁ =&gt; 20, :P₂ =&gt; 0, :P₃ =&gt; 0]
 
 # next we create a discrete problem to encode that our species are integer valued:
 dprob = DiscreteProblem(repressilator, u₀map, tspan, pmap)
@@ -122,10 +109,10 @@ plot(sol)</code></pre><p><img src="../../assets/repressilator_jumps.svg" alt="Re
   c₂, X --&gt; 0
   c₃, 0 --&gt; X
 end c₁ c₂ c₃
-p = (1.0,2.0,50.)
-u₀ = [5.]
+p = (:c₁ =&gt; 1.0, :c₂ =&gt; 2.0, :c₃ =&gt; 50.)
+u₀ = [:X =&gt; 5.]
 tspan = (0.,4.)</code></pre><p>The corresponding Chemical Langevin Equation SDE is then</p><p class="math-container">\[dX(t) = \left( c_1 X\left( t \right) - c_2 X\left( t \right) + c_3 \right) dt + \sqrt{c_1 X(t)} dW_1(t) - \sqrt{c_2 X(t)} dW_2(t) + \sqrt{c_3} dW_3(t)\]</p><p>where each <span>$W_i(t)$</span> denotes an independent Brownian Motion. We can solve the CLE model by creating an <code>SDEProblem</code> and solving it similarly to what we did for ODEs above:</p><pre><code class="language-julia hljs"># SDEProblem for CLE
-sprob = SDEProblem(bdp, species(bdp) .=&gt; u₀, tspan, parameters(bdp) .=&gt; p)
+sprob = SDEProblem(bdp, u₀, tspan, p)
 
 # solve and plot, tstops is used to specify enough points
 # that the plot looks well-resolved
@@ -139,4 +126,4 @@ convert(ODESystem, rn; combinatoric_ratelaws=false)</code></pre><p>For the previ
 \frac{dX}{dt} &amp;=  -2 k X^2 Y^3, &amp;
 \frac{dY}{dt} &amp;=  -3 k X^2 Y^3, &amp;
 \frac{dZ}{dt} &amp;= k X^2 Y^3.
-\end{align*}\]</p><hr/><h2 id="Notes"><a class="docs-heading-anchor" href="#Notes">Notes</a><a id="Notes-1"></a><a class="docs-heading-anchor-permalink" href="#Notes" title="Permalink"></a></h2><ol><li><p>For each of the preceding models we converted the <code>ReactionSystem</code> to, i.e., ODEs, jumps, or SDEs, we had two paths for conversion:</p><p>a. Convert to the corresponding ModelingToolkit system and then use it in     creating the corresponding problem.</p><p>b. Directly create the desired problem type from the <code>ReactionSystem</code>.</p><p>The latter is more convenient, however, the former will be more efficient if one needs to repeatedly create the associated <code>Problem</code>.</p></li><li><p>ModelingToolkit offers many options for optimizing the generated ODEs and SDEs, including options to build functions for evaluating Jacobians and/or multithreaded versions of derivative evaluation functions. See the options for <a href="https://mtk.sciml.ai/dev/systems/ODESystem/#DiffEqBase.ODEProblem"><code>ODEProblem</code>s</a> and <a href="https://mtk.sciml.ai/dev/systems/SDESystem/#DiffEqBase.SDEProblem"><code>SDEProblem</code>s</a>.</p></li></ol></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../dsl/">The Reaction DSL »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.12 on <span class="colophon-date" title="Thursday 20 January 2022 22:31">Thursday 20 January 2022</span>. Using Julia version 1.7.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+\end{align*}\]</p><hr/><h2 id="Notes"><a class="docs-heading-anchor" href="#Notes">Notes</a><a id="Notes-1"></a><a class="docs-heading-anchor-permalink" href="#Notes" title="Permalink"></a></h2><ol><li><p>For each of the preceding models we converted the <code>ReactionSystem</code> to, i.e., ODEs, jumps, or SDEs, we had two paths for conversion:</p><p>a. Convert to the corresponding ModelingToolkit system and then use it in     creating the corresponding problem.</p><p>b. Directly create the desired problem type from the <code>ReactionSystem</code>.</p><p>The latter is more convenient, however, the former will be more efficient if one needs to repeatedly create the associated <code>Problem</code>.</p></li><li><p>ModelingToolkit offers many options for optimizing the generated ODEs and SDEs, including options to build functions for evaluating Jacobians and/or multithreaded versions of derivative evaluation functions. See the options for <a href="https://mtk.sciml.ai/dev/systems/ODESystem/#DiffEqBase.ODEProblem"><code>ODEProblem</code>s</a> and <a href="https://mtk.sciml.ai/dev/systems/SDESystem/#DiffEqBase.SDEProblem"><code>SDEProblem</code>s</a>.</p></li></ol></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../dsl/">The Reaction DSL »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.12 on <span class="colophon-date" title="Friday 21 January 2022 21:19">Friday 21 January 2022</span>. Using Julia version 1.7.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
