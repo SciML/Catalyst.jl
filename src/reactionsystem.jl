@@ -757,10 +757,8 @@ end
 # DiscreteProblem from AbstractReactionNetwork
 function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple, p=DiffEqBase.NullParameters(),
                                     args...; kwargs...)
-    @show p
     u0map = symmap_to_varmap(rs, u0)
     pmap  = symmap_to_varmap(rs, p)       
-    @show pmap                         
     return DiscreteProblem(convert(JumpSystem,rs; kwargs...),u0map,tspan,pmap,args...; kwargs...)
 end
 
