@@ -771,8 +771,9 @@ end
 function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0, p=DiffEqBase.NullParameters(), args...;
                                        kwargs...)
     u0map = symmap_to_varmap(rs, u0)
-    pmap  = symmap_to_varmap(rs, p)                                   
-    return SteadyStateProblem(ODEFunction(convert(ODESystem,rs; kwargs...)),u0map,pmap,args...; kwargs...)
+    pmap  = symmap_to_varmap(rs, p)       
+    @show u0map, pmap                            
+    return SteadyStateProblem(convert(ODESystem,rs; kwargs...),u0map,pmap,args...; kwargs...)
 end
 
 # determine which species a reaction depends on
