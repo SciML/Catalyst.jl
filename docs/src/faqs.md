@@ -13,6 +13,42 @@ osys = convert(ODESystem, rn; combinatoric_ratelaws=false)
 Disabling these rescalings should work for all conversions of `ReactionSystem`s
 to other `ModelingToolkit.AbstractSystem`s.
 
+## How to set default values for initial conditions and parameters?
+When directly constructing a `ReactionSystem` these can be specified directly,
+and allow solving the system without needing initial condition or parameter vectors
+in the generated problem. For example
+```julia
+using Catalyst, Plots, OrdinaryDiffEq
+@parameters β ν
+@variables t S(t) I(t) R(t)
+rx1 = Reaction(β, [S,I], [I], [1,1], [2])
+rx2 = Reaction(ν, [I], [R])
+defs = [β => 1e-4, ν => .01, S => 999.0, I => 1.0, R => 0.0]
+@named sir = ReactionSystem([rx1,rx2],t; defaults=defs)
+oprob = ODEProblem(sir, [], (0.0,250.0))
+sol = solve(oprob, Tsit5())
+plot(sol)
+```
+alternatively we could also have said
+```julia
+@parameters β=1e-4 ν=.01
+@variables t S(t)=999.0 I(t)=1.0 R(t)=0.0
+rx1 = Reaction(β, [S,I], [I], [1,1], [2])
+rx2 = Reaction(ν, [I], [R])
+@named sir = ReactionSystem([rx1,rx2],t)
+```
+
+The `@reaction_network` macro does not currently provide a way to specify
+default values, however, they can be added after creating the system via the
+`setdefaults!` command, like
+```julia
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end β ν
+setdefaults!(sir, [:S => 1.0, :I => 2.0, :β => 3.0])
+```
+
 ## How to modify generated ODEs?
 Conversion to other `ModelingToolkit.AbstractSystem`s allows the possibility to
 modify the system with further terms that are difficult to encode as a chemical

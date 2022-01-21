@@ -332,7 +332,7 @@ function netstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
 end
 
 """
-    setdefaults!(rn::ModelingToolkit.AbstractSystem, newdefs::AbstractVector{Pair{Symbol,T}})
+    setdefaults!(rn::ModelingToolkit.AbstractSystem, newdefs)
 
 Sets the default (initial) values of parameters and species in `rn`.
 
@@ -342,7 +342,12 @@ sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end β ν
-setdefaults!(sir, [:S => 1.0, :I => 2.0, :β => 3.0])
+setdefaults!(sir, [:S => 999.0, :I => 1.0, :R => 1.0, :β => 1e-4, :ν => .01])
+
+# or
+@parameter β ν
+@variables t S(t) I(t) R(t)
+setdefaults!(sir, [S => 999.0, I => 1.0, R => 0.0, β => 1e-4, ν => .01])
 ```
 gives initial/default values to each of `S`, `I` and `β`
 
@@ -351,11 +356,13 @@ Notes:
   subsystems or constraint systems. Either set defaults for those systems
   directly, or [`flatten`](@ref) to collate them into one system before setting
   defaults.
+- Defaults can be specified in any iterable container of symbols to value pairs
+  or symbolics to value pairs.
 """
-function setdefaults!(rn::MT.AbstractSystem, newdefs::AbstractVector{Pair{Symbol,T}}) where {T}
+function setdefaults!(rn::MT.AbstractSystem, newdefs) 
+    defs = eltype(newdefs) <: Pair{Symbol} ? symmap_to_varmap(rn,newdefs) : newdefs
     rndefs = MT.get_defaults(rn)
-    for (sym,val) in newdefs
-        var = value(MT.getproperty(rn, sym, namespace=false))
+    for (var,val) in defs
         rndefs[var] = value(val)
     end
     nothing
