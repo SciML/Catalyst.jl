@@ -772,7 +772,6 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0, p=DiffEqBase.Null
                                        kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap  = symmap_to_varmap(rs, p)       
-    @show u0map, pmap                            
     return SteadyStateProblem(convert(ODESystem,rs; kwargs...),u0map,pmap,args...; kwargs...)
 end
 
