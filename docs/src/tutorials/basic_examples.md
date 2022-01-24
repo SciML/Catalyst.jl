@@ -8,9 +8,9 @@ rs = @reaction_network begin
   c2, X --> 0
   c3, 0 --> X
 end c1 c2 c3
-p = (1.0,2.0,50.) # [c1,c2,c3]
+p = (:c1 => 1.0, :c2 => 2.0, :c3 => 50.) 
 tspan = (0.,4.)
-u0 = [5.]         # [X]
+u0 = [:X => 5.]
 
 # solve ODEs
 oprob = ODEProblem(rs, u0, tspan, p)
@@ -25,7 +25,7 @@ sprob = SDEProblem(rs, u0, tspan, p)
 ssol  = solve(sprob, EM(), dt=.01)
 
 # solve JumpProblem
-u0 = [5]
+u0 = [:X => 5]
 dprob = DiscreteProblem(rs, u0, tspan, p)
 jprob = JumpProblem(rs, dprob, Direct())
 jsol = solve(jprob, SSAStepper())
@@ -39,16 +39,16 @@ rs = @reaction_network begin
   c2, SE --> S + E
   c3, SE --> P + E
 end c1 c2 c3
-p = (0.00166,0.0001,0.1)   # [c1,c2,c3]
+p = (:c1 => 0.00166, :c2 => 0.0001, :c3 => 0.1) 
 tspan = (0., 100.)
-u0 = [301., 100., 0., 0.]  # [S,E,SE,P]
+u0 = [:S => 301., :E => 100., :SE => 0., :P => 0.]  
 
 # solve ODEs
 oprob = ODEProblem(rs, u0, tspan, p)
 osol  = solve(oprob, Tsit5())
 
 # solve JumpProblem
-u0 = [301, 100, 0, 0] 
+u0 = [:S => 301, :E => 100, :SE => 0, :P => 0] 
 dprob = DiscreteProblem(rs, u0, tspan, p)
 jprob = JumpProblem(rs, dprob, Direct())
 jsol = solve(jprob, SSAStepper())

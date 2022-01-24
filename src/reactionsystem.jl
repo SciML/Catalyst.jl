@@ -786,28 +786,36 @@ end
 # ODEProblem from AbstractReactionNetwork
 function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan, p=DiffEqBase.NullParameters(), args...;
                                check_length=false, kwargs...)
-    return ODEProblem(convert(ODESystem,rs; kwargs...),u0,tspan,p, args...; check_length, kwargs...)
+    u0map = symmap_to_varmap(rs, u0)
+    pmap  = symmap_to_varmap(rs, p)
+    return ODEProblem(convert(ODESystem,rs; kwargs...),u0map,tspan,pmap,args...; check_length, kwargs...)
 end
 
 # NonlinearProblem from AbstractReactionNetwork
 function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0, p=DiffEqBase.NullParameters(), args...;
                                      check_length=false, kwargs...)
-    return NonlinearProblem(convert(NonlinearSystem,rs; kwargs...), u0, p, args...; check_length, kwargs...)
+    u0map = symmap_to_varmap(rs, u0)
+    pmap  = symmap_to_varmap(rs, p)                                 
+    return NonlinearProblem(convert(NonlinearSystem,rs; kwargs...), u0map, pmap, args...; check_length, kwargs...)
 end
 
 
 # SDEProblem from AbstractReactionNetwork
 function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan, p=DiffEqBase.NullParameters(), args...;
                                noise_scaling=nothing, kwargs...)
+    u0map = symmap_to_varmap(rs, u0)
+    pmap  = symmap_to_varmap(rs, p)
     sde_sys  = convert(SDESystem,rs;noise_scaling=noise_scaling, kwargs...)
     p_matrix = zeros(length(get_states(rs)), length(get_eqs(rs)))
-    return SDEProblem(sde_sys,u0,tspan,p,args...; noise_rate_prototype=p_matrix,kwargs...)
+    return SDEProblem(sde_sys,u0map,tspan,pmap,args...; noise_rate_prototype=p_matrix,kwargs...)
 end
 
 # DiscreteProblem from AbstractReactionNetwork
 function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple, p=DiffEqBase.NullParameters(),
                                     args...; kwargs...)
-    return DiscreteProblem(convert(JumpSystem,rs; kwargs...), u0,tspan,p, args...; kwargs...)
+    u0map = symmap_to_varmap(rs, u0)
+    pmap  = symmap_to_varmap(rs, p)       
+    return DiscreteProblem(convert(JumpSystem,rs; kwargs...),u0map,tspan,pmap,args...; kwargs...)
 end
 
 # JumpProblem from AbstractReactionNetwork
@@ -818,7 +826,9 @@ end
 # SteadyStateProblem from AbstractReactionNetwork
 function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0, p=DiffEqBase.NullParameters(), args...;
                                        kwargs...)
-    return SteadyStateProblem(ODEFunction(convert(ODESystem,rs; kwargs...)),u0,p, args...; kwargs...)
+    u0map = symmap_to_varmap(rs, u0)
+    pmap  = symmap_to_varmap(rs, p)       
+    return SteadyStateProblem(convert(ODESystem,rs; kwargs...),u0map,pmap,args...; kwargs...)
 end
 
 # determine which species a reaction depends on
@@ -889,7 +899,7 @@ Notes:
 - Currently only `ReactionSystem`s, `NonlinearSystem`s and `ODESystem`s are
   supported as sub-systems when flattening.
 """
-function flatten(rs::ReactionSystem; name=nameof(rs))
+function MT.flatten(rs::ReactionSystem; name=nameof(rs))
 
     isempty(get_systems(rs)) && return rs
 
