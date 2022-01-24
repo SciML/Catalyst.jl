@@ -588,7 +588,7 @@ end
 function error_if_constraint_odes(::Type{T}, rs::ReactionSystem) where {T <: MT.AbstractSystem}
     csys = get_constraints(rs)
     if csys !== nothing
-        any(eq -> MT.isdiffeq(eq), get_eqs(csys)) &&
+        any(eq -> MT.isdiffeq(eq), equations(csys)) &&
             error("Cannot convert to system type $T when then there are ODE constraint equations.")
     end
     nothing
