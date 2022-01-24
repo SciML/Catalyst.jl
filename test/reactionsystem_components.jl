@@ -129,22 +129,39 @@ network = @reaction_network
 @variables t x(t)
 @named constraints = NonlinearSystem([x ~ a], [x], [a])
 extended = extend(constraints, network)
-@test isequal(a, @nonamespace extended.a)
-@test isequal(x, @nonamespace extended.x)
+@test isequal(extended.a, ModelingToolkit.namespace_expr(a, extended))
+@test isequal(extended.x, ModelingToolkit.namespace_expr(x, extended))
+# and after conversion to an AbstractSystem
 system = convert(NonlinearSystem, extended)
+@test isequal(system.a, ModelingToolkit.namespace_expr(a, system))
+@test isequal(system.x, ModelingToolkit.namespace_expr(x, system))
 @test length(equations(system)) == 1
 @test equations(system) == equations(constraints)
+
+# test that the namespacing still works if the extended system takes the name
+# of the ReactionSystem
+extended = extend(constraints, network; name=nameof(network))
+@test isequal(extended.a, ModelingToolkit.namespace_expr(a, extended))
+@test isequal(extended.x, ModelingToolkit.namespace_expr(x, extended))
 # and after conversion to an AbstractSystem
-@test isequal(a, @nonamespace system.a)
-@test isequal(x, @nonamespace system.x)
+system = convert(NonlinearSystem, extended)
+@test isequal(system.a, ModelingToolkit.namespace_expr(a, system))
+@test isequal(system.x, ModelingToolkit.namespace_expr(x, system))
+@test length(equations(system)) == 1
+@test equations(system) == equations(constraints)
 
 # test that extending a system with constraints correctly handles default values
 network = @reaction_network
 @parameters a=1
 @variables t x(t)=a
 @named constraints = NonlinearSystem([x ~ a], [x], [a])
-network = extend(constraints, network)
-defs = ModelingToolkit.get_defaults(network)
+extended = extend(constraints, network)
+defs = ModelingToolkit.defaults(extended)
+@test a ∈ keys(defs) && defs[a] == 1
+@test x ∈ keys(defs) && isequal(defs[x], a)
+
+extended = extend(constraints, network; name=nameof(network))
+defs = ModelingToolkit.defaults(extended)
 @test a ∈ keys(defs) && defs[a] == 1
 @test x ∈ keys(defs) && isequal(defs[x], a)
 
@@ -155,11 +172,20 @@ network = @reaction_network
 @variables t x(t)
 @named constraints = NonlinearSystem([x ~ a], [x], [a])
 constraints = structural_simplify(constraints)
-network = extend(constraints, network)
-@test isequal(a, @nonamespace network.a)
-@test isequal(x, @nonamespace network.x)
-@test observed(network) == observed(constraints)
-@test observed(convert(ODESystem, network)) == observed(constraints)
+
+extended = extend(constraints, network; name=nameof(network))
+@test isequal(extended.a, ModelingToolkit.namespace_expr(a, extended))
+@test isequal(extended.x, ModelingToolkit.namespace_expr(x, extended))
+system = convert(ODESystem, extended)
+@test ModelingToolkit.observed(extended) == ModelingToolkit.observed(constraints)
+@test ModelingToolkit.observed(system) == ModelingToolkit.observed(constraints)
+
+extended = extend(constraints, network)
+@test isequal(extended.a, ModelingToolkit.namespace_expr(a, extended))
+@test isequal(extended.x, ModelingToolkit.namespace_expr(x, extended))
+system = convert(ODESystem, extended)
+@test ModelingToolkit.observed(extended) == ModelingToolkit.observed(constraints)
+@test ModelingToolkit.observed(system) == ModelingToolkit.observed(constraints)
 
 # test can make ODESystem
 @named oderepressilator = convert(ODESystem, repressilator2, include_zero_odes=false)

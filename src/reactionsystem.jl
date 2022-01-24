@@ -251,13 +251,6 @@ function ReactionSystem(eqs, iv, states, ps;
     MT.process_variables!(var_to_name, defaults, states′)
     MT.process_variables!(var_to_name, defaults, ps′)
     MT.collect_var_to_name!(var_to_name, eq.lhs for eq in observed)
-
-    if constraints !== nothing
-        MT.process_variables!(var_to_name, defaults, get_ps(constraints))
-        MT.process_variables!(var_to_name, defaults, get_states(constraints))
-        MT.collect_var_to_name!(var_to_name, eq.lhs for eq in get_observed(constraints))
-        append!(observed, get_observed(constraints))
-    end
         
     ReactionSystem(eqs′, iv′, states′, ps′, var_to_name, observed, name, systems, 
                    defaults, connection_type, constraints; 
@@ -328,6 +321,62 @@ function MT.equations(sys::ReactionSystem)
         return Any[eqs; reduce(vcat, MT.namespace_equations.(systems); init=Any[])]
     end
     return eqs
+end
+
+function MT.defaults(sys::ReactionSystem)
+    constraints = get_constraints(sys)
+    defs = get_defaults(sys)
+    if constraints !== nothing
+        defs = merge(defs, MT.defaults(rename(constraints, nameof(sys))))
+    end
+    return defs
+end
+
+function MT.observed(sys::ReactionSystem)
+    obs = get_observed(sys)
+    constraints = get_constraints(sys)
+    if constraints !== nothing
+        obs = vcat(obs, MT.observed(rename(constraints, nameof(sys))))
+    end
+    return obs
+end
+
+function MT.getvar(sys::ReactionSystem, name::Symbol; namespace=false)
+    if isdefined(sys, name)
+        Base.depwarn("`sys.name` like `sys.$name` is deprecated. Use getters like `get_$name` instead.", "sys.$name")
+        return getfield(sys, name)
+    end
+
+    systems = get_systems(sys)
+    i = findfirst(x->nameof(x)==name, systems)
+    i === nothing || return namespace ? rename(systems[i], renamespace(sys, name)) : systems[i]
+    
+    constraints = get_constraints(sys)
+    if constraints !== nothing && nameof(constraints) == name
+        return namespace ? rename(constraints, renamespace(sys, name)) : constraints
+    end
+
+    avs = get_var_to_name(sys)
+    v = get(avs, name, nothing)
+    v === nothing || return namespace ? renamespace(sys, v) : v
+
+    sts = get_states(sys)
+    i = findfirst(x->getname(x) == name, sts)
+    i === nothing || return namespace ? renamespace(sys, sts[i]) : sts[i]
+
+    ps = get_ps(sys)
+    i = findfirst(x->getname(x) == name,ps)
+    i === nothing || return namespace ? renamespace(sys, ps[i]) : ps[i]
+
+    obs = get_observed(sys)
+    i = findfirst(x->getname(x.lhs)==name,obs)
+    i === nothing || return namespace ? renamespace(sys, obs[i]) : obs[i]
+
+    if constraints !== nothing
+        return getvar(rename(constraints, nameof(sys)), name; namespace=namespace)
+    end
+
+    throw(ArgumentError("System $(nameof(sys)): variable $name does not exist"))
 end
 
 ######################## Conversion to ODEs/SDEs/jump, etc ##############################
@@ -622,8 +671,8 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem;
     eqs = assemble_drift(fullrs; combinatoric_ratelaws=combinatoric_ratelaws,
                              include_zero_odes=include_zero_odes)
     eqs,sts,ps = addconstraints!(eqs, fullrs)
-    ODESystem(eqs, get_iv(fullrs), sts, ps; name=name, defaults=get_defaults(fullrs),
-                                            observed=get_observed(fullrs), checks=checks,
+    ODESystem(eqs, get_iv(fullrs), sts, ps; name=name, defaults=MT.defaults(fullrs),
+                                            observed=MT.observed(fullrs), checks=checks,
                                             kwargs...)
 end
 
@@ -648,8 +697,8 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem;
                                  include_zero_odes=include_zero_odes)
     error_if_constraint_odes(NonlinearSystem, fullrs)
     eqs,sts,ps = addconstraints!(eqs, fullrs)
-    NonlinearSystem(eqs, sts, ps; name=name, defaults=get_defaults(fullrs),
-                                  observed=get_observed(fullrs), checks = checks,
+    NonlinearSystem(eqs, sts, ps; name=name, defaults=MT.defaults(fullrs),
+                                  observed=MT.observed(fullrs), checks = checks,
                                   kwargs...)
 end
 
@@ -699,8 +748,8 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     SDESystem(eqs, noiseeqs, get_iv(flatrs), get_states(flatrs),
               (noise_scaling===nothing) ? get_ps(flatrs) : union(get_ps(flatrs), toparam(noise_scaling));
               name=name,
-              defaults=get_defaults(flatrs),
-              observed=get_observed(flatrs),
+              defaults=MT.defaults(flatrs),
+              observed=MT.observed(flatrs),
               checks = checks,
               kwargs...)
 end
@@ -726,7 +775,7 @@ function Base.convert(::Type{<:JumpSystem},rs::ReactionSystem;
 
     eqs = assemble_jumps(flatrs; combinatoric_ratelaws=combinatoric_ratelaws)
     JumpSystem(eqs, get_iv(flatrs), get_states(flatrs), get_ps(flatrs); name=name,
-               defaults=get_defaults(flatrs), observed=get_observed(flatrs),
+               defaults=MT.defaults(flatrs), observed=MT.observed(flatrs),
                checks = checks, kwargs...)
 end
 
