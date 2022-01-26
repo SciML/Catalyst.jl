@@ -2,6 +2,9 @@
 
 ## Catalyst unreleased (master branch) 
 
+## Catalyst 10.4.2
+- Fixed bugs in `extend` and in supporting namespacing for variables within constraint systems.
+
 ## Catalyst 10.4
 - Added `symmap_to_varmap`, `setdefaults!`, and updated all `*Problem(rn,...)`
   calls to allow setting initial conditions and parameter values using symbol
