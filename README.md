@@ -67,7 +67,8 @@ the current master branch.
   ODE/SDE/jump solver, and can be used within `EnsembleProblem`s for carrying
   out parallelized parameter sweeps and statistical sampling. Plot recipes
   are available for visualizing the solutions.
-- Julia `Expr`s can be obtained for all rate laws and functions determining the
+- [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl) symbolic expressions 
+  and Julia `Expr`s can be obtained for all rate laws and functions determining the
   deterministic and stochastic terms within resulting ODE, SDE, or jump models.
 - [Latexify](https://github.com/korsbo/Latexify.jl) can be used to generate
   LaTeX expressions corresponding to generated mathematical models or the
