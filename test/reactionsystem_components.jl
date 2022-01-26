@@ -148,44 +148,76 @@ system = convert(NonlinearSystem, extended)
 @test isequal(system.a, ModelingToolkit.namespace_expr(a, system))
 @test isequal(system.x, ModelingToolkit.namespace_expr(x, system))
 @test length(equations(system)) == 1
-@test equations(system) == equations(constraints)
+@test Set(equations(system)) == Set(equations(constraints))
 
 # test that extending a system with constraints correctly handles default values
 network = @reaction_network
-@parameters a=1
-@variables t x(t)=a
+subnetwork = @reaction_network
+@parameters a=1 b=2
+@variables t x(t)=a y(t)=b
 @named constraints = NonlinearSystem([x ~ a], [x], [a])
+@named subsystemconstraints = NonlinearSystem([y ~ b], [y], [b])
 extended = extend(constraints, network)
+subextended = extend(subsystemconstraints, subnetwork)
+extended = compose(extended, subextended)
 defs = ModelingToolkit.defaults(extended)
-@test a ∈ keys(defs) && defs[a] == 1
-@test x ∈ keys(defs) && isequal(defs[x], a)
+@test get(defs, a, nothing) == 1
+@test isequal(get(defs, x, nothing), a)
+@test get(defs, subextended.b, nothing) == 2
+@test isequal(get(defs, subextended.y, nothing), subextended.b)
 
 extended = extend(constraints, network; name=nameof(network))
+subextended = extend(subsystemconstraints, subnetwork, name=nameof(subnetwork))
+extended = compose(extended, subextended)
 defs = ModelingToolkit.defaults(extended)
-@test a ∈ keys(defs) && defs[a] == 1
-@test x ∈ keys(defs) && isequal(defs[x], a)
+defs = ModelingToolkit.defaults(extended)
+@test get(defs, a, nothing) == 1
+@test isequal(get(defs, x, nothing), a)
+@test get(defs, subextended.b, nothing) == 2
+@test isequal(get(defs, subextended.y, nothing), subextended.b)
 
 # test that the observables of constraint systems are accessible after
 # extending a ReactionSystem
 network = @reaction_network
-@parameters a
-@variables t x(t)
+subnetwork = @reaction_network
+@parameters a b
+@variables t x(t) y(t)
 @named constraints = NonlinearSystem([x ~ a], [x], [a])
+@named subconstraints = NonlinearSystem([y ~ b], [y], [b])
 constraints = structural_simplify(constraints)
+subconstraints = structural_simplify(subconstraints)
 
 extended = extend(constraints, network; name=nameof(network))
+subextended = extend(subconstraints, subnetwork, name=nameof(subnetwork))
+extended = compose(extended, subextended)
 @test isequal(extended.a, ModelingToolkit.namespace_expr(a, extended))
 @test isequal(extended.x, ModelingToolkit.namespace_expr(x, extended))
-system = convert(ODESystem, extended)
-@test ModelingToolkit.observed(extended) == ModelingToolkit.observed(constraints)
-@test ModelingToolkit.observed(system) == ModelingToolkit.observed(constraints)
+odesystem = convert(ODESystem, extended)
+nlsystem = convert(NonlinearSystem, extended)
+
+obs = Set([
+    ModelingToolkit.observed(constraints);
+    [ModelingToolkit.namespace_equation(o, subextended) for o in ModelingToolkit.observed(subconstraints)]
+          ])
+@test Set(ModelingToolkit.observed(extended)) == obs
+@test Set(ModelingToolkit.observed(odesystem)) == obs
+@test Set(ModelingToolkit.observed(nlsystem)) == obs
 
 extended = extend(constraints, network)
+subextended = extend(subconstraints, subnetwork)
+extended = compose(extended, subextended)
 @test isequal(extended.a, ModelingToolkit.namespace_expr(a, extended))
 @test isequal(extended.x, ModelingToolkit.namespace_expr(x, extended))
-system = convert(ODESystem, extended)
-@test ModelingToolkit.observed(extended) == ModelingToolkit.observed(constraints)
-@test ModelingToolkit.observed(system) == ModelingToolkit.observed(constraints)
+odesystem = convert(ODESystem, extended)
+nlsystem = convert(NonlinearSystem, extended)
+
+obs = Set([
+    ModelingToolkit.observed(constraints);
+    [ModelingToolkit.namespace_equation(o, subextended) for o in ModelingToolkit.observed(subconstraints)]
+          ])
+@test Set(ModelingToolkit.observed(extended)) == obs
+@test Set(ModelingToolkit.observed(odesystem)) == obs
+@test Set(ModelingToolkit.observed(nlsystem)) == obs
 
 # test can make ODESystem
 @named oderepressilator = convert(ODESystem, repressilator2, include_zero_odes=false)

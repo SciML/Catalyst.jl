@@ -325,20 +325,27 @@ end
 
 function MT.defaults(sys::ReactionSystem)
     constraints = get_constraints(sys)
+    systems = get_systems(sys)
     defs = get_defaults(sys)
+    
     if constraints !== nothing
-        defs = merge(defs, MT.defaults(rename(constraints, nameof(sys))))
+        defs = merge(defs, get_defaults(constraints))
     end
-    return defs
+
+    mapfoldr(MT.namespace_defaults, merge, systems, init=defs)
 end
 
 function MT.observed(sys::ReactionSystem)
-    obs = get_observed(sys)
     constraints = get_constraints(sys)
+    systems = get_systems(sys)
+    obs = get_observed(sys)
+
     if constraints !== nothing
-        obs = vcat(obs, MT.observed(rename(constraints, nameof(sys))))
+        obs = vcat(obs, get_observed(constraints))
     end
-    return obs
+    reduce(vcat,
+           (map(o->MT.namespace_equation(o,s), MT.observed(s)) for s in systems);
+           init=obs)
 end
 
 function MT.getvar(sys::ReactionSystem, name::Symbol; namespace=false)
