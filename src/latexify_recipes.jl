@@ -1,9 +1,9 @@
 # Implements handling of registered functions.
-mm_names = ([:mm])
-mmr_names = ([:mmr])
-hill_names = ([:hill])
-hillr_names = ([:hillr])
-hillar_names = ([:hillar])
+const mm_names = ([:mm])
+const mmr_names = ([:mmr])
+const hill_names = ([:hill])
+const hillr_names = ([:hillr])
+const hillar_names = ([:hillar])
 
 make_mm_exp(expr::Expr) = :($(expr.args[3])*$(expr.args[2])/($(expr.args[4])+$(expr.args[2])))
 make_mmr_exp(expr::Expr) = :($(expr.args[3])*$(expr.args[4])/($(expr.args[4])+$(expr.args[2])))
