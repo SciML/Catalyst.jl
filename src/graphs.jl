@@ -236,9 +236,9 @@ indent(io::IO, n::Int) = print(io, " "^n)
 # https://github.com/mehalter/Petri.jl
 #######################################################################
 
-graph_attrs = Attributes(:rankdir => "LR")
-node_attrs  = Attributes(:shape => "plain", :style => "filled", :color => "white")
-edge_attrs  = Attributes(:splines => "splines")
+const graph_attrs = Attributes(:rankdir => "LR")
+const node_attrs  = Attributes(:shape => "plain", :style => "filled", :color => "white")
+const edge_attrs  = Attributes(:splines => "splines")
 
 function edgify(δ, i, reverse::Bool)
     attr = Attributes()
