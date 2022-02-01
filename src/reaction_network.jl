@@ -150,7 +150,7 @@ end
 ### Macros used for manipulating, and successively builing up, reaction systems. ###
 
 macro reaction(ex)
-    return make_reaction(ex)
+    make_reaction(ex)
 end
 
 """
