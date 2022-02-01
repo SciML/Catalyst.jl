@@ -100,3 +100,8 @@ raw"\begin{align}
 \end{align}
 ", "\r\n"=>"\n")
 
+# test empty system
+empty_rn = ReactionSystem(Reaction[]; name=:EmptySys)
+# Latexify.@generate_test latexify(empty_rn)
+@test latexify(empty_rn) == replace(
+raw"ReactionSystem EmptySys has no reactions.", "\r\n"=>"\n")

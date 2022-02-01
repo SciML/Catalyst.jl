@@ -67,12 +67,17 @@ function chemical_arrows(rn::ReactionSystem;
     (get_constraints(rn) !== nothing) && (@warn "Latexify currently ignores constraint equations.")
     any_nonrx_subsys(rn) && (@warn "Latexify currently ignores non-ReactionSystem subsystems.")
 
+    rxs = reactions(rn)    
+    if isempty(rxs)
+        latexstr = Latexify.LaTeXString("ReactionSystem $(nameof(rn)) has no reactions.")
+        Latexify.COPY_TO_CLIPBOARD && clipboard(latexstr)
+        return latexstr
+    end
+
     str = starred ? "\\begin{align*}\n" : "\\begin{align}\n"
     eol = double_linebreak ? "\\\\\\\\\n" : "\\\\\n"
-
     mathjax && (str *= "\\require{mhchem}\n")
     backwards_reaction = false
-    rxs = reactions(rn)    
 
     subber = ModelingToolkit.substituter([s => MT.operation(s) for s in species(rn)])
 
