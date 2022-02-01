@@ -205,15 +205,15 @@ function esc_dollars!(ex)
     ex
 end
 
-function symbolic_reaction(reaction)
-    subs_init = isempty(reaction.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
-    prod_init = isempty(reaction.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
-    reaction_func = :(Reaction($(recursive_expand_functions!(reaction.rate)), $subs_init, $prod_init, $subs_stoich_init, $prod_stoich_init, only_use_rate=$(reaction.only_use_rate)))
-    for sub in reaction.substrates
+function symbolic_reaction(rxexpr)
+    subs_init = isempty(rxexpr.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
+    prod_init = isempty(rxexpr.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
+    reaction_func = :(Reaction($(recursive_expand_functions!(rxexpr.rate)), $subs_init, $prod_init, $subs_stoich_init, $prod_stoich_init, only_use_rate=$(rxexpr.only_use_rate)))
+    for sub in rxexpr.substrates
         push!(reaction_func.args[3].args, sub.reactant)
         push!(reaction_func.args[5].args, sub.stoichiometry)
     end
-    for prod in reaction.products
+    for prod in rxexpr.products
         push!(reaction_func.args[4].args, prod.reactant)
         push!(reaction_func.args[6].args, prod.stoichiometry)
     end
