@@ -205,6 +205,21 @@ function esc_dollars!(ex)
     ex
 end
 
+function symbolic_reaction(reaction)
+    subs_init = isempty(reaction.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
+    prod_init = isempty(reaction.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
+    reaction_func = :(Reaction($(recursive_expand_functions!(reaction.rate)), $subs_init, $prod_init, $subs_stoich_init, $prod_stoich_init, only_use_rate=$(reaction.only_use_rate)))
+    for sub in reaction.substrates
+        push!(reaction_func.args[3].args, sub.reactant)
+        push!(reaction_func.args[5].args, sub.stoichiometry)
+    end
+    for prod in reaction.products
+        push!(reaction_func.args[4].args, prod.reactant)
+        push!(reaction_func.args[6].args, prod.stoichiometry)
+    end
+    reaction_func
+end
+
 # Takes the reactions, and rephrases it as a "ReactionSystem" call, as designated by the ModelingToolkit IR.
 function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSystem)))
 
@@ -232,18 +247,7 @@ function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSyste
     rxexprs = :($(make_ReactionSystem_internal)([],t,nothing,[]; name=$(name)))
     foreach(parameter -> push!(rxexprs.args[6].args,parameter), parameters)
     for reaction in reactions
-        subs_init = isempty(reaction.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
-        prod_init = isempty(reaction.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
-        reaction_func = :(Reaction($(recursive_expand_functions!(reaction.rate)), $subs_init, $prod_init, $subs_stoich_init, $prod_stoich_init, only_use_rate=$(reaction.only_use_rate)))
-        for sub in reaction.substrates
-            push!(reaction_func.args[3].args, sub.reactant)
-            push!(reaction_func.args[5].args, sub.stoichiometry)
-        end
-        for prod in reaction.products
-            push!(reaction_func.args[4].args, prod.reactant)
-            push!(reaction_func.args[6].args, prod.stoichiometry)
-        end
-        push!(rxexprs.args[3].args,reaction_func)
+        push!(rxexprs.args[3].args, symbolic_reaction(reaction))
     end
 
     quote
@@ -276,17 +280,7 @@ function make_reaction(ex::Expr)
     foreach(species -> (species isa Symbol) && push!(sexprs.args, Expr(:call,species,:t)), allspecies)
 
     # Reaction
-    subs_init = isempty(reaction.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
-    prod_init = isempty(reaction.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
-    reaction_func = :(Reaction($(recursive_expand_functions!(reaction.rate)), $subs_init, $prod_init, $subs_stoich_init, $prod_stoich_init, only_use_rate=$(reaction.only_use_rate)))
-    for sub in reaction.substrates
-        push!(reaction_func.args[3].args, sub.reactant)
-        push!(reaction_func.args[5].args, sub.stoichiometry)
-    end
-    for prod in reaction.products
-        push!(reaction_func.args[4].args, prod.reactant)
-        push!(reaction_func.args[6].args, prod.stoichiometry)
-    end
+    reaction_func = symbolic_reaction(reaction)
 
     quote
         $pexprs
