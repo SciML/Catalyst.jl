@@ -49,7 +49,7 @@ export get_constraints
 const ExprValues = Union{Expr,Symbol,Float64,Int}
 include("expression_utils.jl")
 include("reaction_network.jl")
-export @reaction_network, @add_reactions
+export @reaction_network, @add_reactions, @reaction
 
 # registers CRN specific functions using Symbolics.jl
 include("registered_functions.jl")

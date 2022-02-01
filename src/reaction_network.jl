@@ -149,6 +149,10 @@ end
 
 ### Macros used for manipulating, and successively builing up, reaction systems. ###
 
+macro reaction(ex)
+    return make_reaction(ex)
+end
+
 """
     @add_reactions
 
@@ -243,60 +247,53 @@ function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSyste
     end
 
     quote
-        _ps = $pexprs
+        $pexprs
         $sexprs
         $rxexprs
     end
 end
 
-# function make_reaction(ex::Expr)
+function make_reaction(ex::Expr)
 
-#     # handle interpolation of variables
-#     ex = esc_dollars!(ex)
+    # handle interpolation of variables
+    ex = esc_dollars!(ex)
 
-#     # parse DSL lines
-#     reaction = get_reaction(ex)
-#     reactants = get_reactants(reactions)
-#     allspecies = union(reactants, get_rate_species(reactions,parameters))
-#     !isempty(intersect(forbidden_symbols,union(allspecies,parameters))) &&
-#         error("The following symbol(s) are used as species or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(species,parameters)))...))*"this is not permited.")
+    # parse DSL lines
+    reaction   = get_reaction(ex)
+    allspecies = get_reactants(reaction)   # species defined by stoich
+    parameters = get_rate_species([reaction],Symbol[])  # anything in a rate is a parameter
+    !isempty(intersect(forbidden_symbols,union(allspecies,parameters))) &&
+        error("The following symbol(s) are used as species or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(species,parameters)))...))*"this is not permited.")
 
-#     # parameters
-#     pexprs = isempty(parameters) ? :() : :(@parameters)
-#     if !isempty(parameters)
-#         foreach(parameter-> push!(pexprs.args, parameter), parameters)
-#     end
+    # parameters
+    pexprs = isempty(parameters) ? :() : :(@parameters)
+    if !isempty(parameters)
+        foreach(parameter-> push!(pexprs.args, parameter), parameters)
+    end
 
-#     # species
-#     sexprs = :(@variables t)
-#     foreach(species -> (species isa Symbol) && push!(sexprs.args, Expr(:call,species,:t)), allspecies)
+    # species
+    sexprs = :(@variables t)
+    foreach(species -> (species isa Symbol) && push!(sexprs.args, Expr(:call,species,:t)), allspecies)
 
-#     # ReactionSystem
-#     rxexprs = :($(make_ReactionSystem_internal)([],t,nothing,[]; name=$(name)))
-#     foreach(parameter -> push!(rxexprs.args[6].args,parameter), parameters)
-#     for reaction in reactions
-#         subs_init = isempty(reaction.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
-#         prod_init = isempty(reaction.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
-#         reaction_func = :(Reaction($(recursive_expand_functions!(reaction.rate)), $subs_init, $prod_init, $subs_stoich_init, $prod_stoich_init, only_use_rate=$(reaction.only_use_rate)))
-#         for sub in reaction.substrates
-#             push!(reaction_func.args[3].args, sub.reactant)
-#             push!(reaction_func.args[5].args, sub.stoichiometry)
-#         end
-#         for prod in reaction.products
-#             push!(reaction_func.args[4].args, prod.reactant)
-#             push!(reaction_func.args[6].args, prod.stoichiometry)
-#         end
-#         push!(rxexprs.args[3].args,reaction_func)
-#     end
+    # Reaction
+    subs_init = isempty(reaction.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
+    prod_init = isempty(reaction.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
+    reaction_func = :(Reaction($(recursive_expand_functions!(reaction.rate)), $subs_init, $prod_init, $subs_stoich_init, $prod_stoich_init, only_use_rate=$(reaction.only_use_rate)))
+    for sub in reaction.substrates
+        push!(reaction_func.args[3].args, sub.reactant)
+        push!(reaction_func.args[5].args, sub.stoichiometry)
+    end
+    for prod in reaction.products
+        push!(reaction_func.args[4].args, prod.reactant)
+        push!(reaction_func.args[6].args, prod.stoichiometry)
+    end
 
-#     quote
-#         _ps = $pexprs
-#         $sexprs
-#         $rxexprs
-#     end
-# end
-
-
+    quote
+        $pexprs
+        $sexprs
+        $reaction_func
+    end
+end
 
 function get_rate_species(rxs, ps)
     pset = Set(ps)
