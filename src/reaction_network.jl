@@ -205,7 +205,7 @@ function esc_dollars!(ex)
     ex
 end
 
-function symbolic_reaction(rxstruct)
+function get_rxexprs(rxstruct)
     subs_init = isempty(rxstruct.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
     prod_init = isempty(rxstruct.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
     reaction_func = :(Reaction($(recursive_expand_functions!(rxstruct.rate)), $subs_init, $prod_init, $subs_stoich_init, $prod_stoich_init, only_use_rate=$(rxstruct.only_use_rate)))
@@ -218,6 +218,20 @@ function symbolic_reaction(rxstruct)
         push!(reaction_func.args[6].args, prod.stoichiometry)
     end
     reaction_func
+end
+
+function get_pexprs(psyms)
+    pexprs = isempty(psyms) ? :() : :(@parameters)
+    if !isempty(psyms)
+        foreach(psym-> push!(pexprs.args, psym), psyms)
+    end
+    pexprs
+end
+
+function get_sexprs(ssyms)
+    sexprs = :(@variables t)
+    foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call,s,:t)), ssyms)
+    sexprs
 end
 
 # Takes the reactions, and rephrases it as a "ReactionSystem" call, as designated by the ModelingToolkit IR.
@@ -233,21 +247,14 @@ function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSyste
     !isempty(intersect(forbidden_symbols,union(allspecies,parameters))) &&
         error("The following symbol(s) are used as species or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(species,parameters)))...))*"this is not permited.")
 
-    # parameters
-    pexprs = isempty(parameters) ? :() : :(@parameters)
-    if !isempty(parameters)
-        foreach(parameter-> push!(pexprs.args, parameter), parameters)
-    end
-
-    # species
-    sexprs = :(@variables t)
-    foreach(species -> (species isa Symbol) && push!(sexprs.args, Expr(:call,species,:t)), allspecies)
+    pexprs = get_pexprs(parameters)    # parameters
+    sexprs = get_sexprs(allspecies)    # species
 
     # ReactionSystem
     rxexprs = :($(make_ReactionSystem_internal)([],t,nothing,[]; name=$(name)))
     foreach(parameter -> push!(rxexprs.args[6].args,parameter), parameters)
     for reaction in reactions
-        push!(rxexprs.args[3].args, symbolic_reaction(reaction))
+        push!(rxexprs.args[3].args, get_rxexprs(reaction))
     end
 
     quote
@@ -269,23 +276,14 @@ function make_reaction(ex::Expr)
     !isempty(intersect(forbidden_symbols,union(allspecies,parameters))) &&
         error("The following symbol(s) are used as species or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(species,parameters)))...))*"this is not permited.")
 
-    # parameters
-    pexprs = isempty(parameters) ? :() : :(@parameters)
-    if !isempty(parameters)
-        foreach(parameter-> push!(pexprs.args, parameter), parameters)
-    end
-
-    # species
-    sexprs = :(@variables t)
-    foreach(species -> (species isa Symbol) && push!(sexprs.args, Expr(:call,species,:t)), allspecies)
-
-    # Reaction
-    reaction_func = symbolic_reaction(reaction)
+    pexprs = get_pexprs(parameters)    # parameters
+    sexprs = get_sexprs(allspecies)    # species    
+    rxexpr = get_rxexprs(reaction)     # reaction
 
     quote
         $pexprs
         $sexprs
-        $reaction_func
+        $rxexpr
     end
 end
 
