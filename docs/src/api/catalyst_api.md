@@ -70,6 +70,7 @@ sol = solve(jprob, SSAStepper())
 ```@docs
 @reaction_network
 make_empty_network
+@reaction
 Reaction
 ReactionSystem
 ```
