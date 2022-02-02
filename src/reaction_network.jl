@@ -148,7 +148,35 @@ macro reaction_network(name::Symbol=gensym(:ReactionSystem))
 end
 
 ### Macros used for manipulating, and successively builing up, reaction systems. ###
+@doc raw"""
+    @reaction 
 
+Generates a single [`Reaction`](@ref) object.
+
+Examples:
+```julia
+rx = @reaction k*v, A + B --> C + D
+
+# is equivalent to
+@parameters k v
+@variables t A(t) B(t) C(t) D(t)
+rx == Reaction(k*v, [A,B], [C,D])
+```
+Here `k` and `v` will be parameters and `A`, `B`, `C` and `D` will be variables.
+Interpolation of existing parameters/variables also works
+```julia
+@parameters k b
+@variables t A(t)
+ex = k*A^2 + t
+rx = @reaction b*$ex*$A, $A --> C
+```
+
+Notes:
+- Any symbols arising in the rate expression that aren't interpolated are
+  treated as parameters, while any in the reaction part (`A + B --> C + D`) are
+  treated as species.
+- Works with any *single* arrow types supported by [`@reaction_network`](@ref).
+"""
 macro reaction(ex)
     make_reaction(ex)
 end
