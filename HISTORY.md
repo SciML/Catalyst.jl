@@ -1,9 +1,26 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch) 
+- Added `@reaction` macro
+  ```julia
+  rx = @reaction k*v, A + B --> C + D
 
-## Catalyst 10.4.2
-- Fixed bugs in `extend` and in supporting namespacing for variables within constraint systems.
+  # is equivalent to
+  @parameters k v
+  @variables t A(t) B(t) C(t) D(t)
+  rx == Reaction(k*v, [A,B], [C,D])
+  ```
+  Here `k` and `v` will be parameters and `A`, `B`, `C` and `D` will be
+  variables. Interpolation of existing parameters/variables also works
+  ```julia
+  @parameters k b
+  @variables t A(t)
+  ex = k*A^2 + t
+  rx = @reaction b*$ex*$A, $A --> C
+  ```
+  Any symbols arising in the rate expression that aren't interpolated are
+  treated as parameters, while any in the reaction part (`A + B --> C + D`) are
+  treated as species.
 
 ## Catalyst 10.4
 - Added `symmap_to_varmap`, `setdefaults!`, and updated all `*Problem(rn,...)`

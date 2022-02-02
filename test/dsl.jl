@@ -102,3 +102,15 @@ rn2 = ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; nam
     Base.remove_linenums!(ex)
     @test eval(Catalyst.make_reaction_system(ex, (:Ka, :Cl, :Vc))) isa ReactionSystem
 end
+
+
+rx = @reaction k*h, A + 2*B --> 3*C + D
+@parameters k h
+@variables t A(t) B(t) C(t) D(t)
+@test rx == Reaction(k*h,[A,B],[C,D],[1,2],[3,1])
+
+ex = k*A^2 + B
+V  = A
+rx = @reaction b+$ex, 2*$V + C--> ∅
+@parameters b
+@test rx == Reaction(b+ex, [A,C], nothing, [2,1], nothing)
