@@ -1,6 +1,8 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch) 
+
+## Catalyst 10.5
 - Added `@reaction` macro
   ```julia
   rx = @reaction k*v, A + B --> C + D
