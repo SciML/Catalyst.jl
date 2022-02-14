@@ -1,4 +1,5 @@
-using ModelingToolkit, Catalyst, LinearAlgebra, OrdinaryDiffEq, Test, NonlinearSolve
+using ModelingToolkit, Catalyst, LinearAlgebra, OrdinaryDiffEq, Test
+using SciMLNLSolve
 
 # Repressilator model
 @parameters t α₀ α K n δ β μ
@@ -89,22 +90,24 @@ sol = solve(oprob, Tsit5())
 @named ssrepressilator = ReactionSystem(t; systems=[nsys,sys₁,sys₂,sys₃])
 @named nlrepressilator = convert(NonlinearSystem, ssrepressilator, include_zero_odes=false)
 sys2 = structural_simplify(nlrepressilator)
-@test length(equations(sys2)) == 6
+@test length(equations(sys2)) <= 6
 nlprob = NonlinearProblem(sys2, u₀, pvals)
-sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
+sol = solve(nlprob, NLSolveJL(), tol=1e-9)
 @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
-@test sol[sys₁.m] ≈ sol[sys₂.m] ≈ sol[sys₃.m]
+@test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
+@test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
 @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
 
 # flattening
 fsys = Catalyst.flatten(ssrepressilator)
 @named nlrepressilator = convert(NonlinearSystem, fsys, include_zero_odes=false)
 sys2 = structural_simplify(nlrepressilator)
-@test length(equations(sys2)) == 6
+@test length(equations(sys2)) <= 6
 nlprob = NonlinearProblem(sys2, u₀, pvals)
-sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
+sol = solve(nlprob, NLSolveJL(), tol=1e-9)
 @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
-@test sol[sys₁.m] ≈ sol[sys₂.m] ≈ sol[sys₃.m]
+@test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
+@test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
 @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
 
 # test constraints
@@ -115,11 +118,12 @@ connections = [sys₁.R ~ sys₃.P,
 @named repressilator2 = ReactionSystem(t; constraints=csys, systems=[sys₁,sys₂,sys₃])
 @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes=false)
 sys2 = structural_simplify(nlrepressilator)
-@test length(equations(sys2)) == 6
+@test length(equations(sys2)) <= 6
 nlprob = NonlinearProblem(sys2, u₀, pvals)
-sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
+sol = solve(nlprob, NLSolveJL(), tol=1e-9)
 @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
-@test sol[sys₁.m] ≈ sol[sys₂.m] ≈ sol[sys₃.m]
+@test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
+@test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
 @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
 
 # test constraint system variables are accessible through Base.getproperty
@@ -232,11 +236,12 @@ repressilator2 = Catalyst.flatten(repressilator2)
 repressilator2 = extend(csys, repressilator2)
 @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes=false)
 sys2 = structural_simplify(nlrepressilator)
-@test length(equations(sys2)) == 6
+@test length(equations(sys2)) <= 6
 nlprob = NonlinearProblem(sys2, u₀, pvals)
-sol = solve(nlprob, NewtonRaphson(), tol=1e-9)
+sol = solve(nlprob, NLSolveJL(), tol=1e-9)
 @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
-@test sol[sys₁.m] ≈ sol[sys₂.m] ≈ sol[sys₃.m]
+@test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
+@test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
 @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
 
 
