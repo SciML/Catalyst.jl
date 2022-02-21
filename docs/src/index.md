@@ -21,6 +21,7 @@ etc).
 - Catalyst `ReactionSystem`s provide a symbolic representation of reaction networks,
   built on [ModelingToolkit.jl](https://github.com/SciML/ModelingToolkit.jl) and 
   [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl).
+- Floating stoichiometric coefficients are supported for generating ODE models.
 - The [Catalyst.jl API](@ref) provides functionality for extending networks,
   building networks programmatically, network analysis, and for composing multiple 
   networks together.
