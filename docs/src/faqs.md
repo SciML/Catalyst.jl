@@ -13,6 +13,30 @@ osys = convert(ODESystem, rn; combinatoric_ratelaws=false)
 Disabling these rescalings should work for all conversions of `ReactionSystem`s
 to other `ModelingToolkit.AbstractSystem`s.
 
+## How to use non-integer stoichiometric coefficients?
+```julia
+rn = @reaction_network begin
+  k, 2.5*A --> 3*B
+end k
+```
+or directly via
+```julia
+@parameters k b
+@variables t A(t) B(t) C(t) D(t)
+rx1 = Reaction(k,[B,C],[B,D], [2.5,1],[3.5, 2.5])
+rx2 = Reaction(2*k, [B], [D], [1], [2.5])
+rx3 = Reaction(2*k, [B], [D], [2.5], [2])
+@named mixedsys = ReactionSystem([rx1,rx2,rx3],t,[A,B,C,D],[k,b])
+osys = convert(ODESystem, mixedsys; combinatoric_ratelaws=false)
+```
+Note, when using `convert(ODESystem, mixedsys; combinatoric_ratelaws=false)` the
+`combinatoric_ratelaws=false` parameter must be passed. This is also true when
+calling `ODEProblem(mixedsys,...; combinatoric_ratelaws=false)`. As described
+above, this disables Catalyst's standard rescaling of reaction rates when
+generating reaction rate laws, see also the [Reaction rate laws used in
+simulations](@ref) section. Leaving this keyword out for systems with floating
+point stoichiometry will give an error message.
+
 ## How to set default values for initial conditions and parameters?
 When directly constructing a `ReactionSystem` these can be passed to the
 constructor, and allow solving the system without needing initial condition or
