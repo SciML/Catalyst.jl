@@ -137,7 +137,7 @@ function oderhs(du,u,p,t)
 end
 rn = @reaction_network begin
     k, 2.5*A --> 3*B
-end
+end k
 u0 = [:A => 1.0,:B => 0.0]
 tspan = (0.0,1.0)
 p = [:k => 1.0]
