@@ -422,15 +422,15 @@ Notes:
 - `combinatoric_ratelaw=true` uses factorial scaling factors in calculating the
     rate law, i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. If
     `combinatoric_ratelaw=false` then the ratelaw is `k*S^2`, i.e. the scaling
-    factor is ignored. It is also ignored *for an individual reaction* if the
-    stoichiometric coefficients are non-integer.
+    factor is ignored. 
 """
 function oderatelaw(rx; combinatoric_ratelaw=true)
     @unpack rate, substrates, substoich, only_use_rate = rx
     rl = rate
 
-    # if the stoichiometric coefficients are not integers don't scale the rate
-    !(eltype(substoich) <: Integer) && (combinatoric_ratelaw=false)
+    # if the stoichiometric coefficients are not integers error if asking to scale rates
+    !(eltype(substoich) <: Integer) && (combinatoric_ratelaw==true) && 
+        error("Non-integer stoichiometric coefficients require the combinatoric_ratelaw=false keyword to oderatelaw, or passing combinatoric_ratelaws=false to convert.")
 
     if !only_use_rate
         coef = one(eltype(substoich))
