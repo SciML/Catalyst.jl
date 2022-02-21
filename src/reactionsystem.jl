@@ -64,30 +64,42 @@ end
 
 function Reaction(rate, subs, prods, substoich, prodstoich;
                   netstoich=nothing, only_use_rate=false,
-                  kwargs...)
-
+                  kwargs...) 
+    
     (isnothing(prods)&&isnothing(subs)) && error("A reaction requires a non-nothing substrate or product vector.")
     (isnothing(prodstoich)&&isnothing(substoich)) && error("Both substrate and product stochiometry inputs cannot be nothing.")
     if isnothing(subs)
         subs = Vector{Term}()
         !isnothing(substoich) && error("If substrates are nothing, substrate stiocihometries have to be so too.")
-        substoich = typeof(prodstoich)()
+        substoich = typeof(prodstoich)()        
     end
+    S = eltype(substoich)        
+
     if isnothing(prods)
         prods = Vector{Term}()
         !isnothing(prodstoich) && error("If products are nothing, product stiocihometries have to be so too.")
         prodstoich = typeof(substoich)()
     end
+    T = eltype(prodstoich)
+
     subs = value.(subs)
     prods = value.(prods)
-    ns = isnothing(netstoich) ? get_netstoich(subs, prods, substoich, prodstoich) : netstoich
-    Reaction(value(rate), subs, prods, substoich, prodstoich, ns, only_use_rate)
+
+    stoich_type = promote_type(S,T)
+    substoich′ = (S == stoich_type) ? substoich : convert.(stoich_type, substoich)
+    prodstoich′ = (T == stoich_type) ? prodstoich : convert.(stoich_type, prodstoich)    
+    ns = if netstoich === nothing
+        get_netstoich(subs, prods, substoich′, prodstoich′) 
+    else
+        (netstoich_stoichtype(netstoich) != stoich_type) ? 
+            convert.(stoich_type, netstoich) : netstoich
+    end
+    Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate)
 end
 
 
 # three argument constructor assumes stoichiometric coefs are one and integers
 function Reaction(rate, subs, prods; kwargs...)
-
     sstoich = isnothing(subs) ? nothing : ones(Int,length(subs))
     pstoich = isnothing(prods) ? nothing : ones(Int,length(prods))
     Reaction(rate, subs, prods, sstoich, pstoich; kwargs...)
@@ -99,10 +111,10 @@ function print_rxside(io::IO, specs, stoich)
         print(io, "∅")
     else
         for (i,spec) in enumerate(specs)
-            if stoich[i] == 1
+            if isequal(stoich[i],one(eltype(stoich)))
                 print(io, ModelingToolkit.operation(spec))
             else
-                print(io, stoich[i], ModelingToolkit.operation(spec))
+                print(io, stoich[i], "*", ModelingToolkit.operation(spec))
             end
 
             (i < length(specs)) && print(io, " + ")
@@ -127,6 +139,8 @@ function ModelingToolkit.namespace_equation(rx::Reaction, name)
              [namespace_expr(n[1],name) => n[2] for n in rx.netstoich], rx.only_use_rate)
 end
 
+netstoich_stoichtype(::Vector{Pair{S,T}}) where {S,T} = T
+
 # calculates the net stoichiometry of a reaction as a vector of pairs (sub,substoich)
 function get_netstoich(subs, prods, sstoich, pstoich)
     # stoichiometry as a Dictionary
@@ -137,7 +151,7 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     end
 
     # stoichiometry as a vector
-    ns = [el for el in nsdict if el[2] != zero(el[2])]
+    ns = [el for el in nsdict if !_iszero(el[2])]
 
     ns
 end
@@ -396,8 +410,8 @@ generated ODEs for the reaction. Note, for a reaction defined by
 
 `k*X*Y, X+Z --> 2X + Y`
 
-the expression that is returned will be `k*X(t)^2*Y(t)*Z(t)`. For a reaction
-of the form
+the expression that is returned will be `k*X(t)^2*Y(t)*Z(t)`. For a reaction of
+the form
 
 `k, 2X+3Y --> Z`
 
@@ -405,19 +419,24 @@ the expression that is returned will be `k * (X(t)^2/2) * (Y(t)^3/6)`.
 
 Notes:
 - Allocates
-- `combinatoric_ratelaw=true` uses factorial scaling factors in calculating the rate
-    law, i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. If
-    `combinatoric_ratelaw=false` then the ratelaw is `k*S^2`, i.e. the scaling factor is
-    ignored.
+- `combinatoric_ratelaw=true` uses factorial scaling factors in calculating the
+    rate law, i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. If
+    `combinatoric_ratelaw=false` then the ratelaw is `k*S^2`, i.e. the scaling
+    factor is ignored. 
 """
 function oderatelaw(rx; combinatoric_ratelaw=true)
     @unpack rate, substrates, substoich, only_use_rate = rx
     rl = rate
+
+    # if the stoichiometric coefficients are not integers error if asking to scale rates
+    !(eltype(substoich) <: Integer) && (combinatoric_ratelaw==true) && 
+        error("Non-integer stoichiometric coefficients require the combinatoric_ratelaw=false keyword to oderatelaw, or passing combinatoric_ratelaws=false to convert or ODEProblem.")
+
     if !only_use_rate
         coef = one(eltype(substoich))
         for (i,stoich) in enumerate(substoich)
-            coef *= factorial(stoich)
-            rl   *= isone(stoich) ? substrates[i] : substrates[i]^stoich
+            combinatoric_ratelaw && (coef *= factorial(stoich))
+            rl *= isone(stoich) ? substrates[i] : substrates[i]^stoich
         end
         combinatoric_ratelaw && (!isone(coef)) && (rl /= coef)
     end

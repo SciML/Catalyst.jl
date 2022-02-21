@@ -114,3 +114,18 @@ V  = A
 rx = @reaction b+$ex, 2*$V + C--> ∅
 @parameters b
 @test rx == Reaction(b+ex, [A,C], nothing, [2,1], nothing)
+
+### test floating point stoichiometry work ###
+@parameters k 
+@variables t B(t) C(t) D(t)
+rx1 = Reaction(k,[B,C],[B,D], [2.5,1],[3.5, 2.5])
+rx2 = Reaction(2*k, [B], [D], [1], [2.5])
+rx3 = Reaction(2*k, [B], [D], [2.5], [2])
+@named mixedsys = ReactionSystem([rx1,rx2,rx3],t,[B,C,D],[k])
+osys = convert(ODESystem, mixedsys; combinatoric_ratelaws=false)
+rn = @reaction_network mixedsys begin
+    k, 2.5*B + C --> 3.5*B + 2.5*D
+    2*k, B --> 2.5*D
+    2*k, 2.5*B --> 2*D
+end k
+@test rn == mixedsys
