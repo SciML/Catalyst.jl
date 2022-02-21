@@ -290,3 +290,12 @@ obs = [Equation(L, 2*x + y)]
 L2 = L
 @unpack L = rs3
 @test isequal(L,L2)
+
+# test non-integer stoichiometry goes through
+@parameters k b
+@variables t A(t) B(t) C(t) D(t)
+rx1 = Reaction(k,[B,C],[B,D], [2.5,1],[3.5, 2.5])
+rx2 = Reaction(2*k, [B], [D], [1], [2.5])
+rx3 = Reaction(2*k, [B], [D], [2.5], [2])
+@named mixedsys = ReactionSystem([rx1,rx2,rx3],t,[A,B,C,D],[k,b])
+osys = convert(ODESystem, mixedsys; combinatoric_ratelaws=false)

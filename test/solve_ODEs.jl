@@ -127,3 +127,23 @@ for factor in [1e0, 1e1, 1e2]
     sol = solve(prob,Rosenbrock23())
     @test abs.(sol.u[end][1] - 1.5/2) < 1e-8
 end
+
+
+### test solving with floating point stoichiometry ###
+function oderhs(du,u,p,t)
+    du[1] = -2.5*p[1]*u[1]^2.5
+    du[2] = 3*p[1]*u[1]^2.5
+    nothing
+end
+rn = @reaction_network begin
+    k, 2.5*A --> 3*B
+end
+u0 = [:A => 1.0,:B => 0.0]
+tspan = (0.0,1.0)
+p = [:k => 1.0]
+oprob = ODEProblem(rn, u0, tspan, p; combinatoric_ratelaws=false)
+du1 = du2 = zeros(2)
+u = rand(2)
+oprob.f(du1,u,[1.0],0.0)
+oderhs(du2,u,[1.0],0.0)
+@test isapprox(du1, du2, rtol=1e3*eps()) 
