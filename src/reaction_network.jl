@@ -398,7 +398,7 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
 end
 
 #Recursive function that loops through the reaction line and finds the reactants and their stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
-function recursive_find_reactants!(ex::ExprValues, mult::Int, reactants::Vector{ReactantStruct})
+function recursive_find_reactants!(ex::ExprValues, mult::Number, reactants::Vector{ReactantStruct})
     if typeof(ex)!=Expr || (ex.head == :escape)
         (ex == 0 || in(ex,empty_set)) && (return reactants)
         if in(ex, getfield.(reactants,:reactant))

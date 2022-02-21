@@ -111,10 +111,10 @@ function print_rxside(io::IO, specs, stoich)
         print(io, "∅")
     else
         for (i,spec) in enumerate(specs)
-            if stoich[i] == one(eltype(stoich))
+            if isequal(stoich[i],one(eltype(stoich)))
                 print(io, ModelingToolkit.operation(spec))
             else
-                print(io, stoich[i], ModelingToolkit.operation(spec))
+                print(io, stoich[i], "*", ModelingToolkit.operation(spec))
             end
 
             (i < length(specs)) && print(io, " + ")
@@ -151,7 +151,7 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     end
 
     # stoichiometry as a vector
-    ns = [el for el in nsdict if el[2] != zero(el[2])]
+    ns = [el for el in nsdict if !isequal(el[2],_iszero(el[2]))]
 
     ns
 end
