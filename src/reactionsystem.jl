@@ -151,7 +151,7 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     end
 
     # stoichiometry as a vector
-    ns = [el for el in nsdict if !isequal(el[2],_iszero(el[2]))]
+    ns = [el for el in nsdict if !isequal(el[2],zero(el[2]))]
 
     ns
 end
