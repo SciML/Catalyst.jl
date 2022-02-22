@@ -809,51 +809,64 @@ end
 
 # ODEProblem from AbstractReactionNetwork
 function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan, p=DiffEqBase.NullParameters(), args...;
-                               check_length=false, kwargs...)
+                               check_length=false, name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true,
+                               checks=false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap  = symmap_to_varmap(rs, p)
-    return ODEProblem(convert(ODESystem,rs; kwargs...),u0map,tspan,pmap,args...; check_length, kwargs...)
+    osys  = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks)
+    return ODEProblem(osys, u0map, tspan, pmap, args...; check_length, kwargs...)
 end
 
 # NonlinearProblem from AbstractReactionNetwork
 function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0, p=DiffEqBase.NullParameters(), args...;
-                                     check_length=false, kwargs...)
+                                     name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true,
+                                     checks = false, check_length=false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap  = symmap_to_varmap(rs, p)                                 
-    return NonlinearProblem(convert(NonlinearSystem,rs; kwargs...), u0map, pmap, args...; check_length, kwargs...)
+    nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks)
+    return NonlinearProblem(nlsys, u0map, pmap, args...; check_length, kwargs...)
 end
 
 
 # SDEProblem from AbstractReactionNetwork
 function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan, p=DiffEqBase.NullParameters(), args...;
-                               noise_scaling=nothing, kwargs...)
+                               noise_scaling=nothing, name=nameof(rs), combinatoric_ratelaws=true,
+                               include_zero_odes=true, checks = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap  = symmap_to_varmap(rs, p)
-    sde_sys  = convert(SDESystem,rs;noise_scaling=noise_scaling, kwargs...)
-    p_matrix = zeros(length(get_states(rs)), length(get_eqs(rs)))
-    return SDEProblem(sde_sys,u0map,tspan,pmap,args...; noise_rate_prototype=p_matrix,kwargs...)
+    p_matrix = zeros(length(get_states(rs)), length(get_eqs(rs)))  
+    sde_sys  = convert(SDESystem, rs; noise_scaling, name, combinatoric_ratelaws, include_zero_odes, checks)
+    return SDEProblem(sde_sys, u0map, tspan, pmap, args...; noise_rate_prototype=p_matrix,kwargs...)
 end
 
 # DiscreteProblem from AbstractReactionNetwork
 function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple, p=DiffEqBase.NullParameters(),
-                                    args...; kwargs...)
+                                    args...; name=nameof(rs), combinatoric_ratelaws=true, checks = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap  = symmap_to_varmap(rs, p)       
-    return DiscreteProblem(convert(JumpSystem,rs; kwargs...),u0map,tspan,pmap,args...; kwargs...)
+    jsys  = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks)
+    return DiscreteProblem(jsys, u0map, tspan, pmap, args...; kwargs...)
 end
 
 # JumpProblem from AbstractReactionNetwork
-function DiffEqJump.JumpProblem(rs::ReactionSystem, prob, aggregator, args...; kwargs...)
-    return JumpProblem(convert(JumpSystem,rs; kwargs...), prob, aggregator, args...; kwargs...)
+function DiffEqJump.JumpProblem(rs::ReactionSystem, prob, aggregator, args...; 
+                                name=nameof(rs), combinatoric_ratelaws=true, checks = false, kwargs...)
+    jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks)                                
+    return JumpProblem(jsys, prob, aggregator, args...; kwargs...)
 end
 
 # SteadyStateProblem from AbstractReactionNetwork
 function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0, p=DiffEqBase.NullParameters(), args...;
-                                       kwargs...)
+                                       check_length=false, name=nameof(rs), combinatoric_ratelaws=true, 
+                                       include_zero_odes=true, checks=false, kwargs...)
+
     u0map = symmap_to_varmap(rs, u0)
-    pmap  = symmap_to_varmap(rs, p)       
-    return SteadyStateProblem(convert(ODESystem,rs; kwargs...),u0map,pmap,args...; kwargs...)
+    pmap  = symmap_to_varmap(rs, p)      
+    osys =  convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks)
+    return SteadyStateProblem(osys, u0map, pmap, args...; kwargs...)
 end
+
+####################### dependency graph utilities ########################
 
 # determine which species a reaction depends on
 function ModelingToolkit.get_variables!(deps::Set, rx::Reaction, variables)
