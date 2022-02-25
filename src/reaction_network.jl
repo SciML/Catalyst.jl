@@ -58,22 +58,12 @@ Example systems:
     probJump = JumpProblem(prob,aggregator::Direct,rn)
 """
 
-
-
 # Declare various arrow types symbols used for the empty set (also 0).
 const empty_set = Set{Symbol}([:∅])
 const fwd_arrows = Set{Symbol}([:>, :→, :↣, :↦, :⇾, :⟶, :⟼, :⥟, :⥟, :⇀, :⇁, :⇒, :⟾])
-const bwd_arrows = Set{Symbol}([:<, :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :↼, :↽, :⇐, :⟽])
-const double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :⟺])
+const bwd_arrows = Set{Symbol}([:<, :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :↼, :↽, :⇐, :⟽, Symbol("<--")])
+const double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :⟺, Symbol("<-->")])
 const pure_rate_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
-
-# unfortunately the following doesn't seem to work on 1.5, so supporting these
-# operators seems to require us to only support 1.6 and up...
-@static if VERSION >= v"1.6.0"
-    push!(bwd_arrows, Symbol("<--"))
-    push!(double_arrows, Symbol("<-->"))
-end
-
 
 # Declares symbols which may neither be used as parameters not varriables.
 forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅]
