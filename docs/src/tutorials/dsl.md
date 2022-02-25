@@ -160,7 +160,7 @@ rn = @reaction_network begin
   2.0, X + Y <-- XY          
 end
 rn = @reaction_network begin
-  2.0, X + Y <--> XY               
+  (2.0,2.0), X + Y <--> XY               
 end
 ```
 If the reaction rates in the backward and forward directions are different, they
