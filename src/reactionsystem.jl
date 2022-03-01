@@ -454,7 +454,7 @@ function oderatelaw(rx; combinatoric_ratelaw=true)
         error("Non-integer stoichiometric coefficients require the combinatoric_ratelaw=false keyword to oderatelaw, or passing combinatoric_ratelaws=false to convert or ODEProblem.")
 
     if !only_use_rate
-        coef = eltype(substoich) <: Integer ? eltype(substoich) : Int 
+        coef = eltype(substoich) <: Integer ? one(eltype(substoich)) : 1
         for (i,stoich) in enumerate(substoich)
             combinatoric_ratelaw && (coef *= factorial(stoich))
             rl *= isequal(stoich,one(stoich)) ? substrates[i] : substrates[i]^stoich
