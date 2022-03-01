@@ -42,7 +42,7 @@ Notes:
 - The three-argument form assumes all reactant and product stoichiometric coefficients
   are one.
 """
-struct Reaction{S, T <: Number}
+struct Reaction{S, T}
     """The rate function (excluding mass action terms)."""
     rate
     """Reaction substrates."""
@@ -85,15 +85,24 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     subs = value.(subs)
     prods = value.(prods)
 
+    # try to get a common type for stoichiometry, using Any if have Syms
     stoich_type = promote_type(S,T)
-    substoich′ = (S == stoich_type) ? substoich : convert.(stoich_type, substoich)
-    prodstoich′ = (T == stoich_type) ? prodstoich : convert.(stoich_type, prodstoich)    
+    if stoich_type <: Num
+        stoich_type = Any
+        substoich′  = Any[value(s) for s in substoich]
+        prodstoich′ = Any[value(p) for p in prodstoich]
+    else
+        substoich′ = (S == stoich_type) ? substoich : convert.(stoich_type, substoich)
+        prodstoich′ = (T == stoich_type) ? prodstoich : convert.(stoich_type, prodstoich)    
+    end
+
     ns = if netstoich === nothing
         get_netstoich(subs, prods, substoich′, prodstoich′) 
     else
         (netstoich_stoichtype(netstoich) != stoich_type) ? 
             convert.(stoich_type, netstoich) : netstoich
     end
+
     Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate)
 end
 
@@ -111,7 +120,7 @@ function print_rxside(io::IO, specs, stoich)
         print(io, "∅")
     else
         for (i,spec) in enumerate(specs)
-            if isequal(stoich[i],one(eltype(stoich)))
+            if isequal(stoich[i],one(stoich[i]))
                 print(io, ModelingToolkit.operation(spec))
             else
                 print(io, stoich[i], "*", ModelingToolkit.operation(spec))
@@ -277,6 +286,21 @@ function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)
     make_ReactionSystem_internal(rxs, iv, nothing, Vector{Num}(); kwargs...)
 end
 
+# search the symbolic expression for parameters or states 
+# and save in ps and sts respectively. vars is used to cache results
+function findvars!(ps, sts, exprtosearch, t, vars)
+    MT.get_variables!(vars, exprtosearch)
+    for var in vars
+        isequal(t,var) && continue
+        if MT.isparameter(var)
+            push!(ps, var)
+        else
+            push!(sts, var)
+        end
+    end
+    empty!(vars)
+end
+
 # Only used internally by the @reaction_network macro. Permits giving an initial order to the parameters,
 # and then adds additional ones found in the reaction. Name could be changed.
 function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothing, ps_in; kwargs...)
@@ -285,16 +309,13 @@ function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothi
     ps   = OrderedSet{Any}(ps_in)
     vars = OrderedSet()
     for rx in rxs
-        MT.get_variables!(vars, rx.rate)
-        for var in vars
-            isequal(t,var) && continue
-            if MT.isparameter(var)
-                push!(ps, var)
-            else
-                push!(sts, var)
-            end
+        findvars!(ps, sts, rx.rate, t, vars)
+        for s in rx.substoich
+            (s isa Symbolics.Symbolic) && findvars!(ps, sts, s, t, vars)
         end
-        empty!(vars)
+        for p in rx.prodstoich
+            (p isa Symbolics.Symbolic) && findvars!(ps, sts, p, t, vars)
+        end
     end
 
     ReactionSystem(rxs, t, collect(sts), collect(ps); skipvalue=true, kwargs...)
