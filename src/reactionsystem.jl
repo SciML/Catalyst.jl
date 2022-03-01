@@ -454,12 +454,12 @@ function oderatelaw(rx; combinatoric_ratelaw=true)
         error("Non-integer stoichiometric coefficients require the combinatoric_ratelaw=false keyword to oderatelaw, or passing combinatoric_ratelaws=false to convert or ODEProblem.")
 
     if !only_use_rate
-        coef = one(eltype(substoich))
+        coef = eltype(substoich) <: Integer ? eltype(substoich) : Int 
         for (i,stoich) in enumerate(substoich)
             combinatoric_ratelaw && (coef *= factorial(stoich))
-            rl *= isone(stoich) ? substrates[i] : substrates[i]^stoich
+            rl *= isequal(stoich,one(stoich)) ? substrates[i] : substrates[i]^stoich
         end
-        combinatoric_ratelaw && (!isone(coef)) && (rl /= coef)
+        combinatoric_ratelaw && (!isequal(coef,one(coef))) && (rl /= coef)
     end
     rl
 end
@@ -474,11 +474,19 @@ function assemble_oderhs(rs; combinatoric_ratelaws=true)
         for (spec,stoich) in rx.netstoich
             i = species_to_idx[spec]
             if _iszero(rhsvec[i])
-                signedrl  = (stoich > zero(stoich)) ? rl : -rl
-                rhsvec[i] = isone(abs(stoich)) ? signedrl : stoich * rl
+                if stoich isa Symbolics.Symbolic
+                    rhsvec[i] = stoich * rl
+                else
+                    signedrl  = (stoich > zero(stoich)) ? rl : -rl
+                    rhsvec[i] = isone(abs(stoich)) ? signedrl : stoich * rl
+                end
             else
-                Δspec     = isone(abs(stoich)) ? rl : abs(stoich) * rl
-                rhsvec[i] = (stoich > zero(stoich)) ? (rhsvec[i] + Δspec) : (rhsvec[i] - Δspec)
+                if stoich isa Symbolics.Symbolic
+                    rhsvec[i] += stoich * rl
+                else
+                    Δspec     = isone(abs(stoich)) ? rl : abs(stoich) * rl
+                    rhsvec[i] = (stoich > zero(stoich)) ? (rhsvec[i] + Δspec) : (rhsvec[i] - Δspec)
+                end
             end
         end
     end
