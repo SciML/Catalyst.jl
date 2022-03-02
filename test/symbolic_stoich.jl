@@ -32,3 +32,24 @@ end
 oprob2 = ODEProblem(oderhs, [uv[2] for uv in u0map], tspan, Tuple(pv[2] for pv in pmap))
 sol2 = solve(oprob2, Tsit5())
 @test norm(sol - sol2(sol.t)) < 100*eps()
+
+osys = convert(ODESystem, rs, combinatoric_ratelaws=false)
+oprob = ODEProblem(osys, u0map, tspan, pmap)
+sol   = solve(oprob, Tsit5())
+function oderhs(du,u,p,t)
+    k = p[1]; α = p[2]
+    A = u[1]; B = u[2]; C = u[3]; D = u[4]
+    n = 2*α^2
+    @show n
+    rl = t*k * A^n
+    rl2 = A^α*B^2 
+    du[1] = -n*rl - α*rl2
+    du[2] = (k+α*C)*rl - 2*rl2
+    du[3] = k*rl2
+    du[4] = α*rl2
+end
+oprob2 = ODEProblem(oderhs, [uv[2] for uv in u0map], tspan, oprob.p)
+sol2 = solve(oprob2, Tsit5())
+@test norm(sol - sol2(sol.t)) < 100*eps()
+
+
