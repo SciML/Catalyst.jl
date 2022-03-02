@@ -16,7 +16,7 @@ tspan = (0.0,5.0)
 oprob = ODEProblem(osys, u0map, tspan, pmap)
 # this is a hack because of https://github.com/SciML/ModelingToolkit.jl/issues/1475
 oprob = remake(oprob, p=Tuple(pv[2] for pv in pmap))
-du1 = zeros(size(u0))
+du1 = zeros(size(oprob.u0))
 oprob.f(du1,oprob.u0,oprob.p,1.5)
 
 function oderhs(du,u,p,t)
@@ -146,3 +146,27 @@ fake_integrator1 = (u=copy(u0),p=p,t=ttt); fake_integrator2 = deepcopy(fake_inte
 crj.affect!(fake_integrator1);
 affect2!(fake_integrator2);
 @test fake_integrator1 == fake_integrator2
+
+# a few simple solving tests via the SIR Model
+@parameters α β γ k
+@variables t, S(t), I(t), R(t)
+rxs = [Reaction(α, [S,I], [I], [1,1], [2]),
+       Reaction(β, [I], [R], [1], [1])]
+@named sir_ref = ReactionSystem(rxs, t)
+
+rxs2 = [Reaction(α, [S,I], [I], [γ,1], [k]),
+        Reaction(β, [I], [R], [γ], [γ])]
+@named sir = ReactionSystem(rxs2, t)
+
+@test issetequal(states(sir_ref), states(sir))
+
+p1     = (:α => .1/1000, :β => .01)
+p2     = (:α => .1/1000, :β => .01, :γ => 1, :k => 2)
+tspan = (0.0,250.0)
+u0    = [:S => 999.0, :I => 1.0, :R => 0.0]
+oprob = ODEProblem(sir_ref, u0, tspan, p1)
+sol   = solve(oprob, Tsit5())
+oprob2 = ODEProblem(sir, u0, tspan, p2, combinatoric_ratelaws=false)
+sol2   = solve(oprob2, Tsit5())
+@test norm(sol - sol2(sol.t)) < 1e-10
+
