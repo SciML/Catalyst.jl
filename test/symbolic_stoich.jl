@@ -1,4 +1,4 @@
-using Catalyst, ModelingToolkit, OrdinaryDiffEq, Test, LinearAlgebra
+using Catalyst, ModelingToolkit, OrdinaryDiffEq, Test, LinearAlgebra, DiffEqJump
 
 @parameters t k α
 @variables t, A(t), B(t), C(t), D(t)
@@ -16,7 +16,8 @@ tspan = (0.0,5.0)
 oprob = ODEProblem(osys, u0map, tspan, pmap)
 # this is a hack because of https://github.com/SciML/ModelingToolkit.jl/issues/1475
 oprob = remake(oprob, p=Tuple(pv[2] for pv in pmap))
-sol   = solve(oprob, Tsit5())
+du1 = zeros(size(u0))
+oprob.f(du1,u0,p,1.5)
 
 function oderhs(du,u,p,t)
     k = p[1]; α = p[2]
@@ -33,13 +34,13 @@ end
 u0 = [uv[2] for uv in u0map]
 p  = Tuple(pv[2] for pv in pmap)
 oprob2 = ODEProblem(oderhs, u0, tspan, p)
-sol2 = solve(oprob2, Tsit5())
-@test norm(sol - sol2(sol.t)) < 100*eps()
+du2 = copy(du1)
+oprob2.f(du2,u0,p,1.5)
+@test norm(du1 .- du2) < 100*eps()
 
 # test without rate law scalings
 osys = convert(ODESystem, rs, combinatoric_ratelaws=false)
 oprob = ODEProblem(osys, u0map, tspan, pmap)
-sol   = solve(oprob, Tsit5())
 function oderhs(du,u,p,t)
     k = p[1]; α = p[2]
     A = u[1]; B = u[2]; C = u[3]; D = u[4]
@@ -52,8 +53,10 @@ function oderhs(du,u,p,t)
     du[4] = α*rl2
 end
 oprob2 = ODEProblem(oderhs, [uv[2] for uv in u0map], tspan, oprob.p)
-sol2 = solve(oprob2, Tsit5())
-@test norm(sol - sol2(sol.t)) < 100*eps()
+du1 .= 0; du2 .=0
+oprob.f(du1,u0,p,1.5)
+oprob2.f(du2,u0,p,1.5)
+@test norm(du1 .- du2) < 100*eps()
 
 # SDESystem test
 ssys = convert(SDESystem, rs)
