@@ -160,9 +160,7 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     end
 
     # stoichiometry as a vector
-    ns = [el for el in nsdict if !_iszero(el[2])]
-
-    ns
+    [el for el in nsdict if !_iszero(el[2])]
 end
 
 
@@ -556,17 +554,21 @@ function jumpratelaw(rx; rxvars=get_variables(rx.rate), combinatoric_ratelaw=tru
     @unpack rate, substrates, substoich, only_use_rate = rx
     rl = rate
     if !only_use_rate
-        coef = one(eltype(substoich))
+        coef = eltype(substoich) <: Number ? one(eltype(substoich)) : 1        
         for (i,stoich) in enumerate(substoich)
-            s   = substrates[i]
-            rl *= s
-            isone(stoich) && continue
-            for i in one(stoich):(stoich-one(stoich))
-                rl *= (s - i)
-            end
-            combinatoric_ratelaw && (coef *= factorial(stoich))
+            s = substrates[i]            
+            if stoich isa Symbolics.Symbolic
+                rl *= combinatoric_ratelaw ? binomial(s,stoich) : factorial(s) / factorial(s-stoich)
+            else
+                rl *= s
+                isone(stoich) && continue
+                for i in one(stoich):(stoich-one(stoich))
+                    rl *= (s - i)
+                end
+                combinatoric_ratelaw && (coef *= factorial(stoich))
+            end            
         end
-        !isone(coef) && (rl /= coef)
+        combinatoric_ratelaw && !isequal(coef,one(coef)) && (rl /= coef)
     end
     rl
 end
@@ -580,26 +582,38 @@ ismassaction(rx, rs; rxvars = get_variables(rx.rate),
 ```
 
 True if a given reaction is of mass action form, i.e. `rx.rate` does not depend
-on any chemical species that correspond to states of the system, and does not depend
-explicitly on the independent variable (usually time).
+on any chemical species that correspond to states of the system, and does not
+depend explicitly on the independent variable (usually time).
 
 # Arguments
 - `rx`, the [`Reaction`](@ref).
 - `rs`, a [`ReactionSystem`](@ref) containing the reaction.
-- Optional: `rxvars`, `Variable`s which are not in `rxvars` are ignored as possible dependencies.
-- Optional: `haveivdep`, `true` if the [`Reaction`](@ref) `rate` field explicitly depends on the independent variable.
-- Optional: `stateset`, set of states which if the rxvars are within mean rx is non-mass action.
+- Optional: `rxvars`, `Variable`s which are not in `rxvars` are ignored as
+  possible dependencies.
+- Optional: `haveivdep`, `true` if the [`Reaction`](@ref) `rate` field
+  explicitly depends on the independent variable.
+- Optional: `stateset`, set of states which if the rxvars are within mean rx is
+  non-mass action.
+
+Notes:
+- Non-integer stoichiometry is treated as non-mass action. This includes
+  symbolic variables/terms or floating point numbers for stoichiometric
+  coefficients.
 """
 function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
                               haveivdep = any(var -> isequal(get_iv(rs),var), rxvars),
                               stateset = Set(get_states(rs)))
+
+    # we define non-integer (i.e. float or symbolic) stoich to be non-mass action
+    ((eltype(rx.substoich) <: Integer) && (eltype(rx.prodstoich) <: Integer)) || return false
+
     # if no dependencies must be zero order
     (length(rxvars)==0) && return true
     haveivdep && return false
-    rx.only_use_rate && return false
+    rx.only_use_rate && return false    
     @inbounds for i = 1:length(rxvars)
         (rxvars[i] in stateset) && return false
-    end
+    end    
     return true
 end
 
