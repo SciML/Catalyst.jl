@@ -515,9 +515,13 @@ function assemble_diffusion(rs, noise_scaling; combinatoric_ratelaws=true)
         rlsqrt = sqrt(abs(oderatelaw(rx; combinatoric_ratelaw=combinatoric_ratelaws)))
         (noise_scaling!==nothing) && (rlsqrt *= noise_scaling[j])
         for (spec,stoich) in rx.netstoich
-            i            = species_to_idx[spec]
-            signedrlsqrt = (stoich > zero(stoich)) ? rlsqrt : -rlsqrt
-            eqs[i,j]     = isone(abs(stoich)) ? signedrlsqrt : stoich * rlsqrt
+            i = species_to_idx[spec]
+            if stoich isa Symbolics.Symbolic
+                eqs[i,j] = stoich * rlsqrt
+            else
+                signedrlsqrt = (stoich > zero(stoich)) ? rlsqrt : -rlsqrt
+                eqs[i,j]     = isone(abs(stoich)) ? signedrlsqrt : stoich * rlsqrt
+            end
         end
     end
     eqs
