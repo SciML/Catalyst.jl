@@ -16,6 +16,7 @@ end
 @time @safetestset "Model Construction" begin include("make_model.jl") end
 @time @safetestset "Custom Functions" begin include("custom_functions.jl") end
 @time @safetestset "Model Modification" begin include("model_modification.jl") end
+@time @safetestset "Symbolic Stoichiometry" begin include("symbolic_stoich.jl") end
 
 # Test api
 @time @safetestset "API" begin include("api.jl") end
