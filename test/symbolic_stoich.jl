@@ -160,13 +160,43 @@ rxs2 = [Reaction(α, [S,I], [I], [γ,1], [k]),
 
 @test issetequal(states(sir_ref), states(sir))
 
-p1     = (:α => .1/1000, :β => .01)
-p2     = (:α => .1/1000, :β => .01, :γ => 1, :k => 2)
+# ODEs
+p1    = (α => .1/1000, β => .01)
+p2    = (α => .1/1000, β => .01, γ => 1, k => 2)
 tspan = (0.0,250.0)
-u0    = [:S => 999.0, :I => 1.0, :R => 0.0]
+u0    = [S => 999.0, I => 1.0, R => 0.0]
 oprob = ODEProblem(sir_ref, u0, tspan, p1)
 sol   = solve(oprob, Tsit5())
-oprob2 = ODEProblem(sir, u0, tspan, p2, combinatoric_ratelaws=false)
+# here we hack around https://github.com/SciML/ModelingToolkit.jl/issues/1475
+p2dict = Dict(p2)
+pvs    = Tuple(p2dict[s] for s in parameters(sir))
+@test all(isequal.(parameters(sir), parameters(convert(ODESystem, sir))))
+oprob2 = ODEProblem(sir, u0, tspan, pvs)
 sol2   = solve(oprob2, Tsit5())
 @test norm(sol - sol2(sol.t)) < 1e-10
 
+# jumps
+Nsims = 10000
+u0 = [S => 999, I => 1, R => 0]
+jsys  = convert(JumpSystem, sir_ref)
+dprob = DiscreteProblem(jsys, u0, tspan, p1)
+jprob = JumpProblem(jsys, dprob, Direct(), save_positions=(false,false))
+m1 = zeros(3)
+for i=1:Nsims
+    sol = solve(jprob, SSAStepper())
+    m1 += sol(tspan[2])
+end
+m1 /= Nsims
+jsys2 = convert(JumpSystem, sir)
+p2dict = Dict(p2)
+pvs    = Tuple(p2dict[s] for s in parameters(sir))
+@test all(isequal.(parameters(sir), parameters(jsys2)))
+dprob2 = DiscreteProblem(jsys2, u0, tspan, pvs)
+jprob2 = JumpProblem(jsys2, dprob2, Direct(), save_positions=(false,false))
+m2 = zeros(3)
+for i=1:Nsims
+    sol = solve(jprob2, SSAStepper())
+    m2 += sol(tspan[2])
+end
+m2 /= Nsims
+@test maximum(abs.(m1[2:3] .- m2[2:3]) ./ m1[2:3]) < .05
