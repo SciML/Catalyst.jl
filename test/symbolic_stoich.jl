@@ -17,13 +17,12 @@ oprob = ODEProblem(osys, u0map, tspan, pmap)
 # this is a hack because of https://github.com/SciML/ModelingToolkit.jl/issues/1475
 oprob = remake(oprob, p=Tuple(pv[2] for pv in pmap))
 du1 = zeros(size(u0))
-oprob.f(du1,u0,p,1.5)
+oprob.f(du1,oprob.u0,oprob.p,1.5)
 
 function oderhs(du,u,p,t)
     k = p[1]; α = p[2]
     A = u[1]; B = u[2]; C = u[3]; D = u[4]
     n = 2*α^2
-    @show n
     rl = t*k/factorial(n) * A^n
     rl2 = A^α*B^2 / (2 * factorial(α))
     du[1] = -n*rl - α*rl2
@@ -35,7 +34,7 @@ u0 = [uv[2] for uv in u0map]
 p  = Tuple(pv[2] for pv in pmap)
 oprob2 = ODEProblem(oderhs, u0, tspan, p)
 du2 = copy(du1)
-oprob2.f(du2,u0,p,1.5)
+oprob2.f(du2,oprob2.u0,oprob2.p,1.5)
 @test norm(du1 .- du2) < 100*eps()
 
 # test without rate law scalings
@@ -54,8 +53,8 @@ function oderhs(du,u,p,t)
 end
 oprob2 = ODEProblem(oderhs, [uv[2] for uv in u0map], tspan, oprob.p)
 du1 .= 0; du2 .=0
-oprob.f(du1,u0,p,1.5)
-oprob2.f(du2,u0,p,1.5)
+oprob.f(du1,oprob.u0,oprob.p,1.5)
+oprob2.f(du2,oprob2.u0,oprob2.p,1.5)
 @test norm(du1 .- du2) < 100*eps()
 
 # SDESystem test
