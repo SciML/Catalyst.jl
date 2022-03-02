@@ -93,45 +93,54 @@ G2 = sdenoise(u0,p,1.0)
 
 
 # JumpSystem test
-# js  = convert(JumpSystem, rs)
-# u0map = [A => 3, B => 2, C => 3, D => 5]
-# u0    = [uv[2] for uv in u0map]
-# statetoid = Dict(state => i for (i,state) in enumerate(states(js)))
-# function r1(u,p,t)
-#     α = p[2]; A = u[1]
-#     t*k * binomial(A, 2*α^2)
-# end
-# function affect1!(integrator)
-#     A = integrator.u[1]
-#     B = integrator.u[2]
-#     α = p[2]
-#     integrator.u[1] -= 2*α^2
-#     integrator.u[2] += (k+α*C)
-#     nothing
-# end
-# ttt = 1.5
-# j1 = VariableRateJump(r1,affect1!)
-# crj = ModelingToolkit.assemble_vrj(js, equations(js), statetoid)
-# @test isapprox(crj.rate(u0,p,ttt), r1(u0,p,ttt))
-# fake_integrator1 = (u=copy(u0),p=p,t=ttt); fake_integrator2 = deepcopy(fake_integrator1);
-# crj.affect!(fake_integrator1);
-# affect1!(fake_integrator2);
-# @test fake_integrator1 == fake_integrator2
+js  = convert(JumpSystem, rs)
+u0map = [A => 3, B => 2, C => 3, D => 5]
+u0    = [uv[2] for uv in u0map]
+pmap  = (k => 5, α => 2)
+p     = Tuple(pv[2] for pv in pmap)
+statetoid = Dict(state => i for (i,state) in enumerate(states(js)))
+function r1(u,p,t)
+    α = p[2]; A = u[1]
+    t*k * binomial(A, 2*α^2)
+end
+function affect1!(integrator)
+    A = integrator.u[1]
+    B = integrator.u[2]
+    C = integrator.u[3]
+    k = p[1]; α = p[2]
+    integrator.u[1] -= 2*α^2
+    integrator.u[2] += (k+α*C)
+    nothing
+end
+ttt = 1.5
+j1 = VariableRateJump(r1,affect1!)
+vrj = ModelingToolkit.assemble_vrj(js, equations(js)[2], statetoid)
+@test isapprox(vrj.rate(u0,p,ttt), r1(u0,p,ttt))
+fake_integrator1 = (u=copy(u0),p=p,t=ttt); fake_integrator2 = deepcopy(fake_integrator1);
+vrj.affect!(fake_integrator1);
+affect1!(fake_integrator2);
+@test fake_integrator1 == fake_integrator2
 
-# function r2(u,p,t)
-#     α = p[2]; A = u[1]; B = u[2]
-#     binomial(A,α) * B * (B-1) / 2
-# end
-# function affect2!(integrator)
-#     A = integrator.u[1]
-#     B = integrator.u[2]
-#     C = integrator.u[3]
-#     D = integrator.u[4]
-#     k = p[1]; α = p[2]
-#     integrator.u[1] -= α
-#     integrator.u[2] -= 2
-#     integrator.u[3] += k
-#     integrator.u[4] += α
-#     nothing
-# end
-# j2 = ConstantRateJump(r2,affect2!)
+function r2(u,p,t)
+    α = p[2]; A = u[1]; B = u[2]
+    binomial(A,α) * B * (B-1) / 2
+end
+function affect2!(integrator)
+    A = integrator.u[1]
+    B = integrator.u[2]
+    C = integrator.u[3]
+    D = integrator.u[4]
+    k = p[1]; α = p[2]
+    integrator.u[1] -= α
+    integrator.u[2] -= 2
+    integrator.u[3] += k
+    integrator.u[4] += α
+    nothing
+end
+j2 = ConstantRateJump(r2,affect2!)
+crj = ModelingToolkit.assemble_crj(js, equations(js)[1], statetoid)
+@test isapprox(crj.rate(u0,p,ttt), r2(u0,p,ttt))
+fake_integrator1 = (u=copy(u0),p=p,t=ttt); fake_integrator2 = deepcopy(fake_integrator1);
+crj.affect!(fake_integrator1);
+affect2!(fake_integrator2);
+@test fake_integrator1 == fake_integrator2
