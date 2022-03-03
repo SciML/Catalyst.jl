@@ -181,22 +181,21 @@ u0 = [S => 999, I => 1, R => 0]
 jsys  = convert(JumpSystem, sir_ref)
 dprob = DiscreteProblem(jsys, u0, tspan, p1)
 jprob = JumpProblem(jsys, dprob, Direct(), save_positions=(false,false))
-m1 = zeros(3)
-for i=1:Nsims
-    sol = solve(jprob, SSAStepper())
-    m1 += sol(tspan[2])
+function getmean(jprob, tf)
+    m = zeros(3)
+    for i=1:Nsims
+        sol = solve(jprob, SSAStepper())
+        m .+= sol(tspan[2])
+    end
+    m /= Nsims
+    m
 end
-m1 /= Nsims
+m1 = getmean(jprob, tspan[2])
 jsys2 = convert(JumpSystem, sir)
 p2dict = Dict(p2)
 pvs    = Tuple(p2dict[s] for s in parameters(sir))
 @test all(isequal.(parameters(sir), parameters(jsys2)))
 dprob2 = DiscreteProblem(jsys2, u0, tspan, pvs)
 jprob2 = JumpProblem(jsys2, dprob2, Direct(), save_positions=(false,false))
-m2 = zeros(3)
-for i=1:Nsims
-    sol = solve(jprob2, SSAStepper())
-    m2 += sol(tspan[2])
-end
-m2 /= Nsims
+m2 = getmean(jprob2, tspan[2])
 @test maximum(abs.(m1[2:3] .- m2[2:3]) ./ m1[2:3]) < .05
