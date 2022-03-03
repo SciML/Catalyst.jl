@@ -448,8 +448,8 @@ function oderatelaw(rx; combinatoric_ratelaw=true)
     rl = rate
 
     # if the stoichiometric coefficients are not integers error if asking to scale rates
-    !(all(s -> s isa Union{Integer,Symbolics.Symbolic}, substoich)) && (combinatoric_ratelaw==true) && 
-        error("Non-integer or symbolic stoichiometric coefficients require the combinatoric_ratelaw=false keyword to oderatelaw, or passing combinatoric_ratelaws=false to convert or ODEProblem.")
+    !all(s -> s isa Union{Integer,Symbolics.Symbolic}, substoich) && (combinatoric_ratelaw==true) && 
+        error("Non-integer stoichiometric coefficients require the combinatoric_ratelaw=false keyword to oderatelaw, or passing combinatoric_ratelaws=false to convert or ODEProblem.")
 
     if !only_use_rate
         coef = eltype(substoich) <: Number ? one(eltype(substoich)) : 1
