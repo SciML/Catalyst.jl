@@ -42,7 +42,7 @@ Notes:
 - The three-argument form assumes all reactant and product stoichiometric coefficients
   are one.
 """
-struct Reaction{S, T <: Number}
+struct Reaction{S, T}
     """The rate function (excluding mass action terms)."""
     rate
     """Reaction substrates."""
@@ -85,15 +85,24 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     subs = value.(subs)
     prods = value.(prods)
 
+    # try to get a common type for stoichiometry, using Any if have Syms
     stoich_type = promote_type(S,T)
-    substoich′ = (S == stoich_type) ? substoich : convert.(stoich_type, substoich)
-    prodstoich′ = (T == stoich_type) ? prodstoich : convert.(stoich_type, prodstoich)    
+    if stoich_type <: Num
+        stoich_type = Any
+        substoich′  = Any[value(s) for s in substoich]
+        prodstoich′ = Any[value(p) for p in prodstoich]
+    else
+        substoich′ = (S == stoich_type) ? substoich : convert.(stoich_type, substoich)
+        prodstoich′ = (T == stoich_type) ? prodstoich : convert.(stoich_type, prodstoich)    
+    end
+
     ns = if netstoich === nothing
         get_netstoich(subs, prods, substoich′, prodstoich′) 
     else
         (netstoich_stoichtype(netstoich) != stoich_type) ? 
             convert.(stoich_type, netstoich) : netstoich
     end
+
     Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate)
 end
 
@@ -111,7 +120,7 @@ function print_rxside(io::IO, specs, stoich)
         print(io, "∅")
     else
         for (i,spec) in enumerate(specs)
-            if isequal(stoich[i],one(eltype(stoich)))
+            if isequal(stoich[i],one(stoich[i]))
                 print(io, ModelingToolkit.operation(spec))
             else
                 print(io, stoich[i], "*", ModelingToolkit.operation(spec))
@@ -151,9 +160,7 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     end
 
     # stoichiometry as a vector
-    ns = [el for el in nsdict if !_iszero(el[2])]
-
-    ns
+    [el for el in nsdict if !_iszero(el[2])]
 end
 
 
@@ -277,6 +284,21 @@ function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)
     make_ReactionSystem_internal(rxs, iv, nothing, Vector{Num}(); kwargs...)
 end
 
+# search the symbolic expression for parameters or states 
+# and save in ps and sts respectively. vars is used to cache results
+function findvars!(ps, sts, exprtosearch, t, vars)
+    MT.get_variables!(vars, exprtosearch)
+    for var in vars
+        isequal(t,var) && continue
+        if MT.isparameter(var)
+            push!(ps, var)
+        else
+            push!(sts, var)
+        end
+    end
+    empty!(vars)
+end
+
 # Only used internally by the @reaction_network macro. Permits giving an initial order to the parameters,
 # and then adds additional ones found in the reaction. Name could be changed.
 function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothing, ps_in; kwargs...)
@@ -285,16 +307,13 @@ function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothi
     ps   = OrderedSet{Any}(ps_in)
     vars = OrderedSet()
     for rx in rxs
-        MT.get_variables!(vars, rx.rate)
-        for var in vars
-            isequal(t,var) && continue
-            if MT.isparameter(var)
-                push!(ps, var)
-            else
-                push!(sts, var)
-            end
+        findvars!(ps, sts, rx.rate, t, vars)
+        for s in rx.substoich
+            (s isa Symbolics.Symbolic) && findvars!(ps, sts, s, t, vars)
         end
-        empty!(vars)
+        for p in rx.prodstoich
+            (p isa Symbolics.Symbolic) && findvars!(ps, sts, p, t, vars)
+        end
     end
 
     ReactionSystem(rxs, t, collect(sts), collect(ps); skipvalue=true, kwargs...)
@@ -429,16 +448,16 @@ function oderatelaw(rx; combinatoric_ratelaw=true)
     rl = rate
 
     # if the stoichiometric coefficients are not integers error if asking to scale rates
-    !(eltype(substoich) <: Integer) && (combinatoric_ratelaw==true) && 
+    !all(s -> s isa Union{Integer,Symbolics.Symbolic}, substoich) && (combinatoric_ratelaw==true) && 
         error("Non-integer stoichiometric coefficients require the combinatoric_ratelaw=false keyword to oderatelaw, or passing combinatoric_ratelaws=false to convert or ODEProblem.")
 
     if !only_use_rate
-        coef = one(eltype(substoich))
+        coef = eltype(substoich) <: Number ? one(eltype(substoich)) : 1
         for (i,stoich) in enumerate(substoich)
             combinatoric_ratelaw && (coef *= factorial(stoich))
-            rl *= isone(stoich) ? substrates[i] : substrates[i]^stoich
+            rl *= isequal(stoich,one(stoich)) ? substrates[i] : substrates[i]^stoich
         end
-        combinatoric_ratelaw && (!isone(coef)) && (rl /= coef)
+        combinatoric_ratelaw && (!isequal(coef,one(coef))) && (rl /= coef)
     end
     rl
 end
@@ -453,11 +472,19 @@ function assemble_oderhs(rs; combinatoric_ratelaws=true)
         for (spec,stoich) in rx.netstoich
             i = species_to_idx[spec]
             if _iszero(rhsvec[i])
-                signedrl  = (stoich > zero(stoich)) ? rl : -rl
-                rhsvec[i] = isone(abs(stoich)) ? signedrl : stoich * rl
+                if stoich isa Symbolics.Symbolic
+                    rhsvec[i] = stoich * rl
+                else
+                    signedrl  = (stoich > zero(stoich)) ? rl : -rl
+                    rhsvec[i] = isone(abs(stoich)) ? signedrl : stoich * rl
+                end
             else
-                Δspec     = isone(abs(stoich)) ? rl : abs(stoich) * rl
-                rhsvec[i] = (stoich > zero(stoich)) ? (rhsvec[i] + Δspec) : (rhsvec[i] - Δspec)
+                if stoich isa Symbolics.Symbolic
+                    rhsvec[i] += stoich * rl
+                else
+                    Δspec     = isone(abs(stoich)) ? rl : abs(stoich) * rl
+                    rhsvec[i] = (stoich > zero(stoich)) ? (rhsvec[i] + Δspec) : (rhsvec[i] - Δspec)
+                end
             end
         end
     end
@@ -486,9 +513,13 @@ function assemble_diffusion(rs, noise_scaling; combinatoric_ratelaws=true)
         rlsqrt = sqrt(abs(oderatelaw(rx; combinatoric_ratelaw=combinatoric_ratelaws)))
         (noise_scaling!==nothing) && (rlsqrt *= noise_scaling[j])
         for (spec,stoich) in rx.netstoich
-            i            = species_to_idx[spec]
-            signedrlsqrt = (stoich > zero(stoich)) ? rlsqrt : -rlsqrt
-            eqs[i,j]     = isone(abs(stoich)) ? signedrlsqrt : stoich * rlsqrt
+            i = species_to_idx[spec]
+            if stoich isa Symbolics.Symbolic
+                eqs[i,j] = stoich * rlsqrt
+            else
+                signedrlsqrt = (stoich > zero(stoich)) ? rlsqrt : -rlsqrt
+                eqs[i,j]     = isone(abs(stoich)) ? signedrlsqrt : stoich * rlsqrt
+            end
         end
     end
     eqs
@@ -523,17 +554,21 @@ function jumpratelaw(rx; rxvars=get_variables(rx.rate), combinatoric_ratelaw=tru
     @unpack rate, substrates, substoich, only_use_rate = rx
     rl = rate
     if !only_use_rate
-        coef = one(eltype(substoich))
+        coef = eltype(substoich) <: Number ? one(eltype(substoich)) : 1        
         for (i,stoich) in enumerate(substoich)
-            s   = substrates[i]
-            rl *= s
-            isone(stoich) && continue
-            for i in one(stoich):(stoich-one(stoich))
-                rl *= (s - i)
-            end
-            combinatoric_ratelaw && (coef *= factorial(stoich))
+            s = substrates[i]            
+            if stoich isa Symbolics.Symbolic
+                rl *= combinatoric_ratelaw ? binomial(s,stoich) : factorial(s) / factorial(s-stoich)
+            else
+                rl *= s
+                isone(stoich) && continue
+                for i in one(stoich):(stoich-one(stoich))
+                    rl *= (s - i)
+                end
+                combinatoric_ratelaw && (coef *= factorial(stoich))
+            end            
         end
-        !isone(coef) && (rl /= coef)
+        combinatoric_ratelaw && !isequal(coef,one(coef)) && (rl /= coef)
     end
     rl
 end
@@ -547,26 +582,38 @@ ismassaction(rx, rs; rxvars = get_variables(rx.rate),
 ```
 
 True if a given reaction is of mass action form, i.e. `rx.rate` does not depend
-on any chemical species that correspond to states of the system, and does not depend
-explicitly on the independent variable (usually time).
+on any chemical species that correspond to states of the system, and does not
+depend explicitly on the independent variable (usually time).
 
 # Arguments
 - `rx`, the [`Reaction`](@ref).
 - `rs`, a [`ReactionSystem`](@ref) containing the reaction.
-- Optional: `rxvars`, `Variable`s which are not in `rxvars` are ignored as possible dependencies.
-- Optional: `haveivdep`, `true` if the [`Reaction`](@ref) `rate` field explicitly depends on the independent variable.
-- Optional: `stateset`, set of states which if the rxvars are within mean rx is non-mass action.
+- Optional: `rxvars`, `Variable`s which are not in `rxvars` are ignored as
+  possible dependencies.
+- Optional: `haveivdep`, `true` if the [`Reaction`](@ref) `rate` field
+  explicitly depends on the independent variable.
+- Optional: `stateset`, set of states which if the rxvars are within mean rx is
+  non-mass action.
+
+Notes:
+- Non-integer stoichiometry is treated as non-mass action. This includes
+  symbolic variables/terms or floating point numbers for stoichiometric
+  coefficients.
 """
 function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
                               haveivdep = any(var -> isequal(get_iv(rs),var), rxvars),
                               stateset = Set(get_states(rs)))
+
+    # we define non-integer (i.e. float or symbolic) stoich to be non-mass action
+    ((eltype(rx.substoich) <: Integer) && (eltype(rx.prodstoich) <: Integer)) || return false
+
     # if no dependencies must be zero order
     (length(rxvars)==0) && return true
     haveivdep && return false
-    rx.only_use_rate && return false
+    rx.only_use_rate && return false    
     @inbounds for i = 1:length(rxvars)
         (rxvars[i] in stateset) && return false
-    end
+    end    
     return true
 end
 
