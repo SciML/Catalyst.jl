@@ -61,6 +61,22 @@ function any_nonrx_subsys(rn::MT.AbstractSystem)
     false
 end
 
+function make_stoich_str(spec, stoich, subber; kwargs...)
+    if isequal(stoich,one(stoich)) 
+        latexraw(subber(spec); kwargs...) 
+    else
+        if Symbolics.istree(stoich)
+            LaTeXString("(") * 
+            latexraw(subber(stoich); kwargs...) * 
+            LaTeXString(")") * 
+            latexraw(subber(spec); kwargs...) 
+        else
+            latexraw(subber(stoich); kwargs...) * LaTeXString(" ") * 
+            latexraw(subber(spec); kwargs...) 
+        end
+    end
+end
+
 function chemical_arrows(rn::ReactionSystem;
     expand = true, double_linebreak=false, mathjax=true, starred=false, kwargs...)
 
@@ -79,7 +95,7 @@ function chemical_arrows(rn::ReactionSystem;
     mathjax && (str *= "\\require{mhchem}\n")
     backwards_reaction = false
 
-    subber = ModelingToolkit.substituter([s => MT.operation(s) for s in species(rn)])
+    subber = ModelingToolkit.substituter([s => value(Symbolics.variable(MT.getname(s))) for s in species(rn)])
 
     for (i, r) in enumerate(rxs)
         if backwards_reaction
@@ -94,7 +110,9 @@ function chemical_arrows(rn::ReactionSystem;
         expand && (rate = recursive_clean!(rate))
 
         ### Generate formatted string of substrates
-        substrates = [latexraw("$(substrate[2]== 1 ? "" : "$(substrate[2]) * ") $(substrate[1].f.name)"; kwargs...) for substrate in zip(r.substrates,r.substoich)]
+        substrates = [make_stoich_str(substrate[1],substrate[2],subber; kwargs...) for substrate in zip(r.substrates,r.substoich)]
+        @show substrates
+        #substrates = [latexraw("$(substrate[2]== 1 ? "" : "$(substrate[2]) * ") $(substrate[1].f.name)"; kwargs...) for substrate in zip(r.substrates,r.substoich)]
         isempty(substrates) && (substrates = ["\\varnothing"])
 
         str *= join(substrates, " + ")
@@ -119,7 +137,8 @@ function chemical_arrows(rn::ReactionSystem;
         end
 
         ### Generate formatted string of products
-        products = [latexraw("$(product[2]== 1 ? "" : "$(product[2]) * ") $(product[1].f.name)"; kwargs...) for product in zip(r.products,r.prodstoich) ]
+        products = [make_stoich_str(product[1],product[2],subber; kwargs...) for product in zip(r.products,r.prodstoich)]
+        #products = [latexraw("$(product[2]== 1 ? "" : "$(product[2]) * ") $(product[1].f.name)"; kwargs...) for product in zip(r.products,r.prodstoich) ]
         isempty(products) && (products = ["\\varnothing"])
         str *= join(products, " + ")
         str *= "}$eol"

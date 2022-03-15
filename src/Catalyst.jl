@@ -5,7 +5,7 @@ module Catalyst
 
 using DocStringExtensions
 using SparseArrays, DiffEqBase, Reexport, DiffEqJump
-using Latexify, Requires
+using LaTeXStrings, Latexify, Requires
 
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit; const MT = ModelingToolkit
