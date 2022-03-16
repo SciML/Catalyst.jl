@@ -62,6 +62,7 @@ function any_nonrx_subsys(rn::MT.AbstractSystem)
 end
 
 function make_stoich_str(spec, stoich, subber; kwargs...)
+    @show "Hi!!!"
     if isequal(stoich,one(stoich)) 
         latexraw(subber(spec); kwargs...) 
     else
@@ -111,8 +112,6 @@ function chemical_arrows(rn::ReactionSystem;
 
         ### Generate formatted string of substrates
         substrates = [make_stoich_str(substrate[1],substrate[2],subber; kwargs...) for substrate in zip(r.substrates,r.substoich)]
-        @show substrates
-        #substrates = [latexraw("$(substrate[2]== 1 ? "" : "$(substrate[2]) * ") $(substrate[1].f.name)"; kwargs...) for substrate in zip(r.substrates,r.substoich)]
         isempty(substrates) && (substrates = ["\\varnothing"])
 
         str *= join(substrates, " + ")
@@ -138,7 +137,6 @@ function chemical_arrows(rn::ReactionSystem;
 
         ### Generate formatted string of products
         products = [make_stoich_str(product[1],product[2],subber; kwargs...) for product in zip(r.products,r.prodstoich)]
-        #products = [latexraw("$(product[2]== 1 ? "" : "$(product[2]) * ") $(product[1].f.name)"; kwargs...) for product in zip(r.products,r.prodstoich) ]
         isempty(products) && (products = ["\\varnothing"])
         str *= join(products, " + ")
         str *= "}$eol"
