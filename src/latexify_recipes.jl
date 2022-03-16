@@ -62,7 +62,6 @@ function any_nonrx_subsys(rn::MT.AbstractSystem)
 end
 
 function make_stoich_str(spec, stoich, subber; kwargs...)
-    @show "Hi!!!"
     if isequal(stoich,one(stoich)) 
         latexraw(subber(spec); kwargs...) 
     else
