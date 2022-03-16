@@ -9,3 +9,5 @@ Manifest.toml
 # vscode stuff
 .vscode
 .vscode/*
+
+LocalPreferences.toml

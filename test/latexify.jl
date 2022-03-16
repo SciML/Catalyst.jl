@@ -105,3 +105,16 @@ empty_rn = ReactionSystem(Reaction[]; name=:EmptySys)
 # Latexify.@generate_test latexify(empty_rn)
 @test latexify(empty_rn) == replace(
 raw"ReactionSystem EmptySys has no reactions.", "\r\n"=>"\n")
+
+# test for https://github.com/SciML/Catalyst.jl/issues/473
+rn = @reaction_network begin
+    k*Y, Y --> ∅
+  end k
+
+  # Latexify.@generate_test latexify(rn)
+@test latexify(rn) == replace(
+raw"\begin{align}
+\require{mhchem}
+\ce{ Y &->[Y k] \varnothing}
+\end{align}
+", "\r\n"=>"\n")

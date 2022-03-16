@@ -122,6 +122,8 @@ function print_rxside(io::IO, specs, stoich)
         for (i,spec) in enumerate(specs)
             if isequal(stoich[i],one(stoich[i]))
                 print(io, ModelingToolkit.operation(spec))
+            elseif Symbolics.istree(stoich[i])
+                print(io, "(", stoich[i], ")*", ModelingToolkit.operation(spec))
             else
                 print(io, stoich[i], "*", ModelingToolkit.operation(spec))
             end
