@@ -62,3 +62,78 @@ oprob = ODEProblem(osys, u₀, (0.0,1.0), p)
 sol = solve(oprob, Tsit5())
 plot(sol)
 ```
+
+## Gene expression with randomly produced amounts of protein
+As a second example, let's build the negative feedback model from [MomentClosure.jl](https://augustinas1.github.io/MomentClosure.jl/dev/tutorials/geometric_reactions+conditional_closures/) that involves a bursty reaction that produces a random amount of protein. First, let's define our chemical species and parameters
+```@example s1
+@parameters k₊, k₋, kₚ, γₚ, b
+@variables t, G₋(t), G₊(t), P(t)
+nothing # hide
+```
+Here `G₋` denotes the repressed state, and `G₊` the active state where the gene can transcribe. `P` denotes the protein product of the gene. We will assume that proteins are produced in bursts that produce `m` proteins, where `m` is a geometric random variable with mean `b`. To define `m` we must register the `Distributions.Geometric` distribution from Distributions.jl with Symbolics.jl, after which we can use it is symbolic expressions:
+```@example s1
+using Distributions
+@register Geometric(b)
+m = rand(Geometric(1/b)) + 1
+nothing # hide
+```
+Note also that we require the shifted geometric distribution, so transform `m` from a standard geometric random variable to a shift geometric random variable.
+
+We can now define our model
+```@example s1
+rxs = [Reaction(k₊, [G₋], [G₊]),
+       Reaction(k₋, [G₊, P], [G₋], [1,2], [1]),
+       Reaction(kₚ, [G₊], [G₊,P], [1], [1,m]),
+       Reaction(γₚ, [P], nothing)]
+@named burstyrn = ReactionSystem(rxs, t)
+reactions(burstyrn)
+show(stdout, MIME"text/plain"(), reactions(burstyrn)) # hide
+```
+and convert it to a jump process representation:
+```@example s1
+jsys = convert(JumpSystem, burstyrn)
+equations(jsys)
+show(stdout, MIME"text/plain"(), equations(jsys)) # hide
+```
+Notice, the `equations` of `jsys` have three `MassActionJump`s for the first three reactions, and one `ConstantRateJump` for the last reaction. If we examine the `ConstantRateJump` more closely we can see the generated `rate` and `affect!` functions
+```@example s1
+equations(jsys)[4].rate
+show(stdout, MIME"text/plain"(), equations(jsys)[4].rate) # hide
+```
+```@example s1
+equations(jsys)[4].affect!
+show(stdout, MIME"text/plain"(), equations(jsys)[4].affect!) # hide
+```
+Finally, we can now simulate our jumpsystem, 
+```@example s1
+pmean = 200
+bval = 70
+γₚval = 1
+k₋val = 0.001
+k₊val = 0.05
+kₚval = pmean * γₚval * (k₋val * pmean^2 + k₊val) / (k₊val * bval)
+p = (k₊ => k₊val, k₋ => k₋val, kₚ => kₚval, γₚ => γₚval, b => bval)
+u₀ = [G₊ => 1, G₋ => 0, P => 0]
+tspan = (0., 6.0)   # time interval to solve over
+dprob = DiscreteProblem(jsys, u₀, tspan, p)
+jprob = JumpProblem(jsys, dprob, Direct())
+sol = solve(jprob, SSAStepper())
+plot(sol)
+```
+To double check our results are consistent with MomentClosure.jl, let's calculate and plot the average amount of protein
+```@example s1
+function getmean(jprob, Nsims, tv)
+    Pmean = zeros(length(tv))
+    @variables t, P(t)
+
+    for n in 1:length(tv)
+        sol = solve(jprob, SSAStepper())
+        Pmean .+= sol(tv, idxs=P)
+    end
+
+    Pmean ./= Nsims
+end
+tv = range(tspan[1],tspan[2],length=200)
+Pmean = getmean(jprob, 200, tv)
+plot(tv, Pmean, ylabel="average of P(t)", xlabel="time")
+```
