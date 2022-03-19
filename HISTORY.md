@@ -2,8 +2,17 @@
 
 ## Catalyst unreleased (master branch) 
 
+## Catalyst 10.7
+- Added the ability to use symbolic variables, parameters and expressions for
+  stoichiometric coefficients. See the new tutorial on [Parametric
+  Stoichiometry](https://catalyst.sciml.ai/dev/tutorials/symbolic_stoich/) for
+  details, and note the caveat about ModelingToolkit converting integer
+  parameters to floating point types that must be worked around to avoid calls
+  to `factorial` that involve `float`s.
+
 ## Catalyst 10.6
-- Added the ability to use floating point stoichiometry (currently only tested for generating ODE models). This should now work
+- Added the ability to use floating point stoichiometry (currently only tested
+  for generating ODE models). This should now work
   ```julia
   rn = @reaction_network begin
     k, 2.5*A --> 3*B
@@ -19,7 +28,14 @@
   @named mixedsys = ReactionSystem([rx1,rx2,rx3],t,[A,B,C,D],[k,b])
   osys = convert(ODESystem, mixedsys; combinatoric_ratelaws=false)
   ```
-  Note, when using `convert(ODESystem, mixedsys; combinatoric_ratelaws=false)` the `combinatoric_ratelaws=false` parameter must be passed. This is also true when calling `ODEProblem(mixedsys,...; combinatoric_ratelaws=false)`. This disables Catalyst's standard rescaling of reaction rates when generating reaction rate laws, see the [docs](https://catalyst.sciml.ai/dev/tutorials/using_catalyst/#Reaction-rate-laws-used-in-simulations). Leaving this out for systems with floating point stoichiometry will give an error message.
+  Note, when using `convert(ODESystem, mixedsys; combinatoric_ratelaws=false)`
+  the `combinatoric_ratelaws=false` parameter must be passed. This is also true
+  when calling `ODEProblem(mixedsys,...; combinatoric_ratelaws=false)`. This
+  disables Catalyst's standard rescaling of reaction rates when generating
+  reaction rate laws, see the
+  [docs](https://catalyst.sciml.ai/dev/tutorials/using_catalyst/#Reaction-rate-laws-used-in-simulations).
+  Leaving this out for systems with floating point stoichiometry will give an
+  error message.
 
 ## Catalyst 10.5
 - Added `@reaction` macro
