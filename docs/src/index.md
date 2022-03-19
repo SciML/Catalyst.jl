@@ -21,8 +21,9 @@ etc).
 - Catalyst `ReactionSystem`s provide a symbolic representation of reaction networks,
   built on [ModelingToolkit.jl](https://github.com/SciML/ModelingToolkit.jl) and 
   [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl).
-- Non-integer (e.g. `Float64`) stoichiometric coefficients are supported for generating ODE
-  models.
+- Non-integer (e.g. `Float64`) stoichiometric coefficients are supported for generating 
+  ODE models, and symbolic expressions for stoichiometric coefficients are supported for 
+  all system types.
 - The [Catalyst.jl API](@ref) provides functionality for extending networks,
   building networks programmatically, network analysis, and for composing multiple 
   networks together.
