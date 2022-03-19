@@ -38,7 +38,7 @@ Breaking changes and new functionality are summarized in the
 [Modeling Biochemical Systems with Catalyst.jl](https://www.youtube.com/watch?v=5p1PJE5A5Jw).
 - A short 13 minute overview of Catalyst when it was known as DiffEqBiological in older versions is available in the talk [Efficient Modelling of Biochemical Reaction Networks](https://www.youtube.com/watch?v=s1e72k5XD6s)
 
-For information on using the package, [see the stable
+For tutorials and information on using the package, [see the stable
 documentation](https://catalyst.sciml.ai/stable/). The [in-development
 documentation](https://catalyst.sciml.ai/dev/) describes unreleased features in
 the current master branch.
@@ -50,8 +50,9 @@ the current master branch.
 - Catalyst `ReactionSystem`s provide a symbolic representation of reaction networks,
   built on [ModelingToolkit.jl](https://github.com/SciML/ModelingToolkit.jl) and 
   [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl).
-- Non-integer (e.g. `Float64`) stoichiometric coefficients are supported for generating ODE
-  models.
+- Non-integer (e.g. `Float64`) stoichiometric coefficients are supported for generating 
+  ODE models, and symbolic expressions for stoichiometric coefficients are supported for 
+  all system types.
 - The [Catalyst.jl API](http://catalyst.sciml.ai/dev/api/catalyst_api) provides
   functionality for extending networks, building networks programmatically, 
   network analysis, and for composing multiple networks together.
