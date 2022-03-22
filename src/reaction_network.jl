@@ -192,7 +192,7 @@ end
 #Structure containing information about one reactant in one reaction.
 struct ReactantStruct
     reactant::Union{Symbol,Expr}
-    stoichiometry::Number
+    stoichiometry::ExprValues
 end
 #Structure containing information about one Reaction. Contain all its substrates and products as well as its rate. Contains a specialized constructor.
 struct ReactionStruct
@@ -305,11 +305,21 @@ function make_reaction(ex::Expr)
     end
 end
 
+function get_stoich_syms(rxs, specs, ps)
+
+end
+
 function get_rate_species(rxs, ps)
     pset = Set(ps)
     species_set = Set{Symbol}()
     for rx in rxs
         find_species_in_rate!(species_set, rx.rate, pset)
+        for sub in rx.substrates
+            find_species_in_rate!(species_set, sub.stoichiometry, pset)
+        end
+        for prod in rx.products
+            find_species_in_rate!(species_set, prod.stoichiometry, pset)
+        end
     end
     collect(species_set)
 end
@@ -387,18 +397,26 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
     end
 end
 
+function processmult(op, mult, stoich)
+    if (mult isa Number) && (stoich isa Number)
+        op(mult, stoich)
+    else
+        :($op($mult,$stoich))
+    end
+end
+
 #Recursive function that loops through the reaction line and finds the reactants and their stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
-function recursive_find_reactants!(ex::ExprValues, mult::Number, reactants::Vector{ReactantStruct})
+function recursive_find_reactants!(ex::ExprValues, mult::ExprValues, reactants::Vector{ReactantStruct})
     if typeof(ex)!=Expr || (ex.head == :escape)
         (ex == 0 || in(ex,empty_set)) && (return reactants)
-        if in(ex, getfield.(reactants,:reactant))
+        if any(ex==reactant.reactant for reactant in reactants)
             idx = findall(x -> x==ex, getfield.(reactants,:reactant))[1]
-            reactants[idx] = ReactantStruct(ex,mult+reactants[idx].stoichiometry)
+            reactants[idx] = ReactantStruct(ex,processmult(+,mult,reactants[idx].stoichiometry))
         else
             push!(reactants, ReactantStruct(ex,mult))
         end
     elseif ex.args[1] == :*
-        recursive_find_reactants!(ex.args[3],mult*ex.args[2],reactants)
+        recursive_find_reactants!(ex.args[3],processmult(*,mult,ex.args[2]),reactants)
     elseif ex.args[1] == :+
         for i = 2:length(ex.args)
             recursive_find_reactants!(ex.args[i],mult,reactants)
@@ -408,6 +426,33 @@ function recursive_find_reactants!(ex::ExprValues, mult::Number, reactants::Vect
     end
     return reactants
 end
+
+# function recursive_find_reactants!(ex::ExprValues, mult::ExprValues, reactants::Vector{ReactantStruct})
+#     if typeof(ex)!=Expr || (ex.head == :escape)
+#         (ex == 0 || in(ex,empty_set)) && (return reactants)
+#         if any(ex==reactant.reactant for reactant in reactants)
+#             error("$ex appears as a reactant or product multiple times.")
+#             # idx = findall(x -> x==ex, getfield.(reactants,:reactant))[1]
+#             # reactants[idx] = ReactantStruct(ex,mult+reactants[idx].stoichiometry)
+#         else
+#             push!(reactants, ReactantStruct(ex,mult))
+#         end
+#     elseif ex.args[1] == :*
+#         if length(ex.args) == 3
+#             recursive_find_reactants!(ex.args[3],ex.args[2],reactants)
+#         else            
+#             recursive_find_reactants!(ex.args[end],Expr(:call,ex.args[1:end-1]...),reactants)
+#         end
+#     elseif ex.args[1] == :+
+#         for i = 2:length(ex.args)
+#             recursive_find_reactants!(ex.args[i],mult,reactants)
+#         end
+#     else
+#         throw("malformed reaction")
+#     end
+#     return reactants
+# end
+
 
 function get_reactants(reaction::ReactionStruct, reactants=Vector{Union{Symbol,Expr}}())
     for reactant in Iterators.flatten((reaction.substrates,reaction.products))
