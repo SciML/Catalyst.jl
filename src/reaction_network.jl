@@ -261,7 +261,7 @@ function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSyste
     # parse DSL lines
     reactions = get_reactions(ex)
     reactants = get_reactants(reactions)
-    allspecies = union(reactants, get_rate_species(reactions,parameters))
+    allspecies = union(reactants, get_rx_species(reactions,parameters))
     !isempty(intersect(forbidden_symbols,union(allspecies,parameters))) &&
         error("The following symbol(s) are used as species or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(species,parameters)))...))*"this is not permited.")
 
@@ -290,7 +290,7 @@ function make_reaction(ex::Expr)
     # parse DSL lines
     reaction   = get_reaction(ex)
     allspecies = get_reactants(reaction)   # species defined by stoich
-    parameters = get_rate_species([reaction],Symbol[])  # anything in a rate is a parameter
+    parameters = get_rx_species([reaction],Symbol[])  # anything in a rate is a parameter
     !isempty(intersect(forbidden_symbols,union(allspecies,parameters))) &&
         error("The following symbol(s) are used as species or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(species,parameters)))...))*"this is not permited.")
 
@@ -305,11 +305,7 @@ function make_reaction(ex::Expr)
     end
 end
 
-function get_stoich_syms(rxs, specs, ps)
-
-end
-
-function get_rate_species(rxs, ps)
+function get_rx_species(rxs, ps)
     pset = Set(ps)
     species_set = Set{Symbol}()
     for rx in rxs
@@ -416,7 +412,12 @@ function recursive_find_reactants!(ex::ExprValues, mult::ExprValues, reactants::
             push!(reactants, ReactantStruct(ex,mult))
         end
     elseif ex.args[1] == :*
-        recursive_find_reactants!(ex.args[3],processmult(*,mult,ex.args[2]),reactants)
+        if length(ex.args) == 3
+            recursive_find_reactants!(ex.args[3],processmult(*,mult,ex.args[2]),reactants)
+        else
+            newmult = processmult(*, mult, Expr(:call,ex.args[1:end-1]...))
+            recursive_find_reactants!(ex.args[end],newmult,reactants)
+        end
     elseif ex.args[1] == :+
         for i = 2:length(ex.args)
             recursive_find_reactants!(ex.args[i],mult,reactants)
@@ -426,32 +427,6 @@ function recursive_find_reactants!(ex::ExprValues, mult::ExprValues, reactants::
     end
     return reactants
 end
-
-# function recursive_find_reactants!(ex::ExprValues, mult::ExprValues, reactants::Vector{ReactantStruct})
-#     if typeof(ex)!=Expr || (ex.head == :escape)
-#         (ex == 0 || in(ex,empty_set)) && (return reactants)
-#         if any(ex==reactant.reactant for reactant in reactants)
-#             error("$ex appears as a reactant or product multiple times.")
-#             # idx = findall(x -> x==ex, getfield.(reactants,:reactant))[1]
-#             # reactants[idx] = ReactantStruct(ex,mult+reactants[idx].stoichiometry)
-#         else
-#             push!(reactants, ReactantStruct(ex,mult))
-#         end
-#     elseif ex.args[1] == :*
-#         if length(ex.args) == 3
-#             recursive_find_reactants!(ex.args[3],ex.args[2],reactants)
-#         else            
-#             recursive_find_reactants!(ex.args[end],Expr(:call,ex.args[1:end-1]...),reactants)
-#         end
-#     elseif ex.args[1] == :+
-#         for i = 2:length(ex.args)
-#             recursive_find_reactants!(ex.args[i],mult,reactants)
-#         end
-#     else
-#         throw("malformed reaction")
-#     end
-#     return reactants
-# end
 
 
 function get_reactants(reaction::ReactionStruct, reactants=Vector{Union{Symbol,Expr}}())
