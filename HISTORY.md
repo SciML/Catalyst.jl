@@ -1,6 +1,34 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch) 
+- Added the ability to use symbolic stoichiometry expressions via the DSL. This should now work
+  ```julia
+  rn = @reaction_network rs begin
+    t*k, (α+k+B)*A --> B
+    1.0, α*A + 2*B --> k*C + α*D
+  end k α 
+  ```
+  Here Catalyst will try to preserve the order of symbols within an expression, taking the leftmost as the species and
+  everything multiplying that species as stoichiometry. For example, we can interpret the above reaction as `S1 A --> S2 b`
+  where `S1 = (α+k+B)` is the stoichiometry of the reactant `A` and `1` is the stoichiometry of the reactant `B`. For
+  ```julia
+  rn = @reaction_network rs begin
+    1.0, 2X*(Y + Z) --> XYZ
+  end 
+  ```
+  all of `X`, `Y` and `Z` will be registered as species, with substrates `(Y,Z)` having associated stoichiometries of 
+  `(2X,2X)`. As for rate expressions, any symbols that appear and are not defined as parameters will be declared to be species.
+
+  In contrast, when declaring reactions
+  ```julia
+  rx = @reaction t*k, (k+α)*A --> B
+  ```
+  will work, with every symbol declared a parameter except the leftmost symbol in the reaction line. So
+  ```julia
+  rx = @reaction 1.0, 2X*(Y + Z) --> XYZ
+  ```
+  will make `X` a parameter and `Y`, `Z` and `XYZ` species.
+- Symbolic stoichiometry supports interpolation of expressions.
 
 ## Catalyst 10.7
 - Added the ability to use symbolic variables, parameters and expressions for
