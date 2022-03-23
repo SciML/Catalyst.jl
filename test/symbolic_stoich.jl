@@ -1,6 +1,6 @@
 using Catalyst, ModelingToolkit, OrdinaryDiffEq, Test, LinearAlgebra, DiffEqJump
 
-@parameters t k α
+@parameters k α
 @variables t, A(t), B(t), C(t), D(t)
 rxs = [Reaction(t*k, [A], [B], [2*α^2], [k+α*C])
        Reaction(1.0, [A,B], [C,D], [α,2], [k,α])
@@ -9,6 +9,19 @@ rxs = [Reaction(t*k, [A], [B], [2*α^2], [k+α*C])
 @test issetequal(states(rs), [A,B,C,D])
 @test issetequal(parameters(rs), [k,α])
 osys = convert(ODESystem, rs)
+
+g = (k+α*C)
+rs2 = @reaction_network rs begin
+    t*k, 2*α^2*A --> $g*B    
+    1.0, α*A + 2*B --> k*C + α*D
+end k α
+@test rs2 == rs
+
+
+rxs2 = [(@reaction t*k, 2*α^2*A --> $g*B),
+        (@reaction 1.0, α*A + 2*B --> k*C + α*D)]
+rs3  = ReactionSystem(rxs2, t; name=:rs)
+@test rs3 == rs
 
 u0map = [A => 3.0, B => 2.0, C => 3.0, D => 1.5]
 pmap  = (k => 2.5, α => 2)
@@ -36,6 +49,8 @@ oprob2 = ODEProblem(oderhs, u0, tspan, p)
 du2 = copy(du1)
 oprob2.f(du2,oprob2.u0,oprob2.p,1.5)
 @test norm(du1 .- du2) < 100*eps()
+
+
 
 # test without rate law scalings
 osys = convert(ODESystem, rs, combinatoric_ratelaws=false)
