@@ -1,5 +1,5 @@
 # Bifurcation Diagrams
-Bifurcation diagrams can be produced from Catalyst generated models through the use of the [BifurcationKit.jl](https://github.com/rveltz/BifurcationKit.jl/) package. This tutorial gives a simple example of how to create such a bifurcation diagram.
+Bifurcation diagrams can be produced from Catalyst generated models through the use of the [BifurcationKit.jl](https://github.com/rveltz/BifurcationKit.jl/) package. This tutorial gives a simple example of how to create such a bifurcation diagram. This tutorial is written for BifurcationKit version 0.1.11.
 
 First, we declare our model. For our example we will use a bistable switch, but which also contains a Hopf bifurcation.
 ```julia
