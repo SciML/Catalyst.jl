@@ -50,15 +50,15 @@ DO = DeflationOperator( 2,      # Algorithm parameter required when using deflat
 With all this done, we can compute the bifurcations:
 ```julia
 params_input = setindex!(copy(params),p_span[1],p_idx)                                # The input parameter values have to start at the first index of our parameter span.
-branches, = continuation(F, J, params_input, (@lens _[p_idx]) ,opts , DO,             # Gives our input.
-    verbosity = 0, showplot=false,                                                    # We do not want to display, or plot, intermediary results.
+branches, = continuation(F, J, params_input, (@lens _[p_idx]), opts , DO,             # Gives our input.
+    verbosity = 0, plot=false,                                                    # We do not want to display, or plot, intermediary results.
     recordFromSolution = (x, p) -> x[plot_var_idx],                                   # How we wish to print the output in the diagram. Here we simply want the value of the target varriable.
     perturbSolution = (x,p,id) -> (x  .+ 0.8 .* rand(length(x))),                     # Parameter for the continuation method, see BifurcationKit documentation.
-    callbackN = (x, f, J, res, iteration, itlinear, options; kwargs...) -> res <1e7)  # Parameter for the continuation method, see BifurcationKit documentation.
+    callbackN = BifurcationKit.cbMaxNorm(1e7))                      # Parameter for the continuation method, see BifurcationKit documentation.
 ```
 which can then be plotted using
 ```julia
-plot(branches...,xlabel=rn.ps[1],ylabel=Symbol(rn.states[1].f),markersize=4,
+plot(branches...,xlabel=rn.ps[1],ylabel=Symbol(rn.states[1].val.f),markersize=4,
      ylim=(0.,Inf),                                  # This ensures we do not display negative solutions.
      color=:blue,                                    # Otherwise each individual branch will have their separate colors.
      plotbifpoints = false, putbifptlegend = false,  # Plots the bifurcation point(s).
@@ -70,7 +70,7 @@ Here the Hopf bifurcation is amrked with a blue square. The region with a thiner
 ```julia
 plot(branches[1],lw=4,color=map(i->(i==0) ? :blue : :red, getproperty.(branches[1].branch,:n_unstable)))
 plot!(branches[3],lw=4,color=map(i->(i==0) ? :blue : :red, getproperty.(branches[3].branch,:n_unstable)))
-plot!(branches[4],lw=4,color=map(i->(i==0) ? :blue : :red, getproperty.(branches[4].branch,:n_unstable)),plotbifpoints = false,xlabel=rn.ps[1],ylabel=Symbol(rn.states[1].f))
+plot!(branches[4],lw=4,color=map(i->(i==0) ? :blue : :red, getproperty.(branches[4].branch,:n_unstable)),plotbifpoints = false,xlabel=rn.ps[1],ylabel=Symbol(rn.states[1].val.f))
 ```
 ![bifurcation_diagram2](../assets/bifurcation_diagram2.svg)
 
