@@ -35,7 +35,7 @@ using Catalyst, ModelingToolkit
 makedocs(
     sitename = "Catalyst.jl",
     authors = "Samuel Isaacson",
-    format = Documenter.HTML(mathengine=Documenter.Writers.HTMLWriter.MathJax(), prettyurls = (get(ENV, "CI", nothing) == "true")),
+    format = Documenter.HTML(analytics = "UA-90474609-3", mathengine=Documenter.Writers.HTMLWriter.MathJax(), prettyurls = (get(ENV, "CI", nothing) == "true")),
     modules = [Catalyst,ModelingToolkit],
     doctest = false,
     clean = true,
