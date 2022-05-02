@@ -335,7 +335,7 @@ function find_species_in_rate!(sset, rateex::ExprValues, ps)
 end
 
 function get_reaction(line)
-    (line.head != :tuple) && error("Malformed reaction line: $line") 
+    (line.head != :tuple) && error("Malformed reaction line: $(MacroTools.striplines(line))") 
     (rate,r_line) = line.args
     (r_line.head  == :-->) && (r_line = Expr(:call,:→,r_line.args[1],r_line.args[2]))
 
@@ -348,7 +348,7 @@ function get_reaction(line)
     elseif in(arrow,bwd_arrows)
         rs = create_ReactionStruct(r_line.args[3], r_line.args[2], rate, only_use_rate)
     else
-        throw("malformed reaction")
+        throw("Malformed reaction, invalid arrow type used in: $(MacroTools.striplines(line))")
     end
 
     rs
@@ -356,8 +356,8 @@ end
 
 #Generates a vector containing a number of reaction structures, each containing the information about one reaction.
 function get_reactions(ex::Expr, reactions = Vector{ReactionStruct}(undef,0))
-    for line in ex.args
-        (line.head != :tuple) && error("Malformed reaction line: $line") 
+    for line in ex.args 
+        (line.head != :tuple) && error("Malformed reaction line: $(MacroTools.striplines(line))") 
         (rate,r_line) = line.args
         (r_line.head  == :-->) && (r_line = Expr(:call,:→,r_line.args[1],r_line.args[2]))
 
@@ -372,7 +372,7 @@ function get_reactions(ex::Expr, reactions = Vector{ReactionStruct}(undef,0))
         elseif in(arrow,bwd_arrows)
             push_reactions!(reactions, r_line.args[3], r_line.args[2], rate, only_use_rate)
         else
-            throw("malformed reaction")
+            throw("Malformed reaction, invalid arrow type used in: $(MacroTools.striplines(line))")
         end
     end
     return reactions
@@ -380,7 +380,7 @@ end
 
 function create_ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, only_use_rate::Bool)
     all(==(1), (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate))) ||
-        error("Malformed line, appears to be defining multiple reactions.")
+        error("Malformed reaction, line appears to be defining multiple reactions incorrectly: rate=$rate, subs=$sub_line, prods=$prod_line.")
     ReactionStruct(get_tup_arg(sub_line,1), get_tup_arg(prod_line,1), get_tup_arg(rate,1), only_use_rate)
 end
 
@@ -388,7 +388,7 @@ end
 function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, only_use_rate::Bool)
     lengs = (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate))
     for i = 1:maximum(lengs)
-        (count(lengs.==1) + count(lengs.==maximum(lengs)) < 3) && (throw("malformed reaction"))
+        (count(lengs.==1) + count(lengs.==maximum(lengs)) < 3) && (throw("Malformed reaction, rate=$rate, subs=$sub_line, prods=$prod_line."))
         push!(reactions, ReactionStruct(get_tup_arg(sub_line,i), get_tup_arg(prod_line,i), get_tup_arg(rate,i), only_use_rate))
     end
 end
@@ -423,7 +423,7 @@ function recursive_find_reactants!(ex::ExprValues, mult::ExprValues, reactants::
             recursive_find_reactants!(ex.args[i],mult,reactants)
         end
     else
-        throw("malformed reaction")
+        throw("Malformed reaction, bad operator: $(ex.args[1]) found in stochiometry expression $ex.")
     end
     return reactants
 end
