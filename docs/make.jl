@@ -50,7 +50,8 @@ makedocs(
             "tutorials/symbolic_stoich.md",
             "tutorials/bifurcation_diagram.md",
             "tutorials/parameter_estimation.md",
-            "tutorials/generating_reactions_programmatically.md"
+            "tutorials/generating_reactions_programmatically.md",
+            "tutorials/reaction_network_representation.md"
         ],
         "FAQs" => "faqs.md",
         "API" => Any[
