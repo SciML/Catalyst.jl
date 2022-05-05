@@ -150,7 +150,7 @@ We may also define deficiencies for individual subnetworks in the linkage classe
 ```@example s1
 linkage_δ = linkagedeficiencies(subnets, lcs)
 ```
-It follows linear algebra that ,`∑ (linkage_δ) >= δ`
+It follows linear algebra that ,`∑ (linkage_δ) ≤ δ`
 
 Quoting Feinberg[1],
 
