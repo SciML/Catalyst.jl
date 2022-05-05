@@ -24,8 +24,13 @@ repressilator = @reaction_network Repressilator begin
        μ, P₂ --> ∅
        μ, P₃ --> ∅
 end α K n δ γ β μ
-g = Graph(repressilator)
+reactions(repressilator)
 ```
+```julia
+g = Graph(repressilator);
+```
+![Repressilator solution](../assets/repressilator.svg)
+
 The figure above represents species-reaction Graph in which the species are represented by the nodes of the Graph and edges denote the reactions between them.
 The ODE's correponding to this `ReactionSystem` can be found [here](https://catalyst.sciml.ai/dev/tutorials/using_catalyst/)
 ## Complexes based Stoichiometry
@@ -64,19 +69,23 @@ Z = complexstoichmat(repressilator)
 ```@example s1
 rcs, B = reactioncomplexes(repressilator);
 ```
-`rcs` here returns the information about unique reaction complexes that define the `ReactionSystem`. It is a vector of vector type `ReactionComplexElement`. `ReactionComplexElement` contains a tuple of index of participating species(as per sequence returned by `species(repressilator)`), and its corresponding stoichiometric coefficient, respectively.
-The columns of `B` matrix depict the consumption and generation of such unique reaction complex(with entries -1 and 1, respectively) for each `Reaction`.
+`rcs` here returns the information about unique reaction complexes that define the `ReactionSystem`. It is a vector of vector type `ReactionComplexElement`. `ReactionComplexElement` containing a tuple of index of participating species(as per sequence returned by `species(repressilator)`), and its corresponding stoichiometric coefficient, respectively.
+
 ```@example s1
 rcs
 ```
-
+One may also find the occurence of these complexes in different reactions as either substrates or products using API function `reactioncomplexmap(repressilator)`.
+The columns of `B` matrix depict the consumption and generation of such unique reaction complex(with entries -1 and 1, respectively) for each `Reaction`.
 ```@example s1
 B
 ```
 This also gives us an idea of the `Graph` that can be constructed to depict the `ReactionSystem` with nodes as `ReactionComplexElement` and edges as `Reaction`. To visualise the complex graph, Catalyst provides an API function as follows,
-```@example s1
+```julia
 complexgraph(repressilator)
 ```
+
+![Repressilator complex](../assets/repressilator_complexgraph.svg)
+
 The `ODESystem` from Equation (2) is equivalent to the one we get from `convert(ODESystem, repressilator)`. We verify this as follows:
 ```@example s1
 odesys = convert(ODESystem, repressilator);
@@ -97,13 +106,17 @@ rn = @reaction_network begin
      (k6,k7), 2A <--> B+G
      k8, B+G --> H
      k9, H --> 2A
-end k1 k2 k3 k4 k5 k6 k7 k8 k9
+end k1 k2 k3 k4 k5 k6 k7 k8 k9;
 
 # compute incidence matrix as previously mentioned
 B = reactioncomplexes(rn)[2];
+```
+```julia
 # and visualise the graph using Graphviz based API function
 complexgraph(rn)
 ```
+![network_1](../assets/complex_rn.svg)
+
 Lets compute a Graph from incidence matrix
 ```@example s1
 incidencegraph = incidencematgraph(B);
@@ -120,22 +133,25 @@ subnets = subnetworks(rn, lcs)
 # check the reactions in each subnetworks
 reactions.(subnets)
 ```
-```@example s1
+```julia
  # or visualise them as
  complexgraph(subnets[1])
 ```
-
-```@example s1
+![subnetwork_1](../assets/complex_subnets1.svg)
+and,
+```julia
  complexgraph(subnets[2])
 ```
+![subnetwork_2](../assets/complex_subnets2.svg)
+
 #### Deficiency of the network
-The rank of reaction network is defined as the subspace spanned by the net-stoichiometry of reaction-network. In other words, the number of uniquely represented "reactions vectors"(or the columns of net-stoichiometric matrix) is the rank of the reaction network, refer Feinberg[1].
+The rank of reaction network is defined as the subspace spanned by the net-stoichiometry of reaction-network. In other words, the number of uniquely represented "reactions vectors"(or the columns of net-stoichiometric matrix) is the rank of the reaction network, refer Feinberg [(1)](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true).
 This can be calculated as follows
 ```@example s1
 using LinearAlgebra
 s = rank(netstoichmat(rn))
 ```
-Feinberg[1] shows that number of these uniquely represented "reaction vectors" cannot exceed the `no. of complexes - no. of linkage classes`. This puts an upper bound on the rank of reaction network, and allows us to define the deficiency of the reaction network
+Feinberg [(1)](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true) shows that number of these uniquely represented "reaction vectors" cannot exceed the `no. of complexes - no. of linkage classes`. This puts an upper bound on the rank of reaction network, and allows us to define the deficiency of the reaction network
 `δ = no. of complexes - no. of linkage classes - s`
 This gives us a measure of how independent the reaction vectors are, provided the network’s linkage classes.
 ```@example s1
@@ -150,9 +166,9 @@ We may also define deficiencies for individual subnetworks in the linkage classe
 ```@example s1
 linkage_δ = linkagedeficiencies(subnets, lcs)
 ```
-It follows linear algebra that ,`∑ (linkage_δ) ≤ δ`
+It follows linear algebra that ,`∑ (linkage_δ) <= δ`
 
-Quoting Feinberg[1],
+Quoting Feinberg [(1)](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true),
 
 > Deficiency zero networks are ones for which the reaction vectors are as independent as the partition of complexes into linkage classes will allow. And, any subnetwork of a deficiency zero network is also a deficiency zero network.
 
@@ -165,7 +181,7 @@ rn = @reaction_network begin
   (k3,k4),A + C <--> D
   (k5,k6),D <--> B+E
   (k7,k8),B+E <--> A+C
-end k1 k2 k3 k4 k5 k6 k7 k8
+end k1 k2 k3 k4 k5 k6 k7 k8;
 # find the graph from incidence matrix for reaction complexes
 incidencegraph = incidencematgraph(reactioncomplexes(rn)[2]);
 isreversible(incidencegraph)
@@ -177,10 +193,15 @@ rn = @reaction_network begin
   k3, A + C --> D
   k4, D --> B+E
   k5 ,B+E --> A+C
-end k1 k2 k3 k4 k5
-# visualise this
+end k1 k2 k3 k4 k5;
+incidencegraph = incidencematgraph(reactioncomplexes(rn)[2]);
+isreversible(incidencegraph)
+```
+```julia
 complexgraph(rn)
 ```
+![reversibility](../assets/complex_reversibility.svg)
+
 It is evident from the Figure above that the network is not "reversible", but has some sense of reversibility, such that each reaction-complex "ultimately reacts"(or indirectly reacts) to every other complex. This is known as "weakly reversible" system. One can test the network for "weak" reversibility by using function `isweaklyreversible` as follows
 ```@example s1
 # need subnetworks from the reaction network first
@@ -191,4 +212,4 @@ isweaklyreversible(subnets)
 ```
 Needless to say, every "reversible" network is also "weakly reversible", but the vice versa may or may not be true.
 ## Sources
-1) [Foundations of Chemical Reaction Network Theory](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true)
+1) [Foundations of Chemical Reaction Network Theory, Martin Feinberg](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true)
