@@ -1,6 +1,6 @@
 # Network Representations in Catalyst
 
-In this tutorial, we explain some of the API functions mentioned in section [`Network-Analysis-and-Representations`](@https://catalyst.sciml.ai/dev/api/catalyst_api/#Network-Analysis-and-Representations). For demonstration purpose, we reuse the repressilator model from previous tutorial.
+In this tutorial, we explain some of the API functions mentioned in section [`Network-Analysis-and-Representations`](https://catalyst.sciml.ai/dev/api/catalyst_api/#Network-Analysis-and-Representations). For demonstration purpose, we reuse the repressilator model from previous tutorial.
 
 ## Network representation of the Repressilator `ReactionSystem`'s
 We first load Catalyst
