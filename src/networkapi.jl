@@ -97,7 +97,7 @@ Given a [`ReactionSystem`](@ref), return a vector of all `Reactions` in the syst
 Notes:
 - If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
 """
-function reactions(network)    
+function reactions(network)
     rxs = get_eqs(network)
     systems = filter_nonrxsys(network)
     isempty(systems) && (return rxs)
@@ -140,12 +140,12 @@ end
     numspecies(network)
 
 Return the total number of species within the given [`ReactionSystem`](@ref) and
-subsystems that are `ReactionSystem`s. 
+subsystems that are `ReactionSystem`s.
 
 Notes
 - If there are no subsystems this will be fast.
 - As this calls [`species`](@ref), it can be slow and will allocate if there are
-  any subsystems. 
+  any subsystems.
 """
 function numspecies(network)
     length(species(network))
@@ -174,7 +174,7 @@ and subsystems that are `ReactionSystem`s.
 Notes
 - If there are no subsystems this will be fast.
 - As this calls [`reactionparams`](@ref), it can be slow and will allocate if
-  there are any subsystems. 
+  there are any subsystems.
 """
 function numreactionparams(network)
     length(reactionparams(network))
@@ -360,7 +360,7 @@ Notes:
 - Defaults can be specified in any iterable container of symbols to value pairs
   or symbolics to value pairs.
 """
-function setdefaults!(rn, newdefs) 
+function setdefaults!(rn, newdefs)
     defs = eltype(newdefs) <: Pair{Symbol} ? symmap_to_varmap(rn,newdefs) : newdefs
     rndefs = MT.get_defaults(rn)
     for (var,val) in defs
@@ -369,12 +369,12 @@ function setdefaults!(rn, newdefs)
     nothing
 end
 
-function __unpacksys(rn) 
+function __unpacksys(rn)
     ex = :(begin end)
     for key in keys(get_var_to_name(rn))
         var = MT.getproperty(rn, key, namespace=false)
         push!(ex.args, :($key = $var))
-    end    
+    end
     ex
 end
 
@@ -412,10 +412,10 @@ end
 
 # convert symbol of the form :sys.a.b.c to a symbolic a.b.c
 function _symbol_to_var(sys, sym)
-    if hasproperty(sys, sym)    
+    if hasproperty(sys, sym)
         var = getproperty(sys, sym, namespace=false)
     else
-        strs = split(String(sym), "₊")   # need to check if this should be split of not!!!        
+        strs = split(String(sym), "₊")   # need to check if this should be split of not!!!
         if length(strs) > 1
             var = getproperty(sys, Symbol(strs[1]), namespace=false)
             for str in view(strs, 2:length(strs))
@@ -480,16 +480,16 @@ function symmap_to_varmap(sys, symmap::Tuple)
     end
 end
 
-symmap_to_varmap(sys, symmap::AbstractArray{Pair{Symbol,T}}) where {T} = 
+symmap_to_varmap(sys, symmap::AbstractArray{Pair{Symbol,T}}) where {T} =
     [_symbol_to_var(sys,sym) => val for (sym,val) in symmap]
 
-symmap_to_varmap(sys, symmap::Dict{Symbol,T}) where {T} = 
+symmap_to_varmap(sys, symmap::Dict{Symbol,T}) where {T} =
     Dict(_symbol_to_var(sys,sym) => val for (sym,val) in symmap)
 
 # don't permute any other types and let varmap_to_vars handle erroring
 symmap_to_varmap(sys, symmap) = symmap
 #error("symmap_to_varmap requires a Dict, AbstractArray or Tuple to map Symbols to values.")
-    
+
 
 ######################## reaction complexes and reaction rates ###############################
 """
@@ -520,17 +520,17 @@ struct ReactionComplex{V<:Integer} <: AbstractVector{ReactionComplexElement{V}}
     speciesstoichs::Vector{V}
 end
 
-function (==)(a::ReactionComplex{V},b::ReactionComplex{V}) where {V <: Integer} 
+function (==)(a::ReactionComplex{V},b::ReactionComplex{V}) where {V <: Integer}
     (a.speciesids == b.speciesids) &&
-    (a.speciesstoichs == b.speciesstoichs) 
+    (a.speciesstoichs == b.speciesstoichs)
 end
 hash(rc::ReactionComplex,h::UInt) = Base.hash(rc.speciesids,Base.hash(rc.speciesstoichs,h))
 Base.size(rc::ReactionComplex) = size(rc.speciesids)
 Base.length(rc::ReactionComplex) = length(rc.speciesids)
-Base.getindex(rc::ReactionComplex, i...) = 
+Base.getindex(rc::ReactionComplex, i...) =
         ReactionComplexElement(getindex(rc.speciesids, i...), getindex(rc.speciesstoichs, i...))
-Base.setindex!(rc::ReactionComplex, t::ReactionComplexElement, i...) = 
-    (setindex!(rc.speciesids, t.speciesid, i...); setindex!(rc.speciesstoichs, t.speciesstoich, i...); rc) 
+Base.setindex!(rc::ReactionComplex, t::ReactionComplexElement, i...) =
+    (setindex!(rc.speciesids, t.speciesid, i...); setindex!(rc.speciesstoichs, t.speciesstoich, i...); rc)
 Base.isless(a::ReactionComplexElement, b::ReactionComplexElement) = isless(a.speciesid, b.speciesid)
 Base.Sort.defalg(::ReactionComplex{T}) where {T <: Integer} = Base.DEFAULT_UNSTABLE
 
@@ -598,11 +598,11 @@ function reactioncomplexes(::Type{Matrix{Int}}, rn::ReactionSystem, smap, comple
 end
 
 @doc raw"""
-    reactioncomplexes(network::ReactionSystem; sparse=false, smap=speciesmap(rn), 
+    reactioncomplexes(network::ReactionSystem; sparse=false, smap=speciesmap(rn),
                       complextorxsmap=reactioncomplexmap(rn; smap=smap))
 
 Calculate the reaction complexes and complex incidence matrix for the given
-[`ReactionSystem`](@ref). 
+[`ReactionSystem`](@ref).
 
 Notes:
 - returns a pair of a vector of [`ReactionComplex`](@ref)s and the complex
@@ -620,7 +620,7 @@ B_{i j} = \begin{cases}
 ```
 - Set sparse=true for a sparse matrix representation of the incidence matrix
 """
-function reactioncomplexes(rn::ReactionSystem; sparse=false, smap=speciesmap(rn), 
+function reactioncomplexes(rn::ReactionSystem; sparse=false, smap=speciesmap(rn),
                            complextorxsmap=reactioncomplexmap(rn; smap=smap))
     isempty(get_systems(rn)) || error("reactioncomplexes does not currently support subsystems.")
 	sparse ? reactioncomplexes(SparseMatrixCSC{Int,Int}, rn, smap, complextorxsmap) :
@@ -664,12 +664,12 @@ Notes:
 """
 function complexstoichmat(rn::ReactionSystem; sparse=false, rcs=keys(reactioncomplexmap(rn)))
     isempty(get_systems(rn)) || error("complexstoichmat does not currently support subsystems.")
-    sparse ? complexstoichmat(SparseMatrixCSC{Int,Int}, rn, rcs) : 
+    sparse ? complexstoichmat(SparseMatrixCSC{Int,Int}, rn, rcs) :
              complexstoichmat(Matrix{Int}, rn, rcs)
 end
 
 
-function complexoutgoingmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem, B)    
+function complexoutgoingmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem, B)
     n = size(B,2)
 	rows = rowvals(B)
 	vals = nonzeros(B)
@@ -679,9 +679,9 @@ function complexoutgoingmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem
     sizehint!(Vs, div(length(vals),2))
 	for j = 1:n
 	   for i in nzrange(B, j)
-	      if vals[i] != one(eltype(vals)) 
+	      if vals[i] != one(eltype(vals))
             push!(Is, rows[i])
-            push!(Js, j) 
+            push!(Js, j)
             push!(Vs, vals[i])
           end
 	   end
@@ -704,7 +704,7 @@ matrix of size num of complexes by num of reactions that identifies substrate
 complexes.
 
 Notes:
-- The complex outgoing matrix, ``\Delta``, is defined by 
+- The complex outgoing matrix, ``\Delta``, is defined by
 ```math
 \Delta_{i j} = \begin{cases}
     = 0,    &\text{if } B_{i j} = 1, \\
@@ -715,13 +715,13 @@ Notes:
 """
 function complexoutgoingmat(rn::ReactionSystem; sparse=false, B=reactioncomplexes(rn,sparse=sparse)[2])
     isempty(get_systems(rn)) || error("complexoutgoingmat does not currently support subsystems.")
-    sparse ? complexoutgoingmat(SparseMatrixCSC{Int,Int}, rn, B) : 
+    sparse ? complexoutgoingmat(SparseMatrixCSC{Int,Int}, rn, B) :
              complexoutgoingmat(Matrix{Int}, rn, B)
 end
 
 
 """
-    incidencematgraph(incidencemat)   
+    incidencematgraph(incidencemat)
 
 Given an incidence matrix of a reaction-network, construct a directed simple
 graph where nodes correspond to reaction complexes and directed edges to
@@ -754,7 +754,7 @@ function incidencematgraph(incidencemat::Matrix{Int})
 end
 function incidencematgraph(incidencemat::SparseMatrixCSC{Int,Int})
     @assert all(∈([-1,0,1]) ,incidencemat)
-    m,n = size(incidencemat)  
+    m,n = size(incidencemat)
     graph = Graphs.DiGraph(m)
     rows = rowvals(incidencemat)
     vals = nonzeros(incidencemat)
@@ -795,16 +795,16 @@ end
 @doc raw"""
     deficiency(netstoich_mat, incidence_graph, linkage_classes)
 
-Calculate the deficiency of a reaction network. 
+Calculate the deficiency of a reaction network.
 
-Here the deficiency, ``\delta``, of a network with ``n`` reaction complexes, 
+Here the deficiency, ``\delta``, of a network with ``n`` reaction complexes,
 ``\ell`` linkage classes and a rank ``s`` stoichiometric matrix is
 
 ```math
 \delta = n - \ell - s
 ```
 
-For example, 
+For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
@@ -837,7 +837,7 @@ function subnetworkmapping(linkageclass, allrxs, complextorxmap, p)
     end
     rxs, specs, newps   # reactions and species involved in reactions of subnetwork
 end
-	
+
 """
     subnetworks(network, linkage_classes ; rxs = reactions(network),
                   complextorxmap = collect(values(reactioncomplexmap(network))),
@@ -886,8 +886,8 @@ function linkagedeficiencies(subnets, lcs)
     end
     δ
 end
-	
-						
+
+
 """
     isreversible(incidencegraph)
 
@@ -915,34 +915,34 @@ function isweaklyreversible(subnets::Vector{ReactionSystem})
     igs = [incidencematgraph(reactioncomplexes(subrs)[2]) for subrs in subnets]
     all([Graphs.is_strongly_connected(ig) for ig in igs])
 end
-								
-								
-################################################################################################
+
+
+############################################################################################
 ######################## conservation laws ###############################
 
-""" 
+"""
     conservationlaws(netstoichmat::AbstractMatrix)::Matrix
 
 Given the net stoichiometry matrix of a reaction system, computes a matrix of
-conservation laws, each represented as a row in the output. 
+conservation laws, each represented as a row in the output.
 """
-function conservationlaws(nsm::AbstractMatrix)
+function conservationlaws(nsm::AbstractMatrix; col_order=nothing)
 
-    # We basically have to compute the left null space of the matrix
-    # over the integers. We do this using AbstractAlgebra's integer (ZZ) interface.
-    N   = AA.nullspace(AA.matrix(AA.ZZ, nsm'))[2]
-    
-    # to save allocations we manually take the adjoint when converting back
-    # to a Julia integer matrix from the Nemo matrix. 
-    ret = [convert(Int,N[i,j]) for j=1:size(N,2), i=1:size(N,1)]  
+    # compute the left null space of over the integers
+    N = MT.nullspace(nsm'; col_order)
 
-    # If all coefficients for a conservation law are negative
-    # we might as well flip them to become positive
-    for retrow in eachrow(ret)
-        all(r -> r <= 0, retrow) && (retrow .*= -1)
+    # if all coefficients for a conservation law are negative, make positive
+    for Nrow in eachcol(N)
+        all(r -> r <= 0, Nrow) && (Nrow .*= -1)
     end
-    
-    ret
+
+    # check we haven't overflowed
+    errstr =
+    iszero(N' * nsm) || error("Calculation of the conservation law matrix was inaccurate, \
+                            likely due to numerical overflow. Please use a larger integer \
+                            type like Int128 or BigInt for the net stoichiometry matrix.")
+
+    N'
 end
 
 """
@@ -951,6 +951,41 @@ end
 Compute conserved quantities for a system with the given conservation laws.
 """
 conservedquantities(state, cons_laws) = cons_laws * state
+
+function sub_dependent_species(rx, submap)
+    rl = substitute(rx.rate, submap)
+
+end
+
+function removeconstraints(rn::ReactionSystem, N::AbstractMatrix, col_order)
+    nullity = size(N,1)
+    r = numspecies(rn) - nullity     # rank of the netstoichmat
+    sts = species(rn)
+    indepidxs = col_order[begin:r]
+    indepspecs = sts[indepidxs]
+    depidxs = col_order[(r+1):end]
+    depspecs = sts[depidxs]
+    constants = MT.unwrap.(MT.scalarize((@parameters _ConLaw[1:nullity])[1]))
+
+    conservedeqs = Equation[]
+    constantdefs = Equation[]
+    for (i,depidx) in enumerate(depidxs)
+        scaleby = (N[i,depidx] != 1) ? N[i,depidx] : one(eltype(N))
+        (scaleby != 0) || error("Error, found a zero in the conservation law matrix where \
+                                 one was not expected.")
+        coefs = @view N[i,indepidxs]
+        terms = sum(p -> p[1]/scaleby * p[2], zip(coefs,indepspecs))
+        eq = depspecs[i] ~ constants[i] - terms
+        push!(conservedeqs, eq)
+        eq = constants[i] ~ depspecs[i] + terms
+        push!(constantdefs,eq)
+    end
+
+    submap = Dict((eq.lhs => eq.rhs for eq in conservedeqs))
+    rxs = [sub_dependent_species(rx,submap) for rx in reactions(rn)]
+
+    nothing
+end
 
 ######################## reaction network operators #######################
 
@@ -972,7 +1007,7 @@ function (==)(rx1::Reaction, rx2::Reaction)
     rx1.only_use_rate == rx2.only_use_rate
 end
 
-function hash(rx::Reaction, h::UInt) 
+function hash(rx::Reaction, h::UInt)
     h = Base.hash(rx.rate, h)
     h = Base.hash(rx.substrates, h)
     h = Base.hash(rx.products, h)
@@ -1090,8 +1125,8 @@ Given a [`ReactionSystem`](@ref) and a vector `neworder`, orders the states of `
 Notes:
 - Currently only supports `ReactionSystem`s without constraints or subsystems.
 """
-function reorder_states!(rn, neworder) 
-   (get_constraints(rn) === nothing) && isempty(get_systems(rn)) || 
+function reorder_states!(rn, neworder)
+   (get_constraints(rn) === nothing) && isempty(get_systems(rn)) ||
            error("Reordering of states is only supported for systems without constraints or subsystems.")
     permute!(get_states(rn), neworder)
 end
@@ -1170,12 +1205,12 @@ Notes:
 function Base.merge!(network1::ReactionSystem, network2::ReactionSystem)
     ((get_constraints(network1) === nothing) && (get_constraints(network2) === nothing)) ||
         error("merge! does not currently support ReactionSystems with constraints, consider ModelingToolkit.extend instead.")
-    isequal(get_iv(network1), get_iv(network2)) || 
+    isequal(get_iv(network1), get_iv(network2)) ||
         error("Reaction networks must have the same independent variable to be mergable.")
     append!(get_eqs(network1), get_eqs(network2))
     union!(get_states(network1), get_states(network2))
     union!(get_ps(network1), get_ps(network2))
-    append!(get_observed(network1), get_observed(network2))    
+    append!(get_observed(network1), get_observed(network2))
     append!(get_systems(network1), get_systems(network2))
     merge!(get_defaults(network1), get_defaults(network2))
     network1
@@ -1185,7 +1220,7 @@ end
 ###############################   units   #####################################
 
 """
-    validate(rx::Reaction; info::String = "")     
+    validate(rx::Reaction; info::String = "")
 
 Check that all substrates and products within the given [`Reaction`](@ref) have
 the same units, and that the units of the reaction's rate expression are
@@ -1193,9 +1228,9 @@ internally consistent (i.e. if the rate involves sums, each term in the sum has
 the same units).
 
 """
-function validate(rx::Reaction; info::String = "")     
+function validate(rx::Reaction; info::String = "")
     validated = MT._validate([rx.rate], [string(rx, ": rate")], info = info)
-    
+
     subunits = isempty(rx.substrates) ? nothing : get_unit(rx.substrates[1])
     for i in 2:length(rx.substrates)
         if get_unit(rx.substrates[i]) != subunits
@@ -1228,26 +1263,26 @@ that the rate laws of all reactions reduce to units of (species units) / (time
 units).
 
 Notes:
-- Does not check subsystems too. 
+- Does not check subsystems too.
 """
 function validate(rs::ReactionSystem, info::String="")
     specs = get_states(rs)
 
     # if there are no species we don't check units on the system
-    isempty(specs) && return true   
+    isempty(specs) && return true
 
     specunits = get_unit(specs[1])
     validated = true
     for spec in specs
         if get_unit(spec) != specunits
-            validated = false 
+            validated = false
             @warn(string("Species are expected to have units of ", specunits, " however, species ", spec, " has units ", get_unit(spec), "."))
         end
     end
     timeunits = get_unit(get_iv(rs))
 
     # no units for species, time or parameters then assume validated
-    (specunits in (MT.unitless,nothing)) && (timeunits in (MT.unitless,nothing)) && 
+    (specunits in (MT.unitless,nothing)) && (timeunits in (MT.unitless,nothing)) &&
         MT.all_dimensionless(get_ps(rs)) && return true
 
     rateunits = specunits / timeunits
