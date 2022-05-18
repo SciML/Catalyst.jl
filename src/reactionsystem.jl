@@ -64,16 +64,16 @@ end
 
 function Reaction(rate, subs, prods, substoich, prodstoich;
                   netstoich=nothing, only_use_rate=false,
-                  kwargs...) 
-    
+                  kwargs...)
+
     (isnothing(prods)&&isnothing(subs)) && error("A reaction requires a non-nothing substrate or product vector.")
     (isnothing(prodstoich)&&isnothing(substoich)) && error("Both substrate and product stochiometry inputs cannot be nothing.")
     if isnothing(subs)
         subs = Vector{Term}()
         !isnothing(substoich) && error("If substrates are nothing, substrate stiocihometries have to be so too.")
-        substoich = typeof(prodstoich)()        
+        substoich = typeof(prodstoich)()
     end
-    S = eltype(substoich)        
+    S = eltype(substoich)
 
     if isnothing(prods)
         prods = Vector{Term}()
@@ -93,13 +93,13 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
         prodstoich′ = Any[value(p) for p in prodstoich]
     else
         substoich′ = (S == stoich_type) ? substoich : convert.(stoich_type, substoich)
-        prodstoich′ = (T == stoich_type) ? prodstoich : convert.(stoich_type, prodstoich)    
+        prodstoich′ = (T == stoich_type) ? prodstoich : convert.(stoich_type, prodstoich)
     end
 
     ns = if netstoich === nothing
-        get_netstoich(subs, prods, substoich′, prodstoich′) 
+        get_netstoich(subs, prods, substoich′, prodstoich′)
     else
-        (netstoich_stoichtype(netstoich) != stoich_type) ? 
+        (netstoich_stoichtype(netstoich) != stoich_type) ?
             convert.(stoich_type, netstoich) : netstoich
     end
 
@@ -165,6 +165,31 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     [el for el in nsdict if !_iszero(el[2])]
 end
 
+Base.@kwdef mutable struct NetworkProperties
+    netstoichmat::Any = nothing
+    conservationmat::Any = nothing
+    col_order::Vector{Int} = Int[]
+    rank::Int = 0
+    nullity::Int = 0
+    indepspecs::Set{Term} = Set{Term}()
+    depspecs::Set{Term} = Set{Term}()    
+    conservedeqs::Vector{Equation} = Equation[]
+    constantdefs::Vector{Equation} = Equation[]
+end
+
+function Base.show(io::IO, nps::NetworkProperties)    
+    if (nps.conservationmat !== nothing) 
+        println(io, "Conserved Equations: ")
+        foreach(eq -> println(io,eq), nps.conservedeqs)
+        println()
+    end
+    
+    if nps.netstoichmat !== nothing
+        println(io, "Net stoichiometry matrix: ")
+        show(io, nps.netstoichmat)
+    end
+end
+
 
 """
 $(TYPEDEF)
@@ -195,6 +220,7 @@ Keyword Arguments:
 - `checks = true`, boolean for whether to check units.
 - `constraints = nothing`, a `NonlinearSystem` or `ODESystem` of coupled
   constraint equations.
+- `networkproperties = NetworkProperties()`, cache for network properties calculated via API functions.
 
 Notes:
 - ReactionSystems currently do rudimentary unit checking, requiring that all
@@ -202,7 +228,7 @@ Notes:
   (species units) / (time units). Unit checking can be disabled by passing the
   keyword argument `checks=false`.
 """
-struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem}} <: MT.AbstractTimeDependentSystem
+struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem},V <: NetworkProperties} <: MT.AbstractTimeDependentSystem
     """The reactions defining the system."""
     eqs::Vector{Reaction}
     """Independent variable (usually time)."""
@@ -228,15 +254,20 @@ struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem}} <: MT.AbstractTimeD
     connection_type::Any
     """Non-`Reaction` equations that further constrain the system"""
     constraints::U
+    """`NetworkProperties` object that can be filled in by API functions."""
+    networkproperties::V
 
     # inner constructor is considered private and may change between non-breaking releases.
-    function ReactionSystem(eqs, iv, states, ps, var_to_name, observed, name, systems, defaults, connection_type, csys;
+    function ReactionSystem(eqs, iv, states, ps, var_to_name, observed, name, systems,
+                            defaults, connection_type, csys, networkproperties;
                             checks::Bool=true, skipvalue=false)
         if checks
             check_variables(states, iv)
             check_parameters(ps, iv)
         end
-        rs = new{typeof(csys)}(eqs, iv, states, ps, var_to_name, observed, name, systems, defaults, connection_type, csys)
+        rs = new{typeof(csys),typeof(networkproperties)}(eqs, iv, states, ps, var_to_name, 
+                                                         observed, name, systems, defaults, 
+                                                         connection_type, csys, networkproperties)
         checks && validate(rs)
         rs
     end
@@ -252,6 +283,7 @@ function ReactionSystem(eqs, iv, states, ps;
                         connection_type=nothing,
                         checks = true,
                         constraints = nothing,
+                        networkproperties = NetworkProperties(),
                         skipvalue = false)
 
     name === nothing && throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
@@ -274,9 +306,9 @@ function ReactionSystem(eqs, iv, states, ps;
     MT.process_variables!(var_to_name, defaults, states′)
     MT.process_variables!(var_to_name, defaults, ps′)
     MT.collect_var_to_name!(var_to_name, eq.lhs for eq in observed)
-        
-    ReactionSystem(eqs′, iv′, states′, ps′, var_to_name, observed, name, systems, 
-                   defaults, connection_type, constraints; 
+
+    ReactionSystem(eqs′, iv′, states′, ps′, var_to_name, observed, name, systems,
+                   defaults, connection_type, constraints, networkproperties;
                    checks = checks, skipvalue = skipvalue)
 end
 
@@ -286,7 +318,7 @@ function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)
     make_ReactionSystem_internal(rxs, iv, nothing, Vector{Num}(); kwargs...)
 end
 
-# search the symbolic expression for parameters or states 
+# search the symbolic expression for parameters or states
 # and save in ps and sts respectively. vars is used to cache results
 function findvars!(ps, sts, exprtosearch, t, vars)
     MT.get_variables!(vars, exprtosearch)
@@ -337,6 +369,13 @@ Return the current constraint subsystem, if none is defined will return `nothing
 get_constraints(sys::ReactionSystem) = getfield(sys, :constraints)
 has_constraints(sys::ReactionSystem) = isdefined(sys, :constraints)
 
+"""
+    get_networkproperties(sys::ReactionSystem)
+
+Return the current network properties of `sys`.
+"""
+get_networkproperties(sys::ReactionSystem) = getfield(sys, :networkproperties)
+
 function MT.states(sys::ReactionSystem)
     sts = (get_constraints(sys) === nothing) ? get_states(sys) : vcat(get_states(sys), get_states(get_constraints(sys)))
     systems = get_systems(sys)
@@ -362,7 +401,7 @@ function MT.defaults(sys::ReactionSystem)
     constraints = get_constraints(sys)
     systems = get_systems(sys)
     defs = get_defaults(sys)
-    
+
     if constraints !== nothing
         defs = merge(defs, get_defaults(constraints))
     end
@@ -392,7 +431,7 @@ function MT.getvar(sys::ReactionSystem, name::Symbol; namespace=false)
     systems = get_systems(sys)
     i = findfirst(x->nameof(x)==name, systems)
     i === nothing || return namespace ? rename(systems[i], renamespace(sys, name)) : systems[i]
-    
+
     constraints = get_constraints(sys)
     if constraints !== nothing && nameof(constraints) == name
         return namespace ? rename(constraints, renamespace(sys, name)) : constraints
@@ -443,14 +482,14 @@ Notes:
 - `combinatoric_ratelaw=true` uses factorial scaling factors in calculating the
     rate law, i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. If
     `combinatoric_ratelaw=false` then the ratelaw is `k*S^2`, i.e. the scaling
-    factor is ignored. 
+    factor is ignored.
 """
 function oderatelaw(rx; combinatoric_ratelaw=true)
     @unpack rate, substrates, substoich, only_use_rate = rx
     rl = rate
 
     # if the stoichiometric coefficients are not integers error if asking to scale rates
-    !all(s -> s isa Union{Integer,Symbolics.Symbolic}, substoich) && (combinatoric_ratelaw==true) && 
+    !all(s -> s isa Union{Integer,Symbolics.Symbolic}, substoich) && (combinatoric_ratelaw==true) &&
         error("Non-integer stoichiometric coefficients require the combinatoric_ratelaw=false keyword to oderatelaw, or passing combinatoric_ratelaws=false to convert or ODEProblem.")
 
     if !only_use_rate
@@ -556,9 +595,9 @@ function jumpratelaw(rx; rxvars=get_variables(rx.rate), combinatoric_ratelaw=tru
     @unpack rate, substrates, substoich, only_use_rate = rx
     rl = rate
     if !only_use_rate
-        coef = eltype(substoich) <: Number ? one(eltype(substoich)) : 1        
+        coef = eltype(substoich) <: Number ? one(eltype(substoich)) : 1
         for (i,stoich) in enumerate(substoich)
-            s = substrates[i]            
+            s = substrates[i]
             if stoich isa Symbolics.Symbolic
                 rl *= combinatoric_ratelaw ? binomial(s,stoich) : factorial(s) / factorial(s-stoich)
             else
@@ -568,7 +607,7 @@ function jumpratelaw(rx; rxvars=get_variables(rx.rate), combinatoric_ratelaw=tru
                     rl *= (s - i)
                 end
                 combinatoric_ratelaw && (coef *= factorial(stoich))
-            end            
+            end
         end
         combinatoric_ratelaw && !isequal(coef,one(coef)) && (rl /= coef)
     end
@@ -612,10 +651,10 @@ function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
     # if no dependencies must be zero order
     (length(rxvars)==0) && return true
     haveivdep && return false
-    rx.only_use_rate && return false    
+    rx.only_use_rate && return false
     @inbounds for i = 1:length(rxvars)
         (rxvars[i] in stateset) && return false
-    end    
+    end
     return true
 end
 
@@ -871,7 +910,7 @@ function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0, p=DiffEqBase.NullPa
                                      name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true,
                                      checks = false, check_length=false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
-    pmap  = symmap_to_varmap(rs, p)                                 
+    pmap  = symmap_to_varmap(rs, p)
     nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks)
     return NonlinearProblem(nlsys, u0map, pmap, args...; check_length, kwargs...)
 end
@@ -883,7 +922,7 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan, p=DiffEqBase.NullP
                                include_zero_odes=true, checks = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap  = symmap_to_varmap(rs, p)
-    p_matrix = zeros(length(get_states(rs)), length(get_eqs(rs)))  
+    p_matrix = zeros(length(get_states(rs)), length(get_eqs(rs)))
     sde_sys  = convert(SDESystem, rs; noise_scaling, name, combinatoric_ratelaws, include_zero_odes, checks)
     return SDEProblem(sde_sys, u0map, tspan, pmap, args...; noise_rate_prototype=p_matrix,kwargs...)
 end
@@ -892,25 +931,25 @@ end
 function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple, p=DiffEqBase.NullParameters(),
                                     args...; name=nameof(rs), combinatoric_ratelaws=true, checks = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
-    pmap  = symmap_to_varmap(rs, p)       
+    pmap  = symmap_to_varmap(rs, p)
     jsys  = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks)
     return DiscreteProblem(jsys, u0map, tspan, pmap, args...; kwargs...)
 end
 
 # JumpProblem from AbstractReactionNetwork
-function DiffEqJump.JumpProblem(rs::ReactionSystem, prob, aggregator, args...; 
+function DiffEqJump.JumpProblem(rs::ReactionSystem, prob, aggregator, args...;
                                 name=nameof(rs), combinatoric_ratelaws=true, checks = false, kwargs...)
-    jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks)                                
+    jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks)
     return JumpProblem(jsys, prob, aggregator, args...; kwargs...)
 end
 
 # SteadyStateProblem from AbstractReactionNetwork
 function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0, p=DiffEqBase.NullParameters(), args...;
-                                       check_length=false, name=nameof(rs), combinatoric_ratelaws=true, 
+                                       check_length=false, name=nameof(rs), combinatoric_ratelaws=true,
                                        include_zero_odes=true, checks=false, kwargs...)
 
     u0map = symmap_to_varmap(rs, u0)
-    pmap  = symmap_to_varmap(rs, p)      
+    pmap  = symmap_to_varmap(rs, p)
     osys =  convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks)
     return SteadyStateProblem(osys, u0map, pmap, args...; kwargs...)
 end
@@ -984,6 +1023,7 @@ Notes:
   an `ODESystem`.
 - Currently only `ReactionSystem`s, `NonlinearSystem`s and `ODESystem`s are
   supported as sub-systems when flattening.
+- `rs.networkproperties` is reset upon flattening.
 """
 function MT.flatten(rs::ReactionSystem; name=nameof(rs))
 

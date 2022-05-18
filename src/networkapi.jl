@@ -945,19 +945,7 @@ function conservationlaws(nsm::AbstractMatrix; col_order=nothing)
     N'
 end
 
-"""
-    conservedquantities(state, cons_laws)
-
-Compute conserved quantities for a system with the given conservation laws.
-"""
-conservedquantities(state, cons_laws) = cons_laws * state
-
-function sub_dependent_species(rx, submap)
-    rl = substitute(rx.rate, submap)
-
-end
-
-function removeconstraints(rn::ReactionSystem, N::AbstractMatrix, col_order)
+function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_order)
     nullity = size(N,1)
     r = numspecies(rn) - nullity     # rank of the netstoichmat
     sts = species(rn)
@@ -981,11 +969,42 @@ function removeconstraints(rn::ReactionSystem, N::AbstractMatrix, col_order)
         push!(constantdefs,eq)
     end
 
-    submap = Dict((eq.lhs => eq.rhs for eq in conservedeqs))
-    rxs = [sub_dependent_species(rx,submap) for rx in reactions(rn)]
+    # cache in the system
+    nps = rn.networkproperties
+    nps.rank = r
+    nps.nullity = nullity
+    nps.indepspecs = Set(indepspecs)
+    nps.depspecs = Set(depspecs)
+    nps.conservedeqs = conservedeqs
+    nps.constantdefs = constantdefs    
 
     nothing
 end
+
+"""
+    conservationlaws(rs::ReactionSystem)
+
+Return the conservation law matrix of the given `ReactionSystem`, calculating it if it is
+not already stored within the system, or returning an alias to it.
+
+Notes:
+- When not already present in `rs` mutates `rs.networkproperties` to cache it.
+"""
+function conservationlaws(rs::ReactionSystem)
+    nps = rs.networkproperties    
+    (nps.conservationmat !== nothing) && (return nps.conservationmat)
+    (nps.netstoichmat === nothing) && (nps.netstoichmat = netstoichmat(rs))
+    nps.conservationmat = conservationlaws(nps.netstoichmat; col_order=nps.col_order)    
+    cache_conservationlaw_eqs!(rs, nps.conservationmat, nps.col_order)
+    nps.conservationmat
+end
+
+"""
+    conservedquantities(state, cons_laws)
+
+Compute conserved quantities for a system with the given conservation laws.
+"""
+conservedquantities(state, cons_laws) = cons_laws * state
 
 ######################## reaction network operators #######################
 
