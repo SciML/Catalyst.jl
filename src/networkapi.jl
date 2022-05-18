@@ -928,7 +928,7 @@ conservation laws, each represented as a row in the output.
 """
 function conservationlaws(nsm::AbstractMatrix; col_order=nothing)
 
-    # compute the left null space of over the integers
+    # compute the left nullspace over the integers
     N = MT.nullspace(nsm'; col_order)
 
     # if all coefficients for a conservation law are negative, make positive
@@ -937,7 +937,6 @@ function conservationlaws(nsm::AbstractMatrix; col_order=nothing)
     end
 
     # check we haven't overflowed
-    errstr =
     iszero(N' * nsm) || error("Calculation of the conservation law matrix was inaccurate, \
                             likely due to numerical overflow. Please use a larger integer \
                             type like Int128 or BigInt for the net stoichiometry matrix.")
