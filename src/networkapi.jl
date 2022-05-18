@@ -334,11 +334,11 @@ function netstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
     nps = rn.networkproperties
 
     # if it is already calculated and has the right type
-    if (nps.netstoichmat !== nothing) 
+    if (nps.netstoichmat !== nothing)
         (!xor(sparse, issparse(nps.netstoichmat))) && (return nps.netstoichmat)
     end
 
-	if sparse 
+	if sparse
         nps.netstoichmat = netstoichmat(SparseMatrixCSC{Int,Int}, rn; smap=smap)
     else
         nps.netstoichmat = netstoichmat(Matrix{Int}, rn; smap=smap)
@@ -953,9 +953,9 @@ function conservationlaws(nsm::AbstractMatrix; col_order=nothing)
     end
 
     # check we haven't overflowed
-    iszero(N' * nsm) || error("Calculation of the conservation law matrix was inaccurate, \
-                            likely due to numerical overflow. Please use a larger integer \
-                            type like Int128 or BigInt for the net stoichiometry matrix.")
+    iszero(N' * nsm) || error("Calculation of the conservation law matrix was inaccurate, "
+                            * "likely due to numerical overflow. Please use a larger integer "
+                            * "type like Int128 or BigInt for the net stoichiometry matrix.")
 
     N'
 end
@@ -991,7 +991,7 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     nps.indepspecs = Set(indepspecs)
     nps.depspecs = Set(depspecs)
     nps.conservedeqs = conservedeqs
-    nps.constantdefs = constantdefs    
+    nps.constantdefs = constantdefs
 
     nothing
 end
@@ -1007,10 +1007,10 @@ Notes:
   returns the cached version.
 """
 function conservationlaws(rs::ReactionSystem)
-    nps = rs.networkproperties    
+    nps = rs.networkproperties
     (nps.conservationmat !== nothing) && (return nps.conservationmat)
     (nps.netstoichmat === nothing) && (nps.netstoichmat = netstoichmat(rs))
-    nps.conservationmat = conservationlaws(nps.netstoichmat; col_order=nps.col_order)    
+    nps.conservationmat = conservationlaws(nps.netstoichmat; col_order=nps.col_order)
     cache_conservationlaw_eqs!(rs, nps.conservationmat, nps.col_order)
     nps.conservationmat
 end
