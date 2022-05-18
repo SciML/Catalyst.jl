@@ -99,7 +99,7 @@ As a second example, let's build the negative feedback model from [MomentClosure
 In our model `G₋` will denote the repressed state, and `G₊` the active state where the gene can transcribe. `P` will denote the protein product of the gene. We will assume that proteins are produced in bursts that produce `m` proteins, where `m` is a (shifted) geometric random variable with mean `b`. To define `m` we must register the `Distributions.Geometric` distribution from Distributions.jl with Symbolics.jl, after which we can use it in symbolic expressions:
 ```@example s1
 using Distributions: Geometric
-@register Geometric(b)
+@register_symbolic Geometric(b)
 @parameters b
 m = rand(Geometric(1/b)) + 1
 nothing # hide

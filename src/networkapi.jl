@@ -303,7 +303,9 @@ end
 Returns the net stoichiometry matrix, ``N``, with ``N_{i j}`` the net
 stoichiometric coefficient of the ith species within the jth reaction.
 
-Note:
+Notes:
+- Caches the matrix in `get_networkproperties(rn).netstoichmat`.
+- If `get_networkproperties(rn).netstoichmat` has previously been set, it is simply returned.
 - Set sparse=true for a sparse matrix representation
 """
 function netstoichmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem; smap=speciesmap(rn))
@@ -328,7 +330,21 @@ function netstoichmat(::Type{Matrix{Int}},rn::ReactionSystem; smap=speciesmap(rn
 end
 function netstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
     isempty(get_systems(rn)) || error("netstoichmat does not currently support subsystems.")
-	sparse ? netstoichmat(SparseMatrixCSC{Int,Int}, rn; smap=smap) : netstoichmat(Matrix{Int}, rn; smap=smap)
+
+    nps = rn.networkproperties
+
+    # if it is already calculated and has the right type
+    if (nps.netstoichmat !== nothing) 
+        (!xor(sparse, issparse(nps.netstoichmat))) && (return nps.netstoichmat)
+    end
+
+	if sparse 
+        nps.netstoichmat = netstoichmat(SparseMatrixCSC{Int,Int}, rn; smap=smap)
+    else
+        nps.netstoichmat = netstoichmat(Matrix{Int}, rn; smap=smap)
+    end
+
+    nps.netstoichmat
 end
 
 """
@@ -987,7 +1003,8 @@ Return the conservation law matrix of the given `ReactionSystem`, calculating it
 not already stored within the system, or returning an alias to it.
 
 Notes:
-- When not already present in `rs` mutates `rs.networkproperties` to cache it.
+- When not already present in `rs` mutates `get_networkproperties(rs)` to cache it, else
+  returns the cached version.
 """
 function conservationlaws(rs::ReactionSystem)
     nps = rs.networkproperties    

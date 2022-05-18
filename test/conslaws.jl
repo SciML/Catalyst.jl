@@ -15,9 +15,7 @@ end
 
 S = netstoichmat(rn)
 C = conservationlaws(S)
-
 @test size(C,1) == 3
-
 b = [ 0, 0, 0, 1, 1, 1, 1, 1, 0, 0 ]
 @test any(b == C[i,:] for i in 1:size(C,1))
 
@@ -28,19 +26,21 @@ D = [ 1 -1 0 0 0 0 0 0 0 0;
       0  1 1 0 0 0 0 0 0 0 ]
 @test any(D[j,:] == C[i,:] for i in 1:size(C,1), j in 1:size(D,1))
 
-Ss_standard = map(netstoichmat, reaction_networks_standard)
-Cs_standard = map(conservationlaws, Ss_standard)
+C = conservationlaws(rn)
+@test size(C,1) == 3
+@test get_networkproperties(rn).nullity == 3
+@test any(b == C[i,:] for i in 1:size(C,1))
+@test any(D[j,:] == C[i,:] for i in 1:size(C,1), j in 1:size(D,1))
+
+
+Cs_standard = map(conservationlaws, reaction_networks_standard)
 @test all(size(C, 1) == 0 for C in Cs_standard)
 
-Ss_hill = map(netstoichmat, reaction_networks_hill)
-Cs_hill = map(conservationlaws, Ss_hill)
+Cs_hill = map(conservationlaws, reaction_networks_hill)
 @test all(size(C, 1) == 0 for C in Cs_hill)
 
 function consequiv(A, B)
     rank([A; B]) == rank(A) == rank(B)
 end
-
-Ss_constraint = map(netstoichmat, reaction_networks_constraint)
-Cs_constraint = map(conservationlaws, Ss_constraint)
-
+Cs_constraint = map(conservationlaws, reaction_networks_constraint)
 @test all(consequiv.(Matrix{Int}.(Cs_constraint), reaction_network_constraints))
