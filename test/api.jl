@@ -90,7 +90,7 @@ pmat = [0 1;
         0 2]
 @test smat == substoichmat(rnmat) == Matrix(substoichmat(rnmat, sparse=true))
 @test pmat == prodstoichmat(rnmat) == Matrix(prodstoichmat(rnmat, sparse=true))
-              
+
 ############## testing newly added intermediate complexes reaction networks##############
 
 function testnetwork(rn, B, Z, Δ, lcs, d, subrn, lcd)
@@ -101,7 +101,7 @@ function testnetwork(rn, B, Z, Δ, lcs, d, subrn, lcd)
     ig = incidencematgraph(B)
     lcs2 = linkageclasses(ig)
     @test lcs2 == linkageclasses(incidencematgraph(sparse(B))) == lcs
-    @test deficiency(netstoichmat(rn), ig, lcs) == d   
+    @test deficiency(netstoichmat(rn), ig, lcs) == d
     @test all(issetequal.(subrn, reactions.(subnetworks(rn, lcs))))
     @test linkagedeficiencies(subnetworks(rn, lcs), lcs) == lcd
     @test sum(linkagedeficiencies(subnetworks(rn, lcs),lcs)) <= deficiency(netstoichmat(rn), ig, lcs)
@@ -579,7 +579,7 @@ p     = [.1/1000, .01]
 tspan = (0.0,250.0)
 u0    = [999.0,1.0,0.0]
 op    = ODEProblem(rn, species(rn) .=> u0, tspan, parameters(rn) .=> p)
-sol   = solve(op, Tsit5())  # old style 
+sol   = solve(op, Tsit5())  # old style
 setdefaults!(rn, [:S => 999.0, :I => 1.0, :R => 0.0, :α => 1e-4, :β => .01])
 op = ODEProblem(rn, [], tspan, [])
 sol2 = solve(op, Tsit5())
@@ -603,7 +603,7 @@ function unpacktest(rn)
     u₀ = [S1 => 999.0, I1 => 1.0, R1 => 0.0]
     p = [α1 => 1e-4, β1 => .01]
     op = ODEProblem(rn, u₀, (0.0, 250.0), p)
-    solve(op, Tsit5())    
+    solve(op, Tsit5())
 end
 rn = @reaction_network begin
     α1, S1 + I1 --> 2I1
@@ -638,3 +638,20 @@ pmap = (:β => 1e-4, :ν => .01)
 op = ODEProblem(sir, u0map, tspan, pmap)
 sol5 = solve(op, Tsit5())
 @test norm(sol.u - sol5.u) ≈ 0
+
+
+# test conservation law elimination
+let
+    rn = @reaction_network begin
+        (k1,k2), A + B <--> C
+        (m1,m2), D <--> E
+        b12, F1 --> F2
+        b23, F2 --> F3
+        b31, F3 --> F1
+    end k1 k2 m1 m2 b12 b23 b31
+
+
+
+
+
+end
