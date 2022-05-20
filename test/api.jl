@@ -654,7 +654,7 @@ let
     u0 = [A => 10.0, B => 10.0, C => 0.0, D => 10.0, E => 0.0, F1 => 8.0, F2 => 0.0, F3 => 0.0]
     p = [k1 => 1.0, k2 => .1, m1 => 1.0, m2 => 2.0, b12 => 1.0, b23 => 2.0, b31 => .1]
     tspan = (0.0,20.0)
-    oprob = ODEProblem(osys, u0, tspan, symmap_to_varmap(osys,p))
+    oprob = ODEProblem(osys, u0, tspan, p)
     sol = solve(oprob, Tsit5())
     oprob2 = ODEProblem(rn, u0, tspan, p)
     sol2 = solve(oprob, Tsit5())
