@@ -851,8 +851,8 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem;
                       remove_conserved=false, checks=false, kwargs...)
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
-    eqs = assemble_drift(fullrs; combinatoric_ratelaws=combinatoric_ratelaws, as_odes=false,
-                                 include_zero_odes=include_zero_odes)
+    eqs = assemble_drift(fullrs; combinatoric_ratelaws, remove_conserved, as_odes=false,
+                                 include_zero_odes)
     error_if_constraint_odes(NonlinearSystem, fullrs)
     eqs,sts,ps,obs,defs = addconstraints!(eqs, fullrs; remove_conserved)
     NonlinearSystem(eqs, sts, ps; name, defaults=defs, observed=obs, checks, kwargs...)

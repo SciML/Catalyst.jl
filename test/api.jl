@@ -667,4 +667,16 @@ let
         @test norm(sol(tv, idxs=s) .- sol2(tv, idxs=s)) ≈ 0
         @test norm(sol2(tv, idxs=s) .- sol2(tv, idxs=s)) ≈ 0
     end
+
+    nsys = convert(NonlinearSystem, rn; remove_conserved=true)
+    nprob = NonlinearProblem{true}(nsys, u0, p)
+    nsol = solve(nprob, NewtonRaphson(); tol = 1e-9)
+    nprob2 = NonlinearProblem(rn, u0, p)
+    nsol2 = solve(nprob, NewtonRaphson(); tol=1e-9)
+    nprob3 = NonlinearProblem(rn, u0, p; remove_conserved=true)
+    nsol3 = solve(nprob, NewtonRaphson(); tol=1e-9)
+    for s in species(rn)
+        @test norm(nsol[s] .- nsol2[s]) ≈ 0
+        @test norm(nsol2[s] .- nsol2[s]) ≈ 0
+    end
 end
