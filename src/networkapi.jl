@@ -331,7 +331,7 @@ end
 function netstoichmat(rn::ReactionSystem; sparse=false, smap=speciesmap(rn))
     isempty(get_systems(rn)) || error("netstoichmat does not currently support subsystems.")
 
-    nps = rn.networkproperties
+    nps = get_networkproperties(rn)
 
     # if it is already calculated and has the right type
     if (nps.netstoichmat !== nothing)
@@ -985,7 +985,7 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     end
 
     # cache in the system
-    nps = rn.networkproperties
+    nps = get_networkproperties(rn)
     nps.rank = r
     nps.nullity = nullity
     nps.indepspecs = Set(indepspecs)
@@ -1007,7 +1007,7 @@ Notes:
   returns the cached version.
 """
 function conservationlaws(rs::ReactionSystem)
-    nps = rs.networkproperties
+    nps = get_networkproperties(rs)
     (nps.conservationmat !== nothing) && (return nps.conservationmat)
     (nps.netstoichmat === nothing) && (nps.netstoichmat = netstoichmat(rs))
     nps.conservationmat = conservationlaws(nps.netstoichmat; col_order=nps.col_order)

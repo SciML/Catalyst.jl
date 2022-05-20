@@ -786,6 +786,7 @@ function addconstraints!(eqs, rs::ReactionSystem; remove_conserved=false)
     if csys !== nothing
         sts = vcat(sts, get_states(csys))
         ps = vcat(ps, get_ps(csys))
+        ceqs = get_eqs(csys)
         (!isempty(ceqs)) && append!(eqs,ceqs)
         defs = merge(defs, MT.defaults(csys))
         obs = vcat(obs, MT.observed(csys))
