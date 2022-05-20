@@ -172,18 +172,18 @@ Base.@kwdef mutable struct NetworkProperties
     rank::Int = 0
     nullity::Int = 0
     indepspecs::Set{Term} = Set{Term}()
-    depspecs::Set{Term} = Set{Term}()    
+    depspecs::Set{Term} = Set{Term}()
     conservedeqs::Vector{Equation} = Equation[]
     constantdefs::Vector{Equation} = Equation[]
 end
 
-function Base.show(io::IO, nps::NetworkProperties)    
-    if (nps.conservationmat !== nothing) 
+function Base.show(io::IO, nps::NetworkProperties)
+    if (nps.conservationmat !== nothing)
         println(io, "Conserved Equations: ")
         foreach(eq -> println(io,eq), nps.conservedeqs)
         println()
     end
-    
+
     if nps.netstoichmat !== nothing
         println(io, "Net stoichiometry matrix: ")
         show(io, nps.netstoichmat)
@@ -265,8 +265,8 @@ struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem},V <: NetworkProperti
             check_variables(states, iv)
             check_parameters(ps, iv)
         end
-        rs = new{typeof(csys),typeof(networkproperties)}(eqs, iv, states, ps, var_to_name, 
-                                                         observed, name, systems, defaults, 
+        rs = new{typeof(csys),typeof(networkproperties)}(eqs, iv, states, ps, var_to_name,
+                                                         observed, name, systems, defaults,
                                                          connection_type, csys, networkproperties)
         checks && validate(rs)
         rs
@@ -503,14 +503,28 @@ function oderatelaw(rx; combinatoric_ratelaw=true)
     rl
 end
 
-function assemble_oderhs(rs; combinatoric_ratelaws=true)
+function assemble_oderhs(rs; combinatoric_ratelaws=true, remove_conserved=false)
     sts = get_states(rs)
-    species_to_idx = Dict((x => i for (i,x) in enumerate(sts)))
-    rhsvec         = Any[0 for i in eachindex(sts)]
+    nps = get_networkproperties(rs)
+    if remove_conserved
+        # get the independent species in an order consistent with sts
+        indepsts = Iterators.filter(in(nps.indepspecs), sts)
+        species_to_idx = Dict(x => i for (i,x) in enumerate(indepsts))
+        rhsvec = Any[0 for i in eachindex(species_to_idx)]
+        depspec_submap = Dict(eq.lhs => eq.rhs for eq in nps.conservedeqs)
+    else
+        species_to_idx = Dict((x => i for (i,x) in enumerate(sts)))
+        rhsvec = Any[0 for i in eachindex(sts)]
+        depspec_submap = Dict()
+    end
 
     for rx in get_eqs(rs)
         rl = oderatelaw(rx; combinatoric_ratelaw=combinatoric_ratelaws)
+        remove_conserved && (rl = substitute(rl, depspec_submap))
         for (spec,stoich) in rx.netstoich
+            # dependent species don't get an ODE, so are skipped
+            remove_conserved && (spec in nps.depspecs) && continue
+
             i = species_to_idx[spec]
             if _iszero(rhsvec[i])
                 if stoich isa Symbolics.Symbolic
@@ -533,11 +547,18 @@ function assemble_oderhs(rs; combinatoric_ratelaws=true)
     rhsvec
 end
 
-function assemble_drift(rs; combinatoric_ratelaws=true, as_odes=true, include_zero_odes=true)
-    rhsvec = assemble_oderhs(rs; combinatoric_ratelaws=combinatoric_ratelaws)
+function assemble_drift(rs; combinatoric_ratelaws=true, as_odes=true, include_zero_odes=true,
+                            remove_conserved=false)
+    rhsvec = assemble_oderhs(rs; combinatoric_ratelaws, remove_conserved)
     if as_odes
-        D   = Differential(get_iv(rs))
-        eqs = [Equation(D(x),rhs) for (x,rhs) in zip(get_states(rs),rhsvec) if (include_zero_odes || (!_iszero(rhs)))]
+        D = Differential(get_iv(rs))
+        if remove_conserved
+            indepspecs = get_networkproperties(rs).indepspecs
+            sts = Iterators.filter(in(indepspecs), states(rs))
+        else
+            sts = states(rs)
+        end
+        eqs = [Equation(D(x),rhs) for (x,rhs) in zip(sts,rhsvec) if (include_zero_odes || (!_iszero(rhs)))]
     else
         eqs = [Equation(0,rhs) for rhs in rhsvec if (include_zero_odes || (!_iszero(rhs)))]
     end
@@ -735,18 +756,42 @@ end
 # end
 
 # merge constraint eqs, states and ps into the top-level eqs, states and ps
-function addconstraints!(eqs, rs::ReactionSystem)
+function addconstraints!(eqs, rs::ReactionSystem; remove_conserved=false)
     csys = get_constraints(rs)
-    sts  = get_states(rs); ps = get_ps(rs)
+    nps  = get_networkproperties(rs)
 
-    if csys !== nothing
-        csts = get_states(csys); cps = get_ps(csys); ceqs = get_eqs(csys)
-        sts  = isempty(csts) ? sts : [sts; csts]
-        ps   = isempty(cps) ? ps : [ps; cps]
-        (!isempty(ceqs)) && append!(eqs,ceqs)
+    # make dependent species observables and add conservation constants as parameters
+    if remove_conserved
+        # preserve the order of the independent species
+        sts = filter(in(nps.indepspecs), get_states(rs))
+
+        # add the constants as parameters and set their values
+        ps  = copy(get_ps(rs))
+        append!(ps, eq.lhs for eq in nps.constantdefs)
+        defs = copy(MT.defaults(rs))
+        for eq in nps.constantdefs
+            defs[eq.lhs] = eq.rhs
+        end
+
+        # add the dependent species as observed
+        obs = copy(MT.observed(rs))
+        append!(obs, nps.conservedeqs)
+    else
+        sts = get_states(rs)
+        ps = get_ps(rs)
+        defs = MT.defaults(rs)
+        obs = MT.observed(rs)
     end
 
-    eqs,sts,ps
+    if csys !== nothing
+        sts = vcat(sts, get_states(csys))
+        ps = vcat(ps, get_ps(csys))
+        (!isempty(ceqs)) && append!(eqs,ceqs)
+        defs = merge(defs, MT.defaults(csys))
+        obs = vcat(obs, MT.observed(csys))
+    end
+
+    eqs,sts,ps,obs,defs
 end
 
 # used by systems that don't support constraint equations currently
@@ -759,7 +804,7 @@ function error_if_constraint_odes(::Type{T}, rs::ReactionSystem) where {T <: MT.
     csys = get_constraints(rs)
     if csys !== nothing
         any(eq -> MT.isdiffeq(eq), equations(csys)) &&
-            error("Cannot convert to system type $T when then there are ODE constraint equations.")
+            error("Cannot convert to system type $T when there are ODE constraint equations.")
     end
     nothing
 end
@@ -778,14 +823,13 @@ ignored.
 """
 function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem;
                       name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true,
-                      checks=false, kwargs...)
+                      remove_conserved=false, checks=false, kwargs...)
     fullrs = Catalyst.flatten(rs)
-    eqs = assemble_drift(fullrs; combinatoric_ratelaws=combinatoric_ratelaws,
-                             include_zero_odes=include_zero_odes)
-    eqs,sts,ps = addconstraints!(eqs, fullrs)
-    ODESystem(eqs, get_iv(fullrs), sts, ps; name=name, defaults=MT.defaults(fullrs),
-                                            observed=MT.observed(fullrs), checks=checks,
-                                            kwargs...)
+    remove_conserved && conservationlaws(fullrs)
+    eqs = assemble_drift(fullrs; combinatoric_ratelaws, remove_conserved, include_zero_odes)
+    eqs,sts,ps,obs,defs = addconstraints!(eqs, fullrs; remove_conserved)
+    ODESystem(eqs, get_iv(fullrs), sts, ps; name, defaults=defs, observed=obs,
+                                            checks, kwargs...)
 end
 
 """
@@ -803,15 +847,14 @@ ignored.
 """
 function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem;
                       name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true,
-                      checks = false, kwargs...)
+                      remove_conserved=false, checks=false, kwargs...)
     fullrs = Catalyst.flatten(rs)
+    remove_conserved && conservationlaws(fullrs)
     eqs = assemble_drift(fullrs; combinatoric_ratelaws=combinatoric_ratelaws, as_odes=false,
                                  include_zero_odes=include_zero_odes)
     error_if_constraint_odes(NonlinearSystem, fullrs)
-    eqs,sts,ps = addconstraints!(eqs, fullrs)
-    NonlinearSystem(eqs, sts, ps; name=name, defaults=MT.defaults(fullrs),
-                                  observed=MT.observed(fullrs), checks = checks,
-                                  kwargs...)
+    eqs,sts,ps,obs,defs = addconstraints!(eqs, fullrs; remove_conserved)
+    NonlinearSystem(eqs, sts, ps; name, defaults=defs, observed=obs, checks, kwargs...)
 end
 
 """
@@ -897,21 +940,23 @@ end
 
 # ODEProblem from AbstractReactionNetwork
 function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan, p=DiffEqBase.NullParameters(), args...;
-                               check_length=false, name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true,
-                               checks=false, kwargs...)
+                               check_length=false, name=nameof(rs), combinatoric_ratelaws=true,
+                               include_zero_odes=true, remove_conserved=false, checks=false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap  = symmap_to_varmap(rs, p)
-    osys  = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks)
+    osys  = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
+                                   remove_conserved)
     return ODEProblem(osys, u0map, tspan, pmap, args...; check_length, kwargs...)
 end
 
 # NonlinearProblem from AbstractReactionNetwork
 function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0, p=DiffEqBase.NullParameters(), args...;
                                      name=nameof(rs), combinatoric_ratelaws=true, include_zero_odes=true,
-                                     checks = false, check_length=false, kwargs...)
+                                     remove_conserved=false, checks = false, check_length=false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap  = symmap_to_varmap(rs, p)
-    nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks)
+    nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, include_zero_odes,
+                                         checks, remove_conserved)
     return NonlinearProblem(nlsys, u0map, pmap, args...; check_length, kwargs...)
 end
 
