@@ -649,9 +649,22 @@ let
         b23, F2 --> F3
         b31, F3 --> F1
     end k1 k2 m1 m2 b12 b23 b31
+    osys = convert(ODESystem, rn; remove_conserved=true)
+    @unpack A,B,C,D,E,F1,F2,F3,k1,k2,m1,m2,b12,b23,b31 = osys
+    u0 = [A => 10.0, B => 10.0, C => 0.0, D => 10.0, E => 0.0, F1 => 8.0, F2 => 0.0, F3 => 0.0]
+    p = [k1 => 1.0, k2 => .1, m1 => 1.0, m2 => 2.0, b12 => 1.0, b23 => 2.0, b31 => .1]
+    tspan = (0.0,20.0)
+    oprob = ODEProblem(osys, u0, tspan, symmap_to_varmap(osys,p))
+    sol = solve(oprob, Tsit5())
+    oprob2 = ODEProblem(rn, u0, tspan, p)
+    sol2 = solve(oprob, Tsit5())
+    oprob3 = ODEProblem(rn, u0, tspan, symmap_to_varmap(osys,p); remove_conserved=true)
+    sol3 = solve(oprob3, Tsit5())
 
-
-
-
-
+    tv = range(tspan[1], tspan[2], length=101)
+    nps = get_networkproperties(rn)
+    for s in species(rn)
+        @test norm(sol(tv, idxs=s) .- sol2(tv, idxs=s)) ≈ 0
+        @test norm(sol2(tv, idxs=s) .- sol2(tv, idxs=s)) ≈ 0
+    end
 end
