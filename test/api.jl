@@ -1,4 +1,4 @@
-using Catalyst, DiffEqBase, ModelingToolkit, Test, OrdinaryDiffEq
+using Catalyst, DiffEqBase, ModelingToolkit, Test, OrdinaryDiffEq, NonlinearSolve
 using LinearAlgebra: norm
 using SparseArrays
 using ModelingToolkit: value
