@@ -991,15 +991,13 @@ function isreversible(rn::ReactionSystem)
 end
 
 """
-    isweaklyreversible(rn::ReactionSystem)
+    isweaklyreversible(rn::ReactionSystem, subnetworks)
 
-Determine if the reaction network is weakly reversible or not.
+Determine if the reaction network with the given subnetworks is weakly reversible or not.
 
 Notes:
 - Requires the `incidencemat` to already be cached in `rn` by a previous call to
   `reactioncomplexes`.
-- Requires the `incidencemat` to also already be calculated for each subnetwork of `rn` by a
-  previous call to `reactioncomplexes`.
 
 For example,
 ```julia
@@ -1008,16 +1006,20 @@ sir = @reaction_network SIR begin
     ν, I --> R
 end β ν
 rcs,incidencemat = reactioncomplexes(sir)
-isweaklyreversible(sir)
+subnets = subnetworks(rn)
+isweaklyreversible(rn, subnets)
 ```
 """
-function isweaklyreversible(rn::ReactionSystem)
-    subnets = subnetworks(rn)
-    sparseig = issparse(get_networkproperties(rn).incidencemat)
-    for subnet in subnetworks(rn)
-        reactioncomplexes(subnet; sparse=sparseig)
+function isweaklyreversible(rn::ReactionSystem, subnets)
+    im = get_networkproperties(rn).incidencemat
+    isempty(im) && error("Error, please call reactioncomplexes(rn::ReactionSystem) to "
+                         * "ensure the incidence matrix has been cached.")
+    sparseig = issparse(im)
+    for subnet in subnets
+        nps = get_networkproperties(subnet)
+        isempty(nps.incidencemat) && reactioncomplexes(subnet; sparse=sparseig)
     end
-    all(s -> Graphs.is_strongly_connected(incidencematgraph(s)), subnets)
+    all(Graphs.is_strongly_connected ∘ incidencematgraph, subnets)
 end
 
 
