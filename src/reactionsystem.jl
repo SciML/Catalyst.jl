@@ -232,6 +232,7 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: Term}
     incidencegraph::Graphs.SimpleDiGraph{Int} = Graphs.DiGraph()
     linkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef,0)
     deficiency::Int = 0
+    subnetworks::Vector{ReactionSystem} = ReactionSystem[]
 end
 
 function Base.show(io::IO, nps::NetworkProperties)
@@ -269,6 +270,7 @@ function reset!(nps::NetworkProperties{I,V}) where {I,V}
     empty!(nps.incidencegraph)
     empty!(linkageclasses)
     nps.deficiency = 0
+    empty!(nps.subnetworks)
 
     # this needs to be last due to setproperty! setting it to false
     nps.isempty = true

@@ -915,26 +915,29 @@ subnetworks(sir)
 """
 function subnetworks(rs::ReactionSystem)
     isempty(get_systems(rs)) || error("subnetworks does not currently support subsystems.")
-    lcs = linkageclasses(rs)
-    rxs = reactions(rs)
-    p = parameters(rs)
-    t = get_iv(rs)
-    complextorxmap = [map(first,rcmap) for rcmap in values(reactioncomplexmap(rs))]
-    subreac = Vector{ReactionSystem}()
-    for i in 1:length(lcs)
-        reacs,specs,newps = subnetworkmapping(lcs[i], rxs, complextorxmap, p)
-        newname = Symbol(nameof(rs), "_", i)
-        push!(subreac, ReactionSystem(reacs, t, specs, newps; name=newname))
+
+    nps = get_networkproperties(rs)
+    if isempty(nps.subnetworks)
+        lcs = linkageclasses(rs)
+        rxs = reactions(rs)
+        p = parameters(rs)
+        t = get_iv(rs)
+        complextorxmap = [map(first,rcmap) for rcmap in values(reactioncomplexmap(rs))]
+        nps.subnetworks = Vector{ReactionSystem}()
+        for i in 1:length(lcs)
+            reacs,specs,newps = subnetworkmapping(lcs[i], rxs, complextorxmap, p)
+            newname = Symbol(nameof(rs), "_", i)
+            push!(nps.subnetworks, ReactionSystem(reacs, t, specs, newps; name=newname))
+        end
     end
-    subreac
+    nps.subnetworks
 end
 
 
 """
-    linkagedeficiencies(subnetworks::AbstractVector, network::ReactionSystem)
+    linkagedeficiencies(network::ReactionSystem)
 
-Calculates the deficiency of each sub-reaction network defined by a collection
-of linkage_classes.
+Calculates the deficiency of each sub-reaction network within `network`.
 
 Notes:
 - Requires the `incidencemat` to already be cached in `rn` by a previous call to
@@ -947,12 +950,12 @@ sir = @reaction_network SIR begin
     ν, I --> R
 end β ν
 rcs,incidencemat = reactioncomplexes(sir)
-subnets = subnetworks(sir)
-linkage_deficiencies = linkagedeficiencies(subnets, sir)
+linkage_deficiencies = linkagedeficiencies(sir)
 ```
 """
-function linkagedeficiencies(subnets, rs::ReactionSystem)
+function linkagedeficiencies(rs::ReactionSystem)
     lcs = linkageclasses(rs)
+    subnets = subnetworks(rs)
     δ = zeros(Int,length(lcs))
     for (i,subnet) in enumerate(subnets)
         conservationlaws(subnet)
@@ -964,30 +967,57 @@ end
 
 
 """
-    isreversible(incidencegraph)
+    isreversible(rn::ReactionSystem)
 
-Given an incidence graph of the reaction network, returns if the network is reversible or not.
-For example, continuing the example from [`linkagedeficiencies`](@ref)
+Given a reaction network, returns if the network is reversible or not.
+
+Notes:
+- Requires the `incidencemat` to already be cached in `rn` by a previous call to
+  `reactioncomplexes`.
+
+For example,
 ```julia
-isreversible(incidence_graph)
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end β ν
+rcs,incidencemat = reactioncomplexes(sir)
+isreversible(sir)
 ```
 """
-function isreversible(ig::Graphs.SimpleDiGraph)
+function isreversible(rn::ReactionSystem)
+    ig = incidencematgraph(rn)
     Graphs.reverse(ig) == ig
 end
 
 """
-    isweaklyreversible(subnetworks)
+    isweaklyreversible(rn::ReactionSystem)
 
-Given the subnetworks corresponding to the each linkage class of reaction network,
-determines if the reaction network is weakly reversible or not.
-For example, continuing the example from [`isreversible`](@ref)
+Determine if the reaction network is weakly reversible or not.
+
+Notes:
+- Requires the `incidencemat` to already be cached in `rn` by a previous call to
+  `reactioncomplexes`.
+- Requires the `incidencemat` to also already be calculated for each subnetwork of `rn` by a
+  previous call to `reactioncomplexes`.
+
+For example,
 ```julia
-isweaklyreversible(subnets)
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end β ν
+rcs,incidencemat = reactioncomplexes(sir)
+isweaklyreversible(sir)
 ```
 """
-function isweaklyreversible(subnets)
-    all([Graphs.is_strongly_connected(incidencematgraph(s)) for s in subnets])
+function isweaklyreversible(rn::ReactionSystem)
+    subnets = subnetworks(rn)
+    sparseig = issparse(get_networkproperties(rn).incidencemat)
+    for subnet in subnetworks(rn)
+        reactioncomplexes(subnet; sparse=sparseig)
+    end
+    all(s -> Graphs.is_strongly_connected(incidencematgraph(s)), subnets)
 end
 
 
