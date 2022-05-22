@@ -11,9 +11,9 @@ using LaTeXStrings, Latexify, Requires
 using ModelingToolkit; const MT = ModelingToolkit
 @reexport using ModelingToolkit
 using Symbolics
-using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems, 
+using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems,
                        get_eqs, get_defaults, toparam, get_var_to_name, get_observed, getvar
-import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!, 
+import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!,
                         modified_states!, validate, namespace_variables, namespace_parameters,
                         rename, renamespace, getname, flatten
 # internal but needed ModelingToolkit functions
@@ -43,7 +43,7 @@ function __init__()
 include("reactionsystem.jl")
 export Reaction, ReactionSystem, ismassaction, oderatelaw, jumpratelaw
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem, SteadyStateProblem
-export get_constraints, has_constraints, get_networkproperties
+export get_constraints, has_constraints
 
 # reaction_network macro
 const ExprValues = Union{Expr,Symbol,Float64,Int}
@@ -69,7 +69,7 @@ export params, numparams
 # network analysis functions
 export reactioncomplexmap, reactioncomplexes, reactionrates, complexstoichmat, complexoutgoingmat
 export incidencematgraph, linkageclasses, deficiency, subnetworks, linkagedeficiencies, isreversible, isweaklyreversible
-  
+
 # for Latex printing of ReactionSystems
 include("latexify_recipes.jl")
 

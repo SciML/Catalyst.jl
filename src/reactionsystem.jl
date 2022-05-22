@@ -165,16 +165,19 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     [el for el in nsdict if !_iszero(el[2])]
 end
 
-Base.@kwdef mutable struct NetworkProperties
-    netstoichmat::Any = nothing
-    conservationmat::Any = nothing
+# Internal cache for various ReactionSystem calculated properties
+Base.@kwdef mutable struct NetworkProperties{I <: Integer}
+    isempty::Bool = true
+    netstoichmat::Union{Matrix{I},SparseMatrixCSC{I,Int}} = Matrix{I}(undef,0,0)
+    conservationmat::Matrix{I} = Matrix{I}(undef,0,0)
     col_order::Vector{Int} = Int[]
     rank::Int = 0
     nullity::Int = 0
-    indepspecs::Set{Term} = Set{Term}()
-    depspecs::Set{Term} = Set{Term}()
+    indepspecs::Set{Any} = Set{Any}()
+    depspecs::Set{Any} = Set{Any}()
     conservedeqs::Vector{Equation} = Equation[]
     constantdefs::Vector{Equation} = Equation[]
+    speciesmap::Dict{Any,Int} = Dict{Any,Int}()
 end
 
 function Base.show(io::IO, nps::NetworkProperties)
@@ -183,13 +186,32 @@ function Base.show(io::IO, nps::NetworkProperties)
         foreach(eq -> println(io,eq), nps.conservedeqs)
         println()
     end
-
-    if nps.netstoichmat !== nothing
-        println(io, "Net stoichiometry matrix: ")
-        show(io, nps.netstoichmat)
-    end
 end
 
+Base.isempty(nps::NetworkProperties) = getfield(nps, :isempty)
+
+function Base.setproperty!(nps::NetworkProperties, sym::Symbol, x)
+    (sym !== :isempty) && setfield!(nps, :isempty, false)
+    setfield!(nps, sym, x)
+end
+
+function reset!(nps::NetworkProperties{I}) where {I}
+    nps.isempty && return
+    nps.netstoichmat = Matrix{I}(undef,0,0)
+    nps.conservationmat = Matrix{I}(undef,0,0)
+    empty!(nps.col_order)
+    nps.rank = 0
+    nps.nullity = 0
+    empty!(nps.indepspecs)
+    empty!(nps.depspecs)
+    empty!(nps.conservedeqs)
+    empty!(nps.constantdefs)
+    empty!(nps.speciesmap)
+
+    # this needs to be last due to setproperty! setting it to false
+    nps.isempty = true
+    nothing
+end
 
 """
 $(TYPEDEF)
@@ -228,12 +250,13 @@ Notes:
   (species units) / (time units). Unit checking can be disabled by passing the
   keyword argument `checks=false`.
 """
-struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem},V <: NetworkProperties} <: MT.AbstractTimeDependentSystem
+struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem}, V <: NetworkProperties} <: MT.AbstractTimeDependentSystem
     """The reactions defining the system."""
     eqs::Vector{Reaction}
     """Independent variable (usually time)."""
     iv::Any
-    """Dependent (state) variables representing amount of each species. Must not contain the independent variable."""
+    """Dependent (state) variables representing amount of each species. Must not contain the
+    independent variable."""
     states::Vector
     """Parameter variables. Must not contain the independent variable."""
     ps::Vector
@@ -254,22 +277,31 @@ struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem},V <: NetworkProperti
     connection_type::Any
     """Non-`Reaction` equations that further constrain the system"""
     constraints::U
-    """`NetworkProperties` object that can be filled in by API functions."""
+    """`NetworkProperties` object that can be filled in by API functions. INTERNAL -- not
+    considered part of the public API."""
     networkproperties::V
 
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, iv, states, ps, var_to_name, observed, name, systems,
-                            defaults, connection_type, csys, networkproperties;
+                            defaults, connection_type, csys, nps;
                             checks::Bool=true, skipvalue=false)
         if checks
             check_variables(states, iv)
             check_parameters(ps, iv)
         end
-        rs = new{typeof(csys),typeof(networkproperties)}(eqs, iv, states, ps, var_to_name,
-                                                         observed, name, systems, defaults,
-                                                         connection_type, csys, networkproperties)
+        rs = new{typeof(csys), typeof(nps)}(eqs, iv, states, ps, var_to_name, observed, name,
+                                            systems, defaults, connection_type, csys, nps)
         checks && validate(rs)
         rs
+    end
+end
+
+function get_vartype(iv, states)
+    if !isempty(states)
+        T = typeof(MT.unwrap(first(states)))
+    else
+        @variables A($iv)
+        return typeof(MT.unwrap(A))
     end
 end
 
@@ -283,7 +315,7 @@ function ReactionSystem(eqs, iv, states, ps;
                         connection_type=nothing,
                         checks = true,
                         constraints = nothing,
-                        networkproperties = NetworkProperties(),
+                        networkproperties = NetworkProperties{Int}(),
                         skipvalue = false)
 
     name === nothing && throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
@@ -357,7 +389,6 @@ end
 function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
-
 
 ####################### ModelingToolkit inherited accessors #############################
 

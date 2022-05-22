@@ -662,7 +662,6 @@ let
     sol3 = solve(oprob3, Tsit5())
 
     tv = range(tspan[1], tspan[2], length=101)
-    nps = get_networkproperties(rn)
     for s in species(rn)
         @test norm(sol(tv, idxs=s) .- sol2(tv, idxs=s)) ≈ 0
         @test norm(sol2(tv, idxs=s) .- sol2(tv, idxs=s)) ≈ 0
