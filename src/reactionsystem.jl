@@ -1076,12 +1076,14 @@ end
 # SDEProblem from AbstractReactionNetwork
 function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan, p=DiffEqBase.NullParameters(), args...;
                                noise_scaling=nothing, name=nameof(rs), combinatoric_ratelaws=true,
-                               include_zero_odes=true, checks = false, kwargs...)
+                               include_zero_odes=true, checks = false, check_length=false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap  = symmap_to_varmap(rs, p)
     p_matrix = zeros(length(get_states(rs)), length(get_eqs(rs)))
-    sde_sys  = convert(SDESystem, rs; noise_scaling, name, combinatoric_ratelaws, include_zero_odes, checks)
-    return SDEProblem(sde_sys, u0map, tspan, pmap, args...; noise_rate_prototype=p_matrix,kwargs...)
+    sde_sys  = convert(SDESystem, rs; noise_scaling, name, combinatoric_ratelaws,
+                                      include_zero_odes, checks)
+    return SDEProblem(sde_sys, u0map, tspan, pmap, args...; check_length,
+                                                            noise_rate_prototype=p_matrix, kwargs...)
 end
 
 # DiscreteProblem from AbstractReactionNetwork
@@ -1103,12 +1105,13 @@ end
 # SteadyStateProblem from AbstractReactionNetwork
 function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0, p=DiffEqBase.NullParameters(), args...;
                                        check_length=false, name=nameof(rs), combinatoric_ratelaws=true,
-                                       include_zero_odes=true, checks=false, kwargs...)
+                                       remove_conserved=false, include_zero_odes=true, checks=false, kwargs...)
 
     u0map = symmap_to_varmap(rs, u0)
-    pmap  = symmap_to_varmap(rs, p)
-    osys =  convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks)
-    return SteadyStateProblem(osys, u0map, pmap, args...; kwargs...)
+    pmap = symmap_to_varmap(rs, p)
+    osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
+                                  remove_conserved)
+    return SteadyStateProblem(osys, u0map, pmap, args...; check_length, kwargs...)
 end
 
 ####################### dependency graph utilities ########################
