@@ -707,7 +707,7 @@ function complexoutgoingmat(::Type{Matrix{Int}}, rn::ReactionSystem, B)
 end
 
 @doc raw"""
-    complexoutgoingmat(network; sparse=false)
+    complexoutgoingmat(network::ReactionSystem; sparse=false)
 
 Given a [`ReactionSystem`](@ref) and complex incidence matrix, ``B``, return a
 matrix of size num of complexes by num of reactions that identifies substrate
@@ -773,10 +773,14 @@ function incidencematgraph(incidencemat::SparseMatrixCSC{Int,Int})
 end
 
 """
-    incidencematgraph(incidencemat; sparse=false)
+    incidencematgraph(rn::ReactionSystem)
 
 Construct a directed simple graph where nodes correspond to reaction complexes and directed
 edges to reactions converting between two complexes.
+
+Notes:
+- Requires the `incidencemat` to already be cached in `rn` by a previous call to
+  `reactioncomplexes`.
 
 For example,
 ```julia
@@ -784,7 +788,7 @@ sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end β ν
-complexes,incidencemat = reactioncomplexes(rn)
+complexes,incidencemat = reactioncomplexes(sir)
 incidencematgraph(sir)
 ```
 """
@@ -798,16 +802,18 @@ function incidencematgraph(rn::ReactionSystem)
     nps.incidencegraph
 end
 
-function linkageclasses(incidencegraph)
-    Graphs.connected_components(incidencegraph)
-end
+linkageclasses(incidencegraph) = Graphs.connected_components(incidencegraph)
 
 """
-    linkageclasses(incidencegraph)
+    linkageclasses(rn::ReactionSystem)
 
 Given the incidence graph of a reaction network, return a vector of the
 connected components of the graph (i.e. sub-groups of reaction complexes that
 are connected in the incidence graph).
+
+Notes:
+- Requires the `incidencemat` to already be cached in `rn` by a previous call to
+  `reactioncomplexes`.
 
 For example,
 ```julia
@@ -815,8 +821,8 @@ sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end β ν
-complexes,incidencemat = reactioncomplexes(rn)
-linkageclasses(rn)
+complexes,incidencemat = reactioncomplexes(sir)
+linkageclasses(sir)
 ```
 gives
 ```julia
@@ -827,14 +833,14 @@ gives
 """
 function linkageclasses(rn::ReactionSystem)
     nps = get_networkproperties(rn)
-    if isempty(nps.incidencegraph)
-        nps.incidencegraph = linkageclasses(incidencematgraph(rn))
+    if isempty(nps.linkageclasses)
+        nps.linkageclasses = linkageclasses(incidencematgraph(rn))
     end
-    nps.incidencegraph
+    nps.linkageclasses
 end
 
 @doc raw"""
-    deficiency(netstoich_mat, incidence_graph, linkage_classes)
+    deficiency(rn::ReactionSystem)
 
 Calculate the deficiency of a reaction network.
 
@@ -845,6 +851,10 @@ Here the deficiency, ``\delta``, of a network with ``n`` reaction complexes,
 \delta = n - \ell - s
 ```
 
+Notes:
+- Requires the `incidencemat` to already be cached in `rn` by a previous call to
+  `reactioncomplexes`.
+
 For example,
 ```julia
 sir = @reaction_network SIR begin
@@ -852,14 +862,19 @@ sir = @reaction_network SIR begin
     ν, I --> R
 end β ν
 rcs,incidencemat = reactioncomplexes(sir)
-incidence_graph  = incidencematgraph(incidencemat)
-linkage_classes   = linkageclasses(incidence_graph)
-netstoich_mat    = netstoichmat(sir)
-δ = deficiency(netstoich_mat, incidence_graph, linkage_classes)
+δ = deficiency(sir)
 ```
 """
-function deficiency(ns, ig, lc)
-    Graphs.nv(ig) - length(lc) - AA.rank(AA.matrix(AA.ZZ,ns))
+function deficiency(rn::ReactionSystem)
+    nps = get_networkproperties(rn)
+    if isempty(nps.conservationmat)
+        conservationlaws(nps)
+        r = nps.rank
+        ig = incidencematgraph(rn)
+        lc = linkageclasses(rn)
+        nps.deficiency = Graphs.nv(ig) - length(lc) - r
+    end
+    nps.deficiency
 end
 
 function subnetworkmapping(linkageclass, allrxs, complextorxmap, p)
@@ -880,23 +895,31 @@ function subnetworkmapping(linkageclass, allrxs, complextorxmap, p)
 end
 
 """
-    subnetworks(network, linkage_classes ; rxs = reactions(network),
-                  complextorxmap = collect(values(reactioncomplexmap(network))),
-                  p = parameters(network))
+    subnetworks(network)
 
-Find subnetworks corresponding to the each linkage class of reaction network
+Find subnetworks corresponding to each linkage class of reaction network.
 
-For example, continuing the example from [`deficiency`](@ref)
+Notes:
+- Requires the `incidencemat` to already be cached in `rn` by a previous call to
+  `reactioncomplexes`.
+
+For example,
 ```julia
-   subnets = subnetworks(sir, linkage_classes)
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end β ν
+complexes,incidencemat = reactioncomplexes(sir)
+subnetworks(sir)
 ```
 """
-function subnetworks(rs::ReactionSystem, lcs::AbstractVector;
-                  rxs = reactions(rs),
-                  complextorxmap = [map(first,rcmap) for rcmap in values(reactioncomplexmap(rs))],
-                  p = parameters(rs))
+function subnetworks(rs::ReactionSystem)
     isempty(get_systems(rs)) || error("subnetworks does not currently support subsystems.")
+    lcs = linkageclasses(rs)
+    rxs = reactions(rs)
+    p = parameters(rs)
     t = get_iv(rs)
+    complextorxmap = [map(first,rcmap) for rcmap in values(reactioncomplexmap(rs))]
     subreac = Vector{ReactionSystem}()
     for i in 1:length(lcs)
         reacs,specs,newps = subnetworkmapping(lcs[i], rxs, complextorxmap, p)
@@ -908,22 +931,33 @@ end
 
 
 """
-    linkagedeficiencies(subnetworks::AbstractVector, linkage_classes::AbstractVector)
+    linkagedeficiencies(subnetworks::AbstractVector, network::ReactionSystem)
 
 Calculates the deficiency of each sub-reaction network defined by a collection
 of linkage_classes.
 
-For example, continuing the example from [`deficiency`](@ref)
+Notes:
+- Requires the `incidencemat` to already be cached in `rn` by a previous call to
+  `reactioncomplexes`.
+
+For example,
 ```julia
-subnets = subnetworks(sir, linkage_classes)
-linkage_deficiencies = linkagedeficiency(subnets, linkage_classes)
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end β ν
+rcs,incidencemat = reactioncomplexes(sir)
+subnets = subnetworks(sir)
+linkage_deficiencies = linkagedeficiencies(subnets, sir)
 ```
 """
-function linkagedeficiencies(subnets, lcs)
+function linkagedeficiencies(subnets, rs::ReactionSystem)
+    lcs = linkageclasses(rs)
     δ = zeros(Int,length(lcs))
     for (i,subnet) in enumerate(subnets)
-        ns_sub = netstoichmat(subnet)
-        δ[i] = length(lcs[i]) - 1 - AA.rank(AA.matrix(AA.ZZ, ns_sub))
+        conservationlaws(subnet)
+        nps = get_networkproperties(subnet)
+        δ[i] = length(lcs[i]) - 1 - nps.rank
     end
     δ
 end
@@ -952,9 +986,8 @@ For example, continuing the example from [`isreversible`](@ref)
 isweaklyreversible(subnets)
 ```
 """
-function isweaklyreversible(subnets::Vector{ReactionSystem})
-    igs = [incidencematgraph(reactioncomplexes(subrs)[2]) for subrs in subnets]
-    all([Graphs.is_strongly_connected(ig) for ig in igs])
+function isweaklyreversible(subnets)
+    all([Graphs.is_strongly_connected(incidencematgraph(s)) for s in subnets])
 end
 
 

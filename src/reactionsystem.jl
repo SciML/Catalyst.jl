@@ -230,6 +230,8 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: Term}
     complexstoichmat::Union{Matrix{Int},SparseMatrixCSC{Int,Int}} = Matrix{Int}(undef,0.0)
     complexoutgoingmat::Union{Matrix{Int},SparseMatrixCSC{Int,Int}} = Matrix{Int}(undef,0.0)
     incidencegraph::Graphs.SimpleDiGraph{Int} = Graphs.DiGraph()
+    linkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef,0)
+    deficiency::Int = 0
 end
 
 function Base.show(io::IO, nps::NetworkProperties)
@@ -265,6 +267,8 @@ function reset!(nps::NetworkProperties{I,V}) where {I,V}
     empty!(nps.complexstoichmat)
     empty!(nps.complexoutgoingmat)
     empty!(nps.incidencegraph)
+    empty!(linkageclasses)
+    nps.deficiency = 0
 
     # this needs to be last due to setproperty! setting it to false
     nps.isempty = true
