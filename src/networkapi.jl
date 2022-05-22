@@ -528,48 +528,6 @@ function reset_networkproperties!(rn::ReactionSystem)
 end
 
 """
-$(TYPEDEF)
-One reaction complex element
-
-# Fields
-$(FIELDS)
-"""
-struct ReactionComplexElement{T}
-    """The integer id of the species representing this element."""
-    speciesid::Int
-    """The stoichiometric coefficient of this species."""
-    speciesstoich::T
-end
-
-"""
-$(TYPEDEF)
-One reaction complex.
-
-# Fields
-$(FIELDS)
-"""
-struct ReactionComplex{V<:Integer} <: AbstractVector{ReactionComplexElement{V}}
-    """The integer ids of all species participating in this complex."""
-    speciesids::Vector{Int}
-    """The stoichiometric coefficients of all species participating in this complex."""
-    speciesstoichs::Vector{V}
-end
-
-function (==)(a::ReactionComplex{V},b::ReactionComplex{V}) where {V <: Integer}
-    (a.speciesids == b.speciesids) &&
-    (a.speciesstoichs == b.speciesstoichs)
-end
-hash(rc::ReactionComplex,h::UInt) = Base.hash(rc.speciesids,Base.hash(rc.speciesstoichs,h))
-Base.size(rc::ReactionComplex) = size(rc.speciesids)
-Base.length(rc::ReactionComplex) = length(rc.speciesids)
-Base.getindex(rc::ReactionComplex, i...) =
-        ReactionComplexElement(getindex(rc.speciesids, i...), getindex(rc.speciesstoichs, i...))
-Base.setindex!(rc::ReactionComplex, t::ReactionComplexElement, i...) =
-    (setindex!(rc.speciesids, t.speciesid, i...); setindex!(rc.speciesstoichs, t.speciesstoich, i...); rc)
-Base.isless(a::ReactionComplexElement, b::ReactionComplexElement) = isless(a.speciesid, b.speciesid)
-Base.Sort.defalg(::ReactionComplex{T}) where {T <: Integer} = Base.DEFAULT_UNSTABLE
-
-"""
     reactioncomplexmap(rn::ReactionSystem)
 
 Find each [`ReactionComplex`](@ref) within the specified system, constructing a
@@ -584,10 +542,15 @@ Notes:
 """
 function reactioncomplexmap(rn::ReactionSystem)
     isempty(get_systems(rn)) || error("reactioncomplexmap does not currently support subsystems.")
+
+    # check if previously calculated and hence cached
+    nps = get_networkproperties(rn)
+    !isempty(nps.complextorxmap) && return nps.complextorxmap
+    complextorxsmap = nps.complextorxsmap
+
     rxs = reactions(rn)
     smap = speciesmap(rn)
     numreactions(rn) > 0 || error("There must be at least one reaction to find reaction complexes.")
-    complextorxsmap = OrderedDict{ReactionComplex{eltype(rxs[1].substoich)},Vector{Pair{Int,Int}}}()
     for (i,rx) in enumerate(rxs)
         reactantids = isempty(rx.substrates) ? Vector{Int}() : [smap[sub] for sub in rx.substrates]
         subrc = sort!(ReactionComplex(reactantids, copy(rx.substoich)))
@@ -634,8 +597,7 @@ function reactioncomplexes(::Type{Matrix{Int}}, rn::ReactionSystem, complextorxs
 end
 
 @doc raw"""
-    reactioncomplexes(network::ReactionSystem; sparse=false,
-                                               complextorxsmap=reactioncomplexmap(rn))
+    reactioncomplexes(network::ReactionSystem; sparse=false)
 
 Calculate the reaction complexes and complex incidence matrix for the given
 [`ReactionSystem`](@ref).
@@ -656,11 +618,18 @@ B_{i j} = \begin{cases}
 ```
 - Set sparse=true for a sparse matrix representation of the incidence matrix
 """
-function reactioncomplexes(rn::ReactionSystem; sparse=false,
-                                               complextorxsmap=reactioncomplexmap(rn))
+function reactioncomplexes(rn::ReactionSystem; sparse=false)
     isempty(get_systems(rn)) || error("reactioncomplexes does not currently support subsystems.")
-	sparse ? reactioncomplexes(SparseMatrixCSC{Int,Int}, rn, complextorxsmap) :
-             reactioncomplexes(Matrix{Int}, rn, complextorxsmap)
+    nps = get_networkproperties(rn)
+    if isempty(nps.complexes) || (sparse != issparse(nps.complexes))
+        complextorxsmap = reactioncomplexmap(rn)
+        nps.complexes,nps.incidencemat = if sparse
+            reactioncomplexes(SparseMatrixCSC{Int,Int}, rn, complextorxsmap)
+        else
+            reactioncomplexes(Matrix{Int}, rn, complextorxsmap)
+        end
+    end
+    nps.complexes,nps.incidencemat
 end
 
 
@@ -686,7 +655,7 @@ function complexstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem, rcs)
 end
 
 """
-    complexstoichmat(network::ReactionSystem; sparse=false, rcs=keys(reactioncomplexmap(rn)))
+    complexstoichmat(network::ReactionSystem; sparse=false)
 
 Given a [`ReactionSystem`](@ref) and vector of reaction complexes, return a
 matrix with positive entries of size number of species by number of complexes,
@@ -694,14 +663,19 @@ where the non-zero positive entries in the kth column denote stoichiometric
 coefficients of the species participating in the kth reaction complex.
 
 Notes:
-- `rcs` correspond to an iterable of the `ReactionComplexes`, i.e.
-  `rcs=keys(reactioncomplexmap(rn))` or `reactioncomplexes(rn)[1]`.
 - Set sparse=true for a sparse matrix representation
 """
-function complexstoichmat(rn::ReactionSystem; sparse=false, rcs=keys(reactioncomplexmap(rn)))
+function complexstoichmat(rn::ReactionSystem; sparse=false)
     isempty(get_systems(rn)) || error("complexstoichmat does not currently support subsystems.")
-    sparse ? complexstoichmat(SparseMatrixCSC{Int,Int}, rn, rcs) :
-             complexstoichmat(Matrix{Int}, rn, rcs)
+    nps = get_networkproperties(rn)
+    if isempty(nps.complexstoichmat) || (sparse != issparse(nps.complexstoichmat))
+        nps.complexstoichmat = if sparse
+            complexstoichmat(SparseMatrixCSC{Int,Int}, rn, keys(reactioncomplexmap(rn)))
+        else
+            complexstoichmat(Matrix{Int}, rn, keys(reactioncomplexmap(rn)))
+        end
+    end
+    nps.complexstoichmat
 end
 
 
@@ -733,7 +707,7 @@ function complexoutgoingmat(::Type{Matrix{Int}}, rn::ReactionSystem, B)
 end
 
 @doc raw"""
-    complexoutgoingmat(network; sparse=false, B=reactioncomplexes(rn)[2])
+    complexoutgoingmat(network; sparse=false)
 
 Given a [`ReactionSystem`](@ref) and complex incidence matrix, ``B``, return a
 matrix of size num of complexes by num of reactions that identifies substrate
@@ -749,30 +723,21 @@ Notes:
 ```
 - Set sparse=true for a sparse matrix representation
 """
-function complexoutgoingmat(rn::ReactionSystem; sparse=false, B=reactioncomplexes(rn,sparse=sparse)[2])
+function complexoutgoingmat(rn::ReactionSystem; sparse=false)
     isempty(get_systems(rn)) || error("complexoutgoingmat does not currently support subsystems.")
-    sparse ? complexoutgoingmat(SparseMatrixCSC{Int,Int}, rn, B) :
-             complexoutgoingmat(Matrix{Int}, rn, B)
+    nps = get_networkproperties(rn)
+    if isempty(nps.complexoutgoingmat) || (sparse != issparse(nps.complexoutgoingmat))
+        B = reactioncomplexes(rn, sparse=sparse)[2]
+        nps.complexoutgoingmat = if sparse
+            complexoutgoingmat(SparseMatrixCSC{Int,Int}, rn, B)
+        else
+            complexoutgoingmat(Matrix{Int}, rn, B)
+        end
+    end
+    nps.complexoutgoingmat
 end
 
 
-"""
-    incidencematgraph(incidencemat)
-
-Given an incidence matrix of a reaction-network, construct a directed simple
-graph where nodes correspond to reaction complexes and directed edges to
-reactions converting between two complexes.
-
-For example,
-```julia
-sir = @reaction_network SIR begin
-    β, S + I --> 2I
-    ν, I --> R
-end β ν
-rcs,incidencemat = reactioncomplexes(sir)
-incidencegraph   = incidencematgraph(incidencemat)
-```
-"""
 function incidencematgraph(incidencemat::Matrix{Int})
     @assert all(∈([-1,0,1]) ,incidencemat)
     n = size(incidencemat,1)  # no. of nodes/complexes
@@ -807,6 +772,35 @@ function incidencematgraph(incidencemat::SparseMatrixCSC{Int,Int})
     return graph
 end
 
+"""
+    incidencematgraph(incidencemat; sparse=false)
+
+Construct a directed simple graph where nodes correspond to reaction complexes and directed
+edges to reactions converting between two complexes.
+
+For example,
+```julia
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end β ν
+complexes,incidencemat = reactioncomplexes(rn)
+incidencematgraph(sir)
+```
+"""
+function incidencematgraph(rn::ReactionSystem)
+    nps = get_networkproperties(rn)
+    if isempty(nps.incidencegraph)
+        isempty(nps.incidencemat) && error("Please call reactioncomplexes(rn) first to "
+                                           * "construct the incidence matrix.")
+        nps.incidencegraph = incidencematgraph(nps.incidencemat)
+    end
+    nps.incidencegraph
+end
+
+function linkageclasses(incidencegraph)
+    Graphs.connected_components(incidencegraph)
+end
 
 """
     linkageclasses(incidencegraph)
@@ -815,18 +809,29 @@ Given the incidence graph of a reaction network, return a vector of the
 connected components of the graph (i.e. sub-groups of reaction complexes that
 are connected in the incidence graph).
 
-For example, continuing the example from [`incidencematgraph`](@ref)
+For example,
 ```julia
-julia> linkageclasses(incidencegraph)
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end β ν
+complexes,incidencemat = reactioncomplexes(rn)
+linkageclasses(rn)
+```
+gives
+```julia
 2-element Vector{Vector{Int64}}:
  [1, 2]
  [3, 4]
 ```
 """
-function linkageclasses(incidencegraph)
-    Graphs.connected_components(incidencegraph)
+function linkageclasses(rn::ReactionSystem)
+    nps = get_networkproperties(rn)
+    if isempty(nps.incidencegraph)
+        nps.incidencegraph = linkageclasses(incidencematgraph(rn))
+    end
+    nps.incidencegraph
 end
-
 
 @doc raw"""
     deficiency(netstoich_mat, incidence_graph, linkage_classes)

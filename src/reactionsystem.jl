@@ -165,10 +165,56 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     [el for el in nsdict if !_iszero(el[2])]
 end
 
+################################## Reaction Complexes ####################################
+
+"""
+$(TYPEDEF)
+One reaction complex element
+
+# Fields
+$(FIELDS)
+"""
+struct ReactionComplexElement{T}
+    """The integer id of the species representing this element."""
+    speciesid::Int
+    """The stoichiometric coefficient of this species."""
+    speciesstoich::T
+end
+
+"""
+$(TYPEDEF)
+One reaction complex.
+
+# Fields
+$(FIELDS)
+"""
+struct ReactionComplex{V<:Integer} <: AbstractVector{ReactionComplexElement{V}}
+    """The integer ids of all species participating in this complex."""
+    speciesids::Vector{Int}
+    """The stoichiometric coefficients of all species participating in this complex."""
+    speciesstoichs::Vector{V}
+end
+
+function (==)(a::ReactionComplex{V},b::ReactionComplex{V}) where {V <: Integer}
+    (a.speciesids == b.speciesids) &&
+    (a.speciesstoichs == b.speciesstoichs)
+end
+hash(rc::ReactionComplex,h::UInt) = Base.hash(rc.speciesids,Base.hash(rc.speciesstoichs,h))
+Base.size(rc::ReactionComplex) = size(rc.speciesids)
+Base.length(rc::ReactionComplex) = length(rc.speciesids)
+Base.getindex(rc::ReactionComplex, i...) =
+        ReactionComplexElement(getindex(rc.speciesids, i...), getindex(rc.speciesstoichs, i...))
+Base.setindex!(rc::ReactionComplex, t::ReactionComplexElement, i...) =
+    (setindex!(rc.speciesids, t.speciesid, i...); setindex!(rc.speciesstoichs, t.speciesstoich, i...); rc)
+Base.isless(a::ReactionComplexElement, b::ReactionComplexElement) = isless(a.speciesid, b.speciesid)
+Base.Sort.defalg(::ReactionComplex{T}) where {T <: Integer} = Base.DEFAULT_UNSTABLE
+
+############################### Network Properties ####################################
+
 # Internal cache for various ReactionSystem calculated properties
 Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: Term}
     isempty::Bool = true
-    netstoichmat::Union{Matrix{I},SparseMatrixCSC{I,Int}} = Matrix{I}(undef,0,0)
+    netstoichmat::Union{Matrix{Int},SparseMatrixCSC{Int,Int}} = Matrix{Int}(undef,0,0)
     conservationmat::Matrix{I} = Matrix{I}(undef,0,0)
     col_order::Vector{Int} = Int[]
     rank::Int = 0
@@ -178,6 +224,12 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: Term}
     conservedeqs::Vector{Equation} = Equation[]
     constantdefs::Vector{Equation} = Equation[]
     speciesmap::Dict{V,Int} = Dict{V,Int}()
+    complextorxsmap::OrderedDict{ReactionComplex{V},Vector{Pair{Int,Int}}} = OrderedDict{ReactionComplex{V},Vector{Pair{Int,Int}}}()
+    complexes::Vector{ReactionComplex{V}} = Vector{ReactionComplex{V}}(undef,0)
+    incidencemat::Union{Matrix{Int},SparseMatrixCSC{Int,Int}} = Matrix{Int}(undef,0.0)
+    complexstoichmat::Union{Matrix{Int},SparseMatrixCSC{Int,Int}} = Matrix{Int}(undef,0.0)
+    complexoutgoingmat::Union{Matrix{Int},SparseMatrixCSC{Int,Int}} = Matrix{Int}(undef,0.0)
+    incidencegraph::Graphs.SimpleDiGraph{Int} = Graphs.DiGraph()
 end
 
 function Base.show(io::IO, nps::NetworkProperties)
@@ -207,6 +259,12 @@ function reset!(nps::NetworkProperties{I,V}) where {I,V}
     empty!(nps.conservedeqs)
     empty!(nps.constantdefs)
     empty!(nps.speciesmap)
+    empty!(nps.complextorxsmap)
+    empty!(nps.complexes)
+    empty!(nps.incidencemat)
+    empty!(nps.complexstoichmat)
+    empty!(nps.complexoutgoingmat)
+    empty!(nps.incidencegraph)
 
     # this needs to be last due to setproperty! setting it to false
     nps.isempty = true
