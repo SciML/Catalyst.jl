@@ -166,18 +166,18 @@ function get_netstoich(subs, prods, sstoich, pstoich)
 end
 
 # Internal cache for various ReactionSystem calculated properties
-Base.@kwdef mutable struct NetworkProperties{I <: Integer}
+Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: Term}
     isempty::Bool = true
     netstoichmat::Union{Matrix{I},SparseMatrixCSC{I,Int}} = Matrix{I}(undef,0,0)
     conservationmat::Matrix{I} = Matrix{I}(undef,0,0)
     col_order::Vector{Int} = Int[]
     rank::Int = 0
     nullity::Int = 0
-    indepspecs::Set{Any} = Set{Any}()
-    depspecs::Set{Any} = Set{Any}()
+    indepspecs::Set{V} = Set{V}()
+    depspecs::Set{V} = Set{V}()
     conservedeqs::Vector{Equation} = Equation[]
     constantdefs::Vector{Equation} = Equation[]
-    speciesmap::Dict{Any,Int} = Dict{Any,Int}()
+    speciesmap::Dict{V,Int} = Dict{V,Int}()
 end
 
 function Base.show(io::IO, nps::NetworkProperties)
@@ -195,7 +195,7 @@ function Base.setproperty!(nps::NetworkProperties, sym::Symbol, x)
     setfield!(nps, sym, x)
 end
 
-function reset!(nps::NetworkProperties{I}) where {I}
+function reset!(nps::NetworkProperties{I,V}) where {I,V}
     nps.isempty && return
     nps.netstoichmat = Matrix{I}(undef,0,0)
     nps.conservationmat = Matrix{I}(undef,0,0)
@@ -284,11 +284,12 @@ struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem}, V <: NetworkPropert
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, iv, states, ps, var_to_name, observed, name, systems,
                             defaults, connection_type, csys, nps;
-                            checks::Bool=true, skipvalue=false)
+                            checks::Bool=true)
         if checks
             check_variables(states, iv)
             check_parameters(ps, iv)
         end
+
         rs = new{typeof(csys), typeof(nps)}(eqs, iv, states, ps, var_to_name, observed, name,
                                             systems, defaults, connection_type, csys, nps)
         checks && validate(rs)
@@ -296,13 +297,26 @@ struct ReactionSystem{U <: Union{Nothing,MT.AbstractSystem}, V <: NetworkPropert
     end
 end
 
-function get_vartype(iv, states)
-    if !isempty(states)
-        T = typeof(MT.unwrap(first(states)))
-    else
-        @variables A($iv)
-        return typeof(MT.unwrap(A))
+function get_speciestype(iv, states, systems, constraints)
+    T = Nothing
+    !isempty(states) && (T = typeof(first(states)))
+
+    if !isempty(systems)
+        for sys in Iterators.filter(s -> s isa ReactionSystem, systems)
+            sts = MT.states(sys)
+            if !isempty(sts)
+                T = typeof(first(sts))
+                break
+            end
+        end
     end
+
+    if T <: Nothing
+        @variables A($iv)
+        T = typeof(MT.unwrap(A))
+    end
+
+    T
 end
 
 function ReactionSystem(eqs, iv, states, ps;
@@ -315,9 +329,7 @@ function ReactionSystem(eqs, iv, states, ps;
                         connection_type=nothing,
                         checks = true,
                         constraints = nothing,
-                        networkproperties = NetworkProperties{Int}(),
-                        skipvalue = false)
-
+                        networkproperties = nothing)
     name === nothing && throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     sysnames = nameof.(systems)
     (length(unique(sysnames)) == length(sysnames)) ||
@@ -330,8 +342,8 @@ function ReactionSystem(eqs, iv, states, ps;
     defaults = Dict{Any,Any}(value(k) => value(v) for (k, v) in pairs(defaults))
 
     iv′     = value(iv)
-    states′ = skipvalue ? states : value.(MT.scalarize(states))
-    ps′     = skipvalue ? ps : value.(MT.scalarize(ps))
+    states′ = value.(MT.scalarize(states))
+    ps′     = value.(MT.scalarize(ps))
     eqs′    = (eqs isa Vector) ? eqs : collect(eqs)
 
     var_to_name = Dict()
@@ -339,9 +351,14 @@ function ReactionSystem(eqs, iv, states, ps;
     MT.process_variables!(var_to_name, defaults, ps′)
     MT.collect_var_to_name!(var_to_name, eq.lhs for eq in observed)
 
+    nps = if networkproperties === nothing
+        NetworkProperties{Int, get_speciestype(iv′, states′, systems, constraints)}()
+    else
+        networkproperties
+    end
+
     ReactionSystem(eqs′, iv′, states′, ps′, var_to_name, observed, name, systems,
-                   defaults, connection_type, constraints, networkproperties;
-                   checks = checks, skipvalue = skipvalue)
+                   defaults, connection_type, constraints, nps; checks = checks)
 end
 
 
@@ -381,8 +398,7 @@ function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothi
             (p isa Symbolics.Symbolic) && findvars!(ps, sts, p, t, vars)
         end
     end
-
-    ReactionSystem(rxs, t, collect(sts), collect(ps); skipvalue=true, kwargs...)
+    ReactionSystem(rxs, t, collect(sts), collect(ps); kwargs...)
 end
 
 
@@ -797,7 +813,7 @@ function addconstraints!(eqs, rs::ReactionSystem; remove_conserved=false)
         sts = filter(in(nps.indepspecs), get_states(rs))
 
         # add the constants as parameters and set their values
-        ps  = copy(get_ps(rs))
+        ps  = Any[p for p in get_ps(rs)]  # as types can be mixed
         append!(ps, eq.lhs for eq in nps.constantdefs)
         defs = copy(MT.defaults(rs))
         for eq in nps.constantdefs

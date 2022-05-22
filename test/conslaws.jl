@@ -4,8 +4,8 @@ using LinearAlgebra
 include("test_networks.jl")
 
 rn = @reaction_network begin
-    (1, 2), A + B <--> C 
-    (3, 2), D <--> E 
+    (1, 2), A + B <--> C
+    (3, 2), D <--> E
     (0.1, 0.2), E <--> F
     6, F --> G
     7, H --> G
@@ -28,7 +28,7 @@ D = [ 1 -1 0 0 0 0 0 0 0 0;
 
 C = conservationlaws(rn)
 @test size(C,1) == 3
-@test get_networkproperties(rn).nullity == 3
+@test Catalyst.get_networkproperties(rn).nullity == 3
 @test any(b == C[i,:] for i in 1:size(C,1))
 @test any(D[j,:] == C[i,:] for i in 1:size(C,1), j in 1:size(D,1))
 

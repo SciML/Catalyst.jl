@@ -113,10 +113,7 @@ participate in `Reaction`s to their index within [`species(network)`](@ref).
 function speciesmap(network)
     nps = get_networkproperties(network)
     if isempty(nps.speciesmap)
-        nps.isempty = false
-        for (i,S) in enumerate(species(network))
-            nps.speciesmap[S] = i
-        end
+        nps.speciesmap = Dict(S => i for (i,S) in enumerate(species(network)))
     end
     nps.speciesmap
 end
@@ -526,7 +523,6 @@ Clears the cache of various properties (like the netstoichiometry matrix). Use i
 properties need to be recalculated for some reason.
 """
 function reset_networkproperties!(rn::ReactionSystem)
-    nps = get_networkproperties(rn)
     reset!(get_networkproperties(rn))
     nothing
 end
@@ -1146,6 +1142,7 @@ Notes:
   variable, as this will potentially leave the system in an undefined state.
 """
 function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks=false)
+    reset_networkproperties!(network)
 
     # we don't check subsystems since we will add it to the top-level system...
     curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), get_states(network))
@@ -1204,6 +1201,8 @@ id of the parameter within the system.
   variable, as this will potentially leave the system in an undefined state.
 """
 function addparam!(network::ReactionSystem, p::Symbolic; disablechecks=false)
+    reset_networkproperties!(network)
+
     # we don't check subsystems since we will add it to the top-level system...
     if istree(p) && !(operation(p) isa Sym)
         error("If the passed in parameter is an expression, it must correspond to an underlying Variable.")
@@ -1245,6 +1244,7 @@ Notes:
     `network` using [`addspecies!`](@ref) and [`addparam!`](@ref).
 """
 function addreaction!(network::ReactionSystem, rx::Reaction)
+    reset_networkproperties!(network)
     push!(get_eqs(network), rx)
     length(get_eqs(network))
 end
@@ -1273,6 +1273,7 @@ function Base.merge!(network1::ReactionSystem, network2::ReactionSystem)
     append!(get_observed(network1), get_observed(network2))
     append!(get_systems(network1), get_systems(network2))
     merge!(get_defaults(network1), get_defaults(network2))
+    reset_networkproperties!(network1)
     network1
 end
 
