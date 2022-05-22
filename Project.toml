@@ -3,7 +3,6 @@ uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
 version = "10.8.0"
 
 [deps]
-AbstractAlgebra = "c3fe647b-3220-5bb0-a1ea-a7954cac585d"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
 DiffEqJump = "c894b116-72e5-5b58-be3c-e6d8d4ac2b12"
@@ -20,7 +19,6 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
-AbstractAlgebra = "0.21, 0.22, 0.23, 0.24, 0.25"
 DataStructures = "0.18"
 DiffEqBase = "6.54.0"
 DiffEqJump = "7.0, 8.0"
