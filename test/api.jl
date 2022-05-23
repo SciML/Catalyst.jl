@@ -91,20 +91,20 @@ pmat = [0 1;
 @test smat == substoichmat(rnmat) == Matrix(substoichmat(rnmat, sparse=true))
 @test pmat == prodstoichmat(rnmat) == Matrix(prodstoichmat(rnmat, sparse=true))
 
-############## testing newly added intermediate complexes reaction networks##############
+############## testing intermediate complexes reaction networks##############
 
 function testnetwork(rn, B, Z, Δ, lcs, d, subrn, lcd)
     B2 = reactioncomplexes(rn)[2]
     @test B == B2 == Matrix(reactioncomplexes(rn, sparse=true)[2])
     @test Z == complexstoichmat(rn) == Matrix(complexstoichmat(rn, sparse=true))
     @test Δ == complexoutgoingmat(rn) == Matrix(complexoutgoingmat(rn, sparse=true))
-    ig = incidencematgraph(B)
-    lcs2 = linkageclasses(ig)
+    ig = incidencematgraph(rn)
+    lcs2 = linkageclasses(rn)
     @test lcs2 == linkageclasses(incidencematgraph(sparse(B))) == lcs
-    @test deficiency(netstoichmat(rn), ig, lcs) == d
-    @test all(issetequal.(subrn, reactions.(subnetworks(rn, lcs))))
-    @test linkagedeficiencies(subnetworks(rn, lcs), lcs) == lcd
-    @test sum(linkagedeficiencies(subnetworks(rn, lcs),lcs)) <= deficiency(netstoichmat(rn), ig, lcs)
+    @test deficiency(rn) == d
+    @test all(issetequal.(subrn, reactions.(subnetworks(rn))))
+    @test linkagedeficiencies(rn) == lcd
+    @test sum(linkagedeficiencies(rn)) <= deficiency(rn)
 end
 
 rns  = Vector{ReactionSystem}(undef,6)
@@ -270,10 +270,9 @@ testnetwork(rns[6], B, Z, Δ, lcs, 0,subrn,lcd)
 
 ###########Testing reversibility###############
 function testreversibility(rn, B, rev, weak_rev)
-    ig = incidencematgraph(B)
-    subrn = subnetworks(rn, linkageclasses(ig))
-    @test isreversible(ig) == rev
-    @test isweaklyreversible(subrn) == weak_rev
+    @test isreversible(rn) == rev
+    subrn = subnetworks(rn)
+    @test isweaklyreversible(rn,subrn) == weak_rev
 end
 rxs = Vector{ReactionSystem}(undef, 10)
 rxs[1] = @reaction_network begin

@@ -21,6 +21,8 @@ import ModelingToolkit: check_variables, check_parameters, _iszero, _merge, chec
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
+import DataStructures: OrderedDict, OrderedSet
+import Parameters: @with_kw_noshow
 
 # globals for the modulate
 const DEFAULT_IV = (@parameters t)[1]
@@ -73,8 +75,6 @@ export incidencematgraph, linkageclasses, deficiency, subnetworks, linkagedefici
 include("latexify_recipes.jl")
 
 # for making and saving graphs
-import DataStructures: OrderedDict, OrderedSet
-import Parameters: @with_kw_noshow
 include("graphs.jl")
 export Graph, savegraph, complexgraph
 

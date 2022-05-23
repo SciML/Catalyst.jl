@@ -545,7 +545,7 @@ function reactioncomplexmap(rn::ReactionSystem)
 
     # check if previously calculated and hence cached
     nps = get_networkproperties(rn)
-    !isempty(nps.complextorxmap) && return nps.complextorxmap
+    !isempty(nps.complextorxsmap) && return nps.complextorxsmap
     complextorxsmap = nps.complextorxsmap
 
     rxs = reactions(rn)
@@ -794,7 +794,7 @@ incidencematgraph(sir)
 """
 function incidencematgraph(rn::ReactionSystem)
     nps = get_networkproperties(rn)
-    if isempty(nps.incidencegraph)
+    if Graphs.nv(nps.incidencegraph) == 0
         isempty(nps.incidencemat) && error("Please call reactioncomplexes(rn) first to "
                                            * "construct the incidence matrix.")
         nps.incidencegraph = incidencematgraph(nps.incidencemat)
@@ -867,18 +867,16 @@ rcs,incidencemat = reactioncomplexes(sir)
 """
 function deficiency(rn::ReactionSystem)
     nps = get_networkproperties(rn)
-    if isempty(nps.conservationmat)
-        conservationlaws(nps)
-        r = nps.rank
-        ig = incidencematgraph(rn)
-        lc = linkageclasses(rn)
-        nps.deficiency = Graphs.nv(ig) - length(lc) - r
-    end
+    conservationlaws(rn)
+    r = nps.rank
+    ig = incidencematgraph(rn)
+    lc = linkageclasses(rn)
+    nps.deficiency = Graphs.nv(ig) - length(lc) - r
     nps.deficiency
 end
 
-function subnetworkmapping(linkageclass, allrxs, complextorxmap, p)
-    rxinds  = sort!(collect(Set(rxidx for rcidx in linkageclass for rxidx in complextorxmap[rcidx])))
+function subnetworkmapping(linkageclass, allrxs, complextorxsmap, p)
+    rxinds  = sort!(collect(Set(rxidx for rcidx in linkageclass for rxidx in complextorxsmap[rcidx])))
     rxs     = allrxs[rxinds]
     specset = Set(substrate for rx in rxs for substrate in rx.substrates)
     for rx in rxs
@@ -895,9 +893,9 @@ function subnetworkmapping(linkageclass, allrxs, complextorxmap, p)
 end
 
 """
-    subnetworks(network)
+    subnetworks(rn::ReactionSystem)
 
-Find subnetworks corresponding to each linkage class of reaction network.
+Find subnetworks corresponding to each linkage class of the reaction network.
 
 Notes:
 - Requires the `incidencemat` to already be cached in `rn` by a previous call to
@@ -915,22 +913,18 @@ subnetworks(sir)
 """
 function subnetworks(rs::ReactionSystem)
     isempty(get_systems(rs)) || error("subnetworks does not currently support subsystems.")
-
-    nps = get_networkproperties(rs)
-    if isempty(nps.subnetworks)
-        lcs = linkageclasses(rs)
-        rxs = reactions(rs)
-        p = parameters(rs)
-        t = get_iv(rs)
-        complextorxmap = [map(first,rcmap) for rcmap in values(reactioncomplexmap(rs))]
-        nps.subnetworks = Vector{ReactionSystem}()
-        for i in 1:length(lcs)
-            reacs,specs,newps = subnetworkmapping(lcs[i], rxs, complextorxmap, p)
-            newname = Symbol(nameof(rs), "_", i)
-            push!(nps.subnetworks, ReactionSystem(reacs, t, specs, newps; name=newname))
-        end
+    lcs = linkageclasses(rs)
+    rxs = reactions(rs)
+    p = parameters(rs)
+    t = get_iv(rs)
+    complextorxsmap = [map(first,rcmap) for rcmap in values(reactioncomplexmap(rs))]
+    subnetworks = Vector{ReactionSystem}()
+    for i in 1:length(lcs)
+        reacs,specs,newps = subnetworkmapping(lcs[i], rxs, complextorxsmap, p)
+        newname = Symbol(nameof(rs), "_", i)
+        push!(subnetworks, ReactionSystem(reacs, t, specs, newps; name=newname))
     end
-    nps.subnetworks
+    subnetworks
 end
 
 

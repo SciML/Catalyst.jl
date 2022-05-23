@@ -224,11 +224,11 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: Term}
     conservedeqs::Vector{Equation} = Equation[]
     constantdefs::Vector{Equation} = Equation[]
     speciesmap::Dict{V,Int} = Dict{V,Int}()
-    complextorxsmap::OrderedDict{ReactionComplex{V},Vector{Pair{Int,Int}}} = OrderedDict{ReactionComplex{V},Vector{Pair{Int,Int}}}()
-    complexes::Vector{ReactionComplex{V}} = Vector{ReactionComplex{V}}(undef,0)
-    incidencemat::Union{Matrix{Int},SparseMatrixCSC{Int,Int}} = Matrix{Int}(undef,0.0)
-    complexstoichmat::Union{Matrix{Int},SparseMatrixCSC{Int,Int}} = Matrix{Int}(undef,0.0)
-    complexoutgoingmat::Union{Matrix{Int},SparseMatrixCSC{Int,Int}} = Matrix{Int}(undef,0.0)
+    complextorxsmap::OrderedDict{ReactionComplex{Int},Vector{Pair{Int,Int}}} = OrderedDict{ReactionComplex{Int},Vector{Pair{Int,Int}}}()
+    complexes::Vector{ReactionComplex{Int}} = Vector{ReactionComplex{Int}}(undef,0)
+    incidencemat::Union{Matrix{Int},SparseMatrixCSC{Int,Int}} = Matrix{Int}(undef,0,0)
+    complexstoichmat::Union{Matrix{Int},SparseMatrixCSC{Int,Int}} = Matrix{Int}(undef,0,0)
+    complexoutgoingmat::Union{Matrix{Int},SparseMatrixCSC{Int,Int}} = Matrix{Int}(undef,0,0)
     incidencegraph::Graphs.SimpleDiGraph{Int} = Graphs.DiGraph()
     linkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef,0)
     deficiency::Int = 0
@@ -251,7 +251,7 @@ end
 
 function reset!(nps::NetworkProperties{I,V}) where {I,V}
     nps.isempty && return
-    nps.netstoichmat = Matrix{I}(undef,0,0)
+    nps.netstoichmat = Matrix{Int}(undef,0,0)
     nps.conservationmat = Matrix{I}(undef,0,0)
     empty!(nps.col_order)
     nps.rank = 0
@@ -263,11 +263,11 @@ function reset!(nps::NetworkProperties{I,V}) where {I,V}
     empty!(nps.speciesmap)
     empty!(nps.complextorxsmap)
     empty!(nps.complexes)
-    empty!(nps.incidencemat)
-    empty!(nps.complexstoichmat)
-    empty!(nps.complexoutgoingmat)
-    empty!(nps.incidencegraph)
-    empty!(linkageclasses)
+    nps.incidencemat = Matrix{Int}(undef,0,0)
+    nps.complexstoichmat = Matrix{Int}(undef,0,0)
+    nps.complexoutgoingmat = Matrix{Int}(undef,0,0)
+    nps.incidencegraph = Graphs.DiGraph()
+    empty!(nps.linkageclasses)
     nps.deficiency = 0
 
     # this needs to be last due to setproperty! setting it to false
