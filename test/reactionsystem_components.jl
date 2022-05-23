@@ -309,7 +309,8 @@ eqs = vcat(nrxs1, nrxs2, neqs2, nrxs3, neqs3)
 @test issetequal(reactionparams(rs1), [p1, rs2.p2a, rs2.p2b, rs2.rs3.p3a])
 @test issetequal(rxs, reactions(rs1))
 @test issetequal(eqs, equations(rs1))
-@test Catalyst.combinatoric_ratelaws(rs1) == true
+@test Catalyst.combinatoric_ratelaws(rs1)
+@test Catalyst.combinatoric_ratelaws(Catalyst.flatten(rs1))
 
 # test throw error if there are ODE constraints and convert to NonlinearSystem
 rn = @reaction_network rn begin
