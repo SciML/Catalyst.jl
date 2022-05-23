@@ -529,7 +529,8 @@ during calls to `convert` of problem constructors.
 """
 function combinatoric_ratelaws(sys::ReactionSystem)
     crl = get_combinatoric_ratelaws(sys)
-    mapreduce(combinatoric_ratelaws, |, get_systems(sys); init=crl)
+    subsys = Iterators.filter(s -> s isa ReactionSystem, get_systems(sys))
+    mapreduce(combinatoric_ratelaws, |, subsys; init=crl)
 end
 
 function MT.defaults(sys::ReactionSystem)
