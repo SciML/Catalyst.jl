@@ -44,7 +44,7 @@ function __init__()
 include("reactionsystem.jl")
 export Reaction, ReactionSystem, ismassaction, oderatelaw, jumpratelaw
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem, SteadyStateProblem
-export get_constraints, has_constraints
+export get_constraints, has_constraints, get_combinatoric_ratelaws
 
 # reaction_network macro
 const ExprValues = Union{Expr,Symbol,Float64,Int}
