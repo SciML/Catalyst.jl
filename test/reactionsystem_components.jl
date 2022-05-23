@@ -85,7 +85,7 @@ oprob = ODEProblem(sys2, u₀, tspan, pvals)
 sol = solve(oprob, Tsit5())
 @test all(isapprox.(sol(tvs,idxs=sys₁.P),sol2(tvs, idxs=4),atol=1e-4))
 
-# test conversion to nonlinear system 
+# test conversion to nonlinear system
 @named nsys = NonlinearSystem(connections, [], [])
 @named ssrepressilator = ReactionSystem(t; systems=[nsys,sys₁,sys₂,sys₃])
 @named nlrepressilator = convert(NonlinearSystem, ssrepressilator, include_zero_odes=false)
@@ -268,7 +268,7 @@ p  = [r₊ => 1.0, r₋ => 2.0, ns.β => 3.0]
 u₀ = [A => 1.0, B => 2.0, C => 0.0]
 oprob = ODEProblem(structural_simplify(osys), u₀, (0.0,10.0), p)
 sol = solve(oprob, Tsit5())
-@test isapprox(0, norm(sol[ns.D] .- 2*sol[A] - 3*sol[B]), atol=(100*eps())) 
+@test isapprox(0, norm(sol[ns.D] .- 2*sol[A] - 3*sol[B]), atol=(100*eps()))
 
 # test API functions for composed model
 @test issetequal(species(rs), [A,B,C])
@@ -288,11 +288,11 @@ eqs2 = [ParentScope(A1) ~ ParentScope(p1)*A2b]
 rxs3 = [Reaction(p3a, [A3a], nothing), Reaction(ParentScope(p2a), nothing, [ParentScope(A2a)])]
 eqs3 = [ParentScope(A2a) ~ p3b*A3b]
 
-@named rs3 = ReactionSystem(rxs3,t,[A3a,ParentScope(A2a)],[p3a,ParentScope(p2a)])
+@named rs3 = ReactionSystem(rxs3,t,[A3a,ParentScope(A2a)],[p3a,ParentScope(p2a)]; combinatoric_ratelaws=false)
 @named ns3 = NonlinearSystem(eqs3,[ParentScope(A2a),A3b],[p3b])
-@named rs2 = ReactionSystem(rxs2,t,[A2a,ParentScope(A1)],[p2a,p2b], systems=[rs3,ns3])
+@named rs2 = ReactionSystem(rxs2,t,[A2a,ParentScope(A1)],[p2a,p2b], systems=[rs3,ns3]; combinatoric_ratelaws=true)
 @named ns2 = NonlinearSystem(eqs2,[ParentScope(A1),A2b],[ParentScope(p1)])
-@named rs1 = ReactionSystem(rxs1,t,[A1],[p1],systems=[rs2,ns2])
+@named rs1 = ReactionSystem(rxs1,t,[A1],[p1],systems=[rs2,ns2]; combinatoric_ratelaws=false)
 
 # namespaced reactions
 nrxs1 = [Reaction(p1, [A1], nothing)]
@@ -307,8 +307,9 @@ eqs = vcat(nrxs1, nrxs2, neqs2, nrxs3, neqs3)
 @test issetequal(species(rs1), [A1,rs2.A2a,rs2.rs3.A3a])
 @test issetequal(parameters(rs1), [p1,rs2.p2a,rs2.p2b,rs2.rs3.p3a,rs2.ns3.p3b])
 @test issetequal(reactionparams(rs1), [p1, rs2.p2a, rs2.p2b, rs2.rs3.p3a])
-@test issetequal(rxs, reactions(rs1)) 
+@test issetequal(rxs, reactions(rs1))
 @test issetequal(eqs, equations(rs1))
+@test Catalyst.combinatoric_ratelaws(rs1) == true
 
 # test throw error if there are ODE constraints and convert to NonlinearSystem
 rn = @reaction_network rn begin
@@ -344,7 +345,7 @@ rnnlsys = convert(NonlinearSystem,rn2)
 
 # https://github.com/SciML/ModelingToolkit.jl/issues/1274
 @parameters p1 p2
-@variables t A(t) 
+@variables t A(t)
 rxs1 = [Reaction(p1, [A], nothing)]
 rxs2 = [Reaction(p2, [ParentScope(A)], nothing)]
 @named rs1 = ReactionSystem(rxs1, t)
