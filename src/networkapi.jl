@@ -1326,7 +1326,7 @@ Notes:
 - Subsystems are not deepcopied between the two networks and will hence be
   shared.
 - Returns `network1`.
-- `combinatoric_ratelaws` is logical or'ed, so keeps the value of `network1`.
+- `combinatoric_ratelaws` is the value of `network1`.
 """
 function Base.merge!(network1::ReactionSystem, network2::ReactionSystem)
     ((get_constraints(network1) === nothing) && (get_constraints(network2) === nothing)) ||
