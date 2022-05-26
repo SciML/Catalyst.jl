@@ -10,7 +10,7 @@ basern = @reaction_network rn1 begin
 newrn = @reaction_network rn2 begin
         r, C --&gt; A + B
       end r
-@named rn = extend(newrn, basern)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Model rn with 2 equations
+@named rn = extend(newrn, basern)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Model rn
 States (3):
   A(t)
   B(t)
@@ -22,7 +22,7 @@ Parameters (2):
  r, C --&gt; A + B</code></pre><p>Here we extended <code>basern</code> with <code>newrn</code> giving a system with all the reactions. Note, if a name is not specified via <code>@named</code> or the <code>name</code> keyword then <code>rn</code> will have the same name as <code>newrn</code>.</p><p>The second main compositional modeling tool is the use of subsystems. Suppose we now add to <code>basern</code> two subsystems, <code>newrn</code> and <code>newestrn</code>, we get a different result:</p><pre><code class="language-julia hljs">newestrn = @reaction_network rn3 begin
             v, A + D --&gt; 2D
            end v
-@named rn = compose(basern, [newrn, newestrn])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Model rn with 3 equations
+@named rn = compose(basern, [newrn, newestrn])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Model rn
 States (8):
   A(t)
   B(t)
@@ -44,7 +44,7 @@ Parameters (3):
 plot(TreePlot(rn), method=:tree, fontsize=12, nodeshape=:ellipse)</code></pre><p><img src="../../assets/rn_treeplot.svg" alt="rn network with subsystems"/></p><p>We could also have directly constructed <code>rn</code> using the same reaction as in <code>basern</code> as </p><pre><code class="language-julia hljs">@parameters k
 @variables t, A(t), B(t), C(t)
 rxs = [Reaction(k, [A,B], [C])]
-@named rn  = ReactionSystem(rxs, t; systems = [newrn, newestrn])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Model rn with 3 equations
+@named rn  = ReactionSystem(rxs, t; systems = [newrn, newestrn])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Model rn
 States (8):
   A(t)
   B(t)
@@ -79,7 +79,7 @@ Parameters (3):
  rn3₊v</code></pre><pre><code class="language-julia hljs">reactions(rn)   # or equations(rn)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element Vector{Reaction}:
  k, A + B --&gt; C
  rn2₊r, rn2₊C --&gt; rn2₊A + rn2₊B
- rn3₊v, rn3₊A + rn3₊D --&gt; 2*rn3₊D</code></pre><p>If we want to collapse <code>rn</code> down to a single system with no subsystems we can use</p><pre><code class="language-julia hljs">flatrn = Catalyst.flatten(rn)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Model rn with 3 equations
+ rn3₊v, rn3₊A + rn3₊D --&gt; 2*rn3₊D</code></pre><p>If we want to collapse <code>rn</code> down to a single system with no subsystems we can use</p><pre><code class="language-julia hljs">flatrn = Catalyst.flatten(rn)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Model rn
 States (8):
   A(t)
   B(t)
@@ -106,7 +106,7 @@ end</code></pre><pre class="documenter-example-output"><code class="nohighlight 
 @named G1 = repressed_gene(; R=ParentScope(G3₊P))
 @named G2 = repressed_gene(; R=ParentScope(G1.P))
 @named G3 = repressed_gene(; R=ParentScope(G2.P))
-@named repressilator = ReactionSystem(t; systems=[G1,G2,G3])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Model repressilator with 15 equations
+@named repressilator = ReactionSystem(t; systems=[G1,G2,G3])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Model repressilator
 States (6):
   G1₊m(t)
   G1₊P(t)
@@ -170,7 +170,7 @@ model = @reaction_network model begin
        γ, $(nuc.M) --&gt; $(cyto.M)
        δ, $(cyto.D) --&gt; $(nuc.D)
     end γ δ
-@named model = compose(model, [nuc, cyto])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Model model with 10 equations
+@named model = compose(model, [nuc, cyto])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Model model
 States (7):
   nuc₊M(t)
   cyto₊M(t)
@@ -201,4 +201,4 @@ Parameters (12):
  cyto₊k₊ / cyto₊V, 2*cyto₊P --&gt; cyto₊D
  cyto₊k₋, cyto₊D --&gt; 2*cyto₊P
  cyto₊σ, cyto₊P --&gt; ∅
- cyto₊μ, cyto₊M --&gt; ∅</code></pre><p>A graph of the resulting network is</p><pre><code class="language-julia hljs">Graph(model)</code></pre><p><img src="../../assets/compartment_gene_regulation.svg" alt="graph of gene regulation model"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../basic_examples/">« Basic Chemical Reaction Network Examples</a><a class="docs-footer-nextpage" href="../symbolic_stoich/">Parametric Stoichiometry »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.16 on <span class="colophon-date" title="Monday 2 May 2022 00:34">Monday 2 May 2022</span>. Using Julia version 1.7.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ cyto₊μ, cyto₊M --&gt; ∅</code></pre><p>A graph of the resulting network is</p><pre><code class="language-julia hljs">Graph(model)</code></pre><p><img src="../../assets/compartment_gene_regulation.svg" alt="graph of gene regulation model"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../basic_examples/">« Basic Chemical Reaction Network Examples</a><a class="docs-footer-nextpage" href="../symbolic_stoich/">Parametric Stoichiometry »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.18 on <span class="colophon-date" title="Thursday 26 May 2022 12:28">Thursday 26 May 2022</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
