@@ -198,7 +198,7 @@ statetoid = Dict(state => i for (i,state) in enumerate(states(js)))
 jspmapper = ModelingToolkit.JumpSysMajParamMapper(js, pars)
 symmaj = ModelingToolkit.assemble_maj(equations(js).x[1], statetoid, jspmapper)
 maj    = MassActionJump(symmaj.param_mapper(pars), symmaj.reactant_stoch, symmaj.net_stoch, symmaj.param_mapper, scale_rates=false)
-for i in midxs  
+for i in midxs
   @test abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100*eps()
   @test jumps[i].reactant_stoch == maj.reactant_stoch[i]
   @test jumps[i].net_stoch == maj.net_stoch[i]
@@ -256,17 +256,27 @@ isequal2(a,b) = isequal(simplify(a), simplify(b))
 @test isequal2(oderatelaw(rxs[1]), k1*S*S^2*I^3/12)
 @test isequal2(oderatelaw(rxs[1]; combinatoric_ratelaw=false), k1*S*S^2*I^3)
 
+@named rs2 = ReactionSystem(rxs, t, [S,I,R], [k1,k2]; combinatoric_ratelaws=false)
+
 #test ODE scaling:
 os = convert(ODESystem,rs)
 @test isequal2(equations(os)[1].rhs, -2*k1*S*S^2*I^3/12)
 os = convert(ODESystem,rs; combinatoric_ratelaws=false)
 @test isequal2(equations(os)[1].rhs, -2*k1*S*S^2*I^3)
+os2 = convert(ODESystem, rs2)
+@test isequal2(equations(os2)[1].rhs, -2*k1*S*S^2*I^3)
+os3 = convert(ODESystem, rs2; combinatoric_ratelaws=true)
+@test isequal2(equations(os3)[1].rhs, -2*k1*S*S^2*I^3/12)
 
 # test ConstantRateJump rate scaling
 js = convert(JumpSystem,rs)
 @test isequal2(equations(js)[1].rate, k1*S*S*(S-1)*I*(I-1)*(I-2)/12)
 js = convert(JumpSystem,rs;combinatoric_ratelaws=false)
 @test isequal2(equations(js)[1].rate, k1*S*S*(S-1)*I*(I-1)*(I-2))
+js2 = convert(JumpSystem,rs2)
+@test isequal2(equations(js2)[1].rate, k1*S*S*(S-1)*I*(I-1)*(I-2))
+js3 = convert(JumpSystem,rs2; combinatoric_ratelaws=true)
+@test isequal2(equations(js3)[1].rate, k1*S*S*(S-1)*I*(I-1)*(I-2)/12)
 
 # test MassActionJump rate scaling
 rxs = [Reaction(k1, [S,I], [I], [2,3], [2]),

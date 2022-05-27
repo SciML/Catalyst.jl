@@ -1148,6 +1148,7 @@ Notes:
 - Does not include `defaults` in determining equality.
 """
 function isequal_ignore_names(rn1::ReactionSystem, rn2::ReactionSystem)
+    (get_combinatoric_ratelaws(rn1) == get_combinatoric_ratelaws(rn2)) || return false
     isequal(get_iv(rn1), get_iv(rn2)) || return false
     issetequal(get_states(rn1), get_states(rn2)) || return false
     issetequal(get_ps(rn1), get_ps(rn2)) || return false
@@ -1325,6 +1326,7 @@ Notes:
 - Subsystems are not deepcopied between the two networks and will hence be
   shared.
 - Returns `network1`.
+- `combinatoric_ratelaws` is the value of `network1`.
 """
 function Base.merge!(network1::ReactionSystem, network2::ReactionSystem)
     ((get_constraints(network1) === nothing) && (get_constraints(network2) === nothing)) ||
