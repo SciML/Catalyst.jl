@@ -33,7 +33,7 @@ directly generate a collection of [`Reaction`](@ref)s and a corresponding
 SIR example how a system can be directly constructed, and demonstrate how to
 then generate from the [`ReactionSystem`](@ref) and solve corresponding chemical
 reaction ODE models, chemical Langevin equation SDE models, and stochastic
-chemical kinetics jump process models. 
+chemical kinetics jump process models.
 
 ```julia
 using Catalyst, OrdinaryDiffEq, StochasticDiffEq, DiffEqJump
@@ -91,9 +91,9 @@ sub-systems of `rn`, one can use the ModelingToolkit accessors (these provide
 direct access to the corresponding internal fields of the `ReactionSystem`)
 
 * `get_states(rn)` is a vector that collects all the species defined within
-  `rn`. 
+  `rn`.
 * `get_ps(rn)` is a vector that collects all the parameters defined *within*
-  reactions in `rn`. 
+  reactions in `rn`.
 * `get_eqs(rn)` is a vector that collects all the [`Reaction`](@ref)s defined
   within `rn`.
 * `get_iv(rn)` is the independent variable used in the system (usually `t` to
@@ -108,14 +108,14 @@ These are complemented by the Catalyst accessor
   none is defined will return `nothing`.
 
 The preceding accessors do not allocate, directly accessing internal fields of
-the `ReactionSystem`. 
+the `ReactionSystem`.
 
 To retrieve information from the full reaction network represented by a
 system `rn`, which corresponds to information within both `rn` and all
 sub-systems of type `ReactionSystem`, one can call:
 
 * [`species(rn)`](@ref) is a vector collecting all the chemical species within
-  the system and any sub-systems that are also `ReactionSystems`. 
+  the system and any sub-systems that are also `ReactionSystems`.
 * [`reactionparams(rn)`](@ref) is a vector of all the parameters within the
   system and any sub-systems that are also `ReactionSystem`s. These include all
   parameters that appear within some `Reaction`.
@@ -209,9 +209,10 @@ subnetworks
 linkagedeficiencies
 isreversible
 isweaklyreversible
+reset_networkproperties!
 ```
 
-## Network Comparison 
+## Network Comparison
 ```@docs
 ==(rn1::Reaction, rn2::Reaction)
 isequal_ignore_names

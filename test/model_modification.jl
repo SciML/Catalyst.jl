@@ -18,7 +18,7 @@ eqs,iv,ps,name,systems = unpacksys(empty_network_1)
 @test length(get_states(empty_network_1)) == 0
 @test length(ps) == 0
 
-empty_network_2 = @reaction_network 
+empty_network_2 = @reaction_network
 @variables p1 p2 p3 p4 p5
 addparam!(empty_network_2, p1)
 addparam!(empty_network_2, p2)
@@ -187,13 +187,13 @@ for networks in identical_networks
     @test networks[1] == networks[2]
     for factor in [1e-2, 1e-1, 1e0, 1e1]
         u0 = factor*rand(rng,length(get_states(networks[1])))
-        p = factor*rand(rng,length(get_ps(networks[1])))
+        pp = factor*rand(rng,length(get_ps(networks[1])))
 
         # needed because this code assumes an ordering of the parameters and species...
-        p2 = permute_ps(p, networks[1], networks[2])
+        pp2 = permute_ps(pp, networks[1], networks[2])
         t = rand(rng)
-        @test all(abs.(f1(u0,p,t) .- f2(u0,p2,t)) .< 1000*eps())
-        @test all(abs.(f1.jac(u0,p,t) .- f2.jac(u0,p2,t)) .< 1000*eps())
-        @test all(abs.(g1(u0,p,t) .- g2(u0,p2,t)) .< 1000*eps())
+        @test all(abs.(f1(u0,pp,t) .- f2(u0,pp2,t)) .< 1000*eps())
+        @test all(abs.(f1.jac(u0,pp,t) .- f2.jac(u0,pp2,t)) .< 1000*eps())
+        @test all(abs.(g1(u0,pp,t) .- g2(u0,pp2,t)) .< 1000*eps())
     end
 end
