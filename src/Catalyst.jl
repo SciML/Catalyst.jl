@@ -4,8 +4,9 @@ $(DocStringExtensions.README)
 module Catalyst
 
 using DocStringExtensions
-using SparseArrays, DiffEqBase, Reexport, DiffEqJump
+using SparseArrays, DiffEqBase, Reexport
 using LaTeXStrings, Latexify, Requires
+using DiffEqJump: DiffEqJump, JumpProblem, MassActionJump, ConstantRateJump, VariableRateJump
 
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit; const MT = ModelingToolkit
@@ -13,6 +14,7 @@ using ModelingToolkit; const MT = ModelingToolkit
 using Symbolics
 using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems,
                        get_eqs, get_defaults, toparam, get_var_to_name, get_observed, getvar
+
 import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!,
                         modified_states!, validate, namespace_variables, namespace_parameters,
                         rename, renamespace, getname, flatten
@@ -62,14 +64,15 @@ export species, reactionparams, reactions, speciesmap, paramsmap, reactionparams
 export numspecies, numreactions, numreactionparams, setdefaults!, symmap_to_varmap
 export make_empty_network, addspecies!, addparam!, addreaction!
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
-export conservationlaws, conservedquantities
+export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
 
 # depreciated functions to remove in future releases
 export params, numparams
 
 # network analysis functions
-export reactioncomplexmap, reactioncomplexes, reactionrates, complexstoichmat, complexoutgoingmat
-export incidencematgraph, linkageclasses, deficiency, subnetworks, linkagedeficiencies, isreversible, isweaklyreversible
+export reactioncomplexmap, reactioncomplexes, incidencemat, reactionrates, complexstoichmat
+export complexoutgoingmat, incidencematgraph, linkageclasses, deficiency, subnetworks
+export linkagedeficiencies, isreversible, isweaklyreversible
 
 # for Latex printing of ReactionSystems
 include("latexify_recipes.jl")

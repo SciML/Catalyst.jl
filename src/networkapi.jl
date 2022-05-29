@@ -632,6 +632,15 @@ function reactioncomplexes(rn::ReactionSystem; sparse=false)
     nps.complexes,nps.incidencemat
 end
 
+"""
+    incidencemat(rn::ReactionSystem; sparse=false)
+
+Calculate the incidence matrix of `rn`, see [`reactioncomplexes`](@ref).
+
+Notes:
+- Is cached in `rn` so that future calls, assuming the same sparsity, will also be fast.
+"""
+incidencemat(rn::ReactionSystem; sparse=false) = reactioncomplexes(rn; sparse)[2]
 
 function complexstoichmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem, rcs)
     Is=Int[];  Js=Int[];  Vs=Int[];
@@ -1021,6 +1030,66 @@ end
 ######################## conservation laws ###############################
 
 """
+    conservedequations(rn::ReactionSystem)
+
+Calculate symbolic equations from conservation laws, writing dependent variables as
+functions of independent variables and the conservation law constants.
+
+Notes:
+- Caches the resulting equations in `rn`, so will be fast on subsequent calls.
+
+Examples:
+```@repl
+rn = @reaction_network begin
+    k, A + B --> C
+    k2, C --> A + B
+    end k k2
+conservedequations(rn)
+```
+gives
+```
+2-element Vector{Equation}:
+ B(t) ~ A(t) + _ConLaw[1]
+ C(t) ~ _ConLaw[2] - A(t)
+```
+"""
+function conservedequations(rn::ReactionSystem)
+    conservationlaws(rn)
+    nps = get_networkproperties(rn)
+    nps.conservedeqs
+end
+
+"""
+    conservationlaw_constants(rn::ReactionSystem)
+
+Calculate symbolic equations from conservation laws, writing the conservation law constants
+in terms of the dependent and independent variables.
+
+Notes:
+- Caches the resulting equations in `rn`, so will be fast on subsequent calls.
+
+Examples:
+```@julia
+rn = @reaction_network begin
+    k, A + B --> C
+    k2, C --> A + B
+    end k k2
+conservationlaw_constants(rn)
+```
+gives
+```
+2-element Vector{Equation}:
+ _ConLaw[1] ~ B(t) - A(t)
+ _ConLaw[2] ~ A(t) + C(t)
+```
+"""
+function conservationlaw_constants(rn::ReactionSystem)
+    conservationlaws(rn)
+    nps = get_networkproperties(rn)
+    nps.constantdefs
+end
+
+"""
     conservationlaws(netstoichmat::AbstractMatrix)::Matrix
 
 Given the net stoichiometry matrix of a reaction system, computes a matrix of
@@ -1087,7 +1156,8 @@ Return the conservation law matrix of the given `ReactionSystem`, calculating it
 not already stored within the system, or returning an alias to it.
 
 Notes:
-- The first time being called it is calculated and cached, subsequent calls should be fast.
+- The first time being called it is calculated and cached in `rn`, subsequent calls should
+  be fast.
 """
 function conservationlaws(rs::ReactionSystem)
     nps = get_networkproperties(rs)

@@ -62,17 +62,17 @@ function any_nonrx_subsys(rn::MT.AbstractSystem)
 end
 
 function make_stoich_str(spec, stoich, subber; kwargs...)
-    if isequal(stoich,one(stoich)) 
-        latexraw(subber(spec); kwargs...) 
+    if isequal(stoich,one(stoich))
+        latexraw(subber(spec); kwargs...)
     else
         if Symbolics.istree(stoich)
-            LaTeXString("(") * 
-            latexraw(subber(stoich); kwargs...) * 
-            LaTeXString(")") * 
-            latexraw(subber(spec); kwargs...) 
+            LaTeXString("(") *
+            latexraw(subber(stoich); kwargs...) *
+            LaTeXString(")") *
+            latexraw(subber(spec); kwargs...)
         else
-            latexraw(subber(stoich); kwargs...) * LaTeXString(" ") * 
-            latexraw(subber(spec); kwargs...) 
+            latexraw(subber(stoich); kwargs...) * LaTeXString(" ") *
+            latexraw(subber(spec); kwargs...)
         end
     end
 end
@@ -83,7 +83,7 @@ function chemical_arrows(rn::ReactionSystem;
     (get_constraints(rn) !== nothing) && (@warn "Latexify currently ignores constraint equations.")
     any_nonrx_subsys(rn) && (@warn "Latexify currently ignores non-ReactionSystem subsystems.")
 
-    rxs = reactions(rn)    
+    rxs = reactions(rn)
     if isempty(rxs)
         latexstr = Latexify.LaTeXString("ReactionSystem $(nameof(rn)) has no reactions.")
         Latexify.COPY_TO_CLIPBOARD && clipboard(latexstr)

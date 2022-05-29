@@ -76,7 +76,7 @@ forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅]
 Generates a [`ReactionSystem`](@ref) that encodes a chemical reaction
 network.
 
-See the [The Reaction DSL](@ref) documentation for details on
+See [The Reaction DSL](@ref) documentation for details on
 parameters to the macro.
 
 Examples:
@@ -139,7 +139,7 @@ end
 
 ### Macros used for manipulating, and successively builing up, reaction systems. ###
 @doc raw"""
-    @reaction 
+    @reaction
 
 Generates a single [`Reaction`](@ref) object.
 
@@ -162,10 +162,12 @@ rx = @reaction b*$ex*$A, $A --> C
 ```
 
 Notes:
-- Any symbols arising in the rate expression that aren't interpolated are
-  treated as parameters, while any in the reaction part (`A + B --> C + D`) are
-  treated as species.
+- Any symbols arising in the rate expression that aren't interpolated are treated as
+  parameters. In the reaction part (`α*A + B --> C + D`), coefficients are treated as
+  parameters, e.g. `α`, and rightmost symbols as species, e.g. `A,B,C,D`.
 - Works with any *single* arrow types supported by [`@reaction_network`](@ref).
+- Interpolation of Julia variables into the macro works similar to the `@reaction_network`
+  macro. See [The Reaction DSL](@ref) tutorial for more details.
 """
 macro reaction(ex)
     make_reaction(ex)
@@ -295,7 +297,7 @@ function make_reaction(ex::Expr)
         error("The following symbol(s) are used as species or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(species,parameters)))...))*"this is not permited.")
 
     pexprs = get_pexprs(parameters)    # parameters
-    sexprs = get_sexprs(allspecies)    # species    
+    sexprs = get_sexprs(allspecies)    # species
     rxexpr = get_rxexprs(reaction)     # reaction
 
     quote
@@ -335,7 +337,7 @@ function find_species_in_rate!(sset, rateex::ExprValues, ps)
 end
 
 function get_reaction(line)
-    (line.head != :tuple) && error("Malformed reaction line: $(MacroTools.striplines(line))") 
+    (line.head != :tuple) && error("Malformed reaction line: $(MacroTools.striplines(line))")
     (rate,r_line) = line.args
     (r_line.head  == :-->) && (r_line = Expr(:call,:→,r_line.args[1],r_line.args[2]))
 
@@ -356,8 +358,8 @@ end
 
 #Generates a vector containing a number of reaction structures, each containing the information about one reaction.
 function get_reactions(ex::Expr, reactions = Vector{ReactionStruct}(undef,0))
-    for line in ex.args 
-        (line.head != :tuple) && error("Malformed reaction line: $(MacroTools.striplines(line))") 
+    for line in ex.args
+        (line.head != :tuple) && error("Malformed reaction line: $(MacroTools.striplines(line))")
         (rate,r_line) = line.args
         (r_line.head  == :-->) && (r_line = Expr(:call,:→,r_line.args[1],r_line.args[2]))
 
@@ -455,5 +457,3 @@ function recursive_expand_functions!(expr::ExprValues)
     end
     return expr
 end
-
-
