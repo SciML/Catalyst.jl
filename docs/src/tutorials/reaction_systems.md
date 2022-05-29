@@ -1,4 +1,4 @@
-# Programmatic  Construction of Symbolic Reaction Systems
+# Programmatic Construction of Symbolic Reaction Systems
 While the DSL provides a simple interface for creating `ReactionSystem`s, it can
 often be convenient to build or augment a [`ReactionSystem`](@ref)
 programmatically. In this tutorial we show how to build the repressilator model
