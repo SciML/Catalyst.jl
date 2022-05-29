@@ -146,7 +146,7 @@ Below we list the remainder of the Catalyst API accessor functions mentioned
 above.
 
 ## Basic System Properties
-See [Symbolic Reaction Systems](@ref) for examples and [ModelingToolkit and
+See [Programmatic  Construction of Symbolic Reaction Systems](@ref) for examples and [ModelingToolkit and
 Catalyst Accessor Functions](@ref) for more details on the basic accessor
 functions.
 
@@ -196,10 +196,13 @@ merge!(network1::ReactionSystem, network2::ReactionSystem)
 ```@docs
 conservationlaws
 conservedquantities
+conservedequations
+conservationlaw_constants
 ReactionComplexElement
 ReactionComplex
 reactioncomplexmap
 reactioncomplexes
+incidencemat
 complexstoichmat
 complexoutgoingmat
 incidencematgraph

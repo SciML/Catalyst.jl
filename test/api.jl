@@ -96,6 +96,7 @@ pmat = [0 1;
 function testnetwork(rn, B, Z, Δ, lcs, d, subrn, lcd)
     B2 = reactioncomplexes(rn)[2]
     @test B == B2 == Matrix(reactioncomplexes(rn, sparse=true)[2])
+    @test B == incidencemat(rn)
     @test Z == complexstoichmat(rn) == Matrix(complexstoichmat(rn, sparse=true))
     @test Δ == complexoutgoingmat(rn) == Matrix(complexoutgoingmat(rn, sparse=true))
     ig = incidencematgraph(rn)

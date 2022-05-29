@@ -1,4 +1,4 @@
-# Symbolic Reaction Systems
+# Programmatic  Construction of Symbolic Reaction Systems
 While the DSL provides a simple interface for creating `ReactionSystem`s, it can
 often be convenient to build or augment a [`ReactionSystem`](@ref)
 programmatically. In this tutorial we show how to build the repressilator model
@@ -15,8 +15,8 @@ and then define symbolic variables for each parameter and species in the system
 (the latter corresponding to a `variable` or `state` in ModelingToolkit
 terminology)
 ```julia
-@parameters α, K, n, δ, γ, β, μ;
-@variables t, m₁(t), m₂(t), m₃(t), P₁(t), P₂(t), P₃(t);
+@parameters α K n δ γ β μ
+@variables t m₁(t) m₂(t) m₃(t) P₁(t) P₂(t) P₃(t)
 ```
 ```@setup ex
 @parameters α, K, n, δ, γ, β, μ;
@@ -35,7 +35,7 @@ rxs = [Reaction(hillr(P₃,α,K,n), nothing, [m₁]),
        Reaction(δ, [m₂], nothing),
        Reaction(γ, nothing, [m₂]),
        Reaction(δ, [m₃], nothing),
-       Reaction(γ, nothing, [m₃]),       
+       Reaction(γ, nothing, [m₃]),
        Reaction(β, [m₁], [m₁,P₁]),
        Reaction(β, [m₂], [m₂,P₂]),
        Reaction(β, [m₃], [m₃,P₃]),
@@ -52,7 +52,7 @@ rxs = [Reaction(hillr(P₃,α,K,n), nothing, [m₁]),
        Reaction(δ, [m₂], nothing),
        Reaction(γ, nothing, [m₂]),
        Reaction(δ, [m₃], nothing),
-       Reaction(γ, nothing, [m₃]),       
+       Reaction(γ, nothing, [m₃]),
        Reaction(β, [m₁], [m₁,P₁]),
        Reaction(β, [m₂], [m₂,P₂]),
        Reaction(β, [m₃], [m₃,P₃]),
@@ -135,11 +135,63 @@ rx = Reaction(α+β*t*A, [A], [B])
 [See the FAQs](@ref user_functions) for info on using general user-specified
 functions for the rate constant.
 
+## `@reaction` macro for constructing `Reaction`s
+In some cases one wants to build reactions incrementally, as in the
+repressilator example, but it would be nice to still have a short hand as in the
+[`@reaction_network`](@ref) DSL. In this case one can construct individual
+reactions using the [`@reaction`](@ref) macro.
+
+For example, the repressilator reactions could also have been constructed like
+```julia
+@variables t P₁(t) P₂(t) P₃(t)
+rxs = [(@reaction hillr($P₃,α,K,n), ∅ --> m₁),
+       (@reaction hillr($P₁,α,K,n), ∅ --> m₂),
+       (@reaction hillr($P₂,α,K,n), ∅ --> m₃),
+       (@reaction δ, m₁ --> ∅),
+       (@reaction γ, ∅ --> m₁),
+       (@reaction δ, m₂ --> ∅),
+       (@reaction γ, ∅ --> m₂),
+       (@reaction δ, m₃ --> ∅),
+       (@reaction γ, ∅ --> m₃),
+       (@reaction β, m₁ --> m₁ + P₁),
+       (@reaction β, m₂ --> m₂ + P₂),
+       (@reaction β, m₃ --> m₃ + P₃),
+       (@reaction μ, P₁ --> ∅),
+       (@reaction μ, P₂ --> ∅),
+       (@reaction μ, P₃ --> ∅)]
+@named repressilator = ReactionSystem(rxs, t)
+```
+Note, there are a few differences when using the `@reaction` macro to specify
+one reaction versus using the full `@reaction_network` macro to create a
+`ReactionSystem`. First, only one reaction (i.e. a single forward arrow type)
+can be used, i.e. reversible arrows like `<-->` will not work (since they define
+more than one reaction). Second, the `@reaction` macro must try to infer which
+symbols are species versus parameters, and uses the heuristic that anything
+appearing in the rate expression is a parameter. Coefficients in the reaction
+part are also inferred as parameters, while rightmost symbols (i.e. substrates
+and products) are inferred as species. As such, the following are equivalent
+```julia
+rx = @reaction hillr(P,α,K,n), A --> B
+```
+is equivalent to
+```julia
+@parameters P α K n
+@variables t A(t) B(t)
+rx = Reaction(hillr(P,α,K,n), [A], [B])
+```
+Here `(P,α,K,n)` are parameters and `(A,B)` are species.
+
+This behavior is the reason that in the repressilator example above we
+pre-declared `(P₁(t),P₂(t),P₃(t))` as variables, and then used them via
+interpolating their values into the rate law expressions using `$` in the macro.
+This ensured they were properly treated as species and not parameters. See the
+[`@reaction`](@ref) macro docstring for more information.
+
 ## Basic Querying of `ReactionSystems`
 
 The [Catalyst.jl API](@ref) provides a large variety of functionality for
 querying properties of a reaction network. Here we go over a few of the most
-useful basic functions. Given the `repressillator` defined above we have that 
+useful basic functions. Given the `repressillator` defined above we have that
 ```@example ex
 species(repressilator)
 ```
@@ -206,4 +258,3 @@ rx1.netstoich
 
 See the [Catalyst.jl API](@ref) for much more detail on the various querying and
 analysis functions provided by Catalyst.
-

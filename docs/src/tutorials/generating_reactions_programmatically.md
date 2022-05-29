@@ -1,4 +1,4 @@
-# Generating ReactionSystems Programmatically 
+# Smoluchowski Coagulation Equation
 This tutorial shows how to programmatically construct a [`ReactionSystem`](@ref) corresponding to the chemistry underlying the [Smoluchowski coagulation model](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation) using [ModelingToolkit](https://mtk.sciml.ai/stable/)/[Catalyst](https://catalyst.sciml.ai/dev/). A jump process version of the model is then constructed from the [`ReactionSystem`](@ref), and compared to the model's analytical solution obtained by the [method of Scott](https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml) (see also [3](https://doi.org/10.1006/jcph.2002.7017)).
 
 The Smoluchowski coagulation equation describes a system of reactions in which monomers may collide to form dimers, monomers and dimers may collide to form trimers, and so on. This models a variety of chemical/physical processes, including polymerization and flocculation.
@@ -9,7 +9,7 @@ using ModelingToolkit, Catalyst, LinearAlgebra
 using DiffEqBase, DiffEqJump
 using Plots, SpecialFunctions
 ```
-Suppose the maximum cluster size is `N`. We assume an initial concentration of monomers, `Nₒ`, and let `uₒ` denote the initial number of monomers in the system. We have `nr` total reactions, and label by `V` the bulk volume of the system (which plays an important role in the calculation of rate laws since we have bimolecular reactions). Our basic parameters are then  
+Suppose the maximum cluster size is `N`. We assume an initial concentration of monomers, `Nₒ`, and let `uₒ` denote the initial number of monomers in the system. We have `nr` total reactions, and label by `V` the bulk volume of the system (which plays an important role in the calculation of rate laws since we have bimolecular reactions). Our basic parameters are then
 ```julia
 ## Parameter
 N = 10                       # maximum cluster size
@@ -23,7 +23,7 @@ n        = integ(N/2)
 nr       = N%2 == 0 ? (n*(n + 1) - n) : (n*(n + 1)) # No. of forward reactions
 ```
 The [Smoluchowski coagulation equation](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation) Wikipedia page illustrates the set of possible reactions that can occur. We can easily enumerate the `pair`s of multimer reactants that can combine when allowing a maximal cluster size of `N` monomers. We initialize the volumes of the reactant multimers as `volᵢ` and `volⱼ`
-  
+
 ```julia
 # possible pairs of reactant multimers
 pair = []
@@ -46,44 +46,44 @@ if i==1
     kv = @. B*(volᵢ + volⱼ)/V  # dividing by volume as its a bi-molecular reaction chain
 elseif i==2
     C = 1.84e-04               # cm³ s⁻¹
-    kv = fill(C/V, nr) 
+    kv = fill(C/V, nr)
 end
 ```
 We'll store the reaction rates in `pars` as `Pair`s, and set the initial condition that only monomers are present at ``t=0`` in `u₀map`.
 ```julia
 # state variables are X, pars stores rate parameters for each rx
-@parameters t       
+@parameters t
 @variables k[1:nr]  X[1:N](t)
 pars = Pair.(collect(k), kv)
 
 # time-span
 if i == 1
-    tspan = (0. ,2000.)   
+    tspan = (0. ,2000.)
 elseif i == 2
     tspan = (0. ,350.)
 end
 
  # initial condition of monomers
 u₀    = zeros(Int64, N)
-u₀[1] = uₒ  
+u₀[1] = uₒ
 u₀map = Pair.(collect(X), u₀)   # map variable to its initial value
 ```
 Here we generate the reactions programmatically. We systematically create Catalyst `Reaction`s for each possible reaction shown in the figure on [Wikipedia](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation). When `vᵢ[n] == vⱼ[n]`, we set the stoichiometric coefficient of the reactant multimer to two.
 ```julia
 # vector to store the Reactions in
-rx = []              
+rx = []
 for n = 1:nr
     # for clusters of the same size, double the rate
-    if (vᵢ[n] == vⱼ[n]) 
+    if (vᵢ[n] == vⱼ[n])
         push!(rx, Reaction(k[n], [X[vᵢ[n]]], [X[sum_vᵢvⱼ[n]]], [2], [1]))
     else
-        push!(rx, Reaction(k[n], [X[vᵢ[n]], X[vⱼ[n]]], [X[sum_vᵢvⱼ[n]]], 
+        push!(rx, Reaction(k[n], [X[vᵢ[n]], X[vⱼ[n]]], [X[sum_vᵢvⱼ[n]]],
                            [1, 1], [1]))
     end
 end
 @named rs = ReactionSystem(rx, t, collect(X), collect(k))
 ```
-We now convert the [`ReactionSystem`](@ref) into a `ModelingToolkit.JumpSystem`, and solve it using Gillespie's direct method. For details on other possible solvers (SSAs), see the [DifferentialEquations.jl](https://diffeq.sciml.ai/latest/types/jump_types/) documentation 
+We now convert the [`ReactionSystem`](@ref) into a `ModelingToolkit.JumpSystem`, and solve it using Gillespie's direct method. For details on other possible solvers (SSAs), see the [DifferentialEquations.jl](https://diffeq.sciml.ai/latest/types/jump_types/) documentation
 ```julia
 # solving the system
 jumpsys = convert(JumpSystem, rs)
@@ -102,7 +102,7 @@ v_res = [1;2;3]
 t   = jsol.t
 sol = zeros(length(v_res), length(t))
 if i == 1
-    ϕ = @. 1 - exp(-B*Nₒ*Vₒ*t)    
+    ϕ = @. 1 - exp(-B*Nₒ*Vₒ*t)
     for j in v_res
         sol[j,:] = @. Nₒ*(1 - ϕ)*(((j*ϕ)^(j-1))/gamma(j+1))*exp(-j*ϕ)
     end
@@ -122,7 +122,7 @@ scatter!(ϕ, jsol(t)[2,:]/uₒ, label="X2 (dimers)", markercolor=:orange)
 plot!(ϕ, sol[2,:]/Nₒ, line = (:dot,4,:orange), label="Analytical sol--X2")
 
 scatter!(ϕ, jsol(t)[3,:]/uₒ, label="X3 (trimers)", markercolor=:purple)
-plot!(ϕ, sol[3,:]/Nₒ, line = (:dot,4,:purple), label="Analytical sol--X3", 
+plot!(ϕ, sol[3,:]/Nₒ, line = (:dot,4,:purple), label="Analytical sol--X3",
       ylabel = "Normalized Concentration")
 ```
 For the **additive kernel** we find
