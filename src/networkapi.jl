@@ -1060,7 +1060,7 @@ function conservedequations(rn::ReactionSystem)
 end
 
 """
-    conservedequations(rn::ReactionSystem)
+    conservationlaw_constants(rn::ReactionSystem)
 
 Calculate symbolic equations from conservation laws, writing the conservation law constants
 in terms of the dependent and independent variables.
