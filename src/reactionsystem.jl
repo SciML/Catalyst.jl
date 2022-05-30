@@ -914,7 +914,7 @@ end
 # merge constraint components with the ReactionSystem components
 # also handles removing BC and constant species
 function addconstraints!(eqs, rs::ReactionSystem, ists; remove_conserved=false)
-    # if there are BC species, put them after the indepenent species
+    # if there are BC species, put them after the independent species
     rssts = get_states(rs)
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
 
@@ -927,7 +927,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists; remove_conserved=false)
         nps = get_networkproperties(rs)
 
         # add the conservation constants as parameters and set their values
-        vcat(ps, eq.lhs for eq in nps.constantdefs)
+        ps = vcat(ps, collect(eq.lhs for eq in nps.constantdefs))
         defs = copy(MT.defaults(rs))
         for eq in nps.constantdefs
             defs[eq.lhs] = eq.rhs
