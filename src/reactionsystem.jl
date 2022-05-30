@@ -722,16 +722,30 @@ function assemble_drift(rs, sts; combinatoric_ratelaws=true, as_odes=true, inclu
     eqs
 end
 
-function assemble_diffusion(rs, noise_scaling; combinatoric_ratelaws=true)
-    sts  = get_states(rs)
+function assemble_diffusion(rs, sts, noise_scaling; combinatoric_ratelaws=true,
+                                                    remove_conserved=false)
     eqs  = Matrix{Any}(undef, length(sts), length(get_eqs(rs)))
     eqs .= 0
     species_to_idx = Dict((x => i for (i,x) in enumerate(sts)))
+    nps = get_networkproperties(rs)
+    depspec_submap = if remove_conserved
+        Dict(eq.lhs => eq.rhs for eq in nps.conservedeqs)
+    else
+        Dict()
+    end
 
     for (j,rx) in enumerate(get_eqs(rs))
         rlsqrt = sqrt(abs(oderatelaw(rx; combinatoric_ratelaw=combinatoric_ratelaws)))
         (noise_scaling!==nothing) && (rlsqrt *= noise_scaling[j])
+        remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
+
         for (spec,stoich) in rx.netstoich
+            # dependent species don't get an equation
+            remove_conserved && (spec in nps.depspecs) && continue
+
+            # constant or BC species also do not get equations
+            drop_dynamics(spec) && continue
+
             i = species_to_idx[spec]
             if stoich isa Symbolics.Symbolic
                 eqs[i,j] = stoich * rlsqrt
@@ -1062,7 +1076,8 @@ Notes:
 function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       noise_scaling=nothing, name=nameof(rs),
                       combinatoric_ratelaws=get_combinatoric_ratelaws(rs),
-                      include_zero_odes=true, checks = false, kwargs...)
+                      include_zero_odes=true, checks = false, remove_conserved=false,
+                      kwargs...)
 
     flatrs = Catalyst.flatten(rs)
     error_if_constraints(SDESystem, flatrs)
@@ -1078,13 +1093,16 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
         noise_scaling = fill(value(noise_scaling),numreactions(flatrs))
     end
 
-    sts = get_states(flatrs)
-    eqs = assemble_drift(flatrs, sts; combinatoric_ratelaws, include_zero_odes)
-    noiseeqs = assemble_diffusion(flatrs, noise_scaling; combinatoric_ratelaws)
-    SDESystem(eqs, noiseeqs, get_iv(flatrs), sts,
-              (noise_scaling===nothing) ? get_ps(flatrs) : union(get_ps(flatrs),
-              toparam(noise_scaling)); name, defaults=MT.defaults(flatrs),
-              observed=MT.observed(flatrs), checks, kwargs...)
+    remove_conserved && conservationlaws(flatrs)
+    ists = get_indep_sts(flatrs, remove_conserved)
+    eqs = assemble_drift(flatrs, ists; combinatoric_ratelaws, include_zero_odes,
+                                       remove_conserved)
+    noiseeqs = assemble_diffusion(flatrs, ists, noise_scaling; combinatoric_ratelaws,
+                                                               remove_conserved)
+    eqs,sts,ps,obs,defs = addconstraints!(eqs, flatrs, ists; remove_conserved)
+    ps = (noise_scaling===nothing) ? ps : union(ps,toparam(noise_scaling))
+    SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps; name, defaults=defs,
+                                                      observed=obs, checks, kwargs...)
 end
 
 """

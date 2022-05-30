@@ -655,27 +655,28 @@ let
     p = [k1 => 1.0, k2 => .1, m1 => 1.0, m2 => 2.0, b12 => 1.0, b23 => 2.0, b31 => .1]
     tspan = (0.0,20.0)
     oprob = ODEProblem(osys, u0, tspan, p)
-    sol = solve(oprob, Tsit5())
+    sol = solve(oprob, Tsit5(); abstol=1e-10, reltol=1e-10)
     oprob2 = ODEProblem(rn, u0, tspan, p)
-    sol2 = solve(oprob, Tsit5())
+    sol2 = solve(oprob2, Tsit5(); abstol=1e-10, reltol=1e-10)
     oprob3 = ODEProblem(rn, u0, tspan, symmap_to_varmap(osys,p); remove_conserved=true)
-    sol3 = solve(oprob3, Tsit5())
+    sol3 = solve(oprob3, Tsit5(); abstol=1e-10, reltol=1e-10)
 
     tv = range(tspan[1], tspan[2], length=101)
     for s in species(rn)
-        @test norm(sol(tv, idxs=s) .- sol2(tv, idxs=s)) ≈ 0
-        @test norm(sol2(tv, idxs=s) .- sol2(tv, idxs=s)) ≈ 0
+        @test isapprox(sol(tv, idxs=s), sol2(tv, idxs=s))
+        @test isapprox(sol2(tv, idxs=s), sol2(tv, idxs=s))
     end
 
     nsys = convert(NonlinearSystem, rn; remove_conserved=true)
     nprob = NonlinearProblem{true}(nsys, u0, p)
-    nsol = solve(nprob, NewtonRaphson(); tol = 1e-9)
-    nprob2 = NonlinearProblem(rn, u0, p)
-    nsol2 = solve(nprob, NewtonRaphson(); tol=1e-9)
+    nsol = solve(nprob, NewtonRaphson(); tol = 1e-10)
+    nprob2 = ODEProblem(rn, u0, (0.0,100.0*tspan[2]), p)
+    nsol2 = solve(nprob2, Tsit5(); abstol=1e-10, reltol=1e-10)
     nprob3 = NonlinearProblem(rn, u0, p; remove_conserved=true)
-    nsol3 = solve(nprob, NewtonRaphson(); tol=1e-9)
+    nsol3 = solve(nprob3, NewtonRaphson(); tol=1e-10)
     for s in species(rn)
-        @test norm(nsol[s] .- nsol2[s]) ≈ 0
-        @test norm(nsol2[s] .- nsol2[s]) ≈ 0
+        @test isapprox(nsol[s], nsol2(tspan[2], idxs=s))
+        @test isapprox(nsol2(tspan[2], idxs=s), nsol3[s])
     end
+
 end
