@@ -1072,6 +1072,9 @@ Notes:
   Finally, a `Vector{Num}` can be provided (the length must be equal to the number of
   reactions). Here the noise for each reaction is scaled by the corresponding parameter in
   the input vector. This input may contain repeat parameters.
+- `remove_conserved=false`, if set to `true` will calculate conservation laws of the
+  underlying set of reactions (ignoring constraint equations), and then apply them to reduce
+  the number of equations.
 """
 function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       noise_scaling=nothing, name=nameof(rs),
@@ -1166,12 +1169,13 @@ end
 function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan, p=DiffEqBase.NullParameters(), args...;
                                noise_scaling=nothing, name=nameof(rs),
                                combinatoric_ratelaws=get_combinatoric_ratelaws(rs),
-                               include_zero_odes=true, checks = false, check_length=false, kwargs...)
+                               include_zero_odes=true, checks = false, check_length=false,
+                               remove_conserved=false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap  = symmap_to_varmap(rs, p)
-    p_matrix = zeros(length(get_states(rs)), length(get_eqs(rs)))
     sde_sys  = convert(SDESystem, rs; noise_scaling, name, combinatoric_ratelaws,
-                                      include_zero_odes, checks)
+                                      include_zero_odes, checks, remove_conserved)
+    p_matrix = zeros(length(get_states(sde_sys)), length(get_eqs(sde_sys)))
     return SDEProblem(sde_sys, u0map, tspan, pmap, args...; check_length,
                                                             noise_rate_prototype=p_matrix, kwargs...)
 end

@@ -1,4 +1,5 @@
 using Catalyst, DiffEqBase, ModelingToolkit, Test, OrdinaryDiffEq, NonlinearSolve
+using StochasticDiffEq
 using LinearAlgebra: norm
 using SparseArrays
 using ModelingToolkit: value
@@ -679,4 +680,26 @@ let
         @test isapprox(nsol2(tspan[2], idxs=s), nsol3[s])
     end
 
+    u0 = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0, F3 => 20.0]
+    sprob = SDEProblem(ssys, u0, tspan, p)
+    sprob2 = SDEProblem(rn, u0, tspan, p)
+    sprob3 = SDEProblem(rn, u0, tspan, symmap_to_varmap(osys,p); remove_conserved=true)
+    ists = ModelingToolkit.get_states(ssys)
+    sts  = ModelingToolkit.get_states(rn)
+    istsidxs = findall(in(ists),sts)
+    u1 = copy(sprob.u0); u2 = sprob2.u0; u3 = copy(sprob3.u0);
+    du1 = similar(u1); du2 = similar(u2); du3 = similar(u3);
+    g1 = zeros(length(u1), numreactions(rn))
+    g2 = zeros(length(u2), numreactions(rn))
+    g3 = zeros(length(u3), numreactions(rn))
+    sprob.f(du1, u1, sprob.p, 1.0)
+    sprob2.f(du2, u2, sprob2.p, 1.0)
+    sprob3.f(du3, u3, sprob3.p, 1.0)
+    @test isapprox(du1, du2[istsidxs])
+    @test isapprox(du2[istsidxs], du3)
+    sprob.g(g1, u1, sprob.p, 1.0)
+    sprob2.g(g2, u2, sprob2.p, 1.0)
+    sprob3.g(g3, u3, sprob3.p, 1.0)
+    @test isapprox(g1, g2[istsidxs,:])
+    @test isapprox(g2[istsidxs,:], g3)
 end
