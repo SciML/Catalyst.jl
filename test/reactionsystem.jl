@@ -313,6 +313,32 @@ rx3 = Reaction(2*k, [B], [D], [2.5], [2])
 osys = convert(ODESystem, mixedsys; combinatoric_ratelaws=false)
 
 # test for constant and boundary condition species
+function f!(du,u,p,t)
+    k1 = p[1]; k2 = p[2]; A = p[3]
+    B = u[1]; D = u[2]; E = u[3]; C = u[4]
+    du[1] = k1*A - k2*B
+    du[2] = -k1*C*D + k2*E
+    du[3] = k1*C*D - k2*E
+    du[4] = -C
+    nothing
+end
+function fs!(du,u,p,t)
+    k1 = p[1]; k2 = p[2]; A = p[3]
+    B = u[1]; D = u[2]; E = u[3]; C = u[4]
+    du[1] = k1*A - k2*B
+    du[2] = -k1*C*D + k2*E
+    du[3] = k1*C*D - k2*E
+    nothing
+end
+function gs!(dg,u,p,t)
+    k1 = p[1]; k2 = p[2]; A = p[3]
+    B = u[1]; D = u[2]; E = u[3]; C = u[4]
+    dg .= 0.0
+    dg[1,1] = sqrt(k1*A);    dg[1,2] = - sqrt(k2*B)
+    dg[2,3] = -sqrt(k1*C*D); dg[2,4] = sqrt(k2*E)
+    dg[3,3] = -dg[2,3];       dg[3,4] = -dg[2,4]
+    nothing
+end
 let
     @parameters k1 k2
     @variables t A(t) [isconstant=true] B(t) C(t) [isbc=true] D(t) E(t)
@@ -327,18 +353,9 @@ let
     @test issetequal(MT.get_states(osys), [B, C, D, E])
     @test issetequal(MT.get_ps(osys), [k1, k2, A])
 
-    # u = [B,D,E,C], p=
-    function f!(du,u,p,t)
-        k1 = p[1]; k2 = p[2]; A = p[3]
-        B = u[1]; D = u[2]; E = u[3]; C = u[4]
-        du[1] = k1*A - k2*B
-        du[2] = -k1*C*D + k2*E
-        du[3] = k1*C*D - k2*E
-        du[4] = -C
-        nothing
-    end
     u0 = [1.0, 2.0, 3.0, 4.0]
     p = [2.5, 3.5, 2.0]
+    f!(rand(4),u0,p,1.0)
     u0map = [B,D,E,C] .=> u0
     pmap = [k1,k2,A] .=> p
     tspan = (0.0,5.0)
@@ -352,7 +369,7 @@ let
     reltol = 1e-10
     sol1 = solve(oprob1, Tsit5(); saveat, abstol, reltol)
     sol2 = solve(oprob2, Tsit5(); saveat, abstol, reltol)
-    for i in eachindex(sts,syms)
+    for i in eachindex(sts)
         @test isapprox(sol1[sts[i]], sol2[syms[i]])
     end
 
@@ -360,30 +377,13 @@ let
     ssys = convert(SDESystem, rs)
     @test issetequal(MT.get_states(ssys), [B, C, D, E])
     @test issetequal(MT.get_ps(ssys), [k1, k2, A])
-    function f!(du,u,p,t)
-        k1 = p[1]; k2 = p[2]; A = p[3]
-        B = u[1]; D = u[2]; E = u[3]; C = u[4]
-        du[1] = k1*A - k2*B
-        du[2] = -k1*C*D + k2*E
-        du[3] = k1*C*D - k2*E
-        nothing
-    end
-    function g!(dg,u,p,t)
-        k1 = p[1]; k2 = p[2]; A = p[3]
-        B = u[1]; D = u[2]; E = u[3]; C = u[4]
-        dg .= 0.0
-        dg[1,1] = sqrt(k1*A);    dg[1,2] = - sqrt(k2*B)
-        dg[2,3] = -sqrt(k1*C*D); dg[2,4] = sqrt(k2*E)
-        dg[3,3] = -dg[2,3];       dg[3,4] = -dg[2,4]
-        nothing
-    end
     du1 = zeros(4); du2 = zeros(4)
     sprob = SDEProblem(ssys, u0map, tspan, pmap; check_length=false)
     sprob.f(du1, u0, p, 1.0)
-    f!(du2, u0, p, 1.0)
+    fs!(du2, u0, p, 1.0)
     @test isapprox(du1, du2)
     dg1 = zeros(3,4); dg2 = zeros(3,4)
     sprob.g(dg1, u0, p, 1.0)
-    g!(dg2, u0, p, t)
+    gs!(dg2, u0, p, t)
     @test isapprox(dg1, dg2)
 end
