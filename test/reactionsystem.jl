@@ -1,4 +1,4 @@
-using Catalyst, LinearAlgebra, DiffEqJump, Test
+using Catalyst, LinearAlgebra, DiffEqJump, Test, OrdinaryDiffEq, StochasticDiffEq
 
 const MT = ModelingToolkit
 
@@ -335,6 +335,7 @@ let
         du[2] = -k1*C*D + k2*E
         du[3] = k1*C*D - k2*E
         du[4] = -C
+        nothing
     end
     u0 = [1.0, 2.0, 3.0, 4.0]
     p = [2.5, 3.5, 2.0]
@@ -354,4 +355,35 @@ let
     for i in eachindex(sts,syms)
         @test isapprox(sol1[sts[i]], sol2[syms[i]])
     end
+
+    @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
+    ssys = convert(SDESystem, rs)
+    @test issetequal(MT.get_states(ssys), [B, C, D, E])
+    @test issetequal(MT.get_ps(ssys), [k1, k2, A])
+    function f!(du,u,p,t)
+        k1 = p[1]; k2 = p[2]; A = p[3]
+        B = u[1]; D = u[2]; E = u[3]; C = u[4]
+        du[1] = k1*A - k2*B
+        du[2] = -k1*C*D + k2*E
+        du[3] = k1*C*D - k2*E
+        nothing
+    end
+    function g!(dg,u,p,t)
+        k1 = p[1]; k2 = p[2]; A = p[3]
+        B = u[1]; D = u[2]; E = u[3]; C = u[4]
+        dg .= 0.0
+        dg[1,1] = sqrt(k1*A);    dg[1,2] = - sqrt(k2*B)
+        dg[2,3] = -sqrt(k1*C*D); dg[2,4] = sqrt(k2*E)
+        dg[3,3] = -dg[2,3];       dg[3,4] = -dg[2,4]
+        nothing
+    end
+    du1 = zeros(4); du2 = zeros(4)
+    sprob = SDEProblem(ssys, u0map, tspan, pmap; check_length=false)
+    sprob.f(du1, u0, p, 1.0)
+    f!(du2, u0, p, 1.0)
+    @test isapprox(du1, du2)
+    dg1 = zeros(3,4); dg2 = zeros(3,4)
+    sprob.g(dg1, u0, p, 1.0)
+    g!(dg2, u0, p, t)
+    @test isapprox(dg1, dg2)
 end
