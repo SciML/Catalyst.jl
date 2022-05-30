@@ -688,6 +688,9 @@ function assemble_oderhs(rs, sts; combinatoric_ratelaws=true, remove_conserved=f
             # dependent species don't get an ODE, so are skipped
             remove_conserved && (spec in nps.depspecs) && continue
 
+            # constant or BC species also do not get equations
+            drop_dynamics(spec) && continue
+
             i = species_to_idx[spec]
             if _iszero(rhsvec[i])
                 if stoich isa Symbolics.Symbolic

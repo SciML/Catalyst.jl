@@ -659,7 +659,7 @@ let
     sol = solve(oprob, Tsit5(); abstol=1e-10, reltol=1e-10)
     oprob2 = ODEProblem(rn, u0, tspan, p)
     sol2 = solve(oprob2, Tsit5(); abstol=1e-10, reltol=1e-10)
-    oprob3 = ODEProblem(rn, u0, tspan, symmap_to_varmap(osys,p); remove_conserved=true)
+    oprob3 = ODEProblem(rn, u0, tspan, p; remove_conserved=true)
     sol3 = solve(oprob3, Tsit5(); abstol=1e-10, reltol=1e-10)
 
     tv = range(tspan[1], tspan[2], length=101)
@@ -681,9 +681,10 @@ let
     end
 
     u0 = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0, F3 => 20.0]
+    ssys = convert(SDESystem, rn; remove_conserved=true)
     sprob = SDEProblem(ssys, u0, tspan, p)
     sprob2 = SDEProblem(rn, u0, tspan, p)
-    sprob3 = SDEProblem(rn, u0, tspan, symmap_to_varmap(osys,p); remove_conserved=true)
+    sprob3 = SDEProblem(rn, u0, tspan, p; remove_conserved=true)
     ists = ModelingToolkit.get_states(ssys)
     sts  = ModelingToolkit.get_states(rn)
     istsidxs = findall(in(ists),sts)

@@ -1,5 +1,7 @@
 using Catalyst, LinearAlgebra, DiffEqJump, Test
 
+const MT = ModelingToolkit
+
 @parameters t k[1:20]
 @variables A(t) B(t) C(t) D(t)
 rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
@@ -309,3 +311,47 @@ rx2 = Reaction(2*k, [B], [D], [1], [2.5])
 rx3 = Reaction(2*k, [B], [D], [2.5], [2])
 @named mixedsys = ReactionSystem([rx1,rx2,rx3],t,[A,B,C,D],[k,b])
 osys = convert(ODESystem, mixedsys; combinatoric_ratelaws=false)
+
+# test for constant and boundary condition species
+let
+    @parameters k1 k2
+    @variables t A(t) [isconstant=true] B(t) C(t) [isbc=true] D(t) E(t)
+    rxs = [(@reaction k1, $A --> B),
+           (@reaction k2, B --> $A),
+           (@reaction k1, $C + D --> E),
+           (@reaction k2, E --> $C + D)]
+    Dt = Differential(t)
+    csys = ODESystem(Equation[Dt(C) ~ -C], t; name=:rs)
+    @named rs = ReactionSystem(rxs, t; constraints=csys)
+    osys = convert(ODESystem, rs)
+    @test issetequal(MT.get_states(osys), [B, C, D, E])
+    @test issetequal(MT.get_ps(osys), [k1, k2, A])
+
+    # u = [B,D,E,C], p=
+    function f!(du,u,p,t)
+        k1 = p[1]; k2 = p[2]; A = p[3]
+        B = u[1]; D = u[2]; E = u[3]; C = u[4]
+        du[1] = k1*A - k2*B
+        du[2] = -k1*C*D + k2*E
+        du[3] = k1*C*D - k2*E
+        du[4] = -C
+    end
+    u0 = [1.0, 2.0, 3.0, 4.0]
+    p = [2.5, 3.5, 2.0]
+    u0map = [B,D,E,C] .=> u0
+    pmap = [k1,k2,A] .=> p
+    tspan = (0.0,5.0)
+    oprob1 = ODEProblem(osys, u0map, tspan, pmap)
+    sts = [B,D,E,C]
+    syms = [:B,:D,:E,:C]
+    ofun = ODEFunction(f!; syms)
+    oprob2 = ODEProblem(ofun, u0, tspan, p)
+    saveat = tspan[2] / 50
+    abstol = 1e-10
+    reltol = 1e-10
+    sol1 = solve(oprob1, Tsit5(); saveat, abstol, reltol)
+    sol2 = solve(oprob2, Tsit5(); saveat, abstol, reltol)
+    for i in eachindex(sts,syms)
+        @test isapprox(sol1[sts[i]], sol2[syms[i]])
+    end
+end
