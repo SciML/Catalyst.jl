@@ -1,3 +1,21 @@
+# Catalyst specific symbolic variables to support SBML
+struct VariableConstantSpecies end
+struct VariableBCSpecies end
+Symbolics.option_to_metadata_type(::Val{:isconstant}) = VariableConstantSpecies
+Symbolics.option_to_metadata_type(::Val{:isbc}) = VariableBCSpecies
+
+isconstant(s::Num) = isconstant(MT.value(s))
+function isconstant(s)
+    MT.getmetadata(s, VariableConstantSpecies, false)
+end
+
+isbc(s::Num) = isbc(MT.value(s))
+function isbc(s)
+    MT.getmetadata(s, VariableBCSpecies, false)
+end
+
+# true for species for which shouldn't change from the reactions
+drop_dynamics(s) = isconstant(s) || isbc(s)
 
 """
 $(TYPEDEF)
@@ -596,6 +614,19 @@ function MT.getvar(sys::ReactionSystem, name::Symbol; namespace=false)
     throw(ArgumentError("System $(nameof(sys)): variable $name does not exist"))
 end
 
+# get the non-constant, non-bc, independent states, preserving their relative order in
+# get_states(rs)
+function get_indep_sts(rs::ReactionSystem, remove_conserved=false)
+    sts = get_states(rs)
+    nps = get_networkproperties(rs)
+    indepsts = if remove_conserved
+        Iterators.filter(s -> (s ∈ nps.indepspecs) && (!drop_dynamics(s)), sts)
+    else
+        Iterators.filter(s -> !drop_dynamics(s), sts)
+    end
+    indepsts
+end
+
 ######################## Conversion to ODEs/SDEs/jump, etc ##############################
 
 """
@@ -639,19 +670,14 @@ function oderatelaw(rx; combinatoric_ratelaw=true)
     rl
 end
 
-function assemble_oderhs(rs; combinatoric_ratelaws=true, remove_conserved=false)
-    sts = get_states(rs)
+function assemble_oderhs(rs, sts; combinatoric_ratelaws=true, remove_conserved=false)
     nps = get_networkproperties(rs)
-    if remove_conserved
-        # get the independent species in an order consistent with sts
-        indepsts = Iterators.filter(in(nps.indepspecs), sts)
-        species_to_idx = Dict(x => i for (i,x) in enumerate(indepsts))
-        rhsvec = Any[0 for i in eachindex(species_to_idx)]
-        depspec_submap = Dict(eq.lhs => eq.rhs for eq in nps.conservedeqs)
+    species_to_idx = Dict(x => i for (i,x) in enumerate(sts))
+    rhsvec = Any[0 for _ in eachindex(sts)]
+    depspec_submap = if remove_conserved
+        Dict(eq.lhs => eq.rhs for eq in nps.conservedeqs)
     else
-        species_to_idx = Dict((x => i for (i,x) in enumerate(sts)))
-        rhsvec = Any[0 for i in eachindex(sts)]
-        depspec_submap = Dict()
+        Dict()
     end
 
     for rx in get_eqs(rs)
@@ -683,17 +709,11 @@ function assemble_oderhs(rs; combinatoric_ratelaws=true, remove_conserved=false)
     rhsvec
 end
 
-function assemble_drift(rs; combinatoric_ratelaws=true, as_odes=true, include_zero_odes=true,
+function assemble_drift(rs, sts; combinatoric_ratelaws=true, as_odes=true, include_zero_odes=true,
                             remove_conserved=false)
-    rhsvec = assemble_oderhs(rs; combinatoric_ratelaws, remove_conserved)
+    rhsvec = assemble_oderhs(rs, sts; combinatoric_ratelaws, remove_conserved)
     if as_odes
         D = Differential(get_iv(rs))
-        if remove_conserved
-            indepspecs = get_networkproperties(rs).indepspecs
-            sts = Iterators.filter(in(indepspecs), states(rs))
-        else
-            sts = states(rs)
-        end
         eqs = [Equation(D(x),rhs) for (x,rhs) in zip(sts,rhsvec) if (include_zero_odes || (!_iszero(rhs)))]
     else
         eqs = [Equation(0,rhs) for rhs in rhsvec if (include_zero_odes || (!_iszero(rhs)))]
@@ -892,17 +912,24 @@ end
 # end
 
 # merge constraint eqs, states and ps into the top-level eqs, states and ps
-function addconstraints!(eqs, rs::ReactionSystem; remove_conserved=false)
+function addconstraints!(eqs, rs::ReactionSystem, sts; remove_conserved=false)
     csys = get_constraints(rs)
     nps  = get_networkproperties(rs)
 
+    hasconstspec = any(isconstant, sts)
+    ps = if hasconstspec
+        # constant species become parameters, BC species dropped (must be in csys!)
+        vcat(get_ps(rs), filter(isconstant, get_states(rs)))
+    else
+        get_ps(rs)
+    end
+
     # make dependent species observables and add conservation constants as parameters
     if remove_conserved
-        # preserve the order of the independent species
-        sts = filter(in(nps.indepspecs), get_states(rs))
+         # as types can be mixed now
+        !hasconstspec && (ps = Any[p for p in get_ps(rs)])
 
-        # add the constants as parameters and set their values
-        ps  = Any[p for p in get_ps(rs)]  # as types can be mixed
+        # add the conservation constants as parameters and set their values
         append!(ps, eq.lhs for eq in nps.constantdefs)
         defs = copy(MT.defaults(rs))
         for eq in nps.constantdefs
@@ -913,8 +940,6 @@ function addconstraints!(eqs, rs::ReactionSystem; remove_conserved=false)
         obs = copy(MT.observed(rs))
         append!(obs, nps.conservedeqs)
     else
-        sts = get_states(rs)
-        ps = get_ps(rs)
         defs = MT.defaults(rs)
         obs = MT.observed(rs)
     end
@@ -928,7 +953,7 @@ function addconstraints!(eqs, rs::ReactionSystem; remove_conserved=false)
         obs = vcat(obs, MT.observed(csys))
     end
 
-    eqs,sts,ps,obs,defs
+    eqs,ps,obs,defs
 end
 
 # used by systems that don't support constraint equations currently
@@ -963,10 +988,14 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem;
                       include_zero_odes=true, remove_conserved=false, checks=false, kwargs...)
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
-    eqs = assemble_drift(fullrs; combinatoric_ratelaws, remove_conserved, include_zero_odes)
-    eqs,sts,ps,obs,defs = addconstraints!(eqs, fullrs; remove_conserved)
+    sts = get_indep_sts(rs; remove_conserved)
+    eqs = assemble_drift(fullrs, sts; combinatoric_ratelaws, remove_conserved,
+                                      include_zero_odes)
+    eqs,ps,obs,defs = addconstraints!(eqs, fullrs, sts; remove_conserved)
+    csys = get_constraints(rs)
+    continuous_events = (csys === nothing) ? nothing : MT.get_continuous_events(csys)
     ODESystem(eqs, get_iv(fullrs), sts, ps; name, defaults=defs, observed=obs,
-                                            checks, kwargs...)
+                                            checks, continuous_events, kwargs...)
 end
 
 """
@@ -987,10 +1016,11 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem;
                       include_zero_odes=true, remove_conserved=false, checks=false, kwargs...)
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
-    eqs = assemble_drift(fullrs; combinatoric_ratelaws, remove_conserved, as_odes=false,
-                                 include_zero_odes)
+    sts = get_indep_sts(rs; remove_conserved)
+    eqs = assemble_drift(fullrs, sts; combinatoric_ratelaws, remove_conserved, as_odes=false,
+                                      include_zero_odes)
     error_if_constraint_odes(NonlinearSystem, fullrs)
-    eqs,sts,ps,obs,defs = addconstraints!(eqs, fullrs; remove_conserved)
+    eqs,ps,obs,defs = addconstraints!(eqs, fullrs, sts; remove_conserved)
     NonlinearSystem(eqs, sts, ps; name, defaults=defs, observed=obs, checks, kwargs...)
 end
 
@@ -1034,7 +1064,8 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
         noise_scaling = fill(value(noise_scaling),numreactions(flatrs))
     end
 
-    eqs = assemble_drift(flatrs; combinatoric_ratelaws, include_zero_odes)
+    sts = get_states(rs)
+    eqs = assemble_drift(flatrs, sts; combinatoric_ratelaws, include_zero_odes)
     noiseeqs = assemble_diffusion(flatrs, noise_scaling; combinatoric_ratelaws)
     SDESystem(eqs, noiseeqs, get_iv(flatrs), get_states(flatrs),
               (noise_scaling===nothing) ? get_ps(flatrs) : union(get_ps(flatrs),
