@@ -45,6 +45,33 @@
   ```
   Breaking as this required modifications to the `ReactionSystem` type
   signature.
+- **BREAKING** `ReactionSystem`s now store a default value for
+  `combinatoric_ratelaws=true`. This default value can be set in the
+  `ReactionSystem` constructor call as a keyword argument. Passing
+  `combinatoric_ratelaws` as a keyword to `convert` or problem calls involving a
+  `ReactionSystem` is still allowed, and will override the `ReactionSystem`'s
+  default.
+- Fixed a bug where `ODESystem` constraint systems did not propagate
+  `continuous_events` during calls to `convert(ODESystem, rn::ReactionSystem)`.
+- Added constant and boundary condition species (in the SBML sense). During
+  conversion constant species are converted to parameters, while boundary
+  condition species are kept as state variables. Note that boundary condition
+  species are treated as constant with respect to reactions, so their dynamics
+  must be defined in a constraint system. Right now only conversion of
+  `ReactionSystem`s to an `ODESystem` with a constraint `ODESystem` or
+  `NonlinearSystem`, or conversion to a `NonlinearSystem` with a constraint
+  `NonlinearSystem`, are supported. Constraints are not supported in `SDESystem`
+  or `JumpSystem` conversion, and so boundary condition species are effectively
+  constant when converting to those model types (but still left as states
+  instead of parameters). Defining constant and boundary condition species is
+  done by
+  ```julia
+  @variables t A(t) [isconstant=true] B(t) [isbc=true] C(t)
+  ```
+  Here `A` is a constant species, `B` is a boundary condition species, and `C`
+  is a normal species. Note that network API functions do not make use of these
+  labels, and treat all species as normal -- these properties are only made use
+  of when converting to other system types.
 
 ## Catalyst 10.8
 - Added the ability to use symbolic stoichiometry expressions via the DSL. This should now work

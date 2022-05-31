@@ -1,4 +1,6 @@
-using Catalyst, LinearAlgebra, DiffEqJump, Test
+using Catalyst, LinearAlgebra, DiffEqJump, Test, OrdinaryDiffEq, StochasticDiffEq
+
+const MT = ModelingToolkit
 
 @parameters t k[1:20]
 @variables A(t) B(t) C(t) D(t)
@@ -309,3 +311,131 @@ rx2 = Reaction(2*k, [B], [D], [1], [2.5])
 rx3 = Reaction(2*k, [B], [D], [2.5], [2])
 @named mixedsys = ReactionSystem([rx1,rx2,rx3],t,[A,B,C,D],[k,b])
 osys = convert(ODESystem, mixedsys; combinatoric_ratelaws=false)
+
+# test for constant and boundary condition species
+function f!(du,u,p,t)
+    k1 = p[1]; k2 = p[2]; A = p[3]
+    B = u[1]; D = u[2]; E = u[3]; C = u[4]
+    du[1] = k1*A - k2*B
+    du[2] = -k1*C*D + k2*E
+    du[3] = k1*C*D - k2*E
+    du[4] = -C
+    nothing
+end
+function fs!(du,u,p,t)
+    k1 = p[1]; k2 = p[2]; A = p[3]
+    B = u[1]; D = u[2]; E = u[3]; C = u[4]
+    du[1] = k1*A - k2*B
+    du[2] = -k1*C*D + k2*E
+    du[3] = k1*C*D - k2*E
+    nothing
+end
+function gs!(dg,u,p,t)
+    k1 = p[1]; k2 = p[2]; A = p[3]
+    B = u[1]; D = u[2]; E = u[3]; C = u[4]
+    dg .= 0.0
+    dg[1,1] = sqrt(k1*A);    dg[1,2] = - sqrt(k2*B)
+    dg[2,3] = -sqrt(k1*C*D); dg[2,4] = sqrt(k2*E)
+    dg[3,3] = -dg[2,3];       dg[3,4] = -dg[2,4]
+    nothing
+end
+let
+    @parameters k1 k2
+    @variables t A(t) [isconstant=true] B(t) C(t) [isbc=true] D(t) E(t)
+    rxs = [(@reaction k1, $A --> B),
+           (@reaction k2, B --> $A),
+           (@reaction k1, $C + D --> E),
+           (@reaction k2, E --> $C + D)]
+    Dt = Differential(t)
+    csys = ODESystem(Equation[Dt(C) ~ -C], t; name=:rs)
+    @named rs = ReactionSystem(rxs, t; constraints=csys)
+    osys = convert(ODESystem, rs)
+    @test issetequal(MT.get_states(osys), [B, C, D, E])
+    @test issetequal(MT.get_ps(osys), [k1, k2, A])
+
+    # test nonlinear systems
+    u0 = [1.0, 2.0, 3.0, 4.0]
+    p = [2.5, 3.5, 2.0]
+    f!(rand(4),u0,p,1.0)
+    u0map = [B,D,E,C] .=> u0
+    pmap = [k1,k2,A] .=> p
+    tspan = (0.0,5.0)
+    oprob1 = ODEProblem(osys, u0map, tspan, pmap)
+    sts = [B,D,E,C]
+    syms = [:B,:D,:E,:C]
+    ofun = ODEFunction(f!; syms)
+    oprob2 = ODEProblem(ofun, u0, tspan, p)
+    saveat = tspan[2] / 50
+    abstol = 1e-10
+    reltol = 1e-10
+    sol1 = solve(oprob1, Tsit5(); saveat, abstol, reltol)
+    sol2 = solve(oprob2, Tsit5(); saveat, abstol, reltol)
+    for i in eachindex(sts)
+        @test isapprox(sol1[sts[i]], sol2[syms[i]])
+    end
+
+    # test sde systems
+    @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
+    ssys = convert(SDESystem, rs)
+    @test issetequal(MT.get_states(ssys), [B, C, D, E])
+    @test issetequal(MT.get_ps(ssys), [k1, k2, A])
+    du1 = zeros(4); du2 = zeros(4)
+    sprob = SDEProblem(ssys, u0map, tspan, pmap; check_length=false)
+    sprob.f(du1, u0, p, 1.0)
+    fs!(du2, u0, p, 1.0)
+    @test isapprox(du1, du2)
+    dg1 = zeros(4,4); dg2 = zeros(4,4)
+    sprob.g(dg1, u0, p, 1.0)
+    gs!(dg2, u0, p, t)
+    @test isapprox(dg1, dg2)
+
+    # test jump systems
+    rxs = [(@reaction k1, $A --> B),
+           (@reaction k2, B --> $A),
+           (@reaction k1, $C + D --> E),
+           (@reaction k2, E --> $C + D),
+           (@reaction k1*t, $A + $C--> B),
+           (@reaction k1*B, 2*$A --> $C + B)]
+    @named rs = ReactionSystem(rxs, t)
+    jsys = convert(JumpSystem, rs)
+    @test issetequal(states(jsys), [B,C,D,E])
+    @test issetequal(parameters(jsys), [k1, k2, A])
+    majrates = [k1*A, k2, k1, k2]
+    majrs = [[],[B => 1],[C => 1, D => 1],[E => 1]]
+    majns = [[B => 1],[B => -1],[D => -1, E => 1],[D => 1, E => -1]]
+    for (i,maj) in enumerate(equations(jsys).x[1])
+        @test isequal(maj.scaled_rates, majrates[i])
+        @test issetequal(maj.reactant_stoch, majrs[i])
+        @test issetequal(maj.net_stoch, majns[i])
+    end
+    crj = equations(jsys).x[2][1]
+    @test isequal(crj.rate, k1*B*A*(A-1)/2)
+    @test issetequal(crj.affect!, [B ~ B + 1])
+    vrj = equations(jsys).x[3][1]
+    @test isequal(vrj.rate, k1*t*A*C)
+    @test issetequal(vrj.affect!, [B ~ B + 1])
+end
+
+
+# test that jump solutions actually run correctly for constants and BCs
+let
+    @parameters k1
+    @variables t A(t) [isconstant=true] C(t) [isbc=true]
+    @variables t B1(t) B2(t) B3(t)
+    @named rn = ReactionSystem([(@reaction k1, $C --> B1),
+                                (@reaction k1, $A --> B2),
+                                (@reaction 10*k1, ∅ --> B3)], t)
+    dprob = DiscreteProblem(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0,10.0),
+                            [k1 => 1.0])
+    jprob = JumpProblem(rn, dprob, Direct(), save_positions=(false,false))
+    umean = zeros(4)
+    Nsims = 40000
+    for i = 1:Nsims
+        sol = solve(jprob, SSAStepper(), saveat=10.0)
+        umean += sol(10.0, idxs=[B1,B2,B3,C])
+    end
+    umean /= Nsims
+    @test isapprox(umean[1], umean[2]; rtol=1e-2)
+    @test isapprox(umean[1], umean[3]; rtol=1e-2)
+    @test umean[4] == 10
+end

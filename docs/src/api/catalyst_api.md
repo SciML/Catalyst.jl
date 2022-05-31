@@ -160,6 +160,8 @@ numreactionparams
 speciesmap
 paramsmap
 reactionparamsmap
+Catalyst.isconstant
+Catalyst.isbc
 ```
 
 ## Basic Reaction Properties

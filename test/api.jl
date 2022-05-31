@@ -1,4 +1,5 @@
 using Catalyst, DiffEqBase, ModelingToolkit, Test, OrdinaryDiffEq, NonlinearSolve
+using StochasticDiffEq
 using LinearAlgebra: norm
 using SparseArrays
 using ModelingToolkit: value
@@ -655,27 +656,51 @@ let
     p = [k1 => 1.0, k2 => .1, m1 => 1.0, m2 => 2.0, b12 => 1.0, b23 => 2.0, b31 => .1]
     tspan = (0.0,20.0)
     oprob = ODEProblem(osys, u0, tspan, p)
-    sol = solve(oprob, Tsit5())
+    sol = solve(oprob, Tsit5(); abstol=1e-10, reltol=1e-10)
     oprob2 = ODEProblem(rn, u0, tspan, p)
-    sol2 = solve(oprob, Tsit5())
-    oprob3 = ODEProblem(rn, u0, tspan, symmap_to_varmap(osys,p); remove_conserved=true)
-    sol3 = solve(oprob3, Tsit5())
+    sol2 = solve(oprob2, Tsit5(); abstol=1e-10, reltol=1e-10)
+    oprob3 = ODEProblem(rn, u0, tspan, p; remove_conserved=true)
+    sol3 = solve(oprob3, Tsit5(); abstol=1e-10, reltol=1e-10)
 
     tv = range(tspan[1], tspan[2], length=101)
     for s in species(rn)
-        @test norm(sol(tv, idxs=s) .- sol2(tv, idxs=s)) ≈ 0
-        @test norm(sol2(tv, idxs=s) .- sol2(tv, idxs=s)) ≈ 0
+        @test isapprox(sol(tv, idxs=s), sol2(tv, idxs=s))
+        @test isapprox(sol2(tv, idxs=s), sol2(tv, idxs=s))
     end
 
     nsys = convert(NonlinearSystem, rn; remove_conserved=true)
     nprob = NonlinearProblem{true}(nsys, u0, p)
-    nsol = solve(nprob, NewtonRaphson(); tol = 1e-9)
-    nprob2 = NonlinearProblem(rn, u0, p)
-    nsol2 = solve(nprob, NewtonRaphson(); tol=1e-9)
+    nsol = solve(nprob, NewtonRaphson(); tol = 1e-10)
+    nprob2 = ODEProblem(rn, u0, (0.0,100.0*tspan[2]), p)
+    nsol2 = solve(nprob2, Tsit5(); abstol=1e-10, reltol=1e-10)
     nprob3 = NonlinearProblem(rn, u0, p; remove_conserved=true)
-    nsol3 = solve(nprob, NewtonRaphson(); tol=1e-9)
+    nsol3 = solve(nprob3, NewtonRaphson(); tol=1e-10)
     for s in species(rn)
-        @test norm(nsol[s] .- nsol2[s]) ≈ 0
-        @test norm(nsol2[s] .- nsol2[s]) ≈ 0
+        @test isapprox(nsol[s], nsol2(tspan[2], idxs=s))
+        @test isapprox(nsol2(tspan[2], idxs=s), nsol3[s])
     end
+
+    u0 = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0, F3 => 20.0]
+    ssys = convert(SDESystem, rn; remove_conserved=true)
+    sprob = SDEProblem(ssys, u0, tspan, p)
+    sprob2 = SDEProblem(rn, u0, tspan, p)
+    sprob3 = SDEProblem(rn, u0, tspan, p; remove_conserved=true)
+    ists = ModelingToolkit.get_states(ssys)
+    sts  = ModelingToolkit.get_states(rn)
+    istsidxs = findall(in(ists),sts)
+    u1 = copy(sprob.u0); u2 = sprob2.u0; u3 = copy(sprob3.u0);
+    du1 = similar(u1); du2 = similar(u2); du3 = similar(u3);
+    g1 = zeros(length(u1), numreactions(rn))
+    g2 = zeros(length(u2), numreactions(rn))
+    g3 = zeros(length(u3), numreactions(rn))
+    sprob.f(du1, u1, sprob.p, 1.0)
+    sprob2.f(du2, u2, sprob2.p, 1.0)
+    sprob3.f(du3, u3, sprob3.p, 1.0)
+    @test isapprox(du1, du2[istsidxs])
+    @test isapprox(du2[istsidxs], du3)
+    sprob.g(g1, u1, sprob.p, 1.0)
+    sprob2.g(g2, u2, sprob2.p, 1.0)
+    sprob3.g(g3, u3, sprob3.p, 1.0)
+    @test isapprox(g1, g2[istsidxs,:])
+    @test isapprox(g2[istsidxs,:], g3)
 end
