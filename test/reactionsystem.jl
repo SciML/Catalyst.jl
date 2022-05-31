@@ -415,3 +415,27 @@ let
     @test isequal(vrj.rate, k1*t*A*C)
     @test issetequal(vrj.affect!, [B ~ B + 1])
 end
+
+
+# test that jump solutions actually run
+let
+    @parameters k1
+    @variables t A(t) [isconstant=true] C(t) [isbc=true]
+    @variables t B1(t) B2(t) B3(t)
+    @named rn = ReactionSystem([(@reaction k1, $C --> B1),
+                                (@reaction k1, $A --> B2),
+                                (@reaction 10*k1, ∅ --> B3)], t)
+    dprob = DiscreteProblem(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0,10.0),
+                            [k1 => 1.0])
+    jprob = JumpProblem(rn, dprob, Direct(), save_positions=(false,false))
+    umean = zeros(4)
+    Nsims = 40000
+    for i = 1:Nsims
+        sol = solve(jprob, SSAStepper(), saveat=10.0)
+        umean += sol(10.0, idxs=[B1,B2,B3,C])
+    end
+    umean /= Nsims
+    @test isapprox(umean[1], umean[2]; rtol=1e-2)
+    @test isapprox(umean[1], umean[3]; rtol=1e-2)
+    @test umean[4] == 10
+end
