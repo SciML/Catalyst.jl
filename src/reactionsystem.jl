@@ -988,7 +988,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists; remove_conserved=false)
     csys = get_constraints(rs)
     if csys !== nothing
         if remove_conserved
-            @warn """
+            @info """
                   Be careful mixing constraints and elimination of conservation laws,
                   we do not check that the conserved equations still hold for the final
                   coupled system of equations. Consider using remove_conserved=false.
@@ -1136,7 +1136,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     ps = (noise_scaling===nothing) ? ps : vcat(ps,toparam(noise_scaling))
 
     if any(isbc, get_states(flatrs))
-        @warn """As constraints are not supported when converting to SDESystems, the
+        @info """As constraints are not supported when converting to SDESystems, the
         resulting system will be undetermined. Consider using constant species instead."""
     end
 
