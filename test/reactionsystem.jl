@@ -417,7 +417,7 @@ let
 end
 
 
-# test that jump solutions actually run
+# test that jump solutions actually run correctly for constants and BCs
 let
     @parameters k1
     @variables t A(t) [isconstant=true] C(t) [isbc=true]
