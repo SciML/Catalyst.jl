@@ -989,9 +989,9 @@ function addconstraints!(eqs, rs::ReactionSystem, ists; remove_conserved=false)
     if csys !== nothing
         if remove_conserved
             @info """
-                  Be careful mixing constraints and elimination of conservation laws,
-                  we do not check that the conserved equations still hold for the final
-                  coupled system of equations. Consider using remove_conserved=false.
+                  Be careful mixing constraints and elimination of conservation laws. We do
+                  not check that the conserved equations still hold for the final coupled
+                  system of equations. Consider using remove_conserved=false.
                   """
         end
         sts = unique(vcat(sts, get_states(csys)))
