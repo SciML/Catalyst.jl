@@ -1,10 +1,12 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+
+## Catalyst 11.0
 - **BREAKING:** Added the ability to eliminate conserved species when generating
-  ODEs, nonlinear problems, and steady-state problems via the
+  ODEs, nonlinear problems, SDEs, and steady-state problems via the
   `remove_conserved=true` keyword that can be passed to `convert` or to
-  `ODEProblem`, `NonlinearProblem` or `SteadyStateProblem` when called with a
+  `ODEProblem`, `NonlinearProblem`, `SDEProblem`, or `SteadyStateProblem` when called with a
   `ReactionSystem`. For example,
   ```julia
   rn = @reaction_network begin
@@ -35,6 +37,7 @@
   reactioncomplexes(rn)
   complexstoichmat(rn)
   complexoutgoingmat(rn)
+  incidencemat(rn)
   incidencematgraph(rn)
   linkageclasses(rn)
   deficiency(rn)
