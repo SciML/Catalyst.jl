@@ -1120,7 +1120,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     noiseeqs = assemble_diffusion(flatrs, ists, noise_scaling; combinatoric_ratelaws,
                                                                remove_conserved)
     eqs,sts,ps,obs,defs = addconstraints!(eqs, flatrs, ists; remove_conserved)
-    ps = (noise_scaling===nothing) ? ps : push!(ps,toparam(noise_scaling))
+    ps = (noise_scaling===nothing) ? ps : vcat(ps,toparam(noise_scaling))
     SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps; name, defaults=defs,
                                                       observed=obs, checks, kwargs...)
 end
