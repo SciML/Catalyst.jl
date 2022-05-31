@@ -4,11 +4,21 @@ struct VariableBCSpecies end
 Symbolics.option_to_metadata_type(::Val{:isconstant}) = VariableConstantSpecies
 Symbolics.option_to_metadata_type(::Val{:isbc}) = VariableBCSpecies
 
+"""
+    Catalyst.isconstant(s)
+
+Tests if the given symbolic variable corresponds to a constant species.
+"""
 isconstant(s::Num) = isconstant(MT.value(s))
 function isconstant(s)
     MT.getmetadata(s, VariableConstantSpecies, false)
 end
 
+"""
+    Catalyst.isbc(s)
+
+Tests if the given symbolic variable corresponds to a boundary condition species.
+"""
 isbc(s::Num) = isbc(MT.value(s))
 function isbc(s)
     MT.getmetadata(s, VariableBCSpecies, false)
