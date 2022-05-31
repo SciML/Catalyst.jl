@@ -63,7 +63,8 @@
   `NonlinearSystem`, are supported. Constraints are not supported in `SDESystem`
   or `JumpSystem` conversion, and so boundary condition species are effectively
   constant when converting to those model types (but still left as states
-  instead of parameters). Defining constant and boundary condition species is done by
+  instead of parameters). Defining constant and boundary condition species is
+  done by
   ```julia
   @variables t A(t) [isconstant=true] B(t) [isbc=true] C(t)
   ```

@@ -400,8 +400,8 @@ let
     jsys = convert(JumpSystem, rs)
     @test issetequal(states(jsys), [B,C,D,E])
     @test issetequal(parameters(jsys), [k1, k2, A])
-    majrates = [k1*A, k2, k1*C, k2]
-    majrs = [[],[B => 1],[D => 1],[E => 1]]
+    majrates = [k1*A, k2, k1, k2]
+    majrs = [[],[B => 1],[C => 1, D => 1],[E => 1]]
     majns = [[B => 1],[B => -1],[D => -1, E => 1],[D => 1, E => -1]]
     for (i,maj) in enumerate(equations(jsys).x[1])
         @test isequal(maj.scaled_rates, majrates[i])
