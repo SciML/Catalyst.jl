@@ -858,7 +858,7 @@ function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
     (length(rxvars)==0) && return true
     haveivdep && return false
     rx.only_use_rate && return false
-    @inbounds for (i,var) in enumerate(rxvars)
+    @inbounds for var in rxvars
         # not mass action if have a non-constant species in the rate expression
         ((var in stateset) && (!isconstant(var))) && return false
     end
@@ -884,7 +884,7 @@ end
     end
 
     if (!zeroorder) && combinatoric_ratelaw
-        coef = prod(stoich -> factorial(stoich), substoich)
+        coef = prod(factorial, substoich)
         (!isone(coef)) && (rate /= coef)
     end
 
@@ -991,7 +991,9 @@ function addconstraints!(eqs, rs::ReactionSystem, ists; remove_conserved=false)
             @info """
                   Be careful mixing constraints and elimination of conservation laws. We do
                   not check that the conserved equations still hold for the final coupled
-                  system of equations. Consider using remove_conserved=false.
+                  system of equations. Consider using remove_conserved=false and instead
+                  calling ModelingToolkit.structural_simplify to simplify any generated
+                  ODESystem or NonlinearSystem.
                   """
         end
         sts = unique(vcat(sts, get_states(csys)))
@@ -1136,8 +1138,9 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     ps = (noise_scaling===nothing) ? ps : vcat(ps,toparam(noise_scaling))
 
     if any(isbc, get_states(flatrs))
-        @info """As constraints are not supported when converting to SDESystems, the
-        resulting system will be undetermined. Consider using constant species instead."""
+        @info """Boundary condition species detected. As constraints are not supported when
+        converting to SDESystems, the resulting system will be undetermined. Consider using
+        constant species instead."""
     end
 
     SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps; name, defaults=defs,
