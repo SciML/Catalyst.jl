@@ -737,7 +737,9 @@ end
 
 function assemble_diffusion(rs, sts, noise_scaling; combinatoric_ratelaws=true,
                                                     remove_conserved=false)
-    eqs  = Matrix{Any}(undef, length(sts), length(get_eqs(rs)))
+    # as BC species should ultimately get an equation, we include them in the noise matrix
+    num_bcsts = count(isbc, get_states(rs))
+    eqs  = Matrix{Any}(undef, length(sts) + num_bcsts, length(get_eqs(rs)))
     eqs .= 0
     species_to_idx = Dict((x => i for (i,x) in enumerate(sts)))
     nps = get_networkproperties(rs)
@@ -857,9 +859,10 @@ function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
     haveivdep && return false
     rx.only_use_rate && return false
     @inbounds for (i,var) in enumerate(rxvars)
-        # not mass action if have a non-constant or non-BC species in the rate expression
-        ((var in stateset) && (!drop_dynamics(var))) && return false
+        # not mass action if have a non-constant species in the rate expression
+        ((var in stateset) && (!isconstant(var))) && return false
     end
+
     return true
 end
 
@@ -868,8 +871,8 @@ end
     zeroorder = (length(substoich) == 0)
     reactant_stoch = Vector{Pair{Any,eltype(substoich)}}()
     @inbounds for (i,spec) in enumerate(substrates)
-        # move constant and BC terms into the rate
-        if drop_dynamics(spec)
+        # move constant species into the rate
+        if isconstant(spec)
             rate *= spec
             isone(substoich[i]) && continue
             for i = 1:(substoich[i]-1)
@@ -1131,6 +1134,12 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                                                                remove_conserved)
     eqs,sts,ps,obs,defs = addconstraints!(eqs, flatrs, ists; remove_conserved)
     ps = (noise_scaling===nothing) ? ps : vcat(ps,toparam(noise_scaling))
+
+    if any(isbc, get_states(flatrs))
+        @warn """As constraints are not supported when converting to SDESystems, the
+        resulting system will be undetermined. Consider using constant species instead."""
+    end
+
     SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps; name, defaults=defs,
                                                       observed=obs, checks, kwargs...)
 end
@@ -1208,7 +1217,7 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan, p=DiffEqBase.NullP
     pmap  = symmap_to_varmap(rs, p)
     sde_sys  = convert(SDESystem, rs; noise_scaling, name, combinatoric_ratelaws,
                                       include_zero_odes, checks, remove_conserved)
-    p_matrix = zeros(length(get_states(sde_sys)), length(get_eqs(sde_sys)))
+    p_matrix = zeros(length(get_states(sde_sys)), numreactions(rs))
     return SDEProblem(sde_sys, u0map, tspan, pmap, args...; check_length,
                                                             noise_rate_prototype=p_matrix, kwargs...)
 end

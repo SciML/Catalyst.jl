@@ -384,7 +384,7 @@ let
     sprob.f(du1, u0, p, 1.0)
     fs!(du2, u0, p, 1.0)
     @test isapprox(du1, du2)
-    dg1 = zeros(3,4); dg2 = zeros(3,4)
+    dg1 = zeros(4,4); dg2 = zeros(4,4)
     sprob.g(dg1, u0, p, 1.0)
     gs!(dg2, u0, p, t)
     @test isapprox(dg1, dg2)
