@@ -846,8 +846,9 @@ function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
     (length(rxvars)==0) && return true
     haveivdep && return false
     rx.only_use_rate && return false
-    @inbounds for i = 1:length(rxvars)
-        (rxvars[i] in stateset) && return false
+    @inbounds for (i,var) in enumerate(rxvars)
+        # not mass action if have a non-constant or non-BC species in the rate expression
+        ((var in stateset) && (!drop_dynamics(var))) && return false
     end
     return true
 end
@@ -855,33 +856,46 @@ end
 @inline function makemajump(rx; combinatoric_ratelaw=true)
     @unpack rate, substrates, substoich, netstoich = rx
     zeroorder = (length(substoich) == 0)
-    reactant_stoch = Vector{Pair{Any,eltype(substoich)}}(undef, length(substoich))
-    @inbounds for i = 1:length(reactant_stoch)
-        reactant_stoch[i] = substrates[i] => substoich[i]
+    reactant_stoch = Vector{Pair{Any,eltype(substoich)}}()
+    @inbounds for (i,spec) in enumerate(substrates)
+        # move constant and BC terms into the rate
+        if drop_dynamics(spec)
+            rate *= spec
+            isone(substoich[i]) && continue
+            for i = 1:(substoich[i]-1)
+                rate *= spec - i
+            end
+        else
+            push!(reactant_stoch, substrates[i] => substoich[i])
+        end
     end
-    #push!(rstoich, reactant_stoch)
-    coef = (zeroorder || (!combinatoric_ratelaw)) ? one(eltype(substoich)) : prod(stoich -> factorial(stoich), substoich)
-    (!isone(coef)) && (rate /= coef)
-    #push!(rates, rate)
-    net_stoch      = [Pair(p[1],p[2]) for p in netstoich]
-    #push!(nstoich, net_stoch)
+
+    if (!zeroorder) && combinatoric_ratelaw
+        coef = prod(stoich -> factorial(stoich), substoich)
+        (!isone(coef)) && (rate /= coef)
+    end
+
+    net_stoch = filter(p -> !drop_dynamics(p[1]), netstoich)
+    if isempty(net_stoch)
+        error("$rx has no net stoichiometry change once accounting for "
+              * "constant and boundary condition species. This is not supported.")
+    end
+
     MassActionJump(Num(rate), reactant_stoch, net_stoch, scale_rates=false, useiszero=false)
 end
 
 function assemble_jumps(rs; combinatoric_ratelaws=true)
     meqs = MassActionJump[]; ceqs = ConstantRateJump[]; veqs = VariableRateJump[]
     stateset = Set(get_states(rs))
-    #rates = [];  rstoich = []; nstoich = []
     rxvars = []
-    ivname = nameof(get_iv(rs))
 
     isempty(get_eqs(rs)) && error("Must give at least one reaction before constructing a JumpSystem.")
     for rx in get_eqs(rs)
         empty!(rxvars)
         (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
         haveivdep = false
-        @inbounds for i = 1:length(rxvars)
-            if isequal(rxvars[i], get_iv(rs))
+        @inbounds for rxvar in rxvars
+            if isequal(rxvar, get_iv(rs))
                 haveivdep = true
                 break
             end
@@ -892,7 +906,8 @@ function assemble_jumps(rs; combinatoric_ratelaws=true)
             rl = jumpratelaw(rx, combinatoric_ratelaw=combinatoric_ratelaws)
             affect = Vector{Equation}()
             for (spec,stoich) in rx.netstoich
-                push!(affect, spec ~ spec + stoich)
+                # don't change species that are constant or BCs
+                (!drop_dynamics(spec)) && push!(affect, spec ~ spec + stoich)
             end
             if haveivdep
                 push!(veqs, VariableRateJump(rl,affect))
@@ -901,7 +916,6 @@ function assemble_jumps(rs; combinatoric_ratelaws=true)
             end
         end
     end
-    #eqs[1] = MassActionJump(rates, rstoich, nstoich, scale_rates=false, useiszero=false)
     vcat(meqs,ceqs,veqs)
 end
 
@@ -1106,7 +1120,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     noiseeqs = assemble_diffusion(flatrs, ists, noise_scaling; combinatoric_ratelaws,
                                                                remove_conserved)
     eqs,sts,ps,obs,defs = addconstraints!(eqs, flatrs, ists; remove_conserved)
-    ps = (noise_scaling===nothing) ? ps : union(ps,toparam(noise_scaling))
+    ps = (noise_scaling===nothing) ? ps : push!(ps,toparam(noise_scaling))
     SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps; name, defaults=defs,
                                                       observed=obs, checks, kwargs...)
 end
@@ -1133,8 +1147,14 @@ function Base.convert(::Type{<:JumpSystem},rs::ReactionSystem;
     error_if_constraints(JumpSystem, flatrs)
 
     eqs = assemble_jumps(flatrs; combinatoric_ratelaws)
-    JumpSystem(eqs, get_iv(flatrs), get_states(flatrs), get_ps(flatrs); name,
-               defaults=MT.defaults(flatrs), observed=MT.observed(flatrs), checks, kwargs...)
+
+    # handle constant and BC species
+    sts = get_indep_sts(flatrs)
+    sts = vcat(sts, filter(isbc, get_states(flatrs)))
+    ps = vcat(get_ps(flatrs), filter(isconstant, get_states(flatrs)))
+
+    JumpSystem(eqs, get_iv(flatrs), sts, ps; name, defaults=MT.defaults(flatrs),
+                                            observed=MT.observed(flatrs), checks, kwargs...)
 end
 
 

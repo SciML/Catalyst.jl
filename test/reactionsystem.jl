@@ -353,6 +353,7 @@ let
     @test issetequal(MT.get_states(osys), [B, C, D, E])
     @test issetequal(MT.get_ps(osys), [k1, k2, A])
 
+    # test nonlinear systems
     u0 = [1.0, 2.0, 3.0, 4.0]
     p = [2.5, 3.5, 2.0]
     f!(rand(4),u0,p,1.0)
@@ -373,6 +374,7 @@ let
         @test isapprox(sol1[sts[i]], sol2[syms[i]])
     end
 
+    # test sde systems
     @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
     ssys = convert(SDESystem, rs)
     @test issetequal(MT.get_states(ssys), [B, C, D, E])
@@ -386,4 +388,30 @@ let
     sprob.g(dg1, u0, p, 1.0)
     gs!(dg2, u0, p, t)
     @test isapprox(dg1, dg2)
+
+    # test jump systems
+    rxs = [(@reaction k1, $A --> B),
+           (@reaction k2, B --> $A),
+           (@reaction k1, $C + D --> E),
+           (@reaction k2, E --> $C + D),
+           (@reaction k1*t, $A + $C--> B),
+           (@reaction k1*B, 2*$A --> $C + B)]
+    @named rs = ReactionSystem(rxs, t)
+    jsys = convert(JumpSystem, rs)
+    @test issetequal(states(jsys), [B,C,D,E])
+    @test issetequal(parameters(jsys), [k1, k2, A])
+    majrates = [k1*A, k2, k1*C, k2]
+    majrs = [[],[B => 1],[D => 1],[E => 1]]
+    majns = [[B => 1],[B => -1],[D => -1, E => 1],[D => 1, E => -1]]
+    for (i,maj) in enumerate(equations(jsys).x[1])
+        @test isequal(maj.scaled_rates, majrates[i])
+        @test issetequal(maj.reactant_stoch, majrs[i])
+        @test issetequal(maj.net_stoch, majns[i])
+    end
+    crj = equations(jsys).x[2][1]
+    @test isequal(crj.rate, k1*B*A*(A-1)/2)
+    @test issetequal(crj.affect!, [B ~ B + 1])
+    vrj = equations(jsys).x[3][1]
+    @test isequal(vrj.rate, k1*t*A*C)
+    @test issetequal(vrj.affect!, [B ~ B + 1])
 end
