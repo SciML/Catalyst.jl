@@ -189,20 +189,29 @@ N == Z*B
 
 Reaction complexes give an alternative way to visualize a reaction network
 graph. Catalyst's [`complexgraph`](@ref) command will calculate the complexes of
-a network and then show how they are related. For example, for the repressilator
-we find
+a network and then show how they are related. For example,
+```julia
+complexgraph(rn)
+```
+gives
+
+![Simple example complex graph](../assets/simple_complexgraph.svg)
+
+while for the repressilator we find
 ```julia
 complexgraph(repressilator)
 ```
+
+![Repressilator complex](../assets/repressilator_complexgraph.svg)
+
 Here ∅ represents the empty complex, black arrows show reactions converting
 substrate complexes into product complexes where the rate is just a number or
 parameter, and red arrows indicate conversion of substrate complexes into
 product complexes where the rate is an expression involving chemical species.
 
-![Repressilator complex](../assets/repressilator_complexgraph.svg)
-
 ## Aspects of Reaction Network Structure
-Lets assume another example to highlight some more aspects of the reaction networks, using some more API functions
+Lets assume another example to highlight some more aspects of the reaction
+networks, using some more API functions
 ```@example s1
 rn = @reaction_network begin
      (k1,k2), A + B <--> C
@@ -211,30 +220,41 @@ rn = @reaction_network begin
      (k6,k7), 2A <--> B+G
      k8, B+G --> H
      k9, H --> 2A
-end k1 k2 k3 k4 k5 k6 k7 k8 k9;
+end k1 k2 k3 k4 k5 k6 k7 k8 k9
 
 # compute incidence matrix as previously mentioned
-B = reactioncomplexes(rn)[2];
+B = incidencemat(rn)
 ```
 ```julia
-# and visualise the graph using Graphviz based API function
 complexgraph(rn)
 ```
+
 ![network_1](../assets/complex_rn.svg)
 
-Lets compute a Graph from incidence matrix
+Lets compute a graph from incidence matrix
 ```@example s1
 incidencegraph = incidencematgraph(B);
 ```
+
 #### Linkage classes and subnetworks from the reaction network
-Figure above shows that the `ReactionSystem` `rn` is composed of two distinct “pieces,” one containing the complexes `A+B`, `C`,` D+E`, and
-`F`, the other containing the complexes `2A`, `B + G`, and` H`. These two pieces can be viewed as non-linked set of complexes. These sets {`A+B`, `C`,` D+E`, `F`} and {`2A`, `B + G`,`H`} are the "linkage classes"of the reaction network.THe function `linkageclasses` returns vector of the indices of reaction complexes participating in each set of linkage-classes(Note: indices of reaction complexes found from function `reactioncomplexes` as previously explained)
+Figure above shows that the `ReactionSystem` `rn` is composed of two distinct
+“pieces,” one containing the complexes `A+B`, `C`,` D+E`, and `F`, the other
+containing the complexes `2A`, `B + G`, and` H`. These two pieces can be viewed
+as non-linked set of complexes. These sets {`A+B`, `C`,` D+E`, `F`} and {`2A`,
+`B + G`,`H`} are the "linkage classes"of the reaction network.THe function
+`linkageclasses` returns vector of the indices of reaction complexes
+participating in each set of linkage-classes(Note: indices of reaction complexes
+found from function `reactioncomplexes` as previously explained)
 ```@example s1
-lcs = linkageclasses(incidencegraph)
+lcs = linkageclasses(rn)
 ```
-This however, does not tell us what are the individual `ReactionSystem`'s that form these linkage classes. This can be deduced from function `subnetworks` as follows. `subnetwork` returns a vector of `ReactionSystems`forming linkage classes.
+This however, does not tell us what are the individual `ReactionSystem`'s that
+form these linkage classes. This can be deduced from function `subnetworks` as
+follows. `subnetwork` returns a vector of `ReactionSystems`forming linkage
+classes.
 ```@example s1
-subnets = subnetworks(rn, lcs)
+subnets = subnetworks(rn)
+
 # check the reactions in each subnetworks
 reactions.(subnets)
 ```
@@ -242,23 +262,35 @@ reactions.(subnets)
  # or visualise them as
  complexgraph(subnets[1])
 ```
+
 ![subnetwork_1](../assets/complex_subnets1.svg)
+
 and,
 ```julia
  complexgraph(subnets[2])
 ```
+
 ![subnetwork_2](../assets/complex_subnets2.svg)
 
 #### Deficiency of the network
-The rank of reaction network is defined as the subspace spanned by the net-stoichiometry of reaction-network. In other words, the number of uniquely represented "reactions vectors"(or the columns of net-stoichiometric matrix) is the rank of the reaction network, refer Feinberg [(1)](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true).
+The rank of reaction network is defined as the subspace spanned by the
+net-stoichiometry of reaction-network. In other words, the number of uniquely
+represented "reactions vectors"(or the columns of net-stoichiometric matrix) is
+the rank of the reaction network, refer Feinberg
+[(1)](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true).
 This can be calculated as follows
 ```@example s1
 using LinearAlgebra
 s = rank(netstoichmat(rn))
 ```
-Feinberg [(1)](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true) shows that number of these uniquely represented "reaction vectors" cannot exceed the `no. of complexes - no. of linkage classes`. This puts an upper bound on the rank of reaction network, and allows us to define the deficiency of the reaction network
-`δ = no. of complexes - no. of linkage classes - s`
-This gives us a measure of how independent the reaction vectors are, provided the network’s linkage classes.
+Feinberg
+[(1)](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true)
+shows that number of these uniquely represented "reaction vectors" cannot exceed
+the `no. of complexes - no. of linkage classes`. This puts an upper bound on the
+rank of reaction network, and allows us to define the deficiency of the reaction
+network `δ = no. of complexes - no. of linkage classes - s` This gives us a
+measure of how independent the reaction vectors are, provided the network’s
+linkage classes.
 ```@example s1
 # crude way...note B i.e. incidence matrix has size of no. of complexes x no. of reactions
 δ = size(B,1) - length(lcs) - rank(netstoichmat(rn))
@@ -267,7 +299,8 @@ or using Catalyst API function `deficiency`.
 ```@example s1
 δ = deficiency(netstoichmat(rn), incidencegraph, lcs)
 ```
-We may also define deficiencies for individual subnetworks in the linkage classes as follows,
+We may also define deficiencies for individual subnetworks in the linkage
+classes as follows,
 ```@example s1
 linkage_δ = linkagedeficiencies(subnets, lcs)
 ```
@@ -278,8 +311,11 @@ Quoting Feinberg [(1)](https://link.springer.com/book/10.1007/978-3-030-03858-8?
 > Deficiency zero networks are ones for which the reaction vectors are as independent as the partition of complexes into linkage classes will allow. And, any subnetwork of a deficiency zero network is also a deficiency zero network.
 
 #### Reversibility of the network
-Simply put, reaction network is defined reversible if, the "arrows" of the reactions are symmetric such that every reaction is accompanied by its backward reaction. Catalyst API provides function `isreversible` to determine whether the reaction network is reversible or not, based on the Graph constructed from incidence matrix for interaction of reaction complexes.
-Example
+Simply put, reaction network is defined reversible if, the "arrows" of the
+reactions are symmetric such that every reaction is accompanied by its backward
+reaction. Catalyst API provides function `isreversible` to determine whether the
+reaction network is reversible or not, based on the Graph constructed from
+incidence matrix for interaction of reaction complexes. Example
 ```@example s1
 rn = @reaction_network begin
   (k1,k2),A <--> B
@@ -287,6 +323,7 @@ rn = @reaction_network begin
   (k5,k6),D <--> B+E
   (k7,k8),B+E <--> A+C
 end k1 k2 k3 k4 k5 k6 k7 k8;
+
 # find the graph from incidence matrix for reaction complexes
 incidencegraph = incidencematgraph(reactioncomplexes(rn)[2]);
 isreversible(incidencegraph)
