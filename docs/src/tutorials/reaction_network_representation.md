@@ -1,15 +1,15 @@
 # Network Representations in Catalyst
 
-In this tutorial, we explain some of the API functions mentioned in section [`Network-Analysis-and-Representations`](https://catalyst.sciml.ai/dev/api/catalyst_api/#Network-Analysis-and-Representations). For demonstration purpose, we reuse the repressilator model from previous tutorial.
+In this tutorial we introduce several of the Catalyst API functions for network
+analysis. A complete summary of the exported functions is given in the API
+section
+[`Network-Analysis-and-Representations`](https://catalyst.sciml.ai/dev/api/catalyst_api/#Network-Analysis-and-Representations).
+We illustrate these functions on the repressilator model from previous tutorials.
 
-## Network representation of the Repressilator `ReactionSystem`'s
-We first load Catalyst
+## Network representation of the Repressilator `ReactionSystem`
+We first load Catalyst and construct our model of the repressilator
 ```@example s1
 using Catalyst
-```
-Next we specify the chemical reactions that comprise the system using Catalyst
-[`Reaction`](@ref)s
-```@example s1
 repressilator = @reaction_network Repressilator begin
        hillr(P₃,α,K,n), ∅ --> m₁
        hillr(P₁,α,K,n), ∅ --> m₂
@@ -26,75 +26,180 @@ repressilator = @reaction_network Repressilator begin
 end α K n δ γ β μ
 reactions(repressilator)
 ```
+In the [Using Catalyst](https://catalyst.sciml.ai/dev/tutorials/using_catalyst/)
+tutorial we showed how the above network could be visualized as a
+species-reaction graph. There species are represented by the nodes of the graph
+and edges show the reactions in which a given species is a substrate or product.
 ```julia
-g = Graph(repressilator);
+g = Graph(repressilator)
 ```
 ![Repressilator solution](../assets/repressilator.svg)
 
-The figure above represents species-reaction Graph in which the species are represented by the nodes of the Graph and edges denote the reactions between them.
-The ODE's correponding to this `ReactionSystem` can be found [here](https://catalyst.sciml.ai/dev/tutorials/using_catalyst/)
-## Complexes based Stoichiometry
-In general, the `ReactionSystem`s are represented as first order ODEs of following form:
+We also showed in the [Using
+Catalyst](https://catalyst.sciml.ai/dev/tutorials/using_catalyst/) tutorial that
+the reaction rate equation ODE model for the repressilator is
 ```math
-\begin{equation}
-    \nonumber \frac{dx}{dt} =
-        N.
-        \begin{pmatrix}
-        h_{1}(x) & \cdots & 0\\ \vdots &  \ddots & \vdots\\ 0 & \cdots & h_{n}(x) \end{pmatrix}
-        \begin{bmatrix}
-        k_{1} \\
-        k_{2}  \\
-        \vdots \\
-        k_{n} \\  
-        \end{bmatrix}
-\end{equation}
+\begin{aligned}
+\frac{dm_1(t)}{dt} =& \frac{\alpha K^{n}}{K^{n} + \left( {P_3}\left( t \right) \right)^{n}} - \delta {m_1}\left( t \right) + \gamma \\
+\frac{dm_2(t)}{dt} =& \frac{\alpha K^{n}}{K^{n} + \left( {P_1}\left( t \right) \right)^{n}} - \delta {m_2}\left( t \right) + \gamma \\
+\frac{dm_3(t)}{dt} =& \frac{\alpha K^{n}}{K^{n} + \left( {P_2}\left( t \right) \right)^{n}} - \delta {m_3}\left( t \right) + \gamma \\
+\frac{dP_1(t)}{dt} =& \beta {m_1}\left( t \right) - \mu {P_1}\left( t \right) \\
+\frac{dP_2(t)}{dt} =& \beta {m_2}\left( t \right) - \mu {P_2}\left( t \right) \\
+\frac{dP_3(t)}{dt} =& \beta {m_3}\left( t \right) - \mu {P_3}\left( t \right)
+\end{aligned}
 ```
-```math
-\begin{equation}
-    \frac{dx}{dt} = N .D(x) k
-\end{equation}
-```
-where `N` is net stoichiometry matrix of the reaction system.
-It is possible to rewrite the aformentioned ODE system as
-```math
-\begin{equation}\label{eqn1}
-    \frac{dx}{dt} = Z.B. D(x) k
-\end{equation}
-```
-where `Z` is a complex stoichiometric matrix of size `num. of species x num. of complexes`, `B` is an incidence matrix of size `num. of complexes x num. of reactions`, where `c` is number of reaction complexes.
-These matrices can be obtained in following way:
-```@example s1
-Z = complexstoichmat(repressilator)
-```
-```@example s1
-rcs, B = reactioncomplexes(repressilator);
-```
-`rcs` here returns the information about unique reaction complexes that define the `ReactionSystem`. It is a vector of vector type `ReactionComplexElement`. `ReactionComplexElement` containing a tuple of index of participating species(as per sequence returned by `species(repressilator)`), and its corresponding stoichiometric coefficient, respectively.
 
-```@example s1
-rcs
+## Matrix-Vector Reaction Rate Equation Representation
+In general, reaction rate equation (RRE) ODE models for chemical reaction networks can
+be represented as a first order system of ODEs in a compact matrix-vector notation. Suppose
+we have a reaction network with ``K`` reactions and ``M`` species, labelled by the state vector
+```math
+\mathbf{x}(t) = \begin{pmatrix} x_1(t) \\ \vdots \\ x_M(t)) \end{pmatrix}.
 ```
-One may also find the occurence of these complexes in different reactions as either substrates or products using API function `reactioncomplexmap(repressilator)`.
-The columns of `B` matrix depict the consumption and generation of such unique reaction complex(with entries -1 and 1, respectively) for each `Reaction`.
+For the repressilator, ``\mathbf{x}(t)`` is just
 ```@example s1
-B
+x = species(repressilator)
 ```
-This also gives us an idea of the `Graph` that can be constructed to depict the `ReactionSystem` with nodes as `ReactionComplexElement` and edges as `Reaction`. To visualise the complex graph, Catalyst provides an API function as follows,
+The RRE ODEs satisfied by $\mathbf{x}(t)$ are then
+```math
+\frac{d\mathbf{x}}{dt} = N \mathbf{\nu}(\mathbf{x}(t),t),
+```
+where ``N`` is a constant ``M`` by ``K`` matrix with ``N_{m k}`` the net
+stoichiometric coefficient of species ``m`` in reaction ``k``.
+``\mathbf{\nu}(\mathbf{x}(t),t)`` is the rate law vector, with
+``\nu_k(\mathbf{x}(t),t)`` the rate law for the ``k``th reaction. For example,
+for the first reaction of the repressilator above, the rate law is
+```math
+\nu_1(\mathbf{x}(t),t) = \frac{\alpha K^{n}}{K^{n} + \left( P_3(t) \right)^{n}}
+```
+We can calculate each of these in Catalyst via
+```@example s1
+N = netstoichmat(repressilator)
+```
+and by using the [`oderatelaw`](@ref) function
+```@example s1
+rxs = reactions(repressilator)
+ν = oderatelaw.(rxs)
+```
+Note, as [`oderatelaw`](@ref) takes just one reaction as input we use
+broadcasting to apply it to each element of `rxs`.
+
+Let's check this really gives the same ODEs as Catalyst. Here is what Catalyst
+generates by converting to an `ODESystem`
+```@example s1
+osys = convert(ODESystem, repressilator)
+
+# for display purposes we just pull out the right side of the equations
+odes = [eq.rhs for eq in equations(osys)]
+```
+whereas our matrix-vector representation gives
+```@example s1
+odes2 = N * ν
+```
+Let's check these are equal symbolically
+```@example s1
+isequal(odes, odes2)
+```
+
+## Reaction Complex Representation
+We now introduce a further decomposition of the RRE ODEs, which has been used to
+facilitate analysis of a variety of reaction network properties. Consider a simple
+reaction system like
+```@example s1
+rn = @reaction_network begin
+ k*A, 2*A + 3*B --> A + 2*C + D
+ b, C + D --> 2*A + 3*B
+end k b
+show(stdout, MIME"text/plain"(), rn) # hide
+```
+We can think of the first reaction as converting the *reaction complex*,
+``2A:2B`` to the complex ``A:2C:D`` with rate ``2*A``. Suppose we order our
+species the same way as Catalyst does, i.e.
+```math
+\begin{pmatrix}
+x_1(t)\\
+x_2(t)\\
+x_3(t)\\
+x_4(t)
+\end{pmatrix} =
+\begin{pmatrix}
+A(t)\\
+B(t)\\
+C(t)\\
+D(t)
+\end{pmatrix},
+```
+which should be the same as
+```@example s1
+species(rn)
+```
+We can describe a given reaction complex by the stoichiometric coefficients of
+each species within the complex. For the reactions in `rn` these vectors would
+be
+```math
+\begin{align*}
+2A:3B = \begin{pmatrix}
+2\\
+3\\
+0\\
+0
+\end{pmatrix}, &&
+A:2C:D = \begin{pmatrix}
+1\\
+0\\
+2\\
+1
+\end{pmatrix},
+ &&
+C:D = \begin{pmatrix}
+0\\
+0\\
+1\\
+1
+\end{pmatrix}
+\end{align*}
+```
+Catalyst can calculate these representations as the columns of the complex
+stoichiometry matrix,
+```@example s1
+Z = complexstoichmat(rn)
+```
+If we have ``C`` complexes, ``Z`` is a ``M`` by ``C`` matrix with ``Z_{m c}``
+giving the stoichiometric coefficient of species ``m`` within complex ``c``.
+
+We can use this representation to provide another representation of the RRE
+ODEs. The net stoichiometry matrix can be factored as ``N = Z B``, where ``B``
+is called the incidence matrix of the reaction network,
+```@example s1
+B = incidencemat(rn)
+```
+Here ``B`` is a ``C`` by ``K`` matrix with ``B_{c k} = 1`` if complex `c`
+appears as a product of reaction `k`, and ``B_{c k} = -1`` if complex `c` is a
+substrate of reaction `k`.
+
+Using our decomposition of ``N``, the RRE ODEs become
+```math
+\frac{dx}{dt} = Z B \mathbf{\nu}(\mathbf{x}(t),t).
+```
+Let's verify that ``N = Z B``,
+```@example s1
+N = netstoichmat(rn)
+N == Z*B
+```
+
+Reaction complexes give an alternative way to visualize a reaction network
+graph. Catalyst's [`complexgraph`](@ref) command will calculate the complexes of
+a network and then show how they are related. For example, for the repressilator
+we find
 ```julia
 complexgraph(repressilator)
 ```
+Here ∅ represents the empty complex, black arrows show reactions converting
+substrate complexes into product complexes where the rate is just a number or
+parameter, and red arrows indicate conversion of substrate complexes into
+product complexes where the rate is an expression involving chemical species.
 
 ![Repressilator complex](../assets/repressilator_complexgraph.svg)
-
-The `ODESystem` from Equation (2) is equivalent to the one we get from `convert(ODESystem, repressilator)`. We verify this as follows:
-```@example s1
-odesys = convert(ODESystem, repressilator);
-oderhs = [equations(odesys)[i].rhs for i in 1:numspecies(repressilator)];
-```
-Check if this is true !
-```@example s1
-isequal(oderhs, Z*B*oderatelaw.(reactions(repressilator)))
-```
 
 ## Aspects of Reaction Network Structure
 Lets assume another example to highlight some more aspects of the reaction networks, using some more API functions
@@ -211,5 +316,8 @@ subnets = subnetworks(rn, lcs)
 isweaklyreversible(subnets)
 ```
 Needless to say, every "reversible" network is also "weakly reversible", but the vice versa may or may not be true.
+
+## Caching of Network Properties in `ReactionSystems`
+
 ## Sources
-1) [Foundations of Chemical Reaction Network Theory, Martin Feinberg](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true)
+1) [Feinberg, M. *Foundations of Chemical Reaction Network Theory*, Applied Mathematical Sciences 202, Springer (2019).](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true)
