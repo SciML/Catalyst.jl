@@ -1,6 +1,80 @@
 # Breaking updates and feature summaries across releases
 
-## Catalyst unreleased (master branch) 
+## Catalyst unreleased (master branch)
+
+## Catalyst 11.0
+- **BREAKING:** Added the ability to eliminate conserved species when generating
+  ODEs, nonlinear problems, SDEs, and steady-state problems via the
+  `remove_conserved=true` keyword that can be passed to `convert` or to
+  `ODEProblem`, `NonlinearProblem`, `SDEProblem`, or `SteadyStateProblem` when called with a
+  `ReactionSystem`. For example,
+  ```julia
+  rn = @reaction_network begin
+     k, A + B --> C
+     k2, C --> A + B
+     end k k2
+  osys = convert(ODESystem, rn; remove_conserved=true)
+  equations(osys)
+  ```
+  gives
+  ```
+  Differential(t)(A(t)) ~ k2*(_ConLaw[2] - A(t)) - k*(A(t) + _ConLaw[1])*A(t)
+  ```
+  Initial conditions should still be specified for all the species in `rn`, and
+  the conserved constants will then be calculated automatically. Eliminated
+  species are stored as observables in `osys` and still accessible via solution
+  objects. Breaking as this required modifications to the `ReactionSystem` type
+  signature.
+- **BREAKING:** Added an internal cache in `ReactionSystem`s for network properties, and
+  revamped many of the network analysis functions to use this cache (so just a
+  `ReactionSystem` can be passed in). Most of these functions will now only
+  calculate the chosen property the first time they are called, and in
+  subsequent calls will simply returned that cached value. Call
+  `reset_networkproperties!` to clear the cache and allow properties to be
+  recalculated. The new signatures for `rn` a `ReactionSystem` are
+  ```julia
+  reactioncomplexmap(rn)
+  reactioncomplexes(rn)
+  complexstoichmat(rn)
+  complexoutgoingmat(rn)
+  incidencemat(rn)
+  incidencematgraph(rn)
+  linkageclasses(rn)
+  deficiency(rn)
+  sns = subnetworks(rn)
+  linkagedeficiencies(rn)
+  isreversible(rn)
+  isweaklyreversible(rn, sns)
+  ```
+  Breaking as this required modifications to the `ReactionSystem` type
+  signature.
+- **BREAKING** `ReactionSystem`s now store a default value for
+  `combinatoric_ratelaws=true`. This default value can be set in the
+  `ReactionSystem` constructor call as a keyword argument. Passing
+  `combinatoric_ratelaws` as a keyword to `convert` or problem calls involving a
+  `ReactionSystem` is still allowed, and will override the `ReactionSystem`'s
+  default.
+- Fixed a bug where `ODESystem` constraint systems did not propagate
+  `continuous_events` during calls to `convert(ODESystem, rn::ReactionSystem)`.
+- Added constant and boundary condition species (in the SBML sense). During
+  conversion constant species are converted to parameters, while boundary
+  condition species are kept as state variables. Note that boundary condition
+  species are treated as constant with respect to reactions, so their dynamics
+  must be defined in a constraint system. Right now only conversion of
+  `ReactionSystem`s to an `ODESystem` with a constraint `ODESystem` or
+  `NonlinearSystem`, or conversion to a `NonlinearSystem` with a constraint
+  `NonlinearSystem`, are supported. Constraints are not supported in `SDESystem`
+  or `JumpSystem` conversion, and so boundary condition species are effectively
+  constant when converting to those model types (but still left as states
+  instead of parameters). Defining constant and boundary condition species is
+  done by
+  ```julia
+  @variables t A(t) [isconstant=true] B(t) [isbc=true] C(t)
+  ```
+  Here `A` is a constant species, `B` is a boundary condition species, and `C`
+  is a normal species. Note that network API functions do not make use of these
+  labels, and treat all species as normal -- these properties are only made use
+  of when converting to other system types.
 
 ## Catalyst 10.8
 - Added the ability to use symbolic stoichiometry expressions via the DSL. This should now work
@@ -8,7 +82,7 @@
   rn = @reaction_network rs begin
     t*k, (α+k+B)*A --> B
     1.0, α*A + 2*B --> k*C + α*D
-  end k α 
+  end k α
   ```
   Here Catalyst will try to preserve the order of symbols within an expression,
   taking the rightmost as the species and everything multiplying that species as
@@ -18,9 +92,9 @@
   ```julia
   rn = @reaction_network rs begin
     1.0, 2X*(Y + Z) --> XYZ
-  end 
+  end
   ```
-  all of `X`, `Y` and `Z` will be registered as species, with substrates `(Y,Z)` having associated stoichiometries of 
+  all of `X`, `Y` and `Z` will be registered as species, with substrates `(Y,Z)` having associated stoichiometries of
   `(2X,2X)`. As for rate expressions, any symbols that appear and are not defined as parameters will be declared to be species.
 
   In contrast, when declaring reactions
@@ -105,7 +179,7 @@
   end α β
   setdefaults!(rn, [:S => 999.0, :I => 1.0, :R => 0.0, :α => 1e-4, :β => .01])
   op    = ODEProblem(rn, [], (0.0,250.0), [])
-  sol   = solve(op, Tsit5()) 
+  sol   = solve(op, Tsit5())
   ```
   To explicitly pass initial conditions and parameters using symbols we can do
   ```julia
@@ -116,7 +190,7 @@
   u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
   p  = (:α => 1e-4, :β => .01)
   op    = ODEProblem(rn, u0, (0.0,250.0), p)
-  sol   = solve(op, Tsit5())  
+  sol   = solve(op, Tsit5())
   ```
   In each case ModelingToolkit symbolic variables can be used instead of
   `Symbol`s, e.g.
@@ -174,8 +248,8 @@
   ```
 - Added the ability to compose `ReactionSystem`s via subsystems, and include
   either `ODESystem`s or `NonlinearSystem`s as subsystems. Note, if using
-  non-`ReactionSystem` subsystems it is not currently possible to convert to 
-  a `JumpSystem` or `SDESystem`. It is also not possible to include either 
+  non-`ReactionSystem` subsystems it is not currently possible to convert to
+  a `JumpSystem` or `SDESystem`. It is also not possible to include either
   `SDESystem`s or `JumpSystems` as subsystems.
 - Added `extend(sys, reactionnetwork, name=nameof(sys))` to extend
   `ReactionSystem`s with constraint equations (algebraic equations or ODEs), or
@@ -213,7 +287,7 @@ reactions they participate in.
 If passed `sparse=true` a sparse matrix representation is generated, otherwise
 the default `sparse=false` value returns dense `Matrix` representations.
 
-## Catalyst 8.3 
+## Catalyst 8.3
 *1.* Network representations for the reaction complexes of a system along with
 associated graph functionality:
 ```julia
@@ -235,12 +309,12 @@ which gives
 
 ![rn_complexes](https://user-images.githubusercontent.com/9385167/130252763-4418ba5a-164f-47f7-b512-a768e4f73834.png)
 
-*2.* Support for units via ModelingToolkit and 
+*2.* Support for units via ModelingToolkit and
 [Uniftul.jl](https://github.com/PainterQubits/Unitful.jl) in directly constructed
 `ReactionSystem`s:
 ```julia
 # ]add Unitful
-using Unitful 
+using Unitful
 @parameters α [unit=u"μM/s"] β [unit=u"s"^(-1)] γ [unit=u"μM*s"^(-1)]
 @variables t [unit=u"s"] A(t) [unit=u"μM"] B(t) [unit=u"μM"] C(t) [unit=u"μM"]
 rxs = [Reaction(α, nothing, [A]),
@@ -259,7 +333,7 @@ which will print warnings and return `false` if either
 
 (Note, at this time the `@reaction_network` macro does not support units.)
 
-*3.* Calculation of conservation laws 
+*3.* Calculation of conservation laws
 ```julia
 rn = @reaction_network begin
   (k₊,k₋), A + B <--> C
@@ -295,13 +369,13 @@ network matrix representations.
 
 ## Catalyst 8.0
 **BREAKING:** This is a breaking release, with all ModelingToolkit `ReactionSystem` and
-`Reaction` functionality migrated to Catalyst. 
+`Reaction` functionality migrated to Catalyst.
 
 ## Catalyst 6.11
 *1.* Plain text arrows "<--" and "<-->" for backward and reversible reactions are
    available if using Julia 1.6 or higher:
 ```julia
-rn = @reaction_network begin 
+rn = @reaction_network begin
   (k1,k2), A + B <--> C
   k3, 0 <-- C
 end k1 k2 k3
@@ -311,7 +385,7 @@ end k1 k2 k3
 rn = @reaction_network Reversible_Reaction begin
   k1, A --> B
   k2, B --> A
-  end k1 k2 
+  end k1 k2
 nameof(rn) == :Reversible_Reaction
 ```
 Note, empty networks can no longer be created with parameters, i.e. only

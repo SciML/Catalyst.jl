@@ -1,4 +1,5 @@
-using Catalyst, DiffEqBase, ModelingToolkit, Test, OrdinaryDiffEq
+using Catalyst, DiffEqBase, ModelingToolkit, Test, OrdinaryDiffEq, NonlinearSolve
+using StochasticDiffEq
 using LinearAlgebra: norm
 using SparseArrays
 using ModelingToolkit: value
@@ -90,21 +91,22 @@ pmat = [0 1;
         0 2]
 @test smat == substoichmat(rnmat) == Matrix(substoichmat(rnmat, sparse=true))
 @test pmat == prodstoichmat(rnmat) == Matrix(prodstoichmat(rnmat, sparse=true))
-              
-############## testing newly added intermediate complexes reaction networks##############
+
+############## testing intermediate complexes reaction networks##############
 
 function testnetwork(rn, B, Z, Δ, lcs, d, subrn, lcd)
     B2 = reactioncomplexes(rn)[2]
     @test B == B2 == Matrix(reactioncomplexes(rn, sparse=true)[2])
+    @test B == incidencemat(rn)
     @test Z == complexstoichmat(rn) == Matrix(complexstoichmat(rn, sparse=true))
     @test Δ == complexoutgoingmat(rn) == Matrix(complexoutgoingmat(rn, sparse=true))
-    ig = incidencematgraph(B)
-    lcs2 = linkageclasses(ig)
+    ig = incidencematgraph(rn)
+    lcs2 = linkageclasses(rn)
     @test lcs2 == linkageclasses(incidencematgraph(sparse(B))) == lcs
-    @test deficiency(netstoichmat(rn), ig, lcs) == d   
-    @test all(issetequal.(subrn, reactions.(subnetworks(rn, lcs))))
-    @test linkagedeficiencies(subnetworks(rn, lcs), lcs) == lcd
-    @test sum(linkagedeficiencies(subnetworks(rn, lcs),lcs)) <= deficiency(netstoichmat(rn), ig, lcs)
+    @test deficiency(rn) == d
+    @test all(issetequal.(subrn, reactions.(subnetworks(rn))))
+    @test linkagedeficiencies(rn) == lcd
+    @test sum(linkagedeficiencies(rn)) <= deficiency(rn)
 end
 
 rns  = Vector{ReactionSystem}(undef,6)
@@ -270,10 +272,9 @@ testnetwork(rns[6], B, Z, Δ, lcs, 0,subrn,lcd)
 
 ###########Testing reversibility###############
 function testreversibility(rn, B, rev, weak_rev)
-    ig = incidencematgraph(B)
-    subrn = subnetworks(rn, linkageclasses(ig))
-    @test isreversible(ig) == rev
-    @test isweaklyreversible(subrn) == weak_rev
+    @test isreversible(rn) == rev
+    subrn = subnetworks(rn)
+    @test isweaklyreversible(rn,subrn) == weak_rev
 end
 rxs = Vector{ReactionSystem}(undef, 10)
 rxs[1] = @reaction_network begin
@@ -579,7 +580,7 @@ p     = [.1/1000, .01]
 tspan = (0.0,250.0)
 u0    = [999.0,1.0,0.0]
 op    = ODEProblem(rn, species(rn) .=> u0, tspan, parameters(rn) .=> p)
-sol   = solve(op, Tsit5())  # old style 
+sol   = solve(op, Tsit5())  # old style
 setdefaults!(rn, [:S => 999.0, :I => 1.0, :R => 0.0, :α => 1e-4, :β => .01])
 op = ODEProblem(rn, [], tspan, [])
 sol2 = solve(op, Tsit5())
@@ -603,7 +604,7 @@ function unpacktest(rn)
     u₀ = [S1 => 999.0, I1 => 1.0, R1 => 0.0]
     p = [α1 => 1e-4, β1 => .01]
     op = ODEProblem(rn, u₀, (0.0, 250.0), p)
-    solve(op, Tsit5())    
+    solve(op, Tsit5())
 end
 rn = @reaction_network begin
     α1, S1 + I1 --> 2I1
@@ -638,3 +639,68 @@ pmap = (:β => 1e-4, :ν => .01)
 op = ODEProblem(sir, u0map, tspan, pmap)
 sol5 = solve(op, Tsit5())
 @test norm(sol.u - sol5.u) ≈ 0
+
+
+# test conservation law elimination
+let
+    rn = @reaction_network begin
+        (k1,k2), A + B <--> C
+        (m1,m2), D <--> E
+        b12, F1 --> F2
+        b23, F2 --> F3
+        b31, F3 --> F1
+    end k1 k2 m1 m2 b12 b23 b31
+    osys = convert(ODESystem, rn; remove_conserved=true)
+    @unpack A,B,C,D,E,F1,F2,F3,k1,k2,m1,m2,b12,b23,b31 = osys
+    u0 = [A => 10.0, B => 10.0, C => 0.0, D => 10.0, E => 0.0, F1 => 8.0, F2 => 0.0, F3 => 0.0]
+    p = [k1 => 1.0, k2 => .1, m1 => 1.0, m2 => 2.0, b12 => 1.0, b23 => 2.0, b31 => .1]
+    tspan = (0.0,20.0)
+    oprob = ODEProblem(osys, u0, tspan, p)
+    sol = solve(oprob, Tsit5(); abstol=1e-10, reltol=1e-10)
+    oprob2 = ODEProblem(rn, u0, tspan, p)
+    sol2 = solve(oprob2, Tsit5(); abstol=1e-10, reltol=1e-10)
+    oprob3 = ODEProblem(rn, u0, tspan, p; remove_conserved=true)
+    sol3 = solve(oprob3, Tsit5(); abstol=1e-10, reltol=1e-10)
+
+    tv = range(tspan[1], tspan[2], length=101)
+    for s in species(rn)
+        @test isapprox(sol(tv, idxs=s), sol2(tv, idxs=s))
+        @test isapprox(sol2(tv, idxs=s), sol2(tv, idxs=s))
+    end
+
+    nsys = convert(NonlinearSystem, rn; remove_conserved=true)
+    nprob = NonlinearProblem{true}(nsys, u0, p)
+    nsol = solve(nprob, NewtonRaphson(); tol = 1e-10)
+    nprob2 = ODEProblem(rn, u0, (0.0,100.0*tspan[2]), p)
+    nsol2 = solve(nprob2, Tsit5(); abstol=1e-10, reltol=1e-10)
+    nprob3 = NonlinearProblem(rn, u0, p; remove_conserved=true)
+    nsol3 = solve(nprob3, NewtonRaphson(); tol=1e-10)
+    for s in species(rn)
+        @test isapprox(nsol[s], nsol2(tspan[2], idxs=s))
+        @test isapprox(nsol2(tspan[2], idxs=s), nsol3[s])
+    end
+
+    u0 = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0, F3 => 20.0]
+    ssys = convert(SDESystem, rn; remove_conserved=true)
+    sprob = SDEProblem(ssys, u0, tspan, p)
+    sprob2 = SDEProblem(rn, u0, tspan, p)
+    sprob3 = SDEProblem(rn, u0, tspan, p; remove_conserved=true)
+    ists = ModelingToolkit.get_states(ssys)
+    sts  = ModelingToolkit.get_states(rn)
+    istsidxs = findall(in(ists),sts)
+    u1 = copy(sprob.u0); u2 = sprob2.u0; u3 = copy(sprob3.u0);
+    du1 = similar(u1); du2 = similar(u2); du3 = similar(u3);
+    g1 = zeros(length(u1), numreactions(rn))
+    g2 = zeros(length(u2), numreactions(rn))
+    g3 = zeros(length(u3), numreactions(rn))
+    sprob.f(du1, u1, sprob.p, 1.0)
+    sprob2.f(du2, u2, sprob2.p, 1.0)
+    sprob3.f(du3, u3, sprob3.p, 1.0)
+    @test isapprox(du1, du2[istsidxs])
+    @test isapprox(du2[istsidxs], du3)
+    sprob.g(g1, u1, sprob.p, 1.0)
+    sprob2.g(g2, u2, sprob2.p, 1.0)
+    sprob3.g(g3, u3, sprob3.p, 1.0)
+    @test isapprox(g1, g2[istsidxs,:])
+    @test isapprox(g2[istsidxs,:], g3)
+end
