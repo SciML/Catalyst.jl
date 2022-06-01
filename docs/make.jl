@@ -48,10 +48,10 @@ makedocs(
             "tutorials/basic_examples.md",
             "tutorials/compositional_modeling.md",
             "tutorials/symbolic_stoich.md",
+            "tutorials/reaction_network_representation.md",
             "tutorials/bifurcation_diagram.md",
             "tutorials/parameter_estimation.md",
-            "tutorials/generating_reactions_programmatically.md",
-            "tutorials/reaction_network_representation.md"
+            "tutorials/generating_reactions_programmatically.md"
         ],
         "FAQs" => "faqs.md",
         "API" => Any[
