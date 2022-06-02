@@ -1,6 +1,7 @@
 using Documenter
 using Catalyst, ModelingToolkit
 
+include("pages.jl")
 
 # supposed hack to get mhchem but doesn't seem to work yet...
 # const katex_version = "0.11.1"
@@ -39,24 +40,7 @@ makedocs(
     modules = [Catalyst,ModelingToolkit],
     doctest = false,
     clean = true,
-    pages = Any[
-        "Home" => "index.md",
-        "Tutorials" => Any[
-            "tutorials/using_catalyst.md",
-            "tutorials/dsl.md",
-            "tutorials/reaction_systems.md",
-            "tutorials/basic_examples.md",
-            "tutorials/compositional_modeling.md",
-            "tutorials/symbolic_stoich.md",
-            "tutorials/bifurcation_diagram.md",
-            "tutorials/parameter_estimation.md",
-            "tutorials/generating_reactions_programmatically.md"
-        ],
-        "FAQs" => "faqs.md",
-        "API" => Any[
-            "api/catalyst_api.md"
-        ]
-    ]
+    pages = pages
 )
 
 deploydocs(
