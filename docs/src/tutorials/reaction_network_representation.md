@@ -279,7 +279,7 @@ and,
 The rank of a reaction network is defined as the subspace spanned by the net
 stoichiometry vectors of the reaction-network, i.e. the span of the rows of the
 net stoichiometry matrix `N`. In other words, the number of uniquely represented
-"reactions vectors"(or the columns of net-stoichiometric matrix) is the rank of
+"reactions vectors" (or the columns of net-stoichiometric matrix) is the rank of
 the reaction network, refer Feinberg
 [(1)](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true).
 This can be calculated as follows
@@ -294,19 +294,15 @@ the `no. of complexes - no. of linkage classes`. This puts an upper bound on the
 rank of reaction network, and allows us to define the deficiency of the reaction
 network `δ = no. of complexes - no. of linkage classes - s` This gives us a
 measure of how independent the reaction vectors are, provided the network’s
-linkage classes.
+linkage classes, and can be calculated using the Catalyst API function
+`deficiency`.
 ```@example s1
-# crude way...note B i.e. incidence matrix has size of no. of complexes x no. of reactions
-δ = size(B,1) - length(lcs) - rank(netstoichmat(rn))
+δ = deficiency(rn)
 ```
-or using Catalyst API function `deficiency`.
-```@example s1
-δ = deficiency(netstoichmat(rn), incidencegraph, lcs)
-```
-We may also define deficiencies for individual subnetworks in the linkage
+We may also define deficiencies for individual sub-networks in the linkage
 classes as follows,
 ```@example s1
-linkage_δ = linkagedeficiencies(subnets, lcs)
+linkage_δ = linkagedeficiencies(rn)
 ```
 It follows linear algebra that ,`∑ (linkage_δ) <= δ`
 
@@ -315,11 +311,11 @@ Quoting Feinberg [(1)](https://link.springer.com/book/10.1007/978-3-030-03858-8?
 > Deficiency zero networks are ones for which the reaction vectors are as independent as the partition of complexes into linkage classes will allow. And, any subnetwork of a deficiency zero network is also a deficiency zero network.
 
 #### Reversibility of the network
-Simply put, reaction network is defined reversible if, the "arrows" of the
-reactions are symmetric such that every reaction is accompanied by its backward
-reaction. Catalyst API provides function `isreversible` to determine whether the
-reaction network is reversible or not, based on the Graph constructed from
-incidence matrix for interaction of reaction complexes. Example
+A reaction network is *reversible* if the "arrows" of the reactions are
+symmetric such that every reaction is accompanied by its backward reaction.
+Catalyst API provides function [`isreversible`](@ref) to determine whether a
+reaction network is reversible or not, based on the incidence graph showing
+interactions between reaction complexes. As an example, consider
 ```@example s1
 rn = @reaction_network begin
   (k1,k2),A <--> B
@@ -328,9 +324,11 @@ rn = @reaction_network begin
   (k7,k8),B+E <--> A+C
 end k1 k2 k3 k4 k5 k6 k7 k8;
 
-# find the graph from incidence matrix for reaction complexes
-incidencegraph = incidencematgraph(reactioncomplexes(rn)[2]);
-isreversible(incidencegraph)
+# calculate the set of reaction complexes
+reactioncomplexes(rn)
+
+# test if the system is reversible
+isreversible(rn)
 ```
 Consider another example,
 ```@example s1
@@ -340,23 +338,26 @@ rn = @reaction_network begin
   k4, D --> B+E
   k5 ,B+E --> A+C
 end k1 k2 k3 k4 k5;
-incidencegraph = incidencematgraph(reactioncomplexes(rn)[2]);
-isreversible(incidencegraph)
+reactioncomplexes(rn)
+isreversible(rn)
 ```
 ```julia
 complexgraph(rn)
 ```
 ![reversibility](../assets/complex_reversibility.svg)
 
-It is evident from the Figure above that the network is not "reversible", but has some sense of reversibility, such that each reaction-complex "ultimately reacts"(or indirectly reacts) to every other complex. This is known as "weakly reversible" system. One can test the network for "weak" reversibility by using function `isweaklyreversible` as follows
+It is evident from the Figure above that the network is not "reversible", but
+has some sense of reversibility, such that there is a path from each reaction
+complex back to itself within its associated subgraph. This is known as a *weakly
+reversible* system. One can test the network for weak reversibility by using
+the [`isweaklyreversible`](@ref) function:
 ```@example s1
 # need subnetworks from the reaction network first
-B=reactioncomplexes(rn)[2]
-lcs = linkageclasses(incidencematgraph(B));
-subnets = subnetworks(rn, lcs)
-isweaklyreversible(subnets)
+subnets = subnetworks(rn)
+isweaklyreversible(rn, subnets)
 ```
-Needless to say, every "reversible" network is also "weakly reversible", but the vice versa may or may not be true.
+Every reversible network is also weakly reversible, but not ever weakly
+reversible network is reversible.
 
 ## Caching of Network Properties in `ReactionSystems`
 
