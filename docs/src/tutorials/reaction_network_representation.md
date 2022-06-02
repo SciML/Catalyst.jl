@@ -113,7 +113,7 @@ end k b
 show(stdout, MIME"text/plain"(), rn) # hide
 ```
 We can think of the first reaction as converting the *reaction complex*,
-``2A:2B`` to the complex ``A:2C:D`` with rate ``2*A``. Suppose we order our
+``2A+2B`` to the complex ``A+2C+D`` with rate ``2A``. Suppose we order our
 species the same way as Catalyst does, i.e.
 ```math
 \begin{pmatrix}
@@ -138,20 +138,20 @@ each species within the complex. For the reactions in `rn` these vectors would
 be
 ```math
 \begin{align*}
-2A:3B = \begin{pmatrix}
+2A+3B = \begin{pmatrix}
 2\\
 3\\
 0\\
 0
 \end{pmatrix}, &&
-A:2C:D = \begin{pmatrix}
+A+2C+D = \begin{pmatrix}
 1\\
 0\\
 2\\
 1
 \end{pmatrix},
  &&
-C:D = \begin{pmatrix}
+C+D = \begin{pmatrix}
 0\\
 0\\
 1\\
@@ -173,9 +173,9 @@ is called the incidence matrix of the reaction network,
 ```@example s1
 B = incidencemat(rn)
 ```
-Here ``B`` is a ``C`` by ``K`` matrix with ``B_{c k} = 1`` if complex `c`
-appears as a product of reaction `k`, and ``B_{c k} = -1`` if complex `c` is a
-substrate of reaction `k`.
+Here ``B`` is a ``C`` by ``K`` matrix with ``B_{c k} = 1`` if complex ``c``
+appears as a product of reaction ``k``, and ``B_{c k} = -1`` if complex ``c`` is a
+substrate of reaction ``k``.
 
 Using our decomposition of ``N``, the RRE ODEs become
 ```math
@@ -210,8 +210,14 @@ parameter, and red arrows indicate conversion of substrate complexes into
 product complexes where the rate is an expression involving chemical species.
 
 ## Aspects of Reaction Network Structure
-Lets assume another example to highlight some more aspects of the reaction
-networks, using some more API functions
+The reaction complex representation can be exploited via [Chemical Reaction
+Network Theory](https://en.wikipedia.org/wiki/Chemical_reaction_network_theory)
+to provide insight into possible steady-state and time-dependent properties of
+RRE ODE models and in some cases stochastic chemical kinetics models. We'll now
+illustrate some of the types of network properties that Catalyst can determine,
+using the reaction complex representation in these calculations.
+
+Consider the following reaction network.
 ```@example s1
 rn = @reaction_network begin
      (k1,k2), A + B <--> C
@@ -221,46 +227,43 @@ rn = @reaction_network begin
      k8, B+G --> H
      k9, H --> 2A
 end k1 k2 k3 k4 k5 k6 k7 k8 k9
-
-# compute incidence matrix as previously mentioned
-B = incidencemat(rn)
+show(stdout, MIME"text/plain"(), rn) # hide
 ```
+with graph
 ```julia
 complexgraph(rn)
 ```
 
 ![network_1](../assets/complex_rn.svg)
 
-Lets compute a graph from incidence matrix
+### Linkage classes and sub-networks of the reaction network
+The preceding reaction complex graph shows that `rn` is composed of two
+disconnected sub-graphs, one containing the complexes ``A+B``, ``C``, ``D+E``, and
+``F``, the other containing the complexes ``2A``, ``B + G``, and ``H``. These sets,
+``\{A+B, C, D+E, F\}`` and ``\{2A, B + G,H\}`` are called the "linkage classes"
+of the reaction network. The function [`linkageclasses`](@ref) will calculate
+these for a given network, returning a vector of the integer indices of reaction
+complexes participating in each set of linkage-classes. Note, indices of
+reaction complexes can be determined from the ordering returned by
+[`reactioncomplexes`](@ref).
 ```@example s1
-incidencegraph = incidencematgraph(B);
-```
+# we must first calculate the reaction complexes -- they cached in rn
+reactioncomplexes(rn)
 
-#### Linkage classes and subnetworks from the reaction network
-Figure above shows that the `ReactionSystem` `rn` is composed of two distinct
-“pieces,” one containing the complexes `A+B`, `C`,` D+E`, and `F`, the other
-containing the complexes `2A`, `B + G`, and` H`. These two pieces can be viewed
-as non-linked set of complexes. These sets {`A+B`, `C`,` D+E`, `F`} and {`2A`,
-`B + G`,`H`} are the "linkage classes"of the reaction network.THe function
-`linkageclasses` returns vector of the indices of reaction complexes
-participating in each set of linkage-classes(Note: indices of reaction complexes
-found from function `reactioncomplexes` as previously explained)
-```@example s1
+# now we can calculate the linkage classes
 lcs = linkageclasses(rn)
 ```
-This however, does not tell us what are the individual `ReactionSystem`'s that
-form these linkage classes. This can be deduced from function `subnetworks` as
-follows. `subnetwork` returns a vector of `ReactionSystems`forming linkage
-classes.
+It can often be convenient to obtain the disconnected sub-networks as distinct
+`ReactionSystem`s, which are returned by the [`subnetworks`](@ref) function:
 ```@example s1
 subnets = subnetworks(rn)
 
 # check the reactions in each subnetworks
 reactions.(subnets)
 ```
+The graphs of the reaction complexes in the two sub-networks are then
 ```julia
- # or visualise them as
- complexgraph(subnets[1])
+  complexgraph(subnets[1])
 ```
 
 ![subnetwork_1](../assets/complex_subnets1.svg)
@@ -272,11 +275,12 @@ and,
 
 ![subnetwork_2](../assets/complex_subnets2.svg)
 
-#### Deficiency of the network
-The rank of reaction network is defined as the subspace spanned by the
-net-stoichiometry of reaction-network. In other words, the number of uniquely
-represented "reactions vectors"(or the columns of net-stoichiometric matrix) is
-the rank of the reaction network, refer Feinberg
+### Deficiency of the network
+The rank of a reaction network is defined as the subspace spanned by the net
+stoichiometry vectors of the reaction-network, i.e. the span of the rows of the
+net stoichiometry matrix `N`. In other words, the number of uniquely represented
+"reactions vectors"(or the columns of net-stoichiometric matrix) is the rank of
+the reaction network, refer Feinberg
 [(1)](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true).
 This can be calculated as follows
 ```@example s1
