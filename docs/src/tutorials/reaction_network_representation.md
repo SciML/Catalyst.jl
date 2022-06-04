@@ -24,7 +24,6 @@ repressilator = @reaction_network Repressilator begin
        μ, P₂ --> ∅
        μ, P₃ --> ∅
 end α K n δ γ β μ
-reactions(repressilator)
 ```
 In the [Using Catalyst](https://catalyst.sciml.ai/dev/tutorials/using_catalyst/)
 tutorial we showed how the above network could be visualized as a
@@ -110,7 +109,6 @@ rn = @reaction_network begin
  k*A, 2*A + 3*B --> A + 2*C + D
  b, C + D --> 2*A + 3*B
 end k b
-show(stdout, MIME"text/plain"(), rn) # hide
 ```
 We can think of the first reaction as converting the *reaction complex*,
 ``2A+2B`` to the complex ``A+2C+D`` with rate ``2A``. Suppose we order our
@@ -213,9 +211,9 @@ product complexes where the rate is an expression involving chemical species.
 The reaction complex representation can be exploited via [Chemical Reaction
 Network Theory](https://en.wikipedia.org/wiki/Chemical_reaction_network_theory)
 to provide insight into possible steady-state and time-dependent properties of
-RRE ODE models and in some cases stochastic chemical kinetics models. We'll now
-illustrate some of the types of network properties that Catalyst can determine,
-using the reaction complex representation in these calculations.
+RRE ODE models and  stochastic chemical kinetics models. We'll now illustrate
+some of the types of network properties that Catalyst can determine, using the
+reaction complex representation in these calculations.
 
 Consider the following reaction network.
 ```@example s1
@@ -227,7 +225,6 @@ rn = @reaction_network begin
      k8, B+G --> H
      k9, H --> 2A
 end k1 k2 k3 k4 k5 k6 k7 k8 k9
-show(stdout, MIME"text/plain"(), rn) # hide
 ```
 with graph
 ```julia
@@ -247,7 +244,7 @@ complexes participating in each set of linkage-classes. Note, indices of
 reaction complexes can be determined from the ordering returned by
 [`reactioncomplexes`](@ref).
 ```@example s1
-# we must first calculate the reaction complexes -- they cached in rn
+# we must first calculate the reaction complexes -- they are cached in rn
 reactioncomplexes(rn)
 
 # now we can calculate the linkage classes
@@ -280,22 +277,18 @@ The rank of a reaction network is defined as the subspace spanned by the net
 stoichiometry vectors of the reaction-network, i.e. the span of the rows of the
 net stoichiometry matrix `N`. In other words, the number of uniquely represented
 "reactions vectors" (or the columns of net-stoichiometric matrix) is the rank of
-the reaction network, refer Feinberg
-[(1)](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true).
-This can be calculated as follows
+the reaction network, refer [^1].This can be calculated as follows
 ```@example s1
 using LinearAlgebra
 s = rank(netstoichmat(rn))
 ```
-Feinberg
-[(1)](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true)
-shows that number of these uniquely represented "reaction vectors" cannot exceed
-the `no. of complexes - no. of linkage classes`. This puts an upper bound on the
-rank of reaction network, and allows us to define the deficiency of the reaction
-network `δ = no. of complexes - no. of linkage classes - s` This gives us a
-measure of how independent the reaction vectors are, provided the network’s
-linkage classes, and can be calculated using the Catalyst API function
-`deficiency`.
+It is show in [^1] that number of these uniquely represented "reaction
+vectors" cannot exceed the `no. of complexes - no. of linkage classes`. This
+puts an upper bound on the rank of reaction network, and allows us to define the
+deficiency of the reaction network `δ = no. of complexes - no. of linkage
+classes - s` This gives us a measure of how independent the reaction vectors
+are, provided the network’s linkage classes, and can be calculated using the
+Catalyst API function `deficiency`.
 ```@example s1
 δ = deficiency(rn)
 ```
@@ -362,4 +355,4 @@ reversible network is reversible.
 ## Caching of Network Properties in `ReactionSystems`
 
 ## Sources
-1) [Feinberg, M. *Foundations of Chemical Reaction Network Theory*, Applied Mathematical Sciences 202, Springer (2019).](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true)
+[^1]: [Feinberg, M. *Foundations of Chemical Reaction Network Theory*, Applied Mathematical Sciences 202, Springer (2019).](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true)

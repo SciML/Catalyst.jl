@@ -32,10 +32,26 @@ using Catalyst, ModelingToolkit
 #     ))
 # end
 
+# mathengine = MathJax3(Dict(
+#     :loader => Dict("load" => ["[tex]/require"])) #,
+#     #:tex => Dict("packages" => ["base", "ams", "autoload", "physics","[+]","require"] ))
+#     )
+# mathengine = MathJax3()
+
+mathengine = MathJax3(Dict(
+    :loader => Dict("load" => ["[tex]/require","[tex]/mathtools"]),
+    :tex => Dict(
+        "inlineMath" => [["\$","\$"], ["\\(","\\)"]],
+        "packages" => ["base", "ams", "autoload", "mathtools", "require"],
+    ),
+))
+
 makedocs(
     sitename = "Catalyst.jl",
     authors = "Samuel Isaacson",
-    format = Documenter.HTML(analytics = "UA-90474609-3", mathengine=Documenter.Writers.HTMLWriter.MathJax(), prettyurls = (get(ENV, "CI", nothing) == "true")),
+    format = Documenter.HTML(; analytics = "UA-90474609-3",
+                             mathengine,
+                             prettyurls = (get(ENV, "CI", nothing) == "true")),
     modules = [Catalyst,ModelingToolkit],
     doctest = false,
     clean = true,
