@@ -1,3 +1,5 @@
+using Catalyst, ModelingToolkit
+
 pages = Any[
         "Home" => "index.md",
         "Tutorials" => Any[

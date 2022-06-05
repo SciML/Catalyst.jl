@@ -1,5 +1,4 @@
 using Documenter
-using Catalyst, ModelingToolkit
 
 include("pages.jl")
 
