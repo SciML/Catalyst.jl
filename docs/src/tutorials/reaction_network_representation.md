@@ -1,4 +1,4 @@
-# Network Representations in Catalyst
+# Network Analysis in Catalyst
 
 In this tutorial we introduce several of the Catalyst API functions for network
 analysis. A complete summary of the exported functions is given in the API
@@ -111,7 +111,7 @@ rn = @reaction_network begin
 end k b
 ```
 We can think of the first reaction as converting the *reaction complex*,
-``2A+2B`` to the complex ``A+2C+D`` with rate ``2A``. Suppose we order our
+``2A+2B`` to the complex ``A+2C+D`` with rate ``kA``. Suppose we order our
 species the same way as Catalyst does, i.e.
 ```math
 \begin{pmatrix}
@@ -255,7 +255,7 @@ It can often be convenient to obtain the disconnected sub-networks as distinct
 ```@example s1
 subnets = subnetworks(rn)
 
-# check the reactions in each subnetworks
+# check the reactions in each subnetwork
 reactions.(subnets)
 ```
 The graphs of the reaction complexes in the two sub-networks are then
@@ -273,42 +273,62 @@ and,
 ![subnetwork_2](../assets/complex_subnets2.svg)
 
 ### Deficiency of the network
-The rank of a reaction network is defined as the subspace spanned by the net
-stoichiometry vectors of the reaction-network, i.e. the span of the rows of the
-net stoichiometry matrix `N`. In other words, the number of uniquely represented
-"reactions vectors" (or the columns of net-stoichiometric matrix) is the rank of
-the reaction network, refer [^1].This can be calculated as follows
+A famous theorem in Chemical Reaction Network Theory, the Deficiency Zero
+Theorem [^1], allows us to use knowledge of the net stoichiometry matrix and the
+linkage classes of a *mass action* RRE ODE system to draw conclusions about the
+system's possible steady-states. In this section we'll see how Catalyst can
+calculate a network's deficiency.
+
+The rank, ``r``, of a reaction network is defined as the dimension of the
+subspace spanned by the net stoichiometry vectors of the reaction-network [^1],
+i.e. the span of the columns of the net stoichiometry matrix `N`. It corresponds
+to the number of independent species in a chemical reaction network. That is, if
+we calculate the linear conservation laws of the networks, and use them to
+eliminate the dependent species of the network, we will have ``r`` independent
+species remaining. For our current example the conservation laws are given by
+```@example s1
+# first we calculate the conservation laws -- they are cached in rn
+conservationlaws(rn)
+
+# then we display them as equations for the dependent variables
+conservedequations(rn)
+show(stdout, MIME"text/plain"(), ans) # hide
+```
+Here the parameters `_ConLaw[i]` represent the constants of the three
+conservation laws, and we see that there are three dependent species that could
+be eliminated. As
+```@example s1
+numspecies(rn)
+```
+we find that there are five independent species. Let's check this is correct:
 ```@example s1
 using LinearAlgebra
-s = rank(netstoichmat(rn))
+rank(netstoichmat(rn)) == 5
 ```
-It is show in [^1] that number of these uniquely represented "reaction
-vectors" cannot exceed the `no. of complexes - no. of linkage classes`. This
-puts an upper bound on the rank of reaction network, and allows us to define the
-deficiency of the reaction network `δ = no. of complexes - no. of linkage
-classes - s` This gives us a measure of how independent the reaction vectors
-are, provided the network’s linkage classes, and can be calculated using the
-Catalyst API function `deficiency`.
+So we know that the rank of our reaction network is five.
+
+The deficiency, ``\delta``, of a reaction network is defined as
+```math
+\delta = \textrm{(number of complexes)} - \textrm{(number of linkage classes)} - \textrm{(rank)}.
+```
+For our network this is ``7 - 2 - 5 = 0``, which we can calculate in Catalyst as
 ```@example s1
+# first we calculate the reaction complexes of rn and cache them in rn
+reactioncomplexes(rn)
+
+# then we can calculate the deficiency
 δ = deficiency(rn)
 ```
-We may also define deficiencies for individual sub-networks in the linkage
-classes as follows,
-```@example s1
-linkage_δ = linkagedeficiencies(rn)
-```
-It follows linear algebra that ,`∑ (linkage_δ) <= δ`
+Quoting Feinberg [^1]
+> Deficiency zero networks are ones for which the reaction vectors [i.e. net
+> stoichiometry vectors] are as independent as the partition of complexes into
+> linkage classes will allow.
 
-Quoting Feinberg [(1)](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true),
-
-> Deficiency zero networks are ones for which the reaction vectors are as independent as the partition of complexes into linkage classes will allow. And, any subnetwork of a deficiency zero network is also a deficiency zero network.
-
-#### Reversibility of the network
+### Reversibility of the network
 A reaction network is *reversible* if the "arrows" of the reactions are
-symmetric such that every reaction is accompanied by its backward reaction.
-Catalyst API provides function [`isreversible`](@ref) to determine whether a
-reaction network is reversible or not, based on the incidence graph showing
-interactions between reaction complexes. As an example, consider
+symmetric so that every reaction is accompanied by its reverse reaction.
+Catalyst's API provides the [`isreversible`](@ref) function to determine whether
+a reaction network is reversible. As an example, consider
 ```@example s1
 rn = @reaction_network begin
   (k1,k2),A <--> B
@@ -337,22 +357,61 @@ isreversible(rn)
 ```julia
 complexgraph(rn)
 ```
+
 ![reversibility](../assets/complex_reversibility.svg)
 
-It is evident from the Figure above that the network is not "reversible", but
-has some sense of reversibility, such that there is a path from each reaction
-complex back to itself within its associated subgraph. This is known as a *weakly
-reversible* system. One can test the network for weak reversibility by using
+It is evident from the preceding graph that the network is not reversible.
+However, it satisfies a weaker property in that there is a path from each
+reaction complex back to itself within its associated subgraph. This is known as
+a *weak reversiblity*. One can test a network for weak reversibility by using
 the [`isweaklyreversible`](@ref) function:
 ```@example s1
 # need subnetworks from the reaction network first
 subnets = subnetworks(rn)
 isweaklyreversible(rn, subnets)
 ```
-Every reversible network is also weakly reversible, but not ever weakly
+Every reversible network is also weakly reversible, but not every weakly
 reversible network is reversible.
 
+## Deficiency Zero Theorem
+
 ## Caching of Network Properties in `ReactionSystems`
+When calling many of the network API functions, Catalyst calculates and caches
+in `rn` a variety of information. For example the first call to
+```julia
+rcs,B = reactioncomplexes(rn)
+```
+calculates, caches, and returns the reaction complexes, `rcs`, and the incidence
+matrix, `B`, of `rn`. Subsequent calls simply return `rcs` and `B` from the
+cache.
+
+Similarly, the first call to
+```julia
+N = netstoichmat(rn)
+```
+calculates, caches and returns the net stoichiometry matrix. Subsequent calls
+then simply return the cached value of `N`. Caching such information means users
+do not need to manually know which subsets of network properties are needed for
+a given calculation (like the deficiency). Generally only
+```julia
+rcs,B = reactioncomplexes(rn)    # must be called once to cache rcs and B
+any_other_network_property(rn)
+```
+should work to calculate a desired network property, with the API doc strings
+indicating when `reactioncomplexes(rn)` must be called at least once before a
+given function is used.
+
+Because of the caching of network properties, subsequent calls to most API
+functions will be fast, simply returning the previously calculated and cached
+values. In some cases it may be desirable to reset the cache and recalculate
+these properties, for example after modifying a network (see
+[`addspecies!`](@ref), [`addparam!`](@ref), or [`addreaction!`](@ref)). This can
+be done by calling
+```julia
+Catalyst.reset_networkproperties!(rn)
+```
+Network property functions will then recalculate their associated properties and
+cache the new values the next time they are called.
 
 ## Sources
 [^1]: [Feinberg, M. *Foundations of Chemical Reaction Network Theory*, Applied Mathematical Sciences 202, Springer (2019).](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true)
