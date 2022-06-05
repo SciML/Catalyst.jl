@@ -283,7 +283,7 @@ The rank, ``r``, of a reaction network is defined as the dimension of the
 subspace spanned by the net stoichiometry vectors of the reaction-network [^1],
 i.e. the span of the columns of the net stoichiometry matrix `N`. It corresponds
 to the number of independent species in a chemical reaction network. That is, if
-we calculate the linear conservation laws of the networks, and use them to
+we calculate the linear conservation laws of a network, and use them to
 eliminate the dependent species of the network, we will have ``r`` independent
 species remaining. For our current example the conservation laws are given by
 ```@example s1
@@ -373,7 +373,7 @@ isweaklyreversible(rn, subnets)
 Every reversible network is also weakly reversible, but not every weakly
 reversible network is reversible.
 
-## Deficiency Zero Theorem
+### Deficiency Zero Theorem
 
 ## Caching of Network Properties in `ReactionSystems`
 When calling many of the network API functions, Catalyst calculates and caches
@@ -413,5 +413,5 @@ Catalyst.reset_networkproperties!(rn)
 Network property functions will then recalculate their associated properties and
 cache the new values the next time they are called.
 
-## Sources
+## References
 [^1]: [Feinberg, M. *Foundations of Chemical Reaction Network Theory*, Applied Mathematical Sciences 202, Springer (2019).](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true)
