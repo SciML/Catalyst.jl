@@ -18,14 +18,6 @@ newrn = @reaction_network rn2 begin
         r, C --> A + B
       end r
 @named rn = extend(newrn, basern)
-show(stdout, MIME"text/plain"(), rn) # hide
-```
-with reactions
-```julia
-reactions(rn)
-```
-```@example ex1
-show(stdout, MIME"text/plain"(), reactions(rn)) # hide
 ```
 Here we extended `basern` with `newrn` giving a system with all the
 reactions. Note, if a name is not specified via `@named` or the `name` keyword
@@ -39,19 +31,11 @@ newestrn = @reaction_network rn3 begin
             v, A + D --> 2D
            end v
 @named rn = compose(basern, [newrn, newestrn])
-show(stdout, MIME"text/plain"(), rn) # hide
-```
-with reactions
-```julia
-reactions(rn)
-```
-```@example ex1
-show(stdout, MIME"text/plain"(), reactions(rn)) # hide
 ```
 Here we have created a new `ReactionSystem` that adds `newrn` and `newestrn` as
 subsystems of `basern`. The variables and parameters in the sub-systems are
 considered distinct from those in other systems, and so are namespaced (i.e.
-prefaced) by the name of the system they come from. 
+prefaced) by the name of the system they come from.
 
 We can see the subsystems of a given system by
 ```@example ex1
@@ -65,21 +49,15 @@ plot(TreePlot(rn), method=:tree, fontsize=12, nodeshape=:ellipse)
 ![rn network with subsystems](../assets/rn_treeplot.svg)
 
 We could also have directly constructed `rn` using the same reaction as in
-`basern` as 
+`basern` as
 ```@example ex1
 @parameters k
 @variables t, A(t), B(t), C(t)
 rxs = [Reaction(k, [A,B], [C])]
 @named rn  = ReactionSystem(rxs, t; systems = [newrn, newestrn])
-show(stdout, MIME"text/plain"(), rn) # hide
-```
-with reactions
-```@example ex1
-reactions(rn)
-show(stdout, MIME"text/plain"(), reactions(rn)) # hide
 ```
 
-Catalyst provides several different accessors for getting information from a single system, 
+Catalyst provides several different accessors for getting information from a single system,
 or all systems in the tree. To get the species, parameters, and equations *only* within a given system (i.e. ignoring subsystems), we can use
 ```@example ex1
 ModelingToolkit.get_states(rn)
@@ -104,16 +82,10 @@ reactions(rn)   # or equations(rn)
 If we want to collapse `rn` down to a single system with no subsystems we can use
 ```@example ex1
 flatrn = Catalyst.flatten(rn)
-show(stdout, MIME"text/plain"(), flatrn) # hide
 ```
 where
 ```@example ex1
 ModelingToolkit.get_systems(flatrn)
-```
-but
-```@example ex1
-reactions(flatrn)
-show(stdout, MIME"text/plain"(), reactions(flatrn)) # hide
 ```
 
 More about ModelingToolkit's interface for compositional modeling can be found
@@ -144,12 +116,6 @@ three genes, and then compose them together
 @named G2 = repressed_gene(; R=ParentScope(G1.P))
 @named G3 = repressed_gene(; R=ParentScope(G2.P))
 @named repressilator = ReactionSystem(t; systems=[G1,G2,G3])
-show(stdout, MIME"text/plain"(), repressilator) # hide
-```
-with 
-```@example ex1
-reactions(repressilator)
-show(stdout, MIME"text/plain"(), reactions(repressilator)) # hide
 ```
 Notice, in this system each gene is a child node in the system graph of the repressilator
 ```julia
@@ -199,23 +165,16 @@ cyto = @reaction_network cyto begin
             μ, M --> 0
         end β k₊ k₋ V σ μ
 
-# export reactions, 
+# export reactions,
 # γ,δ=probability per time to be exported/imported
 model = @reaction_network model begin
        γ, $(nuc.M) --> $(cyto.M)
        δ, $(cyto.D) --> $(nuc.D)
     end γ δ
 @named model = compose(model, [nuc, cyto])
-show(stdout, MIME"text/plain"(), model) # hide
 ```
-```@example ex1
-reactions(model)
-show(stdout, MIME"text/plain"(), reactions(model)) # hide
-```
-
 A graph of the resulting network is
 ```julia
 Graph(model)
 ```
 ![graph of gene regulation model](../assets/compartment_gene_regulation.svg)
-
