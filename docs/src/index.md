@@ -1,4 +1,4 @@
-# Catalyst.jl for Reaction Models
+# Catalyst.jl for Reaction Network Modeling
 
 Catalyst.jl is a symbolic modeling package for analysis and high performance
 simulation of chemical reaction networks. Catalyst defines symbolic
