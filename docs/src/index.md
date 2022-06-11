@@ -53,6 +53,10 @@ etc).
   [Catlab.jl](https://github.com/AlgebraicJulia/Catlab.jl/).)
 
 ## Packages Supporting Catalyst
+- Catalyst [`ReactionSystem`](@ref)s can be imported from SBML files via
+  [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), and from BioNetGen .net
+  files and various stoichiometric matrix network representations using
+  [ReactionNetworkImporters.jl](https://github.com/SciML/ReactionNetworkImporters.jl).
 - [MomentClosure.jl](https://github.com/augustinas1/MomentClosure.jl) allows
   generation of symbolic ModelingToolkit `ODESystem`s, representing moment
   closure approximations to moments of the Chemical Master Equation, from
@@ -60,10 +64,9 @@ etc).
 - [FiniteStateProjection.jl](https://github.com/kaandocal/FiniteStateProjection.jl)
   allows the construction and numerical solution of Chemical Master Equation
   models from reaction networks defined in Catalyst.
-- Catalyst [`ReactionSystem`](@ref)s can be imported from SBML files via
-  [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), and from BioNetGen .net
-  files and various stoichiometric matrix network representations using
-  [ReactionNetworkImporters.jl](https://github.com/SciML/ReactionNetworkImporters.jl).
+- [DelaySSAToolkit.jl](https://github.com/palmtree2013/DelaySSAToolkit.jl) can
+  augment Catalyst reaction network models with delays, and can simulate the
+  resulting stochastic chemical kinetics with delays models.
 
 ## Installation
 Catalyst can be installed through the Julia package manager:
