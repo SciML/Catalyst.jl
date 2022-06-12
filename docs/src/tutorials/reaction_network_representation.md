@@ -4,7 +4,6 @@ In this tutorial we introduce several of the Catalyst API functions for network
 analysis. A complete summary of the exported functions is given in the API
 section
 [`Network-Analysis-and-Representations`](https://catalyst.sciml.ai/dev/api/catalyst_api/#Network-Analysis-and-Representations).
-We illustrate these functions on the repressilator model from previous tutorials.
 
 ## Network representation of the Repressilator `ReactionSystem`
 We first load Catalyst and construct our model of the repressilator
@@ -61,15 +60,15 @@ x = species(repressilator)
 ```
 The RRE ODEs satisfied by $\mathbf{x}(t)$ are then
 ```math
-\frac{d\mathbf{x}}{dt} = N \mathbf{\nu}(\mathbf{x}(t),t),
+\frac{d\mathbf{x}}{dt} = N \mathbf{v}(\mathbf{x}(t),t),
 ```
 where ``N`` is a constant ``M`` by ``K`` matrix with ``N_{m k}`` the net
 stoichiometric coefficient of species ``m`` in reaction ``k``.
-``\mathbf{\nu}(\mathbf{x}(t),t)`` is the rate law vector, with
-``\nu_k(\mathbf{x}(t),t)`` the rate law for the ``k``th reaction. For example,
+``\mathbf{v}(\mathbf{x}(t),t)`` is the rate law vector, with
+``v_k(\mathbf{x}(t),t)`` the rate law for the ``k``th reaction. For example,
 for the first reaction of the repressilator above, the rate law is
 ```math
-\nu_1(\mathbf{x}(t),t) = \frac{\alpha K^{n}}{K^{n} + \left( P_3(t) \right)^{n}}
+v_1(\mathbf{x}(t),t) = \frac{\alpha K^{n}}{K^{n} + \left( P_3(t) \right)^{n}}.
 ```
 We can calculate each of these in Catalyst via
 ```@example s1
@@ -111,7 +110,7 @@ rn = @reaction_network begin
 end k b
 ```
 We can think of the first reaction as converting the *reaction complex*,
-``2A+2B`` to the complex ``A+2C+D`` with rate ``kA``. Suppose we order our
+``2A+3B`` to the complex ``A+2C+D`` with rate ``kA``. Suppose we order our
 species the same way as Catalyst does, i.e.
 ```math
 \begin{pmatrix}
@@ -177,7 +176,7 @@ substrate of reaction ``k``.
 
 Using our decomposition of ``N``, the RRE ODEs become
 ```math
-\frac{dx}{dt} = Z B \mathbf{\nu}(\mathbf{x}(t),t).
+\frac{dx}{dt} = Z B \mathbf{v}(\mathbf{x}(t),t).
 ```
 Let's verify that ``N = Z B``,
 ```@example s1
@@ -335,7 +334,7 @@ rn = @reaction_network begin
   (k3,k4),A + C <--> D
   (k5,k6),D <--> B+E
   (k7,k8),B+E <--> A+C
-end k1 k2 k3 k4 k5 k6 k7 k8;
+end k1 k2 k3 k4 k5 k6 k7 k8
 
 # calculate the set of reaction complexes
 reactioncomplexes(rn)
@@ -349,8 +348,8 @@ rn = @reaction_network begin
   (k1,k2),A <--> B
   k3, A + C --> D
   k4, D --> B+E
-  k5 ,B+E --> A+C
-end k1 k2 k3 k4 k5;
+  k5, B+E --> A+C
+end k1 k2 k3 k4 k5
 reactioncomplexes(rn)
 isreversible(rn)
 ```
@@ -363,7 +362,7 @@ complexgraph(rn)
 It is evident from the preceding graph that the network is not reversible.
 However, it satisfies a weaker property in that there is a path from each
 reaction complex back to itself within its associated subgraph. This is known as
-a *weak reversiblity*. One can test a network for weak reversibility by using
+*weak reversiblity*. One can test a network for weak reversibility by using
 the [`isweaklyreversible`](@ref) function:
 ```@example s1
 # need subnetworks from the reaction network first
@@ -374,6 +373,95 @@ Every reversible network is also weakly reversible, but not every weakly
 reversible network is reversible.
 
 ### Deficiency Zero Theorem
+Knowing the deficiency and weak reversibility of a mass action chemical reaction
+network ODE model allows us to make inferences about the corresponding
+steady-state behavior. Before illustrating how this works for one example, we
+need one last definition.
+
+Recall that in the matrix-vector representation for the RRE ODEs, the entries,
+``N_{m k}``, of the stoichiometry matrix, ``N``, give the net change in species
+``m`` due to reaction ``k``. If we let ``\mathbf{N}_k`` denote the ``k``th
+column of this matrix, this vector corresponds to the change in the species
+state vector, ``\mathbf{x}(t)``, due to reaction ``k``, i.e. when reaction ``k``
+occurs ``\mathbf{x}(t) \to \mathbf{x}(t) + \mathbf{N}_k``. Moreover, by
+integrating the ODE
+```math
+\frac{d\mathbf{x}}{dt} = N \mathbf{v}(\mathbf{x}(t)) = \sum_{k=1}^{K} v_k(\mathbf{x}(t)) \, \mathbf{N}_k
+```
+we find
+```math
+\mathbf{x}(t) = \mathbf{x}(0) + \sum_{k=1}^K \left(\int_0^t v_k(\mathbf{x})(s) \, ds\right) \mathbf{N}_k,
+```
+which demonstrates that ``\mathbf{x}(t) - \mathbf{x}(0)`` is always given by a
+linear combination of the stochiometry vectors, i.e.
+```math
+\DeclareMathOperator{\span}{span}
+\mathbf{x}(t) - \mathbf{x}(0) \in \span\{\mathbf{N}_k \}.
+```
+In particular, this says that ``\mathbf{x}(t)`` lives in the translation of the
+``\span\{\mathbf{N}_k \}`` by ``\mathbf{x}(0)`` which we write as
+``(\mathbf{x}(0) + \span\{\mathbf{N}_k\})``. In fact, since the solution should
+stay non-negative, if we let $\bar{\mathbb{R}}_+^{M}$ denote the subset of
+vectors in $\mathbb{R}^{M}$ with non-negative components, the possible physical
+values for the solution, ``\mathbf{x}(t)``, must be in the set
+```math
+(\mathbf{x}(0) + \span\{\mathbf{N}_k\}) \cap \bar{\mathbb{R}}_+^{M}.
+```
+This set is called the stoichiometric compatibility class of ``\mathbf{x}(t)``.
+The key property of stoichiometric compatibility classes is that they are
+invariant under the RRE ODE's dynamics, i.e. a solution will always remain
+within the subspace given by the stoichiometric compatibility class. Finally, we
+note that the *positive* stoichiometric compatibility class generated by
+$\mathbf{x}(0)$ is just ``(\mathbf{x}(0) + \span\{\mathbf{N}_k\}) \cap
+\mathbb{R}_+^{M}``, where ``\mathbb{R}_+^{M}`` denotes the vectors in
+``\mathbb{R}^M`` with strictly positive components.
+
+With these definitions we can now see how knowing the deficiency and weak
+reversibility of the network can tell us about its steady-state behavior.
+Consider the previous example, which we know is weakly reversible. Its
+deficiency is
+```@example s1
+deficiency(rn)
+```
+We also verify that the system is purely mass action (though it is apparent
+from the network's definition):
+```@example s1
+all(rx -> ismassaction(rx, rn), reactions(rn))
+```
+We can therefore apply the Deficiency Zero Theorem to draw conclusions about the
+system's steady-state behavior. The Deficiency Zero Theorem (roughly) says that
+a mass action network with deficiency zero satisfies
+1. If the network is weakly reversible, then independent of the reaction rate
+   constants the RRE ODEs have exactly one equilibrium solution within each
+   positive stoichiometric compatibility class. That equilibrium is locally
+   asymptotically stable.
+2. If the network is not weakly reversible, then the RRE ODEs cannot admit a
+   positive equilibrium solution.
+
+See [^1] for a more precise statement, proof, and additional examples.
+
+We can therefore conclude that for any initial condition that is positive, and
+hence in some positive stoichiometric compatibility class, `rn` will have
+exactly one equilibrium solution which will be positive and locally
+asymptotically stable.
+
+As a final example, consider the following network from [^1]
+```@example s1
+rn = @reaction_network begin
+  (k1,k2),A <--> 2B
+  (k3,k4), A + C <--> D
+  k5, B+E --> C + D
+end k1 k2 k3 k4 k5
+reactioncomplexes(rn)
+subnets = subnetworks(rn)
+isma = all(rx -> ismassaction(rx,rn), reactions(rn))
+def = deficiency(rn)
+iswr = isweaklyreversible(rn, subnets)
+isma,def,iswr
+```
+which we see is mass action and has deficiency zero, but is not weakly
+reversible. As such, we can conclude that for any choice of rate constants the
+RRE ODEs cannot have a positive equilibrium solution.
 
 ## Caching of Network Properties in `ReactionSystems`
 When calling many of the network API functions, Catalyst calculates and caches

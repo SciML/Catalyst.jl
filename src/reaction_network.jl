@@ -180,7 +180,7 @@ Adds the reactions declared to a preexisting [`ReactionSystem`](@ref). All
 parameters used in the added reactions need to be declared after the
 reactions.
 
-See the [Catalyst.jl for Reaction Models](@ref) documentation for details on
+See the [Catalyst.jl for Reaction Network Modeling](@ref) documentation for details on
 parameters to the macro.
 """
 macro add_reactions(rn::Symbol, ex::Expr, parameters...)
