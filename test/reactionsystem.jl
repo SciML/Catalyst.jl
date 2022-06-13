@@ -439,3 +439,19 @@ let
     @test isapprox(umean[1], umean[3]; rtol=1e-2)
     @test umean[4] == 10
 end
+
+# fix for SBML test 305
+let
+    @parameters k1 k2
+    @variables t S1(t) S2(t) [isconstant=true] S3(t)
+    rx = Reaction(k2, [S1], nothing)
+    ∂ₜ = Differential(t)
+    eq = ∂ₜ(S3) ~ k1*S2
+    @named csys = ODESystem([eq],t)
+    @named rs = ReactionSystem([rx],t,[S1],[k2]; constraints=csys)
+    @test issetequal(states(rs), [S1,S2,S3])
+    @test issetequal(parameters(rs), [k1,k2])
+    osys = convert(ODESystem, rs)
+    @test issetequal(states(osys),[S1,S3])
+    @test issetequal(parameters(osys), [S2,k1,k2])
+end
