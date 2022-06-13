@@ -1,7 +1,7 @@
 # Catalyst specific symbolic variables to support SBML
 struct VariableConstantSpecies end
 struct VariableBCSpecies end
-Symbolics.option_to_metadata_type(::Val{:isconstant}) = VariableConstantSpecies
+Symbolics.option_to_metadata_type(::Val{:isconstantspecies}) = VariableConstantSpecies
 Symbolics.option_to_metadata_type(::Val{:isbc}) = VariableBCSpecies
 
 """
@@ -90,22 +90,29 @@ struct Reaction{S, T}
     only_use_rate::Bool
 end
 
+"""
+    isvalidreactant(s)
+
+Test if a species is valid as a reactant (i.e. a variable or a constant parameter).
+"""
+isvalidreactant(s) = (isconstant(s) == MT.isparameter(s))
+
 function Reaction(rate, subs, prods, substoich, prodstoich;
                   netstoich=nothing, only_use_rate=false,
                   kwargs...)
 
-    (isnothing(prods)&&isnothing(subs)) && error("A reaction requires a non-nothing substrate or product vector.")
-    (isnothing(prodstoich)&&isnothing(substoich)) && error("Both substrate and product stochiometry inputs cannot be nothing.")
+    (isnothing(prods)&&isnothing(subs)) && throw(ArgumentError("A reaction requires a non-nothing substrate or product vector."))
+    (isnothing(prodstoich)&&isnothing(substoich)) && throw(ArgumentError("Both substrate and product stochiometry inputs cannot be nothing."))
     if isnothing(subs)
         subs = Vector{Term}()
-        !isnothing(substoich) && error("If substrates are nothing, substrate stiocihometries have to be so too.")
+        !isnothing(substoich) && throw(ArgumentError("If substrates are nothing, substrate stiocihometries have to be so too."))
         substoich = typeof(prodstoich)()
     end
     S = eltype(substoich)
 
     if isnothing(prods)
         prods = Vector{Term}()
-        !isnothing(prodstoich) && error("If products are nothing, product stiocihometries have to be so too.")
+        !isnothing(prodstoich) && throw(ArgumentError("If products are nothing, product stiocihometries have to be so too."))
         prodstoich = typeof(substoich)()
     end
     T = eltype(prodstoich)
@@ -122,6 +129,13 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     else
         substoich′ = (S == stoich_type) ? substoich : convert.(stoich_type, substoich)
         prodstoich′ = (T == stoich_type) ? prodstoich : convert.(stoich_type, prodstoich)
+    end
+
+    if !(all(isvalidreactant, subs) && all(isvalidreactant, prods))
+        badsts = union(filter(!isvalidreactant, subs), filter(!isvalidreactant, prods))
+        throw(ArgumentError("""Constant species must be parameters, and parameters must have
+                 the isconstantspecies metadata, to be a substrate or product. The following
+                 reactants do not follow this convention:\n $badsts"""))
     end
 
     ns = if netstoich === nothing
@@ -441,6 +455,18 @@ function ReactionSystem(eqs, iv, states, ps;
     ps′     = value.(MT.scalarize(ps))
     eqs′    = (eqs isa Vector) ? eqs : collect(eqs)
 
+    if any(MT.isparameter, states′)
+        idxs = findall(MT.isparameter, states′)
+        throw(ArgumentError("Found one or more parameters among the states; this is not "
+                            * "allowed. Move: $(states′[idxs]) to be parameters."))
+    end
+
+    if any(isconstant, states′)
+        idxs = findall(isconstant, states′)
+        throw(ArgumentError("Found one or more constant species among the states; this is "
+                            * "not allowed. Move: $(states′[idxs]) to be parameters."))
+    end
+
     var_to_name = Dict()
     MT.process_variables!(var_to_name, defaults, states′)
     MT.process_variables!(var_to_name, defaults, ps′)
@@ -482,9 +508,21 @@ end
 # and then adds additional ones found in the reaction. Name could be changed.
 function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothing, ps_in; kwargs...)
     t    = value(iv)
-    sts  = OrderedSet(spec for rx in rxs for spec in Iterators.flatten((rx.substrates,rx.products)))
+    sts  = OrderedSet()
     ps   = OrderedSet{Any}(ps_in)
     vars = OrderedSet()
+
+    # add species / parameters that are substrates / products first
+    for rx in rxs
+        for spec in Iterators.flatten(rx.substrates, rx.products)
+            if MT.isparameter(spec)
+                push!(ps, spec)
+            else
+                push!(sts, spec)
+            end
+        end
+    end
+
     for rx in rxs
         findvars!(ps, sts, rx.rate, t, vars)
         for s in rx.substoich

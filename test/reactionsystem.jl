@@ -455,3 +455,14 @@ let
     @test issetequal(states(osys),[S1,S3])
     @test issetequal(parameters(osys), [S2,k1,k2])
 end
+
+# constant species = parameters basic tests
+let
+    @parameters b [isconstantspecies=true] c
+    @variables t A(t) B(t) a [isconstantspecies=true]
+    @test_throws ArgumentError Reaction(k, [A,a], [B])
+    @test_throws ArgumentError Reaction(k, [A,c], [B])
+    @test_throws ArgumentError Reaction(k, [A], [B,a])
+    @test_throws ArgumentError Reaction(k, [A], [B,c])
+    Reaction(k, [A,b], [B,b], [1,1], [1,2])
+end
