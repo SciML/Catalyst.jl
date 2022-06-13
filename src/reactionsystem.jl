@@ -148,12 +148,13 @@ function print_rxside(io::IO, specs, stoich)
         print(io, "∅")
     else
         for (i,spec) in enumerate(specs)
+            prspec = MT.isparameter(spec) ? spec : MT.operation(spec)
             if isequal(stoich[i],one(stoich[i]))
-                print(io, ModelingToolkit.operation(spec))
+                print(io, prspec)
             elseif Symbolics.istree(stoich[i])
-                print(io, "(", stoich[i], ")*", ModelingToolkit.operation(spec))
+                print(io, "(", stoich[i], ")*", prspec)
             else
-                print(io, stoich[i], "*", ModelingToolkit.operation(spec))
+                print(io, stoich[i], "*", prspec)
             end
 
             (i < length(specs)) && print(io, " + ")
@@ -996,8 +997,17 @@ function addconstraints!(eqs, rs::ReactionSystem, ists; remove_conserved=false)
                   ODESystem or NonlinearSystem.
                   """
         end
-        sts = unique(vcat(sts, get_states(csys)))
-        ps = unique(vcat(ps, get_ps(csys)))
+        # merge in states of csys that aren't constant
+        sts = unique!(vcat(sts, filter(!isconstant, get_states(csys))))
+
+        # merge constant species that are only in the constraints into parameters
+        ps = vcat(ps, get_ps(csys))
+        ps = if any(isconstant, get_states(csys))
+            unique!(vcat(ps, filter(isconstant, get_states(csys))))
+        else
+            unique!(ps)
+        end
+
         ceqs = get_eqs(csys)
         (!isempty(ceqs)) && append!(eqs,ceqs)
         defs = merge(defs, MT.defaults(csys))
@@ -1172,8 +1182,13 @@ function Base.convert(::Type{<:JumpSystem},rs::ReactionSystem;
 
     # handle constant and BC species
     sts = get_indep_sts(flatrs)
-    sts = vcat(sts, filter(isbc, get_states(flatrs)))
-    ps = vcat(get_ps(flatrs), filter(isconstant, get_states(flatrs)))
+    hasconststs = any(isconstant, get_states(flatrs))
+    hasconststs && (sts = vcat(sts, filter(isbc, get_states(flatrs))))
+    ps = if hasconststs
+        unique!(vcat(get_ps(flatrs), filter(isconstant, get_states(flatrs))))
+    else
+        get_ps(flatrs)
+    end
 
     JumpSystem(eqs, get_iv(flatrs), sts, ps; name, defaults=MT.defaults(flatrs),
                                             observed=MT.observed(flatrs), checks, kwargs...)
