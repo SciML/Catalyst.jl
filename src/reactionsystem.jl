@@ -456,15 +456,15 @@ function ReactionSystem(eqs, iv, states, ps;
     eqs′    = (eqs isa Vector) ? eqs : collect(eqs)
 
     if any(MT.isparameter, states′)
-        idxs = findall(MT.isparameter, states′)
+        psts = filter(MT.isparameter, states′)
         throw(ArgumentError("Found one or more parameters among the states; this is not "
-                            * "allowed. Move: $(states′[idxs]) to be parameters."))
+                            * "allowed. Move: $psts to be parameters."))
     end
 
     if any(isconstant, states′)
-        idxs = findall(isconstant, states′)
+        csts = filter(isconstant, states′)
         throw(ArgumentError("Found one or more constant species among the states; this is "
-                            * "not allowed. Move: $(states′[idxs]) to be parameters."))
+                            * "not allowed. Move: $csts to be parameters."))
     end
 
     var_to_name = Dict()
