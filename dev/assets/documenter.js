@@ -5,7 +5,6 @@ requirejs.config({
     'headroom': 'https://cdnjs.cloudflare.com/ajax/libs/headroom/0.12.0/headroom.min',
     'jqueryui': 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min',
     'jquery': 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min',
-    'mathjax': 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS_HTML',
     'headroom-jquery': 'https://cdnjs.cloudflare.com/ajax/libs/headroom/0.12.0/jQuery.headroom.min',
     'highlight': 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.0.1/highlight.min',
     'highlight-julia-repl': 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.0.1/languages/julia-repl.min',
@@ -15,9 +14,6 @@ requirejs.config({
     "deps": [
       "highlight"
     ]
-  },
-  "mathjax": {
-    "exports": "MathJax"
   },
   "headroom-jquery": {
     "deps": [
@@ -33,19 +29,16 @@ requirejs.config({
 }
 });
 ////////////////////////////////////////////////////////////////////////////////
-require(['mathjax'], function(MathJax) {
-MathJax.Hub.Config({
-  "jax": [
-    "input/TeX",
-    "output/HTML-CSS",
-    "output/NativeMML"
-  ],
-  "TeX": {
-    "equationNumbers": {
-      "autoNumber": "AMS"
-    }
-  },
-  "tex2jax": {
+require([], function() {
+window.MathJax = {
+  "tex": {
+    "packages": [
+      "base",
+      "ams",
+      "autoload",
+      "mathtools",
+      "require"
+    ],
     "inlineMath": [
       [
         "$",
@@ -55,22 +48,27 @@ MathJax.Hub.Config({
         "\\(",
         "\\)"
       ]
-    ],
-    "processEscapes": true
+    ]
   },
-  "config": [
-    "MMLorHTML.js"
-  ],
-  "extensions": [
-    "MathMenu.js",
-    "MathZoom.js",
-    "TeX/AMSmath.js",
-    "TeX/AMSsymbols.js",
-    "TeX/autobold.js",
-    "TeX/autoload-all.js"
-  ]
+  "loader": {
+    "load": [
+      "[tex]/require",
+      "[tex]/mathtools"
+    ]
+  },
+  "options": {
+    "ignoreHtmlClass": "tex2jax_ignore",
+    "processHtmlClass": "tex2jax_process"
+  }
 }
-);
+;
+
+(function () {
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0/es5/tex-svg.js';
+    script.async = true;
+    document.head.appendChild(script);
+})();
 
 })
 ////////////////////////////////////////////////////////////////////////////////
