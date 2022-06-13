@@ -961,7 +961,6 @@ end
 function addconstraints!(eqs, rs::ReactionSystem, ists; remove_conserved=false)
     # if there are BC species, put them after the independent species
     rssts = get_states(rs)
-    @show ists
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
 
     # if there are constant species, make them parameters
