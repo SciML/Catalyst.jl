@@ -1,6 +1,32 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+- **BREAKING:** Modified how constant and boundary condition species (in the
+  SBML sense) work. Constant species should now be specified as parameters with
+  the `isconstantspecies=true` metadata, while non-constant boundary condition
+  species should be specified as variables with the `isbcspecies=true` metadata.
+  As before, boundary condition species are treated as constant with respect to
+  reactions, so their dynamics must be defined in a constraint system. Right now
+  only conversion of `ReactionSystem`s to an `ODESystem` with a constraint
+  `ODESystem` or `NonlinearSystem`, or conversion to a `NonlinearSystem` with a
+  constraint `NonlinearSystem`, are supported. Constraints are not supported in
+  `SDESystem` or `JumpSystem` conversion, and so boundary condition species are
+  effectively constant when converting to those model types (but still left as
+  states instead of parameters). Defining constant and boundary condition
+  species is done by
+  ```julia
+  @parameters k A [isconstantspecies=true]
+  @variables t  B(t) [isbcspecies=true] C(t)
+  rx = Reaction(k, [A,B], [B,C], [1,2], [1,1])
+  ```
+  Here `A` is a constant species, `B` is a non-constant boundary condition
+  species, and `C` is a normal species. Constant species can be used in creating
+  `Reaction`s like normal and boundary condition species as either substrates or
+  products. Note that network API functions do not make use of these labels, and
+  treat all species as normal -- these properties are only made use of when
+  converting to other system types. Network analysis and conservation law
+  functions have not been tested with constant species, so should not be used on
+  such models at this time.
 
 ## Catalyst 11.0
 - **BREAKING:** Added the ability to eliminate conserved species when generating
