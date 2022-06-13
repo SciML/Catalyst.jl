@@ -1,8 +1,8 @@
-# Catalyst specific symbolic variables to support SBML
-struct VariableConstantSpecies end
+# Catalyst specific symbolics to support SBML
+struct ParameterConstantSpecies end
 struct VariableBCSpecies end
-Symbolics.option_to_metadata_type(::Val{:isconstantspecies}) = VariableConstantSpecies
-Symbolics.option_to_metadata_type(::Val{:isbc}) = VariableBCSpecies
+Symbolics.option_to_metadata_type(::Val{:isconstantspecies}) = ParameterConstantSpecies
+Symbolics.option_to_metadata_type(::Val{:isbcspecies}) = VariableBCSpecies
 
 """
     Catalyst.isconstant(s)
@@ -11,7 +11,7 @@ Tests if the given symbolic variable corresponds to a constant species.
 """
 isconstant(s::Num) = isconstant(MT.value(s))
 function isconstant(s)
-    MT.getmetadata(s, VariableConstantSpecies, false)
+    MT.getmetadata(s, ParameterConstantSpecies, false)
 end
 
 """
@@ -24,7 +24,7 @@ function isbc(s)
     MT.getmetadata(s, VariableBCSpecies, false)
 end
 
-# true for species for which shouldn't change from the reactions
+# true for species which shouldn't change from the reactions
 drop_dynamics(s) = isconstant(s) || isbc(s)
 
 """
@@ -513,13 +513,9 @@ function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothi
     vars = OrderedSet()
 
     # add species / parameters that are substrates / products first
-    for rx in rxs
-        for spec in Iterators.flatten(rx.substrates, rx.products)
-            if MT.isparameter(spec)
-                push!(ps, spec)
-            else
-                push!(sts, spec)
-            end
+    for rx in rxs, reactants in (rx.substrates, rx.products)
+        for spec in reactants
+            MT.isparameter(spec) ? push!(ps, spec) : push!(sts, spec)
         end
     end
 
@@ -534,7 +530,6 @@ function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothi
     end
     ReactionSystem(rxs, t, collect(sts), collect(ps); kwargs...)
 end
-
 
 function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)

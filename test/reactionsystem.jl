@@ -340,8 +340,8 @@ function gs!(dg,u,p,t)
     nothing
 end
 let
-    @parameters k1 k2
-    @variables t A(t) [isconstant=true] B(t) C(t) [isbc=true] D(t) E(t)
+    @parameters k1 k2 A [isconstantspecies=true]
+    @variables t B(t) C(t) [isbc=true] D(t) E(t)
     rxs = [(@reaction k1, $A --> B),
            (@reaction k2, B --> $A),
            (@reaction k1, $C + D --> E),
@@ -458,11 +458,14 @@ end
 
 # constant species = parameters basic tests
 let
-    @parameters b [isconstantspecies=true] c
+    @parameters k b [isconstantspecies=true] c
     @variables t A(t) B(t) a [isconstantspecies=true]
     @test_throws ArgumentError Reaction(k, [A,a], [B])
     @test_throws ArgumentError Reaction(k, [A,c], [B])
     @test_throws ArgumentError Reaction(k, [A], [B,a])
     @test_throws ArgumentError Reaction(k, [A], [B,c])
-    Reaction(k, [A,b], [B,b], [1,1], [1,2])
+    rx = Reaction(k, [A,b], [B,b], [1,1], [1,2])
+    @named rs = ReactionSystem([rx],t)
+    @test issetequal(states(rs), [A,B])
+    @test issetequal(parameters(rs), [k,b])
 end
