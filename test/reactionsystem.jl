@@ -314,7 +314,7 @@ osys = convert(ODESystem, mixedsys; combinatoric_ratelaws=false)
 
 # test for constant and boundary condition species
 function f!(du,u,p,t)
-    k1 = p[1]; k2 = p[2]; A = p[3]
+    A = p[1]; k1 = p[2]; k2 = p[3]
     B = u[1]; D = u[2]; E = u[3]; C = u[4]
     du[1] = k1*A - k2*B
     du[2] = -k1*C*D + k2*E
@@ -323,7 +323,7 @@ function f!(du,u,p,t)
     nothing
 end
 function fs!(du,u,p,t)
-    k1 = p[1]; k2 = p[2]; A = p[3]
+    A = p[1]; k1 = p[2]; k2 = p[3]
     B = u[1]; D = u[2]; E = u[3]; C = u[4]
     du[1] = k1*A - k2*B
     du[2] = -k1*C*D + k2*E
@@ -331,7 +331,7 @@ function fs!(du,u,p,t)
     nothing
 end
 function gs!(dg,u,p,t)
-    k1 = p[1]; k2 = p[2]; A = p[3]
+    A = p[1]; k1 = p[2]; k2 = p[3]
     B = u[1]; D = u[2]; E = u[3]; C = u[4]
     dg .= 0.0
     dg[1,1] = sqrt(k1*A);    dg[1,2] = - sqrt(k2*B)
@@ -339,9 +339,11 @@ function gs!(dg,u,p,t)
     dg[3,3] = -dg[2,3];       dg[3,4] = -dg[2,4]
     nothing
 end
+
+# tests for BC and constant species
 let
     @parameters k1 k2 A [isconstantspecies=true]
-    @variables t B(t) C(t) [isbc=true] D(t) E(t)
+    @variables t B(t) C(t) [isbcspecies=true] D(t) E(t)
     rxs = [(@reaction k1, $A --> B),
            (@reaction k2, B --> $A),
            (@reaction k1, $C + D --> E),
@@ -355,10 +357,9 @@ let
 
     # test nonlinear systems
     u0 = [1.0, 2.0, 3.0, 4.0]
-    p = [2.5, 3.5, 2.0]
-    f!(rand(4),u0,p,1.0)
+    p = [2.0,2.5,3.5]
     u0map = [B,D,E,C] .=> u0
-    pmap = [k1,k2,A] .=> p
+    pmap = [A,k1,k2] .=> p
     tspan = (0.0,5.0)
     oprob1 = ODEProblem(osys, u0map, tspan, pmap)
     sts = [B,D,E,C]
@@ -378,7 +379,7 @@ let
     @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
     ssys = convert(SDESystem, rs)
     @test issetequal(MT.get_states(ssys), [B, C, D, E])
-    @test issetequal(MT.get_ps(ssys), [k1, k2, A])
+    @test issetequal(MT.get_ps(ssys), [A, k1, k2])
     du1 = zeros(4); du2 = zeros(4)
     sprob = SDEProblem(ssys, u0map, tspan, pmap; check_length=false)
     sprob.f(du1, u0, p, 1.0)
@@ -419,8 +420,8 @@ end
 
 # test that jump solutions actually run correctly for constants and BCs
 let
-    @parameters k1
-    @variables t A(t) [isconstant=true] C(t) [isbc=true]
+    @parameters k1 A [isconstantspecies=true]
+    @variables t C(t) [isbcspecies=true]
     @variables t B1(t) B2(t) B3(t)
     @named rn = ReactionSystem([(@reaction k1, $C --> B1),
                                 (@reaction k1, $A --> B2),
@@ -442,15 +443,15 @@ end
 
 # fix for SBML test 305
 let
-    @parameters k1 k2
-    @variables t S1(t) S2(t) [isconstant=true] S3(t)
+    @parameters k1 k2 S2 [isconstantspecies=true]
+    @variables t S1(t) S3(t)
     rx = Reaction(k2, [S1], nothing)
     ∂ₜ = Differential(t)
     eq = ∂ₜ(S3) ~ k1*S2
     @named csys = ODESystem([eq],t)
     @named rs = ReactionSystem([rx],t,[S1],[k2]; constraints=csys)
-    @test issetequal(states(rs), [S1,S2,S3])
-    @test issetequal(parameters(rs), [k1,k2])
+    @test issetequal(states(rs), [S1,S3])
+    @test issetequal(parameters(rs), [S2,k1,k2])
     osys = convert(ODESystem, rs)
     @test issetequal(states(osys),[S1,S3])
     @test issetequal(parameters(osys), [S2,k1,k2])
