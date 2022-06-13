@@ -456,6 +456,24 @@ let
     @test issetequal(states(osys),[S1,S3])
     @test issetequal(parameters(osys), [S2,k1,k2])
 end
+let
+    @parameters k1 k2 S2 [isconstantspecies=true]
+    @variables t S1(t) S3(t)
+    rx = Reaction(k2, [S1], nothing)
+    ∂ₜ = Differential(t)
+    eq = S3 ~ k1*S2
+    @named csys = ODESystem([eq],t)
+    @named rs = ReactionSystem([rx],t,[S1],[k2]; constraints=csys)
+    @test issetequal(states(rs), [S1,S3])
+    @test issetequal(parameters(rs), [S2,k1,k2])
+    osys = convert(ODESystem, rs)
+    @test issetequal(states(osys),[S1,S3])
+    @test issetequal(parameters(osys), [S2,k1,k2])
+    osys2 = structural_simplify(osys)
+    @test length(equations(osys2)) == 1
+    @test issetequal(states(osys2), [S1])
+    @test issetequal(parameters(osys2), [S2,k1,k2])
+end
 
 # constant species = parameters basic tests
 let
