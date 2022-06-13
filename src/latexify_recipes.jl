@@ -1,3 +1,10 @@
+Base.@kwdef mutable struct CatalystLatexParams
+    double_linebreak::Bool = false
+    starred::Bool = true
+end
+
+const LATEX_DEFS = CatalystLatexParams()
+
 # Implements handling of registered functions.
 const mm_names = ([:mm])
 const mmr_names = ([:mmr])
@@ -77,8 +84,9 @@ function make_stoich_str(spec, stoich, subber; kwargs...)
     end
 end
 
-function chemical_arrows(rn::ReactionSystem;
-    expand = true, double_linebreak=false, mathjax=true, starred=false, kwargs...)
+function chemical_arrows(rn::ReactionSystem; expand = true,
+                         double_linebreak=LATEX_DEFS.double_linebreak, mathjax=true,
+                         starred=LATEX_DEFS.starred, kwargs...)
 
     (get_constraints(rn) !== nothing) && (@warn "Latexify currently ignores constraint equations.")
     any_nonrx_subsys(rn) && (@warn "Latexify currently ignores non-ReactionSystem subsystems.")
@@ -116,8 +124,8 @@ function chemical_arrows(rn::ReactionSystem;
         str *= join(substrates, " + ")
 
         ### Generate reaction arrows
-        prestr  = mathjax ? "[" : "[\$"
-        poststr = mathjax ? "]" : "\$]"
+        prestr  = mathjax ? "[\$" : "[\$"
+        poststr = mathjax ? "\$]" : "\$]"
         if i + 1 <= length(rxs) && issetequal(r.products,rxs[i+1].substrates) && issetequal(r.substrates,rxs[i+1].products)
             ### Bi-directional arrows
             rate_backwards = ModelingToolkit.prettify_expr(toexpr(rxs[i+1].rate))

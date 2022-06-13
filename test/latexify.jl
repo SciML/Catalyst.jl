@@ -36,27 +36,8 @@ end v1 K1 n1 v2 K2 n2 v3 K3 n3 v4 K4 n4 v5 K5 n5 k1 k2 k3 k4 k5 k6 d1 d2 d3 d4 d
 
 # Latexify.@generate_test latexify(r)
 @test latexify(r) == replace(
-raw"\begin{align}
+raw"\begin{align*}
 \require{mhchem}
-\ce{ \varnothing &->[\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}] X1}\\
-\ce{ \varnothing &->[\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}] X2}\\
-\ce{ \varnothing &->[\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}] X3}\\
-\ce{ \varnothing &->[\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}] X4}\\
-\ce{ \varnothing &->[\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}] X5}\\
-\ce{ X2 &<=>[k1][k2] X1 + 2 X4}\\
-\ce{ X4 &<=>[k3][k4] X3}\\
-\ce{ 3 X5 + X1 &<=>[k5][k6] X2}\\
-\ce{ X1 &->[d1] \varnothing}\\
-\ce{ X2 &->[d2] \varnothing}\\
-\ce{ X3 &->[d3] \varnothing}\\
-\ce{ X4 &->[d4] \varnothing}\\
-\ce{ X5 &->[d5] \varnothing}
-\end{align}
-", "\r\n"=>"\n")
-
-# Latexify.@generate_test latexify(r, mathjax=false)
-@test latexify(r, mathjax = false) == replace(
-raw"\begin{align}
 \ce{ \varnothing &->[$\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}$] X1}\\
 \ce{ \varnothing &->[$\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}$] X2}\\
 \ce{ \varnothing &->[$\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}$] X3}\\
@@ -70,9 +51,27 @@ raw"\begin{align}
 \ce{ X3 &->[$d3$] \varnothing}\\
 \ce{ X4 &->[$d4$] \varnothing}\\
 \ce{ X5 &->[$d5$] \varnothing}
-\end{align}
+\end{align*}
 ", "\r\n"=>"\n")
 
+# Latexify.@generate_test latexify(r, mathjax=false)
+@test latexify(r, mathjax = false) == replace(
+raw"\begin{align*}
+\ce{ \varnothing &->[$\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}$] X1}\\
+\ce{ \varnothing &->[$\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}$] X2}\\
+\ce{ \varnothing &->[$\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}$] X3}\\
+\ce{ \varnothing &->[$\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}$] X4}\\
+\ce{ \varnothing &->[$\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}$] X5}\\
+\ce{ X2 &<=>[$k1$][$k2$] X1 + 2 X4}\\
+\ce{ X4 &<=>[$k3$][$k4$] X3}\\
+\ce{ 3 X5 + X1 &<=>[$k5$][$k6$] X2}\\
+\ce{ X1 &->[$d1$] \varnothing}\\
+\ce{ X2 &->[$d2$] \varnothing}\\
+\ce{ X3 &->[$d3$] \varnothing}\\
+\ce{ X4 &->[$d4$] \varnothing}\\
+\ce{ X5 &->[$d5$] \varnothing}
+\end{align*}
+", "\r\n"=>"\n")
 
 
 r = @reaction_network begin
@@ -83,21 +82,21 @@ end p_a k n d_a p_b d_b r_a r_b
 
 # Latexify.@generate_test latexify(r)
 @test latexify(r) == replace(
-raw"\begin{align}
+raw"\begin{align*}
 \require{mhchem}
-\ce{ \varnothing &<=>[\frac{p_{a} B^{n}}{k^{n} + B^{n}}][d_{a}] A}\\
-\ce{ \varnothing &<=>[p_{b}][d_{b}] B}\\
-\ce{ 3 B &<=>[r_{a}][r_{b}] A}
-\end{align}
+\ce{ \varnothing &<=>[$\frac{p_{a} B^{n}}{k^{n} + B^{n}}$][$d_{a}$] A}\\
+\ce{ \varnothing &<=>[$p_{b}$][$d_{b}$] B}\\
+\ce{ 3 B &<=>[$r_{a}$][$r_{b}$] A}
+\end{align*}
 ", "\r\n"=>"\n")
 
 # Latexify.@generate_test latexify(r, mathjax=false)
 @test latexify(r, mathjax = false) == replace(
-raw"\begin{align}
+raw"\begin{align*}
 \ce{ \varnothing &<=>[$\frac{p_{a} B^{n}}{k^{n} + B^{n}}$][$d_{a}$] A}\\
 \ce{ \varnothing &<=>[$p_{b}$][$d_{b}$] B}\\
 \ce{ 3 B &<=>[$r_{a}$][$r_{b}$] A}
-\end{align}
+\end{align*}
 ", "\r\n"=>"\n")
 
 # test empty system
@@ -111,10 +110,10 @@ rn = @reaction_network begin
     k*Y, Y --> ∅
   end k
 
-  # Latexify.@generate_test latexify(rn)
+# Latexify.@generate_test latexify(rn)
 @test latexify(rn) == replace(
-raw"\begin{align}
+raw"\begin{align*}
 \require{mhchem}
-\ce{ Y &->[Y k] \varnothing}
-\end{align}
+\ce{ Y &->[$Y k$] \varnothing}
+\end{align*}
 ", "\r\n"=>"\n")
