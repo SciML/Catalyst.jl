@@ -1,8 +1,8 @@
-# Catalyst specific symbolic variables to support SBML
-struct VariableConstantSpecies end
+# Catalyst specific symbolics to support SBML
+struct ParameterConstantSpecies end
 struct VariableBCSpecies end
-Symbolics.option_to_metadata_type(::Val{:isconstant}) = VariableConstantSpecies
-Symbolics.option_to_metadata_type(::Val{:isbc}) = VariableBCSpecies
+Symbolics.option_to_metadata_type(::Val{:isconstantspecies}) = ParameterConstantSpecies
+Symbolics.option_to_metadata_type(::Val{:isbcspecies}) = VariableBCSpecies
 
 """
     Catalyst.isconstant(s)
@@ -11,7 +11,7 @@ Tests if the given symbolic variable corresponds to a constant species.
 """
 isconstant(s::Num) = isconstant(MT.value(s))
 function isconstant(s)
-    MT.getmetadata(s, VariableConstantSpecies, false)
+    MT.getmetadata(s, ParameterConstantSpecies, false)
 end
 
 """
@@ -24,7 +24,7 @@ function isbc(s)
     MT.getmetadata(s, VariableBCSpecies, false)
 end
 
-# true for species for which shouldn't change from the reactions
+# true for species which shouldn't change from the reactions
 drop_dynamics(s) = isconstant(s) || isbc(s)
 
 """
@@ -90,22 +90,29 @@ struct Reaction{S, T}
     only_use_rate::Bool
 end
 
+"""
+    isvalidreactant(s)
+
+Test if a species is valid as a reactant (i.e. a variable or a constant parameter).
+"""
+isvalidreactant(s) = (isconstant(s) == MT.isparameter(s))
+
 function Reaction(rate, subs, prods, substoich, prodstoich;
                   netstoich=nothing, only_use_rate=false,
                   kwargs...)
 
-    (isnothing(prods)&&isnothing(subs)) && error("A reaction requires a non-nothing substrate or product vector.")
-    (isnothing(prodstoich)&&isnothing(substoich)) && error("Both substrate and product stochiometry inputs cannot be nothing.")
+    (isnothing(prods)&&isnothing(subs)) && throw(ArgumentError("A reaction requires a non-nothing substrate or product vector."))
+    (isnothing(prodstoich)&&isnothing(substoich)) && throw(ArgumentError("Both substrate and product stochiometry inputs cannot be nothing."))
     if isnothing(subs)
         subs = Vector{Term}()
-        !isnothing(substoich) && error("If substrates are nothing, substrate stiocihometries have to be so too.")
+        !isnothing(substoich) && throw(ArgumentError("If substrates are nothing, substrate stiocihometries have to be so too."))
         substoich = typeof(prodstoich)()
     end
     S = eltype(substoich)
 
     if isnothing(prods)
         prods = Vector{Term}()
-        !isnothing(prodstoich) && error("If products are nothing, product stiocihometries have to be so too.")
+        !isnothing(prodstoich) && throw(ArgumentError("If products are nothing, product stiocihometries have to be so too."))
         prodstoich = typeof(substoich)()
     end
     T = eltype(prodstoich)
@@ -122,6 +129,13 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     else
         substoich′ = (S == stoich_type) ? substoich : convert.(stoich_type, substoich)
         prodstoich′ = (T == stoich_type) ? prodstoich : convert.(stoich_type, prodstoich)
+    end
+
+    if !(all(isvalidreactant, subs) && all(isvalidreactant, prods))
+        badsts = union(filter(!isvalidreactant, subs), filter(!isvalidreactant, prods))
+        throw(ArgumentError("""Constant species must be parameters, and parameters must have
+                 the isconstantspecies metadata, to be a substrate or product. The following
+                 reactants do not follow this convention:\n $badsts"""))
     end
 
     ns = if netstoich === nothing
@@ -441,6 +455,18 @@ function ReactionSystem(eqs, iv, states, ps;
     ps′     = value.(MT.scalarize(ps))
     eqs′    = (eqs isa Vector) ? eqs : collect(eqs)
 
+    if any(MT.isparameter, states′)
+        psts = filter(MT.isparameter, states′)
+        throw(ArgumentError("Found one or more parameters among the states; this is not "
+                            * "allowed. Move: $psts to be parameters."))
+    end
+
+    if any(isconstant, states′)
+        csts = filter(isconstant, states′)
+        throw(ArgumentError("Found one or more constant species among the states; this is "
+                            * "not allowed. Move: $csts to be parameters."))
+    end
+
     var_to_name = Dict()
     MT.process_variables!(var_to_name, defaults, states′)
     MT.process_variables!(var_to_name, defaults, ps′)
@@ -482,9 +508,17 @@ end
 # and then adds additional ones found in the reaction. Name could be changed.
 function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothing, ps_in; kwargs...)
     t    = value(iv)
-    sts  = OrderedSet(spec for rx in rxs for spec in Iterators.flatten((rx.substrates,rx.products)))
+    sts  = OrderedSet()
     ps   = OrderedSet{Any}(ps_in)
     vars = OrderedSet()
+
+    # add species / parameters that are substrates / products first
+    for rx in rxs, reactants in (rx.substrates, rx.products)
+        for spec in reactants
+            MT.isparameter(spec) ? push!(ps, spec) : push!(sts, spec)
+        end
+    end
+
     for rx in rxs
         findvars!(ps, sts, rx.rate, t, vars)
         for s in rx.substoich
@@ -496,7 +530,6 @@ function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothi
     end
     ReactionSystem(rxs, t, collect(sts), collect(ps); kwargs...)
 end
-
 
 function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
@@ -626,15 +659,15 @@ function MT.getvar(sys::ReactionSystem, name::Symbol; namespace=false)
     throw(ArgumentError("System $(nameof(sys)): variable $name does not exist"))
 end
 
-# get the non-constant, non-bc, independent states, preserving their relative order in
-# get_states(rs)
+# get the non-bc, independent state variables, preserving their relative order in
+# get_states(rs). ASSUMES system has been validated to have no constant species as states.
 function get_indep_sts(rs::ReactionSystem, remove_conserved=false)
     sts = get_states(rs)
     nps = get_networkproperties(rs)
     indepsts = if remove_conserved
-        filter(s -> (s ∈ nps.indepspecs) && (!drop_dynamics(s)), sts)
+        filter(s -> (s ∈ nps.indepspecs) && (!isbc(s)), sts)
     else
-        filter(s -> !drop_dynamics(s), sts)
+        filter(s -> !isbc(s), sts)
     end
     indepsts
 end
@@ -860,8 +893,8 @@ function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
     haveivdep && return false
     rx.only_use_rate && return false
     @inbounds for var in rxvars
-        # not mass action if have a non-constant species in the rate expression
-        ((var in stateset) && (!isconstant(var))) && return false
+        # not mass action if have a non-constant, variable species in the rate expression
+        (var in stateset) && return false
     end
 
     return true
@@ -962,10 +995,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists; remove_conserved=false)
     # if there are BC species, put them after the independent species
     rssts = get_states(rs)
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
-
-    # if there are constant species, make them parameters
-    hasconstspec = any(isconstant, get_states(rs))
-    ps = hasconstspec ? vcat(get_ps(rs), filter(isconstant, get_states(rs))) : get_ps(rs)
+    ps = get_ps(rs)
 
     # make dependent species observables and add conservation constants as parameters
     if remove_conserved
@@ -997,16 +1027,24 @@ function addconstraints!(eqs, rs::ReactionSystem, ists; remove_conserved=false)
                   ODESystem or NonlinearSystem.
                   """
         end
-        # merge in states of csys that aren't constant
-        sts = unique!(vcat(sts, filter(!isconstant, get_states(csys))))
+
+        # merge in states of csys
+        csts = get_states(csys)
+        if any(isconstant, csts)
+            const_csts = filter(isconstant, csts)
+            error("""Found a constant species among the states of the constraint system.
+                    This is not allowed. Please make the following species parameters with
+                    the isconstantspecies metadata set: $const_csts.""")
+        end
+        sts = unique!(vcat(sts, csts))
 
         # merge constant species that are only in the constraints into parameters
-        ps = vcat(ps, get_ps(csys))
-        ps = if any(isconstant, get_states(csys))
-            unique!(vcat(ps, filter(isconstant, get_states(csys))))
-        else
-            unique!(ps)
+        if !all(MT.isparameter, get_ps(csys))
+            nonps = filter(!MT.isparameter, get_ps(csys))
+            error("""Found constraint system parameters that were not created as
+                     ModelingToolkit parameters: $nonps.""")
         end
+        ps = unique!(vcat(ps, get_ps(csys)))
 
         ceqs = get_eqs(csys)
         (!isempty(ceqs)) && append!(eqs,ceqs)
@@ -1148,9 +1186,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     ps = (noise_scaling===nothing) ? ps : vcat(ps,toparam(noise_scaling))
 
     if any(isbc, get_states(flatrs))
-        @info """Boundary condition species detected. As constraints are not supported when
-        converting to SDESystems, the resulting system will be undetermined. Consider using
-        constant species instead."""
+        @info "Boundary condition species detected. As constraints are not supported when converting to SDESystems, the resulting system will be undetermined. Consider using constant species instead."
     end
 
     SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps; name, defaults=defs,
@@ -1180,15 +1216,10 @@ function Base.convert(::Type{<:JumpSystem},rs::ReactionSystem;
 
     eqs = assemble_jumps(flatrs; combinatoric_ratelaws)
 
-    # handle constant and BC species
+    # handle BC species
     sts = get_indep_sts(flatrs)
-    hasconststs = any(isconstant, get_states(flatrs))
-    hasconststs && (sts = vcat(sts, filter(isbc, get_states(flatrs))))
-    ps = if hasconststs
-        unique!(vcat(get_ps(flatrs), filter(isconstant, get_states(flatrs))))
-    else
-        get_ps(flatrs)
-    end
+    any(isbc, get_states(flatrs)) && (sts = vcat(sts, filter(isbc, get_states(flatrs))))
+    ps = get_ps(flatrs)
 
     JumpSystem(eqs, get_iv(flatrs), sts, ps; name, defaults=MT.defaults(flatrs),
                                             observed=MT.observed(flatrs), checks, kwargs...)

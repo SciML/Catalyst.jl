@@ -188,8 +188,8 @@ end
     dependents(rx, network)
 
 Given a [`Reaction`](@ref) and a [`ReactionSystem`](@ref), return a vector of
-`ModelingToolkit.Num`s corresponding to species the *reaction rate
-law* depends on. E.g., for
+`ModelingToolkit.Num`s corresponding to *non-constant* species the *reaction rate law*
+depends on. E.g., for
 
 `k*W, 2X + 3Y --> 5Z + W`
 
@@ -1278,6 +1278,8 @@ Notes:
 """
 function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks=false)
     reset_networkproperties!(network)
+
+    isconstant(s) && error("Constant species should be added via addparams!.")
 
     # we don't check subsystems since we will add it to the top-level system...
     curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), get_states(network))
