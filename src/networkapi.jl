@@ -187,9 +187,8 @@ end
 """
     dependents(rx, network)
 
-Given a [`Reaction`](@ref) and a [`ReactionSystem`](@ref), return a vector of
-`ModelingToolkit.Num`s corresponding to *non-constant* species the *reaction rate law*
-depends on. E.g., for
+Given a [`Reaction`](@ref) and a [`ReactionSystem`](@ref), return a vector of the
+*non-constant* species the reaction rate law depends on. e.g., for
 
 `k*W, 2X + 3Y --> 5Z + W`
 
@@ -198,6 +197,8 @@ the returned vector would be `[W(t),X(t),Y(t)]`.
 Notes:
 - Allocates
 - Does not check for dependents within any subsystems.
+- Constant species are not considered dependents since they are internally treated as
+  parameters.
 """
 function dependents(rx, network)
     if rx.rate isa Number
@@ -230,11 +231,13 @@ end
 """
     substoichmat(rn; sparse=false)
 
-Returns the substrate stoichiometry matrix, ``S``, with ``S_{i j}`` the
-stoichiometric coefficient of the ith substrate within the jth reaction.
+Returns the substrate stoichiometry matrix, ``S``, with ``S_{i j}`` the stoichiometric
+coefficient of the ith substrate within the jth reaction.
 
 Note:
 - Set sparse=true for a sparse matrix representation
+- Note that constant species are not considered substrates, but just components that modify
+  the associated rate law.
 """
 function substoichmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem)
     Is=Int[];  Js=Int[];  Vs=Int[];
@@ -242,6 +245,7 @@ function substoichmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem)
     for (k,rx) in enumerate(reactions(rn))
         stoich = rx.substoich
         for (i,sub) in enumerate(rx.substrates)
+            isconstant(sub) && continue
             push!(Js, k)
             push!(Is, smap[sub])
             push!(Vs, stoich[i])
@@ -255,6 +259,7 @@ function substoichmat(::Type{Matrix{Int}},rn::ReactionSystem)
     for (k,rx) in enumerate(reactions(rn))
         stoich = rx.substoich
         for (i,sub) in enumerate(rx.substrates)
+            isconstant(sub) && continue
             smat[smap[sub],k] = stoich[i]
         end
     end
@@ -269,11 +274,13 @@ end
 """
     prodstoichmat(rn; sparse=false)
 
-Returns the product stoichiometry matrix, ``P``, with ``P_{i j}`` the
-stoichiometric coefficient of the ith product within the jth reaction.
+Returns the product stoichiometry matrix, ``P``, with ``P_{i j}`` the stoichiometric
+coefficient of the ith product within the jth reaction.
 
 Note:
 - Set sparse=true for a sparse matrix representation
+- Note that constant species are not treated as products, but just components that modify
+  the associated rate law.
 """
 function prodstoichmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem)
     Is=Int[];  Js=Int[];  Vs=Int[];
@@ -281,6 +288,7 @@ function prodstoichmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem)
     for (k,rx) in enumerate(reactions(rn))
         stoich = rx.prodstoich
         for (i,prod) in enumerate(rx.products)
+            isconstant(prod) && continue
 			push!(Js, k)
 			push!(Is, smap[prod])
 			push!(Vs, stoich[i])
@@ -294,6 +302,7 @@ function prodstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem)
     for (k,rx) in enumerate(reactions(rn))
         stoich = rx.prodstoich
         for (i,prod) in enumerate(rx.products)
+            isconstant(prod) && continue
             pmat[smap[prod],k] = stoich[i]
         end
     end
@@ -308,18 +317,21 @@ end
 """
     netstoichmat(rn, sparse=false)
 
-Returns the net stoichiometry matrix, ``N``, with ``N_{i j}`` the net
-stoichiometric coefficient of the ith species within the jth reaction.
+Returns the net stoichiometry matrix, ``N``, with ``N_{i j}`` the net stoichiometric
+coefficient of the ith species within the jth reaction.
 
 Notes:
 - Set sparse=true for a sparse matrix representation
 - Caches the matrix internally within `rn` so subsequent calls are fast.
+- Note that constant species are not treated as reactants, but just components that modify
+  the associated rate law. As such they do not contribute to the net stoichiometry matrix.
 """
 function netstoichmat(::Type{SparseMatrixCSC{Int,Int}}, rn::ReactionSystem)
     Is=Int[];  Js=Int[];  Vs=Int[];
     smap = speciesmap(rn)
     for (k,rx) in pairs(reactions(rn))
         for (spec,coef) in rx.netstoich
+            isconstant(spec) && continue
 			push!(Js, k)
 			push!(Is, smap[spec])
 			push!(Vs, coef)
@@ -332,6 +344,7 @@ function netstoichmat(::Type{Matrix{Int}},rn::ReactionSystem)
     nmat = zeros(Int,numspecies(rn),numreactions(rn))
     for (k,rx) in pairs(reactions(rn))
         for (spec,coef) in rx.netstoich
+            isconstant(spec) && continue
             nmat[smap[spec],k] = coef
         end
     end
@@ -527,18 +540,40 @@ function reset_networkproperties!(rn::ReactionSystem)
     nothing
 end
 
+# get the species indices and stoichiometry while filtering out constant species.
+function filter_constspecs(specs, stoich::AbstractVector{V}, smap) where {V <: Integer}
+    isempty(specs) && (return Vector{Int}(),Vector{V}())
+
+    if any(isconstant, specs)
+        ids = Vector{Int}()
+        filtered_stoich = Vector{V}()
+        for (i,s) in enumerate(specs)
+            if !isconstant(s)
+                push!(ids, smap[s])
+                push!(filtered_stoich, stoich[i])
+            end
+        end
+    else
+        ids = map(Base.Fix1(getindex, smap), specs)
+        filtered_stoich = copy(stoich)
+    end
+    ids,filtered_stoich
+end
+
 """
     reactioncomplexmap(rn::ReactionSystem)
 
-Find each [`ReactionComplex`](@ref) within the specified system, constructing a
-mapping from the complex to vectors that indicate which reactions it appears in
-as substrates and products.
+Find each [`ReactionComplex`](@ref) within the specified system, constructing a mapping from
+the complex to vectors that indicate which reactions it appears in as substrates and
+products.
 
 Notes:
-- Each [`ReactionComplex`](@ref) is mapped to a vector of pairs, with each pair
-  having the form `reactionidx => ± 1`, where `-1` indicates the complex appears
-  as a substrate and `+1` as a product in the reaction with integer label
-  `reactionidx`.
+- Each [`ReactionComplex`](@ref) is mapped to a vector of pairs, with each pair having the
+  form `reactionidx => ± 1`, where `-1` indicates the complex appears as a substrate and
+  `+1` as a product in the reaction with integer label `reactionidx`.
+- Constant species are ignored as part of a complex. i.e. if species `A` is constant then
+  the reaction `A + B --> C + D` is considered to consist of the complexes `B` and `C + D`.
+  Likewise `A --> B` would be treated as the same as `0 --> B`.
 """
 function reactioncomplexmap(rn::ReactionSystem)
     isempty(get_systems(rn)) || error("reactioncomplexmap does not currently support subsystems.")
@@ -552,16 +587,16 @@ function reactioncomplexmap(rn::ReactionSystem)
     smap = speciesmap(rn)
     numreactions(rn) > 0 || error("There must be at least one reaction to find reaction complexes.")
     for (i,rx) in enumerate(rxs)
-        reactantids = isempty(rx.substrates) ? Vector{Int}() : [smap[sub] for sub in rx.substrates]
-        subrc = sort!(ReactionComplex(reactantids, copy(rx.substoich)))
+        subids,substoich = filter_constspecs(rx.substrates, rx.substoich, smap)
+        subrc = sort!(ReactionComplex(subids, substoich))
         if haskey(complextorxsmap, subrc)
             push!(complextorxsmap[subrc], i => -1)
         else
             complextorxsmap[subrc] = [i => -1]
         end
 
-        productids = isempty(rx.products) ? Vector{Int}() : [smap[prod] for prod in rx.products]
-        prodrc = sort!(ReactionComplex(productids, copy(rx.prodstoich)))
+        prodids,prodstoich = filter_constspecs(rx.products, rx.prodstoich, smap)
+        prodrc = sort!(ReactionComplex(prodids, prodstoich))
         if haskey(complextorxsmap, prodrc)
             push!(complextorxsmap[prodrc], i => 1)
         else
@@ -603,12 +638,12 @@ Calculate the reaction complexes and complex incidence matrix for the given
 [`ReactionSystem`](@ref).
 
 Notes:
-- returns a pair of a vector of [`ReactionComplex`](@ref)s and the complex
-  incidence matrix.
-- An empty [`ReactionComplex`](@ref) denotes the null (∅) state (from reactions
-  like ∅ -> A or A -> ∅).
-- The complex incidence matrix, ``B``, is number of complexes by number of
-  reactions with
+- returns a pair of a vector of [`ReactionComplex`](@ref)s and the complex incidence matrix.
+- An empty [`ReactionComplex`](@ref) denotes the null (∅) state (from reactions like ∅ -> A
+  or A -> ∅).
+- Constant species are ignored in generating a reaction complex. i.e. if A is constant then
+  A --> B consists of the complexes ∅ and B.
+- The complex incidence matrix, ``B``, is number of complexes by number of reactions with
 ```math
 B_{i j} = \begin{cases}
 -1, &\text{if the i'th complex is the substrate of the j'th reaction},\\

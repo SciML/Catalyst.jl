@@ -236,7 +236,18 @@ struct ReactionComplex{V<:Integer} <: AbstractVector{ReactionComplexElement{V}}
     speciesids::Vector{Int}
     """The stoichiometric coefficients of all species participating in this complex."""
     speciesstoichs::Vector{V}
+
+    function ReactionComplex{V}(speciesids::Vector{Int}, speciesstoichs::Vector{V}) where {V<:Integer}
+        new{V}(speciesids, speciesstoichs)
+    end
 end
+
+function ReactionComplex(speciesids::Vector{Int}, speciesstoichs::Vector{V}) where {V<:Integer}
+    (length(speciesids) == length(speciesstoichs)) || error("Creating a complex with different number of species ids and associated stoichiometries.")
+    ReactionComplex{V}(speciesids, speciesstoichs)
+end
+
+
 
 function (==)(a::ReactionComplex{V},b::ReactionComplex{V}) where {V <: Integer}
     (a.speciesids == b.speciesids) &&
