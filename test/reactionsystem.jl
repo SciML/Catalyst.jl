@@ -396,7 +396,7 @@ let
            (@reaction k1, $C + D --> E + $C),
            (@reaction k2, $C + E --> $C + D),
            (@reaction k1*t, $A + $C--> B + $C),
-           (@reaction k1*B, 2*$A +$C --> $C + B)]
+           (@reaction k1*B, 2*$A + $C --> $C + B)]
     @named rs = ReactionSystem(rxs, t)
     jsys = convert(JumpSystem, rs)
     @test issetequal(states(jsys), [B,C,D,E])
