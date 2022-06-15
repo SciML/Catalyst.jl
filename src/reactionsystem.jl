@@ -386,6 +386,8 @@ Keyword Arguments:
   functions.
 - `combinatoric_ratelaws = true`, sets the default value of `combinatoric_ratelaws` used in
   calls to `convert` or calling various problem types with the `ReactionSystem`.
+- `balanced_bc_check = true`, sets whether to check that BC species appearing in reactions
+  are balanced (i.e appear as both a substrate and a product with the same stoichiometry).
 
 Notes:
 - ReactionSystems currently do rudimentary unit checking, requiring that all species have
@@ -507,7 +509,7 @@ function ReactionSystem(eqs, iv, states, ps;
     # if there are BC species, check they are balanced in their reactions
     if balanced_bc_check && any(isbc, states′)
         for rx in eqs
-            isbcbalanced(rx) || error("BC species must be balanced, appearing as a substrate and product with the same stoichiometry. Please fix reaction: $rx")
+            isbcbalanced(rx) || throw(ErrorException("BC species must be balanced, appearing as a substrate and product with the same stoichiometry. Please fix reaction: $rx"))
         end
     end
 

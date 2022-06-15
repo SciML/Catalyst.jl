@@ -346,8 +346,8 @@ let
     @variables t B(t) C(t) [isbcspecies=true] D(t) E(t)
     rxs = [(@reaction k1, $A --> B),
            (@reaction k2, B --> $A),
-           (@reaction k1, $C + D --> E),
-           (@reaction k2, E --> $C + D)]
+           (@reaction k1, $C + D --> E + $C),
+           (@reaction k2, E + $C --> $C + D)]
     Dt = Differential(t)
     csys = ODESystem(Equation[Dt(C) ~ -C], t; name=:rs)
     @named rs = ReactionSystem(rxs, t; constraints=csys)
@@ -393,10 +393,10 @@ let
     # test jump systems
     rxs = [(@reaction k1, $A --> B),
            (@reaction k2, B --> $A),
-           (@reaction k1, $C + D --> E),
-           (@reaction k2, E --> $C + D),
-           (@reaction k1*t, $A + $C--> B),
-           (@reaction k1*B, 2*$A --> $C + B)]
+           (@reaction k1, $C + D --> E + $C),
+           (@reaction k2, $C + E --> $C + D),
+           (@reaction k1*t, $A + $C--> B + $C),
+           (@reaction k1*B, 2*$A +$C --> $C + B)]
     @named rs = ReactionSystem(rxs, t)
     jsys = convert(JumpSystem, rs)
     @test issetequal(states(jsys), [B,C,D,E])
@@ -423,7 +423,7 @@ let
     @parameters k1 A [isconstantspecies=true]
     @variables t C(t) [isbcspecies=true]
     @variables t B1(t) B2(t) B3(t)
-    @named rn = ReactionSystem([(@reaction k1, $C --> B1),
+    @named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
                                 (@reaction k1, $A --> B2),
                                 (@reaction 10*k1, ∅ --> B3)], t)
     dprob = DiscreteProblem(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0,10.0),
@@ -487,4 +487,12 @@ let
     @named rs = ReactionSystem([rx],t)
     @test issetequal(states(rs), [A,B])
     @test issetequal(parameters(rs), [k,b])
+end
+
+# test balanced_bc_check
+let
+    @variables t A(t) [isbcspecies=true]
+    rx = @reaction k, 2*$A + B --> C + $A
+    @test_throws ErrorException ReactionSystem([rx],t; name=:rs)
+    @named rs = ReactionSystem([rx], t; balanced_bc_check=false)
 end
