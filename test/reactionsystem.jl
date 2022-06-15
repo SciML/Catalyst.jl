@@ -317,8 +317,8 @@ function f!(du,u,p,t)
     A = p[1]; k1 = p[2]; k2 = p[3]
     B = u[1]; D = u[2]; E = u[3]; C = u[4]
     du[1] = k1*A - k2*B
-    du[2] = -k1*C*D + k2*E
-    du[3] = k1*C*D - k2*E
+    du[2] = -k1*C*D + k2*C*E
+    du[3] = k1*C*D - k2*C*E
     du[4] = -C
     nothing
 end
@@ -326,8 +326,8 @@ function fs!(du,u,p,t)
     A = p[1]; k1 = p[2]; k2 = p[3]
     B = u[1]; D = u[2]; E = u[3]; C = u[4]
     du[1] = k1*A - k2*B
-    du[2] = -k1*C*D + k2*E
-    du[3] = k1*C*D - k2*E
+    du[2] = -k1*C*D + k2*C*E
+    du[3] = k1*C*D - k2*C*E
     nothing
 end
 function gs!(dg,u,p,t)
@@ -335,7 +335,7 @@ function gs!(dg,u,p,t)
     B = u[1]; D = u[2]; E = u[3]; C = u[4]
     dg .= 0.0
     dg[1,1] = sqrt(k1*A);    dg[1,2] = - sqrt(k2*B)
-    dg[2,3] = -sqrt(k1*C*D); dg[2,4] = sqrt(k2*E)
+    dg[2,3] = -sqrt(k1*C*D); dg[2,4] = sqrt(k2*C*E)
     dg[3,3] = -dg[2,3];       dg[3,4] = -dg[2,4]
     nothing
 end
@@ -402,7 +402,7 @@ let
     @test issetequal(states(jsys), [B,C,D,E])
     @test issetequal(parameters(jsys), [k1, k2, A])
     majrates = [k1*A, k2, k1, k2]
-    majrs = [[],[B => 1],[C => 1, D => 1],[E => 1]]
+    majrs = [[],[B => 1],[C => 1, D => 1],[C => 1, E => 1]]
     majns = [[B => 1],[B => -1],[D => -1, E => 1],[D => 1, E => -1]]
     for (i,maj) in enumerate(equations(jsys).x[1])
         @test isequal(maj.scaled_rates, majrates[i])
@@ -410,7 +410,7 @@ let
         @test issetequal(maj.net_stoch, majns[i])
     end
     crj = equations(jsys).x[2][1]
-    @test isequal(crj.rate, k1*B*A*(A-1)/2)
+    @test isequal(crj.rate, k1*B*A*(A-1)/2*C)
     @test issetequal(crj.affect!, [B ~ B + 1])
     vrj = equations(jsys).x[3][1]
     @test isequal(vrj.rate, k1*t*A*C)
