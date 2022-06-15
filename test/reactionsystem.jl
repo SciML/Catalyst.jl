@@ -317,8 +317,8 @@ function f!(du,u,p,t)
     A = p[1]; k1 = p[2]; k2 = p[3]
     B = u[1]; D = u[2]; E = u[3]; C = u[4]
     du[1] = k1*A - k2*B
-    du[2] = -k1*C*D + k2*E
-    du[3] = k1*C*D - k2*E
+    du[2] = -k1*C*D + k2*C*E
+    du[3] = k1*C*D - k2*C*E
     du[4] = -C
     nothing
 end
@@ -326,8 +326,8 @@ function fs!(du,u,p,t)
     A = p[1]; k1 = p[2]; k2 = p[3]
     B = u[1]; D = u[2]; E = u[3]; C = u[4]
     du[1] = k1*A - k2*B
-    du[2] = -k1*C*D + k2*E
-    du[3] = k1*C*D - k2*E
+    du[2] = -k1*C*D + k2*C*E
+    du[3] = k1*C*D - k2*C*E
     nothing
 end
 function gs!(dg,u,p,t)
@@ -335,7 +335,7 @@ function gs!(dg,u,p,t)
     B = u[1]; D = u[2]; E = u[3]; C = u[4]
     dg .= 0.0
     dg[1,1] = sqrt(k1*A);    dg[1,2] = - sqrt(k2*B)
-    dg[2,3] = -sqrt(k1*C*D); dg[2,4] = sqrt(k2*E)
+    dg[2,3] = -sqrt(k1*C*D); dg[2,4] = sqrt(k2*C*E)
     dg[3,3] = -dg[2,3];       dg[3,4] = -dg[2,4]
     nothing
 end
@@ -346,8 +346,8 @@ let
     @variables t B(t) C(t) [isbcspecies=true] D(t) E(t)
     rxs = [(@reaction k1, $A --> B),
            (@reaction k2, B --> $A),
-           (@reaction k1, $C + D --> E),
-           (@reaction k2, E --> $C + D)]
+           (@reaction k1, $C + D --> E + $C),
+           (@reaction k2, E + $C --> $C + D)]
     Dt = Differential(t)
     csys = ODESystem(Equation[Dt(C) ~ -C], t; name=:rs)
     @named rs = ReactionSystem(rxs, t; constraints=csys)
@@ -393,16 +393,16 @@ let
     # test jump systems
     rxs = [(@reaction k1, $A --> B),
            (@reaction k2, B --> $A),
-           (@reaction k1, $C + D --> E),
-           (@reaction k2, E --> $C + D),
-           (@reaction k1*t, $A + $C--> B),
-           (@reaction k1*B, 2*$A --> $C + B)]
+           (@reaction k1, $C + D --> E + $C),
+           (@reaction k2, $C + E --> $C + D),
+           (@reaction k1*t, $A + $C--> B + $C),
+           (@reaction k1*B, 2*$A + $C --> $C + B)]
     @named rs = ReactionSystem(rxs, t)
     jsys = convert(JumpSystem, rs)
     @test issetequal(states(jsys), [B,C,D,E])
     @test issetequal(parameters(jsys), [k1, k2, A])
     majrates = [k1*A, k2, k1, k2]
-    majrs = [[],[B => 1],[C => 1, D => 1],[E => 1]]
+    majrs = [[],[B => 1],[C => 1, D => 1],[C => 1, E => 1]]
     majns = [[B => 1],[B => -1],[D => -1, E => 1],[D => 1, E => -1]]
     for (i,maj) in enumerate(equations(jsys).x[1])
         @test isequal(maj.scaled_rates, majrates[i])
@@ -410,7 +410,7 @@ let
         @test issetequal(maj.net_stoch, majns[i])
     end
     crj = equations(jsys).x[2][1]
-    @test isequal(crj.rate, k1*B*A*(A-1)/2)
+    @test isequal(crj.rate, k1*B*A*(A-1)/2*C)
     @test issetequal(crj.affect!, [B ~ B + 1])
     vrj = equations(jsys).x[3][1]
     @test isequal(vrj.rate, k1*t*A*C)
@@ -423,7 +423,7 @@ let
     @parameters k1 A [isconstantspecies=true]
     @variables t C(t) [isbcspecies=true]
     @variables t B1(t) B2(t) B3(t)
-    @named rn = ReactionSystem([(@reaction k1, $C --> B1),
+    @named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
                                 (@reaction k1, $A --> B2),
                                 (@reaction 10*k1, ∅ --> B3)], t)
     dprob = DiscreteProblem(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0,10.0),
@@ -487,4 +487,12 @@ let
     @named rs = ReactionSystem([rx],t)
     @test issetequal(states(rs), [A,B])
     @test issetequal(parameters(rs), [k,b])
+end
+
+# test balanced_bc_check
+let
+    @variables t A(t) [isbcspecies=true]
+    rx = @reaction k, 2*$A + B --> C + $A
+    @test_throws ErrorException ReactionSystem([rx],t; name=:rs)
+    @named rs = ReactionSystem([rx], t; balanced_bc_check=false)
 end

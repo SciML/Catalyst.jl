@@ -208,6 +208,31 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     [el for el in nsdict if !_iszero(el[2])]
 end
 
+"""
+    isbcbalanced(rx::Reaction)
+
+True if any BC species in `rx` appears as a substrate and product with the same
+stoichiometry.
+"""
+function isbcbalanced(rx::Reaction)
+    # any substrate BC must be a product with the same stoichiometry
+    for (sidx,sub) in enumerate(rx.substrates)
+        if isbc(sub)
+            pidx = findfirst(Base.Fix1(isequal, sub), rx.products)
+            (pidx === nothing) && return false
+            isequal(rx.prodstoich[pidx], rx.substoich[sidx]) || return false
+        end
+    end
+
+    for prod in rx.products
+        if isbc(prod)
+            any(Base.Fix1(isequal,prod), rx.substrates) || return false
+        end
+    end
+
+    true
+end
+
 ################################## Reaction Complexes ####################################
 
 """
@@ -236,7 +261,18 @@ struct ReactionComplex{V<:Integer} <: AbstractVector{ReactionComplexElement{V}}
     speciesids::Vector{Int}
     """The stoichiometric coefficients of all species participating in this complex."""
     speciesstoichs::Vector{V}
+
+    function ReactionComplex{V}(speciesids::Vector{Int}, speciesstoichs::Vector{V}) where {V<:Integer}
+        new{V}(speciesids, speciesstoichs)
+    end
 end
+
+function ReactionComplex(speciesids::Vector{Int}, speciesstoichs::Vector{V}) where {V<:Integer}
+    (length(speciesids) == length(speciesstoichs)) || error("Creating a complex with different number of species ids and associated stoichiometries.")
+    ReactionComplex{V}(speciesids, speciesstoichs)
+end
+
+
 
 function (==)(a::ReactionComplex{V},b::ReactionComplex{V}) where {V <: Integer}
     (a.speciesids == b.speciesids) &&
@@ -350,6 +386,8 @@ Keyword Arguments:
   functions.
 - `combinatoric_ratelaws = true`, sets the default value of `combinatoric_ratelaws` used in
   calls to `convert` or calling various problem types with the `ReactionSystem`.
+- `balanced_bc_check = true`, sets whether to check that BC species appearing in reactions
+  are balanced (i.e appear as both a substrate and a product with the same stoichiometry).
 
 Notes:
 - ReactionSystems currently do rudimentary unit checking, requiring that all species have
@@ -438,7 +476,8 @@ function ReactionSystem(eqs, iv, states, ps;
                         checks = true,
                         constraints = nothing,
                         networkproperties = nothing,
-                        combinatoric_ratelaws = true)
+                        combinatoric_ratelaws = true,
+                        balanced_bc_check = true)
     name === nothing && throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     sysnames = nameof.(systems)
     (length(unique(sysnames)) == length(sysnames)) ||
@@ -465,6 +504,13 @@ function ReactionSystem(eqs, iv, states, ps;
         csts = filter(isconstant, states′)
         throw(ArgumentError("Found one or more constant species among the states; this is "
                             * "not allowed. Move: $csts to be parameters."))
+    end
+
+    # if there are BC species, check they are balanced in their reactions
+    if balanced_bc_check && any(isbc, states′)
+        for rx in eqs
+            isbcbalanced(rx) || throw(ErrorException("BC species must be balanced, appearing as a substrate and product with the same stoichiometry. Please fix reaction: $rx"))
+        end
     end
 
     var_to_name = Dict()

@@ -94,7 +94,7 @@ pmat = [0 1;
 
 ############## testing intermediate complexes reaction networks##############
 
-function testnetwork(rn, B, Z, Δ, lcs, d, subrn, lcd)
+function testnetwork(rn, B, Z, Δ, lcs, d, subrn, lcd; skiprxtest=false)
     B2 = reactioncomplexes(rn)[2]
     @test B == B2 == Matrix(reactioncomplexes(rn, sparse=true)[2])
     @test B == incidencemat(rn)
@@ -104,7 +104,9 @@ function testnetwork(rn, B, Z, Δ, lcs, d, subrn, lcd)
     lcs2 = linkageclasses(rn)
     @test lcs2 == linkageclasses(incidencematgraph(sparse(B))) == lcs
     @test deficiency(rn) == d
-    @test all(issetequal.(subrn, reactions.(subnetworks(rn))))
+    if !skiprxtest
+        @test all(issetequal.(subrn, reactions.(subnetworks(rn))))
+    end
     @test linkagedeficiencies(rn) == lcd
     @test sum(linkagedeficiencies(rn)) <= deficiency(rn)
 end
@@ -135,6 +137,16 @@ r = reactions(rns[1])
 subrn = [[r[1]], [r[2],r[3]], [r[4]]]
 lcd  =[0,0,0]
 testnetwork(rns[1], B, Z, Δ, lcs, 0, subrn, lcd)
+
+# constant and BC species test
+@parameters F [isconstantspecies=true]
+crn = @reaction_network begin
+    k₁, 2A --> B
+    k₂, A --> C + $F
+    k₃, C --> D
+    k₄, B + D + $F --> E
+end k₁ k₂ k₃ k₄
+testnetwork(crn, B, Z, Δ, lcs, 0, subrn, lcd; skiprxtest=true)
 
 # mass-action rober
 rns[2] = @reaction_network begin
