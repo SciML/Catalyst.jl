@@ -208,6 +208,31 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     [el for el in nsdict if !_iszero(el[2])]
 end
 
+"""
+    isbcbalanced(rx::Reaction)
+
+True if any BC species in `rx` appears as a substrate and product with the same
+stoichiometry.
+"""
+function isbcbalanced(rx::Reaction)
+    # any substrate BC must be a product with the same stoichiometry
+    for (sidx,sub) in enumerate(rx.substrates)
+        if isbc(sub)
+            pidx = findfirst(Base.Fix1(isequal, sub), rx.products)
+            (pidx === nothing) && return false
+            isequal(rx.prodstoich[pidx], rx.substoich[sidx]) || return false
+        end
+    end
+
+    for prod in rx.products
+        if isbc(prod)
+            any(Base.Fix1(isequal,prod), rx.substrates) || return false
+        end
+    end
+
+    true
+end
+
 ################################## Reaction Complexes ####################################
 
 """
@@ -449,7 +474,8 @@ function ReactionSystem(eqs, iv, states, ps;
                         checks = true,
                         constraints = nothing,
                         networkproperties = nothing,
-                        combinatoric_ratelaws = true)
+                        combinatoric_ratelaws = true,
+                        balanced_bc_check = true)
     name === nothing && throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     sysnames = nameof.(systems)
     (length(unique(sysnames)) == length(sysnames)) ||
@@ -476,6 +502,13 @@ function ReactionSystem(eqs, iv, states, ps;
         csts = filter(isconstant, states′)
         throw(ArgumentError("Found one or more constant species among the states; this is "
                             * "not allowed. Move: $csts to be parameters."))
+    end
+
+    # if there are BC species, check they are balanced in their reactions
+    if balanced_bc_check && any(isbc, states′)
+        for rx in eqs
+            isbcbalanced(rx) || error("BC species must be balanced, appearing as a substrate and product with the same stoichiometry. Please fix reaction: $rx")
+        end
     end
 
     var_to_name = Dict()

@@ -922,10 +922,10 @@ end
 function subnetworkmapping(linkageclass, allrxs, complextorxsmap, p)
     rxinds  = sort!(collect(Set(rxidx for rcidx in linkageclass for rxidx in complextorxsmap[rcidx])))
     rxs     = allrxs[rxinds]
-    specset = Set(substrate for rx in rxs for substrate in rx.substrates)
+    specset = Set(s for rx in rxs for s in rx.substrates if !isconstant(s))
     for rx in rxs
         for product in rx.products
-            push!(specset, product)
+            !isconstant(product) && push!(specset, product)
         end
     end
     specs = collect(specset)
