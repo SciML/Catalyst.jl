@@ -10,13 +10,16 @@
   with the `isbcspecies=true` metadata. As before, boundary condition species
   are treated as constant with respect to reactions, but since they are
   considered variables their dynamics should be defined in a constraint system.
-  Right now only conversion of `ReactionSystem`s to an `ODESystem` with a
-  constraint `ODESystem` or `NonlinearSystem`, or conversion to a
-  `NonlinearSystem` with a constraint `NonlinearSystem`, are supported.
-  Constraints are not supported in `SDESystem` or `JumpSystem` conversion, and
-  so boundary condition species are effectively constant when converting to
-  those model types (but still left as states instead of parameters). Defining
-  constant and boundary condition species is done by
+  Moreover, it is required that BC species appear in a balanced manner (i.e. in
+  each reaction for which a BC species is a reactant it must appear as a
+  substrate and a product with the same stoichiometry).  Right now only
+  conversion of `ReactionSystem`s to an `ODESystem` with a constraint
+  `ODESystem` or `NonlinearSystem`, or conversion to a `NonlinearSystem` with a
+  constraint `NonlinearSystem`, are supported. Constraints are not supported in
+  `SDESystem` or `JumpSystem` conversion, and so boundary condition species are
+  effectively constant when converting to those model types (but still left as
+  states instead of parameters). Defining constant and boundary condition
+  species is done by
   ```julia
   @parameters k A [isconstantspecies=true]
   @variables t  B(t) [isbcspecies=true] C(t)
@@ -28,7 +31,21 @@
   or products. Note that network API functions such as `netstoichmat`,
   `conservationlaws`, or `reactioncomplexes` ignore constant species. i.e. for
   `A` a constant species the reaction `2A + B --> C` is treated as equivalent to
-  ``B --> C``, while `B --> A` would be treated the same as `B --> 0`.
+  ``B --> C`` with a modified rate constant, while `B --> A` would be identical
+  to `B --> 0`. Boundary condition species are checked to be balanced by default
+  when `ReactionSystem`s are constructed, i.e.
+  ```julia
+  rx = Reaction(k, [A,B], [C], [1,2], [1])
+  @named rs = ReactionSystem(rs, t)
+  ```
+  would error since `B` only appears as a substrate. This check can be disabled
+  with
+  ```julia
+  @named rs = ReactionSystem(rs, t; balanced_bc_check=false)
+  ```
+  Note that network analysis functions assume BC species appear in a balanced
+  manner, so may not work correctly if one appears in an unbalanced fashion.
+  (Conversion to other system types should still work just fine.)
 
 ## Catalyst 11.0
 - **BREAKING:** Added the ability to eliminate conserved species when generating
