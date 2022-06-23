@@ -20,6 +20,7 @@ using Catalyst, Latexify
 ### test file.
 ###
 ### Just be sure to remove all such macros before you commit a change since it
+#! format: off
 ### will cause issues with Travis.
 
 r = @reaction_network begin
