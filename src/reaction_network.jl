@@ -68,7 +68,6 @@ const pure_rate_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 # Declares symbols which may neither be used as parameters not varriables.
 forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅]
 
-
 ### The main macro, takes reaction network notation and returns a ReactionSystem. ###
 """
     @reaction_network
@@ -101,12 +100,13 @@ emptyrn = @reaction_network
 ```
 """
 macro reaction_network(name::Symbol, ex::Expr, parameters...)
-    make_reaction_system(MacroTools.striplines(ex), parameters; name=:($(QuoteNode(name))))
+    return make_reaction_system(MacroTools.striplines(ex), parameters; name = :($(QuoteNode(name))))
 end
 
 # allows @reaction_network $name begin ... to interpolate variables storing a name
 macro reaction_network(name::Expr, ex::Expr, parameters...)
-    make_reaction_system(MacroTools.striplines(ex), parameters; name=:($(esc(name.args[1]))))
+    return make_reaction_system(MacroTools.striplines(ex), parameters;
+                                name = :($(esc(name.args[1]))))
 end
 
 macro reaction_network(ex::Expr, parameters...)
@@ -117,24 +117,24 @@ macro reaction_network(ex::Expr, parameters...)
         make_reaction_system(ex, parameters)
     else  # empty but has interpolated name: @reaction_network $name
         networkname = :($(esc(ex.args[1])))
-        return Expr(:block,:(@parameters t),
+        return Expr(:block, :(@parameters t),
                     :(ReactionSystem(Reaction[],
-                                    t,
-                                    [],
-                                    [];
-                                    name=$networkname)))
+                                     t,
+                                     [],
+                                     [];
+                                     name = $networkname)))
     end
 end
 
 #Returns a empty network (with, or without, a declared name)
 # @reaction_network name
-macro reaction_network(name::Symbol=gensym(:ReactionSystem))
-    return Expr(:block,:(@parameters t),
+macro reaction_network(name::Symbol = gensym(:ReactionSystem))
+    return Expr(:block, :(@parameters t),
                 :(ReactionSystem(Reaction[],
                                  t,
                                  [],
                                  [];
-                                 name=$(QuoteNode(name)))))
+                                 name = $(QuoteNode(name)))))
 end
 
 ### Macros used for manipulating, and successively builing up, reaction systems. ###
@@ -170,7 +170,7 @@ Notes:
   macro. See [The Reaction DSL](@ref) tutorial for more details.
 """
 macro reaction(ex)
-    make_reaction(ex)
+    return make_reaction(ex)
 end
 
 """
@@ -184,10 +184,8 @@ See the [Catalyst.jl for Reaction Network Modeling](@ref) documentation for deta
 parameters to the macro.
 """
 macro add_reactions(rn::Symbol, ex::Expr, parameters...)
-    :(merge!($(esc(rn)),$(make_reaction_system(MacroTools.striplines(ex), parameters))))
+    return :(merge!($(esc(rn)), $(make_reaction_system(MacroTools.striplines(ex), parameters))))
 end
-
-
 
 ### Sturctures containing information about a reactant, and a reaction, respectively.
 
@@ -203,13 +201,13 @@ struct ReactionStruct
     rate::ExprValues
     only_use_rate::Bool
 
-    function ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, only_use_rate::Bool)
-        sub = recursive_find_reactants!(sub_line,1,Vector{ReactantStruct}(undef,0))
-        prod = recursive_find_reactants!(prod_line,1,Vector{ReactantStruct}(undef,0))
-        new(sub, prod, rate, only_use_rate)
+    function ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues,
+                            only_use_rate::Bool)
+        sub = recursive_find_reactants!(sub_line, 1, Vector{ReactantStruct}(undef, 0))
+        prod = recursive_find_reactants!(prod_line, 1, Vector{ReactantStruct}(undef, 0))
+        return new(sub, prod, rate, only_use_rate)
     end
 end
-
 
 ### Functions that process the input and rephrase it as a reaction system ###
 function esc_dollars!(ex)
@@ -217,18 +215,22 @@ function esc_dollars!(ex)
         if ex.head == :$
             return esc(:($(ex.args[1])))
         else
-            for i = 1:length(ex.args)
+            for i in 1:length(ex.args)
                 ex.args[i] = esc_dollars!(ex.args[i])
             end
         end
     end
-    ex
+    return ex
 end
 
 function get_rxexprs(rxstruct)
-    subs_init = isempty(rxstruct.substrates) ? nothing : :([]); subs_stoich_init = deepcopy(subs_init)
-    prod_init = isempty(rxstruct.products) ? nothing : :([]); prod_stoich_init = deepcopy(prod_init)
-    reaction_func = :(Reaction($(recursive_expand_functions!(rxstruct.rate)), $subs_init, $prod_init, $subs_stoich_init, $prod_stoich_init, only_use_rate=$(rxstruct.only_use_rate)))
+    subs_init = isempty(rxstruct.substrates) ? nothing : :([])
+    subs_stoich_init = deepcopy(subs_init)
+    prod_init = isempty(rxstruct.products) ? nothing : :([])
+    prod_stoich_init = deepcopy(prod_init)
+    reaction_func = :(Reaction($(recursive_expand_functions!(rxstruct.rate)), $subs_init,
+                               $prod_init, $subs_stoich_init, $prod_stoich_init;
+                               only_use_rate = $(rxstruct.only_use_rate)))
     for sub in rxstruct.substrates
         push!(reaction_func.args[3].args, sub.reactant)
         push!(reaction_func.args[5].args, sub.stoichiometry)
@@ -237,25 +239,25 @@ function get_rxexprs(rxstruct)
         push!(reaction_func.args[4].args, prod.reactant)
         push!(reaction_func.args[6].args, prod.stoichiometry)
     end
-    reaction_func
+    return reaction_func
 end
 
 function get_pexprs(psyms)
     pexprs = isempty(psyms) ? :() : :(@parameters)
     if !isempty(psyms)
-        foreach(psym-> push!(pexprs.args, psym), psyms)
+        foreach(psym -> push!(pexprs.args, psym), psyms)
     end
-    pexprs
+    return pexprs
 end
 
 function get_sexprs(ssyms)
     sexprs = :(@variables t)
-    foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call,s,:t)), ssyms)
-    sexprs
+    foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, :t)), ssyms)
+    return sexprs
 end
 
 # Takes the reactions, and rephrases it as a "ReactionSystem" call, as designated by the ModelingToolkit IR.
-function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSystem)))
+function make_reaction_system(ex::Expr, parameters; name = :(gensym(:ReactionSystem)))
 
     # handle interpolation of variables
     ex = esc_dollars!(ex)
@@ -263,16 +265,19 @@ function make_reaction_system(ex::Expr, parameters; name=:(gensym(:ReactionSyste
     # parse DSL lines
     reactions = get_reactions(ex)
     reactants = get_reactants(reactions)
-    allspecies = union(reactants, get_rx_species(reactions,parameters))
-    !isempty(intersect(forbidden_symbols,union(allspecies,parameters))) &&
-        error("The following symbol(s) are used as species or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(species,parameters)))...))*"this is not permited.")
+    allspecies = union(reactants, get_rx_species(reactions, parameters))
+    !isempty(intersect(forbidden_symbols, union(allspecies, parameters))) &&
+        error("The following symbol(s) are used as species or parameters: " *
+              ((map(s -> "'" * string(s) * "', ",
+                    intersect(forbidden_symbols, union(species, parameters)))...)) *
+              "this is not permited.")
 
     pexprs = get_pexprs(parameters)    # parameters
     sexprs = get_sexprs(allspecies)    # species
 
     # ReactionSystem
-    rxexprs = :($(make_ReactionSystem_internal)([],t,nothing,[]; name=$(name)))
-    foreach(parameter -> push!(rxexprs.args[6].args,parameter), parameters)
+    rxexprs = :($(make_ReactionSystem_internal)([], t, nothing, []; name = $(name)))
+    foreach(parameter -> push!(rxexprs.args[6].args, parameter), parameters)
     for reaction in reactions
         push!(rxexprs.args[3].args, get_rxexprs(reaction))
     end
@@ -290,11 +295,14 @@ function make_reaction(ex::Expr)
     ex = esc_dollars!(ex)
 
     # parse DSL lines
-    reaction   = get_reaction(ex)
+    reaction = get_reaction(ex)
     allspecies = get_reactants(reaction)   # species defined by stoich
-    parameters = get_rx_species([reaction],Symbol[])  # anything in a rate is a parameter
-    !isempty(intersect(forbidden_symbols,union(allspecies,parameters))) &&
-        error("The following symbol(s) are used as species or parameters: "*((map(s -> "'"*string(s)*"', ",intersect(forbidden_symbols,union(species,parameters)))...))*"this is not permited.")
+    parameters = get_rx_species([reaction], Symbol[])  # anything in a rate is a parameter
+    !isempty(intersect(forbidden_symbols, union(allspecies, parameters))) &&
+        error("The following symbol(s) are used as species or parameters: " *
+              ((map(s -> "'" * string(s) * "', ",
+                    intersect(forbidden_symbols, union(species, parameters)))...)) *
+              "this is not permited.")
 
     pexprs = get_pexprs(parameters)    # parameters
     sexprs = get_sexprs(allspecies)    # species
@@ -319,7 +327,7 @@ function get_rx_species(rxs, ps)
             find_species_in_rate!(species_set, prod.stoichiometry, pset)
         end
     end
-    collect(species_set)
+    return collect(species_set)
 end
 
 function find_species_in_rate!(sset, rateex::ExprValues, ps)
@@ -329,49 +337,50 @@ function find_species_in_rate!(sset, rateex::ExprValues, ps)
         end
     elseif rateex isa Expr
         # note, this (correctly) skips $(...) expressions
-        for i = 2:length(rateex.args)
+        for i in 2:length(rateex.args)
             find_species_in_rate!(sset, rateex.args[i], ps)
         end
     end
-    nothing
+    return nothing
 end
 
 function get_reaction(line)
     (line.head != :tuple) && error("Malformed reaction line: $(MacroTools.striplines(line))")
-    (rate,r_line) = line.args
-    (r_line.head  == :-->) && (r_line = Expr(:call,:→,r_line.args[1],r_line.args[2]))
+    (rate, r_line) = line.args
+    (r_line.head == :-->) && (r_line = Expr(:call, :→, r_line.args[1], r_line.args[2]))
 
     arrow = r_line.args[1]
-    in(arrow,double_arrows) && error("Double arrows not allowed for single reactions.")
+    in(arrow, double_arrows) && error("Double arrows not allowed for single reactions.")
 
-    only_use_rate = in(arrow,pure_rate_arrows)
-    if in(arrow,fwd_arrows)
+    only_use_rate = in(arrow, pure_rate_arrows)
+    if in(arrow, fwd_arrows)
         rs = create_ReactionStruct(r_line.args[2], r_line.args[3], rate, only_use_rate)
-    elseif in(arrow,bwd_arrows)
+    elseif in(arrow, bwd_arrows)
         rs = create_ReactionStruct(r_line.args[3], r_line.args[2], rate, only_use_rate)
     else
         throw("Malformed reaction, invalid arrow type used in: $(MacroTools.striplines(line))")
     end
 
-    rs
+    return rs
 end
 
 #Generates a vector containing a number of reaction structures, each containing the information about one reaction.
-function get_reactions(ex::Expr, reactions = Vector{ReactionStruct}(undef,0))
+function get_reactions(ex::Expr, reactions = Vector{ReactionStruct}(undef, 0))
     for line in ex.args
         (line.head != :tuple) && error("Malformed reaction line: $(MacroTools.striplines(line))")
-        (rate,r_line) = line.args
-        (r_line.head  == :-->) && (r_line = Expr(:call,:→,r_line.args[1],r_line.args[2]))
+        (rate, r_line) = line.args
+        (r_line.head == :-->) && (r_line = Expr(:call, :→, r_line.args[1], r_line.args[2]))
 
         arrow = r_line.args[1]
-        only_use_rate = in(arrow,pure_rate_arrows)
-        if in(arrow,double_arrows)
-            (typeof(rate) == Expr && rate.head == :tuple) || error("Error: Must provide a tuple of reaction rates when declaring a bi-directional reaction.")
+        only_use_rate = in(arrow, pure_rate_arrows)
+        if in(arrow, double_arrows)
+            (typeof(rate) == Expr && rate.head == :tuple) ||
+                error("Error: Must provide a tuple of reaction rates when declaring a bi-directional reaction.")
             push_reactions!(reactions, r_line.args[2], r_line.args[3], rate.args[1], only_use_rate)
             push_reactions!(reactions, r_line.args[3], r_line.args[2], rate.args[2], only_use_rate)
-        elseif in(arrow,fwd_arrows)
+        elseif in(arrow, fwd_arrows)
             push_reactions!(reactions, r_line.args[2], r_line.args[3], rate, only_use_rate)
-        elseif in(arrow,bwd_arrows)
+        elseif in(arrow, bwd_arrows)
             push_reactions!(reactions, r_line.args[3], r_line.args[2], rate, only_use_rate)
         else
             throw("Malformed reaction, invalid arrow type used in: $(MacroTools.striplines(line))")
@@ -380,18 +389,24 @@ function get_reactions(ex::Expr, reactions = Vector{ReactionStruct}(undef,0))
     return reactions
 end
 
-function create_ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, only_use_rate::Bool)
+function create_ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues,
+                               only_use_rate::Bool)
     all(==(1), (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate))) ||
         error("Malformed reaction, line appears to be defining multiple reactions incorrectly: rate=$rate, subs=$sub_line, prods=$prod_line.")
-    ReactionStruct(get_tup_arg(sub_line,1), get_tup_arg(prod_line,1), get_tup_arg(rate,1), only_use_rate)
+    return ReactionStruct(get_tup_arg(sub_line, 1), get_tup_arg(prod_line, 1), get_tup_arg(rate, 1),
+                          only_use_rate)
 end
 
 #Takes a reaction line and creates reactions from it and pushes those to the reaction array. Used to create multiple reactions from, for instance, 1.0, (X,Y) --> 0.
-function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, only_use_rate::Bool)
+function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues,
+                         prod_line::ExprValues, rate::ExprValues, only_use_rate::Bool)
     lengs = (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate))
-    for i = 1:maximum(lengs)
-        (count(lengs.==1) + count(lengs.==maximum(lengs)) < 3) && (throw("Malformed reaction, rate=$rate, subs=$sub_line, prods=$prod_line."))
-        push!(reactions, ReactionStruct(get_tup_arg(sub_line,i), get_tup_arg(prod_line,i), get_tup_arg(rate,i), only_use_rate))
+    for i in 1:maximum(lengs)
+        (count(lengs .== 1) + count(lengs .== maximum(lengs)) < 3) &&
+            (throw("Malformed reaction, rate=$rate, subs=$sub_line, prods=$prod_line."))
+        push!(reactions,
+              ReactionStruct(get_tup_arg(sub_line, i), get_tup_arg(prod_line, i),
+                             get_tup_arg(rate, i), only_use_rate))
     end
 end
 
@@ -399,30 +414,31 @@ function processmult(op, mult, stoich)
     if (mult isa Number) && (stoich isa Number)
         op(mult, stoich)
     else
-        :($op($mult,$stoich))
+        :($op($mult, $stoich))
     end
 end
 
 #Recursive function that loops through the reaction line and finds the reactants and their stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
-function recursive_find_reactants!(ex::ExprValues, mult::ExprValues, reactants::Vector{ReactantStruct})
-    if typeof(ex)!=Expr || (ex.head == :escape)
-        (ex == 0 || in(ex,empty_set)) && (return reactants)
-        if any(ex==reactant.reactant for reactant in reactants)
-            idx = findall(x -> x==ex, getfield.(reactants,:reactant))[1]
-            reactants[idx] = ReactantStruct(ex,processmult(+,mult,reactants[idx].stoichiometry))
+function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
+                                   reactants::Vector{ReactantStruct})
+    if typeof(ex) != Expr || (ex.head == :escape)
+        (ex == 0 || in(ex, empty_set)) && (return reactants)
+        if any(ex == reactant.reactant for reactant in reactants)
+            idx = findall(x -> x == ex, getfield.(reactants, :reactant))[1]
+            reactants[idx] = ReactantStruct(ex, processmult(+, mult, reactants[idx].stoichiometry))
         else
-            push!(reactants, ReactantStruct(ex,mult))
+            push!(reactants, ReactantStruct(ex, mult))
         end
     elseif ex.args[1] == :*
         if length(ex.args) == 3
-            recursive_find_reactants!(ex.args[3],processmult(*,mult,ex.args[2]),reactants)
+            recursive_find_reactants!(ex.args[3], processmult(*, mult, ex.args[2]), reactants)
         else
-            newmult = processmult(*, mult, Expr(:call,ex.args[1:end-1]...))
-            recursive_find_reactants!(ex.args[end],newmult,reactants)
+            newmult = processmult(*, mult, Expr(:call, ex.args[1:(end - 1)]...))
+            recursive_find_reactants!(ex.args[end], newmult, reactants)
         end
     elseif ex.args[1] == :+
-        for i = 2:length(ex.args)
-            recursive_find_reactants!(ex.args[i],mult,reactants)
+        for i in 2:length(ex.args)
+            recursive_find_reactants!(ex.args[i], mult, reactants)
         end
     else
         throw("Malformed reaction, bad operator: $(ex.args[1]) found in stochiometry expression $ex.")
@@ -430,16 +446,15 @@ function recursive_find_reactants!(ex::ExprValues, mult::ExprValues, reactants::
     return reactants
 end
 
-
-function get_reactants(reaction::ReactionStruct, reactants=Vector{Union{Symbol,Expr}}())
-    for reactant in Iterators.flatten((reaction.substrates,reaction.products))
-        !in(reactant.reactant,reactants) && push!(reactants,reactant.reactant)
+function get_reactants(reaction::ReactionStruct, reactants = Vector{Union{Symbol,Expr}}())
+    for reactant in Iterators.flatten((reaction.substrates, reaction.products))
+        !in(reactant.reactant, reactants) && push!(reactants, reactant.reactant)
     end
     return reactants
 end
 
 # Extract the reactants from the set of reactions.
-function get_reactants(reactions::Vector{ReactionStruct}, reactants=Vector{Union{Symbol,Expr}}())
+function get_reactants(reactions::Vector{ReactionStruct}, reactants = Vector{Union{Symbol,Expr}}())
     for reaction in reactions
         get_reactants(reaction, reactants)
     end
@@ -450,10 +465,10 @@ end
 
 #Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.
 function recursive_expand_functions!(expr::ExprValues)
-    (typeof(expr)!=Expr) && (return expr)
+    (typeof(expr) != Expr) && (return expr)
     foreach(i -> expr.args[i] = recursive_expand_functions!(expr.args[i]), 1:length(expr.args))
     if expr.head == :call
-        !isdefined(Catalyst,expr.args[1]) && (expr.args[1] = esc(expr.args[1]))
+        !isdefined(Catalyst, expr.args[1]) && (expr.args[1] = esc(expr.args[1]))
     end
     return expr
 end

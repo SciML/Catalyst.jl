@@ -23,56 +23,53 @@ using Catalyst, Latexify
 ### will cause issues with Travis.
 
 r = @reaction_network begin
-    hillr(X2,v1,K1,n1)*hill(X4,v1,K1,n1), ∅ → X1
-    hill(X5,v2,K2,n2), ∅ → X2
-    hill(X3,v3,K3,n3), ∅ → X3
-    hillr(X1,v4,K4,n4), ∅ → X4
-    hill(X2,v5,K5,n5), ∅ → X5
-    (k1,k2), X2 ⟷ X1 + 2X4
-    (k3,k4), X4 ⟷ X3
-    (k5,k6), 3X5 + X1 ⟷ X2
-    (d1,d2,d3,d4,d5), (X1,X2,X3,X4,X5)  ⟶ ∅
+    hillr(X2, v1, K1, n1) * hill(X4, v1, K1, n1), ∅ → X1
+    hill(X5, v2, K2, n2), ∅ → X2
+    hill(X3, v3, K3, n3), ∅ → X3
+    hillr(X1, v4, K4, n4), ∅ → X4
+    hill(X2, v5, K5, n5), ∅ → X5
+    (k1, k2), X2 ⟷ X1 + 2X4
+    (k3, k4), X4 ⟷ X3
+    (k5, k6), 3X5 + X1 ⟷ X2
+    (d1, d2, d3, d4, d5), (X1, X2, X3, X4, X5) ⟶ ∅
 end v1 K1 n1 v2 K2 n2 v3 K3 n3 v4 K4 n4 v5 K5 n5 k1 k2 k3 k4 k5 k6 d1 d2 d3 d4 d5
 
 # Latexify.@generate_test latexify(r)
-@test latexify(r) == replace(
-raw"\begin{align*}
-\require{mhchem}
-\ce{ \varnothing &->[$\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}$] X1}\\
-\ce{ \varnothing &->[$\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}$] X2}\\
-\ce{ \varnothing &->[$\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}$] X3}\\
-\ce{ \varnothing &->[$\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}$] X4}\\
-\ce{ \varnothing &->[$\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}$] X5}\\
-\ce{ X2 &<=>[$k1$][$k2$] X1 + 2 X4}\\
-\ce{ X4 &<=>[$k3$][$k4$] X3}\\
-\ce{ 3 X5 + X1 &<=>[$k5$][$k6$] X2}\\
-\ce{ X1 &->[$d1$] \varnothing}\\
-\ce{ X2 &->[$d2$] \varnothing}\\
-\ce{ X3 &->[$d3$] \varnothing}\\
-\ce{ X4 &->[$d4$] \varnothing}\\
-\ce{ X5 &->[$d5$] \varnothing}
-\end{align*}
-", "\r\n"=>"\n")
+@test latexify(r) == replace(raw"\begin{align*}
+                             \require{mhchem}
+                             \ce{ \varnothing &->[$\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}$] X1}\\
+                             \ce{ \varnothing &->[$\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}$] X2}\\
+                             \ce{ \varnothing &->[$\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}$] X3}\\
+                             \ce{ \varnothing &->[$\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}$] X4}\\
+                             \ce{ \varnothing &->[$\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}$] X5}\\
+                             \ce{ X2 &<=>[$k1$][$k2$] X1 + 2 X4}\\
+                             \ce{ X4 &<=>[$k3$][$k4$] X3}\\
+                             \ce{ 3 X5 + X1 &<=>[$k5$][$k6$] X2}\\
+                             \ce{ X1 &->[$d1$] \varnothing}\\
+                             \ce{ X2 &->[$d2$] \varnothing}\\
+                             \ce{ X3 &->[$d3$] \varnothing}\\
+                             \ce{ X4 &->[$d4$] \varnothing}\\
+                             \ce{ X5 &->[$d5$] \varnothing}
+                             \end{align*}
+                             ", "\r\n" => "\n")
 
 # Latexify.@generate_test latexify(r, mathjax=false)
-@test latexify(r, mathjax = false) == replace(
-raw"\begin{align*}
-\ce{ \varnothing &->[$\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}$] X1}\\
-\ce{ \varnothing &->[$\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}$] X2}\\
-\ce{ \varnothing &->[$\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}$] X3}\\
-\ce{ \varnothing &->[$\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}$] X4}\\
-\ce{ \varnothing &->[$\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}$] X5}\\
-\ce{ X2 &<=>[$k1$][$k2$] X1 + 2 X4}\\
-\ce{ X4 &<=>[$k3$][$k4$] X3}\\
-\ce{ 3 X5 + X1 &<=>[$k5$][$k6$] X2}\\
-\ce{ X1 &->[$d1$] \varnothing}\\
-\ce{ X2 &->[$d2$] \varnothing}\\
-\ce{ X3 &->[$d3$] \varnothing}\\
-\ce{ X4 &->[$d4$] \varnothing}\\
-\ce{ X5 &->[$d5$] \varnothing}
-\end{align*}
-", "\r\n"=>"\n")
-
+@test latexify(r; mathjax = false) == replace(raw"\begin{align*}
+                                              \ce{ \varnothing &->[$\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}$] X1}\\
+                                              \ce{ \varnothing &->[$\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}$] X2}\\
+                                              \ce{ \varnothing &->[$\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}$] X3}\\
+                                              \ce{ \varnothing &->[$\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}$] X4}\\
+                                              \ce{ \varnothing &->[$\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}$] X5}\\
+                                              \ce{ X2 &<=>[$k1$][$k2$] X1 + 2 X4}\\
+                                              \ce{ X4 &<=>[$k3$][$k4$] X3}\\
+                                              \ce{ 3 X5 + X1 &<=>[$k5$][$k6$] X2}\\
+                                              \ce{ X1 &->[$d1$] \varnothing}\\
+                                              \ce{ X2 &->[$d2$] \varnothing}\\
+                                              \ce{ X3 &->[$d3$] \varnothing}\\
+                                              \ce{ X4 &->[$d4$] \varnothing}\\
+                                              \ce{ X5 &->[$d5$] \varnothing}
+                                              \end{align*}
+                                              ", "\r\n" => "\n")
 
 r = @reaction_network begin
     (hill(B, p_a, k, n), d_a), 0 ↔ A
@@ -81,39 +78,35 @@ r = @reaction_network begin
 end p_a k n d_a p_b d_b r_a r_b
 
 # Latexify.@generate_test latexify(r)
-@test latexify(r) == replace(
-raw"\begin{align*}
-\require{mhchem}
-\ce{ \varnothing &<=>[$\frac{p_{a} B^{n}}{k^{n} + B^{n}}$][$d_{a}$] A}\\
-\ce{ \varnothing &<=>[$p_{b}$][$d_{b}$] B}\\
-\ce{ 3 B &<=>[$r_{a}$][$r_{b}$] A}
-\end{align*}
-", "\r\n"=>"\n")
+@test latexify(r) == replace(raw"\begin{align*}
+                             \require{mhchem}
+                             \ce{ \varnothing &<=>[$\frac{p_{a} B^{n}}{k^{n} + B^{n}}$][$d_{a}$] A}\\
+                             \ce{ \varnothing &<=>[$p_{b}$][$d_{b}$] B}\\
+                             \ce{ 3 B &<=>[$r_{a}$][$r_{b}$] A}
+                             \end{align*}
+                             ", "\r\n" => "\n")
 
 # Latexify.@generate_test latexify(r, mathjax=false)
-@test latexify(r, mathjax = false) == replace(
-raw"\begin{align*}
-\ce{ \varnothing &<=>[$\frac{p_{a} B^{n}}{k^{n} + B^{n}}$][$d_{a}$] A}\\
-\ce{ \varnothing &<=>[$p_{b}$][$d_{b}$] B}\\
-\ce{ 3 B &<=>[$r_{a}$][$r_{b}$] A}
-\end{align*}
-", "\r\n"=>"\n")
+@test latexify(r; mathjax = false) == replace(raw"\begin{align*}
+                                              \ce{ \varnothing &<=>[$\frac{p_{a} B^{n}}{k^{n} + B^{n}}$][$d_{a}$] A}\\
+                                              \ce{ \varnothing &<=>[$p_{b}$][$d_{b}$] B}\\
+                                              \ce{ 3 B &<=>[$r_{a}$][$r_{b}$] A}
+                                              \end{align*}
+                                              ", "\r\n" => "\n")
 
 # test empty system
-empty_rn = ReactionSystem(Reaction[]; name=:EmptySys)
+empty_rn = ReactionSystem(Reaction[]; name = :EmptySys)
 # Latexify.@generate_test latexify(empty_rn)
-@test latexify(empty_rn) == replace(
-raw"ReactionSystem EmptySys has no reactions.", "\r\n"=>"\n")
+@test latexify(empty_rn) == replace(raw"ReactionSystem EmptySys has no reactions.", "\r\n" => "\n")
 
 # test for https://github.com/SciML/Catalyst.jl/issues/473
 rn = @reaction_network begin
-    k*Y, Y --> ∅
-  end k
+    k * Y, Y --> ∅
+end k
 
 # Latexify.@generate_test latexify(rn)
-@test latexify(rn) == replace(
-raw"\begin{align*}
-\require{mhchem}
-\ce{ Y &->[$Y k$] \varnothing}
-\end{align*}
-", "\r\n"=>"\n")
+@test latexify(rn) == replace(raw"\begin{align*}
+                              \require{mhchem}
+                              \ce{ Y &->[$Y k$] \varnothing}
+                              \end{align*}
+                              ", "\r\n" => "\n")

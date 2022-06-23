@@ -9,7 +9,8 @@ using LaTeXStrings, Latexify, Requires
 using DiffEqJump: DiffEqJump, JumpProblem, MassActionJump, ConstantRateJump, VariableRateJump
 
 # ModelingToolkit imports and convenience functions we use
-using ModelingToolkit; const MT = ModelingToolkit
+using ModelingToolkit
+const MT = ModelingToolkit
 @reexport using ModelingToolkit
 using Symbolics
 using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems,
@@ -22,7 +23,8 @@ import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_v
 import ModelingToolkit: check_variables, check_parameters, _iszero, _merge, check_units, get_unit
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
-import MacroTools, Graphs
+using MacroTools: MacroTools
+using Graphs: Graphs
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 
@@ -32,15 +34,15 @@ const DEFAULT_IV = (@parameters t)[1]
 # as used in Catlab
 const USE_GV_JLL = Ref(false)
 function __init__()
-    @require Graphviz_jll="3c863552-8265-54e4-a6dc-903eb78fde85" begin
-      USE_GV_JLL[] = true
-      let cfg = joinpath(Graphviz_jll.artifact_dir, "lib", "graphviz", "config6")
-        if !isfile(cfg)
-          Graphviz_jll.dot(path -> run(`$path -c`))
+    @require Graphviz_jll = "3c863552-8265-54e4-a6dc-903eb78fde85" begin
+        USE_GV_JLL[] = true
+        let cfg = joinpath(Graphviz_jll.artifact_dir, "lib", "graphviz", "config6")
+            if !isfile(cfg)
+                Graphviz_jll.dot(path -> run(`$path -c`))
+            end
         end
-      end
     end
-  end
+end
 
 # base system type and features
 include("reactionsystem.jl")

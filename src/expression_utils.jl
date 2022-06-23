@@ -1,11 +1,11 @@
 #Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a  Symbol/Numerical).
 function tup_leng(ex::ExprValues)
-    (typeof(ex)==Expr && ex.head == :tuple) && (return length(ex.args))
+    (typeof(ex) == Expr && ex.head == :tuple) && (return length(ex.args))
     return 1
 end
 
 #Gets the ith element in a expression tuple, or returns the input itself if it is not an expression tuple (probably a  Symbol/Numerical).
-function get_tup_arg(ex::ExprValues,i::Int)
+function get_tup_arg(ex::ExprValues, i::Int)
     (tup_leng(ex) == 1) && (return ex)
     return ex.args[i]
 end
