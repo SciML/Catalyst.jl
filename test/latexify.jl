@@ -1,3 +1,5 @@
+#! format: off
+
 ### Fetch required packages and reaction networks ###
 using Catalyst, Latexify
 

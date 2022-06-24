@@ -39,27 +39,25 @@ include("pages.jl")
 #     )
 # mathengine = MathJax3()
 
-mathengine = MathJax3(Dict(
-    :loader => Dict("load" => ["[tex]/require","[tex]/mathtools"]),
-    :tex => Dict(
-        "inlineMath" => [["\$","\$"], ["\\(","\\)"]],
-        "packages" => ["base", "ams", "autoload", "mathtools", "require"],
-    ),
-))
+mathengine = MathJax3(Dict(:loader => Dict("load" => ["[tex]/require", "[tex]/mathtools"]),
+                           :tex => Dict("inlineMath" => [["\$", "\$"], ["\\(", "\\)"]],
+                                        "packages" => [
+                                            "base",
+                                            "ams",
+                                            "autoload",
+                                            "mathtools",
+                                            "require",
+                                        ])))
 
-makedocs(
-    sitename = "Catalyst.jl",
-    authors = "Samuel Isaacson",
-    format = Documenter.HTML(; analytics = "UA-90474609-3",
-                             mathengine,
-                             prettyurls = (get(ENV, "CI", nothing) == "true")),
-    modules = [Catalyst,ModelingToolkit],
-    doctest = false,
-    clean = true,
-    pages = pages
-)
+makedocs(sitename = "Catalyst.jl",
+         authors = "Samuel Isaacson",
+         format = Documenter.HTML(; analytics = "UA-90474609-3",
+                                  mathengine,
+                                  prettyurls = (get(ENV, "CI", nothing) == "true")),
+         modules = [Catalyst, ModelingToolkit],
+         doctest = false,
+         clean = true,
+         pages = pages)
 
-deploydocs(
-   repo = "github.com/SciML/Catalyst.jl.git";
-   push_preview = true
-)
+deploydocs(repo = "github.com/SciML/Catalyst.jl.git";
+           push_preview = true)

@@ -1,3 +1,5 @@
+#! format: off
+
 using Catalyst, Unitful, Test
 const MT = ModelingToolkit
 
@@ -15,7 +17,7 @@ for rx in reactions(rs)
     @test MT.get_unit(oderatelaw(rx)) == odeunit
 
     # we don't currently convert units, so they will be the same as for ODEs
-    @test MT.get_unit(jumpratelaw(rx)) == odeunit  
+    @test MT.get_unit(jumpratelaw(rx)) == odeunit
 end
 
 @test_nowarn convert(ODESystem,rs)

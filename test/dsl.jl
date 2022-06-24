@@ -1,3 +1,5 @@
+#! format: off
+
 using Catalyst, ModelingToolkit
 
 # naming tests
@@ -116,7 +118,7 @@ rx = @reaction b+$ex, 2*$V + C--> ∅
 @test rx == Reaction(b+ex, [A,C], nothing, [2,1], nothing)
 
 ### test floating point stoichiometry work ###
-@parameters k 
+@parameters k
 @variables t B(t) C(t) D(t)
 rx1 = Reaction(k,[B,C],[B,D], [2.5,1],[3.5, 2.5])
 rx2 = Reaction(2*k, [B], [D], [1], [2.5])

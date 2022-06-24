@@ -1,4 +1,4 @@
-using Catalyst, Graphviz_jll 
+using Catalyst, Graphviz_jll
 
 rn = @reaction_network begin
     α, S + I --> 2I
@@ -17,9 +17,7 @@ rcgr = complexgraph(rn)
 fname = Base.Filesystem.tempname()
 savegraph(rcgr, "$fname.svg", "svg")
 
-
 # these are broken in the jll, see
 # https://github.com/JuliaPackaging/Yggdrasil/issues/1428
 # savegraph(gr, "$fname.pdf", "pdf")
 # savegraph(gr, "$fname.png", "png")
-
