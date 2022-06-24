@@ -1068,9 +1068,8 @@ isweaklyreversible(rn, subnets)
 """
 function isweaklyreversible(rn::ReactionSystem, subnets)
     im = get_networkproperties(rn).incidencemat
-    isempty(im) && error("Error, please call reactioncomplexes(rn::ReactionSystem) to "
-          *
-          "ensure the incidence matrix has been cached.")
+    isempty(im) &&
+        error("Error, please call reactioncomplexes(rn::ReactionSystem) to ensure the incidence matrix has been cached.")
     sparseig = issparse(im)
     for subnet in subnets
         nps = get_networkproperties(subnet)

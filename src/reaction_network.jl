@@ -61,22 +61,8 @@ Example systems:
 # Declare various arrow types symbols used for the empty set (also 0).
 const empty_set = Set{Symbol}([:∅])
 const fwd_arrows = Set{Symbol}([:>, :→, :↣, :↦, :⇾, :⟶, :⟼, :⥟, :⥟, :⇀, :⇁, :⇒, :⟾])
-const bwd_arrows = Set{Symbol}([
-                                   :<,
-                                   :←,
-                                   :↢,
-                                   :↤,
-                                   :⇽,
-                                   :⟵,
-                                   :⟻,
-                                   :⥚,
-                                   :⥞,
-                                   :↼,
-                                   :↽,
-                                   :⇐,
-                                   :⟽,
-                                   Symbol("<--"),
-                               ])
+const bwd_arrows = Set{Symbol}([:<, :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :↼, :↽, :⇐, :⟽,
+                                   Symbol("<--")])
 const double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :⟺, Symbol("<-->")])
 const pure_rate_arrows = Set{Symbol}([:⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
@@ -134,11 +120,7 @@ macro reaction_network(ex::Expr, parameters...)
     else  # empty but has interpolated name: @reaction_network $name
         networkname = :($(esc(ex.args[1])))
         return Expr(:block, :(@parameters t),
-                    :(ReactionSystem(Reaction[],
-                                     t,
-                                     [],
-                                     [];
-                                     name = $networkname)))
+                    :(ReactionSystem(Reaction[], t, [], []; name = $networkname)))
     end
 end
 
@@ -146,11 +128,7 @@ end
 # @reaction_network name
 macro reaction_network(name::Symbol = gensym(:ReactionSystem))
     return Expr(:block, :(@parameters t),
-                :(ReactionSystem(Reaction[],
-                                 t,
-                                 [],
-                                 [];
-                                 name = $(QuoteNode(name)))))
+                :(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name)))))
 end
 
 ### Macros used for manipulating, and successively builing up, reaction systems. ###

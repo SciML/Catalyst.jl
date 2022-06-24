@@ -65,48 +65,25 @@ end
 function real_g_3(du, u, p, t)
     X1, X2, X3, X4, X5, X6, X7 = u
     k1, k2, k3, k4, k5, k6 = p
+    fill!(du, 0)
     du[1, 1] = -sqrt(k1 * X1 * X2)
     du[1, 2] = sqrt(k2 * X3)
-    du[1, 3] = 0
-    du[1, 4] = 0
-    du[1, 5] = 0
-    du[1, 6] = 0
     du[2, 1] = -sqrt(k1 * X1 * X2)
     du[2, 2] = sqrt(k2 * X3)
-    du[2, 3] = 0
-    du[2, 4] = 0
-    du[2, 5] = 0
-    du[2, 6] = 0
     du[3, 1] = sqrt(k1 * X1 * X2)
     du[3, 2] = -sqrt(k2 * X3)
     du[3, 3] = -sqrt(k3 * X3 * X4)
     du[3, 4] = sqrt(k4 * X5)
-    du[3, 5] = 0
-    du[3, 6] = 0
     du[4, 3] = -sqrt(k3 * X3 * X4)
     du[4, 4] = sqrt(k4 * X5)
-    du[4, 1] = 0
-    du[4, 2] = 0
-    du[4, 5] = 0
-    du[4, 6] = 0
     du[5, 3] = sqrt(k3 * X3 * X4)
     du[5, 4] = -sqrt(k4 * X5)
     du[5, 5] = -sqrt(k5 * X5 * X6)
     du[5, 6] = sqrt(k6 * X7)
-    du[5, 1] = 0
-    du[5, 2] = 0
     du[6, 5] = -sqrt(k5 * X5 * X6)
     du[6, 6] = sqrt(k6 * X7)
-    du[6, 1] = 0
-    du[6, 2] = 0
-    du[6, 3] = 0
-    du[6, 4] = 0
     du[7, 5] = sqrt(k5 * X5 * X6)
     du[7, 6] = -sqrt(k6 * X7)
-    du[7, 1] = 0
-    du[7, 2] = 0
-    du[7, 3] = 0
-    du[7, 4] = 0
 end
 push!(identical_networks,
       reaction_networks_constraint[9] => (real_f_3, real_g_3, zeros(7, 6)))

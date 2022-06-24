@@ -1,3 +1,5 @@
+#! format: off
+
 ### Fetch required packages and reaction networks ###
 using Catalyst, Test
 using ModelingToolkit: get_ps, get_states, get_eqs, get_systems, get_iv
@@ -90,8 +92,10 @@ end p k1 k2 k3 k4 k5 k6
 end p k1 k2 k3 k4 k5 k6 k7 k8 d
 push!(identical_networks, reaction_networks_standard[10] => step_by_step_network_3)
 
-step_by_step_network_4 = @reaction_network rnh7 begin v / 10 + hill(X1, v, K, n),
-                                                      ∅ → X1 + X2 end v K n k1 k2 k3 d
+step_by_step_network_4 = @reaction_network rnh7 begin
+    v / 10 + hill(X1, v, K, n),
+    ∅ → X1 + X2
+end v K n k1 k2 k3 d
 @add_reactions step_by_step_network_4 begin
     k1, X1 + X2 → X3
     k2, X3 → X1 + X2
@@ -111,17 +115,27 @@ end k1 k2 k3 k4 k5 k6
 push!(identical_networks, reaction_networks_constraint[1] => step_by_step_network_5)
 
 step_by_step_network_6 = @reaction_network rnc5 begin (k1, k2), X1 ↔ 2X2 end k1 k2 k3 k4 k5 k6
-@add_reactions step_by_step_network_6 begin (k3, k4), 2X2 ↔ 3X3 end k3 k4
-@add_reactions step_by_step_network_6 begin (k5, k6), 3X3 ↔ 4X4 end k5 k6
+@add_reactions step_by_step_network_6 begin
+    (k3, k4), 2X2 ↔ 3X3
+end k3 k4
+@add_reactions step_by_step_network_6 begin
+    (k5, k6), 3X3 ↔ 4X4
+end k5 k6
 push!(identical_networks, reaction_networks_constraint[5] => step_by_step_network_6)
 
-step_by_step_network_7 = @reaction_network rnr3 begin k2p, Y → 0 end k1 k2p k2pp k3p k3pp A J3 k4 m J4
+step_by_step_network_7 = @reaction_network rnr3 begin
+    k2p, Y → 0
+end k1 k2p k2pp k3p k3pp A J3 k4 m J4
 @add_reactions step_by_step_network_7 begin
     (k3p + k3pp * A) / (J3 + Po), Po → P
     k2pp * P, Y → 0
 end k3p k3pp A J3 k2pp
-@add_reactions step_by_step_network_7 begin k1, 0 → Y end k1
-@add_reactions step_by_step_network_7 begin (k4 * m) / (J4 + P), Y + P → Y + Po end k4 m J4
+@add_reactions step_by_step_network_7 begin
+    k1, 0 → Y
+end k1
+@add_reactions step_by_step_network_7 begin
+    (k4 * m) / (J4 + P), Y + P → Y + Po
+end k4 m J4
 push!(identical_networks, reaction_networks_real[3] => step_by_step_network_7)
 
 step_by_step_network_8 = @reaction_network rnw7
@@ -138,7 +152,9 @@ end k2 k3
 push!(identical_networks, reaction_networks_weird[7] => step_by_step_network_8)
 
 step_by_step_network_9 = @reaction_network rnw10
-@add_reactions step_by_step_network_9 begin d, 5X1 → 4X1 end d
+@add_reactions step_by_step_network_9 begin
+    d, 5X1 → 4X1
+end d
 push!(identical_networks, reaction_networks_weird[10] => step_by_step_network_9)
 
 function permute_ps(pvals, rn1, rn2)

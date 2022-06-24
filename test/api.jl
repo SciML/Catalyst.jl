@@ -1,3 +1,5 @@
+#! format: off
+
 using Catalyst, DiffEqBase, ModelingToolkit, Test, OrdinaryDiffEq, NonlinearSolve
 using StochasticDiffEq
 using LinearAlgebra: norm
@@ -647,16 +649,8 @@ let
     end k1 k2 m1 m2 b12 b23 b31
     osys = convert(ODESystem, rn; remove_conserved = true)
     @unpack A, B, C, D, E, F1, F2, F3, k1, k2, m1, m2, b12, b23, b31 = osys
-    u0 = [
-        A => 10.0,
-        B => 10.0,
-        C => 0.0,
-        D => 10.0,
-        E => 0.0,
-        F1 => 8.0,
-        F2 => 0.0,
-        F3 => 0.0,
-    ]
+    u0 = [A => 10.0, B => 10.0, C => 0.0, D => 10.0, E => 0.0, F1 => 8.0, F2 => 0.0,
+        F3 => 0.0]
     p = [k1 => 1.0, k2 => 0.1, m1 => 1.0, m2 => 2.0, b12 => 1.0, b23 => 2.0, b31 => 0.1]
     tspan = (0.0, 20.0)
     oprob = ODEProblem(osys, u0, tspan, p)
@@ -684,16 +678,8 @@ let
         @test isapprox(nsol2(tspan[2], idxs = s), nsol3[s])
     end
 
-    u0 = [
-        A => 100.0,
-        B => 20.0,
-        C => 5.0,
-        D => 10.0,
-        E => 3.0,
-        F1 => 8.0,
-        F2 => 2.0,
-        F3 => 20.0,
-    ]
+    u0 = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
+        F3 => 20.0]
     ssys = convert(SDESystem, rn; remove_conserved = true)
     sprob = SDEProblem(ssys, u0, tspan, p)
     sprob2 = SDEProblem(rn, u0, tspan, p)

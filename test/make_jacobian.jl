@@ -10,11 +10,8 @@ jacobian_network_1 = @reaction_network begin
     (3.0, 1.0), ∅ ↔ Y
     (5.0, 2.0), X + Y ↔ XY
 end
-test_jac = ODEFunction(convert(ODESystem, jacobian_network_1), jac = true).jac([
-                                                                                   1.0,
-                                                                                   1.0,
-                                                                                   1.0,
-                                                                               ], [], 0.0)
+osys = convert(ODESystem, jacobian_network_1)
+test_jac = ODEFunction(osys, jac = true).jac([1.0, 1.0, 1.0], [], 0.0)
 real_jac = [-6.0 -5.0 2.0; -5.0 -6.0 2.0; 5.0 5.0 -2.0]
 @test test_jac == real_jac
 
@@ -27,9 +24,8 @@ end p1 p2 p3
 for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2], repeat in 1:10
     u = factor * rand(rng, 3)
     p = factor * rand(rng, 3)
-    local test_jac = ODEFunction(convert(ODESystem, jacobian_network_2), jac = true).jac(u,
-                                                                                         p,
-                                                                                         0.0)
+    local osys = convert(ODESystem, jacobian_network_2)
+    local test_jac = ODEFunction(osys, jac = true).jac(u, p, 0.0)
     local real_jac = [-1-2 * p[3] * u[2] * u[1] -p[3]*u[1]*u[1] 1.0;
                       -2*p[3]*u[2]*u[1] -1-p[3] * u[1] * u[1] 1;
                       2*p[3]*u[2]*u[1] p[3]*u[1]*u[1] -1.0]
@@ -50,9 +46,8 @@ for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2], repeat in 1:10
     p = factor * rand(rng, 8)
     A, B, C = u
     k1, k2, k3, k4, k5, k6, k7, k8 = p
-    local test_jac = ODEFunction(convert(ODESystem, jacobian_network_3), jac = true).jac(u,
-                                                                                         p,
-                                                                                         0.0)
+    local osys = convert(ODESystem, jacobian_network_3)
+    local test_jac = ODEFunction(osys, jac = true).jac(u, p, 0.0)
     local real_jac = [-2 * k1 * A-k3 * B 2 * k2-k3 * A k4+3 * k5 * C^2 / 2;
                       k1 * A - k3 * B+2 * k7 * k8^2 * A / (k8^2 + A^2)^2 -k2-k3 * A k4;
                       k3*B k3*A -k4-3 * k5 * C^2 / 2]

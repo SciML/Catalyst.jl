@@ -26,38 +26,15 @@ connections = [sys₁.R ~ sys₃.P,
 @named connected = ODESystem(connections, t, [], [], systems = [sys₁, sys₂, sys₃])
 oderepressilator = structural_simplify(connected)
 
-pvals = [sys₁.α₀ => 5e-4,
-    sys₁.α => 0.5,
-    sys₁.K => 40.0,
-    sys₁.n => 2,
-    sys₁.δ => (log(2) / 120),
-    sys₁.β => (20 * log(2) / 120),
-    sys₁.μ => (log(2) / 600),
-    sys₂.α₀ => 5e-4,
-    sys₂.α => 0.5,
-    sys₂.K => 40.0,
-    sys₂.n => 2,
-    sys₂.δ => (log(2) / 120),
-    sys₂.β => (20 * log(2) / 120),
-    sys₂.μ => (log(2) / 600),
-    sys₃.α₀ => 5e-4,
-    sys₃.α => 0.5,
-    sys₃.K => 40.0,
-    sys₃.n => 2,
-    sys₃.δ => (log(2) / 120),
-    sys₃.β => (20 * log(2) / 120),
+pvals = [sys₁.α₀ => 5e-4, sys₁.α => 0.5, sys₁.K => 40.0, sys₁.n => 2,
+    sys₁.δ => (log(2) / 120), sys₁.β => (20 * log(2) / 120),
+    sys₁.μ => (log(2) / 600), sys₂.α₀ => 5e-4, sys₂.α => 0.5, sys₂.K => 40.0,
+    sys₂.n => 2, sys₂.δ => (log(2) / 120), sys₂.β => (20 * log(2) / 120),
+    sys₂.μ => (log(2) / 600), sys₃.α₀ => 5e-4, sys₃.α => 0.5, sys₃.K => 40.0,
+    sys₃.n => 2, sys₃.δ => (log(2) / 120), sys₃.β => (20 * log(2) / 120),
     sys₃.μ => (log(2) / 600)]
-u₀ = [
-    sys₁.m => 0.0,
-    sys₁.P => 20.0,
-    sys₁.R => 0.0,
-    sys₂.m => 0.0,
-    sys₂.P => 0.0,
-    sys₂.R => 0.0,
-    sys₃.m => 0.0,
-    sys₃.P => 0.0,
-    sys₃.R => 0.0,
-]
+u₀ = [sys₁.m => 0.0, sys₁.P => 20.0, sys₁.R => 0.0, sys₂.m => 0.0, sys₂.P => 0.0,
+    sys₂.R => 0.0, sys₃.m => 0.0, sys₃.P => 0.0, sys₃.R => 0.0]
 tspan = (0.0, 100000.0)
 oprob = ODEProblem(oderepressilator, u₀, tspan, pvals)
 sol = solve(oprob, Tsit5())

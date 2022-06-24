@@ -304,6 +304,7 @@ Base.Sort.defalg(::ReactionComplex{T}) where {T <: Integer} = Base.DEFAULT_UNSTA
 
 ############################### Network Properties ####################################
 
+#! format: off
 # Internal cache for various ReactionSystem calculated properties
 Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: Term}
     isempty::Bool = true
@@ -317,27 +318,16 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: Term}
     conservedeqs::Vector{Equation} = Equation[]
     constantdefs::Vector{Equation} = Equation[]
     speciesmap::Dict{V, Int} = Dict{V, Int}()
-    complextorxsmap::OrderedDict{ReactionComplex{Int}, Vector{Pair{Int, Int}}} = OrderedDict{
-                                                                                             ReactionComplex{
-                                                                                                             Int
-                                                                                                             },
-                                                                                             Vector{
-                                                                                                    Pair{
-                                                                                                         Int,
-                                                                                                         Int
-                                                                                                         }
-                                                                                                    }
-                                                                                             }()
+    complextorxsmap::OrderedDict{ReactionComplex{Int}, Vector{Pair{Int, Int}}} = OrderedDict{ReactionComplex{Int},Vector{Pair{Int,Int}}}()
     complexes::Vector{ReactionComplex{Int}} = Vector{ReactionComplex{Int}}(undef, 0)
     incidencemat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
-    complexstoichmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0,
-                                                                                  0)
-    complexoutgoingmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef,
-                                                                                    0, 0)
+    complexstoichmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
+    complexoutgoingmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
     incidencegraph::Graphs.SimpleDiGraph{Int} = Graphs.DiGraph()
     linkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
     deficiency::Int = 0
 end
+#! format: on
 
 function Base.show(io::IO, nps::NetworkProperties)
     if (nps.conservationmat !== nothing)
@@ -527,16 +517,12 @@ function ReactionSystem(eqs, iv, states, ps;
 
     if any(MT.isparameter, states′)
         psts = filter(MT.isparameter, states′)
-        throw(ArgumentError("Found one or more parameters among the states; this is not "
-                            *
-                            "allowed. Move: $psts to be parameters."))
+        throw(ArgumentError("Found one or more parameters among the states; this is not allowed. Move: $psts to be parameters."))
     end
 
     if any(isconstant, states′)
         csts = filter(isconstant, states′)
-        throw(ArgumentError("Found one or more constant species among the states; this is "
-                            *
-                            "not allowed. Move: $csts to be parameters."))
+        throw(ArgumentError("Found one or more constant species among the states; this is not allowed. Move: $csts to be parameters."))
     end
 
     # if there are BC species, check they are balanced in their reactions
@@ -845,8 +831,7 @@ function assemble_oderhs(rs, sts; combinatoric_ratelaws = true, remove_conserved
 end
 
 function assemble_drift(rs, sts; combinatoric_ratelaws = true, as_odes = true,
-                        include_zero_odes = true,
-                        remove_conserved = false)
+                        include_zero_odes = true, remove_conserved = false)
     rhsvec = assemble_oderhs(rs, sts; combinatoric_ratelaws, remove_conserved)
     if as_odes
         D = Differential(get_iv(rs))
@@ -1014,11 +999,8 @@ end
     end
 
     net_stoch = filter(p -> !drop_dynamics(p[1]), netstoich)
-    if isempty(net_stoch)
-        error("$rx has no net stoichiometry change once accounting for "
-              *
-              "constant and boundary condition species. This is not supported.")
-    end
+    isempty(net_stoch) &&
+        error("$rx has no net stoichiometry change once accounting for constant and boundary condition species. This is not supported.")
 
     MassActionJump(Num(rate), reactant_stoch, net_stoch, scale_rates = false,
                    useiszero = false)
@@ -1183,8 +1165,7 @@ Keyword args and default values:
   underlying set of reactions (ignoring constraint equations), and then apply them to reduce
   the number of equations.
 """
-function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem;
-                      name = nameof(rs),
+function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, remove_conserved = false, checks = false,
                       kwargs...)
@@ -1217,8 +1198,7 @@ Keyword args and default values:
   underlying set of reactions (ignoring constraint equations), and then apply them to reduce
   the number of equations.
 """
-function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem;
-                      name = nameof(rs),
+function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, remove_conserved = false, checks = false,
                       kwargs...)
@@ -1308,8 +1288,7 @@ Notes:
   Defaults to the value given when the `ReactionSystem` was constructed (which itself
   defaults to true).
 """
-function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem;
-                      name = nameof(rs),
+function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       checks = false, kwargs...)
     flatrs = Catalyst.flatten(rs)
@@ -1334,8 +1313,7 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
                                check_length = false, name = nameof(rs),
                                combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                                include_zero_odes = true, remove_conserved = false,
-                               checks = false,
-                               kwargs...)
+                               checks = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
@@ -1376,8 +1354,8 @@ end
 
 # DiscreteProblem from AbstractReactionNetwork
 function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
-                                    p = DiffEqBase.NullParameters(),
-                                    args...; name = nameof(rs),
+                                    p = DiffEqBase.NullParameters(), args...;
+                                    name = nameof(rs),
                                     combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                                     checks = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
@@ -1513,10 +1491,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
     end
 
     ReactionSystem(rxs, get_iv(rs), specs, reactionps; observed = MT.observed(rs),
-                   name,
-                   defaults = MT.defaults(rs),
-                   checks = false,
-                   constraints = newcsys,
+                   name, defaults = MT.defaults(rs), checks = false, constraints = newcsys,
                    combinatoric_ratelaws)
 end
 
@@ -1536,9 +1511,9 @@ function ModelingToolkit.extend(sys::Union{NonlinearSystem, ODESystem}, rs::Reac
     csys = (get_constraints(rs) === nothing) ? sys : extend(sys, get_constraints(rs))
     combinatoric_ratelaws = get_combinatoric_ratelaws(rs)
     ReactionSystem(get_eqs(rs), get_iv(rs), get_states(rs), get_ps(rs);
-                   observed = get_observed(rs), name = name,
-                   systems = get_systems(rs), defaults = get_defaults(rs),
-                   checks = false, constraints = csys, combinatoric_ratelaws)
+                   observed = get_observed(rs), name, systems = get_systems(rs),
+                   defaults = get_defaults(rs), checks = false, constraints = csys,
+                   combinatoric_ratelaws)
 end
 
 """
