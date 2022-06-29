@@ -103,7 +103,7 @@ the current master branch.
 #### Gillespie Simulations of Michaelis-Menten Enzyme Kinetics
 
 ```julia
-using Catalyst, Plots, DiffEqJump
+using Catalyst, Plots, JumpProcesses
 rs = @reaction_network begin
   c1, S + E --> SE
   c2, SE --> S + E
@@ -143,5 +143,5 @@ plot(ssol,lw=2,title="Adaptive SDE: Birth-Death Process")
 
 ## Getting Help
 Catalyst developers are active on the [Julia
-Discourse](https://discourse.julialang.org/), the [Julia Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sciml-sysbio, and the [Julia Zulip sciml-bridged channel](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged). 
+Discourse](https://discourse.julialang.org/), the [Julia Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sciml-sysbio, and the [Julia Zulip sciml-bridged channel](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged).
 For bugs or feature requests [open an issue](https://github.com/SciML/Catalyst.jl/issues).

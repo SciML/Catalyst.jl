@@ -36,7 +36,7 @@ reaction ODE models, chemical Langevin equation SDE models, and stochastic
 chemical kinetics jump process models.
 
 ```julia
-using Catalyst, OrdinaryDiffEq, StochasticDiffEq, DiffEqJump
+using Catalyst, OrdinaryDiffEq, StochasticDiffEq, JumpProcesses
 @parameters β γ t
 @variables S(t) I(t) R(t)
 

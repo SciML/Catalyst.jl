@@ -1,5 +1,5 @@
 ### Fetch required packages ###
-using DiffEqBase, Catalyst, DiffEqJump, Random, Statistics, Test
+using DiffEqBase, Catalyst, JumpProcesses, Random, Statistics, Test
 using ModelingToolkit: get_states, get_ps
 using StableRNGs
 rng = StableRNG(12345)

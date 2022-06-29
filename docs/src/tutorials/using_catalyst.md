@@ -198,7 +198,7 @@ species to the corresponding numerical values for parameters and initial
 conditions. We can build such mappings in several ways. One is to use Julia
 `Symbols` to specify the values like
 ```julia
-pmap  = (:α => .5, :K => 40, :n => 2, :δ => log(2)/120, 
+pmap  = (:α => .5, :K => 40, :n => 2, :δ => log(2)/120,
          :γ => 5e-3, :β => log(2)/6, :μ => log(2)/60)
 u₀map = [:m₁ => 0., :m₂ => 0., :m₃ => 0., :P₁ => 20., :P₂ => 0., :P₃ => 0.]
 ```
@@ -207,7 +207,7 @@ mappings like
 ```julia
 @parameters  α K n δ γ β μ
 @variables t m₁(t) m₂(t) m₃(t) P₁(t) P₂(t) P₃(t)
-pmap  = (α => .5, K => 40, n => 2, δ => log(2)/120, 
+pmap  = (α => .5, K => 40, n => 2, δ => log(2)/120,
          γ => 5e-3, β => 20*log(2)/120, μ => log(2)/60)
 u₀map = [m₁ => 0., m₂ => 0., m₃ => 0., P₁ => 20., P₂ => 0., P₃ => 0.]
 
@@ -251,7 +251,7 @@ documentation](https://diffeq.sciml.ai/dev/solvers/ode_solve/).
 ## Stochastic Simulation Algorithms (SSAs) for Stochastic Chemical Kinetics
 Let's now look at a stochastic chemical kinetics model of the repressilator,
 modeling it with jump processes. Here, we will construct a
-[DiffEqJump](https://github.com/SciML/DiffEqJump.jl) `JumpProblem` that uses
+[JumpProcesses](https://github.com/SciML/JumpProcesses.jl) `JumpProblem` that uses
 Gillespie's `Direct` method, and then solve it to generate one realization of
 the jump process:
 
@@ -272,13 +272,13 @@ plot(sol)
 ![Repressilator SSA Solutions](../assets/repressilator_jumps.svg)
 
 We see that oscillations remain, but become much noisier. Note, in constructing
-the `JumpProblem` we could have used any of the SSAs that are part of DiffEqJump
+the `JumpProblem` we could have used any of the SSAs that are part of JumpProcesses
 instead of the `Direct` method, see the list of SSAs (i.e., constant rate jump
 aggregators) in the
 [documentation](https://diffeq.sciml.ai/dev/types/jump_types/#Constant-Rate-Jump-Aggregators-1).
 
-Common questions that arise in using the DiffEqJump SSAs (i.e. Gillespie methods) 
-are collated in the [DiffEqJump FAQ](https://diffeq.sciml.ai/latest/tutorials/discrete_stochastic_example/#FAQ).
+Common questions that arise in using the JumpProcesses SSAs (i.e. Gillespie methods)
+are collated in the [JumpProcesses FAQ](https://diffeq.sciml.ai/latest/tutorials/discrete_stochastic_example/#FAQ).
 
 ---
 ## Chemical Langevin Equation (CLE) Stochastic Differential Equation (SDE) Models
@@ -363,7 +363,7 @@ convert(ODESystem, rn; combinatoric_ratelaws=false)
 
 For the previous example using this keyword argument would give the rate law
 ```math
-k X^2 Y^3 
+k X^2 Y^3
 ```
 and the ODE model
 ```math
@@ -393,4 +393,3 @@ and the ODE model
    [`ODEProblem`s](https://mtk.sciml.ai/dev/systems/ODESystem/#DiffEqBase.ODEProblem)
    and
    [`SDEProblem`s](https://mtk.sciml.ai/dev/systems/SDESystem/#DiffEqBase.SDEProblem).
-

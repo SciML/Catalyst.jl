@@ -6,7 +6,7 @@ module Catalyst
 using DocStringExtensions
 using SparseArrays, DiffEqBase, Reexport
 using LaTeXStrings, Latexify, Requires
-using DiffEqJump: DiffEqJump, JumpProblem, MassActionJump, ConstantRateJump,
+using JumpProcesses: JumpProcesses, JumpProblem, MassActionJump, ConstantRateJump,
                   VariableRateJump
 
 # ModelingToolkit imports and convenience functions we use
