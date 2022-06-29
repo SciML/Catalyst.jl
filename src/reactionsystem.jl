@@ -1366,9 +1366,9 @@ end
 
 # JumpProblem from AbstractReactionNetwork
 function JumpProcesses.JumpProblem(rs::ReactionSystem, prob, aggregator, args...;
-                                name = nameof(rs),
-                                combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                                checks = false, kwargs...)
+                                   name = nameof(rs),
+                                   combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+                                   checks = false, kwargs...)
     jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks)
     return JumpProblem(jsys, prob, aggregator, args...; kwargs...)
 end
