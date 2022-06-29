@@ -1,4 +1,4 @@
-using Catalyst, ModelingToolkit, OrdinaryDiffEq, Test, LinearAlgebra, DiffEqJump
+using Catalyst, ModelingToolkit, OrdinaryDiffEq, Test, LinearAlgebra, JumpProcesses
 
 @parameters k α
 @variables t, A(t), B(t), C(t), D(t)

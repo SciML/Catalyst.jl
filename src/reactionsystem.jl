@@ -1365,7 +1365,7 @@ function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
 end
 
 # JumpProblem from AbstractReactionNetwork
-function DiffEqJump.JumpProblem(rs::ReactionSystem, prob, aggregator, args...;
+function JumpProcesses.JumpProblem(rs::ReactionSystem, prob, aggregator, args...;
                                 name = nameof(rs),
                                 combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                                 checks = false, kwargs...)

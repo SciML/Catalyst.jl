@@ -1,4 +1,4 @@
-using Catalyst, LinearAlgebra, DiffEqJump, Test, OrdinaryDiffEq, StochasticDiffEq
+using Catalyst, LinearAlgebra, JumpProcesses, Test, OrdinaryDiffEq, StochasticDiffEq
 
 const MT = ModelingToolkit
 
@@ -182,9 +182,9 @@ js = convert(JumpSystem, rs)
 midxs = 1:14
 cidxs = 15:18
 vidxs = 19:20
-@test all(map(i -> typeof(equations(js)[i]) <: DiffEqJump.MassActionJump, midxs))
-@test all(map(i -> typeof(equations(js)[i]) <: DiffEqJump.ConstantRateJump, cidxs))
-@test all(map(i -> typeof(equations(js)[i]) <: DiffEqJump.VariableRateJump, vidxs))
+@test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.MassActionJump, midxs))
+@test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.ConstantRateJump, cidxs))
+@test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.VariableRateJump, vidxs))
 
 pars = rand(length(k));
 u0 = rand(1:10, 4);

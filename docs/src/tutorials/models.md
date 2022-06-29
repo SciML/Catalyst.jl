@@ -64,7 +64,7 @@ Instead of solving SDEs, one can create a stochastic jump process model using
 integer copy numbers and a discrete stochastic simulation algorithm (i.e.,
 Gillespie Method or Kinetic Monte Carlo). This can be done using:
 ```julia
-using DiffEqJump
+using JumpProcesses
 rn = @reaction_network begin
   p, ∅ → X
   d, X → ∅
@@ -103,4 +103,3 @@ Each `Reaction` within `reactions(rn)` has a number of subfields. For `rx` a
   for `k, X + 2Y --> X + W`, we'd have `rx.netstoich = [Y(t) => -2, W(t) => 1]`.
 * `rx.only_use_rate`, a boolean that is `true` if the reaction was made with
   non-filled arrows and should ignore mass action kinetics. `false` by default.
-

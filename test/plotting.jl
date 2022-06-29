@@ -1,6 +1,6 @@
-### Not currently run by runtests 
+### Not currently run by runtests
 ### Fetch required packages and reaction networks ###
-using Catalyst, DiffEqJump, OrdinaryDiffEq, Plots, Random, Test
+using Catalyst, JumpProcesses, OrdinaryDiffEq, Plots, Random, Test
 using ModelingToolkit: get_states, get_ps
 include("test_networks.jl")
 
