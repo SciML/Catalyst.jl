@@ -5,7 +5,7 @@ One can directly use symbolic variables to index into SciML solution objects.
 Moreover, observables can also be evaluated in this way. For example,
 consider the system
 ```@example faq1
-using Catalyst, OrdinaryDiffEq, Plots
+using Catalyst, DifferentialEquations, Plots
 rn = @reaction_network ABtoC begin
   (k₊,k₋), A + B <--> C
 end k₊ k₋
