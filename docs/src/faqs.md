@@ -1,5 +1,68 @@
 # FAQs
 
+## How to index solution objects using symbolic variables and observables?
+One can directly use symbolic variables to index into SciML solution objects.
+Moreover, observables can also be evaluated in this way. For example,
+consider the system
+```@example faq1
+using Catalyst, OrdinaryDiffEq, Plots
+rn = @reaction_network ABtoC begin
+  (k₊,k₋), A + B <--> C
+end k₊ k₋
+
+# initial condition and parameter values
+setdefaults!(rn, [:A => 1.0, :B => 2.0, :C => 0.0, :k₊ => 1.0, :k₋ => 1.0])
+```
+Let's convert it to a system of ODEs, using the conservation laws of the system
+to eliminate two of the species:
+```@example faq1
+osys = convert(ODESystem, rn; remove_conserved=true)
+show(osys) # hide
+```
+Notice the resulting ODE system has just one ODE
+```@example faq1
+equations(osys)
+show(equations(osys)) # hide
+```
+while algebraic observables have been added for the two removed species (in
+terms of the conservation law constants, `_ConLaw[1]` and `_ConLaw[2]`)
+```@example faq1
+observed(osys)
+show(observed(osys))  # hide
+```
+Let's solve the system and see how to index the solution using our symbolic
+variables
+```@example faq1
+oprob = ODEProblem(osys, [], (0.0, 10.0), [])
+sol = solve(oprob, Tsit5())
+```
+Suppose we want to plot just species `C`, without having to know its integer
+index in the state vector. We can do this using the symbolic variable `C`, which
+we can get at in several ways
+```@example faq1
+sol[osys.C]
+```
+or
+```@example faq1
+@unpack C = osys
+sol[C]
+```
+To evaluate `C` at specific times and plot it we can just do
+```@example faq1
+t = range(0.0, 10.0, length=101)
+plot(t, sol(t, idxs = C), label = "C(t)", xlabel = "t")
+```
+If we want to get multiple variables we can just do
+```@example faq1
+@unpack A, B = osys
+sol(t, idxs = [A, B])
+```
+Plotting multiple variables using the SciML plot recipe can be achieved
+like
+```@example faq1
+plot(sol; vars = [A, B])
+```
+
 ## How to disable rescaling of reaction rates in rate laws?
 As explained in the [Reaction rate laws used in simulations](@ref) section, for
 a reaction such as `k, 2X --> 0`, the generated rate law will rescale the rate
@@ -86,7 +149,7 @@ end α β
 u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
 p  = (:α => 1e-4, :β => .01)
 op  = ODEProblem(rn, u0, (0.0,250.0), p)
-sol = solve(op, Tsit5())  
+sol = solve(op, Tsit5())
 ```
 while using ModelingToolkit symbolic variables we have
 ```julia
@@ -95,7 +158,7 @@ while using ModelingToolkit symbolic variables we have
 u0 = [S => 999.0, I => 1.0, R => 0.0]
 p  = (α => 1e-4, β => .01)
 op  = ODEProblem(rn, u0, (0.0,250.0), p)
-sol = solve(op, Tsit5())  
+sol = solve(op, Tsit5())
 ```
 
 ## How to modify generated ODEs?
@@ -104,18 +167,18 @@ modify the system with further terms that are difficult to encode as a chemical
 reaction. For example, suppose we wish to add a forcing term, $10\sin(10t)$, to
 the ODE for `dX/dt` above. We can do so as:
 ```julia
-dXdteq = equations(osys)[1]           
-t      = get_iv(osys)    
-dXdteq = Equation(dXdteq.lhs, dXdteq.rhs + 10*sin(10*t))   
+dXdteq = equations(osys)[1]
+t      = get_iv(osys)
+dXdteq = Equation(dXdteq.lhs, dXdteq.rhs + 10*sin(10*t))
 @named osys2  = ODESystem([dXdteq], t, states(osys), parameters(osys))
 oprob  = ODEProblem(osys2, u0map, tspan, pmap)
 osol   = solve(oprob, Tsit5())
 ```
 We can add $e^{-X}$ to $dX/dt$ as a forcing term by
 ```julia
-dXdteq = equations(osys)[1]           
+dXdteq = equations(osys)[1]
 @variables X(t)
-dXdteq = Equation(dXdteq.lhs, dXdteq.rhs + exp(-X))   
+dXdteq = Equation(dXdteq.lhs, dXdteq.rhs + exp(-X))
 @named osys2  = ODESystem([dXdteq], t, states(osys), parameters(osys))
 oprob  = ODEProblem(osys2, u0map, tspan, pmap)
 osol   = solve(oprob, Tsit5())
@@ -138,7 +201,7 @@ rn = @reaction_network begin
 end k
 ```
 will occur at rate ``d[X]/dt = -k`` (which might become a problem since ``[X]``
-will be degraded at a constant rate even when very small or equal to 0). 
+will be degraded at a constant rate even when very small or equal to 0).
 
 Note, stoichiometric coefficients are still included, i.e. the reaction
 ```julia
@@ -160,5 +223,3 @@ end
 In some cases, it may be necessary or desirable to register functions with
 Symbolics.jl before their use in Catalyst, see the discussion
 [here](https://symbolics.juliasymbolics.org/dev/manual/functions/).
-
-
