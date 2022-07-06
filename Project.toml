@@ -1,6 +1,6 @@
 name = "Catalyst"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
-version = "12.1.1"
+version = "12.1.2"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
@@ -20,18 +20,18 @@ Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
 DataStructures = "0.18"
-DiffEqBase = "6.54.0"
+DiffEqBase = "6.83.0"
 DocStringExtensions = "0.8, 0.9"
 Graphs = "1.4"
 JumpProcesses = "9.0"
 LaTeXStrings = "v1.3.0"
 Latexify = "0.14, 0.15"
 MacroTools = "0.5.5"
-ModelingToolkit = "6.3, 7.0, 8.0"
+ModelingToolkit = "8.15.1"
 Parameters = "0.12"
 Reexport = "0.2, 1.0"
 Requires = "1.0"
-Symbolics = "3.0, 4.0"
+Symbolics = "4.5"
 julia = "1.6"
 
 [extras]
