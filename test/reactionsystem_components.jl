@@ -262,6 +262,14 @@ u₀ = [A => 1.0, B => 2.0, C => 0.0]
 oprob = ODEProblem(structural_simplify(osys), u₀, (0.0, 10.0), p)
 sol = solve(oprob, Tsit5())
 @test isapprox(0, norm(sol[ns.D] .- 2 * sol[A] - 3 * sol[B]), atol = (100 * eps()))
+psyms = [:r₊ => 1.0, :r₋ => 2.0, :ns₊β => 3.0]
+u₀syms = [:A => 1.0, :B => 2.0, :C => 0.0]
+p = symmap_to_varmap(osys, psyms)
+u₀ = symmap_to_varmap(osys, u₀syms)
+oprob = ODEProblem(structural_simplify(osys), u₀, (0.0, 10.0), p)
+sol = solve(oprob, Tsit5())
+@test isapprox(0, norm(sol[ns.D] .- 2 * sol[A] - 3 * sol[B]), atol = (100 * eps()))
+
 
 # test API functions for composed model
 @test issetequal(species(rs), [A, B, C])
@@ -354,3 +362,19 @@ rxs2 = [Reaction(p2, [ParentScope(A)], nothing)]
 rsc = compose(rs1, [rs2])
 orsc = convert(ODESystem, rsc)
 @test length(equations(orsc)) == 1
+
+# test constraint system symbols can be set via setdefaults!
+let
+    @parameters b
+    @variables t V(t) [isbcspecies=true]
+    rn = @reaction_network begin
+        k/$V, A + B --> C
+    end k
+    Dt = Differential(t)
+    @named csys = ODESystem([Dt(V) ~ -b*V], t)
+    @named fullrn = extend(csys, rn)
+    setdefaults!(fullrn, [:b => 2.0])
+    @unpack b = fullrn
+    @test haskey(ModelingToolkit.defaults(fullrn), b)
+    @test ModelingToolkit.defaults(fullrn)[b] == 2.0
+end
