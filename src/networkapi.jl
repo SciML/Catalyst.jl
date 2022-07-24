@@ -408,7 +408,7 @@ function setdefaults!(rn, newdefs)
     defs = eltype(newdefs) <: Pair{Symbol} ? symmap_to_varmap(rn, newdefs) : newdefs
     rndefs = MT.get_defaults(rn)
     for (var, val) in defs
-        rndefs[var] = value(val)
+        rndefs[value(var)] = value(val)
     end
     nothing
 end

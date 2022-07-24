@@ -690,6 +690,29 @@ function MT.observed(sys::ReactionSystem)
            init = obs)
 end
 
+function Base.propertynames(sys::ReactionSystem; private = false)
+    if private
+        return fieldnames(typeof(sys))
+    else
+        names = Symbol[]
+        for s in get_systems(sys)
+            push!(names, getname(s))
+        end
+        MT.has_states(sys) && for s in get_states(sys)
+            push!(names, getname(s))
+        end
+        MT.has_ps(sys) && for s in get_ps(sys)
+            push!(names, getname(s))
+        end
+        MT.has_observed(sys) && for s in get_observed(sys)
+            push!(names, getname(s.lhs))
+        end
+        (get_constraints(sys) !== nothing) &&
+            append!(names, propertynames(get_constraints(sys)))
+        return unique!(names)
+    end
+end
+
 function MT.getvar(sys::ReactionSystem, name::Symbol; namespace = false)
     if isdefined(sys, name)
         Base.depwarn("`sys.name` like `sys.$name` is deprecated. Use getters like `get_$name` instead.",
@@ -701,11 +724,6 @@ function MT.getvar(sys::ReactionSystem, name::Symbol; namespace = false)
     i = findfirst(x -> nameof(x) == name, systems)
     i === nothing ||
         return namespace ? rename(systems[i], renamespace(sys, name)) : systems[i]
-
-    constraints = get_constraints(sys)
-    if constraints !== nothing && nameof(constraints) == name
-        return namespace ? rename(constraints, renamespace(sys, name)) : constraints
-    end
 
     avs = get_var_to_name(sys)
     v = get(avs, name, nothing)
@@ -723,6 +741,7 @@ function MT.getvar(sys::ReactionSystem, name::Symbol; namespace = false)
     i = findfirst(x -> getname(x.lhs) == name, obs)
     i === nothing || return namespace ? renamespace(sys, obs[i]) : obs[i]
 
+    constraints = get_constraints(sys)
     if constraints !== nothing
         return getvar(rename(constraints, nameof(sys)), name; namespace = namespace)
     end
