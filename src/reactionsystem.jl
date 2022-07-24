@@ -707,7 +707,8 @@ function Base.propertynames(sys::ReactionSystem; private = false)
         MT.has_observed(sys) && for s in get_observed(sys)
             push!(names, getname(s.lhs))
         end
-        (get_constraints(sys) !== nothing) && append!(names, propertynames(get_constraints(sys)))
+        (get_constraints(sys) !== nothing) &&
+            append!(names, propertynames(get_constraints(sys)))
         return unique!(names)
     end
 end

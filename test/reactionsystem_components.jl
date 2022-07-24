@@ -1,3 +1,4 @@
+#! format: off
 using ModelingToolkit, Catalyst, LinearAlgebra, OrdinaryDiffEq, Test
 using SciMLNLSolve
 
@@ -270,7 +271,6 @@ oprob = ODEProblem(structural_simplify(osys), u₀, (0.0, 10.0), p)
 sol = solve(oprob, Tsit5())
 @test isapprox(0, norm(sol[ns.D] .- 2 * sol[A] - 3 * sol[B]), atol = (100 * eps()))
 
-
 # test API functions for composed model
 @test issetequal(species(rs), [A, B, C])
 @test issetequal(states(rs), [A, B, C, ns.D])
@@ -366,12 +366,12 @@ orsc = convert(ODESystem, rsc)
 # test constraint system symbols can be set via setdefaults!
 let
     @parameters b
-    @variables t V(t) [isbcspecies=true]
+    @variables t V(t) [isbcspecies = true]
     rn = @reaction_network begin
         k/$V, A + B --> C
     end k
     Dt = Differential(t)
-    @named csys = ODESystem([Dt(V) ~ -b*V], t)
+    @named csys = ODESystem([Dt(V) ~ -b * V], t)
     @named fullrn = extend(csys, rn)
     setdefaults!(fullrn, [:b => 2.0])
     @unpack b = fullrn
