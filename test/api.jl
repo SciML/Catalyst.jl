@@ -586,6 +586,7 @@ setdefaults!(rn, [:S => 999.0, :I => 1.0, :R => 0.0, :α => 1e-4, :β => 0.01])
 op = ODEProblem(rn, [], tspan, [])
 sol2 = solve(op, Tsit5())
 @test norm(sol.u - sol2.u) ≈ 0
+@test all(p -> p[1] isa Symbolics.Symbolic, collect(ModelingToolkit.defaults(rn)))
 
 rn = @reaction_network begin
     α, S + I --> 2I
