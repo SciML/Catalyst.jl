@@ -551,10 +551,10 @@ let
     rn = @reaction_network begin
         t, A --> B          # vrj
         1.0, B --> D        # vrj
-        k*D, H --> I + H    # vrj
+        k * D, H --> I + H  # vrj
         k2, I --> L         # vrj
         k, E --> F          # maj
-        k*E, E --> G        # crj
+        k * E, E --> G      # crj
         k2, G --> H         # maj
         k2, G --> A + B     # maj
     end k k2

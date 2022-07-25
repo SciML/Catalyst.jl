@@ -1060,7 +1060,7 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
     rxs = get_eqs(rs)
     isvrjvec = falses(length(rxs))
     havevrjs = false
-    for (i,rx) in enumerate(rxs)
+    for (i, rx) in enumerate(rxs)
         empty!(rxvars)
         (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
         @inbounds for rxvar in rxvars
@@ -1084,13 +1084,13 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
         end
     end
 
-    for (i,rx) in enumerate(rxs)
+    for (i, rx) in enumerate(rxs)
         empty!(rxvars)
         (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
 
         isvrj = isvrjvec[i]
         if (!isvrj) && ismassaction(rx, rs; rxvars = rxvars, haveivdep = false,
-                                    stateset = stateset)
+                        stateset = stateset)
             push!(meqs, makemajump(rx, combinatoric_ratelaw = combinatoric_ratelaws))
         else
             rl = jumpratelaw(rx, combinatoric_ratelaw = combinatoric_ratelaws)
@@ -1477,7 +1477,6 @@ function ModelingToolkit.modified_states!(mstates, rx::Reaction, sts::AbstractVe
     end
     mstates
 end
-
 
 ########################## Compositional Tooling ###########################
 function getsubsyseqs!(eqs::Vector{Equation}, sys)
