@@ -210,47 +210,47 @@ let p = p
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.ConstantRateJump, cidxs))
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.VariableRateJump, vidxs))
 
-    pars = rand(length(k));
-    u0 = rand(2:10, 6);
-    ttt = rand();
+    pars = rand(length(k))
+    u0 = rand(2:10, 6)
+    ttt = rand()
     jumps = Vector{Union{ConstantRateJump, MassActionJump, VariableRateJump}}(undef,
-                                                                            length(rxs))
+                                                                              length(rxs))
 
-    jumps[1] = MassActionJump(pars[1], Vector{Pair{Int, Int}}(), [1 => 1]);
-    jumps[2] = MassActionJump(pars[2], [2 => 1], [2 => -1]);
-    jumps[3] = MassActionJump(pars[3], [1 => 1], [1 => -1, 3 => 1]);
-    jumps[4] = MassActionJump(pars[4], [3 => 1], [1 => 1, 2 => 1, 3 => -1]);
-    jumps[5] = MassActionJump(pars[5], [3 => 1], [1 => 2, 3 => -1]);
-    jumps[6] = MassActionJump(pars[6], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1]);
-    jumps[7] = MassActionJump(pars[7], [2 => 2], [1 => 1, 2 => -2]);
-    jumps[8] = MassActionJump(pars[8], [1 => 1, 2 => 1], [2 => -1, 3 => 1]);
-    jumps[9] = MassActionJump(pars[9], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1, 4 => 1]);
-    jumps[10] = MassActionJump(pars[10], [1 => 2], [1 => -2, 3 => 1, 4 => 1]);
-    jumps[11] = MassActionJump(pars[11], [1 => 2], [1 => -1, 2 => 1]);
+    jumps[1] = MassActionJump(pars[1], Vector{Pair{Int, Int}}(), [1 => 1])
+    jumps[2] = MassActionJump(pars[2], [2 => 1], [2 => -1])
+    jumps[3] = MassActionJump(pars[3], [1 => 1], [1 => -1, 3 => 1])
+    jumps[4] = MassActionJump(pars[4], [3 => 1], [1 => 1, 2 => 1, 3 => -1])
+    jumps[5] = MassActionJump(pars[5], [3 => 1], [1 => 2, 3 => -1])
+    jumps[6] = MassActionJump(pars[6], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1])
+    jumps[7] = MassActionJump(pars[7], [2 => 2], [1 => 1, 2 => -2])
+    jumps[8] = MassActionJump(pars[8], [1 => 1, 2 => 1], [2 => -1, 3 => 1])
+    jumps[9] = MassActionJump(pars[9], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1, 4 => 1])
+    jumps[10] = MassActionJump(pars[10], [1 => 2], [1 => -2, 3 => 1, 4 => 1])
+    jumps[11] = MassActionJump(pars[11], [1 => 2], [1 => -1, 2 => 1])
     jumps[12] = MassActionJump(pars[12], [1 => 1, 2 => 3, 3 => 4],
-                            [1 => -1, 2 => -3, 3 => -2, 4 => 3]);
-    jumps[13] = MassActionJump(pars[13], [1 => 3, 2 => 1], [1 => -3, 2 => -1]);
-    jumps[14] = MassActionJump(pars[14], Vector{Pair{Int, Int}}(), [1 => 2]);
+                               [1 => -1, 2 => -3, 3 => -2, 4 => 3])
+    jumps[13] = MassActionJump(pars[13], [1 => 3, 2 => 1], [1 => -3, 2 => -1])
+    jumps[14] = MassActionJump(pars[14], Vector{Pair{Int, Int}}(), [1 => 2])
 
     jumps[15] = ConstantRateJump((u, p, t) -> p[15] * u[1] / (2 + u[1]),
-                                integrator -> (integrator.u[1] -= 1))
+                                 integrator -> (integrator.u[1] -= 1))
     jumps[16] = ConstantRateJump((u, p, t) -> p[16],
-                                integrator -> (integrator.u[1] -= 1; integrator.u[2] += 1))
+                                 integrator -> (integrator.u[1] -= 1; integrator.u[2] += 1))
     jumps[17] = ConstantRateJump((u, p, t) -> p[17] * u[1] * exp(u[2]) * binomial(u[3], 2),
-                                integrator -> (integrator.u[3] -= 2; integrator.u[4] += 1))
+                                 integrator -> (integrator.u[3] -= 2; integrator.u[4] += 1))
     jumps[18] = ConstantRateJump((u, p, t) -> p[18] * u[2],
-                                integrator -> (integrator.u[2] += 2))
+                                 integrator -> (integrator.u[2] += 2))
 
     jumps[19] = VariableRateJump((u, p, t) -> p[19] * u[4] * t,
-                                integrator -> (integrator.u[4] -= 1; integrator.u[5] += 1))
+                                 integrator -> (integrator.u[4] -= 1; integrator.u[5] += 1))
     jumps[20] = VariableRateJump((u, p, t) -> p[20] * t * u[1] * binomial(u[4], 2) * u[5],
-                                integrator -> (integrator.u[4] -= 2; integrator.u[5] -= 1; integrator.u[6] += 2))
+                                 integrator -> (integrator.u[4] -= 2; integrator.u[5] -= 1; integrator.u[6] += 2))
 
     statetoid = Dict(state => i for (i, state) in enumerate(states(js)))
     jspmapper = ModelingToolkit.JumpSysMajParamMapper(js, pars)
     symmaj = ModelingToolkit.assemble_maj(equations(js).x[1], statetoid, jspmapper)
     maj = MassActionJump(symmaj.param_mapper(pars), symmaj.reactant_stoch, symmaj.net_stoch,
-                        symmaj.param_mapper, scale_rates = false)
+                         symmaj.param_mapper, scale_rates = false)
     for i in midxs
         @test abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100 * eps()
         @test jumps[i].reactant_stoch == maj.reactant_stoch[i]
@@ -486,7 +486,7 @@ let
     end
     @test isempty(equations(jsys).x[2])
     vrj1 = equations(jsys).x[3][1]
-    @test isequal(vrj1.rate, k2*B)
+    @test isequal(vrj1.rate, k2 * B)
     @test issetequal(vrj1.affect!, [B ~ B - 1])
     vrj2 = equations(jsys).x[3][2]
     @test isequal(vrj2.rate, k1 * t * A * C)
