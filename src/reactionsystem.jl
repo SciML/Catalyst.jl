@@ -1458,7 +1458,8 @@ end
 function ModelingToolkit.get_variables!(deps::Set, rx::Reaction, variables)
     (rx.rate isa Symbolic) && get_variables!(deps, rx.rate, variables)
     for s in rx.substrates
-        push!(deps, s)
+        # parametric stoichiometry means may have a parameter as a substrate
+        any(isequal(s), variables) && push!(deps, s)
     end
     deps
 end
