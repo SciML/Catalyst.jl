@@ -27,6 +27,9 @@ Generated models can be used with solvers throughout the broader
 for sensitivity analysis, parameter estimation, machine learning applications,
 etc).
 
+## 2022 JuliaCon Workshop Info
+The Pluto notebooks used in the workshop can be downloaded from: https://github.com/TorkelE/JuliaCon2022_Catalyst_Workshop
+
 ## Breaking Changes and New Features
 
 Breaking changes and new functionality are summarized in the
