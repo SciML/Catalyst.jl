@@ -545,3 +545,22 @@ let
     @test_throws ErrorException ReactionSystem([rx], t; name = :rs)
     @named rs = ReactionSystem([rx], t; balanced_bc_check = false)
 end
+
+# test for classification of jump types
+let
+    rn = @reaction_network begin
+        t, A --> B          # vrj
+        1.0, B --> D        # vrj
+        k*D, H --> I + H    # vrj
+        k2, I --> L         # vrj
+        k, E --> F          # maj
+        k*E, E --> G        # crj
+        k2, G --> H         # maj
+        k2, G --> A + B     # maj
+    end k k2
+    jsys = convert(JumpSystem, rn)
+    jumps = Catalyst.assemble_jumps(rn)
+    @test count(j -> j isa VariableRateJump, jumps) == 4
+    @test count(j -> j isa ConstantRateJump, jumps) == 1
+    @test count(j -> j isa MassActionJump, jumps) == 3
+end

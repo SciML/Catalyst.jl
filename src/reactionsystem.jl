@@ -1025,6 +1025,27 @@ end
                    useiszero = false)
 end
 
+# get_depgraph(rs)[i] is the list of reactions with rates depending on species changed by
+# i'th reaction.
+function get_depgraph(rs)
+    jdeps = asgraph(rs)
+    vdeps = variable_dependencies(rs)
+    eqeq_dependencies(jdeps, vdeps).fadjlist
+end
+
+# recursively visit each neighbor's rooted tree and mark everything in it as vrj
+function dfs_mark!(isvrjvec, visited, depgraph, i)
+    visited[i] = true
+    nhbrs = depgraph[i]
+    for nhbr in nhbrs
+        if !visited[nhbr]
+            isvrjvec[nhbr] = true
+            dfs_mark!(isvrjvec, visited, depgraph, nhbr)
+        end
+    end
+    nothing
+end
+
 function assemble_jumps(rs; combinatoric_ratelaws = true)
     meqs = MassActionJump[]
     ceqs = ConstantRateJump[]
@@ -1034,17 +1055,42 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
 
     isempty(get_eqs(rs)) &&
         error("Must give at least one reaction before constructing a JumpSystem.")
-    for rx in get_eqs(rs)
+
+    # first we determine vrjs with an explicit time-dependent rate
+    rxs = get_eqs(rs)
+    isvrjvec = falses(length(rxs))
+    havevrjs = false
+    for (i,rx) in enumerate(rxs)
         empty!(rxvars)
         (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
-        haveivdep = false
         @inbounds for rxvar in rxvars
             if isequal(rxvar, get_iv(rs))
-                haveivdep = true
+                isvrjvec[i] = true
+                havevrjs = true
                 break
             end
         end
-        if ismassaction(rx, rs; rxvars = rxvars, haveivdep = haveivdep, stateset = stateset)
+    end
+
+    # now we determine vrj's that depend on species modified by a previous vrj
+    if havevrjs
+        depgraph = get_depgraph(rs)
+        visited = falses(length(isvrjvec))
+        for (i, isvrj) in enumerate(isvrjvec)
+            if isvrj && !visited[i]
+                # dfs from the vrj node to propagate vrj classification
+                dfs_mark!(isvrjvec, visited, depgraph, i)
+            end
+        end
+    end
+
+    for (i,rx) in enumerate(rxs)
+        empty!(rxvars)
+        (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
+
+        isvrj = isvrjvec[i]
+        if (!isvrj) && ismassaction(rx, rs; rxvars = rxvars, haveivdep = false,
+                                    stateset = stateset)
             push!(meqs, makemajump(rx, combinatoric_ratelaw = combinatoric_ratelaws))
         else
             rl = jumpratelaw(rx, combinatoric_ratelaw = combinatoric_ratelaws)
@@ -1053,7 +1099,7 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
                 # don't change species that are constant or BCs
                 (!drop_dynamics(spec)) && push!(affect, spec ~ spec + stoich)
             end
-            if haveivdep
+            if isvrj
                 push!(veqs, VariableRateJump(rl, affect))
             else
                 push!(ceqs, ConstantRateJump(rl, affect))
@@ -1424,6 +1470,14 @@ function ModelingToolkit.modified_states!(mstates, rx::Reaction, sts::Set)
     end
     mstates
 end
+
+function ModelingToolkit.modified_states!(mstates, rx::Reaction, sts::AbstractVector)
+    for (species, stoich) in rx.netstoich
+        any(isequal(species), sts) && push!(mstates, species)
+    end
+    mstates
+end
+
 
 ########################## Compositional Tooling ###########################
 function getsubsyseqs!(eqs::Vector{Equation}, sys)
