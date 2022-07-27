@@ -592,4 +592,7 @@ let
     @test count(j -> j isa VariableRateJump, jumps) == 4
     @test count(j -> j isa ConstantRateJump, jumps) == 1
     @test count(j -> j isa MassActionJump, jumps) == 3
+    dg = [[1, 2], [2, 3], [4], [4], [5, 6], [5, 6, 7, 8], [3, 7, 8], [1, 2, 7, 8]]
+    dgact = Catalyst.get_depgraph(rn)
+    @test dg == dgact
 end
