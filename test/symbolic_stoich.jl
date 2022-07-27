@@ -145,7 +145,7 @@ function affect1!(integrator)
 end
 ttt = 1.5
 j1 = VariableRateJump(r1, affect1!)
-vrj = ModelingToolkit.assemble_vrj(js, equations(js)[2], statetoid)
+vrj = ModelingToolkit.assemble_vrj(js, equations(js)[1], statetoid)
 @test isapprox(vrj.rate(u0, p, ttt), r1(u0, p, ttt))
 fake_integrator1 = (u = copy(u0), p = p, t = ttt);
 fake_integrator2 = deepcopy(fake_integrator1);
@@ -172,12 +172,12 @@ function affect2!(integrator)
     integrator.u[4] += α
     nothing
 end
-j2 = ConstantRateJump(r2, affect2!)
-crj = ModelingToolkit.assemble_crj(js, equations(js)[1], statetoid)
-@test isapprox(crj.rate(u0, p, ttt), r2(u0, p, ttt))
+j2 = VariableRateJump(r2, affect2!)
+vrj = ModelingToolkit.assemble_vrj(js, equations(js)[2], statetoid)
+@test isapprox(vrj.rate(u0, p, ttt), r2(u0, p, ttt))
 fake_integrator1 = (u = copy(u0), p = p, t = ttt);
 fake_integrator2 = deepcopy(fake_integrator1);
-crj.affect!(fake_integrator1);
+vrj.affect!(fake_integrator1);
 affect2!(fake_integrator2);
 @test fake_integrator1 == fake_integrator2
 
