@@ -27,9 +27,6 @@ Generated models can be used with solvers throughout the broader
 for sensitivity analysis, parameter estimation, machine learning applications,
 etc).
 
-## 2022 JuliaCon Workshop Info
-The Pluto notebooks used in the workshop can be downloaded from: https://github.com/SciML/JuliaCon2022_Catalyst_Workshop.
-
 ## Breaking Changes and New Features
 
 Breaking changes and new functionality are summarized in the
@@ -37,14 +34,16 @@ Breaking changes and new functionality are summarized in the
 
 ## Tutorials and Documentation
 
-- A short 15 minute overview of Catalyst as of version 6 is available in the talk
-[Modeling Biochemical Systems with Catalyst.jl](https://www.youtube.com/watch?v=5p1PJE5A5Jw).
-- A short 13 minute overview of Catalyst when it was known as DiffEqBiological in older versions is available in the talk [Efficient Modelling of Biochemical Reaction Networks](https://www.youtube.com/watch?v=s1e72k5XD6s)
-
 For tutorials and information on using the package, [see the stable
 documentation](https://catalyst.sciml.ai/stable/). The [in-development
 documentation](https://catalyst.sciml.ai/dev/) describes unreleased features in
 the current master branch.
+
+Several Youtube video tutorials and overviews are also available:
+- From JuliaCon 2022: A three hour tutorial workshop overviewing how to use Catalyst and its more advanced features as of version 12.1. [Workshop video](https://youtu.be/tVfxT09AtWQ), [Workshop Pluto.jl Notebooks](https://github.com/SciML/JuliaCon2022_Catalyst_Workshop).
+- From SIAM CSE 2021: A short 15 minute overview of Catalyst as of version 6 is available in the talk
+[Modeling Biochemical Systems with Catalyst.jl](https://www.youtube.com/watch?v=5p1PJE5A5Jw).
+- From JuliaCon 2018: A short 13 minute overview of Catalyst when it was known as DiffEqBiological in older versions is available in the talk [Efficient Modelling of Biochemical Reaction Networks](https://www.youtube.com/watch?v=s1e72k5XD6s)
 
 ## Features
 
