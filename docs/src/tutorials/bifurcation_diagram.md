@@ -1,5 +1,5 @@
 # Bifurcation Diagrams
-Bifurcation diagrams can be produced from Catalyst generated models through the use of the [BifurcationKit.jl](https://github.com/rveltz/BifurcationKit.jl/) package. This tutorial gives a simple example of how to create such a bifurcation diagram. *Please note,* this tutorial is written for BifurcationKit version 0.1.11 and has not yet been updated to work on newer versions like 0.2 and up.
+Bifurcation diagrams can be produced from Catalyst generated models through the use of the [BifurcationKit.jl](https://github.com/rveltz/BifurcationKit.jl/) package. This tutorial gives a simple example of how to create such a bifurcation diagram. 
 
 First, we declare our model. For our example we will use a bistable switch, but which also contains a Hopf bifurcation.
 ```julia
@@ -48,20 +48,15 @@ bopts = ContinuationPar( dsmax = 0.05,        # Maximum arclength value of the p
 ```
 With all this done, we can compute the bifurcation diagram:
 ```julia
-bf = bifurcationdiagram(bprob, PALC(),2, (args...) -> bopts)
+bf = bifurcationdiagram(bprob, PALC(), 2, (args...) -> bopts)
 ```
 Finally, we can plot it:
 ```julia
 plot(bf)
 ```
-![bifurcation_diagram1](../assets/bifurcation_diagram1.svg)
+![bifurcation_diagram1](../assets/bifurcation_diagram.svg)
 
-Here, Hopf bifurcation is marked with a red dot and fold bifurcation with blue dots. The region with a thinner linewidth corresponds to unstable steady states. If one wishes to mark these differently it is possible to plot the individual branches separately:
-```julia
-plot(branches[1],lw=4,color=map(i->(i==0) ? :blue : :red, getproperty.(branches[1].branch,:n_unstable)))
-plot!(branches[3],lw=4,color=map(i->(i==0) ? :blue : :red, getproperty.(branches[3].branch,:n_unstable)))
-plot!(branches[4],lw=4,color=map(i->(i==0) ? :blue : :red, getproperty.(branches[4].branch,:n_unstable)),plotbifpoints = false,xlabel=rn.ps[1],ylabel=Symbol(rn.states[1].val.f))
-```
-![bifurcation_diagram2](../assets/bifurcation_diagram2.svg)
+Here, Hopf bifurcation is marked with a red dot and fold bifurcation with blue dots. The region with a thinner linewidth corresponds to unstable steady states. 
 
-(Note that the second branch corresponds to a negative steady state, which is biological irrelevant, and we hence do not plot)
+This tutorial demonstrates how to make a simple bifurcation diagram where all branches are connected. However, BifurcationKit.jl is a very powerful package capable of a lot more. For more details, please see that package's documentation: [BifurcationKit.jl](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/). 
+
