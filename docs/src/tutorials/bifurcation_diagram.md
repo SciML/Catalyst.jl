@@ -26,47 +26,37 @@ p_span = (0.1,20.)   # The parameter range for the bifurcation diagram.
 plot_var_idx = 1     # The index of the variable we plot in the bifurcation diagram.
 ```
 
-Now we need to fetch the required packages to create the bifurcation diagram.
+When creating a bifurcation diagram, we typically start in some point in parameter-phase space. For paramaeter space, we will simply select the beginning of the interval over which we wish to computer the bifurcation diagram. Here, we make a guess of an initial fixed point. While a good estimate could be provided through e.g. a simulation, the guess do not need to be very exact.
+```julia
+params_bstart = setindex!(copy(params),p_span[1],p_idx)                               # The input parameter values have to start at the first index of our parameter span.
+u0 = [1.0,1.0]
+```
+Next, we fetch the required packages to create the bifurcation diagram. We also  bundle the information we have compiled so far into a "`BifurcationProblem`".
 ```julia
 using BifurcationKit, Plots, LinearAlgebra, Setfield
+bprob = BifurcationProblem(F, u0, params_bstart, (@lens _[p_idx]); recordFromSolution = (x, p) -> x[plot_var_idx], J=J)
 ```
-Next, we need to specify the input options for the pseudo-arclength continuation method which produces the diagram. We will use a [deflated continuation](https://rveltz.github.io/BifurcationKit.jl/dev/DeflatedContinuation/).
+Next, we need to specify the input options for the pseudo-arclength continuation method which produces the diagram..
 ```julia
-opts = ContinuationPar( dsmax = 0.05,        # Maximum arclength value of the pseudo-arc length continuation method.
+bopts = ContinuationPar( dsmax = 0.05,        # Maximum arclength value of the pseudo-arc length continuation method.
                         dsmin = 1e-4,        # Minimum arclength value of the pseudo-arc length continuation method.
                         ds=0.001,            # Initial arclength value of the pseudo-arc length continuation method (should be positive).
                         maxSteps = 100000,   # The maximum number of steps.
                         pMin = p_span[1],    # Minimum p-vale (if hit, the method stops).
                         pMax = p_span[2],    # Maximum p-vale (if hit, the method stops).
-                        detectBifurcation=3, # Value in {0,1,2,3} determining to what extent bifurcation points are detected (0 means nothing is done, 3 both them and there localisation are detected).
-                        newtonOptions = NewtonPar(tol = 1e-9, verbose = false, maxIter = 15)) #Parameters to the newton solver (when finding fixed points) see BifurcationKit documentation.
-                        
-DO = DeflationOperator( 2,      # Algorithm parameter required when using deflated continuation, see BifurcationKit documentation.
-                        dot,    # Algorithm parameter required when using deflated continuation, see BifurcationKit documentation.
-                        1.,     # Algorithm parameter required when using deflated continuation, see BifurcationKit documentation.
-                        [fill(0.,length(rn.states))]); # Guess(es) of the fixed point for the initial parameter set. Do not need to be exact.
-
+                        detectBifurcation=3) # Value in {0,1,2,3} determining to what extent bifurcation points are detected (0 means nothing is done, 3 both them and there localisation are detected).
 ```
-With all this done, we can compute the bifurcations:
+With all this done, we can compute the bifurcation diagram:
 ```julia
-params_input = setindex!(copy(params),p_span[1],p_idx)                                # The input parameter values have to start at the first index of our parameter span.
-branches, = continuation(F, J, params_input, (@lens _[p_idx]), opts , DO,             # Gives our input.
-    verbosity = 0, plot=false,                                                    # We do not want to display, or plot, intermediary results.
-    recordFromSolution = (x, p) -> x[plot_var_idx],                                   # How we wish to print the output in the diagram. Here we simply want the value of the target variable.
-    perturbSolution = (x,p,id) -> (x  .+ 0.8 .* rand(length(x))),                     # Parameter for the continuation method, see BifurcationKit documentation.
-    callbackN = BifurcationKit.cbMaxNorm(1e7))                      # Parameter for the continuation method, see BifurcationKit documentation.
+bf = bifurcationdiagram(bprob, PALC(),2, (args...) -> bopts)
 ```
-which can then be plotted using
+Finally, we can plot it:
 ```julia
-plot(branches...,xlabel=rn.ps[1],ylabel=Symbol(rn.states[1].val.f),markersize=4,
-     ylim=(0.,Inf),                                  # This ensures we do not display negative solutions.
-     color=:blue,                                    # Otherwise each individual branch will have their separate colors.
-     plotbifpoints = false, putbifptlegend = false,  # Plots the bifurcation point(s).
-     linewidthstable=4, linewidthunstable=1)         # Stable/unstable values are distinguished by line thickness.
+plot(bf)
 ```
 ![bifurcation_diagram1](../assets/bifurcation_diagram1.svg)
 
-Here the Hopf bifurcation is marked with a blue square. The region with a thinner linewidth corresponds to unstable steady states. If one wishes to mark these differently it is possible to plot the individual branches separately:
+Here, Hopf bifurcation is marked with a red dot and fold bifurcation with blue dots. The region with a thinner linewidth corresponds to unstable steady states. If one wishes to mark these differently it is possible to plot the individual branches separately:
 ```julia
 plot(branches[1],lw=4,color=map(i->(i==0) ? :blue : :red, getproperty.(branches[1].branch,:n_unstable)))
 plot!(branches[3],lw=4,color=map(i->(i==0) ? :blue : :red, getproperty.(branches[3].branch,:n_unstable)))
