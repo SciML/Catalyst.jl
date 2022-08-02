@@ -1,7 +1,7 @@
 # Bifurcation Diagrams
 Bifurcation diagrams can be produced from Catalyst generated models through the use of the [BifurcationKit.jl](https://github.com/rveltz/BifurcationKit.jl/) package. This tutorial gives a simple example of how to create such a bifurcation diagram. 
 
-First, we declare our model. For our example we will use a bistable switch, but which also contains a Hopf bifurcation.
+First, we declare our model. For this example we will use a bistable switch, but one which also contains a Hopf bifurcation.
 ```@example ex1
 using Catalyst
 rn = @reaction_network begin
@@ -9,14 +9,14 @@ rn = @reaction_network begin
     (X/τ,1/τ), ∅ ↔ A
 end S D τ v0 v K n d
 ```
-Next, we specify the system parameters for which we wish to plot the bifurcation diagram. We also set the parameter we wish to vary in our bifurcation diagram, as well as over which interval. FInally, we set which variable we wish to plot the steady state values of in the diagram.
+Next, we specify the system parameters for which we wish to plot the bifurcation diagram. We also set the parameter we wish to vary in our bifurcation diagram, as well as over which interval. Finally, we set which variable we wish to plot the steady state values of in the diagram.
 ```@example ex1
 p = [:S=>1., :D=>9., :τ=>1000., :v0=>0.01, :v=>2., :K=>20., :n=>3, :d=>0.05]
 bif_par = :S      
 p_span = (0.1,20.)   
 plot_var = :X   
 ```
-When creating a bifurcation diagram, we typically start in some point in parameter-phase space. For parameter space, we will simply select the beginning of the interval over which we wish to computer the bifurcation diagram. We thus create a modified parameter set where this is teh case. For this parameter set, we make a guess of an initial fixed point. While a good estimate could be provided through e.g. a simulation, the guess do not need to be very exact.
+When creating a bifurcation diagram, we typically start in some point in parameter-phase space. For parameter space, we will simply select the beginning of the interval over which we wish to computer the bifurcation diagram. We thus create a modified parameter set where this is the case. For this parameter set, we make a guess of an initial fixed point. While a good estimate could be provided through e.g. a simulation, the guess do not need to be very exact.
 ```@example ex1
 p_bstart = setindex!(copy(p),bif_par => p_span[1],findfirst(first.(p).==bif_par))  
 u0 = [:X=>1.0, :A=>1.0]
@@ -28,12 +28,12 @@ F = (u,p) -> oprob.f(u,p,0)
 J = (u,p) -> oprob.f.jac(u,p,0)
 ```
 
-Now, we fetch the required packages to create the bifurcation diagram. We also  bundle the information we have compiled so far into a "`BifurcationProblem`".
+Now, we fetch the required packages to create the bifurcation diagram. We also bundle the information we have compiled so far into a `BifurcationProblem`.
 ```@example ex1
 using BifurcationKit, Plots, LinearAlgebra, Setfield
 bprob = BifurcationProblem(F, oprob.u0, oprob.p, (@lens _[findfirst(first.(p).==bif_par)]); recordFromSolution = (x, p) -> x[findfirst(first.(u0).==plot_var)], J=J)
 ```
-Next, we need to specify the input options for the pseudo-arclength continuation method which produces the diagram..
+Next, we need to specify the input options for the pseudo-arclength continuation method which produces the diagram.
 ```@example ex1
 bopts = ContinuationPar(dsmax = 0.05,        # Maximum arclength value of the pseudo-arc length continuation method.
                         dsmin = 1e-4,        # Minimum arclength value of the pseudo-arc length continuation method.
