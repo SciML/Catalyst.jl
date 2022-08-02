@@ -149,10 +149,13 @@ Discourse](https://discourse.julialang.org/), the [Julia Slack](https://julialan
 For bugs or feature requests [open an issue](https://github.com/SciML/Catalyst.jl/issues).
 
 
-## Citing Catalyst.jl
+## Supporting and Citing Catalyst.jl
+The software in this ecosystem was developed as part of academic research. If you would like to help support it, 
+please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part 
+of your research, teaching, or other activities, we would be grateful if you could cite our work:
 ```
 @article {2022Catalyst,
-	author = {Loman, Torkel and Ma, Yingbo and Ilin, Vasily and Gowda, Shashi and Korsbo, Niklas and Yewale, Nikhil and Rackauckas, Christopher Vincent and Isaacson, Samuel A},
+	author = {Loman, T. and Ma, Y. and Ilin, V. and Gowda, S. and Korsbo, N. and Yewale, N. and Rackauckas, C. V. and Isaacson, S. A.},
 	title = {Catalyst: Fast Biochemical Modeling with Julia},
 	elocation-id = {2022.07.30.502135},
 	year = {2022},
