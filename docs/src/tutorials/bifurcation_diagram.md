@@ -6,7 +6,7 @@ First, we declare our model. For our example we will use a bistable switch, but 
 using Catalyst
 rn = @reaction_network begin
     (v0+v*(S*X)^n/((S*X)^n+(D*A)^n+K^n),d), ∅ ↔ X
-    (τ*X,τ), ∅ ↔ A
+    (X/τ,1/τ), ∅ ↔ A
 end S D τ v0 v K n d
 ```
 Next, we specify the system parameters for which we wish to plot the bifurcation diagram. We also set the parameter we wish to vary in our bifurcation diagram, as well as over which interval. FInally, we set which variable we wish to plot the steady state values of in the diagram.
@@ -51,7 +51,6 @@ Finally, we can plot it:
 ```@example ex1
 plot(bf)
 ```
-![bifurcation_diagram1](../assets/bifurcation_diagram.svg)
 
 Here, Hopf bifurcation is marked with a red dot and fold bifurcation with blue dots. The region with a thinner linewidth corresponds to unstable steady states. 
 
