@@ -35,7 +35,7 @@ bprob = BifurcationProblem(F, oprob.u0, oprob.p, (@lens _[findfirst(first.(p).==
 ```
 Next, we need to specify the input options for the pseudo-arclength continuation method which produces the diagram..
 ```@example ex1
-bopts = ContinuationPar( dsmax = 0.05,        # Maximum arclength value of the pseudo-arc length continuation method.
+bopts = ContinuationPar(dsmax = 0.05,        # Maximum arclength value of the pseudo-arc length continuation method.
                         dsmin = 1e-4,        # Minimum arclength value of the pseudo-arc length continuation method.
                         ds=0.001,            # Initial arclength value of the pseudo-arc length continuation method (should be positive).
                         maxSteps = 100000,   # The maximum number of steps.
