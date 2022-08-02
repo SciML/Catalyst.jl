@@ -118,3 +118,18 @@ Discourse](https://discourse.julialang.org/), and the [Julia
 Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sciml-sysbio.
 For bugs or feature requests [open an
 issue](https://github.com/SciML/Catalyst.jl/issues).
+
+## Citing Catalyst.jl
+```
+@article {2022Catalyst,
+	author = {Loman, Torkel and Ma, Yingbo and Ilin, Vasily and Gowda, Shashi and Korsbo, Niklas and Yewale, Nikhil and Rackauckas, Christopher Vincent and Isaacson, Samuel A},
+	title = {Catalyst: Fast Biochemical Modeling with Julia},
+	elocation-id = {2022.07.30.502135},
+	year = {2022},
+	doi = {10.1101/2022.07.30.502135},
+	publisher = {Cold Spring Harbor Laboratory},
+	URL = {https://www.biorxiv.org/content/early/2022/08/02/2022.07.30.502135},
+	eprint = {https://www.biorxiv.org/content/early/2022/08/02/2022.07.30.502135.full.pdf},
+	journal = {bioRxiv}
+}
+```
