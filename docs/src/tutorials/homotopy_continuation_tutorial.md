@@ -37,8 +37,27 @@ using Catalyst
 two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end k1 k2
-p = [:k1 => 2.0, :k2 => 1.0]
 ```
-However, the conservation laws can be computed using the `conservationlaws` function. By supplying these, as well as fixed concentrations (in this case the total amount of *X*, that is *X1+X2*), steady states can be found. Tutorial for this is currently a WIP.
-
-
+However, the conservation laws can be computed using the `conservationlaws` function. By supplying these, as well as fixed concentrations (in this case the total amount of *X*, that is *X1+X2*), steady states can be found. First, we set the default values of the system's initial conditions and steady states. This will allow the system to automatically find the conserved amounts.
+```@example hc3
+setdefaults!(two_state_model, [:X1 => 1.0, :X2 => 1.0, :k1 => 2.0, :k2 => 1.0])
+```
+Next, we create a `NonlinearSystem`, while also removing the redundant equation.
+```@example hc3
+ns = convert(NonlinearSystem,two_state_model; remove_conserved=true)
+```
+Again, we will create the dictionary for parameter values that we will sub in. However, we will do it slightly differently so that the conserved quantitites are accoutned for.
+```@example hc3
+const MT = ModelingToolkit
+subs = Dict(MT.parameters(ns) .=> MT.varmap_to_vars([], MT.parameters(ns); defaults=MT.defaults(ns)))
+```
+We now extract the equation produced by the conservation law, and then sub in the parameter values creating a final set of equations (like previously). Unlike previously, we have to do `eq.rhs-eq.lhs`, as `cons_eq` may contain important information on both the lhs and rhs.
+```@example hc3
+cons_eq = conservedequations(two_state_model)
+new_eqs = map(eq -> substitute(eq.rhs-eq.lhs,subs), [equations(ns)...;cons_eq...])
+```
+Finally, we compute the solution:
+```@example hc3
+using HomotopyContinuation
+sols = real_solutions(as_polynomial((f, x...) -> HomotopyContinuation.solve(collect(x)), new_eqs...))
+```
