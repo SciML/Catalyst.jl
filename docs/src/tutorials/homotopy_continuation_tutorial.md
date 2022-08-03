@@ -17,8 +17,8 @@ p = [:k1 => 8.0, :k2 => 2.0, :k3 => 1.0, :k4 => 1.5]
 Next, we will need to extract the actual equations from our model. In addition, we will substitute in our parameter values.
 ```@example hc1
 ns = convert(NonlinearSystem,wilhelm_2009_model)
-subs = Dict(Pair.(wilhelm_2009_model.ps.value,last.(p)))
-new_eqs = map(eq -> ModelingToolkit.unwrap(substitute(eq.rhs,subs)), ns.eqs.value)
+subs = Dict(Pair.(ModelingToolkit.parameters(ns),last.(p)))
+new_eqs = map(eq -> substitute(eq.rhs,subs), equations(ns))
 ```
 Finally, we use the `as_polynomial` function to read our symbolic expression as a polynomial, within it, we can apply homotopy continuation's `solve` command to find the roots. In addition, we use the `real_solutions` to filter away imaginary roots (as CRNs' states typically are non-imaginary):
 ```@example hc1
