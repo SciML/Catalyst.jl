@@ -60,7 +60,7 @@ sol(t, idxs = [A, B])
 Plotting multiple variables using the SciML plot recipe can be achieved
 like
 ```@example faq1
-plot(sol; vars = [A, B])
+plot(sol; idxs = [A, B])
 ```
 
 ## How to disable rescaling of reaction rates in rate laws?
