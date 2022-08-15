@@ -15,6 +15,8 @@ using SafeTestsets
     @time @safetestset "Custom Functions" begin include("custom_functions.jl") end
     @time @safetestset "Model Modification" begin include("model_modification.jl") end
     @time @safetestset "Symbolic Stoichiometry" begin include("symbolic_stoich.jl") end
+    @time @safetestset "Conservation Laws" begin include("conslaws.jl") end
+    @time @safetestset "Network Properties" begin include("network_properties.jl") end
 
     # Test api
     @time @safetestset "API" begin include("api.jl") end
@@ -31,18 +33,17 @@ using SafeTestsets
     # Tests related to solving Stochastic Differential Equations.
     @time @safetestset "SDE System Solving" begin include("solve_SDEs.jl") end
 
-    # Tests related to solvingJump Systems.
+    # Tests related to solving Jump Systems.
     @time @safetestset "Jump System Solving" begin include("solve_jumps.jl") end
 
     # Miscellaneous tests
     #@time @safetestset "Basic Plotting" begin include("plotting.jl") end
     @time @safetestset "Latexify" begin include("latexify.jl") end
 
-    # disable on Macs as can't install GraphViz via jll 
+    # disable on Macs as can't install GraphViz via jll
     if !Sys.isapple()
         @time @safetestset "Graphs" begin include("graphs.jl") end
     end
 
-    @time @safetestset "Conservation Laws" begin include("conslaws.jl") end
     @time @safetestset "Units" begin include("units.jl") end
 end # @time
