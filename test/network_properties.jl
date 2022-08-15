@@ -1,5 +1,6 @@
-using Catalyst, Test
+#! format: off
 
+using Catalyst, Test
 
 MAPK = @reaction_network MAPK begin
     (k₁, k₂),KKK + E1 <--> KKKE1
