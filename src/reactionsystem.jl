@@ -187,7 +187,7 @@ function Base.show(io::IO, rx::Reaction)
     print_rxside(io, rx.products, rx.prodstoich)
 end
 
-function namespace_if_nonempty(f, v)
+function apply_if_nonempty(f, v)
     isempty(v) && return v
     s = similar(v)
     map!(f, s, v)
@@ -197,10 +197,10 @@ end
 function ModelingToolkit.namespace_equation(rx::Reaction, name)
     f = Base.Fix2(namespace_expr, name)
     rate = f(rx.rate)
-    subs = namespace_if_nonempty(f, rx.substrates)
-    prods = namespace_if_nonempty(f, rx.products)
-    substoich = namespace_if_nonempty(f, rx.substoich)
-    prodstoich = namespace_if_nonempty(f, rx.prodstoich)
+    subs = apply_if_nonempty(f, rx.substrates)
+    prods = apply_if_nonempty(f, rx.products)
+    substoich = apply_if_nonempty(f, rx.substoich)
+    prodstoich = apply_if_nonempty(f, rx.prodstoich)
     netstoich = if isempty(rx.netstoich)
         rx.netstoich
     else
