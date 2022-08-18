@@ -187,14 +187,41 @@ function Base.show(io::IO, rx::Reaction)
     print_rxside(io, rx.products, rx.prodstoich)
 end
 
+
 function ModelingToolkit.namespace_equation(rx::Reaction, name)
-    subs = isempty(rx.substrates) ? rx.substrates :
-           [namespace_expr(sub, name) for sub in rx.substrates]
-    prods = isempty(rx.products) ? rx.products :
-            [namespace_expr(prod, name) for prod in rx.products]
-    Reaction(namespace_expr(rx.rate, name),
-             subs, prods, rx.substoich, rx.prodstoich,
-             [namespace_expr(n[1], name) => n[2] for n in rx.netstoich], rx.only_use_rate)
+    rate = namespace_expr(rx.rate, name)
+    f = ex -> namespace_expr(ex, name)
+    subs = if isempty(rx.substrates)
+        rx.substrates
+    else
+        s = similar(rx.substrates)
+        map!(f, s, rx.substrates)
+    end
+    prods = if isempty(rx.products)
+        rx.products
+    else
+        p = similar(rx.products)
+        map!(f, p, rx.products)
+    end
+    substoich = if isempty(rx.substoich)
+        rx.substoich
+    else
+        s = similar(rx.substoich)
+        map!(f, s, rx.substoich)
+    end
+    prodstoich = if isempty(rx.prodstoich)
+        rx.prodstoich
+    else
+        p = similar(rx.prodstoich)
+        map!(f, p, rx.prodstoich)
+    end
+    netstoich = if isempty(rx.netstoich)
+            rx.netstoich
+    else
+        ns = similar(rx.netstoich)
+        map!(n -> namespace_expr(n[1], name) => namespace_expr(n[2], name), ns, rx.netstoich)
+    end
+    Reaction(rate, subs, prods, substoich, prodstoich, netstoich, rx.only_use_rate)
 end
 
 netstoich_stoichtype(::Vector{Pair{S, T}}) where {S, T} = T
