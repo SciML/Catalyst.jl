@@ -379,7 +379,6 @@ let
     @test ModelingToolkit.defaults(fullrn)[b] == 2.0
 end
 
-
 # https://github.com/SciML/Catalyst.jl/issues/545
 let
     rn_AB = @reaction_network AB begin
@@ -398,6 +397,8 @@ let
     @test issetequal(ps, (@parameters AB₊k1 AB₊n BC₊k2))
     rxs = reactions(rs)
     @parameters AB₊n
-    rxs2 = [(@reaction AB₊k1, AB₊A --> $(AB₊n)*AB₊B), (@reaction BC₊k2, BC₊B --> BC₊C)]
+    rxs2 = Reaction[(@reaction AB₊k1, AB₊A --> $(AB₊n)*AB₊B), (@reaction BC₊k2, BC₊B --> BC₊C)]
+    @show rxs
+    @show rxs2
     @test issetequal(rxs, rxs2)
 end
