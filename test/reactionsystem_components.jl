@@ -398,7 +398,5 @@ let
     rxs = reactions(rs)
     @parameters AB₊n
     rxs2 = Reaction[(@reaction AB₊k1, AB₊A --> $(AB₊n)*AB₊B), (@reaction BC₊k2, BC₊B --> BC₊C)]
-    @show rxs
-    @show rxs2
-    @test issetequal(rxs, rxs2)
+    @test (length(rxs) == length(rxs2)) && issubset(rxs, rxs2)
 end
