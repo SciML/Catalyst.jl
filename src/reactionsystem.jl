@@ -187,14 +187,27 @@ function Base.show(io::IO, rx::Reaction)
     print_rxside(io, rx.products, rx.prodstoich)
 end
 
+function apply_if_nonempty(f, v)
+    isempty(v) && return v
+    s = similar(v)
+    map!(f, s, v)
+    s
+end
+
 function ModelingToolkit.namespace_equation(rx::Reaction, name)
-    subs = isempty(rx.substrates) ? rx.substrates :
-           [namespace_expr(sub, name) for sub in rx.substrates]
-    prods = isempty(rx.products) ? rx.products :
-            [namespace_expr(prod, name) for prod in rx.products]
-    Reaction(namespace_expr(rx.rate, name),
-             subs, prods, rx.substoich, rx.prodstoich,
-             [namespace_expr(n[1], name) => n[2] for n in rx.netstoich], rx.only_use_rate)
+    f = Base.Fix2(namespace_expr, name)
+    rate = f(rx.rate)
+    subs = apply_if_nonempty(f, rx.substrates)
+    prods = apply_if_nonempty(f, rx.products)
+    substoich = apply_if_nonempty(f, rx.substoich)
+    prodstoich = apply_if_nonempty(f, rx.prodstoich)
+    netstoich = if isempty(rx.netstoich)
+        rx.netstoich
+    else
+        ns = similar(rx.netstoich)
+        map!(n -> f(n[1]) => f(n[2]), ns, rx.netstoich)
+    end
+    Reaction(rate, subs, prods, substoich, prodstoich, netstoich, rx.only_use_rate)
 end
 
 netstoich_stoichtype(::Vector{Pair{S, T}}) where {S, T} = T

@@ -378,3 +378,25 @@ let
     @test haskey(ModelingToolkit.defaults(fullrn), b)
     @test ModelingToolkit.defaults(fullrn)[b] == 2.0
 end
+
+# https://github.com/SciML/Catalyst.jl/issues/545
+let
+    rn_AB = @reaction_network AB begin
+        k1, A --> n*B
+    end k1 n
+
+    rn_BC = @reaction_network BC begin
+        k2, B --> C
+    end k2
+
+    @variables t
+    @named rs = ReactionSystem(t; systems = [rn_AB, rn_BC])
+    sts = states(rs)
+    @test issetequal(sts, (@variables AB₊A(t) AB₊B(t) BC₊B(t) BC₊C(t)))
+    ps = parameters(rs)
+    @test issetequal(ps, (@parameters AB₊k1 AB₊n BC₊k2))
+    rxs = reactions(rs)
+    @parameters AB₊n
+    rxs2 = Reaction[(@reaction AB₊k1, AB₊A --> $(AB₊n)*AB₊B), (@reaction BC₊k2, BC₊B --> BC₊C)]
+    @test (length(rxs) == length(rxs2)) && issubset(rxs, rxs2)
+end
