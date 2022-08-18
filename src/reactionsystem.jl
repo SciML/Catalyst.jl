@@ -187,39 +187,25 @@ function Base.show(io::IO, rx::Reaction)
     print_rxside(io, rx.products, rx.prodstoich)
 end
 
+function namespace_if_nonempty(f, v)
+    isempty(v) && return v
+    s = similar(v)
+    map!(f, s, v)
+    s
+end
 
 function ModelingToolkit.namespace_equation(rx::Reaction, name)
     rate = namespace_expr(rx.rate, name)
-    f = ex -> namespace_expr(ex, name)
-    subs = if isempty(rx.substrates)
-        rx.substrates
-    else
-        s = similar(rx.substrates)
-        map!(f, s, rx.substrates)
-    end
-    prods = if isempty(rx.products)
-        rx.products
-    else
-        p = similar(rx.products)
-        map!(f, p, rx.products)
-    end
-    substoich = if isempty(rx.substoich)
-        rx.substoich
-    else
-        s = similar(rx.substoich)
-        map!(f, s, rx.substoich)
-    end
-    prodstoich = if isempty(rx.prodstoich)
-        rx.prodstoich
-    else
-        p = similar(rx.prodstoich)
-        map!(f, p, rx.prodstoich)
-    end
+    f = Base.Fix2(namespace_expr, name)
+    subs = namespace_if_nonempty(f, rx.substrates)
+    prods = namespace_if_nonempty(f, rx.products)
+    substoich = namespace_if_nonempty(f, rx.substoich)
+    prodstoich = namespace_if_nonempty(f, rx.prodstoich)
     netstoich = if isempty(rx.netstoich)
-            rx.netstoich
+        rx.netstoich
     else
         ns = similar(rx.netstoich)
-        map!(n -> namespace_expr(n[1], name) => namespace_expr(n[2], name), ns, rx.netstoich)
+        map!(n -> f(n[1]) => f(n[2]), ns, rx.netstoich)
     end
     Reaction(rate, subs, prods, substoich, prodstoich, netstoich, rx.only_use_rate)
 end
