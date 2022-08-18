@@ -195,8 +195,8 @@ function namespace_if_nonempty(f, v)
 end
 
 function ModelingToolkit.namespace_equation(rx::Reaction, name)
-    rate = namespace_expr(rx.rate, name)
     f = Base.Fix2(namespace_expr, name)
+    rate = f(rx.rate)
     subs = namespace_if_nonempty(f, rx.substrates)
     prods = namespace_if_nonempty(f, rx.products)
     substoich = namespace_if_nonempty(f, rx.substoich)
