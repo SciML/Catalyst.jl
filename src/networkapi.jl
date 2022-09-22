@@ -240,7 +240,8 @@ Note:
 - Note that constant species are not considered substrates, but just components that modify
   the associated rate law.
 """
-function substoichmat(::Type{SparseMatrixCSC{T, Int}}, rn::ReactionSystem) where {T <: Number}
+function substoichmat(::Type{SparseMatrixCSC{T, Int}},
+                      rn::ReactionSystem) where {T <: Number}
     Is = Int[]
     Js = Int[]
     Vs = T[]
@@ -271,7 +272,8 @@ end
 function substoichmat(rn::ReactionSystem; sparse::Bool = false)
     isempty(get_systems(rn)) || error("substoichmat does not currently support subsystems.")
     T = reduce(promote_type, eltype(rx.substoich) for rx in reactions(rn))
-    (T == Any) && error("Stoichiometry matrices with symbolic stoichiometry are not supported")
+    (T == Any) &&
+        error("Stoichiometry matrices with symbolic stoichiometry are not supported")
     sparse ? substoichmat(SparseMatrixCSC{T, Int}, rn) : substoichmat(Matrix{T}, rn)
 end
 
@@ -286,7 +288,8 @@ Note:
 - Note that constant species are not treated as products, but just components that modify
   the associated rate law.
 """
-function prodstoichmat(::Type{SparseMatrixCSC{T, Int}}, rn::ReactionSystem) where {T <: Number}
+function prodstoichmat(::Type{SparseMatrixCSC{T, Int}},
+                       rn::ReactionSystem) where {T <: Number}
     Is = Int[]
     Js = Int[]
     Vs = T[]
@@ -319,7 +322,8 @@ function prodstoichmat(rn::ReactionSystem; sparse = false)
         error("prodstoichmat does not currently support subsystems.")
 
     T = reduce(promote_type, eltype(rx.prodstoich) for rx in reactions(rn))
-    (T == Any) && error("Stoichiometry matrices with symbolic stoichiometry are not supported")
+    (T == Any) &&
+        error("Stoichiometry matrices with symbolic stoichiometry are not supported")
     sparse ? prodstoichmat(SparseMatrixCSC{T, Int}, rn) : prodstoichmat(Matrix{T}, rn)
 end
 
@@ -335,7 +339,8 @@ Notes:
 - Note that constant species are not treated as reactants, but just components that modify
   the associated rate law. As such they do not contribute to the net stoichiometry matrix.
 """
-function netstoichmat(::Type{SparseMatrixCSC{T, Int}}, rn::ReactionSystem) where {T <: Number}
+function netstoichmat(::Type{SparseMatrixCSC{T, Int}},
+                      rn::ReactionSystem) where {T <: Number}
     Is = Int[]
     Js = Int[]
     Vs = Vector{T}()
@@ -363,7 +368,7 @@ function netstoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
     nmat
 end
 
-netstoichtype(::Vector{Pair{S,T}}) where {S,T} = T
+netstoichtype(::Vector{Pair{S, T}}) where {S, T} = T
 
 function netstoichmat(rn::ReactionSystem; sparse = false)
     isempty(get_systems(rn)) ||
