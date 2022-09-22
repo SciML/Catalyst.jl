@@ -708,3 +708,28 @@ let
     @test isapprox(g1, g2[istsidxs, :])
     @test isapprox(g2[istsidxs, :], g3)
 end
+
+
+# non-integer stoichiometry
+let
+    function test_stoich(T, rn)
+        @test eltype(substoichmat(rn)) == T
+        @test eltype(prodstoichmat(rn)) == T
+        @test eltype(netstoichmat(rn)) == T
+        @test eltype(substoichmat(rn; sparse = true)) == T
+        @test eltype(prodstoichmat(rn; sparse = true)) == T
+        @test eltype(netstoichmat(rn; sparse = true)) == T
+        nothing
+    end
+
+    rn = @reaction_network ABtoC begin
+        (k₊,k₋), 3.4*A + 2B <--> 2.5*C
+      end k₊ k₋
+    test_stoich(Float64, rn)
+
+    rn2 = @reaction_network ABtoC begin
+        (k₊,k₋), 3*A + 2B <--> 2*C
+      end k₊ k₋
+    test_stoich(Int, rn2)
+
+end
