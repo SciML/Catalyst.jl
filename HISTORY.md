@@ -2,6 +2,9 @@
 
 ## Catalyst unreleased (master branch)
 
+## Catalyst 12.3
+- API functions to generate substrate, product, and net stoichiometry matrices should now work with floating point stoichiometric coefficients. Note, symbolic coefficients are still not supported by such functions.
+
 ## Catalyst 12.0
 - **BREAKING:** Modified how constant and boundary condition species (in the
   SBML sense) work. Constant species should now be specified as ModelingToolkit
