@@ -240,10 +240,11 @@ Note:
 - Note that constant species are not considered substrates, but just components that modify
   the associated rate law.
 """
-function substoichmat(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem)
+function substoichmat(::Type{SparseMatrixCSC{T, Int}},
+                      rn::ReactionSystem) where {T <: Number}
     Is = Int[]
     Js = Int[]
-    Vs = Int[]
+    Vs = T[]
     smap = speciesmap(rn)
     for (k, rx) in enumerate(reactions(rn))
         stoich = rx.substoich
@@ -256,9 +257,9 @@ function substoichmat(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem)
     end
     sparse(Is, Js, Vs, numspecies(rn), numreactions(rn))
 end
-function substoichmat(::Type{Matrix{Int}}, rn::ReactionSystem)
+function substoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
     smap = speciesmap(rn)
-    smat = zeros(Int, numspecies(rn), numreactions(rn))
+    smat = zeros(T, numspecies(rn), numreactions(rn))
     for (k, rx) in enumerate(reactions(rn))
         stoich = rx.substoich
         for (i, sub) in enumerate(rx.substrates)
@@ -270,7 +271,10 @@ function substoichmat(::Type{Matrix{Int}}, rn::ReactionSystem)
 end
 function substoichmat(rn::ReactionSystem; sparse::Bool = false)
     isempty(get_systems(rn)) || error("substoichmat does not currently support subsystems.")
-    sparse ? substoichmat(SparseMatrixCSC{Int, Int}, rn) : substoichmat(Matrix{Int}, rn)
+    T = reduce(promote_type, eltype(rx.substoich) for rx in reactions(rn))
+    (T == Any) &&
+        error("Stoichiometry matrices with symbolic stoichiometry are not supported")
+    sparse ? substoichmat(SparseMatrixCSC{T, Int}, rn) : substoichmat(Matrix{T}, rn)
 end
 
 """
@@ -284,10 +288,11 @@ Note:
 - Note that constant species are not treated as products, but just components that modify
   the associated rate law.
 """
-function prodstoichmat(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem)
+function prodstoichmat(::Type{SparseMatrixCSC{T, Int}},
+                       rn::ReactionSystem) where {T <: Number}
     Is = Int[]
     Js = Int[]
-    Vs = Int[]
+    Vs = T[]
     smap = speciesmap(rn)
     for (k, rx) in enumerate(reactions(rn))
         stoich = rx.prodstoich
@@ -300,9 +305,9 @@ function prodstoichmat(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem)
     end
     sparse(Is, Js, Vs, numspecies(rn), numreactions(rn))
 end
-function prodstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem)
+function prodstoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
     smap = speciesmap(rn)
-    pmat = zeros(Int, numspecies(rn), numreactions(rn))
+    pmat = zeros(T, numspecies(rn), numreactions(rn))
     for (k, rx) in enumerate(reactions(rn))
         stoich = rx.prodstoich
         for (i, prod) in enumerate(rx.products)
@@ -315,7 +320,11 @@ end
 function prodstoichmat(rn::ReactionSystem; sparse = false)
     isempty(get_systems(rn)) ||
         error("prodstoichmat does not currently support subsystems.")
-    sparse ? prodstoichmat(SparseMatrixCSC{Int, Int}, rn) : prodstoichmat(Matrix{Int}, rn)
+
+    T = reduce(promote_type, eltype(rx.prodstoich) for rx in reactions(rn))
+    (T == Any) &&
+        error("Stoichiometry matrices with symbolic stoichiometry are not supported")
+    sparse ? prodstoichmat(SparseMatrixCSC{T, Int}, rn) : prodstoichmat(Matrix{T}, rn)
 end
 
 """
@@ -330,10 +339,11 @@ Notes:
 - Note that constant species are not treated as reactants, but just components that modify
   the associated rate law. As such they do not contribute to the net stoichiometry matrix.
 """
-function netstoichmat(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem)
+function netstoichmat(::Type{SparseMatrixCSC{T, Int}},
+                      rn::ReactionSystem) where {T <: Number}
     Is = Int[]
     Js = Int[]
-    Vs = Int[]
+    Vs = Vector{T}()
     smap = speciesmap(rn)
     for (k, rx) in pairs(reactions(rn))
         for (spec, coef) in rx.netstoich
@@ -345,9 +355,9 @@ function netstoichmat(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem)
     end
     sparse(Is, Js, Vs, numspecies(rn), numreactions(rn))
 end
-function netstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem)
+function netstoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
     smap = speciesmap(rn)
-    nmat = zeros(Int, numspecies(rn), numreactions(rn))
+    nmat = zeros(T, numspecies(rn), numreactions(rn))
     for (k, rx) in pairs(reactions(rn))
         for (spec, coef) in rx.netstoich
             isconstant(spec) && continue
@@ -356,6 +366,9 @@ function netstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem)
     end
     nmat
 end
+
+netstoichtype(::Vector{Pair{S, T}}) where {S, T} = T
+
 function netstoichmat(rn::ReactionSystem; sparse = false)
     isempty(get_systems(rn)) ||
         error("netstoichmat does not currently support subsystems, please create a flattened system before calling.")
@@ -366,13 +379,23 @@ function netstoichmat(rn::ReactionSystem; sparse = false)
     !isempty(nps.netstoichmat) && (sparse == issparse(nps.netstoichmat)) &&
         (return nps.netstoichmat)
 
+    # identify a common stoichiometry type
+    T = reduce(promote_type, netstoichtype(rx.netstoich) for rx in reactions(rn))
+    (T == Any) &&
+        error("Stoichiometry matrices are not supported with symbolic stoichiometry.")
+
     if sparse
-        nps.netstoichmat = netstoichmat(SparseMatrixCSC{Int, Int}, rn)
+        nsmat = netstoichmat(SparseMatrixCSC{T, Int}, rn)
     else
-        nps.netstoichmat = netstoichmat(Matrix{Int}, rn)
+        nsmat = netstoichmat(Matrix{T}, rn)
     end
 
-    nps.netstoichmat
+    # only cache if it is integer
+    if T == Int
+        nps.netstoichmat = nsmat
+    end
+
+    nsmat
 end
 
 """
