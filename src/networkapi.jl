@@ -358,7 +358,6 @@ end
 function netstoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
     smap = speciesmap(rn)
     nmat = zeros(T, numspecies(rn), numreactions(rn))
-    @show eltype(nmat)
     for (k, rx) in pairs(reactions(rn))
         for (spec, coef) in rx.netstoich
             isconstant(spec) && continue
