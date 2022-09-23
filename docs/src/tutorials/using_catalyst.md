@@ -10,7 +10,7 @@ to specify a simple chemical reaction network: the well-known repressilator.
 
 We first import the basic packages we'll need:
 
-```example ex
+```@example tut1
 # If not already installed, first hit "]" within a Julia REPL. Then type:
 # add Catalyst DifferentialEquations Plots Latexify
 
@@ -18,12 +18,11 @@ using Catalyst, DifferentialEquations, Plots, Latexify
 ```
 
 We now construct the reaction network. The basic types of arrows and predefined
-rate laws one can use are discussed in detail within the tutorial, [The
-Reaction DSL](@ref). Here, we use a mix of first order, zero order, and repressive
-Hill function rate laws. Note, $\varnothing$ corresponds to the empty state, and
-is used for zeroth order production and first order degradation reactions:
-
-```julia
+rate laws one can use are discussed in detail within the tutorial, [The Reaction
+DSL](@ref). Here, we use a mix of first order, zero order, and repressive Hill
+function rate laws. Note, $\varnothing$ corresponds to the empty state, and is
+used for zeroth order production and first order degradation reactions:
+```@example tut1
 repressilator = @reaction_network Repressilator begin
     hillr(P₃,α,K,n), ∅ --> m₁
     hillr(P₁,α,K,n), ∅ --> m₂
@@ -38,25 +37,7 @@ repressilator = @reaction_network Repressilator begin
     μ, P₂ --> ∅
     μ, P₃ --> ∅
 end α K n δ γ β μ
-```
-which gives
-```
-Model Repressilator with 15 equations
-States (6):
-  m₁(t)
-  m₂(t)
-  m₃(t)
-  P₁(t)
-  P₂(t)
-  P₃(t)
-Parameters (7):
-  α
-  K
-  n
-  δ
-  γ
-  β
-  μ
+show(stdout, MIME"text/plain"(), repressilator) # hide
 ```
 showing that we've created a new network model named `Repressilator` with the
 listed chemical species and states. [`@reaction_network`](@ref) returns a
@@ -65,81 +46,24 @@ be converted to a variety of other mathematical models represented as
 `ModelingToolkit.AbstractSystem`s, or analyzed in various ways using the
 [Catalyst.jl API](@ref). For example, to see the chemical species, parameters,
 and reactions we can use
-```julia
+```@example tut1
 species(repressilator)
 ```
-which gives
-```julia
-6-element Array{Term{Real},1}:
- m₁(t)
- m₂(t)
- m₃(t)
- P₁(t)
- P₂(t)
- P₃(t)
-```
-```julia
+```@example tut1
 parameters(repressilator)
 ```
-which gives
-```julia
-7-element Array{Sym{ModelingToolkit.Parameter{Real}},1}:
- α
- K
- n
- δ
- γ
- β
- μ
-```
 and
-```julia
+```@example tut1
 reactions(repressilator)
 ```
-which gives
-```
-15-element Vector{Reaction}:
- Catalyst.hillr(P₃(t), α, K, n), ∅ --> m₁
- Catalyst.hillr(P₁(t), α, K, n), ∅ --> m₂
- Catalyst.hillr(P₂(t), α, K, n), ∅ --> m₃
- δ, m₁ --> ∅
- γ, ∅ --> m₁
- δ, m₂ --> ∅
- γ, ∅ --> m₂
- δ, m₃ --> ∅
- γ, ∅ --> m₃
- β, m₁ --> m₁ + P₁
- β, m₂ --> m₂ + P₂
- β, m₃ --> m₃ + P₃
- μ, P₁ --> ∅
- μ, P₂ --> ∅
- μ, P₃ --> ∅
-```
-
-We can also use Latexify to see the corresponding reactions, which shows what
+We can also use Latexify to see the corresponding reactions in Latex, which shows what
 the `hillr` terms correspond to mathematically
-
 ```julia
-latexify(repressilator, starred=true)
+latexify(repressilator)
 ```
-```math
-\begin{align*}
-\require{mhchem}
-\ce{ \varnothing &->[\frac{\alpha K^{n}}{K^{n} + P{_3}^{n}}] m{_1}}\\
-\ce{ \varnothing &->[\frac{\alpha K^{n}}{K^{n} + P{_1}^{n}}] m{_2}}\\
-\ce{ \varnothing &->[\frac{\alpha K^{n}}{K^{n} + P{_2}^{n}}] m{_3}}\\
-\ce{ m{_1} &<=>[\delta][\gamma] \varnothing}\\
-\ce{ m{_2} &<=>[\delta][\gamma] \varnothing}\\
-\ce{ m{_3} &<=>[\delta][\gamma] \varnothing}\\
-\ce{ m{_1} &->[\beta] m{_1} + P{_1}}\\
-\ce{ m{_2} &->[\beta] m{_2} + P{_2}}\\
-\ce{ m{_3} &->[\beta] m{_3} + P{_3}}\\
-\ce{ P{_1} &->[\mu] \varnothing}\\
-\ce{ P{_2} &->[\mu] \varnothing}\\
-\ce{ P{_3} &->[\mu] \varnothing}
-\end{align*}
+```@example tut1
+repressilator #hide
 ```
-
 Assuming [Graphviz](https://graphviz.org/) is installed and commandline
 accessible, within a Jupyter notebook we can also graph the reaction network by
 ```julia
@@ -171,25 +95,11 @@ the graph (assuming `Graphviz` is installed).
 Let's now use our `ReactionSystem` to generate and solve a corresponding mass
 action ODE model. We first convert the system to a `ModelingToolkit.ODESystem`
 by
-```julia
+```@example tut1
 odesys = convert(ODESystem, repressilator)
 ```
-We can once again use Latexify to look at the corresponding ODE model
-```julia; results="hidden";
-latexify(odesys)
-```
-```math
-\begin{aligned}
-\frac{dm_1(t)}{dt} =& \frac{\alpha K^{n}}{K^{n} + \left( \mathrm{P_3}\left( t \right) \right)^{n}} - \delta \mathrm{m_1}\left( t \right) + \gamma \\
-\frac{dm_2(t)}{dt} =& \frac{\alpha K^{n}}{K^{n} + \left( \mathrm{P_1}\left( t \right) \right)^{n}} - \delta \mathrm{m_2}\left( t \right) + \gamma \\
-\frac{dm_3(t)}{dt} =& \frac{\alpha K^{n}}{K^{n} + \left( \mathrm{P_2}\left( t \right) \right)^{n}} - \delta \mathrm{m_3}\left( t \right) + \gamma \\
-\frac{dP_1(t)}{dt} =& \beta \mathrm{m_1}\left( t \right) - \mu \mathrm{P_1}\left( t \right) \\
-\frac{dP_2(t)}{dt} =& \beta \mathrm{m_2}\left( t \right) - \mu \mathrm{P_2}\left( t \right) \\
-\frac{dP_3(t)}{dt} =& \beta \mathrm{m_3}\left( t \right) - \mu \mathrm{P_3}\left( t \right)
-\end{aligned}
-```
-(Note, there is currently a Latexify bug that causes different fonts to be used
-for the species symbols on each side of the equations.)
+(Here Latexify is used automatically to display `odesys` in Latex within Markdown
+documents or notebook environments like Pluto.jl.)
 
 Before we can solve the ODEs, we need to specify the values of the parameters in
 the model, the initial condition, and the time interval to solve the model on.
@@ -197,38 +107,45 @@ To do this we need to build mappings from the symbolic parameters and the
 species to the corresponding numerical values for parameters and initial
 conditions. We can build such mappings in several ways. One is to use Julia
 `Symbols` to specify the values like
-```julia
+```@example tut1
 pmap  = (:α => .5, :K => 40, :n => 2, :δ => log(2)/120,
          :γ => 5e-3, :β => log(2)/6, :μ => log(2)/60)
 u₀map = [:m₁ => 0., :m₂ => 0., :m₃ => 0., :P₁ => 20., :P₂ => 0., :P₃ => 0.]
 ```
 Alternatively, we can use ModelingToolkit symbolic variables to specify these
 mappings like
-```julia
+```@example tut1
 @parameters  α K n δ γ β μ
 @variables t m₁(t) m₂(t) m₃(t) P₁(t) P₂(t) P₃(t)
-pmap  = (α => .5, K => 40, n => 2, δ => log(2)/120,
+psymmap  = (α => .5, K => 40, n => 2, δ => log(2)/120,
          γ => 5e-3, β => 20*log(2)/120, μ => log(2)/60)
-u₀map = [m₁ => 0., m₂ => 0., m₃ => 0., P₁ => 20., P₂ => 0., P₃ => 0.]
-
+u₀symmap = [m₁ => 0., m₂ => 0., m₃ => 0., P₁ => 20., P₂ => 0., P₃ => 0.]
 ```
 Knowing these mappings we can set up the `ODEProblem` we want to solve:
 
-```julia
+```@example tut1
 # time interval to solve on
 tspan = (0., 10000.)
 
 # create the ODEProblem we want to solve
 oprob = ODEProblem(repressilator, u₀map, tspan, pmap)
 ```
-Note, by passing `repressilator` directly to the `ODEProblem`, Catalyst has to
+By passing `repressilator` directly to the `ODEProblem`, Catalyst has to
 (internally) call `convert(ODESystem, repressilator)` again to generate the
 symbolic ODEs. We could instead pass `odesys` directly like
-```julia
-oprob2 = ODEProblem(odesys, u₀map, tspan, pmap)
+```@example tut1
+oprob2 = ODEProblem(odesys, u₀symmap, tspan, psymmap)
 ```
 `oprob` and `oprob2` are functionally equivalent, each representing the same
 underlying problem.
+
+!!! note
+    When passing `odesys` to `ODEProblem` we needed to use the symbolic
+    variable-based parameter mappings, `u₀symmap` and `psymmap`, while when
+    directly passing `repressilator` we could use either those or the
+    `Symbol`-based mappings, `u₀map` and `pmap`. `Symbol`-based mappings can
+    always be converted to `symbolic` mappings using [`symmap_to_varmap`](@ref),
+    see the [Basic Syntax](@ref basic_examples) section for more details.
 
 At this point we are all set to solve the ODEs. We can now use any ODE solver
 from within the
@@ -236,12 +153,10 @@ from within the
 package. We'll use the recommended default explicit solver, `Tsit5()`, and then
 plot the solutions:
 
-```julia
+```@example tut1
 sol = solve(oprob, Tsit5(), saveat=10.)
 plot(sol)
 ```
-![Repressilator ODE Solutions](../assets/repressilator_odes.svg)
-
 We see the well-known oscillatory behavior of the repressilator! For more on the
 choices of ODE solvers, see the [DifferentialEquations.jl
 documentation](https://diffeq.sciml.ai/dev/solvers/ode_solve/).
@@ -255,7 +170,7 @@ modeling it with jump processes. Here, we will construct a
 Gillespie's `Direct` method, and then solve it to generate one realization of
 the jump process:
 
-```julia
+```@example tut1
 # redefine the initial condition to be integer valued
 u₀map = [:m₁ => 0, :m₂ => 0, :m₃ => 0, :P₁ => 20, :P₂ => 0, :P₃ => 0]
 
@@ -269,16 +184,15 @@ jprob = JumpProblem(repressilator, dprob, Direct(), save_positions=(false,false)
 sol = solve(jprob, SSAStepper(), saveat=10.)
 plot(sol)
 ```
-![Repressilator SSA Solutions](../assets/repressilator_jumps.svg)
 
 We see that oscillations remain, but become much noisier. Note, in constructing
 the `JumpProblem` we could have used any of the SSAs that are part of JumpProcesses
 instead of the `Direct` method, see the list of SSAs (i.e., constant rate jump
 aggregators) in the
-[documentation](https://diffeq.sciml.ai/dev/types/jump_types/#Constant-Rate-Jump-Aggregators-1).
+[documentation](https://docs.sciml.ai/stable/modules/JumpProcesses/jump_types/#Constant-Rate-Jump-Aggregators).
 
 Common questions that arise in using the JumpProcesses SSAs (i.e. Gillespie methods)
-are collated in the [JumpProcesses FAQ](https://diffeq.sciml.ai/latest/tutorials/discrete_stochastic_example/#FAQ).
+are collated in the [JumpProcesses FAQ](https://docs.sciml.ai/stable/modules/JumpProcesses/faq/).
 
 ---
 ## Chemical Langevin Equation (CLE) Stochastic Differential Equation (SDE) Models
@@ -289,7 +203,7 @@ very close to zero in size, it is not a good candidate to model with the CLE
 (where solutions can then go negative and become unphysical). Let's create a
 simpler reaction network for a birth-death process that will stay non-negative:
 
-```julia
+```@example tut1
 bdp = @reaction_network begin
   c₁, X --> 2X
   c₂, X --> 0
@@ -310,7 +224,7 @@ where each $W_i(t)$ denotes an independent Brownian Motion. We can solve the CLE
 model by creating an `SDEProblem` and solving it similarly to what we did for ODEs
 above:
 
-```julia
+```@example tut1
 # SDEProblem for CLE
 sprob = SDEProblem(bdp, u₀, tspan, p)
 
@@ -319,11 +233,10 @@ sprob = SDEProblem(bdp, u₀, tspan, p)
 sol = solve(sprob, LambaEM(), tstops=range(0., step=4e-3, length=1001))
 plot(sol)
 ```
-![CLE Solution](../assets/birthdeath_cle.svg)
 
 We again have complete freedom to select any of the
 StochasticDiffEq.jl SDE solvers, see the
-[documentation](https://diffeq.sciml.ai/dev/solvers/sde_solve/).
+[documentation](https://docs.sciml.ai/stable/modules/DiffEqDocs/solvers/sde_solve/).
 
 ---
 ## Reaction rate laws used in simulations
