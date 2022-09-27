@@ -106,7 +106,7 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
         throw(ArgumentError("Both substrate and product stochiometry inputs cannot be nothing."))
 
     if isnothing(subs)
-        prodtype = value(first(prods))
+        prodtype = typeof(value(first(prods)))
         subs = Vector{prodtype}()
         !isnothing(substoich) &&
             throw(ArgumentError("If substrates are nothing, substrate stiocihometries have to be so too."))
