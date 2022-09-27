@@ -104,24 +104,27 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
         throw(ArgumentError("A reaction requires a non-nothing substrate or product vector."))
     (isnothing(prodstoich) && isnothing(substoich)) &&
         throw(ArgumentError("Both substrate and product stochiometry inputs cannot be nothing."))
+
     if isnothing(subs)
-        subs = Vector{Term}()
+        prodtype = value(first(prods))
+        subs = Vector{prodtype}()
         !isnothing(substoich) &&
             throw(ArgumentError("If substrates are nothing, substrate stiocihometries have to be so too."))
         substoich = typeof(prodstoich)()
+    else
+        subs = value.(subs)
     end
     S = eltype(substoich)
 
     if isnothing(prods)
-        prods = Vector{Term}()
+        prods = Vector{eltype(subs)}()
         !isnothing(prodstoich) &&
             throw(ArgumentError("If products are nothing, product stiocihometries have to be so too."))
         prodstoich = typeof(substoich)()
+    else
+        prods = value.(prods)
     end
     T = eltype(prodstoich)
-
-    subs = value.(subs)
-    prods = value.(prods)
 
     # try to get a common type for stoichiometry, using Any if have Syms
     stoich_type = promote_type(S, T)
@@ -461,7 +464,7 @@ struct ReactionSystem{U <: Union{Nothing, MT.AbstractSystem}, V <: NetworkProper
     function ReactionSystem(eqs, iv, states, ps, var_to_name, observed, name, systems,
                             defaults, connection_type, csys, nps, cls;
                             checks::Bool = true)
-        if checks
+        if checks && (iv isa Sym)
             check_variables(states, iv)
             check_parameters(ps, iv)
         end
@@ -470,7 +473,7 @@ struct ReactionSystem{U <: Union{Nothing, MT.AbstractSystem}, V <: NetworkProper
                                             name,
                                             systems, defaults, connection_type, csys, nps,
                                             cls)
-        checks && validate(rs)
+        checks && (iv isa Sym) && validate(rs)
         rs
     end
 end
@@ -523,7 +526,8 @@ function ReactionSystem(eqs, iv, states, ps;
     defaults = MT.todict(defaults)
     defaults = Dict{Any, Any}(value(k) => value(v) for (k, v) in pairs(defaults))
 
-    iv′ = value(iv)
+
+    iv′ = (iv isa AbstractVector) ? value.(MT.scalarize(iv)) : value(iv)
     states′ = value.(MT.scalarize(states))
     ps′ = value.(MT.scalarize(ps))
     eqs′ = (eqs isa Vector) ? eqs : collect(eqs)
