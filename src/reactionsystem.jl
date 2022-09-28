@@ -532,7 +532,11 @@ function ReactionSystem(eqs, iv, states, ps;
 
 
     iv′ = value(iv)
-    sivs′ = value.(MT.scalarize(spatial_ivs))
+    sivs′ = if spatial_ivs === nothing
+        Vector{typeof(iv′)}()
+    else
+        value.(MT.scalarize(spatial_ivs))
+    end
     states′ = value.(MT.scalarize(states))
     ps′ = value.(MT.scalarize(ps))
     eqs′ = (eqs isa Vector) ? eqs : collect(eqs)
@@ -630,14 +634,19 @@ function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
 
-isspatial(rn::ReactionSystem) = (get_sivs(rn) !== nothing)
+"""
+    isspatial(rn::ReactionSystem)
+
+Returns whether `rn` has any spatial independent variables (i.e. is a spatial network).
+"""
+isspatial(rn::ReactionSystem) = !isempty(get_sivs(rn))
 
 ####################### ModelingToolkit inherited accessors #############################
 
 """
     get_sivs(sys::ReactionSystem)
 
-Return the current spatial ivs, if the system is non-spatial returns `nothing`.
+Return the current spatial ivs, if the system is non-spatial returns an empty vector.
 """
 get_sivs(sys::ReactionSystem) = getfield(sys, :sivs)
 has_sivs(sys::ReactionSystem) = isdefined(sys, :sivs)
@@ -1692,16 +1701,9 @@ function ModelingToolkit.extend(sys::ReactionSystem, rs::ReactionSystem;
         newcsys = (csys2 === nothing) ? csys : extend(csys2, csys, name)
     end
 
-    if isspatial(sys)
-        ivs = copy(get_sivs(sys))
-        isspatial(rs) && union!(ivs, get_sivs(rs))
-    elseif isspatial(rs)
-        ivs = copy(get_sivs(rs))
-    else
-        ivs = nothing
-    end
+    sivs = union(get_sivs(sys), get_sivs(rs))
 
     ReactionSystem(eqs, get_iv(rs), sts, ps; observed = obs, name = name,
                    systems = syss, defaults = defs, checks = false, constraints = newcsys,
-                   combinatoric_ratelaws, spatial_ivs = ivs)
+                   combinatoric_ratelaws, spatial_ivs = sivs)
 end
