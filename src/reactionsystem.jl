@@ -386,6 +386,8 @@ function reset!(nps::NetworkProperties{I, V}) where {I, V}
     nothing
 end
 
+############################### Reaction Systems ####################################
+
 """
 $(TYPEDEF)
 
@@ -432,6 +434,8 @@ struct ReactionSystem{U <: Union{Nothing, MT.AbstractSystem}, V <: NetworkProper
     eqs::Vector{Reaction}
     """Independent variable (usually time)."""
     iv::Any
+    """Spatial independent variables"""
+    sivs::Any
     """Dependent (state) variables representing amount of each species. Must not contain the
     independent variable."""
     states::Vector
@@ -461,19 +465,18 @@ struct ReactionSystem{U <: Union{Nothing, MT.AbstractSystem}, V <: NetworkProper
     combinatoric_ratelaws::Bool
 
     # inner constructor is considered private and may change between non-breaking releases.
-    function ReactionSystem(eqs, iv, states, ps, var_to_name, observed, name, systems,
+    function ReactionSystem(eqs, iv, sivs, states, ps, var_to_name, observed, name, systems,
                             defaults, connection_type, csys, nps, cls;
                             checks::Bool = true)
-        if checks && (iv isa Sym)
+        if checks
             check_variables(states, iv)
             check_parameters(ps, iv)
         end
 
-        rs = new{typeof(csys), typeof(nps)}(eqs, iv, states, ps, var_to_name, observed,
-                                            name,
-                                            systems, defaults, connection_type, csys, nps,
-                                            cls)
-        checks && (iv isa Sym) && validate(rs)
+        rs = new{typeof(csys), typeof(nps)}(eqs, iv, sivs, states, ps, var_to_name,
+                                            observed, name, systems, defaults,
+                                            connection_type, csys, nps, cls)
+        checks && validate(rs)
         rs
     end
 end
@@ -512,7 +515,8 @@ function ReactionSystem(eqs, iv, states, ps;
                         constraints = nothing,
                         networkproperties = nothing,
                         combinatoric_ratelaws = true,
-                        balanced_bc_check = true)
+                        balanced_bc_check = true,
+                        spatial_ivs = nothing)
     name === nothing &&
         throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     sysnames = nameof.(systems)
@@ -527,7 +531,8 @@ function ReactionSystem(eqs, iv, states, ps;
     defaults = Dict{Any, Any}(value(k) => value(v) for (k, v) in pairs(defaults))
 
 
-    iv′ = (iv isa AbstractVector) ? value.(MT.scalarize(iv)) : value(iv)
+    iv′ = value(iv)
+    sivs′ = value.(MT.scalarize(spatial_ivs))
     states′ = value.(MT.scalarize(states))
     ps′ = value.(MT.scalarize(ps))
     eqs′ = (eqs isa Vector) ? eqs : collect(eqs)
@@ -561,7 +566,7 @@ function ReactionSystem(eqs, iv, states, ps;
         networkproperties
     end
 
-    ReactionSystem(eqs′, iv′, states′, ps′, var_to_name, observed, name, systems,
+    ReactionSystem(eqs′, iv′, sivs′, states′, ps′, var_to_name, observed, name, systems,
                    defaults, connection_type, constraints, nps, combinatoric_ratelaws;
                    checks = checks)
 end
@@ -573,10 +578,10 @@ end
 
 # search the symbolic expression for parameters or states
 # and save in ps and sts respectively. vars is used to cache results
-function findvars!(ps, sts, exprtosearch, t, vars)
+function findvars!(ps, sts, exprtosearch, ivs, vars)
     MT.get_variables!(vars, exprtosearch)
     for var in vars
-        isequal(t, var) && continue
+        (var ∈ ivs) && continue
         if MT.isparameter(var)
             push!(ps, var)
         else
@@ -586,11 +591,18 @@ function findvars!(ps, sts, exprtosearch, t, vars)
     empty!(vars)
 end
 
-# Only used internally by the @reaction_network macro. Permits giving an initial order to the parameters,
-# and then adds additional ones found in the reaction. Name could be changed.
+# Only used internally by the @reaction_network macro. Permits giving an initial order to
+# the parameters, and then adds additional ones found in the reaction. Name could be
+# changed.
 function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothing, ps_in;
-                                      kwargs...)
+                                      spatial_ivs = nothing, kwargs...)
     t = value(iv)
+    ivs = Set([t])
+    if (spatial_ivs !== nothing)
+        for siv in (MT.scalarize(spatial_ivs))
+            push!(ivs, value(siv))
+        end
+    end
     sts = OrderedSet()
     ps = OrderedSet{Any}(ps_in)
     vars = OrderedSet()
@@ -603,22 +615,32 @@ function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothi
     end
 
     for rx in rxs
-        findvars!(ps, sts, rx.rate, t, vars)
+        findvars!(ps, sts, rx.rate, ivs, vars)
         for s in rx.substoich
-            (s isa Symbolics.Symbolic) && findvars!(ps, sts, s, t, vars)
+            (s isa Symbolics.Symbolic) && findvars!(ps, sts, s, ivs, vars)
         end
         for p in rx.prodstoich
-            (p isa Symbolics.Symbolic) && findvars!(ps, sts, p, t, vars)
+            (p isa Symbolics.Symbolic) && findvars!(ps, sts, p, ivs, vars)
         end
     end
-    ReactionSystem(rxs, t, collect(sts), collect(ps); kwargs...)
+    ReactionSystem(rxs, t, collect(sts), collect(ps); spatial_ivs, kwargs...)
 end
 
 function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
 
+isspatial(rn::ReactionSystem) = (get_sivs(rn) !== nothing)
+
 ####################### ModelingToolkit inherited accessors #############################
+
+"""
+    get_sivs(sys::ReactionSystem)
+
+Return the current spatial ivs, if the system is non-spatial returns `nothing`.
+"""
+get_sivs(sys::ReactionSystem) = getfield(sys, :sivs)
+has_sivs(sys::ReactionSystem) = isdefined(sys, :sivs)
 
 """
     get_constraints(sys::ReactionSystem)
@@ -969,8 +991,9 @@ end
 """
 ```julia
 ismassaction(rx, rs; rxvars = get_variables(rx.rate),
-                              haveivdep = any(var -> isequal(get_iv(rs),var), rxvars),
-                              stateset = Set(states(rs)))
+                              haveivdep = nothing,
+                              stateset = Set(states(rs)),
+                              ivset = nothing)
 ```
 
 True if a given reaction is of mass action form, i.e. `rx.rate` does not depend
@@ -983,9 +1006,14 @@ depend explicitly on the independent variable (usually time).
 - Optional: `rxvars`, `Variable`s which are not in `rxvars` are ignored as
   possible dependencies.
 - Optional: `haveivdep`, `true` if the [`Reaction`](@ref) `rate` field
-  explicitly depends on the independent variable.
+  explicitly depends on any independent variable (i.e. t or for spatial systems x,y,etc).
+  If not set, will be automatically calculated.
 - Optional: `stateset`, set of states which if the rxvars are within mean rx is
   non-mass action.
+- Optional: `ivset`, a set of the independent variables of the system. If not provided and
+  the system is spatial, i.e. `isspatial(rs) == true`, it will be created with all the
+  spatial variables and the time variable. If the rate expression contains any element of
+  `ivset`, then `ismassaction(rx,rs) == false`. Pass a custom set to control this behavior.
 
 Notes:
 - Non-integer stoichiometry is treated as non-mass action. This includes
@@ -993,8 +1021,8 @@ Notes:
   coefficients.
 """
 function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
-                      haveivdep = any(var -> isequal(get_iv(rs), var), rxvars),
-                      stateset = Set(get_states(rs)))
+                      haveivdep::Union{Nothing,Bool} = nothing,
+                      stateset = Set(get_states(rs)), ivset = nothing)
 
     # we define non-integer (i.e. float or symbolic) stoich to be non-mass action
     ((eltype(rx.substoich) <: Integer) && (eltype(rx.prodstoich) <: Integer)) ||
@@ -1002,7 +1030,23 @@ function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
 
     # if no dependencies must be zero order
     (length(rxvars) == 0) && return true
-    haveivdep && return false
+
+    if (haveivdep === nothing)
+        if isspatial(rs)
+            if (ivset === nothing)
+                ivs = Set(get_sivs(rs))
+                push!(ivs, get_iv(rs))
+                ivdep = any(var -> var ∈ ivs, rxvars)
+            else
+                ivdep = any(var -> var ∈ ivset, rxvars)
+            end
+        else
+            ivdep = any(var -> isequal(get_iv(rs), var), rxvars)
+        end
+        ivdep && return false
+    else
+        haveivdep && return false
+    end
     rx.only_use_rate && return false
     @inbounds for var in rxvars
         # not mass action if have a non-constant, variable species in the rate expression
@@ -1231,6 +1275,10 @@ function error_if_constraint_odes(::Type{T},
     nothing
 end
 
+function spatial_convert_err(rs::ReactionSystem, systype)
+    isspatial(rs) && error("Conversion to $systype is not supported for spatial networks.")
+end
+
 """
 ```julia
 Base.convert(::Type{<:ODESystem},rs::ReactionSystem)
@@ -1251,6 +1299,7 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, remove_conserved = false, checks = false,
                       kwargs...)
+    spatial_convert_err(rs::ReactionSystem, ODESystem)
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
     ists = get_indep_sts(fullrs, remove_conserved)
@@ -1284,6 +1333,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, remove_conserved = false, checks = false,
                       kwargs...)
+    spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
     ists = get_indep_sts(fullrs, remove_conserved)
@@ -1325,6 +1375,9 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, checks = false, remove_conserved = false,
                       kwargs...)
+
+    spatial_convert_err(rs::ReactionSystem, SDESystem)
+
     flatrs = Catalyst.flatten(rs)
     error_if_constraints(SDESystem, flatrs)
 
@@ -1373,6 +1426,9 @@ Notes:
 function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       checks = false, kwargs...)
+
+    spatial_convert_err(rs::ReactionSystem, JumpSystem)
+
     flatrs = Catalyst.flatten(rs)
     error_if_constraints(JumpSystem, flatrs)
 
@@ -1582,7 +1638,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
 
     ReactionSystem(rxs, get_iv(rs), specs, reactionps; observed = MT.observed(rs),
                    name, defaults = MT.defaults(rs), checks = false, constraints = newcsys,
-                   combinatoric_ratelaws)
+                   combinatoric_ratelaws, spatial_ivs = get_sivs(rs))
 end
 
 """
@@ -1603,7 +1659,7 @@ function ModelingToolkit.extend(sys::Union{NonlinearSystem, ODESystem}, rs::Reac
     ReactionSystem(get_eqs(rs), get_iv(rs), get_states(rs), get_ps(rs);
                    observed = get_observed(rs), name, systems = get_systems(rs),
                    defaults = get_defaults(rs), checks = false, constraints = csys,
-                   combinatoric_ratelaws)
+                   combinatoric_ratelaws, spatial_ivs = get_sivs(rs))
 end
 
 """
@@ -1636,7 +1692,16 @@ function ModelingToolkit.extend(sys::ReactionSystem, rs::ReactionSystem;
         newcsys = (csys2 === nothing) ? csys : extend(csys2, csys, name)
     end
 
+    if isspatial(sys)
+        ivs = copy(get_sivs(sys))
+        isspatial(rs) && union!(ivs, get_sivs(rs))
+    elseif isspatial(rs)
+        ivs = copy(get_sivs(rs))
+    else
+        ivs = nothing
+    end
+
     ReactionSystem(eqs, get_iv(rs), sts, ps; observed = obs, name = name,
                    systems = syss, defaults = defs, checks = false, constraints = newcsys,
-                   combinatoric_ratelaws)
+                   combinatoric_ratelaws, spatial_ivs = ivs)
 end
