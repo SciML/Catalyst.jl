@@ -58,11 +58,6 @@ smap = speciesmap(bpm)
 
 # for defining boundary conditions
 evalat(u, a, b, t) = (operation(ModelingToolkit.unwrap(u)))(a, b, t)
-# function evalat(u, a, b, t)
-#     Usym = nameof(operation(unwrap(u)))
-#     U = (@variables ($Usym)(..))[1]
-#     U(a,b,t)
-# end
 
 # construct the PDEs and bcs
 ∂t = Differential(t)
@@ -81,25 +76,30 @@ for (i,st) in enumerate(states(bpm))
 end
 
 # define the domains
-domains = [x ∈ Interval(0.0, L), y ∈ Interval(0.0, L), t ∈ Interval(0.0, tstop)]
+domains = [x ∈ Interval(0.0, L),
+           y ∈ Interval(0.0, L),
+           t ∈ Interval(0.0, tstop)]
 
 pmap = [p for p in defaults(bpm)]
 @named bpmpdes = PDESystem(eqs, bcs, domains, [x,y,t], [U, V, W], pmap)
 ```
 
-Discretization
+We now discretize and solve the model
 ```julia
 h = L / N  # mesh width
 order = 2  # order of the discretization
 
-discretization = MOLFiniteDifference([x => h, y => h], t; approx_order = order,
+discretization = MOLFiniteDifference([x => h, y => h], t;
+                                     approx_order = order,
                                      grid_align = center_align)
 prob = discretize(bpmpdes, discretization)
 sol = solve(prob, TRBDF2(), saveat = (tstop/10))
 ```
 
-Plotting
+Plotting ``U`` at the final time we get
 ```julia
 solU = sol[U]
 heatmap(solU[2:end, 2:end, end])
 ```
+
+![BPM solution](../assets/bpm.png)
