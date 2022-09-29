@@ -80,7 +80,7 @@ domains = [x ∈ Interval(0.0, L),
            y ∈ Interval(0.0, L),
            t ∈ Interval(0.0, tstop)]
 
-pmap = [p for p in defaults(bpm)]
+pmap = collect(defaults(bpm))
 @named bpmpdes = PDESystem(eqs, bcs, domains, [x,y,t], [U, V, W], pmap)
 ```
 
