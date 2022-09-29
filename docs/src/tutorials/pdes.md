@@ -51,7 +51,7 @@ pars = vcat(scalarize(k), scalarize(D), scalarize(n0), [A])
 We now put together the symbolic PDE model
 ```julia
 # get the reaction terms
-rxeqs = Catalyst.assemble_oderhs(bpm, states(bpm))
+rxeqs = Catalyst.assemble_oderhs(bpm, states(bpm), combinatoric_ratelaws=false)
 
 # get the ordering of the variables within rxeqs
 smap = speciesmap(bpm)
@@ -101,21 +101,5 @@ sol = solve(prob, TRBDF2(), saveat = (tstop/10))
 Plotting
 ```julia
 solU = sol[U]
-heatmap(solU[2:end,2:end,end])
-```
-
-ODEs
-```julia
-# @variables U(t) V(t) W(t)
-
-# @named bpm = ReactionSystem(rxs, t, [U, V, W], pars)
-# eqs = Vector{Equation}(undef, 3)
-# for (i,st) in enumerate(states(bpm))
-#     idx = smap[st]
-#     eqs[i] = ∂t(st) ~ rxeqs[idx]
-# end
-# @named osys = ODESystem(eqs, t, [U,V,W], pars)
-# oprob = ODEProblem(osys, [U => n0[1], V => n0[2], W => n0[3]], (0.0, tstop))
-# sol = solve(oprob, Tsit5())
-# plot(sol)
+heatmap(solU[2:end, 2:end, end])
 ```
