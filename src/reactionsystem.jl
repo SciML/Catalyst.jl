@@ -530,7 +530,6 @@ function ReactionSystem(eqs, iv, states, ps;
     defaults = MT.todict(defaults)
     defaults = Dict{Any, Any}(value(k) => value(v) for (k, v) in pairs(defaults))
 
-
     iv′ = value(iv)
     sivs′ = if spatial_ivs === nothing
         Vector{typeof(iv′)}()
@@ -1030,7 +1029,7 @@ Notes:
   coefficients.
 """
 function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
-                      haveivdep::Union{Nothing,Bool} = nothing,
+                      haveivdep::Union{Nothing, Bool} = nothing,
                       stateset = Set(get_states(rs)), ivset = nothing)
 
     # we define non-integer (i.e. float or symbolic) stoich to be non-mass action
@@ -1384,7 +1383,6 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, checks = false, remove_conserved = false,
                       kwargs...)
-
     spatial_convert_err(rs::ReactionSystem, SDESystem)
 
     flatrs = Catalyst.flatten(rs)
@@ -1435,7 +1433,6 @@ Notes:
 function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       checks = false, kwargs...)
-
     spatial_convert_err(rs::ReactionSystem, JumpSystem)
 
     flatrs = Catalyst.flatten(rs)
