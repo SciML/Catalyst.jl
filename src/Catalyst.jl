@@ -27,8 +27,9 @@ import ModelingToolkit: check_variables, check_parameters, _iszero, _merge, chec
                         get_unit
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
-import MacroTools, Graphs
-import MetaGraphs, GraphRecipes
+import MacroTools, Graphs, Graphs.vertices, Graphs.edges
+using MetaGraphs
+using Plots, GraphRecipes
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 
