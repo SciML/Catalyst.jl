@@ -111,6 +111,62 @@ end
 get_val(comp,sym,lattice,vals) = has_prop(lattice,comp,sym) ? get_prop(lattice,comp,sym) : Dict(vals)[sym] 
 
 
+### SDEProblem ###
+# Basically a copy of ODEProblem
+function DiffEqBase.SDEProblem(lrs::LatticeReactionSystem, u0, tspan,
+    p = DiffEqBase.NullParameters(), args...;
+    check_length = false, name = nameof(rs),
+    combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+    include_zero_odes = true, remove_conserved = false,
+    checks = false, kwargs...)
+
+    # Converts the [:X => ...] to similar, but for each compartment variable.
+    state_names = Symbol.(getfield.(states(lrs.rs_base),:f)) # Not sure if there's a better way to do this.
+    ps_names = Symbol.(parameters(lrs.rs_base)) # Not sure if there's a better way to do this.
+    u0_full = vcat(map(comp -> map(species -> sym_to_var(species,lrs.rs,comp,lrs.lattice) => get_val(comp,species,lrs.lattice,u0), state_names), vertices(lrs.lattice))...)
+    p_full = vcat(map(comp -> map(species -> sym_to_var(species,lrs.rs,comp,lrs.lattice) => get_val(comp,species,lrs.lattice,p), ps_names), vertices(lrs.lattice))...)
+
+    u0map = symmap_to_varmap(lrs.rs, u0_full)
+    pmap_lattice = symmap_to_varmap(lrs.rs, p_full)
+    pmap_global = symmap_to_varmap(lrs.rs,filter(p_pair->!in(p_pair[1],ps_names), p))
+
+    sde_sys = convert(ODESystem, lrs.rs; name, combinatoric_ratelaws, include_zero_odes, checks,remove_conserved)
+    p_matrix = zeros(length(get_states(sde_sys)), numreactions(lrs.rs))
+    return SDEProblem(sde_sys, u0map, tspan, [pmap_lattice;pmap_global], args...; check_length, noise_rate_prototype = p_matrix, kwargs...)
+end
+
+### Discrete and Jump Problems ###
+# DiscreteProblem from AbstractReactionNetwork
+function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0, tspan::Tuple,
+    p = DiffEqBase.NullParameters(), args...;
+    name = nameof(rs),
+    combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+    checks = false, kwargs...)
+    
+    # Converts the [:X => ...] to similar, but for each compartment variable.
+    state_names = Symbol.(getfield.(states(lrs.rs_base),:f)) # Not sure if there's a better way to do this.
+    ps_names = Symbol.(parameters(lrs.rs_base)) # Not sure if there's a better way to do this.
+    u0_full = vcat(map(comp -> map(species -> sym_to_var(species,lrs.rs,comp,lrs.lattice) => get_val(comp,species,lrs.lattice,u0), state_names), vertices(lrs.lattice))...)
+    p_full = vcat(map(comp -> map(species -> sym_to_var(species,lrs.rs,comp,lrs.lattice) => get_val(comp,species,lrs.lattice,p), ps_names), vertices(lrs.lattice))...)
+ 
+    u0map = symmap_to_varmap(lrs.rs, u0_full)
+    pmap_lattice = symmap_to_varmap(lrs.rs, p_full)
+    pmap_global = symmap_to_varmap(lrs.rs,filter(p_pair->!in(p_pair[1],ps_names), p))
+ 
+    jsys = convert(JumpSystem, lrs.rs; name, combinatoric_ratelaws, checks)
+    return DiscreteProblem(jsys, u0map, tspan, [pmap_lattice;pmap_global], args...; kwargs...)
+end
+
+# JumpProblem from AbstractReactionNetwork
+function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, prob, aggregator, args...;
+   name = nameof(rs),
+   combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+   checks = false, kwargs...)
+
+    jsys = convert(JumpSystem, lrs.rs; name, combinatoric_ratelaws, checks)
+    return JumpProblem(jsys, prob, aggregator, args...; kwargs...)
+end
+
 ### Plotting ###
 
 # Should at some point overload "plot()" command.
