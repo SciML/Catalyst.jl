@@ -54,8 +54,8 @@ domains = [x ∈ Interval(0.0, L),
 pmap = collect(defaults(bpm))
 @named bpmpdes = PDESystem(eqs, bcs, domains, [x, y, t], [U, V, W], pmap)
 
-rxs = [Reaction(k[1]*x, [U, W], [V, W]),
-    Reaction(k[2]*y, [V], [W], [2], [1]),
+rxs = [Reaction(k[1] * x, [U, W], [V, W]),
+    Reaction(k[2] * y, [V], [W], [2], [1]),
     Reaction(k[3] + t, [W], [V], [1], [2]),
     Reaction(k[4], [U], nothing),
     Reaction(k[5], nothing, [U]),
@@ -64,7 +64,7 @@ rxs = [Reaction(k[1]*x, [U, W], [V, W]),
 pars = vcat(scalarize(k), scalarize(D), scalarize(n0), [A])
 @named bpm4 = ReactionSystem(rxs, t, [U, V, W], pars; spatial_ivs = [x, y])
 @test !ismassaction(rxs[1], bpm4)
-@test ismassaction(rxs[1], bpm4; ivset=Set([t, y]))
+@test ismassaction(rxs[1], bpm4; ivset = Set([t, y]))
 @test !ismassaction(rxs[2], bpm4)
 @test !ismassaction(rxs[3], bpm4)
 @test ismassaction(rxs[4], bpm4)
