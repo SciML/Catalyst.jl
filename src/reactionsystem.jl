@@ -1018,7 +1018,7 @@ depend explicitly on the independent variable (usually time).
   If not set, will be automatically calculated.
 - Optional: `stateset`, set of states which if the rxvars are within mean rx is
   non-mass action.
-- Optional: `ivset`, a set of the independent variables of the system. If not provided and
+- Optional: `ivset`, a `Set` of the independent variables of the system. If not provided and
   the system is spatial, i.e. `isspatial(rs) == true`, it will be created with all the
   spatial variables and the time variable. If the rate expression contains any element of
   `ivset`, then `ismassaction(rx,rs) == false`. Pass a custom set to control this behavior.
