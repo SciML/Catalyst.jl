@@ -1,7 +1,8 @@
 using Catalyst, OrdinaryDiffEq, Test
-using ModelingToolkit
+using ModelingToolkit, DomainSets
 const MT = ModelingToolkit
 
+@parameters k[1:7] D[1:3] n0[1:3] A
 @variables t x y U(x, y, t) V(x, y, t) W(x, y, t)
 rxs = [Reaction(k[1], [U, W], [V, W]),
     Reaction(k[2], [V], [W], [2], [1]),
@@ -10,7 +11,7 @@ rxs = [Reaction(k[1], [U, W], [V, W]),
     Reaction(k[5], nothing, [U]),
     Reaction(k[6], [V], nothing),
     Reaction(k[7], nothing, [V])]
-pars = vcat(scalarize(k), scalarize(D), scalarize(n0), [A])
+pars = vcat(MT.scalarize(k), MT.scalarize(D), MT.scalarize(n0), [A])
 @named bpm = ReactionSystem(rxs, t, [U, V, W], pars; spatial_ivs = [x, y])
 
 @test isequal(MT.get_iv(bpm), t)
@@ -40,6 +41,14 @@ bpm2 = deepcopy(bpm)
 Δ(u) = (∂x^2)(u) + (∂y^2)(u)
 eqs = Vector{Equation}(undef, 3)
 bcs = Vector{Equation}()
+smap = speciesmap(bpm)
+evalat(u, a, b, t) = (operation(ModelingToolkit.unwrap(u)))(a, b, t)
+function icfun(n, x, y, A)
+    float(rand(Poisson(round(n * A * 10))) / A / 10)
+end
+@register icfun(n, x, y, A)
+L = 32.0
+tstop = 5e4
 for (i, st) in enumerate(states(bpm))
     idx = smap[st]
     eqs[i] = ∂t(st) ~ D[idx] * Δ(st) + rxeqs[idx]
@@ -51,7 +60,7 @@ end
 domains = [x ∈ Interval(0.0, L),
     y ∈ Interval(0.0, L),
     t ∈ Interval(0.0, tstop)]
-pmap = collect(defaults(bpm))
+pmap = collect(MT.defaults(bpm))
 @named bpmpdes = PDESystem(eqs, bcs, domains, [x, y, t], [U, V, W], pmap)
 
 rxs = [Reaction(k[1] * x, [U, W], [V, W]),
@@ -61,7 +70,6 @@ rxs = [Reaction(k[1] * x, [U, W], [V, W]),
     Reaction(k[5], nothing, [U]),
     Reaction(k[6], [V], nothing),
     Reaction(k[7], nothing, [V])]
-pars = vcat(scalarize(k), scalarize(D), scalarize(n0), [A])
 @named bpm4 = ReactionSystem(rxs, t, [U, V, W], pars; spatial_ivs = [x, y])
 @test !ismassaction(rxs[1], bpm4)
 @test ismassaction(rxs[1], bpm4; ivset = Set([t, y]))
