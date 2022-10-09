@@ -1004,12 +1004,14 @@ function subnetworks(rs::ReactionSystem)
     rxs = reactions(rs)
     p = parameters(rs)
     t = get_iv(rs)
+    spatial_ivs = get_sivs(rs)
     complextorxsmap = [map(first, rcmap) for rcmap in values(reactioncomplexmap(rs))]
     subnetworks = Vector{ReactionSystem}()
     for i in 1:length(lcs)
         reacs, specs, newps = subnetworkmapping(lcs[i], rxs, complextorxsmap, p)
         newname = Symbol(nameof(rs), "_", i)
-        push!(subnetworks, ReactionSystem(reacs, t, specs, newps; name = newname))
+        push!(subnetworks,
+              ReactionSystem(reacs, t, specs, newps; name = newname, spatial_ivs))
     end
     subnetworks
 end
@@ -1298,6 +1300,7 @@ Notes:
 function isequal_ignore_names(rn1::ReactionSystem, rn2::ReactionSystem)
     (get_combinatoric_ratelaws(rn1) == get_combinatoric_ratelaws(rn2)) || return false
     isequal(get_iv(rn1), get_iv(rn2)) || return false
+    issetequal(get_sivs(rn1), get_sivs(rn2)) || return false
     issetequal(get_states(rn1), get_states(rn2)) || return false
     issetequal(get_ps(rn1), get_ps(rn2)) || return false
     issetequal(MT.get_observed(rn1), MT.get_observed(rn2)) || return false
@@ -1481,6 +1484,7 @@ function Base.merge!(network1::ReactionSystem, network2::ReactionSystem)
         error("merge! does not currently support ReactionSystems with constraints, consider ModelingToolkit.extend instead.")
     isequal(get_iv(network1), get_iv(network2)) ||
         error("Reaction networks must have the same independent variable to be mergable.")
+    union!(get_sivs(network1), get_sivs(network2))
     append!(get_eqs(network1), get_eqs(network2))
     union!(get_states(network1), get_states(network2))
     union!(get_ps(network1), get_ps(network2))

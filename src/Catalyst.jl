@@ -48,10 +48,10 @@ end
 
 # base system type and features
 include("reactionsystem.jl")
-export Reaction, ReactionSystem, ismassaction, oderatelaw, jumpratelaw
+export Reaction, ReactionSystem, ismassaction, oderatelaw, jumpratelaw, isspatial
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem,
        SteadyStateProblem
-export get_constraints, has_constraints, get_combinatoric_ratelaws
+export get_constraints, has_constraints, get_combinatoric_ratelaws, get_sivs
 
 # reaction_network macro
 const ExprValues = Union{Expr, Symbol, Float64, Int}
