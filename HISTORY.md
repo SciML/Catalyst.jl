@@ -23,7 +23,9 @@
   The `spatial_ivs` keyword lets Catalyst know which independent variables
   correspond to spatial variables. Note that rate expressions can depend on `x`
   and `y` too, i.e. `k[1] * x + y*t` would be valid. See the [work in progress
-  PDE tutorial]() to solve the resulting system and add spatial transport.
+  PDE
+  tutorial](https://github.com/SciML/Catalyst.jl/blob/master/docs/src/tutorials/pdes.md)
+  to solve the resulting system and add spatial transport.
 
 ## Catalyst 12.3
 - API functions to generate substrate, product, and net stoichiometry matrices
