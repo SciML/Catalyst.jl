@@ -1,9 +1,36 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+- Support for states/species that are functions of multiple variables. This
+  enables (symbolically) building PDEs to solve with
+  [MethodOfLines](https://github.com/SciML/MethodOfLines.jl/). To use multiple
+  independent variables one can say:
+  ```julia
+  using Catalyst
+  using ModelingToolkit: scalarize
+  @parameters k[1:7]
+  @variables t x y U(x,y,t) V(x,y,t) W(x,y,t)
+  rxs = [Reaction(k[1], [U, W], [V, W]),
+        Reaction(k[2], [V], [W], [2], [1]),
+        Reaction(k[3], [W], [V], [1], [2]),
+        Reaction(k[4], [U], nothing),
+        Reaction(k[5], nothing, [U]),
+        Reaction(k[6], [V], nothing),
+        Reaction(k[7], nothing, [V])]
+  pars = scalarize(k)
+  @named rn = ReactionSystem(rxs, t, [U, V, W], pars; spatial_ivs = [x, y])
+  ```
+  The `spatial_ivs` keyword lets Catalyst know which independent variables
+  correspond to spatial variables. Note that rate expressions can depend on `x`
+  and `y` too, i.e. `k[1] * x + y*t` would be valid. See the [work in progress
+  PDE
+  tutorial](https://github.com/SciML/Catalyst.jl/blob/master/docs/src/tutorials/pdes.md)
+  to solve the resulting system and add spatial transport.
 
 ## Catalyst 12.3
-- API functions to generate substrate, product, and net stoichiometry matrices should now work with floating point stoichiometric coefficients. Note, symbolic coefficients are still not supported by such functions.
+- API functions to generate substrate, product, and net stoichiometry matrices
+  should now work with floating point stoichiometric coefficients. Note,
+  symbolic coefficients are still not supported by such functions.
 
 ## Catalyst 12.0
 - **BREAKING:** Modified how constant and boundary condition species (in the
