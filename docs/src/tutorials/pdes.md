@@ -1,7 +1,13 @@
 # Partial Differential Equation Models
-**Note** this functionality is work in progress in both Catalyst, ModelingToolkit, and MethodOfLines (generally across SciML). As such, the recommended workflows, API features, and observed simulation performance may change.
+**Note** this functionality is work in progress in both Catalyst,
+ModelingToolkit, and MethodOfLines (generally across SciML). As such, the
+recommended workflows, API features, and observed simulation performance may
+change. In particular, with a 32x32 mesh as below, calling `solve` can take
+10-20 minutes currently due to compilation issues. For this reason it is best to
+restrict to one-dimensional spatial models at this time.
 
-We'll simulate the Baras–Pearson–Mansour (BPM) pattern formation model using the parameters in (Kim et al., J. Chem. Phys., 146, 2017).
+We'll simulate the Baras–Pearson–Mansour (BPM) pattern formation model using the
+parameters in (Kim et al., J. Chem. Phys., 146, 2017).
 
 First we load the packages we'll use
 ```julia
