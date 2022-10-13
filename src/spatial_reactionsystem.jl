@@ -10,7 +10,6 @@ struct SpatialReaction
     substrates::Tuple{Vector,Vector}
     """Reaction products."""
     products::Tuple{Vector,Vector}
-
     """
     `false` (default) if `rate` should be multiplied by mass action terms to give the rate law.
     `true` if `rate` represents the full reaction rate law.
@@ -29,55 +28,51 @@ end
 # A reaction network (that is simulated within each compartment).
 # A set of spatial reactions (denoting interaction between comaprtments).
 struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this part messes up show, disabling me from creating LRSs
-    """The reaction system expanded onto a graph."""
+    """The spatial reactions defined between individual nodes."""
     rs::ReactionSystem
-    """The original (non-spatial) reaction system that was expanded onto a graph."""
-    rs_base::ReactionSystem
     """The spatial reactions defined between individual nodes."""
     spatial_reactions::Vector{SpatialReaction}
     """The graph on which the lattice is defined."""
-    lattice::MetaGraph
+    lattice::DiGraph
     """Dependent (state) variables representing amount of each species. Must not contain the
     independent variable."""
     
-    function LatticeReactionSystem(rs_base, spatial_reactions, lattice)
-        rs = make_spatial_reaction_system(rs_base, spatial_reactions, lattice)
-        return new(rs, rs_base, spatial_reactions, lattice)
+    function LatticeReactionSystem(rs, spatial_reactions, lattice::DiGraph)
+        return new(rs, spatial_reactions, lattice)
+    end
+    function LatticeReactionSystem(rs, spatial_reactions, lattice::SimpleGraph)
+        return new(rs, spatial_reactions, DiGraph(lattice))
     end
 end
 
 
 # Function for creating a single ReactionSystem structure from a LatticeReactionSystem input.
-function make_spatial_reaction_system(rs::ReactionSystem,srs::Vector{SpatialReaction},lattice::MetaGraph)
-    # Extends an empty base network, with one copy of the input network for each node on the graph.
+function make_spatial_reaction_system(lrs::LatticeReactionSystem)
+    @unpack rs,spatial_reactions,lattice = lrs
+
+    # Extends an empty base network, with one copy of the input network for each node on the graph.    
     @named rs_base = ReactionSystem(rs.iv)
-    rs_combined = flatten(compose(rs_base, map(c -> make_subsystem(rs,c,lattice),vertices(lattice))))
-
-    # Loops through all connections, and spatial reactions, and add them (in both directions) for each connection.
-    spatial_reactions = Vector{Reaction}()
-    for sr in srs, e in edges(lattice)
-        # Could create a loop to generate all 8 expressions, but code is easier to read this way.
-        subs1_r1 = map(sub -> sym_to_var(sub,rs_combined,e.src,lattice), first.(sr.substrates[1]))
-        subs2_r1 = map(sub -> sym_to_var(sub,rs_combined,e.dst,lattice), first.(sr.substrates[2]))
-        subs1_r2 = map(sub -> sym_to_var(sub,rs_combined,e.dst,lattice), first.(sr.substrates[1]))
-        subs2_r2 = map(sub -> sym_to_var(sub,rs_combined,e.src,lattice), first.(sr.substrates[2]))
-        prods1_r1 = map(sub -> sym_to_var(sub,rs_combined,e.src,lattice), first.(sr.products[1]))
-        prods2_r1 = map(sub -> sym_to_var(sub,rs_combined,e.dst,lattice), first.(sr.products[2]))
-        prods1_r2 = map(sub -> sym_to_var(sub,rs_combined,e.dst,lattice), first.(sr.products[1]))
-        prods2_r2 = map(sub -> sym_to_var(sub,rs_combined,e.src,lattice), first.(sr.products[2]))
-
-        push!(spatial_reactions,Reaction(sr.rate,[subs1_r1;subs2_r1],[prods1_r1;prods2_r1],[last.(sr.substrates[1]);last.(sr.substrates[2])],[last.(sr.products[1]);last.(sr.products[2])]))
-        push!(spatial_reactions,Reaction(sr.rate,[subs1_r2;subs2_r2],[prods1_r2;prods2_r2],[last.(sr.substrates[1]);last.(sr.substrates[2])],[last.(sr.products[1]);last.(sr.products[2])]))
+    rs_combined = flatten(compose(rs_base, map(c -> make_subsystem(rs,c),vertices(lattice))))
+    
+    connection_systems = Vector{ReactionSystem}()
+    for sr in spatial_reactions, (ei,e) in enumerate(edges(lattice))
+        substrates_src = map(sub -> ParentScope(sym_to_var(sub[1],rs_combined,e.src)),sr.substrates[1])
+        substrates_dst = map(sub -> ParentScope(sym_to_var(sub[1],rs_combined,e.dst)),sr.substrates[2])
+        products_src = map(prod -> ParentScope(sym_to_var(prod[1],rs_combined,e.src)),sr.products[1])
+        products_dst = map(prod -> ParentScope(sym_to_var(prod[1],rs_combined,e.dst)),sr.products[2])
+        subs_stoich_src = map(sub -> sub[2],sr.substrates[1])
+        subs_stoich_dst = map(sub -> sub[2],sr.substrates[2])
+        prods_stoich_src = map(prod -> prod[2],sr.products[1])
+        prods_stoich_dst = map(prod -> prod[2],sr.products[2])
+        rs_internal = ReactionSystem([Reaction(sr.rate,[substrates_src;substrates_dst],[products_src;products_dst],[subs_stoich_src;subs_stoich_dst],[prods_stoich_src;prods_stoich_dst])],rs_base.iv;name=Symbol(:connection___,ei))
+        push!(connection_systems,rs_internal)
     end
-
-    # Adds the spatial reactions to the initial network.
-    return extend(rs_combined,ReactionSystem(spatial_reactions,rs_combined.iv;name=rs_combined.name))
+    return flatten(compose(rs_combined, connection_systems))
 end
 
 # Helper functions.
-get_name(comp::Int64,lattice::MetaGraph) = has_prop(lattice,comp,:name) ? get_prop(lattice,comp,:name) : Symbol("container___",comp)
-make_subsystem(rs::ReactionSystem,comp::Int64,lattice::MetaGraph) = @set! rs.name = get_name(comp,lattice)
-sym_to_var(sym,rs,comp,lattice) = rs.var_to_name[Symbol(get_name(comp,lattice),:₊,sym)]
+make_subsystem(rs::ReactionSystem,comp::Int64) = @set! rs.name = Symbol("container___",comp)
+sym_to_var(sym,rs,comp) = get_var_to_name(rs)[Symbol("container___",comp,:₊,sym)]
 
 ### ODEProblem ###
 # Creates an ODEProblem from a LatticeReactionSystem.
@@ -90,25 +85,33 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0, tspan,
                                combinatoric_ratelaws = get_combinatoric_ratelaws(lrs.rs),
                                include_zero_odes = true, remove_conserved = false,
                                checks = false, kwargs...)
-    
-    # Converts the [:X => ...] to similar, but for each compartment variable.
-    state_names = Symbol.(getfield.(states(lrs.rs_base),:f)) # Not sure if there's a better way to do this.
-    ps_names = Symbol.(parameters(lrs.rs_base)) # Not sure if there's a better way to do this.
-    u0_full = vcat(map(comp -> map(species -> sym_to_var(species,lrs.rs,comp,lrs.lattice) => get_val(comp,species,lrs.lattice,u0), state_names), vertices(lrs.lattice))...)
-    p_full = vcat(map(comp -> map(species -> sym_to_var(species,lrs.rs,comp,lrs.lattice) => get_val(comp,species,lrs.lattice,p), ps_names), vertices(lrs.lattice))...)
+                               
+    # Creates the expanded reaction system
+    rs_expanded = make_spatial_reaction_system(lrs)
 
-    u0map = symmap_to_varmap(lrs.rs, u0_full)
-    pmap_lattice = symmap_to_varmap(lrs.rs, p_full)
-    pmap_global = symmap_to_varmap(lrs.rs,filter(p_pair->!in(p_pair[1],ps_names), p))
+    # Creates spatial u0 and p vectors
+    container_syms = keys(get_var_to_name(lrs.rs))
+    nCells = length(vertices(lrs.lattice))
+    nConnections = length(edges(lrs.lattice))
+    u0_expanded = vcat(map(u0_i -> expand_sym_val_pair(u0_i,container_syms,nCells,nConnections), u0)...)
+    p_expanded = vcat(map(p_i -> expand_sym_val_pair(p_i,container_syms,nCells,nConnections), p)...)
+   
+    u0map = symmap_to_varmap(rs_expanded,u0_expanded)
+    pmap = symmap_to_varmap(rs_expanded,p_expanded)
 
-    osys = convert(ODESystem, lrs.rs; name, combinatoric_ratelaws, include_zero_odes, checks,
+    osys = convert(ODESystem, rs_expanded; name, combinatoric_ratelaws, include_zero_odes, checks,
                    remove_conserved)
-    return ODEProblem(osys, u0map, tspan, [pmap_lattice;pmap_global], args...; check_length, kwargs...)
+    return ODEProblem(osys, u0map, tspan, pmap, args...; check_length, kwargs...)
 end
 
 # Helper function.
-# Gets the value of a species (or parameter) for a given cell and ODEProblem input.
-get_val(comp,sym,lattice,vals) = has_prop(lattice,comp,sym) ? get_prop(lattice,comp,sym) : Dict(vals)[sym] 
+# Converts e.g. :x => 1.0 to [container___1₊X => 1.0, container___2₊X => 1.0 ...]
+function expand_sym_val_pair(pair, container_syms, nCells, nConnections)
+    base,n = in(pair[1],container_syms) ? (:container___,nCells) : (:connection___,nConnections)
+    syms = map(i -> Symbol(base,i,:₊,pair[1]), 1:n)
+    vals = (pair[2] isa Vector) ? pair[2] : fill(pair[2],n)
+    return Pair.(syms,vals)
+end
 
 
 ### SDEProblem ###
@@ -119,20 +122,23 @@ function DiffEqBase.SDEProblem(lrs::LatticeReactionSystem, u0, tspan,
     combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
     include_zero_odes = true, remove_conserved = false,
     checks = false, kwargs...)
+                               
+    # Creates the expanded reaction system
+    rs_expanded = make_spatial_reaction_system(lrs)
 
-    # Converts the [:X => ...] to similar, but for each compartment variable.
-    state_names = Symbol.(getfield.(states(lrs.rs_base),:f)) # Not sure if there's a better way to do this.
-    ps_names = Symbol.(parameters(lrs.rs_base)) # Not sure if there's a better way to do this.
-    u0_full = vcat(map(comp -> map(species -> sym_to_var(species,lrs.rs,comp,lrs.lattice) => get_val(comp,species,lrs.lattice,u0), state_names), vertices(lrs.lattice))...)
-    p_full = vcat(map(comp -> map(species -> sym_to_var(species,lrs.rs,comp,lrs.lattice) => get_val(comp,species,lrs.lattice,p), ps_names), vertices(lrs.lattice))...)
+    # Creates spatial u0 and p vectors
+    container_syms = keys(get_var_to_name(lrs.rs))
+    nCells = length(vertices(lrs.lattice))
+    nConnections = length(edges(lrs.lattice))
+    u0_expanded = vcat(map(u0_i -> expand_sym_val_pair(u0_i,container_syms,nCells,nConnections), u0)...)
+    p_expanded = vcat(map(p_i -> expand_sym_val_pair(p_i,container_syms,nCells,nConnections), p)...)
+   
+    u0map = symmap_to_varmap(rs_expanded,u0_expanded)
+    pmap = symmap_to_varmap(rs_expanded,p_expanded)
 
-    u0map = symmap_to_varmap(lrs.rs, u0_full)
-    pmap_lattice = symmap_to_varmap(lrs.rs, p_full)
-    pmap_global = symmap_to_varmap(lrs.rs,filter(p_pair->!in(p_pair[1],ps_names), p))
-
-    sde_sys = convert(ODESystem, lrs.rs; name, combinatoric_ratelaws, include_zero_odes, checks,remove_conserved)
+    sde_sys = convert(SDESystem, rs_expanded; name, combinatoric_ratelaws, include_zero_odes, checks,remove_conserved)
     p_matrix = zeros(length(get_states(sde_sys)), numreactions(lrs.rs))
-    return SDEProblem(sde_sys, u0map, tspan, [pmap_lattice;pmap_global], args...; check_length, noise_rate_prototype = p_matrix, kwargs...)
+    return SDEProblem(sde_sys, u0map, tspan, pmap, args...; check_length, noise_rate_prototype = p_matrix, kwargs...)
 end
 
 ### Discrete and Jump Problems ###
@@ -142,19 +148,22 @@ function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0, tspan::Tuple
     name = nameof(rs),
     combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
     checks = false, kwargs...)
-    
-    # Converts the [:X => ...] to similar, but for each compartment variable.
-    state_names = Symbol.(getfield.(states(lrs.rs_base),:f)) # Not sure if there's a better way to do this.
-    ps_names = Symbol.(parameters(lrs.rs_base)) # Not sure if there's a better way to do this.
-    u0_full = vcat(map(comp -> map(species -> sym_to_var(species,lrs.rs,comp,lrs.lattice) => get_val(comp,species,lrs.lattice,u0), state_names), vertices(lrs.lattice))...)
-    p_full = vcat(map(comp -> map(species -> sym_to_var(species,lrs.rs,comp,lrs.lattice) => get_val(comp,species,lrs.lattice,p), ps_names), vertices(lrs.lattice))...)
+                               
+    # Creates the expanded reaction system
+    rs_expanded = make_spatial_reaction_system(lrs)
+
+    # Creates spatial u0 and p vectors
+    container_syms = keys(get_var_to_name(lrs.rs))
+    nCells = length(vertices(lrs.lattice))
+    nConnections = length(edges(lrs.lattice))
+    u0_expanded = vcat(map(u0_i -> expand_sym_val_pair(u0_i,container_syms,nCells,nConnections), u0)...)
+    p_expanded = vcat(map(p_i -> expand_sym_val_pair(p_i,container_syms,nCells,nConnections), p)...)
+   
+    u0map = symmap_to_varmap(rs_expanded,u0_expanded)
+    pmap = symmap_to_varmap(rs_expanded,p_expanded)
  
-    u0map = symmap_to_varmap(lrs.rs, u0_full)
-    pmap_lattice = symmap_to_varmap(lrs.rs, p_full)
-    pmap_global = symmap_to_varmap(lrs.rs,filter(p_pair->!in(p_pair[1],ps_names), p))
- 
-    jsys = convert(JumpSystem, lrs.rs; name, combinatoric_ratelaws, checks)
-    return DiscreteProblem(jsys, u0map, tspan, [pmap_lattice;pmap_global], args...; kwargs...)
+    jsys = convert(JumpSystem, rs_expanded; name, combinatoric_ratelaws, checks)
+    return DiscreteProblem(jsys, u0map, tspan, pmap, args...; kwargs...)
 end
 
 # JumpProblem from AbstractReactionNetwork
@@ -163,7 +172,7 @@ function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, prob, aggregator,
    combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
    checks = false, kwargs...)
 
-    jsys = convert(JumpSystem, lrs.rs; name, combinatoric_ratelaws, checks)
+    jsys = convert(JumpSystem, make_spatial_reaction_system(lrs); name, combinatoric_ratelaws, checks)
     return JumpProblem(jsys, prob, aggregator, args...; kwargs...)
 end
 

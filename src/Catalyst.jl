@@ -24,11 +24,11 @@ import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_v
                         @set!
 # internal but needed ModelingToolkit functions
 import ModelingToolkit: check_variables, check_parameters, _iszero, _merge, check_units,
-                        get_unit
+                        get_unit, get_var_to_name
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs, Graphs.vertices, Graphs.edges
-using MetaGraphs
+using Graphs
 using Plots, GraphRecipes
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
