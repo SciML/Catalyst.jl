@@ -88,7 +88,7 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0, tspan,
                                
     # Creates the expanded reaction system
     rs_expanded = make_spatial_reaction_system(lrs)
-
+    
     # Creates spatial u0 and p vectors
     container_syms = keys(get_var_to_name(lrs.rs))
     nCells = length(vertices(lrs.lattice))
@@ -181,8 +181,8 @@ end
 # Should at some point overload "plot()" command.
 # Plots the output from a spatial simulation as an animation over time.
 function plot_spatial_sol(sol,lattice,var;v_max=maximum(maximum.(sol.u)),samp_freq=1,nodesize=0.3,linewidth=1,kwargs...)
-    nComps = length(vertices(lattice));
-    trajectories = map(vals -> vals[(var-1)*nComps+1:var*nComps] ./ v_max, sol.u)[1:samp_freq:end]
+    nVars = Int64(length(sol.u[1])/length(vertices(lattice)));
+    trajectories = map(vals -> vals[var:nVars:end]./v_max, sol.u)[1:samp_freq:end]
 
     # Has to do this to fix x and y positions of all nodes, else the graph moves in every fram (=very bad).
     base_plot = graphplot(lattice); 
@@ -191,13 +191,13 @@ function plot_spatial_sol(sol,lattice,var;v_max=maximum(maximum.(sol.u)),samp_fr
 
     # Function that plots the graph for a certain set of solution values.
     function plot_frame(vals)
-        graphplot(lattice,x=xs,y=ys,
-        nodeshape=:circle, nodesize=nodesize,
-        axis_buffer=0.6,
-        curves=false,
-        color=:black,
-        nodecolor=map(val -> RGB{Float64}(val,val,0.0), vals),
-        linewidth=linewidth,kwargs...)
+        graphplot(  lattice,x=xs,y=ys,
+                    nodeshape=:circle, nodesize=nodesize,
+                    axis_buffer=0.6,
+                    curves=false,
+                    color=:black,
+                    nodecolor=map(val -> RGB{Float64}(val,val,0.0), vals),
+                    linewidth=linewidth,kwargs...)
     end
 
     # Creates an animation.
