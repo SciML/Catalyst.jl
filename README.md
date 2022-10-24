@@ -6,8 +6,8 @@
 [![Coverage Status](https://coveralls.io/repos/github/SciML/Catalyst.jl/badge.svg?branch=master)](https://coveralls.io/github/SciML/Catalyst.jl?branch=master)
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/Catalyst/stable/)
 [![API Stable](https://img.shields.io/badge/API-stable-blue.svg)](https://docs.sciml.ai/Catalyst/stable/api/catalyst_api/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/Catalyst/stable/dev/)
-[![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://docs.sciml.ai/Catalyst/stable/dev/api/catalyst_api/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/Catalyst/dev/)
+[![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://docs.sciml.ai/Catalyst/dev/api/catalyst_api/)
 [![ColPrac: Contributor's Guide on Collaborative Practices for Community Packages](https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet)](https://github.com/SciML/ColPrac)
 [![SciML Code Style](https://img.shields.io/static/v1?label=code%20style&message=SciML&color=9558b2&labelColor=389826)](https://github.com/SciML/SciMLStyle)
 
