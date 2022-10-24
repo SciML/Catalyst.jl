@@ -4,8 +4,8 @@ Catalyst.jl is a symbolic modeling package for analysis and high performance
 simulation of chemical reaction networks. Catalyst defines symbolic
 [`ReactionSystem`](@ref)s, which can be created programmatically or easily
 specified using Catalyst's domain specific language (DSL). Leveraging
-[ModelingToolkit](https://github.com/SciML/ModelingToolkit.jl) and
-[Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl), Catalyst enables
+[ModelingToolkit](https://docs.sciml.ai/ModelingToolkit/stable/) and
+[Symbolics.jl](https://docs.sciml.ai/Symbolics/stable/), Catalyst enables
 large-scale simulations through auto-vectorization and parallelism. Symbolic
 `ReactionSystem`s can be used to generate ModelingToolkit-based models, allowing
 the easy simulation and parameter estimation of mass action ODE models, Chemical
@@ -19,8 +19,8 @@ etc).
 - DSL provides a simple and readable format for manually specifying chemical
   reactions.
 - Catalyst `ReactionSystem`s provide a symbolic representation of reaction networks,
-  built on [ModelingToolkit.jl](https://github.com/SciML/ModelingToolkit.jl) and
-  [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl).
+  built on [ModelingToolkit.jl](https://docs.sciml.ai/ModelingToolkit/stable/) and
+  [Symbolics.jl](https://docs.sciml.ai/Symbolics/stable/).
 - Non-integer (e.g. `Float64`) stoichiometric coefficients are supported for generating
   ODE models, and symbolic expressions for stoichiometric coefficients are supported for
   all system types.
@@ -39,32 +39,32 @@ etc).
   jump types for Gillespie type simulations, automatic construction of
   dependency graphs for jump systems, and more.
 - Generated systems can be solved using any
-  [DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl)
+  [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/)
   ODE/SDE/jump solver, and can be used within `EnsembleProblem`s for carrying
   out parallelized parameter sweeps and statistical sampling. Plot recipes
   are available for visualizing the solutions.
 - Julia `Expr`s can be obtained for all rate laws and functions determining the
   deterministic and stochastic terms within resulting ODE, SDE or jump models.
-- [Latexify](https://github.com/korsbo/Latexify.jl) can be used to generate
+- [Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to generate
   LaTeX expressions corresponding to generated mathematical models or the
   underlying set of reactions.
 - [Graphviz](https://graphviz.org/) can be used to generate and visualize
   reaction network graphs. (Reusing the Graphviz interface created in
-  [Catlab.jl](https://github.com/AlgebraicJulia/Catlab.jl/).)
+  [Catlab.jl](https://algebraicjulia.github.io/Catlab.jl/stable/).)
 
 ## Packages Supporting Catalyst
 - Catalyst [`ReactionSystem`](@ref)s can be imported from SBML files via
-  [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), and from BioNetGen .net
+  [SBMLToolkit.jl](https://docs.sciml.ai/SBMLToolkit/stable/), and from BioNetGen .net
   files and various stoichiometric matrix network representations using
-  [ReactionNetworkImporters.jl](https://github.com/SciML/ReactionNetworkImporters.jl).
-- [MomentClosure.jl](https://github.com/augustinas1/MomentClosure.jl) allows
+  [ReactionNetworkImporters.jl](https://docs.sciml.ai/ReactionNetworkImporters/stable/).
+- [MomentClosure.jl](https://augustinas1.github.io/MomentClosure.jl/dev) allows
   generation of symbolic ModelingToolkit `ODESystem`s, representing moment
   closure approximations to moments of the Chemical Master Equation, from
   reaction networks defined in Catalyst.
-- [FiniteStateProjection.jl](https://github.com/kaandocal/FiniteStateProjection.jl)
+- [FiniteStateProjection.jl](https://kaandocal.github.io/FiniteStateProjection.jl/dev/)
   allows the construction and numerical solution of Chemical Master Equation
   models from reaction networks defined in Catalyst.
-- [DelaySSAToolkit.jl](https://github.com/palmtree2013/DelaySSAToolkit.jl) can
+- [DelaySSAToolkit.jl](https://palmtree2013.github.io/DelaySSAToolkit.jl/dev/) can
   augment Catalyst reaction network models with delays, and can simulate the
   resulting stochastic chemical kinetics with delays models.
 

@@ -669,7 +669,7 @@ get_networkproperties(sys::ReactionSystem) = getfield(sys, :networkproperties)
     get_combinatoric_ratelaws(sys::ReactionSystem)
 
 Returns true if the default for the system is to rescale ratelaws, see
-https://catalyst.sciml.ai/dev/tutorials/using_catalyst/#Reaction-rate-laws-used-in-simulations
+https://docs.sciml.ai/Catalyst/stable/tutorials/using_catalyst/#Reaction-rate-laws-used-in-simulations
 for details. Can be overriden via passing `combinatoric_ratelaws` to `convert` or the
 `*Problem` functions.
 """

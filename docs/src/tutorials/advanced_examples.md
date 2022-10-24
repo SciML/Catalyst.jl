@@ -2,7 +2,7 @@
 For additional flexibility, we can convert the generated `ReactionSystem` first
 to another `ModelingToolkit.AbstractSystem`, e.g., an `ODESystem`, `SDESystem`,
 `JumpSystem`, etc. These systems can then be used in problem generation. Please
-also see the [ModelingToolkit](http://mtk.sciml.ai/stable/) docs, which give
+also see the [ModelingToolkit](http://docs.sciml.ai/ModelingToolkit/stable/) docs, which give
 many options for optimized problem generation (i.e., generating dense or sparse
 Jacobians with or without threading and/or parallelization), creating LaTeX
 representations for systems, etc.

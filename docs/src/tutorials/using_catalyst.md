@@ -149,7 +149,7 @@ underlying problem.
 
 At this point we are all set to solve the ODEs. We can now use any ODE solver
 from within the
-[DifferentialEquations.jl](https://diffeq.sciml.ai/latest/solvers/ode_solve/)
+[DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/)
 package. We'll use the recommended default explicit solver, `Tsit5()`, and then
 plot the solutions:
 
@@ -159,14 +159,14 @@ plot(sol)
 ```
 We see the well-known oscillatory behavior of the repressilator! For more on the
 choices of ODE solvers, see the [DifferentialEquations.jl
-documentation](https://diffeq.sciml.ai/dev/solvers/ode_solve/).
+documentation](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/).
 
 ---
 
 ## Stochastic Simulation Algorithms (SSAs) for Stochastic Chemical Kinetics
 Let's now look at a stochastic chemical kinetics model of the repressilator,
 modeling it with jump processes. Here, we will construct a
-[JumpProcesses](https://github.com/SciML/JumpProcesses.jl) `JumpProblem` that uses
+[JumpProcesses](https://docs.sciml.ai/JumpProcesses/stable/) `JumpProblem` that uses
 Gillespie's `Direct` method, and then solve it to generate one realization of
 the jump process:
 
