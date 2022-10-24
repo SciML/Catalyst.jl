@@ -89,7 +89,7 @@ ModelingToolkit.get_systems(flatrn)
 ```
 
 More about ModelingToolkit's interface for compositional modeling can be found
-in the [ModelingToolkit docs](https://mtk.sciml.ai/dev/).
+in the [ModelingToolkit docs](http://docs.sciml.ai/ModelingToolkit/stable/).
 
 ## Compositional Model of the Repressilator
 Let's apply the tooling we've just seen to create the repressilator in a more

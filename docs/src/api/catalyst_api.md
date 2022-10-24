@@ -79,7 +79,7 @@ ReactionSystem
 A [`ReactionSystem`](@ref) is an instance of a
 `ModelingToolkit.AbstractTimeDependentSystem`, and has a number of fields that
 can be accessed using the Catalyst API and the [ModelingToolkit.jl Abstract
-System Interface](https://mtk.sciml.ai/dev/basics/AbstractSystem/). Below we
+System Interface](https://docs.sciml.ai/ModelingToolkit/stable/basics/AbstractSystem/). Below we
 overview these components.
 
 There are three basic sets of convenience accessors that will return information
@@ -228,7 +228,7 @@ isequal_ignore_names
 ```
 
 ## Network Visualization
-[Latexify](https://github.com/korsbo/Latexify.jl) can be used to convert
+[Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to convert
 networks to LaTeX mhchem equations by
 ```julia
 using Latexify

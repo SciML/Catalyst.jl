@@ -1,7 +1,7 @@
 # Model Simulation
 Once created, a reaction network can be used as input to various problem types,
 which can be solved by
-[DifferentialEquations.jl](https://github.com/JuliaDiffEq/DifferentialEquations.jl/),
+[DifferentialEquations.jl](http://docs.sciml.ai/DiffEqDocs/stable/),
 and more broadly used within [SciML](https://sciml.ai) packages.
 
 #### Deterministic simulations using ODEs

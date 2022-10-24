@@ -187,7 +187,7 @@
 ## Catalyst 10.7
 - Added the ability to use symbolic variables, parameters and expressions for
   stoichiometric coefficients. See the new tutorial on [Parametric
-  Stoichiometry](https://catalyst.sciml.ai/dev/tutorials/symbolic_stoich/) for
+  Stoichiometry](https://docs.sciml.ai/Catalyst/stable/tutorials/symbolic_stoich/) for
   details, and note the caveat about ModelingToolkit converting integer
   parameters to floating point types that must be worked around to avoid calls
   to `factorial` that involve `float`s.
@@ -244,7 +244,7 @@
 ## Catalyst 10.4
 - Added `symmap_to_varmap`, `setdefaults!`, and updated all `*Problem(rn,...)`
   calls to allow setting initial conditions and parameter values using symbol
-  maps. See the [Catalyst API](https://catalyst.sciml.ai/dev/) for details.
+  maps. See the [Catalyst API](https://docs.sciml.ai/Catalyst/stable/) for details.
   These allow using regular Julia `Symbols` to specify parameter values and
   initial conditions. i.e. to set defaults we can do
   ```julia
@@ -430,7 +430,7 @@ giving
  B(t) + C(t)
 ```
 
-See the [API docs](https://catalyst.sciml.ai/dev/api/catalyst_api/) for more
+See the [API docs](https://docs.sciml.ai/Catalyst/stable/api/catalyst_api/) for more
 details about each of these new features.
 
 ## Catalyst 8.2
