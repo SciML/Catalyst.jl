@@ -316,7 +316,7 @@ end
 function Base.isless(a::ReactionComplexElement, b::ReactionComplexElement)
     isless(a.speciesid, b.speciesid)
 end
-Base.Sort.defalg(::ReactionComplex{T}) where {T <: Integer} = Base.DEFAULT_UNSTABLE
+Base.Sort.defalg(::ReactionComplex) = Base.DEFAULT_UNSTABLE
 
 ############################### Network Properties ####################################
 
