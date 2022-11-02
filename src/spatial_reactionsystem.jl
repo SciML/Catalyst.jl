@@ -117,11 +117,11 @@ end
 ### SDEProblem ###
 # Basically a copy of ODEProblem
 function DiffEqBase.SDEProblem(lrs::LatticeReactionSystem, u0, tspan,
-    p = DiffEqBase.NullParameters(), args...;
-    check_length = false, name = nameof(rs),
-    combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-    include_zero_odes = true, remove_conserved = false,
-    checks = false, kwargs...)
+                                p = DiffEqBase.NullParameters(), args...;
+                                check_length = false, name = nameof(lrs.rs),
+                                combinatoric_ratelaws = get_combinatoric_ratelaws(lrs.rs),
+                                include_zero_odes = true, remove_conserved = false,
+                                checks = false, kwargs...)
                                
     # Creates the expanded reaction system
     rs_expanded = make_spatial_reaction_system(lrs)
@@ -144,10 +144,10 @@ end
 ### Discrete and Jump Problems ###
 # DiscreteProblem from AbstractReactionNetwork
 function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0, tspan::Tuple,
-    p = DiffEqBase.NullParameters(), args...;
-    name = nameof(rs),
-    combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-    checks = false, kwargs...)
+                                    p = DiffEqBase.NullParameters(), args...;
+                                    name = nameof(lrs.rs),
+                                    combinatoric_ratelaws = get_combinatoric_ratelaws(lrs.rs),
+                                    checks = false, kwargs...)
                                
     # Creates the expanded reaction system
     rs_expanded = make_spatial_reaction_system(lrs)
@@ -168,9 +168,9 @@ end
 
 # JumpProblem from AbstractReactionNetwork
 function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, prob, aggregator, args...;
-   name = nameof(rs),
-   combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-   checks = false, kwargs...)
+                                    name = nameof(lrs.rs),
+                                    combinatoric_ratelaws = get_combinatoric_ratelaws(lrs.rs),
+                                    checks = false, kwargs...)
 
     jsys = convert(JumpSystem, make_spatial_reaction_system(lrs); name, combinatoric_ratelaws, checks)
     return JumpProblem(jsys, prob, aggregator, args...; kwargs...)
