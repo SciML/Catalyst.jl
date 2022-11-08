@@ -125,7 +125,7 @@ Finally, we can plot the solution through the `plot` function.
 plot(sol)
 ```
 
-Here, the plot described the time evolution of the concentration of the species *X*, from its initial condition. 
+Here, the plot shows the time evolution of the concentration of the species *X* from its initial condition. 
 
 For more information about the numerical simulation package, please see the [DifferentialEquation documentation](https://diffeq.sciml.ai/stable/). For more information about the plotting package, please see the [Plots documentation](https://docs.juliaplots.org/stable/). 
 
