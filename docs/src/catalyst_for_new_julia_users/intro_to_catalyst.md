@@ -38,7 +38,7 @@ Finally, we note that the first time some code is run in Julia, it has to be *co
 (245^0.43) + exp(0.431) - log(124541) * tan(1.43) - sin(4.3);
 ```
 
-This is useful to know when you e.g. declare, simulate, or plot, a Catalyst model. The first time you run the command there might be a slight delay. Howegver, the second run will execute much quicker. This holds even if you do minor adjustments before the second run (such as changing simulation initial conditions).
+This is useful to know when you e.g. declare, simulate, or plot, a Catalyst model. The first time you run a command there might be a slight delay. However, subsequent runs will execute much quicker. This holds even if you do minor adjustments before the second run (such as changing simulation initial conditions).
 
 ### Installing and activating packages
 Except for some base Julia packages (such as `Pkg`, the package manager) that are available by default, Julia packages must be installed locally before they can be used. Most packages are registered with Julia, and can be added through the `Pkg.add("desired_package")` command (where `desired_package` is the name of the package you wish to install). We can thus install Catalyst:
