@@ -153,7 +153,7 @@ sir_model = @reaction_network begin
 end b k;
 ```
 
-Here we note that the first reaction contains two different substrates (separated by a `+` sign). While there is only a single product (*I*), two copies of *I* are produced. The *2* in front of the product *I* denotes this.
+Note that the first reaction contains two different substrates (separated by a `+` sign). While there is only a single product (*I*), two copies of *I* are produced. The *2* in front of the product *I* denotes this.
 
 Next, we declare our initial condition, time span, and parameter values. Since we want to simulate the individual reaction events, that discretely change the state of our model, we want our initial conditions to be integer-valued. We will start with a mostly susceptible population, but where a single individual has been infected through some means.
 ```julia
