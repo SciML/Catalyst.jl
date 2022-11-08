@@ -87,7 +87,7 @@ end b d;
 For more information on how to use the Catalyst model creator, please read [the corresponding documentation](https://docs.sciml.ai/Catalyst/stable/tutorials/dsl/).
 
 Next, we wish to simulate our model. To do this, we need to provide some additional information to the simulator. This is
-* The initial condition. That is the concentration of each species at the start of the simulation.
+* The initial condition. That is the concentration or number of each species at the start of the simulation.
 * The timespan. That is, over the timeframe over which we wish to run the simulation.
 * The parameter values. That is, the values of the model's parameters for this simulation.
 
