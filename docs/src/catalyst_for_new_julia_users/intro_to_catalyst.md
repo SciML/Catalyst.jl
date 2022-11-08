@@ -13,7 +13,7 @@ width = 4.0
 area = length*width
 ```
 
-*Functions* takes some input (enclosed by `()`) and returns some output. E.g. the `min` function returns the minimum of two values
+*Functions* take one or more inputs (enclosed by `()`) and return some output. E.g. the `min` function returns the minimum of two values
 ```julia
 min(1.0,3.0)
 ```
