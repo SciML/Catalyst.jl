@@ -127,7 +127,7 @@ plot(sol)
 
 Here, the plot shows the time evolution of the concentration of the species *X* from its initial condition. 
 
-For more information about the numerical simulation package, please see the [DifferentialEquation documentation](https://diffeq.sciml.ai/stable/). For more information about the plotting package, please see the [Plots documentation](https://docs.juliaplots.org/stable/). 
+For more information about the numerical simulation package, please see the [DifferentialEquation documentation](https://docs.sciml.ai/DiffEqDocs/stable/). For more information about the plotting package, please see the [Plots documentation](https://docs.juliaplots.org/stable/). 
 
 ### Additional modelling example
 To make this introduction more comprehensive, we here provide another example, using a more complicated model. In addition, instead of simulating our model as concentrations evolving over time, we will simulate the individual reaction events through the [Gillespie algorithm](https://en.wikipedia.org/wiki/Gillespie_algorithm). This is a way to add *noise* to our model.
