@@ -81,7 +81,7 @@ Here, we create a simple *birth-death* model, where a single species (*X*) is cr
 rn = @reaction_network begin
     b, 0 --> X
     d, X --> 0
-end b d;
+end b d
 ```
 
 For more information on how to use the Catalyst model creator, please read [the corresponding documentation](https://docs.sciml.ai/Catalyst/stable/tutorials/dsl/).
@@ -150,7 +150,7 @@ We declare the model using the `reaction_network` macro, and store it in the `si
 sir_model = @reaction_network begin
     b, S + I --> 2I
     k, I --> R 
-end b k;
+end b k
 ```
 
 Note that the first reaction contains two different substrates (separated by a `+` sign). While there is only a single product (*I*), two copies of *I* are produced. The *2* in front of the product *I* denotes this.
