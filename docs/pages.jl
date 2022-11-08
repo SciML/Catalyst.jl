@@ -1,4 +1,5 @@
 pages = Any["Home" => "index.md",
+            "Catalyst for new Julia users" => Any["catalyst_for_new_julia_users/intro_to_catalyst.md",],
             "Tutorials" => Any["tutorials/using_catalyst.md",
                                "tutorials/dsl.md",
                                "tutorials/reaction_systems.md",
