@@ -4,7 +4,7 @@ The Catalyst tool for the modelling of chemical reaction networks is based in th
 Julia can be downloaded [here](https://julialang.org/downloads/).
 
 ### Basic Julia usage
-On the surface, Julia got many similarities to languages like MATLAB, Python, and R. 
+On the surface, Julia has many similarities to languages like MATLAB, Python, and R. 
 
 *Values* can be assigned to *variables* through the use of a `=` sign. Values (possibly stored in variables) can be used for most basic computations.
 ```julia
