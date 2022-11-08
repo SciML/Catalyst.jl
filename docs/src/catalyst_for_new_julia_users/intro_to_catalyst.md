@@ -88,7 +88,7 @@ For more information on how to use the Catalyst model creator, please read [the 
 
 Next, we wish to simulate our model. To do this, we need to provide some additional information to the simulator. This is
 * The initial condition. That is the concentration or number of each species at the start of the simulation.
-* The timespan. That is, over the timeframe over which we wish to run the simulation.
+* The timespan. That is, the timeframe over which we wish to run the simulation.
 * The parameter values. That is, the values of the model's parameters for this simulation.
 
 The initial condition is given as a *Vector*. This is a type which combines several different values. When declared, the values are contained by `[]`, and separated by `,`. Since we only have one species, the vector holds a single element. In this element, we set the value of *X* using the `:X => 1.0` syntax. Here, we first denote the name of the species, with a `:` pre-appended. Next follows `=>` and then the value of *X*. Since we wish to simulate the *concentration* of X over time, we will let the initial condition be decimal valued.
