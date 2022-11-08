@@ -170,7 +170,7 @@ jprob = JumpProblem(sir_model,dprob,Direct());
 
 Again, the order in which the inputs are given to the `DiscreteProblem` and the `JumpProblem` is important. The last argument to the `JumpProblem` (`Direct()`) denotes which simulation method we wish to use. For now, we recommend the user simply use the `Direct()` option, and then consider alternative ones when they are more familiar with modelling in Catalyst and Julia.
 
-Finally, we can simulate our model using the `solve` function, and plot the solution using the `plot` function. Here, the `solve` function also has a second argument (`SSAStepper()`). This is a stepping algorithm. Again we recommend that you at this stage simply use this option, and then explore further exactly what this means at a later stage.
+Finally, we can simulate our model using the `solve` function, and plot the solution using the `plot` function. Here, the `solve` function also has a second argument (`SSAStepper()`). This is a time stepping algorithm that calls the `Direct` solver to advance a simulation. Again, we recommend at this stage you simply use this option, and then explore further exactly what this means at a later stage.
 ```julia
 sol = solve(jprob, SSAStepper())
 plot(sol)
