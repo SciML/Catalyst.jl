@@ -35,8 +35,9 @@ typeof(1)
 
 Finally, we note that the first time some code is run in Julia, it has to be *compiled*. However, this is only required once per Julia session. Hence, the second time the same code is run, it runs much faster. E.g. try running this line of code first one time, and then one additional time. You will note that the second run is much faster.
 ```@example ex1
-(245^0.43) + exp(0.431) - log(124541) * tan(1.43) - sin(4.3);
+rand(100,100)^3.5;
 ```
+(This code creates a random 100x100 matrix, and take it to teh power of 3.5)
 
 This is useful to know when you e.g. declare, simulate, or plot, a Catalyst model. The first time you run a command there might be a slight delay. However, subsequent runs will execute much quicker. This holds even if you do minor adjustments before the second run (such as changing simulation initial conditions).
 
