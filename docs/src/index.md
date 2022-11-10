@@ -120,8 +120,8 @@ For bugs or feature requests [open an
 issue](https://github.com/SciML/Catalyst.jl/issues).
 
 ## Supporting and Citing Catalyst.jl
-The software in this ecosystem was developed as part of academic research. If you would like to help support it, 
-please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part 
+The software in this ecosystem was developed as part of academic research. If you would like to help support it,
+please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part
 of your research, teaching, or other activities, we would be grateful if you could cite our work:
 ```
 @article {2022Catalyst,
@@ -163,20 +163,21 @@ versioninfo() # hide
 ```
 ```@example
 using Pkg # hide
-Pkg.status(;mode = PKGMODE_MANIFEST) # hide
+Pkg.status(; mode = PKGMODE_MANIFEST) # hide
 ```
 ```@raw html
 </details>
 ```
 ```@raw html
-You can also download the 
+You can also download the
 <a href="
 ```
 ```@eval
 using TOML
-version = TOML.parse(read("../../Project.toml",String))["version"]
-name = TOML.parse(read("../../Project.toml",String))["name"]
-link = "https://github.com/SciML/"*name*".jl/tree/gh-pages/v"*version*"/assets/Manifest.toml"
+projtoml = joinpath(Base.source_dir(), "..", "Project.toml")
+version = TOML.parse(read(projtoml, String))["version"]
+name = TOML.parse(read(projtoml, String))["name"]
+link = "https://github.com/SciML/" * name * ".jl/tree/gh-pages/v" * version * "/assets/Manifest.toml"
 ```
 ```@raw html
 ">manifest</a> file and the
@@ -184,9 +185,10 @@ link = "https://github.com/SciML/"*name*".jl/tree/gh-pages/v"*version*"/assets/M
 ```
 ```@eval
 using TOML
-version = TOML.parse(read("../../Project.toml",String))["version"]
-name = TOML.parse(read("../../Project.toml",String))["name"]
-link = "https://github.com/SciML/"*name*".jl/tree/gh-pages/v"*version*"/assets/Project.toml"
+projtoml = joinpath(Base.source_dir(), "..", "Project.toml")
+version = TOML.parse(read(projtoml, String))["version"]
+name = TOML.parse(read(projtoml, String))["name"]
+link = "https://github.com/SciML/" * name * ".jl/tree/gh-pages/v" * version * "/assets/Project.toml"
 ```
 ```@raw html
 ">project</a> file.
