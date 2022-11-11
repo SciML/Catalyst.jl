@@ -165,9 +165,9 @@ version = "0.16.21"
 
 [[deps.BoundaryValueDiffEq]]
 deps = ["BandedMatrices", "DiffEqBase", "FiniteDiff", "ForwardDiff", "LinearAlgebra", "NLsolve", "Reexport", "SciMLBase", "SparseArrays"]
-git-tree-sha1 = "2f80b70bd3ddd9aa3ec2d77604c1121bd115650e"
+git-tree-sha1 = "d4d28a2ac12b6252e6b09a6eebf71f6f8795de49"
 uuid = "764a87c0-6b3e-53db-9096-fe964310641d"
-version = "2.9.0"
+version = "2.10.0"
 
 [[deps.Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]

@@ -14,7 +14,7 @@ tspan = (0.0,250.0)
 u0    = [:S =&gt; 999.0, :I =&gt; 1.0, :R =&gt; 0.0]
 op    = ODEProblem(rn, u0, tspan, p)
 sol   = solve(op, Tsit5())       # use Tsit5 ODE solver</code></pre><p>which we can plot as</p><pre><code class="language-julia hljs">using Plots
-plot(sol, lw=2)</code></pre><p><img src="assets/SIR.svg" alt="SIR Solution"/></p><h2 id="Getting-Help"><a class="docs-heading-anchor" href="#Getting-Help">Getting Help</a><a id="Getting-Help-1"></a><a class="docs-heading-anchor-permalink" href="#Getting-Help" title="Permalink"></a></h2><p>Catalyst developers are active on the <a href="https://discourse.julialang.org/">Julia Discourse</a>, and the <a href="https://julialang.slack.com">Julia Slack</a> channels #sciml-bridged and #sciml-sysbio. For bugs or feature requests <a href="https://github.com/SciML/Catalyst.jl/issues">open an issue</a>.</p><h2 id="Supporting-and-Citing-Catalyst.jl"><a class="docs-heading-anchor" href="#Supporting-and-Citing-Catalyst.jl">Supporting and Citing Catalyst.jl</a><a id="Supporting-and-Citing-Catalyst.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Supporting-and-Citing-Catalyst.jl" title="Permalink"></a></h2><p>The software in this ecosystem was developed as part of academic research. If you would like to help support it,  please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part  of your research, teaching, or other activities, we would be grateful if you could cite our work:</p><pre><code class="nohighlight hljs">@article {2022Catalyst,
+plot(sol, lw=2)</code></pre><p><img src="assets/SIR.svg" alt="SIR Solution"/></p><h2 id="Getting-Help"><a class="docs-heading-anchor" href="#Getting-Help">Getting Help</a><a id="Getting-Help-1"></a><a class="docs-heading-anchor-permalink" href="#Getting-Help" title="Permalink"></a></h2><p>Catalyst developers are active on the <a href="https://discourse.julialang.org/">Julia Discourse</a>, and the <a href="https://julialang.slack.com">Julia Slack</a> channels #sciml-bridged and #sciml-sysbio. For bugs or feature requests <a href="https://github.com/SciML/Catalyst.jl/issues">open an issue</a>.</p><h2 id="Supporting-and-Citing-Catalyst.jl"><a class="docs-heading-anchor" href="#Supporting-and-Citing-Catalyst.jl">Supporting and Citing Catalyst.jl</a><a id="Supporting-and-Citing-Catalyst.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Supporting-and-Citing-Catalyst.jl" title="Permalink"></a></h2><p>The software in this ecosystem was developed as part of academic research. If you would like to help support it, please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part of your research, teaching, or other activities, we would be grateful if you could cite our work:</p><pre><code class="nohighlight hljs">@article {2022Catalyst,
 	author = {Loman, T. and Ma, Y. and Ilin, V. and Gowda, S. and Korsbo, N. and Yewale, N. and Rackauckas, C. V. and Isaacson, S. A.},
 	title = {Catalyst: Fast Biochemical Modeling with Julia},
 	elocation-id = {2022.07.30.502135},
@@ -26,7 +26,7 @@ plot(sol, lw=2)</code></pre><p><img src="assets/SIR.svg" alt="SIR Solution"/></p
 	journal = {bioRxiv}
 }</code></pre><h2 id="Reproducibility"><a class="docs-heading-anchor" href="#Reproducibility">Reproducibility</a><a id="Reproducibility-1"></a><a class="docs-heading-anchor-permalink" href="#Reproducibility" title="Permalink"></a></h2><details><summary>The documentation of this SciML package was built using these direct dependencies,</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Status `~/work/Catalyst.jl/Catalyst.jl/docs/Project.toml`
   [0f109fa4] BifurcationKit v0.2.0
-  [479239e8] Catalyst v12.3.1
+  [479239e8] Catalyst v12.3.1 `~/work/Catalyst.jl/Catalyst.jl`
   [0c46a032] DifferentialEquations v7.6.0
   [31c24e10] Distributions v0.25.77
   [e30172f5] Documenter v0.27.23
@@ -39,10 +39,10 @@ plot(sol, lw=2)</code></pre><p><img src="assets/SIR.svg" alt="SIR Solution"/></p
 Commit 36034abf260 (2022-09-29 15:21 UTC)
 Platform Info:
   OS: Linux (x86_64-linux-gnu)
-  CPU: 2 × Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz
+  CPU: 2 × Intel(R) Xeon(R) Platinum 8272CL CPU @ 2.60GHz
   WORD_SIZE: 64
   LIBM: libopenlibm
-  LLVM: libLLVM-13.0.1 (ORCJIT, icelake-server)
+  LLVM: libLLVM-13.0.1 (ORCJIT, skylake-avx512)
   Threads: 1 on 2 virtual cores</code></pre></details><details><summary>A more complete overview of all dependencies and their versions is also provided.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Status `~/work/Catalyst.jl/Catalyst.jl/docs/Manifest.toml`
   [a4c015fc] ANSIColoredPrinters v0.0.1
   [c3fe647b] AbstractAlgebra v0.27.6
@@ -68,12 +68,12 @@ Platform Info:
   [d1d4a3ce] BitFlags v0.1.6
   [62783981] BitTwiddlingConvenienceFunctions v0.1.4
   [8e7c35d0] BlockArrays v0.16.21
-⌃ [764a87c0] BoundaryValueDiffEq v2.9.0
+  [764a87c0] BoundaryValueDiffEq v2.10.0
   [fa961155] CEnum v0.4.2
   [2a0fbf3d] CPUSummary v0.1.28
   [00ebfdb7] CSTParser v3.3.6
   [49dc2e85] Calculus v0.5.1
-  [479239e8] Catalyst v12.3.1
+  [479239e8] Catalyst v12.3.1 `~/work/Catalyst.jl/Catalyst.jl`
   [d360d2e6] ChainRulesCore v1.15.6
   [9e997f8a] ChangesOfVariables v0.1.4
   [fb6a15b2] CloseOpenIntervals v0.1.10
@@ -129,7 +129,7 @@ Platform Info:
   [069b7b12] FunctionWrappers v1.1.3
   [77dc65aa] FunctionWrappersWrappers v0.1.1
   [46192b85] GPUArraysCore v0.1.2
-  [28b8d3ca] GR v0.69.5
+⌅ [28b8d3ca] GR v0.69.5
   [c145ed77] GenericSchur v0.5.3
   [c27321d9] Glob v1.3.0
   [86223c79] Graphs v1.7.4
@@ -397,6 +397,6 @@ Platform Info:
   [8e850b90] libblastrampoline_jll v5.1.1+0
   [8e850ede] nghttp2_jll v1.48.0+0
   [3f19e933] p7zip_jll v17.4.0+0
-Info Packages marked with ⌃ and ⌅ have new versions available, but those with ⌅ are restricted by compatibility constraints from upgrading. To see why use `status --outdated -m`</code></pre></details>You can also download the 
+Info Packages marked with ⌅ have new versions available but compatibility constraints restrict them from upgrading. To see why use `status --outdated -m`</code></pre></details>You can also download the
 <a href="https://github.com/SciML/Catalyst.jl/tree/gh-pages/v12.3.1/assets/Manifest.toml">manifest</a> file and the
-<a href="https://github.com/SciML/Catalyst.jl/tree/gh-pages/v12.3.1/assets/Project.toml">project</a> file.</article><nav class="docs-footer"><a class="docs-footer-nextpage" href="catalyst_for_new_julia_users/intro_to_catalyst/">Introduction to Catalyst and Julia for new Julia users »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Thursday 10 November 2022 19:28">Thursday 10 November 2022</span>. Using Julia version 1.8.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+<a href="https://github.com/SciML/Catalyst.jl/tree/gh-pages/v12.3.1/assets/Project.toml">project</a> file.</article><nav class="docs-footer"><a class="docs-footer-nextpage" href="catalyst_for_new_julia_users/intro_to_catalyst/">Introduction to Catalyst and Julia for new Julia users »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Friday 11 November 2022 00:31">Friday 11 November 2022</span>. Using Julia version 1.8.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
