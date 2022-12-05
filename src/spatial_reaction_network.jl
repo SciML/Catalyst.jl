@@ -59,7 +59,7 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0, tspan,
     spatial_params = unique(getfield.(spatial_reactions, :rate))
     pV_in, pE_in = split_parameters(p, spatial_params)
     nV, nE = length.([vertices(lattice), edges(lattice)])
-    u_idxs = Dict(reverse.(enumerate(Symbol.(getfield.(states(rs), :f)))))
+    u_idxs = Dict(reverse.(enumerate(Symbolics.getname.(states(rs)))))
     pV_idxes = Dict(reverse.(enumerate(Symbol.(parameters(rs)))))
     pE_idxes = Dict(reverse.(enumerate(unique(getfield.(spatial_reactions, :rate)))))
 
