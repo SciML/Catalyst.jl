@@ -2,28 +2,31 @@
 # Describing a spatial reaction that involves species from two neighbouring compartments.
 # Currently only permit constant rate.
 struct SpatialReaction
-    rate::Symbol
-    substrates::Tuple{Vector{Pair{Symbol,Int64}},Vector{Pair{Symbol,Int64}}}
-    products::Tuple{Vector{Pair{Symbol,Int64}},Vector{Pair{Symbol,Int64}}}
-    net_stoich_src::Vector{Pair{Symbol, Int64}}
-    net_stoich_dst::Vector{Pair{Symbol, Int64}}
-
-    function SpatialReaction(rate::Symbol, substrates_in::Tuple{Vector,Vector}, products_in::Tuple{Vector,Vector})
-        substrates = process_sr_species.(substrates_in)
-        products = process_sr_species.(products_in)
-        new(rate, substrates, products, net_stoich(substrates,products,1), net_stoich(substrates,products,2))
+    """The rate function (excluding mass action terms). Currentl only cosntants supported"""
+    rate::Any
+    """Reaction substrates (source and destination)."""
+    substrates::Tuple{Vector,Vector}
+    """Reaction products (source and destination)."""
+    products::Tuple{Vector,Vector}
+    """The stoichiometric coefficients of the reactants (source and destination)."""
+    substoich::Tuple{Vector{Int64},Vector{Int64}}
+    """The stoichiometric coefficients of the products (source and destination)."""
+    prodstoich::Tuple{Vector{Int64},Vector{Int64}}
+    """The net stoichiometric coefficients of all species changed by the reaction (source and destination)."""
+    netstoich::Tuple{Vector{Pair},Vector{Pair}}
+    """
+    `false` (default) if `rate` should be multiplied by mass action terms to give the rate law.
+    `true` if `rate` represents the full reaction rate law.
+    Currently only `false`, is supported.
+    """
+    only_use_rate::Bool
+    function SpatialReaction(rate, substrates, products, substoich, prodstoich; only_use_rate=false)
+    products::Tuple{Vector,Vector}
+        new(rate, substrates, products, substoich, prodstoich, get_netstoich.(substrates,products,substoich,prodstoich), only_use_rate)
     end
 end
-process_sr_species(species::Vector) = map(s -> (s isa Symbol) ? s => 1 : s, species);
-function net_stoich(substrates, products, idx)
-    sub_dict = Dict(Pair.(first.(substrates[idx]), -last.(substrates[idx])))
-    prod_dict = Dict(products[idx])
-    return collect(mergewith(-, prod_dict, sub_dict))
-end;
 
-function diffusion_reaction(rate, species)
-    return SpatialReaction(rate, ([species], []), ([]), [species])
-end;
+
 
 ### Lattice Reaction Network Structure ###
 # Couples:
@@ -61,7 +64,7 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0, tspan,
     nV, nE = length.([vertices(lattice), edges(lattice)])
     u_idxs = Dict(reverse.(enumerate(Symbolics.getname.(states(rs)))))
     pV_idxes = Dict(reverse.(enumerate(Symbol.(parameters(rs)))))
-    pE_idxes = Dict(reverse.(enumerate(unique(getfield.(spatial_reactions, :rate)))))
+    pE_idxes = Dict(reverse.(enumerate(spatial_params)))
 
     u0 = matrix_form(u0, nV, u_idxs)
     pV = matrix_form(pV_in, nV, pV_idxes)
@@ -93,8 +96,8 @@ function build_f(lrs::LatticeReactionSystem, u_idxs::Dict{Symbol,Int64}, pE_idxe
         for comp_i in 1:size(u,2)
             for comp_j::Int64 in (lrs.lattice.fadjlist::Vector{Vector{Int64}})[comp_i], sr::SpatialReaction in lrs.spatial_reactions::Vector{SpatialReaction}
                 rate = get_rate(sr,p[2],(@view u[:,comp_i]),(@view u[:,comp_j]), u_idxs, pE_idxes)
-                foreach(stoich -> du[u_idxs[stoich[1]],comp_i] += rate*stoich[2], sr.net_stoich_src)
-                foreach(stoich -> du[u_idxs[stoich[1]],comp_j] += rate*stoich[2], sr.net_stoich_dst)
+                foreach(stoich -> du[u_idxs[stoich[1]],comp_i] += rate*stoich[2], sr.netstoich[1])
+                foreach(stoich -> du[u_idxs[stoich[1]],comp_j] += rate*stoich[2], sr.netstoich[2])
             end
         end
     end
@@ -103,7 +106,15 @@ end
 # Get the rate of a specific reaction.
 function get_rate(sr, pE, u_src, u_dst, u_idxs, pE_idxes)
     product = pE[pE_idxes[sr.rate]]
-    !isempty(sr.substrates[1]) && (product *= prod(u_src[u_idxs[subs[1]]]^subs[2] / factorial(subs[2]) for subs in sr.substrates[1]))
-    !isempty(sr.substrates[2]) && (product *= prod(u_dst[u_idxs[subs[1]]]^subs[2] / factorial(subs[2]) for subs in sr.substrates[2]))
+    !isempty(sr.substrates[1]) && (product *= prod(u_src[u_idxs[subs[1]]]^subs[2] / factorial(subs[2]) for subs in Pair.(sr.substrates[1],sr.substoich[1])))
+    !isempty(sr.substrates[2]) && (product *= prod(u_dst[u_idxs[subs[1]]]^subs[2] / factorial(subs[2]) for subs in Pair.(sr.substrates[2],sr.substoich[2])))
     return product::Float64
 end
+
+# Get the rate of a specific reaction.
+#function get_rate(sr, pE, u_src, u_dst, u_idxs, pE_idxes)
+#    product = pE[pE_idxes[sr.rate]]
+#    !isempty(sr.substrates[1]) && (product *= prod(u_src[u_idxs[subs[1]]]^subs[2] / factorial(subs[2]) for subs in sr.substrates[1]))
+#    !isempty(sr.substrates[2]) && (product *= prod(u_dst[u_idxs[subs[1]]]^subs[2] / factorial(subs[2]) for subs in sr.substrates[2]))
+#    return product::Float64
+#end
