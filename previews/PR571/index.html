@@ -33,16 +33,16 @@ plot(sol, lw=2)</code></pre><p><img src="assets/SIR.svg" alt="SIR Solution"/></p
   [f213a82b] HomotopyContinuation v2.6.4
   [23fbe1c1] Latexify v0.15.17
   [961ee093] ModelingToolkit v8.36.0
-  [91a5bcdd] Plots v1.37.0
+  [91a5bcdd] Plots v1.37.2
   [efcf1570] Setfield v1.1.1
   [276daf66] SpecialFunctions v2.1.7</code></pre></details><details><summary>and using this machine and Julia version.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Julia Version 1.8.3
 Commit 0434deb161e (2022-11-14 20:14 UTC)
 Platform Info:
   OS: Linux (x86_64-linux-gnu)
-  CPU: 2 × Intel(R) Xeon(R) Platinum 8272CL CPU @ 2.60GHz
+  CPU: 2 × Intel(R) Xeon(R) CPU E5-2673 v4 @ 2.30GHz
   WORD_SIZE: 64
   LIBM: libopenlibm
-  LLVM: libLLVM-13.0.1 (ORCJIT, skylake-avx512)
+  LLVM: libLLVM-13.0.1 (ORCJIT, broadwell)
   Threads: 1 on 2 virtual cores</code></pre></details><details><summary>A more complete overview of all dependencies and their versions is also provided.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Status `~/work/Catalyst.jl/Catalyst.jl/docs/Manifest.toml`
   [a4c015fc] ANSIColoredPrinters v0.0.1
   [c3fe647b] AbstractAlgebra v0.27.7
@@ -109,7 +109,7 @@ Platform Info:
   [31c24e10] Distributions v0.25.79
 ⌅ [ffbed154] DocStringExtensions v0.8.6
   [e30172f5] Documenter v0.27.23
-⌅ [5b8099bc] DomainSets v0.5.14
+⌅ [5b8099bc] DomainSets v0.5.15
   [fa6b7ba4] DualNumbers v0.6.8
   [7c1d4256] DynamicPolynomials v0.4.5
   [fdbdab4c] ElasticArrays v1.2.11
@@ -121,7 +121,7 @@ Platform Info:
   [9aa1b823] FastClosures v0.3.2
 ⌅ [442a2c76] FastGaussQuadrature v0.4.9
   [29a986be] FastLapackInterface v1.2.8
-  [1a297f60] FillArrays v0.13.5
+  [1a297f60] FillArrays v0.13.6
   [6a86dc24] FiniteDiff v2.17.0
   [53c48c17] FixedPointNumbers v0.8.4
   [59287772] Formatting v0.4.2
@@ -146,7 +146,7 @@ Platform Info:
   [83e8ac13] IniFile v0.5.1
   [22cec73e] InitialValues v0.3.1
   [18e54dd8] IntegerMathUtils v0.1.0
-  [8197267c] IntervalSets v0.7.4
+⌅ [8197267c] IntervalSets v0.7.3
   [3587e190] InverseFunctions v0.1.8
   [92d709cd] IrrationalConstants v0.1.1
   [42fd0dbc] IterativeSolvers v0.9.2
@@ -198,12 +198,12 @@ Platform Info:
   [b98c9c47] Pipe v1.3.0
   [ccf2f8ad] PlotThemes v3.1.0
   [995b91a9] PlotUtils v1.3.2
-  [91a5bcdd] Plots v1.37.0
+  [91a5bcdd] Plots v1.37.2
   [e409e4f3] PoissonRandom v0.4.3
   [f517fe37] Polyester v0.6.18
   [1d0040c9] PolyesterWeave v0.1.11
   [85a6dd25] PositiveFactorizations v0.2.4
-  [d236fae5] PreallocationTools v0.4.5
+  [d236fae5] PreallocationTools v0.4.6
   [21216c6a] Preferences v1.3.0
 ⌅ [08abe8d2] PrettyTables v1.3.1
   [27ebfcd6] Primes v0.5.3
@@ -227,7 +227,7 @@ Platform Info:
   [3cdde19b] SIMDDualNumbers v0.1.1
   [94e857df] SIMDTypes v0.1.0
   [476501e8] SLEEFPirates v0.6.37
-  [0bca4576] SciMLBase v1.77.0
+  [0bca4576] SciMLBase v1.77.1
   [6c6a2e73] Scratch v1.1.1
   [8e049039] SemialgebraicSets v0.2.5
   [efcf1570] Setfield v1.1.1
@@ -248,9 +248,9 @@ Platform Info:
   [4c63d2b9] StatsFuns v1.1.1
   [9672c7b4] SteadyStateDiffEq v1.10.1
   [789caeaf] StochasticDiffEq v6.57.3
-  [7792a7ef] StrideArraysCore v0.4.3
+  [7792a7ef] StrideArraysCore v0.4.4
 ⌅ [09ab397b] StructArrays v0.4.2
-  [c3572dad] Sundials v4.11.3
+  [c3572dad] Sundials v4.11.4
   [d1185830] SymbolicUtils v0.19.11
   [0c5d862f] Symbolics v4.13.0
   [3783bdb8] TableTraits v1.0.1
@@ -399,4 +399,4 @@ Platform Info:
   [3f19e933] p7zip_jll v17.4.0+0
 Info Packages marked with ⌃ and ⌅ have new versions available, but those with ⌅ are restricted by compatibility constraints from upgrading. To see why use `status --outdated -m`</code></pre></details>You can also download the
 <a href="https://github.com/SciML/Catalyst.jl/tree/gh-pages/v12.3.1/assets/Manifest.toml">manifest</a> file and the
-<a href="https://github.com/SciML/Catalyst.jl/tree/gh-pages/v12.3.1/assets/Project.toml">project</a> file.</article><nav class="docs-footer"><a class="docs-footer-nextpage" href="catalyst_for_new_julia_users/intro_to_catalyst/">Introduction to Catalyst and Julia for new Julia users »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Tuesday 6 December 2022 21:55">Tuesday 6 December 2022</span>. Using Julia version 1.8.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+<a href="https://github.com/SciML/Catalyst.jl/tree/gh-pages/v12.3.1/assets/Project.toml">project</a> file.</article><nav class="docs-footer"><a class="docs-footer-nextpage" href="catalyst_for_new_julia_users/intro_to_catalyst/">Introduction to Catalyst and Julia for new Julia users »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Friday 9 December 2022 18:25">Friday 9 December 2022</span>. Using Julia version 1.8.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

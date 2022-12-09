@@ -430,9 +430,9 @@ version = "0.27.23"
 
 [[deps.DomainSets]]
 deps = ["CompositeTypes", "IntervalSets", "LinearAlgebra", "Random", "StaticArrays", "Statistics"]
-git-tree-sha1 = "85cf537e38b7f34a84eaac22b534aa1b5bf01949"
+git-tree-sha1 = "988e2db482abeb69efc76ae8b6eba2e93805ee70"
 uuid = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
-version = "0.5.14"
+version = "0.5.15"
 
 [[deps.Downloads]]
 deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
@@ -525,9 +525,9 @@ uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 
 [[deps.FillArrays]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "Statistics"]
-git-tree-sha1 = "802bfc139833d2ba893dd9e62ba1767c88d708ae"
+git-tree-sha1 = "9a0472ec2f5409db243160a8b030f94c380167a3"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
-version = "0.13.5"
+version = "0.13.6"
 
 [[deps.FiniteDiff]]
 deps = ["ArrayInterfaceCore", "LinearAlgebra", "Requires", "Setfield", "SparseArrays", "StaticArrays"]
@@ -734,9 +734,9 @@ uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 
 [[deps.IntervalSets]]
 deps = ["Dates", "Random", "Statistics"]
-git-tree-sha1 = "16c0cc91853084cb5f58a78bd209513900206ce6"
+git-tree-sha1 = "3f91cd3f56ea48d4d2a75c2a65455c5fc74fa347"
 uuid = "8197267c-284f-5f27-9208-e0e47529a953"
-version = "0.7.4"
+version = "0.7.3"
 
 [[deps.InverseFunctions]]
 deps = ["Test"]
@@ -1224,9 +1224,9 @@ version = "1.3.2"
 
 [[deps.Plots]]
 deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "JLFzf", "JSON", "LaTeXStrings", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "Preferences", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "RelocatableFolders", "Requires", "Scratch", "Showoff", "SnoopPrecompile", "SparseArrays", "Statistics", "StatsBase", "UUIDs", "UnicodeFun", "Unzip"]
-git-tree-sha1 = "7c5d624a2cb080c2bf41dc5da8fbb837c427048a"
+git-tree-sha1 = "dadd6e31706ec493192a70a7090d369771a9a22a"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-version = "1.37.0"
+version = "1.37.2"
 
 [[deps.PoissonRandom]]
 deps = ["Random"]
@@ -1254,9 +1254,9 @@ version = "0.2.4"
 
 [[deps.PreallocationTools]]
 deps = ["Adapt", "ArrayInterfaceCore", "ForwardDiff"]
-git-tree-sha1 = "788b63c3b7494d4305357b2b352b551ba40d563c"
+git-tree-sha1 = "2c88339bcfa011089f7538f89c5be780d0b558bb"
 uuid = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
-version = "0.4.5"
+version = "0.4.6"
 
 [[deps.Preferences]]
 deps = ["TOML"]
@@ -1424,9 +1424,9 @@ version = "0.6.37"
 
 [[deps.SciMLBase]]
 deps = ["ArrayInterfaceCore", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "EnumX", "FunctionWrappersWrappers", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "Markdown", "Preferences", "RecipesBase", "RecursiveArrayTools", "RuntimeGeneratedFunctions", "StaticArraysCore", "Statistics", "Tables"]
-git-tree-sha1 = "6a5c8e335e82b0c674bf74f7b45f005175b0cc5f"
+git-tree-sha1 = "fadd9fd005c8fc57939ef9a59a00686fa811f645"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "1.77.0"
+version = "1.77.1"
 
 [[deps.Scratch]]
 deps = ["Dates"]
@@ -1565,9 +1565,9 @@ version = "6.57.3"
 
 [[deps.StrideArraysCore]]
 deps = ["ArrayInterface", "CloseOpenIntervals", "IfElse", "LayoutPointers", "ManualMemory", "SIMDTypes", "Static", "ThreadingUtilities"]
-git-tree-sha1 = "baef2a7220109851a17f62776a27cc1fa3aadea7"
+git-tree-sha1 = "8e91e5618bbca975312313c39ff827ea8f802fe3"
 uuid = "7792a7ef-975c-4747-a70f-980b88e8d1da"
-version = "0.4.3"
+version = "0.4.4"
 
 [[deps.StructArrays]]
 deps = ["DataAPI", "Tables"]
@@ -1586,9 +1586,9 @@ version = "5.10.1+0"
 
 [[deps.Sundials]]
 deps = ["CEnum", "DataStructures", "DiffEqBase", "Libdl", "LinearAlgebra", "Logging", "Reexport", "SciMLBase", "SnoopPrecompile", "SparseArrays", "Sundials_jll"]
-git-tree-sha1 = "8c79f03bc4fff031eb4ef08f413fe2e18c9ad169"
+git-tree-sha1 = "3f8c27118d25ac5cfd36ec382c9c3a834c4d91ad"
 uuid = "c3572dad-4567-51f8-b174-8c6c989267f4"
-version = "4.11.3"
+version = "4.11.4"
 
 [[deps.Sundials_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "OpenBLAS_jll", "Pkg", "SuiteSparse_jll"]
