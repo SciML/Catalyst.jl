@@ -20,13 +20,30 @@ struct SpatialReaction
     Currently only `false`, is supported.
     """
     only_use_rate::Bool
-    function SpatialReaction(rate, substrates, products, substoich, prodstoich;
+    function SpatialReaction(rate, substrates::Tuple{Vector, Vector}, products::Tuple{Vector, Vector}, substoich::Tuple{Vector{Int64}, Vector{Int64}}, prodstoich::Tuple{Vector{Int64}, Vector{Int64}};
                              only_use_rate = false)
-        products::Tuple{Vector, Vector}
         new(rate, substrates, products, substoich, prodstoich,
             get_netstoich.(substrates, products, substoich, prodstoich), only_use_rate)
     end
 end
+
+"""
+    DiffusionReaction(rate,species)
+
+Simple function to create a diffusion spatial reaction. 
+    Equivalent to SpatialReaction(rate,([species],[]),([],[species]),([1],[]),([],[1]))
+"""
+DiffusionReaction(rate,species) = SpatialReaction(rate,([species],[]),([],[species]),([1],[]),([],[1]))
+
+"""
+    OnewaySpatialReaction(rate, substrates, products, substoich, prodstoich)
+
+Simple function to create a spatial reactions where all substrates are in teh soruce compartment, and all products in the destination.
+Equivalent to SpatialReaction(rate,(substrates,[]),([],products),(substoich,[]),([],prodstoich))
+"""
+OnewaySpatialReaction(rate, substrates::Vector, products::Vector, substoich::Vector{Int64}, prodstoich::Vector{Int64}) = SpatialReaction(rate,(substrates,[]),([],products),(substoich,[]),([],prodstoich))
+
+
 
 ### Lattice Reaction Network Structure ###
 # Couples:
