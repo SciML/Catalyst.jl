@@ -3,17 +3,17 @@
 # Currently only permit constant rate.
 struct SpatialReaction
     """The rate function (excluding mass action terms). Currentl only cosntants supported"""
-    rate::Any
+    rate::Symbol
     """Reaction substrates (source and destination)."""
-    substrates::Tuple{Vector, Vector}
+    substrates::Tuple{Vector{Symbol}, Vector{Symbol}}
     """Reaction products (source and destination)."""
-    products::Tuple{Vector, Vector}
+    products::Tuple{Vector{Symbol}, Vector{Symbol}}
     """The stoichiometric coefficients of the reactants (source and destination)."""
     substoich::Tuple{Vector{Int64}, Vector{Int64}}
     """The stoichiometric coefficients of the products (source and destination)."""
     prodstoich::Tuple{Vector{Int64}, Vector{Int64}}
     """The net stoichiometric coefficients of all species changed by the reaction (source and destination)."""
-    netstoich::Tuple{Vector{Pair}, Vector{Pair}}
+    netstoich::Tuple{Vector{Pair{Symbol,Int64}}, Vector{Pair{Symbol,Int64}}}
     """
     `false` (default) if `rate` should be multiplied by mass action terms to give the rate law.
     `true` if `rate` represents the full reaction rate law.
