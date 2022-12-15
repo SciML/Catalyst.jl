@@ -11,6 +11,7 @@ using SafeTestsets
     # Tests all features realted to constructing a model
     @time @safetestset "1.6 Arrows" begin include("newarrows.jl") end
     @time @safetestset "Basic DSL" begin include("dsl.jl") end
+    @time @safetestset "DSL Options" begin include("dsl_options.jl") end
     @time @safetestset "Model Construction" begin include("make_model.jl") end
     @time @safetestset "Custom Functions" begin include("custom_functions.jl") end
     @time @safetestset "Model Modification" begin include("model_modification.jl") end
