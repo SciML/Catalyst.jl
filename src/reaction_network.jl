@@ -236,8 +236,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
-    species = haskey(options,:species) ? get_species_or_params(options[:species]) : extract_species(reactions)
-    parameters = haskey(options,:parameters) ? get_species_or_params(options[:parameters]) : extract_parameters(reactions,species)
+    species = haskey(options,:species) ? get_species_or_params(remake_quote(options[:species])) : extract_species(reactions)
+    parameters = haskey(options,:parameters) ? get_species_or_params(remake_quote(options[:parameters])) : extract_parameters(reactions,species)
     
     # Checks for input errors.
     (sum(length.(reaction_lines,option_lines)) != length(ex)) && 
@@ -316,6 +316,8 @@ function esc_dollars!(ex)
     ex
 end
 
+# If species or parameters are given as a quote, this handle sthat.
+remake_quote(expr) = (expr[1] isa Expr && expr[1].head==:call) ? expr[1].args : expr
 # Gets the species/parameter symbols designated by the user.
 get_species_or_params(ex::Symbol) = ex
 get_species_or_params(ex::Expr) = ex.args[1]
