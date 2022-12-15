@@ -228,23 +228,23 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     ex = esc_dollars!(ex)
 
     # Read lines with reactions and options.
-    reaction_lines = filter(x -> x.head == :tuple, ex)
-    option_lines = filter(x -> x.head == :macrocall, ex)
+    reaction_lines = filter(x -> x.head == :tuple, ex.args)
+    option_lines = filter(x -> x.head == :macrocall, ex.args)
     
     # Get macro options.
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg.args[3:end], option_lines))
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
-    species = haskey(options,:species) ? get_species_or_params(remake_quote(options[:species])) : extract_species(reactions)
-    parameters = haskey(options,:parameters) ? get_species_or_params(remake_quote(options[:parameters])) : extract_parameters(reactions,species)
+    species = haskey(options,:species) ? get_species_or_params.(remake_quote(options[:species])) : extract_species(reactions)
+    parameters = haskey(options,:parameters) ? get_species_or_params.(remake_quote(options[:parameters])) : extract_parameters(reactions,species)
     
     # Checks for input errors.
-    (sum(length.(reaction_lines,option_lines)) != length(ex)) && 
-        error("@reaction_network input contain $(length(ex) - sum(length.(reaction_lines,option_lines))) malformed lines.")
+    (sum(length.([reaction_lines,option_lines])) != length(ex.args)) && 
+        error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
     any(!in(opt_in,option_keys) for opt_in in keys(options)) && 
         error("The following unsupprted options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
-    !isempty(intersect(forbidden_symbols, union(allspecies, parameters))) &&
+    !isempty(intersect(forbidden_symbols, union(species, parameters))) &&
         error("The following symbol(s) are used as species or parameters: " *
               ((map(s -> "'" * string(s) * "', ",
                     intersect(forbidden_symbols, union(species, parameters)))...)) *
@@ -279,7 +279,7 @@ function make_reaction(ex::Expr)
     parameters = extract_parameters([reactions],species)
     
     # Checks for input errors.
-    !isempty(intersect(forbidden_symbols, union(allspecies, parameters))) &&
+    !isempty(intersect(forbidden_symbols, union(species, parameters))) &&
         error("The following symbol(s) are used as species or parameters: " *
               ((map(s -> "'" * string(s) * "', ",
                     intersect(forbidden_symbols, union(species, parameters)))...)) *
@@ -329,7 +329,7 @@ function extract_species(reactions::Vector{ReactionStruct}, reactants=Vector{Uni
     end
     return reactants
 end
-function extract_parameters(reactions::Vector{ReactionStruct}, species::Vector{Symbol}, parameters=Vector{Symbol}())
+function extract_parameters(reactions::Vector{ReactionStruct}, species::Vector{Union{Symbol, Expr}}, parameters=Vector{Symbol}())
     for rx in reactions
         find_parameters_in_expr!(parameters, rx.rate, species)
         for sub in rx.substrates
@@ -343,7 +343,7 @@ function extract_parameters(reactions::Vector{ReactionStruct}, species::Vector{S
 end
 
 # Goes through an expression, and returns the paramters in it.
-function find_parameters_in_expr!(parameters, rateex::ExprValues, species)
+function find_parameters_in_expr!(parameters, rateex::ExprValues, species::Vector{Union{Symbol, Expr}})
     if rateex isa Symbol
         if !(rateex in forbidden_symbols) && !(rateex in species)
             push!(parameters, rateex)
@@ -411,8 +411,8 @@ function get_reaction(line)
     rs
 end
 # Generates a vector containing a number of reaction structures, each containing the information about one reaction.
-function get_reactions(ex::Expr, reactions = Vector{ReactionStruct}(undef, 0))
-    for line in ex.args
+function get_reactions(exprs::Vector{Any}, reactions = Vector{ReactionStruct}(undef, 0))
+    for line in exprs
         (rate, r_line) = line.args
         (r_line.head == :-->) && (r_line = Expr(:call, :→, r_line.args[1], r_line.args[2]))
 
