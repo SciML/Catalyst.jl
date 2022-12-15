@@ -74,6 +74,15 @@ const forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅]
 # Declares the keys used for various options.
 const option_keys = [:species, :parameters ]
 
+
+### Separate macro for creating species. ###
+macro get_sexprs(species...)
+    base_macro = :(@species)
+    foreach(spec -> push!(base_macro.args,spec), species)
+    ### ADD PART HERE SETTING METADATA, SPECIFYING THAT THESE ARE SPECIES ###
+    return esc(base_macro)
+end
+
 ### The main macro, takes reaction network notation and returns a ReactionSystem. ###
 """
     @reaction_network
@@ -284,6 +293,7 @@ function make_reaction(ex::Expr)
     # Returns the rephrased expression.
     quote
         $pexprs
+        :(@variables t)
         $sexprs
         $rxexprs
     end
