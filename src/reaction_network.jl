@@ -236,7 +236,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
-    species = haskey(options,:species) ? get_species_or_params.(remake_quote(options[:species])) : extract_species(reactions)
+    species = haskey(options,:species) ? Vector{Union{Symbol,Expr}}(get_species_or_params.(remake_quote(options[:species]))) : extract_species(reactions)
     parameters = haskey(options,:parameters) ? get_species_or_params.(remake_quote(options[:parameters])) : extract_parameters(reactions,species)
     
     # Checks for input errors.
@@ -323,11 +323,11 @@ get_species_or_params(ex::Symbol) = ex
 get_species_or_params(ex::Expr) = ex.args[1]
 
 # Gets the species/parameter symbols from the reactions (when the user has omitted the designation of these).
-function extract_species(reactions::Vector{ReactionStruct}, reactants=Vector{Union{Symbol, Expr}}())
+function extract_species(reactions::Vector{ReactionStruct}, species=Vector{Union{Symbol, Expr}}())
     for reaction in reactions, reactant in Iterators.flatten((reaction.substrates, reaction.products))
-        !in(reactant.reactant, reactants) && push!(reactants, reactant.reactant)
+        !in(reactant.reactant, species) && push!(species, reactant.reactant)
     end
-    return reactants
+    return species
 end
 function extract_parameters(reactions::Vector{ReactionStruct}, species::Vector{Union{Symbol, Expr}}, parameters=Vector{Symbol}())
     for rx in reactions
@@ -351,7 +351,7 @@ function find_parameters_in_expr!(parameters, rateex::ExprValues, species::Vecto
     elseif rateex isa Expr
         # note, this (correctly) skips $(...) expressions
         for i in 2:length(rateex.args)
-            find_species_in_rate!(parameters, rateex.args[i], species)
+            find_parameters_in_expr!(parameters, rateex.args[i], species)
         end
     end
     nothing
