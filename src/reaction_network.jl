@@ -258,7 +258,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Creates expressions corresponding to actual code from the internal DSL representation.
     pexprs = get_pexprs(parameters)
     sexprs = get_sexprs(species)
-    rxexprs = :($(make_ReactionSystem_internal)([], t, nothing, []; name = $(name), defaults = $(defaults)))
+    rxexprs = :($(make_ReactionSystem_internal)([], t, nothing, []; name = $(name),
+                                                defaults = $(defaults)))
     foreach(parameter -> push!(rxexprs.args[6].args, parameter), parameters)
     for reaction in reactions
         push!(rxexprs.args[3].args, get_rxexprs(reaction))
@@ -369,19 +370,18 @@ end
 # Loops through the users species and parameter inputs, and checks if any have default values.
 function make_default_args(options)
     defaults = :(Dict([]))
-    haskey(options,:species) && for arg in options[:species]
+    haskey(options, :species) && for arg in options[:species]
         (arg isa Symbol) && continue
         (arg.head != :(=)) && continue
-        push!(defaults.args[2].args, :($(arg.args[1])=>$(arg.args[2])))
+        push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
     end
-    haskey(options,:parameters) && for arg in options[:parameters]
+    haskey(options, :parameters) && for arg in options[:parameters]
         (arg isa Symbol) && continue
         (arg.head != :(=)) && continue
-        push!(defaults.args[2].args, :($(arg.args[1])=>$(arg.args[2])))
+        push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
     end
     return defaults
 end
-
 
 # Creates the species declaration statement.
 function get_sexprs(ssyms)
