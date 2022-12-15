@@ -271,14 +271,13 @@ end
 
 # Function for creating a single reaction, used by the @reaction macro.
 function make_reaction(ex::Expr)
-
     # Handle interpolation of variables
     ex = esc_dollars!(ex)
 
     # Parses reactions, species, and parameters.
-    reactions = get_reaction(ex)
-    species = extract_species([reactions])
-    parameters = extract_parameters([reactions], species)
+    reaction = get_reaction(ex)
+    species = extract_species([reaction])
+    parameters = extract_parameters([reaction], species)
 
     # Checks for input errors.
     !isempty(intersect(forbidden_symbols, union(species, parameters))) &&
