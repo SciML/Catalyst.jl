@@ -21,25 +21,29 @@ function emptyrntest(rn, name)
 end
 
 rn = @reaction_network name begin
+@parameters k
     k, A --> 0
-end k
+end
 rntest(rn, :name)
 
 name = :blah
 rn = @reaction_network $name begin
+@parameters k
     k, A --> 0
-end k
+end
 rntest(rn, :blah)
 
 rn = @reaction_network begin
+@parameters k
     k, A --> 0
-end k
+end
 rntest(rn, nameof(rn))
 
 function makern(; name)
     @reaction_network $name begin
+    @parameters k
         k, A --> 0
-    end k
+    end
 end
 @named testnet = makern()
 rntest(testnet, :testnet)
@@ -53,8 +57,9 @@ emptyrntest(rn, :blah)
 # test variables that appear only in rates and aren't ps
 # are categorized as species
 rn = @reaction_network begin
+@parameters k k2 n
     π*k*D*hill(B,k2,B*D*H,n), 3*A  --> 2*C
-end k k2 n
+end
 @parameters k,k2,n
 @variables t,A(t),B(t),C(t),D(t),H(t)
 @test issetequal([A,B,C,D,H], species(rn))
@@ -66,21 +71,24 @@ end k k2 n
 AA = A
 AAA = A^2 + B
 rn = @reaction_network rn begin
+@parameters k
     k*$AAA, C --> D
-end k
+end
 rn2 = ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn)
 @test rn == rn2
 
 rn = @reaction_network rn begin
+@parameters k
     k, $AA + C --> D
-end k
+end
 rn2 = ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn)
 @test rn == rn2
 
 BB = B; A2 = A
 rn = @reaction_network rn begin
+@parameters k1 k2
     (k1,k2), C + $A2 + $BB + $A2 <--> $BB + $BB
-end k1 k2
+end
 rn2 = ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
                       Reaction(k2, [B], [C, A, B], [2], [1,2,1])],
                      t; name=:rn)
@@ -89,6 +97,7 @@ rn2 = ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
 kk1 = k^2*A
 kk2 = k1+k2
 rn = @reaction_network rn begin
+@parameters α
     α+$kk1*$kk2*$AA, 2*$AA + B --> $AA
 end α
 @parameters α
@@ -126,8 +135,9 @@ rx3 = Reaction(2*k, [B], [D], [2.5], [2])
 @named mixedsys = ReactionSystem([rx1,rx2,rx3],t,[B,C,D],[k])
 osys = convert(ODESystem, mixedsys; combinatoric_ratelaws=false)
 rn = @reaction_network mixedsys begin
+@parameters k
     k, 2.5*B + C --> 3.5*B + 2.5*D
     2*k, B --> 2.5*D
     2*k, 2.5*B --> 2*D
-end k
+end
 @test rn == mixedsys

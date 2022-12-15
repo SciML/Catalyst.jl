@@ -9,7 +9,7 @@ rng = StableRNG(12345)
 ### Checks the solutions of specific problems ###
 
 # Exponential decay, should be identical to the (known) analytical solution.
-exponential_decay = @reaction_network begin d, X → ∅ end d
+exponential_decay = @reaction_network begin d, X → ∅ end
 
 for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
     u0 = factor * rand(rng, length(get_states(exponential_decay)))
@@ -22,6 +22,7 @@ end
 
 # Networks with know equilibrium
 known_equilibrium = @reaction_network begin
+@parameters k1 k2 k3 k4 k5 k6 k7 k8
     (k1, k2), X1 ↔ X2
     (k3, k4), X3 + X4 ↔ X5
     (k5, k6), 2X6 ↔ 3X7
@@ -129,7 +130,7 @@ function oderhs(du, u, p, t)
     du[2] = 3 * p[1] * u[1]^2.5
     nothing
 end
-rn = @reaction_network begin k, 2.5 * A --> 3 * B end k
+rn = @reaction_network begin k, 2.5 * A --> 3 * B end
 u0 = [:A => 1.0, :B => 0.0]
 tspan = (0.0, 1.0)
 p = [:k => 1.0]

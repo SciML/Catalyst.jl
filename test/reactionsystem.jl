@@ -578,6 +578,7 @@ end
 # test for classification of jump types
 let
     rn = @reaction_network begin
+    @parameters k k2
         t, A --> B          # vrj
         1.0, B --> D        # vrj
         k * D, H --> I + H  # vrj
@@ -586,7 +587,7 @@ let
         k * E, E --> G      # crj
         k2, G --> H         # maj
         k2, G --> A + B     # maj
-    end k k2
+    end
     jsys = convert(JumpSystem, rn)
     jumps = Catalyst.assemble_jumps(rn)
     @test count(j -> j isa VariableRateJump, jumps) == 4

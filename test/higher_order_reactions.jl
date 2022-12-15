@@ -6,6 +6,7 @@ rng = StableRNG(12345)
 
 ### Declares a test network. ###
 higher_order_network_1 = @reaction_network begin
+@parameters p r1 r2 K r3 r4 r5 r6 d 
     p, ∅ ⟼ X1
     r1, 2X1 ⟼ 3X2
     mm(X1, r2, K), 3X2 ⟼ X3 + 2X4
@@ -14,11 +15,12 @@ higher_order_network_1 = @reaction_network begin
     r5, 3X5 + 2X7 + 4X8 ⟼ 10X9
     r6, 10X9 ⟼ X10
     d, 2X10 ⟼ ∅
-end p r1 r2 K r3 r4 r5 r6 d
+end
 
 ### Tests that deterministic and stochastic differential functions are identical. ###
 
 higher_order_network_2 = @reaction_network begin
+@parameters p r1 r2 K r3 r4 r5 r6 d 
     p, ∅ ⟾ X1
     r1 * X1^2 / factorial(2), 2X1 ⟾ 3X2
     mm(X1, r2, K) * X2^3 / factorial(3), 3X2 ⟾ X3 + 2X4
@@ -28,7 +30,7 @@ higher_order_network_2 = @reaction_network begin
     3X5 + 2X7 + 4X8 ⟾ 10X9
     r6 * X9^10 / factorial(10), 10X9 ⟾ X10
     d * X10^2 / factorial(2), 2X10 ⟾ ∅
-end p r1 r2 K r3 r4 r5 r6 d
+end
 
 f1 = ODEFunction(convert(ODESystem, higher_order_network_1), jac = true)
 f2 = ODEFunction(convert(ODESystem, higher_order_network_2), jac = true)
@@ -45,6 +47,7 @@ end
 
 ### Tests that the discrete jump systems are equal. ###
 higher_order_network_3 = @reaction_network begin
+@parameters p r1 r2 K r3 r4 r5 r6 d 
     p, ∅ ⟼ X1
     r1 * binomial(X1, 2), 2X1 ⟾ 3X2
     mm(X1, r2, K) * binomial(X2, 3), 3X2 ⟾ X3 + 2X4
@@ -53,7 +56,7 @@ higher_order_network_3 = @reaction_network begin
     r5 * binomial(X5, 3) * binomial(X7, 2) * binomial(X8, 4), 3X5 + 2X7 + 4X8 ⟾ 10X9
     r6 * binomial(X9, 10), 10X9 ⟾ X10
     d * binomial(X10, 2), 2X10 ⟾ ∅
-end p r1 r2 K r3 r4 r5 r6 d
+end
 
 for factor in [1e-1, 1e0], repeat in 1:5
     u0 = rand(rng, 1:Int64(factor * 100), length(get_states(higher_order_network_1)))
