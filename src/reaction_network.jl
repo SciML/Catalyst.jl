@@ -229,16 +229,16 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     option_lines = filter(x -> x.head == :macrocall, ex.args)
 
     # Get macro options.
-    options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg.args[3:end],
+    options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => remake_quote(arg.args[3:end]),
                        option_lines))
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
     species = haskey(options, :species) ?
-              Vector{Union{Symbol, Expr}}(get_species_or_params.(remake_quote(options[:species]))) :
+              Vector{Union{Symbol, Expr}}(get_species_or_params.(roptions[:species])) :
               extract_species(reactions)
     parameters = haskey(options, :parameters) ?
-                 get_species_or_params.(remake_quote(options[:parameters])) :
+                 get_species_or_params.(options[:parameters]) :
                  extract_parameters(reactions, species)
 
     # Checks for input errors.
@@ -252,10 +252,13 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
                     intersect(forbidden_symbols, union(species, parameters)))...)) *
               "this is not permited.")
 
+    # Prepares defaults.
+    defaults = make_default_args(options)
+
     # Creates expressions corresponding to actual code from the internal DSL representation.
     pexprs = get_pexprs(parameters)
     sexprs = get_sexprs(species)
-    rxexprs = :($(make_ReactionSystem_internal)([], t, nothing, []; name = $(name)))
+    rxexprs = :($(make_ReactionSystem_internal)([], t, nothing, []; name = $(name), defaults = $(defaults)))
     foreach(parameter -> push!(rxexprs.args[6].args, parameter), parameters)
     for reaction in reactions
         push!(rxexprs.args[3].args, get_rxexprs(reaction))
@@ -362,6 +365,23 @@ function find_parameters_in_expr!(parameters, rateex::ExprValues,
     end
     nothing
 end
+
+# Loops through the users species and parameter inputs, and checks if any have default values.
+function make_default_args(options)
+    defaults = :(Dict([]))
+    haskey(options,:species) && for arg in options[:species]
+        (arg isa Symbol) && continue
+        (arg.head != :(=)) && continue
+        push!(defaults.args[2].args, :($(arg.args[1])=>$(arg.args[2])))
+    end
+    haskey(options,:parameters) && for arg in options[:parameters]
+        (arg isa Symbol) && continue
+        (arg.head != :(=)) && continue
+        push!(defaults.args[2].args, :($(arg.args[1])=>$(arg.args[2])))
+    end
+    return defaults
+end
+
 
 # Creates the species declaration statement.
 function get_sexprs(ssyms)

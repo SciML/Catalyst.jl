@@ -134,12 +134,12 @@ end
 
 # Checks that the rights things are put in vectors
 rn7 = @reaction_network name begin
-    @parameters p d1 d2
-    @species A B
-        p, 0 --> A
-        1, A --> B
-        (d1,d2), (A,B) --> 0
-    end
+@parameters p d1 d2
+@species A B
+    p, 0 --> A
+    1, A --> B
+    (d1,d2), (A,B) --> 0
+end
 rn8 = @reaction_network name begin
     p, 0 --> A
     1, A --> B
@@ -154,3 +154,12 @@ end
 @test isequal(parameters(rn8)[3],d2)
 @test isequal(species(rn8)[1],A)
 @test isequal(species(rn8)[2],B)
+
+# Tests that defaults work. (Need expanding)
+rn9 = @reaction_network name begin
+@parameters p=1.0 d1 d2=5
+@species A B=4
+    p, 0 --> A
+    1, A --> B
+    (d1,d2), (A,B) --> 0
+end
