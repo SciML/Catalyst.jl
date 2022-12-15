@@ -130,3 +130,27 @@ rn6 = @reaction_network name begin
 end
 #@test !isequal(species(rn5),species(rn6)) # This does not work, as ReactionSystem does not accept ordering of species, but does that itself.
 @test !isequal(parameters(rn5), parameters(rn6))
+
+
+# Checks that the rights things are put in vectors
+rn7 = @reaction_network name begin
+    @parameters p d1 d2
+    @species A B
+        p, 0 --> A
+        1, A --> B
+        (d1,d2), (A,B) --> 0
+    end
+rn8 = @reaction_network name begin
+    p, 0 --> A
+    1, A --> B
+    (d1,d2), (A,B) --> 0
+end
+@test isequal(parameters(rn7), parameters(rn8))
+
+@parameters p d1 d2
+@variables t A(t) B(t)
+@test isequal(parameters(rn8)[1],p)
+@test isequal(parameters(rn8)[2],d1)
+@test isequal(parameters(rn8)[3],d2)
+@test isequal(species(rn8)[1],A)
+@test isequal(species(rn8)[2],B)
