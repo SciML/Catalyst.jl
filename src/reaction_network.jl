@@ -295,7 +295,7 @@ function make_reaction(ex::Expr)
         $pexprs
         :(@variables t)
         $sexprs
-        $rxexprs
+        $rxexpr
     end
 end
 
