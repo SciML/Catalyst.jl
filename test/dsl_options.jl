@@ -2,7 +2,7 @@
 
 using Catalyst, ModelingToolkit, OrdinaryDiffEq
 
-# Test creating networks with/without options.
+### Test creating networks with/without options. ###
 @reaction_network begin (k1, k2), A <--> B end
 @reaction_network begin
     @parameters k1 k2
@@ -123,8 +123,6 @@ end
 @test isequal(parameters(rn2), parameters(rn3))
 @test isequal(parameters(rn3), parameters(rn4))
 
-parameters(rn1)
-
 rn5 = @reaction_network name begin (k1, k2), A <--> B end
 rn6 = @reaction_network name begin
     @parameters k2 k1
@@ -135,7 +133,7 @@ end
 @test !isequal(parameters(rn5), parameters(rn6))
 
 
-# Checks that the rights things are put in vectors
+### Checks that the rights things are put in vectors. ###
 rn7 = @reaction_network name begin
     @parameters p d1 d2
     @species A B
@@ -158,7 +156,7 @@ end
 @test isequal(species(rn8)[1], A)
 @test isequal(species(rn8)[2], B)
 
-# Tests that defaults work. (Need expanding)
+#### Tests that defaults work. ###
 rn9 = @reaction_network name begin
     @parameters p=1.0 d1 d2=5
     @species A B=4
