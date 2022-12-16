@@ -58,6 +58,7 @@ emptyrntest(rn, :blah)
 # are categorized as species
 rn = @reaction_network begin
 @parameters k k2 n
+@species A B C D H
     π*k*D*hill(B,k2,B*D*H,n), 3*A  --> 2*C
 end
 @parameters k,k2,n
@@ -72,6 +73,7 @@ AA = A
 AAA = A^2 + B
 rn = @reaction_network rn begin
 @parameters k
+@species A B C D
     k*$AAA, C --> D
 end
 rn2 = ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn)
@@ -79,6 +81,7 @@ rn2 = ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn)
 
 rn = @reaction_network rn begin
 @parameters k
+@species A C D
     k, $AA + C --> D
 end
 rn2 = ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn)

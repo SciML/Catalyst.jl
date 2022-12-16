@@ -1,3 +1,5 @@
+#! format: off
+
 using Catalyst, ModelingToolkit
 
 # Test creating networks with/without options.
@@ -98,6 +100,7 @@ end
     (k1, k2), A <--> B
 end
 
+
 # Checks that some created networks are identical.
 rn1 = @reaction_network name begin (k1, k2), A <--> B end
 rn2 = @reaction_network name begin
@@ -134,32 +137,32 @@ end
 
 # Checks that the rights things are put in vectors
 rn7 = @reaction_network name begin
-@parameters p d1 d2
-@species A B
+    @parameters p d1 d2
+    @species A B
     p, 0 --> A
     1, A --> B
-    (d1,d2), (A,B) --> 0
+    (d1, d2), (A, B) --> 0
 end
 rn8 = @reaction_network name begin
     p, 0 --> A
     1, A --> B
-    (d1,d2), (A,B) --> 0
+    (d1, d2), (A, B) --> 0
 end
 @test isequal(parameters(rn7), parameters(rn8))
 
 @parameters p d1 d2
 @variables t A(t) B(t)
-@test isequal(parameters(rn8)[1],p)
-@test isequal(parameters(rn8)[2],d1)
-@test isequal(parameters(rn8)[3],d2)
-@test isequal(species(rn8)[1],A)
-@test isequal(species(rn8)[2],B)
+@test isequal(parameters(rn8)[1], p)
+@test isequal(parameters(rn8)[2], d1)
+@test isequal(parameters(rn8)[3], d2)
+@test isequal(species(rn8)[1], A)
+@test isequal(species(rn8)[2], B)
 
 # Tests that defaults work. (Need expanding)
 rn9 = @reaction_network name begin
-@parameters p=1.0 d1 d2=5
-@species A B=4
+    @parameters p=1.0 d1 d2=5
+    @species A B=4
     p, 0 --> A
     1, A --> B
-    (d1,d2), (A,B) --> 0
+    (d1, d2), (A, B) --> 0
 end

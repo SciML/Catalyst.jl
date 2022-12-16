@@ -235,7 +235,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
     species = haskey(options, :species) ?
-              Vector{Union{Symbol, Expr}}(get_species_or_params.(roptions[:species])) :
+              Vector{Union{Symbol, Expr}}(get_species_or_params.(options[:species])) :
               extract_species(reactions)
     parameters = haskey(options, :parameters) ?
                  get_species_or_params.(options[:parameters]) :
