@@ -387,6 +387,54 @@ species(rn)
 parameters(rn)
 ```
 
+## Set default initial condition and parameter values
+When using the `@species` and ` @parameters` options to declare species and/or parameters, one can also provide initial conditions for each component:
+```@example tut2
+rn = @reaction_network begin
+  @species X=1.0
+  @parameters p=1.0, d=0.1
+  p, 0 --> X
+  d, X -->
+end
+```
+the system can now be simulated without providing initial conditions or parameter values:
+```@example tut2
+using DifferentiaLEquations, Plots
+u0 = []
+tspan = (0.0,10.0)
+p = []
+oprob = ODEProblem(rn,u0,tspan,p)
+sol = solve(oprob)
+plot(sol)
+```
+
+When providing default values, it is possible to do so for only a subset of the species or parameters:
+```@example tut2
+rn = @reaction_network begin
+  @species X
+  @parameters p=1.0, d
+  p, 0 --> X
+  d, X -->
+end
+
+u0 = [:X => 1.0]
+tspan = (0.0,10.0)
+p = [:p => 1.0]
+oprob = ODEProblem(rn,u0,tspan,p)
+sol = solve(oprob)
+plot(sol)
+```
+
+Finally, even if a default value is provided, this can be overridden through the vectors parsed to the differential equation problem:
+```
+u0 = [:X => 1.0]
+tspan = (0.0,10.0)
+p = [:p => 1.0, :d => 0.5]
+oprob = ODEProblem(rn,u0,tspan,p)
+sol = solve(oprob)
+plot(sol)
+```
+
 
 ## Interpolation of Julia variables
 The DSL allows Julia variables to be interpolated for the network name, within
