@@ -27,7 +27,7 @@ known_equilibrium = @reaction_network begin
     (k3, k4), X3 + X4 ↔ X5
     (k5, k6), 2X6 ↔ 3X7
     (k7, k8), ∅ ↔ X8
-end k1 k2 k3 k4 k5 k6 k7 k8
+end
 
 for factor in [1e-1, 1e0, 1e1, 1e2, 1e3]
     u0 = factor * rand(rng, length(get_states(known_equilibrium)))

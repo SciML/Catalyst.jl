@@ -120,7 +120,7 @@ rns[1] = @reaction_network begin
     k₂, A --> C
     k₃, C --> D
     k₄, B + D --> E
-end k₁ k₂ k₃ k₄
+end
 Z = [2 0 1 0 0 0 0;
      0 1 0 0 0 1 0;
      0 0 0 1 0 0 0;
@@ -147,7 +147,7 @@ crn = @reaction_network begin
     k₂, A --> C + $F
     k₃, C --> D
     k₄, B + D + $F --> E
-end k₁ k₂ k₃ k₄
+end
 testnetwork(crn, B, Z, Δ, lcs, 0, subrn, lcd; skiprxtest = true)
 
 # mass-action rober
@@ -307,7 +307,7 @@ rxs[1] = @reaction_network begin
     (k6, k5), A5 <--> 2A6
     k7, 2A6 --> A4
     k8, A4 + A5 --> A7
-end k1 k2 k3 k4 k5 k6 k7 k8
+end
 rev = false
 weak_rev = false
 testreversibility(rxs[1], reactioncomplexes(rxs[1])[2], rev, weak_rev)
@@ -320,7 +320,7 @@ rxs[2] = @reaction_network begin
     (k6, k5), A5 <--> 2A6
     k7, A4 --> 2A6
     (k9, k8), A4 + A5 <--> A7
-end k1 k2 k3 k4 k5 k6 k7 k8 k9
+end
 rev = false
 weak_rev = false
 testreversibility(rxs[2], reactioncomplexes(rxs[2])[2], rev, weak_rev)
@@ -329,7 +329,7 @@ rxs[3] = @reaction_network begin
 @parameters k1 k2
     k1, A --> B
     k2, A --> C
-end k1 k2
+end
 rev = false
 weak_rev = false
 testreversibility(rxs[3], reactioncomplexes(rxs[3])[2], rev, weak_rev)
@@ -339,7 +339,7 @@ rxs[4] = @reaction_network begin
     k1, A --> B
     k2, A --> C
     k3, B + C --> 2A
-end k1 k2 k3
+end
 rev = false
 weak_rev = false
 testreversibility(rxs[4], reactioncomplexes(rxs[4])[2], rev, weak_rev)
@@ -350,7 +350,7 @@ rxs[5] = @reaction_network begin
     (k4, k3), A + C --> D
     k5, D --> B + E
     k6, B + E --> A + C
-end k1 k2 k3 k4 k5 k6
+end
 rev = false
 weak_rev = true
 testreversibility(rxs[5], reactioncomplexes(rxs[5])[2], rev, weak_rev)
@@ -359,7 +359,7 @@ rxs[6] = @reaction_network begin
 @parameters k1 k2 k3
     (k2, k1), A + E <--> AE
     k3, AE --> B + E
-end k1 k2 k3
+end
 rev = false
 weak_rev = false
 testreversibility(rxs[6], reactioncomplexes(rxs[6])[2], rev, weak_rev)
@@ -368,12 +368,12 @@ rxs[7] = @reaction_network begin
 @parameters k1 k2 k3 k4
     (k2, k1), A + E <--> AE
     (k4, k3), AE <--> B + E
-end k1 k2 k3 k4
+end
 rev = true
 weak_rev = true
 testreversibility(rxs[7], reactioncomplexes(rxs[7])[2], rev, weak_rev)
 
-rxs[8] = @reaction_network begin (k2, k1), A + B <--> 2A end k1 k2
+rxs[8] = @reaction_network begin (k2, k1), A + B <--> 2A end
 rev = true
 weak_rev = true
 testreversibility(rxs[8], reactioncomplexes(rxs[8])[2], rev, weak_rev)
@@ -384,7 +384,7 @@ rxs[9] = @reaction_network begin
     k2, 3A --> 2A + C
     k3, 2A + C --> 2B
     k4, 2B --> A + B
-end k1 k2 k3 k4
+end
 rev = false
 weak_rev = true
 testreversibility(rxs[9], reactioncomplexes(rxs[9])[2], rev, weak_rev)
@@ -395,7 +395,7 @@ rxs[10] = @reaction_network begin
     (k4, k3), AE <--> B + E
     k5, B --> 0
     k6, 0 --> A
-end k1 k2 k3 k4 k5 k6
+end
 rev = false
 weak_rev = false
 testreversibility(rxs[10], reactioncomplexes(rxs[10])[2], rev, weak_rev)
@@ -461,8 +461,8 @@ sir = @reaction_network sir begin
 @parameters β ν
     β, S + I --> 2I
     ν, I --> R
-end β ν
-subsys = @reaction_network subsys begin k, A --> B end k
+end
+subsys = @reaction_network subsys begin k, A --> B end
 @named sys = compose(sir, [subsys])
 symmap = [:S => 1.0, :I => 1.0, :R => 1.0, :subsys₊A => 1.0, :subsys₊B => 1.0]
 u0map = symmap_to_varmap(sys, symmap)
@@ -491,7 +491,7 @@ let
         b12, F1 --> F2
         b23, F2 --> F3
         b31, F3 --> F1
-    end k1 k2 m1 m2 b12 b23 b31
+    end
     osys = convert(ODESystem, rn; remove_conserved = true)
     @unpack A, B, C, D, E, F1, F2, F3, k1, k2, m1, m2, b12, b23, b31 = osys
     u0 = [A => 10.0, B => 10.0, C => 0.0, D => 10.0, E => 0.0, F1 => 8.0, F2 => 0.0,
@@ -569,13 +569,13 @@ let
     rn = @reaction_network ABtoC begin
     @parameters k₊ k₋
         (k₊,k₋), 3.4*A + 2B <--> 2.5*C
-    end k₊ k₋
+    end
     test_stoich(Float64, rn)
 
     rn2 = @reaction_network ABtoC begin
     @parameters k₊ k₋
         (k₊,k₋), 3*A + 2B <--> 2*C
-    end k₊ k₋
+    end
     test_stoich(Int, rn2)
 
 end

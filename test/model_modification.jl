@@ -47,17 +47,17 @@ unfinished_network = @reaction_network begin
 @parameters k0 k1 k2 k3 k4
     (k1, k2), X1 ↔ X2
     (k3, k4), X3 ↔ X4
-end 
+end
 @add_reactions unfinished_network begin
 @parameters k0 k3 k4 k5 k6
     (k3, k4), X3 ↔ X4
     (k5, k6), X5 ↔ X6
-end 
+end
 @add_reactions unfinished_network begin
 @parameters k0 k5 k6 k7 k8
     (k5, k6), X5 ↔ X6
     (k7, k8), X7 ↔ X8
-end 
+end
 @test length(get_states(unfinished_network)) == 8
 @test length(get_ps(unfinished_network)) == 9
 
@@ -69,7 +69,7 @@ step_by_step_network_1 = @reaction_network rns5 begin
     p, ∅ → X1
     (k1, k2), X1 ⟷ X2
     (k3, k4), X2 ⟷ X3
-end p k1 k2 k3 k4
+end
 @add_reactions step_by_step_network_1 begin 
     @parameters 
     (k5, k6), X3 ⟷ X4 
@@ -80,7 +80,7 @@ end
 end
 push!(identical_networks, reaction_networks_standard[5] => step_by_step_network_1)
 
-step_by_step_network_2 = @reaction_network rns7 begin (p1, p2, p3), ∅ → (X1, X2, X3) end p1 p2 p3
+step_by_step_network_2 = @reaction_network rns7 begin (p1, p2, p3), ∅ → (X1, X2, X3) end
 @add_reactions step_by_step_network_2 begin
 @parameters k1 k2 k3 v1 K1 d1 d2 d3 d4 d5 
     (k1, k2), X1 + 2X2 ⟷ X4
@@ -127,7 +127,7 @@ step_by_step_network_5 = @reaction_network rnc1 begin
 @parameters k1 k2 k3 k4 k5 k6
     (k1, k2), X1 ↔ X2
     (k3, k4), X2 ↔ X3
-end 
+end
 @add_reactions step_by_step_network_5 begin
 @parameters k5
     k5, X3 → X1 
@@ -160,7 +160,7 @@ end
 @parameters k3p k3pp A J3 k2pp
     (k3p + k3pp * A) / (J3 + Po), Po → P
     k2pp * P, Y → 0
-end 
+end
 @add_reactions step_by_step_network_7 begin
 @parameters k1 
     k1, 0 → Y

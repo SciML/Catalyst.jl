@@ -12,7 +12,7 @@ steady_state_network_1 = @reaction_network begin
     (k1, k2), ∅ ↔ X1
     (k3, k4), ∅ ↔ 3X2
     (k5, k6), ∅ ↔ X3 + X4
-end k1 k2 k3 k4 k5 k6
+end
 
 for factor in [1e-1, 1e0, 1e1], repeat in 1:3
     u0 = factor * rand(rng, length(get_states(steady_state_network_1)))

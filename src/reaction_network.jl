@@ -39,7 +39,7 @@ Example systems:
     p = []
     rn = @reaction_network begin
         (kB, kD), X + Y ↔ XY               # Lets you define parameters outside on network. Parameters can be changed without recalling the network.
-    end kB, kD
+    end
 
     ### Defining New Functions ###
     my_hill_repression(x, v, k, n) = v*k^n/(k^n+x^n)
@@ -50,7 +50,7 @@ Example systems:
 
     r = @reaction_network MyReactionType begin
         my_hill_repression(x, v_x, k_x, n_x), 0 --> x
-    end v_x k_x n_x
+    end
 
     ### Simulating Reaction Networks ###
     probODE = ODEProblem(rn, args...; kwargs...)        # Using multiple dispatch the reaction network can be used as input to create ODE, SDE and Jump problems.
@@ -98,13 +98,13 @@ Examples:
 sir_model = @reaction_network SIR begin
     c1, s + i --> 2i
     c2, i --> r
-end c1 c2
+end
 
 # a basic SIR model, with random generated name
 sir_model = @reaction_network begin
     c1, s + i --> 2i
     c2, i --> r
-end c1 c2
+end
 
 # an empty network with name empty
 emptyrn = @reaction_network empty

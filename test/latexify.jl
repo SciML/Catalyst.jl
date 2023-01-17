@@ -113,7 +113,7 @@ raw"ReactionSystem EmptySys has no reactions.", "\r\n"=>"\n")
 rn = @reaction_network begin
 @parameters k
     k*Y, Y --> ∅
-end k
+end
 
 # Latexify.@generate_test latexify(rn)
 @test latexify(rn) == replace(
