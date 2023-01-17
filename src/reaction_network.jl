@@ -258,9 +258,10 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Creates expressions corresponding to actual code from the internal DSL representation.
     pexprs = get_pexprs(parameters)
     sexprs = get_sexprs(species)
-    rxexprs = :($(make_ReactionSystem_internal)([], t, nothing, []; name = $(name),
+    rxexprs = :($(make_ReactionSystem_internal)([], t, nothing, [], []; name = $(name),
                                                 defaults = $(defaults)))
-    foreach(parameter -> push!(rxexprs.args[6].args, parameter), parameters)
+    foreach(speci -> push!(rxexprs.args[6].args, speci), species)
+    foreach(parameter -> push!(rxexprs.args[7].args, parameter), parameters)
     for reaction in reactions
         push!(rxexprs.args[3].args, get_rxexprs(reaction))
     end
