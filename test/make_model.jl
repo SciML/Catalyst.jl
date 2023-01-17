@@ -315,7 +315,7 @@ test_network = @reaction_network begin
     (m, M), z ⟷ Z
 end
 
-test_network = @reaction_network begin @parameters (1.0, 1.0), i ⟷ T end
+test_network = @reaction_network begin (1.0, 1.0), i ⟷ T end
 
 test_network = @reaction_network begin
     @parameters å Å ä Ä ö Ö
