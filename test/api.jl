@@ -143,6 +143,7 @@ testnetwork(rns[1], B, Z, Δ, lcs, 0, subrn, lcd)
 # constant and BC species test
 @parameters F [isconstantspecies = true]
 crn = @reaction_network begin
+    @species A B C D E F
     k₁, 2A --> B
     k₂, A --> C + $F
     k₃, C --> D
