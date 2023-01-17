@@ -322,7 +322,9 @@ function esc_dollars!(ex)
 end
 
 # If species or parameters are given as a quote, this handle sthat.
-remake_quote(expr) = (expr isa Vector && expr[1] isa Expr && expr[1].head == :block) ? expr[1].args : expr
+function remake_quote(expr)
+    (expr isa Vector && expr[1] isa Expr && expr[1].head == :block) ? expr[1].args : expr
+end
 # Gets the species/parameter symbols designated by the user.
 get_species_or_params(ex::Symbol) = ex
 get_species_or_params(ex::Expr) = ex.args[1]

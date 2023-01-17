@@ -10,7 +10,7 @@ new_poly(x, p1, p2) = 0.5 * p1 * x^2
 new_exp(x, p) = exp(-p * x)
 
 custom_function_network_1 = @reaction_network begin
-@parameters v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4 v5 K5 
+    @parameters v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4 v5 K5
     hill(X1, v1, K1, 2), X1 + Y1 --> Z1
     mm(X2, v2, K2), X2 + Y2 --> Z2
     p1 * X3^2 + p2, X3 + Y3 --> Z3
@@ -21,7 +21,7 @@ custom_function_network_1 = @reaction_network begin
 end
 
 custom_function_network_2 = @reaction_network begin
-@parameters v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4 v5 K5
+    @parameters v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4 v5 K5
     new_hill(X1, v1, K1, 2), X1 + Y1 --> Z1
     v2 * X2 / (X2 + K2), X2 + Y2 --> Z2
     2 * new_poly(X3, p1, p2) + p2, X3 + Y3 --> Z3
@@ -63,7 +63,7 @@ end
 
 # Michaelis-Menten function.
 mm_network = @reaction_network begin
-@parameters v K
+    @parameters v K
     (1.0, 1.0), 0 ↔ X
     mm(X, v, K), 0 --> X1
     mm(X, v, K), 0 --> X2
@@ -82,7 +82,7 @@ f_mm_jac_output = f_mm.jac(u0, p, t)[2:end, 1]
 
 # Repressing Michaelis-Menten function.
 mmr_network = @reaction_network begin
-@parameters v K
+    @parameters v K
     (1.0, 1.0), 0 ↔ X
     mmr(X, v, K), 0 --> X1
     mmr(X, v, K), 0 --> X2
@@ -101,7 +101,7 @@ f_mmr_jac_output = f_mmr.jac(u0, p, t)[2:end, 1]
 
 # Hill function.
 hill_network = @reaction_network begin
-@parameters v K
+    @parameters v K
     (1.0, 1.0), 0 ↔ X
     hill(X, v, K, 2), 0 --> X1
     hill(X, v, K, 2), 0 --> X2
@@ -119,7 +119,7 @@ f_hill_jac_output = f_hill.jac(u0, p, t)[2:end, 1]
 
 # Repressing Hill function.
 hillr_network = @reaction_network begin
-@parameters v K
+    @parameters v K
     (1.0, 1.0), 0 ↔ X
     hillr(X, v, K, 2), 0 --> X1
     hillr(X, v, K, 2), 0 --> X2
@@ -137,7 +137,7 @@ f_hillr_jac_output = f_hillr.jac(u0, p, t)[2:end, 1]
 
 # Activation/repressing Hill function.
 hillar_network = @reaction_network begin
-@parameters v K
+    @parameters v K
     (1.0, 1.0), 0 ↔ (X, Y)
     hillar(X, Y, v, K, 2), 0 --> X1
     hillar(X, Y, v, K, 2), 0 --> X2

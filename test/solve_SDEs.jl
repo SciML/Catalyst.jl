@@ -114,8 +114,8 @@ end
 
 # Tests with a single noise scaling parameter.
 noise_scaling_network = @reaction_network begin
-@parameters k1 k2
-    (k1, k2), X1 ↔ X2 
+    @parameters k1 k2
+    (k1, k2), X1 ↔ X2
 end
 for repeat in 1:5
     p = 1.0 .+ rand(rng, 2)

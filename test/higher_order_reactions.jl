@@ -6,7 +6,7 @@ rng = StableRNG(12345)
 
 ### Declares a test network. ###
 higher_order_network_1 = @reaction_network begin
-@parameters p r1 r2 K r3 r4 r5 r6 d 
+    @parameters p r1 r2 K r3 r4 r5 r6 d
     p, ∅ ⟼ X1
     r1, 2X1 ⟼ 3X2
     mm(X1, r2, K), 3X2 ⟼ X3 + 2X4
@@ -20,7 +20,7 @@ end
 ### Tests that deterministic and stochastic differential functions are identical. ###
 
 higher_order_network_2 = @reaction_network begin
-@parameters p r1 r2 K r3 r4 r5 r6 d 
+    @parameters p r1 r2 K r3 r4 r5 r6 d
     p, ∅ ⟾ X1
     r1 * X1^2 / factorial(2), 2X1 ⟾ 3X2
     mm(X1, r2, K) * X2^3 / factorial(3), 3X2 ⟾ X3 + 2X4
@@ -47,7 +47,7 @@ end
 
 ### Tests that the discrete jump systems are equal. ###
 higher_order_network_3 = @reaction_network begin
-@parameters p r1 r2 K r3 r4 r5 r6 d 
+    @parameters p r1 r2 K r3 r4 r5 r6 d
     p, ∅ ⟼ X1
     r1 * binomial(X1, 2), 2X1 ⟾ 3X2
     mm(X1, r2, K) * binomial(X2, 3), 3X2 ⟾ X3 + 2X4

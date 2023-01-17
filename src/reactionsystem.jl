@@ -597,7 +597,8 @@ end
 # Only used internally by the @reaction_network macro. Permits giving an initial order to
 # the parameters, and then adds additional ones found in the reaction. Name could be
 # changed.
-function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothing, sts_in, ps_in;
+function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothing, sts_in,
+                                      ps_in;
                                       spatial_ivs = nothing, kwargs...)
     t = value(iv)
     ivs = Set([t])

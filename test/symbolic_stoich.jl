@@ -11,7 +11,7 @@ osys = convert(ODESystem, rs)
 
 g = (k + α * C)
 rs2 = @reaction_network rs begin
-@parameters k α
+    @parameters k α
     t * k, 2 * α^2 * A --> $g * B
     1.0, α * A + 2 * B --> k * C + α * D
 end

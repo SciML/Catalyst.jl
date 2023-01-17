@@ -22,7 +22,7 @@ end
 
 # Networks with know equilibrium
 known_equilibrium = @reaction_network begin
-@parameters k1 k2 k3 k4 k5 k6 k7 k8
+    @parameters k1 k2 k3 k4 k5 k6 k7 k8
     (k1, k2), X1 ↔ X2
     (k3, k4), X3 + X4 ↔ X5
     (k5, k6), 2X6 ↔ 3X7
