@@ -92,7 +92,7 @@ repressilator2 = @reaction_network repressilator begin
     μ, P₁ --> ∅
     μ, P₂ --> ∅
     μ, P₃ --> ∅
-end α K n δ γ β μ
+end
 repressilator == repressilator2
 ```
 
@@ -220,7 +220,7 @@ like
 ```@example ex
 rn = @reaction_network begin
        k*W, 2X + 3Y --> 5Z + W
-     end k
+     end
 dependents(reactions(rn)[1], rn)
 ```
 Basic stoichiometry matrices can be obtained from a `ReactionSystem` as

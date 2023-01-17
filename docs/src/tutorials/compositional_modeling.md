@@ -13,10 +13,10 @@ extending a system is the `extend` command
 using Catalyst
 basern = @reaction_network rn1 begin
            k, A + B --> C
-         end k
+         end
 newrn = @reaction_network rn2 begin
         r, C --> A + B
-      end r
+      end
 @named rn = extend(newrn, basern)
 ```
 Here we extended `basern` with `newrn` giving a system with all the
@@ -29,7 +29,7 @@ different result:
 ```@example ex1
 newestrn = @reaction_network rn3 begin
             v, A + D --> 2D
-           end v
+           end
 @named rn = compose(basern, [newrn, newestrn])
 ```
 Here we have created a new `ReactionSystem` that adds `newrn` and `newestrn` as
@@ -102,7 +102,7 @@ function repressed_gene(; R, name)
         (δ,γ), m <--> ∅
         β, m --> m + P
         μ, P --> ∅
-    end α K n δ γ β μ
+    end
 end
 ```
 Here we assume the user will pass in the repressor species as a ModelingToolkit
@@ -155,7 +155,7 @@ account for compartment volumes:
 nuc = @reaction_network nuc begin
         α, G --> G + M
         (κ₊/V,κ₋), D + G <--> DG
-      end α V κ₊ κ₋
+      end
 
 # translation and dimerization
 cyto = @reaction_network cyto begin
@@ -163,14 +163,14 @@ cyto = @reaction_network cyto begin
             (k₊/V,k₋), 2P <--> D
             σ, P --> 0
             μ, M --> 0
-        end β k₊ k₋ V σ μ
+        end
 
 # export reactions,
 # γ,δ=probability per time to be exported/imported
 model = @reaction_network model begin
        γ, $(nuc.M) --> $(cyto.M)
        δ, $(cyto.D) --> $(nuc.D)
-    end γ δ
+    end
 @named model = compose(model, [nuc, cyto])
 ```
 A graph of the resulting network is

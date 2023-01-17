@@ -13,7 +13,7 @@ using Catalyst, Latexify, DifferentialEquations, ModelingToolkit, Plots
 revsys = @reaction_network revsys begin
     k₊, m*A --> (m*n)*B
     k₋, B --> A
-end k₊ k₋ m n
+end
 reactions(revsys)
 ```
 Note, as always the `@reaction_network` macro sets all symbols not declared to
@@ -25,7 +25,7 @@ in
 ```@example s1
 rn = @reaction_network begin
     k, A*C --> 2B
-    end k
+    end
 reactions(rn)
 ```
 we see three species, `(A,B,C)`, however, `A` is treated as the stoichiometric
@@ -113,7 +113,7 @@ burstyrn = @reaction_network burstyrn begin
     k₋*P^2, G₊ --> G₋
     kₚ, G₊ --> G₊ + $m*P
     γₚ, P --> ∅
-end k₊ k₋ kₚ γₚ
+end
 reactions(burstyrn)
 show(stdout, MIME"text/plain"(), reactions(burstyrn)) # hide
 ```

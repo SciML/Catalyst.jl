@@ -16,7 +16,7 @@ rs = @reaction_network begin
   c1, X --> 2X
   c2, X --> 0
   c3, 0 --> X
-end c1 c2 c3
+end
 p     = (:c1 => 1.0, :c2 => 2.0, :c3 => 50.)
 pmap  = symmap_to_varmap(rs,p)   # convert Symbol map to symbolic variable map
 tspan = (0.,4.)

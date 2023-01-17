@@ -21,7 +21,7 @@ the reaction
 ```julia
 rn = @reaction_network begin
   k, X → ∅
-end k
+end
 ```
 occurs at the rate ``d[X]/dt = -k[X]``, it is possible to ignore this by using
 any of the following non-filled arrows when declaring the reaction: `⇐`, `⟽`,
@@ -30,7 +30,7 @@ any of the following non-filled arrows when declaring the reaction: `⇐`, `⟽`
 ```julia
 rn = @reaction_network begin
   k, X ⇒ ∅
-end k
+end
 ```
 
 will occur at rate ``d[X]/dt = -k`` (which might become a problem since ``[X]``

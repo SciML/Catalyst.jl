@@ -25,7 +25,7 @@ repressilator = @reaction_network Repressilator begin
        μ, P₁ --> ∅
        μ, P₂ --> ∅
        μ, P₃ --> ∅
-end α K n δ γ β μ
+end
 ```
 In the [Using Catalyst](https://docs.sciml.ai/Catalyst/stable/tutorials/using_catalyst/)
 tutorial we showed how the above network could be visualized as a
@@ -110,7 +110,7 @@ reaction system like
 rn = @reaction_network begin
  k*A, 2*A + 3*B --> A + 2*C + D
  b, C + D --> 2*A + 3*B
-end k b
+end
 ```
 We can think of the first reaction as converting the *reaction complex*,
 ``2A+3B`` to the complex ``A+2C+D`` with rate ``kA``. Suppose we order our
@@ -226,7 +226,7 @@ rn = @reaction_network begin
      (k6,k7), 2A <--> B+G
      k8, B+G --> H
      k9, H --> 2A
-end k1 k2 k3 k4 k5 k6 k7 k8 k9
+end
 ```
 with graph
 ```julia
@@ -337,7 +337,7 @@ rn = @reaction_network begin
   (k3,k4),A + C <--> D
   (k5,k6),D <--> B+E
   (k7,k8),B+E <--> A+C
-end k1 k2 k3 k4 k5 k6 k7 k8
+end
 
 # calculate the set of reaction complexes
 reactioncomplexes(rn)
@@ -352,7 +352,7 @@ rn = @reaction_network begin
   k3, A + C --> D
   k4, D --> B+E
   k5, B+E --> A+C
-end k1 k2 k3 k4 k5
+end
 reactioncomplexes(rn)
 isreversible(rn)
 ```
@@ -454,7 +454,7 @@ rn = @reaction_network begin
   (k1,k2),A <--> 2B
   (k3,k4), A + C <--> D
   k5, B+E --> C + D
-end k1 k2 k3 k4 k5
+end
 reactioncomplexes(rn)
 subnets = subnetworks(rn)
 isma = all(rx -> ismassaction(rx,rn), reactions(rn))

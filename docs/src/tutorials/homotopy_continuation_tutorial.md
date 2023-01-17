@@ -11,7 +11,7 @@ wilhelm_2009_model = @reaction_network begin
     k2, 2X --> X + Y
     k3, X + Y --> Y
     k4, X --> 0
-end k1 k2 k3 k4
+end
 p = [:k1 => 8.0, :k2 => 2.0, :k3 => 1.0, :k4 => 1.5]
 ```
 Next, we will need to extract the actual equations from our model. In addition, we will substitute in our parameter values.
@@ -36,7 +36,7 @@ Finally, some systems are underdetermined, and have an infinite number of possib
 using Catalyst
 two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
-end k1 k2
+end
 ```
 However, the conservation laws can be computed using the `conservationlaws` function. By supplying these, as well as fixed concentrations (in this case the total amount of *X*, that is *X1+X2*), steady states can be found. First, we set the default values of the system's initial conditions and steady states. This will allow the system to automatically find the conserved amounts.
 ```@example hc3

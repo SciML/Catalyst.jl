@@ -82,17 +82,14 @@ For more detailed examples, see the [Basic Chemical Reaction Network
 Examples](@ref).
 
 ## Defining parameters and species
-Parameter values do not need to be set when the model is created. Components can
-be designated as symbolic parameters by declaring them at the end:
+Parameter values do not need to be set when the model is created:
 ```@example tut2
 rn = @reaction_network begin
   p, ∅ --> X
   d, X --> ∅
-end p d
+end
 ```
-Parameters can only exist in the reaction rates (where they can be mixed with
-reactants). All variables not declared after `end` will be treated as a chemical
-species.
+All symbols that does not appear as a reactant in a reaction is designated by Catalyst as a parameter. In this example `X` appear as a reactant, but not `p` and `d`. Hence `p` and `d` are designated as parameters. It is possible to manually set what should be considered a species or parameter This is described towards the end of this tutorial.
 
 ## Production, Destruction and Stoichiometry
 Sometimes reactants are produced/destroyed from/to nothing. This can be
@@ -241,8 +238,9 @@ expressions depending on time or the current concentration of other species
 instance, this is a valid notation:
 ```@example tut2
 rn = @reaction_network begin
+  1.0, X --> ∅
   k*X, Y --> ∅
-end k
+end
 ```
 corresponding to the ODE model
 ```@example tut2
@@ -253,6 +251,7 @@ With respect to the corresponding mass action ODE model, this is actually
 equivalent to the reaction system
 ```@example tut2
 rn = @reaction_network begin
+  1.0, X --> ∅
   k, X + Y --> X
 end k
 ```
@@ -287,7 +286,7 @@ models. To specify a name for the generated `ReactionSystem` via the
 rn = @reaction_network production_degradation begin
   p, ∅ --> X
   d, X --> ∅
-end p d
+end
 ModelingToolkit.nameof(rn) == :production_degradation
 ```
 
@@ -299,13 +298,13 @@ the pair of reactions within `rn2`:
 rn1 = @reaction_network begin
   hill(X,v,K,n), ∅ --> X
   v*X^n/(X^n+K^n), ∅ --> X
-end v K n
+end
 ```
 ```@example tut2
 rn2 = @reaction_network begin
   mm(X,v,K), ∅ --> X
   v*X/(X+K), ∅ --> X
-end v K
+end
 ```
 Repressor Hill (`hillr`) and Michaelis-Menten (`mmr`) functions are also
 provided:
@@ -313,18 +312,83 @@ provided:
 rn1 = @reaction_network begin
   hillr(X,v,K,n), ∅ --> X
   v*K^n/(X^n+K^n), ∅ --> X
-end v K n
+end
 ```
 ```@example tut2
 rn2 = @reaction_network begin
   mmr(X,v,K), ∅ --> X
   v*K/(X+K), ∅ --> X
-end v K
+end
 ```
 
 Please see the API [Rate Laws](@ref) section for more details.
 
-## Interpolation of Julia Variables
+## Manual designation of network species and parameters
+The `@reaction_network` macro automatically designated symbols used in the macro as wither parameters of species. However, sometimes the user might want to manually override this selection. E.g one might want something to be considered as a species, even if it neither appears as a reaction substrate or product. In the following network
+```@example tut2
+rn = @reaction_network begin
+  k*X, Y --> 0
+end
+```
+`X` (as well as `k`) will be considered a parameter. 
+
+By using the `@species` and ` @parameters` options within the `@reaction_network` macro, one can manually declare what should be considered a species or parameter. E.g in:
+```@example tut2
+rn = @reaction_network begin
+  @species X Y
+  k*X, Y --> 0
+end
+```
+`X` and `Y` are set as species. Similarly 
+```@example tut2
+rn = @reaction_network begin
+  @parameters k
+  k*X, Y --> 0
+end
+```
+designates that `k` (and only `k`) should be considered a parameter. However, in this case the DSL does not know what to do with `X`, and throws an error. Instead, it is possible to use both options simultaneously:
+```@example tut2
+rn = @reaction_network begin
+  @species X Y
+  @parameters k
+  k*X, Y --> 0
+end
+```
+Here, `X` and `Y` are designated as species and `k` as a parameter.
+
+Another use of the `@species` and ` @parameters` options is that they enable the user to set the *order* in which the parameters (or species) appear in their respective vector. It should be noted that it is strongly recommended to write code that does not depend on this order. However, if required to do so, the option exists. Consider the following network:
+```@example tut2
+rn = @reaction_network begin
+  d2, X2 --> 0
+  d1, X1 --> 0
+end
+```
+If we consider the species and parameter vectors:
+```
+species(rn)
+```
+```
+parameters(rn)
+```
+we note that they are ordered as `[X2(t) ,X1(t)]` and `[d2, d1]`. If one which to change the order, it can be done through:
+```@example tut2
+rn = @reaction_network begin
+  @species X1 X2
+  @parameters d1 d2
+  d2, X2 --> 0
+  d1, X1 --> 0
+end
+```
+if we now check the two vectors, we see that the order has changed:
+```
+species(rn)
+```
+```
+parameters(rn)
+```
+
+
+## Interpolation of Julia variables
 The DSL allows Julia variables to be interpolated for the network name, within
 rate constant expressions, or for species/stoichiometry within reactions. Using
 the lower-level symbolic interface we can then define symbolic variables and

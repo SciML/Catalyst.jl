@@ -11,7 +11,7 @@ using Catalyst
 rn = @reaction_network begin
     (v0 + v*(S * X)^n / ((S*X)^n + (D*A)^n + K^n), d), ∅ ↔ X
     (X/τ, 1/τ), ∅ ↔ A
-end S D τ v0 v K n d
+end
 ```
 Next, we specify the system parameters for which we wish to plot the bifurcation
 diagram. We also set the parameter we wish to vary in our bifurcation diagram,
