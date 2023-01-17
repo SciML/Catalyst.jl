@@ -113,7 +113,7 @@ rn2 = ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; nam
     end
     # Line number nodes aren't ignored so have to be manually removed
     Base.remove_linenums!(ex)
-    @test eval(Catalyst.make_reaction_system(ex, (:Ka, :Cl, :Vc))) isa ReactionSystem
+    @test eval(Catalyst.make_reaction_system(ex)) isa ReactionSystem
 end
 
 
