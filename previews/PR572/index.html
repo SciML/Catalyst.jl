@@ -8,7 +8,7 @@ using Catalyst</code></pre><h2 id="Illustrative-Example"><a class="docs-heading-
 rn = @reaction_network begin
     α, S + I --&gt; 2I
     β, I --&gt; R
-end α β</code></pre><p>Assuming <a href="https://graphviz.org/">Graphviz</a> and is installed and <em>command line accessible</em>, the network can be visualized using the <a href="api/catalyst_api/#Catalyst.Graph"><code>Graph</code></a> command</p><pre><code class="language-julia hljs">Graph(rn)</code></pre><p>which in Jupyter notebooks will give the figure</p><p><img src="assets/SIR_rn.svg" alt="SIR Network Graph"/></p><p>To generate and solve a mass action ODE version of the model we use</p><pre><code class="language-julia hljs">using OrdinaryDiffEq
+end</code></pre><p>Assuming <a href="https://graphviz.org/">Graphviz</a> and is installed and <em>command line accessible</em>, the network can be visualized using the <a href="api/catalyst_api/#Catalyst.Graph"><code>Graph</code></a> command</p><pre><code class="language-julia hljs">Graph(rn)</code></pre><p>which in Jupyter notebooks will give the figure</p><p><img src="assets/SIR_rn.svg" alt="SIR Network Graph"/></p><p>To generate and solve a mass action ODE version of the model we use</p><pre><code class="language-julia hljs">using OrdinaryDiffEq
 p     = [:α =&gt; .1/1000, :β =&gt; .01]
 tspan = (0.0,250.0)
 u0    = [:S =&gt; 999.0, :I =&gt; 1.0, :R =&gt; 0.0]
@@ -40,10 +40,10 @@ Info Packages marked with ⌃ have new versions available and may be upgradable.
 Commit 17cfb8e65ea (2023-01-08 06:45 UTC)
 Platform Info:
   OS: Linux (x86_64-linux-gnu)
-  CPU: 2 × Intel(R) Xeon(R) Platinum 8272CL CPU @ 2.60GHz
+  CPU: 2 × Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz
   WORD_SIZE: 64
   LIBM: libopenlibm
-  LLVM: libLLVM-13.0.1 (ORCJIT, skylake-avx512)
+  LLVM: libLLVM-13.0.1 (ORCJIT, icelake-server)
   Threads: 1 on 2 virtual cores</code></pre></details><details><summary>A more complete overview of all dependencies and their versions is also provided.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Status `~/work/Catalyst.jl/Catalyst.jl/docs/Manifest.toml`
   [a4c015fc] ANSIColoredPrinters v0.0.1
   [c3fe647b] AbstractAlgebra v0.27.8
@@ -401,4 +401,4 @@ Platform Info:
   [3f19e933] p7zip_jll v17.4.0+0
 Info Packages marked with ⌃ and ⌅ have new versions available, but those with ⌅ are restricted by compatibility constraints from upgrading. To see why use `status --outdated -m`</code></pre></details>You can also download the
 <a href="https://github.com/SciML/Catalyst.jl/tree/gh-pages/v12.3.1/assets/Manifest.toml">manifest</a> file and the
-<a href="https://github.com/SciML/Catalyst.jl/tree/gh-pages/v12.3.1/assets/Project.toml">project</a> file.</article><nav class="docs-footer"><a class="docs-footer-nextpage" href="catalyst_for_new_julia_users/intro_to_catalyst/">Introduction to Catalyst and Julia for new Julia users »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Tuesday 17 January 2023 16:24">Tuesday 17 January 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+<a href="https://github.com/SciML/Catalyst.jl/tree/gh-pages/v12.3.1/assets/Project.toml">project</a> file.</article><nav class="docs-footer"><a class="docs-footer-nextpage" href="catalyst_for_new_julia_users/intro_to_catalyst/">Introduction to Catalyst and Julia for new Julia users »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Tuesday 17 January 2023 17:12">Tuesday 17 January 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
