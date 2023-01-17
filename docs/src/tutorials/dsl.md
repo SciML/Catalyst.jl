@@ -387,6 +387,25 @@ species(rn)
 parameters(rn)
 ```
 
+Finally, if prefered, the `@species` and `@parameters` options can also be used in `begin ... end` block form:
+```
+```@example tut2
+rn = @reaction_network begin
+    @parameters begin
+        X1
+        X2
+    end
+    @species begin
+        d1
+        d2
+    end
+  d2, X2 --> 0
+  d1, X1 --> 0
+end
+```
+especially when declaring defalt values (next section), this can make code clearer.
+
+
 ## Set default initial condition and parameter values
 When using the `@species` and ` @parameters` options to declare species and/or parameters, one can also provide initial conditions for each component:
 ```@example tut2
