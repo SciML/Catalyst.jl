@@ -76,7 +76,7 @@ Now that we have some basic familiarity with Julia, and have installed and activ
 
 Catalyst models are created through the `@reaction_network` *macro*. For more information on macros, please read [the Julia documentation on macros](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros). This documentation is, however, rather advanced (and not required to use Catalyst). We instead recommend that you simply familiarise yourself with the Catalyst syntax, without studying in detail how macros work and what they are.
 
-The `@reaction_network` command is followed by the `begin` keyword, which is followed by one line for each *reaction* of the model. Each reaction consists of a *reaction rate*, followed by the reaction itself. The reaction itself contains a set of *substrates* and a set of *products* (what is consumed and produced by the reaction, respectively). These are separated by a `-->` arrow. Finally, the model ends with the `end` keyword, followed by a list of its *parameters*.
+The `@reaction_network` command is followed by the `begin` keyword, which is followed by one line for each *reaction* of the model. Each reaction consists of a *reaction rate*, followed by the reaction itself. The reaction itself contains a set of *substrates* and a set of *products* (what is consumed and produced by the reaction, respectively). These are separated by a `-->` arrow. Finally, the model ends with the `end` keyword.
 
 Here, we create a simple *birth-death* model, where a single species (*X*) is created at rate *b*, and degraded at rate *d*. The model is stored in the variable `rn`.
 
@@ -84,7 +84,7 @@ Here, we create a simple *birth-death* model, where a single species (*X*) is cr
 rn = @reaction_network begin
     b, 0 --> X
     d, X --> 0
-end b d
+end
 ```
 
 For more information on how to use the Catalyst model creator, please read [the corresponding documentation](https://docs.sciml.ai/Catalyst/stable/tutorials/dsl/).
@@ -153,7 +153,7 @@ We declare the model using the `reaction_network` macro, and store it in the `si
 sir_model = @reaction_network begin
     b, S + I --> 2I
     k, I --> R
-end b k
+end
 ```
 
 Note that the first reaction contains two different substrates (separated by a `+` sign). While there is only a single product (*I*), two copies of *I* are produced. The *2* in front of the product *I* denotes this.
@@ -162,7 +162,7 @@ Next, we declare our initial condition, time span, and parameter values. Since w
 ```@example ex1
 u0 = [:S => 50, :I => 1, :R => 0.0]
 tspan = (0.0, 10.0)
-params = [:b => .2, :k => 1.0]
+params = [:b => 0.2, :k => 1.0]
 ```
 
 Previously we have bundled this information into an `ODEProblem` (denoting a deterministic *ordinary differential equation*). Now we wish to simulate our model as a jump process (where each reaction event denotes a single jump in the state of the system). We do this by first creating a `DiscreteProblem`, and then using this as an input to a `JumpProblem`.
