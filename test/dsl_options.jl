@@ -190,7 +190,7 @@ p_11 = [:Y=>3.0, :X2Y=>2.0]
 
 rn12 = @reaction_network name begin
 @parameters p1 p2 k1 k2 v K n d
-@species X Y Z X2Y
+@species X Y X2Y Z
     (p1,p2), 0 --> (X,Y)
     (k1,k2), 2X + Y --> X2Y
     hill(X2Y,v,K,n), 0 --> Z
