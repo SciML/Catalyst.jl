@@ -124,12 +124,13 @@ function build_f(lrs::LatticeReactionSystem, u_idxs::Dict{Symbol, Int64},
             for comp_j::Int64 in (lrs.lattice.fadjlist::Vector{Vector{Int64}})[comp_i],
                 sr::SpatialReaction in lrs.spatial_reactions::Vector{SpatialReaction}
 
-                rate = get_rate(sr, p[2], (@view u[:, comp_i]), (@view u[:, comp_j]),
-                                u_idxs, pE_idxes)
-                foreach(stoich -> du[u_idxs[stoich[1]], comp_i] += rate * stoich[2],
-                        sr.netstoich[1])
-                foreach(stoich -> du[u_idxs[stoich[1]], comp_j] += rate * stoich[2],
-                        sr.netstoich[2])
+                rate = get_rate(sr, p[2], (@view u[:, comp_i]), (@view u[:, comp_j]), u_idxs, pE_idxes)
+                for stoich in sr.netstoich[1]
+                    du[u_idxs[stoich[1]], comp_i] += rate * stoich[2]
+                end
+                for stoich in sr.netstoich[2]
+                    du[u_idxs[stoich[1]], comp_j] += rate * stoich[2]
+                end
             end
         end
     end
@@ -138,11 +139,11 @@ end
 # Get the rate of a specific reaction.
 function get_rate(sr, pE, u_src, u_dst, u_idxs, pE_idxes)
     product = pE[pE_idxes[sr.rate]]
-    !isempty(sr.substrates[1]) &&
-        (product *= prod(u_src[u_idxs[subs[1]]]^subs[2] / factorial(subs[2])
-                         for subs in Pair.(sr.substrates[1], sr.substoich[1])))
-    !isempty(sr.substrates[2]) &&
-        (product *= prod(u_dst[u_idxs[subs[1]]]^subs[2] / factorial(subs[2])
-                         for subs in Pair.(sr.substrates[2], sr.substoich[2])))
-    return product::Float64
+    !isempty(sr.substrates[1]) && for (sub,stoich) in zip(sr.substrates[1], sr.substoich[1])
+        product *= prod(u_src[u_idxs[sub]]^stoich / factorial(stoich))
+    end
+    !isempty(sr.substrates[2]) && for (sub,stoich) in zip(sr.substrates[2], sr.substoich[2])
+        product *= prod(u_dst[u_idxs[sub]]^stoich / factorial(stoich))
+    end
+    return product
 end
