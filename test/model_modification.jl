@@ -171,6 +171,7 @@ end
 end
 push!(identical_networks, reaction_networks_real[3] => step_by_step_network_7)
 
+@variables k1
 step_by_step_network_8 = @reaction_network rnw7
 addparam!(step_by_step_network_8, k1)
 @add_reactions step_by_step_network_8 begin
