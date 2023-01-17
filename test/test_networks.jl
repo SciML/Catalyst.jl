@@ -252,7 +252,7 @@ reaction_network_constraints[9] = [1 0 1 0 1 0 1; -1 1 0 0 0 0 0; 0 0 0 1 1 0 1;
                                    0 0 0 0 0 1 1]
 
 reaction_networks_constraint[10] = @reaction_network rnc10 begin
-@parameterskBw kDw kD kB1 kB2 kB3 kB4 kB5 kD1 kD2 kD3 kD4 kD5 kK1 kK2 kP kDeg v0 F K λW λV
+@parameters kBw kDw kD kB1 kB2 kB3 kB4 kB5 kD1 kD2 kD3 kD4 kD5 kK1 kK2 kP kDeg v0 F K λW λV
     kDeg, (w, w2, w2v, v, w2v2, vP, σB, w2σB) ⟶ ∅
     kDeg, vPp ⟶ phos
     (kBw, kDw), 2w ⟷ w2
