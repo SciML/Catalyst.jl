@@ -387,7 +387,7 @@ reaction_networks_weird[9] = @reaction_network rnw9 begin
 end
 
 reaction_networks_weird[10] = @reaction_network rnw10 begin
-    @parameter d
+    @parameters d
     d, 5X1 → 4X1
 end
 
