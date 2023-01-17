@@ -29,7 +29,7 @@ custom_function_network_2 = @reaction_network begin
     v3 * (K3^2) / (K3^2 + X5^2), X5 + Y5 --> Z5
     v4 * K4 / (X6 + K4), X6 + Y6 --> Z6
     v5 * (X7^2) / (K5^2 + X7^2 + Y7^2), X7 + Y7 --> Z7
-end v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4 v5 K5
+end
 
 function permute_ps(pvals, rn1, rn2)
     ps1 = parameters(rn1)
