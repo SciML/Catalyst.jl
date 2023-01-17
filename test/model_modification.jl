@@ -71,7 +71,7 @@ step_by_step_network_1 = @reaction_network rns5 begin
     (k3, k4), X2 ⟷ X3
 end
 @add_reactions step_by_step_network_1 begin 
-    @parameters 
+@parameters k5 k6
     (k5, k6), X3 ⟷ X4 
 end
 @add_reactions step_by_step_network_1 begin
