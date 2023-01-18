@@ -158,6 +158,7 @@ end
 
 
 ### Tests that order is preserved when set ###
+### Tests that order is preserved when set ###
 rn9 = @reaction_network name begin
     @species X1 X2 X3 X4
     k4, 0 --> X4
@@ -165,7 +166,7 @@ rn9 = @reaction_network name begin
     k2, 0 --> X2
     k1, 0 --> X1
 end
-@test isequal(Symbol.(getfield.(species(rn9),:f)),[:X1, :X2, :X3, :X4]) # Should use other notation to get syms, but can't find it.
+@test isequal(map(Symbol ∘ ModelingToolkit.operation, states(rn9)),[:X1, :X2, :X3, :X4])
 
 rn10 = @reaction_network name begin
     @parameters k1 k2 k3 k4
@@ -174,7 +175,7 @@ rn10 = @reaction_network name begin
     k2, 0 --> X2
     k1, 0 --> X1
 end
-@test isequal(Symbol.(parameters(rn10)),[:k1, :k2, :k3, :k4])
+@test isequal(map(Symbol, parameters(rn10)),[:k1, :k2, :k3, :k4])
 
 rn11 = @reaction_network name begin
     @species X1 X2 X3 X4 Y1 Y2 Y3 Y4
@@ -184,8 +185,8 @@ rn11 = @reaction_network name begin
     k2+l2+l1, Y2 --> X2
     k1, 0 --> X1
 end
-@test isequal(Symbol.(getfield.(species(rn11),:f)),[:X1, :X2, :X3, :X4, :Y1, :Y2, :Y3, :Y4])
-@test isequal(Symbol.(parameters(rn11)),[:k1, :k2, :k3, :k4, :l1, :l2, :l3, :l4])
+@test isequal(map(Symbol ∘ ModelingToolkit.operation, states(rn11)),[:X1, :X2, :X3, :X4, :Y1, :Y2, :Y3, :Y4])
+@test isequal(map(Symbol, parameters(rn11)),[:k1, :k2, :k3, :k4, :l1, :l2, :l3, :l4])
 
 
 #### Tests that defaults work. ###
