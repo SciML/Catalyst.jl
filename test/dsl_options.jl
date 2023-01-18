@@ -185,7 +185,8 @@ rn11 = @reaction_network name begin
     k1, 0 --> X1
 end
 @test isequal(Symbol.(getfield.(species(rn11),:f)),[:X1, :X2, :X3, :X4, :Y1, :Y2, :Y3, :Y4])
-@test parameters(rn11) == isequal(Symbol.(parameters(rn11)),[:k1, :k2, :k3, :k4, :l1, :l2, :l3, :L4])
+@test isequal(Symbol.(parameters(rn11)),[:k1, :k2, :k3, :k4, :l1, :l2, :l3, :l4])
+
 
 #### Tests that defaults work. ###
 rn12 = @reaction_network name begin
