@@ -231,9 +231,9 @@ end
 u0_15 = [:p1=>1.0, :p2=>2.0, :k1=>4.0, :k2=>5.0, :v=>8.0, :K=>9.0, :n=>3, :d=>10.0]
 p_15 = [:X=>4.0, :Y=>3.0, :X2Y=>2.0, :Z=>1.0]
 
-uEnd_13 = solve(ODEProblem(rn10,u0_13,(0.0,10.0),p_13),Rosenbrock23()).u[end]
-uEnd_14 = solve(ODEProblem(rn11,u0_14,(0.0,10.0),p_14),Rosenbrock23()).u[end]
-uEnd_15 = solve(ODEProblem(rn12,u0_15,(0.0,10.0),p_15),Rosenbrock23()).u[end]
+uEnd_13 = solve(ODEProblem(rn13,u0_13,(0.0,10.0),p_13),Rosenbrock23()).u[end]
+uEnd_14 = solve(ODEProblem(rn14,u0_14,(0.0,10.0),p_14),Rosenbrock23()).u[end]
+uEnd_15 = solve(ODEProblem(rn15,u0_15,(0.0,10.0),p_15),Rosenbrock23()).u[end]
 
 @test isapprox(uEnd_13, uEnd_14, rtol = 1e3 * eps())
 @test isapprox(uEnd_14, uEnd_15, rtol = 1e3 * eps())
