@@ -627,7 +627,8 @@ function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothi
             (p isa Symbolics.Symbolic) && findvars!(ps, sts, p, ivs, vars)
         end
     end
-    ReactionSystem(rxs, t, collect(issetequal(sts,sts_in) ? sts_in : sts), collect(ps); spatial_ivs, kwargs...)
+    ReactionSystem(rxs, t, collect(issetequal(sts, sts_in) ? sts_in : sts), collect(ps);
+                   spatial_ivs, kwargs...)
 end
 
 function ReactionSystem(iv; kwargs...)
