@@ -156,8 +156,39 @@ end
 @test isequal(species(rn8)[1], A)
 @test isequal(species(rn8)[2], B)
 
-#### Tests that defaults work. ###
+
+### Tests that order is preserved when set ###
 rn9 = @reaction_network name begin
+    @species X1 X2 X3 X4
+    k4, 0 --> X4
+    k3, 0 --> X3
+    k2, 0 --> X2
+    k1, 0 --> X1
+end
+@test isequal(Symbol.(getfield.(species(rn9),:f)),[:X1, :X2, :X3, :X4]) # Should use other notation to get syms, but can't find it.
+
+rn10 = @reaction_network name begin
+    @parameters k1 k2 k3 k4
+    k4, 0 --> X4
+    k3, 0 --> X3
+    k2, 0 --> X2
+    k1, 0 --> X1
+end
+@test isequal(Symbol.(parameters(rn10)),[:k1, :k2, :k3, :k4])
+
+rn11 = @reaction_network name begin
+    @species X1 X2 X3 X4 Y1 Y2 Y3 Y4
+    @parameters k1 k2 k3 k4 l1 l2 l3 l4
+    k4*Y3+l4, 0 --> X4 + Y4
+    k3*Y1, 0 --> X3
+    k2+l2+l1, Y2 --> X2
+    k1, 0 --> X1
+end
+@test isequal(Symbol.(getfield.(species(rn11),:f)),[:X1, :X2, :X3, :X4, :Y1, :Y2, :Y3, :Y4])
+@test parameters(rn11) == isequal(Symbol.(parameters(rn11)),[:k1, :k2, :k3, :k4, :l1, :l2, :l3, :L4])
+
+#### Tests that defaults work. ###
+rn12 = @reaction_network name begin
     @parameters p=1.0 d1 d2=5
     @species A B=4
     p, 0 --> A
@@ -165,8 +196,7 @@ rn9 = @reaction_network name begin
     (d1, d2), (A, B) --> 0
 end
 
-
-rn10 = @reaction_network name begin
+rn13 = @reaction_network name begin
 @parameters p1=1.0 p2=2.0 k1=4.0 k2=5.0 v=8.0 K=9.0 n=3 d=10.0
 @species X=4.0 Y=3.0 X2Y=2.0 Z=1.0
     (p1,p2), 0 --> (X,Y)
@@ -174,10 +204,10 @@ rn10 = @reaction_network name begin
     hill(X2Y,v,K,n), 0 --> Z
     d, (X,Y,X2Y,Z) --> 0
 end
-u0_10 = []
-p_10 = []
+u0_13 = []
+p_13 = []
 
-rn11 = @reaction_network name begin
+rn14 = @reaction_network name begin
 @parameters p1=1.0 p2 k1=4.0 k2 v=8.0 K n=3 d
 @species X=4.0 Y X2Y Z=1.0
     (p1,p2), 0 --> (X,Y)
@@ -185,10 +215,10 @@ rn11 = @reaction_network name begin
     hill(X2Y,v,K,n), 0 --> Z
     d, (X,Y,X2Y,Z) --> 0
 end
-u0_11 = [:p2=>2.0, :k2=>5.0, :K=>9.0, :d=>10.0]
-p_11 = [:Y=>3.0, :X2Y=>2.0]
+u0_14 = [:p2=>2.0, :k2=>5.0, :K=>9.0, :d=>10.0]
+p_14 = [:Y=>3.0, :X2Y=>2.0]
 
-rn12 = @reaction_network name begin
+rn15 = @reaction_network name begin
 @parameters p1 p2 k1 k2 v K n d
 @species X Y X2Y Z
     (p1,p2), 0 --> (X,Y)
@@ -196,12 +226,12 @@ rn12 = @reaction_network name begin
     hill(X2Y,v,K,n), 0 --> Z
     d, (X,Y,X2Y,Z) --> 0
 end
-u0_12 = [:p1=>1.0, :p2=>2.0, :k1=>4.0, :k2=>5.0, :v=>8.0, :K=>9.0, :n=>3, :d=>10.0]
-p_12 = [:X=>4.0, :Y=>3.0, :X2Y=>2.0, :Z=>1.0]
+u0_15 = [:p1=>1.0, :p2=>2.0, :k1=>4.0, :k2=>5.0, :v=>8.0, :K=>9.0, :n=>3, :d=>10.0]
+p_15 = [:X=>4.0, :Y=>3.0, :X2Y=>2.0, :Z=>1.0]
 
-uEnd_10 = solve(ODEProblem(rn10,u0_10,(0.0,10.0),p_10),Rosenbrock23()).u[end]
-uEnd_11 = solve(ODEProblem(rn11,u0_11,(0.0,10.0),p_11),Rosenbrock23()).u[end]
-uEnd_12 = solve(ODEProblem(rn12,u0_12,(0.0,10.0),p_12),Rosenbrock23()).u[end]
+uEnd_13 = solve(ODEProblem(rn10,u0_13,(0.0,10.0),p_13),Rosenbrock23()).u[end]
+uEnd_14 = solve(ODEProblem(rn11,u0_14,(0.0,10.0),p_14),Rosenbrock23()).u[end]
+uEnd_15 = solve(ODEProblem(rn12,u0_15,(0.0,10.0),p_15),Rosenbrock23()).u[end]
 
-@test isapprox(uEnd_10, uEnd_11, rtol = 1e3 * eps())
-@test isapprox(uEnd_11, uEnd_12, rtol = 1e3 * eps())
+@test isapprox(uEnd_13, uEnd_14, rtol = 1e3 * eps())
+@test isapprox(uEnd_14, uEnd_15, rtol = 1e3 * eps())
