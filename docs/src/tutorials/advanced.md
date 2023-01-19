@@ -24,12 +24,12 @@ rn = @reaction_network begin
 end k
 ```
 occurs at the rate ``d[X]/dt = -k[X]``, it is possible to ignore this by using
-any of the following non-filled arrows when declaring the reaction: `⇐`, `⟽`,
-`⇒`, `⟾`, `⇔`, `⟺`. This means that the reaction
+any of the following non-filled arrows when declaring the reaction: `<=`, `⇐`, `⟽`,
+`⇒`, `⟾`, `=>`, `⇔`, `⟺` (`<=>` currently not possible due to Julia langauge technical reasons). This means that the reaction
 
 ```julia
 rn = @reaction_network begin
-  k, X ⇒ ∅
+  k, X => ∅
 end k
 ```
 
