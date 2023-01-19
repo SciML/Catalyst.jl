@@ -125,8 +125,26 @@ rx2 = Reaction(ν, [I], [R])
 @named sir = ReactionSystem([rx1,rx2],t)
 ```
 
-The `@reaction_network` macro does not currently provide a way to specify
-default values, however, they can be added after creating the system via the
+To set defaults when using the `@reaction_network` macro, use the `@species` and `@parameters` options:
+```julia
+sir = @reaction_network sir begin
+    @species S=999.0 I=1.0 R=0.0
+    @parameters β=1e-4 ν=0.01
+    β, S + I --> 2I
+    ν, I --> R
+end
+```
+it is possible to only declare defaults for a subset of initial conditions or parameters. However, when the `@species` (or `@parameters`) option is used, it has to be followed with the full list of species (or parameters
+```julia
+sir = @reaction_network sir begin
+    @species S I=1.0 R=0.0
+    @parameters β ν=0.01
+    β, S + I --> 2I
+    ν, I --> R
+end
+```
+
+Alternatively, default values can be added after creating the system via the
 `setdefaults!` command, like
 ```julia
 sir = @reaction_network sir begin
