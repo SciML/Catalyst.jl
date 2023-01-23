@@ -211,11 +211,11 @@ rn = @reaction_network begin
 end
 ```
 occurs at the (ODE) rate ``d[X]/dt = -k[X]``, it is possible to override this by
-using any of the following non-filled arrows when declaring the reaction: `⇐`,
-`⟽`, `⇒`, `⟾`, `⇔`, `⟺`. This means that the reaction
+using any of the following non-filled arrows when declaring the reaction: `<=`, `⇐`,
+`⟽`, `=>`, `⇒`, `⟾`, `⇔`, `⟺` (`<=>` currently not possible due to Julia langauge technical reasons). This means that the reaction
 ```julia
 rn = @reaction_network begin
-  k, X ⇒ ∅
+  k, X => ∅
 end
 ```
 will occur at rate ``d[X]/dt = -k`` (which might become a problem since ``[X]``
