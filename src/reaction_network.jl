@@ -277,7 +277,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args[3].args, get_rxexprs(reaction))
     end
 
-
     println(sexprs)
 
     # Returns the rephrased expression.
@@ -409,9 +408,11 @@ end
 # In case "@species option is used, a modified version of this option should be used (with t and t dependency added in).
 function get_sexprs(ssyms, sline)
     sline.args[1] = Symbol("@variables") #Temporary, @species macro does not currently work.
-    if (length(sline.args)>2) && (sline.args[3] isa Expr) sline.args[3].head == :block
+    if (length(sline.args) > 2) && (sline.args[3] isa Expr)
+        sline.args[3].head == :block
         sline.args[3].args = [:t; sline.args[3].args]
-        sline.args[3].args[2:end] = map(arg -> add_spec_time_dep(arg, ssyms), sline.args[3].args[2:end])
+        sline.args[3].args[2:end] = map(arg -> add_spec_time_dep(arg, ssyms),
+                                        sline.args[3].args[2:end])
         return MacroTools.striplines(sline)
     else
         sline.args = [sline.args[1:2]; :t; sline.args[3:end]]
