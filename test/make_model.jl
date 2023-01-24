@@ -176,7 +176,7 @@ differently_written_8 = @reaction_network begin
     (k1 * X1 * X2^2 / 2, k2 * X4), X1 + 2X2 ⟺ X4
     (mm(X3, v1, K1) * X4, k3 * X5), X4 ⇔ X5
     (d1 * X1, d2 * X2, d3 * X3, d4 * X4, d5 * X5), ∅ <= (X1, X2, X3, X4, X5)
-end p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
+end
 push!(identical_networks_2, reaction_networks_standard[7] => differently_written_8)
 
 for networks in identical_networks_2
