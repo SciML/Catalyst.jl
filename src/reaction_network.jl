@@ -280,14 +280,13 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
                        option_lines))
 
-    # Parses reactions, species, and parameters.
-    
+    # Parses reactions, species, and parameters.    
     reactions = get_reactions(reaction_lines)
-    parameters_opts = (haskey(options, :parameters) ? extract_syms(options[:parameters]) : [])
-    species_opts = (haskey(options, :species) ? extract_syms(options[:species]) : [])
-    species_not_opts,parameters_not_opts = extract_species_and_parameters!(reactions,vcat(parameters_opts,species_opts))
-    parameters = vcat(parameters_opts,parameters_not_opts)
-    species = vcat(species_opts,species_not_opts)
+    species_declared = (haskey(options, :species) ? extract_syms(options[:species]) : [])
+    parameters_declared = (haskey(options, :parameters) ? extract_syms(options[:parameters]) : [])
+    species_extracted,parameters_extracted = extract_species_and_parameters!(reactions,vcat(parameters_declared,species_declared))
+    species = vcat(species_declared,species_extracted)
+    parameters = vcat(parameters_declared,parameters_extracted)
     
     # Checks for input errors.
     (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
@@ -301,8 +300,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
               "this is not permited.")
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
-    sexprs = get_sexpr(species, options)
-    pexprs = get_pexpr(parameters, options)
+    sexprs = get_sexpr(species_extracted, options)
+    pexprs = get_pexpr(parameters_extracted, options)
 
     rxexprs = :($(make_ReactionSystem_internal)([], t, nothing, [], []; name = $(name)))
     foreach(speci -> push!(rxexprs.args[6].args, speci), vcat(species))
@@ -310,6 +309,14 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     for reaction in reactions
         push!(rxexprs.args[3].args, get_rxexprs(reaction))
     end
+
+    println(
+        quote
+            $pexprs
+            :(@variables t)
+            $sexprs
+            $rxexprs
+        end)
 
     # Returns the rephrased expression.
     quote
@@ -439,7 +446,6 @@ end
 
 
 function get_sexpr(species, options)
-    println(options)
     sexprs = (haskey(options, :species) ? options[:species] : (isempty(species) ? :() : :(@species)))
     foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, :t)), species)
     sexprs

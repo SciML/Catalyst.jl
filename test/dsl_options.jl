@@ -183,7 +183,7 @@ end
 
 rn10 = @reaction_network begin
     @parameters k1 X2 B2 [isconstantspecies=true] 
-    @species A1 X1
+    @species A1(t) X1(t)
     k1*X1, A1 + B1 --> 0
     k2*X2, A2 + B2 --> 0
 end
@@ -192,7 +192,7 @@ end
 
 rn11 = @reaction_network begin
     @parameters k1 k2
-    @species X1
+    @species X1(t)
     k1*X1, A1 + B1 --> 0
     k2*X2, A2 + B2 --> 0
 end
