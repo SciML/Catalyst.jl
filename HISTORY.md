@@ -27,6 +27,48 @@
   tutorial](https://github.com/SciML/Catalyst.jl/blob/master/docs/src/tutorials/pdes.md)
   to solve the resulting system and add spatial transport.
 
+- An `@species` macro is currently exported. Currently, it is simply a thematic version of (and equivalent to) ModelingToolkit's `@variables`.
+
+- **BREAKING:** Parameters are no longer listed at the end of the DSL macro, but is rather inferred from their position in the reactions. By default, anything that appears as a substrate or product is a species, an everything else is considered a parameter. E.g. what previously was
+  ```julia
+  using Catalyst
+    p, 0 --> X
+    d, X --> 0
+  end p d
+  ```
+  is now 
+  ```julia
+  using Catalyst
+    p, 0 --> X
+    d, X --> 0
+  end
+  ```
+  
+- Two options, `@species` and @parameters` has been added to the DSL. These can be used to designate when something should be a species or parameter. This can be used to set something that would become a parameter to a species. E.g. in:
+  ```julia
+  using Catalyst
+    @species X
+    k*X, 0 --> Y
+  end
+  ```
+  `X` and `Y` will be considered species, while `k` will be considered a parameter. These options take the same arguments as the `@species` and `@parameters` macros. E.g you can set default values using:
+  ```julia
+  using Catalyst
+    @species X=1.0
+    @parameters p=1.0 d=0.1
+    p, 0 --> X
+    d, X --> 0
+  end
+  ```
+  or designate something as a constant species:
+  ```julia
+  using Catalyst
+    @parameters Y [isconstantspecies=true]
+    k, X + Y --> 0
+  end
+  ```
+
+
 ## Catalyst 12.3
 - API functions to generate substrate, product, and net stoichiometry matrices
   should now work with floating point stoichiometric coefficients. Note,
