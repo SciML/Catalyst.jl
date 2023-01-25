@@ -3,6 +3,7 @@
 using Catalyst, ModelingToolkit, OrdinaryDiffEq
 
 ### Test creating networks with/without options. ###
+
 @reaction_network begin (k1, k2), A <--> B end
 @reaction_network begin
     @parameters k1 k2
@@ -100,8 +101,54 @@ end
     (k1, k2), A <--> B
 end
 
+using Catalyst
+### Tests that when either @species or @parameters is given, the otehr is infered properly. ###
+@variables t
 
-# Checks that some created networks are identical.
+rn1 = @reaction_network begin
+    k*X, A + B --> 0
+end
+@test issetequal(species(rn1), @species A(t) B(t))
+@test issetequal(parameters(rn1), @parameters k X) 
+
+rn2 = @reaction_network begin
+    @species A(t) B(t) X(t)
+    k*X, A + B --> 0
+end
+@test issetequal(species(rn2), @species A(t) B(t) X(t))
+@test issetequal(parameters(rn2), @parameters k) 
+
+rn3 = @reaction_network begin
+    @parameters k
+    k*X, A + B --> 0
+end
+@test issetequal(species(rn3), @species A(t) B(t) X(t))
+@test issetequal(parameters(rn3), @parameters k) 
+
+
+rn4 = @reaction_network begin
+    @species A(t) B(t) X(t)
+    @parameters k
+    k*X, A + B --> 0
+end
+@test issetequal(species(rn4), @species A(t) B(t) X(t))
+@test issetequal(parameters(rn4), @parameters k) 
+
+rn5 = @reaction_network begin
+    @parameters k B [isconstantspecies=true]
+    k*X, A + B --> 0
+end
+@test issetequal(species(rn5), @species A(t) X(t))
+@test issetequal(parameters(rn5), @parameters k B) 
+
+# This should throw an error that B must be declared as a constant species.
+@test_throws ArgumentError @reaction_network begin
+    @parameters k B
+    k*X, A + B --> 0
+end
+
+
+### Checks that some created networks are identical. ###
 rn1 = @reaction_network name begin (k1, k2), A <--> B end
 rn2 = @reaction_network name begin
     @parameters k1 k2
@@ -116,9 +163,9 @@ rn4 = @reaction_network name begin
     @species A(t) B(t)
     (k1, k2), A <--> B
 end
-#@test isequal(species(rn1),species(rn2))
-#@test isequal(species(rn2),species(rn3))
-#@test isequal(species(rn3),species(rn4))
+@test isequal(species(rn1),species(rn2))
+@test isequal(species(rn2),species(rn3))
+@test isequal(species(rn3),species(rn4))
 @test isequal(parameters(rn1), parameters(rn2))
 @test isequal(parameters(rn2), parameters(rn3))
 @test isequal(parameters(rn3), parameters(rn4))
@@ -129,7 +176,7 @@ rn6 = @reaction_network name begin
     @species B(t) A(t)
     (k1, k2), A <--> B
 end
-#@test !isequal(species(rn5),species(rn6)) # This does not work, as ReactionSystem does not accept ordering of species, but does that itself.
+@test !isequal(species(rn5),species(rn6))
 @test !isequal(parameters(rn5), parameters(rn6))
 
 
@@ -157,8 +204,7 @@ end
 @test isequal(species(rn8)[2], B)
 
 
-### Tests that order is preserved when set ###
-### Tests that order is preserved when set ###
+### Tests that order is preserved when set. ###
 rn9 = @reaction_network name begin
     @species X1(t) X2(t) X3(t) X4(t)
     k4, 0 --> X4

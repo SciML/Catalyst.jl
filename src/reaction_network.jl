@@ -272,9 +272,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args[3].args, get_rxexprs(reaction))
     end
 
-    println(species)
-    println(parameters)
-
     # Returns the rephrased expression.
     quote
         $pexprs
@@ -338,7 +335,7 @@ function extract_syms(ex::Expr)
     Vector{Union{Symbol, Expr}}(vars.args[end].args)
 end
 # Extracts species (or parameters) from the reactions, given a list parameters (or speices).
-function extract_syms(reactions, excluded_syms::Vector{Union{Symbol, Expr}}, output_syms = Vector{Union{Symbol, Expr}}())
+function extract_syms(reactions, excluded_syms::Vector{Union{Symbol, Expr}}, output_syms = Vector{Union{Symbol, Expr}}())    
     for reaction in reactions
         find_syms_in_expr!(output_syms, reaction.rate, excluded_syms)
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
@@ -360,7 +357,7 @@ end
 # Given an expression, find species (or parameters) in it.
 function find_syms_in_expr!(output_syms, rateex::ExprValues, excluded_syms::Vector)
     if rateex isa Symbol
-        if !(rateex in forbidden_symbols) && !(rateex in excluded_syms)
+        if !(rateex in forbidden_symbols) && !(rateex in excluded_syms) && !(rateex in output_syms)
             push!(output_syms, rateex)
         end
     elseif rateex isa Expr
@@ -374,15 +371,14 @@ end
 
 # Creates the species declaration statement.
 function get_sexprs(ssyms)
+    sexprs = isempty(ssyms) ? :() : :(@species)
     foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, :t)), ssyms)
     sexprs
 end
 # Creates the parameters declaration statement.
 function get_pexprs(psyms)
     pexprs = isempty(psyms) ? :() : :(@parameters)
-    if !isempty(psyms)
-        foreach(psym -> push!(pexprs.args, psym), psyms)
-    end
+    foreach(psym -> push!(pexprs.args, psym), psyms)
     pexprs
 end
 # Creates the reactions declaration statement.
