@@ -172,6 +172,7 @@ push!(identical_networks_2, reaction_networks_standard[7] => differently_written
 
 # Ignore mass action new arrows.
 differently_written_8 = @reaction_network begin
+    @parameters p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
     (p1, p2, p3), ∅ => (X1, X2, X3)
     (k1 * X1 * X2^2 / 2, k2 * X4), X1 + 2X2 ⟺ X4
     (mm(X3, v1, K1) * X4, k3 * X5), X4 ⇔ X5
@@ -254,7 +255,7 @@ rxs_2 = [Reaction(k1, [X1], [X2], [1], [1]),
     Reaction(k4, [X4], [X3], [1], [1]),
     Reaction(p + k5 * X2 * X3, nothing, [X5], nothing, [1]),
     Reaction(d, [X5], nothing, [1], nothing)]
-@named rs_2 = ReactionSystem(rxs_2, t, [X1, X2, X3, X4, X5], [k1, k2, k3, k4, p, k5, d])
+@named rs_2 = ReactionSystem(rxs_2, t, [X1, X2, X5, X3, X4], [k1, k2, k3, k4, p, k5, d])
 push!(identical_networks_4, reaction_networks_constraint[3] => rs_2)
 
 rxs_3 = [Reaction(k1, [X1], [X2], [1], [1]),
