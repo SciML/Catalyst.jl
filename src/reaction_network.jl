@@ -290,8 +290,8 @@ function make_reaction(ex::Expr)
 
     # Parses reactions, species, and parameters.
     reaction = get_reaction(ex)
-    species = extract_species([reaction], [])
-    parameters = extract_parameters([reaction], species)
+    species = extract_syms([reaction], nothing)
+    parameters = extract_syms([reaction], species)
 
     # Checks for input errors.
     !isempty(intersect(forbidden_symbols, union(species, parameters))) &&

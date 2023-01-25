@@ -1,10 +1,10 @@
-### Fecth the require packages ###
+### Fetch the require packages ###
 using SafeTestsets
 
 ### Run the tests ###
 @time begin
 
-    # system type tests
+    # System type tests
     @time @safetestset "ReactionSystem Test" begin include("reactionsystem.jl") end
     @time @safetestset "ReactionSystem Components Test" begin include("reactionsystem_components.jl") end
 
@@ -44,7 +44,7 @@ using SafeTestsets
     #@time @safetestset "Basic Plotting" begin include("plotting.jl") end
     @time @safetestset "Latexify" begin include("latexify.jl") end
 
-    # disable on Macs as can't install GraphViz via jll
+    # Disable on Macs as can't install GraphViz via jll
     if !Sys.isapple()
         @time @safetestset "Graphs" begin include("graphs.jl") end
     end
