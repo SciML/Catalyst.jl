@@ -111,19 +111,9 @@ const forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅]
 # Declares the keys used for various options.
 const option_keys = [:species, :parameters]
 
-### Separate macro for creating species. ###
-macro get_sexprs(species...)
-    base_macro = :(@species)
-    foreach(spec -> push!(base_macro.args, spec), species)
-    ### ADD PART HERE SETTING METADATA, SPECIFYING THAT THESE ARE SPECIES ###
-    return esc(base_macro)
-end
-
-### The @species macro, currently just passing to the @varriables macro. ###
-# Currenrtly not working.
+### The @species macro, basically a copy of the @varriables macro. ###
 macro species(ex...)
     vars = Symbolics._parse_vars(:variables, Real, ex)
-    syms = vars.args[end].args
     lastarg = vars.args[end]
     resize!(vars.args, length(vars.args) - 1)
     push!(vars.args, lastarg)
@@ -264,9 +254,9 @@ struct ReactionStruct
     end
 end
 
-### Main function called by the macro. Rephrases information as a ReactionSystem structure. ###
+### Functions rephrasing the macro input as a ReactionSystem structure. ###
 
-# Takes the reactions, and rephrases it as a "ReactionSystem" call, as designated by the ModelingToolkit IR.
+# Function for creating a ReactionSystem structure (used by the @reaction_network macro).
 function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Handle interpolation of variables
@@ -305,7 +295,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Creates expressions corresponding to actual code from the internal DSL representation.
     sexprs = get_sexpr(species_extracted, options)
     pexprs = get_pexpr(parameters_extracted, options)
-
     rxexprs = :($(make_ReactionSystem_internal)([], t, nothing, [], []; name = $(name)))
     foreach(speci -> push!(rxexprs.args[6].args, speci), vcat(species))
     foreach(parameter -> push!(rxexprs.args[7].args, parameter), parameters)
@@ -322,8 +311,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     end
 end
 
-# Function for creating a single reaction, used by the @reaction macro.
+# Function for creating a Reaction structure (used by the @reaction macro).
 function make_reaction(ex::Expr)
+
     # Handle interpolation of variables
     ex = esc_dollars!(ex)
 
@@ -339,8 +329,8 @@ function make_reaction(ex::Expr)
               "this is not permited.")
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
-    pexprs = get_pexprs(parameters)
-    sexprs = get_sexprs(species)
+    sexprs = get_sexpr(species, Dict{Symbol, Expr}())
+    pexprs = get_pexpr(parameters, Dict{Symbol, Expr}())
     rxexpr = get_rxexprs(reaction)
 
     # Returns the rephrased expression.
@@ -368,22 +358,22 @@ function esc_dollars!(ex)
     ex
 end
 
-# When the user have used the @species (or @parameters) macro, extract species (or parameters) from its input.
+# When the user have used the @species (or @parameters) options, extract species (or parameters) from its input.
 function extract_syms(ex::Expr)
     vars = Symbolics._parse_vars(:parameters, Real, ex.args[3:end])
     Vector{Union{Symbol, Expr}}(vars.args[end].args)
 end
+
+# Function looping through all reactions, found symbols without designated type (species or parameters), and assignes them to teh right category.
 function extract_species_and_parameters!(reactions, excluded_syms,
                                          species = Vector{Union{Symbol, Expr}}(),
                                          parameters = Vector{Union{Symbol, Expr}}())
-    for reaction in reactions,
-        reactant in Iterators.flatten((reaction.substrates, reaction.products))
-
-        add_syms_from_expr!(species, reactant.reactant, vcat(parameters, excluded_syms))
+    for reaction in reactions
+        for reactant in Iterators.flatten((reaction.substrates, reaction.products))
+            add_syms_from_expr!(species, reactant.reactant, vcat(parameters, excluded_syms))
+        end
     end
-    for reaction in reactions,
-        reactant in Iterators.flatten((reaction.substrates, reaction.products))
-
+    for reaction in reactions
         add_syms_from_expr!(parameters, reaction.rate, vcat(species, excluded_syms))
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(parameters, reactant.stoichiometry,
@@ -392,6 +382,7 @@ function extract_species_and_parameters!(reactions, excluded_syms,
     end
     species, parameters
 end
+# Function called by extract_species_and_parameters!, recursively loops through an expression and find symbols (adding them to the push_symbols vector).
 function add_syms_from_expr!(push_symbols, rateex::ExprValues, excluded_syms::Vector)
     if rateex isa Symbol
         if !(rateex in forbidden_symbols) && !(rateex in excluded_syms) &&
@@ -407,70 +398,23 @@ function add_syms_from_expr!(push_symbols, rateex::ExprValues, excluded_syms::Ve
     nothing
 end
 
-# Extracts species (or parameters) from the reactions, given a list parameters (or speices).
-function extract_syms(reactions, excluded_syms::Vector{Union{Symbol, Expr}},
-                      output_syms = Vector{Union{Symbol, Expr}}())
-    for reaction in reactions
-        find_syms_in_expr!(output_syms, reaction.rate, excluded_syms)
-        for reactant in Iterators.flatten((reaction.substrates, reaction.products))
-            find_syms_in_expr!(output_syms, reactant.stoichiometry, excluded_syms)
-            find_syms_in_expr!(output_syms, reactant.reactant, excluded_syms)
-        end
-    end
-    output_syms
-end
-# When parameters are undefined, extracts species from the reactions.
-function extract_syms(reactions, excluded_syms::Nothing,
-                      output_syms = Vector{Union{Symbol, Expr}}())
-    for reaction in reactions
-        for reactant in Iterators.flatten((reaction.substrates, reaction.products))
-            find_syms_in_expr!(output_syms, reactant.reactant, [])
-        end
-    end
-    output_syms
-end
-# Given an expression, find species (or parameters) in it.
-function find_syms_in_expr!(output_syms, rateex::ExprValues, excluded_syms::Vector)
-    if rateex isa Symbol
-        if !(rateex in forbidden_symbols) && !(rateex in excluded_syms) &&
-           !(rateex in output_syms)
-            push!(output_syms, rateex)
-        end
-    elseif rateex isa Expr
-        # note, this (correctly) skips $(...) expressions
-        for i in 2:length(rateex.args)
-            find_syms_in_expr!(output_syms, rateex.args[i], excluded_syms)
-        end
-    end
-    nothing
-end
-
-function get_sexpr(species, options)
+# Given the species that were extracted from the reactions, and the options dictionary, creates the @species ... expression for the macro output.
+function get_sexpr(species_extracted, options)
     sexprs = (haskey(options, :species) ? options[:species] :
-              (isempty(species) ? :() : :(@species)))
-    foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, :t)), species)
+              (isempty(species_extracted) ? :() : :(@species)))
+    foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, :t)),
+            species_extracted)
     sexprs
 end
-function get_pexpr(parameters, options)
+# Given the parameters that were extracted from the reactions, and the options dictionary, creates the @parameters ... expression for the macro output.
+function get_pexpr(parameters_extracted, options)
     pexprs = (haskey(options, :parameters) ? options[:parameters] :
-              (isempty(parameters) ? :() : :(@parameters)))
-    foreach(p -> push!(pexprs.args, p), parameters)
+              (isempty(parameters_extracted) ? :() : :(@parameters)))
+    foreach(p -> push!(pexprs.args, p), parameters_extracted)
     pexprs
 end
 
-# Creates the species declaration statement.
-function get_sexprs(ssyms)
-    sexprs = isempty(ssyms) ? :() : :(@species)
-    foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, :t)), ssyms)
-    sexprs
-end
-# Creates the parameters declaration statement.
-function get_pexprs(psyms)
-    pexprs = isempty(psyms) ? :() : :(@parameters)
-    foreach(psym -> push!(pexprs.args, psym), psyms)
-    pexprs
-end
-# Creates the reactions declaration statement.
+# Creates the reaction vector declaration statement.
 function get_rxexprs(rxstruct)
     subs_init = isempty(rxstruct.substrates) ? nothing : :([])
     subs_stoich_init = deepcopy(subs_init)
@@ -489,6 +433,8 @@ function get_rxexprs(rxstruct)
     end
     reaction_func
 end
+
+### Functions for extracting the reactions from a DSL expression, and putting them ReactionStruct vector. ###
 
 # Reads a line and creates the corresponding ReactionStruct.
 function get_reaction(line)
@@ -532,7 +478,7 @@ function get_reactions(exprs::Vector{Any}, reactions = Vector{ReactionStruct}(un
             throw("Malformed reaction, invalid arrow type used in: $(MacroTools.striplines(line))")
         end
     end
-    return reactions
+    reactions
 end
 
 # Creates a ReactionStruct from the information in a single line.
@@ -585,7 +531,7 @@ function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
     else
         throw("Malformed reaction, bad operator: $(ex.args[1]) found in stochiometry expression $ex.")
     end
-    return reactants
+    reactants
 end
 function processmult(op, mult, stoich)
     if (mult isa Number) && (stoich isa Number)
@@ -605,7 +551,7 @@ function recursive_expand_functions!(expr::ExprValues)
     if expr.head == :call
         !isdefined(Catalyst, expr.args[1]) && (expr.args[1] = esc(expr.args[1]))
     end
-    return expr
+    expr
 end
 
 ### Old functions (for deleting).
