@@ -245,12 +245,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
-    species = haskey(options, :species) ?
-            Vector{Union{Symbol, Expr}}(extract_species_or_params(options[:species])) :
-            extract_species(reactions)
-    parameters = haskey(options, :parameters) ?
-        extract_species_or_params(options[:parameters]) :
-                 extract_parameters(reactions, species)
+    parameters = (haskey(options, :parameters) ? extract_syms(options[:parameters]) : nothing)
+    species = (haskey(options, :species) ? extract_syms(options[:species]) : extract_syms(reactions, parameters))
+    isnothing(parameters) && (parameters = extract_syms(reactions, species))
 
     # Checks for input errors.
     (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
@@ -275,6 +272,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args[3].args, get_rxexprs(reaction))
     end
 
+    println(species)
+    println(parameters)
+
     # Returns the rephrased expression.
     quote
         $pexprs
@@ -291,7 +291,7 @@ function make_reaction(ex::Expr)
 
     # Parses reactions, species, and parameters.
     reaction = get_reaction(ex)
-    species = extract_species([reaction])
+    species = extract_species([reaction], [])
     parameters = extract_parameters([reaction], species)
 
     # Checks for input errors.
@@ -331,76 +331,52 @@ function esc_dollars!(ex)
     ex
 end
 
-# When the user have used the @species/@parameters macro, gets the list of species or parameters.
-function extract_species_or_params(ex)
-    vars = Symbolics._parse_vars(:variables, Real, ex.args[3:end])
-    vars.args[end].args
-end
 
-# Gets the species/parameter symbols from the reactions (when the user has omitted the designation of these).
-function extract_species(reactions::Vector{ReactionStruct},
-                         species = Vector{Union{Symbol, Expr}}())
-    for reaction in reactions,
-        reactant in Iterators.flatten((reaction.substrates, reaction.products))
-
-        !in(reactant.reactant, species) && push!(species, reactant.reactant)
-    end
-    return species
+# When the user have used the @species (or @parameters) macro, extract species (or parameters) from its input.
+function extract_syms(ex::Expr)
+    vars = Symbolics._parse_vars(:parameters, Real, ex.args[3:end])
+    Vector{Union{Symbol, Expr}}(vars.args[end].args)
 end
-function extract_parameters(reactions::Vector{ReactionStruct},
-                            species::Vector{Union{Symbol, Expr}},
-                            parameters = Vector{Symbol}())
-    for rx in reactions
-        find_parameters_in_expr!(parameters, rx.rate, species)
-        for sub in rx.substrates
-            find_parameters_in_expr!(parameters, sub.stoichiometry, species)
-        end
-        for prod in rx.products
-            find_parameters_in_expr!(parameters, prod.stoichiometry, species)
+# Extracts species (or parameters) from the reactions, given a list parameters (or speices).
+function extract_syms(reactions, excluded_syms::Vector{Union{Symbol, Expr}}, output_syms = Vector{Union{Symbol, Expr}}())
+    for reaction in reactions
+        find_syms_in_expr!(output_syms, reaction.rate, excluded_syms)
+        for reactant in Iterators.flatten((reaction.substrates, reaction.products))
+            find_syms_in_expr!(output_syms, reactant.stoichiometry, excluded_syms)
+            find_syms_in_expr!(output_syms, reactant.reactant, excluded_syms)
         end
     end
-    return parameters
+    output_syms
 end
-
-# Goes through an expression, and returns the paramters in it.
-function find_parameters_in_expr!(parameters, rateex::ExprValues,
-                                  species::Vector{Union{Symbol, Expr}})
+# When parameters are undefined, extracts species from the reactions.
+function extract_syms(reactions, excluded_syms::Nothing, output_syms = Vector{Union{Symbol, Expr}}())
+    for reaction in reactions
+        for reactant in Iterators.flatten((reaction.substrates, reaction.products))
+            find_syms_in_expr!(output_syms, reactant.reactant, [])
+        end
+    end
+    output_syms
+end
+# Given an expression, find species (or parameters) in it.
+function find_syms_in_expr!(output_syms, rateex::ExprValues, excluded_syms::Vector)
     if rateex isa Symbol
-        if !(rateex in forbidden_symbols) && !(rateex in species)
-            push!(parameters, rateex)
+        if !(rateex in forbidden_symbols) && !(rateex in excluded_syms)
+            push!(output_syms, rateex)
         end
     elseif rateex isa Expr
         # note, this (correctly) skips $(...) expressions
         for i in 2:length(rateex.args)
-            find_parameters_in_expr!(parameters, rateex.args[i], species)
+            find_parameters_in_expr!(output_syms, rateex.args[i], excluded_syms)
         end
     end
     nothing
 end
 
-# Loops through the users species and parameter inputs, and checks if any have default values.
-function make_default_args(options)
-    defaults = :(Dict([]))
-    haskey(options, :species) && for arg in options[:species]
-        (arg isa Symbol) && continue
-        (arg.head != :(=)) && continue
-        push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
-    end
-    haskey(options, :parameters) && for arg in options[:parameters]
-        (arg isa Symbol) && continue
-        (arg.head != :(=)) && continue
-        push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
-    end
-    return defaults
-end
-
 # Creates the species declaration statement.
 function get_sexprs(ssyms)
-    sexprs = :(@variables t)
     foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, :t)), ssyms)
     sexprs
 end
-
 # Creates the parameters declaration statement.
 function get_pexprs(psyms)
     pexprs = isempty(psyms) ? :() : :(@parameters)
@@ -593,4 +569,62 @@ function get_reactants_deletethis(reactions::Vector{ReactionStruct},
         get_reactants(reaction, reactants)
     end
     return reactants
+end
+
+# Gets the species/parameter symbols from the reactions (when the user has omitted the designation of these).
+function extract_species(reactions::Vector{ReactionStruct}, parameters::Vector, 
+    species = Vector{Union{Symbol, Expr}}())
+for reaction in reactions,
+reactant in Iterators.flatten((reaction.substrates, reaction.products))
+
+find_parameters_in_expr!(species, reaction.rate, parameters)
+!in(reactant.reactant, species) && !in(reactant.reactant, parameters) && push!(species, reactant.reactant)
+end
+return species
+end
+function extract_parameters(reactions::Vector{ReactionStruct},
+       species::Vector{Union{Symbol, Expr}},
+       parameters = Vector{Symbol}())
+for rx in reactions
+find_parameters_in_expr!(parameters, rx.rate, species)
+for sub in rx.substrates
+find_parameters_in_expr!(parameters, sub.stoichiometry, species)
+end
+for prod in rx.products
+find_parameters_in_expr!(parameters, prod.stoichiometry, species)
+end
+end
+return parameters
+end
+
+# Goes through an expression, and returns the paramters in it.
+function find_parameters_in_expr!(parameters, rateex::ExprValues,
+             species::Vector)
+if rateex isa Symbol
+if !(rateex in forbidden_symbols) && !(rateex in species)
+push!(parameters, rateex)
+end
+elseif rateex isa Expr
+# note, this (correctly) skips $(...) expressions
+for i in 2:length(rateex.args)
+find_parameters_in_expr!(parameters, rateex.args[i], species)
+end
+end
+nothing
+end
+
+# Loops through the users species and parameter inputs, and checks if any have default values.
+function make_default_args(options)
+defaults = :(Dict([]))
+haskey(options, :species) && for arg in options[:species]
+(arg isa Symbol) && continue
+(arg.head != :(=)) && continue
+push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
+end
+haskey(options, :parameters) && for arg in options[:parameters]
+(arg isa Symbol) && continue
+(arg.head != :(=)) && continue
+push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
+end
+return defaults
 end
