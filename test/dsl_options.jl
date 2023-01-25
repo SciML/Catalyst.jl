@@ -249,11 +249,11 @@ end
 
 @parameters p d1 d2
 @variables t A(t) B(t)
-@test isequal(parameters(rn8)[1], p)
-@test isequal(parameters(rn8)[2], d1)
-@test isequal(parameters(rn8)[3], d2)
-@test isequal(species(rn8)[1], A)
-@test isequal(species(rn8)[2], B)
+@test isequal(parameters(rn18)[1], p)
+@test isequal(parameters(rn18)[2], d1)
+@test isequal(parameters(rn18)[3], d2)
+@test isequal(species(rn18)[1], A)
+@test isequal(species(rn18)[2], B)
 
 rn20 = @reaction_network name begin
     @species X(t)

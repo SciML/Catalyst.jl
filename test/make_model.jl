@@ -255,7 +255,7 @@ rxs_2 = [Reaction(k1, [X1], [X2], [1], [1]),
     Reaction(k4, [X4], [X3], [1], [1]),
     Reaction(p + k5 * X2 * X3, nothing, [X5], nothing, [1]),
     Reaction(d, [X5], nothing, [1], nothing)]
-@named rs_2 = ReactionSystem(rxs_2, t, [X1, X2, X5, X3, X4], [k1, k2, k3, k4, p, k5, d])
+@named rs_2 = ReactionSystem(rxs_2, t, [X1, X2, X3, X4, X5], [k1, k2, k3, k4, p, k5, d])
 push!(identical_networks_4, reaction_networks_constraint[3] => rs_2)
 
 rxs_3 = [Reaction(k1, [X1], [X2], [1], [1]),

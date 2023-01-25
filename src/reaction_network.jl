@@ -283,11 +283,14 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Parses reactions, species, and parameters.    
     reactions = get_reactions(reaction_lines)
     species_declared = (haskey(options, :species) ? extract_syms(options[:species]) : [])
-    parameters_declared = (haskey(options, :parameters) ? extract_syms(options[:parameters]) : [])
-    species_extracted,parameters_extracted = extract_species_and_parameters!(reactions,vcat(parameters_declared,species_declared))
-    species = vcat(species_declared,species_extracted)
-    parameters = vcat(parameters_declared,parameters_extracted)
-    
+    parameters_declared = (haskey(options, :parameters) ?
+                           extract_syms(options[:parameters]) : [])
+    species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
+                                                                              vcat(parameters_declared,
+                                                                                   species_declared))
+    species = vcat(species_declared, species_extracted)
+    parameters = vcat(parameters_declared, parameters_extracted)
+
     # Checks for input errors.
     (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
         error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
@@ -310,14 +313,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args[3].args, get_rxexprs(reaction))
     end
 
-    println(
-        quote
-            $pexprs
-            :(@variables t)
-            $sexprs
-            $rxexprs
-        end)
-
     # Returns the rephrased expression.
     quote
         $pexprs
@@ -334,8 +329,7 @@ function make_reaction(ex::Expr)
 
     # Parses reactions, species, and parameters.
     reaction = get_reaction(ex)
-    species = extract_syms([reaction], nothing)
-    parameters = extract_syms([reaction], species)
+    species, parameters = extract_species_and_parameters!(reactions, [])
 
     # Checks for input errors.
     !isempty(intersect(forbidden_symbols, union(species, parameters))) &&
@@ -379,14 +373,21 @@ function extract_syms(ex::Expr)
     vars = Symbolics._parse_vars(:parameters, Real, ex.args[3:end])
     Vector{Union{Symbol, Expr}}(vars.args[end].args)
 end
-function extract_species_and_parameters!(reactions,excluded_syms,species=Vector{Union{Symbol, Expr}}(),parameters=Vector{Union{Symbol, Expr}}())
-    for reaction in reactions, reactant in Iterators.flatten((reaction.substrates, reaction.products))
-        add_syms_from_expr!(species, reactant.reactant, vcat(parameters,excluded_syms))
+function extract_species_and_parameters!(reactions, excluded_syms,
+                                         species = Vector{Union{Symbol, Expr}}(),
+                                         parameters = Vector{Union{Symbol, Expr}}())
+    for reaction in reactions,
+        reactant in Iterators.flatten((reaction.substrates, reaction.products))
+
+        add_syms_from_expr!(species, reactant.reactant, vcat(parameters, excluded_syms))
     end
-    for reaction in reactions, reactant in Iterators.flatten((reaction.substrates, reaction.products))
-        add_syms_from_expr!(parameters, reaction.rate, vcat(species,excluded_syms))
+    for reaction in reactions,
+        reactant in Iterators.flatten((reaction.substrates, reaction.products))
+
+        add_syms_from_expr!(parameters, reaction.rate, vcat(species, excluded_syms))
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
-            add_syms_from_expr!(parameters, reactant.stoichiometry, vcat(species,excluded_syms))
+            add_syms_from_expr!(parameters, reactant.stoichiometry,
+                                vcat(species, excluded_syms))
         end
     end
     species, parameters
@@ -444,14 +445,15 @@ function find_syms_in_expr!(output_syms, rateex::ExprValues, excluded_syms::Vect
     nothing
 end
 
-
 function get_sexpr(species, options)
-    sexprs = (haskey(options, :species) ? options[:species] : (isempty(species) ? :() : :(@species)))
+    sexprs = (haskey(options, :species) ? options[:species] :
+              (isempty(species) ? :() : :(@species)))
     foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, :t)), species)
     sexprs
 end
 function get_pexpr(parameters, options)
-    pexprs = (haskey(options, :parameters) ? options[:parameters] : (isempty(parameters) ? :() : :(@parameters)))
+    pexprs = (haskey(options, :parameters) ? options[:parameters] :
+              (isempty(parameters) ? :() : :(@parameters)))
     foreach(p -> push!(pexprs.args, p), parameters)
     pexprs
 end
