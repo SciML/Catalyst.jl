@@ -282,11 +282,11 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
-    parameters = (haskey(options, :parameters) ? extract_syms(options[:parameters]) :
-                  nothing)
-    species = (haskey(options, :species) ? extract_syms(options[:species]) :
-               extract_syms(reactions, parameters))
-    isnothing(parameters) && (parameters = extract_syms(reactions, species))
+    parameters_opts = (haskey(options, :parameters) ? extract_syms(options[:parameters]) : [])
+    species_opts = (haskey(options, :species) ? extract_syms(options[:species]) : [])
+    species_not_opts,parameters_not_opts = extract_species_and_parameters!(reactions,vcat(parameters_opts,species_opts))
+    parameters = vcat(parameters_opts,parameters_not_opts)
+    species = vcat(species_opts,species_not_opts)
 
     # Checks for input errors.
     (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
@@ -300,17 +300,15 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
               "this is not permited.")
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
-    pexprs = haskey(options, :parameters) ? options[:parameters] :
-             get_pexprs(parameters)
-    sexprs = haskey(options, :species) ? options[:species] : get_sexprs(species)
+    sexprs = get_sexpr(species, options)
+    pexprs = get_pexpr(parameters, options)
 
     rxexprs = :($(make_ReactionSystem_internal)([], t, nothing, [], []; name = $(name)))
-    foreach(speci -> push!(rxexprs.args[6].args, speci), species)
+    foreach(speci -> push!(rxexprs.args[6].args, speci), vcat(species))
     foreach(parameter -> push!(rxexprs.args[7].args, parameter), parameters)
     for reaction in reactions
         push!(rxexprs.args[3].args, get_rxexprs(reaction))
     end
-
 
     # Returns the rephrased expression.
     quote
@@ -373,6 +371,33 @@ function extract_syms(ex::Expr)
     vars = Symbolics._parse_vars(:parameters, Real, ex.args[3:end])
     Vector{Union{Symbol, Expr}}(vars.args[end].args)
 end
+function extract_species_and_parameters!(reactions,excluded_syms,species=Vector{Union{Symbol, Expr}}(),parameters=Vector{Union{Symbol, Expr}}())
+    for reaction in reactions, reactant in Iterators.flatten((reaction.substrates, reaction.products))
+        add_syms_from_expr!(species, reactant.reactant, vcat(parameters,excluded_syms))
+    end
+    for reaction in reactions, reactant in Iterators.flatten((reaction.substrates, reaction.products))
+        add_syms_from_expr!(parameters, reaction.rate, vcat(species,excluded_syms))
+        for reactant in Iterators.flatten((reaction.substrates, reaction.products))
+            add_syms_from_expr!(parameters, reactant.stoichiometry, vcat(species,excluded_syms))
+        end
+    end
+    species, parameters
+end
+function add_syms_from_expr!(push_symbols, rateex::ExprValues, excluded_syms::Vector)
+    if rateex isa Symbol
+        if !(rateex in forbidden_symbols) && !(rateex in excluded_syms) &&
+           !(rateex in push_symbols)
+            push!(push_symbols, rateex)
+        end
+    elseif rateex isa Expr
+        # note, this (correctly) skips $(...) expressions
+        for i in 2:length(rateex.args)
+            add_syms_from_expr!(push_symbols, rateex.args[i], excluded_syms)
+        end
+    end
+    nothing
+end
+
 # Extracts species (or parameters) from the reactions, given a list parameters (or speices).
 function extract_syms(reactions, excluded_syms::Vector{Union{Symbol, Expr}},
                       output_syms = Vector{Union{Symbol, Expr}}())
@@ -409,6 +434,18 @@ function find_syms_in_expr!(output_syms, rateex::ExprValues, excluded_syms::Vect
         end
     end
     nothing
+end
+
+
+function get_sexpr(species, options)
+    sexprs = (haskey(options, :species) ? options[species] : (isempty(species) ? :() : :(@species)))
+    foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, :t)), species)
+    sexprs
+end
+function get_pexpr(parameters, options)
+    pexprs = (haskey(options, :parameters) ? options[species] : (isempty(parameters) ? :() : :(@parameters)))
+    foreach(p -> push!(pexprs.args, p), parameters)
+    pexprs
 end
 
 # Creates the species declaration statement.
