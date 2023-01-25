@@ -101,8 +101,8 @@ end
     (k1, k2), A <--> B
 end
 
-using Catalyst
-### Tests that when either @species or @parameters is given, the otehr is infered properly. ###
+
+### Tests that when either @species or @parameters is given, the other is infered properly. ###
 @variables t
 
 rn1 = @reaction_network begin
@@ -122,9 +122,8 @@ rn3 = @reaction_network begin
     @parameters k
     k*X, A + B --> 0
 end
-@test issetequal(species(rn3), @species A(t) B(t) X(t))
-@test issetequal(parameters(rn3), @parameters k) 
-
+@test issetequal(species(rn3), @species A(t) B(t))
+@test issetequal(parameters(rn3), @parameters k X) 
 
 rn4 = @reaction_network begin
     @species A(t) B(t) X(t)
@@ -138,62 +137,115 @@ rn5 = @reaction_network begin
     @parameters k B [isconstantspecies=true]
     k*X, A + B --> 0
 end
-@test issetequal(species(rn5), @species A(t) X(t))
-@test issetequal(parameters(rn5), @parameters k B) 
+@test issetequal(species(rn5), @species A(t))
+@test issetequal(parameters(rn5), @parameters k B X) 
 
-# This should throw an error that B must be declared as a constant species.
-@test_throws ArgumentError @reaction_network begin
-    @parameters k B
+
+### Tests that when some species or parameters are left out, the others are set properly. ###
+@variables t
+
+rn6 = @reaction_network begin
+    @species A(t) 
     k*X, A + B --> 0
 end
+@test issetequal(species(rn6), @species A(t) B(t))
+@test issetequal(parameters(rn6), @parameters k X) 
+
+rn7 = @reaction_network begin
+    @species A(t) X(t) 
+    k*X, A + B --> 0
+end
+@test issetequal(species(rn7), @species A(t) X(t) B(t))
+@test issetequal(parameters(rn7), @parameters k) 
+
+rn7 = @reaction_network begin
+    @parameters B [isconstantspecies=true]
+    k*X, A + B --> 0
+end
+@test issetequal(species(rn7), @species A(t))
+@test issetequal(parameters(rn7), @parameters B k X) 
+
+rn8 = @reaction_network begin
+    @parameters B [isconstantspecies=true] k 
+    k*X, A + B --> 0
+end
+@test issetequal(species(rn8), @species A(t))
+@test issetequal(parameters(rn8), @parameters B k X) 
+
+rn9 = @reaction_network begin
+    @parameters k1 X1 
+    @species A1(t) B1(t)
+    k1*X1, A1 + B1 --> 0
+    k2*X2, A2 + B2 --> 0
+end
+@test issetequal(species(rn9), @species A1(t) B1(t) A2(t) B2(t))
+@test issetequal(parameters(rn9), @parameters k1 X1 k2 X2) 
+
+rn10 = @reaction_network begin
+    @parameters k1 X2 B2 [isconstantspecies=true] 
+    @species A1 X1
+    k1*X1, A1 + B1 --> 0
+    k2*X2, A2 + B2 --> 0
+end
+@test issetequal(species(rn10), @species A1(t) X1(t) B1(t) A2(t))
+@test issetequal(parameters(rn10), @parameters k1 X2 B2 k2) 
+
+rn11 = @reaction_network begin
+    @parameters k1 k2
+    @species X1
+    k1*X1, A1 + B1 --> 0
+    k2*X2, A2 + B2 --> 0
+end
+@test issetequal(species(rn11), @species X1(t) A1(t) A2(t) B1(t) B2(t))
+@test issetequal(parameters(rn11), @parameters k1 k2 X2) 
 
 
 ### Checks that some created networks are identical. ###
-rn1 = @reaction_network name begin (k1, k2), A <--> B end
-rn2 = @reaction_network name begin
+rn12 = @reaction_network name begin (k1, k2), A <--> B end
+rn13 = @reaction_network name begin
     @parameters k1 k2
     (k1, k2), A <--> B
 end
-rn3 = @reaction_network name begin
+rn14 = @reaction_network name begin
     @species A(t) B(t)
     (k1, k2), A <--> B
 end
-rn4 = @reaction_network name begin
+rn15 = @reaction_network name begin
     @parameters k1 k2
     @species A(t) B(t)
     (k1, k2), A <--> B
 end
-@test isequal(species(rn1),species(rn2))
-@test isequal(species(rn2),species(rn3))
-@test isequal(species(rn3),species(rn4))
-@test isequal(parameters(rn1), parameters(rn2))
-@test isequal(parameters(rn2), parameters(rn3))
-@test isequal(parameters(rn3), parameters(rn4))
+@test isequal(species(rn12),species(rn13))
+@test isequal(species(rn13),species(rn14))
+@test isequal(species(rn14),species(rn15))
+@test isequal(parameters(rn12), parameters(rn13))
+@test isequal(parameters(rn13), parameters(rn14))
+@test isequal(parameters(rn14), parameters(rn15))
 
-rn5 = @reaction_network name begin (k1, k2), A <--> B end
-rn6 = @reaction_network name begin
+rn16 = @reaction_network name begin (k1, k2), A <--> B end
+rn17 = @reaction_network name begin
     @parameters k2 k1
     @species B(t) A(t)
     (k1, k2), A <--> B
 end
-@test !isequal(species(rn5),species(rn6))
-@test !isequal(parameters(rn5), parameters(rn6))
+@test !isequal(species(rn16),species(rn17))
+@test !isequal(parameters(rn16), parameters(rn17))
 
 
 ### Checks that the rights things are put in vectors. ###
-rn7 = @reaction_network name begin
+rn18 = @reaction_network name begin
     @parameters p d1 d2
     @species A(t) B(t)
     p, 0 --> A
     1, A --> B
     (d1, d2), (A, B) --> 0
 end
-rn8 = @reaction_network name begin
+rn19 = @reaction_network name begin
     p, 0 --> A
     1, A --> B
     (d1, d2), (A, B) --> 0
 end
-@test isequal(parameters(rn7), parameters(rn8))
+@test isequal(parameters(rn18), parameters(rn19))
 
 @parameters p d1 d2
 @variables t A(t) B(t)
@@ -203,27 +255,50 @@ end
 @test isequal(species(rn8)[1], A)
 @test isequal(species(rn8)[2], B)
 
+rn20 = @reaction_network name begin
+    @species X(t)
+    @parameters S
+    mm(X,v,K), 0 --> Y
+    (k1,k2), 2Y <--> Y2
+    d*Y, S*(Y2+Y) --> 0
+end
+rn21 = @reaction_network name begin
+    @species X(t) Y(t) Y2(t)
+    @parameters v K k1 k2 d S
+    mm(X,v,K), 0 --> Y
+    (k1,k2), 2Y <--> Y2
+    d*Y, S*(Y2+Y) --> 0
+end
+
+@parameters v K k1 k2 d S
+@variables t X(t) Y(t) Y2(t)
+@test length(parameters(rn20))==length(parameters(rn21))==6
+@test length(species(rn20))==length(species(rn21))==3
+@test issetequal(parameters(rn20),parameters(rn21))
+@test issetequal(parameters(rn21),[v K k1 k2 d S])
+@test issetequal(species(rn20), species(rn21))
+@test issetequal(species(rn21), [X Y Y2])
 
 ### Tests that order is preserved when set. ###
-rn9 = @reaction_network name begin
+rn22 = @reaction_network name begin
     @species X1(t) X2(t) X3(t) X4(t)
     k4, 0 --> X4
     k3, 0 --> X3
     k2, 0 --> X2
     k1, 0 --> X1
 end
-@test isequal(map(Symbol ∘ ModelingToolkit.operation, states(rn9)),[:X1, :X2, :X3, :X4])
+@test isequal(map(Symbol ∘ ModelingToolkit.operation, states(rn22)),[:X1, :X2, :X3, :X4])
 
-rn10 = @reaction_network name begin
+rn23 = @reaction_network name begin
     @parameters k1 k2 k3 k4
     k4, 0 --> X4
     k3, 0 --> X3
     k2, 0 --> X2
     k1, 0 --> X1
 end
-@test isequal(map(Symbol, parameters(rn10)),[:k1, :k2, :k3, :k4])
+@test isequal(map(Symbol, parameters(rn23)),[:k1, :k2, :k3, :k4])
 
-rn11 = @reaction_network name begin
+rn24 = @reaction_network name begin
     @species X1(t) X2(t) X3(t) X4(t) Y1(t) Y2(t) Y3(t) Y4(t)
     @parameters k1 k2 k3 k4 l1 l2 l3 l4
     k4*Y3+l4, 0 --> X4 + Y4
@@ -231,12 +306,12 @@ rn11 = @reaction_network name begin
     k2+l2+l1, Y2 --> X2
     k1, 0 --> X1
 end
-@test isequal(map(Symbol ∘ ModelingToolkit.operation, states(rn11)),[:X1, :X2, :X3, :X4, :Y1, :Y2, :Y3, :Y4])
-@test isequal(map(Symbol, parameters(rn11)),[:k1, :k2, :k3, :k4, :l1, :l2, :l3, :l4])
+@test isequal(map(Symbol ∘ ModelingToolkit.operation, states(rn24)),[:X1, :X2, :X3, :X4, :Y1, :Y2, :Y3, :Y4])
+@test isequal(map(Symbol, parameters(rn24)),[:k1, :k2, :k3, :k4, :l1, :l2, :l3, :l4])
 
 
 #### Tests that defaults work. ###
-rn12 = @reaction_network name begin
+rn25 = @reaction_network name begin
     @parameters p=1.0 d1 d2=5
     @species A(t) B(t)=4
     p, 0 --> A
@@ -244,7 +319,7 @@ rn12 = @reaction_network name begin
     (d1, d2), (A, B) --> 0
 end
 
-rn13 = @reaction_network name begin
+rn26 = @reaction_network name begin
 @parameters p1=1.0 p2=2.0 k1=4.0 k2=5.0 v=8.0 K=9.0 n=3 d=10.0
 @species X(t)=4.0 Y(t)=3.0 X2Y(t)=2.0 Z(t)=1.0
     (p1,p2), 0 --> (X,Y)
@@ -252,10 +327,10 @@ rn13 = @reaction_network name begin
     hill(X2Y,v,K,n), 0 --> Z
     d, (X,Y,X2Y,Z) --> 0
 end
-u0_13 = []
-p_13 = []
+u0_26 = []
+p_26 = []
 
-rn14 = @reaction_network name begin
+rn27 = @reaction_network name begin
 @parameters p1=1.0 p2 k1=4.0 k2 v=8.0 K n=3 d
 @species X(t)=4.0 Y(t) X2Y(t) Z(t)=1.0
     (p1,p2), 0 --> (X,Y)
@@ -263,10 +338,10 @@ rn14 = @reaction_network name begin
     hill(X2Y,v,K,n), 0 --> Z
     d, (X,Y,X2Y,Z) --> 0
 end
-u0_14 = [:p2=>2.0, :k2=>5.0, :K=>9.0, :d=>10.0]
-p_14 = [:Y=>3.0, :X2Y=>2.0]
+u0_27 = [:p2=>2.0, :k2=>5.0, :K=>9.0, :d=>10.0]
+p_27 = [:Y=>3.0, :X2Y=>2.0]
 
-rn15 = @reaction_network name begin
+rn28 = @reaction_network name begin
 @parameters p1 p2 k1 k2 v K n d
 @species X(t) Y(t) X2Y(t) Z(t)
     (p1,p2), 0 --> (X,Y)
@@ -274,12 +349,12 @@ rn15 = @reaction_network name begin
     hill(X2Y,v,K,n), 0 --> Z
     d, (X,Y,X2Y,Z) --> 0
 end
-u0_15 = [:p1=>1.0, :p2=>2.0, :k1=>4.0, :k2=>5.0, :v=>8.0, :K=>9.0, :n=>3, :d=>10.0]
-p_15 = [:X=>4.0, :Y=>3.0, :X2Y=>2.0, :Z=>1.0]
+u0_28 = [:p1=>1.0, :p2=>2.0, :k1=>4.0, :k2=>5.0, :v=>8.0, :K=>9.0, :n=>3, :d=>10.0]
+p_28 = [:X=>4.0, :Y=>3.0, :X2Y=>2.0, :Z=>1.0]
 
-uEnd_13 = solve(ODEProblem(rn13,u0_13,(0.0,10.0),p_13),Rosenbrock23()).u[end]
-uEnd_14 = solve(ODEProblem(rn14,u0_14,(0.0,10.0),p_14),Rosenbrock23()).u[end]
-uEnd_15 = solve(ODEProblem(rn15,u0_15,(0.0,10.0),p_15),Rosenbrock23()).u[end]
+uEnd_26 = solve(ODEProblem(rn26,u0_26,(0.0,10.0),p_26),Rosenbrock23()).u[end]
+uEnd_27 = solve(ODEProblem(rn27,u0_27,(0.0,10.0),p_27),Rosenbrock23()).u[end]
+uEnd_28 = solve(ODEProblem(rn28,u0_28,(0.0,10.0),p_28),Rosenbrock23()).u[end]
 
-@test isapprox(uEnd_13, uEnd_14, rtol = 1e3 * eps())
-@test isapprox(uEnd_14, uEnd_15, rtol = 1e3 * eps())
+@test isapprox(uEnd_26, uEnd_27, rtol = 1e3 * eps())
+@test isapprox(uEnd_27, uEnd_28, rtol = 1e3 * eps())

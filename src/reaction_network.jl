@@ -281,13 +281,14 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
                        option_lines))
 
     # Parses reactions, species, and parameters.
+    
     reactions = get_reactions(reaction_lines)
     parameters_opts = (haskey(options, :parameters) ? extract_syms(options[:parameters]) : [])
     species_opts = (haskey(options, :species) ? extract_syms(options[:species]) : [])
     species_not_opts,parameters_not_opts = extract_species_and_parameters!(reactions,vcat(parameters_opts,species_opts))
     parameters = vcat(parameters_opts,parameters_not_opts)
     species = vcat(species_opts,species_not_opts)
-
+    
     # Checks for input errors.
     (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
         error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
@@ -438,12 +439,13 @@ end
 
 
 function get_sexpr(species, options)
-    sexprs = (haskey(options, :species) ? options[species] : (isempty(species) ? :() : :(@species)))
+    println(options)
+    sexprs = (haskey(options, :species) ? options[:species] : (isempty(species) ? :() : :(@species)))
     foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, :t)), species)
     sexprs
 end
 function get_pexpr(parameters, options)
-    pexprs = (haskey(options, :parameters) ? options[species] : (isempty(parameters) ? :() : :(@parameters)))
+    pexprs = (haskey(options, :parameters) ? options[:parameters] : (isempty(parameters) ? :() : :(@parameters)))
     foreach(p -> push!(pexprs.args, p), parameters)
     pexprs
 end
