@@ -1,3 +1,40 @@
+### Temporary deprecation warning - Eventually to be removed. ###
+deprication_message = """
+@reaction_network notation where parameters are delacred afetr "end", e.g. like:
+
+@reaction_network begin
+    p, 0 --> X
+    d, X --> 0
+end p d
+
+has been depricated in favour of a notation where the parameter values are infered, e.g:
+
+@reaction_network begin
+    p, 0 --> X
+    d, X --> 0
+end p d
+
+If desired, parameters (and species) can now be designated through the @parameters (and @species) macro, e.g:
+
+@reaction_network begin
+    @parameters p d
+    p, 0 --> X
+    d, X --> 0
+end 
+"""
+macro reaction_network(name::Symbol, ex::Expr, parameters...)
+    error(deprication_message)
+end
+macro reaction_network(name::Expr, ex::Expr, parameters...)
+    error(deprication_message)
+end
+macro reaction_network(ex::Expr, parameters...)
+    error(deprication_message)
+end
+macro reaction_network(name::Symbol = gensym(:ReactionSystem))
+    error(deprication_message)
+end
+
 """
 Macro that inputs an expression corresponding to a reaction network and outputs
 a `ReactionNetwork` that can be used as input to generation of ODE, SDE, and
