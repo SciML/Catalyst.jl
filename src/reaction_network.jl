@@ -311,6 +311,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args[3].args, get_rxexprs(reaction))
     end
 
+
     # Returns the rephrased expression.
     quote
         $pexprs
@@ -404,7 +405,7 @@ function find_syms_in_expr!(output_syms, rateex::ExprValues, excluded_syms::Vect
     elseif rateex isa Expr
         # note, this (correctly) skips $(...) expressions
         for i in 2:length(rateex.args)
-            find_parameters_in_expr!(output_syms, rateex.args[i], excluded_syms)
+            find_syms_in_expr!(output_syms, rateex.args[i], excluded_syms)
         end
     end
     nothing
