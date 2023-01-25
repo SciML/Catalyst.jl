@@ -84,8 +84,13 @@ end
 
 ### The @species macro, currently just passing to the @varriables macro. ###
 # Currenrtly not working.
-macro species(args...)
-    return :(@variables $(args...))
+macro species(ex...)
+    vars = Symbolics._parse_vars(:variables, Real, ex)
+    syms = vars.args[end].args
+    lastarg = vars.args[end]
+    resize!(vars.args, length(vars.args)-1)
+    push!(vars.args, lastarg)
+    esc(vars)
 end
 
 ### The main macro, takes reaction network notation and returns a ReactionSystem. ###
@@ -235,18 +240,16 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     option_lines = filter(x -> x.head == :macrocall, ex.args)
 
     # Get macro options.
-    options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => remake_quote(arg.args[3:end]),
-                       option_lines))
-    options_full_line = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
+    options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
                                  option_lines))
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
     species = haskey(options, :species) ?
-              Vector{Union{Symbol, Expr}}(get_species_or_params.(options[:species])) :
-              extract_species(reactions)
+            Vector{Union{Symbol, Expr}}(extract_species_or_params(options[:species])) :
+            extract_species(reactions)
     parameters = haskey(options, :parameters) ?
-                 get_species_or_params.(options[:parameters]) :
+        extract_species_or_params(options[:parameters]) :
                  extract_parameters(reactions, species)
 
     # Checks for input errors.
@@ -260,17 +263,12 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
                     intersect(forbidden_symbols, union(species, parameters)))...)) *
               "this is not permited.")
 
-    # Prepares defaults.
-    defaults = make_default_args(options)
-
     # Creates expressions corresponding to actual code from the internal DSL representation.
-    pexprs = haskey(options, :parameters) ? options_full_line[:parameters] :
-             get_pexprs(parameters)
-    sexprs = haskey(options, :species) ? get_sexprs(species, options_full_line[:species]) :
-             get_sexprs(species)
+    pexprs = haskey(options, :parameters) ? options[:parameters] :
+            get_pexprs(parameters)
+    sexprs = haskey(options, :species) ? options[:species] : get_sexprs(species)
 
-    rxexprs = :($(make_ReactionSystem_internal)([], t, nothing, [], []; name = $(name),
-                                                defaults = $(defaults)))
+    rxexprs = :($(make_ReactionSystem_internal)([], t, nothing, [], []; name = $(name)))
     foreach(speci -> push!(rxexprs.args[6].args, speci), species)
     foreach(parameter -> push!(rxexprs.args[7].args, parameter), parameters)
     for reaction in reactions
@@ -280,6 +278,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Returns the rephrased expression.
     quote
         $pexprs
+        :(@variables t)
         $sexprs
         $rxexprs
     end
@@ -332,13 +331,11 @@ function esc_dollars!(ex)
     ex
 end
 
-# If species or parameters are given as a quote, this handle sthat.
-function remake_quote(expr)
-    (expr isa Vector && expr[1] isa Expr && expr[1].head == :block) ? expr[1].args : expr
+# When the user have used the @species/@parameters macro, gets the list of species or parameters.
+function extract_species_or_params(ex)
+    vars = Symbolics._parse_vars(:variables, Real, ex.args[3:end])
+    vars.args[end].args
 end
-# Gets the species/parameter symbols designated by the user.
-get_species_or_params(ex::Symbol) = ex
-get_species_or_params(ex::Expr) = ex.args[1]
 
 # Gets the species/parameter symbols from the reactions (when the user has omitted the designation of these).
 function extract_species(reactions::Vector{ReactionStruct},
@@ -402,27 +399,6 @@ function get_sexprs(ssyms)
     sexprs = :(@variables t)
     foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, :t)), ssyms)
     sexprs
-end
-# In case "@species option is used, a modified version of this option should be used (with t and t dependency added in).
-function get_sexprs(ssyms, sline)
-    sline.args[1] = Symbol("@variables") #Temporary, @species macro does not currently work.
-    if (length(sline.args) > 2) && (sline.args[3] isa Expr) &&
-       (sline.args[3].head == :block)
-        sline.args[3].args = [:t; sline.args[3].args]
-        sline.args[3].args[2:end] = map(arg -> add_spec_time_dep(arg, ssyms),
-                                        sline.args[3].args[2:end])
-        return MacroTools.striplines(sline)
-    else
-        sline.args = [sline.args[1:2]; :t; sline.args[3:end]]
-        sline.args[4:end] = map(arg -> add_spec_time_dep(arg, ssyms), sline.args[4:end])
-        return MacroTools.striplines(sline)
-    end
-end
-# modifies a species in the @species option declaration to incldue t dependency.
-function add_spec_time_dep(ex, syms)
-    (ex isa Symbol) && return in(ex, syms) ? :($ex(t)) : ex
-    (ex.head == :(=)) && in(ex.args[1], syms) && return :($(ex.args[1])(t) = $(ex.args[2]))
-    return ex
 end
 
 # Creates the parameters declaration statement.

@@ -335,11 +335,11 @@ end
 By using the `@species` and ` @parameters` options within the `@reaction_network` macro, one can manually declare what should be considered a species or parameter. E.g in:
 ```@example tut2
 rn = @reaction_network begin
-  @species X Y
+  @species X(t) Y(t)
   k*X, Y --> 0
 end
 ```
-`X` and `Y` are set as species. Similarly 
+`X` and `Y` are set as species. Please note that when declaring species using the `@species` option, their dependant variable (almost always `t`) also needs to be desiganted. Similarly 
 ```@example tut2
 rn = @reaction_network begin
   @parameters k
@@ -349,7 +349,7 @@ end
 designates that `k` (and only `k`) should be considered a parameter. However, in this case the DSL does not know what to do with `X`, and throws an error. Instead, it is possible to use both options simultaneously:
 ```@example tut2
 rn = @reaction_network begin
-  @species X Y
+  @species X(t) Y(t)
   @parameters k
   k*X, Y --> 0
 end
@@ -386,6 +386,8 @@ species(rn)
 ```
 parameters(rn)
 ```
+It should be noted if further modifications are made to a reaction network, the ordering set here cannot be guaranteed.
+
 
 Finally, if prefered, the `@species` and `@parameters` options can also be used in `begin ... end` block form:
 ```
@@ -396,8 +398,8 @@ rn = @reaction_network begin
         X2
     end
     @species begin
-        d1
-        d2
+        d1(t)
+        d2(t)
     end
   d2, X2 --> 0
   d1, X1 --> 0
@@ -410,7 +412,7 @@ especially when declaring defalt values (next section), this can make code clear
 When using the `@species` and ` @parameters` options to declare species and/or parameters, one can also provide initial conditions for each component:
 ```@example tut2
 rn = @reaction_network begin
-  @species X=1.0
+  @species X(t)=1.0
   @parameters p=1.0, d=0.1
   p, 0 --> X
   d, X -->
@@ -430,7 +432,7 @@ plot(sol)
 When providing default values, it is possible to do so for only a subset of the species or parameters:
 ```@example tut2
 rn = @reaction_network begin
-  @species X
+  @species X(t)
   @parameters p=1.0, d
   p, 0 --> X
   d, X -->
