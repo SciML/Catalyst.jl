@@ -88,7 +88,7 @@ macro species(ex...)
     vars = Symbolics._parse_vars(:variables, Real, ex)
     syms = vars.args[end].args
     lastarg = vars.args[end]
-    resize!(vars.args, length(vars.args)-1)
+    resize!(vars.args, length(vars.args) - 1)
     push!(vars.args, lastarg)
     esc(vars)
 end
@@ -241,12 +241,14 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Get macro options.
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
-                                 option_lines))
+                       option_lines))
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
-    parameters = (haskey(options, :parameters) ? extract_syms(options[:parameters]) : nothing)
-    species = (haskey(options, :species) ? extract_syms(options[:species]) : extract_syms(reactions, parameters))
+    parameters = (haskey(options, :parameters) ? extract_syms(options[:parameters]) :
+                  nothing)
+    species = (haskey(options, :species) ? extract_syms(options[:species]) :
+               extract_syms(reactions, parameters))
     isnothing(parameters) && (parameters = extract_syms(reactions, species))
 
     # Checks for input errors.
@@ -262,7 +264,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     pexprs = haskey(options, :parameters) ? options[:parameters] :
-            get_pexprs(parameters)
+             get_pexprs(parameters)
     sexprs = haskey(options, :species) ? options[:species] : get_sexprs(species)
 
     rxexprs = :($(make_ReactionSystem_internal)([], t, nothing, [], []; name = $(name)))
@@ -328,14 +330,14 @@ function esc_dollars!(ex)
     ex
 end
 
-
 # When the user have used the @species (or @parameters) macro, extract species (or parameters) from its input.
 function extract_syms(ex::Expr)
     vars = Symbolics._parse_vars(:parameters, Real, ex.args[3:end])
     Vector{Union{Symbol, Expr}}(vars.args[end].args)
 end
 # Extracts species (or parameters) from the reactions, given a list parameters (or speices).
-function extract_syms(reactions, excluded_syms::Vector{Union{Symbol, Expr}}, output_syms = Vector{Union{Symbol, Expr}}())    
+function extract_syms(reactions, excluded_syms::Vector{Union{Symbol, Expr}},
+                      output_syms = Vector{Union{Symbol, Expr}}())
     for reaction in reactions
         find_syms_in_expr!(output_syms, reaction.rate, excluded_syms)
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
@@ -346,7 +348,8 @@ function extract_syms(reactions, excluded_syms::Vector{Union{Symbol, Expr}}, out
     output_syms
 end
 # When parameters are undefined, extracts species from the reactions.
-function extract_syms(reactions, excluded_syms::Nothing, output_syms = Vector{Union{Symbol, Expr}}())
+function extract_syms(reactions, excluded_syms::Nothing,
+                      output_syms = Vector{Union{Symbol, Expr}}())
     for reaction in reactions
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             find_syms_in_expr!(output_syms, reactant.reactant, [])
@@ -357,7 +360,8 @@ end
 # Given an expression, find species (or parameters) in it.
 function find_syms_in_expr!(output_syms, rateex::ExprValues, excluded_syms::Vector)
     if rateex isa Symbol
-        if !(rateex in forbidden_symbols) && !(rateex in excluded_syms) && !(rateex in output_syms)
+        if !(rateex in forbidden_symbols) && !(rateex in excluded_syms) &&
+           !(rateex in output_syms)
             push!(output_syms, rateex)
         end
     elseif rateex isa Expr
@@ -568,59 +572,60 @@ function get_reactants_deletethis(reactions::Vector{ReactionStruct},
 end
 
 # Gets the species/parameter symbols from the reactions (when the user has omitted the designation of these).
-function extract_species(reactions::Vector{ReactionStruct}, parameters::Vector, 
-    species = Vector{Union{Symbol, Expr}}())
-for reaction in reactions,
-reactant in Iterators.flatten((reaction.substrates, reaction.products))
+function extract_species(reactions::Vector{ReactionStruct}, parameters::Vector,
+                         species = Vector{Union{Symbol, Expr}}())
+    for reaction in reactions,
+        reactant in Iterators.flatten((reaction.substrates, reaction.products))
 
-find_parameters_in_expr!(species, reaction.rate, parameters)
-!in(reactant.reactant, species) && !in(reactant.reactant, parameters) && push!(species, reactant.reactant)
-end
-return species
+        find_parameters_in_expr!(species, reaction.rate, parameters)
+        !in(reactant.reactant, species) && !in(reactant.reactant, parameters) &&
+            push!(species, reactant.reactant)
+    end
+    return species
 end
 function extract_parameters(reactions::Vector{ReactionStruct},
-       species::Vector{Union{Symbol, Expr}},
-       parameters = Vector{Symbol}())
-for rx in reactions
-find_parameters_in_expr!(parameters, rx.rate, species)
-for sub in rx.substrates
-find_parameters_in_expr!(parameters, sub.stoichiometry, species)
-end
-for prod in rx.products
-find_parameters_in_expr!(parameters, prod.stoichiometry, species)
-end
-end
-return parameters
+                            species::Vector{Union{Symbol, Expr}},
+                            parameters = Vector{Symbol}())
+    for rx in reactions
+        find_parameters_in_expr!(parameters, rx.rate, species)
+        for sub in rx.substrates
+            find_parameters_in_expr!(parameters, sub.stoichiometry, species)
+        end
+        for prod in rx.products
+            find_parameters_in_expr!(parameters, prod.stoichiometry, species)
+        end
+    end
+    return parameters
 end
 
 # Goes through an expression, and returns the paramters in it.
 function find_parameters_in_expr!(parameters, rateex::ExprValues,
-             species::Vector)
-if rateex isa Symbol
-if !(rateex in forbidden_symbols) && !(rateex in species)
-push!(parameters, rateex)
-end
-elseif rateex isa Expr
-# note, this (correctly) skips $(...) expressions
-for i in 2:length(rateex.args)
-find_parameters_in_expr!(parameters, rateex.args[i], species)
-end
-end
-nothing
+                                  species::Vector)
+    if rateex isa Symbol
+        if !(rateex in forbidden_symbols) && !(rateex in species)
+            push!(parameters, rateex)
+        end
+    elseif rateex isa Expr
+        # note, this (correctly) skips $(...) expressions
+        for i in 2:length(rateex.args)
+            find_parameters_in_expr!(parameters, rateex.args[i], species)
+        end
+    end
+    nothing
 end
 
 # Loops through the users species and parameter inputs, and checks if any have default values.
 function make_default_args(options)
-defaults = :(Dict([]))
-haskey(options, :species) && for arg in options[:species]
-(arg isa Symbol) && continue
-(arg.head != :(=)) && continue
-push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
-end
-haskey(options, :parameters) && for arg in options[:parameters]
-(arg isa Symbol) && continue
-(arg.head != :(=)) && continue
-push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
-end
-return defaults
+    defaults = :(Dict([]))
+    haskey(options, :species) && for arg in options[:species]
+        (arg isa Symbol) && continue
+        (arg.head != :(=)) && continue
+        push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
+    end
+    haskey(options, :parameters) && for arg in options[:parameters]
+        (arg isa Symbol) && continue
+        (arg.head != :(=)) && continue
+        push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
+    end
+    return defaults
 end
