@@ -1,26 +1,34 @@
 ### Temporary deprecation warning - Eventually to be removed. ###
 deprication_message = """
-@reaction_network notation where parameters are delacred afetr "end", e.g. like:
+@reaction_network notation where parameters are declared after "end", e.g. like:
 
+```julia
 @reaction_network begin
     p, 0 --> X
     d, X --> 0
 end p d
+```
 
-has been depricated in favour of a notation where the parameter values are infered, e.g:
+has been deprecated in favor of a notation where the parameters are inferred, e.g:
 
+```julia
 @reaction_network begin
     p, 0 --> X
     d, X --> 0
 end p d
+```
 
-If desired, parameters (and species) can now be designated through the @parameters (and @species) macro, e.g:
+Parameters and species can be explicitly indicated using the @parameters and @species
+macros, e.g:
 
+```julia
 @reaction_network begin
     @parameters p d
+    @species X(t)
     p, 0 --> X
     d, X --> 0
 end
+```
 """
 macro reaction_network(name::Symbol, ex::Expr, parameters...)
     error(deprication_message)

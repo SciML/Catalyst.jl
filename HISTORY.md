@@ -27,42 +27,70 @@
   tutorial](https://github.com/SciML/Catalyst.jl/blob/master/docs/src/tutorials/pdes.md)
   to solve the resulting system and add spatial transport.
 
-- An `@species` macro is currently exported. Currently, it is simply a thematic version of (and equivalent to) ModelingToolkit's `@variables`.
+- An `@species` macro was added. Currently, it is simply a thematic version of
+  (and equivalent to) ModelingToolkit's `@variables`.
 
-- **BREAKING:** Parameters are no longer listed at the end of the DSL macro, but is rather inferred from their position in the reactions. By default, anything that appears as a substrate or product is a species, an everything else is considered a parameter. E.g. what previously was
+- **BREAKING:** Parameters no longer need to be listed at the end of the DSL
+  macro, but are instead inferred from their position in the reaction
+  statements. By default, any symbol that appears as a substrate or product is a
+  species, while any other is a parameter. That is, parameters are those that
+  only appear within a rate expression and/or as a stoichiometric coefficient. E.g.
+  what previously was
   ```julia
   using Catalyst
+  rn = @reaction_network begin
     p, 0 --> X
     d, X --> 0
   end p d
   ```
-  is now 
+  is now
   ```julia
   using Catalyst
+  rn = @reaction_network begin
     p, 0 --> X
     d, X --> 0
   end
   ```
-  
-- Two options, `@species` and @parameters` has been added to the DSL. These can be used to designate when something should be a species or parameter. This can be used to set something that would become a parameter to a species. E.g. in:
+  More generally, in the reaction system
+  ```julia
+  rn = @reaction_network begin
+      k*k1*A, A --> B
+      k2, k1 + k*A --> B
+  end
+  ```
+  `k` and `k2` are inferred as parameters by the preceding convention, while
+  `A`, `B` and `k1` are species.
+
+- More explicit control over which symbols are treated as parameters vs. species
+  is available through the new DSL macros, `@species` and `@parameters`. These
+  can be used to designate when something should be a species or parameter,
+  overriding the default DSL assignments. This can be used to set something that
+  would by default be interpreted as a parameter to actually be a species. E.g.
+  in:
   ```julia
   using Catalyst
-    @species X
+  rn = @reaction_network begin
+    @species X(t)
     k*X, 0 --> Y
   end
   ```
-  `X` and `Y` will be considered species, while `k` will be considered a parameter. These options take the same arguments as the `@species` and `@parameters` macros. E.g you can set default values using:
+  `X` and `Y` will be considered species, while `k` will be considered a
+  parameter. These options take the same arguments as the `@species` (i.e.
+  `@variables`) and `@parameters` macros, and support default values and setting
+  metadata. E.g you can set default values using:
   ```julia
   using Catalyst
-    @species X=1.0
+  rn = @reaction_network begin
+    @species X(t)=1.0
     @parameters p=1.0 d=0.1
     p, 0 --> X
     d, X --> 0
   end
   ```
-  or designate something as a constant species:
+  or designate a parameter as representing a constant species using metadata:
   ```julia
   using Catalyst
+  rn = @reaction_network begin
     @parameters Y [isconstantspecies=true]
     k, X + Y --> 0
   end
