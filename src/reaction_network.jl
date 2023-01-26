@@ -20,7 +20,7 @@ If desired, parameters (and species) can now be designated through the @paramete
     @parameters p d
     p, 0 --> X
     d, X --> 0
-end 
+end
 """
 macro reaction_network(name::Symbol, ex::Expr, parameters...)
     error(deprication_message)
@@ -29,9 +29,6 @@ macro reaction_network(name::Expr, ex::Expr, parameters...)
     error(deprication_message)
 end
 macro reaction_network(ex::Expr, parameters...)
-    error(deprication_message)
-end
-macro reaction_network(name::Symbol = gensym(:ReactionSystem))
     error(deprication_message)
 end
 
@@ -270,7 +267,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
                        option_lines))
 
-    # Parses reactions, species, and parameters.    
+    # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
     species_declared = (haskey(options, :species) ? extract_syms(options[:species]) : [])
     parameters_declared = (haskey(options, :parameters) ?
