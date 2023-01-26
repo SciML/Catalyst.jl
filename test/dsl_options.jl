@@ -269,36 +269,45 @@ rn21 = @reaction_network name begin
     (k1,k2), 2Y <--> Y2
     d*Y, S*(Y2+Y) --> 0
 end
+rn22 = @reaction_network name begin
+    @species X(t) Y2(t)
+    @parameters d k1
+    mm(X,v,K), 0 --> Y
+    (k1,k2), 2Y <--> Y2
+    d*Y, S*(Y2+Y) --> 0
+end
 
 @parameters v K k1 k2 d S
 @variables t X(t) Y(t) Y2(t)
-@test length(parameters(rn20))==length(parameters(rn21))==6
-@test length(species(rn20))==length(species(rn21))==3
+@test length(parameters(rn20))==length(parameters(rn21))==length(parameters(rn22))==6
+@test length(species(rn20))==length(species(rn21))==length(species(rn22))==3
 @test issetequal(parameters(rn20),parameters(rn21))
-@test issetequal(parameters(rn21),[v K k1 k2 d S])
+@test issetequal(parameters(rn21),parameters(rn22))
+@test issetequal(parameters(rn22),[v K k1 k2 d S])
 @test issetequal(species(rn20), species(rn21))
-@test issetequal(species(rn21), [X Y Y2])
+@test issetequal(species(rn21), species(rn22))
+@test issetequal(species(rn22), [X Y Y2])
 
 ### Tests that order is preserved when set. ###
-rn22 = @reaction_network name begin
+rn23 = @reaction_network name begin
     @species X1(t) X2(t) X3(t) X4(t)
     k4, 0 --> X4
     k3, 0 --> X3
     k2, 0 --> X2
     k1, 0 --> X1
 end
-@test isequal(map(Symbol ∘ ModelingToolkit.operation, states(rn22)),[:X1, :X2, :X3, :X4])
+@test isequal(map(Symbol ∘ ModelingToolkit.operation, states(rn23)),[:X1, :X2, :X3, :X4])
 
-rn23 = @reaction_network name begin
+rn24 = @reaction_network name begin
     @parameters k1 k2 k3 k4
     k4, 0 --> X4
     k3, 0 --> X3
     k2, 0 --> X2
     k1, 0 --> X1
 end
-@test isequal(map(Symbol, parameters(rn23)),[:k1, :k2, :k3, :k4])
+@test isequal(map(Symbol, parameters(rn24)),[:k1, :k2, :k3, :k4])
 
-rn24 = @reaction_network name begin
+rn25 = @reaction_network name begin
     @species X1(t) X2(t) X3(t) X4(t) Y1(t) Y2(t) Y3(t) Y4(t)
     @parameters k1 k2 k3 k4 l1 l2 l3 l4
     k4*Y3+l4, 0 --> X4 + Y4
@@ -306,12 +315,12 @@ rn24 = @reaction_network name begin
     k2+l2+l1, Y2 --> X2
     k1, 0 --> X1
 end
-@test isequal(map(Symbol ∘ ModelingToolkit.operation, states(rn24)),[:X1, :X2, :X3, :X4, :Y1, :Y2, :Y3, :Y4])
-@test isequal(map(Symbol, parameters(rn24)),[:k1, :k2, :k3, :k4, :l1, :l2, :l3, :l4])
+@test isequal(map(Symbol ∘ ModelingToolkit.operation, states(rn25)),[:X1, :X2, :X3, :X4, :Y1, :Y2, :Y3, :Y4])
+@test isequal(map(Symbol, parameters(rn25)),[:k1, :k2, :k3, :k4, :l1, :l2, :l3, :l4])
 
 
 #### Tests that defaults work. ###
-rn25 = @reaction_network name begin
+rn26 = @reaction_network name begin
     @parameters p=1.0 d1 d2=5
     @species A(t) B(t)=4
     p, 0 --> A
@@ -319,7 +328,7 @@ rn25 = @reaction_network name begin
     (d1, d2), (A, B) --> 0
 end
 
-rn26 = @reaction_network name begin
+rn27 = @reaction_network name begin
 @parameters p1=1.0 p2=2.0 k1=4.0 k2=5.0 v=8.0 K=9.0 n=3 d=10.0
 @species X(t)=4.0 Y(t)=3.0 X2Y(t)=2.0 Z(t)=1.0
     (p1,p2), 0 --> (X,Y)
@@ -327,10 +336,10 @@ rn26 = @reaction_network name begin
     hill(X2Y,v,K,n), 0 --> Z
     d, (X,Y,X2Y,Z) --> 0
 end
-u0_26 = []
-p_26 = []
+u0_27 = []
+p_27 = []
 
-rn27 = @reaction_network name begin
+rn28 = @reaction_network name begin
 @parameters p1=1.0 p2 k1=4.0 k2 v=8.0 K n=3 d
 @species X(t)=4.0 Y(t) X2Y(t) Z(t)=1.0
     (p1,p2), 0 --> (X,Y)
@@ -338,10 +347,10 @@ rn27 = @reaction_network name begin
     hill(X2Y,v,K,n), 0 --> Z
     d, (X,Y,X2Y,Z) --> 0
 end
-u0_27 = [:p2=>2.0, :k2=>5.0, :K=>9.0, :d=>10.0]
-p_27 = [:Y=>3.0, :X2Y=>2.0]
+u0_28 = [:p2=>2.0, :k2=>5.0, :K=>9.0, :d=>10.0]
+p_28 = [:Y=>3.0, :X2Y=>2.0]
 
-rn28 = @reaction_network name begin
+rn29 = @reaction_network name begin
 @parameters p1 p2 k1 k2 v K n d
 @species X(t) Y(t) X2Y(t) Z(t)
     (p1,p2), 0 --> (X,Y)
@@ -349,12 +358,12 @@ rn28 = @reaction_network name begin
     hill(X2Y,v,K,n), 0 --> Z
     d, (X,Y,X2Y,Z) --> 0
 end
-u0_28 = [:p1=>1.0, :p2=>2.0, :k1=>4.0, :k2=>5.0, :v=>8.0, :K=>9.0, :n=>3, :d=>10.0]
-p_28 = [:X=>4.0, :Y=>3.0, :X2Y=>2.0, :Z=>1.0]
+u0_29 = [:p1=>1.0, :p2=>2.0, :k1=>4.0, :k2=>5.0, :v=>8.0, :K=>9.0, :n=>3, :d=>10.0]
+p_29 = [:X=>4.0, :Y=>3.0, :X2Y=>2.0, :Z=>1.0]
 
-uEnd_26 = solve(ODEProblem(rn26,u0_26,(0.0,10.0),p_26),Rosenbrock23()).u[end]
 uEnd_27 = solve(ODEProblem(rn27,u0_27,(0.0,10.0),p_27),Rosenbrock23()).u[end]
 uEnd_28 = solve(ODEProblem(rn28,u0_28,(0.0,10.0),p_28),Rosenbrock23()).u[end]
+uEnd_29 = solve(ODEProblem(rn29,u0_29,(0.0,10.0),p_29),Rosenbrock23()).u[end]
 
-@test isapprox(uEnd_26, uEnd_27, rtol = 1e3 * eps())
 @test isapprox(uEnd_27, uEnd_28, rtol = 1e3 * eps())
+@test isapprox(uEnd_28, uEnd_29, rtol = 1e3 * eps())
