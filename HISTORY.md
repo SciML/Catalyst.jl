@@ -1,6 +1,8 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+
+## Catalyst 12.3.2
 - Support for states/species that are functions of multiple variables. This
   enables (symbolically) building PDEs to solve with
   [MethodOfLines](https://github.com/SciML/MethodOfLines.jl/). To use multiple
