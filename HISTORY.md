@@ -4,12 +4,12 @@
 - An `@species` macro was added. Currently, it is simply a thematic version of
   (and equivalent to) ModelingToolkit's `@variables`.
 
-- **BREAKING:** Parameters no longer need to be listed at the end of the DSL
-  macro, but are instead inferred from their position in the reaction
-  statements. By default, any symbol that appears as a substrate or product is a
-  species, while any other is a parameter. That is, parameters are those that
-  only appear within a rate expression and/or as a stoichiometric coefficient. E.g.
-  what previously was
+- **BREAKING:** Parameters should no longer be listed at the end of the DSL
+  macro, but are instead inferred from their position in the reaction statements
+  or via explicit declarations in the DSL macro. By default, any symbol that appears
+  as a substrate or product is a species, while any other is a parameter. That
+  is, parameters are those that only appear within a rate expression and/or as a
+  stoichiometric coefficient. E.g. what previously was
   ```julia
   using Catalyst
   rn = @reaction_network begin
@@ -35,12 +35,12 @@
   `k` and `k2` are inferred as parameters by the preceding convention, while
   `A`, `B` and `k1` are species.
 
-- More explicit control over which symbols are treated as parameters vs. species
-  is available through the new DSL macros, `@species` and `@parameters`. These
-  can be used to designate when something should be a species or parameter,
-  overriding the default DSL assignments. This can be used to set something that
-  would by default be interpreted as a parameter to actually be a species. E.g.
-  in:
+- Explicit control over which symbols are treated as parameters vs. species is
+  available through the new DSL macros, `@species` and `@parameters`. These can
+  be used to designate when something should be a species or parameter,
+  overriding the default DSL assignments. This allows setting that a symbol
+  which would by default be interpreted as a parameter should actually be a
+  species (or vice-versa). E.g. in:
   ```julia
   using Catalyst
   rn = @reaction_network begin
@@ -49,9 +49,10 @@
   end
   ```
   `X` and `Y` will be considered species, while `k` will be considered a
-  parameter. These options take the same arguments as the `@species` (i.e.
-  `@variables`) and `@parameters` macros, and support default values and setting
-  metadata. E.g you can set default values using:
+  parameter. These options take the same arguments as standalone the `@species`
+  (i.e. `ModelingToolkit.@variables`) and `ModelingToolkit.@parameters` macros,
+  and support default values and setting metadata. E.g you can set default
+  values using:
   ```julia
   using Catalyst
   rn = @reaction_network begin
