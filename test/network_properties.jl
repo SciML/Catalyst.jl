@@ -3,7 +3,7 @@
 using Catalyst, Test
 
 MAPK = @reaction_network MAPK begin
-@parameters k₁ k₂ k₃ k₄ k₅ k₆ k₇ k₈ k₉ k₁₀  k₁₁ k₁₂ k₁₃ k₁₄ k₁₅ k₁₆ k₁₇ k₁₈ k₁₉ k₂₀ k₂₁ k₂₂ k₂₃ k₂₄ k₂₅ k₂₆ k₂₇ k₂₈ k₂₉ k₃₀
+    @parameters k₁ k₂ k₃ k₄ k₅ k₆ k₇ k₈ k₉ k₁₀  k₁₁ k₁₂ k₁₃ k₁₄ k₁₅ k₁₆ k₁₇ k₁₈ k₁₉ k₂₀ k₂₁ k₂₂ k₂₃ k₂₄ k₂₅ k₂₆ k₂₇ k₂₈ k₂₉ k₃₀
     (k₁, k₂),KKK + E1 <--> KKKE1
     k₃, KKKE1 --> KKK_ + E1
     (k₄, k₅), KKK_ + E2 <--> KKKE2
@@ -53,7 +53,7 @@ cls = conservationlaws(MAPK)
 
 #########################
 rn2 = @reaction_network begin
-@parameters k₁ k₂ k₃ k₄ k₅ k₆ k₇ k₈ k₉ k₁₀  k₁₁ k₁₂ 
+    @parameters k₁ k₂ k₃ k₄ k₅ k₆ k₇ k₈ k₉ k₁₀  k₁₁ k₁₂
     (k₁, k₂), E + S1 <--> ES1
     (k₃, k₄), E + S2 <--> ES2
     (k₅, k₆),  S2 + ES1 <--> ES1S2
@@ -91,7 +91,7 @@ cls = conservationlaws(rn2)
 ######################
 
 rn3 = @reaction_network begin
-@parameters k₁ k₂ k₃ k₄ k₅ k₆ k₇ k₈ k₉ k₁₀  k₁₁ k₁₂ k₁₃ k₁₄ k₁₅ k₁₆ k₁₇ k₁₈ k₁₉
+    @parameters k₁ k₂ k₃ k₄ k₅ k₆ k₇ k₈ k₉ k₁₀  k₁₁ k₁₂ k₁₃ k₁₄ k₁₅ k₁₆ k₁₇ k₁₈ k₁₉
     (k₁, k₂), A11 <--> 0
     (k₃, k₄), A11 <--> A13
     (k₅, k₆),  0 <--> A12

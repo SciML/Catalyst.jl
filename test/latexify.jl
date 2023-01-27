@@ -25,7 +25,7 @@ using Catalyst, Latexify
 ### will cause issues with Travis.
 
 r = @reaction_network begin
-@parameters v1 K1 n1 v2 K2 n2 v3 K3 n3 v4 K4 n4 v5 K5 n5 k1 k2 k3 k4 k5 k6 d1 d2 d3 d4 d5
+    @parameters v1 K1 n1 v2 K2 n2 v3 K3 n3 v4 K4 n4 v5 K5 n5 k1 k2 k3 k4 k5 k6 d1 d2 d3 d4 d5
     hillr(X2,v1,K1,n1)*hill(X4,v1,K1,n1), ∅ → X1
     hill(X5,v2,K2,n2), ∅ → X2
     hill(X3,v3,K3,n3), ∅ → X3
@@ -78,7 +78,7 @@ raw"\begin{align*}
 
 
 r = @reaction_network begin
-@parameters p_a k n d_a p_b d_b r_a r_b
+    @parameters p_a k n d_a p_b d_b r_a r_b
     (hill(B, p_a, k, n), d_a), 0 ↔ A
     (p_b, d_b), 0 ↔ B
     (r_a, r_b), 3B ↔ A
@@ -111,7 +111,7 @@ raw"ReactionSystem EmptySys has no reactions.", "\r\n"=>"\n")
 
 # test for https://github.com/SciML/Catalyst.jl/issues/473
 rn = @reaction_network begin
-@parameters k
+    @parameters k
     k*Y, Y --> ∅
 end
 

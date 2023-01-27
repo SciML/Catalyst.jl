@@ -325,7 +325,7 @@ eqs = vcat(nrxs1, nrxs2, neqs2, nrxs3, neqs3)
 
 # test throw error if there are ODE constraints and convert to NonlinearSystem
 rn = @reaction_network rn begin
-@parameters k1 k2
+    @parameters k1 k2
     (k1, k2), A <--> B
 end
 @parameters a, b
@@ -371,7 +371,7 @@ let
     @parameters b
     @variables t V(t) [isbcspecies = true]
     rn = @reaction_network begin
-    @parameters k
+        @parameters k
         k/$V, A + B --> C
     end
     Dt = Differential(t)
@@ -386,12 +386,12 @@ end
 # https://github.com/SciML/Catalyst.jl/issues/545
 let
     rn_AB = @reaction_network AB begin
-    @parameters k1 n
+        @parameters k1 n
         k1, A --> n*B
     end
 
     rn_BC = @reaction_network BC begin
-    @parameters k2
+        @parameters k2
         k2, B --> C
     end
 
