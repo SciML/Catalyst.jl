@@ -1,7 +1,8 @@
 using Catalyst, ModelingToolkit, OrdinaryDiffEq, Test, LinearAlgebra, JumpProcesses
 
 @parameters k α
-@variables t, A(t), B(t), C(t), D(t)
+@variables t
+@species A(t), B(t), C(t), D(t)
 rxs = [Reaction(t * k, [A], [B], [2 * α^2], [k + α * C])
        Reaction(1.0, [A, B], [C, D], [α, 2], [k, α])]
 @named rs = ReactionSystem(rxs, t)
@@ -184,7 +185,8 @@ affect2!(fake_integrator2);
 
 # a few simple solving tests via the SIR Model
 @parameters α β γ k
-@variables t, S(t), I(t), R(t)
+@variables t
+@species S(t), I(t), R(t)
 rxs = [Reaction(α, [S, I], [I], [1, 1], [2]),
     Reaction(β, [I], [R], [1], [1])]
 @named sir_ref = ReactionSystem(rxs, t)

@@ -7,8 +7,9 @@ using SparseArrays
 using ModelingToolkit: value
 include("test_networks.jl")
 
-@parameters t k1 k2
-@variables S(t) I(t) R(t)
+@parameters k1 k2
+@variables t
+@species S(t) I(t) R(t)
 rxs = [Reaction(k1, [S, I], [I], [1, 1], [2]),
     Reaction(k2, [I], [R])]
 @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
@@ -33,7 +34,7 @@ rs2 = ReactionSystem(rxs2, t, [R, I, S], [k2, k1], name = :rs)
 
 rs3 = make_empty_network()
 @parameters k3 k4
-@variables D(t)
+@species D(t)
 addspecies!(rs3, S)
 addspecies!(rs3, D)
 addparam!(rs3, k3)
@@ -435,7 +436,7 @@ rn = @reaction_network begin
     β, I --> R
 end
 @parameters α β
-@variables t S(t) I(t) R(t)
+@species S(t) I(t) R(t)
 setdefaults!(rn, [S => 999.0, I => 1.0, R => 0.0, α => 1e-4, β => 0.01])
 op = ODEProblem(rn, [], tspan, [])
 sol2 = solve(op, Tsit5())

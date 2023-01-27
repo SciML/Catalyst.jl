@@ -65,7 +65,8 @@ $(FIELDS)
 ```julia
 using Catalyst
 @parameters k[1:20]
-@variables t A(t) B(t) C(t) D(t)
+@variables t
+@species A(t) B(t) C(t) D(t)
 rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
        Reaction(k[2], [B], nothing),            # B -> 0
        Reaction(k[3],[A],[C]),                  # A -> C
@@ -120,7 +121,7 @@ end
 
 Test if a species is valid as a reactant (i.e. a species variable or a constant parameter).
 """
-isvalidreactant(s) = MT.isparameter(s) ? isconstant(s) : isspecies(s)
+isvalidreactant(s) = MT.isparameter(s) ? isconstant(s) : (isspecies(s) && !isconstant(s))
 
 function Reaction(rate, subs, prods, substoich, prodstoich;
                   netstoich = nothing, only_use_rate = false,

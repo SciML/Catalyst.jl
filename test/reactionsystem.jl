@@ -2,8 +2,9 @@ using Catalyst, LinearAlgebra, JumpProcesses, Test, OrdinaryDiffEq, StochasticDi
 
 const MT = ModelingToolkit
 
-@parameters t k[1:20]
-@variables A(t) B(t) C(t) D(t)
+@parameters k[1:20]
+@variables t
+@species A(t) B(t) C(t) D(t)
 rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
     Reaction(k[2], [B], nothing),            # B -> 0
     Reaction(k[3], [A], [C]),                  # A -> C
@@ -178,7 +179,8 @@ G2 = sf.g(u, p, t)
 
 # test with JumpSystem
 let p = p
-    @variables t A(t) B(t) C(t) D(t) E(t) F(t)
+    @variables t
+    @species A(t) B(t) C(t) D(t) E(t) F(t)
     rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
         Reaction(k[2], [B], nothing),            # B -> 0
         Reaction(k[3], [A], [C]),                  # A -> C
@@ -278,7 +280,7 @@ end
 
 # test for https://github.com/SciML/ModelingToolkit.jl/issues/436
 @parameters t
-@variables S(t) I(t)
+@species S(t) I(t)
 rxs = [Reaction(1, [S], [I]), Reaction(1.1, [S], [I])]
 @named rs = ReactionSystem(rxs, t, [S, I], [])
 js = convert(JumpSystem, rs)
@@ -290,7 +292,7 @@ sol = solve(jprob, SSAStepper())
 jprob = JumpProblem(rs, dprob, Direct(), save_positions = (false, false))
 
 @parameters k1 k2
-@variables R(t)
+@species R(t)
 rxs = [Reaction(k1 * S, [S, I], [I], [2, 3], [2]),
     Reaction(k2 * R, [I], [R])]
 @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
@@ -351,7 +353,8 @@ rxs = [Reaction(x * t * A * B + y, [A], nothing)]
 @named rs2 = ReactionSystem(rxs, t)
 @test Catalyst.isequal_ignore_names(rs1, rs2)
 
-@variables t, L(t), H(t)
+@variables t
+@species L(t), H(t)
 obs = [Equation(L, 2 * x + y)]
 @named rs3 = ReactionSystem(rxs, t; observed = obs)
 L2 = L
@@ -360,7 +363,8 @@ L2 = L
 
 # test non-integer stoichiometry goes through
 @parameters k b
-@variables t A(t) B(t) C(t) D(t)
+@variables t
+@species A(t) B(t) C(t) D(t)
 rx1 = Reaction(k, [B, C], [B, D], [2.5, 1], [3.5, 2.5])
 rx2 = Reaction(2 * k, [B], [D], [1], [2.5])
 rx3 = Reaction(2 * k, [B], [D], [2.5], [2])
@@ -416,7 +420,8 @@ end
 # tests for BC and constant species
 let
     @parameters k1 k2 A [isconstantspecies = true]
-    @variables t B(t) C(t) [isbcspecies = true] D(t) E(t)
+    @variables t
+    @species B(t) C(t) [isbcspecies = true] D(t) E(t)
     rxs = [(@reaction k1, $A --> B),
         (@reaction k2, B --> $A),
         (@reaction k1, $C + D --> E + $C),
@@ -499,8 +504,8 @@ end
 # test that jump solutions actually run correctly for constants and BCs
 let
     @parameters k1 A [isconstantspecies = true]
-    @variables t C(t) [isbcspecies = true]
-    @variables t B1(t) B2(t) B3(t)
+    @variables t
+    @species C(t) [isbcspecies = true] B1(t) B2(t) B3(t)
     @named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
                                    (@reaction k1, $A --> B2),
                                    (@reaction 10 * k1, ∅ --> B3)], t)
@@ -522,7 +527,8 @@ end
 # fix for SBML test 305
 let
     @parameters k1 k2 S2 [isconstantspecies = true]
-    @variables t S1(t) S3(t)
+    @variables t
+    @species S1(t) S3(t)
     rx = Reaction(k2, [S1], nothing)
     ∂ₜ = Differential(t)
     eq = ∂ₜ(S3) ~ k1 * S2
@@ -536,7 +542,8 @@ let
 end
 let
     @parameters k1 k2 S2 [isconstantspecies = true]
-    @variables t S1(t) S3(t)
+    @variables t
+    @species S1(t) S3(t)
     rx = Reaction(k2, [S1], nothing)
     ∂ₜ = Differential(t)
     eq = S3 ~ k1 * S2
@@ -556,10 +563,9 @@ end
 # constant species = parameters basic tests
 let
     @parameters k b [isconstantspecies = true] c
-    @variables t A(t) B(t) a [isconstantspecies = true]
-    @test_throws ArgumentError Reaction(k, [A, a], [B])
+    @variables t
+    @test_throws ArgumentError @species A(t) B(t) a [isconstantspecies = true]
     @test_throws ArgumentError Reaction(k, [A, c], [B])
-    @test_throws ArgumentError Reaction(k, [A], [B, a])
     @test_throws ArgumentError Reaction(k, [A], [B, c])
     rx = Reaction(k, [A, b], [B, b], [1, 1], [1, 2])
     @named rs = ReactionSystem([rx], t)
@@ -569,7 +575,8 @@ end
 
 # test balanced_bc_check
 let
-    @variables t A(t) [isbcspecies = true]
+    @variables t
+    @species A(t) [isbcspecies = true]
     rx = @reaction k, 2 * $A + B --> C + $A
     @test_throws ErrorException ReactionSystem([rx], t; name = :rs)
     @named rs = ReactionSystem([rx], t; balanced_bc_check = false)

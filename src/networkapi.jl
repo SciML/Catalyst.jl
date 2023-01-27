@@ -414,7 +414,8 @@ setdefaults!(sir, [:S => 999.0, :I => 1.0, :R => 1.0, :β => 1e-4, :ν => .01])
 
 # or
 @parameter β ν
-@variables t S(t) I(t) R(t)
+@variables t
+@species S(t) I(t) R(t)
 setdefaults!(sir, [S => 999.0, I => 1.0, R => 0.0, β => 1e-4, ν => .01])
 ```
 gives initial/default values to each of `S`, `I` and `β`
@@ -1365,6 +1366,7 @@ function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks = false
     curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), get_states(network))
     if curidx === nothing
         push!(get_states(network), s)
+        push!(get_species(network), s)
         MT.process_variables!(get_var_to_name(network), get_defaults(network), [s])
         return length(get_states(network))
     else
@@ -1400,6 +1402,7 @@ function reorder_states!(rn, neworder)
     (get_constraints(rn) === nothing) && isempty(get_systems(rn)) ||
         error("Reordering of states is only supported for systems without constraints or subsystems.")
     permute!(get_states(rn), neworder)
+    get_species(rn) .= Iterators.filter(isspecies, get_states(rn))
     reset_networkproperties!(rn)
     nothing
 end

@@ -4,7 +4,7 @@ using SciMLNLSolve
 
 # Repressilator model
 @parameters t α₀ α K n δ β μ
-@variables m(t) P(t) R(t)
+@species m(t) P(t) R(t)
 rxs = [
     Reaction(α₀, nothing, [m]),
     Reaction(α / (1 + (R / K)^n), nothing, [m]),
@@ -243,7 +243,7 @@ sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
 
 # adding algebraic constraints
 @parameters t, r₊, r₋, β
-@variables A(t), B(t), C(t), D(t)
+@species A(t), B(t), C(t), D(t)
 rxs1 = [Reaction(r₊, [A, B], [C])]
 rxs2 = [Reaction(r₋, [C], [A, B])]
 @named rs1 = ReactionSystem(rxs1, t, [A, B, C], [r₊])
@@ -282,8 +282,9 @@ sol = solve(oprob, Tsit5())
                  [ModelingToolkit.namespace_equation(nseqs[1], ns)])
 
 # check several levels of nesting namespace and filter ok for the API functions
-@parameters t, p1, p2a, p2b, p3a, p3b
-@variables A1(t), A2a(t), A2b(t), A3a(t), A3b(t)
+@parameters p1, p2a, p2b, p3a, p3b
+@variables t
+@species A1(t), A2a(t), A2b(t), A3a(t), A3b(t)
 rxs1 = [Reaction(p1, [A1], nothing)]
 rxs2 = [Reaction(p2a, [A2a], nothing), Reaction(p2b, [ParentScope(A1)], nothing)]
 eqs2 = [ParentScope(A1) ~ ParentScope(p1) * A2b]
@@ -357,7 +358,7 @@ rnnlsys = convert(NonlinearSystem, rn2)
 
 # https://github.com/SciML/ModelingToolkit.jl/issues/1274
 @parameters p1 p2
-@variables t A(t)
+@species A(t)
 rxs1 = [Reaction(p1, [A], nothing)]
 rxs2 = [Reaction(p2, [ParentScope(A)], nothing)]
 @named rs1 = ReactionSystem(rxs1, t)
@@ -369,7 +370,8 @@ orsc = convert(ODESystem, rsc)
 # test constraint system symbols can be set via setdefaults!
 let
     @parameters b
-    @variables t V(t) [isbcspecies = true]
+    @variables t
+    @species V(t) [isbcspecies = true]
     rn = @reaction_network begin
         @parameters k
         k/$V, A + B --> C
@@ -398,7 +400,7 @@ let
     @variables t
     @named rs = ReactionSystem(t; systems = [rn_AB, rn_BC])
     sts = states(rs)
-    @test issetequal(sts, (@variables AB₊A(t) AB₊B(t) BC₊B(t) BC₊C(t)))
+    @test issetequal(sts, (@species AB₊A(t) AB₊B(t) BC₊B(t) BC₊C(t)))
     ps = parameters(rs)
     @test issetequal(ps, (@parameters AB₊k1 AB₊n BC₊k2))
     rxs = reactions(rs)
