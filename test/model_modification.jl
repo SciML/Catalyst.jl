@@ -44,17 +44,17 @@ addparam!(empty_network_3, p)
 
 ### Tests creating a network and adding reactions ###
 unfinished_network = @reaction_network begin
-@parameters k0 k1 k2 k3 k4
+    @parameters k0 k1 k2 k3 k4
     (k1, k2), X1 ↔ X2
     (k3, k4), X3 ↔ X4
 end
 @add_reactions unfinished_network begin
-@parameters k0 k3 k4 k5 k6
+    @parameters k0 k3 k4 k5 k6
     (k3, k4), X3 ↔ X4
     (k5, k6), X5 ↔ X6
 end
 @add_reactions unfinished_network begin
-@parameters k0 k5 k6 k7 k8
+    @parameters k0 k5 k6 k7 k8
     (k5, k6), X5 ↔ X6
     (k7, k8), X7 ↔ X8
 end
@@ -65,24 +65,24 @@ end
 identical_networks = Vector{Pair}()
 
 step_by_step_network_1 = @reaction_network rns5 begin
-@parameters p k1 k2 k3 k4
+    @parameters p k1 k2 k3 k4
     p, ∅ → X1
     (k1, k2), X1 ⟷ X2
     (k3, k4), X2 ⟷ X3
 end
-@add_reactions step_by_step_network_1 begin 
-@parameters k5 k6
-    (k5, k6), X3 ⟷ X4 
+@add_reactions step_by_step_network_1 begin
+    @parameters k5 k6
+    (k5, k6), X3 ⟷ X4
 end
 @add_reactions step_by_step_network_1 begin
-@parameters d 
-    d, X4 → ∅ 
+    @parameters d
+    d, X4 → ∅
 end
 push!(identical_networks, reaction_networks_standard[5] => step_by_step_network_1)
 
 step_by_step_network_2 = @reaction_network rns7 begin (p1, p2, p3), ∅ → (X1, X2, X3) end
 @add_reactions step_by_step_network_2 begin
-@parameters k1 k2 k3 v1 K1 d1 d2 d3 d4 d5 
+    @parameters k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
     (k1, k2), X1 + 2X2 ⟷ X4
     (mm(X3, v1, K1), k3), X4 ⟷ X5
     (d1, d2, d3, d4, d5), (X1, X2, X3, X4, X5) → ∅
@@ -90,70 +90,70 @@ end
 push!(identical_networks, reaction_networks_standard[7] => step_by_step_network_2)
 
 step_by_step_network_3 = @reaction_network rns10 begin
-@parameters p k1 k2 k3 k4 
+    @parameters p k1 k2 k3 k4
     p, ∅ ⟶ X1
     (k1, k2), X1 → X2
 end
 @add_reactions step_by_step_network_3 begin
-@parameters p k1 k2 k3 k4 k5 k6 
+    @parameters p k1 k2 k3 k4 k5 k6
     (k3, k4), X2 → X3
     (k5, k6), X3 → X4
 end
 @add_reactions step_by_step_network_3 begin
-@parameters p k1 k2 k3 k4 k5 k6 k7 k8 d 
+    @parameters p k1 k2 k3 k4 k5 k6 k7 k8 d
     (k7, k8), X4 → X5
     d, X5 ⟶ ∅
 end
 push!(identical_networks, reaction_networks_standard[10] => step_by_step_network_3)
 
 step_by_step_network_4 = @reaction_network rnh7 begin
-@parameters v K n k1 k2 k3 d 
+    @parameters v K n k1 k2 k3 d
     v / 10 + hill(X1, v, K, n),
     ∅ → X1 + X2
 end
 @add_reactions step_by_step_network_4 begin
-@parameters k1 k2 
+    @parameters k1 k2
     k1, X1 + X2 → X3
     k2, X3 → X1 + X2
 end
 @add_reactions step_by_step_network_4 begin
-@parameters k2 k3 d 
+    @parameters k2 k3 d
     k3, X3 → X1
     d, (X1, X2, X3) → ∅
 end
 push!(identical_networks, reaction_networks_hill[7] => step_by_step_network_4)
 
 step_by_step_network_5 = @reaction_network rnc1 begin
-@parameters k1 k2 k3 k4 k5 k6
+    @parameters k1 k2 k3 k4 k5 k6
     (k1, k2), X1 ↔ X2
     (k3, k4), X2 ↔ X3
 end
 @add_reactions step_by_step_network_5 begin
-@parameters k5
-    k5, X3 → X1 
+    @parameters k5
+    k5, X3 → X1
 end
 @add_reactions step_by_step_network_5 begin
-@parameters k6  
-    k6, X1 → X3 
+    @parameters k6
+    k6, X1 → X3
 end
 push!(identical_networks, reaction_networks_constraint[1] => step_by_step_network_5)
 
-step_by_step_network_6 = @reaction_network rnc5 begin 
-@parameters k1 k2 k3 k4 k5 k6 
-    (k1, k2), X1 ↔ 2X2 
+step_by_step_network_6 = @reaction_network rnc5 begin
+    @parameters k1 k2 k3 k4 k5 k6
+    (k1, k2), X1 ↔ 2X2
 end
 @add_reactions step_by_step_network_6 begin
-@parameters k3 k4 
+    @parameters k3 k4
     (k3, k4), 2X2 ↔ 3X3
 end
 @add_reactions step_by_step_network_6 begin
-@parameters k5 k6 
+    @parameters k5 k6
     (k5, k6), 3X3 ↔ 4X4
 end
 push!(identical_networks, reaction_networks_constraint[5] => step_by_step_network_6)
 
 step_by_step_network_7 = @reaction_network rnr3 begin
-@parameters k1 k2p k2pp k3p k3pp A J3 k4 m J4 
+    @parameters k1 k2p k2pp k3p k3pp A J3 k4 m J4
     k2p, Y → 0
 end
 @add_reactions step_by_step_network_7 begin
@@ -162,25 +162,25 @@ end
     k2pp * P, Y → 0
 end
 @add_reactions step_by_step_network_7 begin
-@parameters k1 
+    @parameters k1
     k1, 0 → Y
 end
 @add_reactions step_by_step_network_7 begin
-@parameters k4 m J4 
+    @parameters k4 m J4
     (k4 * m) / (J4 + P), Y + P → Y + Po
 end
 push!(identical_networks, reaction_networks_real[3] => step_by_step_network_7)
 
-@variables k1
+@parameters k1
 step_by_step_network_8 = @reaction_network rnw7
 addparam!(step_by_step_network_8, k1)
 @add_reactions step_by_step_network_8 begin
-@parameters k1 
+    @parameters k1
     k1, X1 → X2
     0, X2 → X3
 end
 @add_reactions step_by_step_network_8 begin
-@parameters k2 k3 
+    @parameters k2 k3
     k2, X3 → X4
     k3, X4 → X5
 end
@@ -188,7 +188,7 @@ push!(identical_networks, reaction_networks_weird[7] => step_by_step_network_8)
 
 step_by_step_network_9 = @reaction_network rnw10
 @add_reactions step_by_step_network_9 begin
-@parameters d
+    @parameters d
     d, 5X1 → 4X1
 end
 push!(identical_networks, reaction_networks_weird[10] => step_by_step_network_9)
