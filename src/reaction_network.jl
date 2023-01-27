@@ -119,9 +119,12 @@ const option_keys = [:species, :parameters]
 ### The @species macro, basically a copy of the @varriables macro. ###
 macro species(ex...)
     vars = Symbolics._parse_vars(:variables, Real, ex)
-    # lastarg = vars.args[end]
-    # resize!(vars.args, length(vars.args) - 1)
-    # push!(vars.args, lastarg)
+    lastarg = vars.args[end]
+    resize!(vars.args, length(vars.args) - 1)
+    for sym in lastarg.args
+        push!(vars.args, :($sym = setmetadata($sym, Catalyst.VariableSpecies, true)))
+    end
+    push!(vars.args, lastarg)
     esc(vars)
 end
 

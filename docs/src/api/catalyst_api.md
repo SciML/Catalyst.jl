@@ -164,6 +164,7 @@ numreactionparams
 speciesmap
 paramsmap
 reactionparamsmap
+isspecies
 Catalyst.isconstant
 Catalyst.isbc
 ```

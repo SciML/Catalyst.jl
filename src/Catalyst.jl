@@ -48,6 +48,7 @@ end
 
 # base system type and features
 include("reactionsystem.jl")
+export isspecies
 export Reaction, ReactionSystem, ismassaction, oderatelaw, jumpratelaw, isspatial
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem,
        SteadyStateProblem

@@ -1,8 +1,10 @@
 # Catalyst specific symbolics to support SBML
 struct ParameterConstantSpecies end
 struct VariableBCSpecies end
+struct VariableSpecies end
 Symbolics.option_to_metadata_type(::Val{:isconstantspecies}) = ParameterConstantSpecies
 Symbolics.option_to_metadata_type(::Val{:isbcspecies}) = VariableBCSpecies
+Symbolics.option_to_metadata_type(::Val{:isspecies}) = VariableSpecies
 
 """
     Catalyst.isconstant(s)
@@ -23,6 +25,17 @@ isbc(s::Num) = isbc(MT.value(s))
 function isbc(s)
     MT.getmetadata(s, VariableBCSpecies, false)
 end
+
+"""
+    Catalyst.isspecie(s)
+
+Tests if the given symbolic variable corresponds to chemical species.
+"""
+isspecies(s::Num) = isspecies(MT.value(s))
+function isspecies(s)
+    MT.getmetadata(s, VariableSpecies, false)
+end
+
 
 # true for species which shouldn't change from the reactions
 drop_dynamics(s) = isconstant(s) || isbc(s)
