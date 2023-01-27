@@ -61,7 +61,7 @@ Notes:
 - If `ModelingToolkit.get_systems(network)` is non-empty will allocate.
 """
 function species(network)
-    sts = get_states(network)
+    sts = get_species(network)
     systems = filter_nonrxsys(network)
     isempty(systems) && return sts
     unique([sts; reduce(vcat, map(sys -> species(sys, species(sys)), systems))])

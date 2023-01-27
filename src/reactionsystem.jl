@@ -29,7 +29,7 @@ end
 """
     Catalyst.isspecies(s)
 
-Tests if the given symbolic variable corresponds to chemical species.
+Tests if the given symbolic variable corresponds to a chemical species.
 """
 isspecies(s::Num) = isspecies(MT.value(s))
 function isspecies(s)
@@ -106,9 +106,9 @@ end
 """
     isvalidreactant(s)
 
-Test if a species is valid as a reactant (i.e. a variable or a constant parameter).
+Test if a species is valid as a reactant (i.e. a species variable or a constant parameter).
 """
-isvalidreactant(s) = (isconstant(s) == MT.isparameter(s))
+isvalidreactant(s) = MT.isparameter(s) ? isconstant(s) : isspecies(s)
 
 function Reaction(rate, subs, prods, substoich, prodstoich;
                   netstoich = nothing, only_use_rate = false,
@@ -122,7 +122,7 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
         prodtype = typeof(value(first(prods)))
         subs = Vector{prodtype}()
         !isnothing(substoich) &&
-            throw(ArgumentError("If substrates are nothing, substrate stiocihometries have to be so too."))
+            throw(ArgumentError("If substrates are nothing, substrate stoichiometries have to be so too."))
         substoich = typeof(prodstoich)()
     else
         subs = value.(subs)
@@ -132,7 +132,7 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     if isnothing(prods)
         prods = Vector{eltype(subs)}()
         !isnothing(prodstoich) &&
-            throw(ArgumentError("If products are nothing, product stiocihometries have to be so too."))
+            throw(ArgumentError("If products are nothing, product stoichiometries have to be so too."))
         prodstoich = typeof(substoich)()
     else
         prods = value.(prods)
@@ -152,9 +152,10 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
 
     if !(all(isvalidreactant, subs) && all(isvalidreactant, prods))
         badsts = union(filter(!isvalidreactant, subs), filter(!isvalidreactant, prods))
-        throw(ArgumentError("""Constant species must be parameters, and parameters must have
-                 the isconstantspecies metadata, to be a substrate or product. The following
-                 reactants do not follow this convention:\n $badsts"""))
+        throw(ArgumentError("""Constant species must be parameters with the
+                 isconstantspecies metadata, and non-constant species must be declared via
+                 @species, to be a valid substrate or product. The following reactants do
+                 not follow this convention:\n $badsts"""))
     end
 
     ns = if netstoich === nothing
@@ -449,9 +450,11 @@ struct ReactionSystem{U <: Union{Nothing, MT.AbstractSystem}, V <: NetworkProper
     iv::Any
     """Spatial independent variables"""
     sivs::Any
-    """Dependent (state) variables representing amount of each species. Must not contain the
+    """All dependent (state) variables, species and non-species. Must not contain the
     independent variable."""
     states::Vector
+    """Dependent state variables representing species"""
+    species::Vector
     """Parameter variables. Must not contain the independent variable."""
     ps::Vector
     """Maps Symbol to corresponding variable."""
@@ -478,15 +481,15 @@ struct ReactionSystem{U <: Union{Nothing, MT.AbstractSystem}, V <: NetworkProper
     combinatoric_ratelaws::Bool
 
     # inner constructor is considered private and may change between non-breaking releases.
-    function ReactionSystem(eqs, iv, sivs, states, ps, var_to_name, observed, name, systems,
-                            defaults, connection_type, csys, nps, cls;
+    function ReactionSystem(eqs, iv, sivs, states, spcs, ps, var_to_name, observed, name,
+                            systems, defaults, connection_type, csys, nps, cls;
                             checks::Bool = true)
         if checks
             check_variables(states, iv)
             check_parameters(ps, iv)
         end
 
-        rs = new{typeof(csys), typeof(nps)}(eqs, iv, sivs, states, ps, var_to_name,
+        rs = new{typeof(csys), typeof(nps)}(eqs, iv, sivs, states, spcs, ps, var_to_name,
                                             observed, name, systems, defaults,
                                             connection_type, csys, nps, cls)
         checks && validate(rs)
@@ -571,6 +574,9 @@ function ReactionSystem(eqs, iv, states, ps;
         end
     end
 
+    # variables representing chemical species
+    spcs = filter(isspecies, states′)
+
     var_to_name = Dict()
     MT.process_variables!(var_to_name, defaults, states′)
     MT.process_variables!(var_to_name, defaults, ps′)
@@ -582,9 +588,9 @@ function ReactionSystem(eqs, iv, states, ps;
         networkproperties
     end
 
-    ReactionSystem(eqs′, iv′, sivs′, states′, ps′, var_to_name, observed, name, systems,
-                   defaults, connection_type, constraints, nps, combinatoric_ratelaws;
-                   checks = checks)
+    ReactionSystem(eqs′, iv′, sivs′, states′, spcs, ps′, var_to_name, observed, name,
+                   systems, defaults, connection_type, constraints, nps,
+                   combinatoric_ratelaws; checks = checks)
 end
 
 # Previous function called by the macro, but still avaiable for general use.
@@ -654,6 +660,14 @@ Returns whether `rn` has any spatial independent variables (i.e. is a spatial ne
 isspatial(rn::ReactionSystem) = !isempty(get_sivs(rn))
 
 ####################### ModelingToolkit inherited accessors #############################
+
+"""
+    get_species(sys::ReactionSystem)
+
+Return the current dependent variables that represent species in `sys`.
+"""
+get_species(sys::ReactionSystem) = getfield(sys, :species)
+has_species(sys::ReactionSystem) = isdefined(sys, :species)
 
 """
     get_sivs(sys::ReactionSystem)
