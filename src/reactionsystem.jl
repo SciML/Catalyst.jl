@@ -27,7 +27,7 @@ function isbc(s)
 end
 
 """
-    Catalyst.isspecies(s)
+    isspecies(s)
 
 Tests if the given symbolic variable corresponds to a chemical species.
 """
@@ -36,6 +36,18 @@ function isspecies(s)
     MT.getmetadata(s, VariableSpecies, false)
 end
 
+"""
+    tospecies(s)
+
+Convert the given symbolic variable to be a species by adding the isspecies metadata.
+
+Notes:
+- Will error if passed a parameter.
+"""
+function tospecies(s)
+    MT.isparameter(s) && error("Parameters can not be converted to species. Please pass a variable.")
+    MT.setmetadata(s, VariableSpecies, true)
+end
 
 # true for species which shouldn't change from the reactions
 drop_dynamics(s) = isconstant(s) || isbc(s)
