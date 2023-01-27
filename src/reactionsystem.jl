@@ -27,7 +27,7 @@ function isbc(s)
 end
 
 """
-    Catalyst.isspecie(s)
+    Catalyst.isspecies(s)
 
 Tests if the given symbolic variable corresponds to chemical species.
 """
