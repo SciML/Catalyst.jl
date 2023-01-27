@@ -28,7 +28,7 @@ any of the following non-filled arrows when declaring the reaction: `<=`, `⇐`,
 `⇒`, `⟾`, `=>`, `⇔`, `⟺` (`<=>` currently not possible due to Julia langauge technical reasons). This means that the reaction
 
 ```julia
-rn = @reaction_network beginsssssssssssssssssssssssssssssssssssssssss
+rn = @reaction_network begin
   k, X => ∅
 end
 ```

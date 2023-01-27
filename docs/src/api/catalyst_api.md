@@ -16,7 +16,12 @@ arguments (or one argument to name the system), or the
 programmatically using [`addspecies!`](@ref), [`addparam!`](@ref), and
 [`addreaction!`](@ref).
 
-When using the [`@reaction_network`](@ref) macro, Catalyst will automaticall attempt to detect what is a species and what is a parameter. Everything that appear as a substrate or product in a reaction will be trated as a species, while all remaining components will be considered parameters. I.e. in
+When using the [`@reaction_network`](@ref) macro, Catalyst will automatically
+attempt to detect what is a species and what is a parameter. Everything that
+appear as a substrate or product in some reaction will be treated as a species,
+while all remaining symbols will be considered parameters (corresponding to
+those symbols that only appear within rate expressions and/or as stoichiometric
+coefficients). I.e. in
 ```julia
 rn = @reaction_network begin
     k*X, Y --> W

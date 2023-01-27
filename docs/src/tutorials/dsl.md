@@ -54,7 +54,7 @@ the model. We do this by creating a mapping from each symbolic variable
 representing a chemical species to its initial value
 ```@example tut2
 # define the symbolic variables
-@variables t, X(t), Y(t), Z(t), XY(t), Z1(t), Z2(t)
+@variables t X(t) Y(t) Z(t) XY(t) Z1(t) Z2(t)
 
 # create the mapping
 u0 = [X => 1.0, Y => 1.0, XY => 1.0, Z1 => 1.0, Z2 => 1.0]
@@ -82,14 +82,20 @@ For more detailed examples, see the [Basic Chemical Reaction Network
 Examples](@ref).
 
 ## Defining parameters and species
-Parameter values do not need to be set when the model is created:
+Numeric parameter values do not need to be set when the model is created, i.e.
+Catalyst supports symbolic parameters too:
 ```@example tut2
 rn = @reaction_network begin
   p, ∅ --> X
   d, X --> ∅
 end
 ```
-All symbols that does not appear as a reactant in a reaction is designated by Catalyst as a parameter. In this example `X` appear as a reactant, but not `p` and `d`. Hence `p` and `d` are designated as parameters. It is possible to manually set what should be considered a species or parameter This is described towards the end of this tutorial.
+All symbols that do not appear as a substrate or product in a reaction are
+designated by Catalyst as a parameter (i.e. all symbols appearing only within
+rate expressions and/or as stoichiometric coefficients). In this example `X`
+appears as a substrate and product, but not `p` or `d`. Hence `p` and `d` are
+designated as parameters. It is possible to manually specify what should be
+considered a species or parameter. This is described later in the tutorial.
 
 ## Production, Destruction and Stoichiometry
 Sometimes reactants are produced/destroyed from/to nothing. This can be
@@ -233,9 +239,9 @@ end
 
 ## Variable reaction rates
 Reaction rates do not need to be a single parameter or a number, but can also be
-expressions depending on time or the current concentration of other species
-(when, for example, one species can activate the production of another). For
-instance, this is a valid notation:
+expressions depending on time or the current amount of other species (when, for
+example, one species can activate the production of another). For instance, this
+is a valid notation:
 ```@example tut2
 rn = @reaction_network begin
   1.0, X --> ∅
@@ -253,14 +259,14 @@ equivalent to the reaction system
 rn = @reaction_network begin
   1.0, X --> ∅
   k, X + Y --> X
-end k
+end
 ```
 ```@example tut2
 convert(ODESystem, rn)
 ```
 !!! note
     While the ODE models corresponding to the preceding two reaction systems are
-    identical, in the latter example the `Reaction` will be classified as
+    identical, in the latter example the `Reaction` stored in `rn` will be classified as
     [`ismassaction`](@ref) while in the former it will not, which can impact optimizations
     used in generating `JumpSystem`s. For this reason, it is recommended to use the
     latter representation when possible.
@@ -277,6 +283,126 @@ end
 where here `t` always denotes Catalyst's time variable. Please note that many
 user-defined functions can be called directly, but others will require
 registration with Symbolics.jl ([see the faq](@ref user_functions)).
+
+## Explicit specification of network species and parameters
+Recall that the `@reaction_network` macro automatically designates symbols used
+in the macro as either parameters or species, with symbols that appear as a
+substrate or product being species, and all other symbols becoming parameters
+(i.e. those that only appear within a rate expression and/or as stoichiometric
+coefficients). Sometimes, one might want to manually override this default
+behavior for a given symbol. E.g one might want something to be considered as a
+species, even if it only appears within a rate expression. In the following
+network
+```@example tut2
+rn = @reaction_network begin
+  k*X, Y --> 0
+end
+```
+`X` (as well as `k`) will be considered a parameter.
+
+By using the `@species` and `@parameters` options within the `@reaction_network`
+macro, one can manually declare that specified symbols should be considered a
+species or parameter. E.g in:
+```@example tut2
+rn = @reaction_network begin
+  @species X(t) Y(t)
+  k*X, Y --> 0
+end
+```
+`X` and `Y` are set as species. Please note that when declaring species using
+the `@species` option, their dependant variable (almost always `t`) also needs
+to be designated. Similarly in
+```@example tut2
+rn = @reaction_network begin
+  @parameters k
+  k*X, Y --> 0
+end
+```
+both `X` and `k` will be considered as parameters. It is also possible to use
+both options simultaneously, allowing users to fully specify which symbols are
+species and/or parameters:
+```@example tut2
+rn = @reaction_network begin
+  @species X(t) Y(t)
+  @parameters k
+  k*X, Y --> 0
+end
+```
+Here, `X` and `Y` are designated as species and `k` as a parameter.
+
+Finally, note that the `@species` and `@parameters` options can also be used in
+`begin ... end` block form, allowing more formatted lists of species/parameters:
+```@example tut2
+rn = @reaction_network begin
+  @parameters begin
+      d1
+      d2
+  end
+  @species begin
+      X1(t)
+      X2(t)
+  end
+  d2, X2 --> 0
+  d1, X1 --> 0
+end
+```
+This can be especially useful when declaring default values for clarity of model
+specification (see the next section).
+
+## Setting default values for initial conditions and parameters
+When using the `@species` and ` @parameters` macros to declare species and/or
+parameters, one can also provide initial conditions for each species and default
+values for each parameter:
+```@example tut2
+rn = @reaction_network begin
+  @species X(t)=1.0
+  @parameters p=1.0 d=0.1
+  p, 0 --> X
+  d, X --> ∅
+end
+```
+This system can now be simulated without providing initial condition or
+parameter vectors to the DifferentialEquations.jl solvers:
+```@example tut2
+using DifferentialEquations, Plots
+u0 = []
+tspan = (0.0, 10.0)
+p = []
+oprob = ODEProblem(rn, u0, tspan, p)
+sol = solve(oprob)
+plot(sol)
+```
+
+When providing default values, it is possible to do so for only a subset of the
+species or parameters, in which case the rest can be specified when constructing
+the problem type to solve:
+```@example tut2
+rn = @reaction_network begin
+  @species X(t)
+  @parameters p=1.0 d
+  p, 0 --> X
+  d, X --> 0
+end
+
+u0 = [:X => 1.0]
+tspan = (0.0, 10.0)
+p = [:d => .1]
+oprob = ODEProblem(rn, u0, tspan, p)
+sol = solve(oprob)
+plot(sol)
+```
+
+Finally, default values can be overridden by passing mapping vectors to the
+DifferentialEquations.jl problem being constructed.  Only those initial conditions
+or parameters that differ from their default value need to be passed
+```@example tut2
+u0 = [:X => 1.0]
+tspan = (0.0, 10.0)
+p = [:p => 2.0, :d => .1]   # we change p to 2.0
+oprob = ODEProblem(rn, u0, tspan, p)
+sol = solve(oprob)
+plot(sol)
+```
 
 ## Naming the generated `ReactionSystem`
 ModelingToolkit uses system names to allow for compositional and hierarchical
@@ -323,141 +449,7 @@ end
 
 Please see the API [Rate Laws](@ref) section for more details.
 
-## Manual designation of network species and parameters
-The `@reaction_network` macro automatically designated symbols used in the macro as wither parameters of species. However, sometimes the user might want to manually override this selection. E.g one might want something to be considered as a species, even if it neither appears as a reaction substrate or product. In the following network
-```@example tut2
-rn = @reaction_network begin
-  k*X, Y --> 0
-end
-```
-`X` (as well as `k`) will be considered a parameter. 
-
-By using the `@species` and ` @parameters` options within the `@reaction_network` macro, one can manually declare what should be considered a species or parameter. E.g in:
-```@example tut2
-rn = @reaction_network begin
-  @species X(t) Y(t)
-  k*X, Y --> 0
-end
-```
-`X` and `Y` are set as species. Please note that when declaring species using the `@species` option, their dependant variable (almost always `t`) also needs to be desiganted. Similarly 
-```@example tut2
-rn = @reaction_network begin
-  @parameters k
-  k*X, Y --> 0
-end
-```
-designates that `k` (and only `k`) should be considered a parameter. However, in this case the DSL does not know what to do with `X`, and throws an error. Instead, it is possible to use both options simultaneously:
-```@example tut2
-rn = @reaction_network begin
-  @species X(t) Y(t)
-  @parameters k
-  k*X, Y --> 0
-end
-```
-Here, `X` and `Y` are designated as species and `k` as a parameter.
-
-Another use of the `@species` and ` @parameters` options is that they enable the user to set the *order* in which the parameters (or species) appear in their respective vector. It should be noted that it is strongly recommended to write code that does not depend on this order. However, if required to do so, the option exists. Consider the following network:
-```@example tut2
-rn = @reaction_network begin
-  d2, X2 --> 0
-  d1, X1 --> 0
-end
-```
-If we consider the species and parameter vectors:
-```
-species(rn)
-```
-```
-parameters(rn)
-```
-we note that they are ordered as `[X2(t) ,X1(t)]` and `[d2, d1]`. If one which to change the order, it can be done through:
-```@example tut2
-rn = @reaction_network begin
-  @species X1 X2
-  @parameters d1 d2
-  d2, X2 --> 0
-  d1, X1 --> 0
-end
-```
-if we now check the two vectors, we see that the order has changed:
-```
-species(rn)
-```
-```
-parameters(rn)
-```
-It should be noted if further modifications are made to a reaction network, the ordering set here cannot be guaranteed.
-
-
-Finally, if prefered, the `@species` and `@parameters` options can also be used in `begin ... end` block form:
-```
-```@example tut2
-rn = @reaction_network begin
-    @parameters begin
-        X1
-        X2
-    end
-    @species begin
-        d1(t)
-        d2(t)
-    end
-  d2, X2 --> 0
-  d1, X1 --> 0
-end
-```
-especially when declaring defalt values (next section), this can make code clearer.
-
-
-## Set default initial condition and parameter values
-When using the `@species` and ` @parameters` options to declare species and/or parameters, one can also provide initial conditions for each component:
-```@example tut2
-rn = @reaction_network begin
-  @species X(t)=1.0
-  @parameters p=1.0, d=0.1
-  p, 0 --> X
-  d, X -->
-end
-```
-the system can now be simulated without providing initial conditions or parameter values:
-```@example tut2
-using DifferentiaLEquations, Plots
-u0 = []
-tspan = (0.0,10.0)
-p = []
-oprob = ODEProblem(rn,u0,tspan,p)
-sol = solve(oprob)
-plot(sol)
-```
-
-When providing default values, it is possible to do so for only a subset of the species or parameters:
-```@example tut2
-rn = @reaction_network begin
-  @species X(t)
-  @parameters p=1.0, d
-  p, 0 --> X
-  d, X -->
-end
-
-u0 = [:X => 1.0]
-tspan = (0.0,10.0)
-p = [:p => 1.0]
-oprob = ODEProblem(rn,u0,tspan,p)
-sol = solve(oprob)
-plot(sol)
-```
-
-Finally, even if a default value is provided, this can be overridden through the vectors parsed to the differential equation problem:
-```
-u0 = [:X => 1.0]
-tspan = (0.0,10.0)
-p = [:p => 1.0, :d => 0.5]
-oprob = ODEProblem(rn,u0,tspan,p)
-sol = solve(oprob)
-plot(sol)
-```
-
-
-## Interpolation of Julia variables
+## Interpolation of Julia Variables
 The DSL allows Julia variables to be interpolated for the network name, within
 rate constant expressions, or for species/stoichiometry within reactions. Using
 the lower-level symbolic interface we can then define symbolic variables and

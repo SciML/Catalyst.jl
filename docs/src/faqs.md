@@ -101,6 +101,17 @@ simulations](@ref) section. Leaving this keyword out for systems with floating
 point stoichiometry will give an error message.
 
 ## How to set default values for initial conditions and parameters?
+To set defaults when using the `@reaction_network` macro, use the `@species` and
+`@parameters` options:
+```julia
+sir = @reaction_network sir begin
+    @species S(t)=999.0 I(t)=1.0 R(t)=0.0
+    @parameters β=1e-4 ν=0.01
+    β, S + I --> 2I
+    ν, I --> R
+end
+```
+
 When directly constructing a `ReactionSystem` these can be passed to the
 constructor, and allow solving the system without needing initial condition or
 parameter vectors in the generated problem. For example
@@ -123,25 +134,6 @@ alternatively we could also have said
 rx1 = Reaction(β, [S,I], [I], [1,1], [2])
 rx2 = Reaction(ν, [I], [R])
 @named sir = ReactionSystem([rx1,rx2],t)
-```
-
-To set defaults when using the `@reaction_network` macro, use the `@species` and `@parameters` options:
-```julia
-sir = @reaction_network sir begin
-    @species S(t)=999.0 I(t)=1.0 R(t)=0.0
-    @parameters β=1e-4 ν=0.01
-    β, S + I --> 2I
-    ν, I --> R
-end
-```
-it is possible to only declare defaults for a subset of initial conditions or parameters. However, when the `@species` (or `@parameters`) option is used, it has to be followed with the full list of species (or parameters
-```julia
-sir = @reaction_network sir begin
-    @species S(t) I(t)=1.0 R(t)=0.0
-    @parameters β ν=0.01
-    β, S + I --> 2I
-    ν, I --> R
-end
 ```
 
 Alternatively, default values can be added after creating the system via the
