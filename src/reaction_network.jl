@@ -261,9 +261,9 @@ end
 
 function forbidden_symbol_check(v)
     !isempty(intersect(forbidden_symbols, v)) &&
-    error("The following symbol(s) are used as species or parameters: " *
-          ((map(s -> "'" * string(s) * "', ", intersect(forbidden_symbols, v))...)) *
-          "this is not permited.")
+        error("The following symbol(s) are used as species or parameters: " *
+              ((map(s -> "'" * string(s) * "', ", intersect(forbidden_symbols, v))...)) *
+              "this is not permited.")
     nothing
 end
 
@@ -284,10 +284,10 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
     species_declared = haskey(options, :species) ?
-                       extract_syms(options[:species], :species) : Union{Symbol,Expr}[]
+                       extract_syms(options[:species], :species) : Union{Symbol, Expr}[]
     parameters_declared = haskey(options, :parameters) ?
                           extract_syms(options[:parameters], :parameters) :
-                          Union{Symbol,Expr}[]
+                          Union{Symbol, Expr}[]
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
                                                                               declared_syms)
