@@ -576,7 +576,7 @@ end
 
 # Previous function called by the macro, but still avaiable for general use.
 function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)
-    make_ReactionSystem_internal(rxs, iv, nothing, Vector{Num}(), Vector{Num}(); kwargs...)
+    make_ReactionSystem_internal(rxs, iv, Vector{Num}(), Vector{Num}(); kwargs...)
 end
 
 # search the symbolic expression for parameters or states
@@ -597,8 +597,7 @@ end
 # Only used internally by the @reaction_network macro. Permits giving an initial order to
 # the parameters, and then adds additional ones found in the reaction. Name could be
 # changed.
-function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, no_sps::Nothing, sts_in,
-                                      ps_in;
+function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, sts_in, ps_in;
                                       spatial_ivs = nothing, kwargs...)
     t = value(iv)
     ivs = Set([t])
