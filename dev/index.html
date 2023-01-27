@@ -8,7 +8,7 @@ using Catalyst</code></pre><h2 id="Illustrative-Example"><a class="docs-heading-
 rn = @reaction_network begin
     α, S + I --&gt; 2I
     β, I --&gt; R
-end α β</code></pre><p>Assuming <a href="https://graphviz.org/">Graphviz</a> and is installed and <em>command line accessible</em>, the network can be visualized using the <a href="api/catalyst_api/#Catalyst.Graph"><code>Graph</code></a> command</p><pre><code class="language-julia hljs">Graph(rn)</code></pre><p>which in Jupyter notebooks will give the figure</p><p><img src="assets/SIR_rn.svg" alt="SIR Network Graph"/></p><p>To generate and solve a mass action ODE version of the model we use</p><pre><code class="language-julia hljs">using OrdinaryDiffEq
+end</code></pre><p>Assuming <a href="https://graphviz.org/">Graphviz</a> and is installed and <em>command line accessible</em>, the network can be visualized using the <a href="api/catalyst_api/#Catalyst.Graph"><code>Graph</code></a> command</p><pre><code class="language-julia hljs">Graph(rn)</code></pre><p>which in Jupyter notebooks will give the figure</p><p><img src="assets/SIR_rn.svg" alt="SIR Network Graph"/></p><p>To generate and solve a mass action ODE version of the model we use</p><pre><code class="language-julia hljs">using OrdinaryDiffEq
 p     = [:α =&gt; .1/1000, :β =&gt; .01]
 tspan = (0.0,250.0)
 u0    = [:S =&gt; 999.0, :I =&gt; 1.0, :R =&gt; 0.0]
@@ -25,7 +25,7 @@ plot(sol, lw=2)</code></pre><p><img src="assets/SIR.svg" alt="SIR Solution"/></p
 	eprint = {https://www.biorxiv.org/content/early/2022/08/02/2022.07.30.502135.full.pdf},
 	journal = {bioRxiv}
 }</code></pre><h2 id="Reproducibility"><a class="docs-heading-anchor" href="#Reproducibility">Reproducibility</a><a id="Reproducibility-1"></a><a class="docs-heading-anchor-permalink" href="#Reproducibility" title="Permalink"></a></h2><details><summary>The documentation of this SciML package was built using these direct dependencies,</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Status `~/work/Catalyst.jl/Catalyst.jl/docs/Project.toml`
-  [0f109fa4] BifurcationKit v0.2.2
+  [0f109fa4] BifurcationKit v0.2.3
   [479239e8] Catalyst v12.3.2 `~/work/Catalyst.jl/Catalyst.jl`
   [0c46a032] DifferentialEquations v7.6.0
   [31c24e10] Distributions v0.25.80
@@ -33,17 +33,17 @@ plot(sol, lw=2)</code></pre><p><img src="assets/SIR.svg" alt="SIR Solution"/></p
   [f213a82b] HomotopyContinuation v2.6.4
   [23fbe1c1] Latexify v0.15.18
 ⌃ [961ee093] ModelingToolkit v8.36.0
-  [91a5bcdd] Plots v1.38.2
+  [91a5bcdd] Plots v1.38.3
   [efcf1570] Setfield v1.1.1
   [276daf66] SpecialFunctions v2.1.7
 Info Packages marked with ⌃ have new versions available and may be upgradable.</code></pre></details><details><summary>and using this machine and Julia version.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Julia Version 1.8.5
 Commit 17cfb8e65ea (2023-01-08 06:45 UTC)
 Platform Info:
   OS: Linux (x86_64-linux-gnu)
-  CPU: 2 × Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz
+  CPU: 2 × Intel(R) Xeon(R) CPU E5-2673 v4 @ 2.30GHz
   WORD_SIZE: 64
   LIBM: libopenlibm
-  LLVM: libLLVM-13.0.1 (ORCJIT, icelake-server)
+  LLVM: libLLVM-13.0.1 (ORCJIT, broadwell)
   Threads: 1 on 2 virtual cores</code></pre></details><details><summary>A more complete overview of all dependencies and their versions is also provided.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Status `~/work/Catalyst.jl/Catalyst.jl/docs/Manifest.toml`
   [a4c015fc] ANSIColoredPrinters v0.0.1
   [c3fe647b] AbstractAlgebra v0.27.8
@@ -52,7 +52,7 @@ Platform Info:
 ⌅ [fb37089c] Arblib v0.6.4
   [dce04be8] ArgCheck v2.3.0
   [ec485272] ArnoldiMethod v0.2.0
-  [7d9fca2a] Arpack v0.5.4
+⌅ [7d9fca2a] Arpack v0.5.3
   [4fba245c] ArrayInterface v6.0.25
   [30b0a656] ArrayInterfaceCore v0.1.29
   [6ba088a2] ArrayInterfaceGPUArrays v0.2.2
@@ -64,7 +64,7 @@ Platform Info:
   [aae01518] BandedMatrices v0.17.10
   [198e06fe] BangBang v0.3.37
   [9718e550] Baselet v0.1.1
-  [0f109fa4] BifurcationKit v0.2.2
+  [0f109fa4] BifurcationKit v0.2.3
   [e2ed5e7c] Bijections v0.1.4
   [d1d4a3ce] BitFlags v0.1.7
   [62783981] BitTwiddlingConvenienceFunctions v0.1.5
@@ -139,7 +139,7 @@ Platform Info:
   [d5909c97] GroupsCore v0.4.0
   [cd3eb016] HTTP v1.7.4
   [f213a82b] HomotopyContinuation v2.6.4
-  [3e5b6fbb] HostCPUFeatures v0.1.13
+  [3e5b6fbb] HostCPUFeatures v0.1.14
   [34004b35] HypergeometricFunctions v0.3.11
   [b5f81e59] IOCapture v0.2.2
   [615f187c] IfElse v0.1.1
@@ -165,7 +165,7 @@ Platform Info:
   [2ee39098] LabelledArrays v1.13.0
   [984bce1d] LambertW v0.4.6
   [23fbe1c1] Latexify v0.15.18
-  [10f19ff3] LayoutPointers v0.1.12
+  [10f19ff3] LayoutPointers v0.1.13
   [2d8b4e74] LevyArea v1.0.0
   [d3d80556] LineSearches v7.2.0
   [7a12625a] LinearMaps v3.8.0
@@ -199,7 +199,7 @@ Platform Info:
   [b98c9c47] Pipe v1.3.0
   [ccf2f8ad] PlotThemes v3.1.0
   [995b91a9] PlotUtils v1.3.3
-  [91a5bcdd] Plots v1.38.2
+  [91a5bcdd] Plots v1.38.3
   [e409e4f3] PoissonRandom v0.4.3
 ⌅ [f517fe37] Polyester v0.6.20
 ⌅ [1d0040c9] PolyesterWeave v0.1.13
@@ -250,7 +250,7 @@ Platform Info:
   [4c63d2b9] StatsFuns v1.1.1
   [9672c7b4] SteadyStateDiffEq v1.11.0
   [789caeaf] StochasticDiffEq v6.57.4
-  [7792a7ef] StrideArraysCore v0.4.5
+  [7792a7ef] StrideArraysCore v0.4.6
 ⌅ [09ab397b] StructArrays v0.4.2
   [c3572dad] Sundials v4.12.0
 ⌅ [d1185830] SymbolicUtils v0.19.11
@@ -259,7 +259,7 @@ Platform Info:
   [bd369af6] Tables v1.10.0
   [62fd8b95] TensorCore v0.1.1
 ⌅ [8ea1fca8] TermInterface v0.2.3
-  [8290d209] ThreadingUtilities v0.5.0
+  [8290d209] ThreadingUtilities v0.5.1
   [ac1d9e8a] ThreadsX v0.1.11
   [a759f4b9] TimerOutputs v0.5.22
   [0796e94c] Tokenize v0.5.25
@@ -401,4 +401,4 @@ Platform Info:
   [3f19e933] p7zip_jll v17.4.0+0
 Info Packages marked with ⌃ and ⌅ have new versions available, but those with ⌅ are restricted by compatibility constraints from upgrading. To see why use `status --outdated -m`</code></pre></details>You can also download the
 <a href="https://github.com/SciML/Catalyst.jl/tree/gh-pages/v12.3.2/assets/Manifest.toml">manifest</a> file and the
-<a href="https://github.com/SciML/Catalyst.jl/tree/gh-pages/v12.3.2/assets/Project.toml">project</a> file.</article><nav class="docs-footer"><a class="docs-footer-nextpage" href="catalyst_for_new_julia_users/intro_to_catalyst/">Introduction to Catalyst and Julia for new Julia users »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 26 January 2023 15:24">Thursday 26 January 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+<a href="https://github.com/SciML/Catalyst.jl/tree/gh-pages/v12.3.2/assets/Project.toml">project</a> file.</article><nav class="docs-footer"><a class="docs-footer-nextpage" href="catalyst_for_new_julia_users/intro_to_catalyst/">Introduction to Catalyst and Julia for new Julia users »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Friday 27 January 2023 18:08">Friday 27 January 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
