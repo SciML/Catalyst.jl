@@ -606,8 +606,8 @@ function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, sts_in, ps_in
             push!(ivs, value(siv))
         end
     end
-    sts = OrderedSet{Any}(sts_in)
-    ps = OrderedSet{Any}(ps_in)
+    sts = OrderedSet{eltype(sts_in)}(sts_in)
+    ps = OrderedSet{eltype(ps_in)}(ps_in)
     vars = OrderedSet()
 
     # add species / parameters that are substrates / products first

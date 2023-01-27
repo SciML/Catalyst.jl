@@ -259,6 +259,14 @@ end
 
 ### Functions rephrasing the macro input as a ReactionSystem structure. ###
 
+function forbidden_symbol_check(v)
+    !isempty(intersect(forbidden_symbols, v)) &&
+    error("The following symbol(s) are used as species or parameters: " *
+          ((map(s -> "'" * string(s) * "', ", intersect(forbidden_symbols, v))...)) *
+          "this is not permited.")
+    nothing
+end
+
 # Function for creating a ReactionSystem structure (used by the @reaction_network macro).
 function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
@@ -280,9 +288,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     parameters_declared = haskey(options, :parameters) ?
                           extract_syms(options[:parameters], :parameters) :
                           Union{Symbol,Expr}[]
+    declared_syms = Set(Iterators.flatten((parameters_declared, species_declared)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
-                                                                              vcat(parameters_declared,
-                                                                              species_declared))
+                                                                              declared_syms)
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
@@ -291,17 +299,13 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
     any(!in(opt_in, option_keys) for opt_in in keys(options)) &&
         error("The following unsupprted options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
-    !isempty(intersect(forbidden_symbols, union(species, parameters))) &&
-        error("The following symbol(s) are used as species or parameters: " *
-              ((map(s -> "'" * string(s) * "', ",
-                    intersect(forbidden_symbols, union(species, parameters)))...)) *
-              "this is not permited.")
+    forbidden_symbol_check(union(species, parameters))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     sexprs = get_sexpr(species_extracted, options)
     pexprs = get_pexpr(parameters_extracted, options)
-    rxexprs = :($(make_ReactionSystem_internal)([], t, [], []; name = $(name)))
-    foreach(speci -> push!(rxexprs.args[5].args, speci), vcat(species))
+    rxexprs = :($(make_ReactionSystem_internal)([], t, Num[], Num[]; name = $(name)))
+    foreach(speci -> push!(rxexprs.args[5].args, speci), species)
     foreach(parameter -> push!(rxexprs.args[6].args, parameter), parameters)
     for reaction in reactions
         push!(rxexprs.args[3].args, get_rxexprs(reaction))
@@ -327,11 +331,7 @@ function make_reaction(ex::Expr)
     species, parameters = extract_species_and_parameters!([reaction], [])
 
     # Checks for input errors.
-    !isempty(intersect(forbidden_symbols, union(species, parameters))) &&
-        error("The following symbol(s) are used as species or parameters: " *
-              ((map(s -> "'" * string(s) * "', ",
-                    intersect(forbidden_symbols, union(species, parameters)))...)) *
-              "this is not permited.")
+    forbidden_symbol_check(union(species, parameters))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     sexprs = get_sexpr(species, Dict{Symbol, Expr}())
@@ -363,38 +363,39 @@ function esc_dollars!(ex)
     ex
 end
 
-# When the user have used the @species (or @parameters) options, extract species (or parameters) from its input.
+# When the user have used the @species (or @parameters) options, extract species (or
+# parameters) from its input.
 function extract_syms(ex::Expr, vartype::Symbol)
     vars = Symbolics._parse_vars(vartype, Real, ex.args[3:end])
     Vector{Union{Symbol, Expr}}(vars.args[end].args)
 end
 
-# Function looping through all reactions, found symbols without designated type (species or
-# parameters), and assignes them to teh right category.
+# Function looping through all reactions, to find undeclared symbols (species or
+# parameters), and assign them to the right category.
 function extract_species_and_parameters!(reactions, excluded_syms)
-    species = Vector{Union{Symbol, Expr}}()
-    parameters = Vector{Union{Symbol, Expr}}()
+    species = OrderedSet{Union{Symbol, Expr}}()
+    for reaction in reactions
+        for reactant in Iterators.flatten((reaction.substrates, reaction.products))
+            add_syms_from_expr!(species, reactant.reactant, excluded_syms)
+        end
+    end
 
+    foreach(s -> push!(excluded_syms, s), species)
+    parameters = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
+        add_syms_from_expr!(parameters, reaction.rate, excluded_syms)
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
-            add_syms_from_expr!(species, reactant.reactant, vcat(parameters, excluded_syms))
+            add_syms_from_expr!(parameters, reactant.stoichiometry, excluded_syms)
         end
     end
-    for reaction in reactions
-        add_syms_from_expr!(parameters, reaction.rate, vcat(species, excluded_syms))
-        for reactant in Iterators.flatten((reaction.substrates, reaction.products))
-            add_syms_from_expr!(parameters, reactant.stoichiometry,
-                                vcat(species, excluded_syms))
-        end
-    end
-    species, parameters
+
+    collect(species), collect(parameters)
 end
 # Function called by extract_species_and_parameters!, recursively loops through an
 # expression and find symbols (adding them to the push_symbols vector).
-function add_syms_from_expr!(push_symbols, rateex::ExprValues, excluded_syms::Vector)
+function add_syms_from_expr!(push_symbols::AbstractSet, rateex::ExprValues, excluded_syms)
     if rateex isa Symbol
-        if !(rateex in forbidden_symbols) && !(rateex in excluded_syms) &&
-           !(rateex in push_symbols)
+        if !(rateex in forbidden_symbols) && !(rateex in excluded_syms)
             push!(push_symbols, rateex)
         end
     elseif rateex isa Expr
@@ -511,7 +512,16 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
     end
 end
 
-#Recursive function that loops through the reaction line and finds the reactants and their stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
+function processmult(op, mult, stoich)
+    if (mult isa Number) && (stoich isa Number)
+        op(mult, stoich)
+    else
+        :($op($mult, $stoich))
+    end
+end
+
+# Recursive function that loops through the reaction line and finds the reactants and their
+# stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
 function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
                                    reactants::Vector{ReactantStruct})
     if typeof(ex) != Expr || (ex.head == :escape)
@@ -541,13 +551,6 @@ function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
     end
     reactants
 end
-function processmult(op, mult, stoich)
-    if (mult isa Number) && (stoich isa Number)
-        op(mult, stoich)
-    else
-        :($op($mult, $stoich))
-    end
-end
 
 ### Functionality for expanding function call to custom and specific functions ###
 
@@ -562,109 +565,109 @@ function recursive_expand_functions!(expr::ExprValues)
     expr
 end
 
-### Old functions (for deleting).
+# ### Old functions (for deleting).
 
-function get_rx_species_deletethis(rxs, ps)
-    pset = Set(ps)
-    species_set = Set{Symbol}()
-    for rx in rxs
-        find_species_in_rate!(species_set, rx.rate, pset)
-        for sub in rx.substrates
-            find_species_in_rate!(species_set, sub.stoichiometry, pset)
-        end
-        for prod in rx.products
-            find_species_in_rate!(species_set, prod.stoichiometry, pset)
-        end
-    end
-    collect(species_set)
-end
+# function get_rx_species_deletethis(rxs, ps)
+#     pset = Set(ps)
+#     species_set = Set{Symbol}()
+#     for rx in rxs
+#         find_species_in_rate!(species_set, rx.rate, pset)
+#         for sub in rx.substrates
+#             find_species_in_rate!(species_set, sub.stoichiometry, pset)
+#         end
+#         for prod in rx.products
+#             find_species_in_rate!(species_set, prod.stoichiometry, pset)
+#         end
+#     end
+#     collect(species_set)
+# end
 
-function find_species_in_rate!_deletethis(sset, rateex::ExprValues, ps)
-    if rateex isa Symbol
-        if !(rateex in forbidden_symbols) && !(rateex in ps)
-            push!(sset, rateex)
-        end
-    elseif rateex isa Expr
-        # note, this (correctly) skips $(...) expressions
-        for i in 2:length(rateex.args)
-            find_species_in_rate!(sset, rateex.args[i], ps)
-        end
-    end
-    nothing
-end
+# function find_species_in_rate!_deletethis(sset, rateex::ExprValues, ps)
+#     if rateex isa Symbol
+#         if !(rateex in forbidden_symbols) && !(rateex in ps)
+#             push!(sset, rateex)
+#         end
+#     elseif rateex isa Expr
+#         # note, this (correctly) skips $(...) expressions
+#         for i in 2:length(rateex.args)
+#             find_species_in_rate!(sset, rateex.args[i], ps)
+#         end
+#     end
+#     nothing
+# end
 
-function get_reactants_deletethis(reaction::ReactionStruct,
-                                  reactants = Vector{Union{Symbol, Expr}}())
-    for reactant in Iterators.flatten((reaction.substrates, reaction.products))
-        !in(reactant.reactant, reactants) && push!(reactants, reactant.reactant)
-    end
-    return reactants
-end
+# function get_reactants_deletethis(reaction::ReactionStruct,
+#                                   reactants = Vector{Union{Symbol, Expr}}())
+#     for reactant in Iterators.flatten((reaction.substrates, reaction.products))
+#         !in(reactant.reactant, reactants) && push!(reactants, reactant.reactant)
+#     end
+#     return reactants
+# end
 
-# Extract the reactants from the set of reactions.
-function get_reactants_deletethis(reactions::Vector{ReactionStruct},
-                                  reactants = Vector{Union{Symbol, Expr}}())
-    for reaction in reactions
-        get_reactants(reaction, reactants)
-    end
-    return reactants
-end
+# # Extract the reactants from the set of reactions.
+# function get_reactants_deletethis(reactions::Vector{ReactionStruct},
+#                                   reactants = Vector{Union{Symbol, Expr}}())
+#     for reaction in reactions
+#         get_reactants(reaction, reactants)
+#     end
+#     return reactants
+# end
 
-# Gets the species/parameter symbols from the reactions (when the user has omitted the designation of these).
-function extract_species(reactions::Vector{ReactionStruct}, parameters::Vector,
-                         species = Vector{Union{Symbol, Expr}}())
-    for reaction in reactions,
-        reactant in Iterators.flatten((reaction.substrates, reaction.products))
+# # Gets the species/parameter symbols from the reactions (when the user has omitted the designation of these).
+# function extract_species(reactions::Vector{ReactionStruct}, parameters::Vector,
+#                          species = Vector{Union{Symbol, Expr}}())
+#     for reaction in reactions,
+#         reactant in Iterators.flatten((reaction.substrates, reaction.products))
 
-        find_parameters_in_expr!(species, reaction.rate, parameters)
-        !in(reactant.reactant, species) && !in(reactant.reactant, parameters) &&
-            push!(species, reactant.reactant)
-    end
-    return species
-end
-function extract_parameters(reactions::Vector{ReactionStruct},
-                            species::Vector{Union{Symbol, Expr}},
-                            parameters = Vector{Symbol}())
-    for rx in reactions
-        find_parameters_in_expr!(parameters, rx.rate, species)
-        for sub in rx.substrates
-            find_parameters_in_expr!(parameters, sub.stoichiometry, species)
-        end
-        for prod in rx.products
-            find_parameters_in_expr!(parameters, prod.stoichiometry, species)
-        end
-    end
-    return parameters
-end
+#         find_parameters_in_expr!(species, reaction.rate, parameters)
+#         !in(reactant.reactant, species) && !in(reactant.reactant, parameters) &&
+#             push!(species, reactant.reactant)
+#     end
+#     return species
+# end
+# function extract_parameters(reactions::Vector{ReactionStruct},
+#                             species::Vector{Union{Symbol, Expr}},
+#                             parameters = Vector{Symbol}())
+#     for rx in reactions
+#         find_parameters_in_expr!(parameters, rx.rate, species)
+#         for sub in rx.substrates
+#             find_parameters_in_expr!(parameters, sub.stoichiometry, species)
+#         end
+#         for prod in rx.products
+#             find_parameters_in_expr!(parameters, prod.stoichiometry, species)
+#         end
+#     end
+#     return parameters
+# end
 
-# Goes through an expression, and returns the paramters in it.
-function find_parameters_in_expr!(parameters, rateex::ExprValues,
-                                  species::Vector)
-    if rateex isa Symbol
-        if !(rateex in forbidden_symbols) && !(rateex in species)
-            push!(parameters, rateex)
-        end
-    elseif rateex isa Expr
-        # note, this (correctly) skips $(...) expressions
-        for i in 2:length(rateex.args)
-            find_parameters_in_expr!(parameters, rateex.args[i], species)
-        end
-    end
-    nothing
-end
+# # Goes through an expression, and returns the paramters in it.
+# function find_parameters_in_expr!(parameters, rateex::ExprValues,
+#                                   species::Vector)
+#     if rateex isa Symbol
+#         if !(rateex in forbidden_symbols) && !(rateex in species)
+#             push!(parameters, rateex)
+#         end
+#     elseif rateex isa Expr
+#         # note, this (correctly) skips $(...) expressions
+#         for i in 2:length(rateex.args)
+#             find_parameters_in_expr!(parameters, rateex.args[i], species)
+#         end
+#     end
+#     nothing
+# end
 
-# Loops through the users species and parameter inputs, and checks if any have default values.
-function make_default_args(options)
-    defaults = :(Dict([]))
-    haskey(options, :species) && for arg in options[:species]
-        (arg isa Symbol) && continue
-        (arg.head != :(=)) && continue
-        push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
-    end
-    haskey(options, :parameters) && for arg in options[:parameters]
-        (arg isa Symbol) && continue
-        (arg.head != :(=)) && continue
-        push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
-    end
-    return defaults
-end
+# # Loops through the users species and parameter inputs, and checks if any have default values.
+# function make_default_args(options)
+#     defaults = :(Dict([]))
+#     haskey(options, :species) && for arg in options[:species]
+#         (arg isa Symbol) && continue
+#         (arg.head != :(=)) && continue
+#         push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
+#     end
+#     haskey(options, :parameters) && for arg in options[:parameters]
+#         (arg isa Symbol) && continue
+#         (arg.head != :(=)) && continue
+#         push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
+#     end
+#     return defaults
+# end

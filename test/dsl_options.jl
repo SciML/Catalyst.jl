@@ -109,21 +109,21 @@ rn1 = @reaction_network begin
     k*X, A + B --> 0
 end
 @test issetequal(species(rn1), @species A(t) B(t))
-@test issetequal(parameters(rn1), @parameters k X) 
+@test issetequal(parameters(rn1), @parameters k X)
 
 rn2 = @reaction_network begin
     @species A(t) B(t) X(t)
     k*X, A + B --> 0
 end
 @test issetequal(species(rn2), @species A(t) B(t) X(t))
-@test issetequal(parameters(rn2), @parameters k) 
+@test issetequal(parameters(rn2), @parameters k)
 
 rn3 = @reaction_network begin
     @parameters k
     k*X, A + B --> 0
 end
 @test issetequal(species(rn3), @species A(t) B(t))
-@test issetequal(parameters(rn3), @parameters k X) 
+@test issetequal(parameters(rn3), @parameters k X)
 
 rn4 = @reaction_network begin
     @species A(t) B(t) X(t)
@@ -131,64 +131,64 @@ rn4 = @reaction_network begin
     k*X, A + B --> 0
 end
 @test issetequal(species(rn4), @species A(t) B(t) X(t))
-@test issetequal(parameters(rn4), @parameters k) 
+@test issetequal(parameters(rn4), @parameters k)
 
 rn5 = @reaction_network begin
     @parameters k B [isconstantspecies=true]
     k*X, A + B --> 0
 end
 @test issetequal(species(rn5), @species A(t))
-@test issetequal(parameters(rn5), @parameters k B X) 
+@test issetequal(parameters(rn5), @parameters k B X)
 
 
 ### Tests that when some species or parameters are left out, the others are set properly. ###
 @variables t
 
 rn6 = @reaction_network begin
-    @species A(t) 
+    @species A(t)
     k*X, A + B --> 0
 end
 @test issetequal(species(rn6), @species A(t) B(t))
-@test issetequal(parameters(rn6), @parameters k X) 
+@test issetequal(parameters(rn6), @parameters k X)
 
 rn7 = @reaction_network begin
-    @species A(t) X(t) 
+    @species A(t) X(t)
     k*X, A + B --> 0
 end
 @test issetequal(species(rn7), @species A(t) X(t) B(t))
-@test issetequal(parameters(rn7), @parameters k) 
+@test issetequal(parameters(rn7), @parameters k)
 
 rn7 = @reaction_network begin
     @parameters B [isconstantspecies=true]
     k*X, A + B --> 0
 end
 @test issetequal(species(rn7), @species A(t))
-@test issetequal(parameters(rn7), @parameters B k X) 
+@test issetequal(parameters(rn7), @parameters B k X)
 
 rn8 = @reaction_network begin
-    @parameters B [isconstantspecies=true] k 
+    @parameters B [isconstantspecies=true] k
     k*X, A + B --> 0
 end
 @test issetequal(species(rn8), @species A(t))
-@test issetequal(parameters(rn8), @parameters B k X) 
+@test issetequal(parameters(rn8), @parameters B k X)
 
 rn9 = @reaction_network begin
-    @parameters k1 X1 
+    @parameters k1 X1
     @species A1(t) B1(t)
     k1*X1, A1 + B1 --> 0
     k2*X2, A2 + B2 --> 0
 end
 @test issetequal(species(rn9), @species A1(t) B1(t) A2(t) B2(t))
-@test issetequal(parameters(rn9), @parameters k1 X1 k2 X2) 
+@test issetequal(parameters(rn9), @parameters k1 X1 k2 X2)
 
 rn10 = @reaction_network begin
-    @parameters k1 X2 B2 [isconstantspecies=true] 
+    @parameters k1 X2 B2 [isconstantspecies=true]
     @species A1(t) X1(t)
     k1*X1, A1 + B1 --> 0
     k2*X2, A2 + B2 --> 0
 end
 @test issetequal(species(rn10), @species A1(t) X1(t) B1(t) A2(t))
-@test issetequal(parameters(rn10), @parameters k1 X2 B2 k2) 
+@test issetequal(parameters(rn10), @parameters k1 X2 B2 k2)
 
 rn11 = @reaction_network begin
     @parameters k1 k2
@@ -197,7 +197,7 @@ rn11 = @reaction_network begin
     k2*X2, A2 + B2 --> 0
 end
 @test issetequal(species(rn11), @species X1(t) A1(t) A2(t) B1(t) B2(t))
-@test issetequal(parameters(rn11), @parameters k1 k2 X2) 
+@test issetequal(parameters(rn11), @parameters k1 k2 X2)
 
 
 ### Checks that some created networks are identical. ###
@@ -245,7 +245,7 @@ rn19 = @reaction_network name begin
     1, A --> B
     (d1, d2), (A, B) --> 0
 end
-@test isequal(parameters(rn18), parameters(rn19))
+@test rn18 == rn19
 
 @parameters p d1 d2
 @variables t A(t) B(t)
