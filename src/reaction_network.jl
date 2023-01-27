@@ -266,8 +266,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     ex = esc_dollars!(ex)
 
     # Read lines with reactions and options.
-    reaction_lines = filter(x -> x.head == :tuple, ex.args)
-    option_lines = filter(x -> x.head == :macrocall, ex.args)
+    reaction_lines = Expr[x for x in ex.args if x.head == :tuple]
+    option_lines = Expr[x for x in ex.args if x.head == :macrocall]
 
     # Get macro options.
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
@@ -275,12 +275,14 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
-    species_declared = (haskey(options, :species) ? extract_syms(options[:species]) : [])
-    parameters_declared = (haskey(options, :parameters) ?
-                           extract_syms(options[:parameters]) : [])
+    species_declared = haskey(options, :species) ?
+                       extract_syms(options[:species], :species) : Union{Symbol,Expr}[]
+    parameters_declared = haskey(options, :parameters) ?
+                          extract_syms(options[:parameters], :parameters) :
+                          Union{Symbol,Expr}[]
     species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
                                                                               vcat(parameters_declared,
-                                                                                   species_declared))
+                                                                              species_declared))
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
@@ -362,15 +364,17 @@ function esc_dollars!(ex)
 end
 
 # When the user have used the @species (or @parameters) options, extract species (or parameters) from its input.
-function extract_syms(ex::Expr)
-    vars = Symbolics._parse_vars(:parameters, Real, ex.args[3:end])
+function extract_syms(ex::Expr, vartype::Symbol)
+    vars = Symbolics._parse_vars(vartype, Real, ex.args[3:end])
     Vector{Union{Symbol, Expr}}(vars.args[end].args)
 end
 
-# Function looping through all reactions, found symbols without designated type (species or parameters), and assignes them to teh right category.
-function extract_species_and_parameters!(reactions, excluded_syms,
-                                         species = Vector{Union{Symbol, Expr}}(),
-                                         parameters = Vector{Union{Symbol, Expr}}())
+# Function looping through all reactions, found symbols without designated type (species or
+# parameters), and assignes them to teh right category.
+function extract_species_and_parameters!(reactions, excluded_syms)
+    species = Vector{Union{Symbol, Expr}}()
+    parameters = Vector{Union{Symbol, Expr}}()
+
     for reaction in reactions
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(species, reactant.reactant, vcat(parameters, excluded_syms))
@@ -385,7 +389,8 @@ function extract_species_and_parameters!(reactions, excluded_syms,
     end
     species, parameters
 end
-# Function called by extract_species_and_parameters!, recursively loops through an expression and find symbols (adding them to the push_symbols vector).
+# Function called by extract_species_and_parameters!, recursively loops through an
+# expression and find symbols (adding them to the push_symbols vector).
 function add_syms_from_expr!(push_symbols, rateex::ExprValues, excluded_syms::Vector)
     if rateex isa Symbol
         if !(rateex in forbidden_symbols) && !(rateex in excluded_syms) &&
@@ -459,7 +464,7 @@ function get_reaction(line)
     rs
 end
 # Generates a vector containing a number of reaction structures, each containing the information about one reaction.
-function get_reactions(exprs::Vector{Any}, reactions = Vector{ReactionStruct}(undef, 0))
+function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(undef, 0))
     for line in exprs
         (rate, r_line) = line.args
         (r_line.head == :-->) && (r_line = Expr(:call, :→, r_line.args[1], r_line.args[2]))
