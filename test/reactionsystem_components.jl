@@ -88,7 +88,7 @@ sol = solve(oprob, Tsit5())
 sys2 = structural_simplify(nlrepressilator)
 @test length(equations(sys2)) <= 6
 nlprob = NonlinearProblem(sys2, u₀, pvals)
-sol = solve(nlprob, NLSolveJL(), tol = 1e-9)
+sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
 @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
 @test sol[sys₁.m]≈sol[sys₂.m] atol=1e-7
 @test sol[sys₁.m]≈sol[sys₃.m] atol=1e-7
@@ -100,7 +100,7 @@ fsys = Catalyst.flatten(ssrepressilator)
 sys2 = structural_simplify(nlrepressilator)
 @test length(equations(sys2)) <= 6
 nlprob = NonlinearProblem(sys2, u₀, pvals)
-sol = solve(nlprob, NLSolveJL(), tol = 1e-9)
+sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
 @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
 @test sol[sys₁.m]≈sol[sys₂.m] atol=1e-7
 @test sol[sys₁.m]≈sol[sys₃.m] atol=1e-7
@@ -117,7 +117,7 @@ connections = [sys₁.R ~ sys₃.P,
 sys2 = structural_simplify(nlrepressilator)
 @test length(equations(sys2)) <= 6
 nlprob = NonlinearProblem(sys2, u₀, pvals)
-sol = solve(nlprob, NLSolveJL(), tol = 1e-9)
+sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
 @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
 @test sol[sys₁.m]≈sol[sys₂.m] atol=1e-7
 @test sol[sys₁.m]≈sol[sys₃.m] atol=1e-7
@@ -233,7 +233,7 @@ repressilator2 = extend(csys, repressilator2)
 sys2 = structural_simplify(nlrepressilator)
 @test length(equations(sys2)) <= 6
 nlprob = NonlinearProblem(sys2, u₀, pvals)
-sol = solve(nlprob, NLSolveJL(), tol = 1e-9)
+sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
 @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
 @test sol[sys₁.m]≈sol[sys₂.m] atol=1e-7
 @test sol[sys₁.m]≈sol[sys₃.m] atol=1e-7
@@ -326,7 +326,7 @@ eqs = vcat(nrxs1, nrxs2, neqs2, nrxs3, neqs3)
 # test throw error if there are ODE constraints and convert to NonlinearSystem
 rn = @reaction_network rn begin
 @parameters k1 k2
-    (k1, k2), A <--> B 
+    (k1, k2), A <--> B
 end
 @parameters a, b
 @variables t, A(t), C(t)

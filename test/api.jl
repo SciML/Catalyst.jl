@@ -514,11 +514,11 @@ let
 
     nsys = convert(NonlinearSystem, rn; remove_conserved = true)
     nprob = NonlinearProblem{true}(nsys, u0, p)
-    nsol = solve(nprob, NewtonRaphson(); tol = 1e-10)
+    nsol = solve(nprob, NewtonRaphson(); abstol = 1e-10)
     nprob2 = ODEProblem(rn, u0, (0.0, 100.0 * tspan[2]), p)
     nsol2 = solve(nprob2, Tsit5(); abstol = 1e-10, reltol = 1e-10)
     nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true)
-    nsol3 = solve(nprob3, NewtonRaphson(); tol = 1e-10)
+    nsol3 = solve(nprob3, NewtonRaphson(); abstol = 1e-10)
     for s in species(rn)
         @test isapprox(nsol[s], nsol2(tspan[2], idxs = s))
         @test isapprox(nsol2(tspan[2], idxs = s), nsol3[s])

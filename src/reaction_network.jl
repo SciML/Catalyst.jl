@@ -301,8 +301,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     sexprs = get_sexpr(species_extracted, options)
     pexprs = get_pexpr(parameters_extracted, options)
     rxexprs = :($(make_ReactionSystem_internal)([], t, [], []; name = $(name)))
-    foreach(speci -> push!(rxexprs.args[6].args, speci), vcat(species))
-    foreach(parameter -> push!(rxexprs.args[7].args, parameter), parameters)
+    foreach(speci -> push!(rxexprs.args[5].args, speci), vcat(species))
+    foreach(parameter -> push!(rxexprs.args[6].args, parameter), parameters)
     for reaction in reactions
         push!(rxexprs.args[3].args, get_rxexprs(reaction))
     end
