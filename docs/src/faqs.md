@@ -104,6 +104,7 @@ point stoichiometry will give an error message.
 To set defaults when using the `@reaction_network` macro, use the `@species` and
 `@parameters` options:
 ```julia
+using Catalyst
 sir = @reaction_network sir begin
     @species S(t)=999.0 I(t)=1.0 R(t)=0.0
     @parameters β=1e-4 ν=0.01
@@ -111,32 +112,32 @@ sir = @reaction_network sir begin
     ν, I --> R
 end
 ```
-
-When directly constructing a `ReactionSystem` these can be passed to the
-constructor, and allow solving the system without needing initial condition or
-parameter vectors in the generated problem. For example
+When directly constructing a `ReactionSystem`, we can set the symbolic values to
+have the desired default values, and this will automatically be propagated
+through to the equation solvers:
 ```julia
-using Catalyst, Plots, OrdinaryDiffEq
+Plots, OrdinaryDiffEq
+@parameters β=1e-4 ν=.01
+@variables t S(t)=999.0 I(t)=1.0 R(t)=0.0
+rx1 = Reaction(β, [S,I], [I], [1,1], [2])
+rx2 = Reaction(ν, [I], [R])
+@named sir = ReactionSystem([rx1, rx2], t)
+oprob = ODEProblem(sir, [], (0.0, 250.0))
+sol = solve(oprob, Tsit5())
+plot(sol)
+```
+One can also build a mapping from parameter/species to value/initial
+condition and pass these to the `ReactionSystem` via the `defaults` keyword
+argument:
+```julia
 @parameters β ν
 @variables t S(t) I(t) R(t)
 rx1 = Reaction(β, [S,I], [I], [1,1], [2])
 rx2 = Reaction(ν, [I], [R])
 defs = [β => 1e-4, ν => .01, S => 999.0, I => 1.0, R => 0.0]
-@named sir = ReactionSystem([rx1,rx2],t; defaults=defs)
-oprob = ODEProblem(sir, [], (0.0,250.0))
-sol = solve(oprob, Tsit5())
-plot(sol)
+@named sir = ReactionSystem([rx1, rx2], t; defaults = defs)
 ```
-alternatively we could also have said
-```julia
-@parameters β=1e-4 ν=.01
-@variables t S(t)=999.0 I(t)=1.0 R(t)=0.0
-rx1 = Reaction(β, [S,I], [I], [1,1], [2])
-rx2 = Reaction(ν, [I], [R])
-@named sir = ReactionSystem([rx1,rx2],t)
-```
-
-Alternatively, default values can be added after creating the system via the
+Finally, default values can also be added after creating the system via the
 `setdefaults!` command, like
 ```julia
 sir = @reaction_network sir begin
