@@ -409,7 +409,7 @@ For example,
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
-end β ν
+end
 setdefaults!(sir, [:S => 999.0, :I => 1.0, :R => 1.0, :β => 1e-4, :ν => .01])
 
 # or
@@ -456,7 +456,7 @@ For example,
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
-end β ν
+end
 @unpacksys sir
 ```
 will load the symbolic variables, `S`, `I`, `R`, `ν` and `β`.
@@ -506,10 +506,10 @@ For example,
 sir = @reaction_network sir begin
     β, S + I --> 2I
     ν, I --> R
-end β ν
+end
 subsys = @reaction_network subsys begin
     k, A --> B
-end k
+end
 @named sys = compose(sir, [subsys])
 ```
 gives
@@ -872,7 +872,7 @@ For example,
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
-end β ν
+end
 complexes,incidencemat = reactioncomplexes(sir)
 incidencematgraph(sir)
 ```
@@ -906,7 +906,7 @@ For example,
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
-end β ν
+end
 complexes,incidencemat = reactioncomplexes(sir)
 linkageclasses(sir)
 ```
@@ -946,7 +946,7 @@ For example,
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
-end β ν
+end
 rcs,incidencemat = reactioncomplexes(sir)
 δ = deficiency(sir)
 ```
@@ -993,7 +993,7 @@ For example,
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
-end β ν
+end
 complexes,incidencemat = reactioncomplexes(sir)
 subnetworks(sir)
 ```
@@ -1030,7 +1030,7 @@ For example,
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
-end β ν
+end
 rcs,incidencemat = reactioncomplexes(sir)
 linkage_deficiencies = linkagedeficiencies(sir)
 ```
@@ -1061,7 +1061,7 @@ For example,
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
-end β ν
+end
 rcs,incidencemat = reactioncomplexes(sir)
 isreversible(sir)
 ```
@@ -1085,7 +1085,7 @@ For example,
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
-end β ν
+end
 rcs,incidencemat = reactioncomplexes(sir)
 subnets = subnetworks(rn)
 isweaklyreversible(rn, subnets)
@@ -1120,7 +1120,7 @@ Examples:
 rn = @reaction_network begin
     k, A + B --> C
     k2, C --> A + B
-    end k k2
+    end
 conservedequations(rn)
 ```
 gives
@@ -1150,7 +1150,7 @@ Examples:
 rn = @reaction_network begin
     k, A + B --> C
     k2, C --> A + B
-    end k k2
+    end
 conservationlaw_constants(rn)
 ```
 gives

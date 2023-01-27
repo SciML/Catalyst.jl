@@ -1,6 +1,76 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+- An `@species` macro was added. Currently, it is simply a thematic version of
+  (and equivalent to) ModelingToolkit's `@variables`.
+
+- **BREAKING:** Parameters should no longer be listed at the end of the DSL
+  macro, but are instead inferred from their position in the reaction statements
+  or via explicit declarations in the DSL macro. By default, any symbol that appears
+  as a substrate or product is a species, while any other is a parameter. That
+  is, parameters are those that only appear within a rate expression and/or as a
+  stoichiometric coefficient. E.g. what previously was
+  ```julia
+  using Catalyst
+  rn = @reaction_network begin
+    p, 0 --> X
+    d, X --> 0
+  end p d
+  ```
+  is now
+  ```julia
+  using Catalyst
+  rn = @reaction_network begin
+    p, 0 --> X
+    d, X --> 0
+  end
+  ```
+  More generally, in the reaction system
+  ```julia
+  rn = @reaction_network begin
+      k*k1*A, A --> B
+      k2, k1 + k*A --> B
+  end
+  ```
+  `k` and `k2` are inferred as parameters by the preceding convention, while
+  `A`, `B` and `k1` are species.
+
+- Explicit control over which symbols are treated as parameters vs. species is
+  available through the new DSL macros, `@species` and `@parameters`. These can
+  be used to designate when something should be a species or parameter,
+  overriding the default DSL assignments. This allows setting that a symbol
+  which would by default be interpreted as a parameter should actually be a
+  species (or vice-versa). E.g. in:
+  ```julia
+  using Catalyst
+  rn = @reaction_network begin
+    @species X(t)
+    k*X, 0 --> Y
+  end
+  ```
+  `X` and `Y` will be considered species, while `k` will be considered a
+  parameter. These options take the same arguments as standalone the `@species`
+  (i.e. `ModelingToolkit.@variables`) and `ModelingToolkit.@parameters` macros,
+  and support default values and setting metadata. E.g you can set default
+  values using:
+  ```julia
+  using Catalyst
+  rn = @reaction_network begin
+    @species X(t)=1.0
+    @parameters p=1.0 d=0.1
+    p, 0 --> X
+    d, X --> 0
+  end
+  ```
+  or designate a parameter as representing a constant species using metadata:
+  ```julia
+  using Catalyst
+  rn = @reaction_network begin
+    @parameters Y [isconstantspecies=true]
+    k, X + Y --> 0
+  end
+  ```
+
 
 ## Catalyst 12.3.2
 - Support for states/species that are functions of multiple variables. This

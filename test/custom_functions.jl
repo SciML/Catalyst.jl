@@ -10,6 +10,7 @@ new_poly(x, p1, p2) = 0.5 * p1 * x^2
 new_exp(x, p) = exp(-p * x)
 
 custom_function_network_1 = @reaction_network begin
+    @parameters v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4 v5 K5
     hill(X1, v1, K1, 2), X1 + Y1 --> Z1
     mm(X2, v2, K2), X2 + Y2 --> Z2
     p1 * X3^2 + p2, X3 + Y3 --> Z3
@@ -17,9 +18,10 @@ custom_function_network_1 = @reaction_network begin
     hillr(X5, v3, K3, 2), X5 + Y5 --> Z5
     mmr(X6, v4, K4), X6 + Y6 --> Z6
     hillar(X7, Y7, v5, K5, 2), X7 + Y7 --> Z7
-end v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4 v5 K5
+end
 
 custom_function_network_2 = @reaction_network begin
+    @parameters v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4 v5 K5
     new_hill(X1, v1, K1, 2), X1 + Y1 --> Z1
     v2 * X2 / (X2 + K2), X2 + Y2 --> Z2
     2 * new_poly(X3, p1, p2) + p2, X3 + Y3 --> Z3
@@ -27,7 +29,7 @@ custom_function_network_2 = @reaction_network begin
     v3 * (K3^2) / (K3^2 + X5^2), X5 + Y5 --> Z5
     v4 * K4 / (X6 + K4), X6 + Y6 --> Z6
     v5 * (X7^2) / (K5^2 + X7^2 + Y7^2), X7 + Y7 --> Z7
-end v1 K1 v2 K2 p1 p2 p3 v3 K3 v4 K4 v5 K5
+end
 
 function permute_ps(pvals, rn1, rn2)
     ps1 = parameters(rn1)
@@ -61,11 +63,12 @@ end
 
 # Michaelis-Menten function.
 mm_network = @reaction_network begin
+    @parameters v K
     (1.0, 1.0), 0 ↔ X
     mm(X, v, K), 0 --> X1
     mm(X, v, K), 0 --> X2
     mm(X, v, K), 0 --> X3
-end v K
+end
 f_mm = ODEFunction(convert(ODESystem, mm_network), jac = true)
 
 u0 = 10 * rand(rng, length(get_states(mm_network)))
@@ -79,11 +82,12 @@ f_mm_jac_output = f_mm.jac(u0, p, t)[2:end, 1]
 
 # Repressing Michaelis-Menten function.
 mmr_network = @reaction_network begin
+    @parameters v K
     (1.0, 1.0), 0 ↔ X
     mmr(X, v, K), 0 --> X1
     mmr(X, v, K), 0 --> X2
     mmr(X, v, K), 0 --> X3
-end v K
+end
 f_mmr = ODEFunction(convert(ODESystem, mmr_network), jac = true)
 
 u0 = 10 * rand(rng, length(get_states(mmr_network)))
@@ -97,10 +101,11 @@ f_mmr_jac_output = f_mmr.jac(u0, p, t)[2:end, 1]
 
 # Hill function.
 hill_network = @reaction_network begin
+    @parameters v K
     (1.0, 1.0), 0 ↔ X
     hill(X, v, K, 2), 0 --> X1
     hill(X, v, K, 2), 0 --> X2
-end v K
+end
 f_hill = ODEFunction(convert(ODESystem, hill_network), jac = true)
 
 u0 = 10 * rand(rng, length(get_states(hill_network)))
@@ -114,10 +119,11 @@ f_hill_jac_output = f_hill.jac(u0, p, t)[2:end, 1]
 
 # Repressing Hill function.
 hillr_network = @reaction_network begin
+    @parameters v K
     (1.0, 1.0), 0 ↔ X
     hillr(X, v, K, 2), 0 --> X1
     hillr(X, v, K, 2), 0 --> X2
-end v K
+end
 f_hillr = ODEFunction(convert(ODESystem, hillr_network), jac = true)
 
 u0 = 10 * rand(rng, length(get_states(hillr_network)))
@@ -131,12 +137,13 @@ f_hillr_jac_output = f_hillr.jac(u0, p, t)[2:end, 1]
 
 # Activation/repressing Hill function.
 hillar_network = @reaction_network begin
+    @parameters v K
     (1.0, 1.0), 0 ↔ (X, Y)
     hillar(X, Y, v, K, 2), 0 --> X1
     hillar(X, Y, v, K, 2), 0 --> X2
     hillar(X, Y, v, K, 2), 0 --> X3
     hillar(X, Y, v, K, 2), 0 --> X4
-end v K
+end
 f_hillar = ODEFunction(convert(ODESystem, hillar_network), jac = true)
 
 u0 = 10 * rand(rng, length(get_states(hillar_network)))

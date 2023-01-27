@@ -15,7 +15,7 @@ brusselator = @reaction_network begin
     1, 2X + Y → 3X
     B, X → Y
     1, X → ∅
-end A B
+end
 p_real = [1., 2.]
 ```
 

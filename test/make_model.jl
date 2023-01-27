@@ -67,45 +67,50 @@ basic_test(reaction_networks_weird[2], 4, [:X, :Y, :Z], [:k1, :k2, :k3, :k4])
 identical_networks_1 = Vector{Pair}()
 
 different_arrow_1 = @reaction_network begin
+    @parameters p1 p2 p3 k1 k2 k3 k4 d1 d2 d3
     (p1, p2, p3), ∅ > (X1, X2, X3)
     (k1, k2), X2 ↔ X1 + 2X3
     (k3, k4), X1 ⟷ X3
     (d1, d2, d3), (X1, X2, X3) → ∅
-end p1 p2 p3 k1 k2 k3 k4 d1 d2 d3
+end
 push!(identical_networks_1, reaction_networks_standard[1] => different_arrow_1)
 
 different_arrow_2 = @reaction_network begin
+    @parameters v1 K1 v2 K2 d
     mmr(X2, v1, K1), ∅ → X1
     mm(X1, v2, K2), ∅ ↣ X2
     d, X1 + X2 ↦ ∅
-end v1 K1 v2 K2 d
+end
 push!(identical_networks_1, reaction_networks_standard[2] => different_arrow_2)
 
 different_arrow_3 = @reaction_network begin
+    @parameters v1 K1 v2 K2 k1 k2 k3 k4 d
     mm(X2, v1, K1), ∅ ⇾ X1
     mm(X3, v2, K2), ∅ ⟶ X2
     (k1, k2), X1 ⇄ X3
     (k3, k4), X3 + X2 ⇆ X4 + X1
     d, (X1, X2, X3, X4) ⟼ ∅
-end v1 K1 v2 K2 k1 k2 k3 k4 d
+end
 push!(identical_networks_1, reaction_networks_standard[3] => different_arrow_3)
 
 different_arrow_4 = @reaction_network begin
+    @parameters v1 K1 v2 K2 v3 K3 v4 K4 d1 d2 d3 d4
     mmr(X4, v1, K1), ∅ ⥟ X1
     mmr(X1, v2, K2), ∅ ⥟ X2
     mmr(X2, v3, K3), ∅ ⇀ X3
     mmr(X3, v4, K4), ∅ ⇁ X4
     (d1, d2, d3, d4), (X1, X2, X3, X4) --> ∅
-end v1 K1 v2 K2 v3 K3 v4 K4 d1 d2 d3 d4
+end
 push!(identical_networks_1, reaction_networks_standard[4] => different_arrow_4)
 
 # Yes the name is different, I wanted one with several single direction arrows.
 different_arrow_8 = @reaction_network begin
+    @parameters p k1 k2 k3 d
     p, 2X1 < ∅
     k1, X2 ← X1
     (k2, k3), X3 ⟻ X2
     d, ∅ ↼ X3
-end p k1 k2 k3 d
+end
 push!(identical_networks_1, reaction_networks_standard[8] => different_arrow_8)
 
 for networks in identical_networks_1
@@ -128,16 +133,18 @@ identical_networks_2 = Vector{Pair}()
 
 # Different parameter and variable names.
 differently_written_5 = @reaction_network begin
+    @parameters q l1 l2 l3 l4 l5 l6 c
     q, ∅ → Y1
     (l1, l2), Y1 ⟷ Y2
     (l3, l4), Y2 ⟷ Y3
     (l5, l6), Y3 ⟷ Y4
     c, Y4 → ∅
-end q l1 l2 l3 l4 l5 l6 c
+end
 push!(identical_networks_2, reaction_networks_standard[5] => differently_written_5)
 
 # Unfold reactions.
 differently_written_6 = @reaction_network begin
+    @parameters p1 p2 k1 k2 k3 k4 k5 k6 d
     p1, ∅ → X1
     p2, ∅ → X2
     k1, 2X1 → X3
@@ -150,25 +157,27 @@ differently_written_6 = @reaction_network begin
     d, X2 → ∅
     d, X3 → ∅
     d, X4 → ∅
-end p1 p2 k1 k2 k3 k4 k5 k6 d
+end
 push!(identical_networks_2, reaction_networks_standard[6] => differently_written_6)
 
 # Ignore mass action.
 differently_written_7 = @reaction_network begin
+    @parameters p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
     (p1, p2, p3), ∅ ⇒ (X1, X2, X3)
     (k1 * X1 * X2^2 / 2, k2 * X4), X1 + 2X2 ⟺ X4
     (mm(X3, v1, K1) * X4, k3 * X5), X4 ⇔ X5
     (d1 * X1, d2 * X2, d3 * X3, d4 * X4, d5 * X5), ∅ ⟽ (X1, X2, X3, X4, X5)
-end p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
+end
 push!(identical_networks_2, reaction_networks_standard[7] => differently_written_7)
 
 # Ignore mass action new arrows.
 differently_written_8 = @reaction_network begin
+    @parameters p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
     (p1, p2, p3), ∅ => (X1, X2, X3)
     (k1 * X1 * X2^2 / 2, k2 * X4), X1 + 2X2 ⟺ X4
     (mm(X3, v1, K1) * X4, k3 * X5), X4 ⇔ X5
     (d1 * X1, d2 * X2, d3 * X3, d4 * X4, d5 * X5), ∅ <= (X1, X2, X3, X4, X5)
-end p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
+end
 push!(identical_networks_2, reaction_networks_standard[7] => differently_written_8)
 
 for networks in identical_networks_2
@@ -276,10 +285,11 @@ end
 
 ### Tests that time is handled properly ###
 time_network = @reaction_network begin
+    @parameters k2 k3 k6
     (t, k2), X1 ↔ X2
     (k3, t), X2 ↔ X3
     (t, k6), X3 ↔ X1
-end k2 k3 k6
+end
 
 f1 = ODEFunction(convert(ODESystem, reaction_networks_constraint[1]), jac = true)
 f2 = ODEFunction(convert(ODESystem, time_network), jac = true)
@@ -300,6 +310,7 @@ end
 
 ### Test various names as varriables ###
 test_network = @reaction_network begin
+    @parameters a A b B c C d D e E f F g G h H j J k K l L m M
     (a, A), n ⟷ N
     (b, B), o ⟷ O
     (c, C), p ⟷ P
@@ -312,17 +323,19 @@ test_network = @reaction_network begin
     (k, K), x ⟷ X
     (l, L), y ⟷ Y
     (m, M), z ⟷ Z
-end a A b B c C d D e E f F g G h H j J k K l L m M
+end
 
 test_network = @reaction_network begin (1.0, 1.0), i ⟷ T end
 
 test_network = @reaction_network begin
+    @parameters å Å ä Ä ö Ö
     (å, Å), ü ⟷ Ü
     (ä, Ä), ñ ⟷ Ñ
     (ö, Ö), æ ⟷ Æ
-end å Å ä Ä ö Ö
+end
 
 test_network = @reaction_network begin
+    @parameters α Α β Β γ Γ δ Δ ϵ Ε ζ Ζ η Η θ Θ ι Ι κ Κ λ Λ μ Μ
     (α, Α), ν ⟷ Ν
     (β, Β), ξ ⟷ Ξ
     (γ, Γ), ο ⟷ Ο
@@ -335,20 +348,22 @@ test_network = @reaction_network begin
     (κ, Κ), χ ⟷ Χ
     (λ, Λ), ψ ↔ Ψ
     (μ, Μ), ω ⟷ Ω
-end α Α β Β γ Γ δ Δ ϵ Ε ζ Ζ η Η θ Θ ι Ι κ Κ λ Λ μ Μ
+end
 
 # Networks containing t, im, and π should generate errors.
 
 # test I works
 rn = @reaction_network begin
+    @parameters k1 k2
     k1, S + I --> 2I
     k2, I --> R
-end k1 k2
+end
 @test isequal(opname(species(rn)[2]), :I)
 
 # test names work
 rn = @reaction_network SIR1 begin
+    @parameters k1 k2
     k1, S + I --> 2I
     k2, I --> R
-end k1 k2
+end
 @test nameof(rn) == :SIR1

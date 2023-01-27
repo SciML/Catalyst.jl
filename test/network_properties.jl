@@ -3,6 +3,7 @@
 using Catalyst, Test
 
 MAPK = @reaction_network MAPK begin
+    @parameters k₁ k₂ k₃ k₄ k₅ k₆ k₇ k₈ k₉ k₁₀  k₁₁ k₁₂ k₁₃ k₁₄ k₁₅ k₁₆ k₁₇ k₁₈ k₁₉ k₂₀ k₂₁ k₂₂ k₂₃ k₂₄ k₂₅ k₂₆ k₂₇ k₂₈ k₂₉ k₃₀
     (k₁, k₂),KKK + E1 <--> KKKE1
     k₃, KKKE1 --> KKK_ + E1
     (k₄, k₅), KKK_ + E2 <--> KKKE2
@@ -23,7 +24,7 @@ MAPK = @reaction_network MAPK begin
     k₂₇, KKPPKPase --> KP + KPase
     k₂₈, KPKPase --> K + KPase
     (k₂₉, k₃₀), KPP + KPase <--> KKPPKPase
-end k₁ k₂ k₃ k₄ k₅ k₆ k₇ k₈ k₉ k₁₀  k₁₁ k₁₂ k₁₃ k₁₄ k₁₅ k₁₆ k₁₇ k₁₈ k₁₉ k₂₀ k₂₁ k₂₂ k₂₃ k₂₄ k₂₅ k₂₆ k₂₇ k₂₈ k₂₉ k₃₀
+end
 rcs, B = reactioncomplexes(MAPK)
 @test length(rcs) == 26
 num_lcs = length(linkageclasses(MAPK))
@@ -52,6 +53,7 @@ cls = conservationlaws(MAPK)
 
 #########################
 rn2 = @reaction_network begin
+    @parameters k₁ k₂ k₃ k₄ k₅ k₆ k₇ k₈ k₉ k₁₀  k₁₁ k₁₂
     (k₁, k₂), E + S1 <--> ES1
     (k₃, k₄), E + S2 <--> ES2
     (k₅, k₆),  S2 + ES1 <--> ES1S2
@@ -60,7 +62,7 @@ rn2 = @reaction_network begin
     (k₉, k₁₀), S1 <--> 0
     (k₁₀, k₁₁), 0 <--> S2
     k₁₂, P --> 0
-end k₁ k₂ k₃ k₄ k₅ k₆ k₇ k₈ k₉ k₁₀  k₁₁ k₁₂
+end
 
 rcs, B = reactioncomplexes(rn2)
 @test length(rcs) == 12
@@ -89,6 +91,7 @@ cls = conservationlaws(rn2)
 ######################
 
 rn3 = @reaction_network begin
+    @parameters k₁ k₂ k₃ k₄ k₅ k₆ k₇ k₈ k₉ k₁₀  k₁₁ k₁₂ k₁₃ k₁₄ k₁₅ k₁₆ k₁₇ k₁₈ k₁₉
     (k₁, k₂), A11 <--> 0
     (k₃, k₄), A11 <--> A13
     (k₅, k₆),  0 <--> A12
@@ -101,7 +104,7 @@ rn3 = @reaction_network begin
     (k₁₆,k₁₇), A8 <--> A3 + A11
     k₁₈, A9 --> A3 + A10
     k₁₉, A2+A4 --> A2 + A6
-end k₁ k₂ k₃ k₄ k₅ k₆ k₇ k₈ k₉ k₁₀  k₁₁ k₁₂ k₁₃ k₁₄ k₁₅ k₁₆ k₁₇ k₁₈ k₁₉
+end
 rcs, B = reactioncomplexes(rn3)
 @test length(rcs) == 15
 @test length(linkageclasses(rn3)) == 3

@@ -16,7 +16,7 @@ using DiffEqBase, OrdinaryDiffEq
 rn = @reaction_network begin
   p, ∅ → X
   d, X → ∅
-end p d
+end
 p = [1.0,2.0]
 u0 = [0.1]
 tspan = (0.,1.)
@@ -28,7 +28,8 @@ parameters first appear within the DSL. They can also be determined by examining
 the ordering within the `species(rn)` and `parameters` vectors, or accessed more
 explicitly through the [`speciesmap(rn)`](@ref) and [`paramsmap(rn)`](@ref)
 dictionaries, which map the ModelingToolkit `Term`s and/or `Sym`s corresponding
-to each species or parameter to their integer id. Note, if no parameters are
+to each species or parameter to their integer id. The order can also be set manually using the `@species` and `@parameters` DSL options (see [The Reaction
+DSL](@ref)). Note, if no parameters are
 given in the [`@reaction_network`](@ref), then `p` does not need to be provided.
 
 We can then plot the solution using the solution plotting recipe:

@@ -8,7 +8,7 @@ consider the system
 using Catalyst, DifferentialEquations, Plots
 rn = @reaction_network ABtoC begin
   (k₊,k₋), A + B <--> C
-end k₊ k₋
+end
 
 # initial condition and parameter values
 setdefaults!(rn, [:A => 1.0, :B => 2.0, :C => 0.0, :k₊ => 1.0, :k₋ => 1.0])
@@ -80,7 +80,7 @@ to other `ModelingToolkit.AbstractSystem`s.
 ```julia
 rn = @reaction_network begin
   k, 2.5*A --> 3*B
-end k
+end
 ```
 or directly via
 ```julia
@@ -101,38 +101,49 @@ simulations](@ref) section. Leaving this keyword out for systems with floating
 point stoichiometry will give an error message.
 
 ## How to set default values for initial conditions and parameters?
-When directly constructing a `ReactionSystem` these can be passed to the
-constructor, and allow solving the system without needing initial condition or
-parameter vectors in the generated problem. For example
+To set defaults when using the `@reaction_network` macro, use the `@species` and
+`@parameters` options:
 ```julia
-using Catalyst, Plots, OrdinaryDiffEq
+using Catalyst
+sir = @reaction_network sir begin
+    @species S(t)=999.0 I(t)=1.0 R(t)=0.0
+    @parameters β=1e-4 ν=0.01
+    β, S + I --> 2I
+    ν, I --> R
+end
+```
+When directly constructing a `ReactionSystem`, we can set the symbolic values to
+have the desired default values, and this will automatically be propagated
+through to the equation solvers:
+```julia
+Plots, OrdinaryDiffEq
+@parameters β=1e-4 ν=.01
+@variables t S(t)=999.0 I(t)=1.0 R(t)=0.0
+rx1 = Reaction(β, [S,I], [I], [1,1], [2])
+rx2 = Reaction(ν, [I], [R])
+@named sir = ReactionSystem([rx1, rx2], t)
+oprob = ODEProblem(sir, [], (0.0, 250.0))
+sol = solve(oprob, Tsit5())
+plot(sol)
+```
+One can also build a mapping from parameter/species to value/initial
+condition and pass these to the `ReactionSystem` via the `defaults` keyword
+argument:
+```julia
 @parameters β ν
 @variables t S(t) I(t) R(t)
 rx1 = Reaction(β, [S,I], [I], [1,1], [2])
 rx2 = Reaction(ν, [I], [R])
 defs = [β => 1e-4, ν => .01, S => 999.0, I => 1.0, R => 0.0]
-@named sir = ReactionSystem([rx1,rx2],t; defaults=defs)
-oprob = ODEProblem(sir, [], (0.0,250.0))
-sol = solve(oprob, Tsit5())
-plot(sol)
+@named sir = ReactionSystem([rx1, rx2], t; defaults = defs)
 ```
-alternatively we could also have said
-```julia
-@parameters β=1e-4 ν=.01
-@variables t S(t)=999.0 I(t)=1.0 R(t)=0.0
-rx1 = Reaction(β, [S,I], [I], [1,1], [2])
-rx2 = Reaction(ν, [I], [R])
-@named sir = ReactionSystem([rx1,rx2],t)
-```
-
-The `@reaction_network` macro does not currently provide a way to specify
-default values, however, they can be added after creating the system via the
+Finally, default values can also be added after creating the system via the
 `setdefaults!` command, like
 ```julia
 sir = @reaction_network sir begin
     β, S + I --> 2I
     ν, I --> R
-end β ν
+end
 setdefaults!(sir, [:β => 1e-4, :ν => .01, :S => 999.0, :I => 1.0, :R => 0.0])
 ```
 
@@ -145,7 +156,7 @@ we have
 rn = @reaction_network begin
     α, S + I --> 2I
     β, I --> R
-end α β
+end
 u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
 p  = (:α => 1e-4, :β => .01)
 op  = ODEProblem(rn, u0, (0.0,250.0), p)
@@ -190,7 +201,7 @@ so the reaction
 ```julia
 rn = @reaction_network begin
   k, X --> ∅
-end k
+end
 ```
 occurs at the (ODE) rate ``d[X]/dt = -k[X]``, it is possible to override this by
 using any of the following non-filled arrows when declaring the reaction: `<=`, `⇐`,
@@ -198,7 +209,7 @@ using any of the following non-filled arrows when declaring the reaction: `<=`, 
 ```julia
 rn = @reaction_network begin
   k, X => ∅
-end k
+end
 ```
 will occur at rate ``d[X]/dt = -k`` (which might become a problem since ``[X]``
 will be degraded at a constant rate even when very small or equal to 0).
@@ -207,7 +218,7 @@ Note, stoichiometric coefficients are still included, i.e. the reaction
 ```julia
 rn = @reaction_network begin
   k, 2*X ⇒ ∅
-end k
+end
 ```
 has rate ``d[X]/dt = -2 k``.
 

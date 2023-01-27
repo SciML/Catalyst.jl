@@ -84,7 +84,7 @@ using Catalyst
 rn = @reaction_network begin
     α, S + I --> 2I
     β, I --> R
-end α β
+end
 ```
 Assuming [Graphviz](https://graphviz.org/) and is installed and *command line
 accessible*, the network can be visualized using the [`Graph`](@ref) command

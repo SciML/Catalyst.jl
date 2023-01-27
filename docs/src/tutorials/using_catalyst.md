@@ -36,7 +36,7 @@ repressilator = @reaction_network Repressilator begin
     μ, P₁ --> ∅
     μ, P₂ --> ∅
     μ, P₃ --> ∅
-end α K n δ γ β μ
+end
 show(stdout, MIME"text/plain"(), repressilator) # hide
 ```
 showing that we've created a new network model named `Repressilator` with the
@@ -208,7 +208,7 @@ bdp = @reaction_network begin
   c₁, X --> 2X
   c₂, X --> 0
   c₃, 0 --> X
-end c₁ c₂ c₃
+end
 p = (:c₁ => 1.0, :c₂ => 2.0, :c₃ => 50.)
 u₀ = [:X => 5.]
 tspan = (0.,4.)
