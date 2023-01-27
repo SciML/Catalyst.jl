@@ -119,9 +119,9 @@ const option_keys = [:species, :parameters]
 ### The @species macro, basically a copy of the @varriables macro. ###
 macro species(ex...)
     vars = Symbolics._parse_vars(:variables, Real, ex)
-    lastarg = vars.args[end]
-    resize!(vars.args, length(vars.args) - 1)
-    push!(vars.args, lastarg)
+    # lastarg = vars.args[end]
+    # resize!(vars.args, length(vars.args) - 1)
+    # push!(vars.args, lastarg)
     esc(vars)
 end
 
@@ -157,14 +157,12 @@ emptyrn = @reaction_network
 ```
 """
 macro reaction_network(name::Symbol, ex::Expr)
-    make_reaction_system(MacroTools.striplines(ex);
-                         name = :($(QuoteNode(name))))
+    make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name))))
 end
 
 # allows @reaction_network $name begin ... to interpolate variables storing a name
 macro reaction_network(name::Expr, ex::Expr)
-    make_reaction_system(MacroTools.striplines(ex);
-                         name = :($(esc(name.args[1]))))
+    make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1]))))
 end
 
 macro reaction_network(ex::Expr)
