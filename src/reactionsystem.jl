@@ -168,7 +168,7 @@ function print_rxside(io::IO, specs, stoich)
     else
         for (i, spec) in enumerate(specs)
             prspec = (MT.isparameter(spec) || (MT.operation(spec) == getindex)) ?
-                        spec : MT.operation(spec)
+                     spec : MT.operation(spec)
             if isequal(stoich[i], one(stoich[i]))
                 print(io, prspec)
             elseif Symbolics.istree(stoich[i])
