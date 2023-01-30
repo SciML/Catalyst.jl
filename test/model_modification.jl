@@ -36,7 +36,9 @@ eqs, iv, ps, name, systems = unpacksys(empty_network_2)
 
 ### Tests accessing parameters and species added with network API ###
 empty_network_3 = @reaction_network
-@parameters x p
+@parameters p
+@variables t
+@species x(t)
 addspecies!(empty_network_3, x)
 addparam!(empty_network_3, p)
 @test isequal(empty_network_3.x, states(empty_network_3, x))

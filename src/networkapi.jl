@@ -189,7 +189,7 @@ end
     dependents(rx, network)
 
 Given a [`Reaction`](@ref) and a [`ReactionSystem`](@ref), return a vector of the
-*non-constant* species the reaction rate law depends on. e.g., for
+*non-constant* species and variables the reaction rate law depends on. e.g., for
 
 `k*W, 2X + 3Y --> 5Z + W`
 
@@ -205,7 +205,7 @@ function dependents(rx, network)
     if rx.rate isa Number
         return rx.substrates
     else
-        rvars = get_variables(rx.rate, species(network))
+        rvars = get_variables(rx.rate, states(network))
         return union!(rvars, rx.substrates)
     end
 end
