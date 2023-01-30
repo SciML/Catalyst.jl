@@ -165,10 +165,10 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
 
     if !(all(isvalidreactant, subs) && all(isvalidreactant, prods))
         badsts = union(filter(!isvalidreactant, subs), filter(!isvalidreactant, prods))
-        throw(ArgumentError("""Constant species must be parameters with the
-                 isconstantspecies metadata, and non-constant species must be declared via
-                 @species, to be a valid substrate or product. The following reactants do
-                 not follow this convention:\n $badsts"""))
+        throw(ArgumentError("""To be a valid substrate or product, non-constant species must
+                 be declared via @species, while constant species must be parameters with
+                 the isconstantspecies metadata. The following reactants do not follow this
+                 convention:\n $badsts"""))
     end
 
     ns = if netstoich === nothing
