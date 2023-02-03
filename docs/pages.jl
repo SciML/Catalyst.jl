@@ -10,7 +10,7 @@ pages = Any["Home" => "index.md",
                                 "catalyst_functionality/compositional_modeling.md",
                                 "catalyst_functionality/parametric_stoichiometry.md"
                             ],
-            "Tutorials" => Any[
+            "Catalyst Applications" => Any[
                                 "tutorials/network_analysis.md",
                                 "tutorials/homotopy_continuation.md",
                                 "tutorials/bifurcation_diagram.md",
