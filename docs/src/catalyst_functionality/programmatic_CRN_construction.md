@@ -2,7 +2,7 @@
 While the DSL provides a simple interface for creating `ReactionSystem`s, it can
 often be convenient to build or augment a [`ReactionSystem`](@ref)
 programmatically. In this tutorial we show how to build the repressilator model
-of the [Using Catalyst](@using_catalyst) tutorial directly using symbolic variables, and
+of the [Using Catalyst](@ref using_catalyst) tutorial directly using symbolic variables, and
 then summarize the basic API functionality for accessing information stored
 within `ReactionSystem`s.
 
