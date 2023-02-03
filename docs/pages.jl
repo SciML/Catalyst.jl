@@ -18,7 +18,5 @@ pages = Any["Home" => "index.md",
                                 "tutorials/smoluchowski_coagulation_equation.md"
                             ],
             "FAQs" => "faqs.md",
-            "API" => Any[
-                            "api/catalyst_api.md"
-                        ]
+            "API" => "api/catalyst_api.md"
             ]
