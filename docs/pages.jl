@@ -5,17 +5,17 @@ pages = Any["Home" => "index.md",
                             ],
             "Catalyst Functionality" => Any[
                                 "catalyst_functionality/dsl.md",
-                                "catalyst_functionality/reaction_systems.md",
-                                "catalyst_functionality/basic_examples.md",
+                                "catalyst_functionality/programmatic_CRN_construction.md",
+                                "catalyst_functionality/basic_CRN_examples.md",
                                 "catalyst_functionality/compositional_modeling.md",
-                                "catalyst_functionality/symbolic_stoich.md"
+                                "catalyst_functionality/parametric_stoichiometry.md"
                             ],
             "Tutorials" => Any[
-                                "tutorials/reaction_network_representation.md",
-                                "tutorials/homotopy_continuation_tutorial.md",
+                                "tutorials/network_analysis.md",
+                                "tutorials/homotopy_continuation.md",
                                 "tutorials/bifurcation_diagram.md",
                                 "tutorials/parameter_estimation.md",
-                                "tutorials/generating_reactions_programmatically.md"
+                                "tutorials/smoluchowski_coagulation_equation.md"
                             ],
             "FAQs" => "faqs.md",
             "API" => Any[
