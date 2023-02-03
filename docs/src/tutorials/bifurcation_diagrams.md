@@ -1,4 +1,4 @@
-# Bifurcation Diagrams
+# [Bifurcation Diagrams](@id bifurcation_diagrams)
 Bifurcation diagrams can be produced from Catalyst generated models through the
 use of the [BifurcationKit.jl](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/)
 package. This tutorial gives a simple example of how to create such a

@@ -1,4 +1,4 @@
-# The Reaction DSL
+# [The Reaction DSL](@id dsl_description)
 This tutorial covers some of the basic syntax for building chemical reaction
 network models using Catalyst's domain specific language (DSL). Examples showing
 how to both construct and solve ODE, SDE, and jump models are provided in [Basic

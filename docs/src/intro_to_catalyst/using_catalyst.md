@@ -1,4 +1,4 @@
-# Using Catalyst
+# [Using Catalyst](@id using_catalyst)
 In this tutorial we provide an introduction to using Catalyst to specify
 chemical reaction networks, and then to solve ODE, jump, and SDE models
 generated from them. At the end we show what mathematical rate laws and

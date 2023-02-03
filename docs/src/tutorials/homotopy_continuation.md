@@ -1,4 +1,4 @@
-# Finding Steady States through Homotopy Continuation
+# [Finding Steady States through Homotopy Continuation](@id homotopy_continuation)
 
 The steady states of a dynamical system ${dx \over dt} = f(x)$ can be found by solving $0 = f(x)$. This is typically a hard problem, and generally, there is no method that guarantees to find all steady states for a system that has multiple ones. However, most CRNs generate polynomial systems (the main exception is when Hill functions with non-integer exponents are used). The roots of these can reliably be found through a *homotopy continuation* algorithm. This is implemented in Julia through the [HomotopyContinuation.jl](https://www.juliahomotopycontinuation.org/) package. In this tutorial, we will demonstrate how homotopy continuation can be used to find the steady states of a CNR implemented in  Catalyst.
 

@@ -1,4 +1,4 @@
-# Compositional Modeling of Reaction Systems
+# [Compositional Modeling of Reaction Systems](@id compositional_modeling)
 Catalyst supports the construction of models in a compositional fashion, based
 on ModelingToolkit's subsystem functionality. In this tutorial we'll see how we
 can construct the earlier repressilator model by composing together three
