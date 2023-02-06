@@ -176,19 +176,18 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
     return latexstr
 end
 
-@latexrecipe function f(rs::ReactionSystem; form=:reactions)
-    if form==:reactions    # Returns chemical reaction network code.
+@latexrecipe function f(rs::ReactionSystem; form = :reactions)
+    if form == :reactions    # Returns chemical reaction network code.
         cdot --> false
         env --> :chem
         return rs
-    elseif form==:ode      # Returns ODE system code.
-        return convert(ODESystem,rs)
-    elseif form==:sde      # Returns SDE system code.
-        return convert(SDESystem,rs)
+    elseif form == :ode      # Returns ODE system code.
+        return convert(ODESystem, rs)
+    elseif form == :sde      # Returns SDE system code.
+        return convert(SDESystem, rs)
     end
     error("Unrecognised form argument given: $form. This should be either reactions (default), :ode, or :sde.")
 end
-
 
 function Latexify.infer_output(env, rs::ReactionSystem, args...)
     env in [:arrows, :chem, :chemical, :arrow] && return chemical_arrows
