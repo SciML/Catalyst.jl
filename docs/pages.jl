@@ -9,9 +9,9 @@ pages = Any[
                                 "catalyst_functionality/programmatic_CRN_construction.md",
                                 "catalyst_functionality/compositional_modeling.md",
                                 "catalyst_functionality/parametric_stoichiometry.md"
+                                "catalyst_functionality/network_analysis.md",
                             ],
             "Catalyst Applications" => Any[
-                                "tutorials/network_analysis.md",
                                 "tutorials/homotopy_continuation.md",
                                 "tutorials/bifurcation_diagrams.md",
                                 "tutorials/parameter_estimation.md",
