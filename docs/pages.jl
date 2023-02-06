@@ -13,3 +13,4 @@ pages = Any["Home" => "index.md",
                                "tutorials/generating_reactions_programmatically.md"],
             "FAQs" => "faqs.md",
             "API" => Any["api/catalyst_api.md"]]
+            
