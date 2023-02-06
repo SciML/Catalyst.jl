@@ -129,10 +129,10 @@ end
 """
     @reaction_network
 
-Generates a [`ReactionSystem`](@ref) that encodes a chemical reaction
+Generates a [`ReactionSystem`](@ref dsl_description) that encodes a chemical reaction
 network.
 
-See [The Reaction DSL](@ref) documentation for details on
+See [The Reaction DSL](@ref dsl_description) documentation for details on
 parameters to the macro.
 
 Examples:

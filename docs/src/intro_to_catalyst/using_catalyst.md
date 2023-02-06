@@ -19,7 +19,7 @@ using Catalyst, DifferentialEquations, Plots, Latexify
 
 We now construct the reaction network. The basic types of arrows and predefined
 rate laws one can use are discussed in detail within the tutorial, [The Reaction
-DSL](@ref). Here, we use a mix of first order, zero order, and repressive Hill
+DSL](@ref dsl_description). Here, we use a mix of first order, zero order, and repressive Hill
 function rate laws. Note, $\varnothing$ corresponds to the empty state, and is
 used for zeroth order production and first order degradation reactions:
 ```@example tut1
