@@ -122,3 +122,18 @@ raw"\begin{align*}
 \ce{ Y &->[$Y k$] \varnothing}
 \end{align*}
 ", "\r\n"=>"\n")
+
+# Tests the `form` option
+for rn in reaction_networks_standard
+    @test latexify(rn)==latexify(rn; form=:reactions)
+end
+
+rn = @reaction_network begin 
+    (p,d), 0 <--> X
+    (kB,kD), 2X <--> X2
+end
+@test latexify(rn; form=:ode) == raw"$\begin{align}
+\frac{\mathrm{d} X\left( t \right)}{\mathrm{d}t} =& p - \left( X\left( t \right) \right)^{2} kB - d X\left( t \right) + 2 kD \mathrm{X2}\left( t \right) \\
+\frac{\mathrm{d} \mathrm{X2}\left( t \right)}{\mathrm{d}t} =& \frac{1}{2} \left( X\left( t \right) \right)^{2} kB - kD \mathrm{X2}\left( t \right)
+\end{align}
+$"
