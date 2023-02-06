@@ -13,6 +13,7 @@ wilhelm_2009_model = @reaction_network begin
     k4, X --> 0
 end
 p = [:k1 => 8.0, :k2 => 2.0, :k3 => 1.0, :k4 => 1.5]
+nothing   # hide
 ```
 Next, we will need to extract the actual equations from our model. In addition, we will substitute in our parameter values.
 ```@example hc1

@@ -17,6 +17,7 @@ brusselator = @reaction_network begin
     1, X → ∅
 end
 p_real = [1., 2.]
+nothing   # hide
 ```
 
 We simulate our model, and from the simulation generate sampled data points (with added noise), to which we will attempt to fit a parameter et.
@@ -29,6 +30,7 @@ prob = ODEProblem(brusselator, u0, tspan, p_real)
 sol_real = solve(prob, Rosenbrock23(), tstops=sample_times)
 
 sample_vals = [sol_real.u[findfirst(sol_real.t .>= ts)][var] * (1+(0.1rand()-0.05)) for var in 1:2, ts in sample_times];
+nothing   # hide
 ```
 
 We can plot the real solution, as well as the noisy samples.
@@ -50,6 +52,7 @@ function optimise_p(p_init,tend)
     end
     return DiffEqFlux.sciml_train(loss,p_init,ADAM(0.1),maxiters = 100)
 end
+nothing   # hide
 ```
 
 Next, we will fit a parameter set to the data on the interval [0,10].

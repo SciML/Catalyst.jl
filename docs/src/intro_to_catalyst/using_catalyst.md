@@ -110,7 +110,8 @@ conditions. We can build such mappings in several ways. One is to use Julia
 ```@example tut1
 pmap  = (:α => .5, :K => 40, :n => 2, :δ => log(2)/120,
          :γ => 5e-3, :β => log(2)/6, :μ => log(2)/60)
-u₀map = [:m₁ => 0., :m₂ => 0., :m₃ => 0., :P₁ => 20., :P₂ => 0., :P₃ => 0.];
+u₀map = [:m₁ => 0., :m₂ => 0., :m₃ => 0., :P₁ => 20., :P₂ => 0., :P₃ => 0.]
+nothing   # hide
 ```
 Alternatively, we can use ModelingToolkit symbolic variables to specify these
 mappings like
@@ -119,22 +120,25 @@ mappings like
 @variables t m₁(t) m₂(t) m₃(t) P₁(t) P₂(t) P₃(t)
 psymmap  = (α => .5, K => 40, n => 2, δ => log(2)/120,
          γ => 5e-3, β => 20*log(2)/120, μ => log(2)/60)
-u₀symmap = [m₁ => 0., m₂ => 0., m₃ => 0., P₁ => 20., P₂ => 0., P₃ => 0.];
+u₀symmap = [m₁ => 0., m₂ => 0., m₃ => 0., P₁ => 20., P₂ => 0., P₃ => 0.]
+nothing   # hide
 ```
 Knowing these mappings we can set up the `ODEProblem` we want to solve:
 
 ```@example tut1
 # time interval to solve on
-tspan = (0., 10000.);
+tspan = (0., 10000.)
 
 # create the ODEProblem we want to solve
-oprob = ODEProblem(repressilator, u₀map, tspan, pmap);
+oprob = ODEProblem(repressilator, u₀map, tspan, pmap)
+nothing   # hide
 ```
 By passing `repressilator` directly to the `ODEProblem`, Catalyst has to
 (internally) call `convert(ODESystem, repressilator)` again to generate the
 symbolic ODEs. We could instead pass `odesys` directly like
 ```@example tut1
-oprob2 = ODEProblem(odesys, u₀symmap, tspan, psymmap);
+oprob2 = ODEProblem(odesys, u₀symmap, tspan, psymmap)
+nothing   # hide
 ```
 `oprob` and `oprob2` are functionally equivalent, each representing the same
 underlying problem.
@@ -211,7 +215,8 @@ bdp = @reaction_network begin
 end
 p = (:c₁ => 1.0, :c₂ => 2.0, :c₃ => 50.)
 u₀ = [:X => 5.]
-tspan = (0.,4.);
+tspan = (0.,4.)
+nothing   # hide
 ```
 
 The corresponding Chemical Langevin Equation SDE is then
