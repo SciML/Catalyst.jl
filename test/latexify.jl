@@ -2,6 +2,7 @@
 
 ### Fetch required packages and reaction networks ###
 using Catalyst, Latexify
+include("test_networks.jl")
 
 ############################
 ### CURRENTLY NOT ACITVE ###
@@ -126,6 +127,7 @@ raw"\begin{align*}
 # Tests the `form` option
 for rn in reaction_networks_standard
     @test latexify(rn)==latexify(rn; form=:reactions)
+    #@test latexify(convert(ODESystem,rn)) == latexify(rn; form=:ode) # Slight difference due to some latexify weirdity. Both displays fine though
 end
 
 rn = @reaction_network begin 
