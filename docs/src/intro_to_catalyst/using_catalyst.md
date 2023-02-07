@@ -91,7 +91,7 @@ have rates that depend on the proteins, and hence lead to red arrows from each
 Note, from the REPL or scripts one can always use [`savegraph`](@ref) to save
 the graph (assuming `Graphviz` is installed).
 
-## Mass Action ODE Models
+## Mass action ODE models
 Let's now use our `ReactionSystem` to generate and solve a corresponding mass
 action ODE model. We first convert the system to a `ModelingToolkit.ODESystem`
 by
@@ -167,7 +167,7 @@ documentation](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/).
 
 ---
 
-## Stochastic Simulation Algorithms (SSAs) for Stochastic Chemical Kinetics
+## Stochastic simulation algorithms (SSAs) for stochastic chemical kinetics
 Let's now look at a stochastic chemical kinetics model of the repressilator,
 modeling it with jump processes. Here, we will construct a
 [JumpProcesses](https://docs.sciml.ai/JumpProcesses/stable/) `JumpProblem` that uses
@@ -199,7 +199,7 @@ Common questions that arise in using the JumpProcesses SSAs (i.e. Gillespie meth
 are collated in the [JumpProcesses FAQ](https://docs.sciml.ai/stable/modules/JumpProcesses/faq/).
 
 ---
-## Chemical Langevin Equation (CLE) Stochastic Differential Equation (SDE) Models
+## Chemical Langevin equation (CLE) stochastic differential equation (SDE) models
 At an intermediate physical scale between macroscopic ODE models and microscopic
 stochastic chemical kinetics models lies the CLE, given by a system of SDEs that
 add to each ODE above a noise term. As the repressilator has species that get

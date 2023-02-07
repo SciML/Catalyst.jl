@@ -2,7 +2,7 @@
 
 The steady states of a dynamical system ${dx \over dt} = f(x)$ can be found by solving $0 = f(x)$. This is typically a hard problem, and generally, there is no method that guarantees to find all steady states for a system that has multiple ones. However, most CRNs generate polynomial systems (the main exception is when Hill functions with non-integer exponents are used). The roots of these can reliably be found through a *homotopy continuation* algorithm. This is implemented in Julia through the [HomotopyContinuation.jl](https://www.juliahomotopycontinuation.org/) package. In this tutorial, we will demonstrate how homotopy continuation can be used to find the steady states of a CNR implemented in  Catalyst.
 
-## Basic Example 
+## Basic example 
 For this tutorial, we will use a model from the Wilhem (2009) paper (which demonstrates bistability in a small CRN). We declare the model and the parameter set for which we want to find the steady states:
 ```@example hc1
 using Catalyst
@@ -28,10 +28,10 @@ sols = real_solutions(as_polynomial((f, x...) -> HomotopyContinuation.solve(coll
 ```
 While it is not the case for this CRN, we note that some solutions with negative species concentrations may still appear. Typically, these will need to be filtered away as well.
 
-## Rational Polynomial Systems
+## Rational polynomial systems
 It is not uncommon for CRNs to generate systems corresponding to rational multivariate polynomials (e.g. through Hill functions). The roots of these can also be found using homotopy continuation. An expanded tutorial for this will be published once some awaited improvements to the `as_polynomial` function are completed. 
 
-## Systems with Conservation Laws
+## Systems with conservation laws
 Finally, some systems are underdetermined, and have an infinite number of possible steady states. These are typically systems containing a conservation law, e.g.
 ```@example hc3
 using Catalyst

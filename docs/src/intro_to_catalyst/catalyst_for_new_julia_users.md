@@ -5,7 +5,7 @@ Julia can be downloaded [here](https://julialang.org/downloads/).
 
 *Users who are already familiar with Julia can skip to the [Using Catalyst](@ref using_catalyst) tutorial.*
 
-### Basic Julia usage
+## Basic Julia usage
 On the surface, Julia has many similarities to languages like MATLAB, Python, and R.
 
 *Values* can be assigned to *variables* through the use of a `=` sign. Values (possibly stored in variables) can be used for most basic computations.
@@ -43,7 +43,7 @@ rand(100, 100)^3.5
 
 This is useful to know when you e.g. declare, simulate, or plot, a Catalyst model. The first time you run a command there might be a slight delay. However, subsequent runs will execute much quicker. This holds even if you do minor adjustments before the second run (such as changing simulation initial conditions).
 
-### Installing and activating packages
+## Installing and activating packages
 Except for some base Julia packages (such as `Pkg`, the package manager) that are available by default, Julia packages must be installed locally before they can be used. Most packages are registered with Julia, and can be added through the `Pkg.add("desired_package")` command (where `desired_package` is the name of the package you wish to install). We can thus install Catalyst:
 ```julia
 using Pkg
@@ -71,7 +71,7 @@ using Plots
 
 For a more detailed introduction to Julia packages, please read [the Pkg documentation](https://docs.julialang.org/en/v1/stdlib/Pkg/).
 
-### Simulating a basic Catalyst model
+## Simulating a basic Catalyst model
 Now that we have some basic familiarity with Julia, and have installed and activated the required packages, we will create and simulate a basic chemical reaction network model through Catalyst.
 
 Catalyst models are created through the `@reaction_network` *macro*. For more information on macros, please read [the Julia documentation on macros](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros). This documentation is, however, rather advanced (and not required to use Catalyst). We instead recommend that you simply familiarise yourself with the Catalyst syntax, without studying in detail how macros work and what they are.
@@ -132,7 +132,7 @@ Here, the plot shows the time evolution of the concentration of the species *X* 
 
 For more information about the numerical simulation package, please see the [DifferentialEquation documentation](https://docs.sciml.ai/DiffEqDocs/stable/). For more information about the plotting package, please see the [Plots documentation](https://docs.juliaplots.org/stable/).
 
-### Additional modelling example
+## Additional modelling example
 To make this introduction more comprehensive, we here provide another example, using a more complicated model. In addition, instead of simulating our model as concentrations evolving over time, we will simulate the individual reaction events through the [Gillespie algorithm](https://en.wikipedia.org/wiki/Gillespie_algorithm). This is a way to add *noise* to our model.
 
 Remember, unless we have restarted Julia, we do not need to activate our packages (through the `using` command) again.
@@ -181,5 +181,5 @@ plot(sol)
 
 **Exercise:** Try simulating the model several times. Note that the epidemic doesn't always take off, but sometimes dies out without spreading through the population. Try changing the infection rate (*b*), determining how this value affects the probability that the epidemic goes through the population.
 
-# Feedback
+## Feedback
 If you are a new Julia user who has used this tutorial, and there was something you struggled with or would have liked to have explained better, please [raise an issue](https://github.com/SciML/Catalyst.jl/issues). That way, we can continue improving this tutorial.

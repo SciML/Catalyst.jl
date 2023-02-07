@@ -449,7 +449,7 @@ end
 
 Please see the API [Rate Laws](@ref) section for more details.
 
-## Interpolation of Julia Variables
+## Interpolation of Julia variables
 The DSL allows Julia variables to be interpolated for the network name, within
 rate constant expressions, or for species/stoichiometry within reactions. Using
 the lower-level symbolic interface we can then define symbolic variables and

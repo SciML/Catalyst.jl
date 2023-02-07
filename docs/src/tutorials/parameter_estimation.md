@@ -94,7 +94,7 @@ plot!(sol_estimate,color=[:darkblue :darkred], linestyle=:dash,lw=3,label=["X es
 The final parameter set becomes `[0.9996559014056948, 2.005632696191224]` (the real one was `[1.0, 2.0]`).
 
 
-### Why we fit the parameters in iterations.
+## Why we fit the parameters in iterations.
 The reason we chose to fit the model on a smaller interval to begin with, and then extend the interval, is to avoid getting stuck in a local minimum. Here specifically, we chose our initial interval to be smaller than a full cycle of the oscillation. If we had chosen to fit a parameter set on the full interval immediately we would have received an inferior solution.
 ```julia
 p_estimate = optimise_p([5.,5.],30.).minimizer

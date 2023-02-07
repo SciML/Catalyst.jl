@@ -5,7 +5,7 @@ use parametric stoichiometry, and discuss several caveats to be aware of.
 
 *Note, this tutorial requires ModelingToolkit v8.5.4 or greater to work properly.*
 
-## Using Symbolic Stoichiometry
+## Using symbolic stoichiometry
 Let's first consider a simple reversible reaction where the number of reactants
 is a parameter, and the number of products is the product of two parameters. 
 ```@example s1

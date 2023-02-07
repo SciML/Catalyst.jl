@@ -1,6 +1,6 @@
 # [Basic Chemical Reaction Network Examples](@id basic_CRN_examples)
 
-#### Example: Birth-Death Process
+## Example: Birth-death process
 
 ```@example bcrn1
 using Catalyst, DifferentialEquations, Plots
@@ -38,7 +38,7 @@ plot(plot(osol; title = "Reaction Rate Equation ODEs"),
      layout = (3, 1))
 ```
 
-#### Example: Michaelis-Menten Enzyme Kinetics
+## Example: Michaelis-Menten enzyme kinetics
 
 ```@example bcrn1
 rs = @reaction_network begin

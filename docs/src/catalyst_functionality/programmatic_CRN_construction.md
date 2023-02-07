@@ -6,7 +6,7 @@ of the [Using Catalyst](@ref using_catalyst) tutorial directly using symbolic va
 then summarize the basic API functionality for accessing information stored
 within `ReactionSystem`s.
 
-## Directly Building the Repressilator with `ReactionSystem`s
+## Directly building the repressilator with `ReactionSystem`s
 We first load Catalyst
 ```@example ex
 using Catalyst
@@ -98,7 +98,7 @@ repressilator == repressilator2
 
 For more options in building `ReactionSystem`s, see the [`ReactionSystem`](@ref) API docs.
 
-## More General `Reaction`s
+## More general `Reaction`s
 In the example above all the specified `Reaction`s were first or zero order. The
 three-argument form of `Reaction` implicitly assumes all species have a
 stoichiometric coefficient of one, i.e. for substrates `[S₁,...,Sₘ]` and
@@ -135,7 +135,7 @@ rx = Reaction(α+β*t*A, [A], [B])
 [See the FAQs](@ref user_functions) for info on using general user-specified
 functions for the rate constant.
 
-## `@reaction` macro for constructing `Reaction`s
+## The `@reaction` macro for constructing `Reaction`s
 In some cases one wants to build reactions incrementally, as in the
 repressilator example, but it would be nice to still have a short hand as in the
 [`@reaction_network`](@ref) DSL. In this case one can construct individual
@@ -187,7 +187,7 @@ interpolating their values into the rate law expressions using `$` in the macro.
 This ensured they were properly treated as species and not parameters. See the
 [`@reaction`](@ref) macro docstring for more information.
 
-## Basic Querying of `ReactionSystems`
+## Basic querying of `ReactionSystems`
 
 The [Catalyst.jl API](@ref) provides a large variety of functionality for
 querying properties of a reaction network. Here we go over a few of the most

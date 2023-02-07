@@ -5,7 +5,7 @@ can construct the earlier repressilator model by composing together three
 identically repressed genes, and how to use compositional modeling to create
 compartments.
 
-## Compositional Modeling Tooling
+## Compositional modeling tooling
 Catalyst supports two ModelingToolkit interfaces for composing multiple
 [`ReactionSystem`](@ref)s together into a full model. The first mechanism for
 extending a system is the `extend` command
@@ -91,7 +91,7 @@ ModelingToolkit.get_systems(flatrn)
 More about ModelingToolkit's interface for compositional modeling can be found
 in the [ModelingToolkit docs](http://docs.sciml.ai/ModelingToolkit/stable/).
 
-## Compositional Model of the Repressilator
+## Compositional model of the repressilator
 Let's apply the tooling we've just seen to create the repressilator in a more
 modular fashion. We start by defining a function that creates a negatively
 repressed gene, taking the repressor as input
@@ -132,7 +132,7 @@ signal Catalyst that these variables will come from parallel systems in the tree
 that have the same parent as the system being constructed (in this case the
 top-level `repressilator` system).
 
-## Compartment-based Models
+## Compartment-based models
 Finally, let's see how we can make a compartment-based model. Let's create a
 simple eukaryotic gene expression model with negative feedback by protein
 dimers. Transcription and gene inhibition by the protein dimer occur in the

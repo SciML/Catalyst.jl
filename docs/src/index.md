@@ -52,7 +52,7 @@ etc).
   reaction network graphs. (Reusing the Graphviz interface created in
   [Catlab.jl](https://algebraicjulia.github.io/Catlab.jl/stable/).)
 
-## Packages Supporting Catalyst
+## Packages supporting Catalyst
 - Catalyst [`ReactionSystem`](@ref)s can be imported from SBML files via
   [SBMLToolkit.jl](https://docs.sciml.ai/SBMLToolkit/stable/), and from BioNetGen .net
   files and various stoichiometric matrix network representations using
@@ -76,7 +76,7 @@ Catalyst can be installed through the Julia package manager:
 using Catalyst
 ```
 
-## Illustrative Example
+## Illustrative example
 Here is a simple example of generating, visualizing and solving an SIR ODE
 model. We first define the SIR reaction model using Catalyst
 ```julia
@@ -112,14 +112,14 @@ plot(sol, lw=2)
 
 ![SIR Solution](assets/SIR.svg)
 
-## Getting Help
+## Getting help
 Catalyst developers are active on the [Julia
 Discourse](https://discourse.julialang.org/), and the [Julia
 Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sciml-sysbio.
 For bugs or feature requests [open an
 issue](https://github.com/SciML/Catalyst.jl/issues).
 
-## Supporting and Citing Catalyst.jl
+## Supporting and citing Catalyst.jl
 The software in this ecosystem was developed as part of academic research. If you would like to help support it,
 please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part
 of your research, teaching, or other activities, we would be grateful if you could cite our work:
