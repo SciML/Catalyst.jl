@@ -597,3 +597,14 @@ let
     dgact = Catalyst.get_depgraph(rn)
     @test dg == dgact
 end
+
+# test printing with arrays is working ok
+let
+    @parameters a
+    @variables t A(t) B(t) C(t)[1:2]
+    rx1 = Reaction(a, [A, C[1]], [C[2], B], [1, 2], [2, 3])
+    io = IOBuffer()
+    show(io, rx1)
+    str = String(take!(io))
+    @test str == "a, A + 2*(C(t))[1] --> 2*(C(t))[2] + 3*B"
+end
