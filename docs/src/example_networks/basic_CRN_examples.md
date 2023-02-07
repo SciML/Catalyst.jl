@@ -115,7 +115,7 @@ osol1 = solve(oprob1)
 oprob2 = ODEProblem(rs, u0, tspan, [:A => 1.0, :B => 3.0])
 osol2 = solve(oprob2)
 
-plot(plot(osol1; title = "No oscillation (B < 1 + A^2"),
+plot(plot(osol1; title = "No oscillation (B < 1 + A^2)"),
      plot(osol2; title = "Oscillation (B > 1 + A^2)");
      layout = (2, 1))
 ```
