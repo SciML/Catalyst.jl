@@ -1,0 +1,215 @@
+# [Advanced Simulation Options](@id advanced_simulations)
+throughout this tutorial, we have described how to perform basic ODE, SDE, and Jump simulations of Catalyst models. However, there exists a large number of additional options for performing these simulations. For a comprehensive overview, please read the [documentation of the DifferentialEquations package](https://docs.sciml.ai/DiffEqDocs/stable/), on which Catalyst depends for all simulations. Here, we will not provide a comprehensive overview, but rather demonstrate a couple of useful features of DifferentialEquations. Finally, while DifferentialEquations have a large number of options for tuning simulation performance, these features will not be considered in this tutorial.
+
+### Monte Carlo simulations using `EnsembleProblem`s
+Especially when performing stochastic simulations, one often wishes to run a large number of simulations. While it is possible to do so e.g. through a `for` loop, a more convenient way is to create a so-called `EnsembleProblem`. An advantage of these is that they contain a simple interface for modifying a problem across the ensemble, as well as automatic parallelization across CPUs. For a more throughout description, please read [the Parallel Ensemble Simulations section of the DifferentialEquation documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#ensemble). Here, we will give a brief introduction to this feature.
+
+We are using a simple single-component self-activation model (which contains bistability):
+```@example ex1
+rn = @reaction_network begin
+    v0 + hill(X,v,K,n), ∅ --> X
+    deg, X --> ∅
+end
+u0 = [:X => 0.0]
+tspan = (0.0,1000.0)
+p = [:v0 => 0.1, :v => 2.5, :K => 75.0, :n => 2.0, :deg => 0.01];
+sprob = SDEProblem(rn,u0,tspan,p)
+nothing # hide
+```
+we can then use our `SDEProblem` as input to an `EnsembleProblem`:
+```@example ex1
+eprob = EnsembleProblem(sprob)
+```
+next, the `EnsembleProblem` can be used as an input to the `solve()` command. It has the same options as when simulating the `SDEProblem` directly, however, it has an additional argument `trajectories` to determine how many simulations should be performed. 
+```@example ex1
+esol = solve(eprob; trajectories=5)
+```
+This simulation is automatically multithreaded over all available threads. Please read [this documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#EnsembleAlgorithms) for more information on parallelisation alternatives. The ensemble simulations can be plotted using the `plot()` function, which will by default display all trajectories:
+```@example ex1
+plot(esol)
+```
+
+Sometimes when performing a large number of ensemble simulations, the plots get very dense. In these cases, the plotting argument is `linealpha` (which sets trajectory transparency) may be useful:
+```@example ex1
+esol = solve(eprob; trajectories=100)
+plot(esol)
+```
+
+Sometimes, one wishes to perform the same simulation a large number of times, while making minor modifications to the problem each time. This can be done by giving a problem function argument to the `EnsembleProblem`. Let us consider ODE simulations of a simple birth/death process:
+```@example ex1
+rn = @reaction_network begin
+    (b,1.0), ∅ <--> X
+end
+u0 = [:X => 1.0]
+tspan = (0.0,1.0)
+p = [:b => 1.];
+oprob = ODEProblem(rn,u0,tspan,p)
+nothing # hide
+```
+We wish to simulate this model for a large number of values of `b`. We do this by creating a `prob_func` that will make a modification to the problem at the start of each Monte Carlo simulation:
+```@example ex1
+b_values = 1.0:0.1:2.0
+function prob_func(prob,i,repeat)
+    remake(prob; p=[b_values[i]])
+end
+nothing # hide
+```
+Here, `prob_func` takes three arguments:
+ - `prob`: The problem given to our `EnsembleProblem`, this is the problem that `prob_func` modified in each iteration.
+ - `i`: The number of this specific Monte Carlo iteration in the interval `1:trajectories`.
+ - `repeat`: The repeat of this specific Monte Carlo simulation (We will ignore this argument in this brief overview).
+In our case, for each Monte Carlo simulation, our `prob_func` takes our original `ODEProblem` and uses the `remake` function to change the parameter vector. Here, for the `i`th Monte Carlo simulation, the value of `b` is also the `i`th value of our `b_values` vector. Finally, we can simulate and plot our problem:
+```@example ex1
+eprob = EnsembleProblem(oprob; prob_func=prob_func)
+esol = solve(eprob; trajectories=length(b_values))
+plot(esol)
+```
+
+Finally, it is worth noting that plot legends are disabled when plotting ensemble solutions. These can be re-enabled using the `legend` plotting keyword. However, when plotting a large number of trajectories, each will generate a label. Sometimes the best approach is to remove these and add a label manually:
+```
+plot(esol; label="")
+plot!([],[],label="X", legend=:best)
+```
+
+
+### Event handling using callbacks
+Sometimes one wishes to add discrete events during simulations. Examples could include:
+ - A chemical system where an amount of some species is added at a time point after the simulation's initiation.
+ - A simulation of a circadian rhythm, where light is turned on/off every 12 hours.
+ - A cell divides when some size variable reaches a certain threshold, randomly allocating all species to two daughter cells.
+Events such as these can be modelled using callbacks. A callback is a function that is parsed to a `solve()` command, combing an `affect!` function (defining how the callback changes the system) with a `condition` function (a condition for triggering a callback). For a throughout the introduction, please read [the section about callbacks in the DifferentialEquations.jl documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/).
+
+There exist three types of callbacks, `PresetTimeCallback`s `DiscreteCallback`s, and `ContinuousCallback`s. Here, we will limit ourselves to introducing the `PresetTimeCallback`. For our example, we are going to use a simple network where a single component, `X`, degrades linearly.
+```@example ex2
+using Catalyst
+degradation_model = @reaction_network begin
+    d, X --> 0
+end
+nothing # hide
+```
+we can simulate the model without using a callback:
+```@example ex2
+using DifferentialEquations
+u0 = [:X => 10.0]
+tspan = (0.0,10.0)
+p = [:d => 1.0]
+
+oprob = ODEProblem(degradation_model, u0, tspan, p)
+sol = solve(oprob)
+plot(sol)
+```
+We now wish to modify our simulation so that at the times `t=3.0` and `t=7.0` we add `5` units of `X` to the system. For this we create a `PresetTimeCallback`:
+```@example ex2
+condition = [3.0, 7.0]
+function affect!(integrator)
+    integrator.u[1] += 5.0
+end
+ps_cb = PresetTimeCallback(condition, affect!)
+nothing # hide
+```
+Here, `condition` is simply a vector with all the time points during which we want the callback to trigger. The `affect!` function determines what happens to the simulation when the callback is triggered. It takes a single object, an `integrator` and makes some modification to it (please read more about integrators [here](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/)). Here, we access the system's current state vector as `integrator.u`, and add `5.0` to the amount of `X` present. We can now simulate our system using the callback:
+```@example ex2
+sol = solve(oprob; callback=ps_cb)
+plot(sol)
+```
+
+Next, we can also use a callback to change the parameters of a system. Now, instead of accessing `integrator.u` we access `integrator.p`. The following code plots the concentration of a two-state system, as we change the equilibrium constant between the two states:
+```@example ex2
+rn = @reaction_network begin
+    (k,1), X1 <--> X2
+end
+u0 = [:X1 => 10.0,:X2 => 0.0]
+tspan = (0.0,20.0)
+p = [:k => 1.0]
+oprob = ODEProblem(rn, u0, tspan, p)
+
+condition = [5.0]
+affect!(integrator) = integrator.p[1] = 5.0
+ps_cb = PresetTimeCallback(condition, affect!)
+
+sol = solve(oprob; callback=ps_cb)
+plot(sol)
+```
+The result looks as expected. However, what happens if we attempt to run the simulation again?
+```@example ex2
+sol = solve(oprob; callback=ps_cb)
+plot(sol)
+```
+The plot looks different, even though we simulate the same problem. Furthermore, the callback does not seem to have any effect on the system. If we check our `ODEProblem`
+```@example ex2
+oprob.p
+```
+we note that `k=5.0`, rather than `k=1.0` as we initially specify. This is because the callback modifies our `ODEProblem` during the simulation, and this modification remains during the second simulation. An improved workflow to avoid this issue is:
+```@example ex2
+rn = @reaction_network begin
+    (k,1), X1 <--> X2
+end
+u0 = [:X1 => 10.0,:X2 => 0.0]
+tspan = (0.0,20.0)
+p = [:k => 1.0]
+oprob = ODEProblem(rn, u0, tspan, p)
+
+condition = [5.0]
+affect!(integrator) = integrator.p[1] = 5.0
+ps_cb = PresetTimeCallback(condition, affect!)
+
+sol = solve(deepcopy(oprob); callback=ps_cb)
+plot(sol)
+```
+where we parse a copy of our `ODEProblem` to the solver. We can now run
+```@example ex2
+sol = solve(deepcopy(oprob); callback=ps_cb)
+plot(sol)
+```
+and get the expected result.
+
+It is possible to give several callbacks to the `solve()` command. To do so, one has to bundle them together in a `CallbackSet`, here follows one example:
+```@example ex2
+rn = @reaction_network begin
+    (k,1), X1 <--> X2
+end
+u0 = [:X1 => 10.0,:X2 => 0.0]
+tspan = (0.0,20.0)
+p = [:k => 1.0]
+oprob = ODEProblem(rn, u0, tspan, p)
+
+ps_cb_1 = PresetTimeCallback([3.0,7.0], integ -> integ.u[1] += 5.0)
+ps_cb_2 = PresetTimeCallback([5.0], integ -> integ.p[1] = 5.0)
+
+sol = solve(deepcopy(oprob); callback=CallbackSet(ps_cb_1, ps_cb_2))
+plot(sol)
+```
+
+The difference between the `PresetTimeCallback`s and the `DiscreteCallback`s and `ContiniousCallback`s is that the latter two allow the condition to be a function, permitting the user to give more general conditions for the callback to be triggered. An example could be a callback that triggers whenever a species surpasses some threshold value.
+
+### Useful plotting options
+Catalyst, just like DifferentialEquations, uses the Plots package for all plotting. For a detailed description of differential equation plotting, see [DifferentialEquations documentation on the subject](https://docs.sciml.ai/DiffEqDocs/stable/basics/plot/). Furthermore, the [Plots package documentation](https://docs.juliaplots.org/stable/) contains additional information and describes [a large number of plotting options](https://docs.juliaplots.org/stable/attributes/). Here follows a very short tutorial with a few useful options.
+
+Let us consider the Brusselator model:
+```@example ex3
+brusselator = @reaction_network begin
+    A, ∅ → X
+    1, 2X + Y → 3X
+    B, X → Y
+    1, X → ∅
+end
+u0 = [:X => 1.0, :Y => 0.0]
+tspan = (0.0,50.0)
+p = [:A => 1.0, :B => 4.0]
+
+oprob = ODEProblem(brusselator, u0, tspan, p)
+sol = solve(oprob)
+plot(sol)
+```
+If we want to plot only the `X` species, we can use the `idxs` command:
+```@example ex3
+plot(sol; idxs=[brusselator.X], label="X(t)")
+```
+Here we use the `brusselator.X` notation to denote that we wish to plot the `X` species. The input to `idxs` is a vector listing all the species we wish to plot. If we wish to plot a single species, vector notation is not required and we could simply write `plot(sol; idxs=brusselator.X)`. 
+(The plotting feature that automatically sets the label when using this interface is currently not working optimally, hence we manually set the label using the `label` option.)
+
+Next, if we wish to plot a solution in phase space (instead of across time) we again use the `idxs` notation, but use `()` instead of `[]` when designating the species we wish to plot. Here, we plot the solution in `(X,Y)` space:
+```@example ex3
+plot(sol; idxs=(brusselator.X,brusselator.Y), xguide="X", yguide="Y", label="(X,Y)")
+```
+
