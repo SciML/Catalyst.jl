@@ -26,10 +26,9 @@ plot_var = :X          # we will plot X vs S
 nothing   # hide
 ```
 When creating a bifurcation diagram, we typically start at some point in
-parameter phase-space. We will simply select the beginning of the interval over
+parameter-space. We will simply select the beginning of the interval over
 which we wish to compute the bifurcation diagram, `p_span[1]`. We thus create a
-modified parameter set where `S = .1`. For this parameter set, we also make a
-guess for the steady-state of the system. While a good estimate could be
+modified parameter set where `S = .1`. For this parameter set, we also guess the steady state of the system. While a good estimate could be
 provided through an ODE simulation, BifurcationKit does not require the guess to
 be very accurate.
 ```@example ex1
@@ -53,7 +52,7 @@ as `oprob.u0` and `oprob.p` respectively. BifurcationKit needs to know the index
 in `oprob.p` of our bifurcation parameter, `:S`, and the index in `oprob.u0` of
 the variable we wish to plot, `:X`. We calculate these as
 ```@example ex1
-# get S and X as a symbolic variables
+# get S and X as symbolic variables
 @unpack S, X = rn
 
 # find their indices in oprob.p and oprob.u0 respectively

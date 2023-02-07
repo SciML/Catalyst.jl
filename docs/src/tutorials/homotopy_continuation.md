@@ -47,7 +47,7 @@ Next, we create a `NonlinearSystem`, while also removing the redundant equation.
 ```@example hc3
 ns = convert(NonlinearSystem,two_state_model; remove_conserved=true)
 ```
-Again, we will create the dictionary for parameter values that we will sub in. However, we will do it slightly differently so that the conserved quantitites are accoutned for.
+Again, we will create the dictionary for parameter values that we will sub in. However, we will do it slightly differently so that the conserved quantities are accounted for.
 ```@example hc3
 const MT = ModelingToolkit
 subs = Dict(MT.parameters(ns) .=> MT.varmap_to_vars([], MT.parameters(ns); defaults=MT.defaults(ns)))

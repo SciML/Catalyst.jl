@@ -57,14 +57,14 @@ and
 reactions(repressilator)
 ```
 We can also use Latexify to see the corresponding reactions in Latex, which shows what
-the `hillr` terms correspond to mathematically
+the `hillr` terms mathematically correspond to 
 ```julia
 latexify(repressilator)
 ```
 ```@example tut1
 repressilator #hide
 ```
-Assuming [Graphviz](https://graphviz.org/) is installed and commandline
+Assuming [Graphviz](https://graphviz.org/) is installed and command line
 accessible, within a Jupyter notebook we can also graph the reaction network by
 ```julia
 g = Graph(repressilator)
@@ -178,7 +178,7 @@ the jump process:
 # redefine the initial condition to be integer valued
 u₀map = [:m₁ => 0, :m₂ => 0, :m₃ => 0, :P₁ => 20, :P₂ => 0, :P₃ => 0]
 
-# next we create a discrete problem to encode that our species are integer valued:
+# next we create a discrete problem to encode that our species are integer-valued:
 dprob = DiscreteProblem(repressilator, u₀map, tspan, pmap)
 
 # now, we create a JumpProblem, and specify Gillespie's Direct Method as the solver:

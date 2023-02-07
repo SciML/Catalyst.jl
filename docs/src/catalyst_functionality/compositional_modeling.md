@@ -104,6 +104,7 @@ function repressed_gene(; R, name)
         μ, P --> ∅
     end
 end
+nothing # hide
 ```
 Here we assume the user will pass in the repressor species as a ModelingToolkit
 variable, and specify a name for the network. We use Catalyst's interpolation

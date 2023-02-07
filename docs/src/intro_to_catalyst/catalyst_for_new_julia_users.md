@@ -133,7 +133,7 @@ Here, the plot shows the time evolution of the concentration of the species *X* 
 For more information about the numerical simulation package, please see the [DifferentialEquation documentation](https://docs.sciml.ai/DiffEqDocs/stable/). For more information about the plotting package, please see the [Plots documentation](https://docs.juliaplots.org/stable/).
 
 ## Additional modelling example
-To make this introduction more comprehensive, we here provide another example, using a more complicated model. In addition, instead of simulating our model as concentrations evolving over time, we will simulate the individual reaction events through the [Gillespie algorithm](https://en.wikipedia.org/wiki/Gillespie_algorithm). This is a way to add *noise* to our model.
+To make this introduction more comprehensive, we here provide another example, using a more complicated model. In addition, instead of simulating our model as concentrations evolve over time, we will simulate the individual reaction events through the [Gillespie algorithm](https://en.wikipedia.org/wiki/Gillespie_algorithm). This is a way to add *noise* to our model.
 
 Remember, unless we have restarted Julia, we do not need to activate our packages (through the `using` command) again.
 
