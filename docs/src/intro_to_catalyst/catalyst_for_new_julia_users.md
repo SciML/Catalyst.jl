@@ -1,4 +1,4 @@
-# [Introduction to Catalyst and Julia for new Julia users](@id catalyst_for_new_julia_users)
+# [Introduction to Catalyst and Julia for New Julia users](@id catalyst_for_new_julia_users)
 The Catalyst tool for the modelling of chemical reaction networks is based in the Julia programming language. While experience in Julia programming is advantageous for using Catalyst, it is not necessary for accessing some of its basic features. This tutorial serves as an introduction to Catalyst for those unfamiliar with Julia, also introducing some basic Julia concepts. Anyone who plans on using Catalyst extensively is recommended to familiarise oneself more thoroughly with the Julia programming language. A collection of resources for learning Julia can be found [here](https://julialang.org/learning/), and a full documentation is available [here](https://docs.julialang.org/en/v1/).
 
 Julia can be downloaded [here](https://julialang.org/downloads/).
@@ -37,7 +37,7 @@ typeof(1)
 
 Finally, we note that the first time some code is run in Julia, it has to be *compiled*. However, this is only required once per Julia session. Hence, the second time the same code is run, it runs much faster. E.g. try running this line of code first one time, and then one additional time. You will note that the second run is much faster.
 ```@example ex1
-rand(100, 100)^3.5
+rand(100, 100)^3.5;
 ```
 (This code creates a random 100x100 matrix, and take it to teh power of 3.5)
 

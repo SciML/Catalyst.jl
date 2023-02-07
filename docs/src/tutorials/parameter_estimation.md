@@ -29,7 +29,7 @@ sample_times = range(tspan[1],stop=tspan[2],length=100)
 prob = ODEProblem(brusselator, u0, tspan, p_real)
 sol_real = solve(prob, Rosenbrock23(), tstops=sample_times)
 
-sample_vals = [sol_real.u[findfirst(sol_real.t .>= ts)][var] * (1+(0.1rand()-0.05)) for var in 1:2, ts in sample_times];
+sample_vals = [sol_real.u[findfirst(sol_real.t .>= ts)][var] * (1+(0.1rand()-0.05)) for var in 1:2, ts in sample_times]
 nothing   # hide
 ```
 

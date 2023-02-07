@@ -70,6 +70,7 @@ coefficients. For this reason we must specify `m` and `n` as integers, and hence
 p  = (k₊ => 1.0, k₋ => 1.0, m => 2, n => 2)
 u₀ = [A => 1.0, B => 1.0]
 oprob = ODEProblem(osys, u₀, (0.0,1.0), p)
+nothing # hide
 ```
 We can now solve and plot the system
 ```@example s1
