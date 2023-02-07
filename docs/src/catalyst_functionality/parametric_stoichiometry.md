@@ -1,4 +1,4 @@
-# Parametric Stoichiometry
+# [Parametric Stoichiometry](@id parametric_stoichiometry)
 Catalyst supports stoichiometric coefficients that involve parameters, species,
 or even general expressions. In this tutorial we show several examples of how to
 use parametric stoichiometry, and discuss several caveats to be aware of.

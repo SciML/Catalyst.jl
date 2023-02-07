@@ -1,4 +1,4 @@
-# Network Analysis in Catalyst
+# [Network Analysis in Catalyst](@id network_analysis)
 
 In this tutorial we introduce several of the Catalyst API functions for network
 analysis. A complete summary of the exported functions is given in the API
@@ -27,7 +27,7 @@ repressilator = @reaction_network Repressilator begin
        μ, P₃ --> ∅
 end
 ```
-In the [Using Catalyst](https://docs.sciml.ai/Catalyst/stable/tutorials/using_catalyst/)
+In the [Using Catalyst](@ref using_catalyst)
 tutorial we showed how the above network could be visualized as a
 species-reaction graph. There species are represented by the nodes of the graph
 and edges show the reactions in which a given species is a substrate or product.
