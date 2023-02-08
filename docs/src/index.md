@@ -33,7 +33,7 @@ etc).
 - Conservation laws can be detected and applied to reduce system sizes, and generate
   non-singular Jacobians, during conversion to ODEs, SDEs, and steady-state equations.
 - By leveraging ModelingToolkit, users have a variety of options for generating
-  optimized system representations to use in solvers. These include construction
+  optimized system representations to use in solvers. These include the construction
   of dense or sparse Jacobians, multithreading or parallelization of generated
   derivative functions, automatic classification of reactions into optimized
   jump types for Gillespie type simulations, automatic construction of
@@ -125,15 +125,15 @@ please star the repository as such metrics may help us secure funding in the fut
 of your research, teaching, or other activities, we would be grateful if you could cite our work:
 ```
 @article {2022Catalyst,
-	author = {Loman, T. and Ma, Y. and Ilin, V. and Gowda, S. and Korsbo, N. and Yewale, N. and Rackauckas, C. V. and Isaacson, S. A.},
-	title = {Catalyst: Fast Biochemical Modeling with Julia},
-	elocation-id = {2022.07.30.502135},
-	year = {2022},
-	doi = {10.1101/2022.07.30.502135},
-	publisher = {Cold Spring Harbor Laboratory},
-	URL = {https://www.biorxiv.org/content/early/2022/08/02/2022.07.30.502135},
-	eprint = {https://www.biorxiv.org/content/early/2022/08/02/2022.07.30.502135.full.pdf},
-	journal = {bioRxiv}
+  author = {Loman, T. and Ma, Y. and Ilin, V. and Gowda, S. and Korsbo, N. and Yewale, N. and Rackauckas, C. V. and Isaacson, S. A.},
+  title = {Catalyst: Fast Biochemical Modeling with Julia},
+  elocation-id = {2022.07.30.502135},
+  year = {2022},
+  doi = {10.1101/2022.07.30.502135},
+  publisher = {Cold Spring Harbor Laboratory},
+  URL = {https://www.biorxiv.org/content/early/2022/08/02/2022.07.30.502135},
+  eprint = {https://www.biorxiv.org/content/early/2022/08/02/2022.07.30.502135.full.pdf},
+  journal = {bioRxiv}
 }
 ```
 

@@ -136,7 +136,7 @@ top-level `repressilator` system).
 ## Compartment-based models
 Finally, let's see how we can make a compartment-based model. Let's create a
 simple eukaryotic gene expression model with negative feedback by protein
-dimers. Transcription and gene inhibition by the protein dimer occur in the
+dimers. Transcription and gene inhibition by the protein dimer occurs in the
 nucleus, translation and dimerization occur in the cytosol, and nuclear import
 and export reactions couple the two compartments. We'll include volume
 parameters for the nucleus and cytosol, and assume we are working with species

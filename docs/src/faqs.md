@@ -222,8 +222,8 @@ end
 ```
 has rate ``d[X]/dt = -2 k``.
 
-## [How to specify user defined functions as reaction rates?](@id user_functions)
-The reaction network DSL can "see" user defined functions that work with
+## [How to specify user-defined functions as reaction rates?](@id user_functions)
+The reaction network DSL can "see" user-defined functions that work with
 ModelingToolkit. e.g., this is should work
 ```julia
 myHill(x) = 2.0*x^3/(x^3+1.5^3)

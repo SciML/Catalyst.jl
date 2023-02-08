@@ -29,7 +29,7 @@ end
 ```
 In the [Using Catalyst](@ref using_catalyst)
 tutorial we showed how the above network could be visualized as a
-species-reaction graph. There species are represented by the nodes of the graph
+species-reaction graph. There, species are represented by the nodes of the graph
 and edges show the reactions in which a given species is a substrate or product.
 ```julia
 g = Graph(repressilator)
@@ -52,7 +52,7 @@ the reaction rate equation ODE model for the repressilator is
 
 ## Matrix-vector reaction rate equation representation
 In general, reaction rate equation (RRE) ODE models for chemical reaction networks can
-be represented as a first order system of ODEs in a compact matrix-vector notation. Suppose
+be represented as a first-order system of ODEs in a compact matrix-vector notation. Suppose
 we have a reaction network with ``K`` reactions and ``M`` species, labelled by the state vector
 ```math
 \mathbf{x}(t) = \begin{pmatrix} x_1(t) \\ \vdots \\ x_M(t)) \end{pmatrix}.
@@ -85,7 +85,7 @@ rxs = reactions(repressilator)
 Note, as [`oderatelaw`](@ref) takes just one reaction as input we use
 broadcasting to apply it to each element of `rxs`.
 
-Let's check this really gives the same ODEs as Catalyst. Here is what Catalyst
+Let's check that this really gives the same ODEs as Catalyst. Here is what Catalyst
 generates by converting to an `ODESystem`
 ```@example s1
 osys = convert(ODESystem, repressilator)
@@ -204,16 +204,16 @@ complexgraph(repressilator)
 
 ![Repressilator complex](../assets/repressilator_complexgraph.svg)
 
-Here ∅ represents the empty complex, black arrows show reactions converting
+Here ∅ represent the empty complex, black arrows show reactions converting
 substrate complexes into product complexes where the rate is just a number or
-parameter, and red arrows indicate conversion of substrate complexes into
+parameter, and red arrows indicate the conversion of substrate complexes into
 product complexes where the rate is an expression involving chemical species.
 
 ## Aspects of reaction network structure
 The reaction complex representation can be exploited via [Chemical Reaction
 Network Theory](https://en.wikipedia.org/wiki/Chemical_reaction_network_theory)
 to provide insight into possible steady-state and time-dependent properties of
-RRE ODE models and  stochastic chemical kinetics models. We'll now illustrate
+RRE ODE models and stochastic chemical kinetics models. We'll now illustrate
 some of the types of network properties that Catalyst can determine, using the
 reaction complex representation in these calculations.
 

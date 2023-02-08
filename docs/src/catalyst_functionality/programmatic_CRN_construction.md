@@ -24,7 +24,7 @@ terminology)
 ```
 *Note, each species is declared as a variable that is a function of time!*
 
-Next we specify the chemical reactions that comprise the system using Catalyst
+Next, we specify the chemical reactions that comprise the system using Catalyst
 [`Reaction`](@ref)s
 ```julia
 rxs = [Reaction(hillr(P₃,α,K,n), nothing, [m₁]),
