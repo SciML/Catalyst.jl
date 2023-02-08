@@ -1,9 +1,9 @@
 # [Finding Steady States through Homotopy Continuation](@id homotopy_continuation)
 
-The steady states of a dynamical system ${dx \over dt} = f(x)$ can be found by solving $0 = f(x)$. This is typically a hard problem, and generally, there is no method that guarantees to find all steady states for a system that has multiple ones. However, most CRNs generate polynomial systems (the main exception is when Hill functions with non-integer exponents are used). The roots of these can reliably be found through a *homotopy continuation* algorithm. This is implemented in Julia through the [HomotopyContinuation.jl](https://www.juliahomotopycontinuation.org/) package. In this tutorial, we will demonstrate how homotopy continuation can be used to find the steady states of a CNR implemented in  Catalyst.
+The steady states of a dynamical system ${dx \over dt} = f(x)$ can be found by solving $0 = f(x)$. This is typically a hard problem, and generally, there is no method guaranteed to find all steady states for a system that has multiple ones. However, most chemical reaction networks generate polynomial systems (the main exception is when Hill functions with non-integer exponents are used). The roots of these can reliably be found through a *homotopy continuation* algorithm. This is implemented in Julia through the [HomotopyContinuation.jl](https://www.juliahomotopycontinuation.org/) package. In this tutorial, we will demonstrate how homotopy continuation can be used to find the steady states of a chemical reaction network implemented in  Catalyst.
 
 ## Basic example 
-For this tutorial, we will use a model from the Wilhem (2009) paper (which demonstrates bistability in a small CRN). We declare the model and the parameter set for which we want to find the steady states:
+For this tutorial, we will use a model from Wilhem (2009)[^1] (which demonstrates bistability in a small chemical reaction network). We declare the model and the parameter set for which we want to find the steady states:
 ```@example hc1
 using Catalyst
 wilhelm_2009_model = @reaction_network begin
@@ -17,9 +17,9 @@ nothing   # hide
 ```
 Next, we will need to extract the actual equations from our model. In addition, we will substitute in our parameter values.
 ```@example hc1
-ns = convert(NonlinearSystem,wilhelm_2009_model)
-subs = Dict(Pair.(ModelingToolkit.parameters(ns),last.(p)))
-new_eqs = map(eq -> substitute(eq.rhs,subs), equations(ns))
+ns = convert(NonlinearSystem, wilhelm_2009_model)
+subs = Dict(Pair.(ModelingToolkit.parameters(ns), last.(p)))
+new_eqs = map(eq -> substitute(eq.rhs, subs), equations(ns))
 ```
 Finally, we use the `as_polynomial` function to read our symbolic expression as a polynomial, within it, we can apply homotopy continuation's `solve` command to find the roots. In addition, we use the `real_solutions` to filter away imaginary roots (as CRNs' states typically are non-imaginary):
 ```@example hc1
@@ -39,7 +39,7 @@ two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 ```
-However, the conservation laws can be computed using the `conservationlaws` function. By supplying these, as well as fixed concentrations (in this case the total amount of *X*, that is *X1+X2*), steady states can be found. First, we set the default values of the system's initial conditions and steady states. This will allow the system to automatically find the conserved amounts.
+However, the conservation laws can be computed using the `conservationlaws` function. By supplying these, as well as fixed concentrations (in this case the total amount of *X*, that is *X1+X2*), steady states can be found. First, we set the default values of the system's initial conditions and parameter values. This will allow the system to automatically find the conserved amounts.
 ```@example hc3
 setdefaults!(two_state_model, [:X1 => 1.0, :X2 => 1.0, :k1 => 2.0, :k2 => 1.0])
 ```
@@ -62,3 +62,7 @@ Finally, we compute the solution:
 using HomotopyContinuation
 sols = real_solutions(as_polynomial((f, x...) -> HomotopyContinuation.solve(collect(x)), new_eqs...))
 ```
+
+---
+## References
+[^1]: [Wilhelm, T. *The smallest chemical reaction system with bistability*, BMC Systems Biology (2009).](https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-050Wilhelm-3-90)

@@ -356,7 +356,7 @@ end
 This can be especially useful when declaring default values for clarity of model
 specification (see the next section).
 
-## Setting default values for initial conditions and parameters
+## [Setting default values for initial conditions and parameters](@id dsl_description_defaults)
 When using the `@species` and ` @parameters` macros to declare species and/or
 parameters, one can also provide default initial conditions for each species and 
 values for each parameter:

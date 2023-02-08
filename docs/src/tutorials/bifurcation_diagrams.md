@@ -1,5 +1,5 @@
 # [Bifurcation Diagrams](@id bifurcation_diagrams)
-Bifurcation diagrams can be produced from Catalyst generated models through the
+Bifurcation diagrams can be produced for by Catalyst generated models through the
 use of the [BifurcationKit.jl](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/)
 package. This tutorial gives a simple example of how to create such a
 bifurcation diagram.
@@ -28,7 +28,7 @@ nothing   # hide
 When creating a bifurcation diagram, we typically start at some point in
 parameter-space. We will simply select the beginning of the interval over
 which we wish to compute the bifurcation diagram, `p_span[1]`. We thus create a
-modified parameter set where `S = .1`. For this parameter set, we also guess the steady state of the system. While a good estimate could be
+modified parameter set where `S = 0.1`. For this parameter set, we also guess the steady state of the system. While a good estimate could be
 provided through an ODE simulation, BifurcationKit does not require the guess to
 be very accurate.
 ```@example ex1

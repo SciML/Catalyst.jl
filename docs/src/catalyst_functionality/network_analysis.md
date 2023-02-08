@@ -211,7 +211,7 @@ product complexes where the rate is an expression involving chemical species.
 ## Aspects of reaction network structure
 The reaction complex representation can be exploited via [Chemical Reaction
 Network Theory](https://en.wikipedia.org/wiki/Chemical_reaction_network_theory)
-to provide insight into possible steady-state and time-dependent properties of
+to provide insight into possible steady state and time-dependent properties of
 RRE ODE models and stochastic chemical kinetics models. We'll now illustrate
 some of the types of network properties that Catalyst can determine, using the
 reaction complex representation in these calculations.
@@ -277,7 +277,7 @@ and,
 A famous theorem in Chemical Reaction Network Theory, the Deficiency Zero
 Theorem [^1], allows us to use knowledge of the net stoichiometry matrix and the
 linkage classes of a *mass action* RRE ODE system to draw conclusions about the
-system's possible steady-states. In this section we'll see how Catalyst can
+system's possible steady states. In this section we'll see how Catalyst can
 calculate a network's deficiency.
 
 The rank, ``r``, of a reaction network is defined as the dimension of the
@@ -377,7 +377,7 @@ reversible network is reversible.
 #### Deficiency Zero Theorem
 Knowing the deficiency and weak reversibility of a mass action chemical reaction
 network ODE model allows us to make inferences about the corresponding
-steady-state behavior. Before illustrating how this works for one example, we
+steady state behavior. Before illustrating how this works for one example, we
 need one last definition.
 
 Recall that in the matrix-vector representation for the RRE ODEs, the entries,
@@ -419,7 +419,7 @@ $\mathbf{x}(0)$ is just ``(\mathbf{x}(0) + \span\{\mathbf{N}_k\}) \cap
 ``\mathbb{R}^M`` with strictly positive components.
 
 With these definitions we can now see how knowing the deficiency and weak
-reversibility of the network can tell us about its steady-state behavior.
+reversibility of the network can tell us about its steady state behavior.
 Consider the previous example, which we know is weakly reversible. Its
 deficiency is
 ```@example s1
@@ -431,7 +431,7 @@ from the network's definition):
 all(rx -> ismassaction(rx, rn), reactions(rn))
 ```
 We can therefore apply the Deficiency Zero Theorem to draw conclusions about the
-system's steady-state behavior. The Deficiency Zero Theorem (roughly) says that
+system's steady state behavior. The Deficiency Zero Theorem (roughly) says that
 a mass action network with deficiency zero satisfies
 1. If the network is weakly reversible, then independent of the reaction rate
    constants the RRE ODEs have exactly one equilibrium solution within each
@@ -503,5 +503,6 @@ Catalyst.reset_networkproperties!(rn)
 Network property functions will then recalculate their associated properties and
 cache the new values the next time they are called.
 
+---
 ## References
 [^1]: [Feinberg, M. *Foundations of Chemical Reaction Network Theory*, Applied Mathematical Sciences 202, Springer (2019).](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true)

@@ -31,7 +31,7 @@ etc).
   `ModelingToolkit.AbstractSystem`s, including symbolic ODE, SDE and jump process
   representations.
 - Conservation laws can be detected and applied to reduce system sizes, and generate
-  non-singular Jacobians, during conversion to ODEs, SDEs, and steady-state equations.
+  non-singular Jacobians, during conversion to ODEs, SDEs, and steady state equations.
 - By leveraging ModelingToolkit, users have a variety of options for generating
   optimized system representations to use in solvers. These include construction
   of dense or sparse Jacobians, multithreading or parallelization of generated

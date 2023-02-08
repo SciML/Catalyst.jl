@@ -18,7 +18,7 @@ u0 = [:X => 5.]
 oprob = ODEProblem(rs, u0, tspan, p)
 osol  = solve(oprob, Tsit5())
 
-# solve for Steady-States
+# solve for Steady states
 ssprob = SteadyStateProblem(rs, u0, p)
 sssol  = solve(ssprob, SSRootfind())
 

@@ -96,7 +96,7 @@ end
 repressilator == repressilator2
 ```
 
-For more options in building `ReactionSystem`s, see the [`ReactionSystem`](@ref) API docs.
+For more options in building `ReactionSystem`s, see the [`ReactionSystem`](@ref) API docs. For a more extensive example of how to programmatically create a `ReactionSystem`, see the [Smoluchowski Coagulation Equation example](@ref smoluchowski_coagulation_equation).
 
 ## More general `Reaction`s
 In the example above all the specified `Reaction`s were first or zero order. The
@@ -165,11 +165,7 @@ Note, there are a few differences when using the `@reaction` macro to specify
 one reaction versus using the full `@reaction_network` macro to create a
 `ReactionSystem`. First, only one reaction (i.e. a single forward arrow type)
 can be used, i.e. reversible arrows like `<-->` will not work (since they define
-more than one reaction). Second, the `@reaction` macro must try to infer which
-symbols are species versus parameters, and uses the heuristic that anything
-appearing in the rate expression is a parameter. Coefficients in the reaction
-part are also inferred as parameters, while rightmost symbols (i.e. substrates
-and products) are inferred as species. As such, the following are equivalent
+more than one reaction). Second, the `@reaction` macro does not have an option for designating what should be considered a species or parameter, but have to use the heuristic where anything that appears as either a substrate or a product is a species, and everything else (including stoichiometric coefficients) are parameters. As such, the following are equivalent
 ```julia
 rx = @reaction hillr(P,α,K,n), A --> B
 ```
