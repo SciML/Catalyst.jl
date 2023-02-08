@@ -99,7 +99,7 @@ considered a species or parameter.
 
 ## Production, Destruction, and Stoichiometry
 Sometimes reactants are produced/destroyed from/to nothing. This can be
-designated using `0`:
+designated using `0` (`∅` can also be used as an alternative to `0`):
 ```@example tut2
 rn = @reaction_network begin
   2.0, 0 --> X
