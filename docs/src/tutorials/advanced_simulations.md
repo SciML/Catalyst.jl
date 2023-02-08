@@ -4,7 +4,7 @@ Throughout the preceding tutorials, we have shown the basics of how to solve ODE
 ### Monte Carlo simulations using `EnsembleProblem`s
 In many contexts one needs to run multiple simulations of a model, for example to collect statistics of SDE or jump process solutions, or to systematically vary parameter values within a model. While it is always possible to manually run such ensembles of simulations via a `for` loop, DifferentialEquations.jl provides the `EnsembleProblem` as a convenience to manage structured collections of simulations. `EnsembleProblem`s provide a simple interface for modifying a problem between individual simulations, and offers several options for batching and/or parallelizing simulation runs. For a more thorough description, please read [the Parallel Ensemble Simulations section of the DifferentialEquations documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#ensemble). Here, we will give a brief introduction to the use of `EnsembleProblem`s from Catalyst-generated models.
 
-We are using a simple single-component self-activation model (which contains bistability):
+Let's look at a single-component bistable self-activation model:
 ```@example ex1
 rn = @reaction_network begin
     v0 + hill(X,v,K,n), ∅ --> X
