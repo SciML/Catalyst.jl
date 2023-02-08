@@ -211,6 +211,7 @@ Here we use the `brusselator.X` notation to denote that we wish to plot the `X` 
 
 Next, if we wish to plot a solution in phase space (instead of across time) we again use the `idxs` notation, but use `()` instead of `[]` when designating the species we wish to plot. Here, we plot the solution in `(X,Y)` space:
 ```@example ex3
-plot(sol; idxs=(brusselator.X,brusselator.Y), xguide="X", yguide="Y", label="(X,Y)")
+@unpack X,Y = brusselator
+plot(sol; idxs=(X,Y))
 ```
 
