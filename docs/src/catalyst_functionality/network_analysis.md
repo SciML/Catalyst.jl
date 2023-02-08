@@ -235,7 +235,7 @@ complexgraph(rn)
 
 ![network_1](../assets/complex_rn.svg)
 
-## Linkage classes and sub-networks of the reaction network
+#### Linkage classes and sub-networks of the reaction network
 The preceding reaction complex graph shows that `rn` is composed of two
 disconnected sub-graphs, one containing the complexes ``A+B``, ``C``, ``D+E``, and
 ``F``, the other containing the complexes ``2A``, ``B + G``, and ``H``. These sets,
@@ -274,7 +274,7 @@ and,
 
 ![subnetwork_2](../assets/complex_subnets2.svg)
 
-## Deficiency of the network
+#### Deficiency of the network
 A famous theorem in Chemical Reaction Network Theory, the Deficiency Zero
 Theorem [^1], allows us to use knowledge of the net stoichiometry matrix and the
 linkage classes of a *mass action* RRE ODE system to draw conclusions about the
@@ -326,7 +326,7 @@ Quoting Feinberg [^1]
 > stoichiometry vectors] are as independent as the partition of complexes into
 > linkage classes will allow.
 
-## Reversibility of the network
+#### Reversibility of the network
 A reaction network is *reversible* if the "arrows" of the reactions are
 symmetric so that every reaction is accompanied by its reverse reaction.
 Catalyst's API provides the [`isreversible`](@ref) function to determine whether
@@ -375,7 +375,7 @@ isweaklyreversible(rn, subnets)
 Every reversible network is also weakly reversible, but not every weakly
 reversible network is reversible.
 
-## Deficiency Zero Theorem
+#### Deficiency Zero Theorem
 Knowing the deficiency and weak reversibility of a mass action chemical reaction
 network ODE model allows us to make inferences about the corresponding
 steady-state behavior. Before illustrating how this works for one example, we
