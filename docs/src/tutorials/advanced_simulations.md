@@ -55,7 +55,7 @@ end
 nothing # hide
 ```
 Here, `prob_func` takes three arguments:
- - `prob`: The problem given to our `EnsembleProblem`, this is the problem that `prob_func` modified in each iteration.
+ - `prob`: The problem given to our `EnsembleProblem`, this is the problem that `prob_func` modifies in each iteration.
  - `i`: The number of this specific Monte Carlo iteration in the interval `1:trajectories`.
  - `repeat`: The repeat of this specific Monte Carlo simulation (We will ignore this argument in this brief overview).
 In our case, for each Monte Carlo simulation, our `prob_func` takes our original `ODEProblem` and uses the `remake` function to change the parameter vector. Here, for the `i`th Monte Carlo simulation, the value of `b` is also the `i`th value of our `b_values` vector. Finally, we can simulate and plot our problem:
