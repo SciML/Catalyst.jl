@@ -20,7 +20,7 @@ we can then use our `SDEProblem` as input to an `EnsembleProblem`:
 ```@example ex1
 eprob = EnsembleProblem(sprob)
 ```
-next, the `EnsembleProblem` can be used as an input to the `solve()` command. It has the same options as when simulating the `SDEProblem` directly, however, it has an additional argument `trajectories` to determine how many simulations should be performed. 
+The `EnsembleProblem` can now be used as input to the `solve` command. It has the same options as when simulating the `SDEProblem` directly, however, it has an additional argument `trajectories` to determine how many simulations should be performed. 
 ```@example ex1
 esol = solve(eprob; trajectories=5)
 ```
