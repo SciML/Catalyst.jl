@@ -16,7 +16,7 @@ for sensitivity analysis, parameter estimation, machine learning applications,
 etc).
 
 ## Features
-- DSL provides a simple and readable format for manually specifying chemical
+- A DSL provides a simple and readable format for manually specifying chemical
   reactions.
 - Catalyst `ReactionSystem`s provide a symbolic representation of reaction networks,
   built on [ModelingToolkit.jl](https://docs.sciml.ai/ModelingToolkit/stable/) and
@@ -33,7 +33,7 @@ etc).
 - Conservation laws can be detected and applied to reduce system sizes, and generate
   non-singular Jacobians, during conversion to ODEs, SDEs, and steady-state equations.
 - By leveraging ModelingToolkit, users have a variety of options for generating
-  optimized system representations to use in solvers. These include the construction
+  optimized system representations to use in solvers. These include construction
   of dense or sparse Jacobians, multithreading or parallelization of generated
   derivative functions, automatic classification of reactions into optimized
   jump types for Gillespie type simulations, automatic construction of
@@ -52,7 +52,7 @@ etc).
   reaction network graphs. (Reusing the Graphviz interface created in
   [Catlab.jl](https://algebraicjulia.github.io/Catlab.jl/stable/).)
 
-## Packages supporting Catalyst
+## Packages Supporting Catalyst
 - Catalyst [`ReactionSystem`](@ref)s can be imported from SBML files via
   [SBMLToolkit.jl](https://docs.sciml.ai/SBMLToolkit/stable/), and from BioNetGen .net
   files and various stoichiometric matrix network representations using
@@ -76,7 +76,7 @@ Catalyst can be installed through the Julia package manager:
 using Catalyst
 ```
 
-## Illustrative example
+## Illustrative Example
 Here is a simple example of generating, visualizing and solving an SIR ODE
 model. We first define the SIR reaction model using Catalyst
 ```julia
@@ -112,28 +112,28 @@ plot(sol, lw=2)
 
 ![SIR Solution](assets/SIR.svg)
 
-## Getting help
+## Getting Help
 Catalyst developers are active on the [Julia
 Discourse](https://discourse.julialang.org/), and the [Julia
-Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sciml-sysbio.
+Slack's](https://julialang.slack.com) \#sciml-bridged and \#sciml-sysbio channels.
 For bugs or feature requests [open an
 issue](https://github.com/SciML/Catalyst.jl/issues).
 
-## Supporting and citing Catalyst.jl
+## Supporting and Citing Catalyst.jl
 The software in this ecosystem was developed as part of academic research. If you would like to help support it,
 please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part
 of your research, teaching, or other activities, we would be grateful if you could cite our work:
 ```
 @article {2022Catalyst,
-  author = {Loman, T. and Ma, Y. and Ilin, V. and Gowda, S. and Korsbo, N. and Yewale, N. and Rackauckas, C. V. and Isaacson, S. A.},
-  title = {Catalyst: Fast Biochemical Modeling with Julia},
-  elocation-id = {2022.07.30.502135},
-  year = {2022},
-  doi = {10.1101/2022.07.30.502135},
-  publisher = {Cold Spring Harbor Laboratory},
-  URL = {https://www.biorxiv.org/content/early/2022/08/02/2022.07.30.502135},
-  eprint = {https://www.biorxiv.org/content/early/2022/08/02/2022.07.30.502135.full.pdf},
-  journal = {bioRxiv}
+	author = {Loman, T. and Ma, Y. and Ilin, V. and Gowda, S. and Korsbo, N. and Yewale, N. and Rackauckas, C. V. and Isaacson, S. A.},
+	title = {Catalyst: Fast Biochemical Modeling with Julia},
+	elocation-id = {2022.07.30.502135},
+	year = {2022},
+	doi = {10.1101/2022.07.30.502135},
+	publisher = {Cold Spring Harbor Laboratory},
+	URL = {https://www.biorxiv.org/content/early/2022/08/02/2022.07.30.502135},
+	eprint = {https://www.biorxiv.org/content/early/2022/08/02/2022.07.30.502135.full.pdf},
+	journal = {bioRxiv}
 }
 ```
 
