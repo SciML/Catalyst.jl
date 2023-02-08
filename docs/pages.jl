@@ -1,6 +1,6 @@
 pages = Any["Home" => "index.md",
             "Introduction to Catalyst" => Any["intro_to_catalyst/catalyst_for_new_julia_users.md",
-                                              "intro_to_catalyst/using_catalyst.md"],
+                                              "intro_to_catalyst/introduction_to_catalyst.md"],
             "Catalyst Functionality" => Any["catalyst_functionality/dsl_description.md",
                                             "catalyst_functionality/programmatic_CRN_construction.md",
                                             "catalyst_functionality/compositional_modeling.md",

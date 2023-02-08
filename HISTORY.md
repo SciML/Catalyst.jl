@@ -287,7 +287,7 @@
   when calling `ODEProblem(mixedsys,...; combinatoric_ratelaws=false)`. This
   disables Catalyst's standard rescaling of reaction rates when generating
   reaction rate laws, see the
-  [docs](https://catalyst.sciml.ai/dev/tutorials/using_catalyst/#Reaction-rate-laws-used-in-simulations).
+  [docs](https://catalyst.sciml.ai/dev/tutorials/introduction_to_catalyst/#Reaction-rate-laws-used-in-simulations).
   Leaving this out for systems with floating point stoichiometry will give an
   error message.
 

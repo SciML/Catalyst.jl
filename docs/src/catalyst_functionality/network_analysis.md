@@ -27,7 +27,7 @@ repressilator = @reaction_network Repressilator begin
        μ, P₃ --> ∅
 end
 ```
-In the [Using Catalyst](@ref using_catalyst)
+In the [Introduction to Catalyst](@ref introduction_to_catalyst)
 tutorial we showed how the above network could be visualized as a
 species-reaction graph. There, species are represented by the nodes of the graph
 and edges show the reactions in which a given species is a substrate or product.
@@ -36,8 +36,7 @@ g = Graph(repressilator)
 ```
 ![Repressilator solution](../assets/repressilator.svg)
 
-We also showed in the [Using
-Catalyst](https://docs.sciml.ai/Catalyst/stable/tutorials/using_catalyst/) tutorial that
+We also showed in the [Introduction to Catalyst](@ref introduction_to_catalyst) tutorial that
 the reaction rate equation ODE model for the repressilator is
 ```math
 \begin{aligned}
