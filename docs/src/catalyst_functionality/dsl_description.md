@@ -250,6 +250,7 @@ end
 ```
 corresponding to the ODE model
 ```@example tut2
+using Latexify
 latexify(rn; form=:ode)
 ```
 
