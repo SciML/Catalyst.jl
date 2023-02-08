@@ -16,9 +16,9 @@ revsys = @reaction_network revsys begin
 end
 reactions(revsys)
 ```
-Note, as always the `@reaction_network` macro sets all symbols not declared to
-be parameters to be species, so that in this example we have two species, `A`
-and `B`, and four parameters. In addition, the stoichiometry is applied to the
+Note, as always the `@reaction_network` macro defaults to setting all symbols neither used as a reaction substrate nor a product to
+be parameters. Hence, in this example we have two species (`A`
+and `B`) and four parameters (`₊`, `k₋`, `m`, and `n`). In addition, the stoichiometry is applied to the
 rightmost symbol in a given term, i.e. in the first equation the substrate `A`
 has stoichiometry `m` and the product `B` has stoichiometry `m*n`. For example,
 in
