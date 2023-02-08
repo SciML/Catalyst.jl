@@ -87,7 +87,7 @@ rn = @reaction_network begin
 end
 ```
 
-For more information on how to use the Catalyst model creator (also known as the Catalyst DSL), please read [the corresponding documentation](https://docs.sciml.ai/Catalyst/stable/tutorials/dsl/).
+For more information on how to use the Catalyst model creator (also known as the Catalyst DSL), please read [the corresponding documentation](https://docs.sciml.ai/Catalyst/stable/catalyst_functionality/dsl_description/).
 
 Next, we wish to simulate our model. To do this, we need to provide some additional information to the simulator. This is
 * The initial condition. That is, the concentration or numbers of each species at the start of the simulation.
