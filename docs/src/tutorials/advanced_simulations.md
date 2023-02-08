@@ -8,6 +8,8 @@ In many contexts one needs to run multiple simulations of a model, for example t
 
 Let's look at a single-component bistable self-activation model:
 ```@example ex1
+using Catalyst, DifferentialEquations
+
 rn = @reaction_network begin
     v0 + hill(X,v,K,n), ∅ --> X
     deg, X --> ∅
