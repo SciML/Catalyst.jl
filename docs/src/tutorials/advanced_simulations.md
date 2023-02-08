@@ -24,7 +24,7 @@ The `EnsembleProblem` can now be used as input to the `solve` command. It has th
 ```@example ex1
 esol = solve(eprob; trajectories=5)
 ```
-This simulation is automatically multithreaded over all available threads. Please read [this documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#EnsembleAlgorithms) for more information on parallelisation alternatives. The ensemble simulations can be plotted using the `plot()` function, which will by default display all trajectories:
+This simulation is automatically multithreaded over all available threads. Please read [this documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#EnsembleAlgorithms) for more information on parallelisation alternatives. The ensemble simulations can be plotted using the `plot` function, which by default displays all trajectories:
 ```@example ex1
 plot(esol)
 ```
