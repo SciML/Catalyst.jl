@@ -39,18 +39,18 @@ Finally, we note that the first time some code is run in Julia, it has to be *co
 ```@example ex1
 rand(100, 100)^3.5;
 ```
-(This code creates a random 100x100 matrix, and take it to teh power of 3.5)
+(This code creates a random 100x100 matrix, and take it to the power of 3.5)
 
 This is useful to know when you e.g. declare, simulate, or plot, a Catalyst model. The first time you run a command there might be a slight delay. However, subsequent runs will execute much quicker. This holds even if you do minor adjustments before the second run (such as changing simulation initial conditions).
 
 ## Installing and activating packages
-Except for some base Julia packages (such as `Pkg`, the package manager) that are available by default, Julia packages must be installed locally before they can be used. Most packages are registered with Julia, and can be added through the `Pkg.add("desired_package")` command (where `desired_package` is the name of the package you wish to install). We can thus install Catalyst:
+Except for some base Julia packages (such as `Pkg`, the package manager) that are available by default, Julia packages must be installed locally before they can be used. Most packages are registered with Julia, and can be added through the `Pkg.add("DesiredPackage")` command (where `DesiredPackage` is the name of the package you wish to install). We can thus install Catalyst:
 ```julia
 using Pkg
 Pkg.add("Catalyst")
 ```
 
-Here, the command `using Pkg` is required to activate the package manager.
+Here, the command `using Pkg` is required to activate the Pkg` package manager.
 
 Next, we also wish to add the `DifferentialEquations` and `Plots` packages (for numeric simulation of models, and plotting, respectively).
 ```julia
@@ -59,7 +59,7 @@ Pkg.add("Plots")
 ```
 Once a package has been installed through the `Pkg.add` command, this command does not have to be repeated in further Julia sessions on the same machine.
 
-Installing a Julia package is, however, not enough to use it. Before a package's features are used in a Julia session, it has to be loaded through the `using desired_package` command (where `desired_package` is the name of the package you wish to activate). This command has to be repeated whenever a Julia session is restarted.
+Installing a Julia package is, however, not enough to use it. Before a package's features are used in a Julia session, it has to be loaded through the `using DesiredPackage` command (where `DesiredPackage` is the name of the package you wish to activate). This command has to be repeated whenever a Julia session is restarted.
 
 We thus activate our three desired packages:
 
@@ -74,7 +74,7 @@ For a more detailed introduction to Julia packages, please read [the Pkg documen
 ## Simulating a basic Catalyst model
 Now that we have some basic familiarity with Julia, and have installed and activated the required packages, we will create and simulate a basic chemical reaction network model through Catalyst.
 
-Catalyst models are created through the `@reaction_network` *macro*. For more information on macros, please read [the Julia documentation on macros](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros). This documentation is, however, rather advanced (and not required to use Catalyst). We instead recommend that you simply familiarise yourself with the Catalyst syntax, without studying in detail how macros work and what they are.
+Catalyst models are created through the `@reaction_network`  *macro*. For more information on macros, please read [the Julia documentation on macros](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros). This documentation is, however, rather advanced (and not required to use Catalyst). We instead recommend that you simply familiarise yourself with the Catalyst syntax, without studying in detail how macros work and what they are.
 
 The `@reaction_network` command is followed by the `begin` keyword, which is followed by one line for each *reaction* of the model. Each reaction consists of a *reaction rate*, followed by the reaction itself. The reaction itself contains a set of *substrates* and a set of *products* (what is consumed and produced by the reaction, respectively). These are separated by a `-->` arrow. Finally, the model ends with the `end` keyword.
 
@@ -87,14 +87,14 @@ rn = @reaction_network begin
 end
 ```
 
-For more information on how to use the Catalyst model creator, please read [the corresponding documentation](https://docs.sciml.ai/Catalyst/stable/tutorials/dsl/).
+For more information on how to use the Catalyst model creator (also known as the Catalyst DSL), please read [the corresponding documentation](https://docs.sciml.ai/Catalyst/stable/tutorials/dsl/).
 
 Next, we wish to simulate our model. To do this, we need to provide some additional information to the simulator. This is
-* The initial condition. That is the concentration or number of each species at the start of the simulation.
+* The initial condition. That is, the concentration or numbers of each species at the start of the simulation.
 * The timespan. That is, the timeframe over which we wish to run the simulation.
 * The parameter values. That is, the values of the model's parameters for this simulation.
 
-The initial condition is given as a *Vector*. This is a type which collects several different values. To declare a vector, the values are specific within brackets, `[]`, and separated by `,`. Since we only have one species, the vector holds a single element. In this element, we set the value of *X* using the `:X => 1.0` syntax. Here, we first denote the name of the species, with a `:` pre-appended. Next follows `=>` and then the value of *X*. Since we wish to simulate the *concentration* of X over time, we will let the initial condition be decimal valued.
+The initial condition is given as a *Vector*. This is a type which collects several different values. To declare a vector, the values are specific within brackets, `[]`, and separated by `,`. Since we only have one species, the vector holds a single element. In this element, we set the value of *X* using the `:X => 1.0` syntax. Here, we first denote the name of the species (with a `:` pre-appended), next follows a `=>` and then the value of *X*. Since we wish to simulate the *concentration* of X over time, we will let the initial condition be decimal valued.
 ```@example ex1
 u0 = [:X => 1.0]
 ```
@@ -111,7 +111,7 @@ params = [:b => 1.0, :d => 0.2]
 
 Please read here for more information on [Vectors](https://docs.julialang.org/en/v1/manual/arrays/) and [Tuples](https://docs.julialang.org/en/v1/manual/types/#Tuple-Types).
 
-Next, before we can simulate our model, we bundle all the required information together in a so-called `ODEProblem`. Note that the order in which the input (the model, the initial condition, the timespan, and the parameter values) is provided to the ODEProblem matters. E.g. the parameter values cannot be provided as the first argument, but have to be the last argument. Here, we save our `ODEProblem` in the `oprob` variable.
+Next, before we can simulate our model, we bundle all the required information together in a so-called `ODEProblem`. Note that the order in which the input (the model, the initial condition, the timespan, and the parameter values) is provided to the ODEProblem matters. E.g. the parameter values cannot be provided as the first argument, but have to be the fourth argument. Here, we save our `ODEProblem` in the `oprob` variable.
 
 
 ```@example ex1
@@ -130,7 +130,7 @@ plot(sol)
 
 Here, the plot shows the time evolution of the concentration of the species *X* from its initial condition.
 
-For more information about the numerical simulation package, please see the [DifferentialEquation documentation](https://docs.sciml.ai/DiffEqDocs/stable/). For more information about the plotting package, please see the [Plots documentation](https://docs.juliaplots.org/stable/).
+For more information about the numerical simulation package, please see the [DifferentialEquations documentation](https://docs.sciml.ai/DiffEqDocs/stable/). For more information about the plotting package, please see the [Plots documentation](https://docs.juliaplots.org/stable/).
 
 ## Additional modelling example
 To make this introduction more comprehensive, we here provide another example, using a more complicated model. In addition, instead of simulating our model as concentrations evolve over time, we will simulate the individual reaction events through the [Gillespie algorithm](https://en.wikipedia.org/wiki/Gillespie_algorithm). This is a way to add *noise* to our model.
@@ -142,13 +142,13 @@ This time, we will declare the so-called [SIR model for an infectious disease](h
 * *I*, the amount of *infected* individuals.
 * *R*, the amount of *recovered* (or *removed*) individuals.
 It also has 2 reaction events:
-* Infection, where a susceptible individual meets an infected individual, and also becomes infected.
+* Infection, where a susceptible individual meets an infected individual and also becomes infected.
 * Recovery, where an infected individual recovers.
 Each reaction is also associated with a specific rate (corresponding to a parameter).
 * *b*, the infection rate.
 * *k*, the recovery rate.
 
-We declare the model using the `reaction_network` macro, and store it in the `sir_model` variable.
+We declare the model using the `@reaction_network` macro, and store it in the `sir_model` variable.
 ```@example ex1
 sir_model = @reaction_network begin
     b, S + I --> 2I
@@ -171,11 +171,12 @@ dprob = DiscreteProblem(sir_model, u0, tspan, params)
 jprob = JumpProblem(sir_model, dprob, Direct())
 ```
 
-Again, the order in which the inputs are given to the `DiscreteProblem` and the `JumpProblem` is important. The last argument to the `JumpProblem` (`Direct()`) denotes which simulation method we wish to use. For now, we recommend the user simply use the `Direct()` option, and then consider alternative ones, see the [JumpProcesses.jl docs](https://docs.sciml.ai/JumpProcesses/stable/), when they are more familiar with modelling in Catalyst and Julia.
+Again, the order in which the inputs are given to the `DiscreteProblem` and the `JumpProblem` is important. The last argument to the `JumpProblem` (`Direct()`) denotes which simulation method we wish to use. For now, we recommend the user simply use the `Direct()` option, and then consider alternative ones (see the [JumpProcesses.jl docs](https://docs.sciml.ai/JumpProcesses/stable/)) when they are more familiar with modelling in Catalyst and Julia.
 
-Finally, we can simulate our model using the `solve` function, and plot the solution using the `plot` function. Here, the `solve` function also has a second argument (`SSAStepper()`). This is a time stepping algorithm that calls the `Direct` solver to advance a simulation. Again, we recommend at this stage you simply use this option, and then explore further exactly what this means at a later stage.
+Finally, we can simulate our model using the `solve` function, and plot the solution using the `plot` function. Here, the `solve` function also has a second argument (`SSAStepper()`). This is a time stepping algorithm that calls the `Direct` solver to advance a simulation. Again, we recommend at this stage you simply use this option, and then explore exactly what this means at a later stage.
 ```@example ex1
 sol = solve(jprob, SSAStepper())
+sol = solve(jprob, SSAStepper(); seed=1234) # hide
 plot(sol)
 ```
 
