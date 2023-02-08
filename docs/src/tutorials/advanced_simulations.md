@@ -1,6 +1,8 @@
 # [Advanced Simulation Options](@id advanced_simulations)
 Throughout the preceding tutorials, we have shown the basics of how to solve ODE, SDE, and jump process models generated from Catalyst `ReactionSystem`s. In this tutorial we'll illustrate some more advanced functionality that can be useful in many modeling contexts, and that provide conveniences for common workflows. For a comprehensive overview of solver properties, parameters, and manipulating solution objects, please read the [documentation of the DifferentialEquations package](https://docs.sciml.ai/DiffEqDocs/stable/), which Catalyst uses for all simulations. 
 
+
+
 ### Monte Carlo simulations using `EnsembleProblem`s
 In many contexts one needs to run multiple simulations of a model, for example to collect statistics of SDE or jump process solutions, or to systematically vary parameter values within a model. While it is always possible to manually run such ensembles of simulations via a `for` loop, DifferentialEquations.jl provides the `EnsembleProblem` as a convenience to manage structured collections of simulations. `EnsembleProblem`s provide a simple interface for modifying a problem between individual simulations, and offers several options for batching and/or parallelizing simulation runs. For a more thorough description, please read [the Parallel Ensemble Simulations section of the DifferentialEquations documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#ensemble). Here, we will give a brief introduction to the use of `EnsembleProblem`s from Catalyst-generated models.
 
@@ -182,11 +184,69 @@ plot(sol)
 
 The difference between the `PresetTimeCallback`s and the `DiscreteCallback`s and `ContiniousCallback`s is that the latter two allow the condition to be a function, permitting the user to give more general conditions for the callback to be triggered. An example could be a callback that triggers whenever a species surpasses some threshold value.
 
+
+
+### Scaling the noise magnitude in the chemical Langevin equations
+When using the CLE to generate SDEs from a CRN, it can sometimes be desirable to scale the magnitude of the noise terms. This can be done by introducing a *noise scaling parameter*. First, we simulate a simple two-state CRN model using the CLE:
+```@example ex3
+using Catalyst, StochasticDiffEq, Plots
+
+rn_1 = @reaction_network begin
+    (k1,k2), X1 <--> X2
+end
+u0 = [:X1 => 10.0, :X2 => 10.0]
+tspan = (0.0,10.0)
+p_1 = [:k1 => 1.0, :k2 => 1.0]
+
+sprob_1 = SDEProblem(rn_1,u0,tspan,p_1)
+sol_1 = solve(sprob_1)
+plot(sol_1; idxs=1, ylimit=(0.0,20.0))
+```
+Here we can see that the `X` concentration fluctuations around a steady state of *X≈10.0*. 
+
+Next, we wish to introduce a noise scaling parameter ,`η`. This will scale the noise magnitude so that for *η≈0.0* the system lacks noise (and its SDE simulations are identical to its ODE simulations) and for *η≈1.0* noise is not scaled (and SDE simulations are identical to as if no noise scaling was used). Setting *η<1.0* will reduce noise and *η>1.0* will increase noise. The syntax for setting a noise scaling parameter `η` is
+```@example ex3
+rn_2 = @reaction_network begin
+    @parameters η
+    (k1,k2), X1 <--> X2
+end
+u0 = [:X1 => 10.0, :X2 => 10.0]
+tspan = (0.0,10.0)
+p_2 = [:k1 => 1.0, :k2 => 1.0, :η => 0.1]
+
+sprob_2 = SDEProblem(rn_2,u0,tspan,p_2; noise_scaling=(@parameters η)[1])
+```
+Here, we first need to add `η` as a parameter to the system using the `@parameters η` option. Next, we pass the `noise_scaling=(@parameters η)[1]` argument to the `SDEProblem`. We can now simulate our system and confirm that noise is reduced:
+```@example ex3
+sol_2 = solve(sprob_2)
+plot(sol_2; idxs=1, ylimit=(0.0,20.0))
+```
+
+Finally, it is possible to set individual noise scaling parameters for each reaction of the system. Our model has two reactions (`X1 --> X2` and `X2 --> X1`) so we will use two noise scaling parameters, `η1` and `η2`. We use the following syntax:
+```@example ex3
+rn_3 = @reaction_network begin
+    @parameters η1 η2
+    (k1,k2), X1 <--> X2
+end
+u0 = [:X1 => 10.0, :X2 => 10.0]
+tspan = (0.0,10.0)
+p_3 = [:k1 => 1.0, :k2 => 1.0, :η1 => 0.1, :η2 => 1.0]
+
+sprob_3 = SDEProblem(rn_3,u0,tspan,p_3; noise_scaling=@parameters η1 η2)
+```
+plotting the results, we see that we have less fluctuation than for the first simulation, but more as compared to the second one (which is as expected):
+```@example ex3
+sol_3 = solve(sprob_3)
+plot(sol_3; idxs=1, ylimit=(0.0,20.0))
+```
+
+
+
 ### Useful plotting options
 Catalyst, just like DifferentialEquations, uses the Plots package for all plotting. For a detailed description of differential equation plotting, see [DifferentialEquations documentation on the subject](https://docs.sciml.ai/DiffEqDocs/stable/basics/plot/). Furthermore, the [Plots package documentation](https://docs.juliaplots.org/stable/) contains additional information and describes [a large number of plotting options](https://docs.juliaplots.org/stable/attributes/). Here follows a very short tutorial with a few useful options.
 
 Let us consider the Brusselator model:
-```@example ex3
+```@example ex4
 brusselator = @reaction_network begin
     A, ∅ → X
     1, 2X + Y → 3X
@@ -202,7 +262,7 @@ sol = solve(oprob)
 plot(sol)
 ```
 If we want to plot only the `X` species, we can use the `idxs` command:
-```@example ex3
+```@example ex4
 @unpack X = brusselator
 plot(sol; idxs=[X])
 ```
@@ -210,7 +270,7 @@ Here we use the `brusselator.X` notation to denote that we wish to plot the `X` 
 (The plotting feature that automatically sets the label when using this interface is currently not working optimally, hence we manually set the label using the `label` option.)
 
 Next, if we wish to plot a solution in phase space (instead of across time) we again use the `idxs` notation, but use `()` instead of `[]` when designating the species we wish to plot. Here, we plot the solution in `(X,Y)` space:
-```@example ex3
+```@example ex4
 @unpack X,Y = brusselator
 plot(sol; idxs=(X,Y))
 ```
