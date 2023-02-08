@@ -31,7 +31,7 @@ This simulation is automatically multithreaded over all available threads. Pleas
 plot(esol)
 ```
 
-Sometimes when performing a large number of ensemble simulations, the plots get very dense. In these cases, the plotting argument is `linealpha` (which sets trajectory transparency) may be useful:
+Sometimes when performing a large number of ensemble simulations, the plots get very dense. In these cases, the plot argument `linealpha` (which sets trajectory transparency) may be useful:
 ```@example ex1
 esol = solve(eprob; trajectories=100)
 plot(esol)
