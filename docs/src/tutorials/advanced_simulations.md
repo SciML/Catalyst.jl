@@ -8,7 +8,7 @@ In many contexts one needs to run multiple simulations of a model, for example t
 
 Let's look at a single-component bistable self-activation model:
 ```@example ex1
-using Catalyst, DifferentialEquations
+using Catalyst, DifferentialEquations, Plots
 
 rn = @reaction_network begin
     v0 + hill(X,v,K,n), ∅ --> X
@@ -249,6 +249,8 @@ Catalyst, just like DifferentialEquations, uses the Plots package for all plotti
 
 Let us consider the Brusselator model:
 ```@example ex4
+using Catalyst, DifferentialEquations, Plots
+
 brusselator = @reaction_network begin
     A, ∅ → X
     1, 2X + Y → 3X
