@@ -37,7 +37,7 @@ esol = solve(eprob; trajectories=100)
 plot(esol)
 ```
 
-Sometimes, one wishes to perform the same simulation a large number of times, while making minor modifications to the problem each time. This can be done by giving a problem function argument to the `EnsembleProblem`. Let us consider ODE simulations of a simple birth/death process:
+Sometimes, one wishes to perform the same simulation a large number of times, while making minor modifications to the problem each time. This can be done by giving a problem function, `prob_func`, argument to the `EnsembleProblem`. Let us consider ODE simulations of a simple birth/death process:
 ```@example ex1
 rn = @reaction_network begin
     (b,1.0), ∅ <--> X
