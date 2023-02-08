@@ -12,11 +12,11 @@ extending a system is the `extend` command
 ```@example ex1
 using Catalyst
 basern = @reaction_network rn1 begin
-           k, A + B --> C
-         end
+  k, A + B --> C
+end
 newrn = @reaction_network rn2 begin
-        r, C --> A + B
-      end
+  r, C --> A + B
+end
 @named rn = extend(newrn, basern)
 ```
 Here we extended `basern` with `newrn` giving a system with all the
@@ -97,12 +97,12 @@ modular fashion. We start by defining a function that creates a negatively
 repressed gene, taking the repressor as input
 ```@example ex1
 function repressed_gene(; R, name)
-    @reaction_network $name begin
-        hillr($R,α,K,n), ∅ --> m
-        (δ,γ), m <--> ∅
-        β, m --> m + P
-        μ, P --> ∅
-    end
+  @reaction_network $name begin
+    hillr($R,α,K,n), ∅ --> m
+    (δ,γ), m <--> ∅
+    β, m --> m + P
+    μ, P --> ∅
+  end
 end
 nothing # hide
 ```
@@ -154,24 +154,24 @@ account for compartment volumes:
 ```@example ex1
 # transcription and regulation
 nuc = @reaction_network nuc begin
-        α, G --> G + M
-        (κ₊/V,κ₋), D + G <--> DG
-      end
+  α, G --> G + M
+  (κ₊/V,κ₋), D + G <--> DG
+end
 
 # translation and dimerization
 cyto = @reaction_network cyto begin
-            β, M --> M + P
-            (k₊/V,k₋), 2P <--> D
-            σ, P --> 0
-            μ, M --> 0
-        end
+  β, M --> M + P
+  (k₊/V,k₋), 2P <--> D
+  σ, P --> 0
+  μ, M --> 0
+end
 
 # export reactions,
 # γ,δ=probability per time to be exported/imported
 model = @reaction_network model begin
-       γ, $(nuc.M) --> $(cyto.M)
-       δ, $(cyto.D) --> $(nuc.D)
-    end
+  γ, $(nuc.M) --> $(cyto.M)
+  δ, $(cyto.D) --> $(nuc.D)
+end
 @named model = compose(model, [nuc, cyto])
 ```
 A graph of the resulting network is
