@@ -1566,9 +1566,9 @@ version = "6.57.5"
 
 [[deps.StrideArraysCore]]
 deps = ["ArrayInterface", "CloseOpenIntervals", "IfElse", "LayoutPointers", "ManualMemory", "SIMDTypes", "Static", "ThreadingUtilities"]
-git-tree-sha1 = "45190b743cdc6f761da1e079bb15ff103a89069c"
+git-tree-sha1 = "8114ba9c3694827838d45ea3c9f6b9ccb4182cf2"
 uuid = "7792a7ef-975c-4747-a70f-980b88e8d1da"
-version = "0.4.6"
+version = "0.4.7"
 
 [[deps.StructArrays]]
 deps = ["DataAPI", "Tables"]
