@@ -203,7 +203,8 @@ plot(sol)
 ```
 If we want to plot only the `X` species, we can use the `idxs` command:
 ```@example ex3
-plot(sol; idxs=[brusselator.X], label="X(t)")
+@unpack X = brusselator
+plot(sol; idxs=[X])
 ```
 Here we use the `brusselator.X` notation to denote that we wish to plot the `X` species. The input to `idxs` is a vector listing all the species we wish to plot. If we wish to plot a single species, vector notation is not required and we could simply write `plot(sol; idxs=brusselator.X)`. 
 (The plotting feature that automatically sets the label when using this interface is currently not working optimally, hence we manually set the label using the `label` option.)
