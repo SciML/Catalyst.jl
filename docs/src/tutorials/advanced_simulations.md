@@ -54,7 +54,8 @@ We wish to simulate this model for a large number of values of `b`. We do this b
 ```@example ex1
 b_values = 1.0:0.1:2.0
 function prob_func(prob,i,repeat)
-    remake(prob; p=[b_values[i]])
+    @unpack b = prob.f.sys    # Fetches the b parameter to be used in the local scope.
+    remake(prob; p = [b=>b_values[i]])
 end
 nothing # hide
 ```
