@@ -36,7 +36,7 @@ plot(esol)
 Sometimes when performing a large number of ensemble simulations, the plots get very dense. In these cases, the plot argument `linealpha` (which sets trajectory transparency) may be useful:
 ```@example ex1
 esol = solve(eprob; trajectories=100)
-plot(esol)
+plot(esol; linealpha=0.5)
 ```
 
 Sometimes, one wishes to perform the same simulation a large number of times, while making minor modifications to the problem each time. This can be done by giving a problem function, `prob_func`, argument to the `EnsembleProblem`. Let us consider ODE simulations of a simple birth/death process:
