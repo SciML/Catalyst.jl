@@ -39,7 +39,7 @@ r = @reaction_network begin
 end
 
 # Latexify.@generate_test latexify(r)
-latexify(r) == replace(
+@test latexify(r) == replace(
 raw"\begin{align*}
 \require{mhchem}
 \ce{ \varnothing &->[$\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}$] X1}\\
@@ -68,6 +68,7 @@ raw"\begin{align*}
 \ce{ \varnothing &->[$\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}$] X3}\\
 \ce{ \varnothing &->[$\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}$] X4}\\
 \ce{ \varnothing &->[$\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}$] X5}\\
+\ce{ \varnothing &->[$\frac{v6 X1^{n6}}{K6^{n6} + X1^{n6} + X6^{n6}}$] X6}\\
 \ce{ X2 &<=>[$k1$][$k2$] X1 + 2 X4}\\
 \ce{ X4 &<=>[$k3$][$k4$] X3}\\
 \ce{ 3 X5 + X1 &<=>[$k5$][$k6$] X2}\\
@@ -75,7 +76,8 @@ raw"\begin{align*}
 \ce{ X2 &->[$d2$] \varnothing}\\
 \ce{ X3 &->[$d3$] \varnothing}\\
 \ce{ X4 &->[$d4$] \varnothing}\\
-\ce{ X5 &->[$d5$] \varnothing}
+\ce{ X5 &->[$d5$] \varnothing}\\
+\ce{ X6 &->[$d6$] \varnothing}
 \end{align*}
 ", "\r\n"=>"\n")
 
