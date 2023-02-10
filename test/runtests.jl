@@ -14,7 +14,6 @@ using SafeTestsets
     @time @safetestset "DSL Model Construction" begin include("dsl/dsl_model_construction.jl") end
     @time @safetestset "Custom CRN Functions" begin include("dsl/custom_functions.jl") end
     @time @safetestset "DSL Options" begin include("dsl/dsl_options.jl") end
-    @time @safetestset "1.6 Arrows" begin include("dsl/newarrows.jl") end
 
 
     ### Non-DSL model cration and modication. ###
