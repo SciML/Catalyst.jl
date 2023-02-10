@@ -103,7 +103,7 @@ point stoichiometry will give an error message.
 For a more extensive documentation of non-integer stoichiometric coefficients, pelase read the [Symbolic Stochiometries](@ref parametric_stoichiometry) section.
 
 ## How to set default values for initial conditions and parameters?
-How to set defaults when using the `@reaction_network` macro is desribed in detail [here](@id dsl_description_defaults). Briefly, to do this, use the `@species` and
+How to set defaults when using the `@reaction_network` macro is desribed in detail [here](@ref dsl_description_defaults). Briefly, to do this, use the `@species` and
 `@parameters` options:
 ```julia
 using Catalyst
