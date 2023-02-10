@@ -35,8 +35,8 @@ plot(esol)
 
 Sometimes when performing a large number of ensemble simulations, the plots get very dense. In these cases, the plot argument `linealpha` (which sets trajectory transparency) may be useful:
 ```@example ex1
-esol = solve(eprob; trajectories=100)
-plot(esol; linealpha=0.5)
+esol = solve(eprob; trajectories = 100)
+plot(esol; linealpha = 0.5)
 ```
 
 Sometimes, one wishes to perform the same simulation a large number of times, while making minor modifications to the problem each time. This can be done by giving a problem function, `prob_func`, argument to the `EnsembleProblem`. Let us consider ODE simulations of a simple birth/death process:
@@ -45,17 +45,17 @@ rn = @reaction_network begin
     (b,1.0), ∅ <--> X
 end
 u0 = [:X => 1.0]
-tspan = (0.0,1.0)
+tspan = (0.0, 1.0)
 p = [:b => 1.];
-oprob = ODEProblem(rn,u0,tspan,p)
+oprob = ODEProblem(rn, u0, tspan, p)
 nothing # hide
 ```
 We wish to simulate this model for a large number of values of `b`. We do this by creating a `prob_func` that will make a modification to the problem at the start of each Monte Carlo simulation:
 ```@example ex1
 b_values = 1.0:0.1:2.0
-function prob_func(prob,i,repeat)
+function prob_func(prob, i, repeat)
     @unpack b = prob.f.sys    # Fetches the b parameter to be used in the local scope.
-    remake(prob; p = [b=>b_values[i]])
+    remake(prob; p = [b => b_values[i]])
 end
 nothing # hide
 ```
@@ -65,15 +65,15 @@ Here, `prob_func` takes three arguments:
  - `repeat`: The repeat of this specific Monte Carlo simulation (We will ignore this argument in this brief overview).
 In our case, for each Monte Carlo simulation, our `prob_func` takes our original `ODEProblem` and uses the `remake` function to change the parameter vector. Here, for the `i`th Monte Carlo simulation, the value of `b` is also the `i`th value of our `b_values` vector. Finally, we can simulate and plot our problem:
 ```@example ex1
-eprob = EnsembleProblem(oprob; prob_func=prob_func)
-esol = solve(eprob; trajectories=length(b_values))
+eprob = EnsembleProblem(oprob; prob_func = prob_func)
+esol = solve(eprob; trajectories = length(b_values))
 plot(esol)
 ```
 
 Note that plot legends are disabled when plotting ensemble solutions. These can be re-enabled using the `legend` plotting keyword. However, when plotting a large number of trajectories, each will generate a label. Sometimes the best approach is to remove these and add a label manually:
 ```
-plot(esol; label="")
-plot!([],[],label="X", legend=:best)
+plot(esol; label = "")
+plot!([], [], label = "X", legend = :best)
 ```
 
 
@@ -96,14 +96,14 @@ we can simulate the model without using a callback:
 ```@example ex2
 using DifferentialEquations
 u0 = [:X => 10.0]
-tspan = (0.0,10.0)
+tspan = (0.0, 10.0)
 p = [:d => 1.0]
 
 oprob = ODEProblem(degradation_model, u0, tspan, p)
 sol = solve(oprob)
 plot(sol)
 ```
-We now wish to modify our simulation so that at the times `t=3.0` and `t=7.0` we add `5` units of `X` to the system. For this we create a `PresetTimeCallback`:
+We now wish to modify our simulation so that at the times `t = 3.0` and `t = 7.0` we add `5` units of `X` to the system. For this we create a `PresetTimeCallback`:
 ```@example ex2
 condition = [3.0, 7.0]
 function affect!(integrator)
@@ -114,7 +114,7 @@ nothing # hide
 ```
 Here, `condition` is simply a vector with all the time points during which we want the callback to trigger. The `affect!` function determines what happens to the simulation when the callback is triggered. It takes a single object, an `integrator` and makes some modification to it (please read more about integrators [here](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/)). Here, we access the system's current state vector as `integrator.u`, and add `5.0` to the amount of `X` present. We can now simulate our system using the callback:
 ```@example ex2
-sol = solve(oprob; callback=ps_cb)
+sol = solve(oprob; callback = ps_cb)
 plot(sol)
 ```
 
@@ -123,8 +123,8 @@ Next, we can also use a callback to change the parameters of a system. Now, inst
 rn = @reaction_network begin
     (k,1), X1 <--> X2
 end
-u0 = [:X1 => 10.0,:X2 => 0.0]
-tspan = (0.0,20.0)
+u0 = [:X1 => 10.0, :X2 => 0.0]
+tspan = (0.0, 20.0)
 p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 
@@ -132,25 +132,25 @@ condition = [5.0]
 affect!(integrator) = integrator.p[1] = 5.0
 ps_cb = PresetTimeCallback(condition, affect!)
 
-sol = solve(oprob; callback=ps_cb)
+sol = solve(oprob; callback = ps_cb)
 plot(sol)
 ```
 The result looks as expected. However, what happens if we attempt to run the simulation again?
 ```@example ex2
-sol = solve(oprob; callback=ps_cb)
+sol = solve(oprob; callback = ps_cb)
 plot(sol)
 ```
 The plot looks different, even though we simulate the same problem. Furthermore, the callback does not seem to have any effect on the system. If we check our `ODEProblem`
 ```@example ex2
 oprob.p
 ```
-we note that `k=5.0`, rather than `k=1.0` as we initially specify. This is because the callback modifies our `ODEProblem` during the simulation, and this modification remains during the second simulation. An improved workflow to avoid this issue is:
+we note that `k = 5.0`, rather than `k = 1.0` as we initially specify. This is because the callback modifies our `ODEProblem` during the simulation, and this modification remains during the second simulation. An improved workflow to avoid this issue is:
 ```@example ex2
 rn = @reaction_network begin
     (k,1), X1 <--> X2
 end
 u0 = [:X1 => 10.0,:X2 => 0.0]
-tspan = (0.0,20.0)
+tspan = (0.0, 20.0)
 p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 
@@ -158,12 +158,12 @@ condition = [5.0]
 affect!(integrator) = integrator.p[1] = 5.0
 ps_cb = PresetTimeCallback(condition, affect!)
 
-sol = solve(deepcopy(oprob); callback=ps_cb)
+sol = solve(deepcopy(oprob); callback = ps_cb)
 plot(sol)
 ```
 where we parse a copy of our `ODEProblem` to the solver. We can now run
 ```@example ex2
-sol = solve(deepcopy(oprob); callback=ps_cb)
+sol = solve(deepcopy(oprob); callback = ps_cb)
 plot(sol)
 ```
 and get the expected result.
@@ -178,7 +178,7 @@ tspan = (0.0,20.0)
 p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 
-ps_cb_1 = PresetTimeCallback([3.0,7.0], integ -> integ.u[1] += 5.0)
+ps_cb_1 = PresetTimeCallback([3.0, 7.0], integ -> integ.u[1] += 5.0)
 ps_cb_2 = PresetTimeCallback([5.0], integ -> integ.p[1] = 5.0)
 
 sol = solve(deepcopy(oprob); callback=CallbackSet(ps_cb_1, ps_cb_2))
@@ -198,12 +198,12 @@ rn_1 = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 u0 = [:X1 => 10.0, :X2 => 10.0]
-tspan = (0.0,10.0)
+tspan = (0.0, 10.0)
 p_1 = [:k1 => 1.0, :k2 => 1.0]
 
-sprob_1 = SDEProblem(rn_1,u0,tspan,p_1)
+sprob_1 = SDEProblem(rn_1, u0, tspan, p_1)
 sol_1 = solve(sprob_1)
-plot(sol_1; idxs=1, ylimit=(0.0,20.0))
+plot(sol_1; idxs = 1, ylimit=(0.0, 20.0))
 ```
 Here we can see that the `X` concentration fluctuations around a steady state of *X≈10.0*. 
 
@@ -214,15 +214,15 @@ rn_2 = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 u0 = [:X1 => 10.0, :X2 => 10.0]
-tspan = (0.0,10.0)
+tspan = (0.0, 10.0)
 p_2 = [:k1 => 1.0, :k2 => 1.0, :η => 0.1]
 
-sprob_2 = SDEProblem(rn_2,u0,tspan,p_2; noise_scaling=(@parameters η)[1])
+sprob_2 = SDEProblem(rn_2, u0, tspan, p_2; noise_scaling = (@parameters η)[1])
 ```
-Here, we first need to add `η` as a parameter to the system using the `@parameters η` option. Next, we pass the `noise_scaling=(@parameters η)[1]` argument to the `SDEProblem`. We can now simulate our system and confirm that noise is reduced:
+Here, we first need to add `η` as a parameter to the system using the `@parameters η` option. Next, we pass the `noise_scaling = (@parameters η)[1]` argument to the `SDEProblem`. We can now simulate our system and confirm that noise is reduced:
 ```@example ex3
 sol_2 = solve(sprob_2)
-plot(sol_2; idxs=1, ylimit=(0.0,20.0))
+plot(sol_2; idxs = 1, ylimit=(0.0, 20.0))
 ```
 
 Finally, it is possible to set individual noise scaling parameters for each reaction of the system. Our model has two reactions (`X1 --> X2` and `X2 --> X1`) so we will use two noise scaling parameters, `η1` and `η2`. We use the following syntax:
@@ -232,15 +232,15 @@ rn_3 = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 u0 = [:X1 => 10.0, :X2 => 10.0]
-tspan = (0.0,10.0)
+tspan = (0.0, 10.0)
 p_3 = [:k1 => 1.0, :k2 => 1.0, :η1 => 0.1, :η2 => 1.0]
 
-sprob_3 = SDEProblem(rn_3,u0,tspan,p_3; noise_scaling=@parameters η1 η2)
+sprob_3 = SDEProblem(rn_3, u0, tspan, p_3; noise_scaling = @parameters η1 η2)
 ```
 plotting the results, we see that we have less fluctuation than for the first simulation, but more as compared to the second one (which is as expected):
 ```@example ex3
 sol_3 = solve(sprob_3)
-plot(sol_3; idxs=1, ylimit=(0.0,20.0))
+plot(sol_3; idxs = 1, ylimit=(0.0, 20.0))
 ```
 
 
@@ -259,7 +259,7 @@ brusselator = @reaction_network begin
     1, X → ∅
 end
 u0 = [:X => 1.0, :Y => 0.0]
-tspan = (0.0,50.0)
+tspan = (0.0, 50.0)
 p = [:A => 1.0, :B => 4.0]
 
 oprob = ODEProblem(brusselator, u0, tspan, p)
@@ -271,12 +271,11 @@ If we want to plot only the `X` species, we can use the `idxs` command:
 @unpack X = brusselator
 plot(sol; idxs=[X])
 ```
-Here we use the `brusselator.X` notation to denote that we wish to plot the `X` species. The input to `idxs` is a vector listing all the species we wish to plot. If we wish to plot a single species, vector notation is not required and we could simply write `plot(sol; idxs=brusselator.X)`. 
-(The plotting feature that automatically sets the label when using this interface is currently not working optimally, hence we manually set the label using the `label` option.)
+Here we use `@unpack` to import `X` to the local scope, enabling us to use it for plotting. The input to `idxs` is a vector listing all the species we wish to plot. If we wish to plot a single species, vector notation is not required and we could simply write `plot(sol; idxs=X)`. 
 
 Next, if we wish to plot a solution in phase space (instead of across time) we again use the `idxs` notation, but use `()` instead of `[]` when designating the species we wish to plot. Here, we plot the solution in `(X,Y)` space:
 ```@example ex4
-@unpack X,Y = brusselator
-plot(sol; idxs=(X,Y))
+@unpack X, Y = brusselator
+plot(sol; idxs=(X, Y))
 ```
 
