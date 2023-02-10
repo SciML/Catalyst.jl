@@ -6,7 +6,7 @@ using ModelingToolkit: operation, Sym, istree, get_states, get_ps, get_eqs, get_
 using StableRNGs
 rng = StableRNG(12345)
 
-include("test_networks.jl")
+include("../test_networks.jl")
 
 function unpacksys(sys)
     get_eqs(sys), get_iv(sys), get_states(sys), get_ps(sys), nameof(sys), get_systems(sys)

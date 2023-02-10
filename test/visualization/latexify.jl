@@ -2,7 +2,7 @@
 
 ### Fetch required packages and reaction networks ###
 using Catalyst, Latexify
-include("test_networks.jl")
+include("../test_networks.jl")
 
 ############################
 ### CURRENTLY NOT ACITVE ###

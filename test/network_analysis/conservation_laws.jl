@@ -1,7 +1,7 @@
 using Catalyst, Test
 using LinearAlgebra
 
-include("test_networks.jl")
+include("../test_networks.jl")
 
 rn = @reaction_network begin
     (1, 2), A + B <--> C

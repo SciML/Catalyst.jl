@@ -5,7 +5,7 @@ using StochasticDiffEq
 using LinearAlgebra: norm
 using SparseArrays
 using ModelingToolkit: value
-include("test_networks.jl")
+include("../test_networks.jl")
 
 @parameters t k1 k2
 @variables S(t) I(t) R(t)

@@ -1,7 +1,7 @@
 ### Fetch required packages and reaction networks ###
 using Catalyst, JumpProcesses, Random, Statistics, Test
 using ModelingToolkit: get_states, get_ps
-include("test_networks.jl")
+include("../test_networks.jl")
 
 using StableRNGs
 rng = StableRNG(12345)

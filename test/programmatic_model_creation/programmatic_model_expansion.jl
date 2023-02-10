@@ -3,7 +3,7 @@
 ### Fetch required packages and reaction networks ###
 using Catalyst, Test
 using ModelingToolkit: get_ps, get_states, get_eqs, get_systems, get_iv
-include("test_networks.jl")
+include("../test_networks.jl")
 
 using StableRNGs
 rng = StableRNG(12345)
