@@ -368,6 +368,7 @@ rn = @reaction_network SIR1 begin
 end
 @test nameof(rn) == :SIR1
 
+
 ### Tests some arrow variants ###
 
 rn1 = @reaction_network begin
@@ -386,13 +387,15 @@ rn2 = @reaction_network begin
     b1, B --> 0
 end
 
-ps = ones(5)
-u0 = [10.0, 20.0, 0.0]
-tspan = (0, 100.0)
-oprob1 = ODEProblem(rn1, u0, tspan, ps)
-oprob2 = ODEProblem(rn2, u0, tspan, ps)
-sol1 = solve(oprob1, Tsit5())
-sol2 = solve(oprob2, Tsit5())
-
-tv = range(tspan[1], tspan[2], length = 100)
-@test norm(sol1 - sol2, Inf) ≈ 0
+f1 = ODEFunction(convert(ODESystem, rn1), jac = true)
+f2 = ODEFunction(convert(ODESystem, rn2), jac = true)
+g1 = SDEFunction(convert(SDESystem, rn1))
+g2 = SDEFunction(convert(SDESystem, rn2))
+for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
+    u0 = factor * rand(rng, length(get_states(rn1)))
+    p = factor * rand(rng, length(get_ps(rn1)))
+    t = rand(rng)
+    @test all(abs.(f1(u0, p, t) .≈ f2(u0, p, t)))
+    @test all(abs.(f1.jac(u0, p, t) .≈ f2.jac(u0, p, t)))
+    @test all(abs.(g1(u0, p, t) .≈ g2(u0, p, t)))
+end
