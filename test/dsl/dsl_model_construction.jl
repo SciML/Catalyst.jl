@@ -399,3 +399,11 @@ for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
     @test all(abs.(f1.jac(u0, p, t) .≈ f2.jac(u0, p, t)))
     @test all(abs.(g1(u0, p, t) .≈ g2(u0, p, t)))
 end
+
+
+### Tests arrow variants in "@reaction" macro ###
+
+@test isequal((@reaction k, 0 --> X), (@reaction k, X <-- 0))
+@test isequal((@reaction k, 0 --> X), (@reaction k, X ⟻ 0))
+@test isequal((@reaction k, 0 --> X), (@reaction k, 0 → X))
+@test isequal((@reaction k, 0 --> X), (@reaction k, 0 ⥟ X))

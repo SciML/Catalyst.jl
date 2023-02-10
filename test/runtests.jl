@@ -13,7 +13,6 @@ using SafeTestsets
     @time @safetestset "DSL Model Construction" begin include("dsl/dsl_model_construction.jl") end
     @time @safetestset "Custom CRN Functions" begin include("dsl/custom_functions.jl") end
     @time @safetestset "DSL Options" begin include("dsl/dsl_options.jl") end
-    @time @safetestset "Test @reaction Macr" begin include("dsl/reaction_macro.jl") end
 
     ### Non-DSL model cration and modication. ###
     @time @safetestset "ReactionSystem Components Based Creation" begin include("programmatic_model_creation/component_based_model_creation.jl") end
