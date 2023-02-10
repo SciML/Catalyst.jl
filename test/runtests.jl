@@ -22,9 +22,10 @@ using SafeTestsets
     @time @safetestset "Programmatic Model Expansion" begin include("programmatic_model_creation/programmatic_model_expansion.jl") end
 
 
-    ### Reaction network analysis. ###
-    @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end
-    @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
+    # Runs various miscellaneous tests.
+    @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
+    @time @safetestset "Symbolic Stoichiometry" begin include("miscellaneous_tests/symbolic_stoichiometry.jl") end
+    @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end
 
 
     ### Tests ODE, SDE, PDE, and Gillespie Simulations. ###
@@ -37,6 +38,11 @@ using SafeTestsets
     @time @safetestset "Jump System Simulations" begin include("model_simulation/simulate_jumps.jl") end
 
 
+    ### Reaction network analysis. ###
+    @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end
+    @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
+
+
     ### Tests network visualization. ###
     @time @safetestset "Latexify" begin include("visualization/latexify.jl") end
     # @time @safetestset "Basic Plotting" begin include("visualization/plotting.jl") end
@@ -44,12 +50,6 @@ using SafeTestsets
     if !Sys.isapple()
         @time @safetestset "Graphs" begin include("visualization/graphs.jl") end
     end
-
-
-    # Runs various miscellaneous tests.
-    @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
-    @time @safetestset "Symbolic Stoichiometry" begin include("miscellaneous_tests/symbolic_stoichiometry.jl") end
-    @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end
 
 
 end # @time
