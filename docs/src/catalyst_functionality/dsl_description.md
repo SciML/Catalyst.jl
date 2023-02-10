@@ -252,6 +252,7 @@ corresponding to the ODE model
 ```@example tut2
 using Latexify
 latexify(rn; form=:ode)
+latexify(convert(ODESystem,rn)) # hide
 ```
 
 With respect to the corresponding mass action ODE model, this is actually
@@ -264,6 +265,7 @@ end
 ```
 ```@example tut2
 latexify(rn; form=:ode)
+latexify(convert(ODESystem,rn)) # hide
 ```
 !!! note
     While the ODE models corresponding to the preceding two reaction systems are
