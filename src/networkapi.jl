@@ -1,16 +1,16 @@
 # Functions for querying network properties.
 
 # DEPRECIATED after v9.0
-function params(network)
+function params(network)  # COV_EXCL_LINE
     Base.depwarn("`params` is depreciated, please use `ModelingToolkit.parameters` for all system and subsystem parameters, or `reactionparams` for all parameters within system and subsystem `Reaction`s.",
-                 :params, force = true)
-    parameters(network)
+                 :params, force = true)  # COV_EXCL_LINE
+    parameters(network)  # COV_EXCL_LINE
 end
 
-function numparams(network)
+function numparams(network)  # COV_EXCL_LINE
     Base.depwarn("`numparams` is depreciated, please use `length(ModelingToolkit.parameters)` for the total number of parameters across all systems and subsystems, or `numreactionparams` for the number of parameters within system and subsystem `Reaction`s.",
-                 :params, force = true)
-    length(parameters(network))
+                 :params, force = true)  # COV_EXCL_LINE
+    length(parameters(network))  # COV_EXCL_LINE
 end
 
 """
@@ -26,13 +26,13 @@ Notes:
   shared.
 - Returns the merged network.
 """
-function Base.merge(network1::ReactionSystem, network2::ReactionSystem)
+function Base.merge(network1::ReactionSystem, network2::ReactionSystem)  # COV_EXCL_LINE
     Base.depwarn("`merge(sys1::ReactionSystem, sys2::ReactionNetwork)` is depreciated, please use `ModelingToolkit.extend` instead.",
-                 :merge, force = true)
-    network = make_empty_network()
-    merge!(network, network1)
-    merge!(network, network2)
-    network
+                 :merge, force = true)  # COV_EXCL_LINE
+    network = make_empty_network()  # COV_EXCL_LINE
+    merge!(network, network1)  # COV_EXCL_LINE
+    merge!(network, network2)  # COV_EXCL_LINE
+    network  # COV_EXCL_LINE
 end
 
 ######### Accessors: #########
