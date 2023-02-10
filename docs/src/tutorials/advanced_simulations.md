@@ -240,7 +240,7 @@ sprob_3 = SDEProblem(rn_3, u0, tspan, p_3; noise_scaling = @parameters η1 η2)
 plotting the results, we see that we have less fluctuation than for the first simulation, but more as compared to the second one (which is as expected):
 ```@example ex3
 sol_3 = solve(sprob_3)
-plot(sol_3; idxs = 1, ylimit=(0.0, 20.0))
+plot(sol_3; idxs = 1, ylimit = (0.0, 20.0))
 ```
 
 
