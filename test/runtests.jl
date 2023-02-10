@@ -19,7 +19,7 @@ using SafeTestsets
 
     ### Non-DSL model cration and modication. ###
     @time @safetestset "ReactionSystem Components Based Creation" begin include("programmatic_model_creation/component_based_model_creation.jl") end
-    @time @safetestset "Programmatic Model Expansion" begin include("programmatic_model_creation/model_modification.jl") end
+    @time @safetestset "Programmatic Model Expansion" begin include("programmatic_model_creation/programmatic_model_expansion.jl") end
 
 
     ### Reaction network analysis. ###
@@ -48,8 +48,8 @@ using SafeTestsets
 
     # Runs various miscellaneous tests.
     @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
+    @time @safetestset "Symbolic Stoichiometry" begin include("miscellaneous_tests/symbolic_stoichiometry.jl") end
     @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end
-    @time @safetestset "Symbolic Stoichiometry" begin include("dsl/symbolic_stoichiometry.jl") end
 
 
 end # @time
