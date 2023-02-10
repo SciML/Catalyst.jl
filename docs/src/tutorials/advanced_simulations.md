@@ -269,7 +269,7 @@ plot(sol)
 If we want to plot only the `X` species, we can use the `idxs` command:
 ```@example ex4
 @unpack X = brusselator
-plot(sol; idxs=[X])
+plot(sol; idxs = [X])
 ```
 Here we use `@unpack` to import `X` to the local scope, enabling us to use it for plotting. The input to `idxs` is a vector listing all the species we wish to plot. If we wish to plot a single species, vector notation is not required and we could simply write `plot(sol; idxs=X)`. 
 
