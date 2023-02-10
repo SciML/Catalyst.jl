@@ -17,7 +17,7 @@ end
 u0 = [:X => 0.0]
 tspan = (0.0,1000.0)
 p = [:v0 => 0.1, :v => 2.5, :K => 75.0, :n => 2.0, :deg => 0.01];
-sprob = SDEProblem(rn,u0,tspan,p)
+sprob = SDEProblem(rn, u0, tspan, p)
 nothing # hide
 ```
 we can then use our `SDEProblem` as input to an `EnsembleProblem`:
