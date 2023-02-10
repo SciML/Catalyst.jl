@@ -8,7 +8,6 @@ using SafeTestsets
     @time @safetestset "ReactionSystem Structure" begin include("reactionsystem_structure/reactionsystem.jl") end
     @time @safetestset "Higher Order Reactions" begin include("reactionsystem_structure/higher_order_reactions.jl") end
 
-
     ### Tests model creation via the @reaction_network DSL. ###
     @time @safetestset "Basic DSL" begin include("dsl/dsl_basics.jl") end
     @time @safetestset "DSL Model Construction" begin include("dsl/dsl_model_construction.jl") end
@@ -16,17 +15,14 @@ using SafeTestsets
     @time @safetestset "DSL Options" begin include("dsl/dsl_options.jl") end
     @time @safetestset "Test @reaction Macr" begin include("dsl/reaction_macro.jl") end
 
-
     ### Non-DSL model cration and modication. ###
     @time @safetestset "ReactionSystem Components Based Creation" begin include("programmatic_model_creation/component_based_model_creation.jl") end
     @time @safetestset "Programmatic Model Expansion" begin include("programmatic_model_creation/programmatic_model_expansion.jl") end
-
 
     # Runs various miscellaneous tests.
     @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
     @time @safetestset "Symbolic Stoichiometry" begin include("miscellaneous_tests/symbolic_stoichiometry.jl") end
     @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end
-
 
     ### Tests ODE, SDE, PDE, and Gillespie Simulations. ###
     @time @safetestset "ODE System Simulations" begin include("model_simulation/simulate_ODEs.jl") end
@@ -37,11 +33,9 @@ using SafeTestsets
     @time @safetestset "PDE Systems Simulations" begin include("model_simulation/simulate_pdes.jl") end
     @time @safetestset "Jump System Simulations" begin include("model_simulation/simulate_jumps.jl") end
 
-
     ### Reaction network analysis. ###
     @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end
     @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
-
 
     ### Tests network visualization. ###
     @time @safetestset "Latexify" begin include("visualization/latexify.jl") end
@@ -50,6 +44,4 @@ using SafeTestsets
     if !Sys.isapple()
         @time @safetestset "Graphs" begin include("visualization/graphs.jl") end
     end
-
-
 end # @time

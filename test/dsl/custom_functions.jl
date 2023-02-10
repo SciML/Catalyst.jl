@@ -155,31 +155,42 @@ f_hillar_jac_output = f_hillar.jac(u0, p, t)[3:end, 1]
 @test (maximum(f_hillar_output) - minimum(f_hillar_output)) .< 100 * eps()
 @test (maximum(f_hillar_jac_output) - minimum(f_hillar_jac_output)) .< 100 * eps()
 
-
 ### Test Symbolic Derivatives ###
 @variables X Y
 @parameters v K n
 
-@test isequal(Symbolics.derivative(Catalyst.mm(X,v,K), X), v*K/(K+X)^2)
-@test isequal(Symbolics.derivative(Catalyst.mm(X,v,K), v), X/(K+X))
-@test isequal(Symbolics.derivative(Catalyst.mm(X,v,K), K), -v*X/(K+X)^2)
+@test isequal(Symbolics.derivative(Catalyst.mm(X, v, K), X), v * K / (K + X)^2)
+@test isequal(Symbolics.derivative(Catalyst.mm(X, v, K), v), X / (K + X))
+@test isequal(Symbolics.derivative(Catalyst.mm(X, v, K), K), -v * X / (K + X)^2)
 
-@test isequal(Symbolics.derivative(Catalyst.mmr(X,v,K), X), -v*K/(K+X)^2)
-@test isequal(Symbolics.derivative(Catalyst.mmr(X,v,K), v), K/(K+X))
-@test isequal(Symbolics.derivative(Catalyst.mmr(X,v,K), K), v*X/(K+X)^2)
+@test isequal(Symbolics.derivative(Catalyst.mmr(X, v, K), X), -v * K / (K + X)^2)
+@test isequal(Symbolics.derivative(Catalyst.mmr(X, v, K), v), K / (K + X))
+@test isequal(Symbolics.derivative(Catalyst.mmr(X, v, K), K), v * X / (K + X)^2)
 
-@test isequal(Symbolics.derivative(Catalyst.hill(X,v,K,n), X), n*v*(K^n)*(X^(n-1))/(K^n+X^n)^2)
-@test isequal(Symbolics.derivative(Catalyst.hill(X,v,K,n), v), X^n/(K^n+X^n))
-@test isequal(Symbolics.derivative(Catalyst.hill(X,v,K,n), K), -n*v*(K^(n-1))*(X^n)/(K^n+X^n)^2)
-@test isequal(Symbolics.derivative(Catalyst.hill(X,v,K,n), n), v*(X^n)*(K^n)*(log(X)-log(K))/(K^n+X^n)^2)
+@test isequal(Symbolics.derivative(Catalyst.hill(X, v, K, n), X),
+              n * v * (K^n) * (X^(n - 1)) / (K^n + X^n)^2)
+@test isequal(Symbolics.derivative(Catalyst.hill(X, v, K, n), v), X^n / (K^n + X^n))
+@test isequal(Symbolics.derivative(Catalyst.hill(X, v, K, n), K),
+              -n * v * (K^(n - 1)) * (X^n) / (K^n + X^n)^2)
+@test isequal(Symbolics.derivative(Catalyst.hill(X, v, K, n), n),
+              v * (X^n) * (K^n) * (log(X) - log(K)) / (K^n + X^n)^2)
 
-@test isequal(Symbolics.derivative(Catalyst.hillr(X,v,K,n), X), -n*v*(K^n)*(X^(n-1))/(K^n+X^n)^2)
-@test isequal(Symbolics.derivative(Catalyst.hillr(X,v,K,n), v), K^n/(K^n+X^n))
-@test isequal(Symbolics.derivative(Catalyst.hillr(X,v,K,n), K), n*v*(K^(n-1))*(X^n)/(K^n+X^n)^2)
-@test isequal(Symbolics.derivative(Catalyst.hillr(X,v,K,n), n), v*(X^n)*(K^n)*(log(K)-log(X))/(K^n+X^n)^2)
+@test isequal(Symbolics.derivative(Catalyst.hillr(X, v, K, n), X),
+              -n * v * (K^n) * (X^(n - 1)) / (K^n + X^n)^2)
+@test isequal(Symbolics.derivative(Catalyst.hillr(X, v, K, n), v), K^n / (K^n + X^n))
+@test isequal(Symbolics.derivative(Catalyst.hillr(X, v, K, n), K),
+              n * v * (K^(n - 1)) * (X^n) / (K^n + X^n)^2)
+@test isequal(Symbolics.derivative(Catalyst.hillr(X, v, K, n), n),
+              v * (X^n) * (K^n) * (log(K) - log(X)) / (K^n + X^n)^2)
 
-@test isequal(Symbolics.derivative(Catalyst.hillar(X,Y,v,K,n), X), n*v*(K^n+Y^n)*(X^(n-1))/(K^n+X^n+Y^n)^2)
-@test isequal(Symbolics.derivative(Catalyst.hillar(X,Y,v,K,n), Y), -n*v*(Y^(n-1))*(X^n)/(K^n+X^n+Y^n)^2)
-@test isequal(Symbolics.derivative(Catalyst.hillar(X,Y,v,K,n), v), X^n/(K^n+X^n+Y^n))
-@test isequal(Symbolics.derivative(Catalyst.hillar(X,Y,v,K,n), K), -n*v*(v^(n-1))*(X^n)/(K^n+X^n+Y^n)^2)
-@test isequal(Symbolics.derivative(Catalyst.hillar(X,Y,v,K,n), n), v*(X^n)*((K^n+Y^n)*log(X)-(K^n)*log(K)-(Y^n)*log(Y))/(K^n+X^n+Y^n)^2)
+@test isequal(Symbolics.derivative(Catalyst.hillar(X, Y, v, K, n), X),
+              n * v * (K^n + Y^n) * (X^(n - 1)) / (K^n + X^n + Y^n)^2)
+@test isequal(Symbolics.derivative(Catalyst.hillar(X, Y, v, K, n), Y),
+              -n * v * (Y^(n - 1)) * (X^n) / (K^n + X^n + Y^n)^2)
+@test isequal(Symbolics.derivative(Catalyst.hillar(X, Y, v, K, n), v),
+              X^n / (K^n + X^n + Y^n))
+@test isequal(Symbolics.derivative(Catalyst.hillar(X, Y, v, K, n), K),
+              -n * v * (v^(n - 1)) * (X^n) / (K^n + X^n + Y^n)^2)
+@test isequal(Symbolics.derivative(Catalyst.hillar(X, Y, v, K, n), n),
+              v * (X^n) * ((K^n + Y^n) * log(X) - (K^n) * log(K) - (Y^n) * log(Y)) /
+              (K^n + X^n + Y^n)^2)
