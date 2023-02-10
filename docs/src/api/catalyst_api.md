@@ -79,7 +79,7 @@ Reaction
 ReactionSystem
 ```
 
-## ModelingToolkit and Catalyst accessor functions
+## [ModelingToolkit and Catalyst accessor functions](@id api_accessor_functions)
 A [`ReactionSystem`](@ref) is an instance of a
 `ModelingToolkit.AbstractTimeDependentSystem`, and has a number of fields that
 can be accessed using the Catalyst API and the [ModelingToolkit.jl Abstract
@@ -151,7 +151,7 @@ above.
 
 ## Basic system properties
 See [Programmatic Construction of Symbolic Reaction Systems](@ref programmatic_CRN_construction) for examples and [ModelingToolkit and
-Catalyst Accessor Functions](@ref) for more details on the basic accessor
+Catalyst Accessor Functions](@ref api_accessor_functions) for more details on the basic accessor
 functions.
 
 ```@docs
@@ -256,7 +256,7 @@ complexgraph
 savegraph
 ```
 
-## Rate laws
+## [Rate laws](@id api_rate_laws)
 As the underlying [`ReactionSystem`](@ref) is comprised of `ModelingToolkit`
 expressions, one can directly access the generated rate laws, and using
 `ModelingToolkit` tooling generate functions or Julia `Expr`s from them.

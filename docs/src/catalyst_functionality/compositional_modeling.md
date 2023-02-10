@@ -109,7 +109,7 @@ nothing # hide
 Here we assume the user will pass in the repressor species as a ModelingToolkit
 variable, and specify a name for the network. We use Catalyst's interpolation
 ability to substitute the value of these variables into the DSL (see
-[Interpolation of Julia Variables](@ref)). To make the repressilator we now make
+[Interpolation of Julia Variables](@ref dsl_description_interpolation_of_variables)). To make the repressilator we now make
 three genes, and then compose them together
 ```@example ex1
 @variables t, G3₊P(t)
