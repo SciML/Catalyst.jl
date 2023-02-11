@@ -17,7 +17,6 @@ real_jac = [-6.0 -5.0 2.0; -5.0 -6.0 2.0; 5.0 5.0 -2.0]
 
 ### Checks that the jacobian is correct for networks with parameters ###
 jacobian_network_2 = @reaction_network begin
-    @parameters p1 p2 p3
     (p1, 1.0), ∅ ↔ X
     (p2, 1.0), ∅ ↔ Y
     (p3 * X, 1.0), X + Y ↔ XY
@@ -34,7 +33,6 @@ for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2], repeat in 1:10
 end
 
 jacobian_network_3 = @reaction_network begin
-    @parameters k1 k2 k3 k4 k5 k6 k7 k8
     k1, 2A → B
     k2, B → 2A
     k3, A + B → C

@@ -343,9 +343,7 @@ reaction_networks_weird[9] = @reaction_network rnw9 begin
     hill(hill(hill(hill(X1, v1, K1, n1), v2, K2, n2), v3, K3, n3), v4, K4, n4), X1 → ∅
 end
 
-reaction_networks_weird[10] = @reaction_network rnw10 begin
-    d, 5X1 → 4X1
-end
+reaction_networks_weird[10] = @reaction_network rnw10 begin d, 5X1 → 4X1 end
 
 ### Gathers all netowkrs in a simgle array ###
 reaction_networks_all = [reaction_networks_standard...,

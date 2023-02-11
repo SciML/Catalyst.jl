@@ -21,27 +21,23 @@ function emptyrntest(rn, name)
 end
 
 rn = @reaction_network name begin
-    @parameters k
     k, A --> 0
 end
 rntest(rn, :name)
 
 name = :blah
 rn = @reaction_network $name begin
-    @parameters k
     k, A --> 0
 end
 rntest(rn, :blah)
 
 rn = @reaction_network begin
-    @parameters k
     k, A --> 0
 end
 rntest(rn, nameof(rn))
 
 function makern(; name)
     @reaction_network $name begin
-    @parameters k
         k, A --> 0
     end
 end
@@ -57,7 +53,6 @@ emptyrntest(rn, :blah)
 # test variables that appear only in rates and aren't ps
 # are categorized as species
 rn = @reaction_network begin
-    @parameters k k2 n
     @species A(t) B(t) C(t) D(t) H(t)
     π*k*D*hill(B,k2,B*D*H,n), 3*A  --> 2*C
 end
@@ -72,7 +67,6 @@ end
 AA = A
 AAA = A^2 + B
 rn = @reaction_network rn begin
-    @parameters k
     @species A(t) B(t) C(t) D(t)
     k*$AAA, C --> D
 end
@@ -80,7 +74,6 @@ rn2 = ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn)
 @test rn == rn2
 
 rn = @reaction_network rn begin
-    @parameters k
     @species A(t) C(t) D(t)
     k, $AA + C --> D
 end
@@ -89,7 +82,6 @@ rn2 = ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn)
 
 BB = B; A2 = A
 rn = @reaction_network rn begin
-    @parameters k1 k2
     (k1,k2), C + $A2 + $BB + $A2 <--> $BB + $BB
 end
 rn2 = ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
@@ -100,7 +92,6 @@ rn2 = ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
 kk1 = k^2*A
 kk2 = k1+k2
 rn = @reaction_network rn begin
-    @parameters α k k1 k2
     α+$kk1*$kk2*$AA, 2*$AA + B --> $AA
 end
 rn2 = ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; name=:rn)
@@ -136,7 +127,6 @@ rx3 = Reaction(2*k, [B], [D], [2.5], [2])
 @named mixedsys = ReactionSystem([rx1,rx2,rx3],t,[B,C,D],[k])
 osys = convert(ODESystem, mixedsys; combinatoric_ratelaws=false)
 rn = @reaction_network mixedsys begin
-    @parameters k
     k, 2.5*B + C --> 3.5*B + 2.5*D
     2*k, B --> 2.5*D
     2*k, 2.5*B --> 2*D

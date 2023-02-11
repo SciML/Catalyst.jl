@@ -80,7 +80,6 @@ addparam!(rs, k1, disablechecks = true)
 @test numreactionparams(rs) == 3
 
 rnmat = @reaction_network begin
-    @parameters α β
     α, S + 2I --> 2I
     β, 3I --> 2R + S
 end
@@ -116,7 +115,6 @@ end
 rns = Vector{ReactionSystem}(undef, 6)
 # mass-action non-catalytic
 rns[1] = @reaction_network begin
-    @parameters k₁ k₂ k₃ k₄
     k₁, 2A --> B
     k₂, A --> C
     k₃, C --> D
@@ -153,7 +151,6 @@ testnetwork(crn, B, Z, Δ, lcs, 0, subrn, lcd; skiprxtest = true)
 
 # mass-action rober
 rns[2] = @reaction_network begin
-    @parameters k₁ k₂ k₃
     k₁, A --> B
     k₂, B + B --> C + B
     k₃, B + C --> A + C
@@ -175,7 +172,6 @@ testnetwork(rns[2], B, Z, Δ, lcs, 1, subrn, lcd)
 
 #  some rational functions as rates
 rns[3] = @reaction_network begin
-    @parameters k₁ k₂ k₃ k₄
     k₁, ∅ --> X₁
     (k₂ / (1 + X₁ * X₂ + X₃ * X₄), k₃ / (1 + X₁ * X₂ + X₃ * X₄)), 2X₁ + X₂ ↔ 3X₃ + X₄
     k₄, X₄ --> ∅
@@ -198,7 +194,6 @@ testnetwork(rns[3], B, Z, Δ, lcs, 0, subrn, lcd)
 
 # repressilator
 rns[4] = @reaction_network begin
-    @parameters α K n δ γ β μ
     hillr(P₃, α, K, n), ∅ --> m₁
     hillr(P₁, α, K, n), ∅ --> m₂
     hillr(P₂, α, K, n), ∅ --> m₃
@@ -243,7 +238,6 @@ testnetwork(rns[4], B, Z, Δ, lcs, 3, subrn, lcd)
 
 #brusselator
 rns[5] = @reaction_network begin
-    @parameters A B
     A, ∅ → X
     1, 2X + Y → 3X
     B, X → Y
@@ -265,7 +259,6 @@ testnetwork(rns[5], B, Z, Δ, lcs, 1, subrn, lcd)
 
 # some rational functions as rates
 rns[6] = @reaction_network begin
-    @parameters k₁ k₋₁ k₂ k₋₂ k₃ k₋₃
     (k₁, k₋₁), X₁ + X₂ <--> X₃ + 2X₄
     (k₂ / (1 + X₄ * X₅ + X₆ * X₇), k₋₂ / (1 + X₄ * X₅ + X₆ * X₇)), 3X₄ + X₅ <--> X₆ + X₇
     (k₃ / (1 + X₇ + X₈ + X₉ + X₁₀), k₋₃ / (1 + X₇ + X₈ + X₉ + X₁₀)), 5X₇ + X₈ <--> X₉ + X₁₀
@@ -301,7 +294,6 @@ function testreversibility(rn, B, rev, weak_rev)
 end
 rxs = Vector{ReactionSystem}(undef, 10)
 rxs[1] = @reaction_network begin
-    @parameters k1 k2 k3 k4 k5 k6 k7 k8
     (k2, k1), A1 <--> A2 + A3
     k3, A2 + A3 --> A4
     k4, A4 --> A5
@@ -314,7 +306,6 @@ weak_rev = false
 testreversibility(rxs[1], reactioncomplexes(rxs[1])[2], rev, weak_rev)
 
 rxs[2] = @reaction_network begin
-    @parameters k1 k2 k3 k4 k5 k6 k7 k8 k9
     (k2, k1), A1 <--> A2 + A3
     k3, A2 + A3 --> A4
     k4, A4 --> A5
@@ -327,7 +318,6 @@ weak_rev = false
 testreversibility(rxs[2], reactioncomplexes(rxs[2])[2], rev, weak_rev)
 
 rxs[3] = @reaction_network begin
-    @parameters k1 k2
     k1, A --> B
     k2, A --> C
 end
@@ -336,7 +326,6 @@ weak_rev = false
 testreversibility(rxs[3], reactioncomplexes(rxs[3])[2], rev, weak_rev)
 
 rxs[4] = @reaction_network begin
-    @parameters k1 k2 k3
     k1, A --> B
     k2, A --> C
     k3, B + C --> 2A
@@ -346,7 +335,6 @@ weak_rev = false
 testreversibility(rxs[4], reactioncomplexes(rxs[4])[2], rev, weak_rev)
 
 rxs[5] = @reaction_network begin
-    @parameters k1 k2 k3 k4 k5 k6
     (k2, k1), A <--> 2B
     (k4, k3), A + C --> D
     k5, D --> B + E
@@ -357,7 +345,6 @@ weak_rev = true
 testreversibility(rxs[5], reactioncomplexes(rxs[5])[2], rev, weak_rev)
 
 rxs[6] = @reaction_network begin
-    @parameters k1 k2 k3
     (k2, k1), A + E <--> AE
     k3, AE --> B + E
 end
@@ -366,7 +353,6 @@ weak_rev = false
 testreversibility(rxs[6], reactioncomplexes(rxs[6])[2], rev, weak_rev)
 
 rxs[7] = @reaction_network begin
-    @parameters k1 k2 k3 k4
     (k2, k1), A + E <--> AE
     (k4, k3), AE <--> B + E
 end
@@ -380,7 +366,6 @@ weak_rev = true
 testreversibility(rxs[8], reactioncomplexes(rxs[8])[2], rev, weak_rev)
 
 rxs[9] = @reaction_network begin
-    @parameters k1 k2 k3 k4
     k1, A + B --> 3A
     k2, 3A --> 2A + C
     k3, 2A + C --> 2B
@@ -391,7 +376,6 @@ weak_rev = true
 testreversibility(rxs[9], reactioncomplexes(rxs[9])[2], rev, weak_rev)
 
 rxs[10] = @reaction_network begin
-    @parameters k1 k2 k3 k4 k5 k6
     (k2, k1), A + E <--> AE
     (k4, k3), AE <--> B + E
     k5, B --> 0
@@ -414,7 +398,6 @@ end
 
 # test defaults
 rn = @reaction_network begin
-    @parameters α β
     α, S + I --> 2I
     β, I --> R
 end
@@ -430,7 +413,6 @@ sol2 = solve(op, Tsit5())
 @test all(p -> p[1] isa Symbolics.Symbolic, collect(ModelingToolkit.defaults(rn)))
 
 rn = @reaction_network begin
-    @parameters α β
     α, S + I --> 2I
     β, I --> R
 end
@@ -450,7 +432,6 @@ function unpacktest(rn)
     solve(op, Tsit5())
 end
 rn = @reaction_network begin
-    @parameters α1 β1
     α1, S1 + I1 --> 2I1
     β1, I1 --> R1
 end
@@ -459,7 +440,6 @@ sol3 = unpacktest(rn)
 
 # test symmap_to_varmap
 sir = @reaction_network sir begin
-    @parameters β ν
     β, S + I --> 2I
     ν, I --> R
 end
@@ -486,7 +466,6 @@ sol5 = solve(op, Tsit5())
 # test conservation law elimination
 let
     rn = @reaction_network begin
-        @parameters k1 k2 m1 m2 b12 b23 b31
         (k1, k2), A + B <--> C
         (m1, m2), D <--> E
         b12, F1 --> F2
@@ -568,13 +547,11 @@ let
     end
 
     rn = @reaction_network ABtoC begin
-        @parameters k₊ k₋
         (k₊,k₋), 3.4*A + 2B <--> 2.5*C
     end
     test_stoich(Float64, rn)
 
     rn2 = @reaction_network ABtoC begin
-        @parameters k₊ k₋
         (k₊,k₋), 3*A + 2B <--> 2*C
     end
     test_stoich(Int, rn2)

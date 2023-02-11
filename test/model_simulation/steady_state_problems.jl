@@ -8,7 +8,6 @@ rng = StableRNG(12345)
 
 ### Compares to netowork with know steady state ###
 steady_state_network_1 = @reaction_network begin
-    @parameters k1 k2 k3 k4 k5 k6
     (k1, k2), ∅ ↔ X1
     (k3, k4), ∅ ↔ 3X2
     (k5, k6), ∅ ↔ X3 + X4
@@ -26,7 +25,6 @@ for factor in [1e-1, 1e0, 1e1], repeat in 1:3
 end
 
 steady_state_network_2 = @reaction_network begin
-    @parameters v K n d
     v / 10 + hill(X, v, K, n), ∅ → X
     d, X → ∅
 end
