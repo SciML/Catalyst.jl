@@ -1498,9 +1498,9 @@ version = "0.12.3"
 
 [[deps.Parsers]]
 deps = ["Dates", "SnoopPrecompile"]
-git-tree-sha1 = "18f84637e00b72ba6769034a4b50d79ee40c84a9"
+git-tree-sha1 = "946b56b2135c6c10bbb93efad8a78b699b6383ab"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.5.5"
+version = "2.5.6"
 
 [[deps.Pipe]]
 git-tree-sha1 = "6842804e7867b115ca9de748a0cf6b364523c16d"
