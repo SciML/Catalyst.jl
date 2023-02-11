@@ -203,7 +203,7 @@ complexgraph(repressilator)
 
 ![Repressilator complex](../assets/repressilator_complexgraph.svg)
 
-Here ∅ represent the empty complex, black arrows show reactions converting
+Here ∅ represents the empty complex, black arrows show reactions converting
 substrate complexes into product complexes where the rate is just a number or
 parameter, and red arrows indicate the conversion of substrate complexes into
 product complexes where the rate is an expression involving chemical species.
@@ -219,12 +219,12 @@ reaction complex representation in these calculations.
 Consider the following reaction network.
 ```@example s1
 rn = @reaction_network begin
-     (k1,k2), A + B <--> C
-     k3, C --> D+E
-     (k4,k5), D+E <--> F
-     (k6,k7), 2A <--> B+G
-     k8, B+G --> H
-     k9, H --> 2A
+    (k1,k2), A + B <--> C
+    k3, C --> D+E
+    (k4,k5), D+E <--> F
+    (k6,k7), 2A <--> B+G
+    k8, B+G --> H
+    k9, H --> 2A
 end
 ```
 with graph
