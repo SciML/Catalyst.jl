@@ -93,7 +93,7 @@ end
 All symbols that do not appear as a substrate or product in a reaction are
 designated by Catalyst as a parameter (i.e. all symbols appearing only within
 rate expressions and/or as [stoichiometric coefficients](@ref parametric_stoichiometry)). In this example `X` and `Y`
-appears as a substrates and products, but neither `k1` nor `k2`. Hence `k1` and `k2` are
+appear as a substrates and products, but neither `k1` nor `k2`. Hence `k1` and `k2` are
 designated as parameters. Later in this tutorial, we will describe how to manually specify what should be
 considered a species or parameter.
 
