@@ -1,7 +1,6 @@
 using Catalyst, Graphviz_jll
 
 rn = @reaction_network begin
-    @parameters α β
     α, S + I --> 2I
     β, I --> R
     S^2, R --> 0

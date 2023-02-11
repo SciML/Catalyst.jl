@@ -578,7 +578,6 @@ end
 # test for classification of jump types
 let
     rn = @reaction_network begin
-        @parameters k k2
         t, A --> B          # vrj
         1.0, B --> D        # vrj
         k * D, H --> I + H  # vrj
