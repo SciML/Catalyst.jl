@@ -32,7 +32,7 @@ etc).
 Breaking changes and new functionality are summarized in the
 [HISTORY.md](HISTORY.md) file.
 
-## Tutorials and cocumentation
+## Tutorials and documentation
 
 For tutorials and information on using the package, [see the stable
 documentation](https://docs.sciml.ai/Catalyst/stable/). The [in-development
