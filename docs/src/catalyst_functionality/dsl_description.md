@@ -417,7 +417,7 @@ plot(sol)
 ## Naming the generated `ReactionSystem`
 ModelingToolkit uses system names to allow for compositional and hierarchical
 models. To specify a name for the generated `ReactionSystem` via the
-`@reaction_network` macro, just place the name before `begin`:
+[`@reaction_network`](@ref) macro, just place the name before `begin`:
 ```@example tut2
 rn = @reaction_network production_degradation begin
   p, ∅ --> X
