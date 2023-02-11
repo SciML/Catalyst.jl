@@ -165,7 +165,7 @@ Note, there are a few differences when using the `@reaction` macro to specify
 one reaction versus using the full `@reaction_network` macro to create a
 `ReactionSystem`. First, only one reaction (i.e. a single forward arrow type)
 can be used, i.e. reversible arrows like `<-->` will not work (since they define
-more than one reaction). Second, the `@reaction` macro does not have an option for designating what should be considered a species or parameter, but have to use the heuristic where anything that appears as either a substrate or a product is a species, and everything else (including stoichiometric coefficients) are parameters. As such, the following are equivalent
+more than one reaction). Second, the `@reaction` macro does not have an option for designating what should be considered a species or parameter, and instead assumes that any symbol that appears as either a substrate or a product is a species, and everything else (including stoichiometric coefficients) are parameters. As such, the following are equivalent
 ```julia
 rx = @reaction hillr(P,α,K,n), A --> B
 ```
