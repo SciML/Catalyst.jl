@@ -40,7 +40,7 @@ the parameters in the system and all subsystems, including non-`ReactionSystem`
 subsystems, use `parameters(network)`.
 
 Notes:
-- If `ModelingToolkit.get_systems(network)` is non-empty will allocate.
+- Allocates and has to calculate these dynamically by comparison for each reaction.
 """
 function reactionparams(network)
     ps = get_ps(network)

@@ -52,7 +52,6 @@ export isspecies
 export Reaction, ReactionSystem, ismassaction, oderatelaw, jumpratelaw, isspatial
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem,
        SteadyStateProblem
-export get_species, has_species, get_rxs, has_rxs, get_combinatoric_ratelaws, get_sivs
 
 # reaction_network macro
 const ExprValues = Union{Expr, Symbol, Float64, Int}
