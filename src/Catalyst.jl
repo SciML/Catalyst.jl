@@ -23,7 +23,7 @@ import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_v
                         rename, renamespace, getname, flatten
 # internal but needed ModelingToolkit functions
 import ModelingToolkit: check_variables, check_parameters, _iszero, _merge, check_units,
-                        get_unit
+                        get_unit, check_equations
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
@@ -52,8 +52,7 @@ export isspecies
 export Reaction, ReactionSystem, ismassaction, oderatelaw, jumpratelaw, isspatial
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem,
        SteadyStateProblem
-export get_species, has_species, get_constraints, has_constraints,
-       get_combinatoric_ratelaws, get_sivs
+export get_species, has_species, get_rxs, has_rxs, get_combinatoric_ratelaws, get_sivs
 
 # reaction_network macro
 const ExprValues = Union{Expr, Symbol, Float64, Int}

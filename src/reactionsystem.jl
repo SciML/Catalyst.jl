@@ -49,8 +49,9 @@ function tospecies(s)
     MT.setmetadata(s, VariableSpecies, true)
 end
 
-# true for species which shouldn't change from the reactions
-drop_dynamics(s) = isconstant(s) || isbc(s)
+# true for species which shouldn't change from the reactions, including non-species
+# variables
+drop_dynamics(s) = isconstant(s) || isbc(s) || (!isspecies(s))
 
 """
 $(TYPEDEF)
@@ -415,6 +416,8 @@ end
 
 ############################### Reaction Systems ####################################
 
+const CatalystEqType = Union{Reaction, Union}
+
 """
 $(TYPEDEF)
 
@@ -441,8 +444,6 @@ Keyword Arguments:
 - `defaults::Dict`, a dictionary mapping parameters to their default values and species to
   their default initial values.
 - `checks = true`, boolean for whether to check units.
-- `constraints = nothing`, a `NonlinearSystem` or `ODESystem` of coupled constraint
-  equations.
 - `networkproperties = NetworkProperties()`, cache for network properties calculated via API
   functions.
 - `combinatoric_ratelaws = true`, sets the default value of `combinatoric_ratelaws` used in
@@ -455,14 +456,16 @@ Notes:
   the same units, and all reactions have rate laws with units of (species units) / (time
   units). Unit checking can be disabled by passing the keyword argument `checks=false`.
 """
-struct ReactionSystem{U <: Union{Nothing, MT.AbstractSystem}, V <: NetworkProperties} <:
+struct ReactionSystem{V <: NetworkProperties} <:
        MT.AbstractTimeDependentSystem
-    """The reactions defining the system."""
-    eqs::Vector{Reaction}
+    """The equations (reactions and algebraic/differential) defining the system."""
+    eqs::Vector{CatalystEqType}
+    """The Reactions defining the system. """
+    rxs::Vector{Reaction}
     """Independent variable (usually time)."""
     iv::Any
     """Spatial independent variables"""
-    sivs::Any
+    sivs::Vector{Any}
     """All dependent (state) variables, species and non-species. Must not contain the
     independent variable."""
     states::Vector
@@ -485,32 +488,58 @@ struct ReactionSystem{U <: Union{Nothing, MT.AbstractSystem}, V <: NetworkProper
     defaults::Dict
     """Type of the system"""
     connection_type::Any
-    """Non-`Reaction` equations that further constrain the system"""
-    constraints::U
     """`NetworkProperties` object that can be filled in by API functions. INTERNAL -- not
     considered part of the public API."""
     networkproperties::V
     """Sets whether to use combinatoric scalings in rate laws. true by default."""
     combinatoric_ratelaws::Bool
+    """
+    continuous_events: A `Vector{SymbolicContinuousCallback}` that model events.
+    The integrator will use root finding to guarantee that it steps at each zero crossing.
+    """
+    continuous_events::Vector{MT.SymbolicContinuousCallback}
+    """
+    discrete_events: A `Vector{SymbolicDiscreteCallback}` that models events. Symbolic
+    analog to `SciMLBase.DiscreteCallback` that executes an affect when a given condition is
+    true at the end of an integration step.
+    """
+    discrete_events::Vector{MT.SymbolicDiscreteCallback}
+    """
+    complete: if a model `sys` is complete, then `sys.x` no longer performs namespacing.
+    """
+    complete::Bool
 
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, iv, sivs, states, spcs, ps, var_to_name, observed, name,
-                            systems, defaults, connection_type, csys, nps, cls;
-                            checks::Bool = true)
-        if checks
+                            systems, defaults, connection_type, nps, cls, orxs,
+                            cevs, devs, complete::Bool = false; checks::Bool = true)
+
+
+        nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
+        rxs = Reaction[rx for rx in eqs if rx isa Reaction]
+
+        # unit checks are for ODEs and Reactions only currently
+        if checks && isempty(sivs)
             check_variables(states, iv)
             check_parameters(ps, iv)
+            !isempty(nonrx_eqs) && check_equations(nonrx_eqs, iv)
+            check_equations(equations(cevs), iv)
         end
 
-        rs = new{typeof(csys), typeof(nps)}(eqs, iv, sivs, states, spcs, ps, var_to_name,
-                                            observed, name, systems, defaults,
-                                            connection_type, csys, nps, cls)
+        if isempty(sivs) && (checks == true || (checks & MT.CheckUnits) > 0)
+            MT.all_dimensionless([states; ps; iv]) || check_units(nonrx_eqs)
+        end
+
+        rs = new{typeof(csys), typeof(nps)}(eqs, rxs, iv, sivs, states, spcs, ps,
+                                            var_to_name, observed, name, systems, defaults,
+                                            connection_type, nps, cls, orxs, cevs, devs,
+                                            complete)
         checks && validate(rs)
         rs
     end
 end
 
-function get_speciestype(iv, states, systems, constraints)
+function get_speciestype(iv, states, systems)
     T = Nothing
     !isempty(states) && (T = typeof(first(states)))
 
@@ -532,8 +561,10 @@ function get_speciestype(iv, states, systems, constraints)
     T
 end
 
+eqsortby(eq::CatalystEqType) = eq isa Reaction ? 1 : 2
+
 function ReactionSystem(eqs, iv, states, ps;
-                        observed = [],
+                        observed = Equation[],
                         systems = [],
                         name = nothing,
                         default_u0 = Dict(),
@@ -541,11 +572,13 @@ function ReactionSystem(eqs, iv, states, ps;
                         defaults = _merge(Dict(default_u0), Dict(default_p)),
                         connection_type = nothing,
                         checks = true,
-                        constraints = nothing,
                         networkproperties = nothing,
                         combinatoric_ratelaws = true,
                         balanced_bc_check = true,
-                        spatial_ivs = nothing)
+                        spatial_ivs = nothing,
+                        continuous_events = nothing,
+                        discrete_events = nothing)
+
     name === nothing &&
         throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     sysnames = nameof.(systems)
@@ -565,9 +598,13 @@ function ReactionSystem(eqs, iv, states, ps;
     else
         value.(MT.scalarize(spatial_ivs))
     end
-    states′ = value.(MT.scalarize(states))
+    states′ = sort!(value.(MT.scalarize(states)), by = !isspecies) # species come first
     ps′ = value.(MT.scalarize(ps))
-    eqs′ = (eqs isa Vector) ? eqs : collect(eqs)
+
+    #TODO
+    #eqs′ = (eqs isa Vector) ? eqs : collect(eqs)
+    eqs′ = CatalystEqType[eq for eq in eqs]
+    sort!(eqs′; by = eqsortby)
 
     if any(MT.isparameter, states′)
         psts = filter(MT.isparameter, states′)
@@ -590,20 +627,25 @@ function ReactionSystem(eqs, iv, states, ps;
     # variables representing chemical species
     spcs = filter(isspecies, states′)
 
+    rxs = Reaction[rx for rx in eqs′ if rx isa Reaction]
+
     var_to_name = Dict()
     MT.process_variables!(var_to_name, defaults, states′)
     MT.process_variables!(var_to_name, defaults, ps′)
     MT.collect_var_to_name!(var_to_name, eq.lhs for eq in observed)
 
     nps = if networkproperties === nothing
-        NetworkProperties{Int, get_speciestype(iv′, states′, systems, constraints)}()
+        NetworkProperties{Int, get_speciestype(iv′, states′, systems)}()
     else
         networkproperties
     end
 
+    ccallbacks = MT.SymbolicContinuousCallbacks(continuous_events)
+    dcallbacks = MT.SymbolicDiscreteCallbacks(discrete_events)
+
     ReactionSystem(eqs′, iv′, sivs′, states′, spcs, ps′, var_to_name, observed, name,
-                   systems, defaults, connection_type, constraints, nps,
-                   combinatoric_ratelaws; checks = checks)
+                   systems, defaults, connection_type, nps, combinatoric_ratelaws,
+                   ccallbacks, dcallbacks; checks = checks)
 end
 
 # Previous function called by the macro, but still avaiable for general use.
@@ -677,10 +719,20 @@ isspatial(rn::ReactionSystem) = !isempty(get_sivs(rn))
 """
     get_species(sys::ReactionSystem)
 
-Return the current dependent variables that represent species in `sys`.
+Return the current dependent variables that represent species in `sys` (toplevel system
+only).
 """
 get_species(sys::ReactionSystem) = getfield(sys, :species)
 has_species(sys::ReactionSystem) = isdefined(sys, :species)
+
+"""
+    get_rxs(sys::ReactionSystem)
+
+Return the system's `Reaction` vector (toplevel system only).
+"""
+get_rxs(sys::ReactionSystem) = getfield(sys, :rxs)
+has_rxs(sys::ReactionSystem) = isdefined(sys, :rxs)
+
 
 """
     get_sivs(sys::ReactionSystem)
@@ -689,14 +741,6 @@ Return the current spatial ivs, if the system is non-spatial returns an empty ve
 """
 get_sivs(sys::ReactionSystem) = getfield(sys, :sivs)
 has_sivs(sys::ReactionSystem) = isdefined(sys, :sivs)
-
-"""
-    get_constraints(sys::ReactionSystem)
-
-Return the current constraint subsystem, if none is defined will return `nothing`.
-"""
-get_constraints(sys::ReactionSystem) = getfield(sys, :constraints)
-has_constraints(sys::ReactionSystem) = isdefined(sys, :constraints)
 
 """
     get_networkproperties(sys::ReactionSystem)
@@ -715,26 +759,13 @@ for details. Can be overriden via passing `combinatoric_ratelaws` to `convert` o
 """
 get_combinatoric_ratelaws(sys::ReactionSystem) = getfield(sys, :combinatoric_ratelaws)
 
-function MT.states(sys::ReactionSystem)
-    sts = (get_constraints(sys) === nothing) ? get_states(sys) :
-          vcat(get_states(sys), get_states(get_constraints(sys)))
-    systems = get_systems(sys)
-    unique(isempty(systems) ? sts : [sts; reduce(vcat, namespace_variables.(systems))])
-end
-
-function MT.parameters(sys::ReactionSystem)
-    ps = (get_constraints(sys) === nothing) ? get_ps(sys) :
-         vcat(get_ps(sys), get_ps(get_constraints(sys)))
-    systems = get_systems(sys)
-    unique(isempty(systems) ? ps : [ps; reduce(vcat, namespace_parameters.(systems))])
-end
-
+# need a custom equations since ReactionSystem.eqs are a mix of Reactions and Equations
 function MT.equations(sys::ReactionSystem)
-    eqs = (get_constraints(sys) === nothing) ? get_eqs(sys) :
-          Any[get_eqs(sys); get_eqs(get_constraints(sys))]
+    eqs = get_eqs(sys)
+    T = eltype(eqs)
     systems = get_systems(sys)
     if !isempty(systems)
-        return Any[eqs; reduce(vcat, MT.namespace_equations.(systems); init = Any[])]
+        return T[eqs; reduce(vcat, MT.namespace_equations.(systems); init = Any[])]
     end
     return eqs
 end
@@ -752,92 +783,9 @@ function combinatoric_ratelaws(sys::ReactionSystem)
     mapreduce(combinatoric_ratelaws, |, subsys; init = crl)
 end
 
-function MT.defaults(sys::ReactionSystem)
-    constraints = get_constraints(sys)
-    systems = get_systems(sys)
-    defs = get_defaults(sys)
-
-    if constraints !== nothing
-        defs = merge(defs, get_defaults(constraints))
-    end
-
-    mapfoldr(MT.namespace_defaults, merge, systems, init = defs)
-end
-
-function MT.observed(sys::ReactionSystem)
-    constraints = get_constraints(sys)
-    systems = get_systems(sys)
-    obs = get_observed(sys)
-
-    if constraints !== nothing
-        obs = vcat(obs, get_observed(constraints))
-    end
-    reduce(vcat,
-           (map(o -> MT.namespace_equation(o, s), MT.observed(s)) for s in systems);
-           init = obs)
-end
-
-function Base.propertynames(sys::ReactionSystem; private = false)
-    if private
-        return fieldnames(typeof(sys))
-    else
-        names = Symbol[]
-        for s in get_systems(sys)
-            push!(names, getname(s))
-        end
-        MT.has_states(sys) && for s in get_states(sys)
-            push!(names, getname(s))
-        end
-        MT.has_ps(sys) && for s in get_ps(sys)
-            push!(names, getname(s))
-        end
-        MT.has_observed(sys) && for s in get_observed(sys)
-            push!(names, getname(s.lhs))
-        end
-        (get_constraints(sys) !== nothing) &&
-            append!(names, propertynames(get_constraints(sys)))
-        return unique!(names)
-    end
-end
-
-function MT.getvar(sys::ReactionSystem, name::Symbol; namespace = false)
-    if isdefined(sys, name)
-        Base.depwarn("`sys.name` like `sys.$name` is deprecated. Use getters like `get_$name` instead.",
-                     "sys.$name")
-        return getfield(sys, name)
-    end
-
-    systems = get_systems(sys)
-    i = findfirst(x -> nameof(x) == name, systems)
-    i === nothing ||
-        return namespace ? rename(systems[i], renamespace(sys, name)) : systems[i]
-
-    avs = get_var_to_name(sys)
-    v = get(avs, name, nothing)
-    v === nothing || return namespace ? renamespace(sys, v) : v
-
-    sts = get_states(sys)
-    i = findfirst(x -> getname(x) == name, sts)
-    i === nothing || return namespace ? renamespace(sys, sts[i]) : sts[i]
-
-    ps = get_ps(sys)
-    i = findfirst(x -> getname(x) == name, ps)
-    i === nothing || return namespace ? renamespace(sys, ps[i]) : ps[i]
-
-    obs = get_observed(sys)
-    i = findfirst(x -> getname(x.lhs) == name, obs)
-    i === nothing || return namespace ? renamespace(sys, obs[i]) : obs[i]
-
-    constraints = get_constraints(sys)
-    if constraints !== nothing
-        return getvar(rename(constraints, nameof(sys)), name; namespace = namespace)
-    end
-
-    throw(ArgumentError("System $(nameof(sys)): variable $name does not exist"))
-end
-
-# get the non-bc, independent state variables, preserving their relative order in
-# get_states(rs). ASSUMES system has been validated to have no constant species as states.
+# get the non-bc, independent state variables and independent species, preserving their
+# relative order in get_states(rs). ASSUMES system has been validated to have no constant
+# species as states and is flattened.
 function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
     sts = get_states(rs)
     nps = get_networkproperties(rs)
@@ -846,7 +794,7 @@ function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
     else
         filter(s -> !isbc(s), sts)
     end
-    indepsts
+    indepsts, filter(isspecies, indepsts)
 end
 
 ######################## Conversion to ODEs/SDEs/jump, etc ##############################
@@ -893,10 +841,10 @@ function oderatelaw(rx; combinatoric_ratelaw = true)
     rl
 end
 
-function assemble_oderhs(rs, sts; combinatoric_ratelaws = true, remove_conserved = false)
+function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserved = false)
     nps = get_networkproperties(rs)
-    species_to_idx = Dict(x => i for (i, x) in enumerate(sts))
-    rhsvec = Any[0 for _ in sts]
+    species_to_idx = Dict(x => i for (i, x) in enumerate(ispcs))
+    rhsvec = Any[0 for _ in ispcs]
     depspec_submap = if remove_conserved
         Dict(eq.lhs => eq.rhs for eq in nps.conservedeqs)
     else
@@ -936,26 +884,29 @@ function assemble_oderhs(rs, sts; combinatoric_ratelaws = true, remove_conserved
     rhsvec
 end
 
-function assemble_drift(rs, sts; combinatoric_ratelaws = true, as_odes = true,
+function assemble_drift(rs, ispcs; combinatoric_ratelaws = true, as_odes = true,
                         include_zero_odes = true, remove_conserved = false)
-    rhsvec = assemble_oderhs(rs, sts; combinatoric_ratelaws, remove_conserved)
+    rhsvec = assemble_oderhs(rs, ispcs; combinatoric_ratelaws, remove_conserved)
     if as_odes
         D = Differential(get_iv(rs))
         eqs = [Equation(D(x), rhs)
-               for (x, rhs) in zip(sts, rhsvec) if (include_zero_odes || (!_iszero(rhs)))]
+               for (x, rhs) in zip(ispcs, rhsvec) if (include_zero_odes || (!_iszero(rhs)))]
     else
         eqs = [Equation(0, rhs) for rhs in rhsvec if (include_zero_odes || (!_iszero(rhs)))]
     end
     eqs
 end
 
-function assemble_diffusion(rs, sts, noise_scaling; combinatoric_ratelaws = true,
+# this doesn't work with constraint equations currently
+function assemble_diffusion(rs, sts, ispcs, noise_scaling; combinatoric_ratelaws = true,
                             remove_conserved = false)
     # as BC species should ultimately get an equation, we include them in the noise matrix
     num_bcsts = count(isbc, get_states(rs))
-    eqs = Matrix{Any}(undef, length(sts) + num_bcsts, length(get_eqs(rs)))
+
+    # we make a matrix sized by the number of reactions
+    eqs = Matrix{Any}(undef, length(sts) + num_bcsts, length(get_rxs(rs)))
     eqs .= 0
-    species_to_idx = Dict((x => i for (i, x) in enumerate(sts)))
+    species_to_idx = Dict((x => i for (i, x) in enumerate(ispcs)))
     nps = get_networkproperties(rs)
     depspec_submap = if remove_conserved
         Dict(eq.lhs => eq.rhs for eq in nps.conservedeqs)
@@ -963,7 +914,7 @@ function assemble_diffusion(rs, sts, noise_scaling; combinatoric_ratelaws = true
         Dict()
     end
 
-    for (j, rx) in enumerate(get_eqs(rs))
+    for (j, rx) in enumerate(get_rxs(rs))
         rlsqrt = sqrt(abs(oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)))
         (noise_scaling !== nothing) && (rlsqrt *= noise_scaling[j])
         remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
@@ -1160,13 +1111,14 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
     ceqs = ConstantRateJump[]
     veqs = VariableRateJump[]
     stateset = Set(get_states(rs))
+    all(isspecies, stateset) || error("Conversion to JumpSystem currently requires all states to be species.")
     rxvars = []
 
-    isempty(get_eqs(rs)) &&
+    isempty(get_rxs(rs)) &&
         error("Must give at least one reaction before constructing a JumpSystem.")
 
     # first we determine vrjs with an explicit time-dependent rate
-    rxs = get_eqs(rs)
+    rxs = get_rxs(rs)
     isvrjvec = falses(length(rxs))
     havevrjs = false
     for (i, rx) in enumerate(rxs)
@@ -1200,9 +1152,9 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
         isvrj = isvrjvec[i]
         if (!isvrj) && ismassaction(rx, rs; rxvars = rxvars, haveivdep = false,
                         stateset = stateset)
-            push!(meqs, makemajump(rx, combinatoric_ratelaw = combinatoric_ratelaws))
+            push!(meqs, makemajump(rx; combinatoric_ratelaw = combinatoric_ratelaws))
         else
-            rl = jumpratelaw(rx, combinatoric_ratelaw = combinatoric_ratelaws)
+            rl = jumpratelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)
             affect = Vector{Equation}()
             for (spec, stoich) in rx.netstoich
                 # don't change species that are constant or BCs
@@ -1218,32 +1170,9 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
     vcat(meqs, ceqs, veqs)
 end
 
-# convert subsystems to the system type T
-# function make_systems_with_type!(systems::Vector{T}, rs::ReactionSystem, include_zero_odes=true) where {T <: MT.AbstractSystem}
-#     resize!(systems, length(get_systems(rs)))
-#     for (i,sys) in enumerate(get_systems(rs))
-#         if sys isa ReactionSystem
-#             systems[i] = convert(T, sys, include_zero_odes=include_zero_odes)
-#         elseif sys isa T
-#             systems[i] = sys
-#         else
-#             try
-#                 if (T <: MT.AbstractTimeDependentSystem) && (sys isa MT.AbstractTimeIndependentSystem)
-#                     systems[i] = MT.convert_system(T, sys, get_iv(rs))
-#                 else
-#                     systems[i] = MT.convert_system(T, sys)
-#                 end
-#             catch e
-#                 error("ModelingToolkit does not currently support convert_system($T, $(typeof(sys)))")
-#             end
-#         end
-#     end
-#     systems
-# end
-
 # merge constraint components with the ReactionSystem components
 # also handles removing BC and constant species
-function addconstraints!(eqs, rs::ReactionSystem, ists; remove_conserved = false)
+function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved = false)
     # if there are BC species, put them after the independent species
     rssts = get_states(rs)
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
@@ -1268,58 +1197,35 @@ function addconstraints!(eqs, rs::ReactionSystem, ists; remove_conserved = false
         obs = MT.observed(rs)
     end
 
-    csys = get_constraints(rs)
-    if csys !== nothing
+    ceqs = Equation[eq for eq in eqs if eq isa Equation]
+    if !isempty(ceqs)
         if remove_conserved
             @info """
-                  Be careful mixing constraints and elimination of conservation laws. We do
-                  not check that the conserved equations still hold for the final coupled
-                  system of equations. Consider using remove_conserved=false and instead
-                  calling ModelingToolkit.structural_simplify to simplify any generated
-                  ODESystem or NonlinearSystem.
+                  Be careful mixing constraints and elimination of conservation laws.
+                  Catalyst does not check that the conserved equations still hold for the
+                  final coupled system of equations. Consider using `remove_conserved =
+                  false` and instead calling ModelingToolkit.structural_simplify to simplify
+                  any generated ODESystem or NonlinearSystem.
                   """
         end
-
-        # merge in states of csys
-        csts = get_states(csys)
-        if any(isconstant, csts)
-            const_csts = filter(isconstant, csts)
-            error("""Found a constant species among the states of the constraint system.
-                    This is not allowed. Please make the following species parameters with
-                    the isconstantspecies metadata set: $const_csts.""")
-        end
-        sts = unique!(vcat(sts, csts))
-
-        # merge constant species that are only in the constraints into parameters
-        if !all(MT.isparameter, get_ps(csys))
-            nonps = filter(!MT.isparameter, get_ps(csys))
-            error("""Found constraint system parameters that were not created as
-                     ModelingToolkit parameters: $nonps.""")
-        end
-        ps = unique!(vcat(ps, get_ps(csys)))
-
-        ceqs = get_eqs(csys)
-        (!isempty(ceqs)) && append!(eqs, ceqs)
-        defs = merge(defs, MT.defaults(csys))
-        obs = vcat(obs, MT.observed(csys))
+        append!(eqs, ceqs)
     end
 
     eqs, sts, ps, obs, defs
 end
 
-# used by systems that don't support constraint equations currently
+# used by flattened systems that don't support constraint equations currently
 function error_if_constraints(::Type{T}, sys::ReactionSystem) where {T <: MT.AbstractSystem}
-    (get_constraints(sys) === nothing) ||
-        error("Can not convert to a system of type ", T, " when there are constraints.")
+    any(eq -> eq isa Equation, get_eqs(sys)) &&
+        error("Can not convert to a system of type ", T, " when there are constraint equations.")
+    nothing
 end
 
+# used by flattened systems that don't support differential equation constraint eqs
 function error_if_constraint_odes(::Type{T},
                                   rs::ReactionSystem) where {T <: MT.AbstractSystem}
-    csys = get_constraints(rs)
-    if csys !== nothing
-        any(eq -> MT.isdiffeq(eq), equations(csys)) &&
-            error("Cannot convert to system type $T when there are ODE constraint equations.")
-    end
+    any(eq -> MT.isdiffeq(eq), get_eqs(rs)) &&
+        error("Cannot convert to system type $T when there are ODE constraint equations.")
     nothing
 end
 
@@ -1350,14 +1256,19 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
     spatial_convert_err(rs::ReactionSystem, ODESystem)
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
-    ists = get_indep_sts(fullrs, remove_conserved)
-    eqs = assemble_drift(fullrs, ists; combinatoric_ratelaws, remove_conserved,
+    ists, ispcs = get_indep_sts(fullrs, remove_conserved)
+    eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
                          include_zero_odes)
-    eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists; remove_conserved)
-    csys = get_constraints(fullrs)
-    continuous_events = (csys === nothing) ? nothing : MT.get_continuous_events(csys)
-    ODESystem(eqs, get_iv(fullrs), sts, ps; name, defaults = defs, observed = obs,
-              checks, continuous_events, kwargs...)
+    eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
+
+    ODESystem(eqs, get_iv(fullrs), sts, ps;
+              observed = obs,
+              name,
+              defaults = defs,
+              checks,
+              continuous_events = MT.get_continuous_events(fullrs),
+              discrete_events = MT.get_discrete_events(fullrs),
+              kwargs...)
 end
 
 """
@@ -1384,13 +1295,17 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
-    ists = get_indep_sts(fullrs, remove_conserved)
-    eqs = assemble_drift(fullrs, ists; combinatoric_ratelaws, remove_conserved,
-                         as_odes = false,
-                         include_zero_odes)
+    ists, ispcs = get_indep_sts(fullrs, remove_conserved)
+    eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
+                         as_odes = false, include_zero_odes)
     error_if_constraint_odes(NonlinearSystem, fullrs)
-    eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists; remove_conserved)
-    NonlinearSystem(eqs, sts, ps; name, defaults = defs, observed = obs, checks, kwargs...)
+    eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
+    NonlinearSystem(eqs, sts, ps;
+                    name,
+                    observed = obs,
+                    defaults = defs,
+                    checks,
+                    kwargs...)
 end
 
 """
@@ -1417,6 +1332,8 @@ Notes:
 - `remove_conserved=false`, if set to `true` will calculate conservation laws of the
   underlying set of reactions (ignoring constraint equations), and then apply them to reduce
   the number of equations.
+- Does not currently support `ReactionSystem`s that include coupled algebraic or
+  differential equations.
 """
 function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       noise_scaling = nothing, name = nameof(rs),
@@ -1440,20 +1357,26 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     end
 
     remove_conserved && conservationlaws(flatrs)
-    ists = get_indep_sts(flatrs, remove_conserved)
-    eqs = assemble_drift(flatrs, ists; combinatoric_ratelaws, include_zero_odes,
+    ists,ispcs = get_indep_sts(flatrs, remove_conserved)
+    eqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws, include_zero_odes,
                          remove_conserved)
-    noiseeqs = assemble_diffusion(flatrs, ists, noise_scaling; combinatoric_ratelaws,
+    noiseeqs = assemble_diffusion(flatrs, ists, ispcs, noise_scaling; combinatoric_ratelaws,
                                   remove_conserved)
-    eqs, sts, ps, obs, defs = addconstraints!(eqs, flatrs, ists; remove_conserved)
+    eqs, sts, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
     ps = (noise_scaling === nothing) ? ps : vcat(ps, toparam(noise_scaling))
 
     if any(isbc, get_states(flatrs))
-        @info "Boundary condition species detected. As constraints are not supported when converting to SDESystems, the resulting system will be undetermined. Consider using constant species instead."
+        @info "Boundary condition species detected. As constraint equations are not currently supported when converting to SDESystems, the resulting system will be undetermined. Consider using constant species instead."
     end
 
-    SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps; name, defaults = defs,
-              observed = obs, checks, kwargs...)
+    SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps;
+              observed = obs,
+              name,
+              defaults = defs,
+              checks,
+              continuous_events = MT.get_continuous_events(flatrs),
+              discrete_events = MT.get_discrete_events(flatrs),
+              kwargs...)
 end
 
 """
@@ -1469,24 +1392,39 @@ Notes:
   the ratelaw is `k*S*(S-1)`, i.e. the rate law is not normalized by the scaling factor.
   Defaults to the value given when the `ReactionSystem` was constructed (which itself
   defaults to true).
+- Does not currently support `ReactionSystem`s that include coupled algebraic or
+  differential equations.
+- Does not currently support continuous events as these are not supported by
+  `ModelingToolkit.JumpSystems`.
 """
 function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                      checks = false, kwargs...)
+                      remove_conserved = nothing, checks = false, kwargs...)
     spatial_convert_err(rs::ReactionSystem, JumpSystem)
+
+    (remove_conserved !== nothing) &&
+        error("Catalyst does not support removing conserved species when converting to JumpSystems.")
 
     flatrs = Catalyst.flatten(rs)
     error_if_constraints(JumpSystem, flatrs)
 
+    (length(MT.continuous_events(flatrs)) > 0) &&
+        (@warn "continuous_events will be dropped as they are not currently supported by JumpSystems.")
+
     eqs = assemble_jumps(flatrs; combinatoric_ratelaws)
 
     # handle BC species
-    sts = get_indep_sts(flatrs)
-    any(isbc, get_states(flatrs)) && (sts = vcat(sts, filter(isbc, get_states(flatrs))))
+    ists,ispcs = get_indep_sts(flatrs)
+    any(isbc, get_states(flatrs)) && (sts = vcat(ists, filter(isbc, get_states(flatrs))))
     ps = get_ps(flatrs)
 
-    JumpSystem(eqs, get_iv(flatrs), sts, ps; name, defaults = MT.defaults(flatrs),
-               observed = MT.observed(flatrs), checks, kwargs...)
+    JumpSystem(eqs, get_iv(flatrs), sts, ps;
+               observed = MT.observed(flatrs),
+               name,
+               defaults = MT.defaults(flatrs),
+               checks,
+               discrete_events = MT.discrete_events(flatrs),
+               kwargs...)
 end
 
 ### Converts a reaction system to ODE or SDE problems ###
@@ -1573,7 +1511,7 @@ end
 
 ####################### dependency graph utilities ########################
 
-# determine which species a reaction depends on
+# determine which states a reaction depends on
 function ModelingToolkit.get_variables!(deps::Set, rx::Reaction, variables)
     (rx.rate isa Symbolic) && get_variables!(deps, rx.rate, variables)
     for s in rx.substrates
@@ -1599,22 +1537,6 @@ function ModelingToolkit.modified_states!(mstates, rx::Reaction, sts::AbstractVe
 end
 
 ########################## Compositional Tooling ###########################
-function getsubsyseqs!(eqs::Vector{Equation}, sys)
-    if sys isa ReactionSystem
-        push!(eqs, get_eqs(get_constraints(sys)))
-    else
-        push!(eqs, get_eqs(sys))
-    end
-
-    for subsys in get_systems(sys)
-        getsubsyseqs!(eqs, subsys)
-    end
-    eqs
-end
-function getsubsyseqs(sys)
-    getsubsyseqs!(Vector{Equation}(), sys)
-end
-
 function getsubsystypes!(typeset::Set{Type}, sys::T) where {T <: MT.AbstractSystem}
     push!(typeset, T)
     csys = (sys isa ReactionSystem) ? get_constraints(sys) : nothing
@@ -1638,11 +1560,8 @@ Merges all subsystems of the given [`ReactionSystem`](@ref) up into `rs`.
 Notes:
 - Returns a new `ReactionSystem` that represents the flattened system.
 - All `Reaction`s within subsystems are namespaced and merged into the list of `Reactions`
-  of `rs`. The merged list is then available as `reactions(rs)` or `get_eqs(rs)`.
-- All algebraic equations are merged into a `NonlinearSystem` or `ODESystem` stored as
-  `get_constraints(rs)`. If `get_constraints !== nothing` then the algebraic equations are
-  merged with the current constraints in a system of the same type as the current
-  constraints, otherwise the new constraint system is an `ODESystem`.
+  of `rs`. The merged list is then available as `reactions(rs)`.
+- All algebraic and differential equations are merged the equations of `rs`, `get_eqs(rs)`.
 - Currently only `ReactionSystem`s, `NonlinearSystem`s and `ODESystem`s are supported as
   sub-systems when flattening.
 - `rs.networkproperties` is reset upon flattening.
@@ -1658,89 +1577,65 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
     all(T -> any(T .<: allowed_types), subsys_types) ||
         error("flattening is currently only supported for subsystems mixing ReactionSystems, NonlinearSystems and ODESystems.")
 
-    specs = species(rs)
-    sts = states(rs)
-    reactionps = reactionparams(rs)
-    ps = parameters(rs)
-    alleqs = equations(rs)
-    rxs = Reaction[rx for rx in alleqs if rx isa Reaction]
-    combinatoric_ratelaws = Catalyst.combinatoric_ratelaws(rs)
-
-    # constraints = states, parameters and equations that do not appear in Reactions
-    csts = setdiff(sts, specs)
-    cps = setdiff(ps, reactionps)
-    ceqs = Equation[eq for eq in alleqs if eq isa Equation]
-    if isempty(csts) && isempty(cps) && isempty(ceqs)
-        newcsys = nothing
-    else
-        if ODESystem in subsys_types
-            newcsys = ODESystem(ceqs, get_iv(rs), csts, cps; name = name)
-        else # must be a NonlinearSystem
-            any(T -> T <: NonlinearSystem, subsys_types) ||
-                error("Error, found constraint Equations but no ODESystem or NonlinearSystem associated with them.")
-            newcsys = NonlinearSystem(ceqs, csts, cps; name = name)
-        end
-    end
-
-    ReactionSystem(rxs, get_iv(rs), specs, reactionps; observed = MT.observed(rs),
-                   name, defaults = MT.defaults(rs), checks = false, constraints = newcsys,
-                   combinatoric_ratelaws, spatial_ivs = get_sivs(rs))
+    ReactionSystem(equations(rs), get_iv(rs), states(rs), parameters(rs);
+                   observed = MT.observed(rs),
+                   name,
+                   defaults = MT.defaults(rs),
+                   checks = false,
+                   combinatoric_ratelaws = combinatoric_ratelaws(rs),
+                   balanced_bc_check = false,
+                   spatial_ivs = get_sivs(rs),
+                   continuous_events = MT.continuous_events(rs),
+                   discrete_events = MT.discrete_events(rs))
 end
 
 """
-    ModelingToolkit.extend(sys::Union{NonlinearSystem,ODESystem}, rs::ReactionSystem; name::Symbol=nameof(sys))
+    ModelingToolkit.extend(sys::AbstractSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
 
-Extends the indicated [`ReactionSystem`](@ref) with a
-`ModelingToolkit.NonlinearSystem` or `ModelingToolkit.ODESystem`, which will be
-stored internally as constraint equations.
+Extends the indicated [`ReactionSystem`](@ref) with another `AbstractSystem`.
 
 Notes:
+- The `AbstractSystem` being added in must be an `ODESystem`, `NonlinearSystem`,
+  or `ReactionSystem` currently.
 - Returns a new `ReactionSystem` and does not modify `rs`.
 - By default, the new `ReactionSystem` will have the same name as `sys`.
 """
-function ModelingToolkit.extend(sys::Union{NonlinearSystem, ODESystem}, rs::ReactionSystem;
+function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
                                 name::Symbol = nameof(sys))
-    csys = (get_constraints(rs) === nothing) ? sys : extend(sys, get_constraints(rs))
-    combinatoric_ratelaws = get_combinatoric_ratelaws(rs)
-    ReactionSystem(get_eqs(rs), get_iv(rs), get_states(rs), get_ps(rs);
-                   observed = get_observed(rs), name, systems = get_systems(rs),
-                   defaults = get_defaults(rs), checks = false, constraints = csys,
-                   combinatoric_ratelaws, spatial_ivs = get_sivs(rs))
-end
 
-"""
-    ModelingToolkit.extend(sys::ReactionSystem, rs::ReactionSystem; name::Symbol=nameof(sys))
+    (typeof(sys) in (ReactionSystem, ODESystem, NonlinearSystem)) ||
+        error("ReactionSystems can only be extended with ReactionSystems, ODESystems and NonlinearSystems currently.")
 
-Extends the indicated [`ReactionSystem`](@ref) with another `ReactionSystem`.
-Similar to calling `merge!` except constraint systems are allowed (and will also
-be merged together).
-
-Notes:
-- Returns a new `ReactionSystem` and does not modify `rs`.
-- By default, the new `ReactionSystem` will have the same name as `sys`.
-"""
-function ModelingToolkit.extend(sys::ReactionSystem, rs::ReactionSystem;
-                                name::Symbol = nameof(sys))
+    # generic system properties
     eqs = union(get_eqs(rs), get_eqs(sys))
     sts = union(get_states(rs), get_states(sys))
     ps = union(get_ps(rs), get_ps(sys))
     obs = union(get_observed(rs), get_observed(sys))
-    defs = merge(get_defaults(rs), get_defaults(sys)) # prefer `sys`
     syss = union(get_systems(rs), get_systems(sys))
-    combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(sys) |
-                            Catalyst.get_combinatoric_ratelaws(rs)
+    defs = merge(get_defaults(rs), get_defaults(sys)) # prefer `sys`
+    continuous_events = union(MT.get_continuous_events(rs), MT.get_continuous_events(sys))
+    discrete_events = union(MT.get_discrete_events(rs), MT.get_discrete_events(sys))
 
-    csys = get_constraints(rs)
-    csys2 = get_constraints(sys)
-    if csys === nothing
-        newcsys = csys2
+    # ReactionSystem specific properties
+    if sys isa ReactionSystem
+        combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(sys) |
+                                Catalyst.get_combinatoric_ratelaws(rs)
+        sivs = union(get_sivs(sys), get_sivs(rs))
     else
-        newcsys = (csys2 === nothing) ? csys : extend(csys2, csys, name)
+        combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rs)
+        sysivs = independent_variables(sys)
+        sivs = (length(sysivs) > 0) ? union(get_sivs(rs), sysivs) : get_sivs(rs)
     end
 
-    sivs = union(get_sivs(sys), get_sivs(rs))
-
-    ReactionSystem(eqs, get_iv(rs), sts, ps; observed = obs, name = name,
-                   systems = syss, defaults = defs, checks = false, constraints = newcsys,
-                   combinatoric_ratelaws, spatial_ivs = sivs)
+    ReactionSystem(eqs, get_iv(rs), sts, ps;
+                   observed = obs,
+                   systems = syss,
+                   name,
+                   defaults = defs,
+                   checks = false,
+                   combinatoric_ratelaws,
+                   balanced_bc_check = false,
+                   spatial_ivs = sivs,
+                   continuous_events,
+                   discrete_events)
 end
