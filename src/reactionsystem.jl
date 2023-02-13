@@ -511,8 +511,8 @@ struct ReactionSystem{V <: NetworkProperties} <:
 
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, iv, sivs, states, spcs, ps, var_to_name, observed, name,
-                            systems, defaults, connection_type, nps, cls, orxs,
-                            cevs, devs, complete::Bool = false; checks::Bool = true)
+                            systems, defaults, connection_type, nps, cls, cevs, devs,
+                            complete::Bool = false; checks::Bool = true)
 
 
         nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
@@ -530,10 +530,9 @@ struct ReactionSystem{V <: NetworkProperties} <:
             MT.all_dimensionless([states; ps; iv]) || check_units(nonrx_eqs)
         end
 
-        rs = new{typeof(csys), typeof(nps)}(eqs, rxs, iv, sivs, states, spcs, ps,
-                                            var_to_name, observed, name, systems, defaults,
-                                            connection_type, nps, cls, orxs, cevs, devs,
-                                            complete)
+        rs = new{typeof(nps)}(eqs, rxs, iv, sivs, states, spcs, ps, var_to_name, observed,
+                              name, systems, defaults, connection_type, nps, cls, cevs,
+                              devs, complete)
         checks && validate(rs)
         rs
     end

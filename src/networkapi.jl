@@ -1,39 +1,3 @@
-# Functions for querying network properties.
-
-# DEPRECIATED after v9.0
-function params(network)
-    Base.depwarn("`params` is depreciated, please use `ModelingToolkit.parameters` for all system and subsystem parameters, or `reactionparams` for all parameters within system and subsystem `Reaction`s.",
-                 :params, force = true)
-    parameters(network)
-end
-
-function numparams(network)
-    Base.depwarn("`numparams` is depreciated, please use `length(ModelingToolkit.parameters)` for the total number of parameters across all systems and subsystems, or `numreactionparams` for the number of parameters within system and subsystem `Reaction`s.",
-                 :params, force = true)
-    length(parameters(network))
-end
-
-"""
-    merge(network1::ReactionSystem, network2::ReactionSystem)
-
-Create a new network merging `network1` and `network2`.
-
-Notes:
-- Duplicate reactions between the two networks are not filtered out.
-- [`Reaction`](@ref)s are not deepcopied to minimize allocations, so the new
-  network will share underlying data arrays.
-- Subsystems are not deepcopied between the two networks and will hence be
-  shared.
-- Returns the merged network.
-"""
-function Base.merge(network1::ReactionSystem, network2::ReactionSystem)
-    Base.depwarn("`merge(sys1::ReactionSystem, sys2::ReactionNetwork)` is depreciated, please use `ModelingToolkit.extend` instead.",
-                 :merge, force = true)
-    network = make_empty_network()
-    merge!(network, network1)
-    merge!(network, network2)
-    network
-end
 
 ######### Accessors: #########
 

@@ -1,6 +1,11 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+- Deprecated functions `params`, `numparams` and `merge` are deprecated and removed.
+- `merge!`, `addparams!`, `addspecies!` are deprecated and will be removed in a
+  future Catalyst release. Please use `ModelingToolkit.extend` and/or
+  `ModelingToolkit.compose` instead.
+- `reactionparams` is deprecated and will be removed in a future release.
 - An `@species` macro was added. Currently, it is simply a thematic version of
   (and equivalent to) ModelingToolkit's `@variables`.
 
