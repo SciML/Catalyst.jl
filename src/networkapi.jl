@@ -1271,7 +1271,6 @@ function isequal_ignore_names(rn1::ReactionSystem, rn2::ReactionSystem)
     issetequal(get_ps(rn1), get_ps(rn2)) || return false
     issetequal(MT.get_observed(rn1), MT.get_observed(rn2)) || return false
     issetequal(get_eqs(rn1), get_eqs(rn2)) || return false
-    (get_constraints(rn1) == get_constraints(rn2)) || return false
 
     # subsystems
     (length(get_systems(rn1)) == length(get_systems(rn2))) || return false
@@ -1333,9 +1332,10 @@ function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks = false
     curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), get_states(network))
     if curidx === nothing
         push!(get_states(network), s)
+        sort!(get_states(network); by = !isspecies)
         push!(get_species(network), s)
         MT.process_variables!(get_var_to_name(network), get_defaults(network), [s])
-        return length(get_states(network))
+        return length(get_species(network))
     else
         return curidx
     end
@@ -1363,14 +1363,17 @@ end
 Given a [`ReactionSystem`](@ref) and a vector `neworder`, orders the states of `rn` accordingly to `neworder`.
 
 Notes:
-- Currently only supports `ReactionSystem`s without constraints or subsystems.
+- Currently only supports `ReactionSystem`s without subsystems.
 """
 function reorder_states!(rn, neworder)
-    (get_constraints(rn) === nothing) && isempty(get_systems(rn)) ||
-        error("Reordering of states is only supported for systems without constraints or subsystems.")
-    permute!(get_states(rn), neworder)
-    get_species(rn) .= Iterators.filter(isspecies, get_states(rn))
     reset_networkproperties!(rn)
+
+    permute!(get_states(rn), neworder)
+    if !issorted(get_states(rn); by = !isspecies)
+        @warn "New ordering has resulted in a non-species state preceding a species state. This is not allowed so states have been resorted to ensure species precede non-species."
+        sort!(get_states(rn); by = !isspecies)
+    end
+    get_species(rn) .= Iterators.filter(isspecies, get_states(rn))
     nothing
 end
 
@@ -1432,7 +1435,9 @@ Notes:
 function addreaction!(network::ReactionSystem, rx::Reaction)
     reset_networkproperties!(network)
     push!(get_eqs(network), rx)
-    length(get_eqs(network))
+    sort(get_eqs(network); by = eqsortby)
+    push!(get_rxs(network), rx)
+    length(get_rxs(network))
 end
 
 """
@@ -1450,18 +1455,29 @@ Notes:
 - `combinatoric_ratelaws` is the value of `network1`.
 """
 function Base.merge!(network1::ReactionSystem, network2::ReactionSystem)
-    ((get_constraints(network1) === nothing) && (get_constraints(network2) === nothing)) ||
-        error("merge! does not currently support ReactionSystems with constraints, consider ModelingToolkit.extend instead.")
     isequal(get_iv(network1), get_iv(network2)) ||
         error("Reaction networks must have the same independent variable to be mergable.")
     union!(get_sivs(network1), get_sivs(network2))
-    append!(get_eqs(network1), get_eqs(network2))
+
+    union!(get_eqs(network1), get_eqs(network2))
+    sort!(get_eqs(network1), by = eqsortby)
+    union!(get_rxs(network1), get_rxs(network2))
+    (count(eq -> eq isa Reaction, get_eqs(network1)) == length(get_rxs(network1))) ||
+        error("Unequal number of reactions from get_rxs(sys) and get_eqs(sys) after merging.")
+
     union!(get_states(network1), get_states(network2))
+    sort!(get_states(network1), by = !isspecies)
     union!(get_species(network1), get_species(network2))
+    (count(isspecies, get_states(network1)) == length(get_species(network1))) ||
+        error("Unequal number of species from get_species(sys) and get_states(sys) after merging.")
+
     union!(get_ps(network1), get_ps(network2))
-    append!(get_observed(network1), get_observed(network2))
-    append!(get_systems(network1), get_systems(network2))
+    union!(get_observed(network1), get_observed(network2))
+    union!(get_systems(network1), get_systems(network2))
     merge!(get_defaults(network1), get_defaults(network2))
+    union!(MT.get_continuous_events(network1), MT.get_continuous_events(network2))
+    union!(MT.get_discrete_events(network1), MT.get_discrete_events(network2))
+
     reset_networkproperties!(network1)
     network1
 end
@@ -1513,10 +1529,10 @@ that the rate laws of all reactions reduce to units of (species units) / (time
 units).
 
 Notes:
-- Does not check subsystems too.
+- Does not check subsystems, constraint equations, or non-species variables.
 """
 function validate(rs::ReactionSystem, info::String = "")
-    specs = get_states(rs)
+    specs = get_species(rs)
 
     # if there are no species we don't check units on the system
     isempty(specs) && return true
@@ -1537,7 +1553,7 @@ function validate(rs::ReactionSystem, info::String = "")
         MT.all_dimensionless(get_ps(rs)) && return true
 
     rateunits = specunits / timeunits
-    for rx in get_eqs(rs)
+    for rx in get_rxs(rs)
         rxunits = get_unit(rx.rate)
         for (i, sub) in enumerate(rx.substrates)
             rxunits *= get_unit(sub)^rx.substoich[i]

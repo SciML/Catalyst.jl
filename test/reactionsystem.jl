@@ -422,13 +422,14 @@ let
     @parameters k1 k2 A [isconstantspecies = true]
     @variables t
     @species B(t) C(t) [isbcspecies = true] D(t) E(t)
-    rxs = [(@reaction k1, $A --> B),
+    Dt = Differential(t)
+    eqs = [(@reaction k1, $A --> B),
         (@reaction k2, B --> $A),
         (@reaction k1, $C + D --> E + $C),
+        Dt(C) ~ -C,
         (@reaction k2, E + $C --> $C + D)]
-    Dt = Differential(t)
-    csys = ODESystem(Equation[Dt(C) ~ -C], t; name = :rs)
-    @named rs = ReactionSystem(rxs, t; constraints = csys)
+    @named rs = ReactionSystem(eqs, t)
+    @test all(eq -> eq isa Reaction, ModelingToolkit.get_eqs(rs)[1:4])
     osys = convert(ODESystem, rs)
     @test issetequal(MT.get_states(osys), [B, C, D, E])
     @test issetequal(MT.get_ps(osys), [k1, k2, A])
@@ -454,6 +455,10 @@ let
     end
 
     # test sde systems
+    rxs = [(@reaction k1, $A --> B),
+           (@reaction k2, B --> $A),
+           (@reaction k1, $C + D --> E + $C),
+           (@reaction k2, E + $C --> $C + D)]
     @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
     ssys = convert(SDESystem, rs)
     @test issetequal(MT.get_states(ssys), [B, C, D, E])
@@ -532,8 +537,8 @@ let
     rx = Reaction(k2, [S1], nothing)
     ∂ₜ = Differential(t)
     eq = ∂ₜ(S3) ~ k1 * S2
-    @named csys = ODESystem([eq], t)
-    @named rs = ReactionSystem([rx], t, [S1], [k2]; constraints = csys)
+    @named osys = ODESystem([eq], t)
+    @named rs = ReactionSystem([rx, eq], t)
     @test issetequal(states(rs), [S1, S3])
     @test issetequal(parameters(rs), [S2, k1, k2])
     osys = convert(ODESystem, rs)
@@ -542,13 +547,12 @@ let
 end
 let
     @parameters k1 k2 S2 [isconstantspecies = true]
-    @variables t
-    @species S1(t) S3(t)
+    @variables t S3(t)
+    @species S1(t)
     rx = Reaction(k2, [S1], nothing)
     ∂ₜ = Differential(t)
     eq = S3 ~ k1 * S2
-    @named csys = ODESystem([eq], t)
-    @named rs = ReactionSystem([rx], t, [S1], [k2]; constraints = csys)
+    @named rs = ReactionSystem([rx, eq], t)
     @test issetequal(states(rs), [S1, S3])
     @test issetequal(parameters(rs), [S2, k1, k2])
     osys = convert(ODESystem, rs)

@@ -416,7 +416,7 @@ end
 
 ############################### Reaction Systems ####################################
 
-const CatalystEqType = Union{Reaction, Union}
+const CatalystEqType = Union{Reaction, Equation}
 
 """
 $(TYPEDEF)
@@ -618,8 +618,10 @@ function ReactionSystem(eqs, iv, states, ps;
     # if there are BC species, check they are balanced in their reactions
     if balanced_bc_check && any(isbc, states′)
         for rx in eqs
-            isbcbalanced(rx) ||
-                throw(ErrorException("BC species must be balanced, appearing as a substrate and product with the same stoichiometry. Please fix reaction: $rx"))
+            if rx isa Reaction
+                isbcbalanced(rx) ||
+                    throw(ErrorException("BC species must be balanced, appearing as a substrate and product with the same stoichiometry. Please fix reaction: $rx"))
+            end
         end
     end
 
@@ -648,7 +650,7 @@ function ReactionSystem(eqs, iv, states, ps;
 end
 
 # Previous function called by the macro, but still avaiable for general use.
-function ReactionSystem(rxs::Vector{<:Reaction}, iv; kwargs...)
+function ReactionSystem(rxs::Vector, iv; kwargs...)
     make_ReactionSystem_internal(rxs, iv, Vector{Num}(), Vector{Num}(); kwargs...)
 end
 
@@ -670,7 +672,7 @@ end
 # Only used internally by the @reaction_network macro. Permits giving an initial order to
 # the parameters, and then adds additional ones found in the reaction. Name could be
 # changed.
-function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, sts_in, ps_in;
+function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, sts_in, ps_in;
                                       spatial_ivs = nothing, kwargs...)
     t = value(iv)
     ivs = Set([t])
@@ -682,6 +684,10 @@ function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, sts_in, ps_in
     sts = OrderedSet{eltype(sts_in)}(sts_in)
     ps = OrderedSet{eltype(ps_in)}(ps_in)
     vars = OrderedSet()
+
+    all(eq -> eq isa Union{Reaction, Equation}, rxs_and_eqs)
+    rxs = Reaction[eq for eq in rxs_and_eqs if eq isa Reaction]
+    eqs = Equation[eq for eq in rxs_and_eqs if eq isa Equation]
 
     # add species / parameters that are substrates / products first
     for rx in rxs, reactants in (rx.substrates, rx.products)
@@ -699,7 +705,20 @@ function make_ReactionSystem_internal(rxs::Vector{<:Reaction}, iv, sts_in, ps_in
             (p isa Symbolics.Symbolic) && findvars!(ps, sts, p, ivs, vars)
         end
     end
-    ReactionSystem(rxs, t, collect(sts), collect(ps); spatial_ivs, kwargs...)
+
+    stsv = collect(sts)
+    psv = collect(ps)
+
+    if !isempty(eqs)
+        osys = ODESystem(eqs, iv; name = gensym())
+        fulleqs = CatalystEqType[rxs; equations(osys)]
+        append!(stsv, states(osys))
+        append!(psv, parameters(osys))
+    else
+        fulleqs = rxs
+    end
+
+    ReactionSystem(fulleqs, t, stsv, psv; spatial_ivs, kwargs...)
 end
 
 function ReactionSystem(iv; kwargs...)
@@ -850,7 +869,7 @@ function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserv
         Dict()
     end
 
-    for rx in get_eqs(rs)
+    for rx in get_rxs(rs)
         rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)
         remove_conserved && (rl = substitute(rl, depspec_submap))
         for (spec, stoich) in rx.netstoich
@@ -1196,7 +1215,7 @@ function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved 
         obs = MT.observed(rs)
     end
 
-    ceqs = Equation[eq for eq in eqs if eq isa Equation]
+    ceqs = Equation[eq for eq in get_eqs(rs) if eq isa Equation]
     if !isempty(ceqs)
         if remove_conserved
             @info """
@@ -1223,7 +1242,7 @@ end
 # used by flattened systems that don't support differential equation constraint eqs
 function error_if_constraint_odes(::Type{T},
                                   rs::ReactionSystem) where {T <: MT.AbstractSystem}
-    any(eq -> MT.isdiffeq(eq), get_eqs(rs)) &&
+    any(eq -> (eq isa Equation) && MT.isdiffeq(eq), get_eqs(rs)) &&
         error("Cannot convert to system type $T when there are ODE constraint equations.")
     nothing
 end
@@ -1413,8 +1432,8 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     eqs = assemble_jumps(flatrs; combinatoric_ratelaws)
 
     # handle BC species
-    ists,ispcs = get_indep_sts(flatrs)
-    any(isbc, get_states(flatrs)) && (sts = vcat(ists, filter(isbc, get_states(flatrs))))
+    sts,ispcs = get_indep_sts(flatrs)
+    any(isbc, get_states(flatrs)) && (sts = vcat(sts, filter(isbc, get_states(flatrs))))
     ps = get_ps(flatrs)
 
     JumpSystem(eqs, get_iv(flatrs), sts, ps;
@@ -1560,7 +1579,7 @@ Notes:
 - Returns a new `ReactionSystem` that represents the flattened system.
 - All `Reaction`s within subsystems are namespaced and merged into the list of `Reactions`
   of `rs`. The merged list is then available as `reactions(rs)`.
-- All algebraic and differential equations are merged the equations of `rs`, `get_eqs(rs)`.
+- All algebraic and differential equations are merged in the equations of `rs`.
 - Currently only `ReactionSystem`s, `NonlinearSystem`s and `ODESystem`s are supported as
   sub-systems when flattening.
 - `rs.networkproperties` is reset upon flattening.
