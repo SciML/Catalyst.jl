@@ -296,7 +296,7 @@ conservationlaws(rn)
 conservedequations(rn)
 show(stdout, MIME"text/plain"(), ans) # hide
 ```
-Here the parameters `_ConLaw[i]` represent the constants of the three
+Here the parameters `Κ[i]` represent the constants of the three
 conservation laws, and we see that there are three dependent species that could
 be eliminated. As
 ```@example s1

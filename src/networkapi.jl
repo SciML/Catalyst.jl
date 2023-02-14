@@ -1091,8 +1091,8 @@ conservedequations(rn)
 gives
 ```
 2-element Vector{Equation}:
- B(t) ~ A(t) + _ConLaw[1]
- C(t) ~ _ConLaw[2] - A(t)
+ B(t) ~ A(t) + Κ[1]
+ C(t) ~ Κ[2] - A(t)
 ```
 """
 function conservedequations(rn::ReactionSystem)
@@ -1121,8 +1121,8 @@ conservationlaw_constants(rn)
 gives
 ```
 2-element Vector{Equation}:
- _ConLaw[1] ~ B(t) - A(t)
- _ConLaw[2] ~ A(t) + C(t)
+ Κ[1] ~ B(t) - A(t)
+ Κ[2] ~ A(t) + C(t)
 ```
 """
 function conservationlaw_constants(rn::ReactionSystem)
@@ -1163,7 +1163,7 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     indepspecs = sts[indepidxs]
     depidxs = col_order[(r + 1):end]
     depspecs = sts[depidxs]
-    constants = MT.unwrap.(MT.scalarize((@parameters _ConLaw[1:nullity])[1]))
+    constants = MT.unwrap.(MT.scalarize((@parameters Κ[1:nullity])[1]))
 
     conservedeqs = Equation[]
     constantdefs = Equation[]
@@ -1267,7 +1267,6 @@ function isequal_ignore_names(rn1::ReactionSystem, rn2::ReactionSystem)
     isequal(get_iv(rn1), get_iv(rn2)) || return false
     issetequal(get_sivs(rn1), get_sivs(rn2)) || return false
     issetequal(get_states(rn1), get_states(rn2)) || return false
-    issetequal(get_species(rn1), get_species(rn2)) || return false
     issetequal(get_ps(rn1), get_ps(rn2)) || return false
     issetequal(MT.get_observed(rn1), MT.get_observed(rn2)) || return false
     issetequal(get_eqs(rn1), get_eqs(rn2)) || return false

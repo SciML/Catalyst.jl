@@ -510,13 +510,14 @@ struct ReactionSystem{V <: NetworkProperties} <:
     complete::Bool
 
     # inner constructor is considered private and may change between non-breaking releases.
-    function ReactionSystem(eqs, iv, sivs, states, spcs, ps, var_to_name, observed, name,
+    function ReactionSystem(eqs, iv, sivs, states, ps, var_to_name, observed, name,
                             systems, defaults, connection_type, nps, cls, cevs, devs,
                             complete::Bool = false; checks::Bool = true)
 
 
         nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
         rxs = Reaction[rx for rx in eqs if rx isa Reaction]
+        spcs = filter(isspecies, states)
 
         # unit checks are for ODEs and Reactions only currently
         if checks && isempty(sivs)
@@ -600,8 +601,7 @@ function ReactionSystem(eqs, iv, states, ps;
     states′ = sort!(value.(MT.scalarize(states)), by = !isspecies) # species come first
     ps′ = value.(MT.scalarize(ps))
 
-    #TODO
-    #eqs′ = (eqs isa Vector) ? eqs : collect(eqs)
+    # sort Reactions before Equations
     eqs′ = CatalystEqType[eq for eq in eqs]
     sort!(eqs′; by = eqsortby)
 
@@ -625,11 +625,6 @@ function ReactionSystem(eqs, iv, states, ps;
         end
     end
 
-    # variables representing chemical species
-    spcs = filter(isspecies, states′)
-
-    rxs = Reaction[rx for rx in eqs′ if rx isa Reaction]
-
     var_to_name = Dict()
     MT.process_variables!(var_to_name, defaults, states′)
     MT.process_variables!(var_to_name, defaults, ps′)
@@ -644,12 +639,11 @@ function ReactionSystem(eqs, iv, states, ps;
     ccallbacks = MT.SymbolicContinuousCallbacks(continuous_events)
     dcallbacks = MT.SymbolicDiscreteCallbacks(discrete_events)
 
-    ReactionSystem(eqs′, iv′, sivs′, states′, spcs, ps′, var_to_name, observed, name,
+    ReactionSystem(eqs′, iv′, sivs′, states′, ps′, var_to_name, observed, name,
                    systems, defaults, connection_type, nps, combinatoric_ratelaws,
                    ccallbacks, dcallbacks; checks = checks)
 end
 
-# Previous function called by the macro, but still avaiable for general use.
 function ReactionSystem(rxs::Vector, iv; kwargs...)
     make_ReactionSystem_internal(rxs, iv, Vector{Num}(), Vector{Num}(); kwargs...)
 end

@@ -25,7 +25,7 @@ equations(osys)
 show(equations(osys)) # hide
 ```
 while algebraic observables have been added for the two removed species (in
-terms of the conservation law constants, `_ConLaw[1]` and `_ConLaw[2]`)
+terms of the conservation law constants, `Κ[1]` and `Κ[2]`)
 ```@example faq1
 observed(osys)
 show(observed(osys))  # hide

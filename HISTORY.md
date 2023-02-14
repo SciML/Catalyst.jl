@@ -170,7 +170,7 @@
   ```
   gives
   ```
-  Differential(t)(A(t)) ~ k2*(_ConLaw[2] - A(t)) - k*(A(t) + _ConLaw[1])*A(t)
+  Differential(t)(A(t)) ~ k2*(Κ[2] - A(t)) - k*(A(t) + Κ[1])*A(t)
   ```
   Initial conditions should still be specified for all the species in `rn`, and
   the conserved constants will then be calculated automatically. Eliminated
