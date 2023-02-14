@@ -2,13 +2,13 @@
 
 ## Catalyst unreleased (master branch)
 - Deprecated functions `params`, `numparams` and `merge` have been removed.
-- `merge!`, `addparams!`, and `addspecies!` are deprecated and will be removed
-  in a future Catalyst release. Please use `ModelingToolkit.extend` and/or
-  `ModelingToolkit.compose` instead.
-- `reactionparams` is deprecated and will be removed in a future release.
+- The old notation for the constants representing conserved quantities,
+  `_Conlaw`, has been replaced with uppercase unicode kappa, "Κ". This can be
+  entered in notebooks, the REPL, or many editors by typing the corresponding
+  Latex command, "\Kappa", and hitting tab. This leads to much cleaner equations
+  when Latexifying systems where conservation laws have been applied.
 - An `@species` macro was added. Currently, it is simply a thematic version of
   (and equivalent to) ModelingToolkit's `@variables`.
-
 - **BREAKING:** Parameters should no longer be listed at the end of the DSL
   macro, but are instead inferred from their position in the reaction statements
   or via explicit declarations in the DSL macro. By default, any symbol that appears
@@ -170,7 +170,7 @@
   ```
   gives
   ```
-  Differential(t)(A(t)) ~ k2*(Κ[2] - A(t)) - k*(A(t) + Κ[1])*A(t)
+  Differential(t)(A(t)) ~ k2*(_ConLaw[2] - A(t)) - k*(A(t) + _ConLaw[1])*A(t)
   ```
   Initial conditions should still be specified for all the species in `rn`, and
   the conserved constants will then be calculated automatically. Eliminated

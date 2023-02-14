@@ -111,7 +111,7 @@ const double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :�
 const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
 # Declares symbols which may neither be used as parameters not varriables.
-const forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅]
+const forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅, :Κ]
 
 # Declares the keys used for various options.
 const option_keys = [:species, :parameters]
@@ -353,6 +353,7 @@ function make_reaction(ex::Expr)
     species, parameters = extract_species_and_parameters!([reaction], [])
 
     # Checks for input errors.
+    @show parameters
     forbidden_symbol_check(union(species, parameters))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
