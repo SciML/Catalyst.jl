@@ -1,6 +1,8 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+- Symbolic species arrays are currently not supported due to
+  https://github.com/JuliaSymbolics/Symbolics.jl/issues/842.
 - Deprecated functions `params`, `numparams` and `merge` have been removed.
 - The old notation for the constants representing conserved quantities,
   `_Conlaw`, has been replaced with uppercase unicode gamma, "Γ". This can be

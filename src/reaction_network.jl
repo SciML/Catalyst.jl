@@ -129,13 +129,13 @@ macro species(ex...)
     idx = length(vars.args)
     resize!(vars.args, idx + length(lastarg.args) + 1)
     for sym in lastarg.args
-        vars.args[idx] = :($sym = setmetadata($sym, Catalyst.VariableSpecies, true))
+        vars.args[idx] = :($sym = ModelingToolkit.wrap(setmetadata(ModelingToolkit.value($sym), Catalyst.VariableSpecies, true)))
         idx += 1
     end
 
     # check nothing was declared isconstantspecies
     ex = quote
-        all(!Catalyst.isconstant, $lastarg) ||
+        all(!Catalyst.isconstant ∘ ModelingToolkit.value, $lastarg) ||
         throw(ArgumentError("isconstantspecies metadata can only be used with parameters."))
     end
     vars.args[idx] = ex
@@ -355,7 +355,6 @@ function make_reaction(ex::Expr)
     species, parameters = extract_species_and_parameters!([reaction], [])
 
     # Checks for input errors.
-    @show parameters
     forbidden_symbol_check(union(species, parameters))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.

@@ -602,8 +602,8 @@ function ReactionSystem(eqs, iv, states, ps;
     states′ = sort!(value.(MT.scalarize(states)), by = !isspecies) # species come first
     ps′ = value.(MT.scalarize(ps))
 
-    smap = Iterators.map(MT.operation, states′)
-    all(sym -> nameof(sym) ∉ forbidden_symbols, Iterators.flatten((ps′, smap))) ||
+    allsyms = Iterators.flatten((ps′, states′))
+    all(sym -> Symbolics.getname(sym) ∉ forbidden_symbols, allsyms) ||
         error("Catalyst reserves the symbols $forbidden_symbols for internal use. Please do not use these symbols as parameters or states/species.")
 
     # sort Reactions before Equations
