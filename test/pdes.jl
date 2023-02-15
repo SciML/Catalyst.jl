@@ -3,8 +3,8 @@ using ModelingToolkit, DomainSets
 const MT = ModelingToolkit
 
 @parameters k[1:7] D[1:3] n0[1:3] A
-@variables t
-@species x y U(x, y, t) V(x, y, t) W(x, y, t)
+@variables t x y
+@species U(x, y, t) V(x, y, t) W(x, y, t)
 rxs = [Reaction(k[1], [U, W], [V, W]),
     Reaction(k[2], [V], [W], [2], [1]),
     Reaction(k[3], [W], [V], [1], [2]),
@@ -16,7 +16,7 @@ pars = vcat(MT.scalarize(k), MT.scalarize(D), MT.scalarize(n0), [A])
 @named bpm = ReactionSystem(rxs, t, [U, V, W], pars; spatial_ivs = [x, y])
 
 @test isequal(MT.get_iv(bpm), t)
-@test issetequal(get_sivs(bpm), [x, y])
+@test issetequal(Catalyst.get_sivs(bpm), [x, y])
 @test isspatial(bpm)
 
 rxeqs = Catalyst.assemble_oderhs(bpm, states(bpm), combinatoric_ratelaws = false)

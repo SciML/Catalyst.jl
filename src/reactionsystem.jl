@@ -598,6 +598,7 @@ function ReactionSystem(eqs, iv, states, ps;
         value.(MT.scalarize(spatial_ivs))
     end
     states′ = sort!(value.(MT.scalarize(states)), by = !isspecies) # species come first
+    spcs = filter(isspecies, states′)
     ps′ = value.(MT.scalarize(ps))
 
     allsyms = Iterators.flatten((ps′, states′))
@@ -642,8 +643,6 @@ function ReactionSystem(eqs, iv, states, ps;
 
     ccallbacks = MT.SymbolicContinuousCallbacks(continuous_events)
     dcallbacks = MT.SymbolicDiscreteCallbacks(discrete_events)
-
-    spcs = filter(isspecies, states)
 
     ReactionSystem(eqs′, rxs, iv′, sivs′, states′, spcs, ps′, var_to_name, observed, name,
                    systems, defaults, connection_type, nps, combinatoric_ratelaws,
