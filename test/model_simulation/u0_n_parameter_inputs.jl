@@ -13,20 +13,19 @@ rng = StableRNG(12345)
 # Tests for reaction_networks_standard[7]
 test_network = reaction_networks_standard[7]
 @parameters t p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
-@variables X1(t) X2(t) X3(t) X4(t) X5(t) X6(t) X(t)
+@variables X1(t) X2(t) X3(t) X4(t) X5(t) X(t)
 
 for factor = [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
     u0_1 = factor*rand(rng,length(get_states(test_network)))
     u0_2 = [X1=>u0_1[1], X2=>u0_1[2], X3=>u0_1[3], X4=>u0_1[4], X5=>u0_1[5]]
     u0_3 = [X2=>u0_1[2], X5=>u0_1[5], X4=>u0_1[4], X3=>u0_1[3], X1=>u0_1[1]]
     p_1 = 0.01 .+ factor*rand(rng,length(get_ps(test_network)))
-    p_2 = [p1=>p_1[1], p2=>p_1[2], p3=>p_1[3], k1=>p_1[4], k2=>p_1[5], k3=>p_1[6],
-           v1=>p_1[7], K1=>p_1[8], d1=>p_1[9], d2=>p_1[10], d3=>p_1[11], d4=>p_1[12],
-           d5=>p_1[13]]
-    p_3 = [k2=>p_1[5], k3=>p_1[6], v1=>p_1[7], d5=>p_1[13], p2=>p_1[2], p1=>p_1[1],
-           d2=>p_1[10], K1=>p_1[8], d1=>p_1[9], d4=>p_1[12], d3=>p_1[11], p3=>p_1[3],
+    p_2 = [p1=>p_1[1], p2=>p_1[2], p3=>p_1[3], k1=>p_1[4], k2=>p_1[5], v1=>p_1[6],
+            K1=>p_1[7], k3=>p_1[8], d1=>p_1[9], d2=>p_1[10], d3=>p_1[11], d4=>p_1[12],
+            d5=>p_1[13]]
+    p_3 = [k2=>p_1[5], k3=>p_1[8], v1=>p_1[6], d5=>p_1[13], p2=>p_1[2], p1=>p_1[1],
+           d2=>p_1[10], K1=>p_1[7], d1=>p_1[9], d4=>p_1[12], d3=>p_1[11], p3=>p_1[3],
            k1=>p_1[4]]
-
     sols = []
     push!(sols,solve(ODEProblem(test_network,u0_1,(0.,10.),p_1),Rosenbrock23()))
     push!(sols,solve(ODEProblem(test_network,u0_1,(0.,10.),p_2),Rosenbrock23()))
