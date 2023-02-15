@@ -111,7 +111,8 @@ const double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :�
 const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
 # Declares symbols which may neither be used as parameters not varriables.
-const forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅]
+const forbidden_symbols_skip = [:t, :∅]
+const forbidden_symbols_error = [:π, :pi, :ℯ, :im, :nothing]
 
 # Declares the keys used for various options.
 const option_keys = [:species, :parameters]
@@ -260,9 +261,9 @@ end
 ### Functions rephrasing the macro input as a ReactionSystem structure. ###
 
 function forbidden_symbol_check(v)
-    !isempty(intersect(forbidden_symbols, v)) &&
+    !isempty(intersect(forbidden_symbols_error, v)) &&
         error("The following symbol(s) are used as species or parameters: " *
-              ((map(s -> "'" * string(s) * "', ", intersect(forbidden_symbols, v))...)) *
+              ((map(s -> "'" * string(s) * "', ", intersect(forbidden_symbols_error, v))...)) *
               "this is not permited.")
     nothing
 end
@@ -395,7 +396,7 @@ end
 # expression and find symbols (adding them to the push_symbols vector).
 function add_syms_from_expr!(push_symbols::AbstractSet, rateex::ExprValues, excluded_syms)
     if rateex isa Symbol
-        if !(rateex in forbidden_symbols) && !(rateex in excluded_syms)
+        if !(rateex in forbidden_symbols_skip) && !(rateex in excluded_syms)
             push!(push_symbols, rateex)
         end
     elseif rateex isa Expr
