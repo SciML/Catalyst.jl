@@ -112,7 +112,7 @@ connections = [sys₁.R ~ sys₃.P,
     sys₃.R ~ sys₂.P]
 @named csys = NonlinearSystem(connections, [sys₁.R, sys₃.P, sys₂.R, sys₁.P, sys₃.R, sys₂.P],
                               [])
-@named repressilator2 = ReactionSystem(t; constraints = csys, systems = [sys₁, sys₂, sys₃])
+@named repressilator2 = ReactionSystem(connections, t; systems = [sys₁, sys₂, sys₃])
 @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes = false)
 sys2 = structural_simplify(nlrepressilator)
 @test length(equations(sys2)) <= 6
@@ -330,9 +330,10 @@ rn = @reaction_network rn begin
     (k1, k2), A <--> B
 end
 @parameters a, b
-@variables t, A(t), C(t)
+@unpack A = rn
+@variables t, C(t)
 D = Differential(t)
-eqs = [D(A) ~ -a * A + C, D(C) ~ -b * C + a * A]
+eqs = [D(C) ~ -b * C + a * A]
 @named osys = ODESystem(eqs, t, [A, C], [a, b])
 rn2 = extend(osys, rn)
 rnodes = convert(ODESystem, rn2)
@@ -343,7 +344,7 @@ rnodes = convert(ODESystem, rn2)
 eqs = [D(G) ~ -G]
 @named osys2 = ODESystem(eqs, t)
 rn3 = compose(rn2, osys2)
-@test length(equations(rn3)) == 5
+@test length(equations(rn3)) == 4
 
 # check conversions work with algebraic constraints
 eqs = [0 ~ -a * A + C, 0 ~ -b * C + a * A]

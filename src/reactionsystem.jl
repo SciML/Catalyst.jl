@@ -511,24 +511,22 @@ struct ReactionSystem{V <: NetworkProperties} <:
     complete::Bool
 
     # inner constructor is considered private and may change between non-breaking releases.
-    function ReactionSystem(eqs, iv, sivs, states, ps, var_to_name, observed, name,
-                            systems, defaults, connection_type, nps, cls, cevs, devs,
+    function ReactionSystem(eqs, rxs, iv, sivs, states, spcs, ps, var_to_name, observed,
+                            name, systems, defaults, connection_type, nps, cls, cevs, devs,
                             complete::Bool = false; checks::Bool = true)
 
-
-        nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
-        rxs = Reaction[rx for rx in eqs if rx isa Reaction]
-        spcs = filter(isspecies, states)
-
         # unit checks are for ODEs and Reactions only currently
+        nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
         if checks && isempty(sivs)
             check_variables(states, iv)
             check_parameters(ps, iv)
+            nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
             !isempty(nonrx_eqs) && check_equations(nonrx_eqs, iv)
             check_equations(equations(cevs), iv)
         end
 
         if isempty(sivs) && (checks == true || (checks & MT.CheckUnits) > 0)
+            nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
             MT.all_dimensionless([states; ps; iv]) || check_units(nonrx_eqs)
         end
 
@@ -609,6 +607,7 @@ function ReactionSystem(eqs, iv, states, ps;
     # sort Reactions before Equations
     eqs′ = CatalystEqType[eq for eq in eqs]
     sort!(eqs′; by = eqsortby)
+    rxs = Reaction[rx for rx in eqs if rx isa Reaction]
 
     if any(MT.isparameter, states′)
         psts = filter(MT.isparameter, states′)
@@ -644,7 +643,9 @@ function ReactionSystem(eqs, iv, states, ps;
     ccallbacks = MT.SymbolicContinuousCallbacks(continuous_events)
     dcallbacks = MT.SymbolicDiscreteCallbacks(discrete_events)
 
-    ReactionSystem(eqs′, iv′, sivs′, states′, ps′, var_to_name, observed, name,
+    spcs = filter(isspecies, states)
+
+    ReactionSystem(eqs′, rxs, iv′, sivs′, states′, spcs, ps′, var_to_name, observed, name,
                    systems, defaults, connection_type, nps, combinatoric_ratelaws,
                    ccallbacks, dcallbacks; checks = checks)
 end
@@ -1556,8 +1557,6 @@ end
 ########################## Compositional Tooling ###########################
 function getsubsystypes!(typeset::Set{Type}, sys::T) where {T <: MT.AbstractSystem}
     push!(typeset, T)
-    csys = (sys isa ReactionSystem) ? get_constraints(sys) : nothing
-    csys !== nothing && getsubsystypes!(typeset, csys)
     for subsys in get_systems(sys)
         getsubsystypes!(typeset, subsys)
     end
@@ -1620,8 +1619,14 @@ Notes:
 function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
                                 name::Symbol = nameof(sys))
 
-    (typeof(sys) in (ReactionSystem, ODESystem, NonlinearSystem)) ||
-        error("ReactionSystems can only be extended with ReactionSystems, ODESystems and NonlinearSystems currently.")
+    any(T -> sys isa T, (ReactionSystem, ODESystem, NonlinearSystem)) ||
+        error("ReactionSystems can only be extended with ReactionSystems, ODESystems and NonlinearSystems currently. Received a $(typeof(sys)) system.")
+
+    t = get_iv(rs)
+    if MT.has_iv(sys)
+        isequal(get_iv(sys), t) ||
+            error("Extending ReactionSystem with iv, $(get_iv(rs)), with a system with iv, $(get_iv(sys)), this is not supported. Please ensure the `ivs` are the same.")
+    end
 
     # generic system properties
     eqs = union(get_eqs(rs), get_eqs(sys))
@@ -1640,11 +1645,12 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
         sivs = union(get_sivs(sys), get_sivs(rs))
     else
         combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rs)
-        sysivs = independent_variables(sys)
+        sysivs = MT.has_ivs(sys) ? filter(!isequal(t), independent_variables(sys)) :
+                                   Vector{typeof(t)}()
         sivs = (length(sysivs) > 0) ? union(get_sivs(rs), sysivs) : get_sivs(rs)
     end
 
-    ReactionSystem(eqs, get_iv(rs), sts, ps;
+    ReactionSystem(eqs, t, sts, ps;
                    observed = obs,
                    systems = syss,
                    name,
