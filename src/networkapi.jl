@@ -64,7 +64,7 @@ Notes:
 - If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
 """
 function reactions(network)
-    rxs = get_eqs(network)
+    rxs = get_rxs(network)
     systems = filter_nonrxsys(network)
     isempty(systems) && (return rxs)
     [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
@@ -127,7 +127,7 @@ Return the total number of reactions within the given [`ReactionSystem`](@ref)
 and subsystems that are `ReactionSystem`s.
 """
 function numreactions(network)
-    nr = length(get_eqs(network))
+    nr = length(get_rxs(network))
     for sys in get_systems(network)
         (sys isa ReactionSystem) && (nr += numreactions(sys))
     end
@@ -164,6 +164,16 @@ Notes:
 - Does not check for dependents within any subsystems.
 - Constant species are not considered dependents since they are internally treated as
   parameters.
+- If the rate expression depends on a non-species state variable that will be included in
+  the dependents, i.e. in
+  ```julia
+  @parameters k
+  @variables t V(t)
+  @species A(t) B(t) C(t)
+  rx = Reaction(k*V, [A, B], [C])
+  @named rs = ReactionSystem([rx], t)
+  issetequal(dependents(rx, rs), [A,B,V]) == true
+  ```
 """
 function dependents(rx, network)
     if rx.rate isa Number
@@ -845,9 +855,8 @@ incidencematgraph(sir)
 function incidencematgraph(rn::ReactionSystem)
     nps = get_networkproperties(rn)
     if Graphs.nv(nps.incidencegraph) == 0
-        isempty(nps.incidencemat) && error("Please call reactioncomplexes(rn) first to "
-              *
-              "construct the incidence matrix.")
+        isempty(nps.incidencemat) &&
+            error("Please call reactioncomplexes(rn) first to construct the incidence matrix.")
         nps.incidencegraph = incidencematgraph(nps.incidencemat)
     end
     nps.incidencegraph
