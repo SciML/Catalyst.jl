@@ -111,8 +111,8 @@ const double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :�
 const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
 # Declares symbols which may neither be used as parameters not varriables.
-const forbidden_symbols_skip = [:t, :∅]
-const forbidden_symbols_error = [:π, :pi, :ℯ, :im, :nothing]
+const forbidden_symbols_skip = Set([:t, :∅])
+const forbidden_symbols_error = union([:π, :pi, :ℯ, :im, :nothing], forbidden_symbols_skip)
 
 # Declares the keys used for various options.
 const option_keys = [:species, :parameters]
