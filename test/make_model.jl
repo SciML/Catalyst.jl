@@ -358,7 +358,10 @@ rn = @reaction_network begin
     k1, S + I --> 2I
     k2, I --> R
 end
-@test isequal(opname(species(rn)[2]), :I)
+@variables t
+@species I(t)
+@test any(isequal(I), species(rn))
+@test any(isequal(I), states(rn))
 
 # test names work
 rn = @reaction_network SIR1 begin

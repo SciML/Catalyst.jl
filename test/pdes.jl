@@ -47,7 +47,7 @@ evalat(u, a, b, t) = (operation(ModelingToolkit.unwrap(u)))(a, b, t)
 function icfun(n, x, y, A)
     float(rand(Poisson(round(n * A * 10))) / A / 10)
 end
-@register icfun(n, x, y, A)
+@register_symbolic icfun(n, x, y, A)
 L = 32.0
 tstop = 5e4
 for (i, st) in enumerate(states(bpm))
