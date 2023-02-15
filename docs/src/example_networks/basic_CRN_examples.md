@@ -1,4 +1,4 @@
-# Basic Chemical Reaction Network Examples
+# [Basic Chemical Reaction Network Examples](@id basic_CRN_examples)
 
 #### Example: Birth-Death Process
 
