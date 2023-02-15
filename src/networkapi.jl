@@ -1091,8 +1091,8 @@ conservedequations(rn)
 gives
 ```
 2-element Vector{Equation}:
- B(t) ~ A(t) + Κ[1]
- C(t) ~ Κ[2] - A(t)
+ B(t) ~ A(t) + Γ[1]
+ C(t) ~ Γ[2] - A(t)
 ```
 """
 function conservedequations(rn::ReactionSystem)
@@ -1121,8 +1121,8 @@ conservationlaw_constants(rn)
 gives
 ```
 2-element Vector{Equation}:
- Κ[1] ~ B(t) - A(t)
- Κ[2] ~ A(t) + C(t)
+ Γ[1] ~ B(t) - A(t)
+ Γ[2] ~ A(t) + C(t)
 ```
 """
 function conservationlaw_constants(rn::ReactionSystem)
@@ -1163,7 +1163,7 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     indepspecs = sts[indepidxs]
     depidxs = col_order[(r + 1):end]
     depspecs = sts[depidxs]
-    constants = MT.unwrap.(MT.scalarize((@parameters Κ[1:nullity])[1]))
+    constants = MT.unwrap.(MT.scalarize((@parameters Γ[1:nullity])[1]))
 
     conservedeqs = Equation[]
     constantdefs = Equation[]

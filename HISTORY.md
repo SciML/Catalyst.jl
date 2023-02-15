@@ -3,10 +3,12 @@
 ## Catalyst unreleased (master branch)
 - Deprecated functions `params`, `numparams` and `merge` have been removed.
 - The old notation for the constants representing conserved quantities,
-  `_Conlaw`, has been replaced with uppercase unicode kappa, "Κ". This can be
+  `_Conlaw`, has been replaced with uppercase unicode gamma, "Γ". This can be
   entered in notebooks, the REPL, or many editors by typing the corresponding
-  Latex command, "\Kappa", and hitting tab. This leads to much cleaner equations
-  when Latexifying systems where conservation laws have been applied.
+  Latex command, "\Gamma", and hitting tab. This leads to much cleaner equations
+  when Latexifying systems where conservation laws have been applied. The
+  underlying symbol can also be accessed via
+  `Catalyst.CONSERVED_CONSTANT_SYMBOL`.
 - An `@species` macro was added. Currently, it is simply a thematic version of
   (and equivalent to) ModelingToolkit's `@variables`.
 - **BREAKING:** Parameters should no longer be listed at the end of the DSL

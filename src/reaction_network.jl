@@ -110,8 +110,10 @@ const bwd_arrows = Set{Symbol}([:<, :(<=), :←, :↢, :↤, :⇽, :⟵, :⟻, :
 const double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :⟺, Symbol("<-->")])
 const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
+const CONSERVED_CONSTANT_SYMBOL = :Γ
+
 # Declares symbols which may neither be used as parameters not varriables.
-const forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅, :Κ]
+const forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅, CONSERVED_CONSTANT_SYMBOL]
 
 # Declares the keys used for various options.
 const option_keys = [:species, :parameters]
