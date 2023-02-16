@@ -2,11 +2,11 @@
 While the DSL provides a simple interface for creating `ReactionSystem`s, it can
 often be convenient to build or augment a [`ReactionSystem`](@ref)
 programmatically. In this tutorial we show how to build the repressilator model
-of the [Using Catalyst](@ref using_catalyst) tutorial directly using symbolic variables, and
+of the [Introduction to Catalyst](@ref introduction_to_catalyst) tutorial directly using symbolic variables, and
 then summarize the basic API functionality for accessing information stored
 within `ReactionSystem`s.
 
-## Directly Building the Repressilator with `ReactionSystem`s
+## Directly building the repressilator with `ReactionSystem`s
 We first load Catalyst
 ```@example ex
 using Catalyst
@@ -24,7 +24,7 @@ terminology)
 ```
 *Note, each species is declared as a variable that is a function of time!*
 
-Next we specify the chemical reactions that comprise the system using Catalyst
+Next, we specify the chemical reactions that comprise the system using Catalyst
 [`Reaction`](@ref)s
 ```julia
 rxs = [Reaction(hillr(P₃,α,K,n), nothing, [m₁]),
@@ -96,9 +96,9 @@ end
 repressilator == repressilator2
 ```
 
-For more options in building `ReactionSystem`s, see the [`ReactionSystem`](@ref) API docs.
+For more options in building `ReactionSystem`s, see the [`ReactionSystem`](@ref) API docs. For a more extensive example of how to programmatically create a `ReactionSystem`, see the [Smoluchowski Coagulation Equation example](@ref smoluchowski_coagulation_equation).
 
-## More General `Reaction`s
+## More general `Reaction`s
 In the example above all the specified `Reaction`s were first or zero order. The
 three-argument form of `Reaction` implicitly assumes all species have a
 stoichiometric coefficient of one, i.e. for substrates `[S₁,...,Sₘ]` and
@@ -135,7 +135,7 @@ rx = Reaction(α+β*t*A, [A], [B])
 [See the FAQs](@ref user_functions) for info on using general user-specified
 functions for the rate constant.
 
-## `@reaction` macro for constructing `Reaction`s
+## The `@reaction` macro for constructing `Reaction`s
 In some cases one wants to build reactions incrementally, as in the
 repressilator example, but it would be nice to still have a short hand as in the
 [`@reaction_network`](@ref) DSL. In this case one can construct individual
@@ -165,11 +165,7 @@ Note, there are a few differences when using the `@reaction` macro to specify
 one reaction versus using the full `@reaction_network` macro to create a
 `ReactionSystem`. First, only one reaction (i.e. a single forward arrow type)
 can be used, i.e. reversible arrows like `<-->` will not work (since they define
-more than one reaction). Second, the `@reaction` macro must try to infer which
-symbols are species versus parameters, and uses the heuristic that anything
-appearing in the rate expression is a parameter. Coefficients in the reaction
-part are also inferred as parameters, while rightmost symbols (i.e. substrates
-and products) are inferred as species. As such, the following are equivalent
+more than one reaction). Second, the `@reaction` macro does not have an option for designating what should be considered a species or parameter, and instead assumes that any symbol that appears as either a substrate or a product is a species, and everything else (including stoichiometric coefficients) are parameters. As such, the following are equivalent
 ```julia
 rx = @reaction hillr(P,α,K,n), A --> B
 ```
@@ -187,7 +183,7 @@ interpolating their values into the rate law expressions using `$` in the macro.
 This ensured they were properly treated as species and not parameters. See the
 [`@reaction`](@ref) macro docstring for more information.
 
-## Basic Querying of `ReactionSystems`
+## Basic querying of `ReactionSystems`
 
 The [Catalyst.jl API](@ref) provides a large variety of functionality for
 querying properties of a reaction network. Here we go over a few of the most

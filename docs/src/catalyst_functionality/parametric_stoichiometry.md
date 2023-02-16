@@ -1,11 +1,11 @@
-# [Parametric Stoichiometry](@id parametric_stoichiometry)
+# [Symbolic Stochiometries](@id parametric_stoichiometry)
 Catalyst supports stoichiometric coefficients that involve parameters, species,
 or even general expressions. In this tutorial we show several examples of how to
-use parametric stoichiometry, and discuss several caveats to be aware of.
+use symbolic stoichiometries, and discuss several caveats to be aware of.
 
 *Note, this tutorial requires ModelingToolkit v8.5.4 or greater to work properly.*
 
-## Using Symbolic Stoichiometry
+## Using symbolic stoichiometry
 Let's first consider a simple reversible reaction where the number of reactants
 is a parameter, and the number of products is the product of two parameters. 
 ```@example s1
@@ -16,10 +16,10 @@ revsys = @reaction_network revsys begin
 end
 reactions(revsys)
 ```
-Note, as always the `@reaction_network` macro sets all symbols not declared to
-be parameters to be species, so that in this example we have two species, `A`
-and `B`, and four parameters. In addition, the stoichiometry is applied to the
-right most symbol in a given term, i.e. in the first equation the substrate `A`
+Note, as always the `@reaction_network` macro defaults to setting all symbols neither used as a reaction substrate nor a product to
+be parameters. Hence, in this example we have two species (`A`
+and `B`) and four parameters (`k₊`, `k₋`, `m`, and `n`). In addition, the stoichiometry is applied to the
+rightmost symbol in a given term, i.e. in the first equation the substrate `A`
 has stoichiometry `m` and the product `B` has stoichiometry `m*n`. For example,
 in
 ```@example s1
@@ -70,6 +70,7 @@ coefficients. For this reason we must specify `m` and `n` as integers, and hence
 p  = (k₊ => 1.0, k₋ => 1.0, m => 2, n => 2)
 u₀ = [A => 1.0, B => 1.0]
 oprob = ODEProblem(osys, u₀, (0.0,1.0), p)
+nothing # hide
 ```
 We can now solve and plot the system
 ```@example s1
