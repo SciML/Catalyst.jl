@@ -640,3 +640,15 @@ let
     str = String(take!(io))
     @test str == "a, A + 2*(C(t))[1] --> 2*(C(t))[2] + 3*B"
 end
+
+# test array metadata for species works
+let
+    @variables t
+    @species (A(t))[1:20]
+    using ModelingToolkit: value
+    @test isspecies(value(A))
+    @test isspecies(value(A[2]))
+    Av = value.(ModelingToolkit.scalarize(A))
+    @test isspecies(Av[2])
+    @test isequal(value(Av[2]), value(A[2]))
+end
