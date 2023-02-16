@@ -50,8 +50,8 @@
     Differential(t)(V(t)) ~ α
   ```
   Mixing ODEs and algebraic equations is allowed and should work when converting
-  to an `ODESystem` or `NonlinearSystem`, but is not currently supported for
-  `JumpSystem`s or `SDESystem`s.
+  to an `ODESystem` or `NonlinearSystem`, but is not currently supported when
+  converting to `JumpSystem`s or `SDESystem`s.
 - **BREAKING:** Chemical species specified or inferred via the DSL are now
   created via the same mechanism as `@species`, and therefore have the
   associated metadata that is missing from a normal symbolic variable.

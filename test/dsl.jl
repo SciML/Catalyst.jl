@@ -144,3 +144,30 @@ rn = @reaction_network mixedsys begin
     2*k, 2.5*B --> 2*D
 end
 @test rn == mixedsys
+
+# test species have the right metadata via the DSL
+let
+    rn = @reaction_network begin
+        k, 2*A + B --> C
+    end
+    @test issetequal(states(rn), species(rn))
+    @test all(isspecies, species(rn))
+
+    rn2 = @reaction_network begin
+        @species A(t) = 1 B(t) = 2 [isbcspecies = true]
+        k, A + 2*B --> 2*B
+    end
+    @variables t
+    @unpack A,B = rn2
+    D = Differential(t)
+    eq = D(B) ~ -B
+    @named osys = ODESystem([eq], t)
+    @named rn2 = extend(osys, rn2)
+    @test issetequal(states(rn2), species(rn2))
+    @test all(isspecies, species(rn))
+    @test Catalyst.isbc(ModelingToolkit.value(B))
+    @test Catalyst.isbc(ModelingToolkit.value(A)) == false
+    osys2 = convert(ODESystem, rn2)
+    @test issetequal(states(osys2), states(rn2))
+    @test length(equations(osys2)) == 2
+end
