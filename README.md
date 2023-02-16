@@ -111,16 +111,16 @@ rs = @reaction_network begin
   c1, S + E --> SE
   c2, SE --> S + E
   c3, SE --> P + E
-end c1 c2 c3
-p     = (:c1 => 0.00166, :c2 => 0.0001, :c3 => 0.1)
+end
+p  = (:c1 => 0.00166, :c2 => 0.0001, :c3 => 0.1)
 tspan = (0., 100.)
-u0    = [:S => 301, :E => 100, :SE => 0, :P => 0]
+u0 = [:S => 301, :E => 100, :SE => 0, :P => 0]
 
 # solve JumpProblem
 dprob = DiscreteProblem(rs, u0, tspan, p)
 jprob = JumpProblem(rs, dprob, Direct())
 jsol = solve(jprob, SSAStepper())
-plot(jsol,lw=2,title="Gillespie: Michaelis-Menten Enzyme Kinetics")
+plot(jsol; lw = 2, title = "Gillespie: Michaelis-Menten Enzyme Kinetics")
 ```
 
 ![](https://user-images.githubusercontent.com/1814174/87864114-3bf9dd00-c932-11ea-83a0-58f38aee8bfb.png)
@@ -133,13 +133,13 @@ rs = @reaction_network begin
   c1, X --> 2X
   c2, X --> 0
   c3, 0 --> X
-end c1 c2 c3
+end
 p     = (:c1 => 1.0, :c2 => 2.0, :c3 => 50.)
 tspan = (0.,10.)
 u0    = [:X => 5.]
 sprob = SDEProblem(rs, u0, tspan, p)
 ssol  = solve(sprob, LambaEM(), reltol=1e-3)
-plot(ssol,lw=2,title="Adaptive SDE: Birth-Death Process")
+plot(ssol; lw = 2, title = "Adaptive SDE: Birth-Death Process")
 ```
 
 ![](https://user-images.githubusercontent.com/1814174/87864113-3bf9dd00-c932-11ea-8275-f903eef90b91.png)

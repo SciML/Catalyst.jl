@@ -652,3 +652,27 @@ let
     @test isspecies(Av[2])
     @test isequal(value(Av[2]), value(A[2]))
 end
+
+# test mixed models are formulated correctly
+let
+    @parameters k1 k2
+    @variables t V(t)
+    @species A(t) B(t)
+    rx = Reaction(k1, [A], [B], [k2], [2])
+    D = Differential(t)
+    eq = D(V) ~ -k1*k2 * V + A
+    @named rs = ReactionSystem([eq, rx], t)
+    @test length(states(rs)) == 3
+    @test issetequal(states(rs), [A, B, V])
+    @test length(parameters(rs)) == 2
+    @test issetequal(parameters(rs), [k1, k2])
+    @test length(species(rs)) == 2
+    @test issetequal(species(rs), [A, B])
+    @test all(typeof.(ModelingToolkit.get_eqs(rs)) .<: (Reaction, Equation))
+    @test length(Catalyst.get_rxs(rs)) == 1
+    @test reactions(rs)[1] == rx
+    osys = convert(ODESystem, rs)
+    @test issetequal(states(osys), [A, B, V])
+    @test issetequal(parameters(osys), [k1, k2])
+    @test length(equations(osys)) == 3
+end

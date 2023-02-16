@@ -1,18 +1,60 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
-- Symbolic species arrays are currently not supported due to
-  https://github.com/JuliaSymbolics/Symbolics.jl/issues/842.
-- Deprecated functions `params`, `numparams` and `merge` have been removed.
-- The old notation for the constants representing conserved quantities,
-  `_Conlaw`, has been replaced with uppercase unicode gamma, "Γ". This can be
-  entered in notebooks, the REPL, or many editors by typing the corresponding
-  Latex command, "\Gamma", and hitting tab. This leads to much cleaner equations
-  when Latexifying systems where conservation laws have been applied. The
-  underlying symbol can also be accessed via
-  `Catalyst.CONSERVED_CONSTANT_SYMBOL`.
-- An `@species` macro was added. Currently, it is simply a thematic version of
-  (and equivalent to) ModelingToolkit's `@variables`.
+- **BREAKING:** An `@species` macro was added and should be used in place of
+  `@variables` when declaring symbolic chemical species, i.e.
+  ```julia
+  @parameters k
+  @variables t
+  @species A(t) B(t)
+  rx = Reaction(k, [A], [B])
+  @named rs = ReactionSystem([rx], t)
+  ```
+  This will no longer work
+  ```julia
+  @variables t A(t) B(t)
+  rx = Reaction(k, [A], [B])
+  @named rs = ReactionSystem([rx], t)   # errors
+  ```
+  `@variables` is now reserved for non-chemical species state variables (for
+  example, arising from constraint equations). Internally, species are normal
+  symbolic variables, but with added metadata to indicate they represent
+  chemical species.
+- To check if a symbolic variable is a species one can use `isspecies`:
+  ```julia
+  @variables t
+  @species A(t)
+  @variables B(t)
+  isspecies(A) == true
+  isspecies(B) == false
+  ```
+- **BREAKING:** Constraint subsystems and the associated keyword argument to
+  `ReactionSystem` have been removed. Instead, one can simply add ODE or
+  algebraic equations into the list of `Reaction`s passed to a `ReactionSystem`.
+  i.e. this should now work
+  ```julia
+  @parameters k α
+  @variables t V(t)
+  @species A(t)
+  rx = Reaction(k*V, nothing, [A])
+  D = Differential(t)
+  eq = D(V) ~ α
+  @named rs = ReactionSystem([rx, eq], t)
+  osys = convert(ODESystem, rs)
+  ```
+  which gives the ODE model
+  ```
+  julia> equations(osys)
+  2-element Vector{Equation}:
+    Differential(t)(A(t)) ~ k*V(t)
+    Differential(t)(V(t)) ~ α
+  ```
+  Mixing ODEs and algebraic equations is allowed and should work when converting
+  to an `ODESystem` or `NonlinearSystem`, but is not currently supported for
+  `JumpSystem`s or `SDESystem`s.
+- **BREAKING:** Chemical species specified or inferred via the DSL are now
+  created via the same mechanism as `@species`, and therefore have the
+  associated metadata that is missing from a normal symbolic variable.
 - **BREAKING:** Parameters should no longer be listed at the end of the DSL
   macro, but are instead inferred from their position in the reaction statements
   or via explicit declarations in the DSL macro. By default, any symbol that appears
@@ -79,6 +121,14 @@
     k, X + Y --> 0
   end
   ```
+- Deprecated functions `params`, `numparams` and `merge` have been removed.
+- The old notation for the constants representing conserved quantities,
+  `_Conlaw`, has been replaced with uppercase unicode gamma, "Γ". This can be
+  entered in notebooks, the REPL, or many editors by typing the corresponding
+  Latex command, "\Gamma", and hitting tab. This leads to much cleaner equations
+  when Latexifying systems where conservation laws have been applied. The
+  underlying symbol can also be accessed via
+  `Catalyst.CONSERVED_CONSTANT_SYMBOL`.
 
 
 ## Catalyst 12.3.2

@@ -167,10 +167,7 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
 
     if !(all(isvalidreactant, subs) && all(isvalidreactant, prods))
         badsts = union(filter(!isvalidreactant, subs), filter(!isvalidreactant, prods))
-        throw(ArgumentError("""To be a valid substrate or product, non-constant species must
-                 be declared via @species, while constant species must be parameters with
-                 the isconstantspecies metadata. The following reactants do not follow this
-                 convention:\n $badsts"""))
+        throw(ArgumentError("""To be a valid substrate or product, non-constant species must be declared via @species, while constant species must be parameters with the isconstantspecies metadata. The following reactants do not follow this convention:\n $badsts"""))
     end
 
     ns = if netstoich === nothing
@@ -711,8 +708,8 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, sts_in, ps_in;
     if !isempty(eqs)
         osys = ODESystem(eqs, iv; name = gensym())
         fulleqs = CatalystEqType[rxs; equations(osys)]
-        append!(stsv, states(osys))
-        append!(psv, parameters(osys))
+        union!(stsv, states(osys))
+        union!(psv, parameters(osys))
     else
         fulleqs = rxs
     end
