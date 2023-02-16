@@ -456,9 +456,9 @@ let
 
     # test sde systems
     rxs = [(@reaction k1, $A --> B),
-           (@reaction k2, B --> $A),
-           (@reaction k1, $C + D --> E + $C),
-           (@reaction k2, E + $C --> $C + D)]
+        (@reaction k2, B --> $A),
+        (@reaction k1, $C + D --> E + $C),
+        (@reaction k2, E + $C --> $C + D)]
     @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
     ssys = convert(SDESystem, rs)
     @test issetequal(MT.get_states(ssys), [B, C, D, E])
@@ -582,7 +582,6 @@ let
     @test issetequal(states(osys2), [S1])
     @test issetequal(parameters(osys2), [S2, k1, k2])
 end
-
 
 # constant species = parameters basic tests
 let

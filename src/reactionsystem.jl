@@ -45,7 +45,8 @@ Notes:
 - Will error if passed a parameter.
 """
 function tospecies(s)
-    MT.isparameter(s) && error("Parameters can not be converted to species. Please pass a variable.")
+    MT.isparameter(s) &&
+        error("Parameters can not be converted to species. Please pass a variable.")
     MT.setmetadata(s, VariableSpecies, true)
 end
 
@@ -577,7 +578,6 @@ function ReactionSystem(eqs, iv, states, ps;
                         spatial_ivs = nothing,
                         continuous_events = nothing,
                         discrete_events = nothing)
-
     name === nothing &&
         throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     sysnames = nameof.(systems)
@@ -749,7 +749,6 @@ Return the system's `Reaction` vector (toplevel system only).
 """
 get_rxs(sys::ReactionSystem) = getfield(sys, :rxs)
 has_rxs(sys::ReactionSystem) = isdefined(sys, :rxs)
-
 
 """
     get_sivs(sys::ReactionSystem)
@@ -1128,7 +1127,8 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
     ceqs = ConstantRateJump[]
     veqs = VariableRateJump[]
     stateset = Set(get_states(rs))
-    all(isspecies, stateset) || error("Conversion to JumpSystem currently requires all states to be species.")
+    all(isspecies, stateset) ||
+        error("Conversion to JumpSystem currently requires all states to be species.")
     rxvars = []
 
     isempty(get_rxs(rs)) &&
@@ -1234,7 +1234,8 @@ end
 # used by flattened systems that don't support constraint equations currently
 function error_if_constraints(::Type{T}, sys::ReactionSystem) where {T <: MT.AbstractSystem}
     any(eq -> eq isa Equation, get_eqs(sys)) &&
-        error("Can not convert to a system of type ", T, " when there are constraint equations.")
+        error("Can not convert to a system of type ", T,
+              " when there are constraint equations.")
     nothing
 end
 
@@ -1374,7 +1375,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     end
 
     remove_conserved && conservationlaws(flatrs)
-    ists,ispcs = get_indep_sts(flatrs, remove_conserved)
+    ists, ispcs = get_indep_sts(flatrs, remove_conserved)
     eqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws, include_zero_odes,
                          remove_conserved)
     noiseeqs = assemble_diffusion(flatrs, ists, ispcs, noise_scaling; combinatoric_ratelaws,
@@ -1431,7 +1432,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     eqs = assemble_jumps(flatrs; combinatoric_ratelaws)
 
     # handle BC species
-    sts,ispcs = get_indep_sts(flatrs)
+    sts, ispcs = get_indep_sts(flatrs)
     any(isbc, get_states(flatrs)) && (sts = vcat(sts, filter(isbc, get_states(flatrs))))
     ps = get_ps(flatrs)
 
@@ -1617,7 +1618,6 @@ Notes:
 """
 function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
                                 name::Symbol = nameof(sys))
-
     any(T -> sys isa T, (ReactionSystem, ODESystem, NonlinearSystem)) ||
         error("ReactionSystems can only be extended with ReactionSystems, ODESystems and NonlinearSystems currently. Received a $(typeof(sys)) system.")
 
@@ -1645,7 +1645,7 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
     else
         combinatoric_ratelaws = Catalyst.get_combinatoric_ratelaws(rs)
         sysivs = MT.has_ivs(sys) ? filter(!isequal(t), independent_variables(sys)) :
-                                   Vector{typeof(t)}()
+                 Vector{typeof(t)}()
         sivs = (length(sysivs) > 0) ? union(get_sivs(rs), sysivs) : get_sivs(rs)
     end
 
