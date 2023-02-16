@@ -10,7 +10,7 @@ Catalyst uses for all simulations.
 
 
 
-### Monte Carlo simulations using `EnsembleProblem`s
+## Monte Carlo simulations using `EnsembleProblem`s
 In many contexts one needs to run multiple simulations of a model, for example
 to collect statistics of SDE or jump process solutions, or to systematically
 vary parameter values within a model. While it is always possible to manually
@@ -114,12 +114,11 @@ be re-enabled using the `legend` plotting keyword. However, when plotting a
 large number of trajectories, each will generate a label. Sometimes the best
 approach is to remove these and add a label manually:
 ```
-plot(esol; label = "")
-plot!([], [], label = "X", legend = :best)
+p = plot(esol; label = "")
+plot!(p, [], []; label = "X", legend = :best)
 ```
 
-
-### Event handling using callbacks
+## Event handling using callbacks
 Sometimes one wishes to add discrete events during simulations. Examples could include:
  - A chemical system where an amount of some species is added at a time point
    after the simulation's initiation.
@@ -264,7 +263,7 @@ surpasses some threshold value.
 
 
 
-### Scaling the noise magnitude in the chemical Langevin equations
+## Scaling the noise magnitude in the chemical Langevin equations
 When using the CLE to generate SDEs from a CRN, it can sometimes be desirable to
 scale the magnitude of the noise terms. This can be done by introducing a *noise
 scaling parameter*. First, we simulate a simple two-state CRN model using the
@@ -333,9 +332,7 @@ sol_3 = solve(sprob_3)
 plot(sol_3; idxs = 1, ylimit = (0.0, 20.0))
 ```
 
-
-
-### Useful plotting options
+## Useful plotting options
 Catalyst, just like DifferentialEquations, uses the Plots package for all
 plotting. For a detailed description of differential equation plotting, see
 [DifferentialEquations documentation on the
