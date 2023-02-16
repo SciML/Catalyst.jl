@@ -16,7 +16,8 @@ const MT = ModelingToolkit
 using Symbolics
 import Symbolics: BasicSymbolic
 using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems,
-                       get_eqs, get_defaults, toparam, get_var_to_name, get_observed, getvar
+                       get_eqs, get_defaults, toparam, get_var_to_name, get_observed,
+                       getvar
 
 import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!,
                         modified_states!, validate, namespace_variables,

@@ -409,3 +409,31 @@ let
     rxs2 = Reaction[(@reaction AB₊k1, AB₊A --> $(AB₊n)*AB₊B), (@reaction BC₊k2, BC₊B --> BC₊C)]
     @test (length(rxs) == length(rxs2)) && issubset(rxs, rxs2)
 end
+
+# test ordering of states and equations
+let
+    @parameters k1 k2 k3
+    @variables t V1(t) V2(t) V3(t)
+    @species A1(t) A2(t) A3(t) B1(t) B2(t) B3(t)
+    D = Differential(t)
+    rx1 = Reaction(k1*V1, [A1], [B1])
+    eq1 = D(V1) ~ -V1
+    @named rs1 = ReactionSystem([rx1, eq1], t)
+    rx2 = Reaction(k2*V2, [A2], [B2])
+    eq2 = D(V2) ~ -V2
+    @named rs2 = ReactionSystem([rx2, eq2], t)
+    rx3 = Reaction(k3*V3, [A3], [B3])
+    eq3 = D(V3) ~ -V3
+    @named rs3 = ReactionSystem([rx3, eq3], t)
+    @named rs23 = compose(rs2, [rs3])
+    @test length(states(rs23)) == 6
+    @test all(p -> isequal(p[1], p[2]), zip(states(rs23)[1:4], species(rs23)))
+    @test length(equations(rs23)) == 4
+    @test all(p -> isequal(p[1], p[2]), zip(equations(rs23)[1:2], reactions(rs23)))
+    @named rs123 = compose(rs1, [rs23])
+    @test length(states(rs123)) == 9
+    @test all(p -> isequal(p[1], p[2]), zip(states(rs123)[1:6], species(rs123)))
+    @test length(equations(rs123)) == 6
+    @test length(reactions(rs123)) == 3
+    @test all(p -> isequal(p[1], p[2]), zip(equations(rs123)[1:3], reactions(rs123)))
+end

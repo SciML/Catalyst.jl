@@ -775,12 +775,23 @@ get_combinatoric_ratelaws(sys::ReactionSystem) = getfield(sys, :combinatoric_rat
 # need a custom equations since ReactionSystem.eqs are a mix of Reactions and Equations
 function MT.equations(sys::ReactionSystem)
     eqs = get_eqs(sys)
-    T = eltype(eqs)
     systems = get_systems(sys)
     if !isempty(systems)
-        return T[eqs; reduce(vcat, MT.namespace_equations.(systems); init = Any[])]
+        eqs = CatalystEqType[eqs; reduce(vcat, MT.namespace_equations.(systems); init = Any[])]
+        return sort!(eqs; by = eqsortby)
     end
     return eqs
+end
+
+function MT.states(sys::ReactionSystem)
+    sts = get_states(sys)
+    systems = get_systems(sys)
+    if !isempty(systems)
+        sts = unique!([sts; reduce(vcat, namespace_variables.(systems))])
+        sort!(sts; by = !isspecies)
+        return sts
+    end
+    return sts
 end
 
 """

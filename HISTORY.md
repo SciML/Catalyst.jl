@@ -52,6 +52,11 @@
   Mixing ODEs and algebraic equations is allowed and should work when converting
   to an `ODESystem` or `NonlinearSystem`, but is not currently supported when
   converting to `JumpSystem`s or `SDESystem`s.
+- **BREAKING:** Several API functions now have different meanings when applied
+  to a `rs` a `ReactionSystem`:
+    - `species(rs)` gives the chemical species of a system.
+    - `states(rs)` gives all the variables, both chemical species and
+      non-chemical species of a system.
 - **BREAKING:** Chemical species specified or inferred via the DSL are now
   created via the same mechanism as `@species`, and therefore have the
   associated metadata that is missing from a normal symbolic variable.
