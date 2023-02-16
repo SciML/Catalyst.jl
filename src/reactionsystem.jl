@@ -200,7 +200,7 @@ function print_rxside(io::IO, specs, stoich)
                      spec : MT.operation(spec)
             if isequal(stoich[i], one(stoich[i]))
                 print(io, prspec)
-            elseif Symbolics.istree(stoich[i])
+            elseif istree(stoich[i])
                 print(io, "(", stoich[i], ")*", prspec)
             else
                 print(io, stoich[i], "*", prspec)
@@ -352,7 +352,7 @@ Base.Sort.defalg(::ReactionComplex) = Base.DEFAULT_UNSTABLE
 
 #! format: off
 # Internal cache for various ReactionSystem calculated properties
-Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: Term}
+Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Real}}
     isempty::Bool = true
     netstoichmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
     conservationmat::Matrix{I} = Matrix{I}(undef, 0, 0)
@@ -465,16 +465,16 @@ struct ReactionSystem{V <: NetworkProperties} <:
     """The Reactions defining the system. """
     rxs::Vector{Reaction}
     """Independent variable (usually time)."""
-    iv::Any
+    iv::BasicSymbolic{Real}
     """Spatial independent variables"""
-    sivs::Vector{Any}
+    sivs::Vector{BasicSymbolic{Real}}
     """All dependent (state) variables, species and non-species. Must not contain the
     independent variable."""
-    states::Vector
+    states::Vector{BasicSymbolic{Real}}
     """Dependent state variables representing species"""
-    species::Vector
+    species::Vector{BasicSymbolic{Real}}
     """Parameter variables. Must not contain the independent variable."""
-    ps::Vector
+    ps::Vector{BasicSymbolic{Real}}
     """Maps Symbol to corresponding variable."""
     var_to_name::Dict{Symbol, Any}
     """Equations for observed variables."""
@@ -602,7 +602,7 @@ function ReactionSystem(eqs, iv, states, ps;
     ps′ = value.(MT.scalarize(ps))
 
     allsyms = Iterators.flatten((ps′, states′))
-    all(sym -> Symbolics.getname(sym) ∉ forbidden_symbols, allsyms) ||
+    all(sym -> getname(sym) ∉ forbidden_symbols, allsyms) ||
         error("Catalyst reserves the symbols $forbidden_symbols for internal use. Please do not use these symbols as parameters or states/species.")
 
     # sort Reactions before Equations
@@ -649,7 +649,7 @@ function ReactionSystem(eqs, iv, states, ps;
                    ccallbacks, dcallbacks; checks = checks)
 end
 
-function ReactionSystem(rxs::Vector, iv; kwargs...)
+function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
     make_ReactionSystem_internal(rxs, iv, Vector{Num}(), Vector{Num}(); kwargs...)
 end
 
@@ -698,10 +698,10 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, sts_in, ps_in;
     for rx in rxs
         findvars!(ps, sts, rx.rate, ivs, vars)
         for s in rx.substoich
-            (s isa Symbolics.Symbolic) && findvars!(ps, sts, s, ivs, vars)
+            (s isa Symbolic) && findvars!(ps, sts, s, ivs, vars)
         end
         for p in rx.prodstoich
-            (p isa Symbolics.Symbolic) && findvars!(ps, sts, p, ivs, vars)
+            (p isa Symbolic) && findvars!(ps, sts, p, ivs, vars)
         end
     end
 
@@ -842,7 +842,7 @@ function oderatelaw(rx; combinatoric_ratelaw = true)
     rl = rate
 
     # if the stoichiometric coefficients are not integers error if asking to scale rates
-    !all(s -> s isa Union{Integer, Symbolics.Symbolic}, substoich) &&
+    !all(s -> s isa Union{Integer, Symbolic}, substoich) &&
         (combinatoric_ratelaw == true) &&
         error("Non-integer stoichiometric coefficients require the combinatoric_ratelaw=false keyword to oderatelaw, or passing combinatoric_ratelaws=false to convert or ODEProblem.")
 
@@ -879,14 +879,14 @@ function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserv
 
             i = species_to_idx[spec]
             if _iszero(rhsvec[i])
-                if stoich isa Symbolics.Symbolic
+                if stoich isa Symbolic
                     rhsvec[i] = stoich * rl
                 else
                     signedrl = (stoich > zero(stoich)) ? rl : -rl
                     rhsvec[i] = isone(abs(stoich)) ? signedrl : stoich * rl
                 end
             else
-                if stoich isa Symbolics.Symbolic
+                if stoich isa Symbolic
                     rhsvec[i] += stoich * rl
                 else
                     Δspec = isone(abs(stoich)) ? rl : abs(stoich) * rl
@@ -943,7 +943,7 @@ function assemble_diffusion(rs, sts, ispcs, noise_scaling; combinatoric_ratelaws
             drop_dynamics(spec) && continue
 
             i = species_to_idx[spec]
-            if stoich isa Symbolics.Symbolic
+            if stoich isa Symbolic
                 eqs[i, j] = stoich * rlsqrt
             else
                 signedrlsqrt = (stoich > zero(stoich)) ? rlsqrt : -rlsqrt
@@ -985,7 +985,7 @@ function jumpratelaw(rx; combinatoric_ratelaw = true)
         coef = eltype(substoich) <: Number ? one(eltype(substoich)) : 1
         for (i, stoich) in enumerate(substoich)
             s = substrates[i]
-            if stoich isa Symbolics.Symbolic
+            if stoich isa Symbolic
                 rl *= combinatoric_ratelaw ? binomial(s, stoich) :
                       factorial(s) / factorial(s - stoich)
             else

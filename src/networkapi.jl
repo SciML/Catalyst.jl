@@ -1401,7 +1401,7 @@ function addparam!(network::ReactionSystem, p::Symbolic; disablechecks = false)
     reset_networkproperties!(network)
 
     # we don't check subsystems since we will add it to the top-level system...
-    if istree(p) && !(operation(p) isa Sym)
+    if istree(p) && !(operation(p) isa Symbolic && !istree(operation(p)))
         error("If the passed in parameter is an expression, it must correspond to an underlying Variable.")
     end
     curidx = disablechecks ? nothing : findfirst(S -> isequal(S, p), get_ps(network))

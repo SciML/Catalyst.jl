@@ -86,7 +86,7 @@ function make_stoich_str(spec, stoich, subber; kwargs...)
     if isequal(stoich, one(stoich))
         latexraw(subber(spec); kwargs...)
     else
-        if Symbolics.istree(stoich)
+        if istree(stoich)
             LaTeXString("(") *
             latexraw(subber(stoich); kwargs...) *
             LaTeXString(")") *

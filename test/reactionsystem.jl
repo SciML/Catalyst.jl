@@ -630,13 +630,13 @@ end
 
 # test printing with arrays is working ok
 # needs fix for https://github.com/JuliaSymbolics/Symbolics.jl/issues/842
-# let
-#     @parameters a
-#     @variables t
-#     @species A(t) B(t) C(t)[1:2]
-#     rx1 = Reaction(a, [A, C[1]], [C[2], B], [1, 2], [2, 3])
-#     io = IOBuffer()
-#     show(io, rx1)
-#     str = String(take!(io))
-#     @test str == "a, A + 2*(C(t))[1] --> 2*(C(t))[2] + 3*B"
-# end
+let
+    @parameters a
+    @variables t
+    @species A(t) B(t) C(t)[1:2]
+    rx1 = Reaction(a, [A, C[1]], [C[2], B], [1, 2], [2, 3])
+    io = IOBuffer()
+    show(io, rx1)
+    str = String(take!(io))
+    @test str == "a, A + 2*(C(t))[1] --> 2*(C(t))[2] + 3*B"
+end

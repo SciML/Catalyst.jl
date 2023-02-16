@@ -74,8 +74,10 @@ Several Youtube video tutorials and overviews are also available:
   ODE/SDE/jump solver, and can be used within `EnsembleProblem`s for carrying
   out parallelized parameter sweeps and statistical sampling. Plot recipes
   are available for visualizing the solutions.
-- Symbolic Julia `Expr`s (implemented through [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl)) can be obtained for all rate laws and functions determining the
-  deterministic and stochastic terms within resulting ODE, SDE or jump models.
+- [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl)) symbolic
+  expressions and Julia `Expr`s can be obtained for all rate laws and functions
+  determining the deterministic and stochastic terms within resulting ODE, SDE
+  or jump models.
 - [Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to generate
   LaTeX expressions corresponding to generated mathematical models or the
   underlying set of reactions.
@@ -149,8 +151,8 @@ For bugs or feature requests [open an issue](https://github.com/SciML/Catalyst.j
 
 
 ## Supporting and citing Catalyst.jl
-The software in this ecosystem was developed as part of academic research. If you would like to help support it, 
-please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part 
+The software in this ecosystem was developed as part of academic research. If you would like to help support it,
+please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part
 of your research, teaching, or other activities, we would be grateful if you could cite our work:
 ```
 @article {2022Catalyst,
