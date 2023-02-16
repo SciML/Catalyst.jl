@@ -39,7 +39,7 @@ plot(sol, lw=2)
 ```
 ![models1](../assets/models1.svg)
 
-To solve for a steady-state starting from the guess `u0`, one can use
+To solve for a steady state starting from the guess `u0`, one can use
 ```julia
 using SteadyStateDiffEq
 prob = SteadyStateProblem(rn,u0,p)

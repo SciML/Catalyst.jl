@@ -180,8 +180,10 @@ end
         env --> :chem
         return rs
     elseif form == :ode      # Returns ODE system code.
+        cdot --> false
         return convert(ODESystem, rs)
     elseif form == :sde      # Returns SDE system code.
+        cdot --> false
         return convert(SDESystem, rs)
     end
     error("Unrecognised form argument given: $form. This should be either reactions (default), :ode, or :sde.")

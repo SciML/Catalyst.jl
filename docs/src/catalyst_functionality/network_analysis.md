@@ -27,17 +27,16 @@ repressilator = @reaction_network Repressilator begin
        μ, P₃ --> ∅
 end
 ```
-In the [Using Catalyst](@ref using_catalyst)
+In the [Introduction to Catalyst](@ref introduction_to_catalyst)
 tutorial we showed how the above network could be visualized as a
-species-reaction graph. There species are represented by the nodes of the graph
+species-reaction graph. There, species are represented by the nodes of the graph
 and edges show the reactions in which a given species is a substrate or product.
 ```julia
 g = Graph(repressilator)
 ```
 ![Repressilator solution](../assets/repressilator.svg)
 
-We also showed in the [Using
-Catalyst](https://docs.sciml.ai/Catalyst/stable/tutorials/using_catalyst/) tutorial that
+We also showed in the [Introduction to Catalyst](@ref introduction_to_catalyst) tutorial that
 the reaction rate equation ODE model for the repressilator is
 ```math
 \begin{aligned}
@@ -50,9 +49,9 @@ the reaction rate equation ODE model for the repressilator is
 \end{aligned}
 ```
 
-## Matrix-Vector Reaction Rate Equation Representation
+## Matrix-vector reaction rate equation representation
 In general, reaction rate equation (RRE) ODE models for chemical reaction networks can
-be represented as a first order system of ODEs in a compact matrix-vector notation. Suppose
+be represented as a first-order system of ODEs in a compact matrix-vector notation. Suppose
 we have a reaction network with ``K`` reactions and ``M`` species, labelled by the state vector
 ```math
 \mathbf{x}(t) = \begin{pmatrix} x_1(t) \\ \vdots \\ x_M(t)) \end{pmatrix}.
@@ -85,7 +84,7 @@ rxs = reactions(repressilator)
 Note, as [`oderatelaw`](@ref) takes just one reaction as input we use
 broadcasting to apply it to each element of `rxs`.
 
-Let's check this really gives the same ODEs as Catalyst. Here is what Catalyst
+Let's check that this really gives the same ODEs as Catalyst. Here is what Catalyst
 generates by converting to an `ODESystem`
 ```@example s1
 osys = convert(ODESystem, repressilator)
@@ -102,7 +101,7 @@ Let's check these are equal symbolically
 isequal(odes, odes2)
 ```
 
-## Reaction Complex Representation
+## Reaction complex representation
 We now introduce a further decomposition of the RRE ODEs, which has been used to
 facilitate analysis of a variety of reaction network properties. Consider a simple
 reaction system like
@@ -206,26 +205,26 @@ complexgraph(repressilator)
 
 Here ∅ represents the empty complex, black arrows show reactions converting
 substrate complexes into product complexes where the rate is just a number or
-parameter, and red arrows indicate conversion of substrate complexes into
+parameter, and red arrows indicate the conversion of substrate complexes into
 product complexes where the rate is an expression involving chemical species.
 
-## Aspects of Reaction Network Structure
+## Aspects of reaction network structure
 The reaction complex representation can be exploited via [Chemical Reaction
 Network Theory](https://en.wikipedia.org/wiki/Chemical_reaction_network_theory)
-to provide insight into possible steady-state and time-dependent properties of
-RRE ODE models and  stochastic chemical kinetics models. We'll now illustrate
+to provide insight into possible steady state and time-dependent properties of
+RRE ODE models and stochastic chemical kinetics models. We'll now illustrate
 some of the types of network properties that Catalyst can determine, using the
 reaction complex representation in these calculations.
 
 Consider the following reaction network.
 ```@example s1
 rn = @reaction_network begin
-     (k1,k2), A + B <--> C
-     k3, C --> D+E
-     (k4,k5), D+E <--> F
-     (k6,k7), 2A <--> B+G
-     k8, B+G --> H
-     k9, H --> 2A
+    (k1,k2), A + B <--> C
+    k3, C --> D+E
+    (k4,k5), D+E <--> F
+    (k6,k7), 2A <--> B+G
+    k8, B+G --> H
+    k9, H --> 2A
 end
 ```
 with graph
@@ -235,7 +234,7 @@ complexgraph(rn)
 
 ![network_1](../assets/complex_rn.svg)
 
-### Linkage classes and sub-networks of the reaction network
+#### Linkage classes and sub-networks of the reaction network
 The preceding reaction complex graph shows that `rn` is composed of two
 disconnected sub-graphs, one containing the complexes ``A+B``, ``C``, ``D+E``, and
 ``F``, the other containing the complexes ``2A``, ``B + G``, and ``H``. These sets,
@@ -274,11 +273,11 @@ and,
 
 ![subnetwork_2](../assets/complex_subnets2.svg)
 
-### Deficiency of the network
+#### Deficiency of the network
 A famous theorem in Chemical Reaction Network Theory, the Deficiency Zero
 Theorem [^1], allows us to use knowledge of the net stoichiometry matrix and the
 linkage classes of a *mass action* RRE ODE system to draw conclusions about the
-system's possible steady-states. In this section we'll see how Catalyst can
+system's possible steady states. In this section we'll see how Catalyst can
 calculate a network's deficiency.
 
 The rank, ``r``, of a reaction network is defined as the dimension of the
@@ -326,7 +325,7 @@ Quoting Feinberg [^1]
 > stoichiometry vectors] are as independent as the partition of complexes into
 > linkage classes will allow.
 
-### Reversibility of the network
+#### Reversibility of the network
 A reaction network is *reversible* if the "arrows" of the reactions are
 symmetric so that every reaction is accompanied by its reverse reaction.
 Catalyst's API provides the [`isreversible`](@ref) function to determine whether
@@ -375,10 +374,10 @@ isweaklyreversible(rn, subnets)
 Every reversible network is also weakly reversible, but not every weakly
 reversible network is reversible.
 
-### Deficiency Zero Theorem
+#### Deficiency Zero Theorem
 Knowing the deficiency and weak reversibility of a mass action chemical reaction
 network ODE model allows us to make inferences about the corresponding
-steady-state behavior. Before illustrating how this works for one example, we
+steady state behavior. Before illustrating how this works for one example, we
 need one last definition.
 
 Recall that in the matrix-vector representation for the RRE ODEs, the entries,
@@ -420,7 +419,7 @@ $\mathbf{x}(0)$ is just ``(\mathbf{x}(0) + \span\{\mathbf{N}_k\}) \cap
 ``\mathbb{R}^M`` with strictly positive components.
 
 With these definitions we can now see how knowing the deficiency and weak
-reversibility of the network can tell us about its steady-state behavior.
+reversibility of the network can tell us about its steady state behavior.
 Consider the previous example, which we know is weakly reversible. Its
 deficiency is
 ```@example s1
@@ -432,7 +431,7 @@ from the network's definition):
 all(rx -> ismassaction(rx, rn), reactions(rn))
 ```
 We can therefore apply the Deficiency Zero Theorem to draw conclusions about the
-system's steady-state behavior. The Deficiency Zero Theorem (roughly) says that
+system's steady state behavior. The Deficiency Zero Theorem (roughly) says that
 a mass action network with deficiency zero satisfies
 1. If the network is weakly reversible, then independent of the reaction rate
    constants the RRE ODEs have exactly one equilibrium solution within each
@@ -504,5 +503,6 @@ Catalyst.reset_networkproperties!(rn)
 Network property functions will then recalculate their associated properties and
 cache the new values the next time they are called.
 
+---
 ## References
 [^1]: [Feinberg, M. *Foundations of Chemical Reaction Network Theory*, Applied Mathematical Sciences 202, Springer (2019).](https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true)

@@ -16,7 +16,7 @@ for sensitivity analysis, parameter estimation, machine learning applications,
 etc).
 
 ## Features
-- DSL provides a simple and readable format for manually specifying chemical
+- A DSL provides a simple and readable format for manually specifying chemical
   reactions.
 - Catalyst `ReactionSystem`s provide a symbolic representation of reaction networks,
   built on [ModelingToolkit.jl](https://docs.sciml.ai/ModelingToolkit/stable/) and
@@ -31,7 +31,7 @@ etc).
   `ModelingToolkit.AbstractSystem`s, including symbolic ODE, SDE and jump process
   representations.
 - Conservation laws can be detected and applied to reduce system sizes, and generate
-  non-singular Jacobians, during conversion to ODEs, SDEs, and steady-state equations.
+  non-singular Jacobians, during conversion to ODEs, SDEs, and steady state equations.
 - By leveraging ModelingToolkit, users have a variety of options for generating
   optimized system representations to use in solvers. These include construction
   of dense or sparse Jacobians, multithreading or parallelization of generated
@@ -43,7 +43,7 @@ etc).
   ODE/SDE/jump solver, and can be used within `EnsembleProblem`s for carrying
   out parallelized parameter sweeps and statistical sampling. Plot recipes
   are available for visualizing the solutions.
-- Julia `Expr`s can be obtained for all rate laws and functions determining the
+- Symbolic Julia `Expr`s (implemented through [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl)) can be obtained for all rate laws and functions determining the
   deterministic and stochastic terms within resulting ODE, SDE or jump models.
 - [Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to generate
   LaTeX expressions corresponding to generated mathematical models or the
@@ -115,7 +115,7 @@ plot(sol, lw=2)
 ## Getting Help
 Catalyst developers are active on the [Julia
 Discourse](https://discourse.julialang.org/), and the [Julia
-Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sciml-sysbio.
+Slack's](https://julialang.slack.com) \#sciml-bridged and \#sciml-sysbio channels.
 For bugs or feature requests [open an
 issue](https://github.com/SciML/Catalyst.jl/issues).
 

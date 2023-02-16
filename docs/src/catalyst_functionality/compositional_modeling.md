@@ -5,18 +5,18 @@ can construct the earlier repressilator model by composing together three
 identically repressed genes, and how to use compositional modeling to create
 compartments.
 
-## Compositional Modeling Tooling
+## Compositional modeling tooling
 Catalyst supports two ModelingToolkit interfaces for composing multiple
 [`ReactionSystem`](@ref)s together into a full model. The first mechanism for
 extending a system is the `extend` command
 ```@example ex1
 using Catalyst
 basern = @reaction_network rn1 begin
-           k, A + B --> C
-         end
+  k, A + B --> C
+end
 newrn = @reaction_network rn2 begin
-        r, C --> A + B
-      end
+  r, C --> A + B
+end
 @named rn = extend(newrn, basern)
 ```
 Here we extended `basern` with `newrn` giving a system with all the
@@ -91,24 +91,25 @@ ModelingToolkit.get_systems(flatrn)
 More about ModelingToolkit's interface for compositional modeling can be found
 in the [ModelingToolkit docs](http://docs.sciml.ai/ModelingToolkit/stable/).
 
-## Compositional Model of the Repressilator
+## Compositional model of the repressilator
 Let's apply the tooling we've just seen to create the repressilator in a more
 modular fashion. We start by defining a function that creates a negatively
 repressed gene, taking the repressor as input
 ```@example ex1
 function repressed_gene(; R, name)
-    @reaction_network $name begin
-        hillr($R,α,K,n), ∅ --> m
-        (δ,γ), m <--> ∅
-        β, m --> m + P
-        μ, P --> ∅
-    end
+  @reaction_network $name begin
+    hillr($R,α,K,n), ∅ --> m
+    (δ,γ), m <--> ∅
+    β, m --> m + P
+    μ, P --> ∅
+  end
 end
+nothing # hide
 ```
 Here we assume the user will pass in the repressor species as a ModelingToolkit
 variable, and specify a name for the network. We use Catalyst's interpolation
 ability to substitute the value of these variables into the DSL (see
-[Interpolation of Julia Variables](@ref)). To make the repressilator we now make
+[Interpolation of Julia Variables](@ref dsl_description_interpolation_of_variables)). To make the repressilator we now make
 three genes, and then compose them together
 ```@example ex1
 @variables t, G3₊P(t)
@@ -132,10 +133,10 @@ signal Catalyst that these variables will come from parallel systems in the tree
 that have the same parent as the system being constructed (in this case the
 top-level `repressilator` system).
 
-## Compartment-based Models
+## Compartment-based models
 Finally, let's see how we can make a compartment-based model. Let's create a
 simple eukaryotic gene expression model with negative feedback by protein
-dimers. Transcription and gene inhibition by the protein dimer occur in the
+dimers. Transcription and gene inhibition by the protein dimer occurs in the
 nucleus, translation and dimerization occur in the cytosol, and nuclear import
 and export reactions couple the two compartments. We'll include volume
 parameters for the nucleus and cytosol, and assume we are working with species
@@ -153,24 +154,24 @@ account for compartment volumes:
 ```@example ex1
 # transcription and regulation
 nuc = @reaction_network nuc begin
-        α, G --> G + M
-        (κ₊/V,κ₋), D + G <--> DG
-      end
+  α, G --> G + M
+  (κ₊/V,κ₋), D + G <--> DG
+end
 
 # translation and dimerization
 cyto = @reaction_network cyto begin
-            β, M --> M + P
-            (k₊/V,k₋), 2P <--> D
-            σ, P --> 0
-            μ, M --> 0
-        end
+  β, M --> M + P
+  (k₊/V,k₋), 2P <--> D
+  σ, P --> 0
+  μ, M --> 0
+end
 
 # export reactions,
 # γ,δ=probability per time to be exported/imported
 model = @reaction_network model begin
-       γ, $(nuc.M) --> $(cyto.M)
-       δ, $(cyto.D) --> $(nuc.D)
-    end
+  γ, $(nuc.M) --> $(cyto.M)
+  δ, $(cyto.D) --> $(nuc.D)
+end
 @named model = compose(model, [nuc, cyto])
 ```
 A graph of the resulting network is

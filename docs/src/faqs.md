@@ -100,8 +100,10 @@ generating reaction rate laws, see also the [Reaction rate laws used in
 simulations](@ref) section. Leaving this keyword out for systems with floating
 point stoichiometry will give an error message.
 
+For a more extensive documentation of using non-integer stoichiometric coefficients, please see the [Symbolic Stochiometries](@ref parametric_stoichiometry) section.
+
 ## How to set default values for initial conditions and parameters?
-To set defaults when using the `@reaction_network` macro, use the `@species` and
+How to set defaults when using the `@reaction_network` macro is desribed in detail [here](@ref dsl_description_defaults). Briefly, to do this, use the `@species` and
 `@parameters` options:
 ```julia
 using Catalyst
@@ -112,6 +114,7 @@ sir = @reaction_network sir begin
     ν, I --> R
 end
 ```
+
 When directly constructing a `ReactionSystem`, we can set the symbolic values to
 have the desired default values, and this will automatically be propagated
 through to the equation solvers:
@@ -126,6 +129,7 @@ oprob = ODEProblem(sir, [], (0.0, 250.0))
 sol = solve(oprob, Tsit5())
 plot(sol)
 ```
+
 One can also build a mapping from parameter/species to value/initial
 condition and pass these to the `ReactionSystem` via the `defaults` keyword
 argument:
@@ -137,6 +141,7 @@ rx2 = Reaction(ν, [I], [R])
 defs = [β => 1e-4, ν => .01, S => 999.0, I => 1.0, R => 0.0]
 @named sir = ReactionSystem([rx1, rx2], t; defaults = defs)
 ```
+
 Finally, default values can also be added after creating the system via the
 `setdefaults!` command, like
 ```julia
@@ -222,8 +227,8 @@ end
 ```
 has rate ``d[X]/dt = -2 k``.
 
-## [How to specify user defined functions as reaction rates?](@id user_functions)
-The reaction network DSL can "see" user defined functions that work with
+## [How to specify user-defined functions as reaction rates?](@id user_functions)
+The reaction network DSL can "see" user-defined functions that work with
 ModelingToolkit. e.g., this is should work
 ```julia
 myHill(x) = 2.0*x^3/(x^3+1.5^3)
