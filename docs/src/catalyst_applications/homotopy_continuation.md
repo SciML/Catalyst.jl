@@ -1,27 +1,51 @@
 # [Finding Steady States through Homotopy Continuation](@id homotopy_continuation)
 
-The steady states of a dynamical system ${dx \over dt} = f(x)$ can be found by solving $0 = f(x)$. This is typically a hard problem, and generally, there is no method guaranteed to find all steady states for a system that has multiple ones. However, most chemical reaction networks generate polynomial systems (the main exception is when Hill functions with non-integer exponents are used). The roots of these can reliably be found through a *homotopy continuation* algorithm. This is implemented in Julia through the [HomotopyContinuation.jl](https://www.juliahomotopycontinuation.org/) package. In this tutorial, we will demonstrate how homotopy continuation can be used to find the steady states of a chemical reaction network implemented in  Catalyst.
+The steady states of a dynamical system ${dx \over dt} = f(x)$ can be found by
+solving $0 = f(x)$. This is typically a hard problem, and generally, there is no
+method guaranteed to find all steady states for a system that has multiple ones.
+However, most chemical reaction networks generate polynomial systems (the main
+exception is when Hill functions with non-integer exponents are used). The roots
+of these can reliably be found through a *homotopy continuation* algorithm. This
+is implemented in Julia through the
+[HomotopyContinuation.jl](https://www.juliahomotopycontinuation.org/) package.
+In this tutorial, we will demonstrate how homotopy continuation can be used to
+find the steady states of a chemical reaction network implemented in  Catalyst.
 
-## Basic example 
-For this tutorial, we will use a model from Wilhem (2009)[^1] (which demonstrates bistability in a small chemical reaction network). We declare the model and the parameter set for which we want to find the steady states:
+## Basic example
+For this tutorial, we will use a model from Wilhem (2009)[^1] (which
+demonstrates bistability in a small chemical reaction network). We declare the
+model and the parameter set for which we want to find the steady states:
 ```@example hc1
-using Catalyst
+using Catalyst, ModelingToolkit
+const MT = ModelingToolkit
+
 wilhelm_2009_model = @reaction_network begin
     k1, Y --> 2X
     k2, 2X --> X + Y
     k3, X + Y --> Y
     k4, X --> 0
 end
-p = [:k1 => 8.0, :k2 => 2.0, :k3 => 1.0, :k4 => 1.5]
+
+# add default parameters values to model
+setdefaults!(wilhelm_2009_model, [:k1 => 8.0, :k2 => 2.0, :k3 => 1.0, :k4 => 1.5])
 nothing   # hide
 ```
-Next, we will need to extract the actual equations from our model. In addition, we will substitute in our parameter values.
+Next, we will need to extract the actual equations from our model. In addition,
+we will substitute in our parameter values to these equations.
 ```@example hc1
 ns = convert(NonlinearSystem, wilhelm_2009_model)
-subs = Dict(Pair.(ModelingToolkit.parameters(ns), last.(p)))
+
+# this gets the parameter values ordered consistent with parameters(ns)
+pvals = MT.varmap_to_vars([], MT.parameters(ns); defaults = MT.defaults(ns))
+
+subs = Dict(MT.parameters(ns) .=> pvals)
 new_eqs = map(eq -> substitute(eq.rhs, subs), equations(ns))
+
 ```
-Finally, we use the `as_polynomial` function to read our symbolic expression as a polynomial, within it, we can apply homotopy continuation's `solve` command to find the roots. In addition, we use the `real_solutions` to filter away imaginary roots (as CRNs' states typically are non-imaginary):
+Finally, we use the `as_polynomial` function to read our symbolic expression as
+a polynomial, within it, we can apply homotopy continuation's `solve` command to
+find the roots. In addition, we use the `real_solutions` to filter away
+imaginary roots (as CRNs' states typically are non-imaginary):
 ```@example hc1
 using HomotopyContinuation
 sols = real_solutions(as_polynomial((f, x...) -> HomotopyContinuation.solve(collect(x)), new_eqs...))
@@ -29,7 +53,7 @@ sols = real_solutions(as_polynomial((f, x...) -> HomotopyContinuation.solve(coll
 While it is not the case for this CRN, we note that some solutions with negative species concentrations may still appear. Typically, these will need to be filtered away as well.
 
 ## Rational polynomial systems
-It is not uncommon for CRNs to generate systems corresponding to rational multivariate polynomials (e.g. through Hill functions). The roots of these can also be found using homotopy continuation. An expanded tutorial for this will be published once some awaited improvements to the `as_polynomial` function are completed. 
+It is not uncommon for CRNs to generate systems corresponding to rational multivariate polynomials (e.g. through Hill functions). The roots of these can also be found using homotopy continuation. An expanded tutorial for this will be published once some awaited improvements to the `as_polynomial` function are completed.
 
 ## Systems with conservation laws
 Finally, some systems are underdetermined, and have an infinite number of possible steady states. These are typically systems containing a conservation law, e.g.
