@@ -203,13 +203,13 @@ parameter_sets = []
 no_parameters_9 = @reaction_network begin
     (1.5, 1, 2), ∅ ⟶ (X1, X2, X3)
     (0.01, 2.3, 1001), (X1, X2, X3) ⟶ ∅
-    (π, 42), X1 + X2 ⟷ X3
+    (3.1, 42), X1 + X2 ⟷ X3
     (19.9, 999.99), X3 ⟷ X4
     (sqrt(3.7), exp(1.9)), X4 ⟷ X1 + X2
 end
 push!(identical_networks_3, reaction_networks_standard[9] => no_parameters_9)
 push!(parameter_sets,
-      [1.5, 1, 2, 0.01, 2.3, 1001, π, 42, 19.9, 999.99, sqrt(3.7), exp(1.9)])
+      [1.5, 1, 2, 0.01, 2.3, 1001, 3.1, 42, 19.9, 999.99, sqrt(3.7), exp(1.9)])
 
 no_parameters_10 = @reaction_network begin
     0.01, ∅ ⟶ X1
@@ -350,8 +350,6 @@ test_network = @reaction_network begin
     (μ, Μ), ω ⟷ Ω
 end
 
-# Networks containing t, im, and π should generate errors.
-
 # test I works
 rn = @reaction_network begin
     @parameters k1 k2
@@ -370,3 +368,23 @@ rn = @reaction_network SIR1 begin
     k2, I --> R
 end
 @test nameof(rn) == :SIR1
+
+# Test that forbidden symbols do not work:
+
+test_network = @reaction_network begin t * k, X --> ∅ end
+@test length(species(test_network)) == 1
+@test length(parameters(test_network)) == 1
+
+test_network = @reaction_network begin π, X --> ∅ end
+@test length(species(test_network)) == 1
+@test length(parameters(test_network)) == 0
+@test reactions(test_network)[1].rate == π
+
+@test_throws LoadError @eval @reaction pi, 0 --> B
+@test_throws LoadError @eval @reaction ℯ, 0 --> B
+@test_throws LoadError @eval @reaction im, 0 --> B
+@test_throws LoadError @eval @reaction nothing, 0 --> B
+@test_throws LoadError @eval @reaction k, 0 --> pi
+@test_throws LoadError @eval @reaction k, 0 --> ℯ
+@test_throws LoadError @eval @reaction k, 0 --> im
+@test_throws LoadError @eval @reaction k, 0 --> nothing
