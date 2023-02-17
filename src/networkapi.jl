@@ -1,39 +1,3 @@
-# Functions for querying network properties.
-
-# DEPRECIATED after v9.0
-function params(network)
-    Base.depwarn("`params` is depreciated, please use `ModelingToolkit.parameters` for all system and subsystem parameters, or `reactionparams` for all parameters within system and subsystem `Reaction`s.",
-                 :params, force = true)
-    parameters(network)
-end
-
-function numparams(network)
-    Base.depwarn("`numparams` is depreciated, please use `length(ModelingToolkit.parameters)` for the total number of parameters across all systems and subsystems, or `numreactionparams` for the number of parameters within system and subsystem `Reaction`s.",
-                 :params, force = true)
-    length(parameters(network))
-end
-
-"""
-    merge(network1::ReactionSystem, network2::ReactionSystem)
-
-Create a new network merging `network1` and `network2`.
-
-Notes:
-- Duplicate reactions between the two networks are not filtered out.
-- [`Reaction`](@ref)s are not deepcopied to minimize allocations, so the new
-  network will share underlying data arrays.
-- Subsystems are not deepcopied between the two networks and will hence be
-  shared.
-- Returns the merged network.
-"""
-function Base.merge(network1::ReactionSystem, network2::ReactionSystem)
-    Base.depwarn("`merge(sys1::ReactionSystem, sys2::ReactionNetwork)` is depreciated, please use `ModelingToolkit.extend` instead.",
-                 :merge, force = true)
-    network = make_empty_network()
-    merge!(network, network1)
-    merge!(network, network2)
-    network
-end
 
 ######### Accessors: #########
 
@@ -53,18 +17,32 @@ end
 """
     species(network)
 
-Given a [`ReactionSystem`](@ref), return a vector of all species defined in the system
-and any subsystems that are of type `ReactionSystem`. To get the variables in the system
-and all subsystems, including non-`ReactionSystem` subsystems, uses `states(network)`.
+Given a [`ReactionSystem`](@ref), return a vector of all species defined in the system and
+any subsystems that are of type `ReactionSystem`. To get the species and non-species
+variables in the system and all subsystems, including non-`ReactionSystem` subsystems, uses
+`states(network)`.
 
 Notes:
 - If `ModelingToolkit.get_systems(network)` is non-empty will allocate.
 """
 function species(network)
-    sts = get_states(network)
+    sts = get_species(network)
     systems = filter_nonrxsys(network)
     isempty(systems) && return sts
     unique([sts; reduce(vcat, map(sys -> species(sys, species(sys)), systems))])
+end
+
+"""
+    nonspecies(network)
+
+Return the non-species variables within the network, i.e. those states for which `isspecies
+== false`.
+
+Notes:
+- Allocates a new array to store the non-species variables.
+"""
+function nonspecies(network)
+    states(network)[(numspecies(network) + 1):end]
 end
 
 """
@@ -76,13 +54,26 @@ the parameters in the system and all subsystems, including non-`ReactionSystem`
 subsystems, use `parameters(network)`.
 
 Notes:
-- If `ModelingToolkit.get_systems(network)` is non-empty will allocate.
+- Allocates and has to calculate these dynamically by comparison for each reaction.
 """
 function reactionparams(network)
     ps = get_ps(network)
     systems = filter_nonrxsys(network)
     isempty(systems) && return ps
     unique([ps; reduce(vcat, map(sys -> species(sys, reactionparams(sys)), systems))])
+end
+
+"""
+    numparams(network)
+
+Return the total number of parameters within the given system and all subsystems.
+"""
+function numparams(network)
+    nps = length(get_ps(network))
+    for sys in get_systems(network)
+        nps += numparams(sys)
+    end
+    nps
 end
 
 function namespace_reactions(network::ReactionSystem)
@@ -100,7 +91,7 @@ Notes:
 - If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
 """
 function reactions(network)
-    rxs = get_eqs(network)
+    rxs = get_rxs(network)
     systems = filter_nonrxsys(network)
     isempty(systems) && (return rxs)
     [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
@@ -146,14 +137,13 @@ end
 
 Return the total number of species within the given [`ReactionSystem`](@ref) and
 subsystems that are `ReactionSystem`s.
-
-Notes
-- If there are no subsystems this will be fast.
-- As this calls [`species`](@ref), it can be slow and will allocate if there are
-  any subsystems.
 """
 function numspecies(network)
-    length(species(network))
+    numspcs = length(get_species(network))
+    for sys in get_systems(network)
+        (sys isa ReactionSystem) && (numspcs += numspecies(sys))
+    end
+    numspcs
 end
 
 """
@@ -163,7 +153,7 @@ Return the total number of reactions within the given [`ReactionSystem`](@ref)
 and subsystems that are `ReactionSystem`s.
 """
 function numreactions(network)
-    nr = length(get_eqs(network))
+    nr = length(get_rxs(network))
     for sys in get_systems(network)
         (sys isa ReactionSystem) && (nr += numreactions(sys))
     end
@@ -189,7 +179,7 @@ end
     dependents(rx, network)
 
 Given a [`Reaction`](@ref) and a [`ReactionSystem`](@ref), return a vector of the
-*non-constant* species the reaction rate law depends on. e.g., for
+*non-constant* species and variables the reaction rate law depends on. e.g., for
 
 `k*W, 2X + 3Y --> 5Z + W`
 
@@ -200,12 +190,22 @@ Notes:
 - Does not check for dependents within any subsystems.
 - Constant species are not considered dependents since they are internally treated as
   parameters.
+- If the rate expression depends on a non-species state variable that will be included in
+  the dependents, i.e. in
+  ```julia
+  @parameters k
+  @variables t V(t)
+  @species A(t) B(t) C(t)
+  rx = Reaction(k*V, [A, B], [C])
+  @named rs = ReactionSystem([rx], t)
+  issetequal(dependents(rx, rs), [A,B,V]) == true
+  ```
 """
 function dependents(rx, network)
     if rx.rate isa Number
         return rx.substrates
     else
-        rvars = get_variables(rx.rate, species(network))
+        rvars = get_variables(rx.rate, states(network))
         return union!(rvars, rx.substrates)
     end
 end
@@ -414,7 +414,8 @@ setdefaults!(sir, [:S => 999.0, :I => 1.0, :R => 1.0, :β => 1e-4, :ν => .01])
 
 # or
 @parameter β ν
-@variables t S(t) I(t) R(t)
+@variables t
+@species S(t) I(t) R(t)
 setdefaults!(sir, [S => 999.0, I => 1.0, R => 0.0, β => 1e-4, ν => .01])
 ```
 gives initial/default values to each of `S`, `I` and `β`
@@ -880,9 +881,8 @@ incidencematgraph(sir)
 function incidencematgraph(rn::ReactionSystem)
     nps = get_networkproperties(rn)
     if Graphs.nv(nps.incidencegraph) == 0
-        isempty(nps.incidencemat) && error("Please call reactioncomplexes(rn) first to "
-              *
-              "construct the incidence matrix.")
+        isempty(nps.incidencemat) &&
+            error("Please call reactioncomplexes(rn) first to construct the incidence matrix.")
         nps.incidencegraph = incidencematgraph(nps.incidencemat)
     end
     nps.incidencegraph
@@ -1126,8 +1126,8 @@ conservedequations(rn)
 gives
 ```
 2-element Vector{Equation}:
- B(t) ~ A(t) + _ConLaw[1]
- C(t) ~ _ConLaw[2] - A(t)
+ B(t) ~ A(t) + Γ[1]
+ C(t) ~ Γ[2] - A(t)
 ```
 """
 function conservedequations(rn::ReactionSystem)
@@ -1156,8 +1156,8 @@ conservationlaw_constants(rn)
 gives
 ```
 2-element Vector{Equation}:
- _ConLaw[1] ~ B(t) - A(t)
- _ConLaw[2] ~ A(t) + C(t)
+ Γ[1] ~ B(t) - A(t)
+ Γ[2] ~ A(t) + C(t)
 ```
 """
 function conservationlaw_constants(rn::ReactionSystem)
@@ -1198,7 +1198,7 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     indepspecs = sts[indepidxs]
     depidxs = col_order[(r + 1):end]
     depspecs = sts[depidxs]
-    constants = MT.unwrap.(MT.scalarize((@parameters _ConLaw[1:nullity])[1]))
+    constants = MT.unwrap.(MT.scalarize((@parameters Γ[1:nullity])[1]))
 
     conservedeqs = Equation[]
     constantdefs = Equation[]
@@ -1305,7 +1305,6 @@ function isequal_ignore_names(rn1::ReactionSystem, rn2::ReactionSystem)
     issetequal(get_ps(rn1), get_ps(rn2)) || return false
     issetequal(MT.get_observed(rn1), MT.get_observed(rn2)) || return false
     issetequal(get_eqs(rn1), get_eqs(rn2)) || return false
-    (get_constraints(rn1) == get_constraints(rn2)) || return false
 
     # subsystems
     (length(get_systems(rn1)) == length(get_systems(rn2))) || return false
@@ -1360,13 +1359,17 @@ function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks = false
     reset_networkproperties!(network)
 
     isconstant(s) && error("Constant species should be added via addparams!.")
+    isspecies(s) ||
+        error("$s is not a valid symbolic species. Please use @species to declare it.")
 
     # we don't check subsystems since we will add it to the top-level system...
     curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), get_states(network))
     if curidx === nothing
         push!(get_states(network), s)
+        sort!(get_states(network); by = !isspecies)
+        push!(get_species(network), s)
         MT.process_variables!(get_var_to_name(network), get_defaults(network), [s])
-        return length(get_states(network))
+        return length(get_species(network))
     else
         return curidx
     end
@@ -1391,16 +1394,21 @@ end
 """
     reorder_states!(rn, neworder)
 
-Given a [`ReactionSystem`](@ref) and a vector `neworder`, orders the states of `rn` accordingly to `neworder`.
+Given a [`ReactionSystem`](@ref) and a vector `neworder`, reorders the states of `rn`, i.e.
+`get_states(rn)`, according to `neworder`.
 
 Notes:
-- Currently only supports `ReactionSystem`s without constraints or subsystems.
+- Currently only supports `ReactionSystem`s without subsystems.
 """
 function reorder_states!(rn, neworder)
-    (get_constraints(rn) === nothing) && isempty(get_systems(rn)) ||
-        error("Reordering of states is only supported for systems without constraints or subsystems.")
-    permute!(get_states(rn), neworder)
     reset_networkproperties!(rn)
+
+    permute!(get_states(rn), neworder)
+    if !issorted(get_states(rn); by = !isspecies)
+        @warn "New ordering has resulted in a non-species state preceding a species state. This is not allowed so states have been resorted to ensure species precede non-species."
+        sort!(get_states(rn); by = !isspecies)
+    end
+    get_species(rn) .= Iterators.filter(isspecies, get_states(rn))
     nothing
 end
 
@@ -1420,7 +1428,7 @@ function addparam!(network::ReactionSystem, p::Symbolic; disablechecks = false)
     reset_networkproperties!(network)
 
     # we don't check subsystems since we will add it to the top-level system...
-    if istree(p) && !(operation(p) isa Sym)
+    if istree(p) && !(operation(p) isa Symbolic && !istree(operation(p)))
         error("If the passed in parameter is an expression, it must correspond to an underlying Variable.")
     end
     curidx = disablechecks ? nothing : findfirst(S -> isequal(S, p), get_ps(network))
@@ -1462,7 +1470,9 @@ Notes:
 function addreaction!(network::ReactionSystem, rx::Reaction)
     reset_networkproperties!(network)
     push!(get_eqs(network), rx)
-    length(get_eqs(network))
+    sort(get_eqs(network); by = eqsortby)
+    push!(get_rxs(network), rx)
+    length(get_rxs(network))
 end
 
 """
@@ -1480,17 +1490,29 @@ Notes:
 - `combinatoric_ratelaws` is the value of `network1`.
 """
 function Base.merge!(network1::ReactionSystem, network2::ReactionSystem)
-    ((get_constraints(network1) === nothing) && (get_constraints(network2) === nothing)) ||
-        error("merge! does not currently support ReactionSystems with constraints, consider ModelingToolkit.extend instead.")
     isequal(get_iv(network1), get_iv(network2)) ||
         error("Reaction networks must have the same independent variable to be mergable.")
     union!(get_sivs(network1), get_sivs(network2))
-    append!(get_eqs(network1), get_eqs(network2))
+
+    union!(get_eqs(network1), get_eqs(network2))
+    sort!(get_eqs(network1), by = eqsortby)
+    union!(get_rxs(network1), get_rxs(network2))
+    (count(eq -> eq isa Reaction, get_eqs(network1)) == length(get_rxs(network1))) ||
+        error("Unequal number of reactions from get_rxs(sys) and get_eqs(sys) after merging.")
+
     union!(get_states(network1), get_states(network2))
+    sort!(get_states(network1), by = !isspecies)
+    union!(get_species(network1), get_species(network2))
+    (count(isspecies, get_states(network1)) == length(get_species(network1))) ||
+        error("Unequal number of species from get_species(sys) and get_states(sys) after merging.")
+
     union!(get_ps(network1), get_ps(network2))
-    append!(get_observed(network1), get_observed(network2))
-    append!(get_systems(network1), get_systems(network2))
+    union!(get_observed(network1), get_observed(network2))
+    union!(get_systems(network1), get_systems(network2))
     merge!(get_defaults(network1), get_defaults(network2))
+    union!(MT.get_continuous_events(network1), MT.get_continuous_events(network2))
+    union!(MT.get_discrete_events(network1), MT.get_discrete_events(network2))
+
     reset_networkproperties!(network1)
     network1
 end
@@ -1542,10 +1564,10 @@ that the rate laws of all reactions reduce to units of (species units) / (time
 units).
 
 Notes:
-- Does not check subsystems too.
+- Does not check subsystems, constraint equations, or non-species variables.
 """
 function validate(rs::ReactionSystem, info::String = "")
-    specs = get_states(rs)
+    specs = get_species(rs)
 
     # if there are no species we don't check units on the system
     isempty(specs) && return true
@@ -1566,7 +1588,7 @@ function validate(rs::ReactionSystem, info::String = "")
         MT.all_dimensionless(get_ps(rs)) && return true
 
     rateunits = specunits / timeunits
-    for rx in get_eqs(rs)
+    for rx in get_rxs(rs)
         rxunits = get_unit(rx.rate)
         for (i, sub) in enumerate(rx.substrates)
             rxunits *= get_unit(sub)^rx.substoich[i]

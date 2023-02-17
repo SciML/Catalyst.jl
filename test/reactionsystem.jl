@@ -2,8 +2,9 @@ using Catalyst, LinearAlgebra, JumpProcesses, Test, OrdinaryDiffEq, StochasticDi
 
 const MT = ModelingToolkit
 
-@parameters t k[1:20]
-@variables A(t) B(t) C(t) D(t)
+@parameters k[1:20]
+@variables t
+@species A(t) B(t) C(t) D(t)
 rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
     Reaction(k[2], [B], nothing),            # B -> 0
     Reaction(k[3], [A], [C]),                  # A -> C
@@ -178,7 +179,8 @@ G2 = sf.g(u, p, t)
 
 # test with JumpSystem
 let p = p
-    @variables t A(t) B(t) C(t) D(t) E(t) F(t)
+    @variables t
+    @species A(t) B(t) C(t) D(t) E(t) F(t)
     rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
         Reaction(k[2], [B], nothing),            # B -> 0
         Reaction(k[3], [A], [C]),                  # A -> C
@@ -278,7 +280,7 @@ end
 
 # test for https://github.com/SciML/ModelingToolkit.jl/issues/436
 @parameters t
-@variables S(t) I(t)
+@species S(t) I(t)
 rxs = [Reaction(1, [S], [I]), Reaction(1.1, [S], [I])]
 @named rs = ReactionSystem(rxs, t, [S, I], [])
 js = convert(JumpSystem, rs)
@@ -290,7 +292,7 @@ sol = solve(jprob, SSAStepper())
 jprob = JumpProblem(rs, dprob, Direct(), save_positions = (false, false))
 
 @parameters k1 k2
-@variables R(t)
+@species R(t)
 rxs = [Reaction(k1 * S, [S, I], [I], [2, 3], [2]),
     Reaction(k2 * R, [I], [R])]
 @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
@@ -351,7 +353,8 @@ rxs = [Reaction(x * t * A * B + y, [A], nothing)]
 @named rs2 = ReactionSystem(rxs, t)
 @test Catalyst.isequal_ignore_names(rs1, rs2)
 
-@variables t, L(t), H(t)
+@variables t
+@species L(t), H(t)
 obs = [Equation(L, 2 * x + y)]
 @named rs3 = ReactionSystem(rxs, t; observed = obs)
 L2 = L
@@ -360,7 +363,8 @@ L2 = L
 
 # test non-integer stoichiometry goes through
 @parameters k b
-@variables t A(t) B(t) C(t) D(t)
+@variables t
+@species A(t) B(t) C(t) D(t)
 rx1 = Reaction(k, [B, C], [B, D], [2.5, 1], [3.5, 2.5])
 rx2 = Reaction(2 * k, [B], [D], [1], [2.5])
 rx3 = Reaction(2 * k, [B], [D], [2.5], [2])
@@ -416,14 +420,16 @@ end
 # tests for BC and constant species
 let
     @parameters k1 k2 A [isconstantspecies = true]
-    @variables t B(t) C(t) [isbcspecies = true] D(t) E(t)
-    rxs = [(@reaction k1, $A --> B),
+    @variables t
+    @species B(t) C(t) [isbcspecies = true] D(t) E(t)
+    Dt = Differential(t)
+    eqs = [(@reaction k1, $A --> B),
         (@reaction k2, B --> $A),
         (@reaction k1, $C + D --> E + $C),
+        Dt(C) ~ -C,
         (@reaction k2, E + $C --> $C + D)]
-    Dt = Differential(t)
-    csys = ODESystem(Equation[Dt(C) ~ -C], t; name = :rs)
-    @named rs = ReactionSystem(rxs, t; constraints = csys)
+    @named rs = ReactionSystem(eqs, t)
+    @test all(eq -> eq isa Reaction, ModelingToolkit.get_eqs(rs)[1:4])
     osys = convert(ODESystem, rs)
     @test issetequal(MT.get_states(osys), [B, C, D, E])
     @test issetequal(MT.get_ps(osys), [k1, k2, A])
@@ -449,6 +455,10 @@ let
     end
 
     # test sde systems
+    rxs = [(@reaction k1, $A --> B),
+        (@reaction k2, B --> $A),
+        (@reaction k1, $C + D --> E + $C),
+        (@reaction k2, E + $C --> $C + D)]
     @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
     ssys = convert(SDESystem, rs)
     @test issetequal(MT.get_states(ssys), [B, C, D, E])
@@ -499,8 +509,8 @@ end
 # test that jump solutions actually run correctly for constants and BCs
 let
     @parameters k1 A [isconstantspecies = true]
-    @variables t C(t) [isbcspecies = true]
-    @variables t B1(t) B2(t) B3(t)
+    @variables t
+    @species C(t) [isbcspecies = true] B1(t) B2(t) B3(t)
     @named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
                                    (@reaction k1, $A --> B2),
                                    (@reaction 10 * k1, ∅ --> B3)], t)
@@ -522,12 +532,13 @@ end
 # fix for SBML test 305
 let
     @parameters k1 k2 S2 [isconstantspecies = true]
-    @variables t S1(t) S3(t)
+    @variables t
+    @species S1(t) S3(t)
     rx = Reaction(k2, [S1], nothing)
     ∂ₜ = Differential(t)
     eq = ∂ₜ(S3) ~ k1 * S2
-    @named csys = ODESystem([eq], t)
-    @named rs = ReactionSystem([rx], t, [S1], [k2]; constraints = csys)
+    @named osys = ODESystem([eq], t)
+    @named rs = ReactionSystem([rx, eq], t)
     @test issetequal(states(rs), [S1, S3])
     @test issetequal(parameters(rs), [S2, k1, k2])
     osys = convert(ODESystem, rs)
@@ -536,12 +547,31 @@ let
 end
 let
     @parameters k1 k2 S2 [isconstantspecies = true]
-    @variables t S1(t) S3(t)
+    @variables t
+    @species S1(t) S3(t) [isbcspecies = true]
     rx = Reaction(k2, [S1], nothing)
     ∂ₜ = Differential(t)
     eq = S3 ~ k1 * S2
-    @named csys = ODESystem([eq], t)
-    @named rs = ReactionSystem([rx], t, [S1], [k2]; constraints = csys)
+    @named rs = ReactionSystem([rx, eq], t)
+    @test issetequal(states(rs), [S1, S3])
+    @test issetequal(parameters(rs), [S2, k1, k2])
+    osys = convert(ODESystem, rs)
+    @test issetequal(states(osys), [S1, S3])
+    @test issetequal(parameters(osys), [S2, k1, k2])
+    osys2 = structural_simplify(osys)
+    @test length(equations(osys2)) == 1
+    @test issetequal(states(osys2), [S1])
+    @test issetequal(parameters(osys2), [S2, k1, k2])
+end
+
+let
+    @parameters k1 k2 S2 [isconstantspecies = true]
+    @variables t S3(t)
+    @species S1(t)
+    rx = Reaction(k2, [S1], nothing)
+    ∂ₜ = Differential(t)
+    eq = S3 ~ k1 * S2
+    @named rs = ReactionSystem([rx, eq], t)
     @test issetequal(states(rs), [S1, S3])
     @test issetequal(parameters(rs), [S2, k1, k2])
     osys = convert(ODESystem, rs)
@@ -556,10 +586,9 @@ end
 # constant species = parameters basic tests
 let
     @parameters k b [isconstantspecies = true] c
-    @variables t A(t) B(t) a [isconstantspecies = true]
-    @test_throws ArgumentError Reaction(k, [A, a], [B])
+    @variables t
+    @test_throws ArgumentError @species A(t) B(t) a [isconstantspecies = true]
     @test_throws ArgumentError Reaction(k, [A, c], [B])
-    @test_throws ArgumentError Reaction(k, [A], [B, a])
     @test_throws ArgumentError Reaction(k, [A], [B, c])
     rx = Reaction(k, [A, b], [B, b], [1, 1], [1, 2])
     @named rs = ReactionSystem([rx], t)
@@ -569,7 +598,8 @@ end
 
 # test balanced_bc_check
 let
-    @variables t A(t) [isbcspecies = true]
+    @variables t
+    @species A(t) [isbcspecies = true]
     rx = @reaction k, 2 * $A + B --> C + $A
     @test_throws ErrorException ReactionSystem([rx], t; name = :rs)
     @named rs = ReactionSystem([rx], t; balanced_bc_check = false)
@@ -599,12 +629,50 @@ let
 end
 
 # test printing with arrays is working ok
+# needs fix for https://github.com/JuliaSymbolics/Symbolics.jl/issues/842
 let
     @parameters a
-    @variables t A(t) B(t) C(t)[1:2]
+    @variables t
+    @species A(t) B(t) C(t)[1:2]
     rx1 = Reaction(a, [A, C[1]], [C[2], B], [1, 2], [2, 3])
     io = IOBuffer()
     show(io, rx1)
     str = String(take!(io))
     @test str == "a, A + 2*(C(t))[1] --> 2*(C(t))[2] + 3*B"
+end
+
+# test array metadata for species works
+let
+    @variables t
+    @species (A(t))[1:20]
+    using ModelingToolkit: value
+    @test isspecies(value(A))
+    @test isspecies(value(A[2]))
+    Av = value.(ModelingToolkit.scalarize(A))
+    @test isspecies(Av[2])
+    @test isequal(value(Av[2]), value(A[2]))
+end
+
+# test mixed models are formulated correctly
+let
+    @parameters k1 k2
+    @variables t V(t)
+    @species A(t) B(t)
+    rx = Reaction(k1, [A], [B], [k2], [2])
+    D = Differential(t)
+    eq = D(V) ~ -k1 * k2 * V + A
+    @named rs = ReactionSystem([eq, rx], t)
+    @test length(states(rs)) == 3
+    @test issetequal(states(rs), [A, B, V])
+    @test length(parameters(rs)) == 2
+    @test issetequal(parameters(rs), [k1, k2])
+    @test length(species(rs)) == 2
+    @test issetequal(species(rs), [A, B])
+    @test all(typeof.(ModelingToolkit.get_eqs(rs)) .<: (Reaction, Equation))
+    @test length(Catalyst.get_rxs(rs)) == 1
+    @test reactions(rs)[1] == rx
+    osys = convert(ODESystem, rs)
+    @test issetequal(states(osys), [A, B, V])
+    @test issetequal(parameters(osys), [k1, k2])
+    @test length(equations(osys)) == 3
 end

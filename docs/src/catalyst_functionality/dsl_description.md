@@ -54,7 +54,8 @@ the model. We do this by creating a mapping from each symbolic variable
 representing a chemical species to its initial value
 ```@example tut2
 # define the symbolic variables
-@variables t X(t) Y(t) Z(t) XY(t) Z1(t) Z2(t)
+@variables t
+@species X(t) Y(t) Z(t) XY(t) Z1(t) Z2(t)
 
 # create the mapping
 u0 = [X => 1.0, Y => 1.0, XY => 1.0, Z1 => 1.0, Z2 => 1.0]
@@ -330,7 +331,7 @@ rn = @reaction_network begin
   k*X, Y --> 0
 end
 ```
-Here, `X` and `Y` are designated as species and `k` as a parameter. 
+Here, `X` and `Y` are designated as species and `k` as a parameter.
 
 The lists provided to the `@species` and `@parameters` options do not need to be extensive. Any symbol that appears in neither list will use the default option as determined by the macro. E.g. in the previous example, where we only want to change the default designation of `X` (making it a species rather than a parameter), we can simply write:
 ```@example tut2
@@ -361,7 +362,7 @@ specification (see the next section).
 
 ## [Setting default values for initial conditions and parameters](@id dsl_description_defaults)
 When using the `@species` and ` @parameters` macros to declare species and/or
-parameters, one can also provide default initial conditions for each species and 
+parameters, one can also provide default initial conditions for each species and
 values for each parameter:
 ```@example tut2
 rn = @reaction_network begin
@@ -468,7 +469,8 @@ the DSL (see the [Programmatic Construction of Symbolic Reaction Systems](@ref p
 tutorial for details on the lower-level symbolic interface). For example,
 ```@example tut2
 @parameters k α
-@variables t, A(t)
+@variables t
+@species A(t)
 spec = A
 par = α
 rate = k*A

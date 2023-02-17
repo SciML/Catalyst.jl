@@ -110,8 +110,10 @@ const bwd_arrows = Set{Symbol}([:<, :(<=), :←, :↢, :↤, :⇽, :⟵, :⟻, :
 const double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :⟺, Symbol("<-->")])
 const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
+const CONSERVED_CONSTANT_SYMBOL = :Γ
+
 # Declares symbols which may neither be used as parameters not varriables.
-const forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅]
+const forbidden_symbols = [:t, :π, :pi, :ℯ, :im, :nothing, :∅, CONSERVED_CONSTANT_SYMBOL]
 
 # Declares the keys used for various options.
 const option_keys = [:species, :parameters]
@@ -119,9 +121,31 @@ const option_keys = [:species, :parameters]
 ### The @species macro, basically a copy of the @varriables macro. ###
 macro species(ex...)
     vars = Symbolics._parse_vars(:variables, Real, ex)
-    # lastarg = vars.args[end]
-    # resize!(vars.args, length(vars.args) - 1)
-    # push!(vars.args, lastarg)
+
+    # vector of symbols that get defined
+    lastarg = vars.args[end]
+
+    # start adding metadata statements where the vector of symbols was previously declared
+    idx = length(vars.args)
+    resize!(vars.args, idx + length(lastarg.args) + 1)
+    for sym in lastarg.args
+        vars.args[idx] = :($sym = ModelingToolkit.wrap(setmetadata(ModelingToolkit.value($sym),
+                                                                   Catalyst.VariableSpecies,
+                                                                   true)))
+        idx += 1
+    end
+
+    # check nothing was declared isconstantspecies
+    ex = quote
+        all(!Catalyst.isconstant ∘ ModelingToolkit.value, $lastarg) ||
+            throw(ArgumentError("isconstantspecies metadata can only be used with parameters."))
+    end
+    vars.args[idx] = ex
+    idx += 1
+
+    # put back the vector of the new species symbols
+    vars.args[idx] = lastarg
+
     esc(vars)
 end
 
@@ -197,14 +221,16 @@ rx = @reaction k*v, A + B --> C + D
 
 # is equivalent to
 @parameters k v
-@variables t A(t) B(t) C(t) D(t)
+@variables t
+@species A(t) B(t) C(t) D(t)
 rx == Reaction(k*v, [A,B], [C,D])
 ```
 Here `k` and `v` will be parameters and `A`, `B`, `C` and `D` will be variables.
 Interpolation of existing parameters/variables also works
 ```julia
 @parameters k b
-@variables t A(t)
+@variables t
+@species A(t)
 ex = k*A^2 + t
 rx = @reaction b*$ex*$A, $A --> C
 ```
@@ -215,7 +241,7 @@ Notes:
   parameters, e.g. `α`, and rightmost symbols as species, e.g. `A,B,C,D`.
 - Works with any *single* arrow types supported by [`@reaction_network`](@ref).
 - Interpolation of Julia variables into the macro works similar to the `@reaction_network`
-  macro. See [The Reaction DSL](@ref) tutorial for more details.
+  macro. See [The Reaction DSL](@ref dsl_description) tutorial for more details.
 """
 macro reaction(ex)
     make_reaction(ex)

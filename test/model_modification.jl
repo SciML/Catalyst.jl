@@ -21,7 +21,7 @@ eqs, iv, ps, name, systems = unpacksys(empty_network_1)
 @test length(ps) == 0
 
 empty_network_2 = @reaction_network
-@variables p1 p2 p3 p4 p5
+@parameters p1 p2 p3 p4 p5
 addparam!(empty_network_2, p1)
 addparam!(empty_network_2, p2)
 addparam!(empty_network_2, p3)
@@ -36,7 +36,9 @@ eqs, iv, ps, name, systems = unpacksys(empty_network_2)
 
 ### Tests accessing parameters and species added with network API ###
 empty_network_3 = @reaction_network
-@variables x p
+@parameters p
+@variables t
+@species x(t)
 addspecies!(empty_network_3, x)
 addparam!(empty_network_3, p)
 @test isequal(empty_network_3.x, states(empty_network_3, x))

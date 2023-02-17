@@ -28,7 +28,7 @@ The [Smoluchowski coagulation equation](https://en.wikipedia.org/wiki/Smoluchows
 # possible pairs of reactant multimers
 pair = []
 for i = 2:N
-    push!(pair,[1:integ(i/2)  i .- (1:integ(i/2))])
+    push!(pair, [1:integ(i/2)  i .- (1:integ(i/2))])
 end
 pair = vcat(pair...)
 vᵢ = @view pair[:,1]   # Reactant 1 indices
@@ -52,8 +52,8 @@ end
 We'll store the reaction rates in `pars` as `Pair`s, and set the initial condition that only monomers are present at ``t=0`` in `u₀map`.
 ```julia
 # state variables are X, pars stores rate parameters for each rx
-@parameters t
-@variables k[1:nr]  X[1:N](t)
+@variables t
+@species k[1:nr] (X(t))[1:N]
 pars = Pair.(collect(k), kv)
 
 # time-span

@@ -29,6 +29,11 @@ etc).
 
 ## Breaking changes and new features
 
+**NOTE:** version 13 is a breaking release, with changes to simplify the DSL
+notation while also adding more features, changes to how chemical species are
+specified symbolically when directly building `ReactionSystem`s, and changes that
+simplify how to include ODE or algebraic constraint equation.
+
 Breaking changes and new functionality are summarized in the
 [HISTORY.md](HISTORY.md) file.
 
@@ -40,10 +45,17 @@ documentation](https://docs.sciml.ai/Catalyst/dev/) describes unreleased feature
 the current master branch.
 
 Several Youtube video tutorials and overviews are also available:
-- From JuliaCon 2022: A three hour tutorial workshop overviewing how to use Catalyst and its more advanced features as of version 12.1. [Workshop video](https://youtu.be/tVfxT09AtWQ), [Workshop Pluto.jl Notebooks](https://github.com/SciML/JuliaCon2022_Catalyst_Workshop).
-- From SIAM CSE 2021: A short 15 minute overview of Catalyst as of version 6 is available in the talk
-[Modeling Biochemical Systems with Catalyst.jl](https://www.youtube.com/watch?v=5p1PJE5A5Jw).
-- From JuliaCon 2018: A short 13 minute overview of Catalyst when it was known as DiffEqBiological in older versions is available in the talk [Efficient Modelling of Biochemical Reaction Networks](https://www.youtube.com/watch?v=s1e72k5XD6s)
+- From JuliaCon 2022: A three hour tutorial workshop overviewing how to use
+  Catalyst and its more advanced features as of version 12.1. [Workshop
+  video](https://youtu.be/tVfxT09AtWQ), [Workshop Pluto.jl
+  Notebooks](https://github.com/SciML/JuliaCon2022_Catalyst_Workshop).
+- From SIAM CSE 2021: A short 15 minute overview of Catalyst as of version 6 is
+available in the talk [Modeling Biochemical Systems with
+Catalyst.jl](https://www.youtube.com/watch?v=5p1PJE5A5Jw).
+- From JuliaCon 2018: A short 13 minute overview of Catalyst when it was known
+  as DiffEqBiological in older versions is available in the talk [Efficient
+  Modelling of Biochemical Reaction
+  Networks](https://www.youtube.com/watch?v=s1e72k5XD6s)
 
 ## Features
 
@@ -74,8 +86,10 @@ Several Youtube video tutorials and overviews are also available:
   ODE/SDE/jump solver, and can be used within `EnsembleProblem`s for carrying
   out parallelized parameter sweeps and statistical sampling. Plot recipes
   are available for visualizing the solutions.
-- Symbolic Julia `Expr`s (implemented through [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl)) can be obtained for all rate laws and functions determining the
-  deterministic and stochastic terms within resulting ODE, SDE or jump models.
+- [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl)) symbolic
+  expressions and Julia `Expr`s can be obtained for all rate laws and functions
+  determining the deterministic and stochastic terms within resulting ODE, SDE
+  or jump models.
 - [Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to generate
   LaTeX expressions corresponding to generated mathematical models or the
   underlying set of reactions.
@@ -109,16 +123,16 @@ rs = @reaction_network begin
   c1, S + E --> SE
   c2, SE --> S + E
   c3, SE --> P + E
-end c1 c2 c3
-p     = (:c1 => 0.00166, :c2 => 0.0001, :c3 => 0.1)
+end
+p  = (:c1 => 0.00166, :c2 => 0.0001, :c3 => 0.1)
 tspan = (0., 100.)
-u0    = [:S => 301, :E => 100, :SE => 0, :P => 0]
+u0 = [:S => 301, :E => 100, :SE => 0, :P => 0]
 
 # solve JumpProblem
 dprob = DiscreteProblem(rs, u0, tspan, p)
 jprob = JumpProblem(rs, dprob, Direct())
 jsol = solve(jprob, SSAStepper())
-plot(jsol,lw=2,title="Gillespie: Michaelis-Menten Enzyme Kinetics")
+plot(jsol; lw = 2, title = "Gillespie: Michaelis-Menten Enzyme Kinetics")
 ```
 
 ![](https://user-images.githubusercontent.com/1814174/87864114-3bf9dd00-c932-11ea-83a0-58f38aee8bfb.png)
@@ -131,13 +145,13 @@ rs = @reaction_network begin
   c1, X --> 2X
   c2, X --> 0
   c3, 0 --> X
-end c1 c2 c3
+end
 p     = (:c1 => 1.0, :c2 => 2.0, :c3 => 50.)
 tspan = (0.,10.)
 u0    = [:X => 5.]
 sprob = SDEProblem(rs, u0, tspan, p)
 ssol  = solve(sprob, LambaEM(), reltol=1e-3)
-plot(ssol,lw=2,title="Adaptive SDE: Birth-Death Process")
+plot(ssol; lw = 2, title = "Adaptive SDE: Birth-Death Process")
 ```
 
 ![](https://user-images.githubusercontent.com/1814174/87864113-3bf9dd00-c932-11ea-8275-f903eef90b91.png)
@@ -149,8 +163,8 @@ For bugs or feature requests [open an issue](https://github.com/SciML/Catalyst.j
 
 
 ## Supporting and citing Catalyst.jl
-The software in this ecosystem was developed as part of academic research. If you would like to help support it, 
-please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part 
+The software in this ecosystem was developed as part of academic research. If you would like to help support it,
+please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part
 of your research, teaching, or other activities, we would be grateful if you could cite our work:
 ```
 @article {2022Catalyst,

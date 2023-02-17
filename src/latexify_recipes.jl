@@ -86,7 +86,7 @@ function make_stoich_str(spec, stoich, subber; kwargs...)
     if isequal(stoich, one(stoich))
         latexraw(subber(spec); kwargs...)
     else
-        if Symbolics.istree(stoich)
+        if istree(stoich)
             LaTeXString("(") *
             latexraw(subber(stoich); kwargs...) *
             LaTeXString(")") *
@@ -101,10 +101,8 @@ end
 function chemical_arrows(rn::ReactionSystem; expand = true,
                          double_linebreak = LATEX_DEFS.double_linebreak, mathjax = true,
                          starred = LATEX_DEFS.starred, kwargs...)
-    (get_constraints(rn) !== nothing) &&
-        (@warn "Latexify currently ignores constraint equations.")
     any_nonrx_subsys(rn) &&
-        (@warn "Latexify currently ignores non-ReactionSystem subsystems.")
+        (@warn "Latexify currently ignores non-ReactionSystem subsystems. Please call `flatsys = flatten(sys)` to obtain a flattened version of your system before trying to Latexify it.")
 
     rxs = reactions(rn)
     if isempty(rxs)

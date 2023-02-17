@@ -14,16 +14,18 @@ using ModelingToolkit
 const MT = ModelingToolkit
 @reexport using ModelingToolkit
 using Symbolics
+import Symbolics: BasicSymbolic
 using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems,
-                       get_eqs, get_defaults, toparam, get_var_to_name, get_observed, getvar
+                       get_eqs, get_defaults, toparam, get_var_to_name, get_observed,
+                       getvar
 
 import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!,
                         modified_states!, validate, namespace_variables,
-                        namespace_parameters,
-                        rename, renamespace, getname, flatten
+                        namespace_parameters, rename, renamespace, getname, flatten
+
 # internal but needed ModelingToolkit functions
 import ModelingToolkit: check_variables, check_parameters, _iszero, _merge, check_units,
-                        get_unit
+                        get_unit, check_equations
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
@@ -48,10 +50,10 @@ end
 
 # base system type and features
 include("reactionsystem.jl")
+export isspecies
 export Reaction, ReactionSystem, ismassaction, oderatelaw, jumpratelaw, isspatial
 export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem,
        SteadyStateProblem
-export get_constraints, has_constraints, get_combinatoric_ratelaws, get_sivs
 
 # reaction_network macro
 const ExprValues = Union{Expr, Symbol, Float64, Int}
@@ -65,9 +67,9 @@ export mm, mmr, hill, hillr, hillar
 
 # functions to query network properties
 include("networkapi.jl")
-export species, reactionparams, reactions, speciesmap, paramsmap, reactionparamsmap
+export species, nonspecies, reactionparams, reactions, speciesmap, paramsmap
 export numspecies, numreactions, numreactionparams, setdefaults!, symmap_to_varmap
-export make_empty_network, addspecies!, addparam!, addreaction!
+export make_empty_network, addspecies!, addparam!, addreaction!, reactionparamsmap
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
 

@@ -1,9 +1,6 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
-- An `@species` macro was added. Currently, it is simply a thematic version of
-  (and equivalent to) ModelingToolkit's `@variables`.
-
 - **BREAKING:** Parameters should no longer be listed at the end of the DSL
   macro, but are instead inferred from their position in the reaction statements
   or via explicit declarations in the DSL macro. By default, any symbol that appears
@@ -70,6 +67,119 @@
     k, X + Y --> 0
   end
   ```
+- **BREAKING:** A standalone `@species` macro was added and should be used in
+  place of `@variables` when declaring symbolic chemical species, i.e.
+  ```julia
+  @parameters k
+  @variables t
+  @species A(t) B(t)
+  rx = Reaction(k, [A], [B])
+  @named rs = ReactionSystem([rx], t)
+  ```
+  This will no longer work as substrates and products must be species
+  ```julia
+  @parameters k
+  @variables t A(t) B(t)
+  rx = Reaction(k, [A], [B]) # errors as neither A or B are species
+  rx = Reaction(k, [A], nothing) # errors as A is not a species
+  rx = Reaction(k, nothing, [B]) # errors as B is not a species
+
+  # this works as the rate or stoichiometry can be non-species
+  @species C(t) D(t)
+  rx = Reaction(k*A, [C], [D], [2], [B])
+  @named rs = ReactionSystem([rx], t)
+  ```
+  `@variables` is now reserved for non-chemical species state variables (for
+  example, arising from constraint equations). Internally, species are normal
+  symbolic variables, but with added metadata to indicate they represent
+  chemical species.
+- To check if a symbolic variable is a species one can use `isspecies`:
+  ```julia
+  @variables t
+  @species A(t)
+  @variables B(t)
+  isspecies(A) == true
+  isspecies(B) == false
+  ```
+- **BREAKING:** Constraint subsystems and the associated keyword argument to
+  `ReactionSystem` have been removed. Instead, one can simply add ODE or
+  algebraic equations into the list of `Reaction`s passed to a `ReactionSystem`.
+  i.e. this should now work
+  ```julia
+  @parameters k α
+  @variables t V(t)
+  @species A(t)
+  rx = Reaction(k*V, nothing, [A])
+  D = Differential(t)
+  eq = D(V) ~ α
+  @named rs = ReactionSystem([rx, eq], t)
+  osys = convert(ODESystem, rs)
+  ```
+  which gives the ODE model
+  ```
+  julia> equations(osys)
+  2-element Vector{Equation}:
+    Differential(t)(A(t)) ~ k*V(t)
+    Differential(t)(V(t)) ~ α
+  ```
+  Mixing ODEs and algebraic equations is allowed and should work when converting
+  to an `ODESystem` or `NonlinearSystem` (if only algebraic equations are
+  included), but is not currently supported when converting to `JumpSystem`s or
+  `SDESystem`s.
+- API functions applied to a `ReactionSystem`, `rs`, now have:
+
+    - `species(rs)` give the chemical species of a system.
+    - `states(rs)` give all the variables, both chemical species and
+      non-chemical species of a system.
+
+  Catalyst now orders species before non-species in `states(rs)` such that
+  `states(rs)[1:length(species(rs))]` and `species(rs)` should be the same.
+  Similarly:
+
+    - `equations(rs)` gives the set of `Reaction`s and `Equation`s of a
+      system.
+    - `reactions(rs)` gives the `Reaction`s of a system.
+
+  As with species, `Reaction`s are always ordered before `Equation`s so that
+  `equations(rs)[1:length(reactions(rs))]` should be the same ordered list of
+  `Reaction`s as given by `reactions(rs)`.
+- Catalyst has been updated for Symbolics v5, and requires Symbolics v5.0.3 or
+  greater and ModelingToolkit v8.47.0 or greater.
+- The accessors for a given system, `rs`, that return the internal
+  arrays at the top-level (i.e. ignoring sub-systems) now have
+    - `ModelingToolkit.get_states(rs)` to get the list of all species and
+      non-species variables.
+    - `Catalyst.get_species(rs)` to get the list of all species variables. Note
+      that `get_states(rs)[1:length(get_species(rs))]` should be the same
+      ordered list of species as `get_species(rs)`.
+    - `ModelingToolkit.get_eqs(rs)` gives the list of all `Reaction`s and then
+      `Equation`s in the system.
+    - `Catalyst.get_rxs(rs)` gives the list of all `Reaction`s, such that
+      `get_eqs(rs)[1:length(get_rx(rs))]` is the same ordered list of
+      `Reaction`s as returned by `get_rxs(rs)`.
+
+- **BREAKING:** Chemical species specified or inferred via the DSL are now
+  created via the same mechanism as `@species`, and therefore have the
+  associated metadata that is missing from a normal symbolic variable.
+- Deprecated functions `params` and `merge` have been removed.
+- **BREAKING:** The old notation for the constants representing conserved
+  quantities, `_Conlaw`, has been replaced with uppercase unicode gamma, "Γ".
+  This can be entered in notebooks, the REPL, or many editors by typing the
+  corresponding Latex command, "\Gamma", and hitting tab. This leads to much
+  cleaner equations when Latexifying systems where conservation laws have been
+  applied. The underlying symbol can also be accessed via
+  `Catalyst.CONSERVED_CONSTANT_SYMBOL`.
+- Modelingtoolkit symbolic continuous and discrete events are now supported when
+  creating `ReactionSystem`s via the `continuous_events` and `discrete_events`
+  keyword arguments. As in ModelingToolkit, species, states, and parameters that
+  appear only within events are not detected automatically, and hence the
+  four-argument `ReactionSystem` constructor, where states and parameters are
+  explicitly passed, must be used unless every variable, state, or parameter in
+  the events appears within a `Reaction` or `Equation` too. See the
+  [ModelingToolkit
+  docs](https://docs.sciml.ai/ModelingToolkit/stable/basics/Events/) for more
+  information on using events. Note that `JumpSystem`s only support discrete
+  events at this time.
 
 
 ## Catalyst 12.3.2
