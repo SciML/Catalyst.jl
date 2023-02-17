@@ -60,7 +60,7 @@ emptyrntest(rn, :blah)
 rn = @reaction_network begin
     @parameters k k2 n
     @species A(t) B(t) C(t) D(t) H(t)
-    π*k*D*hill(B,k2,B*D*H,n), 3*A  --> 2*C
+    k*D*hill(B,k2,B*D*H,n), 3*A  --> 2*C
 end
 @parameters k k2 n
 @variables t
