@@ -110,7 +110,7 @@ for (i, network) in enumerate(reaction_networks_all)
         p = factor * rand(rng, length(get_ps(network)))
         in(i, [[11:20...]..., 34, 37, 42]) && (p = min.(round.(p) .+ 1, 10))  #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
         prob = ODEProblem(network, u0, (0.0, 1.0), p)
-        @test solve(prob, Rosenbrock23()).retcode == :Success
+        @test SciMLBase.successful_retcode(solve(prob, Rosenbrock23()))
     end
 end
 
