@@ -17,9 +17,10 @@ end
 """
     species(network)
 
-Given a [`ReactionSystem`](@ref), return a vector of all species defined in the system
-and any subsystems that are of type `ReactionSystem`. To get the variables in the system
-and all subsystems, including non-`ReactionSystem` subsystems, uses `states(network)`.
+Given a [`ReactionSystem`](@ref), return a vector of all species defined in the system and
+any subsystems that are of type `ReactionSystem`. To get the species and non-species
+variables in the system and all subsystems, including non-`ReactionSystem` subsystems, uses
+`states(network)`.
 
 Notes:
 - If `ModelingToolkit.get_systems(network)` is non-empty will allocate.
@@ -1368,7 +1369,8 @@ end
 """
     reorder_states!(rn, neworder)
 
-Given a [`ReactionSystem`](@ref) and a vector `neworder`, orders the states of `rn` accordingly to `neworder`.
+Given a [`ReactionSystem`](@ref) and a vector `neworder`, reorders the states of `rn`, i.e.
+`get_states(rn)`, according to `neworder`.
 
 Notes:
 - Currently only supports `ReactionSystem`s without subsystems.

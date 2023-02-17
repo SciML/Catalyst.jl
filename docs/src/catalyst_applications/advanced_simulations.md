@@ -244,7 +244,7 @@ rn = @reaction_network begin
     (k,1), X1 <--> X2
 end
 u0 = [:X1 => 10.0,:X2 => 0.0]
-tspan = (0.0,20.0)
+tspan = (0.0, 20.0)
 p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 
