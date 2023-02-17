@@ -1,5 +1,4 @@
 [deps]
-BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
 Catalyst = "479239e8-5488-4da2-87a7-35f2df7eef83"
 DiffEqFlux = "aae7a2af-3d4f-5e19-a356-7da93b79d9d0"
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
@@ -14,14 +13,13 @@ Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [compat]
-BifurcationKit = "0.2"
 Catalyst = "13"
-DifferentialEquations = "7.6"
+DifferentialEquations = "7.7"
 Distributions = "0.25"
 Documenter = "0.27"
 HomotopyContinuation = "2.6"
 Latexify = "0.15"
-ModelingToolkit = "8.33"
+ModelingToolkit = "8.47"
 Plots = "1.36"
 Setfield = "1.1"
 SpecialFunctions = "2.1"
