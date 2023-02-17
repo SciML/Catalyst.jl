@@ -436,4 +436,7 @@ let
     @test length(equations(rs123)) == 6
     @test length(reactions(rs123)) == 3
     @test all(p -> isequal(p[1], p[2]), zip(equations(rs123)[1:3], reactions(rs123)))
+
+    @test numspecies(rs123) == 6
+    @test issetequal(nonspecies(rs123), [V1, rs23.V2, rs23.rs3.V3])
 end

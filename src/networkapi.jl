@@ -33,6 +33,19 @@ function species(network)
 end
 
 """
+    nonspecies(network)
+
+Return the non-species variables within the network, i.e. those states for which `isspecies
+== false`.
+
+Notes:
+- Allocates a new array to store the non-species variables.
+"""
+function nonspecies(network)
+    states(network)[(numspecies(network) + 1):end]
+end
+
+"""
     reactionparams(network)
 
 Given a [`ReactionSystem`](@ref), return a vector of all parameters defined
@@ -111,14 +124,13 @@ end
 
 Return the total number of species within the given [`ReactionSystem`](@ref) and
 subsystems that are `ReactionSystem`s.
-
-Notes
-- If there are no subsystems this will be fast.
-- As this calls [`species`](@ref), it can be slow and will allocate if there are
-  any subsystems.
 """
 function numspecies(network)
-    length(species(network))
+    numspcs = length(get_species(network))
+    for sys in get_systems(network)
+        (sys isa ReactionSystem) && (numspcs += numspecies(sys))
+    end
+    numspcs
 end
 
 """

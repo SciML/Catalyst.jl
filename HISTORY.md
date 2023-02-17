@@ -169,6 +169,17 @@
   cleaner equations when Latexifying systems where conservation laws have been
   applied. The underlying symbol can also be accessed via
   `Catalyst.CONSERVED_CONSTANT_SYMBOL`.
+- Modelingtoolkit symbolic continuous and discrete events are now supported when
+  creating `ReactionSystem`s via the `continuous_events` and `discrete_events`
+  keyword arguments. As in ModelingToolkit, species, states, and parameters that
+  appear only within events are not detected automatically, and hence the
+  four-argument `ReactionSystem` constructor, where states and parameters are
+  explicitly passed, must be used unless every variable, state, or parameter in
+  the events appears within a `Reaction` or `Equation` too. See the
+  [ModelingToolkit
+  docs](https://docs.sciml.ai/ModelingToolkit/stable/basics/Events/) for more
+  information on using events. Note that `JumpSystem`s only support discrete
+  events at this time.
 
 
 ## Catalyst 12.3.2

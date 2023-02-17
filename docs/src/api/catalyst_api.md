@@ -156,6 +156,7 @@ functions.
 
 ```@docs
 species
+nonspecies
 reactionparams
 reactions
 numspecies

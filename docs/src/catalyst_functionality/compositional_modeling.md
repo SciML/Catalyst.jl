@@ -52,15 +52,17 @@ We could also have directly constructed `rn` using the same reaction as in
 `basern` as
 ```@example ex1
 @parameters k
-@variables t, A(t), B(t), C(t)
+@variables t
+@species A(t), B(t), C(t)
 rxs = [Reaction(k, [A,B], [C])]
-@named rn  = ReactionSystem(rxs, t; systems = [newrn, newestrn])
+@named rn = ReactionSystem(rxs, t; systems = [newrn, newestrn])
 ```
 
-Catalyst provides several different accessors for getting information from a single system,
-or all systems in the tree. To get the species, parameters, and equations *only* within a given system (i.e. ignoring subsystems), we can use
+Catalyst provides several different accessors for getting information from a
+single system, or all systems in the tree. To get the species, parameters, and
+equations *only* within a given system (i.e. ignoring subsystems), we can use
 ```@example ex1
-ModelingToolkit.get_states(rn)
+ModelingToolkit.get_species(rn)
 ```
 ```@example ex1
 ModelingToolkit.get_ps(rn)
@@ -112,7 +114,8 @@ ability to substitute the value of these variables into the DSL (see
 [Interpolation of Julia Variables](@ref dsl_description_interpolation_of_variables)). To make the repressilator we now make
 three genes, and then compose them together
 ```@example ex1
-@variables t, G3₊P(t)
+@variables t
+@species G3₊P(t)
 @named G1 = repressed_gene(; R=ParentScope(G3₊P))
 @named G2 = repressed_gene(; R=ParentScope(G1.P))
 @named G3 = repressed_gene(; R=ParentScope(G2.P))
