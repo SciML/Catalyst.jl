@@ -113,9 +113,8 @@ const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔
 const CONSERVED_CONSTANT_SYMBOL = :Γ
 
 # Declares symbols which may neither be used as parameters not varriables.
-const forbidden_symbols_error = [:π, :pi, :ℯ, :im, :nothing, CONSERVED_CONSTANT_SYMBOL]
-const forbidden_symbols_skip = Set([:t, :∅])
-const forbidden_symbols_error = union([:π, :pi, :ℯ, :im, :nothing], forbidden_symbols_skip)
+const forbidden_symbols_skip = Set([:π, :t, :∅])
+const forbidden_symbols_error = union([:pi, :ℯ, :im, :nothing, CONSERVED_CONSTANT_SYMBOL], forbidden_symbols_skip)
 
 # Declares the keys used for various options.
 const option_keys = [:species, :parameters]
