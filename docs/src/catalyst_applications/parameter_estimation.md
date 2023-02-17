@@ -43,12 +43,11 @@ nothing   # hide
 We can plot the real solution, as well as the noisy samples.
 ```@example pe1
 using Plots
-default(; lw = 3, framestyle = :box)
+default(; lw = 3, framestyle = :box, size = (800, 400))
 
-plot(sol_real; size = (1200, 400), label = "", color = [:darkblue :darkred])
+plot(sol_real; label = "", color = [:darkblue :darkred])
 scatter!(sample_times, sample_vals'; color = [:blue :red], label = "")
 ```
-![parameter_estimation_plot1](../assets/parameter_estimation_plot1.svg)
 
 Next, we create an optimization function. For a given initial estimate of the
 parameter values, `p`, this function will fit parameter values to our data
@@ -76,14 +75,12 @@ We can compare this to the real solution, as well as the sample data
 ```@example pe1
 newprob = remake(prob; tspan = (0.,10.), p = p_estimate)
 sol_estimate = solve(newprob, Rosenbrock23())
-plot(sol_real; size = (1200, 400), color = [:blue :red],
-               label = ["X real" "Y real"], linealpha = 0.2)
+plot(sol_real; color = [:blue :red], label = ["X real" "Y real"], linealpha = 0.2)
 scatter!(sample_times, sample_vals'; color = [:blue :red],
          label = ["Samples of X" "Samples of Y"], alpha = 0.4)
 plot!(sol_estimate; color = [:darkblue :darkred], linestyle = :dash,
                     label = ["X estimated" "Y estimated"], xlimit = tspan)
 ```
-![parameter_estimation_plot2](../assets/parameter_estimation_plot2.svg)
 
 Next, we use this parameter estimation as the input to the next iteration of our
 fitting process, this time on the interval `(0, 20)`.
@@ -91,14 +88,12 @@ fitting process, this time on the interval `(0, 20)`.
 p_estimate = optimise_p(p_estimate, 20.).minimizer
 newprob = remake(prob; tspan = (0., 20.), p = p_estimate)
 sol_estimate = solve(newprob, Rosenbrock23())
-plot(sol_real; size = (1200,400), color = [:blue :red],
-               label = ["X real" "Y real"], linealpha = 0.2)
+plot(sol_real; color = [:blue :red], label = ["X real" "Y real"], linealpha = 0.2)
 scatter!(sample_times, sample_vals'; color = [:blue :red],
          label = ["Samples of X" "Samples of Y"], alpha = 0.4)
 plot!(sol_estimate; color = [:darkblue :darkred], linestyle = :dash,
                     label = ["X estimated" "Y estimated"], xlimit = tspan)
 ```
-![parameter_estimation_plot3](../assets/parameter_estimation_plot3.svg)
 
 Finally, we use this estimate as the input to fit a parameter set on the full interval of sampled data.
 ```@example pe1
@@ -106,14 +101,12 @@ p_estimate = optimise_p(p_estimate,30.).minimizer
 
 newprob = remake(prob; tspan = (0., 30.), p = p_estimate)
 sol_estimate = solve(newprob, Rosenbrock23())
-plot(sol_real; size = (1200,400), color = [:blue :red],
-               label = ["X real" "Y real"], linealpha = 0.2)
+plot(sol_real; color = [:blue :red], label = ["X real" "Y real"], linealpha = 0.2)
 scatter!(sample_times, sample_vals'; color = [:blue :red],
         label = ["Samples of X" "Samples of Y"], alpha = 0.4)
 plot!(sol_estimate; color = [:darkblue :darkred], linestyle = :dash,
                     label = ["X estimated" "Y estimated"], xlimit = tspan)
 ```
-![parameter_estimation_plot4](../assets/parameter_estimation_plot4.svg)
 
 The final parameter set becomes `[0.9996559014056948, 2.005632696191224]` (the real one was `[1.0, 2.0]`).
 
@@ -124,11 +117,9 @@ p_estimate = optimise_p([5.,5.],30.).minimizer
 
 newprob = remake(prob; tspan = (0.,30.), p = p_estimate)
 sol_estimate = solve(newprob, Rosenbrock23())
-plot(sol_real; size = (1200,400), color = [:blue :red],
-               label = ["X real" "Y real"], linealpha = 0.2)
+plot(sol_real; color = [:blue :red], label = ["X real" "Y real"], linealpha = 0.2)
 scatter!(sample_times,sample_vals'; color = [:blue :red],
          label = ["Samples of X" "Samples of Y"], alpha = 0.4)
 plot!(sol_estimate; color = [:darkblue :darkred], linestyle = :dash,
                     label = ["X estimated" "Y estimated"], xlimit = tspan)
 ```
-![parameter_estimation_plot5](../assets/parameter_estimation_plot5.svg)

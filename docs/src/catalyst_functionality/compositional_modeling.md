@@ -60,15 +60,15 @@ rxs = [Reaction(k, [A,B], [C])]
 
 Catalyst provides several different accessors for getting information from a
 single system, or all systems in the tree. To get the species, parameters, and
-equations *only* within a given system (i.e. ignoring subsystems), we can use
+reactions *only* within a given system (i.e. ignoring subsystems), we can use
 ```@example ex1
-ModelingToolkit.get_species(rn)
+Catalyst.get_species(rn)
 ```
 ```@example ex1
 ModelingToolkit.get_ps(rn)
 ```
 ```@example ex1
-ModelingToolkit.get_eqs(rn)
+Catalyst.get_rxs(rn)
 ```
 To see all the species, parameters and reactions in the tree we can use
 ```@example ex1

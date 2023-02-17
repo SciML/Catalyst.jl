@@ -12,23 +12,18 @@ end
 
 # initial condition and parameter values
 setdefaults!(rn, [:A => 1.0, :B => 2.0, :C => 0.0, :k₊ => 1.0, :k₋ => 1.0])
+nothing    # hide
 ```
 Let's convert it to a system of ODEs, using the conservation laws of the system
 to eliminate two of the species:
 ```@example faq1
-osys = convert(ODESystem, rn; remove_conserved=true)
-show(osys) # hide
+osys = convert(ODESystem, rn; remove_conserved = true)
 ```
-Notice the resulting ODE system has just one ODE
-```@example faq1
-equations(osys)
-show(equations(osys)) # hide
-```
-while algebraic observables have been added for the two removed species (in
-terms of the conservation law constants, `Γ[1]` and `Γ[2]`)
+Notice the resulting ODE system has just one ODE, while algebraic observables
+have been added for the two removed species (in terms of the conservation law
+constants, `Γ[1]` and `Γ[2]`)
 ```@example faq1
 observed(osys)
-show(observed(osys))  # hide
 ```
 Let's solve the system and see how to index the solution using our symbolic
 variables

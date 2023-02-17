@@ -241,7 +241,7 @@ Notes:
   parameters, e.g. `α`, and rightmost symbols as species, e.g. `A,B,C,D`.
 - Works with any *single* arrow types supported by [`@reaction_network`](@ref).
 - Interpolation of Julia variables into the macro works similar to the `@reaction_network`
-  macro. See [The Reaction DSL](@ref) tutorial for more details.
+  macro. See [The Reaction DSL](@ref dsl_description) tutorial for more details.
 """
 macro reaction(ex)
     make_reaction(ex)

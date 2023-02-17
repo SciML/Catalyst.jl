@@ -108,9 +108,7 @@ for (i, network) in enumerate(reaction_networks_all)
         u0 = rand(rng, 1:Int64(factor * 100), length(get_states(network)))
         p = factor * rand(rng, length(get_ps(network)))
         prob = JumpProblem(network, DiscreteProblem(network, u0, (0.0, 1.0), p), Direct())
-
-        # TODO, REENABLE WHEN JUMPPROCESSES IS FIXED
-        #@test SciMLBase.successful_retcode(solve(prob, SSAStepper()))
+        @test SciMLBase.successful_retcode(solve(prob, SSAStepper()))
     end
 end
 

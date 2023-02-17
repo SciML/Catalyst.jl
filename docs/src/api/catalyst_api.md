@@ -77,7 +77,6 @@ make_empty_network
 @reaction
 Reaction
 ReactionSystem
-ModelingToolkit.Equation
 ```
 
 ## [ModelingToolkit and Catalyst accessor functions](@id api_accessor_functions)
@@ -104,8 +103,8 @@ direct access to the corresponding internal fields of the `ReactionSystem`)
 * `ModelingToolkit.get_ps(rn)` is a vector that collects all the parameters
   defined *within* reactions in `rn`.
 * `ModelingToolkit.get_eqs(rn)` is a vector that collects all the
-  [`Reaction`](@ref)s and [`ModelingToolkit.Equation`](@ref)s defined within
-  `rn`, ordering all `Reaction`s before `Equation`s.
+  [`Reaction`](@ref)s and `Symbolics.Equation` defined within `rn`, ordering all
+  `Reaction`s before `Equation`s.
 * `Catalyst.get_rxs(rn)` is a vector of all the [`Reaction`](@ref)s in `rn`, and
   corresponds to the first `length(get_rxs(rn))` entries in `get_eqs(rn)`.
 * `ModelingToolkit.get_iv(rn)` is the independent variable used in the system
@@ -133,9 +132,10 @@ can call:
   system and any sub-systems that are also `ReactionSystem`s. These include all
   parameters that appear within some `Reaction`.
 * `ModelingToolkit.equations(rn)` returns all [`Reaction`](@ref)s and all
-  `Equations` defined across the system, *all sub-systems*, and all constraint
-  systems. `Reaction`s are ordered ahead of `Equation`s with the first
-  `numreactions(rn)` entries in `equations(rn)` being the same as `reactions(rn)`.
+  `Symbolics.Equations` defined across the system, *all sub-systems*, and all
+  constraint systems. `Reaction`s are ordered ahead of `Equation`s with the
+  first `numreactions(rn)` entries in `equations(rn)` being the same as
+  `reactions(rn)`.
 * [`reactions(rn)`](@ref) is a vector of all the `Reaction`s within the system
   and any sub-systems that are also `ReactionSystem`s.
 
