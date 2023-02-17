@@ -42,7 +42,8 @@ end
 
 We now define the reaction model
 ```julia
-@variables t x y U(x,y,t) V(x,y,t) W(x,y,t)
+@variables t x y
+@species U(x,y,t) V(x,y,t) W(x,y,t)
 rxs = [Reaction(k[1], [U, W], [V, W]),
        Reaction(k[2], [V], [W], [2], [1]),
        Reaction(k[3], [W], [V], [1], [2]),

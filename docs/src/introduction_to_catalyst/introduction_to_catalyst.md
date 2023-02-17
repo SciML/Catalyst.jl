@@ -57,7 +57,7 @@ and
 reactions(repressilator)
 ```
 We can also use Latexify to see the corresponding reactions in Latex, which shows what
-the `hillr` terms mathematically correspond to 
+the `hillr` terms mathematically correspond to
 ```julia
 latexify(repressilator)
 ```
@@ -113,11 +113,12 @@ pmap  = (:α => .5, :K => 40, :n => 2, :δ => log(2)/120,
 u₀map = [:m₁ => 0., :m₂ => 0., :m₃ => 0., :P₁ => 20., :P₂ => 0., :P₃ => 0.]
 nothing   # hide
 ```
-Alternatively, we can use ModelingToolkit symbolic variables to specify these
-mappings like
+Alternatively, we can use ModelingToolkit-based symbolic species variables to
+specify these mappings like
 ```@example tut1
 @parameters  α K n δ γ β μ
-@variables t m₁(t) m₂(t) m₃(t) P₁(t) P₂(t) P₃(t)
+@variables t
+@species m₁(t) m₂(t) m₃(t) P₁(t) P₂(t) P₃(t)
 psymmap  = (α => .5, K => 40, n => 2, δ => log(2)/120,
          γ => 5e-3, β => 20*log(2)/120, μ => log(2)/60)
 u₀symmap = [m₁ => 0., m₂ => 0., m₃ => 0., P₁ => 20., P₂ => 0., P₃ => 0.]

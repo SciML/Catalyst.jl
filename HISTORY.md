@@ -161,7 +161,7 @@
 - **BREAKING:** Chemical species specified or inferred via the DSL are now
   created via the same mechanism as `@species`, and therefore have the
   associated metadata that is missing from a normal symbolic variable.
-- Deprecated functions `params`, `numparams` and `merge` have been removed.
+- Deprecated functions `params` and `merge` have been removed.
 - **BREAKING:** The old notation for the constants representing conserved
   quantities, `_Conlaw`, has been replaced with uppercase unicode gamma, "Γ".
   This can be entered in notebooks, the REPL, or many editors by typing the

@@ -63,6 +63,20 @@ function reactionparams(network)
     unique([ps; reduce(vcat, map(sys -> species(sys, reactionparams(sys)), systems))])
 end
 
+"""
+    numparams(network)
+
+Return the total number of parameters within the given system and all subsystems.
+"""
+function numparams(network)
+    nps = length(get_ps(network))
+    for sys in get_systems(network)
+        nps += numparams(sys)
+    end
+    nps
+end
+
+
 function namespace_reactions(network::ReactionSystem)
     rxs = reactions(network)
     isempty(rxs) && return Reaction[]
