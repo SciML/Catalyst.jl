@@ -1,6 +1,6 @@
 ### Fetch required packages and reaction networks ###
 using DiffEqBase, Catalyst, Random, Test
-using ModelingToolkit: operation, Sym, istree, get_states, get_ps, get_eqs, get_systems,
+using ModelingToolkit: operation, istree, get_states, get_ps, get_eqs, get_systems,
                        get_iv
 
 using StableRNGs
