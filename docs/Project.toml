@@ -15,7 +15,7 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [compat]
 BifurcationKit = "0.2"
-Catalyst = "13"
+Catalyst = "13, 12"
 DifferentialEquations = "7.6"
 Distributions = "0.25"
 Documenter = "0.27"
