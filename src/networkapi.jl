@@ -76,7 +76,6 @@ function numparams(network)
     nps
 end
 
-
 function namespace_reactions(network::ReactionSystem)
     rxs = reactions(network)
     isempty(rxs) && return Reaction[]

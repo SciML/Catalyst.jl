@@ -660,7 +660,7 @@ let
     @species A(t) B(t)
     rx = Reaction(k1, [A], [B], [k2], [2])
     D = Differential(t)
-    eq = D(V) ~ -k1*k2 * V + A
+    eq = D(V) ~ -k1 * k2 * V + A
     @named rs = ReactionSystem([eq, rx], t)
     @test length(states(rs)) == 3
     @test issetequal(states(rs), [A, B, V])

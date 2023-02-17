@@ -777,7 +777,8 @@ function MT.equations(sys::ReactionSystem)
     eqs = get_eqs(sys)
     systems = get_systems(sys)
     if !isempty(systems)
-        eqs = CatalystEqType[eqs; reduce(vcat, MT.namespace_equations.(systems); init = Any[])]
+        eqs = CatalystEqType[eqs;
+                             reduce(vcat, MT.namespace_equations.(systems); init = Any[])]
         return sort!(eqs; by = eqsortby)
     end
     return eqs
