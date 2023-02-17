@@ -350,8 +350,6 @@ test_network = @reaction_network begin
     (μ, Μ), ω ⟷ Ω
 end
 
-# Networks containing t, im, and π should generate errors.
-
 # test I works
 rn = @reaction_network begin
     @parameters k1 k2
@@ -367,3 +365,25 @@ rn = @reaction_network SIR1 begin
     k2, I --> R
 end
 @test nameof(rn) == :SIR1
+
+# Test that forbidden symbols do not work:
+
+test_network = @reaction_network begin
+    t*k, X --> ∅
+end
+@test length(species(test_network))==1
+@test length(parameters(test_network))==1
+
+const forbidden_symbols_skip = Set([:t, :∅])
+const forbidden_symbols_error = union([:π, :pi, :ℯ, :im, :nothing], forbidden_symbols_skip)
+
+@test_throws LoadError @eval @reaction π, 0 --> B
+@test_throws LoadError @eval @reaction pi, 0 --> B
+@test_throws LoadError @eval @reaction ℯ, 0 --> B
+@test_throws LoadError @eval @reaction im, 0 --> B
+@test_throws LoadError @eval @reaction nothing, 0 --> B
+@test_throws LoadError @eval @reaction k, 0 --> π
+@test_throws LoadError @eval @reaction k, 0 --> pi
+@test_throws LoadError @eval @reaction k, 0 --> ℯ
+@test_throws LoadError @eval @reaction k, 0 --> im
+@test_throws LoadError @eval @reaction k, 0 --> nothing
