@@ -50,36 +50,53 @@ imaginary roots (as CRNs' states typically are non-imaginary):
 using HomotopyContinuation
 sols = real_solutions(as_polynomial((f, x...) -> HomotopyContinuation.solve(collect(x)), new_eqs...))
 ```
-While it is not the case for this CRN, we note that some solutions with negative species concentrations may still appear. Typically, these will need to be filtered away as well.
+While it is not the case for this CRN, we note that some solutions with negative
+species concentrations may still appear. Typically, these will need to be
+filtered away as well.
 
 ## Rational polynomial systems
-It is not uncommon for CRNs to generate systems corresponding to rational multivariate polynomials (e.g. through Hill functions). The roots of these can also be found using homotopy continuation. An expanded tutorial for this will be published once some awaited improvements to the `as_polynomial` function are completed.
+It is not uncommon for CRNs to generate systems corresponding to rational
+multivariate polynomials (e.g. through Hill functions). The roots of these can
+also be found using homotopy continuation. An expanded tutorial for this will be
+published once some awaited improvements to the `as_polynomial` function are
+completed.
 
 ## Systems with conservation laws
-Finally, some systems are underdetermined, and have an infinite number of possible steady states. These are typically systems containing a conservation law, e.g.
+Finally, some systems are underdetermined, and have an infinite number of
+possible steady states. These are typically systems containing a conservation
+law, e.g.
 ```@example hc3
 using Catalyst
 two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 ```
-However, the conservation laws can be computed using the `conservationlaws` function. By supplying these, as well as fixed concentrations (in this case the total amount of *X*, that is *X1+X2*), steady states can be found. First, we set the default values of the system's initial conditions and parameter values. This will allow the system to automatically find the conserved amounts.
+However, the conservation laws can be computed using the `conservationlaws`
+function. By supplying these, as well as fixed concentrations (in this case the
+total amount of *X*, that is *X1+X2*), steady states can be found. First, we set
+the default values of the system's initial conditions and parameter values. This
+will allow the system to automatically find the conserved amounts.
 ```@example hc3
 setdefaults!(two_state_model, [:X1 => 1.0, :X2 => 1.0, :k1 => 2.0, :k2 => 1.0])
 ```
 Next, we create a `NonlinearSystem`, while also removing the redundant equation.
 ```@example hc3
-ns = convert(NonlinearSystem,two_state_model; remove_conserved=true)
+ns = convert(NonlinearSystem, two_state_model; remove_conserved=true)
 ```
-Again, we will create the dictionary for parameter values that we will sub in. However, we will do it slightly differently so that the conserved quantities are accounted for.
+Again, we will create the dictionary for parameter values that we will sub in.
+However, we will do it slightly differently so that the conserved quantities are
+accounted for.
 ```@example hc3
 const MT = ModelingToolkit
 subs = Dict(MT.parameters(ns) .=> MT.varmap_to_vars([], MT.parameters(ns); defaults=MT.defaults(ns)))
 ```
-We now extract the equation produced by the conservation law, and then sub in the parameter values creating a final set of equations (like previously). Unlike previously, we have to do `eq.rhs-eq.lhs`, as `cons_eq` may contain important information on both the lhs and rhs.
+We now extract the equation produced by the conservation law, and then sub in
+the parameter values creating a final set of equations (like previously). Unlike
+previously, we have to do `eq.rhs-eq.lhs`, as `cons_eq` may contain important
+information on both the lhs and rhs.
 ```@example hc3
 cons_eq = conservedequations(two_state_model)
-new_eqs = map(eq -> substitute(eq.rhs-eq.lhs,subs), [equations(ns)...;cons_eq...])
+new_eqs = map(eq -> substitute(eq.rhs - eq.lhs, subs), [equations(ns)...; cons_eq...])
 ```
 Finally, we compute the solution:
 ```@example hc3
