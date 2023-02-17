@@ -380,11 +380,17 @@ test_network = @reaction_network begin π, X --> ∅ end
 @test length(parameters(test_network)) == 0
 @test reactions(test_network)[1].rate == π
 
-@test_throws LoadError @eval @reaction pi, 0 --> B
-@test_throws LoadError @eval @reaction ℯ, 0 --> B
+test_network = @reaction_network begin pi, X --> ∅ end
+@test length(species(test_network)) == 1
+@test length(parameters(test_network)) == 0
+@test reactions(test_network)[1].rate == pi
+
+test_network = @reaction_network begin ℯ, X --> ∅ end
+@test length(species(test_network)) == 1
+@test length(parameters(test_network)) == 0
+@test reactions(test_network)[1].rate == ℯ
+
 @test_throws LoadError @eval @reaction im, 0 --> B
 @test_throws LoadError @eval @reaction nothing, 0 --> B
-@test_throws LoadError @eval @reaction k, 0 --> pi
-@test_throws LoadError @eval @reaction k, 0 --> ℯ
 @test_throws LoadError @eval @reaction k, 0 --> im
 @test_throws LoadError @eval @reaction k, 0 --> nothing
