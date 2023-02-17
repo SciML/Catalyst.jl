@@ -203,13 +203,13 @@ parameter_sets = []
 no_parameters_9 = @reaction_network begin
     (1.5, 1, 2), ∅ ⟶ (X1, X2, X3)
     (0.01, 2.3, 1001), (X1, X2, X3) ⟶ ∅
-    (π, 42), X1 + X2 ⟷ X3
+    (3.1, 42), X1 + X2 ⟷ X3
     (19.9, 999.99), X3 ⟷ X4
     (sqrt(3.7), exp(1.9)), X4 ⟷ X1 + X2
 end
 push!(identical_networks_3, reaction_networks_standard[9] => no_parameters_9)
 push!(parameter_sets,
-      [1.5, 1, 2, 0.01, 2.3, 1001, π, 42, 19.9, 999.99, sqrt(3.7), exp(1.9)])
+      [1.5, 1, 2, 0.01, 2.3, 1001, 3.1, 42, 19.9, 999.99, sqrt(3.7), exp(1.9)])
 
 no_parameters_10 = @reaction_network begin
     0.01, ∅ ⟶ X1
@@ -371,9 +371,6 @@ end
 test_network = @reaction_network begin t * k, X --> ∅ end
 @test length(species(test_network)) == 1
 @test length(parameters(test_network)) == 1
-
-const forbidden_symbols_skip = Set([:t, :∅])
-const forbidden_symbols_error = union([:π, :pi, :ℯ, :im, :nothing], forbidden_symbols_skip)
 
 @test_throws LoadError @eval @reaction π, 0 --> B
 @test_throws LoadError @eval @reaction pi, 0 --> B
