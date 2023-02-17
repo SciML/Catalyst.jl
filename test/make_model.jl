@@ -371,11 +371,9 @@ end
 
 # Test that forbidden symbols do not work:
 
-test_network = @reaction_network begin
-    t*k, X --> ∅
-end
-@test length(species(test_network))==1
-@test length(parameters(test_network))==1
+test_network = @reaction_network begin t * k, X --> ∅ end
+@test length(species(test_network)) == 1
+@test length(parameters(test_network)) == 1
 
 const forbidden_symbols_skip = Set([:t, :∅])
 const forbidden_symbols_error = union([:π, :pi, :ℯ, :im, :nothing], forbidden_symbols_skip)
