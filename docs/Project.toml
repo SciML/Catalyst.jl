@@ -15,6 +15,7 @@ Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
 Catalyst = "13"
+DiffEqFlux = "1"
 DifferentialEquations = "7.7"
 Distributions = "0.25"
 Documenter = "0.27"
