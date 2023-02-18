@@ -599,8 +599,8 @@ function ReactionSystem(eqs, iv, states, ps;
     ps′ = value.(MT.scalarize(ps))
 
     allsyms = Iterators.flatten((ps′, states′))
-    all(sym -> getname(sym) ∉ forbidden_symbols, allsyms) ||
-        error("Catalyst reserves the symbols $forbidden_symbols for internal use. Please do not use these symbols as parameters or states/species.")
+    all(sym -> getname(sym) ∉ forbidden_symbols_error, allsyms) ||
+        error("Catalyst reserves the symbols $forbidden_symbols_error for internal use. Please do not use these symbols as parameters or states/species.")
 
     # sort Reactions before Equations
     eqs′ = CatalystEqType[eq for eq in eqs]
