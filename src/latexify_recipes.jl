@@ -127,7 +127,7 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
     rev_arrow = LATEX_DEFS.harpoon_arrows ? "\\xrightleftharpoons" : "\\xleftrightarrow"
 
     # test if in IJulia since their mathjax is outdated...
-    # VSCODE users Katex and doesn't have this issue.
+    # VSCODE uses Katex and doesn't have this issue.
     if isdefined(Main, :IJulia) && Main.IJulia.inited &&
        !any(s -> occursin("VSCODE", s), collect(keys(ENV)))
         str *= "\\require{mhchem} \n"
