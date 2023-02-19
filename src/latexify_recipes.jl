@@ -208,7 +208,7 @@ end
 end
 
 function Latexify.infer_output(env, rs::ReactionSystem, args...)
-    env in [:arrows, :chem, :chemical, :arrow, :mdtext] && return chemical_arrows
+    env in [:arrows, :chem, :chemical, :arrow] && return chemical_arrows
 
     error("The environment $env is not defined.")
     latex_function = Latexify.get_latex_function(rs, args...)
