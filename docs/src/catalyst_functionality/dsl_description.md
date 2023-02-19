@@ -251,9 +251,7 @@ end
 ```
 corresponding to the ODE model
 ```@example tut2
-using Latexify
-# latexify(rn; form=:ode) # hide
-latexify(convert(ODESystem,rn))
+convert(ODESystem,rn)
 ```
 
 With respect to the corresponding mass action ODE model, this is actually
@@ -265,8 +263,7 @@ rn = @reaction_network begin
 end
 ```
 ```@example tut2
-# latexify(rn; form=:ode) # hide
-latexify(convert(ODESystem,rn))
+convert(ODESystem,rn)
 ```
 !!! note
     While the ODE models corresponding to the preceding two reaction systems are
