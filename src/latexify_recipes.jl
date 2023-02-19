@@ -95,7 +95,7 @@ function make_stoich_str(spec, stoich, subber; mathrm = true, kwargs...)
     if isequal(stoich, one(stoich))
         prestr * latexraw(subber(spec); kwargs...) * poststr
     else
-        if stoich isa Symbolic
+        if (stoich isa Symbolic) && istree(stoich)
             LaTeXString("(") *
             latexraw(subber(stoich); kwargs...) *
             LaTeXString(")") *
