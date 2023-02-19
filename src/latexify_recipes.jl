@@ -129,8 +129,7 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
     # test if in IJulia since their mathjax is outdated...
     # VSCODE users Katex and doesn't have this issue.
     if isdefined(Main, :IJulia) && Main.IJulia.inited &&
-            !any(s -> occursin("VSCODE", s), collect(keys(ENV)))
-
+       !any(s -> occursin("VSCODE", s), collect(keys(ENV)))
         str *= "\\require{mhchem} \n"
     end
 
@@ -150,7 +149,8 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
         expand && (rate = recursive_clean!(rate))
 
         ### Generate formatted string of substrates
-        substrates = [make_stoich_str(substrate[1], substrate[2], subber; mathrm, kwargs...)
+        substrates = [make_stoich_str(substrate[1], substrate[2], subber; mathrm,
+                                      kwargs...)
                       for substrate in zip(r.substrates, r.substoich)]
         isempty(substrates) && (substrates = ["\\varnothing"])
 
@@ -179,7 +179,7 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
                     for product in zip(r.products, r.prodstoich)]
         isempty(products) && (products = ["\\varnothing"])
         str *= join(products, " + ")
-        if (i == lastidx) || ( ((i + 1) == lastidx) && (backwards_reaction == true))
+        if (i == lastidx) || (((i + 1) == lastidx) && (backwards_reaction == true))
             str *= "  \n "
         else
             str *= " $eol"

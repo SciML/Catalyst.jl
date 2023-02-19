@@ -41,6 +41,5 @@ makedocs(sitename = "Catalyst.jl",
          clean = true,
          pages = pages)
 
-
 deploydocs(repo = "github.com/SciML/Catalyst.jl.git";
            push_preview = true)
