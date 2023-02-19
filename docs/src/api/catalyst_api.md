@@ -232,7 +232,7 @@ isequal_ignore_names
 
 ## Network visualization
 [Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to convert
-networks to LaTeX mhchem equations by
+networks to LaTeX equations by
 ```julia
 using Latexify
 latexify(rn)

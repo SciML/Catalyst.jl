@@ -1,6 +1,7 @@
 Base.@kwdef mutable struct CatalystLatexParams
     double_linebreak::Bool = false
     starred::Bool = true
+    harpoon_arrows::Bool = true
 end
 
 const LATEX_DEFS = CatalystLatexParams()
@@ -82,25 +83,33 @@ function any_nonrx_subsys(rn::MT.AbstractSystem)
     false
 end
 
-function make_stoich_str(spec, stoich, subber; kwargs...)
-    if isequal(stoich, one(stoich))
-        latexraw(subber(spec); kwargs...)
+function make_stoich_str(spec, stoich, subber; mathrm = true, kwargs...)
+    if mathrm
+        prestr = "\\mathrm{"
+        poststr = "}"
     else
-        if istree(stoich)
+        prestr = ""
+        poststr = ""
+    end
+
+    if isequal(stoich, one(stoich))
+        prestr * latexraw(subber(spec); kwargs...) * poststr
+    else
+        if stoich isa Symbolic
             LaTeXString("(") *
             latexraw(subber(stoich); kwargs...) *
             LaTeXString(")") *
-            latexraw(subber(spec); kwargs...)
+            prestr * latexraw(subber(spec); kwargs...) * poststr
         else
             latexraw(subber(stoich); kwargs...) * LaTeXString(" ") *
-            latexraw(subber(spec); kwargs...)
+            prestr * latexraw(subber(spec); kwargs...) * poststr
         end
     end
 end
 
 function chemical_arrows(rn::ReactionSystem; expand = true,
-                         double_linebreak = LATEX_DEFS.double_linebreak, mathjax = true,
-                         starred = LATEX_DEFS.starred, kwargs...)
+                         double_linebreak = LATEX_DEFS.double_linebreak,
+                         starred = LATEX_DEFS.starred, mathrm = true, kwargs...)
     any_nonrx_subsys(rn) &&
         (@warn "Latexify currently ignores non-ReactionSystem subsystems. Please call `flatsys = flatten(sys)` to obtain a flattened version of your system before trying to Latexify it.")
 
@@ -113,18 +122,27 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
 
     str = starred ? "\\begin{align*}\n" : "\\begin{align}\n"
     eol = double_linebreak ? "\\\\\\\\\n" : "\\\\\n"
-    mathjax && (str *= "\\require{mhchem}\n")
     backwards_reaction = false
+
+    rev_arrow = LATEX_DEFS.harpoon_arrows ? "\\xrightleftharpoons" : "\\xleftrightarrow"
+
+    # test if in IJulia since their mathjax is outdated...
+    # VSCODE users Katex and doesn't have this issue.
+    if isdefined(Main, :IJulia) && Main.IJulia.inited &&
+            !any(s -> occursin("VSCODE", s), collect(keys(ENV)))
+
+        str *= "\\require{mhchem} \n"
+    end
 
     subber = ModelingToolkit.substituter([s => value(Symbolics.variable(MT.getname(s)))
                                           for s in species(rn)])
 
+    lastidx = length(rxs)
     for (i, r) in enumerate(rxs)
         if backwards_reaction
             backwards_reaction = false
             continue
         end
-        str *= "\\ce{ "
 
         ### Expand functions to maths expressions
         rate = r.rate isa Symbolic ? subber(r.rate) : r.rate
@@ -132,15 +150,13 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
         expand && (rate = recursive_clean!(rate))
 
         ### Generate formatted string of substrates
-        substrates = [make_stoich_str(substrate[1], substrate[2], subber; kwargs...)
+        substrates = [make_stoich_str(substrate[1], substrate[2], subber; mathrm, kwargs...)
                       for substrate in zip(r.substrates, r.substoich)]
         isempty(substrates) && (substrates = ["\\varnothing"])
 
         str *= join(substrates, " + ")
 
         ### Generate reaction arrows
-        prestr = mathjax ? "[\$" : "[\$"
-        poststr = mathjax ? "\$]" : "\$]"
         if i + 1 <= length(rxs) && issetequal(r.products, rxs[i + 1].substrates) &&
            issetequal(r.substrates, rxs[i + 1].products)
             ### Bi-directional arrows
@@ -148,25 +164,27 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
             #rate_backwards = rxs[i+1].rate isa Symbolic ? Expr(subber(rxs[i+1].rate)) : rxs[i+1].rate
             expand && (rate_backwards = recursive_clean!(rate_backwards))
             expand && (rate_backwards = recursive_clean!(rate_backwards))
-            str *= " &<=>"
-            str *= prestr * latexraw(rate; kwargs...) * poststr
-            str *= prestr * latexraw(rate_backwards; kwargs...) * poststr * " "
+            str *= " &" * rev_arrow
+            str *= "[" * latexraw(rate; kwargs...) * "]"
+            str *= "{" * latexraw(rate_backwards; kwargs...) * "} "
             backwards_reaction = true
         else
             ### Uni-directional arrows
-            str *= " &->"
-            str *= prestr * latexraw(rate; kwargs...) * poststr * " "
+            str *= " &\\xrightarrow{" * latexraw(rate; kwargs...) * "} "
         end
 
         ### Generate formatted string of products
-        products = [make_stoich_str(product[1], product[2], subber; kwargs...)
+        products = [make_stoich_str(product[1], product[2], subber; mathrm = true,
+                                    kwargs...)
                     for product in zip(r.products, r.prodstoich)]
         isempty(products) && (products = ["\\varnothing"])
         str *= join(products, " + ")
-        str *= "}$eol"
+        if (i == lastidx) || ( ((i + 1) == lastidx) && (backwards_reaction == true))
+            str *= "  \n "
+        else
+            str *= " $eol"
+        end
     end
-    str = str[1:(end - length(eol))] * "\n"
-
     str *= starred ? "\\end{align*}\n" : "\\end{align}\n"
 
     latexstr = Latexify.LaTeXString(str)
@@ -190,7 +208,7 @@ end
 end
 
 function Latexify.infer_output(env, rs::ReactionSystem, args...)
-    env in [:arrows, :chem, :chemical, :arrow] && return chemical_arrows
+    env in [:arrows, :chem, :chemical, :arrow, :mdtext] && return chemical_arrows
 
     error("The environment $env is not defined.")
     latex_function = Latexify.get_latex_function(rs, args...)
