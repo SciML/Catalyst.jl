@@ -10,6 +10,7 @@ First, we fetch the required packages.
 ```@example pe1
 using Catalyst
 using DifferentialEquations
+using Zygote
 using Optimization, OptimizationOptimisers
 ```
 
@@ -98,7 +99,8 @@ plot!(sol_estimate; color = [:darkblue :darkred], linestyle = :dash,
                     label = ["X estimated" "Y estimated"], xlimit = tspan)
 ```
 
-Finally, we use this estimate as the input to fit a parameter set on the full interval of sampled data.
+Finally, we use this estimate as the input to fit a parameter set on the full
+interval of sampled data.
 ```@example pe1
 p_estimate = optimise_p(p_estimate,30.)
 
