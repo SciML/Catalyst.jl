@@ -398,6 +398,31 @@ function netstoichmat(rn::ReactionSystem; sparse = false)
     nsmat
 end
 
+# the following function is adapted from SymbolicUtils.jl v.19
+# Copyright (c) 2020: Shashi Gowda, Yingbo Ma, Mason Protter, Julia Computing.
+# MIT license
+"""
+    to_multivariate_poly(polyeqs::AbstractVector{BasicSymbolic{Real}})
+
+Convert the given system of polynomial equations to multivariate polynomial representation.
+For example, this can be used in HomotopyContinuation.jl functions.
+"""
+function to_multivariate_poly(polyeqs::AbstractVector{BasicSymbolic{Real}})
+    @assert length(polyeqs)>=1 "At least one expression must be passed to `multivariate_poly`."
+
+    pvar2sym, sym2term = SymbolicUtils.get_pvar2sym(), SymbolicUtils.get_sym2term()
+    ps = map(polyeqs) do x
+        if istree(x) && operation(x) == (/)
+            num, den = arguments(x)
+            PolyForm(num, pvar2sym, sym2term).p /
+            PolyForm(den, pvar2sym, sym2term).p
+        else
+            PolyForm(x, pvar2sym, sym2term).p
+        end
+    end
+
+    ps
+end
 """
     setdefaults!(rn, newdefs)
 
