@@ -126,7 +126,7 @@ end
 giving that the steady-state for `X2` is about `1.33333`.
 
 As an alternative, we could have coupled `neweqs` with the conservation law
-relations to have HomotopyContinuation find the steady-state simultaneously:
+relations to have HomotopyContinuation find the steady-states simultaneously:
 ```@example hc3
 # move all the terms in the conserved equations to one side
 # and substitute in the parameter values
