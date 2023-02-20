@@ -252,12 +252,25 @@ end
 """
     @add_reactions
 
-Adds the reactions declared to a preexisting [`ReactionSystem`](@ref). All
-parameters used in the added reactions need to be declared after the
-reactions.
+Adds the reactions declared to a preexisting [`ReactionSystem`](@ref). Note, mutates the
+original network.
 
-See the [Catalyst.jl for Reaction Network Modeling](@ref) documentation for details on
-parameters to the macro.
+Notes:
+- To instead generate a new network by combining two existing networks use
+  `ModelingToolkit.extend`.
+
+Example:
+```julia
+rn = @reaction_network begin
+    @parameters G
+    π, 2*A --> B
+    end
+
+# add this reaction into rn
+@add_reactions rn begin
+    k*A, C --> D
+end
+```
 """
 macro add_reactions(rn::Symbol, ex::Expr)
     :(merge!($(esc(rn)), $(make_reaction_system(MacroTools.striplines(ex)))))

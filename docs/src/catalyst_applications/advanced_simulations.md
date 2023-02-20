@@ -113,9 +113,9 @@ Note that plot legends are disabled when plotting ensemble solutions. These can
 be re-enabled using the `legend` plotting keyword. However, when plotting a
 large number of trajectories, each will generate a label. Sometimes the best
 approach is to remove these and add a label manually:
-```
-p = plot(esol; label = "")
-plot!(p, [], []; label = "X", legend = :best)
+```@example ex1
+p = plot(esol; label = nothing)
+plot!(p, Float64[], Float64[]; label = "X", legend = :topleft)
 ```
 
 ## Event handling using callbacks
@@ -261,8 +261,6 @@ function, permitting the user to give more general conditions for the callback
 to be triggered. An example could be a callback that triggers whenever a species
 surpasses some threshold value.
 
-
-
 ## Scaling the noise magnitude in the chemical Langevin equations
 When using the CLE to generate SDEs from a CRN, it can sometimes be desirable to
 scale the magnitude of the noise terms. This can be done by introducing a *noise
@@ -280,7 +278,8 @@ p_1 = [:k1 => 1.0, :k2 => 1.0]
 
 sprob_1 = SDEProblem(rn_1, u0, tspan, p_1)
 sol_1 = solve(sprob_1)
-plot(sol_1; idxs = 1, ylimit=(0.0, 20.0))
+@unpack X1 = rn_1
+plot(sol_1; idxs = X1, ylimit = (0.0, 20.0))
 ```
 Here we can see that the `X` concentration fluctuations around a steady state of *X≈10.0*.
 
@@ -307,7 +306,8 @@ argument to the `SDEProblem`. We can now simulate our system and confirm that
 noise is reduced:
 ```@example ex3
 sol_2 = solve(sprob_2)
-plot(sol_2; idxs = 1, ylimit=(0.0, 20.0))
+@unpack X1 = rn_2
+plot(sol_2; idxs = X1, ylimit = (0.0, 20.0))
 ```
 
 Finally, it is possible to set individual noise scaling parameters for each
@@ -329,7 +329,8 @@ plotting the results, we see that we have less fluctuation than for the first
 simulation, but more as compared to the second one (which is as expected):
 ```@example ex3
 sol_3 = solve(sprob_3)
-plot(sol_3; idxs = 1, ylimit = (0.0, 20.0))
+@unpack X1 = rn_3
+plot(sol_3; idxs = X1, ylimit = (0.0, 20.0))
 ```
 
 ## Useful plotting options
