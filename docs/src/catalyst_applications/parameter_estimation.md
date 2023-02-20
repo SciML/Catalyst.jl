@@ -10,7 +10,7 @@ First, we fetch the required packages.
 ```@example pe1
 using Catalyst
 using DifferentialEquations
-using Zygote
+using SciMLSensitivity
 using Optimization, OptimizationOptimisers
 ```
 
