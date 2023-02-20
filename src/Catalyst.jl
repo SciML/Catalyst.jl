@@ -15,6 +15,7 @@ const MT = ModelingToolkit
 @reexport using ModelingToolkit
 using Symbolics
 import Symbolics: BasicSymbolic
+import SymbolicUtils
 using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems,
                        get_eqs, get_defaults, toparam, get_var_to_name, get_observed,
                        getvar
