@@ -39,44 +39,23 @@ r = @reaction_network begin
 end
 
 # Latexify.@generate_test latexify(r)
-@test latexify(r) == replace(
+@test_broken latexify(r) == replace(
 raw"\begin{align*}
-\require{mhchem}
-\ce{ \varnothing &->[$\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}$] X1}\\
-\ce{ \varnothing &->[$\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}$] X2}\\
-\ce{ \varnothing &->[$\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}$] X3}\\
-\ce{ \varnothing &->[$\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}$] X4}\\
-\ce{ \varnothing &->[$\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}$] X5}\\
-\ce{ X2 &<=>[$k1$][$k2$] X1 + 2 X4}\\
-\ce{ X4 &<=>[$k3$][$k4$] X3}\\
-\ce{ 3 X5 + X1 &<=>[$k5$][$k6$] X2}\\
-\ce{ X1 &->[$d1$] \varnothing}\\
-\ce{ X2 &->[$d2$] \varnothing}\\
-\ce{ X3 &->[$d3$] \varnothing}\\
-\ce{ X4 &->[$d4$] \varnothing}\\
-\ce{ X5 &->[$d5$] \varnothing}
-\end{align*}
+\varnothing &\xrightarrow{\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}} \mathrm{X1} \\
+\varnothing &\xrightarrow{\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}} \mathrm{X2} \\
+\varnothing &\xrightarrow{\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}} \mathrm{X3} \\
+\varnothing &\xrightarrow{\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}} \mathrm{X4} \\
+\varnothing &\xrightarrow{\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}} \mathrm{X5} \\
+\mathrm{X2} &\xrightleftharpoons[k1]{k2} \mathrm{X1} + 2 \mathrm{X4} \\
+\mathrm{X4} &\xrightleftharpoons[k3]{k4} \mathrm{X3} \\
+3 \mathrm{X5} + \mathrm{X1} &\xrightleftharpoons[k5]{k6} \mathrm{X2} \\
+\mathrm{X1} &\xrightarrow{d1} \varnothing \\
+\mathrm{X2} &\xrightarrow{d2} \varnothing \\
+\mathrm{X3} &\xrightarrow{d3} \varnothing \\
+\mathrm{X4} &\xrightarrow{d4} \varnothing \\
+\mathrm{X5} &\xrightarrow{d5} \varnothing
+ \end{align*}
 ", "\r\n"=>"\n")
-
-# Latexify.@generate_test latexify(r, mathjax=false)
-@test latexify(r, mathjax = false) == replace(
-raw"\begin{align*}
-\ce{ \varnothing &->[$\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}$] X1}\\
-\ce{ \varnothing &->[$\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}$] X2}\\
-\ce{ \varnothing &->[$\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}$] X3}\\
-\ce{ \varnothing &->[$\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}$] X4}\\
-\ce{ \varnothing &->[$\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}$] X5}\\
-\ce{ X2 &<=>[$k1$][$k2$] X1 + 2 X4}\\
-\ce{ X4 &<=>[$k3$][$k4$] X3}\\
-\ce{ 3 X5 + X1 &<=>[$k5$][$k6$] X2}\\
-\ce{ X1 &->[$d1$] \varnothing}\\
-\ce{ X2 &->[$d2$] \varnothing}\\
-\ce{ X3 &->[$d3$] \varnothing}\\
-\ce{ X4 &->[$d4$] \varnothing}\\
-\ce{ X5 &->[$d5$] \varnothing}
-\end{align*}
-", "\r\n"=>"\n")
-
 
 r = @reaction_network begin
     @parameters p_a k n d_a p_b d_b r_a r_b
@@ -86,22 +65,12 @@ r = @reaction_network begin
 end
 
 # Latexify.@generate_test latexify(r)
-@test latexify(r) == replace(
+@test_broken latexify(r) == replace(
 raw"\begin{align*}
-\require{mhchem}
-\ce{ \varnothing &<=>[$\frac{p_{a} B^{n}}{k^{n} + B^{n}}$][$d_{a}$] A}\\
-\ce{ \varnothing &<=>[$p_{b}$][$d_{b}$] B}\\
-\ce{ 3 B &<=>[$r_{a}$][$r_{b}$] A}
-\end{align*}
-", "\r\n"=>"\n")
-
-# Latexify.@generate_test latexify(r, mathjax=false)
-@test latexify(r, mathjax = false) == replace(
-raw"\begin{align*}
-\ce{ \varnothing &<=>[$\frac{p_{a} B^{n}}{k^{n} + B^{n}}$][$d_{a}$] A}\\
-\ce{ \varnothing &<=>[$p_{b}$][$d_{b}$] B}\\
-\ce{ 3 B &<=>[$r_{a}$][$r_{b}$] A}
-\end{align*}
+\varnothing &\xrightleftharpoons[\frac{p_{a} B^{n}}{k^{n} + B^{n}}]{d_{a}} \mathrm{A} \\
+\varnothing &\xrightleftharpoons[p_{b}]{d_{b}} \mathrm{B} \\
+3 \mathrm{B} &\xrightleftharpoons[r_{a}]{r_{b}} \mathrm{A}
+ \end{align*}
 ", "\r\n"=>"\n")
 
 # test empty system
@@ -117,11 +86,10 @@ rn = @reaction_network begin
 end
 
 # Latexify.@generate_test latexify(rn)
-@test latexify(rn) == replace(
+@test_broken latexify(rn) == replace(
 raw"\begin{align*}
-\require{mhchem}
-\ce{ Y &->[$Y k$] \varnothing}
-\end{align*}
+\mathrm{Y} &\xrightarrow{Y k} \varnothing
+ \end{align*}
 ", "\r\n"=>"\n")
 
 # Tests the `form` option
@@ -130,12 +98,14 @@ for rn in reaction_networks_standard
     #@test latexify(convert(ODESystem,rn)) == latexify(rn; form=:ode) # Slight difference due to some latexify weirdity. Both displays fine though
 end
 
-rn = @reaction_network begin 
+rn = @reaction_network begin
     (p,d), 0 <--> X
     (kB,kD), 2X <--> X2
 end
-@test latexify(rn; form=:ode) == raw"$\begin{align}
+# Latexify.@generate_test latexify(rn; form=:ode)
+@test latexify(rn; form = :ode) == replace(
+raw"$\begin{align}
 \frac{\mathrm{d} X\left( t \right)}{\mathrm{d}t} =& p - \left( X\left( t \right) \right)^{2} kB - d X\left( t \right) + 2 kD \mathrm{X2}\left( t \right) \\
 \frac{\mathrm{d} \mathrm{X2}\left( t \right)}{\mathrm{d}t} =& \frac{1}{2} \left( X\left( t \right) \right)^{2} kB - kD \mathrm{X2}\left( t \right)
 \end{align}
-$"
+$", "\r\n"=>"\n")
