@@ -30,24 +30,24 @@ plot(sol, lw=2)</code></pre><p><img src="assets/SIR.svg" alt="SIR Solution"/></p
   [0c46a032] DifferentialEquations v7.7.0
   [31c24e10] Distributions v0.25.80
   [e30172f5] Documenter v0.27.24
-  [587475ba] Flux v0.13.12
+  [587475ba] Flux v0.13.13
   [f213a82b] HomotopyContinuation v2.6.4
   [23fbe1c1] Latexify v0.15.18
   [961ee093] ModelingToolkit v8.47.0
   [91a5bcdd] Plots v1.38.5
   [efcf1570] Setfield v1.1.1
   [276daf66] SpecialFunctions v2.1.7
-  [0c5d862f] Symbolics v5.0.3</code></pre></details><details><summary>and using this machine and Julia version.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Julia Version 1.8.5
+  [0c5d862f] Symbolics v5.1.0</code></pre></details><details><summary>and using this machine and Julia version.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Julia Version 1.8.5
 Commit 17cfb8e65ea (2023-01-08 06:45 UTC)
 Platform Info:
   OS: Linux (x86_64-linux-gnu)
-  CPU: 2 × Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz
+  CPU: 2 × Intel(R) Xeon(R) Platinum 8171M CPU @ 2.60GHz
   WORD_SIZE: 64
   LIBM: libopenlibm
-  LLVM: libLLVM-13.0.1 (ORCJIT, icelake-server)
+  LLVM: libLLVM-13.0.1 (ORCJIT, skylake-avx512)
   Threads: 1 on 2 virtual cores</code></pre></details><details><summary>A more complete overview of all dependencies and their versions is also provided.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Status `~/work/Catalyst.jl/Catalyst.jl/docs/Manifest.toml`
   [a4c015fc] ANSIColoredPrinters v0.0.1
-  [c3fe647b] AbstractAlgebra v0.27.8
+  [c3fe647b] AbstractAlgebra v0.27.10
   [621f4979] AbstractFFTs v1.2.1
   [1520ce14] AbstractTrees v0.4.4
   [7d9f7c33] Accessors v0.1.27
@@ -55,16 +55,15 @@ Platform Info:
 ⌅ [fb37089c] Arblib v0.6.4
   [dce04be8] ArgCheck v2.3.0
   [ec485272] ArnoldiMethod v0.2.0
-  [4fba245c] ArrayInterface v6.0.25
+⌅ [4fba245c] ArrayInterface v6.0.25
   [30b0a656] ArrayInterfaceCore v0.1.29
   [6ba088a2] ArrayInterfaceGPUArrays v0.2.2
   [015c0d05] ArrayInterfaceOffsetArrays v0.1.7
   [b0d46f97] ArrayInterfaceStaticArrays v0.1.5
   [dd5226c6] ArrayInterfaceStaticArraysCore v0.1.3
-  [a2b0951a] ArrayInterfaceTracker v0.1.1
   [4c555306] ArrayLayouts v0.8.18
   [a9b6321e] Atomix v0.1.0
-⌅ [ab4f0b2a] BFloat16s v0.2.0
+  [ab4f0b2a] BFloat16s v0.4.2
   [aae01518] BandedMatrices v0.17.14
   [198e06fe] BangBang v0.3.37
   [9718e550] Baselet v0.1.1
@@ -75,8 +74,9 @@ Platform Info:
   [fa961155] CEnum v0.4.2
   [2a0fbf3d] CPUSummary v0.2.2
   [00ebfdb7] CSTParser v3.3.6
-⌅ [052768ef] CUDA v3.13.1
+  [052768ef] CUDA v4.0.1
   [72cfdca4] CUDAKernels v0.4.7
+  [1af6417a] CUDA_Runtime_Discovery v0.1.1
   [49dc2e85] Calculus v0.5.1
   [7057c7e9] Cassette v0.3.11
   [479239e8] Catalyst v13.0.0 `~/work/Catalyst.jl/Catalyst.jl`
@@ -110,7 +110,7 @@ Platform Info:
   [244e2a9f] DefineSingletons v0.1.2
   [bcd4f6db] DelayDiffEq v5.40.7
   [b429d917] DensityInterface v0.4.0
-  [2b5f629d] DiffEqBase v6.118.0
+  [2b5f629d] DiffEqBase v6.119.0
   [459566f4] DiffEqCallbacks v2.26.0
   [aae7a2af] DiffEqFlux v1.54.0
   [77a26b50] DiffEqNoiseProcess v5.16.0
@@ -130,18 +130,18 @@ Platform Info:
   [4e289a0a] EnumX v1.0.4
   [7da242da] Enzyme v0.10.18
 ⌅ [f151be2c] EnzymeCore v0.1.0
-  [d4d017d3] ExponentialUtilities v1.23.0
+⌃ [d4d017d3] ExponentialUtilities v1.23.0
   [e2ba6199] ExprTools v0.1.8
   [c87230d0] FFMPEG v0.4.1
   [cc61a311] FLoops v0.2.1
   [b9860ae5] FLoopsBase v0.1.1
   [7034ab61] FastBroadcast v0.2.4
   [9aa1b823] FastClosures v0.3.2
-  [29a986be] FastLapackInterface v1.2.8
+  [29a986be] FastLapackInterface v1.2.9
   [1a297f60] FillArrays v0.13.7
-  [6a86dc24] FiniteDiff v2.17.0
+⌃ [6a86dc24] FiniteDiff v2.17.0
   [53c48c17] FixedPointNumbers v0.8.4
-  [587475ba] Flux v0.13.12
+  [587475ba] Flux v0.13.13
   [9c68100b] FoldsThreads v0.1.1
   [59287772] Formatting v0.4.2
   [f6369f11] ForwardDiff v0.10.34
@@ -177,9 +177,9 @@ Platform Info:
   [1019f520] JLFzf v0.1.5
   [692b3bcd] JLLWrappers v1.4.1
   [682c06a0] JSON v0.21.3
-  [98e50ef6] JuliaFormatter v1.0.22
+  [98e50ef6] JuliaFormatter v1.0.23
   [b14d175d] JuliaVariables v0.2.4
-  [ccbc3e58] JumpProcesses v9.3.2
+  [ccbc3e58] JumpProcesses v9.5.0
   [ef3ab10e] KLU v0.4.0
   [63c18a36] KernelAbstractions v0.8.6
   [ba0b0d4f] Krylov v0.9.0
@@ -187,7 +187,7 @@ Platform Info:
   [929cbde3] LLVM v4.16.0
   [8ac3fa9e] LRUCache v1.4.0
   [b964fa9f] LaTeXStrings v1.3.0
-  [2ee39098] LabelledArrays v1.13.0
+⌃ [2ee39098] LabelledArrays v1.13.0
   [984bce1d] LambertW v0.4.6
   [23fbe1c1] Latexify v0.15.18
   [10f19ff3] LayoutPointers v0.1.13
@@ -195,13 +195,13 @@ Platform Info:
   [1d6d02ad] LeftChildRightSiblingTrees v0.2.0
   [2d8b4e74] LevyArea v1.0.0
   [d3d80556] LineSearches v7.2.0
-  [7ed4a6bd] LinearSolve v1.35.0
+  [7ed4a6bd] LinearSolve v1.36.0
   [2ab3a3ac] LogExpFunctions v0.3.22
   [e6f89c97] LoggingExtras v1.0.0
   [bdcacae8] LoopVectorization v0.12.150
-  [b2108857] Lux v0.4.37
+  [b2108857] Lux v0.4.38
   [bb33d45b] LuxCore v0.1.2
-  [82251201] LuxLib v0.1.7
+  [82251201] LuxLib v0.1.8
   [d8e11817] MLStyle v0.4.17
   [f1d291b0] MLUtils v0.4.1
   [1914dd2f] MacroTools v0.5.10
@@ -218,10 +218,10 @@ Platform Info:
   [d41bc354] NLSolversBase v7.8.3
   [2774e3e8] NLsolve v4.5.1
   [872c559c] NNlib v0.8.18
-⌃ [a00861dc] NNlibCUDA v0.2.6
+  [a00861dc] NNlibCUDA v0.2.7
   [77ba4419] NaNMath v1.0.2
   [71a1bf82] NameResolution v0.1.5
-  [8913a72c] NonlinearSolve v1.3.0
+  [8913a72c] NonlinearSolve v1.4.0
   [d8793406] ObjectFile v0.3.7
   [6fe1bfb0] OffsetArrays v1.12.9
   [0b1bfda6] OneHotArrays v0.2.3
@@ -246,7 +246,7 @@ Platform Info:
   [f517fe37] Polyester v0.7.2
   [1d0040c9] PolyesterWeave v0.2.1
   [85a6dd25] PositiveFactorizations v0.2.4
-  [d236fae5] PreallocationTools v0.4.11
+⌃ [d236fae5] PreallocationTools v0.4.11
   [21216c6a] Preferences v1.3.0
   [8162dcfd] PrettyPrint v0.2.0
 ⌅ [08abe8d2] PrettyTables v1.3.1
@@ -261,7 +261,7 @@ Platform Info:
   [c1ae055f] RealDot v0.1.0
   [3cdcf5f2] RecipesBase v1.3.3
   [01d81517] RecipesPipeline v0.6.11
-  [731186ca] RecursiveArrayTools v2.37.0
+⌃ [731186ca] RecursiveArrayTools v2.37.0
   [f2c3362d] RecursiveFactorization v0.2.18
   [189a3867] Reexport v1.2.2
   [05181044] RelocatableFolders v1.0.0
@@ -272,31 +272,31 @@ Platform Info:
   [7e49a35a] RuntimeGeneratedFunctions v0.5.5
   [94e857df] SIMDTypes v0.1.0
   [476501e8] SLEEFPirates v0.6.38
-  [0bca4576] SciMLBase v1.85.0
+⌃ [0bca4576] SciMLBase v1.85.0
   [e9a6253c] SciMLNLSolve v0.1.3
-  [c0aeaf25] SciMLOperators v0.1.21
-  [1ed8b502] SciMLSensitivity v7.20.0
+⌃ [c0aeaf25] SciMLOperators v0.1.21
+  [1ed8b502] SciMLSensitivity v7.21.0
   [6c6a2e73] Scratch v1.1.1
   [8e049039] SemialgebraicSets v0.2.5
   [efcf1570] Setfield v1.1.1
   [605ecd9f] ShowCases v0.1.0
   [992d4aef] Showoff v1.0.3
   [777ac1f9] SimpleBufferStream v1.1.0
-  [727e6d20] SimpleNonlinearSolve v0.1.11
+  [727e6d20] SimpleNonlinearSolve v0.1.13
   [699a6c99] SimpleTraits v0.9.4
   [66db9d55] SnoopPrecompile v1.0.3
   [a2af1166] SortingAlgorithms v1.1.0
-  [47a9eef4] SparseDiffTools v1.30.0
+⌃ [47a9eef4] SparseDiffTools v1.30.0
   [e56a9233] Sparspak v0.3.9
   [276daf66] SpecialFunctions v2.1.7
   [171d559e] SplittablesBase v0.1.15
   [aedffcd0] Static v0.8.3
-  [90137ffa] StaticArrays v1.5.15
+  [90137ffa] StaticArrays v1.5.16
   [1e83bf80] StaticArraysCore v1.4.0
   [82ae8749] StatsAPI v1.5.0
   [2913bbd2] StatsBase v0.33.21
   [4c63d2b9] StatsFuns v1.1.1
-  [9672c7b4] SteadyStateDiffEq v1.12.0
+  [9672c7b4] SteadyStateDiffEq v1.13.0
   [789caeaf] StochasticDiffEq v6.57.5
   [7792a7ef] StrideArraysCore v0.4.7
   [09ab397b] StructArrays v0.6.14
@@ -304,7 +304,7 @@ Platform Info:
   [c3572dad] Sundials v4.15.1
   [2efcf032] SymbolicIndexingInterface v0.2.1
   [d1185830] SymbolicUtils v1.0.3
-  [0c5d862f] Symbolics v5.0.3
+  [0c5d862f] Symbolics v5.1.0
   [3783bdb8] TableTraits v1.0.1
   [bd369af6] Tables v1.10.0
   [62fd8b95] TensorCore v0.1.1
@@ -330,8 +330,12 @@ Platform Info:
   [19fa3120] VertexSafeGraphs v0.2.0
   [e88e6eb3] Zygote v0.6.55
   [700de1a5] ZygoteRules v0.2.2
+  [02a925ec] cuDNN v1.0.1
 ⌅ [d9960996] Arb_jll v200.2200.0+0
   [6e34b625] Bzip2_jll v1.0.8+0
+⌅ [4ee394cb] CUDA_Driver_jll v0.2.0+0
+⌅ [76a88914] CUDA_Runtime_jll v0.2.3+2
+  [62b44479] CUDNN_jll v8.6.0+3
   [83423d85] Cairo_jll v1.16.1+1
 ⌅ [7cc45869] Enzyme_jll v0.0.48+1
   [2e619515] Expat_jll v2.4.8+0
@@ -457,4 +461,4 @@ Platform Info:
   [3f19e933] p7zip_jll v17.4.0+0
 Info Packages marked with ⌃ and ⌅ have new versions available, but those with ⌅ are restricted by compatibility constraints from upgrading. To see why use `status --outdated -m`</code></pre></details>You can also download the
 <a href="https://github.com/SciML/Catalyst.jl/tree/gh-pages/v13.0.0/assets/Manifest.toml">manifest</a> file and the
-<a href="https://github.com/SciML/Catalyst.jl/tree/gh-pages/v13.0.0/assets/Project.toml">project</a> file.</article><nav class="docs-footer"><a class="docs-footer-nextpage" href="introduction_to_catalyst/catalyst_for_new_julia_users/">Introduction to Catalyst and Julia for New Julia users »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Friday 17 February 2023 23:03">Friday 17 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+<a href="https://github.com/SciML/Catalyst.jl/tree/gh-pages/v13.0.0/assets/Project.toml">project</a> file.</article><nav class="docs-footer"><a class="docs-footer-nextpage" href="introduction_to_catalyst/catalyst_for_new_julia_users/">Introduction to Catalyst and Julia for New Julia users »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Monday 20 February 2023 01:17">Monday 20 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
