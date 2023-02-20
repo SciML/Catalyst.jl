@@ -398,7 +398,7 @@ function netstoichmat(rn::ReactionSystem; sparse = false)
     nsmat
 end
 
-# the following function is takadapteden from SymbolicUtils.jl v.19
+# the following function is adapted from SymbolicUtils.jl v.19
 # Copyright (c) 2020: Shashi Gowda, Yingbo Ma, Mason Protter, Julia Computing.
 # MIT license
 """
