@@ -408,7 +408,7 @@ Convert the given system of polynomial equations to multivariate polynomial repr
 For example, this can be used in HomotopyContinuation.jl functions.
 """
 function to_multivariate_poly(polyeqs::AbstractVector{BasicSymbolic{Real}})
-    @assert length(polyeqs) >= 1 "At least one expression must be passed to `multivariate_poly`."
+    @assert length(polyeqs)>=1 "At least one expression must be passed to `multivariate_poly`."
 
     pvar2sym, sym2term = SymbolicUtils.get_pvar2sym(), SymbolicUtils.get_sym2term()
     ps = map(polyeqs) do x
