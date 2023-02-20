@@ -113,9 +113,9 @@ Note that plot legends are disabled when plotting ensemble solutions. These can
 be re-enabled using the `legend` plotting keyword. However, when plotting a
 large number of trajectories, each will generate a label. Sometimes the best
 approach is to remove these and add a label manually:
-```
+```@example ex1
 p = plot(esol; label = nothing)
-plot!(p, [], []; label = "X", legend = :topleft)
+plot!(p, Float64[], Float64[]; label = "X", legend = :topleft)
 ```
 
 ## Event handling using callbacks

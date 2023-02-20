@@ -182,12 +182,12 @@ reactionrates
 
 ## Functions to extend or modify a network
 `ReactionSystem`s can be programmatically extended using
-[`@add_reaction`](@ref), [`addspecies!`](@ref), [`addparam!`](@ref) and
+[`@add_reactions`](@ref), [`addspecies!`](@ref), [`addparam!`](@ref) and
 [`addreaction!`](@ref), or using [`ModelingToolkit.extend`](@ref) and
 [`ModelingToolkit.compose`](@ref).
 
 ```@docs
-@add_reaction
+@add_reactions
 addspecies!
 addparam!
 addreaction!

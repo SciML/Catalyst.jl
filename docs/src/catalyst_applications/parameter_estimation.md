@@ -22,14 +22,13 @@ brusselator = @reaction_network begin
     B, X → Y
     1, X → ∅
 end
-p_real = [1., 2.]
-nothing   # hide
+p_real = [:A => 1., :B => 2.]
 ```
 
 We simulate our model, and from the simulation generate sampled data points
 (with added noise), to which we will attempt to fit a parameter et.
 ```@example pe1
-u0 = [1.0, 1.0]
+u0 = [:X => 1.0, :Y => 1.0]
 tspan = (0.0, 30.0)
 
 sample_times = range(tspan[1]; stop = tspan[2], length = 100)
