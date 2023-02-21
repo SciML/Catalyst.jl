@@ -681,16 +681,16 @@ end
 let
     @variables t
     @species A(t) B(t)
-    @test_throws ArgumentError Reaction(1.0, [A,A,B], [B])
-    @test_throws ArgumentError Reaction(1.0, [B], [A,A])
-    @test_throws ArgumentError Reaction(1.0, [A,A], [B,B])
+    @test_throws ArgumentError Reaction(1.0, [A, A, B], [B])
+    @test_throws ArgumentError Reaction(1.0, [B], [A, A])
+    @test_throws ArgumentError Reaction(1.0, [A, A], [B, B])
 end
 
 # test reactions order species and products lexographically
 let
     @variables t
     @species A(t) α(t)
-    rx  = Reaction(1.0, [α, A], [α, A], [2, 3], [4, 5])
+    rx = Reaction(1.0, [α, A], [α, A], [2, 3], [4, 5])
     rx2 = Reaction(1.0, [A, α], [A, α], [3, 2], [5, 4])
     @test rx == rx2
     @test all(isequal.(rx.substrates, ModelingToolkit.value.([A, α])))
