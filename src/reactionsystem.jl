@@ -772,6 +772,8 @@ for details. Can be overriden via passing `combinatoric_ratelaws` to `convert` o
 """
 get_combinatoric_ratelaws(sys::ReactionSystem) = getfield(sys, :combinatoric_ratelaws)
 
+MT.get_continuous_events(sys::ReactionSystem) = getfield(sys, :continuous_events)
+
 # need a custom equations since ReactionSystem.eqs are a mix of Reactions and Equations
 function MT.equations(sys::ReactionSystem)
     eqs = get_eqs(sys)
