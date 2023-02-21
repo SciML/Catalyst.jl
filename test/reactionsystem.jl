@@ -693,9 +693,10 @@ let
     rx = Reaction(1.0, [α, A], [α, A], [2, 3], [4, 5])
     rx2 = Reaction(1.0, [A, α], [A, α], [3, 2], [5, 4])
     @test rx == rx2
-    @test all(isequal.(rx.substrates, ModelingToolkit.value.([A, α])))
-    @test all(isequal.(rx.substoich, [3, 2]))
-    @test all(isequal.(rx.products, ModelingToolkit.value.([A, α])))
-    @test all(isequal.(rx.prodstoich, [5, 4]))
+    @test hash(rx) == hash(rx2)
+
+    rx = Reaction(1.0, [α, A], [α, A], [2, 3], [4, 5]; netstoich = [α => 2, A => 2])
+    rx2 = Reaction(1.0, [A, α], [A, α], [3, 2], [5, 4]; netstoich = [A => 2, α => 2])
+    @test rx == rx2
     @test hash(rx) == hash(rx2)
 end
