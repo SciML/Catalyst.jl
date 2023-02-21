@@ -94,7 +94,7 @@ raw"\begin{align*}
 
 # Tests the `form` option
 for rn in reaction_networks_standard
-    @test_broken latexify(rn)==latexify(rn; form=:reactions)
+    @test latexify(rn)==latexify(rn; form=:reactions)
     #@test_broken latexify(convert(ODESystem,rn)) == latexify(rn; form=:ode) # Slight difference due to some latexify weirdity. Both displays fine though
 end
 
@@ -103,7 +103,7 @@ rn = @reaction_network begin
     (kB,kD), 2X <--> X2
 end
 # Latexify.@generate_test latexify(rn; form=:ode)
-@test_broken latexify(rn; form = :ode) == replace(
+@test latexify(rn; form = :ode) == replace(
 raw"$\begin{align}
 \frac{\mathrm{d} X\left( t \right)}{\mathrm{d}t} =& p - \left( X\left( t \right) \right)^{2} kB - d X\left( t \right) + 2 kD \mathrm{X2}\left( t \right) \\
 \frac{\mathrm{d} \mathrm{X2}\left( t \right)}{\mathrm{d}t} =& \frac{1}{2} \left( X\left( t \right) \right)^{2} kB - kD \mathrm{X2}\left( t \right)
