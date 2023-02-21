@@ -88,10 +88,11 @@ plot(sol)
 ## Adding events
 Our current model is unrealistic in assuming the cell will grow exponentially
 forever. Let's modify it such that the cell divides in half every time its
-volume reaches a size of `2`. Note, we will only keep track of one cell, and
- hence follow a specific lineage of the system. To do this we can create a
-continuous event using the ModelingToolkit symbolic event interface and attach
-it to our system. Please see the associated [ModelingToolkit
+volume reaches a size of `2`. We also assume we lose half of the protein upon
+division. Note, we will only keep track of one cell, and hence follow a specific
+ lineage of the system. To do this we can create a continuous event using the
+ModelingToolkit symbolic event interface and attach it to our system. Please see
+the associated [ModelingToolkit
 tutorial](https://docs.sciml.ai/ModelingToolkit/stable/basics/Events/) for more
 details on the types of events that can be represented symbolically. A
 lower-level approach for creating events via the DifferentialEquations.jl
@@ -104,20 +105,20 @@ using Catalyst, DifferentialEquations, Plots
 
 @parameters λ = 1.0
 @variables t V(t) = 1.0
+@species P(t) = 0.0
 D = Differential(t)
 eq = D(V) ~ λ * V
-rx1 = @reaction $V, 0 --> P
-rx2 = @reaction 1.0, P --> 0
+rx1 = @reaction $V, 0 --> $P
+rx2 = @reaction 1.0, $P --> 0
 ```
 Before creating our `ReactionSystem` we make the event.
 ```@example ceq3
-# every 1.0 time unit we half the volume of the cell
-continuous_events = [V ~ 2.0] => [V ~ V/2]
+# every 1.0 time unit we half the volume of the cell and the number of proteins
+continuous_events = [V ~ 2.0] => [V ~ V/2, P ~ P/2]
 ```
 We can now create and simulate our model
 ```@example ceq3
 @named rs = ReactionSystem([rx1, rx2, eq], t; continuous_events)
-setdefaults!(rs, [:P => 0.0])
 
 oprob = ODEProblem(rs, [], (0.0, 10.0))
 sol = solve(oprob, Tsit5())
