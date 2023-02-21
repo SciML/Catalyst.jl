@@ -155,7 +155,7 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
         prods = value.(prods)
     end
     allunique(prods) ||
-        throw(ArgumentError("Products can not be repeated in the least provided to `Reaction`, please modify the stoichiometry for any repeated products instead."))
+        throw(ArgumentError("Products can not be repeated in the list provided to `Reaction`, please modify the stoichiometry for any repeated products instead."))
     T = eltype(prodstoich)
 
     # try to get a common type for stoichiometry, using Any if have Syms
