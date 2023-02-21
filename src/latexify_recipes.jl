@@ -180,7 +180,8 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
                     for product in zip(r.products, r.prodstoich)]
         isempty(products) && (products = ["\\varnothing"])
         str *= join(products, " + ")
-        if (i == lastidx) || (((i + 1) == lastidx) && (backwards_reaction == true)) &&
+        if (i == lastidx) ||
+           (((i + 1) == lastidx) && (backwards_reaction == true)) &&
            isempty(nonrxs)
             str *= "  \n "
         else
