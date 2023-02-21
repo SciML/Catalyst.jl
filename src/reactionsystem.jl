@@ -142,6 +142,8 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     else
         subs = value.(subs)
     end
+    allunique(subs) ||
+        throw(ArgumentError("Substrates can not be repeated in the list provided to `Reaction`, please modify the stoichiometry for any repeated substrates instead."))
     S = eltype(substoich)
 
     if isnothing(prods)
@@ -152,6 +154,8 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     else
         prods = value.(prods)
     end
+    allunique(prods) ||
+        throw(ArgumentError("Products can not be repeated in the list provided to `Reaction`, please modify the stoichiometry for any repeated products instead."))
     T = eltype(prodstoich)
 
     # try to get a common type for stoichiometry, using Any if have Syms

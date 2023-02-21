@@ -1302,11 +1302,15 @@ end
 
 function hash(rx::Reaction, h::UInt)
     h = Base.hash(rx.rate, h)
-    h = Base.hash(rx.substrates, h)
-    h = Base.hash(rx.products, h)
-    h = Base.hash(rx.prodstoich, h)
-    h = Base.hash(rx.substoich, h)
-    h = Base.hash(rx.netstoich, h)
+    for s in Iterators.flatten((rx.substrates, rx.products))
+        h ⊻= hash(s)
+    end
+    for s in Iterators.flatten((rx.substoich, rx.prodstoich))
+        h ⊻= hash(s)
+    end
+    for s in rx.netstoich
+        h ⊻= hash(s)
+    end
     Base.hash(rx.only_use_rate, h)
 end
 
