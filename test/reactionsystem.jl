@@ -686,7 +686,7 @@ let
     @test_throws ArgumentError Reaction(1.0, [A, A], [B, B])
 end
 
-# test reactions order species and products lexographically
+# test order of species and products doesn't matter for equality or hashing
 let
     @variables t
     @species A(t) α(t)
