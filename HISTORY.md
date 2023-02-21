@@ -1,6 +1,8 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+
+## Catalyst 13.0
 - **BREAKING:** Parameters should no longer be listed at the end of the DSL
   macro, but are instead inferred from their position in the reaction statements
   or via explicit declarations in the DSL macro. By default, any symbol that appears

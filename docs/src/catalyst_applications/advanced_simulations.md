@@ -125,11 +125,15 @@ Sometimes one wishes to add discrete events during simulations. Examples could i
  - A simulation of a circadian rhythm, where light is turned on/off every 12 hours.
  - A cell divides when some size variable reaches a certain threshold, randomly
    allocating all species to two daughter cells.
-Events such as these can be modelled using callbacks. A callback is a function
-that is parsed to a `solve()` command, combing an `affect!` function (defining
-how the callback changes the system) with a `condition` function (a condition
-for triggering a callback). For a throughout the introduction, please read [the
-section about callbacks in the DifferentialEquations.jl
+
+In simple cases events such as these can be modelled symbolically, as described
+in the [Constraint Equations and Events](@ref constraint_equations) tutorial. A
+more flexible, but low-level, interface is also available via the callback
+functionality of DifferentialEquations.jl. A callback is a function that is
+passed to the `solve()` command, combing an `affect!` function (defining how the
+callback changes the system) with a `condition` function (a condition for
+triggering a callback). For a thorough introduction, please read [the section
+about callbacks in the DifferentialEquations.jl
 documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/).
 
 There exist three types of callbacks, `PresetTimeCallback`s `DiscreteCallback`s,
