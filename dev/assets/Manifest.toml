@@ -77,9 +77,9 @@ uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 
 [[deps.BandedMatrices]]
 deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra", "SnoopPrecompile", "SparseArrays"]
-git-tree-sha1 = "8b0a59f488eb3aceccffa341beeeca9957867919"
+git-tree-sha1 = "cb11e78958aa20df06addef7893b5877448890c5"
 uuid = "aae01518-5342-5314-be14-df237901396f"
-version = "0.17.14"
+version = "0.17.15"
 
 [[deps.Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
@@ -1085,9 +1085,9 @@ version = "4.5.1"
 
 [[deps.NNlib]]
 deps = ["Adapt", "ChainRulesCore", "LinearAlgebra", "Pkg", "Random", "Requires", "Statistics"]
-git-tree-sha1 = "ddf38a5d9140bc8c08ea6158484a455ca3efdd2d"
+git-tree-sha1 = "33ad5a19dc6730d592d8ce91c14354d758e53b0e"
 uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
-version = "0.8.18"
+version = "0.8.19"
 
 [[deps.NaNMath]]
 deps = ["OpenLibm_jll"]
@@ -1457,9 +1457,9 @@ version = "0.6.38"
 
 [[deps.SciMLBase]]
 deps = ["ArrayInterface", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "EnumX", "FunctionWrappersWrappers", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "Markdown", "Preferences", "RecipesBase", "RecursiveArrayTools", "Reexport", "RuntimeGeneratedFunctions", "SciMLOperators", "StaticArraysCore", "Statistics", "SymbolicIndexingInterface", "Tables"]
-git-tree-sha1 = "fd2a15854af0ba1542b89efa24512b0377e7e37d"
+git-tree-sha1 = "33f031423eedc1f9e43f6112da6f13d5b49ea7da"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "1.86.1"
+version = "1.86.2"
 
 [[deps.SciMLNLSolve]]
 deps = ["DiffEqBase", "LineSearches", "NLsolve", "Reexport", "SciMLBase"]
