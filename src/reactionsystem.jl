@@ -144,11 +144,6 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     end
     allunique(subs) ||
         throw(ArgumentError("Substrates can not be repeated in the list provided to `Reaction`, please modify the stoichiometry for any repeated substrates instead."))
-    if !isempty(subs)
-        perm = sortperm(subs; by = getname)
-        subs .= subs[perm]
-        substoich .= substoich[perm]
-    end
     S = eltype(substoich)
 
     if isnothing(prods)
@@ -161,11 +156,6 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     end
     allunique(prods) ||
         throw(ArgumentError("Products can not be repeated in the least provided to `Reaction`, please modify the stoichiometry for any repeated products instead."))
-    if !isempty(prods)
-        perm = sortperm(prods; by = getname)
-        prods .= prods[perm]
-        prodstoich .= prodstoich[perm]
-    end
     T = eltype(prodstoich)
 
     # try to get a common type for stoichiometry, using Any if have Syms
