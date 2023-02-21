@@ -114,8 +114,9 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
         (@warn "Latexify currently ignores non-ReactionSystem subsystems. Please call `flatsys = flatten(sys)` to obtain a flattened version of your system before trying to Latexify it.")
 
     rxs = reactions(rn)
-    if isempty(rxs)
-        latexstr = Latexify.LaTeXString("ReactionSystem $(nameof(rn)) has no reactions.")
+    nonrxs = filter(eq -> eq isa Equation, equations(rn))
+    if isempty(rxs) && isempty(nonrxs)
+        latexstr = Latexify.LaTeXString("ReactionSystem $(nameof(rn)) has no reactions or equations.")
         Latexify.COPY_TO_CLIPBOARD && clipboard(latexstr)
         return latexstr
     end
@@ -165,8 +166,8 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
             expand && (rate_backwards = recursive_clean!(rate_backwards))
             expand && (rate_backwards = recursive_clean!(rate_backwards))
             str *= " &" * rev_arrow
-            str *= "[" * latexraw(rate; kwargs...) * "]"
-            str *= "{" * latexraw(rate_backwards; kwargs...) * "} "
+            str *= "[" * latexraw(rate_backwards; kwargs...) * "]"
+            str *= "{" * latexraw(rate; kwargs...) * "} "
             backwards_reaction = true
         else
             ### Uni-directional arrows
@@ -179,12 +180,23 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
                     for product in zip(r.products, r.prodstoich)]
         isempty(products) && (products = ["\\varnothing"])
         str *= join(products, " + ")
-        if (i == lastidx) || (((i + 1) == lastidx) && (backwards_reaction == true))
+        if (i == lastidx) ||
+           (((i + 1) == lastidx) && (backwards_reaction == true)) &&
+           isempty(nonrxs)
             str *= "  \n "
         else
             str *= " $eol"
         end
     end
+
+    if !isempty(nonrxs)
+        eqstrs = latexraw.(nonrxs)
+        eqstr_list = replace.(eqstrs, "=" => "&=")
+        newstr = join(eqstr_list, " $eol")
+        str *= newstr
+        str *= "  \n "
+    end
+
     str *= starred ? "\\end{align*}\n" : "\\end{align}\n"
 
     latexstr = Latexify.LaTeXString(str)
