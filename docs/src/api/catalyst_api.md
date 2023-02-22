@@ -1,9 +1,11 @@
 # Catalyst.jl API
+
 ```@meta
 CurrentModule = Catalyst
 ```
 
 ## Reaction network generation and representation
+
 Catalyst provides the [`@reaction_network`](@ref) macro for generating a
 complete network, stored as a [`ReactionSystem`](@ref), which in turn is
 composed of [`Reaction`](@ref)s. `ReactionSystem`s can be converted to other
@@ -16,11 +18,11 @@ appear as a substrate or product in some reaction will be treated as a species,
 while all remaining symbols will be considered parameters (corresponding to
 those symbols that only appear within rate expressions and/or as stoichiometric
 coefficients). I.e. in
+
 ```julia
-rn = @reaction_network begin
-    k*X, Y --> W
-end
+rn = @reaction_network begin k * X, Y --> W end
 ```
+
 `Y` and `W` will all be classified as chemical species, while `k` and `X` will
 be classified as parameters.
 
@@ -40,13 +42,13 @@ using Catalyst, DifferentialEquations, Plots
 @variables t
 @species S(t) I(t) R(t)
 
-rxs = [Reaction(β, [S,I], [I], [1,1], [2])
+rxs = [Reaction(β, [S, I], [I], [1, 1], [2])
        Reaction(γ, [I], [R])]
 @named rs = ReactionSystem(rxs, t)
 
-u₀map    = [S => 999.0, I => 1.0, R => 0.0]
-parammap = [β => 1/10000, γ => 0.01]
-tspan    = (0.0, 250.0)
+u₀map = [S => 999.0, I => 1.0, R => 0.0]
+parammap = [β => 1 / 10000, γ => 0.01]
+tspan = (0.0, 250.0)
 
 # solve as ODEs
 odesys = convert(ODESystem, rs)
@@ -57,18 +59,18 @@ p1 = plot(sol, title = "ODE")
 # solve as SDEs
 sdesys = convert(SDESystem, rs)
 sprob = SDEProblem(sdesys, u₀map, tspan, parammap)
-sol = solve(sprob, EM(), dt=.01)
+sol = solve(sprob, EM(), dt = 0.01)
 p2 = plot(sol, title = "SDE")
 
 # solve as jump process
 jumpsys = convert(JumpSystem, rs)
-u₀map    = [S => 999, I => 1, R => 0]
+u₀map = [S => 999, I => 1, R => 0]
 dprob = DiscreteProblem(jumpsys, u₀map, tspan, parammap)
 jprob = JumpProblem(jumpsys, dprob, Direct())
 sol = solve(jprob, SSAStepper())
 p3 = plot(sol, title = "jump")
 
-plot(p1, p2, p3; layout = (3,1))
+plot(p1, p2, p3; layout = (3, 1))
 ```
 
 ```@docs
@@ -80,6 +82,7 @@ ReactionSystem
 ```
 
 ## [ModelingToolkit and Catalyst accessor functions](@id api_accessor_functions)
+
 A [`ReactionSystem`](@ref) is an instance of a
 `ModelingToolkit.AbstractTimeDependentSystem`, and has a number of fields that
 can be accessed using the Catalyst API and the [ModelingToolkit.jl Abstract
@@ -95,23 +98,23 @@ retrieve info from just a base [`ReactionSystem`](@ref) `rn`, ignoring
 sub-systems of `rn`, one can use the ModelingToolkit accessors (these provide
 direct access to the corresponding internal fields of the `ReactionSystem`)
 
-* `ModelingToolkit.get_states(rn)` is a vector that collects all the species
-  defined within `rn`, ordered by species and then non-species variables.
-* `Catalyst.get_species(rn)` is a vector of all the species variables in the system. The
-  entries in `get_species(rn)` correspond to the first `length(get_species(rn))`
-  components in `get_states(rn)`.
-* `ModelingToolkit.get_ps(rn)` is a vector that collects all the parameters
-  defined *within* reactions in `rn`.
-* `ModelingToolkit.get_eqs(rn)` is a vector that collects all the
-  [`Reaction`](@ref)s and `Symbolics.Equation` defined within `rn`, ordering all
-  `Reaction`s before `Equation`s.
-* `Catalyst.get_rxs(rn)` is a vector of all the [`Reaction`](@ref)s in `rn`, and
-  corresponds to the first `length(get_rxs(rn))` entries in `get_eqs(rn)`.
-* `ModelingToolkit.get_iv(rn)` is the independent variable used in the system
-  (usually `t` to represent time).
-* `ModelingToolkit.get_systems(rn)` is a vector of all sub-systems of `rn`.
-* `ModelingToolkit.get_defaults(rn)` is a dictionary of all the default values
-  for parameters and species in `rn`.
+  - `ModelingToolkit.get_states(rn)` is a vector that collects all the species
+    defined within `rn`, ordered by species and then non-species variables.
+  - `Catalyst.get_species(rn)` is a vector of all the species variables in the system. The
+    entries in `get_species(rn)` correspond to the first `length(get_species(rn))`
+    components in `get_states(rn)`.
+  - `ModelingToolkit.get_ps(rn)` is a vector that collects all the parameters
+    defined *within* reactions in `rn`.
+  - `ModelingToolkit.get_eqs(rn)` is a vector that collects all the
+    [`Reaction`](@ref)s and `Symbolics.Equation` defined within `rn`, ordering all
+    `Reaction`s before `Equation`s.
+  - `Catalyst.get_rxs(rn)` is a vector of all the [`Reaction`](@ref)s in `rn`, and
+    corresponds to the first `length(get_rxs(rn))` entries in `get_eqs(rn)`.
+  - `ModelingToolkit.get_iv(rn)` is the independent variable used in the system
+    (usually `t` to represent time).
+  - `ModelingToolkit.get_systems(rn)` is a vector of all sub-systems of `rn`.
+  - `ModelingToolkit.get_defaults(rn)` is a dictionary of all the default values
+    for parameters and species in `rn`.
 
 The preceding accessors do not allocate, directly accessing internal fields of
 the `ReactionSystem`.
@@ -120,24 +123,24 @@ To retrieve information from the full reaction network represented by a system
 `rn`, which corresponds to information within both `rn` and all sub-systems, one
 can call:
 
-* `ModelingToolkit.states(rn)` returns all species *and variables* across the
-  system, *all sub-systems*, and all constraint systems. Species are ordered
-  before non-species variables in `states(rn)`, with the first `numspecies(rn)`
-  entires in `states(rn)` being the same as `species(rn)`.
-* [`species(rn)`](@ref) is a vector collecting all the chemical species within
-  the system and any sub-systems that are also `ReactionSystems`.
-* `ModelingToolkit.parameters(rn)` returns all parameters across the
-  system, *all sub-systems*, and all constraint systems.
-* [`reactionparams(rn)`](@ref) is a vector of all the parameters within the
-  system and any sub-systems that are also `ReactionSystem`s. These include all
-  parameters that appear within some `Reaction`.
-* `ModelingToolkit.equations(rn)` returns all [`Reaction`](@ref)s and all
-  `Symbolics.Equations` defined across the system, *all sub-systems*, and all
-  constraint systems. `Reaction`s are ordered ahead of `Equation`s with the
-  first `numreactions(rn)` entries in `equations(rn)` being the same as
-  `reactions(rn)`.
-* [`reactions(rn)`](@ref) is a vector of all the `Reaction`s within the system
-  and any sub-systems that are also `ReactionSystem`s.
+  - `ModelingToolkit.states(rn)` returns all species *and variables* across the
+    system, *all sub-systems*, and all constraint systems. Species are ordered
+    before non-species variables in `states(rn)`, with the first `numspecies(rn)`
+    entires in `states(rn)` being the same as `species(rn)`.
+  - [`species(rn)`](@ref) is a vector collecting all the chemical species within
+    the system and any sub-systems that are also `ReactionSystems`.
+  - `ModelingToolkit.parameters(rn)` returns all parameters across the
+    system, *all sub-systems*, and all constraint systems.
+  - [`reactionparams(rn)`](@ref) is a vector of all the parameters within the
+    system and any sub-systems that are also `ReactionSystem`s. These include all
+    parameters that appear within some `Reaction`.
+  - `ModelingToolkit.equations(rn)` returns all [`Reaction`](@ref)s and all
+    `Symbolics.Equations` defined across the system, *all sub-systems*, and all
+    constraint systems. `Reaction`s are ordered ahead of `Equation`s with the
+    first `numreactions(rn)` entries in `equations(rn)` being the same as
+    `reactions(rn)`.
+  - [`reactions(rn)`](@ref) is a vector of all the `Reaction`s within the system
+    and any sub-systems that are also `ReactionSystem`s.
 
 These accessors will generally allocate new arrays to store their output unless
 there are no subsystems. In the latter case the usually return the same vector
@@ -147,6 +150,7 @@ Below we list the remainder of the Catalyst API accessor functions mentioned
 above.
 
 ## Basic system properties
+
 See [Programmatic Construction of Symbolic Reaction Systems](@ref
 programmatic_CRN_construction) for examples and [ModelingToolkit and Catalyst
 Accessor Functions](@ref api_accessor_functions) for more details on the basic
@@ -170,6 +174,7 @@ Catalyst.isbc
 ```
 
 ## Basic reaction properties
+
 ```@docs
 ismassaction
 dependents
@@ -181,6 +186,7 @@ reactionrates
 ```
 
 ## Functions to extend or modify a network
+
 `ReactionSystem`s can be programmatically extended using
 [`@add_reactions`](@ref), [`addspecies!`](@ref), [`addparam!`](@ref) and
 [`addreaction!`](@ref), or using [`ModelingToolkit.extend`](@ref) and
@@ -200,6 +206,7 @@ reorder_states!
 ```
 
 ## Network analysis and representations
+
 Note, currently API functions for network analysis and conservation law analysis
 do not work with constant species (currently only generated by SBMLToolkit).
 
@@ -226,6 +233,7 @@ reset_networkproperties!
 ```
 
 ## Network comparison
+
 ```@docs
 ==(rn1::Reaction, rn2::Reaction)
 isequal_ignore_names
@@ -233,27 +241,34 @@ isequal_ignore_names
 ```
 
 ## Network visualization
+
 [Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to convert
 networks to LaTeX equations by
+
 ```julia
 using Latexify
 latexify(rn)
 ```
+
 An optional argument, `form` allows using `latexify` to display a reaction
 network's ODE (as generated by the reaction rate equation) or SDE (as generated
 by the chemical Langevin equation) form:
+
 ```julia
-latexify(rn; form=:ode)
+latexify(rn; form = :ode)
 ```
+
 ```julia
-latexify(rn; form=:sde)
+latexify(rn; form = :sde)
 ```
+
 (As of writing this, an upstream bug causes the SDE form to be erroneously
 displayed as the ODE form)
 
 If [Graphviz](https://graphviz.org/) is installed and commandline accessible, it
 can be used to create and save network diagrams using [`Graph`](@ref) and
 [`savegraph`](@ref).
+
 ```@docs
 Graph
 complexgraph
@@ -261,9 +276,11 @@ savegraph
 ```
 
 ## [Rate laws](@id api_rate_laws)
+
 As the underlying [`ReactionSystem`](@ref) is comprised of `ModelingToolkit`
 expressions, one can directly access the generated rate laws, and using
 `ModelingToolkit` tooling generate functions or Julia `Expr`s from them.
+
 ```@docs
 oderatelaw
 jumpratelaw
@@ -275,18 +292,21 @@ hillar
 ```
 
 ## Transformations
+
 ```@docs
 Base.convert
 ModelingToolkit.structural_simplify
 ```
 
 ## Unit validation
+
 ```@docs
 validate(rx::Reaction; info::String = "")
 validate(rs::ReactionSystem, info::String="")
 ```
 
 ## Utility functions
+
 ```@docs
 symmap_to_varmap
 ```

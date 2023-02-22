@@ -1,4 +1,5 @@
 # [Introduction to Catalyst](@id introduction_to_catalyst)
+
 In this tutorial we provide an introduction to using Catalyst to specify
 chemical reaction networks, and then to solve ODE, jump, and SDE models
 generated from them. At the end we show what mathematical rate laws and
@@ -22,14 +23,15 @@ rate laws one can use are discussed in detail within the tutorial, [The Reaction
 DSL](@ref dsl_description). Here, we use a mix of first order, zero order, and repressive Hill
 function rate laws. Note, $\varnothing$ corresponds to the empty state, and is
 used for zeroth order production and first order degradation reactions:
+
 ```@example tut1
 repressilator = @reaction_network Repressilator begin
-    hillr(P₃,α,K,n), ∅ --> m₁
-    hillr(P₁,α,K,n), ∅ --> m₂
-    hillr(P₂,α,K,n), ∅ --> m₃
-    (δ,γ), m₁ <--> ∅
-    (δ,γ), m₂ <--> ∅
-    (δ,γ), m₃ <--> ∅
+    hillr(P₃, α, K, n), ∅ --> m₁
+    hillr(P₁, α, K, n), ∅ --> m₂
+    hillr(P₂, α, K, n), ∅ --> m₃
+    (δ, γ), m₁ <--> ∅
+    (δ, γ), m₂ <--> ∅
+    (δ, γ), m₃ <--> ∅
     β, m₁ --> m₁ + P₁
     β, m₂ --> m₂ + P₂
     β, m₃ --> m₃ + P₃
@@ -39,6 +41,7 @@ repressilator = @reaction_network Repressilator begin
 end
 show(stdout, MIME"text/plain"(), repressilator) # hide
 ```
+
 showing that we've created a new network model named `Repressilator` with the
 listed chemical species and states. [`@reaction_network`](@ref) returns a
 [`ReactionSystem`](@ref), which we saved in the `repressilator` variable. It can
@@ -46,29 +49,39 @@ be converted to a variety of other mathematical models represented as
 `ModelingToolkit.AbstractSystem`s, or analyzed in various ways using the
 [Catalyst.jl API](@ref). For example, to see the chemical species, parameters,
 and reactions we can use
+
 ```@example tut1
 species(repressilator)
 ```
+
 ```@example tut1
 parameters(repressilator)
 ```
+
 and
+
 ```@example tut1
 reactions(repressilator)
 ```
+
 We can also use Latexify to see the corresponding reactions in Latex, which shows what
 the `hillr` terms mathematically correspond to
+
 ```julia
 latexify(repressilator)
 ```
+
 ```@example tut1
 repressilator #hide
 ```
+
 Assuming [Graphviz](https://graphviz.org/) is installed and command line
 accessible, within a Jupyter notebook we can also graph the reaction network by
+
 ```julia
 g = Graph(repressilator)
 ```
+
 giving
 
 ![Repressilator solution](../assets/repressilator.svg)
@@ -80,11 +93,13 @@ Similarly, black arrows from reactions to species indicate products, and are
 labelled with their output stoichiometry. In contrast, red arrows from a species
 to reactions indicate the species is used within the reactions' rate
 expressions. For the repressilator, the reactions
+
 ```julia
-hillr(P₃,α,K,n), ∅ --> m₁
-hillr(P₁,α,K,n), ∅ --> m₂
-hillr(P₂,α,K,n), ∅ --> m₃
+hillr(P₃, α, K, n), ∅ --> m₁
+hillr(P₁, α, K, n), ∅ --> m₂
+hillr(P₂, α, K, n), ∅ --> m₃
 ```
+
 have rates that depend on the proteins, and hence lead to red arrows from each
 `Pᵢ`.
 
@@ -92,12 +107,15 @@ Note, from the REPL or scripts one can always use [`savegraph`](@ref) to save
 the graph (assuming `Graphviz` is installed).
 
 ## Mass action ODE models
+
 Let's now use our `ReactionSystem` to generate and solve a corresponding mass
 action ODE model. We first convert the system to a `ModelingToolkit.ODESystem`
 by
+
 ```@example tut1
 odesys = convert(ODESystem, repressilator)
 ```
+
 (Here Latexify is used automatically to display `odesys` in Latex within Markdown
 documents or notebook environments like Pluto.jl.)
 
@@ -107,44 +125,52 @@ To do this we need to build mappings from the symbolic parameters and the
 species to the corresponding numerical values for parameters and initial
 conditions. We can build such mappings in several ways. One is to use Julia
 `Symbols` to specify the values like
+
 ```@example tut1
-pmap  = (:α => .5, :K => 40, :n => 2, :δ => log(2)/120,
-         :γ => 5e-3, :β => log(2)/6, :μ => log(2)/60)
-u₀map = [:m₁ => 0., :m₂ => 0., :m₃ => 0., :P₁ => 20., :P₂ => 0., :P₃ => 0.]
+pmap = (:α => 0.5, :K => 40, :n => 2, :δ => log(2) / 120,
+        :γ => 5e-3, :β => log(2) / 6, :μ => log(2) / 60)
+u₀map = [:m₁ => 0.0, :m₂ => 0.0, :m₃ => 0.0, :P₁ => 20.0, :P₂ => 0.0, :P₃ => 0.0]
 nothing   # hide
 ```
+
 Alternatively, we can use ModelingToolkit-based symbolic species variables to
 specify these mappings like
+
 ```@example tut1
-@parameters  α K n δ γ β μ
+@parameters α K n δ γ β μ
 @variables t
 @species m₁(t) m₂(t) m₃(t) P₁(t) P₂(t) P₃(t)
-psymmap  = (α => .5, K => 40, n => 2, δ => log(2)/120,
-         γ => 5e-3, β => 20*log(2)/120, μ => log(2)/60)
-u₀symmap = [m₁ => 0., m₂ => 0., m₃ => 0., P₁ => 20., P₂ => 0., P₃ => 0.]
+psymmap = (α => 0.5, K => 40, n => 2, δ => log(2) / 120,
+           γ => 5e-3, β => 20 * log(2) / 120, μ => log(2) / 60)
+u₀symmap = [m₁ => 0.0, m₂ => 0.0, m₃ => 0.0, P₁ => 20.0, P₂ => 0.0, P₃ => 0.0]
 nothing   # hide
 ```
+
 Knowing these mappings we can set up the `ODEProblem` we want to solve:
 
 ```@example tut1
 # time interval to solve on
-tspan = (0., 10000.)
+tspan = (0.0, 10000.0)
 
 # create the ODEProblem we want to solve
 oprob = ODEProblem(repressilator, u₀map, tspan, pmap)
 nothing   # hide
 ```
+
 By passing `repressilator` directly to the `ODEProblem`, Catalyst has to
 (internally) call `convert(ODESystem, repressilator)` again to generate the
 symbolic ODEs. We could instead pass `odesys` directly like
+
 ```@example tut1
 oprob2 = ODEProblem(odesys, u₀symmap, tspan, psymmap)
 nothing   # hide
 ```
+
 `oprob` and `oprob2` are functionally equivalent, each representing the same
 underlying problem.
 
 !!! note
+    
     When passing `odesys` to `ODEProblem` we needed to use the symbolic
     variable-based parameter mappings, `u₀symmap` and `psymmap`, while when
     directly passing `repressilator` we could use either those or the
@@ -159,16 +185,18 @@ package. We'll use the recommended default explicit solver, `Tsit5()`, and then
 plot the solutions:
 
 ```@example tut1
-sol = solve(oprob, Tsit5(), saveat=10.)
+sol = solve(oprob, Tsit5(), saveat = 10.0)
 plot(sol)
 ```
+
 We see the well-known oscillatory behavior of the repressilator! For more on the
 choices of ODE solvers, see the [DifferentialEquations.jl
 documentation](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/).
 
----
+* * *
 
 ## Stochastic simulation algorithms (SSAs) for stochastic chemical kinetics
+
 Let's now look at a stochastic chemical kinetics model of the repressilator,
 modeling it with jump processes. Here, we will construct a
 [JumpProcesses](https://docs.sciml.ai/JumpProcesses/stable/) `JumpProblem` that uses
@@ -183,10 +211,10 @@ u₀map = [:m₁ => 0, :m₂ => 0, :m₃ => 0, :P₁ => 20, :P₂ => 0, :P₃ =>
 dprob = DiscreteProblem(repressilator, u₀map, tspan, pmap)
 
 # now, we create a JumpProblem, and specify Gillespie's Direct Method as the solver:
-jprob = JumpProblem(repressilator, dprob, Direct(), save_positions=(false,false))
+jprob = JumpProblem(repressilator, dprob, Direct(), save_positions = (false, false))
 
 # now, let's solve and plot the jump process:
-sol = solve(jprob, SSAStepper(), saveat=10.)
+sol = solve(jprob, SSAStepper(), saveat = 10.0)
 plot(sol)
 ```
 
@@ -199,8 +227,10 @@ aggregators) in the
 Common questions that arise in using the JumpProcesses SSAs (i.e. Gillespie methods)
 are collated in the [JumpProcesses FAQ](https://docs.sciml.ai/stable/modules/JumpProcesses/faq/).
 
----
+* * *
+
 ## Chemical Langevin equation (CLE) stochastic differential equation (SDE) models
+
 At an intermediate physical scale between macroscopic ODE models and microscopic
 stochastic chemical kinetics models lies the CLE, given by a system of SDEs that
 add to each ODE above a noise term. As the repressilator has species that get
@@ -210,13 +240,13 @@ simpler reaction network for a birth-death process that will stay non-negative:
 
 ```@example tut1
 bdp = @reaction_network begin
-  c₁, X --> 2X
-  c₂, X --> 0
-  c₃, 0 --> X
+    c₁, X --> 2X
+    c₂, X --> 0
+    c₃, 0 --> X
 end
-p = (:c₁ => 1.0, :c₂ => 2.0, :c₃ => 50.)
-u₀ = [:X => 5.]
-tspan = (0.,4.)
+p = (:c₁ => 1.0, :c₂ => 2.0, :c₃ => 50.0)
+u₀ = [:X => 5.0]
+tspan = (0.0, 4.0)
 nothing   # hide
 ```
 
@@ -236,7 +266,7 @@ sprob = SDEProblem(bdp, u₀, tspan, p)
 
 # solve and plot, tstops is used to specify enough points
 # that the plot looks well-resolved
-sol = solve(sprob, LambaEM(), tstops=range(0., step=4e-3, length=1001))
+sol = solve(sprob, LambaEM(), tstops = range(0.0, step = 4e-3, length = 1001))
 plot(sol)
 ```
 
@@ -244,26 +274,35 @@ We again have complete freedom to select any of the
 StochasticDiffEq.jl SDE solvers, see the
 [documentation](https://docs.sciml.ai/stable/modules/DiffEqDocs/solvers/sde_solve/).
 
----
+* * *
+
 ## Reaction rate laws used in simulations
+
 In generating mathematical models from a [`ReactionSystem`](@ref), reaction
 rates are treated as *microscopic* rates. That is, for a general mass action
 reaction of the form $n_1 S_1 + n_2 S_2 + \dots n_M S_M \to \dots$ with
 stoichiometric substrate coefficients $\{n_i\}_{i=1}^M$ and rate constant $k$,
 the corresponding ODE and SDE rate laws are taken to be
+
 ```math
 k \prod_{i=1}^M \frac{(S_i)^{n_i}}{n_i!},
 ```
+
 while the jump process transition rate (i.e., the propensity or intensity
 function) is
+
 ```math
 k \prod_{i=1}^M \frac{S_i (S_i-1) \dots (S_i-n_i+1)}{n_i!}.
 ```
+
 For example, the rate law of the reaction $2X + 3Y \to Z$ with rate constant $k$ would be
+
 ```math
 k \frac{X^2}{2!} \frac{Y^3}{3!} \\
 ```
+
 giving the ODE model
+
 ```math
 \begin{align*}
 \frac{dX}{dt} &=  -2 k \frac{X^2}{2!} \frac{Y^3}{3!}, &
@@ -271,20 +310,25 @@ giving the ODE model
 \frac{dZ}{dt} &= k \frac{X^2}{2!} \frac{Y^3}{3!}.
 \end{align*}
 ```
+
 This implicit rescaling of rate constants can be disabled through explicit
 conversion of a [`ReactionSystem`](@ref) to another system via
 [`Base.convert`](@ref) using the `combinatoric_ratelaws=false` keyword
 argument, i.e.
+
 ```julia
 rn = @reaction_network ...
-convert(ODESystem, rn; combinatoric_ratelaws=false)
+convert(ODESystem, rn; combinatoric_ratelaws = false)
 ```
 
 For the previous example using this keyword argument would give the rate law
+
 ```math
 k X^2 Y^3
 ```
+
 and the ODE model
+
 ```math
 \begin{align*}
 \frac{dX}{dt} &=  -2 k X^2 Y^3, &
@@ -293,22 +337,25 @@ and the ODE model
 \end{align*}
 ```
 
----
+* * *
+
 ## Notes
-1. For each of the preceding models we converted the `ReactionSystem` to, i.e.,
-   ODEs, jumps, or SDEs, we had two paths for conversion:
 
+ 1. For each of the preceding models we converted the `ReactionSystem` to, i.e.,
+    ODEs, jumps, or SDEs, we had two paths for conversion:
+    
     a. Convert to the corresponding ModelingToolkit system and then use it in
-       creating the corresponding problem.
-
+    creating the corresponding problem.
+    
     b. Directly create the desired problem type from the `ReactionSystem`.
+    
+    The latter is more convenient, however, the former will be more efficient if
+    one needs to repeatedly create the associated `Problem`.
 
-   The latter is more convenient, however, the former will be more efficient if
-   one needs to repeatedly create the associated `Problem`.
-2. ModelingToolkit offers many options for optimizing the generated ODEs and
-   SDEs, including options to build functions for evaluating Jacobians and/or
-   multithreaded versions of derivative evaluation functions. See the options
-   for
-   [`ODEProblem`s](https://mtk.sciml.ai/dev/systems/ODESystem/#DiffEqBase.ODEProblem)
-   and
-   [`SDEProblem`s](https://mtk.sciml.ai/dev/systems/SDESystem/#DiffEqBase.SDEProblem).
+ 2. ModelingToolkit offers many options for optimizing the generated ODEs and
+    SDEs, including options to build functions for evaluating Jacobians and/or
+    multithreaded versions of derivative evaluation functions. See the options
+    for
+    [`ODEProblem`s](https://mtk.sciml.ai/dev/systems/ODESystem/#DiffEqBase.ODEProblem)
+    and
+    [`SDEProblem`s](https://mtk.sciml.ai/dev/systems/SDESystem/#DiffEqBase.SDEProblem).
