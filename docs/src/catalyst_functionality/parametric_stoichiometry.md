@@ -28,8 +28,8 @@ rn = @reaction_network begin
     end
 reactions(rn)
 ```
-we see three species, `(A,B,C)`, however, `A` is treated as the stoichiometric
-coefficient of `C`, i.e.
+we see two species, `(B,C)`, with `A` treated as a parameter representing the
+stoichiometric coefficient of `C`, i.e.
 ```@example s1
 rx = reactions(rn)[1]
 rx.substrates[1],rx.substoich[1]
@@ -52,10 +52,10 @@ rxs2 = [(@reaction k₊, m*A --> (m*n)*B),
 revsys3 = ReactionSystem(rxs2,t; name=:revsys)
 revsys3 == revsys
 ```
-Note, the `@reaction` macro assumes all symbols are parameters except the right
-most symbols in the reaction line (i.e. `A` and `B`). For example, in `@reaction
-k, F*A + 2(H*G+B) --> D`, the substrates are `(A,G,B)` with stoichiometries
-`(F,2*H,2)`.
+Note, the `@reaction` macro again assumes all symbols are parameters except the
+substrates or reactants (i.e. `A` and `B`). For example, in
+`@reaction k, F*A + 2(H*G+B) --> D`, the substrates are `(A,G,B)` with
+stoichiometries `(F,2*H,2)`.
 
 Let's now convert `revsys` to ODEs and look at the resulting equations:
 ```@example s1
@@ -70,7 +70,7 @@ coefficients. For this reason we must specify `m` and `n` as integers, and hence
 ```@example s1
 p  = (k₊ => 1.0, k₋ => 1.0, m => 2, n => 2)
 u₀ = [A => 1.0, B => 1.0]
-oprob = ODEProblem(osys, u₀, (0.0,1.0), p)
+oprob = ODEProblem(osys, u₀, (0.0, 1.0), p)
 nothing # hide
 ```
 We can now solve and plot the system
@@ -97,7 +97,7 @@ Since we no longer have factorial functions appearing, our example will now run
 even with floating point values for `m` and `n`:
 ```@example s1
 p  = (k₊ => 1.0, k₋ => 1.0, m => 2.0, n => 2.0)
-oprob = ODEProblem(osys, u₀, (0.0,1.0), p)
+oprob = ODEProblem(osys, u₀, (0.0, 1.0), p)
 sol = solve(oprob, Tsit5())
 plot(sol)
 ```
