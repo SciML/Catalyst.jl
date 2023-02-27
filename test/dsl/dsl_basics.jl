@@ -4,7 +4,8 @@ using Catalyst, ModelingToolkit
 
 # naming tests
 @parameters k
-@variables t, A(t)
+@variables t
+@species A(t)
 rx = Reaction(k, [A], nothing)
 function rntest(rn, name)
     @test nameof(rn) == name
@@ -57,13 +58,14 @@ rn = @reaction_network begin
     π*k*D*hill(B,k2,B*D*H,n), 3*A  --> 2*C
 end
 @parameters k k2 n
-@variables t A(t) B(t) C(t) D(t) H(t)
+@variables t
+@species A(t) B(t) C(t) D(t) H(t)
 @test issetequal([A,B,C,D,H], species(rn))
 @test issetequal([k,k2,n], parameters(rn))
 
 # test interpolation within the DSL
 @parameters α k k1 k2
-@variables t A(t) B(t) C(t) D(t)
+@species A(t) B(t) C(t) D(t)
 AA = A
 AAA = A^2 + B
 rn = @reaction_network rn begin
@@ -109,7 +111,7 @@ end
 
 rx = @reaction k*h, A + 2*B --> 3*C + D
 @parameters k h
-@variables t A(t) B(t) C(t) D(t)
+@species A(t) B(t) C(t) D(t)
 @test rx == Reaction(k*h,[A,B],[C,D],[1,2],[3,1])
 
 ex = k*A^2 + B
@@ -120,7 +122,7 @@ rx = @reaction b+$ex, 2*$V + C--> ∅
 
 ### test floating point stoichiometry work ###
 @parameters k
-@variables t B(t) C(t) D(t)
+@species B(t) C(t) D(t)
 rx1 = Reaction(k,[B,C],[B,D], [2.5,1],[3.5, 2.5])
 rx2 = Reaction(2*k, [B], [D], [1], [2.5])
 rx3 = Reaction(2*k, [B], [D], [2.5], [2])
@@ -132,3 +134,30 @@ rn = @reaction_network mixedsys begin
     2*k, 2.5*B --> 2*D
 end
 @test rn == mixedsys
+
+# test species have the right metadata via the DSL
+let
+    rn = @reaction_network begin
+        k, 2*A + B --> C
+    end
+    @test issetequal(states(rn), species(rn))
+    @test all(isspecies, species(rn))
+
+    rn2 = @reaction_network begin
+        @species A(t) = 1 B(t) = 2 [isbcspecies = true]
+        k, A + 2*B --> 2*B
+    end
+    @variables t
+    @unpack A,B = rn2
+    D = Differential(t)
+    eq = D(B) ~ -B
+    @named osys = ODESystem([eq], t)
+    @named rn2 = extend(osys, rn2)
+    @test issetequal(states(rn2), species(rn2))
+    @test all(isspecies, species(rn))
+    @test Catalyst.isbc(ModelingToolkit.value(B))
+    @test Catalyst.isbc(ModelingToolkit.value(A)) == false
+    osys2 = convert(ODESystem, rn2)
+    @test issetequal(states(osys2), states(rn2))
+    @test length(equations(osys2)) == 2
+end

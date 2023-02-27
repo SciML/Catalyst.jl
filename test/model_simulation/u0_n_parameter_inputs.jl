@@ -12,8 +12,9 @@ rng = StableRNG(12345)
 
 # Tests for reaction_networks_standard[7]
 test_network = reaction_networks_standard[7]
-@parameters t p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
-@variables X1(t) X2(t) X3(t) X4(t) X5(t) X(t)
+@parameters p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
+@variables t
+@species X1(t) X2(t) X3(t) X4(t) X5(t) X6(t) X(t)
 
 for factor = [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
     u0_1 = factor*rand(rng,length(get_states(test_network)))

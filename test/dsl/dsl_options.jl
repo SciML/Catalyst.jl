@@ -101,8 +101,6 @@ end
 @test all(==(n1), (n2, n3, n4, n5, n6, n7, n8, n9, n10))
 
 ### Tests that when either @species or @parameters is given, the other is infered properly. ###
-@variables t
-
 rn1 = @reaction_network begin
     k*X, A + B --> 0
 end
@@ -251,7 +249,7 @@ end
 @test rn18 == rn19
 
 @parameters p d1 d2
-@variables t A(t) B(t)
+@species A(t) B(t)
 @test isequal(parameters(rn18)[1], p)
 @test isequal(parameters(rn18)[2], d1)
 @test isequal(parameters(rn18)[3], d2)
@@ -281,7 +279,7 @@ rn22 = @reaction_network name begin
 end
 @test all(==(rn20), (rn21, rn22))
 @parameters v K k1 k2 d S
-@variables t X(t) Y(t) Y2(t)
+@species X(t) Y(t) Y2(t)
 @test issetequal(parameters(rn22),[v K k1 k2 d S])
 @test issetequal(species(rn22), [X Y Y2])
 

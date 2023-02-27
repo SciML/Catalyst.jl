@@ -1,6 +1,6 @@
 ### Fetch required packages and reaction networks ###
 using DiffEqBase, Catalyst, Random, Test
-using ModelingToolkit: operation, Sym, istree, get_states, get_ps, get_eqs, get_systems,
+using ModelingToolkit: operation, istree, get_states, get_ps, get_eqs, get_systems,
                        get_iv
 
 using StableRNGs
@@ -230,7 +230,7 @@ end
 ### Tests that Reaction System created manually and through macro are identical ###
 identical_networks_4 = Vector{Pair}()
 @parameters v1 K1 v2 K2 k1 k2 k3 k4 k5 p d t
-@variables X1(t) X2(t) X3(t) X4(t) X5(t)
+@species X1(t) X2(t) X3(t) X4(t) X5(t)
 
 rxs_1 = [Reaction(p, nothing, [X1], nothing, [2]),
     Reaction(k1, [X1], [X2], [1], [1]),
@@ -325,14 +325,14 @@ end
 test_network = @reaction_network begin
     (α, Α), ν ⟷ Ν
     (β, Β), ξ ⟷ Ξ
-    (γ, Γ), ο ⟷ Ο
+    (γ, γ), ο ⟷ Ο
     (δ, Δ), Π ⟷ Π
     (ϵ, Ε), ρ ⟷ Ρ
     (ζ, Ζ), σ ⟷ Σ
     (η, Η), τ ⟷ Τ
     (θ, Θ), υ ⟷ Υ
     (ι, Ι), ϕ ⟷ Φ
-    (κ, Κ), χ ⟷ Χ
+    (κ, κ), χ ⟷ Χ
     (λ, Λ), ψ ↔ Ψ
     (μ, Μ), ω ⟷ Ω
 end
@@ -344,7 +344,10 @@ rn = @reaction_network begin
     k1, S + I --> 2I
     k2, I --> R
 end
-@test isequal(opname(species(rn)[2]), :I)
+@variables t
+@species I(t)
+@test any(isequal(I), species(rn))
+@test any(isequal(I), states(rn))
 
 # test names work
 rn = @reaction_network SIR1 begin
@@ -355,19 +358,21 @@ end
 
 ### Tests some arrow variants ###
 
-rn1 = @reaction_network begin
+rn1 = @reaction_network arrowtest begin
     (a1, a2), C <--> 0
     (k1, k2), A + B <--> C
     b1, 0 <-- B
 end
 
-rn2 = @reaction_network begin
+rn2 = @reaction_network arrowtest begin
     a1, C --> 0
     a2, 0 --> C
     k1, A + B --> C
     k2, C --> A + B
     b1, B --> 0
 end
+
+@test rn == rn2
 
 f1 = ODEFunction(convert(ODESystem, rn1), jac = true)
 f2 = ODEFunction(convert(ODESystem, rn2), jac = true)

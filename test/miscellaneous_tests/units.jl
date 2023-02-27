@@ -4,7 +4,8 @@ using Catalyst, Unitful, Test
 const MT = ModelingToolkit
 
 @parameters α [unit=u"μM/s"] β [unit=u"s"^(-1)] γ [unit=u"μM*s"^(-1)]
-@variables t [unit=u"s"] A(t) [unit=u"μM"] B(t) [unit=u"μM"] C(t) [unit=u"μM"]
+@variables t [unit=u"s"]
+@species A(t) [unit=u"μM"] B(t) [unit=u"μM"] C(t) [unit=u"μM"]
 rxs = [Reaction(α, nothing, [A]),
        Reaction(β, [A], [B]),
        Reaction(γ, [A,B], [B], [1,1], [2])]
@@ -31,13 +32,13 @@ rxs = [Reaction(α, nothing, [A]),
 @test (@test_logs (:warn, ) match_mode=:any ModelingToolkit.validate(ReactionSystem(rxs, t, [A,B,C], [α,β,γ], name=Symbol("unittester")))) == false
 
 @parameters β [unit=u"s"^(-1)]
-@variables B(t) [unit=u"M"]
+@species B(t) [unit=u"M"]
 rxs = [Reaction(α, nothing, [A]),
        Reaction(β, [A], [B]),
        Reaction(γ, [A,B], [B], [1,1], [2])]
 @test (@test_logs (:warn, ) match_mode=:any ModelingToolkit.validate(ReactionSystem(rxs, t, [A,B,C], [α,β,γ], name=Symbol("unittester")))) == false
 
-@variables B(t) [unit=u"μM"] D(t) [unit=u"M"]
+@species B(t) [unit=u"μM"] D(t) [unit=u"M"]
 badrx1 = Reaction(α, [A], [D])
 @test (@test_logs (:warn, ) match_mode=:any ModelingToolkit.validate(badrx1)) == false
 badrx2 = Reaction(α, [A], [B,D])
