@@ -1,5 +1,5 @@
 ### Fetch required packages and reaction networks ###
-using Catalyst, JumpProcesses, Random, Statistics, Test
+using Catalyst, JumpProcesses, Random, Statistics, Test, SciMLBase
 using ModelingToolkit: get_states, get_ps
 include("../test_networks.jl")
 
