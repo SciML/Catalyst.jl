@@ -25,7 +25,7 @@ include("../test_networks.jl")
 ### Just be sure to remove all such macros before you commit a change since it
 ### will cause issues with Travis.
 
-r = @reaction_network begin
+rn = @reaction_network begin
     hillr(X2,v1,K1,n1)*hill(X4,v1,K1,n1), ∅ → X1
     hill(X5,v2,K2,n2), ∅ → X2
     hill(X3,v3,K3,n3), ∅ → X3
@@ -39,57 +39,58 @@ r = @reaction_network begin
 end
 
 # Latexify.@generate_test latexify(r)
-@test_broken latexify(r) == replace(
+@test_broken latexify(rn) == replace(
 raw"\begin{align*}
-\require{mhchem}
-\ce{ \varnothing &->[$\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}$] X1}\\
-\ce{ \varnothing &->[$\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}$] X2}\\
-\ce{ \varnothing &->[$\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}$] X3}\\
-\ce{ \varnothing &->[$\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}$] X4}\\
-\ce{ \varnothing &->[$\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}$] X5}\\
-\ce{ \varnothing &->[$\frac{v6 X1^{n6}}{K6^{n6} + X1^{n6} + X6^{n6}}$] X6}\\
-\ce{ X2 &<=>[$k1$][$k2$] X1 + 2 X4}\\
-\ce{ X4 &<=>[$k3$][$k4$] X3}\\
-\ce{ 3 X5 + X1 &<=>[$k5$][$k6$] X2}\\
-\ce{ X1 &->[$d1$] \varnothing}\\
-\ce{ X2 &->[$d2$] \varnothing}\\
-\ce{ X3 &->[$d3$] \varnothing}\\
-\ce{ X4 &->[$d4$] \varnothing}\\
-\ce{ X5 &->[$d5$] \varnothing}\\
-\ce{ X6 &->[$d6$] \varnothing}
-\end{align*}
-", "\r\n"=>"\n")
+\varnothing &\xrightarrow{\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}} \mathrm{X1} \\
+\varnothing &\xrightarrow{\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}} \mathrm{X2} \\
+\varnothing &\xrightarrow{\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}} \mathrm{X3} \\
+\varnothing &\xrightarrow{\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}} \mathrm{X4} \\
+\varnothing &\xrightarrow{\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}} \mathrm{X5} \\
+\varnothing &\xrightarrow{\frac{v6 X1^{n6}}{K6^{n6} + X1^{n6} + X6^{n6}}} \mathrm{X6} \\
+\mathrm{X2} &\xrightleftharpoons[k2]{k1} \mathrm{X1} + 2 \mathrm{X4} \\
+\mathrm{X4} &\xrightleftharpoons[k4]{k3} \mathrm{X3} \\
+3 \mathrm{X5} + \mathrm{X1} &\xrightleftharpoons[k6]{k5} \mathrm{X2} \\
+\mathrm{X1} &\xrightarrow{d1} \varnothing \\
+\mathrm{X2} &\xrightarrow{d2} \varnothing \\
+\mathrm{X3} &\xrightarrow{d3} \varnothing \\
+\mathrm{X4} &\xrightarrow{d4} \varnothing \\
+\mathrm{X5} &\xrightarrow{d5} \varnothing \\
+\mathrm{X6} &\xrightarrow{d6} \varnothing  
+ \end{align*}
+"
+, "\r\n"=>"\n")
 
 # Latexify.@generate_test latexify(r, mathjax=false)
-@test_broken latexify(r, mathjax = false) == replace(
+@test_broken latexify(rn, mathjax = false) == replace(
 raw"\begin{align*}
-\ce{ \varnothing &->[$\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}$] X1}\\
-\ce{ \varnothing &->[$\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}$] X2}\\
-\ce{ \varnothing &->[$\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}$] X3}\\
-\ce{ \varnothing &->[$\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}$] X4}\\
-\ce{ \varnothing &->[$\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}$] X5}\\
-\ce{ \varnothing &->[$\frac{v6 X1^{n6}}{K6^{n6} + X1^{n6} + X6^{n6}}$] X6}\\
-\ce{ X2 &<=>[$k1$][$k2$] X1 + 2 X4}\\
-\ce{ X4 &<=>[$k3$][$k4$] X3}\\
-\ce{ 3 X5 + X1 &<=>[$k5$][$k6$] X2}\\
-\ce{ X1 &->[$d1$] \varnothing}\\
-\ce{ X2 &->[$d2$] \varnothing}\\
-\ce{ X3 &->[$d3$] \varnothing}\\
-\ce{ X4 &->[$d4$] \varnothing}\\
-\ce{ X5 &->[$d5$] \varnothing}\\
-\ce{ X6 &->[$d6$] \varnothing}
-\end{align*}
-", "\r\n"=>"\n")
+\varnothing &\xrightarrow{\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}} \mathrm{X1} \\
+\varnothing &\xrightarrow{\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}} \mathrm{X2} \\
+\varnothing &\xrightarrow{\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}} \mathrm{X3} \\
+\varnothing &\xrightarrow{\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}} \mathrm{X4} \\
+\varnothing &\xrightarrow{\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}} \mathrm{X5} \\
+\varnothing &\xrightarrow{\frac{v6 X1^{n6}}{K6^{n6} + X1^{n6} + X6^{n6}}} \mathrm{X6} \\
+\mathrm{X2} &\xrightleftharpoons[k2]{k1} \mathrm{X1} + 2 \mathrm{X4} \\
+\mathrm{X4} &\xrightleftharpoons[k4]{k3} \mathrm{X3} \\
+3 \mathrm{X5} + \mathrm{X1} &\xrightleftharpoons[k6]{k5} \mathrm{X2} \\
+\mathrm{X1} &\xrightarrow{d1} \varnothing \\
+\mathrm{X2} &\xrightarrow{d2} \varnothing \\
+\mathrm{X3} &\xrightarrow{d3} \varnothing \\
+\mathrm{X4} &\xrightarrow{d4} \varnothing \\
+\mathrm{X5} &\xrightarrow{d5} \varnothing \\
+\mathrm{X6} &\xrightarrow{d6} \varnothing  
+ \end{align*}
+"
+, "\r\n"=>"\n")
 
 
-r = @reaction_network begin
+rn = @reaction_network begin
     (hill(B, p_a, k, n), d_a), 0 ↔ A
     (p_b, d_b), 0 ↔ B
     (r_a, r_b), 3B ↔ A
 end
 
 # Latexify.@generate_test latexify(r)
-@test_broken latexify(r) == replace(
+@test_broken latexify(rn) == replace(
 raw"\begin{align*}
 \require{mhchem}
 \ce{ \varnothing &<=>[$\frac{p_{a} B^{n}}{k^{n} + B^{n}}$][$d_{a}$] A}\\
@@ -99,19 +100,19 @@ raw"\begin{align*}
 ", "\r\n"=>"\n")
 
 # Latexify.@generate_test latexify(r, mathjax=false)
-@test_broken latexify(r, mathjax = false) == replace(
+@test_broken latexify(rn, mathjax = false) == replace(
 raw"\begin{align*}
-\ce{ \varnothing &<=>[$\frac{p_{a} B^{n}}{k^{n} + B^{n}}$][$d_{a}$] A}\\
-\ce{ \varnothing &<=>[$p_{b}$][$d_{b}$] B}\\
-\ce{ 3 B &<=>[$r_{a}$][$r_{b}$] A}
-\end{align*}
+\varnothing &\xrightleftharpoons[d_{a}]{\frac{p_{a} B^{n}}{k^{n} + B^{n}}} \mathrm{A} \\
+\varnothing &\xrightleftharpoons[d_{b}]{p_{b}} \mathrm{B} \\
+3 \mathrm{B} &\xrightleftharpoons[r_{b}]{r_{a}} \mathrm{A}  
+ \end{align*}
 ", "\r\n"=>"\n")
 
 # test empty system
 empty_rn = ReactionSystem(Reaction[]; name=:EmptySys)
 # Latexify.@generate_test latexify(empty_rn)
 @test_broken latexify(empty_rn) == replace(
-raw"ReactionSystem EmptySys has no reactions.", "\r\n"=>"\n")
+raw"ReactionSystem EmptySys has no reactions or equations.", "\r\n"=>"\n")
 
 # test for https://github.com/SciML/Catalyst.jl/issues/473
 rn = @reaction_network begin
@@ -121,9 +122,8 @@ end
 # Latexify.@generate_test latexify(rn)
 @test_broken latexify(rn) == replace(
 raw"\begin{align*}
-\require{mhchem}
-\ce{ Y &->[$Y k$] \varnothing}
-\end{align*}
+\mathrm{Y} &\xrightarrow{Y k} \varnothing  
+ \end{align*}
 ", "\r\n"=>"\n")
 
 # Tests the `form` option
