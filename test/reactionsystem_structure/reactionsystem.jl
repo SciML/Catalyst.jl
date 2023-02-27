@@ -363,8 +363,7 @@ L2 = L
 
 # test non-integer stoichiometry goes through
 @parameters k b
-@variables t
-@species A(t) B(t) C(t) D(t)
+@variables t A(t) B(t) C(t) D(t)
 rx1 = Reaction(k, [B, C], [B, D], [2.5, 1], [3.5, 2.5])
 rx2 = Reaction(2 * k, [B], [D], [1], [2.5])
 rx3 = Reaction(2 * k, [B], [D], [2.5], [2])
@@ -528,7 +527,6 @@ let
     @test isapprox(umean[1], umean[3]; rtol = 1e-2)
     @test umean[4] == 10
 end
-
 # fix for SBML test 305
 let
     @parameters k1 k2 S2 [isconstantspecies = true]
@@ -608,7 +606,6 @@ end
 # test for classification of jump types
 let
     rn = @reaction_network begin
-        @parameters k k2
         t, A --> B          # vrj
         1.0, B --> D        # vrj
         k * D, H --> I + H  # vrj
