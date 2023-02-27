@@ -21,6 +21,7 @@ using SafeTestsets
     # Runs various miscellaneous tests.
     @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
     @time @safetestset "Symbolic Stoichiometry" begin include("miscellaneous_tests/symbolic_stoichiometry.jl") end
+    @time @safetestset "Events" begin include("miscellaneous_tests/events.jl") end
     @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end
 
     ### Tests ODE, SDE, PDE, and Gillespie Simulations. ###
