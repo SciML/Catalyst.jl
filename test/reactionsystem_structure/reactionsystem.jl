@@ -363,7 +363,8 @@ L2 = L
 
 # test non-integer stoichiometry goes through
 @parameters k b
-@variables t A(t) B(t) C(t) D(t)
+@variables t
+@species A(t) B(t) C(t) D(t)
 rx1 = Reaction(k, [B, C], [B, D], [2.5, 1], [3.5, 2.5])
 rx2 = Reaction(2 * k, [B], [D], [1], [2.5])
 rx3 = Reaction(2 * k, [B], [D], [2.5], [2])
