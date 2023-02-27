@@ -104,6 +104,7 @@ end
 rn1 = @reaction_network begin
     k*X, A + B --> 0
 end
+@variables t
 @test issetequal(species(rn1), @species A(t) B(t))
 @test issetequal(parameters(rn1), @parameters k X)
 

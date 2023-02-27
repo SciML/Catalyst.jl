@@ -6,7 +6,7 @@ using ModelingToolkit: operation, istree, get_states, get_ps, get_eqs, get_syste
 using StableRNGs
 rng = StableRNG(12345)
 
-include("test_networks.jl")
+include("../test_networks.jl")
 
 function unpacksys(sys)
     get_eqs(sys), get_iv(sys), get_states(sys), get_ps(sys), nameof(sys), get_systems(sys)
@@ -67,7 +67,6 @@ basic_test(reaction_networks_weird[2], 4, [:X, :Y, :Z], [:k1, :k2, :k3, :k4])
 identical_networks_1 = Vector{Pair}()
 
 different_arrow_1 = @reaction_network begin
-    @parameters p1 p2 p3 k1 k2 k3 k4 d1 d2 d3
     (p1, p2, p3), ∅ > (X1, X2, X3)
     (k1, k2), X2 ↔ X1 + 2X3
     (k3, k4), X1 ⟷ X3
@@ -76,7 +75,6 @@ end
 push!(identical_networks_1, reaction_networks_standard[1] => different_arrow_1)
 
 different_arrow_2 = @reaction_network begin
-    @parameters v1 K1 v2 K2 d
     mmr(X2, v1, K1), ∅ → X1
     mm(X1, v2, K2), ∅ ↣ X2
     d, X1 + X2 ↦ ∅
@@ -84,7 +82,6 @@ end
 push!(identical_networks_1, reaction_networks_standard[2] => different_arrow_2)
 
 different_arrow_3 = @reaction_network begin
-    @parameters v1 K1 v2 K2 k1 k2 k3 k4 d
     mm(X2, v1, K1), ∅ ⇾ X1
     mm(X3, v2, K2), ∅ ⟶ X2
     (k1, k2), X1 ⇄ X3
@@ -94,7 +91,6 @@ end
 push!(identical_networks_1, reaction_networks_standard[3] => different_arrow_3)
 
 different_arrow_4 = @reaction_network begin
-    @parameters v1 K1 v2 K2 v3 K3 v4 K4 d1 d2 d3 d4
     mmr(X4, v1, K1), ∅ ⥟ X1
     mmr(X1, v2, K2), ∅ ⥟ X2
     mmr(X2, v3, K3), ∅ ⇀ X3
@@ -105,7 +101,6 @@ push!(identical_networks_1, reaction_networks_standard[4] => different_arrow_4)
 
 # Yes the name is different, I wanted one with several single direction arrows.
 different_arrow_8 = @reaction_network begin
-    @parameters p k1 k2 k3 d
     p, 2X1 < ∅
     k1, X2 ← X1
     (k2, k3), X3 ⟻ X2
@@ -133,7 +128,6 @@ identical_networks_2 = Vector{Pair}()
 
 # Different parameter and variable names.
 differently_written_5 = @reaction_network begin
-    @parameters q l1 l2 l3 l4 l5 l6 c
     q, ∅ → Y1
     (l1, l2), Y1 ⟷ Y2
     (l3, l4), Y2 ⟷ Y3
@@ -144,7 +138,6 @@ push!(identical_networks_2, reaction_networks_standard[5] => differently_written
 
 # Unfold reactions.
 differently_written_6 = @reaction_network begin
-    @parameters p1 p2 k1 k2 k3 k4 k5 k6 d
     p1, ∅ → X1
     p2, ∅ → X2
     k1, 2X1 → X3
@@ -162,7 +155,6 @@ push!(identical_networks_2, reaction_networks_standard[6] => differently_written
 
 # Ignore mass action.
 differently_written_7 = @reaction_network begin
-    @parameters p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
     (p1, p2, p3), ∅ ⇒ (X1, X2, X3)
     (k1 * X1 * X2^2 / 2, k2 * X4), X1 + 2X2 ⟺ X4
     (mm(X3, v1, K1) * X4, k3 * X5), X4 ⇔ X5
@@ -172,7 +164,6 @@ push!(identical_networks_2, reaction_networks_standard[7] => differently_written
 
 # Ignore mass action new arrows.
 differently_written_8 = @reaction_network begin
-    @parameters p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
     (p1, p2, p3), ∅ => (X1, X2, X3)
     (k1 * X1 * X2^2 / 2, k2 * X4), X1 + 2X2 ⟺ X4
     (mm(X3, v1, K1) * X4, k3 * X5), X4 ⇔ X5
@@ -203,13 +194,13 @@ parameter_sets = []
 no_parameters_9 = @reaction_network begin
     (1.5, 1, 2), ∅ ⟶ (X1, X2, X3)
     (0.01, 2.3, 1001), (X1, X2, X3) ⟶ ∅
-    (3.1, 42), X1 + X2 ⟷ X3
+    (π, 42), X1 + X2 ⟷ X3
     (19.9, 999.99), X3 ⟷ X4
     (sqrt(3.7), exp(1.9)), X4 ⟷ X1 + X2
 end
 push!(identical_networks_3, reaction_networks_standard[9] => no_parameters_9)
 push!(parameter_sets,
-      [1.5, 1, 2, 0.01, 2.3, 1001, 3.1, 42, 19.9, 999.99, sqrt(3.7), exp(1.9)])
+      [1.5, 1, 2, 0.01, 2.3, 1001, π, 42, 19.9, 999.99, sqrt(3.7), exp(1.9)])
 
 no_parameters_10 = @reaction_network begin
     0.01, ∅ ⟶ X1
@@ -285,7 +276,6 @@ end
 
 ### Tests that time is handled properly ###
 time_network = @reaction_network begin
-    @parameters k2 k3 k6
     (t, k2), X1 ↔ X2
     (k3, t), X2 ↔ X3
     (t, k6), X3 ↔ X1
@@ -310,7 +300,6 @@ end
 
 ### Test various names as varriables ###
 test_network = @reaction_network begin
-    @parameters a A b B c C d D e E f F g G h H j J k K l L m M
     (a, A), n ⟷ N
     (b, B), o ⟷ O
     (c, C), p ⟷ P
@@ -328,14 +317,12 @@ end
 test_network = @reaction_network begin (1.0, 1.0), i ⟷ T end
 
 test_network = @reaction_network begin
-    @parameters å Å ä Ä ö Ö
     (å, Å), ü ⟷ Ü
     (ä, Ä), ñ ⟷ Ñ
     (ö, Ö), æ ⟷ Æ
 end
 
 test_network = @reaction_network begin
-    @parameters α Α β Β γ δ Δ ϵ Ε ζ Ζ η Η θ Θ ι Ι κ λ Λ μ Μ
     (α, Α), ν ⟷ Ν
     (β, Β), ξ ⟷ Ξ
     (γ, γ), ο ⟷ Ο
@@ -345,14 +332,15 @@ test_network = @reaction_network begin
     (η, Η), τ ⟷ Τ
     (θ, Θ), υ ⟷ Υ
     (ι, Ι), ϕ ⟷ Φ
-    (κ, γ), χ ⟷ Χ
+    (κ, κ), χ ⟷ Χ
     (λ, Λ), ψ ↔ Ψ
     (μ, Μ), ω ⟷ Ω
 end
 
+# Networks containing t, im, and π should generate errors.
+
 # test I works
 rn = @reaction_network begin
-    @parameters k1 k2
     k1, S + I --> 2I
     k2, I --> R
 end
@@ -363,34 +351,45 @@ end
 
 # test names work
 rn = @reaction_network SIR1 begin
-    @parameters k1 k2
     k1, S + I --> 2I
     k2, I --> R
 end
 @test nameof(rn) == :SIR1
 
-# Test that forbidden symbols do not work:
+### Tests some arrow variants ###
 
-test_network = @reaction_network begin t * k, X --> ∅ end
-@test length(species(test_network)) == 1
-@test length(parameters(test_network)) == 1
+rn1 = @reaction_network arrowtest begin
+    (a1, a2), C <--> 0
+    (k1, k2), A + B <--> C
+    b1, 0 <-- B
+end
 
-test_network = @reaction_network begin π, X --> ∅ end
-@test length(species(test_network)) == 1
-@test length(parameters(test_network)) == 0
-@test reactions(test_network)[1].rate == π
+rn2 = @reaction_network arrowtest begin
+    a1, C --> 0
+    a2, 0 --> C
+    k1, A + B --> C
+    k2, C --> A + B
+    b1, B --> 0
+end
 
-test_network = @reaction_network begin pi, X --> ∅ end
-@test length(species(test_network)) == 1
-@test length(parameters(test_network)) == 0
-@test reactions(test_network)[1].rate == pi
+@test rn == rn2
 
-test_network = @reaction_network begin ℯ, X --> ∅ end
-@test length(species(test_network)) == 1
-@test length(parameters(test_network)) == 0
-@test reactions(test_network)[1].rate == ℯ
+f1 = ODEFunction(convert(ODESystem, rn1), jac = true)
+f2 = ODEFunction(convert(ODESystem, rn2), jac = true)
+g1 = SDEFunction(convert(SDESystem, rn1))
+g2 = SDEFunction(convert(SDESystem, rn2))
+for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
+    u0 = factor * rand(rng, length(get_states(rn1)))
+    p = factor * rand(rng, length(get_ps(rn1)))
+    t = rand(rng)
+    @test all(abs.(f1(u0, p, t) .≈ f2(u0, p, t)))
+    @test all(abs.(f1.jac(u0, p, t) .≈ f2.jac(u0, p, t)))
+    @test all(abs.(g1(u0, p, t) .≈ g2(u0, p, t)))
+end
 
-@test_throws LoadError @eval @reaction im, 0 --> B
-@test_throws LoadError @eval @reaction nothing, 0 --> B
-@test_throws LoadError @eval @reaction k, 0 --> im
-@test_throws LoadError @eval @reaction k, 0 --> nothing
+### Tests arrow variants in "@reaction" macro ###
+
+@test isequal((@reaction k, 0 --> X), (@reaction k, X <-- 0))
+@test isequal((@reaction k, 0 --> X), (@reaction k, X ⟻ 0))
+@test isequal((@reaction k, 0 --> X), (@reaction k, 0 → X))
+@test isequal((@reaction k, 0 --> X), (@reaction k, 0 ⥟ X))
