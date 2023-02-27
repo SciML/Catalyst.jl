@@ -12,6 +12,7 @@ function unpacksys(sys)
     get_eqs(sys), get_iv(sys), get_states(sys), get_ps(sys), nameof(sys), get_systems(sys)
 end
 
+
 ### Debug functions ###
 opname(x) = istree(x) ? nameof(operation(x)) : nameof(x)
 alleq(xs, ys) = all(isequal(x, y) for (x, y) in zip(xs, ys))
@@ -30,6 +31,7 @@ end
 function all_parameters(eqs)
     return Set(unique(map(eq -> opname(eq.rate), eqs)))
 end
+
 
 ### Test basic properties of networks ###
 function basic_test(rn, N, states_syms, p_syms)
@@ -62,6 +64,7 @@ basic_test(reaction_networks_constraint[1], 6, [:X1, :X2, :X3],
 basic_test(reaction_networks_real[1], 4, [:X, :Y], [:A, :B])
 basic_test(reaction_networks_weird[1], 2, [:X], [:p, :d])
 basic_test(reaction_networks_weird[2], 4, [:X, :Y, :Z], [:k1, :k2, :k3, :k4])
+
 
 ### Tries making various systems ###
 identical_networks_1 = Vector{Pair}()
@@ -122,6 +125,7 @@ for networks in identical_networks_1
         @test all(abs.(g1(u0, p, t) .≈ g2(u0, p, t)))
     end
 end
+
 
 ### Tests that networks expressed in different ways are identical ###
 identical_networks_2 = Vector{Pair}()
@@ -186,6 +190,7 @@ for networks in identical_networks_2
     end
 end
 
+
 ### Test networks without parameters ###
 identical_networks_3 = Vector{Pair}()
 parameter_sets = []
@@ -226,6 +231,7 @@ for (i, networks) in enumerate(identical_networks_3)
         @test g1(u0, parameter_sets[i], t) ≈ g2(u0, [], t)
     end
 end
+
 
 ### Tests that Reaction System created manually and through macro are identical ###
 identical_networks_4 = Vector{Pair}()
@@ -274,6 +280,7 @@ for networks in identical_networks_4
     end
 end
 
+
 ### Tests that time is handled properly ###
 time_network = @reaction_network begin
     (t, k2), X1 ↔ X2
@@ -297,6 +304,7 @@ for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
     @test all(f1.jac(u0, p1, τ) .≈ f2.jac(u0, p2, τ))
     @test all(g1(u0, p1, τ) .≈ g2(u0, p2, τ))
 end
+
 
 ### Test various names as varriables ###
 test_network = @reaction_network begin
@@ -394,7 +402,7 @@ end
 @test isequal((@reaction k, 0 --> X), (@reaction k, 0 ⥟ X))
 
 
-# Test that forbidden and special symbols:
+### Test forbidden and special symbols ###
 
 test_network = @reaction_network begin t * k, X --> ∅ end
 @test length(species(test_network)) == 1
