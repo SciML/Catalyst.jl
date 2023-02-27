@@ -1,7 +1,7 @@
 using Catalyst, Test
 using LinearAlgebra
 
-include("test_networks.jl")
+include("../test_networks.jl")
 
 rn = @reaction_network begin
     (1, 2), A + B <--> C
@@ -43,3 +43,21 @@ function consequiv(A, B)
 end
 Cs_constraint = map(conservationlaws, reaction_networks_constraint)
 @test all(consequiv.(Matrix{Int}.(Cs_constraint), reaction_network_constraints))
+
+### Tests additional conservation functions ###
+
+rn = @reaction_network begin
+    (k1, k2), X1 <--> X2
+    (k3, k4), X3 <--> X4
+end
+cons_laws = conservationlaws(rn)
+cons_eqs = conservedequations(rn)
+cons_laws_constants = conservationlaw_constants(rn)
+conserved_quantity = conservedquantities(cons_laws[1, :], rn.states[1])
+
+@test sum(cons_laws) == 4
+@test size(cons_laws) == (2, 4)
+@test length(cons_eqs) == 2
+@test length(conserved_quantity) == 4
+@test length(cons_laws_constants) == 2
+@test count(isequal.(conserved_quantity, Num(0))) == 2
