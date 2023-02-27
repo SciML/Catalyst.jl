@@ -1,7 +1,7 @@
 ### Fetch required packages and reaction networks ###
 using Catalyst, OrdinaryDiffEq, Random, Test
 using ModelingToolkit: get_states, get_ps
-include("test_networks.jl")
+include("../test_networks.jl")
 
 using StableRNGs
 rng = StableRNG(12345)
@@ -22,7 +22,6 @@ end
 
 # Networks with know equilibrium
 known_equilibrium = @reaction_network begin
-    @parameters k1 k2 k3 k4 k5 k6 k7 k8
     (k1, k2), X1 ↔ X2
     (k3, k4), X3 + X4 ↔ X5
     (k5, k6), 2X6 ↔ 3X7
@@ -64,7 +63,7 @@ push!(identical_networks_1, reaction_networks_standard[2] => real_functions_2)
 
 function real_functions_3(du, u, p, t)
     X1, X2, X3 = u
-    v1, v2, v3, K1, K2, K3, n1, n2, n3, d1, d2, d3 = p
+    v1, K1, n1, v2, K2, n2, v3, K3, n3, d1, d2, d3 = p
     du[1] = v1 * K1^n1 / (K1^n1 + X3^n1) - d1 * X1
     du[2] = v2 * K2^n2 / (K2^n2 + X1^n2) - d2 * X2
     du[3] = v3 * K3^n3 / (K3^n3 + X2^n3) - d3 * X3

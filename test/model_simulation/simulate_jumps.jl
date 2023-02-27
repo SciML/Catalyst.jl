@@ -1,7 +1,7 @@
 ### Fetch required packages and reaction networks ###
-using Catalyst, JumpProcesses, Random, Statistics, Test, SciMLBase
+using Catalyst, JumpProcesses, Random, Statistics, Test
 using ModelingToolkit: get_states, get_ps
-include("test_networks.jl")
+include("../test_networks.jl")
 
 using StableRNGs
 rng = StableRNG(12345)
@@ -108,7 +108,7 @@ for (i, network) in enumerate(reaction_networks_all)
         u0 = rand(rng, 1:Int64(factor * 100), length(get_states(network)))
         p = factor * rand(rng, length(get_ps(network)))
         prob = JumpProblem(network, DiscreteProblem(network, u0, (0.0, 1.0), p), Direct())
-        @test SciMLBase.successful_retcode(solve(prob, SSAStepper()))
+        @test solve(prob, SSAStepper()).retcode == :Default
     end
 end
 
