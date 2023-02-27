@@ -150,4 +150,3 @@ $", "\r\n"=>"\n")
 \frac{\mathrm{d} \mathrm{X2}\left( t \right)}{\mathrm{d}t} =& \frac{1}{2} \left( X\left( t \right) \right)^{2} kB - kD \mathrm{X2}\left( t \right)
 \end{align}
 $"
-
