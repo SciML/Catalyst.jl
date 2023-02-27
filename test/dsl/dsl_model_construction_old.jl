@@ -155,6 +155,7 @@ push!(identical_networks_2, reaction_networks_standard[6] => differently_written
 
 # Ignore mass action.
 differently_written_7 = @reaction_network begin
+    @parameters p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
     (p1, p2, p3), ∅ ⇒ (X1, X2, X3)
     (k1 * X1 * X2^2 / 2, k2 * X4), X1 + 2X2 ⟺ X4
     (mm(X3, v1, K1) * X4, k3 * X5), X4 ⇔ X5
@@ -164,6 +165,7 @@ push!(identical_networks_2, reaction_networks_standard[7] => differently_written
 
 # Ignore mass action new arrows.
 differently_written_8 = @reaction_network begin
+    @parameters p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
     (p1, p2, p3), ∅ => (X1, X2, X3)
     (k1 * X1 * X2^2 / 2, k2 * X4), X1 + 2X2 ⟺ X4
     (mm(X3, v1, K1) * X4, k3 * X5), X4 ⇔ X5
@@ -372,8 +374,7 @@ rn2 = @reaction_network arrowtest begin
     b1, B --> 0
 end
 
-@test rn == rn2
-
+@test rn1 == rn2
 f1 = ODEFunction(convert(ODESystem, rn1), jac = true)
 f2 = ODEFunction(convert(ODESystem, rn2), jac = true)
 g1 = SDEFunction(convert(SDESystem, rn1))
