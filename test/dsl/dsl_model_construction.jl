@@ -337,8 +337,6 @@ test_network = @reaction_network begin
     (μ, Μ), ω ⟷ Ω
 end
 
-# Networks containing t, im, and π should generate errors.
-
 # test I works
 rn = @reaction_network begin
     k1, S + I --> 2I
@@ -355,6 +353,7 @@ rn = @reaction_network SIR1 begin
     k2, I --> R
 end
 @test nameof(rn) == :SIR1
+
 
 ### Tests some arrow variants ###
 
@@ -387,9 +386,36 @@ for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
     @test all(abs.(g1(u0, p, t) .≈ g2(u0, p, t)))
 end
 
-### Tests arrow variants in "@reaction" macro ###
+# Tests arrow variants in "@reaction" macro 
 
 @test isequal((@reaction k, 0 --> X), (@reaction k, X <-- 0))
 @test isequal((@reaction k, 0 --> X), (@reaction k, X ⟻ 0))
 @test isequal((@reaction k, 0 --> X), (@reaction k, 0 → X))
 @test isequal((@reaction k, 0 --> X), (@reaction k, 0 ⥟ X))
+
+
+# Test that forbidden and special symbols:
+
+test_network = @reaction_network begin t * k, X --> ∅ end
+@test length(species(test_network)) == 1
+@test length(parameters(test_network)) == 1
+
+test_network = @reaction_network begin π, X --> ∅ end
+@test length(species(test_network)) == 1
+@test length(parameters(test_network)) == 0
+@test reactions(test_network)[1].rate == π
+
+test_network = @reaction_network begin pi, X --> ∅ end
+@test length(species(test_network)) == 1
+@test length(parameters(test_network)) == 0
+@test reactions(test_network)[1].rate == pi
+
+test_network = @reaction_network begin ℯ, X --> ∅ end
+@test length(species(test_network)) == 1
+@test length(parameters(test_network)) == 0
+@test reactions(test_network)[1].rate == ℯ
+
+@test_throws LoadError @eval @reaction im, 0 --> B
+@test_throws LoadError @eval @reaction nothing, 0 --> B
+@test_throws LoadError @eval @reaction k, 0 --> im
+@test_throws LoadError @eval @reaction k, 0 --> nothing
