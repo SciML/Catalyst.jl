@@ -8,7 +8,8 @@ let
     discrete_events = [1.0 => [V ~ 1.0]]
     rxs = [(@reaction $V, 0 --> A), (@reaction 1.0, A --> 0)]
     @named rs = ReactionSystem([rxs; eqs], t; discrete_events)
-    @test length(ModelingToolkit.continuous_events(rs)) == 1
+    @test length(ModelingToolkit.discrete_events(rs)) == 1
+    @test length(ModelingToolkit.continuous_events(rs)) == 0
     setdefaults!(rs, [:A => 0.0])
     osys = convert(ODESystem, rs)
     @test length(ModelingToolkit.discrete_events(osys)) == 1
@@ -25,6 +26,7 @@ let
     rxs = [Reaction(α, nothing, [V]), Reaction(β, [V], nothing)]
     continuous_events = [V ~ 2.5] => [α ~ 0, β ~ 0]
     @named rs = ReactionSystem(rxs, t; continuous_events)
+    @test length(ModelingToolkit.discrete_events(rs)) == 0
     @test length(ModelingToolkit.continuous_events(rs)) == 1
     osys = convert(ODESystem, rs)
     @test length(ModelingToolkit.continuous_events(osys)) == 1
