@@ -76,8 +76,10 @@ addspecies!(rs, S)
 addspecies!(rs, S, disablechecks = true)
 @test numspecies(rs) == 4
 addparam!(rs, k1)
+@test numparams(rs) == 2
 @test numreactionparams(rs) == 2
 addparam!(rs, k1, disablechecks = true)
+@test numparams(rs) == 3
 @test numreactionparams(rs) == 3
 
 rnmat = @reaction_network begin
@@ -558,3 +560,31 @@ let
     test_stoich(Int, rn2)
 
 end
+
+
+### Test Polynomial Transformation Functionality ###
+
+# Tests normal network.
+rn = @reaction_network begin
+    (p,d), 0 <--> X
+    (kB,kD), 2X <--> X2
+end
+ns = convert(NonlinearSystem, rn)
+neweqs = getfield.(equations(ns),:rhs)
+poly = Catalyst.to_multivariate_poly(neweqs)
+@test length(poly) == 2
+
+# Tests netowkr with a fraction.
+rn = @reaction_network begin
+    (p/X,d), 0 <--> X
+end
+ns = convert(NonlinearSystem, rn)
+neweqs = getfield.(equations(ns),:rhs)
+poly = Catalyst.to_multivariate_poly(neweqs)
+@test length(poly) == 1
+
+# Test empty netowkr.
+rn = @reaction_network
+ns = convert(NonlinearSystem, rn)
+neweqs = getfield.(equations(ns),:rhs)
+@test_throws MethodError Catalyst.to_multivariate_poly(neweqs)
