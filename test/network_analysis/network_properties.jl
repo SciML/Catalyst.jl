@@ -124,14 +124,3 @@ cls = conservationlaws(rn3)
 #     end
 #     println("-----------")
 # end
-
-
-### Tests additional network properties ###
-rn4 = @reaction_network begin
-    (p,d), 0 <--> X
-    (kB,kD), 2X <--> X
-end
-@unpack p, d, kB, kD = rn4
-isequal(reactionparamsmap(rn4), Dict([p => 1, d => 2, kB => 3, kD => 4]))
-issetequal(reactionrates(rn4), [p, d, kB, kD])
-isequal(symmap_to_varmap(rn4, [:p => 1.0, :kB => 3.0]), [p => 1.0, kB => 3.0])
