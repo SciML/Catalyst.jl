@@ -12,6 +12,7 @@ rng = StableRNG(12345)
 
 # Tests for reaction_networks_standard[7]
 test_network = reaction_networks_standard[7]
+test_osys = convert(ODESystem, test_network)
 @parameters p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
 @variables t
 @species X1(t) X2(t) X3(t) X4(t) X5(t) X6(t) X(t)
@@ -29,15 +30,15 @@ for factor = [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
            k1=>p_1[4]]
 
     sols = []
-    push!(sols,solve(ODEProblem(test_network,u0_1,(0.,10.),p_1),Rosenbrock23()))
-    push!(sols,solve(ODEProblem(test_network,u0_1,(0.,10.),p_2),Rosenbrock23()))
-    push!(sols,solve(ODEProblem(test_network,u0_1,(0.,10.),p_3),Rosenbrock23()))
-    push!(sols,solve(ODEProblem(test_network,u0_2,(0.,10.),p_1),Rosenbrock23()))
-    push!(sols,solve(ODEProblem(test_network,u0_2,(0.,10.),p_2),Rosenbrock23()))
-    push!(sols,solve(ODEProblem(test_network,u0_2,(0.,10.),p_3),Rosenbrock23()))
-    push!(sols,solve(ODEProblem(test_network,u0_3,(0.,10.),p_1),Rosenbrock23()))
-    push!(sols,solve(ODEProblem(test_network,u0_3,(0.,10.),p_2),Rosenbrock23()))
-    push!(sols,solve(ODEProblem(test_network,u0_3,(0.,10.),p_3),Rosenbrock23()))
+    push!(sols,solve(ODEProblem(test_osys,u0_1,(0.,10.),p_1),Rosenbrock23()))
+    push!(sols,solve(ODEProblem(test_osys,u0_1,(0.,10.),p_2),Rosenbrock23()))
+    push!(sols,solve(ODEProblem(test_osys,u0_1,(0.,10.),p_3),Rosenbrock23()))
+    push!(sols,solve(ODEProblem(test_osys,u0_2,(0.,10.),p_1),Rosenbrock23()))
+    push!(sols,solve(ODEProblem(test_osys,u0_2,(0.,10.),p_2),Rosenbrock23()))
+    push!(sols,solve(ODEProblem(test_osys,u0_2,(0.,10.),p_3),Rosenbrock23()))
+    push!(sols,solve(ODEProblem(test_osys,u0_3,(0.,10.),p_1),Rosenbrock23()))
+    push!(sols,solve(ODEProblem(test_osys,u0_3,(0.,10.),p_2),Rosenbrock23()))
+    push!(sols,solve(ODEProblem(test_osys,u0_3,(0.,10.),p_3),Rosenbrock23()))
 
     ends = map(sol -> sol.u[end],sols)
     for i in 1:length(u0_1)
