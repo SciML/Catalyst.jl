@@ -118,7 +118,7 @@ const forbidden_symbols_error = union([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]
                                       forbidden_symbols_skip)
 
 # Declares the keys used for various options.
-const option_keys = [:species, :parameters]
+const option_keys = [:species, :variables, :parameters]
 
 ### The @species macro, basically a copy of the @varriables macro. ###
 macro species(ex...)
@@ -326,10 +326,12 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     reactions = get_reactions(reaction_lines)
     species_declared = haskey(options, :species) ?
                        extract_syms(options[:species], :species) : Union{Symbol, Expr}[]
+    variables_declared = haskey(options, :variables) ?
+                       extract_syms(options[:variables], :variables) : Union{Symbol, Expr}[]  
     parameters_declared = haskey(options, :parameters) ?
                           extract_syms(options[:parameters], :parameters) :
                           Union{Symbol, Expr}[]
-    declared_syms = Set(Iterators.flatten((parameters_declared, species_declared)))
+    declared_syms = Set(Iterators.flatten((parameters_declared, species_declared, variables_declared)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
                                                                               declared_syms)
     species = vcat(species_declared, species_extracted)
@@ -344,6 +346,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     sexprs = get_sexpr(species_extracted, options)
+    vexprs = (haskey(options, :variables) ? options[:variables] : :())    
     pexprs = get_pexpr(parameters_extracted, options)
     rxexprs = :($(make_ReactionSystem_internal)([], t, Num[], Num[]; name = $(name)))
     foreach(speci -> push!(rxexprs.args[5].args, speci), species)
@@ -356,6 +359,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     quote
         $pexprs
         :(@variables t)
+        $vexprs
         $sexprs
         $rxexprs
     end
