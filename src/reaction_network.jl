@@ -472,9 +472,13 @@ end
 
 # Given the species that were extracted from the reactions, and the options dictionary, creates the @species ... expression for the macro output.
 function get_sexpr(species_extracted, options, key = :species)
-    isempty(species_extracted) && return :()
-    macroex = Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
-    sexprs = haskey(options, key) ? options[key] : macroex
+    if haskey(options, key)
+        sexprs = options[key]
+    elseif isempty(species_extracted)
+        sexprs = :()
+    else
+        sexprs = Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
+    end
     foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, :t)),
             species_extracted)
     sexprs
