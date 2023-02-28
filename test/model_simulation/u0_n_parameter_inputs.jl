@@ -10,7 +10,7 @@ rng = StableRNG(12345)
 
 ### Tests various ways to input u0 and p for various functions ###
 
-# Tests for reaction_networks_standard[7]
+# Tests for reaction_networks_standard[7].
 test_network = reaction_networks_standard[7]
 test_osys = convert(ODESystem, test_network)
 @parameters p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5

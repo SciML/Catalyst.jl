@@ -5,6 +5,7 @@ using StableRNGs
 rng = StableRNG(12345)
 
 ### Checks that the jacobian is correct for networks without parameters ###
+
 jacobian_network_1 = @reaction_network begin
     (2.0, 1.0), ∅ ↔ X
     (3.0, 1.0), ∅ ↔ Y
@@ -16,6 +17,7 @@ real_jac = [-6.0 -5.0 2.0; -5.0 -6.0 2.0; 5.0 5.0 -2.0]
 @test test_jac == real_jac
 
 ### Checks that the jacobian is correct for networks with parameters ###
+
 jacobian_network_2 = @reaction_network begin
     (p1, 1.0), ∅ ↔ X
     (p2, 1.0), ∅ ↔ Y

@@ -27,7 +27,7 @@ eqs = Dict((U => (k[5] - k[4] * U - k[1] * U * W),
 
 @test issetequal(species(bpm), [MT.unwrap(U), MT.unwrap(V), MT.unwrap(W)])
 
-# test a few API functions
+# Test a few API functions.
 ns = [-1 0 0 -1 1 0 0;
       1 -2 2 0 0 -1 1;
       0 1 -1 0 0 0 0]
@@ -35,7 +35,7 @@ ns = [-1 0 0 -1 1 0 0;
 bpm2 = deepcopy(bpm)
 @test bpm == bpm2
 
-# check we can build a PDESystem
+# Check we can build a PDESystem.
 ∂t = Differential(t)
 ∂x = Differential(x)
 ∂y = Differential(y)

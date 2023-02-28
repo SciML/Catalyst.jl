@@ -20,7 +20,7 @@ for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
     @test all(abs.(first.(sol.u) .- analytic_sol) .< 0.1)
 end
 
-# Networks with know equilibrium
+# Networks with know equilibrium.
 known_equilibrium = @reaction_network begin
     (k1, k2), X1 ↔ X2
     (k3, k4), X3 + X4 ↔ X5
@@ -41,6 +41,7 @@ for factor in [1e-1, 1e0, 1e1, 1e2, 1e3]
 end
 
 ### Compares to the manually calcualted function ###
+
 identical_networks_1 = Vector{Pair}()
 
 function real_functions_1(du, u, p, t)
@@ -102,6 +103,7 @@ for (i, networks) in enumerate(identical_networks_1)
 end
 
 ### Tries solving a large number of problem, ensuring there are no errors. ###
+
 for (i, network) in enumerate(reaction_networks_all)
     (i % 5 == 0) && println("Iteration " * string(i) * " at line 104 in file solve_ODEs.jl")
     for factor in [1e-1, 1e0, 1e1]
@@ -123,7 +125,8 @@ for factor in [1e0, 1e1, 1e2]
     @test abs.(sol.u[end][1] - 1.5 / 2) < 1e-8
 end
 
-### test solving with floating point stoichiometry ###
+### Test solving with floating point stoichiometry ###
+
 function oderhs(du, u, p, t)
     du[1] = -2.5 * p[1] * u[1]^2.5
     du[2] = 3 * p[1] * u[1]^2.5

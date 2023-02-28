@@ -96,7 +96,7 @@ pmat = [0 1;
 @test smat == substoichmat(rnmat) == Matrix(substoichmat(rnmat, sparse = true))
 @test pmat == prodstoichmat(rnmat) == Matrix(prodstoichmat(rnmat, sparse = true))
 
-############## testing intermediate complexes reaction networks##############
+### Testing intermediate complexes reaction networks ###
 
 function testnetwork(rn, B, Z, Δ, lcs, d, subrn, lcd; skiprxtest = false)
     B2 = reactioncomplexes(rn)[2]
@@ -142,7 +142,7 @@ subrn = [[r[1]], [r[2], r[3]], [r[4]]]
 lcd = [0, 0, 0]
 testnetwork(rns[1], B, Z, Δ, lcs, 0, subrn, lcd)
 
-# constant and BC species test
+# Constant and BC species test.
 @parameters F [isconstantspecies = true]
 crn = @reaction_network begin
     k₁, 2A --> B
@@ -152,7 +152,7 @@ crn = @reaction_network begin
 end
 testnetwork(crn, B, Z, Δ, lcs, 0, subrn, lcd; skiprxtest = true)
 
-# mass-action rober
+# Mass-action rober.
 rns[2] = @reaction_network begin
     k₁, A --> B
     k₂, B + B --> C + B
@@ -173,7 +173,7 @@ subrn = [[r[1]], [r[2], r[3]]]
 lcd = [0, 0]
 testnetwork(rns[2], B, Z, Δ, lcs, 1, subrn, lcd)
 
-#  some rational functions as rates
+# Some rational functions as rates.
 rns[3] = @reaction_network begin
     k₁, ∅ --> X₁
     (k₂ / (1 + X₁ * X₂ + X₃ * X₄), k₃ / (1 + X₁ * X₂ + X₃ * X₄)), 2X₁ + X₂ ↔ 3X₃ + X₄
@@ -195,7 +195,7 @@ subrn = [[r[1], r[4]], [r[2], r[3]]]
 lcd = [0, 0]
 testnetwork(rns[3], B, Z, Δ, lcs, 0, subrn, lcd)
 
-# repressilator
+# Repressilator.
 rns[4] = @reaction_network begin
     hillr(P₃, α, K, n), ∅ --> m₁
     hillr(P₁, α, K, n), ∅ --> m₂
@@ -239,7 +239,7 @@ subrn = [[r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[13], r[14], r[
 lcd = [3]
 testnetwork(rns[4], B, Z, Δ, lcs, 3, subrn, lcd)
 
-#brusselator
+# Brusselator.
 rns[5] = @reaction_network begin
     A, ∅ → X
     1, 2X + Y → 3X
@@ -260,7 +260,7 @@ subrn = [[r[1], r[4], r[3]], [r[2]]]
 lcd = [0, 0]
 testnetwork(rns[5], B, Z, Δ, lcs, 1, subrn, lcd)
 
-# some rational functions as rates
+# Some rational functions as rates.
 rns[6] = @reaction_network begin
     (k₁, k₋₁), X₁ + X₂ <--> X₃ + 2X₄
     (k₂ / (1 + X₄ * X₅ + X₆ * X₇), k₋₂ / (1 + X₄ * X₅ + X₆ * X₇)), 3X₄ + X₅ <--> X₆ + X₇
@@ -289,7 +289,7 @@ subrn = [[r[1], r[2]], [r[3], r[4]], [r[5], r[6]]]
 lcd = [0, 0, 0]
 testnetwork(rns[6], B, Z, Δ, lcs, 0, subrn, lcd)
 
-###########Testing reversibility###############
+### Testing reversibility. ###
 function testreversibility(rn, B, rev, weak_rev)
     @test isreversible(rn) == rev
     subrn = subnetworks(rn)
@@ -399,7 +399,7 @@ for i in 1:length(myrn)
     @test Z * B == netstoichmat(myrn[i]) == Matrix(netstoichmat(myrn[i], sparse = true))
 end
 
-# test defaults
+# Test defaults.
 rn = @reaction_network begin
     α, S + I --> 2I
     β, I --> R
@@ -426,7 +426,7 @@ op = ODEProblem(rn, [], tspan, [])
 sol2 = solve(op, Tsit5())
 @test norm(sol.u - sol2.u) ≈ 0
 
-# test unpacking variables
+# Rest unpacking variables.
 function unpacktest(rn)
     Catalyst.@unpacksys rn
     u₀ = [S1 => 999.0, I1 => 1.0, R1 => 0.0]
@@ -441,7 +441,7 @@ end
 sol3 = unpacktest(rn)
 @test norm(sol.u - sol3.u) ≈ 0
 
-# test symmap_to_varmap
+# Test symmap_to_varmap.
 sir = @reaction_network sir begin
     β, S + I --> 2I
     ν, I --> R
@@ -466,7 +466,7 @@ op = ODEProblem(sir, u0map, tspan, pmap)
 sol5 = solve(op, Tsit5())
 @test norm(sol.u - sol5.u) ≈ 0
 
-# test conservation law elimination
+# Test conservation law elimination.
 let
     rn = @reaction_network begin
         (k1, k2), A + B <--> C
@@ -537,7 +537,7 @@ let
 end
 
 
-# non-integer stoichiometry
+# Non-integer stoichiometry.
 let
     function test_stoich(T, rn)
         @test eltype(substoichmat(rn)) == T
@@ -586,7 +586,7 @@ neweqs = getfield.(equations(ns),:rhs)
 poly = Catalyst.to_multivariate_poly(neweqs)
 @test length(poly) == 2
 
-# Tests netowkr with a fraction.
+# Tests network with a fraction.
 rn = @reaction_network begin
     (p/X,d), 0 <--> X
 end
@@ -595,7 +595,7 @@ neweqs = getfield.(equations(ns),:rhs)
 poly = Catalyst.to_multivariate_poly(neweqs)
 @test length(poly) == 1
 
-# Test empty netowkr.
+# Test empty network.
 rn = @reaction_network
 ns = convert(NonlinearSystem, rn)
 neweqs = getfield.(equations(ns),:rhs)

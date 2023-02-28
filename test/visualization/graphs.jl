@@ -6,10 +6,10 @@ rn = @reaction_network begin
     S^2, R --> 0
 end
 
-# check can make a graph
+# Check can make a graph.
 gr = Graph(rn)
 
-# check can save a graph
+# Check can save a graph.
 fname = Base.Filesystem.tempname()
 savegraph(gr, "$fname.svg", "svg")
 

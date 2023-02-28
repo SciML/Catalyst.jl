@@ -1,6 +1,6 @@
 using Test, Catalyst, ModelingToolkit, OrdinaryDiffEq
 
-# test discrete event is propagated to ODE solver correctly
+# Test discrete event is propagated to ODE solver correctly.
 let
     @variables t V(t)=1.0
     D = Differential(t)
@@ -18,7 +18,7 @@ let
     @test isapprox(sol(10 + 10 * eps(), idxs = V), 1.0)
 end
 
-# test continuous event is propagated to the ODE solver
+# Test continuous event is propagated to the ODE solver.
 let
     @parameters α=5.0 β=1.0
     @variables t

@@ -341,7 +341,8 @@ let
     js2 = convert(JumpSystem, rs2)
     @test isequal2(equations(js2)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
     js3 = convert(JumpSystem, rs2; combinatoric_ratelaws = true)
-    @test isequal2(equations(js3)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
+    @test isequal2(equations(js3)[1].rate,
+                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
 end
 
 # Test MassActionJump rate scaling.

@@ -125,7 +125,7 @@ raw"\begin{align*}
  \end{align*}
 ", "\r\n"=>"\n")
 
-# Tests the `form` option
+# Tests the `form` option.
 for rn in reaction_networks_standard
     @test latexify(rn)==latexify(rn; form=:reactions)
     #@test_broken latexify(convert(ODESystem,rn)) == latexify(rn; form=:ode) # Slight difference due to some latexify weirdity. Both displays fine though
