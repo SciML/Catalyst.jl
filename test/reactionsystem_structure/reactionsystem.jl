@@ -698,3 +698,19 @@ let
     @test rx == rx2
     @test hash(rx) == hash(rx2)
 end
+
+
+### Additional Unsorted Tests ###
+
+rn = @reaction_network begin
+    k, X --> 0
+end
+isspecies(species(rn)[1])
+@test Catalyst.has_species(rn)
+@test Catalyst.has_rxs(rn)
+
+@species X
+@variables Y
+@test isspecies(X)
+@test !isspecies(Y)
+@test isspecies(Catalyst.tospecies(Y))
