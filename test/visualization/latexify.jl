@@ -38,7 +38,7 @@ rn = @reaction_network begin
     (d1,d2,d3,d4,d5,d6), (X1,X2,X3,X4,X5,X6)  ⟶ ∅
 end
 
-# Latexify.@generate_test latexify(r)
+# Latexify.@generate_test latexify(rn)
 @test latexify(rn) == replace(
 raw"\begin{align*}
 \varnothing &\xrightarrow{\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}} \mathrm{X1} \\
@@ -57,10 +57,10 @@ raw"\begin{align*}
 \mathrm{X5} &\xrightarrow{d5} \varnothing \\
 \mathrm{X6} &\xrightarrow{d6} \varnothing  
  \end{align*}
-"
-, "\r\n"=>"\n")
+", "\r\n"=>"\n")
 
-# Latexify.@generate_test latexify(r, mathjax=false)
+
+# Latexify.@generate_test latexify(rn, mathjax=false)
 @test latexify(rn, mathjax = false) == replace(
 raw"\begin{align*}
 \varnothing &\xrightarrow{\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}} \mathrm{X1} \\
@@ -79,8 +79,8 @@ raw"\begin{align*}
 \mathrm{X5} &\xrightarrow{d5} \varnothing \\
 \mathrm{X6} &\xrightarrow{d6} \varnothing  
  \end{align*}
-"
-, "\r\n"=>"\n")
+", "\r\n"=>"\n")
+
 
 rn = @reaction_network begin
     (hill(B, p_a, k, n), d_a), 0 ↔ A
@@ -88,17 +88,17 @@ rn = @reaction_network begin
     (r_a, r_b), 3B ↔ A
 end
 
-# Latexify.@generate_test latexify(r)
-@test_broken latexify(rn) == replace(
+# Latexify.@generate_test latexify(rn)
+@test latexify(rn) == replace(
 raw"\begin{align*}
-\require{mhchem}
-\ce{ \varnothing &<=>[$\frac{p_{a} B^{n}}{k^{n} + B^{n}}$][$d_{a}$] A}\\
-\ce{ \varnothing &<=>[$p_{b}$][$d_{b}$] B}\\
-\ce{ 3 B &<=>[$r_{a}$][$r_{b}$] A}
-\end{align*}
+\varnothing &\xrightleftharpoons[d_{a}]{\frac{p_{a} B^{n}}{k^{n} + B^{n}}} \mathrm{A} \\
+\varnothing &\xrightleftharpoons[d_{b}]{p_{b}} \mathrm{B} \\
+3 \mathrm{B} &\xrightleftharpoons[r_{b}]{r_{a}} \mathrm{A}  
+ \end{align*}
 ", "\r\n"=>"\n")
 
-# Latexify.@generate_test latexify(r, mathjax=false)
+
+# Latexify.@generate_test latexify(rn, mathjax=false)
 @test latexify(rn, mathjax = false) == replace(
 raw"\begin{align*}
 \varnothing &\xrightleftharpoons[d_{a}]{\frac{p_{a} B^{n}}{k^{n} + B^{n}}} \mathrm{A} \\
@@ -119,9 +119,9 @@ rn = @reaction_network begin
 end
 
 # Latexify.@generate_test latexify(rn)
-@test_broken latexify(rn) == replace(
+@test latexify(rn) == replace(
 raw"\begin{align*}
-\mathrm{Y} &\xrightarrow{Y k} \varnothing
+\mathrm{Y} &\xrightarrow{Y k} \varnothing  
  \end{align*}
 ", "\r\n"=>"\n")
 
@@ -145,8 +145,37 @@ $", "\r\n"=>"\n")
 
 
 # Currently latexify doesn't handle SDE systems properly, and they look identical to ode systems.
-@test_broken latexify(rn; form=:sde) != raw"$\begin{align}
+@test_broken latexify(rn; form=:sde) != replace(
+raw"$\begin{align}
 \frac{\mathrm{d} X\left( t \right)}{\mathrm{d}t} =& p - \left( X\left( t \right) \right)^{2} kB - d X\left( t \right) + 2 kD \mathrm{X2}\left( t \right) \\
 \frac{\mathrm{d} \mathrm{X2}\left( t \right)}{\mathrm{d}t} =& \frac{1}{2} \left( X\left( t \right) \right)^{2} kB - kD \mathrm{X2}\left( t \right)
 \end{align}
-$"
+$", "\r\n"=>"\n")
+
+# Tests that erroneous form gives error.
+@test_throws ErrorException latexify(rn; form=:xxx)
+
+### Checks combined reaction network/equation system ###
+
+base_network = @reaction_network begin
+    k*r, X --> 0
+end
+@variables t r(t)
+@named decaying_rate = NonlinearSystem([x ~ -1], [r], [])
+extended = extend(decaying_rate, base_network)
+
+# Latexify.@generate_test latexify(extended)
+@test latexify(extended) == replace(
+raw"\begin{align*}
+\mathrm{X} &\xrightarrow{k r} \varnothing  
+ 0 &= -1 - x\left( t \right)  
+ \end{align*}
+", "\r\n"=>"\n")
+
+# Latexify.@generate_test latexify(extended, mathjax=false)
+@test latexify(extended, mathjax = false) == replace(
+raw"\begin{align*}
+\mathrm{X} &\xrightarrow{k r} \varnothing  
+ 0 &= -1 - x\left( t \right)  
+ \end{align*}
+", "\r\n"=>"\n")
