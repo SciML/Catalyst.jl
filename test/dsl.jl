@@ -171,3 +171,27 @@ let
     @test issetequal(states(osys2), states(rn2))
     @test length(equations(osys2)) == 2
 end
+
+# test @variables in DSL
+let
+    rn = @reaction_network tester begin
+        @parameters k1
+        @variables V1(t) V2(t) V3(t)
+        @species B1(t) B2(t)
+        (k1*k2 + V3), V1*A + 2*B1 --> V2*C + B2
+    end
+
+    @parameters k1 k2
+    @variables t V1(t) V2(t) V3(3)
+    @species A(t) B1(t) B2(t) C(t)
+    rx = Reaction(k1*k2 + V3, [A, B1], [C, B2], [V1, 2], [V2, 1])
+    @named tester = ReactionSystem([rx], t)
+    @test tester == rn
+
+    @test_throws ArgumentError begin
+        rn = @reaction_network begin
+            @variables K
+            k, K*A --> B
+        end
+    end
+end

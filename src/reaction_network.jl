@@ -114,11 +114,18 @@ const CONSERVED_CONSTANT_SYMBOL = :Γ
 
 # Declares symbols which may neither be used as parameters not varriables.
 const forbidden_symbols_skip = Set([:ℯ, :pi, :π, :t, :∅])
-const forbidden_symbols_error = union([:im, :nothing, CONSERVED_CONSTANT_SYMBOL],
+const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
                                       forbidden_symbols_skip)
+const forbidden_variables_error = let
+    fvars = copy(forbidden_symbols_error)
+    delete!(fvars, :t)
+    fvars
+end
+
+
 
 # Declares the keys used for various options.
-const option_keys = [:species, :parameters]
+const option_keys = (:species, :parameters, :variables)
 
 ### The @species macro, basically a copy of the @varriables macro. ###
 macro species(ex...)
@@ -300,6 +307,14 @@ end
 
 ### Functions rephrasing the macro input as a ReactionSystem structure. ###
 
+function forbidden_variable_check(v)
+    !isempty(intersect(forbidden_variables_error, v)) &&
+        error("The following symbol(s) are used as variables: " *
+            ((map(s -> "'" * string(s) * "', ", intersect(forbidden_variables_error, v))...)) *
+            "this is not permited.")
+
+end
+
 function forbidden_symbol_check(v)
     !isempty(intersect(forbidden_symbols_error, v)) &&
         error("The following symbol(s) are used as species or parameters: " *
@@ -324,12 +339,12 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
-    species_declared = haskey(options, :species) ?
-                       extract_syms(options[:species], :species) : Union{Symbol, Expr}[]
-    parameters_declared = haskey(options, :parameters) ?
-                          extract_syms(options[:parameters], :parameters) :
-                          Union{Symbol, Expr}[]
-    declared_syms = Set(Iterators.flatten((parameters_declared, species_declared)))
+    species_declared = extract_syms(options, :species)
+    parameters_declared = extract_syms(options, :parameters)
+    variables = extract_syms(options, :variables)
+
+    declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
+                                           variables)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
                                                                               declared_syms)
     species = vcat(species_declared, species_extracted)
@@ -341,9 +356,11 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     any(!in(opt_in, option_keys) for opt_in in keys(options)) &&
         error("The following unsupprted options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
     forbidden_symbol_check(union(species, parameters))
+    forbidden_variable_check(variables)
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     sexprs = get_sexpr(species_extracted, options)
+    vexprs = haskey(options, :variables) ? options[:variables] : :()
     pexprs = get_pexpr(parameters_extracted, options)
     rxexprs = :($(make_ReactionSystem_internal)([], t, Num[], Num[]; name = $(name)))
     foreach(speci -> push!(rxexprs.args[5].args, speci), species)
@@ -356,6 +373,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     quote
         $pexprs
         :(@variables t)
+        $vexprs
         $sexprs
         $rxexprs
     end
@@ -406,9 +424,15 @@ end
 
 # When the user have used the @species (or @parameters) options, extract species (or
 # parameters) from its input.
-function extract_syms(ex::Expr, vartype::Symbol)
-    vars = Symbolics._parse_vars(vartype, Real, ex.args[3:end])
-    Vector{Union{Symbol, Expr}}(vars.args[end].args)
+function extract_syms(opts, vartype::Symbol)
+    if haskey(opts, vartype)
+        ex = opts[vartype]
+        vars = Symbolics._parse_vars(vartype, Real, ex.args[3:end])
+        syms = Vector{Union{Symbol, Expr}}(vars.args[end].args)
+    else
+        syms = Union{Symbol, Expr}[]
+    end
+    return syms
 end
 
 # Function looping through all reactions, to find undeclared symbols (species or
@@ -449,13 +473,15 @@ function add_syms_from_expr!(push_symbols::AbstractSet, rateex::ExprValues, excl
 end
 
 # Given the species that were extracted from the reactions, and the options dictionary, creates the @species ... expression for the macro output.
-function get_sexpr(species_extracted, options)
-    sexprs = (haskey(options, :species) ? options[:species] :
-              (isempty(species_extracted) ? :() : :(@species)))
+function get_sexpr(species_extracted, options, key = :species)
+    isempty(species_extracted) && return :()
+    macroex = Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
+    sexprs = haskey(options, key) ? options[key] : macroex
     foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, :t)),
             species_extracted)
     sexprs
 end
+
 # Given the parameters that were extracted from the reactions, and the options dictionary, creates the @parameters ... expression for the macro output.
 function get_pexpr(parameters_extracted, options)
     pexprs = (haskey(options, :parameters) ? options[:parameters] :
