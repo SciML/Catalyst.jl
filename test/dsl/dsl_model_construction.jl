@@ -1,18 +1,23 @@
-### Fetch required packages and reaction networks ###
+### Fetch Packages and Set Global Variables ###
+
+# Fetch packages.
 using DiffEqBase, Catalyst, Random, Test
 using ModelingToolkit: operation, istree, get_states, get_ps, get_eqs, get_systems,
                        get_iv
 
+# Sets rnd number.
 using StableRNGs
 rng = StableRNG(12345)
 
+# fetch test networks.
 include("../test_networks.jl")
+
+### Declares testing functions ###
 
 function unpacksys(sys)
     get_eqs(sys), get_iv(sys), get_states(sys), get_ps(sys), nameof(sys), get_systems(sys)
 end
 
-### Declare functions ###
 opname(x) = istree(x) ? nameof(operation(x)) : nameof(x)
 alleq(xs, ys) = all(isequal(x, y) for (x, y) in zip(xs, ys))
 
@@ -31,20 +36,21 @@ function all_parameters(eqs)
     return Set(unique(map(eq -> opname(eq.rate), eqs)))
 end
 
+# Perform basic tests.
+function basic_test(rn, N, states_syms, p_syms)
+    eqs, iv, states, ps, name, systems = unpacksys(rn)
+    @test length(eqs) == N
+    @test opname(iv) == :t
+    @test length(states) == length(states_syms)
+    @test issetequal(map(opname, states), states_syms)
+    @test all_reactants(eqs) == Set(states_syms)
+    @test length(ps) == length(p_syms)
+    @test issetequal(map(opname, ps), p_syms)
+end
+
 ### Test basic properties of networks ###
 
 let
-    # Testing function
-    function basic_test(rn, N, states_syms, p_syms)
-        eqs, iv, states, ps, name, systems = unpacksys(rn)
-        @test length(eqs) == N
-        @test opname(iv) == :t
-        @test length(states) == length(states_syms)
-        @test issetequal(map(opname, states), states_syms)
-        @test all_reactants(eqs) == Set(states_syms)
-        @test length(ps) == length(p_syms)
-        @test issetequal(map(opname, ps), p_syms)
-    end
     basic_test(reaction_networks_standard[1], 10, [:X1, :X2, :X3],
                [:p1, :p2, :p3, :k1, :k2, :k3, :k4, :d1, :d2, :d3])
     @test all_parameters(get_eqs(reaction_networks_standard[1])) ==
@@ -373,11 +379,13 @@ let
 end
 
 # Test names work.
-rn = @reaction_network SIR1 begin
-    k1, S + I --> 2I
-    k2, I --> R
+let
+    rn = @reaction_network SIR1 begin
+        k1, S + I --> 2I
+        k2, I --> R
+    end
+    @test nameof(rn) == :SIR1
 end
-@test nameof(rn) == :SIR1
 
 ### Tests some arrow variants ###
 let

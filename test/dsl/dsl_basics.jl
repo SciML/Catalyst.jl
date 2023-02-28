@@ -1,12 +1,13 @@
 #! format: off
 
+### Fetch Packages and Set Global Variables ###
 using Catalyst, ModelingToolkit
+@variables t
 
 ### Naming tests ###
 
 let
     @parameters k
-    @variables t
     @species A(t)
     rx = Reaction(k, [A], nothing)
     function rntest(rn, name)
@@ -97,6 +98,7 @@ let
 end
 
 let
+    AA = A
     kk1 = k^2*A
     kk2 = k1+k2
     rn = @reaction_network rn begin
