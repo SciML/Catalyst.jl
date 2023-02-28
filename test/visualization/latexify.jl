@@ -39,7 +39,7 @@ rn = @reaction_network begin
 end
 
 # Latexify.@generate_test latexify(r)
-@test_broken latexify(rn) == replace(
+@test latexify(rn) == replace(
 raw"\begin{align*}
 \varnothing &\xrightarrow{\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}} \mathrm{X1} \\
 \varnothing &\xrightarrow{\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}} \mathrm{X2} \\
@@ -61,7 +61,7 @@ raw"\begin{align*}
 , "\r\n"=>"\n")
 
 # Latexify.@generate_test latexify(r, mathjax=false)
-@test_broken latexify(rn, mathjax = false) == replace(
+@test latexify(rn, mathjax = false) == replace(
 raw"\begin{align*}
 \varnothing &\xrightarrow{\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}} \mathrm{X1} \\
 \varnothing &\xrightarrow{\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}} \mathrm{X2} \\
@@ -99,7 +99,7 @@ raw"\begin{align*}
 ", "\r\n"=>"\n")
 
 # Latexify.@generate_test latexify(r, mathjax=false)
-@test_broken latexify(rn, mathjax = false) == replace(
+@test latexify(rn, mathjax = false) == replace(
 raw"\begin{align*}
 \varnothing &\xrightleftharpoons[d_{a}]{\frac{p_{a} B^{n}}{k^{n} + B^{n}}} \mathrm{A} \\
 \varnothing &\xrightleftharpoons[d_{b}]{p_{b}} \mathrm{B} \\
@@ -110,7 +110,7 @@ raw"\begin{align*}
 # test empty system
 empty_rn = ReactionSystem(Reaction[]; name=:EmptySys)
 # Latexify.@generate_test latexify(empty_rn)
-@test_broken latexify(empty_rn) == replace(
+@test latexify(empty_rn) == replace(
 raw"ReactionSystem EmptySys has no reactions or equations.", "\r\n"=>"\n")
 
 # test for https://github.com/SciML/Catalyst.jl/issues/473
