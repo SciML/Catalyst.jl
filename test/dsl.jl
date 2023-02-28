@@ -182,11 +182,16 @@ let
     end
 
     @parameters k1 k2
-    @variables t V1(t) V2(t) V3(3)
+    @variables t V1(t) V2(t) V3(t)
     @species A(t) B1(t) B2(t) C(t)
     rx = Reaction(k1*k2 + V3, [A, B1], [C, B2], [V1, 2], [V2, 1])
     @named tester = ReactionSystem([rx], t)
     @test tester == rn
+
+    sts = (A, B1, B2, C, V1, V2, V3)
+    spcs = (A, B1, B2, C)
+    @test issetequal(states(rn), sts)
+    @test issetequal(species(rn), spcs)
 
     @test_throws ArgumentError begin
         rn = @reaction_network begin
