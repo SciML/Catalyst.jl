@@ -122,8 +122,6 @@ const forbidden_variables_error = let
     fvars
 end
 
-
-
 # Declares the keys used for various options.
 const option_keys = (:species, :parameters, :variables)
 
@@ -310,9 +308,9 @@ end
 function forbidden_variable_check(v)
     !isempty(intersect(forbidden_variables_error, v)) &&
         error("The following symbol(s) are used as variables: " *
-            ((map(s -> "'" * string(s) * "', ", intersect(forbidden_variables_error, v))...)) *
-            "this is not permited.")
-
+              ((map(s -> "'" * string(s) * "', ",
+                    intersect(forbidden_variables_error, v))...)) *
+              "this is not permited.")
 end
 
 function forbidden_symbol_check(v)
