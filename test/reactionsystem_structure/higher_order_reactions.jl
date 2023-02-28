@@ -1,23 +1,23 @@
-### Fetch required packages ###
+### Fetch packages and declare globals ###
 
 using DiffEqBase, Catalyst, JumpProcesses, Random, Statistics, Test
 using ModelingToolkit: get_states, get_ps
 using StableRNGs
 rng = StableRNG(12345)
 
+higher_order_network_1 = @reaction_network begin
+    p, ∅ ⟼ X1
+    r1, 2X1 ⟼ 3X2
+    mm(X1, r2, K), 3X2 ⟼ X3 + 2X4
+    r3, X3 + 2X4 ⟼ 3X5 + 3X6
+    r4 * X2, 3X5 + 3X6 ⟼ 3X5 + 2X7 + 4X8
+    r5, 3X5 + 2X7 + 4X8 ⟼ 10X9
+    r6, 10X9 ⟼ X10
+    d, 2X10 ⟼ ∅
+end
+
 ### Tests that deterministic and stochastic differential functions are identical. ###
 let
-    higher_order_network_1 = @reaction_network begin
-        p, ∅ ⟼ X1
-        r1, 2X1 ⟼ 3X2
-        mm(X1, r2, K), 3X2 ⟼ X3 + 2X4
-        r3, X3 + 2X4 ⟼ 3X5 + 3X6
-        r4 * X2, 3X5 + 3X6 ⟼ 3X5 + 2X7 + 4X8
-        r5, 3X5 + 2X7 + 4X8 ⟼ 10X9
-        r6, 10X9 ⟼ X10
-        d, 2X10 ⟼ ∅
-    end
-
     higher_order_network_2 = @reaction_network begin
         p, ∅ ⟾ X1
         r1 * X1^2 / factorial(2), 2X1 ⟾ 3X2
