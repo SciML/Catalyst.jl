@@ -1,13 +1,12 @@
 ### File declaring various reaction networks for the tests to be run on ###
 
-#Declares the vectors which contains the various test sets.
+# Declares the vectors which contains the various test sets.
 reaction_networks_standard = Vector{ReactionSystem}(undef, 10)
 reaction_networks_hill = Vector{ReactionSystem}(undef, 10)
 reaction_networks_constraint = Vector{ReactionSystem}(undef, 10)
 reaction_network_constraints = Vector{Matrix{Int}}(undef, 10)
 reaction_networks_real = Vector{ReactionSystem}(undef, 4)
 reaction_networks_weird = Vector{ReactionSystem}(undef, 10)
-
 
 ### Standard reaction networks. ###
 reaction_networks_standard[1] = @reaction_network rns1 begin
@@ -96,7 +95,6 @@ reaction_networks_standard[10] = @reaction_network rns10 begin
     d, X5 ⟶ ∅
 end
 
-
 ### Network with Hill functions ###.
 
 reaction_networks_hill[1] = @reaction_network rnh1 begin
@@ -179,7 +177,6 @@ reaction_networks_hill[10] = @reaction_network rnh10 begin
     (k5, k6), X1 + X2 + X3 + X4 ⟷ X5 + X6
     (d1, d2), (X5, X6) → ∅
 end
-
 
 ### Reaction networks were some linnear combination concentrations remain fixed (steady state values depends on initial conditions). ###
 
@@ -273,7 +270,6 @@ reaction_networks_constraint[10] = @reaction_network rnc10 begin
 end;
 reaction_network_constraints[10] = [0 0 0 0 0 0 0 0 1 1]
 
-
 ### Reaction networks that are actual models that have been used ###
 
 # Brusselator.
@@ -313,7 +309,6 @@ reaction_networks_real[4] = @reaction_network rnr4 begin
     hillr(Y, v1, K1, n1), ∅ → X
     hillr(X, v2, K2, n2), ∅ → Y
 end
-
 
 ### Reaction networks that contain weird functions, stuff, and other oddities ###
 
@@ -395,7 +390,6 @@ reaction_networks_weird[10] = @reaction_network rnw10 begin
     @parameters d
     d, 5X1 → 4X1
 end
-
 
 ### Gathers all netowkrs in a simgle array ###
 reaction_networks_all = [reaction_networks_standard...,
