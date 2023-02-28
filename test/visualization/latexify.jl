@@ -165,7 +165,7 @@ end
 extended = extend(decaying_rate, base_network)
 
 # Latexify.@generate_test latexify(extended)
-@test_borken latexify(extended) == replace(
+@test_broken latexify(extended) == replace(
 raw"\begin{align*}
 \mathrm{X} &\xrightarrow{k r} \varnothing  
  0 &= -1 - x\left( t \right)  
@@ -173,7 +173,7 @@ raw"\begin{align*}
 ", "\r\n"=>"\n")
 
 # Latexify.@generate_test latexify(extended, mathjax=false)
-@test_borken latexify(extended, mathjax = false) == replace(
+@test_broken latexify(extended, mathjax = false) == replace(
 raw"\begin{align*}
 \mathrm{X} &\xrightarrow{k r} \varnothing  
  0 &= -1 - x\left( t \right)  
