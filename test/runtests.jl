@@ -24,18 +24,18 @@ using SafeTestsets
     @time @safetestset "Events" begin include("miscellaneous_tests/events.jl") end
     @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end
 
+    ### Reaction network analysis. ###
+    @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end
+    @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
+
     ### Tests ODE, SDE, PDE, and Gillespie Simulations. ###
     @time @safetestset "ODE System Simulations" begin include("model_simulation/simulate_ODEs.jl") end
     @time @safetestset "Automatic Jacobian Construction" begin include("model_simulation/make_jacobian.jl") end
     @time @safetestset "U0 and Parameters Input Variants" begin include("model_simulation/u0_n_parameter_inputs.jl") end
-    @time @safetestset "DiffEq Steady State Solving" begin include("model_simulation/solve_steady_state_problems.jl") end
     @time @safetestset "SDE System Simulations" begin include("model_simulation/simulate_SDEs.jl") end
-    @time @safetestset "PDE Systems Simulations" begin include("model_simulation/simulate_PDEs.jl") end
     @time @safetestset "Jump System Simulations" begin include("model_simulation/simulate_jumps.jl") end
-
-    ### Reaction network analysis. ###
-    @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end
-    @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
+    @time @safetestset "DiffEq Steady State Solving" begin include("model_simulation/solve_steady_state_problems.jl") end
+    @time @safetestset "PDE Systems Simulations" begin include("model_simulation/simulate_PDEs.jl") end
 
     ### Tests network visualization. ###
     @time @safetestset "Latexify" begin include("visualization/latexify.jl") end
