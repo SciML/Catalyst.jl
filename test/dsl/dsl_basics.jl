@@ -1,10 +1,11 @@
 #! format: off
 
 ### Fetch Packages and Set Global Variables ###
+
 using Catalyst, ModelingToolkit
 @variables t
 
-### Naming tests ###
+### Naming Tests ###
 
 let
     @parameters k
@@ -60,7 +61,7 @@ let
 end
 
 
-### Test interpolation within the DSL ###
+### Test Interpolation Within the DSL ###
 
 @parameters α k k1 k2
 @species A(t) B(t) C(t) D(t)
@@ -153,7 +154,7 @@ let
     @test rn == mixedsys
 end
 
-# test variables that appear only in rates and aren't ps
+# Test variables that appear only in rates and aren't ps
 # are categorized as species.
 let
     rn = @reaction_network begin

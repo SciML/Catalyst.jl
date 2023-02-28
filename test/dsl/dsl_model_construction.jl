@@ -9,10 +9,10 @@ using ModelingToolkit: operation, istree, get_states, get_ps, get_eqs, get_syste
 using StableRNGs
 rng = StableRNG(12345)
 
-# fetch test networks.
+# Fetch test networks.
 include("../test_networks.jl")
 
-### Declares testing functions ###
+### Declares Testing Functions ###
 
 function unpacksys(sys)
     get_eqs(sys), get_iv(sys), get_states(sys), get_ps(sys), nameof(sys), get_systems(sys)
@@ -48,8 +48,9 @@ function basic_test(rn, N, states_syms, p_syms)
     @test issetequal(map(opname, ps), p_syms)
 end
 
-### Test basic properties of networks ###
+## Run Tests ###
 
+# Test basic properties of networks.
 let
     basic_test(reaction_networks_standard[1], 10, [:X1, :X2, :X3],
                [:p1, :p2, :p3, :k1, :k2, :k3, :k4, :d1, :d2, :d3])
@@ -73,8 +74,7 @@ let
     basic_test(reaction_networks_weird[2], 4, [:X, :Y, :Z], [:k1, :k2, :k3, :k4])
 end
 
-### Tries making various systems ###
-
+# Tries making various systems.
 let
     identical_networks_1 = Vector{Pair}()
 
@@ -136,8 +136,7 @@ let
     end
 end
 
-### Tests that networks expressed in different ways are identical ###
-
+# Tests that networks expressed in different ways are identical.
 let
     identical_networks_2 = Vector{Pair}()
 
@@ -204,7 +203,7 @@ let
     end
 end
 
-### Test networks without parameters ###
+# Test networks without parameters.
 let
     identical_networks_3 = Vector{Pair}()
     parameter_sets = []
@@ -247,8 +246,7 @@ let
     end
 end
 
-### Tests that Reaction System created manually and through macro are identical ###
-
+# Tests that Reaction System created manually and through macro are identical.
 let
     identical_networks_4 = Vector{Pair}()
     @parameters v1 K1 v2 K2 k1 k2 k3 k4 k5 p d t
@@ -297,8 +295,9 @@ let
     end
 end
 
-### Tests that time is handled properly ###
+### Tests Usage of Various Symbols ###
 
+# Tests that time is handled properly.
 let
     time_network = @reaction_network begin
         (t, k2), X1 ↔ X2
@@ -324,10 +323,9 @@ let
     end
 end
 
-### Test various names as varriables ###
-
+# Test various names as varriables.
 let
-    test_network = @reaction_network begin
+    @reaction_network begin
         (a, A), n ⟷ N
         (b, B), o ⟷ O
         (c, C), p ⟷ P
@@ -342,15 +340,15 @@ let
         (m, M), z ⟷ Z
     end
 
-    test_network = @reaction_network begin (1.0, 1.0), i ⟷ T end
+    @reaction_network begin (1.0, 1.0), i ⟷ T end
 
-    test_network = @reaction_network begin
+    @reaction_network begin
         (å, Å), ü ⟷ Ü
         (ä, Ä), ñ ⟷ Ñ
         (ö, Ö), æ ⟷ Æ
     end
 
-    test_network = @reaction_network begin
+    @reaction_network begin
         (α, Α), ν ⟷ Ν
         (β, Β), ξ ⟷ Ξ
         (γ, γ), ο ⟷ Ο
@@ -366,7 +364,7 @@ let
     end
 end
 
-# Test I works.
+# Test that I works.
 let
     rn = @reaction_network begin
         k1, S + I --> 2I
@@ -387,7 +385,7 @@ let
     @test nameof(rn) == :SIR1
 end
 
-### Tests some arrow variants ###
+# Tests some arrow variants.
 let
     rn1 = @reaction_network arrowtest begin
         (a1, a2), C <--> 0
@@ -406,7 +404,7 @@ let
     @test rn1 == rn2
 end
 
-# Tests arrow variants in "@reaction" macro 
+# Tests arrow variants in "@reaction" macro .
 let
     @test isequal((@reaction k, 0 --> X), (@reaction k, X <-- 0))
     @test isequal((@reaction k, 0 --> X), (@reaction k, X ⟻ 0))
@@ -414,8 +412,7 @@ let
     @test isequal((@reaction k, 0 --> X), (@reaction k, 0 ⥟ X))
 end
 
-### Test forbidden and special symbols ###
-
+# Test forbidden and special symbols.
 let
     test_network = @reaction_network begin t * k, X --> ∅ end
     @test length(species(test_network)) == 1

@@ -1,10 +1,14 @@
-### Fetch packages and declare globals ###
+### Fetch Packages and Set Global Variables ###
 
+# Fetch packages.
 using DiffEqBase, Catalyst, JumpProcesses, Random, Statistics, Test
 using ModelingToolkit: get_states, get_ps
+
+# Sets rnd number.
 using StableRNGs
 rng = StableRNG(12345)
 
+# Delare globaly used network.
 higher_order_network_1 = @reaction_network begin
     p, ∅ ⟼ X1
     r1, 2X1 ⟼ 3X2
@@ -16,7 +20,9 @@ higher_order_network_1 = @reaction_network begin
     d, 2X10 ⟼ ∅
 end
 
-### Tests that deterministic and stochastic differential functions are identical. ###
+### Run Tests ###
+
+# Tests that deterministic and stochastic differential functions are identical. 
 let
     higher_order_network_2 = @reaction_network begin
         p, ∅ ⟾ X1
@@ -44,8 +50,7 @@ let
     end
 end
 
-### Tests that the discrete jump systems are equal. ###
-
+# Tests that the discrete jump systems are equal.
 let
     higher_order_network_3 = @reaction_network begin
         p, ∅ ⟼ X1

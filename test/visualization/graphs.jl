@@ -1,21 +1,24 @@
 using Catalyst, Graphviz_jll
 
-rn = @reaction_network begin
-    α, S + I --> 2I
-    β, I --> R
-    S^2, R --> 0
+### Basic Tests ###
+let
+    rn = @reaction_network begin
+        α, S + I --> 2I
+        β, I --> R
+        S^2, R --> 0
+    end
+
+    # Check can make a graph.
+    gr = Graph(rn)
+
+    # Check can save a graph.
+    fname = Base.Filesystem.tempname()
+    savegraph(gr, "$fname.svg", "svg")
+
+    rcgr = complexgraph(rn)
+    fname = Base.Filesystem.tempname()
+    savegraph(rcgr, "$fname.svg", "svg")
 end
-
-# Check can make a graph.
-gr = Graph(rn)
-
-# Check can save a graph.
-fname = Base.Filesystem.tempname()
-savegraph(gr, "$fname.svg", "svg")
-
-rcgr = complexgraph(rn)
-fname = Base.Filesystem.tempname()
-savegraph(rcgr, "$fname.svg", "svg")
 
 # these are broken in the jll, see
 # https://github.com/JuliaPackaging/Yggdrasil/issues/1428

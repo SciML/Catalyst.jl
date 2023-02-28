@@ -1,10 +1,12 @@
+
+### Fetch Packages and Set Global Variables ###
 using DiffEqBase, Catalyst, Random, Symbolics, Test
 using ModelingToolkit: get_states, get_ps
 
 using StableRNGs
 rng = StableRNG(12345)
 
-### Tests various cutom made functions ###
+### Tests Cutom Functions ###
 let
     new_hill(x, v, k, n) = v * x^n / (k^n + x^n)
     new_poly(x, p1, p2) = 0.5 * p1 * x^2

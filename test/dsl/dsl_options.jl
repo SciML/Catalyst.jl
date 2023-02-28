@@ -1,10 +1,12 @@
 #! format: off
 
+### Fetch Packages and Set Global Variables ###
 using Catalyst, ModelingToolkit
-const MT = ModelingToolkit
+@variables t
 
-### Test creating networks with/without options. ###
+### Run Tests ###
 
+# Test creating networks with/without options.
 let
     @reaction_network begin (k1, k2), A <--> B end
     @reaction_network begin
@@ -102,13 +104,11 @@ let
     @test all(==(n1), (n2, n3, n4, n5, n6, n7, n8, n9, n10))
 end
 
-### Tests that when either @species or @parameters is given, the other is infered properly. ###
-
+# Tests that when either @species or @parameters is given, the other is infered properly. 
 let
     rn1 = @reaction_network begin
         k*X, A + B --> 0
     end
-    @variables t
     @test issetequal(species(rn1), @species A(t) B(t))
     @test issetequal(parameters(rn1), @parameters k X)
 
@@ -162,11 +162,8 @@ let
     @test rnii == rni
 end
 
-### Tests that when some species or parameters are left out, the others are set properly. ###
-
+# Tests that when some species or parameters are left out, the others are set properly.
 let
-    @variables t
-
     rn6 = @reaction_network begin
         @species A(t)
         k*X, A + B --> 0
@@ -223,8 +220,7 @@ let
     @test issetequal(parameters(rn11), @parameters k1 k2 X2)
 end
 
-### Checks that some created networks are identical. ###
-
+##Checks that some created networks are identical.
 let
     rn12 = @reaction_network name begin (k1, k2), A <--> B end
     rn13 = @reaction_network name begin
@@ -243,8 +239,7 @@ let
     @test all(==(rn12), (rn13, rn14, rn15))
 end
 
-### Checks that the rights things are put in vectors. ###
-
+# Checks that the rights things are put in vectors. 
 let
     rn18 = @reaction_network name begin
         @parameters p d1 d2
@@ -296,8 +291,7 @@ let
     @test issetequal(species(rn22), [X Y Y2])
 end
 
-#### Tests that defaults work. ###
-
+# Tests that defaults work. 
 let
     rn26 = @reaction_network name begin
         @parameters p=1.0 d1 d2=5
@@ -343,5 +337,5 @@ let
     defs29 = Dict(Iterators.flatten((u0_29, p_29)))
 
     @test MT.defaults(rn27) == defs29
-    @test merge(MT.defaults(rn28), defs28) == MT.defaults(rn27)
+    @test merge(ModelingToolkit.defaults(rn28), defs28) == ModelingToolkit.defaults(rn27)
 end
