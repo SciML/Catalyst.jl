@@ -41,7 +41,7 @@ let
     jump_1_7 = ConstantRateJump(rate_1_7, affect_1_7!)
     jump_1_8 = ConstantRateJump(rate_1_8, affect_1_8!)
     jumps_1 = (jump_1_1, jump_1_2, jump_1_3, jump_1_4, jump_1_5, jump_1_6, jump_1_7,
-                jump_1_8)
+               jump_1_8)
     push!(identical_networks, reaction_networks_standard[6] => jumps_1)
 
     rate_2_1(u, p, t) = p[1] / 10 + u[1]^p[3] / (u[1]^p[3] + p[2]^p[3])
@@ -125,7 +125,7 @@ let
             u0 = rand(rng, 1:Int64(factor * 100), length(get_states(network)))
             p = factor * rand(rng, length(get_ps(network)))
             prob = JumpProblem(network, DiscreteProblem(network, u0, (0.0, 1.0), p),
-                                Direct())
+                               Direct())
             @test SciMLBase.successful_retcode(solve(prob, SSAStepper()))
         end
     end
@@ -139,7 +139,7 @@ let
     for factor in [1e1, 1e2]
         u0 = rand(rng, 1:Int64(factor * 100), length(get_states(no_param_network)))
         prob = JumpProblem(no_param_network,
-                            DiscreteProblem(no_param_network, u0, (0.0, 1000.0)), Direct())
+                           DiscreteProblem(no_param_network, u0, (0.0, 1000.0)), Direct())
         sol = solve(prob, SSAStepper())
         vals1 = getindex.(sol.u[1:end], 1)
         vals2 = getindex.(sol.u[1:end], 2)

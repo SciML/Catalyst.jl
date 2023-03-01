@@ -116,11 +116,11 @@ let
     nlsys = convert(NonlinearSystem, rs)
 
     @test ModelingToolkit.get_defaults(rs) ==
-            ModelingToolkit.get_defaults(odesys) ==
-            ModelingToolkit.get_defaults(sdesys) ==
-            ModelingToolkit.get_defaults(js) ==
-            ModelingToolkit.get_defaults(nlsys) ==
-            defs
+          ModelingToolkit.get_defaults(odesys) ==
+          ModelingToolkit.get_defaults(sdesys) ==
+          ModelingToolkit.get_defaults(js) ==
+          ModelingToolkit.get_defaults(nlsys) ==
+          defs
 
     u0map = [A => 5.0] # was 0.5
     pmap = [k[1] => 5.0] # was 1.
@@ -179,7 +179,7 @@ let
     G = vcat(fill(p[21], 8), fill(p[22], 3), fill(p[23], 9))' .* sdenoise(u, p, t)
     @variables η[1:3]
     sdesys_noise_scaling = convert(SDESystem, rs;
-                                    noise_scaling = vcat(fill(η[1], 8), fill(η[2], 3),
+                                   noise_scaling = vcat(fill(η[1], 8), fill(η[2], 3),
                                                         fill(η[3], 9)))
     sf = SDEFunction{false}(sdesys_noise_scaling, states(rs),
                             parameters(sdesys_noise_scaling))
@@ -240,7 +240,7 @@ let
     u0 = rand(2:10, 6)
     ttt = rand()
     jumps = Vector{Union{ConstantRateJump, MassActionJump, VariableRateJump}}(undef,
-                                                                                length(rxs))
+                                                                              length(rxs))
 
     jumps[1] = MassActionJump(pars[1], Vector{Pair{Int, Int}}(), [1 => 1])
     jumps[2] = MassActionJump(pars[2], [2 => 1], [2 => -1])
@@ -254,29 +254,29 @@ let
     jumps[10] = MassActionJump(pars[10], [1 => 2], [1 => -2, 3 => 1, 4 => 1])
     jumps[11] = MassActionJump(pars[11], [1 => 2], [1 => -1, 2 => 1])
     jumps[12] = MassActionJump(pars[12], [1 => 1, 2 => 3, 3 => 4],
-                                [1 => -1, 2 => -3, 3 => -2, 4 => 3])
+                               [1 => -1, 2 => -3, 3 => -2, 4 => 3])
     jumps[13] = MassActionJump(pars[13], [1 => 3, 2 => 1], [1 => -3, 2 => -1])
     jumps[14] = MassActionJump(pars[14], Vector{Pair{Int, Int}}(), [1 => 2])
 
     jumps[15] = ConstantRateJump((u, p, t) -> p[15] * u[1] / (2 + u[1]),
-                                    integrator -> (integrator.u[1] -= 1))
+                                 integrator -> (integrator.u[1] -= 1))
     jumps[16] = ConstantRateJump((u, p, t) -> p[16],
-                                    integrator -> (integrator.u[1] -= 1; integrator.u[2] += 1))
+                                 integrator -> (integrator.u[1] -= 1; integrator.u[2] += 1))
     jumps[17] = ConstantRateJump((u, p, t) -> p[17] * u[1] * exp(u[2]) * binomial(u[3], 2),
-                                    integrator -> (integrator.u[3] -= 2; integrator.u[4] += 1))
+                                 integrator -> (integrator.u[3] -= 2; integrator.u[4] += 1))
     jumps[18] = ConstantRateJump((u, p, t) -> p[18] * u[2],
-                                    integrator -> (integrator.u[2] += 2))
+                                 integrator -> (integrator.u[2] += 2))
 
     jumps[19] = VariableRateJump((u, p, t) -> p[19] * u[4] * t,
-                                    integrator -> (integrator.u[4] -= 1; integrator.u[5] += 1))
+                                 integrator -> (integrator.u[4] -= 1; integrator.u[5] += 1))
     jumps[20] = VariableRateJump((u, p, t) -> p[20] * t * u[1] * binomial(u[4], 2) * u[5],
-                                    integrator -> (integrator.u[4] -= 2; integrator.u[5] -= 1; integrator.u[6] += 2))
+                                 integrator -> (integrator.u[4] -= 2; integrator.u[5] -= 1; integrator.u[6] += 2))
 
     statetoid = Dict(state => i for (i, state) in enumerate(states(js)))
     jspmapper = ModelingToolkit.JumpSysMajParamMapper(js, pars)
     symmaj = ModelingToolkit.assemble_maj(equations(js).x[1], statetoid, jspmapper)
     maj = MassActionJump(symmaj.param_mapper(pars), symmaj.reactant_stoch, symmaj.net_stoch,
-                            symmaj.param_mapper, scale_rates = false)
+                         symmaj.param_mapper, scale_rates = false)
     for i in midxs
         @test abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100 * eps()
         @test jumps[i].reactant_stoch == maj.reactant_stoch[i]
@@ -324,9 +324,9 @@ let
         Reaction(k2 * R, [I], [R])]
     @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
     @test isequal(oderatelaw(equations(rs)[1]),
-                    k1 * S * S^2 * I^3 / (factorial(2) * factorial(3)))
+                  k1 * S * S^2 * I^3 / (factorial(2) * factorial(3)))
     @test_skip isequal(jumpratelaw(equations(eqs)[1]),
-                        k1 * S * binomial(S, 2) * binomial(I, 3))
+                       k1 * S * binomial(S, 2) * binomial(I, 3))
     dep = Set()
     ModelingToolkit.get_variables!(dep, rxs[2], Set(states(rs)))
     dep2 = Set([R, I])
@@ -339,7 +339,7 @@ let
 
     @test isequal2(jumpratelaw(rxs[1]), k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
     @test isequal2(jumpratelaw(rxs[1]; combinatoric_ratelaw = false),
-                    k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
+                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
     @test isequal2(oderatelaw(rxs[1]), k1 * S * S^2 * I^3 / 12)
     @test isequal2(oderatelaw(rxs[1]; combinatoric_ratelaw = false), k1 * S * S^2 * I^3)
 
@@ -362,14 +362,14 @@ end
 let
     js = convert(JumpSystem, rs)
     @test isequal2(equations(js)[1].rate,
-                    k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
+                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
     js = convert(JumpSystem, rs; combinatoric_ratelaws = false)
     @test isequal2(equations(js)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
     js2 = convert(JumpSystem, rs2)
     @test isequal2(equations(js2)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
     js3 = convert(JumpSystem, rs2; combinatoric_ratelaws = true)
     @test isequal2(equations(js3)[1].rate,
-                    k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
+                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
 end
 
 # Test MassActionJump rate scaling.
@@ -551,8 +551,8 @@ let
     @variables t
     @species C(t) [isbcspecies = true] B1(t) B2(t) B3(t)
     @named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
-                                    (@reaction k1, $A --> B2),
-                                    (@reaction 10 * k1, ∅ --> B3)], t)
+                                   (@reaction k1, $A --> B2),
+                                   (@reaction 10 * k1, ∅ --> B3)], t)
     dprob = DiscreteProblem(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
                             [k1 => 1.0])
     jprob = JumpProblem(rn, dprob, Direct(), save_positions = (false, false))

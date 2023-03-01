@@ -177,30 +177,30 @@ let
     @test isequal(Symbolics.derivative(Catalyst.mmr(X, v, K), K), v * X / (K + X)^2)
 
     @test isequal(Symbolics.derivative(Catalyst.hill(X, v, K, n), X),
-                    n * v * (K^n) * (X^(n - 1)) / (K^n + X^n)^2)
+                  n * v * (K^n) * (X^(n - 1)) / (K^n + X^n)^2)
     @test isequal(Symbolics.derivative(Catalyst.hill(X, v, K, n), v), X^n / (K^n + X^n))
     @test isequal(Symbolics.derivative(Catalyst.hill(X, v, K, n), K),
-                    -n * v * (K^(n - 1)) * (X^n) / (K^n + X^n)^2)
+                  -n * v * (K^(n - 1)) * (X^n) / (K^n + X^n)^2)
     @test isequal(Symbolics.derivative(Catalyst.hill(X, v, K, n), n),
-                    v * (X^n) * (K^n) * (log(X) - log(K)) / (K^n + X^n)^2)
+                  v * (X^n) * (K^n) * (log(X) - log(K)) / (K^n + X^n)^2)
 
     @test isequal(Symbolics.derivative(Catalyst.hillr(X, v, K, n), X),
-                    -n * v * (K^n) * (X^(n - 1)) / (K^n + X^n)^2)
+                  -n * v * (K^n) * (X^(n - 1)) / (K^n + X^n)^2)
     @test isequal(Symbolics.derivative(Catalyst.hillr(X, v, K, n), v), K^n / (K^n + X^n))
     @test isequal(Symbolics.derivative(Catalyst.hillr(X, v, K, n), K),
-                    n * v * (K^(n - 1)) * (X^n) / (K^n + X^n)^2)
+                  n * v * (K^(n - 1)) * (X^n) / (K^n + X^n)^2)
     @test isequal(Symbolics.derivative(Catalyst.hillr(X, v, K, n), n),
-                    v * (X^n) * (K^n) * (log(K) - log(X)) / (K^n + X^n)^2)
+                  v * (X^n) * (K^n) * (log(K) - log(X)) / (K^n + X^n)^2)
 
     @test isequal(Symbolics.derivative(Catalyst.hillar(X, Y, v, K, n), X),
-                    n * v * (K^n + Y^n) * (X^(n - 1)) / (K^n + X^n + Y^n)^2)
+                  n * v * (K^n + Y^n) * (X^(n - 1)) / (K^n + X^n + Y^n)^2)
     @test isequal(Symbolics.derivative(Catalyst.hillar(X, Y, v, K, n), Y),
-                    -n * v * (Y^(n - 1)) * (X^n) / (K^n + X^n + Y^n)^2)
+                  -n * v * (Y^(n - 1)) * (X^n) / (K^n + X^n + Y^n)^2)
     @test isequal(Symbolics.derivative(Catalyst.hillar(X, Y, v, K, n), v),
-                    X^n / (K^n + X^n + Y^n))
+                  X^n / (K^n + X^n + Y^n))
     @test isequal(Symbolics.derivative(Catalyst.hillar(X, Y, v, K, n), K),
-                    -n * v * (v^(n - 1)) * (X^n) / (K^n + X^n + Y^n)^2)
+                  -n * v * (v^(n - 1)) * (X^n) / (K^n + X^n + Y^n)^2)
     @test isequal(Symbolics.derivative(Catalyst.hillar(X, Y, v, K, n), n),
-                    v * (X^n) * ((K^n + Y^n) * log(X) - (K^n) * log(K) - (Y^n) * log(Y)) /
-                    (K^n + X^n + Y^n)^2)
+                  v * (X^n) * ((K^n + Y^n) * log(X) - (K^n) * log(K) - (Y^n) * log(Y)) /
+                  (K^n + X^n + Y^n)^2)
 end

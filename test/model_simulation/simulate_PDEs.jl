@@ -40,8 +40,8 @@ let
 
     # Test a few API functions.
     ns = [-1 0 0 -1 1 0 0;
-        1 -2 2 0 0 -1 1;
-        0 1 -1 0 0 0 0]
+          1 -2 2 0 0 -1 1;
+          0 1 -1 0 0 0 0]
     @test ns == netstoichmat(bpm)
     bpm2 = deepcopy(bpm)
     @test bpm == bpm2

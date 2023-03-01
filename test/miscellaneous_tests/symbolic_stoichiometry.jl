@@ -7,7 +7,7 @@ let
     @variables t
     @species A(t), B(t), C(t), D(t)
     rxs = [Reaction(t * k, [A], [B], [2 * α^2], [k + α * C])
-            Reaction(1.0, [A, B], [C, D], [α, 2], [k, α])]
+           Reaction(1.0, [A, B], [C, D], [α, 2], [k, α])]
     @named rs = ReactionSystem(rxs, t)
     @test issetequal(states(rs), [A, B, C, D])
     @test issetequal(parameters(rs), [k, α])
@@ -96,9 +96,9 @@ let
         rl = sqrt(t * k / factorial(n) * A^n)
         rl2 = sqrt(A^α * B^2 / (2 * factorial(α)))
         G = [-n*rl (-α*rl2);
-                (k + α * C)*rl (-2*rl2);
-                0.0 k*rl2;
-                0.0 α*rl2]
+             (k + α * C)*rl (-2*rl2);
+             0.0 k*rl2;
+             0.0 α*rl2]
     end
     G2 = sdenoise(u0, p, 1.0)
     @test norm(G - G2) < 100 * eps()
@@ -118,9 +118,9 @@ let
         rl = sqrt(t * k * A^n)
         rl2 = sqrt(A^α * B^2)
         G = [-n*rl (-α*rl2);
-                (k + α * C)*rl (-2*rl2);
-                0.0 k*rl2;
-                0.0 α*rl2]
+             (k + α * C)*rl (-2*rl2);
+             0.0 k*rl2;
+             0.0 α*rl2]
     end
     G2 = sdenoise(u0, p, 1.0)
     @test norm(G - G2) < 100 * eps()

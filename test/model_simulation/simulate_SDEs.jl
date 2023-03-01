@@ -43,7 +43,7 @@ let
         du[3, 5] = -sqrt(d * X3)
     end
     push!(identical_networks,
-            reaction_networks_standard[8] => (real_f_1, real_g_1, zeros(3, 5)))
+          reaction_networks_standard[8] => (real_f_1, real_g_1, zeros(3, 5)))
 
     function real_f_2(du, u, p, t)
         X1, = u
@@ -57,7 +57,7 @@ let
         du[1, 2] = -sqrt(d * X1)
     end
     push!(identical_networks,
-            reaction_networks_hill[6] => (real_f_2, real_g_2, zeros(1, 2)))
+          reaction_networks_hill[6] => (real_f_2, real_g_2, zeros(1, 2)))
 
     function real_f_3(du, u, p, t)
         X1, X2, X3, X4, X5, X6, X7 = u
@@ -94,7 +94,7 @@ let
         du[7, 6] = -sqrt(k6 * X7)
     end
     push!(identical_networks,
-            reaction_networks_constraint[9] => (real_f_3, real_g_3, zeros(7, 6)))
+          reaction_networks_constraint[9] => (real_f_3, real_g_3, zeros(7, 6)))
 
     for (i, networks) in enumerate(identical_networks)
         for factor in [1e-1, 1e0, 1e1], repeat in 1:3
@@ -104,7 +104,7 @@ let
             (i == 3) ? (p[2:2:6] .*= 1000.0; u0 .+= 1000) : (p[1] += 500.0)
             prob1 = SDEProblem(networks[1], u0, (0.0, 100.0), p)
             prob2 = SDEProblem(networks[2][1], networks[2][2], u0, (0.0, 100.0), p,
-                                noise_rate_prototype = networks[2][3])
+                               noise_rate_prototype = networks[2][3])
             du1 = similar(u0)
             du2 = similar(u0)
             prob1.f.f(du1, u0, p, 0.0)
@@ -128,13 +128,13 @@ let
         p = 1.0 .+ rand(rng, 2)
         u0 = 10000 * (1.0 .+ rand(rng, 2))
         sol001 = solve(SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), vcat(p, 0.01),
-                                    noise_scaling = (@variables η1)[1]), ImplicitEM())
+                                  noise_scaling = (@variables η1)[1]), ImplicitEM())
         sol01 = solve(SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), vcat(p, 0.1),
-                                    noise_scaling = (@variables η1)[1]), ImplicitEM())
+                                 noise_scaling = (@variables η1)[1]), ImplicitEM())
         sol1 = solve(SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), vcat(p, 1.0),
                                 noise_scaling = (@variables η2)[1]), ImplicitEM())
         sol10 = solve(SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), vcat(p, 10.0),
-                                    noise_scaling = (@variables η3)[1]), ImplicitEM())
+                                 noise_scaling = (@variables η3)[1]), ImplicitEM())
         @test 2 * std(first.(sol001.u)[100:end]) < std(first.(sol01.u)[100:end])
         @test 2 * std(last.(sol001.u)[100:end]) < std(last.(sol01.u)[100:end])
         @test 2 * std(first.(sol01.u)[100:end]) < std(first.(sol1.u)[100:end])

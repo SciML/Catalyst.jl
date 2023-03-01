@@ -53,22 +53,22 @@ end
 # Test basic properties of networks.
 let
     basic_test(reaction_networks_standard[1], 10, [:X1, :X2, :X3],
-                [:p1, :p2, :p3, :k1, :k2, :k3, :k4, :d1, :d2, :d3])
+               [:p1, :p2, :p3, :k1, :k2, :k3, :k4, :d1, :d2, :d3])
     @test all_parameters(get_eqs(reaction_networks_standard[1])) ==
-            Set([:p1, :p2, :p3, :k1, :k2, :k3, :k4, :d1, :d2, :d3])
+          Set([:p1, :p2, :p3, :k1, :k2, :k3, :k4, :d1, :d2, :d3])
     basic_test(reaction_networks_standard[2], 3, [:X1, :X2], [:v1, :K1, :v2, :K2, :d])
     basic_test(reaction_networks_standard[3], 10, [:X1, :X2, :X3, :X4],
-                [:v1, :K1, :v2, :K2, :k1, :k2, :k3, :k4, :d])
+               [:v1, :K1, :v2, :K2, :k1, :k2, :k3, :k4, :d])
     basic_test(reaction_networks_standard[4], 8, [:X1, :X2, :X3, :X4],
-                [:v1, :K1, :v2, :K2, :v3, :K3, :v4, :K4, :d1, :d2, :d3, :d4])
+               [:v1, :K1, :v2, :K2, :v3, :K3, :v4, :K4, :d1, :d2, :d3, :d4])
     basic_test(reaction_networks_standard[5], 8, [:X1, :X2, :X3, :X4],
-                [:p, :k1, :k2, :k3, :k4, :k5, :k6, :d])
+               [:p, :k1, :k2, :k3, :k4, :k5, :k6, :d])
     @test all_parameters(get_eqs(reaction_networks_standard[5])) ==
-            Set([:p, :k1, :k2, :k3, :k4, :k5, :k6, :d])
+          Set([:p, :k1, :k2, :k3, :k4, :k5, :k6, :d])
     basic_test(reaction_networks_hill[1], 4, [:X1, :X2],
-                [:v1, :v2, :K1, :K2, :n1, :n2, :d1, :d2])
+               [:v1, :v2, :K1, :K2, :n1, :n2, :d1, :d2])
     basic_test(reaction_networks_constraint[1], 6, [:X1, :X2, :X3],
-                [:k1, :k2, :k3, :k4, :k5, :k6])
+               [:k1, :k2, :k3, :k4, :k5, :k6])
     basic_test(reaction_networks_real[1], 4, [:X, :Y], [:A, :B])
     basic_test(reaction_networks_weird[1], 2, [:X], [:p, :d])
     basic_test(reaction_networks_weird[2], 4, [:X, :Y, :Z], [:k1, :k2, :k3, :k4])
@@ -218,7 +218,7 @@ let
     end
     push!(identical_networks_3, reaction_networks_standard[9] => no_parameters_9)
     push!(parameter_sets,
-            [1.5, 1, 2, 0.01, 2.3, 1001, π, 42, 19.9, 999.99, sqrt(3.7), exp(1.9)])
+          [1.5, 1, 2, 0.01, 2.3, 1001, π, 42, 19.9, 999.99, sqrt(3.7), exp(1.9)])
 
     no_parameters_10 = @reaction_network begin
         0.01, ∅ ⟶ X1
@@ -281,7 +281,7 @@ let
         @test alleq(get_states(networks[1]), get_states(networks[2]))
         @test alleq(get_ps(networks[1]), get_ps(networks[2]))
         @test ModelingToolkit.get_systems(networks[1]) ==
-                ModelingToolkit.get_systems(networks[2])
+              ModelingToolkit.get_systems(networks[2])
         @test length(get_eqs(networks[1])) == length(get_eqs(networks[2]))
         for (e1, e2) in zip(get_eqs(networks[1]), get_eqs(networks[2]))
             @test isequal(e1.rate, e2.rate)
