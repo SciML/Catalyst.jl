@@ -336,6 +336,6 @@ let
     p_29 = symmap_to_varmap(rn29, [:X=>4.0, :Y=>3.0, :X2Y=>2.0, :Z=>1.0])
     defs29 = Dict(Iterators.flatten((u0_29, p_29)))
 
-    @test MT.defaults(rn27) == defs29
+    @test ModelingToolkit.defaults(rn27) == defs29
     @test merge(ModelingToolkit.defaults(rn28), defs28) == ModelingToolkit.defaults(rn27)
 end
