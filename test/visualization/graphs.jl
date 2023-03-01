@@ -1,7 +1,7 @@
 using Catalyst, Graphviz_jll
 
 ### Basic Tests ###
-let
+#let
     rn = @reaction_network begin
         α, S + I --> 2I
         β, I --> R
@@ -18,7 +18,7 @@ let
     rcgr = complexgraph(rn)
     fname = Base.Filesystem.tempname()
     savegraph(rcgr, "$fname.svg", "svg")
-end
+#end
 
 # these are broken in the jll, see
 # https://github.com/JuliaPackaging/Yggdrasil/issues/1428

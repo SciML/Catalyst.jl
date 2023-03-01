@@ -14,7 +14,7 @@ include("../test_networks.jl")
 ### Run Tests ###
 
 # Tests the plot() function on a few basic simulation solutions, checks that there are no errors.
-let
+#let
     plotting_test_networks = [
         reaction_networks_standard[6],
         reaction_networks_constraint[6],
@@ -32,4 +32,4 @@ let
                     SSAStepper())
         plot(sol)
     end
-end
+#end

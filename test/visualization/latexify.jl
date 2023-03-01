@@ -27,7 +27,7 @@ include("../test_networks.jl")
 
 ### Basic Tests ###
 
-let
+#let
     rn = @reaction_network begin
         hillr(X2,v1,K1,n1)*hill(X4,v1,K1,n1), ∅ → X1
         hill(X5,v2,K2,n2), ∅ → X2
@@ -82,9 +82,9 @@ let
     \mathrm{X6} &\xrightarrow{d6} \varnothing  
     \end{align*}
     ", "\r\n"=>"\n")
-end
+#end
 
-let
+#let
     rn = @reaction_network begin
         (hill(B, p_a, k, n), d_a), 0 ↔ A
         (p_b, d_b), 0 ↔ B
@@ -108,19 +108,19 @@ let
     3 \mathrm{B} &\xrightleftharpoons[r_{b}]{r_{a}} \mathrm{A}  
     \end{align*}
     ", "\r\n"=>"\n")
-end
+#end
 
 # Test empty system.
-let
+#let
     empty_rn = ReactionSystem(Reaction[]; name=:EmptySys)
     
     # Latexify.@generate_test latexify(empty_rn)
     @test latexify(empty_rn) == replace(
     raw"ReactionSystem EmptySys has no reactions or equations.", "\r\n"=>"\n")
-end
+#end
 
 # Test for https://github.com/SciML/Catalyst.jl/issues/473.
-let
+#let
     rn = @reaction_network begin
         k*Y, Y --> ∅
     end
@@ -131,21 +131,21 @@ let
     \mathrm{Y} &\xrightarrow{Y k} \varnothing  
     \end{align*}
     ", "\r\n"=>"\n")
-end
+#end
 
 
 ### Tests  `form` Option ###
 
 # Check for large number of networks.
-let
+#let
     for rn in reaction_networks_standard
         @test latexify(rn)==latexify(rn; form=:reactions)
         #@test_broken latexify(convert(ODESystem,rn)) == latexify(rn; form=:ode) # Slight difference due to some latexify weirdity. Both displays fine though
     end
-end
+#end
 
 # Check for specific network.
-let
+#let
     rn = @reaction_network begin
         (p,d), 0 <--> X
         (kB,kD), 2X <--> X2
@@ -170,12 +170,12 @@ let
 
     # Tests that erroneous form gives error.
     @test_throws ErrorException latexify(rn; form=:xxx)
-end
+#end
 
 
 ### Checks Reaction Network - Equations Combination ###
 
-let
+#let
     base_network = @reaction_network begin
         k*r, X --> 0
     end
@@ -198,4 +198,4 @@ let
     0 &= -1 - x\left( t \right)  
     \end{align*}
     ", "\r\n"=>"\n")
-end
+#end
