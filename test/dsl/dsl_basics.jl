@@ -1,10 +1,14 @@
 #! format: off
 
-using Catalyst, ModelingToolkit
+### Fetch Packages and Set Global Variables ###
 
-# naming tests
-@parameters k
+using Catalyst, ModelingToolkit
 @variables t
+
+### Naming Tests ###
+
+##let
+@parameters k
 @species A(t)
 rx = Reaction(k, [A], nothing)
 function rntest(rn, name)
@@ -54,23 +58,15 @@ emptyrntest(rn, :name)
 
 rn = @reaction_network $name
 emptyrntest(rn, :blah)
+#end
 
-# test variables that appear only in rates and aren't ps
-# are categorized as species
-rn = @reaction_network begin
-    @parameters k k2 n
-    @species A(t) B(t) C(t) D(t) H(t)
-    π*k*D*hill(B,k2,B*D*H,n), 3*A  --> 2*C
-end
-@parameters k k2 n
-@variables t
-@species A(t) B(t) C(t) D(t) H(t)
-@test issetequal([A,B,C,D,H], species(rn))
-@test issetequal([k,k2,n], parameters(rn))
 
-# test interpolation within the DSL
+### Test Interpolation Within the DSL ###
+
 @parameters α k k1 k2
 @species A(t) B(t) C(t) D(t)
+
+#let
 AA = A
 AAA = A^2 + B
 rn = @reaction_network rn begin
@@ -88,17 +84,22 @@ rn = @reaction_network rn begin
 end
 rn2 = ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn)
 @test rn == rn2
+#end
 
+#let
 BB = B; A2 = A
 rn = @reaction_network rn begin
     @parameters k1 k2
     (k1,k2), C + $A2 + $BB + $A2 <--> $BB + $BB
 end
 rn2 = ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
-                      Reaction(k2, [B], [C, A, B], [2], [1,2,1])],
-                     t; name=:rn)
+                    Reaction(k2, [B], [C, A, B], [2], [1,2,1])],
+                    t; name=:rn)
 @test rn == rn2
+#end
 
+#let
+AA = A
 kk1 = k^2*A
 kk2 = k1+k2
 rn = @reaction_network rn begin
@@ -107,6 +108,7 @@ rn = @reaction_network rn begin
 end
 rn2 = ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; name=:rn)
 @test rn == rn2
+#end
 
 @testset "make_reaction_system can be called from another module" begin
     ex = quote
@@ -118,6 +120,7 @@ rn2 = ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; nam
     @test eval(Catalyst.make_reaction_system(ex)) isa ReactionSystem
 end
 
+#let
 rx = @reaction k*h, A + 2*B --> 3*C + D
 @parameters k h
 @species A(t) B(t) C(t) D(t)
@@ -128,8 +131,13 @@ V  = A
 rx = @reaction b+$ex, 2*$V + C--> ∅
 @parameters b
 @test rx == Reaction(b+ex, [A,C], nothing, [2,1], nothing)
+#end
 
-### test floating point stoichiometry work ###
+
+### Other tests ###
+
+# Test floating point stoichiometry work.
+#let
 @parameters k
 @species B(t) C(t) D(t)
 rx1 = Reaction(k,[B,C],[B,D], [2.5,1],[3.5, 2.5])
@@ -144,30 +152,46 @@ rn = @reaction_network mixedsys begin
     2*k, 2.5*B --> 2*D
 end
 @test rn == mixedsys
+#end
 
-# test species have the right metadata via the DSL
-let
-    rn = @reaction_network begin
-        k, 2*A + B --> C
-    end
-    @test issetequal(states(rn), species(rn))
-    @test all(isspecies, species(rn))
-
-    rn2 = @reaction_network begin
-        @species A(t) = 1 B(t) = 2 [isbcspecies = true]
-        k, A + 2*B --> 2*B
-    end
-    @variables t
-    @unpack A,B = rn2
-    D = Differential(t)
-    eq = D(B) ~ -B
-    @named osys = ODESystem([eq], t)
-    @named rn2 = extend(osys, rn2)
-    @test issetequal(states(rn2), species(rn2))
-    @test all(isspecies, species(rn))
-    @test Catalyst.isbc(ModelingToolkit.value(B))
-    @test Catalyst.isbc(ModelingToolkit.value(A)) == false
-    osys2 = convert(ODESystem, rn2)
-    @test issetequal(states(osys2), states(rn2))
-    @test length(equations(osys2)) == 2
+# Test variables that appear only in rates and aren't ps
+# are categorized as species.
+#let
+rn = @reaction_network begin
+    @parameters k k2 n
+    @species A(t) B(t) C(t) D(t) H(t)
+    π*k*D*hill(B,k2,B*D*H,n), 3*A  --> 2*C
 end
+@parameters k k2 n
+@variables t
+@species A(t) B(t) C(t) D(t) H(t)
+@test issetequal([A,B,C,D,H], species(rn))
+@test issetequal([k,k2,n], parameters(rn))
+#end
+
+# Test species have the right metadata via the DSL.
+#let
+rn = @reaction_network begin
+    k, 2*A + B --> C
+end
+@test issetequal(states(rn), species(rn))
+@test all(isspecies, species(rn))
+
+rn2 = @reaction_network begin
+    @species A(t) = 1 B(t) = 2 [isbcspecies = true]
+    k, A + 2*B --> 2*B
+end
+@variables t
+@unpack A,B = rn2
+D = Differential(t)
+eq = D(B) ~ -B
+@named osys = ODESystem([eq], t)
+@named rn2 = extend(osys, rn2)
+@test issetequal(states(rn2), species(rn2))
+@test all(isspecies, species(rn))
+@test Catalyst.isbc(ModelingToolkit.value(B))
+@test Catalyst.isbc(ModelingToolkit.value(A)) == false
+osys2 = convert(ODESystem, rn2)
+@test issetequal(states(osys2), states(rn2))
+@test length(equations(osys2)) == 2
+#end

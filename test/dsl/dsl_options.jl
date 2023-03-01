@@ -1,10 +1,13 @@
 #! format: off
 
+### Fetch Packages and Set Global Variables ###
 using Catalyst, ModelingToolkit
-const MT = ModelingToolkit
+@variables t
 
-### Test creating networks with/without options. ###
+### Run Tests ###
 
+# Test creating networks with/without options.
+#let
 @reaction_network begin (k1, k2), A <--> B end
 @reaction_network begin
     @parameters k1 k2
@@ -99,12 +102,13 @@ n10 = @reaction_network name begin
     (k1, k2), A <--> B
 end
 @test all(==(n1), (n2, n3, n4, n5, n6, n7, n8, n9, n10))
+#end
 
-### Tests that when either @species or @parameters is given, the other is infered properly. ###
+# Tests that when either @species or @parameters is given, the other is infered properly. 
+#let
 rn1 = @reaction_network begin
     k*X, A + B --> 0
 end
-@variables t
 @test issetequal(species(rn1), @species A(t) B(t))
 @test issetequal(parameters(rn1), @parameters k X)
 
@@ -136,30 +140,30 @@ rn5 = @reaction_network begin
 end
 @test issetequal(species(rn5), @species A(t))
 @test issetequal(parameters(rn5), @parameters k B X)
+#end
 
-# test inferring with stoichiometry symbols and interpolation
-let
-    @parameters k g h gg X y [isconstantspecies = true]
-    t = Catalyst.DEFAULT_IV
-    @species A(t) B(t) BB(t) C(t)
+# Test inferring with stoichiometry symbols and interpolation.
+#let
+@parameters k g h gg X y [isconstantspecies = true]
+t = Catalyst.DEFAULT_IV
+@species A(t) B(t) BB(t) C(t)
 
-    rni = @reaction_network inferred begin
-        $k*X, $y + g*A + h*($gg)*B + $BB * C --> k*C
-    end
-    @test issetequal(species(rni), [A, B, BB, C])
-    @test issetequal(parameters(rni), [k, g, h, gg, X, y])
-
-    rnii = @reaction_network inferred begin
-        @species BB(t)
-        @parameters y [isconstantspecies = true]
-        k*X, y + g*A + h*($gg)*B + BB * C --> k*C
-    end
-    @test rnii == rni
+rni = @reaction_network inferred begin
+    $k*X, $y + g*A + h*($gg)*B + $BB * C --> k*C
 end
+@test issetequal(species(rni), [A, B, BB, C])
+@test issetequal(parameters(rni), [k, g, h, gg, X, y])
 
-### Tests that when some species or parameters are left out, the others are set properly. ###
-@variables t
+rnii = @reaction_network inferred begin
+    @species BB(t)
+    @parameters y [isconstantspecies = true]
+    k*X, y + g*A + h*($gg)*B + BB * C --> k*C
+end
+@test rnii == rni
+#end
 
+# Tests that when some species or parameters are left out, the others are set properly.
+#let
 rn6 = @reaction_network begin
     @species A(t)
     k*X, A + B --> 0
@@ -214,9 +218,10 @@ rn11 = @reaction_network begin
 end
 @test issetequal(species(rn11), @species X1(t) A1(t) A2(t) B1(t) B2(t))
 @test issetequal(parameters(rn11), @parameters k1 k2 X2)
+#end
 
-
-### Checks that some created networks are identical. ###
+##Checks that some created networks are identical.
+#let
 rn12 = @reaction_network name begin (k1, k2), A <--> B end
 rn13 = @reaction_network name begin
     @parameters k1 k2
@@ -232,9 +237,10 @@ rn15 = @reaction_network name begin
     (k1, k2), A <--> B
 end
 @test all(==(rn12), (rn13, rn14, rn15))
+#end
 
-
-### Checks that the rights things are put in vectors. ###
+# Checks that the rights things are put in vectors. 
+#let
 rn18 = @reaction_network name begin
     @parameters p d1 d2
     @species A(t) B(t)
@@ -283,8 +289,10 @@ end
 @species X(t) Y(t) Y2(t)
 @test issetequal(parameters(rn22),[v K k1 k2 d S])
 @test issetequal(species(rn22), [X Y Y2])
+#end
 
-#### Tests that defaults work. ###
+# Tests that defaults work. 
+#let
 rn26 = @reaction_network name begin
     @parameters p=1.0 d1 d2=5
     @species A(t) B(t)=4
@@ -328,5 +336,6 @@ u0_29 = symmap_to_varmap(rn29, [:p1=>1.0, :p2=>2.0, :k1=>4.0, :k2=>5.0, :v=>8.0,
 p_29 = symmap_to_varmap(rn29, [:X=>4.0, :Y=>3.0, :X2Y=>2.0, :Z=>1.0])
 defs29 = Dict(Iterators.flatten((u0_29, p_29)))
 
-@test MT.defaults(rn27) == defs29
-@test merge(MT.defaults(rn28), defs28) == MT.defaults(rn27)
+@test ModelingToolkit.defaults(rn27) == defs29
+@test merge(ModelingToolkit.defaults(rn28), defs28) == ModelingToolkit.defaults(rn27)
+#end

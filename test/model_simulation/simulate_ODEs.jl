@@ -1,14 +1,20 @@
-### Fetch required packages and reaction networks ###
+### Fetch Packages and Reaction Networks ###
+
+# Fetch packages.
 using Catalyst, OrdinaryDiffEq, Random, Test
 using ModelingToolkit: get_states, get_ps
-include("test_networks.jl")
 
+# Sets rnd number.
 using StableRNGs
 rng = StableRNG(12345)
 
-### Checks the solutions of specific problems ###
+# Fetch test networks.
+include("../test_networks.jl")
+
+### Compares to Known Solution ###
 
 # Exponential decay, should be identical to the (known) analytical solution.
+#let
 exponential_decay = @reaction_network begin d, X → ∅ end
 
 for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
@@ -16,13 +22,15 @@ for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
     p = factor * rand(rng, length(get_ps(exponential_decay)))
     prob = ODEProblem(exponential_decay, u0, (0.0, 100 / factor), p)
     sol = solve(prob, Rosenbrock23(), saveat = range(0.0, 100 / factor, length = 101))
-    analytic_sol = map(t -> u0[1] * exp(-p[1] * t), range(0.0, 100 / factor, length = 101))
+    analytic_sol = map(t -> u0[1] * exp(-p[1] * t),
+                        range(0.0, 100 / factor, length = 101))
     @test all(abs.(first.(sol.u) .- analytic_sol) .< 0.1)
 end
+#end
 
-# Networks with know equilibrium
+# Networks with know equilibrium.
+#let
 known_equilibrium = @reaction_network begin
-    @parameters k1 k2 k3 k4 k5 k6 k7 k8
     (k1, k2), X1 ↔ X2
     (k3, k4), X3 + X4 ↔ X5
     (k5, k6), 2X6 ↔ 3X7
@@ -35,15 +43,19 @@ for factor in [1e-1, 1e0, 1e1, 1e2, 1e3]
     prob = ODEProblem(known_equilibrium, u0, (0.0, 1000000.0), p)
     sol = solve(prob, Rosenbrock23())
     @test abs.(sol.u[end][1] / sol.u[end][2] - p[2] / p[1]) < 10000 * eps()
-    @test abs.(sol.u[end][3] * sol.u[end][4] / sol.u[end][5] - p[4] / p[3]) < 10000 * eps()
+    @test abs.(sol.u[end][3] * sol.u[end][4] / sol.u[end][5] - p[4] / p[3]) <
+            10000 * eps()
     @test abs.((sol.u[end][6]^2 / factorial(2)) / (sol.u[end][7]^3 / factorial(3)) -
-               p[6] / p[5]) < 1e-8
+                p[6] / p[5]) < 1e-8
     @test abs.(sol.u[end][8] - p[7] / p[8]) < 10000 * eps()
 end
+#end
 
-### Compares to the manually calcualted function ###
+### Compares to Known ODE Function ###
+
 identical_networks_1 = Vector{Pair}()
 
+#let
 function real_functions_1(du, u, p, t)
     X1, X2, X3 = u
     p1, p2, p3, k1, k2, k3, k4, d1, d2, d3 = p
@@ -101,8 +113,10 @@ for (i, networks) in enumerate(identical_networks_1)
         @test all(abs.(hcat((sol1.u .- sol2.u)...)) .< 1e-7)
     end
 end
+#end
 
-### Tries solving a large number of problem, ensuring there are no errors. ###
+### Checks Simulations Don't Error ###
+
 for (i, network) in enumerate(reaction_networks_all)
     (i % 5 == 0) && println("Iteration " * string(i) * " at line 104 in file solve_ODEs.jl")
     for factor in [1e-1, 1e0, 1e1]
@@ -114,8 +128,10 @@ for (i, network) in enumerate(reaction_networks_all)
     end
 end
 
-### No parameter test ###
+### Other Tests ###
 
+# No parameter test.
+#let
 no_param_network = @reaction_network begin (1.5, 2), ∅ ↔ X end
 for factor in [1e0, 1e1, 1e2]
     u0 = factor * rand(rng, length(get_states(no_param_network)))
@@ -123,8 +139,10 @@ for factor in [1e0, 1e1, 1e2]
     sol = solve(prob, Rosenbrock23())
     @test abs.(sol.u[end][1] - 1.5 / 2) < 1e-8
 end
+#end
 
-### test solving with floating point stoichiometry ###
+# Test solving with floating point stoichiometry.
+#let
 function oderhs(du, u, p, t)
     du[1] = -2.5 * p[1] * u[1]^2.5
     du[2] = 3 * p[1] * u[1]^2.5
@@ -140,3 +158,4 @@ u = rand(2)
 oprob.f(du1, u, [1.0], 0.0)
 oderhs(du2, u, [1.0], 0.0)
 @test isapprox(du1, du2, rtol = 1e3 * eps())
+#end

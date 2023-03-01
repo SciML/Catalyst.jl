@@ -2,7 +2,10 @@
 using ModelingToolkit, Catalyst, LinearAlgebra, OrdinaryDiffEq, Test
 using SciMLNLSolve
 
-# Repressilator model
+### Run Tests ###
+
+# Repressilator model.
+#let
 @parameters t α₀ α K n δ β μ
 @species m(t) P(t) R(t)
 rxs = [
@@ -17,7 +20,7 @@ specs = [m, P, R]
 pars = [α₀, α, K, n, δ, β, μ]
 @named rs = ReactionSystem(rxs, t, specs, pars)
 
-# using ODESystem components
+# Using ODESystem components.
 @named sys₁ = convert(ODESystem, rs; include_zero_odes = false)
 @named sys₂ = convert(ODESystem, rs; include_zero_odes = false)
 @named sys₃ = convert(ODESystem, rs; include_zero_odes = false)
@@ -40,7 +43,7 @@ tspan = (0.0, 100000.0)
 oprob = ODEProblem(oderepressilator, u₀, tspan, pvals)
 sol = solve(oprob, Tsit5())
 
-# hardcoded network
+# Hardcoded network.
 function repress!(f, y, p, t)
     α = p.α
     α₀ = p.α₀
@@ -58,14 +61,14 @@ function repress!(f, y, p, t)
     nothing
 end
 ps = (α₀ = 5e-4, α = 0.5, K = 40.0, n = 2, δ = (log(2) / 120), β = (20 * log(2) / 120),
-      μ = (log(2) / 600))
+    μ = (log(2) / 600))
 u0 = [0.0, 0.0, 0.0, 20.0, 0.0, 0.0]
 oprob2 = ODEProblem(repress!, u0, tspan, ps)
 sol2 = solve(oprob2, Tsit5())
 tvs = 0:1:tspan[end]
 @test all(isapprox.(sol(tvs, idxs = sys₁.P), sol2(tvs, idxs = 4), atol = 1e-4))
 
-# using ReactionSystem components
+# Using ReactionSystem components.
 @named sys₁ = ReactionSystem(rxs, t, specs, pars)
 @named sys₂ = ReactionSystem(rxs, t, specs, pars)
 @named sys₃ = ReactionSystem(rxs, t, specs, pars)
@@ -80,11 +83,11 @@ oprob = ODEProblem(sys2, u₀, tspan, pvals)
 sol = solve(oprob, Tsit5())
 @test all(isapprox.(sol(tvs, idxs = sys₁.P), sol2(tvs, idxs = 4), atol = 1e-4))
 
-# test conversion to nonlinear system
+# Test conversion to nonlinear system.
 @named nsys = NonlinearSystem(connections, [], [])
 @named ssrepressilator = ReactionSystem(t; systems = [nsys, sys₁, sys₂, sys₃])
 @named nlrepressilator = convert(NonlinearSystem, ssrepressilator,
-                                 include_zero_odes = false)
+                                include_zero_odes = false)
 sys2 = structural_simplify(nlrepressilator)
 @test length(equations(sys2)) <= 6
 nlprob = NonlinearProblem(sys2, u₀, pvals)
@@ -94,7 +97,7 @@ sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
 @test sol[sys₁.m]≈sol[sys₃.m] atol=1e-7
 @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
 
-# flattening
+# Flattening.
 fsys = Catalyst.flatten(ssrepressilator)
 @named nlrepressilator = convert(NonlinearSystem, fsys, include_zero_odes = false)
 sys2 = structural_simplify(nlrepressilator)
@@ -106,12 +109,12 @@ sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
 @test sol[sys₁.m]≈sol[sys₃.m] atol=1e-7
 @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
 
-# test constraints
+# Test constraints.
 connections = [sys₁.R ~ sys₃.P,
     sys₂.R ~ sys₁.P,
     sys₃.R ~ sys₂.P]
 @named csys = NonlinearSystem(connections, [sys₁.R, sys₃.P, sys₂.R, sys₁.P, sys₃.R, sys₂.P],
-                              [])
+                            [])
 @named repressilator2 = ReactionSystem(connections, t; systems = [sys₁, sys₂, sys₃])
 @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes = false)
 sys2 = structural_simplify(nlrepressilator)
@@ -123,8 +126,8 @@ sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
 @test sol[sys₁.m]≈sol[sys₃.m] atol=1e-7
 @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
 
-# test constraint system variables are accessible through Base.getproperty
-# even if they do not appear in the original ReactionSystem
+# Test constraint system variables are accessible through Base.getproperty
+# even if they do not appear in the original ReactionSystem.
 network = @reaction_network
 @parameters a
 @variables t x(t)
@@ -139,19 +142,19 @@ system = convert(NonlinearSystem, extended)
 @test length(equations(system)) == 1
 @test equations(system) == equations(constraints)
 
-# test that the namespacing still works if the extended system takes the name
-# of the ReactionSystem
+# Test that the namespacing still works if the extended system takes the name
+# of the ReactionSystem.
 extended = extend(constraints, network; name = nameof(network))
 @test isequal(extended.a, ModelingToolkit.namespace_expr(a, extended))
 @test isequal(extended.x, ModelingToolkit.namespace_expr(x, extended))
-# and after conversion to an AbstractSystem
+# and after conversion to an AbstractSystem.
 system = convert(NonlinearSystem, extended)
 @test isequal(system.a, ModelingToolkit.namespace_expr(a, system))
 @test isequal(system.x, ModelingToolkit.namespace_expr(x, system))
 @test length(equations(system)) == 1
 @test Set(equations(system)) == Set(equations(constraints))
 
-# test that extending a system with constraints correctly handles default values
+# Test that extending a system with constraints correctly handles default values.
 network = @reaction_network
 subnetwork = @reaction_network
 @parameters a=1 b=2
@@ -177,8 +180,8 @@ defs = ModelingToolkit.defaults(extended)
 @test get(defs, subextended.b, nothing) == 2
 @test isequal(get(defs, subextended.y, nothing), subextended.b)
 
-# test that the observables of constraint systems are accessible after
-# extending a ReactionSystem
+# Test that the observables of constraint systems are accessible after
+# extending a ReactionSystem.
 network = @reaction_network
 subnetwork = @reaction_network
 @parameters a b
@@ -197,7 +200,7 @@ odesystem = convert(ODESystem, extended)
 nlsystem = convert(NonlinearSystem, extended)
 
 obs = Set([ModelingToolkit.observed(constraints);
-           [ModelingToolkit.namespace_equation(o, subextended)
+        [ModelingToolkit.namespace_equation(o, subextended)
             for o in ModelingToolkit.observed(subconstraints)]])
 @test Set(ModelingToolkit.observed(extended)) == obs
 @test Set(ModelingToolkit.observed(odesystem)) == obs
@@ -212,20 +215,20 @@ odesystem = convert(ODESystem, extended)
 nlsystem = convert(NonlinearSystem, extended)
 
 obs = Set([ModelingToolkit.observed(constraints);
-           [ModelingToolkit.namespace_equation(o, subextended)
+        [ModelingToolkit.namespace_equation(o, subextended)
             for o in ModelingToolkit.observed(subconstraints)]])
 @test Set(ModelingToolkit.observed(extended)) == obs
 @test Set(ModelingToolkit.observed(odesystem)) == obs
 @test Set(ModelingToolkit.observed(nlsystem)) == obs
 
-# test can make ODESystem
+# Test can make ODESystem.
 @named oderepressilator = convert(ODESystem, repressilator2, include_zero_odes = false)
 sys2 = structural_simplify(oderepressilator)  # FAILS currently
 oprob = ODEProblem(sys2, u₀, tspan, pvals)
 sol = solve(oprob, Tsit5())
 @test all(isapprox.(sol(tvs, idxs = sys₁.P), sol2(tvs, idxs = 4), atol = 1e-4))
 
-# test extending with NonlinearSystem
+# Test extending with NonlinearSystem.
 @named repressilator2 = ReactionSystem(t; systems = [sys₁, sys₂, sys₃])
 repressilator2 = Catalyst.flatten(repressilator2)
 repressilator2 = extend(csys, repressilator2)
@@ -238,10 +241,12 @@ sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
 @test sol[sys₁.m]≈sol[sys₂.m] atol=1e-7
 @test sol[sys₁.m]≈sol[sys₃.m] atol=1e-7
 @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
+#end
 
-# TODO add conversion to SDE and JumpSystems once supported
+# TODO add conversion to SDE and JumpSystems once supported.
 
-# adding algebraic constraints
+# Adding algebraic constraints.
+#let
 @parameters t, r₊, r₋, β
 @species A(t), B(t), C(t), D(t)
 rxs1 = [Reaction(r₊, [A, B], [C])]
@@ -271,7 +276,7 @@ oprob = ODEProblem(structural_simplify(osys), u₀, (0.0, 10.0), p)
 sol = solve(oprob, Tsit5())
 @test isapprox(0, norm(sol[ns.D] .- 2 * sol[A] - 3 * sol[B]), atol = (100 * eps()))
 
-# test API functions for composed model
+# Test API functions for composed model.
 @test issetequal(species(rs), [A, B, C])
 @test issetequal(states(rs), [A, B, C, ns.D])
 @test issetequal(reactionparams(rs), [r₊, r₋])
@@ -279,9 +284,9 @@ sol = solve(oprob, Tsit5())
 @test issetequal(reactions(rs), union(rxs1, rxs2))
 @test issetequal(filter(eq -> eq isa Reaction, equations(rs)), union(rxs1, rxs2))
 @test issetequal(filter(eq -> eq isa Equation, equations(rs)),
-                 [ModelingToolkit.namespace_equation(nseqs[1], ns)])
+                [ModelingToolkit.namespace_equation(nseqs[1], ns)])
 
-# check several levels of nesting namespace and filter ok for the API functions
+# Check several levels of nesting namespace and filter ok for the API functions.
 @parameters p1, p2a, p2b, p3a, p3b
 @variables t
 @species A1(t), A2a(t), A2b(t), A3a(t), A3b(t)
@@ -303,7 +308,7 @@ eqs3 = [ParentScope(A2a) ~ p3b * A3b]
 @named rs1 = ReactionSystem(rxs1, t, [A1], [p1], systems = [rs2, ns2];
                             combinatoric_ratelaws = false)
 
-# namespaced reactions
+# Namespaced reactions.
 nrxs1 = [Reaction(p1, [A1], nothing)]
 nrxs2 = [Reaction(rs2.p2a, [rs2.A2a], nothing), Reaction(rs2.p2b, [A1], nothing)]
 neqs2 = [0 ~ p1 * ns2.A2b - A1]
@@ -323,8 +328,10 @@ eqs = vcat(nrxs1, nrxs2, neqs2, nrxs3, neqs3)
 @test issetequal(eqs, equations(rs1))
 @test Catalyst.combinatoric_ratelaws(rs1)
 @test Catalyst.combinatoric_ratelaws(Catalyst.flatten(rs1))
+#end
 
-# test throw error if there are ODE constraints and convert to NonlinearSystem
+# Test throw error if there are ODE constraints and convert to NonlinearSystem.
+#let
 rn = @reaction_network rn begin
     @parameters k1 k2
     (k1, k2), A <--> B
@@ -339,14 +346,14 @@ rn2 = extend(osys, rn)
 rnodes = convert(ODESystem, rn2)
 @test_throws ErrorException convert(NonlinearSystem, rn2)
 
-# ensure right number of equations are generated
+# Ensure right number of equations are generated.
 @variables G(t)
 eqs = [D(G) ~ -G]
 @named osys2 = ODESystem(eqs, t)
 rn3 = compose(rn2, osys2)
 @test length(equations(rn3)) == 4
 
-# check conversions work with algebraic constraints
+# Check conversions work with algebraic constraints.
 eqs = [0 ~ -a * A + C, 0 ~ -b * C + a * A]
 @named nlsys = NonlinearSystem(eqs, [A, C], [a, b])
 rn2 = extend(nlsys, rn)
@@ -356,9 +363,12 @@ rnnlsys = convert(NonlinearSystem, rn2)
 rn2 = extend(nlsys, rn)
 rnodes = convert(ODESystem, rn2)
 rnnlsys = convert(NonlinearSystem, rn2)
+#end
 
 # https://github.com/SciML/ModelingToolkit.jl/issues/1274
+#let
 @parameters p1 p2
+@variables t
 @species A(t)
 rxs1 = [Reaction(p1, [A], nothing)]
 rxs2 = [Reaction(p2, [ParentScope(A)], nothing)]
@@ -367,76 +377,77 @@ rxs2 = [Reaction(p2, [ParentScope(A)], nothing)]
 rsc = compose(rs1, [rs2])
 orsc = convert(ODESystem, rsc)
 @test length(equations(orsc)) == 1
+#end
 
-# test constraint system symbols can be set via setdefaults!
-let
-    @parameters b
-    @variables t
-    @species V(t) [isbcspecies = true]
-    rn = @reaction_network begin
-        @parameters k
-        k/$V, A + B --> C
-    end
-    Dt = Differential(t)
-    @named csys = ODESystem([Dt(V) ~ -b * V], t)
-    @named fullrn = extend(csys, rn)
-    setdefaults!(fullrn, [:b => 2.0])
-    @unpack b = fullrn
-    @test haskey(ModelingToolkit.defaults(fullrn), b)
-    @test ModelingToolkit.defaults(fullrn)[b] == 2.0
+# Test constraint system symbols can be set via setdefaults!.
+#let
+@parameters b
+@variables t
+@species V(t) [isbcspecies = true]
+rn = @reaction_network begin
+    @parameters k
+    k/$V, A + B --> C
 end
+Dt = Differential(t)
+@named csys = ODESystem([Dt(V) ~ -b * V], t)
+@named fullrn = extend(csys, rn)
+setdefaults!(fullrn, [:b => 2.0])
+@unpack b = fullrn
+@test haskey(ModelingToolkit.defaults(fullrn), b)
+@test ModelingToolkit.defaults(fullrn)[b] == 2.0
+#end
 
 # https://github.com/SciML/Catalyst.jl/issues/545
-let
-    rn_AB = @reaction_network AB begin
-        @parameters k1 n
-        k1, A --> n*B
-    end
-
-    rn_BC = @reaction_network BC begin
-        @parameters k2
-        k2, B --> C
-    end
-
-    @variables t
-    @named rs = ReactionSystem(t; systems = [rn_AB, rn_BC])
-    sts = states(rs)
-    @test issetequal(sts, (@species AB₊A(t) AB₊B(t) BC₊B(t) BC₊C(t)))
-    ps = parameters(rs)
-    @test issetequal(ps, (@parameters AB₊k1 AB₊n BC₊k2))
-    rxs = reactions(rs)
-    @parameters AB₊n
-    rxs2 = Reaction[(@reaction AB₊k1, AB₊A --> $(AB₊n)*AB₊B), (@reaction BC₊k2, BC₊B --> BC₊C)]
-    @test (length(rxs) == length(rxs2)) && issubset(rxs, rxs2)
+#let
+rn_AB = @reaction_network AB begin
+    @parameters k1 n
+    k1, A --> n*B
 end
 
-# test ordering of states and equations
-let
-    @parameters k1 k2 k3
-    @variables t V1(t) V2(t) V3(t)
-    @species A1(t) A2(t) A3(t) B1(t) B2(t) B3(t)
-    D = Differential(t)
-    rx1 = Reaction(k1*V1, [A1], [B1])
-    eq1 = D(V1) ~ -V1
-    @named rs1 = ReactionSystem([rx1, eq1], t)
-    rx2 = Reaction(k2*V2, [A2], [B2])
-    eq2 = D(V2) ~ -V2
-    @named rs2 = ReactionSystem([rx2, eq2], t)
-    rx3 = Reaction(k3*V3, [A3], [B3])
-    eq3 = D(V3) ~ -V3
-    @named rs3 = ReactionSystem([rx3, eq3], t)
-    @named rs23 = compose(rs2, [rs3])
-    @test length(states(rs23)) == 6
-    @test all(p -> isequal(p[1], p[2]), zip(states(rs23)[1:4], species(rs23)))
-    @test length(equations(rs23)) == 4
-    @test all(p -> isequal(p[1], p[2]), zip(equations(rs23)[1:2], reactions(rs23)))
-    @named rs123 = compose(rs1, [rs23])
-    @test length(states(rs123)) == 9
-    @test all(p -> isequal(p[1], p[2]), zip(states(rs123)[1:6], species(rs123)))
-    @test length(equations(rs123)) == 6
-    @test length(reactions(rs123)) == 3
-    @test all(p -> isequal(p[1], p[2]), zip(equations(rs123)[1:3], reactions(rs123)))
-
-    @test numspecies(rs123) == 6
-    @test issetequal(nonspecies(rs123), [V1, rs23.V2, rs23.rs3.V3])
+rn_BC = @reaction_network BC begin
+    @parameters k2
+    k2, B --> C
 end
+
+@variables t
+@named rs = ReactionSystem(t; systems = [rn_AB, rn_BC])
+sts = states(rs)
+@test issetequal(sts, (@species AB₊A(t) AB₊B(t) BC₊B(t) BC₊C(t)))
+ps = parameters(rs)
+@test issetequal(ps, (@parameters AB₊k1 AB₊n BC₊k2))
+rxs = reactions(rs)
+@parameters AB₊n
+rxs2 = Reaction[(@reaction AB₊k1, AB₊A --> $(AB₊n)*AB₊B), (@reaction BC₊k2, BC₊B --> BC₊C)]
+@test (length(rxs) == length(rxs2)) && issubset(rxs, rxs2)
+#end
+
+# Test ordering of states and equations.
+#let
+@parameters k1 k2 k3
+@variables t V1(t) V2(t) V3(t)
+@species A1(t) A2(t) A3(t) B1(t) B2(t) B3(t)
+D = Differential(t)
+rx1 = Reaction(k1*V1, [A1], [B1])
+eq1 = D(V1) ~ -V1
+@named rs1 = ReactionSystem([rx1, eq1], t)
+rx2 = Reaction(k2*V2, [A2], [B2])
+eq2 = D(V2) ~ -V2
+@named rs2 = ReactionSystem([rx2, eq2], t)
+rx3 = Reaction(k3*V3, [A3], [B3])
+eq3 = D(V3) ~ -V3
+@named rs3 = ReactionSystem([rx3, eq3], t)
+@named rs23 = compose(rs2, [rs3])
+@test length(states(rs23)) == 6
+@test all(p -> isequal(p[1], p[2]), zip(states(rs23)[1:4], species(rs23)))
+@test length(equations(rs23)) == 4
+@test all(p -> isequal(p[1], p[2]), zip(equations(rs23)[1:2], reactions(rs23)))
+@named rs123 = compose(rs1, [rs23])
+@test length(states(rs123)) == 9
+@test all(p -> isequal(p[1], p[2]), zip(states(rs123)[1:6], species(rs123)))
+@test length(equations(rs123)) == 6
+@test length(reactions(rs123)) == 3
+@test all(p -> isequal(p[1], p[2]), zip(equations(rs123)[1:3], reactions(rs123)))
+
+@test numspecies(rs123) == 6
+@test issetequal(nonspecies(rs123), [V1, rs23.V2, rs23.rs3.V3])
+#end

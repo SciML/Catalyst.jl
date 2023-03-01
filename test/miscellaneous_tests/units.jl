@@ -3,6 +3,9 @@
 using Catalyst, Unitful, Test
 const MT = ModelingToolkit
 
+### Run Tests ###
+
+#let
 @parameters α [unit=u"μM/s"] β [unit=u"s"^(-1)] γ [unit=u"μM*s"^(-1)]
 @variables t [unit=u"s"]
 @species A(t) [unit=u"μM"] B(t) [unit=u"μM"] C(t) [unit=u"μM"]
@@ -15,10 +18,10 @@ rs = ReactionSystem(rxs, t, [A,B,C], [α,β,γ], name=Symbol("unittester"))
 odeunit = u"μM/s"
 #jumpunit = u"s^(-1)"
 for rx in reactions(rs)
-    @test MT.get_unit(oderatelaw(rx)) == odeunit
+@test MT.get_unit(oderatelaw(rx)) == odeunit
 
-    # we don't currently convert units, so they will be the same as for ODEs
-    @test MT.get_unit(jumpratelaw(rx)) == odeunit
+# we don't currently convert units, so they will be the same as for ODEs
+@test MT.get_unit(jumpratelaw(rx)) == odeunit
 end
 
 @test_nowarn convert(ODESystem,rs)
@@ -47,3 +50,4 @@ badrx3 = Reaction(α, [A,D], [B])
 @test (@test_logs (:warn, ) match_mode=:any ModelingToolkit.validate(badrx3)) == false
 badrx4 = Reaction(α + β, [A], [B])
 @test (@test_logs (:warn, ) match_mode=:any ModelingToolkit.validate(badrx4)) == false
+#end

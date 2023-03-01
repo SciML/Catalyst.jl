@@ -1,12 +1,19 @@
-### Fetch required packages and reaction networks ###
+### Fetch Packages and Reaction Networks ###
+
+# Fetch packages.
 using Catalyst, JumpProcesses, Random, Statistics, Test, SciMLBase
 using ModelingToolkit: get_states, get_ps
-include("test_networks.jl")
 
+# Sets rnd number.
 using StableRNGs
 rng = StableRNG(12345)
 
-### Compares to the manually calcualted function ###
+# Fetch test networks.
+include("../test_networks.jl")
+
+### Compares to Manually Calcualted Function ###
+
+#let
 identical_networks = Vector{Pair}()
 
 rate_1_1(u, p, t) = p[1]
@@ -33,7 +40,8 @@ jump_1_5 = ConstantRateJump(rate_1_5, affect_1_5!)
 jump_1_6 = ConstantRateJump(rate_1_6, affect_1_6!)
 jump_1_7 = ConstantRateJump(rate_1_7, affect_1_7!)
 jump_1_8 = ConstantRateJump(rate_1_8, affect_1_8!)
-jumps_1 = (jump_1_1, jump_1_2, jump_1_3, jump_1_4, jump_1_5, jump_1_6, jump_1_7, jump_1_8)
+jumps_1 = (jump_1_1, jump_1_2, jump_1_3, jump_1_4, jump_1_5, jump_1_6, jump_1_7,
+            jump_1_8)
 push!(identical_networks, reaction_networks_standard[6] => jumps_1)
 
 rate_2_1(u, p, t) = p[1] / 10 + u[1]^p[3] / (u[1]^p[3] + p[2]^p[3])
@@ -44,8 +52,12 @@ rate_2_5(u, p, t) = p[7] * u[1]
 rate_2_6(u, p, t) = p[7] * u[2]
 rate_2_7(u, p, t) = p[7] * u[3]
 affect_2_1!(integrator) = (integrator.u[1] += 1; integrator.u[2] += 1)
-affect_2_2!(integrator) = (integrator.u[1] -= 1; integrator.u[2] -= 1; integrator.u[3] += 1)
-affect_2_3!(integrator) = (integrator.u[1] += 1; integrator.u[2] += 1; integrator.u[3] -= 1)
+function affect_2_2!(integrator)
+    (integrator.u[1] -= 1; integrator.u[2] -= 1; integrator.u[3] += 1)
+end
+function affect_2_3!(integrator)
+    (integrator.u[1] += 1; integrator.u[2] += 1; integrator.u[3] -= 1)
+end
 affect_2_4!(integrator) = (integrator.u[3] -= 1; integrator.u[1] += 1)
 affect_2_5!(integrator) = (integrator.u[1] -= 1)
 affect_2_6!(integrator) = (integrator.u[2] -= 1)
@@ -86,10 +98,12 @@ for (i, networks) in enumerate(identical_networks)
         (i == 3) && (factor > 1e-1) && continue   # Large numbers seems to crash it.
         u0 = rand(rng, 1:Int64(factor * 100), length(get_states(networks[1])))
         p = factor * rand(rng, length(get_ps(networks[1])))
-        prob1 = JumpProblem(networks[1], DiscreteProblem(networks[1], u0, (0.0, 1000.0), p),
+        prob1 = JumpProblem(networks[1],
+                            DiscreteProblem(networks[1], u0, (0.0, 1000.0), p),
                             Direct())
         sol1 = solve(prob1, SSAStepper())
-        prob2 = JumpProblem(DiscreteProblem(u0, (0.0, 1000.0), p), Direct(), networks[2]...)
+        prob2 = JumpProblem(DiscreteProblem(u0, (0.0, 1000.0), p), Direct(),
+                            networks[2]...)
         sol2 = solve(prob2, SSAStepper())
         for i in 1:length(u0)
             vals1 = getindex.(sol1.u, i)
@@ -99,26 +113,36 @@ for (i, networks) in enumerate(identical_networks)
         end
     end
 end
+#end
 
-### Tries solving a large number of problem, ensuring there are no errors. ###
+### Checks Simulations Don't Error ###
+
+#let
 for (i, network) in enumerate(reaction_networks_all)
     (i % 5 == 0) &&
         println("Iteration " * string(i) * " at line 102 in file solve_jumps.jl")
     for factor in [1e-1, 1e0, 1e1]
         u0 = rand(rng, 1:Int64(factor * 100), length(get_states(network)))
         p = factor * rand(rng, length(get_ps(network)))
-        prob = JumpProblem(network, DiscreteProblem(network, u0, (0.0, 1.0), p), Direct())
+        prob = JumpProblem(network, DiscreteProblem(network, u0, (0.0, 1.0), p),
+                            Direct())
         @test SciMLBase.successful_retcode(solve(prob, SSAStepper()))
     end
 end
+#end
 
+### Other Tests ###
+
+# No parameter test.
+#let
 no_param_network = @reaction_network begin (1.2, 5), X1 ↔ X2 end
 for factor in [1e1, 1e2]
     u0 = rand(rng, 1:Int64(factor * 100), length(get_states(no_param_network)))
     prob = JumpProblem(no_param_network,
-                       DiscreteProblem(no_param_network, u0, (0.0, 1000.0)), Direct())
+                        DiscreteProblem(no_param_network, u0, (0.0, 1000.0)), Direct())
     sol = solve(prob, SSAStepper())
     vals1 = getindex.(sol.u[1:end], 1)
     vals2 = getindex.(sol.u[1:end], 2)
     @test mean(vals1) > mean(vals2)
 end
+#end

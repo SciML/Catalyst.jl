@@ -1,12 +1,15 @@
-### Fetch required packages ###
+### Fetch Packages and Set Global Variables ###
+
+# Fetch packages.
 using DiffEqBase, Catalyst, JumpProcesses, Random, Statistics, Test
 using ModelingToolkit: get_states, get_ps
+
+# Sets rnd number.
 using StableRNGs
 rng = StableRNG(12345)
 
-### Declares a test network. ###
+# Delare globaly used network.
 higher_order_network_1 = @reaction_network begin
-    @parameters p r1 r2 K r3 r4 r5 r6 d
     p, ∅ ⟼ X1
     r1, 2X1 ⟼ 3X2
     mm(X1, r2, K), 3X2 ⟼ X3 + 2X4
@@ -17,10 +20,11 @@ higher_order_network_1 = @reaction_network begin
     d, 2X10 ⟼ ∅
 end
 
-### Tests that deterministic and stochastic differential functions are identical. ###
+### Run Tests ###
 
+# Tests that deterministic and stochastic differential functions are identical. 
+#let
 higher_order_network_2 = @reaction_network begin
-    @parameters p r1 r2 K r3 r4 r5 r6 d
     p, ∅ ⟾ X1
     r1 * X1^2 / factorial(2), 2X1 ⟾ 3X2
     mm(X1, r2, K) * X2^3 / factorial(3), 3X2 ⟾ X3 + 2X4
@@ -44,10 +48,11 @@ for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
     @test all(abs.(f1.jac(u0, p, t) .- f2.jac(u0, p, t)) .< 100 * eps())
     @test all(abs.(g1(u0, p, t) .- g2(u0, p, t)) .< 100 * eps())
 end
+#end
 
-### Tests that the discrete jump systems are equal. ###
+# Tests that the discrete jump systems are equal.
+#let
 higher_order_network_3 = @reaction_network begin
-    @parameters p r1 r2 K r3 r4 r5 r6 d
     p, ∅ ⟼ X1
     r1 * binomial(X1, 2), 2X1 ⟾ 3X2
     mm(X1, r2, K) * binomial(X2, 3), 3X2 ⟾ X3 + 2X4
@@ -76,3 +81,4 @@ for factor in [1e-1, 1e0], repeat in 1:5
         (std(vals2) > 0.001) && @test 0.8 < std(vals1) / std(vals2) < 1.25
     end
 end
+#end

@@ -1,25 +1,35 @@
 #! format: off
 
-### Fetch required packages and reaction networks ###
+### Fetch Packages, Reaction Networks, Declare Global Variables ###
+
+# Fetch packages.
 using Catalyst, Test
 using ModelingToolkit: get_ps, get_states, get_eqs, get_systems, get_iv
-include("test_networks.jl")
 
+# Sets rnd number.
 using StableRNGs
 rng = StableRNG(12345)
 
+# Fetch test networks.
+include("../test_networks.jl")
+
+# Test Function
 function unpacksys(sys)
     get_eqs(sys), get_iv(sys), get_ps(sys), nameof(sys), get_systems(sys)
 end
 
-### Tests construction of empty reaction networks ###
+### Run Tests ###
+
+# Tests construction of empty reaction networks.
+#let
 empty_network_1 = @reaction_network
 eqs, iv, ps, name, systems = unpacksys(empty_network_1)
 @test length(eqs) == 0
 @test nameof(iv) == :t
 @test length(get_states(empty_network_1)) == 0
 @test length(ps) == 0
-
+#end
+#let
 empty_network_2 = @reaction_network
 @parameters p1 p2 p3 p4 p5
 addparam!(empty_network_2, p1)
@@ -33,8 +43,10 @@ eqs, iv, ps, name, systems = unpacksys(empty_network_2)
 @test length(get_states(empty_network_2)) == 0
 @test length(ps) == 5
 @test all(getproperty.(ps, :name) .== [:p1, :p2, :p3, :p4, :p5])
+#end
 
-### Tests accessing parameters and species added with network API ###
+# Tests accessing parameters and species added with network API.
+#let
 empty_network_3 = @reaction_network
 @parameters p
 @variables t
@@ -43,8 +55,10 @@ addspecies!(empty_network_3, x)
 addparam!(empty_network_3, p)
 @test isequal(empty_network_3.x, states(empty_network_3, x))
 @test isequal(empty_network_3.p, parameters(empty_network_3, p))
+#end
 
-### Tests creating a network and adding reactions ###
+# Tests creating a network and adding reactions.
+#let
 unfinished_network = @reaction_network begin
     @parameters k0 k1 k2 k3 k4
     (k1, k2), X1 ↔ X2
@@ -62,8 +76,10 @@ end
 end
 @test length(get_states(unfinished_network)) == 8
 @test length(get_ps(unfinished_network)) == 9
+#end
 
-### Compares test network to identical network constructed via @add_reactions ###
+# Compares test network to identical network constructed via @add_reactions.
+#let
 identical_networks = Vector{Pair}()
 
 step_by_step_network_1 = @reaction_network rns5 begin
@@ -224,3 +240,4 @@ for networks in identical_networks
         @test all(abs.(g1(u0, pp, t) .- g2(u0, pp2, t)) .< 1000 * eps())
     end
 end
+#end

@@ -1,10 +1,13 @@
 using Catalyst, ModelingToolkit, OrdinaryDiffEq, Test, LinearAlgebra, JumpProcesses
 
+### Base Tests ###
+
+#let
 @parameters k α
 @variables t
 @species A(t), B(t), C(t), D(t)
 rxs = [Reaction(t * k, [A], [B], [2 * α^2], [k + α * C])
-       Reaction(1.0, [A, B], [C, D], [α, 2], [k, α])]
+        Reaction(1.0, [A, B], [C, D], [α, 2], [k, α])]
 @named rs = ReactionSystem(rxs, t)
 @test issetequal(states(rs), [A, B, C, D])
 @test issetequal(parameters(rs), [k, α])
@@ -12,7 +15,6 @@ osys = convert(ODESystem, rs)
 
 g = (k + α * C)
 rs2 = @reaction_network rs begin
-    @parameters k α
     t * k, 2 * α^2 * A --> $g * B
     1.0, α * A + 2 * B --> k * C + α * D
 end
@@ -27,7 +29,7 @@ u0map = [A => 3.0, B => 2.0, C => 3.0, D => 1.5]
 pmap = (k => 2.5, α => 2)
 tspan = (0.0, 5.0)
 oprob = ODEProblem(osys, u0map, tspan, pmap)
-# this is a hack because of https://github.com/SciML/ModelingToolkit.jl/issues/1475
+# This is a hack because of https://github.com/SciML/ModelingToolkit.jl/issues/1475
 oprob = remake(oprob, p = Tuple(pv[2] for pv in pmap))
 du1 = zeros(size(oprob.u0))
 oprob.f(du1, oprob.u0, oprob.p, 1.5)
@@ -54,7 +56,7 @@ du2 = copy(du1)
 oprob2.f(du2, oprob2.u0, oprob2.p, 1.5)
 @test norm(du1 .- du2) < 100 * eps()
 
-# test without rate law scalings
+# Test without rate law scalings.
 osys = convert(ODESystem, rs, combinatoric_ratelaws = false)
 oprob = ODEProblem(osys, u0map, tspan, pmap)
 function oderhs(du, u, p, t)
@@ -73,13 +75,13 @@ function oderhs(du, u, p, t)
     du[4] = α * rl2
 end
 oprob2 = ODEProblem(oderhs, [uv[2] for uv in u0map], tspan, oprob.p)
-du1 .= 0;
-du2 .= 0;
+du1 .= 0
+du2 .= 0
 oprob.f(du1, oprob.u0, oprob.p, 1.5)
 oprob2.f(du2, oprob2.u0, oprob2.p, 1.5)
 @test norm(du1 .- du2) < 100 * eps()
 
-# SDESystem test
+# SDESystem test.
 ssys = convert(SDESystem, rs)
 sf = SDEFunction{false}(ssys, states(ssys), parameters(ssys))
 G = sf.g(u0, p, 1.0)
@@ -94,14 +96,14 @@ function sdenoise(u, p, t)
     rl = sqrt(t * k / factorial(n) * A^n)
     rl2 = sqrt(A^α * B^2 / (2 * factorial(α)))
     G = [-n*rl (-α*rl2);
-         (k + α * C)*rl (-2*rl2);
-         0.0 k*rl2;
-         0.0 α*rl2]
+            (k + α * C)*rl (-2*rl2);
+            0.0 k*rl2;
+            0.0 α*rl2]
 end
 G2 = sdenoise(u0, p, 1.0)
 @test norm(G - G2) < 100 * eps()
 
-# SDESystem test with no combinatoric rate laws
+# SDESystem test with no combinatoric rate laws.
 ssys = convert(SDESystem, rs, combinatoric_ratelaws = false)
 sf = SDEFunction{false}(ssys, states(ssys), parameters(ssys))
 G = sf.g(u0, p, 1.0)
@@ -116,14 +118,14 @@ function sdenoise(u, p, t)
     rl = sqrt(t * k * A^n)
     rl2 = sqrt(A^α * B^2)
     G = [-n*rl (-α*rl2);
-         (k + α * C)*rl (-2*rl2);
-         0.0 k*rl2;
-         0.0 α*rl2]
+            (k + α * C)*rl (-2*rl2);
+            0.0 k*rl2;
+            0.0 α*rl2]
 end
 G2 = sdenoise(u0, p, 1.0)
 @test norm(G - G2) < 100 * eps()
 
-# JumpSystem test
+# JumpSystem test.
 js = convert(JumpSystem, rs)
 u0map = [A => 3, B => 2, C => 3, D => 5]
 u0 = [uv[2] for uv in u0map]
@@ -149,10 +151,10 @@ ttt = 1.5
 j1 = VariableRateJump(r1, affect1!)
 vrj = ModelingToolkit.assemble_vrj(js, equations(js)[1], statetoid)
 @test isapprox(vrj.rate(u0, p, ttt), r1(u0, p, ttt))
-fake_integrator1 = (u = copy(u0), p = p, t = ttt);
-fake_integrator2 = deepcopy(fake_integrator1);
-vrj.affect!(fake_integrator1);
-affect1!(fake_integrator2);
+fake_integrator1 = (u = copy(u0), p = p, t = ttt)
+fake_integrator2 = deepcopy(fake_integrator1)
+vrj.affect!(fake_integrator1)
+affect1!(fake_integrator2)
 @test fake_integrator1 == fake_integrator2
 
 function r2(u, p, t)
@@ -177,13 +179,16 @@ end
 j2 = VariableRateJump(r2, affect2!)
 vrj = ModelingToolkit.assemble_vrj(js, equations(js)[2], statetoid)
 @test isapprox(vrj.rate(u0, p, ttt), r2(u0, p, ttt))
-fake_integrator1 = (u = copy(u0), p = p, t = ttt);
-fake_integrator2 = deepcopy(fake_integrator1);
-vrj.affect!(fake_integrator1);
-affect2!(fake_integrator2);
+fake_integrator1 = (u = copy(u0), p = p, t = ttt)
+fake_integrator2 = deepcopy(fake_integrator1)
+vrj.affect!(fake_integrator1)
+affect2!(fake_integrator2)
 @test fake_integrator1 == fake_integrator2
+#end
 
-# a few simple solving tests via the SIR Model
+### Simple Solving Tests on SIR Model ###
+
+#let
 @parameters α β γ k
 @variables t
 @species S(t), I(t), R(t)
@@ -197,7 +202,7 @@ rxs2 = [Reaction(α, [S, I], [I], [γ, 1], [k]),
 
 @test issetequal(states(sir_ref), states(sir))
 
-# ODEs
+# ODEs.
 p1 = (α => 0.1 / 1000, β => 0.01)
 p2 = (α => 0.1 / 1000, β => 0.01, γ => 1, k => 2)
 tspan = (0.0, 250.0)
@@ -212,7 +217,7 @@ oprob2 = ODEProblem(sir, u0, tspan, pvs)
 sol2 = solve(oprob2, Tsit5())
 @test norm(sol - sol2(sol.t)) < 1e-10
 
-# jumps
+# Jumps.
 Nsims = 10000
 u0 = [S => 999, I => 1, R => 0]
 jsys = convert(JumpSystem, sir_ref)
@@ -236,3 +241,4 @@ dprob2 = DiscreteProblem(jsys2, u0, tspan, pvs)
 jprob2 = JumpProblem(jsys2, dprob2, Direct(), save_positions = (false, false))
 m2 = getmean(jprob2, tspan[2])
 @test maximum(abs.(m1[2:3] .- m2[2:3]) ./ m1[2:3]) < 0.05
+#end

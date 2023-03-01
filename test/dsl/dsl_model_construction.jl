@@ -1,18 +1,23 @@
-### Fetch required packages and reaction networks ###
+### Fetch Packages and Reaction Networks ###
+
+# Fetch packages.
 using DiffEqBase, Catalyst, Random, Test
 using ModelingToolkit: operation, istree, get_states, get_ps, get_eqs, get_systems,
                        get_iv
 
+# Sets rnd number.
 using StableRNGs
 rng = StableRNG(12345)
 
-include("test_networks.jl")
+# Fetch test networks.
+include("../test_networks.jl")
+
+### Declares Testing Functions ###
 
 function unpacksys(sys)
     get_eqs(sys), get_iv(sys), get_states(sys), get_ps(sys), nameof(sys), get_systems(sys)
 end
 
-### Debug functions ###
 opname(x) = istree(x) ? nameof(operation(x)) : nameof(x)
 alleq(xs, ys) = all(isequal(x, y) for (x, y) in zip(xs, ys))
 
@@ -31,7 +36,7 @@ function all_parameters(eqs)
     return Set(unique(map(eq -> opname(eq.rate), eqs)))
 end
 
-### Test basic properties of networks ###
+# Perform basic tests.
 function basic_test(rn, N, states_syms, p_syms)
     eqs, iv, states, ps, name, systems = unpacksys(rn)
     @test length(eqs) == N
@@ -42,32 +47,38 @@ function basic_test(rn, N, states_syms, p_syms)
     @test length(ps) == length(p_syms)
     @test issetequal(map(opname, ps), p_syms)
 end
+
+## Run Tests ###
+
+# Test basic properties of networks.
+#let
 basic_test(reaction_networks_standard[1], 10, [:X1, :X2, :X3],
-           [:p1, :p2, :p3, :k1, :k2, :k3, :k4, :d1, :d2, :d3])
+            [:p1, :p2, :p3, :k1, :k2, :k3, :k4, :d1, :d2, :d3])
 @test all_parameters(get_eqs(reaction_networks_standard[1])) ==
-      Set([:p1, :p2, :p3, :k1, :k2, :k3, :k4, :d1, :d2, :d3])
+        Set([:p1, :p2, :p3, :k1, :k2, :k3, :k4, :d1, :d2, :d3])
 basic_test(reaction_networks_standard[2], 3, [:X1, :X2], [:v1, :K1, :v2, :K2, :d])
 basic_test(reaction_networks_standard[3], 10, [:X1, :X2, :X3, :X4],
-           [:v1, :K1, :v2, :K2, :k1, :k2, :k3, :k4, :d])
+            [:v1, :K1, :v2, :K2, :k1, :k2, :k3, :k4, :d])
 basic_test(reaction_networks_standard[4], 8, [:X1, :X2, :X3, :X4],
-           [:v1, :K1, :v2, :K2, :v3, :K3, :v4, :K4, :d1, :d2, :d3, :d4])
+            [:v1, :K1, :v2, :K2, :v3, :K3, :v4, :K4, :d1, :d2, :d3, :d4])
 basic_test(reaction_networks_standard[5], 8, [:X1, :X2, :X3, :X4],
-           [:p, :k1, :k2, :k3, :k4, :k5, :k6, :d])
+            [:p, :k1, :k2, :k3, :k4, :k5, :k6, :d])
 @test all_parameters(get_eqs(reaction_networks_standard[5])) ==
-      Set([:p, :k1, :k2, :k3, :k4, :k5, :k6, :d])
+        Set([:p, :k1, :k2, :k3, :k4, :k5, :k6, :d])
 basic_test(reaction_networks_hill[1], 4, [:X1, :X2],
-           [:v1, :v2, :K1, :K2, :n1, :n2, :d1, :d2])
+            [:v1, :v2, :K1, :K2, :n1, :n2, :d1, :d2])
 basic_test(reaction_networks_constraint[1], 6, [:X1, :X2, :X3],
-           [:k1, :k2, :k3, :k4, :k5, :k6])
+            [:k1, :k2, :k3, :k4, :k5, :k6])
 basic_test(reaction_networks_real[1], 4, [:X, :Y], [:A, :B])
 basic_test(reaction_networks_weird[1], 2, [:X], [:p, :d])
 basic_test(reaction_networks_weird[2], 4, [:X, :Y, :Z], [:k1, :k2, :k3, :k4])
+#end
 
-### Tries making various systems ###
+# Tries making various systems.
+#let
 identical_networks_1 = Vector{Pair}()
 
 different_arrow_1 = @reaction_network begin
-    @parameters p1 p2 p3 k1 k2 k3 k4 d1 d2 d3
     (p1, p2, p3), ∅ > (X1, X2, X3)
     (k1, k2), X2 ↔ X1 + 2X3
     (k3, k4), X1 ⟷ X3
@@ -76,7 +87,6 @@ end
 push!(identical_networks_1, reaction_networks_standard[1] => different_arrow_1)
 
 different_arrow_2 = @reaction_network begin
-    @parameters v1 K1 v2 K2 d
     mmr(X2, v1, K1), ∅ → X1
     mm(X1, v2, K2), ∅ ↣ X2
     d, X1 + X2 ↦ ∅
@@ -84,7 +94,6 @@ end
 push!(identical_networks_1, reaction_networks_standard[2] => different_arrow_2)
 
 different_arrow_3 = @reaction_network begin
-    @parameters v1 K1 v2 K2 k1 k2 k3 k4 d
     mm(X2, v1, K1), ∅ ⇾ X1
     mm(X3, v2, K2), ∅ ⟶ X2
     (k1, k2), X1 ⇄ X3
@@ -94,7 +103,6 @@ end
 push!(identical_networks_1, reaction_networks_standard[3] => different_arrow_3)
 
 different_arrow_4 = @reaction_network begin
-    @parameters v1 K1 v2 K2 v3 K3 v4 K4 d1 d2 d3 d4
     mmr(X4, v1, K1), ∅ ⥟ X1
     mmr(X1, v2, K2), ∅ ⥟ X2
     mmr(X2, v3, K3), ∅ ⇀ X3
@@ -105,7 +113,6 @@ push!(identical_networks_1, reaction_networks_standard[4] => different_arrow_4)
 
 # Yes the name is different, I wanted one with several single direction arrows.
 different_arrow_8 = @reaction_network begin
-    @parameters p k1 k2 k3 d
     p, 2X1 < ∅
     k1, X2 ← X1
     (k2, k3), X3 ⟻ X2
@@ -127,13 +134,14 @@ for networks in identical_networks_1
         @test all(abs.(g1(u0, p, t) .≈ g2(u0, p, t)))
     end
 end
+#end
 
-### Tests that networks expressed in different ways are identical ###
+# Tests that networks expressed in different ways are identical.
+#let
 identical_networks_2 = Vector{Pair}()
 
 # Different parameter and variable names.
 differently_written_5 = @reaction_network begin
-    @parameters q l1 l2 l3 l4 l5 l6 c
     q, ∅ → Y1
     (l1, l2), Y1 ⟷ Y2
     (l3, l4), Y2 ⟷ Y3
@@ -144,7 +152,6 @@ push!(identical_networks_2, reaction_networks_standard[5] => differently_written
 
 # Unfold reactions.
 differently_written_6 = @reaction_network begin
-    @parameters p1 p2 k1 k2 k3 k4 k5 k6 d
     p1, ∅ → X1
     p2, ∅ → X2
     k1, 2X1 → X3
@@ -194,8 +201,10 @@ for networks in identical_networks_2
         @test all(g1(u0, p, t) .≈ g2(u0, p, t))
     end
 end
+#end
 
-### Test networks without parameters ###
+# Test networks without parameters.
+#let
 identical_networks_3 = Vector{Pair}()
 parameter_sets = []
 
@@ -203,13 +212,13 @@ parameter_sets = []
 no_parameters_9 = @reaction_network begin
     (1.5, 1, 2), ∅ ⟶ (X1, X2, X3)
     (0.01, 2.3, 1001), (X1, X2, X3) ⟶ ∅
-    (3.1, 42), X1 + X2 ⟷ X3
+    (π, 42), X1 + X2 ⟷ X3
     (19.9, 999.99), X3 ⟷ X4
     (sqrt(3.7), exp(1.9)), X4 ⟷ X1 + X2
 end
 push!(identical_networks_3, reaction_networks_standard[9] => no_parameters_9)
 push!(parameter_sets,
-      [1.5, 1, 2, 0.01, 2.3, 1001, 3.1, 42, 19.9, 999.99, sqrt(3.7), exp(1.9)])
+        [1.5, 1, 2, 0.01, 2.3, 1001, π, 42, 19.9, 999.99, sqrt(3.7), exp(1.9)])
 
 no_parameters_10 = @reaction_network begin
     0.01, ∅ ⟶ X1
@@ -235,8 +244,10 @@ for (i, networks) in enumerate(identical_networks_3)
         @test g1(u0, parameter_sets[i], t) ≈ g2(u0, [], t)
     end
 end
+#end
 
-### Tests that Reaction System created manually and through macro are identical ###
+# Tests that Reaction System created manually and through macro are identical.
+#let
 identical_networks_4 = Vector{Pair}()
 @parameters v1 K1 v2 K2 k1 k2 k3 k4 k5 p d t
 @species X1(t) X2(t) X3(t) X4(t) X5(t)
@@ -270,7 +281,7 @@ for networks in identical_networks_4
     @test alleq(get_states(networks[1]), get_states(networks[2]))
     @test alleq(get_ps(networks[1]), get_ps(networks[2]))
     @test ModelingToolkit.get_systems(networks[1]) ==
-          ModelingToolkit.get_systems(networks[2])
+            ModelingToolkit.get_systems(networks[2])
     @test length(get_eqs(networks[1])) == length(get_eqs(networks[2]))
     for (e1, e2) in zip(get_eqs(networks[1]), get_eqs(networks[2]))
         @test isequal(e1.rate, e2.rate)
@@ -282,10 +293,13 @@ for networks in identical_networks_4
         @test isequal(e1.only_use_rate, e2.only_use_rate)
     end
 end
+#end
 
-### Tests that time is handled properly ###
+### Tests Usage of Various Symbols ###
+
+# Tests that time is handled properly.
+#let
 time_network = @reaction_network begin
-    @parameters k2 k3 k6
     (t, k2), X1 ↔ X2
     (k3, t), X2 ↔ X3
     (t, k6), X3 ↔ X1
@@ -307,10 +321,11 @@ for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
     @test all(f1.jac(u0, p1, τ) .≈ f2.jac(u0, p2, τ))
     @test all(g1(u0, p1, τ) .≈ g2(u0, p2, τ))
 end
+#end
 
-### Test various names as varriables ###
-test_network = @reaction_network begin
-    @parameters a A b B c C d D e E f F g G h H j J k K l L m M
+# Test various names as varriables.
+#let
+@reaction_network begin
     (a, A), n ⟷ N
     (b, B), o ⟷ O
     (c, C), p ⟷ P
@@ -325,17 +340,15 @@ test_network = @reaction_network begin
     (m, M), z ⟷ Z
 end
 
-test_network = @reaction_network begin (1.0, 1.0), i ⟷ T end
+@reaction_network begin (1.0, 1.0), i ⟷ T end
 
-test_network = @reaction_network begin
-    @parameters å Å ä Ä ö Ö
+@reaction_network begin
     (å, Å), ü ⟷ Ü
     (ä, Ä), ñ ⟷ Ñ
     (ö, Ö), æ ⟷ Æ
 end
 
-test_network = @reaction_network begin
-    @parameters α Α β Β γ δ Δ ϵ Ε ζ Ζ η Η θ Θ ι Ι κ λ Λ μ Μ
+@reaction_network begin
     (α, Α), ν ⟷ Ν
     (β, Β), ξ ⟷ Ξ
     (γ, γ), ο ⟷ Ο
@@ -345,14 +358,15 @@ test_network = @reaction_network begin
     (η, Η), τ ⟷ Τ
     (θ, Θ), υ ⟷ Υ
     (ι, Ι), ϕ ⟷ Φ
-    (κ, γ), χ ⟷ Χ
+    (κ, κ), χ ⟷ Χ
     (λ, Λ), ψ ↔ Ψ
     (μ, Μ), ω ⟷ Ω
 end
+#end
 
-# test I works
+# Test that I works.
+#let
 rn = @reaction_network begin
-    @parameters k1 k2
     k1, S + I --> 2I
     k2, I --> R
 end
@@ -360,17 +374,46 @@ end
 @species I(t)
 @test any(isequal(I), species(rn))
 @test any(isequal(I), states(rn))
+#end
 
-# test names work
+# Test names work.
+#let
 rn = @reaction_network SIR1 begin
-    @parameters k1 k2
     k1, S + I --> 2I
     k2, I --> R
 end
 @test nameof(rn) == :SIR1
+#end
 
-# Test that forbidden symbols do not work:
+# Tests some arrow variants.
+#let
+rn1 = @reaction_network arrowtest begin
+    (a1, a2), C <--> 0
+    (k1, k2), A + B <--> C
+    b1, 0 <-- B
+end
 
+rn2 = @reaction_network arrowtest begin
+    a1, C --> 0
+    a2, 0 --> C
+    k1, A + B --> C
+    k2, C --> A + B
+    b1, B --> 0
+end
+
+@test rn1 == rn2
+#end
+
+# Tests arrow variants in "@reaction" macro .
+#let
+@test isequal((@reaction k, 0 --> X), (@reaction k, X <-- 0))
+@test isequal((@reaction k, 0 --> X), (@reaction k, X ⟻ 0))
+@test isequal((@reaction k, 0 --> X), (@reaction k, 0 → X))
+@test isequal((@reaction k, 0 --> X), (@reaction k, 0 ⥟ X))
+#end
+
+# Test forbidden and special symbols.
+#let
 test_network = @reaction_network begin t * k, X --> ∅ end
 @test length(species(test_network)) == 1
 @test length(parameters(test_network)) == 1
@@ -394,3 +437,4 @@ test_network = @reaction_network begin ℯ, X --> ∅ end
 @test_throws LoadError @eval @reaction nothing, 0 --> B
 @test_throws LoadError @eval @reaction k, 0 --> im
 @test_throws LoadError @eval @reaction k, 0 --> nothing
+#end
