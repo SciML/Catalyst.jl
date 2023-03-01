@@ -13,25 +13,25 @@ include("../test_networks.jl")
 ### Compares Solution to Known Steady States ###
 
 # Simple network.
-let
-    steady_state_network_1 = @reaction_network begin
-        (k1, k2), ∅ ↔ X1
-        (k3, k4), ∅ ↔ 3X2
-        (k5, k6), ∅ ↔ X3 + X4
-    end
-
-    for factor in [1e-1, 1e0, 1e1]
-        u0 = factor * rand(rng, length(states(steady_state_network_1)))
-        u0[4] = u0[3]
-        p = 0.01 .+ factor * rand(rng, length(parameters(steady_state_network_1)))
-        prob = SteadyStateProblem(steady_state_network_1, u0, p)
-        sol = solve(prob, SSRootfind()).u
-        (minimum(sol[1:1]) > 1e-2) && (@test abs.(sol[1] - p[1] / p[2]) < 1e-8)
-        (minimum(sol[2:2]) > 1e-2) &&
-            (@test abs.(sol[2]^3 / factorial(3) - p[3] / p[4]) < 1e-8)
-        (minimum(sol[3:4]) > 1e-2) && (@test abs.(sol[3] * sol[4] - p[5] / p[6]) < 1e-8)
-    end
+#let
+steady_state_network_1 = @reaction_network begin
+    (k1, k2), ∅ ↔ X1
+    (k3, k4), ∅ ↔ 3X2
+    (k5, k6), ∅ ↔ X3 + X4
 end
+
+for factor in [1e-1, 1e0, 1e1]
+    u0 = factor * rand(rng, length(states(steady_state_network_1)))
+    u0[4] = u0[3]
+    p = 0.01 .+ factor * rand(rng, length(parameters(steady_state_network_1)))
+    prob = SteadyStateProblem(steady_state_network_1, u0, p)
+    sol = solve(prob, SSRootfind()).u
+    (minimum(sol[1:1]) > 1e-2) && (@test abs.(sol[1] - p[1] / p[2]) < 1e-8)
+    (minimum(sol[2:2]) > 1e-2) &&
+        (@test abs.(sol[2]^3 / factorial(3) - p[3] / p[4]) < 1e-8)
+    (minimum(sol[3:4]) > 1e-2) && (@test abs.(sol[3] * sol[4] - p[5] / p[6]) < 1e-8)
+end
+#end
 
 # These are disabled due to problem in SteadyStateProblem solution exactness. We do not recommend this method for finding steady states.
 
