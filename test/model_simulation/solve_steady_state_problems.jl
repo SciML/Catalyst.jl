@@ -1,4 +1,4 @@
-### Fetch required packages and reaction networks ###
+### Fetch Packages and Reaction Networks ###
 
 # Fetch packages.
 using Catalyst, OrdinaryDiffEq, Random, SteadyStateDiffEq, Test

@@ -31,7 +31,7 @@ let
 
     @test issetequal(species(bpm), [MT.unwrap(U), MT.unwrap(V), MT.unwrap(W)])
 
-    # Test a few API functions.
+    # test a few API functions
     ns = [-1 0 0 -1 1 0 0;
         1 -2 2 0 0 -1 1;
         0 1 -1 0 0 0 0]
@@ -39,7 +39,7 @@ let
     bpm2 = deepcopy(bpm)
     @test bpm == bpm2
 
-    # Check we can build a PDESystem.
+    # check we can build a PDESystem
     ∂t = Differential(t)
     ∂x = Differential(x)
     ∂y = Differential(y)
@@ -49,7 +49,7 @@ let
     smap = speciesmap(bpm)
     evalat(u, a, b, t) = (operation(ModelingToolkit.unwrap(u)))(a, b, t)
     function icfun(n, x, y, A)
-        float(rand(Poisson(round(n * A * 10))) / A / 10)#
+        float(rand(Poisson(round(n * A * 10))) / A / 10)
     end
     @register_symbolic icfun(n, x, y, A)
     L = 32.0
