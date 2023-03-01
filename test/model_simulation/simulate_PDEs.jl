@@ -6,7 +6,6 @@ const MT = ModelingToolkit
 ### Run Tests ###
 
 let
-    # Base tests.
     @parameters k[1:7] D[1:3] n0[1:3] A
     @variables t x y
     @species U(x, y, t) V(x, y, t) W(x, y, t)
@@ -50,7 +49,8 @@ let
     smap = speciesmap(bpm)
     evalat(u, a, b, t) = (operation(ModelingToolkit.unwrap(u)))(a, b, t)
     function icfun(n, x, y, A)
-        float(rand(Poisson(round(n * A * 10))) / A / 10)### Fetch Packages and Set Global Variables ###
+        float(rand(Poisson(round(n * A * 10))) / A / 10)#
+    end
     @register_symbolic icfun(n, x, y, A)
     L = 32.0
     tstop = 5e4
