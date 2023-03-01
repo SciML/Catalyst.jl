@@ -47,3 +47,45 @@ badrx3 = Reaction(α, [A,D], [B])
 @test (@test_logs (:warn, ) match_mode=:any ModelingToolkit.validate(badrx3)) == false
 badrx4 = Reaction(α + β, [A], [B])
 @test (@test_logs (:warn, ) match_mode=:any ModelingToolkit.validate(badrx4)) == false
+
+# units in the DSL
+let
+    rn = @reaction_network begin
+        @ivs t [unit=u"s"]
+        @parameters α [unit=u"μM/s"] β [unit=u"s"^(-1)] γ [unit=u"μM*s"^(-1)]
+        @species A(t) [unit=u"μM"] B(t) [unit=u"μM"] C(t) [unit=u"μM"]
+        α, 0 --> A
+        β, A --> B
+        γ, A + B --> 2B
+    end
+    @test all(MT.get_unit.(states(rn)) .== u"μM")
+    @test MT.get_unit(MT.get_iv(rn)) == u"s"
+    @test all(MT.get_unit.(parameters(rn)) .== [u"μM/s", u"s"^(-1), u"μM*s"^(-1)])
+
+    @test_throws MT.ValidationError @reaction_network begin
+        @ivs t [unit=u"1/s"]
+        @parameters α [unit=u"μM/s"] β [unit=u"s"^(-1)] γ [unit=u"μM*s"^(-1)]
+        @species A(t) [unit=u"μM"] B(t) [unit=u"μM"] C(t) [unit=u"μM"]
+        α, 0 --> A
+        β, A --> B
+        γ, A + B --> 2B
+    end
+
+    @test_logs (:warn, ) match_mode=:any @reaction_network begin
+        @ivs t [unit=u"s"]
+        @parameters α [unit=u"μM"] β [unit=u"s"^(-1)] γ [unit=u"μM*s"^(-1)]
+        @species A(t) [unit=u"μM"] B(t) [unit=u"μM"] C(t) [unit=u"μM"]
+        α, 0 --> A
+        β, A --> B
+        γ, A + B --> 2B
+    end
+
+    @test_logs (:warn, ) match_mode=:any @reaction_network begin
+        @ivs t [unit=u"s"]
+        @parameters α [unit=u"μM/s"] β [unit=u"s"^(-1)] γ [unit=u"μM*s"^(-1)]
+        @species A(t) [unit=u"μM*s"] B(t) [unit=u"μM"] C(t) [unit=u"μM"]
+        α, 0 --> A
+        β, A --> B
+        γ, A + B --> 2B
+    end
+end

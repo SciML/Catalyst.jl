@@ -12,6 +12,7 @@ using JumpProcesses: JumpProcesses, JumpProblem, MassActionJump, ConstantRateJum
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit
 const MT = ModelingToolkit
+using Unitful
 @reexport using ModelingToolkit
 using Symbolics
 import Symbolics: BasicSymbolic
@@ -34,7 +35,8 @@ import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 
 # globals for the modulate
-const DEFAULT_IV = (@parameters t)[1]
+const DEFAULT_IV_SYM = :t
+const DEFAULT_IV = (@variables $(DEFAULT_IV_SYM))[1]
 
 # as used in Catlab
 const USE_GV_JLL = Ref(false)

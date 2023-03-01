@@ -123,7 +123,7 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables)
+const option_keys = (:species, :parameters, :variables, :ivs)
 
 ### The @species macro, basically a copy of the @varriables macro. ###
 macro species(ex...)
@@ -321,6 +321,12 @@ function forbidden_symbol_check(v)
     nothing
 end
 
+function unique_symbol_check(syms)
+    allunique(syms) ||
+        error("Reaction network independent variables, parameters, species, and variables must all have distinct names, but a duplicate has been detected. ")
+    nothing
+end
+
 # Function for creating a ReactionSystem structure (used by the @reaction_network macro).
 function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
@@ -341,6 +347,18 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     parameters_declared = extract_syms(options, :parameters)
     variables = extract_syms(options, :variables)
 
+    # handle independent variables
+    if haskey(options, :ivs)
+        ivs = Tuple(extract_syms(options, :ivs))
+        ivexpr = copy(options[:ivs])
+        ivexpr.args[1] = Symbol("@", "variables")
+    else
+        ivs = (DEFAULT_IV_SYM,)
+        ivexpr = :(@variables $(DEFAULT_IV_SYM))
+    end
+    tiv = ivs[1]
+    sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
+
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
                                            variables)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
@@ -355,12 +373,14 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         error("The following unsupprted options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
     forbidden_symbol_check(union(species, parameters))
     forbidden_variable_check(variables)
+    unique_symbol_check(union(species, parameters, variables, ivs))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
-    sexprs = get_sexpr(species_extracted, options)
+    sexprs = get_sexpr(species_extracted, options; iv_symbols = ivs)
     vexprs = haskey(options, :variables) ? options[:variables] : :()
     pexprs = get_pexpr(parameters_extracted, options)
-    rxexprs = :($(make_ReactionSystem_internal)([], t, Num[], Num[]; name = $(name)))
+    rxexprs = :($(make_ReactionSystem_internal)([], $tiv, Num[], Num[]; name = $(name),
+                                                spatial_ivs = $sivs))
     foreach(speci -> push!(rxexprs.args[5].args, speci), species)
     foreach(parameter -> push!(rxexprs.args[6].args, parameter), parameters)
     for reaction in reactions
@@ -370,7 +390,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Returns the rephrased expression.
     quote
         $pexprs
-        :(@variables t)
+        $ivexpr
         $vexprs
         $sexprs
         $rxexprs
@@ -394,11 +414,12 @@ function make_reaction(ex::Expr)
     sexprs = get_sexpr(species, Dict{Symbol, Expr}())
     pexprs = get_pexpr(parameters, Dict{Symbol, Expr}())
     rxexpr = get_rxexprs(reaction)
+    iv = :(@variables $(DEFAULT_IV_SYM))
 
     # Returns the rephrased expression.
     quote
         $pexprs
-        :(@variables t)
+        $iv
         $sexprs
         $rxexpr
     end
@@ -471,7 +492,8 @@ function add_syms_from_expr!(push_symbols::AbstractSet, rateex::ExprValues, excl
 end
 
 # Given the species that were extracted from the reactions, and the options dictionary, creates the @species ... expression for the macro output.
-function get_sexpr(species_extracted, options, key = :species)
+function get_sexpr(species_extracted, options, key = :species;
+                   iv_symbols = (DEFAULT_IV_SYM,))
     if haskey(options, key)
         sexprs = options[key]
     elseif isempty(species_extracted)
@@ -479,7 +501,7 @@ function get_sexpr(species_extracted, options, key = :species)
     else
         sexprs = Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
     end
-    foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, :t)),
+    foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, iv_symbols...)),
             species_extracted)
     sexprs
 end

@@ -200,3 +200,24 @@ let
         end
     end
 end
+
+# ivs test
+let
+    rn = @reaction_network ivstest begin
+        @ivs s x
+        @parameters k2
+        @variables D(x) E(s) F(s,x)
+        @species A(s,x) B(s) C(x)
+        k*k2*D, E*A +B --> F*C + C2
+    end
+    @parameters k k2
+    @variables s x D(x) E(s) F(s,x)
+    @species A(s,x) B(s) C(x) C2(s,x)
+    rx = Reaction(k*k2*D, [A, B], [C, C2], [E, 1], [F, 1])
+    @named ivstest = ReactionSystem([rx], s; spatial_ivs = [x])
+    @test ivstest == rn
+    @test issetequal(states(rn), [D, E, F, A, B, C, C2])
+    @test issetequal(species(rn), [A, B, C, C2])
+    @test isequal(ModelingToolkit.get_iv(rn), s)
+    @test issetequal(Catalyst.get_sivs(rn), [x])
+end
