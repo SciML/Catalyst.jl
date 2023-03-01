@@ -137,25 +137,28 @@ end
 ### Check ODE, SDE, and Jump Functions ###
 
 # Test by evaluating drift and diffusion terms.
-# These two blocks could be put in a "let .. end" statement, however, this causes "fnl(dunl, u, p)" to throw a "MethodError: no method matching Float64(::Num)" error.
-p = rand(length(k))
-u = rand(length(k))
+# Don't ask me (Torkel) why the t statement before/after is needed. 
 t = 0.0
-du = oderhs(u, p, t)
-G = sdenoise(u, p, t)
-sdesys = convert(SDESystem, rs)
-sf = SDEFunction{false}(sdesys, states(rs), parameters(rs))
-du2 = sf.f(u, p, t)
-@test norm(du - du2) < 100 * eps()
-G2 = sf.g(u, p, t)
-@test norm(G - G2) < 100 * eps()
-
-# Test conversion to NonlinearSystem.
-ns = convert(NonlinearSystem, rs)
-fnl = eval(generate_function(ns)[2])
-dunl = similar(du)
-fnl(dunl, u, p)
-@test norm(du - dunl) < 100 * eps()
+let 
+    p = rand(length(k))
+    u = rand(length(k))
+    du = oderhs(u, p, t)
+    G = sdenoise(u, p, t)
+    sdesys = convert(SDESystem, rs)
+    sf = SDEFunction{false}(sdesys, states(rs), parameters(rs))
+    du2 = sf.f(u, p, t)
+    @test norm(du - du2) < 100 * eps()
+    G2 = sf.g(u, p, t)
+    @test norm(G - G2) < 100 * eps()
+    
+    # Test conversion to NonlinearSystem.
+    ns = convert(NonlinearSystem, rs)
+    fnl = eval(generate_function(ns)[2])
+    dunl = similar(du)
+    fnl(dunl, u, p)
+    @test norm(du - dunl) < 100 * eps()
+end
+@variables t
 
 # Tests the noise_scaling argument.
 let
