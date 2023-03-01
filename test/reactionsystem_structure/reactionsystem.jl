@@ -455,297 +455,297 @@ function gs!(dg, u, p, t)
 end
 
 # Tests for BC and constant species.
-#let
-@parameters k1 k2 A [isconstantspecies = true]
-@variables t
-@species B(t) C(t) [isbcspecies = true] D(t) E(t)
-Dt = Differential(t)
-eqs = [(@reaction k1, $A --> B),
-    (@reaction k2, B --> $A),
-    (@reaction k1, $C + D --> E + $C),
-    Dt(C) ~ -C,
-    (@reaction k2, E + $C --> $C + D)]
-@named rs = ReactionSystem(eqs, t)
-@test all(eq -> eq isa Reaction, ModelingToolkit.get_eqs(rs)[1:4])
-osys = convert(ODESystem, rs)
-@test issetequal(MT.get_states(osys), [B, C, D, E])
-@test issetequal(MT.get_ps(osys), [k1, k2, A])
+let
+    @parameters k1 k2 A [isconstantspecies = true]
+    @variables t
+    @species B(t) C(t) [isbcspecies = true] D(t) E(t)
+    Dt = Differential(t)
+    eqs = [(@reaction k1, $A --> B),
+        (@reaction k2, B --> $A),
+        (@reaction k1, $C + D --> E + $C),
+        Dt(C) ~ -C,
+        (@reaction k2, E + $C --> $C + D)]
+    @named rs = ReactionSystem(eqs, t)
+    @test all(eq -> eq isa Reaction, ModelingToolkit.get_eqs(rs)[1:4])
+    osys = convert(ODESystem, rs)
+    @test issetequal(MT.get_states(osys), [B, C, D, E])
+    @test issetequal(MT.get_ps(osys), [k1, k2, A])
 
-# test nonlinear systems
-u0 = [1.0, 2.0, 3.0, 4.0]
-p = [2.0, 2.5, 3.5]
-u0map = [B, D, E, C] .=> u0
-pmap = [A, k1, k2] .=> p
-tspan = (0.0, 5.0)
-oprob1 = ODEProblem(osys, u0map, tspan, pmap)
-sts = [B, D, E, C]
-syms = [:B, :D, :E, :C]
-ofun = ODEFunction(f!; syms)
-oprob2 = ODEProblem(ofun, u0, tspan, p)
-saveat = tspan[2] / 50
-abstol = 1e-10
-reltol = 1e-10
-sol1 = solve(oprob1, Tsit5(); saveat, abstol, reltol)
-sol2 = solve(oprob2, Tsit5(); saveat, abstol, reltol)
-for i in eachindex(sts)
-    @test isapprox(sol1[sts[i]], sol2[syms[i]])
+    # test nonlinear systems
+    u0 = [1.0, 2.0, 3.0, 4.0]
+    p = [2.0, 2.5, 3.5]
+    u0map = [B, D, E, C] .=> u0
+    pmap = [A, k1, k2] .=> p
+    tspan = (0.0, 5.0)
+    oprob1 = ODEProblem(osys, u0map, tspan, pmap)
+    sts = [B, D, E, C]
+    syms = [:B, :D, :E, :C]
+    ofun = ODEFunction(f!; syms)
+    oprob2 = ODEProblem(ofun, u0, tspan, p)
+    saveat = tspan[2] / 50
+    abstol = 1e-10
+    reltol = 1e-10
+    sol1 = solve(oprob1, Tsit5(); saveat, abstol, reltol)
+    sol2 = solve(oprob2, Tsit5(); saveat, abstol, reltol)
+    for i in eachindex(sts)
+        @test isapprox(sol1[sts[i]], sol2[syms[i]])
+    end
+
+    # Test sde systems.
+    rxs = [(@reaction k1, $A --> B),
+        (@reaction k2, B --> $A),
+        (@reaction k1, $C + D --> E + $C),
+        (@reaction k2, E + $C --> $C + D)]
+    @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
+    ssys = convert(SDESystem, rs)
+    @test issetequal(MT.get_states(ssys), [B, C, D, E])
+    @test issetequal(MT.get_ps(ssys), [A, k1, k2])
+    du1 = zeros(4)
+    du2 = zeros(4)
+    sprob = SDEProblem(ssys, u0map, tspan, pmap; check_length = false)
+    sprob.f(du1, u0, p, 1.0)
+    fs!(du2, u0, p, 1.0)
+    @test isapprox(du1, du2)
+    dg1 = zeros(4, 4)
+    dg2 = zeros(4, 4)
+    sprob.g(dg1, u0, p, 1.0)
+    gs!(dg2, u0, p, t)
+    @test isapprox(dg1, dg2)
+
+    # Test jump systems.
+    rxs = [(@reaction k1, $A --> B),
+        (@reaction k2, B --> $A),
+        (@reaction k1, $C + D --> E + $C),
+        (@reaction k2, $C + E --> $C + D),
+        (@reaction k1 * t, $A + $C --> B + $C),
+        (@reaction k1 * B, 2 * $A + $C --> $C + B)]
+    @named rs = ReactionSystem(rxs, t)
+    jsys = convert(JumpSystem, rs)
+    @test issetequal(states(jsys), [B, C, D, E])
+    @test issetequal(parameters(jsys), [k1, k2, A])
+    majrates = [k1 * A, k1, k2]
+    majrs = [[], [C => 1, D => 1], [C => 1, E => 1]]
+    majns = [[B => 1], [D => -1, E => 1], [D => 1, E => -1]]
+    for (i, maj) in enumerate(equations(jsys).x[1])
+        @test isequal(maj.scaled_rates, majrates[i])
+        @test issetequal(maj.reactant_stoch, majrs[i])
+        @test issetequal(maj.net_stoch, majns[i])
+    end
+    @test isempty(equations(jsys).x[2])
+    vrj1 = equations(jsys).x[3][1]
+    @test isequal(vrj1.rate, k2 * B)
+    @test issetequal(vrj1.affect!, [B ~ B - 1])
+    vrj2 = equations(jsys).x[3][2]
+    @test isequal(vrj2.rate, k1 * t * A * C)
+    @test issetequal(vrj2.affect!, [B ~ B + 1])
+    vrj3 = equations(jsys).x[3][3]
+    @test isequal(vrj3.rate, k1 * B * A * (A - 1) / 2 * C)
+    @test issetequal(vrj3.affect!, [B ~ B + 1])
 end
-
-# Test sde systems.
-rxs = [(@reaction k1, $A --> B),
-    (@reaction k2, B --> $A),
-    (@reaction k1, $C + D --> E + $C),
-    (@reaction k2, E + $C --> $C + D)]
-@named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
-ssys = convert(SDESystem, rs)
-@test issetequal(MT.get_states(ssys), [B, C, D, E])
-@test issetequal(MT.get_ps(ssys), [A, k1, k2])
-du1 = zeros(4)
-du2 = zeros(4)
-sprob = SDEProblem(ssys, u0map, tspan, pmap; check_length = false)
-sprob.f(du1, u0, p, 1.0)
-fs!(du2, u0, p, 1.0)
-@test isapprox(du1, du2)
-dg1 = zeros(4, 4)
-dg2 = zeros(4, 4)
-sprob.g(dg1, u0, p, 1.0)
-gs!(dg2, u0, p, t)
-@test isapprox(dg1, dg2)
-
-# Test jump systems.
-rxs = [(@reaction k1, $A --> B),
-    (@reaction k2, B --> $A),
-    (@reaction k1, $C + D --> E + $C),
-    (@reaction k2, $C + E --> $C + D),
-    (@reaction k1 * t, $A + $C --> B + $C),
-    (@reaction k1 * B, 2 * $A + $C --> $C + B)]
-@named rs = ReactionSystem(rxs, t)
-jsys = convert(JumpSystem, rs)
-@test issetequal(states(jsys), [B, C, D, E])
-@test issetequal(parameters(jsys), [k1, k2, A])
-majrates = [k1 * A, k1, k2]
-majrs = [[], [C => 1, D => 1], [C => 1, E => 1]]
-majns = [[B => 1], [D => -1, E => 1], [D => 1, E => -1]]
-for (i, maj) in enumerate(equations(jsys).x[1])
-    @test isequal(maj.scaled_rates, majrates[i])
-    @test issetequal(maj.reactant_stoch, majrs[i])
-    @test issetequal(maj.net_stoch, majns[i])
-end
-@test isempty(equations(jsys).x[2])
-vrj1 = equations(jsys).x[3][1]
-@test isequal(vrj1.rate, k2 * B)
-@test issetequal(vrj1.affect!, [B ~ B - 1])
-vrj2 = equations(jsys).x[3][2]
-@test isequal(vrj2.rate, k1 * t * A * C)
-@test issetequal(vrj2.affect!, [B ~ B + 1])
-vrj3 = equations(jsys).x[3][3]
-@test isequal(vrj3.rate, k1 * B * A * (A - 1) / 2 * C)
-@test issetequal(vrj3.affect!, [B ~ B + 1])
-#end
 
 # Test that jump solutions actually run correctly for constants and BCs.
-#let
-@parameters k1 A [isconstantspecies = true]
-@variables t
-@species C(t) [isbcspecies = true] B1(t) B2(t) B3(t)
-@named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
-                                (@reaction k1, $A --> B2),
-                                (@reaction 10 * k1, ∅ --> B3)], t)
-dprob = DiscreteProblem(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
-                        [k1 => 1.0])
-jprob = JumpProblem(rn, dprob, Direct(), save_positions = (false, false))
-umean = zeros(4)
-Nsims = 40000
-for i in 1:Nsims
-    sol = solve(jprob, SSAStepper(), saveat = 10.0)
-    umean += sol(10.0, idxs = [B1, B2, B3, C])
+let
+    @parameters k1 A [isconstantspecies = true]
+    @variables t
+    @species C(t) [isbcspecies = true] B1(t) B2(t) B3(t)
+    @named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
+                                    (@reaction k1, $A --> B2),
+                                    (@reaction 10 * k1, ∅ --> B3)], t)
+    dprob = DiscreteProblem(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
+                            [k1 => 1.0])
+    jprob = JumpProblem(rn, dprob, Direct(), save_positions = (false, false))
+    umean = zeros(4)
+    Nsims = 40000
+    for i in 1:Nsims
+        sol = solve(jprob, SSAStepper(), saveat = 10.0)
+        umean += sol(10.0, idxs = [B1, B2, B3, C])
+    end
+    umean /= Nsims
+    @test isapprox(umean[1], umean[2]; rtol = 1e-2)
+    @test isapprox(umean[1], umean[3]; rtol = 1e-2)
+    @test umean[4] == 10
 end
-umean /= Nsims
-@test isapprox(umean[1], umean[2]; rtol = 1e-2)
-@test isapprox(umean[1], umean[3]; rtol = 1e-2)
-@test umean[4] == 10
-#end
 
 # Fix for SBML test 305.
-#let
-@parameters k1 k2 S2 [isconstantspecies = true]
-@variables t
-@species S1(t) S3(t)
-rx = Reaction(k2, [S1], nothing)
-∂ₜ = Differential(t)
-eq = ∂ₜ(S3) ~ k1 * S2
-@named osys = ODESystem([eq], t)
-@named rs = ReactionSystem([rx, eq], t)
-@test issetequal(states(rs), [S1, S3])
-@test issetequal(parameters(rs), [S2, k1, k2])
-osys = convert(ODESystem, rs)
-@test issetequal(states(osys), [S1, S3])
-@test issetequal(parameters(osys), [S2, k1, k2])
-#end
-#let
-@parameters k1 k2 S2 [isconstantspecies = true]
-@variables t
-@species S1(t) S3(t) [isbcspecies = true]
-rx = Reaction(k2, [S1], nothing)
-∂ₜ = Differential(t)
-eq = S3 ~ k1 * S2
-@named rs = ReactionSystem([rx, eq], t)
-@test issetequal(states(rs), [S1, S3])
-@test issetequal(parameters(rs), [S2, k1, k2])
-osys = convert(ODESystem, rs)
-@test issetequal(states(osys), [S1, S3])
-@test issetequal(parameters(osys), [S2, k1, k2])
-osys2 = structural_simplify(osys)
-@test length(equations(osys2)) == 1
-@test issetequal(states(osys2), [S1])
-@test issetequal(parameters(osys2), [S2, k1, k2])
-#end
-#let
-@parameters k1 k2 S2 [isconstantspecies = true]
-@variables t S3(t)
-@species S1(t)
-rx = Reaction(k2, [S1], nothing)
-∂ₜ = Differential(t)
-eq = S3 ~ k1 * S2
-@named rs = ReactionSystem([rx, eq], t)
-@test issetequal(states(rs), [S1, S3])
-@test issetequal(parameters(rs), [S2, k1, k2])
-osys = convert(ODESystem, rs)
-@test issetequal(states(osys), [S1, S3])
-@test issetequal(parameters(osys), [S2, k1, k2])
-osys2 = structural_simplify(osys)
-@test length(equations(osys2)) == 1
-@test issetequal(states(osys2), [S1])
-@test issetequal(parameters(osys2), [S2, k1, k2])
-#end
+let
+    @parameters k1 k2 S2 [isconstantspecies = true]
+    @variables t
+    @species S1(t) S3(t)
+    rx = Reaction(k2, [S1], nothing)
+    ∂ₜ = Differential(t)
+    eq = ∂ₜ(S3) ~ k1 * S2
+    @named osys = ODESystem([eq], t)
+    @named rs = ReactionSystem([rx, eq], t)
+    @test issetequal(states(rs), [S1, S3])
+    @test issetequal(parameters(rs), [S2, k1, k2])
+    osys = convert(ODESystem, rs)
+    @test issetequal(states(osys), [S1, S3])
+    @test issetequal(parameters(osys), [S2, k1, k2])
+end
+let
+    @parameters k1 k2 S2 [isconstantspecies = true]
+    @variables t
+    @species S1(t) S3(t) [isbcspecies = true]
+    rx = Reaction(k2, [S1], nothing)
+    ∂ₜ = Differential(t)
+    eq = S3 ~ k1 * S2
+    @named rs = ReactionSystem([rx, eq], t)
+    @test issetequal(states(rs), [S1, S3])
+    @test issetequal(parameters(rs), [S2, k1, k2])
+    osys = convert(ODESystem, rs)
+    @test issetequal(states(osys), [S1, S3])
+    @test issetequal(parameters(osys), [S2, k1, k2])
+    osys2 = structural_simplify(osys)
+    @test length(equations(osys2)) == 1
+    @test issetequal(states(osys2), [S1])
+    @test issetequal(parameters(osys2), [S2, k1, k2])
+end
+let
+    @parameters k1 k2 S2 [isconstantspecies = true]
+    @variables t S3(t)
+    @species S1(t)
+    rx = Reaction(k2, [S1], nothing)
+    ∂ₜ = Differential(t)
+    eq = S3 ~ k1 * S2
+    @named rs = ReactionSystem([rx, eq], t)
+    @test issetequal(states(rs), [S1, S3])
+    @test issetequal(parameters(rs), [S2, k1, k2])
+    osys = convert(ODESystem, rs)
+    @test issetequal(states(osys), [S1, S3])
+    @test issetequal(parameters(osys), [S2, k1, k2])
+    osys2 = structural_simplify(osys)
+    @test length(equations(osys2)) == 1
+    @test issetequal(states(osys2), [S1])
+    @test issetequal(parameters(osys2), [S2, k1, k2])
+end
 
 # Constant species = parameters basic tests.
-#let
-@parameters k b [isconstantspecies = true] c
-@variables t
-@test_throws ArgumentError @species A(t) B(t) a [isconstantspecies = true]
-@test_throws ArgumentError Reaction(k, [A, c], [B])
-@test_throws ArgumentError Reaction(k, [A], [B, c])
-rx = Reaction(k, [A, b], [B, b], [1, 1], [1, 2])
-@named rs = ReactionSystem([rx], t)
-@test issetequal(states(rs), [A, B])
-@test issetequal(parameters(rs), [k, b])
-#end
+let
+    @parameters k b [isconstantspecies = true] c
+    @variables t
+    @test_throws ArgumentError @species A(t) B(t) a [isconstantspecies = true]
+    @test_throws ArgumentError Reaction(k, [A, c], [B])
+    @test_throws ArgumentError Reaction(k, [A], [B, c])
+    rx = Reaction(k, [A, b], [B, b], [1, 1], [1, 2])
+    @named rs = ReactionSystem([rx], t)
+    @test issetequal(states(rs), [A, B])
+    @test issetequal(parameters(rs), [k, b])
+end
 
 # Test balanced_bc_check.
-#let
-@variables t
-@species A(t) [isbcspecies = true]
-rx = @reaction k, 2 * $A + B --> C + $A
-@test_throws ErrorException ReactionSystem([rx], t; name = :rs)
-@named rs = ReactionSystem([rx], t; balanced_bc_check = false)
-#end
+let
+    @variables t
+    @species A(t) [isbcspecies = true]
+    rx = @reaction k, 2 * $A + B --> C + $A
+    @test_throws ErrorException ReactionSystem([rx], t; name = :rs)
+    @named rs = ReactionSystem([rx], t; balanced_bc_check = false)
+end
 
 # Test for classification of jump types.
-#let
-rn = @reaction_network begin
-    t, A --> B          # vrj
-    1.0, B --> D        # vrj
-    k * D, H --> I + H  # vrj
-    k2, I --> L         # vrj
-    k, E --> F          # maj
-    k * E, E --> G      # crj
-    k2, G --> H         # maj
-    k2, G --> A + B     # maj
+let
+    rn = @reaction_network begin
+        t, A --> B          # vrj
+        1.0, B --> D        # vrj
+        k * D, H --> I + H  # vrj
+        k2, I --> L         # vrj
+        k, E --> F          # maj
+        k * E, E --> G      # crj
+        k2, G --> H         # maj
+        k2, G --> A + B     # maj
+    end
+    jsys = convert(JumpSystem, rn)
+    jumps = Catalyst.assemble_jumps(rn)
+    @test count(j -> j isa VariableRateJump, jumps) == 4
+    @test count(j -> j isa ConstantRateJump, jumps) == 1
+    @test count(j -> j isa MassActionJump, jumps) == 3
+    dg = [[1, 2], [2, 3], [4], [4], [5, 6], [5, 6, 7, 8], [3, 7, 8], [1, 2, 7, 8]]
+    dgact = Catalyst.get_depgraph(rn)
+    @test dg == dgact
 end
-jsys = convert(JumpSystem, rn)
-jumps = Catalyst.assemble_jumps(rn)
-@test count(j -> j isa VariableRateJump, jumps) == 4
-@test count(j -> j isa ConstantRateJump, jumps) == 1
-@test count(j -> j isa MassActionJump, jumps) == 3
-dg = [[1, 2], [2, 3], [4], [4], [5, 6], [5, 6, 7, 8], [3, 7, 8], [1, 2, 7, 8]]
-dgact = Catalyst.get_depgraph(rn)
-@test dg == dgact
-#end
 
 # Test printing with arrays is working ok.
 # Needs fix for https://github.com/JuliaSymbolics/Symbolics.jl/issues/842.
-#let
-@parameters a
-@variables t
-@species A(t) B(t) C(t)[1:2]
-rx1 = Reaction(a, [A, C[1]], [C[2], B], [1, 2], [2, 3])
-io = IOBuffer()
-show(io, rx1)
-str = String(take!(io))
-@test str == "a, A + 2*(C(t))[1] --> 2*(C(t))[2] + 3*B"
-#end
+let
+    @parameters a
+    @variables t
+    @species A(t) B(t) C(t)[1:2]
+    rx1 = Reaction(a, [A, C[1]], [C[2], B], [1, 2], [2, 3])
+    io = IOBuffer()
+    show(io, rx1)
+    str = String(take!(io))
+    @test str == "a, A + 2*(C(t))[1] --> 2*(C(t))[2] + 3*B"
+end
 
 # Test array metadata for species works.
-#let
-@variables t
-@species (A(t))[1:20]
-using ModelingToolkit: value
-@test isspecies(value(A))
-@test isspecies(value(A[2]))
-Av = value.(ModelingToolkit.scalarize(A))
-@test isspecies(Av[2])
-@test isequal(value(Av[2]), value(A[2]))
-#end
+let
+    @variables t
+    @species (A(t))[1:20]
+    using ModelingToolkit: value
+    @test isspecies(value(A))
+    @test isspecies(value(A[2]))
+    Av = value.(ModelingToolkit.scalarize(A))
+    @test isspecies(Av[2])
+    @test isequal(value(Av[2]), value(A[2]))
+end
 
 # Test mixed models are formulated correctly.
-#let
-@parameters k1 k2
-@variables t V(t)
-@species A(t) B(t)
-rx = Reaction(k1, [A], [B], [k2], [2])
-D = Differential(t)
-eq = D(V) ~ -k1 * k2 * V + A
-@named rs = ReactionSystem([eq, rx], t)
-@test length(states(rs)) == 3
-@test issetequal(states(rs), [A, B, V])
-@test length(parameters(rs)) == 2
-@test issetequal(parameters(rs), [k1, k2])
-@test length(species(rs)) == 2
-@test issetequal(species(rs), [A, B])
-@test all(typeof.(ModelingToolkit.get_eqs(rs)) .<: (Reaction, Equation))
-@test length(Catalyst.get_rxs(rs)) == 1
-@test reactions(rs)[1] == rx
-osys = convert(ODESystem, rs)
-@test issetequal(states(osys), [A, B, V])
-@test issetequal(parameters(osys), [k1, k2])
-@test length(equations(osys)) == 3
-#end
+let
+    @parameters k1 k2
+    @variables t V(t)
+    @species A(t) B(t)
+    rx = Reaction(k1, [A], [B], [k2], [2])
+    D = Differential(t)
+    eq = D(V) ~ -k1 * k2 * V + A
+    @named rs = ReactionSystem([eq, rx], t)
+    @test length(states(rs)) == 3
+    @test issetequal(states(rs), [A, B, V])
+    @test length(parameters(rs)) == 2
+    @test issetequal(parameters(rs), [k1, k2])
+    @test length(species(rs)) == 2
+    @test issetequal(species(rs), [A, B])
+    @test all(typeof.(ModelingToolkit.get_eqs(rs)) .<: (Reaction, Equation))
+    @test length(Catalyst.get_rxs(rs)) == 1
+    @test reactions(rs)[1] == rx
+    osys = convert(ODESystem, rs)
+    @test issetequal(states(osys), [A, B, V])
+    @test issetequal(parameters(osys), [k1, k2])
+    @test length(equations(osys)) == 3
+end
 
 # Test errors for repeated substrates or products
-#let
-@variables t
-@species A(t) B(t)
-@test_throws ArgumentError Reaction(1.0, [A, A, B], [B])
-@test_throws ArgumentError Reaction(1.0, [B], [A, A])
-@test_throws ArgumentError Reaction(1.0, [A, A], [B, B])
-#end
+let
+    @variables t
+    @species A(t) B(t)
+    @test_throws ArgumentError Reaction(1.0, [A, A, B], [B])
+    @test_throws ArgumentError Reaction(1.0, [B], [A, A])
+    @test_throws ArgumentError Reaction(1.0, [A, A], [B, B])
+end
 
 # Test order of species and products doesn't matter for equality or hashing
-#let
-@variables t
-@species A(t) α(t)
-rx = Reaction(1.0, [α, A], [α, A], [2, 3], [4, 5])
-rx2 = Reaction(1.0, [A, α], [A, α], [3, 2], [5, 4])
-@test rx == rx2
-@test hash(rx) == hash(rx2)
+let
+    @variables t
+    @species A(t) α(t)
+    rx = Reaction(1.0, [α, A], [α, A], [2, 3], [4, 5])
+    rx2 = Reaction(1.0, [A, α], [A, α], [3, 2], [5, 4])
+    @test rx == rx2
+    @test hash(rx) == hash(rx2)
 
-rx = Reaction(1.0, [α, A], [α, A], [2, 3], [4, 5]; netstoich = [α => 2, A => 2])
-rx2 = Reaction(1.0, [A, α], [A, α], [3, 2], [5, 4]; netstoich = [A => 2, α => 2])
-@test rx == rx2
-@test hash(rx) == hash(rx2)
-#end
+    rx = Reaction(1.0, [α, A], [α, A], [2, 3], [4, 5]; netstoich = [α => 2, A => 2])
+    rx2 = Reaction(1.0, [A, α], [A, α], [3, 2], [5, 4]; netstoich = [A => 2, α => 2])
+    @test rx == rx2
+    @test hash(rx) == hash(rx2)
+end
 
 # Additional unsorted tests.
-#let
-rn = @reaction_network begin k, X --> 0 end
-isspecies(species(rn)[1])
-@test Catalyst.has_species(rn)
-@test Catalyst.has_rxs(rn)
+let
+    rn = @reaction_network begin k, X --> 0 end
+    isspecies(species(rn)[1])
+    @test Catalyst.has_species(rn)
+    @test Catalyst.has_rxs(rn)
 
-@species X
-@variables Y
-@test isspecies(X)
-@test !isspecies(Y)
-@test isspecies(Catalyst.tospecies(Y))
-#end
+    @species X
+    @variables Y
+    @test isspecies(X)
+    @test !isspecies(Y)
+    @test isspecies(Catalyst.tospecies(Y))
+end
