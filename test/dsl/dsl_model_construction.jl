@@ -1,4 +1,4 @@
-### Fetch Packages and Set Global Variables ###
+### Fetch Packages and Reaction Networks ###
 
 # Fetch packages.
 using DiffEqBase, Catalyst, Random, Test

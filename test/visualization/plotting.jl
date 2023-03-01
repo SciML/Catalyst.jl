@@ -4,9 +4,11 @@
 using Catalyst, JumpProcesses, OrdinaryDiffEq, Plots, Random, Test
 using ModelingToolkit: get_states, get_ps
 
+# Sets rnd number.
 using StableRNGs
 rng = StableRNG(12345)
 
+# Fetch test networks.
 include("../test_networks.jl")
 
 ### Run Tests ###
