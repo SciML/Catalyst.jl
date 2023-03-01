@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using Catalyst, Random, Statistics, StochasticDiffEq, Test
-using ModelingToolkit: get_states, get_postprocess_fbody
+using ModelingToolkit: get_postprocess_fbody
 
 # Sets rnd number.
 using StableRNGs
@@ -97,8 +97,8 @@ let
 
     for (i, networks) in enumerate(identical_networks)
         for factor in [1e-1, 1e0, 1e1], repeat in 1:3
-            u0 = 100.0 .+ factor * rand(rng, length(get_states(networks[1])))
-            p = 0.01 .+ factor * rand(rng, length(get_ps(networks[1])))
+            u0 = 100.0 .+ factor * rand(rng, length(states(networks[1])))
+            p = 0.01 .+ factor * rand(rng, length(parameters(networks[1])))
             (i == 2) && (u0[1] += 1000.0)
             (i == 3) ? (p[2:2:6] .*= 1000.0; u0 .+= 1000) : (p[1] += 500.0)
             prob1 = SDEProblem(networks[1], u0, (0.0, 100.0), p)
@@ -149,8 +149,8 @@ end
 let
     for reaction_network in reaction_networks_all
         for factor in [1e-2, 1e-1, 1e0, 1e1]
-            u0 = factor * rand(rng, length(get_states(reaction_network)))
-            p = factor * rand(rng, length(get_ps(reaction_network)))
+            u0 = factor * rand(rng, length(states(reaction_network)))
+            p = factor * rand(rng, length(parameters(reaction_network)))
             prob = SDEProblem(reaction_network, u0, (0.0, 1.0), p)
         end
     end
@@ -162,7 +162,7 @@ end
 let
     no_param_network = @reaction_network begin (1.2, 5), X1 ↔ X2 end
     for factor in [1e3, 1e4]
-        u0 = factor * (1.0 .+ rand(rng, length(get_states(no_param_network))))
+        u0 = factor * (1.0 .+ rand(rng, length(states(no_param_network))))
         prob = SDEProblem(no_param_network, u0, (0.0, 1000.0))
         sol = solve(prob, ImplicitEM())
         vals1 = getindex.(sol.u[1:end], 1)
