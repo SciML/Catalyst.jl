@@ -33,8 +33,8 @@ eqs = Dict((U => (k[5] - k[4] * U - k[1] * U * W),
 
 # test a few API functions
 ns = [-1 0 0 -1 1 0 0;
-    1 -2 2 0 0 -1 1;
-    0 1 -1 0 0 0 0]
+      1 -2 2 0 0 -1 1;
+      0 1 -1 0 0 0 0]
 @test ns == netstoichmat(bpm)
 bpm2 = deepcopy(bpm)
 @test bpm == bpm2

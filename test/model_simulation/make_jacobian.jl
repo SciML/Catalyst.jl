@@ -32,8 +32,8 @@ let
         local osys = convert(ODESystem, jacobian_network_2)
         local test_jac = ODEFunction(osys, jac = true).jac(u, p, 0.0)
         local real_jac = [-1-2 * p[3] * u[2] * u[1] -p[3]*u[1]*u[1] 1.0;
-                        -2*p[3]*u[2]*u[1] -1-p[3] * u[1] * u[1] 1;
-                        2*p[3]*u[2]*u[1] p[3]*u[1]*u[1] -1.0]
+                          -2*p[3]*u[2]*u[1] -1-p[3] * u[1] * u[1] 1;
+                          2*p[3]*u[2]*u[1] p[3]*u[1]*u[1] -1.0]
         @test all(abs.(test_jac .- real_jac) .< 1e-9)
     end
 end
@@ -56,8 +56,8 @@ let
         local osys = convert(ODESystem, jacobian_network_3)
         local test_jac = ODEFunction(osys, jac = true).jac(u, p, 0.0)
         local real_jac = [-2 * k1 * A-k3 * B 2 * k2-k3 * A k4+3 * k5 * C^2 / 2;
-                        k1 * A - k3 * B+2 * k7 * k8^2 * A / (k8^2 + A^2)^2 -k2-k3 * A k4;
-                        k3*B k3*A -k4-3 * k5 * C^2 / 2]
+                          k1 * A - k3 * B+2 * k7 * k8^2 * A / (k8^2 + A^2)^2 -k2-k3 * A k4;
+                          k3*B k3*A -k4-3 * k5 * C^2 / 2]
         @test all(abs.(test_jac .- real_jac) .< 10e-9)
     end
 end

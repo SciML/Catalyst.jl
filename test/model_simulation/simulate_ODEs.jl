@@ -11,7 +11,6 @@ rng = StableRNG(12345)
 # Fetch test networks.
 include("../test_networks.jl")
 
-
 ### Compares to Known Solution ###
 
 # Exponential decay, should be identical to the (known) analytical solution.
@@ -23,7 +22,8 @@ let
         p = factor * rand(rng, length(get_ps(exponential_decay)))
         prob = ODEProblem(exponential_decay, u0, (0.0, 100 / factor), p)
         sol = solve(prob, Rosenbrock23(), saveat = range(0.0, 100 / factor, length = 101))
-        analytic_sol = map(t -> u0[1] * exp(-p[1] * t), range(0.0, 100 / factor, length = 101))
+        analytic_sol = map(t -> u0[1] * exp(-p[1] * t),
+                           range(0.0, 100 / factor, length = 101))
         @test all(abs.(first.(sol.u) .- analytic_sol) .< 0.1)
     end
 end
@@ -43,9 +43,10 @@ let
         prob = ODEProblem(known_equilibrium, u0, (0.0, 1000000.0), p)
         sol = solve(prob, Rosenbrock23())
         @test abs.(sol.u[end][1] / sol.u[end][2] - p[2] / p[1]) < 10000 * eps()
-        @test abs.(sol.u[end][3] * sol.u[end][4] / sol.u[end][5] - p[4] / p[3]) < 10000 * eps()
+        @test abs.(sol.u[end][3] * sol.u[end][4] / sol.u[end][5] - p[4] / p[3]) <
+              10000 * eps()
         @test abs.((sol.u[end][6]^2 / factorial(2)) / (sol.u[end][7]^3 / factorial(3)) -
-                p[6] / p[5]) < 1e-8
+                   p[6] / p[5]) < 1e-8
         @test abs.(sol.u[end][8] - p[7] / p[8]) < 10000 * eps()
     end
 end

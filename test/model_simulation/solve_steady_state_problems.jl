@@ -27,7 +27,8 @@ let
         prob = SteadyStateProblem(steady_state_network_1, u0, p)
         sol = solve(prob, SSRootfind()).u
         (minimum(sol[1:1]) > 1e-2) && (@test abs.(sol[1] - p[1] / p[2]) < 1e-8)
-        (minimum(sol[2:2]) > 1e-2) && (@test abs.(sol[2]^3 / factorial(3) - p[3] / p[4]) < 1e-8)
+        (minimum(sol[2:2]) > 1e-2) &&
+            (@test abs.(sol[2]^3 / factorial(3) - p[3] / p[4]) < 1e-8)
         (minimum(sol[3:4]) > 1e-2) && (@test abs.(sol[3] * sol[4] - p[5] / p[6]) < 1e-8)
     end
 end

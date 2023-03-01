@@ -116,11 +116,11 @@ let
     nlsys = convert(NonlinearSystem, rs)
 
     @test ModelingToolkit.get_defaults(rs) ==
-        ModelingToolkit.get_defaults(odesys) ==
-        ModelingToolkit.get_defaults(sdesys) ==
-        ModelingToolkit.get_defaults(js) ==
-        ModelingToolkit.get_defaults(nlsys) ==
-        defs
+          ModelingToolkit.get_defaults(odesys) ==
+          ModelingToolkit.get_defaults(sdesys) ==
+          ModelingToolkit.get_defaults(js) ==
+          ModelingToolkit.get_defaults(nlsys) ==
+          defs
 
     u0map = [A => 5.0] # was 0.5
     pmap = [k[1] => 5.0] # was 1.
@@ -135,7 +135,6 @@ let
 end
 
 ### Check ODE, SDE, and Jump Functions ###
-
 
 # Test by evaluating drift and diffusion terms.
 # These two blocks could be put in a "let .. end" statement, however, this causes "fnl(dunl, u, p)" to throw a "MethodError: no method matching Float64(::Num)" error.
@@ -158,7 +157,6 @@ dunl = similar(du)
 fnl(dunl, u, p)
 @test norm(du - dunl) < 100 * eps()
 
-
 # Tests the noise_scaling argument.
 let
     p = rand(length(k) + 1)
@@ -167,7 +165,8 @@ let
     G = p[21] * sdenoise(u, p, t)
     @variables η
     sdesys_noise_scaling = convert(SDESystem, rs; noise_scaling = η)
-    sf = SDEFunction{false}(sdesys_noise_scaling, states(rs), parameters(sdesys_noise_scaling))
+    sf = SDEFunction{false}(sdesys_noise_scaling, states(rs),
+                            parameters(sdesys_noise_scaling))
     G2 = sf.g(u, p, t)
     @test norm(G - G2) < 100 * eps()
 end
@@ -180,9 +179,10 @@ let
     G = vcat(fill(p[21], 8), fill(p[22], 3), fill(p[23], 9))' .* sdenoise(u, p, t)
     @variables η[1:3]
     sdesys_noise_scaling = convert(SDESystem, rs;
-                                noise_scaling = vcat(fill(η[1], 8), fill(η[2], 3),
+                                   noise_scaling = vcat(fill(η[1], 8), fill(η[2], 3),
                                                         fill(η[3], 9)))
-    sf = SDEFunction{false}(sdesys_noise_scaling, states(rs), parameters(sdesys_noise_scaling))
+    sf = SDEFunction{false}(sdesys_noise_scaling, states(rs),
+                            parameters(sdesys_noise_scaling))
     G2 = sf.g(u, p, t)
     @test norm(G - G2) < 100 * eps()
 end
@@ -194,7 +194,8 @@ let
     t = 0.0
     G = [p p p p]' .* sdenoise(u, p, t)
     sdesys_noise_scaling = convert(SDESystem, rs; noise_scaling = k)
-    sf = SDEFunction{false}(sdesys_noise_scaling, states(rs), parameters(sdesys_noise_scaling))
+    sf = SDEFunction{false}(sdesys_noise_scaling, states(rs),
+                            parameters(sdesys_noise_scaling))
     G2 = sf.g(u, p, t)
     @test norm(G - G2) < 100 * eps()
 end
@@ -323,8 +324,9 @@ let
         Reaction(k2 * R, [I], [R])]
     @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
     @test isequal(oderatelaw(equations(rs)[1]),
-                k1 * S * S^2 * I^3 / (factorial(2) * factorial(3)))
-    @test_skip isequal(jumpratelaw(equations(eqs)[1]), k1 * S * binomial(S, 2) * binomial(I, 3))
+                  k1 * S * S^2 * I^3 / (factorial(2) * factorial(3)))
+    @test_skip isequal(jumpratelaw(equations(eqs)[1]),
+                       k1 * S * binomial(S, 2) * binomial(I, 3))
     dep = Set()
     ModelingToolkit.get_variables!(dep, rxs[2], Set(states(rs)))
     dep2 = Set([R, I])
@@ -337,7 +339,7 @@ let
 
     @test isequal2(jumpratelaw(rxs[1]), k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
     @test isequal2(jumpratelaw(rxs[1]; combinatoric_ratelaw = false),
-                k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
+                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
     @test isequal2(oderatelaw(rxs[1]), k1 * S * S^2 * I^3 / 12)
     @test isequal2(oderatelaw(rxs[1]; combinatoric_ratelaw = false), k1 * S * S^2 * I^3)
 
@@ -358,14 +360,15 @@ let
     # Test ConstantRateJump rate scaling.
     let
         js = convert(JumpSystem, rs)
-        @test isequal2(equations(js)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
+        @test isequal2(equations(js)[1].rate,
+                       k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
         js = convert(JumpSystem, rs; combinatoric_ratelaws = false)
         @test isequal2(equations(js)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
         js2 = convert(JumpSystem, rs2)
         @test isequal2(equations(js2)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
         js3 = convert(JumpSystem, rs2; combinatoric_ratelaws = true)
         @test isequal2(equations(js3)[1].rate,
-                    k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
+                       k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
     end
 
     # Test MassActionJump rate scaling.

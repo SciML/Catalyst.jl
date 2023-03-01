@@ -7,7 +7,7 @@ let
     @variables t
     @species A(t), B(t), C(t), D(t)
     rxs = [Reaction(t * k, [A], [B], [2 * α^2], [k + α * C])
-        Reaction(1.0, [A, B], [C, D], [α, 2], [k, α])]
+           Reaction(1.0, [A, B], [C, D], [α, 2], [k, α])]
     @named rs = ReactionSystem(rxs, t)
     @test issetequal(states(rs), [A, B, C, D])
     @test issetequal(parameters(rs), [k, α])
@@ -75,8 +75,8 @@ let
         du[4] = α * rl2
     end
     oprob2 = ODEProblem(oderhs, [uv[2] for uv in u0map], tspan, oprob.p)
-    du1 .= 0;
-    du2 .= 0;
+    du1 .= 0
+    du2 .= 0
     oprob.f(du1, oprob.u0, oprob.p, 1.5)
     oprob2.f(du2, oprob2.u0, oprob2.p, 1.5)
     @test norm(du1 .- du2) < 100 * eps()
@@ -96,9 +96,9 @@ let
         rl = sqrt(t * k / factorial(n) * A^n)
         rl2 = sqrt(A^α * B^2 / (2 * factorial(α)))
         G = [-n*rl (-α*rl2);
-            (k + α * C)*rl (-2*rl2);
-            0.0 k*rl2;
-            0.0 α*rl2]
+             (k + α * C)*rl (-2*rl2);
+             0.0 k*rl2;
+             0.0 α*rl2]
     end
     G2 = sdenoise(u0, p, 1.0)
     @test norm(G - G2) < 100 * eps()
@@ -118,9 +118,9 @@ let
         rl = sqrt(t * k * A^n)
         rl2 = sqrt(A^α * B^2)
         G = [-n*rl (-α*rl2);
-            (k + α * C)*rl (-2*rl2);
-            0.0 k*rl2;
-            0.0 α*rl2]
+             (k + α * C)*rl (-2*rl2);
+             0.0 k*rl2;
+             0.0 α*rl2]
     end
     G2 = sdenoise(u0, p, 1.0)
     @test norm(G - G2) < 100 * eps()
@@ -151,10 +151,10 @@ let
     j1 = VariableRateJump(r1, affect1!)
     vrj = ModelingToolkit.assemble_vrj(js, equations(js)[1], statetoid)
     @test isapprox(vrj.rate(u0, p, ttt), r1(u0, p, ttt))
-    fake_integrator1 = (u = copy(u0), p = p, t = ttt);
-    fake_integrator2 = deepcopy(fake_integrator1);
-    vrj.affect!(fake_integrator1);
-    affect1!(fake_integrator2);
+    fake_integrator1 = (u = copy(u0), p = p, t = ttt)
+    fake_integrator2 = deepcopy(fake_integrator1)
+    vrj.affect!(fake_integrator1)
+    affect1!(fake_integrator2)
     @test fake_integrator1 == fake_integrator2
 
     function r2(u, p, t)
@@ -179,10 +179,10 @@ let
     j2 = VariableRateJump(r2, affect2!)
     vrj = ModelingToolkit.assemble_vrj(js, equations(js)[2], statetoid)
     @test isapprox(vrj.rate(u0, p, ttt), r2(u0, p, ttt))
-    fake_integrator1 = (u = copy(u0), p = p, t = ttt);
-    fake_integrator2 = deepcopy(fake_integrator1);
-    vrj.affect!(fake_integrator1);
-    affect2!(fake_integrator2);
+    fake_integrator1 = (u = copy(u0), p = p, t = ttt)
+    fake_integrator2 = deepcopy(fake_integrator1)
+    vrj.affect!(fake_integrator1)
+    affect2!(fake_integrator2)
     @test fake_integrator1 == fake_integrator2
 end
 

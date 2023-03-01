@@ -26,8 +26,8 @@ let
     # For the A + B <--> C subsystem one of these must occur
     # as a conservation law.
     D = [1 -1 0 0 0 0 0 0 0 0;
-        -1 1 0 0 0 0 0 0 0 0
-        0 1 1 0 0 0 0 0 0 0]
+         -1 1 0 0 0 0 0 0 0 0
+         0 1 1 0 0 0 0 0 0 0]
     @test any(D[j, :] == C[i, :] for i in 1:size(C, 1), j in 1:size(D, 1))
 
     C = conservationlaws(rn)
