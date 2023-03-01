@@ -167,10 +167,11 @@ let
     \frac{\mathrm{d} \mathrm{X2}\left( t \right)}{\mathrm{d}t} =& \frac{1}{2} \left( X\left( t \right) \right)^{2} kB - kD \mathrm{X2}\left( t \right)
     \end{align}
     $", "\r\n"=>"\n")
+
+    # Tests that erroneous form gives error.
+    @test_throws ErrorException latexify(rn; form=:xxx)
 end
 
-# Tests that erroneous form gives error.
-@test_throws ErrorException latexify(rn; form=:xxx)
 
 ### Checks Reaction Network - Equations Combination ###
 
