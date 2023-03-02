@@ -137,7 +137,7 @@ end
 ### Check ODE, SDE, and Jump Functions ###
 
 # Test by evaluating drift and diffusion terms.
-# Don't ask me (Torkel) why the t statement before/after is needed. 
+# Don't ask me (Torkel) why the statement before/after is needed. 
 t = 0.0
 let
     p = rand(length(k))
@@ -357,10 +357,8 @@ let
     @test isequal2(equations(os2)[1].rhs, -2 * k1 * S * S^2 * I^3)
     os3 = convert(ODESystem, rs2; combinatoric_ratelaws = true)
     @test isequal2(equations(os3)[1].rhs, -2 * k1 * S * S^2 * I^3 / 12)
-end
 
-# Test ConstantRateJump rate scaling.
-let
+    # Test ConstantRateJump rate scaling.
     js = convert(JumpSystem, rs)
     @test isequal2(equations(js)[1].rate,
                    k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
@@ -371,10 +369,8 @@ let
     js3 = convert(JumpSystem, rs2; combinatoric_ratelaws = true)
     @test isequal2(equations(js3)[1].rate,
                    k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
-end
 
-# Test MassActionJump rate scaling.
-let
+    # Test MassActionJump rate scaling.
     rxs = [Reaction(k1, [S, I], [I], [2, 3], [2]),
         Reaction(k2, [I], [R])]
     @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
