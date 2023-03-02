@@ -4,6 +4,9 @@ use of the [BifurcationKit.jl](https://bifurcationkit.github.io/BifurcationKitDo
 package. This tutorial gives a simple example of how to create such a
 bifurcation diagram.
 
+!!! note
+    Catalyst 13.0 and up require at least BifurcationKit v0.2.4.
+
 First, we declare our reaction model. For this example we will use a bistable
 switch, but one which also contains a Hopf bifurcation.
 ```@example ex1
