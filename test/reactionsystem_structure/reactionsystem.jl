@@ -347,10 +347,8 @@ let
     @test isequal2(oderatelaw(rxs[1]; combinatoric_ratelaw = false), k1 * S * S^2 * I^3)
 
     @named rs2 = ReactionSystem(rxs, t, [S, I, R], [k1, k2]; combinatoric_ratelaws = false)
-end
 
-# Test ODE scaling:
-let
+    # Test ODE scaling:
     os = convert(ODESystem, rs)
     @test isequal2(equations(os)[1].rhs, -2 * k1 * S * S^2 * I^3 / 12)
     os = convert(ODESystem, rs; combinatoric_ratelaws = false)
