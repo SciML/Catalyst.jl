@@ -228,7 +228,7 @@ reset_networkproperties!
 ## Network comparison
 ```@docs
 ==(rn1::Reaction, rn2::Reaction)
-isequal_ignore_names
+isequivalent
 ==(rn1::ReactionSystem, rn2::ReactionSystem)
 ```
 

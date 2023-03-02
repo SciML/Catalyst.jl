@@ -92,7 +92,7 @@ end
 # Test equation only constructor.
 let
     @named rs2 = ReactionSystem(rxs, t)
-    @test Catalyst.isequal_ignore_names(rs, rs2)
+    @test Catalyst.isequivalent(rs, rs2)
 end
 
 # Test show.
@@ -137,7 +137,7 @@ end
 ### Check ODE, SDE, and Jump Functions ###
 
 # Test by evaluating drift and diffusion terms.
-# Don't ask me (Torkel) why the statement before/after is needed. 
+# Don't ask me (Torkel) why the statement before/after is needed.
 t = 0.0
 let
     p = rand(length(k))
@@ -384,7 +384,7 @@ let
     rxs = [Reaction(x * t * A * B + y, [A], nothing)]
     @named rs1 = ReactionSystem(rxs, t, [A, B], [x, y])
     @named rs2 = ReactionSystem(rxs, t)
-    @test Catalyst.isequal_ignore_names(rs1, rs2)
+    @test Catalyst.isequivalent(rs1, rs2)
 
     @variables t
     @species L(t), H(t)

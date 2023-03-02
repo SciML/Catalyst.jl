@@ -2,6 +2,27 @@
 
 ## Catalyst unreleased (master branch)
 
+## Catalyst 13.1
+- Non-species states can be declared in the DSL using `@variables`, and custom
+  independent variables (instead of just `t`) using `@ivs`. For the latter, the
+  first independent variable is always interpreted as the time variable, and all
+  *discovered* species are created to be functions of all the `ivs`. For example
+  in
+  ```julia
+  rn = @reaction_network begin
+      @ivs s x
+      @variables A(s) B(x) C(s,x)
+      @species D(s) E(x) F(s,x)
+      k*C, A*D + B*E --> F + H
+  end
+  ```
+  `s` will be the time variable, `H = H(s,x)` will be made a function of `s` and
+  `x`, and `A(s)`, `B(x)`, and `C(s,x)` will be non-species state variables.
+- `Catalyst.isequal_ignore_names` has been deprecated for `isequivalent(rn1,
+  rn2)` to test equality of two networks and ignore their name. To include names
+  in the equality check continue to use `rn1 == rn2` or use `isequivalent(rn1,
+  rn2; ignorenames = false)`.
+
 ## Catalyst 13.0
 - **BREAKING:** Parameters should no longer be listed at the end of the DSL
   macro, but are instead inferred from their position in the reaction statements

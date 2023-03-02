@@ -236,13 +236,47 @@ sprob = SDEProblem(bdp, u₀, tspan, p)
 
 # solve and plot, tstops is used to specify enough points
 # that the plot looks well-resolved
-sol = solve(sprob, LambaEM(), tstops=range(0., step=4e-3, length=1001))
+sol = solve(sprob, LambaEM(), tstops = range(0., step = 4e-3, length = 1001))
 plot(sol)
 ```
 
 We again have complete freedom to select any of the
 StochasticDiffEq.jl SDE solvers, see the
 [documentation](https://docs.sciml.ai/stable/modules/DiffEqDocs/solvers/sde_solve/).
+
+---
+## Specifying a complete model via the DSL
+In the previous examples we specified initial conditions and parameter values
+via mappings that were constructed after building our [`ReactionSystem`](@ref).
+Catalyst also supports specifying default values for these during
+`ReactionSystem` construction. For example, for the last SDE example we
+could have also built and simulated the complete model using the DSL like
+```@example tut1
+bdp2 = @reaction_network begin
+    @parameters c₁ = 1.0 c₂ = 2.0 c₃ = 50.0
+    @species X(t) = 5.0
+    c₁, X --> 2X
+    c₂, X --> 0
+    c₃, 0 --> X
+end
+tspan = (0., 4.)
+sprob2 = SDEProblem(bdp2, [], tspan)
+```
+Let's now simulate both models, starting from the same random number generator
+seed, and check we get the same solutions
+```@example tut1
+using Random
+Random.seed!(1)
+sol = solve(sprob, LambaEM(), tstops = range(0., step = 4e-3, length = 1001))
+p1 = plot(sol)
+Random.seed!(1)
+sol2 = solve(sprob2, LambaEM(), tstops = range(0., step = 4e-3, length = 1001))
+p2 = plot(sol2)
+plot(p1, p2, layout = (2,1))
+```
+
+For details on what information can be specified via the DSL see the [The
+Reaction DSL](@ref dsl_description) tutorial.
 
 ---
 ## Reaction rate laws used in simulations

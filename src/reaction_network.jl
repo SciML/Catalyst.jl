@@ -370,7 +370,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
         error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
     any(!in(opt_in, option_keys) for opt_in in keys(options)) &&
-        error("The following unsupprted options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
+        error("The following unsupported options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
     forbidden_symbol_check(union(species, parameters))
     forbidden_variable_check(variables)
     unique_symbol_check(union(species, parameters, variables, ivs))

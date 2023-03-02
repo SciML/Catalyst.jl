@@ -4,6 +4,9 @@ use of the [BifurcationKit.jl](https://bifurcationkit.github.io/BifurcationKitDo
 package. This tutorial gives a simple example of how to create such a
 bifurcation diagram.
 
+!!! note
+    Catalyst 13.0 and up require at least BifurcationKit v0.2.4.
+
 First, we declare our reaction model. For this example we will use a bistable
 switch, but one which also contains a Hopf bifurcation.
 ```@example ex1
@@ -26,11 +29,12 @@ plot_var = :X          # we will plot X vs S
 nothing   # hide
 ```
 When creating a bifurcation diagram, we typically start at some point in
-parameter-space. We will simply select the beginning of the interval over
-which we wish to compute the bifurcation diagram, `p_span[1]`. We thus create a
-modified parameter set where `S = 0.1`. For this parameter set, we also guess the steady state of the system. While a good estimate could be
-provided through an ODE simulation, BifurcationKit does not require the guess to
-be very accurate.
+parameter-space. We will simply select the beginning of the interval over which
+we wish to compute the bifurcation diagram, `p_span[1]`. We thus create a
+modified parameter set where `S = 0.1`. For this parameter set, we also guess
+the steady state of the system. While a good estimate could be provided through
+an ODE simulation, BifurcationKit does not require the guess to be very
+accurate.
 ```@example ex1
 p_bstart = copy(p)
 p_bstart[bif_par] = p_span[1]
@@ -40,7 +44,7 @@ nothing   # hide
 Finally, we extract the ODE derivative function and its jacobian in a form that
 BifurcationKit can use:
 ```@example ex1
-oprob = ODEProblem(rn, u0, (0.0,0.0), p_bstart; jac = true)
+oprob = ODEProblem(rn, u0, (0.0, 0.0), p_bstart; jac = true)
 F = (u,p) -> oprob.f(u, p, 0)
 J = (u,p) -> oprob.f.jac(u, p, 0)
 nothing   # hide
@@ -71,11 +75,12 @@ bprob = BifurcationProblem(F, oprob.u0, oprob.p, (@lens _[bif_idx]);
                            recordFromSolution = (x, p) -> x[plot_idx], J = J)
 nothing   # hide
 ```
-Next, we need to specify the input options for the pseudo-arclength continuation method (PACM) which produces the diagram.
+Next, we need to specify the input options for the pseudo-arclength continuation
+method (PACM) which produces the diagram.
 ```@example ex1
 bopts = ContinuationPar(dsmax = 0.05,          # Max arclength in PACM.
                         dsmin = 1e-4,          # Min arclength in PACM.
-                        ds=0.001,              # Initial (positive) arclength in PACM.
+                        ds = 0.001,            # Initial (positive) arclength in PACM.
                         maxSteps = 100000,     # Max number of steps.
                         pMin = p_span[1],      # Min p-val (if hit, the method stops).
                         pMax = p_span[2],      # Max p-val (if hit, the method stops).
@@ -93,7 +98,7 @@ nothing   # hide
 ```
 Finally, we can plot it:
 ```@example ex1
-plot(bf, xlabel = string(bif_par), ylabel = string(plot_var))
+plot(bf; xlabel = string(bif_par), ylabel = string(plot_var))
 ```
 
 Here, the Hopf bifurcation is marked with a red dot and the fold bifurcations
@@ -104,4 +109,4 @@ This tutorial demonstrated how to make a simple bifurcation diagram where all
 branches are connected. However, BifurcationKit.jl is a very powerful package
 capable of a lot more. For more details, please see that package's
 documentation:
-[BifurcationKit.jl](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/).
+[BifurcationKit.jl](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/).
