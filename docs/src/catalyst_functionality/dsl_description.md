@@ -457,6 +457,61 @@ end
 
 Please see the API [Rate Laws](@ref api_rate_laws) section for more details.
 
+## Including non-species variables
+Non-species state variables can be specified in the DSL using the `@variables`
+macro. These are declared similarly to species. For example,
+```@example tut2
+rn_with_volume = @reaction_network begin
+  @variables V(t)
+  k*V, 0 --> A
+end
+```
+Creates a network with one species
+```@example tut2
+species(rn_with_volume)
+```
+and one non-species
+```@example tut2
+nonspecies(rn_with_volume)
+```
+giving two state variables, always internally ordered by species and then
+nonspecies:
+```@example tut2
+states(rn_with_volume)
+```
+
+`rn_with_volume` could then be extended with constraint equations for how `V(t)`
+evolves in time, see the [associated tutorial](@ref constraint_equations).
+
+## Specifying alternative time variables and/or extra independent variables
+While the DSL defaults to allowing `t` as the time variable, one can use the
+`@ivs` macro to specify an alternative. For example, to make `s` the default
+time variable one can say
+```@example tut2
+rn_with_s = @reaction_network begin
+    @ivs s
+    @variables V(s)
+    @species B(s)
+    k, A + V*B --> C
+end
+```
+where we see all states are now functions of `s`.
+
+Similarly, if one wants states to be functions of more than one independent
+variable, for example to encode a spatial problem, one can list more than one
+variable, i.e. `@ivs t x y`. Here the first listed independent variable is
+always chosen to represent time. For example,
+```@example tut2
+rn_with_many_ivs = @reaction_network begin
+    @ivs s x
+    @variables V1(s) V2(s,x)
+    @species A(s) B(s,x)
+    k, V1*A --> V2*B + C
+end
+```
+Here again `s` will be the time variable, and any inferred species, `C` in this
+case, are made functions of both variables, i.e. `C(s, x)`.
+
 ## [Interpolation of Julia variables](@id dsl_description_interpolation_of_variables)
 The DSL allows Julia variables to be interpolated for the network name, within
 rate constant expressions, or for species/stoichiometry within reactions. Using
