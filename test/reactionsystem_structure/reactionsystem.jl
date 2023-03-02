@@ -139,7 +139,7 @@ end
 # Test by evaluating drift and diffusion terms.
 # Don't ask me (Torkel) why the t statement before/after is needed. 
 t = 0.0
-let 
+let
     p = rand(length(k))
     u = rand(length(k))
     du = oderhs(u, p, t)
@@ -150,7 +150,7 @@ let
     @test norm(du - du2) < 100 * eps()
     G2 = sf.g(u, p, t)
     @test norm(G - G2) < 100 * eps()
-    
+
     # Test conversion to NonlinearSystem.
     ns = convert(NonlinearSystem, rs)
     fnl = eval(generate_function(ns)[2])
