@@ -1,6 +1,6 @@
 ### File declaring various reaction networks for the tests to be run on ###
 
-#Declares the vectors which contains the various test sets.
+# Declares the vectors which contains the various test sets.
 reaction_networks_standard = Vector{ReactionSystem}(undef, 10)
 reaction_networks_hill = Vector{ReactionSystem}(undef, 10)
 reaction_networks_constraint = Vector{ReactionSystem}(undef, 10)
@@ -95,7 +95,7 @@ reaction_networks_standard[10] = @reaction_network rns10 begin
     d, X5 ⟶ ∅
 end
 
-### Network with hill functions ###.
+### Network with Hill functions ###.
 
 reaction_networks_hill[1] = @reaction_network rnh1 begin
     @parameters v1 v2 K1 K2 n1 n2 d1 d2
@@ -178,7 +178,7 @@ reaction_networks_hill[10] = @reaction_network rnh10 begin
     (d1, d2), (X5, X6) → ∅
 end
 
-### Reaction networks were some linnear combination concentrations remain fixed (steady state values depends on initial conditions).
+### Reaction networks were some linnear combination concentrations remain fixed (steady state values depends on initial conditions). ###
 
 reaction_networks_constraint[1] = @reaction_network rnc1 begin
     @parameters k1 k2 k3 k4 k5 k6

@@ -1,7 +1,10 @@
-using Catalyst, LinearAlgebra, JumpProcesses, Test, OrdinaryDiffEq, StochasticDiffEq
+### Fetch Packages and Set Global Variables ###
 
+# Fetch pakcages.
+using Catalyst, LinearAlgebra, JumpProcesses, Test, OrdinaryDiffEq, StochasticDiffEq
 const MT = ModelingToolkit
 
+# Create test network.
 @parameters k[1:20]
 @variables t
 @species A(t) B(t) C(t) D(t)
@@ -30,46 +33,7 @@ rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
 odesys = convert(ODESystem, rs)
 sdesys = convert(SDESystem, rs)
 
-# test equation only constructor
-@named rs2 = ReactionSystem(rxs, t)
-@test Catalyst.isequal_ignore_names(rs, rs2)
-
-# test show
-io = IOBuffer()
-show(io, rs)
-str = String(take!(io))
-@test count(isequal('\n'), str) < 30
-
-# defaults test
-def_p = [ki => float(i) for (i, ki) in enumerate(k)]
-def_u0 = [A => 0.5, B => 1.0, C => 1.5, D => 2.0]
-defs = merge(Dict(def_p), Dict(def_u0))
-
-@named rs = ReactionSystem(rxs, t, [A, B, C, D], k; defaults = defs)
-odesys = convert(ODESystem, rs)
-sdesys = convert(SDESystem, rs)
-js = convert(JumpSystem, rs)
-nlsys = convert(NonlinearSystem, rs)
-
-@test ModelingToolkit.get_defaults(rs) ==
-      ModelingToolkit.get_defaults(odesys) ==
-      ModelingToolkit.get_defaults(sdesys) ==
-      ModelingToolkit.get_defaults(js) ==
-      ModelingToolkit.get_defaults(nlsys) ==
-      defs
-
-u0map = [A => 5.0] # was 0.5
-pmap = [k[1] => 5.0] # was 1.
-prob = ODEProblem(rs, u0map, (0, 10.0), pmap)
-@test prob.p[1] == 5.0
-@test prob.u0[1] == 5.0
-u0 = [10.0, 11.0, 12.0, 13.0]
-ps = [float(x) for x in 100:119]
-prob = ODEProblem(rs, u0, (0, 10.0), ps)
-@test prob.p == ps
-@test prob.u0 == u0
-
-# hard coded ODE rhs
+# Hard coded ODE rhs.
 function oderhs(u, k, t)
     A = u[1]
     B = u[2]
@@ -91,7 +55,7 @@ function oderhs(u, k, t)
     du
 end
 
-# sde noise coefs
+# SDE noise coefs.
 function sdenoise(u, k, t)
     A = u[1]
     B = u[2]
@@ -123,62 +87,125 @@ function sdenoise(u, k, t)
     return G
 end
 
-# test by evaluating drift and diffusion terms
-p = rand(length(k))
-u = rand(length(k))
+### Main Tests ###
+
+# Test equation only constructor.
+let
+    @named rs2 = ReactionSystem(rxs, t)
+    @test Catalyst.isequal_ignore_names(rs, rs2)
+end
+
+# Test show.
+let
+    io = IOBuffer()
+    show(io, rs)
+    str = String(take!(io))
+    @test count(isequal('\n'), str) < 30
+end
+
+# Defaults test.
+let
+    def_p = [ki => float(i) for (i, ki) in enumerate(k)]
+    def_u0 = [A => 0.5, B => 1.0, C => 1.5, D => 2.0]
+    defs = merge(Dict(def_p), Dict(def_u0))
+
+    @named rs = ReactionSystem(rxs, t, [A, B, C, D], k; defaults = defs)
+    odesys = convert(ODESystem, rs)
+    sdesys = convert(SDESystem, rs)
+    js = convert(JumpSystem, rs)
+    nlsys = convert(NonlinearSystem, rs)
+
+    @test ModelingToolkit.get_defaults(rs) ==
+          ModelingToolkit.get_defaults(odesys) ==
+          ModelingToolkit.get_defaults(sdesys) ==
+          ModelingToolkit.get_defaults(js) ==
+          ModelingToolkit.get_defaults(nlsys) ==
+          defs
+
+    u0map = [A => 5.0] # was 0.5
+    pmap = [k[1] => 5.0] # was 1.
+    prob = ODEProblem(rs, u0map, (0, 10.0), pmap)
+    @test prob.p[1] == 5.0
+    @test prob.u0[1] == 5.0
+    u0 = [10.0, 11.0, 12.0, 13.0]
+    ps = [float(x) for x in 100:119]
+    prob = ODEProblem(rs, u0, (0, 10.0), ps)
+    @test prob.p == ps
+    @test prob.u0 == u0
+end
+
+### Check ODE, SDE, and Jump Functions ###
+
+# Test by evaluating drift and diffusion terms.
+# Don't ask me (Torkel) why the statement before/after is needed. 
 t = 0.0
-du = oderhs(u, p, t)
-G = sdenoise(u, p, t)
-sdesys = convert(SDESystem, rs)
-sf = SDEFunction{false}(sdesys, states(rs), parameters(rs))
-du2 = sf.f(u, p, t)
-@test norm(du - du2) < 100 * eps()
-G2 = sf.g(u, p, t)
-@test norm(G - G2) < 100 * eps()
+let
+    p = rand(length(k))
+    u = rand(length(k))
+    du = oderhs(u, p, t)
+    G = sdenoise(u, p, t)
+    sdesys = convert(SDESystem, rs)
+    sf = SDEFunction{false}(sdesys, states(rs), parameters(rs))
+    du2 = sf.f(u, p, t)
+    @test norm(du - du2) < 100 * eps()
+    G2 = sf.g(u, p, t)
+    @test norm(G - G2) < 100 * eps()
 
-# test conversion to NonlinearSystem
-ns = convert(NonlinearSystem, rs)
-fnl = eval(generate_function(ns)[2])
-dunl = similar(du)
-fnl(dunl, u, p)
-@test norm(du - dunl) < 100 * eps()
+    # Test conversion to NonlinearSystem.
+    ns = convert(NonlinearSystem, rs)
+    fnl = eval(generate_function(ns)[2])
+    dunl = similar(du)
+    fnl(dunl, u, p)
+    @test norm(du - dunl) < 100 * eps()
+end
+@variables t
 
-# tests the noise_scaling argument.
-p = rand(length(k) + 1)
-u = rand(length(k))
-t = 0.0
-G = p[21] * sdenoise(u, p, t)
-@variables η
-sdesys_noise_scaling = convert(SDESystem, rs; noise_scaling = η)
-sf = SDEFunction{false}(sdesys_noise_scaling, states(rs), parameters(sdesys_noise_scaling))
-G2 = sf.g(u, p, t)
-@test norm(G - G2) < 100 * eps()
+# Tests the noise_scaling argument.
+let
+    p = rand(length(k) + 1)
+    u = rand(length(k))
+    t = 0.0
+    G = p[21] * sdenoise(u, p, t)
+    @variables η
+    sdesys_noise_scaling = convert(SDESystem, rs; noise_scaling = η)
+    sf = SDEFunction{false}(sdesys_noise_scaling, states(rs),
+                            parameters(sdesys_noise_scaling))
+    G2 = sf.g(u, p, t)
+    @test norm(G - G2) < 100 * eps()
+end
 
-# tests the noise_scaling vector argument.
-p = rand(length(k) + 3)
-u = rand(length(k))
-t = 0.0
-G = vcat(fill(p[21], 8), fill(p[22], 3), fill(p[23], 9))' .* sdenoise(u, p, t)
-@variables η[1:3]
-sdesys_noise_scaling = convert(SDESystem, rs;
-                               noise_scaling = vcat(fill(η[1], 8), fill(η[2], 3),
-                                                    fill(η[3], 9)))
-sf = SDEFunction{false}(sdesys_noise_scaling, states(rs), parameters(sdesys_noise_scaling))
-G2 = sf.g(u, p, t)
-@test norm(G - G2) < 100 * eps()
+# Tests the noise_scaling vector argument.
+let
+    p = rand(length(k) + 3)
+    u = rand(length(k))
+    t = 0.0
+    G = vcat(fill(p[21], 8), fill(p[22], 3), fill(p[23], 9))' .* sdenoise(u, p, t)
+    @variables η[1:3]
+    sdesys_noise_scaling = convert(SDESystem, rs;
+                                   noise_scaling = vcat(fill(η[1], 8), fill(η[2], 3),
+                                                        fill(η[3], 9)))
+    sf = SDEFunction{false}(sdesys_noise_scaling, states(rs),
+                            parameters(sdesys_noise_scaling))
+    G2 = sf.g(u, p, t)
+    @test norm(G - G2) < 100 * eps()
+end
 
-# tests using previous parameter for noise scaling
-p = rand(length(k))
-u = rand(length(k))
-t = 0.0
-G = [p p p p]' .* sdenoise(u, p, t)
-sdesys_noise_scaling = convert(SDESystem, rs; noise_scaling = k)
-sf = SDEFunction{false}(sdesys_noise_scaling, states(rs), parameters(sdesys_noise_scaling))
-G2 = sf.g(u, p, t)
-@test norm(G - G2) < 100 * eps()
+# Tests using previous parameter for noise scaling
+let
+    p = rand(length(k))
+    u = rand(length(k))
+    t = 0.0
+    G = [p p p p]' .* sdenoise(u, p, t)
+    sdesys_noise_scaling = convert(SDESystem, rs; noise_scaling = k)
+    sf = SDEFunction{false}(sdesys_noise_scaling, states(rs),
+                            parameters(sdesys_noise_scaling))
+    G2 = sf.g(u, p, t)
+    @test norm(G - G2) < 100 * eps()
+end
 
-# test with JumpSystem
-let p = p
+# Test with JumpSystem.
+let
+    p = rand(length(k))
     @variables t
     @species A(t) B(t) C(t) D(t) E(t) F(t)
     rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
@@ -278,100 +305,109 @@ let p = p
     end
 end
 
-# test for https://github.com/SciML/ModelingToolkit.jl/issues/436
-@parameters t
-@species S(t) I(t)
-rxs = [Reaction(1, [S], [I]), Reaction(1.1, [S], [I])]
-@named rs = ReactionSystem(rxs, t, [S, I], [])
-js = convert(JumpSystem, rs)
-dprob = DiscreteProblem(js, [S => 1, I => 1], (0.0, 10.0))
-jprob = JumpProblem(js, dprob, Direct())
-sol = solve(jprob, SSAStepper())
+### Other Tests ###
 
-# test for https://github.com/SciML/ModelingToolkit.jl/issues/1042
-jprob = JumpProblem(rs, dprob, Direct(), save_positions = (false, false))
+# Test for https://github.com/SciML/ModelingToolkit.jl/issues/436.
+let
+    @parameters t
+    @species S(t) I(t)
+    rxs = [Reaction(1, [S], [I]), Reaction(1.1, [S], [I])]
+    @named rs = ReactionSystem(rxs, t, [S, I], [])
+    js = convert(JumpSystem, rs)
+    dprob = DiscreteProblem(js, [S => 1, I => 1], (0.0, 10.0))
+    jprob = JumpProblem(js, dprob, Direct())
+    sol = solve(jprob, SSAStepper())
 
-@parameters k1 k2
-@species R(t)
-rxs = [Reaction(k1 * S, [S, I], [I], [2, 3], [2]),
-    Reaction(k2 * R, [I], [R])]
-@named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
-@test isequal(oderatelaw(equations(rs)[1]),
-              k1 * S * S^2 * I^3 / (factorial(2) * factorial(3)))
-@test_skip isequal(jumpratelaw(equations(eqs)[1]), k1 * S * binomial(S, 2) * binomial(I, 3))
-dep = Set()
-ModelingToolkit.get_variables!(dep, rxs[2], Set(states(rs)))
-dep2 = Set([R, I])
-@test dep == dep2
-dep = Set()
-ModelingToolkit.modified_states!(dep, rxs[2], Set(states(rs)))
-@test dep == Set([R, I])
+    # Test for https://github.com/SciML/ModelingToolkit.jl/issues/1042.
+    jprob = JumpProblem(rs, dprob, Direct(), save_positions = (false, false))
 
-isequal2(a, b) = isequal(simplify(a), simplify(b))
+    @parameters k1 k2
+    @species R(t)
+    rxs = [Reaction(k1 * S, [S, I], [I], [2, 3], [2]),
+        Reaction(k2 * R, [I], [R])]
+    @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
+    @test isequal(oderatelaw(equations(rs)[1]),
+                  k1 * S * S^2 * I^3 / (factorial(2) * factorial(3)))
+    @test_skip isequal(jumpratelaw(equations(eqs)[1]),
+                       k1 * S * binomial(S, 2) * binomial(I, 3))
+    dep = Set()
+    ModelingToolkit.get_variables!(dep, rxs[2], Set(states(rs)))
+    dep2 = Set([R, I])
+    @test dep == dep2
+    dep = Set()
+    ModelingToolkit.modified_states!(dep, rxs[2], Set(states(rs)))
+    @test dep == Set([R, I])
 
-@test isequal2(jumpratelaw(rxs[1]), k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
-@test isequal2(jumpratelaw(rxs[1]; combinatoric_ratelaw = false),
-               k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
-@test isequal2(oderatelaw(rxs[1]), k1 * S * S^2 * I^3 / 12)
-@test isequal2(oderatelaw(rxs[1]; combinatoric_ratelaw = false), k1 * S * S^2 * I^3)
+    isequal2(a, b) = isequal(simplify(a), simplify(b))
 
-@named rs2 = ReactionSystem(rxs, t, [S, I, R], [k1, k2]; combinatoric_ratelaws = false)
+    @test isequal2(jumpratelaw(rxs[1]), k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
+    @test isequal2(jumpratelaw(rxs[1]; combinatoric_ratelaw = false),
+                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
+    @test isequal2(oderatelaw(rxs[1]), k1 * S * S^2 * I^3 / 12)
+    @test isequal2(oderatelaw(rxs[1]; combinatoric_ratelaw = false), k1 * S * S^2 * I^3)
 
-#test ODE scaling:
-os = convert(ODESystem, rs)
-@test isequal2(equations(os)[1].rhs, -2 * k1 * S * S^2 * I^3 / 12)
-os = convert(ODESystem, rs; combinatoric_ratelaws = false)
-@test isequal2(equations(os)[1].rhs, -2 * k1 * S * S^2 * I^3)
-os2 = convert(ODESystem, rs2)
-@test isequal2(equations(os2)[1].rhs, -2 * k1 * S * S^2 * I^3)
-os3 = convert(ODESystem, rs2; combinatoric_ratelaws = true)
-@test isequal2(equations(os3)[1].rhs, -2 * k1 * S * S^2 * I^3 / 12)
+    @named rs2 = ReactionSystem(rxs, t, [S, I, R], [k1, k2]; combinatoric_ratelaws = false)
 
-# test ConstantRateJump rate scaling
-js = convert(JumpSystem, rs)
-@test isequal2(equations(js)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
-js = convert(JumpSystem, rs; combinatoric_ratelaws = false)
-@test isequal2(equations(js)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
-js2 = convert(JumpSystem, rs2)
-@test isequal2(equations(js2)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
-js3 = convert(JumpSystem, rs2; combinatoric_ratelaws = true)
-@test isequal2(equations(js3)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
+    # Test ODE scaling:
+    os = convert(ODESystem, rs)
+    @test isequal2(equations(os)[1].rhs, -2 * k1 * S * S^2 * I^3 / 12)
+    os = convert(ODESystem, rs; combinatoric_ratelaws = false)
+    @test isequal2(equations(os)[1].rhs, -2 * k1 * S * S^2 * I^3)
+    os2 = convert(ODESystem, rs2)
+    @test isequal2(equations(os2)[1].rhs, -2 * k1 * S * S^2 * I^3)
+    os3 = convert(ODESystem, rs2; combinatoric_ratelaws = true)
+    @test isequal2(equations(os3)[1].rhs, -2 * k1 * S * S^2 * I^3 / 12)
 
-# test MassActionJump rate scaling
-rxs = [Reaction(k1, [S, I], [I], [2, 3], [2]),
-    Reaction(k2, [I], [R])]
-@named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
-js = convert(JumpSystem, rs)
-@test isequal2(equations(js)[1].scaled_rates, k1 / 12)
-js = convert(JumpSystem, rs; combinatoric_ratelaws = false)
-@test isequal2(equations(js)[1].scaled_rates, k1)
+    # Test ConstantRateJump rate scaling.
+    js = convert(JumpSystem, rs)
+    @test isequal2(equations(js)[1].rate,
+                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
+    js = convert(JumpSystem, rs; combinatoric_ratelaws = false)
+    @test isequal2(equations(js)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
+    js2 = convert(JumpSystem, rs2)
+    @test isequal2(equations(js2)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
+    js3 = convert(JumpSystem, rs2; combinatoric_ratelaws = true)
+    @test isequal2(equations(js3)[1].rate,
+                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
 
-# test building directly from rxs
-@parameters x, y
-rxs = [Reaction(x * t * A * B + y, [A], nothing)]
-@named rs1 = ReactionSystem(rxs, t, [A, B], [x, y])
-@named rs2 = ReactionSystem(rxs, t)
-@test Catalyst.isequal_ignore_names(rs1, rs2)
+    # Test MassActionJump rate scaling.
+    rxs = [Reaction(k1, [S, I], [I], [2, 3], [2]),
+        Reaction(k2, [I], [R])]
+    @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
+    js = convert(JumpSystem, rs)
+    @test isequal2(equations(js)[1].scaled_rates, k1 / 12)
+    js = convert(JumpSystem, rs; combinatoric_ratelaws = false)
+    @test isequal2(equations(js)[1].scaled_rates, k1)
 
-@variables t
-@species L(t), H(t)
-obs = [Equation(L, 2 * x + y)]
-@named rs3 = ReactionSystem(rxs, t; observed = obs)
-L2 = L
-@unpack L = rs3
-@test isequal(L, L2)
+    # test building directly from rxs
+    @parameters x, y
+    rxs = [Reaction(x * t * A * B + y, [A], nothing)]
+    @named rs1 = ReactionSystem(rxs, t, [A, B], [x, y])
+    @named rs2 = ReactionSystem(rxs, t)
+    @test Catalyst.isequal_ignore_names(rs1, rs2)
 
-# test non-integer stoichiometry goes through
-@parameters k b
-@variables t
-@species A(t) B(t) C(t) D(t)
-rx1 = Reaction(k, [B, C], [B, D], [2.5, 1], [3.5, 2.5])
-rx2 = Reaction(2 * k, [B], [D], [1], [2.5])
-rx3 = Reaction(2 * k, [B], [D], [2.5], [2])
-@named mixedsys = ReactionSystem([rx1, rx2, rx3], t, [A, B, C, D], [k, b])
-osys = convert(ODESystem, mixedsys; combinatoric_ratelaws = false)
+    @variables t
+    @species L(t), H(t)
+    obs = [Equation(L, 2 * x + y)]
+    @named rs3 = ReactionSystem(rxs, t; observed = obs)
+    L2 = L
+    @unpack L = rs3
+    @test isequal(L, L2)
+end
 
-# test for constant and boundary condition species
+# Test that non-integer stoichiometry goes through.
+let
+    @parameters k b
+    @variables t
+    @species A(t) B(t) C(t) D(t)
+    rx1 = Reaction(k, [B, C], [B, D], [2.5, 1], [3.5, 2.5])
+    rx2 = Reaction(2 * k, [B], [D], [1], [2.5])
+    rx3 = Reaction(2 * k, [B], [D], [2.5], [2])
+    @named mixedsys = ReactionSystem([rx1, rx2, rx3], t, [A, B, C, D], [k, b])
+    osys = convert(ODESystem, mixedsys; combinatoric_ratelaws = false)
+end
+
+# Test for constant and boundary condition species.
 function f!(du, u, p, t)
     A = p[1]
     k1 = p[2]
@@ -417,7 +453,7 @@ function gs!(dg, u, p, t)
     nothing
 end
 
-# tests for BC and constant species
+# Tests for BC and constant species.
 let
     @parameters k1 k2 A [isconstantspecies = true]
     @variables t
@@ -454,7 +490,7 @@ let
         @test isapprox(sol1[sts[i]], sol2[syms[i]])
     end
 
-    # test sde systems
+    # Test sde systems.
     rxs = [(@reaction k1, $A --> B),
         (@reaction k2, B --> $A),
         (@reaction k1, $C + D --> E + $C),
@@ -475,7 +511,7 @@ let
     gs!(dg2, u0, p, t)
     @test isapprox(dg1, dg2)
 
-    # test jump systems
+    # Test jump systems.
     rxs = [(@reaction k1, $A --> B),
         (@reaction k2, B --> $A),
         (@reaction k1, $C + D --> E + $C),
@@ -506,7 +542,7 @@ let
     @test issetequal(vrj3.affect!, [B ~ B + 1])
 end
 
-# test that jump solutions actually run correctly for constants and BCs
+# Test that jump solutions actually run correctly for constants and BCs.
 let
     @parameters k1 A [isconstantspecies = true]
     @variables t
@@ -529,7 +565,7 @@ let
     @test umean[4] == 10
 end
 
-# fix for SBML test 305
+# Fix for SBML test 305.
 let
     @parameters k1 k2 S2 [isconstantspecies = true]
     @variables t
@@ -563,7 +599,6 @@ let
     @test issetequal(states(osys2), [S1])
     @test issetequal(parameters(osys2), [S2, k1, k2])
 end
-
 let
     @parameters k1 k2 S2 [isconstantspecies = true]
     @variables t S3(t)
@@ -583,7 +618,7 @@ let
     @test issetequal(parameters(osys2), [S2, k1, k2])
 end
 
-# constant species = parameters basic tests
+# Constant species = parameters basic tests.
 let
     @parameters k b [isconstantspecies = true] c
     @variables t
@@ -596,7 +631,7 @@ let
     @test issetequal(parameters(rs), [k, b])
 end
 
-# test balanced_bc_check
+# Test balanced_bc_check.
 let
     @variables t
     @species A(t) [isbcspecies = true]
@@ -605,10 +640,9 @@ let
     @named rs = ReactionSystem([rx], t; balanced_bc_check = false)
 end
 
-# test for classification of jump types
+# Test for classification of jump types.
 let
     rn = @reaction_network begin
-        @parameters k k2
         t, A --> B          # vrj
         1.0, B --> D        # vrj
         k * D, H --> I + H  # vrj
@@ -628,8 +662,8 @@ let
     @test dg == dgact
 end
 
-# test printing with arrays is working ok
-# needs fix for https://github.com/JuliaSymbolics/Symbolics.jl/issues/842
+# Test printing with arrays is working ok.
+# Needs fix for https://github.com/JuliaSymbolics/Symbolics.jl/issues/842.
 let
     @parameters a
     @variables t
@@ -641,7 +675,7 @@ let
     @test str == "a, A + 2*(C(t))[1] --> 2*(C(t))[2] + 3*B"
 end
 
-# test array metadata for species works
+# Test array metadata for species works.
 let
     @variables t
     @species (A(t))[1:20]
@@ -653,7 +687,7 @@ let
     @test isequal(value(Av[2]), value(A[2]))
 end
 
-# test mixed models are formulated correctly
+# Test mixed models are formulated correctly.
 let
     @parameters k1 k2
     @variables t V(t)
@@ -677,7 +711,7 @@ let
     @test length(equations(osys)) == 3
 end
 
-# test errors for repeated substrates or products
+# Test errors for repeated substrates or products
 let
     @variables t
     @species A(t) B(t)
@@ -686,7 +720,7 @@ let
     @test_throws ArgumentError Reaction(1.0, [A, A], [B, B])
 end
 
-# test order of species and products doesn't matter for equality or hashing
+# Test order of species and products doesn't matter for equality or hashing
 let
     @variables t
     @species A(t) α(t)
@@ -699,4 +733,18 @@ let
     rx2 = Reaction(1.0, [A, α], [A, α], [3, 2], [5, 4]; netstoich = [A => 2, α => 2])
     @test rx == rx2
     @test hash(rx) == hash(rx2)
+end
+
+# Additional unsorted tests.
+let
+    rn = @reaction_network begin k, X --> 0 end
+    isspecies(species(rn)[1])
+    @test Catalyst.has_species(rn)
+    @test Catalyst.has_rxs(rn)
+
+    @species X
+    @variables Y
+    @test isspecies(X)
+    @test !isspecies(Y)
+    @test isspecies(Catalyst.tospecies(Y))
 end
