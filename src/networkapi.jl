@@ -1315,7 +1315,7 @@ function hash(rx::Reaction, h::UInt)
 end
 
 """
-    isequal_ignore_names(rn1::ReactionSystem, rn2::ReactionSystem)
+    isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true)
 
 Tests whether the underlying species, parameters and reactions are the same in
 the two [`ReactionSystem`](@ref)s. Ignores the names of the systems in testing
@@ -1326,7 +1326,11 @@ Notes:
     considered different than `(A+1)^2`.
 - Does not include `defaults` in determining equality.
 """
-function isequal_ignore_names(rn1::ReactionSystem, rn2::ReactionSystem)
+function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true)
+    if !ignorenames
+        (nameof(rn1) == nameof(rn2)) || return false
+    end
+
     (get_combinatoric_ratelaws(rn1) == get_combinatoric_ratelaws(rn2)) || return false
     isequal(get_iv(rn1), get_iv(rn2)) || return false
     issetequal(get_sivs(rn1), get_sivs(rn2)) || return false
@@ -1342,6 +1346,12 @@ function isequal_ignore_names(rn1::ReactionSystem, rn2::ReactionSystem)
     true
 end
 
+function isequal_ignore_names(rn1, rn2)
+    Base.depwarn("Catalyst.isequal_ignore_names has been deprecated. Use isequivalent(rn1, rn2) instead.",
+                 :isequal_ignore_names; force = true)
+    isequivalent(rn1, rn2)
+end
+
 """
     ==(rn1::ReactionSystem, rn2::ReactionSystem)
 
@@ -1355,8 +1365,7 @@ Notes:
 - Does not include `defaults` in determining equality.
 """
 function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
-    (nameof(rn1) == nameof(rn2)) || return false
-    isequal_ignore_names(rn1, rn2)
+    isequivalent(rn1, rn2; ignorenames = false)
 end
 
 ######################## functions to extend a network ####################

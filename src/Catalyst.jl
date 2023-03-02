@@ -75,6 +75,7 @@ export numspecies, numreactions, numreactionparams, setdefaults!, symmap_to_varm
 export make_empty_network, addspecies!, addparam!, addreaction!, reactionparamsmap
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
+export isequivalent
 
 # depreciated functions to remove in future releases
 export params, numparams
