@@ -450,4 +450,5 @@ let
 
     @test numspecies(rs123) == 6
     @test issetequal(nonspecies(rs123), [V1, rs23.V2, rs23.rs3.V3])
+    @test issetequal(variables(rs123), [V1, rs23.V2, rs23.rs3.V3])
 end

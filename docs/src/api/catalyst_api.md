@@ -155,6 +155,7 @@ accessor functions.
 ```@docs
 species
 nonspecies
+variables
 reactionparams
 reactions
 numspecies
