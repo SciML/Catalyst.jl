@@ -485,8 +485,8 @@ evolves in time, see the [associated tutorial](@ref constraint_equations).
 
 ## Specifying alternative time variables and/or extra independent variables
 While the DSL defaults to allowing `t` as the time variable, one can use the
-`@ivs` macro to specify an alternative. For example, to make `s` the default
-time variable one can say
+`@ivs` macro to specify an alternative independent variable. For example, to
+make `s` the default time variable one can say
 ```@example tut2
 rn_with_s = @reaction_network begin
     @ivs s
