@@ -114,11 +114,16 @@ const CONSERVED_CONSTANT_SYMBOL = :Γ
 
 # Declares symbols which may neither be used as parameters not varriables.
 const forbidden_symbols_skip = Set([:ℯ, :pi, :π, :t, :∅])
-const forbidden_symbols_error = union([:im, :nothing, CONSERVED_CONSTANT_SYMBOL],
+const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
                                       forbidden_symbols_skip)
+const forbidden_variables_error = let
+    fvars = copy(forbidden_symbols_error)
+    delete!(fvars, :t)
+    fvars
+end
 
 # Declares the keys used for various options.
-const option_keys = [:species, :parameters]
+const option_keys = (:species, :parameters, :variables, :ivs)
 
 ### The @species macro, basically a copy of the @varriables macro. ###
 macro species(ex...)
@@ -300,11 +305,25 @@ end
 
 ### Functions rephrasing the macro input as a ReactionSystem structure. ###
 
+function forbidden_variable_check(v)
+    !isempty(intersect(forbidden_variables_error, v)) &&
+        error("The following symbol(s) are used as variables: " *
+              ((map(s -> "'" * string(s) * "', ",
+                    intersect(forbidden_variables_error, v))...)) *
+              "this is not permited.")
+end
+
 function forbidden_symbol_check(v)
     !isempty(intersect(forbidden_symbols_error, v)) &&
         error("The following symbol(s) are used as species or parameters: " *
               ((map(s -> "'" * string(s) * "', ", intersect(forbidden_symbols_error, v))...)) *
               "this is not permited.")
+    nothing
+end
+
+function unique_symbol_check(syms)
+    allunique(syms) ||
+        error("Reaction network independent variables, parameters, species, and variables must all have distinct names, but a duplicate has been detected. ")
     nothing
 end
 
@@ -324,12 +343,24 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
-    species_declared = haskey(options, :species) ?
-                       extract_syms(options[:species], :species) : Union{Symbol, Expr}[]
-    parameters_declared = haskey(options, :parameters) ?
-                          extract_syms(options[:parameters], :parameters) :
-                          Union{Symbol, Expr}[]
-    declared_syms = Set(Iterators.flatten((parameters_declared, species_declared)))
+    species_declared = extract_syms(options, :species)
+    parameters_declared = extract_syms(options, :parameters)
+    variables = extract_syms(options, :variables)
+
+    # handle independent variables
+    if haskey(options, :ivs)
+        ivs = Tuple(extract_syms(options, :ivs))
+        ivexpr = copy(options[:ivs])
+        ivexpr.args[1] = Symbol("@", "variables")
+    else
+        ivs = (DEFAULT_IV_SYM,)
+        ivexpr = :(@variables $(DEFAULT_IV_SYM))
+    end
+    tiv = ivs[1]
+    sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
+
+    declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
+                                           variables)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
                                                                               declared_syms)
     species = vcat(species_declared, species_extracted)
@@ -341,11 +372,15 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     any(!in(opt_in, option_keys) for opt_in in keys(options)) &&
         error("The following unsupprted options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
     forbidden_symbol_check(union(species, parameters))
+    forbidden_variable_check(variables)
+    unique_symbol_check(union(species, parameters, variables, ivs))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
-    sexprs = get_sexpr(species_extracted, options)
+    sexprs = get_sexpr(species_extracted, options; iv_symbols = ivs)
+    vexprs = haskey(options, :variables) ? options[:variables] : :()
     pexprs = get_pexpr(parameters_extracted, options)
-    rxexprs = :($(make_ReactionSystem_internal)([], t, Num[], Num[]; name = $(name)))
+    rxexprs = :($(make_ReactionSystem_internal)([], $tiv, Num[], Num[]; name = $(name),
+                                                spatial_ivs = $sivs))
     foreach(speci -> push!(rxexprs.args[5].args, speci), species)
     foreach(parameter -> push!(rxexprs.args[6].args, parameter), parameters)
     for reaction in reactions
@@ -355,7 +390,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Returns the rephrased expression.
     quote
         $pexprs
-        :(@variables t)
+        $ivexpr
+        $vexprs
         $sexprs
         $rxexprs
     end
@@ -378,11 +414,12 @@ function make_reaction(ex::Expr)
     sexprs = get_sexpr(species, Dict{Symbol, Expr}())
     pexprs = get_pexpr(parameters, Dict{Symbol, Expr}())
     rxexpr = get_rxexprs(reaction)
+    iv = :(@variables $(DEFAULT_IV_SYM))
 
     # Returns the rephrased expression.
     quote
         $pexprs
-        :(@variables t)
+        $iv
         $sexprs
         $rxexpr
     end
@@ -406,9 +443,15 @@ end
 
 # When the user have used the @species (or @parameters) options, extract species (or
 # parameters) from its input.
-function extract_syms(ex::Expr, vartype::Symbol)
-    vars = Symbolics._parse_vars(vartype, Real, ex.args[3:end])
-    Vector{Union{Symbol, Expr}}(vars.args[end].args)
+function extract_syms(opts, vartype::Symbol)
+    if haskey(opts, vartype)
+        ex = opts[vartype]
+        vars = Symbolics._parse_vars(vartype, Real, ex.args[3:end])
+        syms = Vector{Union{Symbol, Expr}}(vars.args[end].args)
+    else
+        syms = Union{Symbol, Expr}[]
+    end
+    return syms
 end
 
 # Function looping through all reactions, to find undeclared symbols (species or
@@ -449,13 +492,20 @@ function add_syms_from_expr!(push_symbols::AbstractSet, rateex::ExprValues, excl
 end
 
 # Given the species that were extracted from the reactions, and the options dictionary, creates the @species ... expression for the macro output.
-function get_sexpr(species_extracted, options)
-    sexprs = (haskey(options, :species) ? options[:species] :
-              (isempty(species_extracted) ? :() : :(@species)))
-    foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, :t)),
+function get_sexpr(species_extracted, options, key = :species;
+                   iv_symbols = (DEFAULT_IV_SYM,))
+    if haskey(options, key)
+        sexprs = options[key]
+    elseif isempty(species_extracted)
+        sexprs = :()
+    else
+        sexprs = Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
+    end
+    foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, iv_symbols...)),
             species_extracted)
     sexprs
 end
+
 # Given the parameters that were extracted from the reactions, and the options dictionary, creates the @parameters ... expression for the macro output.
 function get_pexpr(parameters_extracted, options)
     pexprs = (haskey(options, :parameters) ? options[:parameters] :
