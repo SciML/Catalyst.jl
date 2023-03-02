@@ -466,7 +466,7 @@ rn_with_volume = @reaction_network begin
   k*V, 0 --> A
 end
 ```
-Creates a network with one species
+creates a network with one species
 ```@example tut2
 species(rn_with_volume)
 ```
@@ -494,6 +494,7 @@ rn_with_s = @reaction_network begin
     @species B(s)
     k, A + V*B --> C
 end
+show(stdout, MIME"text/plain"(), rn_with_s)  # hide
 ```
 where we see all states are now functions of `s`.
 
@@ -508,6 +509,7 @@ rn_with_many_ivs = @reaction_network begin
     @species A(s) B(s,x)
     k, V1*A --> V2*B + C
 end
+show(stdout, MIME"text/plain"(), rn_with_many_ivs)  # hide
 ```
 Here again `s` will be the time variable, and any inferred species, `C` in this
 case, are made functions of both variables, i.e. `C(s, x)`.
