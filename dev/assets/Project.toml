@@ -1,4 +1,5 @@
 [deps]
+BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
 Catalyst = "479239e8-5488-4da2-87a7-35f2df7eef83"
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
@@ -15,6 +16,7 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
+BifurcationKit = "0.2.4"
 Catalyst = "13"
 DifferentialEquations = "7.7"
 Distributions = "0.25"
