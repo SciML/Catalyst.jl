@@ -330,15 +330,17 @@ end
 # takes a ModelingToolkit declaration macro like @parameters and returns an expression
 # that calls the macro and then scalarizes all the symbols created into a vector of Nums
 function scalarize_macro(nonempty, ex, name)
+    namesym = gensym(name)
     if nonempty
         symvec = gensym()
-        quote
+        ex = quote
             $symvec = $ex
-            $name = reduce(vcat, Symbolics.scalarize($symvec))
+            $namesym = reduce(vcat, Symbolics.scalarize($symvec))
         end
     else
-        :($name = Num[])
+        ex = :($namesym = Num[])
     end
+    ex, namesym
 end
 
 # Function for creating a ReactionSystem structure (used by the @reaction_network macro).
@@ -393,9 +395,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     sexprs = get_sexpr(species_extracted, options; iv_symbols = ivs)
     vexprs = haskey(options, :variables) ? options[:variables] : :()
     pexprs = get_pexpr(parameters_extracted, options)
-    ps = scalarize_macro(!isempty(parameters), pexprs, :pars)
-    vars = scalarize_macro(!isempty(variables), vexprs, :vars)
-    sps = scalarize_macro(!isempty(species), sexprs, :specs)
+    ps, pssym = scalarize_macro(!isempty(parameters), pexprs, "ps")
+    vars, varssym = scalarize_macro(!isempty(variables), vexprs, "vars")
+    sps, spssym = scalarize_macro(!isempty(species), sexprs, "specs")
     rxexprs = :(Catalyst.CatalystEqType[])
     for reaction in reactions
         push!(rxexprs.args, get_rxexprs(reaction))
@@ -408,9 +410,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         $vars
         $sps
 
-        sts = union(specs, vars)
-
-        Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, sts, pars; name = $name,
+        Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, union($spssym, $varssym),
+                                              $pssym; name = $name,
                                               spatial_ivs = $sivs)
     end
 end
