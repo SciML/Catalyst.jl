@@ -656,7 +656,7 @@ function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
             recursive_find_reactants!(ex.args[i], mult, reactants)
         end
     else
-        throw("Malformed reaction, bad operator: $(ex.args[1]) found in stochiometry expression $ex. One reason for this error is using undeclared array variables.")
+        throw("Malformed reaction, bad operator: $(ex.args[1]) found in stochiometry expression $ex.")
     end
     reactants
 end
