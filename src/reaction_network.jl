@@ -327,6 +327,20 @@ function unique_symbol_check(syms)
     nothing
 end
 
+# takes a ModelingToolkit declaration macro like @parameters and returns an expression
+# that calls the macro and then scalarizes all the symbols created into a vector of Nums
+function scalarize_macro(nonempty, ex, name)
+    if nonempty
+        symvec = gensym()
+        quote
+            $symvec = $ex
+            $name = reduce(vcat, Symbolics.scalarize($symvec))
+        end
+    else
+        :($name = Num[])
+    end
+end
+
 # Function for creating a ReactionSystem structure (used by the @reaction_network macro).
 function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
@@ -379,21 +393,25 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     sexprs = get_sexpr(species_extracted, options; iv_symbols = ivs)
     vexprs = haskey(options, :variables) ? options[:variables] : :()
     pexprs = get_pexpr(parameters_extracted, options)
-    rxexprs = :($(make_ReactionSystem_internal)([], $tiv, Num[], Num[]; name = $(name),
-                                                spatial_ivs = $sivs))
-    foreach(speci -> push!(rxexprs.args[5].args, speci), species)
-    foreach(parameter -> push!(rxexprs.args[6].args, parameter), parameters)
+    ps = scalarize_macro(!isempty(parameters), pexprs, :pars)
+    vars = scalarize_macro(!isempty(variables), vexprs, :vars)
+    sps = scalarize_macro(!isempty(species), sexprs, :specs)
+    rxexprs = :(Catalyst.CatalystEqType[])
     for reaction in reactions
-        push!(rxexprs.args[3].args, get_rxexprs(reaction))
+        push!(rxexprs.args, get_rxexprs(reaction))
     end
 
     # Returns the rephrased expression.
     quote
-        $pexprs
+        $ps
         $ivexpr
-        $vexprs
-        $sexprs
-        $rxexprs
+        $vars
+        $sps
+
+        sts = union(specs, vars)
+
+        Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, sts, pars; name = $name,
+                                              spatial_ivs = $sivs)
     end
 end
 
@@ -615,7 +633,7 @@ end
 # stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
 function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
                                    reactants::Vector{ReactantStruct})
-    if typeof(ex) != Expr || (ex.head == :escape)
+    if typeof(ex) != Expr || (ex.head == :escape) || (ex.head == :ref)
         (ex == 0 || in(ex, empty_set)) && (return reactants)
         if any(ex == reactant.reactant for reactant in reactants)
             idx = findall(x -> x == ex, getfield.(reactants, :reactant))[1]
@@ -638,7 +656,7 @@ function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
             recursive_find_reactants!(ex.args[i], mult, reactants)
         end
     else
-        throw("Malformed reaction, bad operator: $(ex.args[1]) found in stochiometry expression $ex.")
+        throw("Malformed reaction, bad operator: $(ex.args[1]) found in stochiometry expression $ex. One reason for this error is using undeclared array variables.")
     end
     reactants
 end

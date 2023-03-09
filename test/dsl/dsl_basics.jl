@@ -245,3 +245,20 @@ let
     @test isequal(ModelingToolkit.get_iv(rn), s)
     @test issetequal(Catalyst.get_sivs(rn), [x])
 end
+
+# array variables test
+let
+    rn = @reaction_network arrtest begin
+        @parameters k[1:2] a
+        @variables (V(t))[1:2] W(t)
+        @species (X(t))[1:2] Y(t)
+        k[1]*a+k[2], X[1] + V[1]*X[2] --> V[2]*W*Y + B*C
+    end
+
+    @parameters k[1:3] a B
+    @variables t (V(t))[1:2] W(t)
+    @species (X(t))[1:2] Y(t) C(t)
+    rx = Reaction(k[1]*a+k[2], [X[1], X[2]], [Y, C], [1, V[1]], [V[2] * W, B])
+    @named arrtest = ReactionSystem([rx], t)
+    arrtest == rn
+end
