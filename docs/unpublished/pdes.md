@@ -30,7 +30,7 @@ tstop = 5e4
 function icfun(n, x, y, A)
     float(rand(Poisson(round(n * A * 10))) / A / 10)
 end
-@register icfun(n, x, y, A)
+@register_symbolic icfun(n, x, y, A)
 
 @parameters begin
     k[1:7] = [2e-4, 2e-4, 1.0, 3.33e-3, 16.7, 3.67e-2, 4.44]   # reaction rates

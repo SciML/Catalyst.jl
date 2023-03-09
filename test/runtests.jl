@@ -5,7 +5,7 @@ using SafeTestsets
 @time begin
 
     ### Tests the properties of ReactionSystems. ###
-    @time @safetestset "ReactionSystem Structure" begin include("reactionsystem_structure/reactionsystem.jl") end
+    @time @safetestset "ReactionSystem" begin include("reactionsystem_structure/reactionsystem.jl") end
     @time @safetestset "Higher Order Reactions" begin include("reactionsystem_structure/higher_order_reactions.jl") end
 
     ### Tests model creation via the @reaction_network DSL. ###

@@ -2,6 +2,18 @@
 
 ## Catalyst unreleased (master branch)
 
+## Catalyst 13.2
+- Array parameters, species, and variables can be use in the DSL if explicitly
+  declared with `@parameters`, `@species`, or `@variables` respectively, i.e.
+  ```julia
+  rn = @reaction_network begin
+      @parameters k[1:2] a
+      @variables (V(t))[1:2] W(t)
+      @species (X(t))[1:2] Y(t)
+      k[1]*a+k[2], X[1] + V[1]*X[2] --> V[2]*W*Y + B*C
+  end
+  ```
+
 ## Catalyst 13.1
 - Non-species states can be declared in the DSL using `@variables`, and custom
   independent variables (instead of just `t`) using `@ivs`. For the latter, the
