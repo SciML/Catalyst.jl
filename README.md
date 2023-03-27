@@ -41,16 +41,17 @@ Breaking changes and new functionality are summarized in the
 
 ## Tutorials and documentation
 
-For tutorials and information on using the package, [see the stable
+The latest tutorials and information on using the package are available in the [stable
 documentation](https://docs.sciml.ai/Catalyst/stable/). The [in-development
 documentation](https://docs.sciml.ai/Catalyst/dev/) describes unreleased features in
 the current master branch.
 
-Several Youtube video tutorials and overviews are also available:
+Several Youtube video tutorials and overviews are also available, but note these use older 
+Catalyst versions with slightly different notation (for example, in building reaction networks):
 - From JuliaCon 2022: A three hour tutorial workshop overviewing how to use
   Catalyst and its more advanced features as of version 12.1. [Workshop
   video](https://youtu.be/tVfxT09AtWQ), [Workshop Pluto.jl
-  Notebooks](https://github.com/SciML/JuliaCon2022_Catalyst_Workshop).
+  Notebooks](https://github.com/SciML/JuliaCon2022_Catalyst_Workshop). 
 - From SIAM CSE 2021: A short 15 minute overview of Catalyst as of version 6 is
 available in the talk [Modeling Biochemical Systems with
 Catalyst.jl](https://www.youtube.com/watch?v=5p1PJE5A5Jw).
