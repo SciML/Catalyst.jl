@@ -534,7 +534,7 @@ rn = @reaction_network $name begin
   end
 ```
 As the parameters `k` and `α` were pre-defined and appeared via interpolation,
-we did not need to declare them at the end of the `@reaction_network` macro,
+we did not need to declare them within the `@reaction_network` macro,
 i.e. they are automatically detected as parameters:
 ```@example tut2
 parameters(rn)
