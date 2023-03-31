@@ -13,6 +13,8 @@ using Plots, GraphRecipes
 
 Let's build a simple Hodgkin-Huxley model for a single neuron, with the voltage, V(t), included as a constraint ODESystem.
 
-We first specify the transition rates for the three gating variables, $$m(t)$$ , $$n(t)$$ , $$h(t)$$
+We first specify the transition rates for the three gating variables, $$m(t), n(t) and h(t)$$.
 
 $$s' \xleftrightarrow[\beta_s(V(t))]{\alpha_s(V(t))} s, \quad s \in \{m,n,h\}$$
+
+where m,n and h, are gating variables that determine the fraction of active(open) or inactive (m' = 1, n)
