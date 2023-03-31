@@ -39,6 +39,8 @@ begin
 	βₙ(V) = .125 * exp(-(V + 70)/80)
 end
 ```
+```βₙ (generic function with 1 method)```
+
 * We now declare the symbolic variable, `V(t)`, that will represent voltage.
 
 * We tell Catalyst not to generate an equation for it from the reactions we list, using the `isbcspecies` metadata.
@@ -109,3 +111,9 @@ hhsssol = let
 	sol = solve(oprob, Rosenbrock23())	
 end;
 ```
+```julia
+plot(hhsssol, vars=V)
+```
+
+
+
