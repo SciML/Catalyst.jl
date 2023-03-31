@@ -68,4 +68,11 @@ $$
 \end{align*}
 $$
 
+Next we create a `ModelingToolkit.ODESystem` to store the equation for `dV/dt`
 
+$voltageode =$
+$$
+\begin{align}
+\frac{dV(t)}{dt} =& \frac{ - {\textrm{\={g}}}L \left(  - EL + V\left( t \right) \right) - \left( n\left( t \right) \right)^{4} {\textrm{\={g}}}K \left(  - EK + V\left( t \right) \right) - \left( m\left( t \right) \right)^{3} {\textrm{\={g}}}Na \left(  - ENa + V\left( t \right) \right) h\left( t \right)}{C} + \frac{\sin^{2}\left( 0.20943951023931953 t \right) I_0}{C}
+\end{align}
+$$
