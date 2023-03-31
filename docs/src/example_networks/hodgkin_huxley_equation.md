@@ -52,7 +52,7 @@ $[V(t)]$
 ```julia
 @variables V(t) [isbcspecies=true]
 ```
-hhrn =
+$hhrn =$
 
 $$
 \begin{align*}
