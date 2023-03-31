@@ -52,8 +52,9 @@ $[V(t)]$
 ```julia
 @variables V(t) [isbcspecies=true]
 ```
-```hhrn =```
-$$\begin{align*}
+hhrn =
+$$
+\begin{align*}
 \require{mhchem}
 \ce{ n^\prime &<=>[$\begin{cases}
 0.1 & \text{if } \left( 6 + \frac{1}{10} V = 0.0 \right)\\
@@ -64,5 +65,7 @@ $$\begin{align*}
 \frac{\frac{9}{2} + \frac{1}{10} V}{1 - e^{\frac{-9}{2} + \frac{-1}{10} V}} & \text{otherwise}
 \end{cases}$][$4 e^{\frac{-35}{9} + \frac{-1}{18} V\left( t \right)}$] m}\\
 \ce{ h^\prime &<=>[$0.07 e^{\frac{-7}{2} + \frac{-1}{20} V}$][$\frac{1}{1 + e^{-4 + \frac{-1}{10} V\left( t \right)}}$] h}
-\end{align*}$$
+\end{align*}
+$$
+
 
