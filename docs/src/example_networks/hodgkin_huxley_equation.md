@@ -145,6 +145,35 @@ Output:<br/>
 ```julia
 u_ss = hhsssol.u[end]
 ```
+Output:</br>
+`u_ss = [0.680779, 0.319221, 0.946472, 0.0535277, 0.408161, 0.591839, -69.9048]`
 
+Finally, starting from this resting state let's solve the system when the amplitude of the stimulus is non-zero and see if we get action potentials
 
+```julia
+let
+	tspan = (0.0, 50.0)
+	@unpack I₀ = hhmodel
+	oprob = ODEProblem(hhmodel, u_ss, tspan, [I₀ => 10.0])
+	sol = solve(oprob)
+	plot(sol, vars=V, legend=:outerright)
+end
+```
+</br>
+Output:</br>
 
+![Plot2](../assets/hogkin_huxley_plot2.svg)
+
+##Appendix
+
+Let's set some default initial values for the voltage and gating variables.
+
+```
+# let
+# 	V₀ = -70
+# 	setdefaults!(hhrn, [:noff => βₙ(V₀)/(αₙ(V₀)+βₙ(V₀)), :n => αₙ(V₀)/(αₙ(V₀)+βₙ(V₀)),
+# 				    	:moff => βₘ(V₀)/(αₘ(V₀)+βₘ(V₀)), :m => αₘ(V₀)/(αₘ(V₀)+βₘ(V₀)),
+# 						:hoff => βₕ(V₀)/(αₕ(V₀)+βₕ(V₀)), :h => αₕ(V₀)/(αₕ(V₀)+βₕ(V₀)),
+# 						:V => V₀])
+# end
+```
