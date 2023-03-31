@@ -42,8 +42,7 @@ end
 Output:
 ```βₙ (generic function with 1 method)```
 
-
-
+</br>
 
 * We now declare the symbolic variable, `V(t)`, that will represent voltage.
 
@@ -60,6 +59,7 @@ Aside: `bcspecies` means a boundary condition species, a terminology from SBML.
 Output:
 `[V(t)]`
 
+</br>
 
 ```julia
 hhrn = @reaction_network hhmodel begin
@@ -87,6 +87,7 @@ $$
 \end{align*}
 $$
 
+</br>
 
 Next we create a `ModelingToolkit.ODESystem` to store the equation for `dV/dt`
 
@@ -112,7 +113,7 @@ $$
 \end{align}
 $$
 
-
+</br>
 
 Notice, we included an applied current, `I`, that we will use to perturb the system and create action potentials. For now we turn this off by setting its amplitude, `I₀`, to zero.
 
@@ -125,6 +126,7 @@ Finally, we couple this ODE into the reaction model as a constraint system:
 * `hhmodel` is now a `ReactionSystem` that is coupled to an internal constraint `ODESystem` that stores `dV/dt`.
 
 * Let's now solve to steady-state, as we can then use these resting values as an initial condition before applying a current to create an action potential.
+</br>
 
 ```julia
 hhsssol = let
@@ -147,6 +149,7 @@ u_ss = hhsssol.u[end]
 ```
 Output:</br>
 `u_ss = [0.680779, 0.319221, 0.946472, 0.0535277, 0.408161, 0.591839, -69.9048]`
+</br>
 
 Finally, starting from this resting state let's solve the system when the amplitude of the stimulus is non-zero and see if we get action potentials
 
@@ -164,7 +167,7 @@ Output:</br>
 
 ![Plot2](../assets/hogkin_huxley_plot2.svg)
 
-##Appendix
+## Appendix
 
 Let's set some default initial values for the voltage and gating variables.
 
