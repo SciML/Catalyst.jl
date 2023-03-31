@@ -39,3 +39,13 @@ begin
 	βₙ(V) = .125 * exp(-(V + 70)/80)
 end
 ```
+* We now declare the symbolic variable, `V(t)`, that will represent voltage.
+
+* We tell Catalyst not to generate an equation for it from the reactions we list, using the `isbcspecies` metadata.
+
+* This label tells Catalyst an ODE or nonlinear equation for `V(t)` will be provided in a constraint system.
+
+Aside: `bcspecies` means a boundary condition species, a terminology from SBML.
+
+
+
