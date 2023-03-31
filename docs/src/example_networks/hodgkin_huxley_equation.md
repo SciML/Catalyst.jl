@@ -47,9 +47,7 @@ end
 
 Aside: `bcspecies` means a boundary condition species, a terminology from SBML.
 
-$\begin{equation}
-V\left( t \right)
-\end{equation}$
+$\begin{equation}V\left( t \right)\end{equation}$
 
 ```julia
 @variables V(t) [isbcspecies=true]
