@@ -56,7 +56,6 @@ hhrn =
 
 $$
 \begin{align*}
-\require{mhchem}
 \ce{ n^\prime &<=>[$\begin{cases}
 0.1 & \text{if } \left( 6 + \frac{1}{10} V = 0.0 \right)\\\\\\
 \frac{0.6000000000000001 + 0.010000000000000002 V}{1 - e^{-6 + \frac{-1}{10} V}} & \text{otherwise}
