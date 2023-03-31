@@ -142,7 +142,7 @@ end;
 plot(hhsssol, vars=V)
 ```
 Output:<br/>
-![Plot1](docs\src\assets\hogkin_huxley_plot1.svg)
+![Plot1](../assets/hogkin_huxley_plot1.svg)
 
 ```julia
 u_ss = hhsssol.u[end]
@@ -165,7 +165,7 @@ end
 </br>
 Output:</br>
 
-![Plot2](docs\src\assets\hogkin_huxley_plot2.svg)
+![Plot2](../assets/hogkin_huxley_plot2.svg)
 
 ## Appendix
 
