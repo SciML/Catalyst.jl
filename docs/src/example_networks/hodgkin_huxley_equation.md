@@ -39,7 +39,9 @@ begin
 	βₙ(V) = .125 * exp(-(V + 70)/80)
 end
 ```
+Output:
 ```βₙ (generic function with 1 method)```
+
 
 * We now declare the symbolic variable, `V(t)`, that will represent voltage.
 
@@ -49,11 +51,23 @@ end
 
 Aside: `bcspecies` means a boundary condition species, a terminology from SBML.
 
-$[V(t)]$
+
 
 ```julia
 @variables V(t) [isbcspecies=true]
 ```
+Output:
+```$[V(t)]$```
+
+```julia
+hhrn = @reaction_network hhmodel begin
+	(αₙ($V),βₙ($V)), n′ <--> n
+	(αₘ($V),βₘ($V)), m′ <--> m
+	(αₕ($V),βₕ($V)), h′ <--> h
+end
+```
+Output:
+
 $hhrn =$
 
 $$
