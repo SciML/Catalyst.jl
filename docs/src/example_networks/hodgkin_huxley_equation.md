@@ -140,7 +140,7 @@ end;
 plot(hhsssol, vars=V)
 ```
 Output:
-![Plot1](docs\src\assets\complex_subnets2.svg)
+![Plot1](../assets/complex_subnets2.svg)
 
 ```julia
 u_ss = hhsssol.u[end]
