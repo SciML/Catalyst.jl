@@ -21,7 +21,7 @@ where $m$, $n$ and $h$, are gating variables that determine the fraction of acti
 
 The transition rate functions, which depend on the voltage, $V(t)$, are then
 
-'''julia
+```julia
 begin 
 	function αₘ(V) 
 		theta = (V + 45) / 10
@@ -38,4 +38,4 @@ begin
 	end
 	βₙ(V) = .125 * exp(-(V + 70)/80)
 end
-'''
+```
