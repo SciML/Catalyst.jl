@@ -43,6 +43,8 @@ Output:
 ```βₙ (generic function with 1 method)```
 
 
+
+
 * We now declare the symbolic variable, `V(t)`, that will represent voltage.
 
 * We tell Catalyst not to generate an equation for it from the reactions we list, using the `isbcspecies` metadata.
@@ -52,12 +54,12 @@ Output:
 Aside: `bcspecies` means a boundary condition species, a terminology from SBML.
 
 
-
 ```julia
 @variables V(t) [isbcspecies=true]
 ```
 Output:
-`$[V(t)]$`
+`[V(t)]`
+
 
 ```julia
 hhrn = @reaction_network hhmodel begin
@@ -66,6 +68,7 @@ hhrn = @reaction_network hhmodel begin
 	(αₕ($V),βₕ($V)), h′ <--> h
 end
 ```
+
 Output:
 
 $hhrn =$
@@ -83,6 +86,7 @@ $$
 \ce{ h^\prime &<=>[$0.07 e^{\frac{-7}{2} + \frac{-1}{20} V}$][$\frac{1}{1 + e^{-4 + \frac{-1}{10} V\left( t \right)}}$] h}
 \end{align*}
 $$
+
 
 Next we create a `ModelingToolkit.ODESystem` to store the equation for `dV/dt`
 
@@ -114,7 +118,9 @@ Notice, we included an applied current, `I`, that we will use to perturb the sys
 
 Finally, we couple this ODE into the reaction model as a constraint system:
 
-```@named hhmodel = extend(voltageode, hhrn);```
+```julia
+@named hhmodel = extend(voltageode, hhrn);
+```
 
 * `hhmodel` is now a `ReactionSystem` that is coupled to an internal constraint `ODESystem` that stores `dV/dt`.
 
@@ -129,8 +135,15 @@ hhsssol = let
 	sol = solve(oprob, Rosenbrock23())	
 end;
 ```
+
 ```julia
 plot(hhsssol, vars=V)
+```
+Output:
+![Plot1](docs\src\assets\complex_subnets2.svg)
+
+```julia
+u_ss = hhsssol.u[end]
 ```
 
 
