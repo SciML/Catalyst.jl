@@ -57,7 +57,7 @@ Aside: `bcspecies` means a boundary condition species, a terminology from SBML.
 @variables V(t) [isbcspecies=true]
 ```
 Output:
-```$[V(t)]$```
+`$[V(t)]$`
 
 ```julia
 hhrn = @reaction_network hhmodel begin
@@ -86,14 +86,6 @@ $$
 
 Next we create a `ModelingToolkit.ODESystem` to store the equation for `dV/dt`
 
-$voltageode =$
-
-$$
-\begin{align}
-\frac{dV(t)}{dt} =& \frac{ - {\textrm{\={g}}}L \left(  - EL + V\left( t \right) \right) - \left( n\left( t \right) \right)^{4} {\textrm{\={g}}}K \left(  - EK + V\left( t \right) \right) - \left( m\left( t \right) \right)^{3} {\textrm{\={g}}}Na \left(  - ENa + V\left( t \right) \right) h\left( t \right)}{C} + \frac{\sin^{2}\left( 0.20943951023931953 t \right) I_0}{C}
-\end{align}
-$$
-
 ```julia
 voltageode = let
 	@parameters C=1.0 ḡNa=120.0 ḡK=36.0 ḡL=.3 ENa=45.0 EK=-82.0 EL=-59.0 I₀=0.0
@@ -105,6 +97,18 @@ voltageode = let
 	@named voltageode = ODESystem(eqs, t)
 end
 ```
+
+Output:
+
+$voltageode =$
+
+$$
+\begin{align}
+\frac{dV(t)}{dt} =& \frac{ - {\textrm{\={g}}}L \left(  - EL + V\left( t \right) \right) - \left( n\left( t \right) \right)^{4} {\textrm{\={g}}}K \left(  - EK + V\left( t \right) \right) - \left( m\left( t \right) \right)^{3} {\textrm{\={g}}}Na \left(  - ENa + V\left( t \right) \right) h\left( t \right)}{C} + \frac{\sin^{2}\left( 0.20943951023931953 t \right) I_0}{C}
+\end{align}
+$$
+
+
 
 Notice, we included an applied current, `I`, that we will use to perturb the system and create action potentials. For now we turn this off by setting its amplitude, `I₀`, to zero.
 
