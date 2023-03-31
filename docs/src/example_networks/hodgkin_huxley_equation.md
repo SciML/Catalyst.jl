@@ -139,8 +139,8 @@ end;
 ```julia
 plot(hhsssol, vars=V)
 ```
-Output:
-![Plot1](../assets/complex_subnets2.svg)
+Output:<br/>
+![Plot1](../assets/hogkin_huxley_plot1.svg)
 
 ```julia
 u_ss = hhsssol.u[end]
