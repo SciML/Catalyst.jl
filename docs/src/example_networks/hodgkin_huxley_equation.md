@@ -17,6 +17,25 @@ We first specify the transition rates for the three gating variables, $m(t)$, $n
 
 $$s' \xleftrightarrow[\beta_s(V(t))]{\alpha_s(V(t))} s, \quad s \in \{m,n,h\}$$
 
-where $m$, $n$ and $h$, are gating variables that determine the fraction of active(open) or inactive ($m' = 1 - m,n' = 1 -n,h' = 1 - h$) receptors.
+where $m$, $n$ and $h$, are gating variables that determine the fraction of active(open) or inactive ($m' = 1 - m, n' = 1 -n, h' = 1 - h$) receptors.
 
 The transition rate functions, which depend on the voltage, $V(t)$, are then
+
+'''
+begin 
+	function αₘ(V) 
+		theta = (V + 45) / 10
+		IfElse.ifelse(theta == 0.0, 1.0, theta/(1 - exp(-theta)))
+	end
+	βₘ(V) = 4*exp(-(V + 70)/18)
+	
+	αₕ(V) = .07 * exp(-(V + 70)/20)
+	βₕ(V) = 1/(1 + exp(-(V + 40)/10))
+	
+	function αₙ(V)
+		theta = (V + 60) / 10
+		IfElse.ifelse(theta == 0.0, .1, .1*theta / (1 - exp(-theta)))
+	end
+	βₙ(V) = .125 * exp(-(V + 70)/80)
+end
+'''
