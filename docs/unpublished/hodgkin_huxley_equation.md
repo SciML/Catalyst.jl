@@ -91,8 +91,6 @@ $$
 
 Next we create a `ModelingToolkit.ODESystem` to store the equation for `dV/dt`
 
-</br>
-
 ```julia
 voltageode = let
 	@parameters C=1.0 ḡNa=120.0 ḡK=36.0 ḡL=.3 ENa=45.0 EK=-82.0 EL=-59.0 I₀=0.0
