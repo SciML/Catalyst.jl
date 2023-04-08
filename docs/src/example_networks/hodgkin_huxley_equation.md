@@ -5,7 +5,7 @@ This tutorial shows how to programmatically construct a [`ReactionSystem`](@ref)
 The Hodgkin–Huxley model, or conductance-based model, is a mathematical model that describes how action potentials in neurons are initiated and propagated. It is a set of nonlinear differential equations that approximates the electrical characteristics of excitable cells such as neurons and muscle cells. It is a continuous-time dynamical system.
 
 We begin by importing some necessary packages.
-```julia
+```@example hh1
 using ModelingToolkit, Catalyst, NonlinearSolve
 using DifferentialEquations, IfElse
 using Plots, GraphRecipes
@@ -21,7 +21,7 @@ where $m$, $n$ and $h$, are gating variables that determine the fraction of acti
 
 The transition rate functions, which depend on the voltage, $V(t)$, are then
 
-```julia
+```@example hh1
 begin 
 	function αₘ(V) 
 		theta = (V + 45) / 10
@@ -39,29 +39,14 @@ begin
 	βₙ(V) = .125 * exp(-(V + 70)/80)
 end
 ```
-Output:
-```βₙ (generic function with 1 method)```
 
-</br>
+ We now declare the symbolic variable, `V(t)`, that will represent voltage.
 
-* We now declare the symbolic variable, `V(t)`, that will represent voltage.
-
-* We tell Catalyst not to generate an equation for it from the reactions we list, using the `isbcspecies` metadata.
-
-* This label tells Catalyst an ODE or nonlinear equation for `V(t)` will be provided in a constraint system.
-
-Aside: `bcspecies` means a boundary condition species, a terminology from SBML.
-
-
-```julia
-@variables V(t) [isbcspecies=true]
+```@example hh1
+@variables V(t) 
 ```
-Output:
-`[V(t)]`
 
-</br>
-
-```julia
+```@example hh1
 hhrn = @reaction_network hhmodel begin
 	(αₙ($V),βₙ($V)), n′ <--> n
 	(αₘ($V),βₘ($V)), m′ <--> m
@@ -69,32 +54,12 @@ hhrn = @reaction_network hhmodel begin
 end
 ```
 
-Output:
-
-$hhrn =$
-
-$$
-\begin{align*}
-\ce{ n^\prime &<=>[$\begin{cases}
-0.1 & \text{if } \left( 6 + \frac{1}{10} V = 0.0 \right)\\\\\\
-\frac{0.6000000000000001 + 0.010000000000000002 V}{1 - e^{-6 + \frac{-1}{10} V}} & \text{otherwise}
-\end{cases}$][$0.125 e^{\frac{-7}{8} + \frac{-1}{80} V\left( t \right)}$] n}\\
-\ce{ m^\prime &<=>[$\begin{cases}
-1.0 & \text{if } \left( \frac{9}{2} + \frac{1}{10} V = 0.0 \right)\\\\\\
-\frac{\frac{9}{2} + \frac{1}{10} V}{1 - e^{\frac{-9}{2} + \frac{-1}{10} V}} & \text{otherwise}
-\end{cases}$][$4 e^{\frac{-35}{9} + \frac{-1}{18} V\left( t \right)}$] m}\\\\\\
-\ce{ h^\prime &<=>[$0.07 e^{\frac{-7}{2} + \frac{-1}{20} V}$][$\frac{1}{1 + e^{-4 + \frac{-1}{10} V\left( t \right)}}$] h}
-\end{align*}
-$$
-
-</br>
-
 Next we create a `ModelingToolkit.ODESystem` to store the equation for `dV/dt`
 
-```julia
+```@example hh1
 voltageode = let
 	@parameters C=1.0 ḡNa=120.0 ḡK=36.0 ḡL=.3 ENa=45.0 EK=-82.0 EL=-59.0 I₀=0.0
-	@variables m(t) n(t) h(t)
+	@species m(t) n(t) h(t)
 	I = I₀ * sin(2*pi*t/30)^2 
 
 	Dₜ = Differential(t)
@@ -102,33 +67,15 @@ voltageode = let
 	@named voltageode = ODESystem(eqs, t)
 end
 ```
+Note, we declare `m`, `n`, and `h` to be chemical species symbolic variables for consistency (as as they are used within reactions in `hhrn`)
+Notice, we included an applied current, `I`, that we will use to perturb the system and create action potentials. For now we turn this off by setting its amplitude, `I₀`, to zero.Finally, we couple this ODE into the reaction model as a constraint system:
 
-Output:
-
-$voltageode =$
-
-$$
-\begin{align}
-\frac{dV(t)}{dt} =& \frac{ - {\textrm{\={g}}}L \left(  - EL + V\left( t \right) \right) - \left( n\left( t \right) \right)^{4} {\textrm{\={g}}}K \left(  - EK + V\left( t \right) \right) - \left( m\left( t \right) \right)^{3} {\textrm{\={g}}}Na \left(  - ENa + V\left( t \right) \right) h\left( t \right)}{C} + \frac{\sin^{2}\left( 0.20943951023931953 t \right) I_0}{C}
-\end{align}
-$$
-
-</br>
-
-Notice, we included an applied current, `I`, that we will use to perturb the system and create action potentials. For now we turn this off by setting its amplitude, `I₀`, to zero.
-
-Finally, we couple this ODE into the reaction model as a constraint system:
-
-```julia
+```@example hh1
 @named hhmodel = extend(voltageode, hhrn);
 ```
+`hhmodel` is now a `ReactionSystem` that is coupled to an internal constraint `ODESystem` that stores `dV/dt`. Let's now solve to steady-state, as we can then use these resting values as an initial condition before applying a current to create an action potential.</br>
 
-* `hhmodel` is now a `ReactionSystem` that is coupled to an internal constraint `ODESystem` that stores `dV/dt`.
-
-* Let's now solve to steady-state, as we can then use these resting values as an initial condition before applying a current to create an action potential.
-</br>
-
-```julia
+```@example hh1
 hhsssol = let
 	tspan = (0.0, 50.0)
 	u₀ = [:V => -70, :m => 0.0, :h => 0.0, :n => 0.0, 
@@ -138,22 +85,17 @@ hhsssol = let
 end;
 ```
 
-```julia
+```@example hh1
 plot(hhsssol, vars=V)
 ```
-Output:<br/>
-![Plot1](../assets/hogkin_huxley_plot1.svg)
 
-```julia
+```@example hh1
 u_ss = hhsssol.u[end]
 ```
-Output:</br>
-`u_ss = [0.680779, 0.319221, 0.946472, 0.0535277, 0.408161, 0.591839, -69.9048]`
-</br>
 
 Finally, starting from this resting state let's solve the system when the amplitude of the stimulus is non-zero and see if we get action potentials
 
-```julia
+```@example hh1
 let
 	tspan = (0.0, 50.0)
 	@unpack I₀ = hhmodel
@@ -162,21 +104,4 @@ let
 	plot(sol, vars=V, legend=:outerright)
 end
 ```
-</br>
-Output:</br>
 
-![Plot2](../assets/hogkin_huxley_plot2.svg)
-
-## Appendix
-
-Let's set some default initial values for the voltage and gating variables.
-
-```
-# let
-# 	V₀ = -70
-# 	setdefaults!(hhrn, [:noff => βₙ(V₀)/(αₙ(V₀)+βₙ(V₀)), :n => αₙ(V₀)/(αₙ(V₀)+βₙ(V₀)),
-# 				    	:moff => βₘ(V₀)/(αₘ(V₀)+βₘ(V₀)), :m => αₘ(V₀)/(αₘ(V₀)+βₘ(V₀)),
-# 						:hoff => βₕ(V₀)/(αₕ(V₀)+βₕ(V₀)), :h => αₕ(V₀)/(αₕ(V₀)+βₕ(V₀)),
-# 						:V => V₀])
-# end
-```
