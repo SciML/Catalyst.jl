@@ -2,6 +2,7 @@ Base.@kwdef mutable struct CatalystLatexParams
     double_linebreak::Bool = false
     starred::Bool = true
     harpoon_arrows::Bool = true
+    mathjax::Bool = false
 end
 
 const LATEX_DEFS = CatalystLatexParams()
@@ -109,7 +110,8 @@ end
 
 function chemical_arrows(rn::ReactionSystem; expand = true,
                          double_linebreak = LATEX_DEFS.double_linebreak,
-                         starred = LATEX_DEFS.starred, mathrm = true, kwargs...)
+                         starred = LATEX_DEFS.starred, mathrm = true,
+                         mathjax = Catalyst.LATEX_DEFS.mathjax, kwargs...)
     any_nonrx_subsys(rn) &&
         (@warn "Latexify currently ignores non-ReactionSystem subsystems. Please call `flatsys = flatten(sys)` to obtain a flattened version of your system before trying to Latexify it.")
 
@@ -129,8 +131,8 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
 
     # test if in IJulia since their mathjax is outdated...
     # VSCODE uses Katex and doesn't have this issue.
-    if isdefined(Main, :IJulia) && Main.IJulia.inited &&
-       !any(s -> occursin("VSCODE", s), collect(keys(ENV)))
+    if mathjax || (isdefined(Main, :IJulia) && Main.IJulia.inited &&
+       !any(s -> occursin("VSCODE", s), collect(keys(ENV))))
         str *= "\\require{mhchem} \n"
     end
 
