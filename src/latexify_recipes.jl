@@ -132,7 +132,7 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
     # test if in IJulia since their mathjax is outdated...
     # VSCODE uses Katex and doesn't have this issue.
     if mathjax || (isdefined(Main, :IJulia) && Main.IJulia.inited &&
-       !any(s -> occursin("VSCODE", s), collect(keys(ENV))))
+        !any(s -> occursin("VSCODE", s), collect(keys(ENV))))
         str *= "\\require{mhchem} \n"
     end
 
