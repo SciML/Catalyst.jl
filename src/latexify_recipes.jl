@@ -111,7 +111,7 @@ end
 function chemical_arrows(rn::ReactionSystem; expand = true,
                          double_linebreak = LATEX_DEFS.double_linebreak,
                          starred = LATEX_DEFS.starred, mathrm = true,
-                         mathjax = Catalyst.LATEX_DEFS.mathjax, kwargs...)
+                         mathjax = LATEX_DEFS.mathjax, kwargs...)
     any_nonrx_subsys(rn) &&
         (@warn "Latexify currently ignores non-ReactionSystem subsystems. Please call `flatsys = flatten(sys)` to obtain a flattened version of your system before trying to Latexify it.")
 
