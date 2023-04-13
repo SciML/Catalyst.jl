@@ -108,7 +108,7 @@ using ModelingToolkit
 @variables t x(t) y(t) z(t)
 nothing # hide
 ```
-and then uses these to build systems of equations. Here, these symbolic variables (`x`, `y`, and `z`) and parameters (`σ`, `ρ`, and `β`) can be used to interface a `problem`, `integrator`, and `solution` object (like we did previously, but using Symbols, e.g. `:X`). Since Catalyst models are built on ModelingToolkit, these models also contain similar symbolic variables and parameters. However, these cannot be directly used, but needs to be imported into the current scope using the `@unpack` macro:
+and then uses these to build systems of equations. Here, these symbolic variables (`x`, `y`, and `z`) and parameters (`σ`, `ρ`, and `β`) can be used to interface a `problem`, `integrator`, and `solution` object (like we did previously, but using Symbols, e.g. `:X`). Since Catalyst models are built on ModelingToolkit, these models also contain similar symbolic variables and parameters. 
 ```example ex2
 using Catalyst
 rn = @reaction_network begin
