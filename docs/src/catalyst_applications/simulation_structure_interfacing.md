@@ -117,7 +117,7 @@ end
 
 @unpack k1,k2,X1,X2 = rn
 ```
-Here, we first list the parameters and variables (for reaction systems called "species") we which to import (in this case we select all, but we could select only a subset), next we denote from which model (here `rn`) from which we wish to import from. Next, these values can be used directly to interface with e.g. an `ODEProblem`:
+Here, we first list the parameters and variables (for reaction systems the latter are typically species) we wish to import (in this case we select all, but we could select only a subset), next we denote from which model (here `rn`) from which we wish to import from. Next, these values can be used directly to interface with e.g. an `ODEProblem`:
 ```example ex2
 u0 = [:X1 => 1.0, :X2 => 5.0]
 p = [:k1 => 5.0, :k2 => 2.0]
