@@ -282,6 +282,7 @@ function affect!(integrator)
     integrator[:X1] += 5.0
     integrator[:k] += 2.0
     reset_aggregated_jumps!(integrator)
+    nothing
 end
 cb = PresetTimeCallback(condition, affect!)
 
