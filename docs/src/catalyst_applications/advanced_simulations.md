@@ -265,7 +265,7 @@ to be triggered. An example could be a callback that triggers whenever a species
 surpasses some threshold value.
 
 ### Callbacks during SSA simulations(@id advanced_simulations_ssa_callbacks)
-An assumption of (most) SSA simulations is that the state of the system is unchanged inbetween reaction events. However, callbacks that affect the system's state break's this assumption. To prevent erroneous simulations, the users must inform the system that the sate has been updated. This can be done through the `reset_aggregated_jumps!` function, see the following example:
+An assumption of (most) SSA simulations is that the state of the system is unchanged between reaction events. However, callbacks that affect the system's state can violate this assumption. To prevent erroneous simulations, users must inform a SSA solver when the state has been updated in a callback. This allows the solver to reinitialize any internal state information that may have changed. This can be done through the `reset_aggregated_jumps!` function, see the following example:
 
 ```@example ex2
 rn = @reaction_network begin
