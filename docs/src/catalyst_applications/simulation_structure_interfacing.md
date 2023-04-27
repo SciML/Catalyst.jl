@@ -68,7 +68,7 @@ During a simulation, the solution is stored in an integrator object, we will her
 ```example ex1
 integrator = init(oprob)
 ```
-again, using a similar syntax to problems, we can get the values of a state:
+Using a similar syntax to problems, we can get the current values of a state within the integrator:
 ```example ex1
 integrator[:X1]
 ```
@@ -108,7 +108,7 @@ using ModelingToolkit
 @variables t x(t) y(t) z(t)
 nothing # hide
 ```
-and then uses these to build systems of equations. Here, these symbolic variables (`x`, `y`, and `z`) and parameters (`σ`, `ρ`, and `β`) can be used to interface a `problem`, `integrator`, and `solution` object (like we did previously, but using Symbols, e.g. `:X`). Since Catalyst models are built on ModelingToolkit, these models also contain similar symbolic variables and parameters. However, these cannot be directly used, but needs to be imported into the current scope using the `@unpack` macro:
+and then uses these to build systems of equations. Here, these symbolic variables (`x`, `y`, and `z`) and parameters (`σ`, `ρ`, and `β`) can be used to interface a `problem`, `integrator`, and `solution` object (like we did previously, but using Symbols, e.g. `:X`). Since Catalyst models are built on ModelingToolkit, these models also contain similar symbolic variables and parameters. 
 ```example ex2
 using Catalyst
 rn = @reaction_network begin
@@ -117,9 +117,9 @@ end
 
 @unpack k1,k2,X1,X2 = rn
 ```
-Here, we first list the parameters and variables (for reaction systems called "species") we which to import (in this case we select all, but we could select only a subset), next we denote from which model (here `rn`) from which we wish to import from. Next, these values can be used directly to interface with e.g. an `ODEProblem`:
+Here, we first list the parameters and variables (for reaction systems the latter are typically species) we wish to import (in this case we select all, but we could select only a subset), next we denote from which model (here `rn`) from which we wish to import from. Next, these values can be used directly to interface with e.g. an `ODEProblem`:
 ```example ex2
-u0 = [:X1 => 1.0, :X2 => 5.0]
+u0 = [X1 => 1.0, X2 => 5.0]
 p = [:k1 => 5.0, :k2 => 2.0]
 oprob = ODEProblem(rn, u0, (0.0,10.0), p)
 
