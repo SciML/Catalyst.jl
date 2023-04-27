@@ -213,7 +213,7 @@ the callback does not seem to have any effect on the system. If we check our
 ```@example ex2
 oprob.p
 ```
-we note that `k = 5.0`, rather than `k = 1.0` as we initially specify. This is
+we note that `k = 5.0`, rather than `k = 1.0` as we initially specified. This is
 because the callback modifies our `ODEProblem` during the simulation, and this
 modification remains during the second simulation. An improved workflow to avoid
 this issue is:
@@ -233,7 +233,7 @@ ps_cb = PresetTimeCallback(condition, affect!)
 sol = solve(deepcopy(oprob); callback = ps_cb)
 plot(sol)
 ```
-where we parse a copy of our `ODEProblem` to the solver. We can now run
+where we parse a copy of our `ODEProblem` to the solver (using `deepcopy`). We can now run
 ```@example ex2
 sol = solve(deepcopy(oprob); callback = ps_cb)
 plot(sol)
