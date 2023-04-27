@@ -118,7 +118,7 @@ p = plot(esol; label = nothing)
 plot!(p, Float64[], Float64[]; label = "X", legend = :topleft)
 ```
 
-## Event handling using callbacks
+## [Event handling using callbacks](@id advanced_simulations_callbacks)
 Sometimes one wishes to add discrete events during simulations. Examples could include:
  - A chemical system where an amount of some species is added at a time point
    after the simulation's initiation.
@@ -164,7 +164,7 @@ We now wish to modify our simulation so that at the times `t = 3.0` and `t =
 ```@example ex2
 condition = [3.0, 7.0]
 function affect!(integrator)
-    integrator.u[1] += 5.0
+    integrator[:X] += 5.0
 end
 ps_cb = PresetTimeCallback(condition, affect!)
 nothing # hide
@@ -174,16 +174,15 @@ want the callback to trigger. The `affect!` function determines what happens to
 the simulation when the callback is triggered. It takes a single object, an
 `integrator` and makes some modification to it (please read more about
 integrators [here](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/)).
-Here, we access the system's current state vector as `integrator.u`, and add
-`5.0` to the amount of `X` present. We can now simulate our system using the
+Here, we access the system's state `X` through the `integrator`, and add
+`5.0` to its amount. We can now simulate our system using the
 callback:
 ```@example ex2
 sol = solve(oprob; callback = ps_cb)
 plot(sol)
 ```
 
-Next, we can also use a callback to change the parameters of a system. Now,
-instead of accessing `integrator.u` we access `integrator.p`. The following code
+Next, we can also use a callback to change the parameters of a system. The following code
 plots the concentration of a two-state system, as we change the equilibrium
 constant between the two states:
 ```@example ex2
@@ -196,7 +195,7 @@ p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 
 condition = [5.0]
-affect!(integrator) = integrator.p[1] = 5.0
+affect!(integrator) = integrator[:k] = 5.0
 ps_cb = PresetTimeCallback(condition, affect!)
 
 sol = solve(oprob; callback = ps_cb)
@@ -214,7 +213,7 @@ the callback does not seem to have any effect on the system. If we check our
 ```@example ex2
 oprob.p
 ```
-we note that `k = 5.0`, rather than `k = 1.0` as we initially specify. This is
+we note that `k = 5.0`, rather than `k = 1.0` as we initially specified. This is
 because the callback modifies our `ODEProblem` during the simulation, and this
 modification remains during the second simulation. An improved workflow to avoid
 this issue is:
@@ -228,13 +227,13 @@ p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 
 condition = [5.0]
-affect!(integrator) = integrator.p[1] = 5.0
+affect!(integrator) = integrator[:k] = 5.0
 ps_cb = PresetTimeCallback(condition, affect!)
 
 sol = solve(deepcopy(oprob); callback = ps_cb)
 plot(sol)
 ```
-where we parse a copy of our `ODEProblem` to the solver. We can now run
+where we parse a copy of our `ODEProblem` to the solver (using `deepcopy`). We can now run
 ```@example ex2
 sol = solve(deepcopy(oprob); callback = ps_cb)
 plot(sol)
@@ -252,8 +251,8 @@ tspan = (0.0, 20.0)
 p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 
-ps_cb_1 = PresetTimeCallback([3.0, 7.0], integ -> integ.u[1] += 5.0)
-ps_cb_2 = PresetTimeCallback([5.0], integ -> integ.p[1] = 5.0)
+ps_cb_1 = PresetTimeCallback([3.0, 7.0], integ -> integ[:X1] += 5.0)
+ps_cb_2 = PresetTimeCallback([5.0], integ -> integ[:k] = 5.0)
 
 sol = solve(deepcopy(oprob); callback=CallbackSet(ps_cb_1, ps_cb_2))
 plot(sol)
@@ -264,6 +263,33 @@ The difference between the `PresetTimeCallback`s and the `DiscreteCallback`s and
 function, permitting the user to give more general conditions for the callback
 to be triggered. An example could be a callback that triggers whenever a species
 surpasses some threshold value.
+
+### [Callbacks during SSA simulations](@id advanced_simulations_ssa_callbacks)
+An assumption of (most) SSA simulations is that the state of the system is unchanged between reaction events. However, callbacks that affect the system's state can violate this assumption. To prevent erroneous simulations, users must inform a SSA solver when the state has been updated in a callback. This allows the solver to reinitialize any internal state information that may have changed. This can be done through the `reset_aggregated_jumps!` function, see the following example:
+
+```@example ex2
+rn = @reaction_network begin
+    (k,1), X1 <--> X2
+end
+u0 = [:X1 => 10.0,:X2 => 0.0]
+tspan = (0.0, 20.0)
+p = [:k => 1.0]
+dprob = DiscreteProblem(rn, u0, tspan, p)
+jprob = JumpProblem(rn, dprob, Direct())
+
+condition = [5.0]
+function affect!(integrator)
+    integrator[:X1] += 5.0
+    integrator[:k] += 2.0
+    reset_aggregated_jumps!(integrator)
+    nothing
+end
+cb = PresetTimeCallback(condition, affect!)
+
+sol = solve(deepcopy(jprob), SSAStepper(); callback=cb)
+plot(sol)
+```
+
 
 ## Scaling the noise magnitude in the chemical Langevin equations
 When using the CLE to generate SDEs from a CRN, it can sometimes be desirable to
@@ -282,8 +308,7 @@ p_1 = [:k1 => 1.0, :k2 => 1.0]
 
 sprob_1 = SDEProblem(rn_1, u0, tspan, p_1)
 sol_1 = solve(sprob_1)
-@unpack X1 = rn_1
-plot(sol_1; idxs = X1, ylimit = (0.0, 20.0))
+plot(sol_1; idxs = :X1, ylimit = (0.0, 20.0))
 ```
 Here we can see that the `X` concentration fluctuations around a steady state of *X≈10.0*.
 
@@ -310,8 +335,7 @@ argument to the `SDEProblem`. We can now simulate our system and confirm that
 noise is reduced:
 ```@example ex3
 sol_2 = solve(sprob_2)
-@unpack X1 = rn_2
-plot(sol_2; idxs = X1, ylimit = (0.0, 20.0))
+plot(sol_2; idxs = :X1, ylimit = (0.0, 20.0))
 ```
 
 Finally, it is possible to set individual noise scaling parameters for each
@@ -333,8 +357,7 @@ plotting the results, we see that we have less fluctuation than for the first
 simulation, but more as compared to the second one (which is as expected):
 ```@example ex3
 sol_3 = solve(sprob_3)
-@unpack X1 = rn_3
-plot(sol_3; idxs = X1, ylimit = (0.0, 20.0))
+plot(sol_3; idxs = :X1, ylimit = (0.0, 20.0))
 ```
 
 ## Useful plotting options
@@ -367,18 +390,14 @@ plot(sol)
 ```
 If we want to plot only the `X` species, we can use the `idxs` command:
 ```@example ex4
-@unpack X = brusselator
-plot(sol; idxs = [X])
+plot(sol; idxs = [:X])
 ```
-Here we use `@unpack` to import `X` to the local scope, enabling us to use it
-for plotting. The input to `idxs` is a vector listing all the species we wish to
-plot. If we wish to plot a single species, vector notation is not required and
-we could simply write `plot(sol; idxs=X)`.
+If we wish to plot a single species (such as we do in this case), vector notation is not required and
+we could simply write `plot(sol; idxs=:X)`.
 
 Next, if we wish to plot a solution in phase space (instead of across time) we
 again use the `idxs` notation, but use `()` instead of `[]` when designating the
 species we wish to plot. Here, we plot the solution in `(X,Y)` space:
 ```@example ex4
-@unpack X, Y = brusselator
-plot(sol; idxs=(X, Y))
+plot(sol; idxs=(:X, :Y))
 ```
