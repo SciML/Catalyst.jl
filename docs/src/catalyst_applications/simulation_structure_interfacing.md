@@ -64,7 +64,7 @@ will only update the initial conditions.
 
 ## Interfacing integrator objects
 
-During a simulation, the solution is stored in an integrator object, we will here describe how to interface with these. The primary circumstance under which a user may wish to do so is when using [callbacks](@ref advanced_simulations_callbacks). We can create an integrator by calling `init` on our problem (the user will rarely use `init` though, since integrators are automatically created during simulations):
+During a simulation, the solution is stored in an integrator object, we will here describe how to interface with these. The primary circumstance under which a user may wish to do so is when using [callbacks](@ref advanced_simulations_callbacks). We can create an integrator by calling `init` on our problem ([while circumstances where the user might want to use `init` function exist](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/#Initialization-and-Stepping), since integrators are automatically created during simulations, these are rare):
 ```example ex1
 integrator = init(oprob)
 ```
