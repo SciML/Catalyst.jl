@@ -118,7 +118,7 @@ p = plot(esol; label = nothing)
 plot!(p, Float64[], Float64[]; label = "X", legend = :topleft)
 ```
 
-## Event handling using callbacks(@id advanced_simulations_callbacks)
+## [Event handling using callbacks](@id advanced_simulations_callbacks)
 Sometimes one wishes to add discrete events during simulations. Examples could include:
  - A chemical system where an amount of some species is added at a time point
    after the simulation's initiation.
@@ -264,7 +264,7 @@ function, permitting the user to give more general conditions for the callback
 to be triggered. An example could be a callback that triggers whenever a species
 surpasses some threshold value.
 
-### Callbacks during SSA simulations(@id advanced_simulations_ssa_callbacks)
+### [Callbacks during SSA simulations](@id advanced_simulations_ssa_callbacks)
 An assumption of (most) SSA simulations is that the state of the system is unchanged between reaction events. However, callbacks that affect the system's state can violate this assumption. To prevent erroneous simulations, users must inform a SSA solver when the state has been updated in a callback. This allows the solver to reinitialize any internal state information that may have changed. This can be done through the `reset_aggregated_jumps!` function, see the following example:
 
 ```@example ex2
