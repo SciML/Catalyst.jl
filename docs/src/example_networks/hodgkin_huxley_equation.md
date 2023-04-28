@@ -7,8 +7,8 @@ The Hodgkin–Huxley model, or conductance-based model, is a mathematical model 
 We begin by importing some necessary packages.
 ```@example hh1
 using ModelingToolkit, Catalyst, NonlinearSolve
-using DifferentialEquations, IfElse
-using Plots, GraphRecipes
+using DifferentialEquations, Symbolics
+using Plots, GraphRecipes, IfElse
 ```
 
 Let's build a simple Hodgkin-Huxley model for a single neuron, with the voltage, V(t), included as a constraint ODESystem.
@@ -43,7 +43,8 @@ end
  We now declare the symbolic variable, `V(t)`, that will represent voltage.
 
 ```@example hh1
-@variables V(t) 
+@variables V t;
+@variables V(t)
 ```
 
 ```@example hh1
@@ -73,7 +74,7 @@ Notice, we included an applied current, `I`, that we will use to perturb the sys
 ```@example hh1
 @named hhmodel = extend(voltageode, hhrn);
 ```
-`hhmodel` is now a `ReactionSystem` that is coupled to an internal constraint `ODESystem` that stores `dV/dt`. Let's now solve to steady-state, as we can then use these resting values as an initial condition before applying a current to create an action potential.</br>
+`hhmodel` is now a `ReactionSystem` that is coupled to an internal constraint `ODESystem` that stores `dV/dt`. Let's now solve to steady-state, as we can then use these resting values as an initial condition before applying a current to create an action potential.
 
 ```@example hh1
 hhsssol = let
@@ -86,7 +87,7 @@ end;
 ```
 
 ```@example hh1
-plot(hhsssol, vars=V)
+plot(hhsssol, idxs=V)
 ```
 
 ```@example hh1
