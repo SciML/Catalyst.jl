@@ -1,4 +1,4 @@
-+[deps]
+[deps]
 BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
 Catalyst = "479239e8-5488-4da2-87a7-35f2df7eef83"
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
