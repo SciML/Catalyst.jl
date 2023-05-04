@@ -138,7 +138,7 @@ function build_odefunction(lrs::LatticeReactionSystem, spatial_params::Vector{Sy
 
     f = build_f(ofunc, nS, nV, spatial_reactions, lrs.lattice.fadjlist)
     jac = build_jac(ofunc,nS,nV,spatial_reactions, lrs.lattice.fadjlist)
-    jac_prototype = build_jac_prototype(nS,nV,spatial_reactions, lrs.lattice.fadjlist)
+    jac_prototype = build_jac_prototype(nS,nV,spatial_reactions, lrs)
 
     return ODEFunction(f; jac=(use_jac ? jac : nothing), jac_prototype=(use_jac ? (sparse ? SparseArrays.sparse(jac_prototype) : jac_prototype) : nothing))
 end
@@ -179,9 +179,8 @@ function get_rate(sr::SpatialReactionIndexed, pE::Matrix{Float64}, u_src, u_dst)
 end
 
 function build_jac(ofunc::SciMLBase.AbstractODEFunction{true}, nS::Int64, nV::Int64, spatial_reactions::Vector{SpatialReactionIndexed}, adjlist::Vector{Vector{Int64}})
-    base_zero = zeros(nS*nV,nS*nV)
     return function(J, u, p, t)
-        J .= base_zero
+        J .= 0
 
         # Updates for non-spatial reactions.
         for comp_i::Int64 in 1:nV
@@ -229,25 +228,22 @@ function get_rate_differential(sr::SpatialReactionIndexed, pE::Matrix{Float64}, 
     return product
 end
 
-function build_jac_prototype(nS::Int64, nV::Int64, spatial_reactions::Vector{SpatialReactionIndexed}, adjlist::Vector{Vector{Int64}})
+function build_jac_prototype(nS::Int64, nV::Int64, spatial_reactions::Vector{SpatialReactionIndexed}, lrs::LatticeReactionSystem)
     jac_prototype::Matrix{Float64} = zeros(nS*nV,nS*nV)
 
     # Sets non-spatial reactions.
-    for comp_i::Int64 in 1:nV
-        jac_prototype[get_indexes(comp_i,nS),get_indexes(comp_i,nS)] = ones(nS,nS)
+    # Tries to utilise sparsity within each comaprtment.
+    for comp_i in 1:nV, reaction in reactions(lrs.rs)        
+        for substrate in reaction.substrates, ns in reaction.netstoich
+            sub_idx = findfirst(isequal(substrate), states(lrs.rs))
+            spec_idx = findfirst(isequal(ns[1]), states(lrs.rs))
+            jac_prototype[get_index(comp_i,spec_idx,nS), get_index(comp_i,sub_idx,nS)] = 1
+        end
     end
-    # Tries to utilise sparsity within each comaprtment, currently not working, not sure if useful.
-    # for comp_i in 1:nV, reaction in reactions(lrs.rs)        
-    #     for substrate in reaction.substrates, ns in reaction.netstoich
-    #         sub_idx = findfirst(isequal(substrate), states(lrs.rs))
-    #         spec_idx = findfirst(isequal(ns[1]), states(lrs.rs))
-    #         jac_prototype[spec_idx, sub_idx] = 1
-    #     end
-    # end
 
     # Updates for spatial reactions.
     for comp_i::Int64 in 1:nV
-        for comp_j::Int64 in adjlist[comp_i], sr::SpatialReactionIndexed in spatial_reactions
+        for comp_j::Int64 in lrs.lattice.fadjlist[comp_i]::Vector{Int64}, sr::SpatialReactionIndexed in spatial_reactions
             for sub::Int64 in sr.substrates[1]
                 for stoich::Pair{Int64,Int64} in sr.netstoich[1]
                     jac_prototype[get_index(comp_i,stoich[1],nS),get_index(comp_i,sub,nS)] = 1.0
