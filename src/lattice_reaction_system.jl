@@ -54,7 +54,7 @@ end
 Simple function to create a diffusion spatial reaction. 
     Equivalent to SpatialReaction(rate,([species],[]),([],[species]),([1],[]),([],[1]))
 """
-DiffusionReaction(rate,species) = SpatialReaction(rate,([species],[]),([],[species]),([1],[]),([],[1]))
+DiffusionReaction(rate,species) = SpatialReaction(rate,([species],Symbol[]),(Symbol[],[species]),([1],Int64[]),(Int64[],[1]))
 
 """
     OnewaySpatialReaction(rate, substrates, products, substoich, prodstoich)
@@ -62,7 +62,7 @@ DiffusionReaction(rate,species) = SpatialReaction(rate,([species],[]),([],[speci
 Simple function to create a spatial reactions where all substrates are in teh soruce compartment, and all products in the destination.
 Equivalent to SpatialReaction(rate,(substrates,[]),([],products),(substoich,[]),([],prodstoich))
 """
-OnewaySpatialReaction(rate, substrates::Vector, products::Vector, substoich::Vector{Int64}, prodstoich::Vector{Int64}) = SpatialReaction(rate,(substrates,[]),([],products),(substoich,[]),([],prodstoich))
+OnewaySpatialReaction(rate, substrates::Vector, products::Vector, substoich::Vector{Int64}, prodstoich::Vector{Int64}) = SpatialReaction(rate,(substrates,Symbol[]),(Symbol[],products),(substoich,Int64[]),(Int64[],prodstoich))
 
 
 
@@ -77,16 +77,18 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
     rs::ReactionSystem
     """The spatial reactions defined between individual nodes."""
     spatial_reactions::Vector{SpatialReaction}
+    """A list of parameters that occur in the spatial reactions."""
+    spatial_params::Vector{Symbol}
     """The graph on which the lattice is defined."""
     lattice::DiGraph
     """Dependent (state) variables representing amount of each species. Must not contain the
     independent variable."""
 
     function LatticeReactionSystem(rs, spatial_reactions, lattice::DiGraph)
-        return new(rs, spatial_reactions, lattice)
+        return new(rs, spatial_reactions, unique(getfield.(spatial_reactions, :rate)), lattice)
     end
     function LatticeReactionSystem(rs, spatial_reactions, lattice::SimpleGraph)
-        return new(rs, spatial_reactions, DiGraph(lattice))
+        return new(rs, spatial_reactions, unique(getfield.(spatial_reactions, :rate)), DiGraph(lattice))
     end
 end
 
@@ -97,11 +99,10 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0, tspan,
                                jac=true, sparse=true, kwargs...)
     @unpack rs, spatial_reactions, lattice = lrs
 
-    spatial_params = unique(getfield.(spatial_reactions, :rate))
-    pV_in, pE_in = split_parameters(p, spatial_params)
+    pV_in, pE_in = split_parameters(p, lrs.spatial_params)
     u_idxs = Dict(reverse.(enumerate(Symbolics.getname.(states(rs)))))
     pV_idxes = Dict(reverse.(enumerate(Symbol.(parameters(rs)))))
-    pE_idxes = Dict(reverse.(enumerate(spatial_params)))
+    pE_idxes = Dict(reverse.(enumerate(lrs.spatial_params)))
 
     nS,nV,nE = length.([states(lrs.rs), vertices(lrs.lattice), edges(lrs.lattice)])
     u0 = Vector(reshape(matrix_form(u0, nV, u_idxs),1:nS*nV))
@@ -109,7 +110,7 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0, tspan,
     pV = matrix_form(pV_in, nV, pV_idxes)
     pE = matrix_form(pE_in, nE, pE_idxes)
 
-    ofun = build_odefunction(lrs, spatial_params, jac, sparse)
+    ofun = build_odefunction(lrs, jac, sparse)
     return ODEProblem(ofun, u0, tspan, (pV, pE), args...; kwargs...)
 end
 
@@ -121,20 +122,22 @@ function split_parameters(parameters::Vector, spatial_params::Vector{Symbol})
 end
 
 # Converts species and parameters to matrices form.
-matrix_form(input::Matrix, args...) = input
+matrix_form(input::Matrix{Float64}, args...) = input
 function matrix_form(input::Vector{Pair{Symbol, Vector{Float64}}}, n, index_dict)
+    isempty(input) && return zeros(0,n)
     mapreduce(permutedims, vcat, last.(sort(input, by = i -> index_dict[i[1]])))
 end
 function matrix_form(input::Vector, n, index_dict)
+    isempty(input) && return zeros(0,n)
     matrix_form(map(i -> (i[2] isa Vector) ? i[1] => i[2] : i[1] => fill(i[2], n), input),
                 n, index_dict)
 end
 
 # Builds an ODEFunction.
-function build_odefunction(lrs::LatticeReactionSystem, spatial_params::Vector{Symbol}, use_jac::Bool, sparse::Bool)
+function build_odefunction(lrs::LatticeReactionSystem, use_jac::Bool, sparse::Bool)
     ofunc = ODEFunction(convert(ODESystem, lrs.rs); jac=true)
     nS,nV = length.([states(lrs.rs), vertices(lrs.lattice)])
-    spatial_reactions = [SpatialReactionIndexed(sr, Symbol.(getfield.(states(lrs.rs), :f)), spatial_params) for sr in lrs.spatial_reactions]
+    spatial_reactions = [SpatialReactionIndexed(sr, map(s -> Symbol(s.f), species(lrs.rs)), lrs.spatial_params) for sr in lrs.spatial_reactions]
 
     f = build_f(ofunc, nS, nV, spatial_reactions, lrs.lattice.fadjlist)
     jac = build_jac(ofunc,nS,nV,spatial_reactions, lrs.lattice.fadjlist)
