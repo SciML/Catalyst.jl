@@ -68,6 +68,11 @@ export @reaction_network, @add_reactions, @reaction, @species
 include("registered_functions.jl")
 export mm, mmr, hill, hillr, hillar
 
+# spatial reaction networks
+include("lattice_reaction_system.jl")
+export SpatialReaction, DiffusionReaction, OnewaySpatialReaction
+export LatticeReactionSystem
+
 # functions to query network properties
 include("networkapi.jl")
 export species, nonspecies, reactionparams, reactions, speciesmap, paramsmap
