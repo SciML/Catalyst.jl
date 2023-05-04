@@ -35,7 +35,10 @@ using SafeTestsets
     @time @safetestset "SDE System Simulations" begin include("model_simulation/simulate_SDEs.jl") end
     @time @safetestset "Jump System Simulations" begin include("model_simulation/simulate_jumps.jl") end
     @time @safetestset "DiffEq Steady State Solving" begin include("model_simulation/solve_steady_state_problems.jl") end
-    @time @safetestset "PDE Systems Simulations" begin include("model_simulation/simulate_PDEs.jl") end
+
+    ### Tests Spatial Network Simulations. ###
+    @time @safetestset "PDE Systems Simulations" begin include("spatial_reaction_systems/simulate_PDEs.jl") end
+    @time @safetestset "Lattice Systems Simulations" begin include("spatial_reaction_systems/lattice_reaction_networks.jl") end
 
     ### Tests network visualization. ###
     @time @safetestset "Latexify" begin include("visualization/latexify.jl") end
