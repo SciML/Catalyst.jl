@@ -140,10 +140,10 @@ function build_odefunction(lrs::LatticeReactionSystem, use_jac::Bool, sparse::Bo
     spatial_reactions = [SpatialReactionIndexed(sr, map(s -> Symbol(s.f), species(lrs.rs)), lrs.spatial_params) for sr in lrs.spatial_reactions]
 
     f = build_f(ofunc, nS, nV, spatial_reactions, lrs.lattice.fadjlist)
-    jac = build_jac(ofunc,nS,nV,spatial_reactions, lrs.lattice.fadjlist)
-    jac_prototype = build_jac_prototype(nS,nV,spatial_reactions, lrs)
+    jac = (use_jac ? build_jac(ofunc,nS,nV,spatial_reactions, lrs.lattice.fadjlist) : nothing)
+    jac_prototype = (use_jac ? build_jac_prototype(nS,nV,spatial_reactions, lrs, sparse) : nothing)
 
-    return ODEFunction(f; jac=(use_jac ? jac : nothing), jac_prototype=(use_jac ? (sparse ? SparseArrays.sparse(jac_prototype) : jac_prototype) : nothing))
+    return ODEFunction(f; jac=jac, jac_prototype=jac_prototype)
 end
 
 # Creates a function for simulating the spatial ODE with spatial reactions.
@@ -231,8 +231,8 @@ function get_rate_differential(sr::SpatialReactionIndexed, pE::Matrix{Float64}, 
     return product
 end
 
-function build_jac_prototype(nS::Int64, nV::Int64, spatial_reactions::Vector{SpatialReactionIndexed}, lrs::LatticeReactionSystem)
-    jac_prototype::Matrix{Float64} = zeros(nS*nV,nS*nV)
+function build_jac_prototype(nS::Int64, nV::Int64, spatial_reactions::Vector{SpatialReactionIndexed}, lrs::LatticeReactionSystem, sparse::Bool)
+    jac_prototype = (sparse ? spzeros(nS*nV,nS*nV) : zeros(nS*nV,nS*nV)::Matrix{Float64})
 
     # Sets non-spatial reactions.
     # Tries to utilise sparsity within each comaprtment.
