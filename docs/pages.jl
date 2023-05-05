@@ -13,6 +13,7 @@ pages = Any["Home" => "index.md",
                                            "catalyst_applications/bifurcation_diagrams.md",
                                            "catalyst_applications/parameter_estimation.md"],
             "Example Networks" => Any["example_networks/basic_CRN_examples.md",
+                                      "example_networks/hodgkin_huxley_equation.md",
                                       "example_networks/smoluchowski_coagulation_equation.md"],
             "FAQs" => "faqs.md",
             "API" => "api/catalyst_api.md"]
