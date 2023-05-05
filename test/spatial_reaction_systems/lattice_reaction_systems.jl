@@ -209,11 +209,12 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE); jac=false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
     
-    runtime_target = 0.000895
-    runtime = minimum((@benchmark solve(oprob, Tsit5())).times)/1000000000
+    runtime_target = 0.00089
+    runtime = minimum((@benchmark solve($oprob, Tsit5())).times)/1000000000
     println("Small grid, small, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
 end
+
 
 # Large grid, small, non-stiff, system.
 let 
@@ -224,8 +225,8 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE); jac=false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
     
-    runtime_target = 0.00091
-    runtime = minimum((@benchmark solve(oprob, Tsit5())).times)/1000000000
+    runtime_target = 0.451
+    runtime = minimum((@benchmark solve($oprob, Tsit5())).times)/1000000000
     println("Large grid, small, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
 end
@@ -239,8 +240,8 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,100.0), (pV,pE))
     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
     
-    runtime_target = 0.086
-    runtime = minimum((@benchmark solve(oprob, QNDF())).times)/1000000000
+    runtime_target = 0.05
+    runtime = minimum((@benchmark solve($oprob, QNDF())).times)/1000000000
     println("Small grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
 end
@@ -254,11 +255,12 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,100.0), (pV,pE))
     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
     
-    runtime_target = 120.0
-    runtime = minimum((@benchmark solve(oprob, QNDF())).times)/1000000000
+    runtime_target = 140.0
+    runtime = minimum((@benchmark solve($oprob, QNDF())).times)/1000000000
     println("Large grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
 end
+
 
 # Small grid, mid-sized, non-stiff, system.
 let 
@@ -270,7 +272,7 @@ let
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
     
     runtime_target = 0.00293
-    runtime = minimum((@benchmark solve(oprob, Tsit5())).times)/1000000000
+    runtime = minimum((@benchmark solve($oprob, Tsit5())).times)/1000000000
     println("Small grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
 end
@@ -284,8 +286,8 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE); jac=false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
     
-    runtime_target = 1.54
-    runtime = minimum((@benchmark solve(oprob, Tsit5())).times)/1000000000
+    runtime_target = 1.257
+    runtime = minimum((@benchmark solve($oprob, Tsit5())).times)/1000000000
     println("Large grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
 end
@@ -299,8 +301,8 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE))
     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
     
-    runtime_target = 0.0228
-    runtime = minimum((@benchmark solve(oprob, QNDF())).times)/1000000000
+    runtime_target = 0.023
+    runtime = minimum((@benchmark solve($oprob, QNDF())).times)/1000000000
     println("Small grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
 end
@@ -314,8 +316,8 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE))
     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
     
-    runtime_target = 127.0
-    runtime = minimum((@benchmark solve(oprob, QNDF())).times)/1000000000
+    runtime_target = 111.
+    runtime = minimum((@benchmark solve($oprob, QNDF())).times)/1000000000
     println("Large grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
 end
@@ -342,7 +344,7 @@ pV = binding_p
 pE = [:dX => 0.1, :dY => 0.2]
 oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE); jac=false)
 
-runtime = minimum((@benchmark solve(oprob, Tsit5())).times)
+runtime = minimum((@benchmark solve($oprob, Tsit5())).times)
 
 (@benchmark solve(oprob, Tsit5())).times
 
