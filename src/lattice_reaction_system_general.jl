@@ -1,8 +1,13 @@
+### CURRENTLY NOT IN USE ###
+
+
 ### Spatial Reaction Structure. ###
 # Describing a spatial reaction that involves species from two neighbouring compartments.
 # Currently only permit constant rate.
-struct SpatialReaction
-    """The rate function (excluding mass action terms). Currentl only cosntants supported"""
+
+# A general spatial reaction.
+struct SpatialReaction <: AbstractSpatialReaction
+    """The rate function (excluding mass action terms). Currentl only constants supported"""
     rate::Symbol
     """Reaction substrates (source and destination)."""
     substrates::Tuple{Vector{Symbol}, Vector{Symbol}}
@@ -36,15 +41,20 @@ struct SpatialReactionIndexed
     substoich::Tuple{Vector{Int64}, Vector{Int64}}
     prodstoich::Tuple{Vector{Int64}, Vector{Int64}}
     netstoich::Tuple{Vector{Pair{Int64,Int64}}, Vector{Pair{Int64,Int64}}}
+    netstoich_new::Tuple{Dict{Int64,Int64},Dict{Int64,Int64}}
     only_use_rate::Bool
 
-    function SpatialReactionIndexed(sr::SpatialReaction, species_list::Vector{Symbol}, param_list::Vector{Symbol})
+    function SpatialReactionIndexed(sr::SpatialReaction, species_list::Vector{Symbol}, param_list::Vector{Symbol}; reverse_direction=false)
         get_s_idx(species::Symbol) = findfirst(species .== (species_list))
         rate = findfirst(sr.rate .== (param_list))
         substrates = Tuple([get_s_idx.(sr.substrates[i]) for i in 1:2])
         products = Tuple([get_s_idx.(sr.products[i]) for i in 1:2])
         netstoich = Tuple([Pair.(get_s_idx.(first.(sr.netstoich[i])), last.(sr.netstoich[i])) for i in 1:2])
-        new(rate, substrates, products, sr.substoich, sr.prodstoich, netstoich, sr.only_use_rate)
+        netstoich_new = Tuple([Dict(Pair.(get_s_idx.(first.(sr.netstoich[i])), last.(sr.netstoich[i]))) for i in 1:2])
+        if reverse_direction 
+            return new(rate, reverse.([substrates, products, sr.substoich, sr.prodstoich, netstoich, netstoich_new])..., sr.only_use_rate)
+        end
+        new(rate, substrates, products, sr.substoich, sr.prodstoich, netstoich, netstoich_new, sr.only_use_rate)
     end
 end
 
@@ -105,7 +115,7 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0, tspan,
     pE_idxes = Dict(reverse.(enumerate(lrs.spatial_params)))
 
     nS,nV,nE = length.([states(lrs.rs), vertices(lrs.lattice), edges(lrs.lattice)])
-    u0 = Vector(reshape(matrix_form(u0, nV, u_idxs),1:nS*nV))
+    u0 = Vector(reshape(matrix_form(u0, nV, u_idxs)',1:nS*nV))
 
     pV = matrix_form(pV_in, nV, pV_idxes)
     pE = matrix_form(pE_in, nE, pE_idxes)
@@ -137,10 +147,20 @@ end
 function build_odefunction(lrs::LatticeReactionSystem, use_jac::Bool, sparse::Bool)
     ofunc = ODEFunction(convert(ODESystem, lrs.rs); jac=true)
     nS,nV = length.([states(lrs.rs), vertices(lrs.lattice)])
+    
+    species_list = map(s -> Symbol(s.f), species(lrs.rs))
     spatial_reactions = [SpatialReactionIndexed(sr, map(s -> Symbol(s.f), species(lrs.rs)), lrs.spatial_params) for sr in lrs.spatial_reactions]
+    spatial_reactions_reversed = [SpatialReactionIndexed(sr, map(s -> Symbol(s.f), species(lrs.rs)), lrs.spatial_params; reverse_direction=true) for sr in lrs.spatial_reactions]
+    spatial_reactions_dict = Dict{Int64,Vector{SpatialReactionIndexed}}([i => Vector{SpatialReactionIndexed}() for i in 1:nS])
+    for sr in spatial_reactions, sub in sr.substrates[1]
+        push!(spatial_reactions_dict[sub], sr)
+    end
+    for sr in spatial_reactions_reversed, sub in sr.substrates[1]
+        push!(spatial_reactions_dict[sub], sr)
+    end
 
     f = build_f(ofunc, nS, nV, spatial_reactions, lrs.lattice.fadjlist)
-    jac = (use_jac ? build_jac(ofunc,nS,nV,spatial_reactions, lrs.lattice.fadjlist) : nothing)
+    jac = (use_jac ? build_jac(ofunc,nS,nV,spatial_reactions,spatial_reactions_dict, lrs.lattice.fadjlist) : nothing)
     jac_prototype = (use_jac ? build_jac_prototype(nS,nV,spatial_reactions, lrs, sparse) : nothing)
 
     return ODEFunction(f; jac=jac, jac_prototype=jac_prototype)
@@ -151,18 +171,18 @@ function build_f(ofunc::SciMLBase.AbstractODEFunction{true}, nS::Int64, nV::Int6
     return function(du, u, p, t)
         # Updates for non-spatial reactions.
         for comp_i::Int64 in 1:nV
-            ofunc((@view du[get_indexes(comp_i,nS)]), (@view u[get_indexes(comp_i,nS)]), (@view p[1][:,comp_i]), t)
+            ofunc((@view du[get_indexes(comp_i,nV,nV*nS)]), (@view u[get_indexes(comp_i,nV,nV*nS)]), (@view p[1][:,comp_i]), t)
         end
     
         # Updates for spatial reactions.
         for comp_i::Int64 in 1:nV
             for comp_j::Int64 in adjlist[comp_i], sr::SpatialReactionIndexed in spatial_reactions
-                rate::Float64 = get_rate(sr, p[2], (@view u[get_indexes(comp_i,nS)]), (@view u[get_indexes(comp_j,nS)]))
+                rate::Float64 = get_rate(sr, p[2], (@view u[get_indexes(comp_i,nV,nV*nS)]), (@view u[get_indexes(comp_j,nV,nV*nS)]))
                 for stoich::Pair{Int64,Int64} in sr.netstoich[1]
-                    du[get_index(comp_i,stoich[1],nS)] += rate * stoich[2]
+                    du[get_index(comp_i,stoich[1],nV)] += rate * stoich[2]
                 end
                 for stoich::Pair{Int64,Int64} in sr.netstoich[2]
-                    du[get_index(comp_j,stoich[1],nS)] += rate * stoich[2]
+                    du[get_index(comp_j,stoich[1],nV)] += rate * stoich[2]
                 end
             end
         end
@@ -181,34 +201,62 @@ function get_rate(sr::SpatialReactionIndexed, pE::Matrix{Float64}, u_src, u_dst)
     return product
 end
 
-function build_jac(ofunc::SciMLBase.AbstractODEFunction{true}, nS::Int64, nV::Int64, spatial_reactions::Vector{SpatialReactionIndexed}, adjlist::Vector{Vector{Int64}})
+function build_jac(ofunc::SciMLBase.AbstractODEFunction{true}, nS::Int64, nV::Int64, spatial_reactions::Vector{SpatialReactionIndexed}, spatial_reactions_dict::Dict{Int64,Vector{SpatialReactionIndexed}}, adjlist::Vector{Vector{Int64}})
     return function(J, u, p, t)
         J .= 0
 
         # Updates for non-spatial reactions.
         for comp_i::Int64 in 1:nV
-            ofunc.jac((@view J[get_indexes(comp_i,nS),get_indexes(comp_i,nS)]), (@view u[get_indexes(comp_i,nS)]), (@view p[1][:,comp_i]), t)
+            ofunc.jac((@view J[get_indexes(comp_i,nV,nV*nS),get_indexes(comp_i,nV,nV*nS)]), (@view u[get_indexes(comp_i,nV,nV*nS)]), (@view p[1][:,comp_i]), t)
         end
     
         # Updates for spatial reactions.
+        # for species_i in 1:nS, comp_i in 1:nV    
+        #     i_idx = sub + (comp_i-1)*nS
+        #     for j_idx in J.rowval[J.colptr[i_idx]:J.colptr[i_idx+1]-1]
+        #         species_j 
+        #     end
+        #     for comp_j::Int64 in adjlist[comp_i], sr in spatial_reactions_dict[sub]
+        #         rate::Float64 = get_rate_differential(sr, p[2], sub, (@view u[get_indexes(comp_i,nV,nV*nS)]), (@view u[get_indexes(comp_j,nV,nV*nS)]))
+        #         for stoich::Pair{Int64,Int64} in sr.netstoich[1]
+        #             J.nzval[idxs_loolup_dict[stoich[1]]] += rate * stoich[2]
+        #         end
+        #     end
+        # end
+
+        # idxs_loolup_dict = Dict{Int64,Int64}(Pair.(1:nV*nS, 0))
+        # for sub in 1:nS, comp_i in 1:nV
+        #     # Creates a look up, so that we for a given species (in a given container) can find its position in J.nzval.
+        #     sub_idx = sub + (comp_i-1)*nS
+        #     for (idx,species) in enumerate(J.rowval[J.colptr[sub_idx]:J.colptr[sub_idx+1]-1])
+        #         idxs_loolup_dict[species] = J.colptr[sub_idx] + idx - 1
+        #     end
+        #     for comp_j::Int64 in adjlist[comp_i], sr in spatial_reactions_dict[sub]
+        #         rate::Float64 = get_rate_differential(sr, p[2], sub, (@view u[get_indexes(comp_i,nV,nV*nS)]), (@view u[get_indexes(comp_j,nV,nV*nS)]))
+        #         for stoich::Pair{Int64,Int64} in sr.netstoich[1]
+        #             J.nzval[idxs_loolup_dict[stoich[1]]] += rate * stoich[2]
+        #         end
+        #     end
+        # end
+
         for comp_i::Int64 in 1:nV
             for comp_j::Int64 in adjlist[comp_i], sr::SpatialReactionIndexed in spatial_reactions
                 for sub::Int64 in sr.substrates[1]
-                    rate::Float64 = get_rate_differential(sr, p[2], sub, (@view u[get_indexes(comp_i,nS)]), (@view u[get_indexes(comp_j,nS)]))
+                    rate::Float64 = get_rate_differential(sr, p[2], sub, (@view u[get_indexes(comp_i,nV,nV*nS)]), (@view u[get_indexes(comp_j,nV,nV*nS)]))
                     for stoich::Pair{Int64,Int64} in sr.netstoich[1]
-                        J[get_index(comp_i,stoich[1],nS),get_index(comp_i,sub,nS)] += rate * stoich[2]
+                        J[get_index(comp_i,stoich[1],nV),get_index(comp_i,sub,nV)] += rate * stoich[2]
                     end
                     for stoich::Pair{Int64,Int64} in sr.netstoich[2]
-                        J[get_index(comp_j,stoich[1],nS),get_index(comp_i,sub,nS)] += rate * stoich[2]
+                        J[get_index(comp_j,stoich[1],nV),get_index(comp_i,sub,nV)] += rate * stoich[2]
                     end
                 end
                 for sub::Int64 in sr.substrates[2]
-                    rate::Float64 = get_rate_differential(sr, p[2], sub, (@view u[get_indexes(comp_j,nS)]), (@view u[get_indexes(comp_i,nS)]))
+                    rate::Float64 = get_rate_differential(sr, p[2], sub, (@view u[get_indexes(comp_j,nV,nV*nS)]), (@view u[get_indexes(comp_i,nV,nV*nS)]))
                     for stoich::Pair{Int64,Int64} in sr.netstoich[1]
-                        J[get_index(comp_i,stoich[1],nS),get_index(comp_j,sub,nS)] += rate * stoich[2]
+                        J[get_index(comp_i,stoich[1],nV),get_index(comp_j,sub,nV)] += rate * stoich[2]
                     end
                     for stoich::Pair{Int64,Int64} in sr.netstoich[2]
-                        J[get_index(comp_j,stoich[1],nS),get_index(comp_j,sub,nS)] += rate * stoich[2]
+                        J[get_index(comp_j,stoich[1],nV),get_index(comp_j,sub,nV)] += rate * stoich[2]
                     end
                 end
             end
@@ -240,27 +288,26 @@ function build_jac_prototype(nS::Int64, nV::Int64, spatial_reactions::Vector{Spa
         for substrate in reaction.substrates, ns in reaction.netstoich
             sub_idx = findfirst(isequal(substrate), states(lrs.rs))
             spec_idx = findfirst(isequal(ns[1]), states(lrs.rs))
-            jac_prototype[get_index(comp_i,spec_idx,nS), get_index(comp_i,sub_idx,nS)] = 1
+            jac_prototype[get_index(comp_i,spec_idx,nV), get_index(comp_i,sub_idx,nV)] = 1
         end
     end
 
-    # Updates for spatial reactions.
     for comp_i::Int64 in 1:nV
         for comp_j::Int64 in lrs.lattice.fadjlist[comp_i]::Vector{Int64}, sr::SpatialReactionIndexed in spatial_reactions
             for sub::Int64 in sr.substrates[1]
                 for stoich::Pair{Int64,Int64} in sr.netstoich[1]
-                    jac_prototype[get_index(comp_i,stoich[1],nS),get_index(comp_i,sub,nS)] = 1.0
+                    jac_prototype[get_index(comp_i,stoich[1],nV),get_index(comp_i,sub,nV)] = 1.0
                 end
                 for stoich::Pair{Int64,Int64} in sr.netstoich[2]
-                    jac_prototype[get_index(comp_j,stoich[1],nS),get_index(comp_i,sub,nS)] = 1.0
+                    jac_prototype[get_index(comp_j,stoich[1],nV),get_index(comp_i,sub,nV)] = 1.0
                 end
             end
             for sub::Int64 in sr.substrates[2]
                 for stoich::Pair{Int64,Int64} in sr.netstoich[1]
-                    jac_prototype[get_index(comp_i,stoich[1],nS),get_index(comp_j,sub,nS)] = 1.0
+                    jac_prototype[get_index(comp_i,stoich[1],nV),get_index(comp_j,sub,nV)] = 1.0
                 end
                 for stoich::Pair{Int64,Int64} in sr.netstoich[2]
-                    jac_prototype[get_index(comp_j,stoich[1],nS),get_index(comp_j,sub,nS)] = 1.0
+                    jac_prototype[get_index(comp_j,stoich[1],nV),get_index(comp_j,sub,nV)] = 1.0
                 end
             end
         end
@@ -269,5 +316,8 @@ function build_jac_prototype(nS::Int64, nV::Int64, spatial_reactions::Vector{Spa
 end
 
 # Gets the index of a species (or a node's species) in the u array.
-get_index(container::Int64,species::Int64,nS) = (container-1)*nS + species
-get_indexes(container::Int64,nS) = (container-1)*nS+1:container*nS
+# get_index(container::Int64,species::Int64,nS) = (container-1)*nS + species
+# get_indexes(container::Int64,nS) = (container-1)*nS+1:container*nS
+
+get_index(container::Int64,species::Int64,nC) = (species-1)*nC + container
+get_indexes(container::Int64,nC,l) = container:nC:l
