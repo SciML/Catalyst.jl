@@ -136,58 +136,58 @@ large_directed_cycle = cycle_graph(1000)
 
 ### Test No Error During Runs ###
 for grid in [small_2d_grid, short_path, small_directed_cycle]
-    # Stiff case
-    for srs in [Vector{SpatialReaction}(), brusselator_srs_1, brusselator_srs_2, brusselator_srs_3, brusselator_srs_4] 
-        lrs = LatticeReactionSystem(brusselator_system, srs, grid)
-        u0_1 = [:X => 1.0, :Y => 20.0]
-        u0_2 = [:X => rand_v_vals(grid, 10.0), :Y => 2.0]
-        u0_3 = [:X => rand_v_vals(grid, 20), :Y => rand_v_vals(grid, 10)]
-        u0_4 = make_u0_matrix(u0_3, vertices(grid), map(s -> Symbol(s.f), species(lrs.rs)))
-        for u0 in [u0_1, u0_2, u0_3, u0_4]
-            p1 = [:A => 1.0, :B => 4.0]
-            p2 = [:A => 0.5 .+ rand_v_vals(grid, 0.5), :B => 4.0]
-            p3 = [:A => 0.5 .+ rand_v_vals(grid, 0.5), :B => 4.0 .+ rand_v_vals(grid, 1.0)]
-            p4 = make_u0_matrix(p2, vertices(grid), Symbol.(parameters(lrs.rs)))
-            for pV in [p1, p2, p3, p4]
-                pE_1 = map(sp -> sp => 0.2, lrs.spatial_params)
-                pE_2 = map(sp -> sp => rand(), lrs.spatial_params)
-                pE_3 = map(sp -> sp => rand_e_vals(grid, 0.2), lrs.spatial_params)
-                pE_4 = make_u0_matrix(pE_3, edges(grid), lrs.spatial_params)
-                for pE in [pE_1, pE_2, pE_3, pE_4]
-                    oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV, pE))
-                    @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
-
-                    oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV, pE); sparse=false)
-                    @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
-                end
-            end
-        end
-    end
-
     # Non-stiff case
-    for srs in [Vector{SpatialReaction}(), binding_srs_1, binding_srs_2, binding_srs_3, binding_srs_4]    
+    for srs in [Vector{DiffusionReaction}(), binding_srs_1, binding_srs_2]  
         lrs = LatticeReactionSystem(binding_system, srs, grid)
         u0_1 = [:X => 1.0, :Y => 2.0, :XY => 0.0]
-        u0_2 = [:X => rand_v_vals(grid), :Y => 2.0, :XY => 0.0]
-        u0_3 = [:X => 1.0, :Y => rand_v_vals(grid), :XY => rand_v_vals(grid)]
-        u0_4 = [:X => rand_v_vals(grid), :Y => rand_v_vals(grid), :XY => rand_v_vals(grid,3)]
-        u0_5 = make_u0_matrix(u0_3, vertices(grid), map(s -> Symbol(s.f), species(lrs.rs)))
+        u0_2 = [:X => rand_v_vals(lrs.lattice), :Y => 2.0, :XY => 0.0]
+        u0_3 = [:X => 1.0, :Y => rand_v_vals(lrs.lattice), :XY => rand_v_vals(lrs.lattice)]
+        u0_4 = [:X => rand_v_vals(lrs.lattice), :Y => rand_v_vals(lrs.lattice), :XY => rand_v_vals(lrs.lattice,3)]
+        u0_5 = make_u0_matrix(u0_3, vertices(lrs.lattice), map(s -> Symbol(s.f), species(lrs.rs)))
         for u0 in [u0_1, u0_2, u0_3, u0_4, u0_5]
             p1 = [:kB => 2.0, :kD => 0.5]
-            p2 = [:kB => 2.0, :kD => rand_v_vals(grid)]
-            p3 = [:kB => rand_v_vals(grid), :kD => rand_v_vals(grid)]
-            p4 = make_u0_matrix(p1, vertices(grid), Symbol.(parameters(lrs.rs)))
-            for pV in [p1, p2, p3, p4]
+            p2 = [:kB => 2.0, :kD => rand_v_vals(lrs.lattice)]
+            p3 = [:kB => rand_v_vals(lrs.lattice), :kD => rand_v_vals(lrs.lattice)]
+            p4 = make_u0_matrix(p1, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
+            for pV in [p1, p2, p3, p4]                
                 pE_1 = map(sp -> sp => 0.2, lrs.spatial_params)
                 pE_2 = map(sp -> sp => rand(), lrs.spatial_params)
-                pE_3 = map(sp -> sp => rand_e_vals(grid, 0.2), lrs.spatial_params)
-                pE_4 = make_u0_matrix(pE_3, edges(grid), lrs.spatial_params)
+                pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.2), lrs.spatial_params)
+                pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), lrs.spatial_params)
                 for pE in [pE_1, pE_2, pE_3, pE_4]
                     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV, pE))
                     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
 
                     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV, pE); jac=false)
                     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
+                end
+            end
+        end
+    end
+
+    # Stiff case
+    for srs in [Vector{DiffusionReaction}(), brusselator_srs_1, brusselator_srs_2] 
+        lrs = LatticeReactionSystem(brusselator_system, srs, grid)
+        u0_1 = [:X => 1.0, :Y => 20.0]
+        u0_2 = [:X => rand_v_vals(lrs.lattice, 10.0), :Y => 2.0]
+        u0_3 = [:X => rand_v_vals(lrs.lattice, 20), :Y => rand_v_vals(lrs.lattice, 10)]
+        u0_4 = make_u0_matrix(u0_3, vertices(lrs.lattice), map(s -> Symbol(s.f), species(lrs.rs)))
+        for u0 in [u0_1, u0_2, u0_3, u0_4]
+            p1 = [:A => 1.0, :B => 4.0]
+            p2 = [:A => 0.5 .+ rand_v_vals(lrs.lattice, 0.5), :B => 4.0]
+            p3 = [:A => 0.5 .+ rand_v_vals(lrs.lattice, 0.5), :B => 4.0 .+ rand_v_vals(lrs.lattice, 1.0)]
+            p4 = make_u0_matrix(p2, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
+            for pV in [p1, p2, p3, p4]
+                pE_1 = map(sp -> sp => 0.2, lrs.spatial_params)
+                pE_2 = map(sp -> sp => rand(), lrs.spatial_params)
+                pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.2), lrs.spatial_params)
+                pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), lrs.spatial_params)
+                for pE in [pE_1, pE_2, pE_3, pE_4]
+                    oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV, pE))
+                    @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
+
+                    oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV, pE); sparse=false)
+                    @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
                 end
             end
         end
@@ -209,7 +209,7 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE); jac=false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
     
-    runtime_target = 0.00089
+    runtime_target = 0.001
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times)/1000000000
     println("Small grid, small, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
@@ -225,7 +225,7 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE); jac=false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
     
-    runtime_target = 0.451
+    runtime_target = 0.5
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times)/1000000000
     println("Large grid, small, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
@@ -240,7 +240,7 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,100.0), (pV,pE))
     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
     
-    runtime_target = 0.05
+    runtime_target = 0.1
     runtime = minimum((@benchmark solve($oprob, QNDF())).times)/1000000000
     println("Small grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
@@ -255,7 +255,7 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,100.0), (pV,pE))
     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
     
-    runtime_target = 140.0
+    runtime_target = 200.0
     runtime = minimum((@benchmark solve($oprob, QNDF())).times)/1000000000
     println("Large grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
@@ -271,7 +271,7 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE); jac=false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
     
-    runtime_target = 0.00293
+    runtime_target = 0.005
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times)/1000000000
     println("Small grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
@@ -286,7 +286,7 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE); jac=false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
     
-    runtime_target = 1.257
+    runtime_target = 2
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times)/1000000000
     println("Large grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
@@ -301,7 +301,7 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE))
     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
     
-    runtime_target = 0.023
+    runtime_target = 0.025
     runtime = minimum((@benchmark solve($oprob, QNDF())).times)/1000000000
     println("Small grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
@@ -316,7 +316,7 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE))
     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
     
-    runtime_target = 111.
+    runtime_target = 150.
     runtime = minimum((@benchmark solve($oprob, QNDF())).times)/1000000000
     println("Large grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target

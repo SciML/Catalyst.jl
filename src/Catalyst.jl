@@ -73,8 +73,8 @@ include("registered_functions.jl")
 export mm, mmr, hill, hillr, hillar
 
 # spatial reaction networks
-include("lattice_reaction_system.jl")
-export SpatialReaction, DiffusionReaction, OnewaySpatialReaction
+include("lattice_reaction_system_diffusion.jl")
+export DiffusionReaction
 export LatticeReactionSystem
 
 # functions to query network properties
