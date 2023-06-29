@@ -24,14 +24,18 @@ end
 ### Declares Models ###
 
 # Small non-stiff network.
-binding_system = @reaction_network begin (kB, kD), X + Y <--> XY end
-binding_p = [:kB => 2.0, :kD => 0.5]
+SIR_system = @reaction_network begin
+    α, S + I --> 2I
+    β, I --> R
+end
+SIR_p = [:α => 0.1 / 1000, :β => 0.01]
+SIR_u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
 
-binding_dif_x = DiffusionReaction(:dX, :X)
-binding_dif_y = DiffusionReaction(:dY, :Y)
-binding_dif_xy = DiffusionReaction(:dXY, :XY)
-binding_srs_1 = [binding_dif_x]
-binding_srs_2 = [binding_dif_x, binding_dif_y, binding_dif_xy]
+SIR_dif_S = DiffusionReaction(:dS, :S)
+SIR_dif_I = DiffusionReaction(:dI, :I)
+SIR_dif_R = DiffusionReaction(:dR, :R)
+SIR_srs_1 = [SIR_dif_S]
+SIR_srs_2 = [SIR_dif_S, SIR_dif_I, SIR_dif_R]
 
 # Mid-sized non-stiff system.
 CuH_Amination_system = @reaction_network begin
@@ -164,27 +168,34 @@ large_directed_cycle = cycle_graph(1000)
 ### Test No Error During Runs ###
 for grid in [small_2d_grid, short_path, small_directed_cycle]
     # Non-stiff case
-    for srs in [Vector{DiffusionReaction}(), binding_srs_1, binding_srs_2]
-        lrs = LatticeReactionSystem(binding_system, srs, grid)
-        u0_1 = [:X => 1.0, :Y => 2.0, :XY => 0.0]
-        u0_2 = [:X => rand_v_vals(lrs.lattice), :Y => 2.0, :XY => 0.0]
-        u0_3 = [:X => 1.0, :Y => rand_v_vals(lrs.lattice), :XY => rand_v_vals(lrs.lattice)]
+    for srs in [Vector{DiffusionReaction}(), SIR_srs_1, SIR_srs_2]
+        lrs = LatticeReactionSystem(SIR_system, srs, grid)
+        u0_1 = [:S => 999.0, :I => 1.0, :R => 0.0]
+        u0_2 = [:S => 500.0 .+ 500.0 * rand_v_vals(lrs.lattice), :I => 1.0, :R => 0.0]
+        u0_3 = [
+            :S => 950.0,
+            :I => 50 * rand_v_vals(lrs.lattice),
+            :R => 50 * rand_v_vals(lrs.lattice),
+        ]
         u0_4 = [
-            :X => rand_v_vals(lrs.lattice),
-            :Y => rand_v_vals(lrs.lattice),
-            :XY => rand_v_vals(lrs.lattice, 3),
+            :S => 500.0 .+ 500.0 * rand_v_vals(lrs.lattice),
+            :I => 50 * rand_v_vals(lrs.lattice),
+            :R => 50 * rand_v_vals(lrs.lattice),
         ]
         u0_5 = make_u0_matrix(u0_3, vertices(lrs.lattice),
                               map(s -> Symbol(s.f), species(lrs.rs)))
         for u0 in [u0_1, u0_2, u0_3, u0_4, u0_5]
-            p1 = [:kB => 2.0, :kD => 0.5]
-            p2 = [:kB => 2.0, :kD => rand_v_vals(lrs.lattice)]
-            p3 = [:kB => rand_v_vals(lrs.lattice), :kD => rand_v_vals(lrs.lattice)]
+            p1 = [:α => 0.1 / 1000, :β => 0.01]
+            p2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lrs.lattice)]
+            p3 = [
+                :α => 0.1 / 2000 * rand_v_vals(lrs.lattice),
+                :β => 0.02 * rand_v_vals(lrs.lattice),
+            ]
             p4 = make_u0_matrix(p1, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
             for pV in [p1, p2, p3, p4]
-                pE_1 = map(sp -> sp => 0.2, lrs.spatial_params)
-                pE_2 = map(sp -> sp => rand(), lrs.spatial_params)
-                pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.2), lrs.spatial_params)
+                pE_1 = map(sp -> sp => 0.01, lrs.spatial_params)
+                pE_2 = map(sp -> sp => 0.01, lrs.spatial_params)
+                pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.01), lrs.spatial_params)
                 pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), lrs.spatial_params)
                 for pE in [pE_1, pE_2, pE_3, pE_4]
                     oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE))
@@ -235,40 +246,32 @@ end
 
 # Small grid, small, non-stiff, system.
 let
-    lrs = LatticeReactionSystem(binding_system, binding_srs_2, small_2d_grid)
-    u0 = [
-        :X => rand_v_vals(lrs.lattice),
-        :Y => rand_v_vals(lrs.lattice),
-        :XY => rand_v_vals(lrs.lattice),
-    ]
-    pV = binding_p
-    pE = [:dX => 0.1, :dY => 0.2, :dXY => 0.05]
+    lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, small_2d_grid)
+    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs.lattice), :R => 0.0]
+    pV = SIR_p
+    pE = [:dS => 0.01, :dI => 0.01, :dR => 0.01]
     oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac = false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
 
-    runtime_target = 0.00089
+    runtime_target = 0.027
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times) / 1000000000
     println("Small grid, small, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 10 * runtime_target
+    @test runtime < 1.2 * runtime_target
 end
 
 # Large grid, small, non-stiff, system.
 let
-    lrs = LatticeReactionSystem(binding_system, binding_srs_2, large_2d_grid)
-    u0 = [
-        :X => rand_v_vals(lrs.lattice),
-        :Y => rand_v_vals(lrs.lattice),
-        :XY => rand_v_vals(lrs.lattice),
-    ]
-    pV = binding_p
-    pE = [:dX => 0.1, :dY => 0.2, :dXY => 0.05]
+    lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, large_2d_grid)
+    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs.lattice), :R => 0.0]
+    pV = SIR_p
+    pE = [:dS => 0.01, :dI => 0.01, :dR => 0.01]
     oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac = false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
 
     runtime_target = 0.451
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times) / 1000000000
     println("Large grid, small, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 10 * runtime_target
+    @test runtime < 1.2 * runtime_target
 end
 
 # Small grid, small, stiff, system.
