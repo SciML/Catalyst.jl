@@ -1,5 +1,6 @@
 ### Fetches Stuff ###
 
+
 # Fetch packages.
 using Catalyst, OrdinaryDiffEq, Random, Test
 using BenchmarkTools, Statistics
@@ -34,15 +35,8 @@ binding_p = [:kB => 2.0, :kD => 0.5]
 binding_dif_x = DiffusionReaction(:dX, :X)
 binding_dif_y = DiffusionReaction(:dY, :Y)
 binding_dif_xy = DiffusionReaction(:dXY, :XY)
-binding_osr_xy1 = OnewaySpatialReaction(:d_ord_1, [:X, :Y], [:X, :Y], [1, 1], [1, 1])
-binding_osr_xy2 = OnewaySpatialReaction(:d_ord_2, [:X, :Y], [:XY], [1, 1], [1])
-binding_osr_xy3 = OnewaySpatialReaction(:d_ord_3, [:X, :Y], [:X, :Y], [2, 2], [2, 2])
-binding_sr_1 = SpatialReaction(:d_sr_1, ([:X], [:Y]), ([:Y], [:X]), ([1], [1]), ([1], [1]))
-binding_sr_2 = SpatialReaction(:d_sr_2, ([:X, :Y], [:XY]), ([:XY], []), ([1, 1], [2]), ([1], Vector{Int64}()))
 binding_srs_1 = [binding_dif_x]
 binding_srs_2 = [binding_dif_x, binding_dif_y, binding_dif_xy]
-binding_srs_3 = [binding_sr_1, binding_sr_2]
-binding_srs_4 = [binding_dif_x, binding_dif_y, binding_dif_xy, binding_osr_xy1, binding_osr_xy2, binding_osr_xy3, binding_sr_1, binding_sr_2]
 
 # Mid-sized non-stiff system.
 CuH_Amination_system = @reaction_network begin
@@ -78,12 +72,8 @@ brusselator_p = [:A => 1.0, :B => 4.0]
 
 brusselator_dif_x = DiffusionReaction(:dX, :X)
 brusselator_dif_y = DiffusionReaction(:dY, :Y)
-binding_osr_x2 = OnewaySpatialReaction(:d_ord_1, [:X], [:X], [2], [2])
-brusselator_dif_sr = SpatialReaction(:D, ([:X], [:Y]), ([:Y], [:X]), ([1], [2]), ([1], [1]))
 brusselator_srs_1 = [brusselator_dif_x]
 brusselator_srs_2 = [brusselator_dif_x, brusselator_dif_y]
-brusselator_srs_3 = [binding_osr_x2]
-brusselator_srs_4 = [brusselator_dif_x, brusselator_dif_sr]
 
 # Mid-sized stiff system.
 sigmaB_system = @reaction_network begin
@@ -196,20 +186,18 @@ end
 
 
 ### Tests Runtimes ###
-
 # Timings currently are from Torkel's computer.
-
 
 # Small grid, small, non-stiff, system.
 let 
     lrs = LatticeReactionSystem(binding_system, binding_srs_2, small_2d_grid)
     u0 = [:X => rand_v_vals(lrs.lattice), :Y => rand_v_vals(lrs.lattice), :XY => rand_v_vals(lrs.lattice)]
     pV = binding_p
-    pE = [:dX => 0.1, :dY => 0.2]
+    pE = [:dX => 0.1, :dY => 0.2, :dXY => 0.05]
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE); jac=false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
     
-    runtime_target = 0.001
+    runtime_target = 0.00089
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times)/1000000000
     println("Small grid, small, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
@@ -221,11 +209,11 @@ let
     lrs = LatticeReactionSystem(binding_system, binding_srs_2, large_2d_grid)
     u0 = [:X => rand_v_vals(lrs.lattice), :Y => rand_v_vals(lrs.lattice), :XY => rand_v_vals(lrs.lattice)]
     pV = binding_p
-    pE = [:dX => 0.1, :dY => 0.2]
+    pE = [:dX => 0.1, :dY => 0.2, :dXY => 0.05]
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE); jac=false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
     
-    runtime_target = 0.5
+    runtime_target = 0.451
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times)/1000000000
     println("Large grid, small, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
@@ -240,7 +228,7 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,100.0), (pV,pE))
     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
     
-    runtime_target = 0.1
+    runtime_target = 0.05
     runtime = minimum((@benchmark solve($oprob, QNDF())).times)/1000000000
     println("Small grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
@@ -255,12 +243,11 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,100.0), (pV,pE))
     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
     
-    runtime_target = 200.0
+    runtime_target = 140.0
     runtime = minimum((@benchmark solve($oprob, QNDF())).times)/1000000000
     println("Large grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
 end
-
 
 # Small grid, mid-sized, non-stiff, system.
 let 
@@ -271,7 +258,7 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE); jac=false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
     
-    runtime_target = 0.005
+    runtime_target = 0.00293
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times)/1000000000
     println("Small grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
@@ -286,7 +273,7 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE); jac=false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
     
-    runtime_target = 2
+    runtime_target = 1.257
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times)/1000000000
     println("Large grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
@@ -301,9 +288,9 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE))
     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
     
-    runtime_target = 0.025
+    runtime_target = 0.023
     runtime = minimum((@benchmark solve($oprob, QNDF())).times)/1000000000
-    println("Small grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
+    println("Small grid, mid-sized, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
 end
 
@@ -316,8 +303,8 @@ let
     oprob = ODEProblem(lrs, u0, (0.0,10.0), (pV,pE))
     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
     
-    runtime_target = 150.
+    runtime_target = 111.0
     runtime = minimum((@benchmark solve($oprob, QNDF())).times)/1000000000
-    println("Large grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
+    println("Large grid, mid-sized, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2*runtime_target
 end
