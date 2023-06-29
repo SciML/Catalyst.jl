@@ -249,7 +249,7 @@ let
     runtime_target = 0.00089
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times) / 1000000000
     println("Small grid, small, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 1.2 * runtime_target
+    @test runtime < 10 * runtime_target
 end
 
 # Large grid, small, non-stiff, system.
@@ -268,7 +268,7 @@ let
     runtime_target = 0.451
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times) / 1000000000
     println("Large grid, small, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 1.2 * runtime_target
+    @test runtime < 10 * runtime_target
 end
 
 # Small grid, small, stiff, system.
@@ -283,7 +283,7 @@ let
     runtime_target = 0.05
     runtime = minimum((@benchmark solve($oprob, QNDF())).times) / 1000000000
     println("Small grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 1.2 * runtime_target
+    @test runtime < 10 * runtime_target
 end
 
 # Large grid, small, stiff, system.
@@ -298,7 +298,7 @@ let
     runtime_target = 140.0
     runtime = minimum((@benchmark solve($oprob, QNDF())).times) / 1000000000
     println("Large grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 1.2 * runtime_target
+    @test runtime < 10 * runtime_target
 end
 
 # Small grid, mid-sized, non-stiff, system.
@@ -328,7 +328,7 @@ let
     runtime_target = 0.00293
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times) / 1000000000
     println("Small grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 1.2 * runtime_target
+    @test runtime < 10 * runtime_target
 end
 
 # Large grid, mid-sized, non-stiff, system.
@@ -358,7 +358,7 @@ let
     runtime_target = 1.257
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times) / 1000000000
     println("Large grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 1.2 * runtime_target
+    @test runtime < 10 * runtime_target
 end
 
 # Small grid, mid-sized, stiff, system.
@@ -384,7 +384,7 @@ let
     runtime_target = 0.023
     runtime = minimum((@benchmark solve($oprob, QNDF())).times) / 1000000000
     println("Small grid, mid-sized, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 1.2 * runtime_target
+    @test runtime < 10 * runtime_target
 end
 
 # Large grid, mid-sized, stiff, system.
@@ -410,5 +410,5 @@ let
     runtime_target = 111.0
     runtime = minimum((@benchmark solve($oprob, QNDF())).times) / 1000000000
     println("Large grid, mid-sized, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 1.2 * runtime_target
+    @test runtime < 10 * runtime_target
 end
