@@ -198,7 +198,7 @@ for grid in [small_2d_grid, short_path, small_directed_cycle]
                 pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.01), lrs.spatial_params)
                 pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), lrs.spatial_params)
                 for pE in [pE_1, pE_2, pE_3, pE_4]
-                    oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE))
+                    oprob = ODEProblem(lrs, u0, (0.0, 500.0), (pV, pE))
                     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
 
                     oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac = false)
@@ -250,10 +250,10 @@ let
     u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs.lattice), :R => 0.0]
     pV = SIR_p
     pE = [:dS => 0.01, :dI => 0.01, :dR => 0.01]
-    oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac = false)
+    oprob = ODEProblem(lrs, u0, (0.0, 500.0), (pV, pE); jac = false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
 
-    runtime_target = 0.027
+    runtime_target = 0.00023
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times) / 1000000000
     println("Small grid, small, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2 * runtime_target
@@ -265,10 +265,10 @@ let
     u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs.lattice), :R => 0.0]
     pV = SIR_p
     pE = [:dS => 0.01, :dI => 0.01, :dR => 0.01]
-    oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac = false)
+    oprob = ODEProblem(lrs, u0, (0.0, 500.0), (pV, pE); jac = false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
 
-    runtime_target = 0.451
+    runtime_target = 0.1
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times) / 1000000000
     println("Large grid, small, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < 1.2 * runtime_target
