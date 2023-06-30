@@ -79,12 +79,10 @@ function build_odefunction(lrs::LatticeReactionSystem, pV, pE, use_jac::Bool, sp
                               for s in getfield.(lrs.spatial_reactions, :species)]
 
     f = build_f(ofunc, pV, pE, diffusion_species, lrs)
-    jac_prototype = (use_jac ?
+    jac_prototype = (sparse ?
                      build_jac_prototype(ofunc_sparse.jac_prototype, pE, diffusion_species,
                                          lrs; set_nonzero = true) : nothing)
-    jac = (use_jac ?
-           build_jac(ofunc, pV, pE, diffusion_species, lrs, jac_prototype;
-                     sparse = sparse) : nothing)
+    jac = (use_jac ? build_jac(ofunc, pV, pE, diffusion_species, lrs, (isnothing(jac_prototype) ? build_jac_prototype(ofunc_sparse.jac_prototype, pE, diffusion_species, lrs; set_nonzero = true) : jac_prototype); sparse = sparse) : nothing)
     return ODEFunction(f; jac = jac, jac_prototype = jac_prototype)
 end
 
