@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using Catalyst, OrdinaryDiffEq, Random, Test
-using BenchmarkTools, Statistics
+using BenchmarkTools, LinearAlgebra, Statistics
 using Graphs
 
 # Sets rnd number.
@@ -240,6 +240,69 @@ for grid in [small_2d_grid, short_path, small_directed_cycle]
         end
     end
 end
+
+
+### Tests Special Cases ###
+
+# Create network with vaious combinations of graph/di-graph and parameters.
+lrs_digraph = LatticeReactionSystem(SIR_system, SIR_srs_2, complete_digraph(3))
+lrs_graph = LatticeReactionSystem(SIR_system, SIR_srs_2, complete_graph(3))
+u0 = [:S => 990.0, :I => 20.0*rand_v_vals(lrs_digraph.lattice), :R => 0.0]
+pV = SIR_p
+pE_digraph_1 = [:dS => [0.10, 0.10, 0.12, 0.12, 0.14, 0.14], :dI => 0.01, :dR => 0.01]
+pE_digraph_2 = [[0.10, 0.10, 0.12, 0.12, 0.14, 0.14], 0.01, 0.01]
+pE_digraph_3 = [0.10 0.10 0.12 0.12 0.14 0.14; 0.01 0.01 0.01 0.01 0.01 0.01; 0.01 0.01 0.01 0.01 0.01 0.01]
+pE_graph_1 = [:dS => [0.10, 0.12, 0.14], :dI => 0.01, :dR => 0.01]
+pE_graph_2 = [[0.10, 0.12, 0.14], 0.01, 0.01]
+pE_graph_3 = [0.10 0.12 0.14 ; 0.01 0.01 0.01; 0.01 0.01 0.01]
+oprob_digraph_1 = ODEProblem(lrs_digraph, u0, (0.0,500.0), (pV,pE_digraph_1))
+oprob_digraph_2 = ODEProblem(lrs_digraph, u0, (0.0,500.0), (pV,pE_digraph_2))
+oprob_digraph_3 = ODEProblem(lrs_digraph, u0, (0.0,500.0), (pV,pE_digraph_3))
+oprob_graph_11 = ODEProblem(lrs_graph, u0, (0.0,500.0), (pV,pE_digraph_1))
+oprob_graph_12 = ODEProblem(lrs_graph, u0, (0.0,500.0), (pV,pE_graph_1))
+oprob_graph_21 = ODEProblem(lrs_graph, u0, (0.0,500.0), (pV,pE_digraph_2))
+oprob_graph_22 = ODEProblem(lrs_graph, u0, (0.0,500.0), (pV,pE_graph_2))
+oprob_graph_31 = ODEProblem(lrs_graph, u0, (0.0,500.0), (pV,pE_digraph_3))
+oprob_graph_32 = ODEProblem(lrs_graph, u0, (0.0,500.0), (pV,pE_graph_3))
+sim_end_digraph_1 = solve(oprob_digraph_1, Tsit5()).u[end]
+sim_end_digraph_2 = solve(oprob_digraph_2, Tsit5()).u[end]
+sim_end_digraph_3 = solve(oprob_digraph_3, Tsit5()).u[end]
+sim_end_graph_11 = solve(oprob_graph_11, Tsit5()).u[end]
+sim_end_graph_12 = solve(oprob_graph_12, Tsit5()).u[end]
+sim_end_graph_21 = solve(oprob_graph_21, Tsit5()).u[end]
+sim_end_graph_22 = solve(oprob_graph_22, Tsit5()).u[end]
+sim_end_graph_31 = solve(oprob_graph_31, Tsit5()).u[end]
+sim_end_graph_32 = solve(oprob_graph_32, Tsit5()).u[end]
+
+@test all(sim_end_digraph_1 .== sim_end_digraph_2 .== sim_end_digraph_3 .== sim_end_graph_11 .== sim_end_graph_12 .== sim_end_graph_21 .== sim_end_graph_22 .== sim_end_graph_31 .== sim_end_graph_32)
+
+# Creates networks with empty species or parameters.
+binding_system_1 = @reaction_network begin
+    @species X(t) Y(t) XY(t) Z(t) V(t) W(t)
+    @parameters k1 k2 dX dXY dZ dV p1 p2
+    (k1, k2), X + Y <--> XY
+end
+binding_sr_1 = [DiffusionReaction(:dX, :X), DiffusionReaction(:dXY, :XY), DiffusionReaction(:dZ, :Z), DiffusionReaction(:dV, :V)]
+binding_lrs_1 = LatticeReactionSystem(binding_system_1, binding_sr_1, Graphs.grid([5, 5]))
+binding_u0_1 = [:X => 1.0, :Y => 2.0*rand_v_vals(binding_lrs_1.lattice), :XY => 0.5, :Z => 2.0*rand_v_vals(binding_lrs_1.lattice), :V => 0.5, :W => 1.0]
+binding_p_1 = [:k1 => 2.0, :k2 => 0.1 .+ rand_v_vals(binding_lrs_1.lattice), :dX => 1.0 .+ rand_e_vals(binding_lrs_1.lattice), :dXY => 3.0, :dZ => rand_e_vals(binding_lrs_1.lattice), :dV => 0.2, :p1 => 1.0, :p2 => rand_v_vals(binding_lrs_1.lattice)]
+binding_oprob_1 = ODEProblem(binding_lrs_1, binding_u0_1, (0.0,10.0), binding_p_1)
+binding_sol_1 = solve(binding_oprob_1, Tsit5())
+
+binding_system_2 = @reaction_network begin
+    (k1, k2), X + Y <--> XY
+end
+binding_sr_2 = [DiffusionReaction(:dX, :X), DiffusionReaction(:dXY, :XY)]
+binding_lrs_2 = LatticeReactionSystem(binding_system_2, binding_sr_2, Graphs.grid([5, 5]))
+binding_u0_2 = binding_u0_1[1:3]
+binding_p_2 = binding_p_1[1:4]
+binding_oprob_2 = ODEProblem(binding_lrs_2, binding_u0_2, (0.0,10.0), binding_p_2)
+binding_sol_2 = solve(binding_oprob_2, Tsit5())
+
+for i = 1:25
+    @test norm(binding_sol_1.u[end][(i-1)*6+1:(i-1)*6+3] .- binding_sol_2.u[end][(i-1)*3+1:(i-1)*3+3]) <1e-3
+end
+
 
 ### Tests Runtimes ###
 # Timings currently are from Torkel's computer.
