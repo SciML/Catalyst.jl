@@ -37,11 +37,7 @@ SIR_srs_2 = [SIR_dif_S, SIR_dif_I, SIR_dif_R]
 
 # Small non-stiff system.
 binding_system = @reaction_network begin (k1, k2), X + Y <--> XY end
-binding_dif_X = DiffusionReaction(:dX, :X)
-binding_dif_Y = DiffusionReaction(:dY, :Y)
-binding_dif_XY = DiffusionReaction(:dXY, :XY)
-binding_sr = [binding_dif_X, binding_dif_Y, binding_dif_XY]
-
+binding_sr = DiffusionReactions([(:dX, :X), (:dY, :Y), (:dXY, :XY)])
 binding_u0 = [:X => 1.0, :Y => 2.0, :XY => 0.5]
 binding_p = [:k1 => 2.0, :k2 => 0.1, :dX => 3.0, :dY => 5.0, :dXY => 2.0]
 
@@ -376,6 +372,19 @@ let
                        ss[((i - 1) * 3 + 1):((i - 1) * 3 + 3)]) < 1e-3
     end
 end
+
+# System with single spatial reaction.
+let
+    lrs_1 = LatticeReactionSystem(SIR_system, SIR_dif_S, small_2d_grid)
+    lrs_2 = LatticeReactionSystem(SIR_system, [SIR_dif_S], small_2d_grid)
+    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs_1.lattice), :R => 0.0]
+    pV = SIR_p
+    pE = [:dS => 0.01]
+    ss_1 = solve(ODEProblem(lrs_1, u0, (0.0, 500.0), (pV, pE)), Tsit5()).u[end]
+    ss_2 = solve(ODEProblem(lrs_2, u0, (0.0, 500.0), (pV, pE)), Tsit5()).u[end]
+    @test all(isequal.(ss_1, ss_2))
+end
+
 
 ### Tests Runtimes ###
 # Timings currently are from Torkel's computer.
