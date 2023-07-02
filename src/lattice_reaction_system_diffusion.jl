@@ -11,6 +11,8 @@ struct DiffusionReaction <: AbstractSpatialReaction
     """The species that is subject to difusion."""
     species::Symbol
 end
+# Creates a vector of DiffusionReactions.
+DiffusionReaction(diffusion_reactions) = [DiffusionReaction(dr[1],dr[2]) for dr in diffusion_reactions]
 
 ### Lattice Reaction Network Structure ###
 # Desribes a spatial reaction network over a graph.
@@ -32,15 +34,18 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
     """Whenever the initial input was a di graph."""
     init_digraph::Bool
 
-    function LatticeReactionSystem(rs, spatial_reactions, lattice::DiGraph;
+    function LatticeReactionSystem(rs, spatial_reactions::Vector{<:AbstractSpatialReaction}, lattice::DiGraph;
                                    init_digraph = true)
         return new(rs, spatial_reactions, lattice,
                    unique(getfield.(spatial_reactions, :rate)), length(vertices(lattice)),
                    length(species(rs)), init_digraph)
     end
-    function LatticeReactionSystem(rs, spatial_reactions, lattice::SimpleGraph)
+    function LatticeReactionSystem(rs, spatial_reactions::Vector{<:AbstractSpatialReaction}, lattice::SimpleGraph)
         return LatticeReactionSystem(rs, spatial_reactions, DiGraph(lattice);
                                      init_digraph = false)
+    end
+    function LatticeReactionSystem(rs, spatial_reaction::AbstractSpatialReaction, lattice::Graphs.AbstractGraph)
+        return LatticeReactionSystem(rs, [spatial_reaction], lattice)
     end
 end
 
