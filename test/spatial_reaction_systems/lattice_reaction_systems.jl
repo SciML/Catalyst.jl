@@ -8,9 +8,9 @@ using StableRNGs
 rng = StableRNG(12345)
 
 ### Helper Functions ###
-rand_v_vals(grid) = rand(length(vertices(grid)))
+rand_v_vals(grid) = rand(nv(grid))
 rand_v_vals(grid, x::Number) = rand_v_vals(grid) * x
-rand_e_vals(grid) = rand(length(edges(grid)))
+rand_e_vals(grid) = rand(ne(grid))
 rand_e_vals(grid, x::Number) = rand_e_vals(grid) * x
 
 function make_u0_matrix(value_map, vals, symbols)
@@ -265,7 +265,7 @@ let
     sol_nonspatial = solve(oprob_nonspatial, QNDF(); abstol = 1e-12, reltol = 1e-12)
     sol_spatial = solve(oprob_spatial, QNDF(); abstol = 1e-12, reltol = 1e-12)
 
-    for i in 1:length(vertices(unconnected_graph))
+    for i in 1:nv(unconnected_graph)
         @test all(isapprox.(sol_nonspatial.u[end],
                             sol_spatial.u[end][((i - 1) * 2 + 1):((i - 1) * 2 + 2)]))
     end
