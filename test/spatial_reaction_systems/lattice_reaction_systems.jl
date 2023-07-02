@@ -1,8 +1,6 @@
-### Fetches Stuff ###
-
 # Fetch packages.
 using Catalyst, OrdinaryDiffEq, Random, Test
-using BenchmarkTools, LinearAlgebra, Statistics
+using BenchmarkTools, Statistics
 using Graphs
 
 # Sets rnd number.
@@ -23,7 +21,7 @@ end
 
 ### Declares Models ###
 
-# Small non-stiff network.
+# Small non-stiff system.
 SIR_system = @reaction_network begin
     α, S + I --> 2I
     β, I --> R
@@ -36,6 +34,16 @@ SIR_dif_I = DiffusionReaction(:dI, :I)
 SIR_dif_R = DiffusionReaction(:dR, :R)
 SIR_srs_1 = [SIR_dif_S]
 SIR_srs_2 = [SIR_dif_S, SIR_dif_I, SIR_dif_R]
+
+# Small non-stiff system.
+binding_system = @reaction_network begin (k1, k2), X + Y <--> XY end
+binding_dif_X = DiffusionReaction(:dX, :X)
+binding_dif_Y = DiffusionReaction(:dY, :Y)
+binding_dif_XY = DiffusionReaction(:dXY, :XY)
+binding_sr = [binding_dif_X, binding_dif_Y, binding_dif_XY]
+
+binding_u0 = [:X => 1.0, :Y => 2.0, :XY => 0.5]
+binding_p = [:k1 => 2.0, :k2 => 0.1, :dX => 3.0, :dY => 5.0, :dXY => 2.0]
 
 # Mid-sized non-stiff system.
 CuH_Amination_system = @reaction_network begin
@@ -161,6 +169,12 @@ large_3d_grid = Graphs.grid([100, 100, 100])
 short_path = path_graph(100)
 long_path = path_graph(1000)
 
+# Unconnected graphs.
+unconnected_graph = SimpleGraph(10)
+
+# Undirected cycle.
+undirected_cycle = cycle_graph(49)
+
 # Directed cycle.
 small_directed_cycle = cycle_graph(100)
 large_directed_cycle = cycle_graph(1000)
@@ -241,68 +255,127 @@ for grid in [small_2d_grid, short_path, small_directed_cycle]
     end
 end
 
+### Tests Simulation Correctness ###
+
+# Checks that non-spatial brusselator simulation is identical to all on an unconnected lattice.
+let
+    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, unconnected_graph)
+    u0 = [:X => 2.0 + 2.0 * rand(), :Y => 10.0 + 10.0 * rand()]
+    pV = brusselator_p
+    pE = [:dX => 0.2]
+    oprob_nonspatial = ODEProblem(brusselator_system, u0, (0.0, 100.0), pV)
+    oprob_spatial = ODEProblem(lrs, u0, (0.0, 100.0), (pV, pE))
+    sol_nonspatial = solve(oprob_nonspatial, QNDF(); abstol = 1e-12, reltol = 1e-12)
+    sol_spatial = solve(oprob_spatial, QNDF(); abstol = 1e-12, reltol = 1e-12)
+
+    for i in 1:length(vertices(unconnected_graph))
+        @test all(isapprox.(sol_nonspatial.u[end],
+                            sol_spatial.u[end][((i - 1) * 2 + 1):((i - 1) * 2 + 2)]))
+    end
+end
+
+# Checks that result becomes homogeneous on a connected lattice.
+let
+    lrs = LatticeReactionSystem(binding_system, binding_sr, undirected_cycle)
+    u0 = [
+        :X => 1.0 .+ rand_v_vals(lrs.lattice),
+        :Y => 2.0 * rand_v_vals(lrs.lattice),
+        :XY => 0.5,
+    ]
+    oprob = ODEProblem(lrs, u0, (0.0, 1000.0), binding_p; tstops = 0.1:0.1:1000.0)
+    ss = solve(oprob, Tsit5()).u[end]
+
+    @test all(isapprox.(ss[1:3:end], ss[1]))
+    @test all(isapprox.(ss[2:3:end], ss[2]))
+    @test all(isapprox.(ss[3:3:end], ss[3]))
+end
 
 ### Tests Special Cases ###
 
 # Create network with vaious combinations of graph/di-graph and parameters.
-lrs_digraph = LatticeReactionSystem(SIR_system, SIR_srs_2, complete_digraph(3))
-lrs_graph = LatticeReactionSystem(SIR_system, SIR_srs_2, complete_graph(3))
-u0 = [:S => 990.0, :I => 20.0*rand_v_vals(lrs_digraph.lattice), :R => 0.0]
-pV = SIR_p
-pE_digraph_1 = [:dS => [0.10, 0.10, 0.12, 0.12, 0.14, 0.14], :dI => 0.01, :dR => 0.01]
-pE_digraph_2 = [[0.10, 0.10, 0.12, 0.12, 0.14, 0.14], 0.01, 0.01]
-pE_digraph_3 = [0.10 0.10 0.12 0.12 0.14 0.14; 0.01 0.01 0.01 0.01 0.01 0.01; 0.01 0.01 0.01 0.01 0.01 0.01]
-pE_graph_1 = [:dS => [0.10, 0.12, 0.14], :dI => 0.01, :dR => 0.01]
-pE_graph_2 = [[0.10, 0.12, 0.14], 0.01, 0.01]
-pE_graph_3 = [0.10 0.12 0.14 ; 0.01 0.01 0.01; 0.01 0.01 0.01]
-oprob_digraph_1 = ODEProblem(lrs_digraph, u0, (0.0,500.0), (pV,pE_digraph_1))
-oprob_digraph_2 = ODEProblem(lrs_digraph, u0, (0.0,500.0), (pV,pE_digraph_2))
-oprob_digraph_3 = ODEProblem(lrs_digraph, u0, (0.0,500.0), (pV,pE_digraph_3))
-oprob_graph_11 = ODEProblem(lrs_graph, u0, (0.0,500.0), (pV,pE_digraph_1))
-oprob_graph_12 = ODEProblem(lrs_graph, u0, (0.0,500.0), (pV,pE_graph_1))
-oprob_graph_21 = ODEProblem(lrs_graph, u0, (0.0,500.0), (pV,pE_digraph_2))
-oprob_graph_22 = ODEProblem(lrs_graph, u0, (0.0,500.0), (pV,pE_graph_2))
-oprob_graph_31 = ODEProblem(lrs_graph, u0, (0.0,500.0), (pV,pE_digraph_3))
-oprob_graph_32 = ODEProblem(lrs_graph, u0, (0.0,500.0), (pV,pE_graph_3))
-sim_end_digraph_1 = solve(oprob_digraph_1, Tsit5()).u[end]
-sim_end_digraph_2 = solve(oprob_digraph_2, Tsit5()).u[end]
-sim_end_digraph_3 = solve(oprob_digraph_3, Tsit5()).u[end]
-sim_end_graph_11 = solve(oprob_graph_11, Tsit5()).u[end]
-sim_end_graph_12 = solve(oprob_graph_12, Tsit5()).u[end]
-sim_end_graph_21 = solve(oprob_graph_21, Tsit5()).u[end]
-sim_end_graph_22 = solve(oprob_graph_22, Tsit5()).u[end]
-sim_end_graph_31 = solve(oprob_graph_31, Tsit5()).u[end]
-sim_end_graph_32 = solve(oprob_graph_32, Tsit5()).u[end]
+let
+    lrs_digraph = LatticeReactionSystem(SIR_system, SIR_srs_2, complete_digraph(3))
+    lrs_graph = LatticeReactionSystem(SIR_system, SIR_srs_2, complete_graph(3))
+    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs_digraph.lattice), :R => 0.0]
+    pV = SIR_p
+    pE_digraph_1 = [:dS => [0.10, 0.10, 0.12, 0.12, 0.14, 0.14], :dI => 0.01, :dR => 0.01]
+    pE_digraph_2 = [[0.10, 0.10, 0.12, 0.12, 0.14, 0.14], 0.01, 0.01]
+    pE_digraph_3 = [0.10 0.10 0.12 0.12 0.14 0.14; 0.01 0.01 0.01 0.01 0.01 0.01;
+                    0.01 0.01 0.01 0.01 0.01 0.01]
+    pE_graph_1 = [:dS => [0.10, 0.12, 0.14], :dI => 0.01, :dR => 0.01]
+    pE_graph_2 = [[0.10, 0.12, 0.14], 0.01, 0.01]
+    pE_graph_3 = [0.10 0.12 0.14; 0.01 0.01 0.01; 0.01 0.01 0.01]
+    oprob_digraph_1 = ODEProblem(lrs_digraph, u0, (0.0, 500.0), (pV, pE_digraph_1))
+    oprob_digraph_2 = ODEProblem(lrs_digraph, u0, (0.0, 500.0), (pV, pE_digraph_2))
+    oprob_digraph_3 = ODEProblem(lrs_digraph, u0, (0.0, 500.0), (pV, pE_digraph_3))
+    oprob_graph_11 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_digraph_1))
+    oprob_graph_12 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_graph_1))
+    oprob_graph_21 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_digraph_2))
+    oprob_graph_22 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_graph_2))
+    oprob_graph_31 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_digraph_3))
+    oprob_graph_32 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_graph_3))
+    sim_end_digraph_1 = solve(oprob_digraph_1, Tsit5()).u[end]
+    sim_end_digraph_2 = solve(oprob_digraph_2, Tsit5()).u[end]
+    sim_end_digraph_3 = solve(oprob_digraph_3, Tsit5()).u[end]
+    sim_end_graph_11 = solve(oprob_graph_11, Tsit5()).u[end]
+    sim_end_graph_12 = solve(oprob_graph_12, Tsit5()).u[end]
+    sim_end_graph_21 = solve(oprob_graph_21, Tsit5()).u[end]
+    sim_end_graph_22 = solve(oprob_graph_22, Tsit5()).u[end]
+    sim_end_graph_31 = solve(oprob_graph_31, Tsit5()).u[end]
+    sim_end_graph_32 = solve(oprob_graph_32, Tsit5()).u[end]
 
-@test all(sim_end_digraph_1 .== sim_end_digraph_2 .== sim_end_digraph_3 .== sim_end_graph_11 .== sim_end_graph_12 .== sim_end_graph_21 .== sim_end_graph_22 .== sim_end_graph_31 .== sim_end_graph_32)
+    @test all(sim_end_digraph_1 .== sim_end_digraph_2 .== sim_end_digraph_3 .==
+              sim_end_graph_11 .== sim_end_graph_12 .== sim_end_graph_21 .==
+              sim_end_graph_22 .== sim_end_graph_31 .== sim_end_graph_32)
+end
 
 # Creates networks with empty species or parameters.
-binding_system_1 = @reaction_network begin
-    @species X(t) Y(t) XY(t) Z(t) V(t) W(t)
-    @parameters k1 k2 dX dXY dZ dV p1 p2
-    (k1, k2), X + Y <--> XY
-end
-binding_sr_1 = [DiffusionReaction(:dX, :X), DiffusionReaction(:dXY, :XY), DiffusionReaction(:dZ, :Z), DiffusionReaction(:dV, :V)]
-binding_lrs_1 = LatticeReactionSystem(binding_system_1, binding_sr_1, Graphs.grid([5, 5]))
-binding_u0_1 = [:X => 1.0, :Y => 2.0*rand_v_vals(binding_lrs_1.lattice), :XY => 0.5, :Z => 2.0*rand_v_vals(binding_lrs_1.lattice), :V => 0.5, :W => 1.0]
-binding_p_1 = [:k1 => 2.0, :k2 => 0.1 .+ rand_v_vals(binding_lrs_1.lattice), :dX => 1.0 .+ rand_e_vals(binding_lrs_1.lattice), :dXY => 3.0, :dZ => rand_e_vals(binding_lrs_1.lattice), :dV => 0.2, :p1 => 1.0, :p2 => rand_v_vals(binding_lrs_1.lattice)]
-binding_oprob_1 = ODEProblem(binding_lrs_1, binding_u0_1, (0.0,10.0), binding_p_1)
-binding_sol_1 = solve(binding_oprob_1, Tsit5())
+let
+    binding_system_alt = @reaction_network begin
+        @species X(t) Y(t) XY(t) Z(t) V(t) W(t)
+        @parameters k1 k2 dX dXY dZ dV p1 p2
+        (k1, k2), X + Y <--> XY
+    end
+    binding_sr_alt = [
+        DiffusionReaction(:dX, :X),
+        DiffusionReaction(:dXY, :XY),
+        DiffusionReaction(:dZ, :Z),
+        DiffusionReaction(:dV, :V),
+    ]
+    lrs_alt = LatticeReactionSystem(binding_system_alt, binding_sr_alt, small_2d_grid)
+    u0_alt = [
+        :X => 1.0,
+        :Y => 2.0 * rand_v_vals(lrs_alt.lattice),
+        :XY => 0.5,
+        :Z => 2.0 * rand_v_vals(lrs_alt.lattice),
+        :V => 0.5,
+        :W => 1.0,
+    ]
+    p_alt = [
+        :k1 => 2.0,
+        :k2 => 0.1 .+ rand_v_vals(lrs_alt.lattice),
+        :dX => 1.0 .+ rand_e_vals(lrs_alt.lattice),
+        :dXY => 3.0,
+        :dZ => rand_e_vals(lrs_alt.lattice),
+        :dV => 0.2,
+        :p1 => 1.0,
+        :p2 => rand_v_vals(lrs_alt.lattice),
+    ]
+    oprob_alt = ODEProblem(lrs_alt, u0_alt, (0.0, 10.0), p_alt)
+    ss_alt = solve(oprob_alt, Tsit5()).u[end]
 
-binding_system_2 = @reaction_network begin
-    (k1, k2), X + Y <--> XY
-end
-binding_sr_2 = [DiffusionReaction(:dX, :X), DiffusionReaction(:dXY, :XY)]
-binding_lrs_2 = LatticeReactionSystem(binding_system_2, binding_sr_2, Graphs.grid([5, 5]))
-binding_u0_2 = binding_u0_1[1:3]
-binding_p_2 = binding_p_1[1:4]
-binding_oprob_2 = ODEProblem(binding_lrs_2, binding_u0_2, (0.0,10.0), binding_p_2)
-binding_sol_2 = solve(binding_oprob_2, Tsit5())
+    binding_sr_main = [DiffusionReaction(:dX, :X), DiffusionReaction(:dXY, :XY)]
+    lrs = LatticeReactionSystem(binding_system, binding_sr_main, small_2d_grid)
+    u0 = u0_alt[1:3]
+    p = p_alt[1:4]
+    oprob = ODEProblem(lrs, u0, (0.0, 10.0), p)
+    ss = solve(oprob, Tsit5()).u[end]
 
-for i = 1:25
-    @test norm(binding_sol_1.u[end][(i-1)*6+1:(i-1)*6+3] .- binding_sol_2.u[end][(i-1)*3+1:(i-1)*3+3]) <1e-3
+    for i in 1:25
+        @test isapprox(ss_alt[((i - 1) * 6 + 1):((i - 1) * 6 + 3)],
+                       ss[((i - 1) * 3 + 1):((i - 1) * 3 + 3)]) < 1e-3
+    end
 end
-
 
 ### Tests Runtimes ###
 # Timings currently are from Torkel's computer.
@@ -349,7 +422,22 @@ let
     runtime_target = 0.05
     runtime = minimum((@benchmark solve($oprob, QNDF())).times) / 1000000000
     println("Small grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 10 * runtime_target
+    @test runtime < 1.2 * runtime_target
+end
+
+# Medium grid, small, stiff, system.
+let
+    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, medium_2d_grid)
+    u0 = [:X => rand_v_vals(lrs.lattice, 10), :Y => rand_v_vals(lrs.lattice, 10)]
+    pV = brusselator_p
+    pE = [:dX => 0.2]
+    oprob = ODEProblem(lrs, u0, (0.0, 100.0), (pV, pE))
+    @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
+
+    runtime_target = 1.066
+    runtime = minimum((@benchmark solve($oprob, QNDF())).times) / 1000000000
+    println("Medium grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
+    @test runtime < 1.2 * runtime_target
 end
 
 # Large grid, small, stiff, system.
@@ -364,7 +452,7 @@ let
     runtime_target = 140.0
     runtime = minimum((@benchmark solve($oprob, QNDF())).times) / 1000000000
     println("Large grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 10 * runtime_target
+    @test runtime < 1.2 * runtime_target
 end
 
 # Small grid, mid-sized, non-stiff, system.
@@ -394,7 +482,7 @@ let
     runtime_target = 0.00293
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times) / 1000000000
     println("Small grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 10 * runtime_target
+    @test runtime < 1.2 * runtime_target
 end
 
 # Large grid, mid-sized, non-stiff, system.
@@ -424,7 +512,7 @@ let
     runtime_target = 1.257
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times) / 1000000000
     println("Large grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 10 * runtime_target
+    @test runtime < 1.2 * runtime_target
 end
 
 # Small grid, mid-sized, stiff, system.
@@ -450,7 +538,7 @@ let
     runtime_target = 0.023
     runtime = minimum((@benchmark solve($oprob, QNDF())).times) / 1000000000
     println("Small grid, mid-sized, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 10 * runtime_target
+    @test runtime < 1.2 * runtime_target
 end
 
 # Large grid, mid-sized, stiff, system.
@@ -476,5 +564,5 @@ let
     runtime_target = 111.0
     runtime = minimum((@benchmark solve($oprob, QNDF())).times) / 1000000000
     println("Large grid, mid-sized, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < 10 * runtime_target
+    @test runtime < 1.2 * runtime_target
 end

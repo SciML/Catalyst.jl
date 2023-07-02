@@ -32,14 +32,15 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
     """Whenever the initial input was a di graph."""
     init_digraph::Bool
 
-
-    function LatticeReactionSystem(rs, spatial_reactions, lattice::DiGraph; init_digraph=true)
+    function LatticeReactionSystem(rs, spatial_reactions, lattice::DiGraph;
+                                   init_digraph = true)
         return new(rs, spatial_reactions, lattice,
                    unique(getfield.(spatial_reactions, :rate)), length(vertices(lattice)),
                    length(species(rs)), init_digraph)
     end
     function LatticeReactionSystem(rs, spatial_reactions, lattice::SimpleGraph)
-        return LatticeReactionSystem(rs, spatial_reactions, DiGraph(lattice); init_digraph=false)
+        return LatticeReactionSystem(rs, spatial_reactions, DiGraph(lattice);
+                                     init_digraph = false)
     end
 end
 
@@ -52,9 +53,9 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     u0 = [get_component_value(u0, species, comp) for comp in 1:(lrs.nC)
           for species in 1:(lrs.nS)]
     pV, pE = split_parameters(p_in, lrs.spatial_params)
-    pV = resort_values(pV, Symbol.(parameters(lrs.rs)))
+    pV = resort_values(pV, setdiff(Symbol.(parameters(lrs.rs)), lrs.spatial_params))
     pE = resort_values(pE, lrs.spatial_params)
-    lrs.init_digraph || (pE = duplicate_edge_params(pE, length(edges(lrs.lattice))/2))
+    lrs.init_digraph || (pE = duplicate_edge_params(pE, length(edges(lrs.lattice)) / 2))
 
     ofun = build_odefunction(lrs, pV, pE, jac, sparse)
     return ODEProblem(ofun, u0, tspan, pV, args...; kwargs...)
@@ -71,16 +72,24 @@ function split_parameters(ps::Vector{<:Number}, spatial_params::Vector{Symbol})
 end
 # Sorts a parameter (or species) vector along parameter (or species) index, and remove the Symbol in the pair.
 function resort_values(values::Vector{<:Pair}, symbols::Vector{Symbol})
+    issetequal(first.(values), symbols) ||
+        error("The system's species and parameters does not match those in the input. $(first.(values)) shoud match $(symbols).")
     last.(sort(values; by = val -> findfirst(val[1] .== symbols)))
 end
 resort_values(values::Any, symbols::Vector{Symbol}) = values
 # If a graph was given as lattice, internal it has a digraph representation (2n edges), this duplicates edges parameters (if n values are given for one parameters).
-duplicate_edge_params(pE::Matrix, nE::Float64) = (size(pE)[2]==nE) ? reshape(vcat(pE,pE),size(pE)[1],2*size(pE)[2]) : pE
+function duplicate_edge_params(pE::Matrix, nE::Float64)
+    (size(pE)[2] == nE) ? reshape(vcat(pE, pE), size(pE)[1], 2 * size(pE)[2]) : pE
+end
 duplicate_edge_params(pE::Vector, nE::Float64) = duplicate_edge_param.(pE, nE)
 duplicate_edge_param(pe::Number, nE::Float64) = pe
-duplicate_edge_param(pe::Pair{Symbol,Number}, nE::Float64) = pe
-duplicate_edge_param(pe::Vector, nE::Float64) = (length(pe)==nE) ? hcat(pe,pe)'[1:end] : pe
-duplicate_edge_param(pe::Pair{Symbol,Vector}, nE::Float64) = (length(pe[2])==nE) ? pe[1] => hcat(pe[2],pe[2])'[1:end] : pe
+duplicate_edge_param(pe::Pair{Symbol, Number}, nE::Float64) = pe
+function duplicate_edge_param(pe::Vector, nE::Float64)
+    (length(pe) == nE) ? hcat(pe, pe)'[1:end] : pe
+end
+function duplicate_edge_param(pe::Pair{Symbol, Vector}, nE::Float64)
+    (length(pe[2]) == nE) ? pe[1] => hcat(pe[2], pe[2])'[1:end] : pe
+end
 
 # Builds an ODEFunction.
 function build_odefunction(lrs::LatticeReactionSystem, pV, pE, use_jac::Bool, sparse::Bool)
@@ -93,7 +102,12 @@ function build_odefunction(lrs::LatticeReactionSystem, pV, pE, use_jac::Bool, sp
     jac_prototype = (sparse ?
                      build_jac_prototype(ofunc_sparse.jac_prototype, pE, diffusion_species,
                                          lrs; set_nonzero = true) : nothing)
-    jac = (use_jac ? build_jac(ofunc, pV, pE, diffusion_species, lrs, (isnothing(jac_prototype) ? build_jac_prototype(ofunc_sparse.jac_prototype, pE, diffusion_species, lrs; set_nonzero = true) : jac_prototype); sparse = sparse) : nothing)
+    jac = (use_jac ?
+           build_jac(ofunc, pV, pE, diffusion_species, lrs,
+                     (isnothing(jac_prototype) ?
+                      build_jac_prototype(ofunc_sparse.jac_prototype, pE, diffusion_species,
+                                          lrs; set_nonzero = true) : jac_prototype);
+                     sparse = sparse) : nothing)
     return ODEFunction(f; jac = jac, jac_prototype = jac_prototype)
 end
 
@@ -103,6 +117,7 @@ function build_f(ofunc::SciMLBase.AbstractODEFunction{true}, pV, pE,
     leaving_rates = zeros(length(diffusion_species), lrs.nC)
     for (s_idx, species) in enumerate(diffusion_species),
         (e_idx, e) in enumerate(edges(lrs.lattice))
+
         leaving_rates[s_idx, e.src] += get_component_value(pE, s_idx, e_idx)
     end
     p_base = deepcopy(first.(pV))
