@@ -71,7 +71,7 @@ export mm, mmr, hill, hillr, hillar
 
 # spatial reaction networks
 include("lattice_reaction_system_diffusion.jl")
-export DiffusionReaction
+export DiffusionReaction, DiffusionReactions
 export LatticeReactionSystem
 
 # functions to query network properties

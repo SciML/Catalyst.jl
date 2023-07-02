@@ -153,6 +153,7 @@ sigmaB_srs_2 = [sigmaB_dif_σB, sigmaB_dif_w, sigmaB_dif_v]
 ### Declares Lattices ###
 
 # Grids.
+very_small_2d_grid = Graphs.grid([2, 2])
 small_2d_grid = Graphs.grid([5, 5])
 medium_2d_grid = Graphs.grid([20, 20])
 large_2d_grid = Graphs.grid([100, 100])
@@ -383,6 +384,27 @@ let
     ss_1 = solve(ODEProblem(lrs_1, u0, (0.0, 500.0), (pV, pE)), Tsit5()).u[end]
     ss_2 = solve(ODEProblem(lrs_2, u0, (0.0, 500.0), (pV, pE)), Tsit5()).u[end]
     @test all(isequal.(ss_1, ss_2))
+end
+
+# Various ways to give parameters and initial conditions.
+let
+    lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, very_small_2d_grid)
+    u0_1 = [:S => 990.0, :I => [1.0, 3.0, 2.0, 5.0], :R => 0.0]
+    u0_2 = [990.0, [1.0, 3.0, 2.0, 5.0], 0.0]
+    u0_3 = [990.0 990.0 990.0 990.0; 1.0 3.0 2.0 5.0; 0.0 0.0 0.0 0.0]
+    pV_1 = [:α => 0.1/1000, :β => [0.01, 0.02, 0.01, 0.03]]
+    pV_2 = [0.1/1000, [0.01, 0.02, 0.01, 0.03]]
+    pV_3 = [0.1/1000 0.1/1000 0.1/1000 0.1/1000; 0.01 0.02 0.01 0.03]
+    pE_1 = [:dS => [0.01, 0.02, 0.03, 0.04], :dI => 0.01, :dR => 0.01]
+    pE_2 = [[0.01, 0.02, 0.03, 0.04], :0.01, 0.01]
+    pE_3 = [0.01 0.02 0.03 0.04; 0.01 0.01 0.01 0.01; 0.01 0.01 0.01 0.01;]
+    
+    p1 = [:α => 0.1/1000, :β => [0.01, 0.02, 0.01, 0.03], :dS => [0.01, 0.02, 0.03, 0.04], :dI => 0.01, :dR => 0.01]
+    ss_1_1 = solve(ODEProblem(lrs, u0_1, (0.0, 1.0), p1), Tsit5()).u[end]
+    for u0 in [u0_1, u0_2, u0_3], pV in [pV_1, pV_2, pV_3], pE in [pE_1, pE_2, pE_3]
+        ss = solve(ODEProblem(lrs, u0, (0.0, 1.0), (pV, pE)), Tsit5()).u[end]
+        @test all(isequal.(ss,ss_1_1))
+    end
 end
 
 

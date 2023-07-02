@@ -126,7 +126,7 @@ function build_f(ofunc::SciMLBase.AbstractODEFunction{true}, pV, pE,
         leaving_rates[s_idx, e.src] += get_component_value(pE, s_idx, e_idx)
     end
     p_base = deepcopy(first.(pV))
-    p_update_idx = (p_base isa Vector) ? findall(typeof.(p_base) .== Vector{Float64}) : []
+    p_update_idx = (p_base isa Vector) ? findall(typeof.(pV) .== Vector{Float64}) : []
     enumerated_edges = deepcopy(enumerate(edges(lrs.lattice)))
 
     return function (du, u, p, t)
