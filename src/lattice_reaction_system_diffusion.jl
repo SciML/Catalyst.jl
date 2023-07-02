@@ -12,7 +12,7 @@ struct DiffusionReaction <: AbstractSpatialReaction
     species::Symbol
 end
 # Creates a vector of DiffusionReactions.
-function DiffusionReaction(diffusion_reactions)
+function DiffusionReactions(diffusion_reactions)
     [DiffusionReaction(dr[1], dr[2]) for dr in diffusion_reactions]
 end
 
