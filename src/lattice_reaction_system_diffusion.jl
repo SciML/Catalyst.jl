@@ -109,16 +109,10 @@ function build_odefunction(lrs::LatticeReactionSystem, pV, pE, use_jac::Bool, sp
                               for s in getfield.(lrs.spatial_reactions, :species)]
 
     f = build_f(ofunc, pV, pE, diffusion_species, lrs)
-    jac_prototype = (sparse ?
-                     build_jac_prototype(ofunc_sparse.jac_prototype, pE, diffusion_species,
-                                         lrs; set_nonzero = true) : nothing)
-    jac = (use_jac ?
-           build_jac(ofunc, pV, pE, diffusion_species, lrs,
-                     (isnothing(jac_prototype) ?
-                      build_jac_prototype(ofunc_sparse.jac_prototype, pE, diffusion_species,
-                                          lrs; set_nonzero = true) : jac_prototype);
-                     sparse = sparse) : nothing)
-    return ODEFunction(f; jac = jac, jac_prototype = jac_prototype)
+    jac_prototype = (use_jac || sparse) ? build_jac_prototype(ofunc_sparse.jac_prototype, pE, diffusion_species, lrs; set_nonzero = use_jac) : nothing
+    jac = use_jac ? build_jac(ofunc, pV, lrs, jac_prototype, sparse) : nothing
+    sparse || (jac_prototype = nothing) 
+    return ODEFunction(f; jac=jac, jac_prototype=jac_prototype)
 end
 
 # Creates a function for simulating the spatial ODE with spatial reactions.
@@ -158,38 +152,21 @@ function build_f(ofunc::SciMLBase.AbstractODEFunction{true}, pV, pE,
     end
 end
 
-function build_jac(ofunc::SciMLBase.AbstractODEFunction{true}, pV, pE,
-                   diffusion_species::Vector{Int64}, lrs::LatticeReactionSystem,
-                   jac_prototype::SparseMatrixCSC{Float64, Int64}; sparse = true)
+function build_jac(ofunc::SciMLBase.AbstractODEFunction{true}, pV, lrs::LatticeReactionSystem, jac_prototype::Union{Nothing,SparseMatrixCSC{Float64, Int64}}, sparse::Bool)
     p_base = deepcopy(first.(pV))
     p_update_idx = (p_base isa Vector) ? findall(typeof.(p_base) .== Vector{Float64}) : []
+    new_jac_values = sparse ? jac_prototype.nzval : Matrix(jac_prototype)
+    
+    return function (J, u, p, t)
+        # Sets the base according to the spatial reactions.
+        sparse ? (J.nzval .= new_jac_values) : (J .= new_jac_values)
 
-    if sparse
-        return function (J, u, p, t)
-            # Sets the base according to the spatial reactions.
-            J.nzval .= jac_prototype.nzval
-
-            # Updates for non-spatial reactions.
-            for comp_i::Int64 in 1:(lrs.nC)
-                ofunc.jac((@view J[get_indexes(comp_i, lrs.nS),
-                                   get_indexes(comp_i, lrs.nS)]),
-                          (@view u[get_indexes(comp_i, lrs.nS)]),
-                          make_p_vector!(p_base, p, p_update_idx, comp_i), t)
-            end
-        end
-    else
-        jac_diffusion = Matrix(jac_prototype)
-        return function (J, u, p, t)
-            # Sets the base according to the spatial reactions.
-            J .= jac_diffusion
-
-            # Updates for non-spatial reactions.
-            for comp_i::Int64 in 1:(lrs.nC)
-                ofunc.jac((@view J[get_indexes(comp_i, lrs.nS),
-                                   get_indexes(comp_i, lrs.nS)]),
-                          (@view u[get_indexes(comp_i, lrs.nS)]),
-                          make_p_vector!(p_base, p, p_update_idx, comp_i), t)
-            end
+        # Updates for non-spatial reactions.
+        for comp_i::Int64 in 1:(lrs.nC)
+            ofunc.jac((@view J[get_indexes(comp_i, lrs.nS),
+                                get_indexes(comp_i, lrs.nS)]),
+                        (@view u[get_indexes(comp_i, lrs.nS)]),
+                        make_p_vector!(p_base, p, p_update_idx, comp_i), t)
         end
     end
 end
@@ -199,7 +176,7 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, 
                              set_nonzero = false)
     only_diff = [(s in diffusion_species) && !Base.isstored(ns_jac_prototype, s, s)
                  for s in 1:(lrs.nS)]
-
+    
     # Declares sparse array content.
     J_colptr = fill(1, lrs.nC * lrs.nS + 1)
     J_nzval = fill(0.0,
@@ -237,7 +214,7 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, 
     end
 
     # Set element values.
-    if set_nonzero
+    if !set_nonzero
         J_nzval .= 1.0
     else
         for (s_idx, s) in enumerate(diffusion_species),
@@ -249,12 +226,12 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, 
 
             # Updates the source value.
             val_idx_src = col_start +
-                          findfirst(column_view .== get_index(edge.src, s_idx, lrs.nS)) - 1
+                          findfirst(column_view .== get_index(edge.src, s, lrs.nS)) - 1
             J_nzval[val_idx_src] -= get_component_value(pE, s_idx, e_idx)
 
             # Updates the destination value.
             val_idx_dst = col_start +
-                          findfirst(column_view .== get_index(edge.dst, s_idx, lrs.nS)) - 1
+                          findfirst(column_view .== get_index(edge.dst, s, lrs.nS)) - 1
             J_nzval[val_idx_dst] += get_component_value(pE, s_idx, e_idx)
         end
     end
@@ -267,7 +244,7 @@ get_index(comp::Int64, species::Int64, nS::Int64) = (comp - 1) * nS + species
 # Gets the indexes of a compartment's species in the u array.
 get_indexes(comp::Int64, nS::Int64) = ((comp - 1) * nS + 1):(comp * nS)
 
-# For set of values (stoed in a variety of possible forms), a given component (species or parameter), and a place (eitehr a compartment or edge), find that components value at that place.
+# For set of values (stoed in a variety of possible forms), a given component (species or parameter), and a place (either a compartment or edge), find that components value at that place.
 function get_component_value(vals::Matrix{Float64}, component::Int64, place::Int64)
     vals[component, place]
 end
@@ -284,12 +261,4 @@ function make_p_vector!(p_base, p, p_update_idx, comp_i)
         p_base[idx] = p[idx][comp_i]
     end
     return p_base
-end
-
-# Gets all the values in a specific palce.
-function get_component_values(vals::Matrix{Float64}, place::Int64, nComponents::Int64)
-    (@view vals[:, place])
-end
-function get_component_values(vals, place::Int64, nComponents::Int64)
-    [get_component_value(vals, component, place) for component in 1:nComponents]
 end
