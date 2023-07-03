@@ -415,20 +415,26 @@ let
 end
 
 # Checks that variosu combinations of jac and sparse gives the same result.
-let 
+let
     lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, small_2d_grid)
     u0 = [:X => rand_v_vals(lrs.lattice, 10), :Y => rand_v_vals(lrs.lattice, 10)]
     pV = brusselator_p
     pE = [:dX => 0.2]
-    oprob = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac=false, sparse=false)
-    oprob_sparse = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac=false, sparse=true)
-    oprob_jac = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac=true, sparse=false)
-    oprob_sparse_jac = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac=true, sparse=true)
+    oprob = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac = false, sparse = false)
+    oprob_sparse = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac = false, sparse = true)
+    oprob_jac = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac = true, sparse = false)
+    oprob_sparse_jac = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac = true, sparse = true)
 
     ss = solve(oprob, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end]
-    @test all(isapprox.(ss, solve(oprob_sparse, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end]; rtol=0.0001))
-    @test all(isapprox.(ss, solve(oprob_jac, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end]; rtol=0.0001))
-    @test all(isapprox.(ss, solve(oprob_sparse_jac, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end]; rtol=0.0001))
+    @test all(isapprox.(ss,
+                        solve(oprob_sparse, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end];
+                        rtol = 0.0001))
+    @test all(isapprox.(ss,
+                        solve(oprob_jac, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end];
+                        rtol = 0.0001))
+    @test all(isapprox.(ss,
+                        solve(oprob_sparse_jac, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end];
+                        rtol = 0.0001))
 end
 
 # Splitting parameters by position
@@ -440,9 +446,8 @@ let
     oprob1 = ODEProblem(lrs, u0, (0.0, 500.0), p1; jac = false)
     oprob2 = ODEProblem(lrs, u0, (0.0, 500.0), p2; jac = false)
 
-    @test all(isapprox.(solve(oprob1, Tsit5()).u[end], solve(oprob2, Tsit5()).u[end])) 
+    @test all(isapprox.(solve(oprob1, Tsit5()).u[end], solve(oprob2, Tsit5()).u[end]))
 end
-
 
 ### Tests Runtimes ###
 # Current timings are taken from the SciML CI server.
@@ -518,7 +523,7 @@ let
     oprob = ODEProblem(lrs, u0, (0.0, 100.0), (pV, pE))
     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
 
-    runtime_target = 170.
+    runtime_target = 170.0
     runtime = minimum((@benchmark solve($oprob, QNDF())).times) / 1000000000
     println("Large grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < runtime_reduction_margin * runtime_target
