@@ -109,10 +109,12 @@ function build_odefunction(lrs::LatticeReactionSystem, pV, pE, use_jac::Bool, sp
                               for s in getfield.(lrs.spatial_reactions, :species)]
 
     f = build_f(ofunc, pV, pE, diffusion_species, lrs)
-    jac_prototype = (use_jac || sparse) ? build_jac_prototype(ofunc_sparse.jac_prototype, pE, diffusion_species, lrs; set_nonzero = use_jac) : nothing
+    jac_prototype = (use_jac || sparse) ?
+                    build_jac_prototype(ofunc_sparse.jac_prototype, pE, diffusion_species,
+                                        lrs; set_nonzero = use_jac) : nothing
     jac = use_jac ? build_jac(ofunc, pV, lrs, jac_prototype, sparse) : nothing
-    sparse || (jac_prototype = nothing) 
-    return ODEFunction(f; jac=jac, jac_prototype=jac_prototype)
+    sparse || (jac_prototype = nothing)
+    return ODEFunction(f; jac = jac, jac_prototype = jac_prototype)
 end
 
 # Creates a function for simulating the spatial ODE with spatial reactions.
@@ -152,11 +154,14 @@ function build_f(ofunc::SciMLBase.AbstractODEFunction{true}, pV, pE,
     end
 end
 
-function build_jac(ofunc::SciMLBase.AbstractODEFunction{true}, pV, lrs::LatticeReactionSystem, jac_prototype::Union{Nothing,SparseMatrixCSC{Float64, Int64}}, sparse::Bool)
+function build_jac(ofunc::SciMLBase.AbstractODEFunction{true}, pV,
+                   lrs::LatticeReactionSystem,
+                   jac_prototype::Union{Nothing, SparseMatrixCSC{Float64, Int64}},
+                   sparse::Bool)
     p_base = deepcopy(first.(pV))
     p_update_idx = (p_base isa Vector) ? findall(typeof.(p_base) .== Vector{Float64}) : []
     new_jac_values = sparse ? jac_prototype.nzval : Matrix(jac_prototype)
-    
+
     return function (J, u, p, t)
         # Sets the base according to the spatial reactions.
         sparse ? (J.nzval .= new_jac_values) : (J .= new_jac_values)
@@ -164,9 +169,9 @@ function build_jac(ofunc::SciMLBase.AbstractODEFunction{true}, pV, lrs::LatticeR
         # Updates for non-spatial reactions.
         for comp_i::Int64 in 1:(lrs.nC)
             ofunc.jac((@view J[get_indexes(comp_i, lrs.nS),
-                                get_indexes(comp_i, lrs.nS)]),
-                        (@view u[get_indexes(comp_i, lrs.nS)]),
-                        make_p_vector!(p_base, p, p_update_idx, comp_i), t)
+                               get_indexes(comp_i, lrs.nS)]),
+                      (@view u[get_indexes(comp_i, lrs.nS)]),
+                      make_p_vector!(p_base, p, p_update_idx, comp_i), t)
         end
     end
 end
@@ -176,7 +181,7 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, 
                              set_nonzero = false)
     only_diff = [(s in diffusion_species) && !Base.isstored(ns_jac_prototype, s, s)
                  for s in 1:(lrs.nS)]
-    
+
     # Declares sparse array content.
     J_colptr = fill(1, lrs.nC * lrs.nS + 1)
     J_nzval = fill(0.0,
