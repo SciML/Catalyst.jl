@@ -129,9 +129,9 @@ version = "0.1.0"
 
 [[deps.BandedMatrices]]
 deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra", "PrecompileTools", "SparseArrays"]
-git-tree-sha1 = "9ad46355045491b12eab409dee73e9de46293aa2"
+git-tree-sha1 = "3c63ab5fb851444fb018b97883cfd79ae044e888"
 uuid = "aae01518-5342-5314-be14-df237901396f"
-version = "0.17.28"
+version = "0.17.29"
 
 [[deps.Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
@@ -218,9 +218,9 @@ version = "13.3.0"
 
 [[deps.ChainRules]]
 deps = ["Adapt", "ChainRulesCore", "Compat", "Distributed", "GPUArraysCore", "IrrationalConstants", "LinearAlgebra", "Random", "RealDot", "SparseArrays", "Statistics", "StructArrays"]
-git-tree-sha1 = "1cdf290d4feec68824bfb84f4bfc9f3aba185647"
+git-tree-sha1 = "2afc496e94d15a1af5502625246d172361542133"
 uuid = "082447d4-558c-5d27-93f4-14fc19e9eca2"
-version = "1.51.1"
+version = "1.52.0"
 
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
@@ -1252,9 +1252,9 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[deps.ModelingToolkit]]
 deps = ["AbstractTrees", "ArrayInterface", "Combinatorics", "Compat", "ConstructionBase", "DataStructures", "DiffEqBase", "DiffEqCallbacks", "DiffRules", "Distributed", "Distributions", "DocStringExtensions", "DomainSets", "ForwardDiff", "FunctionWrappersWrappers", "Graphs", "IfElse", "InteractiveUtils", "JuliaFormatter", "JumpProcesses", "LabelledArrays", "Latexify", "Libdl", "LinearAlgebra", "MLStyle", "MacroTools", "NaNMath", "RecursiveArrayTools", "Reexport", "RuntimeGeneratedFunctions", "SciMLBase", "Serialization", "Setfield", "SimpleNonlinearSolve", "SparseArrays", "SpecialFunctions", "StaticArrays", "SymbolicIndexingInterface", "SymbolicUtils", "Symbolics", "URIs", "UnPack", "Unitful"]
-git-tree-sha1 = "dcf48999a0eeccfdd25a5a0b5eb87e636be79124"
+git-tree-sha1 = "cad27947bc85b1a3136f395f22a7dd5c382b7209"
 uuid = "961ee093-0014-501f-94e3-6117800e7a78"
-version = "8.61.0"
+version = "8.62.0"
 
     [deps.ModelingToolkit.extensions]
     MTKDeepDiffsExt = "DeepDiffs"
@@ -1307,15 +1307,19 @@ version = "4.5.1"
 
 [[deps.NNlib]]
 deps = ["Adapt", "Atomix", "ChainRulesCore", "GPUArraysCore", "KernelAbstractions", "LinearAlgebra", "Pkg", "Random", "Requires", "Statistics"]
-git-tree-sha1 = "72240e3f5ca031937bd536182cb2c031da5f46dd"
+git-tree-sha1 = "ec9858db6fcd07f63aeeed105420cc573ce2685a"
 uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
-version = "0.8.21"
+version = "0.9.1"
 
     [deps.NNlib.extensions]
     NNlibAMDGPUExt = "AMDGPU"
+    NNlibCUDACUDNNExt = ["CUDA", "cuDNN"]
+    NNlibCUDAExt = "CUDA"
 
     [deps.NNlib.weakdeps]
     AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
+    CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+    cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
 
 [[deps.NaNMath]]
 deps = ["OpenLibm_jll"]
@@ -1822,14 +1826,10 @@ uuid = "55797a34-41de-5266-9ec1-32ac4eb504d3"
 version = "0.8.4"
 
 [[deps.SimpleNonlinearSolve]]
-deps = ["ArrayInterface", "DiffEqBase", "FiniteDiff", "ForwardDiff", "LinearAlgebra", "PrecompileTools", "Reexport", "Requires", "SciMLBase", "StaticArraysCore"]
-git-tree-sha1 = "56aa73a93cdca493af5155a0338a864ed314222b"
+deps = ["ArrayInterfaceCore", "DiffEqBase", "FiniteDiff", "ForwardDiff", "LinearAlgebra", "Reexport", "SciMLBase", "SnoopPrecompile", "StaticArraysCore"]
+git-tree-sha1 = "3f558105e8ef4aac1e22bf30bd1f1e95698bfc95"
 uuid = "727e6d20-b764-4bd8-a329-72de5adea6c7"
-version = "0.1.16"
-weakdeps = ["NNlib"]
-
-    [deps.SimpleNonlinearSolve.extensions]
-    SimpleBatchedNonlinearSolveExt = "NNlib"
+version = "0.1.10"
 
 [[deps.SimplePartitions]]
 deps = ["AbstractLattices", "DataStructures", "Permutations"]
@@ -2105,9 +2105,9 @@ version = "0.5.25"
 
 [[deps.Tracker]]
 deps = ["Adapt", "DiffRules", "ForwardDiff", "Functors", "LinearAlgebra", "LogExpFunctions", "MacroTools", "NNlib", "NaNMath", "Optimisers", "Printf", "Random", "Requires", "SpecialFunctions", "Statistics"]
-git-tree-sha1 = "8b552cc0a4132c1ce5cee14197bb57d2109d480f"
+git-tree-sha1 = "92364c27aa35c0ee36e6e010b704adaade6c409c"
 uuid = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
-version = "0.2.25"
+version = "0.2.26"
 weakdeps = ["PDMats"]
 
     [deps.Tracker.extensions]
