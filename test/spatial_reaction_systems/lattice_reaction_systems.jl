@@ -37,7 +37,7 @@ SIR_srs_2 = [SIR_dif_S, SIR_dif_I, SIR_dif_R]
 
 # Small non-stiff system.
 binding_system = @reaction_network begin (k1, k2), X + Y <--> XY end
-binding_sr = DiffusionReactions([(:dX, :X), (:dY, :Y), (:dXY, :XY)])
+binding_srs = DiffusionReactions([(:dX, :X), (:dY, :Y), (:dXY, :XY)])
 binding_u0 = [:X => 1.0, :Y => 2.0, :XY => 0.5]
 binding_p = [:k1 => 2.0, :k2 => 0.1, :dX => 3.0, :dY => 5.0, :dXY => 2.0]
 
@@ -274,7 +274,7 @@ end
 
 # Checks that result becomes homogeneous on a connected lattice.
 let
-    lrs = LatticeReactionSystem(binding_system, binding_sr, undirected_cycle)
+    lrs = LatticeReactionSystem(binding_system, binding_srs, undirected_cycle)
     u0 = [
         :X => 1.0 .+ rand_v_vals(lrs.lattice),
         :Y => 2.0 * rand_v_vals(lrs.lattice),
@@ -289,6 +289,36 @@ let
 end
 
 ### Tests Special Cases ###
+
+# Creates network with various combiantions of Symbls and Nums in diffusion reactions.
+let
+    @parameters dS dI dR
+    @variables t
+    @species S(t) I(t) R(t)
+    SIR_srs_numsym_1 = diffusion_reactions([(:dS, :S), (:dI, :I), (:dR, :R)])
+    SIR_srs_numsym_2 = diffusion_reactions([(dS, :S), (dI, :I), (dR, :R)])
+    SIR_srs_numsym_3 = diffusion_reactions([(:dS, S), (:dI, I), (:dR, R)])
+    SIR_srs_numsym_4 = diffusion_reactions([(dS, S), (dI, I), (dR, R)])
+    SIR_srs_numsym_5 = diffusion_reactions([(dS, :S), (:dI, I), (dR, :R)])
+    SIR_srs_numsym_6 = diffusion_reactions([(:dS, :S), (:dI, I), (dR, R)])
+
+    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(small_2d_grid), :R => 0.0]
+    pV = SIR_p
+    pE_1 = [:dS => 0.01, :dI => 0.01, :dR => 0.01]
+    pE_2 = [dS => 0.01, dI => 0.01, dR => 0.01]
+    pE_3 = [dS => 0.01, :dI => 0.01, :dR => 0.01]
+    ss_explicit_base = solve(ODEProblem(LatticeReactionSystem(SIR_system, SIR_srs_numsym_1, small_2d_grid), u0, (0.0, 10.0), (pV, pE_1); jac=false), Tsit5()).u[end]
+    ss_implicit_base = solve(ODEProblem(LatticeReactionSystem(SIR_system, SIR_srs_numsym_1, small_2d_grid), u0, (0.0, 10.0), (pV, pE_1); jac=true), Rosenbrock23()).u[end]
+
+    for srs in [SIR_srs_numsym_1, SIR_srs_numsym_2, SIR_srs_numsym_3, SIR_srs_numsym_4, SIR_srs_numsym_5, SIR_srs_numsym_6], pE in [pE_1, pE_2, pE_3]
+        lrs = LatticeReactionSystem(SIR_system, srs, small_2d_grid)
+        ss_explicit = solve(ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac=false), Tsit5()).u[end]
+        ss_implicit = solve(ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac=true), Rosenbrock23()).u[end]
+        @test all(isapprox.(ss_explicit, ss_explicit_base))
+        @test all(isapprox.(ss_implicit, ss_implicit_base))
+    end
+end
+
 
 # Create network with vaious combinations of graph/di-graph and parameters.
 let
@@ -334,13 +364,13 @@ let
         @parameters k1 k2 dX dXY dZ dV p1 p2
         (k1, k2), X + Y <--> XY
     end
-    binding_sr_alt = [
+    binding_srs_alt = [
         DiffusionReaction(:dX, :X),
         DiffusionReaction(:dXY, :XY),
         DiffusionReaction(:dZ, :Z),
         DiffusionReaction(:dV, :V),
     ]
-    lrs_alt = LatticeReactionSystem(binding_system_alt, binding_sr_alt, small_2d_grid)
+    lrs_alt = LatticeReactionSystem(binding_system_alt, binding_srs_alt, small_2d_grid)
     u0_alt = [
         :X => 1.0,
         :Y => 2.0 * rand_v_vals(lrs_alt.lattice),
@@ -362,8 +392,8 @@ let
     oprob_alt = ODEProblem(lrs_alt, u0_alt, (0.0, 10.0), p_alt)
     ss_alt = solve(oprob_alt, Tsit5()).u[end]
 
-    binding_sr_main = [DiffusionReaction(:dX, :X), DiffusionReaction(:dXY, :XY)]
-    lrs = LatticeReactionSystem(binding_system, binding_sr_main, small_2d_grid)
+    binding_srs_main = [DiffusionReaction(:dX, :X), DiffusionReaction(:dXY, :XY)]
+    lrs = LatticeReactionSystem(binding_system, binding_srs_main, small_2d_grid)
     u0 = u0_alt[1:3]
     p = p_alt[1:4]
     oprob = ODEProblem(lrs, u0, (0.0, 10.0), p)
