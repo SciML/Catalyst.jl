@@ -7,9 +7,9 @@ abstract type AbstractSpatialReaction end
 # Currently only permit constant rates.
 struct DiffusionReaction <: AbstractSpatialReaction
     """The rate function (excluding mass action terms). Currentl only constants supported"""
-    rate::Union{Symbol,Num}
+    rate::Union{Symbol, Num}
     """The species that is subject to difusion."""
-    species::Union{Symbol,Num}
+    species::Union{Symbol, Num}
 end
 # Creates a vector of DiffusionReactions.
 function diffusion_reactions(diffusion_reactions)
@@ -40,7 +40,8 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
                                    lattice::DiGraph;
                                    init_digraph = true)
         return new(rs, spatial_reactions, lattice,
-                   Symbol.(unique(getfield.(spatial_reactions, :rate))), length(vertices(lattice)),
+                   Symbol.(unique(getfield.(spatial_reactions, :rate))),
+                   length(vertices(lattice)),
                    length(species(rs)), init_digraph)
     end
     function LatticeReactionSystem(rs, spatial_reactions::Vector{<:AbstractSpatialReaction},
@@ -269,4 +270,4 @@ function make_p_vector!(p_base, p, p_update_idx, comp_i)
 end
 
 # Converts a Union{Symbol,Num} tp a Symbol.
-to_sym(s::Union{Symbol,Num}) = (s isa Symbol) ? s : Symbol(s.val.f)
+to_sym(s::Union{Symbol, Num}) = (s isa Symbol) ? s : Symbol(s.val.f)

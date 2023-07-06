@@ -307,18 +307,24 @@ let
     pE_1 = [:dS => 0.01, :dI => 0.01, :dR => 0.01]
     pE_2 = [dS => 0.01, dI => 0.01, dR => 0.01]
     pE_3 = [dS => 0.01, :dI => 0.01, :dR => 0.01]
-    ss_explicit_base = solve(ODEProblem(LatticeReactionSystem(SIR_system, SIR_srs_numsym_1, small_2d_grid), u0, (0.0, 10.0), (pV, pE_1); jac=false), Tsit5()).u[end]
-    ss_implicit_base = solve(ODEProblem(LatticeReactionSystem(SIR_system, SIR_srs_numsym_1, small_2d_grid), u0, (0.0, 10.0), (pV, pE_1); jac=true), Rosenbrock23()).u[end]
+    ss_explicit_base = solve(ODEProblem(LatticeReactionSystem(SIR_system, SIR_srs_numsym_1, small_2d_grid), u0, (0.0, 10.0), (pV, pE_1); jac = false), Tsit5()).u[end]
+    ss_implicit_base = solve(ODEProblem(LatticeReactionSystem(SIR_system, SIR_srs_numsym_1, small_2d_grid), u0, (0.0, 10.0), (pV, pE_1); jac = true), Rosenbrock23()).u[end]
 
-    for srs in [SIR_srs_numsym_1, SIR_srs_numsym_2, SIR_srs_numsym_3, SIR_srs_numsym_4, SIR_srs_numsym_5, SIR_srs_numsym_6], pE in [pE_1, pE_2, pE_3]
+    for srs in [
+            SIR_srs_numsym_1,
+            SIR_srs_numsym_2,
+            SIR_srs_numsym_3,
+            SIR_srs_numsym_4,
+            SIR_srs_numsym_5,
+            SIR_srs_numsym_6,
+        ], pE in [pE_1, pE_2, pE_3]
         lrs = LatticeReactionSystem(SIR_system, srs, small_2d_grid)
-        ss_explicit = solve(ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac=false), Tsit5()).u[end]
-        ss_implicit = solve(ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac=true), Rosenbrock23()).u[end]
+        ss_explicit = solve(ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac = false), Tsit5()).u[end]
+        ss_implicit = solve(ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac = true), Rosenbrock23()).u[end]
         @test all(isapprox.(ss_explicit, ss_explicit_base))
         @test all(isapprox.(ss_implicit, ss_implicit_base))
     end
 end
-
 
 # Create network with vaious combinations of graph/di-graph and parameters.
 let
@@ -479,7 +485,6 @@ let
     @test all(isapprox.(solve(oprob1, Tsit5()).u[end], solve(oprob2, Tsit5()).u[end]))
 end
 
-
 ### Runtime Checks ###
 # Current timings are taken from the SciML CI server.
 # Current not used, simply here for reference.
@@ -565,7 +570,8 @@ if false
 
     # Small grid, mid-sized, non-stiff, system.
     let
-        lrs = LatticeReactionSystem(CuH_Amination_system, CuH_Amination_srs_2, small_2d_grid)
+        lrs = LatticeReactionSystem(CuH_Amination_system, CuH_Amination_srs_2,
+                                    small_2d_grid)
         u0 = [
             :CuoAc => 0.005 .+ rand_v_vals(lrs.lattice, 0.005),
             :Ligand => 0.005 .+ rand_v_vals(lrs.lattice, 0.005),
@@ -595,7 +601,8 @@ if false
 
     # Large grid, mid-sized, non-stiff, system.
     let
-        lrs = LatticeReactionSystem(CuH_Amination_system, CuH_Amination_srs_2, large_2d_grid)
+        lrs = LatticeReactionSystem(CuH_Amination_system, CuH_Amination_srs_2,
+                                    large_2d_grid)
         u0 = [
             :CuoAc => 0.005 .+ rand_v_vals(lrs.lattice, 0.005),
             :Ligand => 0.005 .+ rand_v_vals(lrs.lattice, 0.005),
