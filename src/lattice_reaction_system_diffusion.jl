@@ -7,12 +7,12 @@ abstract type AbstractSpatialReaction end
 # Currently only permit constant rates.
 struct DiffusionReaction <: AbstractSpatialReaction
     """The rate function (excluding mass action terms). Currentl only constants supported"""
-    rate::Symbol
+    rate::Union{Symbol,Num}
     """The species that is subject to difusion."""
-    species::Symbol
+    species::Union{Symbol,Num}
 end
 # Creates a vector of DiffusionReactions.
-function DiffusionReactions(diffusion_reactions)
+function diffusion_reactions(diffusion_reactions)
     [DiffusionReaction(dr[1], dr[2]) for dr in diffusion_reactions]
 end
 
@@ -40,7 +40,7 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
                                    lattice::DiGraph;
                                    init_digraph = true)
         return new(rs, spatial_reactions, lattice,
-                   unique(getfield.(spatial_reactions, :rate)), length(vertices(lattice)),
+                   Symbol.(unique(getfield.(spatial_reactions, :rate))), length(vertices(lattice)),
                    length(species(rs)), init_digraph)
     end
     function LatticeReactionSystem(rs, spatial_reactions::Vector{<:AbstractSpatialReaction},
@@ -58,13 +58,13 @@ end
 # Creates an ODEProblem from a LatticeReactionSystem.
 function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
                                p_in = DiffEqBase.NullParameters(), args...;
-                               jac = true, sparse = true, kwargs...)
+                               jac = true, sparse = jac, kwargs...)
     u0 = resort_values(u0_in, [Symbol(s.f) for s in species(lrs.rs)])
     u0 = [get_component_value(u0, species, comp) for comp in 1:(lrs.nC)
           for species in 1:(lrs.nS)]
     pV, pE = split_parameters(p_in, lrs.spatial_params)
     pV = resort_values(pV, setdiff(Symbol.(parameters(lrs.rs)), lrs.spatial_params))
-    pE = resort_values(pE, lrs.spatial_params)
+    pE = resort_values(pE, Symbol.(lrs.spatial_params))
     lrs.init_digraph || (pE = duplicate_edge_params(pE, length(edges(lrs.lattice)) / 2))
 
     ofun = build_odefunction(lrs, pV, pE, jac, sparse)
@@ -82,9 +82,9 @@ function split_parameters(ps::Vector{<:Number}, spatial_params::Vector{Symbol})
 end
 # Sorts a parameter (or species) vector along parameter (or species) index, and remove the Symbol in the pair.
 function resort_values(values::Vector{<:Pair}, symbols::Vector{Symbol})
-    issetequal(first.(values), symbols) ||
+    issetequal(Symbol.(first.(values)), symbols) ||
         error("The system's species and parameters does not match those in the input. $(first.(values)) shoud match $(symbols).")
-    last.(sort(values; by = val -> findfirst(val[1] .== symbols)))
+    last.(sort(values; by = val -> findfirst(Symbol(val[1]) .== symbols)))
 end
 resort_values(values::Any, symbols::Vector{Symbol}) = values
 # If a graph was given as lattice, internal it has a digraph representation (2n edges), this duplicates edges parameters (if n values are given for one parameters).
@@ -106,7 +106,7 @@ function build_odefunction(lrs::LatticeReactionSystem, pV, pE, use_jac::Bool, sp
     ofunc = ODEFunction(convert(ODESystem, lrs.rs); jac = use_jac, sparse = false)
     ofunc_sparse = ODEFunction(convert(ODESystem, lrs.rs); jac = use_jac, sparse = true)
     diffusion_species = Int64[findfirst(s .== [Symbol(s.f) for s in species(lrs.rs)])
-                              for s in getfield.(lrs.spatial_reactions, :species)]
+                              for s in to_sym.(getfield.(lrs.spatial_reactions, :species))]
 
     f = build_f(ofunc, pV, pE, diffusion_species, lrs)
     jac_prototype = (use_jac || sparse) ?
@@ -267,3 +267,6 @@ function make_p_vector!(p_base, p, p_update_idx, comp_i)
     end
     return p_base
 end
+
+# Converts a Union{Symbol,Num} tp a Symbol.
+to_sym(s::Union{Symbol,Num}) = (s isa Symbol) ? s : Symbol(s.val.f)
