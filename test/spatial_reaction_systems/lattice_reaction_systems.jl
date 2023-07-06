@@ -37,7 +37,7 @@ SIR_srs_2 = [SIR_dif_S, SIR_dif_I, SIR_dif_R]
 
 # Small non-stiff system.
 binding_system = @reaction_network begin (k1, k2), X + Y <--> XY end
-binding_srs = DiffusionReactions([(:dX, :X), (:dY, :Y), (:dXY, :XY)])
+binding_srs = diffusion_reactions([(:dX, :X), (:dY, :Y), (:dXY, :XY)])
 binding_u0 = [:X => 1.0, :Y => 2.0, :XY => 0.5]
 binding_p = [:k1 => 2.0, :k2 => 0.1, :dX => 3.0, :dY => 5.0, :dXY => 2.0]
 
