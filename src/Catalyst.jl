@@ -92,4 +92,8 @@ include("latexify_recipes.jl")
 include("graphs.jl")
 export Graph, savegraph, complexgraph
 
+# for creating compounds
+include("compound.jl")
+export @compound, components, iscompound
+
 end # module
