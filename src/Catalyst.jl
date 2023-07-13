@@ -94,6 +94,7 @@ export Graph, savegraph, complexgraph
 
 # for creating compounds
 include("compound.jl")
-export @compound, components, iscompound
+export @compound
+export components, iscompound, coefficients
 
 end # module
