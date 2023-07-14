@@ -132,7 +132,7 @@ We can also model discrete events. Similar to our example with continuous events
 
 rxs = [(@reaction k_on, A --> B), (@reaction k_off, B --> A)]
 ```
-Now we add an event such that at time t (switch-time), k_on goes to zero. 
+Now we add an event such that at time `t` (`switch_time`), `k_on` is set to zero. 
 ```@example ceq3
 discrete_events = (t == switch_time) => [k_on ~ 0.0]
 
