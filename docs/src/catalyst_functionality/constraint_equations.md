@@ -148,4 +148,4 @@ oprob = ODEProblem(osys, u0, tspan, p)
 sol = solve(oprob, Tsit5(); tstops = 2.0)
 plot(sol)
 ```
-Note that for discrete events we need to set  a stop time, `tstops`, so that the ODE solver can step exactly to the specific time of our event. 
+Note that for discrete events we need to set a stop time, `tstops`, so that the ODE solver can step exactly to the specific time of our event. For a detailed discussion on how to directly use the lower-level but more flexible DifferentialEquations.jl event/callback interface, see the [tutorial](https://docs.sciml.ai/Catalyst/stable/catalyst_applications/advanced_simulations/#Event-handling-using-callbacks) on event handling using callbacks. 
