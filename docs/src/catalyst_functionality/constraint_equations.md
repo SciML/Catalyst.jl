@@ -124,3 +124,28 @@ oprob = ODEProblem(rs, [], (0.0, 10.0))
 sol = solve(oprob, Tsit5())
 plot(sol; plotdensity = 1000)
 ```
+We can also model discrete events. Similar to our example with continuous events, we start by creating reaction equations, parameters, variables, and states. 
+```@example ceq3
+@parameters k_on switch_time k_off
+@variables t
+@species A(t) B(t)
+
+rxs = [(@reaction k_on, A --> B), (@reaction k_off, B --> A)]
+```
+Now we add an event such that at time `t` (`switch_time`), `k_on` is set to zero. 
+```@example ceq3
+discrete_events = (t == switch_time) => [k_on ~ 0.0]
+
+u0 = [:A => 10.0, :B => 0.0]
+tspan = (0.0, 4.0)
+p = [k_on => 100.0, switch_time => 2.0, k_off => 10.0]
+```
+Simulating our model, 
+```@example ceq3
+@named osys = ReactionSystem(rxs, t, [A, B], [k_on, k_off, switch_time]; discrete_events)
+
+oprob = ODEProblem(osys, u0, tspan, p)
+sol = solve(oprob, Tsit5(); tstops = 2.0)
+plot(sol)
+```
+Note that for discrete events we need to set a stop time, `tstops`, so that the ODE solver can step exactly to the specific time of our event. For a detailed discussion on how to directly use the lower-level but more flexible DifferentialEquations.jl event/callback interface, see the [tutorial](https://docs.sciml.ai/Catalyst/stable/catalyst_applications/advanced_simulations/#Event-handling-using-callbacks) on event handling using callbacks. 
