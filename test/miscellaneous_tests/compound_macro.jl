@@ -1,11 +1,11 @@
 using Catalyst, Test
 
 # Test base funcationality in two cases.
-let 
+let
     @variables t
     @species C(t) H(t) O(t)
-    @compound C6H12O2(t) 6C 12H 2O 
-    
+    @compound C6H12O2(t) 6C 12H 2O
+
     @test iscompound(C6H12O2)
     @test isspecies(C6H12O2)
     @test !iscompound(C)
@@ -21,11 +21,11 @@ let
     # type #iscompound has no field components
 end
 
-let 
+let
     @variables t
     @species O(t)
     @compound O2(t) 2O
-    
+
     @test iscompound(O2)
     @test isspecies(O2)
     @test !iscompound(O)
@@ -48,7 +48,7 @@ let
 end
 
 # Checks that nested components works as expected.
-let 
+let
     @variables t
     @species C(t) H(t) O(t)
     @compound OH(t) O H
@@ -59,7 +59,7 @@ let
     @test iscompound(OH)
     @test iscompound(C3H5OH3)
     @test !(all(!iscompound(i) for i in components(C3H5OH3)))
-    
+
     @test !iscompound(components(C3H5OH3)[1])
     @test !iscompound(components(C3H5OH3)[2])
     @test iscompound(components(C3H5OH3)[3])
@@ -70,18 +70,18 @@ let
 end
 
 # Checks that interpolation works.
-let 
+let
     @variables t
     @species C(t) H(t) O(t)
     s = C
-    @compound C6H12O2_1(t) 6s 12H 2O 
-    @compound C6H12O2_2(t) 6C 12H 2O 
+    @compound C6H12O2_1(t) 6s 12H 2O
+    @compound C6H12O2_2(t) 6C 12H 2O
 
     @test isequal(components(C6H12O2_1), components(C6H12O2_2))
     @test isequal(coefficients(C6H12O2_1), coefficients(C6H12O2_2))
 end
 
-let 
+let
     @variables t
     @species C(t) H(t)
     @compound Cyclopentadiene(t) 5C 6H
@@ -90,7 +90,7 @@ let
 
     @test iscompound(C10H12)
     @test iscompound(components(C10H12)[1])
-    
+
     @test isequal(components(C10H12)[1], C5H6)
     @test isequal(components(C10H12)[1], Cyclopentadiene)
     @test isequal(coefficients(C10H12)[1], 2)
