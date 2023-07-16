@@ -69,29 +69,29 @@ let
     @test isequal([3, 5, 3], coefficients(C3H5OH3))
 end
 
-# # Checks that interpolation works.
-# let 
-#     @variables t
-#     @species C(t) H(t) O(t)
-#     s = C
-#     @compound C6H12O2_1(t) 6$s 12H 2O 
-#     @compound C6H12O2_2(t) 6C 12H 2O 
+# Checks that interpolation works.
+let 
+    @variables t
+    @species C(t) H(t) O(t)
+    s = C
+    @compound C6H12O2_1(t) 6s 12H 2O 
+    @compound C6H12O2_2(t) 6C 12H 2O 
 
-#     @test isequal(components(C6H12O2_1), components(C6H12O2_2))
-#     @test isequal(coefficients(C6H12O2_1), coefficients(C6H12O2_2))
-# end
+    @test isequal(components(C6H12O2_1), components(C6H12O2_2))
+    @test isequal(coefficients(C6H12O2_1), coefficients(C6H12O2_2))
+end
 
-# let 
-#     @variables t
-#     @species C(t) H(t)
-#     @compound Cyclopentadiene(t) 5C 6H
-#     C5H6 = Cyclopentadiene
-#     @compound C10H12(t) 2$(C5H6)
+let 
+    @variables t
+    @species C(t) H(t)
+    @compound Cyclopentadiene(t) 5C 6H
+    C5H6 = Cyclopentadiene
+    @compound C10H12(t) 2C5H6
 
-#     @test iscompound(C10H12)
-#     @test iscompound(components(C10H12)[1])
+    @test iscompound(C10H12)
+    @test iscompound(components(C10H12)[1])
     
-#     @test isequal(components(C10H12)[1], C5H6)
-#     @test isequal(components(C10H12)[1], Cyclopentadiene)
-#     @test isequal(coefficients(C10H12)[1], 2)
-# end
+    @test isequal(components(C10H12)[1], C5H6)
+    @test isequal(components(C10H12)[1], Cyclopentadiene)
+    @test isequal(coefficients(C10H12)[1], 2)
+end
