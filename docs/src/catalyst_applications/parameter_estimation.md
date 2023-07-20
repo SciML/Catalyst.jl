@@ -161,7 +161,7 @@ tspan = (0.0, 4.0)
 p_real = [k_on => 100.0, k_off => 10.0]
 @named osys = ReactionSystem(rxs, t, [A, B], [k_on, k_off]; discrete_events)
 ```
-Note that here `switch_time` is hard coded. Again, we create sample data point by simulating our model and adding noise. 
+Note that here `switch_time` is hard coded. Again, we create sample data points by simulating our model and adding noise. 
 ```@example pe1
 sample_times = range(tspan[1]; stop = tspan[2], length = 101) 
 oprob = ODEProblem(osys, u0, tspan, p_real)
