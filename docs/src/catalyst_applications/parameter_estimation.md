@@ -161,7 +161,7 @@ tspan = (0.0, 4.0)
 p_real = [k_on => 100.0, k_off => 10.0]
 @named osys = ReactionSystem(rxs, t, [A, B], [k_on, k_off]; discrete_events)
 ```
-Note that here `switch_time` is hard coded. Again, we create sample data point by simulating our model and adding noise. 
+Note that here `switch_time` is hard coded. Again, we create sample data points by simulating our model and adding noise. 
 ```@example pe1
 sample_times = range(tspan[1]; stop = tspan[2], length = 101) 
 oprob = ODEProblem(osys, u0, tspan, p_real)
@@ -200,7 +200,7 @@ First we fit our function on a time interval before, `switch_time`.
 ```@example pe1
 p_estimate = optimise_p([100.0, 10.0], 1.5)
 ```
-Next, we use this parametere estimate as an input to our second iteration of fitting this time on the time interval `(0.0, 4.0)`.
+Next, we use this parameter estimate as an input to our second iteration of fitting, this time on the time interval `(0.0, 4.0)`.
 ```@example pe1
 newprob = remake(oprob; tspan = (0.0, 4.0), p = p_estimate)
 newsol = solve(newprob, Tsit5(); tstops = switch_time)
