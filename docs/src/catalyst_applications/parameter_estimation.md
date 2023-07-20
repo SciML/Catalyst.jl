@@ -163,7 +163,7 @@ p_real = [k_on => 100.0, k_off => 10.0]
 ```
 Note that here `switch_time` is hard coded. Again, we create sample data points by simulating our model and adding noise. 
 ```@example pe1
-sample_times = range(tspan[1]; stop = tspan[2], length = 101) 
+sample_times = range(tspan[1]; stop = tspan[2], length = 1001) 
 oprob = ODEProblem(osys, u0, tspan, p_real)
 sol_real = solve(oprob, Tsit5(); tstops = sample_times)
 sample_vals = Array(sol_real(sample_times))
@@ -183,7 +183,7 @@ function optimise_p(pinit, tend)
     function loss(p, _)
         newtimes = filter(<=(tend), sample_times)
         newprob = remake(oprob; tspan = (0.0, tend), p = p)
-        sol = Array(solve(newprob, Tsit5(); saveat = newtimes))
+        sol = Array(solve(newprob, Tsit5(); saveat = newtimes, tstops = switch_time))
         loss = sum(abs2, sol .- sample_vals[:, 1:size(sol,2)])
         return loss, sol
     end
