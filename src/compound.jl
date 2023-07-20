@@ -46,9 +46,6 @@ macro compound(species_expr, arr_expr...)
     coeffs_expr = Expr(:vect, coeffs...)
     species_expr = Expr(:vect, species...)
 
-    # Ensure the expression is evaluated in the correct scope by escaping it
-    escaped_setcomponentcoefficients_expr = esc(setcomponentcoefficients_expr)
-
     # Construct the expression to set the components metadata
     setcomponents_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
                                                                          Catalyst.CompoundComponents,
@@ -66,7 +63,7 @@ macro compound(species_expr, arr_expr...)
 
     # Return a block that contains the escaped expressions
     return Expr(:block, escaped_species_expr, escaped_setmetadata_expr,
-                escaped_setcomponents_expr, escaped_setcoefficients_expr, escaped_setcomponentcoefficients_expr)
+                escaped_setcomponents_expr, escaped_setcoefficients_expr)
 end
 
 # Check if a species is a compound
@@ -83,11 +80,6 @@ end
 components(s::Num) = components(MT.value(s))
 function components(s)
     MT.getmetadata(s, CompoundComponents)
-end
-
-component_coefficients(s::Num) = component_coefficients(MT.value(s))
-function component_coefficients(s)
-    MT.getmetadata(s, CompoundComponentCoefficients)
 end
 
 component_coefficients(s::Num) = component_coefficients(MT.value(s))
