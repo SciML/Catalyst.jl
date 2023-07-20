@@ -173,7 +173,7 @@ default(; lw = 3, framestyle = :box, size = (800, 400))
 plot(sol_real; legend = nothing, color = [:darkblue :darkred])
 scatter!(sample_times, sample_vals'; color = [:blue :red], legend = nothing)
 ```
-Now we define a function to fit our model. In this case, instead of `ADAM`, we are using `NelderMead()` because our model has an undefined derivative at switch_time. Additionally, `Optimization.AutoZygote()` is not necessary for gradient free optimizations. 
+Now we define a function to fit our model. In this case, instead of `ADAM`, we are using `NelderMead()` because our model has an undefined derivative at `switch_time`. Additionally, `Optimization.AutoZygote()` is not necessary for gradient free optimizations. 
 
 ```@example pe1
 #for NelderMead() optimiser
