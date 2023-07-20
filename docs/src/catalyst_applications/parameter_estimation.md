@@ -200,7 +200,7 @@ First we fit our function on a time interval before, `switch_time`.
 ```@example pe1
 p_estimate = optimise_p([100.0, 10.0], 1.5)
 ```
-Next, we use this parametere estimate as an input to our second iteration of fitting this time on the time interval `(0.0, 4.0)`.
+Next, we use this parameter estimate as an input to our second iteration of fitting, this time on the time interval `(0.0, 4.0)`.
 ```@example pe1
 newprob = remake(oprob; tspan = (0.0, 4.0), p = p_estimate)
 newsol = solve(newprob, Tsit5(); tstops = switch_time)
