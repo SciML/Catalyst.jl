@@ -1,1 +1,2 @@
 style = "sciml"
+ignore = ["test"]
