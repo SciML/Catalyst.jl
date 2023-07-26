@@ -1,3 +1,4 @@
+const MT = ModelingToolkit
 struct CompoundSpecies end
 struct CompoundComponents end
 struct CompoundCoefficients end
@@ -90,81 +91,6 @@ function component_coefficients(s)
     return [c => co for (c, co) in zip(components(s), coefficients(s))]
 end
 
-### Balancing Code
-
-function create_matrix(reaction::Catalyst.Reaction)
-    compounds = [reaction.substrates; reaction.products]
-    atoms = []
-    n_atoms = 0
-    A = zeros(Int, 0, length(compounds))
-
-    for (j, compound) in enumerate(compounds)
-        if iscompound(compound)
-            pairs = component_coefficients(compound)
-            if pairs == Nothing 
-                continue
-            end
-        else 
-            pairs = [(compound, 1)]
-        end
-
-        for pair in pairs
-            atom, coeff = pair
-            i = findfirst(x -> isequal(x, atom), atoms)
-            if i === nothing  
-                push!(atoms, atom)
-                n_atoms += 1
-                A = [A; zeros(Int, 1, length(compounds))]
-                i = n_atoms
-            end
-            coeff = any(map(p -> isequal(p, compounds[j]), reaction.products)) ? -coeff : coeff
-            A[i, j] = coeff
-        end
-    end
-
-    # Append a row with last element as 1 
-    new_row = zeros(Int, 1, size(A, 2))
-    new_row[end] = 1
-    A = vcat(A, new_row)
-
-    return A
-end
-
-function get_stoich(reaction::Reaction)
-    # Create the matrix A using create_matrix function.
-    A = create_matrix(reaction)
-    
-    # Create the vector b. The last element is 1 and others are 0.
-    b = zeros(size(A,1))
-    b[end] = 1
-    
-    # Compute x= A^-1 *b
-    x = inv(A)*b
-
-    # Normalize the stoichiometric coefficients to be integers.
-    smallest_value = minimum(x[x .> 0])  
-    x = x / smallest_value
-
-    return round.(Int, x)   # rounding is due to potential minimal numerical inaccuracies
-end
-
-
-function balance(reaction::Reaction)
-    # Calculate the stoichiometric coefficients for the balanced reaction.
-    stoichiometries = get_stoich(reaction)
-
-    # Divide the stoichiometry vector into substrate and product stoichiometries.
-    substoich = stoichiometries[1:length(reaction.substrates)]
-    prodstoich = stoichiometries[(length(reaction.substrates)) + 1:end]
-
-    # Create a new reaction with the balanced stoichiometries
-    balanced_reaction = Reaction(reaction.rate, reaction.substrates, reaction.products, substoich, prodstoich)
-
-    # Return the balanced reaction
-    return balanced_reaction
-end
-
-
 # function esc_dollars!(ex)
 #     if ex isa Expr
 #         if ex.head == :call && ex.args[1] == :* && ex.args[3] isa Expr && ex.args[3].head == :$
@@ -180,3 +106,153 @@ end
 #     ex
 # end
 
+# macro compound(species_expr, arr_expr...)
+#     # Ensure the species name is a valid expression
+#     if !(species_expr isa Expr && species_expr.head == :call)
+#         error("Invalid species name in @compound macro")
+#     end
+
+#     # Parse the species name to extract the species name and argument
+#     species_name = species_expr.args[1]
+#     species_arg = species_expr.args[2]
+
+#     # Construct the expressions that define the species
+#     species_expr = Expr(:macrocall, Symbol("@species"), LineNumberNode(0),
+#                         Expr(:call, species_name, species_arg))
+
+#     # Construct the expression to set the iscompound metadata
+#     setmetadata_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
+#                                                                        Catalyst.CompoundSpecies,
+#                                                                        true))
+
+#     # Ensure the expressions are evaluated in the correct scope by escaping them
+#     escaped_species_expr = esc(species_expr)
+#     escaped_setmetadata_expr = esc(setmetadata_expr)
+    
+#     # Construct the array from the remaining arguments
+#     coeffs = []
+#     species = []
+
+#     for expr in arr_expr
+#         if isa(expr, Expr) && expr.head == :call && expr.args[1] == :*
+#             coeff = expr.args[2]
+#             specie = expr.args[3]
+#             # check if the coefficient is a variable and get its value
+#             if isa(coeff, Expr) && coeff.head == :$
+#                 coeff = getfield(Main, coeff.args[1])
+#             end
+#             push!(coeffs, coeff)
+#             push!(species, specie)
+#         else
+#             push!(coeffs, 1)
+#             push!(species, expr)
+#         end
+#     end
+
+#     coeffs_expr = Expr(:vect, coeffs...)
+#     species_expr = Expr(:vect, species...)
+
+#     # Construct the expression to set the components metadata
+#     setcomponents_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
+#                                                                          Catalyst.CompoundComponents,
+#                                                                          $species_expr))
+
+#     # Ensure the expression is evaluated in the correct scope by escaping it
+#     escaped_setcomponents_expr = esc(setcomponents_expr)
+
+#     # Construct the expression to set the coefficients metadata
+#     setcoefficients_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
+#                                                                            Catalyst.CompoundCoefficients,
+#                                                                            $coeffs_expr))
+
+#     escaped_setcoefficients_expr = esc(setcoefficients_expr)
+
+#     # Return a block that contains the escaped expressions
+#     return Expr(:block, escaped_species_expr, escaped_setmetadata_expr,
+#                 escaped_setcomponents_expr, escaped_setcoefficients_expr)
+# end
+
+
+# macro compound(species_expr, arr_expr...)
+#     # Ensure the species name is a valid expression
+#     if !(species_expr isa Expr && species_expr.head == :call)
+#         error("Invalid species name in @compound macro")
+#     end
+
+#     # Parse the species name to extract the species name and argument
+#     species_name = species_expr.args[1]
+#     species_arg = species_expr.args[2]
+
+#     # Construct the expressions that define the species
+#     species_expr = Expr(:macrocall, Symbol("@species"), LineNumberNode(0),
+#                         Expr(:call, species_name, species_arg))
+
+#     # Construct the expression to set the iscompound metadata
+#     setmetadata_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
+#                                                                        Catalyst.CompoundSpecies,
+#                                                                        true))
+
+#     # Ensure the expressions are evaluated in the correct scope by escaping them
+#     escaped_species_expr = esc(species_expr)
+#     escaped_setmetadata_expr = esc(setmetadata_expr)
+
+#     # Construct the array from the remaining arguments
+#     arr = Expr(:vect, (arr_expr)...)
+
+#     coeffs = []
+#     species = []
+
+#     # Add process_expr! function within the macro
+#     function process_expr!(ex)
+#         if ex isa Expr && ex.head == :call && ex.args[1] == :*
+#             # Extract the coefficient and the species
+#             coeff = ex.args[2]
+#             species = ex.args[3]
+
+#             # Check if the species is an interpolated variable
+#             if species isa Expr && species.head == :$
+#                 # Replace the interpolated variable with its value
+#                 species = getfield(Main, species.args[1])
+
+#                 # Multiply the coefficient with the species
+#                 return Expr(:call, :*, coeff, species)
+#             end
+#         end
+#         return ex
+#     end
+
+#     for expr in arr_expr
+#         # Call process_expr! on the expression to process it
+#         processed_expr = process_expr!(expr)
+        
+#         if isa(processed_expr, Expr) && processed_expr.head == :call && processed_expr.args[1] == :*
+#             push!(coeffs, processed_expr.args[2])
+#             push!(species, processed_expr.args[3])
+#         else
+#             push!(coeffs, 1)
+#             push!(species, processed_expr)
+#         end
+#     end
+
+#     coeffs_expr = Expr(:vect, coeffs...)
+#     species_expr = Expr(:vect, species...)
+
+#     # Construct the expression to set the components metadata
+#     setcomponents_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
+#                                                                          Catalyst.CompoundComponents,
+#                                                                          $species_expr))
+
+#     # Ensure the expression is evaluated in the correct scope by escaping it
+#     escaped_setcomponents_expr = esc(setcomponents_expr)
+
+#     # Construct the expression to set the coefficients metadata
+#     setcoefficients_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
+#                                                                            Catalyst.CompoundCoefficients,
+#                                                                            $coeffs_expr))
+
+#     escaped_setcoefficients_expr = esc(setcoefficients_expr)
+
+#     # Return a block that contains the escaped expressions
+#     return Expr(:block, escaped_species_expr, escaped_setmetadata_expr,
+#                 escaped_setcomponents_expr, escaped_setcoefficients_expr)
+# end
