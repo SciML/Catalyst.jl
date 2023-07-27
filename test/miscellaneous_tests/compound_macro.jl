@@ -51,7 +51,7 @@ end
 let
     @variables t
     @species C(t) H(t) O(t)
-    @compound OH(t) O H
+    @compound OH(t) 1O 1H
     @compound C3H5OH3(t) 3C 5H 3OH
 
     @test !iscompound(O)
