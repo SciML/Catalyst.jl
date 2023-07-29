@@ -121,12 +121,10 @@ function create_matrix(reaction::Catalyst.Reaction)
             A[i, j] = coeff
         end
     end
-
-    # Append a row with last element as 1 
-    new_row = zeros(Int, 1, size(A, 2))
-    new_row[end] = 1
-    A = vcat(A, new_row)
-
+        # Append a row with last element as 1 
+        new_row = zeros(Int, 1, size(A, 2))
+        new_row[end] = 1
+        A = vcat(A, new_row)
     return A
 end
 
@@ -135,19 +133,31 @@ function get_stoich(reaction::Reaction)
     A = create_matrix(reaction)
     
     # Create the vector b. The last element is 1 and others are 0.
-    b = zeros(size(A,1))
-    b[end] = 1
-    
-    # Compute x= A^-1 *b
-    x = inv(A)*b
+    B = zeros(Int64, size(A,1))
+    B[end] = 1
 
-    # Normalize the stoichiometric coefficients to be integers.
-    smallest_value = minimum(x[x .> 0])  
-    x = x / smallest_value
+    # Concatenate B to A to form an augmented matrix   
+    AB = [A B]
 
-    return round.(Int, x)   # rounding is due to potential minimal numerical inaccuracies
+    # Apply the Bareiss algorithm
+    ModelingToolkit.bareiss!(AB)
+
+    # Extract the transformed A and B
+    A_transformed = AB[:, 1:end-1]
+    B_transformed = AB[:, end]
+
+    # Solve for X using back substitution
+    X = A_transformed \ B_transformed
+
+    # Get the smallest positive value in X
+    smallest_value = minimum(X[X .> 0])  
+
+    # Normalize X to be integers
+    X_normalized = round.(Int64, X / smallest_value)
+
+    return X_normalized
+
 end
-
 
 function balance(reaction::Reaction)
     # Calculate the stoichiometric coefficients for the balanced reaction.
@@ -164,86 +174,37 @@ function balance(reaction::Reaction)
     return balanced_reaction
 end
 
-### Balancing Code
 
-function create_matrix(reaction::Catalyst.Reaction)
-    compounds = [reaction.substrates; reaction.products]
-    atoms = []
-    n_atoms = 0
-    A = zeros(Int, 0, length(compounds))
+# x = :(6*$s)
+# typeof(x)
+# ex = :(6*$s)
 
-    for (j, compound) in enumerate(compounds)
-        if iscompound(compound)
-            pairs = component_coefficients(compound)
-            if pairs == Nothing 
-                continue
-            end
-        else 
-            pairs = [(compound, 1)]
-        end
-
-        for pair in pairs
-            atom, coeff = pair
-            i = findfirst(x -> isequal(x, atom), atoms)
-            if i === nothing  
-                push!(atoms, atom)
-                n_atoms += 1
-                A = [A; zeros(Int, 1, length(compounds))]
-                i = n_atoms
-            end
-            coeff = any(map(p -> isequal(p, compounds[j]), reaction.products)) ? -coeff : coeff
-            A[i, j] = coeff
-        end
-    end
-
-    # Append a row with last element as 1 
-    new_row = zeros(Int, 1, size(A, 2))
-    new_row[end] = 1
-    A = vcat(A, new_row)
-
-    return A
-end
-
-function get_stoich(reaction::Reaction)
-    # Create the matrix A using create_matrix function.
-    A = create_matrix(reaction)
-    
-    # Create the vector b. The last element is 1 and others are 0.
-    b = zeros(size(A,1))
-    b[end] = 1
-    
-    # Compute x= A^-1 *b
-    x = inv(A)*b
-
-    # Normalize the stoichiometric coefficients to be integers.
-    smallest_value = minimum(x[x .> 0])  
-    x = x / smallest_value
-
-    return round.(Int, x)   # rounding is due to potential minimal numerical inaccuracies
-end
-
-
-function balance(reaction::Reaction)
-    # Calculate the stoichiometric coefficients for the balanced reaction.
-    stoichiometries = get_stoich(reaction)
-
-    # Divide the stoichiometry vector into substrate and product stoichiometries.
-    substoich = stoichiometries[1:length(reaction.substrates)]
-    prodstoich = stoichiometries[(length(reaction.substrates)) + 1:end]
-
-    # Create a new reaction with the balanced stoichiometries
-    balanced_reaction = Reaction(reaction.rate, reaction.substrates, reaction.products, substoich, prodstoich)
-
-    # Return the balanced reaction
-    return balanced_reaction
-end
+# ex.args[3]
+# for arg in ex.args
+#     if arg isa Expr && arg.head == :$
+#         println(arg.args[1])
+#     end
+# end
+# if ex isa Expr && ex.head == :call
+#     for arg in ex.args
+#         if arg isa Expr && arg.head == :$
+#             println(arg.args[1])
+#         end
+#     end
+# end
 
 # function esc_dollars!(ex)
 #     if ex isa Expr
-#         if ex.head == :call && ex.args[1] == :* && ex.args[3] isa Expr && ex.args[3].head == :$
-#             coeff = ex.args[2]
-#             value = eval(ex.args[3].args[1])
-#             return coeff * value
+#         if ex.head == :call && ex.args[1] == :*
+#             if ex.args[3] isa Expr && ex.args[3].head == :$
+#                 ex.args[3] = ex.args[3].args[1]
+#             else
+#                 for i in 1:length(ex.args)
+#                     if ex.args[i] isa Expr && ex.args[i].args[1] == :*
+#                         ex.args[i] = esc_dollars!(ex.args[i])
+#                     end
+#                 end
+#             end
 #         else
 #             for i in 1:length(ex.args)
 #                 ex.args[i] = esc_dollars!(ex.args[i])
@@ -251,3 +212,30 @@ end
 #         end
 #     end
 #     ex
+# end
+
+# esc_dollars!(ex)
+# @variables t
+# @species C(t) H(t) O(t)
+# s = :(C)
+# ex = :(6*$s)
+# ex.args
+
+# @compound C6H12O2_1(t) 6*$s 12H 2O 
+# arr_expr = [:(2H) , :(1O), Expr(esc_dollars!(ex))]
+# coeffsS = []
+# speciesS = []
+
+# for expr in arr_expr
+#     if isa(expr, Expr) && expr.head == :call && expr.args[1] == :*
+#         push!(coeffsS, expr.args[2])
+#         push!(speciesS, expr.args[3])
+#     else
+#         push!(coeffsS, 1)
+#         push!(speciesS, expr)
+#     end
+# end
+
+# coeffs_exprS = Expr(:vect, coeffsS...)
+# species_exprS = Expr(:vect, speciesS...)
+
