@@ -158,6 +158,7 @@ function get_stoich(reaction::Reaction)
     return X_normalized
 end
 
+
 function balance(reaction::Reaction)
     # Calculate the stoichiometric coefficients for the balanced reaction.
     stoichiometries = get_stoich(reaction)
@@ -173,21 +174,7 @@ function balance(reaction::Reaction)
     return balanced_reaction
 end
 
-
-# @variables t
-# @parameters k
-# @species C(t) H(t) O(t) 
-# @compound O2(t) 2O
-# @compound CO2(t) 1C 2O
-# @compound H2O(t) 2H 1O
-# @compound C6H12O6(t) 6C 12H 6O
-# # rx = Reaction(k,[CO2,H2O],[C6H12O6,O2])
-
-# using LinearAlgebra
-# using SparseArrays
-# using SuiteSparse.UMFPACK
-
-# function get_stoich(reaction::Reaction)
+# function get_stoich(reaction::Reaction) ## Gaussian Elimination
 #     # Create the matrix A using create_matrix function.
 #     A = create_matrix(reaction)
     
@@ -215,6 +202,19 @@ end
 
 #     return X_normalized
 # end
+
+# @variables t
+# @parameters k
+# @species C(t) H(t) O(t) 
+# @compound O2(t) 2O
+# @compound CO2(t) 1C 2O
+# @compound H2O(t) 2H 1O
+# @compound C6H12O6(t) 6C 12H 6O
+# # rx = Reaction(k,[CO2,H2O],[C6H12O6,O2])
+
+# using LinearAlgebra
+# using SparseArrays
+# using SuiteSparse.UMFPACK
 
 # gcd_value = gcd(X...)
 # X_scaled = X ./ gcd_value
