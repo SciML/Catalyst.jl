@@ -149,14 +149,19 @@ function get_stoich(reaction::Reaction)
     # Solve for X using back substitution
     X = A_transformed \ B_transformed
 
-    # Get the smallest positive value in X
-    smallest_value = minimum(X[X .> 0])  
+    # Convert X to Rational type
+    X = Rational{Int64}.(X)
 
-    # Normalize X to be integers
-    X_normalized = round.(Int64, X / smallest_value)
+    # Get the GCD of all values in X
+    gcd_value = gcd(X...)
 
-    return X_normalized
+    # Scale X by the GCD
+    X_scaled = X ./ gcd_value
 
+    # Convert back to Int64
+    X_scaled = Int64.(X_scaled)
+
+    return X_scaled
 end
 
 function balance(reaction::Reaction)
@@ -238,4 +243,3 @@ end
 
 # coeffs_exprS = Expr(:vect, coeffsS...)
 # species_exprS = Expr(:vect, speciesS...)
-
