@@ -149,19 +149,13 @@ function get_stoich(reaction::Reaction)
     # Solve for X using back substitution
     X = A_transformed \ B_transformed
 
-    # Convert X to Rational type
-    X = Rational{Int64}.(X)
+    # Get the smallest positive value in X
+    smallest_value = minimum(X[X .> 0])  
 
-    # Get the GCD of all values in X
-    gcd_value = gcd(X...)
+    # Normalize X to be integers
+    X_normalized = round.(Int64, X / smallest_value)
 
-    # Scale X by the GCD
-    X_scaled = X ./ gcd_value
-
-    # Convert back to Int64
-    X_scaled = Int64.(X_scaled)
-
-    return X_scaled
+    return X_normalized
 end
 
 function balance(reaction::Reaction)
@@ -180,66 +174,50 @@ function balance(reaction::Reaction)
 end
 
 
-# x = :(6*$s)
-# typeof(x)
-# ex = :(6*$s)
-
-# ex.args[3]
-# for arg in ex.args
-#     if arg isa Expr && arg.head == :$
-#         println(arg.args[1])
-#     end
-# end
-# if ex isa Expr && ex.head == :call
-#     for arg in ex.args
-#         if arg isa Expr && arg.head == :$
-#             println(arg.args[1])
-#         end
-#     end
-# end
-
-# function esc_dollars!(ex)
-#     if ex isa Expr
-#         if ex.head == :call && ex.args[1] == :*
-#             if ex.args[3] isa Expr && ex.args[3].head == :$
-#                 ex.args[3] = ex.args[3].args[1]
-#             else
-#                 for i in 1:length(ex.args)
-#                     if ex.args[i] isa Expr && ex.args[i].args[1] == :*
-#                         ex.args[i] = esc_dollars!(ex.args[i])
-#                     end
-#                 end
-#             end
-#         else
-#             for i in 1:length(ex.args)
-#                 ex.args[i] = esc_dollars!(ex.args[i])
-#             end
-#         end
-#     end
-#     ex
-# end
-
-# esc_dollars!(ex)
 # @variables t
-# @species C(t) H(t) O(t)
-# s = :(C)
-# ex = :(6*$s)
-# ex.args
+# @parameters k
+# @species C(t) H(t) O(t) 
+# @compound O2(t) 2O
+# @compound CO2(t) 1C 2O
+# @compound H2O(t) 2H 1O
+# @compound C6H12O6(t) 6C 12H 6O
+# # rx = Reaction(k,[CO2,H2O],[C6H12O6,O2])
 
-# @compound C6H12O2_1(t) 6*$s 12H 2O 
-# arr_expr = [:(2H) , :(1O), Expr(esc_dollars!(ex))]
-# coeffsS = []
-# speciesS = []
+# using LinearAlgebra
+# using SparseArrays
+# using SuiteSparse.UMFPACK
 
-# for expr in arr_expr
-#     if isa(expr, Expr) && expr.head == :call && expr.args[1] == :*
-#         push!(coeffsS, expr.args[2])
-#         push!(speciesS, expr.args[3])
-#     else
-#         push!(coeffsS, 1)
-#         push!(speciesS, expr)
-#     end
+# function get_stoich(reaction::Reaction)
+#     # Create the matrix A using create_matrix function.
+#     A = create_matrix(reaction)
+    
+#     # Create the vector b. The last element is 1 and others are 0.
+#     B = zeros(Int64, size(A,1))
+#     B[end] = 1
+
+#     # Convert A and B to sparse matrices
+#     A = sparse(A)
+
+#     # Apply the LU factorization (Gaussian elimination)
+#     lu_f = lu(A)
+
+#     # Convert B to a dense vector
+#     B_dense = Vector(B)
+
+#     # Solve for X using the LU factorization
+#     X = lu_f \ B_dense
+
+#     # Get the smallest positive value in X
+#     smallest_value = minimum(X[X .> 0])  
+
+#     # Normalize X to be integers
+#     X_normalized = round.(Int64, X / smallest_value)
+
+#     return X_normalized
 # end
 
-# coeffs_exprS = Expr(:vect, coeffsS...)
-# species_exprS = Expr(:vect, speciesS...)
+# gcd_value = gcd(X...)
+# X_scaled = X ./ gcd_value
+
+# X = [1,1,0.2,1]
+
