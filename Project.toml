@@ -39,7 +39,6 @@ Unitful = "1.12.4"
 julia = "1.6"
 
 [extras]
-BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 DomainSets = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
 Graphviz_jll = "3c863552-8265-54e4-a6dc-903eb78fde85"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -57,4 +56,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [targets]
-test = ["BenchmarkTools", "DomainSets", "Graphviz_jll", "LinearAlgebra", "NonlinearSolve", "OrdinaryDiffEq", "Random", "SafeTestsets", "SciMLBase", "SciMLNLSolve", "StableRNGs", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "Unitful"]
+test = ["DomainSets", "Graphviz_jll", "LinearAlgebra", "NonlinearSolve", "OrdinaryDiffEq", "Random", "SafeTestsets", "SciMLBase", "SciMLNLSolve", "StableRNGs", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "Unitful"]

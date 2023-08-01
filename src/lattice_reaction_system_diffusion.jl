@@ -6,10 +6,19 @@ abstract type AbstractSpatialReaction end
 # A diffusion reaction. These are simple to hanlde, and should cover most types of spatial reactions.
 # Currently only permit constant rates.
 struct DiffusionReaction <: AbstractSpatialReaction
-    """The rate function (excluding mass action terms). Currentl only constants supported"""
-    rate::Union{Symbol, Num}
+    """The rate function (excluding mass action terms). Currently only constants supported"""
+    rate::Num
     """The species that is subject to difusion."""
-    species::Union{Symbol, Num}
+    species::Num
+
+    # Default (for when both inputs are Nums).
+    function DiffusionReaction(rate::Num,species::Num)
+        return new(rate,species)
+    end
+    # If at least one input is not a Num, converts it to that.
+    function DiffusionReaction(rate::Any,species::Any)
+        return new(Symbolics.variable.([rate,species])...)
+    end
 end
 # Creates a vector of DiffusionReactions.
 function diffusion_reactions(diffusion_reactions)
@@ -28,7 +37,7 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
 
     # Derrived values.
     """A list of parameters that occur in the spatial reactions."""
-    spatial_params::Vector{Symbol}
+    spatial_param_syms::Vector{Symbol}
     """The number of compartments."""
     nC::Int64
     """The number of species."""
@@ -63,9 +72,9 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     u0 = resort_values(u0_in, [Symbol(s.f) for s in species(lrs.rs)])
     u0 = [get_component_value(u0, species, comp) for comp in 1:(lrs.nC)
           for species in 1:(lrs.nS)]
-    pV, pE = split_parameters(p_in, lrs.spatial_params)
-    pV = resort_values(pV, setdiff(Symbol.(parameters(lrs.rs)), lrs.spatial_params))
-    pE = resort_values(pE, Symbol.(lrs.spatial_params))
+    pV, pE = split_parameters(p_in, lrs.spatial_param_syms)
+    pV = resort_values(pV, setdiff(Symbol.(parameters(lrs.rs)), lrs.spatial_param_syms))
+    pE = resort_values(pE, lrs.spatial_param_syms)
     lrs.init_digraph || (pE = duplicate_edge_params(pE, length(edges(lrs.lattice)) / 2))
 
     ofun = build_odefunction(lrs, pV, pE, jac, sparse)
@@ -73,18 +82,18 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
 end
 
 # Splits parameters into those for the compartments and those for the connections.
-split_parameters(ps::Tuple{<:Any, <:Any}, spatial_params::Vector{Symbol}) = ps
-function split_parameters(ps::Vector{<:Pair}, spatial_params::Vector{Symbol})
-    (filter(p -> !(p[1] in spatial_params), ps), filter(p -> p[1] in spatial_params, ps))
+split_parameters(ps::Tuple{<:Any, <:Any}, spatial_param_syms::Vector{Symbol}) = ps
+function split_parameters(ps::Vector{<:Pair}, spatial_param_syms::Vector{Symbol})
+    (filter(p -> !(p[1] in spatial_param_syms), ps), filter(p -> Symbol(p[1]) in spatial_param_syms, ps))
 end
-function split_parameters(ps::Vector{<:Number}, spatial_params::Vector{Symbol})
-    (ps[1:(length(ps) - length(spatial_params))],
-     ps[(length(ps) - length(spatial_params) + 1):end])
+function split_parameters(ps::Vector{<:Number}, spatial_param_syms::Vector{Symbol})
+    (ps[1:(length(ps) - length(spatial_param_syms))],
+     ps[(length(ps) - length(spatial_param_syms) + 1):end])
 end
 # Sorts a parameter (or species) vector along parameter (or species) index, and remove the Symbol in the pair.
 function resort_values(values::Vector{<:Pair}, symbols::Vector{Symbol})
     issetequal(Symbol.(first.(values)), symbols) ||
-        error("The system's species and parameters does not match those in the input. $(first.(values)) shoud match $(symbols).")
+        error("The system's species and parameters does not match those in the input. $(Symbol.(first.(values))) shoud match $(symbols).")
     last.(sort(values; by = val -> findfirst(Symbol(val[1]) .== symbols)))
 end
 resort_values(values::Any, symbols::Vector{Symbol}) = values
@@ -107,7 +116,7 @@ function build_odefunction(lrs::LatticeReactionSystem, pV, pE, use_jac::Bool, sp
     ofunc = ODEFunction(convert(ODESystem, lrs.rs); jac = use_jac, sparse = false)
     ofunc_sparse = ODEFunction(convert(ODESystem, lrs.rs); jac = use_jac, sparse = true)
     diffusion_species = Int64[findfirst(s .== [Symbol(s.f) for s in species(lrs.rs)])
-                              for s in to_sym.(getfield.(lrs.spatial_reactions, :species))]
+                              for s in Symbol.(getfield.(lrs.spatial_reactions, :species))]
 
     f = build_f(ofunc, pV, pE, diffusion_species, lrs)
     jac_prototype = (use_jac || sparse) ?
@@ -139,6 +148,7 @@ function build_f(ofunc::SciMLBase.AbstractODEFunction{true}, pV, pE,
                   make_p_vector!(p_base, p, p_update_idx, comp_i), t)
         end
 
+        # Updates for spatial diffusion reactions.
         for (s_idx::Int64, species::Int64) in enumerate(diffusion_species)
             for comp_i::Int64 in 1:(lrs.nC)
                 du[get_index(comp_i, species, lrs.nS)] -= leaving_rates[s_idx, comp_i] *
@@ -164,7 +174,7 @@ function build_jac(ofunc::SciMLBase.AbstractODEFunction{true}, pV,
     new_jac_values = sparse ? jac_prototype.nzval : Matrix(jac_prototype)
 
     return function (J, u, p, t)
-        # Sets the base according to the spatial reactions.
+        # Updates for the spatial reactions.
         sparse ? (J.nzval .= new_jac_values) : (J .= new_jac_values)
 
         # Updates for non-spatial reactions.
@@ -250,7 +260,7 @@ get_index(comp::Int64, species::Int64, nS::Int64) = (comp - 1) * nS + species
 # Gets the indexes of a compartment's species in the u array.
 get_indexes(comp::Int64, nS::Int64) = ((comp - 1) * nS + 1):(comp * nS)
 
-# For set of values (stoed in a variety of possible forms), a given component (species or parameter), and a place (either a compartment or edge), find that components value at that place.
+# For set of values (stored in a variety of possible forms), a given component (species or parameter), and a place (either a compartment or edge), find that components value at that place.
 function get_component_value(vals::Matrix{Float64}, component::Int64, place::Int64)
     vals[component, place]
 end
