@@ -146,18 +146,29 @@ function get_stoich(reaction::Reaction)
     A_transformed = AB[:, 1:end-1]
     B_transformed = AB[:, end]
 
-    # Solve for X using back substitution
-    X = A_transformed \ B_transformed
+    # Convert A_transformed to rational numbers
+    A_transformed_rational = Rational.(A_transformed)
 
-    # Get the smallest positive value in X
-    smallest_value = minimum(X[X .> 0])  
+    # Convert B_transformed to rational numbers
+    B_transformed_rational = Rational.(B_transformed)
 
-    # Normalize X to be integers
-    X_normalized = round.(Int64, X / smallest_value)
+    # Perform the division
+    X = A_transformed_rational \ B_transformed_rational
 
-    return X_normalized
+    # Get the denominators of the rational numbers in X
+    denominators = denominator.(X)
+
+    # Compute the LCM of the denominators
+    lcm_value = reduce(lcm, denominators)
+
+    # Multiply each element in X by the LCM of the denominators
+    X_multiplied = X .* lcm_value
+
+    # Convert the rational numbers to integers
+    X_integers = numerator.(X_multiplied)
+
+    return X_integers
 end
-
 
 function balance(reaction::Reaction)
     # Calculate the stoichiometric coefficients for the balanced reaction.
@@ -203,6 +214,36 @@ end
 #     return X_normalized
 # end
 
+# function get_stoich(reaction::Reaction) ##Bareiss Algorithm (Does not avoid floating points)
+#     # Create the matrix A using create_matrix function.
+#     A = create_matrix(reaction)
+    
+#     # Create the vector b. The last element is 1 and others are 0.
+#     B = zeros(Int64, size(A,1))
+#     B[end] = 1
+
+#     # Concatenate B to A to form an augmented matrix   
+#     AB = [A B]
+
+#     # Apply the Bareiss algorithm
+#     ModelingToolkit.bareiss!(AB)
+
+#     # Extract the transformed A and B
+#     A_transformed = AB[:, 1:end-1]
+#     B_transformed = AB[:, end]
+
+#     # Solve for X using back substitution
+#     X = A_transformed \ B_transformed
+
+#     # Get the smallest positive value in X
+#     smallest_value = minimum(X[X .> 0])  
+
+#     # Normalize X to be integers
+#     X_normalized = round.(Int64, X / smallest_value)
+
+#     return X_normalized
+# end
+
 # @variables t
 # @parameters k
 # @species C(t) H(t) O(t) 
@@ -210,7 +251,7 @@ end
 # @compound CO2(t) 1C 2O
 # @compound H2O(t) 2H 1O
 # @compound C6H12O6(t) 6C 12H 6O
-# # rx = Reaction(k,[CO2,H2O],[C6H12O6,O2])
+# rx = Reaction(k,[CO2,H2O],[C6H12O6,O2])
 
 # using LinearAlgebra
 # using SparseArrays
