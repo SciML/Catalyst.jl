@@ -205,10 +205,10 @@ for grid in [small_2d_grid, short_path, small_directed_cycle]
             ]
             p4 = make_u0_matrix(p1, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
             for pV in [p1, p2, p3, p4]
-                pE_1 = map(sp -> sp => 0.01, lrs.spatial_params)
-                pE_2 = map(sp -> sp => 0.01, lrs.spatial_params)
-                pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.01), lrs.spatial_params)
-                pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), lrs.spatial_params)
+                pE_1 = map(sp -> sp => 0.01, lrs.spatial_param_syms)
+                pE_2 = map(sp -> sp => 0.01, lrs.spatial_param_syms)
+                pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.01), lrs.spatial_param_syms)
+                pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), lrs.spatial_param_syms)
                 for pE in [pE_1, pE_2, pE_3, pE_4]
                     oprob = ODEProblem(lrs, u0, (0.0, 500.0), (pV, pE))
                     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
@@ -237,10 +237,10 @@ for grid in [small_2d_grid, short_path, small_directed_cycle]
             ]
             p4 = make_u0_matrix(p2, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
             for pV in [p1, p2, p3, p4]
-                pE_1 = map(sp -> sp => 0.2, lrs.spatial_params)
-                pE_2 = map(sp -> sp => rand(), lrs.spatial_params)
-                pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.2), lrs.spatial_params)
-                pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), lrs.spatial_params)
+                pE_1 = map(sp -> sp => 0.2, lrs.spatial_param_syms)
+                pE_2 = map(sp -> sp => rand(), lrs.spatial_param_syms)
+                pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.2), lrs.spatial_param_syms)
+                pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), lrs.spatial_param_syms)
                 for pE in [pE_1, pE_2, pE_3, pE_4]
                     oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE))
                     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
