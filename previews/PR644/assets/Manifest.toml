@@ -130,9 +130,9 @@ version = "0.1.0"
 
 [[deps.BandedMatrices]]
 deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra", "PrecompileTools"]
-git-tree-sha1 = "3cddbe0fad23df52587e675b3d71eea66b850cb9"
+git-tree-sha1 = "6e9b384d5e21452bc81cae3552c74f430e320985"
 uuid = "aae01518-5342-5314-be14-df237901396f"
-version = "0.17.34"
+version = "0.17.35"
 weakdeps = ["SparseArrays"]
 
     [deps.BandedMatrices.extensions]
