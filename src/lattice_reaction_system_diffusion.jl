@@ -10,20 +10,35 @@ struct DiffusionReaction <: AbstractSpatialReaction
     rate::Num
     """The species that is subject to difusion."""
     species::Num
+    """A symbol representation of the species that is subject to difusion."""
+    species_sym::Symbol    # Required for identification in certain cases.
 
-    # Default (for when both inputs are Nums).
-    function DiffusionReaction(rate::Num,species::Num)
-        return new(rate,species)
+    # Creates a diffusion reaction.
+    function DiffusionReaction(rate::Num, species::Num)
+        new(rate, species, ModelingToolkit.getname(species))
     end
-    # If at least one input is not a Num, converts it to that.
-    function DiffusionReaction(rate::Any,species::Any)
-        return new(Symbolics.variable.([rate,species])...)
+    function DiffusionReaction(rate::Number, species::Num)
+        new(Num(rate), species, ModelingToolkit.getname(species))
+    end
+    function DiffusionReaction(rate::Symbol, species::Num)
+        new(Symbolics.variable(rate), species, ModelingToolkit.getname(species))
+    end
+    function DiffusionReaction(rate::Num, species::Symbol)
+        new(rate, Symbolics.variable(species), species)
+    end
+    function DiffusionReaction(rate::Number, species::Symbol)
+        new(Num(rate), Symbolics.variable(species), species)
+    end
+    function DiffusionReaction(rate::Symbol, species::Symbol)
+        new(Symbolics.variable(rate), Symbolics.variable(species), species)
     end
 end
 # Creates a vector of DiffusionReactions.
 function diffusion_reactions(diffusion_reactions)
     [DiffusionReaction(dr[1], dr[2]) for dr in diffusion_reactions]
 end
+# Gets the parameters in a diffusion reaction.
+ModelingToolkit.parameters(dr::DiffusionReaction) = Symbolics.get_variables(dr.rate)
 
 ### Lattice Reaction Network Structure ###
 # Desribes a spatial reaction network over a graph.
@@ -49,7 +64,10 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
                                    lattice::DiGraph;
                                    init_digraph = true)
         return new(rs, spatial_reactions, lattice,
-                   Symbol.(unique(getfield.(spatial_reactions, :rate))),
+                   Symbol.(setdiff(filter(s -> Symbolics.issym(s),
+                                          vcat(Symbolics.get_variables.(getfield.(spatial_reactions,
+                                                                                  :rate))...)),
+                                   parameters(rs))),
                    length(vertices(lattice)),
                    length(species(rs)), init_digraph)
     end
@@ -63,6 +81,11 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
         return LatticeReactionSystem(rs, [spatial_reaction], lattice)
     end
 end
+# Gets the parameters in a lattice reaction system.
+function ModelingToolkit.parameters(lrs::LatticeReactionSystem)
+    unique(vcat(parameters(lrs.rs),
+                Symbolics.get_variables.(getfield.(lrs.spatial_reactions, :rate))...))
+end
 
 ### ODEProblem ###
 # Creates an ODEProblem from a LatticeReactionSystem.
@@ -74,7 +97,8 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
           for species in 1:(lrs.nS)]
     pV, pE = split_parameters(p_in, lrs.spatial_param_syms)
     pV = resort_values(pV, setdiff(Symbol.(parameters(lrs.rs)), lrs.spatial_param_syms))
-    pE = resort_values(pE, lrs.spatial_param_syms)
+    #pE = resort_values(pE, lrs.spatial_param_syms)
+    pE = compute_diffusion_rates(p_in, pE, lrs)
     lrs.init_digraph || (pE = duplicate_edge_params(pE, length(edges(lrs.lattice)) / 2))
 
     ofun = build_odefunction(lrs, pV, pE, jac, sparse)
@@ -84,12 +108,14 @@ end
 # Splits parameters into those for the compartments and those for the connections.
 split_parameters(ps::Tuple{<:Any, <:Any}, spatial_param_syms::Vector{Symbol}) = ps
 function split_parameters(ps::Vector{<:Pair}, spatial_param_syms::Vector{Symbol})
-    (filter(p -> !(p[1] in spatial_param_syms), ps), filter(p -> Symbol(p[1]) in spatial_param_syms, ps))
+    (filter(p -> !(p[1] in spatial_param_syms), ps),
+     filter(p -> Symbol(p[1]) in spatial_param_syms, ps))
 end
 function split_parameters(ps::Vector{<:Number}, spatial_param_syms::Vector{Symbol})
     (ps[1:(length(ps) - length(spatial_param_syms))],
      ps[(length(ps) - length(spatial_param_syms) + 1):end])
 end
+
 # Sorts a parameter (or species) vector along parameter (or species) index, and remove the Symbol in the pair.
 function resort_values(values::Vector{<:Pair}, symbols::Vector{Symbol})
     issetequal(Symbol.(first.(values)), symbols) ||
@@ -97,6 +123,7 @@ function resort_values(values::Vector{<:Pair}, symbols::Vector{Symbol})
     last.(sort(values; by = val -> findfirst(Symbol(val[1]) .== symbols)))
 end
 resort_values(values::Any, symbols::Vector{Symbol}) = values
+
 # If a graph was given as lattice, internal it has a digraph representation (2n edges), this duplicates edges parameters (if n values are given for one parameters).
 function duplicate_edge_params(pE::Matrix, nE::Float64)
     (size(pE)[2] == nE) ? reshape(vcat(pE, pE), size(pE)[1], 2 * size(pE)[2]) : pE
@@ -111,12 +138,43 @@ function duplicate_edge_param(pe::Pair{Symbol, Vector}, nE::Float64)
     (length(pe[2]) == nE) ? pe[1] => hcat(pe[2], pe[2])'[1:end] : pe
 end
 
+# Computes the diffusion rates for each diffusion reaction.
+function compute_diffusion_rates(p_in::Tuple{<:Vector, <:Vector}, pE::Vector{<:Pair},
+                                 lrs::LatticeReactionSystem)
+    compute_diffusion_rates([p_in[1]; p_in[2]], pE, lrs)
+end
+function compute_diffusion_rates(p_in, pE, lrs::LatticeReactionSystem)
+    if !(p_in isa Vector{<:Pair})
+        !all(Symbolics.issym.(Symbolics.unwrap.(getfield.(lrs.spatial_reactions, :rate)))) &&
+            error("Parameter values are NOT given as a map. This is only possible when all spatial reaction rates are single parameters.")
+        return resort_values(pE, lrs.spatial_param_syms)
+    end
+    p_full_dict = Dict([Symbolics.variable(p_val[1]) => p_val[2] for p_val in p_in])
+    param_dependencies = Symbolics.jacobian_sparsity(getfield.(lrs.spatial_reactions,
+                                                               :rate), parameters(lrs))
+    diff_rate = [get_diff_rate(filter(x -> (count(isequal.(x[1],
+                                                           parameters(lrs)[param_dependencies[idx,
+                                                                                              :]])) ==
+                                            1), p_full_dict), sr)
+                 for (idx, sr) in enumerate(lrs.spatial_reactions)]
+end
+function get_diff_rate(p_specific_dict, sr::DiffusionReaction)
+    all(v isa Float64 for v in values(p_specific_dict)) &&
+        (return Symbolics.value(substitute(sr.rate, p_specific_dict)))
+    l = maximum(length.(values(p_specific_dict)))
+    [Symbolics.value(substitute(sr.rate, get_sub_p_dict(p_specific_dict, i))) for i in 1:l]
+end
+function get_sub_p_dict(p_specific_dict, i)
+    Dict([p_specific_dict[k] isa Vector ? k => p_specific_dict[k][i] :
+          k => p_specific_dict[k] for k in keys(p_specific_dict)])
+end
+
 # Builds an ODEFunction.
 function build_odefunction(lrs::LatticeReactionSystem, pV, pE, use_jac::Bool, sparse::Bool)
     ofunc = ODEFunction(convert(ODESystem, lrs.rs); jac = use_jac, sparse = false)
     ofunc_sparse = ODEFunction(convert(ODESystem, lrs.rs); jac = use_jac, sparse = true)
-    diffusion_species = Int64[findfirst(s .== [Symbol(s.f) for s in species(lrs.rs)])
-                              for s in Symbol.(getfield.(lrs.spatial_reactions, :species))]
+    diffusion_species = Int64[findfirst(isequal.(s, [Symbol(s.f) for s in species(lrs.rs)]))
+                              for s in getfield.(lrs.spatial_reactions, :species_sym)]
 
     f = build_f(ofunc, pV, pE, diffusion_species, lrs)
     jac_prototype = (use_jac || sparse) ?

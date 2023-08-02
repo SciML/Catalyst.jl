@@ -207,7 +207,8 @@ for grid in [small_2d_grid, short_path, small_directed_cycle]
             for pV in [p1, p2, p3, p4]
                 pE_1 = map(sp -> sp => 0.01, lrs.spatial_param_syms)
                 pE_2 = map(sp -> sp => 0.01, lrs.spatial_param_syms)
-                pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.01), lrs.spatial_param_syms)
+                pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.01),
+                           lrs.spatial_param_syms)
                 pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), lrs.spatial_param_syms)
                 for pE in [pE_1, pE_2, pE_3, pE_4]
                     oprob = ODEProblem(lrs, u0, (0.0, 500.0), (pV, pE))
@@ -239,7 +240,8 @@ for grid in [small_2d_grid, short_path, small_directed_cycle]
             for pV in [p1, p2, p3, p4]
                 pE_1 = map(sp -> sp => 0.2, lrs.spatial_param_syms)
                 pE_2 = map(sp -> sp => rand(), lrs.spatial_param_syms)
-                pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.2), lrs.spatial_param_syms)
+                pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.2),
+                           lrs.spatial_param_syms)
                 pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), lrs.spatial_param_syms)
                 for pE in [pE_1, pE_2, pE_3, pE_4]
                     oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE))
@@ -490,6 +492,7 @@ end
 # Current not used, simply here for reference.
 # Useful when attempting to optimise workflow.
 
+# using BenchmarkTools
 # runtime_reduction_margin = 10.0
 # 
 # # Small grid, small, non-stiff, system.
