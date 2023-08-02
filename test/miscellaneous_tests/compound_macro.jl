@@ -96,3 +96,39 @@ end
 #     @test isequal(coefficients(C10H12)[1], 2)
 # end
 
+#Check that balancing works.
+let 
+    @variables t
+    @parameters k
+    @species H(t) O(t)
+    @compound H2(t) 2H
+    @compound O2(t) 2O
+    @compound H2O(t) 2H 1O
+
+    rx = Reaction(k,[H2,O2],[H2O])
+
+    @test isequal(create_matrix(rx),[2 0 -2; 0 2 -1; 0 0 1;])
+    @test isequal(get_stoich(rx),[2, 1, 2])
+    
+    balanced_rx = Reaction(k,[H2,O2],[H2O],[2,1],[2])
+    @test isequal(balanced_rx, balance(rx))
+
+end
+
+let 
+    @variables t
+    @parameters k
+    @species C(t) H(t) O(t) 
+    @compound O2(t) 2O
+    @compound CO2(t) 1C 2O
+    @compound H2O(t) 2H 1O
+    @compound C6H12O6(t) 6C 12H 6O
+
+    rx = Reaction(k,[CO2,H2O],[C6H12O6,O2])
+
+    @test isequal(create_matrix(rx),[ 1 0 -6 0; 2 1 -6 -2; 0 2 -12 0; 0 0 0 1;])
+    @test isequal(get_stoich(rx),[6, 6, 1, 6])
+    
+    balanced_rx = Reaction(k,[CO2,H2O],[C6H12O6,O2],[6, 6], [1,6])
+    @test isequal(balanced_rx, balance(rx))
+end
