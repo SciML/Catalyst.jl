@@ -1,6 +1,6 @@
 # Fetch packages.
 using Catalyst, OrdinaryDiffEq, Random, Test
-using Statistics
+using Statistics, SparseArrays
 using Graphs
 
 # Sets rnd number.
