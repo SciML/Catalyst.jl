@@ -487,124 +487,123 @@ let
     @test all(isapprox.(solve(oprob1, Tsit5()).u[end], solve(oprob2, Tsit5()).u[end]))
 end
 
-
 ### Compare to Hand-written Functions ###
 
 # Compares the brusselator for a line of cells.
 let
     function spatial_brusselator_f(du, u, p, t)
         # Non-spatial
-        for i = 1:2:length(u)-1
-            du[i] = p[1] + 0.5 * (u[i]^2) * u[i+1] - u[i] - p[2]*u[i]
-            du[i+1] = p[2]*u[i] - 0.5 * (u[i]^2) * u[i+1]
+        for i in 1:2:(length(u) - 1)
+            du[i] = p[1] + 0.5 * (u[i]^2) * u[i + 1] - u[i] - p[2] * u[i]
+            du[i + 1] = p[2] * u[i] - 0.5 * (u[i]^2) * u[i + 1]
         end
-    
+
         # Spatial
-        du[1] += p[3]*(u[3] - u[1])
-        du[end-1] += p[3]*(u[end-3] - u[end-1])
-        for i = 3:2:length(u)-3
-            du[i] += p[3]*(u[i-2] + u[i+2] - 2u[i])
+        du[1] += p[3] * (u[3] - u[1])
+        du[end - 1] += p[3] * (u[end - 3] - u[end - 1])
+        for i in 3:2:(length(u) - 3)
+            du[i] += p[3] * (u[i - 2] + u[i + 2] - 2u[i])
         end
     end
     function spatial_brusselator_jac(J, u, p, t)
         J .= 0
         # Non-spatial
-        for i = 1:2:length(u)-1
-            J[i,i] = u[i]*u[i+1]-1-p[2]
-            J[i,i+1] = 0.5 * (u[i]^2)
-            J[i+1,i] = p[2] - u[i]*u[i+1]
-            J[i+1,i+1] = - 0.5 * (u[i]^2)
+        for i in 1:2:(length(u) - 1)
+            J[i, i] = u[i] * u[i + 1] - 1 - p[2]
+            J[i, i + 1] = 0.5 * (u[i]^2)
+            J[i + 1, i] = p[2] - u[i] * u[i + 1]
+            J[i + 1, i + 1] = -0.5 * (u[i]^2)
         end
-    
+
         # Spatial
-        J[1,1] -= p[3]
-        J[1,3] += p[3]
-        J[end-1,end-1] -= p[3]
-        J[end-1,end-3] += p[3]
-        for i = 3:2:length(u)-3
-            J[i,i] -= 2*p[3]
-            J[i,i-2] += p[3]
-            J[i,i+2] += p[3]
+        J[1, 1] -= p[3]
+        J[1, 3] += p[3]
+        J[end - 1, end - 1] -= p[3]
+        J[end - 1, end - 3] += p[3]
+        for i in 3:2:(length(u) - 3)
+            J[i, i] -= 2 * p[3]
+            J[i, i - 2] += p[3]
+            J[i, i + 2] += p[3]
         end
-    end    
+    end
     function spatial_brusselator_jac_sparse(J, u, p, t)
         # Spatial
         J.nzval .= 0.0
-        J.nzval[7:6:end-9] .= -2p[3]
+        J.nzval[7:6:(end - 9)] .= -2p[3]
         J.nzval[1] = -p[3]
-        J.nzval[end-3] = -p[3]
-        J.nzval[3:3:end-4] .= p[3]
-    
+        J.nzval[end - 3] = -p[3]
+        J.nzval[3:3:(end - 4)] .= p[3]
+
         # Non-spatial
-        for i in 1:1:Int64(lenth(u)/2 -1)
-            j = 6(i-1)+1
-            J.nzval[j] = u[i]*u[i+1]-1-p[2]
-            J.nzval[j+1] = 0.5 * (u[i]^2)
-            J.nzval[j+3] = p[2] - u[i]*u[i+1]
-            J.nzval[j+4] = - 0.5 * (u[i]^2)
+        for i in 1:1:Int64(lenth(u) / 2 - 1)
+            j = 6(i - 1) + 1
+            J.nzval[j] = u[i] * u[i + 1] - 1 - p[2]
+            J.nzval[j + 1] = 0.5 * (u[i]^2)
+            J.nzval[j + 3] = p[2] - u[i] * u[i + 1]
+            J.nzval[j + 4] = -0.5 * (u[i]^2)
         end
-        J.nzval[end-3] = u[end-1]*u[end]-1-p[end-1]
-        J.nzval[end-2] = 0.5 * (u[end-1]^2)
-        J.nzval[end-1] = p[2] - u[end-1]*u[end]
-        J.nzval[end] = - 0.5 * (u[end-1]^2)
+        J.nzval[end - 3] = u[end - 1] * u[end] - 1 - p[end - 1]
+        J.nzval[end - 2] = 0.5 * (u[end - 1]^2)
+        J.nzval[end - 1] = p[2] - u[end - 1] * u[end]
+        J.nzval[end] = -0.5 * (u[end - 1]^2)
     end
     function make_jac_prototype(u0)
         jac_prototype_pre = zeros(length(u0), length(u0))
-        for i = 1:2:(length(u0)-1)
-            jac_prototype_pre[i,i] = 1
-            jac_prototype_pre[i+1,i] = 1
-            jac_prototype_pre[i,i+1] = 1
-            jac_prototype_pre[i+1,i+1] = 1
+        for i in 1:2:(length(u0) - 1)
+            jac_prototype_pre[i, i] = 1
+            jac_prototype_pre[i + 1, i] = 1
+            jac_prototype_pre[i, i + 1] = 1
+            jac_prototype_pre[i + 1, i + 1] = 1
         end
-        for i = 3:2:(length(u0)-1)
-            jac_prototype_pre[i-2,i] = 1
-            jac_prototype_pre[i,i-2] = 1
+        for i in 3:2:(length(u0) - 1)
+            jac_prototype_pre[i - 2, i] = 1
+            jac_prototype_pre[i, i - 2] = 1
         end
         return sparse(jac_prototype_pre)
     end
-    
-    u0 = 2*rand(10000)
-    p = [1.0, 4.0, 0.1]    
-    tspan = (0.0,100.0)
 
-    ofun_hw_dense = ODEFunction(spatial_brusselator_f; jac=spatial_brusselator_jac)
-    ofun_hw_sparse = ODEFunction(spatial_brusselator_f; jac=spatial_brusselator_jac, jac_prototype=make_jac_prototype(u0))
-        
-    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, path_graph(Int64(length(u0)/2)))
-    u0V = [:X => u0[1:2:end-1], :Y => u0[2:2:end]]
+    u0 = 2 * rand(10000)
+    p = [1.0, 4.0, 0.1]
+    tspan = (0.0, 100.0)
+
+    ofun_hw_dense = ODEFunction(spatial_brusselator_f; jac = spatial_brusselator_jac)
+    ofun_hw_sparse = ODEFunction(spatial_brusselator_f; jac = spatial_brusselator_jac,
+                                 jac_prototype = make_jac_prototype(u0))
+
+    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1,
+                                path_graph(Int64(length(u0) / 2)))
+    u0V = [:X => u0[1:2:(end - 1)], :Y => u0[2:2:end]]
     pV = [:A => p[1], :B => p[2]]
     pE = [:dX => p[3]]
-    ofun_aut_dense = ODEProblem(lrs, u0V, tspan, (pV, pE);jac=true,sparse=false).f
-    ofun_aut_sparse = ODEProblem(lrs, u0V, tspan, (pV, pE);jac=true,sparse=true).f
+    ofun_aut_dense = ODEProblem(lrs, u0V, tspan, (pV, pE); jac = true, sparse = false).f
+    ofun_aut_sparse = ODEProblem(lrs, u0V, tspan, (pV, pE); jac = true, sparse = true).f
 
     du_hw_dense = deepcopy(u0)
     du_hw_sparse = deepcopy(u0)
     du_aut_dense = deepcopy(u0)
     du_aut_sparse = deepcopy(u0)
 
-    ofun_hw_dense(du_hw_dense , u0, p, 0.0)
-    ofun_hw_sparse(du_hw_sparse , u0, p, 0.0)
-    ofun_aut_dense(du_aut_dense , u0, p, 0.0)
-    ofun_aut_sparse(du_aut_sparse , u0, p, 0.0)
-    
+    ofun_hw_dense(du_hw_dense, u0, p, 0.0)
+    ofun_hw_sparse(du_hw_sparse, u0, p, 0.0)
+    ofun_aut_dense(du_aut_dense, u0, p, 0.0)
+    ofun_aut_sparse(du_aut_sparse, u0, p, 0.0)
+
     @test isapprox(du_hw_dense, du_aut_dense)
     @test isapprox(du_hw_sparse, du_aut_sparse)
-    
-    
-    J_hw_dense = deepcopy(zeros(length(u0),length(u0)))
+
+    J_hw_dense = deepcopy(zeros(length(u0), length(u0)))
     J_hw_sparse = deepcopy(make_jac_prototype(u0))
-    J_aut_dense = deepcopy(zeros(length(u0),length(u0)))
+    J_aut_dense = deepcopy(zeros(length(u0), length(u0)))
     J_aut_sparse = deepcopy(make_jac_prototype(u0))
-    
-    ofun_hw_dense.jac(J_hw_dense , u0, p, 0.0)
-    ofun_hw_sparse.jac(J_hw_sparse , u0, p, 0.0)
-    ofun_aut_dense.jac(J_aut_dense , u0, p, 0.0)
-    ofun_aut_sparse.jac(J_aut_sparse , u0, p, 0.0)
-    
+
+    ofun_hw_dense.jac(J_hw_dense, u0, p, 0.0)
+    ofun_hw_sparse.jac(J_hw_sparse, u0, p, 0.0)
+    ofun_aut_dense.jac(J_aut_dense, u0, p, 0.0)
+    ofun_aut_sparse.jac(J_aut_sparse, u0, p, 0.0)
+
     @test isapprox(J_hw_dense, J_aut_dense)
     @test isapprox(J_hw_sparse, J_aut_sparse)
 end
-
 
 ### Runtime Checks ###
 # Current timings are taken from the SciML CI server.

@@ -242,7 +242,7 @@ function build_jac(ofunc::SciMLBase.AbstractODEFunction{true}, pV,
                       (@view u[get_indexes(comp_i, lrs.nS)]),
                       make_p_vector!(p_base, p, p_update_idx, comp_i), t)
         end
-        
+
         # Updates for the spatial reactions.
         sparse ? (J.nzval .+= new_jac_values) : (J .+= new_jac_values)
     end
