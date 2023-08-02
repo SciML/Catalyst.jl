@@ -232,8 +232,8 @@ function build_jac(ofunc::SciMLBase.AbstractODEFunction{true}, pV,
     new_jac_values = sparse ? jac_prototype.nzval : Matrix(jac_prototype)
 
     return function (J, u, p, t)
-        # Updates for the spatial reactions.
-        sparse ? (J.nzval .= new_jac_values) : (J .= new_jac_values)
+        # Because of weird stuff where the Jacobian is not reset that I don't understand properly.
+        sparse ? (J.nzval .= 0.0) : (J .= 0.0)
 
         # Updates for non-spatial reactions.
         for comp_i::Int64 in 1:(lrs.nC)
@@ -242,6 +242,9 @@ function build_jac(ofunc::SciMLBase.AbstractODEFunction{true}, pV,
                       (@view u[get_indexes(comp_i, lrs.nS)]),
                       make_p_vector!(p_base, p, p_update_idx, comp_i), t)
         end
+        
+        # Updates for the spatial reactions.
+        sparse ? (J.nzval .+= new_jac_values) : (J .+= new_jac_values)
     end
 end
 
