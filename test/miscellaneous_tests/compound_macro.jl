@@ -14,11 +14,8 @@ let
 
     @test isequal([C, H, O], components(C6H12O2))
     @test isequal([6, 12, 2], coefficients(C6H12O2))
-    @test isequal([C => 6, H => 12, O => 2], component_coefficients(C6H12O2)) # Maybe chaneg "component_coefficients" name soem time.
+    @test isequal([C => 6, H => 12, O => 2], Catalyst.component_coefficients(C6H12O2)) 
     @test all(!iscompound(i) for i in components(C6H12O2))
-    # Test threw exception
-    # Expression: all(.!(iscompound.components(C6H12O2)))
-    # type #iscompound has no field components
 end
 
 let
@@ -32,7 +29,7 @@ let
 
     @test isequal([O], components(O2))
     @test isequal([2], coefficients(O2))
-    @test isequal([O => 2], component_coefficients(O2)) # Maybe chaneg "component_coefficients" name soem time.
+    @test isequal([O => 2], Catalyst.component_coefficients(O2)) 
     @test all(!iscompound(i) for i in components(O2))
 end
 
@@ -40,11 +37,11 @@ end
 let
     @variables t
     @species C(t) H(t)
-    @test_throws Exception @compound C6H12O2(t) 6C 12H 2O    # @test_throws might behave weirdly here, if you think this fails as it should but the test comes out starneg, just report and we will figure it out.
+    @test_throws Exception @compound C6H12O2(t) 6C 12H 2O    
 end
 let
     @variables t
-    @test_throws Exception @compound O2(t) 2O    # @test_throws might behave weirdly here, if you think this fails as it should but the test comes out starneg, just report and we will figure it out.
+    @test_throws Exception @compound O2(t) 2O    
 end
 
 # Checks that nested components works as expected.
@@ -69,32 +66,79 @@ let
     @test isequal([3, 5, 3], coefficients(C3H5OH3))
 end
 
-# # Checks that interpolation works.
-# let
-#     @variables t
-#     @species C(t) H(t) O(t)
-#     s = C
-#     @compound C6H12O2_1(t) 6s 12H 2O
-#     @compound C6H12O2_2(t) 6C 12H 2O
+# Checks that interpolation works.
+let
+    @variables t
+    @species C(t) H(t) O(t)
+    s = C
+    @compound C6H12O2_1(t) 6s 12H 2O
+    @compound C6H12O2_2(t) 6C 12H 2O
 
-#     @test isequal(components(C6H12O2_1), components(C6H12O2_2))
-#     @test isequal(coefficients(C6H12O2_1), coefficients(C6H12O2_2))
-# end
+    @test iscompound(C6H12O2_1)
+    @test iscompound(C6H12O2_2)
 
-# let
-#     @variables t
-#     @species C(t) H(t)
-#     @compound Cyclopentadiene(t) 5C 6H
-#     C5H6 = Cyclopentadiene
-#     @compound C10H12(t) 2C5H6
+    @test isequal(components(C6H12O2_1), components(C6H12O2_2))
+    @test isequal(coefficients(C6H12O2_1), coefficients(C6H12O2_2))
+end
 
-#     @test iscompound(C10H12)
-#     @test iscompound(components(C10H12)[1])
+let
+    @variables t
+    @species C(t) H(t)
+    @compound Cyclopentadiene(t) 5C 6H
+    C5H6 = Cyclopentadiene
+    @compound C10H12(t) 2C5H6
 
-#     @test isequal(components(C10H12)[1], C5H6)
-#     @test isequal(components(C10H12)[1], Cyclopentadiene)
-#     @test isequal(coefficients(C10H12)[1], 2)
-# end
+    @test iscompound(C10H12)
+    @test iscompound(components(C10H12)[1])
+
+    @test isequal(components(C10H12)[1], C5H6)
+    @test isequal(components(C10H12)[1], Cyclopentadiene)
+    @test isequal(coefficients(C10H12)[1], 2)
+end
+
+let
+    @variables t
+    @species H(t)
+
+    alpha = 2
+    @compound H2_1(t) alpha*H
+    @compound H2_2(t) 2H
+
+    @test iscompound(H2_1)
+    @test iscompound(H2_2)
+
+    @test isequal(components(H2_1),components(H2_2))
+    @test isequal(coefficients(H2_1),coefficients(H2_2))
+end
+
+let
+    @variables t
+    @parameters alpha = 2
+    @species H(t)
+
+    @compound H2_1(t) alpha*H
+    @compound H2_2(t) 2H
+
+    @test iscompound(H2_1)
+    @test iscompound(H2_2)
+
+    @test isequal(components(H2_1),components(H2_2))
+    @test isequal(coefficients(H2_1), @parameters alpha = 2)
+end
+
+let 
+    @variables t
+    @species A(t)
+    B = A
+    @compound A2(t) 2A
+    @compound B2(t) 2B
+
+    @test iscompound(A2)
+    @test iscompound(B2)
+
+    @test isequal(components(A2),components(B2))
+    @test isequal(coefficients(A2), coefficients(B2))
+end
 
 #Check that balancing works.
 let 
@@ -109,7 +153,7 @@ let
 
     @test isequal(create_matrix(rx),[2 0 -2; 0 2 -1; 0 0 1;])
     @test isequal(get_stoich(rx),[2, 1, 2])
-    
+
     balanced_rx = Reaction(k,[H2,O2],[H2O],[2,1],[2])
     @test isequal(balanced_rx, balance(rx))
 
@@ -128,7 +172,7 @@ let
 
     @test isequal(create_matrix(rx),[ 1 0 -6 0; 2 1 -6 -2; 0 2 -12 0; 0 0 0 1;])
     @test isequal(get_stoich(rx),[6, 6, 1, 6])
-    
+
     balanced_rx = Reaction(k,[CO2,H2O],[C6H12O6,O2],[6, 6], [1,6])
     @test isequal(balanced_rx, balance(rx))
 end
