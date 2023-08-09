@@ -93,29 +93,35 @@ end
 
 function create_matrix(reaction::Catalyst.Reaction)
     compounds = [reaction.substrates; reaction.products]
-    atoms = []
+    atoms = [] # Array to store unique atoms
     n_atoms = 0
     A = zeros(Int, 0, length(compounds))
 
     for (j, compound) in enumerate(compounds)
+        # Check if the compound is a valid compound
         if iscompound(compound)
+            # Get component coefficients of the compound
             pairs = component_coefficients(compound)
             if pairs == Nothing 
                 continue
             end
         else 
+            # If not a compound, assume coefficient of 1
             pairs = [(compound, 1)]
         end
 
         for pair in pairs
+            # Extract atom and coefficient from the pair
             atom, coeff = pair
             i = findfirst(x -> isequal(x, atom), atoms)
             if i === nothing  
+                # Add the atom to the atoms array if it's not already present
                 push!(atoms, atom)
                 n_atoms += 1
                 A = [A; zeros(Int, 1, length(compounds))]
                 i = n_atoms
             end
+            # Adjust coefficient based on whether the compound is a product or substrate
             coeff = any(map(p -> isequal(p, compounds[j]), reaction.products)) ? -coeff : coeff
             A[i, j] = coeff
         end
@@ -154,6 +160,26 @@ function get_stoich(reaction::Reaction)
     # Perform the division
     X = A_transformed_rational \ B_transformed_rational
 
+    # Check if X is of Float64 type
+    if eltype(X) == Float64
+            # Check if X contains 0.5
+        if any(abs.(X .- 0.5) .< 1e-8)
+            # If so, apply custom rounding logic
+            X = X .+ 1
+            for i in 1:length(X)
+                if abs(X[i] - floor(X[i])) >= 0.6
+                    X[i] = ceil(X[i])
+                else
+                    X[i] = floor(X[i])
+                end
+            end
+            X = round.(Int, X)
+        else
+            # If not, just round normally
+            X = round.(Int, X)
+        end
+    end
+
     # Get the denominators of the rational numbers in X
     denominators = denominator.(X)
 
@@ -166,10 +192,10 @@ function get_stoich(reaction::Reaction)
     # Convert the rational numbers to integers
     X_integers = numerator.(X_multiplied)
 
-    return X_integers
+    return abs.(X_integers)
 end
 
-function balance(reaction::Reaction)
+function balance_reaction(reaction::Reaction)
     # Calculate the stoichiometric coefficients for the balanced reaction.
     stoichiometries = get_stoich(reaction)
 
@@ -183,6 +209,49 @@ function balance(reaction::Reaction)
     # Return the balanced reaction
     return balanced_reaction
 end
+
+# function get_stoich(reaction::Reaction)
+#     # Create the matrix A using create_matrix function.
+#     A = create_matrix(reaction)
+    
+#     # Create the vector b. The last element is 1 and others are 0.
+#     B = zeros(Int64, size(A,1))
+#     B[end] = 1
+
+#     # Concatenate B to A to form an augmented matrix   
+#     AB = [A B]
+
+#     # Apply the Bareiss algorithm
+#     ModelingToolkit.bareiss!(AB)
+
+#     # Extract the transformed A and B
+#     A_transformed = AB[:, 1:end-1]
+#     B_transformed = AB[:, end]
+
+#     # Convert A_transformed to rational numbers
+#     A_transformed_rational = Rational.(A_transformed)
+
+#     # Convert B_transformed to rational numbers
+#     B_transformed_rational = Rational.(B_transformed)
+
+#     # Perform the division
+#     X = A_transformed_rational \ B_transformed_rational
+#     X = round.(Int, X)
+
+#     # Get the denominators of the rational numbers in X
+#     denominators = denominator.(X)
+
+#     # Compute the LCM of the denominators
+#     lcm_value = reduce(lcm, denominators)
+
+#     # Multiply each element in X by the LCM of the denominators
+#     X_multiplied = X .* lcm_value
+
+#     # Convert the rational numbers to integers
+#     X_integers = numerator.(X_multiplied)
+
+#     return X_integers
+# end
 
 # function get_stoich(reaction::Reaction) ## Gaussian Elimination
 #     # Create the matrix A using create_matrix function.
