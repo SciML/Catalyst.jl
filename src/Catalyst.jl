@@ -9,6 +9,7 @@ using LaTeXStrings, Latexify, Requires
 using JumpProcesses: JumpProcesses,
                      JumpProblem, MassActionJump, ConstantRateJump,
                      VariableRateJump
+using SplitApplyCombine
 
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit
@@ -74,8 +75,9 @@ export mm, mmr, hill, hillr, hillar
 
 # spatial reaction networks
 include("lattice_reaction_system_diffusion.jl")
-export DiffusionReaction, diffusion_reactions
+export DiffusionReaction, diffusion_reactions, isdiffusionparameter
 export LatticeReactionSystem
+export compartment_parameters, diffusion_parameters, diffusion_species
 
 # functions to query network properties
 include("networkapi.jl")
