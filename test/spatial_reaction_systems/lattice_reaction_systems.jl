@@ -7,7 +7,6 @@ using Graphs
 using StableRNGs
 rng = StableRNG(12345)
 
-
 ### Helper Functions ###
 
 # Generates ranomised intiial condition or paraemter values.
@@ -22,11 +21,12 @@ function make_u0_matrix(value_map, vals, symbols)
 end
 
 # Converts to integer value (for JumpProcess simulations).
-make_values_int(values::Vector{<:Pair}) = [val[1] => round.(Int64,val[2]) for val in values]
-make_values_int(values::Matrix{<:Number}) = round.(Int64,values)
-make_values_int(values::Vector{<:Number}) = round.(Int64,values)
-make_values_int(values::Vector{Vector}) = [round.(Int64,vals) for vals in values]
-
+function make_values_int(values::Vector{<:Pair})
+    [val[1] => round.(Int64, val[2]) for val in values]
+end
+make_values_int(values::Matrix{<:Number}) = round.(Int64, values)
+make_values_int(values::Vector{<:Number}) = round.(Int64, values)
+make_values_int(values::Vector{Vector}) = [round.(Int64, vals) for vals in values]
 
 ### Declares Models ###
 
@@ -379,7 +379,9 @@ end
 let
     binding_system_alt = @reaction_network begin
         @species X(t) Y(t) XY(t) Z(t) V(t) W(t)
-        @parameters k1 k2 dX [diffusionparameter=true] dXY [diffusionparameter=true] dZ [diffusionparameter=true] dV [diffusionparameter=true] p1 p2
+        @parameters k1 k2 dX [diffusionparameter = true] dXY [diffusionparameter = true] dZ [
+            diffusionparameter = true,
+        ] dV [diffusionparameter = true] p1 p2
         (k1, k2), X + Y <--> XY
     end
     binding_srs_alt = [
@@ -615,7 +617,6 @@ let
     @test isapprox(J_hw_sparse, J_aut_sparse)
 end
 
-
 ### Spatial Jump System Tests ###
 
 # Tests that there are no errors during runs.
@@ -624,19 +625,23 @@ let
         for srs in [Vector{DiffusionReaction}(), SIR_srs_1, SIR_srs_2]
             lrs = LatticeReactionSystem(SIR_system, srs, grid)
             u0_1 = make_values_int([:S => 999.0, :I => 1.0, :R => 0.0])
-            u0_2 = make_values_int([:S => 500.0 .+ 500.0 * rand_v_vals(lrs.lattice), :I => 1.0, :R => 0.0])
+            u0_2 = make_values_int([
+                                       :S => 500.0 .+ 500.0 * rand_v_vals(lrs.lattice),
+                                       :I => 1.0,
+                                       :R => 0.0,
+                                   ])
             u0_3 = make_values_int([
-                :S => 950.0,
-                :I => 50 * rand_v_vals(lrs.lattice),
-                :R => 50 * rand_v_vals(lrs.lattice),
-            ])
+                                       :S => 950.0,
+                                       :I => 50 * rand_v_vals(lrs.lattice),
+                                       :R => 50 * rand_v_vals(lrs.lattice),
+                                   ])
             u0_4 = make_values_int([
-                :S => 500.0 .+ 500.0 * rand_v_vals(lrs.lattice),
-                :I => 50 * rand_v_vals(lrs.lattice),
-                :R => 50 * rand_v_vals(lrs.lattice),
-            ])
+                                       :S => 500.0 .+ 500.0 * rand_v_vals(lrs.lattice),
+                                       :I => 50 * rand_v_vals(lrs.lattice),
+                                       :R => 50 * rand_v_vals(lrs.lattice),
+                                   ])
             u0_5 = make_values_int(make_u0_matrix(u0_3, vertices(lrs.lattice),
-                                map(s -> Symbol(s.f), species(lrs.rs))))
+                                                  map(s -> Symbol(s.f), species(lrs.rs))))
             for u0 in [u0_1, u0_2, u0_3, u0_4, u0_5]
                 p1 = [:α => 0.1 / 1000, :β => 0.01]
                 p2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lrs.lattice)]
@@ -646,11 +651,14 @@ let
                 ]
                 p4 = make_u0_matrix(p1, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
                 for pV in [p1] #, p2, p3, p4] # Removed until spatial non-diffusion parameters are supported.
-                    pE_1 = map(sp -> sp => 0.01, ModelingToolkit.getname.(diffusion_parameters(lrs)))
-                    pE_2 = map(sp -> sp => 0.01, ModelingToolkit.getname.(diffusion_parameters(lrs)))
+                    pE_1 = map(sp -> sp => 0.01,
+                               ModelingToolkit.getname.(diffusion_parameters(lrs)))
+                    pE_2 = map(sp -> sp => 0.01,
+                               ModelingToolkit.getname.(diffusion_parameters(lrs)))
                     pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.01),
-                            ModelingToolkit.getname.(diffusion_parameters(lrs)))
-                    pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), ModelingToolkit.getname.(diffusion_parameters(lrs)))
+                               ModelingToolkit.getname.(diffusion_parameters(lrs)))
+                    pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice),
+                                          ModelingToolkit.getname.(diffusion_parameters(lrs)))
                     for pE in [pE_1, pE_2, pE_3, pE_4]
                         dprob = DiscreteProblem(lrs, u0, (0.0, 100.0), (pV, pE))
                         jprob = JumpProblem(lrs, dprob, NSM())
@@ -661,7 +669,6 @@ let
         end
     end
 end
-
 
 ### Runtime Checks ###
 # Current timings are taken from the SciML CI server.
