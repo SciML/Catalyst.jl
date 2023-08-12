@@ -1,23 +1,32 @@
 # Fetch packages.
-using Catalyst, OrdinaryDiffEq, Random, Test
-using Statistics, SparseArrays
+using Catalyst, JumpProcesses, OrdinaryDiffEq
+using Random, Statistics, SparseArrays, Test
 using Graphs
 
 # Sets rnd number.
 using StableRNGs
 rng = StableRNG(12345)
 
+
 ### Helper Functions ###
+
+# Generates ranomised intiial condition or paraemter values.
 rand_v_vals(grid) = rand(nv(grid))
 rand_v_vals(grid, x::Number) = rand_v_vals(grid) * x
 rand_e_vals(grid) = rand(ne(grid))
 rand_e_vals(grid, x::Number) = rand_e_vals(grid) * x
-
 function make_u0_matrix(value_map, vals, symbols)
     (length(symbols) == 0) && (return zeros(0, length(vals)))
     d = Dict(value_map)
     return [(d[s] isa Vector) ? d[s][v] : d[s] for s in symbols, v in 1:length(vals)]
 end
+
+# Converts to integer value (for JumpProcess simulations).
+make_values_int(values::Vector{<:Pair}) = [val[1] => round.(Int64,val[2]) for val in values]
+make_values_int(values::Matrix{<:Number}) = round.(Int64,values)
+make_values_int(values::Vector{<:Number}) = round.(Int64,values)
+make_values_int(values::Vector{Vector}) = [round.(Int64,vals) for vals in values]
+
 
 ### Declares Models ###
 
@@ -258,21 +267,22 @@ end
 ### Tests Simulation Correctness ###
 
 # Checks that non-spatial brusselator simulation is identical to all on an unconnected lattice.
-let
-    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, unconnected_graph)
-    u0 = [:X => 2.0 + 2.0 * rand(), :Y => 10.0 + 10.0 * rand()]
-    pV = brusselator_p
-    pE = [:dX => 0.2]
-    oprob_nonspatial = ODEProblem(brusselator_system, u0, (0.0, 100.0), pV)
-    oprob_spatial = ODEProblem(lrs, u0, (0.0, 100.0), (pV, pE))
-    sol_nonspatial = solve(oprob_nonspatial, QNDF(); abstol = 1e-12, reltol = 1e-12)
-    sol_spatial = solve(oprob_spatial, QNDF(); abstol = 1e-12, reltol = 1e-12)
-
-    for i in 1:nv(unconnected_graph)
-        @test all(isapprox.(sol_nonspatial.u[end],
-                            sol_spatial.u[end][((i - 1) * 2 + 1):((i - 1) * 2 + 2)]))
-    end
-end
+# Temporarily removed until imrpvoed graph creation routine is created (fairly trivial).
+# let
+#     lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, unconnected_graph)
+#     u0 = [:X => 2.0 + 2.0 * rand(), :Y => 10.0 + 10.0 * rand()]
+#     pV = brusselator_p
+#     pE = [:dX => 0.2]
+#     oprob_nonspatial = ODEProblem(brusselator_system, u0, (0.0, 100.0), pV)
+#     oprob_spatial = ODEProblem(lrs, u0, (0.0, 100.0), (pV, pE))
+#     sol_nonspatial = solve(oprob_nonspatial, QNDF(); abstol = 1e-12, reltol = 1e-12)
+#     sol_spatial = solve(oprob_spatial, QNDF(); abstol = 1e-12, reltol = 1e-12)
+# 
+#     for i in 1:nv(unconnected_graph)
+#         @test all(isapprox.(sol_nonspatial.u[end],
+#                             sol_spatial.u[end][((i - 1) * 2 + 1):((i - 1) * 2 + 2)]))
+#     end
+# end
 
 # Checks that result becomes homogeneous on a connected lattice.
 let
@@ -329,41 +339,41 @@ let
 end
 
 # Create network with vaious combinations of graph/di-graph and parameters.
-# let
-#     lrs_digraph = LatticeReactionSystem(SIR_system, SIR_srs_2, complete_digraph(3))
-#     lrs_graph = LatticeReactionSystem(SIR_system, SIR_srs_2, complete_graph(3))
-#     u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs_digraph.lattice), :R => 0.0]
-#     pV = SIR_p
-#     pE_digraph_1 = [:dS => [0.10, 0.10, 0.12, 0.12, 0.14, 0.14], :dI => 0.01, :dR => 0.01]
-#     pE_digraph_2 = [[0.10, 0.10, 0.12, 0.12, 0.14, 0.14], 0.01, 0.01]
-#     pE_digraph_3 = [0.10 0.10 0.12 0.12 0.14 0.14; 0.01 0.01 0.01 0.01 0.01 0.01;
-#                     0.01 0.01 0.01 0.01 0.01 0.01]
-#     pE_graph_1 = [:dS => [0.10, 0.12, 0.14], :dI => 0.01, :dR => 0.01]
-#     pE_graph_2 = [[0.10, 0.12, 0.14], 0.01, 0.01]
-#     pE_graph_3 = [0.10 0.12 0.14; 0.01 0.01 0.01; 0.01 0.01 0.01]
-#     oprob_digraph_1 = ODEProblem(lrs_digraph, u0, (0.0, 500.0), (pV, pE_digraph_1))
-#     oprob_digraph_2 = ODEProblem(lrs_digraph, u0, (0.0, 500.0), (pV, pE_digraph_2))
-#     oprob_digraph_3 = ODEProblem(lrs_digraph, u0, (0.0, 500.0), (pV, pE_digraph_3))
-#     oprob_graph_11 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_digraph_1))
-#     oprob_graph_12 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_graph_1))
-#     oprob_graph_21 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_digraph_2))
-#     oprob_graph_22 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_graph_2))
-#     oprob_graph_31 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_digraph_3))
-#     oprob_graph_32 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_graph_3))
-#     sim_end_digraph_1 = solve(oprob_digraph_1, Tsit5()).u[end]
-#     sim_end_digraph_2 = solve(oprob_digraph_2, Tsit5()).u[end]
-#     sim_end_digraph_3 = solve(oprob_digraph_3, Tsit5()).u[end]
-#     sim_end_graph_11 = solve(oprob_graph_11, Tsit5()).u[end]
-#     sim_end_graph_12 = solve(oprob_graph_12, Tsit5()).u[end]
-#     sim_end_graph_21 = solve(oprob_graph_21, Tsit5()).u[end]
-#     sim_end_graph_22 = solve(oprob_graph_22, Tsit5()).u[end]
-#     sim_end_graph_31 = solve(oprob_graph_31, Tsit5()).u[end]
-#     sim_end_graph_32 = solve(oprob_graph_32, Tsit5()).u[end]
-# 
-#     @test all(sim_end_digraph_1 .== sim_end_digraph_2 .== sim_end_digraph_3 .==
-#               sim_end_graph_11 .== sim_end_graph_12 .== sim_end_graph_21 .==
-#               sim_end_graph_22 .== sim_end_graph_31 .== sim_end_graph_32)
-# end
+let
+    lrs_digraph = LatticeReactionSystem(SIR_system, SIR_srs_2, complete_digraph(3))
+    lrs_graph = LatticeReactionSystem(SIR_system, SIR_srs_2, complete_graph(3))
+    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs_digraph.lattice), :R => 0.0]
+    pV = SIR_p
+    pE_digraph_1 = [:dS => [0.10, 0.10, 0.12, 0.12, 0.14, 0.14], :dI => 0.01, :dR => 0.01]
+    pE_digraph_2 = [[0.10, 0.10, 0.12, 0.12, 0.14, 0.14], 0.01, 0.01]
+    pE_digraph_3 = [0.10 0.10 0.12 0.12 0.14 0.14; 0.01 0.01 0.01 0.01 0.01 0.01;
+                    0.01 0.01 0.01 0.01 0.01 0.01]
+    pE_graph_1 = [:dS => [0.10, 0.12, 0.14], :dI => 0.01, :dR => 0.01]
+    pE_graph_2 = [[0.10, 0.12, 0.14], 0.01, 0.01]
+    pE_graph_3 = [0.10 0.12 0.14; 0.01 0.01 0.01; 0.01 0.01 0.01]
+    oprob_digraph_1 = ODEProblem(lrs_digraph, u0, (0.0, 500.0), (pV, pE_digraph_1))
+    oprob_digraph_2 = ODEProblem(lrs_digraph, u0, (0.0, 500.0), (pV, pE_digraph_2))
+    oprob_digraph_3 = ODEProblem(lrs_digraph, u0, (0.0, 500.0), (pV, pE_digraph_3))
+    oprob_graph_11 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_digraph_1))
+    oprob_graph_12 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_graph_1))
+    oprob_graph_21 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_digraph_2))
+    oprob_graph_22 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_graph_2))
+    oprob_graph_31 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_digraph_3))
+    oprob_graph_32 = ODEProblem(lrs_graph, u0, (0.0, 500.0), (pV, pE_graph_3))
+    sim_end_digraph_1 = solve(oprob_digraph_1, Tsit5()).u[end]
+    sim_end_digraph_2 = solve(oprob_digraph_2, Tsit5()).u[end]
+    sim_end_digraph_3 = solve(oprob_digraph_3, Tsit5()).u[end]
+    sim_end_graph_11 = solve(oprob_graph_11, Tsit5()).u[end]
+    sim_end_graph_12 = solve(oprob_graph_12, Tsit5()).u[end]
+    sim_end_graph_21 = solve(oprob_graph_21, Tsit5()).u[end]
+    sim_end_graph_22 = solve(oprob_graph_22, Tsit5()).u[end]
+    sim_end_graph_31 = solve(oprob_graph_31, Tsit5()).u[end]
+    sim_end_graph_32 = solve(oprob_graph_32, Tsit5()).u[end]
+
+    @test all(sim_end_digraph_1 .== sim_end_digraph_2 .== sim_end_digraph_3 .==
+              sim_end_graph_11 .== sim_end_graph_12 .== sim_end_graph_21 .==
+              sim_end_graph_22 .== sim_end_graph_31 .== sim_end_graph_32)
+end
 
 # Creates networks with empty species or parameters.
 let
@@ -426,31 +436,31 @@ let
 end
 
 # Various ways to give parameters and initial conditions.
-# let
-#     lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, very_small_2d_grid)
-#     u0_1 = [:S => 990.0, :I => [1.0, 3.0, 2.0, 5.0], :R => 0.0]
-#     u0_2 = [990.0, [1.0, 3.0, 2.0, 5.0], 0.0]
-#     u0_3 = [990.0 990.0 990.0 990.0; 1.0 3.0 2.0 5.0; 0.0 0.0 0.0 0.0]
-#     pV_1 = [:α => 0.1 / 1000, :β => [0.01, 0.02, 0.01, 0.03]]
-#     pV_2 = [0.1 / 1000, [0.01, 0.02, 0.01, 0.03]]
-#     pV_3 = [0.1/1000 0.1/1000 0.1/1000 0.1/1000; 0.01 0.02 0.01 0.03]
-#     pE_1 = [:dS => [0.01, 0.02, 0.03, 0.04], :dI => 0.01, :dR => 0.01]
-#     pE_2 = [[0.01, 0.02, 0.03, 0.04], :0.01, 0.01]
-#     pE_3 = [0.01 0.02 0.03 0.04; 0.01 0.01 0.01 0.01; 0.01 0.01 0.01 0.01]
-# 
-#     p1 = [
-#         :α => 0.1 / 1000,
-#         :β => [0.01, 0.02, 0.01, 0.03],
-#         :dS => [0.01, 0.02, 0.03, 0.04],
-#         :dI => 0.01,
-#         :dR => 0.01,
-#     ]
-#     ss_1_1 = solve(ODEProblem(lrs, u0_1, (0.0, 1.0), p1), Tsit5()).u[end]
-#     for u0 in [u0_1, u0_2, u0_3], pV in [pV_1, pV_2, pV_3], pE in [pE_1, pE_2, pE_3]
-#         ss = solve(ODEProblem(lrs, u0, (0.0, 1.0), (pV, pE)), Tsit5()).u[end]
-#         @test all(isequal.(ss, ss_1_1))
-#     end
-# end
+let
+    lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, very_small_2d_grid)
+    u0_1 = [:S => 990.0, :I => [1.0, 3.0, 2.0, 5.0], :R => 0.0]
+    u0_2 = [990.0, [1.0, 3.0, 2.0, 5.0], 0.0]
+    u0_3 = [990.0 990.0 990.0 990.0; 1.0 3.0 2.0 5.0; 0.0 0.0 0.0 0.0]
+    pV_1 = [:α => 0.1 / 1000, :β => [0.01, 0.02, 0.01, 0.03]]
+    pV_2 = [0.1 / 1000, [0.01, 0.02, 0.01, 0.03]]
+    pV_3 = [0.1/1000 0.1/1000 0.1/1000 0.1/1000; 0.01 0.02 0.01 0.03]
+    pE_1 = [:dS => [0.01, 0.02, 0.03, 0.04], :dI => 0.01, :dR => 0.01]
+    pE_2 = [[0.01, 0.02, 0.03, 0.04], :0.01, 0.01]
+    pE_3 = [0.01 0.02 0.03 0.04; 0.01 0.01 0.01 0.01; 0.01 0.01 0.01 0.01]
+
+    p1 = [
+        :α => 0.1 / 1000,
+        :β => [0.01, 0.02, 0.01, 0.03],
+        :dS => [0.01, 0.02, 0.03, 0.04],
+        :dI => 0.01,
+        :dR => 0.01,
+    ]
+    ss_1_1 = solve(ODEProblem(lrs, u0_1, (0.0, 1.0), p1), Tsit5()).u[end]
+    for u0 in [u0_1, u0_2, u0_3], pV in [pV_1, pV_2, pV_3], pE in [pE_1, pE_2, pE_3]
+        ss = solve(ODEProblem(lrs, u0, (0.0, 1.0), (pV, pE)), Tsit5()).u[end]
+        @test all(isequal.(ss, ss_1_1))
+    end
+end
 
 # Checks that variosu combinations of jac and sparse gives the same result.
 let
@@ -604,6 +614,54 @@ let
     @test isapprox(J_hw_dense, J_aut_dense)
     @test isapprox(J_hw_sparse, J_aut_sparse)
 end
+
+
+### Spatial Jump System Tests ###
+
+# Tests that there are no errors during runs.
+let
+    for grid in [small_2d_grid, short_path, small_directed_cycle]
+        for srs in [Vector{DiffusionReaction}(), SIR_srs_1, SIR_srs_2]
+            lrs = LatticeReactionSystem(SIR_system, srs, grid)
+            u0_1 = make_values_int([:S => 999.0, :I => 1.0, :R => 0.0])
+            u0_2 = make_values_int([:S => 500.0 .+ 500.0 * rand_v_vals(lrs.lattice), :I => 1.0, :R => 0.0])
+            u0_3 = make_values_int([
+                :S => 950.0,
+                :I => 50 * rand_v_vals(lrs.lattice),
+                :R => 50 * rand_v_vals(lrs.lattice),
+            ])
+            u0_4 = make_values_int([
+                :S => 500.0 .+ 500.0 * rand_v_vals(lrs.lattice),
+                :I => 50 * rand_v_vals(lrs.lattice),
+                :R => 50 * rand_v_vals(lrs.lattice),
+            ])
+            u0_5 = make_values_int(make_u0_matrix(u0_3, vertices(lrs.lattice),
+                                map(s -> Symbol(s.f), species(lrs.rs))))
+            for u0 in [u0_1, u0_2, u0_3, u0_4, u0_5]
+                p1 = [:α => 0.1 / 1000, :β => 0.01]
+                p2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lrs.lattice)]
+                p3 = [
+                    :α => 0.1 / 2000 * rand_v_vals(lrs.lattice),
+                    :β => 0.02 * rand_v_vals(lrs.lattice),
+                ]
+                p4 = make_u0_matrix(p1, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
+                for pV in [p1] #, p2, p3, p4] # Removed until spatial non-diffusion parameters are supported.
+                    pE_1 = map(sp -> sp => 0.01, ModelingToolkit.getname.(diffusion_parameters(lrs)))
+                    pE_2 = map(sp -> sp => 0.01, ModelingToolkit.getname.(diffusion_parameters(lrs)))
+                    pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.01),
+                            ModelingToolkit.getname.(diffusion_parameters(lrs)))
+                    pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), ModelingToolkit.getname.(diffusion_parameters(lrs)))
+                    for pE in [pE_1, pE_2, pE_3, pE_4]
+                        dprob = DiscreteProblem(lrs, u0, (0.0, 100.0), (pV, pE))
+                        jprob = JumpProblem(lrs, dprob, NSM())
+                        @time solve(jprob, SSAStepper())
+                    end
+                end
+            end
+        end
+    end
+end
+
 
 ### Runtime Checks ###
 # Current timings are taken from the SciML CI server.

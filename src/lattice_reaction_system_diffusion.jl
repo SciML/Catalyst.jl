@@ -11,7 +11,6 @@ function isdiffusionparameter(x, default=false)
     Symbolics.getmetadata(x, DiffusionParameter, default)
 end
 
-
 # Abstract spatial reaction structures.
 abstract type AbstractSpatialReaction end
 
@@ -63,8 +62,6 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
     lattice::DiGraph
 
     # Derrived values.
-    """A list of parameters that occur in the spatial reactions."""
-    spatial_param_syms::Vector{Symbol}
     """The number of compartments."""
     nC::Int64
     """The number of edges."""
@@ -74,25 +71,18 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
     """Whenever the initial input was a di graph."""
     init_digraph::Bool
 
-    function LatticeReactionSystem(rs, spatial_reactions::Vector{<:AbstractSpatialReaction},
-                                   lattice::DiGraph;
-                                   init_digraph = true)
-        return new(rs, spatial_reactions, lattice,
-                    Symbol.(setdiff(filter(s -> Symbolics.issym(s),
-                    vcat(Symbolics.get_variables.(getfield.(spatial_reactions, :rate))...)), parameters(rs))),
-                    length(vertices(lattice)), length(edges(lattice)), length(species(rs)), 
-                    init_digraph)
+    function LatticeReactionSystem(rs::ReactionSystem, spatial_reactions::Vector{<:AbstractSpatialReaction}, lattice::DiGraph; init_digraph = true)
+        return new(rs, spatial_reactions, lattice, nv(lattice), ne(lattice), length(species(rs)),  init_digraph)
     end
-    function LatticeReactionSystem(rs, spatial_reactions::Vector{<:AbstractSpatialReaction},
-                                   lattice::SimpleGraph)
-        return LatticeReactionSystem(rs, spatial_reactions, DiGraph(lattice);
-                                     init_digraph = false)
+    function LatticeReactionSystem(rs::ReactionSystem, spatial_reactions::Vector{<:AbstractSpatialReaction}, lattice::SimpleGraph)
+        return LatticeReactionSystem(rs, spatial_reactions, graph_to_digraph(lattice); init_digraph = false)
     end
-    function LatticeReactionSystem(rs, spatial_reaction::AbstractSpatialReaction,
-                                   lattice::Graphs.AbstractGraph)
+    function LatticeReactionSystem(rs::ReactionSystem, spatial_reaction::AbstractSpatialReaction, lattice::Graphs.AbstractGraph)
         return LatticeReactionSystem(rs, [spatial_reaction], lattice)
     end
 end
+# Covnerts a graph to a digraph (in a way where we know where the new edges are in teh edge vector).
+graph_to_digraph(g) = SimpleDiGraphFromIterator(reshape(permutedims(hcat(collect(edges(g)),reverse.(edges(g)))), : , 1)[:])
 # Gets the species of a lattice reaction system.
 species(lrs::LatticeReactionSystem) = species(lrs.rs)
 diffusion_species(lrs::LatticeReactionSystem) = filter(s -> ModelingToolkit.getname(s) in getfield.(lrs.spatial_reactions, :species_sym), species(lrs.rs))
@@ -126,8 +116,8 @@ function lattice_process_p(p_in, p_comp_symbols, p_diff_symbols, lrs::LatticeRea
     pC_in, pD_in = split_parameters(p_in, p_comp_symbols, p_diff_symbols)
     pC = lattice_process_input(pC_in, p_comp_symbols, lrs.nC)
     pD = lattice_process_input(pD_in, p_diff_symbols, lrs.nE)
-    lrs.init_digraph || foreach(pD_vals -> duplicate_diff_params!(pD_vals, lrs), pD)    
-    check_vector_lengths(pC, lrs.nC);  check_vector_lengths(pD, lrs.nE)
+    lrs.init_digraph || foreach(idx -> duplicate_diff_params!(pD, idx, lrs), 1:length(pD))    
+    check_vector_lengths(pC, lrs.nC); check_vector_lengths(pD, lrs.nE)
     return pC,pD
 end
 
@@ -149,14 +139,14 @@ function lattice_process_input(input::Vector{<:Pair}, symbols::Vector{Symbol}, a
 end
 # Processes the input and gvies it in a form where it is a vector of vectors (some of which may have a single value).
 lattice_process_input(input::Matrix{<:Number}, args...) = lattice_process_input([vec(input[i, :]) for i in 1:size(input, 1)], args...)
-lattice_process_input(input::Array{<:Number,3}, args...) = error("Have not yet written code for correctly mapping the position of reverse edge to correct location in the full edge vector.")
-lattice_process_input(input::Vector{<:Any}, args...) = lattice_process_input([(val isa Vector{<:Number}) ? val : [val] for val in input], args...)
+lattice_process_input(input::Array{<:Number,3}, args...) = error("3 dimensional array parameter inpur currently not supported.")
+lattice_process_input(input::Vector{<:Any}, args...) = isempty(input) ? Vector{Vector{Float64}}() : lattice_process_input([(val isa Vector{<:Number}) ? val : [val] for val in input], args...)
 lattice_process_input(input::Vector{<:Vector}, symbols::Vector{Symbol}, n::Int64) = input
 check_vector_lengths(input::Vector{<:Vector}, n) = isempty(setdiff(unique(length.(input)),[1, n])) || error("Some inputs where given values of inappropriate length.")
 
 # For diffusion parameters, if the graph was given as an undirected graph of length n, and the paraemter have n values, exapnd so that the same value are given for both values on the edge.
-function duplicate_diff_params!(pD_vals::Vector{Float64}, lrs::LatticeReactionSystem)
-    (2length(pD_vals) == lrs.nE) && error("Currently, even if an undirected graph is provided, you still have to provide parameter values for each edge separately.")
+function duplicate_diff_params!(pD::Vector{Vector{Float64}}, idx::Int64, lrs::LatticeReactionSystem)
+    (2length(pD[idx]) == lrs.nE) && (pD[idx] = [p_val for p_val in pD[idx] for _ in 1:2])
 end
 
 # For a set of input values on the given forms, and their symbolics, convert into a dictionary.
@@ -202,7 +192,7 @@ function build_odefunction(lrs::LatticeReactionSystem, pC::Vector{Vector{Float64
     ofunc = ODEFunction(convert(ODESystem, lrs.rs); jac = use_jac, sparse = false)
     ofunc_sparse = ODEFunction(convert(ODESystem, lrs.rs); jac = use_jac, sparse = true)
     diffusion_rates_speciesmap = compute_all_diffusion_rates(pC, pD, lrs)
-    diffusion_rates = [findfirst(isequal.(diff_rates[1], states(lrs.rs))) => diff_rates[2] for diff_rates in diffusion_rates_speciesmap]
+    diffusion_rates = [findfirst(isequal(diff_rates[1]), states(lrs.rs)) => diff_rates[2] for diff_rates in diffusion_rates_speciesmap]
     
     f = build_f(ofunc, pC, diffusion_rates, lrs)
     jac_prototype = (use_jac || sparse) ?
@@ -353,7 +343,7 @@ end
 
 # Builds a spatial DiscreteProblem from a Lattice Reaction System.
 
-# Creates an ODEProblem from a LatticeReactionSystem.
+# Creates a DiscreteProblem from a LatticeReactionSystem.
 function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0_in, tspan, p_in = DiffEqBase.NullParameters(), args...; kwargs...)
     u0 = lattice_process_u0(u0_in, ModelingToolkit.getname.(species(lrs)), lrs.nC)
     pC,pD = lattice_process_p(p_in, Symbol.(compartment_parameters(lrs)), Symbol.(diffusion_parameters(lrs)), lrs)
