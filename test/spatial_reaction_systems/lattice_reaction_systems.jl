@@ -20,6 +20,11 @@ function make_u0_matrix(value_map, vals, symbols)
     return [(d[s] isa Vector) ? d[s][v] : d[s] for s in symbols, v in 1:length(vals)]
 end
 
+# Gets a symbol list of spatial parameters.
+function spatial_param_syms(lrs::LatticReactionSystem)
+    ModelingToolkit.getname.(diffusion_species(lrs))
+end
+
 # Converts to integer value (for JumpProcess simulations).
 function make_values_int(values::Vector{<:Pair})
     [val[1] => round.(Int64, val[2]) for val in values]
@@ -214,11 +219,12 @@ for grid in [small_2d_grid, short_path, small_directed_cycle]
             ]
             p4 = make_u0_matrix(p1, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
             for pV in [p1, p2, p3, p4]
-                pE_1 = map(sp -> sp => 0.01, lrs.spatial_param_syms)
-                pE_2 = map(sp -> sp => 0.01, lrs.spatial_param_syms)
+                println()
+                pE_1 = map(sp -> sp => 0.01, spatial_param_syms(lrs))
+                pE_2 = map(sp -> sp => 0.01, spatial_param_syms(lrs))
                 pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.01),
-                           lrs.spatial_param_syms)
-                pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), lrs.spatial_param_syms)
+                           spatial_param_syms(lrs))
+                pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), spatial_param_syms(lrs))
                 for pE in [pE_1, pE_2, pE_3, pE_4]
                     oprob = ODEProblem(lrs, u0, (0.0, 500.0), (pV, pE))
                     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
@@ -247,11 +253,11 @@ for grid in [small_2d_grid, short_path, small_directed_cycle]
             ]
             p4 = make_u0_matrix(p2, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
             for pV in [p1, p2, p3, p4]
-                pE_1 = map(sp -> sp => 0.2, lrs.spatial_param_syms)
-                pE_2 = map(sp -> sp => rand(), lrs.spatial_param_syms)
+                pE_1 = map(sp -> sp => 0.2, spatial_param_syms(lrs))
+                pE_2 = map(sp -> sp => rand(), spatial_param_syms(lrs))
                 pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.2),
-                           lrs.spatial_param_syms)
-                pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), lrs.spatial_param_syms)
+                           spatial_param_syms(lrs))
+                pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), spatial_param_syms(lrs))
                 for pE in [pE_1, pE_2, pE_3, pE_4]
                     oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE))
                     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
