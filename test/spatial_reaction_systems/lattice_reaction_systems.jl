@@ -22,7 +22,7 @@ end
 
 # Gets a symbol list of spatial parameters.
 function spatial_param_syms(lrs::LatticeReactionSystem)
-    ModelingToolkit.getname.(diffusion_species(lrs))
+    ModelingToolkit.getname.(diffusion_parameters(lrs))
 end
 
 # Converts to integer value (for JumpProcess simulations).
@@ -219,7 +219,6 @@ for grid in [small_2d_grid, short_path, small_directed_cycle]
             ]
             p4 = make_u0_matrix(p1, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
             for pV in [p1, p2, p3, p4]
-                println()
                 pE_1 = map(sp -> sp => 0.01, spatial_param_syms(lrs))
                 pE_2 = map(sp -> sp => 0.01, spatial_param_syms(lrs))
                 pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.01),

@@ -91,7 +91,7 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
 end
 # Covnerts a graph to a digraph (in a way where we know where the new edges are in teh edge vector).
 function graph_to_digraph(g1)
-    g2 = SimpleDiGraphFromIterator(reshape(permutedims(hcat(collect(edges(g1)),
+    g2 = Graphs.SimpleDiGraphFromIterator(reshape(permutedims(hcat(collect(edges(g1)),
                                                        reverse.(edges(g1)))), :, 1)[:])
     add_vertices!(g2, nv(g1) - nv(g2))
     return g2
@@ -258,7 +258,7 @@ end
 
 # Builds the forcing (f) function for a reaction system on a lattice.
 function build_f(ofunc::SciMLBase.AbstractODEFunction{true}, pC,
-                 diffusion_rates::Vector{Pair{Int64, Vector{Float64}}},
+                 diffusion_rates::Vector,
                  lrs::LatticeReactionSystem)
     leaving_rates = zeros(length(diffusion_rates), lrs.nC)
     for (s_idx, rates) in enumerate(last.(diffusion_rates)),
