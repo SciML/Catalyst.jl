@@ -90,9 +90,11 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
     end
 end
 # Covnerts a graph to a digraph (in a way where we know where the new edges are in teh edge vector).
-function graph_to_digraph(g)
-    SimpleDiGraphFromIterator(reshape(permutedims(hcat(collect(edges(g)),
+function graph_to_digraph(g1)
+    g2 = SimpleDiGraphFromIterator(reshape(permutedims(hcat(collect(edges(g)),
                                                        reverse.(edges(g)))), :, 1)[:])
+    add_vertices!(g2, nv(g1) - nv(g2))
+    return g2
 end
 # Gets the species of a lattice reaction system.
 species(lrs::LatticeReactionSystem) = species(lrs.rs)

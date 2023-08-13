@@ -273,22 +273,21 @@ end
 ### Tests Simulation Correctness ###
 
 # Checks that non-spatial brusselator simulation is identical to all on an unconnected lattice.
-# Temporarily removed until imrpvoed graph creation routine is created (fairly trivial).
-# let
-#     lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, unconnected_graph)
-#     u0 = [:X => 2.0 + 2.0 * rand(), :Y => 10.0 + 10.0 * rand()]
-#     pV = brusselator_p
-#     pE = [:dX => 0.2]
-#     oprob_nonspatial = ODEProblem(brusselator_system, u0, (0.0, 100.0), pV)
-#     oprob_spatial = ODEProblem(lrs, u0, (0.0, 100.0), (pV, pE))
-#     sol_nonspatial = solve(oprob_nonspatial, QNDF(); abstol = 1e-12, reltol = 1e-12)
-#     sol_spatial = solve(oprob_spatial, QNDF(); abstol = 1e-12, reltol = 1e-12)
-# 
-#     for i in 1:nv(unconnected_graph)
-#         @test all(isapprox.(sol_nonspatial.u[end],
-#                             sol_spatial.u[end][((i - 1) * 2 + 1):((i - 1) * 2 + 2)]))
-#     end
-# end
+let
+    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, unconnected_graph)
+    u0 = [:X => 2.0 + 2.0 * rand(), :Y => 10.0 + 10.0 * rand()]
+    pV = brusselator_p
+    pE = [:dX => 0.2]
+    oprob_nonspatial = ODEProblem(brusselator_system, u0, (0.0, 100.0), pV)
+    oprob_spatial = ODEProblem(lrs, u0, (0.0, 100.0), (pV, pE))
+    sol_nonspatial = solve(oprob_nonspatial, QNDF(); abstol = 1e-12, reltol = 1e-12)
+    sol_spatial = solve(oprob_spatial, QNDF(); abstol = 1e-12, reltol = 1e-12)
+
+    for i in 1:nv(unconnected_graph)
+        @test all(isapprox.(sol_nonspatial.u[end],
+                            sol_spatial.u[end][((i - 1) * 2 + 1):((i - 1) * 2 + 2)]))
+    end
+end
 
 # Checks that result becomes homogeneous on a connected lattice.
 let
