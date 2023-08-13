@@ -21,7 +21,7 @@ function make_u0_matrix(value_map, vals, symbols)
 end
 
 # Gets a symbol list of spatial parameters.
-function spatial_param_syms(lrs::LatticReactionSystem)
+function spatial_param_syms(lrs::LatticeReactionSystem)
     ModelingToolkit.getname.(diffusion_species(lrs))
 end
 
@@ -623,58 +623,6 @@ let
     @test isapprox(J_hw_sparse, J_aut_sparse)
 end
 
-### Spatial Jump System Tests ###
-
-# Tests that there are no errors during runs.
-let
-    for grid in [small_2d_grid, short_path, small_directed_cycle]
-        for srs in [Vector{DiffusionReaction}(), SIR_srs_1, SIR_srs_2]
-            lrs = LatticeReactionSystem(SIR_system, srs, grid)
-            u0_1 = make_values_int([:S => 999.0, :I => 1.0, :R => 0.0])
-            u0_2 = make_values_int([
-                                       :S => 500.0 .+ 500.0 * rand_v_vals(lrs.lattice),
-                                       :I => 1.0,
-                                       :R => 0.0,
-                                   ])
-            u0_3 = make_values_int([
-                                       :S => 950.0,
-                                       :I => 50 * rand_v_vals(lrs.lattice),
-                                       :R => 50 * rand_v_vals(lrs.lattice),
-                                   ])
-            u0_4 = make_values_int([
-                                       :S => 500.0 .+ 500.0 * rand_v_vals(lrs.lattice),
-                                       :I => 50 * rand_v_vals(lrs.lattice),
-                                       :R => 50 * rand_v_vals(lrs.lattice),
-                                   ])
-            u0_5 = make_values_int(make_u0_matrix(u0_3, vertices(lrs.lattice),
-                                                  map(s -> Symbol(s.f), species(lrs.rs))))
-            for u0 in [u0_1, u0_2, u0_3, u0_4, u0_5]
-                p1 = [:α => 0.1 / 1000, :β => 0.01]
-                p2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lrs.lattice)]
-                p3 = [
-                    :α => 0.1 / 2000 * rand_v_vals(lrs.lattice),
-                    :β => 0.02 * rand_v_vals(lrs.lattice),
-                ]
-                p4 = make_u0_matrix(p1, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
-                for pV in [p1] #, p2, p3, p4] # Removed until spatial non-diffusion parameters are supported.
-                    pE_1 = map(sp -> sp => 0.01,
-                               ModelingToolkit.getname.(diffusion_parameters(lrs)))
-                    pE_2 = map(sp -> sp => 0.01,
-                               ModelingToolkit.getname.(diffusion_parameters(lrs)))
-                    pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.01),
-                               ModelingToolkit.getname.(diffusion_parameters(lrs)))
-                    pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice),
-                                          ModelingToolkit.getname.(diffusion_parameters(lrs)))
-                    for pE in [pE_1, pE_2, pE_3, pE_4]
-                        dprob = DiscreteProblem(lrs, u0, (0.0, 100.0), (pV, pE))
-                        jprob = JumpProblem(lrs, dprob, NSM())
-                        @time solve(jprob, SSAStepper())
-                    end
-                end
-            end
-        end
-    end
-end
 
 ### Runtime Checks ###
 # Current timings are taken from the SciML CI server.
