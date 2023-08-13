@@ -91,8 +91,8 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
 end
 # Covnerts a graph to a digraph (in a way where we know where the new edges are in teh edge vector).
 function graph_to_digraph(g1)
-    g2 = SimpleDiGraphFromIterator(reshape(permutedims(hcat(collect(edges(g)),
-                                                       reverse.(edges(g)))), :, 1)[:])
+    g2 = SimpleDiGraphFromIterator(reshape(permutedims(hcat(collect(edges(g1)),
+                                                       reverse.(edges(g1)))), :, 1)[:])
     add_vertices!(g2, nv(g1) - nv(g2))
     return g2
 end
