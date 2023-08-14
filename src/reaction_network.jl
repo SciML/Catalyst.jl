@@ -125,7 +125,7 @@ end
 # Declares the keys used for various options.
 const option_keys = (:species, :parameters, :variables, :ivs)
 
-### The @species macro, basically a copy of the @varriables macro. ###
+### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)
     vars = Symbolics._parse_vars(:variables, Real, ex)
 
