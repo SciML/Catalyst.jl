@@ -126,10 +126,7 @@ function create_matrix(reaction::Catalyst.Reaction)
             A[i, j] = coeff
         end
     end
-        # Append a row with last element as 1 
-        new_row = zeros(Int, 1, size(A, 2))
-        new_row[end] = 1
-        A = vcat(A, new_row)
+
     return A
 end
 
@@ -137,9 +134,18 @@ function get_stoich(reaction::Reaction)
     # Create the matrix A using create_matrix function.
     A = create_matrix(reaction)
     
-    # Create the vector b. The last element is 1 and others are 0.
-    B = zeros(Int64, size(A,1))
-    B[end] = 1
+    m, n = size(A)
+        if m == n
+            B = zeros(Int64, size(A,1))
+        else
+            # Append a row with last element as 1 
+            new_row = zeros(Int, 1, size(A, 2))
+            new_row[end] = 1
+            A = vcat(A, new_row)
+
+            B = zeros(Int64, size(A,1))
+            B[end] = 1
+        end
 
     # Concatenate B to A to form an augmented matrix   
     AB = [A B]
@@ -157,28 +163,8 @@ function get_stoich(reaction::Reaction)
     # Convert B_transformed to rational numbers
     B_transformed_rational = Rational.(B_transformed)
 
-    # Perform the division
-    X = A_transformed_rational \ B_transformed_rational
-
-    # Check if X is of Float64 type
-    if eltype(X) == Float64
-            # Check if X contains 0.5
-        if any(abs.(X .- 0.5) .< 1e-8)
-            # If so, apply custom rounding logic
-            X = X .+ 1
-            for i in 1:length(X)
-                if abs(X[i] - floor(X[i])) >= 0.6
-                    X[i] = ceil(X[i])
-                else
-                    X[i] = floor(X[i])
-                end
-            end
-            X = round.(Int, X)
-        else
-            # If not, just round normally
-            X = round.(Int, X)
-        end
-    end
+    # Perform backward substitution
+    X = backward_substitution(A_transformed_rational,B_transformed_rational)
 
     # Get the denominators of the rational numbers in X
     denominators = denominator.(X)
@@ -208,6 +194,19 @@ function balance_reaction(reaction::Reaction)
 
     # Return the balanced reaction
     return balanced_reaction
+end
+
+function backward_substitution(A::AbstractMatrix{T}, B::AbstractVector{T}) where T <: Number
+    n = length(B)
+    x = zeros(Rational{Int}, n)
+    for i in n:-1:1
+        if all(A[i, :] .== 0)
+            x[i] = 1
+        else
+            x[i] = (B[i] - A[i, i+1:n]' * x[i+1:n]) / A[i, i]
+        end
+    end
+    return x
 end
 
 # function get_stoich(reaction::Reaction)

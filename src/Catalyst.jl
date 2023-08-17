@@ -96,6 +96,6 @@ export Graph, savegraph, complexgraph
 include("chemistry_functionality.jl")
 export @compound
 export components, iscompound, coefficients
-export get_stoich, create_matrix, balance_reaction
+export balance_reaction
 
 end # module
