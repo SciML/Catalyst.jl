@@ -93,7 +93,7 @@ include("graphs.jl")
 export Graph, savegraph, complexgraph
 
 # for creating compounds
-include("compound.jl")
+include("chemistry_functionality.jl")
 export @compound
 export components, iscompound, coefficients
 export balance_reaction
