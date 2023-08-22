@@ -137,6 +137,9 @@ function get_stoich(reaction::Reaction)
     m, n = size(A)
         if m == n
             B = zeros(Int64, size(A,1))
+        elseif m > n
+            A = A[1:n, :]
+            B = zeros(Int64, size(A,1))
         else
             # Append a row with last element as 1 
             new_row = zeros(Int, 1, size(A, 2))
