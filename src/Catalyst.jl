@@ -8,6 +8,7 @@ using SparseArrays, DiffEqBase, Reexport
 using LaTeXStrings, Latexify, Requires
 using JumpProcesses: JumpProcesses, JumpProblem, MassActionJump, ConstantRateJump,
                      VariableRateJump
+using SplitApplyCombine
 
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit
@@ -30,7 +31,9 @@ import ModelingToolkit: check_variables, check_parameters, _iszero, _merge, chec
                         get_unit, check_equations
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
-import MacroTools, Graphs
+import MacroTools
+import Graphs, Graphs.DiGraph, Graphs.SimpleGraph, Graphs.vertices, Graphs.edges,
+       Graphs.add_vertices!, Graphs.nv, Graphs.ne
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 
@@ -67,6 +70,12 @@ export @reaction_network, @add_reactions, @reaction, @species
 # registers CRN specific functions using Symbolics.jl
 include("registered_functions.jl")
 export mm, mmr, hill, hillr, hillar
+
+# spatial reaction networks
+include("lattice_reaction_system_diffusion.jl")
+export DiffusionReaction, diffusion_reactions, isdiffusionparameter
+export LatticeReactionSystem
+export compartment_parameters, diffusion_parameters, diffusion_species
 
 # functions to query network properties
 include("networkapi.jl")
