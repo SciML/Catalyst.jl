@@ -11,7 +11,7 @@ using StableRNGs
 rng = StableRNG(12345)
 
 # Fetch test networks.
-include("spatial_test_networks.jl")
+include("../spatial_test_networks.jl")
 
 ### Runtime Checks ###
 # Current timings are taken from the SciML CI server.
