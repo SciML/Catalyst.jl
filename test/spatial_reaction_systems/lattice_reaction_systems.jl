@@ -251,3 +251,4 @@ let
     @test_throws ErrorException LatticeReactionSystem(rs, tr, grid)
 end
 
+### Spatial Jump System Tests ###
