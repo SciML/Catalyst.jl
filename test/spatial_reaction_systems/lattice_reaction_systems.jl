@@ -666,7 +666,7 @@ let
                     for pE in [pE_1, pE_2, pE_3, pE_4]
                         dprob = DiscreteProblem(lrs, u0, (0.0, 100.0), (pV, pE))
                         jprob = JumpProblem(lrs, dprob, NSM())
-                        @time solve(jprob, SSAStepper())
+                        solve(jprob, SSAStepper())
                     end
                 end
             end
@@ -707,7 +707,7 @@ let
     for u0 in [u0_1, u0_2, u0_3, u0_4, u0_5]
         # Provides parameters as a tupple.
         for pC in [pC_1, pC_3], pD in [pD_1, pD_2, pC_3, pD_4, pD_5]
-            dprob = DiscreteProblem(lrs, u0, (0.0, 100.0), p)
+            dprob = DiscreteProblem(lrs, u0, (0.0, 100.0), (pC,pD))
             jprob = JumpProblem(lrs, dprob, NSM())
             @test jprob.prob.u0 == true_u0
             @test jprob.discrete_jump_aggregation.hop_rates.hop_const_cumulative_sums == true_hopping_rates
