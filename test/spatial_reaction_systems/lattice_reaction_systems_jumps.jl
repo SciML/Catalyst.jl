@@ -268,7 +268,7 @@ if false
             α, S + I --> 2I
             β, I --> R
         end
-        @unpack comp_dS, comp_dI connection_d = SIR_system_special
+        @unpack comp_dS, comp_dI, connection_d = SIR_system_special
         SIR_srs_special = [DiffusionReaction(comp_dS*connection_d, :S), DiffusionReaction(comp_dI*connection_d, :I)]
 
         # Prepares the system.
