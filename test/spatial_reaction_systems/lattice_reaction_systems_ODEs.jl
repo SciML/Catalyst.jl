@@ -9,7 +9,7 @@ using StableRNGs
 rng = StableRNG(12345)
 
 # Fetch test networks.
-include("spatial_test_networks.jl")
+include("../spatial_test_networks.jl")
 
 
 ### Test No Error During Runs ###
