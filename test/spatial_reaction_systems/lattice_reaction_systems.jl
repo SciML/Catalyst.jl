@@ -621,6 +621,106 @@ let
     @test isapprox(J_hw_sparse, J_aut_sparse)
 end
 
+### Spatial Jump System Tests ###
+
+# Tests that there are no errors during runs.
+let
+    for grid in [small_2d_grid, short_path, small_directed_cycle]
+        for srs in [Vector{DiffusionReaction}(), SIR_srs_1, SIR_srs_2]
+            lrs = LatticeReactionSystem(SIR_system, srs, grid)
+            u0_1 = make_values_int([:S => 999.0, :I => 1.0, :R => 0.0])
+            u0_2 = make_values_int([
+                                       :S => 500.0 .+ 500.0 * rand_v_vals(lrs.lattice),
+                                       :I => 1.0,
+                                       :R => 0.0,
+                                   ])
+            u0_3 = make_values_int([
+                                       :S => 950.0,
+                                       :I => 50 * rand_v_vals(lrs.lattice),
+                                       :R => 50 * rand_v_vals(lrs.lattice),
+                                   ])
+            u0_4 = make_values_int([
+                                       :S => 500.0 .+ 500.0 * rand_v_vals(lrs.lattice),
+                                       :I => 50 * rand_v_vals(lrs.lattice),
+                                       :R => 50 * rand_v_vals(lrs.lattice),
+                                   ])
+            u0_5 = make_values_int(make_u0_matrix(u0_3, vertices(lrs.lattice),
+                                                  map(s -> Symbol(s.f), species(lrs.rs))))
+            for u0 in [u0_1, u0_2, u0_3, u0_4, u0_5]
+                p1 = [:α => 0.1 / 1000, :β => 0.01]
+                p2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lrs.lattice)]
+                p3 = [
+                    :α => 0.1 / 2000 * rand_v_vals(lrs.lattice),
+                    :β => 0.02 * rand_v_vals(lrs.lattice),
+                ]
+                p4 = make_u0_matrix(p1, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
+                for pV in [p1] #, p2, p3, p4] # Removed until spatial non-diffusion parameters are supported.
+                    pE_1 = map(sp -> sp => 0.01,
+                               ModelingToolkit.getname.(diffusion_parameters(lrs)))
+                    pE_2 = map(sp -> sp => 0.01,
+                               ModelingToolkit.getname.(diffusion_parameters(lrs)))
+                    pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.01),
+                               ModelingToolkit.getname.(diffusion_parameters(lrs)))
+                    pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice),
+                                          ModelingToolkit.getname.(diffusion_parameters(lrs)))
+                    for pE in [pE_1, pE_2, pE_3, pE_4]
+                        dprob = DiscreteProblem(lrs, u0, (0.0, 100.0), (pV, pE))
+                        jprob = JumpProblem(lrs, dprob, NSM())
+                        @time solve(jprob, SSAStepper())
+                    end
+                end
+            end
+        end
+    end
+end
+
+# Tests that the correct hopping rates and initial conditions are generated.
+# Hoppping rates should be on the form D_{s,i,j}.
+let
+    # Prepares the system.
+    lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, small_2d_grid)
+
+    # Prepares various u0 input types.
+    u0_1 = [:I => 2.0, :S => 1.0, :R => 3.0]
+    u0_2 = [:I => fill(2., nv(small_2d_grid)), :S => 1.0, :R => 3.0]
+    u0_3 = [1.0, 2.0, 3.0]
+    u0_4 = [1.0, fill(2., nv(small_2d_grid)), 3.0]
+    u0_5 = permutedims(hcat(fill(1., nv(small_2d_grid)), fill(2., nv(small_2d_grid)), fill(3., nv(small_2d_grid))))
+
+    # Prepare various (comaprtment) parameter input types.
+    pC_1 = [:β => 0.2, :α => 0.1]
+    pC_2 = [:β => fill(0.2, nv(small_2d_grid)), :α => 1.0]
+    pC_3 = [0.1, 0.2]
+    pC_4 = [0.1, fill(0.2, nv(small_2d_grid))]
+    pC_5 = permutedims(hcat(fill(0.1, nv(small_2d_grid)), fill(0.2, nv(small_2d_grid))))
+
+    # Prepare various (diffusion) parameter input types.
+    pD_1 = [:dI => 0.02, :dS => 0.01, :dR => 0.03]
+    pD_2 = [:dI => 0.02, :dS => fill(0.01, ne(small_2d_grid)), :dR => 0.03]
+    pD_3 = [0.01, 0.02, 0.03]
+    pD_4 = [fill(0.01, ne(small_2d_grid)), 0.02, 0.03]
+    pD_5 = permutedims(hcat(fill(0.01, ne(small_2d_grid)), fill(0.02, ne(small_2d_grid)), fill(0.03, ne(small_2d_grid))))
+
+    # Checks hopping rates and u0 correct.
+    true_u0 = [fill(1.0, 1, 25); fill(2.0, 1, 25); fill(3.0, 1, 25)]
+    true_hopping_rates = cumsum.([fill(dval, length(v)) for dval in [0.01,0.02,0.03], v in small_2d_grid.fadjlist])
+    for u0 in [u0_1, u0_2, u0_3, u0_4, u0_5]
+        # Provides parameters as a tupple.
+        for pC in [pC_1, pC_3], pD in [pD_1, pD_2, pC_3, pD_4, pD_5]
+            dprob = DiscreteProblem(lrs, u0, (0.0, 100.0), p)
+            jprob = JumpProblem(lrs, dprob, NSM())
+            @test jprob.prob.u0 == true_u0
+            @test jprob.discrete_jump_aggregation.hop_rates.hop_const_cumulative_sums == true_hopping_rates
+        end
+        # Provides parameters as a combined vector.
+        for pC in [pC_1], pD in [pD_1, pD_2]
+            dprob = DiscreteProblem(lrs, u0, (0.0, 100.0), [pD; pC])
+            jprob = JumpProblem(lrs, dprob, NSM())
+            @test jprob.prob.u0 == true_u0
+            @test jprob.discrete_jump_aggregation.hop_rates.hop_const_cumulative_sums == true_hopping_rates
+        end
+    end
+end
 
 ### Runtime Checks ###
 # Current timings are taken from the SciML CI server.
