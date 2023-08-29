@@ -134,54 +134,21 @@ function get_stoich(reaction::Reaction)
     # Create the matrix A using create_matrix function.
     A = create_matrix(reaction)
     
-    m, n = size(A)
-        if m == n
-            B = zeros(Int64, size(A,1))
-        elseif m > n
-            A = A[1:n, :]
-            B = zeros(Int64, size(A,1))
-        else
-            # Append a row with last element as 1 
-            new_row = zeros(Int, 1, size(A, 2))
-            new_row[end] = 1
-            A = vcat(A, new_row)
+    X = ModelingToolkit.nullspace(A)
 
-            B = zeros(Int64, size(A,1))
-            B[end] = 1
+    m, n = size(X)
+        if n == 1
+            X = abs.(vec(X))
+            common_divisor = reduce(gcd, X)
+            X = X ./ common_divisor
+
+        elseif n > 1
+            error("Chemical equation can be balanced in infinitely many ways")
+        else
+            error("Chemical equation cannot be balanced")
         end
 
-    # Concatenate B to A to form an augmented matrix   
-    AB = [A B]
-
-    # Apply the Bareiss algorithm
-    ModelingToolkit.bareiss!(AB)
-
-    # Extract the transformed A and B
-    A_transformed = AB[:, 1:end-1]
-    B_transformed = AB[:, end]
-
-    # Convert A_transformed to rational numbers
-    A_transformed_rational = Rational.(A_transformed)
-
-    # Convert B_transformed to rational numbers
-    B_transformed_rational = Rational.(B_transformed)
-
-    # Perform backward substitution
-    X = backward_substitution(A_transformed_rational,B_transformed_rational)
-
-    # Get the denominators of the rational numbers in X
-    denominators = denominator.(X)
-
-    # Compute the LCM of the denominators
-    lcm_value = reduce(lcm, denominators)
-
-    # Multiply each element in X by the LCM of the denominators
-    X_multiplied = X .* lcm_value
-
-    # Convert the rational numbers to integers
-    X_integers = numerator.(X_multiplied)
-
-    return abs.(X_integers)
+        return X
 end
 
 function balance_reaction(reaction::Reaction)
@@ -199,16 +166,16 @@ function balance_reaction(reaction::Reaction)
     return balanced_reaction
 end
 
-function backward_substitution(A::AbstractMatrix{T}, B::AbstractVector{T}) where T <: Number
-    n = length(B)
-    x = zeros(Rational{Int}, n)
-    for i in n:-1:1
-        if all(A[i, :] .== 0)
-            x[i] = 1
-        else
-            x[i] = (B[i] - A[i, i+1:n]' * x[i+1:n]) / A[i, i]
-        end
-    end
-    return x
-end
+# function backward_substitution(A::AbstractMatrix{T}, B::AbstractVector{T}) where T <: Number
+#     n = length(B)
+#     x = zeros(Rational{Int}, n)
+#     for i in n:-1:1
+#         if all(A[i, :] .== 0)
+#             x[i] = 1
+#         else
+#             x[i] = (B[i] - A[i, i+1:n]' * x[i+1:n]) / A[i, i]
+#         end
+#     end
+#     return x
+# end
 

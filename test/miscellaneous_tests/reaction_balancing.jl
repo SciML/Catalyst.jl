@@ -302,3 +302,41 @@ let
     balanced_rx = Reaction(1.0,[H2SO4,HI],[H2S,I2,H2O], [1,8], [1,4,4]) 
     @test isequal(balanced_rx, balance_reaction(rx))
 end
+
+# @reaction k, C2H4 + 3O2 ↔ 2CO2 + 2H2O
+let 
+    @variables t
+    @species C(t) H(t) O(t)
+    @compound C2H4(t) 2C 4H
+    @compound O2(t) 2O
+    @compound CO2(t) C 2O
+    @compound H2O(t) 2H O
+
+    rx = Reaction(1.0,[C2H4,O2],[CO2,H2O])
+    balanced_rx = Reaction(1.0,[C2H4,O2],[CO2,H2O],[1,3],[2,2])
+    @test isequal(balanced_rx, balance_reaction(rx))
+end
+
+# Infinite solutions
+let 
+    @variables t
+    @species C(t) H(t) O(t)
+    @compound CO(t) C O
+    @compound CO2(t) C 2O
+    @compound H2(t) 2H
+    @compound CH4(t) C 4H
+    @compound H2O(t) 2H O
+
+    rx = Reaction(1.0,[CO,CO2,H2],[CH4,H2O])
+
+    @test_throws ErrorException("Chemical equation can be balanced in infinitely many ways") balance_reaction(rx)
+end
+
+# No way to balance
+let 
+    @variables t
+    @species Fe(t) S(t) O(t) H(t) N(t)
+
+    rx = Reaction(1.0,[FeS2,HNO3],[Fe2S3O12,NO,H2SO4])
+    @test_throws ErrorException("Chemical equation cannot be balanced") balance_reaction(rx)
+end
