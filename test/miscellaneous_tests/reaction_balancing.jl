@@ -337,6 +337,12 @@ let
     @variables t
     @species Fe(t) S(t) O(t) H(t) N(t)
 
+    @compound FeS2(t) Fe 2S
+    @compound HNO3(t) H N 3O
+    @compound Fe2S3O12(t) 2Fe 3S 12O
+    @compound NO(t) N O
+    @compound H2SO4(t) 2H S 4O
+
     rx = Reaction(1.0,[FeS2,HNO3],[Fe2S3O12,NO,H2SO4])
     @test_throws ErrorException("Chemical equation cannot be balanced") balance_reaction(rx)
 end
