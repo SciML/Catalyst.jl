@@ -141,30 +141,62 @@ function get_stoich(reaction::Reaction)
             X = abs.(vec(X))
             common_divisor = reduce(gcd, X)
             X = X ./ common_divisor
-
+            return X
         elseif n > 1
-            error("Chemical equation can be balanced in infinitely many ways")
+            # initialize final_vector
+            final_vector = Vector{Vector{Int64}}()
+            for i = 1:min(m, n)  
+            X_i = abs.(vec(X[:, i]))   
+            common_divisor = reduce(gcd, X_i)  
+            X_i = X_i ./ common_divisor    
+            push!(final_vector, X_i)   
+        end
+            return final_vector
         else
             error("Chemical equation cannot be balanced")
         end
 
-        return X
 end
 
 function balance_reaction(reaction::Reaction)
     # Calculate the stoichiometric coefficients for the balanced reaction.
     stoichiometries = get_stoich(reaction)
 
-    # Divide the stoichiometry vector into substrate and product stoichiometries.
-    substoich = stoichiometries[1:length(reaction.substrates)]
-    prodstoich = stoichiometries[(length(reaction.substrates)) + 1:end]
+    # Check if stoichiometries is a vector of vectors
+    if typeof(stoichiometries[1]) == Vector{Int64}
+        # Initialize an empty vector to store all the reactions
+        possible_reactions = Vector{Reaction}()
 
-    # Create a new reaction with the balanced stoichiometries
-    balanced_reaction = Reaction(reaction.rate, reaction.substrates, reaction.products, substoich, prodstoich)
+        # Iterate over each stoichiometry vector and create a reaction
+        for stoich in stoichiometries
+            # Divide the stoichiometry vector into substrate and product stoichiometries.
+            substoich = stoich[1:length(reaction.substrates)]
+            prodstoich = stoich[(length(reaction.substrates)) + 1:end]
 
-    # Return the balanced reaction
-    return balanced_reaction
+            # Create a new reaction with the balanced stoichiometries
+            balanced_reaction = Reaction(reaction.rate, reaction.substrates, reaction.products, substoich, prodstoich)
+
+            # Add the reaction to the vector of all reactions
+            push!(possible_reactions, balanced_reaction)
+        end
+
+        println("Chemical equation $reaction can be balanced in infinitely many ways")
+        # Return the vector of all reactions
+        return possible_reactions
+        
+    else
+        # Divide the stoichiometry vector into substrate and product stoichiometries.
+        substoich = stoichiometries[1:length(reaction.substrates)]
+        prodstoich = stoichiometries[(length(reaction.substrates)) + 1:end]
+
+        # Create a new reaction with the balanced stoichiometries
+        balanced_reaction = Reaction(reaction.rate, reaction.substrates, reaction.products, substoich, prodstoich)
+
+        # Return the balanced reaction
+        return balanced_reaction
+    end
 end
+
 
 # function backward_substitution(A::AbstractMatrix{T}, B::AbstractVector{T}) where T <: Number
 #     n = length(B)

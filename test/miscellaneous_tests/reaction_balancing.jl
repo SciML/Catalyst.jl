@@ -328,8 +328,8 @@ let
     @compound H2O(t) 2H O
 
     rx = Reaction(1.0,[CO,CO2,H2],[CH4,H2O])
-
-    @test_throws ErrorException("Chemical equation can be balanced in infinitely many ways") balance_reaction(rx)
+    @test typeof(balance_reaction(rx)) == Vector{Reaction}
+    @test length(balance_reaction(rx)) == 2
 end
 
 # No way to balance
