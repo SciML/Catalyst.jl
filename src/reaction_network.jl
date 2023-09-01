@@ -316,7 +316,8 @@ end
 function forbidden_symbol_check(v)
     !isempty(intersect(forbidden_symbols_error, v)) &&
         error("The following symbol(s) are used as species or parameters: " *
-              ((map(s -> "'" * string(s) * "', ", intersect(forbidden_symbols_error, v))...)) *
+              ((map(s -> "'" * string(s) * "', ",
+                    intersect(forbidden_symbols_error, v))...)) *
               "this is not permited.")
     nothing
 end

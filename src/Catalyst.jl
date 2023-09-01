@@ -6,7 +6,8 @@ module Catalyst
 using DocStringExtensions
 using SparseArrays, DiffEqBase, Reexport
 using LaTeXStrings, Latexify, Requires
-using JumpProcesses: JumpProcesses, JumpProblem, MassActionJump, ConstantRateJump,
+using JumpProcesses: JumpProcesses,
+                     JumpProblem, MassActionJump, ConstantRateJump,
                      VariableRateJump
 
 # ModelingToolkit imports and convenience functions we use
@@ -26,7 +27,8 @@ import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_v
                         namespace_parameters, rename, renamespace, getname, flatten
 
 # internal but needed ModelingToolkit functions
-import ModelingToolkit: check_variables, check_parameters, _iszero, _merge, check_units,
+import ModelingToolkit: check_variables,
+                        check_parameters, _iszero, _merge, check_units,
                         get_unit, check_equations
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
@@ -55,7 +57,8 @@ end
 include("reactionsystem.jl")
 export isspecies
 export Reaction, ReactionSystem, ismassaction, oderatelaw, jumpratelaw, isspatial
-export ODEProblem, SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem,
+export ODEProblem,
+       SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem,
        SteadyStateProblem
 
 # reaction_network macro
