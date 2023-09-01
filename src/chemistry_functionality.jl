@@ -90,124 +90,108 @@ end
 
 
 ### Balancing Code
+const COMPOUND_OF_COMPOUND_ERROR = ErrorException("Reaction balancing does not currently work for reactions involving compounds of compounds.")
 
+# note this does not correctly handle compounds of compounds currently
 function create_matrix(reaction::Catalyst.Reaction)
-    compounds = [reaction.substrates; reaction.products]
-    atoms = [] # Array to store unique atoms
+    @unpack substrates, products = reaction
+    unique_atoms = [] # Array to store unique atoms
     n_atoms = 0
-    A = zeros(Int, 0, length(compounds))
+    ncompounds = length(substrates) + length(products)
+    A = zeros(Int, 0, ncompounds)
 
-    for (j, compound) in enumerate(compounds)
-        # Check if the compound is a valid compound
-        if iscompound(compound)
-            # Get component coefficients of the compound
-            pairs = component_coefficients(compound)
-            if pairs == Nothing 
-                continue
+    coeffsign = 1
+    jbase = 0
+    for compounds in (substrates, products)
+        for (j2, compound) in enumerate(compounds)
+            j = jbase + j2
+
+            if iscompound(compound)
+                atoms = components(compound)
+                any(iscompound, atoms) && throw(COMPOUND_OF_COMPOUND_ERROR)
+                coeffs = coefficients(compound)
+                (atoms == nothing || coeffs == nothing) && continue
+            else
+                # If not a compound, assume coefficient of 1
+                atoms = [compound]
+                coeffs = [1]
             end
-        else 
-            # If not a compound, assume coefficient of 1
-            pairs = [(compound, 1)]
+
+            for (atom,coeff) in zip(atoms, coeffs)
+                # Extract atom and coefficient from the pair
+                i = findfirst(x -> isequal(x, atom), unique_atoms)
+                if i === nothing
+                    # Add the atom to the atoms array if it's not already present
+                    push!(unique_atoms, atom)
+                    n_atoms += 1
+                    A = [A; zeros(Int, 1, ncompounds)]
+                    i = n_atoms
+                end
+
+                # Adjust coefficient based on whether the compound is a product or substrate
+                coeff *= coeffsign
+
+                A[i, j] = coeff
+            end
         end
 
-        for pair in pairs
-            # Extract atom and coefficient from the pair
-            atom, coeff = pair
-            i = findfirst(x -> isequal(x, atom), atoms)
-            if i === nothing  
-                # Add the atom to the atoms array if it's not already present
-                push!(atoms, atom)
-                n_atoms += 1
-                A = [A; zeros(Int, 1, length(compounds))]
-                i = n_atoms
-            end
-            # Adjust coefficient based on whether the compound is a product or substrate
-            coeff = any(map(p -> isequal(p, compounds[j]), reaction.products)) ? -coeff : coeff
-            A[i, j] = coeff
-        end
+        # update for iterating through products
+        coeffsign = -1
+        jbase = length(substrates)
     end
 
     return A
 end
 
-function get_stoich(reaction::Reaction)
-    # Create the matrix A using create_matrix function.
+function get_balanced_stoich(reaction::Reaction)
+    # Create the reaction matrix A that is m atoms by n compounds
     A = create_matrix(reaction)
-    
+
+    # get an integer nullspace basis
     X = ModelingToolkit.nullspace(A)
+    nullity = size(X, 2)
 
-    m, n = size(X)
-        if n == 1
-            X = abs.(vec(X))
-            common_divisor = reduce(gcd, X)
-            X = X ./ common_divisor
-            return X
-        elseif n > 1
-            # initialize final_vector
-            final_vector = Vector{Vector{Int64}}()
-            for i = 1:min(m, n)  
-            X_i = abs.(vec(X[:, i]))   
-            common_divisor = reduce(gcd, X_i)  
-            X_i = X_i ./ common_divisor    
-            push!(final_vector, X_i)   
-        end
-            return final_vector
-        else
-            error("Chemical equation cannot be balanced")
-        end
+    stoichvecs = Vector{Vector{Int64}}()
+    for (j, col) in pairs(eachcol(X))
+        signs = unique(col)
 
+        # If there is only one basis vector and the signs are not all the same this means
+        # we have a solution that would require moving at least one substrate to be a
+        # product (or vice-versa). We therefore do not return anything in this case.
+        # If there are multiple basis vectors we don't currently determine if we can
+        # construct a linear combination giving a solution, so we just return them.
+        if (nullity > 1) || (all(>=(0), signs) || all(<=(0), signs))
+            coefs = abs.(col)
+            common_divisor = reduce(gcd, coefs)
+            coefs .= div.(coefs, common_divisor)
+            push!(stoichvecs, coefs)
+        end
+    end
+
+    return stoichvecs
 end
 
 function balance_reaction(reaction::Reaction)
     # Calculate the stoichiometric coefficients for the balanced reaction.
-    stoichiometries = get_stoich(reaction)
+    stoichiometries = get_balanced_stoich(reaction)
 
-    # Check if stoichiometries is a vector of vectors
-    if typeof(stoichiometries[1]) == Vector{Int64}
-        # Initialize an empty vector to store all the reactions
-        possible_reactions = Vector{Reaction}()
+    balancedrxs = Vector{Reaction}(undef, length(stoichiometries))
 
-        # Iterate over each stoichiometry vector and create a reaction
-        for stoich in stoichiometries
-            # Divide the stoichiometry vector into substrate and product stoichiometries.
-            substoich = stoich[1:length(reaction.substrates)]
-            prodstoich = stoich[(length(reaction.substrates)) + 1:end]
-
-            # Create a new reaction with the balanced stoichiometries
-            balanced_reaction = Reaction(reaction.rate, reaction.substrates, reaction.products, substoich, prodstoich)
-
-            # Add the reaction to the vector of all reactions
-            push!(possible_reactions, balanced_reaction)
-        end
-
-        println("Chemical equation $reaction can be balanced in infinitely many ways")
-        # Return the vector of all reactions
-        return possible_reactions
-        
-    else
+    # Iterate over each stoichiometry vector and create a reaction
+    for (i,stoich) in enumerate(stoichiometries)
         # Divide the stoichiometry vector into substrate and product stoichiometries.
-        substoich = stoichiometries[1:length(reaction.substrates)]
-        prodstoich = stoichiometries[(length(reaction.substrates)) + 1:end]
+        substoich = stoich[1:length(reaction.substrates)]
+        prodstoich = stoich[(length(reaction.substrates) + 1):end]
 
         # Create a new reaction with the balanced stoichiometries
-        balanced_reaction = Reaction(reaction.rate, reaction.substrates, reaction.products, substoich, prodstoich)
+        balancedrx = Reaction(reaction.rate, reaction.substrates,
+                              reaction.products, substoich, prodstoich)
 
-        # Return the balanced reaction
-        return balanced_reaction
+        # Add the reaction to the vector of all reactions
+        balancedrxs[i] = balancedrx
     end
+
+    isempty(balancedrxs) && (@warn "Unable to balance reaction.")
+    (length(balancedrxs) > 1) && (@warn "Infinite balanced reactions from ($reaction) are possible, returning a basis for them. Note that we do not check if they preserve the set of substrates and products from the original reaction.")
+    return balancedrxs
 end
-
-
-# function backward_substitution(A::AbstractMatrix{T}, B::AbstractVector{T}) where T <: Number
-#     n = length(B)
-#     x = zeros(Rational{Int}, n)
-#     for i in n:-1:1
-#         if all(A[i, :] .== 0)
-#             x[i] = 1
-#         else
-#             x[i] = (B[i] - A[i, i+1:n]' * x[i+1:n]) / A[i, i]
-#         end
-#     end
-#     return x
-# end
-
