@@ -228,7 +228,7 @@ function apply_if_nonempty(f, v)
     s
 end
 
-function ModelingToolkit.namespace_equation(rx::Reaction, name)
+function ModelingToolkit.namespace_equation(rx::Reaction, name; kw...)
     f = Base.Fix2(namespace_expr, name)
     rate = f(rx.rate)
     subs = apply_if_nonempty(f, rx.substrates)
@@ -780,11 +780,13 @@ MT.get_continuous_events(sys::ReactionSystem) = getfield(sys, :continuous_events
 
 # need a custom equations since ReactionSystem.eqs are a mix of Reactions and Equations
 function MT.equations(sys::ReactionSystem)
+    ivs = independent_variables(sys)
     eqs = get_eqs(sys)
     systems = get_systems(sys)
     if !isempty(systems)
         eqs = CatalystEqType[eqs;
-                             reduce(vcat, MT.namespace_equations.(systems); init = Any[])]
+                             reduce(vcat, MT.namespace_equations.(systems, (ivs,));
+                                    init = Any[])]
         return sort!(eqs; by = eqsortby)
     end
     return eqs
