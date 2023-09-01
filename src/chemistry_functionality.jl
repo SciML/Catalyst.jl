@@ -152,7 +152,7 @@ function get_balanced_stoich(reaction::Reaction)
     nullity = size(X, 2)
 
     stoichvecs = Vector{Vector{Int64}}()
-    for (j, col) in pairs(eachcol(X))
+    for (j, col) in enumerate(eachcol(X))
         signs = unique(col)
 
         # If there is only one basis vector and the signs are not all the same this means
