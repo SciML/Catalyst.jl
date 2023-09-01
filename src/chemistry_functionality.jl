@@ -18,12 +18,12 @@ macro compound(species_expr, arr_expr...)
 
     # Construct the expressions that define the species
     species_expr = Expr(:macrocall, Symbol("@species"), LineNumberNode(0),
-        Expr(:call, species_name, species_arg))
+                        Expr(:call, species_name, species_arg))
 
     # Construct the expression to set the iscompound metadata
     setmetadata_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
-        Catalyst.CompoundSpecies,
-        true))
+                                                                       Catalyst.CompoundSpecies,
+                                                                       true))
 
     # Ensure the expressions are evaluated in the correct scope by escaping them
     escaped_species_expr = esc(species_expr)
@@ -49,22 +49,22 @@ macro compound(species_expr, arr_expr...)
 
     # Construct the expression to set the components metadata
     setcomponents_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
-        Catalyst.CompoundComponents,
-        $species_expr))
+                                                                         Catalyst.CompoundComponents,
+                                                                         $species_expr))
 
     # Ensure the expression is evaluated in the correct scope by escaping it
     escaped_setcomponents_expr = esc(setcomponents_expr)
 
     # Construct the expression to set the coefficients metadata
     setcoefficients_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
-        Catalyst.CompoundCoefficients,
-        $coeffs_expr))
+                                                                           Catalyst.CompoundCoefficients,
+                                                                           $coeffs_expr))
 
     escaped_setcoefficients_expr = esc(setcoefficients_expr)
 
     # Return a block that contains the escaped expressions
     return Expr(:block, escaped_species_expr, escaped_setmetadata_expr,
-        escaped_setcomponents_expr, escaped_setcoefficients_expr)
+                escaped_setcomponents_expr, escaped_setcoefficients_expr)
 end
 
 # Check if a species is a compound
