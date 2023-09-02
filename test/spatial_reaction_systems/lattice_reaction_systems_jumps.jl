@@ -303,3 +303,56 @@ if false
         end
     end
 end
+
+using Catalyst, JumpProcesses, Graphs
+### ABC Model Test (from JumpProcesses) ###
+let 
+    # Preparations (stuff used in JumpProcesses examples ported over here, could be written directly into code).
+    Nsims = 100
+    reltol = 0.05
+    non_spatial_mean = [65.7395, 65.7395, 434.2605] #mean of 10,000 simulations
+    dim = 1
+    linear_size = 5
+    dims = Tuple(repeat([linear_size], dim))
+    domain_size = 1.0 #μ-meter
+    mesh_size = domain_size / linear_size
+    rates = [0.1 / mesh_size, 1.0]
+    diffusivity = 1.0
+    num_species = 3
+
+    # Make model.
+    rn = @reaction_network begin
+        (kB,kD), A + B <--> C
+    end
+    srs = diffusion_reactions([(:D, :A), (:D, :B), (:D, :C)])
+    lattice = Graphs.grid(dims)
+    lrs = LatticeReactionSystem(rn, srs, lattice)
+
+
+    # Set simulation parameters and create problems
+    u0 = [:A => [0,0,500,0,0], :B => [0,0,500,0,0], :C => 0]
+    tspan = (0.0, 10.0)
+    pC = [:kB => rates[1], :kD => rates[2]]
+    pD = [:D => diffusivity]
+    dprob = DiscreteProblem(lrs, u0, tspan, (pC, pD))
+    jump_problems = [JumpProblem(lrs, dprob, alg(); save_positions = (false, false)) for alg in [NSM, DirectCRDirect]] # NRM doesn't work. Might need Cartesian grid.
+
+    # Tests.
+    function get_mean_end_state(jump_prob, Nsims)
+        end_state = zeros(size(jump_prob.prob.u0))
+        for i in 1:Nsims
+            sol = solve(jump_prob, SSAStepper())
+            end_state .+= sol.u[end]
+        end
+        end_state / Nsims
+    end
+    for jprob in jump_problems
+        solution = solve(jprob, SSAStepper())
+        mean_end_state = get_mean_end_state(jprob, Nsims)
+        mean_end_state = reshape(mean_end_state, num_species, num_nodes)
+        diff = sum(mean_end_state, dims = 2) - non_spatial_mean
+        for (i, d) in enumerate(diff)
+            @test abs(d) < reltol * non_spatial_mean[i]
+        end
+    end
+end
