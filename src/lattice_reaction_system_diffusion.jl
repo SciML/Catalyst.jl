@@ -459,7 +459,11 @@ function make_majumps(dprob::DiscreteProblem, lrs::LatticeReactionSystem, aggreg
                            combinatoric_ratelaws = combinatoric_ratelaws, checks = checks)
     (length(___jprob.variable_jumps) != 0) &&
         error("Currently, for lattice jump simulations, variable rate jumps are not supported.")
-    return ___jprob.massaction_jump
+function make_majumps(lrs::LatticeReactionSystem)
+    jumps = assemble_jumps(lrs.rs)
+    if !(jumps[end] isa MassActionJump)
+        error("Only MassAction Jumps are currently allowed in spatial simulation.")
+    return jumps
 end
 
 ### Accessing State & Parameter Array Values ###
