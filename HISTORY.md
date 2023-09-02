@@ -2,6 +2,55 @@
 
 ## Catalyst unreleased (master branch)
 
+## Catalyst 13.4
+- Added the ability to create species that represent chemical compounds and know
+  their constituents. For example, water can be created and queried as
+  ```julia
+  @variables t
+  @species H(t) O(t)
+  @compound H2O(t) 2*H O
+  iscompound(H2O) == true
+  isspecies(H2O) == true   # compounds are also species, so can be used in reactions
+  isequal(components(H2O), [H, O])
+  coefficients(H2O) == [2, 1]
+  ```
+- Added reaction balancing via the `balance_reaction` command, which returns a
+  vector of balanced reaction versions, i.e.
+  ```julia
+  @variables t
+  @species H(t) O(t) C(t)
+  @compound CH4(t) C 4H
+  @compound O2(t) 2O
+  @compound CO2(t) C 2O
+  @compound H2O(t) 2H O
+
+  # unbalanced reaction to balance
+  rx = Reaction(1.0, [CH4, O2], [CO2, H2O])
+
+  # calculate a balanced version, this returns a vector
+  # storing a single balanced version of the reaction in this case
+  brxs = balance_reaction(rx)
+
+  # what one would calculate by hand
+  balanced_rx = Reaction(1.0, [CH4, O2], [CO2, H2O], [1, 2], [1, 2])
+
+  # testing equality
+  @test isequal(balanced_rx, first(brxs))
+  ```
+- Note that balancing works via calculating the nullspace of an associated
+  integer matrix that stores in entry `(i,j)` a signed integer representing the
+  number of times the `i`'th atom appears within the `j`th compound. The entry
+  is positive for a substrate and negative for a product. One cannot balance a
+  reaction involving compounds of compounds currently. A non-empty solution
+  vector is returned if the reaction can be balanced in exactly one way with
+  minimal coefficients while preserving the set of substrates and products, i.e.
+  if the dimension of the nullspace is one. If the dimension is greater than one
+  we return a `Reaction` for each nullspace basis vector, but note that they may
+  currently interchange substrates and products (i.e. we do not solve for if
+  there is a linear combination of them that preserves the set of substrates and
+  products). An empty `Reaction` vector indicates it is not possible to balance
+  the reaction.
+
 ## Catalyst 13.2
 - Array parameters, species, and variables can be use in the DSL if explicitly
   declared with `@parameters`, `@species`, or `@variables` respectively, i.e.
