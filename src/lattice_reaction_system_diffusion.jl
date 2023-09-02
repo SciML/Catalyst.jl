@@ -445,6 +445,7 @@ function make_hopping_constants(dprob::DiscreteProblem, lrs::LatticeReactionSyst
 end
 
 # Creates the mass action jumps from a discrete problem and a lattice reaction system.
+# Should be some way to get mass actions jumps directly from ReactionSystem. Haven't managed to find out how, but when possible, this can be simplified.
 function make_majumps(dprob::DiscreteProblem, lrs::LatticeReactionSystem, aggregator,
                       hopping_constants::Union{Matrix{<:Number}, Matrix{<:Vector}},
                       combinatoric_ratelaws, checks)

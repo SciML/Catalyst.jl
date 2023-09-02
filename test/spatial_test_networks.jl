@@ -1,12 +1,16 @@
 ### Fetch packages ###
 using Catalyst, Graphs
 
+# Sets rnd number.
+using StableRNGs
+rng = StableRNG(12345)
+
 ### Helper Functions ###
 
 # Generates ranomised intiial condition or paraemter values.
-rand_v_vals(grid) = rand(nv(grid))
+rand_v_vals(grid) = rand(rng, nv(grid))
 rand_v_vals(grid, x::Number) = rand_v_vals(grid) * x
-rand_e_vals(grid) = rand(ne(grid))
+rand_e_vals(grid) = rand(rng, ne(grid))
 rand_e_vals(grid, x::Number) = rand_e_vals(grid) * x
 function make_u0_matrix(value_map, vals, symbols)
     (length(symbols) == 0) && (return zeros(0, length(vals)))
