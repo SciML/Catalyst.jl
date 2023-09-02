@@ -415,8 +415,8 @@ function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator
     dprob.p isa Tuple{Vector{Vector{Float64}}, Vector{Vector{Float64}}} ||
         error("Parameters in input DiscreteProblem is of an unexpected type: $(typeof(dprob.p)). Was a LatticeReactionProblem passed into the DiscreteProblem when it was created?")
     hopping_constants = make_hopping_constants(dprob, lrs)
-    majumps = make_majumps(dprob, lrs, aggregator, hopping_constants, combinatoric_ratelaws,
-                           checks)
+    #majumps = make_majumps(lrs, combinatoric_ratelaws=combinatoric_ratelaws)
+    majumps = make_majumps(dprob, lrs, aggregator, hopping_constants, combinatoric_ratelaws, checks)
     ___dprob = DiscreteProblem(reshape(dprob.u0, lrs.nS, lrs.nC), dprob.tspan,
                                first.(dprob.p[1]))
     return JumpProblem(___dprob, aggregator, majumps, hopping_constants = hopping_constants,
@@ -445,26 +445,27 @@ function make_hopping_constants(dprob::DiscreteProblem, lrs::LatticeReactionSyst
 end
 
 # Creates the mass action jumps from a discrete problem and a lattice reaction system.
-# Should be some way to get mass actions jumps directly from ReactionSystem. Haven't managed to find out how, but when possible, this can be simplified.
 function make_majumps(dprob::DiscreteProblem, lrs::LatticeReactionSystem, aggregator,
-                      hopping_constants::Union{Matrix{<:Number}, Matrix{<:Vector}},
-                      combinatoric_ratelaws, checks)
+    hopping_constants::Union{Matrix{<:Number}, Matrix{<:Vector}},
+    combinatoric_ratelaws, checks)
     any(length.(dprob.p[1]) .> 1) &&
-        error("Currently, for lattice jump simulations, spatial non-diffusion parameters are not supported.")
+    error("Currently, for lattice jump simulations, spatial non-diffusion parameters are not supported.")
     ___dprob = DiscreteProblem(lrs.rs, reshape(dprob.u0, lrs.nS, lrs.nC), dprob.tspan,
-                               first.(dprob.p[1]))
+                first.(dprob.p[1]))
     ___jprob = JumpProblem(lrs.rs, ___dprob, aggregator;
-                           hopping_constants = hopping_constants,
-                           spatial_system = lrs.lattice,
-                           combinatoric_ratelaws = combinatoric_ratelaws, checks = checks)
+            hopping_constants = hopping_constants,
+            spatial_system = lrs.lattice,
+            combinatoric_ratelaws = combinatoric_ratelaws, checks = checks)
     (length(___jprob.variable_jumps) != 0) &&
-        error("Currently, for lattice jump simulations, variable rate jumps are not supported.")
-function make_majumps(lrs::LatticeReactionSystem)
-    jumps = assemble_jumps(lrs.rs)
-    if !(jumps[end] isa MassActionJump)
-        error("Only MassAction Jumps are currently allowed in spatial simulation.")
-    return jumps
+    error("Currently, for lattice jump simulations, variable rate jumps are not supported.")
+    return ___jprob.massaction_jump
 end
+
+# function make_majumps(lrs::LatticeReactionSystem; combinatoric_ratelaws=get_combinatoric_ratelaws(lrs.rs))
+#     jumps = assemble_jumps(lrs.rs; combinatoric_ratelaws=combinatoric_ratelaws)
+#     (jumps[end] isa MassActionJump) || error("Only MassAction Jumps are currently allowed in spatial simulation.")
+#     return jumps
+# end
 
 ### Accessing State & Parameter Array Values ###
 
