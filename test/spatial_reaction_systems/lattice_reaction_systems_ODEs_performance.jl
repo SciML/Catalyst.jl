@@ -6,10 +6,6 @@
 using OrdinaryDiffEq
 using Random, Statistics, SparseArrays, Test
 
-# Sets rnd number.
-using StableRNGs
-rng = StableRNG(12345)
-
 # Fetch test networks.
 include("../spatial_test_networks.jl")
 
