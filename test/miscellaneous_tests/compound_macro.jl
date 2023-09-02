@@ -139,3 +139,4 @@ let
     @test isequal(components(A2),components(B2))
     @test isequal(coefficients(A2), coefficients(B2))
 end
+

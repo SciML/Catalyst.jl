@@ -23,6 +23,7 @@ using SafeTestsets
     @time @safetestset "Symbolic Stoichiometry" begin include("miscellaneous_tests/symbolic_stoichiometry.jl") end
     @time @safetestset "Events" begin include("miscellaneous_tests/events.jl") end
     @time @safetestset "Compound species" begin include("miscellaneous_tests/compound_macro.jl") end
+    @time @safetestset "Reaction balancing" begin include("miscellaneous_tests/reaction_balancing.jl") end
     @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end
 
     ### Reaction network analysis. ###
