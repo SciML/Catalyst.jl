@@ -228,18 +228,18 @@ end
 ### Spatial ODE Functor Structures ###
 
 # Functor structure containg the information for the forcing function of a spatial ODE with diffusion on a lattice.
-struct LatticeDiffusionODEf
-    ofunc::SciMLBase.AbstractODEFunction{true}
+struct LatticeDiffusionODEf{R,S,T}
+    ofunc::R
     nC::Int64
     nS::Int64
     pC::Vector{Vector{Float64}}
     pC_location_types::Vector{Bool}
     pC_idxs::UnitRange{Int64}
-    diffusion_rates::Vector
+    diffusion_rates::Vector{S}
     leaving_rates::Matrix{Float64}
-    enumerated_edges::Base.Iterators.Enumerate{Graphs.SimpleGraphs.SimpleEdgeIter{SimpleDiGraph{Int64}}}
+    enumerated_edges::T
     
-    function LatticeDiffusionODEf(ofunc::SciMLBase.AbstractODEFunction{true}, pC, diffusion_rates::Vector, lrs::LatticeReactionSystem)
+    function LatticeDiffusionODEf(ofunc::R, pC, diffusion_rates::Vector{S}, lrs::LatticeReactionSystem) where {R, S, T}
         leaving_rates = zeros(length(diffusion_rates), lrs.nC)
         for (s_idx, rates) in enumerate(last.(diffusion_rates)),
             (e_idx, e) in enumerate(edges(lrs.lattice))
@@ -249,26 +249,26 @@ struct LatticeDiffusionODEf
         pC_location_types = length.(pC) .== 1
         pC_idxs = 1:length(pC)
         enumerated_edges = deepcopy(enumerate(edges(lrs.lattice)))
-        new(ofunc, lrs.nC, lrs.nS, pC, pC_location_types, pC_idxs, diffusion_rates, leaving_rates, enumerated_edges)
+        new{R,S,typeof(enumerated_edges)}(ofunc, lrs.nC, lrs.nS, pC, pC_location_types, pC_idxs, diffusion_rates, leaving_rates, enumerated_edges)
     end
 end
 
 # Functor structure containg the information for the forcing function of a spatial ODE with diffusion on a lattice.
-# Thinking that LatticeDiffusionODEjac maybe should be a parameteric type or have subtypes to designate whenever it is sparse or not.
-struct LatticeDiffusionODEjac
-    ofunc::SciMLBase.AbstractODEFunction{true}
+struct LatticeDiffusionODEjac{S,T}
+    ofunc::S
     nC::Int64
     nS::Int64
     pC::Vector{Vector{Float64}}
     pC_location_types::Vector{Bool}
     pC_idxs::UnitRange{Int64}
     sparse::Bool
-    jac_values
+    jac_values::T
 
-    function LatticeDiffusionODEjac(ofunc::SciMLBase.AbstractODEFunction{true}, pC, lrs::LatticeReactionSystem, jac_prototype::Union{Nothing, SparseMatrixCSC{Float64, Int64}}, sparse::Bool)
+    function LatticeDiffusionODEjac(ofunc::S, pC, lrs::LatticeReactionSystem, jac_prototype::Union{Nothing, SparseMatrixCSC{Float64, Int64}}, sparse::Bool) where {S, T}
         pC_location_types = length.(pC) .== 1
         pC_idxs = 1:length(pC)
-        new(ofunc, lrs.nC, lrs.nS, pC, pC_location_types, pC_idxs, sparse, sparse ? jac_prototype.nzval : Matrix(jac_prototype))
+        jac_values = sparse ? jac_prototype.nzval : Matrix(jac_prototype)
+        new{S,typeof(jac_values)}(ofunc, lrs.nC, lrs.nS, pC, pC_location_types, pC_idxs, sparse, jac_values)
     end
 end
 
