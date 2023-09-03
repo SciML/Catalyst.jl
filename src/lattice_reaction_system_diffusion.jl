@@ -225,6 +225,53 @@ function compute_diffusion_rates(rate_law::Num,
                             for p in relevant_parameters)) for idxE in 1:nE]
 end
 
+### Spatial ODE Functor Structures ###
+
+# Functor structure containg the information for the forcing function of a spatial ODE with diffusion on a lattice.
+struct LatticeDiffusionODEf
+    ofunc::SciMLBase.AbstractODEFunction{true}
+    nC::Int64
+    nS::Int64
+    pC::Vector{Vector{Float64}}
+    pC_location_types::Vector{Bool}
+    pC_idxs::UnitRange{Int64}
+    diffusion_rates::Vector
+    leaving_rates::Matrix{Float64}
+    enumerated_edges::Base.Iterators.Enumerate{Graphs.SimpleGraphs.SimpleEdgeIter{SimpleDiGraph{Int64}}}
+    
+    function LatticeDiffusionODEf(ofunc::SciMLBase.AbstractODEFunction{true}, pC, diffusion_rates::Vector, lrs::LatticeReactionSystem)
+        leaving_rates = zeros(length(diffusion_rates), lrs.nC)
+        for (s_idx, rates) in enumerate(last.(diffusion_rates)),
+            (e_idx, e) in enumerate(edges(lrs.lattice))
+    
+            leaving_rates[s_idx, e.src] += get_component_value(rates, e_idx)
+        end
+        pC_location_types = length.(pC) .== 1
+        pC_idxs = 1:length(pC)
+        enumerated_edges = deepcopy(enumerate(edges(lrs.lattice)))
+        new(ofunc, lrs.nC, lrs.nS, pC, pC_location_types, pC_idxs, diffusion_rates, leaving_rates, enumerated_edges)
+    end
+end
+
+# Functor structure containg the information for the forcing function of a spatial ODE with diffusion on a lattice.
+# Thinking that LatticeDiffusionODEjac maybe should be a parameteric type or have subtypes to designate whenever it is sparse or not.
+struct LatticeDiffusionODEjac
+    ofunc::SciMLBase.AbstractODEFunction{true}
+    nC::Int64
+    nS::Int64
+    pC::Vector{Vector{Float64}}
+    pC_location_types::Vector{Bool}
+    pC_idxs::UnitRange{Int64}
+    sparse::Bool
+    jac_values
+
+    function LatticeDiffusionODEjac(ofunc::SciMLBase.AbstractODEFunction{true}, pC, lrs::LatticeReactionSystem, jac_prototype::Union{Nothing, SparseMatrixCSC{Float64, Int64}}, sparse::Bool)
+        pC_location_types = length.(pC) .== 1
+        pC_idxs = 1:length(pC)
+        new(ofunc, lrs.nC, lrs.nS, pC, pC_location_types, pC_idxs, sparse, sparse ? jac_prototype.nzval : Matrix(jac_prototype))
+    end
+end
+
 ### ODEProblem ###
 
 # Creates an ODEProblem from a LatticeReactionSystem.
@@ -248,78 +295,12 @@ function build_odefunction(lrs::LatticeReactionSystem, pC::Vector{Vector{Float64
     diffusion_rates = [findfirst(isequal(diff_rates[1]), states(lrs.rs)) => diff_rates[2]
                        for diff_rates in diffusion_rates_speciesmap]
 
-    f = build_f(ofunc, pC, diffusion_rates, lrs)
+    f = LatticeDiffusionODEf(ofunc, pC, diffusion_rates, lrs)
     jac_prototype = (use_jac || sparse) ?
                     build_jac_prototype(ofunc_sparse.jac_prototype, diffusion_rates,
                                         lrs; set_nonzero = use_jac) : nothing
-    jac = use_jac ? build_jac(ofunc, pC, lrs, jac_prototype, sparse) : nothing
+    jac = use_jac ? LatticeDiffusionODEjac(ofunc, pC, lrs, jac_prototype, sparse) : nothing
     return ODEFunction(f; jac = jac, jac_prototype = (sparse ? jac_prototype : nothing))
-end
-
-# Builds the forcing (f) function for a reaction system on a lattice.
-function build_f(ofunc::SciMLBase.AbstractODEFunction{true}, pC,
-                 diffusion_rates::Vector,
-                 lrs::LatticeReactionSystem)
-    leaving_rates = zeros(length(diffusion_rates), lrs.nC)
-    for (s_idx, rates) in enumerate(last.(diffusion_rates)),
-        (e_idx, e) in enumerate(edges(lrs.lattice))
-
-        leaving_rates[s_idx, e.src] += get_component_value(rates, e_idx)
-    end
-    pC_location_types = length.(pC) .== 1
-    pC_idxs = 1:length(pC)
-    enumerated_edges = deepcopy(enumerate(edges(lrs.lattice)))
-
-    return function (du, u, p, t)
-        # Updates for non-spatial reactions.
-        for comp_i::Int64 in 1:(lrs.nC)
-            ofunc((@view du[get_indexes(comp_i, lrs.nS)]),
-                  (@view u[get_indexes(comp_i, lrs.nS)]),
-                  view_pC_vector(pC, comp_i, pC_location_types, pC_idxs), t)
-        end
-
-        # Updates for spatial diffusion reactions.
-        for (s_idx, (s, rates)) in enumerate(diffusion_rates)
-            for comp_i::Int64 in 1:(lrs.nC)
-                du[get_index(comp_i, s, lrs.nS)] -= leaving_rates[s_idx, comp_i] *
-                                                    u[get_index(comp_i, s,
-                                                                lrs.nS)]
-            end
-            for (e_idx::Int64, edge::Graphs.SimpleGraphs.SimpleEdge{Int64}) in enumerated_edges
-                du[get_index(edge.dst, s, lrs.nS)] += get_component_value(rates, e_idx) *
-                                                      u[get_index(edge.src, s,
-                                                                  lrs.nS)]
-            end
-        end
-    end
-end
-
-# Builds the Jacobian function for a reaction system on a lattice.
-function build_jac(ofunc::SciMLBase.AbstractODEFunction{true}, pC,
-                   lrs::LatticeReactionSystem,
-                   jac_prototype::Union{Nothing, SparseMatrixCSC{Float64, Int64}},
-                   sparse::Bool)
-    pC_location_types = length.(pC) .== 1
-    pC_idxs = 1:length(pC)
-    reset_J_vals = (sparse ? J -> (J.nzval .= 0.0) : J -> (J .= 0.0))
-    add_diff_J_vals = (sparse ? J -> (J.nzval .+= jac_prototype.nzval) :
-                       J -> (J .+= Matrix(jac_prototype)))
-
-    return function (J, u, p, t)
-        # Because of weird stuff where the Jacobian is not reset that I don't understand properly.
-        reset_J_vals(J)
-
-        # Updates for non-spatial reactions.
-        for comp_i::Int64 in 1:(lrs.nC)
-            ofunc.jac((@view J[get_indexes(comp_i, lrs.nS),
-                               get_indexes(comp_i, lrs.nS)]),
-                      (@view u[get_indexes(comp_i, lrs.nS)]),
-                      view_pC_vector(pC, comp_i, pC_location_types, pC_idxs), t)
-        end
-
-        # Updates for the spatial reactions.
-        add_diff_J_vals(J)
-    end
 end
 
 # Builds a jacobian prototype. If requested, populate it with the Jacobian's (constant) values as well.
@@ -393,6 +374,52 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64},
     return SparseMatrixCSC(lrs.nS * lrs.nC, lrs.nS * lrs.nC, J_colptr, J_rowval, J_nzval)
 end
 
+# Defines the forcing functors effect on the (spatial) ODE system.
+function (f_func::LatticeDiffusionODEf)(du, u, p, t)
+    # Updates for non-spatial reactions.
+    for comp_i::Int64 in 1:(f_func.nC)
+        f_func.ofunc((@view du[get_indexes(comp_i, f_func.nS)]),
+              (@view u[get_indexes(comp_i, f_func.nS)]),
+              view_pC_vector(p, comp_i, f_func.pC_location_types, f_func.pC_idxs), t)
+    end
+
+    # Updates for spatial diffusion reactions.
+    for (s_idx, (s, rates)) in enumerate(f_func.diffusion_rates)
+        for comp_i::Int64 in 1:(f_func.nC)
+            du[get_index(comp_i, s, f_func.nS)] -= f_func.leaving_rates[s_idx, comp_i] *
+                                                u[get_index(comp_i, s,
+                                                f_func.nS)]
+        end
+        for (e_idx::Int64, edge::Graphs.SimpleGraphs.SimpleEdge{Int64}) in f_func.enumerated_edges
+            du[get_index(edge.dst, s, f_func.nS)] += get_component_value(rates, e_idx) *
+                                                  u[get_index(edge.src, s,
+                                                  f_func.nS)]
+        end
+    end
+end
+
+# Defines the jacobian functors effect on the (spatial) ODE system.
+function (jac_func::LatticeDiffusionODEjac)(J, u, p, t)
+    # Because of weird stuff where the Jacobian is not reset that I don't understand properly.
+    reset_J_vals!(J)
+
+    # Updates for non-spatial reactions.
+    for comp_i::Int64 in 1:(jac_func.nC)
+        jac_func.ofunc.jac((@view J[get_indexes(comp_i, jac_func.nS),
+                           get_indexes(comp_i, jac_func.nS)]),
+                  (@view u[get_indexes(comp_i, jac_func.nS)]),
+                  view_pC_vector(p, comp_i, jac_func.pC_location_types, jac_func.pC_idxs), t)
+    end
+
+    # Updates for the spatial reactions.
+    add_diff_J_vals!(J, jac_func)
+end
+# Resets the jacobian matrix within a jac call.
+reset_J_vals!(J::Matrix) = (J .= 0.0)
+reset_J_vals!(J::SparseMatrixCSC) = (J.nzval .= 0.0)
+# Updates the jacobian matrix with the difussion values.
+add_diff_J_vals!(J::SparseMatrixCSC, jac_func::LatticeDiffusionODEjac) = (J.nzval .+= jac_func.jac_values)
+add_diff_J_vals!(J::Matrix, jac_func::LatticeDiffusionODEjac) = (J .+= jac_func.jac_values)
 
 ### Accessing State & Parameter Array Values ###
 
