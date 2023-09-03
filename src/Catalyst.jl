@@ -34,7 +34,7 @@ import ModelingToolkit: check_variables,
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools
-import Graphs, Graphs.DiGraph, Graphs.SimpleGraph, Graphs.vertices, Graphs.edges, Graphs.add_vertices!, Graphs.nv, Graphs.ne
+import Graphs, Graphs.DiGraph, Graphs.SimpleGraph, Graphs.SimpleDiGraph, Graphs.vertices, Graphs.edges, Graphs.add_vertices!, Graphs.nv, Graphs.ne
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 
