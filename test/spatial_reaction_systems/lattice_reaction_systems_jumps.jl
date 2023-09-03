@@ -119,6 +119,7 @@ let
     non_spatial_mean = [65.7395, 65.7395, 434.2605] #mean of 10,000 simulations
     dim = 1
     linear_size = 5
+    num_nodes = linear_size^dim
     dims = Tuple(repeat([linear_size], dim))
     domain_size = 1.0 #μ-meter
     mesh_size = domain_size / linear_size
