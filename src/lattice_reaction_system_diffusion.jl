@@ -460,7 +460,7 @@ function make_majumps(dprob::DiscreteProblem, lrs::LatticeReactionSystem, aggreg
     error("Currently, for lattice jump simulations, variable rate jumps are not supported.")
     return ___jprob.massaction_jump
 end
-
+# We would want something like this, but it errors if used.
 # function make_majumps(lrs::LatticeReactionSystem; combinatoric_ratelaws=get_combinatoric_ratelaws(lrs.rs))
 #     jumps = assemble_jumps(lrs.rs; combinatoric_ratelaws=combinatoric_ratelaws)
 #     (jumps[end] isa MassActionJump) || error("Only MassAction Jumps are currently allowed in spatial simulation.")
