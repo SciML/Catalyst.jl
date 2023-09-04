@@ -446,7 +446,7 @@ function make_hopping_constants(dprob::DiscreteProblem, lrs::LatticeReactionSyst
     end
 end
 
-# Creates the mass action jumps from a discrete problem and a lattice reaction system.
+# Creates the mass action jumps from a discrete problem and a reaction system.
 function make_majumps(non_spatial_prob, rs::ReactionSystem)
     prob = non_spatial_prob
     
