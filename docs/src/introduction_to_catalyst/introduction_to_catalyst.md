@@ -194,10 +194,10 @@ We see that oscillations remain, but become much noisier. Note, in constructing
 the `JumpProblem` we could have used any of the SSAs that are part of JumpProcesses
 instead of the `Direct` method, see the list of SSAs (i.e., constant rate jump
 aggregators) in the
-[documentation](https://docs.sciml.ai/stable/modules/JumpProcesses/jump_types/#Constant-Rate-Jump-Aggregators).
+[documentation](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-for-Exact-Simulation).
 
 Common questions that arise in using the JumpProcesses SSAs (i.e. Gillespie methods)
-are collated in the [JumpProcesses FAQ](https://docs.sciml.ai/stable/modules/JumpProcesses/faq/).
+are collated in the [JumpProcesses FAQ](https://docs.sciml.ai/JumpProcesses/stable/faq/).
 
 ---
 ## Chemical Langevin equation (CLE) stochastic differential equation (SDE) models
