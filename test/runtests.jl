@@ -39,7 +39,7 @@ using SafeTestsets
 
     ### Tests Spatial Network Simulations. ###
     @time @safetestset "PDE Systems Simulations" begin include("spatial_reaction_systems/simulate_PDEs.jl") end
-    @time @safetestset "Lattice Systems Simulations" begin include("spatial_reaction_systems/lattice_reaction_systems.jl") end
+    @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_reaction_systems/lattice_reaction_systems_ODEs.jl") end
 
     ### Tests network visualization. ###
     @time @safetestset "Latexify" begin include("visualization/latexify.jl") end
