@@ -233,8 +233,8 @@ struct LatticeDiffusionODEf{R,S,T}
     nC::Int64
     nS::Int64
     pC::Vector{Vector{Float64}}
-    pC_location_types::Vector{Bool}
-    pC_idxs::UnitRange{Int64}
+    work_pC::Vector{Float64}    
+    enumerated_pC_idx_types::Base.Iterators.Enumerate{BitVector}
     diffusion_rates::Vector{S}
     leaving_rates::Matrix{Float64}
     enumerated_edges::T
@@ -246,10 +246,10 @@ struct LatticeDiffusionODEf{R,S,T}
     
             leaving_rates[s_idx, e.src] += get_component_value(rates, e_idx)
         end
-        pC_location_types = length.(pC) .== 1
-        pC_idxs = 1:length(pC)
+        work_pC = zeros(lrs.nC)
+        enumerated_pC_idx_types = enumerate(length.(pC) .== 1)
         enumerated_edges = deepcopy(enumerate(edges(lrs.lattice)))
-        new{R,S,typeof(enumerated_edges)}(ofunc, lrs.nC, lrs.nS, pC, pC_location_types, pC_idxs, diffusion_rates, leaving_rates, enumerated_edges)
+        new{R,S,typeof(enumerated_edges)}(ofunc, lrs.nC, lrs.nS, pC, work_pC, enumerated_pC_idx_types, diffusion_rates, leaving_rates, enumerated_edges)
     end
 end
 
@@ -259,16 +259,16 @@ struct LatticeDiffusionODEjac{S,T}
     nC::Int64
     nS::Int64
     pC::Vector{Vector{Float64}}
-    pC_location_types::Vector{Bool}
-    pC_idxs::UnitRange{Int64}
+    work_pC::Vector{Float64}    
+    enumerated_pC_idx_types::Base.Iterators.Enumerate{BitVector}
     sparse::Bool
     jac_values::T
 
     function LatticeDiffusionODEjac(ofunc::S, pC, lrs::LatticeReactionSystem, jac_prototype::Union{Nothing, SparseMatrixCSC{Float64, Int64}}, sparse::Bool) where {S, T}
-        pC_location_types = length.(pC) .== 1
-        pC_idxs = 1:length(pC)
+        work_pC = zeros(lrs.nC)
+        enumerated_pC_idx_types = enumerate(length.(pC) .== 1)
         jac_values = sparse ? jac_prototype.nzval : Matrix(jac_prototype)
-        new{S,typeof(jac_values)}(ofunc, lrs.nC, lrs.nS, pC, pC_location_types, pC_idxs, sparse, jac_values)
+        new{S,typeof(jac_values)}(ofunc, lrs.nC, lrs.nS, pC, work_pC, enumerated_pC_idx_types, sparse, jac_values)
     end
 end
 
@@ -380,7 +380,7 @@ function (f_func::LatticeDiffusionODEf)(du, u, p, t)
     for comp_i::Int64 in 1:(f_func.nC)
         f_func.ofunc((@view du[get_indexes(comp_i, f_func.nS)]),
               (@view u[get_indexes(comp_i, f_func.nS)]),
-              view_pC_vector(p, comp_i, f_func.pC_location_types, f_func.pC_idxs), t)
+              view_pC_vector!(f_func.work_pC, p, comp_i, f_func.enumerated_pC_idx_types), t)
     end
 
     # Updates for spatial diffusion reactions.
@@ -408,7 +408,7 @@ function (jac_func::LatticeDiffusionODEjac)(J, u, p, t)
         jac_func.ofunc.jac((@view J[get_indexes(comp_i, jac_func.nS),
                            get_indexes(comp_i, jac_func.nS)]),
                   (@view u[get_indexes(comp_i, jac_func.nS)]),
-                  view_pC_vector(p, comp_i, jac_func.pC_location_types, jac_func.pC_idxs), t)
+                  view_pC_vector!(jac_func.work_pC, p, comp_i, jac_func.enumerated_pC_idx_types), t)
     end
 
     # Updates for the spatial reactions.
@@ -452,8 +452,11 @@ function expand_component_values(values::Vector{<:Vector}, n, location_types::Ve
     vcat([get_component_value.(values, comp, location_types) for comp in 1:n]...)
 end
 # Creates a view of the pC vector at a given comaprtment.
-function view_pC_vector(pC, comp, pC_location_types, pC_idxs)
-    mapview(p_idx -> pC_location_types[p_idx] ? pC[p_idx][1] : pC[p_idx][comp], pC_idxs)
+function view_pC_vector!(work_pC, pC, comp, enumerated_pC_idx_types)
+    for (idx,loc_type) in enumerated_pC_idx_types
+        work_pC[idx] = (loc_type ? pC[idx][1] : pC[idx][comp])
+    end
+    return work_pC
 end
 # Expands a u0/p information stored in Vector{Vector{}} for to Matrix form (currently used in Spatial Jump systems).
 function matrix_expand_component_values(values::Vector{<:Vector}, n)
