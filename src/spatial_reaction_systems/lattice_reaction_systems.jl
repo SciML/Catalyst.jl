@@ -17,6 +17,10 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
     nS::Int64
     """Whenever the initial input was a digraph."""
     init_digraph::Bool
+    """Species that may move spatially."""
+    spatial_species::Bool
+    """Parameters which values are tied to edges (adjacencies).."""
+    edge_parameters::Bool
 
     function LatticeReactionSystem(rs::ReactionSystem,
                                    spatial_reactions::Vector{<:AbstractSpatialReaction},
@@ -25,17 +29,16 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
                    length(species(rs)), init_digraph)
     end
 end
-function LatticeReactionSystem(rs::ReactionSystem,
-                               spatial_reactions::Vector{<:AbstractSpatialReaction},
-                               lattice::SimpleGraph)
-    return LatticeReactionSystem(rs, spatial_reactions, graph_to_digraph(lattice);
-                                 init_digraph = false)
+function LatticeReactionSystem(rs, srs, lat::SimpleGraph)
+    return LatticeReactionSystem(rs, srs, graph_to_digraph(lat); init_digraph = false)
 end
-function LatticeReactionSystem(rs::ReactionSystem,
-                               spatial_reaction::AbstractSpatialReaction,
-                               lattice::Graphs.AbstractGraph)
-    return LatticeReactionSystem(rs, [spatial_reaction], lattice)
+function LatticeReactionSystem(rs, sr::AbstractSpatialReaction, lat)
+    return LatticeReactionSystem(rs, [ss], lat)
 end
+function LatticeReactionSystem(rs, sr::AbstractSpatialReaction, lat::SimpleGraph)
+    return LatticeReactionSystem(rs, [sr], graph_to_digraph(lat); init_digraph = false)
+end
+
 # Converts a graph to a digraph (in a way where we know where the new edges are in teh edge vector).
 function graph_to_digraph(g1)
     g2 = Graphs.SimpleDiGraphFromIterator(reshape(permutedims(hcat(collect(edges(g1)),
@@ -43,6 +46,21 @@ function graph_to_digraph(g1)
     add_vertices!(g2, nv(g1) - nv(g2))
     return g2
 end
+
+### Lattice ReactionSystem Getters ###
+
+# Get all species.
+species(lrs::LatticeReactionSystem) = unique([species(lrs.rs); lrs.spatial_species])
+# Get all species that may be transported.
+spatial_species(lrs::LatticeReactionSystem) = lrs.spatial_species
+
+# Get all parameters.
+ModelingToolkit.parameters(lrs::LatticeReactionSystem) = unique([species(lrs.rs); lrs.edge_parameters])
+# Get all parameters which values are tied to vertexes (compartments).
+vertex_parameters(lrs::LatticeReactionSystem) = setdiff(parameters(lrs), edge_parameters(lrs))
+# Get all parameters which values are tied to edges (adjacencies).
+edge_parameters(lrs::LatticeReactionSystem) = lrs.edge_parameters
+
 # Gets the species of a lattice reaction system.
 species(lrs::LatticeReactionSystem) = species(lrs.rs)
 function diffusion_species(lrs::LatticeReactionSystem)
