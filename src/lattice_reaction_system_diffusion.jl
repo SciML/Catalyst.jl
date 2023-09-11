@@ -119,7 +119,7 @@ end
 function is_spatial_param(p, lrs)
     hasmetadata(p, DiffusionParameter) && getmetadata(p, DiffusionParameter) &&
         (return true)    # Wanted to just depend on metadata, but seems like we cannot implement that trivially.
-    return (any(isequal.(p, parameters(lrs.rs))) ? false : true)
+    return (any(isequal(p), parameters(lrs.rs)) ? false : true)
 end
 
 ### Processes Input u0 & p ###
