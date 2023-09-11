@@ -1,56 +1,3 @@
-### Diffusion Reaction Structure. ###
-
-# Implements the diffusionparameter metadata field.
-struct DiffusionParameter end
-Symbolics.option_to_metadata_type(::Val{:diffusionparameter}) = DiffusionParameter
-
-isdiffusionparameter(x::Num, args...) = isdiffusionparameter(Symbolics.unwrap(x), args...)
-function isdiffusionparameter(x, default = false)
-    p = Symbolics.getparent(x, nothing)
-    p === nothing || (x = p)
-    Symbolics.getmetadata(x, DiffusionParameter, default)
-end
-
-# Abstract spatial reaction structures.
-abstract type AbstractSpatialReaction end
-
-# A diffusion reaction. These are simple to hanlde, and should cover most types of spatial reactions.
-# Currently only permit constant rates.
-struct DiffusionReaction <: AbstractSpatialReaction
-    """The rate function (excluding mass action terms). Currently only constants supported"""
-    rate::Num
-    """The species that is subject to difusion."""
-    species::Num
-    """A symbol representation of the species that is subject to difusion."""
-    species_sym::Symbol    # Required for identification in certain cases.
-
-    # Creates a diffusion reaction.
-    function DiffusionReaction(rate::Num, species::Num)
-        new(rate, species, ModelingToolkit.getname(species))
-    end
-    function DiffusionReaction(rate::Number, species::Num)
-        new(Num(rate), species, ModelingToolkit.getname(species))
-    end
-    function DiffusionReaction(rate::Symbol, species::Num)
-        new(Symbolics.variable(rate), species, ModelingToolkit.getname(species))
-    end
-    function DiffusionReaction(rate::Num, species::Symbol)
-        new(rate, Symbolics.variable(species), species)
-    end
-    function DiffusionReaction(rate::Number, species::Symbol)
-        new(Num(rate), Symbolics.variable(species), species)
-    end
-    function DiffusionReaction(rate::Symbol, species::Symbol)
-        new(Symbolics.variable(rate), Symbolics.variable(species), species)
-    end
-end
-# Creates a vector of DiffusionReactions.
-function diffusion_reactions(diffusion_reactions)
-    [DiffusionReaction(dr[1], dr[2]) for dr in diffusion_reactions]
-end
-# Gets the parameters in a diffusion reaction.
-ModelingToolkit.parameters(dr::DiffusionReaction) = Symbolics.get_variables(dr.rate)
-
 ### Lattice Reaction Network Structure ###
 # Desribes a spatial reaction network over a graph.
 struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this part messes up show, disabling me from creating LRSs
@@ -68,7 +15,7 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
     nE::Int64
     """The number of species."""
     nS::Int64
-    """Whenever the initial input was a di graph."""
+    """Whenever the initial input was a digraph."""
     init_digraph::Bool
 
     function LatticeReactionSystem(rs::ReactionSystem,
@@ -77,19 +24,19 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
         return new(rs, spatial_reactions, lattice, nv(lattice), ne(lattice),
                    length(species(rs)), init_digraph)
     end
-    function LatticeReactionSystem(rs::ReactionSystem,
-                                   spatial_reactions::Vector{<:AbstractSpatialReaction},
-                                   lattice::SimpleGraph)
-        return LatticeReactionSystem(rs, spatial_reactions, graph_to_digraph(lattice);
-                                     init_digraph = false)
-    end
-    function LatticeReactionSystem(rs::ReactionSystem,
-                                   spatial_reaction::AbstractSpatialReaction,
-                                   lattice::Graphs.AbstractGraph)
-        return LatticeReactionSystem(rs, [spatial_reaction], lattice)
-    end
 end
-# Covnerts a graph to a digraph (in a way where we know where the new edges are in teh edge vector).
+function LatticeReactionSystem(rs::ReactionSystem,
+                               spatial_reactions::Vector{<:AbstractSpatialReaction},
+                               lattice::SimpleGraph)
+    return LatticeReactionSystem(rs, spatial_reactions, graph_to_digraph(lattice);
+                                 init_digraph = false)
+end
+function LatticeReactionSystem(rs::ReactionSystem,
+                               spatial_reaction::AbstractSpatialReaction,
+                               lattice::Graphs.AbstractGraph)
+    return LatticeReactionSystem(rs, [spatial_reaction], lattice)
+end
+# Converts a graph to a digraph (in a way where we know where the new edges are in teh edge vector).
 function graph_to_digraph(g1)
     g2 = Graphs.SimpleDiGraphFromIterator(reshape(permutedims(hcat(collect(edges(g1)),
                                                        reverse.(edges(g1)))), :, 1)[:])
