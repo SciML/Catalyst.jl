@@ -70,12 +70,6 @@ export @reaction_network, @add_reactions, @reaction, @species
 include("registered_functions.jl")
 export mm, mmr, hill, hillr, hillar
 
-# spatial reaction networks
-include("lattice_reaction_system_diffusion.jl")
-export DiffusionReaction, diffusion_reactions, isdiffusionparameter
-export LatticeReactionSystem
-export compartment_parameters, diffusion_parameters, diffusion_species
-
 # functions to query network properties
 include("networkapi.jl")
 export species, nonspecies, reactionparams, reactions, speciesmap, paramsmap
@@ -104,5 +98,14 @@ export Graph, savegraph, complexgraph
 include("compound.jl")
 export @compound
 export components, iscompound, coefficients
+
+# spatial reactions
+include("spatial_reaction_systems/spatial_reactions.jl")
+export TransportReaction, transport_reactions, isedgeparameter
+
+# lattice reaction systems
+include("spatial_reaction_systems/lattice_reaction_systems.jl")
+export LatticeReactionSystem
+export spatial_species, vertex_parameters, edge_parameters
 
 end # module
