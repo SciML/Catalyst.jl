@@ -52,9 +52,16 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
                                p_in = DiffEqBase.NullParameters(), args...;
                                jac = true, sparse = jac, kwargs...)
     is_transport_system(lrs) || error("Currently lattice ODE simulations only supported when all spatial reactions are transport reactions.")
-    u0 = lattice_process_u0(u0_in, ModelingToolkit.getname.(species(lrs)), lrs.nV)
-    pV, pD = lattice_process_p(p_in, Symbol.(compartment_parameters(lrs)),
-                               Symbol.(edge_parameters(lrs)), lrs)
+    
+    # Converts potential symmaps to varmaps.
+    u0_in = symmap_to_varmap(lrs, u0_in)
+    p_in = (p_in isa Tuple{<:Any,<:Any}) ? (symmap_to_varmap(lrs, p_in[1]),symmap_to_varmap(lrs, p_in[2])) : symmap_to_varmap(lrs, p_in)
+    
+    # Converts u0 and p to Vector{Vector{Float64}} form.
+    u0 = lattice_process_u0(u0_in, species(lrs), lrs.nV)
+    pV, pD = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs), lrs)
+
+    # Creates ODEProblem.
     ofun = build_odefunction(lrs, pV, pD, jac, sparse)
     return ODEProblem(ofun, u0, tspan, pV, args...; kwargs...)
 end
@@ -100,13 +107,13 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, 
         local_elements = in(s, spat_species) *
                          (length(lrs.lattice.fadjlist[comp]) + only_spat[s])
         spatial_elements = -(ns_jac_prototype.colptr[(s + 1):-1:s]...)
-        J_colptr[col_idx + 1] = J_colptr[col_idx] + local_elements + spatial_elements_elements
+        J_colptr[col_idx + 1] = J_colptr[col_idx] + local_elements + spatial_elements
 
         # Row values.
         rows = ns_jac_prototype.rowval[ns_jac_prototype.colptr[s]:(ns_jac_prototype.colptr[s + 1] - 1)] .+
                (comp - 1) * lrs.nS
         if in(s, spat_species)
-            # Finds the location of the spatial_elements elements, and inserts the elements from the non-spatial part into this.
+            # Finds the location of the spatial_elements, and inserts the elements from the non-spatial part into this.
             spatial_rows = (lrs.lattice.fadjlist[comp] .- 1) .* lrs.nS .+ s
             split_idx = isempty(rows) ? 1 : findfirst(spatial_rows .> rows[1])
             isnothing(split_idx) && (split_idx = length(spatial_rows) + 1)
