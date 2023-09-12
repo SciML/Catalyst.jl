@@ -10,7 +10,7 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
 
     # Derrived values.
     """The number of compartments."""
-    nC::Int64
+    nV::Int64
     """The number of edges."""
     nE::Int64
     """The number of species."""
@@ -18,22 +18,26 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
     """Whenever the initial input was a digraph."""
     init_digraph::Bool
     """Species that may move spatially."""
-    spatial_species::Bool
+    spatial_species::Vector{BasicSymbolic{Real}}
     """Parameters which values are tied to edges (adjacencies).."""
-    edge_parameters::Bool
+    edge_parameters::Vector{BasicSymbolic{Real}}
 
     function LatticeReactionSystem(rs::ReactionSystem,
                                    spatial_reactions::Vector{<:AbstractSpatialReaction},
                                    lattice::DiGraph; init_digraph = true)
-        return new(rs, spatial_reactions, lattice, nv(lattice), ne(lattice),
-                   length(species(rs)), init_digraph)
+        spatial_species = unique(spatial_species.(spatial_reactions))
+        rs_edge_parameters = filter(isedgeparameter, parameters(rs))
+        srs_edge_parameters = setdiff(vcat(parameters.(spatial_reactions)), parameters(rs))
+        edge_parameters = unique([rs_edge_parameters; srs_edge_parameters])
+        foreach(sr -> check_spatial_reaction_validity(rs, rs), spatial_reactions)                                  
+        return new(rs, spatial_reactions, lattice, nv(lattice), ne(lattice), length(species(rs)), init_digraph, spatial_species, edge_parameters)
     end
 end
 function LatticeReactionSystem(rs, srs, lat::SimpleGraph)
     return LatticeReactionSystem(rs, srs, graph_to_digraph(lat); init_digraph = false)
 end
 function LatticeReactionSystem(rs, sr::AbstractSpatialReaction, lat)
-    return LatticeReactionSystem(rs, [ss], lat)
+    return LatticeReactionSystem(rs, [sr], lat)
 end
 function LatticeReactionSystem(rs, sr::AbstractSpatialReaction, lat::SimpleGraph)
     return LatticeReactionSystem(rs, [sr], graph_to_digraph(lat); init_digraph = false)
@@ -61,50 +65,27 @@ vertex_parameters(lrs::LatticeReactionSystem) = setdiff(parameters(lrs), edge_pa
 # Get all parameters which values are tied to edges (adjacencies).
 edge_parameters(lrs::LatticeReactionSystem) = lrs.edge_parameters
 
-# Gets the species of a lattice reaction system.
-species(lrs::LatticeReactionSystem) = species(lrs.rs)
-function diffusion_species(lrs::LatticeReactionSystem)
-    filter(s -> ModelingToolkit.getname(s) in getfield.(lrs.spatial_reactions, :species_sym),
-           species(lrs.rs))
-end
-
-# Gets the parameters in a lattice reaction system.
-function ModelingToolkit.parameters(lrs::LatticeReactionSystem)
-    unique(vcat(parameters(lrs.rs),
-                Symbolics.get_variables.(getfield.(lrs.spatial_reactions, :rate))...))
-end
-function compartment_parameters(lrs::LatticeReactionSystem)
-    filter(p -> !is_spatial_param(p, lrs), parameters(lrs))
-end
-function diffusion_parameters(lrs::LatticeReactionSystem)
-    filter(p -> is_spatial_param(p, lrs), parameters(lrs))
-end
-
-# Checks whenever a parameter is a spatial parameter or not. 
-function is_spatial_param(p, lrs)
-    hasmetadata(p, DiffusionParameter) && getmetadata(p, DiffusionParameter) &&
-        (return true)    # Wanted to just depend on metadata, but seems like we cannot implement that trivially.
-    return (any(isequal(p), parameters(lrs.rs)) ? false : true)
-end
+# Checks if a lattice reaction system is a pure (linear) transport reaction system.
+is_transport_system(lrs::LatticeReactionSystem) = all(typeof.(lrs.spatial_reactions) .== TransportReaction)
 
 ### Processes Input u0 & p ###
 
 # From u0 input, extracts their values and store them in the internal format.
-function lattice_process_u0(u0_in, u0_symbols, nC)
-    u0 = lattice_process_input(u0_in, u0_symbols, nC)
-    check_vector_lengths(u0, nC)
-    expand_component_values(u0, nC)
+function lattice_process_u0(u0_in, u0_symbols, nV)
+    u0 = lattice_process_input(u0_in, u0_symbols, nV)
+    check_vector_lengths(u0, nV)
+    expand_component_values(u0, nV)
 end
 
 # From p input, splits it into diffusion parameters and compartment parameters, and store these in the desired internal format.
 function lattice_process_p(p_in, p_comp_symbols, p_diff_symbols, lrs::LatticeReactionSystem)
-    pC_in, pD_in = split_parameters(p_in, p_comp_symbols, p_diff_symbols)
-    pC = lattice_process_input(pC_in, p_comp_symbols, lrs.nC)
-    pD = lattice_process_input(pD_in, p_diff_symbols, lrs.nE)
-    lrs.init_digraph || foreach(idx -> duplicate_diff_params!(pD, idx, lrs), 1:length(pD))
-    check_vector_lengths(pC, lrs.nC)
-    check_vector_lengths(pD, lrs.nE)
-    return pC, pD
+    pV_in, pE_in = split_parameters(p_in, p_comp_symbols, p_diff_symbols)
+    pV = lattice_process_input(pV_in, p_comp_symbols, lrs.nV)
+    pE = lattice_process_input(pE_in, p_diff_symbols, lrs.nE)
+    lrs.init_digraph || foreach(idx -> duplicate_spat_params!(pE, idx, lrs), 1:length(pE))
+    check_vector_lengths(pV, lrs.nV)
+    check_vector_lengths(pE, lrs.nE)
+    return pV, pE
 end
 
 # Splits parameters into those for the compartments and those for the connections.
@@ -114,14 +95,14 @@ function split_parameters(ps::Vector{<:Number}, args...)
 end
 function split_parameters(ps::Vector{<:Pair}, p_comp_symbols::Vector,
                           p_diff_symbols::Vector)
-    pC_in = [p for p in ps if Symbol(p[1]) in p_comp_symbols]
-    pD_in = [p for p in ps if Symbol(p[1]) in p_diff_symbols]
-    (sum(length.([pC_in, pD_in])) != length(ps)) &&
-        error("These input parameters are not recongised: $(setdiff(first.(ps), vcat(first.([pC_in, pE_in]))))")
-    return pC_in, pD_in
+    pV_in = [p for p in ps if Symbol(p[1]) in p_comp_symbols]
+    pE_in = [p for p in ps if Symbol(p[1]) in p_diff_symbols]
+    (sum(length.([pV_in, pE_in])) != length(ps)) &&
+        error("These input parameters are not recongised: $(setdiff(first.(ps), vcat(first.([pV_in, pE_in]))))")
+    return pV_in, pE_in
 end
 
-# If the input is given in a map form, teh vector needs sorting and the first value removed.
+# If the input is given in a map form, the vector needs sorting and the first value removed.
 function lattice_process_input(input::Vector{<:Pair}, symbols::Vector{Symbol}, args...)
     (length(setdiff(Symbol.(first.(input)), symbols)) != 0) &&
         error("Some input symbols are not recognised: $(setdiff(Symbol.(first.(input)), symbols)).")
@@ -147,36 +128,36 @@ function check_vector_lengths(input::Vector{<:Vector}, n)
         error("Some inputs where given values of inappropriate length.")
 end
 
-# For diffusion parameters, if the graph was given as an undirected graph of length n, and the paraemter have n values, exapnd so that the same value are given for both values on the edge.
-function duplicate_diff_params!(pD::Vector{Vector{Float64}}, idx::Int64,
+# For spatial parameters, if the graph was given as an undirected graph of length n, and the paraemter have n values, expand so that the same value are given for both values on the edge.
+function duplicate_spat_params!(pE::Vector{Vector{Float64}}, idx::Int64,
                                 lrs::LatticeReactionSystem)
-    (2length(pD[idx]) == lrs.nE) && (pD[idx] = [p_val for p_val in pD[idx] for _ in 1:2])
+    (2length(pE[idx]) == lrs.nE) && (pE[idx] = [p_val for p_val in pE[idx] for _ in 1:2])
 end
 
 # For a set of input values on the given forms, and their symbolics, convert into a dictionary.
 vals_to_dict(syms::Vector, vals::Vector{<:Vector}) = Dict(zip(syms, vals))
 # Produces a dictionary with all parameter values.
-function param_dict(pC, pD, lrs)
-    merge(vals_to_dict(compartment_parameters(lrs), pC),
-          vals_to_dict(diffusion_parameters(lrs), pD))
+function param_dict(pV, pE, lrs)
+    merge(vals_to_dict(compartment_parameters(lrs), pV),
+          vals_to_dict(diffusion_parameters(lrs), pE))
 end
 
-# Computes the diffusion rates and stores them in a format (Dictionary of species index to rates across all edges).
-function compute_all_diffusion_rates(pC::Vector{Vector{Float64}},
-                                     pD::Vector{Vector{Float64}},
+# Computes the spatial rates and stores them in a format (Dictionary of species index to rates across all edges).
+function compute_all_spatial_rates(pV::Vector{Vector{Float64}},
+                                     pE::Vector{Vector{Float64}},
                                      lrs::LatticeReactionSystem)
-    param_value_dict = param_dict(pC, pD, lrs)
-    return [s => Symbolics.value.(compute_diffusion_rates(get_diffusion_rate_law(s, lrs),
+    param_value_dict = param_dict(pV, pE, lrs)
+    return [s => Symbolics.value.(compute_spatial_rates(get_spatial_rate_law(s, lrs),
                                                           param_value_dict, lrs.nE))
-            for s in diffusion_species(lrs)]
+            for s in spatial_species(lrs)]
 end
-function get_diffusion_rate_law(s::Symbolics.BasicSymbolic, lrs::LatticeReactionSystem)
+function get_spatial_rate_law(s::Symbolics.BasicSymbolic, lrs::LatticeReactionSystem)
     rates = filter(sr -> isequal(ModelingToolkit.getname(s), sr.species_sym),
                    lrs.spatial_reactions)
     (length(rates) > 1) && error("Species $s have more than one diffusion reaction.")    # We could allows several and simply sum them though, easy change.
     return rates[1].rate
 end
-function compute_diffusion_rates(rate_law::Num,
+function compute_spatial_rates(rate_law::Num,
                                  param_value_dict::Dict{Any, Vector{Float64}}, nE::Int64)
     relevant_parameters = Symbolics.get_variables(rate_law)
     if all(length(param_value_dict[P]) == 1 for P in relevant_parameters)
@@ -220,12 +201,12 @@ end
 function expand_component_values(values::Vector{<:Vector}, n, location_types::Vector{Bool})
     vcat([get_component_value.(values, comp, location_types) for comp in 1:n]...)
 end
-# Creates a view of the pC vector at a given comaprtment.
-function view_pC_vector!(work_pC, pC, comp, enumerated_pC_idx_types)
-    for (idx,loc_type) in enumerated_pC_idx_types
-        work_pC[idx] = (loc_type ? pC[idx][1] : pC[idx][comp])
+# Creates a view of the pV vector at a given comaprtment.
+function view_pV_vector!(work_pV, pV, comp, enumerated_pV_idx_types)
+    for (idx,loc_type) in enumerated_pV_idx_types
+        work_pV[idx] = (loc_type ? pV[idx][1] : pV[idx][comp])
     end
-    return work_pC
+    return work_pV
 end
 # Expands a u0/p information stored in Vector{Vector{}} for to Matrix form (currently used in Spatial Jump systems).
 function matrix_expand_component_values(values::Vector{<:Vector}, n)
