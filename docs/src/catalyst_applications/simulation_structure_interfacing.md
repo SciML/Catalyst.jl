@@ -1,4 +1,4 @@
-# [Interfacing problems, integrators, and solutions](@id simulation_structure_interfacing)
+# [Interfacing Problems, Integrators, and Solutions](@id simulation_structure_interfacing)
 When simulating a model, one begins with creating a [problem](https://docs.sciml.ai/DiffEqDocs/stable/basics/problem/). Next, a simulation is performed on a problem, during which the state of the simulation is recorded through an [integrator](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/). Finally, the simulation output is returned as a [solution](https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/). This tutorial describes how to access, or modify the state, or parameter, values of problems, integrators, and solutions structures.
 
 Generally, when we have a structure `simulation_struct` and want to interface with the state (or parameter) `G`, we use `simulation_struct[:G]` to access the value, and `simulation_struct[:G] = 5.0` to set it to a new value. However, see the following examples for full details.

@@ -11,8 +11,12 @@ pages = Any["Home" => "index.md",
                                            "catalyst_applications/advanced_simulations.md",
                                            "catalyst_applications/homotopy_continuation.md",
                                            "catalyst_applications/bifurcation_diagrams.md"],
+<<<<<<< refs/remotes/origin/master
             "Inverse Problems" => Any["inverse_problems/parameter_estimation.md",
                                       "petab_ode_param_fitting.md"],
+=======
+            "Inverse Problems" => Any["inverse_problems/parameter_estimation.md"],
+>>>>>>> Inverse Problems
             "Example Networks" => Any["example_networks/basic_CRN_examples.md",
                                       "example_networks/hodgkin_huxley_equation.md",
                                       "example_networks/smoluchowski_coagulation_equation.md"],
