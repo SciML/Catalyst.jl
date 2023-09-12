@@ -62,29 +62,41 @@ species(lrs::LatticeReactionSystem) = unique([species(lrs.rs); lrs.spat_species]
 spatial_species(lrs::LatticeReactionSystem) = lrs.spat_species
 
 # Get all parameters.
-ModelingToolkit.parameters(lrs::LatticeReactionSystem) = unique([species(lrs.rs); lrs.edge_parameters])
+ModelingToolkit.parameters(lrs::LatticeReactionSystem) = unique([parameters(lrs.rs); lrs.edge_parameters])
 # Get all parameters which values are tied to vertexes (compartments).
 vertex_parameters(lrs::LatticeReactionSystem) = setdiff(parameters(lrs), edge_parameters(lrs))
 # Get all parameters which values are tied to edges (adjacencies).
 edge_parameters(lrs::LatticeReactionSystem) = lrs.edge_parameters
+
+# Gets the lrs name (same as rs name).
+ModelingToolkit.nameof(lrs::LatticeReactionSystem) = nameof(lrs.rs)
 
 # Checks if a lattice reaction system is a pure (linear) transport reaction system.
 is_transport_system(lrs::LatticeReactionSystem) = all(typeof.(lrs.spatial_reactions) .== TransportReaction)
 
 ### Processes Input u0 & p ###
 
+# Required to make symmapt_to_varmap to work.
+function _symbol_to_var(lrs::LatticeReactionSystem, sym)
+    p_idx = findfirst(sym==p_sym for p_sym in ModelingToolkit.getname.(parameters(lrs)))
+    isnothing(p_idx) || return parameters(lrs)[p_idx]
+    s_idx = findfirst(sym==s_sym for s_sym in ModelingToolkit.getname.(species(lrs)))
+    isnothing(s_idx) || return species(lrs)[s_idx]
+    error("Could not find property parameter/species $sym in lattice reaction system.")
+end
+
 # From u0 input, extracts their values and store them in the internal format.
-function lattice_process_u0(u0_in, u0_symbols, nV)
-    u0 = lattice_process_input(u0_in, u0_symbols, nV)
+function lattice_process_u0(u0_in, u0_syms, nV)
+    u0 = lattice_process_input(u0_in, u0_syms, nV)
     check_vector_lengths(u0, nV)
     expand_component_values(u0, nV)
 end
 
 # From p input, splits it into diffusion parameters and compartment parameters, and store these in the desired internal format.
-function lattice_process_p(p_in, p_comp_symbols, p_diff_symbols, lrs::LatticeReactionSystem)
-    pV_in, pE_in = split_parameters(p_in, p_comp_symbols, p_diff_symbols)
-    pV = lattice_process_input(pV_in, p_comp_symbols, lrs.nV)
-    pE = lattice_process_input(pE_in, p_diff_symbols, lrs.nE)
+function lattice_process_p(p_in, p_vertex_syms, p_edge_syms, lrs::LatticeReactionSystem)
+    pV_in, pE_in = split_parameters(p_in, p_vertex_syms, p_edge_syms)
+    pV = lattice_process_input(pV_in, p_vertex_syms, lrs.nV)
+    pE = lattice_process_input(pE_in, p_edge_syms, lrs.nE)
     lrs.init_digraph || foreach(idx -> duplicate_spat_params!(pE, idx, lrs), 1:length(pE))
     check_vector_lengths(pV, lrs.nV)
     check_vector_lengths(pE, lrs.nE)
@@ -106,12 +118,10 @@ function split_parameters(ps::Vector{<:Pair}, p_comp_symbols::Vector,
 end
 
 # If the input is given in a map form, the vector needs sorting and the first value removed.
-function lattice_process_input(input::Vector{<:Pair}, symbols::Vector{Symbol}, args...)
-    (length(setdiff(Symbol.(first.(input)), symbols)) != 0) &&
-        error("Some input symbols are not recognised: $(setdiff(Symbol.(first.(input)), symbols)).")
-    sorted_input = sort(input;
-                        by = p -> findfirst(ModelingToolkit.getname(p[1]) .== symbols))
-    return lattice_process_input(last.(sorted_input), symbols, args...)
+function lattice_process_input(input::Vector{<:Pair}, syms::Vector{BasicSymbolic{Real}}, args...)
+    isempty(setdiff(first.(input), syms)) || error("Some input symbols are not recognised: $(setdiff(first.(input), syms)).")
+    sorted_input = sort(input; by = p -> findfirst(isequal(p[1]), syms))
+    return lattice_process_input(last.(sorted_input), syms, args...)
 end
 # Processes the input and gvies it in a form where it is a vector of vectors (some of which may have a single value).
 function lattice_process_input(input::Matrix{<:Number}, args...)
@@ -125,7 +135,7 @@ function lattice_process_input(input::Vector{<:Any}, args...)
     lattice_process_input([(val isa Vector{<:Number}) ? val : [val] for val in input],
                           args...)
 end
-lattice_process_input(input::Vector{<:Vector}, symbols::Vector{Symbol}, n::Int64) = input
+lattice_process_input(input::Vector{<:Vector}, syms::Vector{BasicSymbolic{Real}}, n::Int64) = input
 function check_vector_lengths(input::Vector{<:Vector}, n)
     isempty(setdiff(unique(length.(input)), [1, n])) ||
         error("Some inputs where given values of inappropriate length.")
@@ -141,27 +151,22 @@ end
 vals_to_dict(syms::Vector, vals::Vector{<:Vector}) = Dict(zip(syms, vals))
 # Produces a dictionary with all parameter values.
 function param_dict(pV, pE, lrs)
-    merge(vals_to_dict(compartment_parameters(lrs), pV),
-          vals_to_dict(diffusion_parameters(lrs), pE))
+    merge(vals_to_dict(vertex_parameters(lrs), pV),
+          vals_to_dict(edge_parameters(lrs), pE))
 end
 
 # Computes the spatial rates and stores them in a format (Dictionary of species index to rates across all edges).
-function compute_all_spatial_rates(pV::Vector{Vector{Float64}},
-                                     pE::Vector{Vector{Float64}},
-                                     lrs::LatticeReactionSystem)
+function compute_all_spatial_rates(pV::Vector{Vector{Float64}}, pE::Vector{Vector{Float64}}, lrs::LatticeReactionSystem)
     param_value_dict = param_dict(pV, pE, lrs)
-    return [s => Symbolics.value.(compute_spatial_rates(get_spatial_rate_law(s, lrs),
-                                                          param_value_dict, lrs.nE))
-            for s in spatial_species(lrs)]
+    return [s => Symbolics.value.(compute_spatial_rates(get_spatial_rate_law(s, lrs), param_value_dict, lrs.nE)) for s in spatial_species(lrs)]
 end
-function get_spatial_rate_law(s::Symbolics.BasicSymbolic, lrs::LatticeReactionSystem)
-    rates = filter(sr -> isequal(ModelingToolkit.getname(s), sr.species_sym),
-                   lrs.spatial_reactions)
+function get_spatial_rate_law(s::BasicSymbolic{Real}, lrs::LatticeReactionSystem)
+    rates = filter(sr -> isequal(s, sr.species), lrs.spatial_reactions)
     (length(rates) > 1) && error("Species $s have more than one diffusion reaction.")    # We could allows several and simply sum them though, easy change.
     return rates[1].rate
 end
 function compute_spatial_rates(rate_law::Num,
-                                 param_value_dict::Dict{Any, Vector{Float64}}, nE::Int64)
+                                 param_value_dict::Dict{SymbolicUtils.BasicSymbolic{Real}, Vector{Float64}}, nE::Int64)
     relevant_parameters = Symbolics.get_variables(rate_law)
     if all(length(param_value_dict[P]) == 1 for P in relevant_parameters)
         return [

@@ -62,13 +62,13 @@ ModelingToolkit.parameters(tr::TransportReaction) = convert(Vector{BasicSymbolic
 # Gets the species in a transport reaction.
 spatial_species(tr::TransportReaction) = [tr.species]
 
-# Checks that a trnasport reaction is valid for a given reaction system.
+# Checks that a transport reaction is valid for a given reaction system.
 function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReaction)
     # Checks that the rate does not depend on species.    
     isempty(intersect(ModelingToolkit.getname.(species(rs)), ModelingToolkit.getname.(Symbolics.get_variables(tr.rate)))) || error("The following species were used in rates of a transport reactions: $(setdiff(ModelingToolkit.getname(species(rs)), ModelingToolkit.getname(Symbolics.get_variables(tr.rate)))).")
     # Checks that the species does not exist in the system with different metadata.
-    any([isequal(tr.species, s) && isequal(tr.species.metadata, s.metadata) for s in species(rs)]) || error("A transport reaction used a species ($(tr.species)) with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and used in transport reaction creation.")
-    any([isequal(rs_p, tr_p) && isequal(rs_p.metadata, tr_p.metadata) for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate)]) || error("A transport reaction used a parameter with metadata not matching its lattice reaction system. Please fetch this parameter from the reaction system and used in transport reaction creation.")
+    any([isequal(tr.species, s) && !isequal(tr.species.metadata, s.metadata) for s in species(rs)]) && error("A transport reaction used a species, $(tr.species), with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and used in transport reaction creation.")
+    any([isequal(rs_p, tr_p) && !isequal(rs_p.metadata, tr_p.metadata) for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate)]) && error("A transport reaction used a parameter with metadata not matching its lattice reaction system. Please fetch this parameter from the reaction system and used in transport reaction creation.")
 end
 
 ### Utility ###
