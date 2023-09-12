@@ -1,12 +1,12 @@
 ### Lattice Reaction Network Structure ###
 # Desribes a spatial reaction network over a graph.
-struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this part messes up show, disabling me from creating LRSs
+struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem # Adding this part messes up show, disabling me from creating LRSs
     """The reaction system within each comaprtment."""
-    rs::ReactionSystem
+    rs::ReactionSystem{S}
     """The spatial reactions defined between individual nodes."""
-    spatial_reactions::Vector{<:AbstractSpatialReaction}
+    spatial_reactions::Vector{T}
     """The graph on which the lattice is defined."""
-    lattice::DiGraph
+    lattice::SimpleDiGraph{Int64}
 
     # Derrived values.
     """The number of compartments."""
@@ -18,19 +18,22 @@ struct LatticeReactionSystem # <: MT.AbstractTimeDependentSystem # Adding this p
     """Whenever the initial input was a digraph."""
     init_digraph::Bool
     """Species that may move spatially."""
-    spatial_species::Vector{BasicSymbolic{Real}}
+    spat_species::Vector{BasicSymbolic{Real}}
     """Parameters which values are tied to edges (adjacencies).."""
     edge_parameters::Vector{BasicSymbolic{Real}}
 
-    function LatticeReactionSystem(rs::ReactionSystem,
-                                   spatial_reactions::Vector{<:AbstractSpatialReaction},
-                                   lattice::DiGraph; init_digraph = true)
-        spatial_species = unique(spatial_species.(spatial_reactions))
+    function LatticeReactionSystem(rs::ReactionSystem{S},
+                                   spatial_reactions::Vector{T},
+                                   lattice::DiGraph; init_digraph = true) where {S, T}
+        (T <: AbstractSpatialReaction) || error("The secodn argument must be a vector of AbstractSpatialReaction subtypes.") # There probably some better way to acertain that T has that type. Not sure how.
+        spat_species = unique(vcat(spatial_species.(spatial_reactions)...))
         rs_edge_parameters = filter(isedgeparameter, parameters(rs))
-        srs_edge_parameters = setdiff(vcat(parameters.(spatial_reactions)), parameters(rs))
+        srs_edge_parameters = setdiff(vcat(parameters.(spatial_reactions)...), parameters(rs))
         edge_parameters = unique([rs_edge_parameters; srs_edge_parameters])
-        foreach(sr -> check_spatial_reaction_validity(rs, rs), spatial_reactions)                                  
-        return new(rs, spatial_reactions, lattice, nv(lattice), ne(lattice), length(species(rs)), init_digraph, spatial_species, edge_parameters)
+
+
+        foreach(sr -> check_spatial_reaction_validity(rs, sr), spatial_reactions)   
+        return new{S,T}(rs, spatial_reactions, lattice, nv(lattice), ne(lattice), length(species(rs)), init_digraph, spat_species, edge_parameters)
     end
 end
 function LatticeReactionSystem(rs, srs, lat::SimpleGraph)
@@ -54,9 +57,9 @@ end
 ### Lattice ReactionSystem Getters ###
 
 # Get all species.
-species(lrs::LatticeReactionSystem) = unique([species(lrs.rs); lrs.spatial_species])
+species(lrs::LatticeReactionSystem) = unique([species(lrs.rs); lrs.spat_species])
 # Get all species that may be transported.
-spatial_species(lrs::LatticeReactionSystem) = lrs.spatial_species
+spatial_species(lrs::LatticeReactionSystem) = lrs.spat_species
 
 # Get all parameters.
 ModelingToolkit.parameters(lrs::LatticeReactionSystem) = unique([species(lrs.rs); lrs.edge_parameters])

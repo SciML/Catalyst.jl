@@ -111,7 +111,8 @@ export hc_steady_states
 
 # spatial reactions
 include("spatial_reaction_systems/spatial_reactions.jl")
-export TransportReaction, transport_reactions, isedgeparameter
+export TransportReaction, transport_reactions, @transport_reaction
+export isedgeparameter
 
 # lattice reaction systems
 include("spatial_reaction_systems/lattice_reaction_systems.jl")

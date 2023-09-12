@@ -3,10 +3,13 @@
 # Abstract spatial reaction structures.
 abstract type AbstractSpatialReaction end
 
+### EdgeParameter Metadata ###
+
 # Implements the edgeparameter metadata field.
 struct EdgeParameter end
 Symbolics.option_to_metadata_type(::Val{:edgeparameter}) = EdgeParameter
 
+# Implements the isedgeparameter check function.
 isedgeparameter(x::Num, args...) = isedgeparameter(Symbolics.unwrap(x), args...)
 function isedgeparameter(x, default = false)
     p = Symbolics.getparent(x, nothing)
@@ -17,55 +20,44 @@ end
 ### Transport Reaction Structures ###
 
 # A transport reaction. These are simple to hanlde, and should cover most types of spatial reactions.
-# Currently only permit constant rates.
+# Only permit constant rates (possibly consisting of several parameters).
 struct TransportReaction <: AbstractSpatialReaction
     """The rate function (excluding mass action terms). Currently only constants supported"""
     rate::Num
     """The species that is subject to difusion."""
     species::BasicSymbolic{Real}
-    """A symbol representation of the species that is subject to difusion."""
-    species_sym::Symbol    # Required for identification in certain cases.
 
     # Creates a diffusion reaction.
     function TransportReaction(rate::Num, species::Num)
-        new(rate, species, ModelingToolkit.getname(species))
+        new(rate, species.val)
     end
-    function TransportReaction(rate::Number, species::Num)
-        new(Num(rate), species, ModelingToolkit.getname(species))
-    end
-    function TransportReaction(rate::Symbol, species::Num)
-        new(Symbolics.variable(rate), species, ModelingToolkit.getname(species))
-    end
-    function TransportReaction(rate::Num, species::Symbol)
-        new(rate, Symbolics.variable(species), species)
-    end
-    function TransportReaction(rate::Number, species::Symbol)
-        new(Num(rate), Symbolics.variable(species), species)
-    end
-    function TransportReaction(rate::Symbol, species::Symbol)
-        new(Symbolics.variable(rate), Symbolics.variable(species), species)
-    end
+end
+# If the rate is a value, covert that to a numemric expression.
+function TransportReaction(rate::Number, args...)
+    TransportReaction(Num(rate), args...)
 end
 # Creates a vector of TransportReactions.
 function transport_reactions(transport_reactions)
-    [TransportReaction(dr[1], dr[2]) for dr in transport_reactions]
+    [TransportReaction(tr[1], tr[2]) for tr in transport_reactions]
 end
 
 # Macro for creating a transport reaction.
-macro transport_reaction(species::Symbol, rate::Expr)
-    make_transport_reaction(species, MacroTools.striplines(rate))
+macro transport_reaction(rateex::ExprValues, species::Symbol)
+    make_transport_reaction(MacroTools.striplines(rateex), species)
 end
-function make_transport_reaction(species, rate)
+function make_transport_reaction(rateex, species)
+    parameters = [];
+    find_parameters_in_rate!(parameters, rateex)
     quote
-        @parameters 
-        @variable t
+        @parameters $(parameters...)
+        @variables t
         @species $(species)(t)
-        return TransportReaction(species, rate)
+        TransportReaction($rateex, $species)
     end
 end
 
 # Gets the parameters in a transport reaction.
-ModelingToolkit.parameters(tr::TransportReaction) = Symbolics.get_variables(tr.rate)
+ModelingToolkit.parameters(tr::TransportReaction) = convert(Vector{BasicSymbolic{Real}}, Symbolics.get_variables(tr.rate))
 
 # Gets the species in a transport reaction.
 spatial_species(tr::TransportReaction) = [tr.species]
@@ -73,7 +65,26 @@ spatial_species(tr::TransportReaction) = [tr.species]
 # Checks that a trnasport reaction is valid for a given reaction system.
 function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReaction)
     # Checks that the rate does not depend on species.    
-    isempty(setdiff(ModelingToolkit.getname(species(rs)), ModelingToolkit.getname(Symbolics.get_variables(tr.rate)))) || error("The following species were used in rates of a transport reactions: $(setdiff(ModelingToolkit.getname(species(rs)), ModelingToolkit.getname(Symbolics.get_variables(tr.rate)))).")
+    isempty(intersect(ModelingToolkit.getname.(species(rs)), ModelingToolkit.getname.(Symbolics.get_variables(tr.rate)))) || error("The following species were used in rates of a transport reactions: $(setdiff(ModelingToolkit.getname(species(rs)), ModelingToolkit.getname(Symbolics.get_variables(tr.rate)))).")
     # Checks that the species does not exist in the system with different metadata.
-    any([isequal(tr.species, s) && !isequal(tr.species.metadata, s.metadata)])  || error("A transport reaction used a species ($(tr.species)) with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and used in transport reaction creation.")
+    any([isequal(tr.species, s) && isequal(tr.species.metadata, s.metadata) for s in species(rs)]) || error("A transport reaction used a species ($(tr.species)) with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and used in transport reaction creation.")
+    any([isequal(rs_p, tr_p) && isequal(rs_p.metadata, tr_p.metadata) for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate)]) || error("A transport reaction used a parameter with metadata not matching its lattice reaction system. Please fetch this parameter from the reaction system and used in transport reaction creation.")
+end
+
+### Utility ###
+# Loops through a rate and extract all parameters.
+function find_parameters_in_rate!(parameters, rateex::ExprValues)
+    if rateex isa Symbol
+        if !(rateex in [:ℯ, :pi, :π])
+            push!(parameters, rateex)
+        elseif rateex in [:t, :∅, forbidden_symbols_error...]
+            error("Forbidden term $(rateex) used in transport reaction rate.")
+        end
+    elseif rateex isa Expr
+        # note, this (correctly) skips $(...) expressions
+        for i in 2:length(rateex.args)
+            find_parameters_in_rate!(parameters, rateex.args[i])
+        end
+    end
+    nothing
 end
