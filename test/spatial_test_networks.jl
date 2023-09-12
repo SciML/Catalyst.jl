@@ -41,15 +41,18 @@ end
 SIR_p = [:α => 0.1 / 1000, :β => 0.01]
 SIR_u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
 
-SIR_dif_S = DiffusionReaction(:dS, :S)
-SIR_dif_I = DiffusionReaction(:dI, :I)
-SIR_dif_R = DiffusionReaction(:dR, :R)
-SIR_srs_1 = [SIR_dif_S]
-SIR_srs_2 = [SIR_dif_S, SIR_dif_I, SIR_dif_R]
+SIR_tr_S = @transport_reaction dS S
+SIR_tr_I = @transport_reaction dI I
+SIR_tr_R = @transport_reaction dR R
+SIR_srs_1 = [SIR_tr_S]
+SIR_srs_2 = [SIR_tr_S, SIR_tr_I, SIR_tr_R]
 
 # Small non-stiff system.
 binding_system = @reaction_network begin (k1, k2), X + Y <--> XY end
-binding_srs = diffusion_reactions([(:dX, :X), (:dY, :Y), (:dXY, :XY)])
+binding_tr_X = @transport_reaction dX X
+binding_tr_Y = @transport_reaction dY Y
+binding_tr_XY = @transport_reaction dXY XY
+binding_srs = [binding_tr_X, binding_tr_Y, binding_tr_XY]
 binding_u0 = [:X => 1.0, :Y => 2.0, :XY => 0.5]
 binding_p = [:k1 => 2.0, :k2 => 0.1, :dX => 3.0, :dY => 5.0, :dXY => 2.0]
 
@@ -93,18 +96,18 @@ CuH_Amination_u0 = [
     :Decomposition => 0.0,
 ]
 
-CuH_Amination_diff_1 = DiffusionReaction(:D1, :CuoAc)
-CuH_Amination_diff_2 = DiffusionReaction(:D2, :Silane)
-CuH_Amination_diff_3 = DiffusionReaction(:D3, :Cu_ELigand)
-CuH_Amination_diff_4 = DiffusionReaction(:D4, :Amine)
-CuH_Amination_diff_5 = DiffusionReaction(:D5, :CuHLigand)
-CuH_Amination_srs_1 = [CuH_Amination_diff_1]
+CuH_Amination_tr_1 = @transport_reaction D1 CuoAc
+CuH_Amination_tr_2 = @transport_reaction D2 Silane
+CuH_Amination_tr_3 = @transport_reaction D3 Cu_ELigand
+CuH_Amination_tr_4 = @transport_reaction D4 Amine
+CuH_Amination_tr_5 = @transport_reaction D5 CuHLigand
+CuH_Amination_srs_1 = [CuH_Amination_tr_1]
 CuH_Amination_srs_2 = [
-    CuH_Amination_diff_1,
-    CuH_Amination_diff_2,
-    CuH_Amination_diff_3,
-    CuH_Amination_diff_4,
-    CuH_Amination_diff_5,
+    CuH_Amination_tr_1,
+    CuH_Amination_tr_2,
+    CuH_Amination_tr_3,
+    CuH_Amination_tr_4,
+    CuH_Amination_tr_5,
 ]
 
 # Small stiff system.
@@ -116,10 +119,10 @@ brusselator_system = @reaction_network begin
 end
 brusselator_p = [:A => 1.0, :B => 4.0]
 
-brusselator_dif_x = DiffusionReaction(:dX, :X)
-brusselator_dif_y = DiffusionReaction(:dY, :Y)
-brusselator_srs_1 = [brusselator_dif_x]
-brusselator_srs_2 = [brusselator_dif_x, brusselator_dif_y]
+brusselator_tr_x = @transport_reaction dX X
+brusselator_tr_y = @transport_reaction dY Y
+brusselator_srs_1 = [brusselator_tr_x]
+brusselator_srs_2 = [brusselator_tr_x, brusselator_tr_y]
 
 # Mid-sized stiff system.
 # Unsure about stifness, but non-spatial version oscillates for this parameter set.
@@ -157,11 +160,11 @@ sigmaB_u0 = [
     :phos => 0.4,
 ]
 
-sigmaB_dif_σB = DiffusionReaction(:DσB, :σB)
-sigmaB_dif_w = DiffusionReaction(:Dw, :w)
-sigmaB_dif_v = DiffusionReaction(:Dv, :v)
-sigmaB_srs_1 = [sigmaB_dif_σB]
-sigmaB_srs_2 = [sigmaB_dif_σB, sigmaB_dif_w, sigmaB_dif_v]
+sigmaB_tr_σB = @transport_reaction DσB σB
+sigmaB_tr_w = @transport_reaction Dw w
+sigmaB_tr_v = @transport_reaction Dv v
+sigmaB_srs_1 = [sigmaB_tr_σB]
+sigmaB_srs_2 = [sigmaB_tr_σB, sigmaB_tr_w, sigmaB_tr_v]
 
 ### Declares Lattices ###
 
