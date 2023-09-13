@@ -9,7 +9,6 @@ using LaTeXStrings, Latexify, Requires
 using JumpProcesses: JumpProcesses,
                      JumpProblem, MassActionJump, ConstantRateJump,
                      VariableRateJump
-using SplitApplyCombine
 
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit
