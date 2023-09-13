@@ -26,7 +26,7 @@ end
 # Test case 2.
 let 
     rs = @reaction_network begin
-        @parameters pX [edgeparameter=true] pY dX [edgeparameter=true] dY
+        @parameters pX pY dX [edgeparameter=true] dY
         (pX, 1), 0 <--> X
         (pY, 1), 0 <--> Y
     end
@@ -37,8 +37,8 @@ let
     @test ModelingToolkit.getname.(species(lrs)) == [:X, :Y]   
     @test ModelingToolkit.getname.(spatial_species(lrs)) == [:X, :Y]   
     @test ModelingToolkit.getname.(parameters(lrs)) == [:pX, :pY, :dX, :dY]   
-    @test ModelingToolkit.getname.(vertex_parameters(lrs)) == [:pY, :dY]  
-    @test ModelingToolkit.getname.(edge_parameters(lrs)) == [:pX, :dX]      
+    @test ModelingToolkit.getname.(vertex_parameters(lrs)) == [:pX, :pY, :dY]  
+    @test ModelingToolkit.getname.(edge_parameters(lrs)) == [:dX]      
 end
 
 # Test case 3.
