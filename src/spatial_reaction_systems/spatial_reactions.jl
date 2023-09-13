@@ -60,6 +60,7 @@ end
 ModelingToolkit.parameters(tr::TransportReaction) = convert(Vector{BasicSymbolic{Real}}, Symbolics.get_variables(tr.rate))
 
 # Gets the species in a transport reaction.
+species(tr::TransportReaction) = [tr.species]
 spatial_species(tr::TransportReaction) = [tr.species]
 
 # Checks that a transport reaction is valid for a given reaction system.
