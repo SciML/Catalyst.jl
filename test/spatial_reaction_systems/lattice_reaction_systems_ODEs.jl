@@ -122,42 +122,6 @@ end
 
 ### Tests Special Cases ###
 
-# Creates network with various combiantions of Symbls and Nums in diffusion reactions.
-let
-    @parameters dS dI dR
-    @variables t
-    @species S(t) I(t) R(t)
-    SIR_srs_numsym_1 = diffusion_reactions([(:dS, :S), (:dI, :I), (:dR, :R)])
-    SIR_srs_numsym_2 = diffusion_reactions([(dS, :S), (dI, :I), (dR, :R)])
-    SIR_srs_numsym_3 = diffusion_reactions([(:dS, S), (:dI, I), (:dR, R)])
-    SIR_srs_numsym_4 = diffusion_reactions([(dS, S), (dI, I), (dR, R)])
-    SIR_srs_numsym_5 = diffusion_reactions([(dS, :S), (:dI, I), (dR, :R)])
-    SIR_srs_numsym_6 = diffusion_reactions([(:dS, :S), (:dI, I), (dR, R)])
-
-    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(small_2d_grid), :R => 0.0]
-    pV = SIR_p
-    pE_1 = [:dS => 0.01, :dI => 0.01, :dR => 0.01]
-    pE_2 = [dS => 0.01, dI => 0.01, dR => 0.01]
-    pE_3 = [dS => 0.01, :dI => 0.01, :dR => 0.01]
-    ss_explicit_base = solve(ODEProblem(LatticeReactionSystem(SIR_system, SIR_srs_numsym_1, small_2d_grid), u0, (0.0, 10.0), (pV, pE_1); jac = false), Tsit5()).u[end]
-    ss_implicit_base = solve(ODEProblem(LatticeReactionSystem(SIR_system, SIR_srs_numsym_1, small_2d_grid), u0, (0.0, 10.0), (pV, pE_1); jac = true), Rosenbrock23()).u[end]
-
-    for srs in [
-            SIR_srs_numsym_1,
-            SIR_srs_numsym_2,
-            SIR_srs_numsym_3,
-            SIR_srs_numsym_4,
-            SIR_srs_numsym_5,
-            SIR_srs_numsym_6,
-        ], pE in [pE_1, pE_2, pE_3]
-        lrs = LatticeReactionSystem(SIR_system, srs, small_2d_grid)
-        ss_explicit = solve(ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac = false), Tsit5()).u[end]
-        ss_implicit = solve(ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac = true), Rosenbrock23()).u[end]
-        @test all(isapprox.(ss_explicit, ss_explicit_base))
-        @test all(isapprox.(ss_implicit, ss_implicit_base))
-    end
-end
-
 # Create network with vaious combinations of graph/di-graph and parameters.
 let
     lrs_digraph = LatticeReactionSystem(SIR_system, SIR_srs_2, complete_digraph(3))
@@ -199,16 +163,15 @@ end
 let
     binding_system_alt = @reaction_network begin
         @species X(t) Y(t) XY(t) Z(t) V(t) W(t)
-        @parameters k1 k2 dX [diffusionparameter = true] dXY [diffusionparameter = true] dZ [
-            diffusionparameter = true,
-        ] dV [diffusionparameter = true] p1 p2
+        @parameters k1 k2 dX [edgeparameter = true] dXY [edgeparameter = true] dZ [edgeparameter = true] dV [edgeparameter = true] p1 p2
         (k1, k2), X + Y <--> XY
     end
+    @unpack dX, dXY, dZ, dV, X, XY, Z, V = binding_system_alt
     binding_srs_alt = [
-        DiffusionReaction(:dX, :X),
-        DiffusionReaction(:dXY, :XY),
-        DiffusionReaction(:dZ, :Z),
-        DiffusionReaction(:dV, :V),
+        TransportReaction(dX, X),
+        TransportReaction(dXY, XY),
+        TransportReaction(dZ, Z),
+        TransportReaction(dV, V),
     ]
     lrs_alt = LatticeReactionSystem(binding_system_alt, binding_srs_alt, small_2d_grid)
     u0_alt = [
@@ -232,7 +195,7 @@ let
     oprob_alt = ODEProblem(lrs_alt, u0_alt, (0.0, 10.0), p_alt)
     ss_alt = solve(oprob_alt, Tsit5()).u[end]
 
-    binding_srs_main = [DiffusionReaction(:dX, :X), DiffusionReaction(:dXY, :XY)]
+    binding_srs_main = [TransportReaction(dX, X), TransportReaction(dXY, XY)]
     lrs = LatticeReactionSystem(binding_system, binding_srs_main, small_2d_grid)
     u0 = u0_alt[1:3]
     p = p_alt[1:4]
@@ -247,8 +210,8 @@ end
 
 # System with single spatial reaction.
 let
-    lrs_1 = LatticeReactionSystem(SIR_system, SIR_dif_S, small_2d_grid)
-    lrs_2 = LatticeReactionSystem(SIR_system, [SIR_dif_S], small_2d_grid)
+    lrs_1 = LatticeReactionSystem(SIR_system, SIR_tr_S, small_2d_grid)
+    lrs_2 = LatticeReactionSystem(SIR_system, [SIR_tr_S], small_2d_grid)
     u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs_1.lattice), :R => 0.0]
     pV = SIR_p
     pE = [:dS => 0.01]
