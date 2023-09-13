@@ -56,24 +56,24 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     # Converts potential symmaps to varmaps.
     u0_in = symmap_to_varmap(lrs, u0_in)
     p_in = (p_in isa Tuple{<:Any,<:Any}) ? (symmap_to_varmap(lrs, p_in[1]),symmap_to_varmap(lrs, p_in[2])) : symmap_to_varmap(lrs, p_in)
-    
+
     # Converts u0 and p to Vector{Vector{Float64}} form.
     u0 = lattice_process_u0(u0_in, species(lrs), lrs.nV)
-    pV, pD = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs), lrs)
+    pV, pE = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs), lrs)
 
     # Creates ODEProblem.
-    ofun = build_odefunction(lrs, pV, pD, jac, sparse)
+    ofun = build_odefunction(lrs, pV, pE, jac, sparse)
     return ODEProblem(ofun, u0, tspan, pV, args...; kwargs...)
 end
 
 # Builds an ODEFunction for a spatial ODEProblem.
 function build_odefunction(lrs::LatticeReactionSystem, pV::Vector{Vector{Float64}},
-                           pD::Vector{Vector{Float64}}, use_jac::Bool, sparse::Bool)
+                           pE::Vector{Vector{Float64}}, use_jac::Bool, sparse::Bool)
     # Prepeares (non-spatial) ODE functions and list of spatially moving species and their rates.
     ofunc = ODEFunction(convert(ODESystem, lrs.rs); jac = use_jac, sparse = false)
     ofunc_sparse = ODEFunction(convert(ODESystem, lrs.rs); jac = use_jac, sparse = true)
-    spatial_rates_speciesmap = compute_all_spatial_rates(pV, pD, lrs)
-    spatial_rates = [findfirst(isequal(spat_rates[1]), states(lrs.rs)) => spat_rates[2]
+    spatial_rates_speciesmap = compute_all_spatial_rates(pV, pE, lrs)
+    spatial_rates = [findfirst(isequal(spat_rates[1]), species(lrs)) => spat_rates[2]
                        for spat_rates in spatial_rates_speciesmap]
 
     f = LatticeDiffusionODEf(ofunc, pV, spatial_rates, lrs)
@@ -88,6 +88,7 @@ end
 function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, spatial_rates, lrs::LatticeReactionSystem;
                              set_nonzero = false)
     spat_species = first.(spatial_rates)
+
     # Gets list of indexes for species that move spatially, but are invovled in no other reaction.
     only_spat = [(s in spat_species) && !Base.isstored(ns_jac_prototype, s, s)
                  for s in 1:(lrs.nS)]
@@ -127,7 +128,7 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, 
         end
         J_rowval[J_colptr[col_idx]:(J_colptr[col_idx + 1] - 1)] = rows
     end
-
+    
     # Set element values.
     if !set_nonzero
         J_nzval .= 1.0
@@ -145,6 +146,14 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, 
             J_nzval[val_idx_src] -= get_component_value(rates, e_idx)
 
             # Updates the destination value.
+            # println()
+            # println()
+            # println(col_start)
+            # println(column_view)
+            # println(get_index(edge.dst, s, lrs.nS))
+            # println(col_start)
+            # println(col_end)
+            # println(column_view)
             val_idx_dst = col_start +
                           findfirst(column_view .== get_index(edge.dst, s, lrs.nS)) - 1
             J_nzval[val_idx_dst] += get_component_value(rates, e_idx)

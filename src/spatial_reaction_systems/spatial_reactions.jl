@@ -63,13 +63,18 @@ ModelingToolkit.parameters(tr::TransportReaction) = convert(Vector{BasicSymbolic
 spatial_species(tr::TransportReaction) = [tr.species]
 
 # Checks that a transport reaction is valid for a given reaction system.
-function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReaction)
+function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReaction; edge_parameters=[])
+    # Checks that the species exist in the reaction system (ODE simulation code becomes difficult if this is not required, as non-spatial jacobian and f function generated from rs is of wrong size).  
+    any(isequal(tr.species), species(rs)) || error("Currently, species used in TransportReactions must also be in non-spatial ReactionSystem. This is not the case for $(tr.species).")
     # Checks that the rate does not depend on species.    
-    isempty(intersect(ModelingToolkit.getname.(species(rs)), ModelingToolkit.getname.(Symbolics.get_variables(tr.rate)))) || error("The following species were used in rates of a transport reactions: $(setdiff(ModelingToolkit.getname(species(rs)), ModelingToolkit.getname(Symbolics.get_variables(tr.rate)))).")
+    isempty(intersect(ModelingToolkit.getname.(species(rs)), ModelingToolkit.getname.(Symbolics.get_variables(tr.rate)))) || error("The following species were used in rates of a transport reactions: $(setdiff(ModelingToolkit.getname.(species(rs)), ModelingToolkit.getname.(Symbolics.get_variables(tr.rate)))).")
     # Checks that the species does not exist in the system with different metadata.
     any([isequal(tr.species, s) && !isequal(tr.species.metadata, s.metadata) for s in species(rs)]) && error("A transport reaction used a species, $(tr.species), with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and used in transport reaction creation.")
-    any([isequal(rs_p, tr_p) && !isequal(rs_p.metadata, tr_p.metadata) for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate)]) && error("A transport reaction used a parameter with metadata not matching its lattice reaction system. Please fetch this parameter from the reaction system and used in transport reaction creation.")
+    any([isequal(rs_p, tr_p) && !equivalent_metadata(rs_p, tr_p) for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate)]) && error("A transport reaction used a parameter with metadata not matching its lattice reaction system. Please fetch this parameter from the reaction system and used in transport reaction creation.")
+    # Checks that no edge parameter occur among rates of non-spatial reactions.
+    any([!isempty(intersect(Symbolics.get_variables(r.rate), edge_parameters)) for r in reactions(rs)]) && error("Edge paramter(s) were found as a rate of a non-spatial reaction.")
 end
+equivalent_metadata(p1, p2) = isempty(setdiff(p1.metadata, p2.metadata, [Catalyst.EdgeParameter => true]))
 
 ### Utility ###
 # Loops through a rate and extract all parameters.

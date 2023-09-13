@@ -25,15 +25,14 @@ struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem # Adding t
     function LatticeReactionSystem(rs::ReactionSystem{S},
                                    spatial_reactions::Vector{T},
                                    lattice::DiGraph; init_digraph = true) where {S, T}
-        (T <: AbstractSpatialReaction) || error("The secodn argument must be a vector of AbstractSpatialReaction subtypes.") # There probably some better way to acertain that T has that type. Not sure how.
+        (T <: AbstractSpatialReaction) || error("The second argument must be a vector of AbstractSpatialReaction subtypes.") # There probably some better way to acertain that T has that type. Not sure how.
         spat_species = unique(vcat(spatial_species.(spatial_reactions)...))
         rs_edge_parameters = filter(isedgeparameter, parameters(rs))
         srs_edge_parameters = setdiff(vcat(parameters.(spatial_reactions)...), parameters(rs))
         edge_parameters = unique([rs_edge_parameters; srs_edge_parameters])
 
-
-        foreach(sr -> check_spatial_reaction_validity(rs, sr), spatial_reactions)   
-        return new{S,T}(rs, spatial_reactions, lattice, nv(lattice), ne(lattice), length(species(rs)), init_digraph, spat_species, edge_parameters)
+        foreach(sr -> check_spatial_reaction_validity(rs, sr; edge_parameters=edge_parameters), spatial_reactions)   
+        return new{S,T}(rs, spatial_reactions, lattice, nv(lattice), ne(lattice), length(unique([species(rs); spat_species])), init_digraph, spat_species, edge_parameters)
     end
 end
 function LatticeReactionSystem(rs, srs, lat::SimpleGraph)
@@ -88,7 +87,7 @@ end
 # From u0 input, extracts their values and store them in the internal format.
 function lattice_process_u0(u0_in, u0_syms, nV)
     u0 = lattice_process_input(u0_in, u0_syms, nV)
-    check_vector_lengths(u0, nV)
+    check_vector_lengths(u0, length(u0_syms), nV)
     expand_component_values(u0, nV)
 end
 
@@ -98,8 +97,8 @@ function lattice_process_p(p_in, p_vertex_syms, p_edge_syms, lrs::LatticeReactio
     pV = lattice_process_input(pV_in, p_vertex_syms, lrs.nV)
     pE = lattice_process_input(pE_in, p_edge_syms, lrs.nE)
     lrs.init_digraph || foreach(idx -> duplicate_spat_params!(pE, idx, lrs), 1:length(pE))
-    check_vector_lengths(pV, lrs.nV)
-    check_vector_lengths(pE, lrs.nE)
+    check_vector_lengths(pV, length(p_vertex_syms), lrs.nV)
+    check_vector_lengths(pE, length(p_edge_syms), lrs.nE)
     return pV, pE
 end
 
@@ -134,9 +133,11 @@ function lattice_process_input(input::Vector{<:Any}, args...)
                           args...)
 end
 lattice_process_input(input::Vector{<:Vector}, syms::Vector{BasicSymbolic{Real}}, n::Int64) = input
-function check_vector_lengths(input::Vector{<:Vector}, n)
-    isempty(setdiff(unique(length.(input)), [1, n])) ||
-        error("Some inputs where given values of inappropriate length.")
+
+# Checks that a value vector have the right length, as well as that of all its sub vectors.
+function check_vector_lengths(input::Vector{<:Vector}, n_syms, n_locations)
+    (length(input)==n_syms) || error("Missing values for some initial conditions/parameters. Expected $n_syms values, got $(length(input)).")
+    isempty(setdiff(unique(length.(input)), [1, n_locations])) || error("Some inputs where given values of inappropriate length.")
 end
 
 # For spatial parameters, if the graph was given as an undirected graph of length n, and the paraemter have n values, expand so that the same value are given for both values on the edge.
@@ -156,7 +157,8 @@ end
 # Computes the spatial rates and stores them in a format (Dictionary of species index to rates across all edges).
 function compute_all_spatial_rates(pV::Vector{Vector{Float64}}, pE::Vector{Vector{Float64}}, lrs::LatticeReactionSystem)
     param_value_dict = param_dict(pV, pE, lrs)
-    return [s => Symbolics.value.(compute_spatial_rates(get_spatial_rate_law(s, lrs), param_value_dict, lrs.nE)) for s in spatial_species(lrs)]
+    unsorted_rates = [s => Symbolics.value.(compute_spatial_rates(get_spatial_rate_law(s, lrs), param_value_dict, lrs.nE)) for s in spatial_species(lrs)]
+    return sort(unsorted_rates; by=rate -> findfirst(isequal(rate[1]), species(lrs)))
 end
 function get_spatial_rate_law(s::BasicSymbolic{Real}, lrs::LatticeReactionSystem)
     rates = filter(sr -> isequal(s, sr.species), lrs.spatial_reactions)

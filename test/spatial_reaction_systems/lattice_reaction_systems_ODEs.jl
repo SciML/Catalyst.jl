@@ -7,10 +7,10 @@ using Random, Statistics, SparseArrays, Test
 # Fetch test networks.
 include("../spatial_test_networks.jl")
 
-### Test No Error During Runs ###
+### Tests Simulations Don't Error ###
 for grid in [small_2d_grid, short_path, small_directed_cycle]
     # Non-stiff case
-    for srs in [Vector{DiffusionReaction}(), SIR_srs_1, SIR_srs_2]
+    for srs in [Vector{TransportReaction}(), SIR_srs_1, SIR_srs_2]
         lrs = LatticeReactionSystem(SIR_system, srs, grid)
         u0_1 = [:S => 999.0, :I => 1.0, :R => 0.0]
         u0_2 = [:S => 500.0 .+ 500.0 * rand_v_vals(lrs.lattice), :I => 1.0, :R => 0.0]
@@ -52,7 +52,7 @@ for grid in [small_2d_grid, short_path, small_directed_cycle]
     end
 
     # Stiff case
-    for srs in [Vector{DiffusionReaction}(), brusselator_srs_1, brusselator_srs_2]
+    for srs in [Vector{TransportReaction}(), brusselator_srs_1, brusselator_srs_2]
         lrs = LatticeReactionSystem(brusselator_system, srs, grid)
         u0_1 = [:X => 1.0, :Y => 20.0]
         u0_2 = [:X => rand_v_vals(lrs.lattice, 10.0), :Y => 2.0]
@@ -120,6 +120,134 @@ let
     @test all(isapprox.(ss[3:3:end], ss[3]))
 end
 
+# Checks that various combinations of jac and sparse gives the same result.
+let
+    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, small_2d_grid)
+    u0 = [:X => rand_v_vals(lrs.lattice, 10), :Y => rand_v_vals(lrs.lattice, 10)]
+    pV = brusselator_p
+    pE = [:dX => 0.2]
+    oprob = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac = false, sparse = false)
+    oprob_sparse = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac = false, sparse = true)
+    oprob_jac = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac = true, sparse = false)
+    oprob_sparse_jac = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac = true, sparse = true)
+
+    ss = solve(oprob, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end]
+    @test all(isapprox.(ss,
+                        solve(oprob_sparse, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end];
+                        rtol = 0.0001))
+    @test all(isapprox.(ss,
+                        solve(oprob_jac, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end];
+                        rtol = 0.0001))
+    @test all(isapprox.(ss,
+                        solve(oprob_sparse_jac, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end];
+                        rtol = 0.0001))
+end
+
+### Test Transport Reaction Types ###
+
+# Compares where spatial reactions are created with/without the macro.
+let
+    @parameters dS dI
+    @unpack S, I = SIR_system
+    tr_1 = TransportReaction(dS, S)
+    tr_2 = TransportReaction(dI, I)
+    tr_macros_1 = @transport_reaction dS S
+    tr_macros_2 = @transport_reaction dI I
+
+    lrs_1 = LatticeReactionSystem(SIR_system, [tr_1, tr_2], small_2d_grid)
+    lrs_2 = LatticeReactionSystem(SIR_system, [tr_macros_1, tr_macros_2], small_2d_grid)
+    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs_1.lattice), :R => 0.0]
+    pV = [:α => 0.1 / 1000, :β => 0.01]
+    pE = [:dS => 0.01, :dI => 0.01]
+    ss_1 = solve(ODEProblem(lrs_1, u0, (0.0, 500.0), (pV, pE)), Tsit5()).u[end]
+    ss_2 = solve(ODEProblem(lrs_2, u0, (0.0, 500.0), (pV, pE)), Tsit5()).u[end]
+    @test all(isequal.(ss_1, ss_2))
+end
+
+# Tries non-trivial diffusion rates.
+let 
+    SIR_tr_S_alt = @transport_reaction dS1+dS2 S
+    SIR_tr_I_alt = @transport_reaction dI1*dI2 I
+    SIR_tr_R_alt = @transport_reaction log(dR1)+dR2 R
+    SIR_srs_2_alt = [SIR_tr_S_alt, SIR_tr_I_alt, SIR_tr_R_alt]
+    lrs_1 = LatticeReactionSystem(SIR_system, SIR_srs_2, small_2d_grid)
+    lrs_2 = LatticeReactionSystem(SIR_system, SIR_srs_2_alt, small_2d_grid)
+
+    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs_1.lattice), :R => 0.0]
+    pV = [:α => 0.1 / 1000, :β => 0.01]
+    pE_1 = [:dS => 0.01, :dI => 0.01, :dR => 0.01]
+    pE_2 = [:dS1 => 0.005, :dS1 => 0.005, :dI1 => 2, :dI2 => 0.005, :dR1 => 1.010050167084168, :dR2 => 1.0755285551056204e-16]
+
+    ss_1 = solve(ODEProblem(lrs_1, u0, (0.0, 500.0), (pV, pE_1)), Tsit5()).u[end]
+    ss_2 = solve(ODEProblem(lrs_2, u0, (0.0, 500.0), (pV, pE_2)), Tsit5()).u[end]
+    @test all(isapprox.(ss_1, ss_2))
+end
+
+# Tries various ways of creating TransportReactions.
+let
+    CuH_Amination_system_alt_1 = @reaction_network begin
+        @species Newspecies1(t) Newspecies2(t)
+        @parameters dCuoAc [edgeparameter=true] dLigand dSilane dStyrene dCu_ELigand
+        10.0^kp1, CuoAc + Ligand --> CuoAcLigand
+        10.0^kp2, CuoAcLigand + Silane --> CuHLigand + SilaneOAc
+        10.0^k1, CuHLigand + Styrene --> AlkylCuLigand
+        10.0^k_1, AlkylCuLigand --> CuHLigand + Styrene
+        10.0^k2, AlkylCuLigand + Amine_E --> AlkylAmine + Cu_ELigand
+        10.0^k_2, AlkylAmine + Cu_ELigand --> AlkylCuLigand + Amine_E
+        10.0^k3, Cu_ELigand + Silane --> CuHLigand + E_Silane
+        10.0^kam, CuHLigand + Amine_E --> Amine + Cu_ELigand
+        10.0^kdc, CuHLigand + CuHLigand --> Decomposition
+    end
+    @unpack dLigand, dSilane, Silane = CuH_Amination_system_alt_1
+    @parameters dAmine_E dNewspecies1
+    @variables t
+    @species Ligand(t) Amine_E(t) Newspecies1(t) 
+    tr_alt_1_1 = TransportReaction(dLigand, Ligand)
+    tr_alt_1_2 = TransportReaction(dSilane, Silane)
+    tr_alt_1_3 = TransportReaction(dAmine_E, Amine_E)
+    tr_alt_1_4 = TransportReaction(dNewspecies1, Newspecies1)
+    tr_alt_1_5 = @transport_reaction dDecomposition Decomposition
+    tr_alt_1_6 = @transport_reaction dCu_ELigand Cu_ELigand
+    tr_alt_1_7 = @transport_reaction dNewspecies2 Newspecies2
+    CuH_Amination_srs_alt_1 = [tr_alt_1_1, tr_alt_1_2, tr_alt_1_3, tr_alt_1_4, tr_alt_1_5, tr_alt_1_6, tr_alt_1_7]
+    lrs_1 = LatticeReactionSystem(CuH_Amination_system_alt_1, CuH_Amination_srs_alt_1, small_2d_grid)
+
+    CuH_Amination_system_alt_2 = @reaction_network begin
+        @species Newspecies1(t) Newspecies2(t)
+        @parameters dCuoAc [edgeparameter=true] dLigand dSilane dStyrene dCu_ELigand
+        10.0^kp1, CuoAc + Ligand --> CuoAcLigand
+        10.0^kp2, CuoAcLigand + Silane --> CuHLigand + SilaneOAc
+        10.0^k1, CuHLigand + Styrene --> AlkylCuLigand
+        10.0^k_1, AlkylCuLigand --> CuHLigand + Styrene
+        10.0^k2, AlkylCuLigand + Amine_E --> AlkylAmine + Cu_ELigand
+        10.0^k_2, AlkylAmine + Cu_ELigand --> AlkylCuLigand + Amine_E
+        10.0^k3, Cu_ELigand + Silane --> CuHLigand + E_Silane
+        10.0^kam, CuHLigand + Amine_E --> Amine + Cu_ELigand
+        10.0^kdc, CuHLigand + CuHLigand --> Decomposition
+    end
+    @unpack Decomposition, dCu_ELigand, Cu_ELigand  = CuH_Amination_system_alt_2
+    @parameters dNewspecies2 dDecomposition
+    @variables t
+    @species Newspecies2(t) 
+    tr_alt_2_1 = @transport_reaction dLigand Ligand
+    tr_alt_2_2 = @transport_reaction dSilane Silane
+    tr_alt_2_3 = @transport_reaction dAmine_E Amine_E
+    tr_alt_2_4 = @transport_reaction dNewspecies1 Newspecies1
+    tr_alt_2_5 = TransportReaction(dDecomposition, Decomposition)
+    tr_alt_2_6 = TransportReaction(dCu_ELigand, Cu_ELigand)
+    tr_alt_2_7 = TransportReaction(dNewspecies2, Newspecies2)
+    CuH_Amination_srs_alt_2 = [tr_alt_2_1, tr_alt_2_2, tr_alt_2_3, tr_alt_2_4, tr_alt_2_5, tr_alt_2_6, tr_alt_2_7]
+    lrs_2 = LatticeReactionSystem(CuH_Amination_system_alt_2, CuH_Amination_srs_alt_2, small_2d_grid)
+    
+    u0 = [CuH_Amination_u0; :Newspecies1 => 0.1; :Newspecies2 => 0.1]
+    pV = [CuH_Amination_p; :dLigand => 0.01; :dSilane => 0.01; :dCu_ELigand =>  0.009; :dStyrene => -10000.0]
+    pE = [:dAmine_E => 0.011, :dNewspecies1 =>  0.013, :dDecomposition =>  0.015, :dNewspecies2 =>  0.016, :dCuoAc => -10000.0]
+
+    ss_1 = solve(ODEProblem(lrs_1, u0, (0.0, 500.0), (pV, pE)), Tsit5()).u[end]
+    ss_2 = solve(ODEProblem(lrs_2, u0, (0.0, 500.0), (pV, pE)), Tsit5()).u[end]
+    @test all(isequal.(ss_1, ss_2))
+end
+
 ### Tests Special Cases ###
 
 # Create network with vaious combinations of graph/di-graph and parameters.
@@ -159,7 +287,7 @@ let
               sim_end_graph_22 .== sim_end_graph_31 .== sim_end_graph_32)
 end
 
-# Creates networks with empty species or parameters.
+# Creates networks where some species or parameters have no effect on the system.
 let
     binding_system_alt = @reaction_network begin
         @species X(t) Y(t) XY(t) Z(t) V(t) W(t)
@@ -208,7 +336,7 @@ let
     end
 end
 
-# System with single spatial reaction.
+# Checks that system with single spatial reaction can be created without inputting it as a vector.
 let
     lrs_1 = LatticeReactionSystem(SIR_system, SIR_tr_S, small_2d_grid)
     lrs_2 = LatticeReactionSystem(SIR_system, [SIR_tr_S], small_2d_grid)
@@ -220,7 +348,7 @@ let
     @test all(isequal.(ss_1, ss_2))
 end
 
-# Various ways to give parameters and initial conditions.
+# Provides initial conditions and parameters in various different ways.
 let
     lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, very_small_2d_grid)
     u0_1 = [:S => 990.0, :I => [1.0, 3.0, 2.0, 5.0], :R => 0.0]
@@ -247,30 +375,7 @@ let
     end
 end
 
-# Checks that variosu combinations of jac and sparse gives the same result.
-let
-    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, small_2d_grid)
-    u0 = [:X => rand_v_vals(lrs.lattice, 10), :Y => rand_v_vals(lrs.lattice, 10)]
-    pV = brusselator_p
-    pE = [:dX => 0.2]
-    oprob = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac = false, sparse = false)
-    oprob_sparse = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac = false, sparse = true)
-    oprob_jac = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac = true, sparse = false)
-    oprob_sparse_jac = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE); jac = true, sparse = true)
-
-    ss = solve(oprob, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end]
-    @test all(isapprox.(ss,
-                        solve(oprob_sparse, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end];
-                        rtol = 0.0001))
-    @test all(isapprox.(ss,
-                        solve(oprob_jac, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end];
-                        rtol = 0.0001))
-    @test all(isapprox.(ss,
-                        solve(oprob_sparse_jac, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end];
-                        rtol = 0.0001))
-end
-
-# Splitting parameters by position
+# Confirms parameters can be inputed in [pV; pE] and (pV, pE) form.
 let
     lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, small_2d_grid)
     u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs.lattice), :R => 0.0]
