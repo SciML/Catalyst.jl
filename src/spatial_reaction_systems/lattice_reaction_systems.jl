@@ -108,12 +108,10 @@ split_parameters(ps::Tuple{<:Any, <:Any}, args...) = ps
 function split_parameters(ps::Vector{<:Number}, args...)
     error("When providing parameters for a spatial system as a single vector, the paired form (e.g :D =>1.0) must be used.")
 end
-function split_parameters(ps::Vector{<:Pair}, p_comp_symbols::Vector,
-                          p_diff_symbols::Vector)
-    pV_in = [p for p in ps if Symbol(p[1]) in p_comp_symbols]
-    pE_in = [p for p in ps if Symbol(p[1]) in p_diff_symbols]
-    (sum(length.([pV_in, pE_in])) != length(ps)) &&
-        error("These input parameters are not recongised: $(setdiff(first.(ps), vcat(first.([pV_in, pE_in]))))")
+function split_parameters(ps::Vector{<:Pair}, p_vertex_syms::Vector, p_edge_syms::Vector)
+    pV_in = [p for p in ps if any(isequal(p[1]), p_vertex_syms)]
+    pE_in = [p for p in ps if any(isequal(p[1]), p_edge_syms)]
+    (sum(length.([pV_in, pE_in])) != length(ps)) && error("These input parameters are not recongised: $(setdiff(first.(ps), vcat(first.([pV_in, pE_in]))))")
     return pV_in, pE_in
 end
 

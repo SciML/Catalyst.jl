@@ -20,7 +20,7 @@ end
 
 # Gets a symbol list of spatial parameters.
 function spatial_param_syms(lrs::LatticeReactionSystem)
-    ModelingToolkit.getname.(diffusion_parameters(lrs))
+    ModelingToolkit.getname.(edge_parameters(lrs))
 end
 
 # Converts to integer value (for JumpProcess simulations).
