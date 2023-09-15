@@ -144,7 +144,7 @@ sigmaB_system = @reaction_network begin
 end
 sigmaB_p = [:kBw => 3600, :kDw => 18, :kB1 => 3600, :kB2 => 3600, :kB3 => 3600,
     :kB4 => 1800, :kB5 => 3600,
-    :kD1 => 18, :kD2 => 18, :kD3 => 18, :kD4 => 1800, :kD5 => 18, :kK1 => 36, :kK2 => 12,
+    :kD1 => 18, :kD2 => 18, :kD3 => 18, :kD4 => 1800, :kD5 => 18, :kK1 => 36, :kK2 => 6,
     :kP => 180, :kDeg => 0.7,
     :v0 => 0.4, :F => 30, :K => 0.2, :λW => 4, :λV => 4.5]
 sigmaB_u0 = [
