@@ -113,7 +113,8 @@ export spatial_species, vertex_parameters, edge_parameters
 # variosu utility functions
 include("spatial_reaction_systems/utility.jl")
 
-# spatial lattice ode systems.
+# spatial lattice ode and jump systems.
 include("spatial_reaction_systems/spatial_ODE_systems.jl")
+include("spatial_reaction_systems/spatial_Jump_systems.jl")
 
 end # module
