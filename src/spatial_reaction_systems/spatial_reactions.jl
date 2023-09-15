@@ -49,7 +49,7 @@ function make_transport_reaction(rateex, species)
     parameters = [];
     find_parameters_in_rate!(parameters, rateex)
     quote
-        @parameters $(parameters...)
+        $(isempty(parameters) ? nothing : :(@parameters $(parameters...)))
         @variables t
         @species $(species)(t)
         TransportReaction($rateex, $species)
@@ -81,10 +81,10 @@ equivalent_metadata(p1, p2) = isempty(setdiff(p1.metadata, p2.metadata, [Catalys
 # Loops through a rate and extract all parameters.
 function find_parameters_in_rate!(parameters, rateex::ExprValues)
     if rateex isa Symbol
-        if !(rateex in [:ℯ, :pi, :π])
-            push!(parameters, rateex)
-        elseif rateex in [:t, :∅, forbidden_symbols_error...]
+        if rateex in [:t, :∅, :im, :nothing, CONSERVED_CONSTANT_SYMBOL]
             error("Forbidden term $(rateex) used in transport reaction rate.")
+        elseif !(rateex in [:ℯ, :pi, :π])
+            push!(parameters, rateex)
         end
     elseif rateex isa Expr
         # note, this (correctly) skips $(...) expressions

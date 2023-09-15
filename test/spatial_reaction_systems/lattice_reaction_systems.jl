@@ -26,6 +26,17 @@ end
 # Test case 2.
 let 
     rs = @reaction_network begin
+        @parameters p1 p2 [edgeparameter=true]
+    end
+    @unpack p1, p2 = rs
+
+    @test !isedgeparameter(p1)
+    @test isedgeparameter(p2)
+end
+
+# Test case 3.
+let 
+    rs = @reaction_network begin
         @parameters pX pY dX [edgeparameter=true] dY
         (pX, 1), 0 <--> X
         (pY, 1), 0 <--> Y
@@ -41,7 +52,7 @@ let
     @test ModelingToolkit.getname.(edge_parameters(lrs)) == [:dX]      
 end
 
-# Test case 3.
+# Test case 4.
 let 
     rs = @reaction_network begin
         @parameters dX p
@@ -58,7 +69,7 @@ let
     @test ModelingToolkit.getname.(edge_parameters(lrs)) == []      
 end
 
-# Test case 4.
+# Test case 5.
 let 
     rs = @reaction_network begin
         @species W(t)
@@ -84,6 +95,17 @@ let
     @test ModelingToolkit.getname.(parameters(lrs)) == [:pX, :pY, :dX, :dY, :pZ, :pV, :dZ, :dV, :dW]   
     @test ModelingToolkit.getname.(vertex_parameters(lrs)) == [:pX, :pY, :dY, :pZ, :pV]  
     @test ModelingToolkit.getname.(edge_parameters(lrs)) == [:dX, :dZ, :dV, :dW]      
+end
+
+# Test case 6.
+let 
+    rs = @reaction_network customname begin
+        (p, 1), 0 <--> X
+    end
+    tr = @transport_reaction d X    
+    lrs = LatticeReactionSystem(rs, tr, grid)
+
+    @test nameof(lrs) == :customname
 end
 
 ### Tests Spatial Reactions Getters Correctness ###
@@ -113,6 +135,47 @@ let
     @test isequal(spatial_species(tr_2), [Y])
     @test isequal(parameters(tr_1), [dX])
     @test isequal(parameters(tr_2), [dY1, dY2])
+end
+
+### Tests Spatial Reactions Generation ###
+
+# Tests TransportReaction with non-trivial rate.
+let 
+    rs = @reaction_network begin
+        @parameters dV dE [edgeparameter=true] 
+        (p,1), 0 <--> X
+    end
+    @unpack dV, dE, X = rs
+    
+    tr = TransportReaction(dV*dE, X)
+    @test isequal(tr.rate, dV*dE)
+end
+
+# Tests transport_reactions function for creating TransportReactions.
+let 
+    rs = @reaction_network begin
+        @parameters d
+        (p,1), 0 <--> X
+    end
+    @unpack d, X = rs
+    trs = transport_reactions([(d, X), (d, X)])
+    @test isequal(trs[1], trs[2])
+end
+
+# Test reactions with constants in rate.
+let 
+    @variables t
+    @species X(t) Y(t)
+    
+    tr_1 = TransportReaction(1.5, X)
+    tr_1_macro = @transport_reaction 1.5 X
+    @test isequal(tr_1.rate, tr_1_macro.rate)
+    @test isequal(tr_1.species, tr_1_macro.species)
+    
+    tr_2 = TransportReaction(π, Y)
+    tr_2_macro = @transport_reaction π Y
+    @test isequal(tr_2.rate, tr_2_macro.rate)
+    @test isequal(tr_2.species, tr_2_macro.species)
 end
 
 ### Test Interpolation ###
