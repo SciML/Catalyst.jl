@@ -14,7 +14,7 @@ include("../spatial_test_networks.jl")
 # Current not used, simply here for reference.
 # Useful when attempting to optimise workflow.
 
-# using BenchmarkTools
+# using BenchmarkTools, Sundials
 # runtime_reduction_margin = 10.0
 
 # Small grid, small, non-stiff, system.
@@ -26,7 +26,7 @@ let
     oprob = ODEProblem(lrs, u0, (0.0, 500.0), (pV, pE); jac = false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
 
-    runtime_target = 0.00060
+    runtime_target = 0.00027
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times) / 1000000000
     println("Small grid, small, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < runtime_reduction_margin * runtime_target
@@ -41,40 +41,24 @@ let
     oprob = ODEProblem(lrs, u0, (0.0, 500.0), (pV, pE); jac = false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
 
-    runtime_target = 0.26
+    runtime_target = 0.12
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times) / 1000000000
     println("Large grid, small, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < runtime_reduction_margin * runtime_target
 end
 
 # Small grid, small, stiff, system.
-
 let
     lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, small_2d_grid)
     u0 = [:X => rand_v_vals(lrs.lattice, 10), :Y => rand_v_vals(lrs.lattice, 10)]
     pV = brusselator_p
     pE = [:dX => 0.2]
     oprob = ODEProblem(lrs, u0, (0.0, 100.0), (pV, pE))
-    @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
+    @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver=:GMRES)))
 
-    runtime_target = 0.17
-    runtime = minimum((@benchmark solve($oprob, QNDF())).times) / 1000000000
+    runtime_target = 0.013
+    runtime = minimum((@benchmark solve($oprob, CVODE_BDF(linear_solver=:GMRES))).times) / 1000000000
     println("Small grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
-    @test runtime < runtime_reduction_margin * runtime_target
-end
-
-# Medium grid, small, stiff, system.
-let
-    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, medium_2d_grid)
-    u0 = [:X => rand_v_vals(lrs.lattice, 10), :Y => rand_v_vals(lrs.lattice, 10)]
-    pV = brusselator_p
-    pE = [:dX => 0.2]
-    oprob = ODEProblem(lrs, u0, (0.0, 100.0), (pV, pE))
-    @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
-
-    runtime_target = 2.3
-    runtime = minimum((@benchmark solve($oprob, QNDF())).times) / 1000000000
-    println("Medium grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < runtime_reduction_margin * runtime_target
 end
 
@@ -85,10 +69,10 @@ let
     pV = brusselator_p
     pE = [:dX => 0.2]
     oprob = ODEProblem(lrs, u0, (0.0, 100.0), (pV, pE))
-    @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
+    @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver=:GMRES)))
 
-    runtime_target = 170.0
-    runtime = minimum((@benchmark solve($oprob, QNDF())).times) / 1000000000
+    runtime_target = 11.
+    runtime = minimum((@benchmark solve($oprob, CVODE_BDF(linear_solver=:GMRES))).times) / 1000000000
     println("Large grid, small, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < runtime_reduction_margin * runtime_target
 end
@@ -118,7 +102,7 @@ let
     oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac = false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
 
-    runtime_target = 0.0016
+    runtime_target = 0.0012
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times) / 1000000000
     println("Small grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < runtime_reduction_margin * runtime_target
@@ -149,7 +133,7 @@ let
     oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac = false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
 
-    runtime_target = 0.67
+    runtime_target = 0.56
     runtime = minimum((@benchmark solve($oprob, Tsit5())).times) / 1000000000
     println("Large grid, mid-sized, non-stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < runtime_reduction_margin * runtime_target
@@ -172,11 +156,11 @@ let
     ]
     pV = sigmaB_p
     pE = [:DσB => 0.1, :Dw => 0.1, :Dv => 0.1]
-    oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE))
-    @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
+    oprob = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE))
+    @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver=:GMRES)))
 
-    runtime_target = 0.019
-    runtime = minimum((@benchmark solve($oprob, QNDF())).times) / 1000000000
+    runtime_target = 0.61
+    runtime = minimum((@benchmark solve($oprob, CVODE_BDF(linear_solver=:GMRES))).times) / 1000000000
     println("Small grid, mid-sized, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < runtime_reduction_margin * runtime_target
 end
@@ -198,11 +182,11 @@ let
     ]
     pV = sigmaB_p
     pE = [:DσB => 0.1, :Dw => 0.1, :Dv => 0.1]
-    oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE))
-    @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
+    oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE)) # Time reduced from 50.0 (which casues Julai to crash).
+    @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver=:GMRES)))
 
-    runtime_target = 35.0
-    runtime = minimum((@benchmark solve($oprob, QNDF())).times) / 1000000000
+    runtime_target = 59.
+    runtime = minimum((@benchmark solve($oprob, CVODE_BDF(linear_solver=:GMRES))).times) / 1000000000
     println("Large grid, mid-sized, stiff, system. Runtime: $(runtime), previous standard: $(runtime_target)")
     @test runtime < runtime_reduction_margin * runtime_target
 end
