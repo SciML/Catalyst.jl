@@ -23,14 +23,6 @@ function spatial_param_syms(lrs::LatticeReactionSystem)
     ModelingToolkit.getname.(edge_parameters(lrs))
 end
 
-# Converts to integer value (for JumpProcess simulations).
-function make_values_int(values::Vector{<:Pair})
-    [val[1] => round.(Int64, val[2]) for val in values]
-end
-make_values_int(values::Matrix{<:Number}) = round.(Int64, values)
-make_values_int(values::Vector{<:Number}) = round.(Int64, values)
-make_values_int(values::Vector{Vector}) = [round.(Int64, vals) for vals in values]
-
 ### Declares Models ###
 
 # Small non-stiff system.
