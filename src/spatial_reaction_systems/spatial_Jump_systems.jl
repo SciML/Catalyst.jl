@@ -8,28 +8,11 @@ function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0_in, tspan, p_
 
     # Converts potential symmaps to varmaps.
     u0_in = symmap_to_varmap(lrs, u0_in)
-    println()
-    println(p_in)
-    println(typeof(p_in))
     p_in = (p_in isa Tuple{<:Any,<:Any}) ? (symmap_to_varmap(lrs, p_in[1]),symmap_to_varmap(lrs, p_in[2])) : symmap_to_varmap(lrs, p_in)
-
-    println()
-    println(p_in)
-    println(typeof(p_in))
 
     # Converts u0 and p to Vector{Vector{Float64}} form.
     u0 = lattice_process_u0(u0_in, species(lrs), lrs.nV)
     pC, pD = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs), lrs)
-    
-    println()
-    println(pC)
-    println(pD)
-    println(typeof(pC))
-    println(typeof(pD))
-
-    println()
-    println((pC, pD))
-    println(typeof((pC, pD)))
     # Creates DiscreteProblem.
     return DiscreteProblem(lrs.rs, u0, tspan, (pC, pD), args...; kwargs...)
 end
