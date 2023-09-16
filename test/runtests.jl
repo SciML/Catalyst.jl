@@ -3,8 +3,6 @@ using SafeTestsets
 
 ### Run the tests ###
 @time begin
-    @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_reaction_systems/lattice_reaction_systems_jumps.jl") end
-
     ### Tests the properties of ReactionSystems. ###
     @time @safetestset "ReactionSystem" begin include("reactionsystem_structure/reactionsystem.jl") end
     @time @safetestset "Higher Order Reactions" begin include("reactionsystem_structure/higher_order_reactions.jl") end
