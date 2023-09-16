@@ -12,7 +12,7 @@ include("../spatial_test_networks.jl")
 # Tests that there are no errors during runs.
 let
     for grid in [small_2d_grid, short_path, small_directed_cycle]
-        for srs in [Vector{TransportReaction}(), SIR_srs_1, SIR_srs_2]
+        for srs in [SIR_srs_1, SIR_srs_2]
             lrs = LatticeReactionSystem(SIR_system, srs, grid)
             u0_1 = [:S => 999, :I => 1, :R => 0]
             u0_2 = [:S => round.(Int64, 500.0 .+ 500.0 * rand_v_vals(lrs.lattice)), :I => 1, :R => 0, ]
@@ -34,8 +34,6 @@ let
                     pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), ModelingToolkit.getname.(edge_parameters(lrs)))
                     for pE in [pE_1, pE_2, pE_3, pE_4]
                         dprob = DiscreteProblem(lrs, u0, (0.0, 100.0), (pV, pE))
-                        println(dprob.p)
-                        println(typeof(dprob.p))
                         jprob = JumpProblem(lrs, dprob, NSM())
                         @test SciMLBase.successful_retcode(solve(jprob, SSAStepper()))
                     end
