@@ -75,6 +75,9 @@ let
     # Checks hopping rates and u0 are correct.
     true_u0 = [fill(1.0, 1, 25); fill(2.0, 1, 25); fill(3.0, 1, 25)]
     true_hopping_rates = cumsum.([fill(dval, length(v)) for dval in [0.01,0.02,0.03], v in small_2d_grid.fadjlist])
+    true_maj_scaled_rates = [0.1, 0.2]
+    true_maj_reactant_stoch = [[1 => 1, 2 => 1], [2 => 1]]
+    true_maj_net_stoch = [[1 => -1, 2 => 1], [2 => -1, 3 => 1]]
     for u0 in [u0_1, u0_2, u0_3, u0_4, u0_5]
         # Provides parameters as a tupple.
         for pV in [pV_1, pV_3], pE in [pE_1, pE_2, pE_3, pE_4, pE_5]
@@ -82,6 +85,9 @@ let
             jprob = JumpProblem(lrs, dprob, NSM())
             @test jprob.prob.u0 == true_u0
             @test jprob.discrete_jump_aggregation.hop_rates.hop_const_cumulative_sums == true_hopping_rates
+            @test jprob.massaction_jump.scaled_rates == true_maj_scaled_rates
+            @test jprob.massaction_jump.reactant_stoch  == true_maj_reactant_stoch
+            @test jprob.massaction_jump.net_stoch == true_maj_net_stoch
         end
         # Provides parameters as a combined vector.
         for pV in [pV_1], pE in [pE_1, pE_2]
@@ -89,6 +95,9 @@ let
             jprob = JumpProblem(lrs, dprob, NSM())
             @test jprob.prob.u0 == true_u0
             @test jprob.discrete_jump_aggregation.hop_rates.hop_const_cumulative_sums == true_hopping_rates
+            @test jprob.massaction_jump.scaled_rates == true_maj_scaled_rates
+            @test jprob.massaction_jump.reactant_stoch  == true_maj_reactant_stoch
+            @test jprob.massaction_jump.net_stoch == true_maj_net_stoch
         end
     end
 end
