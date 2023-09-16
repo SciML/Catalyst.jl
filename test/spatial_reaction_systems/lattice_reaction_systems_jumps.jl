@@ -34,6 +34,7 @@ let
                     pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), ModelingToolkit.getname.(edge_parameters(lrs)))
                     for pE in [pE_1, pE_2, pE_3, pE_4]
                         dprob = DiscreteProblem(lrs, u0, (0.0, 100.0), (pV, pE))
+                        println(dprob.p)
                         jprob = JumpProblem(lrs, dprob, NSM())
                         @test SciMLBase.successful_retcode(solve(jprob, SSAStepper()))
                     end
