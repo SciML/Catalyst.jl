@@ -6,20 +6,29 @@
 function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0_in, tspan, p_in = DiffEqBase.NullParameters(), args...; kwargs...)
     is_transport_system(lrs) || error("Currently lattice Jump simulations only supported when all spatial reactions are transport reactions.")
 
+    println("\nMaking dprob")
     # Converts potential symmaps to varmaps.
     u0_in = symmap_to_varmap(lrs, u0_in)
+    println(p_in)
+    println(typeof(p_in))
     p_in = (p_in isa Tuple{<:Any,<:Any}) ? (symmap_to_varmap(lrs, p_in[1]),symmap_to_varmap(lrs, p_in[2])) : symmap_to_varmap(lrs, p_in)
 
     # Converts u0 and p to Vector{Vector{Float64}} form.
     u0 = lattice_process_u0(u0_in, species(lrs), lrs.nV)
     pC, pD = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs), lrs)
     
+    println((pC, pD))
+    println(typeof((pC, pD)))
     # Creates DiscreteProblem.
     return DiscreteProblem(lrs.rs, u0, tspan, (pC, pD), args...; kwargs...)
 end
 
 # Builds a spatial JumpProblem from a DiscreteProblem containg a Lattice Reaction System.
 function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator, args...; name = nameof(lrs.rs), combinatoric_ratelaws = get_combinatoric_ratelaws(lrs.rs),checks = false, kwargs...)
+
+    println("\nMaking jprob")
+    println(dprob.p)
+    println(typeof(dprob.p))
     # Error checks.
     dprob.p isa Tuple{Vector{Vector{Float64}}, Vector{Vector{Float64}}} || error("Parameters in input DiscreteProblem is of an unexpected type: $(typeof(dprob.p)). Was a LatticeReactionProblem passed into the DiscreteProblem when it was created?")
     any(length.(dprob.p[1]) .> 1) && error("Spatial reaction rates are currently not supported in lattice jump simulations.")
