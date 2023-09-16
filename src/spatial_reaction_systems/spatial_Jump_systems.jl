@@ -19,9 +19,8 @@ end
 
 # Builds a spatial JumpProblem from a DiscreteProblem containg a Lattice Reaction System.
 function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator, args...; name = nameof(lrs.rs), combinatoric_ratelaws = get_combinatoric_ratelaws(lrs.rs),checks = false, kwargs...)
-
     # Error checks.
-    dprob.p isa Tuple{Vector{Vector{Float64}}, Vector{Vector{Float64}}} || error("Parameters in input DiscreteProblem is of an unexpected type: $(typeof(dprob.p)). Was a LatticeReactionProblem passed into the DiscreteProblem when it was created?")
+    dprob.p isa Tuple{Vector{Vector{Float64}}, Vector{Vector{Float64}}} || dprob.p isa Vector{Vector} || error("Parameters in input DiscreteProblem is of an unexpected type: $(typeof(dprob.p)). Was a LatticeReactionProblem passed into the DiscreteProblem when it was created?") # The second check (Vector{Vector} is needed becaus on the CI server somehow the Tuple{..., ...} is covnerted into a Vector[..., ...]). It does not happen when I run tests locally, so no ideal how to fix.
     any(length.(dprob.p[1]) .> 1) && error("Spatial reaction rates are currently not supported in lattice jump simulations.")
     
     # Creates JumpProblem.
