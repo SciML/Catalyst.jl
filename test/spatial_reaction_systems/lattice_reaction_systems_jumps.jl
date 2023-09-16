@@ -33,10 +33,6 @@ let
                     pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.01), ModelingToolkit.getname.(edge_parameters(lrs)))
                     pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), ModelingToolkit.getname.(edge_parameters(lrs)))
                     for pE in [pE_1, pE_2, pE_3, pE_4]
-                        println("\n\n\nHere: 1")
-                        println(pE)
-                        println(typeof(pE))
-                        println((pV, pE))
                         dprob = DiscreteProblem(lrs, u0, (0.0, 100.0), (pV, pE))
                         println(dprob.p)
                         println(typeof(dprob.p))
