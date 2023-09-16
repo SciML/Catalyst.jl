@@ -21,9 +21,6 @@ end
 # Builds a spatial JumpProblem from a DiscreteProblem containg a Lattice Reaction System.
 function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator, args...; name = nameof(lrs.rs), combinatoric_ratelaws = get_combinatoric_ratelaws(lrs.rs),checks = false, kwargs...)
     # Error checks.
-    println()
-    println(dprob.p)
-    println(dprob.u0)
     dprob.p isa Tuple{Vector{Vector{Float64}}, Vector{Vector{Float64}}} || error("Parameters in input DiscreteProblem is of an unexpected type: $(typeof(dprob.p)). Was a LatticeReactionProblem passed into the DiscreteProblem when it was created?")
     any(length.(dprob.p[1]) .> 1) && error("Spatial reaction rates are currently not supported in lattice jump simulations.")
     
@@ -40,24 +37,19 @@ function make_hopping_constants(dprob::DiscreteProblem, lrs::LatticeReactionSyst
     all_diff_rates = [haskey(spatial_rates_dict, s) ? spatial_rates_dict[s] : [0.0] for s in species(lrs)]
     hopping_constants = [Vector{Float64}(undef, length(lrs.lattice.fadjlist[j])) for i in 1:(lrs.nS), j in 1:(lrs.nV)]
     for (e_idx, e) in enumerate(edges(lrs.lattice)), s_idx in 1:(lrs.nS)
-        for dst_idx in 1:length(hopping_constants[s_idx, e.src])
-            if (hopping_constants[s_idx, e.src][dst_idx] == undef)
-                hopping_constants[s_idx, e.src][dst_idx] = get_component_value(all_diff_rates[s_idx], e_idx)
-            end
-        end
+        dst_idx = findfirst(isequal(e.dst), lrs.lattice.fadjlist[e.src])
+        hopping_constants[s_idx, e.src][dst_idx] = get_component_value(all_diff_rates[s_idx], e_idx)
     end
     return hopping_constants
 end
 
 # Creates the mass action jumps from a discrete problem and a reaction system.
-function make_majumps(non_spatial_prob, rs::ReactionSystem)
-    prob = non_spatial_prob
+function make_majumps(non_spat_dprob, rs::ReactionSystem)
     js = convert(JumpSystem, rs)
-    statetoid = Dict(ModelingToolkit.value(state) => i for (i, state) in enumerate(ModelingToolkit.states(js)))
+    statetoid = Dict(ModelingToolkit.value(state) => i for (i, state) in enumerate(states(rs)))
     eqs = equations(js)
-    invttype = prob.tspan[1] === nothing ? Float64 : typeof(1 / prob.tspan[2])
-    p = (prob.p isa DiffEqBase.NullParameters || prob.p === nothing) ? Num[] : prob.p
+    invttype = non_spat_dprob.tspan[1] === nothing ? Float64 : typeof(1 / non_spat_dprob.tspan[2])
+    p = (non_spat_dprob.p isa DiffEqBase.NullParameters || non_spat_dprob.p === nothing) ? Num[] : non_spat_dprob.p    
     majpmapper = ModelingToolkit.JumpSysMajParamMapper(js, p; jseqs = eqs, rateconsttype = invttype)
-    majumps = ModelingToolkit.assemble_maj(eqs.x[1], statetoid, majpmapper)
-    return majumps
+    return ModelingToolkit.assemble_maj(eqs.x[1], statetoid, majpmapper)
 end
