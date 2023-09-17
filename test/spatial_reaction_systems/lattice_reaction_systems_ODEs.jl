@@ -143,6 +143,42 @@ let
                         rtol = 0.0001))
 end
 
+# Checks that, when non directed graphs are provided, the parameters are re-ordered correctly.
+let 
+    # Create the same lattice (one as digraph, one not). Algorithm depends on Graphs.jl reordering edges, hence the jumpled order.
+    lattice_1 = SimpleGraph(5)
+    lattice_2 = SimpleDiGraph(5)
+
+    add_edge!(lattice_1, 5, 2)
+    add_edge!(lattice_1, 1, 4)
+    add_edge!(lattice_1, 1, 3)
+    add_edge!(lattice_1, 4, 3)
+    add_edge!(lattice_1, 4, 5)
+
+    add_edge!(lattice_2, 4, 1)
+    add_edge!(lattice_2, 3, 4)
+    add_edge!(lattice_2, 5, 4)
+    add_edge!(lattice_2, 5, 2)
+    add_edge!(lattice_2, 4, 3)
+    add_edge!(lattice_2, 4, 5)
+    add_edge!(lattice_2, 3, 1)
+    add_edge!(lattice_2, 2, 5)
+    add_edge!(lattice_2, 1, 4)
+    add_edge!(lattice_2, 1, 3)
+
+    lrs_1 = LatticeReactionSystem(SIR_system, SIR_srs_2, lattice_1)
+    lrs_2 = LatticeReactionSystem(SIR_system, SIR_srs_2, lattice_2)
+
+    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs_1.lattice), :R => 0.0]
+    pV = [:α => 0.1 / 1000, :β => 0.01]
+
+    pE_1 = [:dS => [1.3, 1.4, 2.5, 3.4, 4.5], :dI => 0.01, :dR => 0.02]
+    pE_2 = [:dS => [1.3, 1.4, 2.5, 1.3, 3.4, 1.4, 3.4, 4.5, 2.5, 4.5], :dI => 0.01, :dR => 0.02]
+    ss_1 = solve(ODEProblem(lrs_1, u0, (0.0, 500.0), (pV, pE_1)), Tsit5()).u[end]
+    ss_2 = solve(ODEProblem(lrs_2, u0, (0.0, 500.0), (pV, pE_2)), Tsit5()).u[end]
+    @test all(isequal.(ss_1, ss_2))
+end
+
 ### Test Transport Reaction Types ###
 
 # Compares where spatial reactions are created with/without the macro.

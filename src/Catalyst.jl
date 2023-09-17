@@ -98,6 +98,8 @@ include("compound.jl")
 export @compound
 export components, iscompound, coefficients
 
+### Spatial Reaction Networks ###
+
 # spatial reactions
 include("spatial_reaction_systems/spatial_reactions.jl")
 export TransportReaction, transport_reactions, @transport_reaction
@@ -107,6 +109,9 @@ export isedgeparameter
 include("spatial_reaction_systems/lattice_reaction_systems.jl")
 export LatticeReactionSystem
 export spatial_species, vertex_parameters, edge_parameters
+
+# variosu utility functions
+include("spatial_reaction_systems/utility.jl")
 
 # spatial lattice ode systems.
 include("spatial_reaction_systems/spatial_ODE_systems.jl")
