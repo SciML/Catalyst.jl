@@ -1,6 +1,18 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+- Simulation of spatial ODEs now supported. For full details, please see https://github.com/SciML/Catalyst.jl/pull/644 and upcoming documentation.
+- LatticeReactionSystem structure represents a spatiral reaction network:
+  ```julia
+  rn = @reaction_network begin
+      (p,d), 0 <--> X
+  end
+  tr = @transport_reaction D X
+  lattice = Graphs.grid([5, 5])
+  lrs = LatticeReactionSystem(rn, [tr], lattice)
+  ```
+
+
 
 ## Catalyst 13.2
 - Array parameters, species, and variables can be use in the DSL if explicitly
