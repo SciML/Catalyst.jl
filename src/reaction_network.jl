@@ -369,6 +369,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     parameters_declared = extract_syms(options, :parameters)
     variables = extract_syms(options, :variables)
 
+    # Handles a (potential) noise scaling parameter.
+    #nosie_scaling_p_args = handle_noise_scaling_ps!(parameters_declared, options)
+
     # handle independent variables
     if haskey(options, :ivs)
         ivs = Tuple(extract_syms(options, :ivs))
@@ -391,7 +394,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
                                                                               declared_syms)
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
-
+    
     # Checks for input errors.
     (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
         error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
@@ -414,6 +417,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args, get_rxexprs(reaction))
     end
 
+    # Returns the rephrased expression.
     quote
         $ps
         $ivexpr
@@ -556,7 +560,21 @@ function get_pexpr(parameters_extracted, options)
     pexprs = (haskey(options, :parameters) ? options[:parameters] :
               (isempty(parameters_extracted) ? :() : :(@parameters)))
     foreach(p -> push!(pexprs.args, p), parameters_extracted)
+    append!(pexprs.args, get_noise_scaling_pexpr(options))
     pexprs
+end
+# Extracts any decalred nosie scaling parameters.
+function get_noise_scaling_pexpr(options)
+    haskey(options, :noise_scaling_parameters) || return []
+    ns_expr = options[:noise_scaling_parameters]
+    for idx = length(ns_expr.args):-1:3
+        if ns_expr.args[idx] isa Symbol
+            insert!(ns_expr.args, idx+1, :([noisescalingparameter=true]))
+        elseif (ns_expr.args[idx] isa Expr) && (ns_expr.args[idx].head == :ref)
+            insert!(ns_expr.args, idx+1, :([noisescalingparameter=true]))
+        end
+    end
+    return ns_expr.args[3:end]
 end
 
 # Creates the reaction vector declaration statement.
@@ -810,6 +828,21 @@ function recursive_expand_functions!(expr::ExprValues)
     end
     expr
 end
+
+### Option Handling ###
+
+# Extracts any potential nosie scaling parameters and add them to teh decalred parameters.
+function add_noise_scaling_ps!(parameters_declared, options)
+    haskey(options, :noise_scaling_parameters) || return
+    for arg in options[:noise_scaling_parameters].args[end:-1:3]
+        if arg isa Symbol
+            push!(parameters_declared, arg)
+        elseif arg isa Expr
+            push!(parameters_declared, arg.args[1])
+        end
+    end
+end
+
 
 # ### Old functions (for deleting).
 

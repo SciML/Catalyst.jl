@@ -58,7 +58,7 @@ drop_dynamics(s) = isconstant(s) || isbc(s) || (!isspecies(s))
 
 # Denotes that a parameter controls the scaling of noise in the CLE.
 struct NoiseScalingParameter end
-Symbolics.option_to_metadata_type(::Val{:isnoisescalingparameter}) = NoiseScalingParameter
+Symbolics.option_to_metadata_type(::Val{:noisescalingparameter}) = NoiseScalingParameter
 
 isnoisescalingparameter(s::Num) = isnoisescalingparameter(MT.value(s))
 function isnoisescalingparameter(s)
@@ -1546,7 +1546,16 @@ end
 
 # Extracts any noise scaling parameters from a reaction system.
 function get_noise_scaling(rs::ReactionSystem)
-    return nothing
+    ns_params = filter(p -> isnoisescalingparameter(p), parameters(rs))
+    if isempty(ns_params)
+        return nothing
+    elseif length(ns_params) == 1
+        return Num(ns_params[1])
+    elseif length(ns_params) == length(reactions(rs)) 
+        return ns_params
+    else
+        error("The system have $(length(ns_params)) noise scaling parameters. This number should be equal to 0, 1, or the number of reactions ($(length(reactions(rs)))).")
+    end
 end
 
 """

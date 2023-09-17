@@ -504,7 +504,9 @@ end
 
 # convert symbol of the form :sys.a.b.c to a symbolic a.b.c
 function _symbol_to_var(sys, sym)
-    if hasproperty(sys, sym)
+    if sym isa Num
+        return sym
+    elseif hasproperty(sys, sym)
         var = getproperty(sys, sym, namespace = false)
     else
         strs = split(String(sym), "₊")   # need to check if this should be split of not!!!
@@ -563,25 +565,39 @@ pmap   = symmap_to_varmap(sys, [:β => 1.0, :ν => 1.0, :subsys₊k => 1.0])
 Notes:
 - Any `Symbol`, `sym`, within `symmap` must be a valid field of `sys`. i.e.
   `sys.sym` must be defined.
+- The function works even if symbols and symbolics are mixed, e.g.
+```julia
+sir = @reaction_network sir begin
+    β, S + I --> 2I
+    ν, I --> R
+end
+@unpack S = sir
+mixed_u0map = [S => 1.0, :I => 1.0, :R => 1.0]
+u0map  = symmap_to_varmap(sir, mixed_u0map)
+```
+
 """
 function symmap_to_varmap(sys, symmap::Tuple)
     if all(p -> p isa Pair{Symbol}, symmap)
         return ((_symbol_to_var(sys, sym) => val for (sym, val) in symmap)...,)
     else  # if not all entries map a symbol to value pass through
-        return symmap
+        return symmapAny
     end
 end
 
-function symmap_to_varmap(sys, symmap::AbstractArray{Pair{Symbol, T}}) where {T}
+function symmap_to_varmap(sys, symmap::AbstractArray{Pair{Any, T}}) where {T}
     [_symbol_to_var(sys, sym) => val for (sym, val) in symmap]
 end
 
-function symmap_to_varmap(sys, symmap::Dict{Symbol, T}) where {T}
+function symmap_to_varmap(sys, symmap::Dict{Any, T}) where {T}
     Dict(_symbol_to_var(sys, sym) => val for (sym, val) in symmap)
 end
 
-# don't permute any other types and let varmap_to_vars handle erroring
+# don't permute any other types and let varmap_to_vars handle erroring.
+# If all keys are `Num`, conversion not needed.
 symmap_to_varmap(sys, symmap) = symmap
+symmap_to_varmap(sys, symmap::AbstractArray{Pair{Num, T}}) where {T} = symmap
+symmap_to_varmap(sys, symmap::Dict{Num, T}) where {T} = symmap
 #error("symmap_to_varmap requires a Dict, AbstractArray or Tuple to map Symbols to values.")
 
 ######################## reaction complexes and reaction rates ###############################
