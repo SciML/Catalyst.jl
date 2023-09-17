@@ -16,9 +16,9 @@ version = "0.0.1"
 
 [[deps.AbstractAlgebra]]
 deps = ["GroupsCore", "InteractiveUtils", "LinearAlgebra", "MacroTools", "Preferences", "Random", "RandomExtensions", "SparseArrays", "Test"]
-git-tree-sha1 = "41b45260ad00b666558c16f7cd9db0e8af408ea1"
+git-tree-sha1 = "237a3ebe3040abca26d889b8b38a5363a797dd68"
 uuid = "c3fe647b-3220-5bb0-a1ea-a7954cac585d"
-version = "0.31.1"
+version = "0.32.1"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -789,9 +789,9 @@ version = "1.0.2"
 
 [[deps.Groebner]]
 deps = ["AbstractAlgebra", "Combinatorics", "ExprTools", "Logging", "MultivariatePolynomials", "Primes", "Random", "SIMD", "SnoopPrecompile"]
-git-tree-sha1 = "5066e06b375e0fc75f957a2027d233524b195e86"
+git-tree-sha1 = "44f595de4f6485ab5ba71fe257b5eadaa3cf161e"
 uuid = "0b43b601-686d-58a3-8a1c-6623616c7cd4"
-version = "0.4.3"
+version = "0.4.4"
 
 [[deps.GroupsCore]]
 deps = ["Markdown", "Random"]
@@ -1566,9 +1566,9 @@ version = "0.4.4"
 
 [[deps.Polyester]]
 deps = ["ArrayInterface", "BitTwiddlingConvenienceFunctions", "CPUSummary", "IfElse", "ManualMemory", "PolyesterWeave", "Requires", "Static", "StaticArrayInterface", "StrideArraysCore", "ThreadingUtilities"]
-git-tree-sha1 = "3d811babe092a6e7b130beee84998fe7663348b6"
+git-tree-sha1 = "d4c9ebdc6528a4aaf7cfcf43b482e927267b400d"
 uuid = "f517fe37-dbe3-4b94-8317-1923a5111588"
-version = "0.7.5"
+version = "0.7.6"
 
 [[deps.PolyesterWeave]]
 deps = ["BitTwiddlingConvenienceFunctions", "CPUSummary", "IfElse", "Static", "ThreadingUtilities"]
@@ -1657,10 +1657,10 @@ uuid = "01f381cc-face-5a0a-ade9-ef63dc65d628"
 version = "1.1.4"
 
 [[deps.Qt6Base_jll]]
-deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
-git-tree-sha1 = "364898e8f13f7eaaceec55fd3d08680498c0aa6e"
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Vulkan_Loader_jll", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
+git-tree-sha1 = "ea513c73c8f657985e8fb9b8067dd7cf306adc35"
 uuid = "c0090381-4147-56d7-9ebc-da0b1113ec56"
-version = "6.4.2+3"
+version = "6.5.2+0"
 
 [[deps.QuadGK]]
 deps = ["DataStructures", "LinearAlgebra"]
@@ -1812,9 +1812,9 @@ version = "0.6.39"
 
 [[deps.SciMLBase]]
 deps = ["ADTypes", "ArrayInterface", "ChainRulesCore", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "EnumX", "FillArrays", "FunctionWrappersWrappers", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "Markdown", "PrecompileTools", "Preferences", "RecipesBase", "RecursiveArrayTools", "Reexport", "RuntimeGeneratedFunctions", "SciMLOperators", "StaticArraysCore", "Statistics", "SymbolicIndexingInterface", "Tables", "TruncatedStacktraces", "ZygoteRules"]
-git-tree-sha1 = "827c87edbb5ad34a5e61accc99269285291c692e"
+git-tree-sha1 = "6de099dba3c80e23bde1d19011161ea91a23ed6b"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "1.97.1"
+version = "1.98.0"
 weakdeps = ["Zygote"]
 
     [deps.SciMLBase.extensions]
@@ -2290,6 +2290,12 @@ deps = ["Graphs"]
 git-tree-sha1 = "8351f8d73d7e880bfc042a8b6922684ebeafb35c"
 uuid = "19fa3120-7c27-5ec5-8db8-b0b0aa330d6f"
 version = "0.2.0"
+
+[[deps.Vulkan_Loader_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Wayland_jll", "Xorg_libX11_jll", "Xorg_libXrandr_jll", "xkbcommon_jll"]
+git-tree-sha1 = "2f0486047a07670caad3a81a075d2e518acc5c59"
+uuid = "a44049a8-05dd-5a78-86c9-5fde0876e88c"
+version = "1.3.243+0"
 
 [[deps.Wayland_jll]]
 deps = ["Artifacts", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg", "XML2_jll"]
