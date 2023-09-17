@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Basic Chemical Reaction Network Examples · Catalyst.jl</title><script async src="https://www.googletagmanager.com/gtag/js?id=UA-90474609-3"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-90474609-3', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://docs.sciml.ai/Catalyst/stable/example_networks/basic_CRN_examples/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/favicon.ico" rel="icon" type="image/x-icon"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img src="../../assets/logo.png" alt="Catalyst.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">Catalyst.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Introduction to Catalyst</span><ul><li><a class="tocitem" href="../../introduction_to_catalyst/catalyst_for_new_julia_users/">Introduction to Catalyst and Julia for New Julia users</a></li><li><a class="tocitem" href="../../introduction_to_catalyst/introduction_to_catalyst/">Introduction to Catalyst</a></li></ul></li><li><span class="tocitem">Catalyst Functionality</span><ul><li><a class="tocitem" href="../../catalyst_functionality/dsl_description/">The Reaction DSL</a></li><li><a class="tocitem" href="../../catalyst_functionality/programmatic_CRN_construction/">Programmatic Construction of Symbolic Reaction Systems</a></li><li><a class="tocitem" href="../../catalyst_functionality/compositional_modeling/">Compositional Modeling of Reaction Systems</a></li><li><a class="tocitem" href="../../catalyst_functionality/constraint_equations/">Constraint Equations and Events</a></li><li><a class="tocitem" href="../../catalyst_functionality/parametric_stoichiometry/">Symbolic Stochiometries</a></li><li><a class="tocitem" href="../../catalyst_functionality/network_analysis/">Network Analysis in Catalyst</a></li></ul></li><li><span class="tocitem">Catalyst Applications</span><ul><li><a class="tocitem" href="../../catalyst_applications/simulation_structure_interfacing/">Interfacing problems, integrators, and solutions</a></li><li><a class="tocitem" href="../../catalyst_applications/advanced_simulations/">Advanced Simulation Options</a></li><li><a class="tocitem" href="../../catalyst_applications/homotopy_continuation/">Finding Steady States through Homotopy Continuation</a></li><li><a class="tocitem" href="../../catalyst_applications/bifurcation_diagrams/">Bifurcation Diagrams</a></li><li><a class="tocitem" href="../../catalyst_applications/parameter_estimation/">Parameter Estimation</a></li></ul></li><li><span class="tocitem">Example Networks</span><ul><li class="is-active"><a class="tocitem" href>Basic Chemical Reaction Network Examples</a><ul class="internal"><li><a class="tocitem" href="#Example:-Birth-death-process"><span>Example: Birth-death process</span></a></li><li><a class="tocitem" href="#Example:-Michaelis-Menten-enzyme-kinetics"><span>Example: Michaelis-Menten enzyme kinetics</span></a></li><li><a class="tocitem" href="#Example:-SIR-infection-model"><span>Example: SIR infection model</span></a></li><li><a class="tocitem" href="#Example:-Brusselator-chemical-reaction-network"><span>Example: Brusselator chemical reaction network</span></a></li></ul></li><li><a class="tocitem" href="../hodgkin_huxley_equation/">Hodgkin-Huxley Equation</a></li><li><a class="tocitem" href="../smoluchowski_coagulation_equation/">Smoluchowski Coagulation Equation</a></li></ul></li><li><a class="tocitem" href="../../faqs/">FAQs</a></li><li><a class="tocitem" href="../../api/catalyst_api/">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Example Networks</a></li><li class="is-active"><a href>Basic Chemical Reaction Network Examples</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Basic Chemical Reaction Network Examples</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/SciML/Catalyst.jl/blob/master/docs/src/example_networks/basic_CRN_examples.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="basic_CRN_examples"><a class="docs-heading-anchor" href="#basic_CRN_examples">Basic Chemical Reaction Network Examples</a><a id="basic_CRN_examples-1"></a><a class="docs-heading-anchor-permalink" href="#basic_CRN_examples" title="Permalink"></a></h1><h2 id="Example:-Birth-death-process"><a class="docs-heading-anchor" href="#Example:-Birth-death-process">Example: Birth-death process</a><a id="Example:-Birth-death-process-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-Birth-death-process" title="Permalink"></a></h2><pre><code class="language- hljs">using Catalyst, DifferentialEquations, Plots
+
+rs = @reaction_network begin
+  c1, X --&gt; 2X
+  c2, X --&gt; 0
+  c3, 0 --&gt; X
+end
+p = (:c1 =&gt; 1.0, :c2 =&gt; 2.0, :c3 =&gt; 50.)
+tspan = (0.,4.)
+u0 = [:X =&gt; 5.]
+
+# solve ODEs
+oprob = ODEProblem(rs, u0, tspan, p)
+osol  = solve(oprob, Tsit5())
+
+# solve for Steady states
+ssprob = SteadyStateProblem(rs, u0, p)
+sssol  = solve(ssprob, SSRootfind())
+
+# solve SDEs
+sprob = SDEProblem(rs, u0, tspan, p)
+ssol  = solve(sprob, EM(), dt=.01)
+
+# solve JumpProblem
+u0 = [:X =&gt; 5]
+dprob = DiscreteProblem(rs, u0, tspan, p)
+jprob = JumpProblem(rs, dprob, Direct())
+jsol = solve(jprob, SSAStepper())
+
+plot(plot(osol; title = &quot;Reaction Rate Equation ODEs&quot;),
+     plot(ssol; title = &quot;Chemical Langevin SDEs&quot;),
+     plot(jsol; title = &quot;Stochastic Chemical Kinetics Jump Processes&quot;);
+     layout = (3, 1))</code></pre><h2 id="Example:-Michaelis-Menten-enzyme-kinetics"><a class="docs-heading-anchor" href="#Example:-Michaelis-Menten-enzyme-kinetics">Example: Michaelis-Menten enzyme kinetics</a><a id="Example:-Michaelis-Menten-enzyme-kinetics-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-Michaelis-Menten-enzyme-kinetics" title="Permalink"></a></h2><pre><code class="language- hljs">using Catalyst, DifferentialEquations, Plots
+
+rs = @reaction_network begin
+  c1, S + E --&gt; SE
+  c2, SE --&gt; S + E
+  c3, SE --&gt; P + E
+end
+p = (:c1 =&gt; 0.00166, :c2 =&gt; 0.0001, :c3 =&gt; 0.1)
+tspan = (0., 100.)
+u0 = [:S =&gt; 301., :E =&gt; 100., :SE =&gt; 0., :P =&gt; 0.]
+
+# solve ODEs
+oprob = ODEProblem(rs, u0, tspan, p)
+osol  = solve(oprob, Tsit5())
+
+# solve JumpProblem
+u0 = [:S =&gt; 301, :E =&gt; 100, :SE =&gt; 0, :P =&gt; 0]
+dprob = DiscreteProblem(rs, u0, tspan, p)
+jprob = JumpProblem(rs, dprob, Direct())
+jsol = solve(jprob, SSAStepper())
+
+plot(plot(osol; title = &quot;Reaction Rate Equation ODEs&quot;),
+     plot(jsol; title = &quot;Stochastic Chemical Kinetics Jump Processes&quot;);
+     layout = (2, 1))</code></pre><h2 id="Example:-SIR-infection-model"><a class="docs-heading-anchor" href="#Example:-SIR-infection-model">Example: SIR infection model</a><a id="Example:-SIR-infection-model-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-SIR-infection-model" title="Permalink"></a></h2><pre><code class="language- hljs">using Catalyst, DifferentialEquations, Plots
+
+rs = @reaction_network begin
+    α, S + I --&gt; 2I
+    β, I --&gt; R
+end
+p = [:α =&gt; .1/100, :β =&gt; .01]
+tspan = (0.0,500.0)
+u0 = [:S =&gt; 99.0, :I =&gt; 1.0, :R =&gt; 0.0]
+
+# Solve ODEs.
+oprob = ODEProblem(rs, u0, tspan, p)
+osol = solve(oprob)
+
+# Solve Jumps.
+dprob = DiscreteProblem(rs, u0, tspan, p)
+jprob = JumpProblem(rs, dprob, Direct())
+jsol = solve(jprob, SSAStepper())
+
+plot(plot(osol; title = &quot;Reaction Rate Equation ODEs&quot;),
+     plot(jsol; title = &quot;Gillespie Jump Simulation&quot;);
+     layout = (2, 1))</code></pre><h2 id="Example:-Brusselator-chemical-reaction-network"><a class="docs-heading-anchor" href="#Example:-Brusselator-chemical-reaction-network">Example: Brusselator chemical reaction network</a><a id="Example:-Brusselator-chemical-reaction-network-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-Brusselator-chemical-reaction-network" title="Permalink"></a></h2><pre><code class="language- hljs">using Catalyst, DifferentialEquations, Plots
+
+rs = @reaction_network begin
+    @parameters A B
+    A, ∅ → X
+    1, 2X + Y → 3X
+    B, X → Y
+    1, X → ∅
+end
+tspan = (0.0,50.0)
+u0 = [:X =&gt; 1.0, :Y =&gt; 1.0]
+
+# Non-oscillation parameter set
+oprob1 = ODEProblem(rs, u0, tspan, [:A =&gt; 1.0, :B =&gt; 1.0])
+osol1 = solve(oprob1)
+
+# Oscillation parameter set
+oprob2 = ODEProblem(rs, u0, tspan, [:A =&gt; 1.0, :B =&gt; 3.0])
+osol2 = solve(oprob2)
+
+plot(plot(osol1; title = &quot;No oscillation (B &lt; 1 + A^2)&quot;),
+     plot(osol2; title = &quot;Oscillation (B &gt; 1 + A^2)&quot;);
+     layout = (2, 1))</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../catalyst_applications/parameter_estimation/">« Parameter Estimation</a><a class="docs-footer-nextpage" href="../hodgkin_huxley_equation/">Hodgkin-Huxley Equation »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Sunday 17 September 2023 22:36">Sunday 17 September 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
