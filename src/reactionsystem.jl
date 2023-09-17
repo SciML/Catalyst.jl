@@ -54,6 +54,17 @@ end
 # variables
 drop_dynamics(s) = isconstant(s) || isbc(s) || (!isspecies(s))
 
+### Other Metadata Fields ###
+
+# Denotes that a parameter controls the scaling of noise in the CLE.
+struct NoiseScalingParameter end
+Symbolics.option_to_metadata_type(::Val{:isnoisescalingparameter}) = NoiseScalingParameter
+
+isnoisescalingparameter(s::Num) = isnoisescalingparameter(MT.value(s))
+function isnoisescalingparameter(s)
+    MT.getmetadata(s, NoiseScalingParameter, false)
+end
+
 """
 $(TYPEDEF)
 
@@ -1489,7 +1500,7 @@ Notes:
   differential equations.
 """
 function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
-                      noise_scaling = nothing, name = nameof(rs),
+                      noise_scaling = get_noise_scaling(rs), name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, checks = false, remove_conserved = false,
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
@@ -1531,6 +1542,11 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
               continuous_events = MT.get_continuous_events(flatrs),
               discrete_events = MT.get_discrete_events(flatrs),
               kwargs...)
+end
+
+# Extracts any noise scaling parameters from a reaction system.
+function get_noise_scaling(rs::ReactionSystem)
+    return nothing
 end
 
 """
@@ -1616,7 +1632,7 @@ end
 # SDEProblem from AbstractReactionNetwork
 function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
                                p = DiffEqBase.NullParameters(), args...;
-                               noise_scaling = nothing, name = nameof(rs),
+                               noise_scaling = get_noise_scaling(rs), name = nameof(rs),
                                combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                                include_zero_odes = true, checks = false,
                                check_length = false,
