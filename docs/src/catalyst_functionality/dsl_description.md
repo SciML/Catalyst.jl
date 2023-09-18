@@ -416,8 +416,8 @@ plot(sol)
 It is possible to set the initial condition of one (or several) species so that they depend on some system parameter. This is done in a similar way as default initial conditions, but giving the parameter instead of a value. When doing this, we also need to ensure that the initial condition parameter is a variable of the system:
 ```@example tut2
 rn = @reaction_network begin
-  @species X(t)=X0
   @parameters X0
+  @species X(t)=X0
   p, 0 --> X
   d, X --> ∅
 end
