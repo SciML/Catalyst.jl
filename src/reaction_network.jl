@@ -833,20 +833,6 @@ function recursive_expand_functions!(expr::ExprValues)
     expr
 end
 
-### Option Handling ###
-
-# Extracts any potential nosie scaling parameters and add them to teh decalred parameters.
-function add_noise_scaling_ps!(parameters_declared, options)
-    haskey(options, :noise_scaling_parameters) || return
-    for arg in options[:noise_scaling_parameters].args[end:-1:3]
-        if arg isa Symbol
-            push!(parameters_declared, arg)
-        elseif arg isa Expr
-            push!(parameters_declared, arg.args[1])
-        end
-    end
-end
-
 
 # ### Old functions (for deleting).
 
