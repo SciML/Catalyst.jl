@@ -631,6 +631,17 @@ let
     @test issetequal(parameters(rs), [k, b])
 end
 
+# Test parameteric initial conditions.
+let
+    @parameters d X0
+    @variables t
+    @species X(t)=X0
+    rx = Reaction(d, [X], nothing, [1], nothing)
+    @named rs = ReactionSystem([rx], t)
+    prob = ODEProblem(rs, [], (0.0, 1.0), [d => 1.0, X0 => 7.6])
+    @test prob[X] == 7.6
+end
+
 # Test balanced_bc_check.
 let
     @variables t
