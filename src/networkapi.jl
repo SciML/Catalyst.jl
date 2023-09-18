@@ -585,21 +585,16 @@ function symmap_to_varmap(sys, symmap::Tuple)
     end
 end
 
-function symmap_to_varmap(sys, symmap::AbstractArray{Pair{T, V}}) where {T, V}
+function symmap_to_varmap(sys, symmap::AbstractArray{Pair{Symbol, T}}) where {T}
     [_symbol_to_var(sys, sym) => val for (sym, val) in symmap]
 end
 
-function symmap_to_varmap(sys, symmap::Dict{T, V}) where {T, V}
+function symmap_to_varmap(sys, symmap::Dict{Symbol, T}) where {T}
     Dict(_symbol_to_var(sys, sym) => val for (sym, val) in symmap)
 end
 
-# don't permute any other types and let varmap_to_vars handle erroring.
-# If all keys are `Num`, conversion not needed.
+# don't permute any other types and let varmap_to_vars handle erroring
 symmap_to_varmap(sys, symmap) = symmap
-symmap_to_varmap(sys, symmap::AbstractArray{Pair{SymbolicUtils.BasicSymbolic{Real}, T}}) where {T} = symmap
-symmap_to_varmap(sys, symmap::AbstractArray{Pair{Num, T}}) where {T} = symmap
-symmap_to_varmap(sys, symmap::Dict{SymbolicUtils.BasicSymbolic{Real}, T}) where {T} = symmap
-symmap_to_varmap(sys, symmap::Dict{Num, T}) where {T} = symmap
 #error("symmap_to_varmap requires a Dict, AbstractArray or Tuple to map Symbols to values.")
 
 ######################## reaction complexes and reaction rates ###############################

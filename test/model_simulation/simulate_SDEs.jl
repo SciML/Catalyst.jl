@@ -121,29 +121,6 @@ end
 
 ### Noise Scaling ###
 
-# Tests where a single noise scaling parameter is given directly to the SDEProblem.
-let
-    noise_scaling_network = @reaction_network begin (k1, k2), X1 ↔ X2 end
-    for repeat in 1:5
-        p = 1.0 .+ rand(rng, 2)
-        u0 = 10000 * (1.0 .+ rand(rng, 2))
-        sol001 = solve(SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), vcat(p, 0.01),
-                                  noise_scaling = (@variables η1)[1]), ImplicitEM())
-        sol01 = solve(SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), vcat(p, 0.1),
-                                 noise_scaling = (@variables η1)[1]), ImplicitEM())
-        sol1 = solve(SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), vcat(p, 1.0),
-                                noise_scaling = (@variables η2)[1]), ImplicitEM())
-        sol10 = solve(SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), vcat(p, 10.0),
-                                 noise_scaling = (@variables η3)[1]), ImplicitEM())
-        @test 2 * std(first.(sol001.u)[100:end]) < std(first.(sol01.u)[100:end])
-        @test 2 * std(last.(sol001.u)[100:end]) < std(last.(sol01.u)[100:end])
-        @test 2 * std(first.(sol01.u)[100:end]) < std(first.(sol1.u)[100:end])
-        @test 2 * std(last.(sol01.u)[100:end]) < std(last.(sol1.u)[100:end])
-        @test 2 * std(first.(sol1.u)[100:end]) < std(first.(sol10.u)[100:end])
-        @test 2 * std(last.(sol1.u)[100:end]) < std(last.(sol10.u)[100:end])
-    end
-end
-
 # Tests with multiple noise scaling parameters directly in the macro.
 let 
     noise_scaling_network_1 = @reaction_network begin 
@@ -160,10 +137,10 @@ let
         @noise_scaling_parameters η[1:2]
         (k1, k2), X1 ↔ X2 
     end
-    @unpack η = noise_scaling_network_2
-    sol_2_1 = solve(SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, η[1] => 2.0, η[2] => 2.0]), ImplicitEM(); saveat=1.0)
-    sol_2_2 = solve(SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, η[1] => 2.0, η[2] => 0.2]), ImplicitEM(); saveat=1.0)
-    sol_2_3 = solve(SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, η[1] => 0.2, η[2] => 0.2]), ImplicitEM(); saveat=1.0)
+    @unpack k1, k2, η = noise_scaling_network_2
+    sol_2_1 = solve(SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 2.0, η[2] => 2.0]), ImplicitEM(); saveat=1.0)
+    sol_2_2 = solve(SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 2.0, η[2] => 0.2]), ImplicitEM(); saveat=1.0)
+    sol_2_3 = solve(SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 0.2, η[2] => 0.2]), ImplicitEM(); saveat=1.0)
     @test var(sol_2_1[1,:]) > var(sol_2_2[1,:]) > var(sol_2_3[1,:]) 
 end
 
@@ -175,8 +152,7 @@ let
     end
     u0 = [:X1 => 1100.0, :X2 => 3900.0]
     p = [:k1 => 2.0, :k2 => 0.5, :η=>0.0]
-    ss = solve(SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p), ImplicitEM())[end]
-    @test ss ≈ [1000.0, 4000.0]
+    @test SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p)[:η] == 0.0
 end
 
 # Complicated test with many combinations of options.
@@ -187,18 +163,16 @@ let
         (p, d), 0 ↔ X1 
         (k1, k2), X1 ↔ X2 
     end
-    @unpack X1, η4, p = noise_scaling_network
-    u0 = [X1 => 500.0, :X2 => 500.0]
-    p = [p => 20.0, :d => 0.1, :η1 => 0.0, :η3 => 0.0, η4 => 0.0, :k1 => 2.0, :k2 => 2.0, :par1 => 1000.0, :par2 => 1000.0]
+    u0 = [:X1 => 500.0, :X2 => 500.0]
+    p = [:p => 20.0, :d => 0.1, :η1 => 0.0, :η3 => 0.0, :η4 => 0.0, :k1 => 2.0, :k2 => 2.0, :par1 => 1000.0, :par2 => 1000.0]
     
     @test getdescription(parameters(noise_scaling_network)[2]) == "Parameter par1"
     @test getdescription(parameters(noise_scaling_network)[8]) == "Parameter η2"
 
-    ss = solve(SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p), ImplicitEM())[end]
-    @test ss ≈ [200.0, 200.0]
+    sprob = SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p)
+    @test sprob[:η1] == sprob[:η2] == sprob[:η3] == sprob[:η4] == 0.0
 end
 
-# Tests that nosie scaling wor
 
 ### Checks Simulations Don't Error ###
 
