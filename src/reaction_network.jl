@@ -414,7 +414,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args, get_rxexprs(reaction))
     end
 
-    # Adds potentital noise scaling parameters.
     #append!(ps.args, noise_scaling_p_args)
     
     # Returns the rephrased expression.
