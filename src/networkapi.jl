@@ -581,22 +581,24 @@ function symmap_to_varmap(sys, symmap::Tuple)
     if all(p -> p isa Pair{Symbol}, symmap)
         return ((_symbol_to_var(sys, sym) => val for (sym, val) in symmap)...,)
     else  # if not all entries map a symbol to value pass through
-        return symmapAny
+        return symmap
     end
 end
 
-function symmap_to_varmap(sys, symmap::AbstractArray{Pair{Any, T}}) where {T}
+function symmap_to_varmap(sys, symmap::AbstractArray{Pair{T, V}}) where {T, V}
     [_symbol_to_var(sys, sym) => val for (sym, val) in symmap]
 end
 
-function symmap_to_varmap(sys, symmap::Dict{Any, T}) where {T}
+function symmap_to_varmap(sys, symmap::Dict{T, V}) where {T, V}
     Dict(_symbol_to_var(sys, sym) => val for (sym, val) in symmap)
 end
 
 # don't permute any other types and let varmap_to_vars handle erroring.
 # If all keys are `Num`, conversion not needed.
 symmap_to_varmap(sys, symmap) = symmap
+symmap_to_varmap(sys, symmap::AbstractArray{Pair{SymbolicUtils.BasicSymbolic{Real}, T}}) where {T} = symmap
 symmap_to_varmap(sys, symmap::AbstractArray{Pair{Num, T}}) where {T} = symmap
+symmap_to_varmap(sys, symmap::Dict{SymbolicUtils.BasicSymbolic{Real}, T}) where {T} = symmap
 symmap_to_varmap(sys, symmap::Dict{Num, T}) where {T} = symmap
 #error("symmap_to_varmap requires a Dict, AbstractArray or Tuple to map Symbols to values.")
 

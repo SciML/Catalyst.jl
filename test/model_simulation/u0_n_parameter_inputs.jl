@@ -72,3 +72,23 @@ let
         end
     end
 end
+
+# Tests uding mix of symbols and symbolics in input.
+let
+    test_network = @reaction_network begin 
+        (p1, d1), 0 ↔ X1 
+        (p2, d2), 0 ↔ X2 
+    end
+    @unpack p1, d1, p2, d2, X1, X2 = test_network
+    u0_1 = [X1 => 0.7, X2 => 3.6]
+    u0_2 = [:X1 => 0.7, X2 => 3.6]
+    u0_3 = [:X1 => 0.7, :X2 => 3.6]
+    p_1 = [p1 => 1.2, d1 => 4.0, p2 => 2.5, d2 =>0.1]
+    p_2 = [:p1 => 1.2, d1 => 4.0, :p2 => 2.5, d2 =>0.1]
+    p_3 = [:p1 => 1.2, :d1 => 4.0, :p2 => 2.5, :d2 =>0.1]
+
+    ss_base = solve(ODEProblem(test_network, u0_1, (0.0, 10.0), p_1), Tsit5())[end]
+    for u0 in [u0_1, u0_2, u0_3], p in [p_1, p_2, p_3]
+        @test ss_base == solve(ODEProblem(test_network, u0, (0.0, 10.0), p), Tsit5())[end]
+    end
+end

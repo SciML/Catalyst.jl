@@ -568,10 +568,14 @@ function get_noise_scaling_pexpr(options)
     haskey(options, :noise_scaling_parameters) || return []
     ns_expr = options[:noise_scaling_parameters]
     for idx = length(ns_expr.args):-1:3
-        if ns_expr.args[idx] isa Symbol
-            insert!(ns_expr.args, idx+1, :([noisescalingparameter=true]))
-        elseif (ns_expr.args[idx] isa Expr) && (ns_expr.args[idx].head == :ref)
-            insert!(ns_expr.args, idx+1, :([noisescalingparameter=true]))
+        if (ns_expr.args[idx] isa Symbol) || # Parameter on form η.
+           (ns_expr.args[idx] isa Expr) && (ns_expr.args[idx].head == :ref) || # Parameter on form η[1:3].
+           (ns_expr.args[idx] isa Expr) && (ns_expr.args[idx].head == :(=)) # Parameter on form η=0.1.
+            if idx < length(ns_expr.args) && (ns_expr.args[idx+1] isa Expr)  && (ns_expr.args[idx+1].head == :vect)
+                push!(ns_expr.args[idx+1].args,:(noisescalingparameter=true))
+            else
+                insert!(ns_expr.args, idx+1, :([noisescalingparameter=true]))
+            end
         end
     end
     return ns_expr.args[3:end]
