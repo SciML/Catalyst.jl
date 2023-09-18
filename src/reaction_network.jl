@@ -369,9 +369,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     parameters_declared = extract_syms(options, :parameters)
     variables = extract_syms(options, :variables)
 
-    # Handles a (potential) noise scaling parameter.
-    #noise_scaling_p_args = handle_noise_scaling_ps!(parameters_declared, options)
-
     # handle independent variables
     if haskey(options, :ivs)
         ivs = Tuple(extract_syms(options, :ivs))
