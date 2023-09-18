@@ -6,6 +6,20 @@ Symbolics.option_to_metadata_type(::Val{:iscompound}) = CompoundSpecies
 Symbolics.option_to_metadata_type(::Val{:components}) = CompoundComponents
 Symbolics.option_to_metadata_type(::Val{:coefficients}) = CompoundCoefficients
 
+"""
+Macro that creates a species symbolizing a chemical compound, which is composed of smaller constituent species.
+
+Example:
+```julia
+# creating CO2 as a compound
+@variables t
+@species C(t) O(t)
+@compound CO2(t) 1C 2O
+```
+
+Note that the constituent species must be defined before using the `@compound` macro.
+"""
+
 macro compound(species_expr, arr_expr...)
     # Ensure the species name is a valid expression
     if !(species_expr isa Expr && species_expr.head == :call)
@@ -171,6 +185,55 @@ function get_balanced_stoich(reaction::Reaction)
     return stoichvecs
 end
 
+"""
+Returns a vector of all possible stoichiometrically balanced `Reaction` objects for the given `Reaction`.
+
+Examples:
+```julia
+
+@variables t
+@species Si(t) Cl(t) H(t) O(t)
+@compound SiCl4(t) 1Si 4Cl
+@compound H2O(t) 2H O
+@compound H4SiO4(t) 4H Si 4O
+@compound HCl(t) H Cl
+
+rx = Reaction(1.0,[SiCl4,H2O],[H4SiO4,HCl]) #Exactly one solution
+
+balance_reaction(rx)
+```
+
+```julia
+@variables t
+@species C(t) H(t) O(t)
+@compound CO(t) C O
+@compound CO2(t) C 2O
+@compound H2(t) 2H
+@compound CH4(t) C 4H
+@compound H2O(t) 2H O
+
+rx = Reaction(1.0,[CO,CO2,H2],[CH4,H2O]) 
+
+balance_reaction(rx) # More than one solution
+```
+
+```julia
+@variables t
+@species Fe(t) S(t) O(t) H(t) N(t)
+@compound FeS2(t) Fe 2S
+@compound HNO3(t) H N 3O
+@compound Fe2S3O12(t) 2Fe 3S 12O
+@compound NO(t) N O
+@compound H2SO4(t) 2H S 4O
+
+rx = Reaction(1.0,[FeS2,HNO3],[Fe2S3O12,NO,H2SO4])
+
+brxs = balance_reaction(rx) # No solution 
+```
+Note that a reaction may not always yield a single solution; it could have an infinite number of solutions or none at all. When there are multiple solutions, a vector of all possible `Reaction` objects is returned. However, substrates and products may be interchanged as we currently do not solve for a linear combination that maintains the set of substrates and products. If the reaction cannot be balanced, an empty `Reaction` vector is returned.
+
+
+"""
 function balance_reaction(reaction::Reaction)
     # Calculate the stoichiometric coefficients for the balanced reaction.
     stoichiometries = get_balanced_stoich(reaction)
