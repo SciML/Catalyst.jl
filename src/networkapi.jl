@@ -504,9 +504,6 @@ end
 
 # convert symbol of the form :sys.a.b.c to a symbolic a.b.c
 function _symbol_to_var(sys, sym)
-    if sym isa Num
-        return sym
-    elseif hasproperty(sys, sym)
         var = getproperty(sys, sym, namespace = false)
     else
         strs = split(String(sym), "₊")   # need to check if this should be split of not!!!
