@@ -565,17 +565,6 @@ pmap   = symmap_to_varmap(sys, [:β => 1.0, :ν => 1.0, :subsys₊k => 1.0])
 Notes:
 - Any `Symbol`, `sym`, within `symmap` must be a valid field of `sys`. i.e.
   `sys.sym` must be defined.
-- The function works even if symbols and symbolics are mixed, e.g.
-```julia
-sir = @reaction_network sir begin
-    β, S + I --> 2I
-    ν, I --> R
-end
-@unpack S = sir
-mixed_u0map = [S => 1.0, :I => 1.0, :R => 1.0]
-u0map  = symmap_to_varmap(sir, mixed_u0map)
-```
-
 """
 function symmap_to_varmap(sys, symmap::Tuple)
     if all(p -> p isa Pair{Symbol}, symmap)
