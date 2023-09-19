@@ -1,4 +1,4 @@
-using Catalyst, ModelingToolkit, OrdinaryDiffEq, Test, LinearAlgebra, JumpProcesses
+using Catalyst, OrdinaryDiffEq, Test, LinearAlgebra, JumpProcesses
 
 ### Base Tests ###
 
@@ -34,7 +34,7 @@ let
     du1 = zeros(size(oprob.u0))
     oprob.f(du1, oprob.u0, oprob.p, 1.5)
 
-    function oderhs(du, u, p, t)
+    function oderhs1(du, u, p, t)
         k = p[1]
         α = p[2]
         A = u[1]
@@ -51,7 +51,7 @@ let
     end
     u0 = [uv[2] for uv in u0map]
     p = Tuple(pv[2] for pv in pmap)
-    oprob2 = ODEProblem(oderhs, u0, tspan, p)
+    oprob2 = ODEProblem(oderhs1, u0, tspan, p)
     du2 = copy(du1)
     oprob2.f(du2, oprob2.u0, oprob2.p, 1.5)
     @test norm(du1 .- du2) < 100 * eps()
@@ -59,7 +59,7 @@ let
     # Test without rate law scalings.
     osys = convert(ODESystem, rs, combinatoric_ratelaws = false)
     oprob = ODEProblem(osys, u0map, tspan, pmap)
-    function oderhs(du, u, p, t)
+    function oderhs2(du, u, p, t)
         k = p[1]
         α = p[2]
         A = u[1]
@@ -74,7 +74,7 @@ let
         du[3] = k * rl2
         du[4] = α * rl2
     end
-    oprob2 = ODEProblem(oderhs, [uv[2] for uv in u0map], tspan, oprob.p)
+    oprob2 = ODEProblem(oderhs2, [uv[2] for uv in u0map], tspan, oprob.p)
     du1 .= 0
     du2 .= 0
     oprob.f(du1, oprob.u0, oprob.p, 1.5)
@@ -85,7 +85,7 @@ let
     ssys = convert(SDESystem, rs)
     sf = SDEFunction{false}(ssys, states(ssys), parameters(ssys))
     G = sf.g(u0, p, 1.0)
-    function sdenoise(u, p, t)
+    function sdenoise1(u, p, t)
         k = p[1]
         α = p[2]
         A = u[1]
@@ -100,14 +100,14 @@ let
              0.0 k*rl2;
              0.0 α*rl2]
     end
-    G2 = sdenoise(u0, p, 1.0)
+    G2 = sdenoise1(u0, p, 1.0)
     @test norm(G - G2) < 100 * eps()
 
     # SDESystem test with no combinatoric rate laws.
     ssys = convert(SDESystem, rs, combinatoric_ratelaws = false)
     sf = SDEFunction{false}(ssys, states(ssys), parameters(ssys))
     G = sf.g(u0, p, 1.0)
-    function sdenoise(u, p, t)
+    function sdenoise2(u, p, t)
         k = p[1]
         α = p[2]
         A = u[1]
@@ -122,7 +122,7 @@ let
              0.0 k*rl2;
              0.0 α*rl2]
     end
-    G2 = sdenoise(u0, p, 1.0)
+    G2 = sdenoise2(u0, p, 1.0)
     @test norm(G - G2) < 100 * eps()
 
     # JumpSystem test.

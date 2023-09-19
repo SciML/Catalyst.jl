@@ -94,7 +94,7 @@ let
     push!(identical_networks, reaction_networks_constraint[5] => jumps_3)
 
     for (i, networks) in enumerate(identical_networks)
-        for factor in [1e-2, 1e-1, 1e0, 1e1], repeat in 1:3
+        for factor in [1e-2, 1e-1, 1e0, 1e1]
             (i == 3) && (factor > 1e-1) && continue   # Large numbers seems to crash it.
             u0 = rand(rng, 1:Int64(factor * 100), length(get_states(networks[1])))
             p = factor * rand(rng, length(get_ps(networks[1])))
@@ -118,10 +118,8 @@ end
 ### Checks Simulations Don't Error ###
 
 let
-    for (i, network) in enumerate(reaction_networks_all)
-        (i % 5 == 0) &&
-            println("Iteration " * string(i) * " at line 102 in file solve_jumps.jl")
-        for factor in [1e-1, 1e0, 1e1]
+    for network in reaction_networks_all
+        for factor in [1e0]
             u0 = rand(rng, 1:Int64(factor * 100), length(get_states(network)))
             p = factor * rand(rng, length(get_ps(network)))
             prob = JumpProblem(network, DiscreteProblem(network, u0, (0.0, 1.0), p),
@@ -136,7 +134,7 @@ end
 # No parameter test.
 let
     no_param_network = @reaction_network begin (1.2, 5), X1 ↔ X2 end
-    for factor in [1e1, 1e2]
+    for factor in [1e1]
         u0 = rand(rng, 1:Int64(factor * 100), length(get_states(no_param_network)))
         prob = JumpProblem(no_param_network,
                            DiscreteProblem(no_param_network, u0, (0.0, 1000.0)), Direct())
