@@ -4,6 +4,10 @@
 using Catalyst, LinearAlgebra, JumpProcesses, Test, OrdinaryDiffEq, StochasticDiffEq
 const MT = ModelingToolkit
 
+# Sets rnd number.
+using StableRNGs
+rng = StableRNG(12345)
+
 # Create test network.
 @parameters k[1:20]
 @variables t
@@ -140,8 +144,8 @@ end
 # Don't ask me (Torkel) why the statement before/after is needed.
 t = 0.0
 let
-    p = rand(length(k))
-    u = rand(length(k))
+    p = rand(rng, length(k))
+    u = rand(rng, length(k))
     du = oderhs(u, p, t)
     G = sdenoise(u, p, t)
     sdesys = convert(SDESystem, rs)
@@ -162,8 +166,8 @@ end
 
 # Tests the noise_scaling argument.
 let
-    p = rand(length(k) + 1)
-    u = rand(length(k))
+    p = rand(rng, length(k) + 1)
+    u = rand(rng, length(k))
     t = 0.0
     G = p[21] * sdenoise(u, p, t)
     @variables η
@@ -176,8 +180,8 @@ end
 
 # Tests the noise_scaling vector argument.
 let
-    p = rand(length(k) + 3)
-    u = rand(length(k))
+    p = rand(rng, length(k) + 3)
+    u = rand(rng, length(k))
     t = 0.0
     G = vcat(fill(p[21], 8), fill(p[22], 3), fill(p[23], 9))' .* sdenoise(u, p, t)
     @variables η[1:3]
@@ -192,8 +196,8 @@ end
 
 # Tests using previous parameter for noise scaling
 let
-    p = rand(length(k))
-    u = rand(length(k))
+    p = rand(rng, length(k))
+    u = rand(rng, length(k))
     t = 0.0
     G = [p p p p]' .* sdenoise(u, p, t)
     sdesys_noise_scaling = convert(SDESystem, rs; noise_scaling = k)
@@ -205,7 +209,7 @@ end
 
 # Test with JumpSystem.
 let
-    p = rand(length(k))
+    p = rand(rng, length(k))
     @variables t
     @species A(t) B(t) C(t) D(t) E(t) F(t)
     rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
@@ -239,9 +243,9 @@ let
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.ConstantRateJump, cidxs))
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.VariableRateJump, vidxs))
 
-    pars = rand(length(k))
-    u0 = rand(2:10, 6)
-    ttt = rand()
+    pars = rand(rng, length(k))
+    u0 = rand(rng, 2:10, 6)
+    ttt = rand(rng)
     jumps = Vector{Union{ConstantRateJump, MassActionJump, VariableRateJump}}(undef,
                                                                               length(rxs))
 

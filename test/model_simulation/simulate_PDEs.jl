@@ -5,9 +5,13 @@ using Catalyst, OrdinaryDiffEq, Test
 using ModelingToolkit, DomainSets
 const MT = ModelingToolkit
 
+# Sets rnd number.
+using StableRNGs
+rng = StableRNG(12345)
+
 # Test function.
 function icfun(n, x, y, A)
-    float(rand(Poisson(round(n * A * 10))) / A / 10)
+    float(rand(rng, Poisson(round(n * A * 10))) / A / 10)
 end
 
 ### Run Tests ###
