@@ -21,6 +21,12 @@ SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
+[weakdeps]
+HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
+
+[extensions]
+HomotopyContinuationExtension = "HomotopyContinuation"
+
 [compat]
 DataStructures = "0.18"
 DiffEqBase = "6.83.0"

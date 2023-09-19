@@ -46,4 +46,7 @@ using SafeTestsets
     if !Sys.isapple()
         @time @safetestset "Graphs" begin include("visualization/graphs.jl") end
     end
+    
+    ### Tests extensions. ###
+    @time @safetestset "Homotopy Continuation Extension" begin include("extensions/homotopy_continuation.jl") end
 end # @time

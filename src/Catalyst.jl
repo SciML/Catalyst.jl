@@ -101,4 +101,10 @@ export @compound
 export components, iscompound, coefficients
 export balance_reaction
 
+### Extensions ###
+
+# HomotopyContinuation
+function hc_steady_states end
+export hc_steady_states
+
 end # module
