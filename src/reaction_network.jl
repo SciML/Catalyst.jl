@@ -727,8 +727,9 @@ function extract_metadata(metadata_line::Expr)
     return metadata
 end
 
-### DSL Options Handling ###
-# Most options handled in previous sections, when code re-organised, these should ideally be moved to the same place.
+# macro, similar to @parameters, but all paraemters become noise scaling parameters.
+macro noise_scaling_parameters(ex...)
+    vars = Symbolics._parse_vars(:parameters, Real, ex)
 
 # Reads the observables options. Outputs an expression ofr creating the obervable variables, and a vector of observable equations.
 function read_observed_options(options, species_n_vars_declared, ivs_sorted)
