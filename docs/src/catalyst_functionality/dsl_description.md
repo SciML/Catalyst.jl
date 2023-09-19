@@ -412,6 +412,26 @@ sol = solve(oprob)
 plot(sol)
 ```
 
+## Setting initial conditions that depend on parameters
+It is possible to set the initial condition of one (or several) species so that they depend on some system parameter. This is done in a similar way as default initial conditions, but giving the parameter instead of a value. When doing this, we also need to ensure that the initial condition parameter is a variable of the system:
+```@example tut2
+rn = @reaction_network begin
+  @parameters X0
+  @species X(t)=X0
+  p, 0 --> X
+  d, X --> ∅
+end
+```
+We can now simulate the network without providing any initial conditions:
+```@example tut2
+u0 = []
+tspan = (0.0, 10.0)
+p = [:p => 2.0, :d => .1, :X0 => 1.0]  
+oprob = ODEProblem(rn, u0, tspan, p)
+sol = solve(oprob)
+plot(sol)
+```
+
 ## Naming the generated `ReactionSystem`
 ModelingToolkit uses system names to allow for compositional and hierarchical
 models. To specify a name for the generated `ReactionSystem` via the
