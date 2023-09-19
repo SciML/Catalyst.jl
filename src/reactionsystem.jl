@@ -58,10 +58,10 @@ drop_dynamics(s) = isconstant(s) || isbc(s) || (!isspecies(s))
 
 # Denotes that a parameter controls the scaling of noise in the CLE.
 struct NoiseScalingParameter end
-Symbolics.option_to_metadata_type(::Val{:noisescalingparameter}) = NoiseScalingParameter
+Symbolics.option_to_metadata_type(::Val{:noise_scaling_parameter}) = NoiseScalingParameter
 
-isnoisescalingparameter(s::Num) = isnoisescalingparameter(MT.value(s))
-function isnoisescalingparameter(s)
+is_noise_scaling_parameter(s::Num) = is_noise_scaling_parameter(MT.value(s))
+function is_noise_scaling_parameter(s)
     MT.getmetadata(s, NoiseScalingParameter, false)
 end
 
@@ -1506,10 +1506,13 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
     spatial_convert_err(rs::ReactionSystem, SDESystem)
-    isnothing(noise_scaling) && (noise_scaling = get_noise_scaling(rs)) # Required before final deprication of previous noise scaling functionality.
 
     flatrs = Catalyst.flatten(rs)
     error_if_constraints(SDESystem, flatrs)
+    if any(isnoisescalingparameter, get_ps(flatrs))
+        any(is_noise_scaling_parameter.(parameters(rs))) && error("You have declared some paraemters as noise scaling parameters, and also given a \"noise_scaling\" argument to SDEProblem. Please remove the \"noise_scaling\", as this way of scaling CLE noise is being depricated.")
+        @warn "Passing noise scaling input into SDEProblem will be deprecated. New standard is to declare one (or several) paraemter as noise scaling parameters when the ReactionSystem is created. Please read https://docs.sciml.ai/Catalyst/stable/catalyst_applications/advanced_simulations/#Scaling-the-noise-magnitude-in-the-chemical-Langevin-equations." 
+    end
 
     if noise_scaling isa AbstractArray
         (length(noise_scaling) != numreactions(flatrs)) &&
@@ -1547,7 +1550,7 @@ end
 
 # Extracts any noise scaling parameters from a reaction system.
 function get_noise_scaling(rs::ReactionSystem)
-    ns_params = filter(p -> isnoisescalingparameter(p), parameters(rs))
+    ns_params = filter(p -> is_noise_scaling_parameter(p), parameters(rs))
     if isempty(ns_params)
         return nothing
     elseif length(ns_params) == 1
@@ -1647,10 +1650,6 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
                                include_zero_odes = true, checks = false,
                                check_length = false,
                                remove_conserved = false, kwargs...)
-    if !isnothing(noise_scaling) 
-        any(isnoisescalingparameter.(parameters(rs))) && error("You have declared some paraemters as noise scaling parameters, and also given a \"noise_scaling\" argument to SDEProblem. Please remove the \"noise_scaling\", as this way of scaling CLE noise is being depricated.")
-        @warn "Passing noise scaling input into SDEProblem will be depricated. New standard is to declare one (or several) paraemter as noise scaling parameters when the ReactionSystem is created. Please read https://docs.sciml.ai/Catalyst/stable/catalyst_applications/advanced_simulations/#Scaling-the-noise-magnitude-in-the-chemical-Langevin-equations." 
-    end
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     sde_sys = convert(SDESystem, rs; noise_scaling, name, combinatoric_ratelaws,

@@ -153,6 +153,7 @@ macro species(ex...)
     # put back the vector of the new species symbols
     vars.args[idx] = lastarg
 
+    println(vars)
     esc(vars)
 end
 
@@ -369,6 +370,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     parameters_declared = extract_syms(options, :parameters)
     variables = extract_syms(options, :variables)
 
+    # Handles noise scaling parameters.
+    noise_scaling_pexpr = handle_noise_scaling_parameters!(parameters_declared, options)
+
     # handle independent variables
     if haskey(options, :ivs)
         ivs = Tuple(extract_syms(options, :ivs))
@@ -405,6 +409,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     sexprs = get_sexpr(species_extracted, options; iv_symbols = ivs)
     vexprs = haskey(options, :variables) ? options[:variables] : :()
     pexprs = get_pexpr(parameters_extracted, options)
+    ns_ps, ns_pssym = scalarize_macro(haskey(options, :noise_scaling_parameters), noise_scaling_pexpr, "ns_ps")
     ps, pssym = scalarize_macro(!isempty(parameters), pexprs, "ps")
     vars, varssym = scalarize_macro(!isempty(variables), vexprs, "vars")
     sps, spssym = scalarize_macro(!isempty(species), sexprs, "specs")
@@ -414,11 +419,14 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args, get_rxexprs(reaction))
     end
 
-    #append!(ps.args, noise_scaling_p_args)
-    
+    println(ps)
+    println(ns_ps)
+    println(sps)
+
     # Returns the rephrased expression.
     quote
         $ps
+        $ns_ps
         $ivexpr
         $vars
         $sps
@@ -559,25 +567,7 @@ function get_pexpr(parameters_extracted, options)
     pexprs = (haskey(options, :parameters) ? options[:parameters] :
               (isempty(parameters_extracted) ? :() : :(@parameters)))
     foreach(p -> push!(pexprs.args, p), parameters_extracted)
-    append!(pexprs.args, get_noise_scaling_pexpr(options))
     pexprs
-end
-# Extracts any decalred noise scaling parameters.
-function get_noise_scaling_pexpr(options)
-    haskey(options, :noise_scaling_parameters) || return []
-    ns_expr = options[:noise_scaling_parameters]
-    for idx = length(ns_expr.args):-1:3
-        if (ns_expr.args[idx] isa Symbol) || # Parameter on form η.
-           (ns_expr.args[idx] isa Expr) && (ns_expr.args[idx].head == :ref) || # Parameter on form η[1:3].
-           (ns_expr.args[idx] isa Expr) && (ns_expr.args[idx].head == :(=)) # Parameter on form η=0.1.
-            if idx < length(ns_expr.args) && (ns_expr.args[idx+1] isa Expr)  && (ns_expr.args[idx+1].head == :vect)
-                push!(ns_expr.args[idx+1].args,:(noisescalingparameter=true))
-            else
-                insert!(ns_expr.args, idx+1, :([noisescalingparameter=true]))
-            end
-        end
-    end
-    return ns_expr.args[3:end]
 end
 
 # Creates the reaction vector declaration statement.

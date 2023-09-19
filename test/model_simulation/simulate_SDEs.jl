@@ -158,7 +158,7 @@ end
 # Complicated test with many combinations of options.
 let
     noise_scaling_network = @reaction_network begin 
-        @parameters k1 par1 [description="Parameter par1"] par2 η1 [noisescalingparameter=true]
+        @parameters k1 par1 [description="Parameter par1"] par2 η1 [noise_scaling_parameter=true]
         @noise_scaling_parameters η2=0.0 [description="Parameter η2"] η3=1.0 η4
         (p, d), 0 ↔ X1 
         (k1, k2), X1 ↔ X2 
