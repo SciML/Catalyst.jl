@@ -119,8 +119,6 @@ end
 
 let
     for (i, network) in enumerate(reaction_networks_all)
-        (i % 5 == 0) &&
-            println("Iteration " * string(i) * " at line 102 in file solve_jumps.jl")
         for factor in [1e-1, 1e0, 1e1]
             u0 = rand(rng, 1:Int64(factor * 100), length(get_states(network)))
             p = factor * rand(rng, length(get_ps(network)))
