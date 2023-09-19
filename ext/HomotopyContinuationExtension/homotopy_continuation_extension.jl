@@ -29,6 +29,7 @@ gives
 [0.5000000000000002, 2.0000000000000004]
 [0.0, 0.0]
 [4.499999999999999, 5.999999999999999]
+```
 
 Notes:
 - This is a wrapper around the `solve` function provided by HomotopyContinuation.jl, all credit for this functionality to that package's authors.
@@ -45,11 +46,20 @@ end
 function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     ns = convert(NonlinearSystem, rs; remove_conserved = true)
     pre_varmap = map(pair -> pair::Pair{Num,Float64}, [symmap_to_varmap(rs,u0); symmap_to_varmap(rs,ps)]) # Needed in case ps or u0 are empty (making the combination a Vector{Any}, causing an error).
+    conservationlaw_errorcheck(rs, pre_varmap)
     p_vals = MT.varmap_to_vars(pre_varmap, parameters(ns); defaults = MT.defaults(ns))
     p_dict = Dict(parameters(ns) .=> p_vals)
     eqs = vcat(equations(ns), conservedequations(rs))
     eqs = map(eq -> substitute(eq.rhs - eq.lhs, p_dict), eqs)
     return Catalyst.to_multivariate_poly(eqs)
+end
+
+# If u0s are not given while conservation laws are present, throws an error.
+function conservationlaw_errorcheck(rs, pre_varmap)
+    vars_with_vals = union(first.(pre_varmap), keys(ModelingToolkit.defaults(rs)))
+    isempty(intersect(species(rs), vars_with_vals)) || return
+    isempty(conservedequations(rs)) && return 
+    error("The system have conservation laws but no initial conditions were provided. Please provide initial conditions.")
 end
 
 # HC orders the solution vector according to the lexiographic values of the variable names. This reorders the output acording to the species index in the reaction system species vector.
