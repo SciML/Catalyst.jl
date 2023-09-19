@@ -153,7 +153,6 @@ macro species(ex...)
     # put back the vector of the new species symbols
     vars.args[idx] = lastarg
 
-    println(vars)
     esc(vars)
 end
 
