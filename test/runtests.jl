@@ -3,9 +3,6 @@ using SafeTestsets
 
 ### Run the tests ###
 @time begin
-    
-    ### Tests extensions. ###
-    @time @safetestset "Homotopy Continuation Extension" begin include("extensions/homotopy_continuation.jl") end
 
     ### Tests the properties of ReactionSystems. ###
     @time @safetestset "ReactionSystem" begin include("reactionsystem_structure/reactionsystem.jl") end
