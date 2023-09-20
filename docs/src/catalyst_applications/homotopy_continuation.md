@@ -8,19 +8,16 @@ example those which are purely mass action or have only have Hill functions with
 integer Hill exponents). The roots of these can reliably be found through a
 *homotopy continuation* algorithm. This is implemented in Julia through the
 [HomotopyContinuation.jl](https://www.juliahomotopycontinuation.org/) package.
-In this tutorial, we will demonstrate how homotopy continuation can be used to
-find the steady states of mass action chemical reaction networks implemented in
-Catalyst.
+
+Catalyst contains a special homotopy continuation extension that is loaded whenever HomotopyContinuation.jl is. This exports a single function, `hc_steady_states`, that can be used to find the steady states of any `ReactionSystem` structure.
 
 ## Basic example
 For this tutorial, we will use a model from Wilhem (2009)[^1] (which
 demonstrates bistability in a small chemical reaction network). We declare the
 model and the parameter set for which we want to find the steady states:
 ```@example hc1
-using Catalyst, ModelingToolkit
+using Catalyst
 import HomotopyContinuation
-const MT = ModelingToolkit
-const HC = HomotopyContinuation
 
 wilhelm_2009_model = @reaction_network begin
     k1, Y --> 2X
@@ -28,116 +25,56 @@ wilhelm_2009_model = @reaction_network begin
     k3, X + Y --> Y
     k4, X --> 0
 end
-
-# add default parameters values to model
-setdefaults!(wilhelm_2009_model, [:k1 => 8.0, :k2 => 2.0, :k3 => 1.0, :k4 => 1.5])
+ps = [:k1 => 8.0, :k2 => 2.0, :k3 => 1.0, :k4 => 1.5]
 nothing   # hide
 ```
-Next, we will need to extract the actual equations from our model. In addition,
-we will substitute in our parameter values to these equations.
+Here, we only run `import HomotopyContinuation` as we do not require any of its functions, and just need it to be present in the current scope for the extension to be activated.
+
+Now we can find the steady states using:
 ```@example hc1
-ns = convert(NonlinearSystem, wilhelm_2009_model)
-
-# this gets the parameter values ordered consistent with parameters(ns)
-pvals = MT.varmap_to_vars([], MT.parameters(ns); defaults = MT.defaults(ns))
-
-subs = Dict(MT.parameters(ns) .=> pvals)
-neweqs = map(eq -> substitute(eq.rhs, subs), equations(ns))
+hc_steady_states(wilhelm_2009_model, ps)
 ```
-Finally, we use Catalyst's `to_multivariate_poly` function to reinterpret our
-symbolic equations in a polynomial representation that is compatible with
-HomotopyContinuation. We can then apply HomotopyContinuation's `solve` command
-to find the roots, using `real_solutions` to filter our non-physical complex
-steady-states:
-```@example hc1
-polyeqs = Catalyst.to_multivariate_poly(neweqs)
-sols = HC.real_solutions(HC.solve(polyeqs))
-```
-Note that HomotopyContinuation orders variables lexicographically, so this will
-be the ordering present in each steady-state solution vector (i.e. `[X1, X2]` is
-the ordering here).
+The order of the species in the output vectors are the same as in `species(wilhelm_2009_model)`.
 
-While it is not the case for this CRN, we note that solutions with negative
-species concentrations can be valid (unphysical) steady-states for certain
-systems. These will need to be filtered out as well.
+It should be noted that the steady state multivariate polynomials produced by reaction systems may have both imaginary and negative roots, which are filtered away by `hc_steady_states`. If you want the negative roots, you can use the `hc_steady_states(wilhelm_2009_model, ps; filter_negative=false)` argument.
+
 
 ## Systems with conservation laws
-Finally, some systems are under-determined, and have an infinite number of
-possible steady states. These are typically systems containing a conservation
+Some systems are under-determined, and have an infinite number of possible steady states. These are typically systems containing a conservation
 law, e.g.
 ```@example hc3
 using Catalyst
 import HomotopyContinuation
-const MT = ModelingToolkit
-const HC = HomotopyContinuation
 
 two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 ```
-Catalyst allows the conservation laws to be computed using the
-`conservationlaws` function. By using these to reduce the dimensionality of the
-system, as well specifying the initial amount of each species,
-HomotopyContinuation can again be used to find steady states. First, we set the
-default values of the system's initial conditions and parameter values. This
-will allow the system to automatically find the conserved amounts.
+To find the steady states of these, an initial condition must also be provided (which is used to compute the system's conserved quantities, in this case `X1+X2`):
 ```@example hc3
-setdefaults!(two_state_model, [:X1 => 1.0, :X2 => 1.0, :k1 => 2.0, :k2 => 1.0])
-```
-Next, we create a `NonlinearSystem`, while also removing one species via the
-conservation equation.
-```@example hc3
-ns = convert(NonlinearSystem, two_state_model; remove_conserved = true)
-```
-Again, we next create a dictionary for parameter values that we substitute in to
-give our final equation.
-```@example hc3
-pvals = MT.varmap_to_vars([], MT.parameters(ns); defaults = MT.defaults(ns))
-subs = Dict(MT.parameters(ns) .=> pvals)
-neweqs = map(eq -> substitute(eq.rhs, subs), equations(ns))
-```
-Notice, our equations are just for `X1` as `X2` was eliminated via the conservation law.
-
-Finally, we convert to polynomial form and solve for the steady-states
-```@example hc3
-polyeqs = Catalyst.to_multivariate_poly(neweqs)
-sols = HC.real_solutions(HC.solve(polyeqs))
+ps = [:k1 => 2.0, :k2 => 1.0]
+u0 = [:X1 => 1.0, :X2 => 1.0]
+hc_steady_states(wilhelm_2009_model, ps; u0=u0)
 ```
 
-If we also want the corresponding value for `X2`, we can substitute
-into the equation for it from the conservation laws:
-```@example hc3
-# get the X2 symbolic variable
-@unpack X2 = two_state_model
-
-# get its algebraic formula in terms of X1 and parameters
-ceqs = conservedequations(two_state_model)
-X2eqidx = findfirst(eq -> isequal(eq.lhs, X2), ceqs)
-X2eq = ceqs[X2eqidx].rhs
-
-# for each SS, set X1's value in the subs map and calculate X2
-@unpack X1 = two_state_model
-X2 = map(sols) do x
-    X1val = x[1]
-    subs[MT.value(X1)] = X1val
-    substitute(X2eq, subs)
-end
-```
-giving that the steady-state for `X2` is about `1.33333`.
-
-As an alternative, we could have coupled `neweqs` with the conservation law
-relations to have HomotopyContinuation find the steady-states simultaneously:
-```@example hc3
-# move all the terms in the conserved equations to one side
-# and substitute in the parameter values
-subs = Dict(MT.parameters(ns) .=> pvals)
-conservedrelations = map(eq -> substitute(eq.rhs - eq.lhs, subs), ceqs)
-neweqs = vcat(neweqs, conservedrelations)
-
-# calculate the steady-states
-polyeqs = Catalyst.to_multivariate_poly(neweqs)
-sols = HC.real_solutions(HC.solve(polyeqs))
-```
+## Final notes
+- `hc_steady_states` supports any systems where all rates are systems of rational polynomial (such as hill functions with integer hill coefficients).
+- Additional arguments provided to `hc_steady_states` are automatically passed to HomotopyContinuation's `solve` command. Use e.g. `show_progress=false` to disable the progress bar.
 ---
+
+## Citations
+If you use this functionality in your reasearch, please cite the following paper to support the authors of the HomotopyContinuation package:
+```
+@inproceedings{HomotopyContinuation.jl,
+  title={{H}omotopy{C}ontinuation.jl: {A} {P}ackage for {H}omotopy {C}ontinuation in {J}ulia},
+  author={Breiding, Paul and Timme, Sascha},
+  booktitle={International Congress on Mathematical Software},
+  pages={458--465},
+  year={2018},
+  organization={Springer}
+}
+```
+
 ## References
 [^1]: [Wilhelm, T. *The smallest chemical reaction system with bistability*, BMC Systems Biology (2009).](https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-050Wilhelm-3-90)
+[^2]: [Breiding, P., Timme, S. *HomotopyContinuation.jl: A Package for Homotopy Continuation in Julia*, International Congress on Mathematical Software (2018).](https://link.springer.com/chapter/10.1007/978-3-319-96418-8_54)
