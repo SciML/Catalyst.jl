@@ -399,6 +399,7 @@ function netstoichmat(rn::ReactionSystem; sparse = false)
 end
 
 # the following function is adapted from SymbolicUtils.jl v.19
+# later on (Spetember 2023) modified by Torkel and Shashi (now assumes input not on polynomial form, which is handled elsewhere, previous version failed in these cases anyway).
 # Copyright (c) 2020: Shashi Gowda, Yingbo Ma, Mason Protter, Julia Computing.
 # MIT license
 """
@@ -407,15 +408,13 @@ end
 Convert the given system of polynomial equations to multivariate polynomial representation.
 For example, this can be used in HomotopyContinuation.jl functions.
 """
-function to_multivariate_poly(polyeqs::AbstractVector{BasicSymbolic{Real}})
+function to_multivariate_poly(polyeqs::AbstractVector{Symbolics.BasicSymbolic{Real}})
     @assert length(polyeqs)>=1 "At least one expression must be passed to `multivariate_poly`."
 
     pvar2sym, sym2term = SymbolicUtils.get_pvar2sym(), SymbolicUtils.get_sym2term()
     ps = map(polyeqs) do x
         if istree(x) && operation(x) == (/)
-            num, den = arguments(x)
-            PolyForm(num, pvar2sym, sym2term).p /
-            PolyForm(den, pvar2sym, sym2term).p
+            error("We should not be able to get here, please contact the package authors.")
         else
             PolyForm(x, pvar2sym, sym2term).p
         end

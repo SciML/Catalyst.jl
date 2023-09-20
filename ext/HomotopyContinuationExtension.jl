@@ -4,6 +4,7 @@ module HomotopyContinuationExtension
 using Catalyst
 import ModelingToolkit as MT
 import HomotopyContinuation as HC
+import Symbolics: unwrap, wrap, Rewriters, symtype, issym, istree
 
 # Creates and exports hc_steady_states function.
 include("HomotopyContinuationExtension/homotopy_continuation_extension.jl")

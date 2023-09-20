@@ -45,13 +45,15 @@ end
 # For a given reaction system, paraemter values, and initial conditions, find the polynomial that HC solves to find steady states.
 function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     ns = convert(NonlinearSystem, rs; remove_conserved = true)
-    pre_varmap = map(pair -> pair::Pair{Num,Float64}, [symmap_to_varmap(rs,u0); symmap_to_varmap(rs,ps)]) # Needed in case ps or u0 are empty (making the combination a Vector{Any}, causing an error).
+    pre_varmap = map(pair -> pair::Pair{Num,Float64}, [symmap_to_varmap(rs,u0); symmap_to_varmap(rs,ps)]) 
     conservationlaw_errorcheck(rs, pre_varmap)
-    p_vals = MT.varmap_to_vars(pre_varmap, parameters(ns); defaults = MT.defaults(ns))
-    p_dict = Dict(parameters(ns) .=> p_vals)
-    eqs = vcat(equations(ns), conservedequations(rs))
-    eqs = map(eq -> substitute(eq.rhs - eq.lhs, p_dict), eqs)
-    return Catalyst.to_multivariate_poly(eqs)
+    p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns); defaults = ModelingToolkit.defaults(ns))
+    p_dict  = Dict(parameters(ns) .=> p_vals)
+    eqs_pars_funcs = vcat(equations(ns), conservedequations(rs))
+    eqs_funcs = map(eq -> substitute(eq.rhs - eq.lhs, p_dict), eqs_pars_funcs)
+    eqs = [deregister([mm, mmr, hill, hillr, hillar], eq) for eq in eqs_funcs]
+    eqs_intexp = make_int_exps.(eqs)
+    return Catalyst.to_multivariate_poly(remove_denominators.(eqs_intexp))
 end
 
 # If u0s are not given while conservation laws are present, throws an error.
@@ -60,6 +62,49 @@ function conservationlaw_errorcheck(rs, pre_varmap)
     isempty(intersect(species(rs), vars_with_vals)) || return
     isempty(conservedequations(rs)) && return 
     error("The system have conservation laws but no initial conditions were provided. Please provide initial conditions.")
+end
+
+# Unfolds a function (like mm or hill). 
+function deregister(fs::Vector{T}, expr) where T
+    for f in fs
+        expr = deregister(f, expr) 
+    end
+    return expr
+end
+# Provided by Shashi Gowda.
+deregister(f, expr) = wrap(Rewriters.Postwalk(Rewriters.PassThrough(___deregister(f)))(unwrap(expr)))
+function ___deregister(f)
+    (expr) ->
+    if istree(expr) && operation(expr) == f
+        args = arguments(expr)
+        invoke_with = map(args) do a
+            t = typeof(a)
+            issym(a) || istree(a) ? wrap(a) => symtype(a) : a => typeof(a)
+        end 
+        invoke(f, Tuple{last.(invoke_with)...}, first.(invoke_with)...)
+    end
+end
+
+# Parses and expression and return a version where any exponents that are Float64 (but an int, like 2.0) are turned into Int64s.
+make_int_exps(expr) = wrap(Rewriters.Postwalk(Rewriters.PassThrough(___make_int_exps))(unwrap(expr))).val
+function ___make_int_exps(expr)
+    !istree(expr) && return expr
+    if (operation(expr) == ^) && isinteger(arguments(expr)[2])
+        return arguments(expr)[1] ^ Int64(arguments(expr)[2])
+    end
+end
+
+# If the input is a fraction, removes the denominator.
+function remove_denominators(expr)
+    s_expr = simplify_fractions(expr)
+    !istree(expr) && return expr
+    if operation(s_expr) == /
+        return remove_denominators(arguments(s_expr)[1])
+    end
+    if operation(s_expr) == +
+        return +(remove_denominators.(arguments(s_expr))...)
+    end
+    return s_expr
 end
 
 # HC orders the solution vector according to the lexiographic values of the variable names. This reorders the output acording to the species index in the reaction system species vector.
