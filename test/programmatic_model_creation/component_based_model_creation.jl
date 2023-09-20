@@ -138,7 +138,7 @@ let
     # and after conversion to an AbstractSystem
     system = convert(NonlinearSystem, extended)
     @test isequal(system.a, ModelingToolkit.namespace_expr(a, system))
-    @test isequal(system.x, ModelingToolkit.namespace_expr(x, system))
+    @test isequal(system.x, ModelingToolkit.namespace_expr(x, system; ivs = independent_variables(extended)))
     @test length(equations(system)) == 1
     @test equations(system) == equations(constraints)
 
@@ -150,7 +150,7 @@ let
     # and after conversion to an AbstractSystem.
     system = convert(NonlinearSystem, extended)
     @test isequal(system.a, ModelingToolkit.namespace_expr(a, system))
-    @test isequal(system.x, ModelingToolkit.namespace_expr(x, system))
+    @test isequal(system.x, ModelingToolkit.namespace_expr(x, system; ivs = independent_variables(extended)))
     @test length(equations(system)) == 1
     @test Set(equations(system)) == Set(equations(constraints))
 

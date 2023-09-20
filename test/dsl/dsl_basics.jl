@@ -2,7 +2,7 @@
 
 ### Fetch Packages and Set Global Variables ###
 
-using Catalyst, ModelingToolkit
+using Catalyst
 @variables t
 
 ### Naming Tests ###

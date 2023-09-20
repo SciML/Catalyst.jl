@@ -63,7 +63,7 @@ let
         d * binomial(X10, 2), 2X10 ⟾ ∅
     end
 
-    for factor in [1e-1, 1e0], repeat in 1:5
+    for factor in [1e-1, 1e0]
         u0 = rand(rng, 1:Int64(factor * 100), length(get_states(higher_order_network_1)))
         p = factor * rand(rng, length(get_ps(higher_order_network_3)))
         prob1 = JumpProblem(higher_order_network_1,

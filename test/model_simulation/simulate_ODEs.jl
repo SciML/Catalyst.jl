@@ -9,7 +9,7 @@ using StableRNGs
 rng = StableRNG(12345)
 
 # Fetch test networks.
-include("../test_networks.jl")
+@time include("../test_networks.jl")
 
 ### Compares to Known Solution ###
 
@@ -119,8 +119,6 @@ end
 
 let
     for (i, network) in enumerate(reaction_networks_all)
-        (i % 5 == 0) &&
-            println("Iteration " * string(i) * " at line 104 in file solve_ODEs.jl")
         for factor in [1e-1, 1e0, 1e1]
             u0 = factor * rand(rng, length(get_states(network)))
             p = factor * rand(rng, length(get_ps(network)))
@@ -157,7 +155,7 @@ let
     p = [:k => 1.0]
     oprob = ODEProblem(rn, u0, tspan, p; combinatoric_ratelaws = false)
     du1 = du2 = zeros(2)
-    u = rand(2)
+    u = rand(rng, 2)
     oprob.f(du1, u, [1.0], 0.0)
     oderhs(du2, u, [1.0], 0.0)
     @test isapprox(du1, du2, rtol = 1e3 * eps())

@@ -14,7 +14,7 @@ We begin by importing some necessary packages.
 ```@example hh1
 using ModelingToolkit, Catalyst, NonlinearSolve
 using DifferentialEquations, Symbolics
-using Plots, IfElse
+using Plots
 ```
 
 We'll build a simple Hodgkin-Huxley model for a single neuron, with the voltage,
@@ -32,7 +32,7 @@ The transition rate functions, which depend on the voltage, $V(t)$, are given by
 ```@example hh1
 function αₘ(V)
     theta = (V + 45) / 10
-    IfElse.ifelse(theta == 0.0, 1.0, theta/(1 - exp(-theta)))
+    ifelse(theta == 0.0, 1.0, theta/(1 - exp(-theta)))
 end
 βₘ(V) = 4*exp(-(V + 70)/18)
 
@@ -41,14 +41,14 @@ end
 
 function αₙ(V)
     theta = (V + 60) / 10
-    IfElse.ifelse(theta == 0.0, .1, .1*theta / (1 - exp(-theta)))
+    ifelse(theta == 0.0, .1, .1*theta / (1 - exp(-theta)))
 end
 βₙ(V) = .125 * exp(-(V + 70)/80)
 nothing # hide
 ```
 
- We now declare the symbolic variable, `V(t)`, that will represent the
- transmembrane potential
+We now declare the symbolic variable, `V(t)`, that will represent the
+transmembrane potential
 
 ```@example hh1
 @variables t V(t)
