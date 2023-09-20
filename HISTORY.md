@@ -2,6 +2,7 @@
 
 ## Catalyst unreleased (master branch)
 - Simulation of spatial ODEs now supported. For full details, please see https://github.com/SciML/Catalyst.jl/pull/644 and upcoming documentation.
+- Simulations of spatial Jumps are now supported. For full details see: https://github.com/SciML/Catalyst.jl/pull/663. For documentation on the spatial SSA solvers used, pelase see: https://docs.sciml.ai/JumpProcesses/stable/tutorials/spatial/.
 - LatticeReactionSystem structure represents a spatiral reaction network:
   ```julia
   rn = @reaction_network begin
