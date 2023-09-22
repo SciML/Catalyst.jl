@@ -55,33 +55,33 @@ end</code></pre><p class="math-container">\[ \begin{align*}
  Catalyst.hillr(P₃(t), α, K, n)
  Catalyst.hillr(P₁(t), α, K, n)
  Catalyst.hillr(P₂(t), α, K, n)
- δ*m₁(t)
+ m₁(t)*δ
  γ
- δ*m₂(t)
+ m₂(t)*δ
  γ
- δ*m₃(t)
+ m₃(t)*δ
  γ
- β*m₁(t)
- β*m₂(t)
- β*m₃(t)
- μ*P₁(t)
- μ*P₂(t)
- μ*P₃(t)</code></pre><p>Note, as <a href="../../api/catalyst_api/#Catalyst.oderatelaw"><code>oderatelaw</code></a> takes just one reaction as input we use broadcasting to apply it to each element of <code>rxs</code>.</p><p>Let&#39;s check that this really gives the same ODEs as Catalyst. Here is what Catalyst generates by converting to an <code>ODESystem</code></p><pre><code class="language-julia hljs">osys = convert(ODESystem, repressilator)
+ m₁(t)*β
+ m₂(t)*β
+ m₃(t)*β
+ P₁(t)*μ
+ P₂(t)*μ
+ P₃(t)*μ</code></pre><p>Note, as <a href="../../api/catalyst_api/#Catalyst.oderatelaw"><code>oderatelaw</code></a> takes just one reaction as input we use broadcasting to apply it to each element of <code>rxs</code>.</p><p>Let&#39;s check that this really gives the same ODEs as Catalyst. Here is what Catalyst generates by converting to an <code>ODESystem</code></p><pre><code class="language-julia hljs">osys = convert(ODESystem, repressilator)
 
 # for display purposes we just pull out the right side of the equations
 odes = [eq.rhs for eq in equations(osys)]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">6-element Vector{SymbolicUtils.BasicSymbolic{Real}}:
- γ + Catalyst.hillr(P₃(t), α, K, n) - δ*m₁(t)
- γ + Catalyst.hillr(P₁(t), α, K, n) - δ*m₂(t)
- γ + Catalyst.hillr(P₂(t), α, K, n) - δ*m₃(t)
- β*m₁(t) - μ*P₁(t)
- β*m₂(t) - μ*P₂(t)
- β*m₃(t) - μ*P₃(t)</code></pre><p>whereas our matrix-vector representation gives</p><pre><code class="language-julia hljs">odes2 = N * ν</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">6-element Vector{Any}:
- γ + Catalyst.hillr(P₃(t), α, K, n) - δ*m₁(t)
- γ + Catalyst.hillr(P₁(t), α, K, n) - δ*m₂(t)
- γ + Catalyst.hillr(P₂(t), α, K, n) - δ*m₃(t)
- β*m₁(t) - μ*P₁(t)
- β*m₂(t) - μ*P₂(t)
- β*m₃(t) - μ*P₃(t)</code></pre><p>Let&#39;s check these are equal symbolically</p><pre><code class="language-julia hljs">isequal(odes, odes2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><h2 id="Reaction-complex-representation"><a class="docs-heading-anchor" href="#Reaction-complex-representation">Reaction complex representation</a><a id="Reaction-complex-representation-1"></a><a class="docs-heading-anchor-permalink" href="#Reaction-complex-representation" title="Permalink"></a></h2><p>We now introduce a further decomposition of the RRE ODEs, which has been used to facilitate analysis of a variety of reaction network properties. Consider a simple reaction system like</p><pre><code class="language-julia hljs">rn = @reaction_network begin
+ Catalyst.hillr(P₃(t), α, K, n) + γ - m₁(t)*δ
+ Catalyst.hillr(P₁(t), α, K, n) + γ - m₂(t)*δ
+ Catalyst.hillr(P₂(t), α, K, n) + γ - m₃(t)*δ
+ -P₁(t)*μ + m₁(t)*β
+ m₂(t)*β - P₂(t)*μ
+ -P₃(t)*μ + m₃(t)*β</code></pre><p>whereas our matrix-vector representation gives</p><pre><code class="language-julia hljs">odes2 = N * ν</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">6-element Vector{Any}:
+ Catalyst.hillr(P₃(t), α, K, n) + γ - m₁(t)*δ
+ Catalyst.hillr(P₁(t), α, K, n) + γ - m₂(t)*δ
+ Catalyst.hillr(P₂(t), α, K, n) + γ - m₃(t)*δ
+ -P₁(t)*μ + m₁(t)*β
+ m₂(t)*β - P₂(t)*μ
+ -P₃(t)*μ + m₃(t)*β</code></pre><p>Let&#39;s check these are equal symbolically</p><pre><code class="language-julia hljs">isequal(odes, odes2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><h2 id="Reaction-complex-representation"><a class="docs-heading-anchor" href="#Reaction-complex-representation">Reaction complex representation</a><a id="Reaction-complex-representation-1"></a><a class="docs-heading-anchor-permalink" href="#Reaction-complex-representation" title="Permalink"></a></h2><p>We now introduce a further decomposition of the RRE ODEs, which has been used to facilitate analysis of a variety of reaction network properties. Consider a simple reaction system like</p><pre><code class="language-julia hljs">rn = @reaction_network begin
  k*A, 2*A + 3*B --&gt; A + 2*C + D
  b, C + D --&gt; 2*A + 3*B
 end</code></pre><p class="math-container">\[ \begin{align*}
@@ -163,8 +163,8 @@ conservationlaws(rn)
 # then we display them as equations for the dependent variables
 conservedequations(rn)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element Vector{Equation}:
  E(t) ~ D(t) + Γ[1]
- G(t) ~ B(t) + C(t) + D(t) + F(t) + Γ[2]
- H(t) ~ Γ[3] - 0.5A(t) - B(t) - 1.5C(t) - 1.5D(t) - 1.5F(t)</code></pre><p>Here the parameters <code>Γ[i]</code> represent the constants of the three conservation laws, and we see that there are three dependent species that could be eliminated. As</p><pre><code class="language-julia hljs">numspecies(rn)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">8</code></pre><p>we find that there are five independent species. Let&#39;s check this is correct:</p><pre><code class="language-julia hljs">using LinearAlgebra
+ G(t) ~ B(t) + D(t) + C(t) + F(t) + Γ[2]
+ H(t) ~ -B(t) - 1.5D(t) - 0.5A(t) - 1.5C(t) - 1.5F(t) + Γ[3]</code></pre><p>Here the parameters <code>Γ[i]</code> represent the constants of the three conservation laws, and we see that there are three dependent species that could be eliminated. As</p><pre><code class="language-julia hljs">numspecies(rn)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">8</code></pre><p>we find that there are five independent species. Let&#39;s check this is correct:</p><pre><code class="language-julia hljs">using LinearAlgebra
 rank(netstoichmat(rn)) == 5</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>So we know that the rank of our reaction network is five.</p><p>The deficiency, <span>$\delta$</span>, of a reaction network is defined as</p><p class="math-container">\[\delta = \textrm{(number of complexes)} - \textrm{(number of linkage classes)} - \textrm{(rank)}.\]</p><p>For our network this is <span>$7 - 2 - 5 = 0$</span>, which we can calculate in Catalyst as</p><pre><code class="language-julia hljs"># first we calculate the reaction complexes of rn and cache them in rn
 reactioncomplexes(rn)
 
@@ -200,4 +200,4 @@ isma = all(rx -&gt; ismassaction(rx,rn), reactions(rn))
 def = deficiency(rn)
 iswr = isweaklyreversible(rn, subnets)
 isma,def,iswr</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(true, 0, false)</code></pre><p>which we see is mass action and has deficiency zero, but is not weakly reversible. As such, we can conclude that for any choice of rate constants the RRE ODEs cannot have a positive equilibrium solution.</p><h2 id="Caching-of-Network-Properties-in-ReactionSystems"><a class="docs-heading-anchor" href="#Caching-of-Network-Properties-in-ReactionSystems">Caching of Network Properties in <code>ReactionSystems</code></a><a id="Caching-of-Network-Properties-in-ReactionSystems-1"></a><a class="docs-heading-anchor-permalink" href="#Caching-of-Network-Properties-in-ReactionSystems" title="Permalink"></a></h2><p>When calling many of the network API functions, Catalyst calculates and caches in <code>rn</code> a variety of information. For example the first call to</p><pre><code class="language-julia hljs">rcs,B = reactioncomplexes(rn)</code></pre><p>calculates, caches, and returns the reaction complexes, <code>rcs</code>, and the incidence matrix, <code>B</code>, of <code>rn</code>. Subsequent calls simply return <code>rcs</code> and <code>B</code> from the cache.</p><p>Similarly, the first call to</p><pre><code class="language-julia hljs">N = netstoichmat(rn)</code></pre><p>calculates, caches and returns the net stoichiometry matrix. Subsequent calls then simply return the cached value of <code>N</code>. Caching such information means users do not need to manually know which subsets of network properties are needed for a given calculation (like the deficiency). Generally only</p><pre><code class="language-julia hljs">rcs,B = reactioncomplexes(rn)    # must be called once to cache rcs and B
-any_other_network_property(rn)</code></pre><p>should work to calculate a desired network property, with the API doc strings indicating when <code>reactioncomplexes(rn)</code> must be called at least once before a given function is used.</p><p>Because of the caching of network properties, subsequent calls to most API functions will be fast, simply returning the previously calculated and cached values. In some cases it may be desirable to reset the cache and recalculate these properties, for example after modifying a network (see <a href="../../api/catalyst_api/#Catalyst.addspecies!"><code>addspecies!</code></a>, <a href="../../api/catalyst_api/#Catalyst.addparam!"><code>addparam!</code></a>, or <a href="../../api/catalyst_api/#Catalyst.addreaction!"><code>addreaction!</code></a>). This can be done by calling</p><pre><code class="language-julia hljs">Catalyst.reset_networkproperties!(rn)</code></pre><p>Network property functions will then recalculate their associated properties and cache the new values the next time they are called.</p><hr/><h2 id="References"><a class="docs-heading-anchor" href="#References">References</a><a id="References-1"></a><a class="docs-heading-anchor-permalink" href="#References" title="Permalink"></a></h2><section class="footnotes is-size-7"><ul><li class="footnote" id="footnote-1"><a class="tag is-link" href="#citeref-1">1</a><a href="https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true">Feinberg, M. <em>Foundations of Chemical Reaction Network Theory</em>, Applied Mathematical Sciences 202, Springer (2019).</a></li></ul></section></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../parametric_stoichiometry/">« Symbolic Stochiometries</a><a class="docs-footer-nextpage" href="../../catalyst_applications/simulation_structure_interfacing/">Interfacing problems, integrators, and solutions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Tuesday 19 September 2023 16:38">Tuesday 19 September 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+any_other_network_property(rn)</code></pre><p>should work to calculate a desired network property, with the API doc strings indicating when <code>reactioncomplexes(rn)</code> must be called at least once before a given function is used.</p><p>Because of the caching of network properties, subsequent calls to most API functions will be fast, simply returning the previously calculated and cached values. In some cases it may be desirable to reset the cache and recalculate these properties, for example after modifying a network (see <a href="../../api/catalyst_api/#Catalyst.addspecies!"><code>addspecies!</code></a>, <a href="../../api/catalyst_api/#Catalyst.addparam!"><code>addparam!</code></a>, or <a href="../../api/catalyst_api/#Catalyst.addreaction!"><code>addreaction!</code></a>). This can be done by calling</p><pre><code class="language-julia hljs">Catalyst.reset_networkproperties!(rn)</code></pre><p>Network property functions will then recalculate their associated properties and cache the new values the next time they are called.</p><hr/><h2 id="References"><a class="docs-heading-anchor" href="#References">References</a><a id="References-1"></a><a class="docs-heading-anchor-permalink" href="#References" title="Permalink"></a></h2><section class="footnotes is-size-7"><ul><li class="footnote" id="footnote-1"><a class="tag is-link" href="#citeref-1">1</a><a href="https://link.springer.com/book/10.1007/978-3-030-03858-8?noAccess=true">Feinberg, M. <em>Foundations of Chemical Reaction Network Theory</em>, Applied Mathematical Sciences 202, Springer (2019).</a></li></ul></section></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../parametric_stoichiometry/">« Symbolic Stochiometries</a><a class="docs-footer-nextpage" href="../../catalyst_applications/simulation_structure_interfacing/">Interfacing problems, integrators, and solutions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Friday 22 September 2023 17:23">Friday 22 September 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
