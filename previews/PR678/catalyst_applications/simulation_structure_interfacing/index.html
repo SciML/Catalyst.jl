@@ -11,28 +11,17 @@ end
 u0 = [:X1 =&gt; 1.0, :X2 =&gt; 5.0]
 p = [:k1 =&gt; 5.0, :k2 =&gt; 2.0]
 oprob = ODEProblem(rn, u0, (0.0,10.0), p)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">begin
+    #= /home/runner/work/Catalyst.jl/Catalyst.jl/src/reaction_network.jl:338 =#
+    var&quot;##1515&quot; = #= /home/runner/work/Catalyst.jl/Catalyst.jl/src/reaction_network.jl:541 =# @parameters(k1, k2)
     #= /home/runner/work/Catalyst.jl/Catalyst.jl/src/reaction_network.jl:339 =#
-    var&quot;##1515&quot; = #= /home/runner/work/Catalyst.jl/Catalyst.jl/src/reaction_network.jl:542 =# @parameters(k1, k2)
-    #= /home/runner/work/Catalyst.jl/Catalyst.jl/src/reaction_network.jl:340 =#
     var&quot;##ps#1514&quot; = reduce(vcat, Symbolics.scalarize(var&quot;##1515&quot;))
 end
 var&quot;##ns_ps#1513&quot; = Num[]
 begin
-    #= /home/runner/work/Catalyst.jl/Catalyst.jl/src/reaction_network.jl:339 =#
+    #= /home/runner/work/Catalyst.jl/Catalyst.jl/src/reaction_network.jl:338 =#
     var&quot;##1518&quot; = #= line 0 =# @species(X1(t), X2(t))
-    #= /home/runner/work/Catalyst.jl/Catalyst.jl/src/reaction_network.jl:340 =#
+    #= /home/runner/work/Catalyst.jl/Catalyst.jl/src/reaction_network.jl:339 =#
     var&quot;##specs#1517&quot; = reduce(vcat, Symbolics.scalarize(var&quot;##1518&quot;))
-end
-begin
-    X1 = (identity)((Symbolics.wrap)((SymbolicUtils.setmetadata)(((Sym){(SymbolicUtils.FnType){NTuple{1, Any}, Real}}(:X1))((Symbolics.value)(t)), Symbolics.VariableSource, (:variables, :X1))))
-    X2 = (identity)((Symbolics.wrap)((SymbolicUtils.setmetadata)(((Sym){(SymbolicUtils.FnType){NTuple{1, Any}, Real}}(:X2))((Symbolics.value)(t)), Symbolics.VariableSource, (:variables, :X2))))
-    X1 = ModelingToolkit.wrap(setmetadata(ModelingToolkit.value(X1), Catalyst.VariableSpecies, true))
-    X2 = ModelingToolkit.wrap(setmetadata(ModelingToolkit.value(X2), Catalyst.VariableSpecies, true))
-    begin
-        #= /home/runner/work/Catalyst.jl/Catalyst.jl/src/reaction_network.jl:147 =#
-        all(!(Catalyst.isconstant) ∘ ModelingToolkit.value, [X1, X2]) || throw(ArgumentError(&quot;isconstantspecies metadata can only be used with parameters.&quot;))
-    end
-    [X1, X2]
 end</code></pre><p>We can find the value of a state simply by interfacing with the corresponding symbol:</p><pre><code class="language-julia hljs">oprob[:X1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1.0</code></pre><p>with the notation being identical for parameters:</p><pre><code class="language-julia hljs">oprob[:k1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.0</code></pre><p>If we want to change a state&#39;s initial condition value, we use the following notation</p><pre><code class="language-julia hljs">oprob[:X1] = 10.0</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10.0</code></pre><p>with parameters using the same notation.</p><h4 id="Remaking-problems-using-the-remake-function"><a class="docs-heading-anchor" href="#Remaking-problems-using-the-remake-function">Remaking problems using the <code>remake</code> function</a><a id="Remaking-problems-using-the-remake-function-1"></a><a class="docs-heading-anchor-permalink" href="#Remaking-problems-using-the-remake-function" title="Permalink"></a></h4><p>Typically, when modifying problems, it is recommended to use the <code>remake</code> function. Unlike when we do <code>oprob[:X1] = 10.0</code> (which modifies the problem in question), <code>remake</code> creates a new problem object. The <code>remake</code> function takes a problem as input, and any fields you wish to modify (and their new values) as optional inputs. Thus, we can do:</p><pre><code class="language-julia hljs">using DifferentialEquations
 @unpack X1, X2, k1, k2 = rn
 oprob1 = ODEProblem(rn, u0, (0.0,10.0), p)
@@ -120,4 +109,4 @@ end
 p = [:k1 =&gt; 5.0, :k2 =&gt; 2.0]
 oprob = ODEProblem(rn, u0, (0.0,10.0), p)
 
-oprob[k1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.0</code></pre><p>To interface with integrators and solutions we use a similar syntax.</p><p>Finally, instead of using <code>@unpack</code> to access a symbolic variable or parameter, we can access it directly using <code>rn.X1</code>, and thus access a state of our <code>ODEProblem</code> using</p><pre><code class="language-julia hljs">oprob[rn.X1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1.0</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../catalyst_functionality/network_analysis/">« Network Analysis in Catalyst</a><a class="docs-footer-nextpage" href="../advanced_simulations/">Advanced Simulation Options »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Tuesday 19 September 2023 03:30">Tuesday 19 September 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+oprob[k1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5.0</code></pre><p>To interface with integrators and solutions we use a similar syntax.</p><p>Finally, instead of using <code>@unpack</code> to access a symbolic variable or parameter, we can access it directly using <code>rn.X1</code>, and thus access a state of our <code>ODEProblem</code> using</p><pre><code class="language-julia hljs">oprob[rn.X1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1.0</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../catalyst_functionality/network_analysis/">« Network Analysis in Catalyst</a><a class="docs-footer-nextpage" href="../advanced_simulations/">Advanced Simulation Options »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Sunday 24 September 2023 21:08">Sunday 24 September 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
