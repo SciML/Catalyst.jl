@@ -12,74 +12,10 @@ wilhelm_2009_model = @reaction_network begin
     k3, X + Y --&gt; Y
     k4, X --&gt; 0
 end
-ps = [:k1 =&gt; 8.0, :k2 =&gt; 2.0, :k3 =&gt; 1.0, :k4 =&gt; 1.5]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Error: Error during loading of extension CatalystHomotopyContinuationExtension of Catalyst, use `Base.retry_load_extensions()` to retry.
-│   exception =
-│    1-element ExceptionStack:
-│    ArgumentError: Package CatalystHomotopyContinuationExtension [29df821d-c551-590f-9cc3-167176ca91b8] is required but does not seem to be installed:
-│     - Run `Pkg.instantiate()` to install all recorded dependencies.
-│
-│    Stacktrace:
-│      [1] _require(pkg::Base.PkgId, env::Nothing)
-│        @ Base ./loading.jl:1774
-│      [2] _require_prelocked(uuidkey::Base.PkgId, env::Nothing)
-│        @ Base ./loading.jl:1660
-│      [3] _require_prelocked(uuidkey::Base.PkgId)
-│        @ Base ./loading.jl:1658
-│      [4] run_extension_callbacks(extid::Base.ExtensionId)
-│        @ Base ./loading.jl:1255
-│      [5] run_extension_callbacks(pkgid::Base.PkgId)
-│        @ Base ./loading.jl:1290
-│      [6] run_package_callbacks(modkey::Base.PkgId)
-│        @ Base ./loading.jl:1124
-│      [7] _require_prelocked(uuidkey::Base.PkgId, env::String)
-│        @ Base ./loading.jl:1667
-│      [8] macro expansion
-│        @ ./loading.jl:1648 [inlined]
-│      [9] macro expansion
-│        @ ./lock.jl:267 [inlined]
-│     [10] require(into::Module, mod::Symbol)
-│        @ Base ./loading.jl:1611
-│     [11] eval
-│        @ ./boot.jl:370 [inlined]
-│     [12] #17
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:629 [inlined]
-│     [13] cd(f::Documenter.Expanders.var&quot;#17#19&quot;{Module, Expr}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│     [14] (::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr})()
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:628
-│     [15] (::IOCapture.var&quot;#3#5&quot;{DataType, Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}, Task, IOContext{Base.PipeEndpoint}, IOContext{Base.PipeEndpoint}, Base.PipeEndpoint, Base.PipeEndpoint})()
-│        @ IOCapture ~/.julia/packages/IOCapture/8Uj7o/src/IOCapture.jl:119
-│     [16] with_logstate(f::Function, logstate::Any)
-│        @ Base.CoreLogging ./logging.jl:514
-│     [17] with_logger
-│        @ ./logging.jl:626 [inlined]
-│     [18] capture(f::Documenter.Expanders.var&quot;#16#18&quot;{Documenter.Documents.Page, Module, Expr}; rethrow::Type, color::Bool)
-│        @ IOCapture ~/.julia/packages/IOCapture/8Uj7o/src/IOCapture.jl:116
-│     [19] runner(#unused#::Type{Documenter.Expanders.ExampleBlocks}, x::Markdown.Code, page::Documenter.Documents.Page, doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:627
-│     [20] dispatch(::Type{Documenter.Expanders.ExpanderPipeline}, ::Markdown.Code, ::Vararg{Any})
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [21] expand(doc::Documenter.Documents.Document)
-│        @ Documenter.Expanders ~/.julia/packages/Documenter/bYYzK/src/Expanders.jl:42
-│     [22] runner(#unused#::Type{Documenter.Builder.ExpandTemplates}, doc::Documenter.Documents.Document)
-│        @ Documenter.Builder ~/.julia/packages/Documenter/bYYzK/src/Builder.jl:226
-│     [23] dispatch(#unused#::Type{Documenter.Builder.DocumentPipeline}, x::Documenter.Documents.Document)
-│        @ Documenter.Utilities.Selectors ~/.julia/packages/Documenter/bYYzK/src/Utilities/Selectors.jl:170
-│     [24] #2
-│        @ ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:273 [inlined]
-│     [25] cd(f::Documenter.var&quot;#2#3&quot;{Documenter.Documents.Document}, dir::String)
-│        @ Base.Filesystem ./file.jl:112
-│     [26] makedocs(; debug::Bool, format::Documenter.Writers.HTMLWriter.HTML, kwargs::Base.Pairs{Symbol, Any, NTuple{6, Symbol}, NamedTuple{(:sitename, :authors, :modules, :doctest, :clean, :pages), Tuple{String, String, Vector{Module}, Bool, Bool, Vector{Any}}}})
-│        @ Documenter ~/.julia/packages/Documenter/bYYzK/src/Documenter.jl:272
-│     [27] top-level scope
-│        @ ~/work/Catalyst.jl/Catalyst.jl/docs/make.jl:33
-│     [28] include(mod::Module, _path::String)
-│        @ Base ./Base.jl:457
-│     [29] exec_options(opts::Base.JLOptions)
-│        @ Base ./client.jl:307
-│     [30] _start()
-│        @ Base ./client.jl:522
-└ @ Base loading.jl:1261</code></pre><p>Here, we only run <code>import HomotopyContinuation</code> as we do not require any of its functions, and just need it to be present in the current scope for the extension to be activated.</p><p>Now we can find the steady states using:</p><pre><code class="language- hljs">hc_steady_states(wilhelm_2009_model, ps)</code></pre><p>The order of the species in the output vectors are the same as in <code>species(wilhelm_2009_model)</code>.</p><p>It should be noted that the steady state multivariate polynomials produced by reaction systems may have both imaginary and negative roots, which are filtered away by <code>hc_steady_states</code>. If you want the negative roots, you can use the <code>hc_steady_states(wilhelm_2009_model, ps; filter_negative=false)</code> argument.</p><h2 id="Systems-with-conservation-laws"><a class="docs-heading-anchor" href="#Systems-with-conservation-laws">Systems with conservation laws</a><a id="Systems-with-conservation-laws-1"></a><a class="docs-heading-anchor-permalink" href="#Systems-with-conservation-laws" title="Permalink"></a></h2><p>Some systems are under-determined, and have an infinite number of possible steady states. These are typically systems containing a conservation law, e.g.</p><pre><code class="language-julia hljs">using Catalyst
+ps = [:k1 =&gt; 8.0, :k2 =&gt; 2.0, :k3 =&gt; 1.0, :k4 =&gt; 1.5]</code></pre><p>Here, we only run <code>import HomotopyContinuation</code> as we do not require any of its functions, and just need it to be present in the current scope for the extension to be activated.</p><p>Now we can find the steady states using:</p><pre><code class="language-julia hljs">hc_steady_states(wilhelm_2009_model, ps)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element Vector{Vector{Float64}}:
+ [0.0, 0.0]
+ [4.499999999999999, 5.999999999999999]
+ [0.5, 2.0]</code></pre><p>The order of the species in the output vectors are the same as in <code>species(wilhelm_2009_model)</code>.</p><p>It should be noted that the steady state multivariate polynomials produced by reaction systems may have both imaginary and negative roots, which are filtered away by <code>hc_steady_states</code>. If you want the negative roots, you can use the <code>hc_steady_states(wilhelm_2009_model, ps; filter_negative=false)</code> argument.</p><h2 id="Systems-with-conservation-laws"><a class="docs-heading-anchor" href="#Systems-with-conservation-laws">Systems with conservation laws</a><a id="Systems-with-conservation-laws-1"></a><a class="docs-heading-anchor-permalink" href="#Systems-with-conservation-laws" title="Permalink"></a></h2><p>Some systems are under-determined, and have an infinite number of possible steady states. These are typically systems containing a conservation law, e.g.</p><pre><code class="language-julia hljs">using Catalyst
 import HomotopyContinuation
 
 two_state_model = @reaction_network begin
@@ -96,4 +32,4 @@ hc_steady_states(wilhelm_2009_model, ps; u0=u0)</code></pre><h2 id="Final-notes"
   pages={458--465},
   year={2018},
   organization={Springer}
-}</code></pre><h2 id="References"><a class="docs-heading-anchor" href="#References">References</a><a id="References-1"></a><a class="docs-heading-anchor-permalink" href="#References" title="Permalink"></a></h2><p>[^3:] <a href="https://www.worldscientific.com/worldscibooks/10.1142/5763#t=aboutBook">Andrew J Sommese, Charles W Wampler <em>The Numerical Solution of Systems of Polynomials Arising in Engineering and Science</em>, World Scientific (2005).</a> [^4:] <a href="https://arxiv.org/abs/2302.08585">Daniel J. Bates, Paul Breiding, Tianran Chen, Jonathan D. Hauenstein, Anton Leykin, Frank Sottile, <em>Numerical Nonlinear Algebra</em>, arXiv (2023).</a></p><section class="footnotes is-size-7"><ul><li class="footnote" id="footnote-1"><a class="tag is-link" href="#citeref-1">1</a><a href="https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-3-90">Thomas Wilhelm, <em>The smallest chemical reaction system with bistability</em>, BMC Systems Biology (2009).</a></li><li class="footnote" id="footnote-2"><a class="tag is-link" href="#citeref-2">2</a><a href="https://link.springer.com/chapter/10.1007/978-3-319-96418-8_54">Paul Breiding, Sascha Timme, <em>HomotopyContinuation.jl: A Package for Homotopy Continuation in Julia</em>, International Congress on Mathematical Software (2018).</a></li></ul></section></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../advanced_simulations/">« Advanced Simulation Options</a><a class="docs-footer-nextpage" href="../bifurcation_diagrams/">Bifurcation Diagrams »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Monday 25 September 2023 17:10">Monday 25 September 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+}</code></pre><h2 id="References"><a class="docs-heading-anchor" href="#References">References</a><a id="References-1"></a><a class="docs-heading-anchor-permalink" href="#References" title="Permalink"></a></h2><p>[^3:] <a href="https://www.worldscientific.com/worldscibooks/10.1142/5763#t=aboutBook">Andrew J Sommese, Charles W Wampler <em>The Numerical Solution of Systems of Polynomials Arising in Engineering and Science</em>, World Scientific (2005).</a> [^4:] <a href="https://arxiv.org/abs/2302.08585">Daniel J. Bates, Paul Breiding, Tianran Chen, Jonathan D. Hauenstein, Anton Leykin, Frank Sottile, <em>Numerical Nonlinear Algebra</em>, arXiv (2023).</a></p><section class="footnotes is-size-7"><ul><li class="footnote" id="footnote-1"><a class="tag is-link" href="#citeref-1">1</a><a href="https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-3-90">Thomas Wilhelm, <em>The smallest chemical reaction system with bistability</em>, BMC Systems Biology (2009).</a></li><li class="footnote" id="footnote-2"><a class="tag is-link" href="#citeref-2">2</a><a href="https://link.springer.com/chapter/10.1007/978-3-319-96418-8_54">Paul Breiding, Sascha Timme, <em>HomotopyContinuation.jl: A Package for Homotopy Continuation in Julia</em>, International Congress on Mathematical Software (2018).</a></li></ul></section></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../advanced_simulations/">« Advanced Simulation Options</a><a class="docs-footer-nextpage" href="../bifurcation_diagrams/">Bifurcation Diagrams »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Monday 25 September 2023 22:08">Monday 25 September 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
