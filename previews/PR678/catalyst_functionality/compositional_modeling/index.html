@@ -66,18 +66,6 @@ rxs = [Reaction(k, [A,B], [C])]
     β, m --&gt; m + P
     μ, P --&gt; ∅
   end
-end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">begin
-    #= /home/runner/work/Catalyst.jl/Catalyst.jl/src/reaction_network.jl:338 =#
-    var&quot;##1552&quot; = #= /home/runner/work/Catalyst.jl/Catalyst.jl/src/reaction_network.jl:541 =# @parameters(α, K, n, δ, γ, β, μ)
-    #= /home/runner/work/Catalyst.jl/Catalyst.jl/src/reaction_network.jl:339 =#
-    var&quot;##ps#1551&quot; = reduce(vcat, Symbolics.scalarize(var&quot;##1552&quot;))
-end
-var&quot;##ns_ps#1550&quot; = Num[]
-begin
-    #= /home/runner/work/Catalyst.jl/Catalyst.jl/src/reaction_network.jl:338 =#
-    var&quot;##1555&quot; = #= line 0 =# @species(m(t), P(t))
-    #= /home/runner/work/Catalyst.jl/Catalyst.jl/src/reaction_network.jl:339 =#
-    var&quot;##specs#1554&quot; = reduce(vcat, Symbolics.scalarize(var&quot;##1555&quot;))
 end</code></pre><p>Here we assume the user will pass in the repressor species as a ModelingToolkit variable, and specify a name for the network. We use Catalyst&#39;s interpolation ability to substitute the value of these variables into the DSL (see <a href="../dsl_description/#dsl_description_interpolation_of_variables">Interpolation of Julia Variables</a>). To make the repressilator we now make three genes, and then compose them together</p><pre><code class="language-julia hljs">@variables t
 @species G3₊P(t)
 @named G1 = repressed_gene(; R=ParentScope(G3₊P))
@@ -127,4 +115,4 @@ end
 \mathrm{cyto_{+}P} &amp;\xrightarrow{cyto_+\sigma} \varnothing \\
 \mathrm{cyto_{+}M} &amp;\xrightarrow{cyto_+\mu} \varnothing  
  \end{align*}
- \]</p><p>A graph of the resulting network is</p><pre><code class="language-julia hljs">Graph(model)</code></pre><p><img src="../../assets/compartment_gene_regulation.svg" alt="graph of gene regulation model"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../programmatic_CRN_construction/">« Programmatic Construction of Symbolic Reaction Systems</a><a class="docs-footer-nextpage" href="../constraint_equations/">Constraint Equations and Events »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Sunday 24 September 2023 21:08">Sunday 24 September 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ \]</p><p>A graph of the resulting network is</p><pre><code class="language-julia hljs">Graph(model)</code></pre><p><img src="../../assets/compartment_gene_regulation.svg" alt="graph of gene regulation model"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../programmatic_CRN_construction/">« Programmatic Construction of Symbolic Reaction Systems</a><a class="docs-footer-nextpage" href="../constraint_equations/">Constraint Equations and Events »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Monday 25 September 2023 23:21">Monday 25 September 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
