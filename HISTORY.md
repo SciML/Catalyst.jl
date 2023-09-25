@@ -1,7 +1,7 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
-- Added a HomotopyContinuationExtension extension, which exports the `hc_steady_state` function if HomotopyContinuation is exported. `hc_steady_state` finds teh steady states of a reactin system using the homotopy continuation method.
+- Added a CatalystHomotopyContinuationExtension extension, which exports the `hc_steady_state` function if HomotopyContinuation is exported. `hc_steady_state` finds teh steady states of a reactin system using the homotopy continuation method.
 
 ## Catalyst 13.4
 - Added the ability to create species that represent chemical compounds and know

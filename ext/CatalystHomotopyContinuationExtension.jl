@@ -1,4 +1,4 @@
-module HomotopyContinuationExtension
+module CatalystHomotopyContinuationExtension
 
 # Fetch packages.
 using Catalyst
