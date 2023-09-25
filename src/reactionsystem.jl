@@ -1509,11 +1509,8 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
 
     flatrs = Catalyst.flatten(rs)
     error_if_constraints(SDESystem, flatrs)
-    if any(isnoisescalingparameter, get_ps(flatrs))
-        any(is_noise_scaling_parameter.(parameters(rs))) && error("You have declared some paraemters as noise scaling parameters, and also given a \"noise_scaling\" argument to SDEProblem. Please remove the \"noise_scaling\", as this way of scaling CLE noise is being depricated.")
-        @warn "Passing noise scaling input into SDEProblem will be deprecated. New standard is to declare one (or several) paraemter as noise scaling parameters when the ReactionSystem is created. Please read https://docs.sciml.ai/Catalyst/stable/catalyst_applications/advanced_simulations/#Scaling-the-noise-magnitude-in-the-chemical-Langevin-equations." 
-    end
 
+    isnothing(noise_scaling) && (noise_scaling = get_noise_scaling(rs)) # Required until passing nosie into SDEProblem can be depricated.
     if noise_scaling isa AbstractArray
         (length(noise_scaling) != numreactions(flatrs)) &&
             error("The number of elements in 'noise_scaling' must be equal " *
@@ -1650,6 +1647,12 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
                                include_zero_odes = true, checks = false,
                                check_length = false,
                                remove_conserved = false, kwargs...)
+
+    if !isnothing(noise_scaling)
+        !isnothing(get_noise_scaling(rs)) && error("You have declared some parameters as noise scaling parameters, and also given a \"noise_scaling\" argument to SDEProblem. Please remove the \"noise_scaling\", as this way of scaling CLE noise is being depricated.")
+        @warn "Passing noise scaling input into SDEProblem will be deprecated. New standard is to declare one (or several) paraemter as noise scaling parameters when the ReactionSystem is created. Please read https://docs.sciml.ai/Catalyst/stable/catalyst_applications/advanced_simulations/#Scaling-the-noise-magnitude-in-the-chemical-Langevin-equations." 
+    end
+
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     sde_sys = convert(SDESystem, rs; noise_scaling, name, combinatoric_ratelaws,

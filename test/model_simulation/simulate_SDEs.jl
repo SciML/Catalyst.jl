@@ -119,6 +119,19 @@ let
     end
 end
 
+### Checks Simulations Don't Error ###
+
+#Tries to create a large number of problem, ensuring there are no errors (cannot solve as solution likely to go into negatives). 
+let
+    for reaction_network in reaction_networks_all
+        for factor in [1e-2, 1e-1, 1e0, 1e1]
+            u0 = factor * rand(rng, length(states(reaction_network)))
+            p = factor * rand(rng, length(parameters(reaction_network)))
+            prob = SDEProblem(reaction_network, u0, (0.0, 1.0), p)
+        end
+    end
+end
+
 ### Noise Scaling ###
 
 # Tests with multiple noise scaling parameters directly in the macro.
