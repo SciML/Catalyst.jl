@@ -227,7 +227,7 @@ version = "13.4.1"
 weakdeps = ["HomotopyContinuation"]
 
     [deps.Catalyst.extensions]
-    HomotopyContinuationExtension = "HomotopyContinuation"
+    CatalystHomotopyContinuationExtension = "HomotopyContinuation"
 
 [[deps.ChainRules]]
 deps = ["Adapt", "ChainRulesCore", "Compat", "Distributed", "GPUArraysCore", "IrrationalConstants", "LinearAlgebra", "Random", "RealDot", "SparseArrays", "SparseInverseSubset", "Statistics", "StructArrays", "SuiteSparse"]
