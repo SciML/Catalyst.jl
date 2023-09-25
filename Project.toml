@@ -25,7 +25,7 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
 
 [extensions]
-HomotopyContinuationExtension = "HomotopyContinuation"
+CatalystHomotopyContinuationExtension = "HomotopyContinuation"
 
 [compat]
 DataStructures = "0.18"

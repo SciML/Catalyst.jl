@@ -7,6 +7,6 @@ import HomotopyContinuation as HC
 import Symbolics: unwrap, wrap, Rewriters, symtype, issym, istree
 
 # Creates and exports hc_steady_states function.
-include("HomotopyContinuationExtension/homotopy_continuation_extension.jl")
+include("CatalystHomotopyContinuationExtension/homotopy_continuation_extension.jl")
 
 end
