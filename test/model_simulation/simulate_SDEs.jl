@@ -158,15 +158,21 @@ let
 end
 
 # Tests using default values for noise scaling.
-let
-    noise_scaling_network = @reaction_network begin 
+# Tests when reaction system is created programmatically.
+# Tests @noise_scaling_parameters macro.
+    let
+        @variables t
+        @species X1(t) X2(t)
         @noise_scaling_parameters η=0.0
-        (k1, k2), X1 ↔ X2 
+        @parameters k1 k2
+        r1 = Reaction(k1,[X1],[X2],[1],[1])
+        r2 = Reaction(k2,[X2],[X1],[1],[1])
+        @named noise_scaling_network = ReactionSystem([r1, r2], t, [X1, X2], [k1, k2, η])
+    
+        u0 = [:X1 => 1100.0, :X2 => 3900.0]
+        p = [:k1 => 2.0, :k2 => 0.5, :η=>0.0]
+        @test SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p)[:η] == 0.0
     end
-    u0 = [:X1 => 1100.0, :X2 => 3900.0]
-    p = [:k1 => 2.0, :k2 => 0.5, :η=>0.0]
-    @test SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p)[:η] == 0.0
-end
 
 # Complicated test with many combinations of options.
 let
