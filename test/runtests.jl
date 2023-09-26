@@ -48,5 +48,7 @@ using SafeTestsets
     end
     
     ### Tests extensions. ###
-    @time @safetestset "Homotopy Continuation Extension" begin include("extensions/homotopy_continuation.jl") end
+    if VERSION >= v"1.9"
+        @time @safetestset "Homotopy Continuation Extension" begin include("extensions/homotopy_continuation.jl") end
+    end
 end # @time
