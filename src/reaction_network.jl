@@ -410,6 +410,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     pexprs = get_pexpr(parameters_extracted, options)
     ns_ps, ns_pssym = scalarize_macro(haskey(options, :noise_scaling_parameters), noise_scaling_pexpr, "ns_ps")
     ps, pssym = scalarize_macro(!isempty(parameters), pexprs, "ps")
+    rs_p_syms = haskey(options, :noise_scaling_parameters) ? :(union($pssym, $ns_pssym)) : pssym
     vars, varssym = scalarize_macro(!isempty(variables), vexprs, "vars")
     sps, spssym = scalarize_macro(!isempty(species), sexprs, "specs")
     comps, compssym = scalarize_macro(!isempty(compound_species), compound_expr, "comps")
@@ -417,7 +418,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     for reaction in reactions
         push!(rxexprs.args, get_rxexprs(reaction))
     end
-
     # Returns the rephrased expression.
     quote
         $ps
