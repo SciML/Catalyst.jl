@@ -85,7 +85,7 @@ export mm, mmr, hill, hillr, hillar
 
 # functions to query network properties
 include("networkapi.jl")
-export species, nonspecies, reactionparams, reactions, speciesmap, paramsmap
+export species, nonspecies, noise_scaling_parameters, reactionparams, reactions, speciesmap, paramsmap
 export numspecies, numreactions, numreactionparams, setdefaults!, symmap_to_varmap
 export make_empty_network, addspecies!, addparam!, addreaction!, reactionparamsmap
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat

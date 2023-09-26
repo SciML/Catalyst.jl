@@ -306,7 +306,7 @@ tspan = (0.0, 10.0)
 p_1 = [:k1 => 1.0, :k2 => 1.0]
 
 sprob_1 = SDEProblem(rn_1, u0, tspan, p_1)
-sol_1 = solve(sprob_1)
+sol_1 = solve(sprob_1, ImplicitEM())
 plot(sol_1; idxs = :X1, ylimit = (0.0, 20.0))
 ```
 Here we can see that the `X` concentration fluctuates around a steady state of $X≈10.0$.
@@ -319,44 +319,74 @@ Setting $η<1.0$ will reduce noise and $η>1.0$ will increase noise. The syntax
 for setting a noise scaling parameter `η` is
 ```@example ex3
 rn_2 = @reaction_network begin
-    @parameters η
+    @noise_scaling_parameters η
     (k1,k2), X1 <--> X2
 end
+```
+The `@noise_scaling_parameter` option is equivalent to the `@parameters` option, but also designates subsequent parameter as a *noise scaling parameter*. *η* becomes a parameter of the system, and we can now modualte its value to scale simualtion noise:
+```@example ex3
 u0 = [:X1 => 10.0, :X2 => 10.0]
 tspan = (0.0, 10.0)
 p_2 = [:k1 => 1.0, :k2 => 1.0, :η => 0.1]
 
-sprob_2 = SDEProblem(rn_2, u0, tspan, p_2; noise_scaling = (@parameters η)[1])
-```
-Here, we first need to add `η` as a parameter to the system using the
-`@parameters η` option. Next, we pass the `noise_scaling = (@parameters η)[1]`
-argument to the `SDEProblem`. We can now simulate our system and confirm that
-noise is reduced:
-```@example ex3
-sol_2 = solve(sprob_2)
+sprob_2 = SDEProblem(rn_2, u0, tspan, p_2)
+sol_2 = solve(sprob_2, ImplicitEM())
 plot(sol_2; idxs = :X1, ylimit = (0.0, 20.0))
 ```
 
-Finally, it is possible to set individual noise scaling parameters for each
-reaction of the system. Our model has two reactions (`X1 --> X2` and `X2 -->
-X1`) so we will use two noise scaling parameters, `η1` and `η2`. We use the
-following syntax:
+It is worth noting that in the CLE, nosie is tied to *reactions* (and not species, which is a common missperception). If only a single noise scaling parameter is given, it will scale the noise for all reaction. However, it is also possible to set several nosie scaling parameters, with each scaling the noise of a single reaction. Our model has two reactions (`X1 --> X2` and `X2 --> X1`) so we will use two noise scaling parameters (`η1` and `η2`):
 ```@example ex3
 rn_3 = @reaction_network begin
-    @parameters η1 η2
+    @noise_scaling_parameters η1 η2
     (k1,k2), X1 <--> X2
 end
 u0 = [:X1 => 10.0, :X2 => 10.0]
 tspan = (0.0, 10.0)
 p_3 = [:k1 => 1.0, :k2 => 1.0, :η1 => 0.1, :η2 => 1.0]
 
-sprob_3 = SDEProblem(rn_3, u0, tspan, p_3; noise_scaling = @parameters η1 η2)
+sprob_3 = SDEProblem(rn_3, u0, tspan, p_3)
 ```
-plotting the results, we see that we have less fluctuation than for the first
-simulation, but more as compared to the second one (which is as expected):
+Both the noise scaling parameters and the reaction are ordered (these orders can be seen by calling `reactions(rn_3)` and `noise_scaling_parameters(rn_3)`, respectively). The i'th noise scaling parameter scales the noise of the i'th reaction. Plotting the results, we see that we have less fluctuation than for the first simulation, but more as compared to the second one (which is as expected):
 ```@example ex3
-sol_3 = solve(sprob_3)
+sol_3 = solve(sprob_3, ImplicitEM())
 plot(sol_3; idxs = :X1, ylimit = (0.0, 20.0))
+```
+
+For systems with many reactions, the `η[1:n]` (where `n` is equal to the number of reactions) notation can be useful (this however, requires `@unpack`'ing the system's parameters):
+```@example ex3
+rn_4 = @reaction_network begin
+    @noise_scaling_parameters η[1:6]
+    (p, d), 0 <--> X
+    (p, d), 0 <--> Y
+    (p, d), 0 <--> Z
+end
+@unpack p, d, η = rn_4
+
+u0_4 = [:X => 10.0, :Y => 10.0, :Z => 10.0]
+tspan = (0.0, 10.0)
+p_4 = [p => 10.0, d => 1., η[1]=>0.1, η[2]=>0.1, η[3]=>1., η[4]=>1., η[5]=>1., η[6]=>1.]
+
+sprob_4 = SDEProblem(rn_4, u0_4, tspan, p_4)
+sol_4 = solve(sprob_4, ImplicitEM())
+plot(sol_4; ylimit = (0.0, 20.0))
+```
+Here, we have reduced the noise of the reactions involving `X` only.
+
+Finally, it is possible to use the `@noise_scaling_parameter` option as a normal macro when creating reaction systems programmatically:
+```@example ex3
+@variables t
+@species X1(t) X2(t)
+@noise_scaling_parameters η
+@parameters k1 k2
+r1 = Reaction(k1,[X1],[X2],[1],[1])
+r2 = Reaction(k2,[X2],[X1],[1],[1])
+@named rn_5 = ReactionSystem([r1, r2], t, [X1, X2], [k1, k2, η])
+nothing # hide
+```
+which is equivalent to `rn_2`. In this example, calling `@noise_scaling_parameters η` is equivalent to calling `parameters η` with the `noise_scaling_parameter` metadata:
+```@example ex3
+@parameters η [noise_scaling_parameter=true]
+nothing # hide
 ```
 
 ## Useful plotting options

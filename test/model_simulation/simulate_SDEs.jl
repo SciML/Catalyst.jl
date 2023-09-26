@@ -121,7 +121,7 @@ end
 
 ### Checks Simulations Don't Error ###
 
-#Tries to create a large number of problem, ensuring there are no errors (cannot solve as solution likely to go into negatives). 
+# Tries to create a large number of problem, ensuring there are no errors (cannot solve as solution likely to go into negatives). 
 let
     for reaction_network in reaction_networks_all
         for factor in [1e-2, 1e-1, 1e0, 1e1]
@@ -160,21 +160,23 @@ end
 # Tests using default values for noise scaling.
 # Tests when reaction system is created programmatically.
 # Tests @noise_scaling_parameters macro.
-    let
-        @variables t
-        @species X1(t) X2(t)
-        @noise_scaling_parameters η=0.0
-        @parameters k1 k2
-        r1 = Reaction(k1,[X1],[X2],[1],[1])
-        r2 = Reaction(k2,[X2],[X1],[1],[1])
-        @named noise_scaling_network = ReactionSystem([r1, r2], t, [X1, X2], [k1, k2, η])
-    
-        u0 = [:X1 => 1100.0, :X2 => 3900.0]
-        p = [:k1 => 2.0, :k2 => 0.5, :η=>0.0]
-        @test SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p)[:η] == 0.0
-    end
+let
+    η_stored = :η
+    @variables t
+    @species X1(t) X2(t)
+    ηs = @noise_scaling_parameters $(η_stored)=0.0
+    @parameters k1 k2
+    r1 = Reaction(k1,[X1],[X2],[1],[1])
+    r2 = Reaction(k2,[X2],[X1],[1],[1])
+    @named noise_scaling_network = ReactionSystem([r1, r2], t, [X1, X2], [k1, k2, ηs[1]])
+
+    u0 = [:X1 => 1100.0, :X2 => 3900.0]
+    p = [:k1 => 2.0, :k2 => 0.5, :η=>0.0]
+    @test SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p)[:η] == 0.0
+end
 
 # Complicated test with many combinations of options.
+# Tests the noise_scaling_parameters getter.
 let
     noise_scaling_network = @reaction_network begin 
         @parameters k1 par1 [description="Parameter par1"] par2 η1 [noise_scaling_parameter=true]
@@ -190,6 +192,9 @@ let
 
     sprob = SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p)
     @test sprob[:η1] == sprob[:η2] == sprob[:η3] == sprob[:η4] == 0.0
+
+    @unpack η1, η2, η3, η4 = noise_scaling_network
+    isequal([η1, η2, η3, η4], noise_scaling_parameters(noise_scaling_network))
 end
 
 
