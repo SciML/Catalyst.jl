@@ -92,7 +92,7 @@ Catalyst.jl](https://www.youtube.com/watch?v=5p1PJE5A5Jw).
   ODE/SDE/jump solver, and can be used within `EnsembleProblem`s for carrying
   out parallelized parameter sweeps and statistical sampling. Plot recipes
   are available for visualizing the solutions.
-- [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl)) symbolic
+- [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl) symbolic
   expressions and Julia `Expr`s can be obtained for all rate laws and functions
   determining the deterministic and stochastic terms within resulting ODE, SDE
   or jump models.
@@ -118,6 +118,8 @@ Catalyst.jl](https://www.youtube.com/watch?v=5p1PJE5A5Jw).
 - [DelaySSAToolkit.jl](https://github.com/palmtree2013/DelaySSAToolkit.jl) can
   augment Catalyst reaction network models with delays, and can simulate the
   resulting stochastic chemical kinetics with delays models.
+- [BondGraphs.jl](https://github.com/jedforrest/BondGraphs.jl) a package for
+  constructing and analyzing bond graphs models, which can take Catalyst models as input.
 
 
 ## Illustrative examples
