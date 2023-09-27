@@ -501,7 +501,7 @@ In our case we wish to fit all three system parameters (*kB*, *kD*, and *kP*). F
 par_kB = PEtabParameter(:kB)
 par_kD = PEtabParameter(:kD)
 par_kP = PEtabParameter(:kP)
-parameters = [par_kB, par_kD, par_kP]
+params = [par_kB, par_kD, par_kP]
 nothing # hide
 ```
 For each parameter, it is also possible to set [a lower or upper bound](@ref petab_parameters_bounds), set whether to use [logarithmic or linear scale](@ref petab_parameters_scales), or add a [prior distribution of its value](@ref petab_parameters_priors).
@@ -529,7 +529,7 @@ Since, in our example, all measurements is of the same observable, we can set `o
 ### Creating a PEtabModel
 Finally, we combine all inputs in a single `PEtabModel`. To it, we also pass the initial conditions of our simulations (using the `state_map` argument). It is also possible to have [initial conditions with uncertainty](@ref petab_simulation_initial_conditions_uncertainty), [that vary between different simulations](@ref petab_simulation_conditions), or [that we attempt to fit to the data](@ref petab_simulation_initial_conditions_fitted).
 ```petab1
-petab_model = PEtabModel(rn, observables, measurements, parameters; state_map=u0)
+petab_model = PEtabModel(rn, observables, measurements, params; state_map=u0)
 nothing # hide
 ```
 
@@ -590,12 +590,12 @@ In our previous example, all parameters where unknowns that we wished to fit to 
 ```petab1
 par_kD = PEtabParameter(:kD)
 par_kP = PEtabParameter(:kP)
-parameters = [par_kD, par_kP]
+params = [par_kD, par_kP]
 nothing # hide
 ```
 We then provide `parameter_map=[:kB => 1.0]` when we assembly our model:
 ```petab1
-petab_model = PEtabModel(rn, observables, measurements, parameters; state_map=u0, parameter_map=[:kB => 1.0])
+petab_model = PEtabModel(rn, observables, measurements, params; state_map=u0, parameter_map=[:kB => 1.0])
 nothing # hide
 ```
 
@@ -673,7 +673,7 @@ observables = Dict("obs_P" => obs_P)
 par_kB = PEtabParameter(:kB)
 par_kD = PEtabParameter(:kD)
 par_kP = PEtabParameter(:kP)
-parameters = [par_kB, par_kD, par_kP]
+params = [par_kB, par_kD, par_kP]
 
 c1 = Dict(:kB => 1.0)
 c2 = Dict(:kB => 0.5)
@@ -684,7 +684,7 @@ m1 = DataFrame(simulation_id="c1", obs_id="obs_P", time=t1, measurement=d1)
 m2 = DataFrame(simulation_id="c2", obs_id="obs_P", time=t2, measurement=d2)
 measurements = vcat(m1,m2)
 
-petab_model = PEtabModel(rn, simulation_conditions, observables, measurements, parameters; state_map=u0)
+petab_model = PEtabModel(rn, simulation_conditions, observables, measurements, params; state_map=u0)
 nothing # hide
 ```
 Note that the `u0` we pass into `PEtabModel` through the `state_map` argument no longer contain the value of *S* (as it is provided by the conditions). 
@@ -720,10 +720,10 @@ par_kB = PEtabParameter(:kB)
 par_kD = PEtabParameter(:kD)
 par_kP = PEtabParameter(:kP)
 par_E0 = PEtabParameter(:E0)
-parameters = [par_kB, par_kD, par_kP, par_E0]
+params = [par_kB, par_kD, par_kP, par_E0]
 nothing # hide
 ```
-and we can use our updated `rn`, `u0`, ad `parameters` as input to our `PEtabModel`.
+and we can use our updated `rn`, `u0`, and `params` as input to our `PEtabModel`.
 
 ### [Uncertain initial conditions](@id petab_simulation_initial_conditions_uncertainty)
 Often, while an initial condition have been reported for an experiment, its exact value is uncertain. This can be modelled by making the initial condition a [parameter that is fitted to the data](@id petab_simulation_initial_conditions_fitted) and attach a prior to it corresponding to our certainty about its value. 
@@ -757,12 +757,12 @@ par_kD = PEtabParameter(:kD)
 par_kP = PEtabParameter(:kP)
 par_S0 = PEtabParameter(:S0)
 par_E0 = PEtabParameter(:E0)
-parameters = [par_kB, par_kD, par_kP, par_S0, par_E0]
+params = [par_kB, par_kD, par_kP, par_S0, par_E0]
 
 using DataFrames
 measurements = DataFrame(obs_id="obs_P", time=sol.t[10:10:end], measurement=data)
 
-petab_model = PEtabModel(rn, observables, measurements, parameters; state_map=u0)
+petab_model = PEtabModel(rn, observables, measurements, params; state_map=u0)
 nothing # hide
 ```
 Here, when we fit our data we will also gain values for `S0` and `E0`, however, unless we are explicitly interested in these, they can be ignored.
