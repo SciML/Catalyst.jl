@@ -323,7 +323,7 @@ rn_2 = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 ```
-The `@noise_scaling_parameter` option is equivalent to the `@parameters` option, but also designates subsequent parameter as a *noise scaling parameter*. *η* becomes a parameter of the system, and we can now modualte its value to scale simualtion noise:
+The `@noise_scaling_parameter` option creates one or more new parameters with additional metadata that allows Catalyst to know they represent a noise scaling. *η* becomes a parameter of the system, and we can now modulate its value to scale simulation noise:
 ```@example ex3
 u0 = [:X1 => 10.0, :X2 => 10.0]
 tspan = (0.0, 10.0)
