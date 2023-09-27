@@ -743,7 +743,6 @@ end
 u0 = [:SE => 0.0, :P => 0.0]
 p_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
 
-# Simulate data.
 using OrdinaryDiffEq, Random
 oprob = ODEProblem(rn, [:S=>1.0; :E => 1.0; u0], (0.0, 10.0), p_true)
 sol = solve(oprob, Tsit5(); saveat=0.1)
