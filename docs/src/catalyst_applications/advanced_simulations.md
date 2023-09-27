@@ -334,7 +334,7 @@ sol_2 = solve(sprob_2, ImplicitEM())
 plot(sol_2; idxs = :X1, ylimit = (0.0, 20.0))
 ```
 
-It is worth noting that in the CLE, nosie is tied to *reactions* (and not species, which is a common missperception). If only a single noise scaling parameter is given, it will scale the noise for all reaction. However, it is also possible to set several nosie scaling parameters, with each scaling the noise of a single reaction. Our model has two reactions (`X1 --> X2` and `X2 --> X1`) so we will use two noise scaling parameters (`η1` and `η2`):
+It is worth noting that in the CLE, nosie is tied to *reactions* (and not species, which is a common missperception). If only a single noise scaling parameter is given, it will scale the noise for all reactions. However, it is also possible to set several noise scaling parameters, with each scaling the noise of a single reaction. Our model has two reactions (`X1 --> X2` and `X2 --> X1`) so we will use two noise scaling parameters (`η1` and `η2`):
 ```@example ex3
 rn_3 = @reaction_network begin
     @noise_scaling_parameters η1 η2
