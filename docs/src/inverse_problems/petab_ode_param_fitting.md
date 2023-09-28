@@ -548,11 +548,11 @@ res = calibrate_model(petab_problem, p0, IPNewton())
 
 We can now simulate our model for the fitted parameter set, and compare the result to the measurements and true solution.
 ```petab1
-oprob = ODEProblem(rn, u0, (0.0, 10.0), get_best_ps(res, petab_model))
+oprob = ODEProblem(rn, u0, (0.0, 10.0), get_fitted_ps(res, petab_model))
 sol = solve(oprob, Tsit5(); saveat=0.1)
 plot!(sol; idxs=4, label="Fitted solution")
 ```
-Here we use the `get_best_ps` function to retrieve a full parameter set using the optimal parameters. The calibration result can also be found in `res.xmin`, however, note that PEtab automatically ([unless linear scale is selected](petab_parameters_scales)) converts parameters to logarithmic scale, so typically `10 .^res.xmin` are the values of interest. If you investigate the result from this example you might note that the found parameter set (while it fits the data well) does not correspond to the true parameter set. This phenomena is related to *identifiability*, and is very important for parameter fitting.
+Here we use the `get_fitted_ps` function to retrieve a full parameter set using the optimal parameters. The calibration result can also be found in `res.xmin`, however, note that PEtab automatically ([unless linear scale is selected](petab_parameters_scales)) converts parameters to logarithmic scale, so typically `10 .^res.xmin` are the values of interest. If you investigate the result from this example you might note that the found parameter set (while it fits the data well) does not correspond to the true parameter set. This phenomena is related to *identifiability*, and is very important for parameter fitting.
 
 ### Final notes
 PEtab.jl also supports [multistart optimisation](@ref petab_multistart_optimisation), [automatic equilibration before simulations](https://sebapersson.github.io/PEtab.jl/stable/Brannmark/), and [events](@ref petab_events). Various [plot recipes](@ref petab_plotting) exist for investigating the optimisation process. Please read the [PETab.jl documentation](https://sebapersson.github.io/PEtab.jl/stable/) for a more complete description of the package's features.
@@ -824,7 +824,7 @@ using Optim
 using QuasiMonteCarlo
 res_ms = calibrate_model_multistart(petab_problem, IPNewton(), 10, "OptimizationRuns/runs_ms_1"; sampling_method=QuasiMonteCarlo.SobolSample())
 ```
-The best result across all runs can still be retrieved using `get_best_ps(res_ms)`, with the results of the individual runs being stored in the `res_ms.runs` field.
+The best result across all runs can still be retrieved using `get_fitted_ps(res_ms, petab_model)`, with the results of the individual runs being stored in the `res_ms.runs` field.
 
 ## [Events](@id petab_events)
 Support for events in PEtab and PEtab.jl is currently a work in progress, with an implementation in PEtab.jl expected soon.
