@@ -9,7 +9,7 @@ integer Hill exponents). The roots of these can reliably be found through a
 *homotopy continuation* algorithm. This is implemented in Julia through the
 [HomotopyContinuation.jl](https://www.juliahomotopycontinuation.org/) package.
 
-Catalyst contains a special homotopy continuation extension that is loaded whenever HomotopyContinuation.jl is. This exports a single function, `hc_steady_states`, that can be used to find the steady states of any `ReactionSystem` structure.
+Catalyst contains a special homotopy continuation extension that is loaded whenever HomotopyContinuation.jl is. This exports a single function, `hc_steady_states`, that can be used to find the steady states of any `ReactionSystem` structure. If you use this in your research, please [cite the HomotopyContinuation.jl publication](@ref homotopy_continuation_citation).
 
 ## Basic example
 For this tutorial, we will use a model from Wilhem (2009)[^1] (which
@@ -62,7 +62,7 @@ hc_steady_states(wilhelm_2009_model, ps; u0=u0)
 - Additional arguments provided to `hc_steady_states` are automatically passed to HomotopyContinuation's `solve` command. Use e.g. `show_progress=false` to disable the progress bar.
 ---
 
-## Citations
+## [Citation](@id homotopy_continuation_citation)
 If you use this functionality in your reasearch, please cite the following paper to support the authors of the HomotopyContinuation package:
 ```
 @inproceedings{HomotopyContinuation.jl,
