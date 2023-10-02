@@ -13,7 +13,7 @@ Arguments:
 - `u0=typeof(ps)()`: Initial conditions for which we want to find the steady states. For systems with conservation laws this are required to compute conserved quantities.
 - `kwargs...`: any additional arguments (like `show_progress= true`) are passed into HomotopyContinuation.jl's `solve` call. 
 
-Examples:
+Examples
 ```@repl
 rs = @reaction_network begin
     k1, Y --> 2X
