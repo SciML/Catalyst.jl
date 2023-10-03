@@ -34,7 +34,7 @@ gives
 Notes:
 ```
   """
-function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative=true, neg_thres=-1e-20, u0=nothing, kwargs...)
+function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative=true, neg_thres=-1e-20, u0=[], kwargs...)
     ss_poly = steady_state_polynomial(rs, ps, u0)
     sols = HC.real_solutions(HC.solve(ss_poly; kwargs...))
     reorder_sols!(sols, ss_poly, rs)
@@ -57,8 +57,8 @@ end
 
 # If u0s are not given while conservation laws are present, throws an error.
 function conservationlaw_errorcheck(rs, pre_varmap)
-    vars_with_vals = Set(p[1] for p in pre_varpmap) 
-    issubset(species(rs), vars_with_vals) && return
+    vars_with_vals = Set(p[1] for p in pre_varmap)
+    isempty(intersect(species(rs), vars_with_vals)) || return
     isempty(conservedequations(rs)) || 
         error("The system has conservation laws but initial conditions were not provided for all species.")
 end
