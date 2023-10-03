@@ -59,7 +59,8 @@ hc_steady_states(wilhelm_2009_model, ps; u0)
 ```
 
 ## Final notes
-- `hc_steady_states` supports any systems where all rates are systems of rational polynomial (such as hill functions with integer hill coefficients).
+- `hc_steady_states` supports any systems where all rates are systems of rational polynomials (such as Hill functions with integer Hill coefficients).
+
 - Additional arguments provided to `hc_steady_states` are automatically passed to HomotopyContinuation's `solve` command. Use e.g. `show_progress=false` to disable the progress bar.
 ---
 
