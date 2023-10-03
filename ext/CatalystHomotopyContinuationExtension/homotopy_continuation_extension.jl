@@ -38,7 +38,7 @@ function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative=true,
     ss_poly = steady_state_polynomial(rs, ps, u0)
     sols = HC.real_solutions(HC.solve(ss_poly; kwargs...))
     reorder_sols!(sols, ss_poly, rs)
-    return (filter_negative ? filter_negative_f(sols; neg_thres=neg_thres) : sols)
+    return (filter_negative ? filter_negative_f(sols; neg_thres) : sols)
 end
 
 # For a given reaction system, paraemter values, and initial conditions, find the polynomial that HC solves to find steady states.
