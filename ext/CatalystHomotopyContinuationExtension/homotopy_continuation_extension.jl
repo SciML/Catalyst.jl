@@ -8,9 +8,9 @@ Uses homotopy continuation via HomotopyContinuation.jl to find the steady states
 Arguments:
 - `rs::ReactionSystem`: The reaction system for which we want to find the steady states.
 - `ps`: The parameter values for which we want to find the steady states.
-- `filter_negative=true`: If set to true, solutions with any species concentration <0 is removed from the output.
+- `filter_negative=true`: If set to true, solutions with any species concentration <neg_thres is removed from the output.
 - `neg_thres=-1e-20`: Determine the minimum values for which a species concentration is to be considred non-negative. Species conentrations ``> neg_thres`` but `< 0.0` are set to `0.0`.
-- `u0=typeof(ps)()`: Initial conditions for which we want to find the steady states. For systems with conservation laws this are required to compute conserved quantities.
+- `u0=nothing`: Initial conditions for which we want to find the steady states. For systems with conservation laws this are required to compute conserved quantities.
 - `kwargs...`: any additional arguments (like `show_progress= true`) are passed into HomotopyContinuation.jl's `solve` call. 
 
 Examples
@@ -34,7 +34,7 @@ gives
 Notes:
 ```
   """
-function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative=true, neg_thres=-1e-20, u0=typeof(ps)(), kwargs...)
+function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative=true, neg_thres=-1e-20, u0=nothing, kwargs...)
     ss_poly = steady_state_polynomial(rs, ps, u0)
     sols = HC.real_solutions(HC.solve(ss_poly; kwargs...))
     reorder_sols!(sols, ss_poly, rs)
@@ -44,7 +44,7 @@ end
 # For a given reaction system, paraemter values, and initial conditions, find the polynomial that HC solves to find steady states.
 function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     ns = convert(NonlinearSystem, rs; remove_conserved = true)
-    pre_varmap = map(pair -> pair::Pair{Num,Float64}, [symmap_to_varmap(rs,u0); symmap_to_varmap(rs,ps)]) 
+    pre_varmap = map(pair -> pair, [symmap_to_varmap(rs,u0); symmap_to_varmap(rs,ps)]) 
     conservationlaw_errorcheck(rs, pre_varmap)
     p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns); defaults = ModelingToolkit.defaults(ns))
     p_dict  = Dict(parameters(ns) .=> p_vals)
@@ -58,7 +58,6 @@ end
 # If u0s are not given while conservation laws are present, throws an error.
 function conservationlaw_errorcheck(rs, pre_varmap)
     vars_with_vals = Set(p[1] for p in pre_varpmap) 
-    union!(vars_with_vals, keys(ModelingToolkit.defaults(rs))
     issubset(species(rs), vars_with_vals) && return
     isempty(conservedequations(rs)) || 
         error("The system has conservation laws but initial conditions were not provided for all species.")
@@ -89,8 +88,12 @@ end
 make_int_exps(expr) = wrap(Rewriters.Postwalk(Rewriters.PassThrough(___make_int_exps))(unwrap(expr))).val
 function ___make_int_exps(expr)
     !istree(expr) && return expr
-    if (operation(expr) == ^) && isinteger(arguments(expr)[2])
-        return arguments(expr)[1] ^ Int64(arguments(expr)[2])
+    if (operation(expr) == ^) 
+        if isinteger(arguments(expr)[2])
+            return arguments(expr)[1] ^ Int64(arguments(expr)[2])
+        else
+            error("An non integer ($(arguments(expr)[2])) was found as a variable exponent. Non-integer exponents are not supported for homotopy continuation based steady state finding.")
+        end
     end
 end
 
