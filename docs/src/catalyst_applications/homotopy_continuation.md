@@ -50,7 +50,7 @@ two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 ```
-To find the steady states of these, an initial condition must also be provided (which is used to compute the system's conserved quantities, in this case `X1+X2`):
+Catalyst allows the conservation laws of such systems to be computed using the `conservationlaws` function. By using these to reduce the dimensionality of the system, as well specifying the initial amount of each species, HomotopyContinuation can again be used to find steady states. To find the steady states using the Catalyst interface to HomotopyContinuation, an initial condition must be provided (which is used to compute the system's conserved quantities, in this case `X1+X2`):
 ```@example hc3
 ps = [:k1 => 2.0, :k2 => 1.0]
 u0 = [:X1 => 1.0, :X2 => 1.0]
