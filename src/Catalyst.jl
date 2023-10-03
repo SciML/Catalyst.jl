@@ -106,8 +106,5 @@ export balance_reaction
 # HomotopyContinuation
 function hc_steady_states end
 export hc_steady_states
-if !isdefined(Base, :get_extension) # Workaround for 1.6 compatibility.
-    include("../ext/CatalystHomotopyContinuationExtension.jl")
-end
 
 end # module
