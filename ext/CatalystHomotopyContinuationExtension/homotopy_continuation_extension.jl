@@ -60,8 +60,8 @@ function conservationlaw_errorcheck(rs, pre_varmap)
     vars_with_vals = Set(p[1] for p in pre_varpmap) 
     union!(vars_with_vals, keys(ModelingToolkit.defaults(rs))
     issubset(species(rs), vars_with_vals) && return
-    isempty(conservedequations(rs)) && return 
-    error("The system have conservation laws but no initial conditions were provided. Please provide initial conditions.")
+    isempty(conservedequations(rs)) || 
+        error("The system has conservation laws but initial conditions were not provided for all species.")
 end
 
 # Unfolds a function (like mm or hill). 
