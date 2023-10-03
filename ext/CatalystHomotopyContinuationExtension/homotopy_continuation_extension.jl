@@ -3,7 +3,7 @@
 """
     hc_steady_states(rs::ReactionSystem, ps; filter_negative=true, neg_thres=-1e-20, u0=typeof(ps)(), kwargs...)
 
-Uses homotopy continuation to find the steady states of the ODE system corresponding to the provided reaction system.
+Uses homotopy continuation via HomotopyContinuation.jl to find the steady states of the ODE system corresponding to the provided reaction system.
 
 Arguments:
 - `rs::ReactionSystem`: The reaction system for which we want to find the steady states.
@@ -32,14 +32,13 @@ gives
 ```
 
 Notes:
-- This is a wrapper around the `solve` function provided by HomotopyContinuation.jl, all credit for this functionality to that package's authors.
 ```
   """
 function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative=true, neg_thres=-1e-20, u0=typeof(ps)(), kwargs...)
     ss_poly = steady_state_polynomial(rs, ps, u0)
     sols = HC.real_solutions(HC.solve(ss_poly; kwargs...))
     reorder_sols!(sols, ss_poly, rs)
-    return (filter_negative ? filter_negative_f(sols; neg_thres=neg_thres) : sols)
+    return (filter_negative ? filter_negative_f(sols; neg_thres) : sols)
 end
 
 # For a given reaction system, paraemter values, and initial conditions, find the polynomial that HC solves to find steady states.
@@ -58,10 +57,11 @@ end
 
 # If u0s are not given while conservation laws are present, throws an error.
 function conservationlaw_errorcheck(rs, pre_varmap)
-    vars_with_vals = union(first.(pre_varmap), keys(ModelingToolkit.defaults(rs)))
-    isempty(intersect(species(rs), vars_with_vals)) || return
-    isempty(conservedequations(rs)) && return 
-    error("The system have conservation laws but no initial conditions were provided. Please provide initial conditions.")
+    vars_with_vals = Set(p[1] for p in pre_varpmap) 
+    union!(vars_with_vals, keys(ModelingToolkit.defaults(rs))
+    issubset(species(rs), vars_with_vals) && return
+    isempty(conservedequations(rs)) || 
+        error("The system has conservation laws but initial conditions were not provided for all species.")
 end
 
 # Unfolds a function (like mm or hill). 
@@ -118,7 +118,7 @@ end
 # Filters away solutions with negative species concentrations (and for neg_thres < val < 0.0, sets val=0.0).
 function filter_negative_f(sols; neg_thres=-1e-20)
     for sol in sols, idx in 1:length(sol)
-        (neg_thres < sol[idx] < 0.0) && (sol[idx] = 0.0)
+        (neg_thres < sol[idx] < 0) && (sol[idx] = 0)
     end
-    return filter(sol -> all(>=(0.0), sol), sols)
+    return filter(sol -> all(>=(0), sol), sols)
 end
