@@ -32,7 +32,6 @@ gives
 ```
 
 Notes:
-- This is a wrapper around the `solve` function provided by HomotopyContinuation.jl, all credit for this functionality to that package's authors.
 ```
   """
 function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative=true, neg_thres=-1e-20, u0=typeof(ps)(), kwargs...)
