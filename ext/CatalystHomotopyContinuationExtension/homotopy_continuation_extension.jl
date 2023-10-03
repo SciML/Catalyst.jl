@@ -59,7 +59,7 @@ end
 function conservationlaw_errorcheck(rs, pre_varmap)
     vars_with_vals = Set(p[1] for p in pre_varpmap) 
     union!(vars_with_vals, keys(ModelingToolkit.defaults(rs))
-    isempty(intersect(species(rs), vars_with_vals)) || return
+    issubset(species(rs), vars_with_vals) && return
     isempty(conservedequations(rs)) && return 
     error("The system have conservation laws but no initial conditions were provided. Please provide initial conditions.")
 end
