@@ -54,7 +54,8 @@ Catalyst allows the conservation laws of such systems to be computed using the `
 ```@example hc3
 ps = [:k1 => 2.0, :k2 => 1.0]
 u0 = [:X1 => 1.0, :X2 => 1.0]
-hc_steady_states(wilhelm_2009_model, ps; u0=u0)
+hc_steady_states(wilhelm_2009_model, ps; u0)
+
 ```
 
 ## Final notes
