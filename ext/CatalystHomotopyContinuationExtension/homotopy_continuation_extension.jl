@@ -3,7 +3,7 @@
 """
     hc_steady_states(rs::ReactionSystem, ps; filter_negative=true, neg_thres=-1e-20, u0=typeof(ps)(), kwargs...)
 
-Uses homotopy continuation to find the steady states of the ODE system corresponding to the provided reaction system.
+Uses homotopy continuation via HomotopyContinuation.jl to find the steady states of the ODE system corresponding to the provided reaction system.
 
 Arguments:
 - `rs::ReactionSystem`: The reaction system for which we want to find the steady states.
