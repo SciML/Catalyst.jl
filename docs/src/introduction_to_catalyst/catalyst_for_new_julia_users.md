@@ -39,18 +39,18 @@ Finally, we note that the first time some code is run in Julia, it has to be *co
 ```@example ex1
 rand(100, 100)^3.5;
 ```
-(This code creates a random 100x100 matrix, and take it to the power of 3.5)
+(This code creates a random 100x100 matrix, and takes it to the power of 3.5)
 
 This is useful to know when you e.g. declare, simulate, or plot, a Catalyst model. The first time you run a command there might be a slight delay. However, subsequent runs will execute much quicker. This holds even if you do minor adjustments before the second run (such as changing simulation initial conditions).
 
 ## Installing and activating packages
-Except for some base Julia packages (such as `Pkg`, the package manager) that are available by default, Julia packages must be installed locally before they can be used. Most packages are registered with Julia, and can be added through the `Pkg.add("DesiredPackage")` command (where `DesiredPackage` is the name of the package you wish to install). We can thus install Catalyst:
+Except for some base Julia packages (such as Pkg, the package manager) that are available by default, Julia packages must be installed locally before they can be used. Most packages are registered with Julia, and can be added through the `Pkg.add("DesiredPackage")` command (where `DesiredPackage` is the name of the package you wish to install). We can thus install Catalyst:
 ```julia
 using Pkg
 Pkg.add("Catalyst")
 ```
 
-Here, the command `using Pkg` is required to activate the Pkg` package manager.
+Here, the command `using Pkg` is required to activate the Pkg package manager.
 
 Next, we also wish to add the `DifferentialEquations` and `Plots` packages (for numeric simulation of models, and plotting, respectively).
 ```julia
