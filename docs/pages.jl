@@ -15,6 +15,7 @@ pages = Any["Home" => "index.md",
                                            "catalyst_applications/homotopy_continuation.md",
                                            "catalyst_applications/bifurcation_diagrams.md"],
 <<<<<<< refs/remotes/origin/master
+<<<<<<< refs/remotes/origin/master
             "Inverse Problems" => Any["inverse_problems/parameter_estimation.md",
                                       "petab_ode_param_fitting.md"],
 =======
@@ -26,5 +27,8 @@ pages = Any["Home" => "index.md",
                                       "example_networks/smoluchowski_coagulation_equation.md"],
 =======
 >>>>>>> update
+=======
+            "Inverse Problems" => Any["inverse_problems/parameter_estimation.md"],
+>>>>>>> merge fix
             "FAQs" => "faqs.md",
             "API" => "api/catalyst_api.md"]
