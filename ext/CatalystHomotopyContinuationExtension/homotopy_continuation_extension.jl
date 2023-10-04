@@ -44,7 +44,7 @@ end
 # For a given reaction system, parameter values, and initial conditions, find the polynomial that HC solves to find steady states.
 function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     ns = convert(NonlinearSystem, rs; remove_conserved = true)
-    pre_varmap = map(pair -> pair, [symmap_to_varmap(rs,u0)..., symmap_to_varmap(rs,ps)...]) 
+    pre_varmap = [symmap_to_varmap(rs,u0)..., symmap_to_varmap(rs,ps)...]
     conservationlaw_errorcheck(rs, pre_varmap)
     p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns); defaults = ModelingToolkit.defaults(ns))
     p_dict  = Dict(parameters(ns) .=> p_vals)
