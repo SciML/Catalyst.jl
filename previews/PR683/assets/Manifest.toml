@@ -937,9 +937,9 @@ version = "2.1.91+0"
 
 [[deps.JuliaFormatter]]
 deps = ["CSTParser", "CommonMark", "DataStructures", "Glob", "Pkg", "PrecompileTools", "Tokenize"]
-git-tree-sha1 = "c0ac2f93058fd148267154c42dd7dc79869f7923"
+git-tree-sha1 = "d6bb89d51ec10f6b0110c2aa27721a0cf3d58c7d"
 uuid = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
-version = "1.0.37"
+version = "1.0.38"
 
 [[deps.JumpProcesses]]
 deps = ["ArrayInterface", "DataStructures", "DiffEqBase", "DocStringExtensions", "FunctionWrappers", "Graphs", "LinearAlgebra", "Markdown", "PoissonRandom", "Random", "RandomNumbers", "RecursiveArrayTools", "Reexport", "SciMLBase", "StaticArrays", "TreeViews", "UnPack"]
@@ -1510,9 +1510,9 @@ version = "10.42.0+0"
 
 [[deps.PDMats]]
 deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
-git-tree-sha1 = "35882aa39079c44ea6c1f07827f98dc78bf1ce91"
+git-tree-sha1 = "1f2f6bb484346b40bc48f4b5b4ab79cab482a352"
 uuid = "90014a1f-27ba-587c-ab20-58faa44d9150"
-version = "0.11.22"
+version = "0.11.23"
 
 [[deps.PackageExtensionCompat]]
 git-tree-sha1 = "fb28e33b8a95c4cee25ce296c817d89cc2e53518"
