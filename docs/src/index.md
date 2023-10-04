@@ -130,7 +130,7 @@ Slack's](https://julialang.slack.com) \#sciml-bridged and \#sciml-sysbio channel
 For bugs or feature requests [open an
 issue](https://github.com/SciML/Catalyst.jl/issues).
 
-## Supporting and Citing Catalyst.jl
+## [Supporting and Citing Catalyst.jl](@id catalyst_citation)
 The software in this ecosystem was developed as part of academic research. If you would like to help support it,
 please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part
 of your research, teaching, or other activities, we would be grateful if you could cite our work:
