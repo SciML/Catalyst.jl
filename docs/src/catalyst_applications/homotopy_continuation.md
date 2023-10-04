@@ -60,12 +60,12 @@ hc_steady_states(wilhelm_2009_model, ps; u0)
 
 ## Final notes
 - `hc_steady_states` supports any systems where all rates are systems of rational polynomials (such as Hill functions with integer Hill coefficients).
-
+- When providing initial conditions to compute conservation laws, values are only required for those species that are part of conserved quantities. If this set of species is unknown, it is recommended to provide initial conditions for all species. 
 - Additional arguments provided to `hc_steady_states` are automatically passed to HomotopyContinuation's `solve` command. Use e.g. `show_progress=false` to disable the progress bar.
 ---
 
 ## [Citation](@id homotopy_continuation_citation)
-If you use this functionality in your reasearch, please cite the following paper to support the authors of the HomotopyContinuation package:
+If you use this functionality in your research, please cite the following paper to support the authors of the HomotopyContinuation package:
 ```
 @inproceedings{HomotopyContinuation.jl,
   title={{H}omotopy{C}ontinuation.jl: {A} {P}ackage for {H}omotopy {C}ontinuation in {J}ulia},

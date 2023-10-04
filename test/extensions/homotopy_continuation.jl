@@ -6,7 +6,7 @@ import HomotopyContinuation
 
 # Tests for network without conservation laws.
 # Tests for Symbol parameter input.
-# Tests for Symbolics initial condiiton input.
+# Tests for Symbolics initial condition input.
 # Tests for different types (Symbol/Symbolics) for parameters and initial conditions.
 # Tests that attempts to find steady states of system with conservation laws, while u0 is not provided, gives an error.
 let 
@@ -47,8 +47,9 @@ let
 end
 
 # Tests that reordering is correct.
-# Tests corectness in presence of default values.
-# Tests where some defaul values are overwritten with other values
+# Tests correctness in presence of default values.
+# Tests where some default values are overwritten with other values.
+# Tests where input ps/u0 are tuples with mixed types.
 let    
     rs_1 = @reaction_network begin
         @parameters kX1=1.0 kX2=2.0 kY1=12345.0 
@@ -57,8 +58,8 @@ let
         (kY1,kY2), Y1 <--> Y2
         (kZ1,kZ2), Z1 <--> Z2
     end
-    ps = [:kY1 => 1.0, :kY2 => 3.0, :kZ1 => 1.0, :kZ2 => 4.0]
-    u0_1 = [:Y1 => 1.0, :Y2 => 3.0, :Z1 => 10.0, :Z2 =>40.0]
+    ps = (:kY1 => 1.0, :kY2 => 3, :kZ1 => 1.0, :kZ2 => 4.0)
+    u0_1 = (:Y1 => 1.0, :Y2 => 3, :Z1 => 10, :Z2 =>40.0)
     
     ss_1 = sort(hc_steady_states(rs_1, ps; u0=u0_1, show_progress=false), by=sol->sol[1])
     @test ss_1 ≈ [[0.2, 0.1, 3.0, 1.0, 40.0, 10.0]]
