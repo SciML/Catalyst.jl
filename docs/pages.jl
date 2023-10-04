@@ -15,11 +15,5 @@ pages = Any["Home" => "index.md",
                                            "catalyst_applications/homotopy_continuation.md",
                                            "catalyst_applications/bifurcation_diagrams.md"],
             "Inverse Problems" => Any["inverse_problems/parameter_estimation.md"],
-<<<<<<< HEAD
-=======
-            "Example Networks" => Any["example_networks/basic_CRN_examples.md",
-                                      "example_networks/hodgkin_huxley_equation.md",
-                                      "example_networks/smoluchowski_coagulation_equation.md"],
->>>>>>> initialise_inverse_problem_redocumentation
             "FAQs" => "faqs.md",
             "API" => "api/catalyst_api.md"]
