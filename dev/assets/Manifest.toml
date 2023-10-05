@@ -16,9 +16,9 @@ version = "0.0.1"
 
 [[deps.AbstractAlgebra]]
 deps = ["GroupsCore", "InteractiveUtils", "LinearAlgebra", "MacroTools", "Preferences", "Random", "RandomExtensions", "SparseArrays", "Test"]
-git-tree-sha1 = "1db808640788803779048afdbe359a172e62927e"
+git-tree-sha1 = "c3c29bf6363b3ac3e421dc8b2ba8e33bdacbd245"
 uuid = "c3fe647b-3220-5bb0-a1ea-a7954cac585d"
-version = "0.32.4"
+version = "0.32.5"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -223,7 +223,7 @@ version = "0.3.12"
 deps = ["DataStructures", "DiffEqBase", "DocStringExtensions", "Graphs", "JumpProcesses", "LaTeXStrings", "Latexify", "LinearAlgebra", "MacroTools", "ModelingToolkit", "Parameters", "Reexport", "Requires", "SparseArrays", "SymbolicUtils", "Symbolics", "Unitful"]
 path = "/home/runner/work/Catalyst.jl/Catalyst.jl"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
-version = "13.4.1"
+version = "13.5.0"
 weakdeps = ["HomotopyContinuation"]
 
     [deps.Catalyst.extensions]
@@ -2140,9 +2140,9 @@ version = "1.4.0"
 
 [[deps.Symbolics]]
 deps = ["ArrayInterface", "Bijections", "ConstructionBase", "DataStructures", "DiffRules", "Distributions", "DocStringExtensions", "DomainSets", "DynamicPolynomials", "Groebner", "IfElse", "LaTeXStrings", "LambertW", "Latexify", "Libdl", "LinearAlgebra", "MacroTools", "Markdown", "NaNMath", "PrecompileTools", "RecipesBase", "Reexport", "Requires", "RuntimeGeneratedFunctions", "SciMLBase", "Setfield", "SparseArrays", "SpecialFunctions", "StaticArrays", "SymbolicUtils", "TreeViews"]
-git-tree-sha1 = "f4f0129cdd274c951723e2a47ac1d486222b037c"
+git-tree-sha1 = "4e703925f8d0954974f466ee08e866b1513a6d08"
 uuid = "0c5d862f-8b57-4792-8d23-62f2024744c7"
-version = "5.7.0"
+version = "5.8.0"
 
     [deps.Symbolics.extensions]
     SymbolicsSymPyExt = "SymPy"
