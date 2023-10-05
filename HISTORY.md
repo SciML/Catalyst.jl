@@ -1,6 +1,8 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+
+## Catalyst 13.5
 - Added a CatalystHomotopyContinuationExtension extension, which exports the `hc_steady_state` function if HomotopyContinuation is exported. `hc_steady_state` finds the steady states of a reactin system using the homotopy continuation method. This feature is only available for julia versions 1.9+. Example: 
 ```julia
 wilhelm_2009_model = @reaction_network begin
