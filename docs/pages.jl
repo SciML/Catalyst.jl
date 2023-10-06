@@ -16,6 +16,7 @@ pages = Any["Home" => "index.md",
                                            "catalyst_applications/bifurcation_diagrams.md"],
 <<<<<<< refs/remotes/origin/master
 <<<<<<< refs/remotes/origin/master
+<<<<<<< refs/remotes/origin/master
             "Inverse Problems" => Any["inverse_problems/parameter_estimation.md",
                                       "petab_ode_param_fitting.md"],
 =======
@@ -30,5 +31,9 @@ pages = Any["Home" => "index.md",
 =======
             "Inverse Problems" => Any["inverse_problems/parameter_estimation.md"],
 >>>>>>> merge fix
+=======
+            "Inverse Problems" => Any["inverse_problems/parameter_estimation.md",
+                                      "inverse_problems/petab_ode_param_fitting.md"],
+>>>>>>> update
             "FAQs" => "faqs.md",
             "API" => "api/catalyst_api.md"]
