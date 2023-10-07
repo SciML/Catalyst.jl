@@ -489,8 +489,11 @@ Here, the first argument is evaluated to a scalar value, in which case it is int
 ```petab1
 event2 = PEtabEvent(S < 0.5, S + 0.5, S)
 <<<<<<< refs/remotes/origin/master
+<<<<<<< refs/remotes/origin/master
 =======
 
+>>>>>>> update
+=======
 >>>>>>> update
 ```
 
