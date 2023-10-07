@@ -18,6 +18,7 @@ pages = Any["Home" => "index.md",
 <<<<<<< refs/remotes/origin/master
 <<<<<<< refs/remotes/origin/master
             "Inverse Problems" => Any["inverse_problems/parameter_estimation.md",
+<<<<<<< refs/remotes/origin/master
                                       "petab_ode_param_fitting.md"],
 =======
             "Inverse Problems" => Any["inverse_problems/parameter_estimation.md"],
@@ -33,6 +34,9 @@ pages = Any["Home" => "index.md",
 >>>>>>> merge fix
 =======
             "Inverse Problems" => Any["inverse_problems/parameter_estimation.md",
+                                      "inverse_problems/petab_ode_param_fitting.md"],
+>>>>>>> update
+=======
                                       "inverse_problems/petab_ode_param_fitting.md"],
 >>>>>>> update
             "FAQs" => "faqs.md",
