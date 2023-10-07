@@ -421,6 +421,10 @@ event1 = PEtabEvent(5.0, S + 0.5, S)
 Here, the first argument is evaluated to a scalar value, in which case it is interpreted as a time point at which the event happens. If we instead want the event to happen whenever the concentration of `S` falls below `0.5` we set the first argument to a boolean condition indicating this:
 ```petab1
 event2 = PEtabEvent(S < 0.5, S + 0.5, S)
+<<<<<<< HEAD
+=======
+
+>>>>>>> PEtab_tutorial
 ```
 
 Whenever we have several events or not, we bundle them together in a single vector which is later passed to the `PEtabODEProblem` using the `events` argument:
