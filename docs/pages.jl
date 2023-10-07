@@ -15,6 +15,13 @@ pages = Any["Home" => "index.md",
                                            "catalyst_applications/homotopy_continuation.md",
                                            "catalyst_applications/bifurcation_diagrams.md"],
             "Inverse Problems" => Any["inverse_problems/parameter_estimation.md",
+<<<<<<< HEAD
                                       "inverse_problems/petab_ode_param_fitting.md"],
+=======
+                                      "petab_ode_param_fitting.md"],
+            "Example Networks" => Any["example_networks/basic_CRN_examples.md",
+                                      "example_networks/hodgkin_huxley_equation.md",
+                                      "example_networks/smoluchowski_coagulation_equation.md"],
+>>>>>>> PEtab_tutorial
             "FAQs" => "faqs.md",
             "API" => "api/catalyst_api.md"]
