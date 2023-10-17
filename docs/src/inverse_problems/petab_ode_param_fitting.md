@@ -259,7 +259,7 @@ nothing # hide
 Note that the `u0` we pass into `PEtabModel` through the `state_map` argument no longer contains the value of *S* (as it is provided by the conditions). 
 
 ### [Varying parameters between different simulation conditions](@id petab_simulation_conditions)
-Sometimes, the parameters that are used vary between the different conditions. Consider our catalysis example, if we had performed the experiment twice, using two different enzymes with different catalytic properties, this could have generated such conditions. The two enzymes could e.g. yield different rates (*kP₁* and *kP₂*) for the `SE --> P + E` reaction, but otherwise be identical. Here, the parameters *kP₁* and *kP₂* are unique to their respective conditions. PEtab.jl provides support for cases such as this, and [its documentation](https://sebapersson.github.io/PEtab.jl/dev/Beer/) provided instructions of how to handle them.
+Sometimes, the parameters that are used vary between the different conditions. Consider our catalysis example, if we had performed the experiment twice, using two different enzymes with different catalytic properties, this could have generated such conditions. The two enzymes could e.g. yield different rates (*kP₁* and *kP₂*) for the `SE --> P + E` reaction, but otherwise be identical. Here, the parameters *kP₁* and *kP₂* are unique to their respective conditions. PEtab.jl provides support for cases such as this, and [its documentation](https://sebapersson.github.io/PEtab.jl/stable/Julia_condition_specific/) provided instructions of how to handle them.
 
 ## [Additional features: Initial conditions](@id petab_simulation_initial_conditions)
 
