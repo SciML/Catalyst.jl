@@ -135,16 +135,18 @@ The software in this ecosystem was developed as part of academic research. If yo
 please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part
 of your research, teaching, or other activities, we would be grateful if you could cite our work:
 ```
-@article {2022Catalyst,
-	author = {Loman, T. and Ma, Y. and Ilin, V. and Gowda, S. and Korsbo, N. and Yewale, N. and Rackauckas, C. V. and Isaacson, S. A.},
-	title = {Catalyst: Fast Biochemical Modeling with Julia},
-	elocation-id = {2022.07.30.502135},
-	year = {2022},
-	doi = {10.1101/2022.07.30.502135},
-	publisher = {Cold Spring Harbor Laboratory},
-	URL = {https://www.biorxiv.org/content/early/2022/08/02/2022.07.30.502135},
-	eprint = {https://www.biorxiv.org/content/early/2022/08/02/2022.07.30.502135.full.pdf},
-	journal = {bioRxiv}
+@article{CatalystPLOSCompBio2023,
+    doi = {10.1371/journal.pcbi.1011530},
+    author = {Loman, Torkel E. AND Ma, Yingbo AND Ilin, Vasily AND Gowda, Shashi AND Korsbo, Niklas AND Yewale, Nikhil AND Rackauckas, Chris AND Isaacson, Samuel A.},
+    journal = {PLOS Computational Biology},
+    publisher = {Public Library of Science},
+    title = {Catalyst: Fast and flexible modeling of reaction networks},
+    year = {2023},
+    month = {10},
+    volume = {19},
+    url = {https://doi.org/10.1371/journal.pcbi.1011530},
+    pages = {1-19},
+    number = {10},
 }
 ```
 
