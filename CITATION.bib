@@ -1,13 +1,17 @@
-@article {2022Catalyst,
-	author = {Loman, T. and Ma, Y. and Ilin, V. and Gowda, S. and Korsbo, N. and Yewale, N. and Rackauckas, C. V. and Isaacson, S. A.},
-	title = {Catalyst: Fast Biochemical Modeling with Julia},
-	elocation-id = {2022.07.30.502135},
-	year = {2022},
-	doi = {10.1101/2022.07.30.502135},
-	publisher = {Cold Spring Harbor Laboratory},
-	URL = {https://www.biorxiv.org/content/early/2022/08/02/2022.07.30.502135},
-	eprint = {https://www.biorxiv.org/content/early/2022/08/02/2022.07.30.502135.full.pdf},
-	journal = {bioRxiv}
+@article{CatalystPLOSCompBio2023,
+    doi = {10.1371/journal.pcbi.1011530},
+    author = {Loman, Torkel E. AND Ma, Yingbo AND Ilin, Vasily AND Gowda, Shashi AND Korsbo, Niklas AND Yewale, Nikhil AND Rackauckas, Chris AND Isaacson, Samuel A.},
+    journal = {PLOS Computational Biology},
+    publisher = {Public Library of Science},
+    title = {Catalyst: Fast and flexible modeling of reaction networks},
+    year = {2023},
+    month = {10},
+    volume = {19},
+    url = {https://doi.org/10.1371/journal.pcbi.1011530},
+    pages = {1-19},
+    abstract = {We introduce Catalyst.jl, a flexible and feature-filled Julia library for modeling and high-performance simulation of chemical reaction networks (CRNs). Catalyst supports simulating stochastic chemical kinetics (jump process), chemical Langevin equation (stochastic differential equation), and reaction rate equation (ordinary differential equation) representations for CRNs. Through comprehensive benchmarks, we demonstrate that Catalyst simulation runtimes are often one to two orders of magnitude faster than other popular tools. More broadly, Catalyst acts as both a domain-specific language and an intermediate representation for symbolically encoding CRN models as Julia-native objects. This enables a pipeline of symbolically specifying, analyzing, and modifying CRNs; converting Catalyst models to symbolic representations of concrete mathematical models; and generating compiled code for numerical solvers. Leveraging ModelingToolkit.jl and Symbolics.jl, Catalyst models can be analyzed, simplified, and compiled into optimized representations for use in numerical solvers. Finally, we demonstrate Catalyst’s broad extensibility and composability by highlighting how it can compose with a variety of Julia libraries, and how existing open-source biological modeling projects have extended its intermediate representation.},
+    number = {10},
+
 }
 
 @misc{ma2021modelingtoolkit,
