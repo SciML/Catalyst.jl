@@ -143,3 +143,70 @@ scatter!(sample_times,sample_vals'; color = [:blue :red],
 plot!(sol_estimate; color = [:darkblue :darkred], linestyle = :dash,
                     label = ["X estimated" "Y estimated"], xlimit = tspan)
 ```
+
+## Example: discrete event model 
+As we defined in the Constraint Equations and Event [Tutorial](https://docs.sciml.ai/Catalyst/stable/catalyst_functionality/constraint_equations/), 
+```@example pe1
+switch_time = 2.0 
+
+@variables t 
+@parameters k_on k_off
+@species A(t) B(t)
+
+rxs = [(@reaction k_on, A --> B), (@reaction k_off, B --> A)]
+discrete_events = (t == switch_time) => [k_on ~ 0.0]
+
+u0 = [:A => 10.0, :B => 0.0]
+tspan = (0.0, 4.0)
+p_real = [k_on => 100.0, k_off => 10.0]
+@named osys = ReactionSystem(rxs, t, [A, B], [k_on, k_off]; discrete_events)
+```
+Note that here `switch_time` is hard coded. Again, we create sample data points by simulating our model and adding noise. 
+```@example pe1
+sample_times = range(tspan[1]; stop = tspan[2], length = 1001) 
+oprob = ODEProblem(osys, u0, tspan, p_real)
+sol_real = solve(oprob, Tsit5(); tstops = sample_times)
+sample_vals = Array(sol_real(sample_times))
+sample_vals .*= (1 .+ .1 * rand(Float64, size(sample_vals)) .- .05)
+
+default(; lw = 3, framestyle = :box, size = (800, 400))
+plot(sol_real; legend = nothing, color = [:darkblue :darkred])
+scatter!(sample_times, sample_vals'; color = [:blue :red], legend = nothing)
+```
+Now we define a function to fit our model. In this case, instead of `ADAM`, we are using `NelderMead()` because our model has an undefined derivative at `switch_time`. Additionally, `Optimization.AutoZygote()` is not necessary for gradient free optimizations. 
+
+```@example pe1
+#for the NelderMead() optimiser
+using OptimizationOptimJL 
+
+function optimise_p(pinit, tend)
+    function loss(p, _)
+        newtimes = filter(<=(tend), sample_times)
+        newprob = remake(oprob; tspan = (0.0, tend), p = p)
+        sol = Array(solve(newprob, Tsit5(); saveat = newtimes, tstops = switch_time))
+        loss = sum(abs2, sol .- sample_vals[:, 1:size(sol,2)])
+        return loss, sol
+    end
+
+    optf = OptimizationFunction(loss)
+    
+    optprob = OptimizationProblem(optf, pinit)
+    sol = solve(optprob, Optim.NelderMead())
+
+    return sol.u
+end
+```
+First we fit our function on a time interval before, `switch_time`. 
+```@example pe1
+p_estimate = optimise_p([100.0, 10.0], 1.5)
+```
+Next, we use this parameter estimate as an input to our second iteration of fitting, this time on the time interval `(0.0, 4.0)`.
+```@example pe1
+newprob = remake(oprob; tspan = (0.0, 4.0), p = p_estimate)
+newsol = solve(newprob, Tsit5(); tstops = switch_time)
+
+plot(sol_real; legend = nothing, color = [:darkblue :darkred])
+scatter!(sample_times, sample_vals'; color = [:blue :red], legend = nothing)
+
+plot!(newsol; legend = nothing, color = [:darkblue :darkred], linestyle = :dash)
+```
