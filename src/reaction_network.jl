@@ -15,7 +15,7 @@ has been deprecated in favor of a notation where the parameters are inferred, e.
 @reaction_network begin
     p, 0 --> X
     d, X --> 0
-end p d
+end 
 ```
 
 Parameters and species can be explicitly indicated using the @parameters and @species
