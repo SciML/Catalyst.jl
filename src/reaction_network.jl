@@ -123,7 +123,7 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs)
+const option_keys = (:species, :parameters, :variables, :ivs, :discrete_events, :continuous_events)
 
 ### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)
@@ -154,6 +154,14 @@ macro species(ex...)
     vars.args[idx] = lastarg
 
     esc(vars)
+end
+
+macro discrete_events(ex...)
+    ex
+end
+
+macro continuous_events(ex...)
+    ex
 end
 
 ### The main macro, takes reaction network notation and returns a ReactionSystem. ###
@@ -354,15 +362,20 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     reaction_lines = Expr[x for x in ex.args if x.head == :tuple]
     option_lines = Expr[x for x in ex.args if x.head == :macrocall]
 
+    @show option_lines
+
     # Get macro options.
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
                        option_lines))
 
+    @show options
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
     species_declared = extract_syms(options, :species)
     parameters_declared = extract_syms(options, :parameters)
     variables = extract_syms(options, :variables)
+    discrete_e = extract_discrete_events(options)
+    continuous_e = extract_continuous_events(options)
 
     # handle independent variables
     if haskey(options, :ivs)
@@ -413,7 +426,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
         Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, union($spssym, $varssym),
                                               $pssym; name = $name,
-                                              spatial_ivs = $sivs)
+                                              spatial_ivs = $sivs,
+                                              discrete_events = $discrete_e,
+                                              continuous_events = $continuous_e)
     end
 end
 
@@ -474,6 +489,51 @@ function extract_syms(opts, vartype::Symbol)
     return syms
 end
 
+# When the user have used the @continuous_events option, extract continuous events
+function extract_continuous_events(opts)
+    events = Vector{Equation}[]
+    if haskey(opts, :continuous_event)
+        push!(events, opts[:continuous_events])
+    end
+    if length(events)==0
+        return nothing
+    else
+        return events
+    end
+end
+
+# When the user have used the @discrete_events option, extract discrete events
+#function extract_discrete_events(opts)
+    #events = Expr[]
+    #if haskey(opts, :discrete_events)
+        #push!(events, opts[:discrete_events])
+    #end
+    #if length(events)==0
+        #return nothing
+    #else
+        #return events
+    #end
+#end
+
+#this is interpolating rather than quoting. why does it need to be quoting? 
+function extract_discrete_events(opts)
+    events = []
+    if haskey(opts, :discrete_events)
+        ex = quote 
+            $(opts[:discrete_events])
+        end
+        ex1 = MacroTools.striplines(ex)
+        ex2 = ex1.args[1].args[end].args
+        push!(events, ex2)
+    end
+    if length(events)==0
+        return nothing
+    else
+        return events
+    end
+end
+
+#interp
 # Function looping through all reactions, to find undeclared symbols (species or
 # parameters), and assign them to the right category.
 function extract_species_and_parameters!(reactions, excluded_syms)
