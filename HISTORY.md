@@ -2,6 +2,19 @@
 
 ## Catalyst unreleased (master branch)
 
+## Catalyst 13.5
+- Added a CatalystHomotopyContinuationExtension extension, which exports the `hc_steady_state` function if HomotopyContinuation is exported. `hc_steady_state` finds the steady states of a reactin system using the homotopy continuation method. This feature is only available for julia versions 1.9+. Example: 
+```julia
+wilhelm_2009_model = @reaction_network begin
+    k1, Y --> 2X
+    k2, 2X --> X + Y
+    k3, X + Y --> Y
+    k4, X --> 0
+end
+ps = [:k1 => 8.0, :k2 => 2.0, :k3 => 1.0, :k4 => 1.5]
+hc_steady_states(wilhelm_2009_model, ps)
+```
+
 ## Catalyst 13.4
 - Added the ability to create species that represent chemical compounds and know
   their constituents. For example, water can be created and queried as
