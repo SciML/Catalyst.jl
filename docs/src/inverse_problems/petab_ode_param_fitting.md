@@ -197,6 +197,7 @@ to set a normally distributed prior (with mean `1.0` and standard deviation `0.2
 ```petab1
 par_kB = PEtabParameter(:kB; prior=Normal(1.0,0.2), prior_on_linear_scale=false)
 ```
+In this example, setting `prior_on_linear_scale=false` make sense as a (linear) normal distribution is non-zero for negative values (an alternative is to use a log-normal distribution, e.g. `prior=LogNormal(3.0, 3.0)`).
 
 ## [Simulation conditions](@id petab_simulation_conditions)
 Sometimes, we have data from several different experimental conditions. Here, when a potential parameter set is evaluated during the fitting process, each experimental condition corresponds to one simulation condition (which produces one simulation). To account for this, PEtab permits the user to define several different simulation conditions, with each condition being defined by specific values for some initial conditions and/or parameters. 
@@ -427,6 +428,7 @@ Here, the first argument is evaluated to a scalar value, in which case it is int
 ```petab1
 event2 = PEtabEvent(S < 0.5, S + 0.5, S)
 ```
+Here, the event only triggers whenever the condition changes from `false` to `true`, and not while it remains `true` (or when changing from `true` to `false`). E.g. this event only triggers when `S` concentration passes from more than *5.0* to less that *5.0*.
 
 Whenever we have several events or not, we bundle them together in a single vector which is later passed to the `PEtabODEProblem` using the `events` argument:
 ```petab1
@@ -466,7 +468,7 @@ There exist several types of plots for both types of calibration results. More d
 If you use this functionality in your research, [in addition to Catalyst](@ref catalyst_citation), please cite the following papers to support the authors of the PEtab.jl package (currently there is no article associated with this package) and the PEtab standard:
 ```
 @misc{2023Petabljl,
-  author       = {Ognissanti, Damiano and Arutjunjan, Rafael and Persson, Sebastian and Hasselgren, Viktor},
+  author       = {Ognissanti, Damiano AND Arutjunjan, Rafael AND Persson, Sebastian AND Hasselgren, Viktor},
   title        = {{2023Petabljl.jl}},
   howpublished = {\url{https://github.com/sebapersson/PEtab.jl/}},
   year         = {2023}
