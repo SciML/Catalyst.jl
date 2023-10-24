@@ -24,9 +24,11 @@ Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [weakdeps]
+BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
 HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
 
 [extensions]
+CatalystBifurcationKitExtension = "BifurcationKit"
 CatalystHomotopyContinuationExtension = "HomotopyContinuation"
 
 [compat]
@@ -50,6 +52,7 @@ Unitful = "1.12.4"
 julia = "1.9"
 
 [extras]
+BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
 DomainSets = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
 Graphviz_jll = "3c863552-8265-54e4-a6dc-903eb78fde85"
 HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
@@ -68,4 +71,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [targets]
-test = ["DomainSets", "Graphviz_jll", "HomotopyContinuation", "NonlinearSolve", "OrdinaryDiffEq", "Random", "SafeTestsets", "SciMLBase", "SciMLNLSolve", "StableRNGs", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "Unitful"]
+test = ["BifurcationKit", "DomainSets", "Graphviz_jll", "HomotopyContinuation", "NonlinearSolve", "OrdinaryDiffEq", "Random", "SafeTestsets", "SciMLBase", "SciMLNLSolve", "StableRNGs", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "Test", "Unitful"]

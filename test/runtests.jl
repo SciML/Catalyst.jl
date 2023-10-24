@@ -55,6 +55,7 @@ using SafeTestsets
     
     ### Tests extensions. ###
     if VERSION >= v"1.9"
-        @time @safetestset "Homotopy Continuation Extension" begin include("extensions/homotopy_continuation.jl") end
+        @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
+        @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
     end
 end # @time
