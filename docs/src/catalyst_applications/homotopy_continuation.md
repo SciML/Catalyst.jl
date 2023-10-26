@@ -61,8 +61,8 @@ hc_steady_states(two_state_model, ps; u0)
 - `hc_steady_states` supports any systems where all rates are systems of rational polynomials (such as Hill functions with integer Hill coefficients).
 - When providing initial conditions to compute conservation laws, values are only required for those species that are part of conserved quantities. If this set of species is unknown, it is recommended to provide initial conditions for all species. 
 - Additional arguments provided to `hc_steady_states` are automatically passed to HomotopyContinuation's `solve` command. Use e.g. `show_progress=false` to disable the progress bar.
----
 
+---
 ## [Citation](@id homotopy_continuation_citation)
 If you use this functionality in your research, please cite the following paper to support the authors of the HomotopyContinuation package:
 ```
@@ -76,6 +76,7 @@ If you use this functionality in your research, please cite the following paper 
 }
 ```
 
+---
 ## References
 [^1]: [Thomas Wilhelm, *The smallest chemical reaction system with bistability*, BMC Systems Biology (2009).](https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-3-90)
 [^2]: [Paul Breiding, Sascha Timme, *HomotopyContinuation.jl: A Package for Homotopy Continuation in Julia*, International Congress on Mathematical Software (2018).](https://link.springer.com/chapter/10.1007/978-3-319-96418-8_54)
