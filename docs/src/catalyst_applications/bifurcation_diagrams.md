@@ -110,3 +110,7 @@ branches are connected. However, BifurcationKit.jl is a very powerful package
 capable of a lot more. For more details, please see that package's
 documentation:
 [BifurcationKit.jl](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/).
+
+---
+## References
+[^1]: [Yuri A. Kuznetsov, *Elements of Applied Bifurcation Theory*, Springer (2023).](https://link.springer.com/book/10.1007/978-3-031-22007-4)
