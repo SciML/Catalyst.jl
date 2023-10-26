@@ -131,6 +131,6 @@ For the **additive kernel** we find
 
 ---
 ## References
-1. [https://en.wikipedia.org/wiki/Smoluchowski\_coagulation\_equation](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation)
-2. Scott, W. T. (1968). Analytic Studies of Cloud Droplet Coalescence I, Journal of Atmospheric Sciences, 25(1), 54-65. Retrieved Feb 18, 2021, from https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469\_1968\_025\_0054\_asocdc\_2\_0\_co\_2.xml
-3. Ian J. Laurenzi, John D. Bartels, Scott L. Diamond, A General Algorithm for Exact Simulation of Multicomponent Aggregation Processes, Journal of Computational Physics, Volume 177, Issue 2, 2002, Pages 418-449, ISSN 0021-9991, https://doi.org/10.1006/jcph.2002.7017.
+[^1]: [https://en.wikipedia.org/wiki/Smoluchowski\_coagulation\_equation](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation)
+[^2]: Scott, W. T. (1968). Analytic Studies of Cloud Droplet Coalescence I, Journal of Atmospheric Sciences, 25(1), 54-65. Retrieved Feb 18, 2021, from https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469\_1968\_025\_0054\_asocdc\_2\_0\_co\_2.xml
+[^3]: Ian J. Laurenzi, John D. Bartels, Scott L. Diamond, A General Algorithm for Exact Simulation of Multicomponent Aggregation Processes, Journal of Computational Physics, Volume 177, Issue 2, 2002, Pages 418-449, ISSN 0021-9991, https://doi.org/10.1006/jcph.2002.7017.
