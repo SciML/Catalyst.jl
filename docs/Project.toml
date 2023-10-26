@@ -19,7 +19,7 @@ StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
-BifurcationKit = "0.2.4"
+BifurcationKit = "0.3"
 Catalyst = "13"
 DifferentialEquations = "7.7"
 Distributions = "0.25"
