@@ -112,7 +112,7 @@ documentation:
 [BifurcationKit.jl](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/).
 
 ---
-## [Citation](@id homotopy_continuation_citation)
+## [Citation](@id bifurcation_kit_citation)
 If you use this functionality in your research, please cite the following paper to support the author of the BifurcationKit package:
 ```
 @misc{veltz:hal-02902346,
