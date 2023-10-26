@@ -189,4 +189,4 @@ If you are a new Julia user who has used this tutorial, and there was something 
 ---
 ## References
 [^1]: [Jeff Bezanson, Alan Edelman, Stefan Karpinski, Viral B. Shah, *Julia: A Fresh Approach to Numerical Computing*, SIAM Review (2017).](https://epubs.siam.org/doi/abs/10.1137/141000671)
-[^2]: [Torkel E. Loman, Yingbo Ma, Vasily Ilin, Shashi Gowda, Niklas Korsbo, Nikhil Yewale, Chris Rackauckas, Samuel A. Isaacson, , *Catalyst: Fast and flexible modeling of reaction networks*, PLOS Computational Biology (2023).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530)
+[^2]: [Torkel E. Loman, Yingbo Ma, Vasily Ilin, Shashi Gowda, Niklas Korsbo, Nikhil Yewale, Chris Rackauckas, Samuel A. Isaacson, *Catalyst: Fast and flexible modeling of reaction networks*, PLOS Computational Biology (2023).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530)
