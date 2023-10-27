@@ -72,7 +72,11 @@ etc).
   models from reaction networks defined in Catalyst.
 - [DelaySSAToolkit.jl](https://palmtree2013.github.io/DelaySSAToolkit.jl/dev/) can
   augment Catalyst reaction network models with delays, and can simulate the
-  resulting stochastic chemical kinetics with delays models.
+  resulting stochastic chemical kinetics with delays models.  
+- [BondGraphs.jl](https://github.com/jedforrest/BondGraphs.jl) a package for
+  constructing and analyzing bond graphs models, which can take Catalyst models as input.
+- [PEtab.jl](https://github.com/sebapersson/PEtab.jl) a package that implements the PEtab format for fitting reaction network ODEs to data. Input can be provided either as SBML files or as Catalyst `ReactionSystem`s.
+  
 
 ## Installation
 Catalyst can be installed through the Julia package manager:
