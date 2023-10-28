@@ -9,10 +9,10 @@ integer Hill exponents). The roots of these can reliably be found through a
 *homotopy continuation* algorithm. This is implemented in Julia through the
 [HomotopyContinuation.jl](https://www.juliahomotopycontinuation.org/) package.
 
-Catalyst contains a special homotopy continuation extension that is loaded whenever HomotopyContinuation.jl is. This exports a single function, `hc_steady_states`, that can be used to find the steady states of any `ReactionSystem` structure. If you use this in your research, please [cite the HomotopyContinuation.jl](@ref homotopy_continuation_citation) and [Catalyst.jl]() publications.
+Catalyst contains a special homotopy continuation extension that is loaded whenever HomotopyContinuation.jl is. This exports a single function, `hc_steady_states`, that can be used to find the steady states of any `ReactionSystem` structure. If you use this in your research, please [cite the HomotopyContinuation.jl](@ref homotopy_continuation_citation) and [Catalyst.jl](@ref catalyst_citation) publications.
 
 ## Basic example
-For this tutorial, we will use a model from Wilhem (2009)[^1] (which
+For this tutorial, we will use a model from Wilhelm (2009)[^1] (which
 demonstrates bistability in a small chemical reaction network). We declare the
 model and the parameter set for which we want to find the steady states:
 ```@example hc1
@@ -54,16 +54,15 @@ Catalyst allows the conservation laws of such systems to be computed using the `
 ```@example hc3
 ps = [:k1 => 2.0, :k2 => 1.0]
 u0 = [:X1 => 1.0, :X2 => 1.0]
-hc_steady_states(wilhelm_2009_model, ps; u0)
-
+hc_steady_states(two_state_model, ps; u0)
 ```
 
 ## Final notes
 - `hc_steady_states` supports any systems where all rates are systems of rational polynomials (such as Hill functions with integer Hill coefficients).
 - When providing initial conditions to compute conservation laws, values are only required for those species that are part of conserved quantities. If this set of species is unknown, it is recommended to provide initial conditions for all species. 
 - Additional arguments provided to `hc_steady_states` are automatically passed to HomotopyContinuation's `solve` command. Use e.g. `show_progress=false` to disable the progress bar.
----
 
+---
 ## [Citation](@id homotopy_continuation_citation)
 If you use this functionality in your research, please cite the following paper to support the authors of the HomotopyContinuation package:
 ```
@@ -77,8 +76,9 @@ If you use this functionality in your research, please cite the following paper 
 }
 ```
 
+---
 ## References
 [^1]: [Thomas Wilhelm, *The smallest chemical reaction system with bistability*, BMC Systems Biology (2009).](https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-3-90)
 [^2]: [Paul Breiding, Sascha Timme, *HomotopyContinuation.jl: A Package for Homotopy Continuation in Julia*, International Congress on Mathematical Software (2018).](https://link.springer.com/chapter/10.1007/978-3-319-96418-8_54)
-[^3:] [Andrew J Sommese, Charles W Wampler *The Numerical Solution of Systems of Polynomials Arising in Engineering and Science*, World Scientific (2005).](https://www.worldscientific.com/worldscibooks/10.1142/5763#t=aboutBook)
-[^4:] [Daniel J. Bates, Paul Breiding, Tianran Chen, Jonathan D. Hauenstein, Anton Leykin, Frank Sottile, *Numerical Nonlinear Algebra*, arXiv (2023).](https://arxiv.org/abs/2302.08585)
+[^3]: [Andrew J Sommese, Charles W Wampler *The Numerical Solution of Systems of Polynomials Arising in Engineering and Science*, World Scientific (2005).](https://www.worldscientific.com/worldscibooks/10.1142/5763#t=aboutBook)
+[^4]: [Daniel J. Bates, Paul Breiding, Tianran Chen, Jonathan D. Hauenstein, Anton Leykin, Frank Sottile, *Numerical Nonlinear Algebra*, arXiv (2023).](https://arxiv.org/abs/2302.08585)

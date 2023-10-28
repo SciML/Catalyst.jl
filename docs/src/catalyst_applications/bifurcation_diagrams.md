@@ -72,7 +72,7 @@ We also bundle the information we have compiled so far into a
 using BifurcationKit, Plots, LinearAlgebra, Setfield
 
 bprob = BifurcationProblem(F, oprob.u0, oprob.p, (@lens _[bif_idx]);
-                           recordFromSolution = (x, p) -> x[plot_idx], J = J)
+                           record_from_solution = (x, p) -> x[plot_idx], J = J)
 nothing   # hide
 ```
 Next, we need to specify the input options for the pseudo-arclength continuation
@@ -81,10 +81,10 @@ method (PACM) which produces the diagram.
 bopts = ContinuationPar(dsmax = 0.05,          # Max arclength in PACM.
                         dsmin = 1e-4,          # Min arclength in PACM.
                         ds = 0.001,            # Initial (positive) arclength in PACM.
-                        maxSteps = 100000,     # Max number of steps.
-                        pMin = p_span[1],      # Min p-val (if hit, the method stops).
-                        pMax = p_span[2],      # Max p-val (if hit, the method stops).
-                        detectBifurcation = 3) # Value in {0,1,2,3}
+                        max_steps = 100000,     # Max number of steps.
+                        p_min = p_span[1],      # Min p-val (if hit, the method stops).
+                        p_max = p_span[2],      # Max p-val (if hit, the method stops).
+                        detect_bifurcation = 3) # Value in {0,1,2,3}
 nothing   # hide
 ```
 Here `detectBifurcation` determines to what extent bifurcation points are
@@ -110,3 +110,25 @@ branches are connected. However, BifurcationKit.jl is a very powerful package
 capable of a lot more. For more details, please see that package's
 documentation:
 [BifurcationKit.jl](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/).
+
+---
+## [Citation](@id bifurcation_kit_citation)
+If you use this functionality in your research, please cite the following paper to support the author of the BifurcationKit package:
+```
+@misc{veltz:hal-02902346,
+  title = {{BifurcationKit.jl}},
+  author = {Veltz, Romain},
+  url = {https://hal.archives-ouvertes.fr/hal-02902346},
+  institution = {{Inria Sophia-Antipolis}},
+  year = {2020},
+  month = Jul,
+  keywords = {pseudo-arclength-continuation ; periodic-orbits ; floquet ; gpu ; bifurcation-diagram ; deflation ; newton-krylov},
+  pdf = {https://hal.archives-ouvertes.fr/hal-02902346/file/354c9fb0d148262405609eed2cb7927818706f1f.tar.gz},
+  hal_id = {hal-02902346},
+  hal_version = {v1},
+}
+```
+
+---
+## References
+[^1]: [Yuri A. Kuznetsov, *Elements of Applied Bifurcation Theory*, Springer (2023).](https://link.springer.com/book/10.1007/978-3-031-22007-4)

@@ -401,3 +401,8 @@ species we wish to plot. Here, we plot the solution in `(X,Y)` space:
 ```@example ex4
 plot(sol; idxs=(:X, :Y))
 ```
+
+---
+## References
+[^1]: [DifferentialEquations.jl online documentation.](https://docs.sciml.ai/DiffEqDocs/stable/)
+[^2]: [Chris Rackauckas, Qing Nie, *DifferentialEquations.jl – A Performant and Feature-Rich Ecosystem for Solving Differential Equations in Julia*, Journal of Open Resource Software (2017).](https://openresearchsoftware.metajnl.com/articles/10.5334/jors.151)
