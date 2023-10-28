@@ -97,7 +97,7 @@ nothing # hide
 ```
 
 ### Fitting parameters
-We are now able to fit our model to the data. First, we create a `PEtabODEProblem`. Here, we use `petab_model` as the only input, but it is also possible to set various [numeric solver and automatic differentiation option](@ref petab_simulation_conditions) (such as method or tolerance).
+We are now able to fit our model to the data. First, we create a `PEtabODEProblem`. Here, we use `petab_model` as the only input, but it is also possible to set various [numeric solver and automatic differentiation options](@ref petab_simulation_options) (such as method or tolerance).
 ```petab1
 petab_problem = PEtabODEProblem(petab_model)
 nothing # hide
@@ -117,7 +117,7 @@ oprob = ODEProblem(rn, u0, (0.0, 10.0), get_ps(res, petab_problem))
 sol = solve(oprob, Tsit5(); saveat=0.1)
 plot!(sol; idxs=4, label="Fitted solution")
 ```
-Here we use the `get_ps` function to retrieve a full parameter set using the optimal parameters. Alternatively, the `ODEProblem` or fitted simulation can be retrieved directly using the `get_odeproblem` or `get_odesol` [functions](https://sebapersson.github.io/PEtab.jl/dev/API_choosen/#PEtab.get_odeproblem), respectively (and the initial condition using the `get_u0` function). The calibration result can also be found in `res.xmin`, however, note that PEtab automatically ([unless a linear scale is selected](petab_parameters_scales)) converts parameters to logarithmic scale, so typically `10 .^res.xmin` are the values of interest. If you investigate the result from this example you might note that the found parameter set (while it fits the data well) does not correspond to the true parameter set. This phenomenon is related to *identifiability*, and is very important for parameter fitting.
+Here we use the `get_ps` function to retrieve a full parameter set using the optimal parameters. Alternatively, the `ODEProblem` or fitted simulation can be retrieved directly using the `get_odeproblem` or `get_odesol` [functions](https://sebapersson.github.io/PEtab.jl/dev/API_choosen/#PEtab.get_odeproblem), respectively (and the initial condition using the `get_u0` function). The calibration result can also be found in `res.xmin`, however, note that PEtab automatically ([unless a linear scale is selected](@ref petab_parameters_scales)) converts parameters to logarithmic scale, so typically `10 .^res.xmin` are the values of interest. If you investigate the result from this example you might note that the found parameter set (while it fits the data well) does not correspond to the true parameter set. This phenomenon is related to *identifiability*, and is very important for parameter fitting.
 
 ### Final notes
 PEtab.jl also supports [multistart optimisation](@ref petab_multistart_optimisation), [automatic pre-equilibration before simulations](https://sebapersson.github.io/PEtab.jl/stable/Brannmark/), and [events](@ref petab_events). Various [plot recipes](@ref petab_plotting) exist for investigating the optimisation process. Please read the [PETab.jl documentation](https://sebapersson.github.io/PEtab.jl/stable/) for a more complete description of the package's features. Below follows additional details of various options and features (generally, PEtab is able to find good default values for most options not specified).
@@ -263,13 +263,13 @@ nothing # hide
 ```
 Note that the `u0` we pass into `PEtabModel` through the `state_map` argument no longer contains the value of *S* (as it is provided by the conditions). 
 
-### [Varying parameters between different simulation conditions](@id petab_simulation_conditions)
+### Varying parameters between different simulation conditions
 Sometimes, the parameters that are used vary between the different conditions. Consider our catalysis example, if we had performed the experiment twice, using two different enzymes with different catalytic properties, this could have generated such conditions. The two enzymes could e.g. yield different rates (*kP₁* and *kP₂*) for the `SE --> P + E` reaction, but otherwise be identical. Here, the parameters *kP₁* and *kP₂* are unique to their respective conditions. PEtab.jl provides support for cases such as this, and [its documentation](https://sebapersson.github.io/PEtab.jl/stable/Julia_condition_specific/) provided instructions of how to handle them.
 
 ## [Additional features: Initial conditions](@id petab_simulation_initial_conditions)
 
 ### [Fitting initial conditions](@id petab_simulation_initial_conditions_fitted)
-Sometimes, initial conditions are uncertain quantities which we wish to fit to the data. This is possible by [defining an initial condition as a parameter](dsl_description_parametric_initial_conditions): 
+Sometimes, initial conditions are uncertain quantities which we wish to fit to the data. This is possible by [defining an initial condition as a parameter](@ref dsl_description_parametric_initial_conditions): 
 ```petab4
 using Catalyst, PEtab # hide
 rn = @reaction_network begin
@@ -298,7 +298,7 @@ nothing # hide
 and we can use our updated `rn`, `u0`, and `params` as input to our `PEtabModel`.
 
 ### [Uncertain initial conditions](@id petab_simulation_initial_conditions_uncertainty)
-Often, while an initial condition has been reported for an experiment, its exact value is uncertain. This can be modelled by making the initial condition a [parameter that is fitted to the data](@id petab_simulation_initial_conditions_fitted) and attach a prior to it corresponding to our certainty about its value. 
+Often, while an initial condition has been reported for an experiment, its exact value is uncertain. This can be modelled by making the initial condition a [parameter that is fitted to the data](@ref petab_simulation_initial_conditions_fitted) and attach a prior to it corresponding to our certainty about its value. 
 
 Let us consider our initial example, but where we want to add uncertainty to the initial conditions of `S` and `E`. We will add priors on these, assuming normal distributions with mean `1.0` and standard deviation `0.1`. For the synthetic measured data we will use the true values *S(0)=E(0)=1.0*.
 ```petab5
@@ -438,7 +438,7 @@ petab_model = PEtabModel(rn, observables, measurements, params; state_map=u0, ev
 More details on how to use events, including how to create events with multiple targets, can be found in [PEtab.jl's documentation](https://sebapersson.github.io/PEtab.jl/stable/Julia_event/).
 
 ## [Plot recipes](@id petab_plotting)
-There exist various types of graphs that can be used to evaluate the parameter fitting process. These can be plotted using the `plot` command, where the input is either the result of a `calibrate_model` or a  `calibrate_model_multistart` run. To be able to use this functionality, you have to ensure that PEtab.jl [records the optimisation process](@id petab_optimisation_path_recording) by providing the `save_trace=true` argument to the calibration functions.
+There exist various types of graphs that can be used to evaluate the parameter fitting process. These can be plotted using the `plot` command, where the input is either the result of a `calibrate_model` or a  `calibrate_model_multistart` run. To be able to use this functionality, you have to ensure that PEtab.jl [records the optimisation process](@ref petab_optimisation_path_recording) by providing the `save_trace=true` argument to the calibration functions.
 
 To, for a single start calibration run, plot, for each iteration of the optimization process, the best objective value achieved so far, run:
 
@@ -460,7 +460,7 @@ plot(res_ms; plot_type = :best_objective)
 ```
 ![petab best objective plot](../assets/petab_best_objective.svg)
 
-There exist several types of plots for both types of calibration results. More details of the types of available plots, and how to customise them, can be found [here](@ref https://sebapersson.github.io/PEtab.jl/stable/optimisation_output_plotting/).
+There exist several types of plots for both types of calibration results. More details of the types of available plots, and how to customise them, can be found [here](https://sebapersson.github.io/PEtab.jl/stable/optimisation_output_plotting/).
 
 
 ## [Citations](@id petab_citations)
