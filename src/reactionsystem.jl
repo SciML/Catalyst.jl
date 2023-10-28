@@ -1287,6 +1287,7 @@ Keyword args and default values:
 function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, remove_conserved = false, checks = false,
+                      default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
     spatial_convert_err(rs::ReactionSystem, ODESystem)
     fullrs = Catalyst.flatten(rs)
@@ -1299,7 +1300,7 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
     ODESystem(eqs, get_iv(fullrs), sts, ps;
               observed = obs,
               name,
-              defaults = defs,
+              defaults = _merge(defaults,defs),
               checks,
               continuous_events = MT.get_continuous_events(fullrs),
               discrete_events = MT.get_discrete_events(fullrs),
@@ -1326,6 +1327,7 @@ Keyword args and default values:
 function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, remove_conserved = false, checks = false,
+                      default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
     fullrs = Catalyst.flatten(rs)
@@ -1339,7 +1341,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     NonlinearSystem(eqs, sts, ps;
                     name,
                     observed = obs,
-                    defaults = defs,
+                    defaults = _merge(defaults,defs),
                     checks,
                     kwargs...)
 end
@@ -1375,6 +1377,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       noise_scaling = nothing, name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, checks = false, remove_conserved = false,
+                      default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
     spatial_convert_err(rs::ReactionSystem, SDESystem)
 
@@ -1435,7 +1438,9 @@ Notes:
 """
 function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                      remove_conserved = nothing, checks = false, kwargs...)
+                      remove_conserved = nothing, checks = false, 
+                      default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
+                      kwargs...)
     spatial_convert_err(rs::ReactionSystem, JumpSystem)
 
     (remove_conserved !== nothing) &&
@@ -1457,7 +1462,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     JumpSystem(eqs, get_iv(flatrs), sts, ps;
                observed = MT.observed(flatrs),
                name,
-               defaults = MT.defaults(flatrs),
+               defaults = _merge(defaults,MT.defaults(flatrs)),
                checks,
                discrete_events = MT.discrete_events(flatrs),
                kwargs...)
