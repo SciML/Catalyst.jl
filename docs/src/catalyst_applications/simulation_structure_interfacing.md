@@ -99,7 +99,7 @@ sol[:k1]
 ```
 Finally, we note that we cannot change the values of solution states or parameters (i.e. both `sol[:X1] = 0.0` and `sol[:k1] = 0.0` generate errors).
 
-## Interfacing using symbolic representation
+## [Interfacing using symbolic representation](@id simulation_structure_interfacing_symbolic_representation)
 
 Catalyst is built on an *intermediary representation* implemented by (ModelingToolkit.jl)[https://github.com/SciML/ModelingToolkit.jl]. ModelingToolkit is a modelling framework where one first declares a set of symbolic variables and parameters using e.g.
 ```@example ex2
