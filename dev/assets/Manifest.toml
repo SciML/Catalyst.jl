@@ -87,9 +87,9 @@ version = "3.5.1+1"
 
 [[deps.ArrayInterface]]
 deps = ["Adapt", "LinearAlgebra", "Requires", "SparseArrays", "SuiteSparse"]
-git-tree-sha1 = "f83ec24f76d4c8f525099b2ac475fc098138ec31"
+git-tree-sha1 = "eba0af42241f0cb648806604222bab1e064edb67"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "7.4.11"
+version = "7.5.0"
 
     [deps.ArrayInterface.extensions]
     ArrayInterfaceBandedMatricesExt = "BandedMatrices"
@@ -115,9 +115,9 @@ version = "0.1.29"
 
 [[deps.ArrayLayouts]]
 deps = ["FillArrays", "LinearAlgebra"]
-git-tree-sha1 = "9a731850434825d183af39c6e6cd0a1c32dd7e20"
+git-tree-sha1 = "af43df5704827c8618afd36eb56fcab20d3041ee"
 uuid = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
-version = "1.4.2"
+version = "1.4.3"
 weakdeps = ["SparseArrays"]
 
     [deps.ArrayLayouts.extensions]
@@ -229,7 +229,7 @@ version = "0.3.12"
 deps = ["DataStructures", "DiffEqBase", "DocStringExtensions", "Graphs", "JumpProcesses", "LaTeXStrings", "Latexify", "LinearAlgebra", "MacroTools", "ModelingToolkit", "Parameters", "Reexport", "Requires", "SparseArrays", "SymbolicUtils", "Symbolics", "Unitful"]
 path = "/home/runner/work/Catalyst.jl/Catalyst.jl"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
-version = "13.5.0"
+version = "13.5.1"
 weakdeps = ["HomotopyContinuation"]
 
     [deps.Catalyst.extensions]
@@ -962,9 +962,9 @@ version = "2.1.91+0"
 
 [[deps.JuliaFormatter]]
 deps = ["CSTParser", "CommonMark", "DataStructures", "Glob", "Pkg", "PrecompileTools", "Tokenize"]
-git-tree-sha1 = "0bac3374ff3aa798148669ecb5559ba20c8b0e73"
+git-tree-sha1 = "b11c259ae111b08aabdc2ff5186dad12a95fedca"
 uuid = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
-version = "1.0.40"
+version = "1.0.41"
 
 [[deps.JumpProcesses]]
 deps = ["ArrayInterface", "DataStructures", "DiffEqBase", "DocStringExtensions", "FunctionWrappers", "Graphs", "LinearAlgebra", "Markdown", "PoissonRandom", "Random", "RandomNumbers", "RecursiveArrayTools", "Reexport", "SciMLBase", "StaticArrays", "TreeViews", "UnPack"]
@@ -1215,9 +1215,9 @@ weakdeps = ["ChainRulesCore", "SparseArrays", "Statistics"]
 
 [[deps.LinearSolve]]
 deps = ["ArrayInterface", "ConcreteStructs", "DocStringExtensions", "EnumX", "EnzymeCore", "FastLapackInterface", "GPUArraysCore", "InteractiveUtils", "KLU", "Krylov", "Libdl", "LinearAlgebra", "MKL_jll", "PrecompileTools", "Preferences", "RecursiveFactorization", "Reexport", "Requires", "SciMLBase", "SciMLOperators", "Setfield", "SparseArrays", "Sparspak", "SuiteSparse", "UnPack"]
-git-tree-sha1 = "a563cd835c9ed5295c35a7d140e0bf0a514bb10a"
+git-tree-sha1 = "9f807ca41005f9a8f092716e48022ee5b36cf5b1"
 uuid = "7ed4a6bd-45f5-4d41-b270-4a48e9bafcae"
-version = "2.13.0"
+version = "2.14.1"
 
     [deps.LinearSolve.extensions]
     LinearSolveBandedMatricesExt = "BandedMatrices"
@@ -1883,9 +1883,9 @@ version = "0.1.0"
 
 [[deps.SLEEFPirates]]
 deps = ["IfElse", "Static", "VectorizationBase"]
-git-tree-sha1 = "4b8586aece42bee682399c4c4aee95446aa5cd19"
+git-tree-sha1 = "3aac6d68c5e57449f5b9b865c9ba50ac2970c4cf"
 uuid = "476501e8-09a2-5ece-8869-fb82de89a1fa"
-version = "0.6.39"
+version = "0.6.42"
 
 [[deps.SciMLBase]]
 deps = ["ADTypes", "ArrayInterface", "ChainRulesCore", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "EnumX", "FillArrays", "FunctionWrappersWrappers", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "Markdown", "PrecompileTools", "Preferences", "RecipesBase", "RecursiveArrayTools", "Reexport", "RuntimeGeneratedFunctions", "SciMLOperators", "StaticArraysCore", "Statistics", "SymbolicIndexingInterface", "Tables", "TruncatedStacktraces", "ZygoteRules"]
@@ -2027,9 +2027,9 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[deps.SparseDiffTools]]
 deps = ["ADTypes", "Adapt", "ArrayInterface", "Compat", "DataStructures", "FiniteDiff", "ForwardDiff", "Graphs", "LinearAlgebra", "PackageExtensionCompat", "Random", "Reexport", "SciMLOperators", "Setfield", "SparseArrays", "StaticArrayInterface", "StaticArrays", "Tricks", "UnPack", "VertexSafeGraphs"]
-git-tree-sha1 = "eac5b754896a56df0b9e049a3d93cc27912a78f2"
+git-tree-sha1 = "590acc2c3baf98aaff7d2f1990a6f1de6138361e"
 uuid = "47a9eef4-7e08-11e9-0b38-333d64bd3804"
-version = "2.9.0"
+version = "2.9.1"
 weakdeps = ["Enzyme", "Symbolics", "Zygote"]
 
     [deps.SparseDiffTools.extensions]
