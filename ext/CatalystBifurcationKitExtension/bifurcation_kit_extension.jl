@@ -11,8 +11,6 @@ function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
     ((ps isa Vector{<:Pair{Symbol,<:Any}}) || (ps isa Dict{Symbol, <:Any})) && (ps = symmap_to_varmap(rs, ps))
     ((u0 isa Vector{<:Pair{Symbol,<:Any}}) || (u0 isa Dict{Symbol, <:Any})) && (u0 = symmap_to_varmap(rs, u0))
 
-    println("HERE")
-
     # Creates NonlinearSystem.
     Catalyst.conservationlaw_errorcheck(rs, vcat(ps, u0))
     nsys = convert(NonlinearSystem, rs; remove_conserved=true, defaults=Dict(u0))
