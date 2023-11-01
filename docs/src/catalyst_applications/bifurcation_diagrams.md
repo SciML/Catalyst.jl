@@ -113,6 +113,28 @@ Finally, for additional clarity, we reiterate the purpose of the two `u` argumen
 - `u0`: Used to compute the concentrations of any conserved quantities (e.g. in our example $X + Xp = 1.0$). Technically, values are only required for species that are involved in conservation laws (in our case we do not need to provide a value for $K$). However, sometimes determining which species are actually involved in conservation laws can be difficult, and it might be easier to simply provide concentrations for all species.
 
 
+The illustrate this, we will create a simple model of a kinase that is produced and degraded (at rates *p* and *d*). The kinase facilitates the phosphorylation of a protein (*X*), which is dephosphorylated at a constant rate. For this system, we will compute a bifurcation diagram, showing how the concentration of the phosphoryalted protein (*Xp*) depends on teh degradation rate of the kinase (*d*). We will set the total amount of protein (*X+Xp*) to *1.0*.
+```@example ex2
+using BifurcationKit, Catalyst, Plots
+kinase_model = @reaction_network begin
+    (p, d), 0 <--> K
+    (K*kP,kD), X <--> Xp
+end
+
+u_guess = [:K => 1.0, :X => 1.0, :Xp => 1.0]
+p_start = [:p => 1.0, :d => 0.5, :kP => 2.0, :kD => 5.0]
+u0 = [:X => 1.0, :Xp => 0.0]
+bprob = BifurcationProblem(kinase_model, u_guess, p_start, :d; plot_var=:Xp, u0=u0)
+
+p_span = (0.1, 10.0)
+opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2], max_steps = 1000)
+bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside=true)
+plot(bif_dia; xguide="d", yguide="Xp")
+```
+This bifurcation diagram does not contain any interesting features (such as bifurcation points), but only shows how the steady state concentration of *Xp* is reduced as *d* increases. For this example, we will note two additional facts:
+- When providing the concentrations for computing the conserved quantities (in `u0`), we only have to designate the concentrations of species that are actually involved in conservation laws. For larger systems, determining which one are may, however, be difficult. In this case, it might be wise to provide concentrations for all species.
+- The steady state guess in `u_guess` does not actually have to fulfil the conserved concentrations provided in `u0`.
+
 ---
 ## [Citation](@id bifurcation_kit_citation)
 If you use this functionality in your research, please cite the following paper to support the author of the BifurcationKit package:
