@@ -178,7 +178,7 @@ reaction_networks_hill[10] = @reaction_network rnh10 begin
     (d1, d2), (X5, X6) → ∅
 end
 
-### Reaction networks were some linnear combination concentrations remain fixed (steady state values depends on initial conditions). ###
+### Reaction networks were some linear combination concentrations remain fixed (steady state values depends on initial conditions). ###
 
 reaction_networks_constraint[1] = @reaction_network rnc1 begin
     @parameters k1 k2 k3 k4 k5 k6
