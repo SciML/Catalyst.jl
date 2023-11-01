@@ -52,6 +52,7 @@ end
 # Bistable switch.
 # Checks that the same bifurcation problem is created as for BifurcationKit.
 # Checks with Symbolics as bifurcation and plot vars.
+# Tries setting `jac=false`.
 let 
     # Creates BifurcationProblem via Catalyst.
     bistable_switch = @reaction_network begin
