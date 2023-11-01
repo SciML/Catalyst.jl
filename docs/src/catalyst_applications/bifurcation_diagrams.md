@@ -1,11 +1,10 @@
 # [Bifurcation Diagrams](@id bifurcation_diagrams)
 
-Bifurcation diagrams describes how, for a dynamic system, the quantity and quality of its steady states changes with a parameter's value[^1]. These can be computed through the [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl) package. Catalyst provides a simple interface for creating BifurcationKit compatible `BifurcationProblem`s from `ReactionSystem`s. If you use this in your research, please [cite the BifurcationKit.jl](@ref bifurcation_kit_citation) and [Catalyst.jl](@ref catalyst_citation) publications.
+Bifurcation diagrams describes how, for a dynamic system, the quantity and quality of its steady states changes with a parameter's value[^1]. These can be computed through the [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl) package. Catalyst provides a simple interface for creating BifurcationKit compatible `BifurcationProblem`s from `ReactionSystem`s. If you use this feature in your research, please [cite the BifurcationKit.jl](@ref bifurcation_kit_citation) and [Catalyst.jl](@ref catalyst_citation) publications.
 
 This tutorial briefly introduces how to use Catalyst in conjecture with BifurcationKit through basic examples, with BifurcationKit.jl providing [a more extensive documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/). Especially for more complicated systems, where careful tuning of algorithm options might be required, reading the BifurcationKit documentation is recommended. Finally, BifurcationKit provides many additional features not described here, including [computation of periodic orbits](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/), [tracking of bifurcation points along secondary parameters](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/branchswitching/), and [bifurcation computations for PDEs](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/tutorials/tutorials/#PDEs:-bifurcations-of-equilibria).
 
 ## Basic example
-
 For this example, we will use a modified version of the model from Wilhelm (2009)[^2] (which
 demonstrates a bistable switch as the parameter *k1* is varied). We declare the model using Catalyst:
 ```@example ex1
@@ -18,13 +17,13 @@ wilhelm_2009_model = @reaction_network begin
     k5, 0 --> X
 end
 ```
-Next we will create a `BifurcationProblem`. In addition to the `REactionSystem`, we need to provide:
+Next we will create a `BifurcationProblem`. In addition to the `ReactionSystem`, we need to provide:
 - The bifurcation parameter (the parameter which is varied in the bifurcation diagram).
 - A full model parameter set. This includes the values of all non-bifurcation parameters, but also a value for the bifurcation parameter (which correspond to the point in parameter space from which the computation of the bifurcation diagram starts).
 - An initial guess of the steady state values of the system at the provided parameter set. Using this point as a start, BifurcationKit uses Newton's method to find an initial steady state from which to compute the bifurcation diagram. Hence, this guess does not need to be very exact (but may be important if the system exhibits multistability for the initial parameter set).
 - The species which concentration we wish to plot on the y-axis of the bifurcation diagram (alternatively, a custom value can be provided by using the [`record_from_solution` argument](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/#.-record*from*solution)).
 
-We combines all this information to a `BifurcationProblem`:
+We combines all this information to form a `BifurcationProblem`:
 ```@example ex1
 using BifurcationKit
 bif_par = :k1
@@ -35,7 +34,7 @@ bprob = BifurcationProblem(wilhelm_2009_model, u_guess, p_start, bif_par; plot_v
 nothing # hide
 ```
 
-BifurcationKit computes bifurcation diagrams using the `bifurcationdiagram` function. From an initial point in the diagram, it tracks the solution (using a continuation algorithm) until the entire diagram is computed (BifurcationKit's continuation can be used for other purposes, however, this tutorial focuses on bifurcation diagram computation). The continuation settings are provided in a `ContinuationPar` structure. In this example, we will only specify three settings, `p_min` and `p_max` (which sets the minimum and maximum values over which the bifurcation parameter is varied) and `max_steps` (the maximum number of continuation steps to take as the bifurcation diagram is tracked). If we wish to compute a bifurcation diagram over the interval *(2.0,20.0)*  we use the following settings:
+BifurcationKit computes bifurcation diagrams using the `bifurcationdiagram` function. From an initial point in the diagram, it tracks the solution (using a continuation algorithm) until the entire diagram is computed (BifurcationKit's continuation can be used for other purposes, however, this tutorial focuses on bifurcation diagram computation). The continuation settings are provided in a `ContinuationPar` structure. In this example, we will only specify three settings, `p_min` and `p_max` (which sets the minimum and maximum values over which the bifurcation parameter is varied) and `max_steps` (the maximum number of continuation steps to take as the bifurcation diagram is tracked). We wish to compute a bifurcation diagram over the interval *(2.0,20.0)*, and will use the following settings:
 ```@example ex1
 p_span = (2.0, 20.0)
 opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2], max_steps=1000)
@@ -73,6 +72,7 @@ opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2],
 bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside=true)
 nothing # hide
 ```
+(however, in this case these additional settings have no significant effect on the result)
 
 ## Bifurcation diagrams with disjoint branches
 Let's consider the previous case, but instead compute the bifurcation diagram over the interval *(2.0, 15.0)*:
@@ -82,13 +82,13 @@ opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2], max_steps = 1000
 bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside=true)
 plot(bif_dia; xguide="k1", yguide="X")
 ```
-Here, in the bistable region, we only see a single branch. The reason is that the continuation algorithm start at our initial guess (here made at *k1 = 4.0* for *(X,Y) = (5.0,2.0)*) and tracks diagram from there. However, with the upper bound set at *k1=15.0* the bifurcation diagram have a disjoint branch structure, preventing the full diagram from being computed by continuation alone. In this case it could be solved by increasing the bound of *k1=15.0*, however, this is not possible in all cases. In these cases, *deflation* can be used. This is described in the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/tutorials/tutorials2/#Snaking-computed-with-deflation).
+Here, in the bistable region, we only see a single branch. The reason is that the continuation algorithm start at our initial guess (here made at *k1 = 4.0* for *(X,Y) = (5.0,2.0)*) and tracks the diagram from there. However, with the upper bound set at *k1=15.0* the bifurcation diagram have a disjoint branch structure, preventing the full diagram from being computed by continuation alone. In this case it could be solved by increasing the bound of *k1=15.0*, however, this is not possible in all cases. In these cases, *deflation* can be used. This is described in the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/tutorials/tutorials2/#Snaking-computed-with-deflation).
 
 
 ## Systems with conservation laws
 Some systems are under-determined, and for a given parameter set they have an infinite number of possible steady states, preventing bifurcation diagrams from being computed. Similar to when we [compute single steady states](@ref homotopy_continuation_conservation_laws), we can utilise Catalyst's ability to detect and eliminate conservation laws to resolve this issue. This requires us to provide information of the species concentrations at which we wish to compute the bifurcation diagram. These are provided to the `BifurcationProblem` using the `u0` argument.
 
-The illustrate this, we will create a simple model of a kinase that is produced and degraded (at rates *p* and *d*). The kinase facilitates the phosphorylation of a protein (*X*), which is dephosphorylated at a constant rate. For this system, we will compute a bifurcation diagram, showing how the concentration of the phosphoryalted protein (*Xp*) depends on teh degradation rate of the kinase (*d*). We will set the total amount of protein (*X+Xp*) to *1.0*.
+To illustrate this, we will create a simple model of a kinase that is produced and degraded (at rates *p* and *d*). The kinase facilitates the phosphorylation of a protein (*X*), which is dephosphorylated at a constant rate. For this system, we will compute a bifurcation diagram, showing how the concentration of the phosphorylated protein (*Xp*) depends on the degradation rate of the kinase (*d*). We will set the total amount of protein (*X+Xp*) to *1.0*.
 ```@example ex2
 using BifurcationKit, Catalyst, Plots
 kinase_model = @reaction_network begin
@@ -106,8 +106,8 @@ opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2], max_steps = 1000
 bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside=true)
 plot(bif_dia; xguide="d", yguide="Xp")
 ```
-This bifurcation diagram does not contain any interesting features (such as bifurcation points), but only shows how the steady state concentration of *Xp* is reduced as *d* increases. For this example, we will note two additional facts:
-- When providing the concentrations for computing the conserved quantities (in `u0`), we only have to designate the concentrations of species that are actually involved in conservation laws. For larger systems, determining which one are may, however, be difficult. In this case, it might be wise to provide concentrations for all species.
+This bifurcation diagram does not contain any interesting features (such as bifurcation points), and only shows how the steady state concentration of *Xp* is reduced as *d* increases. For this example, we will note two facts:
+- When providing the concentrations for computing the conserved quantities (in `u0`), we only have to designate the concentrations of species that are actually involved in conservation laws. For larger systems, determining which one are may, however, be difficult. In this case, it might still be wise to provide concentrations for all species.
 - The steady state guess in `u_guess` does not actually have to fulfil the conserved concentrations provided in `u0`.
 
 ---
