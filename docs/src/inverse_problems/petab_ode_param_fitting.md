@@ -80,7 +80,7 @@ For cases where several simulation conditions are given, we also need to provide
 
 4. The simulation condition which generates the measurement ([here](@ref petab_simulation_conditions) is an example where this is used).
 
-([When [pre-equilibration](https://sebapersson.github.io/PEtab.jl/stable/Brannmark/) is used to initiate the system in a steady state, a fifth field is also required])
+*Note also, when [pre-equilibration](https://sebapersson.github.io/PEtab.jl/stable/Brannmark/) is used to initiate the system in a steady state, a fifth field is also required.*
 
 Measurements are provided in a `DataFrame` where each row corresponds to a measurement. The values are provided in the `obs_id`, `time`, `measurement`, and `simulation_id` columns. In our case we only need to fill in the first three:
 ```@example petab1
