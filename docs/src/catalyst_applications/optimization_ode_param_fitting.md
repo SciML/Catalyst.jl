@@ -1,5 +1,5 @@
 # [Parameter Fitting for ODEs using SciML/Optimization.jl and DiffEqParamEstim.jl](@id optimization_parameter_fitting)
-Fitting parameters to data involves solving an optimisation problem (that is, finding the parameter set that optimally fits you model to your data, typically by minimising a cost function). The SciML ecosystem's primary package for solving optimisation problems is [Optimization.jl](https://github.com/SciML/Optimization.jl). While it does not implement any optimisation methods itself, it wraps the large number of optimisation methods that have been implemented in Julia into a single common interface. 
+Fitting parameters to data involves solving an optimisation problem (that is, finding the parameter set that optimally fits you model to your data, typically by minimising a cost function). The SciML ecosystem's primary package for solving optimisation problems is [Optimization.jl](https://github.com/SciML/Optimization.jl). It provides access to a variety of solvers from a single common interface, wrapping a large number of optimisation methods that have been implemented in Julia into a single common interface. 
 
 This tutorial both demonstrate how to create parameter fitting cost functions using the [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl) package, and how to use Optimization.jl to minimise these. Optimization.jl can also be used in other contexts, such as finding parameter sets that maximises the magnitude of some system behaviour. More details on how to use these packages can be found in their [respective](https://docs.sciml.ai/Optimization/stable/) [documentations](https://docs.sciml.ai/DiffEqParamEstim/stable/).
 
@@ -79,10 +79,10 @@ plot!(fitted_sol; idxs=:P, label="Fitted solution", linestyle=:dash, lw=6, color
 !!! note
 Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. [Identifiability](https://www.sciencedirect.com/science/article/pii/S1364815218307278) is a concept that studies how to deal with this problem.
 
-Say that we instead would like to use the [CMA Evolution Strategy](https://en.wikipedia.org/wiki/CMA-ES) method, as implemented by the [CMAEvolutionStrategy.jl](https://github.com/jbrea/CMAEvolutionStrategy.jl) package. In this case we would run:
+Say that we instead would like to use the [Broyden–Fletcher–Goldfarb–Shannon](https://en.wikipedia.org/wiki/Broyden%E2%80%93Fletcher%E2%80%93Goldfarb%E2%80%93Shanno_algorithm) algorithm, as implemented by the [NLopt.jl](https://github.com/JuliaOpt/NLopt.jl) package. In this case we would run:
 ```@example diffeq_param_estim_1 
-using OptimizationCMAEvolutionStrategy
-sol = solve(optprob, CMAEvolutionStrategyOpt())
+using OptimizationNLopt
+sol = solve(optprob, BFGS())
 nothing # hide
 ```
 
