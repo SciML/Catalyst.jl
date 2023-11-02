@@ -65,7 +65,7 @@ nothing #
 Finally, we can optimise `optprob` to find the parameter set that best fits our data. Optimization.jl does not provide any optimisation methods by default. Instead, for each supported optimisation package, it provides a corresponding wrapper-package to import that optimisation package for using with Optimization. E.g., if we wish to [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)'s [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) method, we must install and import the OptimizationOptimJL package. A summary of all, by Optimization.jl, supported optimisation packages can be found [here](https://docs.sciml.ai/Optimization/stable/#Overview-of-the-Optimizers). Here, we import the Optim.jl package and uses it to minimise our cost function (thus finding a parameter set that fits the data):
 ```@example diffeq_param_estim_1 
 using OptimizationOptimJL
-optsol = solve(optprob, NelderMead())
+optsol = solve(optprob, Optim.NelderMead())
 nothing # hide
 ```
 
@@ -106,7 +106,7 @@ nothing # hide
 We can now fit our model to data and plot the results:
 ```@example diffeq_param_estim_1 
 optprob_S_P = OptimizationProblem(loss_function_S_P, [1.0,1.0, 1.0])
-optsol_S_P = solve(optprob_S_P, NelderMead())
+optsol_S_P = solve(optprob_S_P, Optim.NelderMead())
 oprob_fitted_S_P = remake(oprob; p=optsol_S_P.u)
 fitted_sol_S_P = solve(oprob_fitted_S_P, Tsit5())
 plot!(fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle=:dash, lw=6, color=[:lightblue :pink])
@@ -136,7 +136,7 @@ nothing #
 We can create an optimisation problem from this one like previously, but keeping in mind that it (and its output results) only contains two parameter values (*kB* and *kP):
 ```@example diffeq_param_estim_1 
 optprob_fixed_kD = OptimizationProblem(loss_function_fixed_kD, [1.0, 1.0])
-optsol_fixed_kD = solve(optprob_fixed_kD, NelderMead())
+optsol_fixed_kD = solve(optprob_fixed_kD, Optim.NelderMead())
 nothing # hide
 ```
 
@@ -163,6 +163,6 @@ Say that we had measured our model for several different initial conditions, and
 ## Optimisation solver options
 Optimization.jl supports various [optimisation solver options](https://docs.sciml.ai/Optimization/stable/API/solve/) that can be supplied to the `solve` command. For example, to set a maximum number of seconds (after which the optimisation process is terminated), you can use the `maxtime` argument:
 ```@example diffeq_param_estim_1 
-optsol_fixed_kD = solve(optprob, NelderMead(); maxtime=100)
+optsol_fixed_kD = solve(optprob, Optim.NelderMead(); maxtime=100)
 nothing # hide
 ```
