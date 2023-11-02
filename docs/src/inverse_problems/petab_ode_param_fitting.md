@@ -102,7 +102,7 @@ We are now able to fit our model to the data. First, we create a `PEtabODEProble
 petab_problem = PEtabODEProblem(petab_model)
 nothing # hide
 ```
-Since no additional input is given, default optiosn are selected by PEtab.jl (and generally, its choices are good).
+Since no additional input is given, default options are selected by PEtab.jl (and generally, its choices are good).
 
 To fit a parameter set we use the `calibrate_model` function. In addition to our `PEtabODEProblem`, we must also provide an initial guess (which can be generated with the `generate_startguesses` function) and an optimisation algorithm (which needs to be imported specifically). PEtab.jl supports various [optimisation methods and options](@ref petab_optimisation_optimisers). 
 ```@example petab1
