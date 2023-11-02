@@ -20,15 +20,17 @@ u0 = [:S => 1.0, :E => 1.0, :SE => 0.0, :P => 0.0]
 p_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
 
 # Generate synthetic data.
-using OrdinaryDiffEq, Random
-oprob = ODEProblem(rn, u0, (0.0, 10.0), p_true)
-sol = solve(oprob, Tsit5(); saveat=0.1)
-data = (0.8 .+ 0.4*rand(10)) .* sol[:P][10:10:end]
+using OrdinaryDiffEq
+oprob_true = ODEProblem(rn, u0, (0.0, 10.0), p_true)
+true_sol = solve(oprob_true, Tsit5())
+data_sol = solve(oprob_true, Tsit5(); saveat=1.0)
+data_ts = data_sol.t[2:end]
+data_vals = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 
 # Plots the true solutions and the (synthetic data) measurements.
 using Plots
-plot(sol; idxs=:P, label="True solution")
-plot!(sol.t[10:10:end], data; label="Measurements", seriestype=:scatter)
+plot(true_sol; idxs=:P, label="True solution", lw=8)
+plot!(data_ts, data_vals; label="Measurements", seriestype=:scatter, ms=6, color=:blue)
 ```
 
 Generally, PEtab takes five different inputs to define an optimisation problem (the minimiser of which generates a fitted parameter set):
@@ -85,7 +87,7 @@ For cases where several simulation conditions are given, we also need to provide
 Each individual measurement is provided as a row of a `DataFrame`. The values are provided in the `obs_id`, `time`, `measurement`, and `simulation_id` columns. In our case we only need to fill in the first three:
 ```@example petab1
 using DataFrames
-measurements = DataFrame(obs_id="obs_P", time=sol.t[10:10:end], measurement=data)
+measurements = DataFrame(obs_id="obs_P", time=data_ts, measurement=data_vals)
 ```
 Since, in our example, all measurements are of the same observable, we can set `obs_id="obs_P"`. If several different observables were measured, `obs_id` would be a vector of the same length as `time` and `measurement`.
 
@@ -113,9 +115,9 @@ res = calibrate_model(petab_problem, p0, IPNewton())
 
 We can now simulate our model for the fitted parameter set, and compare the result to the measurements and true solution.
 ```@example petab1
-oprob = ODEProblem(rn, u0, (0.0, 10.0), get_ps(res, petab_problem))
-sol = solve(oprob, Tsit5(); saveat=0.1)
-plot!(sol; idxs=4, label="Fitted solution")
+oprob_fitted = remake(oprob; p=get_ps(res, petab_problem))
+fitted_sol = solve(oprob_fitted, Tsit5())
+plot!(fitted_sol; idxs=:P, label="Fitted solution", linestyle=:dash, lw=6, color=:lightblue)
 ```
 Here we use the `get_ps` function to retrieve a full parameter set using the optimal parameters. Alternatively, the `ODEProblem` or fitted simulation can be retrieved directly using the `get_odeproblem` or `get_odesol` [functions](https://sebapersson.github.io/PEtab.jl/dev/API_choosen/#PEtab.get_odeproblem), respectively (and the initial condition using the `get_u0` function). The calibration result can also be found in `res.xmin`, however, note that PEtab automatically ([unless a linear scale is selected](@ref petab_parameters_scales)) converts parameters to logarithmic scale, so typically `10 .^res.xmin` are the values of interest. If you investigate the result from this example you might note that the found parameter set (while it fits the data well) does not correspond to the true parameter set. This phenomenon is related to *identifiability*, and is very important for parameter fitting.
 
@@ -228,16 +230,16 @@ u0 = [:E => 1.0, :SE => 0.0, :P => 0.0]
 p_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
 
 # Simulate data.
-using OrdinaryDiffEq, Random
-d1, t1 = let 
-    oprob = ODEProblem(rn, [:S=>1.0; u0], (0.0, 10.0), p_true)
-    sol = solve(oprob, Tsit5(); saveat=0.1)
-    ((0.8 .+ 0.4*rand(10)) .* sol[:P][10:10:end], sol.t[10:10:end])
+using OrdinaryDiffEq
+t1, d1 = let 
+    oprob_true = ODEProblem(rn, [:S=>1.0; u0], (0.0, 10.0), p_true)
+    data_sol = solve(oprob_true, Tsit5(); saveat=1.0)
+    data_sol.t[2:end], (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 end
-d2, t2 = let 
-    oprob = ODEProblem(rn, [:S=>0.5; u0], (0.0, 10.0), p_true)
-    sol = solve(oprob, Tsit5(); saveat=0.1)
-    ((0.8 .+ 0.4*rand(10)) .* sol[:P][10:10:end], sol.t[10:10:end])
+t2, d2 = let 
+    oprob_true = ODEProblem(rn, [:S=>0.5; u0], (0.0, 10.0), p_true)
+    data_sol = solve(oprob_true, Tsit5(); saveat=1.0)
+    data_sol.t[2:end], (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 end
 
 @unpack P = rn
@@ -316,10 +318,12 @@ end
 u0 = [:SE => 0.0, :P => 0.0]
 p_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5, :S0=>1.0, :E0 => 1.0]
 
-using OrdinaryDiffEq, Random
-oprob = ODEProblem(rn, [:S=>1.0; :E => 1.0; u0], (0.0, 10.0), p_true)
-sol = solve(oprob, Tsit5(); saveat=0.1)
-data = (0.8 .+ 0.4*rand(10)) .* sol[:P][10:10:end]
+using OrdinaryDiffEq
+oprob_true = ODEProblem(rn, u0, (0.0, 10.0), p_true)
+true_sol = solve(oprob_true, Tsit5())
+data_sol = solve(oprob_true, Tsit5(); saveat=1.0)
+data_ts = data_sol.t[2:end]
+data_vals = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 
 @unpack P = rn
 obs_P = PEtabObservable(P, 0.5)
@@ -333,7 +337,7 @@ par_E0 = PEtabParameter(:E0)
 params = [par_kB, par_kD, par_kP, par_S0, par_E0]
 
 using DataFrames
-measurements = DataFrame(obs_id="obs_P", time=sol.t[10:10:end], measurement=data)
+measurements = DataFrame(obs_id="obs_P", time=data_ts, measurement=data_vals)
 
 petab_model = PEtabModel(rn, observables, measurements, params; state_map=u0)
 nothing # hide
@@ -386,7 +390,7 @@ We can find the:
 To avoid the optimisation process returning a local minimum, it is often advised to run it multiple times, using different initial guesses. PEtab.jl supports this through the `calibrate_model_multistart` function. This is identical to the `calibrate_model` function, but takes two additional arguments:
 
 1. `n_multistart`: The number of runs to perform.
-2. `dir_save`: A location to which the output is saved. If `dir_save=nothing`, no output is saved.
+2. `dir_save`: A location to which the output is automatically saved. If `dir_save=nothing`, no output is saved.
 
 And one additional optional argument:
 
@@ -406,10 +410,11 @@ To load the result in a later session, we can call:
 ```@example petab1
 res_ms = PEtabMultistartOptimisationResult("OptimizationRuns")
 ```
-If the OptimizationRuns folder contains the output from several runs, we can designate which to load using the `which_run` argument. Here we load the second run to be saved in that folder:
+where `"OptimizationRuns"` is the name of the save directory (specified in `calibrate_model_multistart`). If the OptimizationRuns folder contains the output from several runs, we can designate which to load using the `which_run` argument. Here we load the second run to be saved in that folder:
 ```@example petab1
 res_ms = PEtabMultistartOptimisationResult("OptimizationRuns"; which_run="2")
 ```
+By default, `which_run` loads the first run saved to that directory.
 
 
 ## [Events](@id petab_events)
@@ -441,13 +446,16 @@ More details on how to use events, including how to create events with multiple 
 There exist various types of graphs that can be used to evaluate the parameter fitting process. These can be plotted using the `plot` command, where the input is either the result of a `calibrate_model` or a  `calibrate_model_multistart` run. To be able to use this functionality, you have to ensure that PEtab.jl [records the optimisation process](@ref petab_optimisation_path_recording) by providing the `save_trace=true` argument to the calibration functions.
 
 To, for a single start calibration run, plot, for each iteration of the optimization process, the best objective value achieved so far, run:
-
 ```@example petab1
 plot(res)
+nothing # hide
 ```
+![petab single best objective plot](../assets/petab_best_objective_single_run.svg)
+
 For a multi-start calibration run, the default output is instead a so-called waterfall plot:
 ```@example petab1
 plot(res_ms)
+nothing # hide
 ```
 ![petab waterfall plot](../assets/petab_waterfall.svg)
 
@@ -458,6 +466,7 @@ In the waterfall plot, each dot shows the final objective value for a single run
 To instead use the best objective value plot for a multi-start run (with one curve for each run), the `plot_type` argument is used:
 ```@example petab1
 plot(res_ms; plot_type = :best_objective)
+nothing # hide
 ```
 ![petab best objective plot](../assets/petab_best_objective.svg)
 
