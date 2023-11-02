@@ -31,7 +31,9 @@ data_vals = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 using Plots
 plot(true_sol; idxs=:P, label="True solution", lw=8)
 plot!(data_ts, data_vals; label="Measurements", seriestype=:scatter, ms=6, color=:blue)
+nothing # hide
 ```
+![petab data solution](../assets/petab_data.svg)
 
 Generally, PEtab takes five different inputs to define an optimisation problem (the minimiser of which generates a fitted parameter set):
 1. **Model**: The model which we want to fit to the data (a `ReactionSystem`).
@@ -118,7 +120,10 @@ We can now simulate our model for the fitted parameter set, and compare the resu
 oprob_fitted = remake(oprob; p=get_ps(res, petab_problem))
 fitted_sol = solve(oprob_fitted, Tsit5())
 plot!(fitted_sol; idxs=:P, label="Fitted solution", linestyle=:dash, lw=6, color=:lightblue)
+nothing # hide
 ```
+![petab fitted solution](../assets/petab_fitted_sol.svg)
+
 Here we use the `get_ps` function to retrieve a full parameter set using the optimal parameters. Alternatively, the `ODEProblem` or fitted simulation can be retrieved directly using the `get_odeproblem` or `get_odesol` [functions](https://sebapersson.github.io/PEtab.jl/dev/API_choosen/#PEtab.get_odeproblem), respectively (and the initial condition using the `get_u0` function). The calibration result can also be found in `res.xmin`, however, note that PEtab automatically ([unless a linear scale is selected](@ref petab_parameters_scales)) converts parameters to logarithmic scale, so typically `10 .^res.xmin` are the values of interest. If you investigate the result from this example you might note that the found parameter set (while it fits the data well) does not correspond to the true parameter set. This phenomenon is related to *identifiability*, and is very important for parameter fitting.
 
 ### Final notes
