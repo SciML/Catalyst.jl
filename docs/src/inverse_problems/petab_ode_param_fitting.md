@@ -450,6 +450,7 @@ For a multi-start calibration run, the default output is instead a so-called wat
 plot(res_ms)
 ```
 ![petab waterfall plot](../assets/petab_waterfall.svg)
+
 (for this, and the next plot, we use a multi-start optimisation result from a different model, which yields less trivial optimisation runs than our catalysis one)
 
 In the waterfall plot, each dot shows the final objective value for a single run in the multi-start process. The runs are ordered by their objective values, and colours designate runs in the same local minimum. A common use of waterfall plots is to check whether a sufficient number of runs (typically *>5*) has converged to the same best local minimum (in which case it is assumed to be the *global* minimum).
