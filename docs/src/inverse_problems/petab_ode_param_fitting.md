@@ -82,7 +82,7 @@ For cases where several simulation conditions are given, we also need to provide
 
 *Note also, when [pre-equilibration](https://sebapersson.github.io/PEtab.jl/stable/Brannmark/) is used to initiate the system in a steady state, a fifth field is also required.*
 
-Measurements are provided in a `DataFrame` where each row corresponds to a measurement. The values are provided in the `obs_id`, `time`, `measurement`, and `simulation_id` columns. In our case we only need to fill in the first three:
+Each individual measurement is provided as a row of a `DataFrame`. The values are provided in the `obs_id`, `time`, `measurement`, and `simulation_id` columns. In our case we only need to fill in the first three:
 ```@example petab1
 using DataFrames
 measurements = DataFrame(obs_id="obs_P", time=sol.t[10:10:end], measurement=data)
