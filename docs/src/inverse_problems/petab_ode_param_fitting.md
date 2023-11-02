@@ -196,7 +196,7 @@ to set a normally distributed prior (with mean `1.0` and standard deviation `0.2
 ```@example petab1
 par_kB = PEtabParameter(:kB; prior=Normal(1.0,0.2), prior_on_linear_scale=false)
 ```
-In this example, setting `prior_on_linear_scale=false` make sense as a (linear) normal distribution is non-zero for negative values (an alternative is to use a log-normal distribution, e.g. `prior=LogNormal(3.0, 3.0)`).
+In this example, setting `prior_on_linear_scale=false` makes sense as a (linear) normal distribution is non-zero for negative values (an alternative is to use a log-normal distribution, e.g. `prior=LogNormal(3.0, 3.0)`).
 
 ## [Simulation conditions](@id petab_simulation_conditions)
 Sometimes, we have data from several different experimental conditions. Here, when a potential parameter set is evaluated during the fitting process, each experimental condition corresponds to one simulation condition (which produces one simulation). To account for this, PEtab permits the user to define several different simulation conditions, with each condition being defined by specific values for some initial conditions and/or parameters. 
