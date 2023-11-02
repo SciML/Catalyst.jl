@@ -212,7 +212,7 @@ Similarly as for observables, we then gather the conditions in another `Dict`, g
 simulation_conditions = Dict("c1" => c1, "c2" => c2)
 nothing # hide
 ```
-Again (like for observables), each measurement in the measurements `DataFrame` needs to be associated with a simulation condition id tag (describing which condition that measurements were taken from). Parameters, just like initial conditions, may vary between different conditions. If an initial condition (or parameter) occurs in one condition, it must occur in all of them.
+Again (like for observables), each measurement in the measurements `DataFrame` needs to be associated with a simulation condition id tag (describing which condition those measurements were taken from). Parameters, just like initial conditions, may vary between different conditions. If an initial condition (or parameter) occurs in one condition, it must occur in all of them.
 
 Here follows a complete version of our basic example, but with measurements both for *S(0)=1.0* and *S(0)=0.5*.
 ```@example petab3
