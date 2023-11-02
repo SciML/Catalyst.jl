@@ -72,7 +72,7 @@ oprob = ODEProblem(osys, u₀, (0.0, 1.0), p)
 nothing # hide
 ```
 We can now solve and plot the system
-```@example s1
+```@julia
 sol = solve(oprob, Tsit5())
 plot(sol)
 ```
