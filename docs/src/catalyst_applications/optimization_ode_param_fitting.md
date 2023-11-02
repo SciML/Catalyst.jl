@@ -106,7 +106,7 @@ nothing # hide
 We can now fit our model to data and plot the results:
 ```@example diffeq_param_estim_1 
 optprob_S_P = OptimizationProblem(loss_function_S_P, [1.0,1.0, 1.0])
-optsol_S_P = solve(optprob_S_P, CMAEvolutionStrategyOpt())
+optsol_S_P = solve(optprob_S_P, NelderMead())
 oprob_fitted_S_P = remake(oprob; p=optsol_S_P.u)
 fitted_sol_S_P = solve(oprob_fitted_S_P, Tsit5())
 plot!(fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle=:dash, lw=6, color=[:lightblue :pink])
@@ -163,6 +163,6 @@ Say that we had measured our model for several different initial conditions, and
 ## Optimisation solver options
 Optimization.jl supports various [optimisation solver options](https://docs.sciml.ai/Optimization/stable/API/solve/) that can be supplied to the `solve` command. For example, to set a maximum number of seconds (after which the optimisation process is terminated), you can use the `maxtime` argument:
 ```@example diffeq_param_estim_1 
-optsol_fixed_kD = solve(optprob, CMAEvolutionStrategyOpt(); maxtime=100)
+optsol_fixed_kD = solve(optprob, NelderMead(); maxtime=100)
 nothing # hide
 ```
