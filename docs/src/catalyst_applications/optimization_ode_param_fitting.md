@@ -103,8 +103,9 @@ nothing # hide
 
 We can now fit our model to data and plot the results:
 ```@example diffeq_param_estim_1 
-optprob_S_P = OptimizationProblem(loss_function_S_P, [1.0, 0.1, 0.5])
-oprob_fitted_S_P = remake(oprob; p=optprob_S_P.u)
+optprob_S_P = OptimizationProblem(loss_function_S_P, [1.0,1.0, 1.0])
+optsol_S_P = solve(optprob_S_P, NelderMead())
+oprob_fitted_S_P = remake(oprob; p=oprob_fitted_S_P.u)
 fitted_sol_S_P = solve(oprob_fitted_S_P, Tsit5())
 plot!(fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle=:dash, lw=6, color=[:lightblue :pink])
 ```
@@ -118,7 +119,23 @@ optprob = OptimizationProblem(loss_function, [1.0, 1.0, 1.0]; lb = [0.1, 0.1, 0.
 In addition to boundaries, Optimization.jl also supports setting [linear and non-linear constraints](https://docs.sciml.ai/Optimization/stable/tutorials/constraints/#constraints) on its output solution.
 
 ## Parameter fitting with known parameters
+If we from previous knowledge know that *kD = 0.1*, and only would like to fit the values of *kD* and *kP*, this can be achieved through `build_loss_objective`'s `prob_generator` argument. First, we create a function (`fixed_p_prob_generator`) that modifies our `ODEProblem` to incorporate this knowledge:
+```@example diffeq_param_estim_1 
+fixed_p_prob_generator(prob, p) = remake(prob; p = vcat(p[1], 0.1, p[2]))
+nothing # hide
+```
+Here, it takes the `ODEProblem` (`prob`) we simulates, and the parameter set used (`p`), during the optimisation process, and creates a modified `ODEProblem` (by setting a customised parameter vector [using `remake`](@ref simulation_structure_interfacing_remake)). Now we create our modified loss function:
+```@example diffeq_param_estim_1 
+loss_function_fixed_kD = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, data_vals), Optimization.AutoForwardDiff(); rob_generator = fixed_p_prob_generator, maxiters=10000, verbose=false, save_idxs=4)
+nothing #
+```
 
+We can create an optimisation problem from this one like previously, but keeping in mind that it (and its output results) only contains two parameter values (*kB* and *kP):
+```@example diffeq_param_estim_1 
+optprob_fixed_kD = OptimizationProblem(loss_function_fixed_kD, [1.0, 1.0])
+optsol_fixed_kD = solve(optprob_fixed_kD, NelderMead())
+nothing # hide
+```
 
 ## Fitting parameters on the logarithmic scale
 Often it can be advantageous to fit parameters on a [logarithmic, rather than linear, scale](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008646). The best way to proceed is to simply replace each parameters in the model definition by its logarithmic version:

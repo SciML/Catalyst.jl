@@ -33,7 +33,7 @@ oprob[:X1] = 10.0
 ```
 with parameters using the same notation.
 
-#### Remaking problems using the `remake` function
+#### [Remaking problems using the `remake` function](@od simulation_structure_interfacing_remake)
 Typically, when modifying problems, it is recommended to use the `remake` function. Unlike when we do `oprob[:X1] = 10.0` (which modifies the problem in question), `remake` creates a new problem object. The `remake` function takes a problem as input, and any fields you wish to modify (and their new values) as optional inputs. Thus, we can do:
 ```@example ex1
 using DifferentialEquations
