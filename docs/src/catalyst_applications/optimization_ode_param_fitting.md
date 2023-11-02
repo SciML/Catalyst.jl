@@ -161,7 +161,7 @@ corresponds to the same true parameter values as used previously (`[:kB => 1.0, 
 Say that we had measured our model for several different initial conditions, and would like to fit our model to all these measurements simultaneously. This can be done by first creating a [corresponding `EnsembleProblem`](@ref advanced_simulations_ensemble_problems). How to then create loss functions for these are described in more detail [here](https://docs.sciml.ai/DiffEqParamEstim/stable/tutorials/ensemble/).
 
 ## Optimisation solver options
-Optimization.jl supports various [optimisation solver options](https://docs.sciml.ai/Optimization/stable/API/solve/) that can be supplied to the solve command. For example, to set a maximum number of seconds (after which the optimisation process is terminated), you can use the `maxtime` argument:
+Optimization.jl supports various [optimisation solver options](https://docs.sciml.ai/Optimization/stable/API/solve/) that can be supplied to the `solve` command. For example, to set a maximum number of seconds (after which the optimisation process is terminated), you can use the `maxtime` argument:
 ```@example diffeq_param_estim_1 
 optsol_fixed_kD = solve(optprob, CMAEvolutionStrategyOpt(); maxtime=100)
 nothing # hide
