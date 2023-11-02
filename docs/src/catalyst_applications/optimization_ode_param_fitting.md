@@ -31,7 +31,7 @@ data_vals = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 # Plots the true solutions and the (synthetic data) measurements.
 using Plots
 plot(true_sol; idxs=:P, label="True solution", lw=8)
-plot!(data_ts, data_vals; label="Measurements", seriestype=:scatter, ms=6)
+plot!(data_ts, data_vals; label="Measurements", seriestype=:scatter, ms=6, color=:blue)
 ```
 
 Next, we will use DiffEqParamEstim.jl to build a loss function that describing how well our model's simulations fit the data.
@@ -66,13 +66,14 @@ Finally, we can optimise `optprob` to find the parameter set that best fits our 
 ```@example diffeq_param_estim_1 
 using OptimizationOptimJL
 optsol = solve(optprob, NelderMead())
+nothing # hide
 ```
 
 We can now simulate our model for the corresponding parameter set, checking that it fits our data.
 ```@example diffeq_param_estim_1 
 oprob_fitted = remake(oprob; p=optsol.u)
 fitted_sol = solve(oprob_fitted, Tsit5())
-plot!(fitted_sol; idxs=:P, label="Fitted solution", linestyle=:dash, lw=6, color=:purple)
+plot!(fitted_sol; idxs=:P, label="Fitted solution", linestyle=:dash, lw=6, color=:lightblue)
 ```
 
 !!! note
@@ -82,6 +83,7 @@ Say that we instead would like to use the [CMA Evolution Strategy](https://en.wi
 ```@example diffeq_param_estim_1 
 using OptimizationCMAEvolutionStrategy
 sol = solve(optprob, CMAEvolutionStrategyOpt())
+nothing # hide
 ```
 
 ## Optimisation problems with data for multiple species
@@ -92,7 +94,7 @@ data_vals_P = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 
 plot(true_sol; idxs=[:S, :P], label=["True S" "True P"], lw=8)
 plot!(data_ts, data_vals_S; label="Measured S", seriestype=:scatter, ms=6, color=:blue)
-plot!(data_ts, data_vals_P; label="Measured P", seriestype=:scatter, ms=6, color =:red)
+plot!(data_ts, data_vals_P; label="Measured P", seriestype=:scatter, ms=6, color=:red)
 ```
 
 In this case we would have to use the `L2Loss(data_ts, hcat(data_vals_S, data_vals_P))` and `save_idxs=[1,4]` arguments in `loss_function`:
@@ -104,8 +106,8 @@ nothing # hide
 We can now fit our model to data and plot the results:
 ```@example diffeq_param_estim_1 
 optprob_S_P = OptimizationProblem(loss_function_S_P, [1.0,1.0, 1.0])
-optsol_S_P = solve(optprob_S_P, NelderMead())
-oprob_fitted_S_P = remake(oprob; p=oprob_fitted_S_P.u)
+optsol_S_P = solve(optprob_S_P, CMAEvolutionStrategyOpt())
+oprob_fitted_S_P = remake(oprob; p=optsol_S_P.u)
 fitted_sol_S_P = solve(oprob_fitted_S_P, Tsit5())
 plot!(fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle=:dash, lw=6, color=[:lightblue :pink])
 ```
@@ -113,7 +115,8 @@ plot!(fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle=:dash, l
 ## Setting parameter constraints and boundaries
 Sometimes, it is desired to set boundaries on parameter values. Indeed, this can speed up the optimisation process (by preventing searching through unfeasible parts of parameter space) or be a prerequisite of some optimisation methods. This can be done by passing the `lb` (lower bounds) and `up` (upper bounds) arguments to `OptimizationProblem`. These are vectors (of the same length as the number of parameters), with each argument corresponding to the boundary value of the parameter with the same index (as used in the `parameters(rn)` vector). If we wish to constrain each parameter to the interval *(0.1, 10.0)* this can be done through:
 ```@example diffeq_param_estim_1 
-optprob = OptimizationProblem(loss_function, [1.0, 1.0, 1.0]; lb = [0.1, 0.1, 0.1], up = [10.0, 10.0, 10.0])
+optprob = OptimizationProblem(loss_function, [1.0, 1.0, 1.0]; lb = [0.1, 0.1, 0.1], ub = [10.0, 10.0, 10.0])
+nothing # hide
 ```
 
 In addition to boundaries, Optimization.jl also supports setting [linear and non-linear constraints](https://docs.sciml.ai/Optimization/stable/tutorials/constraints/#constraints) on its output solution.
@@ -126,7 +129,7 @@ nothing # hide
 ```
 Here, it takes the `ODEProblem` (`prob`) we simulates, and the parameter set used (`p`), during the optimisation process, and creates a modified `ODEProblem` (by setting a customised parameter vector [using `remake`](@ref simulation_structure_interfacing_remake)). Now we create our modified loss function:
 ```@example diffeq_param_estim_1 
-loss_function_fixed_kD = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, data_vals), Optimization.AutoForwardDiff(); rob_generator = fixed_p_prob_generator, maxiters=10000, verbose=false, save_idxs=4)
+loss_function_fixed_kD = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, data_vals), Optimization.AutoForwardDiff(); prob_generator = fixed_p_prob_generator, maxiters=10000, verbose=false, save_idxs=4)
 nothing #
 ```
 
@@ -140,7 +143,7 @@ nothing # hide
 ## Fitting parameters on the logarithmic scale
 Often it can be advantageous to fit parameters on a [logarithmic, rather than linear, scale](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008646). The best way to proceed is to simply replace each parameters in the model definition by its logarithmic version:
 ```@example diffeq_param_estim_2
-using Catalyst, PEtab
+using Catalyst
 rn = @reaction_network begin
     10^kB, S + E --> SE
     10^kD, SE --> S + E
@@ -150,11 +153,16 @@ end
 And then proceeding, by keeping in mind that parameter values are logarithmic. Here, setting
 ```@example diffeq_param_estim_2
 p_true = [:kB => 0.0, :kD => -1.0, :kP => 10^(0.5)]
+nothing # hide
 ```
 corresponds to the same true parameter values as used previously (`[:kB => 1.0, :kD => 0.1, :kP => 0.5]`).
-
 
 ## Parameter fitting to multiple experiments
 Say that we had measured our model for several different initial conditions, and would like to fit our model to all these measurements simultaneously. This can be done by first creating a [corresponding `EnsembleProblem`](@ref advanced_simulations_ensemble_problems). How to then create loss functions for these are described in more detail [here](https://docs.sciml.ai/DiffEqParamEstim/stable/tutorials/ensemble/).
 
-
+## Optimisation solver options
+Optimization.jl supports various [optimisation solver options](https://docs.sciml.ai/Optimization/stable/API/solve/) that can be supplied to the solve command. For example, to set a maximum number of seconds (after which the optimisation process is terminated), you can use the `maxtime` argument:
+```@example diffeq_param_estim_1 
+optsol_fixed_kD = solve(optprob, CMAEvolutionStrategyOpt(); maxtime=100)
+nothing # hide
+```
