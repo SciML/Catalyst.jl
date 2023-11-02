@@ -406,7 +406,7 @@ To load the result in a later session, we can call:
 ```@example petab1
 res_ms = PEtabMultistartOptimisationResult("OptimizationRuns")
 ```
-If the OptimizationRuns folder contains the output from several runs, we can designate which to load using the `which_run` argument. Here we loads the second run to be saved in that folder:
+If the OptimizationRuns folder contains the output from several runs, we can designate which to load using the `which_run` argument. Here we load the second run to be saved in that folder:
 ```@example petab1
 res_ms = PEtabMultistartOptimisationResult("OptimizationRuns"; which_run="2")
 ```
