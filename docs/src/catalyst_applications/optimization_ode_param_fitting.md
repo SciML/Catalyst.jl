@@ -32,7 +32,9 @@ data_vals = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 using Plots
 plot(true_sol; idxs=:P, label="True solution", lw=8)
 plot!(data_ts, data_vals; label="Measurements", seriestype=:scatter, ms=6, color=:blue)
+nothing # hide
 ```
+![Optimization data](../assets/optimization_data.svg)
 
 Next, we will use DiffEqParamEstim.jl to build a loss function that describing how well our model's simulations fit the data.
 ```@example diffeq_param_estim_1 
@@ -40,7 +42,7 @@ using DiffEqParamEstim, Optimization
 p_dummy = [:kB => 0.0, :kD => 0.0, :kP => 0.0]
 oprob = ODEProblem(rn, u0, (0.0, 10.0), p_dummy)
 loss_function = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, data_vals), Optimization.AutoForwardDiff(); maxiters=10000, verbose=false, save_idxs=4)
-nothing #
+nothing # hide
 ```
 To `build_loss_objective` we provide the following arguments:
 - `oprob`: The `ODEProblem` with which we simulate our model (using some dummy parameter values, since we do not know these).
@@ -56,7 +58,7 @@ Furthermore, we can pass any number of additional optional arguments, these are 
 Now we can create an `OptimizationProblem` using our `loss_function` and some initial guess of parameter values from which the optimiser will start:
 ```@example diffeq_param_estim_1 
 optprob = OptimizationProblem(loss_function, [1.0, 1.0, 1.0])
-nothing #
+nothing # hide
 ```
 
 !!! note
@@ -74,7 +76,9 @@ We can now simulate our model for the corresponding parameter set, checking that
 oprob_fitted = remake(oprob; p=optsol.u)
 fitted_sol = solve(oprob_fitted, Tsit5())
 plot!(fitted_sol; idxs=:P, label="Fitted solution", linestyle=:dash, lw=6, color=:lightblue)
+nothing # hide
 ```
+![Optimization data](../assets/optimization_fitted_sol.svg)
 
 !!! note
 Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. [Identifiability](https://www.sciencedirect.com/science/article/pii/S1364815218307278) is a concept that studies how to deal with this problem.
@@ -130,7 +134,7 @@ nothing # hide
 Here, it takes the `ODEProblem` (`prob`) we simulates, and the parameter set used (`p`), during the optimisation process, and creates a modified `ODEProblem` (by setting a customised parameter vector [using `remake`](@ref simulation_structure_interfacing_remake)). Now we create our modified loss function:
 ```@example diffeq_param_estim_1 
 loss_function_fixed_kD = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, data_vals), Optimization.AutoForwardDiff(); prob_generator = fixed_p_prob_generator, maxiters=10000, verbose=false, save_idxs=4)
-nothing #
+nothing # hide
 ```
 
 We can create an optimisation problem from this one like previously, but keeping in mind that it (and its output results) only contains two parameter values (*kB* and *kP):
