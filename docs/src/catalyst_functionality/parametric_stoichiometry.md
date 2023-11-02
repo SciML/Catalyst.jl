@@ -77,7 +77,7 @@ sol = solve(oprob, Tsit5())
 plot(sol)
 ```
 *If we had used a vector to store parameters, `m` and `n` would be converted to
-floating point giving an error when solving the system.*
+floating point giving an error when solving the system.* **Note, currently a [bug]() in ModelingToolkit has broken this example by converting to floating point when using tuple parameters, see the alternative approach below for a workaround.**
 
 An alternative approach to avoid the issues of using mixed floating point and
 integer variables is to disable the rescaling of rate laws as described in
