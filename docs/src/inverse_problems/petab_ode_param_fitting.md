@@ -186,7 +186,7 @@ par_kB = PEtabParameter(:kB; scale=:lin)
 ```
 
 ### [Parameter priors](@id petab_parameters_priors)
-If we has prior knowledge about the distribution of a parameter, it is possible to incorporate this into the model. The prior can be any continuous, univariate, distribution from the [Distributions.jl package](https://github.com/JuliaStats/Distributions.jl). E.g we can use:
+If we have prior knowledge about the distribution of a parameter, it is possible to incorporate this into the model. The prior can be any continuous, univariate, distribution from the [Distributions.jl package](https://github.com/JuliaStats/Distributions.jl). E.g we can use:
 
 ```@example petab1
 using Distributions
