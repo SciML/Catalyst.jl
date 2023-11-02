@@ -82,7 +82,7 @@ Here, a good exercise is to check the resulting parameter set and note that, whi
 Say that we instead would like to use the [Broyden–Fletcher–Goldfarb–Shannon](https://en.wikipedia.org/wiki/Broyden%E2%80%93Fletcher%E2%80%93Goldfarb%E2%80%93Shanno_algorithm) algorithm, as implemented by the [NLopt.jl](https://github.com/JuliaOpt/NLopt.jl) package. In this case we would run:
 ```@example diffeq_param_estim_1 
 using OptimizationNLopt
-sol = solve(optprob, BFGS())
+sol = solve(optprob, NLopt.LD_LBFGS())
 nothing # hide
 ```
 
