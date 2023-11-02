@@ -298,7 +298,7 @@ nothing # hide
 and we can use our updated `rn`, `u0`, and `params` as input to our `PEtabModel`.
 
 ### [Uncertain initial conditions](@id petab_simulation_initial_conditions_uncertainty)
-Often, while an initial condition has been reported for an experiment, its exact value is uncertain. This can be modelled by making the initial condition a [parameter that is fitted to the data](@ref petab_simulation_initial_conditions_fitted) and attach a prior to it corresponding to our certainty about its value. 
+Often, while an initial condition has been reported for an experiment, its exact value is uncertain. This can be modelled by making the initial condition a [parameter that is fitted to the data](@ref petab_simulation_initial_conditions_fitted) and attaching a prior to it corresponding to our certainty about its value. 
 
 Let us consider our initial example, but where we want to add uncertainty to the initial conditions of `S` and `E`. We will add priors on these, assuming normal distributions with mean `1.0` and standard deviation `0.1`. For the synthetic measured data we will use the true values *S(0)=E(0)=1.0*.
 ```@example petab5
