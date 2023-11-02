@@ -3,7 +3,7 @@ The [PEtab.jl package](https://github.com/sebapersson/PEtab.jl) implements the [
 
 
 ## Introductory example
-Let us consider a simple catalysis network, where an enzyme (*E*) turns a substrate (*S*) into a product (*P*):
+Let us consider a simple catalysis network, where an enzyme ($E$) turns a substrate ($S$) into a product ($P$):
 ```@example petab1
 using Catalyst, PEtab
 
