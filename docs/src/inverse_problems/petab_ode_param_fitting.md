@@ -4,7 +4,7 @@ The [PEtab.jl package](https://github.com/sebapersson/PEtab.jl) implements the [
 
 ## Introductory example
 Let us consider a simple catalysis network, where an enzyme (*E*) turns a substrate (*S*) into a product (*P*):
-```petab1
+```@example petab1
 using Catalyst, PEtab
 
 rn = @reaction_network begin
@@ -14,7 +14,7 @@ rn = @reaction_network begin
 end
 ```
 From some known initial condition, and a true parameter set (which we later want to recover from the data) we generate synthetic data (on which we will demonstrate the fitting process).
-```petab1
+```@example petab1
 # Define initial conditions and parameters.
 u0 = [:S => 1.0, :E => 1.0, :SE => 0.0, :P => 0.0]
 p_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
@@ -43,7 +43,7 @@ The observables define the quantities that we may measure in our experiments. Ty
 
 In our example, we only have a single possible observable, the `P` species. We will assume that the noise is normally distributed with a standard deviation `0.5` (in our case this is not true, however, typically the noise distribution is unknown and a guess have to be made). We combine this information in a `PEtabObservable` struct (to access the `P` species we must use [`@unpack`](@ref simulation_structure_interfacing_symbolic_representation)). Finally, we store all our observables in a dictionary, giving each an id tag (which is later used in the measurements input).
 
-```petab1
+```@example petab1
 @unpack P = rn
 obs_P = PEtabObservable(P, 0.5)
 observables = Dict("obs_P" => obs_P)
@@ -57,7 +57,7 @@ Each parameter of the system can either be
 3. Be an unknown that we wish to fit to data.
 
 In our case, we wish to fit all three system parameters (*kB*, *kD*, and *kP*). For each, we create a single `PEtabParameter`, and then gather these into a single vector.
-```petab1
+```@example petab1
 par_kB = PEtabParameter(:kB)
 par_kD = PEtabParameter(:kD)
 par_kP = PEtabParameter(:kP)
@@ -83,7 +83,7 @@ For cases where several simulation conditions are given, we also need to provide
 ([When [pre-equilibration](https://sebapersson.github.io/PEtab.jl/stable/Brannmark/) is used to initiate the system in a steady state, a fifth field is also required])
 
 Measurements are provided in a `DataFrame` where each row corresponds to a measurement. The values are provided in the `obs_id`, `time`, `measurement`, and `simulation_id` columns. In our case we only need to fill in the first three:
-```petab1
+```@example petab1
 using DataFrames
 measurements = DataFrame(obs_id="obs_P", time=sol.t[10:10:end], measurement=data)
 ```
@@ -91,28 +91,28 @@ Since, in our example, all measurements are of the same observable, we can set `
 
 ### Creating a PEtabModel
 Finally, we combine all inputs in a single `PEtabModel`. To it, we also pass the initial conditions of our simulations (using the `state_map` argument). It is also possible to have [initial conditions with uncertainty](@ref petab_simulation_initial_conditions_uncertainty), [that vary between different simulations](@ref petab_simulation_conditions), or [that we attempt to fit to the data](@ref petab_simulation_initial_conditions_fitted).
-```petab1
+```@example petab1
 petab_model = PEtabModel(rn, observables, measurements, params; state_map=u0)
 nothing # hide
 ```
 
 ### Fitting parameters
 We are now able to fit our model to the data. First, we create a `PEtabODEProblem`. Here, we use `petab_model` as the only input, but it is also possible to set various [numeric solver and automatic differentiation options](@ref petab_simulation_options) (such as method or tolerance).
-```petab1
+```@example petab1
 petab_problem = PEtabODEProblem(petab_model)
 nothing # hide
 ```
 Since no additional input is given, default optiosn are selected by PEtab.jl (and generally, its choices are good).
 
 To fit a parameter set we use the `calibrate_model` function. In addition to our `PEtabODEProblem`, we must also provide an initial guess (which can be generated with the `generate_startguesses` function) and an optimisation algorithm (which needs to be imported specifically). PEtab.jl supports various [optimisation methods and options](@ref petab_optimisation_optimisers). 
-```petab1
+```@example petab1
 using Optim
 p0 = generate_startguesses(petab_problem, 1)
 res = calibrate_model(petab_problem, p0, IPNewton())
 ```
 
 We can now simulate our model for the fitted parameter set, and compare the result to the measurements and true solution.
-```petab1
+```@example petab1
 oprob = ODEProblem(rn, u0, (0.0, 10.0), get_ps(res, petab_problem))
 sol = solve(oprob, Tsit5(); saveat=0.1)
 plot!(sol; idxs=4, label="Fitted solution")
@@ -126,7 +126,7 @@ PEtab.jl also supports [multistart optimisation](@ref petab_multistart_optimisat
 
 ### [Defining non-trivial observables](@id petab_observables_observables)
 It is possible for observables to be any algebraic expression of species concentrations and parameters. E.g. in this example the total amount of `X` in the system is an observable:
-```petab2
+```@example petab2
 using Catalyst, PEtab # hide
 rn = @reaction_network begin
     (k1,k2), X1 <--> X2
@@ -139,18 +139,18 @@ A common application for this is to define an [*offset* and a *scale* for each o
 
 ### [Advanced observables noise formulas](@id petab_observables_noise_formula)
 In our basic example we assumed that the normally distributed noise had a standard deviation of `0.5`. However, this value may be a parameter (or indeed any algebraic expression). E.g, we could set
-```petab1
+```@example petab1
 @parameters σ
 obs_P = PEtabObservable(P, σ)
 ```
 and then let the parameter *σ* vary between different [simulation conditions](@ref petab_simulation_conditions). Alternatively we could let the noise scale linearly with the species' concentration:
-```petab1
+```@example petab1
 obs_P = PEtabObservable(P, 0.05P)
 ```
 It would also be possible to make *σ* a *parameter that is fitted as a part of the parameter fitting process*.
 
 PEtab.jl assumes that noise is normally distributed (with a standard deviation equal to the second argument provided to `PEtabObservable`). The only other (currently implemented) noise distribution is log-normally distributed noise, which is designated through the `transformation=:log` argument:
-```petab1
+```@example petab1
 obs_P = PEtabObservable(P, σ; transformation=:log)
 ```
 
@@ -158,21 +158,21 @@ obs_P = PEtabObservable(P, σ; transformation=:log)
 
 ### [Known parameters](@id petab_parameters_known)
 In our previous example, all parameters were unknowns that we wished to fit to the data. If any parameters have known values, it is possible to provide these to `PEtabModel` through the `parameter_map` argument. E.g if we had known that *kB = 1.0*, then we would only define *kD* and *kP* as parameters we wish to fit:
-```petab1
+```@example petab1
 par_kD = PEtabParameter(:kD)
 par_kP = PEtabParameter(:kP)
 params = [par_kD, par_kP]
 nothing # hide
 ```
 We then provide `parameter_map=[:kB => 1.0]` when we assembly our model:
-```petab1
+```@example petab1
 petab_model = PEtabModel(rn, observables, measurements, params; state_map=u0, parameter_map=[:kB => 1.0])
 nothing # hide
 ```
 
 ### [Parameter bounds](@id petab_parameters_bounds)
 By default, when fitted, potential parameter values are assumed to be in the interval *[1e-3, 1e3]*. When declaring a `PEtabParameter` it is possible to change these values through the `lb` and `ub` arguments. E.g. we could use
-```petab1
+```@example petab1
 par_kB = PEtabParameter(:kB; lb=1e-2, ub=1e-2)
 ```
 to achieve the more conservative bound *[1e-2, 1e2]* for the parameter *kB*.
@@ -181,19 +181,19 @@ to achieve the more conservative bound *[1e-2, 1e2]* for the parameter *kB*.
 
 Internally, parameters that are fitted are converted to a logarithmic scale (generally, this is considered advantageous[^2]). To prevent this conversion, the `scale=:lin` argument can be used. Here we change the scale of *kB* to linear:
 
-```petab1
+```@example petab1
 par_kB = PEtabParameter(:kB; scale=:lin)
 ```
 
 ### [Parameter priors](@id petab_parameters_priors)
 If we has prior knowledge about the distribution of a parameter, it is possible to incorporate this into the model. The prior can be any continuous, univariate, distribution from the [Distributions.jl package](https://github.com/JuliaStats/Distributions.jl). E.g we can use:
 
-```petab1
+```@example petab1
 using Distributions
 par_kB = PEtabParameter(:kB; prior=Normal(1.0,0.2))
 ```
 to set a normally distributed prior (with mean `1.0` and standard deviation `0.2`) on the value of *kB*. By default, the prior is assumed to be on the linear scale of the parameter (before any potential log transform). To specify that the prior is on the logarithmic scale, the `prior_on_linear_scale=false` argument can be provided:
-```petab1
+```@example petab1
 par_kB = PEtabParameter(:kB; prior=Normal(1.0,0.2), prior_on_linear_scale=false)
 ```
 In this example, setting `prior_on_linear_scale=false` make sense as a (linear) normal distribution is non-zero for negative values (an alternative is to use a log-normal distribution, e.g. `prior=LogNormal(3.0, 3.0)`).
@@ -202,20 +202,20 @@ In this example, setting `prior_on_linear_scale=false` make sense as a (linear) 
 Sometimes, we have data from several different experimental conditions. Here, when a potential parameter set is evaluated during the fitting process, each experimental condition corresponds to one simulation condition (which produces one simulation). To account for this, PEtab permits the user to define several different simulation conditions, with each condition being defined by specific values for some initial conditions and/or parameters. 
 
 If, for our previous catalysis example, we had measured the system for two different initial values of *S* (*S(0)=1.0* and *S(0)=0.5*), these would correspond to two different simulation conditions. For each condition we define a `Dict` mapping the species to their initial condition (here, *S* is the only species in each `Dict`):
-```petab1
+```@example petab1
 c1 = Dict(:S => 1.0)
 c2 = Dict(:S => 0.5)
 nothing # hide
 ```
 Similarly as for observables, we then gather the conditions in another `Dict`, giving each an id tag:
-```petab1
+```@example petab1
 simulation_conditions = Dict("c1" => c1, "c2" => c2)
 nothing # hide
 ```
 Again (like for observables), each measurement in the measurements `DataFrame` needs to be associated with a simulation condition id tag (describing which condition that measurements were taken from). Parameters, just like initial conditions, may vary between different conditions. If an initial condition (or parameter) occurs in one condition, it must occur in all of them.
 
 Here follows a complete version of our basic example, but with measurements both for *S(0)=1.0* and *S(0)=0.5*.
-```petab3
+```@example petab3
 using Catalyst, PEtab
 
 rn = @reaction_network begin
@@ -270,7 +270,7 @@ Sometimes, the parameters that are used vary between the different conditions. C
 
 ### [Fitting initial conditions](@id petab_simulation_initial_conditions_fitted)
 Sometimes, initial conditions are uncertain quantities which we wish to fit to the data. This is possible by [defining an initial condition as a parameter](@ref dsl_description_parametric_initial_conditions): 
-```petab4
+```@example petab4
 using Catalyst, PEtab # hide
 rn = @reaction_network begin
     @parameters E0
@@ -282,12 +282,12 @@ end
 nothing # hide
 ```
 Here, the initial value of `E` is equal to the parameter `E0`. We modify our `u0` vector by removing `E` (which is no longer known):
-```petab4
+```@example petab4
 u0 = [:S => 1.0, :SE => 0.0, :P => 0.0]
 nothing # hide
 ```
 Next, we add `E0` to the parameters we wish to fit:
-```petab4
+```@example petab4
 par_kB = PEtabParameter(:kB)
 par_kD = PEtabParameter(:kD)
 par_kP = PEtabParameter(:kP)
@@ -301,7 +301,7 @@ and we can use our updated `rn`, `u0`, and `params` as input to our `PEtabModel`
 Often, while an initial condition has been reported for an experiment, its exact value is uncertain. This can be modelled by making the initial condition a [parameter that is fitted to the data](@ref petab_simulation_initial_conditions_fitted) and attach a prior to it corresponding to our certainty about its value. 
 
 Let us consider our initial example, but where we want to add uncertainty to the initial conditions of `S` and `E`. We will add priors on these, assuming normal distributions with mean `1.0` and standard deviation `0.1`. For the synthetic measured data we will use the true values *S(0)=E(0)=1.0*.
-```petab5
+```@example petab5
 
 using Catalyst, PEtab
 
@@ -345,7 +345,7 @@ Here, when we fit our data we will also gain values for `S0` and `E0`, however, 
 While in our basic example, we do not provide any additional information to our `PEtabODEProblem`, this is an opportunity to specify how the model should be simulated, and what automatic differentiation techniques to use for the optimisation procedure (if none are provided, appropriate defaults are selected). 
 
 Here is an example, taken from the [more detailed PEtab.jl documentation](https://sebapersson.github.io/PEtab.jl/dev/Boehm/#Creating-a-PEtabODEProblem)
-```petab1
+```@example petab1
 petab_problem = PEtabODEProblem(petab_model, 
                                 ode_solver=ODESolver(Rodas5P(), abstol=1e-8, reltol=1e-8), 
                                 gradient_method=:ForwardDiff, 
@@ -358,7 +358,7 @@ where we simulate our ODE model using the `Rodas5p` method (with absolute and re
 
 ### [Optimisation methods and options](@id petab_optimisation_optimisers)
 For our examples, we have used the `Optim.IPNewton` optimisation method. PEtab.jl supports [several additional optimisation methods](https://sebapersson.github.io/PEtab.jl/dev/Avaible_optimisers/#options_optimisers). Furthermore, `calibrate_model`'s `options` argument permits the customisation of the options for any used optimiser. E.g. to designate the maximum number of iterations of the `Optim.IPNewton` method we would use:
-```petab1
+```@example petab1
 res = calibrate_model(petab_problem, p0, IPNewton(); options=Optim.Options(iterations = 10000))
 nothing # hide
 ```
@@ -372,7 +372,7 @@ To record all the parameter sets evaluated (and their objective values) during t
 
 ## Objective function extraction
 While PEtab.jl provides various tools for analysing the objective function generated by `PEtabODEProblem`, it is also possible to extract this function for customised analysis. Given a `PEtabODEProblem`
-```petab1
+```@example petab1
 petab_problem = PEtabODEProblem(petab_model)
 nothing # hide
 ```
@@ -395,7 +395,7 @@ And one additional optional argument:
 Because `calibrate_model_multistart` handles initial guess sampling, unlike for `calibrate_model`, no initial guess has to be provided. 
 
 Here, we fit parameters through 10 independent optimisation runs, using QuasiMonteCarlo's `SobolSample` method, and save the result to the OptimizationRuns folder:
-```
+```@example petab1
 using Optim
 using QuasiMonteCarlo
 res_ms = calibrate_model_multistart(petab_problem, IPNewton(), 10, "OptimizationRuns"; sampling_method=QuasiMonteCarlo.SobolSample())
@@ -403,11 +403,11 @@ res_ms = calibrate_model_multistart(petab_problem, IPNewton(), 10, "Optimization
 The best result across all runs can still be retrieved using `get_ps(res_ms, petab_problem)`, with the results of the individual runs being stored in the `res_ms.runs` field. 
 
 To load the result in a later session, we can call:
-```
+```@example petab1
 res_ms = PEtabMultistartOptimisationResult("OptimizationRuns")
 ```
 If the OptimizationRuns folder contains the output from several runs, we can designate which to load using the `which_run` argument. Here we loads the second run to be saved in that folder:
-```
+```@example petab1
 res_ms = PEtabMultistartOptimisationResult("OptimizationRuns"; which_run="2")
 ```
 
@@ -419,18 +419,18 @@ So far, we have assumed that all experiments, after initiation, run without inte
 3. The event's target (either a species or parameter).
 
 Here we create an event which adds `0.5` units of `S` to the system at time `5.0`:
-```petab1
+```@example petab1
 @unpack S = rn
 event1 = PEtabEvent(5.0, S + 0.5, S)
 ```
 Here, the first argument is evaluated to a scalar value, in which case it is interpreted as a time point at which the event happens. If we instead want the event to happen whenever the concentration of `S` falls below `0.5` we set the first argument to a boolean condition indicating this:
-```petab1
+```@example petab1
 event2 = PEtabEvent(S < 0.5, S + 0.5, S)
 ```
 Here, the event only triggers whenever the condition changes from `false` to `true`, and not while it remains `true` (or when changing from `true` to `false`). E.g. this event only triggers when `S` concentration passes from more than *5.0* to less that *5.0*.
 
 Whenever we have several events or not, we bundle them together in a single vector which is later passed to the `PEtabODEProblem` using the `events` argument:
-```petab1
+```@example petab1
 events = [event, event2]
 petab_model = PEtabModel(rn, observables, measurements, params; state_map=u0, events=events)
 ```
@@ -442,11 +442,11 @@ There exist various types of graphs that can be used to evaluate the parameter f
 
 To, for a single start calibration run, plot, for each iteration of the optimization process, the best objective value achieved so far, run:
 
-```petab1
+```@example petab1
 plot(res)
 ```
 For a multi-start calibration run, the default output is instead a so-called waterfall plot:
-```petab1
+```@example petab1
 plot(res_ms)
 ```
 ![petab waterfall plot](../assets/petab_waterfall.svg)
@@ -455,7 +455,7 @@ plot(res_ms)
 In the waterfall plot, each dot shows the final objective value for a single run in the multi-start process. The runs are ordered by their objective values, and colours designate runs in the same local minimum. A common use of waterfall plots is to check whether a sufficient number of runs (typically *>5*) has converged to the same best local minimum (in which case it is assumed to be the *global* minimum).
 
 To instead use the best objective value plot for a multi-start run (with one curve for each run), the `plot_type` argument is used:
-```petab1
+```@example petab1
 plot(res_ms; plot_type = :best_objective)
 ```
 ![petab best objective plot](../assets/petab_best_objective.svg)
