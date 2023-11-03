@@ -85,7 +85,7 @@ sol = solve(oprob, Tsit5())
 plot(sol)
 ```
 
-## Adding events
+## [Adding events](@id constraint_equations_events)
 Our current model is unrealistic in assuming the cell will grow exponentially
 forever. Let's modify it such that the cell divides in half every time its
 volume reaches a size of `2`. We also assume we lose half of the protein upon
