@@ -1,14 +1,14 @@
 ### Lattice Reaction Network Structure ###
-# Desribes a spatial reaction network over a graph.
+# Describes a spatial reaction network over a graph.
 struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem # Adding this part messes up show, disabling me from creating LRSs
-    """The reaction system within each comaprtment."""
+    """The reaction system within each compartment."""
     rs::ReactionSystem{S}
     """The spatial reactions defined between individual nodes."""
     spatial_reactions::Vector{T}
     """The graph on which the lattice is defined."""
     lattice::SimpleDiGraph{Int64}
 
-    # Derrived values.
+    # Derived values.
     """The number of compartments."""
     nV::Int64
     """The number of edges."""
@@ -19,7 +19,7 @@ struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem # Adding t
     init_digraph::Bool
     """Species that may move spatially."""
     spat_species::Vector{BasicSymbolic{Real}}
-    """Parameters which values are tied to edges (adjacencies).."""
+    """Parameters which values are tied to edges (adjacencies), e.g. (possibly) have a unique value at each edge of the system."""
     edge_parameters::Vector{BasicSymbolic{Real}}
 
     function LatticeReactionSystem(rs::ReactionSystem{S},
@@ -37,12 +37,6 @@ struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem # Adding t
 end
 function LatticeReactionSystem(rs, srs, lat::SimpleGraph)
     return LatticeReactionSystem(rs, srs, DiGraph(lat); init_digraph = false)
-end
-function LatticeReactionSystem(rs, sr::AbstractSpatialReaction, lat)
-    return LatticeReactionSystem(rs, [sr], lat)
-end
-function LatticeReactionSystem(rs, sr::AbstractSpatialReaction, lat::SimpleGraph)
-    return LatticeReactionSystem(rs, [sr], DiGraph(lat); init_digraph = false)
 end
 
 ### Lattice ReactionSystem Getters ###

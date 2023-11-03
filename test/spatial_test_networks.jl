@@ -7,7 +7,7 @@ rng = StableRNG(12345)
 
 ### Helper Functions ###
 
-# Generates ranomised intiial condition or paraemter values.
+# Generates randomised initial condition or parameter values.
 rand_v_vals(grid) = rand(rng, nv(grid))
 rand_v_vals(grid, x::Number) = rand_v_vals(grid) * x
 rand_e_vals(grid) = rand(rng, ne(grid))
@@ -125,7 +125,7 @@ brusselator_srs_1 = [brusselator_tr_x]
 brusselator_srs_2 = [brusselator_tr_x, brusselator_tr_y]
 
 # Mid-sized stiff system.
-# Unsure about stifness, but non-spatial version oscillates for this parameter set.
+# Unsure about stiffness, but non-spatial version oscillates for this parameter set.
 sigmaB_system = @reaction_network begin
     kDeg, (w, w2, w2v, v, w2v2, vP, σB, w2σB) ⟶ ∅
     kDeg, vPp ⟶ phos

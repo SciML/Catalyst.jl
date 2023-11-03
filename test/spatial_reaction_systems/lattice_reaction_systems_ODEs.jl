@@ -7,6 +7,10 @@ using Random, Statistics, SparseArrays, Test
 # Fetch test networks.
 include("../spatial_test_networks.jl")
 
+# Sets rnd number.
+using StableRNGs
+rng = StableRNG(12345)
+
 ### Tests Simulations Don't Error ###
 for grid in [small_2d_grid, short_path, small_directed_cycle]
     # Non-stiff case
@@ -69,7 +73,7 @@ for grid in [small_2d_grid, short_path, small_directed_cycle]
             p4 = make_u0_matrix(p2, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
             for pV in [p1, p2, p3, p4]
                 pE_1 = map(sp -> sp => 0.2, spatial_param_syms(lrs))
-                pE_2 = map(sp -> sp => rand(), spatial_param_syms(lrs))
+                pE_2 = map(sp -> sp => rand(rng), spatial_param_syms(lrs))
                 pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.2),
                            spatial_param_syms(lrs))
                 pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), spatial_param_syms(lrs))
@@ -90,7 +94,7 @@ end
 # Checks that non-spatial brusselator simulation is identical to all on an unconnected lattice.
 let
     lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, unconnected_graph)
-    u0 = [:X => 2.0 + 2.0 * rand(), :Y => 10.0 + 10.0 * rand()]
+    u0 = [:X => 2.0 + 2.0 * rand(rng), :Y => 10.0 + 10.0 * rand(rng)]
     pV = brusselator_p
     pE = [:dX => 0.2]
     oprob_nonspatial = ODEProblem(brusselator_system, u0, (0.0, 100.0), pV)
@@ -497,7 +501,7 @@ let
         return sparse(jac_prototype_pre)
     end
 
-    u0 = 2 * rand(10000)
+    u0 = 2 * rand(rng, 10000)
     p = [1.0, 4.0, 0.1]
     tspan = (0.0, 100.0)
 

@@ -19,7 +19,7 @@ end
 
 ### Transport Reaction Structures ###
 
-# A transport reaction. These are simple to hanlde, and should cover most types of spatial reactions.
+# A transport reaction. These are simple to handle, and should cover most types of spatial reactions.
 # Only permit constant rates (possibly consisting of several parameters).
 struct TransportReaction <: AbstractSpatialReaction
     """The rate function (excluding mass action terms). Currently only constants supported"""
@@ -32,12 +32,12 @@ struct TransportReaction <: AbstractSpatialReaction
         new(rate, species.val)
     end
 end
-# If the rate is a value, covert that to a numemric expression.
+# If the rate is a value, covert that to a numeric expression.
 function TransportReaction(rate::Number, args...)
     TransportReaction(Num(rate), args...)
 end
 # Creates a vector of TransportReactions.
-function transport_reactions(transport_reactions)
+function TransportReactions(transport_reactions)
     [TransportReaction(tr[1], tr[2]) for tr in transport_reactions]
 end
 

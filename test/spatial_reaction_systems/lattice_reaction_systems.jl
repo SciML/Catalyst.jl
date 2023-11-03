@@ -158,7 +158,7 @@ let
         (p,1), 0 <--> X
     end
     @unpack d, X = rs
-    trs = transport_reactions([(d, X), (d, X)])
+    trs = TransportReactions([(d, X), (d, X)])
     @test isequal(trs[1], trs[2])
 end
 
