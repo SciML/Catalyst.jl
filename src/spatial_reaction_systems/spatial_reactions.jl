@@ -24,7 +24,7 @@ end
 struct TransportReaction <: AbstractSpatialReaction
     """The rate function (excluding mass action terms). Currently only constants supported"""
     rate::Num
-    """The species that is subject to difusion."""
+    """The species that is subject to diffusion."""
     species::BasicSymbolic{Real}
 
     # Creates a diffusion reaction.
