@@ -475,7 +475,7 @@ petab_model = PEtabModel(rn, observables, measurements, params; state_map=u0, ev
 More details on how to use events, including how to create events with multiple targets, can be found in [PEtab.jl's documentation](https://sebapersson.github.io/PEtab.jl/stable/Julia_event/).
 
 !!! note
-    PEtab currently does not support events [created as a part of Catalyst's `ReactionStructure`s](@ref constraint_equations_events) and [implemented through `callbacks`](@ref advanced_simulations_callbacks). Instead, events have to use this interface.
+    PEtab currently ignores events [created as a part of a Catalyst `ReactionSystem` model](@ref constraint_equations_events), and does not support SciML-style events [implemented through `callbacks` to `solve`](@ref advanced_simulations_callbacks). Instead, events have to use the preceding interface.
 
 ## [Plot recipes](@id petab_plotting)
 There exist various types of graphs that can be used to evaluate the parameter fitting process. These can be plotted using the `plot` command, where the input is either the result of a `calibrate_model` or a  `calibrate_model_multistart` run. To be able to use this functionality, you have to ensure that PEtab.jl [records the optimisation process](@ref petab_optimisation_path_recording) by providing the `save_trace=true` argument to the calibration functions.
