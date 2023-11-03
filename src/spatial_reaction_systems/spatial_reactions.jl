@@ -46,7 +46,7 @@ macro transport_reaction(rateex::ExprValues, species::Symbol)
     make_transport_reaction(MacroTools.striplines(rateex), species)
 end
 function make_transport_reaction(rateex, species)
-    parameters = [];
+    parameters = ExprValues[]
     find_parameters_in_rate!(parameters, rateex)
     quote
         $(isempty(parameters) ? nothing : :(@parameters $(parameters...)))
