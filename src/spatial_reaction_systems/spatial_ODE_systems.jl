@@ -115,12 +115,12 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, 
     J_nzval = fill(0.0,                         # Initiates the row values of the (sparse) jacobian. Has one value for each value in teh sparse jacobian.            
                    lrs.nV * (nnz(ns_jac_prototype) +                        # The number of values due to the non-spatial jacobian (its number of values, and multiplied by the number of vertexes).
                    count(only_spat)) +                                      # 
-                   length(edges(lrs.lattice)) * length(spatial_rates))      # Initiates the row values of the (sparse) jacobian.
-    J_rowval = fill(0, length(J_nzval))
+                   length(edges(lrs.lattice)) * length(spatial_rates))      # 
+    J_rowval = fill(0, length(J_nzval))                                      
 
     # Finds filled elements.
-    for comp in 1:(lrs.nV), s in 1:(lrs.nS)
-        col_idx = get_index(comp, s, lrs.nS)
+    for comp in 1:(lrs.nV), s in 1:(lrs.nS)                                 # Loops through all vertexes and species.                
+        col_idx = get_index(comp, s, lrs.nS)                                # For the current vertex+species, finds its column (same as its index in the `u` vector).
 
         # Column values.
         local_elements = in(s, spat_species) *
