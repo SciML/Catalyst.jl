@@ -32,8 +32,8 @@ import ModelingToolkit: check_variables,
                         get_unit, check_equations
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
-import MacroTools
-import Graphs, Graphs.DiGraph, Graphs.SimpleGraph, Graphs.SimpleDiGraph, Graphs.vertices, Graphs.edges, Graphs.add_vertices!, Graphs.nv, Graphs.ne
+import MacroTools, Graphs
+import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 
