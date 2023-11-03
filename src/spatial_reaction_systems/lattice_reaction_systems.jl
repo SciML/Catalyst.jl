@@ -63,4 +63,4 @@ edge_parameters(lrs::LatticeReactionSystem) = lrs.edge_parameters
 ModelingToolkit.nameof(lrs::LatticeReactionSystem) = nameof(lrs.rs)
 
 # Checks if a lattice reaction system is a pure (linear) transport reaction system.
-is_transport_system(lrs::LatticeReactionSystem) = all(typeof.(lrs.spatial_reactions) .== TransportReaction)
+is_transport_system(lrs::LatticeReactionSystem) = all(sr -> sr isa TransportReaction, lrs.spatial_reactions)
