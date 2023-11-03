@@ -66,7 +66,7 @@ spatial_species(tr::TransportReaction) = [tr.species]
 # Checks that a transport reaction is valid for a given reaction system.
 function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReaction; edge_parameters=[])
     # Checks that the species exist in the reaction system (ODE simulation code becomes difficult if this is not required, as non-spatial jacobian and f function generated from rs is of wrong size).  
-    any(isequal(tr.species), species(rs)) || error("Currently, species used in TransportReactions must also be in non-spatial ReactionSystem. This is not the case for $(tr.species).")
+    any(isequal(tr.species), species(rs)) || error("Currently, species used in TransportReactions must have previously been declared within the non-spatial ReactionSystem. This is not the case for $(tr.species).")
     # Checks that the rate does not depend on species.    
     isempty(intersect(ModelingToolkit.getname.(species(rs)), ModelingToolkit.getname.(Symbolics.get_variables(tr.rate)))) || error("The following species were used in rates of a transport reactions: $(setdiff(ModelingToolkit.getname.(species(rs)), ModelingToolkit.getname.(Symbolics.get_variables(tr.rate)))).")
     # Checks that the species does not exist in the system with different metadata.
