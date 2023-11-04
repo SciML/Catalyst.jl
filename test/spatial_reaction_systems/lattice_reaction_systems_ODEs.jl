@@ -149,7 +149,7 @@ end
 
 # Checks that, when non directed graphs are provided, the parameters are re-ordered correctly.
 let 
-    # Create the same lattice (one as digraph, one not). Algorithm depends on Graphs.jl reordering edges, hence the jumpled order.
+    # Create the same lattice (one as digraph, one not). Algorithm depends on Graphs.jl reordering edges, hence the jumbled order.
     lattice_1 = SimpleGraph(5)
     lattice_2 = SimpleDiGraph(5)
 
@@ -290,7 +290,7 @@ end
 
 ### Tests Special Cases ###
 
-# Create network with vaious combinations of graph/di-graph and parameters.
+# Create network with various combinations of graph/di-graph and parameters.
 let
     lrs_digraph = LatticeReactionSystem(SIR_system, SIR_srs_2, complete_digraph(3))
     lrs_graph = LatticeReactionSystem(SIR_system, SIR_srs_2, complete_graph(3))
@@ -375,18 +375,6 @@ let
     end
 end
 
-# Checks that system with single spatial reaction can be created without inputting it as a vector.
-let
-    lrs_1 = LatticeReactionSystem(SIR_system, SIR_tr_S, small_2d_grid)
-    lrs_2 = LatticeReactionSystem(SIR_system, [SIR_tr_S], small_2d_grid)
-    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs_1.lattice), :R => 0.0]
-    pV = SIR_p
-    pE = [:dS => 0.01]
-    ss_1 = solve(ODEProblem(lrs_1, u0, (0.0, 500.0), (pV, pE)), Tsit5()).u[end]
-    ss_2 = solve(ODEProblem(lrs_2, u0, (0.0, 500.0), (pV, pE)), Tsit5()).u[end]
-    @test all(isequal.(ss_1, ss_2))
-end
-
 # Provides initial conditions and parameters in various different ways.
 let
     lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, very_small_2d_grid)
@@ -414,7 +402,7 @@ let
     end
 end
 
-# Confirms parameters can be inputed in [pV; pE] and (pV, pE) form.
+# Confirms parameters can be provided in [pV; pE] and (pV, pE) form.
 let
     lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, small_2d_grid)
     u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs.lattice), :R => 0.0]

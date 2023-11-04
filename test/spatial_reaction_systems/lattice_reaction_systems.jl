@@ -7,7 +7,6 @@ using Catalyst, Graphs, Test
 grid = Graphs.grid([2, 2])
 
 ### Tests LatticeReactionSystem Getters Correctness ###
-
 # Test case 1.
 let 
     rs = @reaction_network begin
@@ -21,6 +20,14 @@ let
     @test ModelingToolkit.getname.(parameters(lrs)) == [:p, :d]   
     @test ModelingToolkit.getname.(vertex_parameters(lrs)) == [:p]  
     @test ModelingToolkit.getname.(edge_parameters(lrs)) == [:d]      
+
+    @unpack X, p = rs
+    d = edge_parameters(lrs)[1]
+    @test issetequal(species(lrs), [X])  
+    @test issetequal(spatial_species(lrs), [X])   
+    @test issetequal(parameters(lrs), [p, d])   
+    @test issetequal(vertex_parameters(lrs), [p])  
+    @test issetequal(edge_parameters(lrs), [d])      
 end
 
 # Test case 2.
@@ -50,6 +57,13 @@ let
     @test ModelingToolkit.getname.(parameters(lrs)) == [:pX, :pY, :dX, :dY]   
     @test ModelingToolkit.getname.(vertex_parameters(lrs)) == [:pX, :pY, :dY]  
     @test ModelingToolkit.getname.(edge_parameters(lrs)) == [:dX]      
+
+    @unpack X, Y, pX, pY, dX, dY = rs
+    @test issetequal(species(lrs), [X, Y])
+    @test issetequal(spatial_species(lrs), [X, Y])
+    @test issetequal(parameters(lrs), [pX, pY, dX, dY])
+    @test issetequal(vertex_parameters(lrs), [pX, pY, dY])
+    @test issetequal(edge_parameters(lrs), [dX])
 end
 
 # Test case 4.
@@ -67,6 +81,13 @@ let
     @test ModelingToolkit.getname.(parameters(lrs)) == [:dX, :p, :pX, :pY]   
     @test ModelingToolkit.getname.(vertex_parameters(lrs)) == [:dX, :p, :pX, :pY]  
     @test ModelingToolkit.getname.(edge_parameters(lrs)) == []      
+
+    @unpack dX, p, X, Y, pX, pY = rs
+    @test issetequal(species(lrs), [X, Y])
+    @test issetequal(spatial_species(lrs), [X])
+    @test issetequal(parameters(lrs), [dX, p, pX, pY])
+    @test issetequal(vertex_parameters(lrs), [dX, p, pX, pY])
+    @test issetequal(edge_parameters(lrs), [])
 end
 
 # Test case 5.
@@ -95,6 +116,14 @@ let
     @test ModelingToolkit.getname.(parameters(lrs)) == [:pX, :pY, :dX, :dY, :pZ, :pV, :dZ, :dV, :dW]   
     @test ModelingToolkit.getname.(vertex_parameters(lrs)) == [:pX, :pY, :dY, :pZ, :pV]  
     @test ModelingToolkit.getname.(edge_parameters(lrs)) == [:dX, :dZ, :dV, :dW]      
+
+    @unpack pX, pY, pZ, pV, dX, dY, X, Y, Z, V = rs
+    dZ, dV, dW = edge_parameters(lrs)[2:end]
+    @test issetequal(species(lrs), [W, X, Y, Z, V])
+    @test issetequal(spatial_species(lrs), [X, Y, Z, V, W])
+    @test issetequal(parameters(lrs), [pX, pY, dX, dY, pZ, pV, dZ, dV, dW])
+    @test issetequal(vertex_parameters(lrs), [pX, pY, dY, pZ, pV])
+    @test issetequal(edge_parameters(lrs), [dX, dZ, dV, dW])
 end
 
 # Test case 6.
@@ -113,11 +142,17 @@ end
 # Test case 1.
 let 
     tr_1 = @transport_reaction dX X    
-    tr_2 = @transport_reaction dY1*dY2 Y     
+    tr_2 = @transport_reaction dY1*dY2 Y   
+
     @test ModelingToolkit.getname.(species(tr_1)) == ModelingToolkit.getname.(spatial_species(tr_1)) == [:X]
     @test ModelingToolkit.getname.(species(tr_2)) == ModelingToolkit.getname.(spatial_species(tr_2)) == [:Y]
     @test ModelingToolkit.getname.(parameters(tr_1)) == [:dX]
     @test ModelingToolkit.getname.(parameters(tr_2)) == [:dY1, :dY2]
+
+    @test issetequal(species(tr_1), [tr_1.species])
+    @test issetequal(species(tr_2), [tr_2.species])
+    @test issetequal(spatial_species(tr_1), [tr_1.species])
+    @test issetequal(spatial_species(tr_2), [tr_2.species])
 end
 
 # Test case 2.
@@ -198,9 +233,9 @@ end
 #     tr_macro_2 = @transport_reaction $(rate2) Y
 #     tr_macro_3 = @transport_reaction dZ $species3
 #     
-#     @teest isequal(tr_1, tr_macro_1)
-#     @teest isequal(tr_2, tr_macro_2)
-#     @teest isequal(tr_3, tr_macro_3)
+#     @test isequal(tr_1, tr_macro_1)
+#     @test isequal(tr_2, tr_macro_2)
+#     @test isequal(tr_3, tr_macro_3)
 # end
 
 ### Tests Error generation ###
