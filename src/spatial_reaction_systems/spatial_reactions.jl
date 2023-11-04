@@ -88,7 +88,7 @@ function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReacti
 end
 equivalent_metadata(p1, p2) = isempty(setdiff(p1.metadata, p2.metadata, [Catalyst.EdgeParameter => true]))
 
-# Since MTK's "isequal does not worry about metadata, we have to use a special function that accounts for this (important because whether something is an edge parameter is defined here).
+# Since MTK's "isequal" does not worry about metadata, we have to use a special function that accounts for this (important because whether something is an edge parameter is defined here).
 function isequivalent(sym1, sym2)
     !isequal(sym1, sym2) && (return false)
     (sym1.metadata != sym2.metadata) && (return false)
