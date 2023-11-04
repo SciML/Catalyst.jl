@@ -14,7 +14,7 @@ let
         (p, 1), 0 <--> X
     end
     tr = @transport_reaction d X    
-    lrs = LatticeReactionSystem(rs, tr, grid)
+    lrs = LatticeReactionSystem(rs, [tr], grid)
 
     @test ModelingToolkit.getname.(species(lrs)) == [:X]   
     @test ModelingToolkit.getname.(spatial_species(lrs)) == [:X]   
@@ -60,7 +60,7 @@ let
         (pY, 1), 0 <--> Y
     end
     tr_1 = @transport_reaction dX X   
-    lrs = LatticeReactionSystem(rs, tr_1, grid)
+    lrs = LatticeReactionSystem(rs, [tr_1], grid)
 
     @test ModelingToolkit.getname.(species(lrs)) == [:X, :Y]   
     @test ModelingToolkit.getname.(spatial_species(lrs)) == [:X]   
@@ -103,7 +103,7 @@ let
         (p, 1), 0 <--> X
     end
     tr = @transport_reaction d X    
-    lrs = LatticeReactionSystem(rs, tr, grid)
+    lrs = LatticeReactionSystem(rs, [tr], grid)
 
     @test nameof(lrs) == :customname
 end
@@ -211,7 +211,7 @@ let
         (p, d), 0 <--> X
     end
     tr = @transport_reaction D Y    
-    @test_throws ErrorException LatticeReactionSystem(rs, tr, grid)
+    @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
 end
 
 # Network where the rate depend on a species
@@ -221,7 +221,7 @@ let
         (p, d), 0 <--> X
     end
     tr = @transport_reaction D*Y X
-    @test_throws ErrorException LatticeReactionSystem(rs, tr, grid)
+    @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
 end
 
 # Network with edge parameter in non-spatial reaction rate.
@@ -231,7 +231,7 @@ let
         (p, d), 0 <--> X
     end
     tr = @transport_reaction D X
-    @test_throws ErrorException LatticeReactionSystem(rs, tr, grid)
+    @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
 end
 
 # Network where metadata has been added in rs (which is not seen in transport reaction).
@@ -241,13 +241,13 @@ let
         (p, d), 0 <--> X
     end
     tr = @transport_reaction D X
-    @test_throws ErrorException LatticeReactionSystem(rs, tr, grid)
+    @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
 
     rs = @reaction_network begin
         @parameters D [description="Parameter with added metadata"]
         (p, d), 0 <--> X
     end
     tr = @transport_reaction D X
-    @test_throws ErrorException LatticeReactionSystem(rs, tr, grid)
+    @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
 end
 
