@@ -108,6 +108,89 @@ let
     end
 end
 
+# Compares Jacobian and forcing functions of spatial system to analytically computed on.
+let
+    # Creates LatticeReactionNetwork ODEProblem.
+    rs = @reaction_network begin
+        pX, 0 --> X
+        d, X --> 0
+        pY*X, 0 --> Y
+        d, Y --> 0
+    end
+    tr = @transport_reaction D X
+    lattice = path_graph(3)
+    lrs = LatticeReactionSystem(rs, [tr], lattice);
+
+    D_vals = [0.2, 0.2, 0.3, 0.3]
+    u0 = [:X => [1.0, 2.0, 3.0], :Y => 1.0]
+    ps = [:pX => [2.0, 2.5, 3.0], :pY => 0.5, :d => 0.1, :D => D_vals]
+    oprob = ODEProblem(lrs, u0, (0.0, 0.0), ps)
+
+    # Creates manual f and jac functions.
+    function f_manual!(du, u, p, t)
+        X1, Y1, X2, Y2, X3, Y3 = u
+        pX, d, pY = p
+        pX1, pX2, pX3 = pX
+        pY, = pY
+        d, = d
+        D1, D2, D3, D4 = D_vals
+        du[1] = pX1 - d*X1 - D1*X1 + D2*X2
+        du[2] = pY*X1 - d*Y1
+        du[3] = pX2 - d*X2 + D1*X1 - (D2+D3)*X2 + D4*X3 
+        du[4] = pY*X2 - d*Y2
+        du[5] = pX3 - d*X3 + D3*X2 - D4*X3 
+        du[6] = pY*X3 - d*Y3
+    end
+    function jac_manual!(J, u, p, t)
+        X1, Y1, X2, Y2, X3, Y3 = u
+        pX, d, pY = p
+        pX1, pX2, pX3 = pX
+        pY, = pY
+        d, = d
+        D1, D2, D3, D4 = D_vals
+
+        J .= 0.0
+
+        J[1,1] = - d - D1
+        J[1,2] = 0
+        J[2,1] = pY
+        J[2,2] = - d
+
+        J[3,3] = - d - D2 - D3
+        J[3,4] = 0
+        J[4,3] = pY
+        J[4,4] = - d
+
+        J[5,5] = - d - D4
+        J[5,6] = 0
+        J[6,5] = pY
+        J[6,6] = - d
+
+        J[1,3] = D1
+        J[3,1] = D2
+        J[3,5] = D3
+        J[5,3] = D4
+    end
+
+    # Sets test input values.
+    u = rand(rng, 6)
+    p = [rand(rng, 3), rand(rng, 1), rand(rng, 1)]
+
+    # Tests forcing function.
+    du1 = fill(0.0, 6)
+    du2 = fill(0.0, 6)
+    oprob.f(du1, u, p, 0.0)
+    f_manual!(du2, u, p, 0.0)
+    @test du1 == du2
+
+    # Tests Jacobian.
+    J1 = deepcopy(oprob.f.jac_prototype)
+    J2 = deepcopy(oprob.f.jac_prototype)
+    oprob.f.jac(J1, u, p, 0.0)
+    jac_manual!(J2, u, p, 0.0)
+    @test J1 == J2
+end
+
 # Checks that result becomes homogeneous on a connected lattice.
 let
     lrs = LatticeReactionSystem(binding_system, binding_srs, undirected_cycle)
