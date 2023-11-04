@@ -31,9 +31,10 @@ struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem # Adding t
                                    spatial_reactions::Vector{T},
                                    lattice::DiGraph; init_digraph = true) where {S, T}
         (T <: AbstractSpatialReaction) || error("The second argument must be a vector of AbstractSpatialReaction subtypes.") # There probably some better way to ascertain that T has that type. Not sure how.
-        spat_species = unique(vcat(spatial_species.(spatial_reactions)...))
+
+        spat_species = (isempty(spatial_reactions) ? Vector{BasicSymbolic{Real}}[] : unique(reduce(vcat, [spatial_species(sr) for sr in spatial_reactions])))
         rs_edge_parameters = filter(isedgeparameter, parameters(rs))
-        srs_edge_parameters = setdiff(vcat(parameters.(spatial_reactions)...), parameters(rs))
+        srs_edge_parameters = (isempty(spatial_reactions) ? Vector{BasicSymbolic{Real}}[] : setdiff(reduce(vcat, [parameters(sr) for sr in spatial_reactions]), parameters(rs)))
         edge_parameters = unique([rs_edge_parameters; srs_edge_parameters])
         vertex_parameters = filter(!isedgeparameter, parameters(rs))
         ps = [parameters(rs); setdiff([edge_parameters; vertex_parameters], parameters(rs))]    # Ensures that the order begins similarly to in the non-spatial ReactionSystem.
