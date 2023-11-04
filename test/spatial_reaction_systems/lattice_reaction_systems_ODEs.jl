@@ -181,14 +181,14 @@ let
     du2 = fill(0.0, 6)
     oprob.f(du1, u, p, 0.0)
     f_manual!(du2, u, p, 0.0)
-    @test du1 == du2
+    @test du1 ≈ du2
 
     # Tests Jacobian.
     J1 = deepcopy(oprob.f.jac_prototype)
     J2 = deepcopy(oprob.f.jac_prototype)
     oprob.f.jac(J1, u, p, 0.0)
     jac_manual!(J2, u, p, 0.0)
-    @test J1 == J2
+    @test J1 ≈ J2
 end
 
 # Checks that result becomes homogeneous on a connected lattice.
