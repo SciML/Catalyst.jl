@@ -136,7 +136,7 @@ end
 # Defines the forcing functor's effect on the (spatial) ODE system.
 function (f_func::LatticeDiffusionODEf)(du, u, p, t)
     # Updates for non-spatial reactions.
-    for comp_i::Int64 in 1:(f_func.num_verts)                                # Loops through each vertex of the lattice. Applies the (non-spatial) ODEFunction to the species in that vertex.
+    for comp_i in 1:(f_func.num_verts)                                # Loops through each vertex of the lattice. Applies the (non-spatial) ODEFunction to the species in that vertex.
         f_func.ofunc((@view du[get_indexes(comp_i, f_func.num_species)]),    # Get the indexes of the i'th vertex (current one in the loop) in the u vector. Uses this to create a view of the vector to which the new species concentrations are written.  
                      (@view u[get_indexes(comp_i, f_func.num_species)]),     # Same as above, but reads the current species concentrations.
                       view_vert_ps_vector!(f_func.work_vert_ps, p, comp_i, f_func.enum_v_ps_idx_types),   # Gets a vector with the values of the (vertex) parameters in the current vertex.
@@ -145,12 +145,12 @@ function (f_func::LatticeDiffusionODEf)(du, u, p, t)
 
     # Updates for spatial reactions.
     for (s_idx, (s, rates)) in enumerate(f_func.transport_rates)            # Loops through all species with transportation. Here: s_idx is its index among the species with transportations. s is its index among all species (in the species(::ReactionSystem) vector). rates is its rates values (vector length 1 if uniform, else same length as the number of edges).
-        for comp_i::Int64 in 1:(f_func.num_verts)                           # Loops through all vertexes.
+        for comp_i in 1:(f_func.num_verts)                           # Loops through all vertexes.
             du[get_index(comp_i, s, f_func.num_species)] -= f_func.leaving_rates[s_idx, comp_i] *
                                                 u[get_index(comp_i, s,
                                                 f_func.num_species)]        # Finds the leaving rate of this species in this vertex. Updates the du vector at that vertex/species combination with the corresponding rate (leaving rate times concentration).
         end
-        for (e_idx::Int64, edge::Graphs.SimpleGraphs.SimpleEdge{Int64}) in f_func.enum_edges  # Loops through all edges.
+        for (e_idx, edge) in f_func.enum_edges  # Loops through all edges.
             du[get_index(edge.dst, s, f_func.num_species)] += get_component_value(rates, e_idx) *
                                                   u[get_index(edge.src, s,
                                                   f_func.num_species)]      # For the destination of this edge, we want to add the influx term to du. This is ["rates" value for this edge]*[the species concentration in the source vertex]. 
@@ -164,7 +164,7 @@ function (jac_func::LatticeDiffusionODEjac)(J, u, p, t)
     reset_J_vals!(J)    # Sets all Jacobian values to 0 (because they are not by default, this is weird but and I could not get it to work otherwise, tried to get Chris to explain but he wouldn't. Hopefully this can be improved once I get him to explain).
 
     # Updates for non-spatial reactions.
-    for comp_i::Int64 in 1:(jac_func.num_verts)                                # Loops through all vertexes and applies the (non-spatial) Jacobian to the species in that vertex.
+    for comp_i in 1:(jac_func.num_verts)                                # Loops through all vertexes and applies the (non-spatial) Jacobian to the species in that vertex.
         jac_func.ofunc.jac((@view J[get_indexes(comp_i, jac_func.num_species),
                            get_indexes(comp_i, jac_func.num_species)]),
                            (@view u[get_indexes(comp_i, jac_func.num_species)]),
