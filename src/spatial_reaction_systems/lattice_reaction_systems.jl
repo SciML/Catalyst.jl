@@ -1,6 +1,7 @@
 ### Lattice Reaction Network Structure ###
 # Describes a spatial reaction network over a graph.
 struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem # Adding this part messes up show, disabling me from creating LRSs
+    # Input values.
     """The reaction system within each compartment."""
     rs::ReactionSystem{S}
     """The spatial reactions defined between individual nodes."""
@@ -10,11 +11,11 @@ struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem # Adding t
 
     # Derived values.
     """The number of compartments."""
-    nV::Int64
+    num_verts::Int64
     """The number of edges."""
-    nE::Int64
+    num_edges::Int64
     """The number of species."""
-    nS::Int64
+    num_species::Int64
     """Whenever the initial input was a digraph."""
     init_digraph::Bool
     """Species that may move spatially."""
@@ -25,7 +26,7 @@ struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem # Adding t
     function LatticeReactionSystem(rs::ReactionSystem{S},
                                    spatial_reactions::Vector{T},
                                    lattice::DiGraph; init_digraph = true) where {S, T}
-        (T <: AbstractSpatialReaction) || error("The second argument must be a vector of AbstractSpatialReaction subtypes.") # There probably some better way to acertain that T has that type. Not sure how.
+        (T <: AbstractSpatialReaction) || error("The second argument must be a vector of AbstractSpatialReaction subtypes.") # There probably some better way to ascertain that T has that type. Not sure how.
         spat_species = unique(vcat(spatial_species.(spatial_reactions)...))
         rs_edge_parameters = filter(isedgeparameter, parameters(rs))
         srs_edge_parameters = setdiff(vcat(parameters.(spatial_reactions)...), parameters(rs))
