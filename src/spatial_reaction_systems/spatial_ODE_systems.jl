@@ -90,8 +90,8 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Vector{Fl
     ofunc = ODEFunction(convert(ODESystem, lrs.rs); jac = use_jac, sparse = false)                  # Creates the (non-spatial) ODEFunction corresponding to the (non-spatial) reaction network.
     ofunc_sparse = ODEFunction(convert(ODESystem, lrs.rs); jac = use_jac, sparse = true)            # Creates the same function, but sparse. Could insert so this is only computed for sparse cases.
     transport_rates_speciesmap = compute_all_transport_rates(vert_ps, edge_ps, lrs)                 # Creates a map (Vector{Pair}), mapping each species that is transported to a vector with its transportation rate. If the rate is uniform across all edges, the vector will be length 1 (with this value), else there will be a separate value for each edge.
-    transport_rates = [findfirst(isequal(spat_rates[1]), species(lrs)) => spat_rates[2]
-                       for spat_rates in transport_rates_speciesmap]                                # Remakes "transport_rates_speciesmap". Rates are identical, but the species are represented as their index (in the species(::ReactionSystem) vector). In "transport_rates_speciesmap" they instead were Symbolics.
+    transport_rates = Pair{Int64, Vector{Float64}}[findfirst(isequal(spat_rates[1]), species(lrs)) => spat_rates[2]
+                       for spat_rates in transport_rates_speciesmap]                                # Remakes "transport_rates_speciesmap". Rates are identical, but the species are represented as their index (in the species(::ReactionSystem) vector). In "transport_rates_speciesmap" they instead were Symbolics. Pair{Int64, Vector{Float64}}[] is required in case vector is empty (otherwise it becomes Any[], causing type error later).
 
     f = LatticeDiffusionODEf(ofunc, vert_ps, transport_rates, lrs)                                  # Creates a functor for the ODE f function (incorporating spatial and non-spatial reactions).
     jac_prototype = (use_jac || sparse) ?
