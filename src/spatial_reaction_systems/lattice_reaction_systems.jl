@@ -20,6 +20,10 @@ struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem # Adding t
     init_digraph::Bool
     """Species that may move spatially."""
     spat_species::Vector{BasicSymbolic{Real}}
+    """All parameters related to the lattice reaction system (both with spatial and non-spatial effects)."""
+    parameters::Vector{BasicSymbolic{Real}}
+    """Parameters which values are tied to vertexes (adjacencies), e.g. (possibly) have a unique value at each vertex of the system."""
+    vertex_parameters::Vector{BasicSymbolic{Real}}
     """Parameters which values are tied to edges (adjacencies), e.g. (possibly) have a unique value at each edge of the system."""
     edge_parameters::Vector{BasicSymbolic{Real}}
 
@@ -31,9 +35,11 @@ struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem # Adding t
         rs_edge_parameters = filter(isedgeparameter, parameters(rs))
         srs_edge_parameters = setdiff(vcat(parameters.(spatial_reactions)...), parameters(rs))
         edge_parameters = unique([rs_edge_parameters; srs_edge_parameters])
+        vertex_parameters = filter(!isedgeparameter, parameters(rs))
+        ps = [parameters(rs); setdiff([edge_parameters; vertex_parameters], parameters(rs))]    # Ensures that the order begins similarly to in the non-spatial ReactionSystem.
 
         foreach(sr -> check_spatial_reaction_validity(rs, sr; edge_parameters=edge_parameters), spatial_reactions)   
-        return new{S,T}(rs, spatial_reactions, lattice, nv(lattice), ne(lattice), length(unique([species(rs); spat_species])), init_digraph, spat_species, edge_parameters)
+        return new{S,T}(rs, spatial_reactions, lattice, nv(lattice), ne(lattice), length(unique([species(rs); spat_species])), init_digraph, spat_species, ps, vertex_parameters, edge_parameters)
     end
 end
 function LatticeReactionSystem(rs, srs, lat::SimpleGraph)
@@ -48,9 +54,9 @@ species(lrs::LatticeReactionSystem) = unique([species(lrs.rs); lrs.spat_species]
 spatial_species(lrs::LatticeReactionSystem) = lrs.spat_species
 
 # Get all parameters.
-ModelingToolkit.parameters(lrs::LatticeReactionSystem) = unique([parameters(lrs.rs); lrs.edge_parameters])
+ModelingToolkit.parameters(lrs::LatticeReactionSystem) = lrs.parameters
 # Get all parameters which values are tied to vertexes (compartments).
-vertex_parameters(lrs::LatticeReactionSystem) = setdiff(parameters(lrs), edge_parameters(lrs))
+vertex_parameters(lrs::LatticeReactionSystem) = lrs.vertex_parameters
 # Get all parameters which values are tied to edges (adjacencies).
 edge_parameters(lrs::LatticeReactionSystem) = lrs.edge_parameters
 
