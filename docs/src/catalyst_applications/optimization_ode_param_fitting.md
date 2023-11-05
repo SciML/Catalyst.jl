@@ -100,7 +100,7 @@ plot(true_sol; idxs=[:S, :P], label=["True S" "True P"], lw=8)
 plot!(data_ts, data_vals_S; label="Measured S", seriestype=:scatter, ms=6, color=:blue)
 plot!(data_ts, data_vals_P; label="Measured P", seriestype=:scatter, ms=6, color=:red)
 ```
-![Optimization S, D data](../assets/optimization_data_S_D.svg)
+![Optimization S, D data](../assets/optimization_data_S_P.svg)
 
 In this case we would have to use the `L2Loss(data_ts, hcat(data_vals_S, data_vals_P))` and `save_idxs=[1,4]` arguments in `loss_function`:
 ```@example diffeq_param_estim_1 
@@ -117,7 +117,7 @@ oprob_fitted_S_P = remake(oprob; p=optsol_S_P.u)
 fitted_sol_S_P = solve(oprob_fitted_S_P, Tsit5())
 plot!(fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle=:dash, lw=6, color=[:lightblue :pink])
 ```
-![Optimization S, D fitted sol](../assets/optimization_fitted_sol_S_D.svg)
+![Optimization S, D fitted sol](../assets/optimization_fitted_sol_S_P.svg)
 
 ## Setting parameter constraints and boundaries
 Sometimes, it is desired to set boundaries on parameter values. Indeed, this can speed up the optimisation process (by preventing searching through unfeasible parts of parameter space) or be a prerequisite of some optimisation methods. This can be done by passing the `lb` (lower bounds) and `up` (upper bounds) arguments to `OptimizationProblem`. These are vectors (of the same length as the number of parameters), with each argument corresponding to the boundary value of the parameter with the same index (as used in the `parameters(rn)` vector). If we wish to constrain each parameter to the interval *(0.1, 10.0)* this can be done through:
