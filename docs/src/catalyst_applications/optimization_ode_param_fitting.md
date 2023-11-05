@@ -81,7 +81,7 @@ nothing # hide
 ![Optimization fitted sol](../assets/optimization_fitted_sol.svg)
 
 !!! note
-Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. [Identifiability](https://www.sciencedirect.com/science/article/pii/S1364815218307278) is a concept that studies how to deal with this problem.
+    Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. [Identifiability](https://www.sciencedirect.com/science/article/pii/S1364815218307278) is a concept that studies how to deal with this problem.
 
 Say that we instead would like to use the [Broyden–Fletcher–Goldfarb–Shannon](https://en.wikipedia.org/wiki/Broyden%E2%80%93Fletcher%E2%80%93Goldfarb%E2%80%93Shanno_algorithm) algorithm, as implemented by the [NLopt.jl](https://github.com/JuliaOpt/NLopt.jl) package. In this case we would run:
 ```@example diffeq_param_estim_1 
@@ -99,12 +99,13 @@ data_vals_P = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 plot(true_sol; idxs=[:S, :P], label=["True S" "True P"], lw=8)
 plot!(data_ts, data_vals_S; label="Measured S", seriestype=:scatter, ms=6, color=:blue)
 plot!(data_ts, data_vals_P; label="Measured P", seriestype=:scatter, ms=6, color=:red)
+nothing #hide
 ```
 ![Optimization S, D data](../assets/optimization_data_S_P.svg)
 
 In this case we would have to use the `L2Loss(data_ts, hcat(data_vals_S, data_vals_P))` and `save_idxs=[1,4]` arguments in `loss_function`:
 ```@example diffeq_param_estim_1 
-loss_function_S_P = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, Array(hcat(data_vals_S, data_vals_P)')), Optimization.AutoForwardDiff(); maxiters=10000, verbose=false, save_idxs=4)
+loss_function_S_P = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, Array(hcat(data_vals_S, data_vals_P)')), Optimization.AutoForwardDiff(); maxiters=10000, verbose=false, save_idxs=[1,4])
 nothing # hide
 ```
 Here, `Array(hcat(data_vals_S, data_vals_P)')` is required to pu the data in the right form (in this case, a 2x10 matrix).
@@ -116,6 +117,7 @@ optsol_S_P = solve(optprob_S_P, Optim.NelderMead())
 oprob_fitted_S_P = remake(oprob; p=optsol_S_P.u)
 fitted_sol_S_P = solve(oprob_fitted_S_P, Tsit5())
 plot!(fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle=:dash, lw=6, color=[:lightblue :pink])
+nothing #hide
 ```
 ![Optimization S, D fitted sol](../assets/optimization_fitted_sol_S_P.svg)
 
