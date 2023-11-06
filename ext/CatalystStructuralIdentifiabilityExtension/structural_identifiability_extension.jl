@@ -20,31 +20,30 @@ end
 si_ode(rs; measured_quantities = [:X], known_p = [:p])
 ```
 """
-function make_si_ode(rs::ReactionSystem; measured_quantities=observed(rs), known_p = Num[], ignore_no_measured_warn=false)
-    ignore_no_meassured_warn || isempty(measured_quantities) && @warn "No measured quantity provided to the `measured_quantities` argument, any further identifiability analysis will likely fail."
+function Catalyst.make_si_ode(rs::ReactionSystem; measured_quantities=observed(rs), known_p = [], ignore_no_measured_warn=false)
+    ignore_no_measured_warn || isempty(measured_quantities) && @warn "No measured quantity provided to the `measured_quantities` argument, any further identifiability analysis will likely fail."
     known_quantities = make_measured_quantities(rs, measured_quantities, known_p)
-    return preprocess_ode(convert(ODESystem, rs), known_quantities)
+    return StructuralIdentifiability.preprocess_ode(convert(ODESystem, rs), known_quantities)
 end
 
 # For input measured quantities, if this is not a vector of equations, convert it to a proper form.
-make_measured_quantities(rs::ReactionSystem, measured_quantities::Vector{Equation}) = measured_quantities # If form is already a vector of equations.
 function make_measured_quantities(rs::ReactionSystem, measured_quantities::Vector{T}, known_p::Vector{S}) where {T,S}
     (measured_quantities isa Vector{Symbol}) && (measured_quantities = [Catalyst._symbol_to_var(rs, sym) for sym in measured_quantities])
     (known_p isa Vector{Symbol}) && (known_p = [Catalyst._symbol_to_var(rs, sym) for sym in known_p])
-    @variables t ___internal_observables[1:length(measured_quantities)](t)
-    measured_quantities = [eq[1] ~ eq[2] for eq in zip(___internal_observables, measured_quantities)] 
-    return [Num.(measured_quantities); known_p]
+    all_quantities = [measured_quantities; known_p]
+    @variables t (___internal_observables(t))[1:length(all_quantities)]
+    return Equation[(all_quantities[i] isa Equation) ? all_quantities[i] : (___internal_observables[i] ~ all_quantities[i]) for i in 1:length(all_quantities)] 
 end
 
 ### Structural Identifiability Wrappers ###
 
 # Local identifiability.
 function StructuralIdentifiability.assess_local_identifiability(rs::ReactionSystem, args...; measured_quantities=observed(rs), known_p = Num[], kwargs...)
-    return StructuralIdentifiability.assess_local_identifiability(make_si_ode(rs, measured_quantities, known_p), args...; kwargs...)
+    return StructuralIdentifiability.assess_local_identifiability(Catalyst.make_si_ode(rs; measured_quantities, known_p), args...; kwargs...)
 end
 
 # Global identifiability.
 function StructuralIdentifiability.assess_identifiability(rs::ReactionSystem, args...; measured_quantities=observed(rs), known_p = Num[], kwargs...)
-    return StructuralIdentifiability.assess_identifiability(make_si_ode(rs, measured_quantities, known_p), args...; kwargs...)
+    return StructuralIdentifiability.assess_identifiability(Catalyst.make_si_ode(rs; measured_quantities, known_p), args...; kwargs...)
 end
 
