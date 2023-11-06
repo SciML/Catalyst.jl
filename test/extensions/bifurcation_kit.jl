@@ -1,5 +1,5 @@
 ### Fetch Packages ###
-using Bifurcationkit, Catalyst, Test
+using BifurcationKit, Catalyst, Test
 
 # Sets rnd number.
 using StableRNGs
@@ -15,7 +15,7 @@ rng = StableRNG(12345)
 # Checks that bifurcation diagrams can be computed for systems with non-constant rate.
 # Checks that not providing conserved species throws and appropriate error.
 let 
-    # Create model
+    # Create model.
     extended_brusselator = @reaction_network begin
         @species W(t) = 2.0
         @parameters k2 = 0.5
@@ -25,19 +25,15 @@ let
         1, X → ∅
         (k1*Y, k2), V <--> W
     end
-    @unpack A, B, k1
+    @unpack A, B, k1 = extended_brusselator
     u0_guess = [:X => 1.0, :Y => 1.0, :V => 0.0, :W => 0.0]
     p_start = [A => 1.0, B => 4.0, k1 => 0.1]
     
     # Computes bifurcation diagram.
-    BifurcationProblem(extended_brusselator, u0_guess, p_start, :B; plot_var=:V, u0 = [:V => 1.0])
+    BifurcationProblem(extended_brusselator, u0_guess, p_start, :B; plot_var = :V, u0 = [:V => 1.0])
     p_span = (0.1, 6.0)
-    opt_newton = NewtonPar(tol = 1e-9, max_iterations = 100)
-    opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001,
-        max_steps = 200000, nev = 2, newton_options = opt_newton,
-        p_min = p_span[1], p_max = p_span[2],
-        detect_bifurcation = 3, n_inversion = 4, tol_bisection_eigenvalue = 1e-8, dsmin_bisection = 1e-9)
-    bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside=true)
+    opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
+    bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside = true)
     
     # Checks computed V values are correct (Formula: V = k2*(V0+W0)/(k1*Y+k2), where Y=2*B.)
     B_vals = getfield.(bif_dia.γ.branch, :param)
@@ -63,10 +59,10 @@ let
         0.1 + hill(X,v,K,n), 0 --> X
         d, X --> 0
     end
-    @unpack x, v, K, n, d = rn
-    u0_guess = [x => 1.0]
+    @unpack X, v, K, n, d = bistable_switch
+    u0_guess = [X => 1.0]
     p_start = [v => 5.0, K => 2.5, n => 3, d => 1.0]
-    bprob = BifurcationProblem(bistable_switch, u0_guess, p_start, K; jac=false; plot_var=x)
+    bprob = BifurcationProblem(bistable_switch, u0_guess, p_start, K; jac=false, plot_var=X)
     
     # Creates BifurcationProblem via BifurcationKit.
     function bistable_switch_BK(u, p)
