@@ -105,3 +105,26 @@ function filter_negative_f(sols; neg_thres=-1e-20)
     end
     return filter(sol -> all(>=(0), sol), sols)
 end
+
+### Archived ###
+
+# # Unfolds a function (like mm or hill). 
+# function deregister(fs::Vector{T}, expr) where T
+#     for f in fs
+#         expr = deregister(f, expr) 
+#     end
+#     return expr
+# end
+# # Provided by Shashi Gowda.
+# deregister(f, expr) = wrap(Rewriters.Postwalk(Rewriters.PassThrough(___deregister(f)))(unwrap(expr)))
+# function ___deregister(f)
+#     (expr) ->
+#     if istree(expr) && operation(expr) == f
+#         args = arguments(expr)
+#         invoke_with = map(args) do a
+#             t = typeof(a)
+#             issym(a) || istree(a) ? wrap(a) => symtype(a) : a => typeof(a)
+#         end 
+#         invoke(f, Tuple{last.(invoke_with)...}, first.(invoke_with)...)
+#     end
+# end
