@@ -1296,6 +1296,11 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
                          include_zero_odes)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
+    
+    # Converts expressions like mm(X,v,K) to v*X/(X+K).
+    expand_functions && for eq in eqs
+        eq.rhs = expand_registered_functions!(eq.rhs)
+    end
 
     ODESystem(eqs, get_iv(fullrs), sts, ps;
               observed = obs,
@@ -1327,7 +1332,6 @@ Keyword args and default values:
 function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, remove_conserved = false, checks = false,
-                      default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
     fullrs = Catalyst.flatten(rs)
@@ -1377,7 +1381,6 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       noise_scaling = nothing, name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, checks = false, remove_conserved = false,
-                      default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
     spatial_convert_err(rs::ReactionSystem, SDESystem)
 
@@ -1403,6 +1406,11 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                                   remove_conserved)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
     ps = (noise_scaling === nothing) ? ps : vcat(ps, toparam(noise_scaling))
+
+    # Converts expressions like mm(X,v,K) to v*X/(X+K).
+    expand_functions && for eq in eqs
+        eq.rhs = expand_registered_functions!(eq.rhs)
+    end
 
     if any(isbc, get_states(flatrs))
         @info "Boundary condition species detected. As constraint equations are not currently supported when converting to SDESystems, the resulting system will be undetermined. Consider using constant species instead."
