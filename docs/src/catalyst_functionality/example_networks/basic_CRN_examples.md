@@ -89,7 +89,7 @@ jprob = JumpProblem(rs, dprob, Direct())
 jsol = solve(jprob, SSAStepper())
 
 plot(plot(osol; title = "Reaction Rate Equation ODEs"),
-     plot(jsol; title = "Gillespie Jump Simulation");
+     plot(jsol; title = "Stochastic Chemical Kinetics Jump Processes");
      layout = (2, 1))
 ```
 

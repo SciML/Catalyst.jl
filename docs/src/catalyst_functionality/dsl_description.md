@@ -412,7 +412,7 @@ sol = solve(oprob)
 plot(sol)
 ```
 
-## Setting initial conditions that depend on parameters
+## [Setting initial conditions that depend on parameters](@id dsl_description_parametric_initial_conditions)
 It is possible to set the initial condition of one (or several) species so that they depend on some system parameter. This is done in a similar way as default initial conditions, but giving the parameter instead of a value. When doing this, we also need to ensure that the initial condition parameter is a variable of the system:
 ```@example tut2
 rn = @reaction_network begin
