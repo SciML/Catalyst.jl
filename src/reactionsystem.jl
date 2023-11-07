@@ -1297,9 +1297,7 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
     
     # Converts expressions like mm(X,v,K) to v*X/(X+K).
-    expand_functions && for eq in eqs
-        eq.rhs = expand_registered_functions!(eq.rhs)
-    end
+    expand_functions  && (eqs = [eq.lhs ~ expand_registered_functions!(eq.rhs) for eq in eqs])
 
     ODESystem(eqs, get_iv(fullrs), sts, ps;
               observed = obs,
@@ -1342,9 +1340,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
     # Converts expressions like mm(X,v,K) to v*X/(X+K).
-    expand_functions && for eq in eqs
-        eq.rhs = expand_registered_functions!(eq.rhs)
-    end
+    expand_functions  && (eqs = [eq.lhs ~ expand_registered_functions!(eq.rhs) for eq in eqs])
 
     NonlinearSystem(eqs, sts, ps;
                     name,
@@ -1412,8 +1408,9 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     ps = (noise_scaling === nothing) ? ps : vcat(ps, toparam(noise_scaling))
 
     # Converts expressions like mm(X,v,K) to v*X/(X+K).
-    expand_functions && for eq in eqs
-        eq.rhs = expand_registered_functions!(eq.rhs)
+    if expand_functions
+        eqs = [eq.lhs ~ expand_registered_functions!(eq.rhs) for eq in eqs]
+        noiseeqs = [expand_registered_functions!(neq) for neq in noiseeqs]
     end
 
     if any(isbc, get_states(flatrs))
