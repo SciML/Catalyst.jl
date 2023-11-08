@@ -211,7 +211,7 @@ end
 Pair 3:
 ```@example tut2
 rn1 = @reaction_network begin
-  (1.0,2.0,3.0), (S1,S2,S3) → (P1,P2,P3)
+  (1.0,2.0,3.0), (S1,S2,S3) --> (P1,P2,P3)
 end
 ```
 ```@example tut2
@@ -278,7 +278,7 @@ using SpecialFunctions
 rn = @reaction_network begin
   2.0*X^2, 0 --> X + Y
   t*gamma(Y), X --> ∅
-  pi*X/Y, Y → ∅
+  pi*X/Y, Y --> ∅
 end
 ```
 where here `t` always denotes Catalyst's time variable. Please note that many

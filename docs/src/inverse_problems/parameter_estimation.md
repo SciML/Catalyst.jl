@@ -21,10 +21,10 @@ Next, we declare our model. For our example, we will use the Brusselator, a
 simple oscillator.
 ```@example pe1
 brusselator = @reaction_network begin
-    A, ∅ → X
-    1, 2X + Y → 3X
-    B, X → Y
-    1, X → ∅
+    A, ∅ --> X
+    1, 2X + Y --> 3X
+    B, X --> Y
+    1, X --> ∅
 end
 p_real = [:A => 1., :B => 2.]
 ```
