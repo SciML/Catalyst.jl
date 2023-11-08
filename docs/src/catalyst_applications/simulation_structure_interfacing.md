@@ -5,7 +5,7 @@ Generally, when we have a structure `simulation_struct` and want to interface wi
 
 ## Interfacing problem objects
 
-We begin by demonstrating how we can interface with problem objects. We will demonstrate using a `ODEProblem`, however, it works similarily for other problem types.
+We begin by demonstrating how we can interface with problem objects. We will demonstrate using a `ODEProblem`, however, it works similarly for other problem types.
 ```@example ex1
 using Catalyst
 rn = @reaction_network begin
