@@ -26,7 +26,7 @@ true_sol = solve(oprob_true, Tsit5())
 data_sol = solve(oprob_true, Tsit5(); saveat=1.0)
 data_ts = data_sol.t[2:end]
 data_vals = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
-
+→
 # Plots the true solutions and the (synthetic data) measurements.
 using Plots
 plot(true_sol; idxs=:P, label="True solution", lw=8)
