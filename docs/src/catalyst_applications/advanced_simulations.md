@@ -375,10 +375,10 @@ Let us consider the Brusselator model:
 using Catalyst, DifferentialEquations, Plots
 
 brusselator = @reaction_network begin
-    A, ∅ → X
-    1, 2X + Y → 3X
-    B, X → Y
-    1, X → ∅
+    A, ∅ --> X
+    1, 2X + Y --> 3X
+    B, X --> Y
+    1, X --> ∅
 end
 u0 = [:X => 1.0, :Y => 0.0]
 tspan = (0.0, 50.0)
