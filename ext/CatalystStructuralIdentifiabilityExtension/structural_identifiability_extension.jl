@@ -23,7 +23,7 @@ si_ode(rs; measured_quantities = [:X], known_p = [:p])
 function Catalyst.make_si_ode(rs::ReactionSystem; measured_quantities = [], known_p = [], ignore_no_measured_warn=false)
     ignore_no_measured_warn || isempty(measured_quantities) && @warn "No measured quantity provided to the `measured_quantities` argument, any further identifiability analysis will likely fail."
     known_quantities = make_measured_quantities(rs, measured_quantities, known_p)
-    return StructuralIdentifiability.preprocess_ode(convert(ODESystem, rs), known_quantities)[1]
+    return StructuralIdentifiability.preprocess_ode(convert(ODESystem, rs; expand_functions = true), known_quantities)[1]
 end
 
 # For input measured quantities, if this is not a vector of equations, convert it to a proper form.
