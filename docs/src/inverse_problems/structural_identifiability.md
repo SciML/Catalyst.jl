@@ -42,6 +42,8 @@ assess_identifiability(gwo; measured_quantities=[:M], known_p=[:pₑ])
 ```
 Not only does this turn the previously non-identifiable `pₑ` (globally) identifiable (which is obvious, given that its value is now known), but this additional information improve identifiability for several other network components.
 
+To, in a similar manner, indicate that certain initial conditions are known is a work in progress. Hopefully it should be an available feature in the near future.
+
 ### Providing non-trivial measured quantities
 Sometimes, we are not actually measuring species species, but rather some combinations of species (or possibly parameters). Here, any algebraic expression can be used in `measured_quantities`. If so, used species and parameters have to first be `@unpack`'ed from the model. Say that we have a model where an enzyme ($E$) is converted between an active and inactive form, which in turns activates the production of a product, $P$:
 ```example si2
