@@ -309,13 +309,13 @@ sprob_1 = SDEProblem(rn_1, u0, tspan, p_1)
 sol_1 = solve(sprob_1)
 plot(sol_1; idxs = :X1, ylimit = (0.0, 20.0))
 ```
-Here we can see that the `X` concentration fluctuations around a steady state of *X≈10.0*.
+Here we can see that the `X` concentration fluctuations around a steady state of $X≈10.0$.
 
 Next, we wish to introduce a noise scaling parameter ,`η`. This will scale the
-noise magnitude so that for *η≈0.0* the system lacks noise (and its SDE
-simulations are identical to its ODE simulations) and for *η≈1.0* noise is not
+noise magnitude so that for $η≈0.0$ the system lacks noise (and its SDE
+simulations are identical to its ODE simulations) and for $η≈1.0$ noise is not
 scaled (and SDE simulations are identical to as if no noise scaling was used).
-Setting *η<1.0* will reduce noise and *η>1.0* will increase noise. The syntax
+Setting $η<1.0$ will reduce noise and $η>1.0$ will increase noise. The syntax
 for setting a noise scaling parameter `η` is
 ```@example ex3
 rn_2 = @reaction_network begin
