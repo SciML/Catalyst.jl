@@ -118,7 +118,7 @@ res = calibrate_model(petab_problem, p0, IPNewton())
 
 We can now simulate our model for the fitted parameter set, and compare the result to the measurements and true solution.
 ```@example petab1
-oprob_fitted = remake(oprob; p=get_ps(res, petab_problem))
+oprob_fitted = remake(oprob_true; p=get_ps(res, petab_problem))
 fitted_sol = solve(oprob_fitted, Tsit5())
 plot!(fitted_sol; idxs=:P, label="Fitted solution", linestyle=:dash, lw=6, color=:lightblue)
 nothing # hide
