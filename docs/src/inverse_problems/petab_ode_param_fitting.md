@@ -470,6 +470,7 @@ Whenever we have several events or not, we bundle them together in a single vect
 ```@example petab1
 events = [event1, event2]
 petab_model = PEtabModel(rn, observables, measurements, params; state_map=u0, events=events)
+nothing # hide
 ```
 
 More details on how to use events, including how to create events with multiple targets, can be found in [PEtab.jl's documentation](https://sebapersson.github.io/PEtab.jl/stable/Julia_event/).
@@ -483,14 +484,12 @@ There exist various types of graphs that can be used to evaluate the parameter f
 To, for a single start calibration run, plot, for each iteration of the optimization process, the best objective value achieved so far, run:
 ```julia
 plot(res)
-nothing # hide
 ```
 ![petab single best objective plot](../assets/petab_best_objective_single_run.svg)
 
 For a multi-start calibration run, the default output is instead a so-called waterfall plot:
 ```julia
 plot(res_ms)
-nothing # hide
 ```
 ![petab waterfall plot](../assets/petab_waterfall.svg)
 
@@ -501,7 +500,6 @@ In the waterfall plot, each dot shows the final objective value for a single run
 To instead use the best objective value plot for a multi-start run (with one curve for each run), the `plot_type` argument is used:
 ```julia
 plot(res_ms; plot_type = :best_objective)
-nothing # hide
 ```
 ![petab best objective plot](../assets/petab_best_objective.svg)
 
