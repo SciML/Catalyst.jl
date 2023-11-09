@@ -21,13 +21,13 @@ si_ode(rs; measured_quantities = [:X], known_p = [:p])
 ```
 """
 function Catalyst.make_si_ode(rs::ReactionSystem; measured_quantities = [], known_p = [], ignore_no_measured_warn=false)
-    ignore_no_measured_warn || isempty(measured_quantities) && @warn "No measured quantity provided to the `measured_quantities` argument, any further identifiability analysis will likely fail. You can disable this warning by setting `ignore_no_measured_warn=true`."
-    known_quantities = make_measured_quantities(rs, measured_quantities, known_p)
+    known_quantities = make_measured_quantities(rs, measured_quantities, known_p; ignore_no_measured_warn)
     return StructuralIdentifiability.preprocess_ode(convert(ODESystem, rs; expand_functions = true), known_quantities)[1]
 end
 
 # For input measured quantities, if this is not a vector of equations, convert it to a proper form.
-function make_measured_quantities(rs::ReactionSystem, measured_quantities::Vector{T}, known_p::Vector{S}) where {T,S}
+function make_measured_quantities(rs::ReactionSystem, measured_quantities::Vector{T}, known_p::Vector{S}; ignore_no_measured_warn=false) where {T,S}
+    ignore_no_measured_warn || isempty(measured_quantities) && @warn "No measured quantity provided to the `measured_quantities` argument, any further identifiability analysis will likely fail. You can disable this warning by setting `ignore_no_measured_warn=true`."
     all_quantities = [measured_quantities; known_p]
     all_quantities = [(quant isa Symbol) ? Catalyst._symbol_to_var(rs, quant) : quant for quant in all_quantities]
     @variables t (___internal_observables(t))[1:length(all_quantities)]
@@ -37,17 +37,23 @@ end
 ### Structural Identifiability Wrappers ###
 
 # Local identifiability.
-function StructuralIdentifiability.assess_local_identifiability(rs::ReactionSystem, args...; measured_quantities = Num[], known_p = Num[], kwargs...)
-    return StructuralIdentifiability.assess_local_identifiability(Catalyst.make_si_ode(rs; measured_quantities, known_p), args...; kwargs...)
+function StructuralIdentifiability.assess_local_identifiability(rs::ReactionSystem, args...; measured_quantities = Num[], known_p = Num[], ignore_no_measured_warn=false, kwargs...)
+    known_quantities = make_measured_quantities(rs, measured_quantities, known_p; ignore_no_measured_warn)
+    osys = convert(ODESystem, rs; expand_functions = true)
+    return StructuralIdentifiability.assess_local_identifiability(osys, args...; measured_quantities=known_quantities, kwargs...)
 end
 
 # Global identifiability.
-function StructuralIdentifiability.assess_identifiability(rs::ReactionSystem, args...; measured_quantities = Num[], known_p = Num[], kwargs...)
-    return StructuralIdentifiability.assess_identifiability(Catalyst.make_si_ode(rs; measured_quantities, known_p), args...; kwargs...)
+function StructuralIdentifiability.assess_identifiability(rs::ReactionSystem, args...; measured_quantities = Num[], known_p = Num[], ignore_no_measured_warn=false, kwargs...)
+    known_quantities = make_measured_quantities(rs, measured_quantities, known_p; ignore_no_measured_warn)
+    osys = convert(ODESystem, rs; expand_functions = true)
+    return StructuralIdentifiability.assess_identifiability(osys, args...; measured_quantities=known_quantities, kwargs...)
 end
 
 # Identifiable functions.
-function StructuralIdentifiability.find_identifiable_functions(rs::ReactionSystem, args...; measured_quantities = Num[], known_p = Num[], kwargs...)
-    return StructuralIdentifiability.find_identifiable_functions(Catalyst.make_si_ode(rs; measured_quantities, known_p), args...; kwargs...)
+function StructuralIdentifiability.find_identifiable_functions(rs::ReactionSystem, args...; measured_quantities = Num[], known_p = Num[], ignore_no_measured_warn=false, kwargs...)
+    known_quantities = make_measured_quantities(rs, measured_quantities, known_p; ignore_no_measured_warn)
+    osys = convert(ODESystem, rs; expand_functions = true)
+    return StructuralIdentifiability.find_identifiable_functions(osys, args...; measured_quantities=known_quantities, kwargs...)
 end
 
