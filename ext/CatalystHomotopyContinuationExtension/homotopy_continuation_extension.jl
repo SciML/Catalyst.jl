@@ -49,8 +49,7 @@ function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns); defaults = ModelingToolkit.defaults(ns))
     p_dict  = Dict(parameters(ns) .=> p_vals)
     eqs_pars_funcs = vcat(equations(ns), conservedequations(rs))
-    eqs_funcs = map(eq -> substitute(eq.rhs - eq.lhs, p_dict), eqs_pars_funcs)
-    eqs = [deregister([mm, mmr, hill, hillr, hillar], eq) for eq in eqs_funcs]
+    eqs = map(eq -> substitute(eq.rhs - eq.lhs, p_dict), eqs_pars_funcs)
     eqs_intexp = make_int_exps.(eqs)
     return Catalyst.to_multivariate_poly(remove_denominators.(eqs_intexp))
 end
