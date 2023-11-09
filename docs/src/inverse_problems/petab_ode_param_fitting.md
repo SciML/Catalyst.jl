@@ -468,7 +468,7 @@ Here, the event only triggers whenever the condition changes from `false` to `tr
 
 Whenever we have several events or not, we bundle them together in a single vector which is later passed to the `PEtabODEProblem` using the `events` argument:
 ```@example petab1
-events = [event, event2]
+events = [event1, event2]
 petab_model = PEtabModel(rn, observables, measurements, params; state_map=u0, events=events)
 ```
 
