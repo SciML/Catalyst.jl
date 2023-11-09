@@ -49,9 +49,9 @@ let
     ifs_3 = find_identifiable_functions(goodwind_oscillator_si)
 
     # Check outputs.
-    sym_dict(gi_1) == sym_dict(gi_2) == sym_dict(gi_3)
-    sym_dict(li_1) == sym_dict(li_2) == sym_dict(li_3)
-    length(ifs_1) == length(ifs_2) == length(ifs_3)     
+    @test sym_dict(gi_1) == sym_dict(gi_2) == sym_dict(gi_3)
+    @test sym_dict(li_1) == sym_dict(li_2) == sym_dict(li_3)
+    @test length(ifs_1) == length(ifs_2) == length(ifs_3)     
 end
 
 # Tests on a made-up reaction network with mix of identifiable and non-identifiable components.
@@ -92,9 +92,9 @@ let
     ifs_3 = find_identifiable_functions(rs_si)
 
     # Check outputs.
-    sym_dict(gi_1) == sym_dict(gi_2) == sym_dict(gi_3)
-    sym_dict(li_1) == sym_dict(li_2) == sym_dict(li_3)
-    length(ifs_1) == length(ifs_2) == length(ifs_3)     
+    @test sym_dict(gi_1) == sym_dict(gi_2) == sym_dict(gi_3)
+    @test sym_dict(li_1) == sym_dict(li_2) == sym_dict(li_3)
+    @test length(ifs_1) == length(ifs_2) == length(ifs_3)     
 end
 
 # Tests on a made-up reaction network with mix of identifiable and non-identifiable components.
@@ -141,9 +141,9 @@ let
     ifs_3 = find_identifiable_functions(rs_si)
     
     # Check outputs.
-    sym_dict(gi_1) == sym_dict(gi_2) == sym_dict(gi_3)
-    sym_dict(li_1) == sym_dict(li_2) == sym_dict(li_3)
-    length(ifs_1) == length(ifs_2) == length(ifs_3)    
+    @test sym_dict(gi_1) == sym_dict(gi_2) == sym_dict(gi_3)
+    @test sym_dict(li_1) == sym_dict(li_2) == sym_dict(li_3)
+    @test length(ifs_1) == length(ifs_2) == length(ifs_3)    
 end
 
 # Tests that various inputs types work.
