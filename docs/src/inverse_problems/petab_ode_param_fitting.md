@@ -431,7 +431,7 @@ And one additional optional argument:
 Because `calibrate_model_multistart` handles initial guess sampling, unlike for `calibrate_model`, no initial guess has to be provided. 
 
 Here, we fit parameters through 10 independent optimisation runs, using QuasiMonteCarlo's `SobolSample` method, and save the result to the OptimizationRuns folder:
-```@example petab1
+```julia
 using Optim
 using QuasiMonteCarlo
 res_ms = calibrate_model_multistart(petab_problem, IPNewton(), 10, "OptimizationRuns"; sampling_method=QuasiMonteCarlo.SobolSample())
@@ -439,11 +439,11 @@ res_ms = calibrate_model_multistart(petab_problem, IPNewton(), 10, "Optimization
 The best result across all runs can still be retrieved using `get_ps(res_ms, petab_problem)`, with the results of the individual runs being stored in the `res_ms.runs` field. 
 
 To load the result in a later session, we can call:
-```@example petab1
+```julia
 res_ms = PEtabMultistartOptimisationResult("OptimizationRuns")
 ```
 where `"OptimizationRuns"` is the name of the save directory (specified in `calibrate_model_multistart`). If the OptimizationRuns folder contains the output from several runs, we can designate which to load using the `which_run` argument. Here we load the second run to be saved in that folder:
-```@example petab1
+```julia
 res_ms = PEtabMultistartOptimisationResult("OptimizationRuns"; which_run="2")
 ```
 By default, `which_run` loads the first run saved to that directory.
@@ -488,7 +488,7 @@ nothing # hide
 ![petab single best objective plot](../assets/petab_best_objective_single_run.svg)
 
 For a multi-start calibration run, the default output is instead a so-called waterfall plot:
-```@example petab1
+```julia
 plot(res_ms)
 nothing # hide
 ```
@@ -499,7 +499,7 @@ nothing # hide
 In the waterfall plot, each dot shows the final objective value for a single run in the multi-start process. The runs are ordered by their objective values, and colours designate runs in the same local minimum. A common use of waterfall plots is to check whether a sufficient number of runs (typically $>5$) has converged to the same best local minimum (in which case it is assumed to be the *global* minimum).
 
 To instead use the best objective value plot for a multi-start run (with one curve for each run), the `plot_type` argument is used:
-```@example petab1
+```julia
 plot(res_ms; plot_type = :best_objective)
 nothing # hide
 ```
