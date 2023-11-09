@@ -481,7 +481,7 @@ More details on how to use events, including how to create events with multiple 
 There exist various types of graphs that can be used to evaluate the parameter fitting process. These can be plotted using the `plot` command, where the input is either the result of a `calibrate_model` or a  `calibrate_model_multistart` run. To be able to use this functionality, you have to ensure that PEtab.jl [records the optimisation process](@ref petab_optimisation_path_recording) by providing the `save_trace=true` argument to the calibration functions.
 
 To, for a single start calibration run, plot, for each iteration of the optimization process, the best objective value achieved so far, run:
-```@example petab1
+```julia
 plot(res)
 nothing # hide
 ```
