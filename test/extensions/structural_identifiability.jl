@@ -131,10 +131,10 @@ let
         X5'(t) = -d*X5(t) + k3*X3(t),
         Yi'(t) = kD*Ya(t) - kA*Yi(t)*X3(t),
         Ya'(t) = -kD*Ya(t) + kA*Yi(t)*X3(t),
-        y1(t) = X1 + Ya,
-        y2(t) = X2,
+        y1(t) = X1 + Yi,
+        y2(t) = Ya,
         y3(t) = k1,
-        y4(t) = k2
+        y4(t) = kD
     )
     gi_3 = assess_identifiability(rs_si)
     li_3 = assess_local_identifiability(rs_si)
@@ -169,4 +169,70 @@ let
     si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[M + pₑ])
     si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[M + E, pₑ*M], known_p=[:pₑ])
     si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[pₑ, pₚ], known_p=[pₑ])    
+
+    # Tests using model.component style (have to make system complete first).
+    gw_osc_complt = complete(goodwind_oscillator_catalyst)
+    make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M])
+    make_si_ode(gw_osc_complt; known_p=[gw_osc_complt.pₑ])
+    make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M], known_p=[gw_osc_complt.pₑ])
+    make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M, gw_osc_complt.E], known_p=[gw_osc_complt.pₑ])
+    make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M], known_p=[gw_osc_complt.pₑ, gw_osc_complt.pₚ])
+    make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M], known_p = [:pₚ])
+    make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M*gw_osc_complt.E])
+end
+
+# Tests directly on reaction systems with known identifiability structures.
+# Test provided by Alexander Demin.
+let
+    rs = @reaction_network begin
+        k1, x1 --> x2
+    end
+    # Measure the source
+    id_report = assess_identifiability(rs, measured_quantities = [:x1])
+    @test sym_dict(id_report) == Dict(
+        :x1 => :globally,
+        :x2 => :nonidentifiable,
+        :k1 => :globally
+    )
+    # Measure the target instead
+    id_report = assess_identifiability(rs, measured_quantities = [:x2])
+    @test sym_dict(id_report) == Dict(
+        :x1 => :globally,
+        :x2 => :globally,
+        :k1 => :globally
+    )
+
+    # Example from
+    #   Identifiability of chemical reaction networks
+    #   DOI: 10.1007/s10910-007-9307-x
+    # The rate constants a, b, c are not identifiable even if all of the species
+    # are observed.
+    rs = @reaction_network begin
+        a, A0 --> 2A1
+        b, A0 --> 2A2
+        c, A0 --> A1 + A2
+    end
+    id_report = assess_identifiability(rs, measured_quantities = [:A0, :A1, :A2])
+    @test sym_dict(id_report) == Dict(
+        :A0 => :globally,
+        :A1 => :globally,
+        :A2 => :globally,
+        :a  => :nonidentifiable,
+        :b  => :nonidentifiable,
+        :c  => :nonidentifiable
+    )
+
+    # Test with no parameters
+    rs = @reaction_network begin
+        1, x1 --> x2
+        1, x2 --> x3
+    end
+    id_report = assess_identifiability(rs, measured_quantities = [:x3])
+    @test sym_dict(id_report) == Dict(
+        :x1 => :globally,
+        :x2 => :globally,
+        :x3 => :globally,
+    )
+    # Will probably be fixed in the 0.5 release of SI.jl
+    @test_broken find_identifiable_functions(rs, measured_quantities = [:x3])
 end
