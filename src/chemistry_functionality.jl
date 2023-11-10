@@ -188,6 +188,7 @@ function component_coefficients(s)
     return [c => co for (c, co) in zip(components(s), coefficients(s))]
 end
 
+### Reaction Balancing Functionality ###
 
 ### Reaction Balancing Functionality ###
 
