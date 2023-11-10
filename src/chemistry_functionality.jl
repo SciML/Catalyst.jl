@@ -12,7 +12,7 @@ Symbolics.option_to_metadata_type(::Val{:coefficients}) = CompoundCoefficients
 """
     @compound
 
-Macro that creates a compound species, which is composed of smaller constituent species.
+Macro that creates a compound species, which is composed of smaller component species.
 
 Example:
 ```julia
@@ -22,7 +22,7 @@ Example:
 ```
 
 Notes: 
-- The constituent species must be defined before using the `@compound` macro.
+- The component species must be defined before using the `@compound` macro.
 """
 macro compound(expr)
     make_compound(MacroTools.striplines(expr))
@@ -62,7 +62,7 @@ end
 """
     @compounds
 
-Macro that creates several compound species, which each is composed of smaller constituent species. Uses the same syntax as `@compound`, but with one compound species one each line.
+Macro that creates several compound species, which each is composed of smaller component species. Uses the same syntax as `@compound`, but with one compound species one each line.
 
 Example:
 ```julia
@@ -77,7 +77,7 @@ end
 ```
 
 Notes: 
-- The constituent species must be defined before using the `@compound` macro.
+- The component species must be defined before using the `@compound` macro.
 """
 macro compounds(expr)
     make_compounds(MacroTools.striplines(expr))
@@ -131,6 +131,7 @@ component_coefficients(s::Num) = component_coefficients(MT.value(s))
 function component_coefficients(s)
     return [c => co for (c, co) in zip(components(s), coefficients(s))]
 end
+
 
 ### Reaction Balancing Functionality ###
 
