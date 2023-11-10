@@ -1,3 +1,4 @@
+### Declares Compound Related Metadata ###
 struct CompoundSpecies end
 struct CompoundComponents end
 struct CompoundCoefficients end
@@ -6,93 +7,138 @@ Symbolics.option_to_metadata_type(::Val{:iscompound}) = CompoundSpecies
 Symbolics.option_to_metadata_type(::Val{:components}) = CompoundComponents
 Symbolics.option_to_metadata_type(::Val{:coefficients}) = CompoundCoefficients
 
-macro compound(species_expr, arr_expr...)
-    # Ensure the species name is a valid expression
-    if !(species_expr isa Expr && species_expr.head == :call)
-        error("Invalid species name in @compound macro")
-    end
+### Create @compound Macro(s) ###
 
-    # Parse the species name to extract the species name and argument
-    species_name = species_expr.args[1]
-    species_arg = species_expr.args[2]
+"""
+    @compound
 
-    # Construct the expressions that define the species
-    species_expr = Expr(:macrocall, Symbol("@species"), LineNumberNode(0),
-                        Expr(:call, species_name, species_arg))
+Macro that creates a compound species, which is composed of smaller constituent species.
 
-    # Construct the expression to set the iscompound metadata
-    setmetadata_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
-                                                                       Catalyst.CompoundSpecies,
-                                                                       true))
+Example:
+```julia
+@variables t
+@species C(t) O(t)
+@compound CO2(t) = C + 2O
+```
 
-    # Ensure the expressions are evaluated in the correct scope by escaping them
-    escaped_species_expr = esc(species_expr)
-    escaped_setmetadata_expr = esc(setmetadata_expr)
-
-    # Construct the array from the remaining arguments
-    arr = Expr(:vect, (arr_expr)...)
-    coeffs = []
-    species = []
-
-    for expr in arr_expr
-        if isa(expr, Expr) && expr.head == :call && expr.args[1] == :*
-            push!(coeffs, expr.args[2])
-            push!(species, expr.args[3])
-        else
-            push!(coeffs, 1)
-            push!(species, expr)
-        end
-    end
-
-    coeffs_expr = Expr(:vect, coeffs...)
-    species_expr = Expr(:vect, species...)
-
-    # Construct the expression to set the components metadata
-    setcomponents_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
-                                                                         Catalyst.CompoundComponents,
-                                                                         $species_expr))
-
-    # Ensure the expression is evaluated in the correct scope by escaping it
-    escaped_setcomponents_expr = esc(setcomponents_expr)
-
-    # Construct the expression to set the coefficients metadata
-    setcoefficients_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
-                                                                           Catalyst.CompoundCoefficients,
-                                                                           $coeffs_expr))
-
-    escaped_setcoefficients_expr = esc(setcoefficients_expr)
-
-    # Return a block that contains the escaped expressions
-    return Expr(:block, escaped_species_expr, escaped_setmetadata_expr,
-                escaped_setcomponents_expr, escaped_setcoefficients_expr)
+Notes: 
+- The constituent species must be defined before using the `@compound` macro.
+"""
+macro compound(expr)
+    make_compound(MacroTools.striplines(expr))
 end
 
-# Check if a species is a compound
+# Function managing the @compound macro.
+function make_compound(expr)
+    # Error checks.
+    !(expr isa Expr) || (expr.head != :(=)) && error("Malformed expression. Compounds should be declared using a \"=\".")
+    (length(expr.args) != 2) && error("Malformed expression. Compounds should be consists of two expression, separated by a \"=\".")
+    ((expr.args[1] isa Symbol) || (expr.args[1].head != :call)) && error("Malformed expression. There must be a single compound which depend on an independent variable, e.g. \"CO2(t)\".")
+
+    # Extracts the composite species name, and a Vector{ReactantStruct} of its components.
+    species_expr = expr.args[1]                                         # E.g. :(CO2(t))
+    species_name = expr.args[1].args[1]                                 # E.g. :CO2
+    composition = Catalyst.recursive_find_reactants!(expr.args[2].args[1], 1, Vector{ReactantStruct}(undef, 0))
+    components = :([])                                                  # Extra step required here to get something like :([C, O]), rather than :([:C, :O])
+    foreach(comp -> push!(components.args, comp.reactant), composition) # E.g. [C, O]
+    coefficients = getfield.(composition, :stoichiometry)               # E.g. [1, 2]
+
+    # Creates the found expressions that will create the compound species.
+    # The `Expr(:escape, :(...))` is required so that teh expressions are evaluated in the scope the users use the macro in (to e.g. detect already exiting species).
+    species_declaration_expr = Expr(:escape, :(@species $species_expr))                                                                                         # E.g. `@species CO2(t)`
+    compound_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundSpecies, true)))                    # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, true)`
+    components_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundComponents, $components)))        # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [C, O])`
+    coefficients_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundCoefficients, $coefficients)))  # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [1, 2])`
+
+    # Returns the rephrased expression.
+    return quote
+        $species_declaration_expr
+        $compound_designation_expr
+        $components_designation_expr
+        $coefficients_designation_expr
+    end
+end
+
+"""
+    @compounds
+
+Macro that creates several compound species, which each is composed of smaller constituent species. Uses the same syntax as `@compound`, but with one compound species one each line.
+
+Example:
+```julia
+@variables t
+@species C(t) H(t) O(t) 
+@compounds
+    CH4(t) = C + 4H
+    O2(t) = 2O
+    CO2(t) = C + 2O
+    H2O(t) = 2H + O
+end
+```
+
+Notes: 
+- The constituent species must be defined before using the `@compound` macro.
+"""
+macro compounds(expr)
+    make_compounds(MacroTools.striplines(expr))
+end
+
+# Function managing the @compound macro.
+function make_compounds(expr)
+    # Creates a separate compound call for each compound.
+    compound_calls = [make_compound(line) for line in expr.args]                # Crates a vector containing the quote for each compound.
+    return Expr(:block, vcat([c_call.args for c_call in compound_calls]...)...) # Combines the quotes to a single one. Don't want the double "...". But had problems getting past them for various metaprogramming reasons :(.)
+end
+
+## Compound Getters ###
+
+"""
+    iscompound(s)
+
+Returns `true` if the input is a compound species (else false).
+"""
 iscompound(s::Num) = iscompound(MT.value(s))
 function iscompound(s)
     MT.getmetadata(s, CompoundSpecies, false)
 end
 
-coefficients(s::Num) = coefficients(MT.value(s))
-function coefficients(s)
-    MT.getmetadata(s, CompoundCoefficients)
-end
+"""
+    components(s)
 
+Returns a vector with a list of all the components of a compound species (created using e.g. the @compound macro).
+"""
 components(s::Num) = components(MT.value(s))
 function components(s)
     MT.getmetadata(s, CompoundComponents)
 end
 
+"""
+    coefficients(s)
+
+Returns a vector with a list of all the stoichiometric coefficients of the components of a compound species (created using e.g. the @compound macro).
+"""
+coefficients(s::Num) = coefficients(MT.value(s))
+function coefficients(s)
+    MT.getmetadata(s, CompoundCoefficients)
+end
+
+"""
+    component_coefficients(s)
+
+Returns a Vector{Pari{Symbol,Int64}}, listing a compounds species (created using e.g. the @compound macro) all the coefficients and their stoichiometric coefficients.
+"""
 component_coefficients(s::Num) = component_coefficients(MT.value(s))
 function component_coefficients(s)
     return [c => co for (c, co) in zip(components(s), coefficients(s))]
 end
 
+### Reaction Balancing Functionality ###
 
-### Balancing Code
+# Reaction balancing error.
 const COMPOUND_OF_COMPOUND_ERROR = ErrorException("Reaction balancing does not currently work for reactions involving compounds of compounds.")
 
-# note this does not correctly handle compounds of compounds currently
+# Note this does not correctly handle compounds of compounds currently.
+# Internal function used by "balance_reaction" (via "get_balanced_stoich").
 function create_matrix(reaction::Catalyst.Reaction)
     @unpack substrates, products = reaction
     unique_atoms = [] # Array to store unique atoms
@@ -143,6 +189,7 @@ function create_matrix(reaction::Catalyst.Reaction)
     return A
 end
 
+# Internal function used by "balance_reaction".
 function get_balanced_stoich(reaction::Reaction)
     # Create the reaction matrix A that is m atoms by n compounds
     A = create_matrix(reaction)
@@ -171,6 +218,52 @@ function get_balanced_stoich(reaction::Reaction)
     return stoichvecs
 end
 
+"""
+    balance_reaction(reaction::Reaction)
+
+Returns a vector of all possible stoichiometrically balanced `Reaction` objects for the given `Reaction`.
+
+Example:
+```julia
+@variables t
+@species Si(t) Cl(t) H(t) O(t)
+@compound SiCl4(t) = Si + 4Cl
+@compound H2O(t) = 2H + O
+@compound H4SiO4(t) = 4H + Si + 4O
+@compound HCl(t) = H + Cl
+rx = Reaction(1.0,[SiCl4,H2O],[H4SiO4,HCl])
+balance_reaction(rx) # Exactly one solution.
+```
+
+```julia
+@variables t
+@species C(t) H(t) O(t)
+@compound CO(t) = C + O
+@compound CO2(t) = C + 2O
+@compound H2(t) = 2H
+@compound CH4(t) = C + 4H
+@compound H2O(t) = 2H + O
+rx = Reaction(1.0, [CO, CO2, H2], [CH4, H2O]) 
+balance_reaction(rx) # Multiple solutions.
+```
+
+```julia
+@variables t
+@species Fe(t) S(t) O(t) H(t) N(t)
+@compound FeS2(t) = Fe + 2S
+@compound HNO3(t) = H + N + 3O
+@compound Fe2S3O12(t) = 2Fe + 3S + 12O
+@compound NO(t) = N + O
+@compound H2SO4(t) = 2H + S + 4O
+rx = Reaction(1.0, [FeS2, HNO3], [Fe2S3O12, NO, H2SO4])
+brxs = balance_reaction(rx) # No solution.
+```
+
+Notes:
+- Balancing reactions that contain compounds of compounds is currently not supported.
+- A reaction may not always yield a single solution; it could have an infinite number of solutions or none at all. When there are multiple solutions, a vector of all possible `Reaction` objects is returned. However, substrates and products may be interchanged as we currently do not solve for a linear combination that maintains the set of substrates and products. 
+- If the reaction cannot be balanced, an empty `Reaction` vector is returned.
+"""
 function balance_reaction(reaction::Reaction)
     # Calculate the stoichiometric coefficients for the balanced reaction.
     stoichiometries = get_balanced_stoich(reaction)
