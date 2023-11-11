@@ -106,7 +106,7 @@ let
     @compound H2_1(t) = 2*H
     @compound H2_2(t) = alpha*H
     @compound H2_3(t) = 2*h
-    @compound H2_4(t) = alpha*2H
+    @compound H2_4(t) = alpha*H
 
     @test iscompound(H2_1)
     @test iscompound(H2_2)

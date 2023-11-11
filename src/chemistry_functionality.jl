@@ -55,14 +55,6 @@ function make_compound(expr)
     components_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundComponents, $components)))        # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [C, O])`
     coefficients_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundCoefficients, $coefficients)))  # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [1, 2])`
 
-    println(
-        return quote
-            $species_declaration_expr
-            $compound_designation_expr
-            $components_designation_expr
-            $coefficients_designation_expr
-        end)
-
     # Returns the rephrased expression.
     return quote
         $species_declaration_expr

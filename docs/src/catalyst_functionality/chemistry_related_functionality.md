@@ -7,12 +7,12 @@ While Catalyst has primarily been designed around the modelling of biological sy
 ## Modelling with compound species
 
 #### Creating compound species programmatically
-We will first show how to create compound species through [programmatic construction](@ref programmatic_CRN_construction), and then demonstrate using the DSL. To create a compound species, use the `@compound` macro, first designating the compound, followed by its components (and stoichiometries). In this example, we will create a CO₂ compound species, consisting of one C species and two O species. First, we create species corresponding to the components:
+We will first show how to create compound species through [programmatic construction](@ref programmatic_CRN_construction), and then demonstrate using the DSL. To create a compound species, use the `@compound` macro, first designating the compound, followed by its components (and stoichiometries). In this example, we will create a CO₂ molecule, consisting of one C atom and two O atoms. First, we create species corresponding to the components:
 ```@example chem1
 @variables t
 @species C(t) O(t) 
 ```
-Next, we create the `CO2` compound:
+Next, we create the `CO2` compound species:
 ```@example chem1
 @compound CO2(t) = C + 2O
 ```
@@ -76,10 +76,10 @@ rn = @reaction_network begin
     (k1,k2), H2O+ CO2 <--> H2CO3
 end
 ```
-as the components `C`, `H`, and `O` are not explicitly declared as a species anywhere. Please also note that only `@compounds` can be used as an option in the DSL, not `@compound`.
+as the components `C`, `H`, and `O` are not declared as a species anywhere. Please also note that only `@compounds` can be used as an option in the DSL, not `@compound`.
 
 ## Balancing chemical reactions
-One use of defining a species as a compound is that they can be used to balance reactions to that the number of compounds are the same on both sides. Catalyst provides the `balance_reaction` function, which takes a reaction, and returns a balanced version. E.g. let us consider a reaction when carbon dioxide is formed from carbon and oxide `C + O --> CO2`. Here, `balance_reaction` enables us to find coefficients creating a balanced reaction (in this case, where the number of carbon and oxygen atoms are the same on both sides). To demonstrate, we first created the unbalanced reactions:
+One use of defining a species as a compound is that they can be used to balance reactions to that the number of components are the same on both sides. Catalyst provides the `balance_reaction` function, which takes a reaction, and returns a balanced version. E.g. let us consider a reaction when carbon dioxide is formed from carbon and oxide `C + O --> CO2`. Here, `balance_reaction` enables us to find coefficients creating a balanced reaction (in this case, where the number of carbon and oxygen atoms are the same on both sides). To demonstrate, we first created the unbalanced reactions:
 ```@example chem1
 rx = @reaction k, C + O --> $CO2
 ```
