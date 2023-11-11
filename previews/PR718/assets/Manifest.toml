@@ -1638,9 +1638,9 @@ version = "0.11.29"
 
 [[deps.PEtab]]
 deps = ["CSV", "ChainRulesCore", "DataFrames", "DiffEqCallbacks", "Distributed", "Distributions", "FiniteDifferences", "ForwardDiff", "LinearAlgebra", "ModelingToolkit", "NonlinearSolve", "OrdinaryDiffEq", "PreallocationTools", "PrecompileTools", "Printf", "QuasiMonteCarlo", "Random", "ReverseDiff", "RuntimeGeneratedFunctions", "SBML", "SciMLBase", "SpecialFunctions", "StatsBase", "SteadyStateDiffEq", "Sundials", "YAML"]
-git-tree-sha1 = "92c0a1b99c44b21969de33e34b5582b65220128d"
+git-tree-sha1 = "d0b4c41bb1e8fb4df5ae0a16d9a688bb16b23b2e"
 uuid = "48d54b35-e43e-4a66-a5a1-dde6b987cf69"
-version = "2.1.2"
+version = "2.2.0"
 
     [deps.PEtab.extensions]
     PEtabCatalystExtension = ["Catalyst"]
