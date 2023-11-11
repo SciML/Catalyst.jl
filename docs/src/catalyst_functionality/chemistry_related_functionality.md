@@ -5,7 +5,9 @@ While Catalyst has primarily been designed around the modelling of biological sy
 - The `balance_reaction` function enabling the user to balance a reaction so the same number of components occur on both sides.
 
 ## Modelling with compound species
-Defining compound species is currently only supported for [programmatic construction](@ref programmatic_CRN_construction) of reactions and reaction network models. To create a compound species, use the `@compound` macro, first designating the compound, followed by its components (and stoichiometries). In this example, we will create a CO₂ compound species, consisting of one C species and two O species. First, we create species corresponding to the components:
+
+#### Creating compound species programmatically
+We will first show how to create compound species through [programmatic construction](@ref programmatic_CRN_construction), and then demonstrate using the DSL. To create a compound species, use the `@compound` macro, first designating the compound, followed by its components (and stoichiometries). In this example, we will create a CO₂ compound species, consisting of one C species and two O species. First, we create species corresponding to the components:
 ```@example chem1
 @variables t
 @species C(t) O(t) 
@@ -50,10 +52,34 @@ When multiple compounds are created, they can be created simultaneously using th
 end
 ```
 
-One use of defining a species as a compound is that they can be used to balance reactions to that the number of compounds are the same on both sides.
+#### Creating compound species programmatically
+It is also possible to declare species as compound species within the `@reaction_network` DSL, using the `@compounds` options:
+```@example chem1
+rn = @reaction_network begin
+    @species C(t) H(t) O(t)
+    @compounds begin
+        C2O(t) = C + 2O
+        H2O(t) = 2H + O
+        H2CO3(t) = CO2 + H2O
+    end
+    (k1,k2), H2O+ CO2 <--> H2CO3
+end
+```
+When creating compound species using the DSL, it is important to note that *every component must be known to the system as a species, either by being declared using the `@species` option, or by appearing in a reaction*. E.g. the following is not valid
+```julia 
+rn = @reaction_network begin
+    @compounds begin
+        C2O(t) = C + 2O
+        H2O(t) = 2H + O
+        H2CO3(t) = CO2 + H2O
+    end
+    (k1,k2), H2O+ CO2 <--> H2CO3
+end
+```
+as the components `C`, `H`, and `O` are not explicitly declared as a species anywhere. Please also note that only `@compounds` can be used as an option in the DSL, not `@compound`.
 
 ## Balancing chemical reactions
-Catalyst provides the `balance_reaction` function, which takes a reaction, and returns a balanced version. E.g. let us consider a reaction when carbon dioxide is formed from carbon and oxide `C + O --> CO2`. Here, `balance_reaction` enables us to find coefficients creating a balanced reaction (in this case, where the number of carbon and oxygen atoms are the same on both sides). To demonstrate, we first created the unbalanced reactions:
+One use of defining a species as a compound is that they can be used to balance reactions to that the number of compounds are the same on both sides. Catalyst provides the `balance_reaction` function, which takes a reaction, and returns a balanced version. E.g. let us consider a reaction when carbon dioxide is formed from carbon and oxide `C + O --> CO2`. Here, `balance_reaction` enables us to find coefficients creating a balanced reaction (in this case, where the number of carbon and oxygen atoms are the same on both sides). To demonstrate, we first created the unbalanced reactions:
 ```@example chem1
 rx = @reaction k, C + O --> $CO2
 ```
@@ -80,6 +106,8 @@ We can now create a balanced version (where the amount of H, N, and O is the sam
 ```@example chem2
 balanced_reaction = balance_reaction(unbalanced_reaction)[1]
 ```
+
+Reactions declared as a part of a `ReactionSystem` (e.g. using the DSL) can be retrieved for balancing using the `reaction` function. Please note that balancing these will not mutate the `ReactionSystem`, but a new reaction system will need to be created using the balanced reactions.
 
 !!! note
     Reaction balancing is currently not supported for reactions involving compounds of compounds.
