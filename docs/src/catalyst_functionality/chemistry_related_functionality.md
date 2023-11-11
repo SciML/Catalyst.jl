@@ -9,6 +9,7 @@ While Catalyst has primarily been designed around the modelling of biological sy
 #### Creating compound species programmatically
 We will first show how to create compound species through [programmatic construction](@ref programmatic_CRN_construction), and then demonstrate using the DSL. To create a compound species, use the `@compound` macro, first designating the compound, followed by its components (and stoichiometries). In this example, we will create a CO₂ molecule, consisting of one C atom and two O atoms. First, we create species corresponding to the components:
 ```@example chem1
+using Catalyst
 @variables t
 @species C(t) O(t) 
 ```
