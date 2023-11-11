@@ -8,7 +8,7 @@ let
     @compounds begin
         H2(t) = 2H
         O2(t) = 2O
-        H2O(t) = 2H + 1O2
+        H2O(t) = 2H + 1O
     end
 
     rx = Reaction(k,[H2,O2],[H2O])
@@ -29,7 +29,7 @@ end
 let
     @variables t
     @parameters k
-    @species C(t) H(t) = O(t)
+    @species C(t) H(t) O(t)
     @compound O2(t) = 2O
     @compound CO2(t) = 1C + 2O
     @compound H2O(t) = 2H + 1O
@@ -415,4 +415,26 @@ let
 
     rx = Reaction(1.0, [CO, H2], [COH2])
     @test_throws Catalyst.COMPOUND_OF_COMPOUND_ERROR balance_reaction(rx)
+end
+
+# Checks that balancing work for a reaction from a reaction_network.
+let
+    rn = complete(@reaction_network begin
+        @species C(t) H(t) O(t)
+        @compounds begin
+            O2(t) = 2O
+            CO2(t) = 1C + 2O
+            H2O(t) = 2H + 1O
+            C6H12O6(t) = 6C + 12H + 6O
+        end
+        k, CO2 + H2O --> C6H12O6 + O2
+    end)
+    
+    brxs = balance_reaction(reactions(rn)[1])[1]
+    
+    @test isequal(rn.k, brxs.rate)
+    @test isequal([rn.CO2,  rn.H2O], brxs.substrates)
+    @test isequal([rn.C6H12O6,  rn.O2], brxs.products)
+    @test isequal([6, 6], brxs.substoich)
+    @test isequal([1,  6], brxs.prodstoich)    
 end

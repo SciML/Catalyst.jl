@@ -39,9 +39,14 @@ function make_compound(expr)
     species_expr = expr.args[1]                                         # E.g. :(CO2(t))
     species_name = expr.args[1].args[1]                                 # E.g. :CO2
     composition = Catalyst.recursive_find_reactants!(expr.args[2].args[1], 1, Vector{ReactantStruct}(undef, 0))
-    components = :([])                                                  # Extra step required here to get something like :([C, O]), rather than :([:C, :O])
-    foreach(comp -> push!(components.args, comp.reactant), composition) # E.g. [C, O]
-    coefficients = getfield.(composition, :stoichiometry)               # E.g. [1, 2]
+
+    # Loops through all components, add the component and the coefficients to the corresponding vectors (cannot extract directly using e.g. "getfield.(composition, :reactant)" because then we get something like :([:C, :O]), rather than :([C, O]))
+    components = :([])                                                  # Becomes something like :([C, O]).                                         
+    coefficients = :([])                                                # Becomes something like :([1, 2]). 
+    for comp in composition
+        push!(components.args, comp.reactant)
+        push!(coefficients.args, comp.stoichiometry)
+    end
 
     # Creates the found expressions that will create the compound species.
     # The `Expr(:escape, :(...))` is required so that teh expressions are evaluated in the scope the users use the macro in (to e.g. detect already exiting species).
@@ -49,6 +54,14 @@ function make_compound(expr)
     compound_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundSpecies, true)))                    # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, true)`
     components_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundComponents, $components)))        # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [C, O])`
     coefficients_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundCoefficients, $coefficients)))  # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [1, 2])`
+
+    println(
+        return quote
+            $species_declaration_expr
+            $compound_designation_expr
+            $components_designation_expr
+            $coefficients_designation_expr
+        end)
 
     # Returns the rephrased expression.
     return quote
@@ -85,9 +98,22 @@ end
 
 # Function managing the @compound macro.
 function make_compounds(expr)
-    # Creates a separate compound call for each compound.
-    compound_calls = [make_compound(line) for line in expr.args]                # Crates a vector containing the quote for each compound.
-    return Expr(:block, vcat([c_call.args for c_call in compound_calls]...)...) # Combines the quotes to a single one. Don't want the double "...". But had problems getting past them for various metaprogramming reasons :(.)
+    # Creates an empty block containing the output call.
+    compound_declarations = Expr(:block)
+
+    # Creates a compound creation set of lines (4 in total) for each line. Loops through all 4x[Number of compounds] liens and add them to compound_declarations.
+    compound_calls = [Catalyst.make_compound(line) for line in expr.args] 
+    for compound_call in compound_calls, line in MacroTools.striplines(compound_call).args
+        push!(compound_declarations.args, line)
+    end
+
+    # The output of the macros should be a vector with the compounds (same as for e.g. "@species begin ... end", also require for things to work in the DSL).
+    # Creates an output vector, and loops through all compounds, adding them to it.
+    push!(compound_declarations.args, :($(Expr(:escape, :([])))))
+    for arg in expr.args
+        push!(compound_declarations.args[end].args[1].args, arg.args[1].args[1])
+    end
+    return compound_declarations
 end
 
 ## Compound Getters ###

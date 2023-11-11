@@ -1,9 +1,9 @@
 using Catalyst, Test
 
-# Test base funcationality in two cases.
+# Test base functionality in two cases.
 let
     @variables t
-    @species C(t) H(t) + O(t)
+    @species C(t) H(t) O(t)
     @compound C6H12O2(t) = 6C + 12H + 2O
 
     @test iscompound(C6H12O2)
@@ -102,14 +102,23 @@ let
     @species H(t)
 
     alpha = 2
-    @compound H2_1(t) = alpha*H
-    @compound H2_2(t) = 2H
+    h = H
+    @compound H2_1(t) = 2*H
+    @compound H2_2(t) = alpha*H
+    @compound H2_3(t) = 2*h
+    @compound H2_4(t) = alpha*2H
 
     @test iscompound(H2_1)
     @test iscompound(H2_2)
+    @test iscompound(H2_2)
+    @test iscompound(H2_4)
 
     @test isequal(components(H2_1),components(H2_2))
+    @test isequal(components(H2_2),components(H2_3))
+    @test isequal(components(H2_3),components(H2_4))
     @test isequal(coefficients(H2_1),coefficients(H2_2))
+    @test isequal(coefficients(H2_2),coefficients(H2_3))
+    @test isequal(coefficients(H2_3),coefficients(H2_4))
 end
 
 let
@@ -185,4 +194,79 @@ let
     @test isequal(components(comp),components(comp_alt))
     @test isequal(coefficients(comp), coefficients(comp_alt))
     @test isequal(component_coefficients(comp), component_coefficients(comp_alt))
+end
+
+### Compounds in DSL ###
+
+# Checks with a single compound.
+# Checks using @unpack.
+# Check where compounds and components does not occur in reactions.
+let 
+    rn = @reaction_network begin
+        @species C(t) O(t)
+        @compounds begin
+            CO2(t) = C + 2O
+        end
+    end
+    @unpack C, O, CO2 = rn
+    
+    @test length(species(rn)) == 3
+    @test iscompound(CO2)
+    @test isequal([C, O], components(CO2))
+    @test isequal([1, 2], coefficients(CO2))
+    @test isequal([C => 1, O => 2], component_coefficients(CO2)) 
+end
+
+# Test using multiple compounds.
+# Test using rn. notation to fetch species.
+let 
+    rn = complete(@reaction_network begin
+        @species C(t) O(t) H(t)
+        @compounds begin
+            CH4(t) = C + 4H
+            O2(t) = 2O
+            CO2(t) = C + 2O
+            H2O(t) = 2H + O
+        end
+        k, CH4 + O2 --> CO2 + H2O
+    end)
+    species(rn)
+    
+    @test length(species(rn)) == 7
+    @test isequal([rn.C, rn.H], components(rn.CH4))
+    @test isequal([1, 4], coefficients(rn.CH4))
+    @test isequal([rn.C => 1, rn.H => 4], component_coefficients(rn.CH4)) 
+    @test isequal([rn.O], components(rn.O2))
+    @test isequal([2], coefficients(rn.O2))
+    @test isequal([rn.O => 2], component_coefficients(rn.O2)) 
+    @test isequal([rn.C, rn.O], components(rn.CO2))
+    @test isequal([1, 2], coefficients(rn.CO2))
+    @test isequal([rn.C => 1, rn.O => 2], component_coefficients(rn.CO2)) 
+    @test isequal([rn.H, rn.O], components(rn.H2O))
+    @test isequal([2, 1], coefficients(rn.H2O))
+    @test isequal([rn.H => 2, rn.O => 1], component_coefficients(rn.H2O)) 
+end
+
+# Tests using compounds of compounds.
+# Tests where species are part of reactions and not declared using "@species".
+let
+    rn = @reaction_network begin
+        @compounds begin
+            SO2(t) = S + 2O
+            S2O4(t) = 2SO2
+        end
+        dS, S --> 0
+        dO, O --> 0
+    end
+    species(rn)
+    @unpack S, O, SO2, S2O4 = rn
+    
+    @test length(species(rn)) == 4
+    
+    @test isequal([S, O], components(SO2))
+    @test isequal([1, 2], coefficients(SO2))
+    @test isequal([S => 1, O => 2], component_coefficients(SO2)) 
+    @test isequal([SO2], components(S2O4))
+    @test isequal([2], coefficients(S2O4))
+    @test isequal([SO2 => 2], component_coefficients(S2O4)) 
 end

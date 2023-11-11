@@ -123,7 +123,7 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs)
+const option_keys = (:species, :parameters, :variables, :ivs, :compounds)
 
 ### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)
@@ -358,9 +358,12 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
                        option_lines))
 
+    # Reads compounds options.
+    compound_expr, compound_species = read_compound_options(options)
+
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
-    species_declared = extract_syms(options, :species)
+    species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
     variables = extract_syms(options, :variables)
 
@@ -399,6 +402,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     ps, pssym = scalarize_macro(!isempty(parameters), pexprs, "ps")
     vars, varssym = scalarize_macro(!isempty(variables), vexprs, "vars")
     sps, spssym = scalarize_macro(!isempty(species), sexprs, "specs")
+    comps, compssym = scalarize_macro(!isempty(compound_species), compound_expr, "comps")
     rxexprs = :(Catalyst.CatalystEqType[])
     for reaction in reactions
         push!(rxexprs.args, get_rxexprs(reaction))
@@ -410,8 +414,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         $ivexpr
         $vars
         $sps
+        $comps
 
-        Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, union($spssym, $varssym),
+        Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, union($spssym, $varssym, $compssym),
                                               $pssym; name = $name,
                                               spatial_ivs = $sivs)
     end
@@ -459,6 +464,19 @@ function esc_dollars!(ex)
         end
     end
     ex
+end
+
+# When compound species are declared using the "@compound begin ... end" option, get a list of the compound species, and also the expression that crates them.
+function read_compound_options(opts)
+    # If the compound option is used retrive a list of compound species, and the option that creeates them
+    if haskey(opts, :compounds)
+        compound_expr = opts[:compounds]
+        compound_species = [arg.args[1].args[1] for arg in compound_expr.args[3].args] # Loops through where in the "@compound begin ... end" the compound species names are.
+    else
+        compound_expr = :()
+        compound_species = Union{Symbol, Expr}[]
+    end
+    return compound_expr, compound_species
 end
 
 # When the user have used the @species (or @parameters) options, extract species (or
