@@ -82,14 +82,6 @@ function make_compound(expr)
     components_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundComponents, $components)))
     coefficients_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundCoefficients, $coefficients))) 
 
-    println(
-        return quote
-            $species_declaration_expr
-            $compound_designation_expr
-            $components_designation_expr
-            $coefficients_designation_expr
-        end)
-
     # Returns the rephrased expression.
     return quote
         $species_declaration_expr
