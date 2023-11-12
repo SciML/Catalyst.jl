@@ -15,6 +15,7 @@ pages = Any["Home" => "index.md",
                                            "catalyst_applications/homotopy_continuation.md",
                                            "catalyst_applications/bifurcation_diagrams.md"],
             "Inverse Problems" => Any["inverse_problems/parameter_estimation.md",
-                                      "inverse_problems/petab_ode_param_fitting.md"],
+                                      "inverse_problems/petab_ode_param_fitting.md",
+                                      "inverse_problems/behaviour_optimization.md"],
             "FAQs" => "faqs.md",
             "API" => "api/catalyst_api.md"]
