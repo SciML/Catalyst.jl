@@ -78,7 +78,7 @@ u_guess = [:X1 => 3.0, :X2 => 1.0]
 nl_prob = NonlinearProblem(two_state_model, u_guess, p; remove_conserved = true)
 nothing # hide
 ```
-here it is important that the quantities used in `u_guess` correspond to the conserved quantities we wish to use. E.g. here the conserved quantity $X1 + X2= 3.0 + 1.0 = 4$ holds in the input, and will hence do in the output as well. We can now find the steady states using `solve` like before:
+here it is important that the quantities used in `u_guess` correspond to the conserved quantities we wish to use. E.g. here the conserved quantity $X1 + X2= 3.0 + 1.0 = 4$ holds for the initial condition, and will hence also hold in the calculated steady-state as well. We can now find the steady states using `solve` like before:
 ```@example nonlinear_solve2
 sol = solve(nl_prob)
 ```
