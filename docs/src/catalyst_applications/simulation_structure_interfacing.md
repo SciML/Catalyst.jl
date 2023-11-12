@@ -83,7 +83,7 @@ integrator[:X1] = 10.0
 Please read [this](@ref advanced_simulations_ssa_callbacks) with regards to updating integrators of `JumpProblem`s.
 
 
-## Interfacing solution objects
+## [Interfacing solution objects](@id simulation_structure_interfacing_solutions)
 
 Finally, we consider solution objects. First, we simulate our problem:
 ```@example ex1
