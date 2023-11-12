@@ -14,13 +14,14 @@ using SafeTestsets
     @time @safetestset "Custom CRN Functions" begin include("dsl/custom_functions.jl") end
     @time @safetestset "DSL Options" begin include("dsl/dsl_options.jl") end
 
-    ### Non-DSL model cration and modication. ###
+    ### Non-DSL model creation and modification. ###
     @time @safetestset "ReactionSystem Components Based Creation" begin include("programmatic_model_creation/component_based_model_creation.jl") end
     @time @safetestset "Programmatic Model Expansion" begin include("programmatic_model_creation/programmatic_model_expansion.jl") end
 
     # Runs various miscellaneous tests.
     @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
     @time @safetestset "Symbolic Stoichiometry" begin include("miscellaneous_tests/symbolic_stoichiometry.jl") end
+    @time @safetestset "NonlinearProblems and Steady State Solving" begin include("miscellaneous_tests/nonlinear_solve.jl") end
     @time @safetestset "Events" begin include("miscellaneous_tests/events.jl") end
     @time @safetestset "Compound species" begin include("miscellaneous_tests/compound_macro.jl") end
     @time @safetestset "Reaction balancing" begin include("miscellaneous_tests/reaction_balancing.jl") end
