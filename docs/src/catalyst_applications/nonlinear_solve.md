@@ -58,7 +58,7 @@ solve(nprob, DynamicSS(Tsit5()))
 ```
 Here, we had to import [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) (to use `Tsit5`) and [SteadyStateDiffEq.jl](https://github.com/SciML/SteadyStateDiffEq.jl) (to use `DynamicSS`).
 
-Like previously, the found steady state is unaffected by the initial `u` guess. However, when [finding the steady states of systems with conservation laws](@ref nonlinear_solve_conservation_laws) it is important to select a `u` guess corresponding to the initial condition of the ODE simulation which steady state is sought.
+Like previously, the found steady state is unaffected by the initial `u` guess. However, when [finding the steady states of systems with conservation laws](@ref nonlinear_solve_conservation_laws) it is important to select a `u` guess that corresponds to the initial condition for the ODE model for which a steady state is sought.
 
 
 ## [Systems with conservation laws](@id nonlinear_solve_conservation_laws)
