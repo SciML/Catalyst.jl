@@ -505,7 +505,7 @@ plot(res_ms; plot_type = :best_objective)
 
 There exist several types of plots for both types of calibration results. More details of the types of available plots, and how to customise them, can be found [here](https://sebapersson.github.io/PEtab.jl/stable/optimisation_output_plotting/).
 
-
+---
 ## [Citations](@id petab_citations)
 If you use this functionality in your research, [in addition to Catalyst](@ref catalyst_citation), please cite the following papers to support the authors of the PEtab.jl package (currently there is no article associated with this package) and the PEtab standard:
 ```
@@ -532,6 +532,7 @@ If you use this functionality in your research, [in addition to Catalyst](@ref c
 }
 ```
 
+---
 ## References
 [^1]: [Schmiester, L et al. *PEtab—Interoperable specification of parameter estimation problems in systems biology*, PLOS Computational Biology (2021).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008646)
 [^2]: [Hass, H et al. *PBenchmark problems for dynamic modeling of intracellular processes*, Bioinformatics (2019).](https://academic.oup.com/bioinformatics/article/35/17/3073/5280731?login=false)
