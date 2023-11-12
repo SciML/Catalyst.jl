@@ -2,7 +2,7 @@
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "df716ad763a624a81219d4a11fe601b3d54c54b8"
+project_hash = "cddeda3026e844606ba9773e0f4e85a4915dbe44"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "5d2e21d7b0d8c22f67483ef95ebdc39c0e6b6003"
@@ -1618,6 +1618,12 @@ deps = ["BlackBoxOptim", "Optimization", "Reexport"]
 git-tree-sha1 = "939b19f2c213901aa544d1fd50e5f0065e66127c"
 uuid = "3e6eede4-6085-4f62-9a71-46d9bc1eb92b"
 version = "0.1.5"
+
+[[deps.OptimizationOptimJL]]
+deps = ["Optim", "Optimization", "Reexport", "SparseArrays"]
+git-tree-sha1 = "fedb7064e737aefef3382f8bef3a4e464c7cb8eb"
+uuid = "36348300-93cb-4f02-beb5-3c3902f8871e"
+version = "0.1.13"
 
 [[deps.OptimizationOptimisers]]
 deps = ["Optimisers", "Optimization", "Printf", "ProgressLogging", "Reexport"]
