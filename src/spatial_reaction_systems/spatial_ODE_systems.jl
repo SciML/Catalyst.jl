@@ -160,8 +160,7 @@ end
 
 # Defines the jacobian functor's effect on the (spatial) ODE system.
 function (jac_func::LatticeDiffusionODEjac)(J, u, p, t)
-    # Because of weird stuff where the Jacobian is not reset that I don't understand properly.
-    J .= 0.0    # Sets all Jacobian values to 0 (because they are not by default, this is weird but and I could not get it to work otherwise, tried to get Chris to explain but he wouldn't. Hopefully this can be improved once I get him to explain).
+    J .= 0.0 
 
     # Updates for non-spatial reactions.
     for vert_i in 1:(jac_func.num_verts)                                # Loops through all vertexes and applies the (non-spatial) Jacobian to the species in that vertex.
