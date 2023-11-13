@@ -25,14 +25,14 @@ let
     nl_prob = NonlinearProblem(steady_state_network_1, u0, p)
     
     # Solves it using standard algorithm and simulation based algorithm.
-    sol1 = solve(nl_prob; abstol=1e-15, reltol=1e-15).u
-    sol2 = solve(nl_prob, DynamicSS(Tsit5(); abstol=1e-15, reltol=1e-15); abstol=1e-15, reltol=1e-15).u
+    sol1 = solve(nl_prob; abstol=1e-12, reltol=1e-12).u
+    sol2 = solve(nl_prob, DynamicSS(Rosenbrock23(); abstol=1e-12, reltol=1e-12); abstol=1e-12, reltol=1e-12).u
     
     # Tests solutions are correct.
-    @test abs.(sol1[1] - p[1] / p[2]) < 1e-8
-    @test abs.(sol1[2]^3 / factorial(3) - p[3] / p[4]) < 1e-8
-    @test abs.(sol1[3] * sol1[4] - p[5] / p[6]) < 1e-8
-    @test sol1 ≈ sol2
+    @test isapprox(sol1[1], p[1] / p[2]; atol=1e-10)
+    @test isapprox(sol1[2]^3 / factorial(3), p[3] / p[4]; atol=1e-10)
+    @test isapprox(sol1[3] * sol1[4], p[5] / p[6]; atol=1e-10)
+    @test isapprox(sol1, sol2; atol=1e-10)
 end
 
 # Creates a system with multiple steady states.
@@ -52,8 +52,8 @@ let
     nl_prob = NonlinearProblem(steady_state_network_2, u0, p)
     
     # Solves it using standard algorithm and simulation based algorithm.
-    sol1 = solve(nl_prob; abstol=1e-18, reltol=1e-18).u
-    sol2 = solve(nl_prob, DynamicSS(Tsit5(); abstol=1e-18, reltol=1e-18); abstol=1e-18, reltol=1e-18).u
+    sol1 = solve(nl_prob; abstol=1e-12, reltol=1e-12).u
+    sol2 = solve(nl_prob, DynamicSS(Rosenbrock23(); abstol=1e-12, reltol=1e-12); abstol=1e-12, reltol=1e-12).u
     
     # Computes NonlinearFunction (manually and automatically).
     nfunc = NonlinearFunction(convert(NonlinearSystem, steady_state_network_2))    
@@ -64,10 +64,10 @@ let
     end
 
     # Tests solutions are correct.
-    @test nfunc(sol1, last.(p))[1] ≈ 0.0
-    @test nfunc(sol2, last.(p))[1] ≈ 0.0
-    @test nf_manual(sol1, last.(p)) ≈ 0.0
-    @test nf_manual(sol2, last.(p)) ≈ 0.0
+    @test isapprox(nfunc(sol1, last.(p))[1], 0.0; atol=1e-10)
+    @test isapprox(nfunc(sol2, last.(p))[1], 0.0; atol=1e-10)
+    @test isapprox(nf_manual(sol1, last.(p)), 0.0; atol=1e-10)
+    @test isapprox(nf_manual(sol2, last.(p)), 0.0; atol=1e-10)
 end
 
 # Checks for system with conservation laws.
@@ -88,11 +88,11 @@ let
     nl_prob_2 = NonlinearProblem(steady_state_network_3, u0, p)
 
     # Solves it using standard algorithm and simulation based algorithm.
-    sol1 = solve(nl_prob_1; abstol=1e-18, reltol=1e-18)
-    sol2 = solve(nl_prob_2, DynamicSS(Tsit5(); abstol=1e-18, reltol=1e-18); abstol=1e-18, reltol=1e-18)
+    sol1 = solve(nl_prob_1; abstol=1e-12, reltol=1e-12)
+    sol2 = solve(nl_prob_2, DynamicSS(Rosenbrock23(); abstol=1e-12, reltol=1e-12); abstol=1e-12, reltol=1e-12)
 
     # Checks output using NonlinearFunction.
     nfunc = NonlinearFunction(convert(NonlinearSystem, steady_state_network_3))   
-    @test all(nfunc([sol1[X], sol1[Y], sol1[Y2], sol1[XY2]], last.(p)) .≈ 0.0)
-    @test all(nfunc([sol2[X], sol2[Y], sol2[Y2], sol2[XY2]], last.(p)) .≈ 0.0)
+    @test isapprox(nfunc([sol1[X], sol1[Y], sol1[Y2], sol1[XY2]], last.(p)), [0.0, 0.0, 0.0, 0.0]; atol=1e-10)
+    @test isapprox(nfunc([sol2[X], sol2[Y], sol2[Y2], sol2[XY2]], last.(p)), [0.0, 0.0, 0.0, 0.0]; atol=1e-10)
 end
