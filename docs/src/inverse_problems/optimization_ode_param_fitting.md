@@ -167,3 +167,7 @@ Optimization.jl supports various [optimisation solver options](https://docs.scim
 optsol_fixed_kD = solve(optprob, Optim.NelderMead(); maxtime=100)
 nothing # hide
 ```
+
+---
+## References
+[^1]: [Alejandro F. Villaverde, Dilan Pathirana, Fabian Fröhlich, Jan Hasenauer, Julio R. Banga, *A protocol for dynamic model calibration*, Briefings in Bioinformatics (2023).](https://academic.oup.com/bib/article/23/1/bbab387/6383562?login=false)
