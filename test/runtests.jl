@@ -21,7 +21,9 @@ using SafeTestsets
     # Runs various miscellaneous tests.
     @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
     @time @safetestset "Symbolic Stoichiometry" begin include("miscellaneous_tests/symbolic_stoichiometry.jl") end
-    @time @safetestset "NonlinearProblems and Steady State Solving" begin include("miscellaneous_tests/nonlinear_solve.jl") end
+    if VERSION >= v"1.9"
+        @time @safetestset "NonlinearProblems and Steady State Solving" begin include("miscellaneous_tests/nonlinear_solve.jl") end
+    end
     @time @safetestset "Events" begin include("miscellaneous_tests/events.jl") end
     @time @safetestset "Compound species" begin include("miscellaneous_tests/compound_macro.jl") end
     @time @safetestset "Reaction balancing" begin include("miscellaneous_tests/reaction_balancing.jl") end
