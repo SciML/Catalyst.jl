@@ -1,6 +1,10 @@
 # [Finding Steady States using NonlinearSolve.jl](@id nonlinear_solve)
 
-We have previously described how `ReactionSystem` steady states can be found through [homotopy continuation](@ref homotopy_continuation). Catalyst also supports the creation of `NonlinearProblems` corresponding to `ODEProblems` with all left-hand side derivatives set to 0. These can be solved using the variety of nonlinear equation-solving algorithms implemented by [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl), with the solutions corresponding to system steady states. Generally, this approach is preferred when one only wishes to find *a single solution* (with homotopy continuation being preferred when one wishes to find *all solutions*). 
+We have previously described how `ReactionSystem` steady states can be found through [homotopy continuation](@ref homotopy_continuation). Catalyst also supports the creation of `NonlinearProblems` corresponding to `ODEProblems` with all left-hand side derivatives set to 0. These can be solved using the variety of nonlinear equation-solving algorithms implemented by [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl), with the solutions corresponding to system steady states. Generally, using this approach is advantageous when:
+- Only a single steady state solution is sought.
+- The nonlinear system produced by the model does not correspond to a multivariate, rational, polynomial (homotopy continuation cannot be applied to these systems). Examples include models with non-integer hill coefficients or stoichiometric constants.
+
+However, if all (or multiple) steady states are sought, using homotopy continuation is better.
 
 This tutorial describes how to create `NonlinearProblem`s from Catalyst's `ReactionSystemn`s, and how to solve them using NonlinearSolve. More extensive descriptions of available solvers and options can be found in [NonlinearSolve's documentation](https://docs.sciml.ai/NonlinearSolve/stable/). If you use this in your research, please [cite the NonlinearSolve.jl](@ref nonlinear_solve_citation) and [Catalyst.jl](@ref catalyst_citation) publications.
 
@@ -41,13 +45,13 @@ nl_prob = NonlinearProblem(dimer_production, u_guess, p)
 Finally, we can solve it using the `solve` command, returning the steady state solution:
 ```@example nonlinear_solve1
 using NonlinearSolve
-solve(nl_prob)
+sol = solve(nl_prob)
 ```
 
-NonlinearSolve provides [a wide range of potential solvers](https://docs.sciml.ai/NonlinearSolve/stable/solvers/NonlinearSystemSolvers/). If we wish to designate one, it can be supplied as a second argument to `solve`. Here, we use the Newton Trust Region method:
+NonlinearSolve provides [a wide range of potential solvers](https://docs.sciml.ai/NonlinearSolve/stable/solvers/NonlinearSystemSolvers/). If we wish to designate one, it can be supplied as a second argument to `solve`. Here, we use the Newton Trust Region method, and then check that the solution is equal to the previous one.
 ```@example nonlinear_solve1
-solve(nl_prob, TrustRegion())
-nothing # hide
+sol_ntr = solve(nl_prob, TrustRegion())
+sol ≈ sol_ntr
 ```
 
 ## [Finding steady states through ODE simulations](@id nonlinear_solve_ode_simulation_based)
@@ -69,7 +73,7 @@ two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 ```
-It has an infinite number of steady states. To make steady state finding possible, information of the system's conserved quantities (here $C=X1+X2$) must be provided. Since these can be computed from system initial conditions (`u0`, i.e. those provided when performing ODE simulations), designating an `u0` is often the best way. This can either be done by performing [ODE simulation-based steady state finding](@ref), using the initial condition as the initial `u` guess. Alternatively, any conservation quantities can be eliminated when the `NonlinearProblem` is created. This feature is supported by Catalyst's [conservation law finding and elimination feature](@ref network_analysis_deficiency).
+It has an infinite number of steady states. To make steady state finding possible, information of the system's conserved quantities (here $C=X1+X2$) must be provided. Since these can be computed from system initial conditions (`u0`, i.e. those provided when performing ODE simulations), designating an `u0` is often the best way. There are two ways to do this. First, one can perform [ODE simulation-based steady state finding](@ref), using the initial condition as the initial `u` guess. Alternatively, any conserved quantities can be eliminated when the `NonlinearProblem` is created. This feature is supported by Catalyst's [conservation law finding and elimination feature](@ref network_analysis_deficiency).
 
 To eliminate conservation laws we simply provide the `remove_conserved = true` argument to `NonlinearProblem`:
 ```@example nonlinear_solve2
@@ -82,7 +86,7 @@ here it is important that the quantities used in `u_guess` correspond to the con
 ```@example nonlinear_solve2
 sol = solve(nl_prob)
 ```
-We note that the output only provides a single value. The reason is that the actual system solved only contains a single equation (the other being eliminated with the conserved quantity). To find the values of $X1$ and $X2$ we can [inference the solution object using these as input](@ref simulation_structure_interfacing_solutions):
+We note that the output only provides a single value. The reason is that the actual system solved only contains a single equation (the other being eliminated with the conserved quantity). To find the values of $X1$ and $X2$ we can [directly query the solution object for these species' values, using the species themselves as inputs](@ref simulation_structure_interfacing_solutions):
 ```@example nonlinear_solve2
 @unpack X1, X2 = two_state_model
 sol[X1]
