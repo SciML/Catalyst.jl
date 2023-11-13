@@ -32,7 +32,9 @@ let
     @test isapprox(sol1[1], p[1] / p[2]; atol=1e-10)
     @test isapprox(sol1[2]^3 / factorial(3), p[3] / p[4]; atol=1e-10)
     @test isapprox(sol1[3] * sol1[4], p[5] / p[6]; atol=1e-10)
-    @test isapprox(sol1, sol2; atol=1e-10)
+    @test isapprox(sol2[1], p[1] / p[2]; atol=1e-10)
+    @test isapprox(sol2[2]^3 / factorial(3), p[3] / p[4]; atol=1e-10)
+    @test isapprox(sol2[3] * sol2[4], p[5] / p[6]; atol=1e-10)
 end
 
 # Creates a system with multiple steady states.
