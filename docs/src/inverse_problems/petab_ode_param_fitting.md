@@ -450,7 +450,7 @@ nothing # hide
 where `"OptimizationRuns"` is the name of the save directory (specified in `calibrate_model_multistart`). If the OptimizationRuns folder contains the output from several runs, we can designate which to load using the `which_run` argument. Here we load the second run to be saved in that folder:
 ```@example petab1
 res_ms = PEtabMultistartOptimisationResult("OptimizationRuns"; which_run="2")
-rm("OptimizationRuns", recursive=true) # hide
+foreach(f -> rm(joinpath("OptimizationRuns", f), recursive=true), readdir("OptimizationRuns")) # hide
 nothing # hide
 ```
 By default, `which_run` loads the first run saved to that directory.
