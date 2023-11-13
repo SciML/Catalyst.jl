@@ -29,6 +29,7 @@ data_vals = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 
 # Plots the true solutions and the (synthetic data) measurements.
 using Plots
+default(bottom_margin=4Plots.Measures.mm,left_margin=4Plots.Measures.mm) # hide
 plot(true_sol; idxs=:P, label="True solution", lw=8)
 plot!(data_ts, data_vals; label="Measurements", seriestype=:scatter, ms=6, color=:blue)
 ```
@@ -489,7 +490,7 @@ There exist various types of graphs that can be used to evaluate the parameter f
 
 To, for a single start calibration run, plot, for each iteration of the optimization process, the best objective value achieved so far, run:
 ```@example petab1
-default(bottom_margin=4Plots.Measures.mm,left_margin=4Plots.Measures.mm) # hide
+res = calibrate_model(petab_problem, p0, IPNewton(); save_trace=true) # hide
 plot(res)
 ```
 
