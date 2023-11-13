@@ -1,7 +1,7 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
-- Simulation of spatial ODEs now supported. For full details, please see https://github.com/SciML/Catalyst.jl/pull/644 and upcoming documentation.
+- Simulation of spatial ODEs now supported. For full details, please see https://github.com/SciML/Catalyst.jl/pull/644 and upcoming documentation. Note that these methods are currently considered alpha, with the interface and approach changing even in non-breaking Catalyst releases.
 - LatticeReactionSystem structure represents a spatial reaction network:
   ```julia
   rn = @reaction_network begin
