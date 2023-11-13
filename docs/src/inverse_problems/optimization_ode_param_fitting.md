@@ -32,9 +32,7 @@ data_vals = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 using Plots
 plot(true_sol; idxs=:P, label="True solution", lw=8)
 plot!(data_ts, data_vals; label="Measurements", seriestype=:scatter, ms=6, color=:blue)
-nothing # hide
 ```
-![Optimization data](../assets/optimization_data.svg)
 
 Next, we will use DiffEqParamEstim.jl to build a loss function that describing how well our model's simulations fit the data.
 ```@example diffeq_param_estim_1 
@@ -76,9 +74,7 @@ We can now simulate our model for the corresponding parameter set, checking that
 oprob_fitted = remake(oprob; p=optsol.u)
 fitted_sol = solve(oprob_fitted, Tsit5())
 plot!(fitted_sol; idxs=:P, label="Fitted solution", linestyle=:dash, lw=6, color=:lightblue)
-nothing # hide
 ```
-![Optimization fitted sol](../assets/optimization_fitted_sol.svg)
 
 !!! note
     Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. [Identifiability](https://www.sciencedirect.com/science/article/pii/S1364815218307278) is a concept that studies how to deal with this problem.
@@ -99,9 +95,7 @@ data_vals_P = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 plot(true_sol; idxs=[:S, :P], label=["True S" "True P"], lw=8)
 plot!(data_ts, data_vals_S; label="Measured S", seriestype=:scatter, ms=6, color=:blue)
 plot!(data_ts, data_vals_P; label="Measured P", seriestype=:scatter, ms=6, color=:red)
-nothing #hide
 ```
-![Optimization S, D data](../assets/optimization_data_S_P.svg)
 
 In this case we would have to use the `L2Loss(data_ts, hcat(data_vals_S, data_vals_P))` and `save_idxs=[1,4]` arguments in `loss_function`:
 ```@example diffeq_param_estim_1 
@@ -117,9 +111,7 @@ optsol_S_P = solve(optprob_S_P, Optim.NelderMead())
 oprob_fitted_S_P = remake(oprob; p=optsol_S_P.u)
 fitted_sol_S_P = solve(oprob_fitted_S_P, Tsit5())
 plot!(fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle=:dash, lw=6, color=[:lightblue :pink])
-nothing #hide
 ```
-![Optimization S, D fitted sol](../assets/optimization_fitted_sol_S_P.svg)
 
 ## Setting parameter constraints and boundaries
 Sometimes, it is desired to set boundaries on parameter values. Indeed, this can speed up the optimisation process (by preventing searching through unfeasible parts of parameter space) or be a prerequisite of some optimisation methods. This can be done by passing the `lb` (lower bounds) and `up` (upper bounds) arguments to `OptimizationProblem`. These are vectors (of the same length as the number of parameters), with each argument corresponding to the boundary value of the parameter with the same index (as used in the `parameters(rn)` vector). If we wish to constrain each parameter to the interval *(0.1, 10.0)* this can be done through:
