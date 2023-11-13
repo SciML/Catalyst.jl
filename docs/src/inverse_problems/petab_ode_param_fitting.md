@@ -134,10 +134,10 @@ PEtab.jl also supports [multistart optimisation](@ref petab_multistart_optimisat
 It is possible for observables to be any algebraic expression of species concentrations and parameters. E.g. in this example the total amount of `X` in the system is an observable:
 ```@example petab2
 using Catalyst, PEtab # hide
-rn = @reaction_network begin
+two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
-@unpack X1, X2 = rn
+@unpack X1, X2 = two_state_model
 obs_X = PEtabObservable(X1 + X2, 0.5)
 ```
 
@@ -172,7 +172,7 @@ nothing # hide
 ```
 We then provide `parameter_map=[:kB => 1.0]` when we assembly our model:
 ```@example petab1
-petab_model = PEtabModel(rn, observables, measurements, params; state_map=u0, parameter_map=[:kB => 1.0])
+petab_model_known_param = PEtabModel(rn, observables, measurements, params; state_map=u0, parameter_map=[:kB => 1.0])
 nothing # hide
 ```
 
@@ -380,10 +380,10 @@ While in our basic example, we do not provide any additional information to our 
 
 Here is an example, taken from the [more detailed PEtab.jl documentation](https://sebapersson.github.io/PEtab.jl/dev/Boehm/#Creating-a-PEtabODEProblem)
 ```@example petab1
-petab_problem = PEtabODEProblem(petab_model, 
-                                ode_solver=ODESolver(Rodas5P(), abstol=1e-8, reltol=1e-8), 
-                                gradient_method=:ForwardDiff, 
-                                hessian_method=:ForwardDiff)
+PEtabODEProblem(petab_model, 
+                ode_solver=ODESolver(Rodas5P(), abstol=1e-8, reltol=1e-8), 
+                gradient_method=:ForwardDiff, 
+                hessian_method=:ForwardDiff)
 nothing # hide
 ```
 where we simulate our ODE model using the `Rodas5p` method (with absolute and relative tolerance both equal `1e-8`) and use [forward automatic differentiation](https://github.com/JuliaDiff/ForwardDiff.jl) for both gradient and hessian computation. More details on available ODE solver options can be found in [the PEtab.jl documentation](https://sebapersson.github.io/PEtab.jl/dev/API_choosen/#PEtab.ODESolver).
