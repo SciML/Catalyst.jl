@@ -125,7 +125,7 @@ plot!(fitted_sol; idxs=:P, label="Fitted solution", linestyle=:dash, lw=6, color
 Here we use the `get_ps` function to retrieve a full parameter set using the optimal parameters. Alternatively, the `ODEProblem` or fitted simulation can be retrieved directly using the `get_odeproblem` or `get_odesol` [functions](https://sebapersson.github.io/PEtab.jl/dev/API_choosen/#PEtab.get_odeproblem), respectively (and the initial condition using the `get_u0` function). The calibration result can also be found in `res.xmin`, however, note that PEtab automatically ([unless a linear scale is selected](@ref petab_parameters_scales)) converts parameters to logarithmic scale, so typically `10 .^res.xmin` are the values of interest. If you investigate the result from this example you might note, that even if PEtab.jl has found the global optimum (which fits the data well), this does not actually correspond to the true parameter set. This phenomenon is related to the concept of *identifiability*, which is very important for parameter fitting.
 
 ### Final notes
-PEtab.jl also supports [multistart optimisation](@ref petab_multistart_optimisation), [automatic pre-equilibration before simulations](https://sebapersson.github.io/PEtab.jl/stable/Brannmark/), and [events](@ref petab_events). Various [plot recipes](@ref petab_plotting) exist for investigating the optimisation process. Please read the [PETab.jl documentation](https://sebapersson.github.io/PEtab.jl/stable/) for a more complete description of the package's features. Below follows additional details of various options and features (generally, PEtab is able to find good default values for most options not specified).
+PEtab.jl also supports [multistart optimisation](@ref petab_multistart_optimisation), [automatic pre-equilibration before simulations](https://sebapersson.github.io/PEtab.jl/stable/Brannmark/), and [events](@ref petab_events). Various [plot recipes](@ref petab_plotting) exist for investigating the optimisation process. Please read the [PETab.jl documentation](https://sebapersson.github.io/PEtab.jl/stable/) for a more complete description of the package's features. Below follows additional details of various options and features (generally, PEtab is able to find good default values for most options that are not specified).
 
 ## [Additional features: Observables](@id petab_observables)
 
@@ -489,6 +489,7 @@ There exist various types of graphs that can be used to evaluate the parameter f
 
 To, for a single start calibration run, plot, for each iteration of the optimization process, the best objective value achieved so far, run:
 ```@example petab1
+default(bottom_margin=4Plots.Measures.mm,left_margin=4Plots.Measures.mm) # hide
 plot(res)
 ```
 
