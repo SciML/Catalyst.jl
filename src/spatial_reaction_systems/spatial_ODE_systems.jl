@@ -51,7 +51,7 @@ struct LatticeDiffusionODEjac{R,S,T}
     enum_v_ps_idx_types::Base.Iterators.Enumerate{BitVector}
     """Whether the Jacobian is sparse or not."""
     sparse::Bool
-    """The values of the Jacobian. All the diffusion rates. Eitehr in matrix form (for non-sparse, in this case with potential zeros) or as the "nzval" field of the sparse jacobian matrix."""
+    """The transport rates. Can be a dense matrix (for non-sparse) or as the "nzval" field if sparse."""
     jac_values::T
 
     function LatticeDiffusionODEjac(ofunc::R, vert_ps::Vector{Vector{S}}, lrs::LatticeReactionSystem, jac_prototype::Union{Nothing, SparseMatrixCSC{Float64, Int64}}, sparse::Bool) where {R,S}
