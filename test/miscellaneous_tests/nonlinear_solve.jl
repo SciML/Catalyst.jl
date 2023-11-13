@@ -1,7 +1,7 @@
 ### Fetch Packages ###
 
 # Fetch packages.
-using Catalyst, NonlinearSolve, OrdinaryDiffEq, SteadyStateDiffEq
+using Catalyst, NonlinearSolve, OrdinaryDiffEq, SteadyStateDiffEq, DifferentialEquations
 using Random, Test
 
 # Sets rnd number.
