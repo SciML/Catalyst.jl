@@ -4,7 +4,7 @@ $(DocStringExtensions.README)
 module Catalyst
 
 using DocStringExtensions
-using SparseArrays, DiffEqBase, Reexport
+using SparseArrays, DiffEqBase, Reexport, Setfield
 using LaTeXStrings, Latexify, Requires
 using JumpProcesses: JumpProcesses,
                      JumpProblem, MassActionJump, ConstantRateJump,
