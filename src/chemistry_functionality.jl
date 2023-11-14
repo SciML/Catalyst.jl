@@ -85,8 +85,6 @@ function make_compound(expr)
     # Currently, non-t independent variables are not supported for compounds. If there are any like these, we throw an error:
     non_t_iv_error_check_expr = Expr(:escape, :(issetequal(unique(reduce(vcat, arguments.(ModelingToolkit.unwrap.($components)))), [t]) || error("Currently, compounds depending on components that are not \"t\" are not supported.")))
 
-println(non_t_iv_error_check_expr)
-
     # Returns the rephrased expression.
     return quote
         $non_t_iv_error_check_expr
