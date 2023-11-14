@@ -82,8 +82,14 @@ function make_compound(expr)
     components_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundComponents, $components)))
     coefficients_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundCoefficients, $coefficients))) 
 
+    # Currently, non-t independent variables are not supported for compounds. If there are any like these, we throw an error:
+    non_t_iv_error_check_expr = Expr(:escape, :(issetequal(unique(reduce(vcat, arguments.(ModelingToolkit.unwrap.($components)))), [t]) || error("Currently, compounds depending on components that are not \"t\" are not supported.")))
+
+println(non_t_iv_error_check_expr)
+
     # Returns the rephrased expression.
     return quote
+        $non_t_iv_error_check_expr
         $species_declaration_expr
         $multiple_ivs_error_check_expr
         $iv_designation_expr
