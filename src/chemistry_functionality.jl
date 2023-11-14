@@ -47,7 +47,7 @@ function make_compound(expr)
 
     # Extracts the composite species name, and a Vector{ReactantStruct} of its components.
     species_expr = expr.args[2]                                         # E.g. :(CO2(t))
-    species_expr = insert_independent_variable(species_expr, :t)        # Add independent variable (e.g. goes from `CO2` to `CO2(t)`).
+    species_expr = insert_independent_variable(species_expr, [:t])      # Add independent variable (e.g. goes from `CO2` to `CO2(t)`).
     species_name = find_varname_in_declaration(expr.args[2])            # E.g. :CO2
     composition = Catalyst.recursive_find_reactants!(expr.args[3], 1, Vector{ReactantStruct}(undef, 0))
 
@@ -61,13 +61,20 @@ function make_compound(expr)
 
     # Creates the found expressions that will create the compound species.
     # The `Expr(:escape, :(...))` is required so that teh expressions are evaluated in the scope the users use the macro in (to e.g. detect already exiting species).
+    non_t_iv_error_check_expr = Expr(:escape, :(@species $species_expr))                                                                                         # E.g. `@species CO2(t)`
     species_declaration_expr = Expr(:escape, :(@species $species_expr))                                                                                         # E.g. `@species CO2(t)`
     compound_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundSpecies, true)))                    # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, true)`
     components_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundComponents, $components)))        # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [C, O])`
     coefficients_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundCoefficients, $coefficients)))  # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [1, 2])`
 
+    # Currently, non-t independent variables are not supported for compounds. If there are any like these, we throw an error:
+    non_t_iv_error_check_expr = Expr(:escape, :(issetequal(unique(reduce(vcat, arguments.(ModelingToolkit.unwrap.($components)))), [t]) || error("Currently, compounds depending on components that are not \"t\" are not supported.")))
+
+println(non_t_iv_error_check_expr)
+
     # Returns the rephrased expression.
     return quote
+        $non_t_iv_error_check_expr
         $species_declaration_expr
         $compound_designation_expr
         $components_designation_expr
