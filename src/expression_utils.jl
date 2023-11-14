@@ -10,6 +10,73 @@ function get_tup_arg(ex::ExprValues, i::Int)
     return ex.args[i]
 end
 
+# In variable/species/parameters on the forms like:
+# X
+# X = 1.0
+# X, [metadata=true]
+# X = 1.0, [metadata=true]
+# X(t)
+# X(t) = 1.0
+# X(t), [metadata=true]
+# X(t) = 1.0, [metadata=true]
+# Finds the variable name (here, X).
+# Currently does not support e.g. "X, [metadata=true]" (when metadata does not have a comma before).
+function find_varname_in_declaration(expr)
+    (expr isa Symbol) && (return expr)           # Case: X
+    (expr.head == :call) && (return ex5.args[1]) # Case: X(t)
+    if expr.head == :(=)
+        (expr.args[1] isa Symbol) && (return expr.args[1])            # Case: X = 1.0
+        (expr.args[1].head == :call) && (return expr.args[1].args[1]) # Case: X(t) = 1.0
+    end
+    if expr.head == :tuple
+        (expr.args[1] isa Symbol) && (return expr.args[1])            # Case: X, [metadata=true]
+        (expr.args[1].head == :call) && (return expr.args[1].args[1]) # Case: X(t), [metadata=true]
+        if (expr.args[1].head == :(=)) 
+            (expr.args[1].args[1] isa Symbol) && (return expr.args[1].args[1])            # Case: X = 1.0, [metadata=true]
+            (expr.args[1].args[1].head == :call) && (return expr.args[1].args[1].args[1]) # Case: X(t) = 1.0, [metadata=true]
+        end
+    end
+    error("Unable to detect the variable declared in expression: $expr.")
+end
+
+# Converts an expression of the form:
+# X
+# X = 1.0
+# X, [metadata=true]
+# X = 1.0, [metadata=true]
+# To the form:
+# X(t)
+# X(t) = 1.0
+# X(t), [metadata=true]
+# X(t) = 1.0, [metadata=true]
+# (In this example the independent variable t was inserted).
+function insert_independent_variable(expr_in, iv)
+    # If expr is a symbol, just attach the iv. If not we have to create a new expr and mutate it. 
+    # Because Symbols (a possible input) cannot be mutated, this function cannot mutate the input (would have been easier if Expr input was guaranteed).
+    (expr_in isa Symbol) && (return :($(expr_in)($iv)))
+    expr = deepcopy(expr_in)
+
+    if expr.head == :(=) # Case: :(X = 1.0)
+        expr.args[1] = :($(expr.args[1])($iv))
+    elseif expr.head == :tuple
+        if expr.args[1] isa Symbol # Case: :(X, [metadata=true])
+            expr.args[1] = :($(expr.args[1])($iv))
+        elseif (expr.args[1].head == :(=)) && (expr.args[1].args[1] isa Symbol) # Case: :(X = 1.0, [metadata=true])
+            expr.args[1].args[1] = :($(expr.args[1].args[1])($iv))
+        end
+    end
+    (expr == expr_in) && error("Failed to add independent variable $(iv) to expression: $expr_in")
+    return expr
+end
+
+
+
+
+
+
+
+### Old Stuff ###
+
 #This will be called whenever a function stored in funcdict is called.
 # function replace_names(expr, old_names, new_names)
 #     mapping = Dict(zip(old_names, new_names))

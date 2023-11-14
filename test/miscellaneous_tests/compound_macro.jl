@@ -1,10 +1,79 @@
 using Catalyst, Test
 
+### Tests Main Macro Creation Forms ### 
+let
+    @variables t
+    @species C(t) H(t) O(t) 
+    @parameters p1 p2
+
+    # Basic cases that should pass:
+    @compound H2O_1 ~ 2H + O
+    @compound H2O_2, [output=true] ~ 2H + O
+    @compound (H2O_3 = 1.5) ~ 2H + O
+    @compound (H2O_4 = 4, [output=true]) ~ 2H + O
+    @compound (H2O_5 = p1, [output=true]) ~ 2H + p2*O
+    @test iscompound(H2O_1)
+    @test iscompound(H2O_2)
+    @test iscompound(H2O_3)
+    @test iscompound(H2O_4)
+    @test iscompound(H2O_5)
+
+    # Independent variable given.
+    @test_throws LoadError @eval @compound H2O(t) ~ 2H + O
+    @test_throws LoadError @eval @compound H2O(t), [output=true] ~ 2H + O
+    @test_throws LoadError @eval @compound (H2O(t) = 1.5) ~ 2H + O
+    @test_throws LoadError @eval @compound (H2O(t) = 4, [output=true]) ~ 2H + O
+    @test_throws LoadError @eval @compound (H2O(t) = p1, [output=true]) ~ 2H + p2*O
+
+    # Other errors.
+    @test_throws LoadError @eval @compound H2O(t) = 2H + O
+    @test_throws LoadError @eval @compound H2O(t), [output=true] = 2H + O
+    @test_throws LoadError @eval @compound H2O(t) = 1.5 ~ 2H + O
+    @test_throws LoadError @eval @compound H2O(t) = 4, [output=true] ~ 2H + O
+    @test_throws LoadError @eval @compound H2O(t) = p1, [output=true] ~ 2H + p2*O
+
+    # Compounds created in block notation.
+    @compounds begin
+        CO2_1 ~ 2H + O
+    end
+    @compounds begin
+        CO2_2, [output=true] ~ 2H + O
+        (CO2_3 = 1.5) ~ 2H + O
+        (CO2_4 = 4, [output=true]) ~ 2H + O
+        (CO2_5 = p1, [output=true]) ~ 2H + p2*O
+    end
+    @test iscompound(CO2_1)
+    @test iscompound(CO2_2)
+    @test iscompound(CO2_3)
+    @test iscompound(CO2_4)
+    @test iscompound(CO2_5)
+
+    # Declares stuff in the DSL.
+    rn = @reaction_network begin
+        @species N(t) H(t) 
+        @parameters p1 p2
+        @compounds begin
+            NH3_1 ~ N + 3H
+            NH3_2, [output=true] ~ N + 3H
+            (NH3_3 = 1.5) ~ N + 3H
+            (NH3_4 = 4, [output=true]) ~ N + 3H
+            (NH3_5 = p1, [output=true]) ~ N + p2*H
+        end
+    end
+    @test iscompound(rn.NH3_1)
+    @test iscompound(rn.NH3_2)
+    @test iscompound(rn.NH3_3)
+    @test iscompound(rn.NH3_4)
+    @test iscompound(rn.NH3_5)
+end
+
+### Other Minor Tests ###
+
 # Test base functionality in two cases.
 let
     @variables t
     @species C(t) H(t) O(t)
-    @compound C6H12O2(t) = 6C + 12H + 2O
+    @compound C6H12O2 ~ 6C + 12H + 2O
 
     @test iscompound(C6H12O2)
     @test isspecies(C6H12O2)
@@ -21,7 +90,7 @@ end
 let
     @variables t
     @species O(t)
-    @compound O2(t) = 2O
+    @compound O2 ~ 2O
 
     @test iscompound(O2)
     @test isspecies(O2)
@@ -37,19 +106,19 @@ end
 let
     @variables t
     @species C(t) H(t)
-    @test_throws Exception @compound C6H12O2(t) = 6C + 12H + 2O    
+    @test_throws Exception @compound C6H12O2 ~ 6C + 12H + 2O    
 end
 let
     @variables t
-    @test_throws Exception @compound O2(t) = 2O    
+    @test_throws Exception @compound O2 ~ 2O    
 end
 
 # Checks that nested components works as expected.
 let
     @variables t
     @species C(t) H(t) O(t)
-    @compound OH(t) = 1O + 1H
-    @compound C3H5OH3(t) = 3C + 5H + 3OH
+    @compound OH ~ 1O + 1H
+    @compound C3H5OH3 ~ 3C + 5H + 3OH
 
     @test !iscompound(O)
     @test !iscompound(H)
@@ -71,8 +140,8 @@ let
     @variables t
     @species C(t) H(t) O(t)
     s = C
-    @compound C6H12O2_1(t) = 6s + 12H + 2O
-    @compound C6H12O2_2(t) = 6C + 12H + 2O
+    @compound C6H12O2_1 ~ 6s + 12H + 2O
+    @compound C6H12O2_2 ~ 6C + 12H + 2O
 
     @test iscompound(C6H12O2_1)
     @test iscompound(C6H12O2_2)
@@ -85,9 +154,9 @@ end
 let
     @variables t
     @species C(t) H(t)
-    @compound Cyclopentadiene(t) = 5C + 6H
+    @compound Cyclopentadiene ~ 5C + 6H
     C5H6 = Cyclopentadiene
-    @compound C10H12(t) = 2C5H6
+    @compound C10H12 ~ 2C5H6
 
     @test iscompound(C10H12)
     @test iscompound(components(C10H12)[1])
@@ -103,10 +172,10 @@ let
 
     alpha = 2
     h = H
-    @compound H2_1(t) = 2*H
-    @compound H2_2(t) = alpha*H
-    @compound H2_3(t) = 2*h
-    @compound H2_4(t) = alpha*H
+    @compound H2_1 ~ 2*H
+    @compound H2_2 ~ alpha*H
+    @compound H2_3 ~ 2*h
+    @compound H2_4 ~ alpha*H
 
     @test iscompound(H2_1)
     @test iscompound(H2_2)
@@ -126,8 +195,8 @@ let
     @parameters alpha = 2
     @species H(t)
 
-    @compound H2_1(t) = alpha*H
-    @compound H2_2(t) = 2H
+    @compound H2_1 ~ alpha*H
+    @compound H2_2 ~ 2H
 
     @test iscompound(H2_1)
     @test iscompound(H2_2)
@@ -140,8 +209,8 @@ let
     @variables t
     @species A(t)
     B = A
-    @compound A2(t) = 2A
-    @compound B2(t) = 2B
+    @compound A2 ~ 2A
+    @compound B2 ~ 2B
 
     @test iscompound(A2)
     @test iscompound(B2)
@@ -157,12 +226,12 @@ end
 let 
     @variables t
     @species C(t) H(t) O(t)
-    @compound OH(t) = 1O + 1H
-    @compound C3H5OH3(t) = 3C + 5H + 3OH
+    @compound OH ~ 1O + 1H
+    @compound C3H5OH3 ~ 3C + 5H + 3OH
 
     @compounds begin
-        OH_alt(t) = 1O + 1H
-        C3H5OH3_alt(t) = 3C + 5H + 3OH
+        OH_alt ~ 1O + 1H
+        C3H5OH3_alt ~ 3C + 5H + 3OH
     end
 
     @test iscompound(OH_alt)
@@ -184,8 +253,8 @@ let
     s3_alt = s3
 
     @compounds begin
-        comp(t) = s1 + s2 + 4s3
-        comp_alt(t) = s1 + s2_alt + 4s3_alt
+        comp ~ s1 + s2 + 4s3
+        comp_alt ~ s1 + s2_alt + 4s3_alt
     end
 
     @test iscompound(comp)
@@ -205,7 +274,7 @@ let
     rn = @reaction_network begin
         @species C(t) O(t)
         @compounds begin
-            CO2(t) = C + 2O
+            CO2 ~ C + 2O
         end
     end
     @unpack C, O, CO2 = rn
@@ -223,10 +292,10 @@ let
     rn = complete(@reaction_network begin
         @species C(t) O(t) H(t)
         @compounds begin
-            CH4(t) = C + 4H
-            O2(t) = 2O
-            CO2(t) = C + 2O
-            H2O(t) = 2H + O
+            CH4 ~ C + 4H
+            O2 ~ 2O
+            CO2 ~ C + 2O
+            H2O ~ 2H + O
         end
         k, CH4 + O2 --> CO2 + H2O
     end)
@@ -252,8 +321,8 @@ end
 let
     rn = @reaction_network begin
         @compounds begin
-            SO2(t) = S + 2O
-            S2O4(t) = 2SO2
+            SO2 ~ S + 2O
+            S2O4 ~ 2SO2
         end
         dS, S --> 0
         dO, O --> 0

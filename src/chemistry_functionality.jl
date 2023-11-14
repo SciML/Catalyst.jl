@@ -28,17 +28,28 @@ macro compound(expr)
     make_compound(MacroTools.striplines(expr))
 end
 
+# Declares compound error messages:
+const COMPOUND_CREATION_ERROR_BASE = "Malformed input to @compound. Should use form like e.g. \"@compound CO2 ~ C + 2O\"."
+const COMPOUND_CREATION_ERROR_BAD_SEPARATOR = "Malformed input to @compound. Left-hand side (the compound) and the right-hand side (the components) should be separated by a \"~\" (e.g. \"@compound CO2 ~ C + 2O\"). If the left hand side contains metadata or default values, this should be enclosed by \"()\" (e.g. \"@compound (CO2 = 1.0, [output=true]) ~ C + 2O\")."
+const COMPOUND_CREATION_ERROR_DEPENDENT_VAR_GIVEN = "Left hand side of @compound is malformed. Does the compound depend on a independent variable (e.g. \"CO2(t)\")? If so, that should not be the case, these are inferred from the compounds."
+
 # Function managing the @compound macro.
 function make_compound(expr)
     # Error checks.
-    !(expr isa Expr) || (expr.head != :(=)) && error("Malformed expression. Compounds should be declared using a \"=\".")
-    (length(expr.args) != 2) && error("Malformed expression. Compounds should be consists of two expression, separated by a \"=\".")
-    ((expr.args[1] isa Symbol) || (expr.args[1].head != :call)) && error("Malformed expression. There must be a single compound which depend on an independent variable, e.g. \"CO2(t)\".")
+    (expr isa Expr) || error(COMPOUND_CREATION_ERROR_BASE)
+    ((expr.head == :call) && (expr.args[1] == :~) && (length(expr.args) == 3)) || error(COMPOUND_CREATION_ERROR_BAD_SEPARATOR)
+    if !(expr.args[2] isa Symbol) 
+        # Checks if a dependent variable was given (e.g. CO2(t)).
+        (expr.args[2].head == :call) && error(COMPOUND_CREATION_ERROR_DEPENDENT_VAR_GIVEN)
+        ((expr.args[2].args[1] isa Expr) && expr.args[2].args[1].head == :call) && error(COMPOUND_CREATION_ERROR_DEPENDENT_VAR_GIVEN)
+        ((expr.args[2].args[1] isa Expr) && (expr.args[2].args[1].args[1] isa Expr) && expr.args[2].args[1].args[1].head == :call) && error(COMPOUND_CREATION_ERROR_DEPENDENT_VAR_GIVEN) 
+    end
 
     # Extracts the composite species name, and a Vector{ReactantStruct} of its components.
-    species_expr = expr.args[1]                                         # E.g. :(CO2(t))
-    species_name = expr.args[1].args[1]                                 # E.g. :CO2
-    composition = Catalyst.recursive_find_reactants!(expr.args[2].args[1], 1, Vector{ReactantStruct}(undef, 0))
+    species_expr = expr.args[2]                                         # E.g. :(CO2(t))
+    species_expr = insert_independent_variable(species_expr, :t)        # Add independent variable (e.g. goes from `CO2` to `CO2(t)`).
+    species_name = find_varname_in_declaration(expr.args[2])            # E.g. :CO2
+    composition = Catalyst.recursive_find_reactants!(expr.args[3], 1, Vector{ReactantStruct}(undef, 0))
 
     # Loops through all components, add the component and the coefficients to the corresponding vectors (cannot extract directly using e.g. "getfield.(composition, :reactant)" because then we get something like :([:C, :O]), rather than :([C, O]))
     components = :([])                                                  # Becomes something like :([C, O]).                                         
@@ -102,9 +113,13 @@ function make_compounds(expr)
     # The output of the macros should be a vector with the compounds (same as for e.g. "@species begin ... end", also require for things to work in the DSL).
     # Creates an output vector, and loops through all compounds, adding them to it.
     push!(compound_declarations.args, :($(Expr(:escape, :([])))))
+    compound_syms = :([])
     for arg in expr.args
-        push!(compound_declarations.args[end].args[1].args, arg.args[1].args[1])
+        push!(compound_syms.args, find_varname_in_declaration(arg.args[2]))
     end
+    push!(compound_declarations.args, :($(Expr(:escape, :($(compound_syms))))))
+
+    # Returns output that.
     return compound_declarations
 end
 

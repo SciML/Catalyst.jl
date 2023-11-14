@@ -15,9 +15,9 @@ using Catalyst
 ```
 Next, we create the `CO2` compound species:
 ```@example chem1
-@compound CO2(t) = C + 2O
+@compound CO2 ~ C + 2O
 ```
-Here, the compound is the first argument to the macro, followed by its component. The `(t)` indicates that `CO2` is a time dependant species. Components with non-unitary stoichiometries have this value written before the component (generally, the rules for designating the components of a compound are identical to those of designating the substrates or products of a reaction). The created compound, `CO2`, is a species in every sense, and can be used wherever e.g. `C` can be used:
+Here, the compound is the first argument to the macro, followed by its component (with the left-hand and right-hand sides separated by a `~` sign). While non-compound species (such as `C` and `O`) have their independent variable (in this case `t`) designated, independent variables as not designated for compounds (but instead directly inferred from their components). Components with non-unitary stoichiometries have this value written before the component (generally, the rules for designating the components of a compound are identical to those of designating the substrates or products of a reaction). The created compound, `CO2`, is a species in every sense, and can be used wherever e.g. `C` can be used:
 ```@example chem1
 isspecies(CO2)
 ```
@@ -40,16 +40,16 @@ iscompound(CO2)
 Compound components that are also compounds are allowed, e.g. we can create a carbonic acid compound (H₂CO₃) that consists of CO₂ and H₂O:
 ```@example chem1
 @species H(t)
-@compound H2O(t) = 2H + O
-@compound H2CO3(t) = CO2 + H2O
+@compound H2O ~ 2H + O
+@compound H2CO3 ~ CO2 + H2O
 ```
 
 When multiple compounds are created, they can be created simultaneously using the `@compounds` macro, e.g. the previous code-block can be re-written as:
 ```@example chem1
 @species H(t)
 @compounds begin
-    H2O(t) = 2H + O
-    H2CO3(t) = CO2 + H2O
+    H2O ~ 2H + O
+    H2CO3 ~ CO2 + H2O
 end
 ```
 
@@ -59,9 +59,9 @@ It is also possible to declare species as compound species within the `@reaction
 rn = @reaction_network begin
     @species C(t) H(t) O(t)
     @compounds begin
-        C2O(t) = C + 2O
-        H2O(t) = 2H + O
-        H2CO3(t) = CO2 + H2O
+        C2O ~ C + 2O
+        H2O ~ 2H + O
+        H2CO3 ~ CO2 + H2O
     end
     (k1,k2), H2O+ CO2 <--> H2CO3
 end
@@ -70,14 +70,28 @@ When creating compound species using the DSL, it is important to note that *ever
 ```julia 
 rn = @reaction_network begin
     @compounds begin
-        C2O(t) = C + 2O
-        H2O(t) = 2H + O
-        H2CO3(t) = CO2 + H2O
+        C2O ~ C + 2O
+        H2O ~ 2H + O
+        H2CO3 ~ CO2 + H2O
     end
     (k1,k2), H2O+ CO2 <--> H2CO3
 end
 ```
 as the components `C`, `H`, and `O` are not declared as a species anywhere. Please also note that only `@compounds` can be used as an option in the DSL, not `@compound`.
+
+#### Designating metadata and default values for compounds
+Just like for normal species, it is possible to designate metadata and default values for compounds. Metadata is provided after the compound name, but separated from it by a `,`:
+```@example chem1
+@compound CO2, [unit="mol"] ~ C + 2O
+```
+Default values are designated using `=`, and provided directly after the compound name. If default values are given, the left-hand side must be grouped using `()`:
+```@example chem1
+@compound (CO2 = 2.0) ~ C + 2O
+```
+If both default values and meta data are provided, the metadata is provided after teh default value:
+```@example chem1
+@compound (CO2 = 2.0, [unit="mol"]) ~ C + 2O
+```
 
 ## Balancing chemical reactions
 One use of defining a species as a compound is that they can be used to balance reactions to that the number of components are the same on both sides. Catalyst provides the `balance_reaction` function, which takes a reaction, and returns a balanced version. E.g. let us consider a reaction when carbon dioxide is formed from carbon and oxide `C + O --> CO2`. Here, `balance_reaction` enables us to find coefficients creating a balanced reaction (in this case, where the number of carbon and oxygen atoms are the same on both sides). To demonstrate, we first created the unbalanced reactions:
@@ -96,10 +110,10 @@ using Catalyst # hide
 @variables t
 @species N(t) H(t) O(t) 
 @compounds begin
-    NH3(t) = N + 3H
-    O2(t) = 2O
-    NO(t) = N + O
-    H2O(t) = 2H + O
+    NH3 ~ N + 3H
+    O2 ~ 2O
+    NO ~ N + O
+    H2O ~ 2H + O
 end
 unbalanced_reaction = @reaction k, $NH3 + $O2 --> $NO + $H2O
 ```
