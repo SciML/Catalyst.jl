@@ -132,7 +132,15 @@ function expand_registered_functions(expr)
     end
     return expr
 end
-# If applied to a reaction, return a reaction with its rate modified.
+# If applied to a Reaction, return a reaction with its rate modified.
 function expand_registered_functions(rx::Reaction)
     Reaction(expand_registered_functions(rx.rate), rx.substrates, rx.products, rx.substoich, rx.prodstoich, rx.netstoich, rx.only_use_rate)
+end
+# If applied to a Equation, returns it with it applied to lhs and rhs
+function expand_registered_functions(eq::Equation)
+    return expand_registered_functions(eq.lhs) ~ expand_registered_functions(eq.rhs)
+end
+# If applied to a ReactionSystem, applied function to all Reactions and other Equations, and return updated system.
+function expand_registered_functions(rs::ReactionSystem)
+    @set rs.eqs = [Catalyst.expand_registered_functions(eq) for eq in rs.eqs]
 end
