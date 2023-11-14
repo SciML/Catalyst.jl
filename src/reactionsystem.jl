@@ -538,11 +538,6 @@ struct ReactionSystem{V <: NetworkProperties} <:
         checks && validate(rs)
         rs
     end
-
-    # Copies a reaction system, but with the option of having some fields replaced
-    function ReactionSystem(rs::ReactionSystem; eqs = rs.eqs, rxs = rs.rxs, iv = rs.iv, sivs = rs.sivs, states = rs.states, species = rs.species, ps = rs.ps, var_to_name = rs.var_to_name, observed = rs.observed, name = rs.name, systems = rs.systems, defaults = rs.defaults, connection_type = rs.connection_type, networkproperties = rs.networkproperties, combinatoric_ratelaws = rs.combinatoric_ratelaws, continuous_events = rs.continuous_events, discrete_events = rs.discrete_events, complete = rs.complete)
-        new{typeof(networkproperties)}(eqs, rxs, ModelingToolkit.unwrap(iv), ModelingToolkit.unwrap.(sivs), ModelingToolkit.unwrap.(states), ModelingToolkit.unwrap.(species), ModelingToolkit.unwrap.(ps), var_to_name, observed, name, systems, defaults, connection_type, networkproperties, combinatoric_ratelaws, continuous_events, discrete_events, complete)
-    end
 end
 
 function get_speciestype(iv, states, systems)
@@ -1292,7 +1287,7 @@ Keyword args and default values:
 function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, remove_conserved = false, checks = false,
-                      expand_functions = false, kwargs...)
+                      kwargs...)
     spatial_convert_err(rs::ReactionSystem, ODESystem)
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
@@ -1300,9 +1295,6 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
                          include_zero_odes)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
-    
-    # Converts expressions like mm(X,v,K) to v*X/(X+K).
-    expand_functions  && (eqs = [eq.lhs ~ expand_registered_functions!(eq.rhs) for eq in eqs])
 
     ODESystem(eqs, get_iv(fullrs), sts, ps;
               observed = obs,
@@ -1334,7 +1326,7 @@ Keyword args and default values:
 function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, remove_conserved = false, checks = false,
-                      expand_functions = false, kwargs...)
+                      kwargs...)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
@@ -1343,9 +1335,6 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
                          as_odes = false, include_zero_odes)
     error_if_constraint_odes(NonlinearSystem, fullrs)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
-
-    # Converts expressions like mm(X,v,K) to v*X/(X+K).
-    expand_functions  && (eqs = [eq.lhs ~ expand_registered_functions!(eq.rhs) for eq in eqs])
 
     NonlinearSystem(eqs, sts, ps;
                     name,
@@ -1386,7 +1375,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       noise_scaling = nothing, name = nameof(rs),
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, checks = false, remove_conserved = false,
-                      expand_functions = false, kwargs...)
+                      kwargs...)
     spatial_convert_err(rs::ReactionSystem, SDESystem)
 
     flatrs = Catalyst.flatten(rs)
@@ -1411,12 +1400,6 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                                   remove_conserved)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
     ps = (noise_scaling === nothing) ? ps : vcat(ps, toparam(noise_scaling))
-
-    # Converts expressions like mm(X,v,K) to v*X/(X+K).
-    if expand_functions
-        eqs = [eq.lhs ~ expand_registered_functions!(eq.rhs) for eq in eqs]
-        noiseeqs = [expand_registered_functions!(neq) for neq in noiseeqs]
-    end
 
     if any(isbc, get_states(flatrs))
         @info "Boundary condition species detected. As constraint equations are not currently supported when converting to SDESystems, the resulting system will be undetermined. Consider using constant species instead."
