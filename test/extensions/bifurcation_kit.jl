@@ -81,3 +81,61 @@ let
         @test bprob_BK.VF.F(u0, p) == bprob.VF.F(u0, p)
     end
 end
+
+# Creates a system where rn is composed of 4, somewhat nested, networks.
+# Tests with defaults within nested networks.
+let
+    rn1 = @reaction_network rn1 begin
+        @parameters p=1.0
+        (p, d), 0 <--> X
+    end
+    rn2 = @reaction_network rn2 begin
+        @parameters p=2.0
+        (p, d), 0 <--> X
+    end
+    rn3 = @reaction_network rn3 begin
+        @parameters p=3.0
+        (p, d), 0 <--> X
+    end
+    rn4 = @reaction_network rn4 begin
+        @parameters p=4.0
+        (p, d), 0 <--> X
+    end
+    @named rn3 =compose(rn3, [rn4])
+    @named rn = compose(rn1, [rn2, rn3])
+
+    # Declares parameter values and initial u guess.
+    @unpack X, d = rn
+    u0_guess = [X => 1.0, rn2.X => 1.0, rn3.X => 1.0, rn3.rn4.X => 1.0]
+    p_start = [d => 1.0, rn2.d => 1.0, rn3.d => 1.0, rn3.rn4.d => 1.0]
+
+
+    # Computes bifurcation diagrams and check them (the final point at [p_value = 6] should be =[p/d]).
+    p_span = (0.1, 6.0)
+
+    let
+        # Checks top layer.
+        bprob = BifurcationProblem(rn, u0_guess, p_start, d; plot_var = X)
+        opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
+        bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside = true)
+        @test bif_dia.γ.branch[end].x ≈ 1.0/6
+
+        # Checks second layer (1).
+        bprob = BifurcationProblem(rn, u0_guess, p_start, rn2.d; plot_var = rn2.X)
+        opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
+        bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside = true)
+        @test bif_dia.γ.branch[end].x ≈ 2.0/6
+
+        # Checks second layer (2).
+        bprob = BifurcationProblem(rn, u0_guess, p_start, rn3.d; plot_var = rn3.X)
+        opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
+        bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside = true)
+        @test bif_dia.γ.branch[end].x ≈ 3.0/6
+
+        # Checks third layer.
+        bprob = BifurcationProblem(rn, u0_guess, p_start, rn3.rn4.d; plot_var = rn3.rn4.X)
+        opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
+        bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside = true)
+        @test bif_dia.γ.branch[end].x ≈ 4.0/6
+    end
+end
