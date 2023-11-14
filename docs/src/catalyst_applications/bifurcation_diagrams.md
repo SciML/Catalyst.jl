@@ -135,6 +135,10 @@ This bifurcation diagram does not contain any interesting features (such as bifu
 - When providing the concentrations for computing the conserved quantities (in `u0`), we only have to designate the concentrations of species that are actually involved in conservation laws. For larger systems, determining which one are may, however, be difficult. In this case, it might still be wise to provide concentrations for all species.
 - The steady state guess in `u_guess` does not actually have to fulfil the conserved concentrations provided in `u0`.
 
+!!! note
+    Computing bifurcation diagrams for [hierarchical models created using compostability](@ref compositional_modeling), that also contain conservations laws, is currently not supported. For these, please [flatten](@ref api_network_extension_and_modification) the system first.
+
+
 ---
 ## [Citation](@id bifurcation_kit_citation)
 If you use this functionality in your research, please cite the following paper to support the author of the BifurcationKit package:
