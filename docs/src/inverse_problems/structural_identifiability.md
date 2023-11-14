@@ -73,10 +73,10 @@ nothing # hide
 ### Assessing identifiability for specified quantities only
 By default, StructuralIdentifiability assesses identifiability for all parameters and variables. It is, however, possible to designate precisely which quantities you want to check using the `funcs_to_check` option. This both includes selecting a smaller subset of parameters and variables to check, or defining customised expressions. Let us consider the Goodwind from previously, and say that we would like to check whether the production parameters ($pₘ$, $pₑ$, and $pₚ$) and the total amount of the three species ($P + M + E$) are identifiable quantities. Here, we would first unpack these (allowing us to form algebraic expressions) and then use the following code:
 ```example si1
-@unpack pₘ, pₑ, and pₚ, M, E, P = goodwind_oscillator
-assess_identifiability(goodwind_oscillator; funcs_to_check=[pₘ, pₑ, pₚ, M + E + P], loglevel=Logging.Error)
+@unpack pₘ, pₑ, pₚ, M, E, P = goodwind_oscillator
+assess_identifiability(goodwind_oscillator; measured_quantities=[:M], funcs_to_check=[pₘ, pₑ, pₚ, M + E + P], loglevel=Logging.Error)
+nothing # hide
 ```
-
 
 ### Probability of correctness
 The identifiability methods used can, in theory, produce erroneous results. However, it is possible to adjust the lower bound for the probability of correctness using the argument `p` (by default set to `0.99`, that is, at least a $99%$ chance of correctness). We can e.g. increase the bound through:

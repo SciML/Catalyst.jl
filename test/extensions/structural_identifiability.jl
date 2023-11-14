@@ -7,11 +7,14 @@ using StructuralIdentifiability
 ### Helper Function ###
 
 # Converts the output dicts from StructuralIdentifiability functions from "weird symbol => stuff" to "symbol => stuff" (the output have some strange meta data which prevents equality checks, this enables this).
+# Structural identifiability also provides variables like x (rather than x(t)). This is a bug, but we have to convert to make it work (now just remove any (t) to make them all equal).
 function sym_dict(dict_in)
     dict_out = Dict{Symbol,Any}()
     for key in keys(dict_in)
-        dict_out[Symbol(key)] = dict_in[key]
-    end
+        sym_key = Symbol(key)
+        sym_key = Symbol(replace(String(sym_key), "(t)" => ""))
+        dict_out[sym_key] = dict_in[key]
+    end    
     return dict_out
 end
 
