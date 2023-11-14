@@ -30,7 +30,7 @@ let
     p_start = [A => 1.0, B => 4.0, k1 => 0.1]
     
     # Computes bifurcation diagram.
-    BifurcationProblem(extended_brusselator, u0_guess, p_start, :B; plot_var = :V, u0 = [:V => 1.0])
+    bprob = BifurcationProblem(extended_brusselator, u0_guess, p_start, :B; plot_var = :V, u0 = [:V => 1.0])
     p_span = (0.1, 6.0)
     opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
     bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside = true)
