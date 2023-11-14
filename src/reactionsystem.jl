@@ -542,6 +542,11 @@ struct ReactionSystem{V <: NetworkProperties} <:
         checks && validate(rs)
         rs
     end
+
+    # Copies a reaction system, but with the option of having some fields replaced
+    function ReactionSystem(rs::ReactionSystem; eqs = rs.eqs, rxs = rs.rxs, iv = rs.iv, sivs = rs.sivs, states = rs.states, species = rs.species, ps = rs.ps, var_to_name = rs.var_to_name, observed = rs.observed, name = rs.name, systems = rs.systems, defaults = rs.defaults, connection_type = rs.connection_type, networkproperties = rs.networkproperties, combinatoric_ratelaws = rs.combinatoric_ratelaws, continuous_events = rs.continuous_events, discrete_events = rs.discrete_events, complete = rs.complete)
+        new{typeof(networkproperties)}(eqs, rxs, ModelingToolkit.unwrap(iv), ModelingToolkit.unwrap.(sivs), ModelingToolkit.unwrap.(states), ModelingToolkit.unwrap.(species), ModelingToolkit.unwrap.(ps), var_to_name, observed, name, systems, defaults, connection_type, networkproperties, combinatoric_ratelaws, continuous_events, discrete_events, complete)
+    end
 end
 
 function get_speciestype(iv, states, systems)
