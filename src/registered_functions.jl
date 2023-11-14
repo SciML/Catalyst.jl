@@ -128,7 +128,7 @@ function expand_registered_functions(expr)
         return args[3]*(args[1]^args[5])/((args[1])^args[5] + (args[2])^args[5] + (args[4])^args[5])
     end
     for i = 1:length(args)
-        args[i] = expand_registered_functions!(args[i])
+        args[i] = expand_registered_functions(args[i])
     end
     return expr
 end

@@ -79,11 +79,12 @@ end
 
 # Tests that non-scalar reaction rates work.
 # Tests that rational polynomial steady state systems work. 
+# Tests that Hill function is correctly expanded even if nested.
 # Test filter_negative=false works.
-# tests than non-integer exponents throws an error.
+# Tests than non-integer exponents throws an error.
 let 
     rs = @reaction_network begin
-        0.1 + hill(X,v,K,n), 0 --> X
+        v*(0.1/v + hill(X,1,K,n)), 0 --> X
         d, X --> 0
     end
     ps = [:v => 5.0, :K => 2.5, :n => 3, :d => 1.0]
