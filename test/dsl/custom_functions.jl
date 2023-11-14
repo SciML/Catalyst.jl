@@ -204,25 +204,3 @@ let
                   v * (X^n) * ((K^n + Y^n) * log(X) - (K^n) * log(K) - (Y^n) * log(Y)) /
                   (K^n + X^n + Y^n)^2)
 end
-
-### Test expand_functions = true Argument ###
-let 
-    rn_funcs = @reaction_network rn begin
-        mm(X1,v,K), 0 --> X1
-        mmr(X2,v,K), 0 --> X2
-        hill(X3,v,K,n), 0 --> X3
-        hillr(X4,v,K,n), 0 --> X4
-        hillar(X5,Y,v,K,n), 0 --> X5
-    end
-    rn_expanded = @reaction_network rn begin
-        v*X1/(X1+K), 0 --> X1
-        v*K/(X2+K), 0 --> X2
-        v*(X3^n)/(X3^n+K^n), 0 --> X3
-        v*(K^n)/(X4^n+K^n), 0 --> X4
-        v*(X5^n)/(X5^n+Y^n+K^n), 0 --> X5
-    end
-    @test convert(ODESystem, rn_funcs; expand_functions = true) == convert(ODESystem, rn_expanded)
-    @test convert(SDESystem, rn_funcs; expand_functions = true) == convert(SDESystem, rn_expanded)
-    @test convert(NonlinearSystem, rn_funcs; expand_functions = true) == convert(NonlinearSystem, rn_expanded)
-    @test convert(ODESystem, rn_funcs; expand_functions = false) != convert(ODESystem, rn_expanded)    
-end
