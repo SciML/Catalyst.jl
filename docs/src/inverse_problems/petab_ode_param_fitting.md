@@ -103,7 +103,8 @@ nothing # hide
 ### Fitting parameters
 We are now able to fit our model to the data. First, we create a `PEtabODEProblem`. Here, we use `petab_model` as the only input, but it is also possible to set various [numeric solver and automatic differentiation options](@ref petab_simulation_options) (such as method or tolerance).
 ```@example petab1
-petab_problem = PEtabODEProblem(petab_model; verbose=false); nothing # hide
+petab_problem = PEtabODEProblem(petab_model; verbose=false) # hide
+nothing # hide
 ```
 ```julia
 petab_problem = PEtabODEProblem(petab_model)
@@ -115,6 +116,7 @@ To fit a parameter set we use the `calibrate_model` function. In addition to our
 using Optim
 p0 = generate_startguesses(petab_problem, 1)
 p0 = [0.0, 0.0, 0.0] # hide
+res = calibrate_model(petab_problem, p0, IPNewton()) # hide
 res = calibrate_model(petab_problem, p0, IPNewton())
 ```
 
@@ -382,10 +384,7 @@ While in our basic example, we do not provide any additional information to our 
 
 Here is an example, taken from the [more detailed PEtab.jl documentation](https://sebapersson.github.io/PEtab.jl/dev/Boehm/#Creating-a-PEtabODEProblem)
 ```@example petab1
-PEtabODEProblem(petab_model, 
-                ode_solver=ODESolver(Rodas5P(), abstol=1e-8, reltol=1e-8), 
-                gradient_method=:ForwardDiff, 
-                hessian_method=:ForwardDiff, verbose=false); nothing # hide
+PEtabODEProblem(petab_model, ode_solver=ODESolver(Rodas5P(), abstol=1e-8, reltol=1e-8), gradient_method=:ForwardDiff, hessian_method=:ForwardDiff, verbose=false); nothing # hide
 ```
 ```julia
 PEtabODEProblem(petab_model, 
@@ -484,6 +483,7 @@ Here, the event only triggers whenever the condition changes from `false` to `tr
 
 Whenever we have several events or not, we bundle them together in a single vector which is later passed to the `PEtabODEProblem` using the `events` argument:
 ```@example petab1
+params = [par_kB, par_kD, par_kP] # hide
 events = [event1, event2]
 petab_model = PEtabModel(rn, observables, measurements, params; state_map=u0, events=events)
 nothing # hide
