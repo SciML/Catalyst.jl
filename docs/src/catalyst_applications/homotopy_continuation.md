@@ -39,7 +39,7 @@ The order of the species in the output vectors are the same as in `species(wilhe
 It should be noted that the steady state multivariate polynomials produced by reaction systems may have both imaginary and negative roots, which are filtered away by `hc_steady_states`. If you want the negative roots, you can use the `hc_steady_states(wilhelm_2009_model, ps; filter_negative=false)` argument.
 
 
-## Systems with conservation laws
+## [Systems with conservation laws](@id homotopy_continuation_conservation_laws)
 Some systems are under-determined, and have an infinite number of possible steady states. These are typically systems containing a conservation
 law, e.g.
 ```@example hc3

@@ -273,7 +273,7 @@ and,
 
 ![subnetwork_2](../assets/complex_subnets2.svg)
 
-#### Deficiency of the network
+#### [Deficiency of the network](@id network_analysis_deficiency)
 A famous theorem in Chemical Reaction Network Theory, the Deficiency Zero
 Theorem [^1], allows us to use knowledge of the net stoichiometry matrix and the
 linkage classes of a *mass action* RRE ODE system to draw conclusions about the
