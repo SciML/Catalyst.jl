@@ -22,7 +22,7 @@ si_ode(rs; measured_quantities = [:X], known_p = [:p])
 """
 function Catalyst.make_si_ode(rs::ReactionSystem; measured_quantities = [], known_p = [], ignore_no_measured_warn=false)
     known_quantities = make_measured_quantities(rs, measured_quantities, known_p; ignore_no_measured_warn)
-    return StructuralIdentifiability.preprocess_ode(convert(ODESystem, rs; expand_functions = true), known_quantities)[1]
+    return StructuralIdentifiability.preprocess_ode(convert(ODESystem, rs), known_quantities)[1]
 end
 
 # For input measured quantities, if this is not a vector of equations, convert it to a proper form.
@@ -39,21 +39,21 @@ end
 # Local identifiability.
 function StructuralIdentifiability.assess_local_identifiability(rs::ReactionSystem, args...; measured_quantities = Num[], known_p = Num[], ignore_no_measured_warn=false, kwargs...)
     known_quantities = make_measured_quantities(rs, measured_quantities, known_p; ignore_no_measured_warn)
-    osys = convert(ODESystem, rs; expand_functions = true)
+    osys = convert(ODESystem, rs)
     return StructuralIdentifiability.assess_local_identifiability(osys, args...; measured_quantities=known_quantities, kwargs...)
 end
 
 # Global identifiability.
 function StructuralIdentifiability.assess_identifiability(rs::ReactionSystem, args...; measured_quantities = Num[], known_p = Num[], ignore_no_measured_warn=false, kwargs...)
     known_quantities = make_measured_quantities(rs, measured_quantities, known_p; ignore_no_measured_warn)
-    osys = convert(ODESystem, rs; expand_functions = true)
+    osys = convert(ODESystem, rs)
     return StructuralIdentifiability.assess_identifiability(osys, args...; measured_quantities=known_quantities, kwargs...)
 end
 
 # Identifiable functions.
 function StructuralIdentifiability.find_identifiable_functions(rs::ReactionSystem, args...; measured_quantities = Num[], known_p = Num[], ignore_no_measured_warn=false, kwargs...)
     known_quantities = make_measured_quantities(rs, measured_quantities, known_p; ignore_no_measured_warn)
-    osys = convert(ODESystem, rs; expand_functions = true)
+    osys = convert(ODESystem, rs)
     return StructuralIdentifiability.find_identifiable_functions(osys, args...; measured_quantities=known_quantities, kwargs...)
 end
 

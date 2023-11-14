@@ -7,14 +7,20 @@ where, however much data is collected on *x*, it is impossible to determine the 
 
 Catalyst contains a special extension for carrying out structural identifiability analysis using the [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) package. This enables StructuralIdentifiability's `assess_identifiability`, `assess_local_identifiability`, and `find_identifiable_functions` functions to be called directly on Catalyst `ReactionSystem`s. It also implements specialised routines to make these more efficient when applied to reaction network models. How to use these functions are described in the following tutorial, with [StructuralIdentifiability providing a more extensive documentation](https://docs.sciml.ai/StructuralIdentifiability/stable/). If you use this in your research, please [cite the StructuralIdentifiability.jl](@ref structural_identifiability_citation) and [Catalyst.jl](@ref catalyst_citation) publications.
 
-Structural identifiability can be divided into *local* and *global* identifiability. If a model quantity (which can either be a parameter or an initial condition) is locally identifiable, it means that its true value can be determined down to a finite-number of possible options. This also means that there is some limited region around its true value, where the true value is the only possible value. Globally identifiable quantities' values, on the other hand, can be uniquely determined. Again, while parameter (and initial condition) identifiability can be confirmed structurally for a model, it does not necessarily mean that they are practically identifiable for some given data.
+Structural identifiability can be divided into *local* and *global* identifiability. If a model quantity is locally identifiable, it means that its true value can be determined down to a finite-number of possible options. This also means that there is some limited region around its true value, where the true value is the only possible value. Globally identifiable quantities' values, on the other hand, can be uniquely determined. Again, while identifiability can be confirmed structurally for a model, it does not necessarily mean that they are practically identifiable for some given data.
 
+Generally, there are three types of quantities for which identifiability can be assessed.
+- Parameters (e.g. $p$).
+- Full variable trajectories (e.g. $x(t)$).
+- Variable initial conditions (e.g. $x(0)$). 
+
+StructutralIdentifiability currently assesses identifiability for the first two (however, if $x(t)$ is identifiable, $x(0)$ will be as well).
 
 ## Global identifiability analysis
 
 ### Basic example
 
-Local identifiability can be assessed using the `assess_identifiability` function. For each model quantity (parameters and initial conditions), it will asses whether they are:
+Local identifiability can be assessed using the `assess_identifiability` function. For each model quantity (parameters and variables), it will asses whether they are:
 - globally identifiable.
 - locally identifiable.
 - Unidentifiable.
@@ -27,22 +33,26 @@ goodwind_oscillator = @reaction_network begin
     (pₑ*M,dₑ), 0 <--> E
     (pₚ*E,dₚ), 0 <--> P
 end
-assess_identifiability(goodwind_oscillator; measured_quantities=[:M])
+assess_identifiability(goodwind_oscillator; measured_quantities=[:M], loglevel=Logging.Error)
 ```
-From the output, we find that `E`, `pₑ`, and `pₚ` (the initial concentration of $E$, and the production rates of $E$ and $P$, respectively) are non-identifiable. Next, `dₑ` and `dₚ` (the degradation rates of $E$ and $P$, respectively) are locally identifiable. Finally, `P`, `M`, `pₘ`, and `dₘ` (the initial concentrations of `P` and `M`, the production and degradation rate of `M`, respectively) are all globally identifiable. Next, we can assess identifiability in the case where we can measure all three species concentrations:
+From the output, we find that `E(t)`, `pₑ`, and `pₚ` (the trajectory of $E$, and the production rates of $E$ and $P$, respectively) are non-identifiable. Next, `dₑ` and `dₚ` (the degradation rates of $E$ and $P$, respectively) are locally identifiable. Finally, `P(t)`, `M(t)`, `pₘ`, and `dₘ` (the trajectories of `P` and `M`, and the production and degradation rate of `M`, respectively) are all globally identifiable.
+
+Next, we can assess identifiability in the case where we can measure all three species concentrations:
 ```example si1
-assess_identifiability(goodwind_oscillator; measured_quantities=[:M, :P, :E])
+assess_identifiability(goodwind_oscillator; measured_quantities=[:M, :P, :E], loglevel=Logging.Error)
 ```
 in which case all initial conditions and parameters become identifiable.
+
+StructuralIdentifiability functions generally provides a large number of output logging messages. Hence, in the above examples, and throughout the rest of this tutorial, we use the `loglevel=Logging.Error` option to turn these off.
 
 ### Indicating known parameters
 In the previous case we assumed that all parameters are unknown, however, this is not necessarily true. If there are parameters which value's are known, we can supply these using the `known_p` argument. Indeed, this might turn other, previously unidentifiable, parameters identifiable. Let us consider the previous example, where we measure the concentration of $M$ only, but also happen to know the production rate of $E$ ($pₑ$):
 ```example si1
-assess_identifiability(gwo; measured_quantities=[:M], known_p=[:pₑ])
+assess_identifiability(gwo; measured_quantities=[:M], known_p=[:pₑ], loglevel=Logging.Error)
 ```
 Not only does this turn the previously non-identifiable `pₑ` (globally) identifiable (which is obvious, given that its value is now known), but this additional information improve identifiability for several other network components.
 
-To, in a similar manner, indicate that certain initial conditions are known is a work in progress. Hopefully it should be an available feature in the near future.
+To, in a similar manner, indicate that certain initial conditions are known is a work in progress. Hopefully the feature should be an available in the near future.
 
 ### Providing non-trivial measured quantities
 Sometimes, we are not actually measuring species species, but rather some combinations of species (or possibly parameters). Here, any algebraic expression can be used in `measured_quantities`. If so, used species and parameters have to first be `@unpack`'ed from the model. Say that we have a model where an enzyme ($E$) is converted between an active and inactive form, which in turns activates the production of a product, $P$:
@@ -56,29 +66,37 @@ end
 and we can measure the total amount of $E$ ($=$Eᵢ+Eₐ$), as well as the amount of $P$, we can use the following to assess identifiability:
 ```example si2
 @unpack Eᵢ, Eₐ = enzyme_activation
-assess_identifiability(enzyme_activation; measured_quantities=[Eᵢ+Eₐ, :P])
+assess_identifiability(enzyme_activation; measured_quantities=[Eᵢ+Eₐ, :P], loglevel=Logging.Error)
 nothing # hide
 ```
+
+### Assessing identifiability for specified quantities only
+By default, StructuralIdentifiability assesses identifiability for all parameters and variables. It is, however, possible to designate precisely which quantities you want to check using the `funcs_to_check` option. This both includes selecting a smaller subset of parameters and variables to check, or defining customised expressions. Let us consider the Goodwind from previously, and say that we would like to check whether the production parameters ($pₘ$, $pₑ$, and $pₚ$) and the total amount of the three species ($P + M + E$) are identifiable quantities. Here, we would first unpack these (allowing us to form algebraic expressions) and then use the following code:
+```example si1
+@unpack pₘ, pₑ, and pₚ, M, E, P = goodwind_oscillator
+assess_identifiability(goodwind_oscillator; funcs_to_check=[pₘ, pₑ, pₚ, M + E + P], loglevel=Logging.Error)
+```
+
 
 ### Probability of correctness
 The identifiability methods used can, in theory, produce erroneous results. However, it is possible to adjust the lower bound for the probability of correctness using the argument `p` (by default set to `0.99`, that is, at least a $99%$ chance of correctness). We can e.g. increase the bound through:
 ```example si2
-assess_identifiability(goodwind_oscillator; measured_quantities=[:M], p=0.999)
+assess_identifiability(goodwind_oscillator; measured_quantities=[:M], p=0.999, loglevel=Logging.Error)
 nothing # hide
 ```
-giving a minimum bound of $99.9%$  chance of correctness. In practise, the bounds used by StructuralIdentifiability are very conservative, which means that while the minimum guaranteed probability of correctness in the default case is $99%$, in practise it is higher. While increasing the value of `p` increases the certainty of correctness, it will also increase the time required to assess identifiability.
+giving a minimum bound of $99.9%$  chance of correctness. In practise, the bounds used by StructuralIdentifiability are very conservative, which means that while the minimum guaranteed probability of correctness in the default case is $99%$, in practise it is much higher. While increasing the value of `p` increases the certainty of correctness, it will also increase the time required to assess identifiability.
 
 ## Local identifiability analysis
-Local identifiability can be assessed through the `assess_local_identifiability` function. While this is already determined by `assess_identifiability`, assessing local identifiability only have the advantage that it is easier to compute. Hence, there might be models where global identifiability analysis fails (or takes prohibitively long time), where instead `assess_local_identifiability` can be used. This functions takes the same inputs as `assess_identifiability` and returns, for each quantity, `true` if it is locally identifiable (and `false` if it is not). Here, for the Goodwind oscillator, we assesses it for local identifiability only:
+Local identifiability can be assessed through the `assess_local_identifiability` function. While this is already determined by `assess_identifiability`, assessing local identifiability only have the advantage that it is easier to compute. Hence, there might be models where global identifiability analysis fails (or takes prohibitively long time), where instead `assess_local_identifiability` can be used. This functions takes the same inputs as `assess_identifiability` and returns, for each quantity, `true` if it is locally identifiable (or `false` if it is not). Here, for the Goodwind oscillator, we assesses it for local identifiability only:
 ```example si1
-assess_local_identifiability(goodwind_oscillator; measured_quantities=[:M])
+assess_local_identifiability(goodwind_oscillator; measured_quantities=[:M], loglevel=Logging.Error)
 ```
 We note that the results are consistent with those produced by `assess_identifiability` (with globally or locally identifiable quantities here all being assessed as at least locally identifiable).
 
 ## Finding identifiable functions
-Finally, StructuralIdentifiability provides the `find_identifiable_functions` function. Rather than determining the identifiability of each parameter and initial condition of the model, it finds a minimal set of identifiable functions, such as any other identifiable expression of the model can be generated by these. Let us again consider the Goodwind oscillator, using the `find_identifiable_functions` function we find that identifiability can be reduced two five globally identifiable expressions:
+Finally, StructuralIdentifiability provides the `find_identifiable_functions` function. Rather than determining the identifiability of each parameter and initial condition of the model, it finds a minimal set of identifiable functions, such as any other identifiable expression of the model can be generated by these. Let us again consider the Goodwind oscillator, using the `find_identifiable_functions` function we find that identifiability can be reduced to five globally identifiable expressions:
 ```example si1
-find_identifiable_functions(goodwind_oscillator; measured_quantities=[:M])
+find_identifiable_functions(goodwind_oscillator; measured_quantities=[:M], loglevel=Logging.Error)
 ```
 Again, these results are consistent with those of produced by `assess_identifiability`. There, `pₑ` and `pₚ` where found to be globally identifiable. Here, they correspond directly to identifiable expressions. The remaining four parameters (`pₘ`, `dₘ`, `dₑ`, and `dₚ`) occurs as part of more complicated composite expressions.
 

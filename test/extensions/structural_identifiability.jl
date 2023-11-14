@@ -19,7 +19,7 @@ end
 ### Run Tests ###
 
 # Tests for Goodwin model (model with both global, local, and non identifiable components).
-# Tests for system using Catalyst function (in this case, michaelis-menten function)
+# Tests for system using Catalyst function (in this case, Michaelis-Menten function)
 let 
     # Identifiability analysis for Catalyst model.
     goodwind_oscillator_catalyst = @reaction_network begin
