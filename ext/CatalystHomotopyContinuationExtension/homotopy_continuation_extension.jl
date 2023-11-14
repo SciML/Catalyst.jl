@@ -44,6 +44,7 @@ end
 
 # For a given reaction system, parameter values, and initial conditions, find the polynomial that HC solves to find steady states.
 function steady_state_polynomial(rs_in::ReactionSystem, ps, u0)
+    any(!(eq isa Reaction) for eq in rs_in.eqs) && error("This feature is currently not supported for reaction systems containing (non-reaction) equations.")
     rs = ModelingToolkit.@set rs_in.rxs = [Catalyst.expand_registered_functions(rx) for rx in rs_in.rxs]
     ns = convert(NonlinearSystem, rs; remove_conserved = true)
     pre_varmap = [symmap_to_varmap(rs,u0)..., symmap_to_varmap(rs,ps)...]
