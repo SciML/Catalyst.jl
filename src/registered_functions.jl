@@ -109,11 +109,11 @@ function Symbolics.derivative(::typeof(hillar), args::NTuple{5, Any}, ::Val{5})
 end
 
 """
-expand_registered_functions!(expr)
+expand_registered_functions(expr)
 
 Takes an expression, and expands registered function expressions. E.g. `mm(X,v,K)` is replaced with v*X/(X+K). Currently supported functions: `mm`, `mmr`, `hill`, `hillr`, and `hill`.
 """
-function expand_registered_functions!(expr)
+function expand_registered_functions(expr)
     istree(expr) || return expr
     args = arguments(expr)
     if operation(expr) == Catalyst.mm
@@ -131,4 +131,8 @@ function expand_registered_functions!(expr)
         args[i] = expand_registered_functions!(args[i])
     end
     return expr
+end
+# If applied to a reaction, return a reaction with its rate modified.
+function expand_registered_functions(rx::Reaction)
+    Reaction(expand_registered_functions(rx.rate), rx.substrates, rx.products, rx.substoich, rx.prodstoich, rx.netstoich, rx.only_use_rate)
 end
