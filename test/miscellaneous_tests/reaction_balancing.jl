@@ -326,7 +326,7 @@ end
 # @reaction k, Al2(SO4)3 + 3Ca(OH)2 → 2Al(OH)3 + 3CaSO4
 let
     @variables t
-    @species Al(t) S(t) O(t) Ca(t) O(t) (H)
+    @species Al(t) S(t) O(t) Ca(t) O(t) H(t)
     @compound Al2S3O12 ~ 2Al + 3S + 12O
     @compound CaO2H2 ~ Ca + 2O + 2H
     @compound AlO3H3 ~ Al + 3O + 3H
