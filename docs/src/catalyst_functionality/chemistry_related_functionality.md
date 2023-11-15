@@ -17,7 +17,7 @@ Next, we create the `CO2` compound species:
 ```@example chem1
 @compound CO2 ~ C + 2O
 ```
-Here, the compound is the first argument to the macro, followed by its component (with the left-hand and right-hand sides separated by a `~` sign). While non-compound species (such as `C` and `O`) have their independent variable (in this case `t`) designated, independent variables as not designated for compounds (but instead directly inferred from their components). Components with non-unitary stoichiometries have this value written before the component (generally, the rules for designating the components of a compound are identical to those of designating the substrates or products of a reaction). The created compound, `CO2`, is a species in every sense, and can be used wherever e.g. `C` can be used:
+Here, the compound is the first argument to the macro, followed by its component (with the left-hand and right-hand sides separated by a `~` sign). While non-compound species (such as `C` and `O`) have their independent variable (in this case `t`) designated, independent variables are not designated for compounds (these are instead directly inferred from their components). Components with non-unitary stoichiometries have this value written before the component (generally, the rules for designating the components of a compound are identical to those of designating the substrates or products of a reaction). The created compound, `CO2`, is a species in every sense, and can be used wherever e.g. `C` can be used:
 ```@example chem1
 isspecies(CO2)
 ```
@@ -36,16 +36,6 @@ Finally, it is possible to check whether a species is a compound or not using th
 ```@example chem1
 iscompound(CO2)
 ```
-
-!!! note
-    Currently, compounds with components that depend on variables that are not `t` are not supported. E.g. 
-    ```julia
-    @variables x y
-    @species O(x, y) 
-    @compound O2 ~ 2O
-    ```
-    will currently throw an error.
-
 
 Compound components that are also compounds are allowed, e.g. we can create a carbonic acid compound (H₂CO₃) that consists of CO₂ and H₂O:
 ```@example chem1
