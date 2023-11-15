@@ -96,7 +96,7 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Vector{T}
     transport_rates = Pair{Int64, Vector{T}}[findfirst(isequal(spat_rates[1]), species(lrs)) => spat_rates[2]
                        for spat_rates in transport_rates_speciesmap]                                # Remakes "transport_rates_speciesmap". Rates are identical, but the species are represented as their index (in the species(::ReactionSystem) vector). In "transport_rates_speciesmap" they instead were Symbolics. Pair{Int64, Vector{T}}[] is required in case vector is empty (otherwise it becomes Any[], causing type error later).
 
-    f = LatticeTransportODEf(ofunc, vert_ps, transport_rates, lrs)                                  # Creates a functor for the ODE f function (incorporating spatial and non-spatial reactions).
+    f = LatticeTransportODEf(ofunc, vert_ps, transport_rates, lrs)
     jac_prototype = (use_jac || sparse) ?
                     build_jac_prototype(ofunc_sparse.jac_prototype, transport_rates,
                                         lrs; set_nonzero = use_jac) : nothing                       # Computes the Jacobian prototype (nothing if `jac=false`). 
@@ -173,12 +173,10 @@ function (jac_func::LatticeTransportODEjac)(J, u, p, t)
                            view_vert_ps_vector!(jac_func.work_vert_ps, p, vert_i, jac_func.enum_v_ps_idx_types), t) # These inputs are the same as when f_func.ofunc was applied in the previous block.
     end
 
-    # Updates for the spatial reactions.
-    add_spat_J_vals!(J, jac_func)       # Adds the Jacobian values from the diffusion reactions.
+    # Updates for the spatial reactions (adds the Jacobian values from the diffusion reactions).
+    add_spat_J_vals!(J, jac_func)
 end
-# Resets the jacobian matrix within a jac call. Separate for spatial and non-spatial cases.
-reset_J_vals!(J::Matrix) = (J .= 0.0)                   
-reset_J_vals!(J::SparseMatrixCSC) = (J.nzval .= 0.0)
-# Updates the jacobian matrix with the difusion values. Separate for spatial and non-spatial cases.
+
+# Updates the jacobian matrix with the diffusion values. Separate for spatial and non-spatial cases.
 add_spat_J_vals!(J::SparseMatrixCSC, jac_func::LatticeTransportODEjac) = (J.nzval .+= jac_func.jac_values)
 add_spat_J_vals!(J::Matrix, jac_func::LatticeTransportODEjac) = (J .+= jac_func.jac_values)
