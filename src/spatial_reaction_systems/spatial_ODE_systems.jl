@@ -13,7 +13,7 @@ struct LatticeTransportODEf{R,S,T}
     """Temporary vector. For parameters which values are identical across the lattice, at some point these have to be converted of a length num_verts vector. To avoid re-allocation they are written to this vector."""
     work_vert_ps::Vector{S}    
     """For each parameter in vert_ps, its value is a vector with length either num_verts or 1. To know whenever a parameter's value need expanding to the work_vert_ps array, its length needs checking. This check is done once, and the value stored to this array. This field (specifically) is an enumerate over that array."""
-    enum_v_ps_idx_types::Base.Iterators.Enumerate{BitVector}
+    enum_v_ps_idx_types::Base.Iterators.Enumerate{Vector{Bool}}
     """A vector of pairs, with a value for each species with transportation. The first value is the species index (in the species(::ReactionSystem) vector), and the second is a vector with its transport rate values. If the transport rate is uniform (across all edges), that value is the only value in the vector. Else, there is one value for each edge in the lattice."""
     transport_rates::Vector{Pair{Int64, Vector{S}}}
     """A matrix, NxM, where N is the number of species with transportation and M the number of vertexes. Each value is the total rate at which that species leaves that vertex (e.g. for a species with constant diffusion rate D, in a vertex with n neighbours, this value is n*D)."""
@@ -51,7 +51,7 @@ struct LatticeTransportODEjac{R,S,T}
     """Temporary vector. For parameters which values are identical across the lattice, at some point these have to be converted of a length(num_verts) vector. To avoid re-allocation they are written to this vector."""
     work_vert_ps::Vector{S} 
     """For each parameter in vert_ps, it either have length num_verts or 1. To know whenever a parameter's value need expanding to the work_vert_ps array, its length needs checking. This check is done once, and the value stored to this array. This field (specifically) is an enumerate over that array."""
-    enum_v_ps_idx_types::Base.Iterators.Enumerate{BitVector}
+    enum_v_ps_idx_types::Base.Iterators.Enumerate{Vector{Bool}}
     """Whether the Jacobian is sparse or not."""
     sparse::Bool
     """The transport rates. Can be a dense matrix (for non-sparse) or as the "nzval" field if sparse."""
@@ -59,7 +59,7 @@ struct LatticeTransportODEjac{R,S,T}
 
     function LatticeTransportODEjac(ofunc::R, vert_ps::Vector{Vector{S}}, lrs::LatticeReactionSystem, jac_prototype::Union{Nothing, SparseMatrixCSC{Float64, Int64}}, sparse::Bool) where {R,S}
         work_vert_ps = zeros(lrs.num_verts)
-        enum_v_ps_idx_types = enumerate(length.(vert_ps) .== 1)             # Creates a Boolean vector whether each vertex parameter need expanding or (an enumerates it, since it always appear in this form).
+        enum_v_ps_idx_types = enumerate(map(vp -> length(vp) == 1, vert_ps))
         jac_values = sparse ? jac_prototype.nzval : Matrix(jac_prototype)   # Retrieves the diffusion values (form depending on Jacobian sparsity).
         new{R,S,typeof(jac_values)}(ofunc, lrs.num_verts, lrs.num_species, vert_ps, work_vert_ps, enum_v_ps_idx_types, sparse, jac_values)
     end
@@ -177,7 +177,7 @@ function (jac_func::LatticeTransportODEjac)(J, u, p, t)
     for vert_i in 1:(jac_func.num_verts)
         idxs = get_indexes(vert_i, jac_func.num_species)
         vert_ps = view_vert_ps_vector!(jac_func.work_vert_ps, p, vert_i, jac_func.enum_v_ps_idx_types)
-        jac_func.ofunc.jac((@view J[idxs, idxs], (@view u[idxs]), vert_ps, t))
+        jac_func.ofunc.jac((@view J[idxs, idxs]), (@view u[idxs]), vert_ps, t)
     end
 
     # Updates for the spatial reactions (adds the Jacobian values from the diffusion reactions).
