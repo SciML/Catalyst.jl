@@ -140,11 +140,15 @@ end
 # Defines the forcing functor's effect on the (spatial) ODE system.
 function (f_func::LatticeTransportODEf)(du, u, p, t)
     # Updates for non-spatial reactions.
-    for vert_i in 1:(f_func.num_verts)                                       # Loops through each vertex of the lattice. Applies the (non-spatial) ODEFunction to the species in that vertex.
-        f_func.ofunc((@view du[get_indexes(vert_i, f_func.num_species)]),    # Get the indexes of the i'th vertex (current one in the loop) in the u vector. Uses this to create a view of the vector to which the new species concentrations are written.  
-                     (@view u[get_indexes(vert_i, f_func.num_species)]),     # Same as above, but reads the current species concentrations.
-                      view_vert_ps_vector!(f_func.work_vert_ps, p, vert_i, f_func.enum_v_ps_idx_types),   # Gets a vector with the values of the (vertex) parameters in the current vertex.
-                      t)                                                     # Time.
+    for vert_i in 1:(f_func.num_verts)
+        # gets the indices of species at vertex i
+        idxs = get_indexes(vert_i, f_func.num_species)
+        
+        # vector of vertex ps at vert_i
+        vert_i_ps = view_vert_ps_vector!(f_func.work_vert_ps, p, vert_i, f_func.enum_v_ps_idx_types)
+        
+        # evaluate reaction contributions to du at vert_i
+        f_func.ofunc((@view du[idxs]),  (@view u[idxs]), vert_i_ps, t)
     end
 
     # Updates for spatial reactions.
