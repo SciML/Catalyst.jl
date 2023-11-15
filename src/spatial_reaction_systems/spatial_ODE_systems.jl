@@ -75,7 +75,8 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     p_in = (p_in isa Tuple{<:Any,<:Any}) ? (symmap_to_varmap(lrs, p_in[1]),symmap_to_varmap(lrs, p_in[2])) : symmap_to_varmap(lrs, p_in)    # Parameters can be given in Tuple form (where the first element is the vertex parameters and the second the edge parameters). In this case, we have to covert each element separately.
 
     # Converts u0 and p to their internal forms.
-    u0 = lattice_process_u0(u0_in, species(lrs), lrs.num_verts)                                     # u0 becomes a vector ([species 1 at vertex 1, species 2 at vertex 1, ..., species 1 at vertex 2, ...]).
+    # u0 is [spec 1 at vert 1, spec 2 at vert 1, ..., spec 1 at vert 2, ...].
+    u0 = lattice_process_u0(u0_in, species(lrs), lrs.num_verts)                                   
     vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs), lrs)   # Both vert_ps and edge_ps becomes vectors of vectors. Each have 1 element for each parameter. These elements are length 1 vectors (if the parameter is uniform), or length num_verts/nE, with unique values for each vertex/edge (for vert_ps/edge_ps, respectively).
 
     # Creates ODEProblem.
