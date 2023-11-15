@@ -37,16 +37,6 @@ Finally, it is possible to check whether a species is a compound or not using th
 iscompound(CO2)
 ```
 
-!!! note
-    Currently, compounds with components that depend on variables that are not `t` are not supported. E.g. 
-    ```julia
-    @variables x y
-    @species O(x, y) 
-    @compound O2 ~ 2O
-    ```
-    will currently throw an error.
-
-
 Compound components that are also compounds are allowed, e.g. we can create a carbonic acid compound (H₂CO₃) that consists of CO₂ and H₂O:
 ```@example chem1
 @species H(t)
