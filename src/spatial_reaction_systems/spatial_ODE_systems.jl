@@ -1,7 +1,7 @@
 ### Spatial ODE Functor Structures ###
 
 # Functor structure containing the information for the forcing function of a spatial ODE with spatial movement on a lattice.
-struct LatticeDiffusionODEf{R,S,T}
+struct LatticeTransportODEf{R,S,T}
     """The ODEFunction of the (non-spatial) reaction system which generated this function."""
     ofunc::R
     """The number of vertices."""
@@ -21,14 +21,14 @@ struct LatticeDiffusionODEf{R,S,T}
     """An (enumerate'ed) iterator over all the edges of the lattice."""
     enum_edges::T
     
-    function LatticeDiffusionODEf(ofunc::R, vert_ps::Vector{Vector{S}}, transport_rates::Vector{Pair{Int64, Vector{S}}}, lrs::LatticeReactionSystem) where {R,S}
-        leaving_rates = zeros(length(transport_rates), lrs.num_verts)           # Initialises the leaving rates matrix with zeros.
+    function LatticeTransportODEf(ofunc::R, vert_ps::Vector{Vector{S}}, transport_rates::Vector{Pair{Int64, Vector{S}}}, lrs::LatticeReactionSystem) where {R,S}
+        leaving_rates = zeros(length(transport_rates), lrs.num_verts)
         for (s_idx, rates) in enumerate(last.(transport_rates)),
             (e_idx, e) in enumerate(edges(lrs.lattice))                         # Iterates through all edges, and all transport rates (map from each diffusing species to its rates across edges).
     
             leaving_rates[s_idx, e.src] += get_component_value(rates, e_idx)    # Updates the leaving rate for that combination of vertex and species. RHS finds the value of edge "e_idx" in the vector of diffusion rates ("rates").
         end
-        work_vert_ps = zeros(lrs.num_verts)                                     # Initialises the work vert_ps vector to be empty.
+        work_vert_ps = zeros(lrs.num_verts)
         enum_v_ps_idx_types = enumerate(length.(vert_ps) .== 1)                 # Creates a Boolean vector whether each vertex parameter need expanding or (and enumerates it, since it always appear in this form).
         enum_edges = deepcopy(enumerate(edges(lrs.lattice)))                    # Creates an iterator over all the edges. Again, this is always used in the enumerated form. 
         new{R,S,typeof(enum_edges)}(ofunc, lrs.num_verts, lrs.num_species, vert_ps, work_vert_ps, enum_v_ps_idx_types, transport_rates, leaving_rates, enum_edges)
@@ -36,7 +36,7 @@ struct LatticeDiffusionODEf{R,S,T}
 end
 
 # Functor structure containing the information for the forcing function of a spatial ODE with spatial movement on a lattice.
-struct LatticeDiffusionODEjac{R,S,T}
+struct LatticeTransportODEjac{R,S,T}
     """The ODEFunction of the (non-spatial) reaction system which generated this function."""
     ofunc::R
     """The number of vertices."""
@@ -54,8 +54,8 @@ struct LatticeDiffusionODEjac{R,S,T}
     """The transport rates. Can be a dense matrix (for non-sparse) or as the "nzval" field if sparse."""
     jac_values::T
 
-    function LatticeDiffusionODEjac(ofunc::R, vert_ps::Vector{Vector{S}}, lrs::LatticeReactionSystem, jac_prototype::Union{Nothing, SparseMatrixCSC{Float64, Int64}}, sparse::Bool) where {R,S}
-        work_vert_ps = zeros(lrs.num_verts)                                 # Initialises the work vert_ps vector to be empty.
+    function LatticeTransportODEjac(ofunc::R, vert_ps::Vector{Vector{S}}, lrs::LatticeReactionSystem, jac_prototype::Union{Nothing, SparseMatrixCSC{Float64, Int64}}, sparse::Bool) where {R,S}
+        work_vert_ps = zeros(lrs.num_verts)
         enum_v_ps_idx_types = enumerate(length.(vert_ps) .== 1)             # Creates a Boolean vector whether each vertex parameter need expanding or (an enumerates it, since it always appear in this form).
         jac_values = sparse ? jac_prototype.nzval : Matrix(jac_prototype)   # Retrieves the diffusion values (form depending on Jacobian sparsity).
         new{R,S,typeof(jac_values)}(ofunc, lrs.num_verts, lrs.num_species, vert_ps, work_vert_ps, enum_v_ps_idx_types, sparse, jac_values)
@@ -93,11 +93,11 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Vector{T}
     transport_rates = Pair{Int64, Vector{T}}[findfirst(isequal(spat_rates[1]), species(lrs)) => spat_rates[2]
                        for spat_rates in transport_rates_speciesmap]                                # Remakes "transport_rates_speciesmap". Rates are identical, but the species are represented as their index (in the species(::ReactionSystem) vector). In "transport_rates_speciesmap" they instead were Symbolics. Pair{Int64, Vector{T}}[] is required in case vector is empty (otherwise it becomes Any[], causing type error later).
 
-    f = LatticeDiffusionODEf(ofunc, vert_ps, transport_rates, lrs)                                  # Creates a functor for the ODE f function (incorporating spatial and non-spatial reactions).
+    f = LatticeTransportODEf(ofunc, vert_ps, transport_rates, lrs)                                  # Creates a functor for the ODE f function (incorporating spatial and non-spatial reactions).
     jac_prototype = (use_jac || sparse) ?
                     build_jac_prototype(ofunc_sparse.jac_prototype, transport_rates,
                                         lrs; set_nonzero = use_jac) : nothing                       # Computes the Jacobian prototype (nothing if `jac=false`). 
-    jac = use_jac ? LatticeDiffusionODEjac(ofunc, vert_ps, lrs, jac_prototype, sparse) : nothing    # (Potentially) Creates a functor for the ODE Jacobian function (incorporating spatial and non-spatial reactions).
+    jac = use_jac ? LatticeTransportODEjac(ofunc, vert_ps, lrs, jac_prototype, sparse) : nothing    # (Potentially) Creates a functor for the ODE Jacobian function (incorporating spatial and non-spatial reactions).
     return ODEFunction(f; jac = jac, jac_prototype = (sparse ? jac_prototype : nothing))            # Creates the ODEFunction used in the ODEProblem.
 end
 
@@ -134,7 +134,7 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, 
 end
 
 # Defines the forcing functor's effect on the (spatial) ODE system.
-function (f_func::LatticeDiffusionODEf)(du, u, p, t)
+function (f_func::LatticeTransportODEf)(du, u, p, t)
     # Updates for non-spatial reactions.
     for vert_i in 1:(f_func.num_verts)                                       # Loops through each vertex of the lattice. Applies the (non-spatial) ODEFunction to the species in that vertex.
         f_func.ofunc((@view du[get_indexes(vert_i, f_func.num_species)]),    # Get the indexes of the i'th vertex (current one in the loop) in the u vector. Uses this to create a view of the vector to which the new species concentrations are written.  
@@ -159,7 +159,7 @@ function (f_func::LatticeDiffusionODEf)(du, u, p, t)
 end
 
 # Defines the jacobian functor's effect on the (spatial) ODE system.
-function (jac_func::LatticeDiffusionODEjac)(J, u, p, t)
+function (jac_func::LatticeTransportODEjac)(J, u, p, t)
     J .= 0.0 
 
     # Updates for non-spatial reactions.
@@ -177,5 +177,5 @@ end
 reset_J_vals!(J::Matrix) = (J .= 0.0)                   
 reset_J_vals!(J::SparseMatrixCSC) = (J.nzval .= 0.0)
 # Updates the jacobian matrix with the difusion values. Separate for spatial and non-spatial cases.
-add_spat_J_vals!(J::SparseMatrixCSC, jac_func::LatticeDiffusionODEjac) = (J.nzval .+= jac_func.jac_values)
-add_spat_J_vals!(J::Matrix, jac_func::LatticeDiffusionODEjac) = (J .+= jac_func.jac_values)
+add_spat_J_vals!(J::SparseMatrixCSC, jac_func::LatticeTransportODEjac) = (J.nzval .+= jac_func.jac_values)
+add_spat_J_vals!(J::Matrix, jac_func::LatticeTransportODEjac) = (J .+= jac_func.jac_values)
