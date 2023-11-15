@@ -120,7 +120,7 @@ let
     ifs_1 = find_identifiable_functions(rs_catalyst; measured_quantities=[X1 + Yi, Ya], known_p=[k1, kD])
 
     # Identifiability analysis for Catalyst converted to StructuralIdentifiability.jl model.
-    rs_ode = make_si_ode(rs_catalyst; measured_quantities=[X1 + Yi, Ya], known_p=[k1, kD])
+    rs_ode = make_si_ode(rs_catalyst; measured_quantities=[X1 + Yi, Ya], known_p=[k1, kD], remove_conserved=false)
     gi_2 = assess_identifiability(rs_ode)
     li_2 = assess_local_identifiability(rs_ode)
     ifs_2 = find_identifiable_functions(rs_ode)
@@ -146,7 +146,7 @@ let
     # Check outputs.
     @test sym_dict(gi_1) == sym_dict(gi_2) == sym_dict(gi_3)
     @test sym_dict(li_1) == sym_dict(li_2) == sym_dict(li_3)
-    @test length(ifs_1) == length(ifs_2) == length(ifs_3)    
+    @test length(ifs_1[2:end]) == length(ifs_2) == length(ifs_3) # In the first case, the conservation law parameter is also identifiable.
 end
 
 # Tests that various inputs types work.
