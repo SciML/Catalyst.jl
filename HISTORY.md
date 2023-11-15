@@ -10,6 +10,7 @@
   tr = @transport_reaction D X
   lattice = Graphs.grid([5, 5])
   lrs = LatticeReactionSystem(rn, [tr], lattice)
+```
 - Here, if a `u0` or `p` vector is given with scalar values:
   ```julia
   u0 = [:X => 1.0]
