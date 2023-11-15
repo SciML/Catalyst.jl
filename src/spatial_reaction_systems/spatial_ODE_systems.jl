@@ -151,17 +151,18 @@ function (f_func::LatticeTransportODEf)(du, u, p, t)
         f_func.ofunc((@view du[idxs]),  (@view u[idxs]), vert_i_ps, t)
     end
 
-    # Updates for spatial reactions.
-    for (s_idx, (s, rates)) in enumerate(f_func.transport_rates)            # Loops through all species with transportation. Here: s_idx is its index among the species with transportations. s is its index among all species (in the species(::ReactionSystem) vector). rates is its rates values (vector length 1 if uniform, else same length as the number of edges).
-        for vert_i in 1:(f_func.num_verts)                                  # Loops through all vertexes.
-            du[get_index(vert_i, s, f_func.num_species)] -= f_func.leaving_rates[s_idx, vert_i] *
-                                                u[get_index(vert_i, s,
-                                                f_func.num_species)]        # Finds the leaving rate of this species in this vertex. Updates the du vector at that vertex/species combination with the corresponding rate (leaving rate times concentration).
+    # s_idx is species index among transport species, s is index among all species
+    # rates are the species' transport rates
+    for (s_idx, (s, rates)) in enumerate(f_func.transport_rates)  
+        # rate for leaving vert_i
+        for vert_i in 1:(f_func.num_verts)                                 
+            idx = get_index(vert_i, s, f_func.num_species)
+            du[idx] -= f_func.leaving_rates[s_idx, vert_i] * u[idx]
         end
-        for (e_idx, e) in f_func.enum_edges  # Loops through all edges.
-            du[get_index(e.dst, s, f_func.num_species)] += get_component_value(rates, e_idx) *
-                                                  u[get_index(e.src, s,
-                                                  f_func.num_species)]      # For the destination of this edge, we want to add the influx term to du. This is ["rates" value for this edge]*[the species concentration in the source vertex]. 
+        # add rates for entering a given vertex via an incoming edge
+        for (e_idx, e) in f_func.enum_edges 
+            idx = get_index(e.dst, s, f_func.num_species)
+            du[idx] += get_component_value(rates, e_idx) * u[idx] 
         end
     end
 end
