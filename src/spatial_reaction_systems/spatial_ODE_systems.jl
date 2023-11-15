@@ -31,7 +31,8 @@ struct LatticeTransportODEf{R,S,T}
             end
         end
         work_vert_ps = zeros(lrs.num_verts)
-        enum_v_ps_idx_types = enumerate(length.(vert_ps) .== 1)                 # Creates a Boolean vector whether each vertex parameter need expanding or (and enumerates it, since it always appear in this form).
+        # 1 if ps are constant across the graph, 0 else
+        enum_v_ps_idx_types = enumerate(map(vp -> length(vp) == 1, vert_ps))
         enum_edges = deepcopy(enumerate(edges(lrs.lattice)))                    # Creates an iterator over all the edges. Again, this is always used in the enumerated form. 
         new{R,S,typeof(enum_edges)}(ofunc, lrs.num_verts, lrs.num_species, vert_ps, work_vert_ps, enum_v_ps_idx_types, transport_rates, leaving_rates, enum_edges)
     end
