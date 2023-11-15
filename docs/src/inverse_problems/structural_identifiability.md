@@ -27,7 +27,7 @@ Local identifiability can be assessed using the `assess_identifiability` functio
   
 To it, we provide our `ReactionSystem` model and a list of quantities that we are able to measure. Here, we consider a Goodwind oscillator (a simple 3-component model, where the three species $M$, $E$, and $P$ are produced and degraded, which may exhibit oscillations)[^2]. Let us say that we are able to measure the concentration of $M$, we then provide designate this using the `measured_quantities` argument. We can now assess identifiability in the following way:
 ```example si1
-using StructuralIdentifiability, Catalyst
+using Catalyst, StructuralIdentifiability
 goodwind_oscillator = @reaction_network begin
     (pₘ/(1+P), dₘ), 0 <--> M
     (pₑ*M,dₑ), 0 <--> E
@@ -117,6 +117,7 @@ nothing # hide
 ## Notes on systems with conservation laws
 Several reaction network models, such as
 ```example si2
+using Catalyst, StructuralIdentifiability # hide
 rs = @reaction_network begin
   (k1,k2), X1 <--> X2
 end
@@ -133,6 +134,16 @@ we see that `Γ[1]` (`= X1 + X2`) is detected as an identifiable expression. If 
 ```example si2
 find_identifiable_functions(rs; measured_quantities = [:X1, :X2], remove_conserved = false)
 ```
+
+## Systems with exponent parameters
+Structural identifiability cannot currently be applied to systems with parameters (or species) in exponents. E.g. this
+```julia
+rn = @reaction_network begin
+    (hill(X,v,K,n),d), 0 <--> X
+end
+assess_identifiability(rn; measured_quantities=[:X])
+```
+is currently not possible. Hopefully this will be a supported feature in the future. For now, these expression will have to be rewritten to not include such exponents. For some cases, e.g. `10^k` this is trivial. However, it is also possible generally (but more involved and often includes introducing additional variables). If you have a system where this is required, it is recommended to contact an expert.
 
 ---
 ## [Citation](@id structural_identifiability_citation)
