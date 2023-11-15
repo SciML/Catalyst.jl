@@ -71,23 +71,20 @@ end
 let
     @variables t x y z
     @species C(t) H(x) N(x) O(t) P(t,x) S(x,y)
-
-    @compound CO2 ~ C + 2O
-    @test issetequal(arguments(ModelingToolkit.unwrap(CO2)), [t])
     
-    # These 4 tests checks currently non-supported feature.
-    @test_broken false
-    @test_broken false
-    @test_broken false
-    @test_broken false
-    # @compound NH4, [output=true] ~ N + 4H
-    # @compound (H2O = 2.0) ~ 2H + N
-    # @compound PH4 ~ P + 4H
-    # @compound SO2 ~ S + 2O
-    # @test issetequal(arguments(ModelingToolkit.unwrap(NH4)), [x])
-    # @test issetequal(arguments(ModelingToolkit.unwrap(H2O)), [t, x])
-    # @test issetequal(arguments(ModelingToolkit.unwrap(PH4)), [t, x])
-    # @test issetequal(arguments(ModelingToolkit.unwrap(SO2)), [t, x, y])
+    # Creates compounds.
+    @compound CO2 ~ C + 2O
+    @compound NH4, [output=true] ~ N + 4H
+    @compound (H2O = 2.0) ~ 2H + O
+    @compound PH4 ~ P + 4H
+    @compound SO2 ~ S + 2O
+    
+    # Checks they have the correct independent variables.
+    @test issetequal(arguments(ModelingToolkit.unwrap(CO2)), [t])
+    @test issetequal(arguments(ModelingToolkit.unwrap(NH4)), [x])
+    @test issetequal(arguments(ModelingToolkit.unwrap(H2O)), [t, x])
+    @test issetequal(arguments(ModelingToolkit.unwrap(PH4)), [t, x])
+    @test issetequal(arguments(ModelingToolkit.unwrap(SO2)), [t, x, y])
 end
 
 ### Other Minor Tests ###

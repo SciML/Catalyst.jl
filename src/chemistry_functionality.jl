@@ -56,28 +56,22 @@ function make_compound(expr)
 
     # Extracts the composite species name, as well as the expression which creates it (with e.g. meta data and default values included).
     species_expr = expr.args[2]                                                             # E.g. :(CO2 = 1.0, [metadata=true])
-    iv_expr = :(unique(reduce(vcat, arguments.(ModelingToolkit.unwrap.($(components))))))   # Expression which, when evaluated, becoems a list of all the independent variables the compound should depend on.
-    species_expr = insert_independent_variable(species_expr, iv_expr)                       # Add independent variable (e.g. goes from `CO2` to `CO2(t)`).
+    species_expr = insert_independent_variable(species_expr, :(..))                         # Prepare iv addition, i.e. turns CO to CO(..).
     species_name = find_varname_in_declaration(expr.args[2])                                # E.g. :CO2
+    ivs_get_expr = :(unique(reduce(vcat,[arguments(ModelingToolkit.unwrap(iv)) for iv in $components])))    # Expression which when evaluated gives a vector with all the ivs of the components.
     
-
     # Creates the found expressions that will create the compound species.
-    # The `Expr(:escape, :(...))` is required so that teh expressions are evaluated in the scope the users use the macro in (to e.g. detect already exiting species).                                                                                        # E.g. `@species CO2(t)`
-    species_declaration_expr = Expr(:escape, :(@species $species_expr))                                                                                         # E.g. `@species CO2(t)`
+    # The `Expr(:escape, :(...))` is required so that the expressions are evaluated in the scope the users use the macro in (to e.g. detect already exiting species).                                                                                        
+    species_declaration_expr = Expr(:escape, :(@species $species_expr))                                                                                         # E.g. `@species CO2(..)`
+    iv_designation_expression = Expr(:escape, :($species_name = $(species_name)($(ivs_get_expr)...)))                                                           # E.g. `CO2 = CO2([...]..)` where [...] is something which evaluates to a vector with all the ivs of the components.
     compound_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundSpecies, true)))                    # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, true)`
     components_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundComponents, $components)))        # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [C, O])`
     coefficients_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundCoefficients, $coefficients)))  # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [1, 2])`
 
-    println(quote
-        $species_declaration_expr
-        $compound_designation_expr
-        $components_designation_expr
-        $coefficients_designation_expr
-    end)
-
     # Returns the rephrased expression.
     return quote
         $species_declaration_expr
+        $iv_designation_expression
         $compound_designation_expr
         $components_designation_expr
         $coefficients_designation_expr
@@ -127,6 +121,9 @@ function make_compounds(expr)
         push!(compound_syms.args, find_varname_in_declaration(arg.args[2]))
     end
     push!(compound_declarations.args, :($(Expr(:escape, :($(compound_syms))))))
+
+    # The output needs to be converted to Vector{Num} (from  Vector{SymbolicUtils.BasicSymbolic{Real}}) to be consistent with e.g. @variables.
+    compound_declarations.args[end] = :([ModelingToolkit.wrap(cmp) for cmp in $(compound_declarations.args[end])])
 
     # Returns output that.
     return compound_declarations
