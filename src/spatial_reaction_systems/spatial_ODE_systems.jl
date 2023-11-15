@@ -177,7 +177,7 @@ function (jac_func::LatticeTransportODEjac)(J, u, p, t)
     for vert_i in 1:(jac_func.num_verts)
         idxs = get_indexes(vert_i, jac_func.num_species)
         vert_ps = view_vert_ps_vector!(jac_func.work_vert_ps, p, vert_i, jac_func.enum_v_ps_idx_types)
-        jac_func.ofunc.jac((@view J[idxs, idxs], (@view u[idxs]), vert_ps, t) 
+        jac_func.ofunc.jac((@view J[idxs, idxs], (@view u[idxs]), vert_ps, t))
     end
 
     # Updates for the spatial reactions (adds the Jacobian values from the diffusion reactions).
