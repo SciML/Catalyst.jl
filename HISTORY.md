@@ -24,6 +24,35 @@
   ```
   X's value will be `1.0` in the first vertex, but `0.0` in the remaining one (the system have 25 vertexes in total). SInce th parameters `p` and `d` are part of the non-spatial reaction network, their values are tied to vertexes. However, if the `D` parameter (which governs diffusion between vertexes) is given several values, these will instead correspond to the specific edges (and transportation along those edges.)
 
+- Add a CatalystBifurcationKitExtension, permitting BifurcationKit's `BifurcationProblem`s to be created from Catalyst reaction networks. Example usage:
+```julia
+using Catalyst
+wilhelm_2009_model = @reaction_network begin
+    k1, Y --> 2X
+    k2, 2X --> X + Y
+    k3, X + Y --> Y
+    k4, X --> 0
+    k5, 0 --> X
+end
+
+
+using BifurcationKit
+bif_par = :k1
+u_guess = [:X => 5.0, :Y => 2.0]
+p_start = [:k1 => 4.0, :k2 => 1.0, :k3 => 1.0, :k4 => 1.5, :k5 => 1.25]
+plot_var = :X
+bprob = BifurcationProblem(wilhelm_2009_model, u_guess, p_start, bif_par; plot_var=plot_var)
+
+p_span = (2.0, 20.0)
+opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2], max_steps=1000)
+
+bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside=true)
+
+using Plots
+plot(bif_dia; xguide="k1", yguide="X")
+```
+- Automatically handles elimination of conservation laws for computing bifurcation diagrams.
+- Updated Bifurcation documentation with respect to this new feature.
 
 ## Catalyst 13.5
 - Added a CatalystHomotopyContinuationExtension extension, which exports the `hc_steady_state` function if HomotopyContinuation is exported. `hc_steady_state` finds the steady states of a reaction system using the homotopy continuation method. This feature is only available for julia versions 1.9+. Example: 
