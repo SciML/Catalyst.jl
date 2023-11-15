@@ -3,6 +3,18 @@
 ## Catalyst unreleased (master branch)
 
 ## Catalyst 14.0
+- Added CatalystStructuralIdentifiabilityExtension, which permits StructuralIdentifiability.jl function to be applied directly to Catalyst systems. E.g. use
+```julia
+goodwind_oscillator = @reaction_network begin
+    (mmr(P,pₘ,1), dₘ), 0 <--> M
+    (pₑ*M,dₑ), 0 <--> E
+    (pₚ*E,dₚ), 0 <--> P
+end
+assess_identifiability(goodwind_oscillator; measured_quantities=[:M])
+```
+to assess (global) structural identifiability for all parameters an variables of the `goodwind_oscillator` model (under the presumption that we can measure `M` only).
+- Automatically handles conservation laws for structural identifiability problems (eliminates these internally to speed up computations).
+- Add documentation for these features.
 - Simulation of spatial ODEs now supported. For full details, please see https://github.com/SciML/Catalyst.jl/pull/644 and upcoming documentation. Note that these methods are currently considered alpha, with the interface and approach changing even in non-breaking Catalyst releases.
 - LatticeReactionSystem structure represents a spatial reaction network:
   ```julia
