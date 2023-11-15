@@ -68,7 +68,7 @@ end
 function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
                                p_in = DiffEqBase.NullParameters(), args...;
                                jac = true, sparse = jac, kwargs...)
-    is_transport_system(lrs) || error("Currently lattice ODE simulations only supported when all spatial reactions are transport reactions.")
+    is_transport_system(lrs) || error("Currently lattice ODE simulations are only supported when all spatial reactions are TransportReactions.")
     
     # Converts potential symmaps to varmaps.
     u0_in = symmap_to_varmap(lrs, u0_in)
