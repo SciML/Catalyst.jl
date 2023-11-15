@@ -23,10 +23,12 @@ struct LatticeTransportODEf{R,S,T}
     
     function LatticeTransportODEf(ofunc::R, vert_ps::Vector{Vector{S}}, transport_rates::Vector{Pair{Int64, Vector{S}}}, lrs::LatticeReactionSystem) where {R,S}
         leaving_rates = zeros(length(transport_rates), lrs.num_verts)
-        for (s_idx, rates) in enumerate(last.(transport_rates)),
-            (e_idx, e) in enumerate(edges(lrs.lattice))                         # Iterates through all edges, and all transport rates (map from each diffusing species to its rates across edges).
-    
-            leaving_rates[s_idx, e.src] += get_component_value(rates, e_idx)    # Updates the leaving rate for that combination of vertex and species. RHS finds the value of edge "e_idx" in the vector of diffusion rates ("rates").
+        for (s_idx, trpair) in enumerate(transport_rates)
+            rates = last(trpair)
+            for (e_idx, e) in enumerate(edges(lrs.lattice))    
+                # Updates the exit rate for species s_idx from vertex e.src
+                leaving_rates[s_idx, e.src] += get_component_value(rates, e_idx)    
+            end
         end
         work_vert_ps = zeros(lrs.num_verts)
         enum_v_ps_idx_types = enumerate(length.(vert_ps) .== 1)                 # Creates a Boolean vector whether each vertex parameter need expanding or (and enumerates it, since it always appear in this form).
