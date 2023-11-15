@@ -52,21 +52,19 @@ end
 # (In this example the independent variable t was inserted).
 # Extra dispatch is to ensure so that iv is a vector (so that we can handle both single or multiple iv insertion in one function). 
 #     - This way we don't have to make a check for how to create the final expression (which is different for symbol or vector of symbols).
-function insert_independent_variable(expr_in, iv)
-    # If iv is a symbol (e.g. :t), we convert to vector (e.g. [:t]). This way we can handle single and multiple ivs using the same code, without needing to check at the end.    
-    (iv isa Symbol) && (iv = [iv])
+function insert_independent_variable(expr_in, ivs)
     # If expr is a symbol, just attach the iv. If not we have to create a new expr and mutate it. 
     # Because Symbols (a possible input) cannot be mutated, this function cannot mutate the input (would have been easier if Expr input was guaranteed).
-    (expr_in isa Symbol) && (return Expr(:call, expr_in, iv...))
+    (expr_in isa Symbol) && (return Expr(:call, expr_in, :($ivs...)))
     expr = deepcopy(expr_in)
 
     if expr.head == :(=) # Case: :(X = 1.0)
-        expr.args[1] = Expr(:call, expr.args[1], iv...)
+        expr.args[1] = Expr(:call, expr.args[1], :($ivs...))
     elseif expr.head == :tuple
         if expr.args[1] isa Symbol # Case: :(X, [metadata=true])
-            expr.args[1] = Expr(:call, expr.args[1], iv...)
+            expr.args[1] = Expr(:call, expr.args[1], :($ivs...))
         elseif (expr.args[1].head == :(=)) && (expr.args[1].args[1] isa Symbol) # Case: :(X = 1.0, [metadata=true])
-            expr.args[1].args[1] = Expr(:call, expr.args[1].args[1], iv...)
+            expr.args[1].args[1] = Expr(:call, expr.args[1].args[1], :($ivs...))
         end
     end
     (expr == expr_in) && error("Failed to add independent variable $(iv) to expression: $expr_in")
