@@ -171,12 +171,11 @@ end
 function (jac_func::LatticeTransportODEjac)(J, u, p, t)
     J .= 0.0 
 
-    # Updates for non-spatial reactions.
-    for vert_i in 1:(jac_func.num_verts)                                # Loops through all vertexes and applies the (non-spatial) Jacobian to the species in that vertex.
-        jac_func.ofunc.jac((@view J[get_indexes(vert_i, jac_func.num_species),
-                           get_indexes(vert_i, jac_func.num_species)]),
-                           (@view u[get_indexes(vert_i, jac_func.num_species)]),
-                           view_vert_ps_vector!(jac_func.work_vert_ps, p, vert_i, jac_func.enum_v_ps_idx_types), t) # These inputs are the same as when f_func.ofunc was applied in the previous block.
+    # Update the Jacobian from reaction terms
+    for vert_i in 1:(jac_func.num_verts)
+        idxs = get_indexes(vert_i, jac_func.num_species)
+        vert_ps = view_vert_ps_vector!(jac_func.work_vert_ps, p, vert_i, jac_func.enum_v_ps_idx_types)
+        jac_func.ofunc.jac((@view J[idxs, idxs], (@view u[idxs]), vert_ps, t) 
     end
 
     # Updates for the spatial reactions (adds the Jacobian values from the diffusion reactions).
