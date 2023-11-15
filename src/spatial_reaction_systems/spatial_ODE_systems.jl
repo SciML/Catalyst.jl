@@ -73,14 +73,16 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
                                jac = true, sparse = jac, kwargs...)
     is_transport_system(lrs) || error("Currently lattice ODE simulations are only supported when all spatial reactions are TransportReactions.")
     
-    # Converts potential symmaps to varmaps.
+    # Converts potential symmaps to varmaps (parameter conversion is more involved since the vertex and edge parameters may be given in a tuple, or in a common vector).
     u0_in = symmap_to_varmap(lrs, u0_in)
-    p_in = (p_in isa Tuple{<:Any,<:Any}) ? (symmap_to_varmap(lrs, p_in[1]),symmap_to_varmap(lrs, p_in[2])) : symmap_to_varmap(lrs, p_in)    # Parameters can be given in Tuple form (where the first element is the vertex parameters and the second the edge parameters). In this case, we have to covert each element separately.
+    p_in = (p_in isa Tuple{<:Any,<:Any}) ? (symmap_to_varmap(lrs, p_in[1]),symmap_to_varmap(lrs, p_in[2])) : symmap_to_varmap(lrs, p_in)    
 
     # Converts u0 and p to their internal forms.
     # u0 is [spec 1 at vert 1, spec 2 at vert 1, ..., spec 1 at vert 2, ...].
     u0 = lattice_process_u0(u0_in, species(lrs), lrs.num_verts)                                   
-    vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs), lrs)   # Both vert_ps and edge_ps becomes vectors of vectors. Each have 1 element for each parameter. These elements are length 1 vectors (if the parameter is uniform), or length num_verts/nE, with unique values for each vertex/edge (for vert_ps/edge_ps, respectively).
+    # Both vert_ps and edge_ps becomes vectors of vectors. Each have 1 element for each parameter. 
+    # These elements are length 1 vectors (if the parameter is uniform), or length num_verts/nE, with unique values for each vertex/edge (for vert_ps/edge_ps, respectively).
+    vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs), lrs)   
 
     # Creates ODEProblem.
     ofun = build_odefunction(lrs, vert_ps, edge_ps, jac, sparse)        # Builds the ODEFunction.
