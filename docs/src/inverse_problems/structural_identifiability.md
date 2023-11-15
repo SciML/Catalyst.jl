@@ -27,7 +27,7 @@ Local identifiability can be assessed using the `assess_identifiability` functio
   
 To it, we provide our `ReactionSystem` model and a list of quantities that we are able to measure. Here, we consider a Goodwind oscillator (a simple 3-component model, where the three species $M$, $E$, and $P$ are produced and degraded, which may exhibit oscillations)[^2]. Let us say that we are able to measure the concentration of $M$, we then provide designate this using the `measured_quantities` argument. We can now assess identifiability in the following way:
 ```example si1
-using Catalyst, StructuralIdentifiability
+using Catalyst, Logging, StructuralIdentifiability
 goodwind_oscillator = @reaction_network begin
     (pₘ/(1+P), dₘ), 0 <--> M
     (pₑ*M,dₑ), 0 <--> E
@@ -35,7 +35,8 @@ goodwind_oscillator = @reaction_network begin
 end
 assess_identifiability(goodwind_oscillator; measured_quantities=[:M], loglevel=Logging.Error)
 ```
-From the output, we find that `E(t)`, `pₑ`, and `pₚ` (the trajectory of $E$, and the production rates of $E$ and $P$, respectively) are non-identifiable. Next, `dₑ` and `dₚ` (the degradation rates of $E$ and $P$, respectively) are locally identifiable. Finally, `P(t)`, `M(t)`, `pₘ`, and `dₘ` (the trajectories of `P` and `M`, and the production and degradation rate of `M`, respectively) are all globally identifiable.
+From the output, we find that `E(t)`, `pₑ`, and `pₚ` (the trajectory of $E$, and the production rates of $E$ and $P$, respectively) are non-identifiable. Next, `dₑ` and `dₚ` (the degradation rates of $E$ and $P$, respectively) are locally identifiable. Finally, `P(t)`, `M(t)`, `pₘ`, and `dₘ` (the trajectories of `P` and `M`, and the production and degradation rate of `M`, respectively) are all globally identifiable. We note that we also imported the Logging package, and provided the `loglevel=Logging.Error` input argument StructuralIdentifiability functions generally provides a large number of output logging messages. Hence, we will use this argument (which requires the Logging package) throughout this tutorial.
+
 
 Next, we can assess identifiability in the case where we can measure all three species concentrations:
 ```example si1
@@ -43,7 +44,6 @@ assess_identifiability(goodwind_oscillator; measured_quantities=[:M, :P, :E], lo
 ```
 in which case all initial conditions and parameters become identifiable.
 
-StructuralIdentifiability functions generally provides a large number of output logging messages. Hence, in the above examples, and throughout the rest of this tutorial, we use the `loglevel=Logging.Error` option to turn these off.
 
 ### Indicating known parameters
 In the previous case we assumed that all parameters are unknown, however, this is not necessarily true. If there are parameters which value's are known, we can supply these using the `known_p` argument. Indeed, this might turn other, previously unidentifiable, parameters identifiable. Let us consider the previous example, where we measure the concentration of $M$ only, but also happen to know the production rate of $E$ ($pₑ$):
@@ -117,7 +117,7 @@ nothing # hide
 ## Notes on systems with conservation laws
 Several reaction network models, such as
 ```example si2
-using Catalyst, StructuralIdentifiability # hide
+using Catalyst, Logging, StructuralIdentifiability # hide
 rs = @reaction_network begin
   (k1,k2), X1 <--> X2
 end
