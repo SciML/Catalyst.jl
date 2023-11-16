@@ -163,8 +163,9 @@ function (f_func::LatticeTransportODEf)(du, u, p, t)
         end
         # add rates for entering a given vertex via an incoming edge
         for (e_idx, e) in f_func.enum_edges 
-            idx = get_index(e.dst, s, f_func.num_species)
-            du[idx] += get_component_value(rates, e_idx) * u[idx] 
+            idx_dst = get_index(e.dst, s, f_func.num_species)
+            idx_src = get_index(e.src, s, f_func.num_species)
+            du[idx_dst] += get_component_value(rates, e_idx) * u[idx_src] 
         end
     end
 end
