@@ -105,7 +105,7 @@ function find_parameters_in_rate!(parameters, rateex::ExprValues)
             push!(parameters, rateex)
         end
     elseif rateex isa Expr
-        # note, this (correctly) skips $(...) expressions
+        # Note, this (correctly) skips $(...) expressions
         for i in 2:length(rateex.args)
             find_parameters_in_rate!(parameters, rateex.args[i])
         end

@@ -131,6 +131,15 @@ function compute_transport_rates(rate_law::Num,
                             for p in relevant_parameters)) for idxE in 1:num_edges]
 end
 
+# Creates a map, taking each species (with transportation) to its transportation rate.
+# The species is represented by its index (in species(lrs). 
+# If the rate is uniform across all edges, the vector will be length 1 (with this value), else there will be a separate value for each edge.
+# Pair{Int64, Vector{T}}[] is required in case vector is empty (otherwise it becomes Any[], causing type error later).
+function make_sidxs_to_transrate_map(vert_ps::Vector{Vector{Float64}}, edge_ps::Vector{Vector{T}}, lrs::LatticeReactionSystem) where T
+    transport_rates_speciesmap = compute_all_transport_rates(vert_ps, edge_ps, lrs)
+    return Pair{Int64, Vector{T}}[speciesmap(lrs.rs)[spat_rates[1]] => spat_rates[2] for spat_rates in transport_rates_speciesmap]
+end
+
 ### Accessing State & Parameter Array Values ###
 
 # Gets the index in the u array of species s in vertex vert (when their are num_species species).
