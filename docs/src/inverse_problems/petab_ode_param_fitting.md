@@ -446,6 +446,7 @@ using Optim
 using QuasiMonteCarlo
 mkdir("OptimisationRuns") # hide
 res_ms = calibrate_model_multistart(petab_problem, IPNewton(), 10, "OptimisationRuns"; sampling_method=QuasiMonteCarlo.SobolSample())
+res_ms = calibrate_model_multistart(petab_problem, IPNewton(), 10, "OptimisationRuns"; sampling_method=QuasiMonteCarlo.SobolSample()) # hide
 nothing # hide
 ```
 The best result across all runs can still be retrieved using `get_ps(res_ms, petab_problem)`, with the results of the individual runs being stored in the `res_ms.runs` field. 
