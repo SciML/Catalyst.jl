@@ -440,25 +440,25 @@ And one additional optional argument:
  
 Because `calibrate_model_multistart` handles initial guess sampling, unlike for `calibrate_model`, no initial guess has to be provided. 
 
-Here, we fit parameters through 10 independent optimisation runs, using QuasiMonteCarlo's `SobolSample` method, and save the result to the OptimizationRuns folder:
+Here, we fit parameters through 10 independent optimisation runs, using QuasiMonteCarlo's `SobolSample` method, and save the result to the OptimisationRuns folder:
 ```@example petab1
 using Optim
 using QuasiMonteCarlo
-res_ms = calibrate_model_multistart(petab_problem, IPNewton(), 10, "OptimizationRuns"; sampling_method=QuasiMonteCarlo.SobolSample())
-res_ms = calibrate_model_multistart(petab_problem, IPNewton(), 10, "OptimizationRuns"; sampling_method=QuasiMonteCarlo.SobolSample()) # hide
+mkdir("OptimisationRuns") # hide
+res_ms = calibrate_model_multistart(petab_problem, IPNewton(), 10, "OptimisationRuns"; sampling_method=QuasiMonteCarlo.SobolSample())
 nothing # hide
 ```
 The best result across all runs can still be retrieved using `get_ps(res_ms, petab_problem)`, with the results of the individual runs being stored in the `res_ms.runs` field. 
 
 To load the result in a later session, we can call:
 ```@example petab1
-res_ms = PEtabMultistartOptimisationResult("OptimizationRuns")
+res_ms = PEtabMultistartOptimisationResult("OptimisationRuns")
 nothing # hide
 ```
-where `"OptimizationRuns"` is the name of the save directory (specified in `calibrate_model_multistart`). If the OptimizationRuns folder contains the output from several runs, we can designate which to load using the `which_run` argument. Here we load the second run to be saved in that folder:
+where `"OptimisationRuns"` is the name of the save directory (specified in `calibrate_model_multistart`). If the OptimisationRuns folder contains the output from several runs, we can designate which to load using the `which_run` argument. Here we load the second run to be saved in that folder:
 ```@example petab1
-res_ms = PEtabMultistartOptimisationResult("OptimizationRuns"; which_run="2")
-foreach(f -> rm(joinpath("OptimizationRuns", f), recursive=true), readdir("OptimizationRuns")) # hide
+res_ms = PEtabMultistartOptimisationResult("OptimisationRuns"; which_run="2")
+rm("OptimisationRuns", recursive=true) # hide
 nothing # hide
 ```
 By default, `which_run` loads the first run saved to that directory.
