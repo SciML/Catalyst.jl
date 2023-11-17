@@ -242,6 +242,16 @@ end
 
 ### Tests Error generation ###
 
+# Test creation of TransportReaction with non-parameters in rate.
+# Tests that it works even when rate is highly nested.
+let 
+    @variables t
+    @species X(t) Y(t)
+    @parameters D1 D2 D3
+    @test_throws ErrorException TransportReaction(D1 + D2*(D3 + Y), X)
+    @test_throws ErrorException TransportReaction(Y, X)
+end
+
 # Network where diffusion species is not declared in non-spatial network.
 let 
     rs = @reaction_network begin
