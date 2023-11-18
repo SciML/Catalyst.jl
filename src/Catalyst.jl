@@ -39,6 +39,7 @@ import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, 
 import MacroTools, Graphs
 import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne
 import DataStructures: OrderedDict, OrderedSet
+import LinearAlgebra.eigvals
 import Parameters: @with_kw_noshow
 
 # globals for the modulate
@@ -108,6 +109,7 @@ export balance_reaction
 
 # for functions I am unsure where to best place them.
 include("miscellaneous.jl")
+export steady_state_stability, steady_state_jac
 
 ### Extensions ###
 
