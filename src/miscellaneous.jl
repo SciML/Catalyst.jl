@@ -32,14 +32,15 @@ is_autonomous(rs2) # Returns `false`.
 ```
 """
 function is_autonomous(rs::ReactionSystem)
-    (ModelingToolkit.getname(rs.iv) != :t) && error("System has other independent variable(s) than \"t\". This is not currently supported for this function.")
-
     # Get all variables occuring in reactions and then other equations.
     dep_var_param_rxs = [ModelingToolkit.get_variables(rate) for rate in reactionrates(rs)]
     dep_var_param_eqs = [ModelingToolkit.get_variables(eq) for eq in filter(eq -> !(eq isa Reaction), equations(rs))]
+    dep_var_param = reduce(vcat,[dep_var_param_rxs; dep_var_param_eqs])
 
-    # Checks if 
-    return !any(isequal(rs.iv, var) for var in reduce(vcat,[dep_var_param_rxs; dep_var_param_eqs]))
+    # Checks for iv and spatial ivs
+    any(isequal(get_iv(rs), var) for var in dep_var_param) && (return false)
+    any(isequal(siv, var) for siv in get_sivs(rs) for var in dep_var_param) && (return false)
+    return true
 end
 
 ### Stability Analysis ###
@@ -77,7 +78,7 @@ Notes:
 function steady_state_stability(u::Vector{T}, rs::ReactionSystem, p; 
                                 sparse=false, ss_jac = steady_state_jac(rs; u0=u, sparse=sparse), t=Inf, non_autonomous_war=true) where T
     # Warning checks.
-    is_autonomous(rs) && non_autonomous_war && (t == Inf) && @warn "Attempting to compute stability for a non-autonomous system. Default `t=Inf` used. Set `non_autonomous_war=false` to disable this warning."
+    is_autonomous(rs) && non_autonomous_war && @warn "Attempting to compute stability for a non-autonomous system. Set `non_autonomous_war=false` to disable this warning."
 
     # Because Jacobian currently requires ps to be a normal vector, can be removed once this get fixed in MTK.
     if (u isa Vector{<:Pair}) || (u isa Dict) 
