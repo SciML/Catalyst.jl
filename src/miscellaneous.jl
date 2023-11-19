@@ -78,7 +78,7 @@ Notes:
 function steady_state_stability(u::Vector{T}, rs::ReactionSystem, p; 
                                 sparse=false, ss_jac = steady_state_jac(rs; u0=u, sparse=sparse), t=Inf, non_autonomous_war=true) where T
     # Warning checks.
-    is_autonomous(rs) && non_autonomous_war && @warn "Attempting to compute stability for a non-autonomous system. Set `non_autonomous_war=false` to disable this warning."
+    !is_autonomous(rs) && non_autonomous_war && @warn "Attempting to compute stability for a non-autonomous system. Set `non_autonomous_war=false` to disable this warning."
 
     # Because Jacobian currently requires ps to be a normal vector, can be removed once this get fixed in MTK.
     if (u isa Vector{<:Pair}) || (u isa Dict) 

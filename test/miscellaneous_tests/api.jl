@@ -633,7 +633,7 @@ let
         (kB,kD), 2X <--> X
     end
     rn2 = @reaction_network begin
-        hill(X, v/t, K, n), 0 <--> X
+        (hill(X, v/t, K, n),d), 0 <--> X
         (kB,kD), 2X <--> X
     end
     rn3 = @reaction_network begin
@@ -648,7 +648,7 @@ let
     # Using non-default iv.
     rn4 = @reaction_network begin
         @ivs i1 i2
-        (p + X*(p1/(t+i1)),d), 0 <--> X
+        (p + X*(p1/(1+i1)),d), 0 <--> X
         (kB,kD), 2X <--> X
     end
     rn5 = @reaction_network begin
@@ -658,7 +658,7 @@ let
     end
     rn6 = @reaction_network begin
         @ivs i1 i2
-        hill(X, v/i1, i2, n), 0 <--> X
+        (hill(X, v/i1, i2, n),d), 0 <--> X
         (kB,kD), 2X <--> X
     end
     rn7 = @reaction_network begin
