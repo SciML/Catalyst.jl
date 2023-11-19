@@ -110,6 +110,7 @@ export balance_reaction
 # for functions I am unsure where to best place them.
 include("miscellaneous.jl")
 export steady_state_stability, steady_state_jac
+export is_autonomous
 
 ### Extensions ###
 

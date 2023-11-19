@@ -625,6 +625,26 @@ let
     isequal(symmap_to_varmap(rn, [:p => 1.0, :kB => 3.0]), [p => 1.0, kB => 3.0])
 end
 
+# Tests `is_autonomous` function.
+let 
+    rn1 = @reaction_network begin
+        (p + X*(p1/(t+p3)),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn2 = @reaction_network begin
+        (p + X*(p1+p2),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn3 = @reaction_network begin
+        hill(X, v/t, K, n), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+
+    @test !is_autonomous(rn1)
+    @test is_autonomous(rn2)
+    @test !is_autonomous(rn3)
+end
+
 ### Test Polynomial Transformation Functionality ###
 
 # Tests normal network.

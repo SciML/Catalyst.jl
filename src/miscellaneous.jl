@@ -1,5 +1,7 @@
 # File containing code which I am currently unsure which file in which it belongs. Long-term functions here should be moved elsewhere.
 
+### Miscellaneous Functions ###
+
 # If u0s are not given while conservation laws are present, throws an error.
 # If the system is nested, the function is skipped (conservation laws cannot be computed for nested systems).
 # Used in HomotopyContinuation and BifurcationKit extensions.
@@ -11,10 +13,39 @@ function conservationlaw_errorcheck(rs, pre_varmap)
         error("The system has conservation laws but initial conditions were not provided for some species.")
 end
 
+"""
+    is_autonomous(rs::ReactionSystem)
+
+Checks if a system is autonomous (no rate or equation depend on the independent variable(s)).
+
+Example:
+```julia
+rs1 = @reaction_system
+    (p,d), 0 <--> X
+end
+is_autonomous(rs1) # Returns `true`.
+
+rs2 = @reaction_system
+    (p/t,d), 0 <--> X
+end
+is_autonomous(rs2) # Returns `false`.
+```
+"""
+function is_autonomous(rs::ReactionSystem)
+    (ModelingToolkit.getname(rs.iv) != :t) && error("System has other independent variable(s) than \"t\". This is not currently supported for this function.")
+
+    # Get all variables occuring in reactions and then other equations.
+    dep_var_param_rxs = [ModelingToolkit.get_variables(rate) for rate in reactionrates(rs)]
+    dep_var_param_eqs = [ModelingToolkit.get_variables(eq) for eq in filter(eq -> !(eq isa Reaction), equations(rs))]
+
+    # Checks if 
+    return !any(isequal(rs.iv, var) for var in reduce(vcat,[dep_var_param_rxs; dep_var_param_eqs]))
+end
+
 ### Stability Analysis ###
 
 """
-    stability(u::Vector{T}, rs::ReactionSystem, p; sparse=false, ss_jac = steady_state_jac(u, rs, p; sparse=sparse))
+    stability(u::Vector{T}, rs::ReactionSystem, p; sparse=false, ss_jac = steady_state_jac(u, rs, p; sparse=sparse), t=Inf, non_autonomous_war=true)
 
 Compute the stability of a steady state (Returned as a `Bool`, with `true` indicating stability).
 
@@ -24,6 +55,8 @@ Arguments:
     - `p`: The parameter set for which we want to compute stability.
     - `sparse=false`: If we wish to create a sparse Jacobian for the stability computation.
     - `ss_jac = steady_state_jac(u, rs; sparse=sparse)`: It is possible to pre-compute the Jacobian used for stability computation using `steady_state_jac`. If stability is computed for many states, precomputing the Jacobian may speed up evaluation.
+    - `t=Inf`: The time point at which stability is computed. 
+    - `non_autonomous_war=true`: If the system is non-autonomous (e.g. a rate depends on t), a warning will be given. Set this to false to remove that. Alternatively, specify a nonInf value for `t`.
 
 Example:
 ```julia
@@ -41,7 +74,11 @@ steady_state_stability(steady_state, rn, p)
 Notes:
     y states (each being a `Vector`) is provided as `u`, stability is computed for each state separately.
 """
-function steady_state_stability(u::Vector{T}, rs::ReactionSystem, p; sparse=false, ss_jac = steady_state_jac(rs; u0=u, sparse=sparse)) where T
+function steady_state_stability(u::Vector{T}, rs::ReactionSystem, p; 
+                                sparse=false, ss_jac = steady_state_jac(rs; u0=u, sparse=sparse), t=Inf, non_autonomous_war=true) where T
+    # Warning checks.
+    is_autonomous(rs) && non_autonomous_war && (t == Inf) && @warn "Attempting to compute stability for a non-autonomous system. Default `t=Inf` used. Set `non_autonomous_war=false` to disable this warning."
+
     # Because Jacobian currently requires ps to be a normal vector, can be removed once this get fixed in MTK.
     if (u isa Vector{<:Pair}) || (u isa Dict) 
         u_dict = Dict(symmap_to_varmap(rs, u))
