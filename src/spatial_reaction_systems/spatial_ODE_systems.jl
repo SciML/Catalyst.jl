@@ -73,7 +73,7 @@ end
 # Creates an ODEProblem from a LatticeReactionSystem.
 function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
                                p_in = DiffEqBase.NullParameters(), args...;
-                               jac = true, sparse = jac, 
+                               jac = false, sparse = false, 
                                name = nameof(lrs), include_zero_odes = true,
                                combinatoric_ratelaws = get_combinatoric_ratelaws(lrs.rs),
                                remove_conserved = false, checks = false, kwargs...)
