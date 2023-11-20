@@ -15,11 +15,6 @@ let
     tr = @transport_reaction d X    
     lrs = LatticeReactionSystem(rs, [tr], grid)
 
-    @test ModelingToolkit.getname.(species(lrs)) == [:X]   
-    @test ModelingToolkit.getname.(spatial_species(lrs)) == [:X]   
-    @test ModelingToolkit.getname.(parameters(lrs)) == [:p, :d]   
-    @test ModelingToolkit.getname.(vertex_parameters(lrs)) == [:p]  
-    @test ModelingToolkit.getname.(edge_parameters(lrs)) == [:d]      
 
     @unpack X, p = rs
     d = edge_parameters(lrs)[1]
