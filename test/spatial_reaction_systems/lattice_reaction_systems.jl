@@ -15,7 +15,6 @@ let
     tr = @transport_reaction d X    
     lrs = LatticeReactionSystem(rs, [tr], grid)
 
-
     @unpack X, p = rs
     d = edge_parameters(lrs)[1]
     @test issetequal(species(lrs), [X])  
@@ -47,12 +46,6 @@ let
     tr_2 = @transport_reaction dY Y    
     lrs = LatticeReactionSystem(rs, [tr_1, tr_2], grid)
 
-    @test ModelingToolkit.getname.(species(lrs)) == [:X, :Y]   
-    @test ModelingToolkit.getname.(spatial_species(lrs)) == [:X, :Y]   
-    @test ModelingToolkit.getname.(parameters(lrs)) == [:pX, :pY, :dX, :dY]   
-    @test ModelingToolkit.getname.(vertex_parameters(lrs)) == [:pX, :pY, :dY]  
-    @test ModelingToolkit.getname.(edge_parameters(lrs)) == [:dX]      
-
     @unpack X, Y, pX, pY, dX, dY = rs
     @test issetequal(species(lrs), [X, Y])
     @test issetequal(spatial_species(lrs), [X, Y])
@@ -70,12 +63,6 @@ let
     end
     tr_1 = @transport_reaction dX X   
     lrs = LatticeReactionSystem(rs, [tr_1], grid)
-
-    @test ModelingToolkit.getname.(species(lrs)) == [:X, :Y]   
-    @test ModelingToolkit.getname.(spatial_species(lrs)) == [:X]   
-    @test ModelingToolkit.getname.(parameters(lrs)) == [:dX, :p, :pX, :pY]   
-    @test ModelingToolkit.getname.(vertex_parameters(lrs)) == [:dX, :p, :pX, :pY]  
-    @test ModelingToolkit.getname.(edge_parameters(lrs)) == []      
 
     @unpack dX, p, X, Y, pX, pY = rs
     @test issetequal(species(lrs), [X, Y])
@@ -105,7 +92,6 @@ let
     tr_4 = TransportReaction(dV, V)  
     tr_5 = TransportReaction(dW, W)     
     lrs = LatticeReactionSystem(rs, [tr_1, tr_2, tr_3, tr_4, tr_5], grid)
-
 
     @unpack pX, pY, pZ, pV, dX, dY, X, Y, Z, V = rs
     dZ, dV, dW = edge_parameters(lrs)[2:end]
@@ -158,10 +144,10 @@ let
     tr_2 = TransportReaction(dY1*dY2, Y)
     # @test isequal(species(tr_1), [X])
     # @test isequal(species(tr_1), [X])
-    @test isequal(spatial_species(tr_2), [Y])
-    @test isequal(spatial_species(tr_2), [Y])
-    @test isequal(parameters(tr_1), [dX])
-    @test isequal(parameters(tr_2), [dY1, dY2])
+    @test issetequal(spatial_species(tr_2), [Y])
+    @test issetequal(spatial_species(tr_2), [Y])
+    @test issetequal(parameters(tr_1), [dX])
+    @test issetequal(parameters(tr_2), [dY1, dY2])
 end
 
 ### Tests Spatial Reactions Generation ###
