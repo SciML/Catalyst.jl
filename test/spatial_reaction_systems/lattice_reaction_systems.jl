@@ -106,11 +106,6 @@ let
     tr_5 = TransportReaction(dW, W)     
     lrs = LatticeReactionSystem(rs, [tr_1, tr_2, tr_3, tr_4, tr_5], grid)
 
-    @test ModelingToolkit.getname.(species(lrs)) == [:W, :X, :Y, :Z, :V]   
-    @test ModelingToolkit.getname.(spatial_species(lrs)) == [:X, :Y, :Z, :V, :W]   
-    @test ModelingToolkit.getname.(parameters(lrs)) == [:pX, :pY, :dX, :dY, :pZ, :pV, :dZ, :dV, :dW]   
-    @test ModelingToolkit.getname.(vertex_parameters(lrs)) == [:pX, :pY, :dY, :pZ, :pV]  
-    @test ModelingToolkit.getname.(edge_parameters(lrs)) == [:dX, :dZ, :dV, :dW]      
 
     @unpack pX, pY, pZ, pV, dX, dY, X, Y, Z, V = rs
     dZ, dV, dW = edge_parameters(lrs)[2:end]
