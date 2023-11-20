@@ -159,8 +159,14 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, 
     # Set element values.
     if set_nonzero
         for (s, rates) in trans_rates, (e_idx, e) in enumerate(edges(lrs.lattice))
-            jac_prototype[get_index(e.src, s, lrs.num_species), get_index(e.src, s, lrs.num_species)] -= get_component_value(rates, e_idx)    # Term due to species leaving source vertex.
-            jac_prototype[get_index(e.src, s, lrs.num_species), get_index(e.dst, s, lrs.num_species)] += get_component_value(rates, e_idx)    # Term due to species arriving to destination vertex.
+           srcidx = get_index(e.src, s, lrs.num_species)
+           dstidx = get_index(e.dst, s, lrs.num_species)
+           val = get_component_value(rates, e_idx) 
+           # Term due to species leaving source vertex.
+           jac_prototype[srcidx, srcidx] -= val
+            
+           # Term due to species arriving to destination vertex.   
+           jac_prototype[srcidx, dstidx] += val
         end
     end
 
