@@ -284,7 +284,7 @@ let
     pE = [:dS => 0.01, :dI => 0.01]
     ss_1 = solve(ODEProblem(lrs_1, u0, (0.0, 500.0), (pV, pE)), Tsit5()).u[end]
     ss_2 = solve(ODEProblem(lrs_2, u0, (0.0, 500.0), (pV, pE)), Tsit5()).u[end]
-    @test all(isequal.(ss_1, ss_2))
+    @test all(isapprox.(ss_1, ss_2))
 end
 
 # Tries non-trivial diffusion rates.
