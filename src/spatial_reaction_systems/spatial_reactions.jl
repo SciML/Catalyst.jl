@@ -30,7 +30,7 @@ struct TransportReaction <: AbstractSpatialReaction
     # Creates a diffusion reaction.
     function TransportReaction(rate, species)
         if any(!ModelingToolkit.isparameter(var) for var in ModelingToolkit.get_variables(rate)) 
-            error("TransportReaction rate contain variables: $(filter(var -> !ModelingToolkit.isparameter(var), ModelingToolkit.get_variables(rate))). The rate must consist of parameters only.")
+            error("TransportReaction rate contains variables: $(filter(var -> !ModelingToolkit.isparameter(var), ModelingToolkit.get_variables(rate))). The rate must consist of parameters only.")
         end
         new(rate, species.val)
     end
