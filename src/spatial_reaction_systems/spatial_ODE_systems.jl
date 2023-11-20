@@ -99,7 +99,6 @@ end
 function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Vector{T}},
                            edge_ps::Vector{Vector{T}}, jac::Bool, sparse::Bool,
                            name, include_zero_odes, combinatoric_ratelaws, remove_conserved, checks) where {T}
-    println()
     remove_conserved && error("Removal of conserved quantities is currently not supported for `LatticeReactionSystem`s")
 
     # Creates a map, taking (the index in species(lrs) each species (with transportation) to its transportation rate (uniform or one value for each edge).
