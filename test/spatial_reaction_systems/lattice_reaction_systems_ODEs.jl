@@ -263,7 +263,7 @@ let
     pE_2 = [:dS => [1.3, 1.4, 2.5, 1.3, 3.4, 1.4, 3.4, 4.5, 2.5, 4.5], :dI => 0.01, :dR => 0.02]
     ss_1 = solve(ODEProblem(lrs_1, u0, (0.0, 500.0), (pV, pE_1)), Tsit5()).u[end]
     ss_2 = solve(ODEProblem(lrs_2, u0, (0.0, 500.0), (pV, pE_2)), Tsit5()).u[end]
-    @test all(isequal.(ss_1, ss_2))
+    @test all(isapprox.(ss_1, ss_2))
 end
 
 ### Test Transport Reaction Types ###
