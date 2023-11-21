@@ -16,7 +16,7 @@ let
     steady_state_network_1 = @reaction_network begin
         (k1, k2), ∅ ↔ X1
         (k3, k4), ∅ ↔ 3X2
-        (k5, k6), ∅ ↔ X3 + X4
+        (k5, k6*X1), ∅ ↔ X3
     end
     
     # Creates NonlinearProblem.
@@ -31,10 +31,10 @@ let
     # Tests solutions are correct.
     @test isapprox(sol1[1], p[1] / p[2]; atol=1e-10)
     @test isapprox(sol1[2]^3 / factorial(3), p[3] / p[4]; atol=1e-10)
-    @test isapprox(sol1[3] * sol1[4], p[5] / p[6]; atol=1e-10)
+    @test isapprox(sol1[3], (p[5] * p[2]) / (p[6] * p[1]); atol=1e-10)
     @test isapprox(sol2[1], p[1] / p[2]; atol=1e-10)
     @test isapprox(sol2[2]^3 / factorial(3), p[3] / p[4]; atol=1e-10)
-    @test isapprox(sol2[3] * sol2[4], p[5] / p[6]; atol=1e-10)
+    @test isapprox(sol2[3], (p[5] * p[2]) / (p[6] * p[1]); atol=1e-10)
 end
 
 # Creates a system with multiple steady states.
