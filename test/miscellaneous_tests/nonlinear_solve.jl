@@ -26,7 +26,7 @@ let
     
     # Solves it using standard algorithm and simulation based algorithm.
     sol1 = solve(nl_prob; abstol=1e-12, reltol=1e-12).u
-    sol2 = solve(nl_prob, DynamicSS(Rosenbrock23(); abstol=1e-12, reltol=1e-12); abstol=1e-12, reltol=1e-12).u
+    sol2 = solve(nl_prob, DynamicSS(Rosenbrock23()); abstol=1e-12, reltol=1e-12).u
     
     # Tests solutions are correct.
     @test isapprox(sol1[1], p[1] / p[2]; atol=1e-10)
