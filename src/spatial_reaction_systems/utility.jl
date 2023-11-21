@@ -210,14 +210,13 @@ function compute_transport_rates(rate_law::Num,
 
     # If all these parameters are spatially uniform. `rates` becomes a vector with 1 value.
     if all(length(p_val_dict[P]) == 1 for P in relevant_ps)  
-        rates = [rate_law_func([p_val_dict[p][1] for p in relevant_ps]...)]
+        return [rate_law_func([p_val_dict[p][1] for p in relevant_ps]...)]
     # If at least on parameter the rate depends on have a value varying across all edges,
     # we have to compute one rate value for each edge.
     else
-        rates = [rate_law_func([get_component_value(p_val_dict[p], idxE) for p in relevant_ps]...) 
+        return [rate_law_func([get_component_value(p_val_dict[p], idxE) for p in relevant_ps]...) 
                     for idxE in 1:num_edges]
     end
-    return Symbolics.value.(rates)
 end
 
 # Creates a map, taking each species (with transportation) to its transportation rate.
