@@ -95,7 +95,9 @@ end
 # If the input is given in a map form, the vector needs sorting and the first value removed. 
 # The creates a Vector{Vector{Value}} or Vector{value} form, which is then again sent to lattice_process_input for reprocessing.
 function lattice_process_input(input::Vector{<:Pair}, syms::Vector{BasicSymbolic{Real}}, args...)
-    isempty(setdiff(first.(input), syms)) || error("Some input symbols are not recognised: $(setdiff(first.(input), syms)).")
+    if !isempty(setdiff(first.(input), syms)) 
+        error("Some input symbols are not recognised: $(setdiff(first.(input), syms)).")
+    end
     sorted_input = sort(input; by = p -> findfirst(isequal(p[1]), syms))
     return lattice_process_input(last.(sorted_input), syms, args...)
 end
@@ -148,7 +150,7 @@ function duplicate_trans_params!(edge_ps::Vector{Vector{Float64}}, lrs::LatticeR
 
         # A vector where we will put the edge parameters new values. 
         # Has the correct length (the number of directed edges in the lattice).
-        new_vals = Vector{Float64}(undef,lrs.num_edges)     
+        new_vals = Vector{Float64}(undef, lrs.num_edges)     
         # As we loop through the edges of the di-graph, this keeps track of each edge's index in the original graph. 
         original_edge_count = 0                             
         for edge in edges(lrs.lattice)                      # For each edge.
@@ -219,9 +221,11 @@ end
 
 # Creates a map, taking each species (with transportation) to its transportation rate.
 # The species is represented by its index (in species(lrs). 
-# If the rate is uniform across all edges, the vector will be length 1 (with this value), else there will be a separate value for each edge.
+# If the rate is uniform across all edges, the vector will be length 1 (with this value),
+# else there will be a separate value for each edge.
 # Pair{Int64, Vector{T}}[] is required in case vector is empty (otherwise it becomes Any[], causing type error later).
-function make_sidxs_to_transrate_map(vert_ps::Vector{Vector{Float64}}, edge_ps::Vector{Vector{T}}, lrs::LatticeReactionSystem) where T
+function make_sidxs_to_transrate_map(vert_ps::Vector{Vector{Float64}}, edge_ps::Vector{Vector{T}}, 
+                                                                lrs::LatticeReactionSystem) where T
     transport_rates_speciesmap = compute_all_transport_rates(vert_ps, edge_ps, lrs)
     return Pair{Int64, Vector{T}}[
         speciesmap(lrs.rs)[spat_rates[1]] => spat_rates[2] for spat_rates in transport_rates_speciesmap

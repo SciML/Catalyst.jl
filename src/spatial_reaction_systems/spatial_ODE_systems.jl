@@ -1,6 +1,6 @@
 ### Spatial ODE Functor Structures ###
 
-# Functor structure containing the information for the forcing function of a spatial ODE with spatial movement on a lattice.
+# Functor with information for the forcing function of a spatial ODE with spatial movement on a lattice.
 struct LatticeTransportODEf{Q,R,S,T}
     """The ODEFunction of the (non-spatial) reaction system which generated this function."""
     ofunc::Q
@@ -65,7 +65,7 @@ struct LatticeTransportODEf{Q,R,S,T}
     end
 end
 
-# Functor structure containing the information for the forcing function of a spatial ODE with spatial movement on a lattice.
+# Functor with information for the Jacobian function of a spatial ODE with spatial movement on a lattice.
 struct LatticeTransportODEjac{Q,R,S,T}
     """The ODEFunction of the (non-spatial) reaction system which generated this function."""
     ofunc::Q
@@ -123,7 +123,7 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     end
     
     # Converts potential symmaps to varmaps
-    # Parameter conversion complicated since the vertex and edge parameters may be given in a tuple, or in a common vector.
+    # Vertex and edge parameters may be given in a tuple, or in a common vector, making parameter case complicated.
     u0_in = symmap_to_varmap(lrs, u0_in)
     p_in = (p_in isa Tuple{<:Any,<:Any}) ? 
             (symmap_to_varmap(lrs, p_in[1]),symmap_to_varmap(lrs, p_in[2])) :
