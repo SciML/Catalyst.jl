@@ -18,7 +18,9 @@
   ```
   this value will be used across the entire system. If their values are instead vectors, different values are used across the spatial system. Here
   ```julia
-  u0 = [:X => [1.0, 0.0, 0.0, ...]]
+  X0 = zeros(25)
+  X0[1] = 1.0
+  u0 = [:X => X0]
   ```
   X's value will be `1.0` in the first vertex, but `0.0` in the remaining one (the system have 25 vertexes in total). SInce th parameters `p` and `d` are part of the non-spatial reaction network, their values are tied to vertexes. However, if the `D` parameter (which governs diffusion between vertexes) is given several values, these will instead correspond to the specific edges (and transportation along those edges.)
 
