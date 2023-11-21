@@ -71,23 +71,24 @@ function make_transport_reaction(rateex, species)
 end
 
 # Gets the parameters in a transport reaction.
-ModelingToolkit.parameters(tr::TransportReaction) = convert(Vector{BasicSymbolic{Real}}, Symbolics.get_variables(tr.rate))
+ModelingToolkit.parameters(tr::TransportReaction) = Symbolics.get_variables(tr.rate)
 
 # Gets the species in a transport reaction.
-# species(tr::TransportReaction) = [tr.species] # Currently these two are identical. This can be added back in once we have complicated spatial reactions where the two cases are not identical.
 spatial_species(tr::TransportReaction) = [tr.species]
 
 # Checks that a transport reaction is valid for a given reaction system.
 function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReaction; edge_parameters=[])
     # Checks that the species exist in the reaction system.
-    # (ODE simulation code becomes difficult if this is not required, as non-spatial jacobian and f function generated from rs is of wrong size).  
+    # (ODE simulation code becomes difficult if this is not required,
+    # as non-spatial jacobian and f function generated from rs is of wrong size).  
     if !any(isequal(tr.species), species(rs)) 
         error("Currently, species used in TransportReactions must have previously been declared within the non-spatial ReactionSystem. This is not the case for $(tr.species).")
     end
 
     # Checks that the rate does not depend on species.    
-    if !isempty(intersect(ModelingToolkit.getname.(species(rs)), ModelingToolkit.getname.(Symbolics.get_variables(tr.rate)))) 
-        error("The following species were used in rates of a transport reactions: $(setdiff(ModelingToolkit.getname.(species(rs)), ModelingToolkit.getname.(Symbolics.get_variables(tr.rate)))).")
+    rate_vars = ModelingToolkit.getname.(Symbolics.get_variables(tr.rate))
+    if !isempty(intersect(ModelingToolkit.getname.(species(rs)), rate_vars)) 
+        error("The following species were used in rates of a transport reactions: $(setdiff(ModelingToolkit.getname.(species(rs)), rate_vars)).")
     end
 
     # Checks that the species does not exist in the system with different metadata.
@@ -105,11 +106,30 @@ function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReacti
 end
 equivalent_metadata(p1, p2) = isempty(setdiff(p1.metadata, p2.metadata, [Catalyst.EdgeParameter => true]))
 
-# Since MTK's "isequal" does not worry about metadata, we have to use a special function that accounts for this (important because whether something is an edge parameter is defined here).
+# Since MTK's "isequal" ignores metadata, we have to use a special function that accounts for this.
+# This is important because whether something is an edge parameter is defined in metadata.
 function isequivalent(sym1, sym2)
     !isequal(sym1, sym2) && (return false)
     (sym1.metadata != sym2.metadata) && (return false)
     return true
+end
+
+# Implements custom `==`.
+"""
+    ==(rx1::TransportReaction, rx2::TransportReaction)
+
+Tests whether two [`TransportReaction`](@ref)s are identical.
+"""
+function (==)(tr1::TransportReaction, tr2::TransportReaction)
+    isequal(tr1.rate, tr2.rate) || return false
+    isequal(tr1.species, tr2.species) || return false
+    return true
+end
+
+# Implements custom `hash`.
+function hash(tr::TransportReaction, h::UInt)
+    h = Base.hash(tr.rate, h)
+    Base.hash(tr.species, h)
 end
 
 ### Utility ###

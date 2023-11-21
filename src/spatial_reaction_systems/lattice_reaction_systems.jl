@@ -1,6 +1,7 @@
 ### Lattice Reaction Network Structure ###
 # Describes a spatial reaction network over a graph.
-struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem # Adding this part messes up show, disabling me from creating LRSs
+# Adding the "<: MT.AbstractTimeDependentSystem" part messes up show, disabling me from creating LRSs.
+struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem 
     # Input values.
     """The reaction system within each compartment."""
     rs::ReactionSystem{S}
@@ -20,27 +21,49 @@ struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem # Adding t
     init_digraph::Bool
     """Species that may move spatially."""
     spat_species::Vector{BasicSymbolic{Real}}
-    """All parameters related to the lattice reaction system (both with spatial and non-spatial effects)."""
+    """
+    All parameters related to the lattice reaction system
+    (both with spatial and non-spatial effects).
+    """
     parameters::Vector{BasicSymbolic{Real}}
-    """Parameters which values are tied to vertexes (adjacencies), e.g. (possibly) have a unique value at each vertex of the system."""
+    """
+    Parameters which values are tied to vertexes (adjacencies), 
+    e.g. (possibly) have a unique value at each vertex of the system.
+    """
     vertex_parameters::Vector{BasicSymbolic{Real}}
-    """Parameters which values are tied to edges (adjacencies), e.g. (possibly) have a unique value at each edge of the system."""
+    """
+    Parameters which values are tied to edges (adjacencies), 
+    e.g. (possibly) have a unique value at each edge of the system.
+    """
     edge_parameters::Vector{BasicSymbolic{Real}}
 
-    function LatticeReactionSystem(rs::ReactionSystem{S},
-                                   spatial_reactions::Vector{T},
+    function LatticeReactionSystem(rs::ReactionSystem{S}, spatial_reactions::Vector{T},
                                    lattice::DiGraph; init_digraph = true) where {S, T}
-        (T <: AbstractSpatialReaction) || error("The second argument must be a vector of AbstractSpatialReaction subtypes.") # There probably some better way to ascertain that T has that type. Not sure how.
+        # There probably some better way to ascertain that T has that type. Not sure how.
+        if !(T <: AbstractSpatialReaction) 
+            error("The second argument must be a vector of AbstractSpatialReaction subtypes.") 
+        end
 
-        spat_species = (isempty(spatial_reactions) ? Vector{BasicSymbolic{Real}}[] : unique(reduce(vcat, [spatial_species(sr) for sr in spatial_reactions])))
+        if isempty(spatial_reactions)
+            spat_species = Vector{BasicSymbolic{Real}}[]
+        else
+            spat_species = unique(reduce(vcat, [spatial_species(sr) for sr in spatial_reactions]))
+        end
+        num_species = length(unique([species(rs); spat_species]))
         rs_edge_parameters = filter(isedgeparameter, parameters(rs))
-        srs_edge_parameters = (isempty(spatial_reactions) ? Vector{BasicSymbolic{Real}}[] : setdiff(reduce(vcat, [parameters(sr) for sr in spatial_reactions]), parameters(rs)))
+        if isempty(spatial_reactions)
+            srs_edge_parameters = Vector{BasicSymbolic{Real}}[]
+        else
+            srs_edge_parameters = setdiff(reduce(vcat, [parameters(sr) for sr in spatial_reactions]), parameters(rs))
+        end
         edge_parameters = unique([rs_edge_parameters; srs_edge_parameters])
         vertex_parameters = filter(!isedgeparameter, parameters(rs))
-        ps = [parameters(rs); setdiff([edge_parameters; vertex_parameters], parameters(rs))]    # Ensures that the order begins similarly to in the non-spatial ReactionSystem.
+        # Ensures the parameter order begins similarly to in the non-spatial ReactionSystem.
+        ps = [parameters(rs); setdiff([edge_parameters; vertex_parameters], parameters(rs))]    
 
         foreach(sr -> check_spatial_reaction_validity(rs, sr; edge_parameters=edge_parameters), spatial_reactions)   
-        return new{S,T}(rs, spatial_reactions, lattice, nv(lattice), ne(lattice), length(unique([species(rs); spat_species])), init_digraph, spat_species, ps, vertex_parameters, edge_parameters)
+        return new{S,T}(rs, spatial_reactions, lattice, nv(lattice), ne(lattice), num_species, 
+                            init_digraph, spat_species, ps, vertex_parameters, edge_parameters)
     end
 end
 function LatticeReactionSystem(rs, srs, lat::SimpleGraph)

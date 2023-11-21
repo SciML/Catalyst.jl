@@ -124,7 +124,7 @@ let
     D_vals = [0.2, 0.2, 0.3, 0.3]
     u0 = [:X => [1.0, 2.0, 3.0], :Y => 1.0]
     ps = [:pX => [2.0, 2.5, 3.0], :pY => 0.5, :d => 0.1, :D => D_vals]
-    oprob = ODEProblem(lrs, u0, (0.0, 0.0), ps)
+    oprob = ODEProblem(lrs, u0, (0.0, 0.0), ps; jac=true, sparse=true)
 
     # Creates manual f and jac functions.
     function f_manual!(du, u, p, t)

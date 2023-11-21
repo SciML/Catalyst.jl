@@ -1,29 +1,53 @@
 ### Spatial ODE Functor Structures ###
 
 # Functor structure containing the information for the forcing function of a spatial ODE with spatial movement on a lattice.
-struct LatticeTransportODEf{R,S,T}
+struct LatticeTransportODEf{Q,R,S,T}
     """The ODEFunction of the (non-spatial) reaction system which generated this function."""
-    ofunc::R
+    ofunc::Q
     """The number of vertices."""
     num_verts::Int64
     """The number of species."""
     num_species::Int64
     """The values of the parameters which values are tied to vertexes."""
-    vert_ps::Vector{Vector{S}}
-    """Temporary vector. For parameters which values are identical across the lattice, at some point these have to be converted of a length num_verts vector. To avoid re-allocation they are written to this vector."""
-    work_vert_ps::Vector{S}    
-    """For each parameter in vert_ps, its value is a vector with length either num_verts or 1. To know whenever a parameter's value need expanding to the work_vert_ps array, its length needs checking. This check is done once, and the value stored to this array. This field (specifically) is an enumerate over that array."""
+    vert_ps::Vector{Vector{R}}
+    """
+    Temporary vector. For parameters which values are identical across the lattice, 
+    at some point these have to be converted of a length num_verts vector. 
+    To avoid re-allocation they are written to this vector.
+    """
+    work_vert_ps::Vector{R}    
+    """
+    For each parameter in vert_ps, its value is a vector with length either num_verts or 1. 
+    To know whenever a parameter's value need expanding to the work_vert_ps array, its length needs checking. 
+    This check is done once, and the value stored to this array. 
+    This field (specifically) is an enumerate over that array.
+    """
     v_ps_idx_types::Vector{Bool}
-    """A vector of pairs, with a value for each species with transportation. The first value is the species index (in the species(::ReactionSystem) vector), and the second is a vector with its transport rate values. If the transport rate is uniform (across all edges), that value is the only value in the vector. Else, there is one value for each edge in the lattice."""
-    transport_rates::Vector{Pair{Int64, Vector{S}}}
-    """A matrix, NxM, where N is the number of species with transportation and M the number of vertexes. Each value is the total rate at which that species leaves that vertex (e.g. for a species with constant diffusion rate D, in a vertex with n neighbours, this value is n*D)."""
-    leaving_rates::Matrix{S}
+    """
+    A vector of pairs, with a value for each species with transportation. 
+    The first value is the species index (in the species(::ReactionSystem) vector), 
+    and the second is a vector with its transport rate values. 
+    If the transport rate is uniform (across all edges), that value is the only value in the vector. 
+    Else, there is one value for each edge in the lattice.
+    """
+    transport_rates::Vector{Pair{Int64, Vector{R}}}
+    """
+    A matrix, NxM, where N is the number of species with transportation and M the number of vertexes. 
+    Each value is the total rate at which that species leaves that vertex 
+    (e.g. for a species with constant diffusion rate D, in a vertex with n neighbours, this value is n*D).
+    """
+    leaving_rates::Matrix{R}
     """An (enumerate'ed) iterator over all the edges of the lattice."""
-    edges::Graphs.SimpleGraphs.SimpleEdgeIter{SimpleDiGraph{Int64}}
-    """The edge parameters used to create the spatial ODEProblem. Currently unused, but will be needed to support changing these (e.g. due to events). Contain one vector for each edge parameter (length one if uniform, else one value for each edge)."""
+    edges::S
+    """
+    The edge parameters used to create the spatial ODEProblem. Currently unused, 
+    but will be needed to support changing these (e.g. due to events). 
+    Contain one vector for each edge parameter (length one if uniform, else one value for each edge).
+    """
     edge_ps::Vector{Vector{T}}
     
-    function LatticeTransportODEf(ofunc::R, vert_ps::Vector{Vector{S}}, transport_rates::Vector{Pair{Int64, Vector{S}}}, edge_ps::Vector{Vector{T}}, lrs::LatticeReactionSystem) where {R,S,T}
+    function LatticeTransportODEf(ofunc::Q, vert_ps::Vector{Vector{R}}, transport_rates::Vector{Pair{Int64, Vector{R}}}, 
+                                    edge_ps::Vector{Vector{T}}, lrs::LatticeReactionSystem) where {Q,R,T}
         leaving_rates = zeros(length(transport_rates), lrs.num_verts)
         for (s_idx, trpair) in enumerate(transport_rates)
             rates = last(trpair)
@@ -36,7 +60,8 @@ struct LatticeTransportODEf{R,S,T}
         # 1 if ps are constant across the graph, 0 else.
         v_ps_idx_types = map(vp -> length(vp) == 1, vert_ps)
         eds = edges(lrs.lattice)                  
-        new{R,S,T}(ofunc, lrs.num_verts, lrs.num_species, vert_ps, work_vert_ps, v_ps_idx_types, transport_rates, leaving_rates, eds, edge_ps)
+        new{Q,R,typeof(eds),T}(ofunc, lrs.num_verts, lrs.num_species, vert_ps, work_vert_ps, 
+                               v_ps_idx_types, transport_rates, leaving_rates, eds, edge_ps)
     end
 end
 
@@ -50,21 +75,37 @@ struct LatticeTransportODEjac{Q,R,S,T}
     num_species::Int64
     """The values of the parameters which values are tied to vertexes."""
     vert_ps::Vector{Vector{R}}
-    """Temporary vector. For parameters which values are identical across the lattice, at some point these have to be converted of a length(num_verts) vector. To avoid re-allocation they are written to this vector."""
+    """
+    Temporary vector. For parameters which values are identical across the lattice, 
+    at some point these have to be converted of a length(num_verts) vector. 
+    To avoid re-allocation they are written to this vector.
+    """
     work_vert_ps::Vector{R} 
-    """For each parameter in vert_ps, it either have length num_verts or 1. To know whenever a parameter's value need expanding to the work_vert_ps array, its length needs checking. This check is done once, and the value stored to this array. This field (specifically) is an enumerate over that array."""
+    """
+    For each parameter in vert_ps, it either have length num_verts or 1. 
+    To know whenever a parameter's value need expanding to the work_vert_ps array, 
+    its length needs checking. This check is done once, and the value stored to this array. 
+    This field (specifically) is an enumerate over that array.
+    """
     v_ps_idx_types::Vector{Bool}
     """Whether the Jacobian is sparse or not."""
     sparse::Bool
     """The transport rates. Can be a dense matrix (for non-sparse) or as the "nzval" field if sparse."""
     jac_transport::S
-    """The edge parameters used to create the spatial ODEProblem. Currently unused, but will be needed to support changing these (e.g. due to events). Contain one vector for each edge parameter (length one if uniform, else one value for each edge)."""
+    """
+    The edge parameters used to create the spatial ODEProblem. Currently unused, 
+    but will be needed to support changing these (e.g. due to events). 
+    Contain one vector for each edge parameter (length one if uniform, else one value for each edge).
+    """
     edge_ps::Vector{Vector{T}}
 
-    function LatticeTransportODEjac(ofunc::R, vert_ps::Vector{Vector{S}}, lrs::LatticeReactionSystem, jac_transport::Union{Nothing, SparseMatrixCSC{Float64, Int64}}, edge_ps::Vector{Vector{T}}, sparse::Bool) where {R,S,T}
+    function LatticeTransportODEjac(ofunc::R, vert_ps::Vector{Vector{S}}, lrs::LatticeReactionSystem, 
+                                    jac_transport::Union{Nothing, SparseMatrixCSC{Float64, Int64}}, 
+                                    edge_ps::Vector{Vector{T}}, sparse::Bool) where {R,S,T}
         work_vert_ps = zeros(lrs.num_verts)
         v_ps_idx_types = map(vp -> length(vp) == 1, vert_ps)
-        new{R,S,typeof(jac_transport),T}(ofunc, lrs.num_verts, lrs.num_species, vert_ps, work_vert_ps, v_ps_idx_types, sparse, jac_transport, edge_ps)
+        new{R,S,typeof(jac_transport),T}(ofunc, lrs.num_verts, lrs.num_species, vert_ps, 
+                                        work_vert_ps, v_ps_idx_types, sparse, jac_transport, edge_ps)
     end
 end
 
@@ -77,21 +118,28 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
                                name = nameof(lrs), include_zero_odes = true,
                                combinatoric_ratelaws = get_combinatoric_ratelaws(lrs.rs),
                                remove_conserved = false, checks = false, kwargs...)
-    is_transport_system(lrs) || error("Currently lattice ODE simulations are only supported when all spatial reactions are TransportReactions.")
+    if !is_transport_system(lrs)
+        error("Currently lattice ODE simulations are only supported when all spatial reactions are TransportReactions.")
+    end
     
-    # Converts potential symmaps to varmaps (parameter conversion is more involved since the vertex and edge parameters may be given in a tuple, or in a common vector).
+    # Converts potential symmaps to varmaps
+    # Parameter conversion complicated since the vertex and edge parameters may be given in a tuple, or in a common vector.
     u0_in = symmap_to_varmap(lrs, u0_in)
-    p_in = (p_in isa Tuple{<:Any,<:Any}) ? (symmap_to_varmap(lrs, p_in[1]),symmap_to_varmap(lrs, p_in[2])) : symmap_to_varmap(lrs, p_in)    
+    p_in = (p_in isa Tuple{<:Any,<:Any}) ? 
+            (symmap_to_varmap(lrs, p_in[1]),symmap_to_varmap(lrs, p_in[2])) :
+            symmap_to_varmap(lrs, p_in)    
 
     # Converts u0 and p to their internal forms.
     # u0 is [spec 1 at vert 1, spec 2 at vert 1, ..., spec 1 at vert 2, ...].
     u0 = lattice_process_u0(u0_in, species(lrs), lrs.num_verts)                                   
     # Both vert_ps and edge_ps becomes vectors of vectors. Each have 1 element for each parameter. 
-    # These elements are length 1 vectors (if the parameter is uniform), or length num_verts/nE, with unique values for each vertex/edge (for vert_ps/edge_ps, respectively).
+    # These elements are length 1 vectors (if the parameter is uniform), 
+    # or length num_verts/nE, with unique values for each vertex/edge (for vert_ps/edge_ps, respectively).
     vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs), lrs)   
 
     # Creates ODEProblem.
-    ofun = build_odefunction(lrs, vert_ps, edge_ps, jac, sparse, name, include_zero_odes, combinatoric_ratelaws, remove_conserved, checks)
+    ofun = build_odefunction(lrs, vert_ps, edge_ps, jac, sparse, name, include_zero_odes, 
+                                combinatoric_ratelaws, remove_conserved, checks)
     return ODEProblem(ofun, u0, tspan, vert_ps, args...; kwargs...) 
 end
 
@@ -99,15 +147,22 @@ end
 function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Vector{T}},
                            edge_ps::Vector{Vector{T}}, jac::Bool, sparse::Bool,
                            name, include_zero_odes, combinatoric_ratelaws, remove_conserved, checks) where {T}
-    remove_conserved && error("Removal of conserved quantities is currently not supported for `LatticeReactionSystem`s")
+    if remove_conserved 
+        error("Removal of conserved quantities is currently not supported for `LatticeReactionSystem`s")
+    end
 
-    # Creates a map, taking (the index in species(lrs) each species (with transportation) to its transportation rate (uniform or one value for each edge).
+    # Creates a map, taking (the index in species(lrs) each species (with transportation)
+    # to its transportation rate (uniform or one value for each edge).
     transport_rates = make_sidxs_to_transrate_map(vert_ps, edge_ps, lrs)    
 
     # Prepares the Jacobian and forcing functions (depending on jacobian and sparsity selection).
+    osys = convert(ODESystem, lrs.rs; name, combinatoric_ratelaws, include_zero_odes, checks)
     if jac
-        ofunc_dense = ODEFunction(convert(ODESystem, lrs.rs; name, combinatoric_ratelaws, include_zero_odes, checks); jac = true, sparse = false) # Always used for build_jac_prototype.
-        ofunc_sparse = ODEFunction(convert(ODESystem, lrs.rs; name, combinatoric_ratelaws, include_zero_odes, checks); jac = true, sparse = true) # Always used for LatticeTransportODEjac.
+        # `build_jac_prototype` currently assumes a sparse (non-spatial) Jacobian. Hence compute this.
+        # `LatticeTransportODEjac` currently assumes a dense (non-spatial) Jacobian. Hence compute this.
+        # Long term we could write separate version of these functions for generic input.
+        ofunc_dense = ODEFunction(osys; jac = true, sparse = false)
+        ofunc_sparse = ODEFunction(osys; jac = true, sparse = true)
         jac_vals = build_jac_prototype(ofunc_sparse.jac_prototype, transport_rates, lrs; set_nonzero = true)
         if sparse
             f = LatticeTransportODEf(ofunc_sparse, vert_ps, transport_rates, edge_ps, lrs)
@@ -121,11 +176,11 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Vector{T}
         end
     else
         if sparse
-            ofunc_sparse = ODEFunction(convert(ODESystem, lrs.rs; name, combinatoric_ratelaws, include_zero_odes, checks); jac = false, sparse = true)
+            ofunc_sparse = ODEFunction(osys; jac = false, sparse = true)
             f = LatticeTransportODEf(ofunc_sparse, vert_ps, transport_rates, edge_ps, lrs)
             jac_prototype = build_jac_prototype(ofunc_sparse.jac_prototype, transport_rates, lrs; set_nonzero = false)
         else
-            ofunc_dense = ODEFunction(convert(ODESystem, lrs.rs; name, combinatoric_ratelaws, include_zero_odes, checks); jac = false, sparse = false)
+            ofunc_dense = ODEFunction(osys; jac = false, sparse = false)
             f = LatticeTransportODEf(ofunc_dense, vert_ps, transport_rates, edge_ps, lrs)
             jac_prototype = nothing
         end
@@ -136,8 +191,8 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Vector{T}
 end
 
 # Builds a jacobian prototype. If requested, populate it with the Jacobian's (constant) values as well.
-function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, trans_rates, lrs::LatticeReactionSystem;
-                             set_nonzero = false)
+function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, trans_rates, 
+                                lrs::LatticeReactionSystem; set_nonzero = false)
     # Finds the indexes of the transport species, and the species with transport only (and no non-spatial dynamics).
     trans_species = first.(trans_rates)
     trans_only_species = filter(s_idx -> !Base.isstored(ns_jac_prototype, s_idx, s_idx), trans_species)
@@ -147,26 +202,55 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, 
     ns_i_idxs = ns_jac_prototype_idxs[1]
     ns_j_idxs = ns_jac_prototype_idxs[2]
 
-    # List the indexes of all non-zero Jacobian terms.
-    non_spat_terms = [[get_index(vert, s_i, lrs.num_species), get_index(vert, s_j, lrs.num_species)] for vert in 1:(lrs.num_verts) for (s_i, s_j) in zip(ns_i_idxs,ns_j_idxs)]        # Indexes of elements due to non-spatial dynamics.
-    trans_only_leaving_terms = [[get_index(e.src, s_idx, lrs.num_species), get_index(e.src, s_idx, lrs.num_species)] for e in edges(lrs.lattice) for s_idx in trans_only_species]     # Indexes due to terms for a species leaves its current vertex (but does not have non-spatial dynamics). If the non-spatial Jacobian is fully dense, these would already be accounted for. 
-    trans_arriving_terms = [[get_index(e.src, s_idx, lrs.num_species), get_index(e.dst, s_idx, lrs.num_species)] for e in edges(lrs.lattice) for s_idx in trans_species]              # Indexes due to terms for species arriving into a new vertex.
-    all_terms = [non_spat_terms; trans_only_leaving_terms; trans_arriving_terms]
+    # Prepares vectors to store i and j indexes of Jacobian entries.
+    idx = 1
+    num_entries = lrs.num_verts * length(ns_i_idxs) + 
+                  lrs.num_edges * (length(trans_only_species) + length(trans_species))
+    i_idxs = Vector{Int}(undef, num_entries)
+    j_idxs = Vector{Int}(undef, num_entries)
 
-    # Creates a jacobian prototype with 0 values in all positions).
-    jac_prototype = sparse(first.(all_terms), last.(all_terms), fill(0.0, length(all_terms)))
+    # Indexes of elements due to non-spatial dynamics.
+    for vert in 1:lrs.num_verts
+        for n in 1:length(ns_i_idxs)
+            i_idxs[idx] = get_index(vert, ns_i_idxs[n], lrs.num_species)
+            j_idxs[idx] = get_index(vert, ns_j_idxs[n], lrs.num_species)
+            idx += 1
+        end
+    end
+
+    # Indexes of elements due to spatial dynamics.
+    for e in edges(lrs.lattice)
+        # Indexes due to terms for a species leaves its current vertex (but does not have
+        # non-spatial dynamics). If the non-spatial Jacobian is fully dense, these would already
+        # be accounted for.
+        for s_idx in trans_only_species
+            i_idxs[idx] = get_index(e.src, s_idx, lrs.num_species)
+            j_idxs[idx] = i_idxs[idx]
+            idx += 1
+        end
+        # Indexes due to terms for species arriving into a new vertex.
+        for s_idx in trans_species
+            i_idxs[idx] = get_index(e.src, s_idx, lrs.num_species)
+            j_idxs[idx] = get_index(e.dst, s_idx, lrs.num_species)
+            idx += 1
+        end
+    end
+
+    # Create sparse jacobian prototype with 0-valued entries.
+    jac_prototype = sparse(i_idxs, j_idxs, zeros(num_entries))
 
     # Set element values.
     if set_nonzero
         for (s, rates) in trans_rates, (e_idx, e) in enumerate(edges(lrs.lattice))
-           srcidx = get_index(e.src, s, lrs.num_species)
-           dstidx = get_index(e.dst, s, lrs.num_species)
-           val = get_component_value(rates, e_idx) 
-           # Term due to species leaving source vertex.
-           jac_prototype[srcidx, srcidx] -= val
+            idx_src = get_index(e.src, s, lrs.num_species)
+            idx_dst = get_index(e.dst, s, lrs.num_species)
+            val = get_component_value(rates, e_idx) 
+
+            # Term due to species leaving source vertex.
+            jac_prototype[idx_src, idx_src] -= val
             
-           # Term due to species arriving to destination vertex.   
-           jac_prototype[srcidx, dstidx] += val
+            # Term due to species arriving to destination vertex.   
+            jac_prototype[idx_src, idx_dst] += val
         end
     end
 
