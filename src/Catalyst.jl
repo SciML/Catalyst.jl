@@ -16,6 +16,10 @@ const MT = ModelingToolkit
 using Unitful
 @reexport using ModelingToolkit
 using Symbolics
+
+using RuntimeGeneratedFunctions
+RuntimeGeneratedFunctions.init(@__MODULE__)
+
 import Symbolics: BasicSymbolic
 import SymbolicUtils
 using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems,

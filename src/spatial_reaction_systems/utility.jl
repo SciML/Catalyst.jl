@@ -204,16 +204,17 @@ end
 # Else a vector with each value corresponding to the rate at one specific edge.
 function compute_transport_rates(rate_law::Num,
                                 p_val_dict::Dict{SymbolicUtils.BasicSymbolic{Real}, Vector{Float64}}, num_edges::Int64)
-    relevant_ps = Symbolics.get_variables(rate_law)              
-    
-    # If all these parameters are spatially uniform. `rates` becomes a vector with 1 value.
-    if all(length(p_val_dict[P]) == 1 for P in relevant_ps)   
-        rates = [substitute(rate_law, Dict(p => p_val_dict[p][1] for p in relevant_ps))]
+    # Finds parameters involved in rate and create a function evaluating teh rate law.
+    relevant_ps = Symbolics.get_variables(rate_law)
+    rate_law_func = drop_expr(@RuntimeGeneratedFunction(build_function(rate_law, relevant_ps...)))
 
+    # If all these parameters are spatially uniform. `rates` becomes a vector with 1 value.
+    if all(length(p_val_dict[P]) == 1 for P in relevant_ps)  
+        rates = [rate_law_func([p_val_dict[p][1] for p in relevant_ps]...)]
     # If at least on parameter the rate depends on have a value varying across all edges,
     # we have to compute one rate value for each edge.
     else
-        rates = [substitute(rate_law, Dict(p => get_component_value(p_val_dict[p], idxE) for p in relevant_ps))
+        rates = [rate_law_func([get_component_value(p_val_dict[p], idxE) for p in relevant_ps]...) 
                     for idxE in 1:num_edges]
     end
     return Symbolics.value.(rates)
