@@ -43,7 +43,7 @@ Requires = "1.0"
 SymbolicUtils = "1.0.3"
 Symbolics = "5.0.3"
 Unitful = "1.12.4"
-julia = "1.6"
+julia = "1.9"
 
 [extras]
 DomainSets = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
