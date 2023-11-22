@@ -55,7 +55,7 @@ let
     
     # Solves it using standard algorithm and simulation based algorithm.
     sol1 = solve(nl_prob; abstol=1e-12, reltol=1e-12).u
-    sol2 = solve(nl_prob, DynamicSS(Rosenbrock23(); abstol=1e-12, reltol=1e-12); abstol=1e-12, reltol=1e-12).u
+    sol2 = solve(nl_prob, DynamicSS(Rosenbrock23()); abstol=1e-12, reltol=1e-12).u
     
     # Computes NonlinearFunction (manually and automatically).
     nfunc = NonlinearFunction(convert(NonlinearSystem, steady_state_network_2))    
@@ -91,7 +91,7 @@ let
 
     # Solves it using standard algorithm and simulation based algorithm.
     sol1 = solve(nl_prob_1; abstol=1e-12, reltol=1e-12)
-    sol2 = solve(nl_prob_2, DynamicSS(Rosenbrock23(); abstol=1e-12, reltol=1e-12); abstol=1e-12, reltol=1e-12)
+    sol2 = solve(nl_prob_2, DynamicSS(Rosenbrock23()); abstol=1e-12, reltol=1e-12)
 
     # Checks output using NonlinearFunction.
     nfunc = NonlinearFunction(convert(NonlinearSystem, steady_state_network_3))   
