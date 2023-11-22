@@ -82,7 +82,7 @@ opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2], max_steps = 1000
 bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside=true)
 plot(bif_dia; xguide="k1", yguide="X")
 ```
-Here, in the bistable region, we only see a single branch. The reason is that the continuation algorithm start at our initial guess (here made at *k1 = 4.0* for *(X,Y) = (5.0,2.0)*) and tracks the diagram from there. However, with the upper bound set at *k1=15.0* the bifurcation diagram have a disjoint branch structure, preventing the full diagram from being computed by continuation alone. In this case it could be solved by increasing the bound of *k1=15.0*, however, this is not possible in all cases. In these cases, *deflation* can be used. This is described in the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/tutorials/tutorials2/#Snaking-computed-with-deflation).
+Here, in the bistable region, we only see a single branch. The reason is that the continuation algorithm starts at our initial guess (here made at `k1 = 4.0` for `(X,Y) = (5.0,2.0)`) and tracks the diagram from there. However, with the upper bound set at `k1=15.0` the bifurcation diagram has a disjoint branch structure, preventing the full diagram from being computed by continuation alone. In this case it could be solved by increasing the bound from `k1=15.0`, however, this is not possible in all cases. In these cases, *deflation* can be used. This is described in the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/tutorials/tutorials2/#Snaking-computed-with-deflation).
 
 
 ## Systems with conservation laws
