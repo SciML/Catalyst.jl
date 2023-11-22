@@ -32,11 +32,13 @@ CatalystBifurcationKitExtension = "BifurcationKit"
 CatalystHomotopyContinuationExtension = "HomotopyContinuation"
 
 [compat]
+BifurcationKit = "0.3"
 DataStructures = "0.18"
 DiffEqBase = "6.83.0"
 DocStringExtensions = "0.8, 0.9"
 Graphs = "1.4"
 JumpProcesses = "9.3.2"
+HomotopyContinuation = "2.9"
 LaTeXStrings = "1.3.0"
 Latexify = "0.14, 0.15, 0.16"
 MacroTools = "0.5.5"
