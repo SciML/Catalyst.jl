@@ -56,7 +56,7 @@ plot(bif_dia; xguide="k1", yguide="X")
 Here, the steady state concentration of *X* is shown as a function of *k1*'s value. Stable steady states are shown with thick lines, unstable ones with thin lines. The two fold bifurcation points are marked with "bp".
 
 ## Additional `ContinuationPar` options
-Most of the options required by the `bifurcationdiagram` function is not provided directly, but instead provided through the `ContinuationPar` structure. For full details, please read the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.ContinuationPar). However, a few common options, and how they affect the continuation computation, are described here:
+Most of the options required by the `bifurcationdiagram` function are provided through the `ContinuationPar` structure. For full details, please read the [BifurcationKit documentation](https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/library/#BifurcationKit.ContinuationPar). However, a few common options, and how they affect the continuation computation, are described here:
 - `p_min` and `p_max`: Sets the interval over which the bifurcation diagram is computed (with the continuation stopping if it reaches these bounds).
 - `dsmin` and `dsmax`: The minimum and maximum length of the continuation steps (in the bifurcation parameter's value).
 - `max_steps`: The maximum number of continuation steps. If a bifurcation diagram looks incomplete, try increasing this value.
