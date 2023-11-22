@@ -111,7 +111,7 @@ This bifurcation diagram does not contain any interesting features (such as bifu
 - The steady state guess in `u_guess` does not actually have to fulfil the conserved concentrations provided in `u0`.
 
 !!! note
-    Computing bifurcation diagrams for [hierarchical models created using compostability](@ref compositional_modeling), that also contain conservations laws, is currently not supported. For these, please [flatten](@ref api_network_extension_and_modification) the system first.
+    Computing bifurcation diagrams for [hierarchical models created by composing multiple systems](@ref compositional_modeling), that also contain conservations laws, is currently not supported. For these, please [flatten](@ref api_network_extension_and_modification) the system first.
 
 
 ---
