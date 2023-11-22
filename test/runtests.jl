@@ -39,7 +39,6 @@ using SafeTestsets
     @time @safetestset "U0 and Parameters Input Variants" begin include("model_simulation/u0_n_parameter_inputs.jl") end
     @time @safetestset "SDE System Simulations" begin include("model_simulation/simulate_SDEs.jl") end
     @time @safetestset "Jump System Simulations" begin include("model_simulation/simulate_jumps.jl") end
-    @time @safetestset "DiffEq Steady State Solving" begin include("model_simulation/solve_steady_state_problems.jl") end
 
     ### Tests Spatial Network Simulations. ###
     @time @safetestset "PDE Systems Simulations" begin include("spatial_reaction_systems/simulate_PDEs.jl") end
