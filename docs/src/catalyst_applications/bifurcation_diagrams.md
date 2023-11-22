@@ -106,7 +106,7 @@ opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2], max_steps = 1000
 bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside=true)
 plot(bif_dia; xguide="d", yguide="Xp")
 ```
-This bifurcation diagram does not contain any interesting features (such as bifurcation points), and only shows how the steady state concentration of *Xp* is reduced as *d* increases. For this example, we will note two facts:
+This bifurcation diagram does not contain any interesting features (such as bifurcation points), and only shows how the steady state concentration of $Xp$ is reduced as $d$ increases. For this example, we will note two facts:
 - When providing the concentrations for computing the conserved quantities (in `u0`), we only have to designate the concentrations of species that are actually involved in conservation laws. For larger systems, determining which one are may, however, be difficult. In this case, it might still be wise to provide concentrations for all species.
 - The steady state guess in `u_guess` does not actually have to fulfil the conserved concentrations provided in `u0`.
 
