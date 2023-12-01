@@ -1,7 +1,7 @@
 #! format: off
 
 ### Fetch Packages and Set Global Variables ###
-using Catalyst, ModelingToolkit
+using Catalyst, ModelingToolkit, Plots
 @variables t
 
 ### Run Tests ###
@@ -338,4 +338,113 @@ let
 
     @test ModelingToolkit.defaults(rn27) == defs29
     @test merge(ModelingToolkit.defaults(rn28), defs28) == ModelingToolkit.defaults(rn27)
+end
+
+### Observables ###
+
+# Test basic functionality.
+# Tests various types of indexing.
+let 
+    rn = @reaction_network begin
+        @observables begin
+            X ~ Xi + Xa
+            Y ~ Y1 + Y2
+        end
+        (p,d), 0 <--> Xi
+        (k1,k2), Xi <--> Xa
+        (k3,k4), Y1 <--> Y2
+    end
+    @unpack X, Xi, Xa, Y, Y1, Y2, p, d, k1, k2, k3, k4 = rn
+
+    # Test that ReactionSystem have the correct properties.
+    @test length(species(rn)) == 4
+    @test length(states(rn)) == 4
+    @test length(observed(rn)) == 2
+    @test length(equations(rn)) == 6
+
+    @test isequal(observed(rn)[1], X ~ Xi + Xa)
+    @test isequal(observed(rn)[2], Y ~ Y1 + Y2)
+
+    # Tests correct indexing of solution.
+    u0 = [Xi => 0.0, Xa => 0.0, Y1 => 1.0, Y2 => 2.0]
+    ps = [p => 1.0, d => 0.2, k1 => 1.5, k2 => 1.5, k3 => 5.0, k4 => 5.0]
+
+    oprob = ODEProblem(rn, u0, (0.0, 1000.0), ps)
+    sol = solve(oprob, Tsit5())
+    @test sol[X][end] ≈ 10.0
+    @test sol[Y][end] ≈ 3.0
+    @test sol[rn.X][end] ≈ 10.0
+    @test sol[rn.Y][end] ≈ 3.0
+    @test sol[:X][end] ≈ 10.0
+    @test sol[:Y][end] ≈ 3.0
+
+    # Tests that observables can be used for plot indexing.
+    @test plot(sol; idxs=X).series_list[1].plotattributes[:y][end] ≈ 2.5
+    @test plot(sol; idxs=rn.X).series_list[1].plotattributes[:y][end] ≈ 2.5
+    @test plot(sol; idxs=:X).series_list[1].plotattributes[:y][end] ≈ 2.5
+    @test plot(sol; idxs=[X, Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
+    @test plot(sol; idxs=[rn.X, rn.Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
+    @test plot(sol; idxs=[:X, :Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
+end
+
+# Tests for complicated observable formula.
+# Tests using a single observable (without begin/end statement).
+# Tests using observable component not part of reaction.
+# Tests using parameters in observables formula.
+let 
+    rn = @reaction_network begin
+        @parameters op_1 op_2
+        @species X4(t)
+        @observables X ~ X1^2 + op_1*(X2 + 2X3) + X1*X4/op_2 + p        
+        (p,d), 0 <--> X1
+        (k1,k2), X1 <--> X2
+        (k3,k4), X2 <--> X3
+    end
+    
+    u0 = Dict([:X1 => 1.0, :X2 => 2.0, :X3 => 3.0, :X4 => 4.0])
+    ps = Dict([:p => 1.0, :d => 0.2, :k1 => 1.5, :k2 => 1.5, :k3 => 5.0, :k4 => 5.0, :op_1 => 1.5, :op_2 => 1.5])
+
+    oprob = ODEProblem(rn, u0, (0.0, 1000.0), ps)
+    sol = solve(oprob, Tsit5())
+
+    @test sol[:X][1] == u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]  
+end
+
+# Tests various erroneous declarations throw errors.
+let 
+    # System with undeclared component as observable.
+    @test_throws Exception @eval @reaction_network begin
+        @observables begin
+            X ~ X1 + X2
+        end
+        (p,d), 0 <--> X1
+    end
+
+    # System with observable in observable formula.
+    @test_throws Exception @eval @reaction_network begin
+        @observables begin
+            X ~ X1 + X2
+            X2 ~ 2X
+        end
+        (p,d), 0 <--> X1 + X2
+    end
+
+    # System with multiple observables blocks.
+    @test_throws Exception @eval @reaction_network begin
+        @observables begin
+            X ~ X1 + X2
+        end
+        @observables begin
+            X2 ~ 2(X1 + X2)
+        end
+        (p,d), 0 <--> X1 + X2
+    end
+
+    # System with no trivial observable left-hand side.
+    @test_throws Exception @eval @reaction_network begin
+        @observables begin
+            X + X2 ~ 2X1
+        end
+        (p,d), 0 <--> X1 + X2
+    end
 end

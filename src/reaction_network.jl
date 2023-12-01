@@ -123,7 +123,7 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs, :compounds)
+const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables)
 
 ### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)
@@ -358,8 +358,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
                        option_lines))
 
-    # Reads compounds options.
+    # Reads options.
     compound_expr, compound_species = read_compound_options(options)
+    observed_vars, observed_eqs = read_observed_options(options)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
@@ -414,11 +415,12 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         $ivexpr
         $vars
         $sps
+        $observed_vars
         $comps
 
         Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, union($spssym, $varssym, $compssym),
-                                              $pssym; name = $name,
-                                              spatial_ivs = $sivs)
+                                              $pssym; name = $name, spatial_ivs = $sivs,
+                                              observed = $observed_eqs)
     end
 end
 
@@ -682,6 +684,46 @@ function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
     reactants
 end
 
+### DSL Options Handling ###
+# Most options handled in previous sections, when code re-organised, these should ideally be moved to the same place.
+
+# Reads the observables options. Outputs an expression ofr creating the obervable variables, and a vector of observable equations.
+function read_observed_options(options)
+    if haskey(options, :observables)
+        # Gets list of observable equations and prepares variable declaration expression.
+        # (`options[:observables]` inlucdes `@observables`, `.args[3]` removes this part)
+        observed_eqs = make_observed_eqs(options[:observables].args[3])
+        observed_vars = :(@variables)
+
+        # For each observable, checks for errors and adds the variable to `observed_vars`.
+        for obs_eq in observed_eqs.args
+            (obs_eq.args[1] != :~) && error("Malformed observable formula :\"$(obs_eq)\". Formula should contain two expressions separated by a '~'.")
+            (obs_eq.args[2] isa Symbol) || error("Malformed observable formula :\"$(obs_eq)\". Left hand side should be a single symbol.")
+            push!(observed_vars.args, obs_eq.args[2])
+        end
+    else  
+        # If option is not used, return empty expression and vector.
+        observed_vars = :()
+        observed_eqs = :([])
+    end
+    return observed_vars, observed_eqs
+end
+
+# From the input to the @observables options, creates a vector containing one equation for each observable.
+# Checks separate cases for "@obervables O ~ ..." and "@obervables begin ... end". Other cases errors.
+function make_observed_eqs(observables_expr)
+    if observables_expr.head == :call
+        return :([$(observables_expr)])
+    elseif observables_expr.head == :block
+        observed_eqs = :([])
+        for arg in observables_expr.args
+            push!(observed_eqs.args, arg)
+        end
+        return observed_eqs
+    else
+        error("Malformed observables option usage: $(observables_expr).")
+    end 
+end
 ### Functionality for expanding function call to custom and specific functions ###
 
 #Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.

@@ -567,3 +567,58 @@ species(rn)
 !!! note
     When using interpolation, expressions like `2$spec` won't work; the
     multiplication symbol must be explicitly included like `2*$spec`.
+
+## Including observables
+Sometimes, one might want to include observable variables. These are variables that can be computed directly from the other system variables (rather than having their values implicitly given through some differential equation). These can be introduced through the `@observables` option.
+
+Let us consider a simple example where two species ($X$ and $Y$) are produced and degraded at constant rates. They can also bind, forming a complex ($XY$). If we want to access the total amount of $X$ in the system we can create an observable that denotes this quantity ($Xtot = X + XY$). Here, we create observables for the total amount of $X$ and $Y$:
+```@example obs1
+using Catalyst # hide
+rn = @reaction_network begin
+  @observables begin
+    Xtot ~ X + XY
+    Ytot ~ Y + XY
+  end
+  (pX,dX), 0 <--> X
+  (pY,dY), 0 <--> Y
+  (kB,kD), X + Y <--> XY
+end
+```
+The `@observables` option is followed by one line for each observable formula (enclosed by a `begin ... end` block). The left-hand sides indicate the observables' names, and the right-hand sides how their values are computed. The two sides are separated by a `~`. 
+
+If we now simulate our model:
+```@example obs1
+using DifferentialEquations # hide
+u0 = [:X => 0.0, :Y => 0.0, :XY => 0.0]
+tspan = (0.0, 10.0)
+ps = [:pX => 1.0, :dX => 0.2, :pY => 1.0, :dY => 0.5, :kB => 1.0, :kD => 0.2]
+oprob = ODEProblem(rn, u0, tspan, ps)
+sol = solve(oprob)
+nothing # hide
+```
+we can index the solution using our observables (just like for [other variables](@ref simulation_structure_interfacing_solutions)). E.g. we can receive a vector with all $Xtot$ values using
+```@example obs1
+sol[:Xtot]
+```
+similarly, we can plot the values of $Xtot$ and $Ytot$ using
+```@example obs1
+plot(sol; idxs=[:Xtot, :Ytot])
+```
+
+If we only wish to provide a single observable, the `begin ... end` block is note required. E.g., to record only the total amount of $X$ we can use:
+```@example obs1
+using Catalyst # hide
+rn = @reaction_network begin
+  @observables  Xtot ~ X + XY
+  (pX,dX), 0 <--> X
+  (pY,dY), 0 <--> Y
+  (kB,kD), X + Y <--> XY
+end
+```
+
+Finally, some general rules for creating observables:
+- Observables can depend on any species, parameters, or variables, but not on other observables.
+- All observables components must be declared somewhere (i.e., they cannot only appear as a part of the observables formula).
+- Only a single `@observables` option block can be used in each `@reaction_network` call.
+- The left-hand side of the observables expression must be a single symbol, indicating the observable's name.
+- The right-hand side of the observables expression can be any valid algebraic expression.
