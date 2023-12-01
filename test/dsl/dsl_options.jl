@@ -447,4 +447,12 @@ let
         end
         (p,d), 0 <--> X1 + X2
     end
+
+    # A forbidden symbol used as observable name.
+    @test_throws Exception @eval @reaction_network begin
+        @observables begin
+            t ~ X1 + X2
+        end
+        (p,d), 0 <--> X1 + X2
+    end
 end
