@@ -602,7 +602,7 @@ sol[:Xtot]
 ```
 similarly, we can plot the values of $Xtot$ and $Ytot$ using
 ```@example obs1
-plot(sol; idxs=[:Xtot, :Ytot])
+plot(sol; idxs=[:Xtot, :Ytot], label=["Total X" "Total Y"])
 ```
 
 If we only wish to provide a single observable, the `begin ... end` block is note required. E.g., to record only the total amount of $X$ we can use:
