@@ -699,6 +699,7 @@ function read_observed_options(options)
         for obs_eq in observed_eqs.args
             (obs_eq.args[1] != :~) && error("Malformed observable formula :\"$(obs_eq)\". Formula should contain two expressions separated by a '~'.")
             (obs_eq.args[2] isa Symbol) || error("Malformed observable formula :\"$(obs_eq)\". Left hand side should be a single symbol.")
+            in(obs_eq.args[2], forbidden_symbols_error) && error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
             push!(observed_vars.args, obs_eq.args[2])
         end
     else  
