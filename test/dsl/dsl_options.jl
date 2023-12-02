@@ -1,7 +1,7 @@
 #! format: off
 
 ### Fetch Packages and Set Global Variables ###
-using Catalyst, ModelingToolkit, Plots
+using Catalyst, ModelingToolkit, OrdinaryDiffEq, Plots
 @variables t
 
 ### Run Tests ###
