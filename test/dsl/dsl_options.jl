@@ -2,6 +2,12 @@
 
 ### Fetch Packages and Set Global Variables ###
 using Catalyst, ModelingToolkit, OrdinaryDiffEq, Plots
+
+# Sets rnd number.
+using StableRNGs
+rng = StableRNG(12345)
+
+# Sets globally used variable
 @variables t
 
 ### Run Tests ###
@@ -625,9 +631,9 @@ let
     # Checks that set and get index works for variables.
     @test oprob[V] == u0[V]
     oprob[V] = 2.0
-    @test_broken oprob[V] == 2.0
+    @test oprob[V] == 2.0
     integrator = init(oprob, Tsit5())
-    @test_broken integrator[V] == 2.0
+    @test integrator[V] == 2.0
     integrator[V] = 5.0
     @test integrator[V] == 5.0
 
