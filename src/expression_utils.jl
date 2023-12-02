@@ -10,6 +10,13 @@ function get_tup_arg(ex::ExprValues, i::Int)
     return ex.args[i]
 end
 
+# Some options takes input on form that is either `@option ...` or `@option begin ... end`. 
+# This transforms input of the latter form to the former (with only one line in the `begin ... end` block)
+function option_block_form(expr)
+    (expr.head == :block) && return expr
+    return Expr(:block, expr)
+end
+
 # In variable/species/parameters on the forms like:
 # X
 # X = 1.0

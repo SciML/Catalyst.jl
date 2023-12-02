@@ -123,7 +123,7 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables)
+const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables, :equations)
 
 ### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)
@@ -362,12 +362,13 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Reads options.
     compound_expr, compound_species = read_compound_options(options)
     observed_vars, observed_eqs = read_observed_options(options)
+    vars_extracted, add_default_diff, equations = read_equations_options(options)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
     species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
-    variables = extract_syms(options, :variables)
+    variables = [extract_syms(options, :variables); vars_extracted]
 
     # handle independent variables
     if haskey(options, :ivs)
@@ -392,6 +393,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
+    # Create differential expression.
+    diffexpr = create_differential_expr(options, add_default_diff, [species; species; variables])
+
     # Checks for input errors.
     (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
         error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
@@ -403,7 +407,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     sexprs = get_sexpr(species_extracted, options; iv_symbols = ivs)
-    vexprs = haskey(options, :variables) ? options[:variables] : :()
+    vexprs = get_sexpr(vars_extracted, options, :variables)
     pexprs = get_pexpr(parameters_extracted, options)
     ps, pssym = scalarize_macro(!isempty(parameters), pexprs, "ps")
     vars, varssym = scalarize_macro(!isempty(variables), vexprs, "vars")
@@ -413,6 +417,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     for reaction in reactions
         push!(rxexprs.args, get_rxexprs(reaction))
     end
+    for equation in equations
+        push!(rxexprs.args, equation)
+    end
 
     quote
         $ps
@@ -421,6 +428,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         $sps
         $observed_vars
         $comps
+        $diffexpr
 
         Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, union($spssym, $varssym, $compssym),
                                               $pssym; name = $name, spatial_ivs = $sivs,
@@ -752,6 +760,54 @@ function make_observed_eqs(observables_expr)
         error("Malformed observables option usage: $(observables_expr).")
     end 
 end
+
+# Reads the variables options. Outputs:
+# `vars_extracted`: A vector with extracted variables (lhs in pure differential equations only).
+# `dtexpr`: If a differentialequation is defined, the default derrivative (D ~ Differential(t)) must be defined.
+# `equations`: a vector with the equations provided.
+function read_equations_options(options)
+    # Prepares the equations. First, extracts equations from provided option (converting to block form if requried).
+    # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
+    eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :()
+    eqs_input = option_block_form(eqs_input)
+    equations = Expr[]
+    ModelingToolkit.parse_equations!(Expr(:block), equations, Dict{Symbol, Any}(), eqs_input)
+
+    # Loops through all equations, checks for lhs of the form `D(X) ~ ...`.
+    # When this is the case, the variable X and differential D are extracted (for automatic declaration).
+    # Also performs simple error checks.
+    vars_extracted = []
+    add_default_diff = false
+    for eq in equations
+        ((eq.head != :call) || (eq.args[1] != :~)) && error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")
+        (eq.args[2].head != :call) && continue
+        if (eq.args[2].args[1] == :D) && (eq.args[2].args[2] isa Symbol) && (length(eq.args[2].args) == 2)
+            add_default_diff = true
+            push!(vars_extracted, eq.args[2].args[2])
+        end
+    end
+
+    return vars_extracted, add_default_diff, equations
+end
+
+# Creates an expression declaring differentials.
+function create_differential_expr(options, add_default_diff, used_syms)
+    # Creates the differential expression.
+    # If differentials was provided as options, this is used as the initial expression.
+    # If the default differential (D(...)) was used in equations, this is added to the expression.
+    diffexpr = (haskey(options, :differentials) ? options[:differentials] : MacroTools.striplines(:(begin end)))
+    add_default_diff && push!(diffexpr.args, :(D = Differential($(DEFAULT_IV_SYM))))
+
+    # Goes through all differentials, checking that they are correctly formatted and their symbol is not used elsewhere.
+    for dexpr in diffexpr.args
+        (dexpr.head != :(=)) && error("Differential declaration must have form like D = Differential(t), instead \"$(dexpr)\" was given.")
+        (dexpr.args[1] isa Symbol) || error("Differential left-hand side must be a single symbol, instead \"$(dexpr.args[1])\" was given.")
+        in(dexpr.args[1], used_syms) && error("Differential name ($(dexpr.args[1])) is also a species, variable, or parameter. This is ambigious and not allowed.")
+    end
+
+    return diffexpr
+end
+
 
 ### Functionality for expanding function call to custom and specific functions ###
 
