@@ -624,3 +624,67 @@ Finally, some general rules for creating observables:
 - Metadata can, however, be provided, e.g through `@observables (Xtot, [description="Total amount of X"]) ~ X + XY`.
 - The right-hand side of the observables expression can be any valid algebraic expression.
 - Observables are (by default, but this can be changed) considered `variables` (and not `species`). This can be changed by e.g. pre-declaring them using the `@species` option.
+
+
+## Incorporating (differential) equations into reaction network models
+Some models cannot be purely described as a reaction network. E.g. consider the growth of a cell, where the rate of change in cell's volume depends on some growth factor. Here, the cell's volume would be described by a normal equation. Such equations can be incorporated into a model using the `@equations` option. Here, we create a model where a growth factor ($G$) is produced and degraded at a linear rates, and the rate of change in cell volume ($V$) os linear to the amount of growth factor:
+```@example eqs1
+using Catalyst #hide
+rn = @reaction_network begin
+  @equations begin
+    D(V) ~ G
+  end
+  (p,d), 0 <--> G
+end
+```
+Here, `D(V)` indicates the (time) derivative with respect to `D`. The differential equation left and right hand sides are separated by a `~`. The left-hand side should contain differential only, the right hand side can contain any algebraic expression.
+
+We can check the differential equation corresponding to this reaction network using latexify:
+```@example eqs1
+using Latexify
+latexify(rn; form=:ode)
+```
+We can also simulate it using the normal syntax
+```@example eqs1
+using DifferentialEquations, Plots # hide
+u0 = [:G => 0.0, :V => 0.1]
+ps = [:p => 1.0, :d => 0.5]
+oprob = ODEProblem(rn, u0, (0.0, 1.0), ps)
+sol = solve(oprob)
+plot(sol)
+```
+Here, growth is indefinite. To improve the model, [a callback](@ref advanced_simulations_callbacks) can be used to half the volume (cell division) once some threshold is reached.
+
+When creating differential equations this way, the subject of the differential is automatically inferred to be a variable, however, any component on the right-hand side must be declare somewhere in the macro. E.g. to add a scaling parameter ($k$), we must declare that $k$ is a parmaeter using the `@paraemters` option:
+```@example eqs1
+rn = @reaction_network begin
+  @parameters k
+  @equations begin
+    D(V) ~ k*G
+  end
+  (p,d), 0 <--> G
+end
+nothing #hide
+```
+
+It is possible to add several equations to the model. In this case, each have a separate line. E.g. to keep track of a supply of nutrition ($N$) in the growth media, we can use:
+```@example eqs1
+rn = @reaction_network begin
+  @parameters k
+  @equations begin
+    D(V) ~ G
+    D(N) ~ -G
+  end
+  (p,d), 0 <--> G
+end
+nothing #hide
+```
+
+When only a single equation is added, the `begin ... end` statement can be omitted. E.g., the first model can be declared equivalently using:
+```@example eqs1
+rn = @reaction_network begin
+  @equations D(V) ~ G
+  (p,d), 0 <--> G
+end
+nothing # hide
+```

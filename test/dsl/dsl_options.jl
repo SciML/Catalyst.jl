@@ -580,3 +580,197 @@ let
         (p,d), 0 <--> X1 + X2
     end
 end
+
+### Equations ###
+
+# Basic checks on simple case with additional differential equations.
+# Checks indexing works.
+# Checks that non-block form for single equation works.
+let
+    # Creates model.
+    rn = @reaction_network rn begin
+        @parameters k
+        @equations begin
+            D(V) ~ X - k*V
+        end 
+        (p,d), 0 <--> X
+    end
+    
+    @unpack k, p, d, X, V = rn
+    @variables t
+    D = Differential(t)
+    
+    # Checks that the internal structures have the correct lengths.
+    @test length(species(rn)) == 1
+    @test length(states(rn)) == 2
+    @test length(reactions(rn)) == 2
+    @test length(equations(rn)) == 3
+    
+    # Checks that the internal structures contain the correct stuff, and are correctly sorted.
+    @test isspecies(states(rn)[1])
+    @test !isspecies(states(rn)[2])
+    @test equations(rn)[1] isa Reaction
+    @test equations(rn)[2] isa Reaction
+    @test equations(rn)[3] isa Equation
+    @test isequal(equations(rn)[3], D(V) ~ X - k*V)
+    
+    # Checks that simulations has the correct output
+    u0 = Dict([X => 1 + rand(rng), V => 1 + rand(rng)])
+    ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
+    oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps)
+    sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
+    @test sol[X][end] ≈ ps[p]/ps[d]
+    @test sol[V][end] ≈ ps[p]/(ps[d]*ps[k])
+    
+    # Checks that set and get index works for variables.
+    @test oprob[V] == u0[V]
+    oprob[V] = 2.0
+    @test_broken oprob[V] == 2.0
+    integrator = init(oprob, Tsit5())
+    @test_broken integrator[V] == 2.0
+    integrator[V] = 5.0
+    @test integrator[V] == 5.0
+
+    # Checks that block form is not required when only a single equation is used.
+    rn2 = @reaction_network rn begin
+        @parameters k
+        @equations D(V) ~ X - k*V
+        (p,d), 0 <--> X
+    end
+    @test rn == rn2
+end
+
+# Tries complicated set of equations.
+# Tries with pre-declaring some variables (and not others).
+# Tries using default values.
+# Tries using mixing of parameters, variables, and species in different places.
+let 
+    rn = @reaction_network begin
+        @species S(t)=2.0
+        @variables Y(t)=0.5 Z(t)
+        @parameters p1 p2 p3
+        @equations begin
+            D(X) ~ p1*S - X
+            D(Y) ~ p2 + X - Y 
+            D(Z) ~ p + Y - Z 
+        end
+        (p*T,d), 0 <--> S
+        (p*Z,d), 0 <--> T
+    end
+
+    u0 = [:X => 1.0, :Z => 10.0, :S => 1.0, :T => 1.0]
+    ps = [:p1 => 0.5, :p2 => 1.0, :p3 => 1.0, :p => 1.0, :d => 1.0]
+    oprob = ODEProblem(rn, u0, (0.0, 1000.0), ps)
+    sol = solve(oprob, Rosenbrock23(); abstol=1e-9, reltol=1e-9)
+    @test sol[:S][end] ≈ 4
+    @test sol[:T][end] ≈ 4
+    @test sol[:X][end] ≈ 2
+    @test sol[:Y][end] ≈ 3
+    @test sol[:Z][end] ≈ 4
+end
+
+# Tries for reaction system without any reactions (just an equation).
+# Tries with interpolating a value into an equation.
+# Tries using rn.X notation for designating variables.
+# Tries for empty parameter vector.
+let 
+    c = 4.0
+    rn = complete(@reaction_network begin
+        @equations D(X) ~ $c - X
+    end)
+
+    u0 = [rn.X => 0.0]
+    ps = []
+    oprob = ODEProblem(rn, u0, (0.0, 100.0), ps)
+    sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
+    @test sol[rn.X][end] ≈ 4.0
+end
+
+# Checks hierarchical model.
+let 
+    base_rn = @reaction_network begin
+        @equations begin
+            D(V1) ~ X - 2V1
+        end 
+        (p,d), 0 <--> X
+    end
+    @unpack X, V1, p, d = base_rn
+    
+    internal_rn = @reaction_network begin
+        @equations begin
+            D(V2) ~ X - 3V2
+        end 
+        (p,d), 0 <--> X
+    end
+    
+    rn = compose(base_rn, [internal_rn])
+    
+    u0 = [V1 => 1.0, X => 3.0, internal_rn.V2 => 2.0, internal_rn.X => 4.0]
+    ps = [p => 1.0, d => 0.2, internal_rn.p => 2.0, internal_rn.d => 0.5]
+    oprob = ODEProblem(rn, u0, (0.0, 1000.0), ps)
+    sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
+    
+    @test sol[X][end] ≈ 5.0
+    @test sol[V1][end] ≈ 2.5
+    @test sol[internal_rn.X][end] ≈ 4.0
+    @test sol[internal_rn.V2][end] ≈ 4/3
+end
+
+# Tests that various erroneous declarations throw errors.
+let 
+    # Using = instead of ~ (for equation).
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(pi) = 1 - pi
+        (p,d), 0 <--> S
+    end
+
+    # Using ~ instead of = (for differential).
+    @test_throws Exception @eval @reaction_network begin
+        @differentials D ~ Differential(t)
+        (p,d), 0 <--> S
+    end
+
+    # Equation with component undeclared elsewhere.
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(X) ~ p - X
+        (P,D), 0 <--> S
+    end
+
+    # Using default differential D and a symbol D.
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(X) ~ -X
+        (P,D), 0 <--> S
+    end
+
+    # Declaring a symbol as a differential when it is used elsewhere.
+    @test_throws Exception @eval @reaction_network begin
+        @differentials d = Differential(t)
+        (p,d), 0 <--> S
+    end
+
+    # Declaring differential equation using a forbidden variable.
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(pi) ~ 1 - pi
+        (p,d), 0 <--> S
+    end
+
+    # Declaring forbidden symbol as differential.
+    @test_throws Exception @eval @reaction_network begin
+        @differentials pi = Differential(t)
+        (p,d), 0 <--> S
+    end
+
+    # System with derivatives with respect to several independent variables.
+    @test_throws Exception @eval @reaction_network begin
+        @ivs s t
+        @variables X(s) Y(t)
+        @differentials begin
+            Ds = Differential(s)
+            Dt = Differential(t)
+        end
+        @equations begin
+            Ds(X) ~ 1 - X
+            Dt(Y) ~ 1 - Y
+        end
+    end
+end

@@ -123,7 +123,7 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables, :equations)
+const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :differentials, :equations, :observables)
 
 ### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)
@@ -362,14 +362,17 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Reads options.
     compound_expr, compound_species = read_compound_options(options)
     observed_vars, observed_eqs = read_observed_options(options)
-    vars_extracted, add_default_diff, equations = read_equations_options(options)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
     species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
-    variables = [extract_syms(options, :variables); vars_extracted]
-
+    variables_declared = extract_syms(options, :variables)
+    
+    # Reads more options.
+    vars_extracted, add_default_diff, equations = read_equations_options(options, variables_declared)
+    variables = vcat(variables_declared, vars_extracted)
+    
     # handle independent variables
     if haskey(options, :ivs)
         ivs = Tuple(extract_syms(options, :ivs))
@@ -394,7 +397,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     parameters = vcat(parameters_declared, parameters_extracted)
 
     # Create differential expression.
-    diffexpr = create_differential_expr(options, add_default_diff, [species; species; variables])
+    diffexpr = create_differential_expr(options, add_default_diff, [species; parameters; variables])
 
     # Checks for input errors.
     (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
@@ -765,10 +768,10 @@ end
 # `vars_extracted`: A vector with extracted variables (lhs in pure differential equations only).
 # `dtexpr`: If a differentialequation is defined, the default derrivative (D ~ Differential(t)) must be defined.
 # `equations`: a vector with the equations provided.
-function read_equations_options(options)
+function read_equations_options(options, variables_declared)
     # Prepares the equations. First, extracts equations from provided option (converting to block form if requried).
     # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
-    eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :()
+    eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
     eqs_input = option_block_form(eqs_input)
     equations = Expr[]
     ModelingToolkit.parse_equations!(Expr(:block), equations, Dict{Symbol, Any}(), eqs_input)
@@ -779,11 +782,13 @@ function read_equations_options(options)
     vars_extracted = []
     add_default_diff = false
     for eq in equations
-        ((eq.head != :call) || (eq.args[1] != :~)) && error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")
-        (eq.args[2].head != :call) && continue
+        ((eq.head != :call) || (eq.args[1] != :~)) && error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")     
+        (eq.args[2] isa Symbol || eq.args[2].head != :call) && continue
         if (eq.args[2].args[1] == :D) && (eq.args[2].args[2] isa Symbol) && (length(eq.args[2].args) == 2)
+            diff_var = eq.args[2].args[2]
+            in(diff_var, forbidden_symbols_error) && error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
             add_default_diff = true
-            push!(vars_extracted, eq.args[2].args[2])
+            in(diff_var, variables_declared) || push!(vars_extracted, diff_var)
         end
     end
 
@@ -795,7 +800,8 @@ function create_differential_expr(options, add_default_diff, used_syms)
     # Creates the differential expression.
     # If differentials was provided as options, this is used as the initial expression.
     # If the default differential (D(...)) was used in equations, this is added to the expression.
-    diffexpr = (haskey(options, :differentials) ? options[:differentials] : MacroTools.striplines(:(begin end)))
+    diffexpr = (haskey(options, :differentials) ? options[:differentials].args[3] : MacroTools.striplines(:(begin end)))
+    diffexpr = option_block_form(diffexpr)
     add_default_diff && push!(diffexpr.args, :(D = Differential($(DEFAULT_IV_SYM))))
 
     # Goes through all differentials, checking that they are correctly formatted and their symbol is not used elsewhere.
@@ -803,6 +809,7 @@ function create_differential_expr(options, add_default_diff, used_syms)
         (dexpr.head != :(=)) && error("Differential declaration must have form like D = Differential(t), instead \"$(dexpr)\" was given.")
         (dexpr.args[1] isa Symbol) || error("Differential left-hand side must be a single symbol, instead \"$(dexpr.args[1])\" was given.")
         in(dexpr.args[1], used_syms) && error("Differential name ($(dexpr.args[1])) is also a species, variable, or parameter. This is ambigious and not allowed.")
+        in(dexpr.args[1], forbidden_symbols_error) && error("A forbidden symbol ($(dexpr.args[1])) was used as a differential name.")
     end
 
     return diffexpr
