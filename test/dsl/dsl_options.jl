@@ -760,6 +760,12 @@ let
         (p,d), 0 <--> S
     end
 
+    # Differential with respect to a species.
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(S) ~ 1 - S
+        (p,d), 0 <--> S
+    end
+
     # System with derivatives with respect to several independent variables.
     @test_throws Exception @eval @reaction_network begin
         @ivs s t

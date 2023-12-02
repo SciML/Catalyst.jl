@@ -670,7 +670,6 @@ nothing #hide
 It is possible to add several equations to the model. In this case, each have a separate line. E.g. to keep track of a supply of nutrition ($N$) in the growth media, we can use:
 ```@example eqs1
 rn = @reaction_network begin
-  @parameters k
   @equations begin
     D(V) ~ G
     D(N) ~ -G
