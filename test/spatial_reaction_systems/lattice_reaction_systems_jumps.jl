@@ -102,17 +102,19 @@ let
     end
 end
 
-### ABC Model Test (from JumpProcesses) ###
+### Tests taken from JumpProcesses ###
+
+# ABC Model Test
 let 
     # Preparations (stuff used in JumpProcesses examples ported over here, could be written directly into code).
     Nsims = 100
     reltol = 0.05
-    non_spatial_mean = [65.7395, 65.7395, 434.2605] #mean of 10,000 simulations
+    non_spatial_mean = [65.7395, 65.7395, 434.2605] # Mean of 10,000 simulations.
     dim = 1
     linear_size = 5
     num_nodes = linear_size^dim
     dims = Tuple(repeat([linear_size], dim))
-    domain_size = 1.0 #μ-meter
+    domain_size = 1.0 # μ-meter.
     mesh_size = domain_size / linear_size
     rates = [0.1 / mesh_size, 1.0]
     diffusivity = 1.0
@@ -128,15 +130,16 @@ let
     lattice = Graphs.grid(dims)
     lrs = LatticeReactionSystem(rn, [tr_1, tr_2, tr_3], lattice)
 
-    # Set simulation parameters and create problems
+    # Set simulation parameters and create problems.
     u0 = [:A => [0,0,500,0,0], :B => [0,0,500,0,0], :C => 0]
     tspan = (0.0, 10.0)
     pV = [:kB => rates[1], :kD => rates[2]]
     pE = [:D => diffusivity]
     dprob = DiscreteProblem(lrs, u0, tspan, (pV, pE))
-    jump_problems = [JumpProblem(lrs, dprob, alg(); save_positions = (false, false)) for alg in [NSM, DirectCRDirect]] # NRM doesn't work. Might need Cartesian grid.
+    # NRM could be added, but doesn't work. Might need Cartesian grid.
+    jump_problems = [JumpProblem(lrs, dprob, alg(); save_positions = (false, false)) for alg in [NSM, DirectCRDirect]] 
 
-    # Tests.
+    # Run tests.
     function get_mean_end_state(jump_prob, Nsims)
         end_state = zeros(size(jump_prob.prob.u0))
         for i in 1:Nsims
