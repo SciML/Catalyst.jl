@@ -139,3 +139,35 @@ let
         @test bif_dia.γ.branch[end].x ≈ 4.0/6
     end
 end
+
+# Tests for nested model with conservation laws.
+let
+    # Creates model.
+    rn1 = @reaction_network rn1 begin
+        (k1, k2), X1 <--> X2
+    end
+    rn2 = @reaction_network rn2 begin
+        (l1, l2), Y1 <--> Y2
+    end
+    @named rn = compose(rn1, [rn2])
+
+    # Creates input parameter and species vectors.
+    @unpack X1, X2, k1, k2 = rn1
+    u_guess = [X1 => 1.0, X2 => 1.0, rn2.Y1 => 1.0, rn2.Y2 => 1.0]
+    p_start = [k1 => 1.0, k2 => 1.0, rn2.l1 => 1.0, rn2.l2 => 1.0]
+    u0 = [X1 => 1.0, X2 => 0.0, rn2.Y1 => 1.0, rn2.Y2 => 0.0]
+
+    # Computes bifurcation diagram.
+    p_span = (0.2, 5.0)
+    bprob = BifurcationProblem(rn, u_guess, p_start, k1; plot_var = X1, u0=u0)
+    opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
+    bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside = true)
+
+    # Checks that the bifurcation diagram is correct.
+    xs = getfield.(bif_dia.γ.branch, :x)
+    k1s = getfield.(bif_dia.γ.branch, :param)
+    all(1 ./ k1s .* (1 .- xs) .≈ xs)
+
+    # Checks that there is an error if information for conserved quantities computation is not provided.
+    @test_throws Exception bprob = BifurcationProblem(rn, u_guess, p_start, k1; plot_var = X1)
+end

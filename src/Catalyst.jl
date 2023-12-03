@@ -106,9 +106,6 @@ export @compound
 export components, iscompound, coefficients
 export balance_reaction
 
-# for functions I am unsure where to best place them.
-include("miscellaneous.jl")
-
 ### Extensions ###
 
 # HomotopyContinuation
