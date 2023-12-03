@@ -147,9 +147,9 @@ version = "0.1.0"
 
 [[deps.BandedMatrices]]
 deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra", "PrecompileTools"]
-git-tree-sha1 = "67bcff3f50026b6fa952721525d3a04f0570d432"
+git-tree-sha1 = "06a2a94d5a4979c36cc7a3c28d70800f448ae5bb"
 uuid = "aae01518-5342-5314-be14-df237901396f"
-version = "1.2.1"
+version = "1.3.0"
 weakdeps = ["SparseArrays"]
 
     [deps.BandedMatrices.extensions]
@@ -595,9 +595,9 @@ version = "1.0.4"
 
 [[deps.Enzyme]]
 deps = ["CEnum", "EnzymeCore", "Enzyme_jll", "GPUCompiler", "LLVM", "Libdl", "LinearAlgebra", "ObjectFile", "Preferences", "Printf", "Random"]
-git-tree-sha1 = "821daa883570994b4c0f9994de2840cc506a51f3"
+git-tree-sha1 = "dd414d440bf55a14750ea0ebb576353cde0303a2"
 uuid = "7da242da-08ed-463a-9acd-ee780be4f1d9"
-version = "0.11.10"
+version = "0.11.11"
 
 [[deps.EnzymeCore]]
 deps = ["Adapt"]
@@ -607,9 +607,9 @@ version = "0.6.4"
 
 [[deps.Enzyme_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "e248a990a4a917e587c6b7fcf64a4311649a267f"
+git-tree-sha1 = "e7e1ae137a07fd2dfccd83418084e53be9de3edb"
 uuid = "7cc45869-7501-5eee-bdea-0790c847d4ef"
-version = "0.0.89+0"
+version = "0.0.96+0"
 
 [[deps.EpollShim_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1440,9 +1440,9 @@ version = "8.73.1"
     DeepDiffs = "ab62b9b5-e342-54a8-a765-a90f495de1a6"
 
 [[deps.Mods]]
-git-tree-sha1 = "072c23c3d4b1f2f56501c0e9873bbe74231b508f"
+git-tree-sha1 = "40788270af3b9914714a9a01db847f3cffa245f4"
 uuid = "7475f97c-0381-53b1-977b-4c60186c8d62"
-version = "2.0.0"
+version = "2.0.3"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
