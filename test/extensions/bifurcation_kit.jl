@@ -166,7 +166,7 @@ let
     # Checks that the bifurcation diagram is correct.
     xs = getfield.(bif_dia.γ.branch, :x)
     k1s = getfield.(bif_dia.γ.branch, :param)
-    all(1 ./ k1s .* (1 .- xs) .≈ xs)
+    @test all(1 ./ k1s .* (1 .- xs) .≈ xs)
 
     # Checks that there is an error if information for conserved quantities computation is not provided.
     @test_throws Exception bprob = BifurcationProblem(rn, u_guess, p_start, k1; plot_var = X1)
