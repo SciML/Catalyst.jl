@@ -46,7 +46,7 @@ Finally, we compute our bifurcation diagram using:
 bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside=true)
 nothing # hide
 ```
-Where `PALC()` designates that we wish to use the pseudo arclength continuation method to track our solution. The third argument (`2`) designates the maximum number of recursions when branches of branches are computed (branches appear as continuation encounters certain bifurcation points). For diagrams with highly branched structures (rare for many common chemical reaction networks) this input is important. Finally, `bothside=true` designates that we wish to perform continuation on both sides of the initial point (which is typically the case). 
+Where `PALC()` designates that we wish to use the pseudo arclength continuation method to track our solution. The third argument (`2`) designates the maximum number of recursions when branches of branches are computed (branches appear as continuation encounters certain bifurcation points). For diagrams with highly branched structures (rare for many common small chemical reaction networks) this input is important. Finally, `bothside=true` designates that we wish to perform continuation on both sides of the initial point (which is typically the case). 
 
 We can plot our bifurcation diagram using the Plots.jl package:
 ```@example ex1
