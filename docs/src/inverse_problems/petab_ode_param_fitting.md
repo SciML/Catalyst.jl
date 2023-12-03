@@ -90,7 +90,7 @@ Each individual measurement is provided as a row of a `DataFrame`. The values ar
 using DataFrames
 measurements = DataFrame(obs_id="obs_P", time=data_ts, measurement=data_vals)
 ```
-Since, in our example, all measurements are of the same observable, we can set `obs_id="obs_P"`. However, it is also possible [include measurements from several different observables](@ref petab_simulation_measurements_several_observables).
+Since, in our example, all measurements are of the same observable, we can set `obs_id="obs_P"`. However, it is also possible to [include measurements from several different observables](@ref petab_simulation_measurements_several_observables).
 
 
 ### Creating a PEtabModel
