@@ -19,7 +19,7 @@ end
 ```
 Next we will create a `BifurcationProblem`. In addition to the `ReactionSystem`, we need to provide:
 - The bifurcation parameter (the parameter which is varied in the bifurcation diagram).
-- A full model parameter set. This includes the values of all non-bifurcation parameters, but also a value for the bifurcation parameter (which correspond to the point in parameter space from which the computation of the bifurcation diagram starts).
+- A full model parameter set. This includes the values of all non-bifurcation parameters, but also a value for the bifurcation parameter (which corresponds to the point in parameter space from which the computation of the bifurcation diagram starts).
 - An initial guess of the steady state values of the system at the provided parameter set. Using this point as a starting guess for root finding, BifurcationKit calculates an initial steady state from which to compute the bifurcation diagram. Hence, this guess does not need to be very exact (but may be important if the system exhibits multistability for the initial parameter set).
 - The species or statistic we wish to plot on the y-axis of the bifurcation diagram (a custom value can be provided by using the [`record_from_solution` argument](https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/periodicOrbit/#.-record*from*solution)).
 
