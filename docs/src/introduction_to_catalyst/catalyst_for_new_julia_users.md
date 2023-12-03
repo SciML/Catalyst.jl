@@ -37,7 +37,8 @@ typeof(1)
 
 Finally, we note that the first time some code is run in Julia, it has to be *compiled*. However, this is only required once per Julia session. Hence, the second time the same code is run, it runs much faster. E.g. try running this line of code first one time, and then one additional time. You will note that the second run is much faster.
 ```@example ex1
-rand(100, 100)^3.5;
+rand(100, 100)^3.5
+nothing # hide
 ```
 (This code creates a random 100x100 matrix, and takes it to the power of 3.5)
 

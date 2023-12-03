@@ -29,11 +29,10 @@ data_vals = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 
 # Plots the true solutions and the (synthetic data) measurements.
 using Plots
+default(bottom_margin=4Plots.Measures.mm,left_margin=4Plots.Measures.mm) # hide
 plot(true_sol; idxs=:P, label="True solution", lw=8)
 plot!(data_ts, data_vals; label="Measurements", seriestype=:scatter, ms=6, color=:blue)
-nothing # hide
 ```
-![petab data solution](../assets/petab_data.svg)
 
 Generally, PEtab takes five different inputs to define an optimisation problem (the minimiser of which generates a fitted parameter set):
 1. **Model**: The model which we want to fit to the data (a `ReactionSystem`).
@@ -91,7 +90,7 @@ Each individual measurement is provided as a row of a `DataFrame`. The values ar
 using DataFrames
 measurements = DataFrame(obs_id="obs_P", time=data_ts, measurement=data_vals)
 ```
-Since, in our example, all measurements are of the same observable, we can set `obs_id="obs_P"`. However, it is also possible [include measurements from several different observables](petab_simulation_measurements_several_observables).
+Since, in our example, all measurements are of the same observable, we can set `obs_id="obs_P"`. However, it is also possible to [include measurements from several different observables](@ref petab_simulation_measurements_several_observables).
 
 
 ### Creating a PEtabModel
@@ -104,8 +103,11 @@ nothing # hide
 ### Fitting parameters
 We are now able to fit our model to the data. First, we create a `PEtabODEProblem`. Here, we use `petab_model` as the only input, but it is also possible to set various [numeric solver and automatic differentiation options](@ref petab_simulation_options) (such as method or tolerance).
 ```@example petab1
-petab_problem = PEtabODEProblem(petab_model)
+petab_problem = PEtabODEProblem(petab_model; verbose=false) # hide
 nothing # hide
+```
+```julia
+petab_problem = PEtabODEProblem(petab_model)
 ```
 Since no additional input is given, default options are selected by PEtab.jl (and generally, its choices are good).
 
@@ -113,22 +115,22 @@ To fit a parameter set we use the `calibrate_model` function. In addition to our
 ```@example petab1
 using Optim
 p0 = generate_startguesses(petab_problem, 1)
+p0 = [0.0, 0.0, 0.0] # hide
+res = calibrate_model(petab_problem, p0, IPNewton()) # hide
 res = calibrate_model(petab_problem, p0, IPNewton())
 ```
 
 We can now simulate our model for the fitted parameter set, and compare the result to the measurements and true solution.
 ```@example petab1
-oprob_fitted = remake(oprob; p=get_ps(res, petab_problem))
+oprob_fitted = remake(oprob_true; p=get_ps(res, petab_problem))
 fitted_sol = solve(oprob_fitted, Tsit5())
 plot!(fitted_sol; idxs=:P, label="Fitted solution", linestyle=:dash, lw=6, color=:lightblue)
-nothing # hide
 ```
-![petab fitted solution](../assets/petab_fitted_sol.svg)
 
 Here we use the `get_ps` function to retrieve a full parameter set using the optimal parameters. Alternatively, the `ODEProblem` or fitted simulation can be retrieved directly using the `get_odeproblem` or `get_odesol` [functions](https://sebapersson.github.io/PEtab.jl/dev/API_choosen/#PEtab.get_odeproblem), respectively (and the initial condition using the `get_u0` function). The calibration result can also be found in `res.xmin`, however, note that PEtab automatically ([unless a linear scale is selected](@ref petab_parameters_scales)) converts parameters to logarithmic scale, so typically `10 .^res.xmin` are the values of interest. If you investigate the result from this example you might note, that even if PEtab.jl has found the global optimum (which fits the data well), this does not actually correspond to the true parameter set. This phenomenon is related to the concept of *identifiability*, which is very important for parameter fitting.
 
 ### Final notes
-PEtab.jl also supports [multistart optimisation](@ref petab_multistart_optimisation), [automatic pre-equilibration before simulations](https://sebapersson.github.io/PEtab.jl/stable/Brannmark/), and [events](@ref petab_events). Various [plot recipes](@ref petab_plotting) exist for investigating the optimisation process. Please read the [PETab.jl documentation](https://sebapersson.github.io/PEtab.jl/stable/) for a more complete description of the package's features. Below follows additional details of various options and features (generally, PEtab is able to find good default values for most options not specified).
+PEtab.jl also supports [multistart optimisation](@ref petab_multistart_optimisation), [automatic pre-equilibration before simulations](https://sebapersson.github.io/PEtab.jl/stable/Brannmark/), and [events](@ref petab_events). Various [plot recipes](@ref petab_plotting) exist for investigating the optimisation process. Please read the [PETab.jl documentation](https://sebapersson.github.io/PEtab.jl/stable/) for a more complete description of the package's features. Below follows additional details of various options and features (generally, PEtab is able to find good default values for most options that are not specified).
 
 ## [Additional features: Observables](@id petab_observables)
 
@@ -136,10 +138,10 @@ PEtab.jl also supports [multistart optimisation](@ref petab_multistart_optimisat
 It is possible for observables to be any algebraic expression of species concentrations and parameters. E.g. in this example the total amount of `X` in the system is an observable:
 ```@example petab2
 using Catalyst, PEtab # hide
-rn = @reaction_network begin
+two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
-@unpack X1, X2 = rn
+@unpack X1, X2 = two_state_model
 obs_X = PEtabObservable(X1 + X2, 0.5)
 ```
 
@@ -174,7 +176,7 @@ nothing # hide
 ```
 We then provide `parameter_map=[:kB => 1.0]` when we assembly our model:
 ```@example petab1
-petab_model = PEtabModel(rn, observables, measurements, params; state_map=u0, parameter_map=[:kB => 1.0])
+petab_model_known_param = PEtabModel(rn, observables, measurements, params; state_map=u0, parameter_map=[:kB => 1.0])
 nothing # hide
 ```
 
@@ -382,11 +384,13 @@ While in our basic example, we do not provide any additional information to our 
 
 Here is an example, taken from the [more detailed PEtab.jl documentation](https://sebapersson.github.io/PEtab.jl/dev/Boehm/#Creating-a-PEtabODEProblem)
 ```@example petab1
-petab_problem = PEtabODEProblem(petab_model, 
-                                ode_solver=ODESolver(Rodas5P(), abstol=1e-8, reltol=1e-8), 
-                                gradient_method=:ForwardDiff, 
-                                hessian_method=:ForwardDiff)
-nothing # hide
+PEtabODEProblem(petab_model, ode_solver=ODESolver(Rodas5P(), abstol=1e-8, reltol=1e-8), gradient_method=:ForwardDiff, hessian_method=:ForwardDiff, verbose=false); nothing # hide
+```
+```julia
+PEtabODEProblem(petab_model, 
+                ode_solver=ODESolver(Rodas5P(), abstol=1e-8, reltol=1e-8), 
+                gradient_method=:ForwardDiff, 
+                hessian_method=:ForwardDiff)
 ```
 where we simulate our ODE model using the `Rodas5p` method (with absolute and relative tolerance both equal `1e-8`) and use [forward automatic differentiation](https://github.com/JuliaDiff/ForwardDiff.jl) for both gradient and hessian computation. More details on available ODE solver options can be found in [the PEtab.jl documentation](https://sebapersson.github.io/PEtab.jl/dev/API_choosen/#PEtab.ODESolver).
 
@@ -403,14 +407,20 @@ Please read the [PEtab.jl documentation](https://sebapersson.github.io/PEtab.jl/
 
 ### [Optimisation path recording](@id petab_optimisation_path_recording)
 
-To record all the parameter sets evaluated (and their objective values) during the optimisation procedure, provide the `save_trace=true` argument to `calibrate_model` (or `calibrate_model_multistart`). This is required for the various [optimisation evaluation plots](@ref petab_plotting) provided by PEtab.jl. If desired, this information can be accessed in the calibration output's `.xtrace` and `.ftrace` fields.
-
+To record all the parameter sets evaluated (and their objective values) during the optimisation procedure, provide the `save_trace=true` argument to `calibrate_model` (or `calibrate_model_multistart`):
+```@example petab1
+res = calibrate_model(petab_problem, p0, IPNewton(); save_trace=true)
+nothing # hide
+```
+This is required for the various [optimisation evaluation plots](@ref petab_plotting) provided by PEtab.jl. If desired, this information can be accessed in the calibration output's `.xtrace` and `.ftrace` fields.
 
 ## Objective function extraction
 While PEtab.jl provides various tools for analysing the objective function generated by `PEtabODEProblem`, it is also possible to extract this function for customised analysis. Given a `PEtabODEProblem`
 ```@example petab1
+petab_problem = PEtabODEProblem(petab_model; verbose=false); nothing # hide
+```
+```julia
 petab_problem = PEtabODEProblem(petab_model)
-nothing # hide
 ```
 We can find the:
 1. Objective function as the `petab_problem.compute_cost`. It takes a single argument (`p`) and returns the objective value.
@@ -430,21 +440,27 @@ And one additional optional argument:
  
 Because `calibrate_model_multistart` handles initial guess sampling, unlike for `calibrate_model`, no initial guess has to be provided. 
 
-Here, we fit parameters through 10 independent optimisation runs, using QuasiMonteCarlo's `SobolSample` method, and save the result to the OptimizationRuns folder:
+Here, we fit parameters through 10 independent optimisation runs, using QuasiMonteCarlo's `SobolSample` method, and save the result to the OptimisationRuns folder:
 ```@example petab1
 using Optim
 using QuasiMonteCarlo
-res_ms = calibrate_model_multistart(petab_problem, IPNewton(), 10, "OptimizationRuns"; sampling_method=QuasiMonteCarlo.SobolSample())
+mkdir("OptimisationRuns") # hide
+res_ms = calibrate_model_multistart(petab_problem, IPNewton(), 10, "OptimisationRuns"; sampling_method=QuasiMonteCarlo.SobolSample())
+res_ms = calibrate_model_multistart(petab_problem, IPNewton(), 10, "OptimisationRuns"; sampling_method=QuasiMonteCarlo.SobolSample()) # hide
+nothing # hide
 ```
 The best result across all runs can still be retrieved using `get_ps(res_ms, petab_problem)`, with the results of the individual runs being stored in the `res_ms.runs` field. 
 
 To load the result in a later session, we can call:
 ```@example petab1
-res_ms = PEtabMultistartOptimisationResult("OptimizationRuns")
+res_ms = PEtabMultistartOptimisationResult("OptimisationRuns")
+nothing # hide
 ```
-where `"OptimizationRuns"` is the name of the save directory (specified in `calibrate_model_multistart`). If the OptimizationRuns folder contains the output from several runs, we can designate which to load using the `which_run` argument. Here we load the second run to be saved in that folder:
+where `"OptimisationRuns"` is the name of the save directory (specified in `calibrate_model_multistart`). If the OptimisationRuns folder contains the output from several runs, we can designate which to load using the `which_run` argument. Here we load the second run to be saved in that folder:
 ```@example petab1
-res_ms = PEtabMultistartOptimisationResult("OptimizationRuns"; which_run="2")
+res_ms = PEtabMultistartOptimisationResult("OptimisationRuns"; which_run="2")
+rm("OptimisationRuns", recursive=true) # hide
+nothing # hide
 ```
 By default, `which_run` loads the first run saved to that directory.
 
@@ -468,8 +484,10 @@ Here, the event only triggers whenever the condition changes from `false` to `tr
 
 Whenever we have several events or not, we bundle them together in a single vector which is later passed to the `PEtabODEProblem` using the `events` argument:
 ```@example petab1
+params = [par_kB, par_kD, par_kP] # hide
 events = [event1, event2]
 petab_model = PEtabModel(rn, observables, measurements, params; state_map=u0, events=events)
+nothing # hide
 ```
 
 More details on how to use events, including how to create events with multiple targets, can be found in [PEtab.jl's documentation](https://sebapersson.github.io/PEtab.jl/stable/Julia_event/).
@@ -482,17 +500,15 @@ There exist various types of graphs that can be used to evaluate the parameter f
 
 To, for a single start calibration run, plot, for each iteration of the optimization process, the best objective value achieved so far, run:
 ```@example petab1
+res = calibrate_model(petab_problem, p0, IPNewton(); save_trace=true) # hide
 plot(res)
-nothing # hide
 ```
-![petab single best objective plot](../assets/petab_best_objective_single_run.svg)
 
 For a multi-start calibration run, the default output is instead a so-called waterfall plot:
 ```@example petab1
+res_ms = PEtabMultistartOptimisationResult("../assets/boehm___for_petab_tutorial") # hide
 plot(res_ms)
-nothing # hide
 ```
-![petab waterfall plot](../assets/petab_waterfall.svg)
 
 (for this, and the next plot, we use a multi-start optimisation result from a different model, which yields less trivial optimisation runs than our catalysis one)
 
@@ -501,13 +517,11 @@ In the waterfall plot, each dot shows the final objective value for a single run
 To instead use the best objective value plot for a multi-start run (with one curve for each run), the `plot_type` argument is used:
 ```@example petab1
 plot(res_ms; plot_type = :best_objective)
-nothing # hide
 ```
-![petab best objective plot](../assets/petab_best_objective.svg)
 
 There exist several types of plots for both types of calibration results. More details of the types of available plots, and how to customise them, can be found [here](https://sebapersson.github.io/PEtab.jl/stable/optimisation_output_plotting/).
 
-
+---
 ## [Citations](@id petab_citations)
 If you use this functionality in your research, [in addition to Catalyst](@ref catalyst_citation), please cite the following papers to support the authors of the PEtab.jl package (currently there is no article associated with this package) and the PEtab standard:
 ```
@@ -534,6 +548,7 @@ If you use this functionality in your research, [in addition to Catalyst](@ref c
 }
 ```
 
+---
 ## References
 [^1]: [Schmiester, L et al. *PEtab—Interoperable specification of parameter estimation problems in systems biology*, PLOS Computational Biology (2021).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008646)
 [^2]: [Hass, H et al. *PBenchmark problems for dynamic modeling of intracellular processes*, Bioinformatics (2019).](https://academic.oup.com/bioinformatics/article/35/17/3073/5280731?login=false)
