@@ -1291,9 +1291,9 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[deps.LinearAlgebraX]]
 deps = ["LinearAlgebra", "Mods", "Permutations", "Primes", "SimplePolynomials"]
-git-tree-sha1 = "ea0f5146b5ccbd222b0f52d4006a820422975536"
+git-tree-sha1 = "89ed93300377e0742ae8a7423f7543c8f5eb73a4"
 uuid = "9b3f67b0-2d00-526e-9884-9e4938f8fb88"
-version = "0.2.4"
+version = "0.2.5"
 
 [[deps.LinearMaps]]
 deps = ["LinearAlgebra"]
@@ -1460,9 +1460,9 @@ version = "8.73.1"
     DeepDiffs = "ab62b9b5-e342-54a8-a765-a90f495de1a6"
 
 [[deps.Mods]]
-git-tree-sha1 = "e3dfc14bf08a3a983e932cddb22018336cab0e1c"
+git-tree-sha1 = "c703557e9194fce2417b6afc3e1f0318213c401a"
 uuid = "7475f97c-0381-53b1-977b-4c60186c8d62"
-version = "1.3.4"
+version = "2.1.0"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
