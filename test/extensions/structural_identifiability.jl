@@ -101,6 +101,7 @@ let
 end
 
 # Tests on a made-up reaction network with mix of identifiable and non-identifiable components.
+# Tests for system with conserved quantity.
 # Tests for symbolics known_p
 # Tests using an equation for measured quantity.
 let 
@@ -184,6 +185,58 @@ let
     make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M*gw_osc_complt.E])
 end
 
+# Tests for hierarchical model with conservation laws at both top and internal levels.
+let
+    # Identifiability analysis for Catalyst model.
+    rs1 = @reaction_network rn1 begin
+        (k1, k2), X1 <--> X2
+    end
+    rs2 = @reaction_network rn2 begin
+        (k3, k4), X3 <--> X4
+    end
+    @named rs_catalyst = flatten(compose(rs1, [rs2]))
+    @unpack X1, X2, k1, k2 = rn1
+    gi_1 = assess_identifiability(rs_catalyst; measured_quantities=[X1, X2, rs2.X3], known_p=[k1])
+    li_1 = assess_local_identifiability(rs_catalyst; measured_quantities=[X1, X2, rs2.X3], known_p=[k1])
+    ifs_1 = find_identifiable_functions(rs_catalyst; measured_quantities=[X1, X2, rs2.X3], known_p=[k1])
+
+    # Identifiability analysis for Catalyst converted to StructuralIdentifiability.jl model.
+    rs_ode = make_si_ode(rs_catalyst; measured_quantities=[X1, X2, rs2.X3], known_p=[k1])
+    gi_2 = assess_identifiability(rs_ode)
+    li_2 = assess_local_identifiability(rs_ode)
+    ifs_2 = find_identifiable_functions(rs_ode)
+
+    # Identifiability analysis for StructuralIdentifiability.jl model (declare this overwrites e.g. X2 variable etc.).
+    rs_si = @ODEmodel(
+        X1'(t) = -k1*X1(t) + k2*X2(t), 
+        X2'(t) = k1*X1(t) - k2*X2(t),
+        rn2₊X3'(t) = -rn2₊k3*rn2₊X3(t) + rn2₊k4*rn2₊X4(t), 
+        rn2₊X4'(t) = rn2₊k3*rn2₊X3(t) - rn2₊k4*rn2₊X4(t),
+        y1(t) = X1,
+        y2(t) = X2,
+        y3(t) = rn2₊X3,
+        y4(t) = k1
+    )
+    gi_3 = assess_identifiability(rs_si)
+    li_3 = assess_local_identifiability(rs_si)
+    ifs_3 = find_identifiable_functions(rs_si)
+        
+    # Check outputs.
+    @test sym_dict(gi_1) == sym_dict(gi_3)
+    @test sym_dict(li_1) == sym_dict(li_3)
+    @test length(ifs_1)-2 == length(ifs_2)-2 == length(ifs_3) # In the first case, the conservation law parameter is also identifiable.
+
+    # Checks output for the SI converted version of the catalyst model.
+    # For nested systems with conservation laws, conserved quantities like Γ[1], cannot be replaced back.
+    # Hence, here you display identifiability for `Γ[1]` instead of X2.
+    gi_1_no_cq = filter(x -> !occursin("X2",String(x[1])) && !occursin("X4",String(x[1])), sym_dict(gi_1))
+    gi_2_no_cq = filter(x -> !occursin("Γ",String(x[1])), sym_dict(gi_2))
+    li_1_no_cq = filter(x -> !occursin("X2",String(x[1])) && !occursin("X4",String(x[1])), sym_dict(li_1))
+    li_2_no_cq = filter(x -> !occursin("Γ",String(x[1])), sym_dict(li_2))
+    @test gi_1_no_cq == gi_2_no_cq
+    @test li_1_no_cq == li_2_no_cq
+end
+
 # Tests directly on reaction systems with known identifiability structures.
 # Test provided by Alexander Demin.
 let
@@ -236,6 +289,5 @@ let
         :x2 => :globally,
         :x3 => :globally,
     )
-    # Will probably be fixed in the 0.5 release of SI.jl
-    @test_broken find_identifiable_functions(rs, measured_quantities = [:x3])
+    @test length(find_identifiable_functions(rs, measured_quantities = [:x3])) == 1
 end
