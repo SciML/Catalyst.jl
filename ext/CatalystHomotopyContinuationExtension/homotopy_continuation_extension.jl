@@ -36,6 +36,7 @@ Notes:
 ```
   """
 function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative=true, neg_thres=-1e-20, u0=[], kwargs...)
+    is_autonomous(rs) || error("Attempting to compute steady state for non-autonomous system (e.g. does some rate depend on $(rs.iv)?), this is not possible.")
     ss_poly = steady_state_polynomial(rs, ps, u0)
     sols = HC.real_solutions(HC.solve(ss_poly; kwargs...))
     reorder_sols!(sols, ss_poly, rs)
