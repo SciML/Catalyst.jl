@@ -195,7 +195,7 @@ let
         (k3, k4), X3 <--> X4
     end
     @named rs_catalyst = flatten(compose(rs1, [rs2]))
-    @unpack X1, X2, k1, k2 = rn1
+    @unpack X1, X2, k1, k2 = rs1
     gi_1 = assess_identifiability(rs_catalyst; measured_quantities=[X1, X2, rs2.X3], known_p=[k1])
     li_1 = assess_local_identifiability(rs_catalyst; measured_quantities=[X1, X2, rs2.X3], known_p=[k1])
     ifs_1 = find_identifiable_functions(rs_catalyst; measured_quantities=[X1, X2, rs2.X3], known_p=[k1])
@@ -210,11 +210,11 @@ let
     rs_si = @ODEmodel(
         X1'(t) = -k1*X1(t) + k2*X2(t), 
         X2'(t) = k1*X1(t) - k2*X2(t),
-        rn2₊X3'(t) = -rn2₊k3*rn2₊X3(t) + rn2₊k4*rn2₊X4(t), 
-        rn2₊X4'(t) = rn2₊k3*rn2₊X3(t) - rn2₊k4*rn2₊X4(t),
+        rs2₊X3'(t) = -rs2₊k3*rs2₊X3(t) + rs2₊k4*rs2₊X4(t), 
+        rs2₊X4'(t) = rs2₊k3*rs2₊X3(t) - rs2₊k4*rs2₊X4(t),
         y1(t) = X1,
         y2(t) = X2,
-        y3(t) = rn2₊X3,
+        y3(t) = rs2₊X3,
         y4(t) = k1
     )
     gi_3 = assess_identifiability(rs_si)
