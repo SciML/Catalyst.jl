@@ -188,10 +188,10 @@ end
 # Tests for hierarchical model with conservation laws at both top and internal levels.
 let
     # Identifiability analysis for Catalyst model.
-    rs1 = @reaction_network rn1 begin
+    rs1 = @reaction_network rs1 begin
         (k1, k2), X1 <--> X2
     end
-    rs2 = @reaction_network rn2 begin
+    rs2 = @reaction_network rs2 begin
         (k3, k4), X3 <--> X4
     end
     @named rs_catalyst = flatten(compose(rs1, [rs2]))
