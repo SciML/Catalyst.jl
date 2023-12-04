@@ -35,7 +35,8 @@ function steady_state_stability(u::Vector{T}, rs::ReactionSystem, p;
     # Warning checks.
     !is_autonomous(rs) && non_autonomous_war && @warn "Attempting to compute stability for a non-autonomous system. Set `non_autonomous_war=false` to disable this warning."
 
-    # Because Jacobian currently requires ps to be a normal vector, can be removed once this get fixed in MTK.
+    # Because Jacobian currently requires u and p to be a normal vector.
+    # Can be removed once this get fixed in MTK.
     if (u isa Vector{<:Pair}) || (u isa Dict) 
         u_dict = Dict(symmap_to_varmap(rs, u))
         u = [u_dict[var] for var in states(rs)]        
@@ -45,12 +46,13 @@ function steady_state_stability(u::Vector{T}, rs::ReactionSystem, p;
         p = [p_dict[var] for var in parameters(rs)]
     end
 
-    # Computes stability
+    # Computes stability (by checking that the real part of all eigenvalues are negative).
     jac = ss_jac(u, p, Inf)
     return maximum(real.(eigvals(jac))) < 0
 end
 # Computes the stability for a vector of steady states.
-function steady_state_stability(us::Vector{Vector{T}}, rs::ReactionSystem, p; sparse=false, ss_jac = steady_state_jac(rs; u0=us[1], sparse=sparse)) where T
+function steady_state_stability(us::Vector{Vector{T}}, rs::ReactionSystem, p; 
+                                sparse=false, ss_jac = steady_state_jac(rs; u0=us[1], sparse=sparse)) where T
     return [steady_state_stability(u, rs, p) for u in us]
 end
 
