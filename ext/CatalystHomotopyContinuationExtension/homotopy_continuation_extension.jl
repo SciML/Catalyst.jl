@@ -58,14 +58,6 @@ function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     return poly_type_convert(ss_poly)
 end
 
-# If u0s are not given while conservation laws are present, throws an error.
-function conservationlaw_errorcheck(rs, pre_varmap)
-    vars_with_vals = Set(p[1] for p in pre_varmap)
-    any(s -> s in vars_with_vals, species(rs)) && return
-    isempty(conservedequations(rs)) || 
-        error("The system has conservation laws but initial conditions were not provided for some species.")
-end
-
 # Parses and expression and return a version where any exponents that are Float64 (but an int, like 2.0) are turned into Int64s.
 make_int_exps(expr) = wrap(Rewriters.Postwalk(Rewriters.PassThrough(___make_int_exps))(unwrap(expr))).val
 function ___make_int_exps(expr)
