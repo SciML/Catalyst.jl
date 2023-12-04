@@ -98,3 +98,12 @@ let
 
     @test_throws Exception hc_steady_states(rs, [:v => 5.0, :K => 2.5, :n => 2.7, :d => 1.0]; show_progress=false)
 end
+
+# Tests that non-autonomous system throws an error
+let 
+    rs = @reaction_network begin
+        (k,t), 0 <--> X
+    end
+    ps = [k => 1.0]
+    @test_throws Exception hc_steady_states(rs, ps)
+end
