@@ -9,7 +9,7 @@ DifferentialEquations package](https://docs.sciml.ai/DiffEqDocs/stable/), which
 Catalyst uses for all simulations.
 
 
-## Monte Carlo simulations using `EnsembleProblem`s
+## [Monte Carlo simulations using `EnsembleProblem`s](@id advanced_simulations_ensemble_problems)
 In many contexts one needs to run multiple simulations of a model, for example
 to collect statistics of SDE or jump process solutions, or to systematically
 vary parameter values within a model. While it is always possible to manually
