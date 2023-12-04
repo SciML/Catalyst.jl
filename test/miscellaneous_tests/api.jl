@@ -446,3 +446,51 @@ let
     neweqs = getfield.(equations(ns), :rhs)
     @test_throws MethodError Catalyst.to_multivariate_poly(neweqs)
 end
+
+# Tests `is_autonomous` function.
+let 
+    # Using default iv.
+    rn1 = @reaction_network begin
+        (p + X*(p1/(t+p3)),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn2 = @reaction_network begin
+        (hill(X, v/t, K, n),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn3 = @reaction_network begin
+        (p + X*(p1+p2),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+
+    @test !is_autonomous(rn1)
+    @test !is_autonomous(rn2)
+    @test is_autonomous(rn3)
+
+    # Using non-default iv.
+    rn4 = @reaction_network begin
+        @ivs i1 i2
+        (p + X*(p1/(1+i1)),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn5 = @reaction_network begin
+        @ivs i1 i2
+        (p + X*(i2+p2),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn6 = @reaction_network begin
+        @ivs i1 i2
+        (hill(X, v/i1, i2, n),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn7 = @reaction_network begin
+        @ivs i1 i2
+        (p + X*(p1+p2),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+
+    @test !is_autonomous(rn4)
+    @test !is_autonomous(rn5)
+    @test !is_autonomous(rn6)
+    @test is_autonomous(rn7)
+end

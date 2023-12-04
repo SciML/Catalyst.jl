@@ -42,6 +42,7 @@ import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, 
 import MacroTools, Graphs
 import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne
 import DataStructures: OrderedDict, OrderedSet
+import LinearAlgebra.eigvals
 import Parameters: @with_kw_noshow
 import Symbolics: occursin, wrap
 
@@ -148,6 +149,10 @@ include("chemistry_functionality.jl")
 export @compound, @compounds
 export iscompound, components, coefficients, component_coefficients
 export balance_reaction
+
+# for functions I am unsure where to best place them.
+include("steady_state_stability.jl")
+export steady_state_stability, steady_state_jac
 
 ### Extensions ###
 
