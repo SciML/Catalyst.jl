@@ -3,6 +3,7 @@
 # Fetch packages.
 using Catalyst, OrdinaryDiffEq
 using Random, Test
+import HomotopyContinuation
 
 # Sets rnd number.
 using StableRNGs
