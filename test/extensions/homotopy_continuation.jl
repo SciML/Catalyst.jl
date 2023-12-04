@@ -145,6 +145,6 @@ let
     rs = @reaction_network begin
         (k,t), 0 <--> X
     end
-    ps = [k => 1.0]
+    ps = [:k => 1.0]
     @test_throws Exception hc_steady_states(rs, ps)
 end
