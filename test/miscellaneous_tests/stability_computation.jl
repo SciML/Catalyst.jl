@@ -30,17 +30,23 @@ let
         # Generates random parameter values (which can generate all steady states cases).
         p = [:v => 1.0 + 3*rand(rng), :K => 0.5 + 2*rand(rng), :n => rand(rng,[1,2,3,4]), :d => 0.5 + rand(rng)]
 
+        # Computes stability using various jacobian options.
         sss = hc_steady_states(rn, p)
         stabs_1 = steady_state_stability(sss, rn, p)
         stabs_2 = steady_state_stability(sss, rn, p; sparse=true)
         stabs_3 = steady_state_stability(sss, rn, p; ss_jac=ss_jac)
         stabs_4 = steady_state_stability(sss, rn, p; ss_jac=ss_jac_sparse)
 
+        # Confirms stability using simulations.
         for (idx,ss) in enumerate(sss)
             oprob = ODEProblem(rn, [1.001, 0.999] .* ss, (0.0,1000.0), p)
             sol_end = solve(oprob, Rosenbrock23())[end]
             stabs_5 = ss ≈ sol_end
             @test stabs_1[idx] == stabs_2[idx] == stabs_3[idx] == stabs_4[idx] == stabs_5
+
+            # Checks stability when steady state is given on a pair form ([:X => x_val, :Y => y_val]).
+            stabs_6 = steady_state_stability(Pair.(states(rn),ss), rn, p)
+            @test stabs_5 == stabs_6
         end
     end
 end
@@ -49,6 +55,7 @@ end
 # Tests for system with conservation laws.
 # Tests for various input forms of u0 and ps.
 let
+    # Creates model.
     rn = complete(@reaction_network begin
         k1+Z, Y --> 2X
         k2, 2X --> X + Y
@@ -56,6 +63,8 @@ let
         k4, X --> 0
         (kD1+X, kD2), 2Z <--> Z2
     end)
+
+    # Creates various forms of input.
     @unpack k1, k2, k3, k4, kD1, kD2, X, Y, Z, Z2 = rn
     u0_1 = [X => 1.0, Y => 1.0, Z => 1.0, Z2 => 1.0]
     u0_2 = [:X => 1.0, :Y => 1.0, :Z => 1.0, :Z2 => 1.0]
@@ -66,6 +75,7 @@ let
     ps_3 = [rn.k1 => 8.0, rn.k2 => 2.0, rn.k3 => 1.0, rn.k4 => 1.5, rn.kD1 => 0.5, rn.kD2 => 4.0]
     ps_4 = [8.0, 2.0, 1.0, 1.5, 0.5, 4.0]
     
+    # Computes stability using various input forms, and checks that the output is correct. 
     sss = hc_steady_states(rn, ps_1; u0=u0_1)
     for u0 in [u0_1, u0_2, u0_3, u0_4], ps in [ps_1, ps_2, ps_3, ps_4]
         stab_1 = steady_state_stability(sss, rn, ps)
@@ -77,4 +87,7 @@ let
         @test length(stab_2) == 3
         @test count(stab_2) == 2
     end
+
+    # Confirms error when computing Jacobian with wrong length of u0.
+    @test_throws Exception steady_state_jac(rn; u0=[1.0, 1.0])
 end
