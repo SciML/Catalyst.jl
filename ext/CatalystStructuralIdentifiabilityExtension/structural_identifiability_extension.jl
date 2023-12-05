@@ -87,7 +87,6 @@ function make_osys(rs::ReactionSystem; remove_conserved=true)
     vars = [states(rs); parameters(rs)]
 
     # Computes equations for system conservation laws.
-    # These cannot be computed for hierarchical systems (and hence this is skipped). 
     # If there are no conserved equations, the `conseqs` variable must still have the `Vector{Pair{Any, Any}}` type.
     if !remove_conserved
         conseqs = Vector{Pair{Any, Any}}[]
