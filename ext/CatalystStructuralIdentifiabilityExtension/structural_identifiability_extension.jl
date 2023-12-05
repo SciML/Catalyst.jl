@@ -109,9 +109,9 @@ function make_measured_quantities(rs::ReactionSystem, measured_quantities::Vecto
     end
 
     # Appends the known parameters to the measured_quantities vector. Converts any Symbols to symbolics.
-    measured_quantities = [measured_quantities; known_p]
-    measured_quantities = [(q isa Symbol) ? Catalyst._symbol_to_var(rs, q) : q for q in measured_quantities]
-    measured_quantities = vector_subs(measured_quantities, conseqs)
+    mqiterator = Iterators.flatten((measured_quantities, known_p))
+    mqs = [(q isa Symbol) ? Catalyst._symbol_to_var(rs, q) : q for q in mqiterator]
+    mqs = vector_subs(measured_quantities, conseqs)
 
     # Creates one internal observation variable for each measured quantity (`___internal_observables`).
     # Creates a vector of equations, setting each measured quantity equal to one observation variable.
