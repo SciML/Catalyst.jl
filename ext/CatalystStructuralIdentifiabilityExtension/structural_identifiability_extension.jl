@@ -8,7 +8,7 @@ Creates a ODE system of the form used within the StructuralIdentifiability.jl pa
 
 Arguments:
 - `rs::ReactionSystem`; The reaction system we wish to convert to an ODE.
-- `measured_quantities=[]`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.s`, or the symbol `:x`). Defaults to the system's observables.
+- `measured_quantities=[]`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.s`, or the symbol `:x`). 
 - `known_p = Num[]`: List of parameters which values are known. 
 - `ignore_no_measured_warn = false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty. 
 - `remove_conserved = true`: Whether to eliminate conservation laws when computing the ode (this can reduce runtime of identifiability analysis significantly). 
@@ -25,7 +25,6 @@ make_si_ode(rs; measured_quantities = [:X], known_p = [:p])
 Notes:
 - This function is part of the StructuralIdentifiability.jl extension. StructuralIdentifiability.jl must be imported to access it.
 - `measured_quantities` and `known_p` input may also be symbolic (e.g. measured_quantities = [rs.X])
-```
 """
 function Catalyst.make_si_ode(rs::ReactionSystem; measured_quantities = [], known_p = [], 
                               ignore_no_measured_warn = false, remove_conserved = true)
@@ -33,12 +32,36 @@ function Catalyst.make_si_ode(rs::ReactionSystem; measured_quantities = [], know
     # Gives these to SI to create an SI ode model of its preferred form.
     osys, conseqs, _ = make_osys(rs; remove_conserved)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p, conseqs; ignore_no_measured_warn)
-    return SI.preprocess_ode(osys, measured_quantities)[1]
+    return SI.mtk_to_si(osys, measured_quantities)[1]
 end
 
 ### Structural Identifiability Wrappers ###
 
-# Creates dispatch for SI's local identifiability analysis function.
+"""
+assess_local_identifiability(rs::ReactionSystem, args...; measured_quantities = Num[], known_p = Num[],, remove_conserved = true, ignore_no_measured_warn=false, kwargs...)
+
+Applies StructuralIdentifiability.jl's `assess_local_identifiability` function to a Catalyst `ReactionSystem`. Internally it is converted ot a `ODESystem`, for which structural identifiability is computed.
+
+Arguments:
+- `rs::ReactionSystem`; The reaction system we wish to compute structural identifiability for.
+- `measured_quantities=[]`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.s`, or the symbol `:x`). 
+- `known_p = Num[]`: List of parameters which values are known. 
+- `ignore_no_measured_warn = false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty. 
+- `remove_conserved = true`: Whether to eliminate conservation laws when computing the ode (this can reduce runtime of identifiability analysis significantly). 
+
+Example:
+```julia
+using Catalyst, StructuralIdentifiability
+rs = @reaction_network begin
+    (p,d), 0 <--> X
+end
+assess_local_identifiability(rs; measured_quantities = [:X], known_p = [:p])
+```
+
+Notes:
+- This function is part of the StructuralIdentifiability.jl extension. StructuralIdentifiability.jl must be imported to access it.
+- `measured_quantities` and `known_p` input may also be symbolic (e.g. measured_quantities = [rs.X])
+"""
 function SI.assess_local_identifiability(rs::ReactionSystem, args...; measured_quantities = Num[], 
                                          known_p = Num[], funcs_to_check = Vector(), remove_conserved = true, 
                                          ignore_no_measured_warn=false, kwargs...)
@@ -52,7 +75,31 @@ function SI.assess_local_identifiability(rs::ReactionSystem, args...; measured_q
     return make_output(out, funcs_to_check, reverse.(conseqs))
 end
 
-# Creates dispatch for SI's global identifiability analysis function.
+"""
+assess_identifiability(rs::ReactionSystem, args...; measured_quantities = Num[], known_p = Num[],, remove_conserved = true, ignore_no_measured_warn=false, kwargs...)
+
+Applies StructuralIdentifiability.jl's `assess_identifiability` function to a Catalyst `ReactionSystem`. Internally it is converted ot a `ODESystem`, for which structural identifiability is computed.
+
+Arguments:
+- `rs::ReactionSystem`; The reaction system we wish to compute structural identifiability for.
+- `measured_quantities=[]`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.s`, or the symbol `:x`). 
+- `known_p = Num[]`: List of parameters which values are known. 
+- `ignore_no_measured_warn = false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty. 
+- `remove_conserved = true`: Whether to eliminate conservation laws when computing the ode (this can reduce runtime of identifiability analysis significantly). 
+
+Example:
+```julia
+using Catalyst, StructuralIdentifiability
+rs = @reaction_network begin
+    (p,d), 0 <--> X
+end
+assess_identifiability(rs; measured_quantities = [:X], known_p = [:p])
+```
+
+Notes:
+- This function is part of the StructuralIdentifiability.jl extension. StructuralIdentifiability.jl must be imported to access it.
+- `measured_quantities` and `known_p` input may also be symbolic (e.g. measured_quantities = [rs.X])
+"""
 function SI.assess_identifiability(rs::ReactionSystem, args...; measured_quantities = Num[], known_p = Num[], 
                                    funcs_to_check = Vector(), remove_conserved = true, ignore_no_measured_warn=false, 
                                    kwargs...)
@@ -66,7 +113,31 @@ function SI.assess_identifiability(rs::ReactionSystem, args...; measured_quantit
     return make_output(out, funcs_to_check, reverse.(conseqs))
 end
 
-# Creates dispatch for SI's function to find all identifiable functions.
+"""
+find_identifiable_functions(rs::ReactionSystem, args...; measured_quantities = Num[], known_p = Num[],, remove_conserved = true, ignore_no_measured_warn=false, kwargs...)
+
+Applies StructuralIdentifiability.jl's `find_identifiable_functions` function to a Catalyst `ReactionSystem`. Internally it is converted ot a `ODESystem`, for which structurally identifiable functions are computed.
+
+Arguments:
+- `rs::ReactionSystem`; The reaction system we wish to compute structural identifiability for.
+- `measured_quantities=[]`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.s`, or the symbol `:x`). 
+- `known_p = Num[]`: List of parameters which values are known. 
+- `ignore_no_measured_warn = false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty. 
+- `remove_conserved = true`: Whether to eliminate conservation laws when computing the ode (this can reduce runtime of identifiability analysis significantly). 
+
+Example:
+```julia
+using Catalyst, StructuralIdentifiability
+rs = @reaction_network begin
+    (p,d), 0 <--> X
+end
+find_identifiable_functions(rs; measured_quantities = [:X], known_p = [:p])
+```
+
+Notes:
+- This function is part of the StructuralIdentifiability.jl extension. StructuralIdentifiability.jl must be imported to access it.
+- `measured_quantities` and `known_p` input may also be symbolic (e.g. measured_quantities = [rs.X])
+"""
 function SI.find_identifiable_functions(rs::ReactionSystem, args...; measured_quantities = Num[], 
                                         known_p = Num[], remove_conserved = true, ignore_no_measured_warn=false, 
                                         kwargs...)
