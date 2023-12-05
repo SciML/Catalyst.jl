@@ -8,7 +8,7 @@ Creates a ODE system of the form used within the StructuralIdentifiability.jl pa
 
 Arguments:
 - `rs::ReactionSystem`; The reaction system we wish to convert to an ODE.
-- `measured_quantities=observed(rs)`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. `:x`). Defaults to the systems observables.
+- `measured_quantities=observed(rs)`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.s`, or the symbol `:x`). Defaults to the system's observables.
 - `known_p = Num[]`: List of parameters which values are known. 
 - `ignore_no_measured_warn=false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty. 
 
