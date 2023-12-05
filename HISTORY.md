@@ -14,7 +14,7 @@ assess_identifiability(goodwind_oscillator; measured_quantities=[:M])
 ```
 to assess (global) structural identifiability for all parameters and variables of the `goodwind_oscillator` model (under the presumption that we can measure `M` only).
 - Automatically handles conservation laws for structural identifiability problems (eliminates these internally to speed up computations).
-- Add documentation for these features.
+- Adds a tutorial to illustrate the use of the extension.
 - Simulation of spatial ODEs now supported. For full details, please see https://github.com/SciML/Catalyst.jl/pull/644 and upcoming documentation. Note that these methods are currently considered alpha, with the interface and approach changing even in non-breaking Catalyst releases.
 - LatticeReactionSystem structure represents a spatial reaction network:
   ```julia
