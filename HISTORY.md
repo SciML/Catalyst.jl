@@ -5,6 +5,7 @@
 ## Catalyst 14.0
 - Added CatalystStructuralIdentifiabilityExtension, which permits StructuralIdentifiability.jl function to be applied directly to Catalyst systems. E.g. use
 ```julia
+using Catalyst, StructuralIdentifiability
 goodwind_oscillator = @reaction_network begin
     (mmr(P,pₘ,1), dₘ), 0 <--> M
     (pₑ*M,dₑ), 0 <--> E

@@ -2,29 +2,33 @@
 
 # For a reaction system, list of measured quantities and known parameters, generate a StructuralIdentifiability compatible ODE. 
 """
-    si_ode(rs::ReactionSystem; measured_quantities=observed(rs), known_p = Num[], ignore_no_measured_warn=false)
+make_si_ode(rs::ReactionSystem; measured_quantities=observed(rs), known_p = Num[], ignore_no_measured_warn=false)
 
 Creates a ODE system of the form used within the StructuralIdentifiability.jl package. The output system is compatible with all StructuralIdentifiability functions. 
 
 Arguments:
 - `rs::ReactionSystem`; The reaction system we wish to convert to an ODE.
-- `measured_quantities=observed(rs)`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.s`, or the symbol `:x`). Defaults to the system's observables.
+- `measured_quantities=[]`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.s`, or the symbol `:x`). Defaults to the system's observables.
 - `known_p = Num[]`: List of parameters which values are known. 
-- `ignore_no_measured_warn=false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty. 
+- `ignore_no_measured_warn = false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty. 
+- `remove_conserved = true`: Whether to eliminate conservation laws when computing the ode (this can reduce runtime of identifiability analysis significantly). 
 
 Example:
 ```julia
+using Catalyst, StructuralIdentifiability
 rs = @reaction_network begin
     (p,d), 0 <--> X
 end
-si_ode(rs; measured_quantities = [:X], known_p = [:p])
+make_si_ode(rs; measured_quantities = [:X], known_p = [:p])
+```
 
 Notes:
-This function is part of the StructuralIdentifiability.jl extension. StructuralIdentifiability.jl must be imported to access it.
+- This function is part of the StructuralIdentifiability.jl extension. StructuralIdentifiability.jl must be imported to access it.
+- `measured_quantities` and `known_p` input may also be symbolic (e.g. measured_quantities = [rs.X])
 ```
 """
 function Catalyst.make_si_ode(rs::ReactionSystem; measured_quantities = [], known_p = [], 
-                              ignore_no_measured_warn=false, remove_conserved = true)
+                              ignore_no_measured_warn = false, remove_conserved = true)
     # Creates a MTK ODESystem, and a list of measured quantities (there are equations).
     # Gives these to SI to create an SI ode model of its preferred form.
     osys, conseqs, _ = make_osys(rs; remove_conserved)
@@ -111,12 +115,12 @@ function make_measured_quantities(rs::ReactionSystem, measured_quantities::Vecto
     # Appends the known parameters to the measured_quantities vector. Converts any Symbols to symbolics.
     mqiterator = Iterators.flatten((measured_quantities, known_p))
     mqs = [(q isa Symbol) ? Catalyst._symbol_to_var(rs, q) : q for q in mqiterator]
-    mqs = vector_subs(measured_quantities, conseqs)
+    mqs = vector_subs(mqs, conseqs)
 
     # Creates one internal observation variable for each measured quantity (`___internal_observables`).
     # Creates a vector of equations, setting each measured quantity equal to one observation variable.
-    @variables t (___internal_observables(t))[1:length(measured_quantities)]
-    return Equation[(q isa Equation) ? q : (___internal_observables[i] ~ q) for (i,q) in enumerate(measured_quantities)] 
+    @variables t (___internal_observables(Catalyst.get_iv(rs)))[1:length(mqs)]
+    return Equation[(q isa Equation) ? q : (___internal_observables[i] ~ q) for (i,q) in enumerate(mqs)] 
 end
 
 # Creates the functions that we wish to check for identifiability.
@@ -135,8 +139,8 @@ end
 function make_output(out, funcs_to_check, conseqs)
     funcs_to_check = vector_subs(funcs_to_check, conseqs)
     out = Dict(zip(vector_subs(keys(out), conseqs), values(out)))
-    out = sort(out; by = x -> findfirst(isequal(x, ftc) for ftc in funcs_to_check))
-    return out    
+    sortdict = Dict(ftc => i for (i,ftc) in enumerate(funcs_to_check))
+    return sort(out; by = x -> sortdict[x])    
 end
 
 # For a vector of expressions and a conservation law, substitutes the law into every equation.
