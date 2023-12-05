@@ -194,7 +194,7 @@ let
     rs2 = @reaction_network rs2 begin
         (k3, k4), X3 <--> X4
     end
-    @named rs_catalyst = flatten(compose(rs1, [rs2]))
+    @named rs_catalyst = compose(rs1, [rs2])
     @unpack X1, X2, k1, k2 = rs1
     gi_1 = assess_identifiability(rs_catalyst; measured_quantities=[X1, X2, rs2.X3], known_p=[k1])
     li_1 = assess_local_identifiability(rs_catalyst; measured_quantities=[X1, X2, rs2.X3], known_p=[k1])
