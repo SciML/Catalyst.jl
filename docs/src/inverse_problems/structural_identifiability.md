@@ -48,7 +48,7 @@ in which case all initial conditions and parameters become identifiable.
 
 
 ### Indicating known parameters
-In the previous case we assumed that all parameters are unknown, however, this is not necessarily true. If there are parameters which value's are known, we can supply these using the `known_p` argument. Indeed, this might turn other, previously unidentifiable, parameters identifiable. Let us consider the previous example, where we measure the concentration of $M$ only, but also happen to know the production rate of $E$ ($pₑ$):
+In the previous case we assumed that all parameters are unknown, however, this is not necessarily true. If there are parameters with known values, we can supply these using the `known_p` argument. Providing this additional information might also make other, previously unidentifiable, parameters identifiable. Let us consider the previous example, where we measure the concentration of $M$ only, but now assume we also know the production rate of $E$ ($pₑ$):
 ```example si1
 assess_identifiability(gwo; measured_quantities=[:M], known_p=[:pₑ], loglevel=Logging.Error)
 ```
