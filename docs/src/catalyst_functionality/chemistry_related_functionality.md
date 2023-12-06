@@ -1,13 +1,13 @@
 # [Chemistry-related functionality](@id chemistry_functionality)
 
 While Catalyst has primarily been designed around the modelling of biological systems, reaction network models are also common across chemistry. This section describes two types of functionality, that while of general interest, should be especially useful in the modelling of chemical systems.
-- The `@compound` option, allowing the user to designate that a specific species is composed of certain subspecies.
-- The `balance_reaction` function enabling the user to balance a reaction so the same number of components occur on both sides.
+- The `@compound` option, which enables the user to designate that a specific species is composed of certain subspecies.
+- The `balance_reaction` function, which enables the user to balance a reaction so the same number of components occur on both sides.
 
 ## Modelling with compound species
 
 #### Creating compound species programmatically
-We will first show how to create compound species through [programmatic construction](@ref programmatic_CRN_construction), and then demonstrate using the DSL. To create a compound species, use the `@compound` macro, first designating the compound, followed by its components (and stoichiometries). In this example, we will create a CO₂ molecule, consisting of one C atom and two O atoms. First, we create species corresponding to the components:
+We will first show how to create compound species through [programmatic model construction](@ref programmatic_CRN_construction), and then demonstrate using the DSL. To create a compound species, use the `@compound` macro, first designating the compound, followed by its components (and their stoichiometries). In this example, we will create a CO₂ molecule, consisting of one C atom and two O atoms. First, we create species corresponding to the components:
 ```@example chem1
 using Catalyst
 @variables t
@@ -53,7 +53,7 @@ When multiple compounds are created, they can be created simultaneously using th
 end
 ```
 
-#### Creating compound species programmatically
+#### Creating compound species within the DSL
 It is also possible to declare species as compound species within the `@reaction_network` DSL, using the `@compounds` options:
 ```@example chem1
 rn = @reaction_network begin
@@ -88,7 +88,7 @@ Default values are designated using `=`, and provided directly after the compoun
 ```@example chem1
 @compound (CO2 = 2.0) ~ C + 2O
 ```
-If both default values and meta data are provided, the metadata is provided after teh default value:
+If both default values and meta data are provided, the metadata is provided after the default value:
 ```@example chem1
 @compound (CO2 = 2.0, [unit="mol"]) ~ C + 2O
 ```
