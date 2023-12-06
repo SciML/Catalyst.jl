@@ -33,6 +33,9 @@ Next, we can apply `steady_state_stability` directly to this steady state vector
 steady_state_stability(steady_states, sa_loop, ps)
 ```
 
+!!! note
+    For systems with [conservation laws](@ref homotopy_continuation_conservation_laws), `steady_state_jac` must be supplied a `u0` vector (indicating species concentrations for conservation law computation). This is required to eliminate the conserved quantities, preventing a singular Jacobian. These are supplied using the `u0` optional argument.
+
 ## Pre-computing the Jacobian to increase performance when computing stability for many steady states
 Catalyst uses the system Jacobian to compute steady state stability, and the Jacobian is computed once for each call to `steady_state_stability`. If you repeatedly compute stability for steady states of the same system, pre-computing the Jacobian and supplying it to the `steady_state_stability` function can improve performance. 
 
@@ -49,6 +52,3 @@ steady_states_2 = hc_steady_states(sa_loop, ps)
 stability_2 = steady_state_stability(steady_states_2, sa_loop, ps_2; ss_jac=ss_jac)
 nothing # hide
 ```
-
-!!! note
-    For systems with [conservation laws](@ref homotopy_continuation_conservation_laws), `steady_state_jac` must be supplied a `u0` vector (indicating species concentrations for conservation law computation). This is required to eliminate the conserved quantities, preventing a singular Jacobian. These are supplied using the `u0` optional argument.
