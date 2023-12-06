@@ -5,7 +5,7 @@ This tutorial both demonstrate how to create parameter fitting cost functions us
 
 ## Basic example
 
-Let us consider a simple catalysis network, where an enzyme (*E*) turns a substrate (*S*) into a product (*P*):
+Let us consider a simple catalysis network, where an enzyme ($E$) turns a substrate ($S$) into a product ($P$):
 ```@example diffeq_param_estim_1 
 using Catalyst
 rn = @reaction_network begin
@@ -60,9 +60,9 @@ nothing # hide
 ```
 
 !!! note
-    `OptimizationProblem` cannot currently accept parameter values in the form of a map (e.g. `[:kB => 1.0, :kD => 1.0, :kP => 1.0]`). These must be provided as individual values (using the same order as the parameters occur in in the `parameters(rs)` vector).
+    `OptimizationProblem` cannot currently accept parameter values in the form of a map (e.g. `[:kB => 1.0, :kD => 1.0, :kP => 1.0]`). These must be provided as individual values (using the same order as the parameters occur in in the `parameters(rs)` vector). Similarly, `build_loss_objective`'s `save_idxs` uses the species index, rather than the species directly. These inconsistencies should be remedied in future package releases.
 
-Finally, we can optimise `optprob` to find the parameter set that best fits our data. Optimization.jl does not provide any optimisation methods by default. Instead, for each supported optimisation package, it provides a corresponding wrapper-package to import that optimisation package for using with Optimization. E.g., if we wish to [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)'s [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) method, we must install and import the OptimizationOptimJL package. A summary of all, by Optimization.jl, supported optimisation packages can be found [here](https://docs.sciml.ai/Optimization/stable/#Overview-of-the-Optimizers). Here, we import the Optim.jl package and uses it to minimise our cost function (thus finding a parameter set that fits the data):
+Finally, we can optimise `optprob` to find the parameter set that best fits our data. Optimization.jl only provide a few optimisation methods natively. However, for each supported optimisation package, it provides a corresponding wrapper-package to import that optimisation package for use with Optimization.jl. E.g., if we wish to use [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)'s [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) method, we must install and import the OptimizationOptimJL package. A summary of all, by Optimization.jl, supported optimisation packages can be found [here](https://docs.sciml.ai/Optimization/stable/#Overview-of-the-Optimizers). Here, we import the Optim.jl package and uses it to minimise our cost function (thus finding a parameter set that fits the data):
 ```@example diffeq_param_estim_1 
 using OptimizationOptimJL
 optsol = solve(optprob, Optim.NelderMead())
@@ -102,7 +102,7 @@ In this case we would have to use the `L2Loss(data_ts, hcat(data_vals_S, data_va
 loss_function_S_P = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, Array(hcat(data_vals_S, data_vals_P)')), Optimization.AutoForwardDiff(); maxiters=10000, verbose=false, save_idxs=[1,4])
 nothing # hide
 ```
-Here, `Array(hcat(data_vals_S, data_vals_P)')` is required to pu the data in the right form (in this case, a 2x10 matrix).
+Here, `Array(hcat(data_vals_S, data_vals_P)')` is required to put the data in the right form (in this case, a 2x10 matrix).
 
 We can now fit our model to data and plot the results:
 ```@example diffeq_param_estim_1 
@@ -128,7 +128,7 @@ If we from previous knowledge know that *kD = 0.1*, and only would like to fit t
 fixed_p_prob_generator(prob, p) = remake(prob; p = vcat(p[1], 0.1, p[2]))
 nothing # hide
 ```
-Here, it takes the `ODEProblem` (`prob`) we simulates, and the parameter set used (`p`), during the optimisation process, and creates a modified `ODEProblem` (by setting a customised parameter vector [using `remake`](@ref simulation_structure_interfacing_remake)). Now we create our modified loss function:
+Here, it takes the `ODEProblem` (`prob`) we simulates, and the parameter set used, during the optimisation process (`p`), and creates a modified `ODEProblem` (by setting a customised parameter vector [using `remake`](@ref simulation_structure_interfacing_remake)). Now we create our modified loss function:
 ```@example diffeq_param_estim_1 
 loss_function_fixed_kD = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, data_vals), Optimization.AutoForwardDiff(); prob_generator = fixed_p_prob_generator, maxiters=10000, verbose=false, save_idxs=4)
 nothing # hide
