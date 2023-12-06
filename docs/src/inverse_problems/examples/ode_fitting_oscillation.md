@@ -1,5 +1,5 @@
 # [Fitting Parameters for an Oscillatory System](@id parameter_estimation)
-In this examples we will use [Optimization.jl](https://github.com/SciML/Optimization.jl) to fit the parameters of an oscillatory system (the Brusselator). Here, special consideration is taken to avoid reaching a local minimum. Instead of fitting the entire time series directly, we will start with fitting parameter values for the first period, and then use those as an initial guess for fitting the next. As we complete this procedure (which can be advantageous for oscillatory systems) we reach a global optimum.
+In this examples we will use [Optimization.jl](https://github.com/SciML/Optimization.jl) to fit the parameters of an oscillatory system (the Brusselator) to data. Here, special consideration is taken to avoid reaching a local minimum. Instead of fitting the entire time series directly, we will start with fitting parameter values for the first period, and then use those as an initial guess for fitting the next (and then these to find the next one, and so on). Using this procedure is advantageous for oscillatory systems, and enables us to reach the global optimum.
 
 First, we fetch the required packages.
 ```@example pe1
@@ -124,7 +124,7 @@ As previously mentioned, the reason we chose to fit the model on a smaller inter
 then extend the interval, is to avoid getting stuck in a local minimum. Here
 specifically, we chose our initial interval to be smaller than a full cycle of
 the oscillation. If we had chosen to fit a parameter set on the full interval
-immediately we would have received an inferior solution.
+immediately we would have received the wrong solution.
 ```@example pe1
 p_estimate = optimise_p([5.0,5.0], 30.0)
 
