@@ -25,7 +25,7 @@ StructutralIdentifiability currently assesses identifiability for the first two 
 Local identifiability can be assessed using the `assess_identifiability` function. For each model quantity (parameters and variables), it will assess whether they are:
 - globally identifiable.
 - locally identifiable.
-- Unidentifiable.
+- unidentifiable.
   
 To it, we provide our `ReactionSystem` model and a list of quantities that we are able to measure. Here, we consider a Goodwind oscillator (a simple 3-component model, where the three species $M$, $E$, and $P$ are produced and degraded, which may exhibit oscillations)[^2]. Let us say that we are able to measure the concentration of $M$, we then provide designate this using the `measured_quantities` argument. We can now assess identifiability in the following way:
 ```example si1
