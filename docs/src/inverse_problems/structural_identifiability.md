@@ -5,7 +5,7 @@ Identifiability can be divided into *structural* and *practical* identifiability
 
 Structural identifiability (which is what this tutorial considers) can be illustrated by the following differential equation:
 ${dx \over dt} = p1*p2*x(t)$
-where, however much data is collected on *x*, it is impossible to determine the distinct values of *p1* and *p2*. Hence, these parameters are these are non-identifiable.
+where, however much data is collected on $x$, it is impossible to determine the distinct values of $p1$ and $p2$. Hence, these parameters are these are non-identifiable (however, their product, $p1*p2$, *is* identifiable).
 
 Catalyst contains a special extension for carrying out structural identifiability analysis using the [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) package. This enables StructuralIdentifiability's `assess_identifiability`, `assess_local_identifiability`, and `find_identifiable_functions` functions to be called directly on Catalyst `ReactionSystem`s. It also implements specialised routines to make these more efficient when applied to reaction network models. How to use these functions is described in the following tutorial, with [StructuralIdentifiability providing a more extensive documentation](https://docs.sciml.ai/StructuralIdentifiability/stable/). If you use this in your research, please [cite the StructuralIdentifiability.jl](@ref structural_identifiability_citation) and [Catalyst.jl](@ref catalyst_citation) publications.
 
@@ -57,7 +57,7 @@ Not only does this turn the previously non-identifiable `pₑ` (globally) identi
 To, in a similar manner, indicate that certain initial conditions are known is a work in progress. Hopefully the feature should be an available in the near future.
 
 ### Providing non-trivial measured quantities
-Sometimes, we are not actually measuring species species, but rather some combinations of species (or possibly parameters). Here, any algebraic expression can be used in `measured_quantities`. If so, used species and parameters have to first be `@unpack`'ed from the model. Say that we have a model where an enzyme ($E$) is converted between an active and inactive form, which in turns activates the production of a product, $P$:
+Sometimes, we are not actually measuring species species, but rather some combinations of species (or possibly parameters). Here, any algebraic expression can be used in `measured_quantities`. Species and parameters have to first be `@unpack`'ed from the model to be used in such expressions. Say that we have a model where an enzyme ($E$) is converted between an active and inactive form, which in turns activates the production of a product, $P$:
 ```example si2
 using Catalyst, StructuralIdentifiability # hide
 enzyme_activation = @reaction_network begin
