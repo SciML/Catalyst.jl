@@ -12,7 +12,7 @@ Catalyst contains a special extension for carrying out structural identifiabilit
 Structural identifiability can be divided into *local* and *global* identifiability. If a model quantity is locally identifiable, it means that its true value can be determined down to a finite-number of possible options. This also means that there is some limited region around its true value, where the true value is the only possible value. Globally identifiable quantities' values, on the other hand, can be uniquely determined. Again, while identifiability can be confirmed structurally for a model, it does not necessarily mean that they are practically identifiable for some given data.
 
 Generally, there are three types of quantities for which identifiability can be assessed.
-- Parameters (e.g. $p$).
+- Parameters (e.g. $p1$ and $p2$).
 - Full variable trajectories (e.g. $x(t)$).
 - Variable initial conditions (e.g. $x(0)$). 
 
