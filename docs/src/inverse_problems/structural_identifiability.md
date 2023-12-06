@@ -65,7 +65,7 @@ enzyme_activation = @reaction_network begin
     (Eₐ, d), 0 <-->P
 end
 ```
-and we can measure the total amount of $E$ ($=$Eᵢ+Eₐ$), as well as the amount of $P$, we can use the following to assess identifiability:
+and we can measure the total amount of $E$ ($=Eᵢ+Eₐ$), as well as the amount of $P$, we can use the following to assess identifiability:
 ```example si2
 @unpack Eᵢ, Eₐ = enzyme_activation
 assess_identifiability(enzyme_activation; measured_quantities=[Eᵢ+Eₐ, :P], loglevel=Logging.Error)
