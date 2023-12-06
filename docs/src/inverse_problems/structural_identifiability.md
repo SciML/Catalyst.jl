@@ -22,7 +22,7 @@ StructutralIdentifiability currently assesses identifiability for the first two 
 
 ### Basic example
 
-Local identifiability can be assessed using the `assess_identifiability` function. For each model quantity (parameters and variables), it will asses whether they are:
+Local identifiability can be assessed using the `assess_identifiability` function. For each model quantity (parameters and variables), it will assess whether they are:
 - globally identifiable.
 - locally identifiable.
 - Unidentifiable.
