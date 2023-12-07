@@ -149,7 +149,7 @@ let
     # Latexify.@generate_test latexify(rn)
     @test_broken latexify(rn) == replace(
     raw"\begin{align*}
-    \mathrm{Y} &\xrightarrow{Y k} \varnothing  
+    \varnothing &\xrightarrow{p} (m + n)\mathrm{X}  
     \end{align*}
     ", "\r\n"=>"\n")
 end
@@ -178,7 +178,7 @@ end
 # Tests for system with parametric stoichiometry.
 let
     rn = @reaction_network begin
-        p, 0 --> n*X
+        p, 0 --> (m + n)*X
     end
     
     @test_broken latexify(rn) == replace(
