@@ -66,7 +66,7 @@ Like previously, the found steady state is unaffected by the initial `u` guess. 
 
 
 ## [Systems with conservation laws](@id nonlinear_solve_conservation_laws)
-As described in the section on homotopy continuation, when finding the steady states of systems with conservation laws, [additional considerations have to be taken](homotopy_continuation_conservation_laws). E.g. consider the following two-state system:
+As described in the section on homotopy continuation, when finding the steady states of systems with conservation laws, [additional considerations have to be taken](@ref homotopy_continuation_conservation_laws). E.g. consider the following two-state system:
 ```@example nonlinear_solve2
 using Catalyst, NonlinearSolve # hide
 two_state_model = @reaction_network begin
