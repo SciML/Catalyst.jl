@@ -623,4 +623,4 @@ Finally, some general rules for creating observables:
 - The left-hand side of the observables expression must be a single symbol, indicating the observable's name.
 - Metadata can, however, be provided, e.g through `@observables (Xtot, [description="Total amount of X"]) ~ X + XY`.
 - The right-hand side of the observables expression can be any valid algebraic expression.
-- Observables are (by default, but this can be changed) considered `variables` (and not `species`).
+- Observables are (by default, but this can be changed) considered `variables` (and not `species`). This can be changed by e.g. pre-declaring them using the `@species` option.
