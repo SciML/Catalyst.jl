@@ -719,6 +719,9 @@ function read_observed_options(options, species_declared)
             ivs_get_expr = :(unique(reduce(vcat,[arguments(ModelingToolkit.unwrap(dep)) for dep in $dependants])))    
             push!(observed_vars.args, :($obs_name = $(obs_name)($(ivs_get_expr)...)))
         end
+        
+        # If nothing was added to `observed_vars`, it has to be modified not to throw an error.
+        (length(observed_vars.args) == 1) && (observed_vars = :())
     else  
         # If option is not used, return empty expression and vector.
         observed_vars = :()
