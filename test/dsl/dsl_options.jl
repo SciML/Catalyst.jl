@@ -387,6 +387,49 @@ let
     @test plot(sol; idxs=[:X, :Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
 end
 
+# Compares programmatic and DSL system with observables.
+let
+    # Model declarations.
+    rn_dsl = @reaction_network rn_observed begin
+        @observables begin
+            X ~ x + 2x2y
+            Y ~ y + x2y
+        end
+        k, 0 --> (x, y)
+        (kB, kD), 2x + y <--> x2y
+        d, (x,y,x2y) --> 0
+    end
+
+    @variables t X(t) Y(t)
+    @species x(t), y(t), x2y(t)
+    @parameters k kB kD d
+    r1 = Reaction(k, nothing, [x], nothing, [1])
+    r2 = Reaction(k, nothing, [y], nothing, [1])
+    r3 = Reaction(kB, [x, y], [x2y], [2, 1], [1])
+    r4 = Reaction(kD, [x2y], [x, y], [1], [2, 1])
+    r5 = Reaction(d, [x], nothing, [1], nothing)
+    r6 = Reaction(d, [y], nothing, [1], nothing)
+    r7 = Reaction(d, [x2y], nothing, [1], nothing)
+    obs_eqs = [X ~ x + 2x2y, Y ~ y + x2y]
+    rn_prog = ReactionSystem([r1, r2, r3, r4, r5, r6, r7], t, [x, y, x2y], [k, kB, kD, d]; observed = obs_eqs, name=:rn_observed)
+
+    # Make simulations.
+    u0 = [x => 1.0, y => 0.5, x2y => 0.0]
+    tspan = (0.0, 15.0)
+    ps = [k => 1.0, kD => 0.1, kB => 0.5, d => 5.0]
+    oprob_dsl = ODEProblem(rn_dsl, u0, tspan, ps)
+    oprob_prog = ODEProblem(rn_prog, u0, tspan, ps)
+
+    sol_dsl = solve(oprob_dsl, Tsit5(); saveat=0.1)
+    sol_prog = solve(oprob_prog, Tsit5(); saveat=0.1)
+
+    # Tests observables equal in both cases.
+    @test oprob_dsl[:X] == oprob_prog[:X]
+    @test oprob_dsl[:Y] == oprob_prog[:Y]
+    @test sol_dsl[:X] == sol_prog[:X]
+    @test sol_dsl[:Y] == sol_prog[:Y]
+end
+
 # Tests for complicated observable formula.
 # Tests using a single observable (without begin/end statement).
 # Tests using observable component not part of reaction.
@@ -410,14 +453,39 @@ let
     @test sol[:X][1] == u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]  
 end
 
+# Declares observables implicitly/explicitly.
+let 
+    # Basic case.
+    rn1 = @reaction_network rn_observed begin
+        @observables X ~ X1 + X2
+        k, 0 --> X1 + X2
+    end
+    rn2 = @reaction_network rn_observed begin
+        @variables X(t)
+        @observables X ~ X1 + X2
+        k, 0 --> X1 + X2
+    end
+    @test isequal(rn1, rn2)
+
+    # Case with metadata.
+    rn3 = @reaction_network rn_observed begin
+        @observables (X,  [bounds=(0.0, 10.0)]) ~ X1 + X2
+        k, 0 --> X1 + X2
+    end
+    rn4 = @reaction_network rn_observed begin
+        @variables X(t) [bounds=(0.0, 10.0)]
+        @observables X ~ X1 + X2
+        k, 0 --> X1 + X2
+    end
+    @test isequal(rn3, rn4)
+end
+
 # Tests various erroneous declarations throw errors.
 let 
-    # System with undeclared component as observable.
-    @test_throws Exception @eval @reaction_network begin
-        @observables begin
-            X ~ X1 + X2
-        end
-        (p,d), 0 <--> X1
+    # Independent variable in @compounds.
+    @test_throws Exception @eval @reaction_network rn_observed begin
+        @observables X(t) ~ X1 + X2
+        k, 0 --> X1 + X2
     end
 
     # System with observable in observable formula.
@@ -429,7 +497,13 @@ let
         (p,d), 0 <--> X1 + X2
     end
 
-    # System with multiple observables blocks.
+    # Multiple @compounds options
+    @test_throws Exception @eval @reaction_network rn_observed begin
+        @observables X ~ X1 + X2
+        @observables Y ~ Y1 + Y2
+        k, 0 --> X1 + X2
+        k, 0 --> Y1 + Y2
+    end
     @test_throws Exception @eval @reaction_network begin
         @observables begin
             X ~ X1 + X2
@@ -440,19 +514,31 @@ let
         (p,d), 0 <--> X1 + X2
     end
 
-    # System with no trivial observable left-hand side.
-    @test_throws Exception @eval @reaction_network begin
-        @observables begin
-            X + X2 ~ 2X1
-        end
-        (p,d), 0 <--> X1 + X2
+    # Default value for compound.
+    @test_throws Exception @eval @reaction_network rn_observed begin
+        @observables (X = 1.0) ~ X1 + X2
+        k, 0 --> X1 + X2
     end
 
-    # A forbidden symbol used as observable name.
-    @test_throws Exception @eval @reaction_network begin
-        @observables begin
-            t ~ X1 + X2
-        end
-        (p,d), 0 <--> X1 + X2
+    # Forbidden symbols as observable names.
+    @test_throws Exception @eval @reaction_network rn_observed begin
+        @observables t ~ t1 + t2
+        k, 0 --> t1 + t2
+    end
+    @test_throws Exception @eval @reaction_network rn_observed begin
+        @observables im ~ i + m
+        k, 0 --> i + m
+    end
+
+    # Non-trivial observables expression.
+    @test_throws Exception @eval @reaction_network rn_observed begin
+        @observables X - X1 ~ X2
+        k, 0 --> X1 + X2
+    end
+
+    # Occurrence of undeclared dependants.
+    @test_throws Exception @eval @reaction_network rn_observed begin
+        @observables X ~ X1 + X2
+        k, 0 --> X1
     end
 end
