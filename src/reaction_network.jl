@@ -361,7 +361,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Reads options.
     compound_expr, compound_species = read_compound_options(options)
-    observed_vars, observed_eqs = read_observed_options(options)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
