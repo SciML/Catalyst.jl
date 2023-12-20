@@ -355,6 +355,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     option_lines = Expr[x for x in ex.args if x.head == :macrocall]
 
     # Get macro options.
+    length(unique(arg.args[1] for arg in option_lines)) < length(option_lines) && error("Some options where given multiple times.")
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
                        option_lines))
 
@@ -367,9 +368,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     parameters_declared = extract_syms(options, :parameters)
     variables = extract_syms(options, :variables)
 
-    # Reads more options.
-    observed_vars, observed_eqs = read_observed_options(options, [species_declared; variables])
-
     # handle independent variables
     if haskey(options, :ivs)
         ivs = Tuple(extract_syms(options, :ivs))
@@ -381,6 +379,10 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     end
     tiv = ivs[1]
     sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
+    all_ivs = (isnothing(sivs) ? [tiv] : [tiv; sivs.args])
+
+    # Reads more options.
+    observed_vars, observed_eqs = read_observed_options(options, [species_declared; variables], all_ivs)
 
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
                                            variables)))
@@ -411,7 +413,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args, get_rxexprs(reaction))
     end
 
-    # Returns the rephrased expression.
     quote
         $ps
         $ivexpr
@@ -434,7 +435,7 @@ function make_reaction(ex::Expr)
 
     # Parses reactions, species, and parameters.
     reaction = get_reaction(ex)
-    species, parameters = extract_species_and_parameters!([reaction], [])
+    species, parameters = extract_species_and_parameters!([reaivs_get_exprction], [])
 
     # Checks for input errors.
     forbidden_symbol_check(union(species, parameters))
@@ -690,20 +691,23 @@ end
 # Most options handled in previous sections, when code re-organised, these should ideally be moved to the same place.
 
 # Reads the observables options. Outputs an expression ofr creating the obervable variables, and a vector of observable equations.
-function read_observed_options(options, species_declared)
+function read_observed_options(options, species_declared, ivs_sorted)
     if haskey(options, :observables)
         # Gets list of observable equations and prepares variable declaration expression.
         # (`options[:observables]` inlucdes `@observables`, `.args[3]` removes this part)
         observed_eqs = make_observed_eqs(options[:observables].args[3])
         observed_vars = Expr(:block, :(@variables))
 
-        for obs_eq in observed_eqs.args
+        for (idx, obs_eq) in enumerate(observed_eqs.args)
             # Extract the observable, checks errors, and continues the loop if the observable has been declared.        
-            obs_name, ivs, defaults, _ = find_varinfo_in_declaration(obs_eq.args[2])
+            obs_name, ivs, defaults, metadata = find_varinfo_in_declaration(obs_eq.args[2])
             isempty(ivs) || error("An observable ($obs_name) was given independent variable(s). These should not be given, as they are inferred automatically.")
             isnothing(defaults) || error("An observable ($obs_name) was given a default value. This is forbidden.")
             in(obs_name, forbidden_symbols_error) && error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
-            (obs_name in species_declared) && continue
+            if (obs_name in species_declared) 
+                isnothing(metadata) || error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the obervable was also declared separately (using either @species or @variables). When this is done, metadata cannot be provided within the @observables declaration.")
+                continue
+            end
 
             # Appends (..) to the observable (which is later replaced with the extracted ivs).
             # Adds the observable to the first line of the output expression (starting with `@variables`).
@@ -713,11 +717,13 @@ function read_observed_options(options, species_declared)
             # Adds a line to the `observed_vars` expression, setting the ivs for this observable.
             # Cannot extract directly using e.g. "getfield.(dependants_structs, :reactant)" because 
             # then we get something like :([:X1, :X2]), rather than :([X1, X2]).
-            dependants_structs = Catalyst.recursive_find_reactants!(obs_eq.args[3], 1, Vector{ReactantStruct}(undef, 0))
-            dependants = :([]) 
-            foreach(dep -> push!(dependants.args, dep.reactant), dependants_structs)
-            ivs_get_expr = :(unique(reduce(vcat,[arguments(ModelingToolkit.unwrap(dep)) for dep in $dependants])))    
-            push!(observed_vars.args, :($obs_name = $(obs_name)($(ivs_get_expr)...)))
+            dep_var_expr = :(filter(!MT.isparameter, Symbolics.get_variables($(obs_eq.args[3]))))
+            ivs_get_expr = :(unique(reduce(vcat,[arguments(MT.unwrap(dep)) for dep in $dep_var_expr])))    
+            ivs_get_expr_sorted = :(sort($(ivs_get_expr); by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $ivs_sorted)))
+            push!(observed_vars.args, :($obs_name = $(obs_name)($(ivs_get_expr_sorted)...)))
+
+            # In case metadata was given, this must be cleared from `observed_eqs`
+            observed_eqs.args[idx].args[2] = obs_name
         end
         
         # If nothing was added to `observed_vars`, it has to be modified not to throw an error.

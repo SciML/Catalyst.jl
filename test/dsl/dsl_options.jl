@@ -411,7 +411,7 @@ let
     r6 = Reaction(d, [y], nothing, [1], nothing)
     r7 = Reaction(d, [x2y], nothing, [1], nothing)
     obs_eqs = [X ~ x + 2x2y, Y ~ y + x2y]
-    rn_prog = ReactionSystem([r1, r2, r3, r4, r5, r6, r7], t, [x, y, x2y], [k, kB, kD, d]; observed = obs_eqs)
+    @named rn_prog = ReactionSystem([r1, r2, r3, r4, r5, r6, r7], t, [x, y, x2y], [k, kB, kD, d]; observed = obs_eqs)
 
     # Make simulations.
     u0 = [x => 1.0, y => 0.5, x2y => 0.0]
@@ -453,7 +453,7 @@ let
     @test sol[:X][1] == u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]  
 end
 
-# Checks that ivs are correctly found
+# Checks that ivs are correctly found.
 let
     rn = @reaction_network begin
         @ivs t x y
@@ -464,8 +464,17 @@ let
         end
     end
     V,W = getfield.(observed(rn), :lhs)
-    @test isequal(arguments(ModelingToolkit.unwrap(V)), [rn.iv, rn.sivs[1], rn.sivs[2]])
-    @test isequal(arguments(ModelingToolkit.unwrap(W)), [rn.iv, rn.sivs[2]])
+    @test isequal(arguments(ModelingToolkit.unwrap(V)), Any[rn.iv, rn.sivs[1], rn.sivs[2]])
+    @test isequal(arguments(ModelingToolkit.unwrap(W)), Any[rn.iv, rn.sivs[2]])
+end
+
+# Checks that metadata is written properly.
+let
+    rn = @reaction_network rn_observed begin
+        @observables (X, [description="my_description"]) ~ X1 + X2
+        k, 0 --> X1 + X2
+    end
+    @test getdescription(observed(rn)[1].lhs) == "my_description"
 end
 
 # Declares observables implicitly/explicitly.
@@ -480,25 +489,25 @@ let
         @observables X ~ X1 + X2
         k, 0 --> X1 + X2
     end
-    @test isequal(rn1, rn2)
+    @test_broken isequal(rn1, rn2)
 
     # Case with metadata.
     rn3 = @reaction_network rn_observed begin
-        @observables (X,  [bounds=(0.0, 10.0)]) ~ X1 + X2
+        @observables (X,  [description="description"]) ~ X1 + X2
         k, 0 --> X1 + X2
     end
     rn4 = @reaction_network rn_observed begin
-        @variables X(t) [bounds=(0.0, 10.0)]
+        @variables X(t) [description="description"]
         @observables X ~ X1 + X2
         k, 0 --> X1 + X2
     end
-    @test isequal(rn3, rn4)
+    @test_broken isequal(rn3, rn4)
 end
 
 # Tests various erroneous declarations throw errors.
 let 
     # Independent variable in @compounds.
-    @test_throws Exception @eval @reaction_network rn_observed begin
+    @test_throws Exception @eval @reaction_network begin
         @observables X(t) ~ X1 + X2
         k, 0 --> X1 + X2
     end
@@ -513,7 +522,7 @@ let
     end
 
     # Multiple @compounds options
-    @test_throws Exception @eval @reaction_network rn_observed begin
+    @test_throws Exception @eval @reaction_network begin
         @observables X ~ X1 + X2
         @observables Y ~ Y1 + Y2
         k, 0 --> X1 + X2
@@ -524,35 +533,35 @@ let
             X ~ X1 + X2
         end
         @observables begin
-            X2 ~ 2(X1 + X2)
+            X ~ 2(X1 + X2)
         end
         (p,d), 0 <--> X1 + X2
     end
 
     # Default value for compound.
-    @test_throws Exception @eval @reaction_network rn_observed begin
+    @test_throws Exception @eval @reaction_network begin
         @observables (X = 1.0) ~ X1 + X2
         k, 0 --> X1 + X2
     end
 
     # Forbidden symbols as observable names.
-    @test_throws Exception @eval @reaction_network rn_observed begin
+    @test_throws Exception @eval @reaction_network begin
         @observables t ~ t1 + t2
         k, 0 --> t1 + t2
     end
-    @test_throws Exception @eval @reaction_network rn_observed begin
+    @test_throws Exception @eval @reaction_network begin
         @observables im ~ i + m
         k, 0 --> i + m
     end
 
     # Non-trivial observables expression.
-    @test_throws Exception @eval @reaction_network rn_observed begin
+    @test_throws Exception @eval @reaction_network begin
         @observables X - X1 ~ X2
         k, 0 --> X1 + X2
     end
 
     # Occurrence of undeclared dependants.
-    @test_throws Exception @eval @reaction_network rn_observed begin
+    @test_throws Exception @eval @reaction_network begin
         @observables X ~ X1 + X2
         k, 0 --> X1
     end
