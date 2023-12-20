@@ -435,7 +435,7 @@ function make_reaction(ex::Expr)
 
     # Parses reactions, species, and parameters.
     reaction = get_reaction(ex)
-    species, parameters = extract_species_and_parameters!([reaivs_get_exprction], [])
+    species, parameters = extract_species_and_parameters!([reaction], [])
 
     # Checks for input errors.
     forbidden_symbol_check(union(species, parameters))
