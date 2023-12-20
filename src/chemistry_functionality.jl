@@ -30,48 +30,64 @@ end
 
 # Declares compound error messages:
 const COMPOUND_CREATION_ERROR_BASE = "Malformed input to @compound. Should use form like e.g. \"@compound CO2 ~ C + 2O\"."
-const COMPOUND_CREATION_ERROR_BAD_SEPARATOR = "Malformed input to @compound. Left-hand side (the compound) and the right-hand side (the components) should be separated by a \"~\" (e.g. \"@compound CO2 ~ C + 2O\"). If the left hand side contains metadata or default values, this should be enclosed by \"()\" (e.g. \"@compound (CO2 = 1.0, [output=true]) ~ C + 2O\")."
-const COMPOUND_CREATION_ERROR_DEPENDENT_VAR_GIVEN = "Left hand side of @compound is malformed. Does the compound depend on a independent variable (e.g. \"CO2(t)\")? If so, that should not be the case, these are inferred from the compounds."
+const COMPOUND_CREATION_ERROR_BAD_SEPARATOR = "Malformed input to @compound. Left-hand side (the compound) and the right-hand side (the components) should be separated by a \"~\" (e.g. \"@compound CO2 ~ C + 2O\"). If the left hand side contains metadata and/or default values, this should be enclosed by \"()\" (e.g. \"@compound (CO2 = 1.0, [output=true]) ~ C + 2O\")."
+const COMPOUND_CREATION_ERROR_DEPENDENT_VAR_REQUIRED = "When the components (collectively) have more than 1 independent variable, independent variables have to be specified for the compound (e.g. `@compound CO2(t,s) ~ C + 2O`). This is required since the @compound macro cannot infer the correct order of the independent variables."
 
 # Function managing the @compound macro.
 function make_compound(expr)
     # Error checks.
     (expr isa Expr) || error(COMPOUND_CREATION_ERROR_BASE)
     ((expr.head == :call) && (expr.args[1] == :~) && (length(expr.args) == 3)) || error(COMPOUND_CREATION_ERROR_BAD_SEPARATOR)
-    if !(expr.args[2] isa Symbol) 
-        # Checks if a dependent variable was given (e.g. CO2(t)).
-        (expr.args[2].head == :call) && error(COMPOUND_CREATION_ERROR_DEPENDENT_VAR_GIVEN)
-        ((expr.args[2].args[1] isa Expr) && expr.args[2].args[1].head == :call) && error(COMPOUND_CREATION_ERROR_DEPENDENT_VAR_GIVEN)
-        ((expr.args[2].args[1] isa Expr) && (expr.args[2].args[1].args[1] isa Expr) && expr.args[2].args[1].args[1].head == :call) && error(COMPOUND_CREATION_ERROR_DEPENDENT_VAR_GIVEN) 
-    end
 
-    # Loops through all components, add the component and the coefficients to the corresponding vectors (cannot extract directly using e.g. "getfield.(composition, :reactant)" because then we get something like :([:C, :O]), rather than :([C, O]))
+    # Loops through all components, add the component and the coefficients to the corresponding vectors
+    # Cannot extract directly using e.g. "getfield.(composition, :reactant)" because then 
+    # we get something like :([:C, :O]), rather than :([C, O]).
     composition = Catalyst.recursive_find_reactants!(expr.args[3], 1, Vector{ReactantStruct}(undef, 0))
-    components = :([])                                                  # Becomes something like :([C, O]).                                         
-    coefficients = :([])                                                # Becomes something like :([1, 2]). 
+    components = :([])                                      # Becomes something like :([C, O]).                                         
+    coefficients = :([])                                    # Becomes something like :([1, 2]). 
     for comp in composition
         push!(components.args, comp.reactant)
         push!(coefficients.args, comp.stoichiometry)
     end
 
-    # Extracts the composite species name, as well as the expression which creates it (with e.g. meta data and default values included).
-    species_expr = expr.args[2]                                                             # E.g. :(CO2 = 1.0, [metadata=true])
-    species_expr = insert_independent_variable(species_expr, :(..))                         # Prepare iv addition, i.e. turns CO to CO(..).
-    species_name = find_varname_in_declaration(expr.args[2])                                # E.g. :CO2
-    ivs_get_expr = :(unique(reduce(vcat,[arguments(ModelingToolkit.unwrap(iv)) for iv in $components])))    # Expression which when evaluated gives a vector with all the ivs of the components.
+    # Extracts:
+    # - The compound species name (species_name, e.g. `:CO2`).
+    # - Any ivs attached to it (ivs, e.g. `[]` or `[t,x]`).
+    # - The expression which creates the compound (species_expr, e.g. `CO2 = 1.0, [metadata=true]`).
+    species_expr = expr.args[2]
+    species_name, ivs, _, _ = find_varinfo_in_declaration(expr.args[2])
+
+    # If no ivs were given, inserts `(..)` (e.g. turning `CO` to `CO(..)`).
+    isempty(ivs) && (species_expr = insert_independent_variable(species_expr, :(..)))      
+
+    # Expression which when evaluated gives a vector with all the ivs of the components.
+    ivs_get_expr = :(unique(reduce(vcat,[arguments(ModelingToolkit.unwrap(iv)) for iv in $components])))    
     
     # Creates the found expressions that will create the compound species.
-    # The `Expr(:escape, :(...))` is required so that the expressions are evaluated in the scope the users use the macro in (to e.g. detect already exiting species).                                                                                        
-    species_declaration_expr = Expr(:escape, :(@species $species_expr))                                                                                         # E.g. `@species CO2(..)`
-    iv_designation_expression = Expr(:escape, :($species_name = $(species_name)($(ivs_get_expr)...)))                                                           # E.g. `CO2 = CO2([...]..)` where [...] is something which evaluates to a vector with all the ivs of the components.
-    compound_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundSpecies, true)))                    # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, true)`
-    components_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundComponents, $components)))        # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [C, O])`
-    coefficients_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundCoefficients, $coefficients)))  # E.g. `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [1, 2])`
+    # The `Expr(:escape, :(...))` is required so that the expressions are evaluated in 
+    # the scope the users use the macro in (to e.g. detect already exiting species).     
+    # Creates something like (where `compound_ivs` and `component_ivs` evaluates to all the compound's and components' ivs):
+    #   `@species CO2(..)`
+    #   `isempty([])` && length(component_ivs) && error("When ...)
+    #   `CO2 = CO2(component_ivs..)` 
+    #   `issetequal(compound_ivs, component_ivs) || error("The ...)` 
+    #   `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, true)`
+    #   `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [C, O])`
+    #   `CO2 = ModelingToolkit.setmetadata(CO2, Catalyst.CompoundSpecies, [1, 2])`
+    species_declaration_expr = Expr(:escape, :(@species $species_expr)) 
+    multiple_ivs_error_check_expr = Expr(:escape, :($(isempty(ivs)) && (length($ivs_get_expr) > 1) && error($COMPOUND_CREATION_ERROR_DEPENDENT_VAR_REQUIRED)))      
+    iv_designation_expr = Expr(:escape, :($(isempty(ivs)) && ($species_name = $(species_name)($(ivs_get_expr)...)))) 
+    iv_check_expr = Expr(:escape, :(issetequal(arguments(ModelingToolkit.unwrap($species_name)), $ivs_get_expr) || error("The independent variable(S) provided to the compound ($(arguments(ModelingToolkit.unwrap($species_name)))), and those of its components ($($ivs_get_expr)))), are not identical.")))
+    compound_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundSpecies, true)))
+    components_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundComponents, $components)))
+    coefficients_designation_expr = Expr(:escape, :($species_name = ModelingToolkit.setmetadata($species_name, Catalyst.CompoundCoefficients, $coefficients))) 
 
     # Returns the rephrased expression.
     return quote
         $species_declaration_expr
-        $iv_designation_expression
+        $multiple_ivs_error_check_expr
+        $iv_designation_expr
+        $iv_check_expr
         $compound_designation_expr
         $components_designation_expr
         $coefficients_designation_expr
@@ -107,7 +123,8 @@ function make_compounds(expr)
     # Creates an empty block containing the output call.
     compound_declarations = Expr(:block)
 
-    # Creates a compound creation set of lines (4 in total) for each line. Loops through all 4x[Number of compounds] liens and add them to compound_declarations.
+    # Creates a compound creation set of lines (4 in total) for each compound line in expr.
+    # Loops through all 4x[Number of compounds] lines and add them to compound_declarations.
     compound_calls = [Catalyst.make_compound(line) for line in expr.args] 
     for compound_call in compound_calls, line in MacroTools.striplines(compound_call).args
         push!(compound_declarations.args, line)
@@ -118,7 +135,7 @@ function make_compounds(expr)
     push!(compound_declarations.args, :($(Expr(:escape, :([])))))
     compound_syms = :([])
     for arg in expr.args
-        push!(compound_syms.args, find_varname_in_declaration(arg.args[2]))
+        push!(compound_syms.args, find_varinfo_in_declaration(arg.args[2])[1])
     end
     push!(compound_declarations.args, :($(Expr(:escape, :($(compound_syms))))))
 

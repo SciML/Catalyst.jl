@@ -472,7 +472,7 @@ function read_compound_options(opts)
     if haskey(opts, :compounds)
         compound_expr = opts[:compounds]
         # Find compound species names, and append the independent variable.
-        compound_species = [find_varname_in_declaration(arg.args[2]) for arg in compound_expr.args[3].args]
+        compound_species = [find_varinfo_in_declaration(arg.args[2])[1] for arg in compound_expr.args[3].args]
     else  # If option is not used, return empty vectors and expressions.
         compound_expr = :()
         compound_species = Union{Symbol, Expr}[]

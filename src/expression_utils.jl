@@ -1,4 +1,4 @@
-#Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a  Symbol/Numerical).
+# Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a  Symbol/Numerical).
 function tup_leng(ex::ExprValues)
     (typeof(ex) == Expr && ex.head == :tuple) && (return length(ex.args))
     return 1
@@ -19,27 +19,37 @@ end
 # X(t) = 1.0
 # X(t), [metadata=true]
 # X(t) = 1.0, [metadata=true]
-# Finds the variable name (here, X).
-# Currently does not support e.g. "X, [metadata=true]" (when metadata does not have a comma before).
-function find_varname_in_declaration(expr)
-    (expr isa Symbol) && (return expr)           # Case: X
-    (expr.head == :call) && (return ex5.args[1]) # Case: X(t)
+# Finds the: Variable name (X), Independent variable name(s) ([t]), default value (2.0), and metadata (:([metadata=true])).
+# If a field does not exist (e.g. independent variable in `X, [metadata=true]`), gives nothing.
+# The independent variables are given as a vector (empty if none given).
+# Does not support e.g. "X [metadata=true]" (when metadata does not have a comma before).
+function find_varinfo_in_declaration(expr)
+    # Case: X
+    (expr isa Symbol) && (return expr, [], nothing, nothing)                          
+    # Case: X(t)         
+    (expr.head == :call) && (return expr.args[1], expr.args[2:end], nothing, nothing)                   
     if expr.head == :(=)
-        (expr.args[1] isa Symbol) && (return expr.args[1])            # Case: X = 1.0
-        (expr.args[1].head == :call) && (return expr.args[1].args[1]) # Case: X(t) = 1.0
+        # Case: X = 1.0
+        (expr.args[1] isa Symbol) && (return expr.args[1], [], expr.args[2], nothing)  
+        # Case: X(t) = 1.0        
+        (expr.args[1].head == :call) && (return expr.args[1].args[1], expr.args[1].args[2:end], expr.args[2].args[1], nothing) 
     end
     if expr.head == :tuple
-        (expr.args[1] isa Symbol) && (return expr.args[1])            # Case: X, [metadata=true]
-        (expr.args[1].head == :call) && (return expr.args[1].args[1]) # Case: X(t), [metadata=true]
+        # Case: X, [metadata=true]
+        (expr.args[1] isa Symbol) && (return expr.args[1], [], nothing, expr.args[2])          
+        # Case: X(t), [metadata=true]
+        (expr.args[1].head == :call) && (return expr.args[1].args[1], expr.args[1].args[2:end], nothing, expr.args[2]) 
         if (expr.args[1].head == :(=)) 
-            (expr.args[1].args[1] isa Symbol) && (return expr.args[1].args[1])            # Case: X = 1.0, [metadata=true]
-            (expr.args[1].args[1].head == :call) && (return expr.args[1].args[1].args[1]) # Case: X(t) = 1.0, [metadata=true]
+            # Case: X = 1.0, [metadata=true]
+            (expr.args[1].args[1] isa Symbol) && (return expr.args[1].args[1], [], expr.args[1].args[2], expr.args[2]) 
+            # Case: X(t) = 1.0, [metadata=true]
+            (expr.args[1].args[1].head == :call) && (return expr.args[1].args[1].args[1], expr.args[1].args[1].args[2:end], expr.args[1].args[2].args[1], expr.args[2]) 
         end
     end
     error("Unable to detect the variable declared in expression: $expr.")
 end
 
-# Converts an expression of the form:
+# Converts an expression of the forms:
 # X
 # X = 1.0
 # X, [metadata=true]
@@ -53,27 +63,26 @@ end
 # Here, the iv is a iv_expr, which can be anything, which is inserted
 function insert_independent_variable(expr_in, iv_expr)
     # If expr is a symbol, just attach the iv. If not we have to create a new expr and mutate it. 
-    # Because Symbols (a possible input) cannot be mutated, this function cannot mutate the input (would have been easier if Expr input was guaranteed).
+    # Because Symbols (a possible input) cannot be mutated, this function cannot mutate the input
+    # (would have been easier if Expr input was guaranteed).
     (expr_in isa Symbol) && (return Expr(:call, expr_in, iv_expr))
     expr = deepcopy(expr_in)
 
-    if expr.head == :(=) # Case: :(X = 1.0)
+    # Loops through possible cases.
+    if expr.head == :(=) 
+        # Case: :(X = 1.0)
         expr.args[1] = Expr(:call, expr.args[1], iv_expr)
     elseif expr.head == :tuple
-        if expr.args[1] isa Symbol # Case: :(X, [metadata=true])
+        if expr.args[1] isa Symbol 
+            # Case: :(X, [metadata=true])
             expr.args[1] = Expr(:call, expr.args[1], iv_expr)
-        elseif (expr.args[1].head == :(=)) && (expr.args[1].args[1] isa Symbol) # Case: :(X = 1.0, [metadata=true])
+        elseif (expr.args[1].head == :(=)) && (expr.args[1].args[1] isa Symbol)
+            # Case: :(X = 1.0, [metadata=true])
             expr.args[1].args[1] = Expr(:call, expr.args[1].args[1], iv_expr)
         end
     end
-    (expr == expr_in) && error("Failed to add independent variable $(iv) to expression: $expr_in")
     return expr
 end
-
-
-
-
-
 
 
 ### Old Stuff ###

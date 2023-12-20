@@ -82,9 +82,9 @@ as the components `C`, `H`, and `O` are not declared as a species anywhere. Plea
 #### Designating metadata and default values for compounds
 Just like for normal species, it is possible to designate metadata and default values for compounds. Metadata is provided after the compound name, but separated from it by a `,`:
 ```@example chem1
-@compound CO2, [unit="mol"] ~ C + 2O
+@compound (CO2, [unit="mol"]) ~ C + 2O
 ```
-Default values are designated using `=`, and provided directly after the compound name. If default values are given, the left-hand side must be grouped using `()`:
+Default values are designated using `=`, and provided directly after the compound name.:
 ```@example chem1
 @compound (CO2 = 2.0) ~ C + 2O
 ```
@@ -92,6 +92,7 @@ If both default values and meta data are provided, the metadata is provided afte
 ```@example chem1
 @compound (CO2 = 2.0, [unit="mol"]) ~ C + 2O
 ```
+In all of these cases, the side to the left of the `~` must be enclosed within `()`.
 
 ## Balancing chemical reactions
 One use of defining a species as a compound is that they can be used to balance reactions to that the number of components are the same on both sides. Catalyst provides the `balance_reaction` function, which takes a reaction, and returns a balanced version. E.g. let us consider a reaction when carbon dioxide is formed from carbon and oxide `C + O --> CO2`. Here, `balance_reaction` enables us to find coefficients creating a balanced reaction (in this case, where the number of carbon and oxygen atoms are the same on both sides). To demonstrate, we first created the unbalanced reactions:

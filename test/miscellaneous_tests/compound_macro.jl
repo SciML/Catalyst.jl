@@ -8,7 +8,7 @@ let
 
     # Basic cases that should pass:
     @compound H2O_1 ~ 2H + O
-    @compound H2O_2, [output=true] ~ 2H + O
+    @compound (H2O_2, [output=true]) ~ 2H + O
     @compound (H2O_3 = 1.5) ~ 2H + O
     @compound (H2O_4 = 4, [output=true]) ~ 2H + O
     @compound (H2O_5 = p1, [output=true]) ~ 2H + p2*O
@@ -18,26 +18,19 @@ let
     @test iscompound(H2O_4)
     @test iscompound(H2O_5)
 
-    # Independent variable given.
-    @test_throws LoadError @eval @compound H2O(t) ~ 2H + O
-    @test_throws LoadError @eval @compound H2O(t), [output=true] ~ 2H + O
-    @test_throws LoadError @eval @compound (H2O(t) = 1.5) ~ 2H + O
-    @test_throws LoadError @eval @compound (H2O(t) = 4, [output=true]) ~ 2H + O
-    @test_throws LoadError @eval @compound (H2O(t) = p1, [output=true]) ~ 2H + p2*O
-
     # Other errors.
-    @test_throws LoadError @eval @compound H2O(t) = 2H + O
-    @test_throws LoadError @eval @compound H2O(t), [output=true] = 2H + O
-    @test_throws LoadError @eval @compound H2O(t) = 1.5 ~ 2H + O
-    @test_throws LoadError @eval @compound H2O(t) = 4, [output=true] ~ 2H + O
-    @test_throws LoadError @eval @compound H2O(t) = p1, [output=true] ~ 2H + p2*O
+    @test_throws LoadError @eval @compound H2O = 2H + O
+    @test_throws LoadError @eval @compound (H2O, [output=true]) = 2H + O
+    @test_throws LoadError @eval @compound H2O = 1.5 ~ 2H + O
+    @test_throws LoadError @eval @compound (H2O = 4, [output=true]) ~ 2H + O
+    @test_throws LoadError @eval @compound (H2O = p1, [output=true]) ~ 2H + p2*O
 
     # Compounds created in block notation.
     @compounds begin
         CO2_1 ~ 2H + O
     end
     @compounds begin
-        CO2_2, [output=true] ~ 2H + O
+        (CO2_2, [output=true]) ~ 2H + O
         (CO2_3 = 1.5) ~ 2H + O
         (CO2_4 = 4, [output=true]) ~ 2H + O
         (CO2_5 = p1, [output=true]) ~ 2H + p2*O
@@ -54,7 +47,7 @@ let
         @parameters p1 p2
         @compounds begin
             NH3_1 ~ N + 3H
-            NH3_2, [output=true] ~ N + 3H
+            (NH3_2, [output=true]) ~ N + 3H
             (NH3_3 = 1.5) ~ N + 3H
             (NH3_4 = 4, [output=true]) ~ N + 3H
             (NH3_5 = p1, [output=true]) ~ N + p2*H
@@ -71,13 +64,20 @@ end
 let
     @variables t x y z
     @species C(t) H(x) N(x) O(t) P(t,x) S(x,y)
+
+    # Checks that wrong (or absent) independent variable produces errors.
+    @test_throws Exception @eval @compound CO2(t,x) ~ C + 2O
+    @test_throws Exception @eval @compound (NH4(s), [output=true]) ~ N + 4H
+    @test_throws Exception @eval @compound (H2O = 2.0) ~ 2H + O
+    @test_throws Exception @eval @compound PH4(x) ~ P + 4H
+    @test_throws Exception @eval @compound SO2(t,y) ~ S + 2O
     
     # Creates compounds.
     @compound CO2 ~ C + 2O
-    @compound NH4, [output=true] ~ N + 4H
-    @compound (H2O = 2.0) ~ 2H + O
-    @compound PH4 ~ P + 4H
-    @compound SO2 ~ S + 2O
+    @compound (NH4, [output=true]) ~ N + 4H
+    @compound (H2O(t,x) = 2.0) ~ 2H + O
+    @compound PH4(t,x) ~ P + 4H
+    @compound SO2(t,x,y) ~ S + 2O
     
     # Checks they have the correct independent variables.
     @test issetequal(arguments(ModelingToolkit.unwrap(CO2)), [t])
