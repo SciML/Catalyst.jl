@@ -360,13 +360,15 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Reads options.
     compound_expr, compound_species = read_compound_options(options)
-    observed_vars, observed_eqs = read_observed_options(options)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
     species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
     variables = extract_syms(options, :variables)
+
+    # Reads more options.
+    observed_vars, observed_eqs = read_observed_options(options, [species_declared; variables])
 
     # handle independent variables
     if haskey(options, :ivs)
@@ -688,19 +690,31 @@ end
 # Most options handled in previous sections, when code re-organised, these should ideally be moved to the same place.
 
 # Reads the observables options. Outputs an expression ofr creating the obervable variables, and a vector of observable equations.
-function read_observed_options(options)
+function read_observed_options(options, species_declared)
     if haskey(options, :observables)
         # Gets list of observable equations and prepares variable declaration expression.
         # (`options[:observables]` inlucdes `@observables`, `.args[3]` removes this part)
         observed_eqs = make_observed_eqs(options[:observables].args[3])
-        observed_vars = :(@variables)
+        observed_vars = Expr(:block, :(@variables))
 
-        # For each observable, checks for errors and adds the variable to `observed_vars`.
         for obs_eq in observed_eqs.args
-            (obs_eq.args[1] != :~) && error("Malformed observable formula :\"$(obs_eq)\". Formula should contain two expressions separated by a '~'.")
-            (obs_eq.args[2] isa Symbol) || error("Malformed observable formula :\"$(obs_eq)\". Left hand side should be a single symbol.")
-            in(obs_eq.args[2], forbidden_symbols_error) && error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
-            push!(observed_vars.args, obs_eq.args[2])
+            # Extract the observable, checks errors, and continues the loop if the observable has been declared.        
+            obs_name, ivs, defaults, _ = find_varinfo_in_declaration(obs_eq.args[2])
+            isempty(ivs) || error("An observable ($obs_name) was given independent variable(s). These should not be given, as they are inferred automatically.")
+            isnothing(defaults) || error("An observable ($obs_name) was given a default value. This is forbidden.")
+            in(obs_name, forbidden_symbols_error) && error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
+            (obs_name in species_declared) && continue
+
+            # Appends (..) to the observable (which is later replaced with the extracted ivs).
+            # Adds the observable to the first line of the output expression (starting with `@variables`).
+            obs_expr = insert_independent_variable(obs_eq.args[2], :(..))
+            push!(observed_vars.args[1].args, obs_expr)
+            
+            # Adds a line to the `observed_vars` expression, setting the ivs for this observable.
+            dependants = [rs.reactant for rs in 
+                          Catalyst.recursive_find_reactants!(obs_eq.args[3], 1, Vector{ReactantStruct}(undef, 0))]
+            ivs_get_expr = :(unique(reduce(vcat,[arguments(ModelingToolkit.unwrap(dep)) for dep in $dependants])))    
+            push!(observed_vars.args, :($obs_name = $(obs_name)($(ivs_get_expr)...)))
         end
     else  
         # If option is not used, return empty expression and vector.
