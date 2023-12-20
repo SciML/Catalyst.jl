@@ -478,6 +478,8 @@ let
 end
 
 # Declares observables implicitly/explicitly.
+# Cannot test `isequal(rn1, rn2)` because the two sets of observables have some obscure Symbolics
+# substructure that is different.
 let 
     # Basic case.
     rn1 = @reaction_network rn_observed begin
@@ -489,7 +491,9 @@ let
         @observables X ~ X1 + X2
         k, 0 --> X1 + X2
     end
-    @test_broken isequal(rn1, rn2)
+    @test isequal(observed(rn1)[1].rhs, observed(rn2)[1].rhs)
+    @test isequal(observed(rn1)[1].lhs.metadata, observed(rn2)[1].lhs.metadata)
+    @test isequal(states(rn1), states(rn2))
 
     # Case with metadata.
     rn3 = @reaction_network rn_observed begin
@@ -501,7 +505,9 @@ let
         @observables X ~ X1 + X2
         k, 0 --> X1 + X2
     end
-    @test_broken isequal(rn3, rn4)
+    @test isequal(observed(rn3)[1].rhs, observed(rn4)[1].rhs)
+    @test isequal(observed(rn3)[1].lhs.metadata, observed(rn4)[1].lhs.metadata)
+    @test isequal(states(rn3), states(rn4))
 end
 
 # Tests various erroneous declarations throw errors.
