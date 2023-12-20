@@ -390,7 +390,7 @@ end
 # Compares programmatic and DSL system with observables.
 let
     # Model declarations.
-    rn_dsl = @reaction_network rn_observed begin
+    rn_dsl = @reaction_network begin
         @observables begin
             X ~ x + 2x2y
             Y ~ y + x2y
@@ -411,7 +411,7 @@ let
     r6 = Reaction(d, [y], nothing, [1], nothing)
     r7 = Reaction(d, [x2y], nothing, [1], nothing)
     obs_eqs = [X ~ x + 2x2y, Y ~ y + x2y]
-    rn_prog = ReactionSystem([r1, r2, r3, r4, r5, r6, r7], t, [x, y, x2y], [k, kB, kD, d]; observed = obs_eqs, name=:rn_observed)
+    rn_prog = ReactionSystem([r1, r2, r3, r4, r5, r6, r7], t, [x, y, x2y], [k, kB, kD, d]; observed = obs_eqs)
 
     # Make simulations.
     u0 = [x => 1.0, y => 0.5, x2y => 0.0]
@@ -451,6 +451,21 @@ let
     sol = solve(oprob, Tsit5())
 
     @test sol[:X][1] == u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]  
+end
+
+# Checks that ivs are correctly found
+let
+    rn = @reaction_network begin
+        @ivs t x y
+        @species V1(t) V2(t,x) V3(t, y) W1(t) W2(t, y)
+        @observables begin
+            V ~ V1 + 2V2 + 3V3
+            W ~ W1 + W2
+        end
+    end
+    V,W = getfield.(observed(rn), :lhs)
+    @test isequal(arguments(ModelingToolkit.unwrap(V)), [rn.iv, rn.sivs[1], rn.sivs[2]])
+    @test isequal(arguments(ModelingToolkit.unwrap(W)), [rn.iv, rn.sivs[2]])
 end
 
 # Declares observables implicitly/explicitly.
