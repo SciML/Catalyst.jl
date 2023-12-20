@@ -67,7 +67,7 @@ export ODEProblem,
        SteadyStateProblem
 
 # reaction_network macro
-const ExprValues = Union{Expr, Symbol, Float64, Int}
+const ExprValues = Union{Expr, Symbol, Float64, Int, Bool}
 include("expression_utils.jl")
 include("reaction_network.jl")
 export @reaction_network, @add_reactions, @reaction, @species
@@ -80,6 +80,7 @@ export mm, mmr, hill, hillr, hillar
 include("networkapi.jl")
 export species, nonspecies, reactionparams, reactions, speciesmap, paramsmap
 export numspecies, numreactions, numreactionparams, setdefaults!, symmap_to_varmap
+export get_metadata_dict, has_metadata, get_metadata
 export make_empty_network, addspecies!, addparam!, addreaction!, reactionparamsmap
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants

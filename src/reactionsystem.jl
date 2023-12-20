@@ -98,7 +98,7 @@ Notes:
 - The three-argument form assumes all reactant and product stoichiometric coefficients
   are one.
 """
-struct Reaction{S, T}
+struct Reaction{R, S, T}
     """The rate function (excluding mass action terms)."""
     rate::Any
     """Reaction substrates."""
@@ -116,6 +116,11 @@ struct Reaction{S, T}
     `true` if `rate` represents the full reaction rate law.
     """
     only_use_rate::Bool
+    """
+    Contain additional data, such whenever the reaction have a specific noise-scaling expression for
+    the chemical Langevin equation.
+    """
+    metadata::Dict{Symbol, R}
 end
 
 """
@@ -126,7 +131,8 @@ Test if a species is valid as a reactant (i.e. a species variable or a constant 
 isvalidreactant(s) = MT.isparameter(s) ? isconstant(s) : (isspecies(s) && !isconstant(s))
 
 function Reaction(rate, subs, prods, substoich, prodstoich;
-                  netstoich = nothing, only_use_rate = false,
+                  netstoich = nothing, metadata = Dict{Symbol,Any}(), 
+                  only_use_rate = (haskey(metadata, :only_use_rate) && Bool(metadata[:only_use_rate])),
                   kwargs...)
     (isnothing(prods) && isnothing(subs)) &&
         throw(ArgumentError("A reaction requires a non-nothing substrate or product vector."))
@@ -181,7 +187,9 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
         convert.(stoich_type, netstoich) : netstoich
     end
 
-    Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate)
+    haskey(metadata, :only_use_rate) && delete!(metadata, :only_use_rate)
+
+    Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate, metadata)
 end
 
 # three argument constructor assumes stoichiometric coefs are one and integers
@@ -241,7 +249,7 @@ function ModelingToolkit.namespace_equation(rx::Reaction, name; kw...)
         ns = similar(rx.netstoich)
         map!(n -> f(n[1]) => f(n[2]), ns, rx.netstoich)
     end
-    Reaction(rate, subs, prods, substoich, prodstoich, netstoich, rx.only_use_rate)
+    Reaction(rate, subs, prods, substoich, prodstoich, netstoich, rx.only_use_rate, rx.metadata)
 end
 
 netstoich_stoichtype(::Vector{Pair{S, T}}) where {S, T} = T
@@ -828,6 +836,67 @@ function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
         filter(s -> !isbc(s), sts)
     end
     indepsts, filter(isspecies, indepsts)
+end
+
+######################## Other accessors ##############################
+
+"""
+    get_metadata_dict(reaction::Reaction)
+
+Retrives the `ImmutableDict` containing all of the metadata associated with a specific reaction.
+
+Arguments:
+- `reaction`: The reaction for which we wish to retrive all metadata.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
+get_metadata_dict(reaction)
+```
+"""
+function get_metadata_dict(reaction::Reaction)
+    return reaction.metadata
+end
+
+"""
+    has_metadata(reaction::Reaction, md_key::Symbol)
+
+Checks if a `Reaction` have a certain metadata field. If it does, returns `true` (else returns `false`).
+
+Arguments:
+- `reaction`: The reaction for which we wish to check if a specific metadata field exist.
+- `md_key`: The metadata for which we wish to check existence of.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
+has_metadata(reaction, :noise_scaling)
+```
+"""
+function has_metadata(reaction::Reaction, md_key::Symbol)
+    return haskey(get_metadata_dict(reaction), md_key)
+end
+
+"""
+    get_metadata(reaction::Reaction, md_key::Symbol)
+
+Retrives a certain metadata value from a `Reaction`. If the metadata does not exists, throws an error.
+
+Arguments:
+- `reaction`: The reaction for which we wish to retrive a specific metadata value.
+- `md_key`: The metadata for which we wish to retrive.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
+get_metadata(reaction, :noise_scaling)
+```
+"""
+function get_metadata(reaction::Reaction, md_key::Symbol)
+    if !has_metadata(reaction, md_key) 
+        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(get_metadata_dict(reaction))).")
+    end
+    return get_metadata_dict(reaction)[md_key]
 end
 
 ######################## Conversion to ODEs/SDEs/jump, etc ##############################
