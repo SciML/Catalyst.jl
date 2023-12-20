@@ -725,6 +725,7 @@ function make_observed_eqs(observables_expr)
         error("Malformed observables option usage: $(observables_expr).")
     end 
 end
+
 ### Functionality for expanding function call to custom and specific functions ###
 
 #Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.
