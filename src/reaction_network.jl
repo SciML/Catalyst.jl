@@ -711,8 +711,11 @@ function read_observed_options(options, species_declared)
             push!(observed_vars.args[1].args, obs_expr)
             
             # Adds a line to the `observed_vars` expression, setting the ivs for this observable.
-            dependants = [rs.reactant for rs in 
-                          Catalyst.recursive_find_reactants!(obs_eq.args[3], 1, Vector{ReactantStruct}(undef, 0))]
+            # Cannot extract directly using e.g. "getfield.(dependants_structs, :reactant)" because 
+            # then we get something like :([:X1, :X2]), rather than :([X1, X2]).
+            dependants_structs = Catalyst.recursive_find_reactants!(obs_eq.args[3], 1, Vector{ReactantStruct}(undef, 0))
+            dependants = :([]) 
+            foreach(dep -> push!(dependants.args, dep.reactant), dependants_structs)
             ivs_get_expr = :(unique(reduce(vcat,[arguments(ModelingToolkit.unwrap(dep)) for dep in $dependants])))    
             push!(observed_vars.args, :($obs_name = $(obs_name)($(ivs_get_expr)...)))
         end
