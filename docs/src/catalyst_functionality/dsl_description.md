@@ -609,7 +609,7 @@ If we only wish to provide a single observable, the `begin ... end` block is not
 ```@example obs1
 using Catalyst # hide
 rn = @reaction_network begin
-  @observables  Xtot ~ X + XY
+  @observables Xtot ~ X + XY
   (pX,dX), 0 <--> X
   (pY,dY), 0 <--> Y
   (kB,kD), X + Y <--> XY
@@ -621,4 +621,6 @@ Finally, some general rules for creating observables:
 - All observables components must be declared somewhere (i.e., they cannot only appear as a part of the observables formula).
 - Only a single `@observables` option block can be used in each `@reaction_network` call.
 - The left-hand side of the observables expression must be a single symbol, indicating the observable's name.
+- Metadata can, however, be provided, e.g through `@observables (Xtot, [description="Total amount of X"]) ~ X + XY`.
 - The right-hand side of the observables expression can be any valid algebraic expression.
+- Observables are (by default, but this can be changed) considered `variables` (and not `species`).
