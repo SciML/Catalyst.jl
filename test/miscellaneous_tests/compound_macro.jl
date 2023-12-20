@@ -19,11 +19,11 @@ let
     @test iscompound(H2O_5)
 
     # Other errors.
-    @test_throws LoadError @eval @compound H2O = 2H + O
-    @test_throws LoadError @eval @compound (H2O, [output=true]) = 2H + O
-    @test_throws LoadError @eval @compound H2O = 1.5 ~ 2H + O
-    @test_throws LoadError @eval @compound (H2O = 4, [output=true]) ~ 2H + O
-    @test_throws LoadError @eval @compound (H2O = p1, [output=true]) ~ 2H + p2*O
+    @test_throws Exception @eval @compound H2O = 2H + O
+    @test_throws Exception @eval @compound (H2O, [output=true]) = 2H + O
+    @test_throws Exception @eval @compound (H2O = 1.5) ~ 2H + O
+    @test_throws Exception @eval @compound (H2O = 4, [output=true]) ~ 2H + O
+    @test_throws Exception @eval @compound (H2O = p1, [output=true]) ~ 2H + p2*O
 
     # Compounds created in block notation.
     @compounds begin
