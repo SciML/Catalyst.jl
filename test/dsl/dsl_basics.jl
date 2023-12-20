@@ -190,6 +190,14 @@ let
     @test isequal(get_metadata_dict(rx3), get_metadata_dict(rxs[3]))
 end
 
+# Checks that repeated metadata throws errors.
+let 
+    @test_throws LoadError @eval @reaction k, 0 --> X, [md1=1.0, md1=2.0] 
+    @test_throws LoadError @eval @reaction_network begin
+        k, 0 --> X, [md1=1.0, md1=1.0] 
+    end 
+end
+
 # Tests for nested metadata.
 let
     rn1 = @reaction_network reactions begin

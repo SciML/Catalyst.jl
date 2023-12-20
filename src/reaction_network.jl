@@ -655,6 +655,12 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
             push!(metadata_i.args, :(only_use_rate = $(in(arrow, pure_rate_arrows))))
         end
 
+        # Checks that metadata fields are unqiue.
+        metadata_entries = [arg.args[1] for arg in metadata_i.args]
+        if length(unique(metadata_entries)) < length(metadata_entries)
+            error("Some reaction metadata fields where repeated: $(metadata_entries)")
+        end
+
         push!(reactions, ReactionStruct(get_tup_arg(sub_line, i), get_tup_arg(prod_line, i),
                                         get_tup_arg(rate, i), metadata_i))
     end
