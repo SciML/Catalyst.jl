@@ -123,8 +123,8 @@ function make_compounds(expr)
     # Creates an empty block containing the output call.
     compound_declarations = Expr(:block)
 
-    # Creates a compound creation set of lines (4 in total) for each compound line in expr.
-    # Loops through all 4x[Number of compounds] lines and add them to compound_declarations.
+    # For each compound in `expr`, creates the set of 7 compound creation lines (using `make_compound`).
+    # Next, loops through all 7*[Number of compounds] lines and add them to compound_declarations.
     compound_calls = [Catalyst.make_compound(line) for line in expr.args] 
     for compound_call in compound_calls, line in MacroTools.striplines(compound_call).args
         push!(compound_declarations.args, line)
