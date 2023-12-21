@@ -119,8 +119,7 @@ end
 ```
 Here, the rate of the `k1, X1 --> X2` and `k2, X2 --> X3` reactions does not depend on the amount of $X3$ in the system. Hence, their rates are unaffected by the occurrence of the `k3, X3 --> 0` reaction. Performant jump simulation methods have clever ways to determine which rates require recomputing after the occurrence of each reaction, which improves their performance. Many of these depend on so-called dependency graphs (which track which reactions' rates are affected by the occurrence of which reactions). Catalyst automatically builds such dependency graphs, which means that most jump simulators can be used without any additional input.
 
-A full list of jump simulation algorithms implemented by JumpProcesses can be found [here](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-for-Exact-Simulation). Generally, `RSSA()` (the rejection SSA method [^3][^4]) is recommended for small models, with `RSSACR()` (the rejection SSA with composition-rejection method [^5]) typically being more performant for larger models.
-
+A full list of jump simulation method implemented by JumpProcesses can be found [here](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-for-Exact-Simulation). Generally, `RSSA()` (the rejection SSA method [^3][^4]) is recommended for small models, with `RSSACR()` (the rejection SSA with composition-rejection method [^5]) typically being more performant for larger models. For models that are simulated a large number of times, it can be worthwhile to try a few different jump simulation methods to determine which one is most performant in each given case.
 
 ## Hybrid simulations
 For some models, copy numbers may vary greatly between different species. E.g. consider a genetic promoter which can either be in an inactive form ($Pᵢ$) or an active form ($Pₐ$). The active promoter produces a molecule ($M$):
