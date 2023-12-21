@@ -371,8 +371,10 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     species_declared = extract_syms(options, :species)
     parameters_declared = extract_syms(options, :parameters)
     variables = extract_syms(options, :variables)
-    discrete_events = extract_discrete_events(options)
-    discrete_e = [:($(eq)) for eq in discrete_events]
+<<<<<<< Updated upstream
+=======
+    discrete_e = extract_discrete_events(options)
+>>>>>>> Stashed changes
 
     # handle independent variables
     if haskey(options, :ivs)
@@ -502,7 +504,6 @@ function extract_discrete_events(opts)
     end
 end
 
-#interp
 # Function looping through all reactions, to find undeclared symbols (species or
 # parameters), and assign them to the right category.
 function extract_species_and_parameters!(reactions, excluded_syms)
