@@ -6,8 +6,8 @@ Using the symbolic interface, we will create our states/species, define our reac
 We begin by importing some necessary packages. 
 ```julia
 using ModelingToolkit, Catalyst, DifferentialEquations
-using Plots, Optimization
-using OptimizatizationOptimJL, Optim
+using Optimization, OptimizatizationOptimJL
+using Plots
 ```
 In this example, the concentration of antigen,`\beta` is varied to determine the constant of proportionality, `\alpha`, `k_{on}`(association rate constant), and `k_{off}` (dissociation rate constant) which characterized the binding interaction between the antigen and the immobilized receptor molecules on the sensor slide. We start by defining our reaction equations, parameters, variables, event, and states. 
 ```julia
