@@ -358,24 +358,17 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     reaction_lines = Expr[x for x in ex.args if x.head == :tuple]
     option_lines = Expr[x for x in ex.args if x.head == :macrocall]
 
-    @show option_lines
-
     # Get macro options.
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
                        option_lines))
-
-    @show options 
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
     species_declared = extract_syms(options, :species)
     parameters_declared = extract_syms(options, :parameters)
     variables = extract_syms(options, :variables)
-<<<<<<< Updated upstream
-=======
-    discrete_e = extract_discrete_events(options)
->>>>>>> Stashed changes
-
+    discrete_events = extract_discrete_events(options)
+    
     # handle independent variables
     if haskey(options, :ivs)
         ivs = Tuple(extract_syms(options, :ivs))
