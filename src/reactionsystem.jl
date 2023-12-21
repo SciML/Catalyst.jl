@@ -1210,7 +1210,7 @@ end
 
 # merge constraint components with the ReactionSystem components
 # also handles removing BC and constant species
-function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved = false)
+function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved = false, zero_derivatives = false)
     # if there are BC species, put them after the independent species
     rssts = get_states(rs)
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
@@ -1339,8 +1339,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
                          as_odes = false, include_zero_odes)
-    error_if_constraint_odes(NonlinearSystem, fullrs)
-    eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
+    eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved, zero_derivatives=true)
 
     NonlinearSystem(eqs, sts, ps;
                     name,
@@ -1480,11 +1479,19 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
                                check_length = false, name = nameof(rs),
                                combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                                include_zero_odes = true, remove_conserved = false,
-                               checks = false, kwargs...)
+                               checks = false, structural_simplify=false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
                    remove_conserved)
+
+    # Handles potential Differential algebraic equations.
+    if structural_simplify 
+        (osys = MT.structural_simplify(osys))
+    # elseif has_alg_equations(rs)
+    #     error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
+    end
+
     return ODEProblem(osys, u0map, tspan, pmap, args...; check_length, kwargs...)
 end
 
