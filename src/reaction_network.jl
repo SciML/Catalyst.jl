@@ -567,7 +567,7 @@ function get_rxexprs(rxstruct)
     prod_stoich_init = deepcopy(prod_init)
     reaction_func = :(Reaction($(recursive_expand_functions!(rxstruct.rate)), $subs_init,
                                $prod_init, $subs_stoich_init, $prod_stoich_init, 
-                               metadata = Dict($(rxstruct.metadata)),))
+                               metadata = $(rxstruct.metadata),))
     for sub in rxstruct.substrates
         push!(reaction_func.args[3].args, sub.reactant)
         push!(reaction_func.args[5].args, sub.stoichiometry)

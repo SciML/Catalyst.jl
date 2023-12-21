@@ -120,7 +120,7 @@ struct Reaction{R, S, T}
     Contain additional data, such whenever the reaction have a specific noise-scaling expression for
     the chemical Langevin equation.
     """
-    metadata::Dict{Symbol, R}
+    metadata::Vector{Pair{Symbol, R}}
 end
 
 """
@@ -131,9 +131,8 @@ Test if a species is valid as a reactant (i.e. a species variable or a constant 
 isvalidreactant(s) = MT.isparameter(s) ? isconstant(s) : (isspecies(s) && !isconstant(s))
 
 function Reaction(rate, subs, prods, substoich, prodstoich;
-                  netstoich = nothing, metadata = Dict{Symbol,Any}(), 
-                  only_use_rate = (haskey(metadata, :only_use_rate) && Bool(metadata[:only_use_rate])),
-                  kwargs...)
+                  netstoich = nothing, metadata = Pair{Symbol, Any}[], 
+                  only_use_rate = metadata_only_use_rate_check(metadata), kwargs...)
     (isnothing(prods) && isnothing(subs)) &&
         throw(ArgumentError("A reaction requires a non-nothing substrate or product vector."))
     (isnothing(prodstoich) && isnothing(substoich)) &&
@@ -187,9 +186,23 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
         convert.(stoich_type, netstoich) : netstoich
     end
 
-    haskey(metadata, :only_use_rate) && delete!(metadata, :only_use_rate)
+    # Check that all metadata entries are unique.
+    if length(unique(entry[1] for entry in metadata)) < length(metadata)
+        error("Repeated entries for the same metadata encountered in the following metadata set: $([entry[1] for entry in metadata]).")
+    end
+
+    # Deletes potential `:only_use_rate => ` entries from the metadata.
+    if any(:only_use_rate == entry[1] for entry in metadata) 
+        findfirst(:only_use_rate == entry[1] for entry in metadata)
+    end
 
     Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate, metadata)
+end
+
+# Checks if a metadata input has an entry :only_use_rate => true
+function metadata_only_use_rate_check(metadata)
+    any(:only_use_rate == entry[1] for entry in metadata) || (return false)
+    return metadata[findfirst(:only_use_rate == entry[1] for entry in metadata)] 
 end
 
 # three argument constructor assumes stoichiometric coefs are one and integers
@@ -841,7 +854,7 @@ end
 ######################## Other accessors ##############################
 
 """
-    get_metadata_dict(reaction::Reaction)
+    get_metadata_vec(reaction::Reaction)
 
 Retrives the `ImmutableDict` containing all of the metadata associated with a specific reaction.
 
@@ -851,10 +864,10 @@ Arguments:
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
-get_metadata_dict(reaction)
+get_metadata_vec(reaction)
 ```
 """
-function get_metadata_dict(reaction::Reaction)
+function get_metadata_vec(reaction::Reaction)
     return reaction.metadata
 end
 
@@ -874,7 +887,7 @@ has_metadata(reaction, :noise_scaling)
 ```
 """
 function has_metadata(reaction::Reaction, md_key::Symbol)
-    return haskey(get_metadata_dict(reaction), md_key)
+    return any(isequal(md_key, entry[1]) for entry in get_metadata_vec(reaction))
 end
 
 """
@@ -894,9 +907,9 @@ get_metadata(reaction, :noise_scaling)
 """
 function get_metadata(reaction::Reaction, md_key::Symbol)
     if !has_metadata(reaction, md_key) 
-        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(get_metadata_dict(reaction))).")
+        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(get_metadata_vec(reaction))).")
     end
-    return get_metadata_dict(reaction)[md_key]
+    return get_metadata_vec(reaction)[findfirst(isequal(md_key, entry[1]) for entry in get_metadata_vec(reaction))][2]
 end
 
 ######################## Conversion to ODEs/SDEs/jump, etc ##############################

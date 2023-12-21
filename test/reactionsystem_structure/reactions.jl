@@ -7,18 +7,22 @@ using Catalyst, Test
 
 # Tests creation.
 # Tests basic accessor functions.
+# Tests that repeated metadata entries are not permitted.
 let
     @variables t
     @parameters k
     @species X(t) X2(t)
 
-    metadata = Dict(:noise_scaling => 0.0)
+    metadata = [:noise_scaling => 0.0]
     r = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
 
-    @test get_metadata_dict(r) == Dict(:noise_scaling => 0.0)
+    @test get_metadata_vec(r) == [:noise_scaling => 0.0]
     @test has_metadata(r, :noise_scaling)
     @test !has_metadata(r, :nonexisting_metadata)
     @test get_metadata(r, :noise_scaling) == 0.0
+
+    metadata_repeated = [:noise_scaling => 0.0, :noise_scaling => 1.0, :metadata_entry => "unused"]
+    @test_throws Exception Reaction(k, [X], [X2], [2], [1]; metadata=metadata_repeated)
 end
 
 # Tests accessors for system without metadata.
@@ -27,12 +31,12 @@ let
     @parameters k
     @species X(t) X2(t)
 
-    metadata = Dict{Symbol,Any}()
+    metadata = Pair{Symbol,Any}[]
     r1 = Reaction(k, [X], [X2], [2], [1])
     r2 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
 
     @test isequal(r1, r2)
-    @test get_metadata_dict(r1) == Dict()
+    @test get_metadata_vec(r1) == Pair{Symbol,Any}[]
     @test !has_metadata(r1, :md)
 end
 
@@ -44,12 +48,12 @@ let
     @parameters k
     @species X(t) X2(t)
 
-    metadata = Dict(:md_1 => 1.0, :md_2 => false, :md_3 => "Hello world", :md_4 => :sym, 
-                                  :md_5 => X + X2^k -1, :md_6 => (0.1, 2.0))
+    metadata = [:md_1 => 1.0, :md_2 => false, :md_3 => "Hello world", :md_4 => :sym, 
+                                  :md_5 => X + X2^k -1, :md_6 => (0.1, 2.0)]
     r = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
 
-    @test isequal(get_metadata_dict(r), Dict(:md_1 => 1.0, :md_2 => false, :md_3 => "Hello world", 
-                                                     :md_4 => :sym, :md_5 => X + X2^k -1, :md_6 => (0.1, 2.0)))
+    @test isequal(get_metadata_vec(r), [:md_1 => 1.0, :md_2 => false, :md_3 => "Hello world", 
+                                        :md_4 => :sym, :md_5 => X + X2^k -1, :md_6 => (0.1, 2.0)])
     @test has_metadata(r, :md_1)
     @test has_metadata(r, :md_2)
     @test has_metadata(r, :md_3)

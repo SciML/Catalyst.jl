@@ -178,7 +178,7 @@ substoichmat
 prodstoichmat
 netstoichmat
 reactionrates
-get_metadata_dict
+get_metadata_vec
 has_metadata
 get_metadata
 ```

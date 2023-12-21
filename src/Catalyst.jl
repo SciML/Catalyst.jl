@@ -80,7 +80,7 @@ export mm, mmr, hill, hillr, hillar
 include("networkapi.jl")
 export species, nonspecies, reactionparams, reactions, speciesmap, paramsmap
 export numspecies, numreactions, numreactionparams, setdefaults!, symmap_to_varmap
-export get_metadata_dict, has_metadata, get_metadata
+export get_metadata_vec, has_metadata, get_metadata
 export make_empty_network, addspecies!, addparam!, addreaction!, reactionparamsmap
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants

@@ -143,14 +143,14 @@ let
     @parameters k η
     @species X(t) X2(t)
 
-    metadata1 = Dict(:noise_scaling => η)
+    metadata1 = [:noise_scaling => η]
     r1 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata1)
 
-    metadata2 = Dict(:md_1 => 1.0, :md_2 => false, :md_3 => "Hello world", :md_4 => :sym, 
-                     :md_5 => X + X2^k -1, :md_6 => (0.1, 2.0))
+    metadata2 = [:md_1 => 1.0, :md_2 => false, :md_3 => "Hello world", :md_4 => :sym, 
+                     :md_5 => X + X2^k -1, :md_6 => (0.1, 2.0)]
     r2 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata2)
 
-    metadata3 = Dict{Symbol,Any}()
+    metadata3 = Pair{Symbol,Any}[]
     r3 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata3)
 
     # Creates reactions using DSL.
@@ -164,9 +164,9 @@ let
     # Checks DSL reactions are correct.
     rxs = reactions(rs)
     @test isequal([r1, r2, r3], rxs)
-    @test isequal(get_metadata_dict(r1), get_metadata_dict(rxs[1]))
-    @test isequal(get_metadata_dict(r2), get_metadata_dict(rxs[2]))
-    @test isequal(get_metadata_dict(r3), get_metadata_dict(rxs[3]))
+    @test isequal(get_metadata_vec(r1), get_metadata_vec(rxs[1]))
+    @test isequal(get_metadata_vec(r2), get_metadata_vec(rxs[2]))
+    @test isequal(get_metadata_vec(r3), get_metadata_vec(rxs[3]))
 
     # Checks that accessor functions works on the DSL.
     @test has_metadata(rxs[1], :noise_scaling)
@@ -185,9 +185,9 @@ let
     rx3 = @reaction k, 2X --> X2
 
     @test isequal([rx1, rx2, rx3], rxs)
-    @test isequal(get_metadata_dict(rx1), get_metadata_dict(rxs[1]))
-    @test isequal(get_metadata_dict(rx2), get_metadata_dict(rxs[2]))
-    @test isequal(get_metadata_dict(rx3), get_metadata_dict(rxs[3]))
+    @test isequal(get_metadata_vec(rx1), get_metadata_vec(rxs[1]))
+    @test isequal(get_metadata_vec(rx2), get_metadata_vec(rxs[2]))
+    @test isequal(get_metadata_vec(rx3), get_metadata_vec(rxs[3]))
 end
 
 # Checks that repeated metadata throws errors.
