@@ -202,7 +202,7 @@ end
 # Checks if a metadata input has an entry :only_use_rate => true
 function metadata_only_use_rate_check(metadata)
     any(:only_use_rate == entry[1] for entry in metadata) || (return false)
-    return metadata[findfirst(:only_use_rate == entry[1] for entry in metadata)][2]
+    return Bool(metadata[findfirst(:only_use_rate == entry[1] for entry in metadata)][2])
 end
 
 # three argument constructor assumes stoichiometric coefs are one and integers

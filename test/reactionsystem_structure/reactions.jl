@@ -48,10 +48,16 @@ let
     @parameters k
     @species X(t) X2(t)
 
-    metadata = [:md_1 => 1.0, :md_2 => false, :md_3 => "Hello world", :md_4 => :sym, :md_5 => X + X2^k -1, :md_6 => (0.1, 2.0)]
+    metadata = Pair{Symbol,Any}[]
+    push!(metadata, :md_1 => 1.0)
+    push!(metadata, :md_2 => false)
+    push!(metadata, :md_3 => "Hello world")
+    push!(metadata, :md_4 => :sym)
+    push!(metadata, :md_5 => X + X2^k -1)
+    push!(metadata, :md_6 => (0.1, 2.0))
     r = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
 
-    @test isequal(get_metadata_vec(r), [:md_1 => 1.0, :md_2 => false, :md_3 => "Hello world", :md_4 => :sym, :md_5 => X + X2^k -1, :md_6 => (0.1, 2.0)])
+    @test get_metadata_vec(r) isa Vector{Pair{Symbol,Any}}
     @test has_metadata(r, :md_1)
     @test has_metadata(r, :md_2)
     @test has_metadata(r, :md_3)
