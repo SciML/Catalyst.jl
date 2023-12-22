@@ -193,7 +193,7 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
 
     # Deletes potential `:only_use_rate => ` entries from the metadata.
     if any(:only_use_rate == entry[1] for entry in metadata) 
-        findfirst(:only_use_rate == entry[1] for entry in metadata)
+        deleteat!(metadata, findfirst(:only_use_rate == entry[1] for entry in metadata))
     end
 
     Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate, metadata)
@@ -202,7 +202,7 @@ end
 # Checks if a metadata input has an entry :only_use_rate => true
 function metadata_only_use_rate_check(metadata)
     any(:only_use_rate == entry[1] for entry in metadata) || (return false)
-    return metadata[findfirst(:only_use_rate == entry[1] for entry in metadata)] 
+    return metadata[findfirst(:only_use_rate == entry[1] for entry in metadata)][2]
 end
 
 # three argument constructor assumes stoichiometric coefs are one and integers
