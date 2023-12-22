@@ -16,9 +16,9 @@ version = "0.0.1"
 
 [[deps.AbstractAlgebra]]
 deps = ["GroupsCore", "InteractiveUtils", "LinearAlgebra", "MacroTools", "Preferences", "Random", "RandomExtensions", "SparseArrays", "Test"]
-git-tree-sha1 = "a28e910034444c7d37614cb07e299193d6f5d60e"
+git-tree-sha1 = "d7832de8cf7af26abac741f10372080ac6cb73df"
 uuid = "c3fe647b-3220-5bb0-a1ea-a7954cac585d"
-version = "0.34.6"
+version = "0.34.7"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
