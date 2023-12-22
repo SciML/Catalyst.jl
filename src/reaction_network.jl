@@ -493,7 +493,7 @@ function extract_discrete_events(opts)
     elseif length(events)==0
         return nothing
     else 
-        return eqs
+        return ex2
     end
 end
 
