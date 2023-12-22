@@ -409,8 +409,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args, get_rxexprs(reaction))
     end
 
+    @show discrete_events
     discrete_e = convert_to_pair(:($(discrete_events...);))
-    
+    @show discrete_e
 
     # Returns the rephrased expression.
     quote
@@ -500,10 +501,13 @@ function extract_discrete_events(opts)
 end
 
 function convert_to_pair(e::Expr)
-    conditions = e.args[1].args[2]
-    equations = e.args[1].args[end]
-    
-    return Pair(ModelingToolkit.wrap(conditions), [equations])
+    pairs_list = []
+    for i in 1:length(e.args)
+        condition = e.args[i].args[2]
+        equations = e.args[i].args[end]
+        push!(pairs_list, Pair(ModelingToolkit.wrap(condition), [equations]))
+    end
+    return pairs_list
 end
     
 # Function looping through all reactions, to find undeclared symbols (species or
