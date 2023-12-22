@@ -408,10 +408,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     for reaction in reactions
         push!(rxexprs.args, get_rxexprs(reaction))
     end
-
-    @show discrete_events
     discrete_e = convert_to_pair(:($(discrete_events...);))
-    @show discrete_e
 
     # Returns the rephrased expression.
     quote
