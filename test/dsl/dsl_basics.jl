@@ -146,8 +146,13 @@ let
     metadata1 = [:noise_scaling => η]
     r1 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata1)
 
-    metadata2 = [:md_1 => 1.0, :md_2 => false, :md_3 => "Hello world", :md_4 => :sym, 
-                     :md_5 => X + X2^k -1, :md_6 => (0.1, 2.0)]
+    metadata2 = Pair{Symbol,Any}[]
+    push!(metadata2, :md_1 => 1.0)
+    push!(metadata2, :md_2 => false)
+    push!(metadata2, :md_3 => "Hello world")
+    push!(metadata2, :md_4 => :sym)
+    push!(metadata2, :md_5 => X + X2^k -1)
+    push!(metadata2, :md_6 => (0.1, 2.0))
     r2 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata2)
 
     metadata3 = Pair{Symbol,Any}[]
