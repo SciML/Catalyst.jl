@@ -14,13 +14,14 @@ using SafeTestsets
     @time @safetestset "Custom CRN Functions" begin include("dsl/custom_functions.jl") end
     @time @safetestset "DSL Options" begin include("dsl/dsl_options.jl") end
 
-    ### Non-DSL model cration and modication. ###
+    ### Non-DSL model creation and modification. ###
     @time @safetestset "ReactionSystem Components Based Creation" begin include("programmatic_model_creation/component_based_model_creation.jl") end
     @time @safetestset "Programmatic Model Expansion" begin include("programmatic_model_creation/programmatic_model_expansion.jl") end
 
     # Runs various miscellaneous tests.
     @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
     @time @safetestset "Symbolic Stoichiometry" begin include("miscellaneous_tests/symbolic_stoichiometry.jl") end
+    @time @safetestset "NonlinearProblems and Steady State Solving" begin include("miscellaneous_tests/nonlinear_solve.jl") end
     @time @safetestset "Events" begin include("miscellaneous_tests/events.jl") end
     @time @safetestset "Compound species" begin include("miscellaneous_tests/compound_macro.jl") end
     @time @safetestset "Reaction balancing" begin include("miscellaneous_tests/reaction_balancing.jl") end
@@ -36,8 +37,11 @@ using SafeTestsets
     @time @safetestset "U0 and Parameters Input Variants" begin include("model_simulation/u0_n_parameter_inputs.jl") end
     @time @safetestset "SDE System Simulations" begin include("model_simulation/simulate_SDEs.jl") end
     @time @safetestset "Jump System Simulations" begin include("model_simulation/simulate_jumps.jl") end
-    @time @safetestset "DiffEq Steady State Solving" begin include("model_simulation/solve_steady_state_problems.jl") end
-    @time @safetestset "PDE Systems Simulations" begin include("model_simulation/simulate_PDEs.jl") end
+
+    ### Tests Spatial Network Simulations. ###
+    @time @safetestset "PDE Systems Simulations" begin include("spatial_reaction_systems/simulate_PDEs.jl") end
+    @time @safetestset "Lattice Reaction Systems" begin include("spatial_reaction_systems/lattice_reaction_systems.jl") end
+    @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_reaction_systems/lattice_reaction_systems_ODEs.jl") end
 
     ### Tests network visualization. ###
     @time @safetestset "Latexify" begin include("visualization/latexify.jl") end
@@ -48,7 +52,7 @@ using SafeTestsets
     end
     
     ### Tests extensions. ###
-    if VERSION >= v"1.9"
-        @time @safetestset "Homotopy Continuation Extension" begin include("extensions/homotopy_continuation.jl") end
-    end
+    @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
+    @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
+    
 end # @time

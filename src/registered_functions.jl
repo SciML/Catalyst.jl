@@ -107,3 +107,41 @@ function Symbolics.derivative(::typeof(hillar), args::NTuple{5, Any}, ::Val{5})
      (args[4]^args[5]) * log(args[4])) /
     (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
 end
+
+"""
+expand_registered_functions(expr)
+
+Takes an expression, and expands registered function expressions. E.g. `mm(X,v,K)` is replaced with v*X/(X+K). Currently supported functions: `mm`, `mmr`, `hill`, `hillr`, and `hill`.
+"""
+function expand_registered_functions(expr)
+    istree(expr) || return expr
+    args = arguments(expr)
+    if operation(expr) == Catalyst.mm
+        return args[2]*args[1]/(args[1] + args[3])
+    elseif operation(expr) == Catalyst.mmr
+        return args[2]*args[3]/(args[1] + args[3])
+    elseif operation(expr) == Catalyst.hill
+        return args[2]*(args[1]^args[4])/((args[1])^args[4] + (args[3])^args[4])
+    elseif operation(expr) == Catalyst.hillr
+        return args[2]*(args[3]^args[4])/((args[1])^args[4] + (args[3])^args[4])
+    elseif operation(expr) == Catalyst.hillar
+        return args[3]*(args[1]^args[5])/((args[1])^args[5] + (args[2])^args[5] + (args[4])^args[5])
+    end
+    for i = 1:length(args)
+        args[i] = expand_registered_functions(args[i])
+    end
+    return expr
+end
+# If applied to a Reaction, return a reaction with its rate modified.
+function expand_registered_functions(rx::Reaction)
+    Reaction(expand_registered_functions(rx.rate), rx.substrates, rx.products, rx.substoich, rx.prodstoich, rx.netstoich, rx.only_use_rate)
+end
+# If applied to a Equation, returns it with it applied to lhs and rhs
+function expand_registered_functions(eq::Equation)
+    return expand_registered_functions(eq.lhs) ~ expand_registered_functions(eq.rhs)
+end
+# If applied to a ReactionSystem, applied function to all Reactions and other Equations, and return updated system.
+function expand_registered_functions(rs::ReactionSystem)
+    rs = @set rs.eqs = [Catalyst.expand_registered_functions(eq) for eq in rs.eqs]
+    return @set rs.rxs = [Catalyst.expand_registered_functions(rx) for rx in rs.rxs]
+end

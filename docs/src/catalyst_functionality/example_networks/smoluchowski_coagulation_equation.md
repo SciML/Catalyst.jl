@@ -127,7 +127,7 @@ plot!(ϕ, sol[3,:]/Nₒ, line = (:dot,4,:purple), label="Analytical sol--X3",
 ```
 For the **additive kernel** we find
 
-![additive_kernel](../assets/additive_kernel.svg)
+![additive_kernel](../../assets/additive_kernel.svg)
 
 ---
 ## References

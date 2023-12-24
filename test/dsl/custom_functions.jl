@@ -6,7 +6,7 @@ using ModelingToolkit: get_states, get_ps
 using StableRNGs
 rng = StableRNG(12345)
 
-### Tests Cutom Functions ###
+### Tests Custom Functions ###
 let
     new_hill(x, v, k, n) = v * x^n / (k^n + x^n)
     new_poly(x, p1, p2) = 0.5 * p1 * x^2
@@ -203,4 +203,66 @@ let
     @test isequal(Symbolics.derivative(Catalyst.hillar(X, Y, v, K, n), n),
                   v * (X^n) * ((K^n + Y^n) * log(X) - (K^n) * log(K) - (Y^n) * log(Y)) /
                   (K^n + X^n + Y^n)^2)
+end
+
+### Tests Current Function Expansion ###
+
+# Tests `ReactionSystem`s.
+let
+    @variables t 
+    @species x(t) y(t)
+    @parameters k v n 
+    rs1 = @reaction_network rs begin
+        mm(x, v, k), 0 --> x
+        mmr(x, v, k), 0 --> x
+        hill(x, v, k, n), 0 --> x
+        hillr(x, v, k, n), 0 --> x
+        hillar(x, y, v, k, n), 0 --> x    
+    end
+    rs2 = @reaction_network rs begin
+        v * x / (x + k), 0 --> x
+        v * k / (x + k), 0 --> x
+        v * (x^n) / (x^n + k^n), 0 --> x
+        v * (k^n) / (x^n + k^n), 0 --> x
+        v * (x^n) / (x^n + y^n + k^n), 0 --> x    
+    end
+
+    @test Catalyst.expand_registered_functions(rs1) == rs2
+end
+
+# Tests `Reaction`s.
+let
+    @variables t 
+    @species x(t) y(t)
+    @parameters k v n 
+    
+    r1 = @reaction mm(x, v, k), 0 --> x
+    r2 = @reaction mmr(x, v, k), 0 --> x
+    r3 = @reaction hill(x, v, k, n), 0 --> x
+    r4 = @reaction hillr(x, v, k, n), 0 --> x
+    r5 = @reaction hillar(x, y, v, k, n), 0 --> x + y
+    
+    @test isequal(Catalyst.expand_registered_functions(r1).rate, v * x / (x + k))
+    @test isequal(Catalyst.expand_registered_functions(r2).rate, v * k / (x + k))
+    @test isequal(Catalyst.expand_registered_functions(r3).rate, v * (x^n) / (x^n + k^n))
+    @test isequal(Catalyst.expand_registered_functions(r4).rate, v * (k^n) / (x^n + k^n))
+    @test isequal(Catalyst.expand_registered_functions(r5).rate, v * (x^n) / (x^n + y^n + k^n))
+end
+
+# Tests `Equation`s.
+let
+    @variables T X(T) Y(T)
+    @parameters K V N 
+    
+    eq1 = 0 ~ mm(X, V, K)
+    eq2 = 0 ~ mmr(X, V, K)
+    eq3 = 0 ~ hill(X, V, K, N)
+    eq4 = 0 ~ hillr(X, V, K, N)
+    eq5 = 0 ~ hillar(X, Y, V, K, N)
+    
+    @test isequal(Catalyst.expand_registered_functions(eq1), 0 ~ V * X / (X + K))
+    @test isequal(Catalyst.expand_registered_functions(eq2), 0 ~ V * K / (X + K))
+    @test isequal(Catalyst.expand_registered_functions(eq3), 0 ~ V * (X^N) / (X^N + K^N))
+    @test isequal(Catalyst.expand_registered_functions(eq4), 0 ~ V * (K^N) / (X^N + K^N))
+    @test isequal(Catalyst.expand_registered_functions(eq5), 0 ~ V * (X^N) / (X^N + Y^N + K^N))
 end

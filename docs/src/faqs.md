@@ -288,7 +288,7 @@ ModelingToolkit. e.g., this is should work
 using Catalyst
 myHill(x) = 2*x^3/(x^3+1.5^3)
 rn = @reaction_network begin
-  myHill(X), ∅ → X
+  myHill(X), ∅ --> X
 end
 ```
 In some cases, it may be necessary or desirable to register functions with

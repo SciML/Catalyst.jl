@@ -451,3 +451,33 @@ let
     @test numspecies(rs123) == 6
     @test issetequal(nonspecies(rs123), [V1, rs23.V2, rs23.rs3.V3])
 end
+
+# Tests that conversion with defaults works for a composed model.
+let 
+    rn1 = @reaction_network rn1 begin
+        @parameters p=1.0 r=2.0
+        @species X(t) = 3.0 Y(t) = 4.0
+        (p1, d), 0 <--> X
+        (p2, r), 0 <--> Z
+    end
+    rn2 = @reaction_network rn1 begin
+        @parameters p=10. q=20.0
+        @species X(t) = 30.0 Z(t) = 40.0
+        (p1, d), 0 <--> X
+        (p2, q), 0 <--> Z
+    end
+    composed_reaction_system = compose(rn1, [rn2])
+    osys = convert(ODESystem, composed_reaction_system)
+    parameters(osys)[1].metadata
+    
+    osys.defaults
+    @unpack p, r, X, Y = rn1
+    osys.defaults[p] == 1.0
+    osys.defaults[r] == 2.0
+    osys.defaults[X] == 3.0
+    osys.defaults[Y] == 4.0
+    osys.defaults[rn2.p] == 10.0
+    osys.defaults[rn2.q] == 20.0
+    osys.defaults[rn2.X] == 30.0
+    osys.defaults[rn2.Z] == 40.0
+end

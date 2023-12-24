@@ -5,7 +5,7 @@ Generally, when we have a structure `simulation_struct` and want to interface wi
 
 ## Interfacing problem objects
 
-We begin by demonstrating how we can interface with problem objects. We will demonstrate using a `ODEProblem`, however, it works similarily for other problem types.
+We begin by demonstrating how we can interface with problem objects. We will demonstrate using a `ODEProblem`, however, it works similarly for other problem types.
 ```@example ex1
 using Catalyst
 rn = @reaction_network begin
@@ -83,7 +83,7 @@ integrator[:X1] = 10.0
 Please read [this](@ref advanced_simulations_ssa_callbacks) with regards to updating integrators of `JumpProblem`s.
 
 
-## Interfacing solution objects
+## [Interfacing solution objects](@id simulation_structure_interfacing_solutions)
 
 Finally, we consider solution objects. First, we simulate our problem:
 ```@example ex1
@@ -99,7 +99,7 @@ sol[:k1]
 ```
 Finally, we note that we cannot change the values of solution states or parameters (i.e. both `sol[:X1] = 0.0` and `sol[:k1] = 0.0` generate errors).
 
-## Interfacing using symbolic representation
+## [Interfacing using symbolic representation](@id simulation_structure_interfacing_symbolic_representation)
 
 Catalyst is built on an *intermediary representation* implemented by (ModelingToolkit.jl)[https://github.com/SciML/ModelingToolkit.jl]. ModelingToolkit is a modelling framework where one first declares a set of symbolic variables and parameters using e.g.
 ```@example ex2

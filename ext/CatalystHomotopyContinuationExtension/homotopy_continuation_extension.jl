@@ -32,6 +32,7 @@ gives
 ```
 
 Notes:
+- Homotopy-based steady state finding only works when all rates are rational polynomials (e.g. constant, linear, mm, or hill functions).
 ```
   """
 function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative=true, neg_thres=-1e-20, u0=[], kwargs...)
@@ -43,14 +44,14 @@ end
 
 # For a given reaction system, parameter values, and initial conditions, find the polynomial that HC solves to find steady states.
 function steady_state_polynomial(rs::ReactionSystem, ps, u0)
+    rs = Catalyst.expand_registered_functions(rs)
     ns = convert(NonlinearSystem, rs; remove_conserved = true)
     pre_varmap = [symmap_to_varmap(rs,u0)..., symmap_to_varmap(rs,ps)...]
-    conservationlaw_errorcheck(rs, pre_varmap)
+    Catalyst.conservationlaw_errorcheck(rs, pre_varmap)
     p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns); defaults = ModelingToolkit.defaults(ns))
     p_dict  = Dict(parameters(ns) .=> p_vals)
     eqs_pars_funcs = vcat(equations(ns), conservedequations(rs))
-    eqs_funcs = map(eq -> substitute(eq.rhs - eq.lhs, p_dict), eqs_pars_funcs)
-    eqs = [deregister([mm, mmr, hill, hillr, hillar], eq) for eq in eqs_funcs]
+    eqs = map(eq -> substitute(eq.rhs - eq.lhs, p_dict), eqs_pars_funcs)
     eqs_intexp = make_int_exps.(eqs)
     return Catalyst.to_multivariate_poly(remove_denominators.(eqs_intexp))
 end
@@ -61,27 +62,6 @@ function conservationlaw_errorcheck(rs, pre_varmap)
     any(s -> s in vars_with_vals, species(rs)) && return
     isempty(conservedequations(rs)) || 
         error("The system has conservation laws but initial conditions were not provided for some species.")
-end
-
-# Unfolds a function (like mm or hill). 
-function deregister(fs::Vector{T}, expr) where T
-    for f in fs
-        expr = deregister(f, expr) 
-    end
-    return expr
-end
-# Provided by Shashi Gowda.
-deregister(f, expr) = wrap(Rewriters.Postwalk(Rewriters.PassThrough(___deregister(f)))(unwrap(expr)))
-function ___deregister(f)
-    (expr) ->
-    if istree(expr) && operation(expr) == f
-        args = arguments(expr)
-        invoke_with = map(args) do a
-            t = typeof(a)
-            issym(a) || istree(a) ? wrap(a) => symtype(a) : a => typeof(a)
-        end 
-        invoke(f, Tuple{last.(invoke_with)...}, first.(invoke_with)...)
-    end
 end
 
 # Parses and expression and return a version where any exponents that are Float64 (but an int, like 2.0) are turned into Int64s.

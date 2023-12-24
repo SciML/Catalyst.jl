@@ -1,9 +1,61 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+- Simulation of spatial ODEs now supported. For full details, please see https://github.com/SciML/Catalyst.jl/pull/644 and upcoming documentation. Note that these methods are currently considered alpha, with the interface and approach changing even in non-breaking Catalyst releases.
+- LatticeReactionSystem structure represents a spatial reaction network:
+  ```julia
+  rn = @reaction_network begin
+      (p,d), 0 <--> X
+  end
+  tr = @transport_reaction D X
+  lattice = Graphs.grid([5, 5])
+  lrs = LatticeReactionSystem(rn, [tr], lattice)
+```
+- Here, if a `u0` or `p` vector is given with scalar values:
+  ```julia
+  u0 = [:X => 1.0]
+  p = [:p => 1.0, :d => 0.5, :D => 0.1]
+  ```
+  this value will be used across the entire system. If their values are instead vectors, different values are used across the spatial system. Here
+  ```julia
+  X0 = zeros(25)
+  X0[1] = 1.0
+  u0 = [:X => X0]
+  ```
+  X's value will be `1.0` in the first vertex, but `0.0` in the remaining one (the system have 25 vertexes in total). SInce th parameters `p` and `d` are part of the non-spatial reaction network, their values are tied to vertexes. However, if the `D` parameter (which governs diffusion between vertexes) is given several values, these will instead correspond to the specific edges (and transportation along those edges.)
+
+- Add a CatalystBifurcationKitExtension, permitting BifurcationKit's `BifurcationProblem`s to be created from Catalyst reaction networks. Example usage:
+```julia
+using Catalyst
+wilhelm_2009_model = @reaction_network begin
+    k1, Y --> 2X
+    k2, 2X --> X + Y
+    k3, X + Y --> Y
+    k4, X --> 0
+    k5, 0 --> X
+end
+
+
+using BifurcationKit
+bif_par = :k1
+u_guess = [:X => 5.0, :Y => 2.0]
+p_start = [:k1 => 4.0, :k2 => 1.0, :k3 => 1.0, :k4 => 1.5, :k5 => 1.25]
+plot_var = :X
+bprob = BifurcationProblem(wilhelm_2009_model, u_guess, p_start, bif_par; plot_var=plot_var)
+
+p_span = (2.0, 20.0)
+opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2], max_steps=1000)
+
+bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside=true)
+
+using Plots
+plot(bif_dia; xguide="k1", yguide="X")
+```
+- Automatically handles elimination of conservation laws for computing bifurcation diagrams.
+- Updated Bifurcation documentation with respect to this new feature.
 
 ## Catalyst 13.5
-- Added a CatalystHomotopyContinuationExtension extension, which exports the `hc_steady_state` function if HomotopyContinuation is exported. `hc_steady_state` finds the steady states of a reactin system using the homotopy continuation method. This feature is only available for julia versions 1.9+. Example: 
+- Added a CatalystHomotopyContinuationExtension extension, which exports the `hc_steady_state` function if HomotopyContinuation is exported. `hc_steady_state` finds the steady states of a reaction system using the homotopy continuation method. This feature is only available for julia versions 1.9+. Example: 
 ```julia
 wilhelm_2009_model = @reaction_network begin
     k1, Y --> 2X

@@ -4,7 +4,7 @@ $(DocStringExtensions.README)
 module Catalyst
 
 using DocStringExtensions
-using SparseArrays, DiffEqBase, Reexport
+using SparseArrays, DiffEqBase, Reexport, Setfield
 using LaTeXStrings, Latexify, Requires
 using JumpProcesses: JumpProcesses,
                      JumpProblem, MassActionJump, ConstantRateJump,
@@ -16,6 +16,10 @@ const MT = ModelingToolkit
 using Unitful
 @reexport using ModelingToolkit
 using Symbolics
+
+using RuntimeGeneratedFunctions
+RuntimeGeneratedFunctions.init(@__MODULE__)
+
 import Symbolics: BasicSymbolic
 import SymbolicUtils
 using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems,
@@ -33,6 +37,7 @@ import ModelingToolkit: check_variables,
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
+import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 
@@ -106,5 +111,23 @@ export balance_reaction
 # HomotopyContinuation
 function hc_steady_states end
 export hc_steady_states
+
+### Spatial Reaction Networks ###
+
+# spatial reactions
+include("spatial_reaction_systems/spatial_reactions.jl")
+export TransportReaction, TransportReactions, @transport_reaction
+export isedgeparameter
+
+# lattice reaction systems
+include("spatial_reaction_systems/lattice_reaction_systems.jl")
+export LatticeReactionSystem
+export spatial_species, vertex_parameters, edge_parameters
+
+# variosu utility functions
+include("spatial_reaction_systems/utility.jl")
+
+# spatial lattice ode systems.
+include("spatial_reaction_systems/spatial_ODE_systems.jl")
 
 end # module

@@ -89,7 +89,7 @@ jprob = JumpProblem(rs, dprob, Direct())
 jsol = solve(jprob, SSAStepper())
 
 plot(plot(osol; title = "Reaction Rate Equation ODEs"),
-     plot(jsol; title = "Gillespie Jump Simulation");
+     plot(jsol; title = "Stochastic Chemical Kinetics Jump Processes");
      layout = (2, 1))
 ```
 
@@ -99,10 +99,10 @@ using Catalyst, DifferentialEquations, Plots
 
 rs = @reaction_network begin
     @parameters A B
-    A, ∅ → X
-    1, 2X + Y → 3X
-    B, X → Y
-    1, X → ∅
+    A, ∅ --> X
+    1, 2X + Y --> 3X
+    B, X --> Y
+    1, X --> ∅
 end
 tspan = (0.0,50.0)
 u0 = [:X => 1.0, :Y => 1.0]

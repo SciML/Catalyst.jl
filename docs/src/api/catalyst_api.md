@@ -180,7 +180,7 @@ netstoichmat
 reactionrates
 ```
 
-## Functions to extend or modify a network
+## [Functions to extend or modify a network](@id api_network_extension_and_modification)
 `ReactionSystem`s can be programmatically extended using
 [`@add_reactions`](@ref), [`addspecies!`](@ref), [`addparam!`](@ref) and
 [`addreaction!`](@ref), or using [`ModelingToolkit.extend`](@ref) and

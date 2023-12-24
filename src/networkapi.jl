@@ -1277,6 +1277,18 @@ Compute conserved quantities for a system with the given conservation laws.
 """
 conservedquantities(state, cons_laws) = cons_laws * state
 
+
+# If u0s are not given while conservation laws are present, throws an error.
+# Used in HomotopyContinuation and BifurcationKit extensions.
+# Currently only checks if any u0s are given
+# (not whether these are enough for computing conserved quantitites, this will yield a less informative error).
+function conservationlaw_errorcheck(rs, pre_varmap)
+    vars_with_vals = Set(p[1] for p in pre_varmap)
+    any(s -> s in vars_with_vals, species(rs)) && return
+    isempty(conservedequations(Catalyst.flatten(rs))) || 
+        error("The system has conservation laws but initial conditions were not provided for some species.")
+end
+
 ######################## reaction network operators #######################
 
 """
