@@ -9,6 +9,8 @@ Typically, propensities are recomputed only whenever a jump occurs. This means t
 - Simulations over long time spans.
 - Simulations that are performed a large number of times.
 
+More throughout description of these types of simulations can be found in the literature [^1].
+
 ## Managing of solution saving
 By default, `solve` saves the value of the solution at the time of every jump. For simulations where a large number of jumps occur, this can cause memory to quickly fill up. Typically, for simulations with a large number of jumps, we want to [disable this feature](https://docs.sciml.ai/JumpProcesses/dev/tutorials/discrete_stochastic_example/#save_positions_docs) and instead set the save frequency manually. To exemplify this, let us consider a simple production/degradation model:
 ```@example jump_simulation_performance_1
@@ -107,7 +109,7 @@ dprob = DiscreteProblem(rn, u0, tspan, ps)
 jprob = JumpProblem(rn, dprob, Direct())
 nothing # hide
 ```
-Here (as throughout most of Catalyst's documentation) we have used the `Direct()` solver (which corresponds to Gillespie's original direct method [^1][^2], also called the *stochastic simulation algorithm*). This method was originally published in 1976, and since then, many additional methods for performing jump simulations of CRN models have been developed. 
+Here (as throughout most of Catalyst's documentation) we have used the `Direct()` solver (which corresponds to Gillespie's original direct method [^2][^3], also called the *stochastic simulation algorithm*). This method was originally published in 1976, and since then, many additional methods for performing jump simulations of CRN models have been developed. 
 
 Gillespie's direct method will, after a jump has been performed, recompute the rates of *all* possible jumps in the system. This is typically not required. E.g. consider the following system:
 ```@example jump_simulation_performance_2
@@ -119,7 +121,7 @@ end
 ```
 Here, the rate of the `k1, X1 --> X2` and `k2, X2 --> X3` reactions does not depend on the amount of $X3$ in the system. Hence, their rates are unaffected by the occurrence of the `k3, X3 --> 0` reaction. Performant jump simulation methods have clever ways to determine which rates require recomputing after the occurrence of each reaction, which improves their performance. Many of these depend on so-called dependency graphs (which track which reactions' rates are affected by the occurrence of which reactions). Catalyst automatically builds such dependency graphs, which means that most jump simulators can be used without any additional input.
 
-A full list of jump simulation method implemented by JumpProcesses can be found [here](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-for-Exact-Simulation). Generally, `RSSA()` (the rejection SSA method [^3][^4]) is recommended for small models, with `RSSACR()` (the rejection SSA with composition-rejection method [^5]) typically being more performant for larger models. For models that are simulated a large number of times, it can be worthwhile to try a few different jump simulation methods to determine which one is most performant in each given case.
+A full list of jump simulation method implemented by JumpProcesses can be found [here](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-for-Exact-Simulation). Generally, `RSSA()` (the rejection SSA method [^4][^5]) is recommended for small models, with `RSSACR()` (the rejection SSA with composition-rejection method [^6]) typically being more performant for larger models. For models that are simulated a large number of times, it can be worthwhile to try a few different jump simulation methods to determine which one is most performant in each given case.
 
 ## Hybrid simulations
 For some models, copy numbers may vary greatly between different species. E.g. consider a genetic promoter which can either be in an inactive form ($Pᵢ$) or an active form ($Pₐ$). The active promoter produces a molecule ($M$):
@@ -153,8 +155,9 @@ Hybrid simulations for Catalyst models are currently not supported. However, it 
 
 ---
 ## References
-[^1]: [D. T. Gillespie, *A general method for numerically simulating the stochastic time evolution of coupled chemical reactions*, Journal of Computational Physics (1976).](https://www.sciencedirect.com/science/article/abs/pii/0021999176900413)
-[^2]: [D. T. Gillespie, *Exact Stochastic Simulation of Coupled Chemical Reactions*, The Journal of Physical Chemistry (1977).](https://pubs.acs.org/doi/10.1021/j100540a008)
-[^3]: [V. H. Thanh, C. Priami and R. Zunino, *Efficient rejection-based simulation of biochemical reactions with stochastic noise and delays*, Journal of Chemical Physics (2014).](https://pubmed.ncbi.nlm.nih.gov/25296793/)
-[^4]: [V. H. Thanh, R. Zunino and C. Priami, *On the rejection-based algorithm for simulation and analysis of large-scale reaction networks*, Journal of Chemical Physics (2015).](https://pubmed.ncbi.nlm.nih.gov/26133409/)
-[^5]: [V. H. Thanh, R. Zunino, and C. Priami, *Efficient constant-time complexity algorithm for stochastic simulation of large reaction networks*, IEEE/ACM Transactions on Computational Biology and Bioinformatics (2017).](https://pubmed.ncbi.nlm.nih.gov/26890923/)
+[^1]: [L. Marchetti, C. Priami, V. H. Thanh, *Simulation Algorithms for Computational Systems Biology*, Springer (2017).](https://link.springer.com/book/10.1007/978-3-319-63113-4)
+[^2]: [D. T. Gillespie, *A general method for numerically simulating the stochastic time evolution of coupled chemical reactions*, Journal of Computational Physics (1976).](https://www.sciencedirect.com/science/article/abs/pii/0021999176900413)
+[^3]: [D. T. Gillespie, *Exact Stochastic Simulation of Coupled Chemical Reactions*, The Journal of Physical Chemistry (1977).](https://pubs.acs.org/doi/10.1021/j100540a008)
+[^4]: [V. H. Thanh, C. Priami and R. Zunino, *Efficient rejection-based simulation of biochemical reactions with stochastic noise and delays*, Journal of Chemical Physics (2014).](https://pubmed.ncbi.nlm.nih.gov/25296793/)
+[^5]: [V. H. Thanh, R. Zunino and C. Priami, *On the rejection-based algorithm for simulation and analysis of large-scale reaction networks*, Journal of Chemical Physics (2015).](https://pubmed.ncbi.nlm.nih.gov/26133409/)
+[^6]: [V. H. Thanh, R. Zunino, and C. Priami, *Efficient constant-time complexity algorithm for stochastic simulation of large reaction networks*, IEEE/ACM Transactions on Computational Biology and Bioinformatics (2017).](https://pubmed.ncbi.nlm.nih.gov/26890923/)
