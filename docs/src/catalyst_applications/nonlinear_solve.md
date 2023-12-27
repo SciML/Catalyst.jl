@@ -6,7 +6,7 @@ We have previously described how `ReactionSystem` steady states can be found thr
 
 However, if all (or multiple) steady states are sought, using homotopy continuation is better.
 
-This tutorial describes how to create `NonlinearProblem`s from Catalyst's `ReactionSystemn`s, and how to solve them using NonlinearSolve. More extensive descriptions of available solvers and options can be found in [NonlinearSolve's documentation](https://docs.sciml.ai/NonlinearSolve/stable/). If you use this in your research, please [cite the NonlinearSolve.jl](@ref nonlinear_solve_citation) and [Catalyst.jl](@ref catalyst_citation) publications.
+This tutorial describes how to create `NonlinearProblem`s from Catalyst's `ReactionSystemn`s, and how to solve them using NonlinearSolve. More extensive descriptions of available solvers and options can be found in [NonlinearSolve's documentation](https://docs.sciml.ai/NonlinearSolve/stable/).
 
 ## Basic example
 Let us consider a simple dimerisation network, where a protein ($P$) can exist in a monomer and a dimer form. The protein is produced at a constant rate from its mRNA, which is also produced at a constant rate.

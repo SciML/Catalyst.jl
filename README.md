@@ -48,6 +48,8 @@ the current master branch.
 
 Several Youtube video tutorials and overviews are also available, but note these use older 
 Catalyst versions with slightly different notation (for example, in building reaction networks):
+- From JuliaCon 2023: A short 15 minute overview of Catalyst as of version 13 is
+available in the talk [Catalyst.jl, Modeling Chemical Reaction Networks](https://www.youtube.com/watch?v=yreW94n98eM&ab_channel=TheJuliaProgrammingLanguage).
 - From JuliaCon 2022: A three hour tutorial workshop overviewing how to use
   Catalyst and its more advanced features as of version 12.1. [Workshop
   video](https://youtu.be/tVfxT09AtWQ), [Workshop Pluto.jl
@@ -59,6 +61,8 @@ Catalyst.jl](https://www.youtube.com/watch?v=5p1PJE5A5Jw).
   as DiffEqBiological in older versions is available in the talk [Efficient
   Modelling of Biochemical Reaction
   Networks](https://www.youtube.com/watch?v=s1e72k5XD6s)
+
+Finally, an overview of the package and its features (as of version 13) can also be found in its corresponding research paper, [Catalyst: Fast and flexible modeling of reaction networks](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530).
 
 ## Features
 
