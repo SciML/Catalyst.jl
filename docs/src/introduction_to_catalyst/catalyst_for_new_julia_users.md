@@ -1,7 +1,7 @@
 # [Introduction to Catalyst and Julia for New Julia users](@id catalyst_for_new_julia_users)
 The Catalyst tool for the modelling of chemical reaction networks is based in the Julia programming language. While experience in Julia programming is advantageous for using Catalyst, it is not necessary for accessing some of its basic features. This tutorial serves as an introduction to Catalyst for those unfamiliar with Julia, also introducing some basic Julia concepts. Anyone who plans on using Catalyst extensively is recommended to familiarise oneself more thoroughly with the Julia programming language. A collection of resources for learning Julia can be found [here](https://julialang.org/learning/), and a full documentation is available [here](https://docs.julialang.org/en/v1/).
 
-Julia can be downloaded [here](https://julialang.org/downloads/). Generally, it is recommended to use the [*juliaup*](https://github.com/JuliaLang/juliaup) tool to install and update Julia. Furthermore, *Visual Studio Code* is a good IDE with [extensive Julia support](https://code.visualstudio.com/docs/languages/julia), and a good default choice IDE.
+Julia can be downloaded [here](https://julialang.org/downloads/). Generally, it is recommended to use the [*juliaup*](https://github.com/JuliaLang/juliaup) tool to install and update Julia. Furthermore, *Visual Studio Code* is a good IDE with [extensive Julia support](https://code.visualstudio.com/docs/languages/julia), and a good default choice.
 
 *Users who are already familiar with Julia can skip to the [Introduction to Catalyst](@ref introduction_to_catalyst) tutorial.*
 
