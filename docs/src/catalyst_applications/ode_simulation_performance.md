@@ -1,5 +1,5 @@
 # [Advice for performant ODE simulations](@id ode_simulation_performance)
-We have previously described how to perform ODE simulations of *chemical reaction network* (CRN) models. These simulations are typically fast and require little additional considerations. However, when a model is simulated many times (e.g. as a part of solving an inverse problem), or is very large, simulation runtimes may become noticeable. Here we will give some advice on how to improve performance for these cases.
+We have previously described how to perform ODE simulations of *chemical reaction network* (CRN) models. These simulations are typically fast and require little additional consideration. However, when a model is simulated many times (e.g. as a part of solving an inverse problem), or is very large, simulation runtimes may become noticeable. Here we will give some advice on how to improve performance for these cases.
 
 Generally, there are few good ways to, before a simulation, determine the best options. Hence, while we below provide several options, if you face an application for which reducing runtime is critical (e.g. if you need to simulate the same ODE many times), it might be required to manually trial these various options to see which yields the best performance ([BenchmarkTools.jl's](https://github.com/JuliaCI/BenchmarkTools.jl) `@btime` macro is useful for this purpose). It should be noted that most default options typically perform well, and it is primarily for large models where investigating these options is worthwhile. All ODE simulations of Catalyst models are performed using the OrdinaryDiffEq.jl package, [which documentation](https://docs.sciml.ai/DiffEqDocs/stable/) provides additional advice on performance.
 
@@ -169,7 +169,7 @@ Generally, the use of preconditioners is only recommended for advanced users who
 ## [Parallelisation on CPUs and GPUs](@id ode_simulation_performance_parallelisation)
 Whenever an ODE is simulated a large number of times (e.g. when investigating its behaviour for different parameter values), the best way to improve performance is to [parallelise the simulation over several processing units](https://en.wikipedia.org/wiki/Parallel_computing). Indeed, an advantage of the Julia programming language is that it was designed after the advent of parallel computing, making it well-suited for this task. Roughly, parallelisation can be divided into parallelisation on [CPUs](https://en.wikipedia.org/wiki/Central_processing_unit) and on [GPUs](https://en.wikipedia.org/wiki/General-purpose_computing_on_graphics_processing_units). CPU parallelisation is most straightforward, while GPU parallelisation requires specialised ODE solvers (which Catalyst have access to). 
 
-Both CPU and GPU parallelisation requires first building an `EnsembleProblem` (which defines the simulations you wish to perform) and then supplying this with the correct parallelisation options. These have [previously been introduced in Catalyst's documentation](@id advanced_simulations_montecarlo_simulations) (but in the context of convenient bundling of similar simulations, rather than to improve performance), with a more throughout description being found in [OrdinaryDiffEq's documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#ensemble). Finally, a general documentation of parallel computing in Julia is available [here](https://docs.julialang.org/en/v1/manual/parallel-computing/).
+Both CPU and GPU parallelisation require first building an `EnsembleProblem` (which defines the simulations you wish to perform) and then supplying this with the correct parallelisation options. These have [previously been introduced in Catalyst's documentation](@id advanced_simulations_montecarlo_simulations) (but in the context of convenient bundling of similar simulations, rather than to improve performance), with a more throughout description being found in [OrdinaryDiffEq's documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#ensemble). Finally, a general documentation of parallel computing in Julia is available [here](https://docs.julialang.org/en/v1/manual/parallel-computing/).
 
 ### [CPU parallelisation](@id ode_simulation_performance_parallelisation_CPU)
 For this example (and the one for GPUs), we will consider a simple model of an enzyme ($E$) that converts a substrate ($S$) to a product ($P$):
@@ -248,7 +248,7 @@ nothing # hide
 ```
 Powerful personal computers and HPC clusters typically have a large number of available additional processes that can be added to improve performance.
 
-While `EnsembleThreads` and `EnsembleDistributed` covers the main cases, additional ensemble algorithms exist. A more throughout description of these can be found [here](https://docs.sciml.ai/DiffEqDocs/dev/features/ensemble/#EnsembleAlgorithms).
+While `EnsembleThreads` and `EnsembleDistributed` cover the main cases, additional ensemble algorithms exist. A more throughout description of these can be found [here](https://docs.sciml.ai/DiffEqDocs/dev/features/ensemble/#EnsembleAlgorithms).
 
 Finally, it should be noted that OrdainryDiffEq, if additional processes are available, automatically parallelises the [linear solve part of implicit simulations](@ref ode_simulation_performance_symbolic_jacobian_linear_solver). It is thus possible to see performance improvements from adding additional processes on single simulations, even without running multiple simulations in parallel (this effect is primarily noticeable for large systems with many species).
 
@@ -260,15 +260,15 @@ Generally, we can parallelise `EnsembleProblem`s across several GPUs in a very s
 - Depending on which GPU hardware is used, a specific back-end package has to be installed and imported (e.g. CUDA for NVIDIA's GPUs or Metal for Apple's).
 - For some cases, we must use a special ODE solver supporting simulations on GPUs.
 
-Furthermore, to receive good performance, we should also make the following adaptation:
-- By default, Julia's decimal numbers are implemented as `Float64`s, however, using `Float32`s is advantageous on GPUs. IDeally all initial conditions and parameter values should be specified using these.
+Furthermore, to receive good performance, we should also make the following adaptations:
+- By default, Julia's decimal numbers are implemented as `Float64`s, however, using `Float32`s is advantageous on GPUs. Ideally, all initial conditions and parameter values should be specified using these.
 - We should designate all our vectors (i.e. initial conditions and parameter values) as [static vectors](https://github.com/JuliaArrays/StaticArrays.jl).
 
 We will assume that we are using the CUDA GPU hardware, so we will first load the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) backend package, as well as DiffEqGPU:
 ```@example ode_simulation_performance_5
 using CUDA, DiffEqGPU
 ```
-Which backend package you should use depend on your available hardware, with the alternative being listed [here](https://docs.sciml.ai/DiffEqGPU/stable/manual/backends/).
+Which backend package you should use depends on your available hardware, with the alternative being listed [here](https://docs.sciml.ai/DiffEqGPU/stable/manual/backends/).
 
 Next, we declare our model and `ODEProblem`. However, we make all values `Float64` (by appending `f0` to them) and all vectors static (by adding `@SVector` before their declaration, something which requires the [StaticArrays](https://github.com/JuliaArrays/StaticArrays.jl) package).
 ```@example ode_simulation_performance_5
@@ -297,8 +297,8 @@ eprob = EnsembleProblem(oprob; prob_func=prob_func)
 nothing # hide
 ```
 
-We can now simulate our model using an GPU-based ensemble algorithm. Currently, two such algorithms are available, `EnsembleGPUArray` and `EnsembleGPUKernel`. Their difference are that
-* Only `EnsembleGPUKernel` requires arrays to be static array (although it is still advantageous for `EnsembleGPUArray`).
+We can now simulate our model using a GPU-based ensemble algorithm. Currently, two such algorithms are available, `EnsembleGPUArray` and `EnsembleGPUKernel`. Their differences are that
+* Only `EnsembleGPUKernel` requires arrays to be static arrays (although it is still advantageous for `EnsembleGPUArray`).
 * While `EnsembleGPUArray` can use standard ODE solvers, `EnsembleGPUKernel` requires specialised versions (such as `GPUTsit5`). A list of available such solvers can be found [here](https://docs.sciml.ai/DiffEqGPU/dev/manual/ensemblegpukernel/#specialsolvers).
 
 Generally, it is recommended to use `EnsembleGPUArray` for large models (that have at least $100$ variables), and `EnsembleGPUKernel` for smaller ones. Here we simulate our model using both approaches (noting that `EnsembleGPUKernel` requires `GPUTsit5`):
@@ -307,9 +307,9 @@ esol1 = solve(eprob, Tsit5(), EnsembleGPUArray(CUDA.CUDABackend()); trajectories
 esol2 = solve(eprob, GPUTsit5(), EnsembleGPUKernel(CUDA.CUDABackend()); trajectories=100)
 nothing # hide
 ```
-Note that we have to provide the `CUDA.CUDABackend()` argument to our ensemble algorithms (to designate our GPU backend, in this case CUDA).
+Note that we have to provide the `CUDA.CUDABackend()` argument to our ensemble algorithms (to designate our GPU backend, in this case, CUDA).
 
-Juts like OrdinaryDiffEq is able to utilise parallel CPU processes to speed up the linear solve part of ODE simulations, GPUs can also be used. More details on this can be found [here](https://docs.sciml.ai/DiffEqGPU/stable/tutorials/within_method_gpu/). This is only recommended when ODEs are very large, and typically not applicable to CRNs.
+Just like OrdinaryDiffEq is able to utilise parallel CPU processes to speed up the linear solve part of ODE simulations, GPUs can also be used. More details on this can be found [here](https://docs.sciml.ai/DiffEqGPU/stable/tutorials/within_method_gpu/). This is only recommended when ODEs are very large, and typically not applicable to CRNs.
 
 ---
 ## References
