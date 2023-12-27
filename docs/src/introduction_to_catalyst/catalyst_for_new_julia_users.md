@@ -129,7 +129,7 @@ Catalyst models are created through the `@reaction_network` *macro*. For more in
 
 The `@reaction_network` command is followed by the `begin` keyword, which is followed by one line for each *reaction* of the model. Each reaction consists of a *reaction rate*, followed by the reaction itself. The reaction contains a set of *substrates* and a set of *products* (what is consumed and produced by the reaction, respectively). These are separated by a `-->` arrow. Finally, the model ends with the `end` keyword.
 
-Here, we create a simple *birth-death* model, where a single species (*X*) is created at rate *b*, and degraded at rate *d*. The model is stored in the variable `rn`.
+Here, we create a simple *birth-death* model, where a single species ($X$) is created at rate $b$, and degraded at rate $d$. The model is stored in the variable `rn`.
 ```@example ex2
 rn = @reaction_network begin
     b, 0 --> X
