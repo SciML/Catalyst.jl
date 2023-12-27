@@ -309,7 +309,7 @@ nothing # hide
 ```
 Note that we have to provide the `CUDA.CUDABackend()` argument to our ensemble algorithms (to designate our GPU backend, in this case, CUDA).
 
-Just like OrdinaryDiffEq is able to utilise parallel CPU processes to speed up the linear solve part of ODE simulations, GPUs can also be used. More details on this can be found [here](https://docs.sciml.ai/DiffEqGPU/stable/tutorials/within_method_gpu/). This is only recommended when ODEs are very large, and typically not applicable to CRNs.
+Just like OrdinaryDiffEq is able to utilise parallel CPU processes to speed up the linear solve part of ODE simulations, GPUs can also be used. More details on this can be found [here](https://docs.sciml.ai/DiffEqGPU/stable/tutorials/within_method_gpu/). This is only recommended when ODEs are very large (at least 1,000 species), and typically not applicable to CRNs.
 
 ---
 ## References
