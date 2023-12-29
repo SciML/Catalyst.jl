@@ -46,82 +46,29 @@ nothing # hide
 
 This is useful to know when you e.g. declare, simulate, or plot, a Catalyst model. The first time you run a command there might be a slight delay. However, subsequent runs will be much quicker. This holds even if you make minor adjustments before the second run (such as changing simulation initial conditions).
 
-## [Package management in Julia](@id catalyst_for_new_julia_users_packages)
-Due to its native package manager, and a registry of almost all packages of relevancy, package management in Julia is unusually easy. In principle, Catalyst can be both installed, and then imported into a session, using only:
-```julia
-using Pkg
-Pkg.add("Catalyst")
-using Catalyst
-```
-However, over the next three subsections we describe some additional considerations and useful commands. It is recommended to read and understand these at a relatively early stage. For a more detailed introduction to Julia package management, please read [the Pkg documentation](https://docs.julialang.org/en/v1/stdlib/Pkg/).
+## [Installing and activating packages](@id catalyst_for_new_julia_users_packages_intro)
+Due to its native package manager (Pkg), and a registry of almost all packages of relevancy, package management in Julia is unusually easy. Here, we will briefly describe how to install and activate Catalyst (and two additional packages relevant to this tutorial).
 
-### [Setting up a new Julia environment](@id catalyst_for_new_julia_users_packages_environments)
-Whenever you run Julia, it will run in a specific *environment*. You can specify any folder on your computer as a Julia environment. If you start Julia in that folder, that environment will be used (or, this will at least be the case for most modes of running Julia). If you start Julia in a folder not corresponding to an environment, your *default* Julia environment is used. While it is possible to not worry about environments (and always use the default environment), this can lead to long-term problems as more packages are installed.
-
-To activate your current folder as an environment, run the following commands:
-```julia
-using Pkg
-Pkg.activate(".")
-```
-This will:
-1. If your current folder (which can be displayed using the `pwd()` command) is not designated as a possible Julia environment, designate it as such.
-2. Switch your current Julia session to use the current folder's environment.
-
-!!! note
-    If you check any folder which has been designated as a Julia environment, it contains a Project.toml and a Manifest.toml file. These store all information regarding the corresponding environment. For non-advanced users, it is recommended to never touch these files directly (and instead do so using various functions from the Pkg package, the important ones which are described in the next two subsections).
-
-### [Installing and importing packages in Julia](@id catalyst_for_new_julia_users_packages_installing)
-To import a Julia package into a session, you can use the `using PackageName` command (where `PackageName` is the name of the package you wish to activate). However, before you can do so, it must first be installed on your computer. Almost all relevant Julia packages are registered, and can be added through the `Pkg.add("PackageName")` command. We can thus install Catalyst through:
+To import a Julia package into a session, you can use the `using PackageName` command (where `PackageName` is the name of the package you wish to import). However, before you can do so, it must first be installed on your computer. This is done through the `Pkg.add("PackageName")` command:
 ```julia
 using Pkg
 Pkg.add("Catalyst")
 ```
-Here, the Julia package manager package (`Pkg`) is by default installed on your computer when Julia is installed, and can be activated directly.
-
-We can now use Catalyst and its features by running:
-```@example ex2
-using Catalyst
-```
-This will only make Catalyst available for the current Julia session. If you exit Julia, you will have to run `using Catalyst` again to use its features (however, `Pkg.add("Catalyst")` does not need to be rerun). Next, we wish to install the `DifferentialEquations` and `Plots` packages (for numeric simulation of models, and plotting, respectively):
+Here, the Julia package manager package (`Pkg`) is by default installed on your computer when Julia is installed, and can be activated directly. Next, we also wish to install the `DifferentialEquations` and `Plots` packages (for numeric simulation of models, and plotting, respectively).
 ```julia
 Pkg.add("DifferentialEquations")
 Pkg.add("Plots")
 ```
-and also to import them into our current session:
+Once a package has been installed through the `Pkg.add` command, this command does not have to be repeated if we restart our Julia session. We can now import all three packages into our current session with:
 ```@example ex2
+using Catalyst
 using DifferentialEquations
 using Plots
 ```
+Here, if we restart Julia, these commands *do need to be rerun.
 
-### [Why environments are important](@id catalyst_for_new_julia_users_packages_environment_importance)
-We have previously described how to set up new Julia environments, how to install Julia packages, and how to import them into a current session. Let us say that you were to restart Julia in a new folder and activate this as a separate environment. If you then try to import Catalyst through `using Catalyst` you will receive an error claiming that Catalyst was not found. The reason is that the `Pkg.add("Catalyst")` command actually carries out two separate tasks:
-1. If Catalyst is not already installed on your computer, install it.
-2. Add Catalyst as an available package to your current environment.
+A more comprehensive (but still short) introduction to package management in Julia is provided at [the end of this documentation page](catalyst_for_new_julia_users_packages). It contains some useful information and is hence highly recommended reading. For a more detailed introduction to Julia package management, please read [the Pkg documentation](https://docs.julialang.org/en/v1/stdlib/Pkg/).
 
-Here, while Catalyst has previously been installed on your computer, it has not been added to the new environment you created. To do so, simply run 
-```julia
-using Pkg
-Pkg.add("Catalyst")
-```
-after which Catalyst can be imported through `using Catalyst`. You can get a list of all packages available in your current environment using:
-```julia
-Pkg.status()
-```
-
-So, why is this required, and why cannot we simply import any package installed on our computer? The reason is that most packages depend on other packages, and these dependencies may be restricted to only specific versions of these packages. This creates complicated dependency graphs that restrict what versions of what packages are compatible with each other. When you use `Pkg.add("PackageName")`, only a specific version of that package is actually added (the latest possible version as permitted by the dependency graph). Here, Julia environments both define what packages are available *and* their respective versions (these versions are also displayed by the `Pkg.status()` command). By doing this, Julia can guarantee that the packages (and their versions) specified in an environment are compatible with each other.
-
-The reason why all this is important is that it is *highly recommended* to, for each project, define a separate environment. To these, only add the required packages. General-purpose environments with a large number of packages often produce package-incompatibility issues. While these might not prevent you from installing all desired package, they often mean that you are unable to use the latest version of some packages.
-
-!!! note
-    A not-infrequent cause for reported errors with Catalyst (typically the inability to replicate code in tutorials) is package incompatibilities in large environments preventing the latest version of Catalyst from being installed. Hence, whenever an issue is encountered, it is useful to run `Pkg.status()` to check whenever the latest version of Catalyst is being used.
-
-Some additional useful Pkg commands are:
-- `Pk.rm("PackageName")` removes a package from the current environment.
-- `Pkg.update(PackageName")`: updates the designated package.
-
-!!! note
-    A useful feature of Julia's environment system is that enables the exact definition of what packages and versions were used to execute a script. This supports e.g. reproducibility in academic research. Here, by providing the corresponding Project.toml and Manifest.toml files, you can enable someone to reproduce the exact program just to perform some set of analyses.
-    
 ## Simulating a basic Catalyst model
 Now that we have some basic familiarity with Julia, and have installed and imported the required packages, we will create and simulate a basic chemical reaction network model using Catalyst.
 
@@ -230,6 +177,69 @@ plot(sol)
 ```
 
 **Exercise:** Try simulating the model several times. Note that the epidemic doesn't always take off, but sometimes dies out without spreading through the population. Try changing the infection rate (*b*), determining how this value affects the probability that the epidemic goes through the population.
+
+## [Package management in Julia](@id catalyst_for_new_julia_users_packages)
+We have previously introduced how to install and activate Julia packages. While this is enough to get started with Catalyst, for long-term users, there are some additional considerations for a smooth experience. These are described here.
+
+### [Setting up a new Julia environment](@id catalyst_for_new_julia_users_packages_environments)
+Whenever you run Julia, it will run in a specific *environment*. You can specify any folder on your computer as a Julia environment. Some modes of running Julia will automatically use the environment corresponding to the folder you start Julia in. Others (or if you start Julia in a folder without an environment), will use your *default* environment. In these cases you can, during your session, switch to another environment. While it is possible to not worry about environments (and always use the default one), this can lead to long-term problems as more packages are installed.
+
+To activate your current folder as an environment, run the following commands:
+```julia
+using Pkg
+Pkg.activate(".")
+```
+This will:
+1. If your current folder (which can be displayed using the `pwd()` command) is not designated as a possible Julia environment, designate it as such.
+2. Switch your current Julia session to use the current folder's environment.
+
+!!! note
+    If you check any folder which has been designated as a Julia environment, it contains a Project.toml and a Manifest.toml file. These store all information regarding the corresponding environment. For non-advanced users, it is recommended to never touch these files directly (and instead do so using various functions from the Pkg package, the important ones which are described in the next two subsections).
+
+### [Installing and importing packages in Julia](@id catalyst_for_new_julia_users_packages_installing)
+Package installation and import have been described [previously](@ref catalyst_for_new_julia_users_packages_intro). However, for the sake of this extended tutorial, let us repeat the description by demonstrating how to install the [Latexify.jl](https://github.com/korsbo/Latexify.jl) package (which enables e.g. displaying Catalyst models in Latex format). First, we import the Julia Package manager ([Pkg](https://github.com/JuliaLang/Pkg.jl)) (which is required to install Julia packages):
+```@example ex3
+using Pkg
+```
+Latexify is a registered package, so it can be installed directly using:
+ ```julia
+Pkg.add("Latexify")
+```
+Finally, to import Latexify into our current Julia session we use:
+```@example ex3
+using Latexify
+```
+Here, `using Latexify` must be rerun whenever you restart a Julia session. However, you only need to run `Pkg.add("Latexify")` once to install it on your computer (but possibly additional times to add it to new environments, see the next section).
+
+### [Why environments are important](@id catalyst_for_new_julia_users_packages_environment_importance)
+We have previously described how to set up new Julia environments, how to install Julia packages, and how to import them into a current session. Let us say that you were to restart Julia in a new folder and activate this as a separate environment. If you then try to import Latexify through `using Latexify` you will receive an error claiming that Latexify was not found. The reason is that the `Pkg.add("Latexify")` command actually carries out two separate tasks:
+1. If Latexify is not already installed on your computer, install it.
+2. Add Latexify as an available package to your current environment.
+
+Here, while Catalyst has previously been installed on your computer, it has not been added to the new environment you created. To do so, simply run 
+```julia
+using Pkg
+Pkg.add("Latexify")
+```
+after which Catalyst can be imported through `using Latexify`. You can get a list of all packages available in your current environment using:
+```julia
+Pkg.status()
+```
+
+So, why is this required, and why cannot we simply import any package installed on our computer? The reason is that most packages depend on other packages, and these dependencies may be restricted to only specific versions of these packages. This creates complicated dependency graphs that restrict what versions of what packages are compatible with each other. When you use `Pkg.add("PackageName")`, only a specific version of that package is actually added (the latest possible version as permitted by the dependency graph). Here, Julia environments both define what packages are available *and* their respective versions (these versions are also displayed by the `Pkg.status()` command). By doing this, Julia can guarantee that the packages (and their versions) specified in an environment are compatible with each other.
+
+The reason why all this is important is that it is *highly recommended* to, for each project, define a separate environment. To these, only add the required packages. General-purpose environments with a large number of packages often produce package-incompatibility issues. While these might not prevent you from installing all desired package, they often mean that you are unable to use the latest version of some packages.
+
+!!! note
+    A not-infrequent cause for reported errors with Catalyst (typically the inability to replicate code in tutorials) is package incompatibilities in large environments preventing the latest version of Catalyst from being installed. Hence, whenever an issue is encountered, it is useful to run `Pkg.status()` to check whenever the latest version of Catalyst is being used.
+
+Some additional useful Pkg commands are:
+- `Pk.rm("PackageName")` removes a package from the current environment.
+- `Pkg.update(PackageName")`: updates the designated package.
+
+!!! note
+    A useful feature of Julia's environment system is that enables the exact definition of what packages and versions were used to execute a script. This supports e.g. reproducibility in academic research. Here, by providing the corresponding Project.toml and Manifest.toml files, you can enable someone to reproduce the exact program just to perform some set of analyses.
+
 
 ---
 ## Feedback
