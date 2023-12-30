@@ -7,7 +7,8 @@ using Random, Statistics, SparseArrays, Test
 # Fetch test networks.
 include("../spatial_test_networks.jl")
 
-### Correctness Tests ###
+
+### General Tests ###
 
 # Tests that there are no errors during runs for a variety of input forms.
 let
@@ -42,6 +43,7 @@ let
         end
     end
 end
+
 
 ### Input Handling Tests ###
 
@@ -101,6 +103,7 @@ let
         end
     end
 end
+
 
 ### Tests taken from JumpProcesses ###
 
