@@ -44,7 +44,7 @@ nothing # hide
 ```
 However, if we were to simulate our model now, the solution would only actually be saved at its initial and final times. To remedy this, we provide the `saveat = 1.0` argument to the `solve` command, causing the solution to be saved at every `1.0`th time unit (at `t` = `0.0`, `1.0`, `2.0`, ... `999.0`, `1000.0`).
 ```@example jump_simulation_performance_1
-sol = solve(jprob, SSAStepper(),saveat=1.0)
+sol = solve(jprob, SSAStepper(), saveat = 1.0)
 nothing # hide
 ```
 we can now plot the new solution:
