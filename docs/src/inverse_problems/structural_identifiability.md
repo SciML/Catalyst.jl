@@ -5,7 +5,7 @@ Identifiability can be divided into *structural* and *practical* identifiability
 
 Structural identifiability (which is what this tutorial considers) can be illustrated by the following differential equation:
 ${dx \over dt} = p1*p2*x(t)$
-where, however much data is collected on $x$, it is impossible to determine the distinct values of $p1$ and $p2$. Hence, these parameters are these are non-identifiable (however, their product, $p1*p2$, *is* identifiable).
+where, however much data is collected on $x$, it is impossible to determine the distinct values of $p1$ and $p2$. Hence, these parameters are non-identifiable (however, their product, $p1*p2$, *is* identifiable).
 
 Catalyst contains a special extension for carrying out structural identifiability analysis using the [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) package. This enables StructuralIdentifiability's `assess_identifiability`, `assess_local_identifiability`, and `find_identifiable_functions` functions to be called directly on Catalyst `ReactionSystem`s. It also implements specialised routines to make these more efficient when applied to reaction network models. How to use these functions is described in the following tutorial, with [StructuralIdentifiability providing a more extensive documentation](https://docs.sciml.ai/StructuralIdentifiability/stable/). 
 
