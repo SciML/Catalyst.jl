@@ -98,7 +98,7 @@ Finally, StructuralIdentifiability provides the `find_identifiable_functions` fu
 ```example si1
 find_identifiable_functions(goodwind_oscillator; measured_quantities=[:M], loglevel=Logging.Error)
 ```
-Again, these results are consistent with those produced by `assess_identifiability`. There, `pₑ` and `pₚ` where found to be globally identifiable. Here, they correspond directly to identifiable expressions. The remaining four parameters (`pₘ`, `dₘ`, `dₑ`, and `dₚ`) occurs as part of more complicated composite expressions.
+Again, these results are consistent with those produced by `assess_identifiability`. There, `pₑ` and `pₚ` where found to be globally identifiable. Here, they correspond directly to identifiable expressions. The remaining four parameters (`pₘ`, `dₘ`, `dₑ`, and `dₚ`) occur as part of more complicated composite expressions.
 
 The `find_identifiable_functions` functions tries to simplify its output functions to create nice expressions. The degree to which it does this can be adjusted using the `simplify` keywords. Using the `:weak`, `:standard` (default), and `:strong` arguments, increased simplification can be forced (at the expense of longer runtimes).
 
