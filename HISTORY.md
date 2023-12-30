@@ -55,7 +55,7 @@ plot(bif_dia; xguide="k1", yguide="X")
 - Updated Bifurcation documentation with respect to this new feature.
 
 ## Catalyst 13.5
-- Added a CatalystHomotopyContinuationExtension extension, which exports the `hc_steady_state` function if HomotopyContinuation is exported. `hc_steady_state` finds the steady states of a reaction system using the homotopy continuation method. This feature is only available for julia versions 1.9+. Example: 
+- Added a CatalystHomotopyContinuationExtension extension, which exports the `hc_steady_state` function if HomotopyContinuation is exported. `hc_steady_state` finds the steady states of a reaction system using the homotopy continuation method. This feature is only available for julia versions 1.9+. Example:
 ```julia
 wilhelm_2009_model = @reaction_network begin
     k1, Y --> 2X
@@ -792,7 +792,7 @@ rn = @reaction_network Reversible_Reaction begin
   k1, A --> B
   k2, B --> A
   end k1 k2
-nameof(rn) == :Reversible_Reaction
+ModelingToolkit.nameof(rn) == :Reversible_Reaction
 ```
 Note, empty networks can no longer be created with parameters, i.e. only
 ```julia

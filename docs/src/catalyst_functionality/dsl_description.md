@@ -426,7 +426,7 @@ We can now simulate the network without providing any initial conditions:
 ```@example tut2
 u0 = []
 tspan = (0.0, 10.0)
-p = [:p => 2.0, :d => .1, :X0 => 1.0]  
+p = [:p => 2.0, :d => .1, :X0 => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 sol = solve(oprob)
 plot(sol)

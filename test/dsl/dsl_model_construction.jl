@@ -3,7 +3,7 @@
 # Fetch packages.
 using DiffEqBase, Catalyst, Random, Test
 using ModelingToolkit: operation, istree, get_states, get_ps, get_eqs, get_systems,
-                       get_iv
+                       get_iv, nameof
 
 # Sets rnd number.
 using StableRNGs

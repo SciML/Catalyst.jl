@@ -49,48 +49,48 @@ let
         (k1, k2), A <--> B
     end
 
-    n1 = @reaction_network name begin (k1, k2), A <--> B end
-    n2 = @reaction_network name begin
+    n1 = @reaction_network rnname begin (k1, k2), A <--> B end
+    n2 = @reaction_network rnname begin
         @parameters k1 k2
         (k1, k2), A <--> B
     end
-    n3 = @reaction_network name begin
+    n3 = @reaction_network rnname begin
         @species A(t) B(t)
         (k1, k2), A <--> B
     end
-    n4 = @reaction_network name begin
+    n4 = @reaction_network rnname begin
         @parameters k1 k2
         @species A(t) B(t)
         (k1, k2), A <--> B
     end
-    n5 = @reaction_network name begin
+    n5 = @reaction_network rnname begin
         (k1, k2), A <--> B
         @parameters k1 k2
     end
-    n6 = @reaction_network name begin
+    n6 = @reaction_network rnname begin
         (k1, k2), A <--> B
         @species A(t) B(t)
     end
-    n7 = @reaction_network name begin
+    n7 = @reaction_network rnname begin
         (k1, k2), A <--> B
         @parameters k1 k2
         @species A(t) B(t)
     end
-    n8 = @reaction_network name begin
+    n8 = @reaction_network rnname begin
         @parameters begin
             k1
             k2
         end
         (k1, k2), A <--> B
     end
-    n9 = @reaction_network name begin
+    n9 = @reaction_network rnname begin
         @species begin
             A(t)
             B(t)
         end
         (k1, k2), A <--> B
     end
-    n10 = @reaction_network name begin
+    n10 = @reaction_network rnname begin
         @parameters begin
             k1
             k2
@@ -104,7 +104,7 @@ let
     @test all(==(n1), (n2, n3, n4, n5, n6, n7, n8, n9, n10))
 end
 
-# Tests that when either @species or @parameters is given, the other is infered properly. 
+# Tests that when either @species or @parameters is given, the other is infered properly.
 let
     rn1 = @reaction_network begin
         k*X, A + B --> 0
@@ -222,16 +222,16 @@ end
 
 ##Checks that some created networks are identical.
 let
-    rn12 = @reaction_network name begin (k1, k2), A <--> B end
-    rn13 = @reaction_network name begin
+    rn12 = @reaction_network rnname begin (k1, k2), A <--> B end
+    rn13 = @reaction_network rnname begin
         @parameters k1 k2
         (k1, k2), A <--> B
     end
-    rn14 = @reaction_network name begin
+    rn14 = @reaction_network rnname begin
         @species A(t) B(t)
         (k1, k2), A <--> B
     end
-    rn15 = @reaction_network name begin
+    rn15 = @reaction_network rnname begin
         @parameters k1 k2
         @species A(t) B(t)
         (k1, k2), A <--> B
@@ -239,16 +239,16 @@ let
     @test all(==(rn12), (rn13, rn14, rn15))
 end
 
-# Checks that the rights things are put in vectors. 
+# Checks that the rights things are put in vectors.
 let
-    rn18 = @reaction_network name begin
+    rn18 = @reaction_network rnname begin
         @parameters p d1 d2
         @species A(t) B(t)
         p, 0 --> A
         1, A --> B
         (d1, d2), (A, B) --> 0
     end
-    rn19 = @reaction_network name begin
+    rn19 = @reaction_network rnname begin
         p, 0 --> A
         1, A --> B
         (d1, d2), (A, B) --> 0
@@ -263,21 +263,21 @@ let
     @test isequal(species(rn18)[1], A)
     @test isequal(species(rn18)[2], B)
 
-    rn20 = @reaction_network name begin
+    rn20 = @reaction_network rnname begin
         @species X(t)
         @parameters S
         mm(X,v,K), 0 --> Y
         (k1,k2), 2Y <--> Y2
         d*Y, S*(Y2+Y) --> 0
     end
-    rn21 = @reaction_network name begin
+    rn21 = @reaction_network rnname begin
         @species X(t) Y(t) Y2(t)
         @parameters v K k1 k2 d S
         mm(X,v,K), 0 --> Y
         (k1,k2), 2Y <--> Y2
         d*Y, S*(Y2+Y) --> 0
     end
-    rn22 = @reaction_network name begin
+    rn22 = @reaction_network rnname begin
         @species X(t) Y2(t)
         @parameters d k1
         mm(X,v,K), 0 --> Y
@@ -291,9 +291,9 @@ let
     @test issetequal(species(rn22), [X Y Y2])
 end
 
-# Tests that defaults work. 
+# Tests that defaults work.
 let
-    rn26 = @reaction_network name begin
+    rn26 = @reaction_network rnname begin
         @parameters p=1.0 d1 d2=5
         @species A(t) B(t)=4
         p, 0 --> A
@@ -301,7 +301,7 @@ let
         (d1, d2), (A, B) --> 0
     end
 
-    rn27 = @reaction_network name begin
+    rn27 = @reaction_network rnname begin
     @parameters p1=1.0 p2=2.0 k1=4.0 k2=5.0 v=8.0 K=9.0 n=3 d=10.0
     @species X(t)=4.0 Y(t)=3.0 X2Y(t)=2.0 Z(t)=1.0
         (p1,p2), 0 --> (X,Y)
@@ -312,7 +312,7 @@ let
     u0_27 = []
     p_27 = []
 
-    rn28 = @reaction_network name begin
+    rn28 = @reaction_network rnname begin
     @parameters p1=1.0 p2 k1=4.0 k2 v=8.0 K n=3 d
     @species X(t)=4.0 Y(t) X2Y(t) Z(t)=1.0
         (p1,p2), 0 --> (X,Y)
@@ -324,7 +324,7 @@ let
     p_28 = symmap_to_varmap(rn28, [:Y=>3.0, :X2Y=>2.0])
     defs28 = Dict(Iterators.flatten((u0_28, p_28)))
 
-    rn29 = @reaction_network name begin
+    rn29 = @reaction_network rnname begin
     @parameters p1 p2 k1 k2 v K n d
     @species X(t) Y(t) X2Y(t) Z(t)
         (p1,p2), 0 --> (X,Y)

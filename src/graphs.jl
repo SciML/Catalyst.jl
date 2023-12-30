@@ -1,7 +1,7 @@
 #######################################################################
 # Contains code from  Catlab.jl:
 # https://raw.githubusercontent.com/AlgebraicJulia/Catlab.jl/master/src/graphics/Graphviz.jl
-# 
+#
 # That license for that code is:
 #
 # The MIT License
@@ -275,7 +275,7 @@ const edge_attrs = Attributes(:splines => "splines")
 function edgify(δ, i, reverse::Bool)
     attr = Attributes()
     return map(δ) do p
-        val = String(p[1].f.name)
+        val = String(getname(p[1]))
         weight = "$(p[2])"
         attr = Attributes(:label => weight, :labelfontsize => "6")
         return Edge(reverse ? ["rx_$i", "$val"] :
@@ -289,7 +289,7 @@ function edgifyrates(rxs, specs)
     for (i, rx) in enumerate(rxs)
         deps = rx.rate isa Number ? Any[] : get_variables(rx.rate, specs)
         for dep in deps
-            val = String(dep.f.name)
+            val = String(getname(dep))
             attr = Attributes(:color => "#d91111", :style => "dashed")
             e = Edge(["$val", "rx_$i"], attr)
             push!(es, e)
@@ -324,7 +324,7 @@ end
     complexgraph(rn::ReactionSystem; complexdata=reactioncomplexes(rn))
 
 Creates a Graphviz graph of the [`ReactionComplex`](@ref)s in `rn`. Reactions
-correspond to arrows and reaction complexes to blue circles. 
+correspond to arrows and reaction complexes to blue circles.
 
 Notes:
 - Black arrows from complexes to complexes indicate reactions whose rate is a
@@ -389,7 +389,7 @@ Notes:
 function Graph(rn::ReactionSystem)
     rxs = reactions(rn)
     specs = species(rn)
-    statenodes = [Node(string(s.f.name),
+    statenodes = [Node(string(getname(s)),
                        Attributes(:shape => "circle", :color => "#6C9AC3")) for s in specs]
     transnodes = [Node(string("rx_$i"),
                        Attributes(:shape => "point", :color => "#E28F41", :width => ".1"))
