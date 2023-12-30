@@ -82,12 +82,12 @@ nothing # hide
 ```
 
 ### Probability of correctness
-The identifiability methods used can, in theory, produce erroneous results. However, it is possible to adjust the lower bound for the probability of correctness using the argument `p` (by default set to `0.99`, that is, at least a $99\%$ chance of correctness). We can e.g. increase the bound through:
+The identifiability methods used can, in theory, produce erroneous results. However, it is possible to adjust the lower bound for the probability of correctness using the argument `prob_threshold` (by default set to `0.99`, that is, at least a $99\%$ chance of correctness). We can e.g. increase the bound through:
 ```example si2
-assess_identifiability(goodwind_oscillator; measured_quantities=[:M], p=0.999, loglevel=Logging.Error)
+assess_identifiability(goodwind_oscillator; measured_quantities=[:M], prob_threshold=0.999, loglevel=Logging.Error)
 nothing # hide
 ```
-giving a minimum bound of $99.9\%$ chance of correctness. In practise, the bounds used by StructuralIdentifiability are very conservative, which means that while the minimum guaranteed probability of correctness in the default case is $99\%$, in practise it is much higher. While increasing the value of `p` increases the certainty of correctness, it will also increase the time required to assess identifiability.
+giving a minimum bound of $99.9\%$ chance of correctness. In practise, the bounds used by StructuralIdentifiability are very conservative, which means that while the minimum guaranteed probability of correctness in the default case is $99\%$, in practise it is much higher. While increasing the value of `prob_threshold` increases the certainty of correctness, it will also increase the time required to assess identifiability.
 
 ## Local identifiability analysis
 Local identifiability can be assessed through the `assess_local_identifiability` function. While this is already determined by `assess_identifiability`, assessing local identifiability only has the advantage that it is easier to compute. Hence, there might be models where global identifiability analysis fails (or takes a prohibitively long time), where instead `assess_local_identifiability` can be used. This function takes the same inputs as `assess_identifiability` and returns, for each quantity, `true` if it is locally identifiable (or `false` if it is not). Here, for the Goodwind oscillator, we assesses it for local identifiability only:

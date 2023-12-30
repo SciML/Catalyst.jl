@@ -203,6 +203,16 @@ let
     @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M*gw_osc_complt.E]) isa ODE
 end
 
+# Check that `prob_threshold` alternative kwarg works.
+let 
+    rs = @reaction_network begin
+        p, X --> 0
+    end
+
+    assess_identifiability(rs_catalyst; measured_quantities=[rs.X], prob_thres=0.9)
+    assess_identifiability(rs_catalyst; measured_quantities=[rs.X], prob_thres=0.999)
+end
+
 # Tests for hierarchical model with conservation laws at both top and internal levels.
 let
     # Identifiability analysis for Catalyst model.
