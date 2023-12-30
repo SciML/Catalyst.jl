@@ -208,9 +208,10 @@ let
     rs = @reaction_network begin
         p, X --> 0
     end
+    @unpack X = rs
 
-    assess_identifiability(rs_catalyst; measured_quantities=[rs.X], prob_thres=0.9)
-    assess_identifiability(rs_catalyst; measured_quantities=[rs.X], prob_thres=0.999)
+    assess_identifiability(rs; measured_quantities=[X], prob_threshold=0.9)
+    assess_identifiability(rs; measured_quantities=[X], prob_threshold=0.999)
 end
 
 # Tests for hierarchical model with conservation laws at both top and internal levels.
