@@ -40,7 +40,7 @@ end
 """
 assess_local_identifiability(rs::ReactionSystem, args...; measured_quantities = [], known_p = [], remove_conserved = true, ignore_no_measured_warn=false, kwargs...)
 
-Applies StructuralIdentifiability.jl's `assess_local_identifiability` function to a Catalyst `ReactionSystem`. Internally it is converted ot a `ODESystem`, for which structural identifiability is computed.
+Applies StructuralIdentifiability.jl's `assess_local_identifiability` function to the reaction rate equation ODE model for the given Catalyst `ReactionSystem`. Automatically converts the `ReactionSystem` to an appropriate `ODESystem` and computes structural identifiability,
 
 Arguments:
 - `rs::ReactionSystem`; The reaction system for which we wish to compute structural identifiability of the associated reaction rate equation ODE model.
