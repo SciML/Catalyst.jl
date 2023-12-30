@@ -4,7 +4,7 @@
 """
 make_si_ode(rs::ReactionSystem; measured_quantities=observed(rs), known_p = [], ignore_no_measured_warn=false)
 
-Creates a ODE system of the form used within the StructuralIdentifiability.jl package. The output system is compatible with all StructuralIdentifiability functions. 
+Creates a reaction rate equation ODE system of the form used within the StructuralIdentifiability.jl package. The output system is compatible with all StructuralIdentifiability functions. 
 
 Arguments:
 - `rs::ReactionSystem`; The reaction system we wish to convert to an ODE.
