@@ -17,7 +17,7 @@ Next, we create the `CO2` compound species:
 ```@example chem1
 @compound CO2 ~ C + 2O
 ```
-Here, the compound is the first argument to the macro, followed by its component (with the left-hand and right-hand sides separated by a `~` sign). While non-compound species (such as `C` and `O`) have their independent variable (in this case `t`) designated, independent variables are not designated for compounds (these are instead directly inferred from their components). Components with non-unitary stoichiometries have this value written before the component (generally, the rules for designating the components of a compound are identical to those of designating the substrates or products of a reaction). The created compound, `CO2`, is a species in every sense, and can be used wherever e.g. `C` can be used:
+Here, the compound is the first argument to the macro, followed by its component (with the left-hand and right-hand sides separated by a `~` sign). While non-compound species (such as `C` and `O`) have their independent variable (in this case `t`) designated, independent variables are not designated for compounds (these are instead directly inferred from their components). Components with non-unit stoichiometries have this value written before the component (generally, the rules for designating the components of a compound are identical to those of designating the substrates or products of a reaction). The created compound, `CO2`, is also a species, and can be used wherever e.g. `C` can be used:
 ```@example chem1
 isspecies(CO2)
 ```
