@@ -55,7 +55,7 @@ Not only does this turn the previously non-identifiable `pₑ` (globally) identi
 To, in a similar manner, indicate that certain initial conditions are known is a work in progress. Hopefully the feature should be an available in the near future.
 
 ### Providing non-trivial measured quantities
-Sometimes, we are not actually measuring species species, but rather some combinations of species (or possibly parameters). To account for this, `measured_quantities` accepts any algebraic expressions (and not just single species). To form such expressions, species and parameters have to first be `@unpack`'ed from the model. Say that we have a model where an enzyme ($E$) is converted between an active and inactive form, which in turns activates the production of a product, $P$:
+Sometimes, ones may not have measurements of species, but rather some combinations of species (or possibly parameters). To account for this, `measured_quantities` accepts any algebraic expression (and not just single species). To form such expressions, species and parameters have to first be `@unpack`'ed from the model. Say that we have a model where an enzyme ($E$) is converted between an active and inactive form, which in turns activates the production of a product, $P$:
 ```example si2
 using Catalyst, StructuralIdentifiability # hide
 enzyme_activation = @reaction_network begin
