@@ -18,7 +18,7 @@ Example:
 ```julia
 @variables t
 @species C(t) O(t)
-@compound CO2(t) = C + 2O
+@compound CO2(t) ~ C + 2O
 ```
 
 Notes: 
