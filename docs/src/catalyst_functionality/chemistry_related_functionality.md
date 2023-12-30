@@ -103,7 +103,7 @@ Here, the reaction rate (`k`) is not involved in the reaction balancing. We use 
 ```@example chem1
 balance_reaction(rx)
 ```
-which correctly finds the (rather trivial) solution `C + 2O --> CO2`. Here we note that `balance_reaction` actually returns a vector. The reason is that the reaction balancing problem may have several solutions. Typically, there is only a single solution (in which case this is the vector's only element). No, or an infinite number of, solutions is also possible.
+which correctly finds the (rather trivial) solution `C + 2O --> CO2`. Here we note that `balance_reaction` actually returns a vector. The reason is that the reaction balancing problem may have several solutions. Typically, there is only a single solution (in which case this is the vector's only element). No, or an infinite number of, solutions is also possible depending on the given reaction.
 
 Let us consider a more elaborate example, the reaction between ammonia (NH₃) and oxygen (O₂) to form nitrogen monoxide (NO) and water (H₂O). Let us first create the components and the unbalanced reaction:
 ```@example chem2
