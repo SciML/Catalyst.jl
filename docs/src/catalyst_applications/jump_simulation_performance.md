@@ -11,7 +11,7 @@ Typically, propensities are recomputed only whenever a jump occurs. This means t
 - Simulations over long time spans.
 - Simulations that are performed a large number of times.
 
-More throughout description of these types of simulations can be found in the literature [^1].
+A more thorough overview of simulation methods for Stochastic Chemical Kinetics jump process models and their computational efficiency is given in [^1].
 
 ## Managing of solution saving
 By default, `solve` saves the value of the solution at the time of every jump. For simulations where a large number of jumps occur, this can cause memory to quickly fill up. Typically, for simulations with a large number of jumps, we want to [disable this feature](https://docs.sciml.ai/JumpProcesses/dev/tutorials/discrete_stochastic_example/#save_positions_docs) and instead set the save frequency manually. To exemplify this, let us consider a simple production/degradation model:
