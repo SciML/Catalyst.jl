@@ -284,35 +284,35 @@ Example:
 ```julia
 @variables t
 @species Si(t) Cl(t) H(t) O(t)
-@compound SiCl4(t) = Si + 4Cl
-@compound H2O(t) = 2H + O
-@compound H4SiO4(t) = 4H + Si + 4O
-@compound HCl(t) = H + Cl
-rx = Reaction(1.0,[SiCl4,H2O],[H4SiO4,HCl])
+@compound SiCl4 ~ Si + 4Cl
+@compound H2O ~ 2H + O
+@compound H4SiO4 ~ 4H + Si + 4O
+@compound HCl ~ H + Cl
+rx = @reaction 1.0, SiCl4 + H2O --> H4SiO4 HCl
 balance_reaction(rx) # Exactly one solution.
 ```
 
 ```julia
 @variables t
 @species C(t) H(t) O(t)
-@compound CO(t) = C + O
-@compound CO2(t) = C + 2O
-@compound H2(t) = 2H
-@compound CH4(t) = C + 4H
-@compound H2O(t) = 2H + O
-rx = Reaction(1.0, [CO, CO2, H2], [CH4, H2O]) 
+@compound CO ~ C + O
+@compound CO2 ~ C + 2O
+@compound H2 ~ 2H
+@compound CH4 ~ C + 4H
+@compound H2O ~ 2H + O
+rx = @reaction 1.0, CO + CO2 + H2--> CH4 H2O
 balance_reaction(rx) # Multiple solutions.
 ```
 
 ```julia
 @variables t
 @species Fe(t) S(t) O(t) H(t) N(t)
-@compound FeS2(t) = Fe + 2S
-@compound HNO3(t) = H + N + 3O
-@compound Fe2S3O12(t) = 2Fe + 3S + 12O
-@compound NO(t) = N + O
-@compound H2SO4(t) = 2H + S + 4O
-rx = Reaction(1.0, [FeS2, HNO3], [Fe2S3O12, NO, H2SO4])
+@compound FeS2 ~ Fe + 2S
+@compound HNO3 ~ H + N + 3O
+@compound Fe2S3O12 ~ 2Fe + 3S + 12O
+@compound NO ~ N + O
+@compound H2SO4 ~ 2H + S + 4O
+rx = @reaction 1.0, FeS2 + HNO3 --> Fe2S3O12 NO + H2SO4
 brxs = balance_reaction(rx) # No solution.
 ```
 

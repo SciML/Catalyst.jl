@@ -6,7 +6,7 @@ While Catalyst has primarily been designed around the modelling of biological sy
 
 ## Modelling with compound species
 
-#### Creating compound species programmatically
+### Creating compound species programmatically
 We will first show how to create compound species through [programmatic model construction](@ref programmatic_CRN_construction), and then demonstrate using the DSL. To create a compound species, use the `@compound` macro, first designating the compound, followed by its components (and their stoichiometries). In this example, we will create a CO₂ molecule, consisting of one C atom and two O atoms. First, we create species corresponding to the components:
 ```@example chem1
 using Catalyst
@@ -17,7 +17,7 @@ Next, we create the `CO2` compound species:
 ```@example chem1
 @compound CO2 ~ C + 2O
 ```
-Here, the compound is the first argument to the macro, followed by its component (with the left-hand and right-hand sides separated by a `~` sign). While non-compound species (such as `C` and `O`) have their independent variable (in this case `t`) designated, independent variables are not designated for compounds (these are instead directly inferred from their components). Components with non-unit stoichiometries have this value written before the component (generally, the rules for designating the components of a compound are identical to those of designating the substrates or products of a reaction). The created compound, `CO2`, is also a species, and can be used wherever e.g. `C` can be used:
+Here, the compound is the first argument to the macro, followed by its component (with the left-hand and right-hand sides separated by a `~` sign). While non-compound species (such as `C` and `O`) have their independent variable (in this case `t`) designated, independent variables are generally not designated for compounds (these are instead directly inferred from their components). Components with non-unit stoichiometries have this value written before the component (generally, the rules for designating the components of a compound are identical to those of designating the substrates or products of a reaction). The created compound, `CO2`, is also a species, and can be used wherever e.g. `C` can be used:
 ```@example chem1
 isspecies(CO2)
 ```
@@ -53,7 +53,7 @@ When multiple compounds are created, they can be created simultaneously using th
 end
 ```
 
-#### Creating compound species within the DSL
+### Creating compound species within the DSL
 It is also possible to declare species as compound species within the `@reaction_network` DSL, using the `@compounds` options:
 ```@example chem1
 rn = @reaction_network begin
@@ -63,12 +63,12 @@ rn = @reaction_network begin
         H2O ~ 2H + O
         H2CO3 ~ CO2 + H2O
     end
-    (k1,k2), H2O+ CO2 <--> H2CO3
+    (k1,k2), H2O + CO2 <--> H2CO3
 end
 ```
-When creating compound species using the DSL, it is important to note that *every component must be known to the system as a species, either by being declared using the `@species` option, or by appearing in a reaction*. E.g. the following is not valid
+When creating compound species using the DSL, it is important to note that *every component must be known to the system as a species, either by being declared using the `@species` or `@compound` options, or by appearing in a reaction*. E.g. the following is not valid
 ```julia 
-rn = @reaction_network begin
+rn = @reaction_network begin``
     @compounds begin
         C2O ~ C + 2O
         H2O ~ 2H + O
@@ -79,7 +79,7 @@ end
 ```
 as the components `C`, `H`, and `O` are not declared as a species anywhere. Please also note that only `@compounds` can be used as an option in the DSL, not `@compound`.
 
-#### Designating metadata and default values for compounds
+### Designating metadata and default values for compounds
 Just like for normal species, it is possible to designate metadata and default values for compounds. Metadata is provided after the compound name, but separated from it by a `,`:
 ```@example chem1
 @compound (CO2, [unit="mol"]) ~ C + 2O
@@ -93,6 +93,15 @@ If both default values and meta data are provided, the metadata is provided afte
 @compound (CO2 = 2.0, [unit="mol"]) ~ C + 2O
 ```
 In all of these cases, the side to the left of the `~` must be enclosed within `()`.
+
+### Compounds with multiple independent variables
+While we generally do not need to specify independent variables for compound, if the components (together) have more than one independent variable, this have to be done:
+```@example chem1
+@variables t s
+@species N(s) O(t) 
+@compound NO2(t,s) ~ N + 2O
+```
+Here, `NO2` depend both on a spatial independent variable (`s`) and a time one (`t`). This is required since, while multiple independent variables can be inferred, their internal order cannot (and must hence be provided by the user).
 
 ## Balancing chemical reactions
 One use of defining a species as a compound is that they can be used to balance reactions so that the number of components are the same on both sides. Catalyst provides the `balance_reaction` function, which takes a reaction, and returns a balanced version. E.g. let us consider a reaction when carbon dioxide is formed from carbon and oxide `C + O --> CO2`. Here, `balance_reaction` enables us to find coefficients creating a balanced reaction (in this case, where the number of carbon and oxygen atoms are the same on both sides). To demonstrate, we first created the unbalanced reactions:
