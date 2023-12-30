@@ -7,7 +7,7 @@ Jump processes are continuous-time, discrete-space stochastic processes. Exact r
 The time of the next occurrence of some reaction, and the type of reaction that occurs, are sampled from distributions that depend on the current values of the propensity. As the latter depend on the state of the system, they must be recomputed whenever the system's state changes (for example due to a reaction occurring). Hence, jump simulations' run-times are heavily dependent on how frequently these propensities must be recomputed, and how many must be recomputed when a reaction occurs.
 
 Typically, propensities are recomputed only whenever a jump occurs. This means that jump simulations' runtimes, very roughly, scale with the number of jumps. Runtimes typically become prohibitively expensive for:
-- Simulations of large models (either with many different species or where some species occur in large copy numbers).
+- Simulations of large models (i.e. with many different species, where some species occur in large copy numbers, or where many reactions are present in a system).
 - Simulations over long time spans.
 - Simulations that are performed a large number of times.
 
