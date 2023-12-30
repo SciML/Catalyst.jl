@@ -123,7 +123,7 @@ We can now create a balanced version (where the amount of H, N, and O is the sam
 balanced_reaction = balance_reaction(unbalanced_reaction)[1]
 ```
 
-Reactions declared as a part of a `ReactionSystem` (e.g. using the DSL) can be retrieved for balancing using the `reaction` function. Please note that balancing these will not mutate the `ReactionSystem`, but a new reaction system will need to be created using the balanced reactions.
+Reactions declared as a part of a `ReactionSystem` (e.g. using the DSL) can be retrieved for balancing using the [`reactions`](@ref) function. Please note that balancing these will not mutate the `ReactionSystem`, but a new reaction system will need to be created using the balanced reactions.
 
 !!! note
     Reaction balancing is currently not supported for reactions involving compounds of compounds.
