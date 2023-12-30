@@ -95,7 +95,7 @@ If both default values and meta data are provided, the metadata is provided afte
 In all of these cases, the side to the left of the `~` must be enclosed within `()`.
 
 ## Balancing chemical reactions
-One use of defining a species as a compound is that they can be used to balance reactions to that the number of components are the same on both sides. Catalyst provides the `balance_reaction` function, which takes a reaction, and returns a balanced version. E.g. let us consider a reaction when carbon dioxide is formed from carbon and oxide `C + O --> CO2`. Here, `balance_reaction` enables us to find coefficients creating a balanced reaction (in this case, where the number of carbon and oxygen atoms are the same on both sides). To demonstrate, we first created the unbalanced reactions:
+One use of defining a species as a compound is that they can be used to balance reactions so that the number of components are the same on both sides. Catalyst provides the `balance_reaction` function, which takes a reaction, and returns a balanced version. E.g. let us consider a reaction when carbon dioxide is formed from carbon and oxide `C + O --> CO2`. Here, `balance_reaction` enables us to find coefficients creating a balanced reaction (in this case, where the number of carbon and oxygen atoms are the same on both sides). To demonstrate, we first created the unbalanced reactions:
 ```@example chem1
 rx = @reaction k, C + O --> $CO2
 ```
