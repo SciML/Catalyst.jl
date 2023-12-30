@@ -43,7 +43,7 @@ assess_local_identifiability(rs::ReactionSystem, args...; measured_quantities = 
 Applies StructuralIdentifiability.jl's `assess_local_identifiability` function to a Catalyst `ReactionSystem`. Internally it is converted ot a `ODESystem`, for which structural identifiability is computed.
 
 Arguments:
-- `rs::ReactionSystem`; The reaction system we wish to compute structural identifiability for.
+- `rs::ReactionSystem`; The reaction system for which we wish to compute structural identifiability of the associated reaction rate equation ODE model.
 - `measured_quantities=[]`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.s`, or the symbol `:x`). 
 - `known_p = []`: List of parameters which values are known. 
 - `ignore_no_measured_warn = false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty. 
