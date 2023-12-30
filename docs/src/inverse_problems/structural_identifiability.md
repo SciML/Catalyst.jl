@@ -108,7 +108,7 @@ While the functionality described above covers the vast majority of analysis tha
 si_ode = make_si_ode(goodwind_oscillator; measured_quantities=[:M])
 nothing # hide
 ```
-and then used as input to various StructuralIdentifiability functions. In the following example we uses StructuralIdentifiability's `print_for_DAISY` function, printing the model as an expression that can be used by the [DAISY](https://daisy.dei.unipd.it/) software for identifiability analysis[^3].
+and then used as input to various StructuralIdentifiability functions. In the following example we use StructuralIdentifiability's `print_for_DAISY` function, printing the model as an expression that can be used by the [DAISY](https://daisy.dei.unipd.it/) software for identifiability analysis[^3].
 ```example si1
 print_for_DAISY(si_ode)
 nothing # hide
