@@ -162,10 +162,10 @@ let
     @test length(ifs_1[2:end]) == length(ifs_2) == length(ifs_3) # In the first case, the conservation law parameter is also identifiable.
 
     # Checks output to manually checked correct answers. 
-    @test isequal(collect(keys(gi_1)),[states(rs_catalyst); parameters(rs_catalyst)])
-    @test isequal(collect(values(gi_1)),[:globally, :locally, :locally, :nonidentifiable, :nonidentifiable, :globally, :globally, :globally, :globally, :locally, :locally, :nonidentifiable, :locally, :globally])
-    @test isequal(collect(keys(li_1)),[states(rs_catalyst); parameters(rs_catalyst)])
-    @test isequal(collect(values(li_1)),[1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1]) 
+    correct_gi = Pair.([states(rs_catalyst); parameters(rs_catalyst)], [:globally, :locally, :locally, :nonidentifiable, :nonidentifiable, :globally, :globally, :globally, :globally, :locally, :locally, :nonidentifiable, :locally, :globally])
+    correct_li = Pair.([states(rs_catalyst); parameters(rs_catalyst)], [1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1])
+    @test issetequal(gi_1, correct_gi)
+    @test issetequal(li_1, correct_li)
 end
 
 # Tests that various inputs types work.
@@ -194,13 +194,13 @@ let
 
     # Tests using model.component style (have to make system complete first).
     gw_osc_complt = complete(goodwind_oscillator_catalyst)
-    make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M])
-    make_si_ode(gw_osc_complt; known_p=[gw_osc_complt.pₑ])
-    make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M], known_p=[gw_osc_complt.pₑ])
-    make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M, gw_osc_complt.E], known_p=[gw_osc_complt.pₑ])
-    make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M], known_p=[gw_osc_complt.pₑ, gw_osc_complt.pₚ])
-    make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M], known_p = [:pₚ])
-    make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M*gw_osc_complt.E])
+    @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M]) isa ODE
+    @test make_si_ode(gw_osc_complt; known_p=[gw_osc_complt.pₑ]) isa ODE
+    @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M], known_p=[gw_osc_complt.pₑ]) isa ODE
+    @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M, gw_osc_complt.E], known_p=[gw_osc_complt.pₑ]) isa ODE
+    @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M], known_p=[gw_osc_complt.pₑ, gw_osc_complt.pₚ]) isa ODE
+    @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M], known_p = [:pₚ]) isa ODE
+    @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M*gw_osc_complt.E]) isa ODE
 end
 
 # Tests for hierarchical model with conservation laws at both top and internal levels.
