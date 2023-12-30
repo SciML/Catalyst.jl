@@ -143,7 +143,7 @@ rn = @reaction_network begin
 end
 assess_identifiability(rn; measured_quantities=[:X])
 ```
-is currently not possible. Hopefully this will be a supported feature in the future. For now, these expression will have to be rewritten to not include such exponents. For some cases, e.g. `10^k` this is trivial. However, it is also possible generally (but more involved and often includes introducing additional variables). If you have a system where this is required, it is recommended to contact an expert.
+is currently not possible. Hopefully this will be a supported feature in the future. For now, such expressions will have to be rewritten to not include such exponents. For some cases, e.g. `10^k` this is trivial. However, it is also possible generally (but more involved and often includes introducing additional variables). 
 
 ---
 ## [Citation](@id structural_identifiability_citation)
