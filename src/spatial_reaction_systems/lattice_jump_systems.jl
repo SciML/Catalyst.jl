@@ -36,9 +36,9 @@ function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator
     # Currently, JumpProcesses requires uniform vertex parameters (hence `p=first.(dprob.p[1])`).
     hopping_constants = make_hopping_constants(dprob, lrs)
     non_spat_dprob = DiscreteProblem(reshape(dprob.u0, lrs.num_species, lrs.num_verts), dprob.tspan, first.(dprob.p[1]))
-    majumps = make_majumps(non_spat_dprob, lrs.rs)
+    sma_jumps = make_spatial_majumps(non_spat_dprob, dprob, lrs)
 
-    return JumpProblem(non_spat_dprob, aggregator, majumps; 
+    return JumpProblem(non_spat_dprob, aggregator, sma_jumps; 
                        hopping_constants, spatial_system = lrs.lattice, name, kwargs...)
 end
 
@@ -66,6 +66,12 @@ function make_hopping_constants(dprob::DiscreteProblem, lrs::LatticeReactionSyst
     return hopping_constants
 end
 
+# Creates the (spatial) mass action jumps from a (spatial) DiscreteProblem its non-spatial version, and a LatticeReactionSystem.
+function make_spatial_majumps(non_spat_dprob, dprob, rs::LatticeReactionSystem)
+    ma_jumps = make_majumps(non_spat_dprob, lrs.rs)
+    
+end
+
 # Creates the (non-spatial) mass action jumps from a (non-spatial) DiscreteProblem (and its Reaction System of origin).
 function make_majumps(non_spat_dprob, rs::ReactionSystem)
     # Computes various required inputs for assembling the mass action jumps.
@@ -74,7 +80,7 @@ function make_majumps(non_spat_dprob, rs::ReactionSystem)
     eqs = equations(js)
     invttype = non_spat_dprob.tspan[1] === nothing ? Float64 : typeof(1 / non_spat_dprob.tspan[2])
 
-    # Assembles the mass action jumps.
+    # Assembles the non-spatial mass action jumps.
     p = (non_spat_dprob.p isa DiffEqBase.NullParameters || non_spat_dprob.p === nothing) ? Num[] : non_spat_dprob.p    
     majpmapper = ModelingToolkit.JumpSysMajParamMapper(js, p; jseqs = eqs, rateconsttype = invttype)
     return ModelingToolkit.assemble_maj(eqs.x[1], statetoid, majpmapper)
