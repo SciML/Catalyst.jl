@@ -1,14 +1,14 @@
 ### Lattice Reaction Network Structure ###
 # Describes a spatial reaction network over a graph.
 # Adding the "<: MT.AbstractTimeDependentSystem" part messes up show, disabling me from creating LRSs.
-struct LatticeReactionSystem{Q,R,S,T} # <: MT.AbstractTimeDependentSystem 
+struct LatticeReactionSystem{R,S,T} # <: MT.AbstractTimeDependentSystem 
     # Input values.
     """The reaction system within each compartment."""
-    rs::ReactionSystem{Q}
+    rs::ReactionSystem{R}
     """The spatial reactions defined between individual nodes."""
-    spatial_reactions::Vector{R}
+    spatial_reactions::Vector{S}
     """The graph on which the lattice is defined."""
-    lattice::S
+    lattice::T
 
     # Derived values.
     """The number of compartments."""
@@ -36,18 +36,23 @@ struct LatticeReactionSystem{Q,R,S,T} # <: MT.AbstractTimeDependentSystem
     """
     edge_parameters::Vector{BasicSymbolic{Real}}
 
-    """Whenever the initial input was a digraph."""
-    init_digraph::Bool
+    """
+    Whenever the initial input was directed. True for Digraph input, false for other graphs and all grids.
+    Used later to know whenever duplication of edge parameter should be duplicated
+    (i.e. allow parameter for edge i => j to be used for j => i).
+    Even if false, giving separate parameters for both directions is still permitted. 
+    """
+    directed_edges::Bool
     """
     A list of all the edges on the lattice. 
     The format depends on the type of lattice (Cartesian grid, grid, or graph).
     """
-    edge_list::T
+    edge_list::Vector{Vector{Pair{Int64,Int64}}}
 
-    function LatticeReactionSystem(rs::ReactionSystem{Q}, spatial_reactions::Vector{R},
-                                   lattice::S, num_verts, edge_list::T; init_digraph = true) where {Q, R, S, T}
+    function LatticeReactionSystem(rs::ReactionSystem{R}, spatial_reactions::Vector{S},
+                                   lattice::S, num_verts, edge_list::T; directed_edges = false) where {R, S, T}
         # Error checks.
-        if !(R <: AbstractSpatialReaction) |
+        if !(S <: AbstractSpatialReaction) |
             error("The second argument must be a vector of AbstractSpatialReaction subtypes.") 
         end
 
@@ -85,28 +90,61 @@ end
 
 # Creates a LatticeReactionSystem from a CartesianGrid lattice.
 function LatticeReactionSystem(rs, srs, lattice::CartesianGridRej{S,T}; diagonal_connections=false) where {S,T}
+    (length(lattice.dims) > 3) && error("Grids of higher dimension than 3 is currently not supported.")
+    diagonal_connections && error("Diagonal connections is currently unsupported for Cartesian grid lattices.")
     num_verts = prod(lattice.dims)
+
+    # Prepares the list of edges.
+    edge_list = [Vector{Pair{Int64,Int64}}() for i in 1:num_verts]
+
+    # Ensures that the matrix is on a 3d form
+    lattice = reshape(vals,dims..., fill(1,3- length(dims))...)
+
+
     edge_list = false
-    return LatticeReactionSystem(rs, srs, lattice, num_verts, edge_list; init_digraph = false, edge_list)
+    return LatticeReactionSystem(rs, srs, lattice, num_verts, edge_list; edge_list)
 end
 
 # Creates a LatticeReactionSystem from a Boolean Array lattice.
-function LatticeReactionSystem(rs, srs, lattice::Array{Bool, T}; diagonal_connections=false) where {T}
+function LatticeReactionSystem(rs, srs, lattice::Array{Bool, T}; diagonal_connections=false) where {T}  
+    dims = size(vals)
+    (length(dims) > 3) && error("Grids of higher dimension than 3 is currently not supported.")
+    diagonal_connections && error("Diagonal connections is currently unsupported for grid lattices.")
     num_verts = count(lattice)
-    edge_list = false
-    return LatticeReactionSystem(rs, srs, lattice, num_verts, edge_list; init_digraph = false, edge_list)
+
+    # Prepares the list of edges.
+    edge_list = [Vector{Pair{Int64,Int64}}() for i in 1:num_verts]
+
+    # Ensures that the matrix is on a 3d form
+    lattice = CartesianGrid((lattice.dims..., fill(1,3- length(lattice.dims))...))
+
+    # Loops through, simultaneously, the coordinates of each position in the grid, as well as that 
+    # coordinate's (scalar) flat index.
+    indices = [(i, j, k) for i in 1:lattice.dims[1], j in 1:lattice.dims[2], k in 1:lattice.dims[3]]
+    flat_indices = 1:prod(lattice.dims)
+    for ((i,j,k), idx) in zip(indices, flat_indices)
+        for ii in i-1:i+1, jj in j-1:j+1, kk in k-1:k+1
+            # Finds the (scalar) flat index of this neighbour. If it is a valid neighbour, add it to edge_list.
+            n_idx = (k - 1) * (l * m) + (j - 1) * l + i
+            (1 <= n_idx <= flat_indices[end]) || continue
+            (n_idx == idx) && continue
+            push!(edge_list[cur_vert], n_idx)
+        end
+    end
+
+    return LatticeReactionSystem(rs, srs, lattice, num_verts, edge_list; edge_list)
 end
 
 # Creates a LatticeReactionSystem from a DiGraph lattice.
-function LatticeReactionSystem(rs, srs, lattice::SimpleGraph)
+function LatticeReactionSystem(rs, srs, lattice::SimpleGraph; directed_edges = true)
     num_verts = nv(lattice)
     edge_list = false
-    return LatticeReactionSystem(rs, srs, lattice, num_verts, edge_list; init_digraph = false, edge_list)
+    return LatticeReactionSystem(rs, srs, lattice, num_verts, edge_list; directed_edges, edge_list)
 end
 
 # Creates a LatticeReactionSystem from a Graph lattice.
 function LatticeReactionSystem(rs, srs, lattice::SimpleGraph)
-    return LatticeReactionSystem(rs, srs, DiGraph(lattice); init_digraph = false)
+    return LatticeReactionSystem(rs, srs, DiGraph(lattice); directed_edges)
 end
 
 ### Lattice ReactionSystem Getters ###
