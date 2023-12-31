@@ -32,13 +32,11 @@ include("pages.jl")
 
 makedocs(sitename = "Catalyst.jl",
          authors = "Samuel Isaacson",
-         format = Documenter.HTML(; analytics = "UA-90474609-3",
-                                  prettyurls = (get(ENV, "CI", nothing) == "true"),
+         format = Documenter.HTML(; prettyurls = (get(ENV, "CI", nothing) == "true"),
                                   assets = ["assets/favicon.ico"],
-                                  canonical = "https://docs.sciml.ai/Catalyst/stable/"),
+                                  canonical = "https://docs.sciml.ai/Catalyst/"),
          modules = [Catalyst, ModelingToolkit],
-         doctest = false,
-         clean = true,
+         doctest = false, clean = true, linkcheck = true, warnonly = [:missing_docs],
          pages = pages)
 
 deploydocs(repo = "github.com/SciML/Catalyst.jl.git";
