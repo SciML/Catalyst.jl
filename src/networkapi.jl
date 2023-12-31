@@ -1285,7 +1285,7 @@ conservedquantities(state, cons_laws) = cons_laws * state
 function conservationlaw_errorcheck(rs, pre_varmap)
     vars_with_vals = Set(p[1] for p in pre_varmap)
     any(s -> s in vars_with_vals, species(rs)) && return
-    isempty(conservedequations(Catalyst.flatten(rs))) || 
+    isempty(conservedequations(Catalyst.flatten(rs))) ||
         error("The system has conservation laws but initial conditions were not provided for some species.")
 end
 

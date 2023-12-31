@@ -118,7 +118,7 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
     rxs = reactions(rn)
     nonrxs = filter(eq -> eq isa Equation, equations(rn))
     if isempty(rxs) && isempty(nonrxs)
-        latexstr = Latexify.LaTeXString("ReactionSystem $(nameof(rn)) has no reactions or equations.")
+        latexstr = Latexify.LaTeXString("ReactionSystem $(ModelingToolkit.nameof(rn)) has no reactions or equations.")
         Latexify.COPY_TO_CLIPBOARD && clipboard(latexstr)
         return latexstr
     end

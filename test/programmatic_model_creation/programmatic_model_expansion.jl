@@ -4,7 +4,7 @@
 
 # Fetch packages.
 using Catalyst, Test
-using ModelingToolkit: get_ps, get_states, get_eqs, get_systems, get_iv
+using ModelingToolkit: get_ps, get_states, get_eqs, get_systems, get_iv, getname, nameof
 
 # Sets rnd number.
 using StableRNGs
@@ -42,7 +42,7 @@ let
     @test nameof(iv) == :t
     @test length(get_states(empty_network_2)) == 0
     @test length(ps) == 5
-    @test all(getproperty.(ps, :name) .== [:p1, :p2, :p3, :p4, :p5])
+    @test all(getname.(ps) .== [:p1, :p2, :p3, :p4, :p5])
 end
 
 # Tests accessing parameters and species added with network API.

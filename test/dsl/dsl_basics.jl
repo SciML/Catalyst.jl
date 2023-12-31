@@ -2,7 +2,7 @@
 
 ### Fetch Packages and Set Global Variables ###
 
-using Catalyst
+using Catalyst, ModelingToolkit
 @variables t
 
 ### Naming Tests ###
@@ -12,14 +12,14 @@ let
     @species A(t)
     rx = Reaction(k, [A], nothing)
     function rntest(rn, name)
-        @test nameof(rn) == name
+        @test ModelingToolkit.nameof(rn) == name
         @test isequal(species(rn)[1], ModelingToolkit.unwrap(A))
         @test isequal(parameters(rn)[1], ModelingToolkit.unwrap(k))
         @test reactions(rn)[1] == rx
     end
 
     function emptyrntest(rn, name)
-        @test nameof(rn) == name
+        @test ModelingToolkit.nameof(rn) == name
         @test numreactions(rn) == 0
         @test numspecies(rn) == 0
         @test numreactionparams(rn) == 0
@@ -42,7 +42,7 @@ let
         @parameters k
         k, A --> 0
     end
-    rntest(rn, nameof(rn))
+    rntest(rn, ModelingToolkit.nameof(rn))
 
     function makern(; name)
         @reaction_network $name begin

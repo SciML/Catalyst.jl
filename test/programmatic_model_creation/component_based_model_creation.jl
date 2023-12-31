@@ -1,6 +1,8 @@
 #! format: off
 using ModelingToolkit, Catalyst, LinearAlgebra, OrdinaryDiffEq, Test
 using SciMLNLSolve
+using ModelingToolkit: nameof
+
 
 ### Run Tests ###
 
@@ -453,7 +455,7 @@ let
 end
 
 # Tests that conversion with defaults works for a composed model.
-let 
+let
     rn1 = @reaction_network rn1 begin
         @parameters p=1.0 r=2.0
         @species X(t) = 3.0 Y(t) = 4.0
@@ -469,15 +471,15 @@ let
     composed_reaction_system = compose(rn1, [rn2])
     osys = convert(ODESystem, composed_reaction_system)
     parameters(osys)[1].metadata
-    
-    osys.defaults
+
+    defs = ModelingToolkit.defaults(osys)
     @unpack p, r, X, Y = rn1
-    osys.defaults[p] == 1.0
-    osys.defaults[r] == 2.0
-    osys.defaults[X] == 3.0
-    osys.defaults[Y] == 4.0
-    osys.defaults[rn2.p] == 10.0
-    osys.defaults[rn2.q] == 20.0
-    osys.defaults[rn2.X] == 30.0
-    osys.defaults[rn2.Z] == 40.0
+    defs[p] == 1.0
+    defs[r] == 2.0
+    defs[X] == 3.0
+    defs[Y] == 4.0
+    defs[rn2.p] == 10.0
+    defs[rn2.q] == 20.0
+    defs[rn2.X] == 30.0
+    defs[rn2.Z] == 40.0
 end

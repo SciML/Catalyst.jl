@@ -142,6 +142,7 @@ function expand_registered_functions(eq::Equation)
 end
 # If applied to a ReactionSystem, applied function to all Reactions and other Equations, and return updated system.
 function expand_registered_functions(rs::ReactionSystem)
-    rs = @set rs.eqs = [Catalyst.expand_registered_functions(eq) for eq in rs.eqs]
-    return @set rs.rxs = [Catalyst.expand_registered_functions(rx) for rx in rs.rxs]
+    @set! rs.eqs = [Catalyst.expand_registered_functions(eq) for eq in get_eqs(rs)]
+    @set! rs.rxs = [Catalyst.expand_registered_functions(rx) for rx in get_rxs(rs)]
+    return rs
 end
