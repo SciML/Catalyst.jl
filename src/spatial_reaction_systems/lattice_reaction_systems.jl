@@ -47,7 +47,7 @@ struct LatticeReactionSystem{R,S,T} # <: MT.AbstractTimeDependentSystem
     A list of all the edges on the lattice. 
     The format depends on the type of lattice (Cartesian grid, grid, or graph).
     """
-    edge_list::Vector{Vector{Pair{Int64,Int64}}}
+    edge_list::Vector{Vector{Int64}}
 
     function LatticeReactionSystem(rs::ReactionSystem{R}, spatial_reactions::Vector{S},
                                    lattice::S, num_verts, edge_list::T; directed_edges = false) where {R, S, T}
@@ -95,7 +95,7 @@ function LatticeReactionSystem(rs, srs, lattice::CartesianGridRej{S,T}; diagonal
     num_verts = prod(lattice.dims)
 
     # Prepares the list of edges.
-    edge_list = [Vector{Pair{Int64,Int64}}() for i in 1:num_verts]
+    edge_list = [Vector{Int64}() for i in 1:num_verts]
 
     # Ensures that the matrix is on a 3d form
     lattice = reshape(vals,dims..., fill(1,3- length(dims))...)
@@ -113,7 +113,7 @@ function LatticeReactionSystem(rs, srs, lattice::Array{Bool, T}; diagonal_connec
     num_verts = count(lattice)
 
     # Prepares the list of edges.
-    edge_list = [Vector{Pair{Int64,Int64}}() for i in 1:num_verts]
+    edge_list = [Vector{Int64}() for i in 1:num_verts]
 
     # Ensures that the matrix is on a 3d form
     lattice = CartesianGrid((lattice.dims..., fill(1,3- length(lattice.dims))...))
