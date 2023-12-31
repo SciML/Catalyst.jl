@@ -168,7 +168,29 @@ sigmaB_srs_2 = [sigmaB_tr_σB, sigmaB_tr_w, sigmaB_tr_v]
 
 ### Declares Lattices ###
 
-# Grids.
+# Cartesian grids.
+small_1d_cartesian_grid = CartesianGrid(5)
+small_2d_cartesian_grid = CartesianGrid((5,5))
+small_3d_cartesian_grid = CartesianGrid((5,5,5))
+
+large_1d_cartesian_grid = CartesianGrid(100)
+large_2d_cartesian_grid = CartesianGrid((100,100))
+large_3d_cartesian_grid = CartesianGrid((100,100,100))
+
+# Regular grids.
+small_1d_regular_grid = fill(true, 5)
+small_2d_regular_grid = fill(true, 5, 5)
+small_3d_regular_grid = fill(true, 5, 5, 5)
+
+large_1d_regular_grid = fill(true, 5)
+large_2d_regular_grid = fill(true, 5, 5)
+large_3d_regular_grid = fill(true, 5, 5, 5)
+
+random_1d_regular_grid = rand([true, true, true, false], 10)
+random_2d_regular_grid = rand([true, true, true, false], 10, 10)
+random_3d_regular_grid = rand([true, true, true, false], 10, 10, 10)
+
+# Graph - grids.
 very_small_2d_grid = Graphs.grid([2, 2])
 small_2d_grid = Graphs.grid([5, 5])
 medium_2d_grid = Graphs.grid([20, 20])
@@ -178,16 +200,16 @@ small_3d_grid = Graphs.grid([5, 5, 5])
 medium_3d_grid = Graphs.grid([20, 20, 20])
 large_3d_grid = Graphs.grid([100, 100, 100])
 
-# Paths.
+# Graph - paths.
 short_path = path_graph(100)
 long_path = path_graph(1000)
 
-# Unconnected graphs.
+# Graph - unconnected graphs.
 unconnected_graph = SimpleGraph(10)
 
-# Undirected cycle.
+# Graph - undirected cycle.
 undirected_cycle = cycle_graph(49)
 
-# Directed cycle.
+# Graph - directed cycle.
 small_directed_cycle = cycle_graph(100)
 large_directed_cycle = cycle_graph(1000)

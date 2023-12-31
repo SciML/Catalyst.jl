@@ -15,7 +15,10 @@ rng = StableRNG(12345)
 t = default_t()
 
 ### Tests Simulations Don't Error ###
-for grid in [small_2d_grid, short_path, small_directed_cycle]
+for grid in [small_2d_grid, short_path, small_directed_cycle, 
+             small_1d_cartesian_grid, small_2d_cartesian_grid, small_3d_cartesian_grid,
+             small_1d_regular_grid, small_2d_regular_grid, small_3d_regular_grid,
+             random_2d_regular_grid]
     # Non-stiff case
     for srs in [Vector{TransportReaction}(), SIR_srs_1, SIR_srs_2]
         lrs = LatticeReactionSystem(SIR_system, srs, grid)
