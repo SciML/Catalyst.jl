@@ -12,6 +12,10 @@ end
 
 # initial condition and parameter values
 setdefaults!(rn, [:A => 1.0, :B => 2.0, :C => 0.0, :k₊ => 1.0, :k₋ => 1.0])
+
+# mark that rn is completed
+rn = complete(rn)
+
 nothing    # hide
 ```
 Let's convert it to a system of ODEs, using the conservation laws of the system
@@ -45,7 +49,7 @@ sol[C]
 To evaluate `C` at specific times and plot it we can just do
 ```@example faq1
 t = range(0.0, 10.0, length=101)
-plot(t, sol(t, idxs = C), label = "C(t)", xlabel = "t")
+plot(sol; plotat = t, idxs = C, label = "C(t)", xlabel = "t")
 ```
 If we want to get multiple variables we can just do
 ```@example faq1
@@ -83,7 +87,7 @@ or directly via
 @parameters k b
 @variables t
 @species A(t) B(t) C(t) D(t)
-rx1 = Reaction(k,[B,C],[B,D], [2.5,1],[3.5, 2.5])
+rx1 = Reaction(k,[B, C], [B, D], [2.5, 1],[3.5, 2.5])
 rx2 = Reaction(2*k, [B], [D], [1], [2.5])
 rx3 = Reaction(2*k, [B], [D], [2.5], [2])
 @named mixedsys = ReactionSystem([rx1, rx2, rx3], t, [A, B, C, D], [k, b])
@@ -147,7 +151,7 @@ nothing # hide
 ```
 
 Finally, default values can also be added after creating the system via the
-`setdefaults!` command and passing a `Symbol` based mapping, like
+`setdefaults!` command and passing a `Symbol` or symbolics based mapping, like
 ```@example faq3
 sir = @reaction_network sir begin
     β, S + I --> 2I

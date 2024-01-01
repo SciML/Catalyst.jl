@@ -6,7 +6,7 @@ useful in many modeling contexts, and that provide conveniences for common
 workflows. For a comprehensive overview of solver properties, parameters, and
 manipulating solution objects, please read the [documentation of the
 DifferentialEquations package](https://docs.sciml.ai/DiffEqDocs/stable/), which
-Catalyst uses for all simulations.
+Catalyst uses for all ODE, SDE, and jump process simulations.
 
 
 ## Monte Carlo simulations using `EnsembleProblem`s
@@ -16,7 +16,7 @@ vary parameter values within a model. While it is always possible to manually
 run such ensembles of simulations via a `for` loop, DifferentialEquations.jl
 provides the `EnsembleProblem` as a convenience to manage structured collections
 of simulations. `EnsembleProblem`s provide a simple interface for modifying a
-problem between individual simulations, and offers several options for batching
+problem between individual simulations, and offer several options for batching
 and/or parallelizing simulation runs. For a more thorough description, please
 read [the Parallel Ensemble Simulations section of the DifferentialEquations
 documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#ensemble).
@@ -31,13 +31,14 @@ rn = @reaction_network begin
     v0 + hill(X,v,K,n), ∅ --> X
     deg, X --> ∅
 end
+rn = complete(rn)
 u0 = [:X => 0.0]
 tspan = (0.0,1000.0)
 p = [:v0 => 0.1, :v => 2.5, :K => 75.0, :n => 2.0, :deg => 0.01];
 sprob = SDEProblem(rn, u0, tspan, p)
 nothing # hide
 ```
-we can then use our `SDEProblem` as input to an `EnsembleProblem`:
+We can then use our `SDEProblem` as input to an `EnsembleProblem`:
 ```@example ex1
 eprob = EnsembleProblem(sprob)
 ```
@@ -46,7 +47,7 @@ the same options as when simulating the `SDEProblem` directly, however, it has
 an additional argument `trajectories` to determine how many simulations should
 be performed.
 ```@example ex1
-esol = solve(eprob; trajectories=5)
+esol = solve(eprob; trajectories = 5)
 ```
 This simulation is automatically multithreaded over all available threads.
 Please read [this
@@ -181,20 +182,28 @@ sol = solve(oprob; callback = ps_cb)
 plot(sol)
 ```
 
-Next, we can also use a callback to change the parameters of a system. The following code
-plots the concentration of a two-state system, as we change the equilibrium
-constant between the two states:
+Next, we can also use a callback to change the parameters of a system. The
+following code plots the concentration of a two-state system, as we change the
+equilibrium constant between the two states. Notice we now need to use `setp` to
+construct a function that can update a parameter within the integrator
 ```@example ex2
 rn = @reaction_network begin
     (k,1), X1 <--> X2
 end
+rn = complete(rn)
 u0 = [:X1 => 10.0, :X2 => 0.0]
 tspan = (0.0, 20.0)
 p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 
+# the following code creates a function, `setk` that can
+# change parameters within an integrator
+using ModelingToolkit: setp
+setk = setp(rn, :k)
+
+# now we create our callback and solve
 condition = [5.0]
-affect!(integrator) = integrator[:k] = 5.0
+affect!(integrator) = (setk(integrator, 5.0); nothing)
 ps_cb = PresetTimeCallback(condition, affect!)
 
 sol = solve(oprob; callback = ps_cb)
@@ -217,27 +226,12 @@ because the callback modifies our `ODEProblem` during the simulation, and this
 modification remains during the second simulation. An improved workflow to avoid
 this issue is:
 ```@example ex2
-rn = @reaction_network begin
-    (k,1), X1 <--> X2
-end
-u0 = [:X1 => 10.0,:X2 => 0.0]
-tspan = (0.0, 20.0)
-p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
-
-condition = [5.0]
-affect!(integrator) = integrator[:k] = 5.0
-ps_cb = PresetTimeCallback(condition, affect!)
-
 sol = solve(deepcopy(oprob); callback = ps_cb)
 plot(sol)
 ```
-where we parse a copy of our `ODEProblem` to the solver (using `deepcopy`). We can now run
-```@example ex2
-sol = solve(deepcopy(oprob); callback = ps_cb)
-plot(sol)
-```
-and get the expected result.
+where we pass a copy of our `ODEProblem` to the solver (using `deepcopy`). We
+can now get the expected result.
 
 It is possible to give several callbacks to the `solve()` command. To do so, one
 has to bundle them together in a `CallbackSet`, here follows one example:
@@ -245,31 +239,40 @@ has to bundle them together in a `CallbackSet`, here follows one example:
 rn = @reaction_network begin
     (k,1), X1 <--> X2
 end
+rn = complete(rn)
 u0 = [:X1 => 10.0,:X2 => 0.0]
 tspan = (0.0, 20.0)
 p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 
-ps_cb_1 = PresetTimeCallback([3.0, 7.0], integ -> integ[:X1] += 5.0)
-ps_cb_2 = PresetTimeCallback([5.0], integ -> integ[:k] = 5.0)
+ps_cb_1 = PresetTimeCallback([3.0, 7.0], integ -> (integ[:X1] += 5.0; nothing))
+ps_cb_2 = PresetTimeCallback([5.0], integ -> (setk(integ, 5.0); nothing))
 
-sol = solve(deepcopy(oprob); callback=CallbackSet(ps_cb_1, ps_cb_2))
+sol = solve(deepcopy(oprob); callback = CallbackSet(ps_cb_1, ps_cb_2))
 plot(sol)
 ```
 
-The difference between the `PresetTimeCallback`s and the `DiscreteCallback`s and
-`ContiniousCallback`s is that the latter two allow the condition to be a
+The difference between the `PresetTimeCallback`s, the `DiscreteCallback`s, and
+`ContinuousCallback`s is that the latter two allow the condition to be a
 function, permitting the user to give more general conditions for the callback
-to be triggered. An example could be a callback that triggers whenever a species
-surpasses some threshold value.
+to be triggered. An example could be a `ContinuousCallback` that triggers
+whenever a species surpasses some threshold value.
 
 ### [Callbacks during SSA simulations](@id advanced_simulations_ssa_callbacks)
-An assumption of (most) SSA simulations is that the state of the system is unchanged between reaction events. However, callbacks that affect the system's state can violate this assumption. To prevent erroneous simulations, users must inform a SSA solver when the state has been updated in a callback. This allows the solver to reinitialize any internal state information that may have changed. This can be done through the `reset_aggregated_jumps!` function, see the following example:
+An assumption of (most) SSA stochastic chemical kinetics jump process (i.e.
+Gillespie) simulations is that the state of the system is unchanged between
+reaction events. However, callbacks that affect the system's state can violate
+this assumption. To prevent erroneous simulations, users must inform a SSA
+solver when the state or parameters have been updated in a callback. This allows
+the solver to reinitialize any internal state information that may have changed.
+This can be done through the `reset_aggregated_jumps!` function, see the
+following example:
 
 ```@example ex2
 rn = @reaction_network begin
     (k,1), X1 <--> X2
 end
+rn = complete(rn)
 u0 = [:X1 => 10.0,:X2 => 0.0]
 tspan = (0.0, 20.0)
 p = [:k => 1.0]
@@ -277,9 +280,13 @@ dprob = DiscreteProblem(rn, u0, tspan, p)
 jprob = JumpProblem(rn, dprob, Direct())
 
 condition = [5.0]
+getk = ModelingToolkit.getp(rn, :k)
 function affect!(integrator)
     integrator[:X1] += 5.0
-    integrator[:k] += 2.0
+
+    # update k = k + 2
+    setk(integrator, getk(integrator) + 2.0)
+
     reset_aggregated_jumps!(integrator)
     nothing
 end
@@ -301,6 +308,7 @@ using Catalyst, StochasticDiffEq, Plots
 rn_1 = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
+rn_1 = complete(rn_1)
 u0 = [:X1 => 10.0, :X2 => 10.0]
 tspan = (0.0, 10.0)
 p_1 = [:k1 => 1.0, :k2 => 1.0]

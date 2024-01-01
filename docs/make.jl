@@ -36,7 +36,7 @@ makedocs(sitename = "Catalyst.jl",
                                   assets = ["assets/favicon.ico"],
                                   canonical = "https://docs.sciml.ai/Catalyst/"),
          modules = [Catalyst, ModelingToolkit],
-         doctest = false, clean = true, linkcheck = true, warnonly = [:missing_docs],
+         doctest = false, clean = true, linkcheck = true, warnonly = [:missing_docs, :footnote],
          pages = pages)
 
 deploydocs(repo = "github.com/SciML/Catalyst.jl.git";
