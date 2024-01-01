@@ -596,9 +596,9 @@ version = "1.0.4"
 
 [[deps.Enzyme]]
 deps = ["CEnum", "EnzymeCore", "Enzyme_jll", "GPUCompiler", "LLVM", "Libdl", "LinearAlgebra", "ObjectFile", "Preferences", "Printf", "Random"]
-git-tree-sha1 = "dd414d440bf55a14750ea0ebb576353cde0303a2"
+git-tree-sha1 = "5d4c9ff045b50929c598f13c214c8670bb40d02b"
 uuid = "7da242da-08ed-463a-9acd-ee780be4f1d9"
-version = "0.11.11"
+version = "0.11.12"
 
 [[deps.EnzymeCore]]
 deps = ["Adapt"]
@@ -608,9 +608,9 @@ version = "0.6.4"
 
 [[deps.Enzyme_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "e7e1ae137a07fd2dfccd83418084e53be9de3edb"
+git-tree-sha1 = "95b4c72f71010dcc05594d3424d1642ea74eca60"
 uuid = "7cc45869-7501-5eee-bdea-0790c847d4ef"
-version = "0.0.96+0"
+version = "0.0.98+0"
 
 [[deps.EpollShim_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -620,9 +620,9 @@ version = "0.0.20230411+0"
 
 [[deps.ExceptionUnwrapping]]
 deps = ["Test"]
-git-tree-sha1 = "e90caa41f5a86296e014e148ee061bd6c3edec96"
+git-tree-sha1 = "dcb08a0d93ec0b1cdc4af184b26b591e9695423a"
 uuid = "460bff9d-24e4-43bc-9d9f-a8973cb893f4"
-version = "0.1.9"
+version = "0.1.10"
 
 [[deps.Expat_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1491,9 +1491,9 @@ version = "4.5.1"
 
 [[deps.NNlib]]
 deps = ["Adapt", "Atomix", "ChainRulesCore", "GPUArraysCore", "KernelAbstractions", "LinearAlgebra", "Pkg", "Random", "Requires", "Statistics"]
-git-tree-sha1 = "7c221293228506db2fe883251407581e0846688e"
+git-tree-sha1 = "900a11b3a2b02e36b25cb55a80777d4a4670f0f6"
 uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
-version = "0.9.9"
+version = "0.9.10"
 
     [deps.NNlib.extensions]
     NNlibAMDGPUExt = "AMDGPU"
@@ -1798,10 +1798,10 @@ uuid = "85a6dd25-e78a-55b7-8502-1745935b8125"
 version = "0.2.4"
 
 [[deps.PreallocationTools]]
-deps = ["Adapt", "ArrayInterface", "ForwardDiff", "Requires"]
-git-tree-sha1 = "01ac95fca7daabe77a9cb705862bd87016af9ddb"
+deps = ["Adapt", "ArrayInterface", "ForwardDiff"]
+git-tree-sha1 = "13078a8afc9f88ede295c17c3c673eb52c05b0b4"
 uuid = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
-version = "0.4.13"
+version = "0.4.16"
 weakdeps = ["ReverseDiff"]
 
     [deps.PreallocationTools.extensions]
