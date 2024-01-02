@@ -83,7 +83,7 @@ struct LatticeReactionSystem{R,S,T} # <: MT.AbstractTimeDependentSystem
         # Checks that all spatial reactions are valid for this reactions system.
         foreach(sr -> check_spatial_reaction_validity(rs, sr; edge_parameters=edge_parameters), spatial_reactions)   
 
-        return new{Q,R,S,T}(rs, spatial_reactions, lattice, num_verts, ne(lattice), num_species, 
+        return new{R,S,T}(rs, spatial_reactions, lattice, num_verts, ne(lattice), num_species, 
                             spat_species, ps, vertex_parameters, edge_parameters, init_digraph, edge_list)
     end
 end
@@ -168,8 +168,8 @@ ModelingToolkit.nameof(lrs::LatticeReactionSystem) = nameof(lrs.rs)
 is_transport_system(lrs::LatticeReactionSystem) = all(sr -> sr isa TransportReaction, lrs.spatial_reactions)
 
 # Checks if a LatticeReactionSystem have a Cartesian grid lattice.
-has_cartesian_lattice(lrs::LatticeReactionsSystem) = lrs.lattice isa CartesianGridRej{S,T} where {S,T}
+has_cartesian_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa CartesianGridRej{S,T} where {S,T}
 # Checks if a LatticeReactionSystem have a regular grid lattice.
-has_cartesian_lattice(lrs::LatticeReactionsSystem) = lrs.lattice isa Array{Bool, T} where T
+has_cartesian_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa Array{Bool, T} where T
 # Checks if a LatticeReactionSystem have a graph lattice.
-has_cartesian_lattice(lrs::LatticeReactionsSystem) = lrs.lattice isa SimpleDiGraph
+has_cartesian_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa SimpleDiGraph
