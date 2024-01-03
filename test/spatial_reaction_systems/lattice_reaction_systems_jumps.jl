@@ -105,6 +105,62 @@ let
 end
 
 
+### SpatialMassActionJump Testing ###
+
+# Checks that the correct structure is produced.
+let 
+    # Network for reference:
+    # A, ∅ → X
+    # 1, 2X + Y → 3X
+    # B, X → Y
+    # 1, X → ∅
+    # srs = [@transport_reaction dX X]
+    # Create LatticeReactionSystem
+    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, small_3d_grid)
+
+    # Create JumpProblem
+    u0 = [:X => 1, :Y => rand(1:10, lrs.num_verts)]
+    tspan = (0.0, 100.0)
+    ps = [:A => 1.0, :B => 5.0 .+ rand(lrs.num_verts), :dX => rand(lrs.num_edges)]
+    dprob = DiscreteProblem(lrs, u0, tspan, ps)
+    jprob = JumpProblem(lrs, dprob, NSM())
+
+    # Checks internal structures.
+    jprob.massaction_jump.uniform_rates == [1.0, 0.5 ,10.] # 0.5 is due to combinatoric /2! in (2X + Y).
+    jprob.massaction_jump.spatial_rates[1,:] == ps[2][2]
+    # Test when new SII functions are ready, or we implement them in Catalyst.
+    # @test isequal(to_int(getfield.(reactions(lrs.rs), :netstoich)), jprob.massaction_jump.net_stoch)
+    # @test isequal(to_int(Pair.(getfield.(reactions(lrs.rs), :substrates),getfield.(reactions(lrs.rs), :substoich))), jprob.massaction_jump.net_stoch)
+
+    # Checks that problem can be simulated.
+    @test SciMLBase.successful_retcode(solve(jprob, SSAStepper()))
+end
+
+# Checks that simulations gives a correctly heterogeneous solution.
+let 
+    # Create model.
+    birth_death_network = @reaction_network begin
+        (p,d), 0 <--> X
+    end
+    srs = [(@transport_reaction D X)]
+    lrs = LatticeReactionSystem(birth_death_network, srs, very_small_2d_grid)
+    
+    # Create JumpProblem.
+    u0 = [:X => 1]
+    tspan = (0.0, 100.0)
+    ps = [:p => [0.1, 1.0, 10.0, 100.0], :d => 1.0, :D => 0.0]    
+    dprob = DiscreteProblem(lrs, u0, tspan, ps)
+    jprob = JumpProblem(lrs, dprob, NSM())
+
+    # Simulate model (a few repeats to ensure things don't succeed by change for uniform rates).
+    # Check that higher p gives higher mean.
+    for i = 1:5 
+        sol = solve(jprob, SSAStepper(); saveat = 1., seed = i*1234)
+        @test mean(getindex.(sol.u, 1)) < mean(getindex.(sol.u, 2)) < mean(getindex.(sol.u, 3)) < mean(getindex.(sol.u, 4))
+    end
+end
+
+
 ### Tests taken from JumpProcesses ###
 
 # ABC Model Test
