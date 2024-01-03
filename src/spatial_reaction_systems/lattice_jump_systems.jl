@@ -28,15 +28,19 @@ end
 function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator, args...; name = nameof(lrs.rs), 
                                    combinatoric_ratelaws = get_combinatoric_ratelaws(lrs.rs), kwargs...)
     # Error checks.
-    (dprob.p isa Vector{Vector{Vector{Float64}}}) || dprob.p isa Vector{Vector} || error("Parameters in input DiscreteProblem is of an unexpected type: $(typeof(dprob.p)). Was a LatticeReactionProblem passed into the DiscreteProblem when it was created?") # The second check (Vector{Vector} is needed becaus on the CI server somehow the Tuple{..., ...} is covnerted into a Vector[..., ...]). It does not happen when I run tests locally, so no ideal how to fix.
-    any(length.(dprob.p[1]) .> 1) && error("Spatial reaction rates are currently not supported in lattice jump simulations.")
+    # The second check (Vector{Vector} is needed because on the CI server somehow the Tuple{..., ...} is converted into a Vector[..., ...]).
+    # It does not happen when I run tests locally, so no ideal how to fix.
+    (dprob.p isa Vector{Vector{Vector{Float64}}}) || dprob.p isa Vector{Vector} || error("Parameters in input DiscreteProblem is of an unexpected type: $(typeof(dprob.p)). Was a LatticeReactionProblem passed into the DiscreteProblem when it was created?") 
     
     # Computes hopping constants and mass action jumps (requires some internal juggling).
-    # The non-spatial DiscreteProblem have a u0 matrix with entries for all combinations of species and vertexes.
     # Currently, JumpProcesses requires uniform vertex parameters (hence `p=first.(dprob.p[1])`).
+    # Currently, the resulting JumpProblem does not depend on parameters (no way to incorporate these).
+    # Hence the parameters of this one does nto actually matter. If at some point JumpProcess can 
+    # handle parameters this can be updated and improved.
+    # The non-spatial DiscreteProblem have a u0 matrix with entries for all combinations of species and vertexes.
     hopping_constants = make_hopping_constants(dprob, lrs)
+    sma_jumps = make_spatial_majumps(dprob, lrs)
     non_spat_dprob = DiscreteProblem(reshape(dprob.u0, lrs.num_species, lrs.num_verts), dprob.tspan, first.(dprob.p[1]))
-    sma_jumps = make_spatial_majumps(non_spat_dprob, dprob, lrs)
 
     return JumpProblem(non_spat_dprob, aggregator, sma_jumps; 
                        hopping_constants, spatial_system = lrs.lattice, name, kwargs...)
@@ -66,22 +70,65 @@ function make_hopping_constants(dprob::DiscreteProblem, lrs::LatticeReactionSyst
     return hopping_constants
 end
 
-# Creates the (spatial) mass action jumps from a (spatial) DiscreteProblem its non-spatial version, and a LatticeReactionSystem.
-function make_spatial_majumps(non_spat_dprob, dprob, rs::LatticeReactionSystem)
-    ma_jumps = make_majumps(non_spat_dprob, lrs.rs)
-    
+# Creates a SpatialMassActionJump struct from a (spatial) DiscreteProblem and a LatticeReactionSystem.
+# Could implementation a version which, if all reaction's rates are uniform, returns a MassActionJump.
+# Not sure if there is any form of performance improvement from that though. Possibly is not the case.
+function make_spatial_majumps(dprob, lrs::LatticeReactionSystem)
+    # Creates a vector, storing which reactions have spatial components.
+    is_spatials = [Catalyst.has_spatial_vertex_component(rx.rate, lrs; vert_ps = dprob.p[1]) for rx in reactions(lrs.rs)]
+
+    # Creates templates for the rates (uniform and spatial) and the stoichiometries.
+    # We cannot fetch reactant_stoich and net_stoich from a (non-spatial) MassActionJump.
+    # The reason is that we need to re-order the reactions so that uniform appears first, and spatial next.
+    u_rates = Vector{Float64}(undef, length(reactions(lrs.rs)) - count(is_spatials))
+    s_rates = Matrix{Float64}(undef, count(is_spatials), lrs.num_verts)
+    reactant_stoich = Vector{Vector{Pair{Int64, Int64}}}(undef, length(reactions(lrs.rs)))
+    net_stoich = Vector{Vector{Pair{Int64, Int64}}}(undef, length(reactions(lrs.rs)))
+
+    # Loops through reactions with non-spatial rates, computes their rates and stoichiometries.
+    cur_rx = 1;
+    for (is_spat, rx) in zip(is_spatials, reactions(lrs.rs))
+        is_spat && continue
+        u_rates[cur_rx] = compute_vertex_value(rx.rate, lrs; vert_ps = dprob.p[1])[1]
+        substoich_map = Pair.(rx.substrates, rx.substoich)
+        reactant_stoich[cur_rx] = int_map(substoich_map, lrs.rs)
+        net_stoich[cur_rx] = int_map(rx.netstoich, lrs.rs)
+        cur_rx += 1
+    end
+    # Loops through reactions with spatial rates, computes their rates and stoichiometries.
+    for (is_spat, rx) in zip(is_spatials, reactions(lrs.rs))    
+        is_spat || continue
+        s_rates[cur_rx-length(u_rates),:] = compute_vertex_value(rx.rate, lrs; vert_ps = dprob.p[1])
+        substoich_map = Pair.(rx.substrates, rx.substoich)
+        reactant_stoich[cur_rx] = int_map(substoich_map, lrs.rs)
+        net_stoich[cur_rx] = int_map(rx.netstoich, lrs.rs)
+        cur_rx += 1
+    end
+    # SpatialMassActionJump expects empty rate containers to be nothing.
+    isempty(u_rates) && (u_rates = nothing)
+    (count(is_spatials)==0) && (s_rates = nothing)
+
+    return SpatialMassActionJump(u_rates, s_rates, reactant_stoich, net_stoich)
 end
 
+### Extra ###
+
+# Temporary. Awaiting implementation in SII, or proper implementation withinCatalyst (with more general functionality).
+function int_map(map_in, sys) where {T,S}
+    return [ModelingToolkit.variable_index(sys, pair[1]) => pair[2] for pair in map_in]
+end
+
+# Currently unused. If we want to create certain types of MassActionJumps (instead of SpatialMassActionJumps) we can take this one back.
 # Creates the (non-spatial) mass action jumps from a (non-spatial) DiscreteProblem (and its Reaction System of origin).
-function make_majumps(non_spat_dprob, rs::ReactionSystem)
-    # Computes various required inputs for assembling the mass action jumps.
-    js = convert(JumpSystem, rs)
-    statetoid = Dict(ModelingToolkit.value(state) => i for (i, state) in enumerate(states(rs)))
-    eqs = equations(js)
-    invttype = non_spat_dprob.tspan[1] === nothing ? Float64 : typeof(1 / non_spat_dprob.tspan[2])
-
-    # Assembles the non-spatial mass action jumps.
-    p = (non_spat_dprob.p isa DiffEqBase.NullParameters || non_spat_dprob.p === nothing) ? Num[] : non_spat_dprob.p    
-    majpmapper = ModelingToolkit.JumpSysMajParamMapper(js, p; jseqs = eqs, rateconsttype = invttype)
-    return ModelingToolkit.assemble_maj(eqs.x[1], statetoid, majpmapper)
-end
+# function make_majumps(non_spat_dprob, rs::ReactionSystem)
+#     # Computes various required inputs for assembling the mass action jumps.
+#     js = convert(JumpSystem, rs)
+#     statetoid = Dict(ModelingToolkit.value(state) => i for (i, state) in enumerate(states(rs)))
+#     eqs = equations(js)
+#     invttype = non_spat_dprob.tspan[1] === nothing ? Float64 : typeof(1 / non_spat_dprob.tspan[2])
+# 
+#     # Assembles the non-spatial mass action jumps.
+#     p = (non_spat_dprob.p isa DiffEqBase.NullParameters || non_spat_dprob.p === nothing) ? Num[] : non_spat_dprob.p    
+#     majpmapper = ModelingToolkit.JumpSysMajParamMapper(js, p; jseqs = eqs, rateconsttype = invttype)
+#     return ModelingToolkit.assemble_maj(eqs.x[1], statetoid, majpmapper)
+# end
