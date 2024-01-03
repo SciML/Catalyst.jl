@@ -23,13 +23,13 @@ let
     graph_lrs = LatticeReactionSystem(brusselator_system, srs, small_2d_grid)
 
     # Test lattice type getters.
-    @test has_cartesian_grid_lattice(cartesian_2d_lrs)
-    @test !has_cartesian_grid_lattice(regular_2d_lrs)
-    @test !has_cartesian_grid_lattice(graph_lrs)
+    @test has_cartesian_lattice(cartesian_2d_lrs)
+    @test has_cartesian_lattice(regular_2d_lrs)
+    @test has_cartesian_lattice(graph_lrs)
 
-    @test !has_regular_grid_lattice(cartesian_2d_lrs)
-    @test has_regular_grid_lattice(regular_2d_lrs)
-    @test !has_regular_grid_lattice(graph_lrs)
+    @test !has_regular_lattice(cartesian_2d_lrs)
+    @test !has_regular_lattice(regular_2d_lrs)
+    @test !has_regular_lattice(graph_lrs)
 
     @test has_grid_lattice(cartesian_2d_lrs)
     @test has_grid_lattice(regular_2d_lrs)
