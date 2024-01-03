@@ -5,10 +5,54 @@ using Catalyst, Graphs, OrdinaryDiffEq, Test
 
 ### Run Tests ###
 
+# Test errors when attempting to create networks with dimension > 3.
+let 
+    @test_throws Exception LatticeReactionSystem(brusselator_system, srs, CartesianGrid((5, 5, 5, 5)))
+    @test_throws Exception LatticeReactionSystem(brusselator_system, srs, fill(true, 5, 5, 5, 5))
+end
+
+# Checks that getter functions give the correct output.
+let 
+    # Create LatticeReactionsSystems.
+    cartesian_1d_lrs = LatticeReactionSystem(brusselator_system, srs, small_1d_cartesian_grid)
+    cartesian_2d_lrs = LatticeReactionSystem(brusselator_system, srs, small_2d_cartesian_grid)
+    cartesian_3d_lrs = LatticeReactionSystem(brusselator_system, srs, small_3d_cartesian_grid)
+    regular_1d_lrs = LatticeReactionSystem(brusselator_system, srs, small_1d_regular_grid)
+    regular_2d_lrs = LatticeReactionSystem(brusselator_system, srs, small_2d_regular_grid)
+    regular_3d_lrs = LatticeReactionSystem(brusselator_system, srs, small_3d_regular_grid)
+    graph_lrs = LatticeReactionSystem(brusselator_system, srs, small_2d_grid)
+
+    # Test lattice type getters.
+    @test has_cartesian_grid_lattice(cartesian_2d_lrs)
+    @test !has_cartesian_grid_lattice(regular_2d_lrs)
+    @test !has_cartesian_grid_lattice(graph_lrs)
+
+    @test !has_regular_grid_lattice(cartesian_2d_lrs)
+    @test has_regular_grid_lattice(regular_2d_lrs)
+    @test !has_regular_grid_lattice(graph_lrs)
+
+    @test has_grid_lattice(cartesian_2d_lrs)
+    @test has_grid_lattice(regular_2d_lrs)
+    @test !has_grid_lattice(graph_lrs)
+
+    @test !has_graph_lattice(cartesian_2d_lrs)
+    @test !has_graph_lattice(regular_2d_lrs)
+    @test has_graph_lattice(graph_lrs)
+
+    # Checks grid dimensions.
+    @test grid_dims(cartesian_1d_lrs) == 1
+    @test grid_dims(cartesian_2d_lrs) == 2
+    @test grid_dims(cartesian_3d_lrs) == 3
+    @test grid_dims(regular_1d_lrs) == 1
+    @test grid_dims(regular_2d_lrs) == 2
+    @test grid_dims(regular_3d_lrs) == 3
+    @test_throws Exception grid_dims(graph_lrs)
+end
+
 # Checks that some grids, created using different approaches, generates the same spatial structures.
 # Checks that some grids, created using different approaches, generates the same simulation output.
 let 
-    # Create LatticeReactionsSystems
+    # Create LatticeReactionsSystems.
     cartesian_grid = Graphs.grid([5, 5])
     regular_grid = fill(true, 5, 5)
     graph_grid = Graphs.grid([5, 5])
@@ -48,7 +92,7 @@ end
 
 # Checks that a regular grid with absent vertices generate the same output as corresponding graph.
 let
-    # Create LatticeReactionsSystems
+    # Create LatticeReactionsSystems.
     regular_grid = [true true true; true false true; true true true]
     graph_grid = cycle_graph(8)
     

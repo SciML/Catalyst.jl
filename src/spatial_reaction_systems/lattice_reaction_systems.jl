@@ -170,6 +170,15 @@ is_transport_system(lrs::LatticeReactionSystem) = all(sr -> sr isa TransportReac
 # Checks if a LatticeReactionSystem have a Cartesian grid lattice.
 has_cartesian_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa CartesianGridRej{S,T} where {S,T}
 # Checks if a LatticeReactionSystem have a regular grid lattice.
-has_cartesian_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa Array{Bool, T} where T
+has_regular_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa Array{Bool, T} where T
+# Checks if a LatticeReactionSystem have a grid lattice (cartesian or regular).
+has_grid_lattice(lrs::LatticeReactionSystem) = (has_cartesian_lattice(lrs) || has_regular_lattice(lrs))
 # Checks if a LatticeReactionSystem have a graph lattice.
-has_cartesian_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa SimpleDiGraph
+has_graph_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa SimpleDiGraph
+
+# Returns the dimensions of a LatticeReactionNetwork with a grid lattice.
+function grid_dims(lrs::LatticeReactionSystem)
+    has_cartesian_lattice(lrs) && (return length(lrs.lattice.dims))
+    has_regular_lattice(lrs) && (return length(size(lrs.lattice)))
+    error("Dimensions are only defined for LatticeReactionSystems with grid-based lattices (not graph-based).")
+end
