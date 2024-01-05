@@ -7,7 +7,7 @@ Generally, this small checklist provides a quick guide for dealing with ODE perf
 1. If performance is not critical, use [the default solver choice](@ref ode_simulation_performance_solvers) and do not worry further about the issue.
 2. Determine whether your problem is [non-stiff nor stiff](@ref ode_simulation_performance_stiffness), and use the `Tsit5` solver for the former case and `Rodas5P` for the latter.
 3. If more performance would be useful, read about solver selection (both in [this tutorial](@ref ode_simulation_performance_solvers) and [OrdinaryDiffEq's documentation](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/)) and then try a few different solvers to find one with good performance.
-4. If you have a large ODE, try the [various options for efficient Jacobian computation](@ref ode_simulation_performance_jacobian) (noting that some are non-trivial to use, and should only be investigated if required).
+4. If you have a large ODE (approximately size 100 or more), try the [various options for efficient Jacobian computation](@ref ode_simulation_performance_jacobian) (noting that some are non-trivial to use, and should only be investigated if required).
 5. If you plan to simulate your ODE many times, try [parallelise it on CPUs or GPUs](@ref investigating) (with preference for the former, which is easier to use).
 
 ## [Regarding stiff and non-stiff problems and solvers](@id ode_simulation_performance_stiffness)
