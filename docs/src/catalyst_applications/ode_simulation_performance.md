@@ -260,7 +260,7 @@ Generally, we can parallelise `EnsembleProblem`s across several GPUs in a very s
 - Depending on which GPU hardware is used, a specific back-end package has to be installed and imported (e.g. CUDA for NVIDIA's GPUs or Metal for Apple's).
 - For some cases, we must use a special ODE solver supporting simulations on GPUs.
 
-Furthermore, to receive good performance, we should also make the following adaptations:
+Furthermore (while not required) to receive good performance, we should also make the following adaptations:
 - By default, Julia's decimal numbers are implemented as `Float64`s, however, using `Float32`s is advantageous on GPUs. Ideally, all initial conditions and parameter values should be specified using these.
 - We should designate all our vectors (i.e. initial conditions and parameter values) as [static vectors](https://github.com/JuliaArrays/StaticArrays.jl).
 
@@ -310,6 +310,9 @@ nothing # hide
 Note that we have to provide the `CUDA.CUDABackend()` argument to our ensemble algorithms (to designate our GPU backend, in this case, CUDA).
 
 Just like OrdinaryDiffEq is able to utilise parallel CPU processes to speed up the linear solve part of ODE simulations, GPUs can also be used. More details on this can be found [here](https://docs.sciml.ai/DiffEqGPU/stable/tutorials/within_method_gpu/). This is only recommended when ODEs are very large (at least 1,000 species), and typically not applicable to CRNs.
+
+For more information of differential equation simulations on GPUs in Julia, please read [DiffEqGPU's documentation](https://docs.sciml.ai/DiffEqGPU/stable/). Furthermore, if performance is critical, [this tutorial](https://docs.sciml.ai/DiffEqGPU/stable/tutorials/lower_level_api/) provides information on how to redesign your simulation code to make it more suitable for GPU simulations.
+
 
 ---
 ## References
