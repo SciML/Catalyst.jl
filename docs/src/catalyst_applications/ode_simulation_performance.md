@@ -5,10 +5,9 @@ Generally, there are few good ways to, before a simulation, determine the best o
 
 Generally, this small checklist provides a quick guide for dealing with ODE performance:
 1. If performance is not critical, use [the default solver choice](@ref ode_simulation_performance_solvers) and do not worry further about the issue.
-2. Determine whether your problem is [non-stiff nor stiff](@ref ode_simulation_performance_stiffness), and use the `Tsit5` solver for the former case and `Rodas5P` for the latter.
-3. If more performance would be useful, read about solver selection (both in [this tutorial](@ref ode_simulation_performance_solvers) and [OrdinaryDiffEq's documentation](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/)) and then try a few different solvers to find one with good performance.
-4. If you have a large ODE (approximately size 100 or more), try the [various options for efficient Jacobian computation](@ref ode_simulation_performance_jacobian) (noting that some are non-trivial to use, and should only be investigated if required).
-5. If you plan to simulate your ODE many times, try [parallelise it on CPUs or GPUs](@ref investigating) (with preference for the former, which is easier to use).
+2. If more performance would be useful, read about solver selection (both in [this tutorial](@ref ode_simulation_performance_solvers) and [OrdinaryDiffEq's documentation](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/)) and then try a few different solvers to find one with good performance.
+3. If you have a large ODE (approximately size 100 or more), try the [various options for efficient Jacobian computation](@ref ode_simulation_performance_jacobian) (noting that some are non-trivial to use, and should only be investigated if required).
+4. If you plan to simulate your ODE many times, try [parallelise it on CPUs or GPUs](@ref investigating) (with preference for the former, which is easier to use).
 
 ## [Regarding stiff and non-stiff problems and solvers](@id ode_simulation_performance_stiffness)
 Generally, ODE problems can be categorised into [*stiff ODEs* and *non-stiff ODEs*](https://en.wikipedia.org/wiki/Stiff_equation). This categorisation is important due to stiff ODEs requiring specialised solvers. A common cause of failure to simulate an ODE is the use of a non-stiff solver for a stiff problem. There is no exact way to determine whether a given ODE is stiff or not, however, systems with several different time scales (e.g. a CRN with both slow and fast reactions) typically generate stiff ODEs.
@@ -46,9 +45,9 @@ This time the simulation was successfully completed, which can be confirmed by c
 sol2.retcode
 ``` 
 
-Generally, ODE solvers can be divided into [*explicit* and *implicit* solvers](https://en.wikipedia.org/wiki/Explicit_and_implicit_methods). Roughly, explicit solvers (which include `Tsit5`) are better for non-stiff problems, with implicit solvers (like `Rodas5P`) being required for stiff problems. While we could use implicit solvers for all problems (to guarantee successful simulations irrespective of stiffness), these are typically less performant on non-stiff problems (as compared to the explicit solvers). An important property of implicit solvers is that they require the *computation of a Jacobian* as part of their routine. This means that the various options for efficient Jacobian computation [described later in this tutorial](@ref ode_simulation_performance_jacobian) are only relevant to implicit solvers.
+Generally, ODE solvers can be divided into [*explicit* and *implicit* solvers](https://en.wikipedia.org/wiki/Explicit_and_implicit_methods). Roughly, explicit solvers are better for non-stiff problems, with implicit solvers being required for stiff problems. While we could use implicit solvers for all problems (to guarantee successful simulations irrespective of stiffness), these are typically less performant (as compared to the explicit solvers) on equations that are non-stiff. An important property of implicit solvers is that they require the *computation of a Jacobian* as part of their routine. This means that the various options for efficient Jacobian computation [described later in this tutorial](@ref ode_simulation_performance_jacobian) are only relevant to implicit solvers.
 
-Finally, we should note that this is not an exact science, and sometimes explicit solvers can successfully solve a stiff problem. E.g. if we change the parameters values of our previous Brusselator model to `[:A => 1.0, :B => 4.0]`, the `Tsit5` will successfully be able to simulate it.
+Finally, we should note that stiffness is not tied to the model equations only. If we change the parameters values of our previous Brusselator model to `[:A => 1.0, :B => 4.0]`, the non-stiff `Tsit5` solver will successfully be able to simulate it.
 
 
 ## [ODE solver selection](@id ode_simulation_performance_solvers)
@@ -71,15 +70,15 @@ nothing # hide
 ``` 
 While the default choice is typically enough for most single simulations, if performance is important, it can be worthwhile exploring the available solvers to find one that is especially suited for the given problem. A complete list of possible ODE solvers, with advice on optimal selection, can be found [here](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/). This section will give some general advice.
 
-The most important part of solver selection is to select one appropriate for [the problem's stiffness](@ref ode_simulation_performance_stiffness). Generally, the `Tsit5` solver is recommended for non-stiff problems, and `Rodas5P` for stiff problems. For large stiff problems (with many species), `QNDF` can be a good choice. We can illustrate the impact of these choices by simulating our production/degradation model using the `Tsit5`, `BS5` (an explicit solver yielding [low error in the solution](@ref ode_simulation_performance_error)), `Rodas5P`, and `QNDF` solvers (benchmarking their respective performance using [BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl)):
+The most important part of solver selection is to select one appropriate for [the problem's stiffness](@ref ode_simulation_performance_stiffness). Generally, the `Tsit5` solver is recommended for non-stiff problems, and `Rodas5P` for stiff problems. For large stiff problems (with many species), `FBDF` can be a good choice. We can illustrate the impact of these choices by simulating our production/degradation model using the `Tsit5`, `Vern7` (an explicit solver yielding [low error in the solution](@ref ode_simulation_performance_error)), `Rodas5P`, and `FBDF` solvers (benchmarking their respective performance using [BenchmarkTools.jl](https://github.com/JuliaCI/BenchmarkTools.jl)):
 ```@example ode_simulation_performance_2
 using BenchmarkTools
 @btime solve(oprob, Tsit5())
-@btime solve(oprob, BS5())
+@btime solve(oprob, Vern7())
 @btime solve(oprob, Rodas5P())
-@btime solve(oprob, QNDF())
+@btime solve(oprob, FBDF())
 ```
-Here we note that the fastest solver is several times faster than the slowest one (`QNDF`, which is a poor choice for this ODE),
+Here we note that the fastest solver is several times faster than the slowest one (`FBDF`, which is a poor choice for this ODE),
 
 ### [Simulation error, tolerance, and solver selection](@id ode_simulation_performance_error)
 Numerical ODE simulations [approximate an ODE's continuous solution as a discrete vector](https://en.wikipedia.org/wiki/Discrete_time_and_continuous_time). This introduces errors in the computed solution. The magnitude of these errors can be controlled by setting solver *tolerances*. By reducing the tolerance, solution errors will be reduced, however, this will also increase simulation runtimes. The (absolute and relative) tolerance of a solver can be tuned through the `abstol` and `reltol` arguments. Here we see how runtime increases with larger tolerances:
@@ -96,7 +95,7 @@ Generally, whether solution error is a consideration depends on the application.
 As [previously mentioned](@ref ode_simulation_performance_stiffness), implicit ODE solvers require the computation of the system's [Jacobian](https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant). The reason is that, roughly, in each time step, these solvers need to solve a non-linear equation to find the simulation's value at the next timestep (unlike explicit solvers, which can compute the value at the next time step directly). Typically this is done using [the Newton-Raphson method](https://en.wikipedia.org/wiki/Newton%27s_method), which requires the Jacobian. Especially for large systems this can be computationally expensive (and a potential strain on available memory), in which case one might consider various Jacobian-computation options (as described below). A throughout tutorial on simulating a large, stiff, ODE can be found [here](https://docs.sciml.ai/DiffEqDocs/stable/tutorials/advanced_ode_example/#stiff).
 
 ### [Building the Jacobian symbolically](@id ode_simulation_performance_symbolic_jacobian)
-By default, OrdinaryDiffEq computes the Jacobian using [*automatic differentiation*](https://en.wikipedia.org/wiki/Automatic_differentiation) (however, using [*finite differences*](https://en.wikipedia.org/wiki/Finite_difference) is [also possible](https://docs.sciml.ai/DiffEqDocs/stable/features/performance_overloads/)). Since Catalyst builds its ODEs symbolically, it is able to *compute an analytic Jacobian symbolically*. Typically, this is advantageous when some rows of the Jacobian are highly dense (that is, some system species interact with most other species of the system).
+By default, OrdinaryDiffEq computes the Jacobian using [*automatic differentiation*](https://en.wikipedia.org/wiki/Automatic_differentiation) (however, using [*finite differences*](https://en.wikipedia.org/wiki/Finite_difference) is [also possible](https://docs.sciml.ai/DiffEqDocs/stable/features/performance_overloads/)). Since Catalyst builds its ODEs symbolically, it is able to *compute an analytic Jacobian symbolically*. Typically, this is only advantageous when you are also [using a sparse Jacobian](@ref ode_simulation_performance_sparse_jacobian).
 
 To use this option, simply set `jac=true` when constructing an `ODEProblem`:
 ```@example ode_simulation_performance_3
@@ -116,7 +115,7 @@ oprob = ODEProblem(brusselator, u0, tspan, p; jac=true)
 nothing # hide
 ```
 
-### Using a sparse Jacobian
+### [Using a sparse Jacobian](@id ode_simulation_performance_sparse_jacobian)
 For a system with $n$ variables, the Jacobian will be an $n\times n$ matrix. This means that, as $n$ becomes large, the Jacobian can become *very* large, potentially causing a significant strain on memory. In these cases, most Jacobian entries are typically $0$. This means that a [*sparse*](https://en.wikipedia.org/wiki/Sparse_matrix) Jacobian (rather than a *dense* one, which is the default) can be advantageous. To designate sparse Jacobian usage, simply provide the `sparse=true` option when constructing an `ODEProblem`:
 ```@example ode_simulation_performance_3
 oprob = ODEProblem(brusselator, u0, tspan, p; sparse=true)
@@ -124,13 +123,13 @@ nothing # hide
 ```
 
 ### [Linear solver selection](@id ode_simulation_performance_symbolic_jacobian_linear_solver)
-When implicit solvers use e.g. the Newton-Raphson method to, in each simulation time step, solve a (typically non-linear) equation, they actually solve a linearised version of this equation. For this they use a linear solver, the choice of which can impact performance. To specify one, we use the `linsolve` option (given to the solver function, *not* the `solve` command). E.g. to use the `KLUFactorization` linear solver we run
+When implicit solvers use e.g. the Newton-Raphson method to, in each simulation time step, solve a (typically non-linear) equation, they actually solve a linearised version of this equation. For this they use a linear solver, the choice of which can impact performance. To specify one, we use the `linsolve` option (given to the solver function, *not* the `solve` command). E.g. to use the `KLUFactorization` linear solver (which requires loading the [LinearSolve.jl](https://github.com/SciML/LinearSolve.jl) package) we run
 ```@example ode_simulation_performance_3
-using DifferentialEquations
+using LinearSolve
 solve(oprob, Rodas5P(linsolve = KLUFactorization()))
 nothing # hide
 ```
-Please note that this requires the full DifferentialEquations package (rather than just the more lightweight OrdinaryDiffEq). A full list of potential linear solvers can be found [here](https://docs.sciml.ai/LinearSolve/dev/solvers/solvers/#Full-List-of-Methods), however, the default choice typically performs well. 
+A full list of potential linear solvers can be found [here](https://docs.sciml.ai/LinearSolve/dev/solvers/solvers/#Full-List-of-Methods), however, the default choice typically performs well. 
 
 A unique approach to the linear solvers is to use a Jacobian-free Newton-Krylov method. These do not actually compute the Jacobian, but rather *the effect of multiplying it with a vector*. They are typically advantageous for large systems (with large Jacobians), and can be designated using the `KrylovJL_GMRES` linear solver:
 ```@example ode_simulation_performance_3
@@ -231,7 +230,7 @@ To extract the amount of $P$ produced in each simulation, and plot this against 
 plot(0.01:0.01:1.0, map(sol -> sol[:P][end], esol.u), xguide="kP", yguide="P produced", label="")
 ```
 
-Above, we have simply used `EnsembleProblem` as a convenient interface to run a large number of similar simulations. However, these problems have the advantage that they allow the passing of an *ensemble algorithm* to the `solve` command, which describes a strategy for parallelising the simulations. By default, `EnsembleThreads` is used. This parallelises the simulations using [multithreading](https://en.wikipedia.org/wiki/Multithreading_(computer_architecture)) (parallelisation within a single process), which is typically advantageous for small problems. An alternative is `EnsembleDistributed` which instead parallelises the simulations using [multiprocessing](https://en.wikipedia.org/wiki/Multiprocessing) (parallelisation across multiple processes). To do this, we simply supply this additional solver to the solve command:
+Above, we have simply used `EnsembleProblem` as a convenient interface to run a large number of similar simulations. However, these problems have the advantage that they allow the passing of an *ensemble algorithm* to the `solve` command, which describes a strategy for parallelising the simulations. By default, `EnsembleThreads` is used. This parallelises the simulations using [multithreading](https://en.wikipedia.org/wiki/Multithreading_(computer_architecture)) (parallelisation within a single process), which is typically advantageous for small problems on shared memory devices. An alternative is `EnsembleDistributed` which instead parallelises the simulations using [multiprocessing](https://en.wikipedia.org/wiki/Multiprocessing) (parallelisation across multiple processes). To do this, we simply supply this additional solver to the solve command:
 ```@example ode_simulation_performance_4
 esol = solve(eprob, Tsit5(), EnsembleDistributed(); trajectories=100)
 nothing # hide
@@ -290,12 +289,13 @@ nothing # hide
 When we declare our `prob_func` and `EnsembleProblem` we need to ensure that the updated `ODEProblem` uses `Float32`:
 ```@example ode_simulation_performance_5
 function prob_func(prob, i, repeat) 
-    prob[:kP] = 0.01f0*i
+    prob[:kP] = 0.0001f0*i
     return prob
 end
 eprob = EnsembleProblem(oprob; prob_func=prob_func)
 nothing # hide
 ```
+Here we increase the number of simulations to 10,000, since this is a more appropriate number for GPU parallelisation (as compared to the 100 simulations we performed in our CPU example).
 
 We can now simulate our model using a GPU-based ensemble algorithm. Currently, two such algorithms are available, `EnsembleGPUArray` and `EnsembleGPUKernel`. Their differences are that
 * Only `EnsembleGPUKernel` requires arrays to be static arrays (although it is still advantageous for `EnsembleGPUArray`).
@@ -303,8 +303,8 @@ We can now simulate our model using a GPU-based ensemble algorithm. Currently, t
 
 Generally, it is recommended to use `EnsembleGPUArray` for large models (that have at least $100$ variables), and `EnsembleGPUKernel` for smaller ones. Here we simulate our model using both approaches (noting that `EnsembleGPUKernel` requires `GPUTsit5`):
 ```@example ode_simulation_performance_5
-esol1 = solve(eprob, Tsit5(), EnsembleGPUArray(CUDA.CUDABackend()); trajectories=100)
-esol2 = solve(eprob, GPUTsit5(), EnsembleGPUKernel(CUDA.CUDABackend()); trajectories=100)
+esol1 = solve(eprob, Tsit5(), EnsembleGPUArray(CUDA.CUDABackend()); trajectories=10000)
+esol2 = solve(eprob, GPUTsit5(), EnsembleGPUKernel(CUDA.CUDABackend()); trajectories=10000)
 nothing # hide
 ```
 Note that we have to provide the `CUDA.CUDABackend()` argument to our ensemble algorithms (to designate our GPU backend, in this case, CUDA).
