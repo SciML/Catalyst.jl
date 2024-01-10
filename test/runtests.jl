@@ -64,4 +64,7 @@ end
     @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
     @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
     
+    ### Downstream/Upstream tests. ###
+    @time @safetestset "MTK Structure Indexing" begin include("meta/mtk_structure_indexing.jl") end   
+    
 end # @time

@@ -72,3 +72,42 @@ let
         end
     end
 end
+
+# Tests solving for various inputs types across various problem types.
+let 
+    model = complete(@reaction_network begin
+        (kp,kd), 0 <--> X
+        (k1,k2), X <--> Y
+    end)
+    @unpack X, Y, kp, kd, k1, k2 = model
+    
+    tspan = (0.0, 10.0)
+
+    u0_vals_1 = [X => 1, Y => 0]
+    u0_vals_2 = [model.X => 1, model.Y => 0]
+    u0_vals_3 = [:X => 1, :Y => 0]
+    p_vals_1 = [kp => 1.0, kd => 0.2, k1 => 1.0, k2 => 2.0]
+    p_vals_2 = [model.kp => 1.0, model.kd => 0.2, model.k1 => 1.0, model.k2 => 2.0]
+    p_vals_3 = [:kp => 1.0, :kd => 0.2, :k1 => 1.0, :k2 => 2.0]
+
+    oprob_1 = ODEProblem(model, u0_vals_1, tspan, p_vals_1)
+    oprob_2 = ODEProblem(model, u0_vals_2, tspan, p_vals_2)
+    oprob_3 = ODEProblem(model, u0_vals_3, tspan, p_vals_3)
+    sprob_1 = SDEProblem(model,u0_vals_1, tspan, p_vals_1)
+    sprob_2 = SDEProblem(model,u0_vals_2, tspan, p_vals_2)
+    sprob_3 = SDEProblem(model,u0_vals_3, tspan, p_vals_3)
+    dprob_1 = DiscreteProblem(model, u0_vals_1, tspan, p_vals_1)
+    dprob_2 = DiscreteProblem(model, u0_vals_2, tspan, p_vals_2)
+    dprob_3 = DiscreteProblem(model, u0_vals_3, tspan, p_vals_3)
+    jprob_1 = JumpProblem(model, dprob_1, Direct())
+    jprob_2 = JumpProblem(model, dprob_2, Direct())
+    jprob_3 = JumpProblem(model, dprob_3, Direct())
+    nprob_1 = NonlinearProblem(model, u0_vals_1, p_vals_1)
+    nprob_2 = NonlinearProblem(model, u0_vals_2, p_vals_2)
+    nprob_3 = NonlinearProblem(model, u0_vals_3, p_vals_3)
+    
+    @test solve(oprob_1, Tsit5()) == solve(oprob_2, Tsit5()) == solve(oprob_3, Tsit5())
+    @test solve(sprob_1, ImplicitEM(); seed=1234) == solve(sprob_2, ImplicitEM(); seed=1234) == solve(sprob_3, ImplicitEM(); seed=1234)
+    @test solve(jprob_1, SSAStepper(); seed=1234) == solve(jprob_2, SSAStepper(); seed=1234) == solve(jprob_3, SSAStepper(); seed=1234)
+    @test solve(nprob_1, NewtonRaphson()) == solve(nprob_2, NewtonRaphson()) == solve(nprob_3, NewtonRaphson())
+end
