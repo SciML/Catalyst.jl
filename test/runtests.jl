@@ -55,4 +55,7 @@ using SafeTestsets
     @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
     @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
     
+    ### Downstream/Upstream tests. ###
+    @time @safetestset "MTK Structure Indexing" begin include("meta/mtk_structure_indexing.jl") end   
+    
 end # @time
