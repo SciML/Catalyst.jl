@@ -980,7 +980,7 @@ let
         @parameters thres=1.0 dY_up
         @variables Z(t)
         @continuous_events begin
-            t - 2.5 => p ~ p + 0.2
+            [t - 2.5] => [p ~ p + 0.2]
             [X - thres, Y - X] => [X ~ X - 0.5, Z ~ Z + 0.1]
         end
         @discrete_events begin
