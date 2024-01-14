@@ -123,7 +123,8 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :differentials, :equations, :observables)
+const option_keys = (:species, :parameters, :variables, :ivs, :compounds, 
+                     :differentials, :equations, :observables, continuous_events)
 
 ### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)
@@ -361,6 +362,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Reads options.
     compound_expr, compound_species = read_compound_options(options)
+    continuous_events_expr = read_events_option(options, :continuous_events)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
@@ -434,7 +436,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
         Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, union($spssym, $varssym, $compssym),
                                               $pssym; name = $name, spatial_ivs = $sivs,
-                                              observed = $observed_eqs)
+                                              observed = $observed_eqs,
+                                              continuous_events = $continuous_events_expr)
     end
 end
 
@@ -814,6 +817,32 @@ function create_differential_expr(options, add_default_diff, used_syms)
     return diffexpr
 end
 
+# Read the events (continious or discrete) provided as options to the DSL. Returns an expression which evalutes to these.
+function read_events_option(options, event_type::Symbol)    
+    # Prepares the events, if required to, converts them to block form.
+    (event_type in [:continuous_events]) || error("Trying to read an unsupported event type.")
+    events_input = haskey(options, event_type) ? options[event_type].args[3] : :(begin end)
+    events_input = option_block_form(events_input)
+    
+    # Goes throgh the events, checks for errors, and adds them to the output vector.
+    events_expr = :([])
+    for arg in cevents_input.args
+        # Formatting error checks.
+        # NOTE: Maybe we should move these deeper into the system (rather than the DSL), throwing errors more generally?
+        if (arg.head != :call) || (arg.args[1] != :(=>)) || length(arg.args) != 3
+            error("Events should be on form `condition => affect`, separated by a `=>`. This appears not to be the case for: $(arg).")
+        end
+        if (arg.args[2] != :call) && (event_type == :continuous_events)
+            error("The condition part of continious events (the left-hand side) must be a vector. This is not the case for: $(arg).")
+        end
+        if arg.args[3] != :call
+             error("The affect part of all events (the righ-hand side) must be a vector. This is not the case for: $(arg).")
+        end
+        
+        push!(events_expr.args, arg)
+    end
+    return events_expr
+end
 
 ### Functionality for expanding function call to custom and specific functions ###
 
