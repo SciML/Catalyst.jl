@@ -1,0 +1,1 @@
+# [Spatial jump simulations](@id spatial_lattice_jump_simulations)

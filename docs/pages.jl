@@ -17,5 +17,8 @@ pages = Any["Home" => "index.md",
                                            "catalyst_applications/bifurcation_diagrams.md"],
             "Inverse Problems" => Any["inverse_problems/parameter_estimation.md",
                                       "inverse_problems/petab_ode_param_fitting.md"],
+            "Spatial Modelling" => Any["spatial_modelling/lattice_reaction_systems.md",
+                                       "inverse_problems/spatial_ode_simulations.md",
+                                       "inverse_problems/spatial_jump_simulations.md"],
             "FAQs" => "faqs.md",
             "API" => "api/catalyst_api.md"]
