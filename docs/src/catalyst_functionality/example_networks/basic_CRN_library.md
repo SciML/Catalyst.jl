@@ -179,7 +179,7 @@ jsol = solve(jprob, SSAStepper())
 jsol = solve(jprob, SSAStepper(); seed = 2091) # hide
 
 plot(osol; lw = 3, label = "Reaction rate equation (ODE)")
-plot!(jsol; lw = 3, label = "Stochastic chemical kinetics (Jump)", yguide="X", size = (800,350))
+plot!(jsol; lw = 3, label = "Stochastic chemical kinetics (Jump)", yguide = "X", size = (800,350))
 plot!(bottom_margin = 3Plots.Measures.mm, left_margin=3Plots.Measures.mm) # hide
 ```
 
