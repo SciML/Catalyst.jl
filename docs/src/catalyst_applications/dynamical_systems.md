@@ -33,7 +33,7 @@ x_grid = 0.0:0.01:5.0
 y_grid = 0.0:0.01:10.0
 grid = (x_grid, y_grid)
 avr = AttractorsViaRecurrences(ds, grid)
-basins, attractors = basins_of_attraction(avr, grid)
+basins, attractors = basins_of_attraction(avr, grid; show_progress = false)
 nothing # hide
 ```
 Here, `attractors` is a vector containing the attractors (in this case two fixed points, one at $(0.0,0.0)$ and one at $(4.5,6.0)$). Next, `basins` is a matrix of equal size to `grid`, where each value is an integer describing to which attractor's basin that state belong. 
