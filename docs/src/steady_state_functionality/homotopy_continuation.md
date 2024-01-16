@@ -11,7 +11,7 @@ integer Hill exponents). The roots of these can reliably be found through a
 
 Catalyst contains a special homotopy continuation extension that is loaded whenever HomotopyContinuation.jl is. This exports a single function, `hc_steady_states`, that can be used to find the steady states of any `ReactionSystem` structure.
 
-## Basic example
+## [Basic example](@id homotopy_continuation_basic_example)
 For this tutorial, we will use a model from Wilhelm (2009)[^1] (which
 demonstrates bistability in a small chemical reaction network). We declare the
 model and the parameter set for which we want to find the steady states:
