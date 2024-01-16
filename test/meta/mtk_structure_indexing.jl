@@ -5,6 +5,7 @@ using Test
 # Create model, problems, and solutions.
 begin
     model = complete(@reaction_network begin
+        @observables X2 ~ 2X
         (kp,kd), 0 <--> X
         (k1,k2), X <--> Y
     end)
@@ -33,9 +34,11 @@ let
     for prob in deepcopy(problems)
         # Get u values.
         @test prob[X] == prob[model.X] == prob[:X] == 1
-        @test prob[[X,Y]] == prob[[model.X,model.Y]] == prob[[:X,:Y]] == [1, 2]
-        @test prob[(X,Y)] == prob[(model.X,model.Y)] == prob[(:X,:Y)] == (1, 2)
-        @test getu(prob, X)(prob) == getu(prob, model.X)(prob) == getu(prob, :X)(prob) == 1      
+        @test prob[X2] == prob[model.X2] == prob[:X2] == 2
+        @test prob[[X2,Y]] == prob[[model.X2,model.Y]] == prob[[:X2,:Y]] == [2, 2]
+        @test prob[(X2,Y)] == prob[(model.X2,model.Y)] == prob[(:X2,:Y)] == (2, 2)
+        @test getu(prob, X)(prob) == getu(prob, model.X)(prob) == getu(prob, :X)(prob) == 1   
+        @test getu(prob, X2)(prob) == getu(prob, model.X2)(prob) == getu(prob, :X2)(prob) == 1      
 
         # Set u values.
         prob[X] = 2
@@ -101,9 +104,13 @@ let
     for integrator in init.(deepcopy(problems))
         # Get u values.
         @test integrator[X] == integrator[model.X] == integrator[:X] == 1
+        @test integrator[X2] == integrator[model.X2] == integrator[:X2] == 2
         @test integrator[[X,Y]] == integrator[[model.X,model.Y]] == integrator[[:X,:Y]] == [1, 2]
+        @test integrator[[X2,Y]] == integrator[[model.X2,model.Y]] == integrator[[:X2,:Y]] == [2, 2]
         @test integrator[(X,Y)] == integrator[(model.X,model.Y)] == integrator[(:X,:Y)] == (1, 2)   
-        @test getu(integrator, X)(integrator) == getu(integrator, model.X)(integrator) == getu(integrator, :X)(integrator) == 1         
+        @test integrator[(X2,Y)] == integrator[(model.X2,model.Y)] == integrator[(:X2,:Y)] == (2, 2)   
+        @test getu(integrator, X)(integrator) == getu(integrator, model.X)(integrator) == getu(integrator, :X)(integrator) == 1       
+        @test getu(integrator, X2)(integrator) == getu(integrator, model.X2)(integrator) == getu(integrator, :X2)(integrator) == 2         
 
         # Set u values.
         integrator[X] = 2
@@ -153,9 +160,13 @@ let
         @test Int64(sol[X][1]) == 1
         @test Int64(sol[Y][1]) == 0
         @test sol[X] == sol[model.X] == sol[:X]
+        @test sol[X2] == sol[model.X2] == sol[:X2]
         @test sol[[X,Y]] == sol[[model.X,model.Y]] == sol[[:X,:Y]]
+        @test sol[[X2,Y]] == sol[[model.X2,model.Y]] == sol[[:X2,:Y]]
         @test sol[(X,Y)] == sol[(model.X,model.Y)] == sol[(:X,:Y)]   
-        @test getu(sol, X)(sol) == getu(sol, model.X)(sol) == getu(sol, :X)(sol)          
+        @test sol[(X2,Y)] == sol[(model.X2,model.Y)] == sol[(:X2,:Y)]   
+        @test getu(sol, X)(sol) == getu(sol, model.X)(sol) == getu(sol, :X)(sol)    
+        @test getu(sol, X2)(sol) == getu(sol, model.X2)(sol) == getu(sol, :X2)(sol)          
 
         # Get p values.
         @test getp(sol, kp)(sol) == getp(sol, model.kp)(sol) == getp(sol, :kp)(sol) == 1.0
@@ -168,18 +179,27 @@ let
     for sol in deepcopy(sols[1:3])
         # Single variable.
         @test length(plot(sol; idxs = X).series_list) == 1
+        @test length(plot(sol; idxs = X2).series_list) == 1
         @test length(plot(sol; idxs = model.X).series_list) == 1
+        @test length(plot(sol; idxs = model.X2).series_list) == 1
         @test length(plot(sol; idxs = :X).series_list) == 1
+        @test length(plot(sol; idxs = :X2).series_list) == 1
 
         # As vector.
         @test length(plot(sol; idxs = [X,Y]).series_list) == 2
+        @test length(plot(sol; idxs = [X2,Y]).series_list) == 2
         @test length(plot(sol; idxs = [model.X,model.Y]).series_list) == 2
+        @test length(plot(sol; idxs = [model.X2,model.Y]).series_list) == 2
         @test length(plot(sol; idxs = [:X,:Y]).series_list) == 2
+        @test length(plot(sol; idxs = [:X2,:Y]).series_list) == 2
 
         # As tuple.
         @test length(plot(sol; idxs = (X, Y)).series_list) == 1
+        @test length(plot(sol; idxs = (X2, Y)).series_list) == 1
         @test length(plot(sol; idxs = (model.X, model.Y)).series_list) == 1
+        @test length(plot(sol; idxs = (model.X2, model.Y)).series_list) == 1
         @test length(plot(sol; idxs = (:X, :Y)).series_list) == 1
+        @test length(plot(sol; idxs = (:X2, :Y)).series_list) == 1
     end    
 end
 
