@@ -26,7 +26,7 @@ using DynamicalSystems, OrdinaryDiffEq
 ds = CoupledODEs(oprob, (alg = Tsit5(),))
 nothing # hide
 ```
-We can now compute the basins of attraction. This is done by first designating a grid designate which subspace of phase-space we wish to investigate (here, the corresponding basin of attraction is found for every point on the grid). Next, we first create a `AttractorsViaRecurrences` struct and then use that as input to the `basins_of_attraction` function.
+We can now compute the basins of attraction. This is done by first creating a grid that designates which subspace of phase-space we wish to investigate (here, the corresponding basin of attraction is found for every point on the grid). Next, we create a `AttractorsViaRecurrences` struct, that maps initial conditions to attractors, and then use that as input to the `basins_of_attraction` function.
 ```@example dynamical_systems_basins
 # We provide one grid of values for each species. These are then bundled into a tuple.
 x_grid = 0.0:0.01:5.0
