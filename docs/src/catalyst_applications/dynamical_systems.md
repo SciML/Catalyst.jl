@@ -55,7 +55,7 @@ More information on how to compute basins of attractions for ODEs using Dynamica
 
 While Lyapunov exponents can be used for other purposes, they are primarily used to characterise [*chaotic behaviours*](https://en.wikipedia.org/wiki/Chaos_theory) (where small changes in initial conditions has large effect on the resulting trajectories). Generally, an ODE exhibit chaotic behaviour if its attractor(s) have *at least one* positive Lyapunov exponent. Practically, Lyapunov exponents can be computed using DynamicalSystems.jl's `lyapunovspectrum` function. Here we will use it to investigate two models, one which exhibits chaos and one which do not.
 
-First, let us consider the [Willamowski–Rössler](https://www.degruyter.com/document/doi/10.1515/zna-1980-0308/html?lang=en) model, which is known to exhibit chaotic behaviours. 
+First, let us consider the [Willamowski–Rössler](https://www.degruyter.com/document/doi/10.1515/zna-1980-0308/html?lang=en) model, which is known to exhibit chaotic behaviour.
 ```@example dynamical_systems_lyapunov
 using Catalyst
 wr_model = @reaction_network begin
