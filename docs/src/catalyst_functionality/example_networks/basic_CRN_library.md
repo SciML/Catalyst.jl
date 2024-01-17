@@ -1,7 +1,7 @@
 # [Library of Basic Chemical Reaction Network Models](@id basic_CRN_library)
 Below we will present various simple and established chemical reaction network (CRN) models. Each model is given some brief background, implemented using the `@reaction_network` DSL, and basic simulations are performed.
 
-## Birth-death process
+## [Birth-death process](@id basic_CRN_library_bd)
 The birth-death process is one of the simplest possible CRN models. It consists of a single component ($X$) which is both produced and degraded at linear rates:
 ```@example crn_library_birth_death
 using Catalyst
@@ -47,7 +47,37 @@ jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)")
 plot(oplt, splt, jplt; lw = 3, size=(800,700), layout = (3,1))
 ```
 
-## Michaelis-Menten enzyme kinetics
+## [Two-state model](@id basic_CRN_library_two_states)
+The two-state model describes a component (here called $X$) which can exist in two different forms (here called $X₁$ and $X₂$). It switches between these forms at linear rates. First, we simulate the model using both ODEs and SDEs:
+```@example crn_library_two_states
+using Catalyst, OrdinaryDiffEq, StochasticDiffEq, Plots
+two_state_model = @reaction_network begin
+    (k1,k2), X₁ <--> X₂
+end
+
+u0 = [:X₁ => 50.0, :X₂ => 50.0]
+tspan = (0.0, 1.0)
+ps = [:k1 => 2.0, :k2 => 3.0]
+
+oprob = ODEProblem(two_state_model, u0, tspan, ps)
+osol = solve(oprob, Tsit5())
+oplt = plot(osol; title = "Reaction rate equation (ODE)")
+
+sprob = SDEProblem(two_state_model, u0, tspan, ps)
+ssol = solve(sprob, ImplicitEM())
+splt = plot(ssol; title = "Chemical Langevin equation (SDE)")
+
+plot(oplt, splt; lw = 3, size = (800,550), layout = (2,1))
+```
+What is interesting about this model is that it has a *conserved quantity*, where $X₁ + X₂$ remains constant throughout the simulation (both in deterministic and stochastic cases). We can show this by instead plotting this conserved quantity.
+```@example crn_library_two_states
+@unpack X₁, X₂ = two_state_model
+oplt = plot(osol; idxs = X₁ + X₂, title = "Reaction rate equation (ODE)")
+splt = plot(ssol; idxs = X₁ + X₂, title = "Chemical Langevin equation (SDE)")
+plot(oplt, splt; lw = 3, size = (800,550), layout = (2,1))
+```
+
+## [Michaelis-Menten enzyme kinetics](@id basic_CRN_library_mm)
 [Michaelis-Menten enzyme kinetics](https://en.wikipedia.org/wiki/Michaelis%E2%80%93Menten_kinetics) is a simple description of an enzyme ($E$) transforming a substrate ($S$) into a product ($P$). Under certain assumptions, it can be simplified to a single function (a Michaelis-Menten function) and used as a reaction rate. Here we instead present the full system model:
 ```@example crn_library_michaelis_menten
 using Catalyst
@@ -84,7 +114,7 @@ plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1))
 plot!(bottom_margin = 3Plots.Measures.mm) # hide
 ```
 
-## SIR infection model
+## [SIR infection model](@id basic_CRN_library_sir)
 The [SIR model](https://en.wikipedia.org/wiki/Compartmental_models_in_epidemiology#The_SIR_model) is the simplest model of the spread of an infectious disease. While the real system is very different from the chemical and cellular processes typically modelled with CRNs, it (and several other epidemiological systems) can be modelled using the same CRN formalism. The SIR model consists of three species: susceptible ($S$), infected ($I$), and removed ($R$) individuals, and two reaction events: infection and recovery.
 ```@example crn_library_sir
 using Catalyst
@@ -124,7 +154,7 @@ jplt3 = plot(jsol3; title = "No outbreak")
 plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1))
 ```
 
-## The Wilhelm model
+## [The Wilhelm model](@id basic_CRN_library_wilhelm)
 The Wilhelm model was introduced in [*Wilhelm (2009)*](https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-3-90) as the smallest CRN model (with constant rates) that exhibits bistability.
 ```@example crn_library_wilhelm
 using Catalyst
@@ -152,7 +182,7 @@ plot!(osol2; lw = 4, idxs = :X, label = "X(0) = 2.5", yguide = "X", size = (800,
 plot!(bottom_margin = 3Plots.Measures.mm) # hide
 ```
 
-## Simple self-activation loop
+## [Simple self-activation loop](@id basic_CRN_library_self_activation)
 The simplest self-activation loop consists of a single species (here called $X$) which activates its own production. If its production rate is modelled with a hill function with $n>1$, the system may exhibit bistability.
 ```@example crn_library_self_activation
 using Catalyst
@@ -183,7 +213,7 @@ plot!(jsol; lw = 3, label = "Stochastic chemical kinetics (Jump)", yguide = "X",
 plot!(bottom_margin = 3Plots.Measures.mm, left_margin=3Plots.Measures.mm) # hide
 ```
 
-## The Brusselator
+## [The Brusselator](@id basic_CRN_library_brusselator)
 The [Brusselator](https://en.wikipedia.org/wiki/Brusselator) is a well-known (theoretical) CRN model able to produce oscillations (its name is a portmanteau of "Brussels" and "oscillator").
 ```@example crn_library_brusselator
 using Catalyst
@@ -209,10 +239,10 @@ osol2  = solve(oprob2, Rodas5P())
 oplt1 = plot(osol1; title = "No Oscillation")
 oplt2 = plot(osol2; title = "Oscillation")
 
-plot(oplt1, oplt2; lw = 3, layout = (2,1), size = (800,600))
+plot(oplt1, oplt2; lw = 3, size = (800,600), layout = (2,1))
 ```
 
-## The repressilator
+## [The repressilator](@id basic_CRN_library_)
 The repressilator was introduced in [*Elowitz & Leibler (2000)*](https://www.nature.com/articles/35002125) as a simple system that can generate oscillations (most notably, they demonstrated this both in a model and in a synthetic in vivo implementation in *Escherichia col*). It consists of three genes, repressing each other in a cycle. Here, we will implement it using three species ($X$, $Y$, and $Z$) whose production rates are (repressing) [Hill functions](https://en.wikipedia.org/wiki/Hill_equation_(biochemistry)).
 ```@example crn_library_brusselator
 using Catalyst
@@ -250,7 +280,7 @@ splt2 = plot(ssol2; title = "Oscillation (SDE, K = 50)")
 plot(oplt1, oplt2, splt1, splt2; lw = 2, layout = (2,2), size = (800,600))
 ```
 
-## The Willamowski–Rössler model
+## [The Willamowski–Rössler model](@id basic_CRN_library_wr)
 The Willamowski–Rössler model was introduced in [*Willamowski & Rössler (1979)*](https://www.degruyter.com/document/doi/10.1515/zna-1980-0308/html?lang=en) as an example of a simple CRN model which exhibits [*chaotic behaviours*](https://en.wikipedia.org/wiki/Chaos_theory). This means that small changes in initial conditions can produce relatively large changes in the system's trajectory.
 ```@example crn_library_chaos
 using Catalyst
