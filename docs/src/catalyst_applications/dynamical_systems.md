@@ -24,13 +24,12 @@ Next, for any application of DynamicalSystems.jl, our `ODEProblem` must be conve
 ```@example dynamical_systems_basins
 using DynamicalSystems, OrdinaryDiffEq
 ds = CoupledODEs(oprob, (alg = Tsit5(),))
-nothing # hide
 ```
 We can now compute the basins of attraction. This is done by first creating a grid that designates which subspace of phase-space we wish to investigate (here, the corresponding basin of attraction is found for every point on the grid). Next, we create a `AttractorsViaRecurrences` struct, that maps initial conditions to attractors, and then use that as input to the `basins_of_attraction` function.
 ```@example dynamical_systems_basins
 # We provide one grid of values for each species. These are then bundled into a tuple.
-x_grid = 0.0:0.01:5.0
-y_grid = 0.0:0.01:10.0
+x_grid = 0.0:0.03:6.0
+y_grid = 0.0:0.03:9.0
 grid = (x_grid, y_grid)
 avr = AttractorsViaRecurrences(ds, grid)
 basins, attractors = basins_of_attraction(avr, grid; show_progress = false)
@@ -38,7 +37,7 @@ attractors
 ```
 Here, `attractors` is a dictionary that maps attractor labels (the integers) to attractors. In this case we have two fixed points, one at $(0.0,0.0)$ and one at $(4.5,6.0)$. Next, `basins` is a matrix of equal size to `grid`, where each value is an integer describing to which attractor's basin that state belongs.
 
-DynamicalSystems.jl also provide a simple interface for plotting the resulting basins. This uses [Makie.jl](https://docs.makie.org/stable/), and alternative plotting package to [Plots.jl](https://github.com/JuliaPlots/Plots.jl) (which is typically the preferred plotting package within the context of Catalyst). Generally, Makie is good at creating animations or interactive graphics (however, it is also a popular competitor to Plots.jl for normal plotting). 
+DynamicalSystems.jl also provides a simple interface for plotting the resulting basins. This uses [Makie.jl](https://docs.makie.org/stable/), an alternative plotting package to [Plots.jl](https://github.com/JuliaPlots/Plots.jl) (which is typically the preferred plotting package within the context of Catalyst). Generally, Makie is good at creating animations or interactive graphics (however, it is also a [popular competitor to Plots.jl for general-purpose plotting](https://juliapackagecomparisons.github.io/pages/plotting/)). 
 ```@example dynamical_systems_basins
 using CairoMakie
 heatmap_basins_attractors(grid, basins, attractors)
