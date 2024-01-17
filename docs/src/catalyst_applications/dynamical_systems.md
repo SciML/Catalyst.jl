@@ -118,7 +118,7 @@ Next, we compute the Lyapunov spectrum at one of the initial conditions:
 ds = CoupledODEs(oprob1, (alg = Rodas5P(autodiff=false),))
 lyapunovspectrum(ds, 100)
 ```
-Here, all Lyapunov exponents are negative, confirming that the brusselator (at this point) is non-chaotic.
+Here, all Lyapunov exponents are negative, confirming that the brusselator is non-chaotic.
 
 More details on how to compute Lyapunov exponents using DynamicalSystems.jl can be found [here](https://juliadynamics.github.io/ChaosTools.jl/stable/lyapunovs/). A full overview of tools for analysing chaotic behaviours (using the "ChaosTools.jl subpackage) can be found [here](https://juliadynamics.github.io/ChaosTools.jl/stable/).
 
