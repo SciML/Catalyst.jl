@@ -36,7 +36,7 @@ avr = AttractorsViaRecurrences(ds, grid)
 basins, attractors = basins_of_attraction(avr, grid; show_progress = false)
 nothing # hide
 ```
-Here, `attractors` is a vector containing the attractors (in this case two fixed points, one at $(0.0,0.0)$ and one at $(4.5,6.0)$). Next, `basins` is a matrix of equal size to `grid`, where each value is an integer describing to which attractor's basin that state belong. 
+Here, `attractors` is a dictionary that maps attractor labels (the integers) to attractors. In this case we have two fixed points, one at $(0.0,0.0)$ and one at $(4.5,6.0)$. Next, `basins` is a matrix of equal size to `grid`, where each value is an integer describing to which attractor's basin that state belongs.
 
 DynamicalSystems.jl also provide a simple interface for plotting the resulting basins. This uses [Makie.jl](https://docs.makie.org/stable/), and alternative plotting package to [Plots.jl](https://github.com/JuliaPlots/Plots.jl) (which is typically the preferred plotting package within the context of Catalyst). Generally, Makie is good at creating animations or interactive graphics (however, it is also a popular competitor to Plots.jl for normal plotting). 
 ```@example dynamical_systems_basins
