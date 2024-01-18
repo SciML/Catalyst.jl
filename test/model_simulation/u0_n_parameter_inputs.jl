@@ -3,8 +3,8 @@
 ### Fetch Packages and Reaction Networks ###
 
 # Fetch packages.
-using Catalyst, OrdinaryDiffEq, Random, Test
-using ModelingToolkit: get_unknowns, get_ps
+using Catalyst, OrdinaryDiffEq, JumpProcesses, Random, Test
+using ModelingToolkit: get_states, get_ps
 t = default_t()
 
 # Sets rnd number.
