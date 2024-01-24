@@ -31,10 +31,7 @@ etc).
 
 ## Breaking changes and new features
 
-**NOTE:** version 13 is a breaking release, with changes to simplify the DSL
-notation while also adding more features, changes to how chemical species are
-specified symbolically when directly building `ReactionSystem`s, and changes that
-simplify how to include ODE or algebraic constraint equation.
+**NOTE:** version 14 is a breaking release, prompted by the release of ModelingToolkit.jl version 9. This caused several breaking changes in how Catalyst models are represented and interfaced with.
 
 Breaking changes and new functionality are summarized in the
 [HISTORY.md](HISTORY.md) file.
