@@ -705,8 +705,13 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
             isempty(ivs) || error("An observable ($obs_name) was given independent variable(s). These should not be given, as they are inferred automatically.")
             isnothing(defaults) || error("An observable ($obs_name) was given a default value. This is forbidden.")
             in(obs_name, forbidden_symbols_error) && error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
-            if (obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2])
-                isnothing(metadata) || error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the obervable was also declared separately (using either @species or @variables). When this is done, metadata should instead be provided within the original @species or @variable declaration.")
+            
+            # Error checks.
+            if (obs_name in species_n_vars_declared) && is_escaped_expr(obs_eq.args[2])
+                error("An interpoalted observable have been used, which has also been explicitly delcared within the system using eitehr @species or @variables. This is not permited.")
+            end
+            if ((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2])) && !isnothing(metadata)
+                error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the obervable was also declared separately (using either @species or @variables). When this is done, metadata should instead be provided within the original @species or @variable declaration.")
             end
 
             # This bits adds the observables to the @variables vector which is given as output.
@@ -733,7 +738,8 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
 
             # Adds the observable to the list of observable names.
             # This is required for filtering away so these are not added to the ReactionSystem's species list.
-            push!(obs_syms.args, obs_name)
+            # Again, avoid this check if we have interpoalted teh variable.
+            is_escaped_expr(obs_eq.args[2]) || push!(obs_syms.args, obs_name)
         end
 
         # If nothing was added to `observed_vars`, it has to be modified not to throw an error.
