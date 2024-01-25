@@ -102,8 +102,8 @@ export Graph, savegraph, complexgraph
 
 # for creating compounds
 include("chemistry_functionality.jl")
-export @compound
-export components, iscompound, coefficients
+export @compound, @compounds
+export iscompound, components, coefficients, component_coefficients
 export balance_reaction
 
 ### Extensions ###

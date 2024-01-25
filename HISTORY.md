@@ -39,6 +39,13 @@ to assess (global) structural identifiability for all parameters and variables o
   ```
   X's value will be `1.0` in the first vertex, but `0.0` in the remaining one (the system have 25 vertexes in total). SInce th parameters `p` and `d` are part of the non-spatial reaction network, their values are tied to vertexes. However, if the `D` parameter (which governs diffusion between vertexes) is given several values, these will instead correspond to the specific edges (and transportation along those edges.)
 
+- Update how compounds are created. E.g. use
+```julia
+@variables t C(t) O(t)
+@compound CO2 ~ C + 2O
+```
+to create a compound species `CO2` that consists of `C` and 2 `O`.
+- Added documentation for chemistry related functionality (compound creation and reaction balancing).
 - Add a CatalystBifurcationKitExtension, permitting BifurcationKit's `BifurcationProblem`s to be created from Catalyst reaction networks. Example usage:
 ```julia
 using Catalyst
