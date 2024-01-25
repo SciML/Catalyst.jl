@@ -24,6 +24,9 @@ end
 # The independent variables are given as a vector (empty if none given).
 # Does not support e.g. "X [metadata=true]" (when metadata does not have a comma before).
 function find_varinfo_in_declaration(expr)
+    # Handles the $(Expr(:escape, :Y)) case:
+    is_escaped_expr(expr) && (return find_varinfo_in_declaration(expr.args[1]))
+
     # Case: X
     (expr isa Symbol) && (return expr, [], nothing, nothing)                          
     # Case: X(t)         
@@ -84,6 +87,10 @@ function insert_independent_variable(expr_in, iv_expr)
     return expr
 end
 
+# Checks if an expression is an escaped expression (e.g. on the form `$(Expr(:escape, :Y))`)
+function is_escaped_expr(expr)
+    return (expr isa Expr) && (expr.head == :escape) && (length(expr.args) == 1)
+end
 
 ### Old Stuff ###
 

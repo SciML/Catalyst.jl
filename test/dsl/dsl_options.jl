@@ -510,6 +510,57 @@ let
     @test isequal(states(rn3), states(rn4))
 end
 
+# Tests for interpolation into the observables option.
+let
+    # Interpolation into lhs.
+    @species X [description="An observable"]
+    rn1 = @reaction_network begin
+        @observables $X ~ X1 + X2
+        (k1, k2), X1 <--> X2
+    end
+    @test isequal(observed(rn1)[1].lhs, X)
+    @test getdescription(rn1.X) == "An observable"
+    @test isspecies(rn1.X)
+    @test length(states(rn1)) == 2
+
+    # Interpolation into rhs.
+    @parameters n [description="A parameter"]
+    @variables t
+    @species S(t)
+    rn2 = @reaction_network begin
+        @observables Stot ~ $S + $n*Sn
+        (kB, kD), $n*S <--> Sn
+    end
+    @unpack Stot, Sn, kD, kB = rn2
+
+    u0 = Dict([S => 5.0, Sn => 1.0])
+    ps = Dict([n => 2, kB => 1.0, kD => 1.0])
+    oprob = ODEProblem(rn2, u0, (0.0, 1.0), ps)
+
+    @test issetequal(Symbolics.get_variables(observed(rn2)[1].rhs), [S, n, Sn])
+    @test oprob[Stot] == u0[S] + ps[n]*u0[Sn]
+    @test length(states(rn2)) == 2
+end
+
+# Tests specific declaration of Observables as species/variables
+let
+    rn = @reaction_network begin
+        @species X(t)
+        @variables Y(t)
+        @observables begin
+            X ~ X + 2X2
+            Y ~ Y1 + Y2
+            Z ~ X + Y
+        end
+        (kB,kD), 2X <--> X2
+        (k1,k2), Y1 <--> Y2
+    end
+    
+    @test isspecies(rn.X)
+    @test !isspecies(rn.Y)
+    @test !isspecies(rn.Z)
+end
+
 # Tests various erroneous declarations throw errors.
 let 
     # Independent variable in @observables.
