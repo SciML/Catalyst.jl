@@ -516,7 +516,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
     function ReactionSystem(eqs, rxs, iv, sivs, states, spcs, ps, var_to_name, observed,
                             name, systems, defaults, connection_type, nps, cls, cevs, devs,
                             complete::Bool = false; checks::Bool = true)
-
+                            
         # unit checks are for ODEs and Reactions only currently
         nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
         if checks && isempty(sivs)

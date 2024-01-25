@@ -123,7 +123,7 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs, :compounds)
+const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables)
 
 ### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)
@@ -355,10 +355,11 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     option_lines = Expr[x for x in ex.args if x.head == :macrocall]
 
     # Get macro options.
+    length(unique(arg.args[1] for arg in option_lines)) < length(option_lines) && error("Some options where given multiple times.")
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
                        option_lines))
 
-    # Reads compounds options.
+    # Reads options.
     compound_expr, compound_species = read_compound_options(options)
 
     # Parses reactions, species, and parameters.
@@ -378,7 +379,11 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     end
     tiv = ivs[1]
     sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
+    all_ivs = (isnothing(sivs) ? [tiv] : [tiv; sivs.args])
 
+    # Reads more options.
+    observed_vars, observed_eqs, obs_syms = read_observed_options(options, [species_declared; variables], all_ivs)
+    
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
                                            variables)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
@@ -408,17 +413,17 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args, get_rxexprs(reaction))
     end
 
-    # Returns the rephrased expression.
     quote
         $ps
         $ivexpr
         $vars
         $sps
+        $observed_vars
         $comps
 
-        Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, union($spssym, $varssym, $compssym),
-                                              $pssym; name = $name,
-                                              spatial_ivs = $sivs)
+        Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, setdiff(union($spssym, $varssym, $compssym), $obs_syms),
+                                              $pssym; name = $name, spatial_ivs = $sivs,
+                                              observed = $observed_eqs)
     end
 end
 
@@ -680,6 +685,88 @@ function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
         throw("Malformed reaction, bad operator: $(ex.args[1]) found in stochiometry expression $ex.")
     end
     reactants
+end
+
+### DSL Options Handling ###
+# Most options handled in previous sections, when code re-organised, these should ideally be moved to the same place.
+
+# Reads the observables options. Outputs an expression ofr creating the obervable variables, and a vector of observable equations.
+function read_observed_options(options, species_n_vars_declared, ivs_sorted)
+    if haskey(options, :observables)
+        # Gets list of observable equations and prepares variable declaration expression.
+        # (`options[:observables]` inlucdes `@observables`, `.args[3]` removes this part)
+        observed_eqs = make_observed_eqs(options[:observables].args[3])
+        observed_vars = Expr(:block, :(@variables))
+        obs_syms = :([])
+        
+        for (idx, obs_eq) in enumerate(observed_eqs.args)
+            # Extract the observable, checks errors, and continues the loop if the observable has been declared.        
+            obs_name, ivs, defaults, metadata = find_varinfo_in_declaration(obs_eq.args[2])
+            isempty(ivs) || error("An observable ($obs_name) was given independent variable(s). These should not be given, as they are inferred automatically.")
+            isnothing(defaults) || error("An observable ($obs_name) was given a default value. This is forbidden.")
+            in(obs_name, forbidden_symbols_error) && error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
+            
+            # Error checks.
+            if (obs_name in species_n_vars_declared) && is_escaped_expr(obs_eq.args[2])
+                error("An interpoalted observable have been used, which has also been explicitly delcared within the system using eitehr @species or @variables. This is not permited.")
+            end
+            if ((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2])) && !isnothing(metadata)
+                error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the obervable was also declared separately (using either @species or @variables). When this is done, metadata should instead be provided within the original @species or @variable declaration.")
+            end
+
+            # This bits adds the observables to the @variables vector which is given as output.
+            # For Observables that have already been declared using @species/@variables,
+            # or are interpolated, this parts should not be carried out.
+            if !((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2]))
+                # Appends (..) to the observable (which is later replaced with the extracted ivs).
+                # Adds the observable to the first line of the output expression (starting with `@variables`).
+                    obs_expr = insert_independent_variable(obs_eq.args[2], :(..))
+                    push!(observed_vars.args[1].args, obs_expr)
+                
+                # Adds a line to the `observed_vars` expression, setting the ivs for this observable.
+                # Cannot extract directly using e.g. "getfield.(dependants_structs, :reactant)" because 
+                # then we get something like :([:X1, :X2]), rather than :([X1, X2]).
+                dep_var_expr = :(filter(!MT.isparameter, Symbolics.get_variables($(obs_eq.args[3]))))
+                ivs_get_expr = :(unique(reduce(vcat,[arguments(MT.unwrap(dep)) for dep in $dep_var_expr])))    
+                ivs_get_expr_sorted = :(sort($(ivs_get_expr); by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $ivs_sorted)))
+                push!(observed_vars.args, :($obs_name = $(obs_name)($(ivs_get_expr_sorted)...)))
+            end
+
+            # In case metadata was given, this must be cleared from `observed_eqs`.
+            # For interpolated observables (I.e. $X ~ ...) this should and cannot be done.
+            is_escaped_expr(obs_eq.args[2]) || (observed_eqs.args[idx].args[2] = obs_name)
+
+            # Adds the observable to the list of observable names.
+            # This is required for filtering away so these are not added to the ReactionSystem's species list.
+            # Again, avoid this check if we have interpoalted teh variable.
+            is_escaped_expr(obs_eq.args[2]) || push!(obs_syms.args, obs_name)
+        end
+
+        # If nothing was added to `observed_vars`, it has to be modified not to throw an error.
+        (length(observed_vars.args) == 1) && (observed_vars = :())
+    else  
+        # If option is not used, return empty expression and vector.
+        observed_vars = :()
+        observed_eqs = :([])
+        obs_syms = :([])
+    end
+    return observed_vars, observed_eqs, obs_syms
+end
+
+# From the input to the @observables options, creates a vector containing one equation for each observable.
+# Checks separate cases for "@obervables O ~ ..." and "@obervables begin ... end". Other cases errors.
+function make_observed_eqs(observables_expr)
+    if observables_expr.head == :call
+        return :([$(observables_expr)])
+    elseif observables_expr.head == :block
+        observed_eqs = :([])
+        for arg in observables_expr.args
+            push!(observed_eqs.args, arg)
+        end
+        return observed_eqs
+    else
+        error("Malformed observables option usage: $(observables_expr).")
+    end 
 end
 
 ### Functionality for expanding function call to custom and specific functions ###
