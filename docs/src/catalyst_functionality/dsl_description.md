@@ -618,7 +618,7 @@ end
 
 Finally, some general rules for creating observables:
 - Observables can depend on any species, parameters, or variables, but not on other observables.
-- All observables components must be declared somewhere (i.e., they cannot only appear as a part of the observables formula).
+- All observables components appearing on the right side of the `~` must be declared somewhere (i.e., they cannot only appear as a part of the observables formula).
 - Only a single `@observables` option block can be used in each `@reaction_network` call.
 - The left-hand side of the observables expression must be a single symbol, indicating the observable's name.
 - Metadata can, however, be provided, e.g through `@observables (Xtot, [description="Total amount of X"]) ~ X + XY`.
