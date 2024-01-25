@@ -191,8 +191,6 @@ end
 
 ### Reaction Balancing Functionality ###
 
-### Reaction Balancing Functionality ###
-
 # Reaction balancing error.
 const COMPOUND_OF_COMPOUND_ERROR = ErrorException("Reaction balancing does not currently work for reactions involving compounds of compounds.")
 
