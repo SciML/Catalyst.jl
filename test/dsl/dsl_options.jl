@@ -512,7 +512,7 @@ end
 
 # Tests various erroneous declarations throw errors.
 let 
-    # Independent variable in @compounds.
+    # Independent variable in @observables.
     @test_throws Exception @eval @reaction_network begin
         @observables X(t) ~ X1 + X2
         k, 0 --> X1 + X2
