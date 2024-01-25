@@ -527,7 +527,7 @@ let
         (p,d), 0 <--> X1 + X2
     end
 
-    # Multiple @compounds options
+    # Multiple @observables options
     @test_throws Exception @eval @reaction_network begin
         @observables X ~ X1 + X2
         @observables Y ~ Y1 + Y2
