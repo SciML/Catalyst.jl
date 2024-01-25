@@ -112,6 +112,10 @@ export balance_reaction
 function hc_steady_states end
 export hc_steady_states
 
+# StructuralIdentifiability
+function make_si_ode end
+export make_si_ode
+
 ### Spatial Reaction Networks ###
 
 # spatial reactions
