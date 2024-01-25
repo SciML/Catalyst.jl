@@ -705,7 +705,7 @@ function read_observed_options(options, species_declared, ivs_sorted)
             isnothing(defaults) || error("An observable ($obs_name) was given a default value. This is forbidden.")
             in(obs_name, forbidden_symbols_error) && error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
             if (obs_name in species_declared) 
-                isnothing(metadata) || error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the obervable was also declared separately (using either @species or @variables). When this is done, metadata cannot be provided within the @observables declaration.")
+                isnothing(metadata) || error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the obervable was also declared separately (using either @species or @variables). When this is done, metadata should instead be provided within the original @species or @variable declaration.")
                 continue
             end
 
