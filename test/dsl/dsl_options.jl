@@ -622,4 +622,12 @@ let
         @observables X ~ X1 + X2
         k, 0 --> X1
     end
+
+    # Interpolation and explicit declaration of an observable.
+    @variables t X(t)
+    @test_throws Exception @eval @reaction_network begin
+        @variables X(t)
+        @observables $X ~ X1 + X2
+        (k1,k2), X1 <--> X2
+    end
 end
