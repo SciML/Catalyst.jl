@@ -285,7 +285,7 @@ where here `t` always denotes Catalyst's time variable. Please note that many
 user-defined functions can be called directly, but others will require
 registration with Symbolics.jl ([see the faq](@ref user_functions)).
 
-## Explicit specification of network species and parameters
+## [Explicit specification of network species and parameters](@id dsl_description_explicit_species)
 Recall that the `@reaction_network` macro automatically designates symbols used
 in the macro as either parameters or species, with symbols that appear as a
 substrate or product being species, and all other symbols becoming parameters
@@ -410,6 +410,74 @@ p = [:p => 2.0, :d => .1]   # we change p to 2.0
 oprob = ODEProblem(rn, u0, tspan, p)
 sol = solve(oprob)
 plot(sol)
+```
+
+## Constant/fixed species
+It is possible to fix the concentration of a species in a reaction. Without fixing
+a species, a reaction could look like
+```@example tut2
+rn = @reaction_network begin
+    k, X + Y --> 0
+end
+```
+
+```@example tut2
+ode_sys = convert(ODESystem, rn)
+```
+
+```@example tut2
+equations(ode_sys)
+```
+
+Fixing a species could either be achieved by modifying the reaction specification
+and specifying constant species explicitly as species as described
+[above](@ref dsl_description_explicit_species), i.e.,
+```@example tut2
+rn = @reaction_network begin
+    @species X(t)
+    k * X, Y --> 0
+end
+```
+
+```@example tut2
+ode_sys = convert(ODESystem, rn)
+```
+
+```@example tut2
+equations(ode_sys)
+```
+
+The species can of course also just be used as parameter - using the same modification
+of the reaction, i.e.,
+```@example tut2
+rn = @reaction_network begin
+    k * X, Y --> 0
+end
+```
+
+```@example tut2
+ode_sys = convert(ODESystem, rn)
+```
+
+```@example tut2
+equations(ode_sys)
+```
+
+The same result can also be achieved by declaring a species as fixed/constant
+without having to change the reaction itself, i.e.,
+```@example tut2
+rn = @reaction_network begin
+    @parameters X [isconstantspecies = true]
+    k, X + Y --> 0
+end
+```
+
+```@example tut2
+ode_sys = convert(ODESystem, rn)
+```
+
+```@example tut2
+equations(ode_sys)
 ```
 
 ## [Setting initial conditions that depend on parameters](@id dsl_description_parametric_initial_conditions)
