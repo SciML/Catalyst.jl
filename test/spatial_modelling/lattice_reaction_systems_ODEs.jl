@@ -17,8 +17,8 @@ t = default_t()
 ### Tests Simulations Don't Error ###
 for grid in [small_2d_grid, short_path, small_directed_cycle, 
              small_1d_cartesian_grid, small_2d_cartesian_grid, small_3d_cartesian_grid,
-             small_1d_regular_grid, small_2d_regular_grid, small_3d_regular_grid,
-             random_2d_regular_grid]
+             small_1d_masked_grid, small_2d_masked_grid, small_3d_masked_grid,
+             random_2d_masked_grid]
     # Non-stiff case
     for srs in [Vector{TransportReaction}(), SIR_srs_1, SIR_srs_2]
         lrs = LatticeReactionSystem(SIR_system, srs, grid)
@@ -34,8 +34,6 @@ for grid in [small_2d_grid, short_path, small_directed_cycle,
             :I => 50 * rand_v_vals(lrs.lattice),
             :R => 50 * rand_v_vals(lrs.lattice),
         ]
-        u0_5 = make_u0_matrix(u0_3, vertices(lrs.lattice),
-                              map(s -> Symbol(s.f), species(lrs.rs)))
         for u0 in [u0_1, u0_2, u0_3, u0_4, u0_5]
             p1 = [:α => 0.1 / 1000, :β => 0.01]
             p2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lrs.lattice)]
@@ -43,13 +41,11 @@ for grid in [small_2d_grid, short_path, small_directed_cycle,
                 :α => 0.1 / 2000 * rand_v_vals(lrs.lattice),
                 :β => 0.02 * rand_v_vals(lrs.lattice),
             ]
-            p4 = make_u0_matrix(p1, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
             for pV in [p1, p2, p3, p4]
                 pE_1 = map(sp -> sp => 0.01, spatial_param_syms(lrs))
                 pE_2 = map(sp -> sp => 0.01, spatial_param_syms(lrs))
                 pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.01),
                            spatial_param_syms(lrs))
-                pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), spatial_param_syms(lrs))
                 for pE in [pE_1, pE_2, pE_3, pE_4]
                     oprob = ODEProblem(lrs, u0, (0.0, 500.0), (pV, pE))
                     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
@@ -67,8 +63,6 @@ for grid in [small_2d_grid, short_path, small_directed_cycle,
         u0_1 = [:X => 1.0, :Y => 20.0]
         u0_2 = [:X => rand_v_vals(lrs.lattice, 10.0), :Y => 2.0]
         u0_3 = [:X => rand_v_vals(lrs.lattice, 20), :Y => rand_v_vals(lrs.lattice, 10)]
-        u0_4 = make_u0_matrix(u0_3, vertices(lrs.lattice),
-                              map(s -> Symbol(s.f), species(lrs.rs)))
         for u0 in [u0_1, u0_2, u0_3, u0_4]
             p1 = [:A => 1.0, :B => 4.0]
             p2 = [:A => 0.5 .+ rand_v_vals(lrs.lattice, 0.5), :B => 4.0]
@@ -76,13 +70,11 @@ for grid in [small_2d_grid, short_path, small_directed_cycle,
                 :A => 0.5 .+ rand_v_vals(lrs.lattice, 0.5),
                 :B => 4.0 .+ rand_v_vals(lrs.lattice, 1.0),
             ]
-            p4 = make_u0_matrix(p2, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
             for pV in [p1, p2, p3, p4]
                 pE_1 = map(sp -> sp => 0.2, spatial_param_syms(lrs))
                 pE_2 = map(sp -> sp => rand(rng), spatial_param_syms(lrs))
                 pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.2),
                            spatial_param_syms(lrs))
-                pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), spatial_param_syms(lrs))
                 for pE in [pE_1, pE_2, pE_3, pE_4]
                     oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE))
                     @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
@@ -270,6 +262,98 @@ let
     ss_1 = solve(ODEProblem(lrs_1, u0, (0.0, 500.0), (pV, pE_1)), Tsit5()).u[end]
     ss_2 = solve(ODEProblem(lrs_2, u0, (0.0, 500.0), (pV, pE_2)), Tsit5()).u[end]
     @test all(isapprox.(ss_1, ss_2))
+end
+
+### Test Grid Types ###
+
+# Tests that identical lattices (using different types of lattices) give identical results.
+let 
+    # 1d lattices.
+    lrs1_cartesian = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_1d_cartesian_grid)
+    lrs1_masked = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_1d_masked_grid)
+    lrs1_graph = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_1d_graph_grid)
+
+    oprob1_cartesian = ODEProblem(lrs1_cartesian, sigmaB_u0, (0.0,10.0), sigmaB_p)
+    oprob1_masked = ODEProblem(lrs1_masked, sigmaB_u0, (0.0,10.0), sigmaB_p)
+    oprob1_graph = ODEProblem(lrs1_graph, sigmaB_u0, (0.0,10.0), sigmaB_p)
+    @test solve(oprob1_cartesian, QNDF()) == solve(oprob1_masked, QNDF()) == solve(oprob1_graph, QNDF())
+
+    # 2d lattices.
+    lrs2_cartesian = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_2d_cartesian_grid)
+    lrs2_masked = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_2d_masked_grid)
+    lrs2_graph = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_2d_graph_grid)
+
+    oprob2_cartesian = ODEProblem(lrs2_cartesian, sigmaB_u0, (0.0,10.0), sigmaB_p)
+    oprob2_masked = ODEProblem(lrs2_masked, sigmaB_u0, (0.0,10.0), sigmaB_p)
+    oprob2_graph = ODEProblem(lrs2_graph, sigmaB_u0, (0.0,10.0), sigmaB_p)
+    @test solve(oprob2_cartesian, QNDF()) == solve(oprob2_masked, QNDF()) == solve(oprob2_graph, QNDF())
+
+    # 3d lattices.
+    lrs3_cartesian = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_3d_cartesian_grid)
+    lrs3_masked = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_3d_masked_grid)
+    lrs3_graph = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_3d_graph_grid)
+
+    oprob3_cartesian = ODEProblem(lrs3_cartesian, sigmaB_u0, (0.0,10.0), sigmaB_p)
+    oprob3_masked = ODEProblem(lrs3_masked, sigmaB_u0, (0.0,10.0), sigmaB_p)
+    oprob3_graph = ODEProblem(lrs3_graph, sigmaB_u0, (0.0,10.0), sigmaB_p)
+    @test solve(oprob3_cartesian, QNDF()) == solve(oprob3_masked, QNDF()) == solve(oprob3_graph, QNDF())
+end
+
+# Tests that input parameter and u0 values can be given using different types of input for 2d lattices.
+# Tries both for cartesian and masked (where all vertexes are `true`). 
+let
+    for lattice in [CartesianGrid(3,4), fill(true, 3, 4)]
+        lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, lattice)
+
+        # Initial condition values.
+        S_vals_vec = [100, 200, 300, 100, 100, 100, 200, 200, 200, 300, 300, 300]
+        S_vals_mat = [100, 200, 300; 100, 100, 100; 200, 200, 200; 300, 300, 300]
+        SIR_u0_vec = [:S => S_vals_vec, :I => 1.0, :R => 0.0]
+        SIR_u0_mat = [:S => S_vals_mat, :I => 1.0, :R => 0.0]
+
+        # Parameter values.
+        β_vals_vec = [0.01, 0.02, 0.03, 0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.03, 0.03, 0.03]
+        β_vals_mat = [0.01 0.02 0.03; 0.01 0.01 0.02; 0.02 0.02 0.02; 0.03 0.03 0.03]
+        SIR_p_vec = [:α => 0.1 / 1000, :β => β_vals_vec]
+        SIR_p_mat = [:α => 0.1 / 1000, :β => β_vals_mat]
+
+        sol1 = solve(ODEProblem(lrs, SIR_u0_vec, (0.0, 10.0), SIR_p_vec))
+        sol2 = solve(ODEProblem(lrs, SIR_u0_mat, (0.0, 10.0), SIR_p_vec))
+        sol3 = solve(ODEProblem(lrs, SIR_u0_vec, (0.0, 10.0), SIR_p_mat))
+        sol4 = solve(ODEProblem(lrs, SIR_u0_mat, (0.0, 10.0), SIR_p_mat))
+
+        @test sol1 == sol2 == sol3 = sol4
+    end
+end
+
+# Tests that input parameter and u0 values can be given using different types of input for 2d masked grid.
+# Tries when several of the mask values are `false`.
+let
+    lattice = [true true false; true false false; true true true; false true true]
+    lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, lattice)
+
+    # Initial condition values. 999 is used for empty points.
+    S_vals_vec = [100, 200, 100, 200, 200, 200, 300, 300]
+    S_vals_mat = [100, 200, 999; 100, 999, 999; 200, 200, 200; 999, 300, 300]
+    S_vals_sparse_mat = sparse(S_vals_mat .* lattice)
+    SIR_u0_vec = [:S => S_vals_vec, :I => 1.0, :R => 0.0]
+    SIR_u0_mat = [:S => S_vals_mat, :I => 1.0, :R => 0.0]
+    SIR_u0_sparse_mat = [:S => S_vals_sparse_mat, :I => 1.0, :R => 0.0]
+
+    # Parameter values. 9.99 is used for empty points. 
+    β_vals_vec = [0.01, 0.02, 0.03, 0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.03, 0.03, 0.03]
+    β_vals_mat = [0.01 0.02 9.99; 0.01 9.99 9.99; 0.02 0.02 0.02; 9.99 0.03 0.03]
+    β_vals_sparse_mat = sparse(β_vals_mat .* lattice)
+    SIR_p_vec = [:α => 0.1 / 1000, :β => β_vals_vec]
+    SIR_p_mat = [:α => 0.1 / 1000, :β => β_vals_mat]
+    SIR_p_sparse_mat = [:α => 0.1 / 1000, :β => β_vals_sparse_mat]
+
+    sol = solve(ODEProblem(lrs, SIR_u0_vec, (0.0, 10.0), SIR_p_vec))
+    for u0 in [SIR_u0_vec, SIR_u0_mat, SIR_u0_sparse_mat]
+        for p in [SIR_p_vec, SIR_p_mat, SIR_p_sparse_mat]
+            @test sol == solve(ODEProblem(lrs, u0, (0.0, 10.0), p))
+        end
+    end
 end
 
 ### Test Transport Reaction Types ###

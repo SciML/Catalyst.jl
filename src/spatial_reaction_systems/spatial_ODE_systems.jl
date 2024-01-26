@@ -24,13 +24,13 @@ struct LatticeTransportODEf{Q,R,S,T}
     """
     v_ps_idx_types::Vector{Bool}
     """
-    A vector of pairs, with a value for each species with transportation. 
+    A vector of sparse, with a value for each species with transportation. 
     The first value is the species index (in the species(::ReactionSystem) vector), 
     and the second is a vector with its transport rate values. 
     If the transport rate is uniform (across all edges), that value is the only value in the vector. 
     Else, there is one value for each edge in the lattice.
     """
-    transport_rates::Vector{Pair{Int64, Vector{R}}}
+    transport_rates::Vector{SparseMatrixCSC{R, Int64}}
     """
     A matrix, NxM, where N is the number of species with transportation and M the number of vertexes. 
     Each value is the total rate at which that species leaves that vertex 
@@ -59,7 +59,7 @@ struct LatticeTransportODEf{Q,R,S,T}
         work_vert_ps = zeros(lrs.num_verts)
         # 1 if ps are constant across the graph, 0 else.
         v_ps_idx_types = map(vp -> length(vp) == 1, vert_ps)
-        eds = edges(lrs.lattice)                  
+        eds = lrs.edge_iterator               
         new{Q,R,typeof(eds),T}(ofunc, lrs.num_verts, lrs.num_species, vert_ps, work_vert_ps, 
                                v_ps_idx_types, transport_rates, leaving_rates, eds, edge_ps)
     end
@@ -125,16 +125,15 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     # Converts potential symmaps to varmaps
     # Vertex and edge parameters may be given in a tuple, or in a common vector, making parameter case complicated.
     u0_in = symmap_to_varmap(lrs, u0_in)
-    p_in = (p_in isa Tuple{<:Any,<:Any}) ? 
-            (symmap_to_varmap(lrs, p_in[1]),symmap_to_varmap(lrs, p_in[2])) :
-            symmap_to_varmap(lrs, p_in)    
+    p_in = symmap_to_varmap(lrs, p_in)    
 
     # Converts u0 and p to their internal forms.
     # u0 is [spec 1 at vert 1, spec 2 at vert 1, ..., spec 1 at vert 2, ...].
     u0 = lattice_process_u0(u0_in, species(lrs), lrs.num_verts)                                   
-    # Both vert_ps and edge_ps becomes vectors of vectors. Each have 1 element for each parameter. 
-    # These elements are length 1 vectors (if the parameter is uniform), 
-    # or length num_verts/nE, with unique values for each vertex/edge (for vert_ps/edge_ps, respectively).
+    # Each parameter value in vert_ps is a vector (with one value for each parameter).
+    # edge_ps becomes sparse matrix. Here, index (i,j) is its value in the edge from vertex i to vertex j.
+    # Uniform vertex/edge parameters stores only a single value (in a length 1 vector, or size 1x1 sparse matrix).
+    # This is the parameters single value.
     vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs), lrs)   
 
     # Creates ODEProblem.
@@ -261,25 +260,25 @@ end
 function (f_func::LatticeTransportODEf)(du, u, p, t)
     # Updates for non-spatial reactions.
     for vert_i in 1:(f_func.num_verts)
-        # gets the indices of species at vertex i
+        # Gets the indices of species at vertex i.
         idxs = get_indexes(vert_i, f_func.num_species)
         
-        # vector of vertex ps at vert_i
-        vert_i_ps = view_vert_ps_vector!(f_func.work_vert_ps, p, vert_i, enumerate(f_func.v_ps_idx_types))
+        # Vector of vertex ps at vert_i.
+        vert_i_ps = view_vert_ps_vector!(f_func, p, vert_i)
         
-        # evaluate reaction contributions to du at vert_i
+        # Evaluate reaction contributions to du at vert_i.
         f_func.ofunc((@view du[idxs]),  (@view u[idxs]), vert_i_ps, t)
     end
 
-    # s_idx is species index among transport species, s is index among all species
-    # rates are the species' transport rates
+    # s_idx is species index among transport species, s is index among all species.
+    # rates are the species' transport rates.
     for (s_idx, (s, rates)) in enumerate(f_func.transport_rates)  
         # Rate for leaving vert_i
         for vert_i in 1:(f_func.num_verts)                                 
             idx = get_index(vert_i, s, f_func.num_species)
             du[idx] -= f_func.leaving_rates[s_idx, vert_i] * u[idx]
         end
-        # Add rates for entering a given vertex via an incoming edge
+        # Add rates for entering a given vertex via an incoming edge.
         for (e_idx, e) in enumerate(f_func.edges)
             idx_dst = get_index(e.dst, s, f_func.num_species)
             idx_src = get_index(e.src, s, f_func.num_species)
@@ -292,10 +291,10 @@ end
 function (jac_func::LatticeTransportODEjac)(J, u, p, t)
     J .= 0.0 
 
-    # Update the Jacobian from reaction terms
+    # Update the Jacobian from reaction terms.
     for vert_i in 1:(jac_func.num_verts)
         idxs = get_indexes(vert_i, jac_func.num_species)
-        vert_ps = view_vert_ps_vector!(jac_func.work_vert_ps, p, vert_i, enumerate(jac_func.v_ps_idx_types))
+        vert_ps = view_vert_ps_vector!(jac_func, p, vert_i)
         jac_func.ofunc.jac((@view J[idxs, idxs]), (@view u[idxs]), vert_ps, t)
     end
 

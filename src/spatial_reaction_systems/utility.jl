@@ -289,6 +289,10 @@ function view_vert_ps_vector!(work_vert_ps, vert_ps, comp, enumerated_vert_ps_id
     end
     return work_vert_ps
 end
+# Input is always either a LatticeTransportODEf or LatticeTransportODEjac function (which fields we then pass on).
+function view_vert_ps_vector!(lt_ode_func, vert_ps, comp)
+    return view_vert_ps_vector!(lt_ode_func.work_vert_ps, vert_ps, comp, enumerate(lt_ode_func.v_ps_idx_types))
+end
 
 # Expands a u0/p information stored in Vector{Vector{}} for to Matrix form
 # (currently only used in Spatial Jump systems).

@@ -12,11 +12,6 @@ rand_v_vals(grid) = rand(rng, nv(grid))
 rand_v_vals(grid, x::Number) = rand_v_vals(grid) * x
 rand_e_vals(grid) = rand(rng, ne(grid))
 rand_e_vals(grid, x::Number) = rand_e_vals(grid) * x
-function make_u0_matrix(value_map, vals, symbols)
-    (length(symbols) == 0) && (return zeros(0, length(vals)))
-    d = Dict(value_map)
-    return [(d[s] isa Vector) ? d[s][v] : d[s] for s in symbols, v in 1:length(vals)]
-end
 
 # Gets a symbol list of spatial parameters.
 function spatial_param_syms(lrs::LatticeReactionSystem)
@@ -191,14 +186,19 @@ random_2d_masked_grid = rand([true, true, true, false], 10, 10)
 random_3d_masked_grid = rand([true, true, true, false], 10, 10, 10)
 
 # Graph - grids.
-very_small_2d_grid = Graphs.grid([2, 2])
-small_2d_grid = Graphs.grid([5, 5])
-medium_2d_grid = Graphs.grid([20, 20])
-large_2d_grid = Graphs.grid([100, 100])
+very_small_2d_graph_grid = Graphs.grid([2, 2])
 
-small_3d_grid = Graphs.grid([5, 5, 5])
-medium_3d_grid = Graphs.grid([20, 20, 20])
-large_3d_grid = Graphs.grid([100, 100, 100])
+small_1d_graph_grid = path_graph(5)
+small_2d_graph_grid = Graphs.grid([5,5])
+small_3d_graph_grid = Graphs.grid([5,5,5])
+
+medium_1d_graph_grid = path_graph(20)
+medium_2d_graph_grid = Graphs.grid([20,20])
+medium_3d_graph_grid = Graphs.grid([20,20,20])
+
+large_1d_graph_grid = path_graph(100)
+large_2d_graph_grid = Graphs.grid([100,100])
+large_3d_graph_grid = Graphs.grid([100,100,100])
 
 # Graph - paths.
 short_path = path_graph(100)
