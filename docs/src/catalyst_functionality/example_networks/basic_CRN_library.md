@@ -154,8 +154,8 @@ jplt3 = plot(jsol3; title = "No outbreak")
 plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1))
 ```
 
-## [Chemical cross coupling](@id basic_CRN_library_cc)
-In chemistry, [cross-coupling](https://en.wikipedia.org/wiki/Cross-coupling_reaction) is when a catalyst combines two substrates to form a product. In this example, the catalyst ($C$) first binds one substrate ($S₁$) to form an intermediary complex ($S₁Cat$). Next, the complex binds the second substrate ($S₂$) to form another complex ($CP$). Finally, the catalyst releases the now-formed product ($P$). This system is an extended version of the M[Michaelis-Menten system presented earlier](@ref basic_CRN_library_mm).
+## [Chemical cross-coupling](@id basic_CRN_library_cc)
+In chemistry, [cross-coupling](https://en.wikipedia.org/wiki/Cross-coupling_reaction) is when a catalyst combines two substrates to form a product. In this example, the catalyst ($C$) first binds one substrate ($S₁$) to form an intermediary complex ($S₁C$). Next, the complex binds the second substrate ($S₂$) to form another complex ($CP$). Finally, the catalyst releases the now-formed product ($P$). This system is an extended version of the[Michaelis-Menten system presented earlier](@ref basic_CRN_library_mm).
 ```@example crn_library_cc
 using Catalyst
 cc_system = @reaction_network begin
@@ -164,16 +164,16 @@ cc_system = @reaction_network begin
     k₃, CP --> C + P
 end
 ```
-Below, we perform a simple deterministic ODE simulation of teh system. Next, we plot both:
-- The concentration of the catalyst and the intermediaries.
+Below, we perform a simple deterministic ODE simulation of the system. Next, we plot both:
 - The concentration of the substrates and the product.
+- The concentration of the catalyst and the intermediaries.
 
 In two separate plots.
 ```@example crn_library_cc
 using OrdinaryDiffEq, Plots
 u0 = [:S₁ => 1.0, :C => 0.05, :S₂ => 1.2, :S₁C => 0.0, :CP => 0.0, :P => 0.0]
 tspan = (0., 15.)
-ps = [:k₁ => 10.0, :k₂ => 5.0, :k₃ => 100.0] 
+ps = [:k₁ => 5.0, :k₂ => 5.0, :k₃ => 100.0] 
 
 # solve ODEs
 oprob = ODEProblem(cc_system, u0, tspan, ps)
