@@ -19,7 +19,7 @@ include("../spatial_test_networks.jl")
 
 # Small grid, small, non-stiff, system.
 let
-    lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, small_2d_grid)
+    lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, small_2d_graph_grid)
     u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs.lattice), :R => 0.0]
     pV = SIR_p
     pE = [:dS => 0.01, :dI => 0.01, :dR => 0.01]
@@ -49,7 +49,7 @@ end
 
 # Small grid, small, stiff, system.
 let
-    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, small_2d_grid)
+    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, small_2d_graph_grid)
     u0 = [:X => rand_v_vals(lrs.lattice, 10), :Y => rand_v_vals(lrs.lattice, 10)]
     pV = brusselator_p
     pE = [:dX => 0.2]
@@ -80,7 +80,7 @@ end
 # Small grid, mid-sized, non-stiff, system.
 let
     lrs = LatticeReactionSystem(CuH_Amination_system, CuH_Amination_srs_2,
-                                small_2d_grid)
+                                small_2d_graph_grid)
     u0 = [
         :CuoAc => 0.005 .+ rand_v_vals(lrs.lattice, 0.005),
         :Ligand => 0.005 .+ rand_v_vals(lrs.lattice, 0.005),
@@ -141,7 +141,7 @@ end
 
 # Small grid, mid-sized, stiff, system.
 let
-    lrs = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_2d_grid)
+    lrs = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_2d_graph_grid)
     u0 = [
         :w => 0.5 .+ rand_v_vals(lrs.lattice, 0.5),
         :w2 => 0.5 .+ rand_v_vals(lrs.lattice, 0.5),
