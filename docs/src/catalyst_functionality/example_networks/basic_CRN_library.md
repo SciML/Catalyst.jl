@@ -154,6 +154,36 @@ jplt3 = plot(jsol3; title = "No outbreak")
 plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1))
 ```
 
+## [Chemical cross coupling](@id basic_CRN_library_cc)
+In chemistry, [cross-coupling](https://en.wikipedia.org/wiki/Cross-coupling_reaction) is when a catalyst combines two substrates to form a product. In this example, the catalyst ($C$) first binds one substrate ($S₁$) to form an intermediary complex ($S₁Cat$). Next, the complex binds the second substrate ($S₂$) to form another complex ($CP$). Finally, the catalyst releases the now-formed product ($P$). This system is an extended version of the M[Michaelis-Menten system presented earlier](@ref basic_CRN_library_mm).
+```@example crn_library_cc
+using Catalyst
+cc_system = @reaction_network begin
+    k₁, S₁ + C --> S₁C
+    k₂, S₁C + S₂ --> CP
+    k₃, CP --> C + P
+end
+```
+Below, we perform a simple deterministic ODE simulation of teh system. Next, we plot both:
+- The concentration of the catalyst and the intermediaries.
+- The concentration of the substrates and the product.
+
+In two separate plots.
+```@example crn_library_cc
+using OrdinaryDiffEq, Plots
+u0 = [:S₁ => 1.0, :C => 0.05, :S₂ => 1.2, :S₁C => 0.0, :CP => 0.0, :P => 0.0]
+tspan = (0., 15.)
+ps = [:k₁ => 10.0, :k₂ => 5.0, :k₃ => 100.0] 
+
+# solve ODEs
+oprob = ODEProblem(cc_system, u0, tspan, ps)
+osol  = solve(oprob, Tsit5())
+
+plt1 = plot(osol; idxs = [:S₁, :S₂, :P], title = "Substrate and product dynamics")
+plt2 = plot(osol; idxs = [:C, :S₁C, :CP], title = "Catalyst and intermediaries dynamics")
+plot(plt1, plt2; lw = 3, size = (800,600), layout = (2,1))
+```
+
 ## [The Wilhelm model](@id basic_CRN_library_wilhelm)
 The Wilhelm model was introduced in [*Wilhelm (2009)*](https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-3-90) as the smallest CRN model (with constant rates) that exhibits bistability.
 ```@example crn_library_wilhelm
