@@ -413,7 +413,7 @@ plot(sol)
 ```
 
 ## Constant/fixed species
-It is possible to fix the concentration of a species in a reaction. Without fixing
+It is possible to fix the amount of a species in a reaction. Without fixing
 a species, a reaction could look like
 ```@example tut2
 rn = @reaction_network begin
