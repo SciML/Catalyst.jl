@@ -177,18 +177,18 @@ large_1d_cartesian_grid = CartesianGrid(100)
 large_2d_cartesian_grid = CartesianGrid((100,100))
 large_3d_cartesian_grid = CartesianGrid((100,100,100))
 
-# Regular grids.
-small_1d_regular_grid = fill(true, 5)
-small_2d_regular_grid = fill(true, 5, 5)
-small_3d_regular_grid = fill(true, 5, 5, 5)
+# Masked grids.
+small_1d_masked_grid = fill(true, 5)
+small_2d_masked_grid = fill(true, 5, 5)
+small_3d_masked_grid = fill(true, 5, 5, 5)
 
-large_1d_regular_grid = fill(true, 5)
-large_2d_regular_grid = fill(true, 5, 5)
-large_3d_regular_grid = fill(true, 5, 5, 5)
+large_1d_masked_grid = fill(true, 5)
+large_2d_masked_grid = fill(true, 5, 5)
+large_3d_masked_grid = fill(true, 5, 5, 5)
 
-random_1d_regular_grid = rand([true, true, true, false], 10)
-random_2d_regular_grid = rand([true, true, true, false], 10, 10)
-random_3d_regular_grid = rand([true, true, true, false], 10, 10, 10)
+random_1d_masked_grid = rand([true, true, true, false], 10)
+random_2d_masked_grid = rand([true, true, true, false], 10, 10)
+random_3d_masked_grid = rand([true, true, true, false], 10, 10, 10)
 
 # Graph - grids.
 very_small_2d_grid = Graphs.grid([2, 2])
