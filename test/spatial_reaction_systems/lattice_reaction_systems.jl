@@ -274,3 +274,31 @@ let
     @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
 end
 
+
+### Tests Grid Vertex and Edge Number Computation ###
+
+# Tests that the correct numbers are computed for num_edges.
+let 
+    # Function counting the values in an iterator by stepping through it.
+    function iterator_count(iterator)
+        count = 0
+        foreach(e -> count+=1, iterator)
+        return count
+    end
+
+    # Cartesian and masked grid (test diagonal edges as well).
+    for lattice in [small_1d_cartesian_grid, small_2d_cartesian_grid, small_3d_cartesian_grid, 
+                random_1d_masked_grid, random_2d_masked_grid, random_3d_masked_grid]
+        lrs1 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice)
+        lrs2 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice; diagonal_connections=true)
+        @test lrs1.num_edges == iterator_count(lrs1.edge_iterator)    
+        @test lrs2.num_edges == iterator_count(lrs2.edge_iterator)    
+    end
+
+    # Graph grids (cannot test diagonal connections).
+    for lattice in [small_2d_grid, small_3d_grid, undirected_cycle, small_directed_cycle, unconnected_graph]
+        lrs1 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice)
+        @test lrs1.num_edges == iterator_count(lrs1.edge_iterator)    
+    end
+end
+
