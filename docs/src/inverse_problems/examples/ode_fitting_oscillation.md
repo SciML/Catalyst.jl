@@ -124,7 +124,7 @@ As previously mentioned, the reason we chose to fit the model on a smaller inter
 then extend the interval, is to avoid getting stuck in a local minimum. Here
 specifically, we chose our initial interval to be smaller than a full cycle of
 the oscillation. If we had chosen to fit a parameter set on the full interval
-immediately we would have received the wrong solution.
+immediately we would have obtained a poorer fit and less accurate estimate for the parameters.
 ```@example pe1
 p_estimate = optimise_p([5.0,5.0], 30.0)
 
