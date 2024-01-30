@@ -142,7 +142,7 @@ nothing # hide
 ```
 
 ## Fitting parameters on the logarithmic scale
-Often it can be advantageous to fit parameters on a [logarithmic, rather than linear, scale](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008646). The best way to proceed is to simply replace each parameters in the model definition by its logarithmic version:
+Often it can be advantageous to fit parameters on a [logarithmic, rather than linear, scale](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008646). The best way to proceed is to simply replace each parameter in the model definition by its logarithmic version:
 ```@example diffeq_param_estim_2
 using Catalyst
 rn = @reaction_network begin
