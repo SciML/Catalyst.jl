@@ -1,7 +1,7 @@
 # [Parameter Fitting for ODEs using SciML/Optimization.jl and DiffEqParamEstim.jl](@id optimization_parameter_fitting)
 Fitting parameters to data involves solving an optimisation problem (that is, finding the parameter set that optimally fits your model to your data, typically by minimising a cost function). The SciML ecosystem's primary package for solving optimisation problems is [Optimization.jl](https://github.com/SciML/Optimization.jl). It provides access to a variety of solvers via a single common interface by wrapping a large number of optimisation libraries that have been implemented in Julia.
 
-This tutorial demonstrates both how to create parameter fitting cost functions using the [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl) package, and how to use Optimization.jl to minimise these. Optimization.jl can also be used in other contexts, such as finding parameter sets that maximise the magnitude of some system behavior. More details on how to use these packages can be found in their [respective](https://docs.sciml.ai/Optimization/stable/) [documentations](https://docs.sciml.ai/DiffEqParamEstim/stable/).
+This tutorial demonstrates both how to create parameter fitting cost functions using the [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl) package, and how to use Optimization.jl to minimise these. Optimization.jl can also be used in other contexts, such as finding parameter sets that maximise the magnitude of some system behaviour. More details on how to use these packages can be found in their [respective](https://docs.sciml.ai/Optimization/stable/) [documentations](https://docs.sciml.ai/DiffEqParamEstim/stable/).
 
 ## Basic example
 
@@ -124,7 +124,7 @@ nothing # hide
 In addition to boundaries, Optimization.jl also supports setting [linear and non-linear constraints](https://docs.sciml.ai/Optimization/stable/tutorials/constraints/#constraints) on its output solution for some optimizers.
 
 ## Parameter fitting with known parameters
-If from previous knowledge we know that $kD = 0.1$, and only want to fit the values of $kD$ and $kP$, this can be achieved through `build_loss_objective`'s `prob_generator` argument. First, we create a function (`fixed_p_prob_generator`) that modifies our `ODEProblem` to incorporate this knowledge:
+If from previous knowledge we know that $kD = 0.1$, and only want to fit the values of $kB$ and $kP$, this can be achieved through `build_loss_objective`'s `prob_generator` argument. First, we create a function (`fixed_p_prob_generator`) that modifies our `ODEProblem` to incorporate this knowledge:
 ```@example diffeq_param_estim_1 
 fixed_p_prob_generator(prob, p) = remake(prob; p = vcat(p[1], 0.1, p[2]))
 nothing # hide
@@ -135,7 +135,7 @@ loss_function_fixed_kD = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, da
 nothing # hide
 ```
 
-We can create an optimisation problem from this one like previously, but keep in mind that it (and its output results) only contains two parameter values (*kB* and *kP):
+We can create an optimisation problem from this one like previously, but keep in mind that it (and its output results) only contains two parameter values ($k$* and $kP$):
 ```@example diffeq_param_estim_1 
 optprob_fixed_kD = OptimizationProblem(loss_function_fixed_kD, [1.0, 1.0])
 optsol_fixed_kD = solve(optprob_fixed_kD, Optim.NelderMead())
