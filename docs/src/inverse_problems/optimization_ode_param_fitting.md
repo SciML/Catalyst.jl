@@ -60,7 +60,7 @@ nothing # hide
 ```
 
 !!! note
-    `OptimizationProblem` cannot currently accept parameter values in the form of a map (e.g. `[:kB => 1.0, :kD => 1.0, :kP => 1.0]`). These must be provided as individual values (using the same order as the parameters occur in in the `parameters(rs)` vector). Similarly, `build_loss_objective`'s `save_idxs` uses the species index, rather than the species directly. These inconsistencies should be remedied in future package releases.
+    `OptimizationProblem` cannot currently accept parameter values in the form of a map (e.g. `[:kB => 1.0, :kD => 1.0, :kP => 1.0]`). These must be provided as individual values (using the same order as the parameters occur in in the `parameters(rs)` vector). Similarly, `build_loss_objective`'s `save_idxs` uses the species index, rather than the species directly. These inconsistencies should be remedied in future DiffEqParamEstim releases.
 
 Finally, we can optimise `optprob` to find the parameter set that best fits our data. Optimization.jl only provides a few optimisation methods natively. However, for each supported optimisation package, it provides a corresponding wrapper-package to import that optimisation package for use with Optimization.jl. E.g., if we wish to use [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)'s [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) method, we must install and import the OptimizationOptimJL package. A summary of all, by Optimization.jl, supported optimisation packages can be found [here](https://docs.sciml.ai/Optimization/stable/#Overview-of-the-Optimizers). Here, we import the Optim.jl package and uses it to minimise our cost function (thus finding a parameter set that fits the data):
 ```@example diffeq_param_estim_1 
