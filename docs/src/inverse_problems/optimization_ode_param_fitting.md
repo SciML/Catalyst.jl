@@ -128,7 +128,7 @@ If we from previous knowledge know that *kD = 0.1*, and only would like to fit t
 fixed_p_prob_generator(prob, p) = remake(prob; p = vcat(p[1], 0.1, p[2]))
 nothing # hide
 ```
-Here, it takes the `ODEProblem` (`prob`) we simulates, and the parameter set used, during the optimisation process (`p`), and creates a modified `ODEProblem` (by setting a customised parameter vector [using `remake`](@ref simulation_structure_interfacing_remake)). Now we create our modified loss function:
+Here, it takes the `ODEProblem` (`prob`) we simulate, and the parameter set used, during the optimisation process (`p`), and creates a modified `ODEProblem` (by setting a customised parameter vector [using `remake`](@ref simulation_structure_interfacing_remake)). Now we create our modified loss function:
 ```@example diffeq_param_estim_1 
 loss_function_fixed_kD = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, data_vals), Optimization.AutoForwardDiff(); prob_generator = fixed_p_prob_generator, maxiters=10000, verbose=false, save_idxs=4)
 nothing # hide
