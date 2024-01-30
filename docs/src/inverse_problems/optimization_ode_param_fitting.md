@@ -114,7 +114,7 @@ plot!(fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle=:dash, l
 ```
 
 ## Setting parameter constraints and boundaries
-Sometimes, it is desired to set boundaries on parameter values. Indeed, this can speed up the optimisation process (by preventing searching through unfeasible parts of parameter space) or be a prerequisite of some optimisation methods. This can be done by passing the `lb` (lower bounds) and `up` (upper bounds) arguments to `OptimizationProblem`. These are vectors (of the same length as the number of parameters), with each argument corresponding to the boundary value of the parameter with the same index (as used in the `parameters(rn)` vector). If we wish to constrain each parameter to the interval *(0.1, 10.0)* this can be done through:
+Sometimes, it is desired to set boundaries on parameter values. Indeed, this can speed up the optimisation process (by preventing searching through unfeasible parts of parameter space), and can also be a requirement for some optimisation methods. This can be done by passing the `lb` (lower bounds) and `up` (upper bounds) arguments to `OptimizationProblem`. These are vectors (of the same length as the number of parameters), with each argument corresponding to the boundary value of the parameter with the same index (as used in the `parameters(rn)` vector). If we wish to constrain each parameter to the interval $(0.1, 10.0)$ this can be done through:
 ```@example diffeq_param_estim_1 
 optprob = OptimizationProblem(loss_function, [1.0, 1.0, 1.0]; lb = [0.1, 0.1, 0.1], ub = [10.0, 10.0, 10.0])
 nothing # hide
