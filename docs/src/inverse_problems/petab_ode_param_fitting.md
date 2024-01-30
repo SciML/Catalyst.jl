@@ -44,7 +44,7 @@ Generally, PEtab takes five different inputs to define an optimisation problem (
 ### Observables
 The observables define the quantities that we may measure in our experiments. Typically, each corresponds to a single species, however, [more complicated observables are possible](@ref petab_observables_observables). For each observable, we also need a noise formula, defining the uncertainty in its measurements. By default, PEtab assumes normally distributed noise, with a mean equal to the true value and a standard deviation which we have to define. It is also possible to use [more advanced noise formulas](@ref petab_observables_noise_formula).
 
-In our example, we only have a single possible observable, the `P` species. We will assume that the noise is normally distributed with a standard deviation `0.5` (in our case this is not true, however, as typically the noise distribution is unknown and a guess must be made). We combine this information in a `PEtabObservable` struct (to access the `P` species we must use [`@unpack`](@ref simulation_structure_interfacing_symbolic_representation)). Finally, we store all our observables in a dictionary, giving each an id tag (which is later used in the measurements input).
+In our example, we only have a single possible observable, the `P` species. We will assume that the noise is normally distributed with a standard deviation `0.5` (in our case this is not true, however, typically the noise distribution is unknown and a guess must be made). We combine this information in a `PEtabObservable` struct (to access the `P` species we must use [`@unpack`](@ref simulation_structure_interfacing_symbolic_representation)). Finally, we store all our observables in a dictionary, giving each an id tag (which is later used in the measurements input).
 
 ```@example petab1
 @unpack P = rn
@@ -183,7 +183,7 @@ nothing # hide
 ### [Parameter bounds](@id petab_parameters_bounds)
 By default, when fitted, potential parameter values are assumed to be in the interval $(1e-3, 1e3)$. When declaring a `PEtabParameter` it is possible to change these values through the `lb` and `ub` arguments. E.g. we could use
 ```@example petab1
-par_kB = PEtabParameter(:kB; lb=1e-2, ub=1e-2)
+par_kB = PEtabParameter(:kB; lb=1e-2, ub=1e2)
 ```
 to achieve the more conservative bound $(1e-2, 1e2)$ for the parameter $kB$.
 
