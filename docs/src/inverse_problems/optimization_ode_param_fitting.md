@@ -39,7 +39,8 @@ Next, we will use DiffEqParamEstim.jl to build a loss function to measure how we
 using DiffEqParamEstim, Optimization
 p_dummy = [:kB => 0.0, :kD => 0.0, :kP => 0.0]
 oprob = ODEProblem(rn, u0, (0.0, 10.0), p_dummy)
-loss_function = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, data_vals), Optimization.AutoForwardDiff(); maxiters=10000, verbose=false, save_idxs=4)
+loss_function = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, data_vals), Optimization.AutoForwardDiff(); 
+    maxiters=10000, verbose=false, save_idxs=4)
 nothing # hide
 ```
 To `build_loss_objective` we provide the following arguments:
