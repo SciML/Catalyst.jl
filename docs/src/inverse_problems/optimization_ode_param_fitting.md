@@ -34,7 +34,7 @@ plot(true_sol; idxs=:P, label="True solution", lw=8)
 plot!(data_ts, data_vals; label="Measurements", seriestype=:scatter, ms=6, color=:blue)
 ```
 
-Next, we will use DiffEqParamEstim.jl to build a loss function that describing how well our model's simulations fit the data.
+Next, we will use DiffEqParamEstim.jl to build a loss function to measure how well our model's solutions fit the data.
 ```@example diffeq_param_estim_1 
 using DiffEqParamEstim, Optimization
 p_dummy = [:kB => 0.0, :kD => 0.0, :kP => 0.0]
