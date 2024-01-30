@@ -123,7 +123,7 @@ nothing # hide
 In addition to boundaries, Optimization.jl also supports setting [linear and non-linear constraints](https://docs.sciml.ai/Optimization/stable/tutorials/constraints/#constraints) on its output solution for some optimizers.
 
 ## Parameter fitting with known parameters
-If we from previous knowledge know that *kD = 0.1*, and only would like to fit the values of *kD* and *kP*, this can be achieved through `build_loss_objective`'s `prob_generator` argument. First, we create a function (`fixed_p_prob_generator`) that modifies our `ODEProblem` to incorporate this knowledge:
+If from previous knowledge we know that $kD = 0.1$, and only want to fit the values of $kD$ and $kP$, this can be achieved through `build_loss_objective`'s `prob_generator` argument. First, we create a function (`fixed_p_prob_generator`) that modifies our `ODEProblem` to incorporate this knowledge:
 ```@example diffeq_param_estim_1 
 fixed_p_prob_generator(prob, p) = remake(prob; p = vcat(p[1], 0.1, p[2]))
 nothing # hide
