@@ -134,7 +134,7 @@ loss_function_fixed_kD = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, da
 nothing # hide
 ```
 
-We can create an optimisation problem from this one like previously, but keeping in mind that it (and its output results) only contains two parameter values (*kB* and *kP):
+We can create an optimisation problem from this one like previously, but keep in mind that it (and its output results) only contains two parameter values (*kB* and *kP):
 ```@example diffeq_param_estim_1 
 optprob_fixed_kD = OptimizationProblem(loss_function_fixed_kD, [1.0, 1.0])
 optsol_fixed_kD = solve(optprob_fixed_kD, Optim.NelderMead())
