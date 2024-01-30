@@ -87,7 +87,7 @@ nothing # hide
 ```
 
 ## Optimisation problems with data for multiple species
-Imagine that, in our previous example, we had measurements the concentration of both *S* and *P*:
+Imagine that, in our previous example, we had measurements of the concentration of both *S* and *P*:
 ```@example diffeq_param_estim_1 
 data_vals_S = (0.8 .+ 0.4*rand(10)) .* data_sol[:S][2:end]
 data_vals_P = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
