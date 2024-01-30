@@ -1,14 +1,14 @@
 # [The Catalyst DSL - Introduction](@id dsl_description)
 In the [introduction to Catalyst](@ref introduction_to_catalyst) we described how the `@reaction_network` macro can be used to create chemical reaction network models. This macro enables a so-called [domain-specific language](https://en.wikipedia.org/wiki/Domain-specific_language) (DSL) for creating chemical reaction network (CRN) models.  This tutorial will give a basic introduction on how to create Catalyst models using this macro (from now onwards called the "*Catalyst DSL*"). A [follow-up tutorial](@ref) will describe some of the DSLs more advanced features.
 
-The Catalyst DSL generates a [`ReactionSystem`](@ref) (the [julia structure](https://docs.julialang.org/en/v1/manual/types/#Composite-Types) Catalyst uses to represent CRN models). These can be created through alternative methods (e.g. [programmatically](@ref programmatic_CRN_construction)). A descriptions of teh various ways to create `ReactionSystems`s can be found [here](@ref ref).
+The Catalyst DSL generates a [`ReactionSystem`](@ref) (the [julia structure](https://docs.julialang.org/en/v1/manual/types/#Composite-Types) Catalyst uses to represent CRN models). These can be created through alternative methods (e.g. [programmatically](@ref programmatic_CRN_construction)). A descriptions of the various ways to create `ReactionSystems`s can be found [here](@ref ref). [Previous](@ref ref) and [following](@ref ref) tutorials describe how to simulate models once they have been created using the DSL. This tutorial wil solely focus on options for model creation.
 
 Before we  begin the tutorial, we will first load the `Catalyst` package (which is required to run the code).
 ```@example dsl_1
 using Catalyst
 ```
 
-### QUick-start summary
+### Quick-start summary
 
 
 ## [Basic syntax](@id dsl_description_basic_syntax)
@@ -192,7 +192,7 @@ rn_13 = @reaction_network begin
     kp*A, 0 --> P
 end
 ```
-Here, $P$'s production rate will decay as $A$ is slowly removed from the system. We can [check the ODE this model produce by using `Latexify`]:
+Here, $P$'s production rate will decay as $A$ is slowly removed from the system. We can [check the ODE this model produce by using `Latexify`](@ref ref):
 ```@example dsl_1
 using Latexify
 latexify(rn_13; form=:ode)
@@ -216,12 +216,65 @@ Here, while the model will generate the same ODE, SDE, and jump simulations, the
 !!! danger
     Catalyst automatically infers whether variables appearing in the DSL are species or parameters (as described [here](@ref ref)). Generally, anything that does not appear as a reactant is inferred to be a parameter. This mean that if you want to model a reaction activated by a species (e.g. `kp*A, 0 --> P`), but that species does not occur as a reactant, it will be interpreted as a parameter. This can be handled by [manually declaring the system species](@ref ref). A full example of how to do this for this example can be found [here](@ref ref).
 
+Above we used a simple example where the rate was the product of a species and a parameter. However, any valid Julia expression of parameters, species, and values can be used. E.g the following is a valid model:
+```@example dsl_1
+rn_14 = @reaction_network begin
+  2.0 + X^2, 0 --> X + Y
+  k1+k2^k3, X --> ∅
+  pi*X/(sqrt(2)+Y), Y → ∅
+end
+```
 
 ### Time-dependant rates
+Previously we have assumed that that the rates are independent on the [time variable, $t$](@ref ref). However, time-dependent reactions are also possible. Here, simply use `t` to represent the time variable. E.g., to create a production/degradation model where the production rate decays as time progress, we can use:
+```@example dsl_1
+rn_14 = @reaction_network begin
+    kp/t, 0 --> P
+    d, P --> 0
+end
+```
+
+Like previously, `t` can be part of any valid expression. E.g. to create a reaction with a cyclic rate (e.g. to representing a [circadian system](https://en.wikipedia.org/wiki/Circadian_rhythm)) we can use:
+```@example dsl_1
+rn_15 = @reaction_network begin
+    A*(sin(2π*f*t - ϕ)+1)/2, 0 --> P
+    d, P --> 0
+end
+```
 
 ### Using functions in rates
+It is possible for the rate to use Julia function. These can either be functions from Julia's standard library:  
+```@example dsl_1
+rn_16 = @reaction_network begin
+    d, A --> 0
+    kp*sqrt(A), 0 --> P
+end
+```
+or ones defined by the user:
+```@example dsl_1
+custom_function(p1,p2,X) = (p1+E)/(p2+E)
+rn_17 = @reaction_network begin
+    d, A --> 0
+    custom_function(k1,k2,E), 0 --> P
+end
+```
 
 ### Using pre-declared Michaelis-Menten or Hill function rate
+Two function frequently used within systems biology are the [*Michaelis-Menten*](https://en.wikipedia.org/wiki/Michaelis%E2%80%93Menten_kinetics) and [*Hill*](https://en.wikipedia.org/wiki/Hill_equation_(biochemistry)) functions. These are pre-defined in Catalyst and can be called using `mm(X,v,K)` and `hill(X,v,K,n)`. E.g. a self-activation loop where $X$ activates its own production through a hill function can be created using:
+```@example dsl_1
+custom_function(p1,p2,X) = (p1+E)/(p2+E)
+rn_18 = @reaction_network begin
+    hill(X,v,K,n), 0 --> P
+    d, X --> 0
+end
+```
+
+Catalyst comes with the following predefined functions:
+- The Michaelis-Menten function: $mm(X,v,K) = v*X/(X + K)$.
+- The repressive Michaelis-Menten function: $mmr(X,v,K) = v*K/(X + K)$.
+- The Hill function: $hill(X,v,K,n) = v*(X^n)/(X^n + K^n)$.
+- The repressive Hill function: $hillr(X,v,K,n) = v*(K^n)/(X^n + K^n)$.
+- The activating/repressive Hill function: $hillar(X,Y,v,K,n) = v*(X^n)/(X^n + Y^n + K^n)$.
 
 
 ## [Using special symbols](@id dsl_description_symbols)
@@ -287,561 +340,4 @@ It should be noted that the following symbols are *not permitted* to be used as 
 
 
 
-## [Basic syntax](@id basic_examples)
 
-The `@reaction_network` macro allows the (symbolic) specification of reaction
-networks with a simple format. Its input is a set of chemical reactions, and
-from them it generates a symbolic [`ReactionSystem`](@ref) reaction network
-object. The `ReactionSystem` can be used as input to ModelingToolkit
-`ODEProblem`, `NonlinearProblem`, `SteadyStateProblem`, `SDEProblem`,
-`JumpProblem`, and more. `ReactionSystem`s can also be incrementally extended as
-needed, allowing for programmatic construction of networks and network
-composition.
-
-The basic syntax is:
-
-```@example dsl_1
-rn = @reaction_network begin
-  2.0, X + Y --> XY
-  1.0, XY --> Z1 + Z2
-end
-```
-where each line of the [`@reaction_network`](@ref) macro corresponds to a
-chemical reaction. Each reaction consists of a reaction rate (the expression on
-the left-hand side of  `,`), a set of substrates (the expression in-between `,`
-and `-->`), and a set of products (the expression on the right-hand side of
-`-->`). The substrates and the products may contain one or more reactants,
-separated by `+`. The naming convention for these is the same as for normal
-variables in Julia.
-
-The chemical reaction model is generated by the `@reaction_network` macro and
-stored in the `rn` variable (a normal Julia variable, which does not need to be
-called `rn`). It corresponds to a [`ReactionSystem`](@ref), a symbolic
-representation of the chemical network.  The generated `ReactionSystem` can be
-converted to a symbolic differential equation model via
-```@example dsl_1
-osys  = convert(ODESystem, rn)
-```
-
-We can then convert the symbolic ODE model into a compiled, optimized
-representation for use in the SciML ODE solvers by constructing an `ODEProblem`.
-Creating an `ODEProblem` also requires our specifying the initial conditions for
-the model. We do this by creating a mapping from each symbolic variable
-representing a chemical species to its initial value
-```@example dsl_1
-# define the symbolic variables
-@variables t
-@species X(t) Y(t) Z(t) XY(t) Z1(t) Z2(t)
-
-# create the mapping
-u0 = [X => 1.0, Y => 1.0, XY => 1.0, Z1 => 1.0, Z2 => 1.0]
-```
-Alternatively, we can create a mapping using Julia `Symbol`s for each variable,
-and then convert them to a mapping involving symbolic variables like
-```@example dsl_1
-u0 = symmap_to_varmap(rn, [:X => 1.0, :Y => 1.0, :XY => 1.0, :Z1 => 1.0, :Z2 => 1.0])
-```
-Given the mapping, we can then create an `ODEProblem` from our symbolic `ODESystem`
-```@example dsl_1
-tspan = (0.0, 1.0)  # the time interval to solve on
-oprob = ODEProblem(osys, u0, tspan, [])
-```
-
-Catalyst provides a shortcut to avoid having to explicitly `convert` to an
-`ODESystem` and/or use `symmap_to_varmap`, allowing direct construction
-of the `ODEProblem` like
-```@example dsl_1
-u0 = [:X => 1.0, :Y => 1.0, :XY => 1.0, :Z1 => 1.0, :Z2 => 1.0]
-oprob = ODEProblem(rn, u0, tspan, [])
-```
-
-For more detailed examples, see the [Basic Chemical Reaction Network
-Examples](@ref basic_CRN_examples).
-
-## Defining parameters and species
-Numeric parameter values do not need to be set when the model is created, i.e.
-Catalyst supports symbolic parameters too:
-```@example dsl_1
-rn = @reaction_network begin
-  k1, X --> Y
-  k2, Y --> X
-end
-```
-All symbols that do not appear as a substrate or product in a reaction are
-designated by Catalyst as a parameter (i.e. all symbols appearing only within
-rate expressions and/or as [stoichiometric coefficients](@ref parametric_stoichiometry)). In this example `X` and `Y`
-appear as a substrates and products, but neither `k1` nor `k2`. Hence `k1` and `k2` are
-designated as parameters. Later in this tutorial, we will describe how to manually specify what should be
-considered a species or parameter.
-
-## Production, Destruction, and Stoichiometry
-Sometimes reactants are produced/destroyed from/to nothing. This can be
-designated using either `0` or `∅`:
-```@example dsl_1
-rn = @reaction_network begin
-  2.0, 0 --> X
-  1.0, X --> 0
-end
-```
-If several molecules of the same reactant are involved in a reaction, the
-stoichiometry of a reactant in a reaction can be set using a number. Here, two
-molecules of species `X` form the dimer `X2`:
-```@example dsl_1
-rn = @reaction_network begin
-  1.0, 2X --> Y
-end
-```
-this corresponds to the differential equation:
-```@example dsl_1
-convert(ODESystem, rn)
-```
-Other numbers than 2 can be used, and parenthesis can be used to reuse the same
-stoichiometry for several reactants:
-```@example dsl_1
-rn = @reaction_network begin
-  1.0, X + 2(Y + Z) --> W
-end
-```
-Note, one can explicitly multiply by integer coefficients too, i.e.
-```@example dsl_1
-rn = @reaction_network begin
-  1.0, X + 2*(Y + Z) --> W
-end
-```
-
-## Arrow variants
-A variety of Unicode arrows are accepted by the DSL in addition to `-->`. All of
-these work:  `>`, `→` `↣`, `↦`, `⇾`, `⟶`, `⟼`, `⥟`, `⥟`, `⇀`, `⇁`. Backwards
-arrows can also be used to write the reaction in the opposite direction. For
-example, these reactions are equivalent:
-```@example dsl_1
-rn = @reaction_network begin
-  1.0, X + Y --> XY
-  1.0, X + Y → XY
-  1.0, XY ← X + Y
-  1.0, XY <-- X + Y
-end
-```
-
-## Bi-directional arrows for reversible reactions
-Bi-directional arrows, including bidirectional Unicode arrows like ↔, can be
-used to designate a reversible reaction. For example, these two models are
-equivalent:
-```@example dsl_1
-rn = @reaction_network begin
-  2.0, X + Y --> XY
-  2.0, X + Y <-- XY
-end
-```
-```@example dsl_1
-rn2 = @reaction_network begin
-  (2.0,2.0), X + Y <--> XY
-end
-```
-
-If the reaction rates in the backward and forward directions are different, they
-can be designated in the following way:
-```@example dsl_1
-rn = @reaction_network begin
-  (2.0,1.0), X + Y <--> XY
-end
-```
-which is identical to
-```@example dsl_1
-rn = @reaction_network begin
-  2.0, X + Y --> XY
-  1.0, X + Y <-- XY
-end
-```
-
-Finally, Catalyst also 
-
-## Combining several reactions in one line
-Several similar reactions can be combined in one line by providing a tuple of
-reaction rates and/or substrates and/or products. If several tuples are provided,
-they must all be of identical length. These pairs of reaction networks are all
-identical.
-
-Pair 1:
-```@example dsl_1
-rn1 = @reaction_network begin
-  1.0, S --> (P1,P2)
-end
-```
-```@example dsl_1
-rn2 = @reaction_network begin
-  1.0, S --> P1
-  1.0, S --> P2
-end
-```
-Pair 2:
-```@example dsl_1
-rn1 = @reaction_network begin
-  (1.0,2.0), (S1,S2) --> P
-end
-```
-```@example dsl_1
-rn2 = @reaction_network begin
-  1.0, S1 --> P
-  2.0, S2 --> P
-end
-```
-Pair 3:
-```@example dsl_1
-rn1 = @reaction_network begin
-  (1.0,2.0,3.0), (S1,S2,S3) --> (P1,P2,P3)
-end
-```
-```@example dsl_1
-rn2 = @reaction_network begin
-  1.0, S1 --> P1
-  2.0, S2 --> P2
-  3.0, S3 --> P3
-end
-```
-This can also be combined with bi-directional arrows, in which case separate
-tuples can be provided for the backward and forward reaction rates.
-These reaction networks are identical
-```@example dsl_1
-rn1 = @reaction_network begin
- (1.0,(1.0,2.0)), S <--> (P1,P2)
-end
-```
-```@example dsl_1
-rn2 = @reaction_network begin
-  1.0, S --> P1
-  1.0, S --> P2
-  1.0, P1 --> S
-  2.0, P2 --> S
-end
-```
-
-## Variable reaction rates
-Reaction rates do not need to be a single parameter or a number, but can also be
-expressions depending on time or the current amounts of system species (when, for
-example, one species can activate the production of another). For instance, this
-is a valid notation:
-```@example dsl_1
-rn = @reaction_network begin
-  1.0, X --> ∅
-  k*X, Y --> ∅
-end
-```
-corresponding to the ODE model
-```@example dsl_1
-convert(ODESystem,rn)
-```
-
-With respect to the corresponding mass action ODE model, this is actually
-equivalent to the reaction system
-```@example dsl_1
-rn = @reaction_network begin
-  1.0, X --> ∅
-  k, X + Y --> X
-end
-```
-```@example dsl_1
-convert(ODESystem,rn)
-```
-!!! note
-    While the ODE models corresponding to the preceding two reaction systems are
-    identical, in the latter example the `Reaction` stored in `rn` will be classified as
-    [`ismassaction`](@ref) while in the former it will not, which can impact optimizations
-    used in generating `JumpSystem`s. For this reason, it is recommended to use the
-    latter representation when possible.
-
-Most expressions and functions are valid reaction rates, e.g.:
-```@example dsl_1
-using SpecialFunctions
-rn = @reaction_network begin
-  2.0*X^2, 0 --> X + Y
-  t*gamma(Y), X --> ∅
-  pi*X/Y, Y --> ∅
-end
-```
-where here `t` always denotes Catalyst's time variable. Please note that many
-user-defined functions can be called directly, but others will require
-registration with Symbolics.jl ([see the faq](@ref user_functions)).
-
-## Explicit specification of network species and parameters
-Recall that the `@reaction_network` macro automatically designates symbols used
-in the macro as either parameters or species, with symbols that appear as a
-substrate or product being species, and all other symbols becoming parameters
-(i.e. those that only appear within a rate expression and/or as [stoichiometric coefficients](@ref parametric_stoichiometry)). Sometimes, one might want to manually override this default
-behavior for a given symbol. E.g one might want something to be considered as a
-species, even if it only appears within a rate expression. In the following
-network
-```@example dsl_1
-rn = @reaction_network begin
-  k*X, Y --> 0
-end
-```
-`X` (as well as `k`) will be considered a parameter.
-
-By using the `@species` and `@parameters` options within the `@reaction_network`
-macro, one can manually declare that specified symbols should be considered a
-species or parameter. E.g in:
-```@example dsl_1
-rn = @reaction_network begin
-  @species X(t) Y(t)
-  k*X, Y --> 0
-end
-```
-`X` and `Y` are set as species. Please note that when declaring species using
-the `@species` option, their dependant variable (almost always `t`) also needs
-to be designated. Similarly in
-```@example dsl_1
-rn = @reaction_network begin
-  @parameters k
-  k*X, Y --> 0
-end
-```
-both `X` and `k` will be considered as parameters. It is also possible to use
-both options simultaneously, allowing users to fully specify which symbols are
-species and/or parameters:
-```@example dsl_1
-rn = @reaction_network begin
-  @species X(t) Y(t)
-  @parameters k
-  k*X, Y --> 0
-end
-```
-Here, `X` and `Y` are designated as species and `k` as a parameter.
-
-The lists provided to the `@species` and `@parameters` options do not need to be extensive. Any symbol that appears in neither list will use the default option as determined by the macro. E.g. in the previous example, where we only want to change the default designation of `X` (making it a species rather than a parameter), we can simply write:
-```@example dsl_1
-rn = @reaction_network begin
-  @species X(t)
-  k*X, Y --> 0
-end
-```
-
-Finally, note that the `@species` and `@parameters` options can also be used in
-`begin ... end` block form, allowing more formatted lists of species/parameters:
-```@example dsl_1
-rn = @reaction_network begin
-  @parameters begin
-      d1
-      d2
-  end
-  @species begin
-      X1(t)
-      X2(t)
-  end
-  d2, X2 --> 0
-  d1, X1 --> 0
-end
-```
-This can be especially useful when declaring default values for clarity of model
-specification (see the next section).
-
-## [Setting default values for initial conditions and parameters](@id dsl_description_defaults)
-When using the `@species` and ` @parameters` macros to declare species and/or
-parameters, one can also provide default initial conditions for each species and
-values for each parameter:
-```@example dsl_1
-rn = @reaction_network begin
-  @species X(t)=1.0
-  @parameters p=1.0 d=0.1
-  p, 0 --> X
-  d, X --> ∅
-end
-```
-This system can now be simulated without providing initial condition or
-parameter vectors to the DifferentialEquations.jl solvers:
-```@example dsl_1
-using DifferentialEquations, Plots
-u0 = []
-tspan = (0.0, 10.0)
-p = []
-oprob = ODEProblem(rn, u0, tspan, p)
-sol = solve(oprob)
-plot(sol)
-```
-
-When providing default values, it is possible to do so for only a subset of the
-species or parameters, in which case the rest can be specified when constructing
-the problem type to solve:
-```@example dsl_1
-rn = @reaction_network begin
-  @species X(t)
-  @parameters p=1.0 d
-  p, 0 --> X
-  d, X --> 0
-end
-
-u0 = [:X => 1.0]
-tspan = (0.0, 10.0)
-p = [:d => .1]
-oprob = ODEProblem(rn, u0, tspan, p)
-sol = solve(oprob)
-plot(sol)
-```
-
-Finally, default values can be overridden by passing mapping vectors to the
-DifferentialEquations.jl problem being constructed. Only those initial conditions
-or parameters for which we want to change their value from the default will need to be passed
-```@example dsl_1
-u0 = [:X => 1.0]
-tspan = (0.0, 10.0)
-p = [:p => 2.0, :d => .1]   # we change p to 2.0
-oprob = ODEProblem(rn, u0, tspan, p)
-sol = solve(oprob)
-plot(sol)
-```
-
-## [Setting initial conditions that depend on parameters](@id dsl_description_parametric_initial_conditions)
-It is possible to set the initial condition of one (or several) species so that they depend on some system parameter. This is done in a similar way as default initial conditions, but giving the parameter instead of a value. When doing this, we also need to ensure that the initial condition parameter is a variable of the system:
-```@example dsl_1
-rn = @reaction_network begin
-  @parameters X0
-  @species X(t)=X0
-  p, 0 --> X
-  d, X --> ∅
-end
-```
-We can now simulate the network without providing any initial conditions:
-```@example dsl_1
-u0 = []
-tspan = (0.0, 10.0)
-p = [:p => 2.0, :d => .1, :X0 => 1.0]
-oprob = ODEProblem(rn, u0, tspan, p)
-sol = solve(oprob)
-plot(sol)
-```
-
-## Naming the generated `ReactionSystem`
-ModelingToolkit uses system names to allow for compositional and hierarchical
-models. To specify a name for the generated `ReactionSystem` via the
-[`@reaction_network`](@ref) macro, just place the name before `begin`:
-```@example dsl_1
-rn = @reaction_network production_degradation begin
-  p, ∅ --> X
-  d, X --> ∅
-end
-ModelingToolkit.nameof(rn) == :production_degradation
-```
-
-## Pre-defined functions
-Hill functions and a Michaelis-Menten function are pre-defined and can be used
-as rate laws. Below, the pair of reactions within `rn1` are equivalent, as are
-the pair of reactions within `rn2`:
-```@example dsl_1
-rn1 = @reaction_network begin
-  hill(X,v,K,n), ∅ --> X
-  v*X^n/(X^n+K^n), ∅ --> X
-end
-```
-```@example dsl_1
-rn2 = @reaction_network begin
-  mm(X,v,K), ∅ --> X
-  v*X/(X+K), ∅ --> X
-end
-```
-Repressor Hill (`hillr`) and Michaelis-Menten (`mmr`) functions are also
-provided:
-```@example dsl_1
-rn1 = @reaction_network begin
-  hillr(X,v,K,n), ∅ --> X
-  v*K^n/(X^n+K^n), ∅ --> X
-end
-```
-```@example dsl_1
-rn2 = @reaction_network begin
-  mmr(X,v,K), ∅ --> X
-  v*K/(X+K), ∅ --> X
-end
-```
-
-Please see the API [Rate Laws](@ref api_rate_laws) section for more details.
-
-## Including non-species variables
-Non-species state variables can be specified in the DSL using the `@variables`
-macro. These are declared similarly to species. For example,
-```@example dsl_1
-rn_with_volume = @reaction_network begin
-  @variables V(t)
-  k*V, 0 --> A
-end
-```
-creates a network with one species
-```@example dsl_1
-species(rn_with_volume)
-```
-and one non-species
-```@example dsl_1
-nonspecies(rn_with_volume)
-```
-giving two state variables, always internally ordered by species and then
-nonspecies:
-```@example dsl_1
-states(rn_with_volume)
-```
-
-`rn_with_volume` could then be extended with constraint equations for how `V(t)`
-evolves in time, see the [associated tutorial](@ref constraint_equations).
-
-## Specifying alternative time variables and/or extra independent variables
-While the DSL defaults to allowing `t` as the time variable, one can use the
-`@ivs` macro to specify an alternative independent variable. For example, to
-make `s` the default time variable one can say
-```@example dsl_1
-rn_with_s = @reaction_network begin
-    @ivs s
-    @variables V(s)
-    @species B(s)
-    k, A + V*B --> C
-end
-show(stdout, MIME"text/plain"(), rn_with_s)  # hide
-```
-where we see all states are now functions of `s`.
-
-Similarly, if one wants states to be functions of more than one independent
-variable, for example to encode a spatial problem, one can list more than one
-variable, i.e. `@ivs t x y`. Here the first listed independent variable is
-always chosen to represent time. For example,
-```@example dsl_1
-rn_with_many_ivs = @reaction_network begin
-    @ivs s x
-    @variables V1(s) V2(s,x)
-    @species A(s) B(s,x)
-    k, V1*A --> V2*B + C
-end
-show(stdout, MIME"text/plain"(), rn_with_many_ivs)  # hide
-```
-Here again `s` will be the time variable, and any inferred species, `C` in this
-case, are made functions of both variables, i.e. `C(s, x)`.
-
-## [Interpolation of Julia variables](@id dsl_description_interpolation_of_variables)
-The DSL allows Julia variables to be interpolated for the network name, within
-rate constant expressions, or for species/stoichiometry within reactions. Using
-the lower-level symbolic interface we can then define symbolic variables and
-parameters outside of the macro, which can then be used within expressions in
-the DSL (see the [Programmatic Construction of Symbolic Reaction Systems](@ref programmatic_CRN_construction)
-tutorial for details on the lower-level symbolic interface). For example,
-```@example dsl_1
-@parameters k α
-@variables t
-@species A(t)
-spec = A
-par = α
-rate = k*A
-name = :network
-rn = @reaction_network $name begin
-    $rate*B, 2*$spec + $par*B --> $spec + C
-  end
-```
-As the parameters `k` and `α` were pre-defined and appeared via interpolation,
-we did not need to declare them within the `@reaction_network` macro,
-i.e. they are automatically detected as parameters:
-```@example dsl_1
-parameters(rn)
-```
-as are the species coming from interpolated variables
-```@example dsl_1
-species(rn)
-```
-
-!!! note
-    When using interpolation, expressions like `2$spec` won't work; the
-    multiplication symbol must be explicitly included like `2*$spec`.
