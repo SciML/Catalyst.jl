@@ -51,7 +51,7 @@ To `build_loss_objective` we provide the following arguments:
 Furthermore, we can pass any number of additional optional arguments, these are then passed to the internal `solve()` function (which is used to solve our ODE). Here we provide the following additional arguments:
 - `maxiters=10000`: If the ODE integrator takes a very large number of steps, that can be a sign of a very poor fit (or stiffness in the ODEs, but that is not a concern for our current example). Reducing the `maxiters` threshold reduces the time we waste on evaluating such models. 
 - `verbose=false`: The simulation of models with highly unsuitable parameter sets typically generate various warnings (such as simulation terminations due to reaching the `maxiters` value). To avoid an overflow of such (here unnecessary) warnings as we evaluate a large number of parameter sets, we turn warnings off.
-- `save_idxs=4`: The measured species (*P*) is the 4th species in our species vector (`species(rn)`). To ensure that the concentration of the right species is evaluated against the data, we set the numeric integrator to only save the value of this species.
+- `save_idxs=4`: The measured species ($P$) is the 4th species in our species vector (`species(rn)`). Since we only assume data is available for $P(t)$ there is no reason to save any other species.
 
 Now we can create an `OptimizationProblem` using our `loss_function` and some initial guess of parameter values from which the optimiser will start:
 ```@example diffeq_param_estim_1 
