@@ -34,7 +34,7 @@ plot(true_sol; idxs=:P, label="True solution", lw=8)
 plot!(data_ts, data_vals; label="Measurements", seriestype=:scatter, ms=6, color=:blue)
 ```
 
-Next, we will use DiffEqParamEstim.jl to build a loss function to measure how well our model's solutions fit the data.
+Next, we will use DiffEqParamEstim to build a loss function to measure how well our model's solutions fit the data.
 ```@example diffeq_param_estim_1 
 using DiffEqParamEstim, Optimization
 p_dummy = [:kB => 0.0, :kD => 0.0, :kP => 0.0]
@@ -61,7 +61,7 @@ nothing # hide
 ```
 
 !!! note
-    `OptimizationProblem` cannot currently accept parameter values in the form of a map (e.g. `[:kB => 1.0, :kD => 1.0, :kP => 1.0]`). These must be provided as individual values (using the same order as the parameters occur in in the `parameters(rs)` vector). Similarly, `build_loss_objective`'s `save_idxs` uses the species index, rather than the species directly. These inconsistencies should be remedied in future DiffEqParamEstim releases.
+    `OptimizationProblem` cannot currently accept parameter values in the form of a map (e.g. `[:kB => 1.0, :kD => 1.0, :kP => 1.0]`). These must be provided as individual values (using the same order as the parameters occur in in the `parameters(rs)` vector). Similarly, `build_loss_objective`'s `save_idxs` uses the species' indexes, rather than the species directly. These inconsistencies should be remedied in future DiffEqParamEstim releases.
 
 Finally, we can optimise `optprob` to find the parameter set that best fits our data. Optimization.jl only provides a few optimisation methods natively. However, for each supported optimisation package, it provides a corresponding wrapper-package to import that optimisation package for use with Optimization.jl. E.g., if we wish to use [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)'s [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) method, we must install and import the OptimizationOptimJL package. A summary of all, by Optimization.jl, supported optimisation packages can be found [here](https://docs.sciml.ai/Optimization/stable/#Overview-of-the-Optimizers). Here, we import the Optim.jl package and uses it to minimise our cost function (thus finding a parameter set that fits the data):
 ```@example diffeq_param_estim_1 
@@ -78,7 +78,7 @@ plot!(fitted_sol; idxs=:P, label="Fitted solution", linestyle=:dash, lw=6, color
 ```
 
 !!! note
-    Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. [Identifiability](https://www.sciencedirect.com/science/article/pii/S1364815218307278) is a concept that studies how to deal with this problem.
+    Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. [Identifiability](@ref structural_identifiability) is a concept that studies how to deal with this problem.
 
 Say that we instead would like to use the [Broyden–Fletcher–Goldfarb–Shannon](https://en.wikipedia.org/wiki/Broyden%E2%80%93Fletcher%E2%80%93Goldfarb%E2%80%93Shanno_algorithm) algorithm, as implemented by the [NLopt.jl](https://github.com/JuliaOpt/NLopt.jl) package. In this case we would run:
 ```@example diffeq_param_estim_1 
@@ -124,7 +124,7 @@ nothing # hide
 In addition to boundaries, Optimization.jl also supports setting [linear and non-linear constraints](https://docs.sciml.ai/Optimization/stable/tutorials/constraints/#constraints) on its output solution for some optimizers.
 
 ## Parameter fitting with known parameters
-If from previous knowledge we know that $kD = 0.1$, and only want to fit the values of $kB$ and $kP$, this can be achieved through `build_loss_objective`'s `prob_generator` argument. First, we create a function (`fixed_p_prob_generator`) that modifies our `ODEProblem` to incorporate this knowledge:
+If we from previous knowledge know that $kD = 0.1$, and only want to fit the values of $kB$ and $kP$, this can be achieved through `build_loss_objective`'s `prob_generator` argument. First, we create a function (`fixed_p_prob_generator`) that modifies our `ODEProblem` to incorporate this knowledge:
 ```@example diffeq_param_estim_1 
 fixed_p_prob_generator(prob, p) = remake(prob; p = vcat(p[1], 0.1, p[2]))
 nothing # hide
@@ -135,7 +135,7 @@ loss_function_fixed_kD = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, da
 nothing # hide
 ```
 
-We can create an optimisation problem from this one like previously, but keep in mind that it (and its output results) only contains two parameter values ($k$* and $kP$):
+We can create an `OptimizationProblem` from this one like previously, but keep in mind that it (and its output results) only contains two parameter values ($k$* and $kP$):
 ```@example diffeq_param_estim_1 
 optprob_fixed_kD = OptimizationProblem(loss_function_fixed_kD, [1.0, 1.0])
 optsol_fixed_kD = solve(optprob_fixed_kD, Optim.NelderMead())
