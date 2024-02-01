@@ -64,14 +64,14 @@ Notes:
 """
 function SI.assess_local_identifiability(rs::ReactionSystem, args...; measured_quantities = [], 
                                          known_p = [], funcs_to_check = Vector(), remove_conserved = true, 
-                                         ignore_no_measured_warn=false, prob_threshold = 0.99, kwargs...)
+                                         ignore_no_measured_warn=false, kwargs...)
     # Creates a ODESystem, list of measured quantities, and functions to check, of SI's preferred form.
     osys, conseqs, vars = make_osys(rs; remove_conserved)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p, conseqs; ignore_no_measured_warn)
     funcs_to_check = make_ftc(funcs_to_check, conseqs, vars)
 
     # Computes identifiability and converts it to a easy to read form.
-    out = SI.assess_local_identifiability(osys, args...; measured_quantities, funcs_to_check, p=prob_threshold, kwargs...)
+    out = SI.assess_local_identifiability(osys, args...; measured_quantities, funcs_to_check, kwargs...)
     return make_output(out, funcs_to_check, reverse.(conseqs))
 end
 
@@ -101,15 +101,15 @@ Notes:
 - `measured_quantities` and `known_p` input may also be symbolic (e.g. measured_quantities = [rs.X])
 """
 function SI.assess_identifiability(rs::ReactionSystem, args...; measured_quantities = [], known_p = [], 
-                                   funcs_to_check = Vector(), remove_conserved = true, ignore_no_measured_warn=false, 
-                                   prob_threshold = 0.99, kwargs...)
+                                   funcs_to_check = Vector(), remove_conserved = true, 
+                                   ignore_no_measured_warn=false, kwargs...)
     # Creates a ODESystem, list of measured quantities, and functions to check, of SI's preferred form.
     osys, conseqs, vars = make_osys(rs; remove_conserved)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p, conseqs; ignore_no_measured_warn)
     funcs_to_check = make_ftc(funcs_to_check, conseqs, vars)
 
     # Computes identifiability and converts it to a easy to read form.
-    out = SI.assess_identifiability(osys, args...; measured_quantities, funcs_to_check, p=prob_threshold, kwargs...)
+    out = SI.assess_identifiability(osys, args...; measured_quantities, funcs_to_check, kwargs...)
     return make_output(out, funcs_to_check, reverse.(conseqs))
 end
 
@@ -140,13 +140,13 @@ Notes:
 """
 function SI.find_identifiable_functions(rs::ReactionSystem, args...; measured_quantities = [], 
                                         known_p = [], remove_conserved = true, ignore_no_measured_warn=false, 
-                                        prob_threshold = 0.99, kwargs...)
+                                        kwargs...)
     # Creates a ODESystem, and list of measured quantities, of SI's preferred form.
     osys, conseqs = make_osys(rs; remove_conserved)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p, conseqs; ignore_no_measured_warn)
 
     # Computes identifiable functions and converts it to a easy to read form.
-    out = SI.find_identifiable_functions(osys, args...; measured_quantities, p=prob_threshold, kwargs...)
+    out = SI.find_identifiable_functions(osys, args...; measured_quantities, kwargs...)
     return vector_subs(out, reverse.(conseqs))
 end
 
