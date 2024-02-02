@@ -35,7 +35,7 @@ avr = AttractorsViaRecurrences(ds, grid)
 basins, attractors = basins_of_attraction(avr, grid; show_progress = false)
 attractors
 ```
-Here, `attractors` is a dictionary that maps attractor labels (the integers) to attractors. In this case we have two fixed points, one at $(0.0,0.0)$ and one at $(4.5,6.0)$. Next, `basins` is a matrix of equal size to `grid`, where each value is an integer describing to which attractor's basin that state belongs.
+Here, `attractors` is a dictionary that maps attractor labels (integers) to attractors. In this case we have two fixed points, one at $(0.0,0.0)$ and one at $(4.5,6.0)$. Next, `basins` is a matrix of equal size to `grid`, where each value is an integer describing to which attractor's basin that state belongs.
 
 DynamicalSystems.jl also provides a simple interface for plotting the resulting basins. This uses [Makie.jl](https://docs.makie.org/stable/), an alternative plotting package to [Plots.jl](https://github.com/JuliaPlots/Plots.jl) (which is typically the preferred plotting package within the context of Catalyst). Generally, Makie is good at creating animations or interactive graphics (however, it is also a [popular competitor to Plots.jl for general-purpose plotting](https://juliapackagecomparisons.github.io/pages/plotting/)). 
 ```@example dynamical_systems_basins
@@ -89,7 +89,7 @@ Here, the `autodiff=false` argument is required when Lyapunov spectrums are comp
 ```@example dynamical_systems_lyapunov
 lyapunovspectrum(ds, 100)
 ```
-Here, the largest exponent is positive, suggesting that the model is chaotic (or, more accurately, it has at least one  chaotic attractor, to which we go to from the initial condition $(1.5, 1.5, 1.5)).
+Here, the largest exponent is positive, suggesting that the model is chaotic (or, more accurately, it has at least one chaotic attractor, to which it go to from the initial condition $(1.5, 1.5, 1.5)).
 
 Next, we consider the [Brusselator] model. First we simulate the model for two similar initial conditions, confirming that they converge to the same limit cycle:
 ```@example dynamical_systems_lyapunov
