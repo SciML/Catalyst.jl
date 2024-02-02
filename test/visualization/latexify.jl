@@ -42,14 +42,35 @@ let
     end
 
     # Latexify.@generate_test latexify(rn)
-    @test_broken latexify(rn) == replace(
+    @test_broken latexify(rn; expand_functions = false) == replace(
     raw"\begin{align*}
-    \varnothing &\xrightarrow{\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}} \mathrm{X1} \\
-    \varnothing &\xrightarrow{\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}} \mathrm{X2} \\
-    \varnothing &\xrightarrow{\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}} \mathrm{X3} \\
-    \varnothing &\xrightarrow{\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}} \mathrm{X4} \\
-    \varnothing &\xrightarrow{\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}} \mathrm{X5} \\
-    \varnothing &\xrightarrow{\frac{v6 X1^{n6}}{K6^{n6} + X1^{n6} + X6^{n6}}} \mathrm{X6} \\
+    \varnothing &\xrightarrow{\frac{X4^{n1} v1^{2} K1^{n1}}{\left( K1^{n1} + X4^{n1} \right) \left( K1^{n1} + X2^{n1} \right)}} \mathrm{X1} \\
+    \varnothing &\xrightarrow{\mathrm{hill}\left( X5, v2, K2, n2 \right)} \mathrm{X2} \\
+    \varnothing &\xrightarrow{\mathrm{hill}\left( X3, v3, K3, n3 \right)} \mathrm{X3} \\
+    \varnothing &\xrightarrow{\mathrm{hillr}\left( X1, v4, K4, n4 \right)} \mathrm{X4} \\
+    \varnothing &\xrightarrow{\mathrm{hill}\left( X2, v5, K5, n5 \right)} \mathrm{X5} \\
+    \varnothing &\xrightarrow{\mathrm{hillar}\left( X1, X6, v6, K6, n6 \right)} \mathrm{X6} \\
+    \mathrm{X2} &\xrightleftharpoons[k2]{k1} \mathrm{X1} + 2 \mathrm{X4} \\
+    \mathrm{X4} &\xrightleftharpoons[k4]{k3} \mathrm{X3} \\
+    3 \mathrm{X5} + \mathrm{X1} &\xrightleftharpoons[k6]{k5} \mathrm{X2} \\
+    \mathrm{X1} &\xrightarrow{d1} \varnothing \\
+    \mathrm{X2} &\xrightarrow{d2} \varnothing \\
+    \mathrm{X3} &\xrightarrow{d3} \varnothing \\
+    \mathrm{X4} &\xrightarrow{d4} \varnothing \\
+    \mathrm{X5} &\xrightarrow{d5} \varnothing \\
+    \mathrm{X6} &\xrightarrow{d6} \varnothing  
+    \end{align*}
+    ", "\r\n"=>"\n")
+
+    #Latexify.@generate_test latexify(rn; expand_functions=false)
+    @test_broken latexify(rn; expand_functions = false) == replace(
+    raw"\begin{align*}
+    \varnothing &\xrightarrow{\frac{X4^{n1} v1^{2} K1^{n1}}{\left( K1^{n1} + X4^{n1} \right) \left( K1^{n1} + X2^{n1} \right)}} \mathrm{X1} \\
+    \varnothing &\xrightarrow{\mathrm{mm}\left( X5, v2, K2 \right)} \mathrm{X2} \\
+    \varnothing &\xrightarrow{\mathrm{mmr}\left( X3, v3, K3 \right)} \mathrm{X3} \\
+    \varnothing &\xrightarrow{\mathrm{hillr}\left( X1, v4, K4, n4 \right)} \mathrm{X4} \\
+    \varnothing &\xrightarrow{\mathrm{hill}\left( X2, v5, K5, n5 \right)} \mathrm{X5} \\
+    \varnothing &\xrightarrow{\mathrm{hillar}\left( X1, X6, v6, K6, n6 \right)} \mathrm{X6} \\
     \mathrm{X2} &\xrightleftharpoons[k2]{k1} \mathrm{X1} + 2 \mathrm{X4} \\
     \mathrm{X4} &\xrightleftharpoons[k4]{k3} \mathrm{X3} \\
     3 \mathrm{X5} + \mathrm{X1} &\xrightleftharpoons[k6]{k5} \mathrm{X2} \\
@@ -65,12 +86,12 @@ let
     # Latexify.@generate_test latexify(rn, mathjax=false)
     @test_broken latexify(rn, mathjax = false) == replace(
     raw"\begin{align*}
-    \varnothing &\xrightarrow{\frac{v1 X4^{n1}}{K1^{n1} + X4^{n1}} \frac{v1 K1^{n1}}{K1^{n1} + X2^{n1}}} \mathrm{X1} \\
-    \varnothing &\xrightarrow{\frac{v2 X5^{n2}}{K2^{n2} + X5^{n2}}} \mathrm{X2} \\
-    \varnothing &\xrightarrow{\frac{v3 X3^{n3}}{K3^{n3} + X3^{n3}}} \mathrm{X3} \\
+    \varnothing &\xrightarrow{\frac{X4^{n1} v1^{2} K1^{n1}}{\left( K1^{n1} + X4^{n1} \right) \left( K1^{n1} + X2^{n1} \right)}} \mathrm{X1} \\
+    \varnothing &\xrightarrow{\frac{X5 v2}{K2 + X5}} \mathrm{X2} \\
+    \varnothing &\xrightarrow{\frac{K3 v3}{K3 + X3}} \mathrm{X3} \\
     \varnothing &\xrightarrow{\frac{v4 K4^{n4}}{K4^{n4} + X1^{n4}}} \mathrm{X4} \\
-    \varnothing &\xrightarrow{\frac{v5 X2^{n5}}{K5^{n5} + X2^{n5}}} \mathrm{X5} \\
-    \varnothing &\xrightarrow{\frac{v6 X1^{n6}}{K6^{n6} + X1^{n6} + X6^{n6}}} \mathrm{X6} \\
+    \varnothing &\xrightarrow{\frac{v5 X2^{n5}}{X2^{n5} + K5^{n5}}} \mathrm{X5} \\
+    \varnothing &\xrightarrow{\frac{v6 X1^{n6}}{X6^{n6} + K6^{n6} + X1^{n6}}} \mathrm{X6} \\
     \mathrm{X2} &\xrightleftharpoons[k2]{k1} \mathrm{X1} + 2 \mathrm{X4} \\
     \mathrm{X4} &\xrightleftharpoons[k4]{k3} \mathrm{X3} \\
     3 \mathrm{X5} + \mathrm{X1} &\xrightleftharpoons[k6]{k5} \mathrm{X2} \\
@@ -128,11 +149,44 @@ let
     # Latexify.@generate_test latexify(rn)
     @test_broken latexify(rn) == replace(
     raw"\begin{align*}
-    \mathrm{Y} &\xrightarrow{Y k} \varnothing  
+    \varnothing &\xrightarrow{p} (m + n)\mathrm{X}  
     \end{align*}
     ", "\r\n"=>"\n")
 end
 
+
+# Test using various `env` options.
+let
+    rn = @reaction_network begin
+        (p,d), 0 <--> X
+    end
+    chem_latex = latexify(rn; env = :arrows)
+    @test chem_latex == latexify(rn; env = :chem)
+    @test chem_latex == latexify(rn; env = :chemical)
+    @test chem_latex == latexify(rn; env = :arrow)
+    @test_throws Exception latexify(rn; env = :wrong_env)
+end
+
+# Tests that the `mathrm` option affects the output.
+let
+    rn = @reaction_network begin
+        (k1,k2), 2X <--> X2
+    end
+    @test latexify(rn; mathrm = true) != latexify(rn; mathrm = false)
+end
+
+# Tests for system with parametric stoichiometry.
+let
+    rn = @reaction_network begin
+        p, 0 --> (m + n)*X
+    end
+    
+    @test_broken latexify(rn) == replace(
+    raw"\begin{align*}
+    \varnothing &\xrightarrow{p} (m + n)\mathrm{X}  
+     \end{align*}
+    ", "\r\n"=>"\n")
+end
 
 ### Tests  `form` Option ###
 
@@ -140,7 +194,7 @@ end
 let
     for rn in reaction_networks_standard
         @test latexify(rn)==latexify(rn; form=:reactions)
-        #@test_broken latexify(convert(ODESystem,rn)) == latexify(rn; form=:ode) # Slight difference due to some latexify weirdity. Both displays fine though
+        #@test_broken latexify(convert(ODESystem,rn)) == latexify(rn; form=:ode) # Slight difference due to some latexify weirdly. Both displays fine though
     end
 end
 
