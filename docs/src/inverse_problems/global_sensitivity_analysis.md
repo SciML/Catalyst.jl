@@ -1,14 +1,14 @@
 # [Global Sensitivity Analysis](@id global_sensitivity_analysis)
-*Global sensitivity analysis* (GSA) is used to study the sensitivity of a function with respect of its input [^1]. Within the context of chemical reaction network modelling it is primarily used for two purposes:
+*Global sensitivity analysis* (GSA) is used to study the sensitivity of a function's outputs with respect of its input [^1]. Within the context of chemical reaction network modelling it is primarily used for two purposes:
 - [When fitting a model's parameters to data](@ref petab_parameter_fitting), it can be applied to the cost function of the optimisation problem. Here, GSA helps determine which parameters does, and does not, affects the model's fit to the data. This can be used to identify parameters that are less relevant for the observed data.
-- [When measuring some system behaviour or property](@ref TBA_AT_LATER_STAGE), it can help determine which parameters influence that property. E.g. for a model of a biofuel producing circuit in a synthetic organism, GSA could determine which system parameters has the largest impact on the total rate of biofuel production.
+- [When measuring some system behaviour or property](@ref behaviour_optimisation), it can help determine which parameters influence that property. E.g. for a model of a biofuel producing circuit in a synthetic organism, GSA could determine which system parameters has the largest impact on the total rate of biofuel production.
 
 GSA can be carried out using the [GlobalSensitivity.jl](https://github.com/SciML/GlobalSensitivity.jl) package. This tutorial contain a brief introduction of how to use it for GSA on Catalyst models, with [GlobalSensitivity providing a more complete documentation](https://docs.sciml.ai/GlobalSensitivity/stable/).
 
-#### Global vs local sensitivity
+### Global vs local sensitivity
 A related concept to global sensitivity is *local sensitivity*. This, rather than measuring a function's sensitivity (with regards to its inputs) across its entire (or large part of its) domain, measures it at a specific point. This is equivalent to computing the function's gradients at a specific point in phase space, which is an important routine for most gradient-based optimisation methods (typically carried out through [*automatic differentiation*](https://en.wikipedia.org/wiki/Automatic_differentiation)). For most Catalyst related functionalities, local sensitivities are computed using the [SciMLSensitivity.jl](https://github.com/SciML/SciMLSensitivity.jl) package. While certain GSA methods can utilise local sensitivities, this is not necessarily the case.
 
-While local sensitivities are primarily used as a subroutine of other methodologies (such as optimisation schemes), it also has direct uses. E.g., in the context of fitting parameters to data, local sensitivity analysis can be used to, at the parameter set of the optimal fit, [determine the cost function's sensitivity to the system parameters](@ref TBA_AT_LATER_STAGE).
+While local sensitivities are primarily used as a subroutine of other methodologies (such as optimisation schemes), it also has direct uses. E.g., in the context of fitting parameters to data, local sensitivity analysis can be used to, at the parameter set of the optimal fit, determine the cost function's sensitivity to the system parameters.
 
 ## Basic example
 We will consider a simple [SEIR model of an infectious disease](https://en.wikipedia.org/wiki/Compartmental_models_in_epidemiology). This is an expansion of the classic SIR model with an additional *exposed* state, $E$, denoting individuals who are latently infected but currently unable to transmit their infection others.
@@ -43,14 +43,14 @@ using GlobalSensitivity
 global_sens = gsa(peak_cases, Morris(), [(-3.0,-1.0), (-2.0,0.0), (-2.0,0.0)])
 nothing # hide
 ```
-on the domain $10^β ∈ (-3.0,-1.0), 10^a ∈ (-2.0,0.0), 10^γ ∈ (-2.0,0.0)$. The output of `gsa` varies depending on which GSA approach is used. GlobalSensitivity implements a range of methods for GSA. Bellow, we will describe the most common ones, as well as how to apply them and interpret their outputs.
+on the domain $10^β ∈ (-3.0,-1.0)$, $10^a ∈ (-2.0,0.0)$, $10^γ ∈ (-2.0,0.0)$ (which corresponds to $β ∈ (0.001,0.1)$, $a ∈ (0.01,1.0)$, $γ ∈ (0.01,1.0)$). The output of `gsa` varies depending on which GSA approach is used. GlobalSensitivity implements a range of methods for GSA. Bellow, we will describe the most common ones, as well as how to apply them and interpret their outputs.
 
 !!! note
     We should make a couple of notes about the example above:
-    - Here, we write our parameters on the forms $10^β$, $10^a$, and $10^γ$, which transforms them into log-space. As [previously described](@ref TBA_AT_LATER_STAGE), this is advantageous in the context of inverse problems such as this one.
-    - For simplicity, we create a new `ODEProblem` in each evaluation of the `peak_cases` function. For GSA, where a function is evaluated a large number of times, it is ideal to write it as performant as possible. As [previously described](@ref TBA_AT_LATER_STAGE), creating a single `ODEProblem` initially, and then using `remake` to modify it in each evaluations of `peak_cases` will increase performance.
-    - Again, as [previously described in other inverse problem tutorials](@ref TBA_AT_LATER_STAGE), when exploring a function over large parameter spaces, we will likely simulate our model for unsuitable parameter sets. To reduce time spent on these, and to avoid excessive warning messages, we provide the `maxiters=100000` and `verbose=false` arguments to `solve`.
-    - As we have encountered in [a few other cases](@ref TBA_AT_LATER_STAGE), the `gsa` function is not able to take parameter inputs of the map form usually used for Catalyst. Hence, in its third argument, we have to ensure that the i'th Tuple corresponds to the parameter bounds of the i'th parameter in the `parameters(seir_model)` vector.
+    - Here, we write our parameters on the forms $10^β$, $10^a$, and $10^γ$, which transforms them into log-space. As [previously described](@ref optimization_parameter_fitting_logarithmic_scale), this is advantageous in the context of inverse problems such as this one.
+    - For simplicity, we create a new `ODEProblem` in each evaluation of the `peak_cases` function. For GSA, where a function is evaluated a large number of times, it is ideal to write it as performant as possible. Creating a single `ODEProblem` initially, and then using `remake` to modify it in each evaluations of `peak_cases` will increase performance.
+    - Again, as [previously described in other inverse problem tutorials](@ref optimization_parameter_fitting_basics), when exploring a function over large parameter spaces, we will likely simulate our model for unsuitable parameter sets. To reduce time spent on these, and to avoid excessive warning messages, we provide the `maxiters=100000` and `verbose=false` arguments to `solve`.
+    - As we have encountered in [a few other cases](@ref optimization_parameter_fitting_basics), the `gsa` function is not able to take parameter inputs of the map form usually used for Catalyst. Hence, in its third argument, we have to ensure that the i'th Tuple corresponds to the parameter bounds of the i'th parameter in the `parameters(seir_model)` vector.
 
 
 ## Sobol's method based global sensitivity analysis
