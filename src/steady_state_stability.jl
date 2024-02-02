@@ -1,7 +1,7 @@
 ### Stability Analysis ###
 
 """
-    stability(u::Vector{T}, rs::ReactionSystem, p; sparse=false, ss_jac = steady_state_jac(u, rs, p; sparse=sparse), t=Inf, non_autonomous_war=true)
+    stability(u::Vector{T}, rs::ReactionSystem, p; sparse=false, ss_jac = steady_state_jac(u, rs, p; sparse=sparse), t = Inf, non_autonomous_warn = true)
 
 Compute the stability of a steady state (Returned as a `Bool`, with `true` indicating stability).
 
@@ -11,8 +11,8 @@ Arguments:
     - `p`: The parameter set for which we want to compute stability.
     - `sparse=false`: If we wish to create a sparse Jacobian for the stability computation.
     - `ss_jac = steady_state_jac(u, rs; sparse=sparse)`: It is possible to pre-compute the Jacobian used for stability computation using `steady_state_jac`. If stability is computed for many states, precomputing the Jacobian may speed up evaluation.
-    - `t=Inf`: The time point at which stability is computed. 
-    - `non_autonomous_war=true`: If the system is non-autonomous (e.g. a rate depends on t), a warning will be given. Set this to false to remove that. Alternatively, specify a nonInf value for `t`.
+    - `t = Inf`: The time point at which stability is computed. 
+    - `non_autonomous_warn = true`: If the system is non-autonomous (e.g. a rate depends on t), a warning will be given. Set this to false to remove that. Alternatively, specify a nonInf value for `t`.
 
 Example:
 ```julia
@@ -31,9 +31,10 @@ Notes:
     y states (each being a `Vector`) is provided as `u`, stability is computed for each state separately.
 """
 function steady_state_stability(u::Vector{T}, rs::ReactionSystem, p; 
-                                sparse=false, ss_jac = steady_state_jac(rs; u0=u, sparse=sparse), t=Inf, non_autonomous_war=true) where T
+                                sparse=false, ss_jac = steady_state_jac(rs; u0=u, sparse=sparse), 
+                                t = Inf, non_autonomous_warn =true) where T
     # Warning checks.
-    !is_autonomous(rs) && non_autonomous_war && @warn "Attempting to compute stability for a non-autonomous system. Set `non_autonomous_war=false` to disable this warning."
+    !is_autonomous(rs) && non_autonomous_warn && @warn "Attempting to compute stability for a non-autonomous system. Set `non_autonomous_warn = false` to disable this warning."
 
     # Because Jacobian currently requires u and p to be a normal vector.
     # Can be removed once this get fixed in MTK.
