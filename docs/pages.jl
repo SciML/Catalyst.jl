@@ -19,6 +19,7 @@ pages = Any["Home" => "index.md",
             "Inverse Problems" => Any["inverse_problems/optimization_ode_param_fitting.md",
                                         "inverse_problems/petab_ode_param_fitting.md",
                                         "inverse_problems/structural_identifiability.md",
+                                        "inverse_problems/global_sensitivity_analysis.md",
                                         "Inverse problem examples" => Any["inverse_problems/examples/ode_fitting_oscillation.md"]],
             "FAQs" => "faqs.md",
             "API" => "api/catalyst_api.md"]
