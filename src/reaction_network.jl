@@ -722,10 +722,6 @@ function extract_metadata(metadata_line::Expr)
     return metadata
 end
 
-# macro, similar to @parameters, but all paraemters become noise scaling parameters.
-macro noise_scaling_parameters(ex...)
-    vars = Symbolics._parse_vars(:parameters, Real, ex, toparam)
-
 # Reads the observables options. Outputs an expression ofr creating the obervable variables, and a vector of observable equations.
 function read_observed_options(options, species_n_vars_declared, ivs_sorted)
     if haskey(options, :observables)
