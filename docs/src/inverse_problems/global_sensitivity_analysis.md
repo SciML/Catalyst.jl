@@ -1,6 +1,6 @@
 # [Global Sensitivity Analysis](@id global_sensitivity_analysis)
 *Global sensitivity analysis* (GSA) is used to study the sensitivity of a function with respect of its input [^1]. Within the context of chemical reaction network modelling it is primarily used for two purposes:
-- [When fitting a model's parameters to data](@ref TBA_AT_LATER_STAGE), it can be applied to the cost function of the optimisation problem. Here, GSA helps determine which parameters does, and does not, affects the model's fit to the data. This can be used to identify parameters that are less relevant for the observed data.
+- [When fitting a model's parameters to data](@ref petab_parameter_fitting), it can be applied to the cost function of the optimisation problem. Here, GSA helps determine which parameters does, and does not, affects the model's fit to the data. This can be used to identify parameters that are less relevant for the observed data.
 - [When measuring some system behaviour or property](@ref TBA_AT_LATER_STAGE), it can help determine which parameters influence that property. E.g. for a model of a biofuel producing circuit in a synthetic organism, GSA could determine which system parameters has the largest impact on the total rate of biofuel production.
 
 GSA can be carried out using the [GlobalSensitivity.jl](https://github.com/SciML/GlobalSensitivity.jl) package. This tutorial contain a brief introduction of how to use it for GSA on Catalyst models, with [GlobalSensitivity providing a more complete documentation](https://docs.sciml.ai/GlobalSensitivity/stable/).
