@@ -1361,7 +1361,6 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
-    is_autonomous(rs) || error("Attempting to create a NonlinearSystem for a non-autonomous system (e.g. does some rate depend on $(rs.iv)?), this is not possible.")
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)

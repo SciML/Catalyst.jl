@@ -98,11 +98,3 @@ let
     @test isapprox(nfunc([sol1[X], sol1[Y], sol1[Y2], sol1[XY2]], last.(p)), [0.0, 0.0, 0.0, 0.0]; atol=1e-10)
     @test isapprox(nfunc([sol2[X], sol2[Y], sol2[Y2], sol2[XY2]], last.(p)), [0.0, 0.0, 0.0, 0.0]; atol=1e-10)
 end
-
-# Tests that conversion of non-autonomous systems yields appropriate errors.
-let
-    rn = @reaction_network begin
-        (p/t,d), 0 <--> X
-    end
-    @test_throws Exception convert(NonlinearSystem, rn)
-end
