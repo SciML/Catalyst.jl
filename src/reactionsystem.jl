@@ -854,7 +854,7 @@ end
 ######################## Other accessors ##############################
 
 """
-    get_metadata_vec(reaction::Reaction)
+    get_metadata_dict(reaction::Reaction)
 
 Retrives the `ImmutableDict` containing all of the metadata associated with a specific reaction.
 
@@ -864,10 +864,10 @@ Arguments:
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
-get_metadata_vec(reaction)
+get_metadata_dict(reaction)
 ```
 """
-function get_metadata_vec(reaction::Reaction)
+function get_metadata_dict(reaction::Reaction)
     return reaction.metadata
 end
 
@@ -887,7 +887,7 @@ has_metadata(reaction, :noise_scaling)
 ```
 """
 function has_metadata(reaction::Reaction, md_key::Symbol)
-    return any(isequal(md_key, entry[1]) for entry in get_metadata_vec(reaction))
+    return any(isequal(md_key, entry[1]) for entry in get_metadata_dict(reaction))
 end
 
 """
@@ -907,9 +907,9 @@ get_metadata(reaction, :noise_scaling)
 """
 function get_metadata(reaction::Reaction, md_key::Symbol)
     if !has_metadata(reaction, md_key) 
-        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(get_metadata_vec(reaction))).")
+        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(get_metadata_dict(reaction))).")
     end
-    return get_metadata_vec(reaction)[findfirst(isequal(md_key, entry[1]) for entry in get_metadata_vec(reaction))][2]
+    return get_metadata_dict(reaction)[findfirst(isequal(md_key, entry[1]) for entry in get_metadata_dict(reaction))][2]
 end
 
 ######################## Conversion to ODEs/SDEs/jump, etc ##############################

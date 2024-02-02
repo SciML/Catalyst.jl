@@ -16,7 +16,7 @@ let
     metadata = [:noise_scaling => 0.0]
     r = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
 
-    @test get_metadata_vec(r) == [:noise_scaling => 0.0]
+    @test get_metadata_dict(r) == [:noise_scaling => 0.0]
     @test has_metadata(r, :noise_scaling)
     @test !has_metadata(r, :nonexisting_metadata)
     @test get_metadata(r, :noise_scaling) == 0.0
@@ -36,7 +36,7 @@ let
     r2 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
 
     @test isequal(r1, r2)
-    @test get_metadata_vec(r1) == Pair{Symbol,Any}[]
+    @test get_metadata_dict(r1) == Pair{Symbol,Any}[]
     @test !has_metadata(r1, :md)
 end
 
@@ -57,7 +57,7 @@ let
     push!(metadata, :md_6 => (0.1, 2.0))
     r = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
 
-    @test get_metadata_vec(r) isa Vector{Pair{Symbol,Any}}
+    @test get_metadata_dict(r) isa Vector{Pair{Symbol,Any}}
     @test has_metadata(r, :md_1)
     @test has_metadata(r, :md_2)
     @test has_metadata(r, :md_3)
