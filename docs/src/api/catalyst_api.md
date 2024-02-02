@@ -251,7 +251,7 @@ latexify(rn; form=:sde)
 (As of writing this, an upstream bug causes the SDE form to be erroneously
 displayed as the ODE form)
 
-Finally, another optional argument (`expand_functions=true`) automatically expands by_catalyst defined functions (such as `mm`). To disable this, set `expand_functions=false`.
+Finally, another optional argument (`expand_functions=true`) automatically expands functions defined by Catalyst (such as `mm`). To disable this, set `expand_functions=false`.
 
 If [Graphviz](https://graphviz.org/) is installed and commandline accessible, it
 can be used to create and save network diagrams using [`Graph`](@ref) and
