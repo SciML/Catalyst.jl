@@ -137,8 +137,8 @@ end
 # Tests with multiple noise scaling parameters directly in the macro.
 let 
     noise_scaling_network_1 = @reaction_network begin 
-        @noise_scaling_parameters η1 η2
-        (k1, k2), X1 ↔ X2 
+        @parameters η1 η2
+        (k1, k2), X1 ↔ X2, ([noise_scaling=η1],[noise_scaling=η2]) 
     end
     u0 = [:X1 => 1000.0, :X2 => 3000.0]
     sol_1_1 = solve(SDEProblem(noise_scaling_network_1, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, :η1 => 2.0, :η2 => 2.0]), ImplicitEM(); saveat=1.0)
@@ -148,7 +148,7 @@ let
 
     noise_scaling_network_2 = @reaction_network begin 
         @noise_scaling_parameters η[1:2]
-        (k1, k2), X1 ↔ X2 
+        (k1, k2), X1 ↔ X2, ([noise_scaling=η[1]],[noise_scaling=η[2]])  
     end
     @unpack k1, k2, η = noise_scaling_network_2
     sol_2_1 = solve(SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 2.0, η[2] => 2.0]), ImplicitEM(); saveat=1.0)
@@ -164,37 +164,74 @@ let
     η_stored = :η
     @variables t
     @species X1(t) X2(t)
-    ηs = @noise_scaling_parameters $(η_stored)=0.0
-    @parameters k1 k2
-    r1 = Reaction(k1,[X1],[X2],[1],[1])
-    r2 = Reaction(k2,[X2],[X1],[1],[1])
-    @named noise_scaling_network = ReactionSystem([r1, r2], t, [X1, X2], [k1, k2, ηs[1]])
+    p_syms = @parameters $(η_stored) k1 k2
+
+    r1 = Reaction(k1,[X1],[X2],[1],[1]; metadata = [:noise_scaling => η_stored])
+    r2 = Reaction(k2,[X2],[X1],[1],[1]; metadata = [:noise_scaling => η_stored])
+    @named noise_scaling_network = ReactionSystem([r1, r2], t, [X1, X2], [k1, k2, p_syms[1]])
 
     u0 = [:X1 => 1100.0, :X2 => 3900.0]
     p = [:k1 => 2.0, :k2 => 0.5, :η=>0.0]
-    @test SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p)[:η] == 0.0
+    @test_boken SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p).ps[:η] == 0.0 # Broken due to SII/MTK stuff.
 end
 
 # Complicated test with many combinations of options.
 # Tests the noise_scaling_parameters getter.
 let
     noise_scaling_network = @reaction_network begin 
-        @parameters k1 par1 [description="Parameter par1"] par2 η1 [noise_scaling_parameter=true]
-        @noise_scaling_parameters η2=0.0 [description="Parameter η2"] η3=1.0 η4
-        (p, d), 0 ↔ X1 
-        (k1, k2), X1 ↔ X2 
+        @parameters k1 par1 [description="Parameter par1"] par2 η1 η2=0.0 [description="Parameter η2"] η3=1.0 η4
+        (p, d), 0 ↔ X1, ([noise_scaling=η1],[noise_scaling=η2]) 
+        (k1, k2), X1 ↔ X2, ([noise_scaling=η3],[noise_scaling=η4])  
     end
     u0 = [:X1 => 500.0, :X2 => 500.0]
     p = [:p => 20.0, :d => 0.1, :η1 => 0.0, :η3 => 0.0, :η4 => 0.0, :k1 => 2.0, :k2 => 2.0, :par1 => 1000.0, :par2 => 1000.0]
     
     @test getdescription(parameters(noise_scaling_network)[2]) == "Parameter par1"
-    @test getdescription(parameters(noise_scaling_network)[8]) == "Parameter η2"
-
+    @test getdescription(parameters(noise_scaling_network)[5]) == "Parameter η2"
+    
     sprob = SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p)
-    @test sprob[:η1] == sprob[:η2] == sprob[:η3] == sprob[:η4] == 0.0
+    @test_broken sprob.ps[:η1] == sprob.ps[:η2] == sprob.ps[:η3] == sprob.ps[:η4] == 0.0 # Broken due to SII/MTK stuff.
+end
 
-    @unpack η1, η2, η3, η4 = noise_scaling_network
-    isequal([η1, η2, η3, η4], noise_scaling_parameters(noise_scaling_network))
+# Tests default_noise_scaling_option.
+# Tests using sys. indexing for setting noise scaling parameter values.
+# tests for default value used in noise scaling parameter.
+let
+    noise_scaling_network = @reaction_network begin
+        @parameters η1 η2=0.1
+        @default_noise_scaling η1
+        (p,d), 0 <--> X1, ([noise_scaling=η2],[noise_scaling=η2])
+        (p,d), 0 <--> X2, ([description="Y"],[description="Y"])
+        (p,d), 0 <--> X3
+    end
+    noise_scaling_network = complete(noise_scaling_network)
+    
+    u0 = [:X1 => 1000.0, :X2 => 1000.0, :X3 => 1000.0]
+    ps = [noise_scaling_network.p => 1000.0, noise_scaling_network.d => 1.0, noise_scaling_network.η1 => 1.0]
+    sol = solve(SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), ps), ImplicitEM(); saveat=1.0)
+    @test var(sol[:X1]) < var(sol[:X2]) 
+    @test var(sol[:X1]) < var(sol[:X3]) 
+end
+
+# Tests  using complicated noise scaling expressions
+let
+    noise_scaling_network = @reaction_network begin
+        @parameters η1 η2 η3 η4
+        @species N1(t) N2(t)=0.5
+        @variables N3(t)
+        @default_noise_scaling η1 + N1 + 5.0
+        p, 0 --> X1 
+        p, 0 --> X2, [noise_scaling=0.33η2^1.2 + N2]
+        p, 0 --> X3, [noise_scaling=N3*η3] 
+        p, 0 --> X4, [noise_scaling=exp(-η4) - 0.008]
+        p, 0 --> X5, [noise_scaling=0.0]
+        d, (X1, X2, X3, X4, X5) --> 0, ([], [noise_scaling=0.33η2^1.2 + N2], [noise_scaling=N3*η3], [noise_scaling=exp(-η4) - 0.008], [noise_scaling=0.0])
+    end
+
+    u0 = [:X1 => 1000.0, :X2 => 1000.0, :X3 => 1000.0, :X4 => 1000.0, :X5 => 1000.0, :N1 => 3.0, :N3 => 0.33]
+    ps = [:p => 1000.0, :d => 1.0, :η1 => 1.0, :η2 => 1.4, :η3 => 0.33, :η4 => 4.0]
+    sol = solve(SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), ps), ImplicitEM(); saveat=1.0, adaptive=false, dt=0.1)
+    @test var(sol[:X1]) > var(sol[:X2]) > var(sol[:X3]) > var(sol[:X4]) > var(sol[:X5])  
 end
 
 

@@ -46,15 +46,6 @@ function nonspecies(network)
 end
 
 """
-    noise_scaling_parameters(network)
-
-Given a [`ReactionSystem`](@ref), return a vector of all noise scaling parameters defined in the system.
-"""
-function noise_scaling_parameters(network)
-    filter(is_noise_scaling_parameter, parameters(network))
-end
-
-"""
     reactionparams(network)
 
 Given a [`ReactionSystem`](@ref), return a vector of all parameters defined

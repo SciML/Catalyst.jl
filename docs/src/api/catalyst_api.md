@@ -155,7 +155,6 @@ accessor functions.
 ```@docs
 species
 nonspecies
-noise_scaling_parameters
 reactionparams
 reactions
 numspecies
