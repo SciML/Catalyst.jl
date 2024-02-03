@@ -594,7 +594,7 @@ end
 
 # Generates a vector containing a number of reaction structures, each containing the information about one reaction.
 function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(undef, 0); 
-                       default_reaction_metadata = [])
+                       default_reaction_metadata = :([]))
     for line in exprs
         # Reads core reaction information.
         arrow, rate, reaction, metadata = read_reaction_line(line)
