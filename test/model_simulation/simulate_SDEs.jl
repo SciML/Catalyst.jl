@@ -147,7 +147,7 @@ let
     @test var(sol_1_1[1,:]) > var(sol_1_2[1,:]) > var(sol_1_3[1,:]) 
 
     noise_scaling_network_2 = @reaction_network begin 
-        @noise_scaling_parameters η[1:2]
+        @parameters η[1:2]
         (k1, k2), X1 ↔ X2, ([noise_scaling=η[1]],[noise_scaling=η[2]])  
     end
     @unpack k1, k2, η = noise_scaling_network_2
