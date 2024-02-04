@@ -172,7 +172,7 @@ let
 
     u0 = [:X1 => 1100.0, :X2 => 3900.0]
     p = [:k1 => 2.0, :k2 => 0.5, :η=>0.0]
-    @test_boken SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p).ps[:η] == 0.0 # Broken due to SII/MTK stuff.
+    @test_broken SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p).ps[:η] == 0.0 # Broken due to SII/MTK stuff.
 end
 
 # Complicated test with many combinations of options.
