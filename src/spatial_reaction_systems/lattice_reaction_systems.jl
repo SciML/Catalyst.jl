@@ -208,21 +208,48 @@ ModelingToolkit.nameof(lrs::LatticeReactionSystem) = nameof(lrs.rs)
 # Checks if a lattice reaction system is a pure (linear) transport reaction system.
 is_transport_system(lrs::LatticeReactionSystem) = all(sr -> sr isa TransportReaction, lrs.spatial_reactions)
 
-# Checks if a LatticeReactionSystem have a Cartesian grid lattice.
+"""
+    has_cartesian_lattice(lrs::LatticeReactionSystem)
+
+Returns `true` if `lrs` was created using a cartesian grid lattice (e.g. created via `CartesianGrid(5,5)`). Else, returns `false`.
+"""
 has_cartesian_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa CartesianGridRej{S,T} where {S,T}
-# Checks if a LatticeReactionSystem have a masked grid lattice.
+
+"""
+    has_masked_lattice(lrs::LatticeReactionSystem)
+
+Returns `true` if `lrs` was created using a masked grid lattice (e.g. created via `[true true; true false]`). Else, returns `false`.
+"""
 has_masked_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa Array{Bool, T} where T
-# Checks if a LatticeReactionSystem have a grid lattice (cartesian or masked).
+
+"""
+    has_grid_lattice(lrs::LatticeReactionSystem)
+
+Returns `true` if `lrs` was created using a cartesian or masked grid lattice. Else, returns `false`.
+"""
 has_grid_lattice(lrs::LatticeReactionSystem) = (has_cartesian_lattice(lrs) || has_masked_lattice(lrs))
-# Checks if a LatticeReactionSystem have a graph lattice.
+
+"""
+    has_graph_lattice(lrs::LatticeReactionSystem)
+
+Returns `true` if `lrs` was created using a graph grid lattice (e.g. created via `path_graph(5)`). Else, returns `false`.
+"""
 has_graph_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa SimpleDiGraph
 
-# Returns the size of the lattice of a LatticeReactionNetwork with a grid lattice.
+"""
+    grid_size(lrs::LatticeReactionSystem)
+
+Returns the size of `lrs`'s lattice (only if it is a cartesian or masked grid lattice). E.g. for a lattice `CartesianGrid(4,6)`, `(4,6)` is returned.
+"""
 function grid_size(lrs::LatticeReactionSystem)
     has_cartesian_lattice(lrs) && (return lrs.lattice.dims)
     has_masked_lattice(lrs) && (return size(lrs.lattice))
     error("Grid size is only defined for LatticeReactionSystems with grid-based lattices (not graph-based).")
 end
 
-# Returns the dimensions of a LatticeReactionNetwork with a grid lattice.
+"""
+    grid_dims(lrs::LatticeReactionSystem)
+
+Returns the number of dimensions of `lrs`'s lattice (only if it is a cartesian or masked grid lattice). The output is either `1`, `2`, or `3`.
+"""
 grid_dims(lrs::LatticeReactionSystem) = length(grid_size(lrs))

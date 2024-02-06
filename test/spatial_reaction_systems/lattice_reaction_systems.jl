@@ -7,7 +7,7 @@ using Catalyst, Graphs, Test
 include("../spatial_test_networks.jl")
 
 # Pre declares a grid.
-grids = [CartesianGrid((2,2)), fill(true, 2, 2), Graphs.grid([2, 2])]
+grids = [very_small_2d_cartesian_grid, very_small_2d_masked_grid, very_small_2d_graph_grid]
 
 ### Tests LatticeReactionSystem Getters Correctness ###
 
