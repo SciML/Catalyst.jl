@@ -44,7 +44,7 @@ function lattice_process_p(ps_in, ps_vertex_syms, ps_edge_syms, lrs::LatticeReac
     vert_ps, edge_ps = split_parameters(ps, ps_vertex_syms, ps_edge_syms)     
     vert_ps = vertex_value_map(vert_ps, lrs)
     edge_ps = edge_value_map(edge_ps, lrs)
-
+    
     return vert_ps, edge_ps
 end
 

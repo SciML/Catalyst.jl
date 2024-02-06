@@ -180,6 +180,8 @@ sigmaB_srs_2 = [sigmaB_tr_σB, sigmaB_tr_w, sigmaB_tr_v]
 ### Declares Lattices ###
 
 # Cartesian grids.
+very_small_2d_cartesian_grid = CartesianGrid((2,2))
+
 small_1d_cartesian_grid = CartesianGrid(5)
 small_2d_cartesian_grid = CartesianGrid((5,5))
 small_3d_cartesian_grid = CartesianGrid((5,5,5))
@@ -189,6 +191,8 @@ large_2d_cartesian_grid = CartesianGrid((100,100))
 large_3d_cartesian_grid = CartesianGrid((100,100,100))
 
 # Masked grids.
+very_small_2d_masked_grid = fill(true, 2, 2)
+
 small_1d_masked_grid = fill(true, 5)
 small_2d_masked_grid = fill(true, 5, 5)
 small_3d_masked_grid = fill(true, 5, 5, 5)

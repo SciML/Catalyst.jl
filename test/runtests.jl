@@ -4,6 +4,12 @@ using SafeTestsets
 ### Run the tests ###
 @time begin
 
+    ### Tests Spatial Network Simulations. ###
+    @time @safetestset "PDE Systems Simulations" begin include("spatial_reaction_systems/simulate_PDEs.jl") end
+    @time @safetestset "Lattice Reaction Systems" begin include("spatial_reaction_systems/lattice_reaction_systems.jl") end
+    @time @safetestset "Lattice Reaction Systems Lattice Types" begin include("spatial_reaction_systems/lattice_reaction_systems_lattice_types.jl") end
+    @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_reaction_systems/lattice_reaction_systems_ODEs.jl") end
+
     ### Tests the properties of ReactionSystems. ###
     @time @safetestset "ReactionSystem" begin include("reactionsystem_structure/reactionsystem.jl") end
     @time @safetestset "Higher Order Reactions" begin include("reactionsystem_structure/higher_order_reactions.jl") end
