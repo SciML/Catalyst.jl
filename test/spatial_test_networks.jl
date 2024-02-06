@@ -8,10 +8,26 @@ rng = StableRNG(12345)
 ### Helper Functions ###
 
 # Generates randomised initial condition or parameter values.
-rand_v_vals(grid) = rand(rng, nv(grid))
 rand_v_vals(grid, x::Number) = rand_v_vals(grid) * x
-rand_e_vals(grid) = rand(rng, ne(grid))
+rand_v_vals(lrs::LatticeReactionSystem) = rand_v_vals(lrs.lattice)
+function rand_v_vals(grid::DiGraph) 
+    return rand(rng, nv(grid))
+end
+function rand_v_vals(grid::Catalyst.CartesianGridRej{S,T}) where {S,T}
+    return rand(rng, grid.dims)
+end
+function rand_v_vals(grid::Array{Bool, T}) where {T}
+    return rand(rng, size(grid))
+end
+
 rand_e_vals(grid, x::Number) = rand_e_vals(grid) * x
+function rand_e_vals(lrs::LatticeReactionSystem)
+    e_vals = spzeros(lrs.num_verts, lrs.num_verts)
+    for e in lrs.edge_iterator
+        e_vals[e[1], e[2]] = rand()
+    end
+    return e_vals
+end
 
 # Gets a symbol list of spatial parameters.
 function spatial_param_syms(lrs::LatticeReactionSystem)

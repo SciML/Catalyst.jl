@@ -3,25 +3,31 @@
 # Fetch packages.
 using Catalyst, Graphs, Test
 
+# Fetch test networks.
+include("../spatial_test_networks.jl")
+
 # Pre declares a grid.
-grid = Graphs.grid([2, 2])
+grids = [CartesianGrid((2,2)), fill(true, 2, 2), Graphs.grid([2, 2])]
 
 ### Tests LatticeReactionSystem Getters Correctness ###
+
 # Test case 1.
 let 
     rs = @reaction_network begin
         (p, 1), 0 <--> X
     end
-    tr = @transport_reaction d X    
-    lrs = LatticeReactionSystem(rs, [tr], grid)
+    tr = @transport_reaction d X   
+    for grid in grids 
+        lrs = LatticeReactionSystem(rs, [tr], grid)
 
-    @unpack X, p = rs
-    d = edge_parameters(lrs)[1]
-    @test issetequal(species(lrs), [X])  
-    @test issetequal(spatial_species(lrs), [X])   
-    @test issetequal(parameters(lrs), [p, d])   
-    @test issetequal(vertex_parameters(lrs), [p])  
-    @test issetequal(edge_parameters(lrs), [d])      
+        @unpack X, p = rs
+        d = edge_parameters(lrs)[1]
+        @test issetequal(species(lrs), [X])  
+        @test issetequal(spatial_species(lrs), [X])   
+        @test issetequal(parameters(lrs), [p, d])   
+        @test issetequal(vertex_parameters(lrs), [p])  
+        @test issetequal(edge_parameters(lrs), [d])      
+    end
 end
 
 # Test case 2.
@@ -44,14 +50,16 @@ let
     end
     tr_1 = @transport_reaction dX X  
     tr_2 = @transport_reaction dY Y    
-    lrs = LatticeReactionSystem(rs, [tr_1, tr_2], grid)
+    for grid in grids
+        lrs = LatticeReactionSystem(rs, [tr_1, tr_2], grid)
 
-    @unpack X, Y, pX, pY, dX, dY = rs
-    @test issetequal(species(lrs), [X, Y])
-    @test issetequal(spatial_species(lrs), [X, Y])
-    @test issetequal(parameters(lrs), [pX, pY, dX, dY])
-    @test issetequal(vertex_parameters(lrs), [pX, pY, dY])
-    @test issetequal(edge_parameters(lrs), [dX])
+        @unpack X, Y, pX, pY, dX, dY = rs
+        @test issetequal(species(lrs), [X, Y])
+        @test issetequal(spatial_species(lrs), [X, Y])
+        @test issetequal(parameters(lrs), [pX, pY, dX, dY])
+        @test issetequal(vertex_parameters(lrs), [pX, pY, dY])
+        @test issetequal(edge_parameters(lrs), [dX])
+    end
 end
 
 # Test case 4.
@@ -62,14 +70,16 @@ let
         (pY, 1), 0 <--> Y
     end
     tr_1 = @transport_reaction dX X   
-    lrs = LatticeReactionSystem(rs, [tr_1], grid)
+    for grid in grids
+        lrs = LatticeReactionSystem(rs, [tr_1], grid)
 
-    @unpack dX, p, X, Y, pX, pY = rs
-    @test issetequal(species(lrs), [X, Y])
-    @test issetequal(spatial_species(lrs), [X])
-    @test issetequal(parameters(lrs), [dX, p, pX, pY])
-    @test issetequal(vertex_parameters(lrs), [dX, p, pX, pY])
-    @test issetequal(edge_parameters(lrs), [])
+        @unpack dX, p, X, Y, pX, pY = rs
+        @test issetequal(species(lrs), [X, Y])
+        @test issetequal(spatial_species(lrs), [X])
+        @test issetequal(parameters(lrs), [dX, p, pX, pY])
+        @test issetequal(vertex_parameters(lrs), [dX, p, pX, pY])
+        @test issetequal(edge_parameters(lrs), [])
+    end
 end
 
 # Test case 5.
@@ -90,16 +100,18 @@ let
     tr_2 = @transport_reaction dY Y    
     tr_3 = @transport_reaction dZ Z 
     tr_4 = TransportReaction(dV, V)  
-    tr_5 = TransportReaction(dW, W)     
-    lrs = LatticeReactionSystem(rs, [tr_1, tr_2, tr_3, tr_4, tr_5], grid)
+    tr_5 = TransportReaction(dW, W)   
+    for grid in grids  
+        lrs = LatticeReactionSystem(rs, [tr_1, tr_2, tr_3, tr_4, tr_5], grid)
 
-    @unpack pX, pY, pZ, pV, dX, dY, X, Y, Z, V = rs
-    dZ, dV, dW = edge_parameters(lrs)[2:end]
-    @test issetequal(species(lrs), [W, X, Y, Z, V])
-    @test issetequal(spatial_species(lrs), [X, Y, Z, V, W])
-    @test issetequal(parameters(lrs), [pX, pY, dX, dY, pZ, pV, dZ, dV, dW])
-    @test issetequal(vertex_parameters(lrs), [pX, pY, dY, pZ, pV])
-    @test issetequal(edge_parameters(lrs), [dX, dZ, dV, dW])
+        @unpack pX, pY, pZ, pV, dX, dY, X, Y, Z, V = rs
+        dZ, dV, dW = edge_parameters(lrs)[2:end]
+        @test issetequal(species(lrs), [W, X, Y, Z, V])
+        @test issetequal(spatial_species(lrs), [X, Y, Z, V, W])
+        @test issetequal(parameters(lrs), [pX, pY, dX, dY, pZ, pV, dZ, dV, dW])
+        @test issetequal(vertex_parameters(lrs), [pX, pY, dY, pZ, pV])
+        @test issetequal(edge_parameters(lrs), [dX, dZ, dV, dW])
+    end
 end
 
 # Test case 6.
@@ -108,9 +120,11 @@ let
         (p, 1), 0 <--> X
     end
     tr = @transport_reaction d X    
-    lrs = LatticeReactionSystem(rs, [tr], grid)
+    for grid in grids
+        lrs = LatticeReactionSystem(rs, [tr], grid)
 
-    @test nameof(lrs) == :customname
+        @test nameof(lrs) == :customname
+    end
 end
 
 ### Tests Spatial Reactions Getters Correctness ###
@@ -234,7 +248,9 @@ let
         (p, d), 0 <--> X
     end
     tr = @transport_reaction D Y    
-    @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
+    for grid in grids
+        @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
+    end
 end
 
 # Network where the rate depend on a species
@@ -244,7 +260,9 @@ let
         (p, d), 0 <--> X
     end
     tr = @transport_reaction D*Y X
-    @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
+    for grid in grids
+        @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
+    end
 end
 
 # Network with edge parameter in non-spatial reaction rate.
@@ -254,7 +272,9 @@ let
         (p, d), 0 <--> X
     end
     tr = @transport_reaction D X
-    @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
+    for grid in grids
+        @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
+    end
 end
 
 # Network where metadata has been added in rs (which is not seen in transport reaction).
@@ -264,14 +284,16 @@ let
         (p, d), 0 <--> X
     end
     tr = @transport_reaction D X
-    @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
+    for grid in grids
+        @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
 
-    rs = @reaction_network begin
-        @parameters D [description="Parameter with added metadata"]
-        (p, d), 0 <--> X
+        rs = @reaction_network begin
+            @parameters D [description="Parameter with added metadata"]
+            (p, d), 0 <--> X
+        end
+        tr = @transport_reaction D X
+        @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
     end
-    tr = @transport_reaction D X
-    @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
 end
 
 
@@ -296,7 +318,7 @@ let
     end
 
     # Graph grids (cannot test diagonal connections).
-    for lattice in [small_2d_grid, small_3d_grid, undirected_cycle, small_directed_cycle, unconnected_graph]
+    for lattice in [small_2d_graph_grid, small_3d_graph_grid, undirected_cycle, small_directed_cycle, unconnected_graph]
         lrs1 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice)
         @test lrs1.num_edges == iterator_count(lrs1.edge_iterator)    
     end
