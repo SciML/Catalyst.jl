@@ -119,21 +119,22 @@ export make_si_ode
 
 ### Spatial Reaction Networks ###
 
-# spatial reactions
+# Spatial reactions.
 include("spatial_reaction_systems/spatial_reactions.jl")
 export TransportReaction, TransportReactions, @transport_reaction
 export isedgeparameter
 
-# lattice reaction systems
+# Lattice reaction systems.
 include("spatial_reaction_systems/lattice_reaction_systems.jl")
 export LatticeReactionSystem
 export spatial_species, vertex_parameters, edge_parameters
 export CartesianGrid, CartesianGridReJ # (Implemented in JumpProcesses)
+export has_cartesian_lattice, has_masked_lattice, has_grid_lattice, has_graph_lattice, grid_dims
 
-# variosu utility functions
-include("spatial_reaction_systems/utility.jl")
-
-# spatial lattice ode systems.
+# Spatial lattice ode systems.
 include("spatial_reaction_systems/spatial_ODE_systems.jl")
+
+# Various utility functions.
+include("spatial_reaction_systems/utility.jl")
 
 end # module
