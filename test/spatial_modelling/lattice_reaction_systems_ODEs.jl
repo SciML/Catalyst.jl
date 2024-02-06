@@ -494,6 +494,47 @@ let
     end
 end
 
+# Tests various types of numbers for initial conditions/parameters (e.g. Real numbers, Float32, etc.).
+let
+    # Declare u0 versions.
+    u0_Int64 = [:X => 2, :Y => [1, 1, 1, 2]]
+    u0_Float64 = [:X => 2.0, :Y => [1.0, 1.0, 1.0, 2.0]]
+    u0_Int32 = [:X => Int32(2), :Y => Int32.([1, 1, 1, 2])]
+    u0_Any = Pair{Symbol,Any}[:X => 2.0, :Y => [1.0, 1.0, 1.0, 2.0]]
+    u0s = (u0_Int64, u0_Float64, u0_Int32, u0_Any)
+
+    # Declare parameter versions.
+    dY_vals = spzeros(4,4)
+    dY_vals[1,2] = 1; dY_vals[2,1] = 1; 
+    dY_vals[1,3] = 1; dY_vals[3,1] = 1; 
+    dY_vals[2,4] = 1; dY_vals[4,2] = 1; 
+    dY_vals[3,4] = 2; dY_vals[4,3] = 2; 
+    p_Int64 = (:A => [1, 1, 1, 2], :B => 4, :dX => 1, :dY => Int64.(dY_vals))
+    p_Float64 = (:A => [1.0, 1.0, 1.0, 2.0], :B => 4.0, :dX => 1.0, :dY => Float64.(dY_vals))
+    p_Int32 = (:A => Int32.([1, 1, 1, 2]), :B => Int32(4), :dX => Int32(1), :dY => Int32.(dY_vals))
+    p_Any = Pair{Symbol,Any}[:A => [1.0, 1.0, 1.0, 2.0], :B => 4.0, :dX => 1.0, :dY => dY_vals]
+    ps = (p_Int64, p_Float64, p_Int32, p_Any)
+
+    # Creates a base solution to compare all solution to.
+    lrs_base = LatticeReactionSystem(brusselator_system, brusselator_srs_2, very_small_2d_graph_grid)
+    oprob_base = ODEProblem(lrs_base, u0s[1], (0.0, 20.0), ps[1])
+    sol_base = solve(oprob_base, QNDF(); abstol=1e-8, reltol=1e-8, saveat=0.1)
+
+    # Checks all combinations of input types.
+    for grid in [very_small_2d_cartesian_grid, very_small_2d_masked_grid, very_small_2d_graph_grid]
+        lrs_base = LatticeReactionSystem(brusselator_system, brusselator_srs_2, grid)
+        for u0_base in u0s, p_base in ps
+            for u0 in [u0_base, Tuple(u0_base), Dict(u0_base)], p in [p_base, Tuple(p_base), Dict(p_base)]
+                for sparse in [false, true], jac in [false, true]
+                    oprob = ODEProblem(lrs, u0, (0.0, 20.0), p; sparse, jac)
+                    sol = solve(oprob, QNDF(); abstol=1e-8, reltol=1e-8, saveat=0.1)
+                    @test sol == sol_base
+                end
+            end
+        end
+    end
+end
+
 ### Compare to Hand-written Functions ###
 
 # Compares the brusselator for a line of cells.
