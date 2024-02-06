@@ -177,7 +177,7 @@ include("spatial_reaction_systems/lattice_reaction_systems.jl")
 export LatticeReactionSystem
 export spatial_species, vertex_parameters, edge_parameters
 export CartesianGrid, CartesianGridReJ # (Implemented in JumpProcesses)
-export has_cartesian_lattice, has_masked_lattice, has_grid_lattice, has_graph_lattice, grid_dims
+export has_cartesian_lattice, has_masked_lattice, has_grid_lattice, has_graph_lattice, grid_dims, grid_size
 
 # Various utility functions
 include("spatial_reaction_systems/utility.jl")

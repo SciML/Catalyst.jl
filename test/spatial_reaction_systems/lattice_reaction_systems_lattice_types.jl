@@ -100,9 +100,9 @@ let
 
     # Checks that simulations yields the same output.
     X_vals = rand(cartesian_lrs.num_verts)
-    u0_cartesian = [:X => reshape(u0_vals, 5, 5), :Y => 2.0]
-    u0_masked = [:X => reshape(u0_vals, 5, 5), :Y => 2.0]
-    u0_graph = [:X => u0_vals, :Y => 2.0]
+    u0_cartesian = [:X => reshape(X_vals, 5, 5), :Y => 2.0]
+    u0_masked = [:X => reshape(X_vals, 5, 5), :Y => 2.0]
+    u0_graph = [:X => X_vals, :Y => 2.0]
     B_vals = rand(cartesian_lrs.num_verts)
     pV_cartesian = [:A => 0.5 .+ reshape(B_vals, 5, 5), :B => 4.0]
     pV_masked = [:A => 0.5 .+ reshape(B_vals, 5, 5), :B => 4.0]
