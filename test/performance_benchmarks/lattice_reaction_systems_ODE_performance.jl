@@ -23,7 +23,7 @@ let
     u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs.lattice), :R => 0.0]
     pV = SIR_p
     pE = [:dS => 0.01, :dI => 0.01, :dR => 0.01]
-    oprob = ODEProblem(lrs, u0, (0.0, 500.0), (pV, pE); jac = false)
+    oprob = ODEProblem(lrs, u0, (0.0, 500.0), [pV; pE]; jac = false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
 
     runtime_target = 0.00027
@@ -38,7 +38,7 @@ let
     u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs.lattice), :R => 0.0]
     pV = SIR_p
     pE = [:dS => 0.01, :dI => 0.01, :dR => 0.01]
-    oprob = ODEProblem(lrs, u0, (0.0, 500.0), (pV, pE); jac = false)
+    oprob = ODEProblem(lrs, u0, (0.0, 500.0), [pV; pE]; jac = false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
 
     runtime_target = 0.12
@@ -53,7 +53,7 @@ let
     u0 = [:X => rand_v_vals(lrs.lattice, 10), :Y => rand_v_vals(lrs.lattice, 10)]
     pV = brusselator_p
     pE = [:dX => 0.2]
-    oprob = ODEProblem(lrs, u0, (0.0, 100.0), (pV, pE))
+    oprob = ODEProblem(lrs, u0, (0.0, 100.0), [pV; pE])
     @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver=:GMRES)))
 
     runtime_target = 0.013
@@ -68,7 +68,7 @@ let
     u0 = [:X => rand_v_vals(lrs.lattice, 10), :Y => rand_v_vals(lrs.lattice, 10)]
     pV = brusselator_p
     pE = [:dX => 0.2]
-    oprob = ODEProblem(lrs, u0, (0.0, 100.0), (pV, pE))
+    oprob = ODEProblem(lrs, u0, (0.0, 100.0), [pV; pE])
     @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver=:GMRES)))
 
     runtime_target = 11.
@@ -99,7 +99,7 @@ let
     ]
     pV = CuH_Amination_p
     pE = [:D1 => 0.1, :D2 => 0.1, :D3 => 0.1, :D4 => 0.1, :D5 => 0.1]
-    oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac = false)
+    oprob = ODEProblem(lrs, u0, (0.0, 10.0), [pV; pE]; jac = false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
 
     runtime_target = 0.0012
@@ -130,7 +130,7 @@ let
     ]
     pV = CuH_Amination_p
     pE = [:D1 => 0.1, :D2 => 0.1, :D3 => 0.1, :D4 => 0.1, :D5 => 0.1]
-    oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE); jac = false)
+    oprob = ODEProblem(lrs, u0, (0.0, 10.0), [pV; pE]; jac = false)
     @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
 
     runtime_target = 0.56
@@ -156,7 +156,7 @@ let
     ]
     pV = sigmaB_p
     pE = [:DσB => 0.1, :Dw => 0.1, :Dv => 0.1]
-    oprob = ODEProblem(lrs, u0, (0.0, 50.0), (pV, pE))
+    oprob = ODEProblem(lrs, u0, (0.0, 50.0), [pV; pE])
     @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver=:GMRES)))
 
     runtime_target = 0.61
@@ -182,7 +182,7 @@ let
     ]
     pV = sigmaB_p
     pE = [:DσB => 0.1, :Dw => 0.1, :Dv => 0.1]
-    oprob = ODEProblem(lrs, u0, (0.0, 10.0), (pV, pE)) # Time reduced from 50.0 (which casues Julai to crash).
+    oprob = ODEProblem(lrs, u0, (0.0, 10.0), [pV; pE]) # Time reduced from 50.0 (which casues Julai to crash).
     @test SciMLBase.successful_retcode(solve(oprob, CVODE_BDF(linear_solver=:GMRES)))
 
     runtime_target = 59.

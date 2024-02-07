@@ -303,7 +303,8 @@ let
     end
 
     u0 = 2 * rand(rng, 10000)
-    p = [1.0, 4.0, 0.1]
+    p_hw = [1.0, 4.0, 0.1]
+    p_aut = [[1.0], [4.0], sparse([1], [1], [0.1])]
     tspan = (0.0, 100.0)
 
     ofun_hw_dense = ODEFunction(spatial_brusselator_f; jac = spatial_brusselator_jac)
@@ -323,10 +324,10 @@ let
     du_aut_dense = deepcopy(u0)
     du_aut_sparse = deepcopy(u0)
 
-    ofun_hw_dense(du_hw_dense, u0, p, 0.0)
-    ofun_hw_sparse(du_hw_sparse, u0, p, 0.0)
-    ofun_aut_dense(du_aut_dense, u0, p, 0.0)
-    ofun_aut_sparse(du_aut_sparse, u0, p, 0.0)
+    ofun_hw_dense(du_hw_dense, u0, p_hw, 0.0)
+    ofun_hw_sparse(du_hw_sparse, u0, p_hw, 0.0)
+    ofun_aut_dense(du_aut_dense, u0, p_aut, 0.0)
+    ofun_aut_sparse(du_aut_sparse, u0, p_aut, 0.0)
 
     @test isapprox(du_hw_dense, du_aut_dense)
     @test isapprox(du_hw_sparse, du_aut_sparse)
