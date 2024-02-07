@@ -302,32 +302,32 @@ let
         return sparse(jac_prototype_pre)
     end
 
-    u0 = 2 * rand(rng, 10000)
-    p_hw = [1.0, 4.0, 0.1]
-    p_aut = [[1.0], [4.0], sparse([1], [1], [0.1])]
+    num_verts = 5000
+    u0 = 2 * rand(rng, 2*num_verts)
+    p = [1.0, 4.0, 0.1]
     tspan = (0.0, 100.0)
 
     ofun_hw_dense = ODEFunction(spatial_brusselator_f; jac = spatial_brusselator_jac)
     ofun_hw_sparse = ODEFunction(spatial_brusselator_f; jac = spatial_brusselator_jac,
                                  jac_prototype = make_jac_prototype(u0))
 
-    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1,
-                                path_graph(Int64(length(u0) / 2)))
-    u0V = [:X => u0[1:2:(end - 1)], :Y => u0[2:2:end]]
-    pV = [:A => p[1], :B => p[2]]
-    pE = [:dX => p[3]]
-    ofun_aut_dense = ODEProblem(lrs, u0V, tspan, [pV; pE]; jac = true, sparse = false).f
-    ofun_aut_sparse = ODEProblem(lrs, u0V, tspan, [pV; pE]; jac = true, sparse = true).f
+    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, path_graph(num_verts))
+    u0_map = [:X => u0[1:2:(end - 1)], :Y => u0[2:2:end]]
+    ps_map = [:A => p[1], :B => p[2], :dX => p[3]]
+    oprob_aut_dense = ODEProblem(lrs, u0_map, tspan, ps_map; jac = true, sparse = false)
+    oprob_aut_sparse = ODEProblem(lrs, u0_map, tspan, ps_map; jac = true, sparse = true)
+    ofun_aut_dense = oprob_aut_dense.f
+    ofun_aut_sparse = oprob_aut_sparse.f
 
     du_hw_dense = deepcopy(u0)
     du_hw_sparse = deepcopy(u0)
     du_aut_dense = deepcopy(u0)
     du_aut_sparse = deepcopy(u0)
 
-    ofun_hw_dense(du_hw_dense, u0, p_hw, 0.0)
-    ofun_hw_sparse(du_hw_sparse, u0, p_hw, 0.0)
-    ofun_aut_dense(du_aut_dense, u0, p_aut, 0.0)
-    ofun_aut_sparse(du_aut_sparse, u0, p_aut, 0.0)
+    ofun_hw_dense(du_hw_dense, u0, p, 0.0)
+    ofun_hw_sparse(du_hw_sparse, u0, p, 0.0)
+    ofun_aut_dense(du_aut_dense, u0, oprob_aut_dense.p, 0.0)
+    ofun_aut_sparse(du_aut_sparse, u0, oprob_aut_dense.p, 0.0)
 
     @test isapprox(du_hw_dense, du_aut_dense)
     @test isapprox(du_hw_sparse, du_aut_sparse)
@@ -339,8 +339,8 @@ let
 
     ofun_hw_dense.jac(J_hw_dense, u0, p, 0.0)
     ofun_hw_sparse.jac(J_hw_sparse, u0, p, 0.0)
-    ofun_aut_dense.jac(J_aut_dense, u0, p, 0.0)
-    ofun_aut_sparse.jac(J_aut_sparse, u0, p, 0.0)
+    ofun_aut_dense.jac(J_aut_dense, u0, oprob_aut_dense.p, 0.0)
+    ofun_aut_sparse.jac(J_aut_sparse, u0, oprob_aut_dense.p, 0.0)
 
     @test isapprox(J_hw_dense, J_aut_dense)
     @test isapprox(J_hw_sparse, J_aut_sparse)
