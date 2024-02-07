@@ -190,7 +190,7 @@ let
     @test getdescription(parameters(noise_scaling_network)[5]) == "Parameter η2"
     
     sprob = SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p)
-    @test_broken sprob.ps[:η1] == sprob.ps[:η2] == sprob.ps[:η3] == sprob.ps[:η4] == 0.0 # Broken due to SII/MTK stuff.
+    @test sprob.ps[:η1] == sprob.ps[:η2] == sprob.ps[:η3] == sprob.ps[:η4] == 0.0
 end
 
 # Tests default_noise_scaling_option.
