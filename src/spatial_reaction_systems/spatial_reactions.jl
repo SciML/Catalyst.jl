@@ -3,7 +3,7 @@
 # Abstract spatial reaction structures.
 abstract type AbstractSpatialReaction end
 
-### EdgeParameter Metadata ###
+### Edge Parameter Metadata ###
 
 # Implements the edgeparameter metadata field.
 struct EdgeParameter end
@@ -17,12 +17,13 @@ function isedgeparameter(x, default = false)
     Symbolics.getmetadata(x, EdgeParameter, default)
 end
 
+
 ### Transport Reaction Structures ###
 
 # A transport reaction. These are simple to handle, and should cover most types of spatial reactions.
 # Only permit constant rates (possibly consisting of several parameters).
 struct TransportReaction <: AbstractSpatialReaction
-    """The rate function (excluding mass action terms). Currently only constants supported"""
+    """The rate function (excluding mass action terms). Currently, only constants supported"""
     rate::Any
     """The species that is subject to diffusion."""
     species::BasicSymbolic{Real}
@@ -40,7 +41,7 @@ function TransportReactions(transport_reactions)
     [TransportReaction(tr[1], tr[2]) for tr in transport_reactions]
 end
 
-# Macro for creating a transport reaction.
+# Macro for creating a TransportReactions.
 macro transport_reaction(rateex::ExprValues, species::ExprValues)
     make_transport_reaction(MacroTools.striplines(rateex), species)
 end
@@ -70,17 +71,17 @@ function make_transport_reaction(rateex, species)
     end
 end
 
-# Gets the parameters in a transport reaction.
+# Gets the parameters in a TransportReactions.
 ModelingToolkit.parameters(tr::TransportReaction) = Symbolics.get_variables(tr.rate)
 
-# Gets the species in a transport reaction.
+# Gets the species in a TransportReactions.
 spatial_species(tr::TransportReaction) = [tr.species]
 
-# Checks that a transport reaction is valid for a given reaction system.
+# Checks that a TransportReactions is valid for a given reaction system.
 function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReaction; edge_parameters=[])
     # Checks that the species exist in the reaction system.
     # (ODE simulation code becomes difficult if this is not required,
-    # as non-spatial jacobian and f function generated from rs is of wrong size).  
+    # as non-spatial jacobian and f function generated from rs are of the wrong size).  
     if !any(isequal(tr.species), species(rs)) 
         error("Currently, species used in TransportReactions must have previously been declared within the non-spatial ReactionSystem. This is not the case for $(tr.species).")
     end
@@ -93,16 +94,16 @@ function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReacti
 
     # Checks that the species does not exist in the system with different metadata.
     if any([isequal(tr.species, s) && !isequivalent(tr.species, s) for s in species(rs)]) 
-        error("A transport reaction used a species, $(tr.species), with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and used in transport reaction creation.")
+        error("A transport reaction used a species, $(tr.species), with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and use it in the TransportReaction's creation.")
     end
     if any([isequal(rs_p, tr_p) && !equivalent_metadata(rs_p, tr_p) 
             for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate)]) 
         error("A transport reaction used a parameter with metadata not matching its lattice reaction system. Please fetch this parameter from the reaction system and used in transport reaction creation.")
     end
 
-    # Checks that no edge parameter occur among rates of non-spatial reactions.
+    # Checks that no edge parameter occurs among rates of non-spatial reactions.
     if any([!isempty(intersect(Symbolics.get_variables(r.rate), edge_parameters)) for r in reactions(rs)])
-        error("Edge paramter(s) were found as a rate of a non-spatial reaction.")
+        error("Edge parameter(s) were found as a rate of a non-spatial reaction.")
     end
 end
 equivalent_metadata(p1, p2) = isempty(setdiff(p1.metadata, p2.metadata, [Catalyst.EdgeParameter => true]))
@@ -133,8 +134,10 @@ function hash(tr::TransportReaction, h::UInt)
     Base.hash(tr.species, h)
 end
 
+
 ### Utility ###
-# Loops through a rate and extract all parameters.
+
+# Loops through a rate and extracts all parameters.
 function find_parameters_in_rate!(parameters, rateex::ExprValues)
     if rateex isa Symbol
         if rateex in [:t, :∅, :im, :nothing, CONSERVED_CONSTANT_SYMBOL]
@@ -143,7 +146,7 @@ function find_parameters_in_rate!(parameters, rateex::ExprValues)
             push!(parameters, rateex)
         end
     elseif rateex isa Expr
-        # Note, this (correctly) skips $(...) expressions
+        # Note, this (correctly) skips $(...) expressions.
         for i in 2:length(rateex.args)
             find_parameters_in_rate!(parameters, rateex.args[i])
         end
