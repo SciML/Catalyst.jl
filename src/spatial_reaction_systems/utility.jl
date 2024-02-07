@@ -64,7 +64,7 @@ function lattice_process_input(input::Dict{BasicSymbolic{Real}, T}, syms::Vector
     return [sym => input[sym] for sym in syms]
 end
 function lattice_process_input(input, syms::Vector{BasicSymbolic{Real}})
-    if ((input isa Vector) || (input isa Vector)) && all(entry isa Pair for entry in input)
+    if ((input isa Vector) || (input isa Tuple)) && all(entry isa Pair for entry in input)
         return lattice_process_input(Dict(input), syms)
     end
     error("Input parameters/initial conditions have the wrong format ($(typeof(input))). These should either be a Dictionary, or a Tuple or a Vector (where each entry is a Pair taking a parameter/species to its value).")
@@ -95,7 +95,7 @@ function vertex_value_form(values, lrs::LatticeReactionSystem, sym::BasicSymboli
         # For the case where we have a 1d (Cartesian or masked) grid, and the vector's values
         # correspond to individual grid points.
         if has_grid_lattice(lrs) && (size(values) == grid_size(lrs))
-            vertex_value_form(values, lrs.num_verts, lrs.lattice, sym)
+            return vertex_value_form(values, lrs.num_verts, lrs.lattice, sym)
         end
 
         # For the case where the i'th value of the vector corresponds to the value in the i'th vertex.

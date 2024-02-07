@@ -6,6 +6,7 @@ using Catalyst, Graphs, OrdinaryDiffEq, Test
 # Fetch test networks.
 include("../spatial_test_networks.jl")
 
+
 ### Run Tests ###
 
 # Test errors when attempting to create networks with dimension > 3.
@@ -158,5 +159,93 @@ let
         masked_sol = solve(masked_oprob, QNDF(); saveat=0.1, abstol=1e-9, reltol=1e-9)
         graph_sol = solve(graph_oprob, QNDF(); saveat=0.1, abstol=1e-9, reltol=1e-9)
         @test base_osol ≈ masked_sol ≈ graph_sol
+    end
+end
+
+# For a system which is a single ine of vertexes: (O-O-O-O-X-O-O-O), ensures that different simulations
+# approach yield the same result. Checks for both masked and Cartesian grid. For both, simulates where
+# initial conditions/vertex parameters are either a vector of the same length as the number of vertexes (7),
+# Or as the grid. Here, we try grid sizes (n), (1,n), and (1,n,1) (so the same grid, but in 1d, 2d, and 3d).
+# For the Cartesian grid, we cannot represent the gap, so we make simulations both for length-4 and
+# length-3 grids.
+let
+    # Declares the initial condition/parameter values.
+    S_vals = [500.0, 600.0, 700.0, 800.0, 0.0, 900.0, 1000.0, 1100.0]
+    I_val = 1.0
+    R_val = 1.0
+    α_vals = [0.1, 0.11, 0.12, 0.13, 0.0, 0.14, 0.15, 0.16]
+    β_val = 0.01
+    dS_val = 0.05
+    SIR_p = [:α => 0.1 / 1000, :β => 0.01]
+
+    # Declares the grids (1d, 2d, and 3d). For each dimension, there are a 2 Cartesian grids (length 4 and 3).
+    cart_grid_1d_1 = CartesianGrid(4)
+    cart_grid_1d_2 = CartesianGrid(3)
+    cart_grid_2d_1 = CartesianGrid((4,1))
+    cart_grid_2d_2 = CartesianGrid((3,1))
+    cart_grid_3d_1 = CartesianGrid((1,4,1))
+    cart_grid_3d_2 = CartesianGrid((1,3,1))
+
+    masked_grid_1d = [true, true, true, true, false, true, true, true]
+    masked_grid_2d = reshape(masked_grid_1d,8,1)
+    masked_grid_3d = reshape(masked_grid_1d,1,8,1)
+
+    # Creaets a base solution to which we will compare all simulations.
+    lrs_base = LatticeReactionSystem(SIR_system, SIR_srs_1, masked_grid_1d)
+    oprob_base = ODEProblem(lrs_base, [:S => S_vals, :I => I_val, :R => R_val], (0.0, 100.0), [:α => α_vals, :β => β_val, :dS => dS_val])
+    sol_base = solve(oprob_base, Tsit5(); saveat = 1.0, abstol = 1e-9, reltol = 1e-9)
+
+    # Checks simulations for the masked grid (covering all 7 vertices, with a gap in the middle).
+    for grid in [masked_grid_1d, masked_grid_2d, masked_grid_3d]
+        # Checks where the values are vectors of length equal to the number of vertices.
+        lrs = LatticeReactionSystem(SIR_system, SIR_srs_1, grid)
+        u0 = [:S => [S_vals[1:4]; S_vals[6:8]], :I => I_val, :R => R_val]
+        ps = [:α => [α_vals[1:4]; α_vals[6:8]], :β => β_val, :dS => dS_val]
+        oprob = ODEProblem(lrs, u0, (0.0, 100.0), ps)
+        sol = solve(oprob, Tsit5(); saveat = 1.0, abstol = 1e-9, reltol = 1e-9)
+        @test sol ≈ sol_base
+
+        # Checks where the values are arrays of size equal to the grid.
+        u0 = [:S => reshape(S_vals, grid_size(lrs)), :I => I_val, :R => R_val]
+        ps = [:α => reshape(α_vals, grid_size(lrs)), :β => β_val, :dS => dS_val]
+        oprob = ODEProblem(lrs, u0, (0.0, 100.0), ps)
+        sol = solve(oprob, Tsit5(); saveat = 1.0, abstol = 1e-9, reltol = 1e-9)
+        @test sol ≈ sol_base
+    end
+
+    # Checks simulations for the first Cartesian grids (covering vertices 1 to 4).
+    for grid in [cart_grid_1d_1, cart_grid_2d_1, cart_grid_3d_1]
+        # Checks where the values are vectors of length equal to the number of vertices.
+        lrs = LatticeReactionSystem(SIR_system, SIR_srs_1, grid)
+        u0 = [:S => S_vals[1:4], :I => I_val, :R => R_val]
+        ps = [:α => α_vals[1:4], :β => β_val, :dS => dS_val]
+        oprob = ODEProblem(lrs, u0, (0.0, 100.0), ps)
+        sol = solve(oprob, Tsit5(); saveat = 1.0, abstol = 1e-9, reltol = 1e-9)
+        @test sol[:,:] ≈ sol_base[1:12,:]
+
+        # Checks where the values are arrays of size equal to the grid.
+        u0 = [:S => reshape(S_vals[1:4], grid_size(lrs)), :I => I_val, :R => R_val]
+        ps = [:α => reshape(α_vals[1:4], grid_size(lrs)), :β => β_val, :dS => dS_val]
+        oprob = ODEProblem(lrs, u0, (0.0, 100.0), ps)
+        sol = solve(oprob, Tsit5(); saveat = 1.0, abstol = 1e-9, reltol = 1e-9)
+        @test sol[:,:] ≈ sol_base[1:12,:]
+    end
+
+    # Checks simulations for the second Cartesian grids (covering vertices 6 to 8).
+    for grid in [cart_grid_1d_2, cart_grid_2d_2, cart_grid_3d_2]
+        # Checks where the values are vectors of length equal to the number of vertices.
+        lrs = LatticeReactionSystem(SIR_system, SIR_srs_1, grid)
+        u0 = [:S => S_vals[6:8], :I => I_val, :R => R_val]
+        ps = [:α => α_vals[6:8], :β => β_val, :dS => dS_val]
+        oprob = ODEProblem(lrs, u0, (0.0, 100.0), ps)
+        sol = solve(oprob, Tsit5(); saveat = 1.0, abstol = 1e-9, reltol = 1e-9)
+        @test sol[:,:] ≈ sol_base[13:end,:]
+
+        # Checks where the values are arrays of size equal to the grid.
+        u0 = [:S => reshape(S_vals[6:8], grid_size(lrs)), :I => I_val, :R => R_val]
+        ps = [:α => reshape(α_vals[6:8], grid_size(lrs)), :β => β_val, :dS => dS_val]
+        oprob = ODEProblem(lrs, u0, (0.0, 100.0), ps)
+        sol = solve(oprob, Tsit5(); saveat = 1.0, abstol = 1e-9, reltol = 1e-9)
+        @test sol[:,:] ≈ sol_base[13:end,:]
     end
 end
