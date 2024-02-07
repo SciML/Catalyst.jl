@@ -18,7 +18,7 @@ end
 function lattice_process_u0(u0_in, u0_syms::Vector{BasicSymbolic{Real}}, lrs::LatticeReactionSystem)
     # u0 values can be given in various forms. This converts it to a Vector{Pair{Symbolics,...}} form.
     # Top-level vector: Maps each species to its value(s).
-    u0 = lattice_process_input(u0_in, u0_syms)   
+    u0 = lattice_process_input(u0_in, u0_syms) 
 
     # Species' initial condition values can be given in different forms (also depending on the lattice).
     # This converts each species's values to a Vector. In it, for species with uniform initial conditions,
