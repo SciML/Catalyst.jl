@@ -1,7 +1,7 @@
 ### Preparations ###
 
 # Fetch packages.
-using Catalyst, Graphs, Test
+using Catalyst, Graphs, OrdinaryDiffEq, Test
 
 # Fetch test networks.
 include("../spatial_test_networks.jl")
@@ -325,6 +325,31 @@ let
 end
 
 ### Tests Edge Value Computation Helper Functions ###
+
+# Checks that  computes the correct values across various types of grids.
+let
+    # Prepares the model and the function that determines the edge values.
+    rn = @reaction_network begin
+        (p,d), 0 <--> X
+    end
+    tr = @transport_reaction D X
+    function make_edge_p_value(src_vert, dst_vert)
+        return prod(src_vert) + prod(dst_vert)
+    end
+    
+    # Loops through a variety of grids, checks that `make_edge_p_values` yields the correct values.
+    for grid in [small_1d_cartesian_grid, small_2d_cartesian_grid, small_3d_cartesian_grid,
+                 small_1d_masked_grid, small_2d_masked_grid, small_3d_masked_grid, 
+                 random_1d_masked_grid, random_2d_masked_grid, random_3d_masked_grid]
+        lrs = LatticeReactionSystem(rn, [tr], grid)
+        flat_to_grid_idx = Catalyst.get_index_converters(lrs.lattice, lrs.num_verts)[1]
+        edge_values = make_edge_p_values(lrs, make_edge_p_value)
+    
+        for e in lrs.edge_iterator
+            @test edge_values[e[1], e[2]] == make_edge_p_value(flat_to_grid_idx[e[1]], flat_to_grid_idx[e[2]])
+        end
+    end
+end
 
 # Checks that all species ends up in the correct place in in a pure flow system (checking various dimensions).
 let

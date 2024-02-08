@@ -24,7 +24,7 @@ rand_e_vals(grid, x::Number) = rand_e_vals(grid) * x
 function rand_e_vals(lrs::LatticeReactionSystem)
     e_vals = spzeros(lrs.num_verts, lrs.num_verts)
     for e in lrs.edge_iterator
-        e_vals[e[1], e[2]] = rand()
+        e_vals[e[1], e[2]] = rand(rng)
     end
     return e_vals
 end
@@ -201,9 +201,9 @@ large_1d_masked_grid = fill(true, 5)
 large_2d_masked_grid = fill(true, 5, 5)
 large_3d_masked_grid = fill(true, 5, 5, 5)
 
-random_1d_masked_grid = rand([true, true, true, false], 10)
-random_2d_masked_grid = rand([true, true, true, false], 10, 10)
-random_3d_masked_grid = rand([true, true, true, false], 10, 10, 10)
+random_1d_masked_grid = rand(rng, [true, true, true, false], 10)
+random_2d_masked_grid = rand(rng, [true, true, true, false], 10, 10)
+random_3d_masked_grid = rand(rng, [true, true, true, false], 10, 10, 10)
 
 # Graph - grids.
 very_small_2d_graph_grid = Graphs.grid([2, 2])
