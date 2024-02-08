@@ -51,6 +51,15 @@ let
     @test grid_dims(masked_2d_lrs) == 2
     @test grid_dims(masked_3d_lrs) == 3
     @test_throws Exception grid_dims(graph_lrs)
+
+    # Checks grid sizes.
+    @test grid_size(cartesian_1d_lrs) == (5,)
+    @test grid_size(cartesian_2d_lrs) == (5,5)
+    @test grid_size(cartesian_3d_lrs) == (5,5,5)
+    @test grid_size(masked_1d_lrs) == (5,)
+    @test grid_size(masked_2d_lrs) == (5,5)
+    @test grid_size(masked_3d_lrs) == (5,5,5)
+    @test_throws Exception grid_size(graph_lrs)
 end
 
 # Checks grid dimensions for 2d and 3d grids where some dimension is equal to 1.
@@ -162,9 +171,9 @@ let
     end
 end
 
-# For a system which is a single ine of vertexes: (O-O-O-O-X-O-O-O), ensures that different simulations
+# For a system which is a single ine of vertices: (O-O-O-O-X-O-O-O), ensures that different simulations
 # approach yield the same result. Checks for both masked and Cartesian grid. For both, simulates where
-# initial conditions/vertex parameters are either a vector of the same length as the number of vertexes (7),
+# initial conditions/vertex parameters are either a vector of the same length as the number of vertices (7),
 # Or as the grid. Here, we try grid sizes (n), (1,n), and (1,n,1) (so the same grid, but in 1d, 2d, and 3d).
 # For the Cartesian grid, we cannot represent the gap, so we make simulations both for length-4 and
 # length-3 grids.

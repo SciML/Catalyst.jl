@@ -8,7 +8,7 @@ struct LatticeTransportODEf{S,T}
     num_verts::Int64
     """The number of species."""
     num_species::Int64
-    """The values of the parameters that are tied to vertexes."""
+    """The values of the parameters that are tied to vertices."""
     vert_ps::Vector{Vector{T}}
     """
     Vector for storing temporary values. Repeatedly during simulations, we need to retrieve the 
@@ -41,7 +41,7 @@ struct LatticeTransportODEf{S,T}
     """
     t_rate_idx_types::Vector{Bool}
     """
-    A matrix, NxM, where N is the number of species with transportation and M is the number of vertexes. 
+    A matrix, NxM, where N is the number of species with transportation and M is the number of vertices. 
     Each value is the total rate at which that species leaves that vertex 
     (e.g. for a species with constant diffusion rate D, in a vertex with n neighbours, this value is n*D).
     """
@@ -86,7 +86,7 @@ struct LatticeTransportODEjac{R,S,T}
     num_verts::Int64
     """The number of species."""
     num_species::Int64
-    """The values of the parameters that are tied to vertexes."""
+    """The values of the parameters that are tied to vertices."""
     vert_ps::Vector{Vector{S}}
     """
     Vector for storing temporary values. Repeatedly during simulations, we need to retrieve the 
@@ -140,7 +140,7 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     p_in = symmap_to_varmap(lrs, p_in)    
 
     # Converts u0 and p to their internal forms.
-    # u0 is simply a vector with all the species' initial condition values across all vertexes.
+    # u0 is simply a vector with all the species' initial condition values across all vertices.
     # u0 is [spec 1 at vert 1, spec 2 at vert 1, ..., spec 1 at vert 2, ...].
     u0 = lattice_process_u0(u0_in, species(lrs), lrs)                                       
     # vert_ps and `edge_ps` are vector maps, taking each parameter's Symbolics representation to its value(s).
@@ -212,24 +212,24 @@ end
 function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, 
                              transport_rates::Vector{Pair{Int64,SparseMatrixCSC{T, Int64}}}, 
                              lrs::LatticeReactionSystem; set_nonzero = false) where {T}
-    # Finds the indexes of  both the transport species,
+    # Finds the indices of  both the transport species,
     # and the species with transport only (that is, with no non-spatial dynamics but with spatial dynamics).
     trans_species = [tr[1] for tr in transport_rates]
     trans_only_species = filter(s_idx -> !Base.isstored(ns_jac_prototype, s_idx, s_idx), trans_species)
 
-    # Finds the indexes of all terms in the non-spatial jacobian.
+    # Finds the indices of all terms in the non-spatial jacobian.
     ns_jac_prototype_idxs = findnz(ns_jac_prototype)
     ns_i_idxs = ns_jac_prototype_idxs[1]
     ns_j_idxs = ns_jac_prototype_idxs[2]
 
-    # Prepares vectors to store i and j indexes of Jacobian entries.
+    # Prepares vectors to store i and j indices of Jacobian entries.
     idx = 1
     num_entries = lrs.num_verts * length(ns_i_idxs) + 
                   lrs.num_edges * (length(trans_only_species) + length(trans_species))
     i_idxs = Vector{Int}(undef, num_entries)
     j_idxs = Vector{Int}(undef, num_entries)
 
-    # Indexes of elements caused by non-spatial dynamics.
+    # Indices of elements caused by non-spatial dynamics.
     for vert in 1:lrs.num_verts
         for n in 1:length(ns_i_idxs)
             i_idxs[idx] = get_index(vert, ns_i_idxs[n], lrs.num_species)
@@ -238,7 +238,7 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64},
         end
     end
 
-    # Indexes of elements caused by spatial dynamics.
+    # Indices of elements caused by spatial dynamics.
     for e in lrs.edge_iterator
         # Indexes due to terms for a species leaving its source vertex (but does not have
         # non-spatial dynamics). If the non-spatial Jacobian is fully dense, these would already
@@ -281,7 +281,7 @@ end
 function (f_func::LatticeTransportODEf)(du, u, p, t)
     # Updates for non-spatial reactions.
     for vert_i in 1:(f_func.num_verts)
-        # Gets the indexes of all the species at vertex i.
+        # Gets the indices of all the species at vertex i.
         idxs = get_indexes(vert_i, f_func.num_species)
         
         # Updates the work vector to contain the vertex parameter values for vertex vert_i.
@@ -294,15 +294,15 @@ function (f_func::LatticeTransportODEf)(du, u, p, t)
     # s_idx is the species index among transport species, s is the index among all species.
     # rates are the species' transport rates.
     for (s_idx, (s, rates)) in enumerate(f_func.transport_rates)  
-        # Rate for leaving source vertex vert_i.
-        for vert_i in 1:(f_func.num_verts)                                 
-            idx_src = get_index(vert_i, s, f_func.num_species)
+        # Rate for leaving source vertex vert_i. 
+        for vert_i in 1:(f_func.num_verts)  
+            idx_src = get_index(vert_i, s, f_func.num_species)                       
             du[idx_src] -= f_func.leaving_rates[s_idx, vert_i] * u[idx_src]
         end
         # Add rates for entering a destination vertex via an incoming edge.
-        for e in f_func.edge_iterator            
+        for e in f_func.edge_iterator   
             idx_src = get_index(e[1], s, f_func.num_species)
-            idx_dst = get_index(e[2], s, f_func.num_species)
+            idx_dst = get_index(e[2], s, f_func.num_species)     
             du[idx_dst] += get_transport_rate(s_idx, f_func, e) * u[idx_src]
         end
     end
