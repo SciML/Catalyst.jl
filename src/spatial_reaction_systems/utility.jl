@@ -23,7 +23,7 @@ function lattice_process_u0(u0_in, u0_syms::Vector{BasicSymbolic{Real}}, lrs::La
     # Species' initial condition values can be given in different forms (also depending on the lattice).
     # This converts each species's values to a Vector. In it, for species with uniform initial conditions,
     # it holds that value only. For spatially heterogeneous initial conditions,
-    # the vector has the same length as the number of vertexes (storing one value for each).
+    # the vector has the same length as the number of vertices (storing one value for each).
     u0 = vertex_value_map(u0, lrs)
 
     # Converts the initial condition to a single Vector (with one value for each species and vertex).
@@ -101,7 +101,7 @@ function vertex_value_form(values, lrs::LatticeReactionSystem, sym::BasicSymboli
         # For the case where the i'th value of the vector corresponds to the value in the i'th vertex.
         # This is the only (non-uniform) case possible for graph grids.
         if (length(values) != lrs.num_verts) 
-            error("You have provided ($(length(values))) values for $sym. This is not equal to the number of vertexes ($(lrs.num_verts)).")
+            error("You have provided ($(length(values))) values for $sym. This is not equal to the number of vertices ($(lrs.num_verts)).")
         end
         return values
     end
@@ -111,13 +111,13 @@ function vertex_value_form(values, lrs::LatticeReactionSystem, sym::BasicSymboli
 end
 
 # Converts values to the correct vector form for a Cartesian grid lattice.
-function vertex_value_form(values::AbstractArray, num_verts::Int64, lattice::CartesianGridRej{S,T}, 
-                           sym::BasicSymbolic{Real}) where {S,T}
+function vertex_value_form(values::AbstractArray, num_verts::Int64, lattice::CartesianGridRej{N,T}, 
+                           sym::BasicSymbolic{Real}) where {N,T}
     if size(values) != lattice.dims
         error("The values for $sym did not have the same format as the lattice. Expected a $(lattice.dims) array, got one of size $(size(values))")
     end
     if (length(values) != num_verts) 
-        error("You have provided ($(length(values))) values for $sym. This is not equal to the number of vertexes ($(num_verts)).")
+        error("You have provided ($(length(values))) values for $sym. This is not equal to the number of vertices ($(num_verts)).")
     end
     return [values[flat_idx] for flat_idx in 1:num_verts]
 end
@@ -140,7 +140,7 @@ function vertex_value_form(values::AbstractArray, num_verts::Int64, lattice::Arr
 
     # Checks that the correct number of values was provided, and returns the values.
     if (length(return_values) != num_verts) 
-        error("You have provided ($(length(return_values))) values for $sym. This is not equal to the number of vertexes ($(num_verts)).")
+        error("You have provided ($(length(return_values))) values for $sym. This is not equal to the number of vertices ($(num_verts)).")
     end
     return return_values
 end
@@ -242,7 +242,7 @@ end
 
 # Gets the index in the u array of species s in vertex vert (when there are num_species species).
 get_index(vert::Int64, s::Int64, num_species::Int64) = (vert - 1) * num_species + s
-# Gets the indexes in the u array of all species in vertex vert (when there are num_species species).
+# Gets the indices in the u array of all species in vertex vert (when there are num_species species).
 get_indexes(vert::Int64, num_species::Int64) = ((vert - 1) * num_species + 1):(vert * num_species)
 
 # Returns the value of a parameter in an edge. For vertex parameters, use their values in the source.

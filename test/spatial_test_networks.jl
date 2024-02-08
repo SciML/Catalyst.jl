@@ -13,10 +13,10 @@ rand_v_vals(lrs::LatticeReactionSystem) = rand_v_vals(lrs.lattice)
 function rand_v_vals(grid::DiGraph) 
     return rand(rng, nv(grid))
 end
-function rand_v_vals(grid::Catalyst.CartesianGridRej{S,T}) where {S,T}
+function rand_v_vals(grid::Catalyst.CartesianGridRej{N,T}) where {N,T}
     return rand(rng, grid.dims)
 end
-function rand_v_vals(grid::Array{Bool, T}) where {T}
+function rand_v_vals(grid::Array{Bool, N}) where {N}
     return rand(rng, size(grid))
 end
 

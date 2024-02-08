@@ -324,3 +324,75 @@ let
     end
 end
 
+### Tests Edge Value Computation Helper Functions ###
+
+# Checks that all species ends up in the correct place in in a pure flow system (checking various dimensions).
+let
+    # Prepares a system with a single species which is transported only.
+    rn = @reaction_network begin
+        @species X(t)
+    end
+    n = 5
+    tr = @transport_reaction D X
+    tspan = (0.0, 10000.0)
+    u0 = [:X => 1.0]
+
+    # Checks the 1d case.
+    lrs = LatticeReactionSystem(rn, [tr], CartesianGrid(n))
+    ps = [:D => make_directed_edge_values(lrs, (10.0, 0.0))]
+    oprob = ODEProblem(lrs, u0, tspan, ps)
+    @test isapprox(solve(oprob, Tsit5())[end][5], n, rtol=1e-6)
+
+    # Checks the 2d case (both with 1d and 2d flow).
+    lrs = LatticeReactionSystem(rn, [tr], CartesianGrid((n,n)))
+
+    ps = [:D => make_directed_edge_values(lrs, (1.0, 0.0), (0.0, 0.0))]
+    oprob = ODEProblem(lrs, u0, tspan, ps)
+    @test all(isapprox.(solve(oprob, Tsit5())[end][5:5:25], n, rtol=1e-6))
+
+    ps = [:D => make_directed_edge_values(lrs, (1.0, 0.0), (1.0, 0.0))]
+    oprob = ODEProblem(lrs, u0, tspan, ps)
+    @test isapprox(solve(oprob, Tsit5())[end][25], n^2, rtol=1e-6)
+
+    # Checks the 3d case (both with 1d and 2d flow).
+    lrs = LatticeReactionSystem(rn, [tr], CartesianGrid((n,n,n)))
+
+    ps = [:D => make_directed_edge_values(lrs, (1.0, 0.0), (0.0, 0.0), (0.0, 0.0))]
+    oprob = ODEProblem(lrs, u0, tspan, ps)
+    @test all(isapprox.(solve(oprob, Tsit5())[end][5:5:125], n, rtol=1e-6))
+
+    ps = [:D => make_directed_edge_values(lrs, (1.0, 0.0), (1.0, 0.0), (0.0, 0.0))]
+    oprob = ODEProblem(lrs, u0, tspan, ps)
+    @test all(isapprox.(solve(oprob, Tsit5())[end][25:25:125], n^2, rtol=1e-6))
+
+    ps = [:D => make_directed_edge_values(lrs, (1.0, 0.0), (1.0, 0.0), (1.0, 0.0))]
+    oprob = ODEProblem(lrs, u0, tspan, ps)
+    @test isapprox(solve(oprob, Tsit5())[end][125], n^3, rtol=1e-6)
+end
+
+# Checks that erroneous input yields errors.
+let
+    rn = @reaction_network begin
+        (p,d), 0 <--> X
+    end
+    tr = @transport_reaction D X
+    tspan = (0.0, 10000.0)
+    make_edge_p_value(src_vert, dst_vert) = rand()
+    
+    # Graph grids.
+    lrs = LatticeReactionSystem(rn, [tr], path_graph(5))
+    @test_throws Exception make_edge_p_values(lrs, make_edge_p_value,)
+    @test_throws Exception make_directed_edge_values(lrs, (1.0, 0.0))
+    
+    # Wrong dimensions to `make_directed_edge_values`.
+    lrs_1d = LatticeReactionSystem(rn, [tr], CartesianGrid(5))
+    lrs_2d = LatticeReactionSystem(rn, [tr], fill(true,5,5))
+    lrs_3d = LatticeReactionSystem(rn, [tr], CartesianGrid((5,5,5)))
+    
+    @test_throws Exception make_directed_edge_values(lrs_1d, (1.0, 0.0), (1.0, 0.0))
+    @test_throws Exception make_directed_edge_values(lrs_1d, (1.0, 0.0), (1.0, 0.0), (1.0, 0.0))
+    @test_throws Exception make_directed_edge_values(lrs_2d, (1.0, 0.0))
+    @test_throws Exception make_directed_edge_values(lrs_2d, (1.0, 0.0), (1.0, 0.0), (1.0, 0.0))
+    @test_throws Exception make_directed_edge_values(lrs_3d, (1.0, 0.0))
+    @test_throws Exception make_directed_edge_values(lrs_3d, (1.0, 0.0), (1.0, 0.0))
+end

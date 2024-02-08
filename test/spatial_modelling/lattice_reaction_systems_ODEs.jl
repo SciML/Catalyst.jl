@@ -386,7 +386,7 @@ let
 end
 
 # Tests that input parameter and u0 values can be given using different types of input for 2d lattices.
-# Tries both for cartesian and masked (where all vertexes are `true`). 
+# Tries both for cartesian and masked (where all vertices are `true`). 
 # Tries for Vector, Tuple, and Dictionary inputs.
 let
     for lattice in [CartesianGrid((4,3)), fill(true, 4, 3)]
