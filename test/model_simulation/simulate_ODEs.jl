@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using Catalyst, OrdinaryDiffEq, Random, Test
-using ModelingToolkit: get_states, get_ps
+using ModelingToolkit: get_unknowns, get_ps
 
 # Sets rnd number.
 using StableRNGs
@@ -18,7 +18,7 @@ let
     exponential_decay = @reaction_network begin d, X → ∅ end
 
     for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
-        u0 = factor * rand(rng, length(get_states(exponential_decay)))
+        u0 = factor * rand(rng, length(get_unknowns(exponential_decay)))
         p = factor * rand(rng, length(get_ps(exponential_decay)))
         prob = ODEProblem(exponential_decay, u0, (0.0, 100 / factor), p)
         sol = solve(prob, Rosenbrock23(), saveat = range(0.0, 100 / factor, length = 101))
@@ -38,7 +38,7 @@ let
     end
 
     for factor in [1e-1, 1e0, 1e1, 1e2, 1e3]
-        u0 = factor * rand(rng, length(get_states(known_equilibrium)))
+        u0 = factor * rand(rng, length(get_unknowns(known_equilibrium)))
         p = 0.01 .+ factor * rand(rng, length(get_ps(known_equilibrium)))
         prob = ODEProblem(known_equilibrium, u0, (0.0, 1000000.0), p)
         sol = solve(prob, Rosenbrock23())
@@ -103,7 +103,7 @@ let
 
     for (i, networks) in enumerate(identical_networks_1)
         for factor in [1e-2, 1e-1, 1e0, 1e1]
-            u0 = factor * rand(rng, length(get_states(networks[1])))
+            u0 = factor * rand(rng, length(get_unknowns(networks[1])))
             p = factor * rand(rng, length(get_ps(networks[1])))
             (i == 3) && (p = min.(round.(p) .+ 1, 10))                      #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
             prob1 = ODEProblem(networks[1], u0, (0.0, 10000.0), p)
@@ -120,7 +120,7 @@ end
 let
     for (i, network) in enumerate(reaction_networks_all)
         for factor in [1e-1, 1e0, 1e1]
-            u0 = factor * rand(rng, length(get_states(network)))
+            u0 = factor * rand(rng, length(get_unknowns(network)))
             p = factor * rand(rng, length(get_ps(network)))
             in(i, [[11:20...]..., 34, 37, 42]) && (p = min.(round.(p) .+ 1, 10))  #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
             prob = ODEProblem(network, u0, (0.0, 1.0), p)
@@ -135,7 +135,7 @@ end
 let
     no_param_network = @reaction_network begin (1.5, 2), ∅ ↔ X end
     for factor in [1e0, 1e1, 1e2]
-        u0 = factor * rand(rng, length(get_states(no_param_network)))
+        u0 = factor * rand(rng, length(get_unknowns(no_param_network)))
         prob = ODEProblem(no_param_network, u0, (0.0, 1000.0))
         sol = solve(prob, Rosenbrock23())
         @test abs.(sol.u[end][1] - 1.5 / 2) < 1e-8

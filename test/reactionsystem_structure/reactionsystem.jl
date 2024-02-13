@@ -149,7 +149,7 @@ let
     du = oderhs(u, p, t)
     G = sdenoise(u, p, t)
     sdesys = convert(SDESystem, rs)
-    sf = SDEFunction{false}(sdesys, states(rs), parameters(rs))
+    sf = SDEFunction{false}(sdesys, unknowns(rs), parameters(rs))
     du2 = sf.f(u, p, t)
     @test norm(du - du2) < 100 * eps()
     G2 = sf.g(u, p, t)
@@ -172,7 +172,7 @@ let
     G = p[21] * sdenoise(u, p, t)
     @variables η
     sdesys_noise_scaling = convert(SDESystem, rs; noise_scaling = η)
-    sf = SDEFunction{false}(sdesys_noise_scaling, states(rs),
+    sf = SDEFunction{false}(sdesys_noise_scaling, unknowns(rs),
                             parameters(sdesys_noise_scaling))
     G2 = sf.g(u, p, t)
     @test norm(G - G2) < 100 * eps()
@@ -188,7 +188,7 @@ let
     sdesys_noise_scaling = convert(SDESystem, rs;
                                    noise_scaling = vcat(fill(η[1], 8), fill(η[2], 3),
                                                         fill(η[3], 9)))
-    sf = SDEFunction{false}(sdesys_noise_scaling, states(rs),
+    sf = SDEFunction{false}(sdesys_noise_scaling, unknowns(rs),
                             parameters(sdesys_noise_scaling))
     G2 = sf.g(u, p, t)
     @test norm(G - G2) < 100 * eps()
@@ -201,7 +201,7 @@ let
     t = 0.0
     G = [p p p p]' .* sdenoise(u, p, t)
     sdesys_noise_scaling = convert(SDESystem, rs; noise_scaling = k)
-    sf = SDEFunction{false}(sdesys_noise_scaling, states(rs),
+    sf = SDEFunction{false}(sdesys_noise_scaling, unknowns(rs),
                             parameters(sdesys_noise_scaling))
     G2 = sf.g(u, p, t)
     @test norm(G - G2) < 100 * eps()
@@ -279,9 +279,9 @@ let
     jumps[20] = VariableRateJump((u, p, t) -> p[20] * t * u[1] * binomial(u[4], 2) * u[5],
                                  integrator -> (integrator.u[4] -= 2; integrator.u[5] -= 1; integrator.u[6] += 2))
 
-    statetoid = Dict(state => i for (i, state) in enumerate(states(js)))
+    unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(js)))
     jspmapper = ModelingToolkit.JumpSysMajParamMapper(js, pars)
-    symmaj = ModelingToolkit.assemble_maj(equations(js).x[1], statetoid, jspmapper)
+    symmaj = ModelingToolkit.assemble_maj(equations(js).x[1], unknownoid, jspmapper)
     maj = MassActionJump(symmaj.param_mapper(pars), symmaj.reactant_stoch, symmaj.net_stoch,
                          symmaj.param_mapper, scale_rates = false)
     for i in midxs
@@ -290,7 +290,7 @@ let
         @test jumps[i].net_stoch == maj.net_stoch[i]
     end
     for i in cidxs
-        crj = ModelingToolkit.assemble_crj(js, equations(js)[i], statetoid)
+        crj = ModelingToolkit.assemble_crj(js, equations(js)[i], unknownoid)
         @test isapprox(crj.rate(u0, p, ttt), jumps[i].rate(u0, p, ttt))
         fake_integrator1 = (u = zeros(6), p = p, t = 0.0)
         fake_integrator2 = deepcopy(fake_integrator1)
@@ -299,7 +299,7 @@ let
         @test fake_integrator1 == fake_integrator2
     end
     for i in vidxs
-        crj = ModelingToolkit.assemble_vrj(js, equations(js)[i], statetoid)
+        crj = ModelingToolkit.assemble_vrj(js, equations(js)[i], unknownoid)
         @test isapprox(crj.rate(u0, p, ttt), jumps[i].rate(u0, p, ttt))
         fake_integrator1 = (u = zeros(6), p = p, t = 0.0)
         fake_integrator2 = deepcopy(fake_integrator1)
@@ -335,11 +335,11 @@ let
     @test_skip isequal(jumpratelaw(equations(eqs)[1]),
                        k1 * S * binomial(S, 2) * binomial(I, 3))
     dep = Set()
-    ModelingToolkit.get_variables!(dep, rxs[2], Set(states(rs)))
+    ModelingToolkit.get_variables!(dep, rxs[2], Set(unknowns(rs)))
     dep2 = Set([R, I])
     @test dep == dep2
     dep = Set()
-    ModelingToolkit.modified_states!(dep, rxs[2], Set(states(rs)))
+    ModelingToolkit.modified_unknowns!(dep, rxs[2], Set(unknowns(rs)))
     @test dep == Set([R, I])
 
     isequal2(a, b) = isequal(simplify(a), simplify(b))
@@ -471,7 +471,7 @@ let
     @named rs = ReactionSystem(eqs, t)
     @test all(eq -> eq isa Reaction, ModelingToolkit.get_eqs(rs)[1:4])
     osys = convert(ODESystem, rs)
-    @test issetequal(MT.get_states(osys), [B, C, D, E])
+    @test issetequal(MT.get_unknowns(osys), [B, C, D, E])
     @test issetequal(MT.get_ps(osys), [k1, k2, A])
 
     # test nonlinear systems
@@ -501,7 +501,7 @@ let
         (@reaction k2, E + $C --> $C + D)]
     @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
     ssys = convert(SDESystem, rs)
-    @test issetequal(MT.get_states(ssys), [B, C, D, E])
+    @test issetequal(MT.get_unknowns(ssys), [B, C, D, E])
     @test issetequal(MT.get_ps(ssys), [A, k1, k2])
     du1 = zeros(4)
     du2 = zeros(4)
@@ -524,7 +524,7 @@ let
         (@reaction k1 * B, 2 * $A + $C --> $C + B)]
     @named rs = ReactionSystem(rxs, t)
     jsys = convert(JumpSystem, rs)
-    @test issetequal(states(jsys), [B, C, D, E])
+    @test issetequal(unknowns(jsys), [B, C, D, E])
     @test issetequal(parameters(jsys), [k1, k2, A])
     majrates = [k1 * A, k1, k2]
     majrs = [[], [C => 1, D => 1], [C => 1, E => 1]]
@@ -579,10 +579,10 @@ let
     eq = ∂ₜ(S3) ~ k1 * S2
     @named osys = ODESystem([eq], t)
     @named rs = ReactionSystem([rx, eq], t)
-    @test issetequal(states(rs), [S1, S3])
+    @test issetequal(unknowns(rs), [S1, S3])
     @test issetequal(parameters(rs), [S2, k1, k2])
     osys = convert(ODESystem, rs)
-    @test issetequal(states(osys), [S1, S3])
+    @test issetequal(unknowns(osys), [S1, S3])
     @test issetequal(parameters(osys), [S2, k1, k2])
 end
 let
@@ -593,14 +593,14 @@ let
     ∂ₜ = Differential(t)
     eq = S3 ~ k1 * S2
     @named rs = ReactionSystem([rx, eq], t)
-    @test issetequal(states(rs), [S1, S3])
+    @test issetequal(unknowns(rs), [S1, S3])
     @test issetequal(parameters(rs), [S2, k1, k2])
     osys = convert(ODESystem, rs)
-    @test issetequal(states(osys), [S1, S3])
+    @test issetequal(unknowns(osys), [S1, S3])
     @test issetequal(parameters(osys), [S2, k1, k2])
     osys2 = structural_simplify(osys)
     @test length(equations(osys2)) == 1
-    @test issetequal(states(osys2), [S1])
+    @test issetequal(unknowns(osys2), [S1])
     @test issetequal(parameters(osys2), [S2, k1, k2])
 end
 let
@@ -611,14 +611,14 @@ let
     ∂ₜ = Differential(t)
     eq = S3 ~ k1 * S2
     @named rs = ReactionSystem([rx, eq], t)
-    @test issetequal(states(rs), [S1, S3])
+    @test issetequal(unknowns(rs), [S1, S3])
     @test issetequal(parameters(rs), [S2, k1, k2])
     osys = convert(ODESystem, rs)
-    @test issetequal(states(osys), [S1, S3])
+    @test issetequal(unknowns(osys), [S1, S3])
     @test issetequal(parameters(osys), [S2, k1, k2])
     osys2 = structural_simplify(osys)
     @test length(equations(osys2)) == 1
-    @test issetequal(states(osys2), [S1])
+    @test issetequal(unknowns(osys2), [S1])
     @test issetequal(parameters(osys2), [S2, k1, k2])
 end
 
@@ -631,7 +631,7 @@ let
     @test_throws ArgumentError Reaction(k, [A], [B, c])
     rx = Reaction(k, [A, b], [B, b], [1, 1], [1, 2])
     @named rs = ReactionSystem([rx], t)
-    @test issetequal(states(rs), [A, B])
+    @test issetequal(unknowns(rs), [A, B])
     @test issetequal(parameters(rs), [k, b])
 end
 
@@ -711,8 +711,8 @@ let
     D = Differential(t)
     eq = D(V) ~ -k1 * k2 * V + A
     @named rs = ReactionSystem([eq, rx], t)
-    @test length(states(rs)) == 3
-    @test issetequal(states(rs), [A, B, V])
+    @test length(unknowns(rs)) == 3
+    @test issetequal(unknowns(rs), [A, B, V])
     @test length(parameters(rs)) == 2
     @test issetequal(parameters(rs), [k1, k2])
     @test length(species(rs)) == 2
@@ -721,7 +721,7 @@ let
     @test length(Catalyst.get_rxs(rs)) == 1
     @test reactions(rs)[1] == rx
     osys = convert(ODESystem, rs)
-    @test issetequal(states(osys), [A, B, V])
+    @test issetequal(unknowns(osys), [A, B, V])
     @test issetequal(parameters(osys), [k1, k2])
     @test length(equations(osys)) == 3
 end

@@ -12,7 +12,7 @@ We first load Catalyst
 using Catalyst
 ```
 and then define symbolic variables for each parameter and species in the system
-(the latter corresponding to a `variable` or `state` in ModelingToolkit
+(the latter corresponding to a `variable` or `unknown` in ModelingToolkit
 terminology)
 ```@example ex
 @parameters α K n δ γ β μ

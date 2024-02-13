@@ -20,7 +20,7 @@ end
 Given a [`ReactionSystem`](@ref), return a vector of all species defined in the system and
 any subsystems that are of type `ReactionSystem`. To get the species and non-species
 variables in the system and all subsystems, including non-`ReactionSystem` subsystems, uses
-`states(network)`.
+`unknowns(network)`.
 
 Notes:
 - If `ModelingToolkit.get_systems(network)` is non-empty will allocate.
@@ -35,14 +35,14 @@ end
 """
     nonspecies(network)
 
-Return the non-species variables within the network, i.e. those states for which `isspecies
+Return the non-species variables within the network, i.e. those unknowns for which `isspecies
 == false`.
 
 Notes:
 - Allocates a new array to store the non-species variables.
 """
 function nonspecies(network)
-    states(network)[(numspecies(network) + 1):end]
+    unknowns(network)[(numspecies(network) + 1):end]
 end
 
 """
@@ -190,7 +190,7 @@ Notes:
 - Does not check for dependents within any subsystems.
 - Constant species are not considered dependents since they are internally treated as
   parameters.
-- If the rate expression depends on a non-species state variable that will be included in
+- If the rate expression depends on a non-species unknown variable that will be included in
   the dependents, i.e. in
   ```julia
   @parameters k
@@ -205,7 +205,7 @@ function dependents(rx, network)
     if rx.rate isa Number
         return rx.substrates
     else
-        rvars = get_variables(rx.rate, states(network))
+        rvars = get_variables(rx.rate, unknowns(network))
         return union!(rvars, rx.substrates)
     end
 end
@@ -540,7 +540,7 @@ end
 gives
 ```
 Model sys with 3 equations
-States (5):
+Unknowns (5):
   S(t)
   I(t)
   R(t)
@@ -1345,7 +1345,7 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
     (get_combinatoric_ratelaws(rn1) == get_combinatoric_ratelaws(rn2)) || return false
     isequal(get_iv(rn1), get_iv(rn2)) || return false
     issetequal(get_sivs(rn1), get_sivs(rn2)) || return false
-    issetequal(get_states(rn1), get_states(rn2)) || return false
+    issetequal(get_unknowns(rn1), get_unknowns(rn2)) || return false
     issetequal(get_ps(rn1), get_ps(rn2)) || return false
     issetequal(MT.get_observed(rn1), MT.get_observed(rn2)) || return false
     issetequal(get_eqs(rn1), get_eqs(rn2)) || return false
@@ -1402,7 +1402,7 @@ Notes:
 - `disablechecks` will disable checking for whether the passed in variable is
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
-  variable, as this will potentially leave the system in an undefined state.
+  variable, as this will potentially leave the system in an undefined unknown.
 """
 function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks = false)
     reset_networkproperties!(network)
@@ -1412,10 +1412,10 @@ function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks = false
         error("$s is not a valid symbolic species. Please use @species to declare it.")
 
     # we don't check subsystems since we will add it to the top-level system...
-    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), get_states(network))
+    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), get_unknowns(network))
     if curidx === nothing
-        push!(get_states(network), s)
-        sort!(get_states(network); by = !isspecies)
+        push!(get_unknowns(network), s)
+        sort!(get_unknowns(network); by = !isspecies)
         push!(get_species(network), s)
         MT.process_variables!(get_var_to_name(network), get_defaults(network), [s])
         return length(get_species(network))
@@ -1434,30 +1434,30 @@ integer id of the species within the system.
 - `disablechecks` will disable checking for whether the passed in variable is
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
-  variable, as this will potentially leave the system in an undefined state.
+  variable, as this will potentially leave the system in an undefined unknown.
 """
 function addspecies!(network::ReactionSystem, s::Num; disablechecks = false)
     addspecies!(network, value(s), disablechecks = disablechecks)
 end
 
 """
-    reorder_states!(rn, neworder)
+    reorder_unknowns!(rn, neworder)
 
-Given a [`ReactionSystem`](@ref) and a vector `neworder`, reorders the states of `rn`, i.e.
-`get_states(rn)`, according to `neworder`.
+Given a [`ReactionSystem`](@ref) and a vector `neworder`, reorders the unknowns of `rn`, i.e.
+`get_unknowns(rn)`, according to `neworder`.
 
 Notes:
 - Currently only supports `ReactionSystem`s without subsystems.
 """
-function reorder_states!(rn, neworder)
+function reorder_unknowns!(rn, neworder)
     reset_networkproperties!(rn)
 
-    permute!(get_states(rn), neworder)
-    if !issorted(get_states(rn); by = !isspecies)
-        @warn "New ordering has resulted in a non-species state preceding a species state. This is not allowed so states have been resorted to ensure species precede non-species."
-        sort!(get_states(rn); by = !isspecies)
+    permute!(get_unknowns(rn), neworder)
+    if !issorted(get_unknowns(rn); by = !isspecies)
+        @warn "New ordering has resulted in a non-species unknown preceding a species unknown. This is not allowed so unknowns have been resorted to ensure species precede non-species."
+        sort!(get_unknowns(rn); by = !isspecies)
     end
-    get_species(rn) .= Iterators.filter(isspecies, get_states(rn))
+    get_species(rn) .= Iterators.filter(isspecies, get_unknowns(rn))
     nothing
 end
 
@@ -1471,7 +1471,7 @@ id of the parameter within the system.
 - `disablechecks` will disable checking for whether the passed in variable is
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
-  variable, as this will potentially leave the system in an undefined state.
+  variable, as this will potentially leave the system in an undefined unknown.
 """
 function addparam!(network::ReactionSystem, p::Symbolic; disablechecks = false)
     reset_networkproperties!(network)
@@ -1500,7 +1500,7 @@ integer id of the parameter within the system.
 - `disablechecks` will disable checking for whether the passed in variable is
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
-  variable, as this will potentially leave the system in an undefined state.
+  variable, as this will potentially leave the system in an undefined unknown.
 """
 function addparam!(network::ReactionSystem, p::Num; disablechecks = false)
     addparam!(network, value(p); disablechecks = disablechecks)
@@ -1549,11 +1549,11 @@ function Base.merge!(network1::ReactionSystem, network2::ReactionSystem)
     (count(eq -> eq isa Reaction, get_eqs(network1)) == length(get_rxs(network1))) ||
         error("Unequal number of reactions from get_rxs(sys) and get_eqs(sys) after merging.")
 
-    union!(get_states(network1), get_states(network2))
-    sort!(get_states(network1), by = !isspecies)
+    union!(get_unknowns(network1), get_unknowns(network2))
+    sort!(get_unknowns(network1), by = !isspecies)
     union!(get_species(network1), get_species(network2))
-    (count(isspecies, get_states(network1)) == length(get_species(network1))) ||
-        error("Unequal number of species from get_species(sys) and get_states(sys) after merging.")
+    (count(isspecies, get_unknowns(network1)) == length(get_species(network1))) ||
+        error("Unequal number of species from get_species(sys) and get_unknowns(sys) after merging.")
 
     union!(get_ps(network1), get_ps(network2))
     union!(get_observed(network1), get_observed(network2))

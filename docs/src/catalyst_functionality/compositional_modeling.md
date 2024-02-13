@@ -72,7 +72,7 @@ Catalyst.get_rxs(rn)
 ```
 To see all the species, parameters and reactions in the tree we can use
 ```@example ex1
-species(rn)   # or states(rn)
+species(rn)   # or unknowns(rn)
 ```
 ```@example ex1
 parameters(rn)  # or reactionparameters(rn)

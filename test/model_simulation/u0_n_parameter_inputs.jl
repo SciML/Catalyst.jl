@@ -4,7 +4,7 @@
 
 # Fetch packages.
 using Catalyst, OrdinaryDiffEq, Random, Test
-using ModelingToolkit: get_states, get_ps
+using ModelingToolkit: get_unknowns, get_ps
 
 # Sets rnd number.
 using StableRNGs
@@ -24,7 +24,7 @@ let
     @species X1(t) X2(t) X3(t) X4(t) X5(t) X6(t) X(t)
 
     for factor = [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-        u0_1 = factor*rand(rng,length(get_states(test_network)))
+        u0_1 = factor*rand(rng,length(get_unknowns(test_network)))
         u0_2 = [X1=>u0_1[1], X2=>u0_1[2], X3=>u0_1[3], X4=>u0_1[4], X5=>u0_1[5]]
         u0_3 = [X2=>u0_1[2], X5=>u0_1[5], X4=>u0_1[4], X3=>u0_1[3], X1=>u0_1[1]]
         p_1 = 0.01 .+ factor*rand(rng,length(get_ps(test_network)))
@@ -51,7 +51,7 @@ let
             @test abs(maximum(getindex.(ends,1))-minimum(first.(getindex.(ends,1)))) < 1e-5
         end
 
-        u0_1 = rand(rng,1:Int64(factor*100),length(get_states(test_network)))
+        u0_1 = rand(rng,1:Int64(factor*100),length(get_unknowns(test_network)))
         u0_2 = [X1=>u0_1[1], X2=>u0_1[2], X3=>u0_1[3], X4=>u0_1[4], X5=>u0_1[5]]
         u0_3 = [X2=>u0_1[2], X5=>u0_1[5], X4=>u0_1[4], X3=>u0_1[3], X1=>u0_1[1]]
 

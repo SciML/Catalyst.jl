@@ -22,12 +22,12 @@ RuntimeGeneratedFunctions.init(@__MODULE__)
 
 import Symbolics: BasicSymbolic
 import SymbolicUtils
-using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems,
+using ModelingToolkit: Symbolic, value, istree, get_unknowns, get_ps, get_iv, get_systems,
                        get_eqs, get_defaults, toparam, get_var_to_name, get_observed,
                        getvar
 
 import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!,
-                        modified_states!, validate, namespace_variables,
+                        modified_unknowns!, validate, namespace_variables,
                         namespace_parameters, rename, renamespace, getname, flatten
 
 # internal but needed ModelingToolkit functions

@@ -9,7 +9,7 @@ let
     rxs = [Reaction(t * k, [A], [B], [2 * α^2], [k + α * C])
            Reaction(1.0, [A, B], [C, D], [α, 2], [k, α])]
     @named rs = ReactionSystem(rxs, t)
-    @test issetequal(states(rs), [A, B, C, D])
+    @test issetequal(unknowns(rs), [A, B, C, D])
     @test issetequal(parameters(rs), [k, α])
     osys = convert(ODESystem, rs)
 
@@ -83,7 +83,7 @@ let
 
     # SDESystem test.
     ssys = convert(SDESystem, rs)
-    sf = SDEFunction{false}(ssys, states(ssys), parameters(ssys))
+    sf = SDEFunction{false}(ssys, unknowns(ssys), parameters(ssys))
     G = sf.g(u0, p, 1.0)
     function sdenoise1(u, p, t)
         k = p[1]
@@ -105,7 +105,7 @@ let
 
     # SDESystem test with no combinatoric rate laws.
     ssys = convert(SDESystem, rs, combinatoric_ratelaws = false)
-    sf = SDEFunction{false}(ssys, states(ssys), parameters(ssys))
+    sf = SDEFunction{false}(ssys, unknowns(ssys), parameters(ssys))
     G = sf.g(u0, p, 1.0)
     function sdenoise2(u, p, t)
         k = p[1]
@@ -131,7 +131,7 @@ let
     u0 = [uv[2] for uv in u0map]
     pmap = (k => 5, α => 2)
     p = Tuple(pv[2] for pv in pmap)
-    statetoid = Dict(state => i for (i, state) in enumerate(states(js)))
+    unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(js)))
     function r1(u, p, t)
         α = p[2]
         A = u[1]
@@ -149,7 +149,7 @@ let
     end
     ttt = 1.5
     j1 = VariableRateJump(r1, affect1!)
-    vrj = ModelingToolkit.assemble_vrj(js, equations(js)[1], statetoid)
+    vrj = ModelingToolkit.assemble_vrj(js, equations(js)[1], unknownoid)
     @test isapprox(vrj.rate(u0, p, ttt), r1(u0, p, ttt))
     fake_integrator1 = (u = copy(u0), p = p, t = ttt)
     fake_integrator2 = deepcopy(fake_integrator1)
@@ -177,7 +177,7 @@ let
         nothing
     end
     j2 = VariableRateJump(r2, affect2!)
-    vrj = ModelingToolkit.assemble_vrj(js, equations(js)[2], statetoid)
+    vrj = ModelingToolkit.assemble_vrj(js, equations(js)[2], unknownoid)
     @test isapprox(vrj.rate(u0, p, ttt), r2(u0, p, ttt))
     fake_integrator1 = (u = copy(u0), p = p, t = ttt)
     fake_integrator2 = deepcopy(fake_integrator1)
@@ -200,7 +200,7 @@ let
         Reaction(β, [I], [R], [γ], [γ])]
     @named sir = ReactionSystem(rxs2, t)
 
-    @test issetequal(states(sir_ref), states(sir))
+    @test issetequal(unknowns(sir_ref), unknowns(sir))
 
     # ODEs.
     p1 = (α => 0.1 / 1000, β => 0.01)

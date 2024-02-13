@@ -25,7 +25,7 @@ let
     pset = Set([value(k1) => 1, value(k2) => 2])
     @test issetequal(pset, paramsmap(rs))
 
-    Catalyst.reorder_states!(rs, [3, 1, 2])
+    Catalyst.reorder_unknowns!(rs, [3, 1, 2])
     specset = Set([value(S) => 2, value(I) => 3, value(R) => 1])
     @test issetequal(specset, speciesmap(rs))
 
@@ -563,8 +563,8 @@ let
     sprob = SDEProblem(ssys, u0, tspan, p)
     sprob2 = SDEProblem(rn, u0, tspan, p)
     sprob3 = SDEProblem(rn, u0, tspan, p; remove_conserved = true)
-    ists = ModelingToolkit.get_states(ssys)
-    sts = ModelingToolkit.get_states(rn)
+    ists = ModelingToolkit.get_unknowns(ssys)
+    sts = ModelingToolkit.get_unknowns(rn)
     istsidxs = findall(in(ists), sts)
     u1 = copy(sprob.u0)
     u2 = sprob2.u0

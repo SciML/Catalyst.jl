@@ -40,7 +40,7 @@ end
 show(stdout, MIME"text/plain"(), repressilator) # hide
 ```
 showing that we've created a new network model named `Repressilator` with the
-listed chemical species and states. [`@reaction_network`](@ref) returns a
+listed chemical species and unknowns. [`@reaction_network`](@ref) returns a
 [`ReactionSystem`](@ref), which we saved in the `repressilator` variable. It can
 be converted to a variety of other mathematical models represented as
 `ModelingToolkit.AbstractSystem`s, or analyzed in various ways using the

@@ -63,7 +63,7 @@ let
     cons_laws = conservationlaws(rn)
     cons_eqs = conservedequations(rn)
     cons_laws_constants = conservationlaw_constants(rn)
-    conserved_quantity = conservedquantities(cons_laws[1, :], states(rn)[1])
+    conserved_quantity = conservedquantities(cons_laws[1, :], unknowns(rn)[1])
 
     @test sum(cons_laws) == 4
     @test size(cons_laws) == (2, 4)
