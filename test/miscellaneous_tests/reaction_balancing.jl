@@ -395,7 +395,7 @@ end
 
 # Checks that balancing work for a reaction from a reaction_network.
 let
-    rn = complete(@reaction_network begin
+    rn = @reaction_network begin
         @species C(t) H(t) O(t)
         @compounds begin
             O2 ~ 2O
@@ -404,7 +404,7 @@ let
             C6H12O6 ~ 6C + 12H + 6O
         end
         k, CO2 + H2O --> C6H12O6 + O2
-    end)
+    end
     
     brxs = balance_reaction(reactions(rn)[1])[1]
     

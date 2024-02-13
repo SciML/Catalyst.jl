@@ -20,7 +20,7 @@ let
 
     specs = [m, P, R]
     pars = [α₀, α, K, n, δ, β, μ]
-    @named rs = ReactionSystem(rxs, t, specs, pars)
+    @named rs = ReactionSystem(rxs, t, specs, pars; complete = false)
 
     # Using ODESystem components.
     @named sys₁ = convert(ODESystem, rs; include_zero_odes = false)
@@ -71,14 +71,14 @@ let
     @test all(isapprox.(sol(tvs, idxs = sys₁.P), sol2(tvs, idxs = 4), atol = 1e-4))
 
     # Using ReactionSystem components.
-    @named sys₁ = ReactionSystem(rxs, t, specs, pars)
-    @named sys₂ = ReactionSystem(rxs, t, specs, pars)
-    @named sys₃ = ReactionSystem(rxs, t, specs, pars)
+    @named sys₁ = ReactionSystem(rxs, t, specs, pars; complete = false)
+    @named sys₂ = ReactionSystem(rxs, t, specs, pars; complete = false)
+    @named sys₃ = ReactionSystem(rxs, t, specs, pars; complete = false)
     connections = [ParentScope(sys₁.R) ~ ParentScope(sys₃.P),
         ParentScope(sys₂.R) ~ ParentScope(sys₁.P),
         ParentScope(sys₃.R) ~ ParentScope(sys₂.P)]
     @named csys = ODESystem(connections, t, [], [])
-    @named repressilator = ReactionSystem(t; systems = [csys, sys₁, sys₂, sys₃])
+    @named repressilator = ReactionSystem(t; systems = [csys, sys₁, sys₂, sys₃], complete = false)
     @named oderepressilator2 = convert(ODESystem, repressilator, include_zero_odes = false)
     sys2 = structural_simplify(oderepressilator2)  # FAILS currently
     oprob = ODEProblem(sys2, u₀, tspan, pvals)
@@ -87,7 +87,7 @@ let
 
     # Test conversion to nonlinear system.
     @named nsys = NonlinearSystem(connections, [], [])
-    @named ssrepressilator = ReactionSystem(t; systems = [nsys, sys₁, sys₂, sys₃])
+    @named ssrepressilator = ReactionSystem(t; systems = [nsys, sys₁, sys₂, sys₃], complete = false)
     @named nlrepressilator = convert(NonlinearSystem, ssrepressilator,
                                     include_zero_odes = false)
     sys2 = structural_simplify(nlrepressilator)
@@ -117,7 +117,7 @@ let
         sys₃.R ~ sys₂.P]
     @named csys = NonlinearSystem(connections, [sys₁.R, sys₃.P, sys₂.R, sys₁.P, sys₃.R, sys₂.P],
                                 [])
-    @named repressilator2 = ReactionSystem(connections, t; systems = [sys₁, sys₂, sys₃])
+    @named repressilator2 = ReactionSystem(connections, t; systems = [sys₁, sys₂, sys₃], complete = false)
     @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes = false)
     sys2 = structural_simplify(nlrepressilator)
     @test length(equations(sys2)) <= 6
@@ -231,7 +231,7 @@ let
     @test all(isapprox.(sol(tvs, idxs = sys₁.P), sol2(tvs, idxs = 4), atol = 1e-4))
 
     # Test extending with NonlinearSystem.
-    @named repressilator2 = ReactionSystem(t; systems = [sys₁, sys₂, sys₃])
+    @named repressilator2 = ReactionSystem(t; systems = [sys₁, sys₂, sys₃], complete = false)
     repressilator2 = Catalyst.flatten(repressilator2)
     repressilator2 = extend(csys, repressilator2)
     @named nlrepressilator = convert(NonlinearSystem, repressilator2, include_zero_odes = false)
@@ -253,8 +253,8 @@ let
     @species A(t), B(t), C(t), D(t)
     rxs1 = [Reaction(r₊, [A, B], [C])]
     rxs2 = [Reaction(r₋, [C], [A, B])]
-    @named rs1 = ReactionSystem(rxs1, t, [A, B, C], [r₊])
-    @named rs2 = ReactionSystem(rxs2, t, [A, B, C], [r₋])
+    @named rs1 = ReactionSystem(rxs1, t, [A, B, C], [r₊]; complete = false)
+    @named rs2 = ReactionSystem(rxs2, t, [A, B, C], [r₋]; complete = false)
     @named rs = extend(rs1, rs2)
     @test issetequal(unknowns(rs), [A, B, C])
     @test issetequal(parameters(rs), [r₊, r₋])
@@ -301,13 +301,13 @@ let
     eqs3 = [ParentScope(A2a) ~ p3b * A3b]
 
     @named rs3 = ReactionSystem(rxs3, t, [A3a, ParentScope(A2a)], [p3a, ParentScope(p2a)];
-                                combinatoric_ratelaws = false)
+                                combinatoric_ratelaws = false, complete = false)
     @named ns3 = NonlinearSystem(eqs3, [ParentScope(A2a), A3b], [p3b])
     @named rs2 = ReactionSystem(rxs2, t, [A2a, ParentScope(A1)], [p2a, p2b],
-                                systems = [rs3, ns3]; combinatoric_ratelaws = true)
+                                systems = [rs3, ns3]; combinatoric_ratelaws = true, complete = false)
     @named ns2 = NonlinearSystem(eqs2, [ParentScope(A1), A2b], [ParentScope(p1)])
     @named rs1 = ReactionSystem(rxs1, t, [A1], [p1], systems = [rs2, ns2];
-                                combinatoric_ratelaws = false)
+                                combinatoric_ratelaws = false, complete = false)
 
     # Namespaced reactions.
     nrxs1 = [Reaction(p1, [A1], nothing)]
@@ -427,13 +427,13 @@ let
     D = default_time_deriv()
     rx1 = Reaction(k1*V1, [A1], [B1])
     eq1 = D(V1) ~ -V1
-    @named rs1 = ReactionSystem([rx1, eq1], t)
+    @named rs1 = ReactionSystem([rx1, eq1], t; complete = false)
     rx2 = Reaction(k2*V2, [A2], [B2])
     eq2 = D(V2) ~ -V2
-    @named rs2 = ReactionSystem([rx2, eq2], t)
+    @named rs2 = ReactionSystem([rx2, eq2], t; complete = false)
     rx3 = Reaction(k3*V3, [A3], [B3])
     eq3 = D(V3) ~ -V3
-    @named rs3 = ReactionSystem([rx3, eq3], t)
+    @named rs3 = ReactionSystem([rx3, eq3], t; complete = false)
     @named rs23 = compose(rs2, [rs3])
     @test length(unknowns(rs23)) == 6
     @test all(p -> isequal(p[1], p[2]), zip(unknowns(rs23)[1:4], species(rs23)))
@@ -453,12 +453,14 @@ end
 # Tests that conversion with defaults works for a composed model.
 let
     rn1 = @reaction_network rn1 begin
+        @incomplete
         @parameters p=1.0 r=2.0
         @species X(t) = 3.0 Y(t) = 4.0
         (p1, d), 0 <--> X
         (p2, r), 0 <--> Z
     end
     rn2 = @reaction_network rn1 begin
+        @incomplete
         @parameters p=10. q=20.0
         @species X(t) = 30.0 Z(t) = 40.0
         (p1, d), 0 <--> X

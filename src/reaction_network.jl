@@ -123,7 +123,7 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables, :default_noise_scaling)
+const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables, :default_noise_scaling, :incomplete)
 
 ### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)
@@ -363,7 +363,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Reads options.
     default_reaction_metadata = :([])
     compound_expr, compound_species = read_compound_options(options)
-    check_default_noise_scaling!(default_reaction_metadata, options)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines; default_reaction_metadata)
@@ -426,7 +425,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
         Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, setdiff(union($spssym, $varssym, $compssym), $obs_syms),
                                               $pssym; name = $name, spatial_ivs = $sivs,
-                                              observed = $observed_eqs)
+                                              observed = $observed_eqs, complete = $iscomplete)
     end
 end
 

@@ -48,7 +48,9 @@ end
 
 # Tests accessing parameters and species added with network API.
 let
-    empty_network_3 = @reaction_network
+    empty_network_3 = @reaction_network begin
+        @incomplete
+    end
     @parameters p
     @species x(t)
     addspecies!(empty_network_3, x)
