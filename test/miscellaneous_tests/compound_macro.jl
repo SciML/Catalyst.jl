@@ -297,7 +297,7 @@ end
 # Test using multiple compounds.
 # Test using rn. notation to fetch species.
 let 
-    rn = complete(@reaction_network begin
+    rn = @reaction_network begin
         @species C(t) O(t) H(t)
         @compounds begin
             CH4 ~ C + 4H
@@ -306,7 +306,7 @@ let
             H2O ~ 2H + O
         end
         k, CH4 + O2 --> CO2 + H2O
-    end)
+    end
     species(rn)
     
     @test length(species(rn)) == 7

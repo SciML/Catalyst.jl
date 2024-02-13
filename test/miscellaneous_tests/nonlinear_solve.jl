@@ -76,11 +76,11 @@ end
 # Checks using interfacing with output solution.
 let 
     # Creates steady state network, unpack the parameter values.
-    steady_state_network_3 = complete(@reaction_network begin
+    steady_state_network_3 = @reaction_network begin
         (p,d), 0 <--> X
         (k1, k2), 2Y <--> Y2
         (k3, k4), X + Y2 <--> XY2
-    end)
+    end
     @unpack X, Y, Y2, XY2 = steady_state_network_3
 
     # Creates NonlinearProblem.

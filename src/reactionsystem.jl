@@ -609,7 +609,8 @@ function ReactionSystem(eqs, iv, unknowns, ps;
                         balanced_bc_check = true,
                         spatial_ivs = nothing,
                         continuous_events = nothing,
-                        discrete_events = nothing)
+                        discrete_events = nothing,
+                        complete = true)
     name === nothing &&
         throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     sysnames = nameof.(systems)
@@ -678,7 +679,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
 
     ReactionSystem(eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
                    systems, defaults, connection_type, nps, combinatoric_ratelaws,
-                   ccallbacks, dcallbacks; checks = checks)
+                   ccallbacks, dcallbacks, complete; checks = checks)
 end
 
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
@@ -1803,7 +1804,8 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
                    balanced_bc_check = false,
                    spatial_ivs = get_sivs(rs),
                    continuous_events = MT.continuous_events(rs),
-                   discrete_events = MT.discrete_events(rs))
+                   discrete_events = MT.discrete_events(rs),
+                   complete = false)
 end
 
 """
@@ -1860,5 +1862,6 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
                    balanced_bc_check = false,
                    spatial_ivs = sivs,
                    continuous_events,
-                   discrete_events)
+                   discrete_events,
+                   complete = false)
 end

@@ -5,6 +5,35 @@ can construct the earlier repressilator model by composing together three
 identically repressed genes, and how to use compositional modeling to create
 compartments.
 
+## A note on *completeness*
+Catalyst `ReactionSystem` can either be *complete* or *incomplete*. *By default they are created as complete*. Here, only complete `ReactionSystem`s can be used to create the various problem types (e.g. `ODEProblem`). However, only incomplete `ReactionSystem`s can be composed using the features described below. Hence, for compositional modeling, `ReactionSystem` must be created as incomplete, and later set to complete before simulation.
+
+To set a `ReactionSystem` created via the DSL as complete, use the `@incomplete` option:
+```@example ex0
+using Catalyst
+degradation_component = @reaction_network begin
+  @incomplete
+  d, X --> 0
+end
+```
+Or when created directly, use the `complete = false` argument:
+```@example ex0
+@parameters d
+@variable t
+@species X(t)
+rx = Reaction(d, [X], nothing)
+@named degradation_component = ReactionSystem([rs], t; complete = false)
+```
+We can test whether a system is complete using the `ModelingToolkit.iscomplete` function:
+```@example ex0
+ModelingToolkit.iscomplete(degradation_component)
+```
+To make a incomplete system complete, we can use the `complete` function:
+```@example ex0
+degradation_component_complete = complete(degradation_component)
+ModelingToolkit.iscomplete(degradation_component_complete)
+```
+
 ## Compositional modeling tooling
 Catalyst supports two ModelingToolkit interfaces for composing multiple
 [`ReactionSystem`](@ref)s together into a full model. The first mechanism for
@@ -12,9 +41,11 @@ extending a system is the `extend` command
 ```@example ex1
 using Catalyst
 basern = @reaction_network rn1 begin
+  @incomplete
   k, A + B --> C
 end
 newrn = @reaction_network rn2 begin
+  @incomplete
   r, C --> A + B
 end
 @named rn = extend(newrn, basern)
@@ -28,8 +59,9 @@ now add to `basern` two subsystems, `newrn` and `newestrn`, we get a
 different result:
 ```@example ex1
 newestrn = @reaction_network rn3 begin
-            v, A + D --> 2D
-           end
+  @incomplete
+  v, A + D --> 2D
+end
 @named rn = compose(basern, [newrn, newestrn])
 ```
 Here we have created a new `ReactionSystem` that adds `newrn` and `newestrn` as
@@ -55,7 +87,7 @@ t = default_t()
 @parameters k
 @species A(t), B(t), C(t)
 rxs = [Reaction(k, [A,B], [C])]
-@named rn = ReactionSystem(rxs, t; systems = [newrn, newestrn])
+@named rn = ReactionSystem(rxs, t; systems = [newrn, newestrn], complete = false)
 ```
 
 Catalyst provides several different accessors for getting information from a
@@ -100,6 +132,7 @@ repressed gene, taking the repressor as input
 ```@example ex1
 function repressed_gene(; R, name)
   @reaction_network $name begin
+    @incomplete
     hillr($R,α,K,n), ∅ --> m
     (δ,γ), m <--> ∅
     β, m --> m + P
@@ -119,7 +152,7 @@ t = default_t()
 @named G1 = repressed_gene(; R=ParentScope(G3₊P))
 @named G2 = repressed_gene(; R=ParentScope(G1.P))
 @named G3 = repressed_gene(; R=ParentScope(G2.P))
-@named repressilator = ReactionSystem(t; systems=[G1,G2,G3])
+@named repressilator = ReactionSystem(t; systems=[G1,G2,G3], complete = false)
 ```
 Notice, in this system each gene is a child node in the system graph of the repressilator
 ```julia
@@ -157,12 +190,14 @@ account for compartment volumes:
 ```@example ex1
 # transcription and regulation
 nuc = @reaction_network nuc begin
+  @incomplete
   α, G --> G + M
   (κ₊/V,κ₋), D + G <--> DG
 end
 
 # translation and dimerization
 cyto = @reaction_network cyto begin
+  @incomplete
   β, M --> M + P
   (k₊/V,k₋), 2P <--> D
   σ, P --> 0
@@ -172,6 +207,7 @@ end
 # export reactions,
 # γ,δ=probability per time to be exported/imported
 model = @reaction_network model begin
+  @incomplete
   γ, $(nuc.M) --> $(cyto.M)
   δ, $(cyto.D) --> $(nuc.D)
 end

@@ -710,3 +710,21 @@ let
     @test isnothing(ModelingToolkit.get_metadata(rs))
 end
 
+
+### Tests Completeness Designations ###
+let 
+    # Creates models with/without the `complete` input.
+    @parameters p d
+    @variables t
+    @species X(t)
+    r1 = Reaction(p, [X], nothing)
+    r2 = Reaction(d, nothing, [X])
+    @named rs1 = ReactionSystem([r1, r2], t)
+    @named rs2 = ReactionSystem([r1, r2], t; complete = false)
+    
+    # Check that the correct compeltness is achived.
+    @test ModelingToolkit.iscomplete(rs1)
+    @test !ModelingToolkit.iscomplete(rs2)
+    rs2 = complete(rs2)
+    @test ModelingToolkit.iscomplete(rs2)
+end
