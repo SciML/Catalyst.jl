@@ -227,16 +227,16 @@ Examples:
 rx = @reaction k*v, A + B --> C + D
 
 # is equivalent to
+import Catalyst: t_nounits as t
 @parameters k v
-@variables t
 @species A(t) B(t) C(t) D(t)
 rx == Reaction(k*v, [A,B], [C,D])
 ```
 Here `k` and `v` will be parameters and `A`, `B`, `C` and `D` will be variables.
 Interpolation of existing parameters/variables also works
 ```julia
+import Catalyst: t_nounits as t
 @parameters k b
-@variables t
 @species A(t)
 ex = k*A^2 + t
 rx = @reaction b*$ex*$A, $A --> C

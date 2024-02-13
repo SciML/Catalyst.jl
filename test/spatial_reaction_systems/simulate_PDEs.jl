@@ -18,7 +18,7 @@ end
 
 let
     @parameters k[1:7] D[1:3] n0[1:3] A
-    @variables t x y
+    @variables x y
     @species U(x, y, t) V(x, y, t) W(x, y, t)
     rxs = [Reaction(k[1], [U, W], [V, W]),
         Reaction(k[2], [V], [W], [2], [1]),
@@ -51,7 +51,7 @@ let
     @test bpm == bpm2
 
     # Check we can build a PDESystem.
-    ∂t = Differential(t)
+    ∂t = Catalyst.D_nounits
     ∂x = Differential(x)
     ∂y = Differential(y)
     Δ(u) = (∂x^2)(u) + (∂y^2)(u)

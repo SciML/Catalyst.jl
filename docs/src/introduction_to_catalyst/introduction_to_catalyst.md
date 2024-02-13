@@ -116,8 +116,8 @@ nothing   # hide
 Alternatively, we can use ModelingToolkit-based symbolic species variables to
 specify these mappings like
 ```@example tut1
+import Catalyst: t_nounits as t
 @parameters  α K n δ γ β μ
-@variables t
 @species m₁(t) m₂(t) m₃(t) P₁(t) P₂(t) P₃(t)
 psymmap  = (α => .5, K => 40, n => 2, δ => log(2)/120,
          γ => 5e-3, β => 20*log(2)/120, μ => log(2)/60)

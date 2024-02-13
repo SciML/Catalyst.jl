@@ -1,10 +1,10 @@
 using Catalyst, OrdinaryDiffEq, Test, LinearAlgebra, JumpProcesses
+import Catalyst: t_nounits as t
 
 ### Base Tests ###
 
 let
     @parameters k α
-    @variables t
     @species A(t), B(t), C(t), D(t)
     rxs = [Reaction(t * k, [A], [B], [2 * α^2], [k + α * C])
            Reaction(1.0, [A, B], [C, D], [α, 2], [k, α])]
@@ -190,7 +190,6 @@ end
 
 let
     @parameters α β γ k
-    @variables t
     @species S(t), I(t), R(t)
     rxs = [Reaction(α, [S, I], [I], [1, 1], [2]),
         Reaction(β, [I], [R], [1], [1])]

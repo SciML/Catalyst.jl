@@ -4,6 +4,7 @@
 using DiffEqBase, Catalyst, Random, Test
 using ModelingToolkit: operation, istree, get_unknowns, get_ps, get_eqs, get_systems,
                        get_iv, nameof
+import Catalyst: t_nounits as t
 
 # Sets rnd number.
 using StableRNGs
@@ -370,7 +371,6 @@ let
         k1, S + I --> 2I
         k2, I --> R
     end
-    @variables t
     @species I(t)
     @test any(isequal(I), species(rn))
     @test any(isequal(I), unknowns(rn))

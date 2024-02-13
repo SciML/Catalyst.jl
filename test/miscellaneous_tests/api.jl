@@ -6,6 +6,7 @@ using StochasticDiffEq
 using LinearAlgebra: norm
 using SparseArrays
 using ModelingToolkit: value
+import Catalyst: t_nounits as t
 
 include("../test_networks.jl")
 
@@ -13,7 +14,6 @@ include("../test_networks.jl")
 
 let
     @parameters k1 k2
-    @variables t
     @species S(t) I(t) R(t)
     rxs = [Reaction(k1, [S, I], [I], [1, 1], [2]),
         Reaction(k2, [I], [R])]
@@ -465,7 +465,6 @@ let
         β, I --> R
     end
     @parameters α β
-    @variables t
     @species S(t) I(t) R(t)
     setdefaults!(rn, [S => 999.0, I => 1.0, R => 0.0, α => 1e-4, β => 0.01])
     op = ODEProblem(rn, [], tspan, [])

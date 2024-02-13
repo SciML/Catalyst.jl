@@ -2,7 +2,7 @@
 using ModelingToolkit, Catalyst, LinearAlgebra, OrdinaryDiffEq, Test
 using SciMLNLSolve
 using ModelingToolkit: nameof
-
+import Catalyst: t_nounits as t
 
 ### Run Tests ###
 
@@ -132,7 +132,7 @@ let
     # even if they do not appear in the original ReactionSystem.
     network = @reaction_network
     @parameters a
-    @variables t x(t)
+    @variables x(t)
     @named constraints = NonlinearSystem([x ~ a], [x], [a])
     extended = extend(constraints, network)
     @test isequal(extended.a, ModelingToolkit.namespace_expr(a, extended))
@@ -160,7 +160,7 @@ let
     network = @reaction_network
     subnetwork = @reaction_network
     @parameters a=1 b=2
-    @variables t x(t)=a y(t)=b
+    @variables x(t)=a y(t)=b
     @named constraints = NonlinearSystem([x ~ a], [x], [a])
     @named subsystemconstraints = NonlinearSystem([y ~ b], [y], [b])
     extended = extend(constraints, network)
@@ -187,7 +187,7 @@ let
     network = @reaction_network
     subnetwork = @reaction_network
     @parameters a b
-    @variables t x(t) y(t)
+    @variables x(t) y(t)
     @named constraints = NonlinearSystem([x ~ a], [x], [a])
     @named subconstraints = NonlinearSystem([y ~ b], [y], [b])
     constraints = structural_simplify(constraints)
@@ -290,7 +290,6 @@ let
 
     # Check several levels of nesting namespace and filter ok for the API functions.
     @parameters p1, p2a, p2b, p3a, p3b
-    @variables t
     @species A1(t), A2a(t), A2b(t), A3a(t), A3b(t)
     rxs1 = [Reaction(p1, [A1], nothing)]
     rxs2 = [Reaction(p2a, [A2a], nothing), Reaction(p2b, [ParentScope(A1)], nothing)]
@@ -340,8 +339,8 @@ let
     end
     @parameters a, b
     @unpack A = rn
-    @variables t, C(t)
-    D = Differential(t)
+    @variables C(t)
+    D = Catalyst.D_nounits
     eqs = [D(C) ~ -b * C + a * A]
     @named osys = ODESystem(eqs, t, [A, C], [a, b])
     rn2 = extend(osys, rn)
@@ -370,7 +369,6 @@ end
 # https://github.com/SciML/ModelingToolkit.jl/issues/1274
 let
     @parameters p1 p2
-    @variables t
     @species A(t)
     rxs1 = [Reaction(p1, [A], nothing)]
     rxs2 = [Reaction(p2, [ParentScope(A)], nothing)]
@@ -384,13 +382,12 @@ end
 # Test constraint system symbols can be set via setdefaults!.
 let
     @parameters b
-    @variables t
     @species V(t) [isbcspecies = true]
     rn = @reaction_network begin
         @parameters k
         k/$V, A + B --> C
     end
-    Dt = Differential(t)
+    Dt = Catalyst.D_nounits
     @named csys = ODESystem([Dt(V) ~ -b * V], t)
     @named fullrn = extend(csys, rn)
     setdefaults!(fullrn, [:b => 2.0])
@@ -411,7 +408,6 @@ let
         k2, B --> C
     end
 
-    @variables t
     @named rs = ReactionSystem(t; systems = [rn_AB, rn_BC])
     sts = unknowns(rs)
     @test issetequal(sts, (@species AB₊A(t) AB₊B(t) BC₊B(t) BC₊C(t)))
@@ -426,9 +422,9 @@ end
 # Test ordering of unknowns and equations.
 let
     @parameters k1 k2 k3
-    @variables t V1(t) V2(t) V3(t)
+    @variables V1(t) V2(t) V3(t)
     @species A1(t) A2(t) A3(t) B1(t) B2(t) B3(t)
-    D = Differential(t)
+    D = Catalyst.D_nounits
     rx1 = Reaction(k1*V1, [A1], [B1])
     eq1 = D(V1) ~ -V1
     @named rs1 = ReactionSystem([rx1, eq1], t)

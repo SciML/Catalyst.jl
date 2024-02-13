@@ -2,6 +2,7 @@
 
 # Fetch pakcages.
 using Catalyst, LinearAlgebra, JumpProcesses, Test, OrdinaryDiffEq, StochasticDiffEq
+import Catalyst: t_nounits as t
 const MT = ModelingToolkit
 
 # Sets rnd number.
@@ -10,7 +11,6 @@ rng = StableRNG(12345)
 
 # Create test network.
 @parameters k[1:20]
-@variables t
 @species A(t) B(t) C(t) D(t)
 rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
     Reaction(k[2], [B], nothing),            # B -> 0
@@ -141,18 +141,17 @@ end
 ### Check ODE, SDE, and Jump Functions ###
 
 # Test by evaluating drift and diffusion terms.
-# Don't ask me (Torkel) why the statement before/after is needed.
-t = 0.0
+
 let
     p = rand(rng, length(k))
     u = rand(rng, length(k))
-    du = oderhs(u, p, t)
-    G = sdenoise(u, p, t)
+    du = oderhs(u, p, 0.0)
+    G = sdenoise(u, p, 0.0)
     sdesys = convert(SDESystem, rs)
     sf = SDEFunction{false}(sdesys, unknowns(rs), parameters(rs))
-    du2 = sf.f(u, p, t)
+    du2 = sf.f(u, p, 0.0)
     @test norm(du - du2) < 100 * eps()
-    G2 = sf.g(u, p, t)
+    G2 = sf.g(u, p, 0.0)
     @test norm(G - G2) < 100 * eps()
 
     # Test conversion to NonlinearSystem.
@@ -162,7 +161,6 @@ let
     fnl(dunl, u, p)
     @test norm(du - dunl) < 100 * eps()
 end
-@variables t
 
 # Tests the noise_scaling argument.
 let
@@ -210,7 +208,6 @@ end
 # Test with JumpSystem.
 let
     p = rand(rng, length(k))
-    @variables t
     @species A(t) B(t) C(t) D(t) E(t) F(t)
     rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
         Reaction(k[2], [B], nothing),            # B -> 0
@@ -390,7 +387,6 @@ let
     @named rs2 = ReactionSystem(rxs, t)
     @test Catalyst.isequivalent(rs1, rs2)
 
-    @variables t
     @species L(t), H(t)
     obs = [Equation(L, 2 * x + y)]
     @named rs3 = ReactionSystem(rxs, t; observed = obs)
@@ -402,7 +398,6 @@ end
 # Test that non-integer stoichiometry goes through.
 let
     @parameters k b
-    @variables t
     @species A(t) B(t) C(t) D(t)
     rx1 = Reaction(k, [B, C], [B, D], [2.5, 1], [3.5, 2.5])
     rx2 = Reaction(2 * k, [B], [D], [1], [2.5])
@@ -460,9 +455,8 @@ end
 # Tests for BC and constant species.
 let
     @parameters k1 k2 A [isconstantspecies = true]
-    @variables t
     @species B(t) C(t) [isbcspecies = true] D(t) E(t)
-    Dt = Differential(t)
+    Dt = Catalyst.D_nounits
     eqs = [(@reaction k1, $A --> B),
         (@reaction k2, B --> $A),
         (@reaction k1, $C + D --> E + $C),
@@ -549,7 +543,6 @@ end
 # Test that jump solutions actually run correctly for constants and BCs.
 let
     @parameters k1 A [isconstantspecies = true]
-    @variables t
     @species C(t) [isbcspecies = true] B1(t) B2(t) B3(t)
     @named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
                                    (@reaction k1, $A --> B2),
@@ -572,10 +565,9 @@ end
 # Fix for SBML test 305.
 let
     @parameters k1 k2 S2 [isconstantspecies = true]
-    @variables t
     @species S1(t) S3(t)
     rx = Reaction(k2, [S1], nothing)
-    ∂ₜ = Differential(t)
+    ∂ₜ = Catalyst.D_nounits
     eq = ∂ₜ(S3) ~ k1 * S2
     @named osys = ODESystem([eq], t)
     @named rs = ReactionSystem([rx, eq], t)
@@ -587,10 +579,9 @@ let
 end
 let
     @parameters k1 k2 S2 [isconstantspecies = true]
-    @variables t
     @species S1(t) S3(t) [isbcspecies = true]
     rx = Reaction(k2, [S1], nothing)
-    ∂ₜ = Differential(t)
+    ∂ₜ = Catalyst.D_nounits
     eq = S3 ~ k1 * S2
     @named rs = ReactionSystem([rx, eq], t)
     @test issetequal(unknowns(rs), [S1, S3])
@@ -605,10 +596,10 @@ let
 end
 let
     @parameters k1 k2 S2 [isconstantspecies = true]
-    @variables t S3(t)
+    @variables S3(t)
     @species S1(t)
     rx = Reaction(k2, [S1], nothing)
-    ∂ₜ = Differential(t)
+    ∂ₜ = Catalyst.D_nounits
     eq = S3 ~ k1 * S2
     @named rs = ReactionSystem([rx, eq], t)
     @test issetequal(unknowns(rs), [S1, S3])
@@ -625,7 +616,6 @@ end
 # Constant species = parameters basic tests.
 let
     @parameters k b [isconstantspecies = true] c
-    @variables t
     @test_throws ArgumentError @species A(t) B(t) a [isconstantspecies = true]
     @test_throws ArgumentError Reaction(k, [A, c], [B])
     @test_throws ArgumentError Reaction(k, [A], [B, c])
@@ -638,7 +628,6 @@ end
 # Test parameteric initial conditions.
 let
     @parameters d X0
-    @variables t
     @species X(t)=X0
     rx = Reaction(d, [X], nothing, [1], nothing)
     @named rs = ReactionSystem([rx], t)
@@ -648,7 +637,6 @@ end
 
 # Test balanced_bc_check.
 let
-    @variables t
     @species A(t) [isbcspecies = true]
     rx = @reaction k, 2 * $A + B --> C + $A
     @test_throws ErrorException ReactionSystem([rx], t; name = :rs)
@@ -681,7 +669,6 @@ end
 # Needs fix for https://github.com/JuliaSymbolics/Symbolics.jl/issues/842.
 let
     @parameters a
-    @variables t
     @species A(t) B(t) C(t)[1:2]
     rx1 = Reaction(a, [A, C[1]], [C[2], B], [1, 2], [2, 3])
     io = IOBuffer()
@@ -692,7 +679,6 @@ end
 
 # Test array metadata for species works.
 let
-    @variables t
     @species (A(t))[1:20]
     using ModelingToolkit: value
     @test isspecies(value(A))
@@ -705,10 +691,10 @@ end
 # Test mixed models are formulated correctly.
 let
     @parameters k1 k2
-    @variables t V(t)
+    @variables V(t)
     @species A(t) B(t)
     rx = Reaction(k1, [A], [B], [k2], [2])
-    D = Differential(t)
+    D = Catalyst.D_nounits
     eq = D(V) ~ -k1 * k2 * V + A
     @named rs = ReactionSystem([eq, rx], t)
     @test length(unknowns(rs)) == 3
@@ -728,7 +714,6 @@ end
 
 # Test errors for repeated substrates or products
 let
-    @variables t
     @species A(t) B(t)
     @test_throws ArgumentError Reaction(1.0, [A, A, B], [B])
     @test_throws ArgumentError Reaction(1.0, [B], [A, A])
@@ -737,7 +722,6 @@ end
 
 # Test order of species and products doesn't matter for equality or hashing
 let
-    @variables t
     @species A(t) α(t)
     rx = Reaction(1.0, [α, A], [α, A], [2, 3], [4, 5])
     rx2 = Reaction(1.0, [A, α], [A, α], [3, 2], [5, 4])

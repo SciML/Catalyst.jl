@@ -2,6 +2,7 @@
 ### Fetch Packages and Set Global Variables ###
 using DiffEqBase, Catalyst, Random, Symbolics, Test
 using ModelingToolkit: get_unknowns, get_ps
+import Catalyst: t_nounits as t
 
 using StableRNGs
 rng = StableRNG(12345)
@@ -209,7 +210,6 @@ end
 
 # Tests `ReactionSystem`s.
 let
-    @variables t 
     @species x(t) y(t)
     @parameters k v n 
     rs1 = @reaction_network rs begin
@@ -232,7 +232,6 @@ end
 
 # Tests `Reaction`s.
 let
-    @variables t 
     @species x(t) y(t)
     @parameters k v n 
     

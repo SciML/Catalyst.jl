@@ -5,6 +5,7 @@
 # Fetch packages.
 using Catalyst, OrdinaryDiffEq, Random, Test
 using ModelingToolkit: get_unknowns, get_ps
+import Catalyst: t_nounits as t
 
 # Sets rnd number.
 using StableRNGs
@@ -20,7 +21,6 @@ let
     test_network = reaction_networks_standard[7]
     test_osys = convert(ODESystem, test_network)
     @parameters p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
-    @variables t
     @species X1(t) X2(t) X3(t) X4(t) X5(t) X6(t) X(t)
 
     for factor = [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]

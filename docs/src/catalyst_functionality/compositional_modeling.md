@@ -51,8 +51,8 @@ plot(TreePlot(rn), method=:tree, fontsize=12, nodeshape=:ellipse)
 We could also have directly constructed `rn` using the same reaction as in
 `basern` as
 ```@example ex1
+import Catalyst: t_nounits as t
 @parameters k
-@variables t
 @species A(t), B(t), C(t)
 rxs = [Reaction(k, [A,B], [C])]
 @named rn = ReactionSystem(rxs, t; systems = [newrn, newestrn])
@@ -114,7 +114,7 @@ ability to substitute the value of these variables into the DSL (see
 [Interpolation of Julia Variables](@ref dsl_description_interpolation_of_variables)). To make the repressilator we now make
 three genes, and then compose them together
 ```@example ex1
-@variables t
+import Catalyst: t_nounits as t
 @species G3₊P(t)
 @named G1 = repressed_gene(; R=ParentScope(G3₊P))
 @named G2 = repressed_gene(; R=ParentScope(G1.P))
@@ -130,7 +130,7 @@ plot(TreePlot(repressilator), method=:tree, fontsize=12, nodeshape=:ellipse)
 In building the repressilator we needed to use two new features. First, we
 needed to create a symbolic variable that corresponds to the protein produced by
 the third gene before we created the corresponding system. We did this via
-`@variables t, G3₊P(t)`. We also needed to set the scope where each repressor
+`@variables G3₊P(t)`. We also needed to set the scope where each repressor
 lived. Here `ParentScope(G3₊P)`, `ParentScope(G1.P)`, and `ParentScope(G2.P)`
 signal Catalyst that these variables will come from parallel systems in the tree
 that have the same parent as the system being constructed (in this case the

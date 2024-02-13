@@ -15,12 +15,12 @@ and then define symbolic variables for each parameter and species in the system
 (the latter corresponding to a `variable` or `unknown` in ModelingToolkit
 terminology)
 ```@example ex
+import Catalyst: t_nounits as t
 @parameters α K n δ γ β μ
-@variables t
 @species m₁(t) m₂(t) m₃(t) P₁(t) P₂(t) P₃(t)
 nothing    # hide
 ```
-*Note, each species is declared as a function of time!*
+Note: Each species is declared as a function of time. Here, we first import the *time independent variable using `import Catalyst: t_nounits as t`, and then use it to declare out species.
 
 !!! note
        For users familiar with ModelingToolkit, chemical species must be declared
@@ -117,8 +117,8 @@ Reaction(rate, nothing, [P₁,...,Pₙ], nothing, [β₁,...,βₙ])
 Finally, we note that the rate constant, `rate` above, does not need to be a
 constant or fixed function, but can be a general symbolic expression:
 ```julia
+import Catalyst: t_nounits as t
 @parameters α, β
-@variables t
 @species A(t), B(t)
 rx = Reaction(α + β*t*A, [A], [B])
 ```
@@ -133,7 +133,7 @@ reactions using the [`@reaction`](@ref) macro.
 
 For example, the repressilator reactions could also have been constructed like
 ```julia
-@variables t
+import Catalyst: t_nounits as t
 @species P₁(t) P₂(t) P₃(t)
 rxs = [(@reaction hillr($P₃,α,K,n), ∅ --> m₁),
        (@reaction hillr($P₁,α,K,n), ∅ --> m₂),
@@ -162,8 +162,9 @@ rx = @reaction hillr(P,α,K,n), A --> B
 ```
 is equivalent to
 ```julia
+import Catalyst: t_nounits as t
 @parameters P α K n
-@variables t A(t) B(t)
+@variables A(t) B(t)
 rx = Reaction(hillr(P,α,K,n), [A], [B])
 ```
 Here `(P,α,K,n)` are parameters and `(A,B)` are species.

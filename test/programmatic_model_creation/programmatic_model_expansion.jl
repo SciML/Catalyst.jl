@@ -5,6 +5,7 @@
 # Fetch packages.
 using Catalyst, Test
 using ModelingToolkit: get_ps, get_unknowns, get_eqs, get_systems, get_iv, getname, nameof
+import Catalyst: t_nounits as t
 
 # Sets rnd number.
 using StableRNGs
@@ -49,7 +50,6 @@ end
 let
     empty_network_3 = @reaction_network
     @parameters p
-    @variables t
     @species x(t)
     addspecies!(empty_network_3, x)
     addparam!(empty_network_3, p)

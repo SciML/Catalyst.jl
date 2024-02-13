@@ -15,6 +15,7 @@ We begin by importing some necessary packages.
 using ModelingToolkit, Catalyst, NonlinearSolve
 using DifferentialEquations, Symbolics
 using Plots
+import Catalyst: t_nounits as t, D_nounits as D
 ```
 
 We'll build a simple Hodgkin-Huxley model for a single neuron, with the voltage,
@@ -51,7 +52,7 @@ We now declare the symbolic variable, `V(t)`, that will represent the
 transmembrane potential
 
 ```@example hh1
-@variables t V(t)
+@variables V(t)
 nothing # hide
 ```
 
@@ -75,7 +76,6 @@ I = I₀ * sin(2*pi*t/30)^2
 # get the gating variables to use in the equation for dV/dt
 @unpack m,n,h = hhrn
 
-Dₜ = Differential(t)
 eqs = [Dₜ(V) ~ -1/C * (ḡK*n^4*(V-EK) + ḡNa*m^3*h*(V-ENa) + ḡL*(V-EL)) + I/C]
 @named voltageode = ODESystem(eqs, t)
 nothing # hide

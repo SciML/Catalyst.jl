@@ -23,19 +23,21 @@ There are several ways we can create our Catalyst model with the two reactions
 and ODE for $V(t)$. One approach is to use compositional modeling, create
 separate `ReactionSystem`s and `ODESystem`s with their respective components,
 and then extend the `ReactionSystem` with the `ODESystem`. Let's begin by
-creating these two systems:
+creating these two systems. 
+
+Here, to create differentials with respect to time (for our differential equations), we must import the time differential operator from Catalyst. We do this through `import Catalyst: D_nounits as D` (calling it `D`). Here, `D(V)` denotes the differential of the variable `V` with respect to time.
 
 ```@example ceq1
 using Catalyst, DifferentialEquations, Plots
+import Catalyst: t_nounits as t, D_nounits as D
 
 # set the growth rate to 1.0
 @parameters λ = 1.0
 
 # set the initial volume to 1.0
-@variables t V(t) = 1.0
+@variables V(t) = 1.0
 
 # build the ODESystem for dV/dt
-D = Differential(t)
 eq = [D(V) ~ λ * V]
 @named osys = ODESystem(eq, t)
 
@@ -70,10 +72,10 @@ As an alternative to the previous approach, we could have constructed our
 `ReactionSystem` all at once by directly using the symbolic interface:
 ```@example ceq2
 using Catalyst, DifferentialEquations, Plots
+import Catalyst: t_nounits as t, D_nounits as D
 
 @parameters λ = 1.0
-@variables t V(t) = 1.0
-D = Differential(t)
+@variables V(t) = 1.0
 eq = D(V) ~ λ * V
 rx1 = @reaction $V, 0 --> P
 rx2 = @reaction 1.0, P --> 0
@@ -102,11 +104,11 @@ advanced_simulations) tutorial.
 Let's first create our equations and unknowns/species again
 ```@example ceq3
 using Catalyst, DifferentialEquations, Plots
+import Catalyst: t_nounits as t, D_nounits as D
 
 @parameters λ = 1.0
-@variables t V(t) = 1.0
+@variables V(t) = 1.0
 @species P(t) = 0.0
-D = Differential(t)
 eq = D(V) ~ λ * V
 rx1 = @reaction $V, 0 --> $P
 rx2 = @reaction 1.0, $P --> 0
@@ -126,8 +128,8 @@ plot(sol; plotdensity = 1000)
 ```
 We can also model discrete events. Similar to our example with continuous events, we start by creating reaction equations, parameters, variables, and unknowns. 
 ```@example ceq3
+import Catalyst: t_nounits as t
 @parameters k_on switch_time k_off
-@variables t
 @species A(t) B(t)
 
 rxs = [(@reaction k_on, A --> B), (@reaction k_off, B --> A)]
