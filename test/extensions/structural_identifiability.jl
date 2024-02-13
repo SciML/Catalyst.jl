@@ -193,6 +193,7 @@ let
     si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[pₑ, pₚ], known_p=[pₑ])    
 
     # Tests using model.component style (have to make system complete first).
+    gw_osc_complt = complete(goodwind_oscillator_catalyst)
     @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M]) isa ODE
     @test make_si_ode(gw_osc_complt; known_p=[gw_osc_complt.pₑ]) isa ODE
     @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M], known_p=[gw_osc_complt.pₑ]) isa ODE
@@ -217,9 +218,11 @@ end
 let
     # Identifiability analysis for Catalyst model.
     rs1 = @reaction_network rs1 begin
+        @incomplete
         (k1, k2), X1 <--> X2
     end
     rs2 = @reaction_network rs2 begin
+        @incomplete
         (k3, k4), X3 <--> X4
     end
     @named rs_catalyst = compose(rs1, [rs2])
