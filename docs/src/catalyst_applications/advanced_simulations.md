@@ -292,7 +292,7 @@ function affect!(integrator)
 end
 cb = PresetTimeCallback(condition, affect!)
 
-sol = solve(deepcopy(jprob), SSAStepper(); callback=cb)
+sol = solve(deepcopy(jprob), SSAStepper(); callback = cb)
 plot(sol)
 ```
 
