@@ -83,7 +83,7 @@ t = default_t()
 @parameters k
 @species A(t), B(t), C(t)
 rxs = [Reaction(k, [A,B], [C])]
-@named rn = ReactionSystem(rxs, t; systems = [newrn, newestrn])
+@named rn = ReactionSystem(rxs, t; systems = [newrn, newestrn], complete = false)
 ```
 
 Catalyst provides several different accessors for getting information from a
@@ -147,7 +147,7 @@ t = default_t()
 @named G1 = repressed_gene(; R=ParentScope(G3₊P))
 @named G2 = repressed_gene(; R=ParentScope(G1.P))
 @named G3 = repressed_gene(; R=ParentScope(G2.P))
-@named repressilator = ReactionSystem(t; systems=[G1,G2,G3])
+@named repressilator = ReactionSystem(t; systems=[G1,G2,G3], complete = false)
 ```
 Notice, in this system each gene is a child node in the system graph of the repressilator
 ```julia

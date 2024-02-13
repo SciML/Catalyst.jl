@@ -82,7 +82,7 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables, :default_noise_scaling)
+const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables, :default_noise_scaling, :incomplete)
 
 ### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)

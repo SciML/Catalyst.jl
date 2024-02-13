@@ -78,9 +78,9 @@ let
     @test all(isapprox.(sol(tvs, idxs = sys₁.P), sol2(tvs, idxs = 4), atol = 1e-4))
 
     # Using ReactionSystem components.
-    @named sys₁ = ReactionSystem(rxs, t, specs, pars)
-    @named sys₂ = ReactionSystem(rxs, t, specs, pars)
-    @named sys₃ = ReactionSystem(rxs, t, specs, pars)
+    @named sys₁ = ReactionSystem(rxs, t, specs, pars; complete = false)
+    @named sys₂ = ReactionSystem(rxs, t, specs, pars; complete = false)
+    @named sys₃ = ReactionSystem(rxs, t, specs, pars; complete = false)
     connections = [ParentScope(sys₁.R) ~ ParentScope(sys₃.P),
         ParentScope(sys₂.R) ~ ParentScope(sys₁.P),
         ParentScope(sys₃.R) ~ ParentScope(sys₂.P)]
@@ -245,7 +245,7 @@ let
     @test all(isapprox.(sol(tvs, idxs = sys₁.P), sol2(tvs, idxs = 4), atol = 1e-4))
 
     # Test extending with NonlinearSystem.
-    @named repressilator2 = ReactionSystem(t; systems = [sys₁, sys₂, sys₃])
+    @named repressilator2 = ReactionSystem(t; systems = [sys₁, sys₂, sys₃], complete = false)
     repressilator2 = Catalyst.flatten(repressilator2)
     repressilator2 = extend(csys, repressilator2)
     repressilator2 = complete(repressilator2)
@@ -268,8 +268,8 @@ let
     @species A(t), B(t), C(t), D(t)
     rxs1 = [Reaction(r₊, [A, B], [C])]
     rxs2 = [Reaction(r₋, [C], [A, B])]
-    @named rs1 = ReactionSystem(rxs1, t, [A, B, C], [r₊])
-    @named rs2 = ReactionSystem(rxs2, t, [A, B, C], [r₋])
+    @named rs1 = ReactionSystem(rxs1, t, [A, B, C], [r₊]; complete = false)
+    @named rs2 = ReactionSystem(rxs2, t, [A, B, C], [r₋]; complete = false)
     @named rs = extend(rs1, rs2)
     @test issetequal(unknowns(rs), [A, B, C])
     @test issetequal(parameters(rs), [r₊, r₋])
@@ -317,13 +317,13 @@ let
     eqs3 = [ParentScope(A2a) ~ p3b * A3b]
 
     @named rs3 = ReactionSystem(rxs3, t, [A3a, ParentScope(A2a)], [p3a, ParentScope(p2a)];
-                                combinatoric_ratelaws = false)
+                                combinatoric_ratelaws = false, complete = false)
     @named ns3 = NonlinearSystem(eqs3, [ParentScope(A2a), A3b], [p3b])
     @named rs2 = ReactionSystem(rxs2, t, [A2a, ParentScope(A1)], [p2a, p2b],
-                                systems = [rs3, ns3]; combinatoric_ratelaws = true)
+                                systems = [rs3, ns3]; combinatoric_ratelaws = true, complete = false)
     @named ns2 = NonlinearSystem(eqs2, [ParentScope(A1), A2b], [ParentScope(p1)])
     @named rs1 = ReactionSystem(rxs1, t, [A1], [p1], systems = [rs2, ns2];
-                                combinatoric_ratelaws = false)
+                                combinatoric_ratelaws = false, complete = false)
 
     # Namespaced reactions.
     nrxs1 = [Reaction(p1, [A1], nothing)]
@@ -447,13 +447,13 @@ let
     D = default_time_deriv()
     rx1 = Reaction(k1*V1, [A1], [B1])
     eq1 = D(V1) ~ -V1
-    @named rs1 = ReactionSystem([rx1, eq1], t)
+    @named rs1 = ReactionSystem([rx1, eq1], t; complete = false)
     rx2 = Reaction(k2*V2, [A2], [B2])
     eq2 = D(V2) ~ -V2
-    @named rs2 = ReactionSystem([rx2, eq2], t)
+    @named rs2 = ReactionSystem([rx2, eq2], t; complete = false)
     rx3 = Reaction(k3*V3, [A3], [B3])
     eq3 = D(V3) ~ -V3
-    @named rs3 = ReactionSystem([rx3, eq3], t)
+    @named rs3 = ReactionSystem([rx3, eq3], t; complete = false)
     @named rs23 = compose(rs2, [rs3])
     @test length(unknowns(rs23)) == 6
     @test all(p -> isequal(p[1], p[2]), zip(unknowns(rs23)[1:4], species(rs23)))

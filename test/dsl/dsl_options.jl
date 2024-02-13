@@ -680,3 +680,23 @@ let
         (k1,k2), X1 <--> X2
     end
 end
+
+### Tests Completeness Designations ###
+let 
+    # Creates models with/without the `@incomplete` option.
+    rn1 = @reaction_network begin
+        (p,d), 0 <--> X
+    end
+    rn2 = @reaction_network begin
+        @incomplete
+        (p,d), 0 <--> X
+    end
+
+    # Check that the correct compeltness is achived.
+    @test ModelingToolkit.iscomplete(rn1)
+    @test !ModelingToolkit.iscomplete(rn2)
+    rn2 = complete(rn2)
+    @test ModelingToolkit.iscomplete(rn2)
+end
+
+    
