@@ -487,11 +487,16 @@ let
     @test norm(sol.u - sol3.u) ≈ 0
 
     # Test symmap_to_varmap.
+    # Test symmap_to_varmap.
     sir = @reaction_network sir begin
+        @incomplete
         β, S + I --> 2I
         ν, I --> R
     end
-    subsys = @reaction_network subsys begin k, A --> B end
+    subsys = @reaction_network subsys begin 
+        @incomplete
+        k, A --> B 
+    end
     @named sys = compose(sir, [subsys])
     symmap = [:S => 1.0, :I => 1.0, :R => 1.0, :subsys₊A => 1.0, :subsys₊B => 1.0]
     u0map = symmap_to_varmap(sys, symmap)
