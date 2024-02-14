@@ -18,12 +18,12 @@ macro compound(species_expr, arr_expr...)
 
     # Construct the expressions that define the species
     species_expr = Expr(:macrocall, Symbol("@species"), LineNumberNode(0),
-                        Expr(:call, species_name, species_arg))
+        Expr(:call, species_name, species_arg))
 
     # Construct the expression to set the iscompound metadata
     setmetadata_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
-                                                                       Catalyst.CompoundSpecies,
-                                                                       true))
+        Catalyst.CompoundSpecies,
+        true))
 
     # Ensure the expressions are evaluated in the correct scope by escaping them
     escaped_species_expr = esc(species_expr)
@@ -49,22 +49,22 @@ macro compound(species_expr, arr_expr...)
 
     # Construct the expression to set the components metadata
     setcomponents_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
-                                                                         Catalyst.CompoundComponents,
-                                                                         $species_expr))
+        Catalyst.CompoundComponents,
+        $species_expr))
 
     # Ensure the expression is evaluated in the correct scope by escaping it
     escaped_setcomponents_expr = esc(setcomponents_expr)
 
     # Construct the expression to set the coefficients metadata
     setcoefficients_expr = :($(species_name) = ModelingToolkit.setmetadata($(species_name),
-                                                                           Catalyst.CompoundCoefficients,
-                                                                           $coeffs_expr))
+        Catalyst.CompoundCoefficients,
+        $coeffs_expr))
 
     escaped_setcoefficients_expr = esc(setcoefficients_expr)
 
     # Return a block that contains the escaped expressions
     return Expr(:block, escaped_species_expr, escaped_setmetadata_expr,
-                escaped_setcomponents_expr, escaped_setcoefficients_expr)
+        escaped_setcomponents_expr, escaped_setcoefficients_expr)
 end
 
 # Check if a species is a compound
@@ -87,7 +87,6 @@ component_coefficients(s::Num) = component_coefficients(MT.value(s))
 function component_coefficients(s)
     return [c => co for (c, co) in zip(components(s), coefficients(s))]
 end
-
 
 ### Balancing Code
 const COMPOUND_OF_COMPOUND_ERROR = ErrorException("Reaction balancing does not currently work for reactions involving compounds of compounds.")
@@ -117,7 +116,7 @@ function create_matrix(reaction::Catalyst.Reaction)
                 coeffs = [1]
             end
 
-            for (atom,coeff) in zip(atoms, coeffs)
+            for (atom, coeff) in zip(atoms, coeffs)
                 # Extract atom and coefficient from the pair
                 i = findfirst(x -> isequal(x, atom), unique_atoms)
                 if i === nothing
@@ -178,20 +177,21 @@ function balance_reaction(reaction::Reaction)
     balancedrxs = Vector{Reaction}(undef, length(stoichiometries))
 
     # Iterate over each stoichiometry vector and create a reaction
-    for (i,stoich) in enumerate(stoichiometries)
+    for (i, stoich) in enumerate(stoichiometries)
         # Divide the stoichiometry vector into substrate and product stoichiometries.
         substoich = stoich[1:length(reaction.substrates)]
         prodstoich = stoich[(length(reaction.substrates) + 1):end]
 
         # Create a new reaction with the balanced stoichiometries
         balancedrx = Reaction(reaction.rate, reaction.substrates,
-                              reaction.products, substoich, prodstoich)
+            reaction.products, substoich, prodstoich)
 
         # Add the reaction to the vector of all reactions
         balancedrxs[i] = balancedrx
     end
 
     isempty(balancedrxs) && (@warn "Unable to balance reaction.")
-    (length(balancedrxs) > 1) && (@warn "Infinite balanced reactions from ($reaction) are possible, returning a basis for them. Note that we do not check if they preserve the set of substrates and products from the original reaction.")
+    (length(balancedrxs) > 1) &&
+        (@warn "Infinite balanced reactions from ($reaction) are possible, returning a basis for them. Note that we do not check if they preserve the set of substrates and products from the original reaction.")
     return balancedrxs
 end

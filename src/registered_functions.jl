@@ -117,24 +117,26 @@ function expand_registered_functions(expr)
     istree(expr) || return expr
     args = arguments(expr)
     if operation(expr) == Catalyst.mm
-        return args[2]*args[1]/(args[1] + args[3])
+        return args[2] * args[1] / (args[1] + args[3])
     elseif operation(expr) == Catalyst.mmr
-        return args[2]*args[3]/(args[1] + args[3])
+        return args[2] * args[3] / (args[1] + args[3])
     elseif operation(expr) == Catalyst.hill
-        return args[2]*(args[1]^args[4])/((args[1])^args[4] + (args[3])^args[4])
+        return args[2] * (args[1]^args[4]) / ((args[1])^args[4] + (args[3])^args[4])
     elseif operation(expr) == Catalyst.hillr
-        return args[2]*(args[3]^args[4])/((args[1])^args[4] + (args[3])^args[4])
+        return args[2] * (args[3]^args[4]) / ((args[1])^args[4] + (args[3])^args[4])
     elseif operation(expr) == Catalyst.hillar
-        return args[3]*(args[1]^args[5])/((args[1])^args[5] + (args[2])^args[5] + (args[4])^args[5])
+        return args[3] * (args[1]^args[5]) /
+               ((args[1])^args[5] + (args[2])^args[5] + (args[4])^args[5])
     end
-    for i = 1:length(args)
+    for i in 1:length(args)
         args[i] = expand_registered_functions(args[i])
     end
     return expr
 end
 # If applied to a Reaction, return a reaction with its rate modified.
 function expand_registered_functions(rx::Reaction)
-    Reaction(expand_registered_functions(rx.rate), rx.substrates, rx.products, rx.substoich, rx.prodstoich, rx.netstoich, rx.only_use_rate)
+    Reaction(expand_registered_functions(rx.rate), rx.substrates, rx.products,
+        rx.substoich, rx.prodstoich, rx.netstoich, rx.only_use_rate)
 end
 # If applied to a Equation, returns it with it applied to lhs and rhs
 function expand_registered_functions(eq::Equation)

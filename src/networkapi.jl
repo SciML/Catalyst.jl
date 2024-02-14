@@ -241,7 +241,7 @@ Note:
   the associated rate law.
 """
 function substoichmat(::Type{SparseMatrixCSC{T, Int}},
-                      rn::ReactionSystem) where {T <: Number}
+        rn::ReactionSystem) where {T <: Number}
     Is = Int[]
     Js = Int[]
     Vs = T[]
@@ -289,7 +289,7 @@ Note:
   the associated rate law.
 """
 function prodstoichmat(::Type{SparseMatrixCSC{T, Int}},
-                       rn::ReactionSystem) where {T <: Number}
+        rn::ReactionSystem) where {T <: Number}
     Is = Int[]
     Js = Int[]
     Vs = T[]
@@ -340,7 +340,7 @@ Notes:
   the associated rate law. As such they do not contribute to the net stoichiometry matrix.
 """
 function netstoichmat(::Type{SparseMatrixCSC{T, Int}},
-                      rn::ReactionSystem) where {T <: Number}
+        rn::ReactionSystem) where {T <: Number}
     Is = Int[]
     Js = Int[]
     Vs = Vector{T}()
@@ -665,7 +665,7 @@ function reactioncomplexmap(rn::ReactionSystem)
 end
 
 function reactioncomplexes(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem,
-                           complextorxsmap)
+        complextorxsmap)
     complexes = collect(keys(complextorxsmap))
     Is = Int[]
     Js = Int[]
@@ -987,7 +987,7 @@ end
 
 function subnetworkmapping(linkageclass, allrxs, complextorxsmap, p)
     rxinds = sort!(collect(Set(rxidx for rcidx in linkageclass
-                               for rxidx in complextorxsmap[rcidx])))
+    for rxidx in complextorxsmap[rcidx])))
     rxs = allrxs[rxinds]
     specset = Set(s for rx in rxs for s in rx.substrates if !isconstant(s))
     for rx in rxs
@@ -1035,7 +1035,7 @@ function subnetworks(rs::ReactionSystem)
         reacs, specs, newps = subnetworkmapping(lcs[i], rxs, complextorxsmap, p)
         newname = Symbol(nameof(rs), "_", i)
         push!(subnetworks,
-              ReactionSystem(reacs, t, specs, newps; name = newname, spatial_ivs))
+            ReactionSystem(reacs, t, specs, newps; name = newname, spatial_ivs))
     end
     subnetworks
 end
@@ -1277,7 +1277,6 @@ Compute conserved quantities for a system with the given conservation laws.
 """
 conservedquantities(state, cons_laws) = cons_laws * state
 
-
 # If u0s are not given while conservation laws are present, throws an error.
 # Used in HomotopyContinuation and BifurcationKit extensions.
 # Currently only checks if any u0s are given
@@ -1358,8 +1357,9 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
 end
 
 function isequal_ignore_names(rn1, rn2)
-    Base.depwarn("Catalyst.isequal_ignore_names has been deprecated. Use isequivalent(rn1, rn2) instead.",
-                 :isequal_ignore_names; force = true)
+    Base.depwarn(
+        "Catalyst.isequal_ignore_names has been deprecated. Use isequivalent(rn1, rn2) instead.",
+        :isequal_ignore_names; force = true)
     isequivalent(rn1, rn2)
 end
 
@@ -1599,7 +1599,7 @@ function validate(rx::Reaction; info::String = "")
     if (subunits !== nothing) && (produnits !== nothing) && (subunits != produnits)
         validated = false
         @warn(string("in ", rx,
-                     " the substrate units are not consistent with the product units."))
+            " the substrate units are not consistent with the product units."))
     end
 
     validated
@@ -1627,7 +1627,7 @@ function validate(rs::ReactionSystem, info::String = "")
         if get_unit(spec) != specunits
             validated = false
             @warn(string("Species are expected to have units of ", specunits,
-                         " however, species ", spec, " has units ", get_unit(spec), "."))
+                " however, species ", spec, " has units ", get_unit(spec), "."))
         end
     end
     timeunits = get_unit(get_iv(rs))
@@ -1646,7 +1646,7 @@ function validate(rs::ReactionSystem, info::String = "")
         if rxunits != rateunits
             validated = false
             @warn(string("Reaction rate laws are expected to have units of ", rateunits,
-                         " however, ", rx, " has units of ", rxunits, "."))
+                " however, ", rx, " has units of ", rxunits, "."))
         end
     end
 

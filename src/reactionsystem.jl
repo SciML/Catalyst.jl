@@ -126,8 +126,8 @@ Test if a species is valid as a reactant (i.e. a species variable or a constant 
 isvalidreactant(s) = MT.isparameter(s) ? isconstant(s) : (isspecies(s) && !isconstant(s))
 
 function Reaction(rate, subs, prods, substoich, prodstoich;
-                  netstoich = nothing, only_use_rate = false,
-                  kwargs...)
+        netstoich = nothing, only_use_rate = false,
+        kwargs...)
     (isnothing(prods) && isnothing(subs)) &&
         throw(ArgumentError("A reaction requires a non-nothing substrate or product vector."))
     (isnothing(prodstoich) && isnothing(substoich)) &&
@@ -314,13 +314,13 @@ struct ReactionComplex{V <: Integer} <: AbstractVector{ReactionComplexElement{V}
     speciesstoichs::Vector{V}
 
     function ReactionComplex{V}(speciesids::Vector{Int},
-                                speciesstoichs::Vector{V}) where {V <: Integer}
+            speciesstoichs::Vector{V}) where {V <: Integer}
         new{V}(speciesids, speciesstoichs)
     end
 end
 
 function ReactionComplex(speciesids::Vector{Int},
-                         speciesstoichs::Vector{V}) where {V <: Integer}
+        speciesstoichs::Vector{V}) where {V <: Integer}
     (length(speciesids) == length(speciesstoichs)) ||
         error("Creating a complex with different number of species ids and associated stoichiometries.")
     ReactionComplex{V}(speciesids, speciesstoichs)
@@ -340,9 +340,9 @@ function Base.getindex(rc::ReactionComplex, i...)
 end
 function Base.setindex!(rc::ReactionComplex, t::ReactionComplexElement, i...)
     (setindex!(rc.speciesids, t.speciesid, i...);
-     setindex!(rc.speciesstoichs,
-               t.speciesstoich, i...);
-     rc)
+    setindex!(rc.speciesstoichs,
+        t.speciesstoich, i...);
+    rc)
 end
 function Base.isless(a::ReactionComplexElement, b::ReactionComplexElement)
     isless(a.speciesid, b.speciesid)
@@ -514,8 +514,8 @@ struct ReactionSystem{V <: NetworkProperties} <:
 
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, rxs, iv, sivs, states, spcs, ps, var_to_name, observed,
-                            name, systems, defaults, connection_type, nps, cls, cevs, devs,
-                            complete::Bool = false; checks::Bool = true)
+            name, systems, defaults, connection_type, nps, cls, cevs, devs,
+            complete::Bool = false; checks::Bool = true)
 
         # unit checks are for ODEs and Reactions only currently
         nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
@@ -533,8 +533,8 @@ struct ReactionSystem{V <: NetworkProperties} <:
         end
 
         rs = new{typeof(nps)}(eqs, rxs, iv, sivs, states, spcs, ps, var_to_name, observed,
-                              name, systems, defaults, connection_type, nps, cls, cevs,
-                              devs, complete)
+            name, systems, defaults, connection_type, nps, cls, cevs,
+            devs, complete)
         checks && validate(rs)
         rs
     end
@@ -565,20 +565,20 @@ end
 eqsortby(eq::CatalystEqType) = eq isa Reaction ? 1 : 2
 
 function ReactionSystem(eqs, iv, states, ps;
-                        observed = Equation[],
-                        systems = [],
-                        name = nothing,
-                        default_u0 = Dict(),
-                        default_p = Dict(),
-                        defaults = _merge(Dict(default_u0), Dict(default_p)),
-                        connection_type = nothing,
-                        checks = true,
-                        networkproperties = nothing,
-                        combinatoric_ratelaws = true,
-                        balanced_bc_check = true,
-                        spatial_ivs = nothing,
-                        continuous_events = nothing,
-                        discrete_events = nothing)
+        observed = Equation[],
+        systems = [],
+        name = nothing,
+        default_u0 = Dict(),
+        default_p = Dict(),
+        defaults = _merge(Dict(default_u0), Dict(default_p)),
+        connection_type = nothing,
+        checks = true,
+        networkproperties = nothing,
+        combinatoric_ratelaws = true,
+        balanced_bc_check = true,
+        spatial_ivs = nothing,
+        continuous_events = nothing,
+        discrete_events = nothing)
     name === nothing &&
         throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     sysnames = nameof.(systems)
@@ -586,8 +586,9 @@ function ReactionSystem(eqs, iv, states, ps;
         throw(ArgumentError("System names must be unique."))
 
     if !(isempty(default_u0) && isempty(default_p))
-        Base.depwarn("`default_u0` and `default_p` are deprecated. Use `defaults` instead.",
-                     :ReactionSystem, force = true)
+        Base.depwarn(
+            "`default_u0` and `default_p` are deprecated. Use `defaults` instead.",
+            :ReactionSystem, force = true)
     end
     defaults = MT.todict(defaults)
     defaults = Dict{Any, Any}(value(k) => value(v) for (k, v) in pairs(defaults))
@@ -646,8 +647,8 @@ function ReactionSystem(eqs, iv, states, ps;
     dcallbacks = MT.SymbolicDiscreteCallbacks(discrete_events)
 
     ReactionSystem(eqs′, rxs, iv′, sivs′, states′, spcs, ps′, var_to_name, observed, name,
-                   systems, defaults, connection_type, nps, combinatoric_ratelaws,
-                   ccallbacks, dcallbacks; checks = checks)
+        systems, defaults, connection_type, nps, combinatoric_ratelaws,
+        ccallbacks, dcallbacks; checks = checks)
 end
 
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
@@ -673,7 +674,7 @@ end
 # the parameters, and then adds additional ones found in the reaction. Name could be
 # changed.
 function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, sts_in, ps_in;
-                                      spatial_ivs = nothing, kwargs...)
+        spatial_ivs = nothing, kwargs...)
     t = value(iv)
     ivs = Set([t])
     if (spatial_ivs !== nothing)
@@ -786,7 +787,7 @@ function MT.equations(sys::ReactionSystem)
     if !isempty(systems)
         eqs = CatalystEqType[eqs;
                              reduce(vcat, MT.namespace_equations.(systems, (ivs,));
-                                    init = Any[])]
+                                 init = Any[])]
         return sort!(eqs; by = eqsortby)
     end
     return eqs
@@ -918,7 +919,7 @@ function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserv
 end
 
 function assemble_drift(rs, ispcs; combinatoric_ratelaws = true, as_odes = true,
-                        include_zero_odes = true, remove_conserved = false)
+        include_zero_odes = true, remove_conserved = false)
     rhsvec = assemble_oderhs(rs, ispcs; combinatoric_ratelaws, remove_conserved)
     if as_odes
         D = Differential(get_iv(rs))
@@ -932,7 +933,7 @@ end
 
 # this doesn't work with constraint equations currently
 function assemble_diffusion(rs, sts, ispcs, noise_scaling; combinatoric_ratelaws = true,
-                            remove_conserved = false)
+        remove_conserved = false)
     # as BC species should ultimately get an equation, we include them in the noise matrix
     num_bcsts = count(isbc, get_states(rs))
 
@@ -1053,8 +1054,8 @@ Notes:
   coefficients.
 """
 function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
-                      haveivdep::Union{Nothing, Bool} = nothing,
-                      stateset = Set(get_states(rs)), ivset = nothing)
+        haveivdep::Union{Nothing, Bool} = nothing,
+        stateset = Set(get_states(rs)), ivset = nothing)
 
     # we define non-integer (i.e. float or symbolic) stoich to be non-mass action
     ((eltype(rx.substoich) <: Integer) && (eltype(rx.prodstoich) <: Integer)) ||
@@ -1115,7 +1116,7 @@ end
         error("$rx has no net stoichiometry change once accounting for constant and boundary condition species. This is not supported.")
 
     MassActionJump(Num(rate), reactant_stoch, net_stoch, scale_rates = false,
-                   useiszero = false)
+        useiszero = false)
 end
 
 # get_depgraph(rs)[i] is the list of reactions with rates depending on species changed by
@@ -1185,7 +1186,7 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
 
         isvrj = isvrjvec[i]
         if (!isvrj) && ismassaction(rx, rs; rxvars = rxvars, haveivdep = false,
-                        stateset = stateset)
+            stateset = stateset)
             push!(meqs, makemajump(rx; combinatoric_ratelaw = combinatoric_ratelaws))
         else
             rl = jumpratelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)
@@ -1252,13 +1253,13 @@ end
 function error_if_constraints(::Type{T}, sys::ReactionSystem) where {T <: MT.AbstractSystem}
     any(eq -> eq isa Equation, get_eqs(sys)) &&
         error("Can not convert to a system of type ", T,
-              " when there are constraint equations.")
+            " when there are constraint equations.")
     nothing
 end
 
 # used by flattened systems that don't support differential equation constraint eqs
 function error_if_constraint_odes(::Type{T},
-                                  rs::ReactionSystem) where {T <: MT.AbstractSystem}
+        rs::ReactionSystem) where {T <: MT.AbstractSystem}
     any(eq -> (eq isa Equation) && MT.isdiffeq(eq), get_eqs(rs)) &&
         error("Cannot convert to system type $T when there are ODE constraint equations.")
     nothing
@@ -1285,26 +1286,27 @@ Keyword args and default values:
   the number of equations.
 """
 function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs),
-                      combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                      include_zero_odes = true, remove_conserved = false, checks = false,
-                      default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
-                      kwargs...)
+        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        include_zero_odes = true, remove_conserved = false, checks = false,
+        default_u0 = Dict(), default_p = Dict(), defaults = _merge(
+            Dict(default_u0), Dict(default_p)),
+        kwargs...)
     spatial_convert_err(rs::ReactionSystem, ODESystem)
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
-                         include_zero_odes)
+        include_zero_odes)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
     ODESystem(eqs, get_iv(fullrs), sts, ps;
-              observed = obs,
-              name,
-              defaults = _merge(defaults,defs),
-              checks,
-              continuous_events = MT.get_continuous_events(fullrs),
-              discrete_events = MT.get_discrete_events(fullrs),
-              kwargs...)
+        observed = obs,
+        name,
+        defaults = _merge(defaults, defs),
+        checks,
+        continuous_events = MT.get_continuous_events(fullrs),
+        discrete_events = MT.get_discrete_events(fullrs),
+        kwargs...)
 end
 
 """
@@ -1325,25 +1327,26 @@ Keyword args and default values:
   the number of equations.
 """
 function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = nameof(rs),
-                      combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                      include_zero_odes = true, remove_conserved = false, checks = false,
-                      default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
-                      kwargs...)
+        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        include_zero_odes = true, remove_conserved = false, checks = false,
+        default_u0 = Dict(), default_p = Dict(), defaults = _merge(
+            Dict(default_u0), Dict(default_p)),
+        kwargs...)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
-                         as_odes = false, include_zero_odes)
+        as_odes = false, include_zero_odes)
     error_if_constraint_odes(NonlinearSystem, fullrs)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
     NonlinearSystem(eqs, sts, ps;
-                    name,
-                    observed = obs,
-                    defaults = _merge(defaults,defs),
-                    checks,
-                    kwargs...)
+        name,
+        observed = obs,
+        defaults = _merge(defaults, defs),
+        checks,
+        kwargs...)
 end
 
 """
@@ -1374,11 +1377,12 @@ Notes:
   differential equations.
 """
 function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
-                      noise_scaling = nothing, name = nameof(rs),
-                      combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                      include_zero_odes = true, checks = false, remove_conserved = false,
-                      default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
-                      kwargs...)
+        noise_scaling = nothing, name = nameof(rs),
+        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        include_zero_odes = true, checks = false, remove_conserved = false,
+        default_u0 = Dict(), default_p = Dict(), defaults = _merge(
+            Dict(default_u0), Dict(default_p)),
+        kwargs...)
     spatial_convert_err(rs::ReactionSystem, SDESystem)
 
     flatrs = Catalyst.flatten(rs)
@@ -1398,9 +1402,10 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     remove_conserved && conservationlaws(flatrs)
     ists, ispcs = get_indep_sts(flatrs, remove_conserved)
     eqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws, include_zero_odes,
-                         remove_conserved)
-    noiseeqs = assemble_diffusion(flatrs, ists, ispcs, noise_scaling; combinatoric_ratelaws,
-                                  remove_conserved)
+        remove_conserved)
+    noiseeqs = assemble_diffusion(
+        flatrs, ists, ispcs, noise_scaling; combinatoric_ratelaws,
+        remove_conserved)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
     ps = (noise_scaling === nothing) ? ps : vcat(ps, toparam(noise_scaling))
 
@@ -1409,13 +1414,13 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     end
 
     SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps;
-              observed = obs,
-              name,
-              defaults = defs,
-              checks,
-              continuous_events = MT.get_continuous_events(flatrs),
-              discrete_events = MT.get_discrete_events(flatrs),
-              kwargs...)
+        observed = obs,
+        name,
+        defaults = defs,
+        checks,
+        continuous_events = MT.get_continuous_events(flatrs),
+        discrete_events = MT.get_discrete_events(flatrs),
+        kwargs...)
 end
 
 """
@@ -1437,10 +1442,11 @@ Notes:
   `ModelingToolkit.JumpSystems`.
 """
 function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs),
-                      combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                      remove_conserved = nothing, checks = false,
-                      default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
-                      kwargs...)
+        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        remove_conserved = nothing, checks = false,
+        default_u0 = Dict(), default_p = Dict(), defaults = _merge(
+            Dict(default_u0), Dict(default_p)),
+        kwargs...)
     spatial_convert_err(rs::ReactionSystem, JumpSystem)
 
     (remove_conserved !== nothing) &&
@@ -1460,67 +1466,67 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     ps = get_ps(flatrs)
 
     JumpSystem(eqs, get_iv(flatrs), sts, ps;
-               observed = MT.observed(flatrs),
-               name,
-               defaults = _merge(defaults,MT.defaults(flatrs)),
-               checks,
-               discrete_events = MT.discrete_events(flatrs),
-               kwargs...)
+        observed = MT.observed(flatrs),
+        name,
+        defaults = _merge(defaults, MT.defaults(flatrs)),
+        checks,
+        discrete_events = MT.discrete_events(flatrs),
+        kwargs...)
 end
 
 ### Converts a reaction system to ODE or SDE problems ###
 
 # ODEProblem from AbstractReactionNetwork
 function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
-                               p = DiffEqBase.NullParameters(), args...;
-                               check_length = false, name = nameof(rs),
-                               combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                               include_zero_odes = true, remove_conserved = false,
-                               checks = false, kwargs...)
+        p = DiffEqBase.NullParameters(), args...;
+        check_length = false, name = nameof(rs),
+        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        include_zero_odes = true, remove_conserved = false,
+        checks = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
-                   remove_conserved)
+        remove_conserved)
     return ODEProblem(osys, u0map, tspan, pmap, args...; check_length, kwargs...)
 end
 
 # NonlinearProblem from AbstractReactionNetwork
 function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
-                                     p = DiffEqBase.NullParameters(), args...;
-                                     name = nameof(rs), include_zero_odes = true,
-                                     combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                                     remove_conserved = false, checks = false,
-                                     check_length = false, kwargs...)
+        p = DiffEqBase.NullParameters(), args...;
+        name = nameof(rs), include_zero_odes = true,
+        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        remove_conserved = false, checks = false,
+        check_length = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, include_zero_odes,
-                    checks, remove_conserved)
+        checks, remove_conserved)
     return NonlinearProblem(nlsys, u0map, pmap, args...; check_length, kwargs...)
 end
 
 # SDEProblem from AbstractReactionNetwork
 function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
-                               p = DiffEqBase.NullParameters(), args...;
-                               noise_scaling = nothing, name = nameof(rs),
-                               combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                               include_zero_odes = true, checks = false,
-                               check_length = false,
-                               remove_conserved = false, kwargs...)
+        p = DiffEqBase.NullParameters(), args...;
+        noise_scaling = nothing, name = nameof(rs),
+        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        include_zero_odes = true, checks = false,
+        check_length = false,
+        remove_conserved = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     sde_sys = convert(SDESystem, rs; noise_scaling, name, combinatoric_ratelaws,
-                      include_zero_odes, checks, remove_conserved)
+        include_zero_odes, checks, remove_conserved)
     p_matrix = zeros(length(get_states(sde_sys)), numreactions(rs))
     return SDEProblem(sde_sys, u0map, tspan, pmap, args...; check_length,
-                      noise_rate_prototype = p_matrix, kwargs...)
+        noise_rate_prototype = p_matrix, kwargs...)
 end
 
 # DiscreteProblem from AbstractReactionNetwork
 function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
-                                    p = DiffEqBase.NullParameters(), args...;
-                                    name = nameof(rs),
-                                    combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                                    checks = false, kwargs...)
+        p = DiffEqBase.NullParameters(), args...;
+        name = nameof(rs),
+        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        checks = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks)
@@ -1529,24 +1535,24 @@ end
 
 # JumpProblem from AbstractReactionNetwork
 function JumpProcesses.JumpProblem(rs::ReactionSystem, prob, aggregator, args...;
-                                   name = nameof(rs),
-                                   combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                                   checks = false, kwargs...)
+        name = nameof(rs),
+        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        checks = false, kwargs...)
     jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks)
     return JumpProblem(jsys, prob, aggregator, args...; kwargs...)
 end
 
 # SteadyStateProblem from AbstractReactionNetwork
 function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
-                                       p = DiffEqBase.NullParameters(), args...;
-                                       check_length = false, name = nameof(rs),
-                                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                                       remove_conserved = false, include_zero_odes = true,
-                                       checks = false, kwargs...)
+        p = DiffEqBase.NullParameters(), args...;
+        check_length = false, name = nameof(rs),
+        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        remove_conserved = false, include_zero_odes = true,
+        checks = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
-                   remove_conserved)
+        remove_conserved)
     return SteadyStateProblem(osys, u0map, pmap, args...; check_length, kwargs...)
 end
 
@@ -1617,15 +1623,15 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
         error("flattening is currently only supported for subsystems mixing ReactionSystems, NonlinearSystems and ODESystems.")
 
     ReactionSystem(equations(rs), get_iv(rs), states(rs), parameters(rs);
-                   observed = MT.observed(rs),
-                   name,
-                   defaults = MT.defaults(rs),
-                   checks = false,
-                   combinatoric_ratelaws = combinatoric_ratelaws(rs),
-                   balanced_bc_check = false,
-                   spatial_ivs = get_sivs(rs),
-                   continuous_events = MT.continuous_events(rs),
-                   discrete_events = MT.discrete_events(rs))
+        observed = MT.observed(rs),
+        name,
+        defaults = MT.defaults(rs),
+        checks = false,
+        combinatoric_ratelaws = combinatoric_ratelaws(rs),
+        balanced_bc_check = false,
+        spatial_ivs = get_sivs(rs),
+        continuous_events = MT.continuous_events(rs),
+        discrete_events = MT.discrete_events(rs))
 end
 
 """
@@ -1640,7 +1646,7 @@ Notes:
 - By default, the new `ReactionSystem` will have the same name as `sys`.
 """
 function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
-                                name::Symbol = nameof(sys))
+        name::Symbol = nameof(sys))
     any(T -> sys isa T, (ReactionSystem, ODESystem, NonlinearSystem)) ||
         error("ReactionSystems can only be extended with ReactionSystems, ODESystems and NonlinearSystems currently. Received a $(typeof(sys)) system.")
 
@@ -1673,14 +1679,14 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
     end
 
     ReactionSystem(eqs, t, sts, ps;
-                   observed = obs,
-                   systems = syss,
-                   name,
-                   defaults = defs,
-                   checks = false,
-                   combinatoric_ratelaws,
-                   balanced_bc_check = false,
-                   spatial_ivs = sivs,
-                   continuous_events,
-                   discrete_events)
+        observed = obs,
+        systems = syss,
+        name,
+        defaults = defs,
+        checks = false,
+        combinatoric_ratelaws,
+        balanced_bc_check = false,
+        spatial_ivs = sivs,
+        continuous_events,
+        discrete_events)
 end

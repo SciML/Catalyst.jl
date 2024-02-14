@@ -29,7 +29,8 @@ struct TransportReaction <: AbstractSpatialReaction
 
     # Creates a diffusion reaction.
     function TransportReaction(rate, species)
-        if any(!ModelingToolkit.isparameter(var) for var in ModelingToolkit.get_variables(rate)) 
+        if any(!ModelingToolkit.isparameter(var)
+        for var in ModelingToolkit.get_variables(rate))
             error("TransportReaction rate contains variables: $(filter(var -> !ModelingToolkit.isparameter(var), ModelingToolkit.get_variables(rate))). The rate must consist of parameters only.")
         end
         new(rate, species.val)
@@ -77,35 +78,39 @@ ModelingToolkit.parameters(tr::TransportReaction) = Symbolics.get_variables(tr.r
 spatial_species(tr::TransportReaction) = [tr.species]
 
 # Checks that a transport reaction is valid for a given reaction system.
-function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReaction; edge_parameters=[])
+function check_spatial_reaction_validity(
+        rs::ReactionSystem, tr::TransportReaction; edge_parameters = [])
     # Checks that the species exist in the reaction system.
     # (ODE simulation code becomes difficult if this is not required,
     # as non-spatial jacobian and f function generated from rs is of wrong size).  
-    if !any(isequal(tr.species), species(rs)) 
+    if !any(isequal(tr.species), species(rs))
         error("Currently, species used in TransportReactions must have previously been declared within the non-spatial ReactionSystem. This is not the case for $(tr.species).")
     end
 
     # Checks that the rate does not depend on species.    
     rate_vars = ModelingToolkit.getname.(Symbolics.get_variables(tr.rate))
-    if !isempty(intersect(ModelingToolkit.getname.(species(rs)), rate_vars)) 
+    if !isempty(intersect(ModelingToolkit.getname.(species(rs)), rate_vars))
         error("The following species were used in rates of a transport reactions: $(setdiff(ModelingToolkit.getname.(species(rs)), rate_vars)).")
     end
 
     # Checks that the species does not exist in the system with different metadata.
-    if any([isequal(tr.species, s) && !isequivalent(tr.species, s) for s in species(rs)]) 
+    if any([isequal(tr.species, s) && !isequivalent(tr.species, s) for s in species(rs)])
         error("A transport reaction used a species, $(tr.species), with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and used in transport reaction creation.")
     end
-    if any([isequal(rs_p, tr_p) && !equivalent_metadata(rs_p, tr_p) 
-            for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate)]) 
+    if any([isequal(rs_p, tr_p) && !equivalent_metadata(rs_p, tr_p)
+            for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate)])
         error("A transport reaction used a parameter with metadata not matching its lattice reaction system. Please fetch this parameter from the reaction system and used in transport reaction creation.")
     end
 
     # Checks that no edge parameter occur among rates of non-spatial reactions.
-    if any([!isempty(intersect(Symbolics.get_variables(r.rate), edge_parameters)) for r in reactions(rs)])
+    if any([!isempty(intersect(Symbolics.get_variables(r.rate), edge_parameters))
+            for r in reactions(rs)])
         error("Edge paramter(s) were found as a rate of a non-spatial reaction.")
     end
 end
-equivalent_metadata(p1, p2) = isempty(setdiff(p1.metadata, p2.metadata, [Catalyst.EdgeParameter => true]))
+function equivalent_metadata(p1, p2)
+    isempty(setdiff(p1.metadata, p2.metadata, [Catalyst.EdgeParameter => true]))
+end
 
 # Since MTK's "isequal" ignores metadata, we have to use a special function that accounts for this.
 # This is important because whether something is an edge parameter is defined in metadata.

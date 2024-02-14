@@ -109,9 +109,9 @@ function make_stoich_str(spec, stoich, subber; mathrm = true, kwargs...)
 end
 
 function chemical_arrows(rn::ReactionSystem; expand = true,
-                         double_linebreak = LATEX_DEFS.double_linebreak,
-                         starred = LATEX_DEFS.starred, mathrm = true,
-                         mathjax = LATEX_DEFS.mathjax, kwargs...)
+        double_linebreak = LATEX_DEFS.double_linebreak,
+        starred = LATEX_DEFS.starred, mathrm = true,
+        mathjax = LATEX_DEFS.mathjax, kwargs...)
     any_nonrx_subsys(rn) &&
         (@warn "Latexify currently ignores non-ReactionSystem subsystems. Please call `flatsys = flatten(sys)` to obtain a flattened version of your system before trying to Latexify it.")
 
@@ -153,7 +153,7 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
 
         ### Generate formatted string of substrates
         substrates = [make_stoich_str(substrate[1], substrate[2], subber; mathrm,
-                                      kwargs...)
+                          kwargs...)
                       for substrate in zip(r.substrates, r.substoich)]
         isempty(substrates) && (substrates = ["\\varnothing"])
 
@@ -178,7 +178,7 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
 
         ### Generate formatted string of products
         products = [make_stoich_str(product[1], product[2], subber; mathrm = true,
-                                    kwargs...)
+                        kwargs...)
                     for product in zip(r.products, r.prodstoich)]
         isempty(products) && (products = ["\\varnothing"])
         str *= join(products, " + ")

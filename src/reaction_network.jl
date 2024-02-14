@@ -106,7 +106,7 @@ Example systems:
 const empty_set = Set{Symbol}([:∅])
 const fwd_arrows = Set{Symbol}([:>, :(=>), :→, :↣, :↦, :⇾, :⟶, :⟼, :⥟, :⥟, :⇀, :⇁, :⇒, :⟾])
 const bwd_arrows = Set{Symbol}([:<, :(<=), :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :↼, :↽, :⇐, :⟽,
-                                   Symbol("<--")])
+    Symbol("<--")])
 const double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :⟺, Symbol("<-->")])
 const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
@@ -115,7 +115,7 @@ const CONSERVED_CONSTANT_SYMBOL = :Γ
 # Declares symbols which may neither be used as parameters not varriables.
 const forbidden_symbols_skip = Set([:ℯ, :pi, :π, :t, :∅])
 const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
-                                      forbidden_symbols_skip)
+    forbidden_symbols_skip)
 const forbidden_variables_error = let
     fvars = copy(forbidden_symbols_error)
     delete!(fvars, :t)
@@ -136,9 +136,10 @@ macro species(ex...)
     idx = length(vars.args)
     resize!(vars.args, idx + length(lastarg.args) + 1)
     for sym in lastarg.args
-        vars.args[idx] = :($sym = ModelingToolkit.wrap(setmetadata(ModelingToolkit.value($sym),
-                                                                   Catalyst.VariableSpecies,
-                                                                   true)))
+        vars.args[idx] = :($sym = ModelingToolkit.wrap(setmetadata(
+            ModelingToolkit.value($sym),
+            Catalyst.VariableSpecies,
+            true)))
         idx += 1
     end
 
@@ -205,7 +206,7 @@ macro reaction_network(ex::Expr)
     else  # empty but has interpolated name: @reaction_network $name
         networkname = :($(esc(ex.args[1])))
         return Expr(:block, :(@parameters t),
-                    :(ReactionSystem(Reaction[], t, [], []; name = $networkname)))
+            :(ReactionSystem(Reaction[], t, [], []; name = $networkname)))
     end
 end
 
@@ -213,7 +214,7 @@ end
 # @reaction_network name
 macro reaction_network(name::Symbol = gensym(:ReactionSystem))
     return Expr(:block, :(@parameters t),
-                :(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name)))))
+        :(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name)))))
 end
 
 ### Macros used for manipulating, and successively builing up, reaction systems. ###
@@ -296,7 +297,7 @@ struct ReactionStruct
     only_use_rate::Bool
 
     function ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues,
-                            only_use_rate::Bool)
+            only_use_rate::Bool)
         sub = recursive_find_reactants!(sub_line, 1, Vector{ReactantStruct}(undef, 0))
         prod = recursive_find_reactants!(prod_line, 1, Vector{ReactantStruct}(undef, 0))
         new(sub, prod, rate, only_use_rate)
@@ -309,7 +310,7 @@ function forbidden_variable_check(v)
     !isempty(intersect(forbidden_variables_error, v)) &&
         error("The following symbol(s) are used as variables: " *
               ((map(s -> "'" * string(s) * "', ",
-                    intersect(forbidden_variables_error, v))...)) *
+                  intersect(forbidden_variables_error, v))...)) *
               "this is not permited.")
 end
 
@@ -317,7 +318,7 @@ function forbidden_symbol_check(v)
     !isempty(intersect(forbidden_symbols_error, v)) &&
         error("The following symbol(s) are used as species or parameters: " *
               ((map(s -> "'" * string(s) * "', ",
-                    intersect(forbidden_symbols_error, v))...)) *
+                  intersect(forbidden_symbols_error, v))...)) *
               "this is not permited.")
     nothing
 end
@@ -356,7 +357,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Get macro options.
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
-                       option_lines))
+        option_lines))
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
@@ -377,9 +378,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
 
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
-                                           variables)))
+        variables)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
-                                                                              declared_syms)
+        declared_syms)
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
@@ -412,8 +413,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         $sps
 
         Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, union($spssym, $varssym),
-                                              $pssym; name = $name,
-                                              spatial_ivs = $sivs)
+            $pssym; name = $name,
+            spatial_ivs = $sivs)
     end
 end
 
@@ -513,7 +514,7 @@ end
 
 # Given the species that were extracted from the reactions, and the options dictionary, creates the @species ... expression for the macro output.
 function get_sexpr(species_extracted, options, key = :species;
-                   iv_symbols = (DEFAULT_IV_SYM,))
+        iv_symbols = (DEFAULT_IV_SYM,))
     if haskey(options, key)
         sexprs = options[key]
     elseif isempty(species_extracted)
@@ -522,7 +523,7 @@ function get_sexpr(species_extracted, options, key = :species;
         sexprs = Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
     end
     foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, iv_symbols...)),
-            species_extracted)
+        species_extracted)
     sexprs
 end
 
@@ -541,8 +542,8 @@ function get_rxexprs(rxstruct)
     prod_init = isempty(rxstruct.products) ? nothing : :([])
     prod_stoich_init = deepcopy(prod_init)
     reaction_func = :(Reaction($(recursive_expand_functions!(rxstruct.rate)), $subs_init,
-                               $prod_init, $subs_stoich_init, $prod_stoich_init,
-                               only_use_rate = $(rxstruct.only_use_rate)))
+        $prod_init, $subs_stoich_init, $prod_stoich_init,
+        only_use_rate = $(rxstruct.only_use_rate)))
     for sub in rxstruct.substrates
         push!(reaction_func.args[3].args, sub.reactant)
         push!(reaction_func.args[5].args, sub.stoichiometry)
@@ -587,9 +588,9 @@ function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(u
             (typeof(rate) == Expr && rate.head == :tuple) ||
                 error("Error: Must provide a tuple of reaction rates when declaring a bi-directional reaction.")
             push_reactions!(reactions, r_line.args[2], r_line.args[3], rate.args[1],
-                            only_use_rate)
+                only_use_rate)
             push_reactions!(reactions, r_line.args[3], r_line.args[2], rate.args[2],
-                            only_use_rate)
+                only_use_rate)
         elseif in(arrow, fwd_arrows)
             push_reactions!(reactions, r_line.args[2], r_line.args[3], rate, only_use_rate)
         elseif in(arrow, bwd_arrows)
@@ -603,23 +604,23 @@ end
 
 # Creates a ReactionStruct from the information in a single line.
 function create_ReactionStruct(sub_line::ExprValues, prod_line::ExprValues,
-                               rate::ExprValues, only_use_rate::Bool)
+        rate::ExprValues, only_use_rate::Bool)
     all(==(1), (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate))) ||
         error("Malformed reaction, line appears to be defining multiple reactions incorrectly: rate=$rate, subs=$sub_line, prods=$prod_line.")
     ReactionStruct(get_tup_arg(sub_line, 1), get_tup_arg(prod_line, 1),
-                   get_tup_arg(rate, 1), only_use_rate)
+        get_tup_arg(rate, 1), only_use_rate)
 end
 
 #Takes a reaction line and creates reactions from it and pushes those to the reaction array. Used to create multiple reactions from, for instance, 1.0, (X,Y) --> 0.
 function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues,
-                         prod_line::ExprValues, rate::ExprValues, only_use_rate::Bool)
+        prod_line::ExprValues, rate::ExprValues, only_use_rate::Bool)
     lengs = (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate))
     for i in 1:maximum(lengs)
         (count(lengs .== 1) + count(lengs .== maximum(lengs)) < 3) &&
             (throw("Malformed reaction, rate=$rate, subs=$sub_line, prods=$prod_line."))
         push!(reactions,
-              ReactionStruct(get_tup_arg(sub_line, i), get_tup_arg(prod_line, i),
-                             get_tup_arg(rate, i), only_use_rate))
+            ReactionStruct(get_tup_arg(sub_line, i), get_tup_arg(prod_line, i),
+                get_tup_arg(rate, i), only_use_rate))
     end
 end
 
@@ -634,21 +635,21 @@ end
 # Recursive function that loops through the reaction line and finds the reactants and their
 # stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
 function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
-                                   reactants::Vector{ReactantStruct})
+        reactants::Vector{ReactantStruct})
     if typeof(ex) != Expr || (ex.head == :escape) || (ex.head == :ref)
         (ex == 0 || in(ex, empty_set)) && (return reactants)
         if any(ex == reactant.reactant for reactant in reactants)
             idx = findall(x -> x == ex, getfield.(reactants, :reactant))[1]
             reactants[idx] = ReactantStruct(ex,
-                                            processmult(+, mult,
-                                                        reactants[idx].stoichiometry))
+                processmult(+, mult,
+                    reactants[idx].stoichiometry))
         else
             push!(reactants, ReactantStruct(ex, mult))
         end
     elseif ex.args[1] == :*
         if length(ex.args) == 3
             recursive_find_reactants!(ex.args[3], processmult(*, mult, ex.args[2]),
-                                      reactants)
+                reactants)
         else
             newmult = processmult(*, mult, Expr(:call, ex.args[1:(end - 1)]...))
             recursive_find_reactants!(ex.args[end], newmult, reactants)
@@ -669,7 +670,7 @@ end
 function recursive_expand_functions!(expr::ExprValues)
     (typeof(expr) != Expr) && (return expr)
     foreach(i -> expr.args[i] = recursive_expand_functions!(expr.args[i]),
-            1:length(expr.args))
+        1:length(expr.args))
     if expr.head == :call
         !isdefined(Catalyst, expr.args[1]) && (expr.args[1] = esc(expr.args[1]))
     end
