@@ -532,8 +532,10 @@ struct ReactionSystem{V <: NetworkProperties} <:
         end
 
         if isempty(sivs) && (checks == true || (checks & MT.CheckUnits) > 0)
-            nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
-            MT.all_dimensionless([unknowns; ps; iv]) || check_units(nonrx_eqs)
+            if !all(u == 1.0 for u in ModelingToolkit.get_unit([unknowns; ps; iv]))
+                nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
+                check_units(nonrx_eqs)
+            end
         end
 
         rs = new{typeof(nps)}(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
