@@ -508,9 +508,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
     """
     discrete_events::Vector{MT.SymbolicDiscreteCallback}
     """
-    Metadata for the system, to be used by downstream packages. Currently have no known usage,
-    however, is present in other ModelingToolkit systems, and hence added here in case it might
-    be needed in the future.
+    Metadata for the system, to be used by downstream packages. 
     """
     metadata::Any
     """
