@@ -508,6 +508,10 @@ struct ReactionSystem{V <: NetworkProperties} <:
     """
     discrete_events::Vector{MT.SymbolicDiscreteCallback}
     """
+    Metadata for the system, to be used by downstream packages. 
+    """
+    metadata::Any
+    """
     complete: if a model `sys` is complete, then `sys.x` no longer performs namespacing.
     """
     complete::Bool
@@ -515,7 +519,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, rxs, iv, sivs, states, spcs, ps, var_to_name, observed,
                             name, systems, defaults, connection_type, nps, cls, cevs, devs,
-                            complete::Bool = false; checks::Bool = true)
+                            metadata = nothing, complete::Bool = false; checks::Bool = true)
                             
         # unit checks are for ODEs and Reactions only currently
         nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
@@ -534,7 +538,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
 
         rs = new{typeof(nps)}(eqs, rxs, iv, sivs, states, spcs, ps, var_to_name, observed,
                               name, systems, defaults, connection_type, nps, cls, cevs,
-                              devs, complete)
+                              devs, metadata, complete)
         checks && validate(rs)
         rs
     end

@@ -763,3 +763,9 @@ let
     @test !isspecies(Y)
     @test isspecies(Catalyst.tospecies(Y))
 end
+
+# Tests metadata.
+let
+    @test isnothing(ModelingToolkit.get_metadata(rs))
+end
+
