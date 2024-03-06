@@ -75,7 +75,13 @@ let
         (k7, k8), X7 ↔ X8
     end
     @test length(get_states(unfinished_network)) == 8
+    @test all(Symbol("X$i") for i in 1:8) do p
+        hasproperty(unfinished_network, p) && getproperty(unfinished_network, p) isa Num
+    end
     @test length(get_ps(unfinished_network)) == 9
+    @test all(Symbol("k$i") for i in 0:8) do p
+        hasproperty(unfinished_network, p) && getproperty(unfinished_network, p) isa Num
+    end
 end
 
 # Compares test network to identical network constructed via @add_reactions.

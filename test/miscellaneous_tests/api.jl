@@ -49,6 +49,7 @@ let
     addreaction!(rs3, Reaction(k3, [S], [D]))
     addreaction!(rs3, Reaction(k4, [S, I], [D]))
     merge!(rs, rs3)
+    @test rs.k3 isa Num
     addspecies!(rs2, S)
     addspecies!(rs2, D)
     addparam!(rs2, k3)

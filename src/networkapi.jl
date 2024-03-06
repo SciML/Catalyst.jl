@@ -1559,6 +1559,7 @@ function Base.merge!(network1::ReactionSystem, network2::ReactionSystem)
     union!(get_observed(network1), get_observed(network2))
     union!(get_systems(network1), get_systems(network2))
     merge!(get_defaults(network1), get_defaults(network2))
+    merge!(getfield(network1, :var_to_name), getfield(network2, :var_to_name))
     union!(MT.get_continuous_events(network1), MT.get_continuous_events(network2))
     union!(MT.get_discrete_events(network1), MT.get_discrete_events(network2))
 
