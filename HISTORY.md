@@ -22,7 +22,7 @@ rn = @reaction_network begin
     @parameters η
     k, 2X --> X2, [noise_scaling=η]
 end
-get_metadata(rn, :noise_scaling)
+getnoisescaling(rn)
 ```
 - Changed fields of internal `Reaction` structure. `ReactionSystems`s saved using `serialize` on previous Catalyst versions cannot be loaded using this (or later) versions.
 - Simulation of spatial ODEs now supported. For full details, please see https://github.com/SciML/Catalyst.jl/pull/644 and upcoming documentation. Note that these methods are currently considered alpha, with the interface and approach changing even in non-breaking Catalyst releases.

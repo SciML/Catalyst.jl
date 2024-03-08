@@ -178,9 +178,6 @@ substoichmat
 prodstoichmat
 netstoichmat
 reactionrates
-get_metadata_dict
-has_metadata
-get_metadata
 ```
 
 ## [Functions to extend or modify a network](@id api_network_extension_and_modification)

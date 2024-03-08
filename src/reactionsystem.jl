@@ -98,7 +98,7 @@ Notes:
 - The three-argument form assumes all reactant and product stoichiometric coefficients
   are one.
 """
-struct Reaction{R, S, T}
+struct Reaction{S, T}
     """The rate function (excluding mass action terms)."""
     rate::Any
     """Reaction substrates."""
@@ -120,7 +120,7 @@ struct Reaction{R, S, T}
     Contain additional data, such whenever the reaction have a specific noise-scaling expression for
     the chemical Langevin equation.
     """
-    metadata::Vector{Pair{Symbol, R}}
+    metadata::Vector{Pair{Symbol, Any}}
 end
 
 """
@@ -187,7 +187,7 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     end
 
     # Check that all metadata entries are unique.
-    if length(unique(entry[1] for entry in metadata)) < length(metadata)
+    if any(metadata[i] in metadata[i+1:end] for i in eachindex(metadata))
         error("Repeated entries for the same metadata encountered in the following metadata set: $([entry[1] for entry in metadata]).")
     end
 
@@ -854,6 +854,28 @@ end
 ######################## Other accessors ##############################
 
 """
+    getnoisescaling(reaction::Reaction)
+
+Returns the noise scaling associated with a specific reaction. If the `:noise_scaling` metadata has
+set, returns that. Else, returns `1.0`.
+
+Arguments:
+- `reaction`: The reaction for which we wish to retrive all metadata.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
+getnoisescaling(reaction)
+"""
+function getnoisescaling(reaction::Reaction)
+    has_metadata(reaction, :noise_scaling) && (return get_metadata(reaction, :noise_scaling))
+    return 1.0
+end
+
+
+# These are currently considered internal, but can be used by public accessor functions like getnoisescaling.
+
+"""
     get_metadata_dict(reaction::Reaction)
 
 Retrives the `ImmutableDict` containing all of the metadata associated with a specific reaction.
@@ -909,7 +931,8 @@ function get_metadata(reaction::Reaction, md_key::Symbol)
     if !has_metadata(reaction, md_key) 
         error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(get_metadata_dict(reaction))).")
     end
-    return get_metadata_dict(reaction)[findfirst(isequal(md_key, entry[1]) for entry in get_metadata_dict(reaction))][2]
+    metadata = get_metadata_dict(reaction)
+    return metadata[findfirst(isequal(md_key, entry[1]) for entry in get_metadata_dict(reaction))][2]
 end
 
 ######################## Conversion to ODEs/SDEs/jump, etc ##############################
