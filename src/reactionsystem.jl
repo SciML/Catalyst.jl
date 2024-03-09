@@ -196,6 +196,9 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
         deleteat!(metadata, findfirst(:only_use_rate == entry[1] for entry in metadata))
     end
 
+    # Ensures metadata have the correct type.
+    metadata = convert(Vector{Pair{Symbol, Any}}, metadata)
+
     Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate, metadata)
 end
 
