@@ -169,20 +169,20 @@ let
     # Checks DSL reactions are correct.
     rxs = reactions(rs)
     @test isequal([r1, r2, r3], rxs)
-    @test isequal(get_metadata_dict(r1), get_metadata_dict(rxs[1]))
-    @test isequal(get_metadata_dict(r2), get_metadata_dict(rxs[2]))
-    @test isequal(get_metadata_dict(r3), get_metadata_dict(rxs[3]))
+    @test isequal(Catalyst.get_metadata_dict(r1), Catalyst.get_metadata_dict(rxs[1]))
+    @test isequal(Catalyst.get_metadata_dict(r2), Catalyst.get_metadata_dict(rxs[2]))
+    @test isequal(Catalyst.get_metadata_dict(r3), Catalyst.get_metadata_dict(rxs[3]))
 
     # Checks that accessor functions works on the DSL.
-    @test has_metadata(rxs[1], :noise_scaling)
-    @test !has_metadata(rxs[1], :md_1)
-    @test !has_metadata(rxs[2], :noise_scaling)
-    @test has_metadata(rxs[2], :md_1)
-    @test !has_metadata(rxs[3], :noise_scaling)
-    @test !has_metadata(rxs[3], :md_1)
+    @test Catalyst.has_metadata(rxs[1], :noise_scaling)
+    @test !Catalyst.has_metadata(rxs[1], :md_1)
+    @test !Catalyst.has_metadata(rxs[2], :noise_scaling)
+    @test Catalyst.has_metadata(rxs[2], :md_1)
+    @test !Catalyst.has_metadata(rxs[3], :noise_scaling)
+    @test !Catalyst.has_metadata(rxs[3], :md_1)
     
-    @test isequal(get_metadata(rxs[1], :noise_scaling), η)
-    @test isequal(get_metadata(rxs[2], :md_1), 1.0)
+    @test isequal(Catalyst.get_metadata(rxs[1], :noise_scaling), η)
+    @test isequal(Catalyst.get_metadata(rxs[2], :md_1), 1.0)
 
     # Test that metadata works for @reaction macro.
     rx1 = @reaction k, 2X --> X2, [noise_scaling=$η]
@@ -190,9 +190,9 @@ let
     rx3 = @reaction k, 2X --> X2
 
     @test isequal([rx1, rx2, rx3], rxs)
-    @test isequal(get_metadata_dict(rx1), get_metadata_dict(rxs[1]))
-    @test isequal(get_metadata_dict(rx2), get_metadata_dict(rxs[2]))
-    @test isequal(get_metadata_dict(rx3), get_metadata_dict(rxs[3]))
+    @test isequal(Catalyst.get_metadata_dict(rx1), Catalyst.get_metadata_dict(rxs[1]))
+    @test isequal(Catalyst.get_metadata_dict(rx2), Catalyst.get_metadata_dict(rxs[2]))
+    @test isequal(Catalyst.get_metadata_dict(rx3), Catalyst.get_metadata_dict(rxs[3]))
 end
 
 # Checks that repeated metadata throws errors.
