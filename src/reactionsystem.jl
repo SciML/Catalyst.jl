@@ -186,8 +186,9 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
         convert.(stoich_type, netstoich) : netstoich
     end
 
-    # Check that all metadata entries are unique.
-    if any(metadata[i] in metadata[i+1:end] for i in eachindex(metadata))
+    # Check that all metadata entries are unique. (cannot use `in` since some entries may be symbolics).
+    if any(any(isequal(metadata[i][1], entry[1]) for entry in metadata[i+1:end]) 
+                                                 for i in eachindex(metadata))
         error("Repeated entries for the same metadata encountered in the following metadata set: $([entry[1] for entry in metadata]).")
     end
 
