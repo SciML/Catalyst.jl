@@ -157,6 +157,10 @@ species
 nonspecies
 reactionparams
 reactions
+has_diff_equations
+diff_equations
+has_alg_equations
+alg_equations
 numspecies
 numparams
 numreactions
@@ -278,6 +282,17 @@ hillar
 ```@docs
 Base.convert
 ModelingToolkit.structural_simplify
+```
+
+## Chemistry-related functionalities
+Various functionalities primarily relevant to modelling of chemical systems (but potentially also in biology). 
+```@docs
+@compound
+@compounds
+iscompound
+components
+coefficients
+component_coefficients
 ```
 
 ## Unit validation
