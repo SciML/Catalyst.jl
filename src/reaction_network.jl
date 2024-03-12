@@ -123,7 +123,7 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs)
+const option_keys = (:species, :parameters, :variables, :ivs, :discrete_events)
 
 ### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)
@@ -154,6 +154,10 @@ macro species(ex...)
     vars.args[idx] = lastarg
 
     esc(vars)
+end
+
+macro discrete_events(ex...)
+    ex
 end
 
 ### The main macro, takes reaction network notation and returns a ReactionSystem. ###
@@ -363,7 +367,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     species_declared = extract_syms(options, :species)
     parameters_declared = extract_syms(options, :parameters)
     variables = extract_syms(options, :variables)
-
+    discrete_events = extract_discrete_events(options)
+    
     # handle independent variables
     if haskey(options, :ivs)
         ivs = Tuple(extract_syms(options, :ivs))
@@ -403,6 +408,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     for reaction in reactions
         push!(rxexprs.args, get_rxexprs(reaction))
     end
+    discrete_e = convert_to_pair(:($(discrete_events...);))
 
     # Returns the rephrased expression.
     quote
@@ -410,10 +416,11 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         $ivexpr
         $vars
         $sps
-
         Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, union($spssym, $varssym),
                                               $pssym; name = $name,
-                                              spatial_ivs = $sivs)
+                                              spatial_ivs = $sivs,
+                                              discrete_events = $discrete_e
+                                                )
     end
 end
 
@@ -474,6 +481,32 @@ function extract_syms(opts, vartype::Symbol)
     return syms
 end
 
+function extract_discrete_events(opts)
+    if haskey(opts, :discrete_events)
+        ex = quote 
+            $(opts[:discrete_events])
+        end
+        ex1 = MacroTools.striplines(ex)
+        ex2 = (ex1.args[1].args[end].args)       
+        return ex2
+    
+    elseif length(events)==0
+        return nothing
+    else 
+        return ex2
+    end
+end
+
+function convert_to_pair(e::Expr)
+    pairs_list = []
+    for i in 1:length(e.args)
+        condition = e.args[i].args[2]
+        equations = e.args[i].args[end]
+        push!(pairs_list, Pair(ModelingToolkit.wrap(condition), [equations]))
+    end
+    return pairs_list
+end
+    
 # Function looping through all reactions, to find undeclared symbols (species or
 # parameters), and assign them to the right category.
 function extract_species_and_parameters!(reactions, excluded_syms)
