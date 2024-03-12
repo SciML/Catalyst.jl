@@ -86,7 +86,7 @@ here it is important that the quantities used in `u_guess` correspond to the con
 ```@example nonlinear_solve2
 sol = solve(nl_prob)
 ```
-We note that the output only provides a single value. The reason is that the actual system solved only contains a single equation (the other being eliminated with the conserved quantity). To find the values of $X1$ and $X2$ we can [directly query the solution object for these species' values, using the species themselves as inputs](@ref simulation_structure_interfacing_solutions):
+We note that the output only provides a single value. The reason is that the actual system solved only contains a single equation (the other being eliminated with the conserved quantity). To find the values of $X1$ and $X2$ we can [directly query the solution object for these species' values, using the species themselves as inputs](@ref simulation_structure_interfacing):
 ```@example nonlinear_solve2
 @unpack X1, X2 = two_state_model
 sol[X1]
