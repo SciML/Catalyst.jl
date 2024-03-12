@@ -567,3 +567,123 @@ species(rn)
 !!! note
     When using interpolation, expressions like `2$spec` won't work; the
     multiplication symbol must be explicitly included like `2*$spec`.
+
+## Including observables
+Sometimes, one might want to include observable variables. These are variables that can be computed directly from the other system variables (rather than having their values implicitly given through some differential equation). These can be introduced through the `@observables` option.
+
+Let us consider a simple example where two species ($X$ and $Y$) are produced and degraded at constant rates. They can also bind, forming a complex ($XY$). If we want to access the total amount of $X$ in the system we can create an observable that denotes this quantity ($Xtot = X + XY$). Here, we create observables for the total amount of $X$ and $Y$:
+```@example obs1
+using Catalyst # hide
+rn = @reaction_network begin
+  @observables begin
+    Xtot ~ X + XY
+    Ytot ~ Y + XY
+  end
+  (pX,dX), 0 <--> X
+  (pY,dY), 0 <--> Y
+  (kB,kD), X + Y <--> XY
+end
+```
+The `@observables` option is followed by one line for each observable formula (enclosed by a `begin ... end` block). The left-hand sides indicate the observables' names, and the right-hand sides how their values are computed. The two sides are separated by a `~`. 
+
+If we now simulate our model:
+```@example obs1
+using DifferentialEquations # hide
+u0 = [:X => 0.0, :Y => 0.0, :XY => 0.0]
+tspan = (0.0, 10.0)
+ps = [:pX => 1.0, :dX => 0.2, :pY => 1.0, :dY => 0.5, :kB => 1.0, :kD => 0.2]
+oprob = ODEProblem(rn, u0, tspan, ps)
+sol = solve(oprob)
+nothing # hide
+```
+we can index the solution using our observables (just like for [other variables](@ref simulation_structure_interfacing_solutions)). E.g. we can receive a vector with all $Xtot$ values using
+```@example obs1
+sol[:Xtot]
+```
+similarly, we can plot the values of $Xtot$ and $Ytot$ using
+```@example obs1
+plot(sol; idxs=[:Xtot, :Ytot], label=["Total X" "Total Y"])
+```
+
+If we only wish to provide a single observable, the `begin ... end` block is note required. E.g., to record only the total amount of $X$ we can use:
+```@example obs1
+using Catalyst # hide
+rn = @reaction_network begin
+  @observables Xtot ~ X + XY
+  (pX,dX), 0 <--> X
+  (pY,dY), 0 <--> Y
+  (kB,kD), X + Y <--> XY
+end
+```
+
+Finally, some general rules for creating observables:
+- Observables can depend on any species, parameters, or variables, but not on other observables.
+- All observables components must be declared somewhere (i.e., they cannot only appear as a part of the observables formula).
+- Only a single `@observables` option block can be used in each `@reaction_network` call.
+- The left-hand side of the observables expression must be a single symbol, indicating the observable's name.
+- Metadata can, however, be provided, e.g through `@observables (Xtot, [description="Total amount of X"]) ~ X + XY`.
+- The right-hand side of the observables expression can be any valid algebraic expression.
+- Observables are (by default, but this can be changed) considered `variables` (and not `species`). This can be changed by e.g. pre-declaring them using the `@species` option.
+
+
+## Incorporating (differential) equations into reaction network models
+Some models cannot be purely described as a reaction network. E.g. consider the growth of a cell, where the rate of change in cell's volume depends on some growth factor. Here, the cell's volume would be described by a normal equation. Such equations can be incorporated into a model using the `@equations` option. Here, we create a model where a growth factor ($G$) is produced and degraded at a linear rates, and the rate of change in cell volume ($V$) os linear to the amount of growth factor:
+```@example eqs1
+using Catalyst #hide
+rn = @reaction_network begin
+  @equations begin
+    D(V) ~ G
+  end
+  (p,d), 0 <--> G
+end
+```
+Here, `D(V)` indicates the (time) derivative with respect to `D`. The differential equation left and right hand sides are separated by a `~`. The left-hand side should contain differential only, the right hand side can contain any algebraic expression.
+
+We can check the differential equation corresponding to this reaction network using latexify:
+```@example eqs1
+using Latexify
+latexify(rn; form=:ode)
+```
+We can also simulate it using the normal syntax
+```@example eqs1
+using DifferentialEquations, Plots # hide
+u0 = [:G => 0.0, :V => 0.1]
+ps = [:p => 1.0, :d => 0.5]
+oprob = ODEProblem(rn, u0, (0.0, 1.0), ps)
+sol = solve(oprob)
+plot(sol)
+```
+Here, growth is indefinite. To improve the model, [a callback](@ref advanced_simulations_callbacks) can be used to half the volume (cell division) once some threshold is reached.
+
+When creating differential equations this way, the subject of the differential is automatically inferred to be a variable, however, any component on the right-hand side must be declare somewhere in the macro. E.g. to add a scaling parameter ($k$), we must declare that $k$ is a parmaeter using the `@paraemters` option:
+```@example eqs1
+rn = @reaction_network begin
+  @parameters k
+  @equations begin
+    D(V) ~ k*G
+  end
+  (p,d), 0 <--> G
+end
+nothing #hide
+```
+
+It is possible to add several equations to the model. In this case, each have a separate line. E.g. to keep track of a supply of nutrition ($N$) in the growth media, we can use:
+```@example eqs1
+rn = @reaction_network begin
+  @equations begin
+    D(V) ~ G
+    D(N) ~ -G
+  end
+  (p,d), 0 <--> G
+end
+nothing #hide
+```
+
+When only a single equation is added, the `begin ... end` statement can be omitted. E.g., the first model can be declared equivalently using:
+```@example eqs1
+rn = @reaction_network begin
+  @equations D(V) ~ G
+  (p,d), 0 <--> G
+end
+nothing # hide
+```

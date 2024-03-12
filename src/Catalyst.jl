@@ -79,6 +79,7 @@ export mm, mmr, hill, hillr, hillar
 # functions to query network properties
 include("networkapi.jl")
 export species, nonspecies, reactionparams, reactions, speciesmap, paramsmap
+export has_diff_equations, diff_equations, has_alg_equations, alg_equations
 export numspecies, numreactions, numreactionparams, setdefaults!, symmap_to_varmap
 export make_empty_network, addspecies!, addparam!, addreaction!, reactionparamsmap
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
@@ -102,8 +103,8 @@ export Graph, savegraph, complexgraph
 
 # for creating compounds
 include("chemistry_functionality.jl")
-export @compound
-export components, iscompound, coefficients
+export @compound, @compounds
+export iscompound, components, coefficients, component_coefficients
 export balance_reaction
 
 ### Extensions ###
