@@ -47,6 +47,7 @@ const DEFAULT_t = ModelingToolkit.t_nounits
 function default_t()
     return DEFAULT_t
 end
+export default_t
 
 # as used in Catlab
 const USE_GV_JLL = Ref(false)
