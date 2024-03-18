@@ -47,7 +47,7 @@ rn = @reaction_network begin
 end
 ```
 Notice, here we interpolated the variable `V` with `$V` to ensure we use the
-same symbolic state variable in the `rn` as we used in building `osys`. See the
+same symbolic unknown variable in the `rn` as we used in building `osys`. See the
 doc section on [interpolation of variables](@ref
 dsl_description_interpolation_of_variables) for more information.
 
@@ -99,7 +99,7 @@ lower-level approach for creating events via the DifferentialEquations.jl
 callback interface is illustrated in the [Advanced Simulation Options](@ref
 advanced_simulations) tutorial.
 
-Let's first create our equations and states/species again
+Let's first create our equations and unknowns/species again
 ```@example ceq3
 using Catalyst, DifferentialEquations, Plots
 
@@ -124,7 +124,7 @@ oprob = ODEProblem(rs, [], (0.0, 10.0))
 sol = solve(oprob, Tsit5())
 plot(sol; plotdensity = 1000)
 ```
-We can also model discrete events. Similar to our example with continuous events, we start by creating reaction equations, parameters, variables, and states. 
+We can also model discrete events. Similar to our example with continuous events, we start by creating reaction equations, parameters, variables, and unknowns. 
 ```@example ceq3
 @parameters k_on switch_time k_off
 @variables t

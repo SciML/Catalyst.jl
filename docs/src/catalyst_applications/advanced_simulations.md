@@ -173,7 +173,7 @@ want the callback to trigger. The `affect!` function determines what happens to
 the simulation when the callback is triggered. It takes a single object, an
 `integrator` and makes some modification to it (please read more about
 integrators [here](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/)).
-Here, we access the system's state `X` through the `integrator`, and add
+Here, we access the system's unknown `X` through the `integrator`, and add
 `5.0` to its amount. We can now simulate our system using the
 callback:
 ```@example ex2

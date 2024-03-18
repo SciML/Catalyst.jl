@@ -32,7 +32,7 @@ oprob = ODEProblem(osys, [], (0.0, 10.0), [])
 sol = solve(oprob, Tsit5())
 ```
 Suppose we want to plot just species `C`, without having to know its integer
-index in the state vector. We can do this using the symbolic variable `C`, which
+index in the unknown vector. We can do this using the symbolic variable `C`, which
 we can get at in several ways
 ```@example faq1
 sol[osys.C]
@@ -210,7 +210,7 @@ nothing # hide
 
 ## How to include non-reaction terms in equations for a chemical species?
 One method to add non-reaction terms into an ODE or algebraic equation for a
-chemical species is to add a new (non-species) state variable that represents
+chemical species is to add a new (non-species) unknown variable that represents
 those terms, let it be the rate of zero order reaction, and add a constraint
 equation. I.e., to add a force of `(1 + sin(t))` to ``dA/dt`` in a system with
 the reaction `k, A --> 0`, we can do

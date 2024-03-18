@@ -4,7 +4,7 @@
 
 # Fetch packages.
 using Catalyst, Test
-using ModelingToolkit: get_ps, get_states, get_eqs, get_systems, get_iv, getname, nameof
+using ModelingToolkit: get_ps, get_unknowns, get_eqs, get_systems, get_iv, getname, nameof
 
 # Sets rnd number.
 using StableRNGs
@@ -26,7 +26,7 @@ let
     eqs, iv, ps, name, systems = unpacksys(empty_network_1)
     @test length(eqs) == 0
     @test nameof(iv) == :t
-    @test length(get_states(empty_network_1)) == 0
+    @test length(get_unknowns(empty_network_1)) == 0
     @test length(ps) == 0
 end
 let
@@ -40,7 +40,7 @@ let
     eqs, iv, ps, name, systems = unpacksys(empty_network_2)
     @test length(eqs) == 0
     @test nameof(iv) == :t
-    @test length(get_states(empty_network_2)) == 0
+    @test length(get_unknowns(empty_network_2)) == 0
     @test length(ps) == 5
     @test all(getname.(ps) .== [:p1, :p2, :p3, :p4, :p5])
 end
@@ -53,7 +53,7 @@ let
     @species x(t)
     addspecies!(empty_network_3, x)
     addparam!(empty_network_3, p)
-    @test isequal(empty_network_3.x, states(empty_network_3, x))
+    @test isequal(empty_network_3.x, unknowns(empty_network_3, x))
     @test isequal(empty_network_3.p, parameters(empty_network_3, p))
 end
 
@@ -74,7 +74,7 @@ let
         (k5, k6), X5 ↔ X6
         (k7, k8), X7 ↔ X8
     end
-    @test length(get_states(unfinished_network)) == 8
+    @test length(get_unknowns(unfinished_network)) == 8
     @test length(get_ps(unfinished_network)) == 9
 end
 
@@ -229,7 +229,7 @@ let
         g2 = SDEFunction(convert(SDESystem, networks[2]))
         @test networks[1] == networks[2]
         for factor in [1e-2, 1e-1, 1e0, 1e1]
-            u0 = factor * rand(rng, length(get_states(networks[1])))
+            u0 = factor * rand(rng, length(get_unknowns(networks[1])))
             pp = factor * rand(rng, length(get_ps(networks[1])))
 
             # needed because this code assumes an ordering of the parameters and species...

@@ -358,7 +358,7 @@ let
 
     # Test that ReactionSystem have the correct properties.
     @test length(species(rn)) == 4
-    @test length(states(rn)) == 4
+    @test length(unknowns(rn)) == 4
     @test length(observed(rn)) == 2
     @test length(equations(rn)) == 6
 
@@ -493,7 +493,7 @@ let
     end
     @test isequal(observed(rn1)[1].rhs, observed(rn2)[1].rhs)
     @test isequal(observed(rn1)[1].lhs.metadata, observed(rn2)[1].lhs.metadata)
-    @test isequal(states(rn1), states(rn2))
+    @test isequal(unknowns(rn1), unknowns(rn2))
 
     # Case with metadata.
     rn3 = @reaction_network rn_observed begin
@@ -507,7 +507,7 @@ let
     end
     @test isequal(observed(rn3)[1].rhs, observed(rn4)[1].rhs)
     @test isequal(observed(rn3)[1].lhs.metadata, observed(rn4)[1].lhs.metadata)
-    @test isequal(states(rn3), states(rn4))
+    @test isequal(unknowns(rn3), unknowns(rn4))
 end
 
 # Tests for interpolation into the observables option.
@@ -521,7 +521,7 @@ let
     @test isequal(observed(rn1)[1].lhs, X)
     @test getdescription(rn1.X) == "An observable"
     @test isspecies(rn1.X)
-    @test length(states(rn1)) == 2
+    @test length(unknowns(rn1)) == 2
 
     # Interpolation into rhs.
     @parameters n [description="A parameter"]
@@ -539,7 +539,7 @@ let
 
     @test issetequal(Symbolics.get_variables(observed(rn2)[1].rhs), [S, n, Sn])
     @test oprob[Stot] == u0[S] + ps[n]*u0[Sn]
-    @test length(states(rn2)) == 2
+    @test length(unknowns(rn2)) == 2
 end
 
 # Tests specific declaration of Observables as species/variables

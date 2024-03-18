@@ -174,7 +174,7 @@ let
     rn = @reaction_network begin
         k, 2*A + B --> C
     end
-    @test issetequal(states(rn), species(rn))
+    @test issetequal(unknowns(rn), species(rn))
     @test all(isspecies, species(rn))
 
     rn2 = @reaction_network begin
@@ -187,12 +187,12 @@ let
     eq = D(B) ~ -B
     @named osys = ODESystem([eq], t)
     @named rn2 = extend(osys, rn2)
-    @test issetequal(states(rn2), species(rn2))
+    @test issetequal(unknowns(rn2), species(rn2))
     @test all(isspecies, species(rn))
     @test Catalyst.isbc(ModelingToolkit.value(B))
     @test Catalyst.isbc(ModelingToolkit.value(A)) == false
     osys2 = convert(ODESystem, rn2)
-    @test issetequal(states(osys2), states(rn2))
+    @test issetequal(unknowns(osys2), unknowns(rn2))
     @test length(equations(osys2)) == 2
 end
 
@@ -214,7 +214,7 @@ let
 
     sts = (A, B1, B2, C, V1, V2, V3)
     spcs = (A, B1, B2, C)
-    @test issetequal(states(rn), sts)
+    @test issetequal(unknowns(rn), sts)
     @test issetequal(species(rn), spcs)
 
     @test_throws ArgumentError begin
@@ -240,7 +240,7 @@ let
     rx = Reaction(k*k2*D, [A, B], [C, C2], [E, 1], [F, 1])
     @named ivstest = ReactionSystem([rx], s; spatial_ivs = [x])
     @test ivstest == rn
-    @test issetequal(states(rn), [D, E, F, A, B, C, C2])
+    @test issetequal(unknowns(rn), [D, E, F, A, B, C, C2])
     @test issetequal(species(rn), [A, B, C, C2])
     @test isequal(ModelingToolkit.get_iv(rn), s)
     @test issetequal(Catalyst.get_sivs(rn), [x])

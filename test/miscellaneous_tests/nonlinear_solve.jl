@@ -20,7 +20,7 @@ let
     end
     
     # Creates NonlinearProblem.
-    u0 = rand(rng, length(states(steady_state_network_1)))
+    u0 = rand(rng, length(unknowns(steady_state_network_1)))
     p = rand(rng, length(parameters(steady_state_network_1)))
     nl_prob = NonlinearProblem(steady_state_network_1, u0, p)
     

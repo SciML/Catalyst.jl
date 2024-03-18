@@ -153,13 +153,13 @@ end
 ### Helper Functions ###
 
 # From a reaction system, creates the corresponding MTK-style ODESystem for SI application 
-# Also compute the, later needed, conservation law equations and list of system symbols (states and parameters).
+# Also compute the, later needed, conservation law equations and list of system symbols (unknowns and parameters).
 function make_osys(rs::ReactionSystem; remove_conserved=true)
     # Creates the ODESystem corresponding to the ReactionSystem (expanding functions and flattening it).
-    # Creates a list of the systems all symbols (states and parameters).
+    # Creates a list of the systems all symbols (unknowns and parameters).
     rs = Catalyst.expand_registered_functions(flatten(rs))
     osys = convert(ODESystem, rs; remove_conserved)
-    vars = [states(rs); parameters(rs)]
+    vars = [unknowns(rs); parameters(rs)]
 
     # Computes equations for system conservation laws.
     # If there are no conserved equations, the `conseqs` variable must still have the `Vector{Pair{Any, Any}}` type.
@@ -195,7 +195,7 @@ function make_measured_quantities(rs::ReactionSystem, measured_quantities::Vecto
 end
 
 # Creates the functions that we wish to check for identifiability.
-# If no `funcs_to_check` are given, defaults to checking identifiability for all states and parameters.
+# If no `funcs_to_check` are given, defaults to checking identifiability for all unknowns and parameters.
 # Also, for conserved equations, replaces these in (creating a system without conserved quantities).
 # E.g. for `X1 <--> X2`, replaces `X2` with `Γ[1] - X2`.
 # Removing conserved quantities makes SI's algorithms much more performant.
@@ -206,7 +206,7 @@ end
 
 # Processes the outputs to a better form.
 # Replaces conservation law equations back in the output (so that e.g. Γ are not displayed).
-# Sorts the output according to their input order (defaults to the `[states; parameters]` order).
+# Sorts the output according to their input order (defaults to the `[unknowns; parameters]` order).
 function make_output(out, funcs_to_check, conseqs)
     funcs_to_check = vector_subs(funcs_to_check, conseqs)
     out = Dict(zip(vector_subs(keys(out), conseqs), values(out)))

@@ -62,7 +62,7 @@ let
         β, A --> B
         γ, A + B --> 2B
     end
-    @test all(MT.get_unit.(states(rn)) .== u"μM")
+    @test all(MT.get_unit.(unknowns(rn)) .== u"μM")
     @test MT.get_unit(MT.get_iv(rn)) == u"s"
     @test all(MT.get_unit.(parameters(rn)) .== [u"μM/s", u"s"^(-1), u"μM*s"^(-1)])
 

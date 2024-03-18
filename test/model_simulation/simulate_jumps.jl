@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using Catalyst, JumpProcesses, Random, Statistics, Test, SciMLBase
-using ModelingToolkit: get_states, get_ps
+using ModelingToolkit: get_unknowns, get_ps
 
 # Sets rnd number.
 using StableRNGs
@@ -96,7 +96,7 @@ let
     for (i, networks) in enumerate(identical_networks)
         for factor in [1e-2, 1e-1, 1e0, 1e1]
             (i == 3) && (factor > 1e-1) && continue   # Large numbers seems to crash it.
-            u0 = rand(rng, 1:Int64(factor * 100), length(get_states(networks[1])))
+            u0 = rand(rng, 1:Int64(factor * 100), length(get_unknowns(networks[1])))
             p = factor * rand(rng, length(get_ps(networks[1])))
             prob1 = JumpProblem(networks[1],
                                 DiscreteProblem(networks[1], u0, (0.0, 1000.0), p),
@@ -120,7 +120,7 @@ end
 let
     for network in reaction_networks_all
         for factor in [1e0]
-            u0 = rand(rng, 1:Int64(factor * 100), length(get_states(network)))
+            u0 = rand(rng, 1:Int64(factor * 100), length(get_unknowns(network)))
             p = factor * rand(rng, length(get_ps(network)))
             prob = JumpProblem(network, DiscreteProblem(network, u0, (0.0, 1.0), p),
                                Direct())
@@ -135,7 +135,7 @@ end
 let
     no_param_network = @reaction_network begin (1.2, 5), X1 ↔ X2 end
     for factor in [1e1]
-        u0 = rand(rng, 1:Int64(factor * 100), length(get_states(no_param_network)))
+        u0 = rand(rng, 1:Int64(factor * 100), length(get_unknowns(no_param_network)))
         prob = JumpProblem(no_param_network,
                            DiscreteProblem(no_param_network, u0, (0.0, 1000.0)), Direct())
         sol = solve(prob, SSAStepper())

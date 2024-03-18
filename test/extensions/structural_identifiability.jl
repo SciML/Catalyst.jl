@@ -57,9 +57,9 @@ let
     @test length(ifs_1) == length(ifs_2) == length(ifs_3)     
 
     # Checks output to manually checked correct answers.
-    @test isequal(collect(keys(gi_1)), [states(goodwind_oscillator_catalyst); parameters(goodwind_oscillator_catalyst)])
+    @test isequal(collect(keys(gi_1)), [unknowns(goodwind_oscillator_catalyst); parameters(goodwind_oscillator_catalyst)])
     @test isequal(collect(values(gi_1)), [:globally, :nonidentifiable, :globally, :globally, :globally, :nonidentifiable, :locally, :nonidentifiable, :locally])
-    @test isequal(collect(keys(li_1)), [states(goodwind_oscillator_catalyst); parameters(goodwind_oscillator_catalyst)])
+    @test isequal(collect(keys(li_1)), [unknowns(goodwind_oscillator_catalyst); parameters(goodwind_oscillator_catalyst)])
     @test isequal(collect(values(li_1)), [1, 0, 1, 1, 1, 0, 1, 0, 1]) 
 end
 
@@ -106,9 +106,9 @@ let
     @test length(ifs_1) == length(ifs_2) == length(ifs_3)   
 
     # Checks output to manually checked correct answers. 
-    @test isequal(collect(keys(gi_1)),[states(rs_catalyst); parameters(rs_catalyst)])
+    @test isequal(collect(keys(gi_1)),[unknowns(rs_catalyst); parameters(rs_catalyst)])
     @test isequal(collect(values(gi_1)),[:nonidentifiable, :globally, :globally, :nonidentifiable, :nonidentifiable, :nonidentifiable, :nonidentifiable, :globally, :globally, :globally])
-    @test isequal(collect(keys(li_1)),[states(rs_catalyst); parameters(rs_catalyst)])
+    @test isequal(collect(keys(li_1)),[unknowns(rs_catalyst); parameters(rs_catalyst)])
     @test isequal(collect(values(li_1)),[0, 1, 1, 0, 0, 0, 0, 1, 1, 1])  
 end
 
@@ -162,8 +162,8 @@ let
     @test length(ifs_1[2:end]) == length(ifs_2) == length(ifs_3) # In the first case, the conservation law parameter is also identifiable.
 
     # Checks output to manually checked correct answers. 
-    correct_gi = Pair.([states(rs_catalyst); parameters(rs_catalyst)], [:globally, :locally, :locally, :nonidentifiable, :nonidentifiable, :globally, :globally, :globally, :globally, :locally, :locally, :nonidentifiable, :locally, :globally])
-    correct_li = Pair.([states(rs_catalyst); parameters(rs_catalyst)], [1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1])
+    correct_gi = Pair.([unknowns(rs_catalyst); parameters(rs_catalyst)], [:globally, :locally, :locally, :nonidentifiable, :nonidentifiable, :globally, :globally, :globally, :globally, :locally, :locally, :nonidentifiable, :locally, :globally])
+    correct_li = Pair.([unknowns(rs_catalyst); parameters(rs_catalyst)], [1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1])
     @test issetequal(gi_1, correct_gi)
     @test issetequal(li_1, correct_li)
 end

@@ -232,7 +232,7 @@ function make_sidxs_to_transrate_map(vert_ps::Vector{Vector{Float64}}, edge_ps::
     ]
 end
 
-### Accessing State & Parameter Array Values ###
+### Accessing Unknown & Parameter Array Values ###
 
 # Gets the index in the u array of species s in vertex vert (when their are num_species species).
 get_index(vert::Int64, s::Int64, num_species::Int64) = (vert - 1) * num_species + s

@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using DiffEqBase, Catalyst, JumpProcesses, Random, Statistics, Test
-using ModelingToolkit: get_states, get_ps
+using ModelingToolkit: get_unknowns, get_ps
 
 # Sets rnd number.
 using StableRNGs
@@ -41,7 +41,7 @@ let
     g1 = SDEFunction(convert(SDESystem, higher_order_network_1))
     g2 = SDEFunction(convert(SDESystem, higher_order_network_2))
     for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-        u0 = factor * rand(rng, length(get_states(higher_order_network_1)))
+        u0 = factor * rand(rng, length(get_unknowns(higher_order_network_1)))
         p = factor * rand(rng, length(get_ps(higher_order_network_2)))
         t = rand(rng)
         @test all(abs.(f1(u0, p, t) .- f2(u0, p, t)) .< 100 * eps())
@@ -64,7 +64,7 @@ let
     end
 
     for factor in [1e-1, 1e0]
-        u0 = rand(rng, 1:Int64(factor * 100), length(get_states(higher_order_network_1)))
+        u0 = rand(rng, 1:Int64(factor * 100), length(get_unknowns(higher_order_network_1)))
         p = factor * rand(rng, length(get_ps(higher_order_network_3)))
         prob1 = JumpProblem(higher_order_network_1,
                             DiscreteProblem(higher_order_network_1, u0, (0.0, 1000.0), p),

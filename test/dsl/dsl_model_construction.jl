@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using DiffEqBase, Catalyst, Random, Test
-using ModelingToolkit: operation, istree, get_states, get_ps, get_eqs, get_systems,
+using ModelingToolkit: operation, istree, get_unknowns, get_ps, get_eqs, get_systems,
                        get_iv, nameof
 
 # Sets rnd number.
@@ -15,7 +15,7 @@ include("../test_networks.jl")
 ### Declares Testing Functions ###
 
 function unpacksys(sys)
-    get_eqs(sys), get_iv(sys), get_states(sys), get_ps(sys), nameof(sys), get_systems(sys)
+    get_eqs(sys), get_iv(sys), get_unknowns(sys), get_ps(sys), nameof(sys), get_systems(sys)
 end
 
 opname(x) = istree(x) ? nameof(operation(x)) : nameof(x)
@@ -37,13 +37,13 @@ function all_parameters(eqs)
 end
 
 # Perform basic tests.
-function basic_test(rn, N, states_syms, p_syms)
-    eqs, iv, states, ps, name, systems = unpacksys(rn)
+function basic_test(rn, N, unknowns_syms, p_syms)
+    eqs, iv, unknowns, ps, name, systems = unpacksys(rn)
     @test length(eqs) == N
     @test opname(iv) == :t
-    @test length(states) == length(states_syms)
-    @test issetequal(map(opname, states), states_syms)
-    @test all_reactants(eqs) == Set(states_syms)
+    @test length(unknowns) == length(unknowns_syms)
+    @test issetequal(map(opname, unknowns), unknowns_syms)
+    @test all_reactants(eqs) == Set(unknowns_syms)
     @test length(ps) == length(p_syms)
     @test issetequal(map(opname, ps), p_syms)
 end
@@ -126,7 +126,7 @@ let
         g1 = SDEFunction(convert(SDESystem, networks[1]))
         g2 = SDEFunction(convert(SDESystem, networks[2]))
         for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0 = factor * rand(rng, length(get_states(networks[1])))
+            u0 = factor * rand(rng, length(get_unknowns(networks[1])))
             p = factor * rand(rng, length(get_ps(networks[1])))
             t = rand(rng)
             @test all(abs.(f1(u0, p, t) .≈ f2(u0, p, t)))
@@ -193,7 +193,7 @@ let
         g1 = SDEFunction(convert(SDESystem, networks[1]))
         g2 = SDEFunction(convert(SDESystem, networks[2]))
         for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0 = factor * rand(rng, length(get_states(networks[1])))
+            u0 = factor * rand(rng, length(get_unknowns(networks[1])))
             p = factor * rand(rng, length(get_ps(networks[1])))
             t = rand(rng)
             @test all(f1(u0, p, t) .≈ f2(u0, p, t))
@@ -237,7 +237,7 @@ let
         g1 = SDEFunction(convert(SDESystem, networks[1]))
         g2 = SDEFunction(convert(SDESystem, networks[2]))
         for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0 = factor * rand(rng, length(get_states(networks[1])))
+            u0 = factor * rand(rng, length(get_unknowns(networks[1])))
             t = rand(rng)
             @test f1(u0, parameter_sets[i], t) ≈ f2(u0, [], t)
             @test f1.jac(u0, parameter_sets[i], t) ≈ f2.jac(u0, [], t)
@@ -278,7 +278,7 @@ let
 
     for networks in identical_networks_4
         @test isequal(get_iv(networks[1]), get_iv(networks[2]))
-        @test alleq(get_states(networks[1]), get_states(networks[2]))
+        @test alleq(get_unknowns(networks[1]), get_unknowns(networks[2]))
         @test alleq(get_ps(networks[1]), get_ps(networks[2]))
         @test ModelingToolkit.get_systems(networks[1]) ==
               ModelingToolkit.get_systems(networks[2])
@@ -310,7 +310,7 @@ let
     g1 = SDEFunction(convert(SDESystem, reaction_networks_constraint[1]))
     g2 = SDEFunction(convert(SDESystem, time_network))
     for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-        u0 = factor * rand(rng, length(get_states(time_network)))
+        u0 = factor * rand(rng, length(get_unknowns(time_network)))
         κ2 = factor * rand(rng)
         κ3 = factor * rand(rng)
         κ6 = factor * rand(rng)
@@ -373,7 +373,7 @@ let
     @variables t
     @species I(t)
     @test any(isequal(I), species(rn))
-    @test any(isequal(I), states(rn))
+    @test any(isequal(I), unknowns(rn))
 end
 
 # Test names work.

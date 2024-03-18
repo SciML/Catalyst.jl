@@ -58,7 +58,7 @@ pars = vcat(scalarize(k), scalarize(D), scalarize(n0), [A])
 We now put together the symbolic PDE model
 ```julia
 # get the reaction terms
-rxeqs = Catalyst.assemble_oderhs(bpm, states(bpm), combinatoric_ratelaws=false)
+rxeqs = Catalyst.assemble_oderhs(bpm, unknowns(bpm), combinatoric_ratelaws=false)
 
 # get the ordering of the variables within rxeqs
 smap = speciesmap(bpm)
@@ -73,7 +73,7 @@ evalat(u, a, b, t) = (operation(ModelingToolkit.unwrap(u)))(a, b, t)
 Δ(u) = (∂x^2)(u) + (∂y^2)(u)
 eqs = Vector{Equation}(undef, 3)
 bcs = Vector{Equation}()
-for (i,st) in enumerate(states(bpm))
+for (i,st) in enumerate(unknowns(bpm))
     idx = smap[st]
     eqs[i] = ∂t(st) ~ D[idx] * Δ(st) + rxeqs[idx]
     newbcs = [evalat(st, x, y, 0.0) ~ icfun(n0[idx], x, y, A),

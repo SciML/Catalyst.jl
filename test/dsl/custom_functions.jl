@@ -1,7 +1,7 @@
 
 ### Fetch Packages and Set Global Variables ###
 using DiffEqBase, Catalyst, Random, Symbolics, Test
-using ModelingToolkit: get_states, get_ps
+using ModelingToolkit: get_unknowns, get_ps
 
 using StableRNGs
 rng = StableRNG(12345)
@@ -48,7 +48,7 @@ let
     g1 = SDEFunction(convert(SDESystem, custom_function_network_1))
     g2 = SDEFunction(convert(SDESystem, custom_function_network_2))
     for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
-        u0 = factor * rand(rng, length(get_states(custom_function_network_1)))
+        u0 = factor * rand(rng, length(get_unknowns(custom_function_network_1)))
         p = factor * rand(rng, length(get_ps(custom_function_network_2)))
 
         # needed as this code assumes an ordering of the parameters and species...
@@ -73,7 +73,7 @@ let
     end
     f_mm = ODEFunction(convert(ODESystem, mm_network), jac = true)
 
-    u0 = 10 * rand(rng, length(get_states(mm_network)))
+    u0 = 10 * rand(rng, length(get_unknowns(mm_network)))
     p = 10 * rand(rng, length(get_ps(mm_network)))
     t = 10 * rand(rng)
 
@@ -93,7 +93,7 @@ let
     end
     f_mmr = ODEFunction(convert(ODESystem, mmr_network), jac = true)
 
-    u0 = 10 * rand(rng, length(get_states(mmr_network)))
+    u0 = 10 * rand(rng, length(get_unknowns(mmr_network)))
     p = 10 * rand(rng, length(get_ps(mmr_network)))
     t = 10 * rand(rng)
 
@@ -112,7 +112,7 @@ let
     end
     f_hill = ODEFunction(convert(ODESystem, hill_network), jac = true)
 
-    u0 = 10 * rand(rng, length(get_states(hill_network)))
+    u0 = 10 * rand(rng, length(get_unknowns(hill_network)))
     p = 10 * rand(rng, length(get_ps(hill_network)))
     t = 10 * rand(rng)
 
@@ -131,7 +131,7 @@ let
     end
     f_hillr = ODEFunction(convert(ODESystem, hillr_network), jac = true)
 
-    u0 = 10 * rand(rng, length(get_states(hillr_network)))
+    u0 = 10 * rand(rng, length(get_unknowns(hillr_network)))
     p = 10 * rand(rng, length(get_ps(hillr_network)))
     t = 10 * rand(rng)
 
@@ -152,7 +152,7 @@ let
     end
     f_hillar = ODEFunction(convert(ODESystem, hillar_network), jac = true)
 
-    u0 = 10 * rand(rng, length(get_states(hillar_network)))
+    u0 = 10 * rand(rng, length(get_unknowns(hillar_network)))
     p = 10 * rand(rng, length(get_ps(hillar_network)))
     t = 10 * rand(rng)
 

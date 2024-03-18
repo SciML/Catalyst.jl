@@ -34,11 +34,11 @@ let
     @test issetequal(Catalyst.get_sivs(bpm), [x, y])
     @test isspatial(bpm)
 
-    rxeqs = Catalyst.assemble_oderhs(bpm, states(bpm), combinatoric_ratelaws = false)
+    rxeqs = Catalyst.assemble_oderhs(bpm, unknowns(bpm), combinatoric_ratelaws = false)
     eqs = Dict((U => (k[5] - k[4] * U - k[1] * U * W),
                 V => (2 * k[3] * W + k[1] * U * W + k[7] - k[6] * V - 2 * (V^2) * k[2]),
                 W => ((V^2) * k[2] - k[3] * W)))
-    @test all(isequal.((MT.unwrap(eqs[st]) for st in states(bpm)), rxeqs))
+    @test all(isequal.((MT.unwrap(eqs[st]) for st in unknowns(bpm)), rxeqs))
 
     @test issetequal(species(bpm), [MT.unwrap(U), MT.unwrap(V), MT.unwrap(W)])
 
@@ -62,7 +62,7 @@ let
     @register_symbolic icfun(n, x, y, A)
     L = 32.0
     tstop = 5e4
-    for (i, st) in enumerate(states(bpm))
+    for (i, st) in enumerate(unknowns(bpm))
         idx = smap[st]
         eqs[i] = ∂t(st) ~ D[idx] * Δ(st) + rxeqs[idx]
         newbcs = [evalat(st, x, y, 0.0) ~ icfun(n0[idx], x, y, A),

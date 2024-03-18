@@ -256,7 +256,7 @@ let
     @named rs1 = ReactionSystem(rxs1, t, [A, B, C], [r₊])
     @named rs2 = ReactionSystem(rxs2, t, [A, B, C], [r₋])
     @named rs = extend(rs1, rs2)
-    @test issetequal(states(rs), [A, B, C])
+    @test issetequal(unknowns(rs), [A, B, C])
     @test issetequal(parameters(rs), [r₊, r₋])
     @test issetequal(equations(rs), union(rxs1, rxs2))
     A2 = ModelingToolkit.ParentScope(A)
@@ -280,7 +280,7 @@ let
 
     # Test API functions for composed model.
     @test issetequal(species(rs), [A, B, C])
-    @test issetequal(states(rs), [A, B, C, ns.D])
+    @test issetequal(unknowns(rs), [A, B, C, ns.D])
     @test issetequal(reactionparams(rs), [r₊, r₋])
     @test issetequal(parameters(rs), [r₊, r₋, ns.β])
     @test issetequal(reactions(rs), union(rxs1, rxs2))
@@ -322,7 +322,7 @@ let
     rxs = vcat(nrxs1, nrxs2, nrxs3)
     eqs = vcat(nrxs1, nrxs2, neqs2, nrxs3, neqs3)
 
-    @test issetequal(states(rs1), [A1, rs2.A2a, ns2.A2b, rs2.rs3.A3a, rs2.ns3.A3b])
+    @test issetequal(unknowns(rs1), [A1, rs2.A2a, ns2.A2b, rs2.rs3.A3a, rs2.ns3.A3b])
     @test issetequal(species(rs1), [A1, rs2.A2a, rs2.rs3.A3a])
     @test issetequal(parameters(rs1), [p1, rs2.p2a, rs2.p2b, rs2.rs3.p3a, rs2.ns3.p3b])
     @test issetequal(reactionparams(rs1), [p1, rs2.p2a, rs2.p2b, rs2.rs3.p3a])
@@ -413,7 +413,7 @@ let
 
     @variables t
     @named rs = ReactionSystem(t; systems = [rn_AB, rn_BC])
-    sts = states(rs)
+    sts = unknowns(rs)
     @test issetequal(sts, (@species AB₊A(t) AB₊B(t) BC₊B(t) BC₊C(t)))
     ps = parameters(rs)
     @test issetequal(ps, (@parameters AB₊k1 AB₊n BC₊k2))
@@ -423,7 +423,7 @@ let
     @test (length(rxs) == length(rxs2)) && issubset(rxs, rxs2)
 end
 
-# Test ordering of states and equations.
+# Test ordering of unknowns and equations.
 let
     @parameters k1 k2 k3
     @variables t V1(t) V2(t) V3(t)
@@ -439,13 +439,13 @@ let
     eq3 = D(V3) ~ -V3
     @named rs3 = ReactionSystem([rx3, eq3], t)
     @named rs23 = compose(rs2, [rs3])
-    @test length(states(rs23)) == 6
-    @test all(p -> isequal(p[1], p[2]), zip(states(rs23)[1:4], species(rs23)))
+    @test length(unknowns(rs23)) == 6
+    @test all(p -> isequal(p[1], p[2]), zip(unknowns(rs23)[1:4], species(rs23)))
     @test length(equations(rs23)) == 4
     @test all(p -> isequal(p[1], p[2]), zip(equations(rs23)[1:2], reactions(rs23)))
     @named rs123 = compose(rs1, [rs23])
-    @test length(states(rs123)) == 9
-    @test all(p -> isequal(p[1], p[2]), zip(states(rs123)[1:6], species(rs123)))
+    @test length(unknowns(rs123)) == 9
+    @test all(p -> isequal(p[1], p[2]), zip(unknowns(rs123)[1:6], species(rs123)))
     @test length(equations(rs123)) == 6
     @test length(reactions(rs123)) == 3
     @test all(p -> isequal(p[1], p[2]), zip(equations(rs123)[1:3], reactions(rs123)))
