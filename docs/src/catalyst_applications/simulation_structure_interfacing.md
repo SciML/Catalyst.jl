@@ -27,7 +27,7 @@ with the notation being identical for parameters:
 oprob[:k1]
 ```
 
-If we want to change a unknown's initial condition value, we use the following notation
+If we want to change an unknown's initial condition value, we use the following notation
 ```@example ex1
 oprob[:X1] = 10.0
 ```
