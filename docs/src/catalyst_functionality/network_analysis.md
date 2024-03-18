@@ -52,7 +52,7 @@ the reaction rate equation ODE model for the repressilator is
 ## Matrix-vector reaction rate equation representation
 In general, reaction rate equation (RRE) ODE models for chemical reaction networks can
 be represented as a first-order system of ODEs in a compact matrix-vector notation. Suppose
-we have a reaction network with ``K`` reactions and ``M`` species, labelled by the unknown vector
+we have a reaction network with ``K`` reactions and ``M`` species, labelled by the state vector
 ```math
 \mathbf{x}(t) = \begin{pmatrix} x_1(t) \\ \vdots \\ x_M(t)) \end{pmatrix}.
 ```
