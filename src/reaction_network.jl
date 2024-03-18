@@ -643,7 +643,7 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
     # The rates, substrates, products, and metadata may be in a tupple form (e.g. `k, (X,Y) --> 0`).
     # This finds the length of these tuples (or 1 if not in tuple forms). Errors if lengs inconsistent.
     lengs = (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate), tup_leng(metadata))
-    if any(!(leng in [1, maximum(lengs)]) for leng in lengs)
+    if any(!(leng == 1 || leng == maximum(lengs)) for leng in lengs)
         throw("Malformed reaction, rate=$rate, subs=$sub_line, prods=$prod_line, metadata=$metadata.")
     end
 
