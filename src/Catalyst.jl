@@ -43,12 +43,15 @@ import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 
 # globals for the modulate
+function default_time_deriv()
+    return ModelingToolkit.D_nounits
+end
 function default_t()
     return ModelingToolkit.t_nounits
 end
 const DEFAULT_t = default_t()
 const DEFAULT_IV_SYM = Symbol(DEFAULT_t)
-export default_t
+export default_t, default_time_deriv
 
 # as used in Catlab
 const USE_GV_JLL = Ref(false)

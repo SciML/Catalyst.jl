@@ -20,7 +20,7 @@ t = default_t()
 @species m₁(t) m₂(t) m₃(t) P₁(t) P₂(t) P₃(t)
 nothing    # hide
 ```
-Note: Each species is declared as a function of time. Here, we first import the *time independent variable using `t = default_t()`, and then use it to declare out species.
+Note: Each species is declared as a function of time. Here, we first import the *time independent variable*, and stores it in `t`, using `t = default_t()`, and then use it to declare out species.
 
 !!! note
        For users familiar with ModelingToolkit, chemical species must be declared

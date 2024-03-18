@@ -15,7 +15,8 @@ We begin by importing some necessary packages.
 using ModelingToolkit, Catalyst, NonlinearSolve
 using DifferentialEquations, Symbolics
 using Plots
-t = default_t(), D_nounits as D
+t = default_t()
+D = default_time_deriv()
 ```
 
 We'll build a simple Hodgkin-Huxley model for a single neuron, with the voltage,

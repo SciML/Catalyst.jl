@@ -1403,7 +1403,7 @@ Notes:
 - `disablechecks` will disable checking for whether the passed in variable is
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
-  variable, as this will potentially leave the system in an undefined unknown.
+  variable, as this will potentially leave the system in an undefined state.
 """
 function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks = false)
     reset_networkproperties!(network)
@@ -1435,7 +1435,7 @@ integer id of the species within the system.
 - `disablechecks` will disable checking for whether the passed in variable is
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
-  variable, as this will potentially leave the system in an undefined unknown.
+  variable, as this will potentially leave the system in an undefined state.
 """
 function addspecies!(network::ReactionSystem, s::Num; disablechecks = false)
     addspecies!(network, value(s), disablechecks = disablechecks)
@@ -1451,7 +1451,7 @@ id of the parameter within the system.
 - `disablechecks` will disable checking for whether the passed in variable is
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
-  variable, as this will potentially leave the system in an undefined unknown.
+  variable, as this will potentially leave the system in an undefined state.
 """
 function addparam!(network::ReactionSystem, p::Symbolic; disablechecks = false)
     reset_networkproperties!(network)
@@ -1480,7 +1480,7 @@ integer id of the parameter within the system.
 - `disablechecks` will disable checking for whether the passed in variable is
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
-  variable, as this will potentially leave the system in an undefined unknown.
+  variable, as this will potentially leave the system in an undefined state.
 """
 function addparam!(network::ReactionSystem, p::Num; disablechecks = false)
     addparam!(network, value(p); disablechecks = disablechecks)

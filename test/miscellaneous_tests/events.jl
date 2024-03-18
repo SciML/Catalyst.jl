@@ -1,5 +1,6 @@
 using Test, Catalyst, ModelingToolkit, OrdinaryDiffEq
-t = default_t(), D_nounits as D
+t = default_t()
+D = default_time_deriv()
 
 # Test discrete event is propagated to ODE solver correctly.
 let
