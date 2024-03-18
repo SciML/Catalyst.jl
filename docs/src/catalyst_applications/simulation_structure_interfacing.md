@@ -68,7 +68,7 @@ During a simulation, the solution is stored in an integrator object, we will her
 ```@example ex1
 integrator = init(oprob)
 ```
-Using a similar syntax to problems, we can get the current values of a unknown within the integrator:
+Using a similar syntax to problems, we can get the current values of an unknown within the integrator:
 ```@example ex1
 integrator[:X1]
 ```
