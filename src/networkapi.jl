@@ -1402,7 +1402,7 @@ Notes:
 - `disablechecks` will disable checking for whether the passed in variable is
   already defined, which is useful when adding many new variables to the system.
   *Do not disable checks* unless you are sure the passed in variable is a new
-  variable, as this will potentially leave the system in an undefined unknown.
+  variable, as this will potentially leave the system in an undefined state.
 """
 function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks = false)
     reset_networkproperties!(network)
