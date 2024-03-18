@@ -864,10 +864,27 @@ end
 ######################## Other accessors ##############################
 
 """
-    getnoisescaling(reaction::Reaction)
+has_noise_scaling(reaction::Reaction)
 
-Returns the noise scaling associated with a specific reaction. If the `:noise_scaling` metadata has
-set, returns that. Else, returns `1.0`.
+Checks whether a specific reaction has the metadata field `noise_scaing`. If so, returns `true`, else
+returns `false`.
+
+Arguments:
+- `reaction`: The reaction for which we wish to check.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
+has_noise_scaling(reaction)
+"""
+function has_noise_scaling(reaction::Reaction)
+    return hasmetadata(reaction, :noise_scaling)
+end
+
+"""
+get_noise_scaling(reaction::Reaction)
+
+Returns the noise_scaling metadata from a specific reaction.
 
 Arguments:
 - `reaction`: The reaction for which we wish to retrive all metadata.
@@ -875,18 +892,21 @@ Arguments:
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
-getnoisescaling(reaction)
+get_noise_scaling(reaction)
 """
-function getnoisescaling(reaction::Reaction)
-    has_metadata(reaction, :noise_scaling) && (return get_metadata(reaction, :noise_scaling))
-    return 1.0
+function get_noise_scaling(reaction::Reaction)
+    if has_noise_scaling(reaction)
+        return getmetadata(reaction, :noise_scaling)
+    else
+        error("Attempts to access noise_scaling metadata field for a reaction which does not have a value assigned for this metadata.")
+    end
 end
 
 
-# These are currently considered internal, but can be used by public accessor functions like getnoisescaling.
+# These are currently considered internal, but can be used by public accessor functions like get_noise_scaling.
 
 """
-    get_metadata_dict(reaction::Reaction)
+    getmetadata_dict(reaction::Reaction)
 
 Retrives the `ImmutableDict` containing all of the metadata associated with a specific reaction.
 
@@ -896,15 +916,15 @@ Arguments:
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [description="Production reaction"]
-get_metadata_dict(reaction)
+getmetadata_dict(reaction)
 ```
 """
-function get_metadata_dict(reaction::Reaction)
+function getmetadata_dict(reaction::Reaction)
     return reaction.metadata
 end
 
 """
-    has_metadata(reaction::Reaction, md_key::Symbol)
+    hasmetadata(reaction::Reaction, md_key::Symbol)
 
 Checks if a `Reaction` have a certain metadata field. If it does, returns `true` (else returns `false`).
 
@@ -915,15 +935,15 @@ Arguments:
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [description="Production reaction"]
-has_metadata(reaction, :description)
+hasmetadata(reaction, :description)
 ```
 """
-function has_metadata(reaction::Reaction, md_key::Symbol)
-    return any(isequal(md_key, entry[1]) for entry in get_metadata_dict(reaction))
+function hasmetadata(reaction::Reaction, md_key::Symbol)
+    return any(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))
 end
 
 """
-    get_metadata(reaction::Reaction, md_key::Symbol)
+getmetadata(reaction::Reaction, md_key::Symbol)
 
 Retrives a certain metadata value from a `Reaction`. If the metadata does not exists, throws an error.
 
@@ -934,15 +954,15 @@ Arguments:
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [description="Production reaction"]
-get_metadata(reaction, :description)
+getmetadata(reaction, :description)
 ```
 """
-function get_metadata(reaction::Reaction, md_key::Symbol)
-    if !has_metadata(reaction, md_key) 
-        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(get_metadata_dict(reaction))).")
+function getmetadata(reaction::Reaction, md_key::Symbol)
+    if !hasmetadata(reaction, md_key) 
+        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(getmetadata_dict(reaction))).")
     end
-    metadata = get_metadata_dict(reaction)
-    return metadata[findfirst(isequal(md_key, entry[1]) for entry in get_metadata_dict(reaction))][2]
+    metadata = getmetadata_dict(reaction)
+    return metadata[findfirst(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))][2]
 end
 
 
@@ -1065,7 +1085,7 @@ function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
 
     for (j, rx) in enumerate(get_rxs(rs))
         rlsqrt = sqrt(abs(oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)))
-        rlsqrt *= getnoisescaling(rx)
+        has_noise_scaling(rx) && (rlsqrt *= get_noise_scaling(rx))
         remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
 
         for (spec, stoich) in rx.netstoich
@@ -1485,7 +1505,6 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, checks = false, remove_conserved = false,
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
-                      noise_scaling = nothing, # To be removed (used for deprication message only).
                       kwargs...)
     spatial_convert_err(rs::ReactionSystem, SDESystem)
 
@@ -1535,7 +1554,6 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       remove_conserved = nothing, checks = false,
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
-                      noise_scaling = nothing, # To be removed (used for deprication message only).
                       kwargs...)
     spatial_convert_err(rs::ReactionSystem, JumpSystem)
 

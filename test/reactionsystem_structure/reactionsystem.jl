@@ -707,6 +707,6 @@ end
 
 # Tests metadata.
 let
-    @test isnothing(ModelingToolkit.get_metadata(rs))
+    @test isnothing(ModelingToolkit.getmetadata(rs))
 end
 
