@@ -4,7 +4,8 @@ function tup_leng(ex::ExprValues)
     return 1
 end
 
-#Gets the ith element in a expression tuple, or returns the input itself if it is not an expression tuple (probably a  Symbol/Numerical).
+# Gets the ith element in a expression tuple, or returns the input itself if it is not an expression tuple
+# (probably a  Symbol/Numerical).
 function get_tup_arg(ex::ExprValues, i::Int)
     (tup_leng(ex) == 1) && (return ex)
     return ex.args[i]

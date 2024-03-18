@@ -116,6 +116,11 @@ struct Reaction{S, T}
     `true` if `rate` represents the full reaction rate law.
     """
     only_use_rate::Bool
+    """
+    Contain additional data, such whenever the reaction have a specific noise-scaling expression for
+    the chemical Langevin equation.
+    """
+    metadata::Vector{Pair{Symbol, Any}}
 end
 
 """
@@ -126,8 +131,8 @@ Test if a species is valid as a reactant (i.e. a species variable or a constant 
 isvalidreactant(s) = MT.isparameter(s) ? isconstant(s) : (isspecies(s) && !isconstant(s))
 
 function Reaction(rate, subs, prods, substoich, prodstoich;
-                  netstoich = nothing, only_use_rate = false,
-                  kwargs...)
+                  netstoich = nothing, metadata = Pair{Symbol, Any}[], 
+                  only_use_rate = metadata_only_use_rate_check(metadata), kwargs...)
     (isnothing(prods) && isnothing(subs)) &&
         throw(ArgumentError("A reaction requires a non-nothing substrate or product vector."))
     (isnothing(prodstoich) && isnothing(substoich)) &&
@@ -181,7 +186,27 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
         convert.(stoich_type, netstoich) : netstoich
     end
 
-    Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate)
+    # Check that all metadata entries are unique. (cannot use `in` since some entries may be symbolics).
+    if !allunique(entry[1] for entry in metadata)
+        error("Repeated entries for the same metadata encountered in the following metadata set: $([entry[1] for entry in metadata]).")
+    end
+
+    # Deletes potential `:only_use_rate => ` entries from the metadata.
+    if any(:only_use_rate == entry[1] for entry in metadata) 
+        deleteat!(metadata, findfirst(:only_use_rate == entry[1] for entry in metadata))
+    end
+
+    # Ensures metadata have the correct type.
+    metadata = convert(Vector{Pair{Symbol, Any}}, metadata)
+
+    Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate, metadata)
+end
+
+# Checks if a metadata input has an entry :only_use_rate => true
+function metadata_only_use_rate_check(metadata)
+    only_use_rate_idx = findfirst(:only_use_rate == entry[1] for entry in metadata)
+    isnothing(only_use_rate_idx) && return true
+    return Bool(metadata[only_use_rate_idx][2])
 end
 
 # three argument constructor assumes stoichiometric coefs are one and integers
@@ -241,7 +266,7 @@ function ModelingToolkit.namespace_equation(rx::Reaction, name; kw...)
         ns = similar(rx.netstoich)
         map!(n -> f(n[1]) => f(n[2]), ns, rx.netstoich)
     end
-    Reaction(rate, subs, prods, substoich, prodstoich, netstoich, rx.only_use_rate)
+    Reaction(rate, subs, prods, substoich, prodstoich, netstoich, rx.only_use_rate, rx.metadata)
 end
 
 netstoich_stoichtype(::Vector{Pair{S, T}}) where {S, T} = T
@@ -834,6 +859,90 @@ function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
         filter(s -> !isbc(s), sts)
     end
     indepsts, filter(isspecies, indepsts)
+end
+
+######################## Other accessors ##############################
+
+"""
+    getnoisescaling(reaction::Reaction)
+
+Returns the noise scaling associated with a specific reaction. If the `:noise_scaling` metadata has
+set, returns that. Else, returns `1.0`.
+
+Arguments:
+- `reaction`: The reaction for which we wish to retrive all metadata.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
+getnoisescaling(reaction)
+"""
+function getnoisescaling(reaction::Reaction)
+    has_metadata(reaction, :noise_scaling) && (return get_metadata(reaction, :noise_scaling))
+    return 1.0
+end
+
+
+# These are currently considered internal, but can be used by public accessor functions like getnoisescaling.
+
+"""
+    get_metadata_dict(reaction::Reaction)
+
+Retrives the `ImmutableDict` containing all of the metadata associated with a specific reaction.
+
+Arguments:
+- `reaction`: The reaction for which we wish to retrive all metadata.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
+get_metadata_dict(reaction)
+```
+"""
+function get_metadata_dict(reaction::Reaction)
+    return reaction.metadata
+end
+
+"""
+    has_metadata(reaction::Reaction, md_key::Symbol)
+
+Checks if a `Reaction` have a certain metadata field. If it does, returns `true` (else returns `false`).
+
+Arguments:
+- `reaction`: The reaction for which we wish to check if a specific metadata field exist.
+- `md_key`: The metadata for which we wish to check existence of.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
+has_metadata(reaction, :noise_scaling)
+```
+"""
+function has_metadata(reaction::Reaction, md_key::Symbol)
+    return any(isequal(md_key, entry[1]) for entry in get_metadata_dict(reaction))
+end
+
+"""
+    get_metadata(reaction::Reaction, md_key::Symbol)
+
+Retrives a certain metadata value from a `Reaction`. If the metadata does not exists, throws an error.
+
+Arguments:
+- `reaction`: The reaction for which we wish to retrive a specific metadata value.
+- `md_key`: The metadata for which we wish to retrive.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
+get_metadata(reaction, :noise_scaling)
+```
+"""
+function get_metadata(reaction::Reaction, md_key::Symbol)
+    if !has_metadata(reaction, md_key) 
+        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(get_metadata_dict(reaction))).")
+    end
+    metadata = get_metadata_dict(reaction)
+    return metadata[findfirst(isequal(md_key, entry[1]) for entry in get_metadata_dict(reaction))][2]
 end
 
 ######################## Conversion to ODEs/SDEs/jump, etc ##############################

@@ -133,6 +133,124 @@ let
     @test rx == Reaction(b+ex, [A,C], nothing, [2,1], nothing)
 end
 
+### Tests Reaction Metadata ###
+
+# Tests construction for various types of metadata.
+# Tests accessor functions.
+let
+    # Creates reactions directly.
+    @variables t
+    @parameters k η
+    @species X(t) X2(t)
+
+    metadata1 = [:noise_scaling => η]
+    r1 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata1)
+
+    metadata2 = Pair{Symbol,Any}[]
+    push!(metadata2, :md_1 => 1.0)
+    push!(metadata2, :md_2 => false)
+    push!(metadata2, :md_3 => "Hello world")
+    push!(metadata2, :md_4 => :sym)
+    push!(metadata2, :md_5 => X + X2^k -1)
+    push!(metadata2, :md_6 => (0.1, 2.0))
+    r2 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata2)
+
+    metadata3 = Pair{Symbol,Any}[]
+    r3 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata3)
+
+    # Creates reactions using DSL.
+    rs = @reaction_network begin
+        @parameters η
+        k, 2X --> X2, [noise_scaling=η]
+        k, 2X --> X2, [md_1=1.0, md_2=false, md_3="Hello world", md_4=:sym, md_5=X+X2^k-1, md_6=(0.1,2.0)]
+        k, 2X --> X2
+    end
+
+    # Checks DSL reactions are correct.
+    rxs = reactions(rs)
+    @test isequal([r1, r2, r3], rxs)
+    @test isequal(Catalyst.get_metadata_dict(r1), Catalyst.get_metadata_dict(rxs[1]))
+    @test isequal(Catalyst.get_metadata_dict(r2), Catalyst.get_metadata_dict(rxs[2]))
+    @test isequal(Catalyst.get_metadata_dict(r3), Catalyst.get_metadata_dict(rxs[3]))
+
+    # Checks that accessor functions works on the DSL.
+    @test Catalyst.has_metadata(rxs[1], :noise_scaling)
+    @test !Catalyst.has_metadata(rxs[1], :md_1)
+    @test !Catalyst.has_metadata(rxs[2], :noise_scaling)
+    @test Catalyst.has_metadata(rxs[2], :md_1)
+    @test !Catalyst.has_metadata(rxs[3], :noise_scaling)
+    @test !Catalyst.has_metadata(rxs[3], :md_1)
+    
+    @test isequal(Catalyst.get_metadata(rxs[1], :noise_scaling), η)
+    @test isequal(Catalyst.get_metadata(rxs[2], :md_1), 1.0)
+
+    # Test that metadata works for @reaction macro.
+    rx1 = @reaction k, 2X --> X2, [noise_scaling=$η]
+    rx2 = @reaction k, 2X --> X2, [md_1=1.0, md_2=false, md_3="Hello world", md_4=:sym, md_5=X+X2^k-1, md_6=(0.1,2.0)]
+    rx3 = @reaction k, 2X --> X2
+
+    @test isequal([rx1, rx2, rx3], rxs)
+    @test isequal(Catalyst.get_metadata_dict(rx1), Catalyst.get_metadata_dict(rxs[1]))
+    @test isequal(Catalyst.get_metadata_dict(rx2), Catalyst.get_metadata_dict(rxs[2]))
+    @test isequal(Catalyst.get_metadata_dict(rx3), Catalyst.get_metadata_dict(rxs[3]))
+end
+
+# Checks that repeated metadata throws errors.
+let 
+    @test_throws LoadError @eval @reaction k, 0 --> X, [md1=1.0, md1=2.0] 
+    @test_throws LoadError @eval @reaction_network begin
+        k, 0 --> X, [md1=1.0, md1=1.0] 
+    end 
+end
+
+# Tests for nested metadata.
+let
+    rn1 = @reaction_network reactions begin
+        k1, X1 --> Y1, [md1=1.0,md2=2.0]
+        k2, X2 --> Y2, [md1=0.0]
+        k3, X3 --> Y3, [md3="Hello world"]
+        k, X4 --> Y4, [md4=:sym]
+        k, X5 --> Y5, [md4=:sym]
+        k6, X6 --> Y6, [md6=0.0]
+        k6, Y6 --> X6, [md6=2.0]
+        k7, X7 --> Y7, [md7="Hi"]
+        k7, X7 --> Y8, [md7="Hi"]
+        k8, Y7 --> X7, [md7="Hello"]
+        k8, Y8 --> X7, [md7="Hi",md8="Yo"]
+    end
+    
+    rn2 = @reaction_network reactions begin
+        (k1,k2,k3), (X1,X2,X3) --> (Y1,Y2,Y3), ([md1=1.0,md2=2.0],[md1=0.0],[md3="Hello world"])
+        k, (X4,X5) --> (Y4,Y5), [md4=:sym]
+        (k6, k6), X6 <--> Y6, ([md6=0.0],[md6=2.0])
+        (k7,k8), X7 <--> (Y7,Y8), ([md7="Hi"],([md7="Hello"],[md7="Hi",md8="Yo"]))
+    end
+    
+    @test isequal(rn1, rn2)
+end
+
+# Tests that `only_use_rate` option works.
+let
+    rn1 = @reaction_network reactions begin
+        k1*X1, X1 + 2Y1 --> Z1
+        k2, 4X2 => Z2 + W3
+        k3 + X3, Y3 --> Z3
+        2*k4 + X4*Y4, 2X2 + 2Y4 => Z4
+        k5, 3X5 --> Z5, [unnecessary_metadata=[1,2,3]]
+        k6, X6 => Z6, [unnecessary_metadata=true]
+    end
+    
+    rn2 = @reaction_network reactions begin
+        k1*X1, X1 + 2Y1 --> Z1, [only_use_rate=false]
+        k2, 4X2 --> Z2 + W3, [only_use_rate=true]
+        k3 + X3, Y3 --> Z3
+        2*k4 + X4*Y4, 2X2 + 2Y4 --> Z4, [only_use_rate=true]
+        k5, 3X5 --> Z5, [only_use_rate=false, unnecessary_metadata=[1,2,3]]
+        k6, X6 --> Z6, [only_use_rate=true, unnecessary_metadata=true]
+    end
+    
+    @test isequal(rn1,rn2)
+end
 
 ### Other tests ###
 

@@ -293,16 +293,17 @@ struct ReactionStruct
     substrates::Vector{ReactantStruct}
     products::Vector{ReactantStruct}
     rate::ExprValues
-    only_use_rate::Bool
+    metadata::Expr
 
-    function ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues,
-                            only_use_rate::Bool)
+    function ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues, 
+                            metadata_line::ExprValues)
         sub = recursive_find_reactants!(sub_line, 1, Vector{ReactantStruct}(undef, 0))
         prod = recursive_find_reactants!(prod_line, 1, Vector{ReactantStruct}(undef, 0))
-        new(sub, prod, rate, only_use_rate)
+        metadata = extract_metadata(metadata_line)
+        new(sub, prod, rate, metadata)
     end
 end
-
+ 
 ### Functions rephrasing the macro input as a ReactionSystem structure. ###
 
 function forbidden_variable_check(v)
@@ -445,7 +446,7 @@ function make_reaction(ex::Expr)
     pexprs = get_pexpr(parameters, Dict{Symbol, Expr}())
     rxexpr = get_rxexprs(reaction)
     iv = :(@variables $(DEFAULT_IV_SYM))
-
+    
     # Returns the rephrased expression.
     quote
         $pexprs
@@ -565,8 +566,8 @@ function get_rxexprs(rxstruct)
     prod_init = isempty(rxstruct.products) ? nothing : :([])
     prod_stoich_init = deepcopy(prod_init)
     reaction_func = :(Reaction($(recursive_expand_functions!(rxstruct.rate)), $subs_init,
-                               $prod_init, $subs_stoich_init, $prod_stoich_init,
-                               only_use_rate = $(rxstruct.only_use_rate)))
+                               $prod_init, $subs_stoich_init, $prod_stoich_init, 
+                               metadata = $(rxstruct.metadata),))
     for sub in rxstruct.substrates
         push!(reaction_func.args[3].args, sub.reactant)
         push!(reaction_func.args[5].args, sub.stoichiometry)
@@ -580,70 +581,87 @@ end
 
 ### Functions for extracting the reactions from a DSL expression, and putting them ReactionStruct vector. ###
 
-# Reads a line and creates the corresponding ReactionStruct.
+# Reads a single line and creates the corresponding ReactionStruct.
 function get_reaction(line)
-    (rate, r_line) = line.args
-    (r_line.head == :-->) && (r_line = Expr(:call, :→, r_line.args[1], r_line.args[2]))
-
-    arrow = r_line.args[1]
-    in(arrow, double_arrows) && error("Double arrows not allowed for single reactions.")
-
-    only_use_rate = in(arrow, pure_rate_arrows)
-    if in(arrow, fwd_arrows)
-        rs = create_ReactionStruct(r_line.args[2], r_line.args[3], rate, only_use_rate)
-    elseif in(arrow, bwd_arrows)
-        rs = create_ReactionStruct(r_line.args[3], r_line.args[2], rate, only_use_rate)
-    else
-        throw("Malformed reaction, invalid arrow type used in: $(MacroTools.striplines(line))")
+    reaction = get_reactions([line])
+    if (length(reaction) != 1)
+        error("Malformed reaction. @reaction macro only creates a single reaction. E.g. double arrows, such as `<-->` are not supported.")
     end
-
-    rs
+    return reaction[1]
 end
+
 # Generates a vector containing a number of reaction structures, each containing the information about one reaction.
 function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(undef, 0))
     for line in exprs
-        (rate, r_line) = line.args
-        (r_line.head == :-->) && (r_line = Expr(:call, :→, r_line.args[1], r_line.args[2]))
+        # Reads core reaction information.
+        arrow, rate, reaction, metadata = read_reaction_line(line)
 
-        arrow = r_line.args[1]
-        only_use_rate = in(arrow, pure_rate_arrows)
+        # Checks the type of arrow used, and creates the corresponding reaction(s). Returns them in an array.
         if in(arrow, double_arrows)
-            (typeof(rate) == Expr && rate.head == :tuple) ||
+            if typeof(rate) != Expr || rate.head != :tuple
                 error("Error: Must provide a tuple of reaction rates when declaring a bi-directional reaction.")
-            push_reactions!(reactions, r_line.args[2], r_line.args[3], rate.args[1],
-                            only_use_rate)
-            push_reactions!(reactions, r_line.args[3], r_line.args[2], rate.args[2],
-                            only_use_rate)
+            end
+            push_reactions!(reactions, reaction.args[2], reaction.args[3], rate.args[1], metadata.args[1], arrow)
+            push_reactions!(reactions, reaction.args[3], reaction.args[2], rate.args[2], metadata.args[2], arrow)
         elseif in(arrow, fwd_arrows)
-            push_reactions!(reactions, r_line.args[2], r_line.args[3], rate, only_use_rate)
+            push_reactions!(reactions, reaction.args[2], reaction.args[3], rate, metadata, arrow)
         elseif in(arrow, bwd_arrows)
-            push_reactions!(reactions, r_line.args[3], r_line.args[2], rate, only_use_rate)
+            push_reactions!(reactions, reaction.args[3], reaction.args[2], rate, metadata, arrow)
         else
             throw("Malformed reaction, invalid arrow type used in: $(MacroTools.striplines(line))")
         end
     end
-    reactions
+    return reactions
 end
 
-# Creates a ReactionStruct from the information in a single line.
-function create_ReactionStruct(sub_line::ExprValues, prod_line::ExprValues,
-                               rate::ExprValues, only_use_rate::Bool)
-    all(==(1), (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate))) ||
-        error("Malformed reaction, line appears to be defining multiple reactions incorrectly: rate=$rate, subs=$sub_line, prods=$prod_line.")
-    ReactionStruct(get_tup_arg(sub_line, 1), get_tup_arg(prod_line, 1),
-                   get_tup_arg(rate, 1), only_use_rate)
+# Extracts the rate, reaction, and metadata fields (the last one optional) from a reaction line.
+function read_reaction_line(line::Expr)
+    # Handles rate, reaction, and arrow.
+    # Special routine required for  the`-->` case, which creates different expression from all other cases.
+    rate = line.args[1]
+    reaction = line.args[2]
+    (reaction.head == :-->) && (reaction = Expr(:call, :→, reaction.args[1], reaction.args[2]))
+    arrow = reaction.args[1]
+
+    # Handles metadata. If not provided, empty metadata is created.
+    if length(line.args) == 2
+        metadata = in(arrow, double_arrows) ? :(([], [])) : :([])
+    elseif length(line.args) == 3
+        metadata = line.args[3]
+    else
+        error("The following reaction line: \"$line\" was malformed. It should have a form \"rate, reaction\" or a form \"rate, reaction, metadata\". It has neither.")
+    end
+
+    return arrow, rate, reaction, metadata
 end
 
-#Takes a reaction line and creates reactions from it and pushes those to the reaction array. Used to create multiple reactions from, for instance, 1.0, (X,Y) --> 0.
-function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues,
-                         prod_line::ExprValues, rate::ExprValues, only_use_rate::Bool)
-    lengs = (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate))
-    for i in 1:maximum(lengs)
-        (count(lengs .== 1) + count(lengs .== maximum(lengs)) < 3) &&
-            (throw("Malformed reaction, rate=$rate, subs=$sub_line, prods=$prod_line."))
-        push!(reactions,
-              ReactionStruct(get_tup_arg(sub_line, i), get_tup_arg(prod_line, i),
-                             get_tup_arg(rate, i), only_use_rate))
+# Takes a reaction line and creates reaction(s) from it and pushes those to the reaction array.
+# Used to create multiple reactions from, for instance, `k, (X,Y) --> 0`.
+# Handles metadata, e.g. `1.0, Z --> 0, [noisescaling=η]`.
+function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues, prod_line::ExprValues, 
+                         rate::ExprValues, metadata::ExprValues, arrow::Symbol)  
+    # The rates, substrates, products, and metadata may be in a tupple form (e.g. `k, (X,Y) --> 0`).
+    # This finds the length of these tuples (or 1 if not in tuple forms). Errors if lengs inconsistent.
+    lengs = (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate), tup_leng(metadata))
+    if any(!(leng == 1 || leng == maximum(lengs)) for leng in lengs)
+        throw("Malformed reaction, rate=$rate, subs=$sub_line, prods=$prod_line, metadata=$metadata.")
+    end
+
+    # Loops through each reaction encoded by the reaction composites. Adds the reaction to the reactions vector.
+    for i in 1:maximum(lengs)                       
+        # If the `only_use_rate` metadata was not provided, this has to be infered from the arrow used.
+        metadata_i = get_tup_arg(metadata, i)
+        if all(arg.args[1] != :only_use_rate for arg in metadata_i.args)
+            push!(metadata_i.args, :(only_use_rate = $(in(arrow, pure_rate_arrows))))
+        end
+
+        # Checks that metadata fields are unqiue.
+        if !allunique(arg.args[1] for arg in metadata_i.args)
+            error("Some reaction metadata fields where repeated: $(metadata_entries)")
+        end
+
+        push!(reactions, ReactionStruct(get_tup_arg(sub_line, i), get_tup_arg(prod_line, i),
+                                        get_tup_arg(rate, i), metadata_i))
     end
 end
 
@@ -685,6 +703,17 @@ function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
         throw("Malformed reaction, bad operator: $(ex.args[1]) found in stochiometry expression $ex.")
     end
     reactants
+end
+
+# Finds the metadata from a metadata expresion (`[key=val, ...]`) and returns as a Vector{Pair{Symbol,ExprValues}}.
+function extract_metadata(metadata_line::Expr)
+    metadata = :([])
+    for arg in metadata_line.args
+        (arg.head != :(=)) && error("Malformatted metadata line: $metadata_line. Each entry in the vector should contain a `=`.")
+        (arg.args[1] isa Symbol) || error("Malformatted metadata entry: $arg. Entries left-hand-side should be a single symbol.")
+        push!(metadata.args, :($(QuoteNode(arg.args[1])) => $(arg.args[2])))
+    end
+    return metadata
 end
 
 ### DSL Options Handling ###
@@ -887,4 +916,14 @@ end
 #         push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
 #     end
 #     return defaults
+# end
+
+
+# # Creates a ReactionStruct from the information in a single line.
+# function create_ReactionStruct(sub_line::ExprValues, prod_line::ExprValues,
+#     rate::ExprValues, only_use_rate::Bool)
+#     all(==(1), (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate))) ||
+#     error("Malformed reaction, line appears to be defining multiple reactions incorrectly: rate=$rate, subs=$sub_line, prods=$prod_line.")
+#     ReactionStruct(get_tup_arg(sub_line, 1), get_tup_arg(prod_line, 1),
+#     get_tup_arg(rate, 1), only_use_rate)
 # end

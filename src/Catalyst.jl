@@ -67,7 +67,7 @@ export ODEProblem,
        SteadyStateProblem
 
 # reaction_network macro
-const ExprValues = Union{Expr, Symbol, Float64, Int}
+const ExprValues = Union{Expr, Symbol, Float64, Int, Bool}
 include("expression_utils.jl")
 include("reaction_network.jl")
 export @reaction_network, @add_reactions, @reaction, @species
