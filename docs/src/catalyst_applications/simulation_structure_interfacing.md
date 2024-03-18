@@ -89,7 +89,7 @@ Finally, we consider solution objects. First, we simulate our problem:
 ```@example ex1
 sol = solve(oprob)
 ```
-For solutions, when we access a unknown, we get its whole simulation vector:
+For solutions, when we access an unknown, we get its whole simulation vector:
 ```@example ex1
 sol[:X1]
 ```
