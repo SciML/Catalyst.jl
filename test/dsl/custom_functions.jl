@@ -2,7 +2,7 @@
 ### Fetch Packages and Set Global Variables ###
 using DiffEqBase, Catalyst, Random, Symbolics, Test
 using ModelingToolkit: get_unknowns, get_ps
-import Catalyst: t_nounits as t
+t = default_t()
 
 using StableRNGs
 rng = StableRNG(12345)

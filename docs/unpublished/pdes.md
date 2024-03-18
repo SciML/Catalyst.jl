@@ -42,7 +42,7 @@ end
 
 We now define the reaction model
 ```julia
-import Catalyst: t_nounits as t
+t = default_t()
 @variables x y
 @species U(x,y,t) V(x,y,t) W(x,y,t)
 rxs = [Reaction(k[1], [U, W], [V, W]),

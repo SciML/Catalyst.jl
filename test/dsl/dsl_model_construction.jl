@@ -4,7 +4,7 @@
 using DiffEqBase, Catalyst, Random, Test
 using ModelingToolkit: operation, istree, get_unknowns, get_ps, get_eqs, get_systems,
                        get_iv, nameof
-import Catalyst: t_nounits as t
+t = default_t()
 
 # Sets rnd number.
 using StableRNGs

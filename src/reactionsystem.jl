@@ -66,7 +66,7 @@ $(FIELDS)
 
 ```julia
 using Catalyst
-import Catalyst: t_nounits as t
+t = default_t()
 @parameters k[1:20]
 @species A(t) B(t) C(t) D(t)
 rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A

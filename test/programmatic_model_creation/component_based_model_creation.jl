@@ -2,7 +2,7 @@
 using ModelingToolkit, Catalyst, LinearAlgebra, OrdinaryDiffEq, Test
 using SciMLNLSolve
 using ModelingToolkit: nameof
-import Catalyst: t_nounits as t
+t = default_t()
 
 ### Run Tests ###
 

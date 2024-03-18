@@ -1,5 +1,5 @@
 using Test, Catalyst, ModelingToolkit, OrdinaryDiffEq
-import Catalyst: t_nounits as t, D_nounits as D
+t = default_t(), D_nounits as D
 
 # Test discrete event is propagated to ODE solver correctly.
 let

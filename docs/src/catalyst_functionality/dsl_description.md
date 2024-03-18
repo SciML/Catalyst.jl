@@ -54,7 +54,7 @@ the model. We do this by creating a mapping from each symbolic variable
 representing a chemical species to its initial value
 ```@example tut2
 # define the symbolic variables
-import Catalyst: t_nounits as t
+t = default_t()
 @species X(t) Y(t) Z(t) XY(t) Z1(t) Z2(t)
 
 # create the mapping
@@ -610,7 +610,7 @@ parameters outside of the macro, which can then be used within expressions in
 the DSL (see the [Programmatic Construction of Symbolic Reaction Systems](@ref programmatic_CRN_construction)
 tutorial for details on the lower-level symbolic interface). For example,
 ```@example tut2
-import Catalyst: t_nounits as t
+t = default_t()
 @parameters k α
 @species A(t)
 spec = A

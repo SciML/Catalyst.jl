@@ -3,7 +3,7 @@
 # Fetch packages.
 using OrdinaryDiffEq
 using Random, Statistics, SparseArrays, Test
-import Catalyst: t_nounits as t
+t = default_t()
 
 # Fetch test networks.
 include("../spatial_test_networks.jl")

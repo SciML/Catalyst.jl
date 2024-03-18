@@ -2,7 +2,7 @@
 
 ### Fetch Packages and Set Global Variables ###
 using Catalyst, ModelingToolkit, OrdinaryDiffEq, Plots
-import Catalyst: t_nounits as t
+t = default_t()
 
 ### Run Tests ###
 

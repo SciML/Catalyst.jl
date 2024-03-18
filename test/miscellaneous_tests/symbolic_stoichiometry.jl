@@ -1,5 +1,5 @@
 using Catalyst, OrdinaryDiffEq, Test, LinearAlgebra, JumpProcesses
-import Catalyst: t_nounits as t
+t = default_t()
 
 ### Base Tests ###
 

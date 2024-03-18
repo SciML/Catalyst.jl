@@ -51,7 +51,7 @@ plot(TreePlot(rn), method=:tree, fontsize=12, nodeshape=:ellipse)
 We could also have directly constructed `rn` using the same reaction as in
 `basern` as
 ```@example ex1
-import Catalyst: t_nounits as t
+t = default_t()
 @parameters k
 @species A(t), B(t), C(t)
 rxs = [Reaction(k, [A,B], [C])]
@@ -114,7 +114,7 @@ ability to substitute the value of these variables into the DSL (see
 [Interpolation of Julia Variables](@ref dsl_description_interpolation_of_variables)). To make the repressilator we now make
 three genes, and then compose them together
 ```@example ex1
-import Catalyst: t_nounits as t
+t = default_t()
 @species G3₊P(t)
 @named G1 = repressed_gene(; R=ParentScope(G3₊P))
 @named G2 = repressed_gene(; R=ParentScope(G1.P))

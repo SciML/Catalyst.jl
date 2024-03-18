@@ -15,7 +15,7 @@ We begin by importing some necessary packages.
 using ModelingToolkit, Catalyst, NonlinearSolve
 using DifferentialEquations, Symbolics
 using Plots
-import Catalyst: t_nounits as t, D_nounits as D
+t = default_t(), D_nounits as D
 ```
 
 We'll build a simple Hodgkin-Huxley model for a single neuron, with the voltage,

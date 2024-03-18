@@ -193,7 +193,7 @@ Notes:
 - If the rate expression depends on a non-species unknown variable that will be included in
   the dependents, i.e. in
   ```julia
-  import Catalyst: t_nounits as t
+  t = default_t()
   @parameters k
   @variables V(t)
   @species A(t) B(t) C(t)
@@ -438,7 +438,7 @@ end
 setdefaults!(sir, [:S => 999.0, :I => 1.0, :R => 1.0, :β => 1e-4, :ν => .01])
 
 # or
-import Catalyst: t_nounits as t
+t = default_t()
 @parameter β ν
 @species S(t) I(t) R(t)
 setdefaults!(sir, [S => 999.0, I => 1.0, R => 0.0, β => 1e-4, ν => .01])

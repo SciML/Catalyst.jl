@@ -6,7 +6,7 @@ using StochasticDiffEq
 using LinearAlgebra: norm
 using SparseArrays
 using ModelingToolkit: value
-import Catalyst: t_nounits as t
+t = default_t()
 
 include("../test_networks.jl")
 

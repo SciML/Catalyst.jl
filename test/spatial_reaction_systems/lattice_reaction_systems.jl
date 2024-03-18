@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using Catalyst, Graphs, Test
-import Catalyst: t_nounits as t
+t = default_t()
 
 # Pre declares a grid.
 grid = Graphs.grid([2, 2])

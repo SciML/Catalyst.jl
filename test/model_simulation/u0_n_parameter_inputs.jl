@@ -5,7 +5,7 @@
 # Fetch packages.
 using Catalyst, OrdinaryDiffEq, Random, Test
 using ModelingToolkit: get_unknowns, get_ps
-import Catalyst: t_nounits as t
+t = default_t()
 
 # Sets rnd number.
 using StableRNGs

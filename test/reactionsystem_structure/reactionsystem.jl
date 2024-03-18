@@ -2,7 +2,7 @@
 
 # Fetch pakcages.
 using Catalyst, LinearAlgebra, JumpProcesses, Test, OrdinaryDiffEq, StochasticDiffEq
-import Catalyst: t_nounits as t
+t = default_t()
 const MT = ModelingToolkit
 
 # Sets rnd number.

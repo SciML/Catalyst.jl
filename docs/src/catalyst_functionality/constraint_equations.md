@@ -29,7 +29,7 @@ Here, to create differentials with respect to time (for our differential equatio
 
 ```@example ceq1
 using Catalyst, DifferentialEquations, Plots
-import Catalyst: t_nounits as t, D_nounits as D
+t = default_t(), D_nounits as D
 
 # set the growth rate to 1.0
 @parameters λ = 1.0
@@ -72,7 +72,7 @@ As an alternative to the previous approach, we could have constructed our
 `ReactionSystem` all at once by directly using the symbolic interface:
 ```@example ceq2
 using Catalyst, DifferentialEquations, Plots
-import Catalyst: t_nounits as t, D_nounits as D
+t = default_t(), D_nounits as D
 
 @parameters λ = 1.0
 @variables V(t) = 1.0
@@ -104,7 +104,7 @@ advanced_simulations) tutorial.
 Let's first create our equations and unknowns/species again
 ```@example ceq3
 using Catalyst, DifferentialEquations, Plots
-import Catalyst: t_nounits as t, D_nounits as D
+t = default_t(), D_nounits as D
 
 @parameters λ = 1.0
 @variables V(t) = 1.0
@@ -128,7 +128,7 @@ plot(sol; plotdensity = 1000)
 ```
 We can also model discrete events. Similar to our example with continuous events, we start by creating reaction equations, parameters, variables, and unknowns. 
 ```@example ceq3
-import Catalyst: t_nounits as t
+t = default_t()
 @parameters k_on switch_time k_off
 @species A(t) B(t)
 

@@ -80,7 +80,7 @@ end
 ```
 or directly via
 ```@example faq2
-import Catalyst: t_nounits as t
+t = default_t()
 @parameters k b
 @species A(t) B(t) C(t) D(t)
 rx1 = Reaction(k,[B,C],[B,D], [2.5,1],[3.5, 2.5])
@@ -121,7 +121,7 @@ have the desired default values, and this will automatically be propagated
 through to the equation solvers:
 ```@example faq3
 using Catalyst, Plots, OrdinaryDiffEq
-import Catalyst: t_nounits as t
+t = default_t()
 @parameters β=1e-4 ν=.01
 @species S(t)=999.0 I(t)=1.0 R(t)=0.0
 rx1 = Reaction(β, [S, I], [I], [1,1], [2])
@@ -174,7 +174,7 @@ nothing  # hide
 ```
 while using ModelingToolkit symbolic variables we have
 ```@example faq4
-import Catalyst: t_nounits as t
+t = default_t()
 @parameters α β
 @species S(t) I(t) R(t)
 u0 = [S => 999.0, I => 1.0, R => 0.0]
@@ -215,7 +215,7 @@ equation. I.e., to add a force of `(1 + sin(t))` to ``dA/dt`` in a system with
 the reaction `k, A --> 0`, we can do
 ```@example faq5
 using Catalyst
-import Catalyst: t_nounits as t
+t = default_t()
 @variables f(t)
 rx1 = @reaction k, A --> 0
 rx2 = @reaction $f, 0 --> A

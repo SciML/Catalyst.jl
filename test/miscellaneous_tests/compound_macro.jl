@@ -1,5 +1,5 @@
 using Catalyst, Test
-import Catalyst: t_nounits as t
+t = default_t()
 
 ### Tests Main Macro Creation Forms ### 
 let

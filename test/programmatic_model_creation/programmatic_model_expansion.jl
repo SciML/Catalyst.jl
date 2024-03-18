@@ -5,7 +5,7 @@
 # Fetch packages.
 using Catalyst, Test
 using ModelingToolkit: get_ps, get_unknowns, get_eqs, get_systems, get_iv, getname, nameof
-import Catalyst: t_nounits as t
+t = default_t()
 
 # Sets rnd number.
 using StableRNGs
