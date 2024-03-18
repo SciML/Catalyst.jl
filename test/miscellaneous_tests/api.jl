@@ -25,10 +25,6 @@ let
     pset = Set([value(k1) => 1, value(k2) => 2])
     @test issetequal(pset, paramsmap(rs))
 
-    Catalyst.reorder_unknowns!(rs, [3, 1, 2])
-    specset = Set([value(S) => 2, value(I) => 3, value(R) => 1])
-    @test issetequal(specset, speciesmap(rs))
-
     rxs = [Reaction(k1, [S, I], [I], [1, 1], [2]),
         Reaction(k2, [I], [R])]
     @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])

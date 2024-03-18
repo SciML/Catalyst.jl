@@ -28,12 +28,12 @@ struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem
     parameters::Vector{BasicSymbolic{Real}}
     """
     Parameters which values are tied to vertexes (adjacencies), 
-    e.g. (possibly) have a unique value at each vertex of the system.
+    e.g. (possibly) have an unique value at each vertex of the system.
     """
     vertex_parameters::Vector{BasicSymbolic{Real}}
     """
     Parameters which values are tied to edges (adjacencies), 
-    e.g. (possibly) have a unique value at each edge of the system.
+    e.g. (possibly) have an unique value at each edge of the system.
     """
     edge_parameters::Vector{BasicSymbolic{Real}}
 

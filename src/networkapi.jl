@@ -1441,27 +1441,6 @@ function addspecies!(network::ReactionSystem, s::Num; disablechecks = false)
 end
 
 """
-    reorder_unknowns!(rn, neworder)
-
-Given a [`ReactionSystem`](@ref) and a vector `neworder`, reorders the unknowns of `rn`, i.e.
-`get_unknowns(rn)`, according to `neworder`.
-
-Notes:
-- Currently only supports `ReactionSystem`s without subsystems.
-"""
-function reorder_unknowns!(rn, neworder)
-    reset_networkproperties!(rn)
-
-    permute!(get_unknowns(rn), neworder)
-    if !issorted(get_unknowns(rn); by = !isspecies)
-        @warn "New ordering has resulted in a non-species unknown preceding a species unknown. This is not allowed so unknowns have been resorted to ensure species precede non-species."
-        sort!(get_unknowns(rn); by = !isspecies)
-    end
-    get_species(rn) .= Iterators.filter(isspecies, get_unknowns(rn))
-    nothing
-end
-
-"""
     addparam!(network::ReactionSystem, p::Symbolic; disablechecks=false)
 
 Given a [`ReactionSystem`](@ref), add the parameter corresponding to the

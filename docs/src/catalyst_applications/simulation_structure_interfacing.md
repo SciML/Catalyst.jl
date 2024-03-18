@@ -127,7 +127,7 @@ oprob[k1]
 ```
 To interface with integrators and solutions we use a similar syntax.
 
-Finally, instead of using `@unpack` to access a symbolic variable or parameter, we can access it directly using `rn.X1`, and thus access a unknown of our `ODEProblem` using
+Finally, instead of using `@unpack` to access a symbolic variable or parameter, we can access it directly using `rn.X1`, and thus access an unknown of our `ODEProblem` using
 ```@example ex2
 oprob[rn.X1]
 ```

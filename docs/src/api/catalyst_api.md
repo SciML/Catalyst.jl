@@ -196,7 +196,6 @@ ModelingToolkit.extend
 ModelingToolkit.compose
 Catalyst.flatten
 merge!(network1::ReactionSystem, network2::ReactionSystem)
-reorder_unknowns!
 ```
 
 ## Network analysis and representations
