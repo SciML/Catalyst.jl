@@ -340,7 +340,7 @@ let
     @parameters a, b
     @unpack A = rn
     @variables C(t)
-    D = Catalyst.D_nounits
+    D = default_time_deriv()
     eqs = [D(C) ~ -b * C + a * A]
     @named osys = ODESystem(eqs, t, [A, C], [a, b])
     rn2 = extend(osys, rn)
@@ -387,7 +387,7 @@ let
         @parameters k
         k/$V, A + B --> C
     end
-    Dt = Catalyst.D_nounits
+    Dt = default_time_deriv()
     @named csys = ODESystem([Dt(V) ~ -b * V], t)
     @named fullrn = extend(csys, rn)
     setdefaults!(fullrn, [:b => 2.0])
@@ -424,7 +424,7 @@ let
     @parameters k1 k2 k3
     @variables V1(t) V2(t) V3(t)
     @species A1(t) A2(t) A3(t) B1(t) B2(t) B3(t)
-    D = Catalyst.D_nounits
+    D = default_time_deriv()
     rx1 = Reaction(k1*V1, [A1], [B1])
     eq1 = D(V1) ~ -V1
     @named rs1 = ReactionSystem([rx1, eq1], t)

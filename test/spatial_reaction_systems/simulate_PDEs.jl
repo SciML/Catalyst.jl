@@ -51,7 +51,7 @@ let
     @test bpm == bpm2
 
     # Check we can build a PDESystem.
-    ∂t = Catalyst.D_nounits
+    ∂t = default_time_deriv()
     ∂x = Differential(x)
     ∂y = Differential(y)
     Δ(u) = (∂x^2)(u) + (∂y^2)(u)

@@ -34,7 +34,6 @@ import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_v
 import ModelingToolkit: check_variables,
                         check_parameters, _iszero, _merge, check_units,
                         get_unit, check_equations
-import ModelingToolkit: D_nounits
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs

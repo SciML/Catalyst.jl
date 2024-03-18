@@ -456,7 +456,7 @@ end
 let
     @parameters k1 k2 A [isconstantspecies = true]
     @species B(t) C(t) [isbcspecies = true] D(t) E(t)
-    Dt = Catalyst.D_nounits
+    Dt = default_time_deriv()
     eqs = [(@reaction k1, $A --> B),
         (@reaction k2, B --> $A),
         (@reaction k1, $C + D --> E + $C),
@@ -567,7 +567,7 @@ let
     @parameters k1 k2 S2 [isconstantspecies = true]
     @species S1(t) S3(t)
     rx = Reaction(k2, [S1], nothing)
-    ∂ₜ = Catalyst.D_nounits
+    ∂ₜ = default_time_deriv()
     eq = ∂ₜ(S3) ~ k1 * S2
     @named osys = ODESystem([eq], t)
     @named rs = ReactionSystem([rx, eq], t)
@@ -581,7 +581,7 @@ let
     @parameters k1 k2 S2 [isconstantspecies = true]
     @species S1(t) S3(t) [isbcspecies = true]
     rx = Reaction(k2, [S1], nothing)
-    ∂ₜ = Catalyst.D_nounits
+    ∂ₜ = default_time_deriv()
     eq = S3 ~ k1 * S2
     @named rs = ReactionSystem([rx, eq], t)
     @test issetequal(unknowns(rs), [S1, S3])
@@ -599,7 +599,7 @@ let
     @variables S3(t)
     @species S1(t)
     rx = Reaction(k2, [S1], nothing)
-    ∂ₜ = Catalyst.D_nounits
+    ∂ₜ = default_time_deriv()
     eq = S3 ~ k1 * S2
     @named rs = ReactionSystem([rx, eq], t)
     @test issetequal(unknowns(rs), [S1, S3])
@@ -694,7 +694,7 @@ let
     @variables V(t)
     @species A(t) B(t)
     rx = Reaction(k1, [A], [B], [k2], [2])
-    D = Catalyst.D_nounits
+    D = default_time_deriv()
     eq = D(V) ~ -k1 * k2 * V + A
     @named rs = ReactionSystem([eq, rx], t)
     @test length(unknowns(rs)) == 3

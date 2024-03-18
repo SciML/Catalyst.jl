@@ -299,7 +299,7 @@ let
         k, A + 2*B --> 2*B
     end
     @unpack A,B = rn2
-    D = Catalyst.D_nounits
+    D = default_time_deriv()
     eq = D(B) ~ -B
     @named osys = ODESystem([eq], t)
     @named rn2 = extend(osys, rn2)
