@@ -545,7 +545,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
                             name, systems, defaults, connection_type, nps, cls, cevs, devs,
                             metadata = nothing, complete::Bool = false; checks::Bool = true)
-                            
+        println("Complete 1: ", complete)
         # unit checks are for ODEs and Reactions only currently
         nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
         if checks && isempty(sivs)
@@ -611,6 +611,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
                         continuous_events = nothing,
                         discrete_events = nothing,
                         complete = true)
+    println("Complete 2: ", complete)
     name === nothing &&
         throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     sysnames = nameof.(systems)
@@ -683,6 +684,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
 end
 
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
+    println("Complete 3: ", complete)
     make_ReactionSystem_internal(rxs, iv, Vector{Num}(), Vector{Num}(); kwargs...)
 end
 
@@ -749,11 +751,13 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, sts_in, ps_in;
     else
         fulleqs = rxs
     end
+    println("Complete 4: ", kwargs...)
 
     ReactionSystem(fulleqs, t, stsv, psv; spatial_ivs, kwargs...)
 end
 
 function ReactionSystem(iv; kwargs...)
+    println("Complete 5: ", complete)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
 
@@ -1492,14 +1496,14 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
     spatial_convert_err(rs::ReactionSystem, ODESystem)
-    fullrs = Catalyst.flatten(rs)
+    fullrs = Catalyst.flatten(rs; complete = true)
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
                          include_zero_odes)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
-    ODESystem(eqs, get_iv(fullrs), sts, ps;
+    osys = ODESystem(eqs, get_iv(fullrs), sts, ps;
               observed = obs,
               name,
               defaults = _merge(defaults,defs),
@@ -1507,6 +1511,7 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
               continuous_events = MT.get_continuous_events(fullrs),
               discrete_events = MT.get_discrete_events(fullrs),
               kwargs...)
+    return iscomplete(rs) ? complete(osys) : osys
 end
 
 """
@@ -1532,7 +1537,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
-    fullrs = Catalyst.flatten(rs)
+    fullrs = Catalyst.flatten(rs; complete = true)
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
@@ -1540,12 +1545,13 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     error_if_constraint_odes(NonlinearSystem, fullrs)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
-    NonlinearSystem(eqs, sts, ps;
+    nlsys = NonlinearSystem(eqs, sts, ps;
                     name,
                     observed = obs,
                     defaults = _merge(defaults,defs),
                     checks,
                     kwargs...)
+    return iscomplete(rs) ? complete(nlsys) : nlsys
 end
 
 """
@@ -1574,7 +1580,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       kwargs...)
     spatial_convert_err(rs::ReactionSystem, SDESystem)
 
-    flatrs = Catalyst.flatten(rs)
+    flatrs = Catalyst.flatten(rs; complete = true)
     error_if_constraints(SDESystem, flatrs)
 
     remove_conserved && conservationlaws(flatrs)
@@ -1588,7 +1594,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
         @info "Boundary condition species detected. As constraint equations are not currently supported when converting to SDESystems, the resulting system will be undetermined. Consider using constant species instead."
     end
 
-    SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps;
+    ssys = SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps;
               observed = obs,
               name,
               defaults = defs,
@@ -1596,6 +1602,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
               continuous_events = MT.get_continuous_events(flatrs),
               discrete_events = MT.get_discrete_events(flatrs),
               kwargs...)
+    return iscomplete(rs) ? complete(ssys) : ssys
 end
 
 """
@@ -1626,7 +1633,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     (remove_conserved !== nothing) &&
         error("Catalyst does not support removing conserved species when converting to JumpSystems.")
 
-    flatrs = Catalyst.flatten(rs)
+    flatrs = Catalyst.flatten(rs; complete = true)
     error_if_constraints(JumpSystem, flatrs)
 
     (length(MT.continuous_events(flatrs)) > 0) &&
@@ -1639,13 +1646,14 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     any(isbc, get_unknowns(flatrs)) && (sts = vcat(sts, filter(isbc, get_unknowns(flatrs))))
     ps = get_ps(flatrs)
 
-    JumpSystem(eqs, get_iv(flatrs), sts, ps;
+    jsys = JumpSystem(eqs, get_iv(flatrs), sts, ps;
                observed = MT.observed(flatrs),
                name,
                defaults = _merge(defaults,MT.defaults(flatrs)),
                checks,
                discrete_events = MT.discrete_events(flatrs),
                kwargs...)
+    return iscomplete(rs) ? complete(jsys) : jsys
 end
 
 ### Converts a reaction system to ODE or SDE problems ###
@@ -1786,7 +1794,7 @@ Notes:
 - The default value of `combinatoric_ratelaws` will be the logical or of all
   `ReactionSystem`s.
 """
-function MT.flatten(rs::ReactionSystem; name = nameof(rs))
+function MT.flatten(rs::ReactionSystem; name = nameof(rs), complete = false)
     isempty(get_systems(rs)) && return rs
 
     # right now only NonlinearSystems and ODESystems can be handled as subsystems
@@ -1805,7 +1813,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
                    spatial_ivs = get_sivs(rs),
                    continuous_events = MT.continuous_events(rs),
                    discrete_events = MT.discrete_events(rs),
-                   complete = false)
+                   complete = complete)
 end
 
 """
