@@ -44,6 +44,7 @@ import Parameters: @with_kw_noshow
 
 # globals for the modulate
 const DEFAULT_t = ModelingToolkit.t_nounits
+const DEFAULT_IV_SYM = Symbol(ModelingToolkit.t_nounits)
 function default_t()
     return DEFAULT_t
 end
