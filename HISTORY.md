@@ -24,6 +24,7 @@ rn = @reaction_network begin
 end
 getnoisescaling(rn)
 ```
+- `SDEProblem` no longer takes the `noise_scaling` argument (she above for new approach to handle noise scaling).
 - Changed fields of internal `Reaction` structure. `ReactionSystems`s saved using `serialize` on previous Catalyst versions cannot be loaded using this (or later) versions.
 - Simulation of spatial ODEs now supported. For full details, please see https://github.com/SciML/Catalyst.jl/pull/644 and upcoming documentation. Note that these methods are currently considered alpha, with the interface and approach changing even in non-breaking Catalyst releases.
 - LatticeReactionSystem structure represents a spatial reaction network:
