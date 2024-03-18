@@ -437,6 +437,7 @@ end
 # Two-argument constructor (reactions/equations and time variable).
 # Calls the `make_ReactionSystem_internal`, which in turn calls the four-argument constructor.
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
+    println("Complete 3: ", complete)
     make_ReactionSystem_internal(rxs, iv, Vector{Num}(), Vector{Num}(); kwargs...)
 end
 
@@ -1320,7 +1321,7 @@ Notes:
 - The default value of `combinatoric_ratelaws` will be the logical or of all
   `ReactionSystem`s.
 """
-function MT.flatten(rs::ReactionSystem; name = nameof(rs))
+function MT.flatten(rs::ReactionSystem; name = nameof(rs), complete = false)
     isempty(get_systems(rs)) && return rs
 
     # right now only NonlinearSystems and ODESystems can be handled as subsystems
@@ -1339,7 +1340,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
                    spatial_ivs = get_sivs(rs),
                    continuous_events = MT.continuous_events(rs),
                    discrete_events = MT.discrete_events(rs),
-                   complete = false)
+                   complete = complete)
 end
 
 """
