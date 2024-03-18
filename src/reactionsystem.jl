@@ -187,8 +187,7 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     end
 
     # Check that all metadata entries are unique. (cannot use `in` since some entries may be symbolics).
-    if any(any(isequal(metadata[i][1], entry[1]) for entry in metadata[i+1:end]) 
-                                                 for i in eachindex(metadata))
+    if !allunique(entry[1] for entry in metadata)
         error("Repeated entries for the same metadata encountered in the following metadata set: $([entry[1] for entry in metadata]).")
     end
 
@@ -205,8 +204,9 @@ end
 
 # Checks if a metadata input has an entry :only_use_rate => true
 function metadata_only_use_rate_check(metadata)
-    any(:only_use_rate == entry[1] for entry in metadata) || (return false)
-    return Bool(metadata[findfirst(:only_use_rate == entry[1] for entry in metadata)][2])
+    only_use_rate_idx = findfirst(:only_use_rate == entry[1] for entry in metadata)
+    isnothing(only_use_rate_idx) && return true
+    return Bool(metadata[only_use_rate_idx][2])
 end
 
 # three argument constructor assumes stoichiometric coefs are one and integers
