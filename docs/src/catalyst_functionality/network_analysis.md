@@ -384,7 +384,7 @@ Recall that in the matrix-vector representation for the RRE ODEs, the entries,
 ``N_{m k}``, of the stoichiometry matrix, ``N``, give the net change in species
 ``m`` due to reaction ``k``. If we let ``\mathbf{N}_k`` denote the ``k``th
 column of this matrix, this vector corresponds to the change in the species
-unknown vector, ``\mathbf{x}(t)``, due to reaction ``k``, i.e. when reaction ``k``
+state vector, ``\mathbf{x}(t)``, due to reaction ``k``, i.e. when reaction ``k``
 occurs ``\mathbf{x}(t) \to \mathbf{x}(t) + \mathbf{N}_k``. Moreover, by
 integrating the ODE
 ```math
