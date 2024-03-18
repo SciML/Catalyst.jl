@@ -43,11 +43,11 @@ import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 
 # globals for the modulate
-const DEFAULT_t = ModelingToolkit.t_nounits
-const DEFAULT_IV_SYM = Symbol(ModelingToolkit.t_nounits)
 function default_t()
-    return DEFAULT_t
+    return ModelingToolkit.t_nounits
 end
+const DEFAULT_t = default_t()
+const DEFAULT_IV_SYM = Symbol(DEFAULT_t)
 export default_t
 
 # as used in Catlab
