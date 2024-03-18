@@ -1,8 +1,8 @@
 using Catalyst, Test
+t = default_t()
 
 ### Tests Main Macro Creation Forms ### 
 let
-    @variables t
     @species C(t) H(t) O(t) 
     @parameters p1 p2
 
@@ -62,7 +62,7 @@ end
 
 ### Test Various Independent Variables ###
 let
-    @variables t x y z
+    @variables x y z
     @species C(t) H(x) N(x) O(t) P(t,x) S(x,y)
 
     # Checks that wrong (or absent) independent variable produces errors.
@@ -91,7 +91,6 @@ end
 
 # Test base functionality in two cases.
 let
-    @variables t
     @species C(t) H(t) O(t)
     @compound C6H12O2 ~ 6C + 12H + 2O
 
@@ -108,7 +107,6 @@ let
 end
 
 let
-    @variables t
     @species O(t)
     @compound O2 ~ 2O
 
@@ -124,18 +122,15 @@ end
 
 # Checks that compounds cannot be created from non-existing species.
 let
-    @variables t
     @species C(t) H(t)
     @test_throws Exception @compound C6H12O2 ~ 6C + 12H + 2O    
 end
 let
-    @variables t
     @test_throws Exception @compound O2 ~ 2O    
 end
 
 # Checks that nested components works as expected.
 let
-    @variables t
     @species C(t) H(t) O(t)
     @compound OH ~ 1O + 1H
     @compound C3H5OH3 ~ 3C + 5H + 3OH
@@ -157,7 +152,6 @@ end
 
 # Checks that interpolation works.
 let
-    @variables t
     @species C(t) H(t) O(t)
     s = C
     @compound C6H12O2_1 ~ 6s + 12H + 2O
@@ -172,7 +166,6 @@ let
 end
 
 let
-    @variables t
     @species C(t) H(t)
     @compound Cyclopentadiene ~ 5C + 6H
     C5H6 = Cyclopentadiene
@@ -187,7 +180,6 @@ let
 end
 
 let
-    @variables t
     @species H(t)
 
     alpha = 2
@@ -211,7 +203,6 @@ let
 end
 
 let
-    @variables t
     @parameters alpha = 2
     @species H(t)
 
@@ -226,7 +217,6 @@ let
 end
 
 let 
-    @variables t
     @species A(t)
     B = A
     @compound A2 ~ 2A
@@ -244,7 +234,6 @@ end
 
 # Basic syntax.
 let 
-    @variables t
     @species C(t) H(t) O(t)
     @compound OH ~ 1O + 1H
     @compound C3H5OH3 ~ 3C + 5H + 3OH
@@ -267,7 +256,6 @@ end
 
 # Interpolation
 let 
-    @variables t
     @species s1(t) s2(t) s3(t)
     s2_alt = s2
     s3_alt = s3

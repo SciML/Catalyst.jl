@@ -193,8 +193,9 @@ Notes:
 - If the rate expression depends on a non-species unknown variable that will be included in
   the dependents, i.e. in
   ```julia
+  t = default_t()
   @parameters k
-  @variables t V(t)
+  @variables V(t)
   @species A(t) B(t) C(t)
   rx = Reaction(k*V, [A, B], [C])
   @named rs = ReactionSystem([rx], t)
@@ -437,8 +438,8 @@ end
 setdefaults!(sir, [:S => 999.0, :I => 1.0, :R => 1.0, :β => 1e-4, :ν => .01])
 
 # or
+t = default_t()
 @parameter β ν
-@variables t
 @species S(t) I(t) R(t)
 setdefaults!(sir, [S => 999.0, I => 1.0, R => 0.0, β => 1e-4, ν => .01])
 ```

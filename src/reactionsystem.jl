@@ -66,8 +66,8 @@ $(FIELDS)
 
 ```julia
 using Catalyst
+t = default_t()
 @parameters k[1:20]
-@variables t
 @species A(t) B(t) C(t) D(t)
 rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
        Reaction(k[2], [B], nothing),            # B -> 0

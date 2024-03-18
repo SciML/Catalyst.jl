@@ -1,8 +1,8 @@
 using Catalyst, Test
+t = default_t()
 
 #Check that balancing works.
 let
-    @variables t
     @parameters k
     @species H(t) O(t)
     @compounds begin
@@ -27,7 +27,6 @@ let
 end
 
 let
-    @variables t
     @parameters k
     @species C(t) H(t) O(t)
     @compound O2 ~ 2O
@@ -52,7 +51,6 @@ end
 
 # @reaction k, H2O --> H2O
 let
-    @variables t
     @species H(t) O(t)
     @compound H2O ~ 2H + O
 
@@ -66,7 +64,6 @@ end
 
 # @reaction k, 2H + 1O --> H2O
 let
-    @variables t
     @species H(t) O(t)
     @compound H2O ~ 2H + O
 
@@ -80,7 +77,6 @@ end
 
 # @reaction k, 1CH4 + 2O2 --> 1CO2 + 2H2O
 let
-    @variables t
     @species H(t) O(t) C(t)
     @compounds begin
         CH4 ~ C + 4H
@@ -99,7 +95,6 @@ end
 
 # @reaction k, N2 + 3H2 --> 2NH3
 let
-    @variables t
     @species H(t) N(t)
     @compound N2 ~ 2N
     @compound H2 ~ 2H
@@ -115,7 +110,6 @@ end
 
 # @reaction k, C2H5OH + CH3COOH --> C4H8O2 + H2O
 let
-    @variables t
     @species C(t) H(t) O(t)
     @compound C2H5OH ~ 2C + 6H + O
     @compound CH3COOH ~ 2C + 4H + 2O
@@ -132,7 +126,6 @@ end
 
 # @reaction k, 2Ca3PO42 --> 6CaO + 1P4O10
 let
-    @variables t
     @species Ca(t) P(t) O(t)
     @compound Ca3PO42 ~ 3Ca + 2P + 8O
     @compound CaO ~ Ca + O
@@ -148,7 +141,6 @@ end
 
 # @reaction k, 4Fe + 3O2 + 6H2O --> 4FeOH3
 let
-    @variables t
     @species Fe(t) O(t) H(t)
     @compound O2 ~ 2O
     @compound H2O ~ 2H + O
@@ -164,7 +156,6 @@ end
 
 # @reaction k, 2NaOH + H2SO4 --> Na2SO4 + 2H2O
 let
-    @variables t
     @species Na(t) O(t) H(t) S(t)
     @compound SO4 ~ S + 4O
     @compound NaOH ~ Na + O + H
@@ -182,7 +173,6 @@ end
 
 # @reaction k, 2NO2 --> 1N2O4
 let
-    @variables t
     @species N(t) O(t)
     @compound NO2 ~ N + 2O
     @compound N2O4 ~ 2N + 4O
@@ -197,7 +187,6 @@ end
 
 # @reaction k, 1CaCO3 + 2HCl --> CaCl2  + H2O + CO2
 let
-    @variables t
     @species C(t) H(t) O(t) Ca(t) Cl(t)
     @compound H2O ~ 2H + 1O
     @compound CO2 ~ 1C + 2O
@@ -214,7 +203,6 @@ end
 
 # @reaction k, SiCl4 + 4H2O → H4SiO4 + 4HCl
 let
-    @variables t
     @species Si(t) Cl(t) H(t) O(t)
     @compound SiCl4 ~ 1Si + 4Cl
     @compound H2O ~ 2H + O
@@ -230,7 +218,6 @@ end
 
 # @reaction k, 2Al + 6HCl → 2AlCl3 + 3H2
 let
-    @variables t
     @species Al(t) Cl(t) H(t)
     @compound HCl ~ H + Cl
     @compound AlCl3 ~ Al + 3Cl
@@ -245,7 +232,6 @@ end
 
 # @reaction k, Na2CO3 + 2HCl → 2NaCl + H2O + CO2
 let
-    @variables t
     @species Na(t) C(t) O(t) H(t) Cl(t)
     @compound Na2CO3 ~ 2Na + C + 3O
     @compound HCl ~ H + Cl
@@ -262,7 +248,6 @@ end
 
 # @reaction k, 2C7H6O2 + 15O2 → 14CO2 + 6H2O
 let
-    @variables t
     @species C(t) H(t) O(t)
     @compound C7H6O2 ~ 7C + 6H + 2O
     @compound O2 ~ 2O
@@ -278,7 +263,6 @@ end
 
 # @reaction k,Fe2(SO4)3 + 6KOH → 3K2SO4 + 2Fe(OH)3
 let
-    @variables t
     @species Fe(t) S(t) O(t) H(t) K(t)
     @compound Fe2S3O12 ~ 2Fe + 3S + 12O
     @compound KOH ~ K + O + H
@@ -294,7 +278,6 @@ end
 
 # @reaction k, 2Ca3(PO4)2 + 6SiO2 → P4O10 + 6CaSiO3
 let
-    @variables t
     @species Ca(t) P(t) O(t) Si(t)
     @compound Ca3P2O8 ~ 3Ca + 2P + 8O
     @compound SiO2 ~ Si + 2O
@@ -310,7 +293,6 @@ end
 
 # @reaction k, 4KClO3 → 3KClO4 + KCl
 let
-    @variables t
     @species K(t) Cl(t) O(t)
     @compound KClO3 ~ K + Cl + 3O
     @compound KClO4 ~ K + Cl + 4O
@@ -325,7 +307,6 @@ end
 
 # @reaction k, Al2(SO4)3 + 3Ca(OH)2 → 2Al(OH)3 + 3CaSO4
 let
-    @variables t
     @species Al(t) S(t) O(t) Ca(t) O(t) H(t)
     @compound Al2S3O12 ~ 2Al + 3S + 12O
     @compound CaO2H2 ~ Ca + 2O + 2H
@@ -341,7 +322,6 @@ end
 
 # @reaction k, H2SO4 + 8HI → H2S + 4I2 + 4H2O
 let
-    @variables t
     @species H(t) S(t) O(t) I(t)
     @compound H2SO4 ~ 2H + S + 4O
     @compound HI ~ H + I
@@ -358,7 +338,6 @@ end
 
 # @reaction k, C2H4 + 3O2 ↔ 2CO2 + 2H2O
 let
-    @variables t
     @species C(t) H(t) O(t)
     @compound C2H4 ~ 2C + 4H
     @compound O2 ~ 2O
@@ -374,7 +353,6 @@ end
 
 # Infinite solutions
 let
-    @variables t
     @species C(t) H(t) O(t)
     @compound CO ~ C + O
     @compound CO2 ~ C + 2O
@@ -390,7 +368,6 @@ end
 
 # No way to balance
 let
-    @variables t
     @species Fe(t) S(t) O(t) H(t) N(t)
 
     @compound FeS2 ~ Fe + 2S
@@ -407,7 +384,6 @@ end
 
 # test errors on compounds of compounds
 let
-    @variables t
     @species C(t) H(t) O(t)
     @compound CO ~ C + O
     @compound H2 ~ 2H

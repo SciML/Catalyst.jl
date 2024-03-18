@@ -35,8 +35,8 @@ rx.substrates[1],rx.substoich[1]
 We could have equivalently specified our systems directly via the Catalyst
 API. For example, for `revsys` we would could use
 ```@example s1
+t = default_t()
 @parameters k₊, k₋, m, n
-@variables t
 @species A(t), B(t)
 rxs = [Reaction(k₊, [A], [B], [m], [m*n]),
        Reaction(k₋, [B], [A])]
@@ -177,9 +177,10 @@ calculate and plot the average amount of protein (which is also plotted in the
 MomentClosure.jl
 [tutorial](https://augustinas1.github.io/MomentClosure.jl/dev/tutorials/geometric_reactions+conditional_closures/)).
 ```@example s1
+t = default_t()
 function getmean(jprob, Nsims, tv)
     Pmean = zeros(length(tv))
-    @variables t, P(t)
+    @variables P(t)
     for n in 1:Nsims
         sol = solve(jprob, SSAStepper())
         Pmean .+= sol(tv, idxs=P)

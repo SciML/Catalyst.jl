@@ -2,7 +2,7 @@
 
 ### Fetch Packages and Set Global Variables ###
 using Catalyst, ModelingToolkit, OrdinaryDiffEq, Plots
-@variables t
+t = default_t()
 
 ### Run Tests ###
 
@@ -400,7 +400,7 @@ let
         d, (x,y,x2y) --> 0
     end
 
-    @variables t X(t) Y(t)
+    @variables X(t) Y(t)
     @species x(t), y(t), x2y(t)
     @parameters k kB kD d
     r1 = Reaction(k, nothing, [x], nothing, [1])
@@ -525,7 +525,6 @@ let
 
     # Interpolation into rhs.
     @parameters n [description="A parameter"]
-    @variables t
     @species S(t)
     rn2 = @reaction_network begin
         @observables Stot ~ $S + $n*Sn
@@ -624,7 +623,7 @@ let
     end
 
     # Interpolation and explicit declaration of an observable.
-    @variables t X(t)
+    @variables X(t)
     @test_throws Exception @eval @reaction_network begin
         @variables X(t)
         @observables $X ~ X1 + X2

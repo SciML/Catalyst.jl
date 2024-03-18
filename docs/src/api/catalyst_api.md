@@ -36,8 +36,8 @@ models, and stochastic chemical kinetics jump process models.
 
 ```@example ex1
 using Catalyst, DifferentialEquations, Plots
+t = default_t()
 @parameters β γ
-@variables t
 @species S(t) I(t) R(t)
 
 rxs = [Reaction(β, [S,I], [I], [1,1], [2])

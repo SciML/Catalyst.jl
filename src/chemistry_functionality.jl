@@ -16,7 +16,7 @@ Macro that creates a compound species, which is composed of smaller component sp
 
 Example:
 ```julia
-@variables t
+t = default_t()
 @species C(t) O(t)
 @compound CO2(t) ~ C + 2O
 ```
@@ -101,7 +101,7 @@ Macro that creates several compound species, which each is composed of smaller c
 
 Example:
 ```julia
-@variables t
+t = default_t()
 @species C(t) H(t) O(t) 
 @compounds
     CH4(t) = C + 4H
@@ -282,7 +282,7 @@ Returns a vector of all possible stoichiometrically balanced `Reaction` objects 
 
 Example:
 ```julia
-@variables t
+t = default_t()
 @species Si(t) Cl(t) H(t) O(t)
 @compound SiCl4 ~ Si + 4Cl
 @compound H2O ~ 2H + O
@@ -293,7 +293,7 @@ balance_reaction(rx) # Exactly one solution.
 ```
 
 ```julia
-@variables t
+t = default_t()
 @species C(t) H(t) O(t)
 @compound CO ~ C + O
 @compound CO2 ~ C + 2O
@@ -305,7 +305,7 @@ balance_reaction(rx) # Multiple solutions.
 ```
 
 ```julia
-@variables t
+t = default_t()
 @species Fe(t) S(t) O(t) H(t) N(t)
 @compound FeS2 ~ Fe + 2S
 @compound HNO3 ~ H + N + 3O

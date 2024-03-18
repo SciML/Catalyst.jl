@@ -1,9 +1,10 @@
 using Test, Catalyst, ModelingToolkit, OrdinaryDiffEq
+t = default_t()
+D = default_time_deriv()
 
 # Test discrete event is propagated to ODE solver correctly.
 let
-    @variables t V(t)=1.0
-    D = Differential(t)
+    @variables V(t)=1.0
     eqs = [D(V) ~ V]
     discrete_events = [1.0 => [V ~ 1.0]]
     rxs = [(@reaction $V, 0 --> A), (@reaction 1.0, A --> 0)]
@@ -21,7 +22,6 @@ end
 # Test continuous event is propagated to the ODE solver.
 let
     @parameters α=5.0 β=1.0
-    @variables t
     @species V(t) = 0.0
     rxs = [Reaction(α, nothing, [V]), Reaction(β, [V], nothing)]
     continuous_events = [V ~ 2.5] => [α ~ 0, β ~ 0]

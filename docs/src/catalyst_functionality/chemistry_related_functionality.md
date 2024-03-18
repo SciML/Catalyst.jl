@@ -10,7 +10,7 @@ While Catalyst has primarily been designed around the modelling of biological sy
 We will first show how to create compound species through [programmatic model construction](@ref programmatic_CRN_construction), and then demonstrate using the DSL. To create a compound species, use the `@compound` macro, first designating the compound, followed by its components (and their stoichiometries). In this example, we will create a CO₂ molecule, consisting of one C atom and two O atoms. First, we create species corresponding to the components:
 ```@example chem1
 using Catalyst
-@variables t
+t = default_t()
 @species C(t) O(t) 
 ```
 Next, we create the `CO2` compound species:
@@ -97,7 +97,8 @@ In all of these cases, the side to the left of the `~` must be enclosed within `
 ### Compounds with multiple independent variables
 While we generally do not need to specify independent variables for compound, if the components (together) have more than one independent variable, this have to be done:
 ```@example chem1
-@variables t s
+t = default_t()
+@variables s
 @species N(s) O(t) 
 @compound NO2(t,s) ~ N + 2O
 ```
@@ -117,7 +118,7 @@ which correctly finds the (rather trivial) solution `C + 2O --> CO2`. Here we no
 Let us consider a more elaborate example, the reaction between ammonia (NH₃) and oxygen (O₂) to form nitrogen monoxide (NO) and water (H₂O). Let us first create the components and the unbalanced reaction:
 ```@example chem2
 using Catalyst # hide
-@variables t
+t = default_t()
 @species N(t) H(t) O(t) 
 @compounds begin
     NH3 ~ N + 3H

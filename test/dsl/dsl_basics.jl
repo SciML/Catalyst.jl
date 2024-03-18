@@ -3,7 +3,7 @@
 ### Fetch Packages and Set Global Variables ###
 
 using Catalyst, ModelingToolkit
-@variables t
+t = default_t()
 
 ### Naming Tests ###
 
@@ -281,7 +281,6 @@ let
         π*k*D*hill(B,k2,B*D*H,n), 3*A  --> 2*C
     end
     @parameters k k2 n
-    @variables t
     @species A(t) B(t) C(t) D(t) H(t)
     @test issetequal([A,B,C,D,H], species(rn))
     @test issetequal([k,k2,n], parameters(rn))
@@ -299,9 +298,8 @@ let
         @species A(t) = 1 B(t) = 2 [isbcspecies = true]
         k, A + 2*B --> 2*B
     end
-    @variables t
     @unpack A,B = rn2
-    D = Differential(t)
+    D = default_time_deriv()
     eq = D(B) ~ -B
     @named osys = ODESystem([eq], t)
     @named rn2 = extend(osys, rn2)
@@ -324,7 +322,7 @@ let
     end
 
     @parameters k1 k2
-    @variables t V1(t) V2(t) V3(t)
+    @variables V1(t) V2(t) V3(t)
     @species A(t) B1(t) B2(t) C(t)
     rx = Reaction(k1*k2 + V3, [A, B1], [C, B2], [V1, 2], [V2, 1])
     @named tester = ReactionSystem([rx], t)
@@ -374,7 +372,7 @@ let
     end
 
     @parameters k[1:3] a B
-    @variables t (V(t))[1:2] W(t)
+    @variables (V(t))[1:2] W(t)
     @species (X(t))[1:2] Y(t) C(t)
     rx = Reaction(k[1]*a+k[2], [X[1], X[2]], [Y, C], [1, V[1]], [V[2] * W, B])
     @named arrtest = ReactionSystem([rx], t)

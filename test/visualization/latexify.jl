@@ -233,7 +233,7 @@ let
     base_network = @reaction_network begin
         k*r, X --> 0
     end
-    @variables t r(t)
+    @variables r(t)
     @named decaying_rate = NonlinearSystem([r ~ -1], [r], [])
     extended = extend(decaying_rate, base_network)
 

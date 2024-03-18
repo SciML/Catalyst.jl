@@ -104,8 +104,9 @@ Finally, we note that we cannot change the values of solution unknowns or parame
 Catalyst is built on an *intermediary representation* implemented by (ModelingToolkit.jl)[https://github.com/SciML/ModelingToolkit.jl]. ModelingToolkit is a modelling framework where one first declares a set of symbolic variables and parameters using e.g.
 ```@example ex2
 using ModelingToolkit
+t = default_t()
 @parameters σ ρ β
-@variables t x(t) y(t) z(t)
+@variables x(t) y(t) z(t)
 nothing # hide
 ```
 and then uses these to build systems of equations. Here, these symbolic variables (`x`, `y`, and `z`) and parameters (`σ`, `ρ`, and `β`) can be used to interface a `problem`, `integrator`, and `solution` object (like we did previously, but using Symbols, e.g. `:X`). Since Catalyst models are built on ModelingToolkit, these models also contain similar symbolic variables and parameters.

@@ -2,6 +2,7 @@
 
 # Fetch packages.
 using Catalyst, Graphs, Test
+t = default_t()
 
 # Pre declares a grid.
 grid = Graphs.grid([2, 2])
@@ -84,7 +85,6 @@ let
     end
     @unpack dX, X, V = rs
     @parameters dV dW
-    @variables t
     @species W(t)
     tr_1 = TransportReaction(dX, X)  
     tr_2 = @transport_reaction dY Y    
@@ -177,7 +177,6 @@ end
 
 # Test reactions with constants in rate.
 let 
-    @variables t
     @species X(t) Y(t)
     
     tr_1 = TransportReaction(1.5, X)
@@ -221,7 +220,6 @@ end
 # Test creation of TransportReaction with non-parameters in rate.
 # Tests that it works even when rate is highly nested.
 let 
-    @variables t
     @species X(t) Y(t)
     @parameters D1 D2 D3
     @test_throws ErrorException TransportReaction(D1 + D2*(D3 + Y), X)
