@@ -656,8 +656,7 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
         end
 
         # Checks that metadata fields are unqiue.
-        metadata_entries = [arg.args[1] for arg in metadata_i.args]
-        if length(unique(metadata_entries)) < length(metadata_entries)
+        if !allunique(arg.args[1] for arg in metadata_i.args)
             error("Some reaction metadata fields where repeated: $(metadata_entries)")
         end
 
