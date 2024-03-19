@@ -437,7 +437,6 @@ end
 # Two-argument constructor (reactions/equations and time variable).
 # Calls the `make_ReactionSystem_internal`, which in turn calls the four-argument constructor.
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
-    println("Complete 3: ", complete)
     make_ReactionSystem_internal(rxs, iv, Vector{Num}(), Vector{Num}(); kwargs...)
 end
 
