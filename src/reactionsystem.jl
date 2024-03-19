@@ -545,7 +545,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
                             name, systems, defaults, connection_type, nps, cls, cevs, devs,
                             metadata = nothing, complete::Bool = false; checks::Bool = true)
-        println("Complete 1: ", complete)
+                            
         # unit checks are for ODEs and Reactions only currently
         nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
         if checks && isempty(sivs)
@@ -610,8 +610,9 @@ function ReactionSystem(eqs, iv, unknowns, ps;
                         spatial_ivs = nothing,
                         continuous_events = nothing,
                         discrete_events = nothing,
+                        metadata = nothing,
                         complete = true)
-    println("Complete 2: ", complete)
+                        
     name === nothing &&
         throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     sysnames = nameof.(systems)
@@ -680,11 +681,10 @@ function ReactionSystem(eqs, iv, unknowns, ps;
 
     ReactionSystem(eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
                    systems, defaults, connection_type, nps, combinatoric_ratelaws,
-                   ccallbacks, dcallbacks, complete; checks = checks)
+                   ccallbacks, dcallbacks, metadata, complete; checks = checks)
 end
 
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
-    println("Complete 3: ", complete)
     make_ReactionSystem_internal(rxs, iv, Vector{Num}(), Vector{Num}(); kwargs...)
 end
 
@@ -751,13 +751,11 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, sts_in, ps_in;
     else
         fulleqs = rxs
     end
-    println("Complete 4: ", kwargs...)
 
     ReactionSystem(fulleqs, t, stsv, psv; spatial_ivs, kwargs...)
 end
 
 function ReactionSystem(iv; kwargs...)
-    println("Complete 5: ", complete)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
 

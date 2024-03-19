@@ -363,6 +363,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Reads options.
     default_reaction_metadata = :([])
     compound_expr, compound_species = read_compound_options(options)
+    iscomplete = !haskey(options, :incomplete)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines; default_reaction_metadata)
