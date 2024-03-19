@@ -361,6 +361,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     default_reaction_metadata = :([])
     check_default_noise_scaling!(default_reaction_metadata, options)
     compound_expr, compound_species = read_compound_options(options)
+    iscomplete = !haskey(options, :incomplete)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)

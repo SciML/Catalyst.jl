@@ -690,7 +690,6 @@ function ReactionSystem(eqs, iv, unknowns, ps;
 end
 
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
-    println("Complete 3: ", complete)
     make_ReactionSystem_internal(rxs, iv, Vector{Num}(), Vector{Num}(); kwargs...)
 end
 
@@ -757,13 +756,11 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, sts_in, ps_in;
     else
         fulleqs = rxs
     end
-    println("Complete 4: ", kwargs...)
 
     ReactionSystem(fulleqs, t, stsv, psv; spatial_ivs, kwargs...)
 end
 
 function ReactionSystem(iv; kwargs...)
-    println("Complete 5: ", complete)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
 
