@@ -498,6 +498,9 @@ let
         k, A --> B 
     end
     @named sys = compose(sir, [subsys])
+    sir = complete(sir)
+    sys = complete(sys)
+    
     symmap = [:S => 1.0, :I => 1.0, :R => 1.0, :subsys₊A => 1.0, :subsys₊B => 1.0]
     u0map = symmap_to_varmap(sys, symmap)
     pmap = symmap_to_varmap(sys, [:β => 1.0, :ν => 1.0, :subsys₊k => 1.0])

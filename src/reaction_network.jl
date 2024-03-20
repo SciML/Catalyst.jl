@@ -480,7 +480,7 @@ end
 
 # When compound species are declared using the "@compound begin ... end" option, get a list of the compound species, and also the expression that crates them.
 function read_compound_options(opts)
-    # If the compound option is used retrive a list of compound species (need to be added to teh reaction system's species), and the option that creates them (used to declare them as compounds at the end).
+    # If the compound option is used retrive a list of compound species (need to be added to the reaction system's species), and the option that creates them (used to declare them as compounds at the end).
     if haskey(opts, :compounds)
         compound_expr = opts[:compounds]
         # Find compound species names, and append the independent variable.
@@ -772,7 +772,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
 
             # Adds the observable to the list of observable names.
             # This is required for filtering away so these are not added to the ReactionSystem's species list.
-            # Again, avoid this check if we have interpoalted teh variable.
+            # Again, avoid this check if we have interpoalted the variable.
             is_escaped_expr(obs_eq.args[2]) || push!(obs_syms.args, obs_name)
         end
 

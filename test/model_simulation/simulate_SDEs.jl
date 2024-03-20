@@ -10,6 +10,7 @@ rng = StableRNG(12345)
 
 # Fetch test networks.
 include("../test_networks.jl")
+include("../test_functions.jl")
 
 ### Compares to Manually Calcualted Function ###
 
@@ -98,23 +99,21 @@ let
 
     for (i, networks) in enumerate(identical_networks)
         for factor in [1e-1, 1e0, 1e1], repeat in 1:3
-            u0 = 100.0 .+ factor * rand(rng, length(unknowns(networks[1])))
-            p = 0.01 .+ factor * rand(rng, length(parameters(networks[1])))
-            (i == 2) && (u0[1] += 1000.0)
-            (i == 3) ? (p[2:2:6] .*= 1000.0; u0 .+= 1000) : (p[1] += 500.0)
-            prob1 = SDEProblem(networks[1], u0, (0.0, 100.0), p)
-            prob2 = SDEProblem(networks[2][1], networks[2][2], u0, (0.0, 100.0), p,
-                               noise_rate_prototype = networks[2][3])
-            du1 = similar(u0)
-            du2 = similar(u0)
-            prob1.f.f(du1, u0, p, 0.0)
-            prob2.f.f(du2, u0, p, 0.0)
-            @test all(isapprox.(du1, du2))
-            g1 = zeros(numspecies(networks[1]), numreactions(networks[1]))
-            g2 = copy(g1)
-            prob1.f.g(g1, u0, p, 0.0)
-            prob2.f.g(g2, u0, p, 0.0)
-            @test all(isapprox.(g1, g2))
+            # Set input values.
+            u0_1 = rnd_u0(networks[1], rng; factor, min = 100.0)
+            ps_1 = rnd_ps(networks[1], rng; factor, min = 0.01)
+            u0_2 = last.(u0_1)
+            ps_2 = last.(ps_1)
+
+            # Check drift functions.
+            dt = zeros(length(unknowns(networks[1])))
+            networks[2][1](dt, u0_2, ps_2, 0.0)
+            @test dt ≈ f_eval(networks[1], u0_1, ps_1, 0.0)
+
+            # Check diffusion functions.
+            duW = zeros(length(unknowns(networks[1])), length(reactions(networks[1])))
+            networks[2][2](duW, u0_2, ps_2, 0.0)
+            @test duW ≈ g_eval(networks[1], u0_1, ps_1, 0.0)
         end
     end
 end
@@ -123,11 +122,11 @@ end
 
 # Tries to create a large number of problem, ensuring there are no errors (cannot solve as solution likely to go into negatives). 
 let
-    for reaction_network in reaction_networks_all
+    for network in reaction_networks_all
         for factor in [1e-2, 1e-1, 1e0, 1e1]
-            u0 = factor * rand(rng, length(states(reaction_network)))
-            p = factor * rand(rng, length(parameters(reaction_network)))
-            prob = SDEProblem(reaction_network, u0, (0.0, 1.0), p)
+            u0 = rnd_u0(network, rng; factor)
+            ps = rnd_ps(network, rng)
+            prob = SDEProblem(network, u0, (0.0, 1.0), ps)
         end
     end
 end
@@ -144,7 +143,7 @@ let
     sol_1_1 = solve(SDEProblem(noise_scaling_network_1, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, :η1 => 2.0, :η2 => 2.0]), ImplicitEM(); saveat=1.0)
     sol_1_2 = solve(SDEProblem(noise_scaling_network_1, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, :η1 => 2.0, :η2 => 0.2]), ImplicitEM(); saveat=1.0)
     sol_1_3 = solve(SDEProblem(noise_scaling_network_1, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, :η1 => 0.2, :η2 => 0.2]), ImplicitEM(); saveat=1.0)
-    @test var(sol_1_1[1,:]) > var(sol_1_2[1,:]) > var(sol_1_3[1,:]) 
+    @test var(sol_1_1[:X1]) > var(sol_1_2[:X1]) > var(sol_1_3[:X1]) 
 
     noise_scaling_network_2 = @reaction_network begin 
         @parameters η[1:2]
@@ -154,7 +153,7 @@ let
     sol_2_1 = solve(SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 2.0, η[2] => 2.0]), ImplicitEM(); saveat=1.0)
     sol_2_2 = solve(SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 2.0, η[2] => 0.2]), ImplicitEM(); saveat=1.0)
     sol_2_3 = solve(SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 0.2, η[2] => 0.2]), ImplicitEM(); saveat=1.0)
-    @test var(sol_2_1[1,:]) > var(sol_2_2[1,:]) > var(sol_2_3[1,:]) 
+    @test var(sol_2_1[:X1]) > var(sol_2_2[:X1]) > var(sol_2_3[:X1]) 
 end
 
 # Tests using default values for noise scaling.
@@ -231,7 +230,7 @@ let
     u0 = [:X1 => 1000.0, :X2 => 1000.0, :X3 => 1000.0, :X4 => 1000.0, :X5 => 1000.0, :N1 => 3.0, :N3 => 0.33]
     ps = [:p => 1000.0, :d => 1.0, :η1 => 1.0, :η2 => 1.4, :η3 => 0.33, :η4 => 4.0]
     sol = solve(SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), ps), ImplicitEM(); saveat=1.0, adaptive=false, dt=0.1)
-    @test var(sol[:X1]) > var(sol[:X2]) > var(sol[:X3]) > var(sol[:X4]) > var(sol[:X5])  
+    @test_broken var(sol[:X1]) > var(sol[:X2]) > var(sol[:X3]) > var(sol[:X4]) > var(sol[:X5]) # Likely need this fix: https://github.com/SciML/ModelingToolkit.jl/issues/2556
 end
 
 # Tests the `remake_noise_scaling` function.
@@ -292,11 +291,9 @@ end
 let
     no_param_network = @reaction_network begin (1.2, 5), X1 ↔ X2 end
     for factor in [1e3, 1e4]
-        u0 = factor * (1.0 .+ rand(rng, length(unknowns(no_param_network))))
+        u0 = rnd_u0(no_param_network, rng; factor)
         prob = SDEProblem(no_param_network, u0, (0.0, 1000.0))
         sol = solve(prob, ImplicitEM())
-        vals1 = getindex.(sol.u[1:end], 1)
-        vals2 = getindex.(sol.u[1:end], 2)
-        @test mean(vals1) > mean(vals2)
+        @test mean(sol[:X1]) > mean(sol[:X2])
     end
 end

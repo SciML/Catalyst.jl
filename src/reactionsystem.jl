@@ -205,7 +205,7 @@ end
 # Checks if a metadata input has an entry :only_use_rate => true
 function metadata_only_use_rate_check(metadata)
     only_use_rate_idx = findfirst(:only_use_rate == entry[1] for entry in metadata)
-    isnothing(only_use_rate_idx) && return true
+    isnothing(only_use_rate_idx) && return false
     return Bool(metadata[only_use_rate_idx][2])
 end
 

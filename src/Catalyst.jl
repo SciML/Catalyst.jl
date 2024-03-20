@@ -48,8 +48,8 @@ end
 function default_t()
     return ModelingToolkit.t_nounits
 end
-const DEFAULT_t = default_t()
-const DEFAULT_IV_SYM = Symbol(DEFAULT_t)
+const DEFAULT_IV = default_t()
+const DEFAULT_IV_SYM = Symbol(DEFAULT_IV)
 export default_t, default_time_deriv
 
 # as used in Catlab

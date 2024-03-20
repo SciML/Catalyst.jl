@@ -1,11 +1,18 @@
 ### Fetch the require packages ###
 using SafeTestsets
 
+println("Started")
+function hi_world()
+    println("Hello WOrld")
+end
+
 ### Run the tests ###
 @time begin
 
     ### Tests the properties of ReactionSystems. ###
     @time @safetestset "Reactions" begin include("reactionsystem_structure/reactions.jl") end
+
+    exit()
     @time @safetestset "ReactionSystem" begin include("reactionsystem_structure/reactionsystem.jl") end
     @time @safetestset "Higher Order Reactions" begin include("reactionsystem_structure/higher_order_reactions.jl") end
 

@@ -204,7 +204,7 @@ end
 # Else a vector with each value corresponding to the rate at one specific edge.
 function compute_transport_rates(rate_law::Num,
                                 p_val_dict::Dict{SymbolicUtils.BasicSymbolic{Real}, Vector{Float64}}, num_edges::Int64)
-    # Finds parameters involved in rate and create a function evaluating teh rate law.
+    # Finds parameters involved in rate and create a function evaluating the rate law.
     relevant_ps = Symbolics.get_variables(rate_law)
     rate_law_func = drop_expr(@RuntimeGeneratedFunction(build_function(rate_law, relevant_ps...)))
 
