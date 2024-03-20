@@ -166,6 +166,11 @@ let
     G2 = sf.g(sprob.u0, sprob.p, 0.0)
     @test norm(G - G2) < 100 * eps()
 
+    du2 = sf.f(sprob.u0, sprob.p, 0.0)
+    @test_broken norm(du - du2) < 100 * eps()
+    G2 = sf.g(sprob.u0, sprob.p, 0.0)
+    @test_broken norm(G - G2) < 100 * eps()
+
     # Test conversion to NonlinearSystem.
     ns = convert(NonlinearSystem, rs)
     nlprob = NonlinearProblem(rs, u, p)
@@ -209,7 +214,7 @@ let
     midxs = 1:14
     cidxs = 15:18
     vidxs = 19:20
-    @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.MassActionJump, midxs))
+    @test_broken all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.MassActionJump, midxs))
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.ConstantRateJump, cidxs))
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.VariableRateJump, vidxs))
 

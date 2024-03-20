@@ -10,6 +10,7 @@ rng = StableRNG(123456)
 # Fetch test functions and networks.
 include("../test_functions.jl")
 include("../test_networks.jl")
+include("../test_functions.jl")
 
 
 ### Basic Tests ###
