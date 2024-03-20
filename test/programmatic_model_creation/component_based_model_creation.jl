@@ -95,8 +95,8 @@ let
     nlprob = NonlinearProblem(sys2, u₀, pvals)
     sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
-    @test sol[sys₁.m]≈sol[sys₂.m] atol=1e-7
-    @test sol[sys₁.m]≈sol[sys₃.m] atol=1e-7
+    @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
+    @test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
     @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
 
     # Flattening.
@@ -107,8 +107,8 @@ let
     nlprob = NonlinearProblem(sys2, u₀, pvals)
     sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
-    @test sol[sys₁.m]≈sol[sys₂.m] atol=1e-7
-    @test sol[sys₁.m]≈sol[sys₃.m] atol=1e-7
+    @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
+    @test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
     @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
 
     # Test constraints.
@@ -124,8 +124,8 @@ let
     nlprob = NonlinearProblem(sys2, u₀, pvals)
     sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
-    @test sol[sys₁.m]≈sol[sys₂.m] atol=1e-7
-    @test sol[sys₁.m]≈sol[sys₃.m] atol=1e-7
+    @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
+    @test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
     @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
 
     # Test constraint system variables are accessible through Base.getproperty
@@ -240,8 +240,8 @@ let
     nlprob = NonlinearProblem(sys2, u₀, pvals)
     sol = solve(nlprob, NLSolveJL(), abstol = 1e-9)
     @test sol[sys₁.P] ≈ sol[sys₂.P] ≈ sol[sys₃.P]
-    @test sol[sys₁.m]≈sol[sys₂.m] atol=1e-7
-    @test sol[sys₁.m]≈sol[sys₃.m] atol=1e-7
+    @test sol[sys₁.m] ≈ sol[sys₂.m] atol=1e-7
+    @test sol[sys₁.m] ≈ sol[sys₃.m] atol=1e-7
     @test sol[sys₁.R] ≈ sol[sys₂.R] ≈ sol[sys₃.R]
 end
 

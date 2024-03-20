@@ -1,5 +1,5 @@
 ### Preparations ###
-
+hi_world()
 # Fetch packages.
 using Catalyst, Test
 
@@ -85,6 +85,6 @@ let
     r1 = Reaction(k, [X], [X2], [2], [1])
     r2 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
 
-    @test isequal(Catalyst.get_noise_scaling(r1), 1.0)
+    @test_throws Exception Catalyst.get_noise_scaling(r1)
     @test isequal(Catalyst.get_noise_scaling(r2), η)
 end

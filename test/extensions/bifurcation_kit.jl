@@ -9,7 +9,7 @@ rng = StableRNG(12345)
 
 # Brusselator extended with conserved species.
 # Runs full computation, checks values corresponds to known values.
-# Checks that teh correct bifurcation point is found at the correct position.
+# Checks that the correct bifurcation point is found at the correct position.
 # Checks that bifurcation diagrams can be computed for systems with conservation laws.
 # Checks that bifurcation diagrams can be computed for systems with default values.
 # Checks that bifurcation diagrams can be computed for systems with non-constant rate.
@@ -107,6 +107,7 @@ let
     end
     @named rn3 = compose(rn3, [rn4])
     @named rn = compose(rn1, [rn2, rn3])
+    rn = complete(rn)
 
     # Declares parameter values and initial u guess.
     @unpack X, d = rn
@@ -156,6 +157,7 @@ let
         (l1, l2), Y1 <--> Y2
     end
     @named rn = compose(rn1, [rn2])
+    rn = complete(rn)
 
     # Creates input parameter and species vectors.
     @unpack X1, X2, k1, k2 = rn1

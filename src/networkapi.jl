@@ -1624,7 +1624,7 @@ function validate(rs::ReactionSystem, info::String = "")
             rxunits *= get_unit(sub)^rx.substoich[i]
         end
 
-        if rxunits != rateunits
+        if !isequal(rxunits, rateunits)
             validated = false
             @warn(string("Reaction rate laws are expected to have units of ", rateunits,
                          " however, ", rx, " has units of ", rxunits, "."))

@@ -8,8 +8,9 @@ using ModelingToolkit: get_unknowns, get_ps
 using StableRNGs
 rng = StableRNG(12345)
 
-# Fetch test networks.
-@time include("../test_networks.jl")
+# Fetch test networks and functions.
+include("../test_networks.jl")
+include("../test_functions.jl")
 
 ### Compares to Known Solution ###
 
@@ -18,13 +19,14 @@ let
     exponential_decay = @reaction_network begin d, X → ∅ end
 
     for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
-        u0 = factor * rand(rng, length(get_unknowns(exponential_decay)))
-        p = factor * rand(rng, length(get_ps(exponential_decay)))
-        prob = ODEProblem(exponential_decay, u0, (0.0, 100 / factor), p)
-        sol = solve(prob, Rosenbrock23(), saveat = range(0.0, 100 / factor, length = 101))
-        analytic_sol = map(t -> u0[1] * exp(-p[1] * t),
-                           range(0.0, 100 / factor, length = 101))
-        @test all(abs.(first.(sol.u) .- analytic_sol) .< 0.1)
+        u0 = rnd_u0(exponential_decay, rng; factor)    
+        t_stops = range(0.0, 100 / factor, length = 101)
+        p = rnd_ps(exponential_decay, rng; factor)
+        prob = ODEProblem(exponential_decay, u0, (0.0, t_stops[end]), p)
+
+        sol = solve(prob, Rosenbrock23(), saveat = t_stops, abstol = 1e-14, reltol = 1e-14)
+        analytic_sol = [u0[1][2] * exp(-p[1][2] * t) for t in t_stops]
+        @test sol[:X] ≈ analytic_sol
     end
 end
 
@@ -37,25 +39,24 @@ let
         (k7, k8), ∅ ↔ X8
     end
 
-    for factor in [1e-1, 1e0, 1e1, 1e2, 1e3]
-        u0 = factor * rand(rng, length(get_unknowns(known_equilibrium)))
-        p = 0.01 .+ factor * rand(rng, length(get_ps(known_equilibrium)))
-        prob = ODEProblem(known_equilibrium, u0, (0.0, 1000000.0), p)
-        sol = solve(prob, Rosenbrock23())
-        @test abs.(sol.u[end][1] / sol.u[end][2] - p[2] / p[1]) < 10000 * eps()
-        @test abs.(sol.u[end][3] * sol.u[end][4] / sol.u[end][5] - p[4] / p[3]) <
-              10000 * eps()
-        @test abs.((sol.u[end][6]^2 / factorial(2)) / (sol.u[end][7]^3 / factorial(3)) -
-                   p[6] / p[5]) < 1e-8
-        @test abs.(sol.u[end][8] - p[7] / p[8]) < 10000 * eps()
+    for factor in [1e-1, 1e0, 1e1]
+        u0 = rnd_u0(known_equilibrium, rng; factor)    
+        p = rnd_ps(known_equilibrium, rng; factor, min = 0.1)
+        prob = ODEProblem(known_equilibrium, u0, (0.0, 100000.0), p)
+        sol = solve(prob, Vern7(); abstol = 1e-12, reltol = 1e-12)
+
+        @test sol[:X1][end] / sol[:X2][end] ≈ prob.ps[:k2] / prob.ps[:k1] atol=1e-8
+        @test sol[:X3][end] * sol[:X4][end] / sol[:X5][end] ≈ prob.ps[:k4] / prob.ps[:k3] atol=1e-8
+        @test (sol[:X6][end]^2 / factorial(2)) / (sol[:X7][end]^3 / factorial(3)) ≈ prob.ps[:k6] / prob.ps[:k5] atol=1e-8
+        @test sol[:X8][end] ≈ prob.ps[:k7] / prob.ps[:k8] atol=1e-8
     end
 end
 
 ### Compares to Known ODE Function ###
 
-identical_networks_1 = Vector{Pair}()
-
 let
+    identical_networks_1 = Vector{Pair}()
+    
     function real_functions_1(du, u, p, t)
         X1, X2, X3 = u
         p1, p2, p3, k1, k2, k3, k4, d1, d2, d3 = p
@@ -103,26 +104,32 @@ let
 
     for (i, networks) in enumerate(identical_networks_1)
         for factor in [1e-2, 1e-1, 1e0, 1e1]
-            u0 = factor * rand(rng, length(get_unknowns(networks[1])))
-            p = factor * rand(rng, length(get_ps(networks[1])))
-            (i == 3) && (p = min.(round.(p) .+ 1, 10))                      #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
-            prob1 = ODEProblem(networks[1], u0, (0.0, 10000.0), p)
-            sol1 = solve(prob1, Rosenbrock23(), saveat = 1.0)
-            prob2 = ODEProblem(networks[2], u0, (0.0, 10000.0), p)
-            sol2 = solve(prob2, Rosenbrock23(), saveat = 1.0)
-            @test all(abs.(hcat((sol1.u .- sol2.u)...)) .< 1e-7)
+            u0_1 = rnd_u0(networks[1], rng; factor)
+            p_1 = rnd_ps(networks[1], rng; factor)
+            (i == 3) && (p_1 =rnd_ps_Int64(networks[1], rng))
+            u0_2 = last.(u0_1)
+            p_2 = last.(p_1)
+                                
+            prob1 = ODEProblem(networks[1], u0_1, (0.0, 10000.0), p_1)
+            prob2 = ODEProblem(networks[2], u0_2, (0.0, 10000.0), p_2)
+            sol1 = solve(prob1, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10, saveat = 1.0)
+            sol2 = solve(prob2, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10, saveat = 1.0)
+            @test sol1.u ≈ sol2.u
         end
     end
 end
 
 ### Checks Simulations Don't Error ###
-
 let
     for (i, network) in enumerate(reaction_networks_all)
         for factor in [1e-1, 1e0, 1e1]
-            u0 = factor * rand(rng, length(get_unknowns(network)))
-            p = factor * rand(rng, length(get_ps(network)))
-            in(i, [[11:20...]..., 34, 37, 42]) && (p = min.(round.(p) .+ 1, 10))  #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
+            u0 = rnd_u0(network, rng; factor)
+            #If parameter in exponent, want to avoid possibility of (-small u)^(decimal). Also avoid large exponents.
+            if in(i, [[11:20...]..., 34, 37, 42])
+                p = rnd_ps(network, rng)
+            else
+                p = rnd_ps(network, rng; factor)
+            end
             prob = ODEProblem(network, u0, (0.0, 1.0), p)
             @test SciMLBase.successful_retcode(solve(prob, Rosenbrock23()))
         end
@@ -135,28 +142,32 @@ end
 let
     no_param_network = @reaction_network begin (1.5, 2), ∅ ↔ X end
     for factor in [1e0, 1e1, 1e2]
-        u0 = factor * rand(rng, length(get_unknowns(no_param_network)))
+        u0 = rnd_u0(no_param_network, rng; factor)
         prob = ODEProblem(no_param_network, u0, (0.0, 1000.0))
         sol = solve(prob, Rosenbrock23())
-        @test abs.(sol.u[end][1] - 1.5 / 2) < 1e-8
+        @test sol[:X][end] ≈ 1.5 / 2.0
     end
 end
 
 # Test solving with floating point stoichiometry.
 let
+    # Prepare model.
     function oderhs(du, u, p, t)
         du[1] = -2.5 * p[1] * u[1]^2.5
         du[2] = 3 * p[1] * u[1]^2.5
         nothing
     end
-    rn = @reaction_network begin k, 2.5 * A --> 3 * B end
-    u0 = [:A => 1.0, :B => 0.0]
+    rn = @reaction_network begin 
+        k, 2.5 * A --> 3 * B 
+    end
+    u = rnd_u0(rn, rng)
     tspan = (0.0, 1.0)
     p = [:k => 1.0]
-    oprob = ODEProblem(rn, u0, tspan, p; combinatoric_ratelaws = false)
-    du1 = du2 = zeros(2)
-    u = rand(rng, 2)
-    oprob.f(du1, u, [1.0], 0.0)
-    oderhs(du2, u, [1.0], 0.0)
-    @test isapprox(du1, du2, rtol = 1e3 * eps())
+    
+    # Check equivalence.
+    du1 = du2 = zeros(2) 
+    oprob = ODEProblem(rn, u, tspan, p; combinatoric_ratelaws = false)
+    oprob.f(du1, oprob.u0, oprob.p, 90.0)
+    oderhs(du2, last.(u), last.(p), 0.0)
+    @test du1 ≈ du2
 end

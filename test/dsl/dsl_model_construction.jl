@@ -10,8 +10,9 @@ t = default_t()
 using StableRNGs
 rng = StableRNG(12345)
 
-# Fetch test networks.
+# Fetch test networks and functions.
 include("../test_networks.jl")
+include("../test_functions.jl")
 
 ### Declares Testing Functions ###
 
@@ -122,17 +123,16 @@ let
     push!(identical_networks_1, reaction_networks_standard[8] => different_arrow_8)
 
     for networks in identical_networks_1
-        f1 = ODEFunction(convert(ODESystem, networks[1]), jac = true)
-        f2 = ODEFunction(convert(ODESystem, networks[2]), jac = true)
-        g1 = SDEFunction(convert(SDESystem, networks[1]))
-        g2 = SDEFunction(convert(SDESystem, networks[2]))
         for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0 = factor * rand(rng, length(get_unknowns(networks[1])))
-            p = factor * rand(rng, length(get_ps(networks[1])))
+            u0_1 = rnd_u0(networks[1], rng; factor)
+            p_1 = rnd_ps(networks[1], rng; factor)
+            u0_2 = Pair.(unknowns(networks[2]), last.(u0_1))
+            p_2 = Pair.(parameters(networks[2]), last.(p_1))
             t = rand(rng)
-            @test all(abs.(f1(u0, p, t) .≈ f2(u0, p, t)))
-            @test all(abs.(f1.jac(u0, p, t) .≈ f2.jac(u0, p, t)))
-            @test all(abs.(g1(u0, p, t) .≈ g2(u0, p, t)))
+            
+            @test f_eval(networks[1], u0_1, p_1, t) ≈ f_eval(networks[2], u0_2, p_2, t)
+            @test jac_eval(networks[1], u0_1, p_1, t) ≈ jac_eval(networks[2], u0_2, p_2, t)
+            @test g_eval(networks[1], u0_1, p_1, t) ≈ g_eval(networks[2], u0_2, p_2, t)
         end
     end
 end
@@ -189,17 +189,16 @@ let
     push!(identical_networks_2, reaction_networks_standard[7] => differently_written_8)
 
     for networks in identical_networks_2
-        f1 = ODEFunction(convert(ODESystem, networks[1]), jac = true)
-        f2 = ODEFunction(convert(ODESystem, networks[2]), jac = true)
-        g1 = SDEFunction(convert(SDESystem, networks[1]))
-        g2 = SDEFunction(convert(SDESystem, networks[2]))
         for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0 = factor * rand(rng, length(get_unknowns(networks[1])))
-            p = factor * rand(rng, length(get_ps(networks[1])))
+            u0_1 = rnd_u0(networks[1], rng; factor)
+            p_1 = rnd_ps(networks[1], rng; factor)
+            u0_2 = Pair.(unknowns(networks[2]), last.(u0_1))
+            p_2 = Pair.(parameters(networks[2]), last.(p_1))
             t = rand(rng)
-            @test all(f1(u0, p, t) .≈ f2(u0, p, t))
-            @test all(f1.jac(u0, p, t) .≈ f2.jac(u0, p, t))
-            @test all(g1(u0, p, t) .≈ g2(u0, p, t))
+            
+            @test f_eval(networks[1], u0_1, p_1, t) ≈ f_eval(networks[2], u0_2, p_2, t)
+            @test jac_eval(networks[1], u0_1, p_1, t) ≈ jac_eval(networks[2], u0_2, p_2, t)
+            @test g_eval(networks[1], u0_1, p_1, t) ≈ g_eval(networks[2], u0_2, p_2, t)
         end
     end
 end
@@ -233,16 +232,16 @@ let
     push!(parameter_sets, [0.01, 3.1, 3.2, 0.0, 2.1, 901.0, 63.5, 7, 8, 1.0])
 
     for (i, networks) in enumerate(identical_networks_3)
-        f1 = ODEFunction(convert(ODESystem, networks[1]), jac = true)
-        f2 = ODEFunction(convert(ODESystem, networks[2]), jac = true)
-        g1 = SDEFunction(convert(SDESystem, networks[1]))
-        g2 = SDEFunction(convert(SDESystem, networks[2]))
         for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0 = factor * rand(rng, length(get_unknowns(networks[1])))
+            u0_1 = rnd_u0(networks[1], rng; factor)
+            p_1 = Pair.(parameters(networks[1]), parameter_sets[i])
+            u0_2 = Pair.(unknowns(networks[2]), last.(u0_1))
+            p_2 = []
             t = rand(rng)
-            @test f1(u0, parameter_sets[i], t) ≈ f2(u0, [], t)
-            @test f1.jac(u0, parameter_sets[i], t) ≈ f2.jac(u0, [], t)
-            @test g1(u0, parameter_sets[i], t) ≈ g2(u0, [], t)
+            
+            @test f_eval(networks[1], u0_1, p_1, t) ≈ f_eval(networks[2], u0_2, p_2, t)
+            @test jac_eval(networks[1], u0_1, p_1, t) ≈ jac_eval(networks[2], u0_2, p_2, t)
+            @test g_eval(networks[1], u0_1, p_1, t) ≈ g_eval(networks[2], u0_2, p_2, t)
         end
     end
 end
@@ -306,21 +305,16 @@ let
         (t, k6), X3 ↔ X1
     end
 
-    f1 = ODEFunction(convert(ODESystem, reaction_networks_constraint[1]), jac = true)
-    f2 = ODEFunction(convert(ODESystem, time_network), jac = true)
-    g1 = SDEFunction(convert(SDESystem, reaction_networks_constraint[1]))
-    g2 = SDEFunction(convert(SDESystem, time_network))
     for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-        u0 = factor * rand(rng, length(get_unknowns(time_network)))
-        κ2 = factor * rand(rng)
-        κ3 = factor * rand(rng)
-        κ6 = factor * rand(rng)
         τ = rand(rng)
-        p1 = [τ, κ2, κ3, τ, τ, κ6]
-        p2 = [κ2, κ3, κ6]
-        @test all(f1(u0, p1, τ) .≈ f2(u0, p2, τ))
-        @test all(f1.jac(u0, p1, τ) .≈ f2.jac(u0, p2, τ))
-        @test all(g1(u0, p1, τ) .≈ g2(u0, p2, τ))
+        u = rnd_u0(reaction_networks_constraint[1], rng; factor)
+        p_2 = rnd_ps(time_network, rng; factor)
+        p_1 = [p_2; reaction_networks_constraint[1].k1 => τ; 
+               reaction_networks_constraint[1].k4 => τ; reaction_networks_constraint[1].k5 => τ]
+
+        @test f_eval(reaction_networks_constraint[1], u, p_1, τ) ≈ f_eval(time_network, u, p_2, τ)
+        @test jac_eval(reaction_networks_constraint[1], u, p_1, τ) ≈ jac_eval(time_network, u, p_2, τ)
+        @test g_eval(reaction_networks_constraint[1], u, p_1, τ) ≈ g_eval(time_network, u, p_2, τ)
     end
 end
 
