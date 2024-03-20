@@ -200,7 +200,7 @@ let
     midxs = 1:14
     cidxs = 15:18
     vidxs = 19:20
-    @test_broken all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.MassActionJump, midxs))
+    @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.MassActionJump, midxs))
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.ConstantRateJump, cidxs))
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.VariableRateJump, vidxs))
 
@@ -247,8 +247,8 @@ let
                          symmaj.param_mapper, scale_rates = false)
     for i in midxs
         @test_broken abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100 * eps()
-        @test_broken jumps[i].reactant_stoch == maj.reactant_stoch[i]
-        @test_broken jumps[i].net_stoch == maj.net_stoch[i]
+        @test jumps[i].reactant_stoch == maj.reactant_stoch[i]
+        @test jumps[i].net_stoch == maj.net_stoch[i]
     end
     for i in cidxs
         crj = ModelingToolkit.assemble_crj(js, equations(js)[i], unknownoid)
