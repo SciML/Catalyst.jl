@@ -9,6 +9,9 @@ const MT = ModelingToolkit
 using StableRNGs
 rng = StableRNG(12345)
 
+# Fetch test networks and functions.
+include("../test_functions.jl")
+
 # Create test network.
 @parameters k[1:20]
 @species A(t) B(t) C(t) D(t)
