@@ -214,7 +214,7 @@ let
     midxs = 1:14
     cidxs = 15:18
     vidxs = 19:20
-    @test_broken all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.MassActionJump, midxs))
+    @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.MassActionJump, midxs))
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.ConstantRateJump, cidxs))
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.VariableRateJump, vidxs))
 
