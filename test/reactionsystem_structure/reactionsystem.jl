@@ -152,17 +152,17 @@ let
     G = sdenoise(last.(u), last.(p), 0.0)
     sdesys = convert(SDESystem, rs)
     sf = SDEFunction{false}(sdesys, unknowns(rs), parameters(rs))
-    sprob = SDEProblem(rs, u, (0.0, 0.0), ps)
+    sprob = SDEProblem(rs, u, (0.0, 0.0), p)
     du2 = sf.f(sprob.u0, sprob.p, 0.0)
 
     du2 = sf.f(sprob.u0, sprob.p, 0.0)
-    @test_broken norm(du - du2) < 100 * eps()
+    @test norm(du - du2) < 100 * eps()
     G2 = sf.g(sprob.u0, sprob.p, 0.0)
-    @test_broken norm(G - G2) < 100 * eps()
+    @test norm(G - G2) < 100 * eps()
 
     # Test conversion to NonlinearSystem.
     ns = convert(NonlinearSystem, rs)
-    nlprob = NonlinearProblem(rs, u, ps)
+    nlprob = NonlinearProblem(rs, u, p)
     fnl = eval(generate_function(ns)[2])
     dunl = similar(du)
     fnl(dunl, nlprob.u0, nlprob.p)
