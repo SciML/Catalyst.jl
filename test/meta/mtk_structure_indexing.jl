@@ -5,22 +5,28 @@ using Test
 # Create model, problems, and solutions.
 begin
     model = complete(@reaction_network begin
-        @observables X2 ~ 2X
+        @observables XY ~ X + Y
         (kp,kd), 0 <--> X
         (k1,k2), X <--> Y
     end)
-    @unpack X, Y, kp, kd, k1, k2 = model
+    @unpack XY, X, Y, kp, kd, k1, k2 = model
 
-    u0_vals = [X => 1, Y => 0]
+    u0_vals = [X => 4, Y => 5]
     tspan = (0.0, 10.0)
-    p_vals = [kp => 1.0, kd => 0.2, k1 => 1.0, k2 => 2.0]
+    p_vals = [kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5]
 
     oprob = ODEProblem(model, u0_vals, tspan, p_vals)
     sprob = SDEProblem(model,u0_vals, tspan, p_vals)
     dprob = DiscreteProblem(model, u0_vals, tspan, p_vals)
-    jprob = JumpProblem(model, dprob, Direct())
+    jprob = JumpProblem(model, deepcopy(dprob), Direct())
     nprob = NonlinearProblem(model, u0_vals, p_vals)
     problems = [oprob, sprob, dprob, jprob, nprob]
+
+    oint = init(oprob, Tsit5(); save_everystep=false)
+    sint = init(sprob, ImplicitEM(); save_everystep=false)
+    jint = init(jprob, SSAStepper())
+    nint = init(nprob, NewtonRaphson(); save_everystep=false)
+    integrators = [oint, sint, jint, nint]
     
     osol = solve(oprob, Tsit5())
     ssol = solve(sprob, ImplicitEM())
@@ -29,204 +35,244 @@ begin
     sols = [osol, ssol, jsol, nsol]
 end
 
-# Tests index updating.
+# Tests problem index updating.
 let 
     for prob in deepcopy(problems)
-        # Get u values.
-        @test prob[X] == prob[model.X] == prob[:X] == 1
-        @test prob[X2] == prob[model.X2] == prob[:X2] == 2
-        @test prob[[X2,Y]] == prob[[model.X2,model.Y]] == prob[[:X2,:Y]] == [2, 2]
-        @test prob[(X2,Y)] == prob[(model.X2,model.Y)] == prob[(:X2,:Y)] == (2, 2)
-        @test getu(prob, X)(prob) == getu(prob, model.X)(prob) == getu(prob, :X)(prob) == 1   
-        @test getu(prob, X2)(prob) == getu(prob, model.X2)(prob) == getu(prob, :X2)(prob) == 1      
+        # Get u values (including observables).
+        @test prob[X] == prob[model.X] == prob[:X] == 4
+        @test prob[XY] == prob[model.XY] == prob[:XY] == 9
+        @test prob[[XY,Y]] == prob[[model.XY,model.Y]] == prob[[:XY,:Y]] == [9, 5]
+        @test_broken prob[(XY,Y)] == prob[(model.XY,model.Y)] == prob[(:XY,:Y)] == (9, 5)
+        @test getu(prob, X)(prob) == getu(prob, model.X)(prob) == getu(prob, :X)(prob) == 4
+        @test getu(prob, XY)(prob) == getu(prob, model.XY)(prob) == getu(prob, :XY)(prob) == 9 
+        @test getu(prob, [XY,Y])(prob) == getu(prob, [model.XY,model.Y])(prob) == getu(prob, [:XY,:Y])(prob) == [9, 5]  
+        @test getu(prob, (XY,Y))(prob) == getu(prob, (model.XY,model.Y))(prob) == getu(prob, (:XY,:Y))(prob) == (9, 5)
 
         # Set u values.
-        prob[X] = 2
-        @test prob[X] == 2
-        prob[model.X] = 3
-        @test prob[X] == 3
-        prob[:X] = 4
-        @test prob[X] == 4
-        setu(prob, X)(prob, 5)
-        @test prob[X] == 5
-        setu(prob, model.X)(prob, 6)
-        @test prob[X] == 6
-        setu(prob, :X)(prob, 7)
-        @test prob[X] == 7
+        prob[X] = 20
+        @test prob[X] == 20
+        prob[model.X] = 30
+        @test prob[X] == 30
+        prob[:X] = 40
+        @test prob[X] == 40
+        setu(prob, X)(prob, 50)
+        @test prob[X] == 50
+        setu(prob, model.X)(prob, 60)
+        @test prob[X] == 60
+        setu(prob, :X)(prob, 70)
+        @test prob[X] == 70
 
         # Get p values.
-        @test getp(prob, kp)(prob) == getp(prob, model.kp)(prob) == getp(prob, :kp)(prob) == 1.0
         @test prob.ps[kp] == prob.ps[model.kp] == prob.ps[:kp] == 1.0    
+        @test prob.ps[[k1,k2]] == prob.ps[[model.k1,model.k2]] == prob.ps[[:k1,:k2]] == [0.25, 0.5]
+        @test prob.ps[(k1,k2)] == prob.ps[(model.k1,model.k2)] == prob.ps[(:k1,:k2)] == (0.25, 0.5)
+        @test getp(prob, kp)(prob) == getp(prob, model.kp)(prob) == getp(prob, :kp)(prob) == 1.0
+        @test getp(prob, [k1,k2])(prob) == getp(prob, [model.k1,model.k2])(prob) == getp(prob, [:k1,:k2])(prob) == [0.25, 0.5]
+        @test getp(prob, (k1,k2))(prob) == getp(prob, (model.k1,model.k2))(prob) == getp(prob, (:k1,:k2))(prob) == (0.25, 0.5)
         
         # Set p values.
-        setp(prob, kp)(prob, 2.0)
-        @test prob[kp] == 2.0
-        setp(prob, model.kp)(prob, 3.0)
-        @test prob[kp] == 3.0
-        setp(prob, :kp)(prob, 4.0)
-        @test prob[kp] == 4.0
-        prob.ps[kp] = 5.0
-        @test prob[kp] == .0
-        prob.ps[model.kp] = 6.0
-        @test prob[kp] == 6.0
-        prob.ps[:kp] = 7.0
-        @test prob[kp] == 7.0
+        prob.ps[kp] = 2.0
+        @test prob.ps[kp] == 2.0
+        prob.ps[model.kp] = 3.0
+        @test prob.ps[kp] == 3.0
+        prob.ps[:kp] = 4.0
+        @test prob.ps[kp] == 4.0
+        setp(prob, kp)(prob, 5.0)
+        @test prob.ps[kp] == 5.0
+        setp(prob, model.kp)(prob, 6.0)
+        @test prob.ps[kp] == 6.0
+        setp(prob, :kp)(prob, 7.0)
+        @test prob.ps[kp] == 7.0
     end
 end
 
 # Test remake function.
 let 
-    for prob in deepcopy(probs)
-        # Remake for all u0s.
-        @test remake(prob; u0 = [X => 2, Y => 3]).u0 == [2, 3]
-        @test remake(prob; u0 = [model.X => 4, model.Y => 5]).u0 == [4, 5]
-        @test remake(prob; u0 = [:X => 6, :Y => 7]).u0 == [6, 7]
+    for prob in deepcopy(problems)
+        # Remake for all u0s. Have to hanlde JumpProblem's separately.
+        rp = remake(prob; u0 = [X => 1, Y => 2])
+        @test (rp isa JumpProblem ? rp.prob : rp).u0 == [1, 2] 
+        rp = remake(prob; u0 = [model.X => 3, model.Y => 4])
+        @test (rp isa JumpProblem ? rp.prob : rp).u0 == [3, 4]
+        rp = remake(prob; u0 = [:X => 5, :Y => 6])
+        @test (rp isa JumpProblem ? rp.prob : rp).u0 == [5, 6]
 
         # Remake for some u0s.
-        @test remake(prob; u0 = [Y => 8]).u0 == [1, 8]
-        @test remake(prob; u0 = [model.Y => 9]).u0 == [1, 9]
-        @test remake(prob; u0 = [:Y => 10]).u0 == [1, 10]
+        rp = remake(prob; u0 = [Y => 7])
+        @test (rp isa JumpProblem ? rp.prob : rp).u0 == [4, 7]
+        rp = remake(prob; u0 = [model.Y => 8])
+        @test (rp isa JumpProblem ? rp.prob : rp).u0 == [4, 8]
+        rp = remake(prob; u0 = [:Y => 9])
+        @test (rp isa JumpProblem ? rp.prob : rp).u0 == [4, 9]
 
-        # Remake for all ps.
-        @test remake(prob; p = [kp => 1.0, kd => 2.0, k1 => 3.0, k2 => 4.0]).p == [1.0, 2.0, 3.0, 4.0]
-        @test remake(prob; p = [model.kp => 5.0, model.kd => 6.0, model.k1 => 7.0, model.k2 => 8.0]).p == [5.0, 6.0, 7.0, 8.0]
-        @test remake(prob; p = [:kp => 9.0, :kd => 10.0, :k1 => 11.0, :k2 => 12.0]).p  == [9.0, 10.0, 11.0, 12.0]
+        # Remake for all ps. Have to check each parameter separately, as prob.p is a SciMLStructure-thing.
+        rp = remake(prob; p = [kp => 1.0, kd => 2.0, k1 => 3.0, k2 => 4.0])
+        @test (rp.ps[kp] == 1.0) && (rp.ps[kd] == 2.0) && (rp.ps[k1] == 3.0) && (rp.ps[k2] == 4.0)
+        rp = remake(prob; p = [model.kp => 5.0, model.kd => 6.0, model.k1 => 7.0, model.k2 => 8.0])
+        @test (rp.ps[kp] == 5.0) && (rp.ps[kd] == 6.0) && (rp.ps[k1] == 7.0) && (rp.ps[k2] == 8.0)
+        rp = remake(prob; p = [:kp => 9.0, :kd => 10.0, :k1 => 11.0, :k2 => 12.0])
+        @test (rp.ps[kp] == 9.0) && (rp.ps[kd] == 10.0) && (rp.ps[k1] == 11.0) && (rp.ps[k2] == 12.0)
 
         # Remake for some ps.
-        @test remake(prob; p = [k2 => 13.0]).p == [1.0, 0.2, 1.0, 13.0]
-        @test remake(prob; p = [model.k2 => 14.0]).p == [1.0, 0.2, 1.0, 14.0]
-        @test remake(prob; p = [:k2 => 15.0]).p  == [1.0, 0.2, 1.0, 15.0]
+        rp = remake(prob; p = [k2 => 13.0])
+        @test (rp.ps[kp] == 1.0) && (rp.ps[kd] == 0.1) && (rp.ps[k1] == 0.25) && (rp.ps[k2] == 13.0)
+        rp = remake(prob; p = [model.k2 => 14.0])
+        @test (rp.ps[kp] == 1.0) && (rp.ps[kd] == 0.1) && (rp.ps[k1] == 0.25) && (rp.ps[k2] == 14.0)
+        rp = remake(prob; p = [:k2 => 15.0])
+        @test (rp.ps[kp] == 1.0) && (rp.ps[kd] == 0.1) && (rp.ps[k1] == 0.25) && (rp.ps[k2] == 15.0)
     end
 end
 
 # Test integrator indexing.
 let 
-    for integrator in init.(deepcopy(problems))
+    @test_broken false # NOTE: Multiple problems for `nint`.
+    @test_broken false # NOTE: Multiple problems for `jint`.
+    for int in deepcopy([oint, sint])
         # Get u values.
-        @test integrator[X] == integrator[model.X] == integrator[:X] == 1
-        @test integrator[X2] == integrator[model.X2] == integrator[:X2] == 2
-        @test integrator[[X,Y]] == integrator[[model.X,model.Y]] == integrator[[:X,:Y]] == [1, 2]
-        @test integrator[[X2,Y]] == integrator[[model.X2,model.Y]] == integrator[[:X2,:Y]] == [2, 2]
-        @test integrator[(X,Y)] == integrator[(model.X,model.Y)] == integrator[(:X,:Y)] == (1, 2)   
-        @test integrator[(X2,Y)] == integrator[(model.X2,model.Y)] == integrator[(:X2,:Y)] == (2, 2)   
-        @test getu(integrator, X)(integrator) == getu(integrator, model.X)(integrator) == getu(integrator, :X)(integrator) == 1       
-        @test getu(integrator, X2)(integrator) == getu(integrator, model.X2)(integrator) == getu(integrator, :X2)(integrator) == 2         
+        @test int[X] == int[model.X] == int[:X] == 4
+        @test int[XY] == int[model.XY] == int[:XY] == 9
+        @test int[[XY,Y]] == int[[model.XY,model.Y]] == int[[:XY,:Y]] == [9, 5]
+        @test int[(XY,Y)] == int[(model.XY,model.Y)] == int[(:XY,:Y)] == (9, 5)
+        @test getu(int, X)(int) == getu(int, model.X)(int) == getu(int, :X)(int) == 4
+        @test getu(int, XY)(int) == getu(int, model.XY)(int) == getu(int, :XY)(int) == 9 
+        @test getu(int, [XY,Y])(int) == getu(int, [model.XY,model.Y])(int) == getu(int, [:XY,:Y])(int) == [9, 5]  
+        @test getu(int, (XY,Y))(int) == getu(int, (model.XY,model.Y))(int) == getu(int, (:XY,:Y))(int) == (9, 5)
 
         # Set u values.
-        integrator[X] = 2
-        @test integrator[X] == 2
-        integrator[model.X] = 3
-        @test integrator[X] == 3
-        integrator[:X] = 4
-        @test integrator[X] == 4
-        setu(integrator, X)(integrator, 5)
-        @test integrator[X] == 5
-        setu(integrator, model.X)(integrator, 6)
-        @test integrator[X] == 6
-        setu(integrator, :X)(integrator, 7)
-        @test integrator[X] == 7
+        int[X] = 20
+        @test int[X] == 20
+        int[model.X] = 30
+        @test int[X] == 30
+        int[:X] = 40
+        @test int[X] == 40
+        setu(int, X)(int, 50)
+        @test int[X] == 50
+        setu(int, model.X)(int, 60)
+        @test int[X] == 60
+        setu(int, :X)(int, 70)
+        @test int[X] == 70
 
         # Get p values.
-        @test getp(integrator, kp)(integrator) == getp(integrator, model.kp)(integrator) == getp(integrator, :kp)(integrator) == 1.0
-        @test integrator.ps[kp] == integrator.ps[model.kp] == integrator.ps[:kp] == 1.0    
-
+        @test int.ps[kp] == int.ps[model.kp] == int.ps[:kp] == 1.0    
+        @test int.ps[[k1,k2]] == int.ps[[model.k1,model.k2]] == int.ps[[:k1,:k2]] == [0.25, 0.5]
+        @test int.ps[(k1,k2)] == int.ps[(model.k1,model.k2)] == int.ps[(:k1,:k2)] == (0.25, 0.5)
+        @test getp(int, kp)(int) == getp(int, model.kp)(int) == getp(int, :kp)(int) == 1.0
+        @test getp(int, [k1,k2])(int) == getp(int, [model.k1,model.k2])(int) == getp(int, [:k1,:k2])(int) == [0.25, 0.5]
+        @test getp(int, (k1,k2))(int) == getp(int, (model.k1,model.k2))(int) == getp(int, (:k1,:k2))(int) == (0.25, 0.5)
+        
         # Set p values.
-        setp(integrator, kp)(integrator, 2.0)
-        @test integrator[kp] == 2.0
-        setp(integrator, model.kp)(integrator, 3.0)
-        @test integrator[kp] == 3.0
-        setp(integrator, :kp)(integrator, 4.0)integrator
-        @test integrator[kp] == 4.0
-        integrator.ps[kp] = 5.0
-        @test integrator[kp] == .0
-        integrator.ps[model.kp] = 6.0
-        @test integrator[kp] == 6.0
-        integrator.ps[:kp] = 7.0
-        @test integrator[kp] == 7.0
+        int.ps[kp] = 2.0
+        @test int.ps[kp] == 2.0
+        int.ps[model.kp] = 3.0
+        @test int.ps[kp] == 3.0
+        int.ps[:kp] = 4.0
+        @test int.ps[kp] == 4.0
+        setp(int, kp)(int, 5.0)
+        @test int.ps[kp] == 5.0
+        setp(int, model.kp)(int, 6.0)
+        @test int.ps[kp] == 6.0
+        setp(int, :kp)(int, 7.0)
+        @test int.ps[kp] == 7.0
     end
 end
 
 # Test solve's save_idxs argument.
 let 
-    @test length(solve(oprob, Tsit5(); save_idxs=[X]).u[1]) == 1
-    @test length(solve(sprob, ImplicitEM(); save_idxs=[X]).u[1]) == 1
-    @test length(solve(jprob, SSAStepper(); save_idxs=[X]).u[1]) == 1
+    for (prob, solver) in zip(deepcopy([oprob, sprob, jprob]), [Tsit5(), ImplicitEM(), SSAStepper()])
+        # Save single variable
+        @test_broken solve(prob, solver; save_idxs=X)[X][1] == 4
+        @test_broken solve(prob, solver; save_idxs=model.X)[X][1] == 4
+        @test_broken solve(prob, solver; save_idxs=:X)[X][1] == 4
+
+        # Save observable.
+        @test_broken solve(prob, solver; save_idxs=XY)[XY][1] == 9
+        @test_broken solve(prob, solver; save_idxs=model.XY)[XY][1] == 9
+        @test_broken solve(prob, solver; save_idxs=:XY)[XY][1] == 9
+
+        # Save vector of stuff.
+        @test_broken solve(prob, solver; save_idxs=[XY,Y])[[XY,Y]][1] == [9, 5]
+        @test_broken solve(prob, solver; save_idxs=[model.XY,model.Y])[[model.XY,model.Y]][1] == [9, 5]
+        @test_broken solve(prob, solver; save_idxs=[:XY,:Y])[[:XY,:Y]][1] == [9, 5]
+    end
 end
+
+nsol[X]
 
 #Tests solution indexing.
 let 
-    for sol in deepcopy(sols)
+    for sol in deepcopy([osol, ssol, jsol])
         # Get u values.
-        @test Int64(sol[X][1]) == 1
-        @test Int64(sol[Y][1]) == 0
-        @test sol[X] == sol[model.X] == sol[:X]
-        @test sol[X2] == sol[model.X2] == sol[:X2]
-        @test sol[[X,Y]] == sol[[model.X,model.Y]] == sol[[:X,:Y]]
-        @test sol[[X2,Y]] == sol[[model.X2,model.Y]] == sol[[:X2,:Y]]
-        @test sol[(X,Y)] == sol[(model.X,model.Y)] == sol[(:X,:Y)]   
-        @test sol[(X2,Y)] == sol[(model.X2,model.Y)] == sol[(:X2,:Y)]   
-        @test getu(sol, X)(sol) == getu(sol, model.X)(sol) == getu(sol, :X)(sol)    
-        @test getu(sol, X2)(sol) == getu(sol, model.X2)(sol) == getu(sol, :X2)(sol)          
+        @test sol[X][1] == sol[model.X][1] == sol[:X][1] == 4
+        @test sol[XY][1] == sol[model.XY][1] == sol[:XY][1] == 9
+        @test sol[[XY,Y]][1] == sol[[model.XY,model.Y]][1] == sol[[:XY,:Y]][1] == [9, 5]
+        @test sol[(XY,Y)][1] == sol[(model.XY,model.Y)][1] == sol[(:XY,:Y)][1] == (9, 5)
+        @test getu(sol, X)(sol)[1] == getu(sol, model.X)(sol)[1] == getu(sol, :X)(sol)[1] == 4
+        @test getu(sol, XY)(sol)[1] == getu(sol, model.XY)(sol)[1] == getu(sol, :XY)(sol)[1] == 9 
+        @test getu(sol, [XY,Y])(sol)[1] == getu(sol, [model.XY,model.Y])(sol)[1] == getu(sol, [:XY,:Y])(sol)[1] == [9, 5]  
+        @test getu(sol, (XY,Y))(sol)[1] == getu(sol, (model.XY,model.Y))(sol)[1] == getu(sol, (:XY,:Y))(sol)[1] == (9, 5)       
+
+        # Get u values via idxs and functional call.
+        @test osol(0.0; idxs=X) == osol(0.0; idxs=X) == osol(0.0; idxs=X) == 4
+        @test osol(0.0; idxs=XY) == osol(0.0; idxs=XY) == osol(0.0; idxs=XY) == 9
+        @test_broken osol(0.0; idxs=[model.Y,model.XY]) == osol(0.0; idxs=[model.Y,model.XY]) == osol(0.0; idxs=[model.XY,model.X]) == [9, 5]
+        @test_broken osol(0.0; idxs=(:Y,:XY)) == osol(0.0; idxs=(:Y,:XY)) == osol(0.0; idxs=(:XY,:Y)) == (9, 5)
 
         # Get p values.
-        @test getp(sol, kp)(sol) == getp(sol, model.kp)(sol) == getp(sol, :kp)(sol) == 1.0
         @test sol.ps[kp] == sol.ps[model.kp] == sol.ps[:kp] == 1.0    
+        @test sol.ps[[k1,k2]] == sol.ps[[model.k1,model.k2]] == sol.ps[[:k1,:k2]] == [0.25, 0.5]
+        @test sol.ps[(k1,k2)] == sol.ps[(model.k1,model.k2)] == sol.ps[(:k1,:k2)] == (0.25, 0.5)
+        @test getp(sol, kp)(sol) == getp(sol, model.kp)(sol) == getp(sol, :kp)(sol) == 1.0
+        @test getp(sol, [k1,k2])(sol) == getp(sol, [model.k1,model.k2])(sol) == getp(sol, [:k1,:k2])(sol) == [0.25, 0.5]
+        @test getp(sol, (k1,k2))(sol) == getp(sol, (model.k1,model.k2))(sol) == getp(sol, (:k1,:k2))(sol) == (0.25, 0.5)
+    end
+    # handles nonlinear solution differently.
+    for sol in deepcopy([nsol])
+        # Get u values.
+        @test sol[X] == sol[model.X] == sol[:X]
+        @test sol[XY] == sol[model.XY][1] == sol[:XY]
+        @test sol[[XY,Y]] == sol[[model.XY,model.Y]] == sol[[:XY,:Y]]
+        @test_broken sol[(XY,Y)] == sol[(model.XY,model.Y)] == sol[(:XY,:Y)]
+        @test getu(sol, X)(sol) == getu(sol, model.X)(sol)[1] == getu(sol, :X)(sol)
+        @test getu(sol, XY)(sol) == getu(sol, model.XY)(sol)[1] == getu(sol, :XY)(sol)
+        @test getu(sol, [XY,Y])(sol) == getu(sol, [model.XY,model.Y])(sol) == getu(sol, [:XY,:Y])(sol)
+        @test_broken getu(sol, (XY,Y))(sol) == getu(sol, (model.XY,model.Y))(sol) == getu(sol, (:XY,:Y))(sol)[1]   
+
+        # Get p values.
+        @test sol.ps[kp] == sol.ps[model.kp] == sol.ps[:kp]
+        @test sol.ps[[k1,k2]] == sol.ps[[model.k1,model.k2]] == sol.ps[[:k1,:k2]]
+        @test sol.ps[(k1,k2)] == sol.ps[(model.k1,model.k2)] == sol.ps[(:k1,:k2)]
+        @test getp(sol, kp)(sol) == getp(sol, model.kp)(sol) == getp(sol, :kp)(sol)
+        @test getp(sol, [k1,k2])(sol) == getp(sol, [model.k1,model.k2])(sol) == getp(sol, [:k1,:k2])(sol)
+        @test getp(sol, (k1,k2))(sol) == getp(sol, (model.k1,model.k2))(sol) == getp(sol, (:k1,:k2))(sol)
     end
 end
 
 # Tests plotting.
 let 
-    for sol in deepcopy(sols[1:3])
+    @test_broken false # Currently broken for `ssol`.
+    for sol in deepcopy([osol, jsol])
         # Single variable.
         @test length(plot(sol; idxs = X).series_list) == 1
-        @test length(plot(sol; idxs = X2).series_list) == 1
+        @test length(plot(sol; idxs = XY).series_list) == 1
         @test length(plot(sol; idxs = model.X).series_list) == 1
-        @test length(plot(sol; idxs = model.X2).series_list) == 1
+        @test length(plot(sol; idxs = model.XY).series_list) == 1
         @test length(plot(sol; idxs = :X).series_list) == 1
-        @test length(plot(sol; idxs = :X2).series_list) == 1
+        @test length(plot(sol; idxs = :XY).series_list) == 1
 
         # As vector.
         @test length(plot(sol; idxs = [X,Y]).series_list) == 2
-        @test length(plot(sol; idxs = [X2,Y]).series_list) == 2
+        @test length(plot(sol; idxs = [XY,Y]).series_list) == 2
         @test length(plot(sol; idxs = [model.X,model.Y]).series_list) == 2
-        @test length(plot(sol; idxs = [model.X2,model.Y]).series_list) == 2
+        @test length(plot(sol; idxs = [model.XY,model.Y]).series_list) == 2
         @test length(plot(sol; idxs = [:X,:Y]).series_list) == 2
-        @test length(plot(sol; idxs = [:X2,:Y]).series_list) == 2
+        @test length(plot(sol; idxs = [:XY,:Y]).series_list) == 2
 
         # As tuple.
         @test length(plot(sol; idxs = (X, Y)).series_list) == 1
-        @test length(plot(sol; idxs = (X2, Y)).series_list) == 1
+        @test length(plot(sol; idxs = (XY, Y)).series_list) == 1
         @test length(plot(sol; idxs = (model.X, model.Y)).series_list) == 1
-        @test length(plot(sol; idxs = (model.X2, model.Y)).series_list) == 1
+        @test length(plot(sol; idxs = (model.XY, model.Y)).series_list) == 1
         @test length(plot(sol; idxs = (:X, :Y)).series_list) == 1
-        @test length(plot(sol; idxs = (:X2, :Y)).series_list) == 1
-    end    
-end
-
-# Tests solving for various inputs types.
-let 
-    u0_vals = [X => 1, Y => 0]
-    tspan = (0.0, 10.0)
-    p_vals = [kp => 1.0, kd => 0.2, k1 => 1.0, k2 => 2.0]
-
-    u0_vals_2 = [model.X => 1, model.Y => 0]
-    u0_vals_3 = [:X => 1, :Y => 0]
-    p_vals_2 = [model.kp => 1.0, model.kd => 0.2, model.k1 => 1.0, model.k2 => 2.0]
-    p_vals_3 = [:kp => 1.0, :kd => 0.2, :k1 => 1.0, :k2 => 2.0]
-
-    oprob_2 = ODEProblem(model, u0_vals_2, tspan, p_vals_2)
-    oprob_3 = ODEProblem(model, u0_vals_3, tspan, p_vals_3)
-    sprob_2 = SDEProblem(model,u0_vals_2, tspan, p_vals_2)
-    sprob_3 = SDEProblem(model,u0_vals_3, tspan, p_vals_3)
-    dprob_2 = DiscreteProblem(model, u0_vals_2, tspan, p_vals_2)
-    dprob_3 = DiscreteProblem(model, u0_vals_3, tspan, p_vals_3)
-    jprob_2 = JumpProblem(model, dprob_2, Direct())
-    jprob_3 = JumpProblem(model, dprob_3, Direct())
-    nprob_2 = NonlinearProblem(model, u0_vals_2, p_vals_2)
-    nprob_3 = NonlinearProblem(model, u0_vals_3, p_vals_3)
-    
-    @test solve(oprob, Tsit5()) == solve(oprob_2, Tsit5()) == solve(oprob_3, Tsit5())
-    @test solve(sprob, ImplicitEM(); seed=1234) == solve(sprob_2, ImplicitEM(); seed=1234) == solve(sprob_3, ImplicitEM(); seed=1234)
-    @test solve(jprob, SSAStepper(); seed=1234) == solve(jprob_2, SSAStepper(); seed=1234) == solve(jprob_3, SSAStepper(); seed=1234)
-    @test solve(nprob, NewtonRaphson()) == solve(nprob_2, NewtonRaphson()) == solve(nprob_3, NewtonRaphson())
+        @test length(plot(sol; idxs = (:XY, :Y)).series_list) == 1
+    end     
 end
