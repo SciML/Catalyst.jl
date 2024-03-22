@@ -319,7 +319,7 @@ rn_2 = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 ```
-If we re-simualte the system we see that the amount of noise have increased:
+If we re-simulate the system we see that the amount of noise have increased:
 ```@example ex3
 sprob_1 = SDEProblem(rn_2, u0, tspan, p_1)
 sol_1 = solve(sprob_1, ImplicitEM())
@@ -345,7 +345,7 @@ plot(sol_3; idxs = :X1, ylimit = (0.0, 20.0))
 ```
 Here we saw how, by setting a small $η$ value, the amount of noise was reduced.
 
-It is possible to use a different noise scaling expression for each reaction. Here, each reaction's noise scaling expression is provided using the `noise_scaling` metadata. In the following example, we use this to turn the noise of for both reactions involving the species $Y$.
+It is possible to use a different noise scaling expression for each reaction. Here, each reaction's noise scaling expression is provided using the `noise_scaling` metadata. In the following example, we use this to tune the noise of for both reactions involving the species $Y$.
 
 ```@example ex3
 rn_4 = @reaction_network begin
@@ -361,7 +361,7 @@ sprob_4 = SDEProblem(rn_4, u0_4, tspan, p_4)
 sol_4 = solve(sprob_4, ImplicitEM())
 plot(sol_4; ylimit = (0.0, 20.0))
 ```
-Here, we not that there is n fluctuation in the value of $Y$. If the `@default_noise_scaling` option is used, its value is used for all reactions for which the `noise_scaling` metadata is unused. If `@default_noise_scaling` is not used, teh default noise scaling value is `1.0`.
+Here, we not that there is n fluctuation in the value of $Y$. If the `@default_noise_scaling` option is used, its value is used for all reactions for which the `noise_scaling` metadata is unused. If `@default_noise_scaling` is not used, the default noise scaling value is `1.0` (i.e. no scaling).
 
 ## Useful plotting options
 Catalyst, just like DifferentialEquations, uses the Plots package for all
