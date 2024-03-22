@@ -523,7 +523,7 @@ let
         umean += sol(10.0, idxs = [B1, B2, B3, C])
     end
     umean /= Nsims
-    @test_broken isapprox(umean[1], umean[2]; rtol = 1e-2) # `idxs` keywordargument currently broken for `SDEProblem`s (https://github.com/SciML/SciMLBase.jl/issues/581).
+    @test isapprox(umean[1], umean[2]; rtol = 1e-2) 
     @test isapprox(umean[1], umean[3]; rtol = 1e-2)
     @test umean[4] == 10
 end
