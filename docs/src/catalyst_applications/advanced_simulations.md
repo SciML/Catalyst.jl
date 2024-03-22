@@ -292,7 +292,7 @@ plot(sol)
 
 ## Scaling the noise magnitude in the chemical Langevin equations
 When using the CLE to generate SDEs from a CRN, it can sometimes be desirable to
-scale the magnitude of the noise terms. Here, each reaction of the system generates a separate noise term in the CLE. If you require identical scaling for all reaction, the `@default_noise_scaling` option can be used. Else, you can supply a `noise_scaling` metadata for each individual reaction, describing how to scale the noise for that reaction.
+scale the magnitude of the noise terms. Here, each reaction of the system generates a separate noise term in the CLE. If you require identical scaling for all reactions, the `@default_noise_scaling` option can be used. Else, you can supply a `noise_scaling` metadata for each individual reaction, describing how to scale the noise for that reaction.
 
 We begin with considering the first approach. First, we simulate a simple two-state CRN model using the
 CLE:
