@@ -2,6 +2,9 @@
 using Catalyst, Test
 import HomotopyContinuation
 
+# Fetch test functions.
+include("../test_functions.jl")
+
 ### Run Tests ###
 
 # Tests for network without conservation laws.
@@ -9,7 +12,7 @@ import HomotopyContinuation
 # Tests for Symbolics initial condition input.
 # Tests for different types (Symbol/Symbolics) for parameters and initial conditions.
 # Tests that attempts to find steady states of system with conservation laws, while u0 is not provided, gives an error.
-let 
+@test_broken let # Requires https://github.com/SciML/ModelingToolkit.jl/issues/2566 to be fixed
     rs = @reaction_network begin
         (k1,k2), X1 <--> X2
         (k3,k4), 2X2 + X3 <--> X2_2X3
@@ -27,7 +30,7 @@ end
 
 # Tests for network with multiple steady state.
 # Tests for Symbol parameter input.
-# Tests tha passing kwargs to HC.solve does not error.
+# Tests that passing kwargs to HC.solve does not error.
 let 
     wilhelm_2009_model = @reaction_network begin
         k1, Y --> 2X
@@ -50,7 +53,7 @@ end
 # Tests correctness in presence of default values.
 # Tests where some default values are overwritten with other values.
 # Tests where input ps/u0 are tuples with mixed types.
-let    
+@test_broken let # Requires https://github.com/SciML/ModelingToolkit.jl/issues/2566 to be fixed
     rs_1 = @reaction_network begin
         @parameters kX1=1.0 kX2=2.0 kY1=12345.0 
         @species X1(t)=0.1 X2(t)=0.2 Y1(t)=12345.0
@@ -90,10 +93,9 @@ let
     ps = [:v => 5.0, :K => 2.5, :n => 3, :d => 1.0]
     sss = hc_steady_states(rs, ps; filter_negative=false, show_progress=false)
     
-    f = ODEFunction(convert(ODESystem, rs))
     @test length(sss) == 4
     for ss in sss
-        @test isapprox(f(sss[1], last.(ps), 0.0)[1], 0.0; atol=1e-12)
+        @test isapprox(f_eval(rs,sss[1], last.(ps), 0.0)[1], 0.0; atol=1e-12)
     end
 
     @test_throws Exception hc_steady_states(rs, [:v => 5.0, :K => 2.5, :n => 2.7, :d => 1.0]; show_progress=false)

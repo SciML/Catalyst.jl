@@ -230,6 +230,7 @@ end
 ### Checks Reaction Network - Equations Combination ###
 
 let
+    t = default_t()
     base_network = @reaction_network begin
         k*r, X --> 0
     end
