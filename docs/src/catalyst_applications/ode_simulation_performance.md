@@ -131,7 +131,7 @@ nothing # hide
 ```
 A full list of potential linear solvers can be found [here](https://docs.sciml.ai/LinearSolve/dev/solvers/solvers/#Full-List-of-Methods), however, the default choice typically performs well. 
 
-A unique approach to the linear solvers is to use a Jacobian-free Newton-Krylov method. These do not actually compute the Jacobian, but rather *the effect of multiplying it with a vector*. They are typically advantageous for large systems (with large Jacobians), and can be designated using the `KrylovJL_GMRES` linear solver:
+A unique approach to the linear solvers is to use a matrix-free Newton-Krylov method. These do not actually compute the Jacobian, but rather *the effect of multiplying it with a vector*. They are typically advantageous for large systems (with large Jacobians), and can be designated using the `KrylovJL_GMRES` linear solver:
 ```@example ode_simulation_performance_3
 solve(oprob, Rodas5P(linsolve = KrylovJL_GMRES()))
 nothing # hide
@@ -139,7 +139,9 @@ nothing # hide
 Since these methods do not depend on a Jacobian, certain Jacobian options (such as [computing it symbolically](@ref ode_simulation_performance_symbolic_jacobian)) are irrelevant to them. 
 
 ### [Designating preconditioners for Jacobian-free linear solvers](@ref ode_simulation_performance_preconditioners)
-When an implicit method solves a linear equation through an iterative method, the rate of convergence depends on the numerical properties of the matrix defining the linear system. To speed up convergence, a [*preconditioner*](https://en.wikipedia.org/wiki/Preconditioner) can be applied to both sides of the linear equation, attempting to create an equation that converges faster. In practice, preconditioners are implemented as functions with a specific set of arguments. How to implement these is non-trivial, and we recommend reading OrdinaryDiffEq's documentation pages [here](https://docs.sciml.ai/DiffEqDocs/stable/features/linear_nonlinear/#Preconditioners:-precs-Specification) and [here](https://docs.sciml.ai/DiffEqDocs/stable/tutorials/advanced_ode_example/#Adding-a-Preconditioner). In this example, we will define an [Incomplete LU](https://en.wikipedia.org/wiki/Incomplete_LU_factorization) preconditioner (which requires the [IncompleteLU.jl](https://github.com/haampie/IncompleteLU.jl) package):
+When an implicit method solves a linear equation through an iterative method, the rate of convergence depends on the numerical properties of the matrix defining the linear system. To speed up convergence, a [*preconditioner*](https://en.wikipedia.org/wiki/Preconditioner) can be applied to both sides of the linear equation, attempting to create an equation that converges faster. Preconditioners are only actually relevant when using matrix-free Krylov methods.
+
+In practice, preconditioners are implemented as functions with a specific set of arguments. How to implement these is non-trivial, and we recommend reading OrdinaryDiffEq's documentation pages [here](https://docs.sciml.ai/DiffEqDocs/stable/features/linear_nonlinear/#Preconditioners:-precs-Specification) and [here](https://docs.sciml.ai/DiffEqDocs/stable/tutorials/advanced_ode_example/#Adding-a-Preconditioner). In this example, we will define an [Incomplete LU](https://en.wikipedia.org/wiki/Incomplete_LU_factorization) preconditioner (which requires the [IncompleteLU.jl](https://github.com/haampie/IncompleteLU.jl) package):
 ```@example ode_simulation_performance_3
 using IncompleteLU
 function incompletelu(W, du, u, p, t, newW, Plprev, Prprev, solverdata)
@@ -154,16 +156,12 @@ nothing # hide
 ```
 Next, `incompletelu` can be supplied to our solver using the `precs` argument:
 ```@example ode_simulation_performance_3
-solve(oprob, Rodas5P(precs = incompletelu))
-nothing # hide
-```
-Finally, we note that since matrix-free linear solvers (like `KrylovJL_GMRES`) by default do not build a Jacobian. Hence, if we want to use them with a preconditioner we must tell them to build it. This can be done using the `concrete_jacobian=true` option:
-```@example ode_simulation_performance_3
 solve(oprob, Rodas5P(linsolve = KrylovJL_GMRES(), precs = incompletelu, concrete_jac=true))
 nothing # hide
 ```
+Finally, we note that when using preconditioners with a matrix free method (like `KrylovJL_GMRES`, which is also the only case when these are relevant), the `concrete_jac=true` argument is required.
 
-Generally, the use of preconditioners is only recommended for advanced users who are familiar with the concepts. However, for large systems, if performance is essential, they can still be worth looking into.
+Generally, the use of preconditioners is only recommended for advanced users who are familiar with the concepts. However, for large systems, if performance is essential, they can be worth looking into.
 
 ## [Parallelisation on CPUs and GPUs](@id ode_simulation_performance_parallelisation)
 Whenever an ODE is simulated a large number of times (e.g. when investigating its behaviour for different parameter values), the best way to improve performance is to [parallelise the simulation over several processing units](https://en.wikipedia.org/wiki/Parallel_computing). Indeed, an advantage of the Julia programming language is that it was designed after the advent of parallel computing, making it well-suited for this task. Roughly, parallelisation can be divided into parallelisation on [CPUs](https://en.wikipedia.org/wiki/Central_processing_unit) and on [GPUs](https://en.wikipedia.org/wiki/General-purpose_computing_on_graphics_processing_units). CPU parallelisation is most straightforward, while GPU parallelisation requires specialised ODE solvers (which Catalyst have access to). 
