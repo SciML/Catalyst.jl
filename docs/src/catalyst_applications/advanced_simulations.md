@@ -312,7 +312,7 @@ plot(sol_1; idxs = :X1, ylimit = (0.0, 20.0))
 ```
 Here we can see that the $X$ concentration fluctuates around a steady state of $X≈10.0$.
 
-Next, we wish increase the amount of noise with by a factor 2. To do so, we use the `@default_noise_scaling` option, to which we provide the desired scaling 
+Next, we wish increase the amount of noise by a factor 2. To do so, we use the `@default_noise_scaling` option, to which we provide the desired scaling 
 ```@example ex3
 rn_2 = @reaction_network begin
     @default_noise_scaling 2
