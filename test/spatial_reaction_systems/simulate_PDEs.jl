@@ -17,6 +17,7 @@ end
 ### Run Tests ###
 
 let
+    t = default_t()
     @parameters k[1:7] D[1:3] n0[1:3] A
     @variables x y
     @species U(x, y, t) V(x, y, t) W(x, y, t)

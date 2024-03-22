@@ -1,5 +1,5 @@
 ### Preparations ###
-hi_world()
+
 # Fetch packages.
 using Catalyst, Test
 

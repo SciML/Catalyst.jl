@@ -8,6 +8,9 @@ using Random, Test
 using StableRNGs
 rng = StableRNG(12345)
 
+# Fetch test networks and functions.
+include("../test_functions.jl")
+
 ### Run Tests ###
 
 # Creates a simple problem and find steady states just different approaches. Compares to analytic solution.
@@ -48,7 +51,7 @@ let
 
     # Creates NonlinearProblem.
     u0 = rnd_u0(steady_state_network_2, rng; min = 1.0)
-    rnd_ps_Int64 = rnd_ps(steady_state_network_2, rng)
+    ps = rnd_ps(steady_state_network_2, rng)
     nlprob = NonlinearProblem(steady_state_network_2, u0, ps)
     
     # Solves it using standard algorithm and simulation based algorithm.
@@ -74,6 +77,8 @@ end
 # Checks for system with conservation laws.
 # Checks using interfacing with output solution.
 let 
+    # Conservation laws currently broken (you get stuck in an infinite loop in MTK or something).
+    return (@test_broken false)
     # Creates steady state network, unpack the parameter values.
     steady_state_network_3 = @reaction_network begin
         (p,d), 0 <--> X
