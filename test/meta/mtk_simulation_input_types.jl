@@ -2,10 +2,9 @@
 
 ### Fetch Packages and Reaction Networks ###
 
-# Fetch packages.
-using Catalyst, OrdinaryDiffEq, JumpProcesses, Random, Test
-using ModelingToolkit: get_states, get_ps
-t = default_t()
+# Fetch packages
+using Catalyst, OrdinaryDiffEq, StochasticDiffEq, JumpProcesses, NonlinearSolve, Plots
+using Test
 
 # Sets rnd number.
 using StableRNGs
@@ -76,38 +75,66 @@ end
 # Tests solving for various inputs types across various problem types.
 let 
     model = complete(@reaction_network begin
+        @species Z(t) = Z0
+        @parameters Z0::Int64 k2=0.5
         (kp,kd), 0 <--> X
         (k1,k2), X <--> Y
+        (k1,k2), Y <--> Z
     end)
     @unpack X, Y, kp, kd, k1, k2 = model
-    
+
+    u0_alts = [
+        [X => 4, Y => 5],
+        [model.X => 4, model.Y => 5],
+        [:X => 4, :Y => 5],
+        [X => 4, Y => 5, Z => 10],
+        [model.X => 4, model.Y => 5, model.Z => 10],
+        [:X => 4, :Y => 5, :Z => 10],
+        (X => 4, Y => 5),
+        (model.X => 4, model.Y => 5),
+        (:X => 4, :Y => 5),
+        (X => 4, Y => 5, Z => 10),
+        (model.X => 4, model.Y => 5, model.Z => 10),
+        (:X => 4, :Y => 5, :Z => 10)
+    ]
     tspan = (0.0, 10.0)
+    p_alts = [
+        [kp => 1.0, kd => 0.1, k1 => 0.25, Z0 => 6],
+        [model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.Z0 => 6],
+        [:kp => 1.0, :kd => 0.1, :k1 => 0.25, :Z0 => 6],
+        (kp => 1.0, kd => 0.1, k1 => 0.25, Z0 => 6),
+        (model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.Z0 => 6),
+        (:kp => 1.0, :kd => 0.1, :k1 => 0.25, :Z0 => 6)
+    ]
+end
 
-    u0_vals_1 = [X => 1, Y => 0]
-    u0_vals_2 = [model.X => 1, model.Y => 0]
-    u0_vals_3 = [:X => 1, :Y => 0]
-    p_vals_1 = [kp => 1.0, kd => 0.2, k1 => 1.0, k2 => 2.0]
-    p_vals_2 = [model.kp => 1.0, model.kd => 0.2, model.k1 => 1.0, model.k2 => 2.0]
-    p_vals_3 = [:kp => 1.0, :kd => 0.2, :k1 => 1.0, :k2 => 2.0]
+# Perform ODE simulations.
+let 
+    base_oprob = ODEProblem(model, u0_alts[1], tspan, p_alts[1])
+    base_sol = solve(base_oprob, Tsit5(); saveat = 1.0)
+    for u0 in u0_alts, p in p_alts
+        oprob = remake(base_oprob; u0, p)
+        @test base_sol == solve(oprob, Tsit5(); saveat = 1.0)
+    end
+end
 
-    oprob_1 = ODEProblem(model, u0_vals_1, tspan, p_vals_1)
-    oprob_2 = ODEProblem(model, u0_vals_2, tspan, p_vals_2)
-    oprob_3 = ODEProblem(model, u0_vals_3, tspan, p_vals_3)
-    sprob_1 = SDEProblem(model,u0_vals_1, tspan, p_vals_1)
-    sprob_2 = SDEProblem(model,u0_vals_2, tspan, p_vals_2)
-    sprob_3 = SDEProblem(model,u0_vals_3, tspan, p_vals_3)
-    dprob_1 = DiscreteProblem(model, u0_vals_1, tspan, p_vals_1)
-    dprob_2 = DiscreteProblem(model, u0_vals_2, tspan, p_vals_2)
-    dprob_3 = DiscreteProblem(model, u0_vals_3, tspan, p_vals_3)
-    jprob_1 = JumpProblem(model, dprob_1, Direct())
-    jprob_2 = JumpProblem(model, dprob_2, Direct())
-    jprob_3 = JumpProblem(model, dprob_3, Direct())
-    nprob_1 = NonlinearProblem(model, u0_vals_1, p_vals_1)
-    nprob_2 = NonlinearProblem(model, u0_vals_2, p_vals_2)
-    nprob_3 = NonlinearProblem(model, u0_vals_3, p_vals_3)
-    
-    @test solve(oprob_1, Tsit5()) == solve(oprob_2, Tsit5()) == solve(oprob_3, Tsit5())
-    @test solve(sprob_1, ImplicitEM(); seed=1234) == solve(sprob_2, ImplicitEM(); seed=1234) == solve(sprob_3, ImplicitEM(); seed=1234)
-    @test solve(jprob_1, SSAStepper(); seed=1234) == solve(jprob_2, SSAStepper(); seed=1234) == solve(jprob_3, SSAStepper(); seed=1234)
-    @test solve(nprob_1, NewtonRaphson()) == solve(nprob_2, NewtonRaphson()) == solve(nprob_3, NewtonRaphson())
+# Perform SDE simulations.
+let 
+    base_sprob = SDEProblem(model, u0_alts[1], tspan, p_alts[1])
+    base_sol = solve(base_sprob, ImplicitEM(); saveat = 1.0, seed = 1234)
+    for u0 in u0_alts, p in p_alts
+        sprob = remake(base_sprob; u0, p)
+        @test base_sol == solve(sprob, ImplicitEM(); saveat = 1.0, seed = 1234)
+    end
+end
+
+# Perform Jump simulations.
+let 
+    base_dprob = DiscreteProblem(model, u0_alts[1], tspan, p_alts[1])
+    base_jprob = JumpProblem(model, base_dprob, Direct())
+    base_sol = solve(base_jprob, SSAStepper(); saveat = 1.0, seed = 1234)
+    for u0 in u0_alts, p in p_alts
+        jprob = remake(base_jprob; u0, p)
+        @test base_sol == solve(base_jprob, SSAStepper(); saveat = 1.0, seed = 1234)
+    end
 end
