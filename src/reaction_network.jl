@@ -362,6 +362,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Reads options.
     default_reaction_metadata = :([])
+    check_default_noise_scaling!(default_reaction_metadata, options)
     compound_expr, compound_species = read_compound_options(options)
     check_default_noise_scaling!(default_reaction_metadata, options)
     default_reaction_metadata = expr_equal_vector_to_pairs(default_reaction_metadata)
@@ -601,7 +602,7 @@ function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(u
     for line in exprs
         # Reads core reaction information.
         arrow, rate, reaction, metadata = read_reaction_line(line)
-
+        
         # Checks the type of arrow used, and creates the corresponding reaction(s). Returns them in an array.
         if in(arrow, double_arrows)
             if typeof(rate) != Expr || rate.head != :tuple
