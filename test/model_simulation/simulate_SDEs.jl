@@ -12,7 +12,7 @@ rng = StableRNG(12345)
 include("../test_networks.jl")
 include("../test_functions.jl")
 
-### Compares to Manually Calcualted Function ###
+### Compares to Manually Computed Function ###
 
 let
     identical_networks = Vector{Pair}()
