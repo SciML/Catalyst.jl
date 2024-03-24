@@ -11,7 +11,7 @@ rng = StableRNG(12345)
 # Fetch test networks.
 include("../test_networks.jl")
 
-### Compares to Manually Calcualted Function ###
+### Compares to Manually Computed Function ###
 
 let
     identical_networks = Vector{Pair}()
