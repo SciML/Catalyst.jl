@@ -16,7 +16,7 @@ t = default_t()
 
 ### Tests `@parameters`, `@species`, and `@variables` Options ###
 
-# Test creating networks with/without options.
+# Test creating networks with/without options. Compares they are all identical.
 let
     @reaction_network begin (k1, k2), A <--> B end
     @reaction_network begin
@@ -155,7 +155,6 @@ end
 # Test inferring with stoichiometry symbols and interpolation.
 let
     @parameters k g h gg X y [isconstantspecies = true]
-    t = Catalyst.DEFAULT_IV
     @species A(t) B(t) BB(t) C(t)
 
     rni = @reaction_network inferred begin
@@ -496,7 +495,7 @@ let
     @test_broken false # plot(sol; idxs=[:X, :Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
 end
 
-# Compares programmatic and DSL system with observables.
+# Compares programmatic and DSL systems with observables.
 let
     # Model declarations.
     rn_dsl = @reaction_network begin
