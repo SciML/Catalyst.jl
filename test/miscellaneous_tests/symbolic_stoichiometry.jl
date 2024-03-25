@@ -1,4 +1,9 @@
-using Catalyst, OrdinaryDiffEq, Test, LinearAlgebra, JumpProcesses
+### Prepares Tests ###
+
+# Fetch packages.
+using Catalyst, JumpProcesses, LinearAlgebra, OrdinaryDiffEq, Test
+
+# Sets the default `t` to use.
 t = default_t()
 
 ### Base Tests ###

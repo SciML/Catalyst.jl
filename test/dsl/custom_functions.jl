@@ -1,4 +1,3 @@
-
 ### Fetch Packages and Set Global Variables ###
 using DiffEqBase, Catalyst, Random, Symbolics, Test
 using ModelingToolkit: get_unknowns, get_ps
@@ -6,6 +5,9 @@ t = default_t()
 
 using StableRNGs
 rng = StableRNG(12345)
+
+# Fetch test functions.
+include("../test_functions.jl")
 
 ### Tests Custom Functions ###
 let
@@ -33,32 +35,13 @@ let
         v5 * (X7^2) / (K5^2 + X7^2 + Y7^2), X7 + Y7 --> Z7
     end
 
-    function permute_ps(pvals, rn1, rn2)
-        ps1 = parameters(rn1)
-        ps2 = parameters(rn2)
-        pvals2 = similar(pvals)
-        for (i, p) in enumerate(ps2)
-            pidx = findfirst(isequal(p), ps1)
-            pvals2[i] = pvals[pidx]
-        end
-        pvals2
-    end
-
-    f1 = ODEFunction(convert(ODESystem, custom_function_network_1), jac = true)
-    f2 = ODEFunction(convert(ODESystem, custom_function_network_2), jac = true)
-    g1 = SDEFunction(convert(SDESystem, custom_function_network_1))
-    g2 = SDEFunction(convert(SDESystem, custom_function_network_2))
     for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2]
-        u0 = factor * rand(rng, length(get_unknowns(custom_function_network_1)))
-        p = factor * rand(rng, length(get_ps(custom_function_network_2)))
-
-        # needed as this code assumes an ordering of the parameters and species...
-        p2 = permute_ps(p, custom_function_network_1, custom_function_network_2)
-
+        u0 = rnd_u0(custom_function_network_1, rng; factor)
+        ps = rnd_ps(custom_function_network_1, rng; factor)
         t = rand(rng)
-        @test all(abs.(f1(u0, p, t) .- f2(u0, p2, t)) .< 10e-10)
-        @test all(abs.(f1.jac(u0, p, t) .- f2.jac(u0, p2, t)) .< 10e-10)
-        @test all(abs.(g1(u0, p, t) .- g2(u0, p2, t)) .< 10e-10)
+        @test f_eval(custom_function_network_1, u0, ps, t) ≈ f_eval(custom_function_network_2, u0, ps, t)
+        @test jac_eval(custom_function_network_1, u0, ps, t) ≈ jac_eval(custom_function_network_2, u0, ps, t)
+        @test g_eval(custom_function_network_1, u0, ps, t) ≈ g_eval(custom_function_network_2, u0, ps, t)
     end
 end
 

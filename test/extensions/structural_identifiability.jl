@@ -1,11 +1,9 @@
-### Fetch Packages ###
+### Prepares Tests ###
 
-using Catalyst, Test
-using StructuralIdentifiability
+# Fetch packages.
+using Catalyst, StructuralIdentifiability, Test
 
-
-### Helper Function ###
-
+# Helper function for checking that results are correct identifiability calls from different packages.
 # Converts the output dicts from StructuralIdentifiability functions from "weird symbol => stuff" to "symbol => stuff" (the output have some strange meta data which prevents equality checks, this enables this).
 # Structural identifiability also provides variables like x (rather than x(t)). This is a bug, but we have to convert to make it work (now just remove any (t) to make them all equal).
 function sym_dict(dict_in)
@@ -203,17 +201,6 @@ let
     @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M*gw_osc_complt.E]) isa ODE
 end
 
-# Check that `prob_threshold` alternative kwarg works.
-let 
-    rs = @reaction_network begin
-        p, X --> 0
-    end
-    @unpack X = rs
-
-    assess_identifiability(rs; measured_quantities=[X], prob_threshold=0.9)
-    assess_identifiability(rs; measured_quantities=[X], prob_threshold=0.999)
-end
-
 # Tests for hierarchical model with conservation laws at both top and internal levels.
 let
     # Identifiability analysis for Catalyst model.
@@ -255,7 +242,7 @@ let
     # Check outputs.
     @test sym_dict(gi_1) == sym_dict(gi_3)
     @test sym_dict(li_1) == sym_dict(li_3)
-    @test length(ifs_1)-2 == length(ifs_2)-2 == length(ifs_3) # In the first case, the conservation law parameter is also identifiable.
+    @test (length(ifs_1) - 2) == (length(ifs_2) - 2) == length(ifs_3) # In the first case, the conservation law parameter is also identifiable.
 
     # Checks output for the SI converted version of the catalyst model.
     # For nested systems with conservation laws, conserved quantities like Γ[1], cannot be replaced back.

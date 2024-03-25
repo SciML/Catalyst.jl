@@ -1,6 +1,9 @@
+# Fetch packages.
 using Catalyst, Graphviz_jll
 
 ### Basic Tests ###
+
+# Check basic functionality.
 let
     rn = @reaction_network begin
         α, S + I --> 2I

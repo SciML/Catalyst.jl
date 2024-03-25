@@ -1,14 +1,14 @@
-### Fetch Packages ###
+### Prepares Tests ###
 
 # Fetch packages.
 using Catalyst, NonlinearSolve, OrdinaryDiffEq, SteadyStateDiffEq
 using Random, Test
 
-# Sets rnd number.
+# Sets stable rng number.
 using StableRNGs
 rng = StableRNG(12345)
 
-# Fetch test networks and functions.
+# Fetch test functions.
 include("../test_functions.jl")
 
 ### Run Tests ###
@@ -98,7 +98,6 @@ let
     sol2 = solve(nl_prob_2, DynamicSS(Rosenbrock23()); abstol=1e-12, reltol=1e-12)
 
     # Checks output using the ODE's drift function
-    nfunc = NonlinearFunction(convert(NonlinearSystem, steady_state_network_3))   
     @test f_eval([:X => sol1[X], :Y => sol1[Y], :Y2 => sol1[Y2], :XY2 => sol1[XY2]], p, 0.0) ≈ [0.0, 0.0, 0.0, 0.0] atol=1e-10
     @test f_eval([:X => sol2[X], :Y => sol2[Y], :Y2 => sol2[Y2], :XY2 => sol2[XY2]], p, 0.0) ≈ [0.0, 0.0, 0.0, 0.0] atol=1e-10
 end

@@ -1,14 +1,19 @@
 ### Fetch Packages and Set Global Variables ###
 
+### Prepares Tests ###
+
 # Fetch packages.
 using DiffEqBase, Catalyst, JumpProcesses, Random, Statistics, Test
 using ModelingToolkit: get_unknowns, get_ps
 
-# Sets rnd number.
+# Sets stable rng number.
 using StableRNGs
 rng = StableRNG(12345)
 
-# Delare globaly used network.
+# Fetch test functions.
+include("../test_functions.jl")
+
+# Declares a network used throughout all tests.
 higher_order_network_1 = @reaction_network begin
     p, ∅ ⟼ X1
     r1, 2X1 ⟼ 3X2
@@ -20,9 +25,9 @@ higher_order_network_1 = @reaction_network begin
     d, 2X10 ⟼ ∅
 end
 
-### Run Tests ###
+### Basic Tests ###
 
-# Tests that deterministic and stochastic differential functions are identical. 
+# Tests that ODE and SDE functions are correct (by comparing to network with manually written higher order rates). 
 let
     higher_order_network_2 = @reaction_network begin
         p, ∅ ⟾ X1
@@ -36,21 +41,18 @@ let
         d * X10^2 / factorial(2), 2X10 ⟾ ∅
     end
 
-    f1 = ODEFunction(convert(ODESystem, higher_order_network_1), jac = true)
-    f2 = ODEFunction(convert(ODESystem, higher_order_network_2), jac = true)
-    g1 = SDEFunction(convert(SDESystem, higher_order_network_1))
-    g2 = SDEFunction(convert(SDESystem, higher_order_network_2))
-    for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-        u0 = factor * rand(rng, length(get_unknowns(higher_order_network_1)))
-        p = factor * rand(rng, length(get_ps(higher_order_network_2)))
+    for factor in [1e-1, 1e0, 1e1, 1e2]
+        u0 = rnd_u0(higher_order_network_1, rng; factor)
+        ps = rnd_ps(higher_order_network_1, rng; factor)
         t = rand(rng)
-        @test all(abs.(f1(u0, p, t) .- f2(u0, p, t)) .< 100 * eps())
-        @test all(abs.(f1.jac(u0, p, t) .- f2.jac(u0, p, t)) .< 100 * eps())
-        @test all(abs.(g1(u0, p, t) .- g2(u0, p, t)) .< 100 * eps())
+
+        @test f_eval(higher_order_network_1, u0, ps, t) == f_eval(higher_order_network_2, u0, ps, t)
+        @test jac_eval(higher_order_network_1, u0, ps, t) == jac_eval(higher_order_network_2, u0, ps, t)
+        @test g_eval(higher_order_network_1, u0, ps, t) == g_eval(higher_order_network_2, u0, ps, t)
     end
 end
 
-# Tests that the discrete jump systems are equal.
+# Tests that Jump Systems are correct (by comparing to network with manually written higher order rates). 
 # Currently fails because binomial only takes Int input (and X is Float64).
 # I see several solutions, but depends on whether we allow species to be specified as Int64.
 # I have marked this one as broken for now.

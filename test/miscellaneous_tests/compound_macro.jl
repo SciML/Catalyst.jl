@@ -1,7 +1,14 @@
+### Prepares Tests ###
+
+# Fetch packages.
 using Catalyst, Test
+
+# Sets the default `t` to use.
 t = default_t()
 
-### Tests Main Macro Creation Forms ### 
+### Test Macro Basic Functionality  ### 
+
+# Miscellaneous basic usage.
 let
     @species C(t) H(t) O(t) 
     @parameters p1 p2
@@ -60,7 +67,41 @@ let
     @test iscompound(rn.NH3_5)
 end
 
-### Test Various Independent Variables ###
+# Simple test case 1.
+let
+    @species C(t) H(t) O(t)
+    @compound C6H12O2 ~ 6C + 12H + 2O
+
+    @test iscompound(C6H12O2)
+    @test isspecies(C6H12O2)
+    @test !iscompound(C)
+    @test !iscompound(H)
+    @test !iscompound(O)
+
+    @test isequal([C, H, O], components(C6H12O2))
+    @test isequal([6, 12, 2], coefficients(C6H12O2))
+    @test isequal([C => 6, H => 12, O => 2], Catalyst.component_coefficients(C6H12O2)) 
+    @test all(!iscompound(i) for i in components(C6H12O2))
+end
+
+# Simple test case 2.
+let
+    @species O(t)
+    @compound O2 ~ 2O
+
+    @test iscompound(O2)
+    @test isspecies(O2)
+    @test !iscompound(O)
+
+    @test isequal([O], components(O2))
+    @test isequal([2], coefficients(O2))
+    @test isequal([O => 2], Catalyst.component_coefficients(O2)) 
+    @test all(!iscompound(i) for i in components(O2))
+end
+
+### Independent Variables ###
+
+# Test using different independent variable combinations.
 let
     @variables x y z
     @species C(t) H(x) N(x) O(t) P(t,x) S(x,y)
@@ -87,70 +128,9 @@ let
     @test issetequal(arguments(ModelingToolkit.unwrap(SO2)), [t, x, y])
 end
 
-### Other Minor Tests ###
+### Interpolation Tests ###
 
-# Test base functionality in two cases.
-let
-    @species C(t) H(t) O(t)
-    @compound C6H12O2 ~ 6C + 12H + 2O
-
-    @test iscompound(C6H12O2)
-    @test isspecies(C6H12O2)
-    @test !iscompound(C)
-    @test !iscompound(H)
-    @test !iscompound(O)
-
-    @test isequal([C, H, O], components(C6H12O2))
-    @test isequal([6, 12, 2], coefficients(C6H12O2))
-    @test isequal([C => 6, H => 12, O => 2], Catalyst.component_coefficients(C6H12O2)) 
-    @test all(!iscompound(i) for i in components(C6H12O2))
-end
-
-let
-    @species O(t)
-    @compound O2 ~ 2O
-
-    @test iscompound(O2)
-    @test isspecies(O2)
-    @test !iscompound(O)
-
-    @test isequal([O], components(O2))
-    @test isequal([2], coefficients(O2))
-    @test isequal([O => 2], Catalyst.component_coefficients(O2)) 
-    @test all(!iscompound(i) for i in components(O2))
-end
-
-# Checks that compounds cannot be created from non-existing species.
-let
-    @species C(t) H(t)
-    @test_throws Exception @compound C6H12O2 ~ 6C + 12H + 2O    
-end
-let
-    @test_throws Exception @compound O2 ~ 2O    
-end
-
-# Checks that nested components works as expected.
-let
-    @species C(t) H(t) O(t)
-    @compound OH ~ 1O + 1H
-    @compound C3H5OH3 ~ 3C + 5H + 3OH
-
-    @test !iscompound(O)
-    @test !iscompound(H)
-    @test iscompound(OH)
-    @test iscompound(C3H5OH3)
-    @test !(all(!iscompound(i) for i in components(C3H5OH3)))
-
-    @test !iscompound(components(C3H5OH3)[1])
-    @test !iscompound(components(C3H5OH3)[2])
-    @test iscompound(components(C3H5OH3)[3])
-
-    @test isequal([C, H, OH], components(C3H5OH3))
-    @test isequal([O, H], components(components(C3H5OH3)[3]))
-    @test isequal([3, 5, 3], coefficients(C3H5OH3))
-end
-
-# Checks that interpolation works.
+# Case 1.
 let
     @species C(t) H(t) O(t)
     s = C
@@ -165,6 +145,7 @@ let
     @test isequal(component_coefficients(C6H12O2_1), component_coefficients(C6H12O2_2))
 end
 
+# Case 2.
 let
     @species C(t) H(t)
     @compound Cyclopentadiene ~ 5C + 6H
@@ -179,6 +160,7 @@ let
     @test isequal(coefficients(C10H12)[1], 2)
 end
 
+# Case 3.
 let
     @species H(t)
 
@@ -202,6 +184,7 @@ let
     @test isequal(coefficients(H2_3),coefficients(H2_4))
 end
 
+# Case 4.
 let
     @parameters alpha = 2
     @species H(t)
@@ -216,6 +199,7 @@ let
     @test isequal(coefficients(H2_1), @parameters alpha = 2)
 end
 
+# Case 5.
 let 
     @species A(t)
     B = A
@@ -232,7 +216,7 @@ end
 
 ###  Check @compounds Macro ###
 
-# Basic syntax.
+# Basic @compounds syntax.
 let 
     @species C(t) H(t) O(t)
     @compound OH ~ 1O + 1H
@@ -254,7 +238,7 @@ let
     @test isequal(component_coefficients(C3H5OH3), component_coefficients(C3H5OH3_alt))
 end
 
-# Interpolation
+# Interpolation in @compounds.
 let 
     @species s1(t) s2(t) s3(t)
     s2_alt = s2
@@ -271,6 +255,36 @@ let
     @test isequal(components(comp),components(comp_alt))
     @test isequal(coefficients(comp), coefficients(comp_alt))
     @test isequal(component_coefficients(comp), component_coefficients(comp_alt))
+end
+
+### Other Tests ###
+
+# Checks that compounds cannot be created from non-existing species.
+let
+    @species C(t) H(t)
+    @test_throws Exception @compound C6H12O2 ~ 6C + 12H + 2O    
+    @test_throws Exception @compound O2 ~ 2O    
+end
+
+# Checks that nested components works as expected.
+let
+    @species C(t) H(t) O(t)
+    @compound OH ~ 1O + 1H
+    @compound C3H5OH3 ~ 3C + 5H + 3OH
+
+    @test !iscompound(O)
+    @test !iscompound(H)
+    @test iscompound(OH)
+    @test iscompound(C3H5OH3)
+    @test !(all(!iscompound(i) for i in components(C3H5OH3)))
+
+    @test !iscompound(components(C3H5OH3)[1])
+    @test !iscompound(components(C3H5OH3)[2])
+    @test iscompound(components(C3H5OH3)[3])
+
+    @test isequal([C, H, OH], components(C3H5OH3))
+    @test isequal([O, H], components(components(C3H5OH3)[3]))
+    @test isequal([3, 5, 3], coefficients(C3H5OH3))
 end
 
 ### Compounds in DSL ###

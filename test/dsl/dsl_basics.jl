@@ -2,11 +2,15 @@
 
 ### Fetch Packages and Set Global Variables ###
 
+# Fetch packages.
 using Catalyst, ModelingToolkit
+
+# Set creates the `t` independent variable.
 t = default_t()
 
 ### Naming Tests ###
 
+# Test that the correct name is generated.
 let
     @parameters k
     @species A(t)
@@ -63,63 +67,58 @@ end
 
 ### Test Interpolation Within the DSL ###
 
-@parameters α k k1 k2
-@species A(t) B(t) C(t) D(t)
-
+# Tests basic interpolation cases.
 let
-    AA = A
-    AAA = A^2 + B
-    rn = @reaction_network rn begin
-        @parameters k
-        @species A(t) B(t) C(t) D(t)
-        k*$AAA, C --> D
-    end
-    rn2 = ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn)
-    @test rn == rn2
+    # Declares parameters and species used across the test.
+    @parameters α k k1 k2
+    @species A(t) B(t) C(t) D(t)
 
-    rn = @reaction_network rn begin
-        @parameters k
-        @species A(t) C(t) D(t)
-        k, $AA + C --> D
+    let
+        AA = A
+        AAA = A^2 + B
+        rn = @reaction_network rn begin
+            @parameters k
+            @species A(t) B(t) C(t) D(t)
+            k*$AAA, C --> D
+        end
+        rn2 = ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn)
+        @test rn == rn2
+
+        rn = @reaction_network rn begin
+            @parameters k
+            @species A(t) C(t) D(t)
+            k, $AA + C --> D
+        end
+        rn2 = ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn)
+        @test rn == rn2
     end
-    rn2 = ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn)
-    @test rn == rn2
+
+    let
+        BB = B; A2 = A
+        rn = @reaction_network rn begin
+            @parameters k1 k2
+            (k1,k2), C + $A2 + $BB + $A2 <--> $BB + $BB
+        end
+        rn2 = ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
+                            Reaction(k2, [B], [C, A, B], [2], [1,2,1])],
+                            t; name=:rn)
+        @test rn == rn2
+    end
+
+    let
+        AA = A
+        kk1 = k^2*A
+        kk2 = k1+k2
+        rn = @reaction_network rn begin
+            @parameters α k k1 k2
+            α+$kk1*$kk2*$AA, 2*$AA + B --> $AA
+        end
+        rn2 = ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; name=:rn)
+        @test rn == rn2
+    end
 end
 
-let
-    BB = B; A2 = A
-    rn = @reaction_network rn begin
-        @parameters k1 k2
-        (k1,k2), C + $A2 + $BB + $A2 <--> $BB + $BB
-    end
-    rn2 = ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
-                        Reaction(k2, [B], [C, A, B], [2], [1,2,1])],
-                        t; name=:rn)
-    @test rn == rn2
-end
-
-let
-    AA = A
-    kk1 = k^2*A
-    kk2 = k1+k2
-    rn = @reaction_network rn begin
-        @parameters α k k1 k2
-        α+$kk1*$kk2*$AA, 2*$AA + B --> $AA
-    end
-    rn2 = ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; name=:rn)
-    @test rn == rn2
-end
-
-@testset "make_reaction_system can be called from another module" begin
-    ex = quote
-        (Ka, Depot --> Central)
-        (CL / Vc, Central --> 0)
-    end
-    # Line number nodes aren't ignored so have to be manually removed
-    Base.remove_linenums!(ex)
-    @test eval(Catalyst.make_reaction_system(ex)) isa ReactionSystem
-end
-
+# Miscellaneous interpolation tests. Unsure what they do here (not related to DSL).
 let
     rx = @reaction k*h, A + 2*B --> 3*C + D
     @parameters k h
@@ -133,10 +132,21 @@ let
     @test rx == Reaction(b+ex, [A,C], nothing, [2,1], nothing)
 end
 
+# Creates a reaction network using `eval` and internal function.
+let
+    ex = quote
+        (Ka, Depot --> Central)
+        (CL / Vc, Central --> 0)
+    end
+    # Line number nodes aren't ignored so have to be manually removed
+    Base.remove_linenums!(ex)
+    @test eval(Catalyst.make_reaction_system(ex)) isa ReactionSystem
+end
+
 ### Tests Reaction Metadata ###
 
-# Tests construction for various types of metadata.
-# Tests accessor functions.
+# Tests construction for various types of reaction metadata.
+# Tests reaction metadata accessor functions.
 let
     # Creates reactions directly.
     @variables t
@@ -252,7 +262,7 @@ let
     @test isequal(rn1,rn2)
 end
 
-### Other tests ###
+### Other Tests ###
 
 # Test floating point stoichiometry work.
 let
@@ -272,7 +282,7 @@ let
     @test rn == mixedsys
 end
 
-# Test variables that appear only in rates and aren't ps
+# Test that variables that appear only in rates and aren't ps
 # are categorized as species.
 let
     rn = @reaction_network begin
@@ -312,7 +322,7 @@ let
     @test length(equations(osys2)) == 2
 end
 
-# test @variables in DSL
+# Test @variables in DSL.
 let
     rn = @reaction_network tester begin
         @parameters k1
@@ -341,7 +351,7 @@ let
     end
 end
 
-# ivs test
+# Test ivs in DSL.
 let
     rn = @reaction_network ivstest begin
         @ivs s x
@@ -350,11 +360,13 @@ let
         @species A(s,x) B(s) C(x)
         k*k2*D, E*A +B --> F*C + C2
     end
+
     @parameters k k2
     @variables s x D(x) E(s) F(s,x)
     @species A(s,x) B(s) C(x) C2(s,x)
     rx = Reaction(k*k2*D, [A, B], [C, C2], [E, 1], [F, 1])
     @named ivstest = ReactionSystem([rx], s; spatial_ivs = [x])
+
     @test ivstest == rn
     @test issetequal(unknowns(rn), [D, E, F, A, B, C, C2])
     @test issetequal(species(rn), [A, B, C, C2])
@@ -362,7 +374,7 @@ let
     @test issetequal(Catalyst.get_sivs(rn), [x])
 end
 
-# array variables test
+# Array variables test.
 let
     rn = @reaction_network arrtest begin
         @parameters k[1:2] a
