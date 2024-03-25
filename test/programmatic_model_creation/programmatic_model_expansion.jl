@@ -10,7 +10,7 @@ using ModelingToolkit: get_ps, get_unknowns, get_eqs, get_systems, get_iv, getna
 using StableRNGs
 rng = StableRNG(12345)
 
-# Fetch test networks.
+# Sets the default `t` to use.
 t = default_t()
 
 # Fetch test networks.
