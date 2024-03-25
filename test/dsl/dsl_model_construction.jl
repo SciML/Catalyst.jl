@@ -76,7 +76,7 @@ let
     basic_test(reaction_networks_weird[2], 4, [:X, :Y, :Z], [:k1, :k2, :k3, :k4])
 end
 
-# Tries making various systems.
+# Compares networks to networks created using different arrow types.
 let
     identical_networks_1 = Vector{Pair}()
 
@@ -137,7 +137,7 @@ let
     end
 end
 
-# Tests that networks expressed in different ways are identical.
+# Compares networks to networks written in different ways.
 let
     identical_networks_2 = Vector{Pair}()
 
@@ -203,7 +203,7 @@ let
     end
 end
 
-# Test networks without parameters.
+# Compares networks to networks written without parameters
 let
     identical_networks_3 = Vector{Pair}()
     parameter_sets = []
@@ -217,8 +217,8 @@ let
         (sqrt(3.7), exp(1.9)), X4 ⟷ X1 + X2
     end
     push!(identical_networks_3, reaction_networks_standard[9] => no_parameters_9)
-    push!(parameter_sets,
-          [1.5, 1, 2, 0.01, 2.3, 1001, π, 42, 19.9, 999.99, sqrt(3.7), exp(1.9)])
+    push!(parameter_sets, [:p1 => 1.5, :p2 => 1, :p3 => 2, :d1 => 0.01, :d2 => 2.3, :d3 => 1001, 
+                           :k1 => π, :k2 => 42, :k3 => 19.9, :k4 => 999.99, :k5 => sqrt(3.7), :k6 => exp(1.9)])
 
     no_parameters_10 = @reaction_network begin
         0.01, ∅ ⟶ X1
@@ -229,19 +229,17 @@ let
         1.0, X5 ⟶ ∅
     end
     push!(identical_networks_3, reaction_networks_standard[10] => no_parameters_10)
-    push!(parameter_sets, [0.01, 3.1, 3.2, 0.0, 2.1, 901.0, 63.5, 7, 8, 1.0])
+    push!(parameter_sets, [:p => 0.01, :k1 => 3.1, :k2 => 3.2, :k3 => 0.0, :k4 => 2.1, :k5 => 901.0, 
+                           :k6 => 63.5, :k7 => 7, :k8 => 8, :d => 1.0])
 
-    for (i, networks) in enumerate(identical_networks_3)
+    for (networks, p_1) in zip(identical_networks_3, parameter_sets)
         for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0_1 = rnd_u0(networks[1], rng; factor)
-            p_1 = Pair.(parameters(networks[1]), parameter_sets[i])
-            u0_2 = Pair.(unknowns(networks[2]), last.(u0_1))
-            p_2 = []
+            u0 = rnd_u0(networks[1], rng; factor)
             t = rand(rng)
             
-            @test f_eval(networks[1], u0_1, p_1, t) ≈ f_eval(networks[2], u0_2, p_2, t)
-            @test jac_eval(networks[1], u0_1, p_1, t) ≈ jac_eval(networks[2], u0_2, p_2, t)
-            @test g_eval(networks[1], u0_1, p_1, t) ≈ g_eval(networks[2], u0_2, p_2, t)
+            @test f_eval(networks[1], u0, p_1, t) ≈ f_eval(networks[2], u0, [], t)
+            @test jac_eval(networks[1], u0, p_1, t) ≈ jac_eval(networks[2], u0, [], t)
+            @test g_eval(networks[1], u0, p_1, t) ≈ g_eval(networks[2], u0, [], t)
         end
     end
 end
@@ -318,7 +316,7 @@ let
     end
 end
 
-# Test various names as varriables.
+# CHeck that various symbols can be used as species/parameter names.
 let
     @reaction_network begin
         (a, A), n ⟷ N
@@ -359,7 +357,7 @@ let
     end
 end
 
-# Test that I works.
+# Test that I works as a name.
 let
     rn = @reaction_network begin
         k1, S + I --> 2I
@@ -370,16 +368,7 @@ let
     @test any(isequal(I), unknowns(rn))
 end
 
-# Test names work.
-let
-    rn = @reaction_network SIR1 begin
-        k1, S + I --> 2I
-        k2, I --> R
-    end
-    @test nameof(rn) == :SIR1
-end
-
-# Tests some arrow variants.
+# Tests backwards and double arrows.
 let
     rn1 = @reaction_network arrowtest begin
         (a1, a2), C <--> 0
@@ -406,7 +395,7 @@ let
     @test isequal((@reaction k, 0 --> X), (@reaction k, 0 ⥟ X))
 end
 
-# Test forbidden and special symbols.
+# Test that symbols with special mean, or that are forbidden, are handled properly.
 let
     test_network = @reaction_network begin t * k, X --> ∅ end
     @test length(species(test_network)) == 1

@@ -1,25 +1,27 @@
 #! format: off
 
-### Fetch Packages, Reaction Networks, Declare Global Variables ###
+### Prepares Tests ###
 
 # Fetch packages.
 using Catalyst, Test
 using ModelingToolkit: get_ps, get_unknowns, get_eqs, get_systems, get_iv, getname, nameof
-t = default_t()
 
-# Sets rnd number.
+# Sets stable rng number.
 using StableRNGs
 rng = StableRNG(12345)
 
 # Fetch test networks.
+t = default_t()
+
+# Fetch test networks.
 include("../test_networks.jl")
 
-# Test Function
+# Declares a helper function.
 function unpacksys(sys)
     get_eqs(sys), get_iv(sys), get_ps(sys), nameof(sys), get_systems(sys)
 end
 
-### Run Tests ###
+### Basic Tests ###
 
 # Tests construction of empty reaction networks.
 let
@@ -47,6 +49,7 @@ let
 end
 
 # Tests accessing parameters and species added with network API.
+# Should probably be removed if we remove mutating stuff?
 let
     empty_network_3 = @reaction_network begin
         @incomplete
@@ -60,6 +63,7 @@ let
 end
 
 # Tests creating a network and adding reactions.
+# This test seems weird?
 let
     unfinished_network = @reaction_network begin
         @parameters k0 k1 k2 k3 k4
@@ -81,6 +85,7 @@ let
 end
 
 # Compares test network to identical network constructed via @add_reactions.
+# @add_reactions is getting deprecated though?
 let
     identical_networks = Vector{Pair}()
 

@@ -1,18 +1,24 @@
 ### Fetch Packages and Set Global Variables ###
 
 # Fetch packages.
-using Catalyst, LinearAlgebra, JumpProcesses, Test, OrdinaryDiffEq, StochasticDiffEq
-t = default_t()
+using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEq, StochasticDiffEq, Test
 const MT = ModelingToolkit
 
-# Sets rnd number.
+t = default_t()
+
+# Sets stable rng number.
 using StableRNGs
 rng = StableRNG(12345)
 
-# Fetch test networks and functions.
+# Sets the default `t` to use.
+t = default_t()
+
+# Fetch test functions.
 include("../test_functions.jl")
 
-# Create test network.
+### Creates Basic Test Network ###
+
+# Create the network.
 @parameters k[1:20]
 @species A(t) B(t) C(t) D(t)
 rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
@@ -94,7 +100,7 @@ function sdenoise(u, k, t)
     return G
 end
 
-### Main Tests ###
+### Basic Tests ###
 
 # Test equation only constructor.
 let

@@ -1,8 +1,14 @@
 #! format: off
-using ModelingToolkit, Catalyst, LinearAlgebra, OrdinaryDiffEq, Test
-using SciMLNLSolve
+
+### Prepares Tests ###
+
+# Fetch packages.
+using Catalyst, LinearAlgebra, OrdinaryDiffEq, SciMLNLSolve, Test
 using ModelingToolkit: nameof
+
+# Fetch test networks.
 t = default_t()
+
 
 ### Run Tests ###
 

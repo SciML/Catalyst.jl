@@ -74,7 +74,7 @@ let
     @test isequal(Catalyst.getmetadata(r, :md_6), (0.1, 2.0))
 end
 
-# Noise scaling metadata.
+# tests the noise scaling metadata.
 let
     @variables t
     @parameters k η  

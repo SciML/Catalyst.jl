@@ -1,7 +1,9 @@
-### Fetch Packages ###
+### Prepares Tests ###
+
+# Fetch packages.
 using BifurcationKit, Catalyst, Test
 
-# Sets rnd number.
+# Sets stable rng number.
 using StableRNGs
 rng = StableRNG(12345)
 

@@ -1,17 +1,22 @@
 #! format: off
 
-### Fetch Packages and Test Networks ###
-using Catalyst, DiffEqBase, ModelingToolkit, Test, OrdinaryDiffEq, NonlinearSolve
-using StochasticDiffEq
+### Prepares Tests ###
+
+# Fetch packages.
+using Catalyst, NonlinearSolve, OrdinaryDiffEq, SparseArrays, StochasticDiffEq, Test 
 using LinearAlgebra: norm
-using SparseArrays
 using ModelingToolkit: value
+
+# Sets the default `t` to use.
 t = default_t()
 
+# Fetch test networks.
 include("../test_networks.jl")
 
-### Base Tests ###
+### Tests Basic Getters ###
 
+# Checks various getter functions.
+# Uses several system-modifying functions, and should probably be rewritten not to use these. 
 let
     @parameters k1 k2
     @species S(t) I(t) R(t)
@@ -84,6 +89,7 @@ let
     @test numreactionparams(rs) == 3
 end
 
+# Tests `substoichmat` and `prodstoichmat` getters.
 let
     rnmat = @reaction_network begin
         α, S + 2I --> 2I
@@ -100,6 +106,17 @@ let
     @test pmat == prodstoichmat(rnmat) == Matrix(prodstoichmat(rnmat, sparse = true))
 end
 
+# Tests `reactionparamsmap`, `reactionrates`, and `symmap_to_varmap` getters.
+let
+    rn = @reaction_network begin
+        (p,d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    @unpack p, d, kB, kD = rn
+    isequal(reactionparamsmap(rn), Dict([p => 1, d => 2, kB => 3, kD => 4]))
+    issetequal(reactionrates(rn), [p, d, kB, kD])
+    isequal(symmap_to_varmap(rn, [:p => 1.0, :kB => 3.0]), [p => 1.0, kB => 3.0])
+end
 
 ### Test Intermediate Complexes Reaction Networks ###
 
@@ -120,7 +137,6 @@ function testnetwork(rn, B, Z, Δ, lcs, d, subrn, lcd; skiprxtest = false)
     @test linkagedeficiencies(rn) == lcd
     @test sum(linkagedeficiencies(rn)) <= deficiency(rn)
 end
-
 
 # Mass-action non-catalytic.
 let
@@ -307,7 +323,7 @@ let
     testnetwork(rn, B, Z, Δ, lcs, 0, subrn, lcd)
 end
 
-### Testing Reversibility ###
+### Tests Reversibility ###
 
 # Test function.
 function testreversibility(rn, B, rev, weak_rev)
@@ -316,6 +332,7 @@ function testreversibility(rn, B, rev, weak_rev)
     @test isweaklyreversible(rn, subrn) == weak_rev
 end
 
+# Tests reversibility for networks with known reversibility.
 let
     rn = @reaction_network begin
         (k2, k1), A1 <--> A2 + A3
@@ -329,7 +346,6 @@ let
     weak_rev = false
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         (k2, k1), A1 <--> A2 + A3
@@ -343,7 +359,6 @@ let
     weak_rev = false
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         k1, A --> B
@@ -353,7 +368,6 @@ let
     weak_rev = false
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         k1, A --> B
@@ -364,7 +378,6 @@ let
     weak_rev = false
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         (k2, k1), A <--> 2B
@@ -376,7 +389,6 @@ let
     weak_rev = true
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         (k2, k1), A + E <--> AE
@@ -386,7 +398,6 @@ let
     weak_rev = false
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         (k2, k1), A + E <--> AE
@@ -396,14 +407,12 @@ let
     weak_rev = true
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin (k2, k1), A + B <--> 2A end
     rev = true
     weak_rev = true
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         k1, A + B --> 3A
@@ -415,7 +424,6 @@ let
     weak_rev = true
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         (k2, k1), A + E <--> AE
@@ -428,9 +436,7 @@ let
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
 
-# ------------------------------------------------------------------------- #
-
-### More Tests ###
+### Other Tests ###
 
 let
     myrn = [reaction_networks_standard; reaction_networks_hill; reaction_networks_real]
@@ -444,6 +450,10 @@ let
 end
 
 # Test defaults.
+# Uses mutating stuff (`setdefaults!`) and order dependent input (`species(rn) .=> u0`).
+# If you want to test this here @Sam I can write a new one that simualtes using defaults.
+# If so, tell me if you have anything specific you want to check though, or I will just implement 
+# it as I would.
 let
     rn = @reaction_network begin
         α, S + I --> 2I
@@ -592,8 +602,7 @@ let
     @test isapprox(g2[istsidxs, :], g3)
 end
 
-
-# Non-integer stoichiometry.
+# Tests non-integer stoichiometry.
 let
     function test_stoich(T, rn)
         @test eltype(substoichmat(rn)) == T
@@ -616,20 +625,6 @@ let
     test_stoich(Int, rn2)
 end
 
-### Miscelenesous Tests ###
-
-# Tests various additional API functions.
-let
-    rn = @reaction_network begin
-        (p,d), 0 <--> X
-        (kB,kD), 2X <--> X
-    end
-    @unpack p, d, kB, kD = rn
-    isequal(reactionparamsmap(rn), Dict([p => 1, d => 2, kB => 3, kD => 4]))
-    issetequal(reactionrates(rn), [p, d, kB, kD])
-    isequal(symmap_to_varmap(rn, [:p => 1.0, :kB => 3.0]), [p => 1.0, kB => 3.0])
-end
-
 ### Test Polynomial Transformation Functionality ###
 
 # Tests normal network.
@@ -639,7 +634,7 @@ let
         (kB,kD), 2X <--> X2
     end
     ns = convert(NonlinearSystem, rn)
-    neweqs = getfield.(equations(ns),:rhs)
+    neweqs = getfield.(equations(ns), :rhs)
     poly = Catalyst.to_multivariate_poly(neweqs)
     @test length(poly) == 2
 end
@@ -650,7 +645,7 @@ let
         (p/X,d), 0 <--> X
     end
     ns = convert(NonlinearSystem, rn)
-    neweqs = getfield.(equations(ns),:rhs)
+    neweqs = getfield.(equations(ns), :rhs)
     poly = Catalyst.to_multivariate_poly(neweqs)
     @test length(poly) == 1
 end
@@ -659,6 +654,6 @@ end
 let
     rn = @reaction_network
     ns = convert(NonlinearSystem, rn)
-    neweqs = getfield.(equations(ns),:rhs)
+    neweqs = getfield.(equations(ns), :rhs)
     @test_throws MethodError Catalyst.to_multivariate_poly(neweqs)
 end

@@ -1,6 +1,9 @@
-### Fetch Packages and Reaction Networks ###
-using Catalyst, DiffEqBase, Random, Test
+### Prepares Tests ###
 
+# Fetch packages.
+using Catalyst, DiffEqBase, Test
+
+# Sets stable rng number.
 using StableRNGs
 rng = StableRNG(12345)
 
