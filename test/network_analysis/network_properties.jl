@@ -1,8 +1,11 @@
-#! format: off
+### Prepares Tests ###
 
-using Catalyst, Test
+# Fetch packages.
+using Catalyst, LinearAlgebra, Test
 
-# Test on MAPK network.
+### Basic Tests ###
+
+# Tests network analysis functions on MAPK network (by comparing to manually computed outputs).
 let
     MAPK = @reaction_network MAPK begin
         (k₁, k₂),KKK + E1 <--> KKKE1
@@ -52,7 +55,8 @@ let
     # end
 end
 
-# Test on a network.
+
+# Tests network analysis functions on a second network (by comparing to manually computed outputs).
 let
     rn2 = @reaction_network begin
         (k₁, k₂), E + S1 <--> ES1
@@ -89,7 +93,8 @@ let
     # end
 end
 
-# Test on a network.
+
+# Tests network analysis functions on third network (by comparing to manually computed outputs).
 let
     rn3 = @reaction_network begin
         (k₁, k₂), A11 <--> 0

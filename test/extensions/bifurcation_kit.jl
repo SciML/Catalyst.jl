@@ -1,7 +1,9 @@
-### Fetch Packages ###
+### Prepares Tests ###
+
+# Fetch packages.
 using BifurcationKit, Catalyst, Test
 
-# Sets rnd number.
+# Sets stable rng number.
 using StableRNGs
 rng = StableRNG(12345)
 
@@ -9,7 +11,7 @@ rng = StableRNG(12345)
 
 # Brusselator extended with conserved species.
 # Runs full computation, checks values corresponds to known values.
-# Checks that teh correct bifurcation point is found at the correct position.
+# Checks that the correct bifurcation point is found at the correct position.
 # Checks that bifurcation diagrams can be computed for systems with conservation laws.
 # Checks that bifurcation diagrams can be computed for systems with default values.
 # Checks that bifurcation diagrams can be computed for systems with non-constant rate.
@@ -86,23 +88,28 @@ end
 # Tests with defaults within nested networks.
 let
     rn1 = @reaction_network rn1 begin
+        @incomplete
         @parameters p=1.0
         (p, d), 0 <--> X
     end
     rn2 = @reaction_network rn2 begin
+        @incomplete
         @parameters p=2.0
         (p, d), 0 <--> X
     end
     rn3 = @reaction_network rn3 begin
+        @incomplete
         @parameters p=3.0
         (p, d), 0 <--> X
     end
     rn4 = @reaction_network rn4 begin
+        @incomplete
         @parameters p=4.0
         (p, d), 0 <--> X
     end
-    @named rn3 =compose(rn3, [rn4])
+    @named rn3 = compose(rn3, [rn4])
     @named rn = compose(rn1, [rn2, rn3])
+    rn = complete(rn)
 
     # Declares parameter values and initial u guess.
     @unpack X, d = rn
@@ -144,12 +151,15 @@ end
 let
     # Creates model.
     rn1 = @reaction_network rn1 begin
+        @incomplete
         (k1, k2), X1 <--> X2
     end
     rn2 = @reaction_network rn2 begin
+        @incomplete
         (l1, l2), Y1 <--> Y2
     end
     @named rn = compose(rn1, [rn2])
+    rn = complete(rn)
 
     # Creates input parameter and species vectors.
     @unpack X1, X2, k1, k2 = rn1

@@ -123,7 +123,7 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables)
+const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables, :default_noise_scaling, :incomplete)
 
 ### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)
@@ -361,10 +361,13 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
                        option_lines))
 
     # Reads options.
+    default_reaction_metadata = :([])
+    check_default_noise_scaling!(default_reaction_metadata, options)
     compound_expr, compound_species = read_compound_options(options)
+    iscomplete = !haskey(options, :incomplete)
 
     # Parses reactions, species, and parameters.
-    reactions = get_reactions(reaction_lines)
+    reactions = get_reactions(reaction_lines; default_reaction_metadata)
     species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
     variables = extract_syms(options, :variables)
@@ -424,7 +427,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
         Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, setdiff(union($spssym, $varssym, $compssym), $obs_syms),
                                               $pssym; name = $name, spatial_ivs = $sivs,
-                                              observed = $observed_eqs)
+                                              observed = $observed_eqs, complete = $iscomplete)
     end
 end
 
@@ -474,7 +477,7 @@ end
 
 # When compound species are declared using the "@compound begin ... end" option, get a list of the compound species, and also the expression that crates them.
 function read_compound_options(opts)
-    # If the compound option is used retrive a list of compound species (need to be added to teh reaction system's species), and the option that creates them (used to declare them as compounds at the end).
+    # If the compound option is used retrive a list of compound species (need to be added to the reaction system's species), and the option that creates them (used to declare them as compounds at the end).
     if haskey(opts, :compounds)
         compound_expr = opts[:compounds]
         # Find compound species names, and append the independent variable.
@@ -591,22 +594,27 @@ function get_reaction(line)
 end
 
 # Generates a vector containing a number of reaction structures, each containing the information about one reaction.
-function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(undef, 0))
+function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(undef, 0); 
+                       default_reaction_metadata = :([]))
     for line in exprs
         # Reads core reaction information.
         arrow, rate, reaction, metadata = read_reaction_line(line)
-
+        
         # Checks the type of arrow used, and creates the corresponding reaction(s). Returns them in an array.
         if in(arrow, double_arrows)
             if typeof(rate) != Expr || rate.head != :tuple
                 error("Error: Must provide a tuple of reaction rates when declaring a bi-directional reaction.")
             end
-            push_reactions!(reactions, reaction.args[2], reaction.args[3], rate.args[1], metadata.args[1], arrow)
-            push_reactions!(reactions, reaction.args[3], reaction.args[2], rate.args[2], metadata.args[2], arrow)
+            push_reactions!(reactions, reaction.args[2], reaction.args[3], rate.args[1], metadata.args[1], arrow; 
+                            default_reaction_metadata)
+            push_reactions!(reactions, reaction.args[3], reaction.args[2], rate.args[2], metadata.args[2], arrow; 
+                            default_reaction_metadata)
         elseif in(arrow, fwd_arrows)
-            push_reactions!(reactions, reaction.args[2], reaction.args[3], rate, metadata, arrow)
+            push_reactions!(reactions, reaction.args[2], reaction.args[3], rate, metadata, arrow; 
+                            default_reaction_metadata)
         elseif in(arrow, bwd_arrows)
-            push_reactions!(reactions, reaction.args[3], reaction.args[2], rate, metadata, arrow)
+            push_reactions!(reactions, reaction.args[3], reaction.args[2], rate, metadata, arrow; 
+                            default_reaction_metadata)
         else
             throw("Malformed reaction, invalid arrow type used in: $(MacroTools.striplines(line))")
         end
@@ -637,9 +645,9 @@ end
 
 # Takes a reaction line and creates reaction(s) from it and pushes those to the reaction array.
 # Used to create multiple reactions from, for instance, `k, (X,Y) --> 0`.
-# Handles metadata, e.g. `1.0, Z --> 0, [noisescaling=η]`.
+# Handles metadata, e.g. `1.0, Z --> 0, [noise_scaling=η]`.
 function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues, prod_line::ExprValues, 
-                         rate::ExprValues, metadata::ExprValues, arrow::Symbol)  
+                         rate::ExprValues, metadata::ExprValues, arrow::Symbol; default_reaction_metadata::Expr)  
     # The rates, substrates, products, and metadata may be in a tupple form (e.g. `k, (X,Y) --> 0`).
     # This finds the length of these tuples (or 1 if not in tuple forms). Errors if lengs inconsistent.
     lengs = (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate), tup_leng(metadata))
@@ -651,7 +659,8 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
     for i in 1:maximum(lengs)                       
         # If the `only_use_rate` metadata was not provided, this has to be infered from the arrow used.
         metadata_i = get_tup_arg(metadata, i)
-        if all(arg.args[1] != :only_use_rate for arg in metadata_i.args)
+        merge_metadata!(metadata_i, default_reaction_metadata)
+        if all([arg.args[1] != :only_use_rate for arg in metadata_i.args])
             push!(metadata_i.args, :(only_use_rate = $(in(arrow, pure_rate_arrows))))
         end
 
@@ -662,6 +671,16 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
 
         push!(reactions, ReactionStruct(get_tup_arg(sub_line, i), get_tup_arg(prod_line, i),
                                         get_tup_arg(rate, i), metadata_i))
+    end
+end
+
+# Merge the metadata encoded by a reaction with the default metadata (for all reactions) given by the system.
+# If a metadata value is present in both vectors, uses the non-default value.
+function merge_metadata!(metadata, default_reaction_metadata)
+    for entry in default_reaction_metadata.args
+        if !in(entry.args[1], arg.args[1] for arg in metadata.args)
+            push!(metadata.args, entry)
+        end
     end
 end
 
@@ -767,7 +786,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
 
             # Adds the observable to the list of observable names.
             # This is required for filtering away so these are not added to the ReactionSystem's species list.
-            # Again, avoid this check if we have interpoalted teh variable.
+            # Again, avoid this check if we have interpoalted the variable.
             is_escaped_expr(obs_eq.args[2]) || push!(obs_syms.args, obs_name)
         end
 
@@ -796,6 +815,17 @@ function make_observed_eqs(observables_expr)
     else
         error("Malformed observables option usage: $(observables_expr).")
     end 
+end
+
+# Checks if the `@default_noise_scaling` option is used. If so, read its input and adds it as a
+# default metadata value to the `default_reaction_metadata` vector.
+function check_default_noise_scaling!(default_reaction_metadata, options)
+    if haskey(options, :default_noise_scaling)
+        if (length(options[:default_noise_scaling].args) != 3) # Becasue of how expressions are, 3 is used.
+            error("@default_noise_scaling should only have a single input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
+        end
+        push!(default_reaction_metadata.args, :(noise_scaling=$(options[:default_noise_scaling].args[3])))
+    end
 end
 
 ### Functionality for expanding function call to custom and specific functions ###

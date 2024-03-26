@@ -292,8 +292,9 @@ plot(sol)
 
 ## Scaling the noise magnitude in the chemical Langevin equations
 When using the CLE to generate SDEs from a CRN, it can sometimes be desirable to
-scale the magnitude of the noise terms. This can be done by introducing a *noise
-scaling parameter*. First, we simulate a simple two-state CRN model using the
+scale the magnitude of the noise terms. Here, each reaction of the system generates a separate noise term in the CLE. If you require identical scaling for all reactions, the `@default_noise_scaling` option can be used. Else, you can supply a `noise_scaling` metadata for each individual reaction, describing how to scale the noise for that reaction.
+
+We begin with considering the first approach. First, we simulate a simple two-state CRN model using the
 CLE:
 ```@example ex3
 using Catalyst, StochasticDiffEq, Plots
@@ -306,58 +307,61 @@ tspan = (0.0, 10.0)
 p_1 = [:k1 => 1.0, :k2 => 1.0]
 
 sprob_1 = SDEProblem(rn_1, u0, tspan, p_1)
-sol_1 = solve(sprob_1)
+sol_1 = solve(sprob_1, ImplicitEM())
 plot(sol_1; idxs = :X1, ylimit = (0.0, 20.0))
 ```
-Here we can see that the `X` concentration fluctuates around a steady state of $X≈10.0$.
+Here we can see that the $X$ concentration fluctuates around a steady state of $X≈10.0$.
 
-Next, we wish to introduce a noise scaling parameter ,`η`. This will scale the
-noise magnitude so that for $η=0.0$ the system lacks noise (and its SDE
-simulations are identical to its ODE simulations) and for $η=1.0$ noise is not
-scaled (and SDE simulations are identical to as if no noise scaling was used).
-Setting $η<1.0$ will reduce noise and $η>1.0$ will increase noise. The syntax
-for setting a noise scaling parameter `η` is
+Next, we wish increase the amount of noise by a factor 2. To do so, we use the `@default_noise_scaling` option, to which we provide the desired scaling 
 ```@example ex3
 rn_2 = @reaction_network begin
-    @parameters η
+    @default_noise_scaling 2
     (k1,k2), X1 <--> X2
 end
-u0 = [:X1 => 10.0, :X2 => 10.0]
-tspan = (0.0, 10.0)
-p_2 = [:k1 => 1.0, :k2 => 1.0, :η => 0.1]
-
-sprob_2 = SDEProblem(rn_2, u0, tspan, p_2; noise_scaling = (@parameters η)[1])
 ```
-Here, we first need to add `η` as a parameter to the system using the
-`@parameters η` option. Next, we pass the `noise_scaling = (@parameters η)[1]`
-argument to the `SDEProblem`. We can now simulate our system and confirm that
-noise is reduced:
+If we re-simulate the system we see that the amount of noise have increased:
 ```@example ex3
-sol_2 = solve(sprob_2)
-plot(sol_2; idxs = :X1, ylimit = (0.0, 20.0))
+sprob_1 = SDEProblem(rn_2, u0, tspan, p_1)
+sol_1 = solve(sprob_1, ImplicitEM())
+plot(sol_1; idxs = :X1, ylimit = (0.0, 20.0))
 ```
 
-Finally, it is possible to set individual noise scaling parameters for each
-reaction of the system. Our model has two reactions (`X1 --> X2` and `X2 -->
-X1`) so we will use two noise scaling parameters, `η1` and `η2`. We use the
-following syntax:
+It is possible to scale the amount of noise using any expression. A common use of this is to set a parameter which determines the amount of noise. Here we create a parameter $η$, and uses its value to scale the noise.
 ```@example ex3
+using Catalyst, StochasticDiffEq, Plots
+
 rn_3 = @reaction_network begin
-    @parameters η1 η2
+    @parameters η
+    @default_noise_scaling η
     (k1,k2), X1 <--> X2
 end
 u0 = [:X1 => 10.0, :X2 => 10.0]
 tspan = (0.0, 10.0)
-p_3 = [:k1 => 1.0, :k2 => 1.0, :η1 => 0.1, :η2 => 1.0]
+p_3 = [:k1 => 1.0, :k2 => 1.0, :η => 0.2]
 
-sprob_3 = SDEProblem(rn_3, u0, tspan, p_3; noise_scaling = @parameters η1 η2)
-```
-plotting the results, we see that we have less fluctuation than for the first
-simulation, but more as compared to the second one (which is as expected):
-```@example ex3
-sol_3 = solve(sprob_3)
+sprob_3 = SDEProblem(rn_3, u0, tspan, p_3)
+sol_3 = solve(sprob_3, ImplicitEM())
 plot(sol_3; idxs = :X1, ylimit = (0.0, 20.0))
 ```
+Here we saw how, by setting a small $η$ value, the amount of noise was reduced.
+
+It is possible to use a different noise scaling expression for each reaction. Here, each reaction's noise scaling expression is provided using the `noise_scaling` metadata. In the following example, we use this to tune the noise of for both reactions involving the species $Y$.
+
+```@example ex3
+rn_4 = @reaction_network begin
+    (p, d), 0 <--> X
+    (p, d), 0 <--> Y, ([noise_scaling=0.0, noise_scaling=0.0])
+end
+
+u0_4 = [:X => 10.0, :Y => 10.0]
+tspan = (0.0, 10.0)
+p_4 = [p => 10.0, d => 1.]
+
+sprob_4 = SDEProblem(rn_4, u0_4, tspan, p_4)
+sol_4 = solve(sprob_4, ImplicitEM())
+plot(sol_4; ylimit = (0.0, 20.0))
+```
+Here, we not that there is n fluctuation in the value of $Y$. If the `@default_noise_scaling` option is used, its value is used for all reactions for which the `noise_scaling` metadata is unused. If `@default_noise_scaling` is not used, the default noise scaling value is `1.0` (i.e. no scaling).
 
 ## Useful plotting options
 Catalyst, just like DifferentialEquations, uses the Plots package for all

@@ -205,7 +205,7 @@ end
 # Checks if a metadata input has an entry :only_use_rate => true
 function metadata_only_use_rate_check(metadata)
     only_use_rate_idx = findfirst(:only_use_rate == entry[1] for entry in metadata)
-    isnothing(only_use_rate_idx) && return true
+    isnothing(only_use_rate_idx) && return false
     return Bool(metadata[only_use_rate_idx][2])
 end
 
@@ -609,7 +609,10 @@ function ReactionSystem(eqs, iv, unknowns, ps;
                         balanced_bc_check = true,
                         spatial_ivs = nothing,
                         continuous_events = nothing,
-                        discrete_events = nothing)
+                        discrete_events = nothing,
+                        metadata = nothing,
+                        complete = true)
+                        
     name === nothing &&
         throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     sysnames = nameof.(systems)
@@ -678,7 +681,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
 
     ReactionSystem(eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
                    systems, defaults, connection_type, nps, combinatoric_ratelaws,
-                   ccallbacks, dcallbacks; checks = checks)
+                   ccallbacks, dcallbacks, metadata, complete; checks = checks)
 end
 
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
@@ -864,10 +867,27 @@ end
 ######################## Other accessors ##############################
 
 """
-    getnoisescaling(reaction::Reaction)
+has_noise_scaling(reaction::Reaction)
 
-Returns the noise scaling associated with a specific reaction. If the `:noise_scaling` metadata has
-set, returns that. Else, returns `1.0`.
+Checks whether a specific reaction has the metadata field `noise_scaing`. If so, returns `true`, else
+returns `false`.
+
+Arguments:
+- `reaction`: The reaction for which we wish to check.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
+has_noise_scaling(reaction)
+"""
+function has_noise_scaling(reaction::Reaction)
+    return hasmetadata(reaction, :noise_scaling)
+end
+
+"""
+get_noise_scaling(reaction::Reaction)
+
+Returns the noise_scaling metadata from a specific reaction.
 
 Arguments:
 - `reaction`: The reaction for which we wish to retrive all metadata.
@@ -875,18 +895,21 @@ Arguments:
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
-getnoisescaling(reaction)
+get_noise_scaling(reaction)
 """
-function getnoisescaling(reaction::Reaction)
-    has_metadata(reaction, :noise_scaling) && (return get_metadata(reaction, :noise_scaling))
-    return 1.0
+function get_noise_scaling(reaction::Reaction)
+    if has_noise_scaling(reaction)
+        return getmetadata(reaction, :noise_scaling)
+    else
+        error("Attempts to access noise_scaling metadata field for a reaction which does not have a value assigned for this metadata.")
+    end
 end
 
 
-# These are currently considered internal, but can be used by public accessor functions like getnoisescaling.
+# These are currently considered internal, but can be used by public accessor functions like get_noise_scaling.
 
 """
-    get_metadata_dict(reaction::Reaction)
+    getmetadata_dict(reaction::Reaction)
 
 Retrives the `ImmutableDict` containing all of the metadata associated with a specific reaction.
 
@@ -895,16 +918,16 @@ Arguments:
 
 Example:
 ```julia
-reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
-get_metadata_dict(reaction)
+reaction = @reaction k, 0 --> X, [description="Production reaction"]
+getmetadata_dict(reaction)
 ```
 """
-function get_metadata_dict(reaction::Reaction)
+function getmetadata_dict(reaction::Reaction)
     return reaction.metadata
 end
 
 """
-    has_metadata(reaction::Reaction, md_key::Symbol)
+    hasmetadata(reaction::Reaction, md_key::Symbol)
 
 Checks if a `Reaction` have a certain metadata field. If it does, returns `true` (else returns `false`).
 
@@ -914,16 +937,16 @@ Arguments:
 
 Example:
 ```julia
-reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
-has_metadata(reaction, :noise_scaling)
+reaction = @reaction k, 0 --> X, [description="Production reaction"]
+hasmetadata(reaction, :description)
 ```
 """
-function has_metadata(reaction::Reaction, md_key::Symbol)
-    return any(isequal(md_key, entry[1]) for entry in get_metadata_dict(reaction))
+function hasmetadata(reaction::Reaction, md_key::Symbol)
+    return any(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))
 end
 
 """
-    get_metadata(reaction::Reaction, md_key::Symbol)
+getmetadata(reaction::Reaction, md_key::Symbol)
 
 Retrives a certain metadata value from a `Reaction`. If the metadata does not exists, throws an error.
 
@@ -933,17 +956,18 @@ Arguments:
 
 Example:
 ```julia
-reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
-get_metadata(reaction, :noise_scaling)
+reaction = @reaction k, 0 --> X, [description="Production reaction"]
+getmetadata(reaction, :description)
 ```
 """
-function get_metadata(reaction::Reaction, md_key::Symbol)
-    if !has_metadata(reaction, md_key) 
-        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(get_metadata_dict(reaction))).")
+function getmetadata(reaction::Reaction, md_key::Symbol)
+    if !hasmetadata(reaction, md_key) 
+        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(getmetadata_dict(reaction))).")
     end
-    metadata = get_metadata_dict(reaction)
-    return metadata[findfirst(isequal(md_key, entry[1]) for entry in get_metadata_dict(reaction))][2]
+    metadata = getmetadata_dict(reaction)
+    return metadata[findfirst(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))][2]
 end
+
 
 ######################## Conversion to ODEs/SDEs/jump, etc ##############################
 
@@ -1046,7 +1070,7 @@ function assemble_drift(rs, ispcs; combinatoric_ratelaws = true, as_odes = true,
 end
 
 # this doesn't work with constraint equations currently
-function assemble_diffusion(rs, sts, ispcs, noise_scaling; combinatoric_ratelaws = true,
+function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
                             remove_conserved = false)
     # as BC species should ultimately get an equation, we include them in the noise matrix
     num_bcsts = count(isbc, get_unknowns(rs))
@@ -1064,7 +1088,7 @@ function assemble_diffusion(rs, sts, ispcs, noise_scaling; combinatoric_ratelaws
 
     for (j, rx) in enumerate(get_rxs(rs))
         rlsqrt = sqrt(abs(oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)))
-        (noise_scaling !== nothing) && (rlsqrt *= noise_scaling[j])
+        has_noise_scaling(rx) && (rlsqrt *= get_noise_scaling(rx))
         remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
 
         for (spec, stoich) in rx.netstoich
@@ -1405,14 +1429,14 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
     spatial_convert_err(rs::ReactionSystem, ODESystem)
-    fullrs = Catalyst.flatten(rs)
+    fullrs = Catalyst.flatten(rs; complete = true)
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
                          include_zero_odes)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
-    ODESystem(eqs, get_iv(fullrs), sts, ps;
+    osys = ODESystem(eqs, get_iv(fullrs), sts, ps;
               observed = obs,
               name,
               defaults = _merge(defaults,defs),
@@ -1420,6 +1444,7 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
               continuous_events = MT.get_continuous_events(fullrs),
               discrete_events = MT.get_discrete_events(fullrs),
               kwargs...)
+    return iscomplete(rs) ? complete(osys) : osys
 end
 
 """
@@ -1445,7 +1470,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
-    fullrs = Catalyst.flatten(rs)
+    fullrs = Catalyst.flatten(rs; complete = true)
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
@@ -1453,12 +1478,13 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     error_if_constraint_odes(NonlinearSystem, fullrs)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
-    NonlinearSystem(eqs, sts, ps;
+    nlsys = NonlinearSystem(eqs, sts, ps;
                     name,
                     observed = obs,
                     defaults = _merge(defaults,defs),
                     checks,
                     kwargs...)
+    return iscomplete(rs) ? complete(nlsys) : nlsys
 end
 
 """
@@ -1474,14 +1500,6 @@ Notes:
   `combinatoric_ratelaws=false` for a ratelaw of `k*S^2`, i.e. the scaling factor is
   ignored. Defaults to the value given when the `ReactionSystem` was constructed (which
   itself defaults to true).
-- `noise_scaling=nothing::Union{Vector{Num},Num,Nothing}` allows for linear scaling of the
-  noise in the chemical Langevin equations. If `nothing` is given, the default value as in
-  Gillespie 2000 is used. Alternatively, a `Num` can be given, this is added as a parameter
-  to the system (at the end of the parameter array). All noise terms are linearly scaled
-  with this value. The parameter may be one already declared in the `ReactionSystem`.
-  Finally, a `Vector{Num}` can be provided (the length must be equal to the number of
-  reactions). Here the noise for each reaction is scaled by the corresponding parameter in
-  the input vector. This input may contain repeat parameters.
 - `remove_conserved=false`, if set to `true` will calculate conservation laws of the
   underlying set of reactions (ignoring constraint equations), and then apply them to reduce
   the number of equations.
@@ -1489,41 +1507,27 @@ Notes:
   differential equations.
 """
 function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
-                      noise_scaling = nothing, name = nameof(rs),
-                      combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+                      name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, checks = false, remove_conserved = false,
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
     spatial_convert_err(rs::ReactionSystem, SDESystem)
 
-    flatrs = Catalyst.flatten(rs)
+    flatrs = Catalyst.flatten(rs; complete = true)
     error_if_constraints(SDESystem, flatrs)
-
-    if noise_scaling isa AbstractArray
-        (length(noise_scaling) != numreactions(flatrs)) &&
-            error("The number of elements in 'noise_scaling' must be equal " *
-                  "to the number of reactions in the flattened reaction system.")
-        if !(noise_scaling isa Symbolics.Arr)
-            noise_scaling = value.(noise_scaling)
-        end
-    elseif !isnothing(noise_scaling)
-        noise_scaling = fill(value(noise_scaling), numreactions(flatrs))
-    end
 
     remove_conserved && conservationlaws(flatrs)
     ists, ispcs = get_indep_sts(flatrs, remove_conserved)
     eqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws, include_zero_odes,
                          remove_conserved)
-    noiseeqs = assemble_diffusion(flatrs, ists, ispcs, noise_scaling; combinatoric_ratelaws,
-                                  remove_conserved)
+    noiseeqs = assemble_diffusion(flatrs, ists, ispcs; combinatoric_ratelaws, remove_conserved)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
-    ps = (noise_scaling === nothing) ? ps : vcat(ps, toparam(noise_scaling))
 
     if any(isbc, get_unknowns(flatrs))
         @info "Boundary condition species detected. As constraint equations are not currently supported when converting to SDESystems, the resulting system will be undetermined. Consider using constant species instead."
     end
 
-    SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps;
+    ssys = SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps;
               observed = obs,
               name,
               defaults = defs,
@@ -1531,6 +1535,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
               continuous_events = MT.get_continuous_events(flatrs),
               discrete_events = MT.get_discrete_events(flatrs),
               kwargs...)
+    return iscomplete(rs) ? complete(ssys) : ssys
 end
 
 """
@@ -1561,7 +1566,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     (remove_conserved !== nothing) &&
         error("Catalyst does not support removing conserved species when converting to JumpSystems.")
 
-    flatrs = Catalyst.flatten(rs)
+    flatrs = Catalyst.flatten(rs; complete = true)
     error_if_constraints(JumpSystem, flatrs)
 
     (length(MT.continuous_events(flatrs)) > 0) &&
@@ -1574,13 +1579,14 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     any(isbc, get_unknowns(flatrs)) && (sts = vcat(sts, filter(isbc, get_unknowns(flatrs))))
     ps = get_ps(flatrs)
 
-    JumpSystem(eqs, get_iv(flatrs), sts, ps;
+    jsys = JumpSystem(eqs, get_iv(flatrs), sts, ps;
                observed = MT.observed(flatrs),
                name,
                defaults = _merge(defaults,MT.defaults(flatrs)),
                checks,
                discrete_events = MT.discrete_events(flatrs),
                kwargs...)
+    return iscomplete(rs) ? complete(jsys) : jsys
 end
 
 ### Converts a reaction system to ODE or SDE problems ###
@@ -1616,14 +1622,13 @@ end
 # SDEProblem from AbstractReactionNetwork
 function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
                                p = DiffEqBase.NullParameters(), args...;
-                               noise_scaling = nothing, name = nameof(rs),
-                               combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                               include_zero_odes = true, checks = false,
-                               check_length = false,
+                               name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+                               include_zero_odes = true, checks = false, check_length = false,
                                remove_conserved = false, kwargs...)
+
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
-    sde_sys = convert(SDESystem, rs; noise_scaling, name, combinatoric_ratelaws,
+    sde_sys = convert(SDESystem, rs; name, combinatoric_ratelaws,
                       include_zero_odes, checks, remove_conserved)
     p_matrix = zeros(length(get_unknowns(sde_sys)), numreactions(rs))
     return SDEProblem(sde_sys, u0map, tspan, pmap, args...; check_length,
@@ -1722,7 +1727,7 @@ Notes:
 - The default value of `combinatoric_ratelaws` will be the logical or of all
   `ReactionSystem`s.
 """
-function MT.flatten(rs::ReactionSystem; name = nameof(rs))
+function MT.flatten(rs::ReactionSystem; name = nameof(rs), complete = false)
     isempty(get_systems(rs)) && return rs
 
     # right now only NonlinearSystems and ODESystems can be handled as subsystems
@@ -1740,7 +1745,8 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
                    balanced_bc_check = false,
                    spatial_ivs = get_sivs(rs),
                    continuous_events = MT.continuous_events(rs),
-                   discrete_events = MT.discrete_events(rs))
+                   discrete_events = MT.discrete_events(rs),
+                   complete = complete)
 end
 
 """
@@ -1797,5 +1803,6 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
                    balanced_bc_check = false,
                    spatial_ivs = sivs,
                    continuous_events,
-                   discrete_events)
+                   discrete_events,
+                   complete = false)
 end

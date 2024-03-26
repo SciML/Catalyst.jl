@@ -3,7 +3,6 @@
 # Fetch packages.
 using OrdinaryDiffEq
 using Random, Statistics, SparseArrays, Test
-t = default_t()
 
 # Fetch test networks.
 include("../spatial_test_networks.jl")
@@ -11,6 +10,9 @@ include("../spatial_test_networks.jl")
 # Sets rnd number.
 using StableRNGs
 rng = StableRNG(12345)
+
+# Sets defaults
+t = default_t()
 
 ### Tests Simulations Don't Error ###
 for grid in [small_2d_grid, short_path, small_directed_cycle]
