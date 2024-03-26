@@ -77,8 +77,6 @@ end
 # Checks for system with conservation laws.
 # Checks using interfacing with output solution.
 let 
-    # Conservation laws currently broken (you get stuck in an infinite loop in MTK or something).
-    return (@test_broken false)
     # Creates steady state network, unpack the parameter values.
     steady_state_network_3 = @reaction_network begin
         (p,d), 0 <--> X
@@ -98,6 +96,6 @@ let
     sol2 = solve(nl_prob_2, DynamicSS(Rosenbrock23()); abstol=1e-12, reltol=1e-12)
 
     # Checks output using the ODE's drift function
-    @test f_eval([:X => sol1[X], :Y => sol1[Y], :Y2 => sol1[Y2], :XY2 => sol1[XY2]], p, 0.0) ≈ [0.0, 0.0, 0.0, 0.0] atol=1e-10
-    @test f_eval([:X => sol2[X], :Y => sol2[Y], :Y2 => sol2[Y2], :XY2 => sol2[XY2]], p, 0.0) ≈ [0.0, 0.0, 0.0, 0.0] atol=1e-10
+    @test f_eval(steady_state_network_3, [:X => sol1[X], :Y => sol1[Y], :Y2 => sol1[Y2], :XY2 => sol1[XY2]], p, 0.0) ≈ [0.0, 0.0, 0.0, 0.0] atol=1e-10
+    @test f_eval(steady_state_network_3, [:X => sol2[X], :Y => sol2[Y], :Y2 => sol2[Y2], :XY2 => sol2[XY2]], p, 0.0) ≈ [0.0, 0.0, 0.0, 0.0] atol=1e-10
 end

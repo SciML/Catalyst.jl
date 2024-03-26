@@ -14,7 +14,8 @@ include("../test_functions.jl")
 # Tests for Symbolics initial condition input.
 # Tests for different types (Symbol/Symbolics) for parameters and initial conditions.
 # Tests that attempts to find steady states of system with conservation laws, while u0 is not provided, gives an error.
-@test_broken let # Requires https://github.com/SciML/ModelingToolkit.jl/issues/2566 to be fixed
+let 
+    # Creates the model.
     rs = @reaction_network begin
         (k1,k2), X1 <--> X2
         (k3,k4), 2X2 + X3 <--> X2_2X3
@@ -23,10 +24,12 @@ include("../test_functions.jl")
     ps = [k1 => 1.0, k2 => 2.0, k3 => 2.0, k4 => 2.0]
     u0 = [:X1 => 2.0, :X2 => 2.0, :X3 => 2.0, :X2_2X3 => 2.0]
 
-    hc_ss = hc_steady_states(rs, ps; u0=u0, show_progress=false)[1]
-    f = ODEFunction(convert(ODESystem, rs))
-    @test f(hc_ss, last.(ps), 0.0)[1] == 0.0
+    # Computes the single steady state, checks that when given to the ODE rhs, all are evaluated to 0.
+    hc_ss = hc_steady_states(rs, ps; u0=u0, show_progress=false)
+    hc_ss = Pair.(unknowns(rs), hc_ss[1])
+    @test maximum(abs.(f_eval(rs, hc_ss, ps, 0.0))) ≈ 0.0 atol=1e-12
 
+    # Checks that not giving a `u0` argument yields an error for systems with conservation laws.
     @test_throws Exception hc_steady_states(rs, ps; show_progress=false)
 end
 
@@ -55,7 +58,7 @@ end
 # Tests correctness in presence of default values.
 # Tests where some default values are overwritten with other values.
 # Tests where input ps/u0 are tuples with mixed types.
-@test_broken let # Requires https://github.com/SciML/ModelingToolkit.jl/issues/2566 to be fixed
+let
     rs_1 = @reaction_network begin
         @parameters kX1=1.0 kX2=2.0 kY1=12345.0 
         @species X1(t)=0.1 X2(t)=0.2 Y1(t)=12345.0
