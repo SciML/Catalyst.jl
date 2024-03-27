@@ -234,6 +234,22 @@ let
     @test var(sol[:X1]) > var(sol[:X2]) > var(sol[:X3]) > var(sol[:X4]) > var(sol[:X5])  
 end
 
+# Tests the `remake_noise_scaling` function.
+let
+    # Creates noise scaling networks.
+    noise_scaling_network1 = @reaction_network begin
+        p, 0 --> X, [noise_scaling=2.0]
+        d, X --> 0
+    end
+    noise_scaling_network2 = remake_noise_scaling(noise_scaling_network1, 0.5)
+
+    # Checks that the two networks' reactions have the correct metadata.
+    @test reactions(noise_scaling_network1)[1].metadata == [:noise_scaling => 2.0]
+    @test reactions(noise_scaling_network1)[2].metadata == []
+    @test reactions(noise_scaling_network2)[1].metadata == [:noise_scaling => 2.0]
+    @test reactions(noise_scaling_network2)[2].metadata == [:noise_scaling => 0.5]
+end
+
 
 ### Checks Simulations Don't Error ###
 

@@ -96,7 +96,9 @@ end
 
 ### Generic Expression Handling ###
 
-# Convert an expression with equal signs (e.g. :(a=1.0, b=2.0)) to one with pairs (e.g. :(a=>1.0, b=>2.0))
+# Convert an expression that is a vector with symbols that have values assigned using `=` to vector 
+# where the assignment instead uses pairs (e.g. :([a=1.0, b=2.0])). Used to e.g. convert default 
+# reaction metadata to a form that can be evaluated as actual code.
 function expr_equal_vector_to_pairs(expr_vec)
     pair_vector = :([])
     foreach(arg -> push!(pair_vector.args, arg.args[1] => arg.args[2]), expr_vec.args) 

@@ -761,32 +761,48 @@ end
     remake_ReactionSystem_internal(rs::ReactionSystem; 
         default_reaction_metadata::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol, Any}}()) where {T}
 
-Takes a reaction systems and reameks it, returning a modified reaction system. Modifications depend
-on which arguments are provided.
+Takes a `ReactionSystem` and remakes it, returning a modified `ReactionSystem`. Modifications depend
+on which additional arguments are provided. The input `ReactionSystem` is not mutated.
 
 Arguments:
-- `rs::ReactionSystem`: The `ReactionSystem` which you wish to make a remade version of.
+- `rs::ReactionSystem`: The `ReactionSystem` which you wish to remake.
 - `default_reaction_metadata::Vector{Pair{Symbol, T}}`: A vector with default `Reaction` metadata values.
-    Each metadata in each `Reaction` of the updated `ReactionSystem` will have teh value desiganted in
+    Each metadata in each `Reaction` of the updated `ReactionSystem` will have the value desiganted in
     `default_reaction_metadata` (however, `Reaction`s that already have that metadata designated will not
     have their value updated).
 """
-#function remake_ReactionSystem_internal(rs::ReactionSystem;  default_reaction_metadata::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol, Any}}()) where {T}
-function remake_ReactionSystem_internal(rs; default_reaction_metadata = default_reaction_metadata)
-    # Updates the metadata for all reactions (reactions are ignored).
+function remake_ReactionSystem_internal(rs::ReactionSystem;  default_reaction_metadata = [])
+    # Updates the metadata for all reactions (equation are ignored).
+    updated_equations = [set_default_metadata(rx, default_reaction_metadata) for rx in reactions(rs)]
     updated_reactions = [set_default_metadata(rx, default_reaction_metadata) for rx in reactions(rs)]
-    rs = @set rs.rxs = updated_reactions  
+    @set! rs.eqs = updated_equations
+    @set! rs.rxs = updated_reactions
     return rs
 end
 
 # For a `Reaction`, adds missing default metadata values. Equations are passed back unmodified.
-function set_default_metadata(rx, default_metadata)
+function set_default_metadata(rx::Reaction, default_metadata)
     missing_metadata = filter(md -> !in(md[1], entry[1] for entry in rx.metadata), default_metadata)
     updated_metadata = vcat(rx.metadata, missing_metadata)
     updated_metadata = convert(Vector{Pair{Symbol, Any}}, updated_metadata)
     return @set rx.metadata = updated_metadata
 end
+set_default_metadata(eq::Equation, default_metadata) = eq
 
+"""
+    remake_noise_scaling(rs::ReactionSystem, noise_scaling)
+
+Creates an updated `ReactionSystem`. This is the old `ReactionSystem`, but each `Reaction` that does
+not have a `Noise_scaling` metadata have its noise_scaling metadata updated. The input `ReactionSystem`
+is not mutated.
+
+Arguments:
+- `rs::ReactionSystem`: The `ReactionSystem` which you wish to remake.
+- `noise_scaling`: The updated noise scaling terms
+"""
+function remake_noise_scaling(rs::ReactionSystem, noise_scaling)
+    return remake_ReactionSystem_internal(rs, default_reaction_metadata = [:noise_scaling => noise_scaling])
+end
 
 
 """

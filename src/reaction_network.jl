@@ -643,7 +643,6 @@ end
 
 # Takes a reaction line and creates reaction(s) from it and pushes those to the reaction array.
 # Used to create multiple reactions from, for instance, `k, (X,Y) --> 0`.
-# Handles metadata, e.g. `1.0, Z --> 0, [noise_scaling=η]`.
 function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues, prod_line::ExprValues, 
                          rate::ExprValues, metadata::ExprValues, arrow::Symbol)  
     # The rates, substrates, products, and metadata may be in a tupple form (e.g. `k, (X,Y) --> 0`).
