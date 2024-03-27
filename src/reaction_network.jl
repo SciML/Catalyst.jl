@@ -364,9 +364,10 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     default_reaction_metadata = :([])
     compound_expr, compound_species = read_compound_options(options)
     check_default_noise_scaling!(default_reaction_metadata, options)
+    default_reaction_metadata = expr_equal_vector_to_pairs(default_reaction_metadata)
 
     # Parses reactions, species, and parameters.
-    reactions = get_reactions(reaction_lines; default_reaction_metadata)
+    reactions = get_reactions(reaction_lines)
     species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
     variables = extract_syms(options, :variables)
@@ -424,9 +425,12 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         $observed_vars
         $comps
 
-        Catalyst.make_ReactionSystem_internal($rxexprs, $tiv, setdiff(union($spssym, $varssym, $compssym), $obs_syms),
-                                              $pssym; name = $name, spatial_ivs = $sivs,
-                                              observed = $observed_eqs)
+        Catalyst.remake_ReactionSystem_internal(
+            Catalyst.make_ReactionSystem_internal(
+                $rxexprs, $tiv, setdiff(union($spssym, $varssym, $compssym), $obs_syms),
+                $pssym; name = $name, spatial_ivs = $sivs, observed = $observed_eqs);
+            default_reaction_metadata = $default_reaction_metadata
+        )
     end
 end
 
@@ -593,8 +597,7 @@ function get_reaction(line)
 end
 
 # Generates a vector containing a number of reaction structures, each containing the information about one reaction.
-function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(undef, 0); 
-                       default_reaction_metadata = :([]))
+function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(undef, 0))
     for line in exprs
         # Reads core reaction information.
         arrow, rate, reaction, metadata = read_reaction_line(line)
@@ -604,16 +607,12 @@ function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(u
             if typeof(rate) != Expr || rate.head != :tuple
                 error("Error: Must provide a tuple of reaction rates when declaring a bi-directional reaction.")
             end
-            push_reactions!(reactions, reaction.args[2], reaction.args[3], rate.args[1], metadata.args[1], arrow; 
-                            default_reaction_metadata)
-            push_reactions!(reactions, reaction.args[3], reaction.args[2], rate.args[2], metadata.args[2], arrow; 
-                            default_reaction_metadata)
+            push_reactions!(reactions, reaction.args[2], reaction.args[3], rate.args[1], metadata.args[1], arrow)
+            push_reactions!(reactions, reaction.args[3], reaction.args[2], rate.args[2], metadata.args[2], arrow)
         elseif in(arrow, fwd_arrows)
-            push_reactions!(reactions, reaction.args[2], reaction.args[3], rate, metadata, arrow; 
-                            default_reaction_metadata)
+            push_reactions!(reactions, reaction.args[2], reaction.args[3], rate, metadata, arrow)
         elseif in(arrow, bwd_arrows)
-            push_reactions!(reactions, reaction.args[3], reaction.args[2], rate, metadata, arrow; 
-                            default_reaction_metadata)
+            push_reactions!(reactions, reaction.args[3], reaction.args[2], rate, metadata, arrow)
         else
             throw("Malformed reaction, invalid arrow type used in: $(MacroTools.striplines(line))")
         end
@@ -646,7 +645,7 @@ end
 # Used to create multiple reactions from, for instance, `k, (X,Y) --> 0`.
 # Handles metadata, e.g. `1.0, Z --> 0, [noise_scaling=η]`.
 function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues, prod_line::ExprValues, 
-                         rate::ExprValues, metadata::ExprValues, arrow::Symbol; default_reaction_metadata::Expr)  
+                         rate::ExprValues, metadata::ExprValues, arrow::Symbol)  
     # The rates, substrates, products, and metadata may be in a tupple form (e.g. `k, (X,Y) --> 0`).
     # This finds the length of these tuples (or 1 if not in tuple forms). Errors if lengs inconsistent.
     lengs = (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate), tup_leng(metadata))
@@ -658,7 +657,6 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
     for i in 1:maximum(lengs)                       
         # If the `only_use_rate` metadata was not provided, this has to be infered from the arrow used.
         metadata_i = get_tup_arg(metadata, i)
-        merge_metadata!(metadata_i, default_reaction_metadata)
         if all([arg.args[1] != :only_use_rate for arg in metadata_i.args])
             push!(metadata_i.args, :(only_use_rate = $(in(arrow, pure_rate_arrows))))
         end
@@ -670,16 +668,6 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
 
         push!(reactions, ReactionStruct(get_tup_arg(sub_line, i), get_tup_arg(prod_line, i),
                                         get_tup_arg(rate, i), metadata_i))
-    end
-end
-
-# Merge the metadata encoded by a reaction with the default metadata (for all reactions) given by the system.
-# If a metadata value is present in both vectors, uses the non-default value.
-function merge_metadata!(metadata, default_reaction_metadata)
-    for entry in default_reaction_metadata.args
-        if !in(entry.args[1], arg.args[1] for arg in metadata.args)
-            push!(metadata.args, entry)
-        end
     end
 end
 

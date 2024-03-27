@@ -93,6 +93,16 @@ function is_escaped_expr(expr)
     return (expr isa Expr) && (expr.head == :escape) && (length(expr.args) == 1)
 end
 
+
+### Generic Expression Handling ###
+
+# Convert an expression with equal signs (e.g. :(a=1.0, b=2.0)) to one with pairs (e.g. :(a=>1.0, b=>2.0))
+function expr_equal_vector_to_pairs(expr_vec)
+    pair_vector = :([])
+    foreach(arg -> push!(pair_vector.args, arg.args[1] => arg.args[2]), expr_vec.args) 
+    return pair_vector
+end
+
 ### Old Stuff ###
 
 #This will be called whenever a function stored in funcdict is called.

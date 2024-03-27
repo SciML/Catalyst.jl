@@ -756,6 +756,39 @@ function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
 
+
+"""
+    remake_ReactionSystem_internal(rs::ReactionSystem; 
+        default_reaction_metadata::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol, Any}}()) where {T}
+
+Takes a reaction systems and reameks it, returning a modified reaction system. Modifications depend
+on which arguments are provided.
+
+Arguments:
+- `rs::ReactionSystem`: The `ReactionSystem` which you wish to make a remade version of.
+- `default_reaction_metadata::Vector{Pair{Symbol, T}}`: A vector with default `Reaction` metadata values.
+    Each metadata in each `Reaction` of the updated `ReactionSystem` will have teh value desiganted in
+    `default_reaction_metadata` (however, `Reaction`s that already have that metadata designated will not
+    have their value updated).
+"""
+#function remake_ReactionSystem_internal(rs::ReactionSystem;  default_reaction_metadata::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol, Any}}()) where {T}
+function remake_ReactionSystem_internal(rs; default_reaction_metadata = default_reaction_metadata)
+    # Updates the metadata for all reactions (reactions are ignored).
+    updated_reactions = [set_default_metadata(rx, default_reaction_metadata) for rx in reactions(rs)]
+    rs = @set rs.rxs = updated_reactions  
+    return rs
+end
+
+# For a `Reaction`, adds missing default metadata values. Equations are passed back unmodified.
+function set_default_metadata(rx, default_metadata)
+    missing_metadata = filter(md -> !in(md[1], entry[1] for entry in rx.metadata), default_metadata)
+    updated_metadata = vcat(rx.metadata, missing_metadata)
+    updated_metadata = convert(Vector{Pair{Symbol, Any}}, updated_metadata)
+    return @set rx.metadata = updated_metadata
+end
+
+
+
 """
     isspatial(rn::ReactionSystem)
 
