@@ -91,7 +91,7 @@ export make_empty_network, addspecies!, addparam!, addreaction!, reactionparamsm
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
 export isequivalent
-export remake_noise_scaling, get_noise_scaling, has_noise_scaling
+export set_default_noise_scaling, get_noise_scaling, has_noise_scaling
 
 # depreciated functions to remove in future releases
 export params, numparams

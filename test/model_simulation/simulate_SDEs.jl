@@ -241,7 +241,7 @@ let
         p, 0 --> X, [noise_scaling=2.0]
         d, X --> 0
     end
-    noise_scaling_network2 = remake_noise_scaling(noise_scaling_network1, 0.5)
+    noise_scaling_network2 = set_default_noise_scaling(noise_scaling_network1, 0.5)
 
     # Checks that the two networks' reactions have the correct metadata.
     @test reactions(noise_scaling_network1)[1].metadata == [:noise_scaling => 2.0]
@@ -264,7 +264,7 @@ let
     rn = compose(rn1, [rn2])
 
     # Checks that systems have the correct noise scaling terms.
-    rn = Catalyst.remake_ReactionSystem_internal(rn, default_reaction_metadata = [:noise_scaling => 0.5])
+    rn = set_default_noise_scaling(rn, 0.5)
     rn1_noise_scaling = [get_noise_scaling(rx) for rx in rn.rxs]
     rn2_noise_scaling = [get_noise_scaling(rx) for rx in Catalyst.get_systems(rn)[1].rxs]
     rn_noise_scaling = [get_noise_scaling(rx) for rx in reactions(rn)]
