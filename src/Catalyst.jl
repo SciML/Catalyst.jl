@@ -153,6 +153,11 @@ export balance_reaction, balance_system
 include("steady_state_stability.jl")
 export steady_state_stability, steady_state_jac
 
+# ReactionSystem serialisation.
+include("model_serialisation/serialise_reactionsystem.jl")
+include("model_serialisation/serialisation_support.jl")
+export save_reaction_network
+
 ### Extensions ###
 
 # HomotopyContinuation
