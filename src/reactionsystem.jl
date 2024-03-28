@@ -773,10 +773,10 @@ Arguments:
 """
 function remake_ReactionSystem_internal(rs::ReactionSystem;  default_reaction_metadata = [])
     # Updates the metadata for all reactions (equation are ignored).
-    updated_equations = [set_default_metadata(rx, default_reaction_metadata) for rx in reactions(rs)]
-    updated_reactions = [set_default_metadata(rx, default_reaction_metadata) for rx in reactions(rs)]
+    eqtransform(eq) = eq isa Reaction ? set_default_metadata(eq, default_reaction_metadata) : eq
+    updated_equations = map(eqtransform, get_eqs(rs))
     @set! rs.eqs = updated_equations
-    @set! rs.rxs = updated_reactions
+    @set! rs.rxs = Reaction[rx for rx in updated_equations if rx isa Reaction]
     return rs
 end
 
