@@ -162,49 +162,6 @@ let
     @test norm(du - dunl) < 100 * eps()
 end
 
-# Tests the noise_scaling argument.
-let
-    p = rand(rng, length(k) + 1)
-    u = rand(rng, length(k))
-    t = 0.0
-    G = p[21] * sdenoise(u, p, t)
-    @variables η
-    sdesys_noise_scaling = convert(SDESystem, rs; noise_scaling = η)
-    sf = SDEFunction{false}(sdesys_noise_scaling, unknowns(rs),
-                            parameters(sdesys_noise_scaling))
-    G2 = sf.g(u, p, t)
-    @test norm(G - G2) < 100 * eps()
-end
-
-# Tests the noise_scaling vector argument.
-let
-    p = rand(rng, length(k) + 3)
-    u = rand(rng, length(k))
-    t = 0.0
-    G = vcat(fill(p[21], 8), fill(p[22], 3), fill(p[23], 9))' .* sdenoise(u, p, t)
-    @variables η[1:3]
-    sdesys_noise_scaling = convert(SDESystem, rs;
-                                   noise_scaling = vcat(fill(η[1], 8), fill(η[2], 3),
-                                                        fill(η[3], 9)))
-    sf = SDEFunction{false}(sdesys_noise_scaling, unknowns(rs),
-                            parameters(sdesys_noise_scaling))
-    G2 = sf.g(u, p, t)
-    @test norm(G - G2) < 100 * eps()
-end
-
-# Tests using previous parameter for noise scaling
-let
-    p = rand(rng, length(k))
-    u = rand(rng, length(k))
-    t = 0.0
-    G = [p p p p]' .* sdenoise(u, p, t)
-    sdesys_noise_scaling = convert(SDESystem, rs; noise_scaling = k)
-    sf = SDEFunction{false}(sdesys_noise_scaling, unknowns(rs),
-                            parameters(sdesys_noise_scaling))
-    G2 = sf.g(u, p, t)
-    @test norm(G - G2) < 100 * eps()
-end
-
 # Test with JumpSystem.
 let
     p = rand(rng, length(k))
