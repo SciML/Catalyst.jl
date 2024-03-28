@@ -265,8 +265,8 @@ let
 
     # Checks that systems have the correct noise scaling terms.
     rn = set_default_noise_scaling(rn, 0.5)
-    rn1_noise_scaling = [get_noise_scaling(rx) for rx in rn.rxs]
-    rn2_noise_scaling = [get_noise_scaling(rx) for rx in Catalyst.get_systems(rn)[1].rxs]
+    rn1_noise_scaling = [get_noise_scaling(rx) for rx in get_rxs(rn)]
+    rn2_noise_scaling = [get_noise_scaling(rx) for rx in get_rxs(Catalyst.get_systems(rn)[1])]
     rn_noise_scaling = [get_noise_scaling(rx) for rx in reactions(rn)]
     @test issetequal(rn1_noise_scaling, [2.0, 0.5])
     @test issetequal(rn2_noise_scaling, [5.0, 0.5])
