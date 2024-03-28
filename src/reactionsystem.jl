@@ -762,7 +762,8 @@ end
         default_reaction_metadata::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol, Any}}()) where {T}
 
 Takes a `ReactionSystem` and remakes it, returning a modified `ReactionSystem`. Modifications depend
-on which additional arguments are provided. The input `ReactionSystem` is not mutated.
+on which additional arguments are provided. The input `ReactionSystem` is not mutated. Updating
+default reaction metadata is currently the only supported feature.
 
 Arguments:
 - `rs::ReactionSystem`: The `ReactionSystem` which you wish to remake.
@@ -772,11 +773,26 @@ Arguments:
     have their value updated).
 """
 function remake_ReactionSystem_internal(rs::ReactionSystem;  default_reaction_metadata = [])
-    # Updates the metadata for all reactions (equation are ignored).
+    rs = set_default_metadata(rs;  default_reaction_metadata)
+    return rs
+end
+
+# For a `ReactionSystem`, updates all `Reaction`'s default metadata.
+function set_default_metadata(rs::ReactionSystem;  default_reaction_metadata = [])
+    # Updates reaction metadata for for reactions in this specific system.
     eqtransform(eq) = eq isa Reaction ? set_default_metadata(eq, default_reaction_metadata) : eq
     updated_equations = map(eqtransform, get_eqs(rs))
     @set! rs.eqs = updated_equations
     @set! rs.rxs = Reaction[rx for rx in updated_equations if rx isa Reaction]
+    
+    # Updates reaction metadata for all its subsystems.
+    new_sub_systems = similar(get_systems(rs))
+    for (i, sub_system) in enumerate(get_systems(rs))
+        new_sub_systems[i] = set_default_metadata(sub_system; default_reaction_metadata)
+    end
+    @set! rs.systems = new_sub_systems
+
+    # Returns the updated system.
     return rs
 end
 
@@ -790,17 +806,17 @@ end
 set_default_metadata(eq::Equation, default_metadata) = eq
 
 """
-    remake_noise_scaling(rs::ReactionSystem, noise_scaling)
+set_default_noise_scaling(rs::ReactionSystem, noise_scaling)
 
 Creates an updated `ReactionSystem`. This is the old `ReactionSystem`, but each `Reaction` that does
-not have a `Noise_scaling` metadata have its noise_scaling metadata updated. The input `ReactionSystem`
-is not mutated.
+not have a `noise_scaling` metadata have its noise_scaling metadata updated. The input `ReactionSystem`
+is not mutated. Any subsystems of `rs` have their `noise_scaling` metadata updated as well.
 
 Arguments:
 - `rs::ReactionSystem`: The `ReactionSystem` which you wish to remake.
 - `noise_scaling`: The updated noise scaling terms
 """
-function remake_noise_scaling(rs::ReactionSystem, noise_scaling)
+function set_default_noise_scaling(rs::ReactionSystem, noise_scaling)
     return remake_ReactionSystem_internal(rs, default_reaction_metadata = [:noise_scaling => noise_scaling])
 end
 

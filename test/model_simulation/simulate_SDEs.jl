@@ -250,6 +250,28 @@ let
     @test reactions(noise_scaling_network2)[2].metadata == [:noise_scaling => 0.5]
 end
 
+# Tests the `remake_noise_scaling` function on a hierarchical model.
+let
+    # Creates hierarchical model.
+    rn1 = @reaction_network begin
+        p, 0 --> X, [noise_scaling=2.0]
+        d, X --> 0
+    end
+    rn2 = @reaction_network begin
+        k1, X1 --> X2, [noise_scaling=5.0]
+        k2, X2 --> X1
+    end
+    rn = compose(rn1, [rn2])
+
+    # Checks that systems have the correct noise scaling terms.
+    rn = Catalyst.remake_ReactionSystem_internal(rn, default_reaction_metadata = [:noise_scaling => 0.5])
+    rn1_noise_scaling = [get_noise_scaling(rx) for rx in rn.rxs]
+    rn2_noise_scaling = [get_noise_scaling(rx) for rx in Catalyst.get_systems(rn)[1].rxs]
+    rn_noise_scaling = [get_noise_scaling(rx) for rx in reactions(rn)]
+    @test issetequal(rn1_noise_scaling, [2.0, 0.5])
+    @test issetequal(rn2_noise_scaling, [5.0, 0.5])
+    @test issetequal(rn_noise_scaling, [2.0, 0.5, 5.0, 0.5])
+end
 
 ### Checks Simulations Don't Error ###
 
