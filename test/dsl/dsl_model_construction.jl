@@ -124,32 +124,48 @@ let
 
     for networks in identical_networks_1
         for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0_1 = rnd_u0(networks[1], rng; factor)
-            p_1 = rnd_ps(networks[1], rng; factor)
-            u0_2 = Pair.(unknowns(networks[2]), last.(u0_1))
-            p_2 = Pair.(parameters(networks[2]), last.(p_1))
+            u0 = rnd_u0(networks[1], rng; factor)
+            p = rnd_ps(networks[1], rng; factor)
             t = rand(rng)
             
-            @test f_eval(networks[1], u0_1, p_1, t) ≈ f_eval(networks[2], u0_2, p_2, t)
-            @test jac_eval(networks[1], u0_1, p_1, t) ≈ jac_eval(networks[2], u0_2, p_2, t)
-            @test g_eval(networks[1], u0_1, p_1, t) ≈ g_eval(networks[2], u0_2, p_2, t)
+            @test f_eval(networks[1], u0, p, t) ≈ f_eval(networks[2], u0, p, t)
+            @test jac_eval(networks[1], u0, p, t) ≈ jac_eval(networks[2], u0, p, t)
+            @test g_eval(networks[1], u0, p, t) ≈ g_eval(networks[2], u0, p, t)
         end
     end
 end
 
-# Compares networks to networks written in different ways.
+# Compares simulations for network with different species and parameter names
 let
-    identical_networks_2 = Vector{Pair}()
-
-    # Different parameter and variable names.
+    # Fetches the original network, and also declares it using alternative notation.
+    network = reaction_networks_standard[5]
     differently_written_5 = @reaction_network begin
         q, ∅ → Y1
         (l1, l2), Y1 ⟷ Y2
         (l3, l4), Y2 ⟷ Y3
         (l5, l6), Y3 ⟷ Y4
         c, Y4 → ∅
+    end    
+
+    # Checks that the networks' functions evaluates equally for various randomised inputs.
+    @unpack X1, X2, X3, X4, p, d, k1, k2, k3, k4, k5, k6 = network
+    for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
+        u0_1 = Dict(rnd_u0(network, rng; factor))
+        p_1 = Dict(rnd_ps(network, rng; factor))
+        u0_2 = [:Y1 => u0_1[X1], :Y2 => u0_1[X2], :Y3 => u0_1[X3], :Y4 => u0_1[X4]]
+        p_2 = [:q => p_1[p], :c => p_1[d], :l1 => p_1[k1], :l2 => p_1[k2], :l3 => p_1[k3], 
+               :l4 => p_1[k4], :l5 => p_1[k5], :l6 => p_1[k6]]
+        t = rand(rng)
+        
+        @test f_eval(network, u0_1, p_1, t) ≈ f_eval(differently_written_5, u0_2, p_2, t)
+        @test jac_eval(network, u0_1, p_1, t) ≈ jac_eval(differently_written_5, u0_2, p_2, t)
+        @test g_eval(network, u0_1, p_1, t) ≈ g_eval(differently_written_5, u0_2, p_2, t)
     end
-    push!(identical_networks_2, reaction_networks_standard[5] => differently_written_5)
+end
+
+# Compares networks to networks written in different ways.
+let
+    identical_networks_2 = Vector{Pair}()
 
     # Unfold reactions.
     differently_written_6 = @reaction_network begin
@@ -190,15 +206,13 @@ let
 
     for networks in identical_networks_2
         for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0_1 = rnd_u0(networks[1], rng; factor)
-            p_1 = rnd_ps(networks[1], rng; factor)
-            u0_2 = Pair.(unknowns(networks[2]), last.(u0_1))
-            p_2 = Pair.(parameters(networks[2]), last.(p_1))
+            u0 = rnd_u0(networks[1], rng; factor)
+            p = rnd_ps(networks[1], rng; factor)
             t = rand(rng)
             
-            @test f_eval(networks[1], u0_1, p_1, t) ≈ f_eval(networks[2], u0_2, p_2, t)
-            @test jac_eval(networks[1], u0_1, p_1, t) ≈ jac_eval(networks[2], u0_2, p_2, t)
-            @test g_eval(networks[1], u0_1, p_1, t) ≈ g_eval(networks[2], u0_2, p_2, t)
+            @test f_eval(networks[1], u0, p, t) ≈ f_eval(networks[2], u0, p, t)
+            @test jac_eval(networks[1], u0, p, t) ≈ jac_eval(networks[2], u0, p, t)
+            @test g_eval(networks[1], u0, p, t) ≈ g_eval(networks[2], u0, p, t)
         end
     end
 end

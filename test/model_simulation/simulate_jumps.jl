@@ -111,17 +111,18 @@ let
     # Loops through all cases, checks that identical simulations are generated with/without Catalyst.
     for (rn_catalyst, rn_manual, u0_sym, ps_sym) in zip(catalyst_networks, manual_networks, u0_syms, ps_syms)
         for factor in [5, 50]
+            seed = rand(rng, 1:100)
             u0_1 = rnd_u0_Int64(rn_catalyst, rng; n = factor)
             ps_1 = rnd_ps(rn_catalyst, rng; factor = factor/100.0)
             dprob_1 = DiscreteProblem(rn_catalyst, u0_1, (0.0, 100.0), ps_1)
             jprob_1 = JumpProblem(rn_catalyst, dprob_1, Direct(); rng)
-            sol1 = solve(jprob_1, SSAStepper(); saveat = 1.0)
+            sol1 = solve(jprob_1, SSAStepper(); seed, saveat = 1.0)
             
             u0_2 = map_to_vec(u0_1, u0_sym)
             ps_2 = map_to_vec(ps_1, ps_sym)
             dprob_2 = DiscreteProblem(u0_2, (0.0, 100.0), ps_2)
             jprob_2 = JumpProblem(dprob_2, Direct(), rn_manual...; rng)
-            sol2 = solve(jprob_2, SSAStepper(); saveat = 1.0)
+            sol2 = solve(jprob_2, SSAStepper(); seed, saveat = 1.0)
 
             if nameof(rn_catalyst) == :rnh7
                 # Have spent a few hours figuring this one out. For certain seeds it actually works,

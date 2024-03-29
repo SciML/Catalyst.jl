@@ -131,8 +131,9 @@ let
             if nameof(rn_catalyst) != :rnc9
                 sprob_1 = SDEProblem(rn_catalyst, u0_1, (0.0, 1.0), ps_1)
                 sprob_2 = SDEProblem(rn_manual.f, rn_manual.g, u0_2, (0.0, 1.0), ps_2; noise_rate_prototype = rn_manual.nrp)
-                sol1 = solve(sprob_1, ImplicitEM(); seed = rand(rng, 1:100))
-                sol2 = solve(sprob_2, ImplicitEM(); seed = rand(rng, 1:100))
+                seed =  seed = rand(rng, 1:100)
+                sol1 = solve(sprob_1, ImplicitEM(); seed)
+                sol2 = solve(sprob_2, ImplicitEM(); seed)
                 @test sol1[u0_sym] ≈ sol2.u
             end
         end
