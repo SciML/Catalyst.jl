@@ -77,7 +77,7 @@ export ODEProblem,
 const ExprValues = Union{Expr, Symbol, Float64, Int, Bool}
 include("expression_utils.jl")
 include("reaction_network.jl")
-export @reaction_network, @add_reactions, @reaction, @species
+export @reaction_network, @network_component, @add_reactions, @reaction, @species
 
 # registers CRN specific functions using Symbolics.jl
 include("registered_functions.jl")

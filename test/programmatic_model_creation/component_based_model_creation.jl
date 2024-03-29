@@ -458,15 +458,13 @@ end
 
 # Tests that conversion with defaults works for a composed model.
 let
-    rn1 = @reaction_network rn1 begin
-        @incomplete
+    rn1 = @network_component rn1 begin
         @parameters p=1.0 r=2.0
         @species X(t) = 3.0 Y(t) = 4.0
         (p1, d), 0 <--> X
         (p2, r), 0 <--> Z
     end
-    rn2 = @reaction_network rn1 begin
-        @incomplete
+    rn2 = @network_component rn1 begin
         @parameters p=10. q=20.0
         @species X(t) = 30.0 Z(t) = 40.0
         (p1, d), 0 <--> X

@@ -6,13 +6,12 @@ identically repressed genes, and how to use compositional modeling to create
 compartments.
 
 ## A note on *completeness*
-Catalyst `ReactionSystem` can either be *complete* or *incomplete*. *By default they are created as complete*. Here, only complete `ReactionSystem`s can be used to create the various problem types (e.g. `ODEProblem`). However, only incomplete `ReactionSystem`s can be composed using the features described below. Hence, for compositional modeling, `ReactionSystem` must be created as incomplete, and later set to complete before simulation.
+Catalyst `ReactionSystem` can either be *complete* or *incomplete*. When created using the `@reaction_network` DSL they are *created as complete*. Here, only complete `ReactionSystem`s can be used to create the various problem types (e.g. `ODEProblem`). However, only incomplete `ReactionSystem`s can be composed using the features described below. Hence, for compositional modeling, `ReactionSystem` must be created as incomplete, and later set to complete before simulation.
 
-To set a `ReactionSystem` created via the DSL as complete, use the `@incomplete` option:
+To create incomplete `ReactionSystem`s using the DSL as complete, use the `@network_component` instead of `@reaction_network`:
 ```@example ex0
 using Catalyst
-degradation_component = @reaction_network begin
-  @incomplete
+degradation_component = @network_component begin
   d, X --> 0
 end
 ```
@@ -40,12 +39,10 @@ Catalyst supports two ModelingToolkit interfaces for composing multiple
 extending a system is the `extend` command
 ```@example ex1
 using Catalyst
-basern = @reaction_network rn1 begin
-  @incomplete
+basern = @network_component rn1 begin
   k, A + B --> C
 end
-newrn = @reaction_network rn2 begin
-  @incomplete
+newrn = @network_component rn2 begin
   r, C --> A + B
 end
 @named rn = extend(newrn, basern)
@@ -58,8 +55,7 @@ The second main compositional modeling tool is the use of subsystems. Suppose we
 now add to `basern` two subsystems, `newrn` and `newestrn`, we get a
 different result:
 ```@example ex1
-newestrn = @reaction_network rn3 begin
-  @incomplete
+newestrn = @network_component rn3 begin
   v, A + D --> 2D
 end
 @named rn = compose(basern, [newrn, newestrn])
@@ -131,8 +127,7 @@ modular fashion. We start by defining a function that creates a negatively
 repressed gene, taking the repressor as input
 ```@example ex1
 function repressed_gene(; R, name)
-  @reaction_network $name begin
-    @incomplete
+  @network_component $name begin
     hillr($R,α,K,n), ∅ --> m
     (δ,γ), m <--> ∅
     β, m --> m + P
@@ -189,15 +184,13 @@ In our model we'll therefore add the conversions of the last column to properly
 account for compartment volumes:
 ```@example ex1
 # transcription and regulation
-nuc = @reaction_network nuc begin
-  @incomplete
+nuc = @network_component nuc begin
   α, G --> G + M
   (κ₊/V,κ₋), D + G <--> DG
 end
 
 # translation and dimerization
-cyto = @reaction_network cyto begin
-  @incomplete
+cyto = @network_component cyto begin
   β, M --> M + P
   (k₊/V,k₋), 2P <--> D
   σ, P --> 0
@@ -206,8 +199,7 @@ end
 
 # export reactions,
 # γ,δ=probability per time to be exported/imported
-model = @reaction_network model begin
-  @incomplete
+model = @network_component model begin
   γ, $(nuc.M) --> $(cyto.M)
   δ, $(cyto.D) --> $(nuc.D)
 end

@@ -1,45 +1,4 @@
 ### Temporary deprecation warning - Eventually to be removed. ###
-deprication_message = """
-@reaction_network notation where parameters are declared after "end", e.g. like:
-
-```julia
-@reaction_network begin
-    p, 0 --> X
-    d, X --> 0
-end p d
-```
-
-has been deprecated in favor of a notation where the parameters are inferred, e.g:
-
-```julia
-@reaction_network begin
-    p, 0 --> X
-    d, X --> 0
-end
-```
-
-Parameters and species can be explicitly indicated using the @parameters and @species
-macros, e.g:
-
-```julia
-@reaction_network begin
-    @parameters p d
-    @species X(t)
-    p, 0 --> X
-    d, X --> 0
-end
-```
-"""
-macro reaction_network(name::Symbol, ex::Expr, parameters...)
-    error(deprication_message)
-end
-macro reaction_network(name::Expr, ex::Expr, parameters...)
-    error(deprication_message)
-end
-macro reaction_network(ex::Expr, parameters...)
-    error(deprication_message)
-end
-
 """
 Macro that inputs an expression corresponding to a reaction network and outputs
 a `ReactionNetwork` that can be used as input to generation of ODE, SDE, and
@@ -123,7 +82,7 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables, :default_noise_scaling, :incomplete)
+const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables, :default_noise_scaling)
 
 ### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)
@@ -186,17 +145,53 @@ emptyrn = @reaction_network empty
 # an empty network with random generated name
 emptyrn = @reaction_network
 ```
+
+ReactionSystems generated through `@reaction_network` are compelte.
 """
 macro reaction_network(name::Symbol, ex::Expr)
-    make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name))))
+    :(complete($(make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name)))))))
 end
 
 # allows @reaction_network $name begin ... to interpolate variables storing a name
 macro reaction_network(name::Expr, ex::Expr)
-    make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1]))))
+    :(complete($(make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1])))))))
 end
 
 macro reaction_network(ex::Expr)
+    ex = MacroTools.striplines(ex)
+
+    # no name but equations: @reaction_network begin ... end ...
+    if ex.head == :block
+        :(complete($(make_reaction_system(ex))))
+    else  # empty but has interpolated name: @reaction_network $name
+        networkname = :($(esc(ex.args[1])))
+        return Expr(:block, :(@parameters t),
+                    :(complete(ReactionSystem(Reaction[], t, [], []; name = $networkname))))
+    end
+end
+
+#Returns a empty network (with, or without, a declared name)
+macro reaction_network(name::Symbol = gensym(:ReactionSystem))
+    return Expr(:block, :(@parameters t),
+                :(complete(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name))))))
+end
+
+
+"""
+    @network_component
+
+As @reaction_network, but the output system is not complete.
+"""
+macro network_component(name::Symbol, ex::Expr)
+    make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name))))
+end
+
+# allows @reaction_network $name begin ... to interpolate variables storing a name
+macro network_component(name::Expr, ex::Expr)
+    make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1]))))
+end
+
+macro network_component(ex::Expr)
     ex = MacroTools.striplines(ex)
 
     # no name but equations: @reaction_network begin ... end ...
@@ -210,11 +205,11 @@ macro reaction_network(ex::Expr)
 end
 
 #Returns a empty network (with, or without, a declared name)
-# @reaction_network name
-macro reaction_network(name::Symbol = gensym(:ReactionSystem))
+macro network_component(name::Symbol = gensym(:ReactionSystem))
     return Expr(:block, :(@parameters t),
                 :(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name)))))
 end
+
 
 ### Macros used for manipulating, and successively builing up, reaction systems. ###
 @doc raw"""

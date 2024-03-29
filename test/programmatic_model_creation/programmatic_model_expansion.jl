@@ -51,8 +51,7 @@ end
 # Tests accessing parameters and species added with network API.
 # Should probably be removed if we remove mutating stuff?
 let
-    empty_network_3 = @reaction_network begin
-        @incomplete
+    empty_network_3 = @network_component begin
     end
     @parameters p
     @species x(t)
