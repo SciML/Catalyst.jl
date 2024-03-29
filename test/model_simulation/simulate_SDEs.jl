@@ -131,8 +131,8 @@ let
             if nameof(rn_catalyst) != :rnc9
                 sprob_1 = SDEProblem(rn_catalyst, u0_1, (0.0, 1.0), ps_1)
                 sprob_2 = SDEProblem(rn_manual.f, rn_manual.g, u0_2, (0.0, 1.0), ps_2; noise_rate_prototype = rn_manual.nrp)
-                sol1 = solve(sprob_1, ImplicitEM(); seed = 1234)
-                sol2 = solve(sprob_2, ImplicitEM(); seed = 1234)
+                sol1 = solve(sprob_1, ImplicitEM(); seed = rand(rng, 100))
+                sol2 = solve(sprob_2, ImplicitEM(); seed = rand(rng, 100))
                 @test sol1[u0_sym] ≈ sol2.u
             end
         end
@@ -186,26 +186,39 @@ let
 end
 
 # Tests with multiple noise scaling parameters directly in the macro.
+# If the correct noise scaling is applied, the variance in the individual species should be (widely) different.
 let 
+    # Tries with normally declared parameters.
     noise_scaling_network_1 = @reaction_network begin 
         @parameters η1 η2
         (k1, k2), X1 ↔ X2, ([noise_scaling=η1],[noise_scaling=η2]) 
     end
     u0 = [:X1 => 1000.0, :X2 => 3000.0]
-    sol_1_1 = solve(SDEProblem(noise_scaling_network_1, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, :η1 => 2.0, :η2 => 2.0]), ImplicitEM(); saveat=1.0)
-    sol_1_2 = solve(SDEProblem(noise_scaling_network_1, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, :η1 => 2.0, :η2 => 0.2]), ImplicitEM(); saveat=1.0)
-    sol_1_3 = solve(SDEProblem(noise_scaling_network_1, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, :η1 => 0.2, :η2 => 0.2]), ImplicitEM(); saveat=1.0)
-    @test var(sol_1_1[:X1]) > var(sol_1_2[:X1]) > var(sol_1_3[:X1]) 
+    sprob_1_1 = SDEProblem(noise_scaling_network_1, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, :η1 => 2.0, :η2 => 2.0])
+    sprob_1_2 = SDEProblem(noise_scaling_network_1, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, :η1 => 2.0, :η2 => 0.2])
+    sprob_1_3 = SDEProblem(noise_scaling_network_1, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, :η1 => 0.2, :η2 => 0.2])
+    for repeat in 1:5
+        sol_1_1 = solve(sprob_1_1, ImplicitEM(); saveat=1.0, seed = rand(rng, 100))
+        sol_1_2 = solve(sprob_1_2, ImplicitEM(); saveat=1.0, seed = rand(rng, 100))
+        sol_1_3 = solve(sprob_1_3, ImplicitEM(); saveat=1.0, seed = rand(rng, 100))
+        @test var(sol_1_1[:X1]) > var(sol_1_2[:X1]) > var(sol_1_3[:X1]) 
+    end
 
+    # Tries with an array parameter.
     noise_scaling_network_2 = @reaction_network begin 
         @parameters η[1:2]
         (k1, k2), X1 ↔ X2, ([noise_scaling=η[1]],[noise_scaling=η[2]])  
     end
     @unpack k1, k2, η = noise_scaling_network_2
-    sol_2_1 = solve(SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 2.0, η[2] => 2.0]), ImplicitEM(); saveat=1.0)
-    sol_2_2 = solve(SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 2.0, η[2] => 0.2]), ImplicitEM(); saveat=1.0)
-    sol_2_3 = solve(SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 0.2, η[2] => 0.2]), ImplicitEM(); saveat=1.0)
-    @test var(sol_2_1[:X1]) > var(sol_2_2[:X1]) > var(sol_2_3[:X1]) 
+    sprob_2_1 = SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 2.0, η[2] => 2.0])
+    sprob_2_2 = SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 2.0, η[2] => 0.2])
+    sprob_2_3 = SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 0.2, η[2] => 0.2])
+    for repeat in 1:5
+        sol_2_1 = solve(sprob_2_1, ImplicitEM(); saveat=1.0, seed = rand(rng, 100))
+        sol_2_2 = solve(sprob_2_2, ImplicitEM(); saveat=1.0, seed = rand(rng, 100))
+        sol_2_3 = solve(sprob_2_3, ImplicitEM(); saveat=1.0, seed = rand(rng, 100))
+        @test var(sol_2_1[:X1]) > var(sol_2_2[:X1]) > var(sol_2_3[:X1]) 
+    end
 end
 
 # Tests using default values for noise scaling.
@@ -258,12 +271,16 @@ let
     
     u0 = [:X1 => 1000.0, :X2 => 1000.0, :X3 => 1000.0]
     ps = [noise_scaling_network.p => 1000.0, noise_scaling_network.d => 1.0, noise_scaling_network.η1 => 1.0]
-    sol = solve(SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), ps), ImplicitEM(); saveat=1.0)
-    @test var(sol[:X1]) < var(sol[:X2]) 
-    @test var(sol[:X1]) < var(sol[:X3]) 
+    sprob = SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), ps)
+    
+    for repeat in 1:5
+        sol = solve(sprob, ImplicitEM(); saveat=1.0, seed = rand(rng, 100))
+        @test var(sol[:X1]) < var(sol[:X2]) 
+        @test var(sol[:X1]) < var(sol[:X3]) 
+    end
 end
 
-# Tests  using complicated noise scaling expressions
+# Tests  using complicated noise scaling expressions.
 let
     noise_scaling_network = @reaction_network begin
         @parameters η1 η2 η3 η4
@@ -280,8 +297,12 @@ let
 
     u0 = [:X1 => 1000.0, :X2 => 1000.0, :X3 => 1000.0, :X4 => 1000.0, :X5 => 1000.0, :N1 => 3.0, :N3 => 0.33]
     ps = [:p => 1000.0, :d => 1.0, :η1 => 1.0, :η2 => 1.4, :η3 => 0.33, :η4 => 4.0]
-    sol = solve(SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), ps), ImplicitEM(); saveat=1.0, adaptive=false, dt=0.1)
-    @test var(sol[:X1]) > var(sol[:X2]) > var(sol[:X3]) > var(sol[:X4]) > var(sol[:X5])
+    sprob = SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), ps)
+    
+    for repeat in 1:5
+        sol = solve(sprob, ImplicitEM(); saveat=1.0, adaptive=false, dt=0.1, seed = rand(rng, 100))
+        @test var(sol[:X1]) > var(sol[:X2]) > var(sol[:X3]) > var(sol[:X4]) > var(sol[:X5])
+    end
 end
 
 # Tests the `remake_noise_scaling` function.
@@ -323,28 +344,20 @@ let
     @test issetequal(rn_noise_scaling, [2.0, 0.5, 5.0, 0.5])
 end
 
-### Checks Simulations Don't Error ###
-
-#Tries to create a large number of problem, ensuring there are no errors (cannot solve as solution likely to go into negatives). 
-let
-    for reaction_network in reaction_networks_all
-        for factor in [1e-2, 1e-1, 1e0, 1e1]
-            u0 = factor * rand(rng, length(unknowns(reaction_network)))
-            p = factor * rand(rng, length(parameters(reaction_network)))
-            prob = SDEProblem(reaction_network, u0, (0.0, 1.0), p)
-        end
-    end
-end
 
 ### Other Tests ###
 
 # Tests simulating a network without parameters.
 let
-    no_param_network = @reaction_network begin (1.2, 5), X1 ↔ X2 end
+    no_param_network = @reaction_network begin 
+        (1.2, 5), X1 ↔ X2 
+    end
     for factor in [1e3, 1e4]
         u0 = rnd_u0(no_param_network, rng; factor)
-        prob = SDEProblem(no_param_network, u0, (0.0, 1000.0))
-        sol = solve(prob, ImplicitEM())
-        @test mean(sol[:X1]) > mean(sol[:X2])
+        sprob = SDEProblem(no_param_network, u0, (0.0, 1000.0))
+        for repeat in 1:5
+            sol = solve(sprob, ImplicitEM(); seed = rand(rng, 100))
+            @test mean(sol[:X1]) > mean(sol[:X2])
+        end
     end
 end

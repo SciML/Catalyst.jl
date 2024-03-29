@@ -528,7 +528,6 @@ let
 end
 
 # Test conservation law elimination.
-# Conservation laws currently broken (you get stuck in an infinite loop in MTK or something).
 let
     rn = @reaction_network begin
         (k1, k2), A + B <--> C

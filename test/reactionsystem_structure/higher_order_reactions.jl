@@ -73,11 +73,11 @@ end
         p = factor * rand(rng, length(get_ps(higher_order_network_3)))
         prob1 = JumpProblem(higher_order_network_1,
                             DiscreteProblem(higher_order_network_1, u0, (0.0, 1000.0), p),
-                            Direct())
+                            Direct(); rng)
         sol1 = solve(prob1, SSAStepper())
         prob2 = JumpProblem(higher_order_network_3,
                             DiscreteProblem(higher_order_network_3, u0, (0.0, 1000.0), p),
-                            Direct())
+                            Direct(); rng)
         sol2 = solve(prob2, SSAStepper())
         for i in 1:length(u0)
             vals1 = getindex.(sol1.u, i)

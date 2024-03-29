@@ -115,13 +115,13 @@ let
             ps_1 = rnd_ps(rn_catalyst, rng; factor = factor/100.0)
             dprob_1 = DiscreteProblem(rn_catalyst, u0_1, (0.0, 100.0), ps_1)
             jprob_1 = JumpProblem(rn_catalyst, dprob_1, Direct(); rng)
-            sol1 = solve(jprob_1, SSAStepper(); seed = 1234, saveat = 1.0)
+            sol1 = solve(jprob_1, SSAStepper(); saveat = 1.0)
             
             u0_2 = map_to_vec(u0_1, u0_sym)
             ps_2 = map_to_vec(ps_1, ps_sym)
             dprob_2 = DiscreteProblem(u0_2, (0.0, 100.0), ps_2)
             jprob_2 = JumpProblem(dprob_2, Direct(), rn_manual...; rng)
-            sol2 = solve(jprob_2, SSAStepper(); seed = 1234, saveat = 1.0)
+            sol2 = solve(jprob_2, SSAStepper(); saveat = 1.0)
 
             if nameof(rn_catalyst) == :rnh7
                 # Have spent a few hours figuring this one out. For certain seeds it actually works,
@@ -143,7 +143,7 @@ let
         ps = rnd_ps(rn, rng)
         dprob = DiscreteProblem(rn, u0, (0.0, 1.0), ps)
         jprob = JumpProblem(rn, dprob, Direct(); rng)
-        @test SciMLBase.successful_retcode(solve(jprob, SSAStepper(); seed = 1234))
+        @test SciMLBase.successful_retcode(solve(jprob, SSAStepper()))
     end
 end
 
@@ -157,6 +157,6 @@ let
     u0 = rnd_u0_Int64(no_param_network, rng)
     dprob = DiscreteProblem(no_param_network, u0, (0.0, 1000.0))
     jprob = JumpProblem(no_param_network, dprob, Direct(); rng)
-    sol = solve(jprob, SSAStepper(); seed = 1234)
+    sol = solve(jprob, SSAStepper())
     @test mean(sol[:X1]) > mean(sol[:X2])
 end

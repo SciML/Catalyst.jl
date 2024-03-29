@@ -3,6 +3,10 @@
 # Fetch packages.
 using Catalyst, JumpProcesses, LinearAlgebra, OrdinaryDiffEq, Test
 
+# Sets stable rng number.
+using StableRNGs
+rng = StableRNG(12345)
+
 # Sets the default `t` to use.
 t = default_t()
 
@@ -230,7 +234,7 @@ end
     u0 = [S => 999, I => 1, R => 0]
     jsys = convert(JumpSystem, sir_ref)
     dprob = DiscreteProblem(jsys, u0, tspan, p1)
-    jprob = JumpProblem(jsys, dprob, Direct(), save_positions = (false, false))
+    jprob = JumpProblem(jsys, dprob, Direct(); rng, save_positions = (false, false))
     function getmean(jprob, tf)
         m = zeros(3)
         for i in 1:Nsims
@@ -246,7 +250,7 @@ end
     pvs = Tuple(p2dict[s] for s in parameters(sir))
     @test all(isequal.(parameters(sir), parameters(jsys2)))
     dprob2 = DiscreteProblem(jsys2, u0, tspan, pvs)
-    jprob2 = JumpProblem(jsys2, dprob2, Direct(), save_positions = (false, false))
+    jprob2 = JumpProblem(jsys2, dprob2, Direct(); rng, save_positions = (false, false))
     m2 = getmean(jprob2, tspan[2])
     @test maximum(abs.(m1[2:3] .- m2[2:3]) ./ m1[2:3]) < 0.05
 end

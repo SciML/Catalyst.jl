@@ -1503,7 +1503,7 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
                          include_zero_odes)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
-    osys = ODESystem(eqs, get_iv(fullrs), sts, ps;
+    ODESystem(eqs, get_iv(fullrs), sts, ps;
               observed = obs,
               name,
               defaults = _merge(defaults,defs),
@@ -1511,7 +1511,6 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
               continuous_events = MT.get_continuous_events(fullrs),
               discrete_events = MT.get_discrete_events(fullrs),
               kwargs...)
-    return osys
 end
 
 """
@@ -1546,13 +1545,12 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     error_if_constraint_odes(NonlinearSystem, fullrs)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
-    nlsys = NonlinearSystem(eqs, sts, ps;
+    NonlinearSystem(eqs, sts, ps;
                     name,
                     observed = obs,
                     defaults = _merge(defaults,defs),
                     checks,
                     kwargs...)
-    return nlsys
 end
 
 """
@@ -1596,7 +1594,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
         @info "Boundary condition species detected. As constraint equations are not currently supported when converting to SDESystems, the resulting system will be undetermined. Consider using constant species instead."
     end
 
-    ssys = SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps;
+    SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps;
               observed = obs,
               name,
               defaults = defs,
@@ -1604,7 +1602,6 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
               continuous_events = MT.get_continuous_events(flatrs),
               discrete_events = MT.get_discrete_events(flatrs),
               kwargs...)
-    return ssys
 end
 
 """
@@ -1630,7 +1627,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
                       remove_conserved = nothing, checks = false,
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
-                      iscomplete(rs) || error(COMPLETENESS_ERROR)
+    iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, JumpSystem)
 
     (remove_conserved !== nothing) &&
@@ -1649,14 +1646,13 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     any(isbc, get_unknowns(flatrs)) && (sts = vcat(sts, filter(isbc, get_unknowns(flatrs))))
     ps = get_ps(flatrs)
 
-    jsys = JumpSystem(eqs, get_iv(flatrs), sts, ps;
+    JumpSystem(eqs, get_iv(flatrs), sts, ps;
                observed = MT.observed(flatrs),
                name,
                defaults = _merge(defaults,MT.defaults(flatrs)),
                checks,
                discrete_events = MT.discrete_events(flatrs),
                kwargs...)
-    return jsys
 end
 
 ### Converts a reaction system to ODE or SDE problems ###
@@ -1821,7 +1817,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
                    balanced_bc_check = false,
                    spatial_ivs = get_sivs(rs),
                    continuous_events = MT.continuous_events(rs),
-                   discrete_events = MT.continuous_events(rs))
+                   discrete_events = MT.discrete_events(rs))
 end
 
 """

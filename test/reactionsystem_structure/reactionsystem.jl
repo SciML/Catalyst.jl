@@ -292,11 +292,11 @@ let
     rs = complete(rs)
     js = complete(convert(JumpSystem, rs))
     dprob = DiscreteProblem(js, [S => 1, I => 1], (0.0, 10.0))
-    jprob = JumpProblem(js, dprob, Direct())
+    jprob = JumpProblem(js, dprob, Direct(); rng)
     sol = solve(jprob, SSAStepper())
 
     # Test for https://github.com/SciML/ModelingToolkit.jl/issues/1042.
-    jprob = JumpProblem(rs, dprob, Direct(), save_positions = (false, false))
+    jprob = JumpProblem(rs, dprob, Direct(); rng, save_positions = (false, false))
 
     @parameters k1 k2
     @species R(t)
@@ -530,10 +530,10 @@ let
     @named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
                                    (@reaction k1, $A --> B2),
                                    (@reaction 10 * k1, ∅ --> B3)], t)
-                                   rn = complete(rn)
+    rn = complete(rn)
     dprob = DiscreteProblem(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
                             [k1 => 1.0])
-    jprob = JumpProblem(rn, dprob, Direct(), save_positions = (false, false))
+    jprob = JumpProblem(rn, dprob, Direct(); rng, save_positions = (false, false))
     umean = zeros(4)
     Nsims = 40000
     for i in 1:Nsims
