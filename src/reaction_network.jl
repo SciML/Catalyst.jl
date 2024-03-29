@@ -148,34 +148,9 @@ emptyrn = @reaction_network
 
 ReactionSystems generated through `@reaction_network` are compelte.
 """
-macro reaction_network(name::Symbol, ex::Expr)
-    :(complete($(make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name)))))))
+macro reaction_network(args...)
+    return :(complete(@network_component $(args... )))
 end
-
-# allows @reaction_network $name begin ... to interpolate variables storing a name
-macro reaction_network(name::Expr, ex::Expr)
-    :(complete($(make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1])))))))
-end
-
-macro reaction_network(ex::Expr)
-    ex = MacroTools.striplines(ex)
-
-    # no name but equations: @reaction_network begin ... end ...
-    if ex.head == :block
-        :(complete($(make_reaction_system(ex))))
-    else  # empty but has interpolated name: @reaction_network $name
-        networkname = :($(esc(ex.args[1])))
-        return Expr(:block, :(@parameters t),
-                    :(complete(ReactionSystem(Reaction[], t, [], []; name = $networkname))))
-    end
-end
-
-#Returns a empty network (with, or without, a declared name)
-macro reaction_network(name::Symbol = gensym(:ReactionSystem))
-    return Expr(:block, :(@parameters t),
-                :(complete(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name))))))
-end
-
 
 """
     @network_component
