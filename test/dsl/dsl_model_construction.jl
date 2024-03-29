@@ -316,7 +316,7 @@ let
     end
 end
 
-# CHeck that various symbols can be used as species/parameter names.
+# Check that various symbols can be used as species/parameter names.
 let
     @reaction_network begin
         (a, A), n ⟷ N

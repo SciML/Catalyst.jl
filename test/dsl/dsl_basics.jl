@@ -68,54 +68,53 @@ end
 ### Test Interpolation Within the DSL ###
 
 # Tests basic interpolation cases.
+
+# Declares parameters and species used across the test.
+@parameters α k k1 k2
+@species A(t) B(t) C(t) D(t)
+
 let
-    # Declares parameters and species used across the test.
-    @parameters α k k1 k2
-    @species A(t) B(t) C(t) D(t)
-
-    let
-        AA = A
-        AAA = A^2 + B
-        rn = @reaction_network rn begin
-            @parameters k
-            @species A(t) B(t) C(t) D(t)
-            k*$AAA, C --> D
-        end
-        rn2 = ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn)
-        @test rn == rn2
-
-        rn = @reaction_network rn begin
-            @parameters k
-            @species A(t) C(t) D(t)
-            k, $AA + C --> D
-        end
-        rn2 = ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn)
-        @test rn == rn2
+    AA = A
+    AAA = A^2 + B
+    rn = @reaction_network rn begin
+        @parameters k
+        @species A(t) B(t) C(t) D(t)
+        k*$AAA, C --> D
     end
+    rn2 = ReactionSystem([Reaction(k*AAA, [C], [D])], t; name=:rn)
+    @test rn == rn2
 
-    let
-        BB = B; A2 = A
-        rn = @reaction_network rn begin
-            @parameters k1 k2
-            (k1,k2), C + $A2 + $BB + $A2 <--> $BB + $BB
-        end
-        rn2 = ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
-                            Reaction(k2, [B], [C, A, B], [2], [1,2,1])],
-                            t; name=:rn)
-        @test rn == rn2
+    rn = @reaction_network rn begin
+        @parameters k
+        @species A(t) C(t) D(t)
+        k, $AA + C --> D
     end
+    rn2 = ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn)
+    @test rn == rn2
+end
 
-    let
-        AA = A
-        kk1 = k^2*A
-        kk2 = k1+k2
-        rn = @reaction_network rn begin
-            @parameters α k k1 k2
-            α+$kk1*$kk2*$AA, 2*$AA + B --> $AA
-        end
-        rn2 = ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; name=:rn)
-        @test rn == rn2
+let
+    BB = B; A2 = A
+    rn = @reaction_network rn begin
+        @parameters k1 k2
+        (k1,k2), C + $A2 + $BB + $A2 <--> $BB + $BB
     end
+    rn2 = ReactionSystem([Reaction(k1, [C, A, B], [B], [1,2,1],[2]),
+                        Reaction(k2, [B], [C, A, B], [2], [1,2,1])],
+                        t; name=:rn)
+    @test rn == rn2
+end
+
+let
+    AA = A
+    kk1 = k^2*A
+    kk2 = k1+k2
+    rn = @reaction_network rn begin
+        @parameters α k k1 k2
+        α+$kk1*$kk2*$AA, 2*$AA + B --> $AA
+    end
+    rn2 = ReactionSystem([Reaction(α+kk1*kk2*AA, [A, B], [A], [2, 1], [1])], t; name=:rn)
+    @test rn == rn2
 end
 
 # Miscellaneous interpolation tests. Unsure what they do here (not related to DSL).
@@ -272,6 +271,7 @@ let
     rx2 = Reaction(2*k, [B], [D], [1], [2.5])
     rx3 = Reaction(2*k, [B], [D], [2.5], [2])
     @named mixedsys = ReactionSystem([rx1,rx2,rx3],t,[B,C,D],[k])
+    mixedsys = complete(mixedsys)
     osys = convert(ODESystem, mixedsys; combinatoric_ratelaws=false)
     rn = @reaction_network mixedsys begin
         @parameters k
@@ -313,11 +313,12 @@ let
     eq = D(B) ~ -B
     @named osys = ODESystem([eq], t)
     @named rn2 = extend(osys, rn2)
+    rn2 = complete(rn2)
     @test issetequal(unknowns(rn2), species(rn2))
     @test all(isspecies, species(rn))
     @test Catalyst.isbc(ModelingToolkit.value(B))
     @test Catalyst.isbc(ModelingToolkit.value(A)) == false
-    osys2 = convert(ODESystem, rn2)
+    osys2 = complete(convert(ODESystem, rn2))
     @test issetequal(unknowns(osys2), unknowns(rn2))
     @test length(equations(osys2)) == 2
 end

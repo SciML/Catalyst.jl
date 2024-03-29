@@ -55,7 +55,7 @@ let
         mm(X, v, K), 0 --> X2
         mm(X, v, K), 0 --> X3
     end
-    f_mm = ODEFunction(convert(ODESystem, mm_network), jac = true)
+    f_mm = ODEFunction(complete(convert(ODESystem, mm_network)), jac = true)
 
     u0 = 10 * rand(rng, length(get_unknowns(mm_network)))
     p = 10 * rand(rng, length(get_ps(mm_network)))
@@ -75,7 +75,7 @@ let
         mmr(X, v, K), 0 --> X2
         mmr(X, v, K), 0 --> X3
     end
-    f_mmr = ODEFunction(convert(ODESystem, mmr_network), jac = true)
+    f_mmr = ODEFunction(complete(convert(ODESystem, mmr_network)), jac = true)
 
     u0 = 10 * rand(rng, length(get_unknowns(mmr_network)))
     p = 10 * rand(rng, length(get_ps(mmr_network)))
@@ -94,7 +94,7 @@ let
         hill(X, v, K, 2), 0 --> X1
         hill(X, v, K, 2), 0 --> X2
     end
-    f_hill = ODEFunction(convert(ODESystem, hill_network), jac = true)
+    f_hill = ODEFunction(complete(convert(ODESystem, hill_network)), jac = true)
 
     u0 = 10 * rand(rng, length(get_unknowns(hill_network)))
     p = 10 * rand(rng, length(get_ps(hill_network)))
@@ -113,7 +113,7 @@ let
         hillr(X, v, K, 2), 0 --> X1
         hillr(X, v, K, 2), 0 --> X2
     end
-    f_hillr = ODEFunction(convert(ODESystem, hillr_network), jac = true)
+    f_hillr = ODEFunction(complete(convert(ODESystem, hillr_network)), jac = true)
 
     u0 = 10 * rand(rng, length(get_unknowns(hillr_network)))
     p = 10 * rand(rng, length(get_ps(hillr_network)))
@@ -134,7 +134,7 @@ let
         hillar(X, Y, v, K, 2), 0 --> X3
         hillar(X, Y, v, K, 2), 0 --> X4
     end
-    f_hillar = ODEFunction(convert(ODESystem, hillar_network), jac = true)
+    f_hillar = ODEFunction(complete(convert(ODESystem, hillar_network)), jac = true)
 
     u0 = 10 * rand(rng, length(get_unknowns(hillar_network)))
     p = 10 * rand(rng, length(get_ps(hillar_network)))

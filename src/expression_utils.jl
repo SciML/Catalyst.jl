@@ -94,18 +94,6 @@ function is_escaped_expr(expr)
 end
 
 
-### Generic Expression Handling ###
-
-# Convert an expression that is a vector with symbols that have values assigned using `=` 
-# (e.g. :([a=1.0, b=2.0])) to a vector where the assignment instead uses symbols and pairs 
-# (e.g. :([a=>1.0, b=>2.0])). Used to e.g. convert default reaction metadata to a form that can be 
-# evaluated as actual code.
-function expr_equal_vector_to_pairs(expr_vec)
-    pair_vector = :([])
-    foreach(arg -> push!(pair_vector.args, arg.args[1] => arg.args[2]), expr_vec.args) 
-    return pair_vector
-end
-
 ### Old Stuff ###
 
 #This will be called whenever a function stored in funcdict is called.

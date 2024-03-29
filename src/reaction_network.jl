@@ -360,7 +360,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     check_default_noise_scaling!(default_reaction_metadata, options)
     compound_expr, compound_species = read_compound_options(options)
     check_default_noise_scaling!(default_reaction_metadata, options)
-    default_reaction_metadata = expr_equal_vector_to_pairs(default_reaction_metadata)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
@@ -806,7 +805,7 @@ function check_default_noise_scaling!(default_reaction_metadata, options)
         if (length(options[:default_noise_scaling].args) != 3) # Becasue of how expressions are, 3 is used.
             error("@default_noise_scaling should only have a single input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
         end
-        push!(default_reaction_metadata.args, :(noise_scaling=$(options[:default_noise_scaling].args[3])))
+        push!(default_reaction_metadata.args, :(:noise_scaling => $(options[:default_noise_scaling].args[3])))
     end
 end
 

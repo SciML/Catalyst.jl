@@ -537,7 +537,7 @@ let
         b23, F2 --> F3
         b31, F3 --> F1
     end
-    osys = convert(ODESystem, rn; remove_conserved = true)
+    osys = complete(convert(ODESystem, rn; remove_conserved = true))
     @unpack A, B, C, D, E, F1, F2, F3, k1, k2, m1, m2, b12, b23, b31 = osys
     u0 = [A => 10.0, B => 10.0, C => 0.0, D => 10.0, E => 0.0, F1 => 8.0, F2 => 0.0,
         F3 => 0.0]
@@ -556,7 +556,7 @@ let
         @test isapprox(sol2(tv, idxs = s), sol2(tv, idxs = s))
     end
 
-    nsys = convert(NonlinearSystem, rn; remove_conserved = true)
+    nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true))
     nprob = NonlinearProblem{true}(nsys, u0, p)
     nsol = solve(nprob, NewtonRaphson(); abstol = 1e-10)
     nprob2 = ODEProblem(rn, u0, (0.0, 100.0 * tspan[2]), p)
@@ -570,7 +570,7 @@ let
 
     u0 = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
         F3 => 20.0]
-    ssys = convert(SDESystem, rn; remove_conserved = true)
+    ssys = complete(convert(SDESystem, rn; remove_conserved = true))
     sprob = SDEProblem(ssys, u0, tspan, p)
     sprob2 = SDEProblem(rn, u0, tspan, p)
     sprob3 = SDEProblem(rn, u0, tspan, p; remove_conserved = true)

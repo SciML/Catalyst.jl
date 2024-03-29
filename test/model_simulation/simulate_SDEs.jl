@@ -255,7 +255,6 @@ let
         (p,d), 0 <--> X2, ([description="Y"],[description="Y"])
         (p,d), 0 <--> X3
     end
-    noise_scaling_network = complete(noise_scaling_network)
     
     u0 = [:X1 => 1000.0, :X2 => 1000.0, :X3 => 1000.0]
     ps = [noise_scaling_network.p => 1000.0, noise_scaling_network.d => 1.0, noise_scaling_network.η1 => 1.0]
@@ -316,8 +315,8 @@ let
 
     # Checks that systems have the correct noise scaling terms.
     rn = set_default_noise_scaling(rn, 0.5)
-    rn1_noise_scaling = [get_noise_scaling(rx) for rx in get_rxs(rn)]
-    rn2_noise_scaling = [get_noise_scaling(rx) for rx in get_rxs(Catalyst.get_systems(rn)[1])]
+    rn1_noise_scaling = [get_noise_scaling(rx) for rx in Catalyst.get_rxs(rn)]
+    rn2_noise_scaling = [get_noise_scaling(rx) for rx in Catalyst.get_rxs(Catalyst.get_systems(rn)[1])]
     rn_noise_scaling = [get_noise_scaling(rx) for rx in reactions(rn)]
     @test issetequal(rn1_noise_scaling, [2.0, 0.5])
     @test issetequal(rn2_noise_scaling, [5.0, 0.5])

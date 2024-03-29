@@ -43,8 +43,9 @@ rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
     Reaction(k[20] * t * A, [B, C], [D], [2, 1], [2]),                  # 2A +B -> 2C with non constant rate.
 ]
 @named rs = ReactionSystem(rxs, t, [A, B, C, D], k)
-odesys = convert(ODESystem, rs)
-sdesys = convert(SDESystem, rs)
+rs = complete(rs)
+odesys = complete(convert(ODESystem, rs))
+sdesys = complete(convert(SDESystem, rs))
 
 # Hard coded ODE rhs.
 function oderhs(u, k, t)
@@ -123,10 +124,11 @@ let
     defs = merge(Dict(def_p), Dict(def_u0))
 
     @named rs = ReactionSystem(rxs, t, [A, B, C, D], k; defaults = defs)
-    odesys = convert(ODESystem, rs)
-    sdesys = convert(SDESystem, rs)
-    js = convert(JumpSystem, rs)
-    nlsys = convert(NonlinearSystem, rs)
+    rs = complete(rs)
+    odesys = complete(convert(ODESystem, rs))
+    sdesys = complete(convert(SDESystem, rs))
+    js = complete(convert(JumpSystem, rs))
+    nlsys = complete(convert(NonlinearSystem, rs))
 
     @test ModelingToolkit.get_defaults(rs) ==
           ModelingToolkit.get_defaults(odesys) ==
@@ -156,7 +158,7 @@ let
     p = rnd_ps(rs, rng)
     du = oderhs(last.(u), last.(p), 0.0)
     G = sdenoise(last.(u), last.(p), 0.0)
-    sdesys = convert(SDESystem, rs)
+    sdesys = complete(convert(SDESystem, rs))
     sf = SDEFunction{false}(sdesys, unknowns(rs), parameters(rs))
     sprob = SDEProblem(rs, u, (0.0, 0.0), p)
     du2 = sf.f(sprob.u0, sprob.p, 0.0)
@@ -203,7 +205,8 @@ let
         Reaction(k[20] * t * A, [D, E], [F], [2, 1], [2]),                  # 2D + E -> 2F with non constant rate.
     ]
     @named rs = ReactionSystem(rxs, t, [A, B, C, D, E, F], k)
-    js = convert(JumpSystem, rs)
+    rs = complete(rs)
+    js = complete(convert(JumpSystem, rs))
 
     midxs = 1:14
     cidxs = 15:18
@@ -286,7 +289,8 @@ let
     @species S(t) I(t)
     rxs = [Reaction(1, [S], [I]), Reaction(1.1, [S], [I])]
     @named rs = ReactionSystem(rxs, t, [S, I], [])
-    js = convert(JumpSystem, rs)
+    rs = complete(rs)
+    js = complete(convert(JumpSystem, rs))
     dprob = DiscreteProblem(js, [S => 1, I => 1], (0.0, 10.0))
     jprob = JumpProblem(js, dprob, Direct())
     sol = solve(jprob, SSAStepper())
@@ -299,6 +303,7 @@ let
     rxs = [Reaction(k1 * S, [S, I], [I], [2, 3], [2]),
         Reaction(k2 * R, [I], [R])]
     @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
+    rs = complete(rs)
     @test isequal(oderatelaw(equations(rs)[1]),
                   k1 * S * S^2 * I^3 / (factorial(2) * factorial(3)))
     @test_skip isequal(jumpratelaw(equations(eqs)[1]),
@@ -320,26 +325,27 @@ let
     @test isequal2(oderatelaw(rxs[1]; combinatoric_ratelaw = false), k1 * S * S^2 * I^3)
 
     @named rs2 = ReactionSystem(rxs, t, [S, I, R], [k1, k2]; combinatoric_ratelaws = false)
+    rs2 = complete(rs2)
 
     # Test ODE scaling:
-    os = convert(ODESystem, rs)
+    os = complete(convert(ODESystem, rs))
     @test isequal2(equations(os)[1].rhs, -2 * k1 * S * S^2 * I^3 / 12)
     os = convert(ODESystem, rs; combinatoric_ratelaws = false)
     @test isequal2(equations(os)[1].rhs, -2 * k1 * S * S^2 * I^3)
-    os2 = convert(ODESystem, rs2)
+    os2 = complete(convert(ODESystem, rs2))
     @test isequal2(equations(os2)[1].rhs, -2 * k1 * S * S^2 * I^3)
-    os3 = convert(ODESystem, rs2; combinatoric_ratelaws = true)
+    os3 = complete(convert(ODESystem, rs2; combinatoric_ratelaws = true))
     @test isequal2(equations(os3)[1].rhs, -2 * k1 * S * S^2 * I^3 / 12)
 
     # Test ConstantRateJump rate scaling.
-    js = convert(JumpSystem, rs)
+    js = complete(convert(JumpSystem, rs))
     @test isequal2(equations(js)[1].rate,
                    k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
-    js = convert(JumpSystem, rs; combinatoric_ratelaws = false)
+    js = complete(convert(JumpSystem, rs; combinatoric_ratelaws = false))
     @test isequal2(equations(js)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
-    js2 = convert(JumpSystem, rs2)
+    js2 = complete(convert(JumpSystem, rs2))
     @test isequal2(equations(js2)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
-    js3 = convert(JumpSystem, rs2; combinatoric_ratelaws = true)
+    js3 = complete(convert(JumpSystem, rs2; combinatoric_ratelaws = true))
     @test isequal2(equations(js3)[1].rate,
                    k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
 
@@ -347,9 +353,10 @@ let
     rxs = [Reaction(k1, [S, I], [I], [2, 3], [2]),
         Reaction(k2, [I], [R])]
     @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
-    js = convert(JumpSystem, rs)
+    rs = complete(rs)
+    js = complete(convert(JumpSystem, rs))
     @test isequal2(equations(js)[1].scaled_rates, k1 / 12)
-    js = convert(JumpSystem, rs; combinatoric_ratelaws = false)
+    js = complete(convert(JumpSystem, rs; combinatoric_ratelaws = false))
     @test isequal2(equations(js)[1].scaled_rates, k1)
 
     # test building directly from rxs
@@ -375,6 +382,7 @@ let
     rx2 = Reaction(2 * k, [B], [D], [1], [2.5])
     rx3 = Reaction(2 * k, [B], [D], [2.5], [2])
     @named mixedsys = ReactionSystem([rx1, rx2, rx3], t, [A, B, C, D], [k, b])
+    mixedsys = complete(mixedsys)
     osys = convert(ODESystem, mixedsys; combinatoric_ratelaws = false)
 end
 
@@ -435,8 +443,9 @@ let
         Dt(C) ~ -C,
         (@reaction k2, E + $C --> $C + D)]
     @named rs = ReactionSystem(eqs, t)
+    rs = complete(rs)
     @test all(eq -> eq isa Reaction, ModelingToolkit.get_eqs(rs)[1:4])
-    osys = convert(ODESystem, rs)
+    osys = complete(convert(ODESystem, rs))
     @test issetequal(MT.get_unknowns(osys), [B, C, D, E])
     @test issetequal(MT.get_ps(osys), [k1, k2, A])
 
@@ -466,7 +475,8 @@ let
         (@reaction k1, $C + D --> E + $C),
         (@reaction k2, E + $C --> $C + D)]
     @named rs = ReactionSystem(rxs, t)   # add constraint csys when supported!
-    ssys = convert(SDESystem, rs)
+    rs = complete(rs)
+    ssys = complete(convert(SDESystem, rs))
     @test issetequal(MT.get_unknowns(ssys), [B, C, D, E])
     @test issetequal(MT.get_ps(ssys), [A, k1, k2])
     du1 = zeros(4)
@@ -489,7 +499,8 @@ let
         (@reaction k1 * t, $A + $C --> B + $C),
         (@reaction k1 * B, 2 * $A + $C --> $C + B)]
     @named rs = ReactionSystem(rxs, t)
-    jsys = convert(JumpSystem, rs)
+    rs = complete(rs)
+    jsys = complete(convert(JumpSystem, rs))
     @test issetequal(unknowns(jsys), [B, C, D, E])
     @test issetequal(parameters(jsys), [k1, k2, A])
     majrates = [k1 * A, k1, k2]
@@ -519,6 +530,7 @@ let
     @named rn = ReactionSystem([(@reaction k1, $C --> B1 + $C),
                                    (@reaction k1, $A --> B2),
                                    (@reaction 10 * k1, ∅ --> B3)], t)
+                                   rn = complete(rn)
     dprob = DiscreteProblem(rn, [A => 10, C => 10, B1 => 0, B2 => 0, B3 => 0], (0.0, 10.0),
                             [k1 => 1.0])
     jprob = JumpProblem(rn, dprob, Direct(), save_positions = (false, false))
@@ -541,8 +553,9 @@ let
     rx = Reaction(k2, [S1], nothing)
     ∂ₜ = default_time_deriv()
     eq = ∂ₜ(S3) ~ k1 * S2
-    @named osys = ODESystem([eq], t)
+    @mtkbuild osys = ODESystem([eq], t)
     @named rs = ReactionSystem([rx, eq], t)
+    rs = complete(rs)
     @test issetequal(unknowns(rs), [S1, S3])
     @test issetequal(parameters(rs), [S2, k1, k2])
     osys = convert(ODESystem, rs)
@@ -556,6 +569,7 @@ let
     ∂ₜ = default_time_deriv()
     eq = S3 ~ k1 * S2
     @named rs = ReactionSystem([rx, eq], t)
+    rs = complete(rs)
     @test issetequal(unknowns(rs), [S1, S3])
     @test issetequal(parameters(rs), [S2, k1, k2])
     osys = convert(ODESystem, rs)
@@ -574,6 +588,7 @@ let
     ∂ₜ = default_time_deriv()
     eq = S3 ~ k1 * S2
     @named rs = ReactionSystem([rx, eq], t)
+    rs = complete(rs)
     @test issetequal(unknowns(rs), [S1, S3])
     @test issetequal(parameters(rs), [S2, k1, k2])
     osys = convert(ODESystem, rs)
@@ -603,6 +618,7 @@ let
     @species X(t)=X0
     rx = Reaction(d, [X], nothing, [1], nothing)
     @named rs = ReactionSystem([rx], t)
+    rs = complete(rs)
     prob = ODEProblem(rs, [], (0.0, 1.0), [d => 1.0, X0 => 7.6])
     @test prob[X] == 7.6
 end
@@ -669,6 +685,7 @@ let
     D = default_time_deriv()
     eq = D(V) ~ -k1 * k2 * V + A
     @named rs = ReactionSystem([eq, rx], t)
+    rs = complete(rs)
     @test length(unknowns(rs)) == 3
     @test issetequal(unknowns(rs), [A, B, V])
     @test length(parameters(rs)) == 2
@@ -723,23 +740,4 @@ end
 # Tests metadata.
 let
     @test isnothing(ModelingToolkit.get_metadata(rs))
-end
-
-
-### Tests Completeness Designations ###
-let 
-    # Creates models with/without the `complete` input.
-    @parameters p d
-    @variables t
-    @species X(t)
-    r1 = Reaction(p, [X], nothing)
-    r2 = Reaction(d, nothing, [X])
-    @named rs1 = ReactionSystem([r1, r2], t)
-    @named rs2 = ReactionSystem([r1, r2], t; complete = false)
-    
-    # Check that the correct compeltness is achived.
-    @test ModelingToolkit.iscomplete(rs1)
-    @test !ModelingToolkit.iscomplete(rs2)
-    rs2 = complete(rs2)
-    @test ModelingToolkit.iscomplete(rs2)
 end

@@ -1538,7 +1538,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
                       kwargs...)
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
-    fullrs = Catalyst.flatten(rs; complete = true)
+    fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
@@ -1582,7 +1582,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, SDESystem)
 
-    flatrs = Catalyst.flatten(rs; complete = true)
+    flatrs = Catalyst.flatten(rs)
     error_if_constraints(SDESystem, flatrs)
 
     remove_conserved && conservationlaws(flatrs)
@@ -1636,7 +1636,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     (remove_conserved !== nothing) &&
         error("Catalyst does not support removing conserved species when converting to JumpSystems.")
 
-    flatrs = Catalyst.flatten(rs; complete = true)
+    flatrs = Catalyst.flatten(rs)
     error_if_constraints(JumpSystem, flatrs)
 
     (length(MT.continuous_events(flatrs)) > 0) &&
@@ -1821,7 +1821,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
                    balanced_bc_check = false,
                    spatial_ivs = get_sivs(rs),
                    continuous_events = MT.continuous_events(rs),
-                   discrete_events = MT.discre)
+                   discrete_events = MT.continuous_events(rs))
 end
 
 """

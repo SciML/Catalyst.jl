@@ -19,7 +19,7 @@ include("../test_networks.jl")
 # Tests various ways to input u0 and p for various functions.
 let
     test_network = reaction_networks_standard[7]
-    test_osys = convert(ODESystem, test_network)
+    test_osys = complete(convert(ODESystem, test_network))
     @parameters p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
     @species X1(t) X2(t) X3(t) X4(t) X5(t) X6(t) X(t)
 
