@@ -656,7 +656,7 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
     for i in 1:maximum(lengs)                       
         # If the `only_use_rate` metadata was not provided, this has to be infered from the arrow used.
         metadata_i = get_tup_arg(metadata, i)
-        if all([arg.args[1] != :only_use_rate for arg in metadata_i.args])
+        if all(arg -> arg.args[1] != :only_use_rate, metadata_i.args)
             push!(metadata_i.args, :(only_use_rate = $(in(arrow, pure_rate_arrows))))
         end
 
