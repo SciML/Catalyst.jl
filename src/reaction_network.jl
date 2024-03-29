@@ -146,7 +146,7 @@ emptyrn = @reaction_network empty
 emptyrn = @reaction_network
 ```
 
-ReactionSystems generated through `@reaction_network` are compelte.
+ReactionSystems generated through `@reaction_network` are complete.
 """
 macro reaction_network(args...)
     return :(complete(@network_component $(args... )))
