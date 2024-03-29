@@ -756,6 +756,71 @@ function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
 
+
+"""
+    remake_ReactionSystem_internal(rs::ReactionSystem; 
+        default_reaction_metadata::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol, Any}}()) where {T}
+
+Takes a `ReactionSystem` and remakes it, returning a modified `ReactionSystem`. Modifications depend
+on which additional arguments are provided. The input `ReactionSystem` is not mutated. Updating
+default reaction metadata is currently the only supported feature.
+
+Arguments:
+- `rs::ReactionSystem`: The `ReactionSystem` which you wish to remake.
+- `default_reaction_metadata::Vector{Pair{Symbol, T}}`: A vector with default `Reaction` metadata values.
+    Each metadata in each `Reaction` of the updated `ReactionSystem` will have the value desiganted in
+    `default_reaction_metadata` (however, `Reaction`s that already have that metadata designated will not
+    have their value updated).
+"""
+function remake_ReactionSystem_internal(rs::ReactionSystem;  default_reaction_metadata = [])
+    rs = set_default_metadata(rs;  default_reaction_metadata)
+    return rs
+end
+
+# For a `ReactionSystem`, updates all `Reaction`'s default metadata.
+function set_default_metadata(rs::ReactionSystem;  default_reaction_metadata = [])
+    # Updates reaction metadata for for reactions in this specific system.
+    eqtransform(eq) = eq isa Reaction ? set_default_metadata(eq, default_reaction_metadata) : eq
+    updated_equations = map(eqtransform, get_eqs(rs))
+    @set! rs.eqs = updated_equations
+    @set! rs.rxs = Reaction[rx for rx in updated_equations if rx isa Reaction]
+    
+    # Updates reaction metadata for all its subsystems.
+    new_sub_systems = similar(get_systems(rs))
+    for (i, sub_system) in enumerate(get_systems(rs))
+        new_sub_systems[i] = set_default_metadata(sub_system; default_reaction_metadata)
+    end
+    @set! rs.systems = new_sub_systems
+
+    # Returns the updated system.
+    return rs
+end
+
+# For a `Reaction`, adds missing default metadata values. Equations are passed back unmodified.
+function set_default_metadata(rx::Reaction, default_metadata)
+    missing_metadata = filter(md -> !in(md[1], entry[1] for entry in rx.metadata), default_metadata)
+    updated_metadata = vcat(rx.metadata, missing_metadata)
+    updated_metadata = convert(Vector{Pair{Symbol, Any}}, updated_metadata)
+    return @set rx.metadata = updated_metadata
+end
+set_default_metadata(eq::Equation, default_metadata) = eq
+
+"""
+set_default_noise_scaling(rs::ReactionSystem, noise_scaling)
+
+Creates an updated `ReactionSystem`. This is the old `ReactionSystem`, but each `Reaction` that does
+not have a `noise_scaling` metadata have its noise_scaling metadata updated. The input `ReactionSystem`
+is not mutated. Any subsystems of `rs` have their `noise_scaling` metadata updated as well.
+
+Arguments:
+- `rs::ReactionSystem`: The `ReactionSystem` which you wish to remake.
+- `noise_scaling`: The updated noise scaling terms
+"""
+function set_default_noise_scaling(rs::ReactionSystem, noise_scaling)
+    return remake_ReactionSystem_internal(rs, default_reaction_metadata = [:noise_scaling => noise_scaling])
+end
+
+
 """
     isspatial(rn::ReactionSystem)
 
@@ -864,10 +929,27 @@ end
 ######################## Other accessors ##############################
 
 """
-    getnoisescaling(reaction::Reaction)
+has_noise_scaling(reaction::Reaction)
 
-Returns the noise scaling associated with a specific reaction. If the `:noise_scaling` metadata has
-set, returns that. Else, returns `1.0`.
+Checks whether a specific reaction has the metadata field `noise_scaing`. If so, returns `true`, else
+returns `false`.
+
+Arguments:
+- `reaction`: The reaction for which we wish to check.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
+has_noise_scaling(reaction)
+"""
+function has_noise_scaling(reaction::Reaction)
+    return hasmetadata(reaction, :noise_scaling)
+end
+
+"""
+get_noise_scaling(reaction::Reaction)
+
+Returns the noise_scaling metadata from a specific reaction.
 
 Arguments:
 - `reaction`: The reaction for which we wish to retrive all metadata.
@@ -875,18 +957,21 @@ Arguments:
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
-getnoisescaling(reaction)
+get_noise_scaling(reaction)
 """
-function getnoisescaling(reaction::Reaction)
-    has_metadata(reaction, :noise_scaling) && (return get_metadata(reaction, :noise_scaling))
-    return 1.0
+function get_noise_scaling(reaction::Reaction)
+    if has_noise_scaling(reaction)
+        return getmetadata(reaction, :noise_scaling)
+    else
+        error("Attempts to access noise_scaling metadata field for a reaction which does not have a value assigned for this metadata.")
+    end
 end
 
 
-# These are currently considered internal, but can be used by public accessor functions like getnoisescaling.
+# These are currently considered internal, but can be used by public accessor functions like get_noise_scaling.
 
 """
-    get_metadata_dict(reaction::Reaction)
+    getmetadata_dict(reaction::Reaction)
 
 Retrives the `ImmutableDict` containing all of the metadata associated with a specific reaction.
 
@@ -895,16 +980,16 @@ Arguments:
 
 Example:
 ```julia
-reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
-get_metadata_dict(reaction)
+reaction = @reaction k, 0 --> X, [description="Production reaction"]
+getmetadata_dict(reaction)
 ```
 """
-function get_metadata_dict(reaction::Reaction)
+function getmetadata_dict(reaction::Reaction)
     return reaction.metadata
 end
 
 """
-    has_metadata(reaction::Reaction, md_key::Symbol)
+    hasmetadata(reaction::Reaction, md_key::Symbol)
 
 Checks if a `Reaction` have a certain metadata field. If it does, returns `true` (else returns `false`).
 
@@ -914,16 +999,16 @@ Arguments:
 
 Example:
 ```julia
-reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
-has_metadata(reaction, :noise_scaling)
+reaction = @reaction k, 0 --> X, [description="Production reaction"]
+hasmetadata(reaction, :description)
 ```
 """
-function has_metadata(reaction::Reaction, md_key::Symbol)
-    return any(isequal(md_key, entry[1]) for entry in get_metadata_dict(reaction))
+function hasmetadata(reaction::Reaction, md_key::Symbol)
+    return any(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))
 end
 
 """
-    get_metadata(reaction::Reaction, md_key::Symbol)
+getmetadata(reaction::Reaction, md_key::Symbol)
 
 Retrives a certain metadata value from a `Reaction`. If the metadata does not exists, throws an error.
 
@@ -933,17 +1018,18 @@ Arguments:
 
 Example:
 ```julia
-reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
-get_metadata(reaction, :noise_scaling)
+reaction = @reaction k, 0 --> X, [description="Production reaction"]
+getmetadata(reaction, :description)
 ```
 """
-function get_metadata(reaction::Reaction, md_key::Symbol)
-    if !has_metadata(reaction, md_key) 
-        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(get_metadata_dict(reaction))).")
+function getmetadata(reaction::Reaction, md_key::Symbol)
+    if !hasmetadata(reaction, md_key) 
+        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(getmetadata_dict(reaction))).")
     end
-    metadata = get_metadata_dict(reaction)
-    return metadata[findfirst(isequal(md_key, entry[1]) for entry in get_metadata_dict(reaction))][2]
+    metadata = getmetadata_dict(reaction)
+    return metadata[findfirst(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))][2]
 end
+
 
 ######################## Conversion to ODEs/SDEs/jump, etc ##############################
 
@@ -1046,7 +1132,7 @@ function assemble_drift(rs, ispcs; combinatoric_ratelaws = true, as_odes = true,
 end
 
 # this doesn't work with constraint equations currently
-function assemble_diffusion(rs, sts, ispcs, noise_scaling; combinatoric_ratelaws = true,
+function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
                             remove_conserved = false)
     # as BC species should ultimately get an equation, we include them in the noise matrix
     num_bcsts = count(isbc, get_unknowns(rs))
@@ -1064,7 +1150,7 @@ function assemble_diffusion(rs, sts, ispcs, noise_scaling; combinatoric_ratelaws
 
     for (j, rx) in enumerate(get_rxs(rs))
         rlsqrt = sqrt(abs(oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)))
-        (noise_scaling !== nothing) && (rlsqrt *= noise_scaling[j])
+        has_noise_scaling(rx) && (rlsqrt *= get_noise_scaling(rx))
         remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
 
         for (spec, stoich) in rx.netstoich
@@ -1474,14 +1560,6 @@ Notes:
   `combinatoric_ratelaws=false` for a ratelaw of `k*S^2`, i.e. the scaling factor is
   ignored. Defaults to the value given when the `ReactionSystem` was constructed (which
   itself defaults to true).
-- `noise_scaling=nothing::Union{Vector{Num},Num,Nothing}` allows for linear scaling of the
-  noise in the chemical Langevin equations. If `nothing` is given, the default value as in
-  Gillespie 2000 is used. Alternatively, a `Num` can be given, this is added as a parameter
-  to the system (at the end of the parameter array). All noise terms are linearly scaled
-  with this value. The parameter may be one already declared in the `ReactionSystem`.
-  Finally, a `Vector{Num}` can be provided (the length must be equal to the number of
-  reactions). Here the noise for each reaction is scaled by the corresponding parameter in
-  the input vector. This input may contain repeat parameters.
 - `remove_conserved=false`, if set to `true` will calculate conservation laws of the
   underlying set of reactions (ignoring constraint equations), and then apply them to reduce
   the number of equations.
@@ -1489,8 +1567,7 @@ Notes:
   differential equations.
 """
 function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
-                      noise_scaling = nothing, name = nameof(rs),
-                      combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+                      name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, checks = false, remove_conserved = false,
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
@@ -1499,25 +1576,12 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     flatrs = Catalyst.flatten(rs)
     error_if_constraints(SDESystem, flatrs)
 
-    if noise_scaling isa AbstractArray
-        (length(noise_scaling) != numreactions(flatrs)) &&
-            error("The number of elements in 'noise_scaling' must be equal " *
-                  "to the number of reactions in the flattened reaction system.")
-        if !(noise_scaling isa Symbolics.Arr)
-            noise_scaling = value.(noise_scaling)
-        end
-    elseif !isnothing(noise_scaling)
-        noise_scaling = fill(value(noise_scaling), numreactions(flatrs))
-    end
-
     remove_conserved && conservationlaws(flatrs)
     ists, ispcs = get_indep_sts(flatrs, remove_conserved)
     eqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws, include_zero_odes,
                          remove_conserved)
-    noiseeqs = assemble_diffusion(flatrs, ists, ispcs, noise_scaling; combinatoric_ratelaws,
-                                  remove_conserved)
+    noiseeqs = assemble_diffusion(flatrs, ists, ispcs; combinatoric_ratelaws, remove_conserved)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
-    ps = (noise_scaling === nothing) ? ps : vcat(ps, toparam(noise_scaling))
 
     if any(isbc, get_unknowns(flatrs))
         @info "Boundary condition species detected. As constraint equations are not currently supported when converting to SDESystems, the resulting system will be undetermined. Consider using constant species instead."
@@ -1616,14 +1680,13 @@ end
 # SDEProblem from AbstractReactionNetwork
 function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
                                p = DiffEqBase.NullParameters(), args...;
-                               noise_scaling = nothing, name = nameof(rs),
-                               combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                               include_zero_odes = true, checks = false,
-                               check_length = false,
+                               name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+                               include_zero_odes = true, checks = false, check_length = false,
                                remove_conserved = false, kwargs...)
+
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
-    sde_sys = convert(SDESystem, rs; noise_scaling, name, combinatoric_ratelaws,
+    sde_sys = convert(SDESystem, rs; name, combinatoric_ratelaws,
                       include_zero_odes, checks, remove_conserved)
     p_matrix = zeros(length(get_unknowns(sde_sys)), numreactions(rs))
     return SDEProblem(sde_sys, u0map, tspan, pmap, args...; check_length,
