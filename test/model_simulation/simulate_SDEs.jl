@@ -199,9 +199,9 @@ let
     sprob_1_2 = SDEProblem(noise_scaling_network_1, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, :η1 => 2.0, :η2 => 0.2])
     sprob_1_3 = SDEProblem(noise_scaling_network_1, u0, (0.0, 1000.0), [:k1 => 2.0, :k2 => 0.66, :η1 => 0.2, :η2 => 0.2])
     for repeat in 1:5
-        sol_1_1 = solve(sprob_1_1, ImplicitEM(); saveat=1.0, seed = rand(rng, 1:100))
-        sol_1_2 = solve(sprob_1_2, ImplicitEM(); saveat=1.0, seed = rand(rng, 1:100))
-        sol_1_3 = solve(sprob_1_3, ImplicitEM(); saveat=1.0, seed = rand(rng, 1:100))
+        sol_1_1 = solve(sprob_1_1, ImplicitEM(); saveat = 1.0, seed = rand(rng, 1:100))
+        sol_1_2 = solve(sprob_1_2, ImplicitEM(); saveat = 1.0, seed = rand(rng, 1:100))
+        sol_1_3 = solve(sprob_1_3, ImplicitEM(); saveat = 1.0, seed = rand(rng, 1:100))
         @test var(sol_1_1[:X1]) > var(sol_1_2[:X1]) > var(sol_1_3[:X1]) 
     end
 
@@ -215,9 +215,9 @@ let
     sprob_2_2 = SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 2.0, η[2] => 0.2])
     sprob_2_3 = SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 0.2, η[2] => 0.2])
     for repeat in 1:5
-        sol_2_1 = solve(sprob_2_1, ImplicitEM(); saveat=1.0, seed = rand(rng, 1:100))
-        sol_2_2 = solve(sprob_2_2, ImplicitEM(); saveat=1.0, seed = rand(rng, 1:100))
-        sol_2_3 = solve(sprob_2_3, ImplicitEM(); saveat=1.0, seed = rand(rng, 1:100))
+        sol_2_1 = solve(sprob_2_1, ImplicitEM(); saveat = 1.0, seed = rand(rng, 1:100))
+        sol_2_2 = solve(sprob_2_2, ImplicitEM(); saveat = 1.0, seed = rand(rng, 1:100))
+        sol_2_3 = solve(sprob_2_3, ImplicitEM(); saveat = 1.0, seed = rand(rng, 1:100))
         @test var(sol_2_1[:X1]) > var(sol_2_2[:X1]) > var(sol_2_3[:X1]) 
     end
 end
@@ -275,14 +275,14 @@ let
     sprob = SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), ps)
     
     for repeat in 1:5
-        sol = solve(sprob, ImplicitEM(); saveat=1.0, seed = rand(rng, 1:100))
+        sol = solve(sprob, ImplicitEM(); saveat = 1.0, seed = rand(rng, 1:100))
         @test var(sol[:X1]) < var(sol[:X2]) 
         @test var(sol[:X1]) < var(sol[:X3]) 
     end
 end
 
 # Tests  using complicated noise scaling expressions.
-let
+@time let
     noise_scaling_network = @reaction_network begin
         @parameters η1 η2 η3 η4
         @species N1(t) N2(t)=0.5
@@ -301,7 +301,7 @@ let
     sprob = SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), ps)
 
     for repeat in 1:5
-        sol = solve(sprob, ImplicitEM(); saveat=1.0, adaptive=false, dt=0.1, seed = rand(rng, 1:100))
+        sol = solve(sprob, ImplicitEM(); saveat = 1.0, adaptive = false, dt = 0.01, seed = rand(rng, 1:100))
         @test var(sol[:X1]) > var(sol[:X2]) > var(sol[:X3]) > var(sol[:X4]) > var(sol[:X5])
     end
 end
