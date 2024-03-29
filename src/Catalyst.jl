@@ -153,11 +153,6 @@ export balance_reaction, balance_system
 include("steady_state_stability.jl")
 export steady_state_stability, steady_state_jac
 
-# ReactionSystem serialisation.
-include("model_serialisation/serialise_reactionsystem.jl")
-include("model_serialisation/serialisation_support.jl")
-export save_reaction_network
-
 ### Extensions ###
 
 # HomotopyContinuation
@@ -186,5 +181,13 @@ include("spatial_reaction_systems/utility.jl")
 # Specific spatial problem types.
 include("spatial_reaction_systems/spatial_ODE_systems.jl")
 include("spatial_reaction_systems/lattice_jump_systems.jl")
+
+
+### ReactionSystem Serialisation ###
+# Has to be at the end (because it uses records of all metadata declared by Catalyst).
+include("model_serialisation/serialisation_support.jl")
+include("model_serialisation/serialise_fields.jl")
+include("model_serialisation/serialise_reactionsystem.jl")
+export save_reaction_network
 
 end # module
