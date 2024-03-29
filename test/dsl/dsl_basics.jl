@@ -117,6 +117,17 @@ let
     @test rn == rn2
 end
 
+# Creates a reaction network using `eval` and internal function.
+let
+    ex = quote
+        (Ka, Depot --> Central)
+        (CL / Vc, Central --> 0)
+    end
+    # Line number nodes aren't ignored so have to be manually removed
+    Base.remove_linenums!(ex)
+    @test eval(Catalyst.make_reaction_system(ex)) isa ReactionSystem
+end
+
 # Miscellaneous interpolation tests. Unsure what they do here (not related to DSL).
 let
     rx = @reaction k*h, A + 2*B --> 3*C + D
@@ -129,17 +140,6 @@ let
     rx = @reaction b+$ex, 2*$V + C--> ∅
     @parameters b
     @test rx == Reaction(b+ex, [A,C], nothing, [2,1], nothing)
-end
-
-# Creates a reaction network using `eval` and internal function.
-let
-    ex = quote
-        (Ka, Depot --> Central)
-        (CL / Vc, Central --> 0)
-    end
-    # Line number nodes aren't ignored so have to be manually removed
-    Base.remove_linenums!(ex)
-    @test eval(Catalyst.make_reaction_system(ex)) isa ReactionSystem
 end
 
 ### Tests Reaction Metadata ###

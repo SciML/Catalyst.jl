@@ -395,7 +395,7 @@ let
     @test isequal((@reaction k, 0 --> X), (@reaction k, 0 ⥟ X))
 end
 
-# Test that symbols with special mean, or that are forbidden, are handled properly.
+# Test that symbols with special meanings, or that are forbidden, are handled properly.
 let
     test_network = @reaction_network begin t * k, X --> ∅ end
     @test length(species(test_network)) == 1
