@@ -148,8 +148,35 @@ emptyrn = @reaction_network
 
 ReactionSystems generated through `@reaction_network` are complete.
 """
-macro reaction_network(args...)
-    return :(complete(@network_component $(args... )))
+# macro reaction_network(args...)
+#     return :(complete(@network_component $(args... )))
+# end
+macro reaction_network(name::Symbol, ex::Expr)
+    complete(make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name)))))
+end
+
+# allows @reaction_network $name begin ... to interpolate variables storing a name
+macro reaction_network(name::Expr, ex::Expr)
+    complete(make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1])))))
+end
+
+macro reaction_network(ex::Expr)
+    ex = MacroTools.striplines(ex)
+
+    # no name but equations: @reaction_network begin ... end ...
+    if ex.head == :block
+        complete(make_reaction_system(ex))
+    else  # empty but has interpolated name: @reaction_network $name
+        networkname = :($(esc(ex.args[1])))
+        return Expr(:block, :(@parameters t),
+                    :(complete(ReactionSystem(Reaction[], t, [], []; name = $networkname))))
+    end
+end
+
+#Returns a empty network (with, or without, a declared name)
+macro reaction_network(name::Symbol = gensym(:ReactionSystem))
+    return Expr(:block, :(@parameters t),
+                :(complete(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name))))))
 end
 
 """
@@ -161,7 +188,7 @@ macro network_component(name::Symbol, ex::Expr)
     make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name))))
 end
 
-# allows @reaction_network $name begin ... to interpolate variables storing a name
+# allows @network_component $name begin ... to interpolate variables storing a name
 macro network_component(name::Expr, ex::Expr)
     make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1]))))
 end
@@ -169,17 +196,17 @@ end
 macro network_component(ex::Expr)
     ex = MacroTools.striplines(ex)
 
-    # no name but equations: @reaction_network begin ... end ...
+    # no name but equations: @network_component begin ... end ...
     if ex.head == :block
         make_reaction_system(ex)
-    else  # empty but has interpolated name: @reaction_network $name
+    else  # empty but has interpolated name: @network_component $name
         networkname = :($(esc(ex.args[1])))
         return Expr(:block, :(@parameters t),
                     :(ReactionSystem(Reaction[], t, [], []; name = $networkname)))
     end
 end
 
-#Returns a empty network (with, or without, a declared name)
+# Returns a empty network (with, or without, a declared name)
 macro network_component(name::Symbol = gensym(:ReactionSystem))
     return Expr(:block, :(@parameters t),
                 :(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name)))))
