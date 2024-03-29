@@ -96,6 +96,7 @@ Let's now use our `ReactionSystem` to generate and solve a corresponding mass
 action ODE model. We first convert the system to a `ModelingToolkit.ODESystem`
 by
 ```@example tut1
+repressilator = complete(repressilator)
 odesys = convert(ODESystem, repressilator)
 ```
 (Here Latexify is used automatically to display `odesys` in Latex within Markdown
@@ -138,6 +139,7 @@ By passing `repressilator` directly to the `ODEProblem`, Catalyst has to
 (internally) call `convert(ODESystem, repressilator)` again to generate the
 symbolic ODEs. We could instead pass `odesys` directly like
 ```@example tut1
+odesys = complete(odesys)
 oprob2 = ODEProblem(odesys, u₀symmap, tspan, psymmap)
 nothing   # hide
 ```
@@ -151,6 +153,10 @@ underlying problem.
     `Symbol`-based mappings, `u₀map` and `pmap`. `Symbol`-based mappings can
     always be converted to `symbolic` mappings using [`symmap_to_varmap`](@ref),
     see the [Basic Syntax](@ref basic_examples) section for more details.
+
+
+!!! note
+    Above we have used `repressilator = complete(repressilator)` and `odesys = complete(odesys)` to mark these systems as *complete*. This must be done before any system is given as input to a `convert` call or some problem type. Models created through the @reaction_network` DSL (which is introduced elsewhere, and primarily used throughout these documentation) are created as complete. Hence `complete` does not need to be called on these models. An expanded description on *completeness* can be found [here](@ref completeness_note).
 
 At this point we are all set to solve the ODEs. We can now use any ODE solver
 from within the
