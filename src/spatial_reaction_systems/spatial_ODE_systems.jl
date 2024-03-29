@@ -156,7 +156,7 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Vector{T}
     transport_rates = make_sidxs_to_transrate_map(vert_ps, edge_ps, lrs)    
 
     # Prepares the Jacobian and forcing functions (depending on jacobian and sparsity selection).
-    osys = convert(ODESystem, lrs.rs; name, combinatoric_ratelaws, include_zero_odes, checks)
+    osys = complete(convert(ODESystem, lrs.rs; name, combinatoric_ratelaws, include_zero_odes, checks))
     if jac
         # `build_jac_prototype` currently assumes a sparse (non-spatial) Jacobian. Hence compute this.
         # `LatticeTransportODEjac` currently assumes a dense (non-spatial) Jacobian. Hence compute this.
