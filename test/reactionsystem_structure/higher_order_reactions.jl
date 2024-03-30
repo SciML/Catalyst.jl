@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using DiffEqBase, Catalyst, JumpProcesses, Statistics, Test
-import ModelingToolkit: get_unknowns, get_ps
+using ModelingToolkit: get_unknowns, get_ps
 
 # Sets stable rng number.
 using StableRNGs

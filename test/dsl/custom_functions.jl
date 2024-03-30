@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using Catalyst, Test
-import Symbolics: derivative
+using Symbolics: derivative
 
 # Sets stable rng number.
 using StableRNGs

@@ -4,7 +4,7 @@
 
 # Fetch packages.
 using Catalyst, Test
-import ModelingToolkit: get_ps, get_unknowns, get_eqs, get_systems, get_iv, getname, nameof
+using ModelingToolkit: get_ps, get_unknowns, get_eqs, get_systems, get_iv, getname, nameof
 
 # Sets stable rng number.
 using StableRNGs
