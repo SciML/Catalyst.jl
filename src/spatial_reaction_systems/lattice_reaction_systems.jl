@@ -25,17 +25,17 @@ struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem
     All parameters related to the lattice reaction system
     (both with spatial and non-spatial effects).
     """
-    parameters::Vector{BasicSymbolic{Real}}
+    parameters::Vector{Any}
     """
     Parameters which values are tied to vertexes (adjacencies), 
     e.g. (possibly) have an unique value at each vertex of the system.
     """
-    vertex_parameters::Vector{BasicSymbolic{Real}}
+    vertex_parameters::Vector{Any}
     """
     Parameters which values are tied to edges (adjacencies), 
     e.g. (possibly) have an unique value at each edge of the system.
     """
-    edge_parameters::Vector{BasicSymbolic{Real}}
+    edge_parameters::Vector{Any}
 
     function LatticeReactionSystem(rs::ReactionSystem{S}, spatial_reactions::Vector{T},
                                    lattice::DiGraph; init_digraph = true) where {S, T}
@@ -52,7 +52,7 @@ struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem
         num_species = length(unique([species(rs); spat_species]))
         rs_edge_parameters = filter(isedgeparameter, parameters(rs))
         if isempty(spatial_reactions)
-            srs_edge_parameters = Vector{BasicSymbolic{Real}}[]
+            srs_edge_parameters = Vector{Any}[]
         else
             srs_edge_parameters = setdiff(reduce(vcat, [parameters(sr) for sr in spatial_reactions]), parameters(rs))
         end

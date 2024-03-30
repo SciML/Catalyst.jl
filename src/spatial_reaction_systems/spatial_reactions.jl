@@ -95,7 +95,7 @@ function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReacti
     if any([isequal(tr.species, s) && !isequivalent(tr.species, s) for s in species(rs)]) 
         error("A transport reaction used a species, $(tr.species), with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and used in transport reaction creation.")
     end
-    if any([isequal(rs_p, tr_p) && !equivalent_metadata(rs_p, tr_p) 
+    if any([isequal(rs_p, tr_p) && !isequivalent(rs_p, tr_p) 
             for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate)]) 
         error("A transport reaction used a parameter with metadata not matching its lattice reaction system. Please fetch this parameter from the reaction system and used in transport reaction creation.")
     end
@@ -105,15 +105,16 @@ function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReacti
         error("Edge paramter(s) were found as a rate of a non-spatial reaction.")
     end
 end
-equivalent_metadata(p1, p2) = isempty(setdiff(p1.metadata, p2.metadata, [Catalyst.EdgeParameter => true]))
 
 # Since MTK's "isequal" ignores metadata, we have to use a special function that accounts for this.
 # This is important because whether something is an edge parameter is defined in metadata.
 function isequivalent(sym1, sym2)
-    !isequal(sym1, sym2) && (return false)
-    (sym1.metadata != sym2.metadata) && (return false)
+    isequal(sym1, sym2) || (return false)
+    (ignore_ep_metadata(sym1.metadata) != ignore_ep_metadata(sym2.metadata)) && (return false)
+    (typeof(sym1) != typeof(sym2)) && (return false)
     return true
 end
+ignore_ep_metadata(metadata) = setdiff(metadata, [Catalyst.EdgeParameter => true])
 
 # Implements custom `==`.
 """
