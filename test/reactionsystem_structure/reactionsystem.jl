@@ -4,8 +4,6 @@
 using Catalyst, LinearAlgebra, JumpProcesses, OrdinaryDiffEq, StochasticDiffEq, Test
 const MT = ModelingToolkit
 
-t = default_t()
-
 # Sets stable rng number.
 using StableRNGs
 rng = StableRNG(12345)

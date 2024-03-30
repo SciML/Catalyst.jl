@@ -4,7 +4,7 @@
 
 # Fetch packages.
 using Catalyst, LinearAlgebra, OrdinaryDiffEq, SciMLNLSolve, Test
-using ModelingToolkit: nameof
+import ModelingToolkit: nameof
 
 # Fetch test networks.
 t = default_t()

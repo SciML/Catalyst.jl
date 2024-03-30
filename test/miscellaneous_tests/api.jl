@@ -4,8 +4,8 @@
 
 # Fetch packages.
 using Catalyst, NonlinearSolve, OrdinaryDiffEq, SparseArrays, StochasticDiffEq, Test 
-using LinearAlgebra: norm
-using ModelingToolkit: value
+import LinearAlgebra: norm
+import ModelingToolkit: value
 
 # Sets the default `t` to use.
 t = default_t()
