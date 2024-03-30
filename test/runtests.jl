@@ -1,11 +1,6 @@
 ### Fetch the require packages ###
 using SafeTestsets
 
-println("Started")
-function hi_world()
-    println("Hello WOrld")
-end
-
 ### Run the tests ###
 @time begin
 
