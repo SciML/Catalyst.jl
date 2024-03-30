@@ -500,7 +500,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
     """Dependent unknown variables representing species"""
     species::Vector{BasicSymbolic{Real}}
     """Parameter variables. Must not contain the independent variable."""
-    ps::Vector{BasicSymbolic{Real}}
+    ps::Vector{Any}
     """Maps Symbol to corresponding variable."""
     var_to_name::Dict{Symbol, Any}
     """Equations for observed variables."""
