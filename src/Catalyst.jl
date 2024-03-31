@@ -13,7 +13,7 @@ using JumpProcesses: JumpProcesses,
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit
 const MT = ModelingToolkit
-using Unitful
+using DynamicQuantities# , Unitful # Having Unitful here as well currently gives an error.
 @reexport using ModelingToolkit
 using Symbolics
 
