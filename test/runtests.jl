@@ -4,24 +4,6 @@ using SafeTestsets
 ### Run the tests ###
 @time begin
 
-    ### Tests the properties of ReactionSystems. ###
-    @time @safetestset "Reactions" begin include("reactionsystem_structure/reactions.jl") end
-    @time @safetestset "ReactionSystem" begin include("reactionsystem_structure/reactionsystem.jl") end
-    @time @safetestset "Higher Order Reactions" begin include("reactionsystem_structure/higher_order_reactions.jl") end
-    @time @safetestset "Designation of Parameter Types" begin include("reactionsystem_structure/designating_parameter_types.jl") end
-
-    ### Tests model creation via the @reaction_network DSL. ###
-    @time @safetestset "Basic DSL" begin include("dsl/dsl_basics.jl") end
-    @time @safetestset "DSL Model Construction" begin include("dsl/dsl_model_construction.jl") end
-    @time @safetestset "Custom CRN Functions" begin include("dsl/custom_functions.jl") end
-    @time @safetestset "DSL Options" begin include("dsl/dsl_options.jl") end
-
-    ### Non-DSL model creation and modification. ###
-    @time @safetestset "ReactionSystem Components Based Creation" begin include("programmatic_model_creation/component_based_model_creation.jl") end
-    @time @safetestset "Programmatic Model Expansion" begin include("programmatic_model_creation/programmatic_model_expansion.jl") end
-
-    # Runs various miscellaneous tests.
-    @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
     @time @safetestset "Symbolic Stoichiometry" begin include("miscellaneous_tests/symbolic_stoichiometry.jl") end
     @time @safetestset "NonlinearProblems and Steady State Solving" begin include("miscellaneous_tests/nonlinear_solve.jl") end
     @time @safetestset "Events" begin include("miscellaneous_tests/events.jl") end

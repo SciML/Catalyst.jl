@@ -36,19 +36,19 @@ end
 ### System function evaluation ###
 
 # Evaluates the the drift function of the ODE corresponding to a reaction network.
-function f_eval(rs::ReactionSystem, u, p, τ)
-    prob = ODEProblem(rs, u, (0.0, 0.0), p)
-    return prob.f(prob.u0, prob.p, τ)
+function f_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true)
+    prob = ODEProblem(rs, u, (0.0, 0.0), p; combinatoric_ratelaws)
+    return prob.f(prob.u0, prob.p, t)
 end
 
 # Evaluates the the Jacobian of the drift function of the ODE corresponding to a reaction network.
-function jac_eval(rs::ReactionSystem, u, p, t)
-    prob = ODEProblem(rs, u, (0.0, 0.0), p; jac = true)
+function jac_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true)
+    prob = ODEProblem(rs, u, (0.0, 0.0), p; jac = true, combinatoric_ratelaws)
     return prob.f.jac(prob.u0, prob.p, t)
 end
 
 # Evaluates the the diffusion function of the SDE corresponding to a reaction network.
-function g_eval(rs::ReactionSystem, u, p, t)
-    prob = SDEProblem(rs, u, (0.0, 0.0), p)
+function g_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true)
+    prob = SDEProblem(rs, u, (0.0, 0.0), p; combinatoric_ratelaws)
     return prob.g(prob.u0, prob.p, t)
 end
