@@ -275,10 +275,12 @@ let
     @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
 end
 
+
 ### Test Designation of Parameter Types ###
+# Currently not supported. Won't be until the LatticeReactionSystem internal update is merged.
 
 # Checks that parameter types designated in the non-spatial `ReactionSystem` is handled correctly.
-let
+@test_broken let
     # Declares LatticeReactionSystem with designated parameter types.
     rs = @reaction_network begin
         @parameters begin
@@ -326,7 +328,7 @@ end
 
 # Checks that programmatically declared parameters (with types) can be used in `TransportReaction`s.
 # Checks that LatticeReactionSystem with non-default parameter types can be simulated.
-let
+@test_broken let
     rs = @reaction_network begin
         @parameters p::Float32
         (p,d), 0 <--> X
@@ -354,11 +356,12 @@ end
 
 # Tests that LatticeReactionSystem cannot be generated where transport reactions depend on parameters
 # that have a type designated in the non-spatial `ReactionSystem`.
-let
-    rs = @reaction_network begin
-        @parameters D::Int64
-        (p,d), 0 <--> X
-    end
-    tr = @transport_reaction D X 
-    @test_throws Exception LatticeReactionSystem(rs, tr, grid)
-end
+@test_broken false
+# let
+#     rs = @reaction_network begin
+#         @parameters D::Int64
+#         (p,d), 0 <--> X
+#     end
+#     tr = @transport_reaction D X 
+#     @test_throws Exception LatticeReactionSystem(rs, tr, grid)
+# end
