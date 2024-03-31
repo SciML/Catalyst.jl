@@ -65,7 +65,6 @@ let
     @test (@test_logs (:warn, ) match_mode=:any validate(bad_rs)) == false
 end
 
-
 # Checks that units work in the DSL.
 begin
     # Creates the model, while designating matching units.
@@ -147,3 +146,49 @@ begin
     end
 end
 
+# Checks that units works for various non-trivial systems.
+let
+    # Parametric rates (no units).
+    @test_broken false # This yields a warning (and it shouldn't).
+    rn = @reaction_network begin
+        k1, 2X1 --> Z1
+        k2, n2*X2 --> m2*Z2
+        k3, n3*X3 + m3*Y3--> Z3
+    end
+
+    # Parametric rates with units is not possible, since the unit depends on the parameter values.
+
+    # Non-constant rates (no units).
+    @test_nowarn rn = @reaction_network begin
+        k1*X1, 2X1 --> Z1
+        mm(X2, v2, K2), X2 --> Z2
+        hill(X3, v3, K3, n3), X3 + Y3--> Z3
+    end
+
+    # Non-constant rates (units).
+    @test_broken false # The below expression generates an error on compile. Really no idea why, have 
+    # managed to make a really small example of it, but not figured it out yet.
+    # rn = @reaction_network begin
+    #     @ivs t [unit=u"s"]
+    #     @species begin
+    #         X1(t), [unit=u"m"]
+    #         Z1(t), [unit=u"m"]
+    #         X2(t), [unit=u"m"]
+    #         Z2(t), [unit=u"m"]
+    #         X3(t), [unit=u"m"]
+    #         Y3(t), [unit=u"m"]
+    #         Z3(t), [unit=u"m"]
+    #     end
+    #     @parameters begin
+    #         k1, [unit=u"m^(-4)/s"]
+    #         v2, [unit=u"m^(-4)/s"]
+    #         K2, [unit=u"m"]
+    #         v3, [unit=u"m^(-3)/s"]
+    #         K3, [unit=u"m"]
+    #         n3
+    #     end
+    #     k1*X1, 2X1 --> Z1
+    #     mm(X2, v, K), 3X2 --> Z2
+    #     hill(X3, v3, K3, n3), X3 + Y3--> Z3
+    # end
+    end
