@@ -157,6 +157,10 @@ species
 nonspecies
 reactionparams
 reactions
+has_diff_equations
+diff_equations
+has_alg_equations
+alg_equations
 numspecies
 numparams
 numreactions

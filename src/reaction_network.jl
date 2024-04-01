@@ -82,7 +82,8 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables, :default_noise_scaling)
+const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables, :default_noise_scaling,
+                     :differentials, :equations, :continuous_events, :discrete_events)
 
 ### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)
@@ -353,7 +354,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     option_lines = Expr[x for x in ex.args if x.head == :macrocall]
 
     # Get macro options.
-    length(unique(arg.args[1] for arg in option_lines)) < length(option_lines) && error("Some options where given multiple times.")
+    if length(unique(arg.args[1] for arg in option_lines)) < length(option_lines)
+         error("Some options where given multiple times.")
+    end
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
                        option_lines))
 
@@ -361,12 +364,18 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     default_reaction_metadata = :([])
     check_default_noise_scaling!(default_reaction_metadata, options)
     compound_expr, compound_species = read_compound_options(options)
+    continuous_events_expr = read_events_option(options, :continuous_events)
+    discrete_events_expr = read_events_option(options, :discrete_events)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
     species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
-    variables = extract_syms(options, :variables)
+    variables_declared = extract_syms(options, :variables)
+
+    # Reads more options.
+    vars_extracted, add_default_diff, equations = read_equations_options(options, variables_declared)
+    variables = vcat(variables_declared, vars_extracted)
 
     # handle independent variables
     if haskey(options, :ivs)
@@ -391,6 +400,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
+    # Create differential expression.
+    diffexpr = create_differential_expr(options, add_default_diff, [species; parameters; variables])
+
     # Checks for input errors.
     (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
         error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
@@ -402,7 +414,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     sexprs = get_sexpr(species_extracted, options; iv_symbols = ivs)
-    vexprs = haskey(options, :variables) ? options[:variables] : :()
+    vexprs = get_sexpr(vars_extracted, options, :variables)
     pexprs = get_pexpr(parameters_extracted, options)
     ps, pssym = scalarize_macro(!isempty(parameters), pexprs, "ps")
     vars, varssym = scalarize_macro(!isempty(variables), vexprs, "vars")
@@ -412,6 +424,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     for reaction in reactions
         push!(rxexprs.args, get_rxexprs(reaction))
     end
+    for equation in equations
+        push!(rxexprs.args, equation)
+    end
 
     quote
         $ps
@@ -420,11 +435,13 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         $sps
         $observed_vars
         $comps
+        $diffexpr
 
         Catalyst.remake_ReactionSystem_internal(
             Catalyst.make_ReactionSystem_internal(
                 $rxexprs, $tiv, setdiff(union($spssym, $varssym, $compssym), $obs_syms),
-                $pssym; name = $name, spatial_ivs = $sivs, observed = $observed_eqs);
+                $pssym; name = $name, spatial_ivs = $sivs, observed = $observed_eqs,
+                continuous_events = $continuous_events_expr, discrete_events = $discrete_events_expr);
             default_reaction_metadata = $default_reaction_metadata
         )
     end
@@ -808,6 +825,53 @@ function check_default_noise_scaling!(default_reaction_metadata, options)
         end
         push!(default_reaction_metadata.args, :(:noise_scaling => $(options[:default_noise_scaling].args[3])))
     end
+end
+
+# Creates an expression declaring differentials.
+function create_differential_expr(options, add_default_diff, used_syms)
+    # Creates the differential expression.
+    # If differentials was provided as options, this is used as the initial expression.
+    # If the default differential (D(...)) was used in equations, this is added to the expression.
+    diffexpr = (haskey(options, :differentials) ? options[:differentials].args[3] : MacroTools.striplines(:(begin end)))
+    diffexpr = option_block_form(diffexpr)
+    add_default_diff && push!(diffexpr.args, :(D = Differential($(DEFAULT_IV_SYM))))
+
+    # Goes through all differentials, checking that they are correctly formatted and their symbol is not used elsewhere.
+    for dexpr in diffexpr.args
+        (dexpr.head != :(=)) && error("Differential declaration must have form like D = Differential(t), instead \"$(dexpr)\" was given.")
+        (dexpr.args[1] isa Symbol) || error("Differential left-hand side must be a single symbol, instead \"$(dexpr.args[1])\" was given.")
+        in(dexpr.args[1], used_syms) && error("Differential name ($(dexpr.args[1])) is also a species, variable, or parameter. This is ambigious and not allowed.")
+        in(dexpr.args[1], forbidden_symbols_error) && error("A forbidden symbol ($(dexpr.args[1])) was used as a differential name.")
+    end
+
+    return diffexpr
+end
+
+# Read the events (continious or discrete) provided as options to the DSL. Returns an expression which evalutes to these.
+function read_events_option(options, event_type::Symbol)    
+    # Prepares the events, if required to, converts them to block form.
+    (event_type in [:continuous_events]) || error("Trying to read an unsupported event type.")
+    events_input = haskey(options, event_type) ? options[event_type].args[3] : :(begin end)
+    events_input = option_block_form(events_input)
+
+    # Goes throgh the events, checks for errors, and adds them to the output vector.
+    events_expr = :([])
+    for arg in events_input.args
+        # Formatting error checks.
+        # NOTE: Maybe we should move these deeper into the system (rather than the DSL), throwing errors more generally?
+        if (arg.head != :call) || (arg.args[1] != :(=>)) || length(arg.args) != 3
+            error("Events should be on form `condition => affect`, separated by a `=>`. This appears not to be the case for: $(arg).")
+        end
+        if (arg.args[2] != :call) && (event_type == :continuous_events)
+            error("The condition part of continious events (the left-hand side) must be a vector. This is not the case for: $(arg).")
+        end
+        if arg.args[3] != :call
+             error("The affect part of all events (the righ-hand side) must be a vector. This is not the case for: $(arg).")
+        end
+
+        push!(events_expr.args, arg)
+    end
+    return events_expr
 end
 
 ### Functionality for expanding function call to custom and specific functions ###

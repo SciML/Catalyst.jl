@@ -98,6 +98,55 @@ function reactions(network)
 end
 
 """
+    diff_equations(network)
+Given a [`ReactionSystem`](@ref), return a vector of all `Equations` in the system that are differential equations (contains a derivative with respect to any variable).
+Notes:
+- If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
+"""
+function diff_equations(network)
+    eqs = equations(network)
+    filter!(!isreaction, eqs)
+    systems = filter_nonrxsys(network)
+    isempty(systems) && (return rxs)
+    [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
+end
+
+"""
+    has_diff_equations(network)
+Given a [`ReactionSystem`](@ref), check whether it contain any differential equations (i.e. in addition to those generated through reactions).
+Notes:
+- If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
+"""
+function has_diff_equations(network)
+    return !isempty(diff_equations(network))
+end
+
+"""
+    alg_equations(network)
+Given a [`ReactionSystem`](@ref), return a vector of all `Equations` in the system that are algebraic equations (does not contain any derivatives).
+Notes:
+- If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
+"""
+function alg_equations(network)
+    eqs = equations(network)
+    filter!(!isreaction, eqs)
+    filter!(!isreaction, eqs)
+    systems = filter_nonrxsys(network)
+    isempty(systems) && (return rxs)
+    [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
+end
+
+"""
+    has_alg_equations(network)
+Given a [`ReactionSystem`](@ref), check whether it contain any algebraic equations.
+Notes:
+- If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
+"""
+function has_alg_equations(network)
+    return !isempty(alg_equations(network))
+end
+
+"""
     speciesmap(network)
 
 Given a [`ReactionSystem`](@ref), return a Dictionary mapping species that
