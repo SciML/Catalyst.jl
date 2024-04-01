@@ -298,7 +298,7 @@ let
 
     u0 = [:X1 => 1000.0, :X2 => 1000.0, :X3 => 1000.0, :X4 => 1000.0, :X5 => 1000.0, :N1 => 3.0, :N3 => 0.33]
     ps = [:p => 1000.0, :d => 1.0, :η1 => 1.0, :η2 => 1.4, :η3 => 0.33, :η4 => 4.0]
-    sprob = SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), ps)
+    sprob = SDEProblem(noise_scaling_network, u0, (0.0, 100.0), ps)
 
     # Test have at some point failed due to StochasticDiffEq failing to initiate. This temporary extra
     # check is in place if it will happen again, to help us investigate.
@@ -315,10 +315,35 @@ let
     end
 end
 
+# Tests noise scaling is added properly for programmatically created system.
+# Tests noise scaling for interpolation into the `@reaction macro`.
+# Tests that species, variables, and parameters are extracted from noise scaling metadata when 
+# `ReactionSystems`s are declared programmatically.
+let
+    # Programmatically creates a model with noise scaling.
+    t = default_t()
+    @species X(t) H(t)
+    @variables h(t)
+    @parameters p d η
+    rx1 = Reaction(p, nothing, [X]; metadata = [:noise_scaling => η*H + 1])
+    rx2 = @reaction d, X --> 0, [noise_scaling=$h]
+    @named rs = ReactionSystem([rx1, rx2], t)
+
+    # Checks that noise scaling has been added correctly.
+    @test issetequal([X, H], species(rs))
+    @test issetequal([X, H, h], unknowns(rs))
+    @test issetequal([p, d, η], parameters(rs))
+    @test isequal(get_noise_scaling(reactions(rs)[1]), η*H + 1)
+    @test isequal(get_noise_scaling(reactions(rs)[2]), h)
+end
+
 # Tests the `remake_noise_scaling` function.
+# Checks that the `overwrite` argument works.
+# Checks a parameter part of the initial system is added properly
 let
     # Creates noise scaling networks.
     noise_scaling_network1 = @reaction_network begin
+        @parameters η1
         p, 0 --> X, [noise_scaling=2.0]
         d, X --> 0
     end
@@ -329,16 +354,25 @@ let
     @test reactions(noise_scaling_network1)[2].metadata == []
     @test reactions(noise_scaling_network2)[1].metadata == [:noise_scaling => 2.0]
     @test reactions(noise_scaling_network2)[2].metadata == [:noise_scaling => 0.5]
+
+    @unpack p, d, η1 = noise_scaling_network1
+    @parameters η2
+    noise_scaling_network3 = set_default_noise_scaling(noise_scaling_network2, η1 + η2; overwrite = true)
+    @test isequal(reactions(noise_scaling_network3)[1].metadata, [:noise_scaling => η1 + η2])
+    @test isequal(reactions(noise_scaling_network3)[2].metadata, [:noise_scaling => η1 + η2])
+    @test issetequal([p, d, η1, η2], parameters(noise_scaling_network3))
 end
 
 # Tests the `remake_noise_scaling` function on a hierarchical model.
-let
+# Checks that species, variables, and parameters not part of the original system is added properly.
+# Checks that the `overwrite` argument works.
+let        
     # Creates hierarchical model.
-    rn1 = @reaction_network begin
+    rn1 = @reaction_network rn1 begin
         p, 0 --> X, [noise_scaling=2.0]
         d, X --> 0
     end
-    rn2 = @reaction_network begin
+    rn2 = @reaction_network rn2 begin
         k1, X1 --> X2, [noise_scaling=5.0]
         k2, X2 --> X1
     end
@@ -352,7 +386,23 @@ let
     @test issetequal(rn1_noise_scaling, [2.0, 0.5])
     @test issetequal(rn2_noise_scaling, [5.0, 0.5])
     @test issetequal(rn_noise_scaling, [2.0, 0.5, 5.0, 0.5])
+
+    # Checks that species, variables, and parameters gets correctly added to system (and subsystem).
+    @unpack X, p, d = rn1
+    @unpack X1, X2, k1, k2 = rn2
+    @species H(t)
+    @variables h(t)
+    @parameters η
+    rn = set_default_noise_scaling(rn, H + h + η + 1; overwrite = true)
+
+    @test issetequal(Catalyst.get_species(rn), [X, H])
+    @test issetequal(Catalyst.get_species(rn.rn2), [X1, X2, H])
+    @test issetequal(ModelingToolkit.get_unknowns(rn), [X, H, h])
+    @test issetequal(ModelingToolkit.get_unknowns(rn.rn2), [X1, X2, H, h])
+    @test issetequal(ModelingToolkit.get_ps(rn), [p, d, η])
+    @test issetequal(ModelingToolkit.get_ps(rn.rn2), [k1, k2, η])
 end
+
 
 
 ### Other Tests ###
