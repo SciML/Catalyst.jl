@@ -702,7 +702,7 @@ let
 
     # Checks that the internal structures have the correct lengths.
     @test length(species(rn)) == 1
-    @test length(states(rn)) == 3
+    @test length(unknowns(rn)) == 3
     @test length(reactions(rn)) == 2
     @test length(equations(rn)) == 4
     @test !has_diff_equations(rn)
@@ -711,9 +711,9 @@ let
     @test isequal(alg_equations(rn), [X + 5 ~ k*S, 3Y + X  ~ S + X*d])
 
     # Checks that the internal structures contain the correct stuff, and are correctly sorted.
-    @test isspecies(states(rn)[1])
-    @test !isspecies(states(rn)[2])
-    @test !isspecies(states(rn)[3])
+    @test isspecies(unknowns(rn)[1])
+    @test !isspecies(unknowns(rn)[2])
+    @test !isspecies(unknowns(rn)[3])
     @test equations(rn)[1] isa Reaction
     @test equations(rn)[2] isa Reaction
     @test equations(rn)[3] isa Equation
@@ -814,7 +814,7 @@ let
 
     # Checks that the internal structures have the correct lengths.
     @test length(species(rn)) == 1
-    @test length(states(rn)) == 3
+    @test length(unknowns(rn)) == 3
     @test length(reactions(rn)) == 2
     @test length(equations(rn)) == 4
     @test has_diff_equations(rn)
@@ -823,9 +823,9 @@ let
     @test length(alg_equations(rn)) == 1
 
     # Checks that the internal structures contain the correct stuff, and are correctly sorted.
-    @test isspecies(states(rn)[1])
-    @test !isspecies(states(rn)[2])
-    @test !isspecies(states(rn)[3])
+    @test isspecies(unknowns(rn)[1])
+    @test !isspecies(unknowns(rn)[2])
+    @test !isspecies(unknowns(rn)[3])
     @test equations(rn)[1] isa Reaction
     @test equations(rn)[2] isa Reaction
     @test equations(rn)[3] isa Equation

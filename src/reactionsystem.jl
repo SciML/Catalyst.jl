@@ -553,7 +553,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
 
         # Filters away any potential obervables from `states` and `spcs`.
         obs_vars = [obs_eq.lhs for obs_eq in observed]
-        states = filter(state -> !any(isequal(state, obs_var) for obs_var in obs_vars), states)
+        unknowns = filter(state -> !any(isequal(state, obs_var) for obs_var in obs_vars), unknowns)
         spcs = filter(spc -> !any(isequal(spc, obs_var) for obs_var in obs_vars), spcs)
 
         # unit checks are for ODEs and Reactions only currently
@@ -563,7 +563,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
             check_parameters(ps, iv)
             nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
             !isempty(nonrx_eqs) && check_equations(nonrx_eqs, iv)
-            check_equations(equations(cevs), iv)
+            !isempty(cevs) && check_equations(equations(cevs), iv)
         end
 
         if isempty(sivs) && (checks == true || (checks & MT.CheckUnits) > 0)

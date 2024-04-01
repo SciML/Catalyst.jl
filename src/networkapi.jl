@@ -97,54 +97,6 @@ function reactions(network)
     [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
 end
 
-"""
-    diff_equations(network)
-Given a [`ReactionSystem`](@ref), return a vector of all `Equations` in the system that are differential equations (contains a derivative with respect to any variable).
-Notes:
-- If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
-"""
-function diff_equations(network)
-    eqs = equations(network)
-    filter!(!isreaction, eqs)
-    systems = filter_nonrxsys(network)
-    isempty(systems) && (return rxs)
-    [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
-end
-
-"""
-    has_diff_equations(network)
-Given a [`ReactionSystem`](@ref), check whether it contain any differential equations (i.e. in addition to those generated through reactions).
-Notes:
-- If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
-"""
-function has_diff_equations(network)
-    return !isempty(diff_equations(network))
-end
-
-"""
-    alg_equations(network)
-Given a [`ReactionSystem`](@ref), return a vector of all `Equations` in the system that are algebraic equations (does not contain any derivatives).
-Notes:
-- If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
-"""
-function alg_equations(network)
-    eqs = equations(network)
-    filter!(!isreaction, eqs)
-    filter!(!isreaction, eqs)
-    systems = filter_nonrxsys(network)
-    isempty(systems) && (return rxs)
-    [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
-end
-
-"""
-    has_alg_equations(network)
-Given a [`ReactionSystem`](@ref), check whether it contain any algebraic equations.
-Notes:
-- If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
-"""
-function has_alg_equations(network)
-    return !isempty(alg_equations(network))
-end
 
 """
     speciesmap(network)
@@ -632,6 +584,94 @@ end
 # don't permute any other types and let varmap_to_vars handle erroring
 symmap_to_varmap(sys, symmap) = symmap
 #error("symmap_to_varmap requires a Dict, AbstractArray or Tuple to map Symbols to values.")
+
+
+### Equation Handling Accessors ###
+
+"""
+    is_reaction(eq::Equation)
+
+Returns `true` if the input is a `Reaction`, else false.
+"""
+function is_reaction(eq::Equation)
+    return eq isa Reaction
+end
+
+"""
+    is_alg_equation(eq::Equation)
+
+Returns `true` if the input is an algebraic equation that does not contain any differentials.
+"""
+function is_alg_equation(eq)
+    return isdefined(eq, :lhs) && isdefined(eq, :rhs) && !is_diff_equation(eq)
+end
+
+"""
+    is_diff_equation(eq::Equation)
+
+Returns `true` if the input is an that contains at least one differential.
+"""
+function is_diff_equation(eq)
+    isdefined(eq, :lhs) && occursin(is_derivative, wrap(eq.lhs)) && (return true)
+    isdefined(eq, :rhs) && occursin(is_derivative, wrap(eq.rhs)) && (return true)
+    return false
+end
+
+"""
+    alg_equations(rs)
+
+Returns all the algebraic equations (that does not contain differnetials) in `rs` and its subsystems.
+"""
+alg_equations(rs) = filter(is_alg_equation, equations(rs))
+
+"""
+    diff_equations(rs)
+
+Returns all the differnetials equations (equations that contain differnetials) in `rs` and its subsystems.
+"""
+diff_equations(rs) = filter(is_diff_equation, equations(rs))
+
+"""
+    has_alg_equations(rs)
+
+Returns true if `rs` (or any of its subsystems) has an algebraic equation (that does not contain a differential).
+"""
+has_alg_equations(rs) = any(is_alg_equation, equations(rs))
+
+"""
+    has_diff_equations(rs)
+
+Returns true if `rs` (or any of its subsystems) has a differnetials equations (equations that contain differnetials) .
+"""
+has_diff_equations(rs) = any(is_diff_equation, equations(rs))
+
+"""
+    get_alg_eqs(rs)
+
+Returns all the algebraic equations (that does not contain differnetials) in `rs` and (but not its subsystems).
+"""
+get_alg_eqs(rs) = filter(is_alg_equation, get_eqs(rs))
+
+"""
+    diff_equations(rs)
+
+Returns all the differnetial equations (equations that contain differnetials) in `rs` (but not its subsystems).
+"""
+get_diff_eqs(rs) = filter(is_diff_equation, get_eqs(rs))
+
+"""
+    has_alg_equations(rs)
+
+Returns true if `rs` has an algebraic equation (that does not contain a differential). Does not consider subsystems.
+"""
+has_alg_eqs(rs) = any(is_alg_equation, get_eqs(rs))
+
+"""
+    has_diff_equations(rs)
+
+Returns true if `rs` has a differnetial equations (equations that contain differnetials). Does not consider subsystems.
+"""
+has_diff_eqs(rs) =  any(is_diff_equation, get_eqs(rs))
 
 ######################## reaction complexes and reaction rates ###############################
 

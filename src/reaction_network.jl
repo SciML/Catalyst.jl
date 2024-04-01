@@ -816,15 +816,35 @@ function make_observed_eqs(observables_expr)
     end 
 end
 
-# Checks if the `@default_noise_scaling` option is used. If so, read its input and adds it as a
-# default metadata value to the `default_reaction_metadata` vector.
-function check_default_noise_scaling!(default_reaction_metadata, options)
-    if haskey(options, :default_noise_scaling)
-        if (length(options[:default_noise_scaling].args) != 3) # Becasue of how expressions are, 3 is used.
-            error("@default_noise_scaling should only have a single input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
+# Reads the variables options. Outputs:
+# `vars_extracted`: A vector with extracted variables (lhs in pure differential equations only).
+# `dtexpr`: If a differentialequation is defined, the default derrivative (D ~ Differential(t)) must be defined.
+# `equations`: a vector with the equations provided.
+function read_equations_options(options, variables_declared)
+    # Prepares the equations. First, extracts equations from provided option (converting to block form if requried).
+    # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
+    eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
+    eqs_input = option_block_form(eqs_input)
+    equations = Expr[]
+    ModelingToolkit.parse_equations!(Expr(:block), equations, Dict{Symbol, Any}(), eqs_input)
+
+    # Loops through all equations, checks for lhs of the form `D(X) ~ ...`.
+    # When this is the case, the variable X and differential D are extracted (for automatic declaration).
+    # Also performs simple error checks.
+    vars_extracted = []
+    add_default_diff = false
+    for eq in equations
+        ((eq.head != :call) || (eq.args[1] != :~)) && error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")     
+        (eq.args[2] isa Symbol || eq.args[2].head != :call) && continue
+        if (eq.args[2].args[1] == :D) && (eq.args[2].args[2] isa Symbol) && (length(eq.args[2].args) == 2)
+            diff_var = eq.args[2].args[2]
+            in(diff_var, forbidden_symbols_error) && error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
+            add_default_diff = true
+            in(diff_var, variables_declared) || push!(vars_extracted, diff_var)
         end
-        push!(default_reaction_metadata.args, :(:noise_scaling => $(options[:default_noise_scaling].args[3])))
     end
+
+    return vars_extracted, add_default_diff, equations
 end
 
 # Creates an expression declaring differentials.
@@ -850,8 +870,8 @@ end
 # Read the events (continious or discrete) provided as options to the DSL. Returns an expression which evalutes to these.
 function read_events_option(options, event_type::Symbol)    
     # Prepares the events, if required to, converts them to block form.
-    (event_type in [:continuous_events]) || error("Trying to read an unsupported event type.")
-    events_input = haskey(options, event_type) ? options[event_type].args[3] : :(begin end)
+    (event_type in [:continuous_events, :discrete_events]) || error("Trying to read an unsupported event type.")
+    events_input = haskey(options, event_type) ? options[event_type].args[3] : MacroTools.striplines(:(begin end))
     events_input = option_block_form(events_input)
 
     # Goes throgh the events, checks for errors, and adds them to the output vector.
@@ -872,6 +892,17 @@ function read_events_option(options, event_type::Symbol)
         push!(events_expr.args, arg)
     end
     return events_expr
+end
+
+# Checks if the `@default_noise_scaling` option is used. If so, read its input and adds it as a
+# default metadata value to the `default_reaction_metadata` vector.
+function check_default_noise_scaling!(default_reaction_metadata, options)
+    if haskey(options, :default_noise_scaling)
+        if (length(options[:default_noise_scaling].args) != 3) # Becasue of how expressions are, 3 is used.
+            error("@default_noise_scaling should only have a single input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
+        end
+        push!(default_reaction_metadata.args, :(:noise_scaling => $(options[:default_noise_scaling].args[3])))
+    end
 end
 
 ### Functionality for expanding function call to custom and specific functions ###
