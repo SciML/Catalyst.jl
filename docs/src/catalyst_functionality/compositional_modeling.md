@@ -27,7 +27,7 @@ We can test whether a system is complete using the `ModelingToolkit.iscomplete` 
 ```@example ex0
 ModelingToolkit.iscomplete(degradation_component)
 ```
-To make a incomplete system complete, we can use the `complete` function:
+To mark a system as complete, after which is should be considered as representing a finalized model, use the `complete` function
 ```@example ex0
 degradation_component_complete = complete(degradation_component)
 ModelingToolkit.iscomplete(degradation_component_complete)
