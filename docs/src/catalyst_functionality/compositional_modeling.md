@@ -8,7 +8,7 @@ compartments.
 ## [A note on *completeness*](@id completeness_note)
 Catalyst `ReactionSystem` can either be *complete* or *incomplete*. When created using the `@reaction_network` DSL they are *created as complete*. Here, only complete `ReactionSystem`s can be used to create the various problem types (e.g. `ODEProblem`). However, only incomplete `ReactionSystem`s can be composed using the features described below. Hence, for compositional modeling, `ReactionSystem` must be created as incomplete, and later set to complete before simulation.
 
-To create incomplete `ReactionSystem`s using the DSL as complete, use the `@network_component` instead of `@reaction_network`:
+To create a `ReactionSystem`s for use in compositional modeling via the DSL, simply use the `@network_component` macro instead of `@reaction_network`:
 ```@example ex0
 using Catalyst
 degradation_component = @network_component begin
