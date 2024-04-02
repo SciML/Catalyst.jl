@@ -62,7 +62,6 @@ let
 end
 
 # Tests creating a network and adding reactions.
-# This test seems weird?
 let
     unfinished_network = @reaction_network begin
         @parameters k0 k1 k2 k3 k4
