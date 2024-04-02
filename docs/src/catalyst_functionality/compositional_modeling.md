@@ -15,7 +15,7 @@ degradation_component = @network_component begin
   d, X --> 0
 end
 ```
-Alternatively all `ReactionSystem`s created programmatically are incomplete:
+Alternatively one can just build the `ReactionSystem` via the symbolic interface.
 ```@example ex0
 @parameters d
 @variable t
