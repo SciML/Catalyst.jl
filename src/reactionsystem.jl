@@ -1471,7 +1471,7 @@ function spatial_convert_err(rs::ReactionSystem, systype)
     isspatial(rs) && error("Conversion to $systype is not supported for spatial networks.")
 end
 
-COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be converted to other system types. A ReactionSystem can be marked as complete using the `compelte` function."
+COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be converted to other system types. A ReactionSystem can be marked as complete using the `complete` function."
 
 """
 ```julia
