@@ -25,7 +25,7 @@ let
         p = rnd_ps(exponential_decay, rng; factor)
         prob = ODEProblem(exponential_decay, u0, (0.0, t_stops[end]), p)
 
-        sol = solve(prob, Rosenbrock23(), saveat = t_stops, abstol = 1e-14, reltol = 1e-14)
+        sol = solve(prob, Vern7(), saveat = t_stops, abstol = 1e-10, reltol = 1e-10)
         analytic_sol = [u0[1][2] * exp(-p[1][2] * t) for t in t_stops]
         @test sol[:X] ≈ analytic_sol
     end
@@ -44,12 +44,12 @@ let
         u0 = rnd_u0(known_equilibrium, rng; factor)    
         p = rnd_ps(known_equilibrium, rng; factor, min = 0.1)
         prob = ODEProblem(known_equilibrium, u0, (0.0, 100000.0), p)
-        sol = solve(prob, Vern7(); abstol = 1e-12, reltol = 1e-12)
+        sol = solve(prob, Rosenbrock23())
 
-        @test sol[:X1][end] / sol[:X2][end] ≈ prob.ps[:k2] / prob.ps[:k1] atol=1e-8
-        @test sol[:X3][end] * sol[:X4][end] / sol[:X5][end] ≈ prob.ps[:k4] / prob.ps[:k3] atol=1e-8
-        @test (sol[:X6][end]^2 / factorial(2)) / (sol[:X7][end]^3 / factorial(3)) ≈ prob.ps[:k6] / prob.ps[:k5] atol=1e-8
-        @test sol[:X8][end] ≈ prob.ps[:k7] / prob.ps[:k8] atol=1e-8
+        @test sol[:X1][end] / sol[:X2][end] ≈ prob.ps[:k2] / prob.ps[:k1]
+        @test sol[:X3][end] * sol[:X4][end] / sol[:X5][end] ≈ prob.ps[:k4] / prob.ps[:k3]
+        @test (sol[:X6][end]^2 / factorial(2)) / (sol[:X7][end]^3 / factorial(3)) ≈ prob.ps[:k6] / prob.ps[:k5]
+        @test sol[:X8][end] ≈ prob.ps[:k7] / prob.ps[:k8]
     end
 end
 
