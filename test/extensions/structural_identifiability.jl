@@ -211,6 +211,7 @@ let
         (k3, k4), X3 <--> X4
     end
     @named rs_catalyst = compose(rs1, [rs2])
+    rs_catalyst = complete(rs_catalyst)
     @unpack X1, X2, k1, k2 = rs1
     gi_1 = assess_identifiability(rs_catalyst; measured_quantities=[X1, X2, rs2.X3], known_p=[k1])
     li_1 = assess_local_identifiability(rs_catalyst; measured_quantities=[X1, X2, rs2.X3], known_p=[k1])
