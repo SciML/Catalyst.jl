@@ -157,7 +157,7 @@ end
 function make_osys(rs::ReactionSystem; remove_conserved=true)
     # Creates the ODESystem corresponding to the ReactionSystem (expanding functions and flattening it).
     # Creates a list of the systems all symbols (unknowns and parameters).
-    iscomplete(rs) || error(COMPLETENESS_ERROR)
+    ModelingToolkit.iscomplete(rs) || error("Identifiability should only be computed for complete systems. A ReactionSystem can be marked as complete using the `complete` function.")
     rs = Catalyst.expand_registered_functions(flatten(rs))
     osys = complete(convert(ODESystem, rs; remove_conserved))
     vars = [unknowns(rs); parameters(rs)]
