@@ -187,7 +187,7 @@ let
         (p, d), 0 <--> X
     end
     u0_guess = [:X => 1.0]
-    p_start = [p => 1.0, d => 0.2]
+    p_start = [:p => 1.0, :d => 0.2]
     
     # Computes bifurcation diagram.
     @test_throws Exception BifurcationProblem(incomplete_network, u0_guess, p_start, :p)

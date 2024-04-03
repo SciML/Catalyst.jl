@@ -115,7 +115,7 @@ let
     incomplete_network = @network_component begin
         (p, d), 0 <--> X
     end
-    p_start = [p => 1.0, d => 0.2]
+    p_start = [:p => 1.0, :d => 0.2]
     
     # Computes bifurcation diagram.
     @test_throws Exception hc_steady_states(incomplete_network, p_start)
