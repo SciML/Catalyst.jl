@@ -1,25 +1,27 @@
 #! format: off
 
-### Fetch Packages, Reaction Networks, Declare Global Variables ###
+### Prepares Tests ###
 
 # Fetch packages.
 using Catalyst, Test
 using ModelingToolkit: get_ps, get_unknowns, get_eqs, get_systems, get_iv, getname, nameof
-t = default_t()
 
-# Sets rnd number.
+# Sets stable rng number.
 using StableRNGs
 rng = StableRNG(12345)
+
+# Sets the default `t` to use.
+t = default_t()
 
 # Fetch test networks.
 include("../test_networks.jl")
 
-# Test Function
+# Declares a helper function.
 function unpacksys(sys)
     get_eqs(sys), get_iv(sys), get_ps(sys), nameof(sys), get_systems(sys)
 end
 
-### Run Tests ###
+### Basic Tests ###
 
 # Tests construction of empty reaction networks.
 let
@@ -47,8 +49,10 @@ let
 end
 
 # Tests accessing parameters and species added with network API.
+# Should probably be removed if we remove mutating stuff?
 let
-    empty_network_3 = @reaction_network
+    empty_network_3 = @network_component begin
+    end
     @parameters p
     @species x(t)
     addspecies!(empty_network_3, x)
@@ -79,6 +83,7 @@ let
 end
 
 # Compares test network to identical network constructed via @add_reactions.
+# @add_reactions is getting deprecated though?
 let
     identical_networks = Vector{Pair}()
 
@@ -223,10 +228,10 @@ let
     end
 
     for networks in identical_networks
-        f1 = ODEFunction(convert(ODESystem, networks[1]), jac = true)
-        f2 = ODEFunction(convert(ODESystem, networks[2]), jac = true)
-        g1 = SDEFunction(convert(SDESystem, networks[1]))
-        g2 = SDEFunction(convert(SDESystem, networks[2]))
+        f1 = ODEFunction(complete(convert(ODESystem, networks[1])), jac = true)
+        f2 = ODEFunction(complete(convert(ODESystem, networks[2])), jac = true)
+        g1 = SDEFunction(complete(convert(SDESystem, networks[1])))
+        g2 = SDEFunction(complete(convert(SDESystem, networks[2])))
         @test networks[1] == networks[2]
         for factor in [1e-2, 1e-1, 1e0, 1e1]
             u0 = factor * rand(rng, length(get_unknowns(networks[1])))

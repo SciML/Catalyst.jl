@@ -13,7 +13,7 @@ function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
 
     # Creates NonlinearSystem.
     Catalyst.conservationlaw_errorcheck(rs, vcat(ps, u0))
-    nsys = convert(NonlinearSystem, rs; remove_conserved=true, defaults=Dict(u0))
+    nsys = complete(convert(NonlinearSystem, rs; remove_conserved=true, defaults=Dict(u0)))
 
     # Makes BifurcationProblem (this call goes through the ModelingToolkit-based BifurcationKit extension).
     return BK.BifurcationProblem(nsys, u0_bif, ps, bif_par, args...; plot_var=plot_var,

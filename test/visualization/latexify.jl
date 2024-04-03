@@ -1,11 +1,15 @@
 #! format: off
 
-### Fetch Packages and Reaction Networks ###
-using Catalyst, Latexify
+### Preparations ###
+
+# Fetch packages.
+using Catalyst, Latexify, Test
+
+# Fetch test networks.
 include("../test_networks.jl")
 
 ############################
-### CURRENTLY NOT ACITVE ###
+### CURRENTLY NOT ACTIVE ###
 ### REQUIRES REWRITING   ###
 ############################
 
@@ -27,6 +31,8 @@ include("../test_networks.jl")
 
 ### Basic Tests ###
 
+# Tests functions on basic network (1).
+# Tests on network with special functions (hill etc.).
 let
     rn = @reaction_network begin
         hillr(X2,v1,K1,n1)*hill(X4,v1,K1,n1), ∅ → X1
@@ -105,6 +111,7 @@ let
     ", "\r\n"=>"\n")
 end
 
+# Tests basic functions on simple network (2).
 let
     rn = @reaction_network begin
         (hill(B, p_a, k, n), d_a), 0 ↔ A
@@ -131,50 +138,6 @@ let
     ", "\r\n"=>"\n")
 end
 
-# Test empty system.
-let
-    empty_rn = ReactionSystem(Reaction[]; name=:EmptySys)
-
-    # Latexify.@generate_test latexify(empty_rn)
-    @test latexify(empty_rn) == replace(
-    raw"ReactionSystem EmptySys has no reactions or equations.", "\r\n"=>"\n")
-end
-
-# Test for https://github.com/SciML/Catalyst.jl/issues/473.
-let
-    rn = @reaction_network begin
-        k*Y, Y --> ∅
-    end
-
-    # Latexify.@generate_test latexify(rn)
-    @test_broken latexify(rn) == replace(
-    raw"\begin{align*}
-    \varnothing &\xrightarrow{p} (m + n)\mathrm{X}  
-    \end{align*}
-    ", "\r\n"=>"\n")
-end
-
-
-# Test using various `env` options.
-let
-    rn = @reaction_network begin
-        (p,d), 0 <--> X
-    end
-    chem_latex = latexify(rn; env = :arrows)
-    @test chem_latex == latexify(rn; env = :chem)
-    @test chem_latex == latexify(rn; env = :chemical)
-    @test chem_latex == latexify(rn; env = :arrow)
-    @test_throws Exception latexify(rn; env = :wrong_env)
-end
-
-# Tests that the `mathrm` option affects the output.
-let
-    rn = @reaction_network begin
-        (k1,k2), 2X <--> X2
-    end
-    @test latexify(rn; mathrm = true) != latexify(rn; mathrm = false)
-end
-
 # Tests for system with parametric stoichiometry.
 let
     rn = @reaction_network begin
@@ -188,9 +151,9 @@ let
     ", "\r\n"=>"\n")
 end
 
-### Tests  `form` Option ###
+### Tests the `form` Option ###
 
-# Check for large number of networks.
+# Check option work for a large number of systems (and do not error).
 let
     for rn in reaction_networks_standard
         @test latexify(rn)==latexify(rn; form=:reactions)
@@ -226,10 +189,55 @@ let
     @test_throws ErrorException latexify(rn; form=:xxx)
 end
 
+### Other Tests ###
 
-### Checks Reaction Network - Equations Combination ###
-
+# Test using various `env` options.
 let
+    rn = @reaction_network begin
+        (p,d), 0 <--> X
+    end
+    chem_latex = latexify(rn; env = :arrows)
+    @test chem_latex == latexify(rn; env = :chem)
+    @test chem_latex == latexify(rn; env = :chemical)
+    @test chem_latex == latexify(rn; env = :arrow)
+    @test_throws Exception latexify(rn; env = :wrong_env)
+end
+
+# Tests that the `mathrm` option affects the output.
+let
+    rn = @reaction_network begin
+        (k1,k2), 2X <--> X2
+    end
+    @test latexify(rn; mathrm = true) != latexify(rn; mathrm = false)
+end
+
+# Test on an empty system.
+let
+    empty_rn = ReactionSystem(Reaction[]; name=:EmptySys)
+
+    # Latexify.@generate_test latexify(empty_rn)
+    @test latexify(empty_rn) == replace(
+    raw"ReactionSystem EmptySys has no reactions or equations.", "\r\n"=>"\n")
+end
+
+# Test for https://github.com/SciML/Catalyst.jl/issues/473.
+# (Error where there's an equation in the reaction rate)
+let
+    rn = @reaction_network begin
+        k*Y, Y --> ∅
+    end
+
+    # Latexify.@generate_test latexify(rn)
+    @test_broken latexify(rn) == replace(
+    raw"\begin{align*}
+    \varnothing &\xrightarrow{p} (m + n)\mathrm{X}  
+    \end{align*}
+    ", "\r\n"=>"\n")
+end
+
+# Checks when combined with equations (nonlinear system).
+let
+    t = default_t()
     base_network = @reaction_network begin
         k*r, X --> 0
     end

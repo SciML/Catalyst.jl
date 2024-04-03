@@ -1,7 +1,14 @@
+### Prepares Tests ###
+
+# Fetch packages.
 using Catalyst, Test
+
+# Sets the default `t` to use.
 t = default_t()
 
-#Check that balancing works.
+### Basic Tests ###
+
+# Functionality tests (a).
 let
     @parameters k
     @species H(t) O(t)
@@ -26,6 +33,7 @@ let
     @test isequal(brxs, brxs_macro)
 end
 
+# Functionality tests (a).
 let
     @parameters k
     @species C(t) H(t) O(t)
@@ -48,6 +56,9 @@ let
     brxs_macro = balance_reaction(rx_macro)
     @test isequal(brxs, brxs_macro)
 end
+
+
+### Test Across Various Reactions ###
 
 # @reaction k, H2O --> H2O
 let
@@ -351,7 +362,9 @@ let
     @test isequal(balanced_rx, first(brxs))
 end
 
-# Infinite solutions
+### Special Cases ###
+
+# Reaction with infinite solutions.
 let
     @species C(t) H(t) O(t)
     @compound CO ~ C + O
@@ -366,7 +379,7 @@ let
     @test length(brxs) == 2
 end
 
-# No way to balance
+# Reaction that cannot be balanced.
 let
     @species Fe(t) S(t) O(t) H(t) N(t)
 
@@ -382,7 +395,7 @@ let
     @test isempty(brxs)
 end
 
-# test errors on compounds of compounds
+# Test that balancing with compounds of compounds yields an error.
 let
     @species C(t) H(t) O(t)
     @compound CO ~ C + O
@@ -395,7 +408,7 @@ end
 
 # Checks that balancing work for a reaction from a reaction_network.
 let
-    rn = complete(@reaction_network begin
+    rn = @reaction_network begin
         @species C(t) H(t) O(t)
         @compounds begin
             O2 ~ 2O
@@ -404,7 +417,7 @@ let
             C6H12O6 ~ 6C + 12H + 6O
         end
         k, CO2 + H2O --> C6H12O6 + O2
-    end)
+    end
     
     brxs = balance_reaction(reactions(rn)[1])[1]
     

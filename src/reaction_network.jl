@@ -1,45 +1,4 @@
 ### Temporary deprecation warning - Eventually to be removed. ###
-deprication_message = """
-@reaction_network notation where parameters are declared after "end", e.g. like:
-
-```julia
-@reaction_network begin
-    p, 0 --> X
-    d, X --> 0
-end p d
-```
-
-has been deprecated in favor of a notation where the parameters are inferred, e.g:
-
-```julia
-@reaction_network begin
-    p, 0 --> X
-    d, X --> 0
-end
-```
-
-Parameters and species can be explicitly indicated using the @parameters and @species
-macros, e.g:
-
-```julia
-@reaction_network begin
-    @parameters p d
-    @species X(t)
-    p, 0 --> X
-    d, X --> 0
-end
-```
-"""
-macro reaction_network(name::Symbol, ex::Expr, parameters...)
-    error(deprication_message)
-end
-macro reaction_network(name::Expr, ex::Expr, parameters...)
-    error(deprication_message)
-end
-macro reaction_network(ex::Expr, parameters...)
-    error(deprication_message)
-end
-
 """
 Macro that inputs an expression corresponding to a reaction network and outputs
 a `ReactionNetwork` that can be used as input to generation of ODE, SDE, and
@@ -186,14 +145,16 @@ emptyrn = @reaction_network empty
 # an empty network with random generated name
 emptyrn = @reaction_network
 ```
+
+ReactionSystems generated through `@reaction_network` are complete.
 """
 macro reaction_network(name::Symbol, ex::Expr)
-    make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name))))
+    :(complete($(make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name)))))))
 end
 
-# allows @reaction_network $name begin ... to interpolate variables storing a name
+# Allows @reaction_network $name begin ... to interpolate variables storing a name.
 macro reaction_network(name::Expr, ex::Expr)
-    make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1]))))
+    :(complete($(make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1])))))))
 end
 
 macro reaction_network(ex::Expr)
@@ -201,20 +162,56 @@ macro reaction_network(ex::Expr)
 
     # no name but equations: @reaction_network begin ... end ...
     if ex.head == :block
-        make_reaction_system(ex)
+        :(complete($(make_reaction_system(ex))))
     else  # empty but has interpolated name: @reaction_network $name
+        networkname = :($(esc(ex.args[1])))
+        return Expr(:block, :(@parameters t),
+                    :(complete(ReactionSystem(Reaction[], t, [], []; name = $networkname))))
+    end
+end
+
+# Returns a empty network (with, or without, a declared name).
+macro reaction_network(name::Symbol = gensym(:ReactionSystem))
+    return Expr(:block, :(@parameters t),
+                :(complete(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name))))))
+end
+
+# Ideally, it would have been possible to combine the @reaction_network and @network_component macros.
+# However, this issue: https://github.com/JuliaLang/julia/issues/37691 causes problem with interpolations
+# if we make the @reaction_network macro call the @network_component macro.
+"""
+    @network_component
+
+As @reaction_network, but the output system is not complete.
+"""
+macro network_component(name::Symbol, ex::Expr)
+    make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name))))
+end
+
+# Allows @network_component $name begin ... to interpolate variables storing a name.
+macro network_component(name::Expr, ex::Expr)
+    make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1]))))
+end
+
+macro network_component(ex::Expr)
+    ex = MacroTools.striplines(ex)
+
+    # no name but equations: @network_component begin ... end ...
+    if ex.head == :block
+        make_reaction_system(ex)
+    else  # empty but has interpolated name: @network_component $name
         networkname = :($(esc(ex.args[1])))
         return Expr(:block, :(@parameters t),
                     :(ReactionSystem(Reaction[], t, [], []; name = $networkname)))
     end
 end
 
-#Returns a empty network (with, or without, a declared name)
-# @reaction_network name
-macro reaction_network(name::Symbol = gensym(:ReactionSystem))
+# Returns a empty network (with, or without, a declared name).
+macro network_component(name::Symbol = gensym(:ReactionSystem))
     return Expr(:block, :(@parameters t),
                 :(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name)))))
 end
+
 
 ### Macros used for manipulating, and successively builing up, reaction systems. ###
 @doc raw"""
@@ -362,9 +359,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Reads options.
     default_reaction_metadata = :([])
-    compound_expr, compound_species = read_compound_options(options)
     check_default_noise_scaling!(default_reaction_metadata, options)
-    default_reaction_metadata = expr_equal_vector_to_pairs(default_reaction_metadata)
+    compound_expr, compound_species = read_compound_options(options)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
@@ -480,7 +476,7 @@ end
 
 # When compound species are declared using the "@compound begin ... end" option, get a list of the compound species, and also the expression that crates them.
 function read_compound_options(opts)
-    # If the compound option is used retrive a list of compound species (need to be added to teh reaction system's species), and the option that creates them (used to declare them as compounds at the end).
+    # If the compound option is used retrive a list of compound species (need to be added to the reaction system's species), and the option that creates them (used to declare them as compounds at the end).
     if haskey(opts, :compounds)
         compound_expr = opts[:compounds]
         # Find compound species names, and append the independent variable.
@@ -601,7 +597,7 @@ function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(u
     for line in exprs
         # Reads core reaction information.
         arrow, rate, reaction, metadata = read_reaction_line(line)
-
+        
         # Checks the type of arrow used, and creates the corresponding reaction(s). Returns them in an array.
         if in(arrow, double_arrows)
             if typeof(rate) != Expr || rate.head != :tuple
@@ -772,7 +768,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
 
             # Adds the observable to the list of observable names.
             # This is required for filtering away so these are not added to the ReactionSystem's species list.
-            # Again, avoid this check if we have interpoalted teh variable.
+            # Again, avoid this check if we have interpoalted the variable.
             is_escaped_expr(obs_eq.args[2]) || push!(obs_syms.args, obs_name)
         end
 
@@ -810,7 +806,7 @@ function check_default_noise_scaling!(default_reaction_metadata, options)
         if (length(options[:default_noise_scaling].args) != 3) # Becasue of how expressions are, 3 is used.
             error("@default_noise_scaling should only have a single input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
         end
-        push!(default_reaction_metadata.args, :(noise_scaling=$(options[:default_noise_scaling].args[3])))
+        push!(default_reaction_metadata.args, :(:noise_scaling => $(options[:default_noise_scaling].args[3])))
     end
 end
 

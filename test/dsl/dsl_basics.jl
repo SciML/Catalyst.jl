@@ -2,11 +2,15 @@
 
 ### Fetch Packages and Set Global Variables ###
 
+# Fetch packages.
 using Catalyst, ModelingToolkit
+
+# Set creates the `t` independent variable.
 t = default_t()
 
 ### Naming Tests ###
 
+# Test that the correct name is generated.
 let
     @parameters k
     @species A(t)
@@ -63,6 +67,9 @@ end
 
 ### Test Interpolation Within the DSL ###
 
+# Tests basic interpolation cases.
+
+# Declares parameters and species used across the test.
 @parameters α k k1 k2
 @species A(t) B(t) C(t) D(t)
 
@@ -110,7 +117,8 @@ let
     @test rn == rn2
 end
 
-@testset "make_reaction_system can be called from another module" begin
+# Creates a reaction network using `eval` and internal function.
+let
     ex = quote
         (Ka, Depot --> Central)
         (CL / Vc, Central --> 0)
@@ -120,6 +128,7 @@ end
     @test eval(Catalyst.make_reaction_system(ex)) isa ReactionSystem
 end
 
+# Miscellaneous interpolation tests. Unsure what they do here (not related to DSL).
 let
     rx = @reaction k*h, A + 2*B --> 3*C + D
     @parameters k h
@@ -135,8 +144,8 @@ end
 
 ### Tests Reaction Metadata ###
 
-# Tests construction for various types of metadata.
-# Tests accessor functions.
+# Tests construction for various types of reaction metadata.
+# Tests reaction metadata accessor functions.
 let
     # Creates reactions directly.
     @variables t
@@ -252,7 +261,7 @@ let
     @test isequal(rn1,rn2)
 end
 
-### Other tests ###
+### Other Tests ###
 
 # Test floating point stoichiometry work.
 let
@@ -262,6 +271,7 @@ let
     rx2 = Reaction(2*k, [B], [D], [1], [2.5])
     rx3 = Reaction(2*k, [B], [D], [2.5], [2])
     @named mixedsys = ReactionSystem([rx1,rx2,rx3],t,[B,C,D],[k])
+    mixedsys = complete(mixedsys)
     osys = convert(ODESystem, mixedsys; combinatoric_ratelaws=false)
     rn = @reaction_network mixedsys begin
         @parameters k
@@ -272,7 +282,7 @@ let
     @test rn == mixedsys
 end
 
-# Test variables that appear only in rates and aren't ps
+# Test that variables that appear only in rates and aren't ps
 # are categorized as species.
 let
     rn = @reaction_network begin
@@ -303,16 +313,17 @@ let
     eq = D(B) ~ -B
     @named osys = ODESystem([eq], t)
     @named rn2 = extend(osys, rn2)
+    rn2 = complete(rn2)
     @test issetequal(unknowns(rn2), species(rn2))
     @test all(isspecies, species(rn))
     @test Catalyst.isbc(ModelingToolkit.value(B))
     @test Catalyst.isbc(ModelingToolkit.value(A)) == false
-    osys2 = convert(ODESystem, rn2)
+    osys2 = complete(convert(ODESystem, rn2))
     @test issetequal(unknowns(osys2), unknowns(rn2))
     @test length(equations(osys2)) == 2
 end
 
-# test @variables in DSL
+# Test @variables in DSL.
 let
     rn = @reaction_network tester begin
         @parameters k1
@@ -341,7 +352,7 @@ let
     end
 end
 
-# ivs test
+# Test ivs in DSL.
 let
     rn = @reaction_network ivstest begin
         @ivs s x
@@ -350,11 +361,13 @@ let
         @species A(s,x) B(s) C(x)
         k*k2*D, E*A +B --> F*C + C2
     end
+
     @parameters k k2
     @variables s x D(x) E(s) F(s,x)
     @species A(s,x) B(s) C(x) C2(s,x)
     rx = Reaction(k*k2*D, [A, B], [C, C2], [E, 1], [F, 1])
     @named ivstest = ReactionSystem([rx], s; spatial_ivs = [x])
+
     @test ivstest == rn
     @test issetequal(unknowns(rn), [D, E, F, A, B, C, C2])
     @test issetequal(species(rn), [A, B, C, C2])
@@ -362,7 +375,7 @@ let
     @test issetequal(Catalyst.get_sivs(rn), [x])
 end
 
-# array variables test
+# Array variables test.
 let
     rn = @reaction_network arrtest begin
         @parameters k[1:2] a

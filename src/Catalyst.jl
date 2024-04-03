@@ -33,7 +33,7 @@ import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_v
 # internal but needed ModelingToolkit functions
 import ModelingToolkit: check_variables,
                         check_parameters, _iszero, _merge, check_units,
-                        get_unit, check_equations
+                        get_unit, check_equations, iscomplete
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
@@ -48,8 +48,8 @@ end
 function default_t()
     return ModelingToolkit.t_nounits
 end
-const DEFAULT_t = default_t()
-const DEFAULT_IV_SYM = Symbol(DEFAULT_t)
+const DEFAULT_IV = default_t()
+const DEFAULT_IV_SYM = Symbol(DEFAULT_IV)
 export default_t, default_time_deriv
 
 # as used in Catlab
@@ -77,7 +77,7 @@ export ODEProblem,
 const ExprValues = Union{Expr, Symbol, Float64, Int, Bool}
 include("expression_utils.jl")
 include("reaction_network.jl")
-export @reaction_network, @add_reactions, @reaction, @species
+export @reaction_network, @network_component, @add_reactions, @reaction, @species
 
 # registers CRN specific functions using Symbolics.jl
 include("registered_functions.jl")

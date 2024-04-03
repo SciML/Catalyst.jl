@@ -205,7 +205,7 @@ end
 # Checks if a metadata input has an entry :only_use_rate => true
 function metadata_only_use_rate_check(metadata)
     only_use_rate_idx = findfirst(:only_use_rate == entry[1] for entry in metadata)
-    isnothing(only_use_rate_idx) && return true
+    isnothing(only_use_rate_idx) && return false
     return Bool(metadata[only_use_rate_idx][2])
 end
 
@@ -544,7 +544,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
     # inner constructor is considered private and may change between non-breaking releases.
     function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
                             name, systems, defaults, connection_type, nps, cls, cevs, devs,
-                            metadata = nothing, complete::Bool = false; checks::Bool = true)
+                            metadata = nothing, complete = false; checks::Bool = true)
                             
         # unit checks are for ODEs and Reactions only currently
         nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
@@ -609,7 +609,9 @@ function ReactionSystem(eqs, iv, unknowns, ps;
                         balanced_bc_check = true,
                         spatial_ivs = nothing,
                         continuous_events = nothing,
-                        discrete_events = nothing)
+                        discrete_events = nothing,
+                        metadata = nothing)
+                        
     name === nothing &&
         throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     sysnames = nameof.(systems)
@@ -678,7 +680,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
 
     ReactionSystem(eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
                    systems, defaults, connection_type, nps, combinatoric_ratelaws,
-                   ccallbacks, dcallbacks; checks = checks)
+                   ccallbacks, dcallbacks, metadata; checks = checks)
 end
 
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
@@ -1469,6 +1471,8 @@ function spatial_convert_err(rs::ReactionSystem, systype)
     isspatial(rs) && error("Conversion to $systype is not supported for spatial networks.")
 end
 
+COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be converted to other system types. A ReactionSystem can be marked as complete using the `complete` function."
+
 """
 ```julia
 Base.convert(::Type{<:ODESystem},rs::ReactionSystem)
@@ -1490,6 +1494,7 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
                       include_zero_odes = true, remove_conserved = false, checks = false,
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
+    iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, ODESystem)
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
@@ -1530,6 +1535,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
                       include_zero_odes = true, remove_conserved = false, checks = false,
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
+    iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
@@ -1571,6 +1577,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
                       include_zero_odes = true, checks = false, remove_conserved = false,
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
+    iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, SDESystem)
 
     flatrs = Catalyst.flatten(rs)
@@ -1620,6 +1627,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
                       remove_conserved = nothing, checks = false,
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       kwargs...)
+    iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, JumpSystem)
 
     (remove_conserved !== nothing) &&
@@ -1660,6 +1668,7 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
     pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
                    remove_conserved)
+    osys = complete(osys)
     return ODEProblem(osys, u0map, tspan, pmap, args...; check_length, kwargs...)
 end
 
@@ -1674,6 +1683,7 @@ function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
     pmap = symmap_to_varmap(rs, p)
     nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, include_zero_odes,
                     checks, remove_conserved)
+    nlsys = complete(nlsys)
     return NonlinearProblem(nlsys, u0map, pmap, args...; check_length, kwargs...)
 end
 
@@ -1688,6 +1698,7 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
     pmap = symmap_to_varmap(rs, p)
     sde_sys = convert(SDESystem, rs; name, combinatoric_ratelaws,
                       include_zero_odes, checks, remove_conserved)
+    sde_sys = complete(sde_sys)
     p_matrix = zeros(length(get_unknowns(sde_sys)), numreactions(rs))
     return SDEProblem(sde_sys, u0map, tspan, pmap, args...; check_length,
                       noise_rate_prototype = p_matrix, kwargs...)
@@ -1702,6 +1713,7 @@ function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks)
+    jsys = complete(jsys)
     return DiscreteProblem(jsys, u0map, tspan, pmap, args...; kwargs...)
 end
 
@@ -1711,6 +1723,7 @@ function JumpProcesses.JumpProblem(rs::ReactionSystem, prob, aggregator, args...
                                    combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                                    checks = false, kwargs...)
     jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks)
+    jsys = complete(jsys)
     return JumpProblem(jsys, prob, aggregator, args...; kwargs...)
 end
 
@@ -1725,6 +1738,7 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
     pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
                    remove_conserved)
+    osys = complete(osys)
     return SteadyStateProblem(osys, u0map, pmap, args...; check_length, kwargs...)
 end
 

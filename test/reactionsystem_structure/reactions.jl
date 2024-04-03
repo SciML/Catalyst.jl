@@ -74,7 +74,7 @@ let
     @test isequal(Catalyst.getmetadata(r, :md_6), (0.1, 2.0))
 end
 
-# Noise scaling metadata.
+# Tests the noise scaling metadata.
 let
     @variables t
     @parameters k η  
@@ -85,6 +85,8 @@ let
     r1 = Reaction(k, [X], [X2], [2], [1])
     r2 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
 
-    @test isequal(Catalyst.get_noise_scaling(r1), 1.0)
+    @test !Catalyst.has_noise_scaling(r1)
+    @test Catalyst.has_noise_scaling(r2)
+    @test_throws Exception Catalyst.get_noise_scaling(r1)
     @test isequal(Catalyst.get_noise_scaling(r2), η)
 end

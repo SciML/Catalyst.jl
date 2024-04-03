@@ -1,15 +1,18 @@
-### Fetch Packages ###
+### Prepares Tests ###
+
+# Fetch packages.
 using BifurcationKit, Catalyst, Test
 
-# Sets rnd number.
+# Sets stable rng number.
 using StableRNGs
 rng = StableRNG(12345)
 
-### Run Tests ###
+
+### Basic Tests ###
 
 # Brusselator extended with conserved species.
 # Runs full computation, checks values corresponds to known values.
-# Checks that teh correct bifurcation point is found at the correct position.
+# Checks that the correct bifurcation point is found at the correct position.
 # Checks that bifurcation diagrams can be computed for systems with conservation laws.
 # Checks that bifurcation diagrams can be computed for systems with default values.
 # Checks that bifurcation diagrams can be computed for systems with non-constant rate.
@@ -85,24 +88,25 @@ end
 # Creates a system where rn is composed of 4, somewhat nested, networks.
 # Tests with defaults within nested networks.
 let
-    rn1 = @reaction_network rn1 begin
+    rn1 = @network_component rn1 begin
         @parameters p=1.0
         (p, d), 0 <--> X
     end
-    rn2 = @reaction_network rn2 begin
+    rn2 = @network_component rn2 begin
         @parameters p=2.0
         (p, d), 0 <--> X
     end
-    rn3 = @reaction_network rn3 begin
+    rn3 = @network_component rn3 begin
         @parameters p=3.0
         (p, d), 0 <--> X
     end
-    rn4 = @reaction_network rn4 begin
+    rn4 = @network_component rn4 begin
         @parameters p=4.0
         (p, d), 0 <--> X
     end
-    @named rn3 =compose(rn3, [rn4])
+    @named rn3 = compose(rn3, [rn4])
     @named rn = compose(rn1, [rn2, rn3])
+    rn = complete(rn)
 
     # Declares parameter values and initial u guess.
     @unpack X, d = rn
@@ -143,13 +147,14 @@ end
 # Tests for nested model with conservation laws.
 let
     # Creates model.
-    rn1 = @reaction_network rn1 begin
+    rn1 = @network_component rn1 begin
         (k1, k2), X1 <--> X2
     end
-    rn2 = @reaction_network rn2 begin
+    rn2 = @network_component rn2 begin
         (l1, l2), Y1 <--> Y2
     end
     @named rn = compose(rn1, [rn2])
+    rn = complete(rn)
 
     # Creates input parameter and species vectors.
     @unpack X1, X2, k1, k2 = rn1
@@ -170,4 +175,20 @@ let
 
     # Checks that there is an error if information for conserved quantities computation is not provided.
     @test_throws Exception bprob = BifurcationProblem(rn, u_guess, p_start, k1; plot_var = X1)
+end
+
+
+### Other Tests ###
+
+# Checks that `BifurcationProblem`s cannot be generated from non-complete `ReactionSystems`s.
+let 
+    # Create model.
+    incomplete_network = @network_component begin
+        (p, d), 0 <--> X
+    end
+    u0_guess = [:X => 1.0]
+    p_start = [:p => 1.0, :d => 0.2]
+    
+    # Computes bifurcation diagram.
+    @test_throws Exception BifurcationProblem(incomplete_network, u0_guess, p_start, :p)
 end

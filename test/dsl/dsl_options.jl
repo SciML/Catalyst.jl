@@ -1,10 +1,14 @@
 #! format: off
 
-### Fetch Packages and Set Global Variables ###
-using Catalyst, ModelingToolkit, OrdinaryDiffEq, Plots
+### Prepares Tests ###
+
+# Fetch packages.
+using Catalyst, ModelingToolkit, OrdinaryDiffEq, Plots, Test
+
+# Sets the default `t` to use.
 t = default_t()
 
-### Run Tests ###
+### Tests `@parameters` and `@species` Options ###
 
 # Test creating networks with/without options.
 let
@@ -104,7 +108,7 @@ let
     @test all(==(n1), (n2, n3, n4, n5, n6, n7, n8, n9, n10))
 end
 
-# Tests that when either @species or @parameters is given, the other is infered properly.
+# Tests that when either @species or @parameters is given, the other is inferred properly.
 let
     rn1 = @reaction_network begin
         k*X, A + B --> 0
@@ -220,7 +224,7 @@ let
     @test issetequal(parameters(rn11), @parameters k1 k2 X2)
 end
 
-##Checks that some created networks are identical.
+# Checks that some created networks are identical.
 let
     rn12 = @reaction_network rnname begin (k1, k2), A <--> B end
     rn13 = @reaction_network rnname begin
@@ -412,6 +416,7 @@ let
     r7 = Reaction(d, [x2y], nothing, [1], nothing)
     obs_eqs = [X ~ x + 2x2y, Y ~ y + x2y]
     @named rn_prog = ReactionSystem([r1, r2, r3, r4, r5, r6, r7], t, [x, y, x2y], [k, kB, kD, d]; observed = obs_eqs)
+    rn_prog = complete(rn_prog)
 
     # Make simulations.
     u0 = [x => 1.0, y => 0.5, x2y => 0.0]

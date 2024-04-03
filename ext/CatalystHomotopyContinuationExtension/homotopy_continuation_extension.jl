@@ -45,7 +45,7 @@ end
 # For a given reaction system, parameter values, and initial conditions, find the polynomial that HC solves to find steady states.
 function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     rs = Catalyst.expand_registered_functions(rs)
-    ns = convert(NonlinearSystem, rs; remove_conserved = true)
+    ns = complete(convert(NonlinearSystem, rs; remove_conserved = true))
     pre_varmap = [symmap_to_varmap(rs,u0)..., symmap_to_varmap(rs,ps)...]
     Catalyst.conservationlaw_errorcheck(rs, pre_varmap)
     p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns); defaults = ModelingToolkit.defaults(ns))
