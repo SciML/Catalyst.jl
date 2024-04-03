@@ -109,9 +109,9 @@ let
     function sdenoise(u, p, t)
         k,α = p
         A,B,C,D = u
-        n = Int64(2 * α^2)
-        rl = sqrt(t * k / factorial(Int64(n)) * A^n)
-        rl2 = sqrt(A^α * B^2 / (2 * factorial(Int64(α))))
+        n = 2 * α^2
+        rl = sqrt(t * k / factorial(n) * A^n)
+        rl2 = sqrt(A^α * B^2 / (2 * factorial(α)))
 
         du = zeros(4,2)
         du = [-n*rl (-α*rl2);
