@@ -54,7 +54,7 @@ begin
     u0_1 = [A => 3.0, B => 2.0, C => 3.0, D => 5.0]
     ps_1 = [k => 5.0, α => 2.0]
     u0_2 = [Int64(u[2]) for u in u0_1]
-    ps_2 = [Int64(p[2]) for p in ps_1]
+    ps_2 = Tuple(p[2] for p in ps_1)
     τ = 1.5
 
     # Creates `ReactionSystem` model.
