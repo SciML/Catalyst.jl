@@ -76,8 +76,8 @@ let
         k,α = p
         A,B,C,D = u
         n = 2 * α^2
-        rl = t * k / factorial(Int64(n)) * A^n
-        rl2 = A^α * B^2 / (2 * factorial(Int64(α)))
+        rl = t * k / factorial(n) * A^n
+        rl2 = A^α * B^2 / (2 * factorial(α))
 
         du = zeros(4)
         du[1] = -n * rl - α * rl2
@@ -112,9 +112,9 @@ let
     function sdenoise(u, p, t)
         k,α = p
         A,B,C,D = u
-        n = Int64(2 * α^2)
-        rl = sqrt(t * k / factorial(Int64(n)) * A^n)
-        rl2 = sqrt(A^α * B^2 / (2 * factorial(Int64(α))))
+        n = 2 * α^2
+        rl = sqrt(t * k / factorial(n) * A^n)
+        rl2 = sqrt(A^α * B^2 / (2 * factorial(α)))
 
         du = zeros(4,2)
         du = [-n*rl (-α*rl2);
@@ -149,7 +149,7 @@ let
     function r1(u, p, t)
         k, α = p
         A = u[1]
-        t * k * binomial(Int64(A), Int64(2 * α^2))
+        t * k * binomial(A, 2 * α^2)
     end
     function affect1!(integrator)
         k, α = integrator.p
