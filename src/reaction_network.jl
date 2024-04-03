@@ -879,13 +879,13 @@ function read_events_option(options, event_type::Symbol)
     for arg in events_input.args
         # Formatting error checks.
         # NOTE: Maybe we should move these deeper into the system (rather than the DSL), throwing errors more generally?
-        if (arg.head != :call) || (arg.args[1] != :(=>)) || length(arg.args) != 3
+        if (arg isa Expr) && (arg.head != :call) || (arg.args[1] != :(=>)) || length(arg.args) != 3
             error("Events should be on form `condition => affect`, separated by a `=>`. This appears not to be the case for: $(arg).")
         end
-        if (arg.args[2] != :call) && (event_type == :continuous_events)
+        if (arg isa Expr) && (arg.args[2] isa Expr) && (arg.args[2].head != :vect) && (event_type == :continuous_events)
             error("The condition part of continious events (the left-hand side) must be a vector. This is not the case for: $(arg).")
         end
-        if arg.args[3] != :call
+        if (arg isa Expr) && (arg.args[3] isa Expr) && (arg.args[3].head != :vect)
              error("The affect part of all events (the righ-hand side) must be a vector. This is not the case for: $(arg).")
         end
 

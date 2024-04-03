@@ -37,11 +37,15 @@ import ModelingToolkit: check_variables,
                         check_parameters, _iszero, _merge, check_units,
                         get_unit, check_equations, iscomplete
 
+# Event-related MTK stuff.
+import ModelingToolkit: PresetTimeCallback
+
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
 import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
+import Symbolics: occursin, wrap
 
 # globals for the modulate
 function default_time_deriv()
@@ -88,7 +92,6 @@ export mm, mmr, hill, hillr, hillar
 # functions to query network properties
 include("networkapi.jl")
 export species, nonspecies, reactionparams, reactions, speciesmap, paramsmap
-export has_diff_equations, diff_equations, has_alg_equations, alg_equations
 export numspecies, numreactions, numreactionparams, setdefaults!, symmap_to_varmap
 export make_empty_network, addspecies!, addparam!, addreaction!, reactionparamsmap
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat

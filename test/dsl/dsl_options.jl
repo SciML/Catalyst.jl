@@ -3,8 +3,13 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, ModelingToolkit, OrdinaryDiffEq, Plots, Test
+using Catalyst, ModelingToolkit, OrdinaryDiffEq, StochasticDiffEq, Plots, Test
 using Symbolics: unwrap
+
+# Sets stable rng number.
+using StableRNGs
+rng = StableRNG(12345)
+seed = rand(rng, 1:100)
 
 # Sets the default `t` to use.
 t = default_t()
@@ -770,7 +775,7 @@ end
 
 # Checks hierarchical model.
 let 
-    base_rn = @reaction_network begin
+    base_rn = @network_component begin
         @variables V1(t)
         @equations begin
             X*3V1 ~ X - 2
@@ -779,7 +784,7 @@ let
     end
     @unpack X, V1, p, d = base_rn
 
-    internal_rn = @reaction_network begin
+    internal_rn = @network_component begin
         @variables V2(t)
         @equations begin
             X*4V2 ~ X - 3
@@ -787,7 +792,7 @@ let
         (p,d), 0 <--> X
     end
 
-    rn = compose(base_rn, [internal_rn])
+    rn = complete(compose(base_rn, [internal_rn]))
 
     u0 = [V1 => 1.0, X => 3.0, internal_rn.V2 => 2.0, internal_rn.X => 4.0]
     ps = [p => 1.0, d => 0.2, internal_rn.p => 2.0, internal_rn.d => 0.5]
@@ -877,7 +882,7 @@ let
         @discrete_events begin
             2.0 => [dX ~ dX + 0.1, dY ~ dY + dY_up]
             [1.0, 5.0] => [p ~ p - 0.1]
-            [Z > Y, Z > X] => [Z ~ Z - 0.1]
+            (Z > Y) => [Z ~ Z - 0.1]
         end
 
         (p, dX), 0 <--> X
@@ -901,9 +906,9 @@ let
     discrete_events = [
         2.0 => [dX ~ dX + 0.1, dY ~ dY + dY_up]
         [1.0, 5.0] => [p ~ p - 0.1]
-        [Z > Y, Z > X] => [Z ~ Z - 0.1]
+        (Z > Y) => [Z ~ Z - 0.1]
     ]
-    rn_prog = ReactionSystem([rx1, rx2, eq], t; continuous_events, discrete_events, name=:rn)
+    rn_prog = ReactionSystem(rxs, t; continuous_events, discrete_events, name=:rn)
 
     # Tests that approaches yield identical results.
     @test isequal(rn_dsl, rn_prog)
@@ -929,19 +934,19 @@ let
             [5.0, 10.0] => [X ~ X + 100.0]
         end
         @continuous_events begin
-            [X - 90.0] => [X ~ X + 10.0]
+            [X ~ 90.0] => [X ~ X + 10.0]
         end
         (p, d), 0 <--> X
     end
-    cb_disc = PresetTimeCallback([5.0, 10.0], int -> (int[:X] += 100.0))
+    cb_disc = ModelingToolkit.PresetTimeCallback([5.0, 10.0], int -> (int[:X] += 100.0))
     cb_cont = ContinuousCallback((u, t, int) -> (u[1] - 90.0), int -> (int[:X] += 10.0))
 
-    # Simulates models,.
+    # Simulates models.
     u0 = [:X => 100.0]
     tspan = (0.0, 50.0)
     ps = [:p => 100.0, :d => 1.0]
-    sol = solve(SDEProblem(rn, u0, tspan, ps), ImplicitEM();  seed = 1234, callback = CallbackSet(cb_disc, cb_cont))
-    sol_events = solve(SDEProblem(rn_events, u0, tspan, ps), ImplicitEM(); seed = 1234)
+    sol = solve(SDEProblem(rn, u0, tspan, ps), ImplicitEM();  seed, callback = CallbackSet(cb_disc, cb_cont))
+    sol_events = solve(SDEProblem(rn_events, u0, tspan, ps), ImplicitEM(); seed)
 
     @test sol == sol_events
 end

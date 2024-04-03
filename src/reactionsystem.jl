@@ -309,6 +309,12 @@ function isbcbalanced(rx::Reaction)
     true
 end
 
+### Reaction Acessor Functions ###
+
+# Overwrites functions in ModelingToolkit to give the correct input.
+is_diff_equation(rx::Reaction) = false
+is_alg_equation(rx::Reaction) = false
+
 ################################## Reaction Complexes ####################################
 
 """
@@ -1678,13 +1684,14 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
     pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
                    remove_conserved)
-    osys = complete(osys)
 
     # Handles potential Differential algebraic equations.
     if structural_simplify 
         (osys = MT.structural_simplify(osys))
-    # elseif has_alg_equations(rs)
-    #     error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
+    elseif has_alg_equations(rs)
+        error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
+    else
+        osys = complete(osys)
     end
     
     return ODEProblem(osys, u0map, tspan, pmap, args...; check_length, kwargs...)
