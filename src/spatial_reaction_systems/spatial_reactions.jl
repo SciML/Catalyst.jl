@@ -92,29 +92,38 @@ function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReacti
     end
 
     # Checks that the species does not exist in the system with different metadata.
-    if any([isequal(tr.species, s) && !isequivalent(tr.species, s) for s in species(rs)]) 
+    if any(isequal(tr.species, s) && !isequivalent(tr.species, s) for s in species(rs)) 
         error("A transport reaction used a species, $(tr.species), with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and used in transport reaction creation.")
     end
-    if any([isequal(rs_p, tr_p) && !isequivalent(rs_p, tr_p) 
-            for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate)]) 
+    if any(isequal(rs_p, tr_p) && !isequivalent(rs_p, tr_p) 
+            for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate)) 
         error("A transport reaction used a parameter with metadata not matching its lattice reaction system. Please fetch this parameter from the reaction system and used in transport reaction creation.")
     end
 
     # Checks that no edge parameter occur among rates of non-spatial reactions.
-    if any([!isempty(intersect(Symbolics.get_variables(r.rate), edge_parameters)) for r in reactions(rs)])
+    if any(!isempty(intersect(Symbolics.get_variables(r.rate), edge_parameters)) for r in reactions(rs))
         error("Edge paramter(s) were found as a rate of a non-spatial reaction.")
     end
 end
 
 # Since MTK's "isequal" ignores metadata, we have to use a special function that accounts for this.
 # This is important because whether something is an edge parameter is defined in metadata.
+const ep_metadata = [Catalyst.EdgeParameter => true]
 function isequivalent(sym1, sym2)
     isequal(sym1, sym2) || (return false)
-    (ignore_ep_metadata(sym1.metadata) != ignore_ep_metadata(sym2.metadata)) && (return false)
+    in_skip_ep_metadata(md1, md2) || (return false)
+    in_skip_ep_metadata(md2, md1) || (return false)
     (typeof(sym1) != typeof(sym2)) && (return false)
     return true
 end
-ignore_ep_metadata(metadata) = setdiff(metadata, [Catalyst.EdgeParameter => true])
+# Checks if metadata 1 is in metadata 2 (but always return true if md1 is the edge parameter metadata.
+function in_skip_ep_metadata(md1, md2)
+    (md1 == ep_metadata) && (return true)
+    for md1 in sym1.metadata
+        (md1 in md2) || return false
+    end
+    return true
+end
 
 # Implements custom `==`.
 """

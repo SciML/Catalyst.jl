@@ -19,7 +19,7 @@ include("../test_functions.jl")
 
 # Checks that systems with symbolic stoichiometries, created using different approaches, are identical.
 let 
-    @parameters p k d n1 n2 n3
+    @parameters p k d::Float64 n1::Int64 n2 n3
     @species X(t) Y(t)
     rxs1 = [
         Reaction(p, nothing, [X], nothing, [n1])
@@ -29,13 +29,14 @@ let
     rs1 = ReactionSystem(rxs1, t; name = :rs)
 
     rxs2 = [
-        @reaction p, 0 --> n1*X
+        @reaction p, 0 --> $n1*X
         @reaction k, n2*X --> n3*Y
-        @reaction d, Y --> 0
+        @reaction $d, Y --> 0
     ]
     rs2 = ReactionSystem(rxs2, t; name = :rs)
 
     rs3 = @reaction_network rs begin
+        @parameters d::Float64 n1::Int64
         p, 0 --> n1*X
         k, n2*X --> n3*Y
         d, Y --> 0
@@ -44,6 +45,8 @@ let
     @test rs1 == rs2 == rs3
     @test issetequal(unknowns(rs1), [X, Y])
     @test issetequal(parameters(rs1), [p, k, d, n1, n2, n3])
+    @test unwrap(d) isa SymbolicUtils.BasicSymbolic{Float64}
+    @test unwrap(n1) isa SymbolicUtils.BasicSymbolic{Int64}
 end
 
 # Declares a network, parameter values, and initial conditions, to be used for the next couple of tests.
@@ -51,8 +54,8 @@ begin
     # Prepares parameters and species and their values.
     @parameters k α::Int64
     @species A(t), B(t), C(t), D(t)
-    u0_1 = [A => 3.0, B => 2.0, C => 3.0, D => 5.0]
-    ps_1 = [k => 5.0, α => 2.0]
+    u0_1 = (A => 3.0, B => 2.0, C => 3.0, D => 5.0)
+    ps_1 = (k => 5.0, α => 2)
     u0_2 = [Int64(u[2]) for u in u0_1]
     ps_2 = [Int64(p[2]) for p in ps_1]
     τ = 1.5

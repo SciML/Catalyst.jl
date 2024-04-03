@@ -347,6 +347,7 @@ end
 
 # Tests that parameter type designation works.
 let
+    # Creates a model.
     rn = @reaction_network begin
         @parameters begin
             k1
@@ -366,7 +367,8 @@ let
         (k4,l4), X4 <--> Y4
         (k5,l5), X5 <--> Y5
     end
-    
+
+    # Checks parameter types.
     @test unwrap(rn.k1) isa SymbolicUtils.BasicSymbolic{Real}
     @test unwrap(rn.l1) isa SymbolicUtils.BasicSymbolic{Real}
     @test unwrap(rn.k2) isa SymbolicUtils.BasicSymbolic{Float64}
@@ -377,6 +379,14 @@ let
     @test unwrap(rn.l4) isa SymbolicUtils.BasicSymbolic{Float32}
     @test unwrap(rn.k5) isa SymbolicUtils.BasicSymbolic{Rational{Int64}}
     @test unwrap(rn.l5) isa SymbolicUtils.BasicSymbolic{Rational{Int64}}
+
+    # Checks that other parameter properties are assigned properly.
+    @test !ModelingToolkit.hasdefault(unwrap(rn.k1))
+    @test ModelingToolkit.getdefault(unwrap(rn.k2)) == 2.0
+    @test ModelingToolkit.getdefault(unwrap(rn.k3)) == 2
+    @test ModelingToolkit.getdescription(unwrap(rn.k3)) == "A parameter"
+    @test ModelingToolkit.getdescription(unwrap(rn.k4)) == "Another parameter"
+    @test !ModelingToolkit.hasdescription(unwrap(rn.k5))
 end
 
 ### Observables ###
