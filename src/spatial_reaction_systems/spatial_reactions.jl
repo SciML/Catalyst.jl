@@ -108,20 +108,12 @@ end
 
 # Since MTK's "isequal" ignores metadata, we have to use a special function that accounts for this.
 # This is important because whether something is an edge parameter is defined in metadata.
-const ep_metadata = [Catalyst.EdgeParameter => true]
+const ep_metadata = Catalyst.EdgeParameter => true
 function isequivalent(sym1, sym2)
     isequal(sym1, sym2) || (return false)
-    in_skip_ep_metadata(md1, md2) || (return false)
-    in_skip_ep_metadata(md2, md1) || (return false)
+    any((md1 != ep_metadata) && !(md1 in sym2.metadata) for md1 in sym1.metadata) && (return false)
+    any((md2 != ep_metadata) && !(md2 in sym1.metadata) for md2 in sym2.metadata) && (return false)
     (typeof(sym1) != typeof(sym2)) && (return false)
-    return true
-end
-# Checks if metadata 1 is in metadata 2 (but always return true if md1 is the edge parameter metadata.
-function in_skip_ep_metadata(md1, md2)
-    (md1 == ep_metadata) && (return true)
-    for md1 in sym1.metadata
-        (md1 in md2) || return false
-    end
     return true
 end
 
