@@ -146,7 +146,7 @@ let
     function r1(u, p, t)
         k, α = p
         A = u[1]
-        t * k * binomial(Int64(A), Int64(2 * α^2))
+        t * k * binomial(A, 2 * α^2)
     end
     function affect1!(integrator)
         k, α = integrator.p
