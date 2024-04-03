@@ -1614,7 +1614,7 @@ function validate(rs::ReactionSystem, info::String = "")
 
     # no units for species, time or parameters then assume validated
     if (specunits in (MT.unitless, nothing)) && (timeunits in (MT.unitless, nothing))
-        all(u == 1.0 for u in ModelingToolkit.get_unit(get_ps(rs))) || return true
+        all(u == 1.0 for u in ModelingToolkit.get_unit(get_ps(rs))) && return true
     end
     
     rateunits = specunits / timeunits
