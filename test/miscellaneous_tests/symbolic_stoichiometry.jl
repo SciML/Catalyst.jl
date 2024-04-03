@@ -278,8 +278,8 @@ let
     # Jumps. First ensemble problems for each systems is created.
     dprob = DiscreteProblem(sir, u0, tspan, ps) 
     dprob_ref = DiscreteProblem(sir_ref, u0, tspan, ps_ref) 
-    jprob = JumpProblem(sir, dprob, Direct(), save_positions = (false, false)) 
-    jprob_ref = JumpProblem(sir_ref, dprob_ref, Direct(), save_positions = (false, false)) 
+    jprob = JumpProblem(sir, dprob, Direct(); rng, save_positions = (false, false)) 
+    jprob_ref = JumpProblem(sir_ref, dprob_ref, Direct(); rng, save_positions = (false, false)) 
     eprob = EnsembleProblem(jprob)
     eprob_ref = EnsembleProblem(jprob_ref)
 
