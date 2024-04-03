@@ -73,8 +73,8 @@ let
         k,α = p
         A,B,C,D = u
         n = 2 * α^2
-        rl = t * k / factorial(Int64(n)) * A^n
-        rl2 = A^α * B^2 / (2 * factorial(Int64(α)))
+        rl = t * k / factorial(n) * A^n
+        rl2 = A^α * B^2 / (2 * factorial(α))
 
         du = zeros(4)
         du[1] = -n * rl - α * rl2
