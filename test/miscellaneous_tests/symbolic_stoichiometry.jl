@@ -57,7 +57,7 @@ begin
     u0_1 = (A => 3.0, B => 2.0, C => 3.0, D => 5.0)
     ps_1 = (k => 5.0, α => 2)
     u0_2 = [Int64(u[2]) for u in u0_1]
-    ps_2 = Tuple(p[2] for p in ps_1)
+    ps_2 = [p[2] for p in ps_1]
     τ = 1.5
 
     # Creates `ReactionSystem` model.
@@ -247,4 +247,47 @@ let
     jprob_int = JumpProblem(rs_int, dprob_int, Direct(); rng)
     jprob_int_ref = JumpProblem(rs_ref_int, dprob_int_ref, Direct(); rng)
     @test solve(jprob_int, SSAStepper(); seed) == solve(jprob_int_ref, SSAStepper(); seed)
+end
+
+# Check that jump simulations (implemented with and without symbolic stoichiometries) yield simulations
+# with identical mean number of species at the end of the simulations.
+# Also checks that ODE simulations are identical.
+let
+    # Creates the models.
+    sir = @reaction_network begin
+        @parameters n::Int64 k::Int64
+        i, S + n*I --> k*I
+        r, n*I --> n*R
+    end      
+    sir_ref = @reaction_network begin
+        i, S + I --> 2I
+        r, I --> R
+    end  
+
+    ps = [:i => 1e-4, :r => 1e-2, :n => 1.0, :k => 2.0]
+    ps_ref = [:i => 1e-4, :r => 1e-2]
+    tspan = (0.0, 250.0) # tspan[2] is selected so that it is in the middle of the outbreak peak.
+    u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
+    @test issetequal(unknowns(sir), unknowns(sir_ref))
+
+    # Checks that ODE simulations are identical.
+    oprob = ODEProblem(sir, u0, tspan, ps)
+    oprob_ref = ODEProblem(sir_ref, u0, tspan, ps_ref)
+    @test solve(oprob, Tsit5()) ≈ solve(oprob_ref, Tsit5())
+
+    # Jumps. First ensemble problems for each systems is created.
+    dprob = DiscreteProblem(sir, u0, tspan, ps) 
+    dprob_ref = DiscreteProblem(sir_ref, u0, tspan, ps_ref) 
+    jprob = JumpProblem(sir, dprob, Direct(), save_positions = (false, false)) 
+    jprob_ref = JumpProblem(sir_ref, dprob_ref, Direct(), save_positions = (false, false)) 
+    eprob = EnsembleProblem(jprob)
+    eprob_ref = EnsembleProblem(jprob_ref)
+
+    # Simulates both ensemble problems. Checks that the distribution of values at the simulation ends is similar.
+    sols = solve(eprob, SSAStepper(); trajectories = 100000)
+    sols_ref = solve(eprob_ref, SSAStepper(); trajectories = 100000)
+    end_vals = [[sol[s][end] for sol in sols.u] for s in species(sir)]
+    end_vals_ref = [[sol[s][end] for sol in sols_ref.u] for s in species(sir_ref)]
+    @test mean.(end_vals_ref) ≈ mean.(end_vals) atol=1e-2 rtol = 1e-2
+    @test var.(end_vals_ref) ≈ var.(end_vals) atol=1e-2 rtol = 1e-2
 end

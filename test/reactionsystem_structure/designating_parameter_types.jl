@@ -69,6 +69,7 @@ let
 end
 
 # Test that the various structures stores the parameters using the correct type.
+# Test that the various structures stores the parameters using the correct type.
 let
     # Creates problems, integrators, and solutions.
     oprob = ODEProblem(rs, u0, (0.0, 1.0), p_alts[1])
@@ -87,8 +88,9 @@ let
     jsol = solve(jprob, SSAStepper(); seed)
     nsol = solve(nprob, NewtonRaphson())
 
-    # Checks the types of all stored parameter values.
+    # Checks all stored parameters.
     for mtk_struct in [oprob, sprob, dprob, jprob, nprob, oinit, sinit, jinit, osol, ssol, jsol, nsol]
+        # Checks that all parameters have the correct type.
         @test unwrap(mtk_struct.ps[p1]) isa Float64
         @test unwrap(mtk_struct.ps[d1]) isa Float64
         @test unwrap(mtk_struct.ps[p2]) isa Float64
@@ -99,6 +101,35 @@ let
         @test unwrap(mtk_struct.ps[d4]) isa Rational{Int64}
         @test unwrap(mtk_struct.ps[p5]) isa Rational{Int64}
         @test unwrap(mtk_struct.ps[d5]) isa Float32
+
+        # Checks that all parameters have the correct value.
+        @test unwrap(mtk_struct.ps[p1]) == 1.0
+        @test unwrap(mtk_struct.ps[d1]) == 1.0
+        @test unwrap(mtk_struct.ps[p2]) == 1.2
+        @test unwrap(mtk_struct.ps[d2]) == 1.2
+        @test unwrap(mtk_struct.ps[p3]) == 2
+        @test unwrap(mtk_struct.ps[d3]) == 2
+        @test unwrap(mtk_struct.ps[p4]) == Float32(0.5)
+        @test unwrap(mtk_struct.ps[d4]) == 1//2
+        @test unwrap(mtk_struct.ps[p5]) == 3//2
+        @test unwrap(mtk_struct.ps[d5]) == Float32(1.5)
+    end
+    
+    # Checks all stored variables
+    for mtk_struct in [oprob, sprob, dprob, jprob, nprob, oinit, sinit, jinit]
+        # Checks that all variables have the correct type.
+        @test unwrap(mtk_struct[X1]) isa Float64
+        @test unwrap(mtk_struct[X2]) isa Float64
+        @test unwrap(mtk_struct[X3]) isa Float64
+        @test unwrap(mtk_struct[X4]) isa Float64
+        @test unwrap(mtk_struct[X5]) isa Float64
+
+        # Checks that all variables have the correct value.
+        @test unwrap(mtk_struct[X1]) == 0.1
+        @test unwrap(mtk_struct[X2]) == 0.2
+        @test unwrap(mtk_struct[X3]) == 0.3
+        @test unwrap(mtk_struct[X4]) == 0.4
+        @test unwrap(mtk_struct[X5]) == 0.5
     end
 
     # Indexing currently broken for NonlinearSystem integrators (MTK intend to support this though).
