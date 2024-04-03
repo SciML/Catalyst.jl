@@ -7,7 +7,8 @@ using BifurcationKit, Catalyst, Test
 using StableRNGs
 rng = StableRNG(12345)
 
-### Run Tests ###
+
+### Basic Tests ###
 
 # Brusselator extended with conserved species.
 # Runs full computation, checks values corresponds to known values.
@@ -174,4 +175,20 @@ let
 
     # Checks that there is an error if information for conserved quantities computation is not provided.
     @test_throws Exception bprob = BifurcationProblem(rn, u_guess, p_start, k1; plot_var = X1)
+end
+
+
+### Other Tests ###
+
+# Checks that `BifurcationProblem`s cannot be generated from non-complete `ReactionSystems`s.
+let 
+    # Create model.
+    incomplete_network = @network_component begin
+        (p, d), 0 <--> X
+    end
+    u0_guess = [:X => 1.0]
+    p_start = [p => 1.0, d => 0.2]
+    
+    # Computes bifurcation diagram.
+    @test_throws Exception BifurcationProblem(incomplete_network, u0_guess, p_start, :p)
 end

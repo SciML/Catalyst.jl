@@ -17,7 +17,7 @@ function sym_dict(dict_in)
 end
 
 
-### Run Tests ###
+### Basic Tests ###
 
 # Tests for Goodwin model (model with both global, local, and non identifiable components).
 # Tests for system using Catalyst function (in this case, Michaelis-Menten function)
@@ -306,4 +306,21 @@ let
         :x3 => :globally,
     )
     @test length(find_identifiable_functions(rs, measured_quantities = [:x3])) == 1
+end
+
+
+### Other Tests ###
+
+# Checks that identifiability functions cannot be applied to non-complete `ReactionSystems`s.
+let 
+    # Create model.
+    incomplete_network = @network_component begin
+        (p, d), 0 <--> X
+    end
+    measured_quantities = [:X]
+    
+    # Computes bifurcation diagram.
+    @test_throws Exception assess_identifiability(incomplete_network; measured_quantities)
+    @test_throws Exception assess_local_identifiability(incomplete_network; measured_quantities)
+    @test_throws Exception find_identifiable_functions(incomplete_network; measured_quantities)
 end

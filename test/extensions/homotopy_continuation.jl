@@ -7,7 +7,7 @@ import HomotopyContinuation
 # Fetch test functions.
 include("../test_functions.jl")
 
-### Run Tests ###
+### Basic Tests ###
 
 # Tests for network without conservation laws.
 # Tests for Symbol parameter input.
@@ -104,4 +104,19 @@ let
     end
 
     @test_throws Exception hc_steady_states(rs, [:v => 5.0, :K => 2.5, :n => 2.7, :d => 1.0]; show_progress=false)
+end
+
+
+### Other Tests ###
+
+# Checks that `hc_steady_states` cannot be applied to non-complete `ReactionSystems`s.
+let 
+    # Create model.
+    incomplete_network = @network_component begin
+        (p, d), 0 <--> X
+    end
+    p_start = [p => 1.0, d => 0.2]
+    
+    # Computes bifurcation diagram.
+    @test_throws Exception hc_steady_states(incomplete_network, p_start)
 end

@@ -138,8 +138,9 @@ let
 end
 
 # Tests `Equation`s.
+# Tests using non-default independent variable.
 let
-    @variables X(t) Y(t)
+    @variables T X(T) Y(T)
     @parameters K V N 
     
     eq1 = 0 ~ mm(X, V, K)

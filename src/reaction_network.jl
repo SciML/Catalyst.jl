@@ -148,9 +148,6 @@ emptyrn = @reaction_network
 
 ReactionSystems generated through `@reaction_network` are complete.
 """
-# macro reaction_network(args...)
-#     return :(complete(@network_component $(args... )))
-# end
 macro reaction_network(name::Symbol, ex::Expr)
     :(complete($(make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name)))))))
 end
@@ -179,6 +176,9 @@ macro reaction_network(name::Symbol = gensym(:ReactionSystem))
                 :(complete(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name))))))
 end
 
+# Ideally, it would have been possible to combine the @reaction_network and @network_component macros.
+# However, this issue: https://github.com/JuliaLang/julia/issues/37691 causes problem with interpolations
+# if we make the @reaction_network macro call the @network_component macro.
 """
     @network_component
 
