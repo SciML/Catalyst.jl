@@ -835,7 +835,7 @@ function read_equations_options(options, variables_declared)
     add_default_diff = false
     for eq in equations
         ((eq.head != :call) || (eq.args[1] != :~)) && error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")     
-        (eq.args[2] isa Symbol || eq.args[2].head != :call) && continue
+        (!(eq.args[2] isa Expr) || eq.args[2].head != :call) && continue
         if (eq.args[2].args[1] == :D) && (eq.args[2].args[2] isa Symbol) && (length(eq.args[2].args) == 2)
             diff_var = eq.args[2].args[2]
             in(diff_var, forbidden_symbols_error) && error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
@@ -854,7 +854,6 @@ function create_differential_expr(options, add_default_diff, used_syms)
     # If the default differential (D(...)) was used in equations, this is added to the expression.
     diffexpr = (haskey(options, :differentials) ? options[:differentials].args[3] : MacroTools.striplines(:(begin end)))
     diffexpr = option_block_form(diffexpr)
-    add_default_diff && push!(diffexpr.args, :(D = Differential($(DEFAULT_IV_SYM))))
 
     # Goes through all differentials, checking that they are correctly formatted and their symbol is not used elsewhere.
     for dexpr in diffexpr.args
@@ -863,7 +862,13 @@ function create_differential_expr(options, add_default_diff, used_syms)
         in(dexpr.args[1], used_syms) && error("Differential name ($(dexpr.args[1])) is also a species, variable, or parameter. This is ambigious and not allowed.")
         in(dexpr.args[1], forbidden_symbols_error) && error("A forbidden symbol ($(dexpr.args[1])) was used as a differential name.")
     end
-
+    
+    # If the default differential D has been used, but not pre-declared using the @differenitals
+    # options, add this declaration to the list of declared differentials.
+    if add_default_diff && !any(diff_dec.args[1] == :D for diff_dec in diffexpr.args) 
+        push!(diffexpr.args, :(D = Differential($(DEFAULT_IV_SYM))))
+    end
+    println(diffexpr)
     return diffexpr
 end
 

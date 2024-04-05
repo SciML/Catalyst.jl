@@ -602,6 +602,250 @@ let
     @test solve(oprob_prog, Rosenbrock23()) == solve(oprob_dsl, Rosenbrock23())
 end
 
+# Checks that equations can both be declared in a single line, or within a `begin ... end` block.
+let
+    # Checks for system with a single differential equation.
+    rs_1_line = @reaction_network rs_1 begin
+        @equations D(M) ~ -M*I
+        i, S + I --> 2I
+        r, I --> R
+    end
+    rs_1_block = @reaction_network rs_1 begin
+        @equations begin
+            D(M) ~ -M*I
+        end
+        i, S + I --> 2I
+        r, I --> R
+    end
+    @test rs_1_line == rs_1_block
+
+    # Checks for system with a single algebraic equation.
+    rs_2_line = @reaction_network rs_2 begin
+        @variables H(t)
+        @equations H ~ 100 - I
+        i, S + I --> 2I
+        r, I --> R
+    end
+    rs_2_block = @reaction_network rs_2 begin
+        @variables H(t)
+        @equations begin
+            H ~ 100 - I
+        end
+        i, S + I --> 2I
+        r, I --> R
+    end
+    @test rs_2_line == rs_2_block
+end
+
+# Checks that lhs variable is correctly inferred from differential equations.
+let 
+    # Checks for system with a differential equation and an algebraic equation.
+    # Here, `H` is defined using `@variables`, but M should be inferred.
+    rs_1 = @reaction_network begin
+        @variables H(t)
+        @equations begin
+            D(M) ~ -M*I
+            H ~ 100 - I
+        end
+        i, S + I --> 2I
+        r, I --> R
+    end
+    issetequal(species(rs_1), [rs_1.S, rs_1.I, rs_1.R])
+    issetequal(unknowns(rs_1)[4:5], [rs_1.H, rs_1.M])
+
+    # Checks for system with two differential equations, and which do not use `@variables`, 
+    rs_2 = @reaction_network hybrid_rs begin
+        @equations begin
+            D(V) ~ X/(1+X) - V
+            D(N) ~ - V
+        end
+        (p,d), 0 <--> X
+    end
+    issetequal(species(rs_2), [rs_2.X])
+    issetequal(unknowns(rs_2)[2:3], [rs_2.V, rs_2.N])
+
+    # Checks for system with two differential equations, where one is defined using `@variables`.
+    rs_2 = @reaction_network hybrid_rs begin
+        @variables N(t)
+        @equations begin
+            D(V) ~ X/(1+X) - V
+            D(N) ~ - V
+        end
+        (p,d), 0 <--> X
+    end
+    issetequal(species(rs_2), [rs_2.X])
+    issetequal(unknowns(rs_2)[2:3], [rs_2.V, rs_2.N])
+end
+
+# Checks that equations can be formatted in various ways. Tries e.g. isolating a single number on 
+# either side of the equality. 
+# Checks that various weird function can be used within equations.
+# Checks that special symbols, like π and t can be used within equations.
+let 
+    # Declares models with a single equation, formatted in various ways.
+    rs_1 = @reaction_network rs begin
+        @parameters p q
+        @species X(t)
+        @variables A(t) B(t)
+        @equations X^2 + log(A+X) ~ 1 - sqrt(B) + sin(p + X + π)/exp(A/(1+t)) + q
+    end
+    rs_2 = @reaction_network rs begin
+        @parameters p q
+        @species X(t)
+        @variables A(t) B(t)
+        @equations X^2 + log(A+X) + sqrt(B) - sin(p + X + π)/exp(A/(1+t)) - q ~ 1 
+    end
+    rs_3 = @reaction_network rs begin
+        @parameters p q
+        @species X(t)
+        @variables A(t) B(t)
+        @equations X^2 + log(A+X) + sqrt(B) - sin(p + X + π)/exp(A/(1+t)) - 1 - q ~ 0 
+    end
+    rs_4 = @reaction_network rs begin
+        @parameters p q
+        @species X(t)
+        @variables A(t) B(t)
+        @equations 0 ~ X^2 + log(A+X) + sqrt(B) - sin(p + X + π)/exp(A/(1+t)) - 1 - q
+    end
+    rs_5 = @reaction_network rs begin
+        @parameters p q
+        @species X(t)
+        @variables A(t) B(t)
+        @equations q ~ X^2 + log(A+X) + sqrt(B) - sin(p + X + π)/exp(A/(1+t)) - 1
+    end
+    rs_6 = @reaction_network rs begin
+        @parameters p q
+        @species X(t)
+        @variables A(t) B(t)
+        @equations X^2 + log(A+X) + (A + B)^p ~ 1 - sqrt(B) + sin(p + X + π)/exp(A/(1+t)) + q + (A + B)^p
+    end
+
+    # Uses a special function to check that all equations indeed are identical.
+    function is_eqs_equal(rs1, rs2; eq_idx = 1)
+        eq1 = equations(rs1)[eq_idx]
+        eq2 = equations(rs2)[eq_idx]
+        isequal(eq1.lhs - eq1.rhs - eq2.lhs + eq2.rhs, 0.0) && return true
+        isequal(eq1.lhs - eq1.rhs + eq2.lhs - eq2.rhs, 0.0) && return true
+        return false
+    end
+    @test is_eqs_equal(rs_1, rs_2)
+    @test is_eqs_equal(rs_1, rs_3)
+    @test is_eqs_equal(rs_1, rs_4)
+    @test is_eqs_equal(rs_1, rs_5)
+    @test is_eqs_equal(rs_1, rs_6)
+end
+
+# Checks that custom differentials can be declared.
+# Checks that non-default ivs work, and that a new differential using this can overwrite the default one.
+let
+    # Declares the reaction system using the default differential and iv.
+    rs_1 = @reaction_network begin
+        @equations D(N) ~ -N
+        (p,d), 0 <--> X
+    end
+
+    # Declares the reaction system using a new iv, and overwriting the default differential.
+    rs_2 = @reaction_network begin
+        @ivs τ
+        @species X(τ)
+        @variables N(τ)
+        @differentials D = Differential(τ)
+        @equations D(N) ~ -N
+        (p,d), 0 <--> X
+    end
+
+    # Declares the reaction system using a new differential and iv.
+    rs_3 = @reaction_network begin
+        @ivs τ
+        @species X(τ)
+        @variables N(τ)
+        @differentials Δ = Differential(τ)
+        @equations Δ(N) ~ -N
+        (p,d), 0 <--> X
+    end
+
+    # Simulates all three models, checking that the results are identical.
+    u0 = [:X => 5.0, :N => 10.0]
+    tspan = (0.0, 10.)
+    ps = [:p => 1.0, :d => 0.2]
+    oprob_1 = ODEProblem(rs_1, u0, tspan, ps)
+    oprob_2 = ODEProblem(rs_2, u0, tspan, ps)
+    oprob_3 = ODEProblem(rs_3, u0, tspan, ps)
+    @test solve(oprob_1, Tsit5()) == solve(oprob_2, Tsit5()) == solve(oprob_3, Tsit5())
+end
+
+
+# Checks that various misformatted declarations yield errors.
+let 
+    # Symbol in equation not appearing elsewhere (1).
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(V) ~ -X
+    end
+    
+    # Symbol in equation not appearing elsewhere (2).
+    @test_throws Exception @eval @reaction_network begin
+        @equations 1 + log(x) ~ 2X
+    end
+    
+    # Attempting to infer differential variable not isolated on lhs (1).
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(V) + 1 ~ 0
+    end
+    
+    # Attempting to infer differential variable not isolated on lhs (2).
+    @test_throws Exception @eval @reaction_network begin
+        @equations -1.0 ~ D(V)
+    end
+    
+    # Attempting to infer differential operator not isolated on lhs (1).
+    @test_throws Exception @eval @reaction_network begin
+        @variables V(t)
+        @equations D(V) + 1 ~ 0
+    end
+
+    # Attempting to infer a variable when using a non-default differential.
+    @test_throws Exception @eval @reaction_network begin
+        @differentials Δ = Differential(t)
+        @equations Δ(V) ~ -1,0
+    end
+    
+    # Attempting to create a new differential from an unknown iv.
+    @test_throws Exception @eval @reaction_network begin
+        @differentials D = Differential(τ)
+    end
+
+    # Misformatted expression for a differential.
+    @reaction_network begin
+        @variables D
+        @differentials d ~ D
+    end
+    
+    # Several equations without `begin ... end` block.
+    @test_throws Exception @eval @reaction_network begin
+        @variables V(t)
+        @equations D(V) + 1 ~ - 1.0
+    end
+    
+    # Undeclared differential.
+    @test_throws Exception @eval @reaction_network begin
+        @species V
+        @equations Δ(V) ~ -1.0
+    end
+
+    # System using multiple ivs.
+    @test_throws Exception @eval @reaction_network begin
+        @ivs τ Τ
+        @variables n(τ) N(Τ)
+        @differentials begin
+            δ = Differential(τ)
+            Δ = Differential(Τ)
+        end
+        @equations begin
+            δ(n) ~ -n
+            Δ(N) ~ -N
+        end 
+    end
+end
 
 ### Error Tests ###
 
