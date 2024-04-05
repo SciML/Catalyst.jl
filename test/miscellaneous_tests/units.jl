@@ -67,7 +67,7 @@ let
     @test (@test_logs (:warn, ) match_mode=:any validate(bad_rs)) == false
 end
 
-# Checks that units work in the DSL.
+# Checks that units work for DSL-based model creation.
 begin
     # Creates the model, while designating matching units.
     rs = @reaction_network begin
