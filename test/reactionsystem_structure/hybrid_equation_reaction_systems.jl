@@ -1,5 +1,3 @@
-
-
 # Fetch packages.
 using Catalyst, NonlinearSolve, OrdinaryDiffEq, Statistics, SteadyStateDiffEq, StochasticDiffEq, Test
 using ModelingToolkit: getdefault
