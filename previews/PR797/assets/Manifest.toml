@@ -16,9 +16,9 @@ version = "0.0.1"
 
 [[deps.AbstractAlgebra]]
 deps = ["InteractiveUtils", "LinearAlgebra", "MacroTools", "Preferences", "Random", "RandomExtensions", "SparseArrays", "Test"]
-git-tree-sha1 = "a25edb0a7ea5427ab9941ec08aed85738d3071b5"
+git-tree-sha1 = "a0256b955d255647ca3d95eb0804e954cd555e6b"
 uuid = "c3fe647b-3220-5bb0-a1ea-a7954cac585d"
-version = "0.40.5"
+version = "0.40.6"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -140,9 +140,9 @@ version = "7.9.0"
 
 [[deps.ArrayLayouts]]
 deps = ["FillArrays", "LinearAlgebra"]
-git-tree-sha1 = "6404a564c24a994814106c374bec893195e19bac"
+git-tree-sha1 = "0330bc3e828a05d1073553fb56f9695d73077370"
 uuid = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
-version = "1.8.0"
+version = "1.9.1"
 weakdeps = ["SparseArrays"]
 
     [deps.ArrayLayouts.extensions]
@@ -597,9 +597,9 @@ version = "0.27.25"
 
 [[deps.DomainSets]]
 deps = ["CompositeTypes", "IntervalSets", "LinearAlgebra", "Random", "StaticArrays"]
-git-tree-sha1 = "9fd332fb3b276a080e3ebccf0dcd98f4a10bf6a6"
+git-tree-sha1 = "81dab983a0203f835f9d6dec348f200a4979c755"
 uuid = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
-version = "0.7.10"
+version = "0.7.11"
 
 [[deps.Downloads]]
 deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
@@ -869,9 +869,9 @@ version = "6.2.1+6"
 
 [[deps.GPUArrays]]
 deps = ["Adapt", "GPUArraysCore", "LLVM", "LinearAlgebra", "Printf", "Random", "Reexport", "Serialization", "Statistics"]
-git-tree-sha1 = "47e4686ec18a9620850bad110b79966132f14283"
+git-tree-sha1 = "68e8ff56a4a355a85d2784b94614491f8c900cde"
 uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
-version = "10.0.2"
+version = "10.1.0"
 
 [[deps.GPUArraysCore]]
 deps = ["Adapt"]
@@ -1094,9 +1094,9 @@ version = "3.0.2+0"
 
 [[deps.JuliaFormatter]]
 deps = ["CSTParser", "CommonMark", "DataStructures", "Glob", "Pkg", "PrecompileTools", "Tokenize"]
-git-tree-sha1 = "e07d6fd7db543b11cd90ed764efec53f39851f09"
+git-tree-sha1 = "e57262abcc8463dc8676b4bcc2ef07df40e4986a"
 uuid = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
-version = "1.0.54"
+version = "1.0.55"
 
 [[deps.JumpProcesses]]
 deps = ["ArrayInterface", "DataStructures", "DiffEqBase", "DocStringExtensions", "FunctionWrappers", "Graphs", "LinearAlgebra", "Markdown", "PoissonRandom", "Random", "RandomNumbers", "RecursiveArrayTools", "Reexport", "SciMLBase", "StaticArrays", "SymbolicIndexingInterface", "UnPack"]
@@ -1150,9 +1150,9 @@ version = "3.0.0+1"
 
 [[deps.LLVM]]
 deps = ["CEnum", "LLVMExtra_jll", "Libdl", "Preferences", "Printf", "Requires", "Unicode"]
-git-tree-sha1 = "ab01dde107f21aa76144d0771dccc08f152ccac7"
+git-tree-sha1 = "839c82932db86740ae729779e610f07a1640be9a"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "6.6.2"
+version = "6.6.3"
 
     [deps.LLVM.extensions]
     BFloat16sExt = "BFloat16s"
