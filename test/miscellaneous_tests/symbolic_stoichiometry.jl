@@ -217,9 +217,9 @@ let
         d, Y --> 0
     end
 
-    u0 = [:X => 1, :Y => 1]
-    ps_int = [:p => 1.0, :n1 => 3, :n2 => 4, :d => 0.5]
-    ps_dec = [:p => 1.0, :n1 => 0.5, :n2 => 2.5, :d => 0.5]
+    u0 = [:X => 8, :Y => 8]
+    ps_int = [:p => 1.0, :n1 => 3, :n2 => 4, :d => 0.1]
+    ps_dec = [:p => 1.0, :n1 => 0.5, :n2 => 2.5, :d => 0.1]
     tspan = (0.0, 10.0)
 
     # Test ODE simulations with integer coefficients.
