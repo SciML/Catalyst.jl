@@ -11,8 +11,8 @@ using ModelingToolkit: get_iv, get_unit, validate, ValidationError
 let
     # Creates a `ReactionSystem` programmatically, while designating units.
     @variables t [unit=u"s"]
-    @species A(t) [unit=u"m"] B(t) [unit=u"m"] C(t) [unit=u"m"]
-    @parameters k1 [unit=u"m/s"] k2 [unit=u"s"^(-1)] k3 [unit=u"m*s"^(-1)]
+    @species A(t) [unit=u"mol/m^3"] B(t) [unit=u"mol/m^3"] C(t) [unit=u"mol/m^3"]
+    @parameters k1 [unit=u"mol/(m^3*s)"] k2 [unit=u"s^(-1)"] k3 [unit=u"(m^3)/(s*mol)"]
     rxs = [Reaction(k1, nothing, [A]),
         Reaction(k2, [A], [B]),
         Reaction(k3, [A, B], [B], [1, 1], [2])]
@@ -22,9 +22,9 @@ let
 
     # Test that all reactions have the correct unit.
     for rx in reactions(rs)
-        @test get_unit(oderatelaw(rx)) == u"m/s"
+        @test get_unit(oderatelaw(rx)) == u"mol/(s*m^3)"
         # we don't currently convert units, so they will be the same as for ODEs
-        @test get_unit(jumpratelaw(rx)) == u"m/s"
+        @test get_unit(jumpratelaw(rx)) == u"mol/(s*m^3)"
     end
 
     # Tests that the system can be converted to MTK systems without warnings.
@@ -34,7 +34,7 @@ let
     @test_nowarn convert(NonlinearSystem, rs)
 
     # Tests that creating `Reaction`s with non-matching units yields warnings.
-    @species B(t) [unit=u"m"] D(t) [unit=u"kg"]
+    @species B(t) [unit=u"mol"] D(t) [unit=u"kg"]
     bad_rx1 = Reaction(k1, [A], [D])
     bad_rx2 = Reaction(k1, [A], [B, D])
     bad_rx3 = Reaction(k1, [A, D], [B])
@@ -71,14 +71,14 @@ begin
     rs = @reaction_network begin
         @ivs t [unit=u"s"]
         @species begin
-            A(t), [unit=u"m"]
-            B(t), [unit=u"m"]
-            C(t), [unit=u"m"]
+            A(t), [unit=u"mol/m^3"]
+            B(t), [unit=u"mol/m^3"]
+            C(t), [unit=u"mol/m^3"]
         end
         @parameters begin
-            k1, [unit=u"m/s"]
-            k2, [unit=u"s"^(-1)]
-            k3, [unit=u"m*s"^(-1)]
+            k1, [unit=u"mol/(s*m^3)"]
+            k2, [unit=u"s^(-1)"]
+            k3, [unit=u"(m^3)/(s*mol)"]
         end
         k1, 0 --> A
         k2, A --> B
@@ -87,26 +87,26 @@ begin
 
     # Checks that the `ReactionSystem`'s content have the correct units.
     @test get_unit(get_iv(rs)) == u"s"
-    @test all(get_unit.([rs.A, rs.B, rs.C]) .== [u"m", u"m", u"m"])
-    @test all(get_unit.([rs.k1, rs.k2, rs.k3]) .== [u"m/s", u"s"^(-1), u"m*s"^(-1)])
+    @test all(get_unit.([rs.A, rs.B, rs.C]) .== [u"mol/m^3", u"mol/m^3", u"mol/m^3"])
+    @test all(get_unit.([rs.k1, rs.k2, rs.k3]) .== [u"mol/(s*m^3)", u"s^(-1)", u"(m^3)/(s*mol)"])
     for rx in reactions(rs)
-        @test get_unit(oderatelaw(rx)) == u"m/s"
+        @test get_unit(oderatelaw(rx)) == u"mol/(s*m^3)"
         # we don't currently convert units, so they will be the same as for ODEs
-        @test get_unit(jumpratelaw(rx)) == u"m/s"
+        @test get_unit(jumpratelaw(rx)) == u"mol/(s*m^3)"
     end
 
     # Checks that system declarations with erroneous units yields errors.
     @test_logs (:warn, ) match_mode=:any @reaction_network begin
         @ivs t [unit=u"1/s"] # Here, t's unit is wrong.
         @species begin
-            A(t), [unit=u"m"] 
-            B(t), [unit=u"m"]
-            C(t), [unit=u"m"]
+            A(t), [unit=u"mol/m^3"] 
+            B(t), [unit=u"mol/m^3"]
+            C(t), [unit=u"mol/m^3"]
         end
         @parameters begin
-            k1, [unit=u"m/s"]
-            k2, [unit=u"s"^(-1)]
-            k3, [unit=u"m*s"^(-1)]
+            k1, [unit=u"mol/(s*m^3)"]
+            k2, [unit=u"s^(-1)"]
+            k3, [unit=u"(m^3)/(s*mol)"]
         end
         k1, 0 --> A
         k2, A --> B
@@ -115,14 +115,14 @@ begin
     @test_logs (:warn, ) match_mode=:any @reaction_network begin
         @ivs t [unit=u"s"]
         @species begin
-            A(t), [unit=u"m"]
-            B(t), [unit=u"m"]
-            C(t), [unit=u"m"]
+            A(t), [unit=u"mol/m^3"] 
+            B(t), [unit=u"mol/m^3"]
+            C(t), [unit=u"mol/m^3"]
         end
         @parameters begin
-            k1, [unit=u"m"] # Here, k1's unit is wrong.
-            k2, [unit=u"s"^(-1)]
-            k3, [unit=u"m*s"^(-1)]
+            k1, [unit=u"mol/(m^3)"] # Here, k1's unit is missing "/s".
+            k2, [unit=u"s^(-1)"]
+            k3, [unit=u"(m^3)/(s*mol)"]
         end
         k1, 0 --> A
         k2, A --> B
@@ -131,14 +131,14 @@ begin
     @test_logs (:warn, ) match_mode=:any @reaction_network begin
         @ivs t [unit=u"s"]
         @species begin
-            A(t), [unit=u"m*s"] # Here, A's unit is wrong.
-            B(t), [unit=u"m"]
-            C(t), [unit=u"m"]
+            A(t), [unit=u"mol/(s*m^3)"]  # Here, A's unit got an extra "/s".
+            B(t), [unit=u"mol/m^3"]
+            C(t), [unit=u"mol/m^3"]
         end
         @parameters begin
-            k1, [unit=u"m/s"] 
-            k2, [unit=u"s"^(-1)] 
-            k3, [unit=u"m*s"^(-1)]
+            k1, [unit=u"mol/(s*m^3)"]
+            k2, [unit=u"s^(-1)"]
+            k3, [unit=u"(m^3)/(s*mol)"]
         end
         k1, 0 --> A
         k2, A --> B
@@ -168,20 +168,20 @@ let
     @test_nowarn @reaction_network begin
         @ivs t [unit=u"s"]
         @species begin
-            X1(t), [unit=u"m"]
-            Z1(t), [unit=u"m"]
-            X2(t), [unit=u"m"]
-            Z2(t), [unit=u"m"]
-            X3(t), [unit=u"m"]
-            Y3(t), [unit=u"m"]
-            Z3(t), [unit=u"m"]
+            X1(t), [unit=u"mol/m^3"]
+            Z1(t), [unit=u"mol/m^3"]
+            X2(t), [unit=u"mol/m^3"]
+            Z2(t), [unit=u"mol/m^3"]
+            X3(t), [unit=u"mol/m^3"]
+            Y3(t), [unit=u"mol/m^3"]
+            Z3(t), [unit=u"mol/m^3"]
         end
         @parameters begin
-            k1, [unit=u"m^(-2)/s"]
-            v2, [unit=u"m^(-2)/s"]
-            K2, [unit=u"m"]
-            v3, [unit=u"m^(-1)/s"]
-            K3, [unit=u"m"]
+            k1, [unit=u"(m^6)/(s*mol^2)"]
+            v2, [unit=u"(m^6)/(s*mol^2)"]
+            K2, [unit=u"mol/m^3"]
+            v3, [unit=u"(m^3)/(s*mol)"]
+            K3, [unit=u"mol/m^3"]
             n3
         end
         k1*X1, 2X1 --> Z1
