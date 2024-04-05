@@ -1,3 +1,5 @@
+#! format: off
+
 ### Prepares Tests ###
 
 # Fetch packages.
