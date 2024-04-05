@@ -1,7 +1,7 @@
 # Various functions that are useful for running the tests, and used across several test sets.
 
 # Fetches the (required) Random package.
-using Random
+using Random, Test
 
 ### Initial Condition/Parameter Generators ###
 
@@ -36,19 +36,31 @@ end
 ### System function evaluation ###
 
 # Evaluates the the drift function of the ODE corresponding to a reaction network.
-function f_eval(rs::ReactionSystem, u, p, τ)
-    prob = ODEProblem(rs, u, (0.0, 0.0), p)
-    return prob.f(prob.u0, prob.p, τ)
+# Also checks that in place and out of place evaluations are identical.
+function f_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true)
+    prob = ODEProblem(rs, u, (0.0, 0.0), p; combinatoric_ratelaws)
+    du = zeros(length(u))
+    prob.f(du, prob.u0, prob.p, t)
+    @test du == prob.f(prob.u0, prob.p, t)
+    return du
 end
 
 # Evaluates the the Jacobian of the drift function of the ODE corresponding to a reaction network.
-function jac_eval(rs::ReactionSystem, u, p, t)
-    prob = ODEProblem(rs, u, (0.0, 0.0), p; jac = true)
-    return prob.f.jac(prob.u0, prob.p, t)
+# Also checks that in place and out of place evaluations are identical.
+function jac_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true)
+    prob = ODEProblem(rs, u, (0.0, 0.0), p; jac = true, combinatoric_ratelaws)
+    J = zeros(length(u), length(u))
+    prob.f.jac(J, prob.u0, prob.p, t)
+    @test J == prob.f.jac(prob.u0, prob.p, t)
+    return J
 end
 
 # Evaluates the the diffusion function of the SDE corresponding to a reaction network.
-function g_eval(rs::ReactionSystem, u, p, t)
-    prob = SDEProblem(rs, u, (0.0, 0.0), p)
-    return prob.g(prob.u0, prob.p, t)
+# Also checks that in place and out of place evaluations are identical.
+function g_eval(rs::ReactionSystem, u, p, t; combinatoric_ratelaws = true)
+    prob = SDEProblem(rs, u, (0.0, 0.0), p; combinatoric_ratelaws)
+    dW = zeros(length(u), numreactions(rs))
+    prob.g(dW, prob.u0, prob.p, t)
+    @test dW == prob.g(prob.u0, prob.p, t)
+    return dW
 end

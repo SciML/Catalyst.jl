@@ -4,6 +4,7 @@
 
 # Fetch packages.
 using Catalyst, ModelingToolkit, OrdinaryDiffEq, Plots, Test
+using Symbolics: unwrap
 
 # Sets the default `t` to use.
 t = default_t()
@@ -342,6 +343,50 @@ let
 
     @test ModelingToolkit.defaults(rn27) == defs29
     @test merge(ModelingToolkit.defaults(rn28), defs28) == ModelingToolkit.defaults(rn27)
+end
+
+# Tests that parameter type designation works.
+let
+    # Creates a model.
+    rn = @reaction_network begin
+        @parameters begin
+            k1
+            l1
+            k2::Float64 = 2.0
+            l2::Float64
+            k3::Int64 = 2, [description="A parameter"]
+            l3::Int64
+            k4::Float32, [description="Another parameter"]
+            l4::Float32
+            k5::Rational{Int64}
+            l5::Rational{Int64}
+        end
+        (k1,l1), X1 <--> Y1
+        (k2,l2), X2 <--> Y2
+        (k3,l3), X3 <--> Y3
+        (k4,l4), X4 <--> Y4
+        (k5,l5), X5 <--> Y5
+    end
+
+    # Checks parameter types.
+    @test unwrap(rn.k1) isa SymbolicUtils.BasicSymbolic{Real}
+    @test unwrap(rn.l1) isa SymbolicUtils.BasicSymbolic{Real}
+    @test unwrap(rn.k2) isa SymbolicUtils.BasicSymbolic{Float64}
+    @test unwrap(rn.l2) isa SymbolicUtils.BasicSymbolic{Float64}
+    @test unwrap(rn.k3) isa SymbolicUtils.BasicSymbolic{Int64}
+    @test unwrap(rn.l3) isa SymbolicUtils.BasicSymbolic{Int64}
+    @test unwrap(rn.k4) isa SymbolicUtils.BasicSymbolic{Float32}
+    @test unwrap(rn.l4) isa SymbolicUtils.BasicSymbolic{Float32}
+    @test unwrap(rn.k5) isa SymbolicUtils.BasicSymbolic{Rational{Int64}}
+    @test unwrap(rn.l5) isa SymbolicUtils.BasicSymbolic{Rational{Int64}}
+
+    # Checks that other parameter properties are assigned properly.
+    @test !ModelingToolkit.hasdefault(unwrap(rn.k1))
+    @test ModelingToolkit.getdefault(unwrap(rn.k2)) == 2.0
+    @test ModelingToolkit.getdefault(unwrap(rn.k3)) == 2
+    @test ModelingToolkit.getdescription(unwrap(rn.k3)) == "A parameter"
+    @test ModelingToolkit.getdescription(unwrap(rn.k4)) == "Another parameter"
+    @test !ModelingToolkit.hasdescription(unwrap(rn.k5))
 end
 
 ### Observables ###

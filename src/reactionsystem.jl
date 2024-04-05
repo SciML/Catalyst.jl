@@ -500,7 +500,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
     """Dependent unknown variables representing species"""
     species::Vector{BasicSymbolic{Real}}
     """Parameter variables. Must not contain the independent variable."""
-    ps::Vector{BasicSymbolic{Real}}
+    ps::Vector{Any}
     """Maps Symbol to corresponding variable."""
     var_to_name::Dict{Symbol, Any}
     """Equations for observed variables."""
@@ -546,6 +546,11 @@ struct ReactionSystem{V <: NetworkProperties} <:
                             name, systems, defaults, connection_type, nps, cls, cevs, devs,
                             metadata = nothing, complete = false; checks::Bool = true)
                             
+        # Checks that all parameters have the appropriate Symbolics type.
+        for p in ps
+            (p isa Symbolics.BasicSymbolic) || error("Parameter $p is not a `BasicSymbolic`. This is required.")
+        end
+
         # unit checks are for ODEs and Reactions only currently
         nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
         if checks && isempty(sivs)

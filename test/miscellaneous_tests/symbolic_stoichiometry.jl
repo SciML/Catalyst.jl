@@ -1,256 +1,294 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, JumpProcesses, LinearAlgebra, OrdinaryDiffEq, Test
+using Catalyst, JumpProcesses, OrdinaryDiffEq, StochasticDiffEq, Statistics, Test
+using Symbolics: unwrap
 
 # Sets stable rng number.
 using StableRNGs
 rng = StableRNG(12345)
+seed = rand(rng, 1:100)
 
 # Sets the default `t` to use.
 t = default_t()
 
+# Fetch test functions.
+include("../test_functions.jl")
+
+
 ### Base Tests ###
 
-# Probably requires us to permit Int64 parameters for this to work. 
-@test_broken let
-    @parameters k α
-    @species A(t), B(t), C(t), D(t)
-    rxs = [Reaction(t * k, [A], [B], [2 * α^2], [k + α * C])
-           Reaction(1.0, [A, B], [C, D], [α, 2], [k, α])]
-    @named rs = ReactionSystem(rxs, t)
-    @test issetequal(unknowns(rs), [A, B, C, D])
-    @test issetequal(parameters(rs), [k, α])
-    osys = convert(ODESystem, rs)
+# Checks that systems with symbolic stoichiometries, created using different approaches, are identical.
+let 
+    @parameters p k d::Float64 n1::Int64 n2 n3
+    @species X(t) Y(t)
+    rxs1 = [
+        Reaction(p, nothing, [X], nothing, [n1])
+        Reaction(k, [X], [Y], [n2], [n3])
+        Reaction(d, [Y], nothing)
+    ]
+    rs1 = ReactionSystem(rxs1, t; name = :rs)
 
-    g = (k + α * C)
-    rs2 = @reaction_network rs begin
-        t * k, 2 * α^2 * A --> $g * B
-        1.0, α * A + 2 * B --> k * C + α * D
+    rxs2 = [
+        @reaction p, 0 --> $n1*X
+        @reaction k, n2*X --> n3*Y
+        @reaction $d, Y --> 0
+    ]
+    rs2 = ReactionSystem(rxs2, t; name = :rs)
+
+    rs3 = @reaction_network rs begin
+        @parameters d::Float64 n1::Int64
+        p, 0 --> n1*X
+        k, n2*X --> n3*Y
+        d, Y --> 0
     end
-    @test rs2 == rs
 
-    rxs2 = [(@reaction t * k, 2 * α^2 * A --> $g * B),
-        (@reaction 1.0, α * A + 2 * B --> k * C + α * D)]
-    rs3 = ReactionSystem(rxs2, t; name = :rs)
-    @test rs3 == rs
+    @test rs1 == rs2 == rs3
+    @test issetequal(unknowns(rs1), [X, Y])
+    @test issetequal(parameters(rs1), [p, k, d, n1, n2, n3])
+    @test unwrap(d) isa SymbolicUtils.BasicSymbolic{Float64}
+    @test unwrap(n1) isa SymbolicUtils.BasicSymbolic{Int64}
+end
 
-    u0map = [A => 3.0, B => 2.0, C => 3.0, D => 1.5]
-    pmap = (k => 2.5, α => 2)
-    tspan = (0.0, 5.0)
-    oprob = ODEProblem(osys, u0map, tspan, pmap)
-    # This is a hack because of https://github.com/SciML/ModelingToolkit.jl/issues/1475
-    oprob = remake(oprob, p = Tuple(pv[2] for pv in pmap))
-    du1 = zeros(size(oprob.u0))
-    oprob.f(du1, oprob.u0, oprob.p, 1.5)
+# Declares a network, parameter values, and initial conditions, to be used for the next couple of tests.
+begin
+    # Prepares parameters and species and their values.
+    @parameters k α::Int64
+    @species A(t), B(t), C(t), D(t)
+    u0_1 = (A => 3.0, B => 2.0, C => 3.0, D => 5.0)
+    ps_1 = (k => 5.0, α => 2)
+    u0_2 = [u[2] for u in u0_1]
+    ps_2 = Tuple(p[2] for p in ps_1)
+    τ = 1.5
 
-    function oderhs1(du, u, p, t)
-        k = p[1]
-        α = p[2]
-        A = u[1]
-        B = u[2]
-        C = u[3]
-        D = u[4]
+    # Creates `ReactionSystem` model.
+    g = k + α * C
+    rs = @reaction_network rs begin
+        @parameters k α::Int64
+        t*k, 2*(α^2)*A --> $g*B
+        1.0, α*A + 2*B --> k*C + α*D
+    end
+end
+
+# Compares the Catalyst-generated ODE function to a manually computed ODE function.
+let 
+    # With combinatoric ratelaws.
+    function oderhs(u, p, t)
+        k,α = p
+        A,B,C,D = u
         n = 2 * α^2
         rl = t * k / factorial(n) * A^n
         rl2 = A^α * B^2 / (2 * factorial(α))
+
+        du = zeros(4)
         du[1] = -n * rl - α * rl2
         du[2] = (k + α * C) * rl - 2 * rl2
         du[3] = k * rl2
         du[4] = α * rl2
+        return du
     end
-    u0 = [uv[2] for uv in u0map]
-    p = Tuple(pv[2] for pv in pmap)
-    oprob2 = ODEProblem(oderhs1, u0, tspan, p)
-    du2 = copy(du1)
-    oprob2.f(du2, oprob2.u0, oprob2.p, 1.5)
-    @test norm(du1 .- du2) < 100 * eps()
+    @test f_eval(rs, u0_1, ps_1, τ) ≈ oderhs(u0_2, ps_2, τ)
 
-    # Test without rate law scalings.
-    osys = convert(ODESystem, rs, combinatoric_ratelaws = false)
-    oprob = ODEProblem(osys, u0map, tspan, pmap)
-    function oderhs2(du, u, p, t)
-        k = p[1]
-        α = p[2]
-        A = u[1]
-        B = u[2]
-        C = u[3]
-        D = u[4]
+    # Without combinatoric ratelaws. 
+    function oderhs_no_crl(u, p, t)
+        k,α = p
+        A,B,C,D = u
         n = 2 * α^2
         rl = t * k * A^n
         rl2 = A^α * B^2
+
+        du = zeros(4)
         du[1] = -n * rl - α * rl2
         du[2] = (k + α * C) * rl - 2 * rl2
         du[3] = k * rl2
         du[4] = α * rl2
+        return du
     end
-    oprob2 = ODEProblem(oderhs2, [uv[2] for uv in u0map], tspan, oprob.p)
-    du1 .= 0
-    du2 .= 0
-    oprob.f(du1, oprob.u0, oprob.p, 1.5)
-    oprob2.f(du2, oprob2.u0, oprob2.p, 1.5)
-    @test norm(du1 .- du2) < 100 * eps()
+    @test f_eval(rs, u0_1, ps_1, τ; combinatoric_ratelaws = false) ≈ oderhs_no_crl(u0_2, ps_2, τ)
+end
 
-    # SDESystem test.
-    ssys = convert(SDESystem, rs)
-    sf = SDEFunction{false}(ssys, unknowns(ssys), parameters(ssys))
-    G = sf.g(u0, p, 1.0)
-    function sdenoise1(u, p, t)
-        k = p[1]
-        α = p[2]
-        A = u[1]
-        B = u[2]
-        C = u[3]
-        D = u[4]
+# Compares the Catalyst-generated SDE noise function to a manually computed SDE noise function.
+let 
+    # With combinatoric ratelaws. 
+    function sdenoise(u, p, t)
+        k,α = p
+        A,B,C,D = u
         n = 2 * α^2
         rl = sqrt(t * k / factorial(n) * A^n)
         rl2 = sqrt(A^α * B^2 / (2 * factorial(α)))
-        G = [-n*rl (-α*rl2);
+
+        du = zeros(4,2)
+        du = [-n*rl (-α*rl2);
              (k + α * C)*rl (-2*rl2);
              0.0 k*rl2;
              0.0 α*rl2]
+        return du
     end
-    G2 = sdenoise1(u0, p, 1.0)
-    @test norm(G - G2) < 100 * eps()
+    @test g_eval(rs, u0_1, ps_1, τ) ≈ sdenoise(u0_2, ps_2, τ)
 
-    # SDESystem test with no combinatoric rate laws.
-    ssys = convert(SDESystem, rs, combinatoric_ratelaws = false)
-    sf = SDEFunction{false}(ssys, unknowns(ssys), parameters(ssys))
-    G = sf.g(u0, p, 1.0)
-    function sdenoise2(u, p, t)
-        k = p[1]
-        α = p[2]
-        A = u[1]
-        B = u[2]
-        C = u[3]
-        D = u[4]
+    # Without combinatoric ratelaws. 
+    function sdenoise_no_crl(u, p, t)
+        k,α = p
+        A,B,C,D = u
         n = 2 * α^2
         rl = sqrt(t * k * A^n)
         rl2 = sqrt(A^α * B^2)
-        G = [-n*rl (-α*rl2);
+
+        du = zeros(4,2)
+        du = [-n*rl (-α*rl2);
              (k + α * C)*rl (-2*rl2);
              0.0 k*rl2;
              0.0 α*rl2]
+        return du
     end
-    G2 = sdenoise2(u0, p, 1.0)
-    @test norm(G - G2) < 100 * eps()
+    @test g_eval(rs, u0_1, ps_1, τ; combinatoric_ratelaws = false) ≈ sdenoise_no_crl(u0_2, ps_2, τ)
+end
 
-    # JumpSystem test.
-    js = convert(JumpSystem, rs)
-    u0map = [A => 3, B => 2, C => 3, D => 5]
-    u0 = [uv[2] for uv in u0map]
-    pmap = (k => 5, α => 2)
-    p = Tuple(pv[2] for pv in pmap)
-    unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(js)))
+# Compares the Catalyst-generated jump process jumps to manually computed jumps.
+let
+    # Manually declares the systems two jumps.
     function r1(u, p, t)
-        α = p[2]
+        k, α = p
         A = u[1]
         t * k * binomial(A, 2 * α^2)
     end
     function affect1!(integrator)
-        A = integrator.u[1]
-        B = integrator.u[2]
+        k, α = integrator.p
         C = integrator.u[3]
-        k = p[1]
-        α = p[2]
         integrator.u[1] -= 2 * α^2
         integrator.u[2] += (k + α * C)
         nothing
     end
-    ttt = 1.5
-    j1 = VariableRateJump(r1, affect1!)
-    vrj = ModelingToolkit.assemble_vrj(js, equations(js)[1], unknownoid)
-    @test isapprox(vrj.rate(u0, p, ttt), r1(u0, p, ttt))
-    fake_integrator1 = (u = copy(u0), p = p, t = ttt)
-    fake_integrator2 = deepcopy(fake_integrator1)
-    vrj.affect!(fake_integrator1)
-    affect1!(fake_integrator2)
-    @test fake_integrator1 == fake_integrator2
-
     function r2(u, p, t)
-        α = p[2]
-        A = u[1]
-        B = u[2]
-        binomial(A, α) * B * (B - 1) / 2
+        k, α = p
+        A,B = u[1:2]
+        binomial(Int64(A), Int64(α)) * B * (B - 1) / 2
     end
     function affect2!(integrator)
-        A = integrator.u[1]
-        B = integrator.u[2]
-        C = integrator.u[3]
-        D = integrator.u[4]
-        k = p[1]
-        α = p[2]
+        k, α = integrator.p
         integrator.u[1] -= α
         integrator.u[2] -= 2
         integrator.u[3] += k
         integrator.u[4] += α
         nothing
     end
-    j2 = VariableRateJump(r2, affect2!)
-    vrj = ModelingToolkit.assemble_vrj(js, equations(js)[2], unknownoid)
-    @test isapprox(vrj.rate(u0, p, ttt), r2(u0, p, ttt))
-    fake_integrator1 = (u = copy(u0), p = p, t = ttt)
-    fake_integrator2 = deepcopy(fake_integrator1)
-    vrj.affect!(fake_integrator1)
-    affect2!(fake_integrator2)
-    @test fake_integrator1 == fake_integrator2
+    jumps = [VariableRateJump(r1, affect1!), VariableRateJump(r2, affect2!)]
+
+    # Checks that the Catalyst-generated functions are equal to the manually declared ones.
+    for i in 1:2
+        catalyst_jsys = convert(JumpSystem, rs)
+        unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(catalyst_jsys)))
+        catalyst_vrj = ModelingToolkit.assemble_vrj(catalyst_jsys, equations(catalyst_jsys)[i], unknownoid)
+        @test isapprox(catalyst_vrj.rate(u0_2, ps_2, τ), jumps[i].rate(u0_2, ps_2, τ))
+
+        fake_integrator1 = (u = copy(u0_2), p = ps_2, t = τ)
+        fake_integrator2 = deepcopy(fake_integrator1)
+        catalyst_vrj.affect!(fake_integrator1)
+        jumps[i].affect!(fake_integrator2)
+        @test fake_integrator1 == fake_integrator2
+    end
 end
 
-### Simple Solving Tests on SIR Model ###
-
-# Gives an error. I can fix so there is not, but unsure what part of the code is what we actually are
-# testing for, and what we are not. Sam, if you have any opinions on what to preserve in this test or not,
-# tell me before I try to rewrite. 
-@test_broken let
-    @parameters α β γ k
-    @species S(t), I(t), R(t)
-    rxs = [Reaction(α, [S, I], [I], [1, 1], [2]),
-        Reaction(β, [I], [R], [1], [1])]
-    @named sir_ref = ReactionSystem(rxs, t)
-
-    rxs2 = [Reaction(α, [S, I], [I], [γ, 1], [k]),
-        Reaction(β, [I], [R], [γ], [γ])]
-    @named sir = ReactionSystem(rxs2, t)
-
-    @test issetequal(unknowns(sir_ref), unknowns(sir))
-
-    # ODEs.
-    p1 = (α => 0.1 / 1000, β => 0.01)
-    p2 = (α => 0.1 / 1000, β => 0.01, γ => 1, k => 2)
-    tspan = (0.0, 250.0)
-    u0 = [S => 999.0, I => 1.0, R => 0.0]
-    oprob = ODEProblem(sir_ref, u0, tspan, p1)
-    sol = solve(oprob, Tsit5())
-    # here we hack around https://github.com/SciML/ModelingToolkit.jl/issues/1475
-    p2dict = Dict(p2)
-    pvs = Tuple(p2dict[s] for s in parameters(sir))
-    @test all(isequal.(parameters(sir), parameters(convert(ODESystem, sir))))
-    oprob2 = ODEProblem(sir, u0, tspan, pvs)
-    sol2 = solve(oprob2, Tsit5())
-    @test norm(sol - sol2(sol.t)) < 1e-10
-
-    # Jumps.
-    Nsims = 10000
-    u0 = [S => 999, I => 1, R => 0]
-    jsys = convert(JumpSystem, sir_ref)
-    dprob = DiscreteProblem(jsys, u0, tspan, p1)
-    jprob = JumpProblem(jsys, dprob, Direct(); rng, save_positions = (false, false))
-    function getmean(jprob, tf)
-        m = zeros(3)
-        for i in 1:Nsims
-            sol = solve(jprob, SSAStepper())
-            m .+= sol(tspan[2])
-        end
-        m /= Nsims
-        m
+# Tests symbolic stoichiometries in simulations.
+# Tests for decimal numbered symbolic stoichiometries.
+let
+    rs_int = @reaction_network begin
+        @parameters n1::Int64 n2::Int64
+        p, 0 -->X
+        k, n1*X --> n2*Y
+        d, Y --> 0
     end
-    m1 = getmean(jprob, tspan[2])
-    jsys2 = convert(JumpSystem, sir)
-    p2dict = Dict(p2)
-    pvs = Tuple(p2dict[s] for s in parameters(sir))
-    @test all(isequal.(parameters(sir), parameters(jsys2)))
-    dprob2 = DiscreteProblem(jsys2, u0, tspan, pvs)
-    jprob2 = JumpProblem(jsys2, dprob2, Direct(); rng, save_positions = (false, false))
-    m2 = getmean(jprob2, tspan[2])
-    @test maximum(abs.(m1[2:3] .- m2[2:3]) ./ m1[2:3]) < 0.05
+    rs_dec = @reaction_network begin
+        @parameters n1::Float64 n2::Float64
+        p, 0 -->X
+        k, n1*X --> n2*Y
+        d, Y --> 0
+    end
+    rs_ref_int = @reaction_network begin
+        @parameters n1::Int64 n2::Int64
+        p, 0 -->X
+        k, 3*X --> 4*Y
+        d, Y --> 0
+    end
+    rs_ref_dec = @reaction_network begin
+        @parameters n1::Float64 n2::Float64
+        p, 0 -->X
+        k, 0.5*X --> 2.5*Y
+        d, Y --> 0
+    end
+
+    u0 = [:X => 1, :Y => 1]
+    ps_int = [:p => 1.0, :n1 => 3, :n2 => 4, :d => 0.5]
+    ps_dec = [:p => 1.0, :n1 => 0.5, :n2 => 2.5, :d => 0.5]
+    tspan = (0.0, 10.0)
+
+    # Test ODE simulations with integer coefficients.
+    oprob_int = ODEProblem(rs_int, u0, tspan, ps_int)
+    oprob_int_ref = ODEProblem(rs_ref_int, u0, tspan, ps_int)
+    @test solve(oprob_int, Tsit5()) == solve(oprob_int_ref, Tsit5())
+
+    # Test ODE simulations with decimal coefficients.
+    oprob_dec = ODEProblem(rs_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
+    oprob_dec_ref = ODEProblem(rs_ref_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
+    @test solve(oprob_dec, Tsit5()) == solve(oprob_dec_ref, Tsit5())
+
+    # Test SDE simulations with integer coefficients.
+    sprob_int = SDEProblem(rs_int, u0, tspan, ps_int)
+    sprob_int_ref = SDEProblem(rs_ref_int, u0, tspan, ps_int)
+    @test solve(sprob_int, ImplicitEM(); seed) == solve(sprob_int_ref, ImplicitEM(); seed)
+
+    # Test SDE simulations with decimal coefficients.
+    sprob_dec = SDEProblem(rs_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
+    sprob_dec_ref = SDEProblem(rs_ref_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
+    @test solve(sprob_dec, ImplicitEM(); seed) == solve(sprob_dec_ref, ImplicitEM(); seed)
+
+    # Tests jump simulations with integer coefficients.
+    dprob_int = DiscreteProblem(rs_int, u0, tspan, ps_int)
+    dprob_int_ref = DiscreteProblem(rs_ref_int, u0, tspan, ps_int)
+    jprob_int = JumpProblem(rs_int, dprob_int, Direct(); rng)
+    jprob_int_ref = JumpProblem(rs_ref_int, dprob_int_ref, Direct(); rng)
+    @test solve(jprob_int, SSAStepper(); seed) == solve(jprob_int_ref, SSAStepper(); seed)
+end
+
+# Check that jump simulations (implemented with and without symbolic stoichiometries) yield simulations
+# with identical mean number of species at the end of the simulations.
+# Also checks that ODE simulations are identical.
+let
+    # Creates the models.
+    sir = @reaction_network begin
+        @parameters n::Int64 k::Int64
+        i, S + n*I --> k*I
+        r, n*I --> n*R
+    end      
+    sir_ref = @reaction_network begin
+        i, S + I --> 2I
+        r, I --> R
+    end  
+
+    ps = [:i => 1e-4, :r => 1e-2, :n => 1.0, :k => 2.0]
+    ps_ref = [:i => 1e-4, :r => 1e-2]
+    tspan = (0.0, 250.0) # tspan[2] is selected so that it is in the middle of the outbreak peak.
+    u0 = [:S => 999.0, :I => 1.0, :R => 0.0]
+    @test issetequal(unknowns(sir), unknowns(sir_ref))
+
+    # Checks that ODE simulations are identical.
+    oprob = ODEProblem(sir, u0, tspan, ps)
+    oprob_ref = ODEProblem(sir_ref, u0, tspan, ps_ref)
+    @test solve(oprob, Tsit5()) ≈ solve(oprob_ref, Tsit5())
+
+    # Jumps. First ensemble problems for each systems is created.
+    dprob = DiscreteProblem(sir, u0, tspan, ps) 
+    dprob_ref = DiscreteProblem(sir_ref, u0, tspan, ps_ref) 
+    jprob = JumpProblem(sir, dprob, Direct(); rng, save_positions = (false, false)) 
+    jprob_ref = JumpProblem(sir_ref, dprob_ref, Direct(); rng, save_positions = (false, false)) 
+    eprob = EnsembleProblem(jprob)
+    eprob_ref = EnsembleProblem(jprob_ref)
+
+    # Simulates both ensemble problems. Checks that the distribution of values at the simulation ends is similar.
+    sols = solve(eprob, SSAStepper(); trajectories = 10000)
+    sols_ref = solve(eprob_ref, SSAStepper(); trajectories = 10000)
+    end_vals = [[sol[s][end] for sol in sols.u] for s in species(sir)]
+    end_vals_ref = [[sol[s][end] for sol in sols_ref.u] for s in species(sir_ref)]
+    @test mean.(end_vals_ref) ≈ mean.(end_vals) atol=1e-2 rtol = 1e-2
+    @test var.(end_vals_ref) ≈ var.(end_vals) atol=1e-1 rtol = 1e-1
 end
