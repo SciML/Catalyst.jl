@@ -1,6 +1,6 @@
 # Fetch packages.
 using Catalyst, NonlinearSolve, OrdinaryDiffEq, Statistics, SteadyStateDiffEq, StochasticDiffEq, Test
-using ModelingToolkit: getdefault
+using ModelingToolkit: getdefault, getdescription, getdefault
 using Symbolics: BasicSymbolic, unwrap
 
 # Sets stable rng number.
@@ -540,6 +540,71 @@ end
 
 ### DSL Tests ###
 
+# Check that a hybrid CRN/DAE created programmatically and via the DSL are identical.
+# Checks where variables are implied from differential equations, and with variables/parameter 
+# default values, types, and metadata.
+# Checks that generated system contents are correct, and ODE simulations are identical.
+let
+    # Creates the model programmatically.
+    @species X1(t) X2(t) X3(t) X_tot(t)
+    @variables V(t)=5.0 [description="Volume"] N(t) X_conc(t)
+    @parameters p k1 k2 d v n x_scale::Float32
+    eqs = [
+        Reaction(p, nothing, [X1])
+        Reaction(k1, [X1], [X2])
+        Reaction(k2, [X2], [X3])
+        Reaction(d, [X3], nothing)
+        D(V) ~ X3/(1+X3) - v*V
+        D(N) ~ - n*N*X3
+        V*X_conc ~ x_scale*(X1 + X2 + X3)
+        X_tot + X1 + X2 ~ -X3
+    ]
+    rs_prog = complete(ReactionSystem(eqs, t; name = :hybrid_rs))
+
+    # Creates the model via the DSL.
+    rs_dsl = @reaction_network hybrid_rs begin
+        @species X_tot(t)
+        @variables X_conc(t) V(t)=5.0 [description="Volume"]
+        @parameters v n x_scale::Float32
+        @equations begin
+            D(V) ~ X3/(1+X3) - v*V
+            D(N) ~ - n*N*X3
+            V*X_conc ~ x_scale*(X1 + X2 + X3)
+            X_tot + X1 + X2 ~ -X3
+        end
+        p, 0 --> X1
+        k1, X1 --> X2
+        k2, X2 --> X3
+        d, X3 --> 0
+    end
+
+    # Checks that models are identical. Also checks that they have the correct content.
+    @test rs_prog == rs_dsl
+
+    @test issetequal(parameters(rs_dsl), [p, k1, k2, d, v, n, x_scale])
+    @test issetequal(species(rs_dsl), unknowns(rs_dsl)[1:4])
+    @test issetequal(unknowns(rs_dsl)[1:4], [X1, X2, X3, X_tot])
+    @test issetequal(unknowns(rs_dsl)[5:7], [V N X_conc])
+    @test issetequal(reactions(rs_dsl), equations(rs_dsl)[1:4])
+    @test issetequal(equations(rs_dsl)[1:4], eqs[1:4])
+    @test issetequal(equations(rs_dsl)[5:7], eqs[5:7])
+
+    @test getdescription(rs_dsl.V) == "Volume"
+    @test getdefault(rs_dsl.V) == 5.0
+    @test unwrap(rs_dsl.x_scale) isa BasicSymbolic{Float32}
+
+    # Checks that the models can be simulated and yield identical results.
+    # Test most likely redundant, but seem useful to have one test like this to be sure.
+    u0 = [X1 => 0.1, X2 => 0.2, X3 => 0.2, X_tot => 0.6, N => 10.0, X_conc => 10.0]
+    tspan = (0.0, 10.0)
+    ps = [p => 1.0, k1 => 1.2, k2 => 1.5, d => 2.0, v => 0.2, n => 0.5, x_scale => 2.0]
+
+    @test_broken begin # ODEs become overdetermined.
+        oprob_prog = ODEProblem(rs_prog, u0, tspan, ps; structural_simplify = true)
+        oprob_dsl = ODEProblem(rs_dsl, u0, tspan, ps; structural_simplify = true)
+        @test solve(oprob_prog, Tsit5()) == solve(oprob_dsl, Tsit5())
+    end
+end
 ### Error Tests ###
 
 # Checks that various erroneous hybrid system declarations yield errors.
