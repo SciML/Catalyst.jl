@@ -1615,6 +1615,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
                          as_odes = false, include_zero_odes)
     eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
+    eqs = [remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
 
     NonlinearSystem(eqs, sts, ps;
                     name,
@@ -1623,6 +1624,15 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
                     checks,
                     kwargs...)
 end
+
+# Finds and differentials in an expression, and sets these to 0.
+function remove_diffs(expr)
+    (expr isa Number) && (return expr)
+    return Symbolics.replace(expr, diff_2_zero)
+end
+diff_2_zero(expr) = (Symbolics.is_derivative(expr) ? 0.0 : expr)
+
+    
 
 """
 ```julia
@@ -1652,7 +1662,7 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     spatial_convert_err(rs::ReactionSystem, SDESystem)
 
     flatrs = Catalyst.flatten(rs)
-    error_if_constraints(SDESystem, flatrs)
+    #error_if_constraints(SDESystem, flatrs)
 
     remove_conserved && conservationlaws(flatrs)
     ists, ispcs = get_indep_sts(flatrs, remove_conserved)
@@ -1740,7 +1750,7 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
                    remove_conserved)
 
-    # Handles potential Differential algebraic equations.
+    # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify 
         (osys = MT.structural_simplify(osys))
     elseif has_alg_equations(rs)
@@ -1772,13 +1782,22 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
                                p = DiffEqBase.NullParameters(), args...;
                                name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                                include_zero_odes = true, checks = false, check_length = false,
-                               remove_conserved = false, kwargs...)
+                               remove_conserved = false, structural_simplify = false, kwargs...)
 
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     sde_sys = convert(SDESystem, rs; name, combinatoric_ratelaws,
                       include_zero_odes, checks, remove_conserved)
-    sde_sys = complete(sde_sys)
+
+    # Handles potential differential algebraic equations (which requires `structural_simplify`).
+    if structural_simplify 
+        (sde_sys = MT.structural_simplify(sde_sys))
+    elseif has_alg_equations(rs)
+        error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
+    else
+        sde_sys = complete(sde_sys)
+    end
+    
     p_matrix = zeros(length(get_unknowns(sde_sys)), numreactions(rs))
     return SDEProblem(sde_sys, u0map, tspan, pmap, args...; check_length,
                       noise_rate_prototype = p_matrix, kwargs...)
@@ -1813,12 +1832,21 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
                                        check_length = false, name = nameof(rs),
                                        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                                        remove_conserved = false, include_zero_odes = true,
-                                       checks = false, kwargs...)
+                                       checks = false, structural_simplify=false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
                    remove_conserved)
-    osys = complete(osys)
+
+    # Handles potential differential algebraic equations (which requires `structural_simplify`).
+    if structural_simplify 
+        (osys = MT.structural_simplify(osys))
+    elseif has_alg_equations(rs)
+        error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
+    else
+        osys = complete(osys)
+    end
+
     return SteadyStateProblem(osys, u0map, pmap, args...; check_length, kwargs...)
 end
 
