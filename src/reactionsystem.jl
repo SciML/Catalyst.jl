@@ -993,7 +993,7 @@ function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
     sts = get_unknowns(rs)
     nps = get_networkproperties(rs)
     indepsts = if remove_conserved
-        filter(s -> (s ∈ nps.indepspecs) && (!isbc(s)), sts)
+        filter(s -> ((s ∈ nps.indepspecs) || (!isspecies(s))) && (!isbc(s)), sts)
     else
         filter(s -> !isbc(s), sts)
     end
@@ -1573,9 +1573,9 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
                          include_zero_odes)
-    eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved, zero_derivatives=true)
+    eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved, zero_derivatives=true)
 
-    ODESystem(eqs, get_iv(fullrs), sts, ps;
+    ODESystem(eqs, get_iv(fullrs), us, ps;
               observed = obs,
               name,
               defaults = _merge(defaults,defs),
@@ -1614,10 +1614,10 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
                          as_odes = false, include_zero_odes)
-    eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
+    eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
     eqs = [remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
 
-    NonlinearSystem(eqs, sts, ps;
+    NonlinearSystem(eqs, us, ps;
                     name,
                     observed = obs,
                     defaults = _merge(defaults,defs),
@@ -1669,13 +1669,13 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     eqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws, include_zero_odes,
                          remove_conserved)
     noiseeqs = assemble_diffusion(flatrs, ists, ispcs; combinatoric_ratelaws, remove_conserved)
-    eqs, sts, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
+    eqs, us, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
 
     if any(isbc, get_unknowns(flatrs))
         @info "Boundary condition species detected. As constraint equations are not currently supported when converting to SDESystems, the resulting system will be undetermined. Consider using constant species instead."
     end
 
-    SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps;
+    SDESystem(eqs, noiseeqs, get_iv(flatrs), us, ps;
               observed = obs,
               name,
               defaults = defs,
