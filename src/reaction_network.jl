@@ -834,11 +834,20 @@ function read_equations_options(options, variables_declared)
     vars_extracted = []
     add_default_diff = false
     for eq in equations
-        ((eq.head != :call) || (eq.args[1] != :~)) && error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")     
-        (!(eq.args[2] isa Expr) || eq.args[2].head != :call) && continue
-        if (eq.args[2].args[1] == :D) && (eq.args[2].args[2] isa Symbol) && (length(eq.args[2].args) == 2)
-            diff_var = eq.args[2].args[2]
-            in(diff_var, forbidden_symbols_error) && error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
+        if (eq.head != :call) || (eq.args[1] != :~)
+             error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")
+        end
+        
+        # Checks if the equation have the format D(X) ~ ... (where X is a symbol). This means that the 
+        # default differential has been used. X is added as a declared variable to the system, and
+        # we make a note that a differential D = Differential(iv) should be made as well.
+        lhs = eq.args[2]
+        # if lhs: is an expression. Is a function call. The function's name is D. Calls a single symbol.
+        if (lhs isa Expr) && (lhs.head == :call) && (lhs.args[1] == :D) && (lhs.args[2] isa Symbol)
+            diff_var = lhs.args[2]
+            if in(diff_var, forbidden_symbols_error)
+                error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
+            end
             add_default_diff = true
             in(diff_var, variables_declared) || push!(vars_extracted, diff_var)
         end
@@ -868,7 +877,7 @@ function create_differential_expr(options, add_default_diff, used_syms)
     if add_default_diff && !any(diff_dec.args[1] == :D for diff_dec in diffexpr.args) 
         push!(diffexpr.args, :(D = Differential($(DEFAULT_IV_SYM))))
     end
-    println(diffexpr)
+    
     return diffexpr
 end
 
@@ -894,8 +903,10 @@ function read_events_option(options, event_type::Symbol)
              error("The affect part of all events (the righ-hand side) must be a vector. This is not the case for: $(arg).")
         end
 
+        # Adds the correctly formatted event to the event creation expression.
         push!(events_expr.args, arg)
     end
+
     return events_expr
 end
 
@@ -909,6 +920,7 @@ function check_default_noise_scaling!(default_reaction_metadata, options)
         push!(default_reaction_metadata.args, :(:noise_scaling => $(options[:default_noise_scaling].args[3])))
     end
 end
+
 
 ### Functionality for expanding function call to custom and specific functions ###
 
