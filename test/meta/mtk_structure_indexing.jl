@@ -1,15 +1,14 @@
-#! format: off
-
 ### Prepares Tests ###
 
 # Fetch packages
-using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEq, Plots, StochasticDiffEq
+using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEq, Plots, SteadyStateDiffEq, StochasticDiffEq, Test
 import ModelingToolkit: getp, getu, setp, setu
 
 # Sets rnd number.
 using StableRNGs
 rng = StableRNG(12345)
-seed = rand(rnd, 1:100)
+seed = rand(rng, 1:100)
+
 
 ### Basic Tests ###
 
@@ -31,24 +30,28 @@ begin
     dprob = DiscreteProblem(model, u0_vals, tspan, p_vals)
     jprob = JumpProblem(model, deepcopy(dprob), Direct(); rng)
     nprob = NonlinearProblem(model, u0_vals, p_vals)
-    problems = [oprob, sprob, dprob, jprob, nprob]
+    ssprob = SteadyStateProblem(model, u0_vals, p_vals)
+    problems = [oprob, sprob, dprob, jprob, nprob, ssprob]
 
     oint = init(oprob, Tsit5(); save_everystep=false)
     sint = init(sprob, ImplicitEM(); save_everystep=false)
     jint = init(jprob, SSAStepper())
     nint = init(nprob, NewtonRaphson(); save_everystep=false)
+    @test_broken ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep=false)
     integrators = [oint, sint, jint, nint]
     
     osol = solve(oprob, Tsit5())
     ssol = solve(sprob, ImplicitEM(); seed)
     jsol = solve(jprob, SSAStepper(); seed)
     nsol = solve(nprob, NewtonRaphson())
-    sols = [osol, ssol, jsol, nsol]
+    sssol = solve(nprob, DynamicSS(Tsit5()))
+    sols = [osol, ssol, jsol, nsol, sssol]
 end
 
 # Tests problem indexing and updating.
 let 
-    for prob in deepcopy(problems)
+    @test_broken false # A few cases fails for SteadyStateProblem: https://github.com/SciML/SciMLBase.jl/issues/660
+    for prob in deepcopy(problems[1:end=1])
         # Get u values (including observables).
         @test prob[X] == prob[model.X] == prob[:X] == 4
         @test prob[XY] == prob[model.XY] == prob[:XY] == 9
@@ -139,6 +142,7 @@ end
 let 
     @test_broken false # NOTE: Multiple problems for `nint`.
     @test_broken false # NOTE: Multiple problems for `jint`.
+    @test_broken false # NOTE: Cannot even create a `ssint`.
     for int in deepcopy([oint, sint])
         # Get u values.
         @test int[X] == int[model.X] == int[:X] == 4
@@ -236,26 +240,27 @@ let
         @test getp(sol, (k1,k2))(sol) == getp(sol, (model.k1,model.k2))(sol) == getp(sol, (:k1,:k2))(sol) == (0.25, 0.5)
     end
 
-    # Handles nonlinear solution differently.
+    # Handles nonlinear and steady state solutions differently.
     let
-        sol = deepcopy(nsol)
-        # Get u values.
-        @test sol[X] == sol[model.X] == sol[:X]
-        @test sol[XY] == sol[model.XY][1] == sol[:XY]
-        @test sol[[XY,Y]] == sol[[model.XY,model.Y]] == sol[[:XY,:Y]]
-        @test_broken sol[(XY,Y)] == sol[(model.XY,model.Y)] == sol[(:XY,:Y)]
-        @test getu(sol, X)(sol) == getu(sol, model.X)(sol)[1] == getu(sol, :X)(sol)
-        @test getu(sol, XY)(sol) == getu(sol, model.XY)(sol)[1] == getu(sol, :XY)(sol)
-        @test getu(sol, [XY,Y])(sol) == getu(sol, [model.XY,model.Y])(sol) == getu(sol, [:XY,:Y])(sol)
-        @test_broken getu(sol, (XY,Y))(sol) == getu(sol, (model.XY,model.Y))(sol) == getu(sol, (:XY,:Y))(sol)[1]   
+        for sol in deepcopy([nsol, sssol])
+            # Get u values.
+            @test sol[X] == sol[model.X] == sol[:X]
+            @test sol[XY] == sol[model.XY][1] == sol[:XY]
+            @test sol[[XY,Y]] == sol[[model.XY,model.Y]] == sol[[:XY,:Y]]
+            @test_broken sol[(XY,Y)] == sol[(model.XY,model.Y)] == sol[(:XY,:Y)]
+            @test getu(sol, X)(sol) == getu(sol, model.X)(sol)[1] == getu(sol, :X)(sol)
+            @test getu(sol, XY)(sol) == getu(sol, model.XY)(sol)[1] == getu(sol, :XY)(sol)
+            @test getu(sol, [XY,Y])(sol) == getu(sol, [model.XY,model.Y])(sol) == getu(sol, [:XY,:Y])(sol)
+            @test_broken getu(sol, (XY,Y))(sol) == getu(sol, (model.XY,model.Y))(sol) == getu(sol, (:XY,:Y))(sol)[1]   
 
-        # Get p values.
-        @test sol.ps[kp] == sol.ps[model.kp] == sol.ps[:kp]
-        @test sol.ps[[k1,k2]] == sol.ps[[model.k1,model.k2]] == sol.ps[[:k1,:k2]]
-        @test sol.ps[(k1,k2)] == sol.ps[(model.k1,model.k2)] == sol.ps[(:k1,:k2)]
-        @test getp(sol, kp)(sol) == getp(sol, model.kp)(sol) == getp(sol, :kp)(sol)
-        @test getp(sol, [k1,k2])(sol) == getp(sol, [model.k1,model.k2])(sol) == getp(sol, [:k1,:k2])(sol)
-        @test getp(sol, (k1,k2))(sol) == getp(sol, (model.k1,model.k2))(sol) == getp(sol, (:k1,:k2))(sol)
+            # Get p values.
+            @test sol.ps[kp] == sol.ps[model.kp] == sol.ps[:kp]
+            @test sol.ps[[k1,k2]] == sol.ps[[model.k1,model.k2]] == sol.ps[[:k1,:k2]]
+            @test sol.ps[(k1,k2)] == sol.ps[(model.k1,model.k2)] == sol.ps[(:k1,:k2)]
+            @test getp(sol, kp)(sol) == getp(sol, model.kp)(sol) == getp(sol, :kp)(sol)
+            @test getp(sol, [k1,k2])(sol) == getp(sol, [model.k1,model.k2])(sol) == getp(sol, [:k1,:k2])(sol)
+            @test getp(sol, (k1,k2))(sol) == getp(sol, (model.k1,model.k2))(sol) == getp(sol, (:k1,:k2))(sol)
+        end
     end
 end
 
