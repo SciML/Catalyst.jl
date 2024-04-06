@@ -14,6 +14,7 @@ seed = rand(rng, 1:100)
 
 # Prepares a model and its problems, integrators, and solutions.
 begin
+    # Creates the model and unpacks its context.
     model = @reaction_network begin
         @observables XY ~ X + Y
         (kp,kd), 0 <--> X
@@ -21,10 +22,12 @@ begin
     end
     @unpack XY, X, Y, kp, kd, k1, k2 = model
 
+    # Sets problem inputs (to be used for all problem creations).
     u0_vals = [X => 4, Y => 5]
     tspan = (0.0, 10.0)
     p_vals = [kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5]
 
+    # Creates problems.
     oprob = ODEProblem(model, u0_vals, tspan, p_vals)
     sprob = SDEProblem(model,u0_vals, tspan, p_vals)
     dprob = DiscreteProblem(model, u0_vals, tspan, p_vals)
@@ -33,6 +36,16 @@ begin
     ssprob = SteadyStateProblem(model, u0_vals, p_vals)
     problems = [oprob, sprob, dprob, jprob, nprob, ssprob]
 
+    # Creates an `EnsembleProblem` for each problem.
+    eoprob = EnsembleProblem(oprob)
+    esprob = EnsembleProblem(sprob)
+    edprob = EnsembleProblem(dprob)
+    ejprob = EnsembleProblem(jprob)
+    enprob = EnsembleProblem(nprob)
+    essprob = EnsembleProblem(ssprob)
+    eproblems = [eoprob, esprob, edprob, ejprob, enprob, essprob]
+
+    # Creates integrators.
     oint = init(oprob, Tsit5(); save_everystep=false)
     sint = init(sprob, ImplicitEM(); save_everystep=false)
     jint = init(jprob, SSAStepper())
@@ -40,6 +53,7 @@ begin
     @test_broken ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep=false)
     integrators = [oint, sint, jint, nint]
     
+    # Creates solutions.
     osol = solve(oprob, Tsit5())
     ssol = solve(sprob, ImplicitEM(); seed)
     jsol = solve(jprob, SSAStepper(); seed)
@@ -51,7 +65,8 @@ end
 # Tests problem indexing and updating.
 let 
     @test_broken false # A few cases fails for SteadyStateProblem: https://github.com/SciML/SciMLBase.jl/issues/660
-    for prob in deepcopy(problems[1:end=1])
+    @test_broken false # Most cases broken for Ensemble problems: https://github.com/SciML/SciMLBase.jl/issues/661
+    for prob in deepcopy(problems[1:end-1])
         # Get u values (including observables).
         @test prob[X] == prob[model.X] == prob[:X] == 4
         @test prob[XY] == prob[model.XY] == prob[:XY] == 9
@@ -102,6 +117,7 @@ end
 
 # Test remake function.
 let 
+    @test_broken false # Currently cannot be run for Ensemble problems: https://github.com/SciML/SciMLBase.jl/issues/661 (as indexing cannot be used to check values).
     for prob in deepcopy(problems)
         # Remake for all u0s.
         rp = remake(prob; u0 = [X => 1, Y => 2])
@@ -136,7 +152,6 @@ let
         @test rp.ps[[kp, kd, k1, k2]] == [1.0, 0.1, 0.25, 15.0]
     end
 end
-
 
 # Test integrator indexing.
 let 
@@ -298,3 +313,49 @@ end
 ### Tests For Hierarchical System ###
 
 # TODO
+
+### Mass Action Jump Rate Updating Correctness ###
+
+# Checks that the rates of mass action jumps are correctly updated after parameter values are changed.
+let
+    # Creates the model.
+    rn = @reaction_network begin
+        p1*p2, A + B --> C
+    end
+    @unpack p1, p2 = rn
+
+    # Creates a JumpProblem and integrator. Checks that the initial mass action rate is correct.
+    u0 = [:A => 1, :B => 2, :C => 3]
+    ps = [:p1 => 3.0, :p2 => 2.0]
+    dprob = DiscreteProblem(rn, u0, (0.0, 1.0), ps)
+    jprob = JumpProblem(rn, dprob, Direct())
+    jinit = init(jprob, SSAStepper())
+    @test jprob.massaction_jump.scaled_rates[1] == 6.0
+
+    # Checks that the mass action rate is correctly updated after normal indexing.
+    jprob.ps[p1] = 4.0
+    @test jprob.massaction_jump.scaled_rates[1] == 8.0
+    jprob.ps[rn.p1] = 5.0
+    @test jprob.massaction_jump.scaled_rates[1] == 10.0
+    jprob.ps[:p1] = 6.0
+    @test jprob.massaction_jump.scaled_rates[1] == 12.0
+    setp(jprob, p1)(jprob, 7.0)
+    @test jprob.massaction_jump.scaled_rates[1] == 14.0
+    setp(jprob, rn.p1)(jprob, 8.0)
+    @test jprob.massaction_jump.scaled_rates[1] == 16.0
+    setp(jprob, :p1)(jprob, 3.0)
+    @test jprob.massaction_jump.scaled_rates[1] == 6.0
+
+    # Check that the mass action rate is correctly updated when `remake` is used.
+    # Checks both when partial and full parameter vectors are provided to `remake`.
+    @test remake(jprob; p = [p1 => 4.0]).massaction_jump.scaled_rates[1] == 8.0
+    @test remake(jprob; p = [rn.p1 => 5.0]).massaction_jump.scaled_rates[1] == 10.0
+    @test remake(jprob; p = [:p1 => 6.0]).massaction_jump.scaled_rates[1] == 12.0
+    @test remake(jprob; p = [p1 => 4.0, p2 => 3.0]).massaction_jump.scaled_rates[1] == 12.0
+    @test remake(jprob; p = [rn.p1 => 5.0, rn.p2 => 4.0]).massaction_jump.scaled_rates[1] == 20.0
+    @test remake(jprob; p = [:p1 => 6.0, :p2 => 5.0]).massaction_jump.scaled_rates[1] == 30.0
+
+    # Checks that updating an integrators parameter values using indexing, followed by applying
+    # `reset_aggregated_jumps!`, results in correct mass action rate.
+    # TBA
+end
