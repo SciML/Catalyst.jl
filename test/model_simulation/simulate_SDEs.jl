@@ -5,7 +5,7 @@ using Catalyst, Statistics, StochasticDiffEq, Test
 
 # Sets stable rng number.
 using StableRNGs
-rng = StableRNG(12345)
+rng = StableRNG(123456)
 
 # Fetch test functions and networks.
 include("../test_functions.jl")
@@ -236,7 +236,7 @@ let
     @named noise_scaling_network = ReactionSystem([r1, r2], t, [X1, X2], [k1, k2, p_syms[1]])
 
     u0 = [:X1 => 1100.0, :X2 => 3900.0]
-    p = [:k1 => 2.0, :k2 => 0.5, :η=>0.0]
+    p = [:k1 => 2.0, :k2 => 0.5, :η => 0.0]
     @test_broken SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p).ps[:η] == 0.0 # Broken due to SII/MTK stuff.
 end
 
