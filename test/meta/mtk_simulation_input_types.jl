@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages
-using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEq, StochasticDiffEq
+using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEq, SteadyStateDiffEq, StochasticDiffEq, Test
 
 # Sets rnd number.
 using StableRNGs
@@ -13,7 +13,7 @@ seed = rand(rng, 1:100)
 
 ### Basic Tests ###
 
-# Tests solving for various inputs types across various problem types.
+# Prepares a models and initial conditions/parameters (of different forms) to be used as problem inputs.
 begin 
     model = @reaction_network begin
         @species Z(t) = Z0
@@ -79,42 +79,81 @@ begin
     ]
 end
 
+# Perform ODE simulations (singular and ensemble).
 let 
+    # Creates normal and ensemble problems.
     base_oprob = ODEProblem(model, u0_alts[1], tspan, p_alts[1])
     base_sol = solve(base_oprob, Tsit5(); saveat = 1.0)
+    base_eprob = EnsembleProblem(base_oprob)
+    base_esol = solve(base_eprob, Tsit5(); trajectories = 2, saveat = 1.0)
+
+    # Simulates problems for all input types, checking that identical solutions are found.
     for u0 in u0_alts, p in p_alts
         oprob = remake(base_oprob; u0, p)
         @test base_sol == solve(oprob, Tsit5(); saveat = 1.0)
+        eprob = remake(base_eprob; u0, p)
+        @test base_esol == solve(eprob, Tsit5(); trajectories = 2, saveat = 1.0)
     end
 end
 
-# Perform SDE simulations.
+# Perform SDE simulations (singular and ensemble).
 let 
+    # Creates normal and ensemble problems.
     base_sprob = SDEProblem(model, u0_alts[1], tspan, p_alts[1])
     base_sol = solve(base_sprob, ImplicitEM(); seed, saveat = 1.0)
+    base_eprob = EnsembleProblem(base_sprob)
+    base_esol = solve(base_eprob, ImplicitEM(); seed, trajectories = 2, saveat = 1.0)
+
+    # Simulates problems for all input types, checking that identical solutions are found.
     for u0 in u0_alts, p in p_alts
         sprob = remake(base_sprob; u0, p)
         @test base_sol == solve(sprob, ImplicitEM(); seed, saveat = 1.0)
+        eprob = remake(base_eprob; u0, p)
+        @test base_esol == solve(eprob, ImplicitEM(); seed, trajectories = 2, saveat = 1.0)
     end
 end
 
-# Perform Jump simulations.
+# Perform jump simulations (singular and ensemble).
 let 
+    # Creates normal and ensemble problems.
     base_dprob = DiscreteProblem(model, u0_alts[1], tspan, p_alts[1])
     base_jprob = JumpProblem(model, base_dprob, Direct(); rng)
     base_sol = solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
+    base_eprob = EnsembleProblem(base_jprob)
+    base_esol = solve(base_eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
+
+    # Simulates problems for all input types, checking that identical solutions are found.
     for u0 in u0_alts, p in p_alts
         jprob = remake(base_jprob; u0, p)
         @test base_sol == solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
+        eprob = remake(base_eprob; u0, p)
+        @test base_esol == solve(eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
     end
 end
 
-# Solves a nonlinear problem.
+# Solves a nonlinear problem (EnsembleProblems are not possible for these).
 let
     base_nlprob = NonlinearProblem(model, u0_alts[1], p_alts[1])
     base_sol = solve(base_nlprob, NewtonRaphson())
     for u0 in u0_alts, p in p_alts
         nlprob = remake(base_nlprob; u0, p)
-        @test base_sol == solve(nlprob, NewtonRaphson(); saveat = 1.0)
+        @test base_sol == solve(nlprob, NewtonRaphson())
+    end
+end
+
+# Perform steady state simulations (singular and ensemble).
+let 
+    # Creates normal and ensemble problems.
+    base_ssprob = SteadyStateProblem(model, u0_alts[1], p_alts[1])
+    base_sol = solve(base_ssprob, DynamicSS(Tsit5()))
+    base_eprob = EnsembleProblem(base_ssprob)
+    base_esol = solve(base_eprob, DynamicSS(Tsit5()); trajectories = 2)
+
+    # Simulates problems for all input types, checking that identical solutions are found.
+    for u0 in u0_alts, p in p_alts
+        ssprob = remake(base_ssprob; u0, p)
+        @test base_sol == solve(ssprob, DynamicSS(Tsit5()))
+        eprob = remake(base_eprob; u0, p)
+        @test base_esol == solve(eprob, DynamicSS(Tsit5()); trajectories = 2)
     end
 end
