@@ -93,8 +93,8 @@ let
                                 [affect1!, affect2!, affect3!, affect4!, affect5!, affect6!, affect7!, affect8!])
 
     # Prepares JumpProblem via Catalyst.       
-    u0_base = rnd_u0_Int64(base_higher_order_network, rng; n)
-    ps_base = rnd_ps(base_higher_order_network, rng; factor = n/10.0)
+    u0_base = rnd_u0_Int64(base_higher_order_network, rng)
+    ps_base = rnd_ps(base_higher_order_network, rng)
     dprob_base = DiscreteProblem(base_higher_order_network, u0_base, (0.0, 100.0), ps_base)
     jprob_base = JumpProblem(base_higher_order_network, dprob_base, Direct(); rng = StableRNG(1234))
 
