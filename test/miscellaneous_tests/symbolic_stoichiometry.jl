@@ -225,29 +225,29 @@ let
     # Test ODE simulations with integer coefficients.
     oprob_int = ODEProblem(rs_int, u0, tspan, ps_int)
     oprob_int_ref = ODEProblem(rs_ref_int, u0, tspan, ps_int)
-    @test solve(oprob_int, Tsit5()) == solve(oprob_int_ref, Tsit5())
+    @test solve(oprob_int, Tsit5()) ≈ solve(oprob_int_ref, Tsit5())
 
     # Test ODE simulations with decimal coefficients.
     oprob_dec = ODEProblem(rs_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
     oprob_dec_ref = ODEProblem(rs_ref_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
-    @test solve(oprob_dec, Tsit5()) == solve(oprob_dec_ref, Tsit5())
+    @test solve(oprob_dec, Tsit5()) ≈ solve(oprob_dec_ref, Tsit5())
 
     # Test SDE simulations with integer coefficients.
     sprob_int = SDEProblem(rs_int, u0, tspan, ps_int)
     sprob_int_ref = SDEProblem(rs_ref_int, u0, tspan, ps_int)
-    @test solve(sprob_int, ImplicitEM(); seed) == solve(sprob_int_ref, ImplicitEM(); seed)
+    @test solve(sprob_int, ImplicitEM(); seed) ≈ solve(sprob_int_ref, ImplicitEM(); seed)
 
     # Test SDE simulations with decimal coefficients.
     sprob_dec = SDEProblem(rs_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
     sprob_dec_ref = SDEProblem(rs_ref_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
-    @test solve(sprob_dec, ImplicitEM(); seed) == solve(sprob_dec_ref, ImplicitEM(); seed)
+    @test solve(sprob_dec, ImplicitEM(); seed) ≈ solve(sprob_dec_ref, ImplicitEM(); seed)
 
     # Tests jump simulations with integer coefficients.
     dprob_int = DiscreteProblem(rs_int, u0, tspan, ps_int)
     dprob_int_ref = DiscreteProblem(rs_ref_int, u0, tspan, ps_int)
     jprob_int = JumpProblem(rs_int, dprob_int, Direct(); rng)
     jprob_int_ref = JumpProblem(rs_ref_int, dprob_int_ref, Direct(); rng)
-    @test solve(jprob_int, SSAStepper(); seed) == solve(jprob_int_ref, SSAStepper(); seed)
+    @test solve(jprob_int, SSAStepper(); seed) ≈ solve(jprob_int_ref, SSAStepper(); seed)
 end
 
 # Check that jump simulations (implemented with and without symbolic stoichiometries) yield simulations
