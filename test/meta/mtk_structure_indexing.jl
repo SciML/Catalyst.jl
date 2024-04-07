@@ -355,7 +355,35 @@ let
     @test remake(jprob; p = [rn.p1 => 5.0, rn.p2 => 4.0]).massaction_jump.scaled_rates[1] == 20.0
     @test remake(jprob; p = [:p1 => 6.0, :p2 => 5.0]).massaction_jump.scaled_rates[1] == 30.0
 
-    # Checks that updating an integrators parameter values using indexing, followed by applying
-    # `reset_aggregated_jumps!`, results in correct mass action rate.
-    # TBA
+    # Checks that updating an integrators parameter values does not affect mass action rate until after
+    # `reset_aggregated_jumps!` have been applied as well (wt which point the correct rate is achieved).
+    jinit.ps[p1] = 4.0
+    @test jinit.cb.condition.ma_jumps.scaled_rates[1] != 8.0
+    reset_aggregated_jumps!(jinit)
+    @test jinit.cb.condition.ma_jumps.scaled_rates[1] == 8.0
+    
+    jinit.ps[rn.p1] = 5.0
+    @test jinit.cb.condition.ma_jumps.scaled_rates[1] != 10.0
+    reset_aggregated_jumps!(jinit)
+    @test jinit.cb.condition.ma_jumps.scaled_rates[1] == 10.0
+    
+    jinit.ps[:p1] = 6.0
+    @test jinit.cb.condition.ma_jumps.scaled_rates[1] != 12.0
+    reset_aggregated_jumps!(jinit)
+    @test jinit.cb.condition.ma_jumps.scaled_rates[1] == 12.0
+    
+    setp(jinit, p1)(jinit, 7.0)
+    @test jinit.cb.condition.ma_jumps.scaled_rates[1] != 14.0
+    reset_aggregated_jumps!(jinit)
+    @test jinit.cb.condition.ma_jumps.scaled_rates[1] == 14.0
+    
+    setp(jinit, rn.p1)(jinit, 8.0)
+    @test jinit.cb.condition.ma_jumps.scaled_rates[1] != 16.0
+    reset_aggregated_jumps!(jinit)
+    @test jinit.cb.condition.ma_jumps.scaled_rates[1] == 16.0
+    
+    setp(jinit, :p1)(jinit, 3.0)
+    @test jinit.cb.condition.ma_jumps.scaled_rates[1] != 6.0
+    reset_aggregated_jumps!(jinit)
+    @test jinit.cb.condition.ma_jumps.scaled_rates[1] == 6.0
 end
