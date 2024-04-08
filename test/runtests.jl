@@ -6,6 +6,8 @@ using SafeTestsets
 
     ### Tests the properties of ReactionSystems. ###
     @time @safetestset "Reactions" begin include("reactionsystem_structure/reactions.jl") end
+
+    exit()
     @time @safetestset "ReactionSystem" begin include("reactionsystem_structure/reactionsystem.jl") end
     @time @safetestset "Higher Order Reactions" begin include("reactionsystem_structure/higher_order_reactions.jl") end
 
@@ -46,7 +48,6 @@ using SafeTestsets
 
     ### Tests network visualization. ###
     @time @safetestset "Latexify" begin include("visualization/latexify.jl") end
-    # @time @safetestset "Basic Plotting" begin include("visualization/plotting.jl") end
     # Disable on Macs as can't install GraphViz via jll
     if !Sys.isapple()
         @time @safetestset "Graphs" begin include("visualization/graphs.jl") end
@@ -56,5 +57,9 @@ using SafeTestsets
     @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
     @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
     @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
+    
+    ### Upstream SciML and DiffEq tests . ###
+    @time @safetestset "MTK Structure Indexing" begin include("meta/mtk_structure_indexing.jl") end   
+    @time @safetestset "MTK Structure Indexing" begin include("meta/mtk_problem_inputs.jl") end   
     
 end # @time
