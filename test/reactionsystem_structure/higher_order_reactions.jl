@@ -55,22 +55,22 @@ end
 # Currently fails for reason I do not understand. Likely reason similar to the weird case in the jump tests.
 # Spent loads of time trying to figure out, the best I can get to is that it seems like the rng/seed is
 # not fully reproducible.
-let 
-    @test_broken false
-    # Declares a JumpSystem manually. Would have used Catalyst again, but `binomial` still errors when
-    # called on symbolics. For reference, here is the network as it would be created using Catalyst. 
+let
+    # Declares a JumpSystem manually.
 
-    # higher_order_network_alt2 = @reaction_network begin
-    #     p, ∅ ⟼ X1
-    #     r1 * binomial(X1, 2), 2X1 ⟾ 3X2
-    #     mm(X1, r2, K) * binomial(X2, 3), 3X2 ⟾ X3 + 2X4
-    #     r3 * binomial(X3, 1) * binomial(X4, 2), X3 + 2X4 ⟾ 3X5 + 3X6
-    #     r4 * X2 * binomial(X5, 3) * binomial(X6, 3), 3X5 + 3X6 ⟾ 3X5 + 2X7 + 4X8
-    #     r5 * binomial(X5, 3) * binomial(X7, 2) * binomial(X8, 4), 3X5 + 2X7 + 4X8 ⟾ 10X9
-    #     r6 * binomial(X9, 10), 10X9 ⟾ X10
-    #     d * binomial(X10, 2), 2X10 ⟾ ∅
-    # end
+    # Declares the reactions using Catalyst, but defines the propensities manually.
+    higher_order_network_alt1 = @reaction_network begin
+        p, ∅ ⟼ X1
+        r1 * binomial(X1, 2), 2X1 ⟾ 3X2
+        mm(X1, r2, K) * binomial(X2, 3), 3X2 ⟾ X3 + 2X4
+        r3 * binomial(X3, 1) * binomial(X4, 2), X3 + 2X4 ⟾ 3X5 + 3X6
+        r4 * X2 * binomial(X5, 3) * binomial(X6, 3), 3X5 + 3X6 ⟾ 3X5 + 2X7 + 4X8
+        r5 * binomial(X5, 3) * binomial(X7, 2) * binomial(X8, 4), 3X5 + 2X7 + 4X8 ⟾ 10X9
+        r6 * binomial(X9, 10), 10X9 ⟾ X10
+        d * binomial(X10, 2), 2X10 ⟾ ∅
+    end
 
+    # Declares both the reactions and the propensities manually.
     rate1(u, p, t) = p[1]
     rate2(u, p, t) = p[2] * binomial(u[1], 2)
     rate3(u, p, t) = mm(u[1], p[3], p[4]) * binomial(u[2], 3)
@@ -92,23 +92,28 @@ let
     higher_order_network_alt2 = ConstantRateJump.([rate1, rate2, rate3, rate4, rate5, rate6, rate7, rate8], 
                                 [affect1!, affect2!, affect3!, affect4!, affect5!, affect6!, affect7!, affect8!])
 
-    # For the systems created via Catalyst and manually, compares that they yield identical simulations.
-    for n in [5, 50]         
-        # Prepares JumpProblem via Catalyst.       
-        u0_base = rnd_u0_Int64(base_higher_order_network, rng; n)
-        ps_base = rnd_ps(base_higher_order_network, rng; factor = n/10.0)
-        dprob_base = DiscreteProblem(base_higher_order_network, u0_base, (0.0, 100.0), ps_base)
-        jprob_base = JumpProblem(base_higher_order_network, dprob_base, Direct(); rng = StableRNG(1234))
+    # Prepares JumpProblem via Catalyst.       
+    u0_base = rnd_u0_Int64(base_higher_order_network, rng)
+    ps_base = rnd_ps(base_higher_order_network, rng)
+    dprob_base = DiscreteProblem(base_higher_order_network, u0_base, (0.0, 100.0), ps_base)
+    jprob_base = JumpProblem(base_higher_order_network, dprob_base, Direct(); rng = StableRNG(1234))
 
-        # Prepares JumpProblem via manually declared system.    
-        u0_alt = map_to_vec(u0_base, [:X1, :X2, :X3, :X4, :X5, :X6, :X7, :X8, :X9, :X10])
-        ps_alt = map_to_vec(ps_base, [:p, :r1, :r2, :K, :r3, :r4, :r5, :r6, :d])
-        dprob_alt = DiscreteProblem(u0_alt, (0.0, 100.0), ps_alt)
-        jprob_alt = JumpProblem(dprob_alt, Direct(), higher_order_network_alt2...; rng = StableRNG(1234))
+    # Prepares JumpProblem partially declared manually.   
+    dprob_alt1 = DiscreteProblem(higher_order_network_alt1, u0_base, (0.0, 100.0), ps_base)
+    jprob_alt1 = JumpProblem(higher_order_network_alt1, dprob_alt1, Direct(); rng = StableRNG(1234))
 
-        # Compares the simulations
-        sol_base = solve(jprob_base, SSAStepper(); seed, saveat = 1.0)
-        sol_alt = solve(jprob_alt, SSAStepper(); seed, saveat = 1.0)
-        sol_base == sol_alt
-    end
+    # Prepares JumpProblem via manually declared system.    
+    u0_alt2 = map_to_vec(u0_base, [:X1, :X2, :X3, :X4, :X5, :X6, :X7, :X8, :X9, :X10])
+    ps_alt2 = map_to_vec(ps_base, [:p, :r1, :r2, :K, :r3, :r4, :r5, :r6, :d])
+    dprob_alt2 = DiscreteProblem(u0_alt2, (0.0, 100.0), ps_alt2)
+    jprob_alt2 = JumpProblem(dprob_alt2, Direct(), higher_order_network_alt2...; rng = StableRNG(1234))
+
+    # Simualtes the models.
+    sol_base = solve(jprob_base, SSAStepper(); seed, saveat = 1.0)
+    sol_alt1 = solve(jprob_alt1, SSAStepper(); seed, saveat = 1.0)
+    sol_alt2 = solve(jprob_alt2, SSAStepper(); seed, saveat = 1.0)
+    
+    # Checks that species means in the simulations are similar
+    @test mean(sol_base[:X10]) ≈ mean(sol_alt1[:X10]) atol = 1e-1 rtol = 1e-1
+    @test mean(sol_alt1[:X10]) ≈ mean(sol_alt2[10,:]) atol = 1e-1 rtol = 1e-1
 end

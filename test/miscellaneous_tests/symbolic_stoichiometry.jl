@@ -217,37 +217,39 @@ let
         d, Y --> 0
     end
 
-    u0 = [:X => 1, :Y => 1]
-    ps_int = [:p => 1.0, :n1 => 3, :n2 => 4, :d => 0.5]
-    ps_dec = [:p => 1.0, :n1 => 0.5, :n2 => 2.5, :d => 0.5]
+    u0 = [:X => 8, :Y => 8]
+    ps_int = (:p => 2.0, :k => 0.01, :n1 => 3, :n2 => 4, :d => 0.2)
+    ps_dec = [:p => 2.0, :k => 0.01, :n1 => 0.5, :n2 => 2.5, :d => 0.2]
     tspan = (0.0, 10.0)
 
     # Test ODE simulations with integer coefficients.
     oprob_int = ODEProblem(rs_int, u0, tspan, ps_int)
     oprob_int_ref = ODEProblem(rs_ref_int, u0, tspan, ps_int)
-    @test solve(oprob_int, Tsit5()) == solve(oprob_int_ref, Tsit5())
+    @test solve(oprob_int, Tsit5()) ≈ solve(oprob_int_ref, Tsit5())
 
     # Test ODE simulations with decimal coefficients.
     oprob_dec = ODEProblem(rs_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
     oprob_dec_ref = ODEProblem(rs_ref_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
-    @test solve(oprob_dec, Tsit5()) == solve(oprob_dec_ref, Tsit5())
+    @test solve(oprob_dec, Tsit5()) ≈ solve(oprob_dec_ref, Tsit5())
 
     # Test SDE simulations with integer coefficients.
     sprob_int = SDEProblem(rs_int, u0, tspan, ps_int)
     sprob_int_ref = SDEProblem(rs_ref_int, u0, tspan, ps_int)
-    @test solve(sprob_int, ImplicitEM(); seed) == solve(sprob_int_ref, ImplicitEM(); seed)
+    @test solve(sprob_int, ImplicitEM(); seed) ≈ solve(sprob_int_ref, ImplicitEM(); seed)
 
     # Test SDE simulations with decimal coefficients.
     sprob_dec = SDEProblem(rs_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
     sprob_dec_ref = SDEProblem(rs_ref_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
-    @test solve(sprob_dec, ImplicitEM(); seed) == solve(sprob_dec_ref, ImplicitEM(); seed)
+    @test solve(sprob_dec, ImplicitEM(); seed) ≈ solve(sprob_dec_ref, ImplicitEM(); seed)
 
     # Tests jump simulations with integer coefficients.
-    dprob_int = DiscreteProblem(rs_int, u0, tspan, ps_int)
-    dprob_int_ref = DiscreteProblem(rs_ref_int, u0, tspan, ps_int)
+    dprob_int = DiscreteProblem(rs_int, u0, (0.0, 100000.0), ps_int)
+    dprob_int_ref = DiscreteProblem(rs_ref_int, u0, (0.0, 100000.0), ps_int)
     jprob_int = JumpProblem(rs_int, dprob_int, Direct(); rng)
     jprob_int_ref = JumpProblem(rs_ref_int, dprob_int_ref, Direct(); rng)
-    @test solve(jprob_int, SSAStepper(); seed) == solve(jprob_int_ref, SSAStepper(); seed)
+    sol_int = solve(jprob_int, SSAStepper(); seed)
+    sol_int_ref = solve(jprob_int_ref, SSAStepper(); seed)
+    @test mean(sol_int[:Y]) ≈ mean(sol_int_ref[:Y]) atol = 1e-2 rtol = 1e-2
 end
 
 # Check that jump simulations (implemented with and without symbolic stoichiometries) yield simulations

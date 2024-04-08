@@ -563,8 +563,9 @@ struct ReactionSystem{V <: NetworkProperties} <:
 
         if isempty(sivs) && (checks == true || (checks & MT.CheckUnits) > 0)
             if !all(u == 1.0 for u in ModelingToolkit.get_unit([unknowns; ps; iv]))
-                nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
-                check_units(nonrx_eqs)
+                for eq in eqs
+                    (eq isa Equation) && check_units(eq)
+                end
             end
         end
 
