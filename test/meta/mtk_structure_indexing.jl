@@ -50,7 +50,7 @@ begin
     sint = init(sprob, ImplicitEM(); save_everystep=false)
     jint = init(jprob, SSAStepper())
     nint = init(nprob, NewtonRaphson(); save_everystep=false)
-    @test_broken ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep=false)
+    @test_broken ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep=false) # https://github.com/SciML/SciMLBase.jl/issues/660
     integrators = [oint, sint, jint, nint]
     
     # Creates solutions.
@@ -281,7 +281,7 @@ end
 
 # Tests plotting.
 let 
-    @test_broken false # Currently broken for `ssol`.
+    @test_broken false # Currently broken for `ssol` (https://github.com/SciML/SciMLBase.jl/issues/580) 
     for sol in deepcopy([osol, jsol])
         # Single variable.
         @test length(plot(sol; idxs = X).series_list) == 1

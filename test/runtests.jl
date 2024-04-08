@@ -6,8 +6,6 @@ using SafeTestsets
 
     ### Tests the properties of ReactionSystems. ###
     @time @safetestset "Reactions" begin include("reactionsystem_structure/reactions.jl") end
-
-    exit()
     @time @safetestset "ReactionSystem" begin include("reactionsystem_structure/reactionsystem.jl") end
     @time @safetestset "Higher Order Reactions" begin include("reactionsystem_structure/higher_order_reactions.jl") end
 
@@ -58,8 +56,8 @@ using SafeTestsets
     @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
     @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
     
-    ### Upstream SciML and DiffEq tests . ###
+    ### Upstream SciML and DiffEq tests. ###
     @time @safetestset "MTK Structure Indexing" begin include("meta/mtk_structure_indexing.jl") end   
-    @time @safetestset "MTK Structure Indexing" begin include("meta/mtk_problem_inputs.jl") end   
+    @time @safetestset "MTK Problem Inputs" begin include("meta/mtk_problem_inputs.jl") end   
     
 end # @time
