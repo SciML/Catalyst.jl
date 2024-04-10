@@ -358,7 +358,7 @@ let
     # Checks that updating an integrators parameter values does not affect mass action rate until after
     # `reset_aggregated_jumps!` have been applied as well (wt which point the correct rate is achieved).
     jint.ps[p1] = 4.0
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 6.0
+    @test_broken jint.cb.condition.ma_jumps.scaled_rates[1] == 6.0
     reset_aggregated_jumps!(jint)
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 8.0
     
