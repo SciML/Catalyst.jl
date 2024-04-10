@@ -921,7 +921,6 @@ function check_default_noise_scaling!(default_reaction_metadata, options)
     end
 end
 
-
 ### Functionality for expanding function call to custom and specific functions ###
 
 #Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.

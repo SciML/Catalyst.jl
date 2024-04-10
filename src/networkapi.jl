@@ -97,7 +97,6 @@ function reactions(network)
     [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
 end
 
-
 """
     speciesmap(network)
 
@@ -584,7 +583,6 @@ end
 # don't permute any other types and let varmap_to_vars handle erroring
 symmap_to_varmap(sys, symmap) = symmap
 #error("symmap_to_varmap requires a Dict, AbstractArray or Tuple to map Symbols to values.")
-
 
 ######################## reaction complexes and reaction rates ###############################
 

@@ -1662,7 +1662,6 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     spatial_convert_err(rs::ReactionSystem, SDESystem)
 
     flatrs = Catalyst.flatten(rs)
-    #error_if_constraints(SDESystem, flatrs)
 
     remove_conserved && conservationlaws(flatrs)
     ists, ispcs = get_indep_sts(flatrs, remove_conserved)

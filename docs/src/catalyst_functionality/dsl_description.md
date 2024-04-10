@@ -703,7 +703,7 @@ nothing # hide
 ```
 
 ## Incorporating (differential) equations into reaction network models
-Some models cannot be purely described as a reaction network. E.g. consider the growth of a cell, where the rate of change in cell's volume depends on some growth factor. Here, the cell's volume would be described by a normal equation. Such equations can be incorporated into a model using the `@equations` option. Here, we create a model where a growth factor ($G$) is produced and degraded at a linear rates, and the rate of change in cell volume ($V$) os linear to the amount of growth factor:
+Some models cannot be purely described as reaction networks. E.g. consider the growth of a cell, where the rate of change in cell's volume depends on some growth factor. Here, the cell's volume would be described by a normal equation. Such equations can be incorporated into a model using the `@equations` option. Here, we create a model where a growth factor ($G$) is produced and degraded at a linear rates, and the rate of change in cell volume ($V$) os linear to the amount of growth factor:
 ```@example eqs1
 using Catalyst #hide
 rn = @reaction_network begin
@@ -731,7 +731,7 @@ plot(sol)
 ```
 Here, growth is indefinite. To improve the model, [a callback](@ref advanced_simulations_callbacks) can be used to half the volume (cell division) once some threshold is reached.
 
-When creating differential equations this way, the subject of the differential is automatically inferred to be a variable, however, any component on the right-hand side must be declare somewhere in the macro. E.g. to add a scaling parameter ($k$), we must declare that $k$ is a parmaeter using the `@paraemters` option:
+When creating differential equations this way, the subject of the differential is automatically inferred to be a variable, however, any component on the right-hand side must be declare somewhere in the macro. E.g. to add a scaling parameter ($k$), we must declare that $k$ is a parameter using the `@parameters` option:
 ```@example eqs1
 rn = @reaction_network begin
   @parameters k
@@ -742,6 +742,7 @@ rn = @reaction_network begin
 end
 nothing #hide
 ```
+If the differential does not appear isolated on the lhs, its subject variable must also be explicitly declared (as it is not inferred for these cases).
 
 It is possible to add several equations to the model. In this case, each have a separate line. E.g. to keep track of a supply of nutrition ($N$) in the growth media, we can use:
 ```@example eqs1
