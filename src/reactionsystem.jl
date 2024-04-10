@@ -1615,7 +1615,9 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
                          as_odes = false, include_zero_odes)
     eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
+
     eqs = [remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
+
 
     NonlinearSystem(eqs, us, ps;
                     name,
@@ -1627,8 +1629,11 @@ end
 
 # Finds and differentials in an expression, and sets these to 0.
 function remove_diffs(expr)
-    (expr isa Number) && (return expr)
-    return Symbolics.replace(expr, diff_2_zero)
+    if Symbolics._occursin(Symbolics.is_derivative, expr)
+        return Symbolics.replace(expr, diff_2_zero)
+    else
+        return expr
+    end
 end
 diff_2_zero(expr) = (Symbolics.is_derivative(expr) ? 0.0 : expr)
 
