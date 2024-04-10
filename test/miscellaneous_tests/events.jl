@@ -158,6 +158,7 @@ let
     ]
 
     # Declares various misformatted events .
+    # Relevant MTK issue regarding misformatted events not throwing an early error https://github.com/SciML/ModelingToolkit.jl/issues/2612.
     continuous_events_bad = [
         X ~ 1.0 => [X ~ 0.5],       # Scalar condition.
         [X ~ 1.0] => X ~ 0.5,       # Scalar affect.
