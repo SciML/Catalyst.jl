@@ -38,6 +38,10 @@ using SafeTestsets
     @time @safetestset "U0 and Parameters Input Variants" begin include("model_simulation/u0_n_parameter_inputs.jl") end
     @time @safetestset "SDE System Simulations" begin include("model_simulation/simulate_SDEs.jl") end
     @time @safetestset "Jump System Simulations" begin include("model_simulation/simulate_jumps.jl") end
+    
+    ### Upstream SciML and DiffEq tests. ###
+    @time @safetestset "MTK Structure Indexing" begin include("meta/mtk_structure_indexing.jl") end   
+    @time @safetestset "MTK Problem Inputs" begin include("meta/mtk_problem_inputs.jl") end   
 
     ### Tests Spatial Network Simulations. ###
     @time @safetestset "PDE Systems Simulations" begin include("spatial_reaction_systems/simulate_PDEs.jl") end
@@ -46,7 +50,6 @@ using SafeTestsets
 
     ### Tests network visualization. ###
     @time @safetestset "Latexify" begin include("visualization/latexify.jl") end
-    # @time @safetestset "Basic Plotting" begin include("visualization/plotting.jl") end
     # Disable on Macs as can't install GraphViz via jll
     if !Sys.isapple()
         @time @safetestset "Graphs" begin include("visualization/graphs.jl") end
