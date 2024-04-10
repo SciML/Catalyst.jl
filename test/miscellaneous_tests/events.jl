@@ -224,7 +224,7 @@ let
         Reaction(dY, [Y], nothing, [1], nothing)
     ]
     continuous_events = [
-        t - 2.5 => p ~ p + 0.2
+        [t - 2.5] => [p ~ p + 0.2]
         [X - thres, Y - X] => [X ~ X - 0.5, Z ~ Z + 0.1]
     ]
     discrete_events = [
