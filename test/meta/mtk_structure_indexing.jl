@@ -358,32 +358,32 @@ let
     # Checks that updating an integrators parameter values does not affect mass action rate until after
     # `reset_aggregated_jumps!` have been applied as well (wt which point the correct rate is achieved).
     jint.ps[p1] = 4.0
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] != 8.0
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 6.0
     reset_aggregated_jumps!(jint)
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 8.0
     
     jint.ps[rn.p1] = 5.0
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] != 10.0
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 8.0
     reset_aggregated_jumps!(jint)
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 10.0
     
     jint.ps[:p1] = 6.0
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] != 12.0
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 10.0
     reset_aggregated_jumps!(jint)
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 12.0
     
     setp(jint, p1)(jint, 7.0)
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] != 14.0
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 12.0
     reset_aggregated_jumps!(jint)
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 14.0
     
     setp(jint, rn.p1)(jint, 8.0)
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] != 16.0
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 14.0
     reset_aggregated_jumps!(jint)
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 16.0
     
     setp(jint, :p1)(jint, 3.0)
-    @test jint.cb.condition.ma_jumps.scaled_rates[1] != 6.0
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 16.0
     reset_aggregated_jumps!(jint)
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 6.0
 end
