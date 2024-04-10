@@ -177,11 +177,9 @@ let
 
     # Checks that errors are produced.
     for continuous_events in continuous_events_bad
-        println(continuous_events)
         @test_throws Exception @named rs = ReactionSystem(rxs, t; continuous_events)
     end
     for discrete_events in discrete_events_bad
-        println(discrete_events)
         @test_throws Exception @named rs = ReactionSystem(rxs, t; discrete_events)
     end
 end
@@ -224,8 +222,8 @@ let
         Reaction(dY, [Y], nothing, [1], nothing)
     ]
     continuous_events = [
-        [t - 2.5] => [p ~ p + 0.2]
-        [X - thres, Y - X] => [X ~ X - 0.5, Z ~ Z + 0.1]
+        [t ~ 2.5] => [p ~ p + 0.2]
+        [X ~ thres, Y ~ X] => [X ~ X - 0.5, Z ~ Z + 0.1]
     ]
     discrete_events = [
         2.0 => [dX ~ dX + 0.1, dY ~ dY + dY_up]
@@ -233,6 +231,7 @@ let
         (Z > Y) => [Z ~ Z - 0.1]
     ]
     rn_prog = ReactionSystem(rxs, t; continuous_events, discrete_events, name=:rn)
+    rn_prog = complete(rn_prog)
 
     # Tests that approaches yield identical results.
     @test isequal(rn_dsl, rn_prog)

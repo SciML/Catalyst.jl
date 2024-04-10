@@ -1481,7 +1481,7 @@ end
 
 # merge constraint components with the ReactionSystem components
 # also handles removing BC and constant species
-function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved = false, zero_derivatives = false)
+function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved = false)
     # if there are BC species, put them after the independent species
     rssts = get_unknowns(rs)
     sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
@@ -1573,7 +1573,7 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
                          include_zero_odes)
-    eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved, zero_derivatives=true)
+    eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
     ODESystem(eqs, get_iv(fullrs), us, ps;
               observed = obs,
@@ -1748,7 +1748,7 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
                                check_length = false, name = nameof(rs),
                                combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                                include_zero_odes = true, remove_conserved = false,
-                               checks = false, structural_simplify=false, kwargs...)
+                               checks = false, structural_simplify = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
@@ -1820,7 +1820,7 @@ function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
     return DiscreteProblem(jsys, u0map, tspan, pmap, args...; kwargs...)
 end
 
-# JumpProblem from AbstractReactionNetwork
+# JumpProblem from AbstractReactionNetworkg
 function JumpProcesses.JumpProblem(rs::ReactionSystem, prob, aggregator, args...;
                                    name = nameof(rs),
                                    combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
@@ -1836,7 +1836,7 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
                                        check_length = false, name = nameof(rs),
                                        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                                        remove_conserved = false, include_zero_odes = true,
-                                       checks = false, structural_simplify=false, kwargs...)
+                                       checks = false, structural_simplify = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
