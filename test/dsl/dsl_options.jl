@@ -687,7 +687,7 @@ let
 end
 
 
-### Algebraic Equations ###
+### Hybrid CRN/Equations Models ###
 
 # Checks creation of basic network.
 # Check indexing of output solution.
@@ -731,9 +731,9 @@ let
     ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
     oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify=true)
     sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
-    @test sol[S][end] ≈ ps[p]/ps[d]
-    @test sol[X] .+ 5 ≈ sol[k] .*sol[S]
-    @test 3*sol[Y] .+ sol[X] ≈ sol[S] .+ sol[X].*sol[d]
+    @test sol[S][end] ≈ sol.ps[p]/sol.ps[d]
+    @test sol[X] .+ 5 ≈ sol.ps[k] .*sol[S]
+    @test 3*sol[Y] .+ sol[X] ≈ sol[S] .+ sol[X].*sol.ps[d]
 end
 
 # Checks that block form is not required when only a single equation is used.
@@ -816,6 +816,7 @@ let
         end 
         (p,d), 0 <--> S
     end
+    @unpack X, Y, S, p, d, k = rn
 
     # Checks that the internal structures have the correct lengths.
     @test length(species(rn)) == 1
@@ -841,8 +842,8 @@ let
     ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
     oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify=true)
     sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
-    @test sol[:S][end] ≈ sol[:p]/sol[:d]
-    @test sol[:X] .+ 5 ≈ sol[:k] .*sol[:S]
+    @test sol[:S][end] ≈ sol.ps[:p]/sol.ps[:d]
+    @test sol[:X] .+ 5 ≈ sol.ps[:k] .*sol[:S]
     @test 5*sol[:Y][end] ≈ sol[:S][end] + sol[:X][end]
 end
 
