@@ -8,6 +8,7 @@ using SafeTestsets
     @time @safetestset "Reactions" begin include("reactionsystem_structure/reactions.jl") end
     @time @safetestset "ReactionSystem" begin include("reactionsystem_structure/reactionsystem.jl") end
     @time @safetestset "Higher Order Reactions" begin include("reactionsystem_structure/higher_order_reactions.jl") end
+    @time @safetestset "Hybrid CRN/Equation Systems" begin include("reactionsystem_structure/hybrid_equation_reaction_systems.jl") end
 
     ### Tests model creation via the @reaction_network DSL. ###
     @time @safetestset "Basic DSL" begin include("dsl/dsl_basics.jl") end
