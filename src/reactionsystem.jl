@@ -630,7 +630,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
                         metadata = nothing)
                
     # Error checks
-    if name === nothing &&
+    if name === nothing
         throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     end
     sysnames = nameof.(systems)
@@ -793,7 +793,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in; spa
     usv = collect(us)
     psv = collect(ps)
 
-    # Passes the processed input into the next `ReactionSystem` call.
+    # Passes the processed input into the next `ReactionSystem` call.    
     ReactionSystem(fulleqs, t, usv, psv; spatial_ivs, continuous_events, discrete_events, kwargs...)
 end
 
