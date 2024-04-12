@@ -692,10 +692,10 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     MT.collect_var_to_name!(var_to_name, eq.lhs for eq in observed)
 
     # Computes network properties.
-    if networkproperties === nothing
-        nps = NetworkProperties{Int, get_speciestype(iv′, unknowns′, systems)}()
+    nps = if networkproperties === nothing
+        NetworkProperties{Int, get_speciestype(iv′, unknowns′, systems)}()
     else
-        nps = networkproperties
+        networkproperties
     end
 
     # Creates the continious and discrete callbacks.
