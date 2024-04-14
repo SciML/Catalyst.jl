@@ -24,12 +24,12 @@ IV_FS = (has_iv, get_iv_string, get_iv_annotation)
 
 # Checks if the reaction system have any spatial independent variables.
 function has_sivs(rn::ReactionSystem)
-    return length(rn.sivs) != 0
+    return !isempty(get_sivs(rn))
 end
 
 # Extract a string which declares the system's spatial independent variables.
 function get_sivs_string(rn::ReactionSystem)
-    return "spatial_ivs = @variables$(get_species_string(rn.sivs))"
+    return "spatial_ivs = @variables$(get_species_string(get_sivs(rn)))"
 end
 
 # Creates an annotation for the system's spatial independent variables.
@@ -117,8 +117,7 @@ function get_reactions_string(rn::ReactionSystem)
     # Creates a dictionary for converting symbolics to their call-stripped form (e.g. X(t) to X).
     strip_call_dict = make_strip_call_dict(unknowns(rn))
 
-    # Handles the case with zero and one reaction separately. Only effect is nicer formatting.
-    (length(reactions(rn)) == 0) && (return "rxs = []")
+    # Handles the case with one reaction separately. Only effect is nicer formatting.
     (length(reactions(rn)) == 1) && (return "rxs = [$(reaction_string(rx, strip_call_dict))]")
 
     # Creates the string corresponding to the code which generates the system's reactions. 
@@ -178,12 +177,27 @@ end
 
 # Extract a string which declares the system's equations.
 function get_equations_string(rn::ReactionSystem)
-    get_unsupported_comp_string("equations")
+    # Creates a dictionary for converting symbolics to their call-stripped form (e.g. X(t) to X).
+    strip_call_dict = make_strip_call_dict(unknowns(rn))
+
+    # Handles the case with one equation separately. Only effect is nicer formatting.
+    if length(equations(rn)) - length(reactions(rn)) == 1
+        return "eqs = [$(expression_2_string(equations(rn)[end]; strip_call_dict))]"
+    end
+
+    # Creates the string corresponding to the code which generates the system's reactions. 
+    eqs_string = "rxs = ["
+    for eq in reactions(rn)[length(reactions(rn)) + 1:end]
+        @string_append! eqs_string "\n\t" expression_2_string(eq; strip_call_dict) ","
+    end
+
+    # Updates the string (including removing the last `,`) and returns it.
+    return eqs_string[1:end-1] * "\n]"
 end
 
 # Creates an annotation for the system's equations.
 function get_equations_annotation(rn::ReactionSystem)
-    get_unsupported_comp_annotation("Equations")
+    return "Equations:"
 end
 
 # Combines the 3 equations-related functions in a constant tuple.
@@ -204,7 +218,7 @@ end
 
 # Creates an annotation for the system's observables.
 function get_observed_annotation(rn::ReactionSystem)
-    get_unsupported_comp_annotation("Observables:")
+    return "Observables:"
 end
 
 # Combines the 3 -related functions in a constant tuple.
@@ -215,17 +229,53 @@ OBSERVED_FS = (has_observed, get_observed_string, get_observed_annotation)
 
 # Checks if the reaction system have any continuous events.
 function has_continuous_events(rn::ReactionSystem)
-    return false
+    return length(rn.continuous_events) > 0
 end
 
 # Extract a string which declares the system's continuous events.
 function get_continuous_events_string(rn::ReactionSystem)
-    get_unsupported_comp_string("continuous events")
+    # Creates a dictionary for converting symbolics to their call-stripped form (e.g. X(t) to X).
+    strip_call_dict = make_strip_call_dict(unknowns(rn))
+
+    # Handles the case with one event separately. Only effect is nicer formatting.
+    if length(rn.continuous_events) == 1
+        return "continuous_events = [$(continuous_event_string(rn.continuous_events.value[1], strip_call_dict))]"
+    end
+
+    # Creates the string corresponding to the code which generates the system's reactions. 
+    continuous_events_string = "continuous_events = ["
+    for continuous_event in rn.continuous_events.value
+        @string_append! continuous_events_string "\n\t" continuous_event_string(continuous_event, strip_call_dict) ","
+    end
+
+    # Updates the string (including removing the last `,`) and returns it.
+    return continuous_events_string[1:end-1] * "\n]"
+end
+
+# Creates a string that corresponds to the declaration of a single continuous event.
+function continuous_event_string(continuous_event, strip_call_dict)
+    # Creates the string corresponding to the equations (i.e. conditions).
+    eqs_string = "["
+    for eq in continuous_event.eqs
+        @string_append! eqs_string expression_2_string(eq; strip_call_dict) ", "
+    end
+    eqs_string = eqs_string[1:end-2] * "]"
+
+    # Creates the string corresponding to the affects.
+    # Continuous events' `affect` field should probably be called `affects`. Likely the `s` was
+    # dropped by mistake in MTK.
+    affects_string = "["
+    for affect in continuous_event.affect
+        @string_append! affects_string expression_2_string(affect; strip_call_dict) ", "
+    end
+    affects_string = affects_string[1:end-2] * "]"
+
+    return eqs_string * " => " * affects_string
 end
 
 # Creates an annotation for the system's continuous events.
 function get_continuous_events_annotation(rn::ReactionSystem)
-    get_unsupported_comp_annotation("Continuous events:")
+    return "Continuous events:"
 end
 
 # Combines the 3 -related functions in a constant tuple.
@@ -236,17 +286,52 @@ CONTINUOUS_EVENTS_FS = (has_continuous_events, get_continuous_events_string, get
 
 # Checks if the reaction system have any discrete events.
 function has_discrete_events(rn::ReactionSystem)
-    return false
+    return length(rn.discrete_events) > 0
 end
 
 # Extract a string which declares the system's discrete events.
 function get_discrete_events_string(rn::ReactionSystem)
-    get_unsupported_comp_string("discrete events")
+    # Creates a dictionary for converting symbolics to their call-stripped form (e.g. X(t) to X).
+    strip_call_dict = make_strip_call_dict(unknowns(rn))
+
+    # Handles the case with one event separately. Only effect is nicer formatting.
+    if length(rn.discrete_events) == 1
+        return "discrete_events = [$(discrete_event_string(rn.discrete_events.value[1], strip_call_dict))]"
+    end
+
+    # Creates the string corresponding to the code which generates the system's reactions. 
+    discrete_events_string = "discrete_events = ["
+    for discrete_event in rn.discrete_events.value
+        @string_append! discrete_events_string "\n\t" discrete_event_string(discrete_event, strip_call_dict) ","
+    end
+
+    # Updates the string (including removing the last `,`) and returns it.
+    return discrete_events_string[1:end-1] * "\n]"
+end
+
+# Creates a string that corresponds to the declaration of a single discrete event.
+function discrete_event_string(discrete_event, strip_call_dict)
+    # Creates the string corresponding to the conditions. The special check is if the condition is
+    # an expression like `X > 5.0`. Here, "(...)" is added for purely aesthetic reasons.
+    condition_string = x_2_string(discrete_event.condition)
+    if discrete_event.condition isa SymbolicUtils.BasicSymbolic
+        @string_prepend! "(" condition_string
+        @string_append! condition_string ")"
+    end
+
+    # Creates the string corresponding to the affects.
+    affects_string = "["
+    for affect in discrete_event.affects
+        @string_append! affects_string expression_2_string(affect; strip_call_dict) ", "
+    end
+    affects_string = affects_string[1:end-2] * "]"
+
+    return condition_string * " => " * affects_string
 end
 
 # Creates an annotation for the system's discrete events.
 function get_discrete_events_annotation(rn::ReactionSystem)
-    get_unsupported_comp_annotation("Discrete events:")
+    return "Discrete events:"
 end
 
 # Combines the 3 -related functions in a constant tuple.

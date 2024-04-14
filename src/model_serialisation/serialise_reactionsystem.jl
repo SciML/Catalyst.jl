@@ -5,12 +5,10 @@ Save a `ReactionSystem` model to a file.
 
 Work in progress, currently missing features:
 - Problems with ordering of declarations of species/variables/parameters that have defaults that are other species/variables/parameters.
-- Saving of the `sivs` field has not been fully implemented.
 - Saving of the `observed` field has not been fully implemented.
-- Saving of the `continuous_events` field has not been fully implemented.
-- Saving of the `discrete_events` field has not been fully implemented.
 - Saving of the `systems` field has not been fully implemented.
 - Saving of the `connection_type` field has not been fully implemented.
+- equations and reactions are used instead of get_rxs and get_eqs.
 """
 function save_reaction_network(filename::String, rn::ReactionSystem; annotate = true)
     # Initiates the file string.
@@ -31,11 +29,11 @@ function save_reaction_network(filename::String, rn::ReactionSystem; annotate = 
     file_text, has_connection_type = push_field(file_text, rn, annotate, CONNECTION_TYPE_FS)
 
     # Finalises the system. Creates the final `ReactionSystem` call.
-    rs_creation_code = make_reaction_system_call(rn, file_text, annotate,
-                                                 has_sivs, has_species, has_variables, has_parameters, 
-                                                 has_reactions, has_equations, has_observed, 
-                                                 has_discrete_events, has_continuous_events,
-                                                 has_systems, has_connection_type)
+    # Enclose everything ing a `let ... end` block.
+    rs_creation_code = make_reaction_system_call(rn, annotate, has_sivs, has_species, has_variables, 
+                                                 has_parameters, has_reactions, has_equations, 
+                                                 has_observed, has_continuous_events, 
+                                                 has_discrete_events, has_systems, has_connection_type)
     annotate || (@string_prepend! "\n" file_text) 
     @string_prepend! "let" file_text 
     @string_append! file_text "\n\n" rs_creation_code "\n\nend"
@@ -47,9 +45,9 @@ function save_reaction_network(filename::String, rn::ReactionSystem; annotate = 
     return nothing
 end
 
-# Takes the actual text which creates the model, and wraps it in a `let ... end` statement and a
-# ReactionSystem call. This creates the finalised text that is written to a file.
-function make_reaction_system_call(rs::ReactionSystem, file_text, annotate, has_sivs, has_species, 
+# Creates a ReactionSystem call for creating the model. Adds all the correct inputs to it. The input
+# `has_` `Bool`s described which inputs are used. If model is `complete`, this is handled here.
+function make_reaction_system_call(rs::ReactionSystem, annotate, has_sivs, has_species, 
                                    has_variables, has_parameters, has_reactions, has_equations, 
                                    has_observed, has_continuous_events, has_discrete_events,
                                    has_systems, has_connection_type)
@@ -105,7 +103,7 @@ function make_reaction_system_call(rs::ReactionSystem, file_text, annotate, has_
     has_systems && (@string_append! reaction_system_string ", systems")
     has_connection_type && (@string_append! reaction_system_string ", connection_type")
 
-    # Potentially appends a combinatorial combinatoric_ratelaws statement.
+    # Potentially appends a combinatoric_ratelaws statement.
     Symbolics.unwrap(rs.combinatoric_ratelaws) || (@string_append! reaction_system_string ", combinatoric_ratelaws = false")
 
     # Potentially appends `ReactionSystem` metadata value(s). Weird composite types are not supported.
@@ -113,8 +111,9 @@ function make_reaction_system_call(rs::ReactionSystem, file_text, annotate, has_
 
     # Finalises the call. Appends potential annotation. If the system is complete, add a call for this. 
     @string_append! reaction_system_string ")"
-    if !ModelingToolkit.iscomplete(rs)
-        @string_append! reaction_system_string "rs = $(reaction_system_string)\ncomplete(rs)"
+    if ModelingToolkit.iscomplete(rs)
+        @string_prepend! "rs = " reaction_system_string
+        @string_append! reaction_system_string "\nrs = complete(rs)"
     end
     if annotate 
         @string_prepend! "# Declares ReactionSystem model:\n" reaction_system_string
