@@ -45,12 +45,12 @@ SIVS_FS = (has_sivs, get_sivs_string, get_sivs_annotation)
 
 # Checks if the reaction system have any species.
 function has_species(rn::ReactionSystem)
-    return length(species(rn)) != 0
+    return !isempty(get_species(rn))
 end
 
 # Extract a string which declares the system's species.
 function get_species_string(rn::ReactionSystem)
-    return "sps = @species$(syms_2_declaration_string(species(rn)))"
+    return "sps = @species$(syms_2_declaration_string(get_species(rn)))"
 end
 
 # Creates an annotation for the system's species.
@@ -66,12 +66,12 @@ SPECIES_FS = (has_species, get_species_string, get_species_annotation)
 
 # Checks if the reaction system have any variables.
 function has_variables(rn::ReactionSystem)
-    return length(unknowns(rn)) > length(species(rn))
+    return length(get_unknowns(rn)) > length(get_species(rn))
 end
 
 # Extract a string which declares the system's variables.
 function get_variables_string(rn::ReactionSystem)
-    variables = filter(!isspecies, unknowns(rn))
+    variables = filter(!isspecies, get_unknowns(rn))
     return "vars = @variables$(syms_2_declaration_string(variables))"
 end
 
@@ -88,12 +88,12 @@ VARIABLES_FS = (has_variables, get_variables_string, get_variables_annotation)
 
 # Checks if the reaction system have any parameters.
 function has_parameters(rn::ReactionSystem)
-    return length(parameters(rn)) != 0
+    return length(get_ps(rn)) != 0
 end
 
 # Extract a string which declares the system's parameters.
 function get_parameters_string(rn::ReactionSystem)
-    return "ps = @parameters$(syms_2_declaration_string(parameters(rn)))"
+    return "ps = @parameters$(syms_2_declaration_string(get_ps(rn)))"
 end
 
 # Creates an annotation for the system's parameters.
@@ -115,14 +115,14 @@ end
 # Extract a string which declares the system's reactions.
 function get_reactions_string(rn::ReactionSystem)
     # Creates a dictionary for converting symbolics to their call-stripped form (e.g. X(t) to X).
-    strip_call_dict = make_strip_call_dict(unknowns(rn))
+    strip_call_dict = make_strip_call_dict(rn)
 
     # Handles the case with one reaction separately. Only effect is nicer formatting.
-    (length(reactions(rn)) == 1) && (return "rxs = [$(reaction_string(rx, strip_call_dict))]")
+    (length(get_rxs(rn)) == 1) && (return "rxs = [$(reaction_string(rx, strip_call_dict))]")
 
     # Creates the string corresponding to the code which generates the system's reactions. 
     rxs_string = "rxs = ["
-    for rx in reactions(rn)
+    for rx in get_rxs(rn)
         @string_append! rxs_string "\n\t" * reaction_string(rx, strip_call_dict) ","
     end
 
@@ -172,22 +172,22 @@ REACTIONS_FS = (has_reactions, get_reactions_string, get_reactions_annotation)
 
 # Checks if the reaction system have any equations.
 function has_equations(rn::ReactionSystem)
-    return length(equations(rn)) > length(reactions(rn))
+    return length(get_eqs(rn)) > length(get_rxs(rn))
 end
 
 # Extract a string which declares the system's equations.
 function get_equations_string(rn::ReactionSystem)
     # Creates a dictionary for converting symbolics to their call-stripped form (e.g. X(t) to X).
-    strip_call_dict = make_strip_call_dict(unknowns(rn))
+    strip_call_dict = make_strip_call_dict(rn)
 
     # Handles the case with one equation separately. Only effect is nicer formatting.
-    if length(equations(rn)) - length(reactions(rn)) == 1
-        return "eqs = [$(expression_2_string(equations(rn)[end]; strip_call_dict))]"
+    if length(get_eqs(rn)) - length(get_rxs(rn)) == 1
+        return "eqs = [$(expression_2_string(get_eqs(rn)[end]; strip_call_dict))]"
     end
 
     # Creates the string corresponding to the code which generates the system's reactions. 
     eqs_string = "rxs = ["
-    for eq in reactions(rn)[length(reactions(rn)) + 1:end]
+    for eq in get_eqs(rn)[length(get_rxs(rn)) + 1:end]
         @string_append! eqs_string "\n\t" expression_2_string(eq; strip_call_dict) ","
     end
 
@@ -235,7 +235,7 @@ end
 # Extract a string which declares the system's continuous events.
 function get_continuous_events_string(rn::ReactionSystem)
     # Creates a dictionary for converting symbolics to their call-stripped form (e.g. X(t) to X).
-    strip_call_dict = make_strip_call_dict(unknowns(rn))
+    strip_call_dict = make_strip_call_dict(rn)
 
     # Handles the case with one event separately. Only effect is nicer formatting.
     if length(rn.continuous_events) == 1
@@ -292,7 +292,7 @@ end
 # Extract a string which declares the system's discrete events.
 function get_discrete_events_string(rn::ReactionSystem)
     # Creates a dictionary for converting symbolics to their call-stripped form (e.g. X(t) to X).
-    strip_call_dict = make_strip_call_dict(unknowns(rn))
+    strip_call_dict = make_strip_call_dict(rn)
 
     # Handles the case with one event separately. Only effect is nicer formatting.
     if length(rn.discrete_events) == 1

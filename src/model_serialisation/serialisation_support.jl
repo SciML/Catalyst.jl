@@ -196,3 +196,6 @@ end
 function make_strip_call_dict(syms)
     return Dict([sym => strip_call(Symbolics.unwrap(sym)) for sym in syms])
 end
+function make_strip_call_dict(rn::ReactionSystem)
+    return make_strip_call_dict(get_unknowns(rn))
+end

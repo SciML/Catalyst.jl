@@ -8,7 +8,6 @@ Work in progress, currently missing features:
 - Saving of the `observed` field has not been fully implemented.
 - Saving of the `systems` field has not been fully implemented.
 - Saving of the `connection_type` field has not been fully implemented.
-- equations and reactions are used instead of get_rxs and get_eqs.
 """
 function save_reaction_network(filename::String, rn::ReactionSystem; annotate = true)
     # Initiates the file string.
