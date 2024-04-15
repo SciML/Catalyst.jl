@@ -65,7 +65,7 @@ end
 # the code required to declare them (potential @parameters or @species commands must still be added).
 # The `multiline_format` option formats it with a `begin ... end` block and declarations on separate lines.
 function syms_2_declaration_string(syms; multiline_format = false)
-    decs_string = (multiline_format ? "begin" : "")
+    decs_string = (multiline_format ? " begin" : "")
     for sym in syms
         delimiter = (multiline_format ? "\n\t" : " ")
         @string_append! decs_string delimiter sym_2_declaration_string(sym; multiline_format)
@@ -80,6 +80,17 @@ end
 function sym_2_declaration_string(sym; multiline_format = false)
     # Creates the basic symbol. The `"$(sym)"` ensures that we get e.g. "X(t)" and not "X".
     dec_string = "$(sym)"
+
+    # If the symbol have a non-default type, appends the declaration of this.
+    # Assumes that the type is on the form `SymbolicUtils.BasicSymbolic{X}`. Contain error checks
+    # to ensure that this is the case.
+    if !(sym isa SymbolicUtils.BasicSymbolic{Real})
+        sym_type = String(Symbol(typeof(Symbolics.unwrap(k2))))
+        if (sym_type[1:28] != "SymbolicUtils.BasicSymbolic{") || (sym_type[end] != '}')
+            error("Encountered symbolic of unexpected type: $sym_type.")
+        end
+        @string_append! dec_string "::" sym_type[29:end-1]
+    end
 
     # If there is a default value, adds this to the declaration.
     if ModelingToolkit.hasdefault(sym)
@@ -198,4 +209,48 @@ function make_strip_call_dict(syms)
 end
 function make_strip_call_dict(rn::ReactionSystem)
     return make_strip_call_dict(get_unknowns(rn))
+end
+
+
+### Handle Parameters/Species/Variables Declaration Dependencies ###
+
+# Gets a vector with the symbolics a symbolic depends on (currently only considers defaults).
+function get_dep_syms(sym)
+    ModelingToolkit.hasdefault(sym) || return []
+    return Symbolics.get_variables(ModelingToolkit.getdefault(sym))
+end
+
+# Checks if a symbolic depends on an symbolics in a vector being declared.
+# Because Symbolics has to utilise `isequal`, the `isdisjoint` function cannot be used.
+function depends_on(sym, syms)
+    dep_syms = get_dep_syms(sym)
+    for s1 in dep_syms
+        for s2 in syms
+            isequal(s1, s2) && return true
+        end
+    end
+    return false
+end
+
+# For a set of remaining parameters/species/variables (remaining_syms), return this split into
+# two sets:
+# One with those that does not depend on any sym in `all_remaining_syms`.
+# One with those that does depend on at least one sym in `all_remaining_syms`.
+function dependency_split(all_remaining_syms, remaining_syms)
+    writable_syms = filter(sym -> !depends_on(sym, all_remaining_syms), remaining_syms)
+    nonwritable_syms = filter(sym -> depends_on(sym, all_remaining_syms), remaining_syms)
+    return writable_syms, nonwritable_syms
+end
+
+
+### Other Functions ###
+
+
+# Checks if a symbolic's declaration is "complicated". The declaration is considered complicated
+# if it have metadata, default value, or type designation that must be declared.
+function complicated_declaration(sym)
+    isempty(get_metadata_to_declare(sym)) || (return true)
+    ModelingToolkit.hasdefault(sym) && (return true)
+    (sym isa SymbolicUtils.BasicSymbolic{Real}) || (return true)
+    return false
 end

@@ -185,9 +185,9 @@ include("spatial_reaction_systems/lattice_jump_systems.jl")
 
 ### ReactionSystem Serialisation ###
 # Has to be at the end (because it uses records of all metadata declared by Catalyst).
-include("model_serialisation/serialisation_support.jl")
-include("model_serialisation/serialise_fields.jl")
-include("model_serialisation/serialise_reactionsystem.jl")
+include("reactionsystem_serialisation/serialisation_support.jl")
+include("reactionsystem_serialisation/serialise_fields.jl")
+include("reactionsystem_serialisation/serialise_reactionsystem.jl")
 export save_reaction_network
 
 end # module

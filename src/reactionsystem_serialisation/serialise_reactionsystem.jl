@@ -1,30 +1,62 @@
 """
     save_reaction_network(filename::String, rn::ReactionSystem; annotate = true)
 
-Save a `ReactionSystem` model to a file.
+Save a `ReactionSystem` model to a file. The `ReactionSystem` is saved as runnable Julia code. This
+can both be used to save a `ReactionSystem` model, but also to write it to a file for easy inspection.
 
-Work in progress, currently missing features:
-- Problems with ordering of declarations of species/variables/parameters that have defaults that are other species/variables/parameters.
-- Saving of the `observed` field has not been fully implemented.
-- Saving of the `systems` field has not been fully implemented.
-- Saving of the `connection_type` field has not been fully implemented.
+Arguments:
+- `filename`: The name of the file to which the `ReactionSystem` is saved.
+- `rn`: The `ReactionSystem` which should be saved to a file.
+- `annotate = true`: Whether annotation should be added to the file.
+
+Example: 
+```julia
+rn = @reaction_network begin
+    (p,d), 0 <--> X
+end
+save_reaction_network("rn.jls", rn)
+```
+The model can now be loaded using
+```julia
+rn = include("rn.jls")
+```
+
+Notes:
+- `ReactionSystem`s with the `connection_type` field has this ignored (saving of this field has not
+  been implemented yet).
+- `ReactionSystem`s with non-`ReactionSystem` sub-systems (e.g. `ODESystem`s) cannot be saved.
+- The `ReactionSystem` is saved using *programmatic* (not DSL) format for model creation.
 """
 function save_reaction_network(filename::String, rn::ReactionSystem; annotate = true)
+    open(filename, "w") do file
+        write(file, get_full_system_string(rn, annotate))
+    end
+    return nothing
+end
+
+# Gets the full string which corresponds to the declaration of a system. Might be called recursively
+# for systems with subsystems.
+function get_full_system_string(rn::ReactionSystem, annotate::Bool)
     # Initiates the file string.
     file_text = ""
 
+    # Sub-systems must (unfortunately) be declared first (as the variables written in their internal
+    # let blocks otherwise will overwrite those of the main system).
+    # Systems are uses custom `push_field` function as these requires the annotation `Bool` 
+    # to be passed to the function that creates the next sub-system declarations.
+    file_text, has_systems = push_systems_field(file_text, rn, annotate)
+
     # Goes through each type of system component, potentially adding it to the string.
+    # Species, variables, and parameters must be handled differently in case there is default-values
+    # dependencies between them. 
     file_text, _ = push_field(file_text, rn, annotate, IV_FS)
     file_text, has_sivs = push_field(file_text, rn, annotate, SIVS_FS)
-    file_text, has_species = push_field(file_text, rn, annotate, SPECIES_FS)
-    file_text, has_variables = push_field(file_text, rn, annotate, VARIABLES_FS)
-    file_text, has_parameters = push_field(file_text, rn, annotate, PARAMETERS_FS)
+    file_text, has_parameters, has_species, has_variables = handle_us_n_ps(file_text, rn, annotate)
     file_text, has_reactions = push_field(file_text, rn, annotate, REACTIONS_FS)
     file_text, has_equations = push_field(file_text, rn, annotate, EQUATIONS_FS)
     file_text, has_observed = push_field(file_text, rn, annotate, OBSERVED_FS)
     file_text, has_continuous_events = push_field(file_text, rn, annotate, CONTINUOUS_EVENTS_FS)
     file_text, has_discrete_events = push_field(file_text, rn, annotate, DISCRETE_EVENTS_FS)   
-    file_text, has_systems = push_field(file_text, rn, annotate, SYSTEMS_FS)
     file_text, has_connection_type = push_field(file_text, rn, annotate, CONNECTION_TYPE_FS)
 
     # Finalises the system. Creates the final `ReactionSystem` call.
@@ -37,11 +69,7 @@ function save_reaction_network(filename::String, rn::ReactionSystem; annotate = 
     @string_prepend! "let" file_text 
     @string_append! file_text "\n\n" rs_creation_code "\n\nend"
 
-    # Writes the model to a file. Then, returns nothing.
-    open(filename, "w") do file
-        write(file, file_text)
-    end
-    return nothing
+    return file_text
 end
 
 # Creates a ReactionSystem call for creating the model. Adds all the correct inputs to it. The input
