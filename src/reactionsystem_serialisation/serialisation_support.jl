@@ -119,26 +119,46 @@ end
 # more supported types can be added here.
 x_2_string(x::Num) = expression_2_string(x)
 x_2_string(x::SymbolicUtils.BasicSymbolic{<:Real}) = expression_2_string(x)
+x_2_string(x::Bool) = string(x)
 x_2_string(x::String) = "\"$x\""
 x_2_string(x::Char) = "\'$x\'"
 x_2_string(x::Symbol) = ":$x"
 x_2_string(x::Number) = string(x)
+x_2_string(x::Pair) = "$(x_2_string(x[1])) => $(x_2_string(x[2]))"
+x_2_string(x::Nothing) = "nothing"
 function x_2_string(x::Vector)
     output = "["
     for val in x
-        output = output * x_2_string(val) * ", "
+        @string_append! output x_2_string(val) ", "
     end
     return output[1:end-2] * "]"
 end 
 function x_2_string(x::Tuple)
     output = "("
     for val in x
-        output = output * x_2_string(val) * ", "
+        @string_append! output x_2_string(val) ", "
     end
     return output[1:end-2] * ")"
 end 
-x_2_string(x::Pair) = "$(x_2_string(x[1])) => $(x_2_string(x[2]))"
-x_2_string(x::Nothing) = "nothing"
+function x_2_string(x::Dict)
+    output = "Dict(["
+    for key in keys(x)
+        @string_append! output x_2_string(key) " => " x_2_string(x[key]) ", "
+    end
+    return output[1:end-2] * "])"
+end
+function x_2_string(x::Union{Matrix, Symbolics.Arr{Any, 2}})
+    output = "["
+    for j = 1:size(x)[1]
+        for i = 1:size(x)[2]
+            @string_append! output x_2_string(x[j,i]) " "
+        end
+        output = output[1:end-1] * "; "
+    end
+    return output[1:end-2] *"]"
+end 
+
+
 x_2_string(x) = error("Tried to write an unsupported value ($(x)) of an unsupported type ($(typeof(x))) to a string.")
 
 
@@ -236,10 +256,11 @@ end
 # two sets:
 # One with those that does not depend on any sym in `all_remaining_syms`.
 # One with those that does depend on at least one sym in `all_remaining_syms`.
-function dependency_split(all_remaining_syms, remaining_syms)
+# The first set is returned. Next `remaining_syms` is updated to be the second set.
+function dependency_split!(remaining_syms, all_remaining_syms)
     writable_syms = filter(sym -> !depends_on(sym, all_remaining_syms), remaining_syms)
-    nonwritable_syms = filter(sym -> depends_on(sym, all_remaining_syms), remaining_syms)
-    return writable_syms, nonwritable_syms
+    filter!(sym -> depends_on(sym, all_remaining_syms), remaining_syms)
+    return writable_syms
 end
 
 

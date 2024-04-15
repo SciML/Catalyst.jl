@@ -7,7 +7,7 @@ end
 
 # Extract a string which declares the system's independent variable.
 function get_iv_string(rn::ReactionSystem)
-    iv_dec = ModelingToolkit.get_iv(rn)
+    iv_dec = MT.get_iv(rn)
     return "@variables $(iv_dec)"
 end
 
@@ -29,7 +29,7 @@ end
 
 # Extract a string which declares the system's spatial independent variables.
 function get_sivs_string(rn::ReactionSystem)
-    return "spatial_ivs = @variables$(get_species_string(get_sivs(rn)))"
+    return "spatial_ivs = @variables$(syms_2_declaration_string(get_sivs(rn)))"
 end
 
 # Creates an annotation for the system's spatial independent variables.
@@ -92,27 +92,24 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool)
 
         # Pre-declares the sets with written/remaining parameters/species/variables.
         # Whenever all/none are written depends on whether there were any initial dependencies.
-        remaining_ps = (p_deps ? ps_all : [])
-        remaining_sps = (sp_deps ? sps_all : [])
-        remaining_vars = (var_deps ? vars_all : [])
+        # `deepcopy` is required as these gets mutated by `dependency_split!`. 
+        remaining_ps = (p_deps ? deepcopy(ps_all) : [])
+        remaining_sps = (sp_deps ? deepcopy(sps_all) : [])
+        remaining_vars = (var_deps ? deepcopy(vars_all) : [])
 
         # Iteratively loops through all parameters, species, and/or variables. In each iteration, 
         # adds the declaration of those that can still be declared.
         while !(isempty(remaining_ps) && isempty(remaining_sps) && isempty(remaining_vars))
-            # Checks which parameters/species/variables can be written.
-            writable_ps, nonwritable_ps = dependency_split([remaining_ps; remaining_sps; remaining_vars], remaining_ps)
-            writable_sps, nonwritable_sps = dependency_split([remaining_sps; remaining_vars], remaining_sps)
-            writable_vars, nonwritable_vars = dependency_split(remaining_vars, remaining_vars)
+            # Checks which parameters/species/variables can be written. The `dependency_split`
+            # function updates the `remaining_` input.
+            writable_ps = dependency_split!(remaining_ps, [remaining_ps; remaining_sps; remaining_vars])
+            writable_sps = dependency_split!(remaining_sps, [remaining_ps; remaining_sps; remaining_vars])
+            writable_vars = dependency_split!(remaining_vars, [remaining_ps; remaining_sps; remaining_vars])
             
             # Writes those that can be written.
             isempty(writable_ps) || @string_append! file_text get_parameters_string(writable_ps) "\n"
             isempty(writable_sps) || @string_append! file_text get_species_string(writable_sps) "\n"
             isempty(writable_vars) || @string_append! file_text get_variables_string(writable_vars) "\n"
-
-            # Updates the remaining parameters/species/variables sets.
-            remaining_ps = nonwritable_ps
-            remaining_sps = nonwritable_sps
-            remaining_vars = nonwritable_vars
         end
 
         # For parameters, species, and/or variables with dependencies, creates final vectors.
@@ -280,7 +277,7 @@ function get_equations_string(rn::ReactionSystem)
     end
 
     # Creates the string corresponding to the code which generates the system's reactions. 
-    eqs_string = "rxs = ["
+    eqs_string = "eqs = ["
     for eq in get_eqs(rn)[length(get_rxs(rn)) + 1:end]
         @string_append! eqs_string "\n\t" expression_2_string(eq; strip_call_dict) ","
     end
@@ -308,7 +305,7 @@ end
 # Extract a string which declares the system's observables.
 function get_observed_string(rn::ReactionSystem)
     # Finds the observable species and variables.
-    observed_unknowns = [obs_eq.lhs for obs_eq in observed(rn)]
+    observed_unknowns = [obs_eq.lhs for obs_eq in MT.get_observed(rn)]
     observed_species = filter(isspecies, observed_unknowns)
     observed_variables = filter(!isspecies, observed_unknowns)
 
@@ -325,15 +322,15 @@ function get_observed_string(rn::ReactionSystem)
     end
 
     # Handles the case with one observable separately. Only effect is nicer formatting.
-    if length(observed(rn)) == 1
-        @string_append! observed_string "observed = [$(expression_2_string(observed(rn)[1]; strip_call_dict))]"
+    if length(MT.get_observed(rn)) == 1
+        @string_append! observed_string "observed = [$(expression_2_string(MT.get_observed(rn)[1]; strip_call_dict))]"
         return observed_string
     end
 
     # Appends with the code which will generate observables equations.
     @string_append! observed_string "observed = ["
-    for obs in observed(rn)
-        @string_append! observed_string "\n\t" expression_2_string(obs, strip_call_dict) ","
+    for obs in MT.get_observed(rn)
+        @string_append! observed_string "\n\t" expression_2_string(obs; strip_call_dict) ","
     end
 
     # Updates the string (including removing the last `,`) and returns it.
@@ -353,7 +350,7 @@ OBSERVED_FS = (has_observed, get_observed_string, get_observed_annotation)
 
 # Checks if the reaction system have any continuous events.
 function has_continuous_events(rn::ReactionSystem)
-    return length(rn.continuous_events) > 0
+    return !isempty(MT.get_continuous_events(rn))
 end
 
 # Extract a string which declares the system's continuous events.
@@ -362,13 +359,13 @@ function get_continuous_events_string(rn::ReactionSystem)
     strip_call_dict = make_strip_call_dict(rn)
 
     # Handles the case with one event separately. Only effect is nicer formatting.
-    if length(rn.continuous_events) == 1
-        return "continuous_events = [$(continuous_event_string(rn.continuous_events.value[1], strip_call_dict))]"
+    if length(MT.get_continuous_events(rn)) == 1
+        return "continuous_events = [$(continuous_event_string(MT.get_continuous_events(rn)[1], strip_call_dict))]"
     end
 
     # Creates the string corresponding to the code which generates the system's reactions. 
     continuous_events_string = "continuous_events = ["
-    for continuous_event in rn.continuous_events.value
+    for continuous_event in MT.get_continuous_events(rn)
         @string_append! continuous_events_string "\n\t" continuous_event_string(continuous_event, strip_call_dict) ","
     end
 
@@ -410,7 +407,7 @@ CONTINUOUS_EVENTS_FS = (has_continuous_events, get_continuous_events_string, get
 
 # Checks if the reaction system have any discrete events.
 function has_discrete_events(rn::ReactionSystem)
-    return length(rn.discrete_events) > 0
+    return !isempty(MT.get_discrete_events(rn))
 end
 
 # Extract a string which declares the system's discrete events.
@@ -419,13 +416,13 @@ function get_discrete_events_string(rn::ReactionSystem)
     strip_call_dict = make_strip_call_dict(rn)
 
     # Handles the case with one event separately. Only effect is nicer formatting.
-    if length(rn.discrete_events) == 1
-        return "discrete_events = [$(discrete_event_string(rn.discrete_events.value[1], strip_call_dict))]"
+    if length(MT.get_discrete_events(rn)) == 1
+        return "discrete_events = [$(discrete_event_string(MT.get_discrete_events(rn)[1], strip_call_dict))]"
     end
 
     # Creates the string corresponding to the code which generates the system's reactions. 
     discrete_events_string = "discrete_events = ["
-    for discrete_event in rn.discrete_events.value
+    for discrete_event in MT.get_discrete_events(rn)
         @string_append! discrete_events_string "\n\t" discrete_event_string(discrete_event, strip_call_dict) ","
     end
 
@@ -470,7 +467,7 @@ DISCRETE_EVENTS_FS = (has_discrete_events, get_discrete_events_string, get_discr
 function push_systems_field(file_text::String, rn::ReactionSystem, annotate::Bool)
     # Checks whther there are any subsystems, and if these are ReactionSystems.
     has_systems(rn) || (return (file_text, false))
-    if any(!(system isa ReactionSystem) for system in ModelingToolkit.get_systems(rn)) 
+    if any(!(system isa ReactionSystem) for system in MT.get_systems(rn)) 
         error("Tries to write a ReactionSystem to file which have non-ReactionSystem subs-systems. This is currently not possible.")
     end
 
@@ -482,23 +479,26 @@ end
 
 # Checks if the reaction system have any systems.
 function has_systems(rn::ReactionSystem)
-    return !isempty(ModelingToolkit.get_systems(rn))
+    return !isempty(MT.get_systems(rn))
 end
 
 # Extract a string which declares the system's systems.
+# The systems variable (`systems_X`) is the only variable where we append an identifier. This is
+# to avoid it getting overwritten by other systems variables (not required for other variables
+# due to the order they appear in).
 function get_systems_string(rn::ReactionSystem, annotate::Bool)
     # Initiates the `systems` string. It is pre-declared vector, into which the systems are added.
-    systems_string = "systems = Vector(undef, $(length(ModelingToolkit.get_systems(rn))))"
+    systems_string = "systems_$(getname(rn)) = Vector(undef, $(length(MT.get_systems(rn))))"
 
     # Loops through all systems, adding their declaration to the system string.
-    for (idx, system) in enumerate(ModelingToolkit.get_systems(rn))
+    for (idx, system) in enumerate(MT.get_systems(rn))
         annotate && (@string_append! systems_string "\n\n# Declares subsystem: $(getname(system))")
 
         # Manipulates the subsystem declaration to make it nicer.
         subsystem_string = get_full_system_string(system, annotate)
         subsystem_string = replace(subsystem_string, "\n" => "\n\t")
         subsystem_string = "let\n" * subsystem_string[7:end-6] * "end"
-        @string_append! systems_string "\nsystems[$idx] = " subsystem_string
+        @string_append! systems_string "\nsystems_$(getname(rn))[$idx] = " subsystem_string
     end
 
     return systems_string

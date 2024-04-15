@@ -1,5 +1,5 @@
 """
-    save_reaction_network(filename::String, rn::ReactionSystem; annotate = true)
+    save_reaction_network(filename::String, rn::ReactionSystem; annotate = true, safety_check = true)
 
 Save a `ReactionSystem` model to a file. The `ReactionSystem` is saved as runnable Julia code. This
 can both be used to save a `ReactionSystem` model, but also to write it to a file for easy inspection.
@@ -8,6 +8,10 @@ Arguments:
 - `filename`: The name of the file to which the `ReactionSystem` is saved.
 - `rn`: The `ReactionSystem` which should be saved to a file.
 - `annotate = true`: Whether annotation should be added to the file.
+- `safety_check = true`: After serialisation, Catalyst will automatically load the serialised
+  `ReactionSystem` and check that it is equal to `rn`. If it is not, an error will be thrown. For
+  models without the `connection_type` field, this should not happen. If performance is required 
+  (i.e. when saving a large number of models), this can be disabled by setting `safety_check = false`.
 
 Example: 
 ```julia
@@ -25,11 +29,16 @@ Notes:
 - `ReactionSystem`s with the `connection_type` field has this ignored (saving of this field has not
   been implemented yet).
 - `ReactionSystem`s with non-`ReactionSystem` sub-systems (e.g. `ODESystem`s) cannot be saved.
+- Reaction systems with components that have units cannot currently be saved.
 - The `ReactionSystem` is saved using *programmatic* (not DSL) format for model creation.
 """
-function save_reaction_network(filename::String, rn::ReactionSystem; annotate = true)
+function save_reaction_network(filename::String, rn::ReactionSystem; annotate = true, safety_check = true)
     open(filename, "w") do file
         write(file, get_full_system_string(rn, annotate))
+    end
+    if safety_check && !isequal(rn, include(filename))
+        rm(filename)
+        error("The serialised `ReactionSystem` is not equal to the original one. Please make a report (including the full system) at https://github.com/SciML/Catalyst.jl/issues. To disable this behaviour, please pass the `safety_check = false` argument to `save_reaction_network` (warning, this will permit the serialisation of an erroneous system).")
     end
     return nothing
 end
@@ -127,7 +136,7 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, has_sivs, has_s
     has_observed && (@string_append! reaction_system_string ", observed")
     has_continuous_events && (@string_append! reaction_system_string ", continuous_events")
     has_discrete_events && (@string_append! reaction_system_string ", discrete_events")
-    has_systems && (@string_append! reaction_system_string ", systems")
+    has_systems && (@string_append! reaction_system_string ", systems = systems_$(getname(rs))")
     has_connection_type && (@string_append! reaction_system_string ", connection_type")
 
     # Potentially appends a combinatoric_ratelaws statement.
@@ -140,7 +149,7 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, has_sivs, has_s
     @string_append! reaction_system_string ")"
     if ModelingToolkit.iscomplete(rs)
         @string_prepend! "rs = " reaction_system_string
-        @string_append! reaction_system_string "\nrs = complete(rs)"
+        @string_append! reaction_system_string "\ncomplete(rs)"
     end
     if annotate 
         @string_prepend! "# Declares ReactionSystem model:\n" reaction_system_string
