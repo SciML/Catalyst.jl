@@ -458,9 +458,9 @@ A `ReactionSystem`'s primary (time) independent variable can be retrieved using 
 
 Currently, Catalyst primarily supports spatial modelling on discrete spatial structures, where spatial independent variables are not used. Hence, this feature is not required for any current Catalyst feature.
 
-### [Variable and reaction metadata](@id advanced_intro_to_catalyst_metadata)
+## [Variable and reaction metadata](@id advanced_intro_to_catalyst_metadata)
 
-#### [Variable metadata](@id advanced_intro_to_catalyst_metadata_variables)
+### [Variable metadata](@id advanced_intro_to_catalyst_metadata_variables)
 It is possible  to attach metadata to symbolic variables. The use of this depend on the metadata, and some may simply be a convenience for the user. E.g. the most general metadata, `description` allows you to attach an arbitrary string to a variable. Metadata is attached when a variable is created by adding it within square brackets after the variable in question.
 ```@example advanced_intro_to_catalyst_indep_metadata
 using Catalyst
@@ -483,7 +483,7 @@ Each metadata have its own implementation, and it is not possible to use custom 
 getdescription(X)
 ```
 
-#### [Reaction metadata](@id advanced_intro_to_catalyst_metadata_reactions_)
+### [Reaction metadata](@id advanced_intro_to_catalyst_metadata_reactions_)
 
 Reactions also have metadata. When created using the DSL, a reaction's metadata is given after the reactions (separated from it by a comma):
 ```@example advanced_intro_to_catalyst_indep_metadata
