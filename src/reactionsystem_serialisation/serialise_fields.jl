@@ -45,7 +45,7 @@ SIVS_FS = (has_sivs, get_sivs_string, get_sivs_annotation)
 
 # Function which handles the addition of species, variable, and parameter declarations to the file
 # text. These must be handled as a unity in case there are default value dependencies between these.
-function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool)
+function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool, top_level::Bool)
     # Fetches the systems parameters, species, and variables. Computes the `has_` `Bool`s.
     ps_all = get_ps(rn)
     sps_all = get_species(rn)
@@ -60,17 +60,18 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool)
     var_deps = any(depends_on(var, vars_all) for var in vars_all)
 
     # Makes the initial declaration.
+    us_n_ps_string = ""
     if !p_deps && has_ps
-        annotate && (@string_append! file_text "\n\n# " get_parameters_annotation(rn))
-        @string_append! file_text "\nps = " get_parameters_string(ps_all)
+        annotate && (@string_append! us_n_ps_string "\n\n# " get_parameters_annotation(rn))
+        @string_append! us_n_ps_string "\nps = " get_parameters_string(ps_all)
     end
     if !sp_deps && has_sps
-        annotate && (@string_append! file_text "\n\n# " get_species_annotation(rn))
-        @string_append! file_text "\nsps = " get_species_string(sps_all)
+        annotate && (@string_append! us_n_ps_string "\n\n# " get_species_annotation(rn))
+        @string_append! us_n_ps_string "\nsps = " get_species_string(sps_all)
     end
     if !var_deps && has_vars
-        annotate && (@string_append! file_text "\n\n# " get_variables_annotation(rn))
-        @string_append! file_text "\nvars = " get_variables_string(vars_all)
+        annotate && (@string_append! us_n_ps_string "\n\n# " get_variables_annotation(rn))
+        @string_append! us_n_ps_string "\nvars = " get_variables_string(vars_all)
     end
 
     # If any set have dependencies, handle these.
@@ -82,12 +83,12 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool)
     if p_deps || sp_deps || var_deps
         # Builds an annotation mentioning specially handled stuff.
         if annotate
-            @string_append! file_text "\n\n# Some "
-            p_deps && (@string_append! file_text "parameters, ")
-            sp_deps && (@string_append! file_text "species, ")
-            var_deps && (@string_append! file_text "variables, ")
-            file_text = file_text[1:end-2]
-            @string_append! file_text " depends on the declaration of other parameters, species, and/or variables.\n# These are specially handled here.\n"
+            @string_append! us_n_ps_string "\n\n# Some "
+            p_deps && (@string_append! us_n_ps_string "parameters, ")
+            sp_deps && (@string_append! us_n_ps_string "species, ")
+            var_deps && (@string_append! us_n_ps_string "variables, ")
+            us_n_ps_string = us_n_ps_string[1:end-2]
+            @string_append! us_n_ps_string " depends on the declaration of other parameters, species, and/or variables.\n# These are specially handled here.\n"
         end
 
         # Pre-declares the sets with written/remaining parameters/species/variables.
@@ -107,20 +108,27 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool)
             writable_vars = dependency_split!(remaining_vars, [remaining_ps; remaining_sps; remaining_vars])
             
             # Writes those that can be written.
-            isempty(writable_ps) || @string_append! file_text get_parameters_string(writable_ps) "\n"
-            isempty(writable_sps) || @string_append! file_text get_species_string(writable_sps) "\n"
-            isempty(writable_vars) || @string_append! file_text get_variables_string(writable_vars) "\n"
+            isempty(writable_ps) || @string_append! us_n_ps_string get_parameters_string(writable_ps) "\n"
+            isempty(writable_sps) || @string_append! us_n_ps_string get_species_string(writable_sps) "\n"
+            isempty(writable_vars) || @string_append! us_n_ps_string get_variables_string(writable_vars) "\n"
         end
 
         # For parameters, species, and/or variables with dependencies, creates final vectors.
-        p_deps && (@string_append! file_text "ps = " syms_2_strings(ps_all) "\n")
-        sp_deps && (@string_append! file_text "sps = " syms_2_strings(sps_all) "\n")
-        var_deps && (@string_append! file_text "vars = " syms_2_strings(vars_all) "\n")
-        file_text = file_text[1:end-1]
+        p_deps && (@string_append! us_n_ps_string "ps = " syms_2_strings(ps_all) "\n")
+        sp_deps && (@string_append! us_n_ps_string "sps = " syms_2_strings(sps_all) "\n")
+        var_deps && (@string_append! us_n_ps_string "vars = " syms_2_strings(vars_all) "\n")
+        us_n_ps_string = us_n_ps_string[1:end-1]
     end
 
-    # Returns the finalised output.
-    return file_text, has_ps, has_sps, has_vars
+    # If this is not a top-level system, `local ` must be added to all declarations.
+    if !top_level
+        us_n_ps_string = replace(us_n_ps_string, "\nps = " => "\nlocal ps = ")
+        us_n_ps_string = replace(us_n_ps_string, "\nsps = " => "\nlocal sps = ")
+        us_n_ps_string = replace(us_n_ps_string, "\nvars = " => "\nlocal vars = ")
+    end
+
+    # Merges the file text with `us_n_ps_string` and return the final outputs.
+    return file_text * us_n_ps_string, has_ps, has_sps, has_vars
 end
 
 
@@ -464,7 +472,7 @@ DISCRETE_EVENTS_FS = (has_discrete_events, get_discrete_events_string, get_discr
 # Specific `push_field` function, which is used for the system field (where the annotation option
 # must be passed to the `get_component_string` function). Since non-ReactionSystem systems cannot be 
 # written to file, this functions throws an error if any such systems are encountered.
-function push_systems_field(file_text::String, rn::ReactionSystem, annotate::Bool)
+function push_systems_field(file_text::String, rn::ReactionSystem, annotate::Bool, top_level::Bool)
     # Checks whther there are any subsystems, and if these are ReactionSystems.
     has_systems(rn) || (return (file_text, false))
     if any(!(system isa ReactionSystem) for system in MT.get_systems(rn)) 
@@ -472,7 +480,9 @@ function push_systems_field(file_text::String, rn::ReactionSystem, annotate::Boo
     end
 
     # Adds the system declaration string to the file string.
-    write_string = "\n" * get_systems_string(rn, annotate)
+    write_string = "\n"
+    top_level || (@string_append! write_string "local ")
+    @string_append! write_string get_systems_string(rn, annotate)
     annotate && (@string_prepend! "\n\n# " get_systems_annotation(rn) write_string)
     return (file_text * write_string, true)
 end
@@ -483,22 +493,19 @@ function has_systems(rn::ReactionSystem)
 end
 
 # Extract a string which declares the system's systems.
-# The systems variable (`systems_X`) is the only variable where we append an identifier. This is
-# to avoid it getting overwritten by other systems variables (not required for other variables
-# due to the order they appear in).
 function get_systems_string(rn::ReactionSystem, annotate::Bool)
     # Initiates the `systems` string. It is pre-declared vector, into which the systems are added.
-    systems_string = "systems_$(getname(rn)) = Vector(undef, $(length(MT.get_systems(rn))))"
+    systems_string = "systems = Vector(undef, $(length(MT.get_systems(rn))))"
 
     # Loops through all systems, adding their declaration to the system string.
     for (idx, system) in enumerate(MT.get_systems(rn))
         annotate && (@string_append! systems_string "\n\n# Declares subsystem: $(getname(system))")
 
         # Manipulates the subsystem declaration to make it nicer.
-        subsystem_string = get_full_system_string(system, annotate)
+        subsystem_string = get_full_system_string(system, annotate, false)
         subsystem_string = replace(subsystem_string, "\n" => "\n\t")
         subsystem_string = "let\n" * subsystem_string[7:end-6] * "end"
-        @string_append! systems_string "\nsystems_$(getname(rn))[$idx] = " subsystem_string
+        @string_append! systems_string "\nsystems[$idx] = " subsystem_string
     end
 
     return systems_string

@@ -34,7 +34,7 @@ Notes:
 """
 function save_reaction_network(filename::String, rn::ReactionSystem; annotate = true, safety_check = true)
     open(filename, "w") do file
-        write(file, get_full_system_string(rn, annotate))
+        write(file, get_full_system_string(rn, annotate, true))
     end
     if safety_check && !isequal(rn, include(filename))
         rm(filename)
@@ -45,34 +45,31 @@ end
 
 # Gets the full string which corresponds to the declaration of a system. Might be called recursively
 # for systems with subsystems.
-function get_full_system_string(rn::ReactionSystem, annotate::Bool)
+function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::Bool)
     # Initiates the file string.
     file_text = ""
-
-    # Sub-systems must (unfortunately) be declared first (as the variables written in their internal
-    # let blocks otherwise will overwrite those of the main system).
-    # Systems are uses custom `push_field` function as these requires the annotation `Bool` 
-    # to be passed to the function that creates the next sub-system declarations.
-    file_text, has_systems = push_systems_field(file_text, rn, annotate)
-
+    
     # Goes through each type of system component, potentially adding it to the string.
     # Species, variables, and parameters must be handled differently in case there is default-values
     # dependencies between them. 
-    file_text, _ = push_field(file_text, rn, annotate, IV_FS)
-    file_text, has_sivs = push_field(file_text, rn, annotate, SIVS_FS)
-    file_text, has_parameters, has_species, has_variables = handle_us_n_ps(file_text, rn, annotate)
-    file_text, has_reactions = push_field(file_text, rn, annotate, REACTIONS_FS)
-    file_text, has_equations = push_field(file_text, rn, annotate, EQUATIONS_FS)
-    file_text, has_observed = push_field(file_text, rn, annotate, OBSERVED_FS)
-    file_text, has_continuous_events = push_field(file_text, rn, annotate, CONTINUOUS_EVENTS_FS)
-    file_text, has_discrete_events = push_field(file_text, rn, annotate, DISCRETE_EVENTS_FS)   
-    file_text, has_connection_type = push_field(file_text, rn, annotate, CONNECTION_TYPE_FS)
+    # Systems uses custom `push_field` function as these requires the annotation `Bool`to be passed 
+    # to the function that creates the next sub-system declarations.
+    file_text, _ = push_field(file_text, rn, annotate, top_level, IV_FS)
+    file_text, has_sivs = push_field(file_text, rn, annotate, top_level, SIVS_FS)
+    file_text, has_parameters, has_species, has_variables = handle_us_n_ps(file_text, rn, annotate, top_level)
+    file_text, has_reactions = push_field(file_text, rn, annotate, top_level, REACTIONS_FS)
+    file_text, has_equations = push_field(file_text, rn, annotate, top_level, EQUATIONS_FS)
+    file_text, has_observed = push_field(file_text, rn, annotate, top_level, OBSERVED_FS)
+    file_text, has_continuous_events = push_field(file_text, rn, annotate, top_level, CONTINUOUS_EVENTS_FS)
+    file_text, has_discrete_events = push_field(file_text, rn, annotate, top_level, DISCRETE_EVENTS_FS)   
+    file_text, has_systems = push_systems_field(file_text, rn, annotate, top_level)
+    file_text, has_connection_type = push_field(file_text, rn, annotate, top_level, CONNECTION_TYPE_FS)
 
     # Finalises the system. Creates the final `ReactionSystem` call.
     # Enclose everything ing a `let ... end` block.
-    rs_creation_code = make_reaction_system_call(rn, annotate, has_sivs, has_species, has_variables, 
-                                                 has_parameters, has_reactions, has_equations, 
-                                                 has_observed, has_continuous_events, 
+    rs_creation_code = make_reaction_system_call(rn, annotate, top_level, has_sivs, has_species, 
+                                                 has_variables, has_parameters, has_reactions, 
+                                                 has_equations, has_observed, has_continuous_events, 
                                                  has_discrete_events, has_systems, has_connection_type)
     annotate || (@string_prepend! "\n" file_text) 
     @string_prepend! "let" file_text 
@@ -83,7 +80,7 @@ end
 
 # Creates a ReactionSystem call for creating the model. Adds all the correct inputs to it. The input
 # `has_` `Bool`s described which inputs are used. If model is `complete`, this is handled here.
-function make_reaction_system_call(rs::ReactionSystem, annotate, has_sivs, has_species, 
+function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_sivs, has_species, 
                                    has_variables, has_parameters, has_reactions, has_equations, 
                                    has_observed, has_continuous_events, has_discrete_events,
                                    has_systems, has_connection_type)
@@ -136,7 +133,7 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, has_sivs, has_s
     has_observed && (@string_append! reaction_system_string ", observed")
     has_continuous_events && (@string_append! reaction_system_string ", continuous_events")
     has_discrete_events && (@string_append! reaction_system_string ", discrete_events")
-    has_systems && (@string_append! reaction_system_string ", systems = systems_$(getname(rs))")
+    has_systems && (@string_append! reaction_system_string ", systems")
     has_connection_type && (@string_append! reaction_system_string ", connection_type")
 
     # Potentially appends a combinatoric_ratelaws statement.
@@ -149,6 +146,7 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, has_sivs, has_s
     @string_append! reaction_system_string ")"
     if ModelingToolkit.iscomplete(rs)
         @string_prepend! "rs = " reaction_system_string
+        top_level || (@string_prepend! "local " reaction_system_string)
         @string_append! reaction_system_string "\ncomplete(rs)"
     end
     if annotate 

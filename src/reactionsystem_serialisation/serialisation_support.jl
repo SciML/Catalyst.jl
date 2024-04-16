@@ -25,10 +25,24 @@ end
 ### Field Serialisation Support Functions ###
 
 # Function which handles the addition of a single component to the file string.
-function push_field(file_text::String, rn::ReactionSystem, annotate::Bool, comp_funcs::Tuple)
+function push_field(file_text::String, rn::ReactionSystem, annotate::Bool, top_level::Bool, comp_funcs::Tuple)
     has_component, get_comp_string, get_comp_annotation = comp_funcs
     has_component(rn) || (return (file_text, false))
-    write_string = "\n" * get_comp_string(rn)
+
+    # Prepares the text creating the field. For non-top level systems, adds `local `. Observables
+    # must be handled differently (as the declaration is not at the beginning of the code for these).
+    # The independent variables is not declared as a variable, and also should not have a `1ocal `.
+    write_string = get_comp_string(rn)
+    if !(top_level || comp_funcs == IV_FS)
+        if comp_funcs == OBSERVED_FS
+            write_string = replace(write_string, "\nobserved = [" => "\nlocal observed = [")
+        else
+            @string_prepend! "local " write_string
+        end
+    end
+    @string_prepend! "\n" write_string
+
+    # Adds (potential) annotation. Returns the expanded file text, and a Bool that this field was added.
     annotate && (@string_prepend! "\n\n# " get_comp_annotation(rn) write_string)
     return (file_text * write_string, true)
 end
