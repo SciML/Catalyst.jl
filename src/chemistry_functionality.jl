@@ -346,3 +346,16 @@ function create_matrix(reaction::Catalyst.Reaction)
 
     return A
 end
+
+"""
+    balance_system(rs::ReactionSystem)
+
+From a system, creates a new system where each reaction is a balanced version of the corresponding
+reaction of the original system. For more information, consider the `balance_reaction` function
+(which is internally applied to each system reaction).
+"""
+function balance_system(rs::ReactionSystem)
+    @set! rs.eqs = [(eq isa Reaction) ? balance_reaction(eq) : eq for eq in get_eqs(rs)]
+    @set! rs.rxs = [balance_reaction(rx) for rx in get_rxs(rs)]
+    return rs
+end

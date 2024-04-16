@@ -425,5 +425,58 @@ let
     @test isequal([rn.CO2,  rn.H2O], brxs.substrates)
     @test isequal([rn.C6H12O6,  rn.O2], brxs.products)
     @test isequal([6, 6], brxs.substoich)
-    @test isequal([1,  6], brxs.prodstoich)    
+    @test isequal([1, 6], brxs.prodstoich)    
+end
+
+
+### Reaction System Balancing ###
+
+# Simple example with multiple reactions.
+let
+    # Creates a reaction system and tis balanced version.
+    rs = @reaction_network begin
+        @species C(t) O(t) H(t)
+        @compounds begin
+            H2(t) = 2H
+            CH4(t) = C + 4H
+            O2(t) = 2O
+            CO2(t) = C + 2O
+            H2O(t) = 2H + O
+        end
+        1.0, C + H2 --> CH4
+        2.0, CH4 + O2 --> CO2 + H2O
+    end
+    rs_balanced = balance_system(rs)
+
+    # Checks that the system is correctly balanced (while not taking order of reactions or of
+    # substrates/products for granted).
+    rx1 = filter(rx -> isequal(rx.rate, 1.0), reactions(rs_balanced))[1]
+    rx2 = filter(rx -> isequal(rx.rate, 2.0), reactions(rs_balanced))[1]
+    @test issetequal(rx1.substoich, [1,2])
+    @test issetequal(rx1.prodstoich, [1])
+    @test issetequal(rx2.substoich, [1,2])
+    @test issetequal(rx2.prodstoich, [1,2])
+end
+
+# Checks for system with non-reaction equations.
+let
+    # Creates a reaction system and tis balanced version.
+    rs = @reaction_network begin
+        @species O(t) H(t)
+        @compounds begin
+            H2(t) = 2H
+            O2(t) = 2O
+            H2O(t) = 2H + O
+        end
+        @equation begin
+            D(V) ~ 1 - V
+        end
+        1.0, H2 + O2 --> H2O
+    end
+    rs_balanced = balance_system(rs)
+
+    # Checks that the system is correctly balanced (while not taking order of reactions or of
+    # substrates/products for granted).
+    @test issetequal(reactions(rs_balanced)[1].substoich, [2,1])
+    @test issetequal(reactions(rs_balanced)[1].prodstoich, [2])
 end
