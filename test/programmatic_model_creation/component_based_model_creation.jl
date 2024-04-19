@@ -363,7 +363,6 @@ let
     rn2 = extend(osys, rn)
     rn2 = complete(rn2)
     rnodes = complete(convert(ODESystem, rn2))
-    # @test_throws ErrorException convert(NonlinearSystem, rn2)
 
     # Ensure right number of equations are generated.
     @variables G(t)

@@ -13,12 +13,12 @@ t = default_t()
 D = default_time_deriv()
 
 
-### Basic Differential Hybrid Tests ###
+### Basic Coupled Differential Equations Tests ###
 
-# Tests hybrid CRN/ODE. Checks that known steady state is reached.
+# Tests coupled CRN/ODE. Checks that known steady state is reached.
 # Check that steady state can be found using NonlinearSolve and SteadyStateDiffEq.
 let
-    # Creates hybrid reactions system.
+    # Creates coupled reactions system.
     @parameters p d k
     @species X(t)
     @variables A(t)
@@ -27,17 +27,17 @@ let
         Reaction(d, [X], nothing),
         D(A) ~ p*X - k*A
     ]
-    @named hybrid_rs = ReactionSystem(eqs, t)
-    hybrid_rs = complete(hybrid_rs)
+    @named coupled_rs = ReactionSystem(eqs, t)
+    coupled_rs = complete(coupled_rs)
 
     # Basic model checks.
-    @test issetequal(parameters(hybrid_rs), [p, d, k])
-    @test issetequal(species(hybrid_rs), unknowns(hybrid_rs)[1:1])
-    @test issetequal(unknowns(hybrid_rs)[1:1], [X])
-    @test issetequal(unknowns(hybrid_rs)[2:2], [A])
-    @test issetequal(reactions(hybrid_rs), equations(hybrid_rs)[1:2])
-    @test issetequal(equations(hybrid_rs)[1:2], eqs[1:2])
-    @test issetequal(equations(hybrid_rs)[3:3], eqs[3:3])
+    @test issetequal(parameters(coupled_rs), [p, d, k])
+    @test issetequal(species(coupled_rs), unknowns(coupled_rs)[1:1])
+    @test issetequal(unknowns(coupled_rs)[1:1], [X])
+    @test issetequal(unknowns(coupled_rs)[2:2], [A])
+    @test issetequal(reactions(coupled_rs), equations(coupled_rs)[1:2])
+    @test issetequal(equations(coupled_rs)[1:2], eqs[1:2])
+    @test issetequal(equations(coupled_rs)[3:3], eqs[3:3])
 
     # Set simulation inputs.
     u0 = [X => 0.1, A => 10.0]
@@ -45,22 +45,22 @@ let
     ps = [p => 1.0, d => 0.5, k => 2.0]
 
     # Checks that the correct steady state is found through ODEProblem.
-    oprob = ODEProblem(hybrid_rs, u0, tspan, ps)
+    oprob = ODEProblem(coupled_rs, u0, tspan, ps)
     osol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
     @test osol[end] ≈ [2.0, 1.0]
 
     # Checks that the correct steady state is found through NonlinearProblem.
-    nlprob = NonlinearProblem(hybrid_rs, u0, ps)
+    nlprob = NonlinearProblem(coupled_rs, u0, ps)
     nlsol = solve(nlprob; abstol = 1e-8, reltol = 1e-8)
     @test nlsol ≈ [2.0, 1.0]
 
     # Checks that the correct steady state is found through SteadyStateProblem.
-    ssprob = SteadyStateProblem(hybrid_rs, u0, ps)
+    ssprob = SteadyStateProblem(coupled_rs, u0, ps)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
     @test sssol ≈ [2.0, 1.0]
 end
 
-# Checks that hybrid systems created via the DSL, extension, and programmatically are identical.
+# Checks that coupled systems created via the DSL, extension, and programmatically are identical.
 # Check that these contain the correct stuff (in the correct order).
 # Checks that that these systems yield identical simulations reaching the known (correct) steady state.
 # Checks interpolation of variables between the reaction system and ODE.
@@ -77,8 +77,8 @@ let
         Reaction(k1*A, [X1], [X2]),
         Reaction(k2*B, [X2], [X1])
     ]
-    hybrid_rs_prog = ReactionSystem(eqs_prog, t, [A, B, X1, X2], [k1, k2, a, b]; name = :hybrid_rs)
-    hybrid_rs_prog = complete(hybrid_rs_prog)
+    coupled_rs_prog = ReactionSystem(eqs_prog, t, [A, B, X1, X2], [k1, k2, a, b]; name = :coupled_rs)
+    coupled_rs_prog = complete(coupled_rs_prog)
 
     # Creates model by extending a `ReactionSystem` with a ODESystem.
     rn_extended = @network_component begin
@@ -89,10 +89,10 @@ let
         D(B) ~ X2 + b - B
     ]
     @named osys_extended = ODESystem(eqs_extended, t)
-    hybrid_rs_extended = complete(extend(osys_extended, rn_extended; name = :hybrid_rs))
+    coupled_rs_extended = complete(extend(osys_extended, rn_extended; name = :coupled_rs))
 
     # Creates the model through the DSL.
-    hybrid_rs_dsl = @reaction_network hybrid_rs begin
+    coupled_rs_dsl = @reaction_network coupled_rs begin
         @parameters k1 k2 a b
         @equations begin
             D(A) ~ X1 + a - A
@@ -102,32 +102,32 @@ let
     end
 
     # Checks that models are equivalent and contain the correct stuff.
-    @test hybrid_rs_prog == hybrid_rs_extended == hybrid_rs_dsl
-    @test issetequal(parameters(hybrid_rs_extended), [a, b, k1, k2])
-    @test issetequal(species(hybrid_rs_extended), [X1, X2])
-    @test issetequal(unknowns(hybrid_rs_extended)[1:2], [X1, X2])
-    @test issetequal(unknowns(hybrid_rs_extended)[3:4], [A, B])
-    @test issetequal(equations(hybrid_rs_extended)[3:4], eqs_extended)
+    @test coupled_rs_prog == coupled_rs_extended == coupled_rs_dsl
+    @test issetequal(parameters(coupled_rs_extended), [a, b, k1, k2])
+    @test issetequal(species(coupled_rs_extended), [X1, X2])
+    @test issetequal(unknowns(coupled_rs_extended)[1:2], [X1, X2])
+    @test issetequal(unknowns(coupled_rs_extended)[3:4], [A, B])
+    @test issetequal(equations(coupled_rs_extended)[3:4], eqs_extended)
 
     # Simulates the three models, checking that they all yield the correct end point.
     u0 = [A => 1.0, B => 1.0, X1 => 10.0, X2 => 10.0]
     tspan = (0.0, 100.)
     ps = [a => 1.0, b => 1.0, k1 => 1.0, k2 => 1.0]
-    for hybrid_rs in [hybrid_rs_prog, hybrid_rs_extended, hybrid_rs_dsl]
-        oprob = ODEProblem(hybrid_rs, u0, tspan, ps)
+    for coupled_rs in [coupled_rs_prog, coupled_rs_extended, coupled_rs_dsl]
+        oprob = ODEProblem(coupled_rs, u0, tspan, ps)
         osol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
         osol[end] ≈ [10.0, 10.0, 11.0, 11.0]
     end
 end
 
 
-### Basic Algebraic Hybrid Tests ###
+### Basic Coupled Algebraic Equations Tests ###
 
-# Tests hybrid CRN/algebraic equation. Checks that known steady state is reached using ODE solve.
+# Tests coupled CRN/algebraic equation. Checks that known steady state is reached using ODE solve.
 # Check that steady state can be found using NonlinearSolve and SteadyStateDiffEq.
 # Checks that errors are given if `structural_simplify = true` argument is not given.
 let 
-    # Creates a simple hybrid model with an algebraic equation.
+    # Creates a simple coupled model with an algebraic equation.
     @parameters p d a b
     @species X(t)
     @variables A(t)
@@ -136,17 +136,17 @@ let
         Reaction(d, [X], nothing),
         a*A^2 ~ X + b
     ]
-    @named hybrid_rs = ReactionSystem(eqs, t)
-    hybrid_rs = complete(hybrid_rs)
+    @named coupled_rs = ReactionSystem(eqs, t)
+    coupled_rs = complete(coupled_rs)
 
     # Check model content.
-    @test issetequal(parameters(hybrid_rs), [p, d, a, b])
-    @test issetequal(species(hybrid_rs), unknowns(hybrid_rs)[1:1])
-    @test issetequal(unknowns(hybrid_rs)[1:1], [X])
-    @test issetequal(unknowns(hybrid_rs)[2:2], [A])
-    @test issetequal(reactions(hybrid_rs), equations(hybrid_rs)[1:2])
-    @test issetequal(equations(hybrid_rs)[1:2], eqs[1:2])
-    @test issetequal(equations(hybrid_rs)[3:3], eqs[3:3])
+    @test issetequal(parameters(coupled_rs), [p, d, a, b])
+    @test issetequal(species(coupled_rs), unknowns(coupled_rs)[1:1])
+    @test issetequal(unknowns(coupled_rs)[1:1], [X])
+    @test issetequal(unknowns(coupled_rs)[2:2], [A])
+    @test issetequal(reactions(coupled_rs), equations(coupled_rs)[1:2])
+    @test issetequal(equations(coupled_rs)[1:2], eqs[1:2])
+    @test issetequal(equations(coupled_rs)[3:3], eqs[3:3])
 
     # Set simulation inputs.
     u0 = [X => 0.1, A => 10.0]
@@ -154,29 +154,29 @@ let
     ps = [p => 1.0, d => 0.5, a => 2.0, b => 16.0]
 
     # Checks not using `structural_simplify` argument yields an error.
-    @test_throws Exception ODEProblem(hybrid_rs, u0, tspan, ps)
-    @test_throws Exception SteadyStateProblem(hybrid_rs, u0, ps)
+    @test_throws Exception ODEProblem(coupled_rs, u0, tspan, ps)
+    @test_throws Exception SteadyStateProblem(coupled_rs, u0, ps)
 
     # Checks that the correct steady state is found through ODEProblem.
-    oprob = ODEProblem(hybrid_rs, u0, tspan, ps; structural_simplify = true)
+    oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true)
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
     @test osol[end] ≈ [2.0, 3.0]
 
     # Checks that the correct steady state is found through NonlinearProblem.
-    nlprob = NonlinearProblem(hybrid_rs, u0, ps)
+    nlprob = NonlinearProblem(coupled_rs, u0, ps)
     nlsol = solve(nlprob)
     @test nlsol ≈ [2.0, 3.0]
 
     # Checks that the correct steady state is found through SteadyStateProblem.
-    ssprob = SteadyStateProblem(hybrid_rs, u0, ps; structural_simplify = true)
+    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
     @test sssol ≈ [2.0, 3.0]
 end
 
 
-### Basic Combined Algebraic/Hybrid Hybrid Tests ###
+### Basic Combined Coupled Algebraic/Differential Equations Tests ###
 
-# Checks that a combined reaction/differential/algebraic hybrid system can be created.
+# Checks that a combined reaction/differential/algebraic coupled system can be created.
 # Checks that it can its ODE, SteadyState, and Nonlinear problems all can be solved.
 # Checks that Tuple u0/ps input, and non-default independent variables works.
 # The system is mostly made up to be non-trivial, but reliably solvable.
@@ -192,8 +192,8 @@ let
         Reaction(d, [X], nothing),
         (X + C)*B ~ A
     ]
-    @named hybrid_rs = ReactionSystem(eqs, τ)
-    hybrid_rs = complete(hybrid_rs)
+    @named coupled_rs = ReactionSystem(eqs, τ)
+    coupled_rs = complete(coupled_rs)
 
     # Set simulation inputs.
     u0 = (X => 1.0, A => 2.0, B => 3.0, C => 4.0)
@@ -201,9 +201,9 @@ let
 
     # Creates and solves a ODE, SteadyState, and Nonlinear problems.
     # Success is tested by checking that the same steady state solution is found.
-    oprob = ODEProblem(hybrid_rs, u0, (0.0, 1000.0), ps; structural_simplify = true)
-    ssprob = SteadyStateProblem(hybrid_rs, u0, ps; structural_simplify = true)
-    nlprob = NonlinearProblem(hybrid_rs, u0, ps)
+    oprob = ODEProblem(coupled_rs, u0, (0.0, 1000.0), ps; structural_simplify = true)
+    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
+    nlprob = NonlinearProblem(coupled_rs, u0, ps)
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
     nlsol = solve(nlprob; abstol = 1e-8, reltol = 1e-8)
@@ -213,11 +213,11 @@ end
 
 ### Species, Variables, and Parameter Handling ###
 
-# Checks that hybrid systems contain the correct species, variables, and parameters.
+# Checks that coupled systems contain the correct species, variables, and parameters.
 # Checks that species, variables, and parameters are inferred correctly from equations.
 # Checks that non-default iv is inferred correctly from reactions/equations.
 let 
-    # Create hybrid model.
+    # Create coupled model.
     @variables τ A(τ) B(τ)
     @species X(τ) X2(τ)
     @parameters k1 k2 k b1 b2
@@ -228,23 +228,23 @@ let
         D(A) ~ k*X2 - A,
         B + A ~ b1*X + b2*X2
     ]
-    @named hybrid_rs = ReactionSystem(eqs, τ)
-    hybrid_rs = complete(hybrid_rs)
+    @named coupled_rs = ReactionSystem(eqs, τ)
+    coupled_rs = complete(coupled_rs)
 
-    # Checks that systems created from hybrid reaction systems contain the correct content (in the correct order).
-    osys = convert(ODESystem, hybrid_rs)
-    ssys = convert(SDESystem, hybrid_rs)
-    nlsys = convert(NonlinearSystem, hybrid_rs)
-    for sys in [hybrid_rs, osys, ssys, nlsys]
+    # Checks that systems created from coupled reaction systems contain the correct content (in the correct order).
+    osys = convert(ODESystem, coupled_rs)
+    ssys = convert(SDESystem, coupled_rs)
+    nlsys = convert(NonlinearSystem, coupled_rs)
+    for sys in [coupled_rs, osys, ssys, nlsys]
         @test issetequal(parameters(sys), [k1, k2, k, b1, b2])
         @test issetequal(unknowns(sys)[1:2], [X, X2])
         @test issetequal(unknowns(sys)[3:4], [A, B])
     end
 end
 
-# Checks that parameters, species, and variables can be correctly accessed in hybrid systems.
+# Checks that parameters, species, and variables can be correctly accessed in coupled systems.
 # Checks for both differential and algebraic equations.
-# Checks for problems, integrators, and solutions yielded by hybrid systems.
+# Checks for problems, integrators, and solutions yielded by coupled systems.
 # Checks that metadata, types, and default values are carried through correctly.
 @test_broken let # SDEs are currently broken with structural simplify.
     # Creates the model
@@ -268,55 +268,55 @@ end
         C3^2 ~ c3 + B3^5,
         C4^2 ~ c4 + B4^5
     ]
-    @named hybrid_rs = ReactionSystem(eqs, t)
-    hybrid_rs = complete(hybrid_rs)
+    @named coupled_rs = ReactionSystem(eqs, t)
+    coupled_rs = complete(coupled_rs)
 
     # Checks that the model has the correct content.
-    @test issetequal(parameters(hybrid_rs), [a1, a2, a3, a4, b1, b2, b3, b4, c1, c2, c3, c4])
-    @test issetequal(species(hybrid_rs), unknowns(hybrid_rs)[1:4])
-    @test issetequal(unknowns(hybrid_rs)[1:4], [A1, A2, A3, A4])
-    @test issetequal(unknowns(hybrid_rs)[5:12], [B1, B2, B3, B4, C1, C2, C3, C4])
-    @test issetequal(reactions(hybrid_rs)[1:4], equations(hybrid_rs)[1:4])
-    @test issetequal(equations(hybrid_rs)[1:4], eqs[1:4])
-    @test issetequal(equations(hybrid_rs)[5:12], eqs[5:12])
+    @test issetequal(parameters(coupled_rs), [a1, a2, a3, a4, b1, b2, b3, b4, c1, c2, c3, c4])
+    @test issetequal(species(coupled_rs), unknowns(coupled_rs)[1:4])
+    @test issetequal(unknowns(coupled_rs)[1:4], [A1, A2, A3, A4])
+    @test issetequal(unknowns(coupled_rs)[5:12], [B1, B2, B3, B4, C1, C2, C3, C4])
+    @test issetequal(reactions(coupled_rs)[1:4], equations(coupled_rs)[1:4])
+    @test issetequal(equations(coupled_rs)[1:4], eqs[1:4])
+    @test issetequal(equations(coupled_rs)[5:12], eqs[5:12])
 
     # Checks that parameters, species, and variables carried the correct information.
-    @test unwrap(hybrid_rs.a1) isa BasicSymbolic{Real}
-    @test unwrap(hybrid_rs.a2) isa BasicSymbolic{Rational{Int64}}
-    @test unwrap(hybrid_rs.a3) isa BasicSymbolic{Real}
-    @test unwrap(hybrid_rs.a4) isa BasicSymbolic{Rational{Int64}}
-    @test unwrap(hybrid_rs.b1) isa BasicSymbolic{Real}
-    @test unwrap(hybrid_rs.b2) isa BasicSymbolic{Int64}
-    @test unwrap(hybrid_rs.b3) isa BasicSymbolic{Real}
-    @test unwrap(hybrid_rs.b4) isa BasicSymbolic{Int64}
-    @test unwrap(hybrid_rs.c1) isa BasicSymbolic{Real}
-    @test unwrap(hybrid_rs.c2) isa BasicSymbolic{Float32}
-    @test unwrap(hybrid_rs.c3) isa BasicSymbolic{Real}
-    @test unwrap(hybrid_rs.c4) isa BasicSymbolic{Float32}
-    @test getdescription(hybrid_rs.a1) == "Parameter a1"
-    @test getdescription(hybrid_rs.a4) == "Parameter a4"
-    @test getdescription(hybrid_rs.b1) == "Parameter b1"
-    @test getdescription(hybrid_rs.b4) == "Parameter b4"
-    @test getdescription(hybrid_rs.c1) == "Parameter c1"
-    @test getdescription(hybrid_rs.c4) == "Parameter c4"
-    @test getdefault(hybrid_rs.a3) == 0.3
-    @test getdefault(hybrid_rs.a4) == 4//10
-    @test getdefault(hybrid_rs.b3) == 3
-    @test getdefault(hybrid_rs.b4) == 4
-    @test getdefault(hybrid_rs.c3) == 30
-    @test getdefault(hybrid_rs.c4) == 40
-    @test getdescription(hybrid_rs.A1) == "Species A1"
-    @test getdescription(hybrid_rs.A3) == "Species A3"
-    @test getdescription(hybrid_rs.B1) == "Variable B1"
-    @test getdescription(hybrid_rs.B3) == "Variable B3"
-    @test getdescription(hybrid_rs.C1) == "Variable C1"
-    @test getdescription(hybrid_rs.C3) == "Variable C3"
-    @test getdefault(hybrid_rs.A2) == 0.2
-    @test getdefault(hybrid_rs.A3) == 0.3
-    @test getdefault(hybrid_rs.B2) == 2.0
-    @test getdefault(hybrid_rs.B3) == 3.0
-    @test getdefault(hybrid_rs.C2) == 20.0
-    @test getdefault(hybrid_rs.C3) == 30.0
+    @test unwrap(coupled_rs.a1) isa BasicSymbolic{Real}
+    @test unwrap(coupled_rs.a2) isa BasicSymbolic{Rational{Int64}}
+    @test unwrap(coupled_rs.a3) isa BasicSymbolic{Real}
+    @test unwrap(coupled_rs.a4) isa BasicSymbolic{Rational{Int64}}
+    @test unwrap(coupled_rs.b1) isa BasicSymbolic{Real}
+    @test unwrap(coupled_rs.b2) isa BasicSymbolic{Int64}
+    @test unwrap(coupled_rs.b3) isa BasicSymbolic{Real}
+    @test unwrap(coupled_rs.b4) isa BasicSymbolic{Int64}
+    @test unwrap(coupled_rs.c1) isa BasicSymbolic{Real}
+    @test unwrap(coupled_rs.c2) isa BasicSymbolic{Float32}
+    @test unwrap(coupled_rs.c3) isa BasicSymbolic{Real}
+    @test unwrap(coupled_rs.c4) isa BasicSymbolic{Float32}
+    @test getdescription(coupled_rs.a1) == "Parameter a1"
+    @test getdescription(coupled_rs.a4) == "Parameter a4"
+    @test getdescription(coupled_rs.b1) == "Parameter b1"
+    @test getdescription(coupled_rs.b4) == "Parameter b4"
+    @test getdescription(coupled_rs.c1) == "Parameter c1"
+    @test getdescription(coupled_rs.c4) == "Parameter c4"
+    @test getdefault(coupled_rs.a3) == 0.3
+    @test getdefault(coupled_rs.a4) == 4//10
+    @test getdefault(coupled_rs.b3) == 3
+    @test getdefault(coupled_rs.b4) == 4
+    @test getdefault(coupled_rs.c3) == 30
+    @test getdefault(coupled_rs.c4) == 40
+    @test getdescription(coupled_rs.A1) == "Species A1"
+    @test getdescription(coupled_rs.A3) == "Species A3"
+    @test getdescription(coupled_rs.B1) == "Variable B1"
+    @test getdescription(coupled_rs.B3) == "Variable B3"
+    @test getdescription(coupled_rs.C1) == "Variable C1"
+    @test getdescription(coupled_rs.C3) == "Variable C3"
+    @test getdefault(coupled_rs.A2) == 0.2
+    @test getdefault(coupled_rs.A3) == 0.3
+    @test getdefault(coupled_rs.B2) == 2.0
+    @test getdefault(coupled_rs.B3) == 3.0
+    @test getdefault(coupled_rs.C2) == 20.0
+    @test getdefault(coupled_rs.C3) == 30.0
 
     # Creates problem inputs.
     u0 = [a1 => 0.1, a2 => 2//10, b1 => 1.0, b2 => 2, c1 => 10.0, c2 => 20.0]
@@ -324,17 +324,17 @@ end
     ps = [A1 => 0.1, B1 => 1.0, C1 => 10.0]
 
     # Create ODE structures.
-    oprob = ODEProblem(hybrid_rs, u0, tspan, ps; structural_simplify = true)
+    oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true)
     oint = init(oprob, Tsit5())
     osol = solve(oprob, Tsit5())
 
     # Create SDE structures.
-    sprob = SDEProblem(hybrid_rs, u0, tspan, ps)
+    sprob = SDEProblem(coupled_rs, u0, tspan, ps)
     sint = init(oprob, ImplicitEM())
     ssol = solve(oprob, ImplicitEM())
 
     # Creates Nonlinear structures.
-    nlprob = NonlinearProblem(hybrid_rs, u0, ps)
+    nlprob = NonlinearProblem(coupled_rs, u0, ps)
     nlint = init(nlprob, NewtonRaphson())
     nlsol = solve(nlprob, NewtonRaphson())
 
@@ -373,13 +373,13 @@ end
 end
 
 
-### Hybrid SDE Tests ###
+### Coupled SDESystem Tests ###
 
-# Checks that a hybrid SDE + differential equations works.
+# Checks that a coupled SDE + differential equations works.
 # Checks that CLE noise does not affect ODE part that should be deterministic.
 # Only considers added differential equations without noise.
 let
-    # Creates hybrid reactions system.
+    # Creates coupled reactions system.
     @parameters p d k1 k2
     @species X(t)
     @variables A(t) B(t)
@@ -389,8 +389,8 @@ let
         D(A) ~ X - k1*A,
         D(B) ~ k2 - B
     ]
-    @named hybrid_rs = ReactionSystem(eqs, t)
-    hybrid_rs = complete(hybrid_rs)
+    @named coupled_rs = ReactionSystem(eqs, t)
+    coupled_rs = complete(coupled_rs)
 
     # Set simulation inputs.
     u0 = [X => 100.0, A => 50.0, B => 2.0]
@@ -398,17 +398,17 @@ let
     ps = [p => 10.0, d => 0.1, k1 => 2.0, k2 => 20.0]
 
     # Checks that the simulations have the expected means (or endpoint, for B).
-    sprob = SDEProblem(hybrid_rs, u0, tspan, ps)
+    sprob = SDEProblem(coupled_rs, u0, tspan, ps)
     ssol = solve(sprob, ImplicitEM(); maxiters = 1e9, seed)
     @test mean(ssol[:X]) ≈ 100.0 atol = 1e-2 rtol = 1e-2
     @test mean(ssol[:A]) ≈ 50.0 atol = 1e-2 rtol = 1e-2
     @test ssol[:B][end] ≈ 20.0
 end
 
-# Checks that a hybrid SDE + algebraic equations works.
-# Checks that structural_simplify is required to simulate hybrid SDE + algebraic equations.
+# Checks that a coupled SDE + algebraic equations works.
+# Checks that structural_simplify is required to simulate coupled SDE + algebraic equations.
 @test_broken let # SDEs are currently broken with structural simplify (https://github.com/SciML/ModelingToolkit.jl/issues/2614).
-    # Creates hybrid reactions system.
+    # Creates coupled reactions system.
     @parameters p d k1 k2
     @species X(t)
     @variables A(t)
@@ -417,8 +417,8 @@ end
         Reaction(d, [X], nothing),
         2 + k1 * A ~ 3 + k2 * X
     ]
-    @named hybrid_rs = ReactionSystem(eqs, t)
-    hybrid_rs = complete(hybrid_rs)
+    @named coupled_rs = ReactionSystem(eqs, t)
+    coupled_rs = complete(coupled_rs)
 
     # Set simulation inputs.
     u0 = [X => 100.0, A => 10.0]
@@ -426,20 +426,68 @@ end
     ps = Dict([p => 1.0, d => 0.01, k1 => 3.0, k2 => 4.0])
 
     # Check that the structural_simplify argument is required.
-    @test_throws Exception SDEProblem(hybrid_rs, u0, tspan, ps)
+    @test_throws Exception SDEProblem(coupled_rs, u0, tspan, ps)
 
     # Checks the algebraic equation holds.
-    sprob = SDEProblem(hybrid_rs, u0, tspan, ps; structural_simplify = true)
+    sprob = SDEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true)
     ssol = solve(sprob, ImplicitEM())
     @test 2 .+ ps[:k1] * ssol[:A] == 3 .+ ps[:k2] * ssol[:X]    
 end
 
+
+### Coupled NonlinearSystems Tests ###
+
+# Checks that systems with weird differential equations yield appropriate warnings.
+let 
+    # This oen is normal, and should not yield a warning.
+    begin
+        rs = @reaction_network begin
+            @equations D(V) ~ 1.0 - V
+        end
+        @test_nowarn convert(NonlinearSystem, rs)
+    end
+    
+    # Higher-order differential on the lhs, should yield a warning.
+    begin
+        rs = @reaction_network begin
+            @differentials D = Differential(t)
+            @variables V(t)
+            @equations D(D(V)) ~ 1.0 - V
+            (p,d), 0 <--> X
+        end
+        @test_broken false # Had problem writing this test, need to fix.
+        #@test_warn convert(NonlinearSystem, rs)
+    end
+    
+    # Differential on the rhs, should yield a warning.
+    begin
+        rs = @reaction_network begin
+            @variables U(t)
+            @equations D(V) ~ 1.0 - V + D(U)
+            (p,d), 0 <--> X
+        end
+        @test_broken false # Had problem writing this test, need to fix.
+        #@test_warn convert(NonlinearSystem, rs)
+    end
+    
+    # Non-differential term on the lhs, should yield a warning.
+    begin
+        rs = @reaction_network begin
+            @differentials D = Differential(t)
+            @variables V(t)
+            @equations D(V) + V ~ 1.0 - V
+            (p,d), 0 <--> X
+        end
+        @test_broken false # Had problem writing this test, need to fix.
+        #@test_warn convert(NonlinearSystem, rs)
+    end
+end
 ### Unusual Differentials Tests ###
 
-# Tests that hybrid CRN/DAEs with higher order differentials can be created.
+# Tests that coupled CRN/DAEs with higher order differentials can be created.
 # Tests that these can be solved using ODEs, nonlinear solving, and steady state simulations.
 let 
-    # Create hybrid model.
+    # Create coupled model.
     @species X(t)
     @variables A(t) B(t)
     @parameters p d ω k
@@ -449,13 +497,13 @@ let
         D(D(A)) + 2ω*D(A) +(ω^2)*A ~ 0,
         A + k*(B + D(A)) ~ X 
     ]
-    @named hybrid_rs = ReactionSystem(eqs, t)
-    hybrid_rs = complete(hybrid_rs)
+    @named coupled_rs = ReactionSystem(eqs, t)
+    coupled_rs = complete(coupled_rs)
     u0 = [X => 1.0, A => 2.0, D(A) => 1.0]
     ps = [p => 2.0, d => 1.0, ω => 0.5, k => 2.0]
 
     # Checks that ODE an simulation of the system achieves the correct steady state.
-    oprob = ODEProblem(hybrid_rs, u0, (0.0, 1000.0), ps; structural_simplify = true)
+    oprob = ODEProblem(coupled_rs, u0, (0.0, 1000.0), ps; structural_simplify = true)
     osol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
     @test osol[X][end] ≈ 2.0
     @test osol[A][end] ≈ 0.0 atol = 1e-8
@@ -465,7 +513,7 @@ let
     # Checks that SteadyState simulation of the system achieves the correct steady state.
     # Currently broken due to MTK.
     @test_broken begin
-        ssprob = SteadyStateProblem(hybrid_rs, u0, ps; structural_simplify = true)
+        ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
         sssol = solve(oprob, DynamicSS(Vern7()); abstol = 1e-8, reltol = 1e-8)
         @test osol[X][end] ≈ 2.0
         @test osol[A][end] ≈ 0.0 atol = 1e-8
@@ -477,7 +525,7 @@ let
     # Here `B => 0.1` has to be provided as well (and it shouldn't for the 2nd order ODE), hence the 
     # separate `u0` declaration.
     u0 = [X => 1.0, A => 2.0, D(A) => 1.0, B => 0.1]
-    nlprob = NonlinearProblem(hybrid_rs, u0, ps; structural_simplify = true)
+    nlprob = NonlinearProblem(coupled_rs, u0, ps; structural_simplify = true)
     nlsol = solve(nlprob)
     @test nlsol[X][end] ≈ 2.0
     @test nlsol[A][end] ≈ 0.0
@@ -506,11 +554,11 @@ let
             D(M) ~ -I*M/(m1 + m2),
             H ~ h_max - I
         ]
-        @named hybrid_sir_ordered = ReactionSystem(eqs_ordered, t)
-        hybrid_sir_ordered = complete(hybrid_sir_ordered)
+        @named coupled_sir_ordered = ReactionSystem(eqs_ordered, t)
+        coupled_sir_ordered = complete(coupled_sir_ordered)
 
         # Checks that ODE an simulation of the system achieves the correct steady state.
-        oprob_ordered = ODEProblem(hybrid_sir_ordered, u0, tspan, ps; structural_simplify = true)
+        oprob_ordered = ODEProblem(coupled_sir_ordered, u0, tspan, ps; structural_simplify = true)
         solve(oprob_ordered, Vern7(); abstol = 1e-8, reltol = 1e-8, saveat = 1.0)
     end
 
@@ -525,11 +573,11 @@ let
             I*M + m1*Δ(M) ~ -m2*Δ(M),
             H ~ h_max - I
         ]
-        @named hybrid_sir_messy = ReactionSystem(eqs_messy, τ)
-        hybrid_sir_messy = complete(hybrid_sir_messy)
+        @named coupled_sir_messy = ReactionSystem(eqs_messy, τ)
+        coupled_sir_messy = complete(coupled_sir_messy)
 
         # Checks that ODE an simulation of the system achieves the correct steady state.
-        oprob_messy = ODEProblem(hybrid_sir_messy, u0, tspan, ps; structural_simplify = true)
+        oprob_messy = ODEProblem(coupled_sir_messy, u0, tspan, ps; structural_simplify = true)
         solve(oprob_messy, Vern7(); abstol = 1e-8, reltol = 1e-8, saveat = 1.0)
     end
 
@@ -538,10 +586,9 @@ let
     @test osol_messy[[:S, :I, :R, :M, :H]] ≈ osol_ordered[[:S, :I, :R, :M, :H]]
 end
 
-
 ### DSL Tests ###
 
-# Check that a hybrid CRN/DAE created programmatically and via the DSL are identical.
+# Check that a coupled CRN/DAE created programmatically and via the DSL are identical.
 # Checks where variables are implied from differential equations, and with variables/parameter 
 # default values, types, and metadata.
 # Checks that generated system contents are correct, and ODE simulations are identical.
@@ -560,10 +607,10 @@ let
         V*X_conc ~ x_scale*(X1 + X2 + X3)
         X_tot + X1 + X2 ~ -X3
     ]
-    rs_prog = complete(ReactionSystem(eqs, t; name = :hybrid_rs))
+    rs_prog = complete(ReactionSystem(eqs, t; name = :coupled_rs))
 
     # Creates the model via the DSL.
-    rs_dsl = @reaction_network hybrid_rs begin
+    rs_dsl = @reaction_network coupled_rs begin
         @variables X_conc(t) V(t)=5.0 [description="Volume"] X_tot(t)
         @parameters v n x_scale::Float32
         @equations begin
@@ -654,7 +701,7 @@ let
     issetequal(unknowns(rs_1)[4:5], [rs_1.H, rs_1.M])
 
     # Checks for system with two differential equations, and which do not use `@variables`, 
-    rs_2 = @reaction_network hybrid_rs begin
+    rs_2 = @reaction_network coupled_rs begin
         @equations begin
             D(V) ~ X/(1+X) - V
             D(N) ~ - V
@@ -665,7 +712,7 @@ let
     issetequal(unknowns(rs_2)[2:3], [rs_2.V, rs_2.N])
 
     # Checks for system with two differential equations, where one is defined using `@variables`.
-    rs_2 = @reaction_network hybrid_rs begin
+    rs_2 = @reaction_network coupled_rs begin
         @variables N(t)
         @equations begin
             D(V) ~ X/(1+X) - V
@@ -744,6 +791,24 @@ let
     @test is_eqs_equal(rs_1, rs_4)
     @test is_eqs_equal(rs_1, rs_5)
     @test is_eqs_equal(rs_1, rs_6)
+end
+
+# Checks that the default differential (`D`) uses a declared, non-default, independent variable.
+# Check that inferred variables depends on declared time independent variables.
+let 
+    # Declares model.
+    rs = @reaction_network begin
+        @ivs τ
+        @equations D(V) ~ -1.0
+    end
+    
+    # Checks that the default differential uses τ iv.
+    Ds = Differential(ModelingToolkit.get_iv(rs))
+    @test isequal(operation(equations(rs)[1].lhs), Ds)
+    
+    # Checks that the inferred variable depends on τ iv.
+    @variables V($(ModelingToolkit.get_iv(rs)))
+    @test isequal(V, rs.V)
 end
 
 # Checks that custom differentials can be declared.
@@ -860,7 +925,7 @@ end
 
 ### Error Tests ###
 
-# Checks that various erroneous hybrid system declarations yield errors.
+# Checks that various erroneous coupled system declarations yield errors.
 let 
     @parameters p1 p2
     @variables τ  U1(τ) V1(t)
@@ -896,7 +961,7 @@ let
     @variables V1(t)
     @species S1(t) S2(t) 
 
-    # Hybrid system with additional differential equation for species.
+    # Coupled system with additional differential equation for species.
     eqs = [
         Reaction(p1, [S1], [S2]),
         D(S1) ~ p2 - S1
@@ -907,7 +972,7 @@ let
     ps = [p1 => 2.0, p2 => 3.0]
     @test_throws Exception ODEProblem(rs, u0, (0.0, 1.0), ps; structural_simplify = true)
 
-    # Hybrid system overconstrained due to additional algebraic equations (without variables).
+    # Coupled system overconstrained due to additional algebraic equations (without variables).
     eqs = [
         Reaction(p1, [S1], [S2]),
         S1 ~ p2 + S1,
@@ -918,7 +983,7 @@ let
     ps = [p1 => 2.0, p2 => 3.0]
     @test_throws Exception ODEProblem(rs, u0, (0.0, 1.0), ps; structural_simplify = true)
 
-    # Hybrid system overconstrained due to additional algebraic equations (with variables).
+    # Coupled system overconstrained due to additional algebraic equations (with variables).
     eqs = [
         Reaction(p1, [S1], [S2]),
         V1 ~ p2 - S1,

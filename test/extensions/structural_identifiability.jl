@@ -312,7 +312,7 @@ end
 
 ### Other Tests ###
 
-# Checks that identifiability can be assessed for hybrid CRN/DAE systems.
+# Checks that identifiability can be assessed for coupled CRN/DAE systems.
 let
     rs = @reaction_network begin
         @parameters k c1 c2

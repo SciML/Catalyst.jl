@@ -180,7 +180,7 @@ end
 
 ### Other Tests ###
 
-# Checks that bifurcation diagrams can be computed for hybrid CRN/DAE systems.
+# Checks that bifurcation diagrams can be computed for coupled CRN/DAE systems.
 let
     # Prepares the model (production/degradation of X, with equations for volume and X concentration).
     rs = @reaction_network begin

@@ -312,8 +312,8 @@ end
 ### Reaction Acessor Functions ###
 
 # Overwrites functions in ModelingToolkit to give the correct input.
-is_diff_equation(rx::Reaction) = false
-is_alg_equation(rx::Reaction) = false
+ModelingToolkit.is_diff_equation(rx::Reaction) = false
+ModelingToolkit.is_alg_equation(rx::Reaction) = false
 
 ################################## Reaction Complexes ####################################
 
@@ -725,6 +725,11 @@ function findvars!(ps, us, exprtosearch, ivs, vars)
     end
     empty!(vars)
 end
+# Special dispatch for equations, applied `findvars!` to left-hand and right-hand sides.
+function findvars!(ps, us, eq_to_search::Equation, ivs, vars)
+    findvars!(ps, us, eq_to_search.lhs, ivs, vars)
+    findvars!(ps, us, eq_to_search.lhs, ivs, vars)
+end
 
 # Called internally (whether DSL-based or programmtic model creation is used). 
 # Creates a sorted reactions + equations vector, also ensuring reaction is first in this vector.
@@ -813,22 +818,14 @@ function find_event_vars!(ps, us, event, ivs, vars)
     # If not, it is a vector of conditions and we must check each.
     if conds isa Vector
         for cond in conds
-            # For continious events the conditions are equations (with lhs and rhs).
-            # For discrete events, they are single expressions.
-            if cond isa Equation
-                findvars!(ps, us, cond.lhs, ivs, vars)
-                findvars!(ps, us, cond.rhs, ivs, vars)
-            else
-                findvars!(ps, us, cond, ivs, vars)
-            end
+            findvars!(ps, us, cond, ivs, vars)
         end
     else
         findvars!(ps, us, conds, ivs, vars)
     end
     # The affects is always a vector of equations. Here, we handle the lhs and rhs separately.
     for affect in affects
-        findvars!(ps, us, affect.lhs, ivs, vars)
-        findvars!(ps, us, affect.rhs, ivs, vars)
+        findvars!(ps, us, cond, ivs, vars)
     end
 end
 """
@@ -1616,6 +1613,9 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
                          as_odes = false, include_zero_odes)
     eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
+    # Throws a warning if there are differential equations in non-standard format.
+    # Next, sets all differential terms to `0`.
+    nonlinear_convert_differentials_check(eqs, nonspecies(rs), get_iv(rs))
     eqs = [remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
 
 
@@ -1637,7 +1637,32 @@ function remove_diffs(expr)
 end
 diff_2_zero(expr) = (Symbolics.is_derivative(expr) ? 0.0 : expr)
 
-    
+# Ideally, when `ReactionSystem`s are converted to `NonlinearSystem`s, any coupled ODEs should be 
+# on the form D(X) ~ ..., where lhs is the time derivative w.r.t. a single variable, and the rhs
+# does not contain any differentials. If this is not teh case, we throw a warning to let the user
+# know that they should be careful.
+function nonlinear_convert_differentials_check(eqs, vars, iv)
+    for eq in eqs
+        # For each equation (that is not a reaction), checks in order: 
+        # If there is a differential on the right hand side.
+        # If the lhs is not on the form D(...).
+        # If the lhs upper level function is not a differential w.r.t. time.
+        # If the contenct of the differential is not a variable (and nothing more).
+        # If either of this is a case, throws the warning.
+        (eq isa Reaction) && continue
+        if Symbolics._occursin(Symbolics.is_derivative, eq.rhs) ||
+                !Symbolics.istree(eq.lhs) ||
+                !isequal(Symbolics.operation(eq.lhs), Differential(iv)) || 
+                (length(arguments(eq.lhs)) != 1) ||
+                !any(isequal(arguments(eq.lhs)[1]), vars)
+            @warn "You are attempting to convert a `ReactionSystem` coupled with differential equations. However, some of these differentials are not of the form `D(x) ~ ...` where: 
+                    (1) The left-hand side is a differential of a single variable with respect to the time independent variable, and
+                    (2) The right-hand side does not contain any differentials.
+                  This is permitted (and all differential will be set to `0`), however, it is recommended to proceed with caution to ensure that the produced nonlinear equation is the desired one."
+            return
+        end
+    end
+end
 
 """
 ```julia
@@ -1820,7 +1845,7 @@ function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
     return DiscreteProblem(jsys, u0map, tspan, pmap, args...; kwargs...)
 end
 
-# JumpProblem from AbstractReactionNetworkg
+# JumpProblem from AbstractReactionNetwork
 function JumpProcesses.JumpProblem(rs::ReactionSystem, prob, aggregator, args...;
                                    name = nameof(rs),
                                    combinatoric_ratelaws = get_combinatoric_ratelaws(rs),

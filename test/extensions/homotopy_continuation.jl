@@ -109,7 +109,7 @@ end
 
 ### Other Tests ###
 
-# Tests that homotopy continuation can be applied to hybrid DAE/CRN systems.
+# Tests that homotopy continuation can be applied to coupled DAE/CRN systems.
 let
     # Prepares the model (production/degradation of X, with equations for volume and X concentration).
     rs = @reaction_network begin

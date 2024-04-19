@@ -401,7 +401,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     parameters = vcat(parameters_declared, parameters_extracted)
 
     # Create differential expression.
-    diffexpr = create_differential_expr(options, add_default_diff, [species; parameters; variables])
+    diffexpr = create_differential_expr(options, add_default_diff, [species; parameters; variables], tiv)
 
     # Checks for input errors.
     (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
@@ -414,7 +414,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     sexprs = get_sexpr(species_extracted, options; iv_symbols = ivs)
-    vexprs = get_sexpr(vars_extracted, options, :variables)
+    vexprs = get_sexpr(vars_extracted, options, :variables; iv_symbols = ivs)
     pexprs = get_pexpr(parameters_extracted, options)
     ps, pssym = scalarize_macro(!isempty(parameters), pexprs, "ps")
     vars, varssym = scalarize_macro(!isempty(variables), vexprs, "vars")
@@ -852,12 +852,13 @@ function read_equations_options(options, variables_declared)
             in(diff_var, variables_declared) || push!(vars_extracted, diff_var)
         end
     end
-
+    
     return vars_extracted, add_default_diff, equations
 end
 
-# Creates an expression declaring differentials.
-function create_differential_expr(options, add_default_diff, used_syms)
+# Creates an expression declaring differentials. Here, `tiv` is the time independent variables, 
+# which is used by the default differential (if it is used).
+function create_differential_expr(options, add_default_diff, used_syms, tiv)
     # Creates the differential expression.
     # If differentials was provided as options, this is used as the initial expression.
     # If the default differential (D(...)) was used in equations, this is added to the expression.
@@ -875,7 +876,7 @@ function create_differential_expr(options, add_default_diff, used_syms)
     # If the default differential D has been used, but not pre-declared using the @differenitals
     # options, add this declaration to the list of declared differentials.
     if add_default_diff && !any(diff_dec.args[1] == :D for diff_dec in diffexpr.args) 
-        push!(diffexpr.args, :(D = Differential($(DEFAULT_IV_SYM))))
+        push!(diffexpr.args, :(D = Differential($(tiv))))
     end
     
     return diffexpr

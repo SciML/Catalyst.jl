@@ -687,7 +687,7 @@ let
 end
 
 
-### Hybrid CRN/Equations Models ###
+### Coupled CRN/Equations Models ###
 
 # Checks creation of basic network.
 # Check indexing of output solution.

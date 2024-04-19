@@ -30,7 +30,8 @@ using ModelingToolkit: Symbolic, value, istree, get_unknowns, get_ps, get_iv, ge
 
 import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!,
                         modified_unknowns!, validate, namespace_variables,
-                        namespace_parameters, rename, renamespace, getname, flatten
+                        namespace_parameters, rename, renamespace, getname, flatten,
+                        is_alg_equation, is_diff_equation
 
 # internal but needed ModelingToolkit functions
 import ModelingToolkit: check_variables,

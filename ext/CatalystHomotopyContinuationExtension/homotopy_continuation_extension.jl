@@ -107,7 +107,7 @@ function filter_negative_f(sols; neg_thres=-1e-20)
     return filter(sol -> all(>=(0), sol), sols)
 end
 
-# Sometimes (when polynomials are created from hybrid CRN/DAEs), the steady state polynomial have the wrong type.
+# Sometimes (when polynomials are created from coupled CRN/DAEs), the steady state polynomial have the wrong type.
 # This converts it to the correct type, which homotopy continuation can handle.
 const WRONG_POLY_TYPE = Vector{DynamicPolynomials.Polynomial{DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder}, DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}}}
 const CORRECT_POLY_TYPE = Vector{DynamicPolynomials.Polynomial{DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder}, DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}, Float64}}
