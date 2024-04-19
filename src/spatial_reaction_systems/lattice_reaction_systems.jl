@@ -6,8 +6,7 @@ const GridLattice{N,T} = Union{Array{Bool, N}, CartesianGridRej{N,T}}
 ### Lattice Reaction Network Structure ###
 
 # Describes a spatial reaction network over a lattice.
-# Adding the "<: MT.AbstractTimeDependentSystem" part messes up show, disabling me from creating LRSs. Should be fixed sometime.
-struct LatticeReactionSystem{Q,R,S,T} # <: MT.AbstractTimeDependentSystem 
+struct LatticeReactionSystem{Q,R,S,T} <: MT.AbstractTimeDependentSystem 
     # Input values.
     """The (non-spatial) reaction system within each vertex."""
     rs::ReactionSystem{Q}
@@ -53,6 +52,21 @@ struct LatticeReactionSystem{Q,R,S,T} # <: MT.AbstractTimeDependentSystem
         # Error checks.
         if !(R <: AbstractSpatialReaction)
             error("The second argument must be a vector of AbstractSpatialReaction subtypes.") 
+        end
+        if !isempty(MT.get_systems(rs))
+            error("A non-flattened (hierarchical) `ReactionSystem` was used as input. `LatticeReactionSystem`s can only be based on non-hierarchical `ReactionSystem`s.")
+        end
+        if length(species(rs)) != length(states(rs))
+            error("The `ReactionSystem` used as input contain variable unknowns (in addition to species unknowns). This is not permitted (the input `ReactionSystem` must contain species unknowns only).")
+        end
+        if length(reactions(rs)) != length(equations(rs))
+            error("The `ReactionSystem` used as input contain equations (in addition to reactions). This is not permitted.")
+        end
+        if !isempty(MT.continuous_events(rs)) || !isempty(MT.discrete_events(rs))
+            @warn "The `ReactionSystem` used as input to `LatticeReactionSystem contain events. These will be ignored in any simulations based on the created `LatticeReactionSystem`."
+        end
+        if !isempty(observed(rs))
+            @warn "The `ReactionSystem` used as input to `LatticeReactionSystem contain observables. It will not be possible to access these from the created `LatticeReactionSystem`."
         end
 
         # Computes the species which are parts of spatial reactions. Also counts the total number of 
@@ -215,15 +229,11 @@ get_grid_indices(grid::CartesianGridRej{N,T}) where {N,T} = CartesianIndices(one
 get_grid_indices(grid::Array{Bool, N}) where {N}  = CartesianIndices(grid)
 
 
-### LatticeReactionSystem Getters ###
+### LatticeReactionSystem-specific Getters ###
 
-# Get all species.
-species(lrs::LatticeReactionSystem) = unique([species(lrs.rs); lrs.spat_species])
 # Get all species that may be transported.
 spatial_species(lrs::LatticeReactionSystem) = lrs.spat_species
 
-# Get all parameters.
-ModelingToolkit.parameters(lrs::LatticeReactionSystem) = lrs.parameters
 # Get all parameters whose values are tied to vertices (compartments).
 vertex_parameters(lrs::LatticeReactionSystem) = lrs.vertex_parameters
 # Get all parameters whose values are tied to edges (adjacencies).
@@ -285,11 +295,53 @@ grid_dims(lattice::GridLattice{N,T}) where {N,T} = return N
 grid_dims(lattice::Graph) = error("Grid dimensions is only defined for LatticeReactionSystems with grid-based lattices (not graph-based).")
 
 
-### Generic Getters ###
+### Catalyst-based Getters ###
 
-# Gets the lrs name (same as rs name).
-ModelingToolkit.nameof(lrs::LatticeReactionSystem) = nameof(lrs.rs)
+# Get all species.
+species(lrs::LatticeReactionSystem) = unique([species(lrs.rs); lrs.spat_species])
 
+# Generic ones (simply forwards call to the non-spatial system).
+reactions(lrs::LatticeReactionSystem) = reactions(lrs.rs)
+
+### ModelingToolkit-based Getters ###
+
+# Get all parameters.
+MT.parameters(lrs::LatticeReactionSystem) = lrs.parameters
+
+# Generic ones (simply forwards call to the non-spatial system).
+MT.nameof(lrs::LatticeReactionSystem) = MT.nameof(lrs.rs)
+MT.get_iv(lrs::LatticeReactionSystem) = MT.get_iv(lrs.rs)
+MT.equations(lrs::LatticeReactionSystem) = MT.equations(lrs.rs)
+MT.equations(lrs::LatticeReactionSystem) = MT.equations(lrs.rs)
+MT.states(lrs::LatticeReactionSystem) = MT.states(lrs.rs)
+#MT.unknowns(lrs::LatticeReactionSystem) = MT.unknowns(lrs.rs)
+MT.parameters(lrs::LatticeReactionSystem) = MT.parameters(lrs.rs)
+MT.get_metadata(lrs::LatticeReactionSystem) = MT.get_metadata(lrs.rs)
+
+# Lattice reaction systems should not be combined with compositional modelling.
+# Maybe these should be allowed anyway? Still feel a bit weird
+function MT.get_eqs(lrs::LatticeReactionSystem) 
+    error("The `get_eqs` function is primarily relevant for composed models. LatticeReactionSystems cannot be composed, and hence this function should not be used. Please consider using `equations` instead.")
+    # MT.get_eqs(lrs.rs)
+end
+function MT.get_states(lrs::LatticeReactionSystem) 
+    error("The `get_unknowns` is primarily relevant for composed models. LatticeReactionSystems cannot be composed, and hence this function should not be used. Please consider using `unknowns` instead.")
+    # MT.get_states(lrs.rs)
+end
+function MT.get_ps(lrs::LatticeReactionSystem) 
+    error("The `get_ps` function is primarily relevant for composed models. LatticeReactionSystems cannot be composed, and hence this function should not be used. Please consider using `parameters` instead.")
+    # MT.get_ps(lrs.rs)
+end
+
+# Technically should not be used, but has to be declared for the `show` function to work.
+function MT.get_systems(lrs::LatticeReactionSystem) 
+    return []
+end
+
+# Other non-relevant getters.
+function MT.independent_variables(lrs::LatticeReactionSystem)
+    error("LatticeReactionSystems are used to model a spatial systems on a discrete lattice. The `independent_variables` function is used to retrieve the independent variables of systems with time and space independent variables. LatticeReactionSystems can only have a single independent variable (the time one). If you want to retrieve this one, please consider using the `get_iv` function.)")
+end
 
 ### Edge Parameter Value Generators ###
 
