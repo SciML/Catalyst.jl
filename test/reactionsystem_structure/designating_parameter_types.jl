@@ -132,6 +132,9 @@ let
         @test unwrap(mtk_struct[X5]) == 0.5
     end
 
+    # This test started working now, probably due to a MTK fix. Need to look at where to put it
+    # back into the test properly though.
+    @test_broken false 
     # Indexing currently broken for NonlinearSystem integrators (MTK intend to support this though).
-    @test_broken unwrap(ninit.ps[p1]) isa Float64
+    @test unwrap(ninit.ps[p1]) isa Float64
 end

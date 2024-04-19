@@ -728,7 +728,11 @@ end
 # Special dispatch for equations, applied `findvars!` to left-hand and right-hand sides.
 function findvars!(ps, us, eq_to_search::Equation, ivs, vars)
     findvars!(ps, us, eq_to_search.lhs, ivs, vars)
-    findvars!(ps, us, eq_to_search.lhs, ivs, vars)
+    findvars!(ps, us, eq_to_search.rhs, ivs, vars)
+end
+# Special dispatch for Vectors (applies it to each vector element).
+function findvars!(ps, us, exprs_to_search::Vector, ivs, vars)
+    foreach(exprtosearch -> findvars!(ps, us, exprtosearch, ivs, vars), exprs_to_search)
 end
 
 # Called internally (whether DSL-based or programmtic model creation is used). 
@@ -812,22 +816,12 @@ function find_event_vars!(ps, us, events::Vector, ivs, vars)
     foreach(event -> find_event_vars!(ps, us, event, ivs, vars), events)
 end
 # For a single event, adds quantitites from its condition and affect expression(s) to `ps` and `us`.
+# Applies `findvars!` to the event's condition (`event[1])` and affec (`event[2]`).
 function find_event_vars!(ps, us, event, ivs, vars)
-    conds, affects = event
-    # For discrete events, the condition can be a single value (for periodic events).
-    # If not, it is a vector of conditions and we must check each.
-    if conds isa Vector
-        for cond in conds
-            findvars!(ps, us, cond, ivs, vars)
-        end
-    else
-        findvars!(ps, us, conds, ivs, vars)
-    end
-    # The affects is always a vector of equations. Here, we handle the lhs and rhs separately.
-    for affect in affects
-        findvars!(ps, us, cond, ivs, vars)
-    end
+    findvars!(ps, us, event[1], ivs, vars)
+    findvars!(ps, us, event[2], ivs, vars)
 end
+
 """
     remake_ReactionSystem_internal(rs::ReactionSystem; 
         default_reaction_metadata::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol, Any}}()) where {T}

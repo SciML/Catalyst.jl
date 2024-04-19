@@ -455,8 +455,7 @@ let
             @equations D(D(V)) ~ 1.0 - V
             (p,d), 0 <--> X
         end
-        @test_broken false # Had problem writing this test, need to fix.
-        #@test_warn convert(NonlinearSystem, rs)
+        @test_logs (:warn, r".*") convert(NonlinearSystem, rs)
     end
     
     # Differential on the rhs, should yield a warning.
@@ -466,8 +465,7 @@ let
             @equations D(V) ~ 1.0 - V + D(U)
             (p,d), 0 <--> X
         end
-        @test_broken false # Had problem writing this test, need to fix.
-        #@test_warn convert(NonlinearSystem, rs)
+        @test_logs (:warn, r".*") convert(NonlinearSystem, rs)
     end
     
     # Non-differential term on the lhs, should yield a warning.
@@ -478,8 +476,7 @@ let
             @equations D(V) + V ~ 1.0 - V
             (p,d), 0 <--> X
         end
-        @test_broken false # Had problem writing this test, need to fix.
-        #@test_warn convert(NonlinearSystem, rs)
+        @test_logs (:warn, r".*") convert(NonlinearSystem, rs)
     end
 end
 ### Unusual Differentials Tests ###
