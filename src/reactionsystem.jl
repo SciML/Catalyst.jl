@@ -1609,7 +1609,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
 
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.
-    nonlinear_convert_differentials_check(eqs, nonspecies(rs), get_iv(rs))
+    nonlinear_convert_differentials_check(rs)
     eqs = [remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
 
 
@@ -1635,8 +1635,8 @@ diff_2_zero(expr) = (Symbolics.is_derivative(expr) ? 0.0 : expr)
 # on the form D(X) ~ ..., where lhs is the time derivative w.r.t. a single variable, and the rhs
 # does not contain any differentials. If this is not teh case, we throw a warning to let the user
 # know that they should be careful.
-function nonlinear_convert_differentials_check(eqs, vars, iv)
-    for eq in eqs
+function nonlinear_convert_differentials_check(rs::ReactionSystem)
+    for eq in equations(rs)
         # For each equation (that is not a reaction), checks in order: 
         # If there is a differential on the right hand side.
         # If the lhs is not on the form D(...).
@@ -1646,9 +1646,9 @@ function nonlinear_convert_differentials_check(eqs, vars, iv)
         (eq isa Reaction) && continue
         if Symbolics._occursin(Symbolics.is_derivative, eq.rhs) ||
                 !Symbolics.istree(eq.lhs) ||
-                !isequal(Symbolics.operation(eq.lhs), Differential(iv)) || 
+                !isequal(Symbolics.operation(eq.lhs), Differential(get_iv(rs))) || 
                 (length(arguments(eq.lhs)) != 1) ||
-                !any(isequal(arguments(eq.lhs)[1]), vars)
+                !any(isequal(arguments(eq.lhs)[1]), nonspecies(rs))
             @warn "You are attempting to convert a `ReactionSystem` coupled with differential equations. However, some of these differentials are not of the form `D(x) ~ ...` where: 
                     (1) The left-hand side is a differential of a single variable with respect to the time independent variable, and
                     (2) The right-hand side does not contain any differentials.
