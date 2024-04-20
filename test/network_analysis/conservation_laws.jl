@@ -73,3 +73,25 @@ let
     @test length(cons_laws_constants) == 2
     @test count(isequal.(conserved_quantity, Num(0))) == 2
 end
+
+# Conservation law simulations for vectorised species.
+let 
+    # Prepares the model.
+    t = default_t()
+    @species X(t)[1:2]
+    @parameters k[1:2]
+    rxs = [
+        Reaction(k[1], [X[1]], [X[2]]),
+        Reaction(k[2], [X[2]], [X[1]])
+    ]
+    @named rs = ReactionSystem(rxs, t)
+    rs = complete(rs)
+
+    # Checks that simulation reaches known equilibrium
+    u0 = [:X => [3.0, 9.0]]
+    ps = [:k => [1.0, 2.0]]
+    oprob = ODEProblem(rs, u0, (0.0, 1000.0), ps; remove_conserved = true)
+    sol = solve(oprob, Vern7())
+    @test sol[X[1]] ≈ 8.0
+    @test sol[X[2]] ≈ 4.0
+end
