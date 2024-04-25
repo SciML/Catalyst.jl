@@ -25,7 +25,7 @@ large-scale simulations through auto-vectorization and parallelism. Symbolic
 the easy simulation and parameter estimation of mass action ODE models, Chemical
 Langevin SDE models, stochastic chemical kinetics jump process models, and more.
 Generated models can be used with solvers throughout the broader
-[SciML](https://sciml.ai) ecosystem, including higher level SciML packages (e.g.
+[SciML](https://sciml.ai) ecosystem, including higher-level SciML packages (e.g.
 for sensitivity analysis, parameter estimation, machine learning applications,
 etc).
 
@@ -193,7 +193,7 @@ plot(jump_sol; lw = 2)
 
 ## Elaborate example
 
-In the above example, we used basic Catalyst-based workflows to simulate a simple model. Here we instead show how various Catalyst features can compose to create a much more advanced model. Our model describes how the volume of a cell ($V$) is affected by a growth factor ($G$). Typically the growth factor is inactive ($Gi$), but it is activated ($Ga$) by the presence of sunlight (modelled as the cyclic sinusoid $kA*(sin(t)+1)$). When the cell reaches a critical volume ($V$) it goes through cell division. First, we declare our model:
+In the above example, we used basic Catalyst-based workflows to simulate a simple model. Here we instead show how various Catalyst features can compose to create a much more advanced model. Our model describes how the volume of a cell ($V$) is affected by a growth factor ($G$). Typically the growth factor is inactive ($Gi$), but it is activated ($Ga$) by the presence of sunlight (modeled as the cyclic sinusoid $kA*(sin(t)+1)$). When the cell reaches a critical volume ($V$) it goes through cell division. First, we declare our model:
 ```julia
 cell_model = @reaction_network begin
  @parameters V_thres g
