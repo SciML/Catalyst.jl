@@ -1,9 +1,9 @@
 # [The Catalyst DSL - Introduction](@id dsl_description)
-In the [introduction to Catalyst](@ref introduction_to_catalyst) we described how the `@reaction_network` [macro](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros) can be used to create chemical reaction network (CRN) models. This macro enables a so-called [domain-specific language](https://en.wikipedia.org/wiki/Domain-specific_language) (DSL) for creating CRN models. This tutorial will give a basic introduction on how to create Catalyst models using this macro (from now onwards called the "*Catalyst DSL*"). A [follow-up tutorial](@ref) will describe some of the DSL's more advanced features.
+In the [introduction to Catalyst](@ref introduction_to_catalyst) we described how the `@reaction_network` [macro](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros) can be used to create chemical reaction network (CRN) models. This macro enables a so-called [domain-specific language](https://en.wikipedia.org/wiki/Domain-specific_language) (DSL) for creating CRN models. This tutorial will give a basic introduction on how to create Catalyst models using this macro (from now onwards called the "*Catalyst DSL*"). A [follow-up tutorial](@ref ref) will describe some of the DSL's more advanced features.
 
 The Catalyst DSL generates a [`ReactionSystem`](@ref) (the [julia structure](https://docs.julialang.org/en/v1/manual/types/#Composite-Types) Catalyst uses to represent CRN models). These can be created through alternative methods (e.g. [programmatically](@ref programmatic_CRN_construction) or [compositionally](@ref compositional_modeling)). A summary of the various ways to create `ReactionSystems`s can be found [here](@ref ref). [Previous](@ref ref) and [following](@ref ref) tutorials describe how to simulate models once they have been created using the DSL. This tutorial will solely focus on model creation.
 
-Before we begin, we will first load the `Catalyst` package (which is required to run the code).
+Before we begin, we will first load the Catalyst package (which is required to run the code).
 ```@example dsl_1
 using Catalyst
 ```
@@ -12,7 +12,7 @@ using Catalyst
 The DSL is initiated through the `@reaction_network`, which is followed by one line for each reaction. Each reaction consists of a *rate*, followed lists first of the substrates and next of the products. E.g. a Michaelis-Menten enzyme kinetics system can be written as 
 ```@example dsl_0
 rn = @reaction_network begin
-  (kB,kC), S + E <--> SE
+  (kB,kD), S + E <--> SE
   kP, SE --> P + E
 end
 ```
@@ -31,12 +31,12 @@ Here, you start with `@reaction_network begin`, next list all of the model's rea
 - A (potentially empty) set of *substrates*.
 - A (potentially empty) set of *products*.
 
-Each reaction line declares, in order, the rate, the substrate(s), and the product(s). The rate is separated from the substrate(s) by a `,`, and the substrate(s) from the production by a `-->` (other arrows, however, are [also possible](@ref ref)). In the above examples, our model consists of two reactions. In the first one, `X` (the single substrate) becomes `Y` (the single product) at rate `2.0`. 
+Each reaction line declares, in order, the rate, the substrate(s), and the product(s). The rate is separated from the substrate(s) by a `,`, and the substrate(s) from the production by a `-->` (other arrows, however, are [also possible](@ref ref)). In the above example, our model consists of two reactions. In the first one, `X` (the single substrate) becomes `Y` (the single product) at rate `2.0`. In the second reaction, `Y` becomes `X` at rate `1.0`.
 
 Finally, `rn = ` is used to store the model in the variable `rn` (a normal Julia variable, which does not need to be called `rn`).
 
 ## [Defining parameters and species in the DSL](@id dsl_description_parameters_basics)
-Typically, the rates are not constants, but rather parameters (which values can be set e.g. at [the beginning of each simulation](@ref ref)). To set parametric rates, simply use whichever symbol you which to represent your parameter with. E.g. to set the above rates to `a` and `b`, we use:
+Typically, the rates are not constants, but rather parameters (which values can be set e.g. at [the beginning of each simulation](@ref ref)). To set parametric rates, simply use whichever symbol you wish to represent your parameter with. E.g. to set the above rates to `a` and `b`, we use:
 ```@example dsl_1
 rn1 = @reaction_network begin
   a, X --> Y
@@ -57,7 +57,7 @@ Generally, anything that is a [permitted Julia variable name](@id https://docs.j
 ## [Different types of reactions](@id dsl_description_reactions)
 
 ### [Reactions with multiple substrates or products](@id dsl_description_reactions_multiples)
-Previously, our reactions have had a single substrate and a single product. However, reactions with multiple substrates and/or products are possible. Here, all the substrates (or products) are listed and separated by a `+`. E.g. to create a model where `X` and `Y` bind (at rate `kB`) to form `XY` (which then can dissociate at, rate `kD`, to form `XY`) we use:
+Previously, our reactions have had a single substrate and a single product. However, reactions with multiple substrates and/or products are possible. Here, all the substrates (or products) are listed and separated by a `+`. E.g. to create a model where `X` and `Y` bind (at rate `kB`) to form `XY` (which then can dissociate, at rate `kD`, to form `XY`) we use:
 ```@example dsl_1
 rn2 = @reaction_network begin
   kB, X + Y --> XY
@@ -72,7 +72,7 @@ end
 ```
 
 ### [Reactions with degradation or production](@id dsl_description_reactions_degradation_and_production)
-Some reactions have no products, in which case the substrate(s) are degraded (i.e. removed from the system). To denote this, set the reaction's right-hand side to `0`. Similarly, some reactions have no substrates, in which case the product(s) are produced (i.e. added to the system). This is denoted by setting the left-hand side to `0`. E.g. to create a model where a single species `X` is both created and degraded, we use:
+Some reactions have no products, in which case the substrate(s) are degraded (i.e. removed from the system). To denote this, set the reaction's right-hand side to `0`. Similarly, some reactions have no substrates, in which case the product(s) are produced (i.e. added to the system). This is denoted by setting the left-hand side to `0`. E.g. to create a model where a single species `X` is both created (in the first reaction) and degraded (in a second reaction), we use:
 ```@example dsl_1
 rn4 = @reaction_network begin
   p, 0 --> X
@@ -81,7 +81,7 @@ end
 ```
 
 ### [Reactions with non-unitary stoichiometries](@id dsl_description_reactions_stoichiometries)
-Reactions may include multiple copies of the same reactant (i.e. a substrate or a product). To specify this, the reactant is preceded by a number indicating the number of copies (also called the reactant's *stoichiometry*). E.g. to create a model where two copies of `X` dimerise to form `X2` (which then dissociate back to two `X` copies) we use:
+Reactions may include multiple copies of the same reactant (i.e. a substrate or a product). To specify this, the reactant is preceded by a number indicating its number of copies (also called the reactant's *stoichiometry*). E.g. to create a model where two copies of `X` dimerise to form `X2` (which then dissociate back to two `X` copies) we use:
 ```@example dsl_1
 rn5 = @reaction_network begin
   kB, 2X --> X2
@@ -90,7 +90,7 @@ end
 ```
 Reactants whose stoichiometries are not defined are assumed to have stoichiometry `1`. Any integer number can be used, furthermore, [decimal numbers and parameters can also be used as stoichiometries](@ref ref). A discussion of non-unitary (i.e. not equal to `1`) stoichiometries affecting the created model can be found [here](@ref ref).
 
-Stoichiometries can be combined with `()` to define them for multiple reactants. Here, the following (mock) model declares the same reaction, both with and without this notation:
+Stoichiometries can be combined with `()` to define them for multiple reactants. Here, the following (mock) model declares the same reaction twice, both with and without this notation:
 ```@example dsl_1
 rn6 = @reaction_network begin
   k, 2X + 3(Y + 2Z) --> 5(V + W)    
@@ -129,23 +129,23 @@ rn8 = @reaction_network begin
   k, Y --> X
 end
 ```
-Generally, using forward reactions is clearer than backwards ones, with the letter generally not being used.
+Generally, using forward reactions is clearer than backwards ones, with the later generally not being used.
 
 ### [Bundling similar reactions on a single line](@id dsl_description_reaction_bundling_similar)
-There exist several other situations where models contain similar reactions (e.g. systems where all system components degrade at the same rate). Reactions which share either rates, substrates, or products can be bundled into a single line. Here, the parts which are different for the reactions are written using `(,)` (containing one separate expression for each reaction). E.g., let us consider the following model, where species `X` and `Y` both degrade at the rate `d`:
+There exist additional situations where models contain similar reactions (e.g. systems where all system components degrade at identical rates). Reactions which share either rates, substrates, or products can be bundled into a single line. Here, the parts which are different for the reactions are written using `(,)` (containing one separate expression for each reaction). E.g., let us consider the following model where species `X` and `Y` both degrade at the rate `d`:
 ```@example dsl_1
 rn8 = @reaction_network begin
   d, X --> 0
   d, Y --> 0
 end
 ```
-These share both the rates and product, however, the substrates are different. Hence, the reactions can be bundled into a single line using the common rate and product expression while providing separate substrate expressions:
+These share both the rates (`d`) and product (`0`), however, the substrates are different (`X` and `Y`). Hence, the reactions can be bundled into a single line using the common rate and product expression while providing separate substrate expressions:
 ```@example dsl_1
 rn8 = @reaction_network begin
   d, (X,Y) --> 0
 end
 ```
-This declaration of the model is identical to the one previously. Reactions can share any subset of the rate, substrate, and product expression (the cases where they share all, or none, however, do not make sense to use). I.e. if the two reactions also have different degradation rates:
+This declaration of the model is identical to the previous one. Reactions can share any subset of the rate, substrate, and product expression (the cases where they share all, or none, however, do not make sense to use). I.e. if the two reactions also have different degradation rates:
 ```@example dsl_1
 rn9 = @reaction_network begin
   dX, X --> 0
@@ -166,7 +166,7 @@ rn10 = @reaction_network begin
 end
 ```
 
-It is possible to combine bundling with bi-directional reactions. In this case, the rate is first split into the forward and backwards rate(s). These may then (or may not) indicate several rates. We exemplify this using the two following (identical) networks, created with and without bundling.
+It is possible to combine bundling with bi-directional reactions. In this case, the rate is first split into the forward and backwards rates. These may then (or may not) indicate several rates. We exemplify this using the two following two (identical) networks, created with and without bundling.
 ```@example dsl_1
 rn11 = @reaction_network begin
   kf, S --> P1
@@ -187,19 +187,19 @@ rn12 = @reaction_network begin
     ((pX, pY, pZ),d), (0, Y0, Z0) <--> (X, Y, Z1+Z2)
 end
 ```
-However, as for the above model, bundling reactions too zealously can reduce (rather improve) the model's readability.   
+However, like for the above model, bundling reactions too zealously can reduce (rather improve) a model's readability.   
 
 ## [Non-constant reaction rates](@id dsl_description_nonconstant_rates)
 So far we have assumed that all reaction rates are constant (being either a number of a parameter). Non-constant rates that depend on one (or several) species are also possible. More generally, the rate can be any valid expression of parameters and species.
 
-Let us consider a model with an activator (`A`, which degraded at a constant rate) and a protein (`P`). The production rate of `P` depends both on $A$ and a parameter (`kP`). We model this through:
+Let us consider a model with an activator (`A`, which degraded at a constant rate) and a protein (`P`). The production rate of `P` depends both on `A` and a parameter (`kP`). We model this through:
 ```@example dsl_1
 rn_13 = @reaction_network begin
     d, A --> 0
     kP*A, 0 --> P
 end
 ```
-Here, `P`'s production rate will decay as `A` is slowly removed from the system. We can [print the ODE this model produces by using `Latexify`](@ref ref):
+Here, `P`'s production rate will be reduced as `A` decays. We can [print the ODE this model produces with `Latexify`](@ref ref):
 ```@example dsl_1
 using Latexify
 latexify(rn_13; form=:ode)
@@ -216,24 +216,24 @@ We can confirm that this generates the same ODE:
 ```@example dsl_1
 latexify(rn_13_alt; form=:ode)
 ```
-Here, while the model will generate the same ODE, SDE, and jump simulations, the chemical reaction network models themselves are not equivalent. Generally, as pointed out in the two notes below, using the second form is preferable.
+Here, while these models will generate identical ODE, SDE, and jump simulations, the chemical reaction network models themselves are not equivalent. Generally, as pointed out in the two notes below, using the second form is preferable.
 !!! warn
     While `rn_13` and `rn_13_alt` will generate equivalent simulations, for [jump simulations](@ref ref), the first model will have [reduced performance](@ref ref) (which generally are more performant when rates are constant).
 
 !!! danger
-    Catalyst automatically infers whether variables appearing in the DSL are species or parameters (as described [here](@ref ref)). Generally, anything that does not appear as a reactant is inferred to be a parameter. This means that if you want to model a reaction activated by a species (e.g. `kp*A, 0 --> P`), but that species does not occur as a reactant, it will be interpreted as a parameter. This can be handled by [manually declaring the system species](@ref ref). A full example of how to do this for this example can be found [here](@ref ref).
+    Catalyst automatically infers whether quantities appearing in the DSL are species or parameters (as described [here](@ref ref)). Generally, anything that does not appear as a reactant is inferred to be a parameter. This means that if you want to model a reaction activated by a species (e.g. `kp*A, 0 --> P`), but that species does not occur as a reactant, it will be interpreted as a parameter. This can be handled by [manually declaring the system species](@ref ref). A full example of how to do this for this example can be found [here](@ref ref).
 
 Above we used a simple example where the rate was the product of a species and a parameter. However, any valid Julia expression of parameters, species, and values can be used. E.g the following is a valid model:
 ```@example dsl_1
 rn_14 = @reaction_network begin
   2.0 + X^2, 0 --> X + Y
-  k1+k2^k3, X --> ∅
-  pi*X/(sqrt(2)+Y), Y → ∅
+  k1 + k2^k3, X --> ∅
+  pi * X/(sqrt(2) + Y), Y → ∅
 end
 ```
 
 ### [Using functions in rates](@id dsl_description_nonconstant_rates_functions)
-It is possible for the rate to contain Julia function. These can either be functions from Julia's standard library:  
+It is possible for the rate to contain Julia functions. These can either be functions from Julia's standard library:  
 ```@example dsl_1
 rn_16 = @reaction_network begin
     d, A --> 0
@@ -249,7 +249,7 @@ rn_17 = @reaction_network begin
 end
 ```
 
-### (@id dsl_description_nonconstant_rates_available_functions)
+### [Pre-defined functions](@id dsl_description_nonconstant_rates_available_functions)
 Two functions frequently used within systems biology are the [*Michaelis-Menten*](https://en.wikipedia.org/wiki/Michaelis%E2%80%93Menten_kinetics) and [*Hill*](https://en.wikipedia.org/wiki/Hill_equation_(biochemistry)) functions. These are pre-defined in Catalyst and can be called using `mm(X,v,K)` and `hill(X,v,K,n)`. E.g. a self-activation loop where `X` activates its own production through a Hill function can be created using:
 ```@example dsl_1
 custom_function(p1,p2,X) = (p1+E)/(p2+E)
@@ -287,7 +287,7 @@ end
 Julia permits any Unicode characters to be used in variable names, thus Catalyst can use these as well. Below we describe some cases where this can be useful. No functionality is, however, tied to this.
 
 ### [Using ∅ in degradation/production reactions](@id dsl_description_symbols_empty_set)
-Previously, we described how `0` could be used to [create degradation or production reactions](@ref dsl_description_reactions_degradation_and_production). Catalyst permits the user to instead use the `∅`. E.g. the production/degradation system can alternatively be written as:
+Previously, we described how `0` could be used to [create degradation or production reactions](@ref dsl_description_reactions_degradation_and_production). Catalyst permits the user to instead use the `∅` symbol. E.g. the production/degradation system can alternatively be written as:
 ```@example dsl_1
 rn4 = @reaction_network begin
   p, ∅ --> X
@@ -296,12 +296,12 @@ end
 ```
 
 ### [Using special arrow symbols](@id dsl_description_symbols_arrows)
-Catalyst uses `-->`, `<-->`, and `<--` to denote forward, reversible, and backwards reactions, respectively. Several unicode representations of these arrows are available. Here,
+Catalyst uses `-->`, `<-->`, and `<--` to denote forward, bi-directional, and backwards reactions, respectively. Several unicode representations of these arrows are available. Here,
 - `>`, `→`, `↣`, `↦`, `⇾`, `⟶`, `⟼`, `⥟`, `⥟`, `⇀`, and `⇁` can be used to represent forward reactions.
-- `↔`, `⟷`, `⇄`, `⇆`, `⇌`, `⇋`, , and `⇔` can be used to represent reversible reactions.
+- `↔`, `⟷`, `⇄`, `⇆`, `⇌`, `⇋`, , and `⇔` can be used to represent bi-directional reactions.
 - `<`, `←`, `↢`, `↤`, `⇽`, `⟵`, `⟻`, `⥚`, `⥞`, `↼`, , and `↽` can be used to represent backwards reactions. 
 
-E.g. the production/degradation system alternatively can be written as:
+E.g. the production/degradation system can alternatively be written as:
 ```@example dsl_1
 rn4 = @reaction_network begin
   p, ∅ → X
@@ -333,17 +333,11 @@ rn_13 = @reaction_network begin
 end
 
 It should be noted that the following symbols are *not permitted* to be used as species or parameter names:
-- `ℯ` (used in Julia to denote [Euler's constant](https://en.wikipedia.org/wiki/Euler%27s_constant))
 - `pi` and `π` (used in Julia to denote [`3.1415926535897...`](https://en.wikipedia.org/wiki/Pi)).
+- `ℯ` (used in Julia to denote [Euler's constant](https://en.wikipedia.org/wiki/Euler%27s_constant)).
 - `t` (used to denote the [time variable](@ref dsl_description_nonconstant_rates_time)).
-- `∅` ([used for production/degradation reactions](@ref dsl_description_symbols_empty_set))
+- `∅` ([used for production/degradation reactions](@ref dsl_description_symbols_empty_set)).
 - `im` (used in Julia to represent [complex numbers](https://docs.julialang.org/en/v1/manual/complex-and-rational-numbers/#Complex-Numbers)).
 - `nothing` (used in Julia to denote [nothing](https://docs.julialang.org/en/v1/base/constants/#Core.nothing)).
 - `Γ` (used by Catalyst to represent [conserved quantities](@ref ref)).
-
-
-
-
-
-
 
