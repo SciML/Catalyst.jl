@@ -132,6 +132,7 @@ two_state_model == two_state_model_dsl
 ```
 
 ## [Symbolic designation of model quantities and simulation of programmatic models](@id programmatic_CRN_construction_symbolic_representation)
+Previously, we have described how to [simulate Catalyst models declared via the DSL](@ref ref). Here, we used `Symbol`s (e.g. `:k1` and `:X1`) to designate parameters and species' values. However, in programmatic model creation we have explicitly [declared symbolic variables](@ref programmatic_CRN_construction_symbolic_variables) corresponding to our parameters and species. Here, it is instead possible to use these to designate our simulation conditions. Below we utilise this to declare initial conditions and parameters, and then using this to 
 
 ## [Additional options for declaration of symbolic variables](@id programmatic_CRN_construction_symbolic_variables_options)
 
