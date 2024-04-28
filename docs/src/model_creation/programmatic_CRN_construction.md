@@ -1,4 +1,150 @@
-# [Programmatic Construction of Symbolic Reaction Systems](@id programmatic_CRN_construction)
+# [Programmatic Model Construction](@id programmatic_CRN_construction)
+While the [Catalyst DSL](@ref ref) provides a simple interface for creating Catalyst [`ReactionSystem`](@ref) models using the `@reaction_network` macro, Catalyst also permits models to be created *programmatically*. Here, instead of declaring the model in one go, the models components are instead declared one by one, and then assembled to a full model. While all Catalyst features are accessible through both approaches, programmatic model creation can sometimes give the user more control over the modelling procedure. The DSL instead provides a more concise and human-readable notation. 
+
+Briefly, programmatic model creation consists of three steps:
+1. Declaration of *symbolic variables* representing model species and parameters.
+2. The assembly of these into model reactions.
+3. The creation of a `ReactionSystem` model from the reactions.
+
+The creation of more complicated models (containing e.g. [events](@ref ref) or [non-reaction-based equations](@ref ref)) is also possible, and will be described later on.
+
+Finally, this tutorial will discuss the concepts of model *names* and *completeness*. While also relevant to DSL-created models, only programmatic modelling requires the users to handle these explicitly, and hence they will be given additional attention here.
+
+!!! note
+       Programmatic creation of `ReactionSystem`s is highly related to [programmatic creation of ModelingToolkit.jl models](@ref ref) (from which this approach is derived). Users familiar with ModelingToolkit will be able to reuse this knowledge when declaring Catalyst models programmatically (but should still read the below tutorial, to take note of a few crucial differences).
+
+### [Basic example](@id programmatic_CRN_construction_basic_example)
+Before describing the three steps one by one, we will give a simple example where we create a [birth-death model](@ref ref). First we declare the [time independent variable](@ref ref), the species, and the parameters:
+```@example programmatic_1
+using Catalyst
+t = default_t()
+@species X(t)
+@parameters p d
+nothing # hide
+```
+Next we assembly the production and degradation reactions:
+```@example programmatic_1
+rxs = [
+       Reaction(p, [], [X]),
+       Reaction(d, [X], []),
+]
+nothing # hide
+```
+Finally, we use the reactions and time independent variable as input to the `ReactionSystem` structure constructor:
+```@example programmatic_1
+@named bd_model = ReactionSystem(rxs, t)
+bd_model = complete(bd_model)
+```
+He we also pre-append the model declaration with the `@named` macro (to [give the model a name](@ref ref)) and use `complete` to [mark our model as complete](@ref ref).
+
+## [Declaration of symbolic variables](@id programmatic_CRN_construction_symbolic_variables)
+Internally, all Catalyst quantities (parameters, species, and [variables](@ref ref)) are represented as *symbolic variables*. This enables them to [form algebraic expressions](@ref ref), something Catalyst uses to e.g. build differential equations.
+
+In practise, symbolic variables are declared using the `@parameters` and `@species` macros. In this tutorial we will create a simple [two-state model](@ref ref), for which we need to declare two parameters ($k1$ and $k2$). We do this by simply listing these after the `@parameters` macro:
+```@example programmatic_2
+using Catalyst # hide
+@parameters k1 k2
+```
+Here, `@parameters` create two [new Julia variables](@ref ref), `k1` and `k2`, and stores the symbolic variables `k1` and `k2` in these. This creates the variables `k1` and `k2` in the current scope, something we can confirm:
+```@example programmatic_2
+k1
+```
+!!! warn
+       Since `@parameters` creates the variables `k1` and `k2` in the current scope, this will override any previous variables with these names. Furthermore, if you store new values in the variables (e.g. `k1 = 1.0`), this will override the symbolic variables stored within these, preventing them from being used to e.g. build `ReactionSystem`s.
+
+Next, we declare the species. Species are not constants, but [functions of the time independent variable](@ref ref). Hence, this must be declared first:
+```@example programmatic_2
+t = default_t()
+```
+While [non-time independent variables is possible](@ref), and independent variables can be declared without using the `default_t` function, the approach is the simplest (and by far most common) one. Next, the species can be declared using similar notation as the parameters (however, by using the `@species` macro, and by appending the time dependency `(t)` to each species):
+```@example programmatic_2
+@species X1 X2
+```
+
+Here we have described the basics of symbolic variable declarations. A more throughout overview (describing additional options) can be found [here](@ref ref).
+
+!!! note
+       For users familiar with [ModelingToolkit](@ref ref), the `@species` macro have a very similar functionality to the `@variables` macro. However, `@species` appends additional metadata that the variable is a *species*, which is required for it to be used as a reaction reactant.
+
+## [Creation of `Reaction`s](@id programmatic_CRN_construction_reactions)
+In the next step, we can assembly our models reactions. In DSL-based modelling, these are listed within the `@reaction_network` macro. For programmatic modelling, these are instead declared using the `Reaction` structure's constructor:
+```@example programmatic_2
+rxs = [
+       Reaction(k1, [X1], [X2]),
+       Reaction(k2, [X2], [X1])
+]
+```
+Here, `Reaction` takes three arguments:
+1. The rate (in these cases a single parameter, however, [other types of rates are possible](@ref ref)).
+2. A vector with the reaction's substrates (in these case, both reactions have a single substrate).
+3. A vector with the reaction's products (in these case, both reactions have a single product). 
+
+Just like [when the DSL is used], more complicated reactions (featuring e.g. [](@ref ref), [](@ref ref), [](@ref ref), and [](@ref ref)) are possible. How to create such reactions is described [here](@ref ref).
+
+## [Creation of `ReactionSystem`s](@id programmatic_CRN_construction_reactionsystems)
+Finally, we can use our `Reaction` vector as input to the Catalyst's `ReactionSystem` constructor. In addition to these, we need two additional arguments:
+1. The independent variable (typically time) must be explicitly provided.
+2. A [model name](@ref ref) bust be specified.
+
+```@example programmatic_2
+two_state_model = ReactionSystem(rxs, t; name = :two_state_model)
+```
+Here, while the [DSL-created models also have names](@ref ref), these must not be explicitly declared on creation. Model declaration can be pre-appending with the `@named` macro: 
+```@example programmatic_2
+@named two_state_model = ReactionSystem(rxs, t)
+nothing # hide
+```
+This will automatically take name of the variable in which the model is stored, and use that as the model's name (here `two_state_model`). We can use the `getname` function to confirm this:
+```@example programmatic_2
+getname(two_state_model)
+```
+
+While we now have programmatically created a `ReactionSystem`, there are two final points (described in the next two sections) we should consider before using it for e.g. simulations.
+
+## [System completeness](@id programmatic_CRN_construction_completeness)
+`ReactionSystem` models created in Catalyst can either be *complete* or *incomplete*. This is primarily important for two reasons:
+- Only complete models can be used as inputs to simulations or certain tools for model analysis.
+- Only incomplete models can be [composed with other models to form hierarchical models](@ref ref).
+
+A model's completeness depends on how it was created:
+- Models created using the `@reaction_network` DSL are *complete*.
+- To create *incomplete models using the DSL*, use the [`@network_component` macro](@ref ref).
+- Models created programmatically are *incomplete*.
+- Models generated through the `compose` (and `extend`) functions are *incomplete*.
+
+Here, even if we do not intend to use our two-state model for hierarchical modelling or not, since it was created programmatically it is incomplete. We can confirm this using the `Catalyst.iscomplete` function:
+```@example programmatic_2
+Catalyst.iscomplete(two_state_model)
+```
+Since `two_state_model` is an incomplete model, we cannot simulate it. To do so, we need to use it to generate a new, complete, model. We do so through the `complete` function (and then store the new model in the same variable in which we stored the incomplete one). Finally, we confirm that the new model is complete
+```@example programmatic_2
+two_state_model = complete(two_state_model)
+Catalyst.iscomplete(two_state_model)
+```
+
+We have now created a two-state model programmatically. For all purposes, there is not difference between this model and the same model as created with the DSL. Below we confirm this:
+```@example programmatic_2
+two_state_model_dsl = @reaction_network two_state_model begin
+       k1, X1 --> X2
+       k2, X2 --> X1
+end
+two_state_model == two_state_model_dsl
+```
+
+## [Symbolic designation of model quantities and simulation of programmatic models](@id programmatic_CRN_construction_symbolic_representation)
+
+## [Additional options for declaration of symbolic variables](@id programmatic_CRN_construction_symbolic_variables_options)
+
+## [Additional options for declaration of `Reaction`s](@id programmatic_CRN_construction_reactions_options)
+
+## [Creation of `Reaction`s using the`@reaction` ](@id programmatic_CRN_construction_reaction_macro)
+
+## [Additional options for programmatic model creation](@id programmatic_CRN_construction_additional_options)
+
+
+!!! note
+       While `Reaction`s are not explicitly created when models are created via the DSL, these structures are still declared and stored internally. When calling the 
+
 While the DSL provides a simple interface for creating `ReactionSystem`s, it can
 often be convenient to build or augment a [`ReactionSystem`](@ref)
 programmatically. In this tutorial we show how to build the repressilator model
