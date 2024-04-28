@@ -19,6 +19,7 @@ area = length * width
 ```@example ex1
 min(1.0, 3.0)
 ```
+Julia has a specific *help mode*, which can be [queried for information about any function](https://docs.julialang.org/en/v1/stdlib/REPL/#Help-mode) (including those defined by Catalyst).
 
 Each Julia variable has a specific *type*, designating what type of value it contains. While not directly required to use Catalyst, this is useful to be aware of. To learn the type of a specific variable, use the `typeof` function. More information about types can be [found here](https://docs.julialang.org/en/v1/manual/types/).
 ```@example ex1
@@ -87,7 +88,7 @@ For more information on how to use the Catalyst model creator (also known as *th
 
 Next, we wish to simulate our model. To do this, we need to provide some additional information to the simulator. This is
 * The initial condition. That is, the concentration (or copy numbers) of each species at the start of the simulation.
-* The timespan. That is, the timeframe over which we wish to run the simulation.
+* The time span. That is, the time frame over which we wish to run the simulation.
 * The parameter values. That is, the values of the model's parameters for this simulation.
 
 The initial condition is given as a *Vector*. This is a type which collects several different values. To declare a vector, the values are specific within brackets, `[]`, and separated by `,`. Since we only have one species, the vector holds a single element. In this element, we set the value of $X$ using the `:X => 1.0` syntax. Here, we first denote the name of the species (with a `:` pre-appended, which creates a `Symbol`), next follows a `=>` and then the value of $X$. Since we wish to simulate the *concentration* of X over time, we will let the initial condition be decimal valued.
