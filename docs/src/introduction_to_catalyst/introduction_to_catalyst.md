@@ -135,6 +135,7 @@ Simulation solutions can also be queried in various ways. To receive the value o
 ```@example intro_1
 sol[:P]
 ```
+A more throughout tutorial on how to query solutions (and other relevant structures) for parameters and species values can be found [here](@ref simulation_structure_interfacing).
 
 Finally, it is possible to print a model in [LaTeX format](https://en.wikipedia.org/wiki/LaTeX) using the [Latexify.jl](https://github.com/korsbo/Latexify.jl) package. To print it formatted as chemical reactions we simply call `latexify` with our model as input:
 ```@example intro_1
@@ -145,6 +146,7 @@ If we instead wish to print equations the model is converted to for ODE simulati
 ```@example intro_1
 latexify(sir_model; form = :ode)
 ```
+Printing of models using Latexify is described in more detail [here](@ref ref).
 
 !!! note
     To have `latexify`'s output printed in LaTeX format you must use a programming environment that actually supports this (like a [JuPyteR](https://github.com/JuliaLang/IJulia.jl) or [Pluto](https://github.com/fonsp/Pluto.jl) notebook). Otherwise, you will simply print the LaTeX code which would generate the LaTeX print. 
