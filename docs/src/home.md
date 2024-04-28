@@ -107,6 +107,8 @@ etc).
  
 
 ## [How to read this documentation](@id doc_home_documentation)
+The Catalyst documentation is separated into sections describing Catalyst's various features. Where appropriate, some sections will also give advice on best practices for various modelling workflows, and provide links with further reading. Each section also contains a set of relevant example workflows. Finally, the [API](@ref api) section contains a list of all functions exported by Catalyst (as well as descriptions of them and their inputs and outputs).
+
 New users are recommended to start with either the [Introduction to Catalyst and Julia for New Julia users](@ref catalyst_for_new_julia_users) or [Introduction to Catalyst](@ref introduction_to_catalyst) sections (depending on whether they are familiar with Julia programming or not). This should be enough to carry out many basic Catalyst workflows. Next, [The Catalyst DSL](@ref ref) section gives a more throughout introduction to model creation, while the [Introduction to model simulation](@ref ref) section more through describes how simulations are carried out. Once you have gotten started using Catalyst, you can read whichever sections are relevant to your work (they should all be clearly labelled).
 
 This documentation contains code which is dynamically run whenever it is built. If you copy the code and run it in your Julia environment it should work. The exact Julia environment that is used in this documentation can be found [here](@ref doc_home_reproducibility).
