@@ -149,45 +149,13 @@ oprob = ODEProblem(two_state_model, u0, tspan, ps)
 sol = solve(oprob)
 plot(sol)
 ```
-While programmatically created models can also have their parameters and species designated using `Symbol`s, the reverse is not possible for DSL-created models. Here, the symbolic variables are never explicitly declared, and thus not available for designating their values. Symbolic designation can be enabled for DSL-created models [by using `@unpack`](@ref programmatic_CRN_construction_symbolic_representation_unpack).
+While programmatically created models can also have their parameters and species designated using `Symbol`s, the reverse is not possible for DSL-created models. Here, the symbolic variables are never explicitly declared, and thus not available for designating their values. Symbolic designation can be enabled for DSL-created models [by using `@unpack`](@ref programmatic_CRN_construction_symbolics_and_DSL_unpack).
 
 Elsewhere, we also describe how e.g. `ODEProblem`s and [simulations solutions can be queried for the values of model quantities](@ref simulation_structure_interfacing). There, we use use `Symbol`s to represent model quantities, however, symbolic variables (when available) can again be used. E.g. we can use
 ```@example programmatic_2
 sol[X1]
 ```
 to retrieve $X$'s value across the simulation.
-
-### [Using `@unpack` to extract symbolic variables from `ReactionSystem`s](@id programmatic_CRN_construction_symbolic_representation_unpack)
-Let us consider a simple birth-death model created using the DSL:
-```@example programmatic_3
-using Catalyst # hide
-bd_model = @reaction_network begin
-    (p,d), 0 <--> X
-end
-nothing # hide
-```
-Since we have not explicitly declared `p`, `d`, and `X` using `@parameters` and `@species`, we cannot represent these symbolically (only using `Symbol`s). If we wish to do so, however, we can fetch these into our current scope using the `@unpack` macro:
-```@example programmatic_3
-@unpack p, d, X = bd_model
-nothing # hide
-```
-This lists first the quantities we wish to fetch (does not need to be the model's full set of parameters and species), then `=`, followed by the model name. `p`, `d` and `X` are now symbolic variables in the current scope, just as if they had been declared using `@parameters` or `@species`. We can confirm this:
-```@example programmatic_3
-X
-```
-Next, we can now use these to e.g. designate initial conditions and parameter values for model simulations:
-```@example programmatic_3
-using OrdinaryDiffEq, Plots # hide
-u0 = [X => 0.1]
-tspan = (0.0, 10.0)
-ps = [p => 1.0, d => 0.2]
-oprob = ODEProblem(bd_model, u0, tspan, ps)
-sol = solve(oprob)
-plot(sol)
-```
-
-!!! warn
-       Just like [when using `@parameters` and `@species`](@ref programmatic_CRN_construction_symbolic_variables), `@unpack` will overwrite any variables in the current scope which shares name with the imported quantities.
 
 ## [Additional options for declaration of symbolic variables](@id programmatic_CRN_construction_symbolic_variables_options)
 The declaration of symbolic variables for programmatic Catalyst modelling uses identical syntax as when [parameters/species are explicitly declared within the DSL](@ref ref), or as used within [ModelingToolkit.jl](https://github.com/SciML/ModelingToolkit.jl). Here we will provide a brief summary iterating the same information.
@@ -233,7 +201,7 @@ nothing # hide
 
 If a parameter have a type, a metadata, and a default value, they are designated in the following order:
 ```@example programmatic_4
-TODO: @parameters n(t)::Int64
+@parameters n(t)::Int64 = 2 ["Parameter n, which is an integer and defaults to the value 2."]
 nothing # hide
 ```
 
@@ -260,10 +228,130 @@ end
 nothing # hide
 ```
 
+### [Vector-valued symbolic variables](@id programmatic_CRN_construction_symbolic_variables_options_vectors)
+Sometimes, one wish to declare a large number of similar symbolic variables. E.g. if we have a system with ten species, each being produced at different rates, we could declare ten separate production parameters:
+```@example programmatic_5
+using Catalyst # hide
+@parameters p1 p2 p3 p4 p5 p6 p7 p8 p9 p10
+```
+However, it is also possible to *declare a vector parameter* with ten different values:
+```@example programmatic_5
+@parameters p[1:10]
+```
+
+We can use this to create our two-state model, but instead of declaring `X1`, `X2`, `k1`, and `k2` as separate entities, we create them as two length-two vectors:
+```@example programmatic_5
+t = default_t() 
+@species X[1:2](t)
+@parameters k[1:2]
+nothing # hide
+```
+Next, we can designate the individual parameters using e.g. `X[1]`
+```@example programmatic_5
+rxs = [
+    Reaction(k[1], [X[1]], [X[2]]),
+    Reaction(k[2], [X[2]], [X[1]]),
+]
+@named two_state_model = ReactionSystem(rxs, t)
+```
+Now, while we still can provide individual values to `X[1]`, `X[2]`, `k[1]`, and `k[2]`, we can also declare their values directly as vectors:
+```@example programmatic_5
+using OrdinaryDiffEq, Plots # hide
+u0 = [X => [0.0, 2.0]]
+tspan = (0.0, 1.0)
+ps = [k => [1.0, 2.0]]
+oprob = ODEProblem(two_state_model, u0, tspan, ps)
+sol = solve(oprob)
+plot(sol)
+```
+
+
+## [Additional options for declaration of `Reaction`s](@id programmatic_CRN_construction_reactions_options)
+When describing the DSL, we also describe a range of [options for declaring various types of reactions](@ref ref). Each type of reaction that can be created using the DSL can also be created programmatically. Below, we briefly describe each case.
+
+### [Reactions with ](@id programmatic_CRN_construction_reactions_options_)
+
+### [](@id programmatic_CRN_construction_reactions_options_)
+
+### [](@id programmatic_CRN_construction_reactions_options_)
+
+### [](@id programmatic_CRN_construction_reactions_options_)
 
 ## [Additional options for declaration of `Reaction`s](@id programmatic_CRN_construction_reactions_options)
 
-## [Creation of `Reaction`s using the`@reaction` ](@id programmatic_CRN_construction_reaction_macro)
+
+## [Creation of `Reaction`s using the `@reaction`](@id programmatic_CRN_construction_reaction_macro)
+
+## [Working with symbolic variables and the DSL](@id programmatic_CRN_construction_symbolics_and_DSL)
+The `@reaction` macro allowed us to use some of DSL-based modellings advantage (easy declaration of reactions) in programmatic modelling. Similarity, there are also ways to utilise concepts from programmatic modelling (like the declaration and use of symbolic variables) in DSL-based modelling. Below we briefly describe two of these.
+
+### [Using `@unpack` to extract symbolic variables from `ReactionSystem`s](@id programmatic_CRN_construction_symbolics_and_DSL_unpack)
+Let us consider a simple birth-death model created using the DSL:
+```@example programmatic_3
+using Catalyst # hide
+bd_model = @reaction_network begin
+    (p,d), 0 <--> X
+end
+nothing # hide
+```
+Since we have not explicitly declared `p`, `d`, and `X` using `@parameters` and `@species`, we cannot represent these symbolically (only using `Symbol`s). If we wish to do so, however, we can fetch these into our current scope using the `@unpack` macro:
+```@example programmatic_3
+@unpack p, d, X = bd_model
+nothing # hide
+```
+This lists first the quantities we wish to fetch (does not need to be the model's full set of parameters and species), then `=`, followed by the model name. `p`, `d` and `X` are now symbolic variables in the current scope, just as if they had been declared using `@parameters` or `@species`. We can confirm this:
+```@example programmatic_3
+X
+```
+Next, we can now use these to e.g. designate initial conditions and parameter values for model simulations:
+```@example programmatic_3
+using OrdinaryDiffEq, Plots # hide
+u0 = [X => 0.1]
+tspan = (0.0, 10.0)
+ps = [p => 1.0, d => 0.2]
+oprob = ODEProblem(bd_model, u0, tspan, ps)
+sol = solve(oprob)
+plot(sol)
+```
+
+!!! warn
+       Just like [when using `@parameters` and `@species`](@ref programmatic_CRN_construction_symbolic_variables), `@unpack` will overwrite any variables in the current scope which shares name with the imported quantities.
+
+### [Interpolating variables into the DSL](@id advanced_intro_to_catalyst_interpolation)
+
+The DSL allows Julia variables to be interpolated for the network name, within
+rate constant expressions, or for species/stoichiometry within reactions. Using
+the lower-level symbolic interface we can then define symbolic variables and
+parameters outside of the macro, which can then be used within expressions in
+the DSL (see the [Programmatic Construction of Symbolic Reaction Systems](@ref programmatic_CRN_construction)
+tutorial for details on the lower-level symbolic interface). For example,
+```@example advanced_intro_to_catalyst_interpolation
+using Catalyst
+@parameters k α
+@variables t
+@species A(t)
+spec = A
+par = α
+rate = k*A
+name = :network
+rn = @reaction_network $name begin
+    $rate*B, 2*$spec + $par*B --> $spec + C
+  end
+```
+As the parameters `k` and `α` were pre-defined and appeared via interpolation,
+we did not need to declare them within the `@reaction_network` macro,
+i.e. they are automatically detected as parameters:
+```@example advanced_intro_to_catalyst_interpolation
+parameters(rn)
+```
+as are the species coming from interpolated variables
+```@example advanced_intro_to_catalyst_interpolation
+species(rn)
+```
+
+!!! note
+    When using interpolation, expressions like `2$spec` won't work; the
+    multiplication symbol must be explicitly included like `2*$spec`.
 
 ## [Additional options for programmatic model creation](@id programmatic_CRN_construction_additional_options)
 
