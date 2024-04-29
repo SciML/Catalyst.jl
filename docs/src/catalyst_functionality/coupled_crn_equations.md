@@ -120,8 +120,4 @@ In other sections, we describe how to perform [bifurcation analysis](@ref ref), 
 ### [Using higher-order differentials](@id coupled_equations_other_higher_order_differentials)
 
 
-## [Coupled equations for programmatic and compositional modelling](@id coupled_equations_non_dsl)
-
-### [Coupled equations for programmatic modelling](@id coupled_equations_non_dsl_programmatic)
-
-### [Coupled equations for compositional modelling](@id coupled_equations_non_dsl_compositional)
+## [Coupled equations for programmatic modelling](@id coupled_equations_programmatic)
