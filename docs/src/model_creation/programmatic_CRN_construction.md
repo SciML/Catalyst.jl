@@ -192,6 +192,8 @@ If a symbolic variable have both metadata and a default value, the default value
 nothing # hide
 ```
 
+A list of commonly used metadata, and how to access them, can be found [here](https://docs.sciml.ai/ModelingToolkit/stable/basics/Variable_metadata/).
+
 ### [Designating parameter types](@id programmatic_CRN_construction_symbolic_variables_options_types)
 Sometimes it is desired to designate that a parameter should have a specific [type](@ref ref). When supplying this parameters value to e.g. an `ODEProblem`, that parameter will then be restricted to that specific type. Designating a type is done by appending the parameter with `::` followed by its type. E.g. to specify that a parameter `n` should be an `Int64` we do:
 ```@example programmatic_4
@@ -269,25 +271,112 @@ plot(sol)
 ## [Additional options for declaration of `Reaction`s](@id programmatic_CRN_construction_reactions_options)
 When describing the DSL, we also describe a range of [options for declaring various types of reactions](@ref ref). Each type of reaction that can be created using the DSL can also be created programmatically. Below, we briefly describe each case.
 
-### [Reactions with ](@id programmatic_CRN_construction_reactions_options_)
+### [Reactions with non-unitary stoichiometries](@id programmatic_CRN_construction_reactions_options_stoichiometries)
+Previously, we assumed that all reactions' substrates and products had stoichiometry 1. Other stoichiometries ([including decimal, parametric, and distributed, ones](@ref ref)) are possible. To designate this we provide two additional arguments to the `Reaction` constructor, designating the substrates and products stoichiometries respectively.
 
-### [](@id programmatic_CRN_construction_reactions_options_)
+E.g. to model a simple dimerisation system (where two copies of $X$ dimerise to form $X2$, which then maybe dissociate back into two copies of $X$) we use
+```@example programmatic_6
+using Catalyst # hide
+t = default_t() 
+@species X(t) X2(t)
+@parameters kB kD
+rxs = [
+    Reaction(kB, [X], [X2], [2], [1]),
+    Reaction(kD, [X2], [X], [1], [2])
+]
+@named dimerisation_model = ReactionSystem(rxs, t)
+```
+Here, `Reaction(k, [X], [X2], [2], [1])` indicates that there are `2` copies of $X$ and one copy of $X2$ involved in the reaction.
 
-### [](@id programmatic_CRN_construction_reactions_options_)
+If there are multiple substrates and/or products, the order of the stoichiometries must correspond to the order with which these occur. E.g. to create a reaction `k, 2X + Y --> X + 2Y` we would use
+```@example programmatic_6
+@parameters k
+@species X(t) Y(t)
+Reaction(k, [X, Y], [X, Y], [2, 1], [1, 2]),
+```
 
-### [](@id programmatic_CRN_construction_reactions_options_)
+### [Production and degradation reactions](@id programmatic_CRN_construction_reactions_options_production_and_degradation)
+To designate [an absence of substrates and/or products](@ref ref), we simply give an empty vector. E.g. to create a [birth-death model](@ref ref) we use
+```@example programmatic_6
+@parameters p d
+@species X(t)
+rxs = [
+    Reaction(p, [], [X]),
+    Reaction(d, [X], [])
+]
+@named bd_model = ReactionSystem(rxs, t)
+nothing # hide
+```
+If there also are non-unitary stoichiometries, we must supply empty stoichiometric vectors where appropriate. E.g. if for the previous model the reactions each involved two copies of $X$ (rather than a single one) we would use:
+```@example programmatic_6
+rxs = [
+    Reaction(p, [], [X], [], [2]),
+    Reaction(d, [X], [], [2], [])
+]
+```
 
-## [Additional options for declaration of `Reaction`s](@id programmatic_CRN_construction_reactions_options)
+### [Reactions with non-constant rates](@id programmatic_CRN_construction_reactions_options_rates)
+Just like when creating models using the DSL, the rate can be any valid algebraic expressions (containing any combinations of parameters, species, and numeric values). E.g. to create a reaction that takes $X$ from its inactive form ($Xi$) to its activate form ($Xa$) catalysed by an enzyme ($E$) we would use:
+```@example programmatic_6
+@parameters k
+@species Xi(t) Xa(t) E(t)
+Reaction(k*E, [Xi], [Xa])
+```
 
+Here it is both possible to use known Julia functions:
+```@example programmatic_6
+Reaction(k*sqrt(E), [Xi], [Xa])
+```
+and ones declared by the user:
+```@example programmatic_6
+inhibition_function(x,p) = p/(p+x)
+Reaction(inhibition_function(k,E), [Xi], [Xa])
+```
+Finally, Catalyst also pre-defined a few function commonly used in systems biology (listed [here](@ref ref)) which also can be used. E.g. to make the rate follow a [Michaelis-Menten function](https://en.wikipedia.org/wiki/Michaelis%E2%80%93Menten_kinetics) we use
+```@example programmatic_6
+@parameters v K
+Reaction(mm(E,v,K), [Xi], [Xa])
+```
+
+### [Additional `Reaction` constructor arguments](@id programmatic_CRN_construction_reactions_options_)
+The `Reaction` constructor accepts several additional optional arguments. E.g. to [disable to use of mass action to compute reaction propensities, and instead use the rate only], you can use the `only_use_rate = true` argument:
+```@example programmatic_6
+Reaction(k*E, [Xi], [Xa]; only_use_rate = true)
+nothing # hide
+```
+
+To attach [metadata to a reaction](@ref ref), use the `metadata` argument, followed by a vector containing all metadata entries you wish to supply. Here, each metadata's name is designated using a `Symbol`, its value uses whichever form that metadata accepts, and these two are separated by a `=>`. E.g. to attach a description metadata to a reaction we use:
+```@example programmatic_6
+Reaction(k*E, [Xi], [Xa]; metadata = [:description => "The activation of species X"])
+nothing # hide
+```
 
 ## [Creation of `Reaction`s using the `@reaction`](@id programmatic_CRN_construction_reaction_macro)
+Catalyst's DSL provides a simple way to declare reactions. By using the `@reaction` macro, it is possible to harness this during programmatic modelling. Here, `@reaction` accepts a single line of the same format as used with the DSL, and returns a single `Reaction` object (just as if it was created using the `Reaction` constructor).
+
+E.g. here we create the reactions of our two-state model using the `@reaction` macro:
+```@example programmatic_7
+using Catalyst # hide
+rxs = [
+    @reaction k1, X1 --> X2,
+    @reaction k2, X2 --> X1
+]
+```
+We can now use these reactions as input to the `ReactionSystem` constructor to build our model:
+```@example programmatic_7
+t = default_t()
+@named two_state_model = ReactionSystem(rxs, t)
+nothing # hide
+```
+
+We note that when using `@reaction` it might not be necessary to declare the parameters and species using `@parameters` and `@species`. Instead, `@reaction` automatically infers and creates these from its input. Declaring these explicitly is still, however, possible, in which case they should be [interpolated into the `@reaction` macro](@ref programmatic_CRN_construction_symbolics_and_DSL_interpolation).
 
 ## [Working with symbolic variables and the DSL](@id programmatic_CRN_construction_symbolics_and_DSL)
 The `@reaction` macro allowed us to use some of DSL-based modellings advantage (easy declaration of reactions) in programmatic modelling. Similarity, there are also ways to utilise concepts from programmatic modelling (like the declaration and use of symbolic variables) in DSL-based modelling. Below we briefly describe two of these.
 
 ### [Using `@unpack` to extract symbolic variables from `ReactionSystem`s](@id programmatic_CRN_construction_symbolics_and_DSL_unpack)
 Let us consider a simple birth-death model created using the DSL:
-```@example programmatic_3
+```@example programmatic_8
 using Catalyst # hide
 bd_model = @reaction_network begin
     (p,d), 0 <--> X
@@ -295,7 +384,7 @@ end
 nothing # hide
 ```
 Since we have not explicitly declared `p`, `d`, and `X` using `@parameters` and `@species`, we cannot represent these symbolically (only using `Symbol`s). If we wish to do so, however, we can fetch these into our current scope using the `@unpack` macro:
-```@example programmatic_3
+```@example programmatic_8
 @unpack p, d, X = bd_model
 nothing # hide
 ```
@@ -304,7 +393,7 @@ This lists first the quantities we wish to fetch (does not need to be the model'
 X
 ```
 Next, we can now use these to e.g. designate initial conditions and parameter values for model simulations:
-```@example programmatic_3
+```@example programmatic_8
 using OrdinaryDiffEq, Plots # hide
 u0 = [X => 0.1]
 tspan = (0.0, 10.0)
@@ -317,7 +406,7 @@ plot(sol)
 !!! warn
        Just like [when using `@parameters` and `@species`](@ref programmatic_CRN_construction_symbolic_variables), `@unpack` will overwrite any variables in the current scope which shares name with the imported quantities.
 
-### [Interpolating variables into the DSL](@id advanced_intro_to_catalyst_interpolation)
+### [Interpolating variables into the DSL](@id programmatic_CRN_construction_symbolics_and_DSL_interpolation)
 
 The DSL allows Julia variables to be interpolated for the network name, within
 rate constant expressions, or for species/stoichiometry within reactions. Using
@@ -325,7 +414,7 @@ the lower-level symbolic interface we can then define symbolic variables and
 parameters outside of the macro, which can then be used within expressions in
 the DSL (see the [Programmatic Construction of Symbolic Reaction Systems](@ref programmatic_CRN_construction)
 tutorial for details on the lower-level symbolic interface). For example,
-```@example advanced_intro_to_catalyst_interpolation
+```@example programmatic_9
 using Catalyst
 @parameters k α
 @variables t
@@ -341,11 +430,11 @@ rn = @reaction_network $name begin
 As the parameters `k` and `α` were pre-defined and appeared via interpolation,
 we did not need to declare them within the `@reaction_network` macro,
 i.e. they are automatically detected as parameters:
-```@example advanced_intro_to_catalyst_interpolation
+```@example programmatic_9
 parameters(rn)
 ```
 as are the species coming from interpolated variables
-```@example advanced_intro_to_catalyst_interpolation
+```@example programmatic_9
 species(rn)
 ```
 
@@ -354,256 +443,3 @@ species(rn)
     multiplication symbol must be explicitly included like `2*$spec`.
 
 ## [Additional options for programmatic model creation](@id programmatic_CRN_construction_additional_options)
-
-
-
-While the DSL provides a simple interface for creating `ReactionSystem`s, it can
-often be convenient to build or augment a [`ReactionSystem`](@ref)
-programmatically. In this tutorial we show how to build the repressilator model
-of the [Introduction to Catalyst](@ref introduction_to_catalyst) tutorial directly using symbolic variables, and
-then summarize the basic API functionality for accessing information stored
-within `ReactionSystem`s.
-
-## Directly building the repressilator with `ReactionSystem`s
-We first load Catalyst
-```@example ex
-using Catalyst
-```
-and then define symbolic variables for each parameter and species in the system
-(the latter corresponding to a `variable` or `unknown` in ModelingToolkit
-terminology)
-```@example ex
-t = default_t()
-@parameters α K n δ γ β μ
-@species m₁(t) m₂(t) m₃(t) P₁(t) P₂(t) P₃(t)
-nothing    # hide
-```
-Note: each species is declared as a function of time. Here, we first import the *time independent variable*, and stores it in `t`, using `t = default_t()`, and then use it to declare out species.
-
-!!! note
-       For users familiar with ModelingToolkit, chemical species must be declared
-       via the `@species` macro, and not the `ModelingToolkit.@variables` macro.
-       `@species` wraps `@variables`, adding additional metadata to the symbolic
-       variables that represent species which is used internally in Catalyst.
-
-Next, we specify the chemical reactions that comprise the system using Catalyst
-[`Reaction`](@ref)s
-```@example ex
-rxs = [Reaction(hillr(P₃,α,K,n), nothing, [m₁]),
-       Reaction(hillr(P₁,α,K,n), nothing, [m₂]),
-       Reaction(hillr(P₂,α,K,n), nothing, [m₃]),
-       Reaction(δ, [m₁], nothing),
-       Reaction(γ, nothing, [m₁]),
-       Reaction(δ, [m₂], nothing),
-       Reaction(γ, nothing, [m₂]),
-       Reaction(δ, [m₃], nothing),
-       Reaction(γ, nothing, [m₃]),
-       Reaction(β, [m₁], [m₁,P₁]),
-       Reaction(β, [m₂], [m₂,P₂]),
-       Reaction(β, [m₃], [m₃,P₃]),
-       Reaction(μ, [P₁], nothing),
-       Reaction(μ, [P₂], nothing),
-       Reaction(μ, [P₃], nothing)]
-nothing    # hide
-```
-Here we use `nothing` where the DSL used ``\varnothing``. Finally, we are ready
-to construct our [`ReactionSystem`](@ref) as
-```@example ex
-@named repressilator = ReactionSystem(rxs, t)
-nothing     # hide
-```
-Notice, the model is named `repressilator`. A name must always be specified when
-directly constructing a `ReactionSystem` (the DSL will auto-generate one if left
-out). Using `@named` when constructing a `ReactionSystem` causes the name of the
-system to be the same as the name of the variable storing the system.
-Alternatively, one can use the `name = :repressilator` keyword argument to the
-`ReactionSystem` constructor.
-
-!!! warn
-       All `ReactionSystem`s created via the symbolic interface (i.e. by calling `ReactionSystem` with some input, rather than using `@reaction_network`) are not marked as complete. To simulate them, they must first be marked as *complete*, indicating to Catalyst and ModelingToolkit that they represent finalized models. This can be done using the `complete` function, i.e. by calling `repressilator = complete(repressilator)`. An expanded description on *completeness* can be found [here](@ref completeness_note).
-
-We can check that this is the same model as the one we defined via the DSL as
-follows (this requires that we use the same names for rates, species and the
-system)
-```@example ex
-repressilator2 = @reaction_network repressilator begin
-    hillr(P₃,α,K,n), ∅ --> m₁
-    hillr(P₁,α,K,n), ∅ --> m₂
-    hillr(P₂,α,K,n), ∅ --> m₃
-    (δ,γ), m₁ <--> ∅
-    (δ,γ), m₂ <--> ∅
-    (δ,γ), m₃ <--> ∅
-    β, m₁ --> m₁ + P₁
-    β, m₂ --> m₂ + P₂
-    β, m₃ --> m₃ + P₃
-    μ, P₁ --> ∅
-    μ, P₂ --> ∅
-    μ, P₃ --> ∅
-end
-repressilator == repressilator2
-```
-
-For more options in building `ReactionSystem`s, see the [`ReactionSystem`](@ref)
-API docs. For a more extensive example of how to programmatically create a
-`ReactionSystem`, see the [Smoluchowski Coagulation Equation example](@ref
-smoluchowski_coagulation_equation).
-
-## More general `Reaction`s
-In the example above all the specified `Reaction`s were first or zero order. The
-three-argument form of `Reaction` implicitly assumes all species have a
-stoichiometric coefficient of one, i.e. for substrates `[S₁,...,Sₘ]` and
-products `[P₁,...,Pₙ]` it has the possible forms
-```julia
-# rate, S₁ + ... + Sₘ --> P₁ + ... + Pₙ
-Reaction(rate, [S₁,...,Sₘ], [P₁,...,Pₙ])
-
-# rate, S₁ + ... + Sₘ --> ∅
-Reaction(rate, [S₁,...,Sₘ], nothing)
-
-# rate, ∅ --> P₁ + ... + Pₙ
-Reaction(rate, nothing, [P₁,...,Pₙ])
-```
-To allow for other stoichiometric coefficients we also provide a five argument
-form
-```julia
-# rate, α₁*S₁ + ... + αₘ*Sₘ --> β₁*P₁ + ... + βₙ*Pₙ
-Reaction(rate, [S₁,...,Sₘ], [P₁,...,Pₙ], [α₁,...,αₘ], [β₁,...,βₙ])
-
-# rate, α₁*S₁ + ... + αₘ*Sₘ --> ∅
-Reaction(rate, [S₁,...,Sₘ], nothing, [α₁,...,αₘ], nothing)
-
-# rate, ∅ --> β₁*P₁ + ... + βₙ*Pₙ
-Reaction(rate, nothing, [P₁,...,Pₙ], nothing, [β₁,...,βₙ])
-```
-Finally, we note that the rate constant, `rate` above, does not need to be a
-constant or fixed function, but can be a general symbolic expression:
-```julia
-t = default_t()
-@parameters α, β
-@species A(t), B(t)
-rx = Reaction(α + β*t*A, [A], [B])
-```
-[See the FAQs](@ref user_functions) for info on using general user-specified
-functions for the rate constant.
-
-## The `@reaction` macro for constructing `Reaction`s
-In some cases one wants to build reactions incrementally, as in the
-repressilator example, but it would be nice to still have a short hand as in the
-[`@reaction_network`](@ref) DSL. In this case one can construct individual
-reactions using the [`@reaction`](@ref) macro.
-
-For example, the repressilator reactions could also have been constructed like
-```julia
-t = default_t()
-@species P₁(t) P₂(t) P₃(t)
-rxs = [(@reaction hillr($P₃,α,K,n), ∅ --> m₁),
-       (@reaction hillr($P₁,α,K,n), ∅ --> m₂),
-       (@reaction hillr($P₂,α,K,n), ∅ --> m₃),
-       (@reaction δ, m₁ --> ∅),
-       (@reaction γ, ∅ --> m₁),
-       (@reaction δ, m₂ --> ∅),
-       (@reaction γ, ∅ --> m₂),
-       (@reaction δ, m₃ --> ∅),
-       (@reaction γ, ∅ --> m₃),
-       (@reaction β, m₁ --> m₁ + P₁),
-       (@reaction β, m₂ --> m₂ + P₂),
-       (@reaction β, m₃ --> m₃ + P₃),
-       (@reaction μ, P₁ --> ∅),
-       (@reaction μ, P₂ --> ∅),
-       (@reaction μ, P₃ --> ∅)]
-@named repressilator = ReactionSystem(rxs, t)
-```
-Note, there are a few differences when using the `@reaction` macro to specify
-one reaction versus using the full `@reaction_network` macro to create a
-`ReactionSystem`. First, only one reaction (i.e. a single forward arrow type)
-can be used, i.e. reversible arrows like `<-->` will not work (since they define
-more than one reaction). Second, the `@reaction` macro does not have an option for designating what should be considered a species or parameter, and instead assumes that any symbol that appears as either a substrate or a product is a species, and everything else (including stoichiometric coefficients) are parameters. As such, the following are equivalent
-```julia
-rx = @reaction hillr(P,α,K,n), A --> B
-```
-is equivalent to
-```julia
-t = default_t()
-@parameters P α K n
-@variables A(t) B(t)
-rx = Reaction(hillr(P,α,K,n), [A], [B])
-```
-Here `(P,α,K,n)` are parameters and `(A,B)` are species.
-
-This behavior is the reason that in the repressilator example above we
-pre-declared `(P₁(t),P₂(t),P₃(t))` as variables, and then used them via
-interpolating their values into the rate law expressions using `$` in the macro.
-This ensured they were properly treated as species and not parameters. See the
-[`@reaction`](@ref) macro docstring for more information.
-
-## Basic querying of `ReactionSystems`
-
-The [Catalyst.jl API](@ref) provides a large variety of functionality for
-querying properties of a reaction network. Here we go over a few of the most
-useful basic functions. Given the `repressillator` defined above we have that
-```@example ex
-species(repressilator)
-```
-```@example ex
-parameters(repressilator)
-```
-```@example ex
-reactions(repressilator)
-```
-
-We can test if a `Reaction` is mass action, i.e. the rate does not depend on `t`
-or other species, as
-```@example ex
-# Catalyst.hillr(P₃(t), α, K, n), ∅ --> m₁
-rx1 = reactions(repressilator)[1]
-ismassaction(rx1,repressilator)
-```
-while
-```@example ex
-# δ, m₁ --> ∅
-rx2 = reactions(repressilator)[4]
-ismassaction(rx2,repressilator)
-```
-Similarly, we can determine which species a reaction's rate law will depend on
-like
-```@example ex
-rn = @reaction_network begin
-       k*W, 2X + 3Y --> 5Z + W
-     end
-dependents(reactions(rn)[1], rn)
-```
-Basic stoichiometry matrices can be obtained from a `ReactionSystem` as
-```@example ex
-substoichmat(repressilator)
-```
-```@example ex
-prodstoichmat(repressilator)
-```
-```@example ex
-netstoichmat(repressilator)
-```
-Here the ``(i,j)`` entry gives the corresponding stoichiometric coefficient
-of species ``i`` for reaction ``j``.
-
-Finally, we can directly access fields of individual reactions like
-```@example ex
-rx1.rate
-```
-```@example ex
-rx1.substrates
-```
-```@example ex
-rx1.products
-```
-```@example ex
-rx1.substoich
-```
-```@example ex
-rx1.prodstoich
-```
-```@example ex
-rx1.netstoich
-```
-
-See the [Catalyst.jl API](@ref) for much more detail on the various querying and
-analysis functions provided by Catalyst.
