@@ -94,26 +94,26 @@ let
     graph_lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, graph_grid)
 
     # Check internal structures.
-    @test cartesian_lrs.rs == masked_lrs.rs == graph_lrs.rs
-    @test cartesian_lrs.spatial_reactions == masked_lrs.spatial_reactions == graph_lrs.spatial_reactions
-    @test cartesian_lrs.num_verts == masked_lrs.num_verts == graph_lrs.num_verts
-    @test cartesian_lrs.num_edges == masked_lrs.num_edges == graph_lrs.num_edges
-    @test cartesian_lrs.num_species == masked_lrs.num_species == graph_lrs.num_species
-    @test isequal(cartesian_lrs.spat_species, masked_lrs.spat_species) 
-    @test isequal(masked_lrs.spat_species, graph_lrs.spat_species) 
-    @test isequal(cartesian_lrs.parameters, masked_lrs.parameters)
-    @test isequal(masked_lrs.parameters, graph_lrs.parameters)
-    @test isequal(cartesian_lrs.vertex_parameters, masked_lrs.vertex_parameters)
-    @test isequal(masked_lrs.edge_parameters, graph_lrs.edge_parameters)
-    @test issetequal(cartesian_lrs.edge_iterator, masked_lrs.edge_iterator)
-    @test issetequal(masked_lrs.edge_iterator, graph_lrs.edge_iterator)
+    @test reactionsystem(cartesian_lrs) == reactionsystem(masked_lrs) == reactionsystem(graph_lrs)
+    @test spatial_reactions(cartesian_lrs) == spatial_reactions(masked_lrs) == spatial_reactions(graph_lrs)
+    @test num_verts(cartesian_lrs) == num_verts(masked_lrs) == num_verts(graph_lrs)
+    @test num_edges(cartesian_lrs) == num_edges(masked_lrs) == num_edges(graph_lrs)
+    @test num_species(cartesian_lrs) == num_species(masked_lrs) == num_species(graph_lrs)
+    @test isequal(spatial_species(cartesian_lrs), spatial_species(masked_lrs)) 
+    @test isequal(spatial_species(masked_lrs), spatial_species(graph_lrs)) 
+    @test isequal(parameters(cartesian_lrs), parameters(masked_lrs))
+    @test isequal(parameters(masked_lrs), parameters(graph_lrs))
+    @test isequal(vertex_parameters(cartesian_lrs), vertex_parameters(masked_lrs))
+    @test isequal(edge_parameters(masked_lrs), edge_parameters(graph_lrs))
+    @test issetequal(edge_iterator(cartesian_lrs), edge_iterator(masked_lrs))
+    @test issetequal(edge_iterator(masked_lrs), edge_iterator(graph_lrs))
 
     # Checks that simulations yields the same output.
-    X_vals = rand(cartesian_lrs.num_verts)
+    X_vals = rand(num_verts(cartesian_lrs))
     u0_cartesian = [:X => reshape(X_vals, 5, 5), :Y => 2.0]
     u0_masked = [:X => reshape(X_vals, 5, 5), :Y => 2.0]
     u0_graph = [:X => X_vals, :Y => 2.0]
-    B_vals = rand(cartesian_lrs.num_verts)
+    B_vals = rand(num_verts(cartesian_lrs))
     pV_cartesian = [:A => 0.5 .+ reshape(B_vals, 5, 5), :B => 4.0]
     pV_masked = [:A => 0.5 .+ reshape(B_vals, 5, 5), :B => 4.0]
     pV_graph = [:A => 0.5 .+ B_vals, :B => 4.0]
@@ -148,9 +148,9 @@ let
     graph_lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, graph_grid)
     
     # Check internal structures.
-    @test masked_lrs.num_verts == graph_lrs.num_verts
-    @test masked_lrs.num_edges == graph_lrs.num_edges
-    @test issetequal(masked_lrs.edge_iterator, graph_lrs.edge_iterator)
+    @test num_verts(masked_lrs) == num_verts(graph_lrs)
+    @test num_edges(masked_lrs) == num_edges(graph_lrs)
+    @test issetequal(edge_iterator(masked_lrs), edge_iterator(graph_lrs))
     
     # Checks that simulations yields the same output.
     u0_masked_grid = [:X => [1. 4. 6.; 2. 0. 7.; 3. 5. 8.], :Y => 2.0]
@@ -230,14 +230,14 @@ let
         ps = [:α => α_vals[1:4], :β => β_val, :dS => dS_val]
         oprob = ODEProblem(lrs, u0, (0.0, 100.0), ps)
         sol = solve(oprob, Tsit5(); saveat = 1.0, abstol = 1e-9, reltol = 1e-9)
-        @test sol[:,:] ≈ sol_base[1:12,:]
+        @test hcat(sol.u...) ≈ sol_base[1:12,:]
 
         # Checks where the values are arrays of size equal to the grid.
         u0 = [:S => reshape(S_vals[1:4], grid_size(lrs)), :I => I_val, :R => R_val]
         ps = [:α => reshape(α_vals[1:4], grid_size(lrs)), :β => β_val, :dS => dS_val]
         oprob = ODEProblem(lrs, u0, (0.0, 100.0), ps)
         sol = solve(oprob, Tsit5(); saveat = 1.0, abstol = 1e-9, reltol = 1e-9)
-        @test sol[:,:] ≈ sol_base[1:12,:]
+        @test hcat(sol.u...) ≈ sol_base[1:12,:]
     end
 
     # Checks simulations for the second Cartesian grids (covering vertices 6 to 8).
@@ -248,13 +248,13 @@ let
         ps = [:α => α_vals[6:8], :β => β_val, :dS => dS_val]
         oprob = ODEProblem(lrs, u0, (0.0, 100.0), ps)
         sol = solve(oprob, Tsit5(); saveat = 1.0, abstol = 1e-9, reltol = 1e-9)
-        @test sol[:,:] ≈ sol_base[13:end,:]
+        @test hcat(sol.u...) ≈ sol_base[13:end,:]
 
         # Checks where the values are arrays of size equal to the grid.
         u0 = [:S => reshape(S_vals[6:8], grid_size(lrs)), :I => I_val, :R => R_val]
         ps = [:α => reshape(α_vals[6:8], grid_size(lrs)), :β => β_val, :dS => dS_val]
         oprob = ODEProblem(lrs, u0, (0.0, 100.0), ps)
         sol = solve(oprob, Tsit5(); saveat = 1.0, abstol = 1e-9, reltol = 1e-9)
-        @test sol[:,:] ≈ sol_base[13:end,:]
+        @test hcat(sol.u...) ≈ sol_base[13:end,:]
     end
 end

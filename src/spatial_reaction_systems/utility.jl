@@ -27,7 +27,7 @@ function lattice_process_u0(u0_in, u0_syms::Vector{BasicSymbolic{Real}}, lrs::La
     u0 = vertex_value_map(u0, lrs)
 
     # Converts the initial condition to a single Vector (with one value for each species and vertex).
-    return expand_component_values([entry[2] for entry in u0], lrs.num_verts)                  
+    return expand_component_values([entry[2] for entry in u0], num_verts(lrs))                  
 end
 
 # From a parameter input, split it into vertex parameters and edge parameters.
@@ -95,19 +95,19 @@ function vertex_value_form(values, lrs::LatticeReactionSystem, sym::BasicSymboli
         # For the case where we have a 1d (Cartesian or masked) grid, and the vector's values
         # correspond to individual grid points.
         if has_grid_lattice(lrs) && (size(values) == grid_size(lrs))
-            return vertex_value_form(values, lrs.num_verts, lrs.lattice, sym)
+            return vertex_value_form(values, num_verts(lrs), lattice(lrs), sym)
         end
 
         # For the case where the i'th value of the vector corresponds to the value in the i'th vertex.
         # This is the only (non-uniform) case possible for graph grids.
-        if (length(values) != lrs.num_verts) 
-            error("You have provided ($(length(values))) values for $sym. This is not equal to the number of vertices ($(lrs.num_verts)).")
+        if (length(values) != num_verts(lrs)) 
+            error("You have provided ($(length(values))) values for $sym. This is not equal to the number of vertices ($(num_verts(lrs))).")
         end
         return values
     end
 
     # (2d and 3d) Cartesian and masked grids can take non-vector, non-scalar, values input.
-    return vertex_value_form(values, lrs.num_verts, lrs.lattice, sym)
+    return vertex_value_form(values, num_verts(lrs), lattice(lrs), sym)
 end
 
 # Converts values to the correct vector form for a Cartesian grid lattice.
@@ -158,10 +158,10 @@ function edge_value_form(values, lrs::LatticeReactionSystem, sym)
     (values isa SparseMatrixCSC) || (return sparse([1], [1], [values]))
     
     # Error checks.
-    if nnz(values) != lrs.num_edges
-        error("You have provided ($(nnz(values))) values for $sym. This is not equal to the number of edges ($(lrs.num_edges)).")
+    if nnz(values) != num_edges(lrs)
+        error("You have provided ($(nnz(values))) values for $sym. This is not equal to the number of edges ($(num_edges(lrs))).")
     end
-    if !all(Base.isstored(values, e[1], e[2]) for e in lrs.edge_iterator)
+    if !all(Base.isstored(values, e[1], e[2]) for e in edge_iterator(lrs))
         error("Values was not provided for some edges for edge parameter $sym.")
     end
 
@@ -184,7 +184,7 @@ function make_sidxs_to_transrate_map(vert_ps::Vector{Pair{BasicSymbolic{Real},Ve
     # Next, convert to map from species index to values.
     transport_rates_speciesmap = compute_all_transport_rates(p_val_dict, lrs)
     return Pair{Int64,SparseMatrixCSC{T, Int64}}[
-        speciesmap(lrs.rs)[spat_rates[1]] => spat_rates[2] for spat_rates in transport_rates_speciesmap
+        speciesmap(reactionsystem(lrs))[spat_rates[1]] => spat_rates[2] for spat_rates in transport_rates_speciesmap
     ]
 end
 
@@ -215,8 +215,8 @@ function compute_transport_rates(s::BasicSymbolic{Real}, p_val_dict, lrs::Lattic
         relevant_p_vals = [get_edge_value(p_val_dict[p], 1 => 1) for p in relevant_ps]
         return sparse([1],[1],rate_law_func(relevant_p_vals...))
     else
-        transport_rates = spzeros(lrs.num_verts, lrs.num_verts)
-        for e in lrs.edge_iterator
+        transport_rates = spzeros(num_verts(lrs), num_verts(lrs))
+        for e in edge_iterator(lrs)
             relevant_p_vals = [get_edge_value(p_val_dict[p], e) for p in relevant_ps]
             transport_rates[e...] = rate_law_func(relevant_p_vals...)[1]
         end
@@ -228,7 +228,7 @@ end
 # (likely only a single parameter, such as `D`, but could be e.g. L*D, where L and D are parameters).
 # If there are several transportation reactions for the species, their sum is used.
 function get_transport_rate_law(s::BasicSymbolic{Real}, lrs::LatticeReactionSystem)
-    rates = filter(sr -> isequal(s, sr.species), lrs.spatial_reactions)
+    rates = filter(sr -> isequal(s, sr.species), spatial_reactions(lrs))
     return sum(getfield.(rates, :rate))
 end
 

@@ -1,5 +1,7 @@
 ### Fetch packages ###
 using Catalyst, Graphs
+using Catalyst: reactionsystem, spatial_reactions, lattice, num_verts, num_edges, num_species, 
+                spatial_species, vertex_parameters, edge_parameters, edge_iterator
 
 # Sets rnd number.
 using StableRNGs
@@ -9,7 +11,7 @@ rng = StableRNG(12345)
 
 # Generates randomised initial condition or parameter values.
 rand_v_vals(grid, x::Number) = rand_v_vals(grid) * x
-rand_v_vals(lrs::LatticeReactionSystem) = rand_v_vals(lrs.lattice)
+rand_v_vals(lrs::LatticeReactionSystem) = rand_v_vals(lattice(lrs))
 function rand_v_vals(grid::DiGraph) 
     return rand(rng, nv(grid))
 end
@@ -22,8 +24,8 @@ end
 
 rand_e_vals(grid, x::Number) = rand_e_vals(grid) * x
 function rand_e_vals(lrs::LatticeReactionSystem)
-    e_vals = spzeros(lrs.num_verts, lrs.num_verts)
-    for e in lrs.edge_iterator
+    e_vals = spzeros(num_verts(lrs), num_verts(lrs))
+    for e in edge_iterator(lrs)
         e_vals[e[1], e[2]] = rand(rng)
     end
     return e_vals

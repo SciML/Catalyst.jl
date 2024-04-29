@@ -313,14 +313,14 @@ let
                 random_1d_masked_grid, random_2d_masked_grid, random_3d_masked_grid]
         lrs1 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice)
         lrs2 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice; diagonal_connections=true)
-        @test lrs1.num_edges == iterator_count(lrs1.edge_iterator)    
-        @test lrs2.num_edges == iterator_count(lrs2.edge_iterator)    
+        @test lrs1.num_edges == iterator_count(edge_iterator(lrs1))    
+        @test lrs2.num_edges == iterator_count(edge_iterator(lrs2))    
     end
 
     # Graph grids (cannot test diagonal connections).
     for lattice in [small_2d_graph_grid, small_3d_graph_grid, undirected_cycle, small_directed_cycle, unconnected_graph]
         lrs1 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice)
-        @test lrs1.num_edges == iterator_count(lrs1.edge_iterator)    
+        @test lrs1.num_edges == iterator_count(edge_iterator(lrs1))    
     end
 end
 
@@ -342,10 +342,10 @@ let
                  small_1d_masked_grid, small_2d_masked_grid, small_3d_masked_grid, 
                  random_1d_masked_grid, random_2d_masked_grid, random_3d_masked_grid]
         lrs = LatticeReactionSystem(rn, [tr], grid)
-        flat_to_grid_idx = Catalyst.get_index_converters(lrs.lattice, lrs.num_verts)[1]
+        flat_to_grid_idx = Catalyst.get_index_converters(lattice(lrs), num_verts(lrs))[1]
         edge_values = make_edge_p_values(lrs, make_edge_p_value)
     
-        for e in lrs.edge_iterator
+        for e in edge_iterator(lrs)
             @test edge_values[e[1], e[2]] == make_edge_p_value(flat_to_grid_idx[e[1]], flat_to_grid_idx[e[2]])
         end
     end

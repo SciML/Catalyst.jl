@@ -9,7 +9,7 @@ const GridLattice{N,T} = Union{Array{Bool, N}, CartesianGridRej{N,T}}
 struct LatticeReactionSystem{Q,R,S,T} <: MT.AbstractTimeDependentSystem 
     # Input values.
     """The (non-spatial) reaction system within each vertex."""
-    rs::ReactionSystem{Q}
+    reactionsystem::ReactionSystem{Q}
     """The spatial reactions defined between individual vertices."""
     spatial_reactions::Vector{R}
     """The lattice on which the (discrete) spatial system is defined."""
@@ -24,7 +24,7 @@ struct LatticeReactionSystem{Q,R,S,T} <: MT.AbstractTimeDependentSystem
     num_species::Int64
 
     """List of species that may move spatially."""
-    spat_species::Vector{BasicSymbolic{Real}}
+    spatial_species::Vector{BasicSymbolic{Real}}
     """
     All parameters related to the lattice reaction system
     (both those whose values are tied to vertices and edges).
@@ -231,16 +231,27 @@ get_grid_indices(grid::Array{Bool, N}) where {N}  = CartesianIndices(grid)
 
 ### LatticeReactionSystem-specific Getters ###
 
-# Get all species that may be transported.
-spatial_species(lrs::LatticeReactionSystem) = lrs.spat_species
+# Basic getters (because `LatticeReactionSystem`s are `AbstractSystem`s), normal `lrs.field` does not
+# work and these getters must be used throughout all code.
+reactionsystem(lrs::LatticeReactionSystem) = getfield(lrs, :reactionsystem)
+spatial_reactions(lrs::LatticeReactionSystem) = getfield(lrs, :spatial_reactions)
+lattice(lrs::LatticeReactionSystem) = getfield(lrs, :lattice)
+num_verts(lrs::LatticeReactionSystem) = getfield(lrs, :num_verts)
+num_edges(lrs::LatticeReactionSystem) = getfield(lrs, :num_edges)
+num_species(lrs::LatticeReactionSystem) = getfield(lrs, :num_species)
+spatial_species(lrs::LatticeReactionSystem) = getfield(lrs, :spatial_species)
+MT.parameters(lrs::LatticeReactionSystem) = getfield(lrs, :parameters)
+vertex_parameters(lrs::LatticeReactionSystem) = getfield(lrs, :vertex_parameters)
+edge_parameters(lrs::LatticeReactionSystem) = getfield(lrs, :edge_parameters)
+edge_iterator(lrs::LatticeReactionSystem) = getfield(lrs, :edge_iterator)
 
-# Get all parameters whose values are tied to vertices (compartments).
-vertex_parameters(lrs::LatticeReactionSystem) = lrs.vertex_parameters
-# Get all parameters whose values are tied to edges (adjacencies).
-edge_parameters(lrs::LatticeReactionSystem) = lrs.edge_parameters
+# Non-trivial getters.
+"""
+    is_transport_system(lrs::LatticeReactionSystem)
 
-# Checks if a lattice reaction system is a pure (linear) transport reaction system.
-is_transport_system(lrs::LatticeReactionSystem) = all(sr -> sr isa TransportReaction, lrs.spatial_reactions)
+Returns `true` if all spatial reactions in `lrs` are `TransportReaction`s.
+"""
+is_transport_system(lrs::LatticeReactionSystem) = all(sr -> sr isa TransportReaction, spatial_reactions(lrs))
 
 """
     has_cartesian_lattice(lrs::LatticeReactionSystem)
@@ -248,7 +259,7 @@ is_transport_system(lrs::LatticeReactionSystem) = all(sr -> sr isa TransportReac
 Returns `true` if `lrs` was created using a cartesian grid lattice (e.g. created via `CartesianGrid(5,5)`). 
 Otherwise, returns `false`.
 """
-has_cartesian_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa CartesianGridRej{N,T} where {N,T}
+has_cartesian_lattice(lrs::LatticeReactionSystem) = lattice(lrs) isa CartesianGridRej{N,T} where {N,T}
 
 """
     has_masked_lattice(lrs::LatticeReactionSystem)
@@ -256,7 +267,7 @@ has_cartesian_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa CartesianGri
 Returns `true` if `lrs` was created using a masked grid lattice (e.g. created via `[true true; true false]`). 
 Otherwise, returns `false`.
 """
-has_masked_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa Array{Bool, N} where N
+has_masked_lattice(lrs::LatticeReactionSystem) = lattice(lrs) isa Array{Bool, N} where N
 
 """
     has_grid_lattice(lrs::LatticeReactionSystem)
@@ -271,7 +282,7 @@ has_grid_lattice(lrs::LatticeReactionSystem) = (has_cartesian_lattice(lrs) || ha
 Returns `true` if `lrs` was created using a graph grid lattice (e.g. created via `path_graph(5)`). 
 Otherwise, returns `false`.
 """
-has_graph_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa SimpleDiGraph
+has_graph_lattice(lrs::LatticeReactionSystem) = lattice(lrs) isa SimpleDiGraph
 
 """
     grid_size(lrs::LatticeReactionSystem)
@@ -279,7 +290,7 @@ has_graph_lattice(lrs::LatticeReactionSystem) = lrs.lattice isa SimpleDiGraph
 Returns the size of `lrs`'s lattice (only if it is a cartesian or masked grid lattice). 
 E.g. for a lattice `CartesianGrid(4,6)`, `(4,6)` is returned.
 """
-grid_size(lrs::LatticeReactionSystem) = grid_size(lrs.lattice)
+grid_size(lrs::LatticeReactionSystem) = grid_size(lattice(lrs))
 grid_size(lattice::CartesianGridRej{N,T}) where {N,T} = lattice.dims
 grid_size(lattice::Array{Bool, N}) where {N} = size(lattice)
 grid_size(lattice::Graph) = error("Grid size is only defined for LatticeReactionSystems with grid-based lattices (not graph-based).")
@@ -290,7 +301,7 @@ grid_size(lattice::Graph) = error("Grid size is only defined for LatticeReaction
 Returns the number of dimensions of `lrs`'s lattice (only if it is a cartesian or masked grid lattice). 
 The output is either `1`, `2`, or `3`.
 """
-grid_dims(lrs::LatticeReactionSystem) = grid_dims(lrs.lattice)
+grid_dims(lrs::LatticeReactionSystem) = grid_dims(lattice(lrs))
 grid_dims(lattice::GridLattice{N,T}) where {N,T} = return N
 grid_dims(lattice::Graph) = error("Grid dimensions is only defined for LatticeReactionSystems with grid-based lattices (not graph-based).")
 
@@ -298,39 +309,36 @@ grid_dims(lattice::Graph) = error("Grid dimensions is only defined for LatticeRe
 ### Catalyst-based Getters ###
 
 # Get all species.
-species(lrs::LatticeReactionSystem) = unique([species(lrs.rs); lrs.spat_species])
+species(lrs::LatticeReactionSystem) = unique([species(reactionsystem(lrs)); spatial_species(lrs)])
 
 # Generic ones (simply forwards call to the non-spatial system).
-reactions(lrs::LatticeReactionSystem) = reactions(lrs.rs)
+reactions(lrs::LatticeReactionSystem) = reactions(reactionsystem(lrs))
 
 ### ModelingToolkit-based Getters ###
 
-# Get all parameters.
-MT.parameters(lrs::LatticeReactionSystem) = lrs.parameters
-
-# Generic ones (simply forwards call to the non-spatial system).
-MT.nameof(lrs::LatticeReactionSystem) = MT.nameof(lrs.rs)
-MT.get_iv(lrs::LatticeReactionSystem) = MT.get_iv(lrs.rs)
-MT.equations(lrs::LatticeReactionSystem) = MT.equations(lrs.rs)
-MT.equations(lrs::LatticeReactionSystem) = MT.equations(lrs.rs)
-MT.states(lrs::LatticeReactionSystem) = MT.states(lrs.rs)
-#MT.unknowns(lrs::LatticeReactionSystem) = MT.unknowns(lrs.rs)
-MT.parameters(lrs::LatticeReactionSystem) = MT.parameters(lrs.rs)
-MT.get_metadata(lrs::LatticeReactionSystem) = MT.get_metadata(lrs.rs)
+# Generic ones (simply forwards call to the non-spatial system)
+# The `parameters` MTK getter have a specialised accessor for LatticeReactionSystems.
+MT.nameof(lrs::LatticeReactionSystem) = MT.nameof(reactionsystem(lrs))
+MT.get_iv(lrs::LatticeReactionSystem) = MT.get_iv(reactionsystem(lrs))
+MT.equations(lrs::LatticeReactionSystem) = MT.equations(reactionsystem(lrs))
+MT.equations(lrs::LatticeReactionSystem) = MT.equations(reactionsystem(lrs))
+MT.states(lrs::LatticeReactionSystem) = MT.states(reactionsystem(lrs))
+#MT.unknowns(lrs::LatticeReactionSystem) = MT.unknowns(reactionsystem(lrs))
+MT.get_metadata(lrs::LatticeReactionSystem) = MT.get_metadata(reactionsystem(lrs))
 
 # Lattice reaction systems should not be combined with compositional modelling.
 # Maybe these should be allowed anyway? Still feel a bit weird
 function MT.get_eqs(lrs::LatticeReactionSystem) 
     error("The `get_eqs` function is primarily relevant for composed models. LatticeReactionSystems cannot be composed, and hence this function should not be used. Please consider using `equations` instead.")
-    # MT.get_eqs(lrs.rs)
+    # MT.get_eqs(reactionsystem(lrs))
 end
 function MT.get_states(lrs::LatticeReactionSystem) 
     error("The `get_unknowns` is primarily relevant for composed models. LatticeReactionSystems cannot be composed, and hence this function should not be used. Please consider using `unknowns` instead.")
-    # MT.get_states(lrs.rs)
+    # MT.get_states(reactionsystem(lrs))
 end
 function MT.get_ps(lrs::LatticeReactionSystem) 
     error("The `get_ps` function is primarily relevant for composed models. LatticeReactionSystems cannot be composed, and hence this function should not be used. Please consider using `parameters` instead.")
-    # MT.get_ps(lrs.rs)
+    # MT.get_ps(reactionsystem(lrs))
 end
 
 # Technically should not be used, but has to be declared for the `show` function to work.
@@ -393,11 +401,11 @@ function make_edge_p_values(lrs::LatticeReactionSystem, make_edge_p_value::Funct
     end
 
     # Makes the flat to index grid converts. Predeclared the edge parameter value sparse matrix.
-    flat_to_grid_idx = get_index_converters(lrs.lattice, lrs.num_verts)[1]
-    values = spzeros(lrs.num_verts,lrs.num_verts)
+    flat_to_grid_idx = get_index_converters(lattice(lrs), num_verts(lrs))[1]
+    values = spzeros(num_verts(lrs),num_verts(lrs))
 
     # Loops through all edges, and applies the value function to these.
-    for e in lrs.edge_iterator
+    for e in edge_iterator(lrs)
         # This extra step is needed to ensure that `0` is stored if make_edge_p_value yields a 0.
         # If not, then the sparse matrix simply becomes empty in that position.
         values[e[1],e[2]] = eps()

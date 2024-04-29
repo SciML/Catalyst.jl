@@ -23,18 +23,18 @@ for grid in [small_2d_graph_grid, short_path, small_directed_cycle,
     for srs in [Vector{TransportReaction}(), SIR_srs_1, SIR_srs_2]
         lrs = LatticeReactionSystem(SIR_system, srs, grid)
         u0_1 = [:S => 999.0, :I => 1.0, :R => 0.0]
-        u0_2 = [:S => 500.0 .+ 500.0 * rand_v_vals(lrs.lattice), :I => 1.0, :R => 0.0]
+        u0_2 = [:S => 500.0 .+ 500.0 * rand_v_vals(lattice(lrs)), :I => 1.0, :R => 0.0]
         u0_3 = [
-            :S => 500.0 .+ 500.0 * rand_v_vals(lrs.lattice),
-            :I => 50 * rand_v_vals(lrs.lattice),
-            :R => 50 * rand_v_vals(lrs.lattice),
+            :S => 500.0 .+ 500.0 * rand_v_vals(lattice(lrs)),
+            :I => 50 * rand_v_vals(lattice(lrs)),
+            :R => 50 * rand_v_vals(lattice(lrs)),
         ]
         for u0 in [u0_1, u0_2, u0_3]
             p1 = [:α => 0.1 / 1000, :β => 0.01]
-            p2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lrs.lattice)]
+            p2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lattice(lrs))]
             p3 = [
-                :α => 0.1 / 2000 * rand_v_vals(lrs.lattice),
-                :β => 0.02 * rand_v_vals(lrs.lattice),
+                :α => 0.1 / 2000 * rand_v_vals(lattice(lrs)),
+                :β => 0.02 * rand_v_vals(lattice(lrs)),
             ]
             for pV in [p1, p2, p3]
                 pE_1 = map(sp -> sp => 0.01, spatial_param_syms(lrs))
@@ -57,14 +57,14 @@ for grid in [small_2d_graph_grid, short_path, small_directed_cycle,
     for srs in [Vector{TransportReaction}(), brusselator_srs_1, brusselator_srs_2]
         lrs = LatticeReactionSystem(brusselator_system, srs, grid)
         u0_1 = [:X => 1.0, :Y => 20.0]
-        u0_2 = [:X => rand_v_vals(lrs.lattice, 10.0), :Y => 2.0]
-        u0_3 = [:X => rand_v_vals(lrs.lattice, 20), :Y => rand_v_vals(lrs.lattice, 10)]
+        u0_2 = [:X => rand_v_vals(lattice(lrs), 10.0), :Y => 2.0]
+        u0_3 = [:X => rand_v_vals(lattice(lrs), 20), :Y => rand_v_vals(lattice(lrs), 10)]
         for u0 in [u0_1, u0_2, u0_3]
             p1 = [:A => 1.0, :B => 4.0]
-            p2 = [:A => 0.5 .+ rand_v_vals(lrs.lattice, 0.5), :B => 4.0]
+            p2 = [:A => 0.5 .+ rand_v_vals(lattice(lrs), 0.5), :B => 4.0]
             p3 = [
-                :A => 0.5 .+ rand_v_vals(lrs.lattice, 0.5),
-                :B => 4.0 .+ rand_v_vals(lrs.lattice, 1.0),
+                :A => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
+                :B => 4.0 .+ rand_v_vals(lattice(lrs), 1.0),
             ]
             for pV in [p1, p2, p3]
                 pE_1 = map(sp -> sp => 0.2, spatial_param_syms(lrs))
@@ -194,8 +194,8 @@ end
 let
     lrs = LatticeReactionSystem(binding_system, binding_srs, undirected_cycle)
     u0 = [
-        :X => 1.0 .+ rand_v_vals(lrs.lattice),
-        :Y => 2.0 * rand_v_vals(lrs.lattice),
+        :X => 1.0 .+ rand_v_vals(lattice(lrs)),
+        :Y => 2.0 * rand_v_vals(lattice(lrs)),
         :XY => 0.5
     ]
     oprob = ODEProblem(lrs, u0, (0.0, 1000.0), binding_p; tstops = 0.1:0.1:1000.0)
@@ -209,7 +209,7 @@ end
 # Checks that various combinations of jac and sparse gives the same result.
 let
     lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, small_2d_graph_grid)
-    u0 = [:X => rand_v_vals(lrs.lattice, 10), :Y => rand_v_vals(lrs.lattice, 10)]
+    u0 = [:X => rand_v_vals(lattice(lrs), 10), :Y => rand_v_vals(lattice(lrs), 10)]
     pV = brusselator_p
     pE = [:dX => 0.2]
     oprob = ODEProblem(lrs, u0, (0.0, 50.0), [pV; pE]; jac = false, sparse = false)

@@ -62,9 +62,9 @@ struct LatticeTransportODEf{S,T}
         vert_ps = [vp[2] for vp in vert_ps]
 
         # Computes the leaving rate matrix.
-        leaving_rates = zeros(length(transport_rates), lrs.num_verts)
+        leaving_rates = zeros(length(transport_rates), num_verts(lrs))
         for (s_idx, tr_pair) in enumerate(transport_rates)
-            for e in lrs.edge_iterator 
+            for e in Catalyst.edge_iterator(lrs)
                 # Updates the exit rate for species s_idx from vertex e.src.
                 leaving_rates[s_idx, e[1]] += get_transport_rate(tr_pair[2], e, t_rate_idx_types[s_idx]) 
             end
@@ -72,8 +72,8 @@ struct LatticeTransportODEf{S,T}
 
         # Declares `work_vert_ps` (used as storage during computation) and the edge iterator.
         work_vert_ps = zeros(length(vert_ps))
-        edge_iterator = lrs.edge_iterator               
-        new{S,T}(ofunc, lrs.num_verts, lrs.num_species, vert_ps, work_vert_ps, 
+        edge_iterator = Catalyst.edge_iterator(lrs) 
+        new{S,T}(ofunc, num_verts(lrs), num_species(lrs), vert_ps, work_vert_ps, 
                                v_ps_idx_types, transport_rates, t_rate_idx_types, leaving_rates, edge_iterator)
     end
 end
@@ -115,9 +115,9 @@ struct LatticeTransportODEjac{R,S,T}
         # its values only and put them into `vert_ps`.
         vert_ps = [vp[2] for vp in vert_ps]
 
-        work_vert_ps = zeros(lrs.num_verts)
+        work_vert_ps = zeros(num_verts(lrs))
         v_ps_idx_types = map(vp -> length(vp) == 1, vert_ps)
-        new{R,S,typeof(jac_transport)}(ofunc, lrs.num_verts, lrs.num_species, vert_ps, 
+        new{R,S,typeof(jac_transport)}(ofunc, num_verts(lrs), num_species(lrs) , vert_ps, 
                                         work_vert_ps, v_ps_idx_types, sparse, jac_transport)
     end
 end
@@ -129,7 +129,7 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
                                p_in = DiffEqBase.NullParameters(), args...;
                                jac = false, sparse = false, 
                                name = nameof(lrs), include_zero_odes = true,
-                               combinatoric_ratelaws = get_combinatoric_ratelaws(lrs.rs),
+                               combinatoric_ratelaws = get_combinatoric_ratelaws(reactionsystem(lrs)),
                                remove_conserved = false, checks = false, kwargs...)
     if !is_transport_system(lrs)
         error("Currently lattice ODE simulations are only supported when all spatial reactions are TransportReactions.")
@@ -224,34 +224,34 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64},
 
     # Prepares vectors to store i and j indices of Jacobian entries.
     idx = 1
-    num_entries = lrs.num_verts * length(ns_i_idxs) + 
-                  lrs.num_edges * (length(trans_only_species) + length(trans_species))
+    num_entries = num_verts(lrs) * length(ns_i_idxs) + 
+                  num_edges(lrs) * (length(trans_only_species) + length(trans_species))
     i_idxs = Vector{Int}(undef, num_entries)
     j_idxs = Vector{Int}(undef, num_entries)
 
     # Indices of elements caused by non-spatial dynamics.
-    for vert in 1:lrs.num_verts
+    for vert in 1:num_verts(lrs)
         for n in 1:length(ns_i_idxs)
-            i_idxs[idx] = get_index(vert, ns_i_idxs[n], lrs.num_species)
-            j_idxs[idx] = get_index(vert, ns_j_idxs[n], lrs.num_species)
+            i_idxs[idx] = get_index(vert, ns_i_idxs[n], num_species(lrs))
+            j_idxs[idx] = get_index(vert, ns_j_idxs[n], num_species(lrs))
             idx += 1
         end
     end
 
     # Indices of elements caused by spatial dynamics.
-    for e in lrs.edge_iterator
+    for e in edge_iterator(lrs)
         # Indexes due to terms for a species leaving its source vertex (but does not have
         # non-spatial dynamics). If the non-spatial Jacobian is fully dense, these would already
         # be accounted for.
         for s_idx in trans_only_species
-            i_idxs[idx] = get_index(e[1], s_idx, lrs.num_species)
+            i_idxs[idx] = get_index(e[1], s_idx, num_species(lrs))
             j_idxs[idx] = i_idxs[idx]
             idx += 1
         end
         # Indexes due to terms for species arriving into a destination vertex.
         for s_idx in trans_species
-            i_idxs[idx] = get_index(e[1], s_idx, lrs.num_species)
-            j_idxs[idx] = get_index(e[2], s_idx, lrs.num_species)
+            i_idxs[idx] = get_index(e[1], s_idx, num_species(lrs))
+            j_idxs[idx] = get_index(e[2], s_idx, num_species(lrs))
             idx += 1
         end
     end
@@ -261,9 +261,9 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64},
 
     # Set element values.
     if set_nonzero
-        for (s, rates) in transport_rates, e in lrs.edge_iterator 
-            idx_src = get_index(e[1], s, lrs.num_species)
-            idx_dst = get_index(e[2], s, lrs.num_species)
+        for (s, rates) in transport_rates, e in edge_iterator(lrs)
+            idx_src = get_index(e[1], s, num_species(lrs))
+            idx_dst = get_index(e[2], s, num_species(lrs))
             val = get_transport_rate(rates, e, size(rates)==(1,1))
 
             # Term due to species leaving source vertex.
