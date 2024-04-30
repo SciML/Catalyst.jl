@@ -3,52 +3,48 @@
 Sometimes one wishes to model events, describing things that can happen to a system during its simulation. Examples can include:
  - A chemical system where an amount of some species is added at a time point after the simulation's initiation.
  - A simulation of a circadian rhythm, where light is turned on/off every 12 hours.
- - A cell divides when some size variable reaches a certain threshold, halving the amount of each species in the system.
+ - A cell divides when some size variable reaches a certain threshold, halving its size.
   
 Generally, there are two approaches for creating events:
-1. Including them as a part of the model when its is created.
+1. Including them as a part of the model when it is created.
 2. Creating a separate *callback*, which is then supplied to the `solve` function.
 
 Generally, the first approach is more convenient, and should be used if possible. However, the second approach is more potent, and can be used to create more general types of events. Below, we will describe both approaches.
 
+!!! warn
+    Independently of how they are created, there are some additional considerations when creating events. These are described [at the end of this tutorial](@ref ref). Please briefly check these cases, and if any apply to you, read the corresponding section thoroughly.
+
 ## [Creating models with incorporated events](@id events_model)
-Sometimes one wishes to model events, describing things that can happen to it during a simulation.
- - A chemical system where an amount of some species is added at a time point after the simulation's initiation.
- - A simulation of a circadian rhythm, where light is turned on/off every 12 hours.
- - A cell divides when some size variable reaches a certain threshold, halving the amount of each species in the system.
+Catalyst's DSL provides two options, `@continuous_events` and `@discrete_events`, which permits users to add events to the models when they are constructed. Each corresponds to the creation of a specific type of events, and both are described both. The syntax for creating evens in the DSL is identical to that used for [programmatic] model creation (described in detail [here]) and which is used by the [ModelingToolkit.jl package](https://docs.sciml.ai/ModelingToolkit/stable/basics/Events/)
 
-Events are divided into *continuous* and *discrete* events, and these can be added directly to a system using the `continuous_events` and `discrete_events` options. Events can also be modelled through *callbacks*. These are different in that they are supplied in the simulation step (rather than on system creation), and generally provide more flexibility in how they may affect the system. Callbacks are described on a separate [page](@ref advanced_simulations_callbacks).
-
-The notation described below for creating continuous and discrete events is the same which is used in [ModelingToolkit to create events](https://docs.sciml.ai/ModelingToolkit/stable/basics/Events/), and which is used for [events for programmatic model creation](@ref ref).
-
-### [Continuous vs discrete events](@id events_model_continuous_vs_discrete)
-Both continuous and discrete events combine some condition (for triggering the event) with some affect (describing their effects on the system). They differ in the following ways:
+Both continuous and discrete events combine a *condition* (for triggering the event) with an *affect* (describing its effect on the system). They differ in the following ways:
 - They use slightly different notation.
 - Discrete events' conditions are checked at *the end of* each simulation time step. For continuous events, the simulation instead finds the *exact time point* when the event is triggered at.
 - Continuous events cannot be supplied to jump simulations.
 
 ### [Continuous events](@id events_model_continuous)
-Let us consider a simple system where species `X` degraded at a constant rate `d`. Next, we wish to add an event which adds `2.0` units of `X` whenever `X` reaches a critical threshold `1.0`. This can be done in the following manner:
+Let us consider a simple system where species `X` degrades at a constant rate `d`. We wish to create an event that adds `2.0` units of `X` whenever `X` reaches a critical threshold `1.0`. This can be done in the following manner:
 ```@example dsl_advanced_events
 using Catalyst # hide
 rn = @reaction_network begin
   @continuous_events begin
-    X ~ 1.0 => [X ~ X + 2.0]
+    [X ~ 1.0] => [X ~ X + 2.0]
   end
   d, X --> 0
 end
 nothing # hide
 ```
-Here, the `@continuous_events` option is followed by a `begin ... end` block. Next, each line corresponds to a separate event. Each event is created in the following manner:
-- It combines a *condition* (denoting when the event will happen) with one (or several) *affects* (denoting what the event does to the system when it happens). 
-- The condition (left) and affect (right) are separated by a `=>`.
-- The condition takes the form of an [equation](). Here, the event is triggered whenever the equation's two sides (separated by a `~`) are equal.
-- The affect(s) are enclosed within `[]`. If there are multiple affects, these are separated by `,` (the example above contains a single affect).
-- Each affect is a single equation that describes how a parameter, species, or [variable](@ref dsl_advanced_options_variables) is updated when the event is triggered.
-- Each affect's equation's left-hand side must contain only the parameter/species/variable whose value should be updated.
+Here, the `@continuous_events` option is followed by a `begin ... end` block. Next, each line corresponds to a separate event. Each continuous event is created in the following manner:
+- It combines a set of *conditions* (describing when the event is triggered) with a set of *affects* (describing the event's effect on the system once triggered). 
+- The conditions and affects are vectors (containing each containing any number of condition or affect equations).
+- The conditions (left) and affects (right) are separated by `=>`.
+- Each condition is an [equation](@ref ref). Here, the event is triggered whenever any of its conditions equations' hold (i.e. the equation's left and right ahnd sides are identical).
+- Each affect is a single [equation](@ref ref) that describes how a parameter or species (or [variable](@ref ref)) is updated when the event is triggered.
+- Each affect's equation's left-hand side must contain only the parameter/species(/variable) whose value should be updated.
 - Each affect's equation's right-hand side is an expression describing its updated value.
+- A single event's affects can updates species (and variables) only, or parameters only (but not parameters and species/variables).
 
-We can simulate the model we declared, just like any other model:
+The declared model can be simulated using standard syntax:
 ```@example dsl_advanced_events
 using OrdinaryDiffEq, Plots
 u0 = [:X => 2.0]
@@ -66,13 +62,13 @@ In our example, we can also denote the critical quantities using parameters:
 rn = @reaction_network begin
   @parameters X_thres X_add
   @continuous_events begin
-    X ~ X_thres => [X ~ X + X_add]
+    [X ~ X_thres] => [X ~ X + X_add]
   end
   d, X --> 0
 end
 nothing # hide
 ```
-Here, since `X_thres` and `X_add` do not appear in any reactions, Catalyst cannot determine whether they are parameters or species. hence, they must be [explicitly designated as parameters by using the `@parameters` option](@ref dsl_advanced_options_declaring_species_and_parameters). Next, these can be designated as any value, and supplied to the `ODEProblem`:
+Here, since `X_thres` and `X_add` do not appear in any reactions, Catalyst cannot determine whether they are parameters or species. Hence, they must be [explicitly designated as parameters by using the `@parameters` option](@ref dsl_advanced_options_declaring_species_and_parameters). These values can now be designated when the `ODEProblem` is created:
 ```@example dsl_advanced_events
 u0 = [:X => 2.0]
 tspan = (0.0, 10.0)
@@ -87,7 +83,7 @@ As previously noted, each continuous event can have multiple affects. The follow
 ```@example dsl_advanced_events
 rn = @reaction_network begin
   @continuous_events begin
-    X ~ Y => [X ~ X - 1.0, Y ~ Y + 1.0]
+    [X ~ Y] => [X ~ X - 1.0, Y ~ Y + 1.0]
   end
   p, 0 --> X
   d, Y --> 0
@@ -102,9 +98,6 @@ sol = solve(ODEProblem, Tsit5())
 plot(sol)
 ```
 
-!!!warn
-    A single event (continuous or discrete) can update the value of either (one or several) species (and variables), or of (one or several) parameters. It is not possible for an event to update the values of both species/variables and parameters.
-
 In the above examples we have modelled a system with a single event. In these cases, the `begin end` block is not required, and the event can be provided on the same line as the `@continuous_events` option:
 ```@example dsl_advanced_events
 rn = @reaction_network begin
@@ -116,13 +109,13 @@ nothing # hide
 ```
 
 ### [Discrete events](@id events_model_discrete)
-Just like [continuous events](dsl_advanced_options_events_continuous), discrete events combine a condition with one or more affect statements. Here, discrete events' affects are created identically to those for continuous events. Discrete events' conditions are different. There exist 3 different types of discrete events, each with a different type of condition. All three types are created using the `@discrete_events` option, and a single system can contain a mix of all types. The three types are:
+Discrete events are similar to continuous events in that they combine a condition for being triggered with an affect once triggered. The affect(s) of discrete events are declared, and works, identical to [those of continuous events](@ref events_model_continuous). However, the condition is different. There exist 3 different types of discrete events, each with a different type of condition. All three types are created using the `@discrete_events` option, and a single system can contain a mix of all types. The three types are:
 - Preset-time discrete events.
 - Periodic discrete events.
 - Conditional discrete events.
 
 #### [Preset-time discrete events](@id events_model_discrete_presettime)
-*Present-time events* are events that happen at specific time points. Here, the condition is a vector with all the time points at which an event is triggered. E.g. here we create a production/degradation loop, where `2.0` units of `X` is added at time points `3.0` and `7.0`
+*Present-time events* are events that happen at specific time points. Their conditions are vectors with all the time points at which the event is triggered. E.g. here we create a production/degradation loop, where `2.0` units of `X` is added at time points `3.0` and `7.0`
 ```@example dsl_advanced_events
 rn = @reaction_network begin
   @discrete_events begin
@@ -140,17 +133,7 @@ sol = solve(ODEProblem, Tsit5())
 plot(sol)
 ```
 
-The preset time points can also be parameters (in which case, they have to be [designated as such using the `@parameters` option](@ref dsl_advanced_options_declaring_species_and_parameters)):
-```@example dsl_advanced_events
-rn = @reaction_network begin
-  @parameters t1 t2
-  @discrete_events begin
-    [t1, t2] => [X ~ X + 2.0]
-  end
-  (p,d), 0 <--> X
-end
-nothing
-```
+Currently, the time points of preset cannot be parameters. If you want to create preset time event with a callback, either use a [continuous callback with condition `[t ~ preset_t]`](@ref events_model_continuous) (note, not possible for jump simulations), or [create a conditional discrete event and supply a `tstops` to the `solve` command](@ref events_additional_considerations_tstops)
 
 #### [Periodic discrete events](@id events_model_discrete_periodic)
 When a discrete event's condition is a vector, a preset-time event is created. If it instead is a single value, a *periodic event* is created. These occur repeatedly throughout a simulation, with its period set by the affect term. E.g. here we create a system where `0.5` units of `X` is added every `1.0` time units.
@@ -170,10 +153,10 @@ oprob = ODEProblem(rn, u0, tspan, ps)
 sol = solve(ODEProblem, Tsit5())
 plot(sol)
 ```
-Like for preset-time events, periodic events' affects may contain parameters.
+Like for preset-time events, periodic events' conditions cannot contain parameters.
 
 #### [Conditional discrete events](@id events_model_discrete_conditional)
-Finally, discrete events' condition may be a boolean expression (consisting of parameters, species, variables, and the time variable). Let's say that we want to create an event which, if the concentration of `X` is below a threshold `1.0`, adds `1.0` units of `X` to the system, then we can use the following discrete event:
+Finally, discrete events' condition may be a boolean expression (consisting of any combinations of parameters, species, variables, numbers, and the time variable). Let's say that we want to create an event which, if the concentration of `X` is below a threshold `1.0`, adds `1.0` units of `X` to the system, then we can use the following discrete event:
 ```@example dsl_advanced_events
 rn = @reaction_network begin
   @discrete_events begin
@@ -182,7 +165,7 @@ rn = @reaction_network begin
   d, X --> 0
 end
 ```
-If we simulate the system using the same conditions as for our [similar, continuous, example](@ref dsl_advanced_options_events_continuous) we get the same result:
+If we simulate the system using the same conditions as for our [similar, continuous, example](@ref dsl_advanced_options_events_continuous), the result is similar:
 ```@example dsl_advanced_events
 u0 = [:X => 2.0]
 tspan = (0.0, 10.0)
@@ -193,10 +176,10 @@ sol = solve(ODEProblem, Tsit5())
 plot(sol)
 ```
 So, how is modelling this event as a discrete or continuous event different? There are four differences:
-1) For continuous events, the simulation method finds the exact time point when the condition triggers. Discrete events are triggered at the first time step when the condition holds.
+1) For continuous events, the simulation method finds the exact time point when the condition triggers. Discrete events are triggered after a time step after which the condition holds.
 2) This discrete event will be triggered whenever `X < 1.0` holds, not just when the concentration of `X` passes the threshold. E.g. it will be triggered if the initial concentration of `X` is less than `1.0`.
-3) Only the discrete event event can be used with jump simulations.
-4) The discrete event can be used to create more advanced conditions.
+3) Only discrete event events can be used with jump simulations.
+4) Discrete event can be used to create more advanced conditions.
 
 E.g. using (4), we can modify our system so that the event is only triggered when time is less than `5.0` (after which `X` decays towards `0`):
 ```@example dsl_advanced_events
@@ -215,10 +198,10 @@ oprob = ODEProblem(rn, u0, tspan, ps)
 sol = solve(ODEProblem, Tsit5())
 plot(sol)
 ```
-!!!note
-    When we form composite boolean conditions for conditional discrete events, we use `&` to denote the AND operator (not `&&`, as this is currently not supported).
+!!! note
+    When we form composite boolean conditions for conditional discrete events, we use `&` to denote the AND operator (not `&&`, as this is currently not supported). Similarly, `|` is sued instead of `||`.
 
-!!!warn
+!!! warn
     Generally, discrete events including equality (`==`) will not be triggered. The reason is that the condition is only checked at the end of every time step. Hence, unless special precautions are taken to ensure that the simulator stops when the condition holds, it will unlikely be triggered.
 
 
@@ -377,6 +360,14 @@ The difference between the `PresetTimeCallback`s and the `DiscreteCallback`s and
 function, permitting the user to give more general conditions for the callback
 to be triggered. An example could be a callback that triggers whenever a species
 surpasses some threshold value.
+
+## [Additional consideration when using events (or callbacks)](@id events_additional_considerations)
+
+### [Events affecting changing model parameter values](@id events_additional_considerations_parameters)
+
+### [Events affecting changing model parameter values during jump simulations](@id events_additional_considerations_jump_parameters)
+
+### [Events occurring at specific time points](@id events_additional_considerations_tstops)
 
 ### [Callbacks during SSA simulations](@id advanced_simulations_ssa_callbacks)
 An assumption of (most) SSA simulations is that the state of the system is unchanged between reaction events. However, callbacks that affect the system's state can violate this assumption. To prevent erroneous simulations, users must inform a SSA solver when the state has been updated in a callback. This allows the solver to reinitialize any internal state information that may have changed. This can be done through the `reset_aggregated_jumps!` function, see the following example:
