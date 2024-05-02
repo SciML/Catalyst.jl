@@ -267,37 +267,13 @@ sol = solve(oprob)
 plot(sol)
 ```
 
-
 ## [Additional options for declaration of `Reaction`s](@id programmatic_CRN_construction_reactions_options)
 When describing the DSL, we also describe a range of [options for declaring various types of reactions](@ref ref). Each type of reaction that can be created using the DSL can also be created programmatically. Below, we briefly describe each case.
-
-### [Reactions with non-unitary stoichiometries](@id programmatic_CRN_construction_reactions_options_stoichiometries)
-Previously, we assumed that all reactions' substrates and products had stoichiometry 1. Other stoichiometries ([including decimal, parametric, and distributed, ones](@ref ref)) are possible. To designate this we provide two additional arguments to the `Reaction` constructor, designating the substrates and products stoichiometries respectively.
-
-E.g. to model a simple dimerisation system (where two copies of $X$ dimerise to form $X2$, which then may dissociate back into two copies of $X$) we use
-```@example programmatic_6
-using Catalyst # hide
-t = default_t() 
-@species X(t) X2(t)
-@parameters kB kD
-rxs = [
- Reaction(kB, [X], [X2], [2], [1]),
- Reaction(kD, [X2], [X], [1], [2])
-]
-@named dimerisation_model = ReactionSystem(rxs, t)
-```
-Here, `Reaction(k, [X], [X2], [2], [1])` indicates that there are `2` copies of $X$ and one copy of $X2$ involved in the reaction.
-
-If there are multiple substrates and/or products, the order of the stoichiometries must correspond to the order in which these occur. E.g. to create a reaction `k, 2X + Y --> X + 2Y` we would use
-```@example programmatic_6
-@parameters k
-@species X(t) Y(t)
-Reaction(k, [X, Y], [X, Y], [2, 1], [1, 2]),
-```
 
 ### [Production and degradation reactions](@id programmatic_CRN_construction_reactions_options_production_and_degradation)
 To designate [an absence of substrates and/or products](@ref ref), we simply give an empty vector. E.g. to create a [birth-death model](@ref ref) we use
 ```@example programmatic_6
+using Catalyst # hide
 @parameters p d
 @species X(t)
 rxs = [
@@ -336,6 +312,64 @@ Finally, Catalyst also pre-defined a few functions commonly used in systems biol
 ```@example programmatic_6
 @parameters v K
 Reaction(mm(E, v, K), [Xi], [Xa])
+```
+
+### [Reactions with non-unitary stoichiometries](@id programmatic_CRN_construction_reactions_options_stoichiometries)
+Previously, we assumed that all reactions' substrates and products had stoichiometry 1. Other stoichiometries ([including decimal, parametric, and distributed, ones](@ref ref)) are possible. To designate this we provide two additional arguments to the `Reaction` constructor, designating the substrates and products stoichiometries respectively.
+
+E.g. to model a simple dimerisation system (where two copies of $X$ dimerise to form $X2$, which then may dissociate back into two copies of $X$) we use
+```@example programmatic_6
+t = default_t() 
+@species X(t) X2(t)
+@parameters kB kD
+rxs = [
+ Reaction(kB, [X], [X2], [2], [1]),
+ Reaction(kD, [X2], [X], [1], [2])
+]
+@named dimerisation_model = ReactionSystem(rxs, t)
+```
+Here, `Reaction(k, [X], [X2], [2], [1])` indicates that there are `2` copies of $X$ and one copy of $X2$ involved in the reaction.
+
+If there are multiple substrates and/or products, the order of the stoichiometries must correspond to the order in which these occur. E.g. to create a reaction `k, 2X + Y --> X + 2Y` we would use
+```@example programmatic_6
+@parameters k
+@species X(t) Y(t)
+Reaction(k, [X, Y], [X, Y], [2, 1], [1, 2]),
+```
+
+### [Reactions with non-standard stoichiometries](@id programmatic_CRN_construction_reactions_options_stoichiometries)
+Reactant stoichiometries does not need to be integers, but can also be other numbers, parameters, or expressions. 
+
+Here we create a birth-death model where each production reaction produces 1.5 units of `X`:
+```@example programmatic_6
+t = default_t() 
+@species X(t)
+@parameters p d
+rxs = [
+ Reaction(p, [], [X], [], [1.5]),
+ Reaction(d, [X], [])
+]
+@named bd_model = ReactionSystem(rxs, t)
+```
+It is also possible to have non-integer stoichiometric coefficients for substrates. However, in this case the [`combinatoric_ratelaw = false`](@ref ref) option must be used. We note that non-integer stoichiometric coefficients does not make sense in most fields, however, this features is available for use for models where it does make sense.
+
+It is possible for stoichiometric coefficients to be parameters. E.g. here we create a generic polymerisation system where `n` copies of `X` binds to form `Xn`:
+```@example dsl_1
+t = default_t() 
+@species X(t) Xn(t)
+@parameters kB kD
+rxs = [
+ Reaction(kB, [X], [Xn], [n], [1]),
+ Reaction(kD, [Xn], [X], [1], [n])
+]
+@named polymerisation_model = ReactionSystem(rxs, t)
+```
+Now we can designate the value of `n` through a parameter when we e.g. create an `ODEProblem`:
+```@example dsl_1
+u0 = [X => 5.0, Xn => 1.0]
+ps = [kB => 1.0, kD => 0.1, n => 4]
+oprob = ODEProblem(polymerisation_model, u0, (0.0, 1.0), ps)
+nothing # hide
 ```
 
 ### [Additional `Reaction` constructor arguments](@id programmatic_CRN_construction_reactions_options_)
