@@ -295,7 +295,7 @@ end
 ```
 It is also possible to have non-integer stoichiometric coefficients for substrates. However, in this case the `combinatoric_ratelaw = false` option must be used.
 
-### [Parametric stoichiometries](@id dsl_description_stoichiometries_decimal)
+### [Parametric stoichiometries](@id dsl_description_stoichiometries_parameters)
 It is possible for stoichiometric coefficients to be parameters. E.g. here we create a generic polymerisation system where `n` copies of `X` binds to form `Xn`:
 ```@example dsl_1
 rn_17 = @reaction_network begin
