@@ -283,6 +283,33 @@ rn_15 = @reaction_network begin
 end
 ```
 
+## [Non-standard stoichiometries](@id dsl_description_stoichiometries)
+
+### [Non-integer stoichiometries](@id dsl_description_stoichiometries_decimal)
+Previously all stoichiometric constants have been integer numbers, however, decimal numbers are also permitted. Here we create a birth-death model where each production reaction produces 1.5 units of `X`:
+```@example dsl_1
+rn_16 = @reaction_network begin
+    p, 0 --> 1.5X
+    d, X --> 0
+end
+```
+It is also possible to have non-integer stoichiometric coefficients for substrates. However, in this case the `combinatoric_ratelaw = false` option must be used.
+
+### [Parametric stoichiometries](@id dsl_description_stoichiometries_decimal)
+It is possible for stoichiometric coefficients to be parameters. E.g. here we create a generic polymerisation system where `n` copies of `X` binds to form `Xn`:
+```@example dsl_1
+rn_17 = @reaction_network begin
+    (kB,kD), n*X <--> Xn
+end
+```
+Now we can designate the value of `n` through a parameter when we e.g. create an `ODEProblem`:
+```@example dsl_1
+u0 = [:X => 5.0, :Xn => 1.0]
+ps = [:kB => 1.0, :kD => 0.1, :n => 4]
+oprob = ODEProblem(rn, u0, (0.0, 1.0), ps)
+nothing # hide
+```
+
 ## [Using special symbols](@id dsl_description_symbols)
 Julia permits any Unicode characters to be used in variable names, thus Catalyst can use these as well. Below we describe some cases where this can be useful. No functionality is, however, tied to this.
 
