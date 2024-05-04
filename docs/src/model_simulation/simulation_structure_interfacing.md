@@ -1,141 +1,189 @@
 # [Interfacing problems, integrators, and solutions](@id simulation_structure_interfacing)
-When simulating a model, one begins with creating a [problem](https://docs.sciml.ai/DiffEqDocs/stable/basics/problem/). Next, a simulation is performed on a problem, during which the state of the simulation is recorded through an [integrator](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/). Finally, the simulation output is returned as a [solution](https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/). This tutorial describes how to access, or modify the state, or parameter, values of problems, integrators, and solutions structures.
+When simulating a model, one begins with creating a [problem](https://docs.sciml.ai/DiffEqDocs/stable/basics/problem/). Next, a simulation is performed on a problem, during which the state of the simulation is recorded through an [integrator](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/). Finally, the simulation output is returned as a [solution](https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/). This tutorial describes how to access (or modify) the state (or parameter) values of problem, integrator, and solution structures.
 
-Generally, when we have a structure `simulation_struct` and want to interface with the unknown (or parameter) `G`, we use `simulation_struct[:G]` to access the value, and `simulation_struct[:G] = 5.0` to set it to a new value. However, see the following examples for full details.
+Generally, when we have a structure `simulation_struct` and want to interface with the unknown (or parameter) `x`, we use `simulation_struct[:x]` to access the value, and `simulation_struct[:x] = 5.0` to set it to a new value. For situations where a value is accessed (or changed) a large number of times, it can improve performance to first create a [specialised getter/setter function](@ref ref).
 
-!!! note
-    The following tutorial will describe how to interface with problems, integrators, and solutions using `[]` notation. An alternative is to use the `ModelingToolkit.getu`, `ModelingToolkit.getp`, `ModelingToolkit.setu`, and `ModelingToolkit.setp` functions. These requires an additional step to use, however, they can also improve performance when a very large number interfaces are carried out.
+## [Interfacing problem objects](@id simulation_structure_interfacing_problems)
 
-## Interfacing problem objects
-
-We begin by demonstrating how we can interface with problem objects. We will demonstrate using a `ODEProblem`, however, it works similarly for other problem types.
-```@example ex1
+We begin by demonstrating how we can interface with problem objects. First, we create an `ODEProblem` representation of a [chemical cross-coupling model](@ref ref) (where a catalyst, $C$, couples two substrates, $S₁$ and $S₂$, to form a product, $P$).
+```@example structure_indexing
 using Catalyst
-rn = @reaction_network begin
-    (k1,k2), X1 <--> X2
+cc_system = @reaction_network begin
+    k₁, S₁ + C --> S₁C
+    k₂, S₁C + S₂ --> CP
+    k₃, CP --> C + P
 end
 
-u0 = [:X1 => 1.0, :X2 => 5.0]
-p = [:k1 => 5.0, :k2 => 2.0]
-oprob = ODEProblem(rn, u0, (0.0,10.0), p)
+u0 = [:S₁ => 1.0, :C => 0.05, :S₂ => 1.2, :S₁C => 0.0, :CP => 0.0, :P => 0.0]
+tspan = (0., 10.0)
+ps = [:k₁ => 5.0, :k₂ => 5.0, :k₃ => 100.0] 
+oprob = ODEProblem(cc_system, u0, tspan, ps)
 nothing    # hide
 ```
 
-We can find the value of a state simply by interfacing with the corresponding symbol:
-```@example ex1
-oprob[:X1]
+We can find a species (or [variables](@ref ref)) initial condition value by simply indexing with the species of interest as input. Here we check the initial condition value of $C$:
+```@example structure_indexing
+oprob[:C]
 ```
+An almost identical notation can be used for parameters, however, here we use `oprob.ps` (rather than `oprob`):
 with the notation being identical for parameters:
-```@example ex1
-oprob.ps[:k1]
+```@example structure_indexing
+oprob.ps[:k₁]
+```
+To retrieve several species initial condition (or parameter) values, simply give a vector input. Here we check the values of the two substrates ($S₁$ and $S₂$):
+```@example structure_indexing
+oprob[[:S₁, :S₂]]
 ```
 
-If we want to change an unknown's initial condition value, we use the following notation
-```@example ex1
-oprob[:X1] = 10.0
+We can change a species's initial condition value using a similar notation. Here we increase the initial concentration of $C$ (and also confirm that the new value is stored in an updated `oprob`):
+```@example structure_indexing
+oprob[:C] = 0.1
+oprob[:C]
 ```
-with parameters using the same notation.
+Again, parameter values can be changed using a similar notation, however, again requiring `oprob.ps` notation:
+```@example structure_indexing
+oprob.ps[:k₁] = 10.0
+oprob.ps[:k₁]
+```
+Finally, vectors can be used to update multiple quantities simultaneously
+```@example structure_indexing
+oprob[[:S₁, :S₂]] = [0.5, 0.3]
+oprob[[:S₁, :S₂]]
+```
+Generally, when updating problems, it is often better to use the [`remake` function](@ref simulation_structure_interfacing_problems_remake) (especially when several values are updated).
+
+A problem's time span can be accessed through the `tspan` field:
+```@example structure_indexing
+oprob.tspan
+```
 
 !!! note
-    When interfacing with a parameter, `.ps` must be appended to the structure uses (e.g. `oprob`). This is not done when species are interfaced with.
+    Here we have used an `ODEProblem`to demonstrate all interfacing functionality. However, identical workflows work for the other problem types.
 
-#### [Remaking problems using the `remake` function](@id simulation_structure_interfacing_remake)
-Typically, when modifying problems, it is recommended to use the `remake` function. Unlike when we do `oprob[:X1] = 10.0` (which modifies the problem in question), `remake` creates a new problem object. The `remake` function takes a problem as input, and any fields you wish to modify (and their new values) as optional inputs. Thus, we can do:
-```@example ex1
-using DifferentialEquations
-@unpack X1, X2, k1, k2 = rn
-oprob1 = ODEProblem(rn, u0, (0.0,10.0), p)
-oprob2 = remake(oprob1; u0=[X1 => 10.0, X2 => 50.0], tspan=(0.0,100.0), p=[k1 => 50.0,k2 => 20.0])
-nothing    # hide
-```
-and we can now check the fields of `oprob2`
-```@example ex1
-oprob2.u0
-```
-```@example ex1
-oprob2.tspan
-```
-```@example ex1
-oprob2.p
-```
-Please note that, currently, `remake` does not work while giving `Symbol`s as input (e.g `[:X1 => 10.0, :X2 => 50.0]`), but we need to unpack the symbolic variables and use them instead (please see the end of this tutorial for more information on using symbolic variables rather than `Symbol`s).
+### [Remaking problems using the `remake` function](@id simulation_structure_interfacing_problems_remake)
+The `remake` function offers an (to indexing) alternative approach for updating problems. Unlike indexing, `remake` creates a new problem (rather than updating the old one). Furthermore, it permits the updating of several values simultaneously. The `remake` function takes the following inputs:
+- The problem that is remade.
+- (optionally) `u0`: A vector with initial conditions that should be updated. The vector takes the same form as normal initial condition vectors, but does not need to be complete (in which case only a subset of the initial conditions are updated).
+- (optionally) `tspan`: An updated time span (using the same format as time spans normally are given in).
+- (optionally) `p`: A vector with parameters that should be updated. The vector takes the same form as normal parameter vectors, but does not need to be complete (in which case only a subset of the parameters are updated).
 
-When using `remake`, we only have to provide the fields that we actually wish to change, e.g.
-```@example ex1
-oprob3 = remake(oprob1; u0=[X1 => 10.0, X2 => 50.0])
-nothing    # hide
+Here we modify our problem to increase the initial condition concentrations of the two substrates ($S₁$ and $S₂$), and also confirm that the new problem is different from the old (unchanged) one:
+```@example structure_indexing
+using OrdinaryDiffEq
+oprob_new = remake(oprob; u0 = [:S₁ => 5.0, :S₂ => 2.5])
+oprob_new == oprob
 ```
-will only update the initial conditions.
+Here, we instead use `remake` to simultaneously update a large number of fields:
+```@example structure_indexing
+oprob_new_2 = remake(oprob; u0 = [:C => 0.2], tspan = (0.0, 20.0), p = [:k₁ => 2.0, :k₂ => 2.0])
+nothing # hide
+```
 
+## [Interfacing integrator objects](@id simulation_structure_interfacing_integrators)
 
-## Interfacing integrator objects
-
-During a simulation, the solution is stored in an integrator object, we will here describe how to interface with these. The primary circumstance under which a user may wish to do so is when using [callbacks](@ref advanced_simulations_callbacks). We can create an integrator by calling `init` on our problem ([while circumstances where the user might want to use `init` function exist](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/#Initialization-and-Stepping), since integrators are automatically created during simulations, these are rare):
-```@example ex1
+During a simulation, the solution is stored in an integrator object. Here, we will describe how to interface with these. The almost exclusive circumstance when integrator-interfacing is relevant is when simulation events are [implemented through callbacks](@ref ref). However, to demonstrate integrator indexing in this tutorial, we will create one through the `init` function (while circumstances where one might [want to use `init` function exist](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/#Initialization-and-Stepping), since integrators are automatically created during simulations, these are rare).
+```@example structure_indexing
 integrator = init(oprob)
+nothing # hide
 ```
-Using a similar syntax to problems, we can get the current values of an unknown within the integrator:
-```@example ex1
-integrator[:X1]
+We can interface with our integrator using an identical syntax as [was used for problems](@ref simulation_structure_interfacing_problems) (with the exception that `remake` is not available). Here we update, and then check the values of, first the species $C$ and then the parameter $k₁$:
+```@example structure_indexing
+integrator[:C] = 0.0
+integrator[:C]
 ```
 or a parameter:
-```@example ex1
-integrator.ps[:k1]
+```@example structure_indexing
+integrator.ps[:k₂] = 1.0
+integrator.ps[:k₂]
 ```
-Similarly, we can update their values using:
-```@example ex1
-integrator[:X1] = 10.0
-```
-Please read [this](@ref advanced_simulations_ssa_callbacks) with regards to updating integrators of `JumpProblem`s.
+Note that here, species-interfacing yields (or changes) a simulation's current value for a species, not its initial condition.
 
+If you are interfacing with jump simulation integrators, please read [this, highly relevant, section](@ref ref).
 
 ## [Interfacing solution objects](@id simulation_structure_interfacing_solutions)
 
 Finally, we consider solution objects. First, we simulate our problem:
-```@example ex1
+```@example structure_indexing
 sol = solve(oprob)
-```
-For solutions, when we access an unknown, we get its whole simulation vector:
-```@example ex1
-sol[:X1]
-```
-while when we access a parameter we only get a single value:
-```@example ex1
-sol.ps[:k1]
-```
-Finally, we note that we cannot change the values of solution unknowns or parameters (i.e. both `sol[:X1] = 0.0` and `sol[:k1] = 0.0` generate errors).
-
-## [Interfacing using symbolic representation](@id simulation_structure_interfacing_symbolic_representation)
-
-Catalyst is built on an *intermediary representation* implemented by (ModelingToolkit.jl)[https://github.com/SciML/ModelingToolkit.jl]. ModelingToolkit is a modelling framework where one first declares a set of symbolic variables and parameters using e.g.
-```@example ex2
-using Catalyst # hide
-using ModelingToolkit
-t = default_t()
-@parameters σ ρ β
-@variables x(t) y(t) z(t)
 nothing # hide
 ```
-and then uses these to build systems of equations. Here, these symbolic variables (`x`, `y`, and `z`) and parameters (`σ`, `ρ`, and `β`) can be used to interface a `problem`, `integrator`, and `solution` object (like we did previously, but using Symbols, e.g. `:X`). Since Catalyst models are built on ModelingToolkit, these models also contain similar symbolic variables and parameters.
-```@example ex2
+Next, we can access the simulation's values using the same notation as previously. When we check a species's value, its full across the full simulation is returned as a vector:
+```@example structure_indexing
+sol[:P]
+```
+Parameter values can also be accessed (however, here we only get a single value):
+```@example structure_indexing
+sol.ps[:k₃]
+```
+Unlike for problems and integrators, species or parameter values of solutions cannot be changed. 
+
+A vector with the time values for all simulation time steps can be retrieved using
+```@example structure_indexing
+sol.t
+```
+
+## [Interfacing using specialised getter/setter functions](@id simulation_structure_interfacing_functions)
+Internally, species and parameter values are stored in vectors. Whenever e.g. `oprob[:C]` is called, Julia must first find which index in the storage vector $C$ is stored in. Next, its value can be retrieved. If `oprob[:C]` is called a large number of times, this index must be found in each call. If a large number of such accesses are carried out, and performance is essential, it can be worthwhile to pre-compute a function to carry this out.
+
+There exist four different functions, each returning a function for performing a specific type of interfacing:
+- `ModelingToolkit.getu`: For accessing species values.
+- `ModelingToolkit.getp`: For accessing parameter values.
+- `ModelingToolkit.setu`: For changing species values.
+- `ModelingToolkit.setp`: For changing parameter values.
+
+For each species (or parameter) we wish to interface with, a new interfacing function must be created. Here we first creates a function for retrieving the value of $C$, and then use it for this purpose:
+```@example structure_indexing
+get_C = ModelingToolkit.getu(oprob, :C)
+get_C(oprob)
+```
+Here, `getu` (as well as `getp`, `setu`, and `setp`) first takes the structure we wish to interface with, and then the target quantity. When using `setu` and `setp`, in the second step, we must also provide the update value:
+```@example structure_indexing
+set_C = ModelingToolkit.setu(oprob, :C)
+set_C(oprob, 0.2)
+get_C(oprob)
+```
+
+Like when indexing-based interfacing is used, these functions also work with vectors:
+```@example structure_indexing
+get_S = ModelingToolkit.getu(oprob, [:S₁, :S₂])
+get_S(oprob)
+```
+
+## [Interfacing using symbolic representations](@id simulation_structure_interfacing_symbolic_representation)
+As [previously described](@ref ref), when e.g. [programmatic modelling is used], species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like `Symbol '-based representations can. Here we create a simple [two-state model](@ref ref) programmatically, and use its symbolic variables to check, and update, an initial condition:
+```@example structure_indexing_symbolic_variables
 using Catalyst
-rn = @reaction_network begin
-    (k1,k2), X1 <--> X2
-end
+t = default_t()
+@species X1(t) X2(t)
+@parameters k1 k2
+rxs = [
+    Reaction(k1, [X1], [X2]),
+    Reaction(k2, [X2], [X1])
+]
+@named two_state_model = ReactionSystem(rxs, t)
+two_state_model = complete(two_state_model)
 
-@unpack k1,k2,X1,X2 = rn
-```
-Here, we first list the parameters and variables (for reaction systems the latter are typically species) we wish to import (in this case we select all, but we could select only a subset), next we denote from which model (here `rn`) from which we wish to import from. Next, these values can be used directly to interface with e.g. an `ODEProblem`:
-```@example ex2
-u0 = [X1 => 1.0, X2 => 5.0]
-p = [:k1 => 5.0, :k2 => 2.0]
-oprob = ODEProblem(rn, u0, (0.0,10.0), p)
+u0 = [X1 => 2.0, X2 => 0.0]
+tspan = (0.0, 1.0)
+ps = [k1 => 1.0, k2 => 2.0]
+oprob = ODEProblem(two_state_model, u0, tspan, ps)
 
-oprob.ps[k1]
+oprob[X1] = 5.0
+oprob[X1]
 ```
-To interface with integrators and solutions we use a similar syntax.
+Symbolic variables can be used to access or update species or parameters for all the cases when `Symbol`s can (including when using `remake` or e.g. `getu`).
 
-Finally, instead of using `@unpack` to access a symbolic variable or parameter, we can access it directly using `rn.X1`, and thus access an unknown of our `ODEProblem` using
-```@example ex2
-oprob[rn.X1]
+An advantage when quantities are represented as symbolic variables is that [symbolic expressions] can be formed and used to index a structure. E.g. here we check the combined initial concentration of $X$ ($X1 + X2$) in our two-state problem:
+```@example structure_indexing_symbolic_variables
+oprob[X1 + X2]
 ```
+
+Just like symbolic variables can be used to directly interface with a structure, symbolic variables stored in `ReactionSystem` models can be used:
+```@example structure_indexing_symbolic_variables
+oprob[two_state_model.X1 + two_state_model.X2]
+```
+This can be used to form symbolic expressions using model quantities when a model has been created using the DSL (as an alternative to [@unpack]
+(@ref ref)). Alternatively, [creating an observable](@ref ref), and then interface using its `Symbol` representation, is also possible.
+
+!!! warn
+    With interfacing with a simulating structure using symbolic variables stored in a `ReactionSystem` model, ensure that the [model is complete](@ref ref).
