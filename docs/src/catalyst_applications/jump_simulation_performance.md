@@ -93,7 +93,7 @@ input(t) = t > 5.0
 r = @reaction input(t), 0 --> X
 nothing # hide
 ```
-Here, the production of species $X$ is switched on at the time $t=5.0$. This reaction (which rate depends on `t`) will generate a `VariableRateJump`, which is bad for jump simulation performance. However, since the rate is piecewise constant, it can instead be implemented by setting it to a constant parameter $i$, and then use a [*callback*](@ref advanced_simulations_callbacks) to update it at the critical times. This will again generate an equivalent model, but with the reaction encoded as a `MassActionJump` (rather than a `VariableRateJump`).
+Here, the production of species $X$ is switched on at the time $t=5.0$. This reaction (for which the rate depends on `t`) will generate a `VariableRateJump`, which is the least performant jump type in simulations, and can not be used with the standard SSAs of JumpProcesses. However, since the rate is piecewise constant, it can alternatively be implemented by setting it to a constant parameter $i$, and then using a [*discrete callback*](@ref advanced_simulations_callbacks) to update it at the switching times. This will again generate an equivalent model, but with the reaction encoded as a `MassActionJump` (rather than a `VariableRateJump`). Generally such explicit time-discontinuities should be encoded via discrete callbacks instead of as `VariableRateJump`s if possible as simulation methods for the latter typically assume the system's propensities evolve continuously in-between jumps.
 
 ## Jump solver selection
 When creating a `JumpProblem`, a specific solver is designated using its third argument.
