@@ -290,3 +290,12 @@ Next, a simulation method can be provided (like for ODEs and SDEs) as the second
 sol = solve(jprob, FunctionMap())
 nothing # hide
 ```
+
+### [Jump simulations where some rate depend on time](@id simulation_intro_jumps_variableratejumps)
+For some models, the rate of some reaction depend on time. E.g. consider the following [circadian model](https://en.wikipedia.org/wiki/Circadian_rhythm), where a protein ($P$) switches between an inactive state ($Pi$) and an active state ($Pa$) with an activation rate that is some sinusoid function:
+```@example simulation_intro_jumps
+circadian_model = @reaction_network begin
+    A*(1 + sin())/2
+end
+```
+https://docs.sciml.ai/JumpProcesses/stable/tutorials/simple_poisson_process/#VariableRateJumps-for-processes-that-are-not-constant-between-jumps
