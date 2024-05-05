@@ -114,7 +114,7 @@ dprob = DiscreteProblem(rn, u0, tspan, ps)
 jprob = JumpProblem(rn, dprob, Direct())
 nothing # hide
 ```
-Here (as throughout most of Catalyst's documentation) we have used the `Direct()` solver (which corresponds to Gillespie's original direct method [^2][^3], also called the *stochastic simulation algorithm*). This method was originally published in 1976, and since then, many additional methods for performing jump simulations of CRN models have been developed. 
+Here (as throughout most of Catalyst's documentation) we have used the `Direct()` SSA solver (which corresponds to Gillespie's original direct method [^2][^3]). This method was originally published in 1976, and since then, many additional methods for simulating stochastic chemical kinetics models have been developed. 
 
 Gillespie's direct method will, after a jump has been performed, recompute the rates of *all* possible jumps in the system. This is typically not required. E.g. consider the following system:
 ```@example jump_simulation_performance_2
