@@ -122,6 +122,15 @@ A vector with the time values for all simulation time steps can be retrieved usi
 sol.t
 ```
 
+To find simulation values at a specific time point, simply use this time point as input to your solution object (treating it as a function). I.e. here we get our simulation's values at time $t = 1.0$
+```@example structure_indexing
+sol(1.0)
+```
+This works whenever the simulations actually stopped at time $t = 1.0$ (if not, an interpolated value is returned). To get the simulation's for a specific (subset of) species, we can use the `idxs` optional argument. I.e. here we get the value of $C$ at time $t = 1.0$
+```@example structure_indexing
+sol(1.0; idxs = [:C])
+``` 
+
 ## [Interfacing using specialised getter/setter functions](@id simulation_structure_interfacing_functions)
 Internally, species and parameter values are stored in vectors. Whenever e.g. `oprob[:C]` is called, Julia must first find which index in the storage vector $C$ is stored in. Next, its value can be retrieved. If `oprob[:C]` is called a large number of times, this index must be found in each call. If a large number of such accesses are carried out, and performance is essential, it can be worthwhile to pre-compute a function to carry this out.
 
