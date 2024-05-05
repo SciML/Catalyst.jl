@@ -292,10 +292,11 @@ nothing # hide
 ```
 
 ### [Jump simulations where some rate depend on time](@id simulation_intro_jumps_variableratejumps)
-For some models, the rate of some reaction depend on time. E.g. consider the following [circadian model](https://en.wikipedia.org/wiki/Circadian_rhythm), where a protein ($P$) switches between an inactive state ($Pi$) and an active state ($Pa$) with an activation rate that is some sinusoid function:
+For some models, the rate of some reaction depend on time. E.g. consider the following [circadian model](https://en.wikipedia.org/wiki/Circadian_rhythm), where the production rate of some protein ($P$) depends on a sinusoid function:
 ```@example simulation_intro_jumps
 circadian_model = @reaction_network begin
-    A*(1 + sin())/2
+    A*(sin(2π*f*t - ϕ)+1)/2, 0 --> P
+    d, P --> 0
 end
 ```
-https://docs.sciml.ai/JumpProcesses/stable/tutorials/simple_poisson_process/#VariableRateJumps-for-processes-that-are-not-constant-between-jumps
+This type of model will generate so called [*variable rate jumps*](@ref ref). Simulation of such model is non-trivial (and Catalyst currently lacks a good interface for this). A detailed description of how to simulate models with time-dependant rates can be found [here](https://docs.sciml.ai/JumpProcesses/stable/tutorials/simple_poisson_process/#VariableRateJumps-for-processes-that-are-not-constant-between-jumps).
