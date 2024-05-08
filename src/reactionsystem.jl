@@ -557,11 +557,6 @@ struct ReactionSystem{V <: NetworkProperties} <:
             (p isa Symbolics.BasicSymbolic) || error("Parameter $p is not a `BasicSymbolic`. This is required.")
         end
 
-        # Filters away any potential obervables from `states` and `spcs`.
-        obs_vars = [obs_eq.lhs for obs_eq in observed]
-        unknowns = filter(state -> !any(isequal(state, obs_var) for obs_var in obs_vars), unknowns)
-        spcs = filter(spc -> !any(isequal(spc, obs_var) for obs_var in obs_vars), spcs)
-
         # unit checks are for ODEs and Reactions only currently
         nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
         if checks && isempty(sivs)
@@ -741,8 +736,12 @@ end
 # While species are ordered before variables in the unknowns vector, this ordering is not imposed here,
 # but carried out at a later stage.
 function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in; spatial_ivs = nothing, 
-                                      continuous_events = [], discrete_events = [], kwargs...)
+                                      continuous_events = [], discrete_events = [], observed = [], kwargs...)
 
+    # Filters away any potential obervables from `states` and `spcs`.
+    obs_vars = [obs_eq.lhs for obs_eq in observed]
+    unknowns = filter(u -> !any(isequal(u, obs_var) for obs_var in obs_vars), us_in)
+    
     # Creates a combined iv vector (iv and sivs). This is used later in the function (so that 
     # independent variables can be exluded when encountered quantities are added to `us` and `ps`).
     t = value(iv)
