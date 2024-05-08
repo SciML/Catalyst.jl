@@ -630,9 +630,8 @@ function ReactionSystem(eqs, iv, unknowns, ps;
                         metadata = nothing)
                
     # Error checks
-    if name === nothing
+    name === nothing &&
         throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
-    end
     sysnames = nameof.(systems)
     (length(unique(sysnames)) == length(sysnames)) || throw(ArgumentError("System names must be unique."))
 
