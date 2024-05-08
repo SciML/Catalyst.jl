@@ -480,6 +480,7 @@ let
     end
 end
 
+
 ### Unusual Differentials Tests ###
 
 # Tests that coupled CRN/DAEs with higher order differentials can be created.
@@ -583,6 +584,7 @@ let
     # Some internal details will be different, however, the solutions should be identical.
     @test osol_messy[[:S, :I, :R, :M, :H]] ≈ osol_ordered[[:S, :I, :R, :M, :H]]
 end
+
 
 ### DSL Tests ###
 
@@ -848,7 +850,6 @@ let
     @test solve(oprob_1, Tsit5()) == solve(oprob_2, Tsit5()) == solve(oprob_3, Tsit5())
 end
 
-
 # Checks that various misformatted declarations yield errors.
 let 
     # Symbol in equation not appearing elsewhere (1).
@@ -920,6 +921,7 @@ let
         end 
     end
 end
+
 
 ### Error Tests ###
 
