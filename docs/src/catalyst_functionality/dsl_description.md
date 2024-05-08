@@ -703,7 +703,7 @@ nothing # hide
 ```
 
 ## Incorporating (differential) equations into reaction network models
-Some models cannot be purely described as reaction networks. E.g. consider the growth of a cell, where the rate of change in cell's volume depends on some growth factor. Here, the cell's volume would be described by a normal equation. Such equations can be incorporated into a model using the `@equations` option. Here, we create a model where a growth factor ($G$) is produced and degraded at a linear rates, and the rate of change in cell volume ($V$) os linear to the amount of growth factor:
+Some models cannot be purely described as reaction networks. E.g. consider the growth of a cell, where the rate of change in the cell's volume depends on some growth factor. Here, the cell's volume would be described by a normal ODE. Such equations can be incorporated into a model using the `@equations` option. Here, we create a model where a growth factor ($G$) is produced and degraded at a linear rates, and the rate of change in cell volume ($V$) is linear in the amount of growth factor:
 ```@example eqs1
 using Catalyst #hide
 rn = @reaction_network begin
