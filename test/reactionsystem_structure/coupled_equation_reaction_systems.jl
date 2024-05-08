@@ -437,9 +437,9 @@ end
 
 ### Coupled NonlinearSystems Tests ###
 
-# Checks that systems with weird differential equations yield appropriate warnings.
+# Checks that systems with weird differential equations yield errors.
 let 
-    # This oen is normal, and should not yield a warning.
+    # This one is normal, and should not yield an error.
     begin
         rs = @reaction_network begin
             @equations D(V) ~ 1.0 - V
@@ -447,7 +447,7 @@ let
         @test_nowarn convert(NonlinearSystem, rs)
     end
     
-    # Higher-order differential on the lhs, should yield a warning.
+    # Higher-order differential on the lhs, should yield an error.
     begin
         rs = @reaction_network begin
             @differentials D = Differential(t)
@@ -455,20 +455,20 @@ let
             @equations D(D(V)) ~ 1.0 - V
             (p,d), 0 <--> X
         end
-        @test_logs (:warn, r".*") convert(NonlinearSystem, rs)
+        @test_throws Exception convert(NonlinearSystem, rs)
     end
     
-    # Differential on the rhs, should yield a warning.
+    # Differential on the rhs, should yield an error.
     begin
         rs = @reaction_network begin
             @variables U(t)
             @equations D(V) ~ 1.0 - V + D(U)
             (p,d), 0 <--> X
         end
-        @test_logs (:warn, r".*") convert(NonlinearSystem, rs)
+        @test_throws Exception convert(NonlinearSystem, rs)
     end
     
-    # Non-differential term on the lhs, should yield a warning.
+    # Non-differential term on the lhs, should yield an error.
     begin
         rs = @reaction_network begin
             @differentials D = Differential(t)
@@ -476,9 +476,10 @@ let
             @equations D(V) + V ~ 1.0 - V
             (p,d), 0 <--> X
         end
-        @test_logs (:warn, r".*") convert(NonlinearSystem, rs)
+        @test_throws Exception convert(NonlinearSystem, rs)
     end
 end
+
 ### Unusual Differentials Tests ###
 
 # Tests that coupled CRN/DAEs with higher order differentials can be created.
@@ -522,7 +523,7 @@ let
     # Here `B => 0.1` has to be provided as well (and it shouldn't for the 2nd order ODE), hence the 
     # separate `u0` declaration.
     u0 = [X => 1.0, A => 2.0, D(A) => 1.0, B => 0.1]
-    nlprob = NonlinearProblem(coupled_rs, u0, ps; structural_simplify = true)
+    nlprob = NonlinearProblem(coupled_rs, u0, ps; structural_simplify = true, all_differentials_permitted = true)
     nlsol = solve(nlprob)
     @test nlsol[X][end] ≈ 2.0
     @test nlsol[A][end] ≈ 0.0

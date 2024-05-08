@@ -831,7 +831,7 @@ function read_equations_options(options, variables_declared)
     # Loops through all equations, checks for lhs of the form `D(X) ~ ...`.
     # When this is the case, the variable X and differential D are extracted (for automatic declaration).
     # Also performs simple error checks.
-    vars_extracted = []
+    vars_extracted = Vector{Symbol}()
     add_default_diff = false
     for eq in equations
         if (eq.head != :call) || (eq.args[1] != :~)

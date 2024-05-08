@@ -38,9 +38,6 @@ import ModelingToolkit: check_variables,
                         check_parameters, _iszero, _merge, check_units,
                         get_unit, check_equations, iscomplete
 
-# Event-related MTK stuff.
-import ModelingToolkit: PresetTimeCallback
-
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
 import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne

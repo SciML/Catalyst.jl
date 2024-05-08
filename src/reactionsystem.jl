@@ -1596,7 +1596,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, remove_conserved = false, checks = false,
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
-                      kwargs...)
+                      all_differentials_permitted = false, kwargs...)
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
     fullrs = Catalyst.flatten(rs)
@@ -1608,7 +1608,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
 
     # Throws a warning if there are differential equations in non-standard format.
     # Next, sets all differential terms to `0`.
-    nonlinear_convert_differentials_check(rs)
+    all_differentials_permitted || nonlinear_convert_differentials_check(rs)
     eqs = [remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
 
 
@@ -1635,24 +1635,26 @@ diff_2_zero(expr) = (Symbolics.is_derivative(expr) ? 0.0 : expr)
 # does not contain any differentials. If this is not teh case, we throw a warning to let the user
 # know that they should be careful.
 function nonlinear_convert_differentials_check(rs::ReactionSystem)
-    for eq in equations(rs)
-        # For each equation (that is not a reaction), checks in order: 
+    for eq in filter(is_diff_equation, equations(rs))
+        # For each differential equation, checks in order: 
         # If there is a differential on the right hand side.
         # If the lhs is not on the form D(...).
         # If the lhs upper level function is not a differential w.r.t. time.
         # If the contenct of the differential is not a variable (and nothing more).
         # If either of this is a case, throws the warning.
-        (eq isa Reaction) && continue
         if Symbolics._occursin(Symbolics.is_derivative, eq.rhs) ||
                 !Symbolics.istree(eq.lhs) ||
                 !isequal(Symbolics.operation(eq.lhs), Differential(get_iv(rs))) || 
                 (length(arguments(eq.lhs)) != 1) ||
                 !any(isequal(arguments(eq.lhs)[1]), nonspecies(rs))
-            @warn "You are attempting to convert a `ReactionSystem` coupled with differential equations. However, some of these differentials are not of the form `D(x) ~ ...` where: 
+            error("You are attempting to convert a `ReactionSystem` coupled with differential equations to a `NonlinearSystem`. However, some of these differentials are not of the form `D(x) ~ ...` where: 
                     (1) The left-hand side is a differential of a single variable with respect to the time independent variable, and
                     (2) The right-hand side does not contain any differentials.
-                  This is permitted (and all differential will be set to `0`), however, it is recommended to proceed with caution to ensure that the produced nonlinear equation is the desired one."
-            return
+                This is generally not permitted.
+                
+                If you still would like to perform this conversions, please use the `all_differentials_permitted = true` option. In this case, all differential will be set to `0`. 
+                However, it is recommended to proceed with caution to ensure that the produced nonlinear equation makes sense for you intended application."
+                )
         end
     end
 end
@@ -1790,13 +1792,14 @@ function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
                                      name = nameof(rs), include_zero_odes = true,
                                      combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                                      remove_conserved = false, checks = false,
-                                     check_length = false, kwargs...)
+                                     check_length = false, all_differentials_permitted = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, include_zero_odes,
-                    checks, remove_conserved)
+                    checks, all_differentials_permitted, remove_conserved)
     nlsys = complete(nlsys)
-    return NonlinearProblem(nlsys, u0map, pmap, args...; check_length, kwargs...)
+    return NonlinearProblem(nlsys, u0map, pmap, args...; check_length, 
+                            kwargs...)
 end
 
 # SDEProblem from AbstractReactionNetwork
