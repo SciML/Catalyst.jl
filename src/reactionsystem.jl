@@ -740,7 +740,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in; spa
 
     # Filters away any potential obervables from `states` and `spcs`.
     obs_vars = [obs_eq.lhs for obs_eq in observed]
-    unknowns = filter(u -> !any(isequal(u, obs_var) for obs_var in obs_vars), us_in)
+    us_in = filter(u -> !any(isequal(u, obs_var) for obs_var in obs_vars), us_in)
     
     # Creates a combined iv vector (iv and sivs). This is used later in the function (so that 
     # independent variables can be exluded when encountered quantities are added to `us` and `ps`).
@@ -788,6 +788,10 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in; spa
     if !isempty(eqs)
         osys = ODESystem(eqs, iv; name = gensym())
         fulleqs = CatalystEqType[rxs; equations(osys)]
+        println()
+        println("start")
+        println(us)
+        println(unknowns(osys))
         union!(us, unknowns(osys))
         union!(ps, parameters(osys))
     else
