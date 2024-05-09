@@ -368,9 +368,8 @@ let
     obs = [Equation(L, 2 * x + y)]
     @named rs3 = ReactionSystem(rxs, t; observed = obs)
     L2 = L
-    @test_broken false # `@unpack` does not seem to work on observables. 
-    #@unpack L = rs3
-    #@test isequal(L, L2)
+    @unpack L = rs3
+    @test isequal(L, L2)
 end
 
 # Test that non-integer stoichiometry goes through.
