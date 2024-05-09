@@ -24,6 +24,7 @@ pages = Any[
         ]
     ],
     "Model simulation" => Any[
+    "04_model_simulation/01_simulation_introduction.md",
         # Simulation introduction.
         # Simulation plotting.
         "model_simulation/simulation_structure_interfacing.md",
