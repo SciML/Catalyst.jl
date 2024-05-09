@@ -82,7 +82,8 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables, :default_noise_scaling)
+const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables, :default_noise_scaling,
+                     :differentials, :equations, :continuous_events, :discrete_events)
 
 ### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)
@@ -353,7 +354,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     option_lines = Expr[x for x in ex.args if x.head == :macrocall]
 
     # Get macro options.
-    length(unique(arg.args[1] for arg in option_lines)) < length(option_lines) && error("Some options where given multiple times.")
+    if length(unique(arg.args[1] for arg in option_lines)) < length(option_lines)
+         error("Some options where given multiple times.")
+    end
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
                        option_lines))
 
@@ -361,12 +364,18 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     default_reaction_metadata = :([])
     check_default_noise_scaling!(default_reaction_metadata, options)
     compound_expr, compound_species = read_compound_options(options)
+    continuous_events_expr = read_events_option(options, :continuous_events)
+    discrete_events_expr = read_events_option(options, :discrete_events)
 
     # Parses reactions, species, and parameters.
     reactions = get_reactions(reaction_lines)
     species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
-    variables = extract_syms(options, :variables)
+    variables_declared = extract_syms(options, :variables)
+
+    # Reads more options.
+    vars_extracted, add_default_diff, equations = read_equations_options(options, variables_declared)
+    variables = vcat(variables_declared, vars_extracted)
 
     # handle independent variables
     if haskey(options, :ivs)
@@ -391,6 +400,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
+    # Create differential expression.
+    diffexpr = create_differential_expr(options, add_default_diff, [species; parameters; variables], tiv)
+
     # Checks for input errors.
     (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
         error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
@@ -402,7 +414,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     sexprs = get_sexpr(species_extracted, options; iv_symbols = ivs)
-    vexprs = haskey(options, :variables) ? options[:variables] : :()
+    vexprs = get_sexpr(vars_extracted, options, :variables; iv_symbols = ivs)
     pexprs = get_pexpr(parameters_extracted, options)
     ps, pssym = scalarize_macro(!isempty(parameters), pexprs, "ps")
     vars, varssym = scalarize_macro(!isempty(variables), vexprs, "vars")
@@ -412,6 +424,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     for reaction in reactions
         push!(rxexprs.args, get_rxexprs(reaction))
     end
+    for equation in equations
+        push!(rxexprs.args, equation)
+    end
 
     quote
         $ps
@@ -420,11 +435,13 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         $sps
         $observed_vars
         $comps
+        $diffexpr
 
         Catalyst.remake_ReactionSystem_internal(
             Catalyst.make_ReactionSystem_internal(
                 $rxexprs, $tiv, setdiff(union($spssym, $varssym, $compssym), $obs_syms),
-                $pssym; name = $name, spatial_ivs = $sivs, observed = $observed_eqs);
+                $pssym; name = $name, spatial_ivs = $sivs, observed = $observed_eqs,
+                continuous_events = $continuous_events_expr, discrete_events = $discrete_events_expr);
             default_reaction_metadata = $default_reaction_metadata
         )
     end
@@ -797,6 +814,101 @@ function make_observed_eqs(observables_expr)
     else
         error("Malformed observables option usage: $(observables_expr).")
     end 
+end
+
+# Reads the variables options. Outputs:
+# `vars_extracted`: A vector with extracted variables (lhs in pure differential equations only).
+# `dtexpr`: If a differentialequation is defined, the default derrivative (D ~ Differential(t)) must be defined.
+# `equations`: a vector with the equations provided.
+function read_equations_options(options, variables_declared)
+    # Prepares the equations. First, extracts equations from provided option (converting to block form if requried).
+    # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
+    eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
+    eqs_input = option_block_form(eqs_input)
+    equations = Expr[]
+    ModelingToolkit.parse_equations!(Expr(:block), equations, Dict{Symbol, Any}(), eqs_input)
+
+    # Loops through all equations, checks for lhs of the form `D(X) ~ ...`.
+    # When this is the case, the variable X and differential D are extracted (for automatic declaration).
+    # Also performs simple error checks.
+    vars_extracted = Vector{Symbol}()
+    add_default_diff = false
+    for eq in equations
+        if (eq.head != :call) || (eq.args[1] != :~)
+             error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")
+        end
+        
+        # Checks if the equation have the format D(X) ~ ... (where X is a symbol). This means that the 
+        # default differential has been used. X is added as a declared variable to the system, and
+        # we make a note that a differential D = Differential(iv) should be made as well.
+        lhs = eq.args[2]
+        # if lhs: is an expression. Is a function call. The function's name is D. Calls a single symbol.
+        if (lhs isa Expr) && (lhs.head == :call) && (lhs.args[1] == :D) && (lhs.args[2] isa Symbol)
+            diff_var = lhs.args[2]
+            if in(diff_var, forbidden_symbols_error)
+                error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
+            end
+            add_default_diff = true
+            in(diff_var, variables_declared) || push!(vars_extracted, diff_var)
+        end
+    end
+    
+    return vars_extracted, add_default_diff, equations
+end
+
+# Creates an expression declaring differentials. Here, `tiv` is the time independent variables, 
+# which is used by the default differential (if it is used).
+function create_differential_expr(options, add_default_diff, used_syms, tiv)
+    # Creates the differential expression.
+    # If differentials was provided as options, this is used as the initial expression.
+    # If the default differential (D(...)) was used in equations, this is added to the expression.
+    diffexpr = (haskey(options, :differentials) ? options[:differentials].args[3] : MacroTools.striplines(:(begin end)))
+    diffexpr = option_block_form(diffexpr)
+
+    # Goes through all differentials, checking that they are correctly formatted and their symbol is not used elsewhere.
+    for dexpr in diffexpr.args
+        (dexpr.head != :(=)) && error("Differential declaration must have form like D = Differential(t), instead \"$(dexpr)\" was given.")
+        (dexpr.args[1] isa Symbol) || error("Differential left-hand side must be a single symbol, instead \"$(dexpr.args[1])\" was given.")
+        in(dexpr.args[1], used_syms) && error("Differential name ($(dexpr.args[1])) is also a species, variable, or parameter. This is ambigious and not allowed.")
+        in(dexpr.args[1], forbidden_symbols_error) && error("A forbidden symbol ($(dexpr.args[1])) was used as a differential name.")
+    end
+    
+    # If the default differential D has been used, but not pre-declared using the @differenitals
+    # options, add this declaration to the list of declared differentials.
+    if add_default_diff && !any(diff_dec.args[1] == :D for diff_dec in diffexpr.args) 
+        push!(diffexpr.args, :(D = Differential($(tiv))))
+    end
+    
+    return diffexpr
+end
+
+# Read the events (continious or discrete) provided as options to the DSL. Returns an expression which evalutes to these.
+function read_events_option(options, event_type::Symbol)    
+    # Prepares the events, if required to, converts them to block form.
+    (event_type in [:continuous_events, :discrete_events]) || error("Trying to read an unsupported event type.")
+    events_input = haskey(options, event_type) ? options[event_type].args[3] : MacroTools.striplines(:(begin end))
+    events_input = option_block_form(events_input)
+
+    # Goes throgh the events, checks for errors, and adds them to the output vector.
+    events_expr = :([])
+    for arg in events_input.args
+        # Formatting error checks.
+        # NOTE: Maybe we should move these deeper into the system (rather than the DSL), throwing errors more generally?
+        if (arg isa Expr) && (arg.head != :call) || (arg.args[1] != :(=>)) || length(arg.args) != 3
+            error("Events should be on form `condition => affect`, separated by a `=>`. This appears not to be the case for: $(arg).")
+        end
+        if (arg isa Expr) && (arg.args[2] isa Expr) && (arg.args[2].head != :vect) && (event_type == :continuous_events)
+            error("The condition part of continious events (the left-hand side) must be a vector. This is not the case for: $(arg).")
+        end
+        if (arg isa Expr) && (arg.args[3] isa Expr) && (arg.args[3].head != :vect)
+             error("The affect part of all events (the righ-hand side) must be a vector. This is not the case for: $(arg).")
+        end
+
+        # Adds the correctly formatted event to the event creation expression.
+        push!(events_expr.args, arg)
+    end
+
+    return events_expr
 end
 
 # Checks if the `@default_noise_scaling` option is used. If so, read its input and adds it as a

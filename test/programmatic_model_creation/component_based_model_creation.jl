@@ -348,6 +348,7 @@ let
 end
 
 # Test throw error if there are ODE constraints and convert to NonlinearSystem.
+# Note, these can now be created.
 let
     rn = @reaction_network rn begin
         @parameters k1 k2
@@ -362,7 +363,6 @@ let
     rn2 = extend(osys, rn)
     rn2 = complete(rn2)
     rnodes = complete(convert(ODESystem, rn2))
-    @test_throws ErrorException convert(NonlinearSystem, rn2)
 
     # Ensure right number of equations are generated.
     @variables G(t)

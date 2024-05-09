@@ -312,6 +312,39 @@ end
 
 ### Other Tests ###
 
+# Checks that identifiability can be assessed for coupled CRN/DAE systems.
+let
+    rs = @reaction_network begin
+        @parameters k c1 c2
+        @variables C(t)
+        @equations begin
+            D(V) ~ k*X - V
+            C ~ (c1 + c2) * X/V
+        end
+        (p/V,d/V), 0 <--> X
+    end
+    @unpack p, d, k, c1, c2 = rs
+    
+    # Tests identifiability assessment when all unknowns are measured.
+    gi_1 = assess_identifiability(rs; measured_quantities=[:X, :V, :C])
+    li_1 = assess_local_identifiability(rs; measured_quantities=[:X, :V, :C])
+    ifs_1 = find_identifiable_functions(rs; measured_quantities=[:X, :V, :C])
+    @test sym_dict(gi_1) == Dict([:X => :globally, :C => :globally, :V => :globally, :k => :globally, 
+                      :c1 => :nonidentifiable, :c2 => :nonidentifiable, :p => :globally, :d => :globally])
+    @test sym_dict(li_1) == Dict([:X => 1, :C => 1, :V => 1, :k => 1, :c1 => 0, :c2 => 0, :p => 1, :d => 1])
+    @test issetequal(ifs_1, [d, p, k, c1 + c2])
+    
+    # Tests identifiability assessment when only variables are measured. 
+    # Checks that a parameter in an equation can be set as known.
+    gi_2 = assess_identifiability(rs; measured_quantities=[:V, :C], known_p = [:c1])
+    li_2 = assess_local_identifiability(rs; measured_quantities=[:V, :C], known_p = [:c1])
+    ifs_2 = find_identifiable_functions(rs; measured_quantities=[:V, :C], known_p = [:c1])
+    @test sym_dict(gi_2) == Dict([:X => :nonidentifiable, :C => :globally, :V => :globally, :k => :nonidentifiable, 
+                      :c1 => :globally, :c2 => :nonidentifiable, :p => :nonidentifiable, :d => :globally])
+    @test sym_dict(li_2) == Dict([:X => 0, :C => 1, :V => 1, :k => 0, :c1 => 1, :c2 => 0, :p => 0, :d => 1])
+    @test issetequal(ifs_2, [d, c1, k*p, c1*p + c2*p])
+end
+
 # Checks that identifiability functions cannot be applied to non-complete `ReactionSystems`s.
 let 
     # Create model.

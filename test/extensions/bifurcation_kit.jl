@@ -180,6 +180,29 @@ end
 
 ### Other Tests ###
 
+# Checks that bifurcation diagrams can be computed for coupled CRN/DAE systems.
+let
+    # Prepares the model (production/degradation of X, with equations for volume and X concentration).
+    rs = @reaction_network begin
+        @parameters k
+        @variables C(t)
+        @equations begin
+            D(V) ~ k*X - V
+            C ~ X/V
+        end
+        (p/V,d/V), 0 <--> X
+    end
+    u0_guess = [:X => 1.0, :V => 1.0, :C => 1.0]
+    p_start = [:p => 2.0, :d => 1.0, :k => 5.0]
+
+    # Computes bifurcation diagram.
+    bprob = BifurcationProblem(rs, u0_guess, p_start, :p; plot_var = :C)
+    p_span = (0.1, 6.0)
+    opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
+    bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside = true)
+    @test all(getfield.(bif_dia.γ.branch, :x) .≈ 0.2)
+end
+
 # Checks that `BifurcationProblem`s cannot be generated from non-complete `ReactionSystems`s.
 let 
     # Create model.

@@ -17,7 +17,7 @@ $\lambda$. For now we'll assume the cell can grow indefinitely. We'll also keep
 track of one protein $P(t)$, which is produced at a rate proportional $V$ and
 can be degraded.
 
-## [Coupling ODE constraints via extending a system](@id constraint_equations_coupling_constratins)
+## [Coupling ODE constraints via extending a system](@id constraint_equations_coupling_constraints)
 
 There are several ways we can create our Catalyst model with the two reactions
 and ODE for $V(t)$. One approach is to use compositional modeling, create

@@ -309,6 +309,12 @@ function isbcbalanced(rx::Reaction)
     true
 end
 
+### Reaction Acessor Functions ###
+
+# Overwrites functions in ModelingToolkit to give the correct input.
+ModelingToolkit.is_diff_equation(rx::Reaction) = false
+ModelingToolkit.is_alg_equation(rx::Reaction) = false
+
 ################################## Reaction Complexes ####################################
 
 """
@@ -558,7 +564,7 @@ struct ReactionSystem{V <: NetworkProperties} <:
             check_parameters(ps, iv)
             nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
             !isempty(nonrx_eqs) && check_equations(nonrx_eqs, iv)
-            check_equations(equations(cevs), iv)
+            !isempty(cevs) && check_equations(equations(cevs), iv)
         end
 
         if isempty(sivs) && (checks == true || (checks & MT.CheckUnits) > 0)
@@ -617,70 +623,76 @@ function ReactionSystem(eqs, iv, unknowns, ps;
                         continuous_events = nothing,
                         discrete_events = nothing,
                         metadata = nothing)
-                        
+               
+    # Error checks
     name === nothing &&
         throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     sysnames = nameof.(systems)
-    (length(unique(sysnames)) == length(sysnames)) ||
-        throw(ArgumentError("System names must be unique."))
+    (length(unique(sysnames)) == length(sysnames)) || throw(ArgumentError("System names must be unique."))
 
+    # Handle defaults values provided via optional arguments.
     if !(isempty(default_u0) && isempty(default_p))
-        Base.depwarn("`default_u0` and `default_p` are deprecated. Use `defaults` instead.",
-                     :ReactionSystem, force = true)
+        Base.depwarn("`default_u0` and `default_p` are deprecated. Use `defaults` instead.", :ReactionSystem, force = true)
     end
     defaults = MT.todict(defaults)
     defaults = Dict{Any, Any}(value(k) => value(v) for (k, v) in pairs(defaults))
 
+    # Extracts independent variables (iv and sivs), dependent variables (species and variables)
+    # and parameters. Sorts so that species comes before variables in unknowns vector.
     iv′ = value(iv)
     sivs′ = if spatial_ivs === nothing
         Vector{typeof(iv′)}()
     else
         value.(MT.scalarize(spatial_ivs))
     end
-    unknowns′ = sort!(value.(MT.scalarize(unknowns)), by = !isspecies) # species come first
+    unknowns′ = sort!(value.(MT.scalarize(unknowns)), by = !isspecies) 
     spcs = filter(isspecies, unknowns′)
     ps′ = value.(MT.scalarize(ps))
 
+    # Checks that no (by Catalyst) forbidden symbols are used.
     allsyms = Iterators.flatten((ps′, unknowns′))
-    all(sym -> getname(sym) ∉ forbidden_symbols_error, allsyms) ||
+    if !all(sym -> getname(sym) ∉ forbidden_symbols_error, allsyms)
         error("Catalyst reserves the symbols $forbidden_symbols_error for internal use. Please do not use these symbols as parameters or unknowns/species.")
+    end
 
-    # sort Reactions before Equations
+    # Handles reactions and equations. Sorts so that reactions are before equaions in the equations vector.
     eqs′ = CatalystEqType[eq for eq in eqs]
     sort!(eqs′; by = eqsortby)
     rxs = Reaction[rx for rx in eqs if rx isa Reaction]
 
+    # Additional error checks.
     if any(MT.isparameter, unknowns′)
         psts = filter(MT.isparameter, unknowns′)
         throw(ArgumentError("Found one or more parameters among the unknowns; this is not allowed. Move: $psts to be parameters."))
     end
-
     if any(isconstant, unknowns′)
         csts = filter(isconstant, unknowns′)
         throw(ArgumentError("Found one or more constant species among the unknowns; this is not allowed. Move: $csts to be parameters."))
     end
-
-    # if there are BC species, check they are balanced in their reactions
+    # If there are BC species, check they are balanced in their reactions.
     if balanced_bc_check && any(isbc, unknowns′)
         for rx in eqs
-            if rx isa Reaction
-                isbcbalanced(rx) ||
-                    throw(ErrorException("BC species must be balanced, appearing as a substrate and product with the same stoichiometry. Please fix reaction: $rx"))
+            if (rx isa Reaction) && !isbcbalanced(rx)
+                throw(ErrorException("BC species must be balanced, appearing as a substrate and product with the same stoichiometry. Please fix reaction: $rx"))
             end
         end
     end
 
+    # Adds all unknowns/parameters to the `var_to_name` vector.
+    # Adds their (potential) default values to the defaults vector.
     var_to_name = Dict()
     MT.process_variables!(var_to_name, defaults, unknowns′)
     MT.process_variables!(var_to_name, defaults, ps′)
     MT.collect_var_to_name!(var_to_name, eq.lhs for eq in observed)
-
+    #
+    # Computes network properties.
     nps = if networkproperties === nothing
         NetworkProperties{Int, get_speciestype(iv′, unknowns′, systems)}()
     else
         networkproperties
     end
 
+    # Creates the continious and discrete callbacks.
     ccallbacks = MT.SymbolicContinuousCallbacks(continuous_events)
     dcallbacks = MT.SymbolicDiscreteCallbacks(discrete_events)
 
@@ -694,25 +706,44 @@ function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
 end
 
 # search the symbolic expression for parameters or unknowns
-# and save in ps and sts respectively. vars is used to cache results
-function findvars!(ps, sts, exprtosearch, ivs, vars)
+# and save in ps and us respectively. vars is used to cache results
+function findvars!(ps, us, exprtosearch, ivs, vars)
     MT.get_variables!(vars, exprtosearch)
     for var in vars
         (var ∈ ivs) && continue
         if MT.isparameter(var)
             push!(ps, var)
         else
-            push!(sts, var)
+            push!(us, var)
         end
     end
     empty!(vars)
 end
+# Special dispatch for equations, applied `findvars!` to left-hand and right-hand sides.
+function findvars!(ps, us, eq_to_search::Equation, ivs, vars)
+    findvars!(ps, us, eq_to_search.lhs, ivs, vars)
+    findvars!(ps, us, eq_to_search.rhs, ivs, vars)
+end
+# Special dispatch for Vectors (applies it to each vector element).
+function findvars!(ps, us, exprs_to_search::Vector, ivs, vars)
+    foreach(exprtosearch -> findvars!(ps, us, exprtosearch, ivs, vars), exprs_to_search)
+end
 
-# Only used internally by the @reaction_network macro. Permits giving an initial order to
-# the parameters, and then adds additional ones found in the reaction. Name could be
-# changed.
-function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, sts_in, ps_in;
-                                      spatial_ivs = nothing, kwargs...)
+# Called internally (whether DSL-based or programmtic model creation is used). 
+# Creates a sorted reactions + equations vector, also ensuring reaction is first in this vector.
+# Extracts potential species, variables, and parameters from the input (if not provided as part of 
+# the model creation) and creates the corresponding vectors. 
+# While species are ordered before variables in the unknowns vector, this ordering is not imposed here,
+# but carried out at a later stage.
+function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in; spatial_ivs = nothing, 
+                                      continuous_events = [], discrete_events = [], observed = [], kwargs...)
+
+    # Filters away any potential obervables from `states` and `spcs`.
+    obs_vars = [obs_eq.lhs for obs_eq in observed]
+    us_in = filter(u -> !any(isequal(u, obs_var) for obs_var in obs_vars), us_in)
+    
+    # Creates a combined iv vector (iv and sivs). This is used later in the function (so that 
+    # independent variables can be exluded when encountered quantities are added to `us` and `ps`).
     t = value(iv)
     ivs = Set([t])
     if (spatial_ivs !== nothing)
@@ -720,50 +751,76 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, sts_in, ps_in;
             push!(ivs, value(siv))
         end
     end
-    sts = OrderedSet{eltype(sts_in)}(sts_in)
+
+    # Initialises the new unknowns and parameter vectors.
+    # Preallocates the `vars` set, which is used by `findvars!`
+    us = OrderedSet{eltype(us_in)}(us_in)
     ps = OrderedSet{eltype(ps_in)}(ps_in)
     vars = OrderedSet()
 
+    # Extracts the reactions and equations from the combined reactions + equations input vector.
     all(eq -> eq isa Union{Reaction, Equation}, rxs_and_eqs)
     rxs = Reaction[eq for eq in rxs_and_eqs if eq isa Reaction]
     eqs = Equation[eq for eq in rxs_and_eqs if eq isa Equation]
 
-    # add species / parameters that are substrates / products first
-    for rx in rxs, reactants in (rx.substrates, rx.products)
-        for spec in reactants
-            MT.isparameter(spec) ? push!(ps, spec) : push!(sts, spec)
-        end
-    end
-
+    # Loops through all reactions, adding encountered quantities to the unknown and parameter vectors.
+    # Starts by looping through substrates + products only (so these are added to the vector first).
+    # Next, the otehr components of reactions (e.g. rates and stoichiometries) are added.
     for rx in rxs
-        findvars!(ps, sts, rx.rate, ivs, vars)
-        for s in rx.substoich
-            (s isa Symbolic) && findvars!(ps, sts, s, ivs, vars)
-        end
-        for p in rx.prodstoich
-            (p isa Symbolic) && findvars!(ps, sts, p, ivs, vars)
+        for reactants in (rx.substrates, rx.products), spec in reactants
+            MT.isparameter(spec) ? push!(ps, spec) : push!(us, spec)
         end
     end
+    for rx in rxs
+        # Adds all quantitites encountered in the reaction's rate.
+        findvars!(ps, us, rx.rate, ivs, vars)
 
-    stsv = collect(sts)
-    psv = collect(ps)
+        # Extracts all quantitites encountered within stoichiometries.
+        for stoichiometry in (rx.substoich, rx.prodstoich), sym in stoichiometry
+            (sym isa Symbolic) && findvars!(ps, us, sym, ivs, vars)
+        end
 
+        # Will appear here: add stuff from nosie scaling.
+    end
+
+    # Extracts any species, variables, and parameters that occur in (non-reaction) equations.
+    # Creates the new reactions + equations vector, `fulleqs` (sorted reactions first, equations next).
     if !isempty(eqs)
         osys = ODESystem(eqs, iv; name = gensym())
         fulleqs = CatalystEqType[rxs; equations(osys)]
-        union!(stsv, unknowns(osys))
-        union!(psv, parameters(osys))
+        union!(us, unknowns(osys))
+        union!(ps, parameters(osys))
     else
         fulleqs = rxs
-    end
+    end 
 
-    ReactionSystem(fulleqs, t, stsv, psv; spatial_ivs, kwargs...)
+    # Loops through all events, adding encountered quantities to the unknwon and parameter vectors.
+    find_event_vars!(ps, us, continuous_events, ivs, vars)      
+    find_event_vars!(ps, us, discrete_events, ivs, vars)  
+
+    # Converts the found unknowns and parameters to vectors.
+    usv = collect(us)
+    psv = collect(ps)
+
+    # Passes the processed input into the next `ReactionSystem` call.    
+    ReactionSystem(fulleqs, t, usv, psv; spatial_ivs, continuous_events, discrete_events, observed, kwargs...)
 end
 
 function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
 
+# Loops through all events in an supplied event vector, adding all unknowns and parameters found in
+# its condition and affect functions to their respective vectors (`ps` and `us`).
+function find_event_vars!(ps, us, events::Vector, ivs, vars)
+    foreach(event -> find_event_vars!(ps, us, event, ivs, vars), events)
+end
+# For a single event, adds quantitites from its condition and affect expression(s) to `ps` and `us`.
+# Applies `findvars!` to the event's condition (`event[1])` and affec (`event[2]`).
+function find_event_vars!(ps, us, event, ivs, vars)
+    findvars!(ps, us, event[1], ivs, vars)
+    findvars!(ps, us, event[2], ivs, vars)
+end
 
 """
     remake_ReactionSystem_internal(rs::ReactionSystem; 
@@ -927,7 +984,7 @@ function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
     sts = get_unknowns(rs)
     nps = get_networkproperties(rs)
     indepsts = if remove_conserved
-        filter(s -> (s ∈ nps.indepspecs) && (!isbc(s)), sts)
+        filter(s -> ((s ∈ nps.indepspecs) || (!isspecies(s))) && (!isbc(s)), sts)
     else
         filter(s -> !isbc(s), sts)
     end
@@ -1507,9 +1564,9 @@ function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
                          include_zero_odes)
-    eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
+    eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
-    ODESystem(eqs, get_iv(fullrs), sts, ps;
+    ODESystem(eqs, get_iv(fullrs), us, ps;
               observed = obs,
               name,
               defaults = _merge(defaults,defs),
@@ -1540,7 +1597,7 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                       include_zero_odes = true, remove_conserved = false, checks = false,
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
-                      kwargs...)
+                      all_differentials_permitted = false, kwargs...)
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
     fullrs = Catalyst.flatten(rs)
@@ -1548,15 +1605,59 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
     eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
                          as_odes = false, include_zero_odes)
-    error_if_constraint_odes(NonlinearSystem, fullrs)
-    eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
+    eqs, us, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
 
-    NonlinearSystem(eqs, sts, ps;
+    # Throws a warning if there are differential equations in non-standard format.
+    # Next, sets all differential terms to `0`.
+    all_differentials_permitted || nonlinear_convert_differentials_check(rs)
+    eqs = [remove_diffs(eq.lhs) ~ remove_diffs(eq.rhs) for eq in eqs]
+
+
+    NonlinearSystem(eqs, us, ps;
                     name,
                     observed = obs,
                     defaults = _merge(defaults,defs),
                     checks,
                     kwargs...)
+end
+
+# Finds and differentials in an expression, and sets these to 0.
+function remove_diffs(expr)
+    if Symbolics._occursin(Symbolics.is_derivative, expr)
+        return Symbolics.replace(expr, diff_2_zero)
+    else
+        return expr
+    end
+end
+diff_2_zero(expr) = (Symbolics.is_derivative(expr) ? 0.0 : expr)
+
+# Ideally, when `ReactionSystem`s are converted to `NonlinearSystem`s, any coupled ODEs should be 
+# on the form D(X) ~ ..., where lhs is the time derivative w.r.t. a single variable, and the rhs
+# does not contain any differentials. If this is not teh case, we throw a warning to let the user
+# know that they should be careful.
+function nonlinear_convert_differentials_check(rs::ReactionSystem)
+    for eq in filter(is_diff_equation, equations(rs))
+        # For each differential equation, checks in order: 
+        # If there is a differential on the right hand side.
+        # If the lhs is not on the form D(...).
+        # If the lhs upper level function is not a differential w.r.t. time.
+        # If the contenct of the differential is not a variable (and nothing more).
+        # If either of this is a case, throws the warning.
+        if Symbolics._occursin(Symbolics.is_derivative, eq.rhs) ||
+                !Symbolics.istree(eq.lhs) ||
+                !isequal(Symbolics.operation(eq.lhs), Differential(get_iv(rs))) || 
+                (length(arguments(eq.lhs)) != 1) ||
+                !any(isequal(arguments(eq.lhs)[1]), nonspecies(rs))
+            error("You are attempting to convert a `ReactionSystem` coupled with differential equations to a `NonlinearSystem`. However, some of these differentials are not of the form `D(x) ~ ...` where: 
+                    (1) The left-hand side is a differential of a single variable with respect to the time independent variable, and
+                    (2) The right-hand side does not contain any differentials.
+                This is generally not permitted.
+                
+                If you still would like to perform this conversions, please use the `all_differentials_permitted = true` option. In this case, all differential will be set to `0`. 
+                However, it is recommended to proceed with caution to ensure that the produced nonlinear equation makes sense for you intended application."
+                )
+        end
+    end
 end
 
 """
@@ -1587,20 +1688,19 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     spatial_convert_err(rs::ReactionSystem, SDESystem)
 
     flatrs = Catalyst.flatten(rs)
-    error_if_constraints(SDESystem, flatrs)
 
     remove_conserved && conservationlaws(flatrs)
     ists, ispcs = get_indep_sts(flatrs, remove_conserved)
     eqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws, include_zero_odes,
                          remove_conserved)
     noiseeqs = assemble_diffusion(flatrs, ists, ispcs; combinatoric_ratelaws, remove_conserved)
-    eqs, sts, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
+    eqs, us, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
 
     if any(isbc, get_unknowns(flatrs))
         @info "Boundary condition species detected. As constraint equations are not currently supported when converting to SDESystems, the resulting system will be undetermined. Consider using constant species instead."
     end
 
-    SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps;
+    SDESystem(eqs, noiseeqs, get_iv(flatrs), us, ps;
               observed = obs,
               name,
               defaults = defs,
@@ -1669,12 +1769,21 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
                                check_length = false, name = nameof(rs),
                                combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                                include_zero_odes = true, remove_conserved = false,
-                               checks = false, kwargs...)
+                               checks = false, structural_simplify = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
                    remove_conserved)
-    osys = complete(osys)
+
+    # Handles potential differential algebraic equations (which requires `structural_simplify`).
+    if structural_simplify 
+        (osys = MT.structural_simplify(osys))
+    elseif has_alg_equations(rs)
+        error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
+    else
+        osys = complete(osys)
+    end
+    
     return ODEProblem(osys, u0map, tspan, pmap, args...; check_length, kwargs...)
 end
 
@@ -1684,13 +1793,14 @@ function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
                                      name = nameof(rs), include_zero_odes = true,
                                      combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                                      remove_conserved = false, checks = false,
-                                     check_length = false, kwargs...)
+                                     check_length = false, all_differentials_permitted = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, include_zero_odes,
-                    checks, remove_conserved)
+                    checks, all_differentials_permitted, remove_conserved)
     nlsys = complete(nlsys)
-    return NonlinearProblem(nlsys, u0map, pmap, args...; check_length, kwargs...)
+    return NonlinearProblem(nlsys, u0map, pmap, args...; check_length, 
+                            kwargs...)
 end
 
 # SDEProblem from AbstractReactionNetwork
@@ -1698,13 +1808,22 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
                                p = DiffEqBase.NullParameters(), args...;
                                name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                                include_zero_odes = true, checks = false, check_length = false,
-                               remove_conserved = false, kwargs...)
+                               remove_conserved = false, structural_simplify = false, kwargs...)
 
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     sde_sys = convert(SDESystem, rs; name, combinatoric_ratelaws,
                       include_zero_odes, checks, remove_conserved)
-    sde_sys = complete(sde_sys)
+
+    # Handles potential differential algebraic equations (which requires `structural_simplify`).
+    if structural_simplify 
+        (sde_sys = MT.structural_simplify(sde_sys))
+    elseif has_alg_equations(rs)
+        error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
+    else
+        sde_sys = complete(sde_sys)
+    end
+    
     p_matrix = zeros(length(get_unknowns(sde_sys)), numreactions(rs))
     return SDEProblem(sde_sys, u0map, tspan, pmap, args...; check_length,
                       noise_rate_prototype = p_matrix, kwargs...)
@@ -1739,12 +1858,21 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
                                        check_length = false, name = nameof(rs),
                                        combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
                                        remove_conserved = false, include_zero_odes = true,
-                                       checks = false, kwargs...)
+                                       checks = false, structural_simplify = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
                    remove_conserved)
-    osys = complete(osys)
+
+    # Handles potential differential algebraic equations (which requires `structural_simplify`).
+    if structural_simplify 
+        (osys = MT.structural_simplify(osys))
+    elseif has_alg_equations(rs)
+        error("The input ReactionSystem has algebraic equations. This requires setting `structural_simplify=true` within `ODEProblem` call.")
+    else
+        osys = complete(osys)
+    end
+
     return SteadyStateProblem(osys, u0map, pmap, args...; check_length, kwargs...)
 end
 
