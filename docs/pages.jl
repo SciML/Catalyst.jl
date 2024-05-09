@@ -10,7 +10,7 @@ pages = Any[
         # DSL - Advanced
         "02_model_creation/03_programmatic_CRN_construction.md",
         "02_model_creation/04_constraint_equations.md",
-        # Events.
+        "02_model_creation/05_events_and_callbacks.md",
         "02_model_creation/06_compositional_modeling.md",
         # Distributed parameters, rates, and initial conditions.
         # Loading and writing models to files.
