@@ -116,38 +116,28 @@ Some additional considerations:
 - A discussion of various ways to represent species and parameters when designating their values can be found [here](@ref ref). 
 
 
-### [Providing solver options](@id simulation_intro_solver_options)
-While good defaults are generally selected, OrdinaryDiffEq enables the user to customise simulations through a long range of options that can be provided to the `solve` function. This includes specifying a solver algorithm, which can be provided as a second argument to `solve` (if none is provided, a a suitable choice is automatically made). E.g. here we specify that the `Rodas5P` method should be used:
+### [Designating solvers and solver options](@id simulation_intro_solver_options)
+While good defaults are generally selected, OrdinaryDiffEq enables the user to customise simulations through a long range of options that can be provided to the `solve` function. This includes specifying a [solver algorithm](https://en.wikipedia.org/wiki/Numerical_methods_for_ordinary_differential_equations), which can be provided as a second argument to `solve` (if none is provided, a a suitable choice is automatically made). E.g. here we specify that the `Rodas5P` method should be used:
 ```@example simulation_intro_ode
 sol = solve(oprob, Rodas5P())
 nothing # hide
 ```
-A full list of available solvers is provided [here](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/), and an in-depth discussion on optimal solver choice [here](@ref ref).
+A full list of available solvers is provided [here](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/), and a discussion on optimal solver choice [here](@ref ref).
 
-Additional arguments can be provided as keyword arguments. E.g. the `adaptive` arguments determine whether adaptive time-stepping is used (for algorithms that permit this). This defaults to `true`, but can be disabled using
+Additional options can be provided as keyword arguments. E.g. the `adaptive` arguments determine whether adaptive time-stepping is used (for algorithms that permit this). This defaults to `true`, but can be disabled using
 ```@example simulation_intro_ode
 sol = solve(oprob; adaptive = false)
 nothing # hide
 ```
 
 Here follows a list of solver options which might be of interest to the user.
-- `adaptive`: Toggles adaptive time stepping for appropriate methods. Default to `true`.
-- `dt`: For non-adaptive simulations, sets the step size (also sets the initial step size for non-adaptive methods).
-- `saveat`: Determines the time interval at which the simulation is saved. E.g. for `saveat = 2.0` the simulation is saved every second time unit. If not given, the solution is saved after each time step.
+- `adaptive`: Toggles adaptive time stepping for valid methods. Default to `true`.
+- `dt`: For non-adaptive simulations, sets the step size (also sets the initial step size for adaptive methods).
+- `saveat`: Determines the time points at which the simulation is saved. E.g. for `saveat = 2.0` the simulation is saved every second time unit. If not given, the solution is saved after each time step.
 - `save_idxs`: Provides a vector of species which values should be saved during the simulation. E.g. for `save_idxs =  [:X1]`, only the value of species $X1$ is saved. 
 - `maxiters`: The maximum number of time steps of the simulation. If this number is reached, the simulation is terminated.
 - `seed`: Sets a seed for stochastic simulations. Stochastic simulations with the same seed generate identical results.
 A full list of solver options can be found [here](https://docs.sciml.ai/DiffEqDocs/stable/basics/common_solver_opts/).
-
-### [Plotting options](@id simulation_intro_plot_options)
-TODO - MOVE TO DIFFERENT SECTION
-The Plots package provides a wide range of *plot attributes* to customise plots. E.g. to plot a solution with a thicker, dashed line, set the colours to green (for $X$) and purple (for $Y$), and also set the xguide to "Time", we use:
-```@example simulation_intr_1
-plot(sol; lw = 6, linestyle = :dash, color = [:green :purple], xguide = "Time")
-```
-Here we note that, when providing different arguments to different trajectories (i.e. here designating different colours for $X$ and $Y$), we use vector notation but without `,` (in practice, this creates a matrix, but where the length of one dimension is one).
-
-Plot attributes are described in more detail [here](https://docs.juliaplots.org/latest/attributes/). A full list of plot attributes is provided [in](https://docs.juliaplots.org/latest/generated/attributes_series/) [these](https://docs.juliaplots.org/latest/generated/attributes_plot/) [four](https://docs.juliaplots.org/latest/generated/attributes_subplot/) [links](https://docs.juliaplots.org/latest/generated/attributes_axis/).
 
 ## [Performing SDE simulations](@id simulation_intro_SDEs)
 Catalyst uses the [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) package to perform SDE simulations. This section provides a brief introduction, with [StochasticDiffEq's documentation](https://docs.sciml.ai/StochasticDiffEq/stable/) providing a more extensive description. A dedicated section giving advice on how to optimise SDE simulation performance can be found [here](@ref ref). By default, Catalyst generates SDEs from CRN models using the chemical Langevin equation.
@@ -167,28 +157,26 @@ sol = solve(sprob, STrapezoid())
 sol = solve(sprob, STrapezoid(); seed = 123) # hide
 plot(sol)
 ```
-we can see that while the simulation exhibits some fluctuations, it is very similar to the deterministic one. This suggests that the assumption of the reaction rate equations holds for this example. However, if we reduce species amounts (using [`remake`](@ref ref)), thereby also increasing the relative amount of noise, we encounter a problem when the model is re-simulated:
+we can see that while the simulation exhibits some fluctuations, it is very similar to the deterministic one. This suggests that the assumption of the reaction rate equations holds for this example. However, if we reduce species amounts (using [`remake`](@ref ref)), thereby also increasing the relative amount of noise, we encounter a problem when the model is simulated:
 ```@example simulation_intro_sde
 sprob = remake(sprob; u0 = [:X1 => 0.33, :X2 => 0.66])
 sol = solve(sprob, STrapezoid())
 sol = solve(sprob, STrapezoid(); seed = 1234567) # hide
 plot(sol)
 ```
-Here, we receive a the simulation is terminated before the designated final time point, and that a warning suggesting that an instability might have been encountered. What has happened here is that the stochastic fluctuations have grown too large for the adaptive time-stepper to handle. This can be remedied by disabling adaptive time-stepping and setting a low `dt`:
+Here, we receive a warning that the simulation was terminated before the designated final time point, also suggesting that an instability might have been encountered. What has happened here is that the stochastic fluctuations have grown too large for the adaptive time-stepper to handle. This can be remedied by disabling adaptive time-stepping and setting a low `dt`:
 ```@example simulation_intro_sde
 sol = solve(sprob, STrapezoid(); adaptive = false, dt = 0.001)
 sol = solve(sprob, STrapezoid(); seed = 1234567, adaptive = false, dt = 0.001) # hide
 plot(sol)
 ```
-However, SDE solver instability (combined with the fact that the fluctuations push the solution to negative values!) suggests that species concentrations (for this combination of model, initial conditions, and parameter values)  are too low for the CLE's approximating assumptions to hold. Instead, jump simulations should be used.
+However, SDE solver instability (combined with the fact that the fluctuations push the solution to negative values!) suggests that species concentrations (for this combination of model, initial conditions, and parameter values) are too low for the CLE's approximating assumptions to hold. Instead, [jump simulations](@ref simulation_intro_jumps) should be used.
 
 !!! note
     Unlike for ODE and jump simulations, there are no good heuristics for automatically selecting suitable SDE solvers. Hence, for SDE simulations a solver must be provided. `STrapezoid` will work for a large number of cases. When this is not the case, however, please check the list of [available SDE solvers](https://docs.sciml.ai/DiffEqDocs/stable/solvers/sde_solve/) for a suitable alternative (making sure to select one compatible with non-diagonal noise and the [Ito interpretation]https://en.wikipedia.org/wiki/It%C3%B4_calculus).
 
 ### [Scaling the noise in the chemical Langevin equation](@id simulation_intro_SDEs_noise_saling)
-When using the CLE to generate SDEs from a CRN, it can sometimes be desirable to
-scale the magnitude of the noise. This can be done by introducing a *noise
-scaling term*, with each noise term generated by the CLE being multiplied with thus term. A noise scaling term can be set using the `@default_noise_scaling` option:
+When using the CLE to generate SDEs from a CRN, it can sometimes be desirable to scale the magnitude of the noise. This can be done by introducing a *noise scaling term*, with each noise term generated by the CLE being multiplied with thus term. A noise scaling term can be set using the `@default_noise_scaling` option:
 ```@example simulation_intro_sde
 two_state_model = @reaction_network begin
   @default_noise_scaling 0.1
@@ -234,13 +222,13 @@ nothing # hide
 ```
 If the `@default_noise_scaling` option is used, that term is only applied to reactions *without `noise_scaling` metadata*.
 
-While the `@default_noise_scaling` option is unavailable for [programmatically created models](@ref ref), the `remake_reactionsystem` function can be used to achieve a similar effect.
+While the `@default_noise_scaling` option is unavailable for [programmatically created models](@ref ref), the [`remake_reactionsystem`](@ref) function can be used to achieve a similar effect.
 
 ## [Performing jump simulations using stochastic chemical kinetics](@id simulation_intro_jumps)
 
 Catalyst uses the [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) package to perform jump simulations. This section provides a brief introduction, with [JumpProcesses's documentation](https://docs.sciml.ai/JumpProcesses/stable/) providing a more extensive description. A dedicated section giving advice on how to optimise jump simulation performance can be found [here](@ref ref).
 
-Jump simulations are performed using so-called `JumpProblem`s. Unlike ODEs and SDEs (for which the corresponding problem types can be created directly) Jump simulations require first creating an intermediary `DiscreteProblem`. In this example, we first declare our two-state model and its initial conditions, time span, and parameter values.
+Jump simulations are performed using so-called `JumpProblem`s. Unlike ODEs and SDEs (for which the corresponding problem types can be created directly), jump simulations require first creating an intermediary `DiscreteProblem`. In this example, we first declare our two-state model and its initial conditions, time span, and parameter values.
 ```@example simulation_intro_jumps
 using Catalyst
 two_state_model = @reaction_network begin
@@ -252,7 +240,7 @@ ps = [:k1 => 2.0, :k2 => 5.0]
 nothing # hide
 ```
 !!! note
-    Since jump simulations typically simulate the integer copy numbers of each species present in the system, we designate our initial conditions for jump simulations as integers. Decimal-numbered initial conditions (and thus jump simulations) is, however, also possible. While ODE and SDE simulations accepts integer initial conditions, these will be converted to decimal numbers.
+    Since jump simulations typically simulate the integer copy numbers of each species present in the system, we designate our initial conditions for jump simulations as integers. Decimal-numbered initial conditions (and thus jump simulations) are, however, also possible. While ODE and SDE simulations accepts integer initial conditions, these will be converted to decimal numbers.
 
 Next, we bundle these into a `DiscreteProblem` (similarly to how `ODEProblem`s and `SDEProblem`s are created):
 ```@example simulation_intro_jumps
@@ -283,7 +271,7 @@ Several different aggregators are available (a full list is provided [here](http
 jprob = JumpProblem(brusselator, dprob, Direct())
 nothing # hide
 ```
-Especially for large systems, the choice of aggregator is relevant for performant simulations. A guide for aggregator selection is provided [here](@ref ref).
+Especially for large systems, the choice of aggregator is relevant to simulation performance. A guide for aggregator selection is provided [here](@ref ref).
 
 Next, a simulation method can be provided (like for ODEs and SDEs) as the second argument to `solve`. Primarily two alternatives are available, `SSAStepper` and `FunctionMap` (other alternatives are only relevant when jump simulations are combined with ODEs/SDEs, which is described in more detail in JumpProcesses's documentation). Generally, `FunctionMap` is used when at least one reaction rate depends on time (and `SSAStepper` otherwise). E.g. we can designate that the `FunctionMap` method should be used through:
 ```@example simulation_intro_jumps
@@ -299,4 +287,4 @@ circadian_model = @reaction_network begin
     d, P --> 0
 end
 ```
-This type of model will generate so called [*variable rate jumps*](@ref ref). Simulation of such model is non-trivial (and Catalyst currently lacks a good interface for this). A detailed description of how to simulate models with time-dependant rates can be found [here](https://docs.sciml.ai/JumpProcesses/stable/tutorials/simple_poisson_process/#VariableRateJumps-for-processes-that-are-not-constant-between-jumps).
+This type of model will generate so called [*variable rate jumps*](@ref ref). Simulation of such model is non-trivial (and Catalyst currently lacks a good interface for this). A detailed description of how to carry out jump simulations for models with time-dependant rates can be found [here](https://docs.sciml.ai/JumpProcesses/stable/tutorials/simple_poisson_process/#VariableRateJumps-for-processes-that-are-not-constant-between-jumps).
