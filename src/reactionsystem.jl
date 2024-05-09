@@ -788,10 +788,6 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in; spa
     if !isempty(eqs)
         osys = ODESystem(eqs, iv; name = gensym())
         fulleqs = CatalystEqType[rxs; equations(osys)]
-        println()
-        println("start")
-        println(us)
-        println(unknowns(osys))
         union!(us, unknowns(osys))
         union!(ps, parameters(osys))
     else
