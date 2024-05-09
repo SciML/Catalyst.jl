@@ -29,6 +29,7 @@ pages = Any[
         "model_simulation/simulation_structure_interfacing.md",
         "model_simulation/TOBEREMOVED_advanced_simulations.md",# Monte Carlo/Ensemble simulations.        
         # Stochastic simulation statistical analysis.
+        "04_model_simulation/06_ode_simulation_performance.md",
         # ODE Performance considerations/advice.
         # SDE Performance considerations/advice.
         # Jump Performance considerations/advice.

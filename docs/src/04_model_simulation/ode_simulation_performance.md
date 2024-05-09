@@ -289,7 +289,8 @@ oprob = ODEProblem(mm_model, u0, tspan, p)
 nothing # hide
 ```
 When we declare our `prob_func` and `EnsembleProblem` we need to ensure that the updated `ODEProblem` uses `Float32`:
-```@example ode_simulation_performance_5function prob_func(prob, i, repeat) 
+```@example ode_simulation_performance_5
+function prob_func(prob, i, repeat) 
     return remake(prob; p = [:kP => 0.0001f0*i])
 end
 eprob = EnsembleProblem(oprob; prob_func = prob_func)
