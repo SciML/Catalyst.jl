@@ -764,12 +764,14 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in; spa
     eqs = Equation[eq for eq in rxs_and_eqs if eq isa Equation]
 
     # Loops through all reactions, adding encountered quantities to the unknown and parameter vectors.
+    # Starts by looping through substrates + products only (so these are added to the vector first).
+    # Next, the otehr components of reactions (e.g. rates and stoichiometries) are added.
     for rx in rxs
-        # Loops through all reaction substrates and products, extracting these.
         for reactants in (rx.substrates, rx.products), spec in reactants
             MT.isparameter(spec) ? push!(ps, spec) : push!(us, spec)
         end
-
+    end
+    for rx in rxs
         # Adds all quantitites encountered in the reaction's rate.
         findvars!(ps, us, rx.rate, ivs, vars)
 
