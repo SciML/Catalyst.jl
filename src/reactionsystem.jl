@@ -684,7 +684,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     MT.process_variables!(var_to_name, defaults, unknowns′)
     MT.process_variables!(var_to_name, defaults, ps′)
     MT.collect_var_to_name!(var_to_name, eq.lhs for eq in observed)
-
+    #
     # Computes network properties.
     nps = if networkproperties === nothing
         NetworkProperties{Int, get_speciestype(iv′, unknowns′, systems)}()
@@ -803,7 +803,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in; spa
     psv = collect(ps)
 
     # Passes the processed input into the next `ReactionSystem` call.    
-    ReactionSystem(fulleqs, t, usv, psv; spatial_ivs, continuous_events, discrete_events, kwargs...)
+    ReactionSystem(fulleqs, t, usv, psv; spatial_ivs, continuous_events, discrete_events, observed, kwargs...)
 end
 
 function ReactionSystem(iv; kwargs...)
