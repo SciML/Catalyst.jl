@@ -1653,28 +1653,11 @@ function validate(rs::ReactionSystem, info::String = "")
     validated
 end
 
-function iscomplexbalanced(rs::ReactionSystem, conc::Vector)
-    sm = speciesmap(rs)
-    cm = reactioncomplexmap(rs)
-    complexes, incidencemat = reactioncomplexes(rs)
-    complexbalanced = true
-
-    for c in complexes
-        if (sum([massactionrate(rs, rxn..., conc) for rxn in cm[c]]) != 0)
-            return false
-        end
-    end
-    complexbalanced
-end
-
 """
     complexbalanced(rs::ReactionSystem, rates::Vector)
 
 Constructively compute whether a network will have complex-balanced equilibrium
-solutions, following the method in this paper. 
-
-Notes:
-- Does not check subsystems, constraint equations, or non-species variables.
+solutions, following the method in [this paper](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). 
 """
 
 using MetaGraphs, Combinatorics, LinearAlgebra
@@ -1729,6 +1712,11 @@ function complexbalanced(rs::ReactionSystem, rates::Vector)
     end
 end
 
+"""
+    rateweightedgraph(rs::ReactionSystem, rates::Vector)
+
+Generate an annotated reaction complex graph of a reaction system, where the nodes are annotated with the reaction complex they correspond to and the edges are annotated with the reaction they correspond to and the rate of the reaction. 
+"""
 function rateweightedgraph(rs::ReactionSystem, rates::Vector) 
     if length(rates) != numparams(rs) 
         error("The number of reaction rates must be equal to the number of parameters")
