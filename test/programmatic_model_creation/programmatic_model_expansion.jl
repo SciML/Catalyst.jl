@@ -32,34 +32,6 @@ let
     @test length(get_unknowns(empty_network_1)) == 0
     @test length(ps) == 0
 end
-let
-    empty_network_2 = @reaction_network
-    @parameters p1 p2 p3 p4 p5
-    addparam!(empty_network_2, p1)
-    addparam!(empty_network_2, p2)
-    addparam!(empty_network_2, p3)
-    addparam!(empty_network_2, p4)
-    addparam!(empty_network_2, p5)
-    eqs, iv, ps, name, systems = unpacksys(empty_network_2)
-    @test length(eqs) == 0
-    @test nameof(iv) == :t
-    @test length(get_unknowns(empty_network_2)) == 0
-    @test length(ps) == 5
-    @test all(getname.(ps) .== [:p1, :p2, :p3, :p4, :p5])
-end
-
-# Tests accessing parameters and species added with network API.
-# Should probably be removed if we remove mutating stuff?
-let
-    empty_network_3 = @network_component begin
-    end
-    @parameters p
-    @species x(t)
-    addspecies!(empty_network_3, x)
-    addparam!(empty_network_3, p)
-    @test isequal(empty_network_3.x, unknowns(empty_network_3, x))
-    @test isequal(empty_network_3.p, parameters(empty_network_3, p))
-end
 
 # Tests creating a network and adding reactions.
 let

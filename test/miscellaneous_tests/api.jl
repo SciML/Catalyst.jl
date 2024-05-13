@@ -3,7 +3,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, NonlinearSolve, OrdinaryDiffEq, SparseArrays, StochasticDiffEq, Test 
+using Catalyst, NonlinearSolve, OrdinaryDiffEq, SparseArrays, StochasticDiffEq, Test
 using LinearAlgebra: norm
 using ModelingToolkit: value
 
@@ -16,7 +16,7 @@ include("../test_networks.jl")
 ### Tests Basic Getters ###
 
 # Checks various getter functions.
-# Uses several system-modifying functions, and should probably be rewritten not to use these. 
+# Uses several system-modifying functions, and should probably be rewritten not to use these.
 let
     @parameters k1 k2
     @species S(t) I(t) R(t)
@@ -38,56 +38,33 @@ let
     rs2 = ReactionSystem(rxs2, t, [R, I, S], [k2, k1], name = :rs)
     @test rs == rs2
 
-    rs3 = make_empty_network()
     @parameters k3 k4
     @species D(t)
-    addspecies!(rs3, S)
-    addspecies!(rs3, D)
-    addparam!(rs3, k3)
-    addparam!(rs3, k4)
-    @test issetequal(species(rs3), [S, D])
+    rxs3 = [Reaction(k3, [S], [D]), Reaction(k4, [S, I], [D])]
+    @named rs3 = ReactionSystem(rxs3, t)
+    @test issetequal(species(rs3), [S, D, I])
     @test issetequal(parameters(rs3), [k3, k4])
-    addreaction!(rs3, Reaction(k3, [S], [D]))
-    addreaction!(rs3, Reaction(k4, [S, I], [D]))
-    merge!(rs, rs3)
-    addspecies!(rs2, S)
-    addspecies!(rs2, D)
-    addparam!(rs2, k3)
-    addparam!(rs2, k4)
-    addreaction!(rs2, Reaction(k3, [S], [D]))
-    addreaction!(rs2, Reaction(k4, [S, I], [D]))
+    @named rs = extend(rs3, rs)
+    rxs2b = [Reaction(k3, [S], [D]), Reaction(k4, [S, I], [D])]
+    @named rs2b = ReactionSystem(rxs2b, t)
+    @named rs2 = extend(rs2b, rs2; name = :rs)
     @test rs2 == rs
 
     rxs = [Reaction(k1, [S, I], [I], [1, 1], [2]),
         Reaction(k2, [I], [R])]
-    @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
-    rs3 = make_empty_network()
-    addspecies!(rs3, S)
-    addspecies!(rs3, D)
-    addparam!(rs3, k3)
-    addparam!(rs3, k4)
-    addreaction!(rs3, Reaction(k3, [S], [D]))
-    addreaction!(rs3, Reaction(k4, [S, I], [D]))
-    rs4 = extend(rs, rs3)
+    @named rs = ReactionSystem(rxs, t)
+    rxs3 = [Reaction(k3, [S], [D]), Reaction(k4, [S, I], [D])]
+    @named rs3 = ReactionSystem(rxs3, t)
+    rs4 = extend(rs, rs3; name = :rs)
     @test rs2 == rs4
 
     rxs = [Reaction(k1 * S, [S, I], [I], [2, 3], [2]),
         Reaction(k2 * R, [I], [R])]
-    @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
+    @named rs = ReactionSystem(rxs, t)
     deps = dependents(rxs[2], rs)
     @test isequal(deps, [R, I])
     @test isequal(dependents(rxs[1], rs), dependants(rxs[1], rs))
-    addspecies!(rs, S)
-    @test numspecies(rs) == 3
-    addspecies!(rs, S, disablechecks = true)
-    @test numspecies(rs) == 4
-    addparam!(rs, k1)
-    @test numparams(rs) == 2
-    @test numreactionparams(rs) == 2
-    addparam!(rs, k1, disablechecks = true)
-    @test numparams(rs) == 3
-    @test numreactionparams(rs) == 3
-end
+ end
 
 # Tests `substoichmat` and `prodstoichmat` getters.
 let
@@ -452,7 +429,7 @@ end
 # Test defaults.
 # Uses mutating stuff (`setdefaults!`) and order dependent input (`species(rn) .=> u0`).
 # If you want to test this here @Sam I can write a new one that simualtes using defaults.
-# If so, tell me if you have anything specific you want to check though, or I will just implement 
+# If so, tell me if you have anything specific you want to check though, or I will just implement
 # it as I would.
 let
     rn = @reaction_network begin
@@ -501,13 +478,13 @@ let
         β, S + I --> 2I
         ν, I --> R
     end
-    subsys = @network_component subsys begin 
-        k, A --> B 
+    subsys = @network_component subsys begin
+        k, A --> B
     end
     @named sys = compose(sir, [subsys])
     sir = complete(sir)
     sys = complete(sys)
-    
+
     symmap = [:S => 1.0, :I => 1.0, :R => 1.0, :subsys₊A => 1.0, :subsys₊B => 1.0]
     u0map = symmap_to_varmap(sys, symmap)
     pmap = symmap_to_varmap(sys, [:β => 1.0, :ν => 1.0, :subsys₊k => 1.0])

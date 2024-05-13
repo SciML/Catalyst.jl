@@ -181,21 +181,14 @@ reactionrates
 ```
 
 ## [Functions to extend or modify a network](@id api_network_extension_and_modification)
-`ReactionSystem`s can be programmatically extended using
-[`@add_reactions`](@ref), [`addspecies!`](@ref), [`addparam!`](@ref) and
-[`addreaction!`](@ref), or using [`ModelingToolkit.extend`](@ref) and
+`ReactionSystem`s can be programmatically extended using [`ModelingToolkit.extend`](@ref) and
 [`ModelingToolkit.compose`](@ref).
 
 ```@docs
-@add_reactions
-addspecies!
-addparam!
-addreaction!
 setdefaults!
 ModelingToolkit.extend
 ModelingToolkit.compose
 Catalyst.flatten
-merge!(network1::ReactionSystem, network2::ReactionSystem)
 ```
 
 ## Network analysis and representations
@@ -282,7 +275,7 @@ ModelingToolkit.structural_simplify
 ```
 
 ## Chemistry-related functionalities
-Various functionalities primarily relevant to modelling of chemical systems (but potentially also in biology). 
+Various functionalities primarily relevant to modelling of chemical systems (but potentially also in biology).
 ```@docs
 @compound
 @compounds

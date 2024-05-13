@@ -81,7 +81,7 @@ export ODEProblem,
 const ExprValues = Union{Expr, Symbol, Float64, Int, Bool}
 include("expression_utils.jl")
 include("reaction_network.jl")
-export @reaction_network, @network_component, @add_reactions, @reaction, @species
+export @reaction_network, @network_component, @reaction, @species
 
 # registers CRN specific functions using Symbolics.jl
 include("registered_functions.jl")
@@ -91,7 +91,7 @@ export mm, mmr, hill, hillr, hillar
 include("networkapi.jl")
 export species, nonspecies, reactionparams, reactions, speciesmap, paramsmap
 export numspecies, numreactions, numreactionparams, setdefaults!, symmap_to_varmap
-export make_empty_network, addspecies!, addparam!, addreaction!, reactionparamsmap
+export make_empty_network, reactionparamsmap
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
 export isequivalent

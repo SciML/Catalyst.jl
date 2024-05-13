@@ -493,9 +493,7 @@ given function is used.
 Because of the caching of network properties, subsequent calls to most API
 functions will be fast, simply returning the previously calculated and cached
 values. In some cases it may be desirable to reset the cache and recalculate
-these properties, for example after modifying a network (see
-[`addspecies!`](@ref), [`addparam!`](@ref), or [`addreaction!`](@ref)). This can
-be done by calling
+these properties. This can be done by calling
 ```julia
 Catalyst.reset_networkproperties!(rn)
 ```
