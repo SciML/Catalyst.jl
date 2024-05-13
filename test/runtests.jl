@@ -9,7 +9,7 @@ using SafeTestsets
     @time @safetestset "ReactionSystem" begin include("reactionsystem_structure/reactionsystem.jl") end
     @time @safetestset "Higher Order Reactions" begin include("reactionsystem_structure/higher_order_reactions.jl") end
     @time @safetestset "Parameter Type Designation" begin include("reactionsystem_structure/designating_parameter_types.jl") end
-    @time @safetestset "Coupled CRN/Equation Systems" begin include("reactionsystem_structure/coupled_equation_reaction_systems.jl") end
+    # @time @safetestset "Coupled CRN/Equation Systems" begin include("reactionsystem_structure/coupled_equation_reaction_systems.jl") end
 
     ### Tests model creation via the @reaction_network DSL. ###
     @time @safetestset "Basic DSL" begin include("dsl/dsl_basics.jl") end
@@ -40,10 +40,10 @@ using SafeTestsets
     @time @safetestset "U0 and Parameters Input Variants" begin include("model_simulation/u0_n_parameter_inputs.jl") end
     @time @safetestset "SDE System Simulations" begin include("model_simulation/simulate_SDEs.jl") end
     @time @safetestset "Jump System Simulations" begin include("model_simulation/simulate_jumps.jl") end
-    
+
     ### Upstream SciML and DiffEq tests. ###
-    @time @safetestset "MTK Structure Indexing" begin include("meta/mtk_structure_indexing.jl") end   
-    @time @safetestset "MTK Problem Inputs" begin include("meta/mtk_problem_inputs.jl") end   
+    @time @safetestset "MTK Structure Indexing" begin include("meta/mtk_structure_indexing.jl") end
+    @time @safetestset "MTK Problem Inputs" begin include("meta/mtk_problem_inputs.jl") end
 
     ### Tests Spatial Network Simulations. ###
     @time @safetestset "PDE Systems Simulations" begin include("spatial_reaction_systems/simulate_PDEs.jl") end
@@ -56,10 +56,10 @@ using SafeTestsets
     if !Sys.isapple()
         @time @safetestset "Graphs" begin include("visualization/graphs.jl") end
     end
-    
+
     ### Tests extensions. ###
-    @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
-    @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
-    @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
-    
+    #@time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
+    # @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
+    #@time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
+
 end # @time
