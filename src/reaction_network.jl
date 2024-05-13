@@ -370,7 +370,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     else
         combinatoric_ratelaws = true
     end
-    @show combinatoric_ratelaws
 
     # Reads more options.
     observed_vars, observed_eqs, obs_syms = read_observed_options(options, [species_declared; variables], all_ivs)
