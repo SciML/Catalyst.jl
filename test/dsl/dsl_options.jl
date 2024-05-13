@@ -398,7 +398,7 @@ end
 
 # Test basic functionality.
 # Tests various types of indexing.
-let 
+let
     rn = @reaction_network begin
         @observables begin
             X ~ Xi + Xa
@@ -489,23 +489,23 @@ end
 # Tests using a single observable (without begin/end statement).
 # Tests using observable component not part of reaction.
 # Tests using parameters in observables formula.
-let 
+let
     rn = @reaction_network begin
         @parameters op_1 op_2
         @species X4(t)
-        @observables X ~ X1^2 + op_1*(X2 + 2X3) + X1*X4/op_2 + p        
+        @observables X ~ X1^2 + op_1*(X2 + 2X3) + X1*X4/op_2 + p
         (p,d), 0 <--> X1
         (k1,k2), X1 <--> X2
         (k3,k4), X2 <--> X3
     end
-    
+
     u0 = Dict([:X1 => 1.0, :X2 => 2.0, :X3 => 3.0, :X4 => 4.0])
     ps = Dict([:p => 1.0, :d => 0.2, :k1 => 1.5, :k2 => 1.5, :k3 => 5.0, :k4 => 5.0, :op_1 => 1.5, :op_2 => 1.5])
 
     oprob = ODEProblem(rn, u0, (0.0, 1000.0), ps)
     sol = solve(oprob, Tsit5())
 
-    @test sol[:X][1] == u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]  
+    @test sol[:X][1] == u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]
 end
 
 # Checks that ivs are correctly found.
@@ -535,7 +535,7 @@ end
 # Declares observables implicitly/explicitly.
 # Cannot test `isequal(rn1, rn2)` because the two sets of observables have some obscure Symbolics
 # substructure that is different.
-let 
+let
     # Basic case.
     rn1 = @reaction_network rn_observed begin
         @observables X ~ X1 + X2
@@ -609,14 +609,14 @@ let
         (kB,kD), 2X <--> X2
         (k1,k2), Y1 <--> Y2
     end
-    
+
     @test isspecies(rn.X)
     @test !isspecies(rn.Y)
     @test !isspecies(rn.Z)
 end
 
 # Tests various erroneous declarations throw errors.
-let 
+let
     # Independent variable in @observables.
     @test_throws Exception @eval @reaction_network begin
         @observables X(t) ~ X1 + X2
@@ -699,7 +699,7 @@ let
         @equations begin
             X + 5 ~ k*S
             3Y + X  ~ S + X*d
-        end 
+        end
         (p,d), 0 <--> S
     end
 
@@ -747,7 +747,7 @@ let
     rn2 = @reaction_network rn begin
         @parameters k
         @variables X(t)
-        @equations begin 
+        @equations begin
             X + 2 ~ k*S
         end
         (p,d), 0 <--> S
@@ -759,7 +759,7 @@ end
 # Tries with interpolating a value into an equation.
 # Tries using rn.X notation for designating variables.
 # Tries for empty parameter vector.
-let 
+let
     c = 6.0
     rn = complete(@reaction_network begin
         @variables X(t)
@@ -774,12 +774,12 @@ let
 end
 
 # Checks hierarchical model.
-let 
+let
     base_rn = @network_component begin
         @variables V1(t)
         @equations begin
             X*3V1 ~ X - 2
-        end 
+        end
         (p,d), 0 <--> X
     end
     @unpack X, V1, p, d = base_rn
@@ -788,7 +788,7 @@ let
         @variables V2(t)
         @equations begin
             X*4V2 ~ X - 3
-        end 
+        end
         (p,d), 0 <--> X
     end
 
@@ -813,7 +813,7 @@ let
         @equations begin
             X + 5 ~ k*S
             D(Y) ~ X + S - 5*Y
-        end 
+        end
         (p,d), 0 <--> S
     end
     @unpack X, Y, S, p, d, k = rn
@@ -848,7 +848,7 @@ let
 end
 
 # Tests that various erroneous declarations throw errors.
-let 
+let
     # Using = instead of ~ (for equation).
     @test_throws Exception @eval @reaction_network begin
         @variables X(t)
@@ -861,4 +861,38 @@ let
         @equations X ~ p - S
         (P,D), 0 <--> S
     end
+end
+
+# test combinatoric_ratelaws DSL option
+let
+    rn = @reaction_network begin
+        @combinatoric_ratelaws false
+        (k1,k2), 2A <--> B
+        end
+    combinatoric_ratelaw = Catalyst.get_combinatoric_ratelaws(rn)
+    @test combinatoric_ratelaw == false
+    rl = oderatelaw(reactions(rn)[1]; combinatoric_ratelaw)
+    @unpack k1, A = rn
+    @test isequal(rl, k1*A^2)
+
+    rn2 = @reaction_network begin
+        @combinatoric_ratelaws true
+        (k1,k2), 2A <--> B
+        end
+    combinatoric_ratelaw = Catalyst.get_combinatoric_ratelaws(rn2)
+    @test combinatoric_ratelaw == true
+    rl = oderatelaw(reactions(rn2)[1]; combinatoric_ratelaw)
+    @unpack k1, A = rn2
+    @test isequal(rl, k1*A^2/2)
+
+    crl = false
+    rn3 = @reaction_network begin
+        @combinatoric_ratelaws $crl
+        (k1,k2), 2A <--> B
+        end
+    combinatoric_ratelaw = Catalyst.get_combinatoric_ratelaws(rn3)
+    @test combinatoric_ratelaw == crl
+    rl = oderatelaw(reactions(rn3)[1]; combinatoric_ratelaw)
+    @unpack k1, A = rn3
+    @test isequal(rl, k1*A^2)
 end

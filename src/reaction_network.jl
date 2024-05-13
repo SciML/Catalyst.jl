@@ -82,8 +82,9 @@ const forbidden_variables_error = let
 end
 
 # Declares the keys used for various options.
-const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables, :default_noise_scaling,
-                     :differentials, :equations, :continuous_events, :discrete_events)
+const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables,
+                     :default_noise_scaling, :differentials, :equations,
+                     :continuous_events, :discrete_events, :combinatoric_ratelaws)
 
 ### The @species macro, basically a copy of the @variables macro. ###
 macro species(ex...)
@@ -364,6 +365,12 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
     all_ivs = (isnothing(sivs) ? [tiv] : [tiv; sivs.args])
 
+    if haskey(options, :combinatoric_ratelaws)
+        combinatoric_ratelaws = options[:combinatoric_ratelaws].args[end]
+    else
+        combinatoric_ratelaws = true
+    end
+
     # Reads more options.
     observed_vars, observed_eqs, obs_syms = read_observed_options(options, [species_declared; variables], all_ivs)
 
@@ -415,7 +422,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
             Catalyst.make_ReactionSystem_internal(
                 $rxexprs, $tiv, setdiff(union($spssym, $varssym, $compssym), $obs_syms),
                 $pssym; name = $name, spatial_ivs = $sivs, observed = $observed_eqs,
-                continuous_events = $continuous_events_expr, discrete_events = $discrete_events_expr);
+                continuous_events = $continuous_events_expr,
+                discrete_events = $discrete_events_expr,
+                combinatoric_ratelaws = $combinatoric_ratelaws);
             default_reaction_metadata = $default_reaction_metadata
         )
     end
