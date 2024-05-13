@@ -82,7 +82,7 @@ let
 
     # Creates model by extending a `ReactionSystem` with a ODESystem.
     rn_extended = @network_component begin
-        ($k1*$A, $k2*$B), X1 <--> X2 
+        ($k1*$A, $k2*$B), X1 <--> X2
     end
     eqs_extended = [
         D(A) ~ X1 + a - A
@@ -98,7 +98,7 @@ let
             D(A) ~ X1 + a - A
             D(B) ~ X2 + b - B
         end
-        (k1*A, k2*B), X1 <--> X2 
+        (k1*A, k2*B), X1 <--> X2
     end
 
     # Checks that models are equivalent and contain the correct stuff.
@@ -126,7 +126,7 @@ end
 # Tests coupled CRN/algebraic equation. Checks that known steady state is reached using ODE solve.
 # Check that steady state can be found using NonlinearSolve and SteadyStateDiffEq.
 # Checks that errors are given if `structural_simplify = true` argument is not given.
-let 
+let
     # Creates a simple coupled model with an algebraic equation.
     @parameters p d a b
     @species X(t)
@@ -216,7 +216,7 @@ end
 # Checks that coupled systems contain the correct species, variables, and parameters.
 # Checks that species, variables, and parameters are inferred correctly from equations.
 # Checks that non-default iv is inferred correctly from reactions/equations.
-let 
+let
     # Create coupled model.
     @variables τ A(τ) B(τ)
     @species X(τ) X2(τ)
@@ -431,14 +431,14 @@ end
     # Checks the algebraic equation holds.
     sprob = SDEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true)
     ssol = solve(sprob, ImplicitEM())
-    @test 2 .+ ps[:k1] * ssol[:A] == 3 .+ ps[:k2] * ssol[:X]    
+    @test 2 .+ ps[:k1] * ssol[:A] == 3 .+ ps[:k2] * ssol[:X]
 end
 
 
 ### Coupled NonlinearSystems Tests ###
 
 # Checks that systems with weird differential equations yield errors.
-let 
+let
     # This one is normal, and should not yield an error.
     begin
         rs = @reaction_network begin
@@ -446,7 +446,7 @@ let
         end
         @test_nowarn convert(NonlinearSystem, rs)
     end
-    
+
     # Higher-order differential on the lhs, should yield an error.
     begin
         rs = @reaction_network begin
@@ -457,7 +457,7 @@ let
         end
         @test_throws Exception convert(NonlinearSystem, rs)
     end
-    
+
     # Differential on the rhs, should yield an error.
     begin
         rs = @reaction_network begin
@@ -467,7 +467,7 @@ let
         end
         @test_throws Exception convert(NonlinearSystem, rs)
     end
-    
+
     # Non-differential term on the lhs, should yield an error.
     begin
         rs = @reaction_network begin
@@ -485,7 +485,7 @@ end
 
 # Tests that coupled CRN/DAEs with higher order differentials can be created.
 # Tests that these can be solved using ODEs, nonlinear solving, and steady state simulations.
-let 
+let
     # Create coupled model.
     @species X(t)
     @variables A(t) B(t)
@@ -494,7 +494,7 @@ let
         Reaction(p, nothing, [X]),
         Reaction(d, [X], nothing),
         D(D(A)) + 2ω*D(A) +(ω^2)*A ~ 0,
-        A + k*(B + D(A)) ~ X 
+        A + k*(B + D(A)) ~ X
     ]
     @named coupled_rs = ReactionSystem(eqs, t)
     coupled_rs = complete(coupled_rs)
@@ -521,7 +521,7 @@ let
     end
 
     # Checks that the steady state can be found by solving a nonlinear problem.
-    # Here `B => 0.1` has to be provided as well (and it shouldn't for the 2nd order ODE), hence the 
+    # Here `B => 0.1` has to be provided as well (and it shouldn't for the 2nd order ODE), hence the
     # separate `u0` declaration.
     u0 = [X => 1.0, A => 2.0, D(A) => 1.0, B => 0.1]
     nlprob = NonlinearProblem(coupled_rs, u0, ps; structural_simplify = true, all_differentials_permitted = true)
@@ -536,7 +536,7 @@ end
 # differentials, not necessarily on the same side).
 # Checks with non-default iv, and parameters/initial conditions given using Symbols.
 # Checks with default value for algebraic variable.
-let 
+let
     # Prepares stuff common to both simulations.
     @parameters i r m1 m2 h_max
     u0 = [:S => 999.0, :I => 1.0, :R => 0.0, :M => 1000.0]
@@ -589,7 +589,7 @@ end
 ### DSL Tests ###
 
 # Check that a coupled CRN/DAE created programmatically and via the DSL are identical.
-# Checks where variables are implied from differential equations, and with variables/parameter 
+# Checks where variables are implied from differential equations, and with variables/parameter
 # default values, types, and metadata.
 # Checks that generated system contents are correct, and ODE simulations are identical.
 let
@@ -685,7 +685,7 @@ let
 end
 
 # Checks that lhs variable is correctly inferred from differential equations.
-let 
+let
     # Checks for system with a differential equation and an algebraic equation.
     # Here, `H` is defined using `@variables`, but M should be inferred.
     rs_1 = @reaction_network begin
@@ -700,7 +700,7 @@ let
     issetequal(species(rs_1), [rs_1.S, rs_1.I, rs_1.R])
     issetequal(unknowns(rs_1)[4:5], [rs_1.H, rs_1.M])
 
-    # Checks for system with two differential equations, and which do not use `@variables`, 
+    # Checks for system with two differential equations, and which do not use `@variables`,
     rs_2 = @reaction_network coupled_rs begin
         @equations begin
             D(V) ~ X/(1+X) - V
@@ -735,11 +735,11 @@ let
     @test getdescription(rs.V) == "A variable"
 end
 
-# Checks that equations can be formatted in various ways. Tries e.g. isolating a single number on 
-# either side of the equality. 
+# Checks that equations can be formatted in various ways. Tries e.g. isolating a single number on
+# either side of the equality.
 # Checks that various weird function can be used within equations.
 # Checks that special symbols, like π and t can be used within equations.
-let 
+let
     # Declares models with a single equation, formatted in various ways.
     rs_1 = @reaction_network rs begin
         @parameters p q
@@ -751,13 +751,13 @@ let
         @parameters p q
         @species X(t)
         @variables A(t) B(t)
-        @equations X^2 + log(A+X) + sqrt(B) - sin(p + X + π)/exp(A/(1+t)) - q ~ 1 
+        @equations X^2 + log(A+X) + sqrt(B) - sin(p + X + π)/exp(A/(1+t)) - q ~ 1
     end
     rs_3 = @reaction_network rs begin
         @parameters p q
         @species X(t)
         @variables A(t) B(t)
-        @equations X^2 + log(A+X) + sqrt(B) - sin(p + X + π)/exp(A/(1+t)) - 1 - q ~ 0 
+        @equations X^2 + log(A+X) + sqrt(B) - sin(p + X + π)/exp(A/(1+t)) - 1 - q ~ 0
     end
     rs_4 = @reaction_network rs begin
         @parameters p q
@@ -795,17 +795,17 @@ end
 
 # Checks that the default differential (`D`) uses a declared, non-default, independent variable.
 # Check that inferred variables depends on declared time independent variables.
-let 
+let
     # Declares model.
     rs = @reaction_network begin
         @ivs τ
         @equations D(V) ~ -1.0
     end
-    
+
     # Checks that the default differential uses τ iv.
     Ds = Differential(ModelingToolkit.get_iv(rs))
     @test isequal(operation(equations(rs)[1].lhs), Ds)
-    
+
     # Checks that the inferred variable depends on τ iv.
     @variables V($(ModelingToolkit.get_iv(rs)))
     @test isequal(V, rs.V)
@@ -851,27 +851,27 @@ let
 end
 
 # Checks that various misformatted declarations yield errors.
-let 
+let
     # Symbol in equation not appearing elsewhere (1).
     @test_throws Exception @eval @reaction_network begin
         @equations D(V) ~ -X
     end
-    
+
     # Symbol in equation not appearing elsewhere (2).
     @test_throws Exception @eval @reaction_network begin
         @equations 1 + log(x) ~ 2X
     end
-    
+
     # Attempting to infer differential variable not isolated on lhs (1).
     @test_throws Exception @eval @reaction_network begin
         @equations D(V) + 1 ~ 0
     end
-    
+
     # Attempting to infer differential variable not isolated on lhs (2).
     @test_throws Exception @eval @reaction_network begin
         @equations -1.0 ~ D(V)
     end
-    
+
     # Attempting to infer differential operator not isolated on lhs (1).
     @test_throws Exception @eval @reaction_network begin
         @variables V(t)
@@ -883,7 +883,7 @@ let
         @differentials Δ = Differential(t)
         @equations Δ(V) ~ -1,0
     end
-    
+
     # Attempting to create a new differential from an unknown iv.
     @test_throws Exception @eval @reaction_network begin
         @differentials D = Differential(τ)
@@ -894,13 +894,13 @@ let
         @variables D
         @differentials d ~ D
     end
-    
+
     # Several equations without `begin ... end` block.
     @test_throws Exception @eval @reaction_network begin
         @variables V(t)
         @equations D(V) + 1 ~ - 1.0
     end
-    
+
     # Undeclared differential.
     @test_throws Exception @eval @reaction_network begin
         @species V
@@ -918,7 +918,7 @@ let
         @equations begin
             δ(n) ~ -n
             Δ(N) ~ -N
-        end 
+        end
     end
 end
 
@@ -926,10 +926,10 @@ end
 ### Error Tests ###
 
 # Checks that various erroneous coupled system declarations yield errors.
-let 
+let
     @parameters p1 p2
     @variables τ  U1(τ) V1(t)
-    @species R1(τ) R2(τ) S1(t) S2(t) 
+    @species R1(τ) R2(τ) S1(t) S2(t)
     E = Differential(τ)
 
     # Variables as reaction reactants.
@@ -942,7 +942,7 @@ let
         Reaction(p1, [R1], [R2])
     ], t; name = :rs)
 
-    # Equation with variable using non-declared independent variable. 
+    # Equation with variable using non-declared independent variable.
     @test_throws Exception ReactionSystem([
         Reaction(p1, [S1], [S2]),
         U1 ~ S1 + p2
@@ -956,10 +956,10 @@ let
 end
 
 # Checks that various attempts to create `ODEProblem`s from faulty systems generate errors.
-let 
+let
     @parameters p1 p2
     @variables V1(t)
-    @species S1(t) S2(t) 
+    @species S1(t) S2(t)
 
     # Coupled system with additional differential equation for species.
     eqs = [
