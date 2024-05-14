@@ -195,14 +195,14 @@ end
 let
     # Creates model via DSL.
     rn_dsl = @reaction_network rn begin
-        @parameters thres=1.0 dY_up
+        @parameters thres=7.0 dY_up
         @variables Z(t)
         @continuous_events begin
             [t ~ 2.5] => [p ~ p + 0.2]
             [X ~ thres, Y ~ X] => [X ~ X - 0.5, Z ~ Z + 0.1]
         end
         @discrete_events begin
-            2.0 => [dX ~ dX + 0.1, dY ~ dY + dY_up]
+            2.0 => [dX ~ dX + 0.01, dY ~ dY + dY_up]
             [1.0, 5.0] => [p ~ p - 0.1]
             (Z > Y) => [Z ~ Z - 0.1]
         end
@@ -214,7 +214,7 @@ let
     # Creates model programmatically.
     @variables t Z(t)
     @species X(t) Y(t)
-    @parameters p dX dY thres=1.0 dY_up
+    @parameters p dX dY thres=7.0 dY_up
     rxs = [
         Reaction(p, nothing, [X], nothing, [1])
         Reaction(dX, [X], nothing, [1], nothing)
@@ -226,19 +226,19 @@ let
         [X ~ thres, Y ~ X] => [X ~ X - 0.5, Z ~ Z + 0.1]
     ]
     discrete_events = [
-        2.0 => [dX ~ dX + 0.1, dY ~ dY + dY_up]
+        2.0 => [dX ~ dX + 0.01, dY ~ dY + dY_up]
         [1.0, 5.0] => [p ~ p - 0.1]
         (Z > Y) => [Z ~ Z - 0.1]
     ]
-    rn_prog = ReactionSystem(rxs, t; continuous_events, discrete_events, name=:rn)
+    rn_prog = ReactionSystem(rxs, t; continuous_events, discrete_events, name = :rn)
     rn_prog = complete(rn_prog)
 
     # Tests that approaches yield identical results.
     @test isequal(rn_dsl, rn_prog)
 
-    u0 = [X => 1.0, Y => 0.5, Z => 0.25]
+    u0 = [X => 5.0, Y => 3.0, Z => 3.5]
     tspan = (0.0, 20.0)
-    ps = [p => 1.0, dX => 0.5, dY => 0.5, dY_up => 0.1]
+    ps = [p => 1.0, dX => 0.05, dY => 0.05, dY_up => 0.01]
 
     sol_dsl = solve(ODEProblem(rn_dsl, u0, tspan, ps), Tsit5())
     sol_prog = solve(ODEProblem(rn_prog, u0, tspan, ps), Tsit5())
