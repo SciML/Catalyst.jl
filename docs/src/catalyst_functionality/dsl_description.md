@@ -54,7 +54,7 @@ the model. We do this by creating a mapping from each symbolic variable
 representing a chemical species to its initial value
 ```@example tut2
 # define the symbolic variables
-@variables t
+t = default_t()
 @species X(t) Y(t) Z(t) XY(t) Z1(t) Z2(t)
 
 # create the mapping
@@ -285,7 +285,7 @@ where here `t` always denotes Catalyst's time variable. Please note that many
 user-defined functions can be called directly, but others will require
 registration with Symbolics.jl ([see the faq](@ref user_functions)).
 
-## Explicit specification of network species and parameters
+## [Explicit specification of network species and parameters](@id dsl_description_explicit_species)
 Recall that the `@reaction_network` macro automatically designates symbols used
 in the macro as either parameters or species, with symbols that appear as a
 substrate or product being species, and all other symbols becoming parameters
@@ -412,6 +412,74 @@ sol = solve(oprob)
 plot(sol)
 ```
 
+## Constant/fixed species
+It is possible to fix the amount of a species in a reaction. Without fixing
+a species, a reaction could look like
+```@example tut2
+rn = @reaction_network begin
+    k, X + Y --> 0
+end
+```
+
+```@example tut2
+ode_sys = convert(ODESystem, rn)
+```
+
+```@example tut2
+equations(ode_sys)
+```
+
+Fixing a species could either be achieved by modifying the reaction specification
+and specifying constant species explicitly as species as described
+[above](@ref dsl_description_explicit_species), i.e.,
+```@example tut2
+rn = @reaction_network begin
+    @species X(t)
+    k * X, Y --> 0
+end
+```
+
+```@example tut2
+ode_sys = convert(ODESystem, rn)
+```
+
+```@example tut2
+equations(ode_sys)
+```
+
+The species can of course also just be used as parameter - using the same modification
+of the reaction, i.e.,
+```@example tut2
+rn = @reaction_network begin
+    k * X, Y --> 0
+end
+```
+
+```@example tut2
+ode_sys = convert(ODESystem, rn)
+```
+
+```@example tut2
+equations(ode_sys)
+```
+
+The same result can also be achieved by declaring a species as fixed/constant
+without having to change the reaction itself, i.e.,
+```@example tut2
+rn = @reaction_network begin
+    @parameters X [isconstantspecies = true]
+    k, X + Y --> 0
+end
+```
+
+```@example tut2
+ode_sys = convert(ODESystem, rn)
+```
+
+```@example tut2
+equations(ode_sys)
+```
+
 ## [Setting initial conditions that depend on parameters](@id dsl_description_parametric_initial_conditions)
 It is possible to set the initial condition of one (or several) species so that they depend on some system parameter. This is done in a similar way as default initial conditions, but giving the parameter instead of a value. When doing this, we also need to ensure that the initial condition parameter is a variable of the system:
 ```@example tut2
@@ -478,7 +546,7 @@ end
 Please see the API [Rate Laws](@ref api_rate_laws) section for more details.
 
 ## Including non-species variables
-Non-species state variables can be specified in the DSL using the `@variables`
+Non-species unknown variables can be specified in the DSL using the `@variables`
 macro. These are declared similarly to species. For example,
 ```@example tut2
 rn_with_volume = @reaction_network begin
@@ -494,10 +562,10 @@ and one non-species
 ```@example tut2
 nonspecies(rn_with_volume)
 ```
-giving two state variables, always internally ordered by species and then
+giving two unknown variables, always internally ordered by species and then
 nonspecies:
 ```@example tut2
-states(rn_with_volume)
+unknowns(rn_with_volume)
 ```
 
 `rn_with_volume` could then be extended with constraint equations for how `V(t)`
@@ -516,9 +584,9 @@ rn_with_s = @reaction_network begin
 end
 show(stdout, MIME"text/plain"(), rn_with_s)  # hide
 ```
-where we see all states are now functions of `s`.
+where we see all unknowns are now functions of `s`.
 
-Similarly, if one wants states to be functions of more than one independent
+Similarly, if one wants unknowns to be functions of more than one independent
 variable, for example to encode a spatial problem, one can list more than one
 variable, i.e. `@ivs t x y`. Here the first listed independent variable is
 always chosen to represent time. For example,
@@ -542,8 +610,8 @@ parameters outside of the macro, which can then be used within expressions in
 the DSL (see the [Programmatic Construction of Symbolic Reaction Systems](@ref programmatic_CRN_construction)
 tutorial for details on the lower-level symbolic interface). For example,
 ```@example tut2
+t = default_t()
 @parameters k α
-@variables t
 @species A(t)
 spec = A
 par = α
@@ -567,3 +635,132 @@ species(rn)
 !!! note
     When using interpolation, expressions like `2$spec` won't work; the
     multiplication symbol must be explicitly included like `2*$spec`.
+
+## Including observables
+Sometimes, one might want to include observable variables. These are variables that can be computed directly from the other system variables (rather than having their values implicitly given through some differential equation). These can be introduced through the `@observables` option.
+
+Let us consider a simple example where two species ($X$ and $Y$) are produced and degraded at constant rates. They can also bind, forming a complex ($XY$). If we want to access the total amount of $X$ in the system we can create an observable that denotes this quantity ($Xtot = X + XY$). Here, we create observables for the total amount of $X$ and $Y$:
+```@example obs1
+using Catalyst # hide
+rn = @reaction_network begin
+  @observables begin
+    Xtot ~ X + XY
+    Ytot ~ Y + XY
+  end
+  (pX,dX), 0 <--> X
+  (pY,dY), 0 <--> Y
+  (kB,kD), X + Y <--> XY
+end
+```
+The `@observables` option is followed by one line for each observable formula (enclosed by a `begin ... end` block). The left-hand sides indicate the observables' names, and the right-hand sides how their values are computed. The two sides are separated by a `~`. 
+
+If we now simulate our model:
+```@example obs1
+using DifferentialEquations # hide
+u0 = [:X => 0.0, :Y => 0.0, :XY => 0.0]
+tspan = (0.0, 10.0)
+ps = [:pX => 1.0, :dX => 0.2, :pY => 1.0, :dY => 0.5, :kB => 1.0, :kD => 0.2]
+oprob = ODEProblem(rn, u0, tspan, ps)
+sol = solve(oprob)
+nothing # hide
+```
+we can index the solution using our observables (just like for [other variables](@ref simulation_structure_interfacing_solutions)). E.g. we can receive a vector with all $Xtot$ values using
+```@example obs1
+sol[:Xtot]
+```
+similarly, we can plot the values of $Xtot$ and $Ytot$ using
+```@example obs1
+plot(sol; idxs=[:Xtot, :Ytot], label=["Total X" "Total Y"])
+```
+
+If we only wish to provide a single observable, the `begin ... end` block is note required. E.g., to record only the total amount of $X$ we can use:
+```@example obs1
+using Catalyst # hide
+rn = @reaction_network begin
+  @observables Xtot ~ X + XY
+  (pX,dX), 0 <--> X
+  (pY,dY), 0 <--> Y
+  (kB,kD), X + Y <--> XY
+end
+```
+
+Finally, some general rules for creating observables:
+- Observables can depend on any species, parameters, or variables, but not on other observables.
+- All observables components appearing on the right side of the `~` must be declared somewhere (i.e., they cannot only appear as a part of the observables formula).
+- Only a single `@observables` option block can be used in each `@reaction_network` call.
+- The left-hand side of the observables expression must be a single symbol, indicating the observable's name.
+- Metadata can, however, be provided, e.g through `@observables (Xtot, [description="Total amount of X"]) ~ X + XY`.
+- The right-hand side of the observables expression can be any valid algebraic expression.
+- Observables are (by default, but this can be changed) considered `variables` (and not `species`). This can be changed by e.g. pre-declaring them using the `@species` option:
+```@example obs2
+using Catalyst # hide
+rn = @reaction_network begin
+  @species Xtot(t)
+  @observables Xtot ~ X1 + X2
+  (k1,k2), X1 <--> X2
+end
+nothing # hide
+```
+
+## Incorporating (differential) equations into reaction network models
+Some models cannot be purely described as reaction networks. E.g. consider the growth of a cell, where the rate of change in the cell's volume depends on some growth factor. Here, the cell's volume would be described by a normal ODE. Such equations can be incorporated into a model using the `@equations` option. Here, we create a model where a growth factor ($G$) is produced and degraded at a linear rates, and the rate of change in cell volume ($V$) is linear in the amount of growth factor:
+```@example eqs1
+using Catalyst #hide
+rn = @reaction_network begin
+  @equations begin
+    D(V) ~ G
+  end
+  (p,d), 0 <--> G
+end
+```
+Here, `D(V)` indicates the (time) derivative with respect to `D`. The differential equation left and right hand sides are separated by a `~`. The left-hand side should contain differential only, the right hand side can contain any algebraic expression.
+
+We can check the differential equation corresponding to this reaction network using latexify:
+```@example eqs1
+using Latexify
+latexify(rn; form=:ode)
+```
+We can also simulate it using the normal syntax
+```@example eqs1
+using DifferentialEquations, Plots # hide
+u0 = [:G => 0.0, :V => 0.1]
+ps = [:p => 1.0, :d => 0.5]
+oprob = ODEProblem(rn, u0, (0.0, 1.0), ps)
+sol = solve(oprob)
+plot(sol)
+```
+Here, growth is indefinite. To improve the model, [a callback](@ref advanced_simulations_callbacks) can be used to half the volume (cell division) once some threshold is reached.
+
+When creating differential equations this way, the subject of the differential is automatically inferred to be a variable, however, any component on the right-hand side must be declare somewhere in the macro. E.g. to add a scaling parameter ($k$), we must declare that $k$ is a parameter using the `@parameters` option:
+```@example eqs1
+rn = @reaction_network begin
+  @parameters k
+  @equations begin
+    D(V) ~ k*G
+  end
+  (p,d), 0 <--> G
+end
+nothing #hide
+```
+If the differential does not appear isolated on the lhs, its subject variable must also be explicitly declared (as it is not inferred for these cases).
+
+It is possible to add several equations to the model. In this case, each have a separate line. E.g. to keep track of a supply of nutrition ($N$) in the growth media, we can use:
+```@example eqs1
+rn = @reaction_network begin
+  @equations begin
+    D(V) ~ G
+    D(N) ~ -G
+  end
+  (p,d), 0 <--> G
+end
+nothing #hide
+```
+
+When only a single equation is added, the `begin ... end` statement can be omitted. E.g., the first model can be declared equivalently using:
+```@example eqs1
+rn = @reaction_network begin
+  @equations D(V) ~ G
+  (p,d), 0 <--> G
+end
+nothing # hide
+```

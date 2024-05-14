@@ -32,7 +32,7 @@ oprob = ODEProblem(osys, [], (0.0, 10.0), [])
 sol = solve(oprob, Tsit5())
 ```
 Suppose we want to plot just species `C`, without having to know its integer
-index in the state vector. We can do this using the symbolic variable `C`, which
+index in the unknown vector. We can do this using the symbolic variable `C`, which
 we can get at in several ways
 ```@example faq1
 sol[osys.C]
@@ -80,8 +80,8 @@ end
 ```
 or directly via
 ```@example faq2
+t = default_t()
 @parameters k b
-@variables t
 @species A(t) B(t) C(t) D(t)
 rx1 = Reaction(k,[B,C],[B,D], [2.5,1],[3.5, 2.5])
 rx2 = Reaction(2*k, [B], [D], [1], [2.5])
@@ -121,8 +121,8 @@ have the desired default values, and this will automatically be propagated
 through to the equation solvers:
 ```@example faq3
 using Catalyst, Plots, OrdinaryDiffEq
+t = default_t()
 @parameters β=1e-4 ν=.01
-@variables t
 @species S(t)=999.0 I(t)=1.0 R(t)=0.0
 rx1 = Reaction(β, [S, I], [I], [1,1], [2])
 rx2 = Reaction(ν, [I], [R])
@@ -137,7 +137,6 @@ condition and pass these to the `ReactionSystem` via the `defaults` keyword
 argument:
 ```@example faq3
 @parameters β ν
-@variables t
 @species S(t) I(t) R(t)
 rx1 = Reaction(β, [S,I], [I], [1,1], [2])
 rx2 = Reaction(ν, [I], [R])
@@ -175,8 +174,8 @@ nothing  # hide
 ```
 while using ModelingToolkit symbolic variables we have
 ```@example faq4
+t = default_t()
 @parameters α β
-@variables t
 @species S(t) I(t) R(t)
 u0 = [S => 999.0, I => 1.0, R => 0.0]
 p  = (α => 1e-4, β => .01)
@@ -210,13 +209,14 @@ nothing # hide
 
 ## How to include non-reaction terms in equations for a chemical species?
 One method to add non-reaction terms into an ODE or algebraic equation for a
-chemical species is to add a new (non-species) state variable that represents
+chemical species is to add a new (non-species) unknown variable that represents
 those terms, let it be the rate of zero order reaction, and add a constraint
 equation. I.e., to add a force of `(1 + sin(t))` to ``dA/dt`` in a system with
 the reaction `k, A --> 0`, we can do
 ```@example faq5
 using Catalyst
-@variables t f(t)
+t = default_t()
+@variables f(t)
 rx1 = @reaction k, A --> 0
 rx2 = @reaction $f, 0 --> A
 eq = f ~ (1 + sin(t))

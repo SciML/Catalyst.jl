@@ -36,8 +36,8 @@ models, and stochastic chemical kinetics jump process models.
 
 ```@example ex1
 using Catalyst, DifferentialEquations, Plots
+t = default_t()
 @parameters β γ
-@variables t
 @species S(t) I(t) R(t)
 
 rxs = [Reaction(β, [S,I], [I], [1,1], [2])
@@ -95,11 +95,11 @@ retrieve info from just a base [`ReactionSystem`](@ref) `rn`, ignoring
 sub-systems of `rn`, one can use the ModelingToolkit accessors (these provide
 direct access to the corresponding internal fields of the `ReactionSystem`)
 
-* `ModelingToolkit.get_states(rn)` is a vector that collects all the species
+* `ModelingToolkit.get_unknowns(rn)` is a vector that collects all the species
   defined within `rn`, ordered by species and then non-species variables.
 * `Catalyst.get_species(rn)` is a vector of all the species variables in the system. The
   entries in `get_species(rn)` correspond to the first `length(get_species(rn))`
-  components in `get_states(rn)`.
+  components in `get_unknowns(rn)`.
 * `ModelingToolkit.get_ps(rn)` is a vector that collects all the parameters
   defined *within* reactions in `rn`.
 * `ModelingToolkit.get_eqs(rn)` is a vector that collects all the
@@ -120,10 +120,10 @@ To retrieve information from the full reaction network represented by a system
 `rn`, which corresponds to information within both `rn` and all sub-systems, one
 can call:
 
-* `ModelingToolkit.states(rn)` returns all species *and variables* across the
+* `ModelingToolkit.unknowns(rn)` returns all species *and variables* across the
   system, *all sub-systems*, and all constraint systems. Species are ordered
-  before non-species variables in `states(rn)`, with the first `numspecies(rn)`
-  entires in `states(rn)` being the same as `species(rn)`.
+  before non-species variables in `unknowns(rn)`, with the first `numspecies(rn)`
+  entires in `unknowns(rn)` being the same as `species(rn)`.
 * [`species(rn)`](@ref) is a vector collecting all the chemical species within
   the system and any sub-systems that are also `ReactionSystems`.
 * `ModelingToolkit.parameters(rn)` returns all parameters across the
@@ -181,22 +181,14 @@ reactionrates
 ```
 
 ## [Functions to extend or modify a network](@id api_network_extension_and_modification)
-`ReactionSystem`s can be programmatically extended using
-[`@add_reactions`](@ref), [`addspecies!`](@ref), [`addparam!`](@ref) and
-[`addreaction!`](@ref), or using [`ModelingToolkit.extend`](@ref) and
+`ReactionSystem`s can be programmatically extended using [`ModelingToolkit.extend`](@ref) and
 [`ModelingToolkit.compose`](@ref).
 
 ```@docs
-@add_reactions
-addspecies!
-addparam!
-addreaction!
 setdefaults!
 ModelingToolkit.extend
 ModelingToolkit.compose
 Catalyst.flatten
-merge!(network1::ReactionSystem, network2::ReactionSystem)
-reorder_states!
 ```
 
 ## Network analysis and representations
@@ -251,6 +243,8 @@ latexify(rn; form=:sde)
 (As of writing this, an upstream bug causes the SDE form to be erroneously
 displayed as the ODE form)
 
+Finally, another optional argument (`expand_functions=true`) automatically expands functions defined by Catalyst (such as `mm`). To disable this, set `expand_functions=false`.
+
 If [Graphviz](https://graphviz.org/) is installed and commandline accessible, it
 can be used to create and save network diagrams using [`Graph`](@ref) and
 [`savegraph`](@ref).
@@ -278,6 +272,17 @@ hillar
 ```@docs
 Base.convert
 ModelingToolkit.structural_simplify
+```
+
+## Chemistry-related functionalities
+Various functionalities primarily relevant to modelling of chemical systems (but potentially also in biology).
+```@docs
+@compound
+@compounds
+iscompound
+components
+coefficients
+component_coefficients
 ```
 
 ## Unit validation

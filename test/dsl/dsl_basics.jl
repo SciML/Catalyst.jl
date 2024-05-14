@@ -2,11 +2,15 @@
 
 ### Fetch Packages and Set Global Variables ###
 
+# Fetch packages.
 using Catalyst, ModelingToolkit
-@variables t
+
+# Set creates the `t` independent variable.
+t = default_t()
 
 ### Naming Tests ###
 
+# Test that the correct name is generated.
 let
     @parameters k
     @species A(t)
@@ -63,6 +67,9 @@ end
 
 ### Test Interpolation Within the DSL ###
 
+# Tests basic interpolation cases.
+
+# Declares parameters and species used across the test.
 @parameters α k k1 k2
 @species A(t) B(t) C(t) D(t)
 
@@ -110,7 +117,8 @@ let
     @test rn == rn2
 end
 
-@testset "make_reaction_system can be called from another module" begin
+# Creates a reaction network using `eval` and internal function.
+let
     ex = quote
         (Ka, Depot --> Central)
         (CL / Vc, Central --> 0)
@@ -120,6 +128,7 @@ end
     @test eval(Catalyst.make_reaction_system(ex)) isa ReactionSystem
 end
 
+# Miscellaneous interpolation tests. Unsure what they do here (not related to DSL).
 let
     rx = @reaction k*h, A + 2*B --> 3*C + D
     @parameters k h
@@ -133,8 +142,126 @@ let
     @test rx == Reaction(b+ex, [A,C], nothing, [2,1], nothing)
 end
 
+### Tests Reaction Metadata ###
 
-### Other tests ###
+# Tests construction for various types of reaction metadata.
+# Tests reaction metadata accessor functions.
+let
+    # Creates reactions directly.
+    @variables t
+    @parameters k η
+    @species X(t) X2(t)
+
+    metadata1 = [:noise_scaling => η]
+    r1 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata1)
+
+    metadata2 = Pair{Symbol,Any}[]
+    push!(metadata2, :md_1 => 1.0)
+    push!(metadata2, :md_2 => false)
+    push!(metadata2, :md_3 => "Hello world")
+    push!(metadata2, :md_4 => :sym)
+    push!(metadata2, :md_5 => X + X2^k -1)
+    push!(metadata2, :md_6 => (0.1, 2.0))
+    r2 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata2)
+
+    metadata3 = Pair{Symbol,Any}[]
+    r3 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata3)
+
+    # Creates reactions using DSL.
+    rs = @reaction_network begin
+        @parameters η
+        k, 2X --> X2, [noise_scaling=η]
+        k, 2X --> X2, [md_1=1.0, md_2=false, md_3="Hello world", md_4=:sym, md_5=X+X2^k-1, md_6=(0.1,2.0)]
+        k, 2X --> X2
+    end
+
+    # Checks DSL reactions are correct.
+    rxs = reactions(rs)
+    @test isequal([r1, r2, r3], rxs)
+    @test isequal(Catalyst.getmetadata_dict(r1), Catalyst.getmetadata_dict(rxs[1]))
+    @test isequal(Catalyst.getmetadata_dict(r2), Catalyst.getmetadata_dict(rxs[2]))
+    @test isequal(Catalyst.getmetadata_dict(r3), Catalyst.getmetadata_dict(rxs[3]))
+
+    # Checks that accessor functions works on the DSL.
+    @test Catalyst.hasmetadata(rxs[1], :noise_scaling)
+    @test !Catalyst.hasmetadata(rxs[1], :md_1)
+    @test !Catalyst.hasmetadata(rxs[2], :noise_scaling)
+    @test Catalyst.hasmetadata(rxs[2], :md_1)
+    @test !Catalyst.hasmetadata(rxs[3], :noise_scaling)
+    @test !Catalyst.hasmetadata(rxs[3], :md_1)
+    
+    @test isequal(Catalyst.getmetadata(rxs[1], :noise_scaling), η)
+    @test isequal(Catalyst.getmetadata(rxs[2], :md_1), 1.0)
+
+    # Test that metadata works for @reaction macro.
+    rx1 = @reaction k, 2X --> X2, [noise_scaling=$η]
+    rx2 = @reaction k, 2X --> X2, [md_1=1.0, md_2=false, md_3="Hello world", md_4=:sym, md_5=X+X2^k-1, md_6=(0.1,2.0)]
+    rx3 = @reaction k, 2X --> X2
+
+    @test isequal([rx1, rx2, rx3], rxs)
+    @test isequal(Catalyst.getmetadata_dict(rx1), Catalyst.getmetadata_dict(rxs[1]))
+    @test isequal(Catalyst.getmetadata_dict(rx2), Catalyst.getmetadata_dict(rxs[2]))
+    @test isequal(Catalyst.getmetadata_dict(rx3), Catalyst.getmetadata_dict(rxs[3]))
+end
+
+# Checks that repeated metadata throws errors.
+let 
+    @test_throws LoadError @eval @reaction k, 0 --> X, [md1=1.0, md1=2.0] 
+    @test_throws LoadError @eval @reaction_network begin
+        k, 0 --> X, [md1=1.0, md1=1.0] 
+    end 
+end
+
+# Tests for nested metadata.
+let
+    rn1 = @reaction_network reactions begin
+        k1, X1 --> Y1, [md1=1.0,md2=2.0]
+        k2, X2 --> Y2, [md1=0.0]
+        k3, X3 --> Y3, [md3="Hello world"]
+        k, X4 --> Y4, [md4=:sym]
+        k, X5 --> Y5, [md4=:sym]
+        k6, X6 --> Y6, [md6=0.0]
+        k6, Y6 --> X6, [md6=2.0]
+        k7, X7 --> Y7, [md7="Hi"]
+        k7, X7 --> Y8, [md7="Hi"]
+        k8, Y7 --> X7, [md7="Hello"]
+        k8, Y8 --> X7, [md7="Hi",md8="Yo"]
+    end
+    
+    rn2 = @reaction_network reactions begin
+        (k1,k2,k3), (X1,X2,X3) --> (Y1,Y2,Y3), ([md1=1.0,md2=2.0],[md1=0.0],[md3="Hello world"])
+        k, (X4,X5) --> (Y4,Y5), [md4=:sym]
+        (k6, k6), X6 <--> Y6, ([md6=0.0],[md6=2.0])
+        (k7,k8), X7 <--> (Y7,Y8), ([md7="Hi"],([md7="Hello"],[md7="Hi",md8="Yo"]))
+    end
+    
+    @test isequal(rn1, rn2)
+end
+
+# Tests that `only_use_rate` option works.
+let
+    rn1 = @reaction_network reactions begin
+        k1*X1, X1 + 2Y1 --> Z1
+        k2, 4X2 => Z2 + W3
+        k3 + X3, Y3 --> Z3
+        2*k4 + X4*Y4, 2X2 + 2Y4 => Z4
+        k5, 3X5 --> Z5, [unnecessary_metadata=[1,2,3]]
+        k6, X6 => Z6, [unnecessary_metadata=true]
+    end
+    
+    rn2 = @reaction_network reactions begin
+        k1*X1, X1 + 2Y1 --> Z1, [only_use_rate=false]
+        k2, 4X2 --> Z2 + W3, [only_use_rate=true]
+        k3 + X3, Y3 --> Z3
+        2*k4 + X4*Y4, 2X2 + 2Y4 --> Z4, [only_use_rate=true]
+        k5, 3X5 --> Z5, [only_use_rate=false, unnecessary_metadata=[1,2,3]]
+        k6, X6 --> Z6, [only_use_rate=true, unnecessary_metadata=true]
+    end
+    
+    @test isequal(rn1,rn2)
+end
+
+### Other Tests ###
 
 # Test floating point stoichiometry work.
 let
@@ -144,6 +271,7 @@ let
     rx2 = Reaction(2*k, [B], [D], [1], [2.5])
     rx3 = Reaction(2*k, [B], [D], [2.5], [2])
     @named mixedsys = ReactionSystem([rx1,rx2,rx3],t,[B,C,D],[k])
+    mixedsys = complete(mixedsys)
     osys = convert(ODESystem, mixedsys; combinatoric_ratelaws=false)
     rn = @reaction_network mixedsys begin
         @parameters k
@@ -154,7 +282,7 @@ let
     @test rn == mixedsys
 end
 
-# Test variables that appear only in rates and aren't ps
+# Test that variables that appear only in rates and aren't ps
 # are categorized as species.
 let
     rn = @reaction_network begin
@@ -163,7 +291,6 @@ let
         π*k*D*hill(B,k2,B*D*H,n), 3*A  --> 2*C
     end
     @parameters k k2 n
-    @variables t
     @species A(t) B(t) C(t) D(t) H(t)
     @test issetequal([A,B,C,D,H], species(rn))
     @test issetequal([k,k2,n], parameters(rn))
@@ -174,29 +301,29 @@ let
     rn = @reaction_network begin
         k, 2*A + B --> C
     end
-    @test issetequal(states(rn), species(rn))
+    @test issetequal(unknowns(rn), species(rn))
     @test all(isspecies, species(rn))
 
     rn2 = @reaction_network begin
         @species A(t) = 1 B(t) = 2 [isbcspecies = true]
         k, A + 2*B --> 2*B
     end
-    @variables t
     @unpack A,B = rn2
-    D = Differential(t)
+    D = default_time_deriv()
     eq = D(B) ~ -B
     @named osys = ODESystem([eq], t)
     @named rn2 = extend(osys, rn2)
-    @test issetequal(states(rn2), species(rn2))
+    rn2 = complete(rn2)
+    @test issetequal(unknowns(rn2), species(rn2))
     @test all(isspecies, species(rn))
     @test Catalyst.isbc(ModelingToolkit.value(B))
     @test Catalyst.isbc(ModelingToolkit.value(A)) == false
-    osys2 = convert(ODESystem, rn2)
-    @test issetequal(states(osys2), states(rn2))
+    osys2 = complete(convert(ODESystem, rn2))
+    @test issetequal(unknowns(osys2), unknowns(rn2))
     @test length(equations(osys2)) == 2
 end
 
-# test @variables in DSL
+# Test @variables in DSL.
 let
     rn = @reaction_network tester begin
         @parameters k1
@@ -206,7 +333,7 @@ let
     end
 
     @parameters k1 k2
-    @variables t V1(t) V2(t) V3(t)
+    @variables V1(t) V2(t) V3(t)
     @species A(t) B1(t) B2(t) C(t)
     rx = Reaction(k1*k2 + V3, [A, B1], [C, B2], [V1, 2], [V2, 1])
     @named tester = ReactionSystem([rx], t)
@@ -214,7 +341,7 @@ let
 
     sts = (A, B1, B2, C, V1, V2, V3)
     spcs = (A, B1, B2, C)
-    @test issetequal(states(rn), sts)
+    @test issetequal(unknowns(rn), sts)
     @test issetequal(species(rn), spcs)
 
     @test_throws ArgumentError begin
@@ -225,7 +352,7 @@ let
     end
 end
 
-# ivs test
+# Test ivs in DSL.
 let
     rn = @reaction_network ivstest begin
         @ivs s x
@@ -234,19 +361,21 @@ let
         @species A(s,x) B(s) C(x)
         k*k2*D, E*A +B --> F*C + C2
     end
+
     @parameters k k2
     @variables s x D(x) E(s) F(s,x)
     @species A(s,x) B(s) C(x) C2(s,x)
     rx = Reaction(k*k2*D, [A, B], [C, C2], [E, 1], [F, 1])
     @named ivstest = ReactionSystem([rx], s; spatial_ivs = [x])
+
     @test ivstest == rn
-    @test issetequal(states(rn), [D, E, F, A, B, C, C2])
+    @test issetequal(unknowns(rn), [D, E, F, A, B, C, C2])
     @test issetequal(species(rn), [A, B, C, C2])
     @test isequal(ModelingToolkit.get_iv(rn), s)
     @test issetequal(Catalyst.get_sivs(rn), [x])
 end
 
-# array variables test
+# Array variables test.
 let
     rn = @reaction_network arrtest begin
         @parameters k[1:2] a
@@ -256,7 +385,7 @@ let
     end
 
     @parameters k[1:3] a B
-    @variables t (V(t))[1:2] W(t)
+    @variables (V(t))[1:2] W(t)
     @species (X(t))[1:2] Y(t) C(t)
     rx = Reaction(k[1]*a+k[2], [X[1], X[2]], [Y, C], [1, V[1]], [V[2] * W, B])
     @named arrtest = ReactionSystem([rx], t)

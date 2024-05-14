@@ -1,11 +1,14 @@
-### Fetch Packages and Reaction Networks ###
-using Catalyst, Test
-using LinearAlgebra
+### Prepares Tests ###
 
+# Fetch packages.
+using Catalyst, LinearAlgebra, Test
+
+# Fetch test networks.
 include("../test_networks.jl")
 
-### Run Tests ###
+### Basic Tests ###
 
+# Tests basic functionality on system with known conservation laws.
 let
     rn = @reaction_network begin
         (1, 2), A + B <--> C
@@ -37,8 +40,7 @@ let
     @test any(D[j, :] == C[i, :] for i in 1:size(C, 1), j in 1:size(D, 1))
 end
 
-### Checks Test Networks
-
+# Tests conservation law computation on large number of networks where we know which have conservation laws.
 let
     Cs_standard = map(conservationlaws, reaction_networks_standard)
     @test all(size(C, 1) == 0 for C in Cs_standard)
@@ -53,8 +55,7 @@ let
     @test all(consequiv.(Matrix{Int}.(Cs_constraint), reaction_network_constraints))
 end
 
-### Tests Additional Conservation Law Functions ###
-
+# Tests additional conservation law-related functions.
 let
     rn = @reaction_network begin
         (k1, k2), X1 <--> X2
@@ -63,7 +64,7 @@ let
     cons_laws = conservationlaws(rn)
     cons_eqs = conservedequations(rn)
     cons_laws_constants = conservationlaw_constants(rn)
-    conserved_quantity = conservedquantities(cons_laws[1, :], states(rn)[1])
+    conserved_quantity = conservedquantities(cons_laws[1, :], unknowns(rn)[1])
 
     @test sum(cons_laws) == 4
     @test size(cons_laws) == (2, 4)

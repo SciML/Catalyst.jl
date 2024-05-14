@@ -1,19 +1,24 @@
 #! format: off
 
-### Fetch Packages and Test Networks ###
-using Catalyst, DiffEqBase, ModelingToolkit, Test, OrdinaryDiffEq, NonlinearSolve
-using StochasticDiffEq
+### Prepares Tests ###
+
+# Fetch packages.
+using Catalyst, NonlinearSolve, OrdinaryDiffEq, SparseArrays, StochasticDiffEq, Test
 using LinearAlgebra: norm
-using SparseArrays
 using ModelingToolkit: value
 
+# Sets the default `t` to use.
+t = default_t()
+
+# Fetch test networks.
 include("../test_networks.jl")
 
-### Base Tests ###
+### Tests Basic Getters ###
 
+# Checks various getter functions.
+# Uses several system-modifying functions, and should probably be rewritten not to use these.
 let
     @parameters k1 k2
-    @variables t
     @species S(t) I(t) R(t)
     rxs = [Reaction(k1, [S, I], [I], [1, 1], [2]),
         Reaction(k2, [I], [R])]
@@ -25,10 +30,6 @@ let
     pset = Set([value(k1) => 1, value(k2) => 2])
     @test issetequal(pset, paramsmap(rs))
 
-    Catalyst.reorder_states!(rs, [3, 1, 2])
-    specset = Set([value(S) => 2, value(I) => 3, value(R) => 1])
-    @test issetequal(specset, speciesmap(rs))
-
     rxs = [Reaction(k1, [S, I], [I], [1, 1], [2]),
         Reaction(k2, [I], [R])]
     @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
@@ -37,57 +38,35 @@ let
     rs2 = ReactionSystem(rxs2, t, [R, I, S], [k2, k1], name = :rs)
     @test rs == rs2
 
-    rs3 = make_empty_network()
     @parameters k3 k4
     @species D(t)
-    addspecies!(rs3, S)
-    addspecies!(rs3, D)
-    addparam!(rs3, k3)
-    addparam!(rs3, k4)
-    @test issetequal(species(rs3), [S, D])
+    rxs3 = [Reaction(k3, [S], [D]), Reaction(k4, [S, I], [D])]
+    @named rs3 = ReactionSystem(rxs3, t)
+    @test issetequal(species(rs3), [S, D, I])
     @test issetequal(parameters(rs3), [k3, k4])
-    addreaction!(rs3, Reaction(k3, [S], [D]))
-    addreaction!(rs3, Reaction(k4, [S, I], [D]))
-    merge!(rs, rs3)
-    addspecies!(rs2, S)
-    addspecies!(rs2, D)
-    addparam!(rs2, k3)
-    addparam!(rs2, k4)
-    addreaction!(rs2, Reaction(k3, [S], [D]))
-    addreaction!(rs2, Reaction(k4, [S, I], [D]))
+    @named rs = extend(rs3, rs)
+    rxs2b = [Reaction(k3, [S], [D]), Reaction(k4, [S, I], [D])]
+    @named rs2b = ReactionSystem(rxs2b, t)
+    @named rs2 = extend(rs2b, rs2; name = :rs)
     @test rs2 == rs
 
     rxs = [Reaction(k1, [S, I], [I], [1, 1], [2]),
         Reaction(k2, [I], [R])]
-    @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
-    rs3 = make_empty_network()
-    addspecies!(rs3, S)
-    addspecies!(rs3, D)
-    addparam!(rs3, k3)
-    addparam!(rs3, k4)
-    addreaction!(rs3, Reaction(k3, [S], [D]))
-    addreaction!(rs3, Reaction(k4, [S, I], [D]))
-    rs4 = extend(rs, rs3)
+    @named rs = ReactionSystem(rxs, t)
+    rxs3 = [Reaction(k3, [S], [D]), Reaction(k4, [S, I], [D])]
+    @named rs3 = ReactionSystem(rxs3, t)
+    rs4 = extend(rs, rs3; name = :rs)
     @test rs2 == rs4
 
     rxs = [Reaction(k1 * S, [S, I], [I], [2, 3], [2]),
         Reaction(k2 * R, [I], [R])]
-    @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
+    @named rs = ReactionSystem(rxs, t)
     deps = dependents(rxs[2], rs)
     @test isequal(deps, [R, I])
     @test isequal(dependents(rxs[1], rs), dependants(rxs[1], rs))
-    addspecies!(rs, S)
-    @test numspecies(rs) == 3
-    addspecies!(rs, S, disablechecks = true)
-    @test numspecies(rs) == 4
-    addparam!(rs, k1)
-    @test numparams(rs) == 2
-    @test numreactionparams(rs) == 2
-    addparam!(rs, k1, disablechecks = true)
-    @test numparams(rs) == 3
-    @test numreactionparams(rs) == 3
-end
+ end
 
+# Tests `substoichmat` and `prodstoichmat` getters.
 let
     rnmat = @reaction_network begin
         α, S + 2I --> 2I
@@ -104,6 +83,17 @@ let
     @test pmat == prodstoichmat(rnmat) == Matrix(prodstoichmat(rnmat, sparse = true))
 end
 
+# Tests `reactionparamsmap`, `reactionrates`, and `symmap_to_varmap` getters.
+let
+    rn = @reaction_network begin
+        (p,d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    @unpack p, d, kB, kD = rn
+    isequal(reactionparamsmap(rn), Dict([p => 1, d => 2, kB => 3, kD => 4]))
+    issetequal(reactionrates(rn), [p, d, kB, kD])
+    isequal(symmap_to_varmap(rn, [:p => 1.0, :kB => 3.0]), [p => 1.0, kB => 3.0])
+end
 
 ### Test Intermediate Complexes Reaction Networks ###
 
@@ -124,7 +114,6 @@ function testnetwork(rn, B, Z, Δ, lcs, d, subrn, lcd; skiprxtest = false)
     @test linkagedeficiencies(rn) == lcd
     @test sum(linkagedeficiencies(rn)) <= deficiency(rn)
 end
-
 
 # Mass-action non-catalytic.
 let
@@ -311,7 +300,7 @@ let
     testnetwork(rn, B, Z, Δ, lcs, 0, subrn, lcd)
 end
 
-### Testing Reversibility ###
+### Tests Reversibility ###
 
 # Test function.
 function testreversibility(rn, B, rev, weak_rev)
@@ -320,6 +309,7 @@ function testreversibility(rn, B, rev, weak_rev)
     @test isweaklyreversible(rn, subrn) == weak_rev
 end
 
+# Tests reversibility for networks with known reversibility.
 let
     rn = @reaction_network begin
         (k2, k1), A1 <--> A2 + A3
@@ -333,7 +323,6 @@ let
     weak_rev = false
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         (k2, k1), A1 <--> A2 + A3
@@ -347,7 +336,6 @@ let
     weak_rev = false
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         k1, A --> B
@@ -357,7 +345,6 @@ let
     weak_rev = false
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         k1, A --> B
@@ -368,7 +355,6 @@ let
     weak_rev = false
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         (k2, k1), A <--> 2B
@@ -380,7 +366,6 @@ let
     weak_rev = true
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         (k2, k1), A + E <--> AE
@@ -390,7 +375,6 @@ let
     weak_rev = false
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         (k2, k1), A + E <--> AE
@@ -400,14 +384,12 @@ let
     weak_rev = true
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin (k2, k1), A + B <--> 2A end
     rev = true
     weak_rev = true
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         k1, A + B --> 3A
@@ -419,7 +401,6 @@ let
     weak_rev = true
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
-
 let
     rn = @reaction_network begin
         (k2, k1), A + E <--> AE
@@ -432,9 +413,7 @@ let
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end
 
-# ------------------------------------------------------------------------- #
-
-### More Tests ###
+### Other Tests ###
 
 let
     myrn = [reaction_networks_standard; reaction_networks_hill; reaction_networks_real]
@@ -448,6 +427,10 @@ let
 end
 
 # Test defaults.
+# Uses mutating stuff (`setdefaults!`) and order dependent input (`species(rn) .=> u0`).
+# If you want to test this here @Sam I can write a new one that simualtes using defaults.
+# If so, tell me if you have anything specific you want to check though, or I will just implement
+# it as I would.
 let
     rn = @reaction_network begin
         α, S + I --> 2I
@@ -469,7 +452,6 @@ let
         β, I --> R
     end
     @parameters α β
-    @variables t
     @species S(t) I(t) R(t)
     setdefaults!(rn, [S => 999.0, I => 1.0, R => 0.0, α => 1e-4, β => 0.01])
     op = ODEProblem(rn, [], tspan, [])
@@ -492,12 +474,17 @@ let
     @test norm(sol.u - sol3.u) ≈ 0
 
     # Test symmap_to_varmap.
-    sir = @reaction_network sir begin
+    sir = @network_component sir begin
         β, S + I --> 2I
         ν, I --> R
     end
-    subsys = @reaction_network subsys begin k, A --> B end
+    subsys = @network_component subsys begin
+        k, A --> B
+    end
     @named sys = compose(sir, [subsys])
+    sir = complete(sir)
+    sys = complete(sys)
+
     symmap = [:S => 1.0, :I => 1.0, :R => 1.0, :subsys₊A => 1.0, :subsys₊B => 1.0]
     u0map = symmap_to_varmap(sys, symmap)
     pmap = symmap_to_varmap(sys, [:β => 1.0, :ν => 1.0, :subsys₊k => 1.0])
@@ -526,7 +513,7 @@ let
         b23, F2 --> F3
         b31, F3 --> F1
     end
-    osys = convert(ODESystem, rn; remove_conserved = true)
+    osys = complete(convert(ODESystem, rn; remove_conserved = true))
     @unpack A, B, C, D, E, F1, F2, F3, k1, k2, m1, m2, b12, b23, b31 = osys
     u0 = [A => 10.0, B => 10.0, C => 0.0, D => 10.0, E => 0.0, F1 => 8.0, F2 => 0.0,
         F3 => 0.0]
@@ -545,7 +532,7 @@ let
         @test isapprox(sol2(tv, idxs = s), sol2(tv, idxs = s))
     end
 
-    nsys = convert(NonlinearSystem, rn; remove_conserved = true)
+    nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true))
     nprob = NonlinearProblem{true}(nsys, u0, p)
     nsol = solve(nprob, NewtonRaphson(); abstol = 1e-10)
     nprob2 = ODEProblem(rn, u0, (0.0, 100.0 * tspan[2]), p)
@@ -559,12 +546,12 @@ let
 
     u0 = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
         F3 => 20.0]
-    ssys = convert(SDESystem, rn; remove_conserved = true)
+    ssys = complete(convert(SDESystem, rn; remove_conserved = true))
     sprob = SDEProblem(ssys, u0, tspan, p)
     sprob2 = SDEProblem(rn, u0, tspan, p)
     sprob3 = SDEProblem(rn, u0, tspan, p; remove_conserved = true)
-    ists = ModelingToolkit.get_states(ssys)
-    sts = ModelingToolkit.get_states(rn)
+    ists = ModelingToolkit.get_unknowns(ssys)
+    sts = ModelingToolkit.get_unknowns(rn)
     istsidxs = findall(in(ists), sts)
     u1 = copy(sprob.u0)
     u2 = sprob2.u0
@@ -587,8 +574,7 @@ let
     @test isapprox(g2[istsidxs, :], g3)
 end
 
-
-# Non-integer stoichiometry.
+# Tests non-integer stoichiometry.
 let
     function test_stoich(T, rn)
         @test eltype(substoichmat(rn)) == T
@@ -611,20 +597,6 @@ let
     test_stoich(Int, rn2)
 end
 
-### Miscelenesous Tests ###
-
-# Tests various additional API functions.
-let
-    rn = @reaction_network begin
-        (p,d), 0 <--> X
-        (kB,kD), 2X <--> X
-    end
-    @unpack p, d, kB, kD = rn
-    isequal(reactionparamsmap(rn), Dict([p => 1, d => 2, kB => 3, kD => 4]))
-    issetequal(reactionrates(rn), [p, d, kB, kD])
-    isequal(symmap_to_varmap(rn, [:p => 1.0, :kB => 3.0]), [p => 1.0, kB => 3.0])
-end
-
 ### Test Polynomial Transformation Functionality ###
 
 # Tests normal network.
@@ -634,7 +606,7 @@ let
         (kB,kD), 2X <--> X2
     end
     ns = convert(NonlinearSystem, rn)
-    neweqs = getfield.(equations(ns),:rhs)
+    neweqs = getfield.(equations(ns), :rhs)
     poly = Catalyst.to_multivariate_poly(neweqs)
     @test length(poly) == 2
 end
@@ -645,7 +617,7 @@ let
         (p/X,d), 0 <--> X
     end
     ns = convert(NonlinearSystem, rn)
-    neweqs = getfield.(equations(ns),:rhs)
+    neweqs = getfield.(equations(ns), :rhs)
     poly = Catalyst.to_multivariate_poly(neweqs)
     @test length(poly) == 1
 end
@@ -654,6 +626,6 @@ end
 let
     rn = @reaction_network
     ns = convert(NonlinearSystem, rn)
-    neweqs = getfield.(equations(ns),:rhs)
+    neweqs = getfield.(equations(ns), :rhs)
     @test_throws MethodError Catalyst.to_multivariate_poly(neweqs)
 end

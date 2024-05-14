@@ -20,7 +20,7 @@ end
 Given a [`ReactionSystem`](@ref), return a vector of all species defined in the system and
 any subsystems that are of type `ReactionSystem`. To get the species and non-species
 variables in the system and all subsystems, including non-`ReactionSystem` subsystems, uses
-`states(network)`.
+`unknowns(network)`.
 
 Notes:
 - If `ModelingToolkit.get_systems(network)` is non-empty will allocate.
@@ -35,14 +35,14 @@ end
 """
     nonspecies(network)
 
-Return the non-species variables within the network, i.e. those states for which `isspecies
+Return the non-species variables within the network, i.e. those unknowns for which `isspecies
 == false`.
 
 Notes:
 - Allocates a new array to store the non-species variables.
 """
 function nonspecies(network)
-    states(network)[(numspecies(network) + 1):end]
+    unknowns(network)[(numspecies(network) + 1):end]
 end
 
 """
@@ -190,11 +190,12 @@ Notes:
 - Does not check for dependents within any subsystems.
 - Constant species are not considered dependents since they are internally treated as
   parameters.
-- If the rate expression depends on a non-species state variable that will be included in
+- If the rate expression depends on a non-species unknown variable that will be included in
   the dependents, i.e. in
   ```julia
+  t = default_t()
   @parameters k
-  @variables t V(t)
+  @variables V(t)
   @species A(t) B(t) C(t)
   rx = Reaction(k*V, [A, B], [C])
   @named rs = ReactionSystem([rx], t)
@@ -205,7 +206,7 @@ function dependents(rx, network)
     if rx.rate isa Number
         return rx.substrates
     else
-        rvars = get_variables(rx.rate, states(network))
+        rvars = get_variables(rx.rate, unknowns(network))
         return union!(rvars, rx.substrates)
     end
 end
@@ -437,8 +438,8 @@ end
 setdefaults!(sir, [:S => 999.0, :I => 1.0, :R => 1.0, :β => 1e-4, :ν => .01])
 
 # or
+t = default_t()
 @parameter β ν
-@variables t
 @species S(t) I(t) R(t)
 setdefaults!(sir, [S => 999.0, I => 1.0, R => 0.0, β => 1e-4, ν => .01])
 ```
@@ -540,7 +541,7 @@ end
 gives
 ```
 Model sys with 3 equations
-States (5):
+Unknowns (5):
   S(t)
   I(t)
   R(t)
@@ -1345,7 +1346,7 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
     (get_combinatoric_ratelaws(rn1) == get_combinatoric_ratelaws(rn2)) || return false
     isequal(get_iv(rn1), get_iv(rn2)) || return false
     issetequal(get_sivs(rn1), get_sivs(rn2)) || return false
-    issetequal(get_states(rn1), get_states(rn2)) || return false
+    issetequal(get_unknowns(rn1), get_unknowns(rn2)) || return false
     issetequal(get_ps(rn1), get_ps(rn2)) || return false
     issetequal(MT.get_observed(rn1), MT.get_observed(rn2)) || return false
     issetequal(get_eqs(rn1), get_eqs(rn2)) || return false
@@ -1355,12 +1356,6 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
     issetequal(get_systems(rn1), get_systems(rn2)) || return false
 
     true
-end
-
-function isequal_ignore_names(rn1, rn2)
-    Base.depwarn("Catalyst.isequal_ignore_names has been deprecated. Use isequivalent(rn1, rn2) instead.",
-                 :isequal_ignore_names; force = true)
-    isequivalent(rn1, rn2)
 end
 
 """
@@ -1391,180 +1386,6 @@ function make_empty_network(; iv = DEFAULT_IV, name = gensym(:ReactionSystem))
     ReactionSystem(Reaction[], iv, [], []; name = name)
 end
 
-"""
-    addspecies!(network::ReactionSystem, s::Symbolic; disablechecks=false)
-
-Given a [`ReactionSystem`](@ref), add the species corresponding to the variable
-`s` to the network (if it is not already defined). Returns the integer id of the
-species within the system.
-
-Notes:
-- `disablechecks` will disable checking for whether the passed in variable is
-  already defined, which is useful when adding many new variables to the system.
-  *Do not disable checks* unless you are sure the passed in variable is a new
-  variable, as this will potentially leave the system in an undefined state.
-"""
-function addspecies!(network::ReactionSystem, s::Symbolic; disablechecks = false)
-    reset_networkproperties!(network)
-
-    isconstant(s) && error("Constant species should be added via addparams!.")
-    isspecies(s) ||
-        error("$s is not a valid symbolic species. Please use @species to declare it.")
-
-    # we don't check subsystems since we will add it to the top-level system...
-    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, s), get_states(network))
-    if curidx === nothing
-        push!(get_states(network), s)
-        sort!(get_states(network); by = !isspecies)
-        push!(get_species(network), s)
-        MT.process_variables!(get_var_to_name(network), get_defaults(network), [s])
-        return length(get_species(network))
-    else
-        return curidx
-    end
-end
-
-"""
-    addspecies!(network::ReactionSystem, s::Num; disablechecks=false)
-
-Given a [`ReactionSystem`](@ref), add the species corresponding to the
-variable `s` to the network (if it is not already defined). Returns the
-integer id of the species within the system.
-
-- `disablechecks` will disable checking for whether the passed in variable is
-  already defined, which is useful when adding many new variables to the system.
-  *Do not disable checks* unless you are sure the passed in variable is a new
-  variable, as this will potentially leave the system in an undefined state.
-"""
-function addspecies!(network::ReactionSystem, s::Num; disablechecks = false)
-    addspecies!(network, value(s), disablechecks = disablechecks)
-end
-
-"""
-    reorder_states!(rn, neworder)
-
-Given a [`ReactionSystem`](@ref) and a vector `neworder`, reorders the states of `rn`, i.e.
-`get_states(rn)`, according to `neworder`.
-
-Notes:
-- Currently only supports `ReactionSystem`s without subsystems.
-"""
-function reorder_states!(rn, neworder)
-    reset_networkproperties!(rn)
-
-    permute!(get_states(rn), neworder)
-    if !issorted(get_states(rn); by = !isspecies)
-        @warn "New ordering has resulted in a non-species state preceding a species state. This is not allowed so states have been resorted to ensure species precede non-species."
-        sort!(get_states(rn); by = !isspecies)
-    end
-    get_species(rn) .= Iterators.filter(isspecies, get_states(rn))
-    nothing
-end
-
-"""
-    addparam!(network::ReactionSystem, p::Symbolic; disablechecks=false)
-
-Given a [`ReactionSystem`](@ref), add the parameter corresponding to the
-variable `p` to the network (if it is not already defined). Returns the integer
-id of the parameter within the system.
-
-- `disablechecks` will disable checking for whether the passed in variable is
-  already defined, which is useful when adding many new variables to the system.
-  *Do not disable checks* unless you are sure the passed in variable is a new
-  variable, as this will potentially leave the system in an undefined state.
-"""
-function addparam!(network::ReactionSystem, p::Symbolic; disablechecks = false)
-    reset_networkproperties!(network)
-
-    # we don't check subsystems since we will add it to the top-level system...
-    if istree(p) && !(operation(p) isa Symbolic && !istree(operation(p)))
-        error("If the passed in parameter is an expression, it must correspond to an underlying Variable.")
-    end
-    curidx = disablechecks ? nothing : findfirst(S -> isequal(S, p), get_ps(network))
-    if curidx === nothing
-        push!(get_ps(network), p)
-        MT.process_variables!(get_var_to_name(network), get_defaults(network), [p])
-        return length(get_ps(network))
-    else
-        return curidx
-    end
-end
-
-"""
-    addparam!(network::ReactionSystem, p::Num; disablechecks=false)
-
-Given a [`ReactionSystem`](@ref), add the parameter corresponding to the
-variable `p` to the network (if it is not already defined). Returns the
-integer id of the parameter within the system.
-
-- `disablechecks` will disable checking for whether the passed in variable is
-  already defined, which is useful when adding many new variables to the system.
-  *Do not disable checks* unless you are sure the passed in variable is a new
-  variable, as this will potentially leave the system in an undefined state.
-"""
-function addparam!(network::ReactionSystem, p::Num; disablechecks = false)
-    addparam!(network, value(p); disablechecks = disablechecks)
-end
-
-"""
-    addreaction!(network::ReactionSystem, rx::Reaction)
-
-Add the passed in reaction to the [`ReactionSystem`](@ref). Returns the
-integer id of `rx` in the list of `Reaction`s within `network`.
-
-Notes:
-- Any new species or parameters used in `rx` should be separately added to
-    `network` using [`addspecies!`](@ref) and [`addparam!`](@ref).
-"""
-function addreaction!(network::ReactionSystem, rx::Reaction)
-    reset_networkproperties!(network)
-    push!(get_eqs(network), rx)
-    sort(get_eqs(network); by = eqsortby)
-    push!(get_rxs(network), rx)
-    length(get_rxs(network))
-end
-
-"""
-    merge!(network1::ReactionSystem, network2::ReactionSystem)
-
-Merge `network2` into `network1`.
-
-Notes:
-- Duplicate reactions between the two networks are not filtered out.
-- [`Reaction`](@ref)s are not deepcopied to minimize allocations, so both
-  networks will share underlying data arrays.
-- Subsystems are not deepcopied between the two networks and will hence be
-  shared.
-- Returns `network1`.
-- `combinatoric_ratelaws` is the value of `network1`.
-"""
-function Base.merge!(network1::ReactionSystem, network2::ReactionSystem)
-    isequal(get_iv(network1), get_iv(network2)) ||
-        error("Reaction networks must have the same independent variable to be mergable.")
-    union!(get_sivs(network1), get_sivs(network2))
-
-    union!(get_eqs(network1), get_eqs(network2))
-    sort!(get_eqs(network1), by = eqsortby)
-    union!(get_rxs(network1), get_rxs(network2))
-    (count(eq -> eq isa Reaction, get_eqs(network1)) == length(get_rxs(network1))) ||
-        error("Unequal number of reactions from get_rxs(sys) and get_eqs(sys) after merging.")
-
-    union!(get_states(network1), get_states(network2))
-    sort!(get_states(network1), by = !isspecies)
-    union!(get_species(network1), get_species(network2))
-    (count(isspecies, get_states(network1)) == length(get_species(network1))) ||
-        error("Unequal number of species from get_species(sys) and get_states(sys) after merging.")
-
-    union!(get_ps(network1), get_ps(network2))
-    union!(get_observed(network1), get_observed(network2))
-    union!(get_systems(network1), get_systems(network2))
-    merge!(get_defaults(network1), get_defaults(network2))
-    union!(MT.get_continuous_events(network1), MT.get_continuous_events(network2))
-    union!(MT.get_discrete_events(network1), MT.get_discrete_events(network2))
-
-    reset_networkproperties!(network1)
-    network1
-end
 
 ###############################   units   #####################################
 
@@ -1633,8 +1454,9 @@ function validate(rs::ReactionSystem, info::String = "")
     timeunits = get_unit(get_iv(rs))
 
     # no units for species, time or parameters then assume validated
-    (specunits in (MT.unitless, nothing)) && (timeunits in (MT.unitless, nothing)) &&
-        MT.all_dimensionless(get_ps(rs)) && return true
+    if (specunits in (MT.unitless, nothing)) && (timeunits in (MT.unitless, nothing))
+        all(u == 1.0 for u in ModelingToolkit.get_unit(get_ps(rs))) && return true
+    end
 
     rateunits = specunits / timeunits
     for rx in get_rxs(rs)
@@ -1643,12 +1465,21 @@ function validate(rs::ReactionSystem, info::String = "")
             rxunits *= get_unit(sub)^rx.substoich[i]
         end
 
-        if rxunits != rateunits
-            validated = false
-            @warn(string("Reaction rate laws are expected to have units of ", rateunits,
-                         " however, ", rx, " has units of ", rxunits, "."))
+        # Checks that the reaction's combined units is correct, if not, throws a warning.
+        # Needs additional checks because for cases: (1.0^n) and (1.0^n1)*(1.0^n2).
+        # These are not considered (be default) considered equal to `1.0` for unitless reactions.
+        isequal(rxunits, rateunits) && continue
+        if istree(rxunits)
+            unitless_exp(rxunits) && continue
+            (operation(rxunits) == *) && all(unitless_exp(arg) for arg in arguments(rxunits)) && continue
         end
+        validated = false
+        @warn(string("Reaction rate laws are expected to have units of ", rateunits, " however, ",
+                     rx, " has units of ", rxunits, "."))
     end
 
     validated
 end
+
+# Checks if a unit consist of exponents with base 1 (and is this unitless).
+unitless_exp(u) = istree(u) && (operation(u) == ^) && (arguments(u)[1] == 1)

@@ -2,6 +2,7 @@ module CatalystHomotopyContinuationExtension
 
 # Fetch packages.
 using Catalyst
+import DynamicPolynomials
 import ModelingToolkit as MT
 import HomotopyContinuation as HC
 import Setfield: @set

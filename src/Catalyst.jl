@@ -13,7 +13,9 @@ using JumpProcesses: JumpProcesses,
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit
 const MT = ModelingToolkit
-using Unitful
+using DynamicQuantities#, Unitful # Having Unitful here as well currently gives an error.
+
+
 @reexport using ModelingToolkit
 using Symbolics
 
@@ -22,28 +24,37 @@ RuntimeGeneratedFunctions.init(@__MODULE__)
 
 import Symbolics: BasicSymbolic
 import SymbolicUtils
-using ModelingToolkit: Symbolic, value, istree, get_states, get_ps, get_iv, get_systems,
+using ModelingToolkit: Symbolic, value, istree, get_unknowns, get_ps, get_iv, get_systems,
                        get_eqs, get_defaults, toparam, get_var_to_name, get_observed,
                        getvar
 
 import ModelingToolkit: get_variables, namespace_expr, namespace_equation, get_variables!,
-                        modified_states!, validate, namespace_variables,
-                        namespace_parameters, rename, renamespace, getname, flatten
+                        modified_unknowns!, validate, namespace_variables,
+                        namespace_parameters, rename, renamespace, getname, flatten,
+                        is_alg_equation, is_diff_equation
 
 # internal but needed ModelingToolkit functions
 import ModelingToolkit: check_variables,
                         check_parameters, _iszero, _merge, check_units,
-                        get_unit, check_equations
+                        get_unit, check_equations, iscomplete
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
 import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
+import Symbolics: occursin, wrap
 
 # globals for the modulate
-const DEFAULT_IV_SYM = :t
-const DEFAULT_IV = (@variables $(DEFAULT_IV_SYM))[1]
+function default_time_deriv()
+    return ModelingToolkit.D_nounits
+end
+function default_t()
+    return ModelingToolkit.t_nounits
+end
+const DEFAULT_IV = default_t()
+const DEFAULT_IV_SYM = Symbol(DEFAULT_IV)
+export default_t, default_time_deriv
 
 # as used in Catlab
 const USE_GV_JLL = Ref(false)
@@ -67,10 +78,10 @@ export ODEProblem,
        SteadyStateProblem
 
 # reaction_network macro
-const ExprValues = Union{Expr, Symbol, Float64, Int}
+const ExprValues = Union{Expr, Symbol, Float64, Int, Bool}
 include("expression_utils.jl")
 include("reaction_network.jl")
-export @reaction_network, @add_reactions, @reaction, @species
+export @reaction_network, @network_component, @reaction, @species
 
 # registers CRN specific functions using Symbolics.jl
 include("registered_functions.jl")
@@ -80,10 +91,11 @@ export mm, mmr, hill, hillr, hillar
 include("networkapi.jl")
 export species, nonspecies, reactionparams, reactions, speciesmap, paramsmap
 export numspecies, numreactions, numreactionparams, setdefaults!, symmap_to_varmap
-export make_empty_network, addspecies!, addparam!, addreaction!, reactionparamsmap
+export make_empty_network, reactionparamsmap
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
 export isequivalent
+export set_default_noise_scaling, get_noise_scaling, has_noise_scaling
 
 # depreciated functions to remove in future releases
 export params, numparams
@@ -102,8 +114,8 @@ export Graph, savegraph, complexgraph
 
 # for creating compounds
 include("chemistry_functionality.jl")
-export @compound
-export components, iscompound, coefficients
+export @compound, @compounds
+export iscompound, components, coefficients, component_coefficients
 export balance_reaction
 
 ### Extensions ###
@@ -111,6 +123,10 @@ export balance_reaction
 # HomotopyContinuation
 function hc_steady_states end
 export hc_steady_states
+
+# StructuralIdentifiability
+function make_si_ode end
+export make_si_ode
 
 ### Spatial Reaction Networks ###
 

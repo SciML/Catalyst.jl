@@ -11,6 +11,9 @@ include("../spatial_test_networks.jl")
 using StableRNGs
 rng = StableRNG(12345)
 
+# Sets defaults
+t = default_t()
+
 ### Tests Simulations Don't Error ###
 for grid in [small_2d_grid, short_path, small_directed_cycle]
     # Non-stiff case
@@ -323,7 +326,6 @@ let
     end
     @unpack dLigand, dSilane, Silane = CuH_Amination_system_alt_1
     @parameters dAmine_E dNewspecies1
-    @variables t
     @species Ligand(t) Amine_E(t) Newspecies1(t) 
     tr_alt_1_1 = TransportReaction(dLigand, Ligand)
     tr_alt_1_2 = TransportReaction(dSilane, Silane)
@@ -350,7 +352,6 @@ let
     end
     @unpack Decomposition, dCu_ELigand, Cu_ELigand  = CuH_Amination_system_alt_2
     @parameters dNewspecies2 dDecomposition
-    @variables t
     @species Newspecies2(t) 
     tr_alt_2_1 = @transport_reaction dLigand Ligand
     tr_alt_2_2 = @transport_reaction dSilane Silane

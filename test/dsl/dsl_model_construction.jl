@@ -1,21 +1,23 @@
-### Fetch Packages and Reaction Networks ###
+### Prepares Tests ###
 
 # Fetch packages.
 using DiffEqBase, Catalyst, Random, Test
-using ModelingToolkit: operation, istree, get_states, get_ps, get_eqs, get_systems,
+using ModelingToolkit: operation, istree, get_unknowns, get_ps, get_eqs, get_systems,
                        get_iv, nameof
+t = default_t()
 
 # Sets rnd number.
 using StableRNGs
 rng = StableRNG(12345)
 
-# Fetch test networks.
+# Fetch test networks and functions.
 include("../test_networks.jl")
+include("../test_functions.jl")
 
 ### Declares Testing Functions ###
 
 function unpacksys(sys)
-    get_eqs(sys), get_iv(sys), get_states(sys), get_ps(sys), nameof(sys), get_systems(sys)
+    get_eqs(sys), get_iv(sys), get_unknowns(sys), get_ps(sys), nameof(sys), get_systems(sys)
 end
 
 opname(x) = istree(x) ? nameof(operation(x)) : nameof(x)
@@ -37,13 +39,13 @@ function all_parameters(eqs)
 end
 
 # Perform basic tests.
-function basic_test(rn, N, states_syms, p_syms)
-    eqs, iv, states, ps, name, systems = unpacksys(rn)
+function basic_test(rn, N, unknowns_syms, p_syms)
+    eqs, iv, unknowns, ps, name, systems = unpacksys(rn)
     @test length(eqs) == N
     @test opname(iv) == :t
-    @test length(states) == length(states_syms)
-    @test issetequal(map(opname, states), states_syms)
-    @test all_reactants(eqs) == Set(states_syms)
+    @test length(unknowns) == length(unknowns_syms)
+    @test issetequal(map(opname, unknowns), unknowns_syms)
+    @test all_reactants(eqs) == Set(unknowns_syms)
     @test length(ps) == length(p_syms)
     @test issetequal(map(opname, ps), p_syms)
 end
@@ -74,7 +76,7 @@ let
     basic_test(reaction_networks_weird[2], 4, [:X, :Y, :Z], [:k1, :k2, :k3, :k4])
 end
 
-# Tries making various systems.
+# Compares networks to networks created using different arrow types.
 let
     identical_networks_1 = Vector{Pair}()
 
@@ -121,34 +123,49 @@ let
     push!(identical_networks_1, reaction_networks_standard[8] => different_arrow_8)
 
     for networks in identical_networks_1
-        f1 = ODEFunction(convert(ODESystem, networks[1]), jac = true)
-        f2 = ODEFunction(convert(ODESystem, networks[2]), jac = true)
-        g1 = SDEFunction(convert(SDESystem, networks[1]))
-        g2 = SDEFunction(convert(SDESystem, networks[2]))
         for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0 = factor * rand(rng, length(get_states(networks[1])))
-            p = factor * rand(rng, length(get_ps(networks[1])))
+            u0 = rnd_u0(networks[1], rng; factor)
+            p = rnd_ps(networks[1], rng; factor)
             t = rand(rng)
-            @test all(abs.(f1(u0, p, t) .≈ f2(u0, p, t)))
-            @test all(abs.(f1.jac(u0, p, t) .≈ f2.jac(u0, p, t)))
-            @test all(abs.(g1(u0, p, t) .≈ g2(u0, p, t)))
+            
+            @test f_eval(networks[1], u0, p, t) ≈ f_eval(networks[2], u0, p, t)
+            @test jac_eval(networks[1], u0, p, t) ≈ jac_eval(networks[2], u0, p, t)
+            @test g_eval(networks[1], u0, p, t) ≈ g_eval(networks[2], u0, p, t)
         end
     end
 end
 
-# Tests that networks expressed in different ways are identical.
+# Compares simulations for network with different species and parameter names
 let
-    identical_networks_2 = Vector{Pair}()
-
-    # Different parameter and variable names.
+    # Fetches the original network, and also declares it using alternative notation.
+    network = reaction_networks_standard[5]
     differently_written_5 = @reaction_network begin
         q, ∅ → Y1
         (l1, l2), Y1 ⟷ Y2
         (l3, l4), Y2 ⟷ Y3
         (l5, l6), Y3 ⟷ Y4
         c, Y4 → ∅
+    end    
+
+    # Checks that the networks' functions evaluates equally for various randomised inputs.
+    @unpack X1, X2, X3, X4, p, d, k1, k2, k3, k4, k5, k6 = network
+    for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
+        u0_1 = Dict(rnd_u0(network, rng; factor))
+        p_1 = Dict(rnd_ps(network, rng; factor))
+        u0_2 = [:Y1 => u0_1[X1], :Y2 => u0_1[X2], :Y3 => u0_1[X3], :Y4 => u0_1[X4]]
+        p_2 = [:q => p_1[p], :c => p_1[d], :l1 => p_1[k1], :l2 => p_1[k2], :l3 => p_1[k3], 
+               :l4 => p_1[k4], :l5 => p_1[k5], :l6 => p_1[k6]]
+        t = rand(rng)
+        
+        @test f_eval(network, u0_1, p_1, t) ≈ f_eval(differently_written_5, u0_2, p_2, t)
+        @test jac_eval(network, u0_1, p_1, t) ≈ jac_eval(differently_written_5, u0_2, p_2, t)
+        @test g_eval(network, u0_1, p_1, t) ≈ g_eval(differently_written_5, u0_2, p_2, t)
     end
-    push!(identical_networks_2, reaction_networks_standard[5] => differently_written_5)
+end
+
+# Compares networks to networks written in different ways.
+let
+    identical_networks_2 = Vector{Pair}()
 
     # Unfold reactions.
     differently_written_6 = @reaction_network begin
@@ -188,22 +205,19 @@ let
     push!(identical_networks_2, reaction_networks_standard[7] => differently_written_8)
 
     for networks in identical_networks_2
-        f1 = ODEFunction(convert(ODESystem, networks[1]), jac = true)
-        f2 = ODEFunction(convert(ODESystem, networks[2]), jac = true)
-        g1 = SDEFunction(convert(SDESystem, networks[1]))
-        g2 = SDEFunction(convert(SDESystem, networks[2]))
         for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0 = factor * rand(rng, length(get_states(networks[1])))
-            p = factor * rand(rng, length(get_ps(networks[1])))
+            u0 = rnd_u0(networks[1], rng; factor)
+            p = rnd_ps(networks[1], rng; factor)
             t = rand(rng)
-            @test all(f1(u0, p, t) .≈ f2(u0, p, t))
-            @test all(f1.jac(u0, p, t) .≈ f2.jac(u0, p, t))
-            @test all(g1(u0, p, t) .≈ g2(u0, p, t))
+            
+            @test f_eval(networks[1], u0, p, t) ≈ f_eval(networks[2], u0, p, t)
+            @test jac_eval(networks[1], u0, p, t) ≈ jac_eval(networks[2], u0, p, t)
+            @test g_eval(networks[1], u0, p, t) ≈ g_eval(networks[2], u0, p, t)
         end
     end
 end
 
-# Test networks without parameters.
+# Compares networks to networks written without parameters.
 let
     identical_networks_3 = Vector{Pair}()
     parameter_sets = []
@@ -217,8 +231,8 @@ let
         (sqrt(3.7), exp(1.9)), X4 ⟷ X1 + X2
     end
     push!(identical_networks_3, reaction_networks_standard[9] => no_parameters_9)
-    push!(parameter_sets,
-          [1.5, 1, 2, 0.01, 2.3, 1001, π, 42, 19.9, 999.99, sqrt(3.7), exp(1.9)])
+    push!(parameter_sets, [:p1 => 1.5, :p2 => 1, :p3 => 2, :d1 => 0.01, :d2 => 2.3, :d3 => 1001, 
+                           :k1 => π, :k2 => 42, :k3 => 19.9, :k4 => 999.99, :k5 => sqrt(3.7), :k6 => exp(1.9)])
 
     no_parameters_10 = @reaction_network begin
         0.01, ∅ ⟶ X1
@@ -229,19 +243,17 @@ let
         1.0, X5 ⟶ ∅
     end
     push!(identical_networks_3, reaction_networks_standard[10] => no_parameters_10)
-    push!(parameter_sets, [0.01, 3.1, 3.2, 0.0, 2.1, 901.0, 63.5, 7, 8, 1.0])
+    push!(parameter_sets, [:p => 0.01, :k1 => 3.1, :k2 => 3.2, :k3 => 0.0, :k4 => 2.1, :k5 => 901.0, 
+                           :k6 => 63.5, :k7 => 7, :k8 => 8, :d => 1.0])
 
-    for (i, networks) in enumerate(identical_networks_3)
-        f1 = ODEFunction(convert(ODESystem, networks[1]), jac = true)
-        f2 = ODEFunction(convert(ODESystem, networks[2]), jac = true)
-        g1 = SDEFunction(convert(SDESystem, networks[1]))
-        g2 = SDEFunction(convert(SDESystem, networks[2]))
+    for (networks, p_1) in zip(identical_networks_3, parameter_sets)
         for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0 = factor * rand(rng, length(get_states(networks[1])))
+            u0 = rnd_u0(networks[1], rng; factor)
             t = rand(rng)
-            @test f1(u0, parameter_sets[i], t) ≈ f2(u0, [], t)
-            @test f1.jac(u0, parameter_sets[i], t) ≈ f2.jac(u0, [], t)
-            @test g1(u0, parameter_sets[i], t) ≈ g2(u0, [], t)
+            
+            @test f_eval(networks[1], u0, p_1, t) ≈ f_eval(networks[2], u0, [], t)
+            @test jac_eval(networks[1], u0, p_1, t) ≈ jac_eval(networks[2], u0, [], t)
+            @test g_eval(networks[1], u0, p_1, t) ≈ g_eval(networks[2], u0, [], t)
         end
     end
 end
@@ -278,7 +290,7 @@ let
 
     for networks in identical_networks_4
         @test isequal(get_iv(networks[1]), get_iv(networks[2]))
-        @test alleq(get_states(networks[1]), get_states(networks[2]))
+        @test alleq(get_unknowns(networks[1]), get_unknowns(networks[2]))
         @test alleq(get_ps(networks[1]), get_ps(networks[2]))
         @test ModelingToolkit.get_systems(networks[1]) ==
               ModelingToolkit.get_systems(networks[2])
@@ -305,25 +317,20 @@ let
         (t, k6), X3 ↔ X1
     end
 
-    f1 = ODEFunction(convert(ODESystem, reaction_networks_constraint[1]), jac = true)
-    f2 = ODEFunction(convert(ODESystem, time_network), jac = true)
-    g1 = SDEFunction(convert(SDESystem, reaction_networks_constraint[1]))
-    g2 = SDEFunction(convert(SDESystem, time_network))
     for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-        u0 = factor * rand(rng, length(get_states(time_network)))
-        κ2 = factor * rand(rng)
-        κ3 = factor * rand(rng)
-        κ6 = factor * rand(rng)
         τ = rand(rng)
-        p1 = [τ, κ2, κ3, τ, τ, κ6]
-        p2 = [κ2, κ3, κ6]
-        @test all(f1(u0, p1, τ) .≈ f2(u0, p2, τ))
-        @test all(f1.jac(u0, p1, τ) .≈ f2.jac(u0, p2, τ))
-        @test all(g1(u0, p1, τ) .≈ g2(u0, p2, τ))
+        u = rnd_u0(reaction_networks_constraint[1], rng; factor)
+        p_2 = rnd_ps(time_network, rng; factor)
+        p_1 = [p_2; reaction_networks_constraint[1].k1 => τ; 
+               reaction_networks_constraint[1].k4 => τ; reaction_networks_constraint[1].k5 => τ]
+
+        @test f_eval(reaction_networks_constraint[1], u, p_1, τ) ≈ f_eval(time_network, u, p_2, τ)
+        @test jac_eval(reaction_networks_constraint[1], u, p_1, τ) ≈ jac_eval(time_network, u, p_2, τ)
+        @test g_eval(reaction_networks_constraint[1], u, p_1, τ) ≈ g_eval(time_network, u, p_2, τ)
     end
 end
 
-# Test various names as varriables.
+# Check that various symbols can be used as species/parameter names.
 let
     @reaction_network begin
         (a, A), n ⟷ N
@@ -364,28 +371,18 @@ let
     end
 end
 
-# Test that I works.
+# Test that I works as a name.
 let
     rn = @reaction_network begin
         k1, S + I --> 2I
         k2, I --> R
     end
-    @variables t
     @species I(t)
     @test any(isequal(I), species(rn))
-    @test any(isequal(I), states(rn))
+    @test any(isequal(I), unknowns(rn))
 end
 
-# Test names work.
-let
-    rn = @reaction_network SIR1 begin
-        k1, S + I --> 2I
-        k2, I --> R
-    end
-    @test nameof(rn) == :SIR1
-end
-
-# Tests some arrow variants.
+# Tests backwards and double arrows.
 let
     rn1 = @reaction_network arrowtest begin
         (a1, a2), C <--> 0
@@ -412,7 +409,7 @@ let
     @test isequal((@reaction k, 0 --> X), (@reaction k, 0 ⥟ X))
 end
 
-# Test forbidden and special symbols.
+# Test that symbols with special meanings, or that are forbidden, are handled properly.
 let
     test_network = @reaction_network begin t * k, X --> ∅ end
     @test length(species(test_network)) == 1
@@ -437,4 +434,16 @@ let
     @test_throws LoadError @eval @reaction nothing, 0 --> B
     @test_throws LoadError @eval @reaction k, 0 --> im
     @test_throws LoadError @eval @reaction k, 0 --> nothing
+end
+
+
+### Other Tests ###
+
+# Test names work.
+let
+    rn = @reaction_network SIR1 begin
+        k1, S + I --> 2I
+        k2, I --> R
+    end
+    @test nameof(rn) == :SIR1
 end

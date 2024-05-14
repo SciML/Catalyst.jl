@@ -5,16 +5,44 @@ can construct the earlier repressilator model by composing together three
 identically repressed genes, and how to use compositional modeling to create
 compartments.
 
+## [A note on *completeness*](@id completeness_note)
+Catalyst `ReactionSystem` can either be *complete* or *incomplete*. When created using the `@reaction_network` DSL they are *created as complete*. Here, only complete `ReactionSystem`s can be used to create the various problem types (e.g. `ODEProblem`). However, only incomplete `ReactionSystem`s can be composed using the features described below. Hence, for compositional modeling, `ReactionSystem` must be created as incomplete, and later set to complete before simulation.
+
+To create a `ReactionSystem`s for use in compositional modeling via the DSL, simply use the `@network_component` macro instead of `@reaction_network`:
+```@example ex0
+using Catalyst
+degradation_component = @network_component begin
+  d, X --> 0
+end
+```
+Alternatively one can just build the `ReactionSystem` via the symbolic interface.
+```@example ex0
+@parameters d
+@variable t
+@species X(t)
+rx = Reaction(d, [X], nothing)
+@named degradation_component = ReactionSystem([rs], t)
+```
+We can test whether a system is complete using the `ModelingToolkit.iscomplete` function:
+```@example ex0
+ModelingToolkit.iscomplete(degradation_component)
+```
+To mark a system as complete, after which is should be considered as representing a finalized model, use the `complete` function
+```@example ex0
+degradation_component_complete = complete(degradation_component)
+ModelingToolkit.iscomplete(degradation_component_complete)
+```
+
 ## Compositional modeling tooling
 Catalyst supports two ModelingToolkit interfaces for composing multiple
 [`ReactionSystem`](@ref)s together into a full model. The first mechanism for
 extending a system is the `extend` command
 ```@example ex1
 using Catalyst
-basern = @reaction_network rn1 begin
+basern = @network_component rn1 begin
   k, A + B --> C
 end
-newrn = @reaction_network rn2 begin
+newrn = @network_component rn2 begin
   r, C --> A + B
 end
 @named rn = extend(newrn, basern)
@@ -27,9 +55,9 @@ The second main compositional modeling tool is the use of subsystems. Suppose we
 now add to `basern` two subsystems, `newrn` and `newestrn`, we get a
 different result:
 ```@example ex1
-newestrn = @reaction_network rn3 begin
-            v, A + D --> 2D
-           end
+newestrn = @network_component rn3 begin
+  v, A + D --> 2D
+end
 @named rn = compose(basern, [newrn, newestrn])
 ```
 Here we have created a new `ReactionSystem` that adds `newrn` and `newestrn` as
@@ -51,8 +79,8 @@ plot(TreePlot(rn), method=:tree, fontsize=12, nodeshape=:ellipse)
 We could also have directly constructed `rn` using the same reaction as in
 `basern` as
 ```@example ex1
+t = default_t()
 @parameters k
-@variables t
 @species A(t), B(t), C(t)
 rxs = [Reaction(k, [A,B], [C])]
 @named rn = ReactionSystem(rxs, t; systems = [newrn, newestrn])
@@ -72,7 +100,7 @@ Catalyst.get_rxs(rn)
 ```
 To see all the species, parameters and reactions in the tree we can use
 ```@example ex1
-species(rn)   # or states(rn)
+species(rn)   # or unknowns(rn)
 ```
 ```@example ex1
 parameters(rn)  # or reactionparameters(rn)
@@ -99,7 +127,7 @@ modular fashion. We start by defining a function that creates a negatively
 repressed gene, taking the repressor as input
 ```@example ex1
 function repressed_gene(; R, name)
-  @reaction_network $name begin
+  @network_component $name begin
     hillr($R,α,K,n), ∅ --> m
     (δ,γ), m <--> ∅
     β, m --> m + P
@@ -114,7 +142,7 @@ ability to substitute the value of these variables into the DSL (see
 [Interpolation of Julia Variables](@ref dsl_description_interpolation_of_variables)). To make the repressilator we now make
 three genes, and then compose them together
 ```@example ex1
-@variables t
+t = default_t()
 @species G3₊P(t)
 @named G1 = repressed_gene(; R=ParentScope(G3₊P))
 @named G2 = repressed_gene(; R=ParentScope(G1.P))
@@ -130,7 +158,7 @@ plot(TreePlot(repressilator), method=:tree, fontsize=12, nodeshape=:ellipse)
 In building the repressilator we needed to use two new features. First, we
 needed to create a symbolic variable that corresponds to the protein produced by
 the third gene before we created the corresponding system. We did this via
-`@variables t, G3₊P(t)`. We also needed to set the scope where each repressor
+`@variables G3₊P(t)`. We also needed to set the scope where each repressor
 lived. Here `ParentScope(G3₊P)`, `ParentScope(G1.P)`, and `ParentScope(G2.P)`
 signal Catalyst that these variables will come from parallel systems in the tree
 that have the same parent as the system being constructed (in this case the
@@ -156,13 +184,13 @@ In our model we'll therefore add the conversions of the last column to properly
 account for compartment volumes:
 ```@example ex1
 # transcription and regulation
-nuc = @reaction_network nuc begin
+nuc = @network_component nuc begin
   α, G --> G + M
   (κ₊/V,κ₋), D + G <--> DG
 end
 
 # translation and dimerization
-cyto = @reaction_network cyto begin
+cyto = @network_component cyto begin
   β, M --> M + P
   (k₊/V,k₋), 2P <--> D
   σ, P --> 0
@@ -171,7 +199,7 @@ end
 
 # export reactions,
 # γ,δ=probability per time to be exported/imported
-model = @reaction_network model begin
+model = @network_component model begin
   γ, $(nuc.M) --> $(cyto.M)
   δ, $(cyto.D) --> $(nuc.D)
 end

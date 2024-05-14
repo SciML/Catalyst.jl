@@ -1,6 +1,32 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
+
+## Catalyst 14.0
+- To be more consistent with ModelingToolkit's immutability requirement for systems, we have removed API functions that mutate `ReactionSystem`s such as `addparam!`, `addreaction!`, `addspecies`, `@add_reactions`, and `merge!`. Please use `ModelingToolkit.extend` and `ModelingToolkit.compose` to generate new merged and/or composed `ReactionSystem`s from multiple component systems.
+- Added CatalystStructuralIdentifiabilityExtension, which permits StructuralIdentifiability.jl function to be applied directly to Catalyst systems. E.g. use
+```julia
+using Catalyst, StructuralIdentifiability
+goodwind_oscillator = @reaction_network begin
+    (mmr(P,pₘ,1), dₘ), 0 <--> M
+    (pₑ*M,dₑ), 0 <--> E
+    (pₚ*E,dₚ), 0 <--> P
+end
+assess_identifiability(goodwind_oscillator; measured_quantities=[:M])
+```
+to assess (global) structural identifiability for all parameters and variables of the `goodwind_oscillator` model (under the presumption that we can measure `M` only).
+- Automatically handles conservation laws for structural identifiability problems (eliminates these internally to speed up computations).
+- Adds a tutorial to illustrate the use of the extension.
+- Enable adding metadata to individual reactions, e.g:
+```julia
+rn = @reaction_network begin
+    @parameters η
+    k, 2X --> X2, [noise_scaling=η]
+end
+get_noise_scaling(rn)
+```
+- `SDEProblem` no longer takes the `noise_scaling` argument (see above for new approach to handle noise scaling).
+- Changed fields of internal `Reaction` structure. `ReactionSystems`s saved using `serialize` on previous Catalyst versions cannot be loaded using this (or later) versions.
 - Simulation of spatial ODEs now supported. For full details, please see https://github.com/SciML/Catalyst.jl/pull/644 and upcoming documentation. Note that these methods are currently considered alpha, with the interface and approach changing even in non-breaking Catalyst releases.
 - LatticeReactionSystem structure represents a spatial reaction network:
   ```julia
@@ -24,6 +50,13 @@
   ```
   X's value will be `1.0` in the first vertex, but `0.0` in the remaining one (the system have 25 vertexes in total). SInce th parameters `p` and `d` are part of the non-spatial reaction network, their values are tied to vertexes. However, if the `D` parameter (which governs diffusion between vertexes) is given several values, these will instead correspond to the specific edges (and transportation along those edges.)
 
+- Update how compounds are created. E.g. use
+```julia
+@variables t C(t) O(t)
+@compound CO2 ~ C + 2O
+```
+to create a compound species `CO2` that consists of `C` and 2 `O`.
+- Added documentation for chemistry related functionality (compound creation and reaction balancing).
 - Add a CatalystBifurcationKitExtension, permitting BifurcationKit's `BifurcationProblem`s to be created from Catalyst reaction networks. Example usage:
 ```julia
 using Catalyst
@@ -34,7 +67,6 @@ wilhelm_2009_model = @reaction_network begin
     k4, X --> 0
     k5, 0 --> X
 end
-
 
 using BifurcationKit
 bif_par = :k1

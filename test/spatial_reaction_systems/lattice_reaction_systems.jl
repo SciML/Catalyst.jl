@@ -2,11 +2,15 @@
 
 # Fetch packages.
 using Catalyst, Graphs, Test
+using Symbolics: unwrap
+t = default_t()
 
 # Pre declares a grid.
 grid = Graphs.grid([2, 2])
 
+
 ### Tests LatticeReactionSystem Getters Correctness ###
+
 # Test case 1.
 let 
     rs = @reaction_network begin
@@ -84,7 +88,6 @@ let
     end
     @unpack dX, X, V = rs
     @parameters dV dW
-    @variables t
     @species W(t)
     tr_1 = TransportReaction(dX, X)  
     tr_2 = @transport_reaction dY Y    
@@ -177,7 +180,6 @@ end
 
 # Test reactions with constants in rate.
 let 
-    @variables t
     @species X(t) Y(t)
     
     tr_1 = TransportReaction(1.5, X)
@@ -221,7 +223,6 @@ end
 # Test creation of TransportReaction with non-parameters in rate.
 # Tests that it works even when rate is highly nested.
 let 
-    @variables t
     @species X(t) Y(t)
     @parameters D1 D2 D3
     @test_throws ErrorException TransportReaction(D1 + D2*(D3 + Y), X)
@@ -274,3 +275,93 @@ let
     @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
 end
 
+
+### Test Designation of Parameter Types ###
+# Currently not supported. Won't be until the LatticeReactionSystem internal update is merged.
+
+# Checks that parameter types designated in the non-spatial `ReactionSystem` is handled correctly.
+@test_broken let
+    # Declares LatticeReactionSystem with designated parameter types.
+    rs = @reaction_network begin
+        @parameters begin
+            k1
+            l1
+            k2::Float64 = 2.0
+            l2::Float64
+            k3::Int64 = 2, [description="A parameter"]
+            l3::Int64
+            k4::Float32, [description="Another parameter"]
+            l4::Float32
+            k5::Rational{Int64}
+            l5::Rational{Int64}
+            D1::Float32
+            D2, [edgeparameter=true]
+            D3::Rational{Int64}, [edgeparameter=true]
+        end
+        (k1,l1), X1 <--> Y1
+        (k2,l2), X2 <--> Y2
+        (k3,l3), X3 <--> Y3
+        (k4,l4), X4 <--> Y4
+        (k5,l5), X5 <--> Y5
+    end
+    tr1 = @transport_reaction $(rs.D1) X1 
+    tr2 = @transport_reaction $(rs.D2) X2 
+    tr3 = @transport_reaction $(rs.D3) X3    
+    lrs = LatticeReactionSystem(rs, [tr1, tr2, tr3], grid)
+    
+    # Loops through all parameters, ensuring that they have the correct type
+    p_types = Dict([ModelingToolkit.nameof(p) => typeof(unwrap(p)) for p in parameters(lrs)])
+    @test p_types[:k1] == SymbolicUtils.BasicSymbolic{Real}
+    @test p_types[:l1] == SymbolicUtils.BasicSymbolic{Real}
+    @test p_types[:k2] == SymbolicUtils.BasicSymbolic{Float64}
+    @test p_types[:l2] == SymbolicUtils.BasicSymbolic{Float64}
+    @test p_types[:k3] == SymbolicUtils.BasicSymbolic{Int64}
+    @test p_types[:l3] == SymbolicUtils.BasicSymbolic{Int64}
+    @test p_types[:k4] == SymbolicUtils.BasicSymbolic{Float32}
+    @test p_types[:l4] == SymbolicUtils.BasicSymbolic{Float32}
+    @test p_types[:k5] == SymbolicUtils.BasicSymbolic{Rational{Int64}}
+    @test p_types[:l5] == SymbolicUtils.BasicSymbolic{Rational{Int64}}
+    @test p_types[:D1] == SymbolicUtils.BasicSymbolic{Float32}
+    @test p_types[:D2] == SymbolicUtils.BasicSymbolic{Real}
+    @test p_types[:D3] == SymbolicUtils.BasicSymbolic{Rational{Int64}}
+end
+
+# Checks that programmatically declared parameters (with types) can be used in `TransportReaction`s.
+# Checks that LatticeReactionSystem with non-default parameter types can be simulated.
+@test_broken let
+    rs = @reaction_network begin
+        @parameters p::Float32
+        (p,d), 0 <--> X
+    end
+    @parameters D::Rational{Int64}
+    tr = TransportReaction(D, rs.X)  
+    lrs = LatticeReactionSystem(rs, [tr], grid)
+    
+    p_types = Dict([ModelingToolkit.nameof(p) => typeof(unwrap(p)) for p in parameters(lrs)])
+    @test p_types[:p] == SymbolicUtils.BasicSymbolic{Float32}
+    @test p_types[:d] == SymbolicUtils.BasicSymbolic{Real}
+    @test p_types[:D] == SymbolicUtils.BasicSymbolic{Rational{Int64}}
+
+    u0 = [:X => [0.25, 0.5, 2.0, 4.0]]
+    ps = [rs.p => 2.0, rs.d => 1.0, D => 1//2]
+
+    # Currently broken. This requires some non-trivial reworking of internals.
+    # However, spatial internals have already been reworked (and greatly improved) in an unmerged PR.
+    # This will be sorted out once that has finished.
+    @test_broken false 
+    # oprob = ODEProblem(lrs, u0, (0.0, 10.0), ps)
+    # sol = solve(oprob, Tsit5())
+    # @test sol[end] == [1.0, 1.0, 1.0, 1.0]
+end
+
+# Tests that LatticeReactionSystem cannot be generated where transport reactions depend on parameters
+# that have a type designated in the non-spatial `ReactionSystem`.
+@test_broken false
+# let
+#     rs = @reaction_network begin
+#         @parameters D::Int64
+#         (p,d), 0 <--> X
+#     end
+#     tr = @transport_reaction D X 
+#     @test_throws Exception LatticeReactionSystem(rs, tr, grid)
+# end

@@ -45,7 +45,7 @@ end
 # For a given reaction system, parameter values, and initial conditions, find the polynomial that HC solves to find steady states.
 function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     rs = Catalyst.expand_registered_functions(rs)
-    ns = convert(NonlinearSystem, rs; remove_conserved = true)
+    ns = complete(convert(NonlinearSystem, rs; remove_conserved = true))
     pre_varmap = [symmap_to_varmap(rs,u0)..., symmap_to_varmap(rs,ps)...]
     Catalyst.conservationlaw_errorcheck(rs, pre_varmap)
     p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns); defaults = ModelingToolkit.defaults(ns))
@@ -53,7 +53,8 @@ function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     eqs_pars_funcs = vcat(equations(ns), conservedequations(rs))
     eqs = map(eq -> substitute(eq.rhs - eq.lhs, p_dict), eqs_pars_funcs)
     eqs_intexp = make_int_exps.(eqs)
-    return Catalyst.to_multivariate_poly(remove_denominators.(eqs_intexp))
+    ss_poly = Catalyst.to_multivariate_poly(remove_denominators.(eqs_intexp))
+    return poly_type_convert(ss_poly)
 end
 
 # If u0s are not given while conservation laws are present, throws an error.
@@ -94,7 +95,7 @@ end
 function reorder_sols!(sols, ss_poly, rs::ReactionSystem)
     var_names_extended = String.(Symbol.(HC.variables(ss_poly)))
     var_names = [Symbol(s[1:prevind(s, findlast('_', s))]) for s in var_names_extended]
-    sort_pattern = indexin(MT.getname.(species(rs)), var_names)
+    sort_pattern = indexin(MT.getname.(unknowns(rs)), var_names)
     foreach(sol -> permute!(sol, sort_pattern), sols)
 end
 
@@ -104,4 +105,13 @@ function filter_negative_f(sols; neg_thres=-1e-20)
         (neg_thres < sol[idx] < 0) && (sol[idx] = 0)
     end
     return filter(sol -> all(>=(0), sol), sols)
+end
+
+# Sometimes (when polynomials are created from coupled CRN/DAEs), the steady state polynomial have the wrong type.
+# This converts it to the correct type, which homotopy continuation can handle.
+const WRONG_POLY_TYPE = Vector{DynamicPolynomials.Polynomial{DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder}, DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}}}
+const CORRECT_POLY_TYPE = Vector{DynamicPolynomials.Polynomial{DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder}, DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}, Float64}}
+function poly_type_convert(ss_poly)
+    (typeof(ss_poly) == WRONG_POLY_TYPE) && return convert(CORRECT_POLY_TYPE, ss_poly)
+    return ss_poly
 end

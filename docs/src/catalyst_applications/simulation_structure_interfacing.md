@@ -1,7 +1,7 @@
 # [Interfacing problems, integrators, and solutions](@id simulation_structure_interfacing)
 When simulating a model, one begins with creating a [problem](https://docs.sciml.ai/DiffEqDocs/stable/basics/problem/). Next, a simulation is performed on a problem, during which the state of the simulation is recorded through an [integrator](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/). Finally, the simulation output is returned as a [solution](https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/). This tutorial describes how to access, or modify the state, or parameter, values of problems, integrators, and solutions structures.
 
-Generally, when we have a structure `simulation_struct` and want to interface with the state (or parameter) `G`, we use `simulation_struct[:G]` to access the value, and `simulation_struct[:G] = 5.0` to set it to a new value. However, see the following examples for full details.
+Generally, when we have a structure `simulation_struct` and want to interface with the unknown (or parameter) `G`, we use `simulation_struct[:G]` to access the value, and `simulation_struct[:G] = 5.0` to set it to a new value. However, see the following examples for full details.
 
 ## Interfacing problem objects
 
@@ -27,13 +27,13 @@ with the notation being identical for parameters:
 oprob[:k1]
 ```
 
-If we want to change a state's initial condition value, we use the following notation
+If we want to change an unknown's initial condition value, we use the following notation
 ```@example ex1
 oprob[:X1] = 10.0
 ```
 with parameters using the same notation.
 
-#### Remaking problems using the `remake` function
+#### [Remaking problems using the `remake` function](@id simulation_structure_interfacing_remake)
 Typically, when modifying problems, it is recommended to use the `remake` function. Unlike when we do `oprob[:X1] = 10.0` (which modifies the problem in question), `remake` creates a new problem object. The `remake` function takes a problem as input, and any fields you wish to modify (and their new values) as optional inputs. Thus, we can do:
 ```@example ex1
 using DifferentialEquations
@@ -68,7 +68,7 @@ During a simulation, the solution is stored in an integrator object, we will her
 ```@example ex1
 integrator = init(oprob)
 ```
-Using a similar syntax to problems, we can get the current values of a state within the integrator:
+Using a similar syntax to problems, we can get the current values of an unknown within the integrator:
 ```@example ex1
 integrator[:X1]
 ```
@@ -89,7 +89,7 @@ Finally, we consider solution objects. First, we simulate our problem:
 ```@example ex1
 sol = solve(oprob)
 ```
-For solutions, when we access a state, we get its whole simulation vector:
+For solutions, when we access an unknown, we get its whole simulation vector:
 ```@example ex1
 sol[:X1]
 ```
@@ -97,15 +97,16 @@ while when we access a parameter we only get a single value:
 ```@example ex1
 sol[:k1]
 ```
-Finally, we note that we cannot change the values of solution states or parameters (i.e. both `sol[:X1] = 0.0` and `sol[:k1] = 0.0` generate errors).
+Finally, we note that we cannot change the values of solution unknowns or parameters (i.e. both `sol[:X1] = 0.0` and `sol[:k1] = 0.0` generate errors).
 
 ## [Interfacing using symbolic representation](@id simulation_structure_interfacing_symbolic_representation)
 
 Catalyst is built on an *intermediary representation* implemented by (ModelingToolkit.jl)[https://github.com/SciML/ModelingToolkit.jl]. ModelingToolkit is a modelling framework where one first declares a set of symbolic variables and parameters using e.g.
 ```@example ex2
 using ModelingToolkit
+t = default_t()
 @parameters σ ρ β
-@variables t x(t) y(t) z(t)
+@variables x(t) y(t) z(t)
 nothing # hide
 ```
 and then uses these to build systems of equations. Here, these symbolic variables (`x`, `y`, and `z`) and parameters (`σ`, `ρ`, and `β`) can be used to interface a `problem`, `integrator`, and `solution` object (like we did previously, but using Symbols, e.g. `:X`). Since Catalyst models are built on ModelingToolkit, these models also contain similar symbolic variables and parameters.
@@ -127,7 +128,7 @@ oprob[k1]
 ```
 To interface with integrators and solutions we use a similar syntax.
 
-Finally, instead of using `@unpack` to access a symbolic variable or parameter, we can access it directly using `rn.X1`, and thus access a state of our `ODEProblem` using
+Finally, instead of using `@unpack` to access a symbolic variable or parameter, we can access it directly using `rn.X1`, and thus access an unknown of our `ODEProblem` using
 ```@example ex2
 oprob[rn.X1]
 ```
