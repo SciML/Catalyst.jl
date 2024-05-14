@@ -15,8 +15,8 @@ pages = Any[
         # Distributed parameters, rates, and initial conditions.
         # Loading and writing models to files.
         # Model visualisation.
-        "02_reaction_network_functionality/10_network_analysis.md",
-        "02_reaction_network_functionality/11_chemistry_related_functionality.md",
+        "02_model_creation/10_network_analysis.md",
+        "02_model_creation/11_chemistry_related_functionality.md",
         "Model creation examples" => Any[
             "02_model_creation/examples/basic_CRN_examples.md",
             "02_model_creation/examples/hodgkin_huxley_equation.md",
