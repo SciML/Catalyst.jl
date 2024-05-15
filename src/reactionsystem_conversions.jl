@@ -1,7 +1,4 @@
-
-
-
-######################## Conversion to ODEs/SDEs/jump, etc ##############################
+### ODE & SDE Assembly ###
 
 """
     oderatelaw(rx; combinatoric_ratelaw=true)
@@ -141,6 +138,8 @@ function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
     end
     eqs
 end
+
+### Jumps Assembly ###
 
 """
     jumpratelaw(rx; combinatoric_ratelaw=true)
@@ -375,6 +374,8 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
     vcat(meqs, ceqs, veqs)
 end
 
+### Equation Coupling ###
+
 # merge constraint components with the ReactionSystem components
 # also handles removing BC and constant species
 function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved = false)
@@ -427,19 +428,15 @@ function error_if_constraints(::Type{T}, sys::ReactionSystem) where {T <: MT.Abs
     nothing
 end
 
-# used by flattened systems that don't support differential equation constraint eqs
-function error_if_constraint_odes(::Type{T},
-                                  rs::ReactionSystem) where {T <: MT.AbstractSystem}
-    any(eq -> (eq isa Equation) && MT.isdiffeq(eq), get_eqs(rs)) &&
-        error("Cannot convert to system type $T when there are ODE constraint equations.")
-    nothing
-end
+### Utility ###
 
 function spatial_convert_err(rs::ReactionSystem, systype)
     isspatial(rs) && error("Conversion to $systype is not supported for spatial networks.")
 end
 
 COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be converted to other system types. A ReactionSystem can be marked as complete using the `complete` function."
+
+### System Conversions ###
 
 """
 ```julia
@@ -560,7 +557,7 @@ function nonlinear_convert_differentials_check(rs::ReactionSystem)
                 
                 If you still would like to perform this conversions, please use the `all_differentials_permitted = true` option. In this case, all differential will be set to `0`. 
                 However, it is recommended to proceed with caution to ensure that the produced nonlinear equation makes sense for you intended application."
-                )
+            )
         end
     end
 end
@@ -666,7 +663,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
                kwargs...)
 end
 
-### Converts a reaction system to ODE or SDE problems ###
+### Problems ###
 
 # ODEProblem from AbstractReactionNetwork
 function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,

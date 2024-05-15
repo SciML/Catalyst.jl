@@ -1,6 +1,6 @@
-### Species Structure ###
+### Species Symbolic Variable Definition ###
 
-# Catalyst specific symbolics to support SBML
+# Defines species-related metadata.
 struct ParameterConstantSpecies end
 struct VariableBCSpecies end
 struct VariableSpecies end
@@ -8,6 +8,7 @@ Symbolics.option_to_metadata_type(::Val{:isconstantspecies}) = ParameterConstant
 Symbolics.option_to_metadata_type(::Val{:isbcspecies}) = VariableBCSpecies
 Symbolics.option_to_metadata_type(::Val{:isspecies}) = VariableSpecies
 
+# Defines species-related metadata getters.
 """
     Catalyst.isconstant(s)
 
@@ -52,13 +53,12 @@ function tospecies(s)
     MT.setmetadata(s, VariableSpecies, true)
 end
 
-# true for species which shouldn't change from the reactions, including non-species
-# variables
+# Function returning `true`` for species which shouldn't change from the reactions, 
+# including non-species variables.
 drop_dynamics(s) = isconstant(s) || isbc(s) || (!isspecies(s))
 
 
 ### Reaction Structure ###
-
 
 """
 $(TYPEDEF)
@@ -129,13 +129,7 @@ struct Reaction{S, T}
     metadata::Vector{Pair{Symbol, Any}}
 end
 
-"""
-    isvalidreactant(s)
-
-Test if a species is valid as a reactant (i.e. a species variable or a constant parameter).
-"""
-isvalidreactant(s) = MT.isparameter(s) ? isconstant(s) : (isspecies(s) && !isconstant(s))
-
+# Five-argument constructor accepting rate, substrates, and products, and their stoichiometries.
 function Reaction(rate, subs, prods, substoich, prodstoich;
                   netstoich = nothing, metadata = Pair{Symbol, Any}[], 
                   only_use_rate = metadata_only_use_rate_check(metadata), kwargs...)
@@ -208,6 +202,20 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate, metadata)
 end
 
+# Three argument constructor assumes stoichiometric coefs are one and integers.
+function Reaction(rate, subs, prods; kwargs...)
+    sstoich = isnothing(subs) ? nothing : ones(Int, length(subs))
+    pstoich = isnothing(prods) ? nothing : ones(Int, length(prods))
+    Reaction(rate, subs, prods, sstoich, pstoich; kwargs...)
+end
+
+"""
+    isvalidreactant(s)
+
+Test if a species is valid as a reactant (i.e. a species variable or a constant parameter).
+"""
+isvalidreactant(s) = MT.isparameter(s) ? isconstant(s) : (isspecies(s) && !isconstant(s))
+
 # Checks if a metadata input has an entry :only_use_rate => true
 function metadata_only_use_rate_check(metadata)
     only_use_rate_idx = findfirst(:only_use_rate == entry[1] for entry in metadata)
@@ -215,11 +223,32 @@ function metadata_only_use_rate_check(metadata)
     return Bool(metadata[only_use_rate_idx][2])
 end
 
-# three argument constructor assumes stoichiometric coefs are one and integers
-function Reaction(rate, subs, prods; kwargs...)
-    sstoich = isnothing(subs) ? nothing : ones(Int, length(subs))
-    pstoich = isnothing(prods) ? nothing : ones(Int, length(prods))
-    Reaction(rate, subs, prods, sstoich, pstoich; kwargs...)
+# calculates the net stoichiometry of a reaction as a vector of pairs (sub,substoich)
+function get_netstoich(subs, prods, sstoich, pstoich)
+    # stoichiometry as a Dictionary
+    nsdict = Dict{Any, eltype(sstoich)}(sub => -sstoich[i] for (i, sub) in enumerate(subs))
+    for (i, p) in enumerate(prods)
+        coef = pstoich[i]
+        @inbounds nsdict[p] = haskey(nsdict, p) ? nsdict[p] + coef : coef
+    end
+
+    # stoichiometry as a vector
+    [el for el in nsdict if !_iszero(el[2])]
+end
+
+# Get the net stoichiometries' type.
+netstoich_stoichtype(::Vector{Pair{S, T}}) where {S, T} = T
+
+
+### Base and MTK Accessors ###
+
+# Show function for `Reaction`s.
+function Base.show(io::IO, rx::Reaction)
+    print(io, rx.rate, ", ")
+    print_rxside(io, rx.substrates, rx.substoich)
+    arrow = rx.only_use_rate ? "⇒" : "-->"
+    print(io, " ", arrow, " ")
+    print_rxside(io, rx.products, rx.prodstoich)
 end
 
 function print_rxside(io::IO, specs, stoich)
@@ -244,21 +273,6 @@ function print_rxside(io::IO, specs, stoich)
     nothing
 end
 
-function Base.show(io::IO, rx::Reaction)
-    print(io, rx.rate, ", ")
-    print_rxside(io, rx.substrates, rx.substoich)
-    arrow = rx.only_use_rate ? "⇒" : "-->"
-    print(io, " ", arrow, " ")
-    print_rxside(io, rx.products, rx.prodstoich)
-end
-
-function apply_if_nonempty(f, v)
-    isempty(v) && return v
-    s = similar(v)
-    map!(f, s, v)
-    s
-end
-
 function ModelingToolkit.namespace_equation(rx::Reaction, name; kw...)
     f = Base.Fix2(namespace_expr, name)
     rate = f(rx.rate)
@@ -275,20 +289,19 @@ function ModelingToolkit.namespace_equation(rx::Reaction, name; kw...)
     Reaction(rate, subs, prods, substoich, prodstoich, netstoich, rx.only_use_rate, rx.metadata)
 end
 
-netstoich_stoichtype(::Vector{Pair{S, T}}) where {S, T} = T
-
-# calculates the net stoichiometry of a reaction as a vector of pairs (sub,substoich)
-function get_netstoich(subs, prods, sstoich, pstoich)
-    # stoichiometry as a Dictionary
-    nsdict = Dict{Any, eltype(sstoich)}(sub => -sstoich[i] for (i, sub) in enumerate(subs))
-    for (i, p) in enumerate(prods)
-        coef = pstoich[i]
-        @inbounds nsdict[p] = haskey(nsdict, p) ? nsdict[p] + coef : coef
-    end
-
-    # stoichiometry as a vector
-    [el for el in nsdict if !_iszero(el[2])]
+function apply_if_nonempty(f, v)
+    isempty(v) && return v
+    s = similar(v)
+    map!(f, s, v)
+    s
 end
+
+# Overwrites functions in ModelingToolkit to give the correct input.
+ModelingToolkit.is_diff_equation(rx::Reaction) = false
+ModelingToolkit.is_alg_equation(rx::Reaction) = false
+
+
+### Reaction-specific Accessors ### 
 
 """
     isbcbalanced(rx::Reaction)
@@ -315,8 +328,107 @@ function isbcbalanced(rx::Reaction)
     true
 end
 
-### Reaction Acessor Functions ###
+### Reaction Metadata Implementation ###
+# These are currently considered internal, but can be used by public accessor functions like get_noise_scaling.
 
-# Overwrites functions in ModelingToolkit to give the correct input.
-ModelingToolkit.is_diff_equation(rx::Reaction) = false
-ModelingToolkit.is_alg_equation(rx::Reaction) = false
+"""
+getmetadata_dict(reaction::Reaction)
+
+Retrives the `ImmutableDict` containing all of the metadata associated with a specific reaction.
+
+Arguments:
+- `reaction`: The reaction for which we wish to retrive all metadata.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [description="Production reaction"]
+getmetadata_dict(reaction)
+```
+"""
+function getmetadata_dict(reaction::Reaction)
+return reaction.metadata
+end
+
+"""
+hasmetadata(reaction::Reaction, md_key::Symbol)
+
+Checks if a `Reaction` have a certain metadata field. If it does, returns `true` (else returns `false`).
+
+Arguments:
+- `reaction`: The reaction for which we wish to check if a specific metadata field exist.
+- `md_key`: The metadata for which we wish to check existence of.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [description="Production reaction"]
+hasmetadata(reaction, :description)
+```
+"""
+function hasmetadata(reaction::Reaction, md_key::Symbol)
+return any(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))
+end
+
+"""
+getmetadata(reaction::Reaction, md_key::Symbol)
+
+Retrives a certain metadata value from a `Reaction`. If the metadata does not exists, throws an error.
+
+Arguments:
+- `reaction`: The reaction for which we wish to retrive a specific metadata value.
+- `md_key`: The metadata for which we wish to retrive.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [description="Production reaction"]
+getmetadata(reaction, :description)
+```
+"""
+function getmetadata(reaction::Reaction, md_key::Symbol)
+if !hasmetadata(reaction, md_key) 
+    error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(getmetadata_dict(reaction))).")
+end
+metadata = getmetadata_dict(reaction)
+return metadata[findfirst(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))][2]
+end
+
+### Implemented Reaction Metadata ###
+
+# Noise scaling.
+"""
+has_noise_scaling(reaction::Reaction)
+
+Checks whether a specific reaction has the metadata field `noise_scaing`. If so, returns `true`, else
+returns `false`.
+
+Arguments:
+- `reaction`: The reaction for which we wish to check.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
+has_noise_scaling(reaction)
+"""
+function has_noise_scaling(reaction::Reaction)
+    return hasmetadata(reaction, :noise_scaling)
+end
+
+"""
+get_noise_scaling(reaction::Reaction)
+
+Returns the noise_scaling metadata from a specific reaction.
+
+Arguments:
+- `reaction`: The reaction for which we wish to retrive all metadata.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
+get_noise_scaling(reaction)
+"""
+function get_noise_scaling(reaction::Reaction)
+    if has_noise_scaling(reaction)
+        return getmetadata(reaction, :noise_scaling)
+    else
+        error("Attempts to access noise_scaling metadata field for a reaction which does not have a value assigned for this metadata.")
+    end
+end

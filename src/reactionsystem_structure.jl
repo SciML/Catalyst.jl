@@ -1,6 +1,4 @@
-
-
-################################## Reaction Complexes ####################################
+### ReactionComplex structures ###
 
 """
 $(TYPEDEF)
@@ -65,7 +63,7 @@ function Base.isless(a::ReactionComplexElement, b::ReactionComplexElement)
 end
 Base.Sort.defalg(::ReactionComplex) = Base.DEFAULT_UNSTABLE
 
-############################### Network Properties ####################################
+### NetworkProperties structure ###
 
 #! format: off
 # Internal cache for various ReactionSystem calculated properties
@@ -133,7 +131,8 @@ function reset!(nps::NetworkProperties{I, V}) where {I, V}
     nothing
 end
 
-############################### Reaction Systems ####################################
+
+### ReactionSystem Structure ###
 
 """
 $(TYPEDEF)
@@ -505,6 +504,118 @@ function find_event_vars!(ps, us, event, ivs, vars)
     findvars!(ps, us, event[2], ivs, vars)
 end
 
+
+
+### Basic Functions ###
+
+### ModelingToolkit Inherited Accessors ###
+
+# Retrives events.
+MT.get_continuous_events(sys::ReactionSystem) = getfield(sys, :continuous_events)
+# `MT.get_discrete_events(sys::ReactionSystem) = getfield(sys, :get_discrete_events)` should be added here.
+
+# need a custom equations since ReactionSystem.eqs are a mix of Reactions and Equations
+function MT.equations(sys::ReactionSystem)
+    ivs = independent_variables(sys)
+    eqs = get_eqs(sys)
+    systems = get_systems(sys)
+    if !isempty(systems)
+        eqs = CatalystEqType[eqs;
+                             reduce(vcat, MT.namespace_equations.(systems, (ivs,));
+                                    init = Any[])]
+        return sort!(eqs; by = eqsortby)
+    end
+    return eqs
+end
+
+function MT.unknowns(sys::ReactionSystem)
+    sts = get_unknowns(sys)
+    systems = get_systems(sys)
+    if !isempty(systems)
+        sts = unique!([sts; reduce(vcat, namespace_variables.(systems))])
+        sort!(sts; by = !isspecies)
+        return sts
+    end
+    return sts
+end
+
+### Basic Catalyst-specific Accessors ###
+
+"""
+    get_species(sys::ReactionSystem)
+
+Return the current dependent variables that represent species in `sys` (toplevel system
+only).
+"""
+get_species(sys::ReactionSystem) = getfield(sys, :species)
+has_species(sys::ReactionSystem) = isdefined(sys, :species)
+
+"""
+    get_rxs(sys::ReactionSystem)
+
+Return the system's `Reaction` vector (toplevel system only).
+"""
+get_rxs(sys::ReactionSystem) = getfield(sys, :rxs)
+has_rxs(sys::ReactionSystem) = isdefined(sys, :rxs)
+
+"""
+    get_sivs(sys::ReactionSystem)
+
+Return the current spatial ivs, if the system is non-spatial returns an empty vector.
+"""
+get_sivs(sys::ReactionSystem) = getfield(sys, :sivs)
+has_sivs(sys::ReactionSystem) = isdefined(sys, :sivs)
+
+"""
+    get_networkproperties(sys::ReactionSystem)
+
+Return the current network properties of `sys`.
+"""
+get_networkproperties(sys::ReactionSystem) = getfield(sys, :networkproperties)
+
+"""
+    get_combinatoric_ratelaws(sys::ReactionSystem)
+
+Returns true if the default for the system is to rescale ratelaws, see
+https://docs.sciml.ai/Catalyst/stable/introduction_to_catalyst/introduction_to_catalyst/#Reaction-rate-laws-used-in-simulations
+for details. Can be overriden via passing `combinatoric_ratelaws` to `convert` or the
+`*Problem` functions.
+"""
+get_combinatoric_ratelaws(sys::ReactionSystem) = getfield(sys, :combinatoric_ratelaws)
+
+"""
+    combinatoric_ratelaws(sys::ReactionSystem)
+
+Returns the effective (default) `combinatoric_ratelaw` value for a compositional system,
+calculated by taking the logical or of each component `ReactionSystem`. Can be overriden
+during calls to `convert` of problem constructors.
+"""
+function combinatoric_ratelaws(sys::ReactionSystem)
+    crl = get_combinatoric_ratelaws(sys)
+    subsys = Iterators.filter(s -> s isa ReactionSystem, get_systems(sys))
+    mapreduce(combinatoric_ratelaws, |, subsys; init = crl)
+end
+
+# get the non-bc, independent unknown variables and independent species, preserving their
+# relative order in get_unknowns(rs). ASSUMES system has been validated to have no constant
+# species as unknowns and is flattened.
+function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
+    sts = get_unknowns(rs)
+    nps = get_networkproperties(rs)
+    indepsts = if remove_conserved
+        filter(s -> ((s ∈ nps.indepspecs) || (!isspecies(s))) && (!isbc(s)), sts)
+    else
+        filter(s -> !isbc(s), sts)
+    end
+    indepsts, filter(isspecies, indepsts)
+end
+
+
+### Specialised Catalyst-specific Accessors ###
+
+
+### Catalyst-specific General `ReactionSystem` Functions ###
+
 """
     remake_ReactionSystem_internal(rs::ReactionSystem; 
         default_reaction_metadata::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol, Any}}()) where {T}
@@ -576,207 +687,6 @@ Returns whether `rn` has any spatial independent variables (i.e. is a spatial ne
 """
 isspatial(rn::ReactionSystem) = !isempty(get_sivs(rn))
 
-####################### ModelingToolkit inherited accessors #############################
-
-"""
-    get_species(sys::ReactionSystem)
-
-Return the current dependent variables that represent species in `sys` (toplevel system
-only).
-"""
-get_species(sys::ReactionSystem) = getfield(sys, :species)
-has_species(sys::ReactionSystem) = isdefined(sys, :species)
-
-"""
-    get_rxs(sys::ReactionSystem)
-
-Return the system's `Reaction` vector (toplevel system only).
-"""
-get_rxs(sys::ReactionSystem) = getfield(sys, :rxs)
-has_rxs(sys::ReactionSystem) = isdefined(sys, :rxs)
-
-"""
-    get_sivs(sys::ReactionSystem)
-
-Return the current spatial ivs, if the system is non-spatial returns an empty vector.
-"""
-get_sivs(sys::ReactionSystem) = getfield(sys, :sivs)
-has_sivs(sys::ReactionSystem) = isdefined(sys, :sivs)
-
-"""
-    get_networkproperties(sys::ReactionSystem)
-
-Return the current network properties of `sys`.
-"""
-get_networkproperties(sys::ReactionSystem) = getfield(sys, :networkproperties)
-
-"""
-    get_combinatoric_ratelaws(sys::ReactionSystem)
-
-Returns true if the default for the system is to rescale ratelaws, see
-https://docs.sciml.ai/Catalyst/stable/introduction_to_catalyst/introduction_to_catalyst/#Reaction-rate-laws-used-in-simulations
-for details. Can be overriden via passing `combinatoric_ratelaws` to `convert` or the
-`*Problem` functions.
-"""
-get_combinatoric_ratelaws(sys::ReactionSystem) = getfield(sys, :combinatoric_ratelaws)
-
-MT.get_continuous_events(sys::ReactionSystem) = getfield(sys, :continuous_events)
-
-# need a custom equations since ReactionSystem.eqs are a mix of Reactions and Equations
-function MT.equations(sys::ReactionSystem)
-    ivs = independent_variables(sys)
-    eqs = get_eqs(sys)
-    systems = get_systems(sys)
-    if !isempty(systems)
-        eqs = CatalystEqType[eqs;
-                             reduce(vcat, MT.namespace_equations.(systems, (ivs,));
-                                    init = Any[])]
-        return sort!(eqs; by = eqsortby)
-    end
-    return eqs
-end
-
-function MT.unknowns(sys::ReactionSystem)
-    sts = get_unknowns(sys)
-    systems = get_systems(sys)
-    if !isempty(systems)
-        sts = unique!([sts; reduce(vcat, namespace_variables.(systems))])
-        sort!(sts; by = !isspecies)
-        return sts
-    end
-    return sts
-end
-
-"""
-    combinatoric_ratelaws(sys::ReactionSystem)
-
-Returns the effective (default) `combinatoric_ratelaw` value for a compositional system,
-calculated by taking the logical or of each component `ReactionSystem`. Can be overriden
-during calls to `convert` of problem constructors.
-"""
-function combinatoric_ratelaws(sys::ReactionSystem)
-    crl = get_combinatoric_ratelaws(sys)
-    subsys = Iterators.filter(s -> s isa ReactionSystem, get_systems(sys))
-    mapreduce(combinatoric_ratelaws, |, subsys; init = crl)
-end
-
-# get the non-bc, independent unknown variables and independent species, preserving their
-# relative order in get_unknowns(rs). ASSUMES system has been validated to have no constant
-# species as unknowns and is flattened.
-function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
-    sts = get_unknowns(rs)
-    nps = get_networkproperties(rs)
-    indepsts = if remove_conserved
-        filter(s -> ((s ∈ nps.indepspecs) || (!isspecies(s))) && (!isbc(s)), sts)
-    else
-        filter(s -> !isbc(s), sts)
-    end
-    indepsts, filter(isspecies, indepsts)
-end
-
-######################## Other accessors ##############################
-
-"""
-has_noise_scaling(reaction::Reaction)
-
-Checks whether a specific reaction has the metadata field `noise_scaing`. If so, returns `true`, else
-returns `false`.
-
-Arguments:
-- `reaction`: The reaction for which we wish to check.
-
-Example:
-```julia
-reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
-has_noise_scaling(reaction)
-"""
-function has_noise_scaling(reaction::Reaction)
-    return hasmetadata(reaction, :noise_scaling)
-end
-
-"""
-get_noise_scaling(reaction::Reaction)
-
-Returns the noise_scaling metadata from a specific reaction.
-
-Arguments:
-- `reaction`: The reaction for which we wish to retrive all metadata.
-
-Example:
-```julia
-reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
-get_noise_scaling(reaction)
-"""
-function get_noise_scaling(reaction::Reaction)
-    if has_noise_scaling(reaction)
-        return getmetadata(reaction, :noise_scaling)
-    else
-        error("Attempts to access noise_scaling metadata field for a reaction which does not have a value assigned for this metadata.")
-    end
-end
-
-
-# These are currently considered internal, but can be used by public accessor functions like get_noise_scaling.
-
-"""
-    getmetadata_dict(reaction::Reaction)
-
-Retrives the `ImmutableDict` containing all of the metadata associated with a specific reaction.
-
-Arguments:
-- `reaction`: The reaction for which we wish to retrive all metadata.
-
-Example:
-```julia
-reaction = @reaction k, 0 --> X, [description="Production reaction"]
-getmetadata_dict(reaction)
-```
-"""
-function getmetadata_dict(reaction::Reaction)
-    return reaction.metadata
-end
-
-"""
-    hasmetadata(reaction::Reaction, md_key::Symbol)
-
-Checks if a `Reaction` have a certain metadata field. If it does, returns `true` (else returns `false`).
-
-Arguments:
-- `reaction`: The reaction for which we wish to check if a specific metadata field exist.
-- `md_key`: The metadata for which we wish to check existence of.
-
-Example:
-```julia
-reaction = @reaction k, 0 --> X, [description="Production reaction"]
-hasmetadata(reaction, :description)
-```
-"""
-function hasmetadata(reaction::Reaction, md_key::Symbol)
-    return any(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))
-end
-
-"""
-getmetadata(reaction::Reaction, md_key::Symbol)
-
-Retrives a certain metadata value from a `Reaction`. If the metadata does not exists, throws an error.
-
-Arguments:
-- `reaction`: The reaction for which we wish to retrive a specific metadata value.
-- `md_key`: The metadata for which we wish to retrive.
-
-Example:
-```julia
-reaction = @reaction k, 0 --> X, [description="Production reaction"]
-getmetadata(reaction, :description)
-```
-"""
-function getmetadata(reaction::Reaction, md_key::Symbol)
-    if !hasmetadata(reaction, md_key) 
-        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(getmetadata_dict(reaction))).")
-    end
-    metadata = getmetadata_dict(reaction)
-    return metadata[findfirst(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))][2]
-end
 
 ####################### dependency graph utilities ########################
 
@@ -805,19 +715,7 @@ function ModelingToolkit.modified_unknowns!(munknowns, rx::Reaction, sts::Abstra
     munknowns
 end
 
-########################## Compositional Tooling ###########################
-function getsubsystypes!(typeset::Set{Type}, sys::T) where {T <: MT.AbstractSystem}
-    push!(typeset, T)
-    for subsys in get_systems(sys)
-        getsubsystypes!(typeset, subsys)
-    end
-    typeset
-end
-function getsubsystypes(sys)
-    typeset = Set{Type}()
-    getsubsystypes!(typeset, sys)
-    typeset
-end
+### ReactionSystem Composing & Hierarchical Modelling ###
 
 """
     Catalyst.flatten(rs::ReactionSystem)
@@ -911,4 +809,18 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
                    spatial_ivs = sivs,
                    continuous_events,
                    discrete_events)
+end
+
+# A helper function.
+function getsubsystypes!(typeset::Set{Type}, sys::T) where {T <: MT.AbstractSystem}
+    push!(typeset, T)
+    for subsys in get_systems(sys)
+        getsubsystypes!(typeset, subsys)
+    end
+    typeset
+end
+function getsubsystypes(sys)
+    typeset = Set{Type}()
+    getsubsystypes!(typeset, sys)
+    typeset
 end
