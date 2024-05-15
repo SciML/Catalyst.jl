@@ -1,7 +1,7 @@
 ### Preparations ###
 
-# Fetch packages.
-using SafeTestsets
+# Required for `@safetestset` and `@testset`, respectively.
+using SafeTestsets, Test
 
 # Required for running parallel test groups (copied from ModelingToolkit).
 const GROUP = get(ENV, "GROUP", "All")
