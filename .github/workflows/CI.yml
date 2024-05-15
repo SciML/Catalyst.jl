@@ -12,11 +12,7 @@ jobs:
     strategy:
       matrix:
         group:
-          - ModelCreation
-          - Miscellaneous-NetworkAnalysis
-          - Simulation
-          - Spatial
-          - Visualisation-Extensions
+          - Core
         version:
           - '1.10.2'
     steps:

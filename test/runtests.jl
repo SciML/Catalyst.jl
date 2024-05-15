@@ -4,13 +4,13 @@
 using SafeTestsets, Test
 
 # Required for running parallel test groups (copied from ModelingToolkit).
-const GROUP = get(ENV, "GROUP", "All")
+#const GROUP = get(ENV, "GROUP", "All")
 
 
 ### Run Tests ###
 @time begin
 
-    if GROUP == "All" || GROUP == "ModelCreation"
+    #if GROUP == "All" || GROUP == "ModelCreation"
         # Tests the `ReactionSystem` structure and its properties.
         @time @safetestset "Reaction Structure" begin include("reactionsystem_core/reaction_structure.jl") end
         @time @safetestset "ReactionSystem Structure" begin include("reactionsystem_core/reactionsystem_structure.jl") end
@@ -28,9 +28,9 @@ const GROUP = get(ENV, "GROUP", "All")
 
         # Tests compositional and hierarchical modelling.
         @time @safetestset "ReactionSystem Components Based Creation" begin include("compositional_modelling/component_based_model_creation.jl") end
-    end
+    #end
 
-    if GROUP == "All" || GROUP == "Miscellaneous-NetworkAnalysis"
+    #if GROUP == "All" || GROUP == "Miscellaneous-NetworkAnalysis"
         # Tests various miscellaneous features.
         @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
         @time @safetestset "Compound Species" begin include("miscellaneous_tests/compound_macro.jl") end
@@ -40,9 +40,9 @@ const GROUP = get(ENV, "GROUP", "All")
         # Tests reaction network analysis features.
         @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end
         @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
-    end
+    #end
 
-    if GROUP == "All" || GROUP == "Simulation"
+    #if GROUP == "All" || GROUP == "Simulation"
         # Tests ODE, SDE, jump simulations, nonlinear solving, and steady state simulations.
         @time @safetestset "ODE System Simulations" begin include("simulation_and_solving/simulate_ODEs.jl") end
         @time @safetestset "Automatic Jacobian Construction" begin include("simulation_and_solving/jacobian_construction.jl") end
@@ -53,16 +53,16 @@ const GROUP = get(ENV, "GROUP", "All")
         # Tests upstream SciML and DiffEq stuff.
         @time @safetestset "MTK Structure Indexing" begin include("upstream/mtk_structure_indexing.jl") end
         @time @safetestset "MTK Problem Inputs" begin include("upstream/mtk_problem_inputs.jl") end
-    end
+    #end
 
-    if GROUP == "All" || GROUP == "Spatial"
+    #if GROUP == "All" || GROUP == "Spatial"
         # Tests spatial modelling and simulations.
         @time @safetestset "PDE Systems Simulations" begin include("spatial_modelling/simulate_PDEs.jl") end
         @time @safetestset "Lattice Reaction Systems" begin include("spatial_modelling/lattice_reaction_systems.jl") end
         @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_ODEs.jl") end
-    end
+    #end
 
-    if GROUP == "All" || GROUP == "Visualisation-Extensions"
+    #if GROUP == "All" || GROUP == "Visualisation-Extensions"
         # Tests network visualisation.
         @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
         # Disable on Macs as can't install GraphViz via jll
@@ -74,6 +74,6 @@ const GROUP = get(ENV, "GROUP", "All")
         # @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
         # @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
         # @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
-    end
+    #end
 
 end # @time
