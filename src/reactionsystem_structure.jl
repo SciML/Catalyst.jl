@@ -520,139 +520,23 @@ function find_event_vars!(ps, us, event, ivs, vars)
     findvars!(ps, us, event[2], ivs, vars)
 end
 
-### Units Handling ###
 
-
-"""
-    validate(rx::Reaction; info::String = "")
-
-Check that all substrates and products within the given [`Reaction`](@ref) have
-the same units, and that the units of the reaction's rate expression are
-internally consistent (i.e. if the rate involves sums, each term in the sum has
-the same units).
+### Base Functions ###
 
 """
-function validate(rx::Reaction; info::String = "")
-    validated = MT._validate([rx.rate], [string(rx, ": rate")], info = info)
+    ==(rn1::ReactionSystem, rn2::ReactionSystem)
 
-    subunits = isempty(rx.substrates) ? nothing : get_unit(rx.substrates[1])
-    for i in 2:length(rx.substrates)
-        if get_unit(rx.substrates[i]) != subunits
-            validated = false
-            @warn(string("In ", rx, " the substrates have differing units."))
-        end
-    end
-
-    produnits = isempty(rx.products) ? nothing : get_unit(rx.products[1])
-    for i in 2:length(rx.products)
-        if get_unit(rx.products[i]) != produnits
-            validated = false
-            @warn(string("In ", rx, " the products have differing units."))
-        end
-    end
-
-    if (subunits !== nothing) && (produnits !== nothing) && (subunits != produnits)
-        validated = false
-        @warn(string("in ", rx,
-                     " the substrate units are not consistent with the product units."))
-    end
-
-    validated
-end
-
-"""
-    validate(rs::ReactionSystem, info::String="")
-
-Check that all species in the [`ReactionSystem`](@ref) have the same units, and
-that the rate laws of all reactions reduce to units of (species units) / (time
-units).
+Tests whether the underlying species, parameters and reactions are the same in
+the two [`ReactionSystem`](@ref)s. Requires the systems to have the same names
+too.
 
 Notes:
-- Does not check subsystems, constraint equations, or non-species variables.
-"""
-function validate(rs::ReactionSystem, info::String = "")
-    specs = get_species(rs)
-
-    # if there are no species we don't check units on the system
-    isempty(specs) && return true
-
-    specunits = get_unit(specs[1])
-    validated = true
-    for spec in specs
-        if get_unit(spec) != specunits
-            validated = false
-            @warn(string("Species are expected to have units of ", specunits,
-                         " however, species ", spec, " has units ", get_unit(spec), "."))
-        end
-    end
-    timeunits = get_unit(get_iv(rs))
-
-    # no units for species, time or parameters then assume validated
-    if (specunits in (MT.unitless, nothing)) && (timeunits in (MT.unitless, nothing))
-        all(u == 1.0 for u in ModelingToolkit.get_unit(get_ps(rs))) && return true
-    end
-
-    rateunits = specunits / timeunits
-    for rx in get_rxs(rs)
-        rxunits = get_unit(rx.rate)
-        for (i, sub) in enumerate(rx.substrates)
-            rxunits *= get_unit(sub)^rx.substoich[i]
-        end
-
-        # Checks that the reaction's combined units is correct, if not, throws a warning.
-        # Needs additional checks because for cases: (1.0^n) and (1.0^n1)*(1.0^n2).
-        # These are not considered (be default) considered equal to `1.0` for unitless reactions.
-        isequal(rxunits, rateunits) && continue
-        if istree(rxunits)
-            unitless_exp(rxunits) && continue
-            (operation(rxunits) == *) && all(unitless_exp(arg) for arg in arguments(rxunits)) && continue
-        end
-        validated = false
-        @warn(string("Reaction rate laws are expected to have units of ", rateunits, " however, ",
-                     rx, " has units of ", rxunits, "."))
-    end
-
-    validated
-end
-
-# Checks if a unit consist of exponents with base 1 (and is this unitless).
-unitless_exp(u) = istree(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
-
-### Basic Functions ###
-
-
-"""
-    ==(rx1::Reaction, rx2::Reaction)
-
-Tests whether two [`Reaction`](@ref)s are identical.
-
-Notes:
-- Ignores the order in which stoichiometry components are listed.
 - *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
     considered different than `(A+1)^2`.
+- Does not include `defaults` in determining equality.
 """
-function (==)(rx1::Reaction, rx2::Reaction)
-    isequal(rx1.rate, rx2.rate) || return false
-    issetequal(zip(rx1.substrates, rx1.substoich), zip(rx2.substrates, rx2.substoich)) ||
-        return false
-    issetequal(zip(rx1.products, rx1.prodstoich), zip(rx2.products, rx2.prodstoich)) ||
-        return false
-    issetequal(rx1.netstoich, rx2.netstoich) || return false
-    rx1.only_use_rate == rx2.only_use_rate
-end
-
-function hash(rx::Reaction, h::UInt)
-    h = Base.hash(rx.rate, h)
-    for s in Iterators.flatten((rx.substrates, rx.products))
-        h ⊻= hash(s)
-    end
-    for s in Iterators.flatten((rx.substoich, rx.prodstoich))
-        h ⊻= hash(s)
-    end
-    for s in rx.netstoich
-        h ⊻= hash(s)
-    end
-    Base.hash(rx.only_use_rate, h)
+function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
+    isequivalent(rn1, rn2; ignorenames = false)
 end
 
 """
@@ -687,23 +571,8 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
     true
 end
 
-"""
-    ==(rn1::ReactionSystem, rn2::ReactionSystem)
 
-Tests whether the underlying species, parameters and reactions are the same in
-the two [`ReactionSystem`](@ref)s. Requires the systems to have the same names
-too.
-
-Notes:
-- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
-    considered different than `(A+1)^2`.
-- Does not include `defaults` in determining equality.
-"""
-function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
-    isequivalent(rn1, rn2; ignorenames = false)
-end
-
-### ModelingToolkit Inherited Accessors ###
+### ModelingToolkit-inherited Functions ###
 
 # Retrives events.
 MT.get_continuous_events(sys::ReactionSystem) = getfield(sys, :continuous_events)
@@ -734,7 +603,8 @@ function MT.unknowns(sys::ReactionSystem)
     return sts
 end
 
-### Basic Catalyst-specific Accessors ###
+
+### Basic `ReactionSystem`-specific Accessors ###
 
 """
     get_species(sys::ReactionSystem)
@@ -883,12 +753,6 @@ function numparams(network)
     nps
 end
 
-function namespace_reactions(network::ReactionSystem)
-    rxs = reactions(network)
-    isempty(rxs) && return Reaction[]
-    map(rx -> namespace_equation(rx, network), rxs)
-end
-
 """
     reactions(network)
 
@@ -902,6 +766,12 @@ function reactions(network)
     systems = filter_nonrxsys(network)
     isempty(systems) && (return rxs)
     [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
+end
+
+function namespace_reactions(network::ReactionSystem)
+    rxs = reactions(network)
+    isempty(rxs) && return Reaction[]
+    map(rx -> namespace_equation(rx, network), rxs)
 end
 
 """
@@ -982,11 +852,337 @@ function numreactionparams(network)
     length(reactionparams(network))
 end
 
+"""
+    reactionrates(network)
 
-### Specialised Catalyst-specific Accessors ###
+Given a [`ReactionSystem`](@ref), returns a vector of the symbolic reaction
+rates for each reaction.
+"""
+function reactionrates(rn)
+    [r.rate for r in reactions(rn)]
+end
+
+"""
+    isspatial(rn::ReactionSystem)
+
+Returns whether `rn` has any spatial independent variables (i.e. is a spatial network).
+"""
+isspatial(rn::ReactionSystem) = !isempty(get_sivs(rn))
 
 
-### Catalyst-specific General `ReactionSystem` Functions ###
+### Advanced `ReactionSystem`-specific Accessors ###
+
+"""
+    dependents(rx, network)
+
+Given a [`Reaction`](@ref) and a [`ReactionSystem`](@ref), return a vector of the
+*non-constant* species and variables the reaction rate law depends on. e.g., for
+
+`k*W, 2X + 3Y --> 5Z + W`
+
+the returned vector would be `[W(t),X(t),Y(t)]`.
+
+Notes:
+- Allocates
+- Does not check for dependents within any subsystems.
+- Constant species are not considered dependents since they are internally treated as
+  parameters.
+- If the rate expression depends on a non-species unknown variable that will be included in
+  the dependents, i.e. in
+  ```julia
+  t = default_t()
+  @parameters k
+  @variables V(t)
+  @species A(t) B(t) C(t)
+  rx = Reaction(k*V, [A, B], [C])
+  @named rs = ReactionSystem([rx], t)
+  issetequal(dependents(rx, rs), [A,B,V]) == true
+  ```
+"""
+function dependents(rx, network)
+    if rx.rate isa Number
+        return rx.substrates
+    else
+        rvars = get_variables(rx.rate, unknowns(network))
+        return union!(rvars, rx.substrates)
+    end
+end
+
+"""
+    dependents(rx, network)
+
+See documentation for [`dependents`](@ref).
+"""
+function dependants(rx, network)
+    dependents(rx, network)
+end
+
+
+### Network Matrix Representations ###
+
+"""
+    substoichmat(rn; sparse=false)
+
+Returns the substrate stoichiometry matrix, ``S``, with ``S_{i j}`` the stoichiometric
+coefficient of the ith substrate within the jth reaction.
+
+Note:
+- Set sparse=true for a sparse matrix representation
+- Note that constant species are not considered substrates, but just components that modify
+  the associated rate law.
+"""
+function substoichmat(::Type{SparseMatrixCSC{T, Int}},
+                      rn::ReactionSystem) where {T <: Number}
+    Is = Int[]
+    Js = Int[]
+    Vs = T[]
+    smap = speciesmap(rn)
+    for (k, rx) in enumerate(reactions(rn))
+        stoich = rx.substoich
+        for (i, sub) in enumerate(rx.substrates)
+            isconstant(sub) && continue
+            push!(Js, k)
+            push!(Is, smap[sub])
+            push!(Vs, stoich[i])
+        end
+    end
+    sparse(Is, Js, Vs, numspecies(rn), numreactions(rn))
+end
+function substoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
+    smap = speciesmap(rn)
+    smat = zeros(T, numspecies(rn), numreactions(rn))
+    for (k, rx) in enumerate(reactions(rn))
+        stoich = rx.substoich
+        for (i, sub) in enumerate(rx.substrates)
+            isconstant(sub) && continue
+            smat[smap[sub], k] = stoich[i]
+        end
+    end
+    smat
+end
+function substoichmat(rn::ReactionSystem; sparse::Bool = false)
+    isempty(get_systems(rn)) || error("substoichmat does not currently support subsystems.")
+    T = reduce(promote_type, eltype(rx.substoich) for rx in reactions(rn))
+    (T == Any) &&
+        error("Stoichiometry matrices with symbolic stoichiometry are not supported")
+    sparse ? substoichmat(SparseMatrixCSC{T, Int}, rn) : substoichmat(Matrix{T}, rn)
+end
+
+"""
+    prodstoichmat(rn; sparse=false)
+
+Returns the product stoichiometry matrix, ``P``, with ``P_{i j}`` the stoichiometric
+coefficient of the ith product within the jth reaction.
+
+Note:
+- Set sparse=true for a sparse matrix representation
+- Note that constant species are not treated as products, but just components that modify
+  the associated rate law.
+"""
+function prodstoichmat(::Type{SparseMatrixCSC{T, Int}},
+                       rn::ReactionSystem) where {T <: Number}
+    Is = Int[]
+    Js = Int[]
+    Vs = T[]
+    smap = speciesmap(rn)
+    for (k, rx) in enumerate(reactions(rn))
+        stoich = rx.prodstoich
+        for (i, prod) in enumerate(rx.products)
+            isconstant(prod) && continue
+            push!(Js, k)
+            push!(Is, smap[prod])
+            push!(Vs, stoich[i])
+        end
+    end
+    sparse(Is, Js, Vs, numspecies(rn), numreactions(rn))
+end
+function prodstoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
+    smap = speciesmap(rn)
+    pmat = zeros(T, numspecies(rn), numreactions(rn))
+    for (k, rx) in enumerate(reactions(rn))
+        stoich = rx.prodstoich
+        for (i, prod) in enumerate(rx.products)
+            isconstant(prod) && continue
+            pmat[smap[prod], k] = stoich[i]
+        end
+    end
+    pmat
+end
+function prodstoichmat(rn::ReactionSystem; sparse = false)
+    isempty(get_systems(rn)) ||
+        error("prodstoichmat does not currently support subsystems.")
+
+    T = reduce(promote_type, eltype(rx.prodstoich) for rx in reactions(rn))
+    (T == Any) &&
+        error("Stoichiometry matrices with symbolic stoichiometry are not supported")
+    sparse ? prodstoichmat(SparseMatrixCSC{T, Int}, rn) : prodstoichmat(Matrix{T}, rn)
+end
+
+"""
+    netstoichmat(rn, sparse=false)
+
+Returns the net stoichiometry matrix, ``N``, with ``N_{i j}`` the net stoichiometric
+coefficient of the ith species within the jth reaction.
+
+Notes:
+- Set sparse=true for a sparse matrix representation
+- Caches the matrix internally within `rn` so subsequent calls are fast.
+- Note that constant species are not treated as reactants, but just components that modify
+  the associated rate law. As such they do not contribute to the net stoichiometry matrix.
+"""
+function netstoichmat(::Type{SparseMatrixCSC{T, Int}},
+                      rn::ReactionSystem) where {T <: Number}
+    Is = Int[]
+    Js = Int[]
+    Vs = Vector{T}()
+    smap = speciesmap(rn)
+    for (k, rx) in pairs(reactions(rn))
+        for (spec, coef) in rx.netstoich
+            isconstant(spec) && continue
+            push!(Js, k)
+            push!(Is, smap[spec])
+            push!(Vs, coef)
+        end
+    end
+    sparse(Is, Js, Vs, numspecies(rn), numreactions(rn))
+end
+function netstoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
+    smap = speciesmap(rn)
+    nmat = zeros(T, numspecies(rn), numreactions(rn))
+    for (k, rx) in pairs(reactions(rn))
+        for (spec, coef) in rx.netstoich
+            isconstant(spec) && continue
+            nmat[smap[spec], k] = coef
+        end
+    end
+    nmat
+end
+
+netstoichtype(::Vector{Pair{S, T}}) where {S, T} = T
+
+function netstoichmat(rn::ReactionSystem; sparse = false)
+    isempty(get_systems(rn)) ||
+        error("netstoichmat does not currently support subsystems, please create a flattened system before calling.")
+
+    nps = get_networkproperties(rn)
+
+    # if it is already calculated and has the right type
+    !isempty(nps.netstoichmat) && (sparse == issparse(nps.netstoichmat)) &&
+        (return nps.netstoichmat)
+
+    # identify a common stoichiometry type
+    T = reduce(promote_type, netstoichtype(rx.netstoich) for rx in reactions(rn))
+    (T == Any) &&
+        error("Stoichiometry matrices are not supported with symbolic stoichiometry.")
+
+    if sparse
+        nsmat = netstoichmat(SparseMatrixCSC{T, Int}, rn)
+    else
+        nsmat = netstoichmat(Matrix{T}, rn)
+    end
+
+    # only cache if it is integer
+    if T == Int
+        nps.netstoichmat = nsmat
+    end
+
+    nsmat
+end
+
+
+### General `ReactionSystem`-specific Functions ###
+
+"""
+    @unpacksys sys::ModelingToolkit.AbstractSystem
+
+Loads all species, variables, parameters, and observables defined in `sys` as
+variables within the calling module.
+
+For example,
+```julia
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end
+@unpacksys sir
+```
+will load the symbolic variables, `S`, `I`, `R`, `ν` and `β`.
+
+Notes:
+- Can not be used to load species, variables, or parameters of subsystems or
+  constraints. Either call `@unpacksys` on those systems directly, or
+  [`flatten`](@ref) to collate them into one system before calling.
+- Note that this places symbolic variables within the calling module's scope, so
+  calling from a function defined in a script or the REPL will still result in
+  the symbolic variables being defined in the `Main` module.
+"""
+macro unpacksys(rn)
+    quote
+        ex = Catalyst.__unpacksys($(esc(rn)))
+        Base.eval($(__module__), ex)
+    end
+end
+function __unpacksys(rn)
+    ex = :(begin end)
+    for key in keys(get_var_to_name(rn))
+        var = MT.getproperty(rn, key, namespace = false)
+        push!(ex.args, :($key = $var))
+    end
+    ex
+end
+
+"""
+    setdefaults!(rn, newdefs)
+
+Sets the default (initial) values of parameters and species in the
+`ReactionSystem`, `rn`.
+
+For example,
+```julia
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end
+setdefaults!(sir, [:S => 999.0, :I => 1.0, :R => 1.0, :β => 1e-4, :ν => .01])
+
+# or
+t = default_t()
+@parameter β ν
+@species S(t) I(t) R(t)
+setdefaults!(sir, [S => 999.0, I => 1.0, R => 0.0, β => 1e-4, ν => .01])
+```
+gives initial/default values to each of `S`, `I` and `β`
+
+Notes:
+- Can not be used to set default values for species, variables or parameters of
+  subsystems or constraint systems. Either set defaults for those systems
+  directly, or [`flatten`](@ref) to collate them into one system before setting
+  defaults.
+- Defaults can be specified in any iterable container of symbols to value pairs
+  or symbolics to value pairs.
+"""
+function setdefaults!(rn, newdefs)
+    defs = eltype(newdefs) <: Pair{Symbol} ? symmap_to_varmap(rn, newdefs) : newdefs
+    rndefs = MT.get_defaults(rn)
+    for (var, val) in defs
+        rndefs[value(var)] = value(val)
+    end
+    nothing
+end
+
+"""
+    reset_networkproperties!(rn::ReactionSystem)
+
+Clears the cache of various properties (like the netstoichiometry matrix). Use if such
+properties need to be recalculated for some reason.
+"""
+function reset_networkproperties!(rn::ReactionSystem)
+    reset!(get_networkproperties(rn))
+    nothing
+end
+
+
+### `ReactionSystem` Remaking ###
 
 """
     remake_ReactionSystem_internal(rs::ReactionSystem; 
@@ -1050,14 +1246,6 @@ Arguments:
 function set_default_noise_scaling(rs::ReactionSystem, noise_scaling)
     return remake_ReactionSystem_internal(rs, default_reaction_metadata = [:noise_scaling => noise_scaling])
 end
-
-
-"""
-    isspatial(rn::ReactionSystem)
-
-Returns whether `rn` has any spatial independent variables (i.e. is a spatial network).
-"""
-isspatial(rn::ReactionSystem) = !isempty(get_sivs(rn))
 
 
 ####################### dependency graph utilities ########################
@@ -1206,3 +1394,65 @@ function getsubsystypes(sys)
     getsubsystypes!(typeset, sys)
     typeset
 end
+
+
+
+### Units Handling ###
+
+"""
+    validate(rs::ReactionSystem, info::String="")
+
+Check that all species in the [`ReactionSystem`](@ref) have the same units, and
+that the rate laws of all reactions reduce to units of (species units) / (time
+units).
+
+Notes:
+- Does not check subsystems, constraint equations, or non-species variables.
+"""
+function validate(rs::ReactionSystem, info::String = "")
+    specs = get_species(rs)
+
+    # if there are no species we don't check units on the system
+    isempty(specs) && return true
+
+    specunits = get_unit(specs[1])
+    validated = true
+    for spec in specs
+        if get_unit(spec) != specunits
+            validated = false
+            @warn(string("Species are expected to have units of ", specunits,
+                         " however, species ", spec, " has units ", get_unit(spec), "."))
+        end
+    end
+    timeunits = get_unit(get_iv(rs))
+
+    # no units for species, time or parameters then assume validated
+    if (specunits in (MT.unitless, nothing)) && (timeunits in (MT.unitless, nothing))
+        all(u == 1.0 for u in ModelingToolkit.get_unit(get_ps(rs))) && return true
+    end
+
+    rateunits = specunits / timeunits
+    for rx in get_rxs(rs)
+        rxunits = get_unit(rx.rate)
+        for (i, sub) in enumerate(rx.substrates)
+            rxunits *= get_unit(sub)^rx.substoich[i]
+        end
+
+        # Checks that the reaction's combined units is correct, if not, throws a warning.
+        # Needs additional checks because for cases: (1.0^n) and (1.0^n1)*(1.0^n2).
+        # These are not considered (be default) considered equal to `1.0` for unitless reactions.
+        isequal(rxunits, rateunits) && continue
+        if istree(rxunits)
+            unitless_exp(rxunits) && continue
+            (operation(rxunits) == *) && all(unitless_exp(arg) for arg in arguments(rxunits)) && continue
+        end
+        validated = false
+        @warn(string("Reaction rate laws are expected to have units of ", rateunits, " however, ",
+                     rx, " has units of ", rxunits, "."))
+    end
+
+    validated
+end
+
+# Checks if a unit consist of exponents with base 1 (and is this unitless).
+(u) = istree(u) && (operation(u) == ^) && (arguments(u)[1] == 1)

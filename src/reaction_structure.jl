@@ -53,9 +53,14 @@ function tospecies(s)
     MT.setmetadata(s, VariableSpecies, true)
 end
 
-# Function returning `true`` for species which shouldn't change from the reactions, 
-# including non-species variables.
-drop_dynamics(s) = isconstant(s) || isbc(s) || (!isspecies(s))
+# Other species functions.
+
+"""
+    isvalidreactant(s)
+
+Test if a species is valid as a reactant (i.e. a species variable or a constant parameter).
+"""
+isvalidreactant(s) = MT.isparameter(s) ? isconstant(s) : (isspecies(s) && !isconstant(s))
 
 
 ### Reaction Structure ###
@@ -209,13 +214,6 @@ function Reaction(rate, subs, prods; kwargs...)
     Reaction(rate, subs, prods, sstoich, pstoich; kwargs...)
 end
 
-"""
-    isvalidreactant(s)
-
-Test if a species is valid as a reactant (i.e. a species variable or a constant parameter).
-"""
-isvalidreactant(s) = MT.isparameter(s) ? isconstant(s) : (isspecies(s) && !isconstant(s))
-
 # Checks if a metadata input has an entry :only_use_rate => true
 function metadata_only_use_rate_check(metadata)
     only_use_rate_idx = findfirst(:only_use_rate == entry[1] for entry in metadata)
@@ -240,7 +238,7 @@ end
 netstoich_stoichtype(::Vector{Pair{S, T}}) where {S, T} = T
 
 
-### Base Function ###
+### Base Functions ###
 
 # Show function for `Reaction`s.
 function Base.show(io::IO, rx::Reaction)
@@ -250,6 +248,7 @@ function Base.show(io::IO, rx::Reaction)
     print(io, " ", arrow, " ")
     print_rxside(io, rx.products, rx.prodstoich)
 end
+
 function print_rxside(io::IO, specs, stoich)
     # reactants/substrates
     if isempty(specs)
@@ -272,9 +271,44 @@ function print_rxside(io::IO, specs, stoich)
     nothing
 end
 
+"""
+    ==(rx1::Reaction, rx2::Reaction)
+
+Tests whether two [`Reaction`](@ref)s are identical.
+
+Notes:
+- Ignores the order in which stoichiometry components are listed.
+- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
+    considered different than `(A+1)^2`.
+"""
+function (==)(rx1::Reaction, rx2::Reaction)
+    isequal(rx1.rate, rx2.rate) || return false
+    issetequal(zip(rx1.substrates, rx1.substoich), zip(rx2.substrates, rx2.substoich)) ||
+        return false
+    issetequal(zip(rx1.products, rx1.prodstoich), zip(rx2.products, rx2.prodstoich)) ||
+        return false
+    issetequal(rx1.netstoich, rx2.netstoich) || return false
+    rx1.only_use_rate == rx2.only_use_rate
+end
+
+# Hash function.
+function hash(rx::Reaction, h::UInt)
+    h = Base.hash(rx.rate, h)
+    for s in Iterators.flatten((rx.substrates, rx.products))
+        h ⊻= hash(s)
+    end
+    for s in Iterators.flatten((rx.substoich, rx.prodstoich))
+        h ⊻= hash(s)
+    end
+    for s in rx.netstoich
+        h ⊻= hash(s)
+    end
+    Base.hash(rx.only_use_rate, h)
+end
 
 ### ModelingToolkit-inherited Functions ###
 
+# Returns a name-spaced version of a reaction.
 function ModelingToolkit.namespace_equation(rx::Reaction, name; kw...)
     f = Base.Fix2(namespace_expr, name)
     rate = f(rx.rate)
@@ -303,7 +337,7 @@ ModelingToolkit.is_diff_equation(rx::Reaction) = false
 ModelingToolkit.is_alg_equation(rx::Reaction) = false
 
 
-### Reaction-specific Functions ### 
+### `Reaction`-specific Functions ### 
 
 """
     isbcbalanced(rx::Reaction)
@@ -433,4 +467,44 @@ function get_noise_scaling(reaction::Reaction)
     else
         error("Attempts to access noise_scaling metadata field for a reaction which does not have a value assigned for this metadata.")
     end
+end
+
+
+### Units Handling ###
+
+"""
+    validate(rx::Reaction; info::String = "")
+
+Check that all substrates and products within the given [`Reaction`](@ref) have
+the same units, and that the units of the reaction's rate expression are
+internally consistent (i.e. if the rate involves sums, each term in the sum has
+the same units).
+
+"""
+function validate(rx::Reaction; info::String = "")
+    validated = MT._validate([rx.rate], [string(rx, ": rate")], info = info)
+
+    subunits = isempty(rx.substrates) ? nothing : get_unit(rx.substrates[1])
+    for i in 2:length(rx.substrates)
+        if get_unit(rx.substrates[i]) != subunits
+            validated = false
+            @warn(string("In ", rx, " the substrates have differing units."))
+        end
+    end
+
+    produnits = isempty(rx.products) ? nothing : get_unit(rx.products[1])
+    for i in 2:length(rx.products)
+        if get_unit(rx.products[i]) != produnits
+            validated = false
+            @warn(string("In ", rx, " the products have differing units."))
+        end
+    end
+
+    if (subunits !== nothing) && (produnits !== nothing) && (subunits != produnits)
+        validated = false
+        @warn(string("in ", rx,
+                     " the substrate units are not consistent with the product units."))
+    end
+
+    validated
 end

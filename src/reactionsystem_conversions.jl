@@ -42,6 +42,19 @@ function oderatelaw(rx; combinatoric_ratelaw = true)
     rl
 end
 
+function assemble_drift(rs, ispcs; combinatoric_ratelaws = true, as_odes = true,
+                        include_zero_odes = true, remove_conserved = false)
+    rhsvec = assemble_oderhs(rs, ispcs; combinatoric_ratelaws, remove_conserved)
+    if as_odes
+        D = Differential(get_iv(rs))
+        eqs = [Equation(D(x), rhs)
+               for (x, rhs) in zip(ispcs, rhsvec) if (include_zero_odes || (!_iszero(rhs)))]
+    else
+        eqs = [Equation(0, rhs) for rhs in rhsvec if (include_zero_odes || (!_iszero(rhs)))]
+    end
+    eqs
+end
+
 function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserved = false)
     nps = get_networkproperties(rs)
     species_to_idx = Dict(x => i for (i, x) in enumerate(ispcs))
@@ -83,19 +96,6 @@ function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserv
     end
 
     rhsvec
-end
-
-function assemble_drift(rs, ispcs; combinatoric_ratelaws = true, as_odes = true,
-                        include_zero_odes = true, remove_conserved = false)
-    rhsvec = assemble_oderhs(rs, ispcs; combinatoric_ratelaws, remove_conserved)
-    if as_odes
-        D = Differential(get_iv(rs))
-        eqs = [Equation(D(x), rhs)
-               for (x, rhs) in zip(ispcs, rhsvec) if (include_zero_odes || (!_iszero(rhs)))]
-    else
-        eqs = [Equation(0, rhs) for rhs in rhsvec if (include_zero_odes || (!_iszero(rhs)))]
-    end
-    eqs
 end
 
 # this doesn't work with constraint equations currently
@@ -258,57 +258,6 @@ function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
     return true
 end
 
-@inline function makemajump(rx; combinatoric_ratelaw = true)
-    @unpack rate, substrates, substoich, netstoich = rx
-    zeroorder = (length(substoich) == 0)
-    reactant_stoch = Vector{Pair{Any, eltype(substoich)}}()
-    @inbounds for (i, spec) in enumerate(substrates)
-        # move constant species into the rate
-        if isconstant(spec)
-            rate *= spec
-            isone(substoich[i]) && continue
-            for i in 1:(substoich[i] - 1)
-                rate *= spec - i
-            end
-        else
-            push!(reactant_stoch, substrates[i] => substoich[i])
-        end
-    end
-
-    if (!zeroorder) && combinatoric_ratelaw
-        coef = prod(factorial, substoich)
-        (!isone(coef)) && (rate /= coef)
-    end
-
-    net_stoch = filter(p -> !drop_dynamics(p[1]), netstoich)
-    isempty(net_stoch) &&
-        error("$rx has no net stoichiometry change once accounting for constant and boundary condition species. This is not supported.")
-
-    MassActionJump(Num(rate), reactant_stoch, net_stoch, scale_rates = false,
-                   useiszero = false)
-end
-
-# get_depgraph(rs)[i] is the list of reactions with rates depending on species changed by
-# i'th reaction.
-function get_depgraph(rs)
-    jdeps = asgraph(rs)
-    vdeps = variable_dependencies(rs)
-    eqeq_dependencies(jdeps, vdeps).fadjlist
-end
-
-# recursively visit each neighbor's rooted tree and mark everything in it as vrj
-function dfs_mark!(isvrjvec, visited, depgraph, i)
-    visited[i] = true
-    nhbrs = depgraph[i]
-    for nhbr in nhbrs
-        if !visited[nhbr]
-            isvrjvec[nhbr] = true
-            dfs_mark!(isvrjvec, visited, depgraph, nhbr)
-        end
-    end
-    nothing
-end
-
 function assemble_jumps(rs; combinatoric_ratelaws = true)
     meqs = MassActionJump[]
     ceqs = ConstantRateJump[]
@@ -374,6 +323,58 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
     vcat(meqs, ceqs, veqs)
 end
 
+# get_depgraph(rs)[i] is the list of reactions with rates depending on species changed by
+# i'th reaction.
+function get_depgraph(rs)
+    jdeps = asgraph(rs)
+    vdeps = variable_dependencies(rs)
+    eqeq_dependencies(jdeps, vdeps).fadjlist
+end
+
+# recursively visit each neighbor's rooted tree and mark everything in it as vrj
+function dfs_mark!(isvrjvec, visited, depgraph, i)
+    visited[i] = true
+    nhbrs = depgraph[i]
+    for nhbr in nhbrs
+        if !visited[nhbr]
+            isvrjvec[nhbr] = true
+            dfs_mark!(isvrjvec, visited, depgraph, nhbr)
+        end
+    end
+    nothing
+end
+
+@inline function makemajump(rx; combinatoric_ratelaw = true)
+    @unpack rate, substrates, substoich, netstoich = rx
+    zeroorder = (length(substoich) == 0)
+    reactant_stoch = Vector{Pair{Any, eltype(substoich)}}()
+    @inbounds for (i, spec) in enumerate(substrates)
+        # move constant species into the rate
+        if isconstant(spec)
+            rate *= spec
+            isone(substoich[i]) && continue
+            for i in 1:(substoich[i] - 1)
+                rate *= spec - i
+            end
+        else
+            push!(reactant_stoch, substrates[i] => substoich[i])
+        end
+    end
+
+    if (!zeroorder) && combinatoric_ratelaw
+        coef = prod(factorial, substoich)
+        (!isone(coef)) && (rate /= coef)
+    end
+
+    net_stoch = filter(p -> !drop_dynamics(p[1]), netstoich)
+    isempty(net_stoch) &&
+        error("$rx has no net stoichiometry change once accounting for constant and boundary condition species. This is not supported.")
+
+    MassActionJump(Num(rate), reactant_stoch, net_stoch, scale_rates = false,
+                   useiszero = false)
+end
+
+
 ### Equation Coupling ###
 
 # merge constraint components with the ReactionSystem components
@@ -428,13 +429,20 @@ function error_if_constraints(::Type{T}, sys::ReactionSystem) where {T <: MT.Abs
     nothing
 end
 
+
 ### Utility ###
 
+# Function returning `true` for species which shouldn't change from the reactions, 
+# including non-species variables.
+drop_dynamics(s) = isconstant(s) || isbc(s) || (!isspecies(s))
+
+# Throws an error when attempting to convert a spatial system to an unssuported type.
 function spatial_convert_err(rs::ReactionSystem, systype)
     isspatial(rs) && error("Conversion to $systype is not supported for spatial networks.")
 end
 
 COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be converted to other system types. A ReactionSystem can be marked as complete using the `complete` function."
+
 
 ### System Conversions ###
 
@@ -776,4 +784,89 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
     end
 
     return SteadyStateProblem(osys, u0map, pmap, args...; check_length, kwargs...)
+end
+
+
+### Symbolic Variable/Symbol Conversions ###
+
+"""
+    symmap_to_varmap(sys, symmap)
+
+Given a system and map of `Symbol`s to values, generates a map from
+corresponding symbolic variables/parameters to the values that can be used to
+pass initial conditions and parameter mappings.
+
+For example,
+```julia
+sir = @reaction_network sir begin
+    β, S + I --> 2I
+    ν, I --> R
+end
+subsys = @reaction_network subsys begin
+    k, A --> B
+end
+@named sys = compose(sir, [subsys])
+```
+gives
+```
+Model sys with 3 equations
+Unknowns (5):
+  S(t)
+  I(t)
+  R(t)
+  subsys₊A(t)
+  subsys₊B(t)
+Parameters (3):
+  β
+  ν
+  subsys₊k
+```
+to specify initial condition and parameter mappings from *symbols* we can use
+```julia
+symmap = [:S => 1.0, :I => 1.0, :R => 1.0, :subsys₊A => 1.0, :subsys₊B => 1.0]
+u0map  = symmap_to_varmap(sys, symmap)
+pmap   = symmap_to_varmap(sys, [:β => 1.0, :ν => 1.0, :subsys₊k => 1.0])
+```
+`u0map` and `pmap` can then be used as input to various problem types.
+
+Notes:
+- Any `Symbol`, `sym`, within `symmap` must be a valid field of `sys`. i.e.
+  `sys.sym` must be defined.
+"""
+function symmap_to_varmap(sys, symmap::Tuple)
+    if all(p -> p isa Pair{Symbol}, symmap)
+        return ((_symbol_to_var(sys, sym) => val for (sym, val) in symmap)...,)
+    else  # if not all entries map a symbol to value pass through
+        return symmap
+    end
+end
+
+function symmap_to_varmap(sys, symmap::AbstractArray{Pair{Symbol, T}}) where {T}
+    [_symbol_to_var(sys, sym) => val for (sym, val) in symmap]
+end
+
+function symmap_to_varmap(sys, symmap::Dict{Symbol, T}) where {T}
+    Dict(_symbol_to_var(sys, sym) => val for (sym, val) in symmap)
+end
+
+# don't permute any other types and let varmap_to_vars handle erroring
+symmap_to_varmap(sys, symmap) = symmap
+#error("symmap_to_varmap requires a Dict, AbstractArray or Tuple to map Symbols to values.")
+
+# convert symbol of the form :sys.a.b.c to a symbolic a.b.c
+function _symbol_to_var(sys, sym)
+    if hasproperty(sys, sym)
+        var = getproperty(sys, sym, namespace = false)
+    else
+        strs = split(String(sym), "₊")   # need to check if this should be split of not!!!
+        if length(strs) > 1
+            var = getproperty(sys, Symbol(strs[1]), namespace = false)
+            for str in view(strs, 2:length(strs))
+                var = getproperty(var, Symbol(str), namespace = true)
+            end
+        else
+            throw(ArgumentError("System $(nameof(sys)): variable $sym does not exist"))
+        end
+    end
+    var
 end
