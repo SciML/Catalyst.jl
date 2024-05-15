@@ -1,4 +1,4 @@
-### ReactionComplex structures ###
+### ReactionComplex Structures ###
 
 """
 $(TYPEDEF)
@@ -40,15 +40,24 @@ function ReactionComplex(speciesids::Vector{Int},
     ReactionComplex{V}(speciesids, speciesstoichs)
 end
 
+### ReactionComplex Functions ###
+
+# Equality.
 function (==)(a::ReactionComplex{V}, b::ReactionComplex{V}) where {V <: Integer}
     (a.speciesids == b.speciesids) &&
         (a.speciesstoichs == b.speciesstoichs)
 end
+
+# Hash.
 function hash(rc::ReactionComplex, h::UInt)
     Base.hash(rc.speciesids, Base.hash(rc.speciesstoichs, h))
 end
+
+# Size, length.
 Base.size(rc::ReactionComplex) = size(rc.speciesids)
 Base.length(rc::ReactionComplex) = length(rc.speciesids)
+
+# Get/set index.
 function Base.getindex(rc::ReactionComplex, i...)
     ReactionComplexElement(getindex(rc.speciesids, i...), getindex(rc.speciesstoichs, i...))
 end
@@ -58,12 +67,15 @@ function Base.setindex!(rc::ReactionComplex, t::ReactionComplexElement, i...)
                t.speciesstoich, i...);
      rc)
 end
+
+# Is less, sorting related.
 function Base.isless(a::ReactionComplexElement, b::ReactionComplexElement)
     isless(a.speciesid, b.speciesid)
 end
 Base.Sort.defalg(::ReactionComplex) = Base.DEFAULT_UNSTABLE
 
-### NetworkProperties structure ###
+
+### NetworkProperties Structure ###
 
 #! format: off
 # Internal cache for various ReactionSystem calculated properties
@@ -90,6 +102,9 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
 end
 #! format: on
 
+### NetworkProperties Functions ###
+
+# Show
 function Base.show(io::IO, nps::NetworkProperties)
     if (nps.conservationmat !== nothing)
         println(io, "Conserved Equations: ")
@@ -98,13 +113,16 @@ function Base.show(io::IO, nps::NetworkProperties)
     end
 end
 
+# Is empty.
 Base.isempty(nps::NetworkProperties) = getfield(nps, :isempty)
 
+# Setproperty.
 function Base.setproperty!(nps::NetworkProperties, sym::Symbol, x)
     (sym !== :isempty) && setfield!(nps, :isempty, false)
     setfield!(nps, sym, x)
 end
 
+# Resets computed properties.
 function reset!(nps::NetworkProperties{I, V}) where {I, V}
     nps.isempty && return
     nps.netstoichmat = Matrix{Int}(undef, 0, 0)
@@ -265,30 +283,8 @@ struct ReactionSystem{V <: NetworkProperties} <:
     end
 end
 
-function get_speciestype(iv, unknowns, systems)
-    T = Nothing
-    !isempty(unknowns) && (T = typeof(first(unknowns)))
-
-    if !isempty(systems)
-        for sys in Iterators.filter(s -> s isa ReactionSystem, systems)
-            sts = MT.unknowns(sys)
-            if !isempty(sts)
-                T = typeof(first(sts))
-                break
-            end
-        end
-    end
-
-    if T <: Nothing
-        @variables A($iv)
-        T = typeof(MT.unwrap(A))
-    end
-
-    T
-end
-
-eqsortby(eq::CatalystEqType) = eq isa Reaction ? 1 : 2
-
+# Four-argument constructor. Permits additional inputs as optional arguments.
+# Calls the full constructor.
 function ReactionSystem(eqs, iv, unknowns, ps;
                         observed = Equation[],
                         systems = [],
@@ -383,32 +379,41 @@ function ReactionSystem(eqs, iv, unknowns, ps;
                    ccallbacks, dcallbacks, metadata; checks = checks)
 end
 
+# Used to sort the reaction/equation vector as reactions first, equations second.
+eqsortby(eq::CatalystEqType) = eq isa Reaction ? 1 : 2
+
+# Figures out a type.
+function get_speciestype(iv, unknowns, systems)
+    T = Nothing
+    !isempty(unknowns) && (T = typeof(first(unknowns)))
+
+    if !isempty(systems)
+        for sys in Iterators.filter(s -> s isa ReactionSystem, systems)
+            sts = MT.unknowns(sys)
+            if !isempty(sts)
+                T = typeof(first(sts))
+                break
+            end
+        end
+    end
+
+    if T <: Nothing
+        @variables A($iv)
+        T = typeof(MT.unwrap(A))
+    end
+
+    T
+end
+
+# Two-argument constructor (reactions/equations and time variable).
+# Calls the `make_ReactionSystem_internal`, which in turn calls the four-argument constructor.
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
     make_ReactionSystem_internal(rxs, iv, Vector{Num}(), Vector{Num}(); kwargs...)
 end
 
-# search the symbolic expression for parameters or unknowns
-# and save in ps and us respectively. vars is used to cache results
-function findvars!(ps, us, exprtosearch, ivs, vars)
-    MT.get_variables!(vars, exprtosearch)
-    for var in vars
-        (var ∈ ivs) && continue
-        if MT.isparameter(var)
-            push!(ps, var)
-        else
-            push!(us, var)
-        end
-    end
-    empty!(vars)
-end
-# Special dispatch for equations, applied `findvars!` to left-hand and right-hand sides.
-function findvars!(ps, us, eq_to_search::Equation, ivs, vars)
-    findvars!(ps, us, eq_to_search.lhs, ivs, vars)
-    findvars!(ps, us, eq_to_search.rhs, ivs, vars)
-end
-# Special dispatch for Vectors (applies it to each vector element).
-function findvars!(ps, us, exprs_to_search::Vector, ivs, vars)
-    foreach(exprtosearch -> findvars!(ps, us, exprtosearch, ivs, vars), exprs_to_search)
+# One-argument constructor. Creates an emtoy `ReactionSystem` from a time independent variable only.
+function ReactionSystem(iv; kwargs...)
+    ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
 
 # Called internally (whether DSL-based or programmtic model creation is used). 
@@ -488,8 +493,28 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in; spa
     ReactionSystem(fulleqs, t, usv, psv; spatial_ivs, continuous_events, discrete_events, observed, kwargs...)
 end
 
-function ReactionSystem(iv; kwargs...)
-    ReactionSystem(Reaction[], iv, [], []; kwargs...)
+# search the symbolic expression for parameters or unknowns
+# and save in ps and us respectively. vars is used to cache results
+function findvars!(ps, us, exprtosearch, ivs, vars)
+    MT.get_variables!(vars, exprtosearch)
+    for var in vars
+        (var ∈ ivs) && continue
+        if MT.isparameter(var)
+            push!(ps, var)
+        else
+            push!(us, var)
+        end
+    end
+    empty!(vars)
+end
+# Special dispatch for equations, applied `findvars!` to left-hand and right-hand sides.
+function findvars!(ps, us, eq_to_search::Equation, ivs, vars)
+    findvars!(ps, us, eq_to_search.lhs, ivs, vars)
+    findvars!(ps, us, eq_to_search.rhs, ivs, vars)
+end
+# Special dispatch for Vectors (applies it to each vector element).
+function findvars!(ps, us, exprs_to_search::Vector, ivs, vars)
+    foreach(exprtosearch -> findvars!(ps, us, exprtosearch, ivs, vars), exprs_to_search)
 end
 
 # Loops through all events in an supplied event vector, adding all unknowns and parameters found in
@@ -503,8 +528,6 @@ function find_event_vars!(ps, us, event, ivs, vars)
     findvars!(ps, us, event[1], ivs, vars)
     findvars!(ps, us, event[2], ivs, vars)
 end
-
-
 
 ### Basic Functions ###
 
