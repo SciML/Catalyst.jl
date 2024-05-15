@@ -246,12 +246,6 @@ let
 
     sol_dsl = solve(SDEProblem(rn_dsl, u0, tspan, ps), ImplicitEM(); seed = 1234)
     sol_prog = solve(SDEProblem(rn_prog, u0, tspan, ps), ImplicitEM(); seed = 1234)
-    println()
-    println()
-    println(length(sol_dsl.t))
-    println(sol_dsl.retcode)
-    println(length(sol_prog.t))
-    println(sol_prog.retcode)
     @test sol_dsl == sol_prog
 end
 
