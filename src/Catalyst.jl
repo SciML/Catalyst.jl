@@ -69,8 +69,25 @@ function __init__()
     end
 end
 
-# Declare constants.
+### Package Constants ###
+
+# Declares symbols which may neither be used as parameters nor unknowns.
+const forbidden_symbols_skip = Set([:ℯ, :pi, :π, :t, :∅])
+const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
+                                      forbidden_symbols_skip)
+const forbidden_variables_error = let
+    fvars = copy(forbidden_symbols_error)
+    delete!(fvars, :t)
+    fvars
+end
+
+# Union type for `Reaction`s and `Eqiation`s.
 const CatalystEqType = Union{Reaction, Equation}
+
+# The symbol used for conserved quantities in conservation law eliminations.
+const CONSERVED_CONSTANT_SYMBOL = :Γ
+
+
 
 # base system type and features
 include("reactionsystem.jl")

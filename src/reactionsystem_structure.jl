@@ -661,30 +661,6 @@ function combinatoric_ratelaws(sys::ReactionSystem)
     mapreduce(combinatoric_ratelaws, |, subsys; init = crl)
 end
 
-# get the non-bc, independent unknown variables and independent species, preserving their
-# relative order in get_unknowns(rs). ASSUMES system has been validated to have no constant
-# species as unknowns and is flattened.
-function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
-    sts = get_unknowns(rs)
-    nps = get_networkproperties(rs)
-    indepsts = if remove_conserved
-        filter(s -> ((s ∈ nps.indepspecs) || (!isspecies(s))) && (!isbc(s)), sts)
-    else
-        filter(s -> !isbc(s), sts)
-    end
-    indepsts, filter(isspecies, indepsts)
-end
-
-# Gets sub systems that are also reaction systems.
-function filter_nonrxsys(network)
-    systems = get_systems(network)
-    rxsystems = ReactionSystem[]
-    for sys in systems
-        (sys isa ReactionSystem) && push!(rxsystems, sys)
-    end
-    rxsystems
-end
-
 """
     species(network)
 
@@ -710,6 +686,20 @@ function species(network::ReactionSystem, sts)
 end
 
 """
+    numspecies(network)
+
+Return the total number of species within the given [`ReactionSystem`](@ref) and
+subsystems that are `ReactionSystem`s.
+"""
+function numspecies(network)
+    numspcs = length(get_species(network))
+    for sys in get_systems(network)
+        (sys isa ReactionSystem) && (numspcs += numspecies(sys))
+    end
+    numspcs
+end
+
+"""
     nonspecies(network)
 
 Return the non-species variables within the network, i.e. those unknowns for which `isspecies
@@ -720,6 +710,34 @@ Notes:
 """
 function nonspecies(network)
     unknowns(network)[(numspecies(network) + 1):end]
+end
+
+"""
+    speciesmap(network)
+
+Given a [`ReactionSystem`](@ref), return a Dictionary mapping species that
+participate in `Reaction`s to their index within [`species(network)`](@ref).
+"""
+function speciesmap(network)
+    nps = get_networkproperties(network)
+    if isempty(nps.speciesmap)
+        nps.speciesmap = Dict(S => i for (i, S) in enumerate(species(network)))
+    end
+    nps.speciesmap
+end
+
+# get the non-bc, independent unknown variables and independent species, preserving their
+# relative order in get_unknowns(rs). ASSUMES system has been validated to have no constant
+# species as unknowns and is flattened.
+function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
+    sts = get_unknowns(rs)
+    nps = get_networkproperties(rs)
+    indepsts = if remove_conserved
+        filter(s -> ((s ∈ nps.indepspecs) || (!isspecies(s))) && (!isbc(s)), sts)
+    else
+        filter(s -> !isbc(s), sts)
+    end
+    indepsts, filter(isspecies, indepsts)
 end
 
 """
@@ -754,41 +772,6 @@ function numparams(network)
 end
 
 """
-    reactions(network)
-
-Given a [`ReactionSystem`](@ref), return a vector of all `Reactions` in the system.
-
-Notes:
-- If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
-"""
-function reactions(network)
-    rxs = get_rxs(network)
-    systems = filter_nonrxsys(network)
-    isempty(systems) && (return rxs)
-    [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
-end
-
-function namespace_reactions(network::ReactionSystem)
-    rxs = reactions(network)
-    isempty(rxs) && return Reaction[]
-    map(rx -> namespace_equation(rx, network), rxs)
-end
-
-"""
-    speciesmap(network)
-
-Given a [`ReactionSystem`](@ref), return a Dictionary mapping species that
-participate in `Reaction`s to their index within [`species(network)`](@ref).
-"""
-function speciesmap(network)
-    nps = get_networkproperties(network)
-    if isempty(nps.speciesmap)
-        nps.speciesmap = Dict(S => i for (i, S) in enumerate(species(network)))
-    end
-    nps.speciesmap
-end
-
-"""
     paramsmap(network)
 
 Given a [`ReactionSystem`](@ref), return a Dictionary mapping from all
@@ -810,17 +793,24 @@ function reactionparamsmap(network)
 end
 
 """
-    numspecies(network)
+    reactions(network)
 
-Return the total number of species within the given [`ReactionSystem`](@ref) and
-subsystems that are `ReactionSystem`s.
+Given a [`ReactionSystem`](@ref), return a vector of all `Reactions` in the system.
+
+Notes:
+- If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
 """
-function numspecies(network)
-    numspcs = length(get_species(network))
-    for sys in get_systems(network)
-        (sys isa ReactionSystem) && (numspcs += numspecies(sys))
-    end
-    numspcs
+function reactions(network)
+    rxs = get_rxs(network)
+    systems = filter_nonrxsys(network)
+    isempty(systems) && (return rxs)
+    [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
+end
+
+function namespace_reactions(network::ReactionSystem)
+    rxs = reactions(network)
+    isempty(rxs) && return Reaction[]
+    map(rx -> namespace_equation(rx, network), rxs)
 end
 
 """
@@ -868,6 +858,16 @@ end
 Returns whether `rn` has any spatial independent variables (i.e. is a spatial network).
 """
 isspatial(rn::ReactionSystem) = !isempty(get_sivs(rn))
+
+# Gets sub systems that are also reaction systems.
+function filter_nonrxsys(network)
+    systems = get_systems(network)
+    rxsystems = ReactionSystem[]
+    for sys in systems
+        (sys isa ReactionSystem) && push!(rxsystems, sys)
+    end
+    rxsystems
+end
 
 
 ### Advanced `ReactionSystem`-specific Accessors ###
@@ -948,6 +948,7 @@ function substoichmat(::Type{SparseMatrixCSC{T, Int}},
     end
     sparse(Is, Js, Vs, numspecies(rn), numreactions(rn))
 end
+
 function substoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
     smap = speciesmap(rn)
     smat = zeros(T, numspecies(rn), numreactions(rn))
@@ -960,6 +961,7 @@ function substoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
     end
     smat
 end
+
 function substoichmat(rn::ReactionSystem; sparse::Bool = false)
     isempty(get_systems(rn)) || error("substoichmat does not currently support subsystems.")
     T = reduce(promote_type, eltype(rx.substoich) for rx in reactions(rn))
@@ -996,6 +998,7 @@ function prodstoichmat(::Type{SparseMatrixCSC{T, Int}},
     end
     sparse(Is, Js, Vs, numspecies(rn), numreactions(rn))
 end
+
 function prodstoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
     smap = speciesmap(rn)
     pmat = zeros(T, numspecies(rn), numreactions(rn))
@@ -1008,6 +1011,7 @@ function prodstoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number
     end
     pmat
 end
+
 function prodstoichmat(rn::ReactionSystem; sparse = false)
     isempty(get_systems(rn)) ||
         error("prodstoichmat does not currently support subsystems.")
@@ -1046,6 +1050,7 @@ function netstoichmat(::Type{SparseMatrixCSC{T, Int}},
     end
     sparse(Is, Js, Vs, numspecies(rn), numreactions(rn))
 end
+
 function netstoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
     smap = speciesmap(rn)
     nmat = zeros(T, numspecies(rn), numreactions(rn))
@@ -1057,8 +1062,6 @@ function netstoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
     end
     nmat
 end
-
-netstoichtype(::Vector{Pair{S, T}}) where {S, T} = T
 
 function netstoichmat(rn::ReactionSystem; sparse = false)
     isempty(get_systems(rn)) ||
@@ -1088,6 +1091,8 @@ function netstoichmat(rn::ReactionSystem; sparse = false)
 
     nsmat
 end
+
+netstoichtype(::Vector{Pair{S, T}}) where {S, T} = T
 
 
 ### General `ReactionSystem`-specific Functions ###
@@ -1122,6 +1127,7 @@ macro unpacksys(rn)
         Base.eval($(__module__), ex)
     end
 end
+
 function __unpacksys(rn)
     ex = :(begin end)
     for key in keys(get_var_to_name(rn))
@@ -1248,33 +1254,6 @@ function set_default_noise_scaling(rs::ReactionSystem, noise_scaling)
 end
 
 
-####################### dependency graph utilities ########################
-
-# determine which unknowns a reaction depends on
-function ModelingToolkit.get_variables!(deps::Set, rx::Reaction, variables)
-    (rx.rate isa Symbolic) && get_variables!(deps, rx.rate, variables)
-    for s in rx.substrates
-        # parametric stoichiometry means may have a parameter as a substrate
-        any(isequal(s), variables) && push!(deps, s)
-    end
-    deps
-end
-
-# determine which species a reaction modifies
-function ModelingToolkit.modified_unknowns!(munknowns, rx::Reaction, sts::Set)
-    for (species, stoich) in rx.netstoich
-        (species in sts) && push!(munknowns, species)
-    end
-    munknowns
-end
-
-function ModelingToolkit.modified_unknowns!(munknowns, rx::Reaction, sts::AbstractVector)
-    for (species, stoich) in rx.netstoich
-        any(isequal(species), sts) && push!(munknowns, species)
-    end
-    munknowns
-end
-
 ### ReactionSystem Composing & Hierarchical Modelling ###
 
 """
@@ -1382,6 +1361,13 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
 end
 
 # A helper function.
+
+function getsubsystypes(sys)
+    typeset = Set{Type}()
+    getsubsystypes!(typeset, sys)
+    typeset
+end
+
 function getsubsystypes!(typeset::Set{Type}, sys::T) where {T <: MT.AbstractSystem}
     push!(typeset, T)
     for subsys in get_systems(sys)
@@ -1389,12 +1375,6 @@ function getsubsystypes!(typeset::Set{Type}, sys::T) where {T <: MT.AbstractSyst
     end
     typeset
 end
-function getsubsystypes(sys)
-    typeset = Set{Type}()
-    getsubsystypes!(typeset, sys)
-    typeset
-end
-
 
 
 ### Units Handling ###

@@ -59,7 +59,7 @@ Example systems:
     probJump = JumpProblem(prob,aggregator::Direct,rn)
 """
 
-### Declares various options and constants. ###
+### Constant Declarations ###
 
 # Declare various arrow types symbols used for the empty set (also 0).
 const empty_set = Set{Symbol}([:∅])
@@ -69,24 +69,16 @@ const bwd_arrows = Set{Symbol}([:<, :(<=), :←, :↢, :↤, :⇽, :⟵, :⟻, :
 const double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :⟺, Symbol("<-->")])
 const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
-const CONSERVED_CONSTANT_SYMBOL = :Γ
-
-# Declares symbols which may neither be used as parameters not varriables.
-const forbidden_symbols_skip = Set([:ℯ, :pi, :π, :t, :∅])
-const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
-                                      forbidden_symbols_skip)
-const forbidden_variables_error = let
-    fvars = copy(forbidden_symbols_error)
-    delete!(fvars, :t)
-    fvars
-end
 
 # Declares the keys used for various options.
 const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables,
                      :default_noise_scaling, :differentials, :equations,
                      :continuous_events, :discrete_events, :combinatoric_ratelaws)
 
-### The @species macro, basically a copy of the @variables macro. ###
+
+### `@species` Macro ###
+
+# The @species macro, basically a copy of the @variables macro.
 macro species(ex...)
     vars = Symbolics._parse_vars(:variables, Real, ex)
 
@@ -117,7 +109,9 @@ macro species(ex...)
     esc(vars)
 end
 
-### The main macro, takes reaction network notation and returns a ReactionSystem. ###
+
+### `@reaction_network` macro ###
+
 """
     @reaction_network
 
@@ -214,54 +208,15 @@ macro network_component(name::Symbol = gensym(:ReactionSystem))
                 :(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name)))))
 end
 
+### Internal DSL Structures ###
 
-### Macros used for manipulating, and successively builing up, reaction systems. ###
-@doc raw"""
-    @reaction
-
-Generates a single [`Reaction`](@ref) object.
-
-Examples:
-```julia
-rx = @reaction k*v, A + B --> C + D
-
-# is equivalent to
-t = default_t()
-@parameters k v
-@species A(t) B(t) C(t) D(t)
-rx == Reaction(k*v, [A,B], [C,D])
-```
-Here `k` and `v` will be parameters and `A`, `B`, `C` and `D` will be variables.
-Interpolation of existing parameters/variables also works
-```julia
-t = default_t()
-@parameters k b
-@species A(t)
-ex = k*A^2 + t
-rx = @reaction b*$ex*$A, $A --> C
-```
-
-Notes:
-- Any symbols arising in the rate expression that aren't interpolated are treated as
-  parameters. In the reaction part (`α*A + B --> C + D`), coefficients are treated as
-  parameters, e.g. `α`, and rightmost symbols as species, e.g. `A,B,C,D`.
-- Works with any *single* arrow types supported by [`@reaction_network`](@ref).
-- Interpolation of Julia variables into the macro works similar to the `@reaction_network`
-  macro. See [The Reaction DSL](@ref dsl_description) tutorial for more details.
-"""
-macro reaction(ex)
-    make_reaction(ex)
-end
-
-
-### Internal DSL structures for representing reactants and reactions. ###
-
-#Structure containing information about one reactant in one reaction.
+# Structure containing information about one reactant in one reaction.
 struct ReactantStruct
     reactant::Union{Symbol, Expr}
     stoichiometry::ExprValues
 end
-#Structure containing information about one Reaction. Contain all its substrates and products as well as its rate. Contains a specialized constructor.
+
+# Structure containing information about one Reaction. Contain all its substrates and products as well as its rate. Contains a specialized constructor.
 struct ReactionStruct
     substrates::Vector{ReactantStruct}
     products::Vector{ReactantStruct}
@@ -278,23 +233,6 @@ struct ReactionStruct
 end
 
 ### Functions rephrasing the macro input as a ReactionSystem structure. ###
-
-function forbidden_variable_check(v)
-    !isempty(intersect(forbidden_variables_error, v)) &&
-        error("The following symbol(s) are used as variables: " *
-              ((map(s -> "'" * string(s) * "', ",
-                    intersect(forbidden_variables_error, v))...)) *
-              "this is not permited.")
-end
-
-function forbidden_symbol_check(v)
-    !isempty(intersect(forbidden_symbols_error, v)) &&
-        error("The following symbol(s) are used as species or parameters: " *
-              ((map(s -> "'" * string(s) * "', ",
-                    intersect(forbidden_symbols_error, v))...)) *
-              "this is not permited.")
-    nothing
-end
 
 function unique_symbol_check(syms)
     allunique(syms) ||
@@ -427,34 +365,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
                 combinatoric_ratelaws = $combinatoric_ratelaws);
             default_reaction_metadata = $default_reaction_metadata
         )
-    end
-end
-
-# Function for creating a Reaction structure (used by the @reaction macro).
-function make_reaction(ex::Expr)
-
-    # Handle interpolation of variables
-    ex = esc_dollars!(ex)
-
-    # Parses reactions, species, and parameters.
-    reaction = get_reaction(ex)
-    species, parameters = extract_species_and_parameters!([reaction], [])
-
-    # Checks for input errors.
-    forbidden_symbol_check(union(species, parameters))
-
-    # Creates expressions corresponding to actual code from the internal DSL representation.
-    sexprs = get_sexpr(species, Dict{Symbol, Expr}())
-    pexprs = get_pexpr(parameters, Dict{Symbol, Expr}())
-    rxexpr = get_rxexprs(reaction)
-    iv = :(@variables $(DEFAULT_IV_SYM))
-
-    # Returns the rephrased expression.
-    quote
-        $pexprs
-        $iv
-        $sexprs
-        $rxexpr
     end
 end
 
@@ -917,6 +827,74 @@ function recursive_expand_functions!(expr::ExprValues)
     end
     expr
 end
+
+### `@reaction` Macro & its Internals ###
+
+@doc raw"""
+@reaction
+
+Generates a single [`Reaction`](@ref) object.
+
+Examples:
+```julia
+rx = @reaction k*v, A + B --> C + D
+
+# is equivalent to
+t = default_t()
+@parameters k v
+@species A(t) B(t) C(t) D(t)
+rx == Reaction(k*v, [A,B], [C,D])
+```
+Here `k` and `v` will be parameters and `A`, `B`, `C` and `D` will be variables.
+Interpolation of existing parameters/variables also works
+```julia
+t = default_t()
+@parameters k b
+@species A(t)
+ex = k*A^2 + t
+rx = @reaction b*$ex*$A, $A --> C
+```
+
+Notes:
+- Any symbols arising in the rate expression that aren't interpolated are treated as
+parameters. In the reaction part (`α*A + B --> C + D`), coefficients are treated as
+parameters, e.g. `α`, and rightmost symbols as species, e.g. `A,B,C,D`.
+- Works with any *single* arrow types supported by [`@reaction_network`](@ref).
+- Interpolation of Julia variables into the macro works similar to the `@reaction_network`
+macro. See [The Reaction DSL](@ref dsl_description) tutorial for more details.
+"""
+macro reaction(ex)
+    make_reaction(ex)
+end
+
+# Function for creating a Reaction structure (used by the @reaction macro).
+function make_reaction(ex::Expr)
+
+    # Handle interpolation of variables
+    ex = esc_dollars!(ex)
+
+    # Parses reactions, species, and parameters.
+    reaction = get_reaction(ex)
+    species, parameters = extract_species_and_parameters!([reaction], [])
+
+    # Checks for input errors.
+    forbidden_symbol_check(union(species, parameters))
+
+    # Creates expressions corresponding to actual code from the internal DSL representation.
+    sexprs = get_sexpr(species, Dict{Symbol, Expr}())
+    pexprs = get_pexpr(parameters, Dict{Symbol, Expr}())
+    rxexpr = get_rxexprs(reaction)
+    iv = :(@variables $(DEFAULT_IV_SYM))
+
+    # Returns the rephrased expression.
+    quote
+        $pexprs
+        $iv
+        $sexprs
+        $rxexpr
+    end
+end
+
 
 # ### Old functions (for deleting).
 

@@ -34,8 +34,8 @@ References:
 - DOT language guide: http://www.graphviz.org/pdf/dotguide.pdf
 """
 
-# AST
-#####
+
+### AST ###
 
 abstract type Expression end
 abstract type Statement <: Expression end
@@ -123,8 +123,8 @@ Edge(path::Vector{String}, attrs::AbstractDict) = Edge(map(NodeID, path), attrs)
 Edge(path::Vector{String}; attrs...) = Edge(map(NodeID, path), attrs)
 Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), attrs)
 
-# Bindings
-##########
+
+### Bindings ###
 
 """ Run a Graphviz program.
 
@@ -165,8 +165,7 @@ function Base.show(io::IO, ::MIME"image/svg+xml", graph::Graph)
     run_graphviz(io, graph, format = "svg")
 end
 
-# Pretty-print
-##############
+### Pretty-print ###
 
 """ Pretty-print the Graphviz expression.
 """
@@ -319,6 +318,9 @@ function modifystrcomp(strcomp::Vector{String})
     end
     strcomp = "<" .* strcomp .* ">"
 end
+
+
+### Public-facing API ###
 
 """
     complexgraph(rn::ReactionSystem; complexdata=reactioncomplexes(rn))

@@ -1,3 +1,31 @@
+### Forbidden Symbols Checking ###
+
+# Throws an error when a forbidden symbol is used.
+function forbidden_symbol_check(v)
+    !isempty(intersect(forbidden_symbols_error, v)) &&
+        error("The following symbol(s) are used as species or parameters: " *
+              ((map(s -> "'" * string(s) * "', ",
+                    intersect(forbidden_symbols_error, v))...)) *
+              "this is not permited.")
+    nothing
+end
+
+# Throws an error when a forbidden variable is used (a forbidden symbol that is not `:t`).
+function forbidden_variable_check(v)
+    !isempty(intersect(forbidden_variables_error, v)) &&
+        error("The following symbol(s) are used as variables: " *
+              ((map(s -> "'" * string(s) * "', ",
+                    intersect(forbidden_variables_error, v))...)) *
+              "this is not permited.")
+end
+
+
+
+
+
+
+
+
 # Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a  Symbol/Numerical).
 function tup_leng(ex::ExprValues)
     (typeof(ex) == Expr && ex.head == :tuple) && (return length(ex.args))

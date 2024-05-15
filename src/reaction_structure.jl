@@ -306,6 +306,7 @@ function hash(rx::Reaction, h::UInt)
     Base.hash(rx.only_use_rate, h)
 end
 
+
 ### ModelingToolkit-inherited Functions ###
 
 # Returns a name-spaced version of a reaction.
@@ -332,9 +333,37 @@ function apply_if_nonempty(f, v)
     s
 end
 
-# Overwrites functions in ModelingToolkit to give the correct input.
+# Overwrites equation-type functions to give the correct input for `Reaction`s.
 ModelingToolkit.is_diff_equation(rx::Reaction) = false
 ModelingToolkit.is_alg_equation(rx::Reaction) = false
+
+
+### Dependency-related Functions ###
+
+# determine which unknowns a reaction depends on
+function ModelingToolkit.get_variables!(deps::Set, rx::Reaction, variables)
+    (rx.rate isa Symbolic) && get_variables!(deps, rx.rate, variables)
+    for s in rx.substrates
+        # parametric stoichiometry means may have a parameter as a substrate
+        any(isequal(s), variables) && push!(deps, s)
+    end
+    deps
+end
+
+# determine which species a reaction modifies
+function ModelingToolkit.modified_unknowns!(munknowns, rx::Reaction, sts::Set)
+    for (species, stoich) in rx.netstoich
+        (species in sts) && push!(munknowns, species)
+    end
+    munknowns
+end
+
+function ModelingToolkit.modified_unknowns!(munknowns, rx::Reaction, sts::AbstractVector)
+    for (species, stoich) in rx.netstoich
+        any(isequal(species), sts) && push!(munknowns, species)
+    end
+    munknowns
+end
 
 
 ### `Reaction`-specific Functions ### 
@@ -363,6 +392,7 @@ function isbcbalanced(rx::Reaction)
 
     true
 end
+
 
 ### Reaction Metadata Implementation ###
 # These are currently considered internal, but can be used by public accessor functions like get_noise_scaling.
@@ -426,6 +456,7 @@ function getmetadata(reaction::Reaction, md_key::Symbol)
     metadata = getmetadata_dict(reaction)
     return metadata[findfirst(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))][2]
 end
+
 
 ### Implemented Reaction Metadata ###
 
