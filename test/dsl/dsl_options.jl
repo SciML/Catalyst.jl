@@ -14,7 +14,7 @@ seed = rand(rng, 1:100)
 # Sets the default `t` to use.
 t = default_t()
 
-### Tests `@parameters` and `@species` Options ###
+### Tests `@parameters`, `@species`, and `@variables` Options ###
 
 # Test creating networks with/without options.
 let
@@ -394,6 +394,61 @@ let
     @test !ModelingToolkit.hasdescription(unwrap(rn.k5))
 end
 
+# Test @variables in DSL.
+let
+    rn = @reaction_network tester begin
+        @parameters k1
+        @variables V1(t) V2(t) V3(t)
+        @species B1(t) B2(t)
+        (k1*k2 + V3), V1*A + 2*B1 --> V2*C + B2
+    end
+
+    @parameters k1 k2
+    @variables V1(t) V2(t) V3(t)
+    @species A(t) B1(t) B2(t) C(t)
+    rx = Reaction(k1*k2 + V3, [A, B1], [C, B2], [V1, 2], [V2, 1])
+    @named tester = ReactionSystem([rx], t)
+    @test tester == rn
+
+    sts = (A, B1, B2, C, V1, V2, V3)
+    spcs = (A, B1, B2, C)
+    @test issetequal(unknowns(rn), sts)
+    @test issetequal(species(rn), spcs)
+
+    @test_throws ArgumentError begin
+        rn = @reaction_network begin
+            @variables K
+            k, K*A --> B
+        end
+    end
+end
+
+### Test independent variable designation ###
+
+# Test ivs in DSL.
+let
+    rn = @reaction_network ivstest begin
+        @ivs s x
+        @parameters k2
+        @variables D(x) E(s) F(s,x)
+        @species A(s,x) B(s) C(x)
+        k*k2*D, E*A +B --> F*C + C2
+    end
+
+    @parameters k k2
+    @variables s x D(x) E(s) F(s,x)
+    @species A(s,x) B(s) C(x) C2(s,x)
+    rx = Reaction(k*k2*D, [A, B], [C, C2], [E, 1], [F, 1])
+    @named ivstest = ReactionSystem([rx], s; spatial_ivs = [x])
+
+    @test ivstest == rn
+    @test issetequal(unknowns(rn), [D, E, F, A, B, C, C2])
+    @test issetequal(species(rn), [A, B, C, C2])
+    @test isequal(ModelingToolkit.get_iv(rn), s)
+    @test issetequal(Catalyst.get_sivs(rn), [x])
+end
+
+
 ### Observables ###
 
 # Test basic functionality.
@@ -687,7 +742,7 @@ let
 end
 
 
-### Coupled CRN/Equations Models ###
+### Test `@equations` for Coupled CRN/Equations Models ###
 
 # Checks creation of basic network.
 # Check indexing of output solution.

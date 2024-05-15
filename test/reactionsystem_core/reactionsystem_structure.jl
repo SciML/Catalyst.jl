@@ -739,3 +739,15 @@ end
 let
     @test isnothing(ModelingToolkit.get_metadata(rs))
 end
+
+### Other Tests ###
+
+# Tests construction of empty reaction networks.
+let
+    empty_network_1 = @reaction_network
+    eqs, iv, ps, name, systems = unpacksys(empty_network_1)
+    @test length(eqs) == 0
+    @test nameof(iv) == :t
+    @test length(get_unknowns(empty_network_1)) == 0
+    @test length(ps) == 0
+end

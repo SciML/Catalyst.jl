@@ -435,15 +435,3 @@ let
     @test_throws LoadError @eval @reaction k, 0 --> im
     @test_throws LoadError @eval @reaction k, 0 --> nothing
 end
-
-
-### Other Tests ###
-
-# Test names work.
-let
-    rn = @reaction_network SIR1 begin
-        k1, S + I --> 2I
-        k2, I --> R
-    end
-    @test nameof(rn) == :SIR1
-end

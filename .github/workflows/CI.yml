@@ -14,7 +14,16 @@ jobs:
     strategy:
       matrix:
         group:
-          - Core
+          - ReactionSystem
+          - DSL
+          - CompositionalModelling
+          - Miscellaneous
+          - NetworkAnalysis
+          - Simulation
+          - Upstream
+          - Spatial
+          - Visualisation
+          - Extensions
         version:
           - '1.10.2'
     steps:
