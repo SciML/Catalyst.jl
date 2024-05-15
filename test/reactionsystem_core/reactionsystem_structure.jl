@@ -747,6 +747,10 @@ end
 
 # Tests construction of empty reaction networks.
 let
+    function unpacksys(sys)
+        get_eqs(sys), get_iv(sys), get_unknowns(sys), get_ps(sys), nameof(sys), get_systems(sys)
+    end
+
     empty_network_1 = @reaction_network
     eqs, iv, ps, name, systems = unpacksys(empty_network_1)
     @test length(eqs) == 0

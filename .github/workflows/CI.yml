@@ -14,16 +14,11 @@ jobs:
     strategy:
       matrix:
         group:
-          - ReactionSystem
-          - DSL
-          - CompositionalModelling
-          - Miscellaneous
-          - NetworkAnalysis
+          - ModelCreation
+          - Miscellaneous-NetworkAnalysis
           - Simulation
-          - Upstream
           - Spatial
-          - Visualisation
-          - Extensions
+          - Visualisation-Extensions
         version:
           - '1.10.2'
     steps:
