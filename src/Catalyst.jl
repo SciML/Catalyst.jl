@@ -69,6 +69,9 @@ function __init__()
     end
 end
 
+# Declare constants.
+const CatalystEqType = Union{Reaction, Equation}
+
 # base system type and features
 include("reactionsystem.jl")
 export isspecies
@@ -80,7 +83,7 @@ export ODEProblem,
 # reaction_network macro
 const ExprValues = Union{Expr, Symbol, Float64, Int, Bool}
 include("expression_utils.jl")
-include("reaction_network.jl")
+include("dsl.jl")
 export @reaction_network, @network_component, @reaction, @species
 
 # registers CRN specific functions using Symbolics.jl
