@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, LinearAlgebra, Test
+using Catalyst, LinearAlgebra, NonlinearSolve, OrdinaryDiffEq
 
 # Fetch test networks.
 include("../test_networks.jl")
