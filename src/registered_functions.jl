@@ -1,3 +1,4 @@
+### Custom CRN Function Implementations ###
 """
     mm(X,v,K) = v*X / (X + K)
 
@@ -107,6 +108,9 @@ function Symbolics.derivative(::typeof(hillar), args::NTuple{5, Any}, ::Val{5})
      (args[4]^args[5]) * log(args[4])) /
     (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
 end
+
+
+### Custom CRN FUnction-related Functions ###
 
 """
 expand_registered_functions(expr)

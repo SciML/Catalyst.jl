@@ -33,6 +33,7 @@ struct ReactionComplex{V <: Integer} <: AbstractVector{ReactionComplexElement{V}
     end
 end
 
+# Special constructor.
 function ReactionComplex(speciesids::Vector{Int},
                          speciesstoichs::Vector{V}) where {V <: Integer}
     (length(speciesids) == length(speciesstoichs)) ||
@@ -40,27 +41,23 @@ function ReactionComplex(speciesids::Vector{Int},
     ReactionComplex{V}(speciesids, speciesstoichs)
 end
 
-### ReactionComplex Functions ###
-
-# Equality.
+# Defines base function overloads for `ReactionComplex`.
 function (==)(a::ReactionComplex{V}, b::ReactionComplex{V}) where {V <: Integer}
     (a.speciesids == b.speciesids) &&
         (a.speciesstoichs == b.speciesstoichs)
 end
 
-# Hash.
 function hash(rc::ReactionComplex, h::UInt)
     Base.hash(rc.speciesids, Base.hash(rc.speciesstoichs, h))
 end
 
-# Size, length.
 Base.size(rc::ReactionComplex) = size(rc.speciesids)
 Base.length(rc::ReactionComplex) = length(rc.speciesids)
 
-# Get/set index.
 function Base.getindex(rc::ReactionComplex, i...)
     ReactionComplexElement(getindex(rc.speciesids, i...), getindex(rc.speciesstoichs, i...))
 end
+
 function Base.setindex!(rc::ReactionComplex, t::ReactionComplexElement, i...)
     (setindex!(rc.speciesids, t.speciesid, i...);
      setindex!(rc.speciesstoichs,
@@ -68,10 +65,10 @@ function Base.setindex!(rc::ReactionComplex, t::ReactionComplexElement, i...)
      rc)
 end
 
-# Is less, sorting related.
 function Base.isless(a::ReactionComplexElement, b::ReactionComplexElement)
     isless(a.speciesid, b.speciesid)
 end
+
 Base.Sort.defalg(::ReactionComplex) = Base.DEFAULT_UNSTABLE
 
 
@@ -102,9 +99,7 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
 end
 #! format: on
 
-### NetworkProperties Functions ###
-
-# Show
+# Defines base function overloads for `NetworkProperties`.
 function Base.show(io::IO, nps::NetworkProperties)
     if (nps.conservationmat !== nothing)
         println(io, "Conserved Equations: ")
@@ -112,11 +107,7 @@ function Base.show(io::IO, nps::NetworkProperties)
         println()
     end
 end
-
-# Is empty.
 Base.isempty(nps::NetworkProperties) = getfield(nps, :isempty)
-
-# Setproperty.
 function Base.setproperty!(nps::NetworkProperties, sym::Symbol, x)
     (sym !== :isempty) && setfield!(nps, :isempty, false)
     setfield!(nps, sym, x)
@@ -529,7 +520,188 @@ function find_event_vars!(ps, us, event, ivs, vars)
     findvars!(ps, us, event[2], ivs, vars)
 end
 
+### Units Handling ###
+
+
+"""
+    validate(rx::Reaction; info::String = "")
+
+Check that all substrates and products within the given [`Reaction`](@ref) have
+the same units, and that the units of the reaction's rate expression are
+internally consistent (i.e. if the rate involves sums, each term in the sum has
+the same units).
+
+"""
+function validate(rx::Reaction; info::String = "")
+    validated = MT._validate([rx.rate], [string(rx, ": rate")], info = info)
+
+    subunits = isempty(rx.substrates) ? nothing : get_unit(rx.substrates[1])
+    for i in 2:length(rx.substrates)
+        if get_unit(rx.substrates[i]) != subunits
+            validated = false
+            @warn(string("In ", rx, " the substrates have differing units."))
+        end
+    end
+
+    produnits = isempty(rx.products) ? nothing : get_unit(rx.products[1])
+    for i in 2:length(rx.products)
+        if get_unit(rx.products[i]) != produnits
+            validated = false
+            @warn(string("In ", rx, " the products have differing units."))
+        end
+    end
+
+    if (subunits !== nothing) && (produnits !== nothing) && (subunits != produnits)
+        validated = false
+        @warn(string("in ", rx,
+                     " the substrate units are not consistent with the product units."))
+    end
+
+    validated
+end
+
+"""
+    validate(rs::ReactionSystem, info::String="")
+
+Check that all species in the [`ReactionSystem`](@ref) have the same units, and
+that the rate laws of all reactions reduce to units of (species units) / (time
+units).
+
+Notes:
+- Does not check subsystems, constraint equations, or non-species variables.
+"""
+function validate(rs::ReactionSystem, info::String = "")
+    specs = get_species(rs)
+
+    # if there are no species we don't check units on the system
+    isempty(specs) && return true
+
+    specunits = get_unit(specs[1])
+    validated = true
+    for spec in specs
+        if get_unit(spec) != specunits
+            validated = false
+            @warn(string("Species are expected to have units of ", specunits,
+                         " however, species ", spec, " has units ", get_unit(spec), "."))
+        end
+    end
+    timeunits = get_unit(get_iv(rs))
+
+    # no units for species, time or parameters then assume validated
+    if (specunits in (MT.unitless, nothing)) && (timeunits in (MT.unitless, nothing))
+        all(u == 1.0 for u in ModelingToolkit.get_unit(get_ps(rs))) && return true
+    end
+
+    rateunits = specunits / timeunits
+    for rx in get_rxs(rs)
+        rxunits = get_unit(rx.rate)
+        for (i, sub) in enumerate(rx.substrates)
+            rxunits *= get_unit(sub)^rx.substoich[i]
+        end
+
+        # Checks that the reaction's combined units is correct, if not, throws a warning.
+        # Needs additional checks because for cases: (1.0^n) and (1.0^n1)*(1.0^n2).
+        # These are not considered (be default) considered equal to `1.0` for unitless reactions.
+        isequal(rxunits, rateunits) && continue
+        if istree(rxunits)
+            unitless_exp(rxunits) && continue
+            (operation(rxunits) == *) && all(unitless_exp(arg) for arg in arguments(rxunits)) && continue
+        end
+        validated = false
+        @warn(string("Reaction rate laws are expected to have units of ", rateunits, " however, ",
+                     rx, " has units of ", rxunits, "."))
+    end
+
+    validated
+end
+
+# Checks if a unit consist of exponents with base 1 (and is this unitless).
+unitless_exp(u) = istree(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
+
 ### Basic Functions ###
+
+
+"""
+    ==(rx1::Reaction, rx2::Reaction)
+
+Tests whether two [`Reaction`](@ref)s are identical.
+
+Notes:
+- Ignores the order in which stoichiometry components are listed.
+- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
+    considered different than `(A+1)^2`.
+"""
+function (==)(rx1::Reaction, rx2::Reaction)
+    isequal(rx1.rate, rx2.rate) || return false
+    issetequal(zip(rx1.substrates, rx1.substoich), zip(rx2.substrates, rx2.substoich)) ||
+        return false
+    issetequal(zip(rx1.products, rx1.prodstoich), zip(rx2.products, rx2.prodstoich)) ||
+        return false
+    issetequal(rx1.netstoich, rx2.netstoich) || return false
+    rx1.only_use_rate == rx2.only_use_rate
+end
+
+function hash(rx::Reaction, h::UInt)
+    h = Base.hash(rx.rate, h)
+    for s in Iterators.flatten((rx.substrates, rx.products))
+        h ⊻= hash(s)
+    end
+    for s in Iterators.flatten((rx.substoich, rx.prodstoich))
+        h ⊻= hash(s)
+    end
+    for s in rx.netstoich
+        h ⊻= hash(s)
+    end
+    Base.hash(rx.only_use_rate, h)
+end
+
+"""
+    isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true)
+
+Tests whether the underlying species, parameters and reactions are the same in
+the two [`ReactionSystem`](@ref)s. Ignores the names of the systems in testing
+equality.
+
+Notes:
+- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
+    considered different than `(A+1)^2`.
+- Does not include `defaults` in determining equality.
+"""
+function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true)
+    if !ignorenames
+        (nameof(rn1) == nameof(rn2)) || return false
+    end
+
+    (get_combinatoric_ratelaws(rn1) == get_combinatoric_ratelaws(rn2)) || return false
+    isequal(get_iv(rn1), get_iv(rn2)) || return false
+    issetequal(get_sivs(rn1), get_sivs(rn2)) || return false
+    issetequal(get_unknowns(rn1), get_unknowns(rn2)) || return false
+    issetequal(get_ps(rn1), get_ps(rn2)) || return false
+    issetequal(MT.get_observed(rn1), MT.get_observed(rn2)) || return false
+    issetequal(get_eqs(rn1), get_eqs(rn2)) || return false
+
+    # subsystems
+    (length(get_systems(rn1)) == length(get_systems(rn2))) || return false
+    issetequal(get_systems(rn1), get_systems(rn2)) || return false
+
+    true
+end
+
+"""
+    ==(rn1::ReactionSystem, rn2::ReactionSystem)
+
+Tests whether the underlying species, parameters and reactions are the same in
+the two [`ReactionSystem`](@ref)s. Requires the systems to have the same names
+too.
+
+Notes:
+- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
+    considered different than `(A+1)^2`.
+- Does not include `defaults` in determining equality.
+"""
+function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
+    isequivalent(rn1, rn2; ignorenames = false)
+end
 
 ### ModelingToolkit Inherited Accessors ###
 
@@ -631,6 +803,183 @@ function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
         filter(s -> !isbc(s), sts)
     end
     indepsts, filter(isspecies, indepsts)
+end
+
+# Gets sub systems that are also reaction systems.
+function filter_nonrxsys(network)
+    systems = get_systems(network)
+    rxsystems = ReactionSystem[]
+    for sys in systems
+        (sys isa ReactionSystem) && push!(rxsystems, sys)
+    end
+    rxsystems
+end
+
+"""
+    species(network)
+
+Given a [`ReactionSystem`](@ref), return a vector of all species defined in the system and
+any subsystems that are of type `ReactionSystem`. To get the species and non-species
+variables in the system and all subsystems, including non-`ReactionSystem` subsystems, uses
+`unknowns(network)`.
+
+Notes:
+- If `ModelingToolkit.get_systems(network)` is non-empty will allocate.
+"""
+function species(network)
+    sts = get_species(network)
+    systems = filter_nonrxsys(network)
+    isempty(systems) && return sts
+    unique([sts; reduce(vcat, map(sys -> species(sys, species(sys)), systems))])
+end
+
+# Special species but which take a set of states and names spaces them according to another
+# `ReactionSystem`.
+function species(network::ReactionSystem, sts)
+    [MT.renamespace(network, st) for st in sts]
+end
+
+"""
+    nonspecies(network)
+
+Return the non-species variables within the network, i.e. those unknowns for which `isspecies
+== false`.
+
+Notes:
+- Allocates a new array to store the non-species variables.
+"""
+function nonspecies(network)
+    unknowns(network)[(numspecies(network) + 1):end]
+end
+
+"""
+    reactionparams(network)
+
+Given a [`ReactionSystem`](@ref), return a vector of all parameters defined
+within the system and any subsystems that are of type `ReactionSystem`. To get
+the parameters in the system and all subsystems, including non-`ReactionSystem`
+subsystems, use `parameters(network)`.
+
+Notes:
+- Allocates and has to calculate these dynamically by comparison for each reaction.
+"""
+function reactionparams(network)
+    ps = get_ps(network)
+    systems = filter_nonrxsys(network)
+    isempty(systems) && return ps
+    unique([ps; reduce(vcat, map(sys -> species(sys, reactionparams(sys)), systems))])
+end
+
+"""
+    numparams(network)
+
+Return the total number of parameters within the given system and all subsystems.
+"""
+function numparams(network)
+    nps = length(get_ps(network))
+    for sys in get_systems(network)
+        nps += numparams(sys)
+    end
+    nps
+end
+
+function namespace_reactions(network::ReactionSystem)
+    rxs = reactions(network)
+    isempty(rxs) && return Reaction[]
+    map(rx -> namespace_equation(rx, network), rxs)
+end
+
+"""
+    reactions(network)
+
+Given a [`ReactionSystem`](@ref), return a vector of all `Reactions` in the system.
+
+Notes:
+- If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
+"""
+function reactions(network)
+    rxs = get_rxs(network)
+    systems = filter_nonrxsys(network)
+    isempty(systems) && (return rxs)
+    [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
+end
+
+"""
+    speciesmap(network)
+
+Given a [`ReactionSystem`](@ref), return a Dictionary mapping species that
+participate in `Reaction`s to their index within [`species(network)`](@ref).
+"""
+function speciesmap(network)
+    nps = get_networkproperties(network)
+    if isempty(nps.speciesmap)
+        nps.speciesmap = Dict(S => i for (i, S) in enumerate(species(network)))
+    end
+    nps.speciesmap
+end
+
+"""
+    paramsmap(network)
+
+Given a [`ReactionSystem`](@ref), return a Dictionary mapping from all
+parameters that appear within the system to their index within
+`parameters(network)`.
+"""
+function paramsmap(network)
+    Dict(p => i for (i, p) in enumerate(parameters(network)))
+end
+
+"""
+    reactionparamsmap(network)
+
+Given a [`ReactionSystem`](@ref), return a Dictionary mapping from parameters that
+appear within `Reaction`s to their index within [`reactionparams(network)`](@ref).
+"""
+function reactionparamsmap(network)
+    Dict(p => i for (i, p) in enumerate(reactionparams(network)))
+end
+
+"""
+    numspecies(network)
+
+Return the total number of species within the given [`ReactionSystem`](@ref) and
+subsystems that are `ReactionSystem`s.
+"""
+function numspecies(network)
+    numspcs = length(get_species(network))
+    for sys in get_systems(network)
+        (sys isa ReactionSystem) && (numspcs += numspecies(sys))
+    end
+    numspcs
+end
+
+"""
+    numreactions(network)
+
+Return the total number of reactions within the given [`ReactionSystem`](@ref)
+and subsystems that are `ReactionSystem`s.
+"""
+function numreactions(network)
+    nr = length(get_rxs(network))
+    for sys in get_systems(network)
+        (sys isa ReactionSystem) && (nr += numreactions(sys))
+    end
+    nr
+end
+
+"""
+    numreactionparams(network)
+
+Return the total number of parameters within the given [`ReactionSystem`](@ref)
+and subsystems that are `ReactionSystem`s.
+
+Notes
+- If there are no subsystems this will be fast.
+- As this calls [`reactionparams`](@ref), it can be slow and will allocate if
+  there are any subsystems.
+"""
+function numreactionparams(network)
+    length(reactionparams(network))
 end
 
 
@@ -739,6 +1088,16 @@ function ModelingToolkit.modified_unknowns!(munknowns, rx::Reaction, sts::Abstra
 end
 
 ### ReactionSystem Composing & Hierarchical Modelling ###
+
+"""
+    make_empty_network(; iv=DEFAULT_IV, name=gensym(:ReactionSystem))
+
+Construct an empty [`ReactionSystem`](@ref). `iv` is the independent variable,
+usually time, and `name` is the name to give the `ReactionSystem`.
+"""
+function make_empty_network(; iv = DEFAULT_IV, name = gensym(:ReactionSystem))
+    ReactionSystem(Reaction[], iv, [], []; name = name)
+end
 
 """
     Catalyst.flatten(rs::ReactionSystem)

@@ -240,7 +240,7 @@ end
 netstoich_stoichtype(::Vector{Pair{S, T}}) where {S, T} = T
 
 
-### Base and MTK Accessors ###
+### Base Function ###
 
 # Show function for `Reaction`s.
 function Base.show(io::IO, rx::Reaction)
@@ -250,7 +250,6 @@ function Base.show(io::IO, rx::Reaction)
     print(io, " ", arrow, " ")
     print_rxside(io, rx.products, rx.prodstoich)
 end
-
 function print_rxside(io::IO, specs, stoich)
     # reactants/substrates
     if isempty(specs)
@@ -272,6 +271,9 @@ function print_rxside(io::IO, specs, stoich)
     end
     nothing
 end
+
+
+### ModelingToolkit-inherited Functions ###
 
 function ModelingToolkit.namespace_equation(rx::Reaction, name; kw...)
     f = Base.Fix2(namespace_expr, name)
@@ -301,7 +303,7 @@ ModelingToolkit.is_diff_equation(rx::Reaction) = false
 ModelingToolkit.is_alg_equation(rx::Reaction) = false
 
 
-### Reaction-specific Accessors ### 
+### Reaction-specific Functions ### 
 
 """
     isbcbalanced(rx::Reaction)
@@ -346,7 +348,7 @@ getmetadata_dict(reaction)
 ```
 """
 function getmetadata_dict(reaction::Reaction)
-return reaction.metadata
+    return reaction.metadata
 end
 
 """
@@ -365,7 +367,7 @@ hasmetadata(reaction, :description)
 ```
 """
 function hasmetadata(reaction::Reaction, md_key::Symbol)
-return any(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))
+    return any(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))
 end
 
 """
@@ -384,11 +386,11 @@ getmetadata(reaction, :description)
 ```
 """
 function getmetadata(reaction::Reaction, md_key::Symbol)
-if !hasmetadata(reaction, md_key) 
-    error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(getmetadata_dict(reaction))).")
-end
-metadata = getmetadata_dict(reaction)
-return metadata[findfirst(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))][2]
+    if !hasmetadata(reaction, md_key) 
+        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(getmetadata_dict(reaction))).")
+    end
+    metadata = getmetadata_dict(reaction)
+    return metadata[findfirst(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))][2]
 end
 
 ### Implemented Reaction Metadata ###
