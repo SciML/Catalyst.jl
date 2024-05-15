@@ -8,7 +8,7 @@ t = default_t()
 
 ### Basic Tests ###
 
-# Functionality tests (a).
+# Functionality tests (1).
 let
     @parameters k
     @species H(t) O(t)
@@ -33,7 +33,7 @@ let
     @test isequal(brxs, brxs_macro)
 end
 
-# Functionality tests (a).
+# Functionality tests (2).
 let
     @parameters k
     @species C(t) H(t) O(t)
@@ -58,7 +58,7 @@ let
 end
 
 
-### Test Across Various Reactions ###
+### Test Using Various Reactions ###
 
 # @reaction k, H2O --> H2O
 let

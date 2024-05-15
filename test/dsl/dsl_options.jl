@@ -423,7 +423,7 @@ let
     end
 end
 
-### Test independent variable designation ###
+### Test Independent Variable Designations ###
 
 # Test ivs in DSL.
 let
@@ -651,7 +651,7 @@ let
     @test length(unknowns(rn2)) == 2
 end
 
-# Tests specific declaration of Observables as species/variables
+# Tests specific declaration of observables as species/variables.
 let
     rn = @reaction_network begin
         @species X(t)
@@ -742,7 +742,7 @@ let
 end
 
 
-### Test `@equations` for Coupled CRN/Equations Models ###
+### Test `@equations` Option for Coupled CRN/Equations Models ###
 
 # Checks creation of basic network.
 # Check indexing of output solution.

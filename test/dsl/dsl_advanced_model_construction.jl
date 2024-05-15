@@ -1,6 +1,6 @@
 #! format: off
 
-### Fetch Packages and Set Global Variables ###
+### Prepares Tests ###
 
 # Fetch packages.
 using Catalyst, ModelingToolkit
@@ -76,12 +76,12 @@ end
 
 ### Test Interpolation Within the DSL ###
 
-# Tests basic interpolation cases.
 
 # Declares parameters and species used across the test.
 @parameters α k k1 k2
 @species A(t) B(t) C(t) D(t)
 
+# Tests basic interpolation cases.
 let
     AA = A
     AAA = A^2 + B
@@ -101,7 +101,6 @@ let
     rn2 = ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn)
     @test rn == rn2
 end
-
 let
     BB = B; A2 = A
     rn = @reaction_network rn begin
@@ -113,7 +112,6 @@ let
                         t; name=:rn)
     @test rn == rn2
 end
-
 let
     AA = A
     kk1 = k^2*A

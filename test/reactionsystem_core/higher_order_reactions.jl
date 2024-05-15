@@ -52,12 +52,7 @@ let
 end
 
 # Tests that Jump Systems are correct (by comparing to network with manually written higher order rates). 
-# Currently fails for reason I do not understand. Likely reason similar to the weird case in the jump tests.
-# Spent loads of time trying to figure out, the best I can get to is that it seems like the rng/seed is
-# not fully reproducible.
 let
-    # Declares a JumpSystem manually.
-
     # Declares the reactions using Catalyst, but defines the propensities manually.
     higher_order_network_alt1 = @reaction_network begin
         p, ∅ ⟼ X1

@@ -73,3 +73,73 @@ let
     @test length(cons_laws_constants) == 2
     @test count(isequal.(conserved_quantity, Num(0))) == 2
 end
+
+# Test conservation law elimination.
+let
+    rn = @reaction_network begin
+        (k1, k2), A + B <--> C
+        (m1, m2), D <--> E
+        b12, F1 --> F2
+        b23, F2 --> F3
+        b31, F3 --> F1
+    end
+    osys = complete(convert(ODESystem, rn; remove_conserved = true))
+    @unpack A, B, C, D, E, F1, F2, F3, k1, k2, m1, m2, b12, b23, b31 = osys
+    u0 = [A => 10.0, B => 10.0, C => 0.0, D => 10.0, E => 0.0, F1 => 8.0, F2 => 0.0,
+        F3 => 0.0]
+    p = [k1 => 1.0, k2 => 0.1, m1 => 1.0, m2 => 2.0, b12 => 1.0, b23 => 2.0, b31 => 0.1]
+    tspan = (0.0, 20.0)
+    oprob = ODEProblem(osys, u0, tspan, p)
+    sol = solve(oprob, Tsit5(); abstol = 1e-10, reltol = 1e-10)
+    oprob2 = ODEProblem(rn, u0, tspan, p)
+    sol2 = solve(oprob2, Tsit5(); abstol = 1e-10, reltol = 1e-10)
+    oprob3 = ODEProblem(rn, u0, tspan, p; remove_conserved = true)
+    sol3 = solve(oprob3, Tsit5(); abstol = 1e-10, reltol = 1e-10)
+
+    tv = range(tspan[1], tspan[2], length = 101)
+    for s in species(rn)
+        @test isapprox(sol(tv, idxs = s), sol2(tv, idxs = s))
+        @test isapprox(sol2(tv, idxs = s), sol2(tv, idxs = s))
+    end
+
+    nsys = complete(convert(NonlinearSystem, rn; remove_conserved = true))
+    nprob = NonlinearProblem{true}(nsys, u0, p)
+    nsol = solve(nprob, NewtonRaphson(); abstol = 1e-10)
+    nprob2 = ODEProblem(rn, u0, (0.0, 100.0 * tspan[2]), p)
+    nsol2 = solve(nprob2, Tsit5(); abstol = 1e-10, reltol = 1e-10)
+    nprob3 = NonlinearProblem(rn, u0, p; remove_conserved = true)
+    nsol3 = solve(nprob3, NewtonRaphson(); abstol = 1e-10)
+    for s in species(rn)
+        @test isapprox(nsol[s], nsol2(tspan[2], idxs = s))
+        @test isapprox(nsol2(tspan[2], idxs = s), nsol3[s])
+    end
+
+    u0 = [A => 100.0, B => 20.0, C => 5.0, D => 10.0, E => 3.0, F1 => 8.0, F2 => 2.0,
+        F3 => 20.0]
+    ssys = complete(convert(SDESystem, rn; remove_conserved = true))
+    sprob = SDEProblem(ssys, u0, tspan, p)
+    sprob2 = SDEProblem(rn, u0, tspan, p)
+    sprob3 = SDEProblem(rn, u0, tspan, p; remove_conserved = true)
+    ists = ModelingToolkit.get_unknowns(ssys)
+    sts = ModelingToolkit.get_unknowns(rn)
+    istsidxs = findall(in(ists), sts)
+    u1 = copy(sprob.u0)
+    u2 = sprob2.u0
+    u3 = copy(sprob3.u0)
+    du1 = similar(u1)
+    du2 = similar(u2)
+    du3 = similar(u3)
+    g1 = zeros(length(u1), numreactions(rn))
+    g2 = zeros(length(u2), numreactions(rn))
+    g3 = zeros(length(u3), numreactions(rn))
+    sprob.f(du1, u1, sprob.p, 1.0)
+    sprob2.f(du2, u2, sprob2.p, 1.0)
+    sprob3.f(du3, u3, sprob3.p, 1.0)
+    @test isapprox(du1, du2[istsidxs])
+    @test isapprox(du2[istsidxs], du3)
+    sprob.g(g1, u1, sprob.p, 1.0)
+    sprob2.g(g2, u2, sprob2.p, 1.0)
+    sprob3.g(g3, u3, sprob3.p, 1.0)
+    @test isapprox(g1, g2[istsidxs, :])
+    @test isapprox(g2[istsidxs, :], g3)
+end

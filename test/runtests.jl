@@ -3,7 +3,7 @@
 # Fetch packages.
 using SafeTestsets
 
-# Designate test groups.
+# Required for running parallel test groups (copied from ModelingToolkit).
 const GROUP = get(ENV, "GROUP", "All")
 
 
@@ -17,9 +17,9 @@ const GROUP = get(ENV, "GROUP", "All")
             @time @safetestset "ReactionSystem Structure" begin include("reactionsystem_core/reactionsystem_structure.jl") end
             @time @safetestset "Higher Order Reactions" begin include("reactionsystem_core/higher_order_reactions.jl") end
             @time @safetestset "Symbolic Stoichiometry" begin include("reactionsystem_core/symbolic_stoichiometry.jl") end
-            @time @safetestset "Parameter Type Designation" begin include("reactionsystem_core/designating_parameter_types.jl") end
-            @time @safetestset "Custom CRN Functions" begin include("reactionsystem_core/custom_functions.jl") end
-            # @time @safetestset "Coupled CRN/Equation Systems" begin include("reactionsystem_structure/coupled_equation_reaction_systems.jl") end
+            @time @safetestset "Parameter Type Designation" begin include("reactionsystem_core/parameter_type_designation.jl") end
+            @time @safetestset "Custom CRN Functions" begin include("reactionsystem_core/custom_crn_functions.jl") end
+            # @time @safetestset "Coupled CRN/Equation Systems" begin include("reactionsystem_core/coupled_equation_crn_systems.jl") end
             @time @safetestset "Events" begin include("reactionsystem_core/events.jl") end
         end
     end
@@ -27,8 +27,8 @@ const GROUP = get(ENV, "GROUP", "All")
     # Tests model creation via the @reaction_network DSL.
     if GROUP == "All" || GROUP == "DSL"
         @testset "DSL" begin
-            @time @safetestset "DSL Model Construction" begin include("dsl/dsl_basic_model_construction.jl") end
-            @time @safetestset "DSL Basics" begin include("dsl/dsl_advanced_model_construction.jl") end
+            @time @safetestset "DSL Basic Model Construction" begin include("dsl/dsl_basic_model_construction.jl") end
+            @time @safetestset "DSL Advanced Model Construction" begin include("dsl/dsl_advanced_model_construction.jl") end
             @time @safetestset "DSL Options" begin include("dsl/dsl_options.jl") end
         end
     end
@@ -86,7 +86,7 @@ const GROUP = get(ENV, "GROUP", "All")
         end
     end
 
-    # Tests network visualization.
+    # Tests network visualisation.
     if GROUP == "All" || GROUP == "Visualisation"
         @testset "Visualization" begin
             @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end

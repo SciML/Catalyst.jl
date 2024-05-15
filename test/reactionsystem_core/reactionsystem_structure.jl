@@ -107,14 +107,6 @@ let
     @test Catalyst.isequivalent(rs, rs2)
 end
 
-# Test show.
-let
-    io = IOBuffer()
-    show(io, rs)
-    str = String(take!(io))
-    @test count(isequal('\n'), str) < 30
-end
-
 # Defaults test.
 let
     def_p = [ki => float(i) for (i, ki) in enumerate(k)]
@@ -279,110 +271,30 @@ let
     end
 end
 
-### Other Tests ###
 
-# Test for https://github.com/SciML/ModelingToolkit.jl/issues/436.
+### Test Show ###
+
+# Basic show test.
 let
-    @parameters t
-    @species S(t) I(t)
-    rxs = [Reaction(1, [S], [I]), Reaction(1.1, [S], [I])]
-    @named rs = ReactionSystem(rxs, t, [S, I], [])
-    rs = complete(rs)
-    js = complete(convert(JumpSystem, rs))
-    dprob = DiscreteProblem(js, [S => 1, I => 1], (0.0, 10.0))
-    jprob = JumpProblem(js, dprob, Direct(); rng)
-    sol = solve(jprob, SSAStepper())
-
-    # Test for https://github.com/SciML/ModelingToolkit.jl/issues/1042.
-    jprob = JumpProblem(rs, dprob, Direct(); rng, save_positions = (false, false))
-
-    @parameters k1 k2
-    @species R(t)
-    rxs = [Reaction(k1 * S, [S, I], [I], [2, 3], [2]),
-        Reaction(k2 * R, [I], [R])]
-    @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
-    rs = complete(rs)
-    @test isequal(oderatelaw(equations(rs)[1]),
-                  k1 * S * S^2 * I^3 / (factorial(2) * factorial(3)))
-    @test_skip isequal(jumpratelaw(equations(eqs)[1]),
-                       k1 * S * binomial(S, 2) * binomial(I, 3))
-    dep = Set()
-    ModelingToolkit.get_variables!(dep, rxs[2], Set(unknowns(rs)))
-    dep2 = Set([R, I])
-    @test dep == dep2
-    dep = Set()
-    ModelingToolkit.modified_unknowns!(dep, rxs[2], Set(unknowns(rs)))
-    @test dep == Set([R, I])
-
-    isequal2(a, b) = isequal(simplify(a), simplify(b))
-
-    @test isequal2(jumpratelaw(rxs[1]), k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
-    @test isequal2(jumpratelaw(rxs[1]; combinatoric_ratelaw = false),
-                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
-    @test isequal2(oderatelaw(rxs[1]), k1 * S * S^2 * I^3 / 12)
-    @test isequal2(oderatelaw(rxs[1]; combinatoric_ratelaw = false), k1 * S * S^2 * I^3)
-
-    @named rs2 = ReactionSystem(rxs, t, [S, I, R], [k1, k2]; combinatoric_ratelaws = false)
-    rs2 = complete(rs2)
-
-    # Test ODE scaling:
-    os = complete(convert(ODESystem, rs))
-    @test isequal2(equations(os)[1].rhs, -2 * k1 * S * S^2 * I^3 / 12)
-    os = convert(ODESystem, rs; combinatoric_ratelaws = false)
-    @test isequal2(equations(os)[1].rhs, -2 * k1 * S * S^2 * I^3)
-    os2 = complete(convert(ODESystem, rs2))
-    @test isequal2(equations(os2)[1].rhs, -2 * k1 * S * S^2 * I^3)
-    os3 = complete(convert(ODESystem, rs2; combinatoric_ratelaws = true))
-    @test isequal2(equations(os3)[1].rhs, -2 * k1 * S * S^2 * I^3 / 12)
-
-    # Test ConstantRateJump rate scaling.
-    js = complete(convert(JumpSystem, rs))
-    @test isequal2(equations(js)[1].rate,
-                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
-    js = complete(convert(JumpSystem, rs; combinatoric_ratelaws = false))
-    @test isequal2(equations(js)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
-    js2 = complete(convert(JumpSystem, rs2))
-    @test isequal2(equations(js2)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
-    js3 = complete(convert(JumpSystem, rs2; combinatoric_ratelaws = true))
-    @test isequal2(equations(js3)[1].rate,
-                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
-
-    # Test MassActionJump rate scaling.
-    rxs = [Reaction(k1, [S, I], [I], [2, 3], [2]),
-        Reaction(k2, [I], [R])]
-    @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
-    rs = complete(rs)
-    js = complete(convert(JumpSystem, rs))
-    @test isequal2(equations(js)[1].scaled_rates, k1 / 12)
-    js = complete(convert(JumpSystem, rs; combinatoric_ratelaws = false))
-    @test isequal2(equations(js)[1].scaled_rates, k1)
-
-    # test building directly from rxs
-    @parameters x, y
-    rxs = [Reaction(x * t * A * B + y, [A], nothing)]
-    @named rs1 = ReactionSystem(rxs, t, [A, B], [x, y])
-    @named rs2 = ReactionSystem(rxs, t)
-    @test Catalyst.isequivalent(rs1, rs2)
-
-    @species L(t), H(t)
-    obs = [Equation(L, 2 * x + y)]
-    @named rs3 = ReactionSystem(rxs, t; observed = obs)
-    L2 = L
-    @unpack L = rs3
-    @test isequal(L, L2)
+    io = IOBuffer()
+    show(io, rs)
+    str = String(take!(io))
+    @test count(isequal('\n'), str) < 30
 end
 
-# Test that non-integer stoichiometry goes through.
+# Test printing with arrays is working ok.
+# Needs fix for https://github.com/JuliaSymbolics/Symbolics.jl/issues/842.
 let
-    @parameters k b
-    @species A(t) B(t) C(t) D(t)
-    rx1 = Reaction(k, [B, C], [B, D], [2.5, 1], [3.5, 2.5])
-    rx2 = Reaction(2 * k, [B], [D], [1], [2.5])
-    rx3 = Reaction(2 * k, [B], [D], [2.5], [2])
-    @named mixedsys = ReactionSystem([rx1, rx2, rx3], t, [A, B, C, D], [k, b])
-    mixedsys = complete(mixedsys)
-    osys = convert(ODESystem, mixedsys; combinatoric_ratelaws = false)
+    @parameters a
+    @species A(t) B(t) C(t)[1:2]
+    rx1 = Reaction(a, [A, C[1]], [C[2], B], [1, 2], [2, 3])
+    io = IOBuffer()
+    show(io, rx1)
+    str = String(take!(io))
+    @test str == "a, A + 2*(C(t))[1] --> 2*(C(t))[2] + 3*B"
 end
+
+### Boundary Condition Species Tests ###
 
 # Test for constant and boundary condition species.
 function f!(du, u, p, t)
@@ -544,6 +456,119 @@ let
     @test umean[4] == 10
 end
 
+### Other Tests ###
+
+# Test for https://github.com/SciML/ModelingToolkit.jl/issues/436.
+let
+    @parameters t
+    @species S(t) I(t)
+    rxs = [Reaction(1, [S], [I]), Reaction(1.1, [S], [I])]
+    @named rs = ReactionSystem(rxs, t, [S, I], [])
+    rs = complete(rs)
+    js = complete(convert(JumpSystem, rs))
+    dprob = DiscreteProblem(js, [S => 1, I => 1], (0.0, 10.0))
+    jprob = JumpProblem(js, dprob, Direct(); rng)
+    sol = solve(jprob, SSAStepper())
+
+    # Test for https://github.com/SciML/ModelingToolkit.jl/issues/1042.
+    jprob = JumpProblem(rs, dprob, Direct(); rng, save_positions = (false, false))
+
+    @parameters k1 k2
+    @species R(t)
+    rxs = [Reaction(k1 * S, [S, I], [I], [2, 3], [2]),
+        Reaction(k2 * R, [I], [R])]
+    @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
+    rs = complete(rs)
+    @test isequal(oderatelaw(equations(rs)[1]),
+                  k1 * S * S^2 * I^3 / (factorial(2) * factorial(3)))
+    @test_skip isequal(jumpratelaw(equations(eqs)[1]),
+                       k1 * S * binomial(S, 2) * binomial(I, 3))
+    dep = Set()
+    ModelingToolkit.get_variables!(dep, rxs[2], Set(unknowns(rs)))
+    dep2 = Set([R, I])
+    @test dep == dep2
+    dep = Set()
+    ModelingToolkit.modified_unknowns!(dep, rxs[2], Set(unknowns(rs)))
+    @test dep == Set([R, I])
+
+    isequal2(a, b) = isequal(simplify(a), simplify(b))
+
+    @test isequal2(jumpratelaw(rxs[1]), k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
+    @test isequal2(jumpratelaw(rxs[1]; combinatoric_ratelaw = false),
+                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
+    @test isequal2(oderatelaw(rxs[1]), k1 * S * S^2 * I^3 / 12)
+    @test isequal2(oderatelaw(rxs[1]; combinatoric_ratelaw = false), k1 * S * S^2 * I^3)
+
+    @named rs2 = ReactionSystem(rxs, t, [S, I, R], [k1, k2]; combinatoric_ratelaws = false)
+    rs2 = complete(rs2)
+
+    # Test ODE scaling:
+    os = complete(convert(ODESystem, rs))
+    @test isequal2(equations(os)[1].rhs, -2 * k1 * S * S^2 * I^3 / 12)
+    os = convert(ODESystem, rs; combinatoric_ratelaws = false)
+    @test isequal2(equations(os)[1].rhs, -2 * k1 * S * S^2 * I^3)
+    os2 = complete(convert(ODESystem, rs2))
+    @test isequal2(equations(os2)[1].rhs, -2 * k1 * S * S^2 * I^3)
+    os3 = complete(convert(ODESystem, rs2; combinatoric_ratelaws = true))
+    @test isequal2(equations(os3)[1].rhs, -2 * k1 * S * S^2 * I^3 / 12)
+
+    # Test ConstantRateJump rate scaling.
+    js = complete(convert(JumpSystem, rs))
+    @test isequal2(equations(js)[1].rate,
+                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
+    js = complete(convert(JumpSystem, rs; combinatoric_ratelaws = false))
+    @test isequal2(equations(js)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
+    js2 = complete(convert(JumpSystem, rs2))
+    @test isequal2(equations(js2)[1].rate, k1 * S * S * (S - 1) * I * (I - 1) * (I - 2))
+    js3 = complete(convert(JumpSystem, rs2; combinatoric_ratelaws = true))
+    @test isequal2(equations(js3)[1].rate,
+                   k1 * S * S * (S - 1) * I * (I - 1) * (I - 2) / 12)
+
+    # Test MassActionJump rate scaling.
+    rxs = [Reaction(k1, [S, I], [I], [2, 3], [2]),
+        Reaction(k2, [I], [R])]
+    @named rs = ReactionSystem(rxs, t, [S, I, R], [k1, k2])
+    rs = complete(rs)
+    js = complete(convert(JumpSystem, rs))
+    @test isequal2(equations(js)[1].scaled_rates, k1 / 12)
+    js = complete(convert(JumpSystem, rs; combinatoric_ratelaws = false))
+    @test isequal2(equations(js)[1].scaled_rates, k1)
+
+    # test building directly from rxs
+    @parameters x, y
+    rxs = [Reaction(x * t * A * B + y, [A], nothing)]
+    @named rs1 = ReactionSystem(rxs, t, [A, B], [x, y])
+    @named rs2 = ReactionSystem(rxs, t)
+    @test Catalyst.isequivalent(rs1, rs2)
+
+    @species L(t), H(t)
+    obs = [Equation(L, 2 * x + y)]
+    @named rs3 = ReactionSystem(rxs, t; observed = obs)
+    L2 = L
+    @unpack L = rs3
+    @test isequal(L, L2)
+end
+
+# Test that non-integer stoichiometry goes through.
+let
+    @parameters k b
+    @species A(t) B(t) C(t) D(t)
+    rx1 = Reaction(k, [B, C], [B, D], [2.5, 1], [3.5, 2.5])
+    rx2 = Reaction(2 * k, [B], [D], [1], [2.5])
+    rx3 = Reaction(2 * k, [B], [D], [2.5], [2])
+    @named mixedsys = ReactionSystem([rx1, rx2, rx3], t, [A, B, C, D], [k, b])
+    mixedsys = complete(mixedsys)
+    osys = convert(ODESystem, mixedsys; combinatoric_ratelaws = false)
+end
+
+# Test balanced_bc_check.
+let
+    @species A(t) [isbcspecies = true]
+    rx = @reaction k, 2 * $A + B --> C + $A
+    @test_throws ErrorException ReactionSystem([rx], t; name = :rs)
+    @named rs = ReactionSystem([rx], t; balanced_bc_check = false)
+end
+
 # Fix for SBML test 305.
 let
     @parameters k1 k2 S2 [isconstantspecies = true]
@@ -621,14 +646,6 @@ let
     @test prob[X] == 7.6
 end
 
-# Test balanced_bc_check.
-let
-    @species A(t) [isbcspecies = true]
-    rx = @reaction k, 2 * $A + B --> C + $A
-    @test_throws ErrorException ReactionSystem([rx], t; name = :rs)
-    @named rs = ReactionSystem([rx], t; balanced_bc_check = false)
-end
-
 # Test for classification of jump types.
 let
     rn = @reaction_network begin
@@ -649,18 +666,6 @@ let
     dg = [[1, 2], [2, 3], [4], [4], [5, 6], [5, 6, 7, 8], [3, 7, 8], [1, 2, 7, 8]]
     dgact = Catalyst.get_depgraph(rn)
     @test dg == dgact
-end
-
-# Test printing with arrays is working ok.
-# Needs fix for https://github.com/JuliaSymbolics/Symbolics.jl/issues/842.
-let
-    @parameters a
-    @species A(t) B(t) C(t)[1:2]
-    rx1 = Reaction(a, [A, C[1]], [C[2], B], [1, 2], [2, 3])
-    io = IOBuffer()
-    show(io, rx1)
-    str = String(take!(io))
-    @test str == "a, A + 2*(C(t))[1] --> 2*(C(t))[2] + 3*B"
 end
 
 # Test array metadata for species works.
@@ -735,12 +740,10 @@ let
     @test isspecies(Catalyst.tospecies(Y))
 end
 
-# Tests metadata.
+# Tests system metadata.
 let
     @test isnothing(ModelingToolkit.get_metadata(rs))
 end
-
-### Other Tests ###
 
 # Tests construction of empty reaction networks.
 let
