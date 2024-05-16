@@ -1,4 +1,4 @@
-### Unsorted Functions ###
+### Expression Escaping ###
 
 # Function that handles variable interpolation.
 function esc_dollars!(ex)
@@ -13,31 +13,16 @@ function esc_dollars!(ex)
     end
     ex
 end
-function unique_symbol_check(syms)
-    allunique(syms) ||
-        error("Reaction network independent variables, parameters, species, and variables must all have distinct names, but a duplicate has been detected. ")
-    nothing
+
+# Checks if an expression is an escaped expression (e.g. on the form `$(Expr(:escape, :Y))`)
+function is_escaped_expr(expr)
+    return (expr isa Expr) && (expr.head == :escape) && (length(expr.args) == 1)
 end
 
-# takes a ModelingToolkit declaration macro like @parameters and returns an expression
-# that calls the macro and then scalarizes all the symbols created into a vector of Nums
-function scalarize_macro(nonempty, ex, name)
-    namesym = gensym(name)
-    if nonempty
-        symvec = gensym()
-        ex = quote
-            $symvec = $ex
-            $namesym = reduce(vcat, Symbolics.scalarize($symvec))
-        end
-    else
-        ex = :($namesym = Num[])
-    end
-    ex, namesym
-end
 
-### Functionality for expanding function call to custom and specific functions ###
+### Generic Expression Manipulation ###
 
-#Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.
+# Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.
 function recursive_expand_functions!(expr::ExprValues)
     (typeof(expr) != Expr) && (return expr)
     foreach(i -> expr.args[i] = recursive_expand_functions!(expr.args[i]),
@@ -48,8 +33,21 @@ function recursive_expand_functions!(expr::ExprValues)
     expr
 end
 
+# Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a Symbol/Numerical).
+function tup_leng(ex::ExprValues)
+    (typeof(ex) == Expr && ex.head == :tuple) && (return length(ex.args))
+    return 1
+end
 
-### Forbidden Symbols Checking ###
+# Gets the ith element in a expression tuple, or returns the input itself if it is not an expression tuple
+# (probably a  Symbol/Numerical).
+function get_tup_arg(ex::ExprValues, i::Int)
+    (tup_leng(ex) == 1) && (return ex)
+    return ex.args[i]
+end
+
+
+### Parameters/Species/Variables Symbols Correctness Checking ###
 
 # Throws an error when a forbidden symbol is used.
 function forbidden_symbol_check(v)
@@ -70,25 +68,14 @@ function forbidden_variable_check(v)
               "this is not permited.")
 end
 
-
-
-
-
-
-
-
-# Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a  Symbol/Numerical).
-function tup_leng(ex::ExprValues)
-    (typeof(ex) == Expr && ex.head == :tuple) && (return length(ex.args))
-    return 1
+function unique_symbol_check(syms)
+    allunique(syms) ||
+        error("Reaction network independent variables, parameters, species, and variables must all have distinct names, but a duplicate has been detected. ")
+    nothing
 end
 
-# Gets the ith element in a expression tuple, or returns the input itself if it is not an expression tuple
-# (probably a  Symbol/Numerical).
-function get_tup_arg(ex::ExprValues, i::Int)
-    (tup_leng(ex) == 1) && (return ex)
-    return ex.args[i]
-end
+
+### Catalyst-specific Expressions Manipulation ###
 
 # Some options takes input on form that is either `@option ...` or `@option begin ... end`. 
 # This transforms input of the latter form to the former (with only one line in the `begin ... end` block)
@@ -172,35 +159,4 @@ function insert_independent_variable(expr_in, iv_expr)
         end
     end
     return expr
-end
-
-# Checks if an expression is an escaped expression (e.g. on the form `$(Expr(:escape, :Y))`)
-function is_escaped_expr(expr)
-    return (expr isa Expr) && (expr.head == :escape) && (length(expr.args) == 1)
-end
-
-
-# the following function is adapted from SymbolicUtils.jl v.19
-# later on (Spetember 2023) modified by Torkel and Shashi (now assumes input not on polynomial form, which is handled elsewhere, previous version failed in these cases anyway).
-# Copyright (c) 2020: Shashi Gowda, Yingbo Ma, Mason Protter, Julia Computing.
-# MIT license
-"""
-    to_multivariate_poly(polyeqs::AbstractVector{BasicSymbolic{Real}})
-
-Convert the given system of polynomial equations to multivariate polynomial representation.
-For example, this can be used in HomotopyContinuation.jl functions.
-"""
-function to_multivariate_poly(polyeqs::AbstractVector{Symbolics.BasicSymbolic{Real}})
-    @assert length(polyeqs)>=1 "At least one expression must be passed to `multivariate_poly`."
-
-    pvar2sym, sym2term = SymbolicUtils.get_pvar2sym(), SymbolicUtils.get_sym2term()
-    ps = map(polyeqs) do x
-        if istree(x) && operation(x) == (/)
-            error("We should not be able to get here, please contact the package authors.")
-        else
-            PolyForm(x, pvar2sym, sym2term).p
-        end
-    end
-
-    ps
 end

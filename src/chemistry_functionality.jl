@@ -7,6 +7,49 @@ Symbolics.option_to_metadata_type(::Val{:iscompound}) = CompoundSpecies
 Symbolics.option_to_metadata_type(::Val{:components}) = CompoundComponents
 Symbolics.option_to_metadata_type(::Val{:coefficients}) = CompoundCoefficients
 
+## Compound Getters ###
+
+"""
+    iscompound(s)
+
+Returns `true` if the input is a compound species (else false).
+"""
+iscompound(s::Num) = iscompound(MT.value(s))
+function iscompound(s)
+    MT.getmetadata(s, CompoundSpecies, false)
+end
+
+"""
+    components(s)
+
+Returns a vector with a list of all the components of a compound species (created using e.g. the @compound macro).
+"""
+components(s::Num) = components(MT.value(s))
+function components(s)
+    MT.getmetadata(s, CompoundComponents)
+end
+
+"""
+    coefficients(s)
+
+Returns a vector with a list of all the stoichiometric coefficients of the components of a compound species (created using e.g. the @compound macro).
+"""
+coefficients(s::Num) = coefficients(MT.value(s))
+function coefficients(s)
+    MT.getmetadata(s, CompoundCoefficients)
+end
+
+"""
+    component_coefficients(s)
+
+Returns a Vector{Pari{Symbol,Int64}}, listing a compounds species (created using e.g. the @compound macro) all the coefficients and their stoichiometric coefficients.
+"""
+component_coefficients(s::Num) = component_coefficients(MT.value(s))
+function component_coefficients(s)
+    return [c => co for (c, co) in zip(components(s), coefficients(s))]
+end
+
+
 ### Create @compound Macro(s) ###
 
 """
@@ -146,134 +189,8 @@ function make_compounds(expr)
     return compound_declarations
 end
 
-## Compound Getters ###
-
-"""
-    iscompound(s)
-
-Returns `true` if the input is a compound species (else false).
-"""
-iscompound(s::Num) = iscompound(MT.value(s))
-function iscompound(s)
-    MT.getmetadata(s, CompoundSpecies, false)
-end
-
-"""
-    components(s)
-
-Returns a vector with a list of all the components of a compound species (created using e.g. the @compound macro).
-"""
-components(s::Num) = components(MT.value(s))
-function components(s)
-    MT.getmetadata(s, CompoundComponents)
-end
-
-"""
-    coefficients(s)
-
-Returns a vector with a list of all the stoichiometric coefficients of the components of a compound species (created using e.g. the @compound macro).
-"""
-coefficients(s::Num) = coefficients(MT.value(s))
-function coefficients(s)
-    MT.getmetadata(s, CompoundCoefficients)
-end
-
-"""
-    component_coefficients(s)
-
-Returns a Vector{Pari{Symbol,Int64}}, listing a compounds species (created using e.g. the @compound macro) all the coefficients and their stoichiometric coefficients.
-"""
-component_coefficients(s::Num) = component_coefficients(MT.value(s))
-function component_coefficients(s)
-    return [c => co for (c, co) in zip(components(s), coefficients(s))]
-end
-
 
 ### Reaction Balancing Functionality ###
-
-# Reaction balancing error.
-const COMPOUND_OF_COMPOUND_ERROR = ErrorException("Reaction balancing does not currently work for reactions involving compounds of compounds.")
-
-# Note this does not correctly handle compounds of compounds currently.
-# Internal function used by "balance_reaction" (via "get_balanced_stoich").
-function create_matrix(reaction::Catalyst.Reaction)
-    @unpack substrates, products = reaction
-    unique_atoms = [] # Array to store unique atoms
-    n_atoms = 0
-    ncompounds = length(substrates) + length(products)
-    A = zeros(Int, 0, ncompounds)
-
-    coeffsign = 1
-    jbase = 0
-    for compounds in (substrates, products)
-        for (j2, compound) in enumerate(compounds)
-            j = jbase + j2
-
-            if iscompound(compound)
-                atoms = components(compound)
-                any(iscompound, atoms) && throw(COMPOUND_OF_COMPOUND_ERROR)
-                coeffs = coefficients(compound)
-                (atoms == nothing || coeffs == nothing) && continue
-            else
-                # If not a compound, assume coefficient of 1
-                atoms = [compound]
-                coeffs = [1]
-            end
-
-            for (atom,coeff) in zip(atoms, coeffs)
-                # Extract atom and coefficient from the pair
-                i = findfirst(x -> isequal(x, atom), unique_atoms)
-                if i === nothing
-                    # Add the atom to the atoms array if it's not already present
-                    push!(unique_atoms, atom)
-                    n_atoms += 1
-                    A = [A; zeros(Int, 1, ncompounds)]
-                    i = n_atoms
-                end
-
-                # Adjust coefficient based on whether the compound is a product or substrate
-                coeff *= coeffsign
-
-                A[i, j] = coeff
-            end
-        end
-
-        # update for iterating through products
-        coeffsign = -1
-        jbase = length(substrates)
-    end
-
-    return A
-end
-
-# Internal function used by "balance_reaction".
-function get_balanced_stoich(reaction::Reaction)
-    # Create the reaction matrix A that is m atoms by n compounds
-    A = create_matrix(reaction)
-
-    # get an integer nullspace basis
-    X = ModelingToolkit.nullspace(A)
-    nullity = size(X, 2)
-
-    stoichvecs = Vector{Vector{Int64}}()
-    for (j, col) in enumerate(eachcol(X))
-        signs = unique(col)
-
-        # If there is only one basis vector and the signs are not all the same this means
-        # we have a solution that would require moving at least one substrate to be a
-        # product (or vice-versa). We therefore do not return anything in this case.
-        # If there are multiple basis vectors we don't currently determine if we can
-        # construct a linear combination giving a solution, so we just return them.
-        if (nullity > 1) || (all(>=(0), signs) || all(<=(0), signs))
-            coefs = abs.(col)
-            common_divisor = reduce(gcd, coefs)
-            coefs .= div.(coefs, common_divisor)
-            push!(stoichvecs, coefs)
-        end
-    end
-
-    return stoichvecs
-end
 
 """
     balance_reaction(reaction::Reaction)
@@ -344,4 +261,88 @@ function balance_reaction(reaction::Reaction)
     isempty(balancedrxs) && (@warn "Unable to balance reaction.")
     (length(balancedrxs) > 1) && (@warn "Infinite balanced reactions from ($reaction) are possible, returning a basis for them. Note that we do not check if they preserve the set of substrates and products from the original reaction.")
     return balancedrxs
+end
+
+# Internal function used by "balance_reaction".
+function get_balanced_stoich(reaction::Reaction)
+    # Create the reaction matrix A that is m atoms by n compounds
+    A = create_matrix(reaction)
+
+    # get an integer nullspace basis
+    X = ModelingToolkit.nullspace(A)
+    nullity = size(X, 2)
+
+    stoichvecs = Vector{Vector{Int64}}()
+    for (j, col) in enumerate(eachcol(X))
+        signs = unique(col)
+
+        # If there is only one basis vector and the signs are not all the same this means
+        # we have a solution that would require moving at least one substrate to be a
+        # product (or vice-versa). We therefore do not return anything in this case.
+        # If there are multiple basis vectors we don't currently determine if we can
+        # construct a linear combination giving a solution, so we just return them.
+        if (nullity > 1) || (all(>=(0), signs) || all(<=(0), signs))
+            coefs = abs.(col)
+            common_divisor = reduce(gcd, coefs)
+            coefs .= div.(coefs, common_divisor)
+            push!(stoichvecs, coefs)
+        end
+    end
+
+    return stoichvecs
+end
+
+# Reaction balancing error.
+const COMPOUND_OF_COMPOUND_ERROR = ErrorException("Reaction balancing does not currently work for reactions involving compounds of compounds.")
+
+# Note this does not correctly handle compounds of compounds currently.
+# Internal function used by "balance_reaction" (via "get_balanced_stoich").
+function create_matrix(reaction::Catalyst.Reaction)
+    @unpack substrates, products = reaction
+    unique_atoms = [] # Array to store unique atoms
+    n_atoms = 0
+    ncompounds = length(substrates) + length(products)
+    A = zeros(Int, 0, ncompounds)
+
+    coeffsign = 1
+    jbase = 0
+    for compounds in (substrates, products)
+        for (j2, compound) in enumerate(compounds)
+            j = jbase + j2
+
+            if iscompound(compound)
+                atoms = components(compound)
+                any(iscompound, atoms) && throw(COMPOUND_OF_COMPOUND_ERROR)
+                coeffs = coefficients(compound)
+                (atoms == nothing || coeffs == nothing) && continue
+            else
+                # If not a compound, assume coefficient of 1
+                atoms = [compound]
+                coeffs = [1]
+            end
+
+            for (atom,coeff) in zip(atoms, coeffs)
+                # Extract atom and coefficient from the pair
+                i = findfirst(x -> isequal(x, atom), unique_atoms)
+                if i === nothing
+                    # Add the atom to the atoms array if it's not already present
+                    push!(unique_atoms, atom)
+                    n_atoms += 1
+                    A = [A; zeros(Int, 1, ncompounds)]
+                    i = n_atoms
+                end
+
+                # Adjust coefficient based on whether the compound is a product or substrate
+                coeff *= coeffsign
+
+                A[i, j] = coeff
+            end
+        end
+
+        # update for iterating through products
+        coeffsign = -1
+        jbase = length(substrates)
+    end
+
+    return A
 end

@@ -207,6 +207,7 @@ macro network_component(name::Symbol = gensym(:ReactionSystem))
                 :(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name)))))
 end
 
+
 ### Internal DSL Structures ###
 
 # Structure containing information about one reactant in one reaction.
@@ -572,6 +573,22 @@ function get_rxexprs(rxstruct)
         push!(reaction_func.args[6].args, prod.stoichiometry)
     end
     reaction_func
+end
+
+# takes a ModelingToolkit declaration macro like @parameters and returns an expression
+# that calls the macro and then scalarizes all the symbols created into a vector of Nums
+function scalarize_macro(nonempty, ex, name)
+    namesym = gensym(name)
+    if nonempty
+        symvec = gensym()
+        ex = quote
+            $symvec = $ex
+            $namesym = reduce(vcat, Symbolics.scalarize($symvec))
+        end
+    else
+        ex = :($namesym = Num[])
+    end
+    ex, namesym
 end
 
 

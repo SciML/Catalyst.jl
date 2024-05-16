@@ -870,54 +870,6 @@ function filter_nonrxsys(network)
 end
 
 
-### Advanced `ReactionSystem`-specific Accessors ###
-
-"""
-    dependents(rx, network)
-
-Given a [`Reaction`](@ref) and a [`ReactionSystem`](@ref), return a vector of the
-*non-constant* species and variables the reaction rate law depends on. e.g., for
-
-`k*W, 2X + 3Y --> 5Z + W`
-
-the returned vector would be `[W(t),X(t),Y(t)]`.
-
-Notes:
-- Allocates
-- Does not check for dependents within any subsystems.
-- Constant species are not considered dependents since they are internally treated as
-  parameters.
-- If the rate expression depends on a non-species unknown variable that will be included in
-  the dependents, i.e. in
-  ```julia
-  t = default_t()
-  @parameters k
-  @variables V(t)
-  @species A(t) B(t) C(t)
-  rx = Reaction(k*V, [A, B], [C])
-  @named rs = ReactionSystem([rx], t)
-  issetequal(dependents(rx, rs), [A,B,V]) == true
-  ```
-"""
-function dependents(rx, network)
-    if rx.rate isa Number
-        return rx.substrates
-    else
-        rvars = get_variables(rx.rate, unknowns(network))
-        return union!(rvars, rx.substrates)
-    end
-end
-
-"""
-    dependents(rx, network)
-
-See documentation for [`dependents`](@ref).
-"""
-function dependants(rx, network)
-    dependents(rx, network)
-end
-
-
 ### Network Matrix Representations ###
 
 """
@@ -1187,6 +1139,51 @@ function reset_networkproperties!(rn::ReactionSystem)
     nothing
 end
 
+"""
+    dependents(rx, network)
+
+Given a [`Reaction`](@ref) and a [`ReactionSystem`](@ref), return a vector of the
+*non-constant* species and variables the reaction rate law depends on. e.g., for
+
+`k*W, 2X + 3Y --> 5Z + W`
+
+the returned vector would be `[W(t),X(t),Y(t)]`.
+
+Notes:
+- Allocates
+- Does not check for dependents within any subsystems.
+- Constant species are not considered dependents since they are internally treated as
+  parameters.
+- If the rate expression depends on a non-species unknown variable that will be included in
+  the dependents, i.e. in
+  ```julia
+  t = default_t()
+  @parameters k
+  @variables V(t)
+  @species A(t) B(t) C(t)
+  rx = Reaction(k*V, [A, B], [C])
+  @named rs = ReactionSystem([rx], t)
+  issetequal(dependents(rx, rs), [A,B,V]) == true
+  ```
+"""
+function dependents(rx, network)
+    if rx.rate isa Number
+        return rx.substrates
+    else
+        rvars = get_variables(rx.rate, unknowns(network))
+        return union!(rvars, rx.substrates)
+    end
+end
+
+"""
+    dependents(rx, network)
+
+See documentation for [`dependents`](@ref).
+"""
+function dependants(rx, network)
+    dependents(rx, network)
+end
+
 
 ### `ReactionSystem` Remaking ###
 
@@ -1361,7 +1358,6 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
 end
 
 # A helper function.
-
 function getsubsystypes(sys)
     typeset = Set{Type}()
     getsubsystypes!(typeset, sys)
