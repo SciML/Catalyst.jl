@@ -140,6 +140,35 @@ Here follows a list of solver options which might be of interest to the user.
 
 A full list of solver options can be found [here](https://docs.sciml.ai/DiffEqDocs/stable/basics/common_solver_opts/).
 
+### [Alternative problem input forms](@id simulation_intro_ODEs_input_forms)
+Throughout Catalyst's documentation, we typically provide initial condition and parameter values as vectors. However, these can also be provided as tuples:
+```@example simulation_intro_ode
+u0 = (:X1 => 100.0, :X2 => 200.0)
+tspan = (0.0, 5.0)
+ps = (:k1 => 2.0, :k2 => 5.0)
+oprob = ODEProblem(two_state_model, u0, tspan, ps)
+nothing # hide
+```
+or dictionaries:
+```@example simulation_intro_ode
+u0 = Dict([:X1 => 100.0, :X2 => 200.0])
+tspan = (0.0, 5.0)
+ps = Dict([:k1 => 2.0, :k2 => 5.0])
+oprob = ODEProblem(two_state_model, u0, tspan, ps)
+nothing # hide
+```
+The forms used for `u0` and `ps` does not need to be the same (but can e.g. be a vector and a tuple). 
+
+!!! note
+    It [is possible](@ref ref) to designate specific types for parameters. When this is done, the tuple form for providing parameter values should be preferred.
+
+Throughout Catalyst's documentation, we typically provide the time span as a tuple. However, if the first time point is `0.0` (which is typically the case), this can be omitted. Here, we supply only the simulation endpoint to our `ODEProblem`:
+```@example simulation_intro_ode
+tend = 5.0
+oprob = ODEProblem(two_state_model, u0, tend, ps)
+nothing # hide
+```
+
 ## [Performing SDE simulations](@id simulation_intro_SDEs)
 Catalyst uses the [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) package to perform SDE simulations. This section provides a brief introduction, with [StochasticDiffEq's documentation](https://docs.sciml.ai/StochasticDiffEq/stable/) providing a more extensive description. A dedicated section giving advice on how to optimise SDE simulation performance can be found [here](@ref ref). By default, Catalyst generates SDEs from CRN models using the chemical Langevin equation.
 
