@@ -25,7 +25,7 @@ pages = Any[
     ],
     "Model simulation" => Any[
         # Simulation introduction.
-        # Simulation plotting.
+        "model_simulation/simulation_plotting.md",
         "model_simulation/simulation_structure_interfacing.md",
         "model_simulation/TOBEREMOVED_advanced_simulations.md",# Monte Carlo/Ensemble simulations.        
         # Stochastic simulation statistical analysis.

@@ -5,7 +5,7 @@ Catalyst uses the [Plots.jl](https://github.com/JuliaPlots/Plots.jl) package for
     [Makie.jl](https://github.com/MakieOrg/Makie.jl) is a popular alternative to the Plots.jl package. While it is not used within Catalyst's documentation, it is worth considering (especially for users interested in interactivity, or increased control over their plots).
 
 ## [Common plotting options](@id simulation_plotting_options)
-Let us consider the oscillating [Brusselator](@ref ref) model. We have previously shown how model simulation solutions can be plotted using the `plot` function. Here we plot an ODE simulation from the oscillating [Brusselator](@ref ref) model:
+Let us consider the oscillating [Brusselator](@ref ref) model. We have previously shown how model simulation solutions can be plotted using the `plot` function. Here we plot an ODE simulation from the [Brusselator](@ref ref) model:
 ```@example simulation_plotting
 using Catalyst, OrdinaryDiffEq, Plots
 
@@ -24,7 +24,7 @@ sol = solve(oprob)
 plot(sol)
 ```
 
-Here, various plotting options can be provided as optional arguments to the `plot` command. Common options include:
+Various plotting options can be provided as optional arguments to the `plot` command. Common options include:
 - `lw`: Determine plot line widths.
 - `la`: Determine plot line's transparency (at `la = 0.0` lines are fully transparent, i.e. not visible).
 - `linestyle`: Determines plot line style.
@@ -33,13 +33,13 @@ Here, various plotting options can be provided as optional arguments to the `plo
 - `label`: Determines label texts.
 - `xguide`, `yguide`: Determines x and y axis labels.
 - `title`: Determines plot title.
-- `legendfontsize`, `guidefontsize`, `titlefontsize`: Determines the font size of the labels,  x/y guides and title, respectively.
+- `legendfontsize`, `guidefontsize`, `titlefontsize`: Determines the font size of the labels, x and y guides, and title, respectively.
 
 Here, we re-plot our simulations, utilising some of these options (`legend = :none` is used to disable the legends).
 ```@example simulation_plotting
 plot(sol; lw = 4, linestyle = :dash, color = :green, xguide = "Time", yguide = "Concentration", guidefontsize = 14)
 ```
-Note that, by default, Catalyst uses `xguide = "t"`. Here, however, we modify this to `xguide = "Time"`. We also note that the `color = :green` change both lines' colours to green. To set different colours for each line, we provide these as *a vector without `,` in-between elements*:
+Note that, by default, Catalyst uses `xguide = "t"`. Here, however, we modify this to `xguide = "Time"`. We also note that the `color = :green` change both lines' colours to green. To set different colours for each line, we provide these as *a vector without `,` in-between elements* (in Julia interpreted as a matrix with its first dimension equal to `1`):
 ```@example simulation_plotting
 plot(sol; lw = 4, color = [:green :purple])
 ```
@@ -49,7 +49,7 @@ default(framestyle = :box, grid = false)
 ```
 we designate a box-style frame, and remove the faint background grid, for all subsequent plots in this tutorial.
 
-A useful option unique to Catalyst (and other DifferentialEquation-based) plots is `idxs`. Its input is a vector, listing all the species (or quantities) that should be plotted. I.e.
+A useful option unique to Catalyst (and other DifferentialEquations.jl-based) plots is `idxs`. Its input is a vector, listing all the species (or quantities) that should be plotted. I.e.
 ```@example simulation_plotting
 plot(sol; idxs = [:X])
 ```
@@ -58,7 +58,7 @@ can be used to plot `X` only. When only a single argument is given, the vector f
 plot(sol; idxs = brusselator.X + brusselator.Y)
 ```
 
-## [Multi-plot plots plots](@id simulation_plotting_options)
+## [Multi-plot plots](@id simulation_plotting_options)
 It is possible to save plots in variables. These can then be used as input to the `plot` command. Here, the plot command can be used to create plots containing multiple plots (by providing multiple inputs). E.g. here we plot the concentration of `X` and `Y` in separate subplots:
 ```@example simulation_plotting
 plt_X = plot(sol; idxs = [:X])
