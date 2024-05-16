@@ -1,5 +1,25 @@
 ### Reaction Complex Handling ###
 
+# get the species indices and stoichiometry while filtering out constant species.
+function filter_constspecs(specs, stoich::AbstractVector{V}, smap) where {V <: Integer}
+    isempty(specs) && (return Vector{Int}(), Vector{V}())
+
+    if any(isconstant, specs)
+        ids = Vector{Int}()
+        filtered_stoich = Vector{V}()
+        for (i, s) in enumerate(specs)
+            if !isconstant(s)
+                push!(ids, smap[s])
+                push!(filtered_stoich, stoich[i])
+            end
+        end
+    else
+        ids = map(Base.Fix1(getindex, smap), specs)
+        filtered_stoich = copy(stoich)
+    end
+    ids, filtered_stoich
+end
+
 """
     reactioncomplexmap(rn::ReactionSystem)
 
@@ -46,26 +66,6 @@ function reactioncomplexmap(rn::ReactionSystem)
         end
     end
     complextorxsmap
-end
-
-# get the species indices and stoichiometry while filtering out constant species.
-function filter_constspecs(specs, stoich::AbstractVector{V}, smap) where {V <: Integer}
-    isempty(specs) && (return Vector{Int}(), Vector{V}())
-
-    if any(isconstant, specs)
-        ids = Vector{Int}()
-        filtered_stoich = Vector{V}()
-        for (i, s) in enumerate(specs)
-            if !isconstant(s)
-                push!(ids, smap[s])
-                push!(filtered_stoich, stoich[i])
-            end
-        end
-    else
-        ids = map(Base.Fix1(getindex, smap), specs)
-        filtered_stoich = copy(stoich)
-    end
-    ids, filtered_stoich
 end
 
 @doc raw"""
@@ -396,6 +396,25 @@ function deficiency(rn::ReactionSystem)
     nps.deficiency
 end
 
+# Used in the subsequent function.
+function subnetworkmapping(linkageclass, allrxs, complextorxsmap, p)
+    rxinds = sort!(collect(Set(rxidx for rcidx in linkageclass
+                               for rxidx in complextorxsmap[rcidx])))
+    rxs = allrxs[rxinds]
+    specset = Set(s for rx in rxs for s in rx.substrates if !isconstant(s))
+    for rx in rxs
+        for product in rx.products
+            !isconstant(product) && push!(specset, product)
+        end
+    end
+    specs = collect(specset)
+    newps = Vector{eltype(p)}()
+    for rx in rxs
+        Symbolics.get_variables!(newps, rx.rate, p)
+    end
+    rxs, specs, newps   # reactions and species involved in reactions of subnetwork
+end
+
 """
     subnetworks(rn::ReactionSystem)
 
@@ -431,24 +450,6 @@ function subnetworks(rs::ReactionSystem)
               ReactionSystem(reacs, t, specs, newps; name = newname, spatial_ivs))
     end
     subnetworks
-end
-
-function subnetworkmapping(linkageclass, allrxs, complextorxsmap, p)
-    rxinds = sort!(collect(Set(rxidx for rcidx in linkageclass
-                               for rxidx in complextorxsmap[rcidx])))
-    rxs = allrxs[rxinds]
-    specset = Set(s for rx in rxs for s in rx.substrates if !isconstant(s))
-    for rx in rxs
-        for product in rx.products
-            !isconstant(product) && push!(specset, product)
-        end
-    end
-    specs = collect(specset)
-    newps = Vector{eltype(p)}()
-    for rx in rxs
-        Symbolics.get_variables!(newps, rx.rate, p)
-    end
-    rxs, specs, newps   # reactions and species involved in reactions of subnetwork
 end
 
 """
@@ -625,25 +626,7 @@ function conservationlaws(nsm::T; col_order = nothing) where {T <: AbstractMatri
     T(N')
 end
 
-"""
-    conservationlaws(rs::ReactionSystem)
-
-Return the conservation law matrix of the given `ReactionSystem`, calculating it if it is
-not already stored within the system, or returning an alias to it.
-
-Notes:
-- The first time being called it is calculated and cached in `rn`, subsequent calls should
-  be fast.
-"""
-function conservationlaws(rs::ReactionSystem)
-    nps = get_networkproperties(rs)
-    !isempty(nps.conservationmat) && (return nps.conservationmat)
-    nsm = netstoichmat(rs)
-    nps.conservationmat = conservationlaws(nsm; col_order = nps.col_order)
-    cache_conservationlaw_eqs!(rs, nps.conservationmat, nps.col_order)
-    nps.conservationmat
-end
-
+# Used in the subsequent function.
 function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_order)
     nullity = size(N, 1)
     r = numspecies(rn) - nullity     # rank of the netstoichmat
@@ -679,6 +662,25 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     nps.constantdefs = constantdefs
 
     nothing
+end
+
+"""
+    conservationlaws(rs::ReactionSystem)
+
+Return the conservation law matrix of the given `ReactionSystem`, calculating it if it is
+not already stored within the system, or returning an alias to it.
+
+Notes:
+- The first time being called it is calculated and cached in `rn`, subsequent calls should
+  be fast.
+"""
+function conservationlaws(rs::ReactionSystem)
+    nps = get_networkproperties(rs)
+    !isempty(nps.conservationmat) && (return nps.conservationmat)
+    nsm = netstoichmat(rs)
+    nps.conservationmat = conservationlaws(nsm; col_order = nps.col_order)
+    cache_conservationlaw_eqs!(rs, nps.conservationmat, nps.col_order)
+    nps.conservationmat
 end
 
 """
