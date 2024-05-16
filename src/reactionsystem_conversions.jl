@@ -441,6 +441,16 @@ function spatial_convert_err(rs::ReactionSystem, systype)
     isspatial(rs) && error("Conversion to $systype is not supported for spatial networks.")
 end
 
+# Finds and differentials in an expression, and sets these to 0.
+function remove_diffs(expr)
+    if Symbolics._occursin(Symbolics.is_derivative, expr)
+        return Symbolics.replace(expr, diff_2_zero)
+    else
+        return expr
+    end
+end
+diff_2_zero(expr) = (Symbolics.is_derivative(expr) ? 0.0 : expr)
+
 COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be converted to other system types. A ReactionSystem can be marked as complete using the `complete` function."
 
 
@@ -530,16 +540,6 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
                     checks,
                     kwargs...)
 end
-
-# Finds and differentials in an expression, and sets these to 0.
-function remove_diffs(expr)
-    if Symbolics._occursin(Symbolics.is_derivative, expr)
-        return Symbolics.replace(expr, diff_2_zero)
-    else
-        return expr
-    end
-end
-diff_2_zero(expr) = (Symbolics.is_derivative(expr) ? 0.0 : expr)
 
 # Ideally, when `ReactionSystem`s are converted to `NonlinearSystem`s, any coupled ODEs should be 
 # on the form D(X) ~ ..., where lhs is the time derivative w.r.t. a single variable, and the rhs

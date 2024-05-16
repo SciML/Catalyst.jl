@@ -63,6 +63,31 @@ Test if a species is valid as a reactant (i.e. a species variable or a constant 
 isvalidreactant(s) = MT.isparameter(s) ? isconstant(s) : (isspecies(s) && !isconstant(s))
 
 
+### Reaction Constructor Functions ###
+
+# Checks if a metadata input has an entry :only_use_rate => true
+function metadata_only_use_rate_check(metadata)
+    only_use_rate_idx = findfirst(:only_use_rate == entry[1] for entry in metadata)
+    isnothing(only_use_rate_idx) && return false
+    return Bool(metadata[only_use_rate_idx][2])
+end
+
+# calculates the net stoichiometry of a reaction as a vector of pairs (sub,substoich)
+function get_netstoich(subs, prods, sstoich, pstoich)
+    # stoichiometry as a Dictionary
+    nsdict = Dict{Any, eltype(sstoich)}(sub => -sstoich[i] for (i, sub) in enumerate(subs))
+    for (i, p) in enumerate(prods)
+        coef = pstoich[i]
+        @inbounds nsdict[p] = haskey(nsdict, p) ? nsdict[p] + coef : coef
+    end
+
+    # stoichiometry as a vector
+    [el for el in nsdict if !_iszero(el[2])]
+end
+
+# Get the net stoichiometries' type.
+netstoich_stoichtype(::Vector{Pair{S, T}}) where {S, T} = T
+
 ### Reaction Structure ###
 
 """
@@ -213,29 +238,6 @@ function Reaction(rate, subs, prods; kwargs...)
     pstoich = isnothing(prods) ? nothing : ones(Int, length(prods))
     Reaction(rate, subs, prods, sstoich, pstoich; kwargs...)
 end
-
-# Checks if a metadata input has an entry :only_use_rate => true
-function metadata_only_use_rate_check(metadata)
-    only_use_rate_idx = findfirst(:only_use_rate == entry[1] for entry in metadata)
-    isnothing(only_use_rate_idx) && return false
-    return Bool(metadata[only_use_rate_idx][2])
-end
-
-# calculates the net stoichiometry of a reaction as a vector of pairs (sub,substoich)
-function get_netstoich(subs, prods, sstoich, pstoich)
-    # stoichiometry as a Dictionary
-    nsdict = Dict{Any, eltype(sstoich)}(sub => -sstoich[i] for (i, sub) in enumerate(subs))
-    for (i, p) in enumerate(prods)
-        coef = pstoich[i]
-        @inbounds nsdict[p] = haskey(nsdict, p) ? nsdict[p] + coef : coef
-    end
-
-    # stoichiometry as a vector
-    [el for el in nsdict if !_iszero(el[2])]
-end
-
-# Get the net stoichiometries' type.
-netstoich_stoichtype(::Vector{Pair{S, T}}) where {S, T} = T
 
 # Union type for `Reaction`s and `Equation`s.
 const CatalystEqType = Union{Reaction, Equation}

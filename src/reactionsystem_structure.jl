@@ -141,6 +141,70 @@ function reset!(nps::NetworkProperties{I, V}) where {I, V}
 end
 
 
+### ReactionSystem Constructor Functions ###
+
+# Used to sort the reaction/equation vector as reactions first, equations second.
+eqsortby(eq::CatalystEqType) = eq isa Reaction ? 1 : 2
+
+# Figures out a type.
+function get_speciestype(iv, unknowns, systems)
+    T = Nothing
+    !isempty(unknowns) && (T = typeof(first(unknowns)))
+
+    if !isempty(systems)
+        for sys in Iterators.filter(s -> s isa ReactionSystem, systems)
+            sts = MT.unknowns(sys)
+            if !isempty(sts)
+                T = typeof(first(sts))
+                break
+            end
+        end
+    end
+
+    if T <: Nothing
+        @variables A($iv)
+        T = typeof(MT.unwrap(A))
+    end
+
+    T
+end
+
+# search the symbolic expression for parameters or unknowns
+# and save in ps and us respectively. vars is used to cache results
+function findvars!(ps, us, exprtosearch, ivs, vars)
+    MT.get_variables!(vars, exprtosearch)
+    for var in vars
+        (var ∈ ivs) && continue
+        if MT.isparameter(var)
+            push!(ps, var)
+        else
+            push!(us, var)
+        end
+    end
+    empty!(vars)
+end
+# Special dispatch for equations, applied `findvars!` to left-hand and right-hand sides.
+function findvars!(ps, us, eq_to_search::Equation, ivs, vars)
+    findvars!(ps, us, eq_to_search.lhs, ivs, vars)
+    findvars!(ps, us, eq_to_search.rhs, ivs, vars)
+end
+# Special dispatch for Vectors (applies it to each vector element).
+function findvars!(ps, us, exprs_to_search::Vector, ivs, vars)
+    foreach(exprtosearch -> findvars!(ps, us, exprtosearch, ivs, vars), exprs_to_search)
+end
+
+# Loops through all events in an supplied event vector, adding all unknowns and parameters found in
+# its condition and affect functions to their respective vectors (`ps` and `us`).
+function find_event_vars!(ps, us, events::Vector, ivs, vars)
+    foreach(event -> find_event_vars!(ps, us, event, ivs, vars), events)
+end
+# For a single event, adds quantitites from its condition and affect expression(s) to `ps` and `us`.
+# Applies `findvars!` to the event's condition (`event[1])` and affec (`event[2]`).
+function find_event_vars!(ps, us, event, ivs, vars)
+    findvars!(ps, us, event[1], ivs, vars)
+    findvars!(ps, us, event[2], ivs, vars)
+end
+
 ### ReactionSystem Structure ###
 
 """
@@ -370,32 +434,6 @@ function ReactionSystem(eqs, iv, unknowns, ps;
                    ccallbacks, dcallbacks, metadata; checks = checks)
 end
 
-# Used to sort the reaction/equation vector as reactions first, equations second.
-eqsortby(eq::CatalystEqType) = eq isa Reaction ? 1 : 2
-
-# Figures out a type.
-function get_speciestype(iv, unknowns, systems)
-    T = Nothing
-    !isempty(unknowns) && (T = typeof(first(unknowns)))
-
-    if !isempty(systems)
-        for sys in Iterators.filter(s -> s isa ReactionSystem, systems)
-            sts = MT.unknowns(sys)
-            if !isempty(sts)
-                T = typeof(first(sts))
-                break
-            end
-        end
-    end
-
-    if T <: Nothing
-        @variables A($iv)
-        T = typeof(MT.unwrap(A))
-    end
-
-    T
-end
-
 # Two-argument constructor (reactions/equations and time variable).
 # Calls the `make_ReactionSystem_internal`, which in turn calls the four-argument constructor.
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
@@ -482,42 +520,6 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in; spa
 
     # Passes the processed input into the next `ReactionSystem` call.    
     ReactionSystem(fulleqs, t, usv, psv; spatial_ivs, continuous_events, discrete_events, observed, kwargs...)
-end
-
-# search the symbolic expression for parameters or unknowns
-# and save in ps and us respectively. vars is used to cache results
-function findvars!(ps, us, exprtosearch, ivs, vars)
-    MT.get_variables!(vars, exprtosearch)
-    for var in vars
-        (var ∈ ivs) && continue
-        if MT.isparameter(var)
-            push!(ps, var)
-        else
-            push!(us, var)
-        end
-    end
-    empty!(vars)
-end
-# Special dispatch for equations, applied `findvars!` to left-hand and right-hand sides.
-function findvars!(ps, us, eq_to_search::Equation, ivs, vars)
-    findvars!(ps, us, eq_to_search.lhs, ivs, vars)
-    findvars!(ps, us, eq_to_search.rhs, ivs, vars)
-end
-# Special dispatch for Vectors (applies it to each vector element).
-function findvars!(ps, us, exprs_to_search::Vector, ivs, vars)
-    foreach(exprtosearch -> findvars!(ps, us, exprtosearch, ivs, vars), exprs_to_search)
-end
-
-# Loops through all events in an supplied event vector, adding all unknowns and parameters found in
-# its condition and affect functions to their respective vectors (`ps` and `us`).
-function find_event_vars!(ps, us, events::Vector, ivs, vars)
-    foreach(event -> find_event_vars!(ps, us, event, ivs, vars), events)
-end
-# For a single event, adds quantitites from its condition and affect expression(s) to `ps` and `us`.
-# Applies `findvars!` to the event's condition (`event[1])` and affec (`event[2]`).
-function find_event_vars!(ps, us, event, ivs, vars)
-    findvars!(ps, us, event[1], ivs, vars)
-    findvars!(ps, us, event[2], ivs, vars)
 end
 
 
@@ -974,6 +976,9 @@ function prodstoichmat(rn::ReactionSystem; sparse = false)
     sparse ? prodstoichmat(SparseMatrixCSC{T, Int}, rn) : prodstoichmat(Matrix{T}, rn)
 end
 
+# Used in `netstoichmat` function.
+netstoichtype(::Vector{Pair{S, T}}) where {S, T} = T
+
 """
     netstoichmat(rn, sparse=false)
 
@@ -1044,10 +1049,17 @@ function netstoichmat(rn::ReactionSystem; sparse = false)
     nsmat
 end
 
-netstoichtype(::Vector{Pair{S, T}}) where {S, T} = T
-
-
 ### General `ReactionSystem`-specific Functions ###
+
+# used in the `__unpacksys` function.
+function __unpacksys(rn)
+    ex = :(begin end)
+    for key in keys(get_var_to_name(rn))
+        var = MT.getproperty(rn, key, namespace = false)
+        push!(ex.args, :($key = $var))
+    end
+    ex
+end
 
 """
     @unpacksys sys::ModelingToolkit.AbstractSystem
@@ -1078,15 +1090,6 @@ macro unpacksys(rn)
         ex = Catalyst.__unpacksys($(esc(rn)))
         Base.eval($(__module__), ex)
     end
-end
-
-function __unpacksys(rn)
-    ex = :(begin end)
-    for key in keys(get_var_to_name(rn))
-        var = MT.getproperty(rn, key, namespace = false)
-        push!(ex.args, :($key = $var))
-    end
-    ex
 end
 
 """
@@ -1263,6 +1266,21 @@ function make_empty_network(; iv = DEFAULT_IV, name = gensym(:ReactionSystem))
     ReactionSystem(Reaction[], iv, [], []; name = name)
 end
 
+# A helper function used in `flatten`.
+function getsubsystypes(sys)
+    typeset = Set{Type}()
+    getsubsystypes!(typeset, sys)
+    typeset
+end
+
+function getsubsystypes!(typeset::Set{Type}, sys::T) where {T <: MT.AbstractSystem}
+    push!(typeset, T)
+    for subsys in get_systems(sys)
+        getsubsystypes!(typeset, subsys)
+    end
+    typeset
+end
+
 """
     Catalyst.flatten(rs::ReactionSystem)
 
@@ -1356,22 +1374,6 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
                    continuous_events,
                    discrete_events)
 end
-
-# A helper function.
-function getsubsystypes(sys)
-    typeset = Set{Type}()
-    getsubsystypes!(typeset, sys)
-    typeset
-end
-
-function getsubsystypes!(typeset::Set{Type}, sys::T) where {T <: MT.AbstractSystem}
-    push!(typeset, T)
-    for subsys in get_systems(sys)
-        getsubsystypes!(typeset, subsys)
-    end
-    typeset
-end
-
 
 ### Units Handling ###
 
