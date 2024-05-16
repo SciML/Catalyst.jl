@@ -1,7 +1,7 @@
 # [Interfacing problems, integrators, and solutions](@id simulation_structure_interfacing)
-When simulating a model, one begins with creating a [problem](https://docs.sciml.ai/DiffEqDocs/stable/basics/problem/). Next, a simulation is performed on a problem, during which the state of the simulation is recorded through an [integrator](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/). Finally, the simulation output is returned as a [solution](https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/). This tutorial describes how to access (or modify) the state (or parameter) values of problem, integrator, and solution structures.
+When simulating a model, one begins with creating a [problem](https://docs.sciml.ai/DiffEqDocs/stable/basics/problem/). Next, a simulation is performed on the problem, during which the simulation's state is recorded through an [integrator](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/). Finally, the simulation output is returned as a [solution](https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/). This tutorial describes how to access (or modify) the state (or parameter) values of problem, integrator, and solution structures.
 
-Generally, when we have a structure `simulation_struct` and want to interface with the unknown (or parameter) `x`, we use `simulation_struct[:x]` to access the value, and `simulation_struct[:x] = 5.0` to set it to a new value. For situations where a value is accessed (or changed) a large number of times, it can improve performance to first create a [specialised getter/setter function](@ref ref).
+Generally, when we have a structure `simulation_struct` and want to interface with the unknown (or parameter) `x`, we use `simulation_struct[:x]` to access the value, and `simulation_struct[:x] = 5.0` to set it to a new value. For situations where a value is accessed (or changed) a large number of times, it can *improve performance* to first create a [specialised getter/setter function](@ref simulation_structure_interfacing_functions).
 
 ## [Interfacing problem objects](@id simulation_structure_interfacing_problems)
 
@@ -21,7 +21,7 @@ oprob = ODEProblem(cc_system, u0, tspan, ps)
 nothing    # hide
 ```
 
-We can find a species (or [variables](@ref ref)) initial condition value by simply indexing with the species of interest as input. Here we check the initial condition value of $C$:
+We can find a specie's (or [variable's](@ref ref)) initial condition value by simply indexing with the species of interest as input. Here we check the initial condition value of $C$:
 ```@example structure_indexing
 oprob[:C]
 ```
@@ -52,6 +52,9 @@ oprob[[:S₁, :S₂]]
 ```
 Generally, when updating problems, it is often better to use the [`remake` function](@ref simulation_structure_interfacing_problems_remake) (especially when several values are updated).
 
+!!! warn
+    Indexing *should not* be used not modify `JumpProblem`s. Here, [remake](@ref ref) should be used exclusively.
+
 A problem's time span can be accessed through the `tspan` field:
 ```@example structure_indexing
 oprob.tspan
@@ -62,7 +65,7 @@ oprob.tspan
 
 ### [Remaking problems using the `remake` function](@id simulation_structure_interfacing_problems_remake)
 The `remake` function offers an (to indexing) alternative approach for updating problems. Unlike indexing, `remake` creates a new problem (rather than updating the old one). Furthermore, it permits the updating of several values simultaneously. The `remake` function takes the following inputs:
-- The problem that is remade.
+- The problem that is remakes.
 - (optionally) `u0`: A vector with initial conditions that should be updated. The vector takes the same form as normal initial condition vectors, but does not need to be complete (in which case only a subset of the initial conditions are updated).
 - (optionally) `tspan`: An updated time span (using the same format as time spans normally are given in).
 - (optionally) `p`: A vector with parameters that should be updated. The vector takes the same form as normal parameter vectors, but does not need to be complete (in which case only a subset of the parameters are updated).
@@ -73,7 +76,7 @@ using OrdinaryDiffEq
 oprob_new = remake(oprob; u0 = [:S₁ => 5.0, :S₂ => 2.5])
 oprob_new == oprob
 ```
-Here, we instead use `remake` to simultaneously update a large number of fields:
+Here, we instead use `remake` to simultaneously update a all three fields:
 ```@example structure_indexing
 oprob_new_2 = remake(oprob; u0 = [:C => 0.2], tspan = (0.0, 20.0), p = [:k₁ => 2.0, :k₂ => 2.0])
 nothing # hide
@@ -107,7 +110,7 @@ Finally, we consider solution objects. First, we simulate our problem:
 sol = solve(oprob)
 nothing # hide
 ```
-Next, we can access the simulation's values using the same notation as previously. When we check a species's value, its full across the full simulation is returned as a vector:
+Next, we can access the simulation's values using the same notation as previously. When we access a species's, its values across the full simulation is returned as a vector:
 ```@example structure_indexing
 sol[:P]
 ```
@@ -126,7 +129,7 @@ To find simulation values at a specific time point, simply use this time point a
 ```@example structure_indexing
 sol(1.0)
 ```
-This works whenever the simulations actually stopped at time $t = 1.0$ (if not, an interpolated value is returned). To get the simulation's for a specific (subset of) species, we can use the `idxs` optional argument. I.e. here we get the value of $C$ at time $t = 1.0$
+This works whenever the simulations actually stopped at time $t = 1.0$ (if not, an interpolated value is returned). To get the simulation's values for a specific subset of species, we can use the `idxs` optional argument. I.e. here we get the value of $C$ at time $t = 1.0$
 ```@example structure_indexing
 sol(1.0; idxs = [:C])
 ``` 
@@ -159,7 +162,7 @@ get_S(oprob)
 ```
 
 ## [Interfacing using symbolic representations](@id simulation_structure_interfacing_symbolic_representation)
-As [previously described](@ref ref), when e.g. [programmatic modelling is used], species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like `Symbol '-based representations can. Here we create a simple [two-state model](@ref ref) programmatically, and use its symbolic variables to check, and update, an initial condition:
+As [previously described](@ref ref), when e.g. [programmatic modelling is used](@ref ref), species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like symbol-based representations can. Here we create a simple [two-state model](@ref ref) programmatically, and use its symbolic variables to check, and update, an initial condition:
 ```@example structure_indexing_symbolic_variables
 using Catalyst
 t = default_t()
@@ -182,7 +185,7 @@ oprob[X1]
 ```
 Symbolic variables can be used to access or update species or parameters for all the cases when `Symbol`s can (including when using `remake` or e.g. `getu`).
 
-An advantage when quantities are represented as symbolic variables is that [symbolic expressions] can be formed and used to index a structure. E.g. here we check the combined initial concentration of $X$ ($X1 + X2$) in our two-state problem:
+An advantage when quantities are represented as symbolic variables is that [symbolic expressions](@ref ref) can be formed and used to index a structure. E.g. here we check the combined initial concentration of $X$ ($X1 + X2$) in our two-state problem:
 ```@example structure_indexing_symbolic_variables
 oprob[X1 + X2]
 ```
