@@ -1,7 +1,7 @@
 # [Ensemble/Monte Carlo Simulations](@id ensemble_simulations)
 In many contexts, a single model is re-simulated under similar conditions. Examples include:
 - Performing Monte Carlo simulations of a stochastic model to gain insight in its behaviour.
-- Scanning the behaviour of a model for different parameter values and/or initial conditions.
+- Scanning a model's behaviour for different parameter values and/or initial conditions.
 
 While this can be handled using `for` loops, it is typically better to first create an `EnsembleProblem`, and then perform an ensemble simulation. Advantages include a more concise interface and the option for [automatic simulation parallelisation](@ref ref). Here we provide a short tutorial on how to perform parallel ensemble simulations, with a more extensive documentation being available [here](@ref https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/).
 
@@ -17,7 +17,7 @@ u0 = [:X => 10.0]
 tspan = (0.0, 1000.0)
 ps = [:v0 => 0.1, :v => 2.5, :K => 40.0, :n => 4.0, :deg => 0.01]
 ```
-We wish to simulate it as an SDE. Rather than performing a single simulation, however, we want to make multiple ones. Here, we first create a normal `SDEProblem`, and use it as the single input to a `EnsembleProblem` (similar for ODEs and jump simulations, but the `ODEProblem` or `JumpProblem` is used instead).
+We wish to simulate it as an SDE. Rather than performing a single simulation, however, we want to perform multiple ones. Here, we first create a normal `SDEProblem`, and use it as the single input to a `EnsembleProblem` (`EnsembleProblem` are created similarly for ODE and jump simulations, but the `ODEProblem` or `JumpProblem` is used instead).
 ```@example ensemble
 sprob = SDEProblem(sa_model, u0, tspan, ps)
 eprob = EnsembleProblem(sprob)
@@ -49,13 +49,11 @@ oprob = ODEProblem(sa_model, u0, tspan, p)
 nothing # hide
 ```
 Next, we wish to simulate the model for a range of initial conditions of $X$`. To do this we create a problem function, which takes the following arguments:
-- `prob`: The problem given to our `EnsembleProblem`, which is the problem that
- `prob_func` modifies in each iteration.
-- `i`: The number of this specific Monte Carlo iteration in the interval
- `1:trajectories`.
+- `prob`: The problem given to our `EnsembleProblem` (which is the problem that `prob_func` modifies in each iteration).
+- `i`: The number of this specific Monte Carlo iteration in the interval `1:trajectories`.
 - `repeat`: The iteration of the repeat of the simulation. Typically `1`, but potentially higher if [the simulation re-running option](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#Building-a-Problem) is used.
 
-Here we will use the following problem function, which will provide a uniform range of initial conditions:
+Here we will use the following problem function (utilising [remake](@ref ref)), which will provide a uniform range of initial concentrations of $X$:
 ```@example ensemble
 function prob_func(prob, i, repeat)
     remake(prob; u0 = [:X => i * 5.0])

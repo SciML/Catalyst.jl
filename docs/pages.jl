@@ -27,7 +27,7 @@ pages = Any[
         # Simulation introduction.
         # Simulation plotting.
         "model_simulation/simulation_structure_interfacing.md",
-        "model_simulation/TOBEREMOVED_advanced_simulations.md",# Monte Carlo/Ensemble simulations.        
+        "model_simulation/ensemble_simulations.md",
         # Stochastic simulation statistical analysis.
         # ODE Performance considerations/advice.
         # SDE Performance considerations/advice.
