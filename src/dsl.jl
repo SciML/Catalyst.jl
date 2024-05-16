@@ -1,4 +1,3 @@
-### Temporary deprecation warning - Eventually to be removed. ###
 """
 Macro that inputs an expression corresponding to a reaction network and outputs
 a `ReactionNetwork` that can be used as input to generation of ODE, SDE, and
@@ -110,7 +109,7 @@ macro species(ex...)
 end
 
 
-### `@reaction_network` macro ###
+### `@reaction_network` and `@network_component` Macros ###
 
 """
     @reaction_network
@@ -232,29 +231,59 @@ struct ReactionStruct
     end
 end
 
-### Functions rephrasing the macro input as a ReactionSystem structure. ###
-
-function unique_symbol_check(syms)
-    allunique(syms) ||
-        error("Reaction network independent variables, parameters, species, and variables must all have distinct names, but a duplicate has been detected. ")
-    nothing
-end
-
-# takes a ModelingToolkit declaration macro like @parameters and returns an expression
-# that calls the macro and then scalarizes all the symbols created into a vector of Nums
-function scalarize_macro(nonempty, ex, name)
-    namesym = gensym(name)
-    if nonempty
-        symvec = gensym()
-        ex = quote
-            $symvec = $ex
-            $namesym = reduce(vcat, Symbolics.scalarize($symvec))
+# Recursive function that loops through the reaction line and finds the reactants and their
+# stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
+function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
+                                   reactants::Vector{ReactantStruct})
+    if typeof(ex) != Expr || (ex.head == :escape) || (ex.head == :ref)
+        (ex == 0 || in(ex, empty_set)) && (return reactants)
+        if any(ex == reactant.reactant for reactant in reactants)
+            idx = findall(x -> x == ex, getfield.(reactants, :reactant))[1]
+            reactants[idx] = ReactantStruct(ex,
+                                            processmult(+, mult,
+                                                        reactants[idx].stoichiometry))
+        else
+            push!(reactants, ReactantStruct(ex, mult))
+        end
+    elseif ex.args[1] == :*
+        if length(ex.args) == 3
+            recursive_find_reactants!(ex.args[3], processmult(*, mult, ex.args[2]),
+                                      reactants)
+        else
+            newmult = processmult(*, mult, Expr(:call, ex.args[1:(end - 1)]...))
+            recursive_find_reactants!(ex.args[end], newmult, reactants)
+        end
+    elseif ex.args[1] == :+
+        for i in 2:length(ex.args)
+            recursive_find_reactants!(ex.args[i], mult, reactants)
         end
     else
-        ex = :($namesym = Num[])
+        throw("Malformed reaction, bad operator: $(ex.args[1]) found in stochiometry expression $ex.")
     end
-    ex, namesym
+    reactants
 end
+
+function processmult(op, mult, stoich)
+    if (mult isa Number) && (stoich isa Number)
+        op(mult, stoich)
+    else
+        :($op($mult, $stoich))
+    end
+end
+
+# Finds the metadata from a metadata expresion (`[key=val, ...]`) and returns as a Vector{Pair{Symbol,ExprValues}}.
+function extract_metadata(metadata_line::Expr)
+    metadata = :([])
+    for arg in metadata_line.args
+        (arg.head != :(=)) && error("Malformatted metadata line: $metadata_line. Each entry in the vector should contain a `=`.")
+        (arg.args[1] isa Symbol) || error("Malformatted metadata entry: $arg. Entries left-hand-side should be a single symbol.")
+        push!(metadata.args, :($(QuoteNode(arg.args[1])) => $(arg.args[2])))
+    end
+    return metadata
+end
+
+
+### DSL Internal Master Function ###
 
 # Function for creating a ReactionSystem structure (used by the @reaction_network macro).
 function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
@@ -368,139 +397,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     end
 end
 
-### Auxiliary function called by the main make_reaction_system and make_reaction functions. ###
 
-# Function that handles variable interpolation.
-function esc_dollars!(ex)
-    if ex isa Expr
-        if ex.head == :$
-            return esc(:($(ex.args[1])))
-        else
-            for i in 1:length(ex.args)
-                ex.args[i] = esc_dollars!(ex.args[i])
-            end
-        end
-    end
-    ex
-end
-
-# When compound species are declared using the "@compound begin ... end" option, get a list of the compound species, and also the expression that crates them.
-function read_compound_options(opts)
-    # If the compound option is used retrive a list of compound species (need to be added to the reaction system's species), and the option that creates them (used to declare them as compounds at the end).
-    if haskey(opts, :compounds)
-        compound_expr = opts[:compounds]
-        # Find compound species names, and append the independent variable.
-        compound_species = [find_varinfo_in_declaration(arg.args[2])[1] for arg in compound_expr.args[3].args]
-    else  # If option is not used, return empty vectors and expressions.
-        compound_expr = :()
-        compound_species = Union{Symbol, Expr}[]
-    end
-    return compound_expr, compound_species
-end
-
-# When the user have used the @species (or @parameters) options, extract species (or
-# parameters) from its input.
-function extract_syms(opts, vartype::Symbol)
-    if haskey(opts, vartype)
-        ex = opts[vartype]
-        vars = Symbolics._parse_vars(vartype, Real, ex.args[3:end])
-        syms = Vector{Union{Symbol, Expr}}(vars.args[end].args)
-    else
-        syms = Union{Symbol, Expr}[]
-    end
-    return syms
-end
-
-# Function looping through all reactions, to find undeclared symbols (species or
-# parameters), and assign them to the right category.
-function extract_species_and_parameters!(reactions, excluded_syms)
-    species = OrderedSet{Union{Symbol, Expr}}()
-    for reaction in reactions
-        for reactant in Iterators.flatten((reaction.substrates, reaction.products))
-            add_syms_from_expr!(species, reactant.reactant, excluded_syms)
-        end
-    end
-
-    foreach(s -> push!(excluded_syms, s), species)
-    parameters = OrderedSet{Union{Symbol, Expr}}()
-    for reaction in reactions
-        add_syms_from_expr!(parameters, reaction.rate, excluded_syms)
-        for reactant in Iterators.flatten((reaction.substrates, reaction.products))
-            add_syms_from_expr!(parameters, reactant.stoichiometry, excluded_syms)
-        end
-    end
-
-    collect(species), collect(parameters)
-end
-# Function called by extract_species_and_parameters!, recursively loops through an
-# expression and find symbols (adding them to the push_symbols vector).
-function add_syms_from_expr!(push_symbols::AbstractSet, rateex::ExprValues, excluded_syms)
-    if rateex isa Symbol
-        if !(rateex in forbidden_symbols_skip) && !(rateex in excluded_syms)
-            push!(push_symbols, rateex)
-        end
-    elseif rateex isa Expr
-        # note, this (correctly) skips $(...) expressions
-        for i in 2:length(rateex.args)
-            add_syms_from_expr!(push_symbols, rateex.args[i], excluded_syms)
-        end
-    end
-    nothing
-end
-
-# Given the species that were extracted from the reactions, and the options dictionary, creates the @species ... expression for the macro output.
-function get_sexpr(species_extracted, options, key = :species;
-                   iv_symbols = (DEFAULT_IV_SYM,))
-    if haskey(options, key)
-        sexprs = options[key]
-    elseif isempty(species_extracted)
-        sexprs = :()
-    else
-        sexprs = Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
-    end
-    foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, iv_symbols...)),
-            species_extracted)
-    sexprs
-end
-
-# Given the parameters that were extracted from the reactions, and the options dictionary, creates the @parameters ... expression for the macro output.
-function get_pexpr(parameters_extracted, options)
-    pexprs = (haskey(options, :parameters) ? options[:parameters] :
-              (isempty(parameters_extracted) ? :() : :(@parameters)))
-    foreach(p -> push!(pexprs.args, p), parameters_extracted)
-    pexprs
-end
-
-# Creates the reaction vector declaration statement.
-function get_rxexprs(rxstruct)
-    subs_init = isempty(rxstruct.substrates) ? nothing : :([])
-    subs_stoich_init = deepcopy(subs_init)
-    prod_init = isempty(rxstruct.products) ? nothing : :([])
-    prod_stoich_init = deepcopy(prod_init)
-    reaction_func = :(Reaction($(recursive_expand_functions!(rxstruct.rate)), $subs_init,
-                               $prod_init, $subs_stoich_init, $prod_stoich_init,
-                               metadata = $(rxstruct.metadata),))
-    for sub in rxstruct.substrates
-        push!(reaction_func.args[3].args, sub.reactant)
-        push!(reaction_func.args[5].args, sub.stoichiometry)
-    end
-    for prod in rxstruct.products
-        push!(reaction_func.args[4].args, prod.reactant)
-        push!(reaction_func.args[6].args, prod.stoichiometry)
-    end
-    reaction_func
-end
-
-### Functions for extracting the reactions from a DSL expression, and putting them ReactionStruct vector. ###
-
-# Reads a single line and creates the corresponding ReactionStruct.
-function get_reaction(line)
-    reaction = get_reactions([line])
-    if (length(reaction) != 1)
-        error("Malformed reaction. @reaction macro only creates a single reaction. E.g. double arrows, such as `<-->` are not supported.")
-    end
-    return reaction[1]
-end
+### DSL Reaction Reading Functions ###
 
 # Generates a vector containing a number of reaction structures, each containing the information about one reaction.
 function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(undef, 0))
@@ -576,59 +474,228 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
     end
 end
 
-function processmult(op, mult, stoich)
-    if (mult isa Number) && (stoich isa Number)
-        op(mult, stoich)
+
+### DSL Species and Parameters Extraction ###
+
+# When the user have used the @species (or @parameters) options, extract species (or
+# parameters) from its input.
+function extract_syms(opts, vartype::Symbol)
+    if haskey(opts, vartype)
+        ex = opts[vartype]
+        vars = Symbolics._parse_vars(vartype, Real, ex.args[3:end])
+        syms = Vector{Union{Symbol, Expr}}(vars.args[end].args)
     else
-        :($op($mult, $stoich))
+        syms = Union{Symbol, Expr}[]
     end
+    return syms
 end
 
-# Recursive function that loops through the reaction line and finds the reactants and their
-# stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
-function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
-                                   reactants::Vector{ReactantStruct})
-    if typeof(ex) != Expr || (ex.head == :escape) || (ex.head == :ref)
-        (ex == 0 || in(ex, empty_set)) && (return reactants)
-        if any(ex == reactant.reactant for reactant in reactants)
-            idx = findall(x -> x == ex, getfield.(reactants, :reactant))[1]
-            reactants[idx] = ReactantStruct(ex,
-                                            processmult(+, mult,
-                                                        reactants[idx].stoichiometry))
-        else
-            push!(reactants, ReactantStruct(ex, mult))
+# Function looping through all reactions, to find undeclared symbols (species or
+# parameters), and assign them to the right category.
+function extract_species_and_parameters!(reactions, excluded_syms)
+    species = OrderedSet{Union{Symbol, Expr}}()
+    for reaction in reactions
+        for reactant in Iterators.flatten((reaction.substrates, reaction.products))
+            add_syms_from_expr!(species, reactant.reactant, excluded_syms)
         end
-    elseif ex.args[1] == :*
-        if length(ex.args) == 3
-            recursive_find_reactants!(ex.args[3], processmult(*, mult, ex.args[2]),
-                                      reactants)
-        else
-            newmult = processmult(*, mult, Expr(:call, ex.args[1:(end - 1)]...))
-            recursive_find_reactants!(ex.args[end], newmult, reactants)
+    end
+
+    foreach(s -> push!(excluded_syms, s), species)
+    parameters = OrderedSet{Union{Symbol, Expr}}()
+    for reaction in reactions
+        add_syms_from_expr!(parameters, reaction.rate, excluded_syms)
+        for reactant in Iterators.flatten((reaction.substrates, reaction.products))
+            add_syms_from_expr!(parameters, reactant.stoichiometry, excluded_syms)
         end
-    elseif ex.args[1] == :+
-        for i in 2:length(ex.args)
-            recursive_find_reactants!(ex.args[i], mult, reactants)
+    end
+
+    collect(species), collect(parameters)
+end
+
+# Function called by extract_species_and_parameters!, recursively loops through an
+# expression and find symbols (adding them to the push_symbols vector).
+function add_syms_from_expr!(push_symbols::AbstractSet, rateex::ExprValues, excluded_syms)
+    if rateex isa Symbol
+        if !(rateex in forbidden_symbols_skip) && !(rateex in excluded_syms)
+            push!(push_symbols, rateex)
         end
+    elseif rateex isa Expr
+        # note, this (correctly) skips $(...) expressions
+        for i in 2:length(rateex.args)
+            add_syms_from_expr!(push_symbols, rateex.args[i], excluded_syms)
+        end
+    end
+    nothing
+end
+
+
+### DSL Output Expression Builders ###
+
+# Given the species that were extracted from the reactions, and the options dictionary, creates the @species ... expression for the macro output.
+function get_sexpr(species_extracted, options, key = :species;
+                   iv_symbols = (DEFAULT_IV_SYM,))
+    if haskey(options, key)
+        sexprs = options[key]
+    elseif isempty(species_extracted)
+        sexprs = :()
     else
-        throw("Malformed reaction, bad operator: $(ex.args[1]) found in stochiometry expression $ex.")
+        sexprs = Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
     end
-    reactants
+    foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, iv_symbols...)),
+            species_extracted)
+    sexprs
 end
 
-# Finds the metadata from a metadata expresion (`[key=val, ...]`) and returns as a Vector{Pair{Symbol,ExprValues}}.
-function extract_metadata(metadata_line::Expr)
-    metadata = :([])
-    for arg in metadata_line.args
-        (arg.head != :(=)) && error("Malformatted metadata line: $metadata_line. Each entry in the vector should contain a `=`.")
-        (arg.args[1] isa Symbol) || error("Malformatted metadata entry: $arg. Entries left-hand-side should be a single symbol.")
-        push!(metadata.args, :($(QuoteNode(arg.args[1])) => $(arg.args[2])))
-    end
-    return metadata
+# Given the parameters that were extracted from the reactions, and the options dictionary, creates the @parameters ... expression for the macro output.
+function get_pexpr(parameters_extracted, options)
+    pexprs = (haskey(options, :parameters) ? options[:parameters] :
+              (isempty(parameters_extracted) ? :() : :(@parameters)))
+    foreach(p -> push!(pexprs.args, p), parameters_extracted)
+    pexprs
 end
 
-### DSL Options Handling ###
-# Most options handled in previous sections, when code re-organised, these should ideally be moved to the same place.
+# Creates the reaction vector declaration statement.
+function get_rxexprs(rxstruct)
+    subs_init = isempty(rxstruct.substrates) ? nothing : :([])
+    subs_stoich_init = deepcopy(subs_init)
+    prod_init = isempty(rxstruct.products) ? nothing : :([])
+    prod_stoich_init = deepcopy(prod_init)
+    reaction_func = :(Reaction($(recursive_expand_functions!(rxstruct.rate)), $subs_init,
+                               $prod_init, $subs_stoich_init, $prod_stoich_init,
+                               metadata = $(rxstruct.metadata),))
+    for sub in rxstruct.substrates
+        push!(reaction_func.args[3].args, sub.reactant)
+        push!(reaction_func.args[5].args, sub.stoichiometry)
+    end
+    for prod in rxstruct.products
+        push!(reaction_func.args[4].args, prod.reactant)
+        push!(reaction_func.args[6].args, prod.stoichiometry)
+    end
+    reaction_func
+end
+
+
+### DSL Option Handling ###
+
+# Checks if the `@default_noise_scaling` option is used. If so, read its input and adds it as a
+# default metadata value to the `default_reaction_metadata` vector.
+function check_default_noise_scaling!(default_reaction_metadata, options)
+    if haskey(options, :default_noise_scaling)
+        if (length(options[:default_noise_scaling].args) != 3) # Becasue of how expressions are, 3 is used.
+            error("@default_noise_scaling should only have a single input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
+        end
+        push!(default_reaction_metadata.args, :(:noise_scaling => $(options[:default_noise_scaling].args[3])))
+    end
+end
+
+# When compound species are declared using the "@compound begin ... end" option, get a list of the compound species, and also the expression that crates them.
+function read_compound_options(opts)
+    # If the compound option is used retrive a list of compound species (need to be added to the reaction system's species), and the option that creates them (used to declare them as compounds at the end).
+    if haskey(opts, :compounds)
+        compound_expr = opts[:compounds]
+        # Find compound species names, and append the independent variable.
+        compound_species = [find_varinfo_in_declaration(arg.args[2])[1] for arg in compound_expr.args[3].args]
+    else  # If option is not used, return empty vectors and expressions.
+        compound_expr = :()
+        compound_species = Union{Symbol, Expr}[]
+    end
+    return compound_expr, compound_species
+end
+
+# Read the events (continious or discrete) provided as options to the DSL. Returns an expression which evalutes to these.
+function read_events_option(options, event_type::Symbol)
+    # Prepares the events, if required to, converts them to block form.
+    (event_type in [:continuous_events, :discrete_events]) || error("Trying to read an unsupported event type.")
+    events_input = haskey(options, event_type) ? options[event_type].args[3] : MacroTools.striplines(:(begin end))
+    events_input = option_block_form(events_input)
+
+    # Goes throgh the events, checks for errors, and adds them to the output vector.
+    events_expr = :([])
+    for arg in events_input.args
+        # Formatting error checks.
+        # NOTE: Maybe we should move these deeper into the system (rather than the DSL), throwing errors more generally?
+        if (arg isa Expr) && (arg.head != :call) || (arg.args[1] != :(=>)) || length(arg.args) != 3
+            error("Events should be on form `condition => affect`, separated by a `=>`. This appears not to be the case for: $(arg).")
+        end
+        if (arg isa Expr) && (arg.args[2] isa Expr) && (arg.args[2].head != :vect) && (event_type == :continuous_events)
+            error("The condition part of continious events (the left-hand side) must be a vector. This is not the case for: $(arg).")
+        end
+        if (arg isa Expr) && (arg.args[3] isa Expr) && (arg.args[3].head != :vect)
+             error("The affect part of all events (the righ-hand side) must be a vector. This is not the case for: $(arg).")
+        end
+
+        # Adds the correctly formatted event to the event creation expression.
+        push!(events_expr.args, arg)
+    end
+
+    return events_expr
+end
+
+# Reads the variables options. Outputs:
+# `vars_extracted`: A vector with extracted variables (lhs in pure differential equations only).
+# `dtexpr`: If a differentialequation is defined, the default derrivative (D ~ Differential(t)) must be defined.
+# `equations`: a vector with the equations provided.
+function read_equations_options(options, variables_declared)
+    # Prepares the equations. First, extracts equations from provided option (converting to block form if requried).
+    # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
+    eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
+    eqs_input = option_block_form(eqs_input)
+    equations = Expr[]
+    ModelingToolkit.parse_equations!(Expr(:block), equations, Dict{Symbol, Any}(), eqs_input)
+
+    # Loops through all equations, checks for lhs of the form `D(X) ~ ...`.
+    # When this is the case, the variable X and differential D are extracted (for automatic declaration).
+    # Also performs simple error checks.
+    vars_extracted = Vector{Symbol}()
+    add_default_diff = false
+    for eq in equations
+        if (eq.head != :call) || (eq.args[1] != :~)
+             error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")
+        end
+
+        # Checks if the equation have the format D(X) ~ ... (where X is a symbol). This means that the
+        # default differential has been used. X is added as a declared variable to the system, and
+        # we make a note that a differential D = Differential(iv) should be made as well.
+        lhs = eq.args[2]
+        # if lhs: is an expression. Is a function call. The function's name is D. Calls a single symbol.
+        if (lhs isa Expr) && (lhs.head == :call) && (lhs.args[1] == :D) && (lhs.args[2] isa Symbol)
+            diff_var = lhs.args[2]
+            if in(diff_var, forbidden_symbols_error)
+                error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
+            end
+            add_default_diff = true
+            in(diff_var, variables_declared) || push!(vars_extracted, diff_var)
+        end
+    end
+
+    return vars_extracted, add_default_diff, equations
+end
+
+# Creates an expression declaring differentials. Here, `tiv` is the time independent variables,
+# which is used by the default differential (if it is used).
+function create_differential_expr(options, add_default_diff, used_syms, tiv)
+    # Creates the differential expression.
+    # If differentials was provided as options, this is used as the initial expression.
+    # If the default differential (D(...)) was used in equations, this is added to the expression.
+    diffexpr = (haskey(options, :differentials) ? options[:differentials].args[3] : MacroTools.striplines(:(begin end)))
+    diffexpr = option_block_form(diffexpr)
+
+    # Goes through all differentials, checking that they are correctly formatted and their symbol is not used elsewhere.
+    for dexpr in diffexpr.args
+        (dexpr.head != :(=)) && error("Differential declaration must have form like D = Differential(t), instead \"$(dexpr)\" was given.")
+        (dexpr.args[1] isa Symbol) || error("Differential left-hand side must be a single symbol, instead \"$(dexpr.args[1])\" was given.")
+        in(dexpr.args[1], used_syms) && error("Differential name ($(dexpr.args[1])) is also a species, variable, or parameter. This is ambigious and not allowed.")
+        in(dexpr.args[1], forbidden_symbols_error) && error("A forbidden symbol ($(dexpr.args[1])) was used as a differential name.")
+    end
+
+    # If the default differential D has been used, but not pre-declared using the @differenitals
+    # options, add this declaration to the list of declared differentials.
+    if add_default_diff && !any(diff_dec.args[1] == :D for diff_dec in diffexpr.args)
+        push!(diffexpr.args, :(D = Differential($(tiv))))
+    end
+
+    return diffexpr
+end
 
 # Reads the observables options. Outputs an expression ofr creating the obervable variables, and a vector of observable equations.
 function read_observed_options(options, species_n_vars_declared, ivs_sorted)
@@ -709,124 +776,6 @@ function make_observed_eqs(observables_expr)
     end
 end
 
-# Reads the variables options. Outputs:
-# `vars_extracted`: A vector with extracted variables (lhs in pure differential equations only).
-# `dtexpr`: If a differentialequation is defined, the default derrivative (D ~ Differential(t)) must be defined.
-# `equations`: a vector with the equations provided.
-function read_equations_options(options, variables_declared)
-    # Prepares the equations. First, extracts equations from provided option (converting to block form if requried).
-    # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
-    eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
-    eqs_input = option_block_form(eqs_input)
-    equations = Expr[]
-    ModelingToolkit.parse_equations!(Expr(:block), equations, Dict{Symbol, Any}(), eqs_input)
-
-    # Loops through all equations, checks for lhs of the form `D(X) ~ ...`.
-    # When this is the case, the variable X and differential D are extracted (for automatic declaration).
-    # Also performs simple error checks.
-    vars_extracted = Vector{Symbol}()
-    add_default_diff = false
-    for eq in equations
-        if (eq.head != :call) || (eq.args[1] != :~)
-             error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")
-        end
-
-        # Checks if the equation have the format D(X) ~ ... (where X is a symbol). This means that the
-        # default differential has been used. X is added as a declared variable to the system, and
-        # we make a note that a differential D = Differential(iv) should be made as well.
-        lhs = eq.args[2]
-        # if lhs: is an expression. Is a function call. The function's name is D. Calls a single symbol.
-        if (lhs isa Expr) && (lhs.head == :call) && (lhs.args[1] == :D) && (lhs.args[2] isa Symbol)
-            diff_var = lhs.args[2]
-            if in(diff_var, forbidden_symbols_error)
-                error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
-            end
-            add_default_diff = true
-            in(diff_var, variables_declared) || push!(vars_extracted, diff_var)
-        end
-    end
-
-    return vars_extracted, add_default_diff, equations
-end
-
-# Creates an expression declaring differentials. Here, `tiv` is the time independent variables,
-# which is used by the default differential (if it is used).
-function create_differential_expr(options, add_default_diff, used_syms, tiv)
-    # Creates the differential expression.
-    # If differentials was provided as options, this is used as the initial expression.
-    # If the default differential (D(...)) was used in equations, this is added to the expression.
-    diffexpr = (haskey(options, :differentials) ? options[:differentials].args[3] : MacroTools.striplines(:(begin end)))
-    diffexpr = option_block_form(diffexpr)
-
-    # Goes through all differentials, checking that they are correctly formatted and their symbol is not used elsewhere.
-    for dexpr in diffexpr.args
-        (dexpr.head != :(=)) && error("Differential declaration must have form like D = Differential(t), instead \"$(dexpr)\" was given.")
-        (dexpr.args[1] isa Symbol) || error("Differential left-hand side must be a single symbol, instead \"$(dexpr.args[1])\" was given.")
-        in(dexpr.args[1], used_syms) && error("Differential name ($(dexpr.args[1])) is also a species, variable, or parameter. This is ambigious and not allowed.")
-        in(dexpr.args[1], forbidden_symbols_error) && error("A forbidden symbol ($(dexpr.args[1])) was used as a differential name.")
-    end
-
-    # If the default differential D has been used, but not pre-declared using the @differenitals
-    # options, add this declaration to the list of declared differentials.
-    if add_default_diff && !any(diff_dec.args[1] == :D for diff_dec in diffexpr.args)
-        push!(diffexpr.args, :(D = Differential($(tiv))))
-    end
-
-    return diffexpr
-end
-
-# Read the events (continious or discrete) provided as options to the DSL. Returns an expression which evalutes to these.
-function read_events_option(options, event_type::Symbol)
-    # Prepares the events, if required to, converts them to block form.
-    (event_type in [:continuous_events, :discrete_events]) || error("Trying to read an unsupported event type.")
-    events_input = haskey(options, event_type) ? options[event_type].args[3] : MacroTools.striplines(:(begin end))
-    events_input = option_block_form(events_input)
-
-    # Goes throgh the events, checks for errors, and adds them to the output vector.
-    events_expr = :([])
-    for arg in events_input.args
-        # Formatting error checks.
-        # NOTE: Maybe we should move these deeper into the system (rather than the DSL), throwing errors more generally?
-        if (arg isa Expr) && (arg.head != :call) || (arg.args[1] != :(=>)) || length(arg.args) != 3
-            error("Events should be on form `condition => affect`, separated by a `=>`. This appears not to be the case for: $(arg).")
-        end
-        if (arg isa Expr) && (arg.args[2] isa Expr) && (arg.args[2].head != :vect) && (event_type == :continuous_events)
-            error("The condition part of continious events (the left-hand side) must be a vector. This is not the case for: $(arg).")
-        end
-        if (arg isa Expr) && (arg.args[3] isa Expr) && (arg.args[3].head != :vect)
-             error("The affect part of all events (the righ-hand side) must be a vector. This is not the case for: $(arg).")
-        end
-
-        # Adds the correctly formatted event to the event creation expression.
-        push!(events_expr.args, arg)
-    end
-
-    return events_expr
-end
-
-# Checks if the `@default_noise_scaling` option is used. If so, read its input and adds it as a
-# default metadata value to the `default_reaction_metadata` vector.
-function check_default_noise_scaling!(default_reaction_metadata, options)
-    if haskey(options, :default_noise_scaling)
-        if (length(options[:default_noise_scaling].args) != 3) # Becasue of how expressions are, 3 is used.
-            error("@default_noise_scaling should only have a single input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
-        end
-        push!(default_reaction_metadata.args, :(:noise_scaling => $(options[:default_noise_scaling].args[3])))
-    end
-end
-
-### Functionality for expanding function call to custom and specific functions ###
-
-#Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.
-function recursive_expand_functions!(expr::ExprValues)
-    (typeof(expr) != Expr) && (return expr)
-    foreach(i -> expr.args[i] = recursive_expand_functions!(expr.args[i]),
-            1:length(expr.args))
-    if expr.head == :call
-        !isdefined(Catalyst, expr.args[1]) && (expr.args[1] = esc(expr.args[1]))
-    end
-    expr
-end
 
 ### `@reaction` Macro & its Internals ###
 
@@ -895,120 +844,11 @@ function make_reaction(ex::Expr)
     end
 end
 
-
-# ### Old functions (for deleting).
-
-# function get_rx_species_deletethis(rxs, ps)
-#     pset = Set(ps)
-#     species_set = Set{Symbol}()
-#     for rx in rxs
-#         find_species_in_rate!(species_set, rx.rate, pset)
-#         for sub in rx.substrates
-#             find_species_in_rate!(species_set, sub.stoichiometry, pset)
-#         end
-#         for prod in rx.products
-#             find_species_in_rate!(species_set, prod.stoichiometry, pset)
-#         end
-#     end
-#     collect(species_set)
-# end
-
-# function find_species_in_rate!_deletethis(sset, rateex::ExprValues, ps)
-#     if rateex isa Symbol
-#         if !(rateex in forbidden_symbols) && !(rateex in ps)
-#             push!(sset, rateex)
-#         end
-#     elseif rateex isa Expr
-#         # note, this (correctly) skips $(...) expressions
-#         for i in 2:length(rateex.args)
-#             find_species_in_rate!(sset, rateex.args[i], ps)
-#         end
-#     end
-#     nothing
-# end
-
-# function get_reactants_deletethis(reaction::ReactionStruct,
-#                                   reactants = Vector{Union{Symbol, Expr}}())
-#     for reactant in Iterators.flatten((reaction.substrates, reaction.products))
-#         !in(reactant.reactant, reactants) && push!(reactants, reactant.reactant)
-#     end
-#     return reactants
-# end
-
-# # Extract the reactants from the set of reactions.
-# function get_reactants_deletethis(reactions::Vector{ReactionStruct},
-#                                   reactants = Vector{Union{Symbol, Expr}}())
-#     for reaction in reactions
-#         get_reactants(reaction, reactants)
-#     end
-#     return reactants
-# end
-
-# # Gets the species/parameter symbols from the reactions (when the user has omitted the designation of these).
-# function extract_species(reactions::Vector{ReactionStruct}, parameters::Vector,
-#                          species = Vector{Union{Symbol, Expr}}())
-#     for reaction in reactions,
-#         reactant in Iterators.flatten((reaction.substrates, reaction.products))
-
-#         find_parameters_in_expr!(species, reaction.rate, parameters)
-#         !in(reactant.reactant, species) && !in(reactant.reactant, parameters) &&
-#             push!(species, reactant.reactant)
-#     end
-#     return species
-# end
-# function extract_parameters(reactions::Vector{ReactionStruct},
-#                             species::Vector{Union{Symbol, Expr}},
-#                             parameters = Vector{Symbol}())
-#     for rx in reactions
-#         find_parameters_in_expr!(parameters, rx.rate, species)
-#         for sub in rx.substrates
-#             find_parameters_in_expr!(parameters, sub.stoichiometry, species)
-#         end
-#         for prod in rx.products
-#             find_parameters_in_expr!(parameters, prod.stoichiometry, species)
-#         end
-#     end
-#     return parameters
-# end
-
-# # Goes through an expression, and returns the paramters in it.
-# function find_parameters_in_expr!(parameters, rateex::ExprValues,
-#                                   species::Vector)
-#     if rateex isa Symbol
-#         if !(rateex in forbidden_symbols) && !(rateex in species)
-#             push!(parameters, rateex)
-#         end
-#     elseif rateex isa Expr
-#         # note, this (correctly) skips $(...) expressions
-#         for i in 2:length(rateex.args)
-#             find_parameters_in_expr!(parameters, rateex.args[i], species)
-#         end
-#     end
-#     nothing
-# end
-
-# # Loops through the users species and parameter inputs, and checks if any have default values.
-# function make_default_args(options)
-#     defaults = :(Dict([]))
-#     haskey(options, :species) && for arg in options[:species]
-#         (arg isa Symbol) && continue
-#         (arg.head != :(=)) && continue
-#         push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
-#     end
-#     haskey(options, :parameters) && for arg in options[:parameters]
-#         (arg isa Symbol) && continue
-#         (arg.head != :(=)) && continue
-#         push!(defaults.args[2].args, :($(arg.args[1]) => $(arg.args[2])))
-#     end
-#     return defaults
-# end
-
-
-# # Creates a ReactionStruct from the information in a single line.
-# function create_ReactionStruct(sub_line::ExprValues, prod_line::ExprValues,
-#     rate::ExprValues, only_use_rate::Bool)
-#     all(==(1), (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate))) ||
-#     error("Malformed reaction, line appears to be defining multiple reactions incorrectly: rate=$rate, subs=$sub_line, prods=$prod_line.")
-#     ReactionStruct(get_tup_arg(sub_line, 1), get_tup_arg(prod_line, 1),
-#     get_tup_arg(rate, 1), only_use_rate)
-# end
+# Reads a single line and creates the corresponding ReactionStruct.
+function get_reaction(line)
+    reaction = get_reactions([line])
+    if (length(reaction) != 1)
+        error("Malformed reaction. @reaction macro only creates a single reaction. E.g. double arrows, such as `<-->` are not supported.")
+    end
+    return reaction[1]
+end
