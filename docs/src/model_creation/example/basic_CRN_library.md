@@ -9,25 +9,26 @@ bd_process = @reaction_network begin
     (p,d), ∅ <--> X
 end
 ```
-Next, we define simulation conditions. Note that the initial condition is integer-valued (required to perform jump simulations).
+Next, we define simulation conditions. Note that the initial condition is integer-valued (more natural than decimal numbers for jump simulations).
 ```@example crn_library_birth_death
 u0 = [:X => 1]
 tspan = (0.0, 10.0)
-ps = [:p => 1, :d => 0.2]
+ps = [:p => 1.0, :d => 0.2]
 nothing # hide
 ```
 We can now simulate our model using all three interpretations. First, we perform a reaction rate equation-based ODE simulation:
 ```@example crn_library_birth_death
 using OrdinaryDiffEq
 oprob = ODEProblem(bd_process, u0, tspan, ps)
-osol = solve(oprob, Tsit5())
+osol = solve(oprob)
 nothing # hide
 ```
 Next, a chemical Langevin equation-based SDE simulation:
 ```@example crn_library_birth_death
 using StochasticDiffEq
 sprob = SDEProblem(bd_process, u0, tspan, ps)
-ssol = solve(sprob, ImplicitEM())
+ssol = solve(sprob, STrapezoid())
+ssol = solve(sprob, STrapezoid(); seed = 12) # hide
 nothing # hide
 ```
 Next, a stochastic chemical kinetics-based jump simulation:
@@ -36,6 +37,7 @@ using JumpProcesses
 dprob = DiscreteProblem(bd_process, u0, tspan, ps)
 jprob = JumpProblem(bd_process, dprob, Direct())
 jsol = solve(jprob, SSAStepper())
+jsol = solve(jprob, SSAStepper(); seed = 12) # hide
 nothing # hide
 ```
 Finally, we plot the results:
@@ -60,11 +62,12 @@ tspan = (0.0, 1.0)
 ps = [:k1 => 2.0, :k2 => 3.0]
 
 oprob = ODEProblem(two_state_model, u0, tspan, ps)
-osol = solve(oprob, Tsit5())
+osol = solve(oprob)
 oplt = plot(osol; title = "Reaction rate equation (ODE)")
 
 sprob = SDEProblem(two_state_model, u0, tspan, ps)
-ssol = solve(sprob, ImplicitEM())
+ssol = solve(sprob, STrapezoid())
+ssol = solve(sprob, STrapezoid(); seed = 12) # hide
 splt = plot(ssol; title = "Chemical Langevin equation (SDE)")
 
 plot(oplt, splt; lw = 3, size = (800,550), layout = (2,1))
@@ -74,8 +77,9 @@ What is interesting about this model is that it has a *conserved quantity*, wher
 @unpack X₁, X₂ = two_state_model
 oplt = plot(osol; idxs = X₁ + X₂, title = "Reaction rate equation (ODE)")
 splt = plot(ssol; idxs = X₁ + X₂, title = "Chemical Langevin equation (SDE)")
-plot(oplt, splt; lw = 3, size = (800,550), layout = (2,1))
+plot(oplt, splt; lw = 3, ylimit = (99,101), size = (800,450), layout = (2,1))
 ```
+Catalyst has special methods for working with conserved quantities, which are described [here](@ref ref).
 
 ## [Michaelis-Menten enzyme kinetics](@id basic_CRN_library_mm)
 [Michaelis-Menten enzyme kinetics](https://en.wikipedia.org/wiki/Michaelis%E2%80%93Menten_kinetics) is a simple description of an enzyme ($E$) transforming a substrate ($S$) into a product ($P$). Under certain assumptions, it can be simplified to a single function (a Michaelis-Menten function) and used as a reaction rate. Here we instead present the full system model:
@@ -95,16 +99,18 @@ ps = [:kB => 0.00166, :kD => 0.0001, :kP => 0.1]
 
 using OrdinaryDiffEq
 oprob = ODEProblem(mm_system, u0, tspan, ps)
-osol  = solve(oprob, Tsit5())
+osol  = solve(oprob)
 
 using StochasticDiffEq
 sprob = SDEProblem(mm_system, u0, tspan, ps)
-ssol = solve(sprob, ImplicitEM())
+ssol = solve(sprob, STrapezoid())
+ssol = solve(sprob, STrapezoid(); seed = 12) # hide
 
 using JumpProcesses
 dprob = DiscreteProblem(mm_system, u0, tspan, ps)
 jprob = JumpProblem(mm_system, dprob, Direct())
 jsol = solve(jprob, SSAStepper())
+jsol = solve(jprob, SSAStepper(); seed = 12) # hide
 
 using Plots
 oplt = plot(osol; title = "Reaction rate equation (ODE)")
@@ -113,6 +119,7 @@ jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)")
 plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1)) 
 plot!(bottom_margin = 3Plots.Measures.mm) # hide
 ```
+Note that, due to the large amounts of the species involved, teh stochastic trajectories are very similar to the deterministic one.
 
 ## [SIR infection model](@id basic_CRN_library_sir)
 The [SIR model](https://en.wikipedia.org/wiki/Compartmental_models_in_epidemiology#The_SIR_model) is the simplest model of the spread of an infectious disease. While the real system is very different from the chemical and cellular processes typically modelled with CRNs, it (and several other epidemiological systems) can be modelled using the same CRN formalism. The SIR model consists of three species: susceptible ($S$), infected ($I$), and removed ($R$) individuals, and two reaction events: infection and recovery.
@@ -132,7 +139,7 @@ ps = [:α => 0.001, :β => 0.01]
 
 # Solve ODEs.
 oprob = ODEProblem(sir_model, u0, tspan, ps)
-osol = solve(oprob, Tsit5())
+osol = solve(oprob)
 plot(osol; title = "Reaction rate equation (ODE)", size=(800,350))
 ```
 Next, we perform 3 different Jump simulations. Note that for the stochastic model, the occurrence of an outbreak is not certain. Rather, there is a possibility that it fizzles out without a noteworthy peak.
@@ -177,7 +184,7 @@ ps = [:k₁ => 5.0, :k₂ => 5.0, :k₃ => 100.0]
 
 # solve ODEs
 oprob = ODEProblem(cc_system, u0, tspan, ps)
-osol  = solve(oprob, Tsit5())
+osol  = solve(oprob)
 
 plt1 = plot(osol; idxs = [:S₁, :S₂, :P], title = "Substrate and product dynamics")
 plt2 = plot(osol; idxs = [:C, :S₁C, :CP], title = "Catalyst and intermediaries dynamics")
@@ -205,15 +212,15 @@ ps = [:k1 => 8.0, :k2 => 2.0, :k3 => 1.0, :k4 => 1.5]
 
 oprob1 = ODEProblem(wilhelm_model, u0_1, tspan, ps)
 oprob2 = ODEProblem(wilhelm_model, u0_2, tspan, ps)
-osol1 = solve(oprob1, Tsit5())
-osol2 = solve(oprob2, Tsit5())
+osol1 = solve(oprob1)
+osol2 = solve(oprob2)
 plot(osol1; lw = 4, idxs = :X, label = "X(0) = 1.5")
 plot!(osol2; lw = 4, idxs = :X, label = "X(0) = 2.5", yguide = "X", size = (800,350))
 plot!(bottom_margin = 3Plots.Measures.mm) # hide
 ```
 
 ## [Simple self-activation loop](@id basic_CRN_library_self_activation)
-The simplest self-activation loop consists of a single species (here called $X$) which activates its own production. If its production rate is modelled with a hill function with $n>1$, the system may exhibit bistability.
+The simplest self-activation loop consists of a single species (here called $X$) which activates its own production. If its production rate is modelled as a [Hill function](https://en.wikipedia.org/wiki/Hill_equation_(biochemistry)) with $n>1$, the system may exhibit bistability.
 ```@example crn_library_self_activation
 using Catalyst
 sa_loop = @reaction_network begin
@@ -231,12 +238,12 @@ tspan = (0.0, 1000.0)
 ps = [:v₀ => 0.1, :v => 2.0, :K => 10.0, :n => 2, :d => 0.1]
 
 oprob = ODEProblem(sa_loop, u0, tspan, ps)
-osol = solve(oprob, Tsit5())
+osol = solve(oprob)
 
 dprob = DiscreteProblem(sa_loop, u0, tspan, ps)
 jprob = JumpProblem(sa_loop, dprob, Direct())
 jsol = solve(jprob, SSAStepper())
-jsol = solve(jprob, SSAStepper(); seed = 2091) # hide
+jsol = solve(jprob, SSAStepper(); seed = 12) # hide
 
 plot(osol; lw = 3, label = "Reaction rate equation (ODE)")
 plot!(jsol; lw = 3, label = "Stochastic chemical kinetics (Jump)", yguide = "X", size = (800,350))
@@ -254,7 +261,7 @@ brusselator = @reaction_network begin
     1, X --> ∅
 end
 ```
-It is generally known to (for reaction rate equation-based ODE simulations) produce oscillations when $B > 1 + A^2$. However, this result is based on models generated when *combinatorial adjustment of rates is not performed*. Since Catalyst automatically perform these adjustments, and one reaction contains a stoichiometric constant $>1$, the threshold will be different. Here, we trial two different values of $B$. In both cases, $B < 1 + A^2$, however, in the second case the system can generate oscillations.
+It is generally known to (for reaction rate equation-based ODE simulations) produce oscillations when $B > 1 + A^2$. However, this result is based on models generated when *combinatorial adjustment of rates is not performed*. Since Catalyst [automatically perform these adjustments](@ref ref), and one reaction contains a stoichiometric constant $>1$, the threshold will be different. Here, we trial two different values of $B$. In both cases, $B < 1 + A^2$, however, in the second case the system can generate oscillations.
 ```@example crn_library_brusselator
 using OrdinaryDiffEq, Plots
 u0 = [:X => 1.0, :Y => 1.0]
@@ -264,16 +271,16 @@ ps2 = [:A => 1.0, :B => 1.8]
 
 oprob1 = ODEProblem(brusselator, u0, tspan, ps1)
 oprob2 = ODEProblem(brusselator, u0, tspan, ps2)
-osol1  = solve(oprob1, Rodas5P())
-osol2  = solve(oprob2, Rodas5P())
+osol1  = solve(oprob1)
+osol2  = solve(oprob2)
 oplt1 = plot(osol1; title = "No Oscillation")
 oplt2 = plot(osol2; title = "Oscillation")
 
 plot(oplt1, oplt2; lw = 3, size = (800,600), layout = (2,1))
 ```
 
-## [The repressilator](@id basic_CRN_library_)
-The repressilator was introduced in [*Elowitz & Leibler (2000)*](https://www.nature.com/articles/35002125) as a simple system that can generate oscillations (most notably, they demonstrated this both in a model and in a synthetic in vivo implementation in *Escherichia col*). It consists of three genes, repressing each other in a cycle. Here, we will implement it using three species ($X$, $Y$, and $Z$) whose production rates are (repressing) [Hill functions](https://en.wikipedia.org/wiki/Hill_equation_(biochemistry)).
+## [The Repressilator](@id basic_CRN_library_)
+The Repressilator was introduced in [*Elowitz & Leibler (2000)*](https://www.nature.com/articles/35002125) as a simple system that can generate oscillations (most notably, they demonstrated this both in a model and in a synthetic in vivo implementation in *Escherichia col*). It consists of three genes, repressing each other in a cycle. Here, we will implement it using three species ($X$, $Y$, and $Z$) whose production rates are (repressing) [Hill functions](https://en.wikipedia.org/wiki/Hill_equation_(biochemistry)).
 ```@example crn_library_brusselator
 using Catalyst
 repressilator = @reaction_network begin
@@ -283,7 +290,7 @@ repressilator = @reaction_network begin
     d, (X, Y, Z) --> ∅
 end
 ```
-Whether it oscillates or not depends on its parameter values. Here, we will perform deterministic (ODE) simulations for two different values of $K$, showing that it oscillates for one value and not the other one. Next, we will perform stochastic (SDE) simulations for both $K$ values, showing that the stochastic model can sustain oscillations in both cases. This is an example of the phenomena of *noise-induced oscillation*.
+Whether the Repressilator oscillates or not depends on its parameter values. Here, we will perform deterministic (ODE) simulations for two different values of $K$, showing that it oscillates for one value and not the other one. Next, we will perform stochastic (SDE) simulations for both $K$ values, showing that the stochastic model can sustain oscillations in both cases. This is an example of the phenomena of *noise-induced oscillation*.
 ```@example crn_library_brusselator
 using OrdinaryDiffEq, StochasticDiffEq, Plots
 u0 = [:X => 50.0, :Y => 15.0, :Z => 15.0]
@@ -293,17 +300,17 @@ ps2 = [:v => 10.0, :K => 50.0, :n => 3, :d => 0.1]
 
 oprob1 = ODEProblem(repressilator, u0, tspan, ps1)
 oprob2 = ODEProblem(repressilator, u0, tspan, ps2)
-osol1  = solve(oprob1, Tsit5())
-osol2  = solve(oprob2, Tsit5())
+osol1  = solve(oprob1)
+osol2  = solve(oprob2)
 oplt1 = plot(osol1; title = "Oscillation (ODE, K = 20)")
 oplt2 = plot(osol2; title = "No oscillation (ODE, K = 50)")
 
 sprob1 = SDEProblem(repressilator, u0, tspan, ps1)
 sprob2 = SDEProblem(repressilator, u0, tspan, ps2)
-ssol1  = solve(sprob1, ImplicitEM())
-ssol2  = solve(sprob2, ImplicitEM())
-ssol1  = solve(sprob1, ImplicitEM(); seed = 1) # hide
-ssol2  = solve(sprob2, ImplicitEM(); seed = 100) # hide
+ssol1  = solve(sprob1, STrapezoid())
+ssol2  = solve(sprob2, STrapezoid())
+ssol1  = solve(sprob1, STrapezoid(); seed = 1) # hide
+ssol2  = solve(sprob2, STrapezoid(); seed = 100) # hide
 splt1 = plot(ssol1; title = "Oscillation (SDE, K = 20)")
 splt2 = plot(ssol2; title = "Oscillation (SDE, K = 50)")
 
@@ -324,14 +331,14 @@ wr_model = @reaction_network begin
     k7, Z --> ∅
 end
 ```
-Here we first simulate the model for a single initial condition, showing in both time-state space and phase space how it reaches a [*strange attractor*](https://www.dynamicmath.xyz/strange-attractors/).
+Here we simulate the model for a single initial condition, showing both time-state space and phase space how it reaches a [*strange attractor*](https://www.dynamicmath.xyz/strange-attractors/).
 ```@example crn_library_chaos
 using OrdinaryDiffEq, Plots
 u0 = [:X => 1.5, :Y => 1.5, :Z => 1.5]
 tspan = (0.0, 50.0)
 p = [:k1 => 2.1, :k2 => 0.7, :k3 => 2.9, :k4 => 1.1, :k5 => 1.0, :k6 => 0.5, :k7 => 2.7]
 oprob = ODEProblem(wr_model, u0, tspan, p)
-sol = solve(oprob, Rodas5P())
+sol = solve(oprob)
 
 plt1 = plot(sol; title = "Time-state space")
 plt2 = plot(sol; idxs = (:X, :Y, :Z), title = "Phase space")
