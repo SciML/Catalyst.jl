@@ -3,11 +3,9 @@ on:
   pull_request:
     branches:
       - master
-      - Catalyst_version_14
   push:
     branches:
       - master
-      - Catalyst_version_14
 jobs:
   test:
     runs-on: ubuntu-latest

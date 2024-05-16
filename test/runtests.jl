@@ -1,65 +1,79 @@
-### Fetch the require packages ###
-using SafeTestsets
+### Preparations ###
 
-### Run the tests ###
+# Required for `@safetestset` and `@testset`, respectively.
+using SafeTestsets, Test
+
+# Required for running parallel test groups (copied from ModelingToolkit).
+#const GROUP = get(ENV, "GROUP", "All")
+
+
+### Run Tests ###
 @time begin
 
-    ### Tests the properties of ReactionSystems. ###
-    @time @safetestset "Reactions" begin include("reactionsystem_structure/reactions.jl") end
-    @time @safetestset "ReactionSystem" begin include("reactionsystem_structure/reactionsystem.jl") end
-    @time @safetestset "Higher Order Reactions" begin include("reactionsystem_structure/higher_order_reactions.jl") end
-    @time @safetestset "Parameter Type Designation" begin include("reactionsystem_structure/designating_parameter_types.jl") end
-    # @time @safetestset "Coupled CRN/Equation Systems" begin include("reactionsystem_structure/coupled_equation_reaction_systems.jl") end
+    #if GROUP == "All" || GROUP == "ModelCreation"
+        # Tests the `ReactionSystem` structure and its properties.
+        @time @safetestset "Reaction Structure" begin include("reactionsystem_core/reaction_structure.jl") end
+        @time @safetestset "ReactionSystem Structure" begin include("reactionsystem_core/reactionsystem_structure.jl") end
+        @time @safetestset "Higher Order Reactions" begin include("reactionsystem_core/higher_order_reactions.jl") end
+        @time @safetestset "Symbolic Stoichiometry" begin include("reactionsystem_core/symbolic_stoichiometry.jl") end
+        @time @safetestset "Parameter Type Designation" begin include("reactionsystem_core/parameter_type_designation.jl") end
+        @time @safetestset "Custom CRN Functions" begin include("reactionsystem_core/custom_crn_functions.jl") end
+        # @time @safetestset "Coupled CRN/Equation Systems" begin include("reactionsystem_core/coupled_equation_crn_systems.jl") end
+        @time @safetestset "Events" begin include("reactionsystem_core/events.jl") end
+    
+        # Tests model creation via the @reaction_network DSL.
+        @time @safetestset "DSL Basic Model Construction" begin include("dsl/dsl_basic_model_construction.jl") end
+        @time @safetestset "DSL Advanced Model Construction" begin include("dsl/dsl_advanced_model_construction.jl") end
+        @time @safetestset "DSL Options" begin include("dsl/dsl_options.jl") end
 
-    ### Tests model creation via the @reaction_network DSL. ###
-    @time @safetestset "Basic DSL" begin include("dsl/dsl_basics.jl") end
-    @time @safetestset "DSL Model Construction" begin include("dsl/dsl_model_construction.jl") end
-    @time @safetestset "Custom CRN Functions" begin include("dsl/custom_functions.jl") end
-    @time @safetestset "DSL Options" begin include("dsl/dsl_options.jl") end
+        # Tests compositional and hierarchical modelling.
+        @time @safetestset "ReactionSystem Components Based Creation" begin include("compositional_modelling/component_based_model_creation.jl") end
+    #end
 
-    ### Non-DSL model creation and modification. ###
-    @time @safetestset "ReactionSystem Components Based Creation" begin include("programmatic_model_creation/component_based_model_creation.jl") end
-    @time @safetestset "Programmatic Model Expansion" begin include("programmatic_model_creation/programmatic_model_expansion.jl") end
+    #if GROUP == "All" || GROUP == "Miscellaneous-NetworkAnalysis"
+        # Tests various miscellaneous features.
+        @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
+        @time @safetestset "Compound Species" begin include("miscellaneous_tests/compound_macro.jl") end
+        @time @safetestset "Reaction Balancing" begin include("miscellaneous_tests/reaction_balancing.jl") end
+        @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end
 
-    # Runs various miscellaneous tests.
-    @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
-    @time @safetestset "Symbolic Stoichiometry" begin include("miscellaneous_tests/symbolic_stoichiometry.jl") end
-    @time @safetestset "NonlinearProblems and Steady State Solving" begin include("miscellaneous_tests/nonlinear_solve.jl") end
-    @time @safetestset "Events" begin include("miscellaneous_tests/events.jl") end
-    @time @safetestset "Compound species" begin include("miscellaneous_tests/compound_macro.jl") end
-    @time @safetestset "Reaction balancing" begin include("miscellaneous_tests/reaction_balancing.jl") end
-    @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end
+        # Tests reaction network analysis features.
+        @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end
+        @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
+    #end
 
-    ### Reaction network analysis. ###
-    @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end
-    @time @safetestset "Network Properties" begin include("network_analysis/network_properties.jl") end
+    #if GROUP == "All" || GROUP == "Simulation"
+        # Tests ODE, SDE, jump simulations, nonlinear solving, and steady state simulations.
+        @time @safetestset "ODE System Simulations" begin include("simulation_and_solving/simulate_ODEs.jl") end
+        @time @safetestset "Automatic Jacobian Construction" begin include("simulation_and_solving/jacobian_construction.jl") end
+        @time @safetestset "SDE System Simulations" begin include("simulation_and_solving/simulate_SDEs.jl") end
+        @time @safetestset "Jump System Simulations" begin include("simulation_and_solving/simulate_jumps.jl") end
+        @time @safetestset "Nonlinear and SteadyState System Solving" begin include("simulation_and_solving/solve_nonlinear.jl") end
 
-    ### Tests ODE, SDE, PDE, and Gillespie Simulations. ###
-    @time @safetestset "ODE System Simulations" begin include("model_simulation/simulate_ODEs.jl") end
-    @time @safetestset "Automatic Jacobian Construction" begin include("model_simulation/make_jacobian.jl") end
-    @time @safetestset "U0 and Parameters Input Variants" begin include("model_simulation/u0_n_parameter_inputs.jl") end
-    @time @safetestset "SDE System Simulations" begin include("model_simulation/simulate_SDEs.jl") end
-    @time @safetestset "Jump System Simulations" begin include("model_simulation/simulate_jumps.jl") end
+        # Tests upstream SciML and DiffEq stuff.
+        @time @safetestset "MTK Structure Indexing" begin include("upstream/mtk_structure_indexing.jl") end
+        @time @safetestset "MTK Problem Inputs" begin include("upstream/mtk_problem_inputs.jl") end
+    #end
 
-    ### Upstream SciML and DiffEq tests. ###
-    @time @safetestset "MTK Structure Indexing" begin include("meta/mtk_structure_indexing.jl") end
-    @time @safetestset "MTK Problem Inputs" begin include("meta/mtk_problem_inputs.jl") end
+    #if GROUP == "All" || GROUP == "Spatial"
+        # Tests spatial modelling and simulations.
+        @time @safetestset "PDE Systems Simulations" begin include("spatial_modelling/simulate_PDEs.jl") end
+        @time @safetestset "Lattice Reaction Systems" begin include("spatial_modelling/lattice_reaction_systems.jl") end
+        @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_ODEs.jl") end
+    #end
 
-    ### Tests Spatial Network Simulations. ###
-    @time @safetestset "PDE Systems Simulations" begin include("spatial_reaction_systems/simulate_PDEs.jl") end
-    @time @safetestset "Lattice Reaction Systems" begin include("spatial_reaction_systems/lattice_reaction_systems.jl") end
-    @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_reaction_systems/lattice_reaction_systems_ODEs.jl") end
+    #if GROUP == "All" || GROUP == "Visualisation-Extensions"
+        # Tests network visualisation.
+        @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
+        # Disable on Macs as can't install GraphViz via jll
+        if !Sys.isapple()
+            @time @safetestset "Graphs Visualisations" begin include("visualisation/graphs.jl") end
+        end
 
-    ### Tests network visualization. ###
-    @time @safetestset "Latexify" begin include("visualization/latexify.jl") end
-    # Disable on Macs as can't install GraphViz via jll
-    if !Sys.isapple()
-        @time @safetestset "Graphs" begin include("visualization/graphs.jl") end
-    end
-
-    ### Tests extensions. ###
-    #@time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
-    # @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
-    #@time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
+        # Tests extensions.
+        # @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
+        # @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
+        # @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
+    #end
 
 end # @time

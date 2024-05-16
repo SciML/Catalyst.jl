@@ -11,7 +11,7 @@ rng = StableRNG(12345)
 include("../test_functions.jl")
 include("../test_networks.jl")
 
-### Compares to Known Solution ###
+### Basic Solution Correctness ###
 
 # Exponential decay, should be identical to the (known) analytical solution.
 let

@@ -55,7 +55,6 @@ let
     # end
 end
 
-
 # Tests network analysis functions on a second network (by comparing to manually computed outputs).
 let
     rn2 = @reaction_network begin
@@ -92,7 +91,6 @@ let
     #     println("-----------")
     # end
 end
-
 
 # Tests network analysis functions on third network (by comparing to manually computed outputs).
 let
@@ -132,4 +130,117 @@ let
     #     end
     #     println("-----------")
     # end
+end
+
+### Tests Reversibility ###
+
+# Test function.
+function testreversibility(rn, B, rev, weak_rev)
+    @test isreversible(rn) == rev
+    subrn = subnetworks(rn)
+    @test isweaklyreversible(rn, subrn) == weak_rev
+end
+
+# Tests reversibility for networks with known reversibility.
+let
+    rn = @reaction_network begin
+        (k2, k1), A1 <--> A2 + A3
+        k3, A2 + A3 --> A4
+        k4, A4 --> A5
+        (k6, k5), A5 <--> 2A6
+        k7, 2A6 --> A4
+        k8, A4 + A5 --> A7
+    end
+    rev = false
+    weak_rev = false
+    testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
+end
+let
+    rn = @reaction_network begin
+        (k2, k1), A1 <--> A2 + A3
+        k3, A2 + A3 --> A4
+        k4, A4 --> A5
+        (k6, k5), A5 <--> 2A6
+        k7, A4 --> 2A6
+        (k9, k8), A4 + A5 <--> A7
+    end
+    rev = false
+    weak_rev = false
+    testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
+end
+let
+    rn = @reaction_network begin
+        k1, A --> B
+        k2, A --> C
+    end
+    rev = false
+    weak_rev = false
+    testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
+end
+let
+    rn = @reaction_network begin
+        k1, A --> B
+        k2, A --> C
+        k3, B + C --> 2A
+    end
+    rev = false
+    weak_rev = false
+    testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
+end
+let
+    rn = @reaction_network begin
+        (k2, k1), A <--> 2B
+        (k4, k3), A + C --> D
+        k5, D --> B + E
+        k6, B + E --> A + C
+    end
+    rev = false
+    weak_rev = true
+    testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
+end
+let
+    rn = @reaction_network begin
+        (k2, k1), A + E <--> AE
+        k3, AE --> B + E
+    end
+    rev = false
+    weak_rev = false
+    testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
+end
+let
+    rn = @reaction_network begin
+        (k2, k1), A + E <--> AE
+        (k4, k3), AE <--> B + E
+    end
+    rev = true
+    weak_rev = true
+    testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
+end
+let
+    rn = @reaction_network begin (k2, k1), A + B <--> 2A end
+    rev = true
+    weak_rev = true
+    testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
+end
+let
+    rn = @reaction_network begin
+        k1, A + B --> 3A
+        k2, 3A --> 2A + C
+        k3, 2A + C --> 2B
+        k4, 2B --> A + B
+    end
+    rev = false
+    weak_rev = true
+    testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
+end
+let
+    rn = @reaction_network begin
+        (k2, k1), A + E <--> AE
+        (k4, k3), AE <--> B + E
+        k5, B --> 0
+        k6, 0 --> A
+    end
+    rev = false
+    weak_rev = false
+    testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 end

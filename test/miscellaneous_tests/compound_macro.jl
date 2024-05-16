@@ -214,7 +214,7 @@ let
     @test isequal(component_coefficients(A2), component_coefficients(B2))
 end
 
-###  Check @compounds Macro ###
+### Test @compounds Macro ###
 
 # Basic @compounds syntax.
 let 

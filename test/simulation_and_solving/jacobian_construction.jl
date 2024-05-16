@@ -10,7 +10,7 @@ rng = StableRNG(12345)
 # Fetch test functions.
 include("../test_functions.jl")
 
-### Run Tests ###
+### Basic Tests ###
 
 # Checks that the jacobian is correct for networks without parameters.
 let

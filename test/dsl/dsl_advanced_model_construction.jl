@@ -1,6 +1,6 @@
 #! format: off
 
-### Fetch Packages and Set Global Variables ###
+### Prepares Tests ###
 
 # Fetch packages.
 using Catalyst, ModelingToolkit
@@ -10,7 +10,16 @@ t = default_t()
 
 ### Naming Tests ###
 
-# Test that the correct name is generated.
+# Basic name test.
+let
+    rn = @reaction_network SIR1 begin
+        k1, S + I --> 2I
+        k2, I --> R
+    end
+    @test nameof(rn) == :SIR1
+end
+
+# Advanced name tests.
 let
     @parameters k
     @species A(t)
@@ -67,12 +76,12 @@ end
 
 ### Test Interpolation Within the DSL ###
 
-# Tests basic interpolation cases.
 
 # Declares parameters and species used across the test.
 @parameters α k k1 k2
 @species A(t) B(t) C(t) D(t)
 
+# Tests basic interpolation cases.
 let
     AA = A
     AAA = A^2 + B
@@ -92,7 +101,6 @@ let
     rn2 = ReactionSystem([Reaction(k, [AA,C], [D])], t; name=:rn)
     @test rn == rn2
 end
-
 let
     BB = B; A2 = A
     rn = @reaction_network rn begin
@@ -104,7 +112,6 @@ let
                         t; name=:rn)
     @test rn == rn2
 end
-
 let
     AA = A
     kk1 = k^2*A
@@ -321,58 +328,6 @@ let
     osys2 = complete(convert(ODESystem, rn2))
     @test issetequal(unknowns(osys2), unknowns(rn2))
     @test length(equations(osys2)) == 2
-end
-
-# Test @variables in DSL.
-let
-    rn = @reaction_network tester begin
-        @parameters k1
-        @variables V1(t) V2(t) V3(t)
-        @species B1(t) B2(t)
-        (k1*k2 + V3), V1*A + 2*B1 --> V2*C + B2
-    end
-
-    @parameters k1 k2
-    @variables V1(t) V2(t) V3(t)
-    @species A(t) B1(t) B2(t) C(t)
-    rx = Reaction(k1*k2 + V3, [A, B1], [C, B2], [V1, 2], [V2, 1])
-    @named tester = ReactionSystem([rx], t)
-    @test tester == rn
-
-    sts = (A, B1, B2, C, V1, V2, V3)
-    spcs = (A, B1, B2, C)
-    @test issetequal(unknowns(rn), sts)
-    @test issetequal(species(rn), spcs)
-
-    @test_throws ArgumentError begin
-        rn = @reaction_network begin
-            @variables K
-            k, K*A --> B
-        end
-    end
-end
-
-# Test ivs in DSL.
-let
-    rn = @reaction_network ivstest begin
-        @ivs s x
-        @parameters k2
-        @variables D(x) E(s) F(s,x)
-        @species A(s,x) B(s) C(x)
-        k*k2*D, E*A +B --> F*C + C2
-    end
-
-    @parameters k k2
-    @variables s x D(x) E(s) F(s,x)
-    @species A(s,x) B(s) C(x) C2(s,x)
-    rx = Reaction(k*k2*D, [A, B], [C, C2], [E, 1], [F, 1])
-    @named ivstest = ReactionSystem([rx], s; spatial_ivs = [x])
-
-    @test ivstest == rn
-    @test issetequal(unknowns(rn), [D, E, F, A, B, C, C2])
-    @test issetequal(species(rn), [A, B, C, C2])
-    @test isequal(ModelingToolkit.get_iv(rn), s)
-    @test issetequal(Catalyst.get_sivs(rn), [x])
 end
 
 # Array variables test.

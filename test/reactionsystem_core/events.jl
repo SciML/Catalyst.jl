@@ -208,7 +208,7 @@ let
         end
 
         (p, dX), 0 <--> X
-        (p, dY), 0 <--> Y
+        (1.1*p, dY), 0 <--> Y
     end
 
     # Creates model programmatically.
@@ -218,7 +218,7 @@ let
     rxs = [
         Reaction(p, nothing, [X], nothing, [1])
         Reaction(dX, [X], nothing, [1], nothing)
-        Reaction(p, nothing, [Y], nothing, [1])
+        Reaction(1.1*p, nothing, [Y], nothing, [1])
         Reaction(dY, [Y], nothing, [1], nothing)
     ]
     continuous_events = [
@@ -236,9 +236,9 @@ let
     # Tests that approaches yield identical results.
     @test isequal(rn_dsl, rn_prog)
 
-    u0 = [X => 5.0, Y => 3.0, Z => 3.5]
+    u0 = [X => 6.0, Y => 4.5, Z => 5.5]
     tspan = (0.0, 20.0)
-    ps = [p => 1.0, dX => 0.05, dY => 0.05, dY_up => 0.01]
+    ps = [p => 0.5, dX => 0.025, dY => 0.025, dY_up => 0.01]
 
     sol_dsl = solve(ODEProblem(rn_dsl, u0, tspan, ps), Tsit5())
     sol_prog = solve(ODEProblem(rn_prog, u0, tspan, ps), Tsit5())

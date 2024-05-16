@@ -4,11 +4,13 @@
 using DiffEqBase, Catalyst, Random, Test
 using ModelingToolkit: operation, istree, get_unknowns, get_ps, get_eqs, get_systems,
                        get_iv, nameof
-t = default_t()
 
-# Sets rnd number.
+# Sets stable rng number.
 using StableRNGs
 rng = StableRNG(12345)
+
+# Sets the default `t` to use.
+t = default_t()
 
 # Fetch test networks and functions.
 include("../test_networks.jl")
@@ -33,7 +35,7 @@ function all_reactants(eqs)
     return Set{Symbol}(unique(all_reactants))
 end
 
-# Gets all parameters (where every reaction rate is constant)
+# Gets all parameters (where every reaction rate is constant).
 function all_parameters(eqs)
     return Set(unique(map(eq -> opname(eq.rate), eqs)))
 end
@@ -371,7 +373,7 @@ let
     end
 end
 
-# Test that I works as a name.
+# Test that the `I` symbol works as a quantity name.
 let
     rn = @reaction_network begin
         k1, S + I --> 2I
@@ -382,7 +384,7 @@ let
     @test any(isequal(I), unknowns(rn))
 end
 
-# Tests backwards and double arrows.
+# Tests backwards and bi-directional arrows.
 let
     rn1 = @reaction_network arrowtest begin
         (a1, a2), C <--> 0
@@ -401,7 +403,7 @@ let
     @test rn1 == rn2
 end
 
-# Tests arrow variants in "@reaction" macro .
+# Tests arrow variants in `@reaction`` macro .
 let
     @test isequal((@reaction k, 0 --> X), (@reaction k, X <-- 0))
     @test isequal((@reaction k, 0 --> X), (@reaction k, X ⟻ 0))
@@ -434,16 +436,4 @@ let
     @test_throws LoadError @eval @reaction nothing, 0 --> B
     @test_throws LoadError @eval @reaction k, 0 --> im
     @test_throws LoadError @eval @reaction k, 0 --> nothing
-end
-
-
-### Other Tests ###
-
-# Test names work.
-let
-    rn = @reaction_network SIR1 begin
-        k1, S + I --> 2I
-        k2, I --> R
-    end
-    @test nameof(rn) == :SIR1
 end

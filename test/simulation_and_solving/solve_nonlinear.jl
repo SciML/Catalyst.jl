@@ -11,9 +11,10 @@ rng = StableRNG(12345)
 # Fetch test functions.
 include("../test_functions.jl")
 
-### Run Tests ###
+### Basic Tests ###
 
-# Creates a simple problem and find steady states just different approaches. Compares to analytic solution.
+# Creates a simple problem and find steady states just different approaches. 
+# Compares to analytic solution.
 let 
     # Model with easily computable steady states.
     steady_state_network_1 = @reaction_network begin
@@ -41,7 +42,8 @@ let
 end
 
 # Creates a system with multiple steady states.
-# Checks that corresponding ODEFunction return 0.0 in both cases. Checks for manually computed function as well.
+# Checks that corresponding ODEFunction return 0.0 in both cases.
+# Checks for manually computed function as well.
 let 
     # Creates steady state network.
     steady_state_network_2 = @reaction_network begin

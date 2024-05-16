@@ -6,7 +6,7 @@
 using Catalyst, LinearAlgebra, OrdinaryDiffEq, SciMLNLSolve, Test
 using ModelingToolkit: nameof
 
-# Fetch test networks.
+# Sets the default `t` to use.
 t = default_t()
 
 

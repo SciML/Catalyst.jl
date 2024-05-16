@@ -69,7 +69,6 @@ let
 end
 
 # Test that the various structures stores the parameters using the correct type.
-# Test that the various structures stores the parameters using the correct type.
 let
     # Creates problems, integrators, and solutions.
     oprob = ODEProblem(rs, u0, (0.0, 1.0), p_alts[1])
@@ -115,7 +114,7 @@ let
         @test unwrap(mtk_struct.ps[d5]) == Float32(1.5)
     end
     
-    # Checks all stored variables
+    # Checks all stored variables.
     for mtk_struct in [oprob, sprob, dprob, jprob, nprob, oinit, sinit, jinit]
         # Checks that all variables have the correct type.
         @test unwrap(mtk_struct[X1]) isa Float64
