@@ -2,7 +2,9 @@
 
 # Builds a spatial DiscreteProblem from a Lattice Reaction System.
 function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0_in, tspan, p_in = DiffEqBase.NullParameters(), args...; kwargs...)
-    is_transport_system(lrs) || error("Currently lattice Jump simulations only supported when all spatial reactions are transport reactions.")
+    if !is_transport_system(lrs) 
+        error("Currently lattice Jump simulations only supported when all spatial reactions are transport reactions.")
+    end
 
     # Converts potential symmaps to varmaps
     # Vertex and edge parameters may be given in a tuple, or in a common vector, making parameter case complicated.
@@ -18,20 +20,20 @@ function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0_in, tspan, p_
     # These elements are length 1 vectors (if the parameter is uniform), 
     # or length num_verts/nE, with unique values for each vertex/edge (for vert_ps/edge_ps, respectively).
     vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs), lrs)   
-
+    
     # Returns a DiscreteProblem.
     # Previously, a Tuple was used for (vert_ps, edge_ps), but this was converted to a Vector internally.
-    return DiscreteProblem(lrs.rs, u0, tspan, [vert_ps, edge_ps], args...; kwargs...)
+    return DiscreteProblem(u0, tspan, [vert_ps, edge_ps], args...; kwargs...)
 end
 
 # Builds a spatial JumpProblem from a DiscreteProblem containg a Lattice Reaction System.
 function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator, args...; name = nameof(lrs.rs), 
                                    combinatoric_ratelaws = get_combinatoric_ratelaws(lrs.rs), kwargs...)
     # Error checks.
-    # The second check (Vector{Vector} is needed because on the CI server somehow the Tuple{..., ...} is converted into a Vector[..., ...]).
-    # It does not happen when I run tests locally, so no ideal how to fix.
-    (dprob.p isa Vector{Vector{Vector{Float64}}}) || dprob.p isa Vector{Vector} || error("Parameters in input DiscreteProblem is of an unexpected type: $(typeof(dprob.p)). Was a LatticeReactionProblem passed into the DiscreteProblem when it was created?") 
-    
+    if !isnothing(dprob.f.sys)
+        error("Unexpected `DiscreteProblem` passed into `JumpProblem`. Was a `LatticeReactionSystem` used as input to the initial `DiscreteProblem`?")
+    end
+
     # Computes hopping constants and mass action jumps (requires some internal juggling).
     # Currently, JumpProcesses requires uniform vertex parameters (hence `p=first.(dprob.p[1])`).
     # Currently, the resulting JumpProblem does not depend on parameters (no way to incorporate these).
