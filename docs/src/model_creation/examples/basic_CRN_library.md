@@ -162,7 +162,7 @@ plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1))
 ```
 
 ## [Chemical cross-coupling](@id basic_CRN_library_cc)
-In chemistry, [cross-coupling](https://en.wikipedia.org/wiki/Cross-coupling_reaction) is when a catalyst combines two substrates to form a product. In this example, the catalyst ($C$) first binds one substrate ($S₁$) to form an intermediary complex ($S₁C$). Next, the complex binds the second substrate ($S₂$) to form another complex ($CP$). Finally, the catalyst releases the now-formed product ($P$). This system is an extended version of the[Michaelis-Menten system presented earlier](@ref basic_CRN_library_mm).
+In chemistry, [cross-coupling](https://en.wikipedia.org/wiki/Cross-coupling_reaction) is when a catalyst combines two substrates to form a product. In this example, the catalyst ($C$) first binds one substrate ($S₁$) to form an intermediary complex ($S₁C$). Next, the complex binds the second substrate ($S₂$) to form another complex ($CP$). Finally, the catalyst releases the now-formed product ($P$). This system is an extended version of the [Michaelis-Menten system presented earlier](@ref basic_CRN_library_mm).
 ```@example crn_library_cc
 using Catalyst
 cc_system = @reaction_network begin
