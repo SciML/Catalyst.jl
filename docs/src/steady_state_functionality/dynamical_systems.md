@@ -1,10 +1,10 @@
 # [Analysing model steady state properties with DynamicalSystems.jl](@id dynamical_systems)
-The [DynamicalSystems.jl package](https://github.com/JuliaDynamics/DynamicalSystems.jl) implements a wide range of methods for analysing dynamical systems. This includes both continuous-time systems (i.e. ODEs) and discrete-times ones (difference equations, these are, however, not relevant to chemical reaction network modelling). Here we give two examples of how DynamicalSystems.jl can be used, with the package's [documentation describing many more features](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/dev/tutorial/). Finally, it should also be noted that DynamicalSystems.jl contain several tools for [analysing data measured from dynamical systems](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/dev/contents/#Exported-submodules).
+The [DynamicalSystems.jl package](https://github.com/JuliaDynamics/DynamicalSystems.jl) implements a wide range of methods for analysing dynamical systems. This includes both continuous-time systems (i.e. ODEs) and discrete-times ones (difference equations, however, these are not relevant to chemical reaction network modelling). Here we give two examples of how DynamicalSystems.jl can be used, with the package's [documentation describing many more features](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/dev/tutorial/). Finally, it should also be noted that DynamicalSystems.jl contain several tools for [analysing data measured from dynamical systems](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/dev/contents/#Exported-submodules).
 
 ## [Finding basins of attraction](@id dynamical_systems_basins_of_attraction)
 Given enough time, an ODE will eventually reach a so-called [*attractor*](https://en.wikipedia.org/wiki/Attractor). For chemical reaction networks (CRNs), this will typically be either a *steady state* or a *limit cycle*. Since ODEs are deterministic, which attractor a simulation will reach is uniquely determined by the initial condition (assuming parameter values are fixed). Conversely, each attractor is associated with a set of initial conditions such that model simulations originating in these will tend to that attractor. These sets are called *basins of attraction*. Here, phase space (the space of all possible states of the system) can be divided into a number of basins of attraction equal to the number of attractors. 
 
-DynamicalSystems.jl provides a simple interface for finding an ODE's basins of attraction across any given subspace of phase space. In this example we will use the bistable [Wilhelm model](https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-3-90) (which steady states we have previous [computed using homotopy continuation](@ref homotopy_continuation_basic_example)). As a first step, we create a `ODEProblem` corresponding to the model which basins of attraction we wish to compute. For this application, `u0` and `tspan` is unused, and their values are of little importance (the only exception is than `tspan`, for implementation reason, must provide a not to small interval, we recommend minimum `(0.0, 1.0)`). 
+DynamicalSystems.jl provides a simple interface for finding an ODE's basins of attraction across any given subspace of phase space. In this example we will use the bistable [Wilhelm model](https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-3-90) (which steady states we have previous [computed using homotopy continuation](@ref homotopy_continuation_basic_example)). As a first step, we create an `ODEProblem` corresponding to the model which basins of attraction we wish to compute. For this application, `u0` and `tspan` is unused, and their values are of little importance (the only exception is than `tspan`, for implementation reason, must provide a not too small interval, we recommend minimum `(0.0, 1.0)`). 
 ```@example dynamical_systems_basins
 using Catalyst
 wilhelm_model = @reaction_network begin
@@ -54,7 +54,7 @@ More information on how to compute basins of attractions for ODEs using Dynamica
 
 While Lyapunov exponents can be used for other purposes, they are primarily used to characterise [*chaotic behaviours*](https://en.wikipedia.org/wiki/Chaos_theory) (where small changes in initial conditions has large effect on the resulting trajectories). Generally, an ODE exhibit chaotic behaviour if its attractor(s) have *at least one* positive Lyapunov exponent. Practically, Lyapunov exponents can be computed using DynamicalSystems.jl's `lyapunovspectrum` function. Here we will use it to investigate two models, one which exhibits chaos and one which do not.
 
-First, let us consider the [Willamowski–Rössler](https://www.degruyter.com/document/doi/10.1515/zna-1980-0308/html?lang=en) model, which is known to exhibit chaotic behaviour.
+First, let us consider the [Willamowski–Rössler model](@ref ref), which is known to exhibit chaotic behaviour.
 ```@example dynamical_systems_lyapunov
 using Catalyst
 wr_model = @reaction_network begin
@@ -82,14 +82,14 @@ plot(sol; idxs=(:X, :Y, :Z))
 Next, like when we [computed basins of attraction](@ref dynamical_systems_basins_of_attraction), we create a `CoupledODEs` corresponding to the model and state for which we wish to compute our Lyapunov spectrum. Lke previously, `tspan` must provide some small interval (at least `(0.0, 1.0)` is recommended), but else have no impact on the computed Lyapunov spectrum.
 ```@example dynamical_systems_lyapunov
 using DynamicalSystems
-ds = CoupledODEs(oprob, (alg = Rodas5P(autodiff=false),))
+ds = CoupledODEs(oprob, (alg = Rodas5P(autodiff = false),))
 nothing # hide
 ```
-Here, the `autodiff=false` argument is required when Lyapunov spectrums are computed. We can now provide our `CoupledODEs` (`ds`) to `lyapunovspectrum` to compute the lyapunov spectrum. This function requires a second argument (here set to `100`). Generally setting this to a higher value will increase accuracy, but also increase runtime (since `lyapunovspectrum` is fast for most systems, setting this to a large value is recommended).
+Here, the `autodiff = false` argument is required when Lyapunov spectrums are computed. We can now provide our `CoupledODEs` (`ds`) to `lyapunovspectrum` to compute the lyapunov spectrum. This function requires a second argument (here set to `100`). Generally setting this to a higher value will increase accuracy, but also increase runtime (since `lyapunovspectrum` is fast for most systems, setting this to a large value is recommended).
 ```@example dynamical_systems_lyapunov
 lyapunovspectrum(ds, 100)
 ```
-Here, the largest exponent is positive, suggesting that the model is chaotic (or, more accurately, it has at least one chaotic attractor, to which it go to from the initial condition $(1.5, 1.5, 1.5)).
+Here, the largest exponent is positive, suggesting that the model is chaotic (or, more accurately, it has at least one chaotic attractor, to which is approached from the initial condition $(1.5,1.5,1.5)).
 
 Next, we consider the [Brusselator] model. First we simulate the model for two similar initial conditions, confirming that they converge to the same limit cycle:
 ```@example dynamical_systems_lyapunov
@@ -114,7 +114,7 @@ plot!(osol2; idxs = (:X, :Y))
 ```
 Next, we compute the Lyapunov spectrum at one of the initial conditions:
 ```@example dynamical_systems_lyapunov
-ds = CoupledODEs(oprob1, (alg = Rodas5P(autodiff=false),))
+ds = CoupledODEs(oprob1, (alg = Rodas5P(autodiff = false),))
 lyapunovspectrum(ds, 100)
 ```
 Here, all Lyapunov exponents are negative, confirming that the brusselator is non-chaotic.
