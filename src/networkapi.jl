@@ -1654,24 +1654,26 @@ function validate(rs::ReactionSystem, info::String = "")
 end
 
 """
-    complexbalanced(rs::ReactionSystem, rates::Vector)
+    iscomplexbalanced(rs::ReactionSystem, rates::Vector)
 
 Constructively compute whether a network will have complex-balanced equilibrium
-solutions, following the method in [this paper](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). 
+solutions, following the method in [this paper](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). Accepts a map of rates [k1 => 1.0, k2 => 2.0,...]k2
 """
 
-using MetaGraphs, Combinatorics, LinearAlgebra
+using Combinatorics, LinearAlgebra
 
-function complexbalanced(rs::ReactionSystem, rates::Vector) 
+function iscomplexbalanced(rs::ReactionSystem, rates::Dict{Any, Float64}) 
     if length(rates) != numparams(rs) 
         error("The number of reaction rates must be equal to the number of parameters")
     end
-    rxm = Dict(zip(reactionparams(rs), rates))
+
     sm = speciesmap(rs)
     cm = reactioncomplexmap(rs)
     complexes, D = reactioncomplexes(rs)
     rxns = reactions(rs)
     nc = length(complexes); nr = numreactions(rs); nm = numspecies(rs)
+
+    if !all(r->ismassaction(r, rs), rxns) error("Not mass action") end
 
     # Construct kinetic matrix, K
     K = zeros(nr, nc) 
@@ -1680,7 +1682,7 @@ function complexbalanced(rs::ReactionSystem, rates::Vector)
         for (r, dir) in cm[complex]
             rxn = rxns[r]
             if dir == -1
-                K[r, c] = rxm[rxn.rate]
+                K[r, c] = rates[rxn.rate]
             end
         end
     end
@@ -1689,93 +1691,122 @@ function complexbalanced(rs::ReactionSystem, rates::Vector)
     S = netstoichmat(rs)
 
     # Compute ρ using the matrix-tree theorem
-    ρ = zeros(nc)
-    lcs = linkageclasses(rs)
-    rwg = rateweightedgraph(rs, rates)
+    g = incidencematgraph(rs); R = ratematrix(rs, rates)
+    ρ = matrixtree(g, R)
+    @assert isapprox(L*ρ, zeros(nc), atol=1e-12) 
 
-    for lc in lcs
-        sg, vmap = Graphs.induced_subgraph(rwg, lc)
-        ρ_j = matrixtree(sg)
-        ρ[lc] = ρ_j
-    end
-    
     # Determine if 1) ρ is positive and 2) D^T Ln ρ lies in the image of S^T
     if all(x -> x > 0, ρ)
         img = D'*log.(ρ)
-        if rank(S') == rank(hcat(S', img))
-            return true
-        else
-            return false
-        end
+        if rank(S') == rank(hcat(S', img)) return true else return false end 
     else
         return false
     end
 end
 
-"""
-    rateweightedgraph(rs::ReactionSystem, rates::Vector)
+# """
+#     rateweightedgraph(rs::ReactionSystem, rates::Vector)
+# 
+# Generate an annotated reaction complex graph of a reaction system, where the nodes are annotated with the reaction complex they correspond to and the edges are annotated with the reaction they correspond to and the rate of the reaction. 
+# """
+# 
+# function rateweightedgraph(rs::ReactionSystem, rates::Dict{Any, Float64}) 
+#     if length(rates) != numparams(rs) 
+#         error("The number of reaction rates must be equal to the number of parameters")
+#     end
+# 
+#     complexes, D = reactioncomplexes(rs)
+#     rxns = reactions(rs)
+# 
+#     g = incidencematgraph(rs)
+#     rwg = MetaDiGraph(g)
+# 
+#     for v in vertices(rwg)
+#         set_prop!(rwg, v, :complex, complexes[v])
+#     end
+# 
+#     for (i, e) in collect(enumerate(edges(rwg)))
+#         rxn = rxns[i]
+#         set_prop!(rwg, Graphs.src(e), Graphs.dst(e), :reaction, rxn)
+#         set_prop!(rwg, Graphs.src(e), Graphs.dst(e), :rate, rates[rxn.rate])
+#     end
+# 
+#     rwg
+# end
 
-Generate an annotated reaction complex graph of a reaction system, where the nodes are annotated with the reaction complex they correspond to and the edges are annotated with the reaction they correspond to and the rate of the reaction. 
-"""
-function rateweightedgraph(rs::ReactionSystem, rates::Vector) 
+function ratematrix(rs::ReactionSystem, rates::Dict{Any, Float64}) 
     if length(rates) != numparams(rs) 
         error("The number of reaction rates must be equal to the number of parameters")
     end
-    rm = Dict(zip(reactionparams(rs), rates))
 
     complexes, D = reactioncomplexes(rs)
+    n = length(complexes)
     rxns = reactions(rs)
+    ratematrix = zeros(n, n)
 
-    g = incidencematgraph(rs)
-    rwg = MetaDiGraph(g)
-
-    for v in vertices(rwg)
-        set_prop!(rwg, v, :complex, complexes[v])
+    for r in 1:length(rxns)
+        rxn = rxns[r]
+        s = findfirst(x->x==-1, D[:,r])
+        p = findfirst(x->x==1, D[:,r])
+        ratematrix[s, p] = rates[rxn.rate]
     end
-
-    for (i, e) in collect(enumerate(edges(rwg)))
-        rxn = rxns[i]
-        set_prop!(rwg, Graphs.src(e), Graphs.dst(e), :reaction, rxn)
-        set_prop!(rwg, Graphs.src(e), Graphs.dst(e), :rate, rm[rxn.rate])
-    end
-
-    rwg
+    ratematrix
 end
 
-function matrixtree(g::MetaDiGraph)
-    # generate all spanning trees
-    # TODO: implement Winter's algorithm for generating spanning trees 
+"""
+"""
+function matrixtree(g::SimpleDiGraph, distmx::Matrix)
     n = nv(g)
+    if size(distmx) != (n, n)
+        error("Size of distance matrix is incorrect")
+    end
+
+    π = zeros(n) 
+
+    if !Graphs.is_connected(g)
+        ccs = Graphs.connected_components(g)
+        for cc in ccs
+            sg, vmap = Graphs.induced_subgraph(g, cc)
+            distmx_s = distmx[cc, cc]
+            π_j = matrixtree(sg, distmx_s)
+            π[cc] = π_j
+        end
+        return π
+    end
+
+    # generate all spanning trees
     ug = SimpleGraph(SimpleDiGraph(g))
     trees = collect(Combinatorics.combinations(collect(edges(ug)), n-1))
     trees = SimpleGraph.(trees)
     trees = filter!(t->isempty(Graphs.cycle_basis(t)), trees)
-    
-    π = zeros(n) 
-
-    function treeweight(t::SimpleDiGraph) 
-        prod = 1
-        for e in edges(t)
-            rate = Graphs.has_edge(g, Graphs.src(e), Graphs.dst(e)) ? get_prop(g, e, :rate) : 0
-            prod *= rate
-        end
-        prod 
-    end
+    # trees = spanningtrees(g)
 
     # constructed rooted trees for every edge, compute sum
     for v in 1:n
         rootedTrees = [reverse(Graphs.bfs_tree(t, v, dir=:in)) for t in trees]
-        π[v] = sum([treeweight(t) for t in rootedTrees])
+        π[v] = sum([treeweight(t, g, distmx) for t in rootedTrees])
     end
     
     # sum the contributions
     return π 
 end
 
-function massactionrate(rs::ReactionSystem, rxn_idx::Int, dir::Int, conc::Vector) 
-    if dir != -1 && dir != 1
-        error("Direction must be either +1 in the case of production or -1 in the case of consumption")
+function treeweight(t::SimpleDiGraph, g::SimpleDiGraph, distmx::Matrix) 
+    prod = 1
+    for e in edges(t)
+        s = Graphs.src(e); t = Graphs.dst(e)
+        prod *= distmx[s, t] 
     end
+    prod 
+end
+
+# TODO: implement Winter's algorithm for generating spanning trees 
+function spanningtrees(g::SimpleGraph) 
+        
+end
+
+# Checks if a unit consist of exponents with base 1 (and is this unitless).
+unitless_exp(u) = istree(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
 
     rxn = reactions(rs)[rxn_idx]
     sm = speciesmap(rs)
