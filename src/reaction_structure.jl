@@ -237,6 +237,8 @@ end
 # Get the net stoichiometries' type.
 netstoich_stoichtype(::Vector{Pair{S, T}}) where {S, T} = T
 
+# Union type for `Reaction`s and `Equation`s.
+const CatalystEqType = Union{Reaction, Equation}
 
 ### Base Functions ###
 

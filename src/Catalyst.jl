@@ -87,19 +87,16 @@ const forbidden_variables_error = let
     fvars
 end
 
-# Union type for `Reaction`s and `Eqiation`s.
-const CatalystEqType = Union{Reaction, Equation}
-
 ### Package Main ###
 
 # The `Reaction` structure and its functions.
-include("reaction_structure.jl.jl")
+include("reaction_structure.jl")
 export isspecies
 export Reaction
 export get_noise_scaling, has_noise_scaling
 
 # The `ReactionSystem` structure and its functions.
-include("reactionsystem_structure.jl.jl")
+include("reactionsystem_structure.jl")
 export ReactionSystem, isspatial
 export species, nonspecies, reactionparams, reactions, speciesmap, paramsmap
 export numspecies, numreactions, numreactionparams, setdefaults!
@@ -113,7 +110,7 @@ export set_default_noise_scaling
 export params, numparams
 
 # Conversions of the `ReactionSystem` structure.
-include("reactionsystem_conversions.jl.jl")
+include("reactionsystem_conversions.jl")
 export ODEProblem,
        SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem,
        SteadyStateProblem
@@ -126,7 +123,7 @@ include("dsl.jl")
 export @reaction_network, @network_component, @reaction, @species
 
 # Network analysis functionality.
-include("network_analysis.jl.jl")
+include("network_analysis.jl")
 export reactioncomplexmap, reactioncomplexes, incidencemat
 export complexstoichmat
 export complexoutgoingmat, incidencematgraph, linkageclasses, deficiency, subnetworks

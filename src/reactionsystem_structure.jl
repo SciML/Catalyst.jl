@@ -1431,4 +1431,4 @@ function validate(rs::ReactionSystem, info::String = "")
 end
 
 # Checks if a unit consist of exponents with base 1 (and is this unitless).
-(u) = istree(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
+unitless_exp(u) = istree(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
