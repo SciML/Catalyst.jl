@@ -31,7 +31,7 @@ pages = Any[
         # Stochastic simulation statistical analysis.
         # ODE Performance considerations/advice.
         # SDE Performance considerations/advice.
-        "04_model_simulation/08_jump_simulation_performance.md",
+        "model_simulation/jump_simulation_performance.md",
         # Finite state projection
     ],
     "Steady state analysis" => Any[
