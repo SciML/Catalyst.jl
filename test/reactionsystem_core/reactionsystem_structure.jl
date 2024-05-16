@@ -748,8 +748,8 @@ end
 # Tests construction of empty reaction networks.
 let
     empty_network = @reaction_network
-    @test length(equations(empty_network)) == 0
-    @test nameof(independent_variable(empty_network)) == :t
-    @test length(unknowns(empty_network)) == 0
-    @test length(parameters(empty_network)) == 0
+    @test length(get_eqs(empty_network)) == 0
+    @test nameof(get_iv(empty_network)) == :t
+    @test length(get_unknowns(empty_network)) == 0
+    @test length(get_ps(empty_network)) == 0
 end
