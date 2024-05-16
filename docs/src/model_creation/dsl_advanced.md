@@ -4,23 +4,23 @@ Within the Catalyst DSL, each line can represent either *a reaction* or *an opti
 All option designations begin with a declaration starting with `@`, followed by its input. E.g. the `@observables` option allows for the generation of observables. Each option can only be used once within each use of `@reaction_network`. A full list of options can be found [here](@ref ref), with most (but not all) being described in more detail below. This tutorial will also describe some additional advanced DSL features that do not involve using an option. 
 
 As a first step, we import Catalyst (which is required to run the tutorial):
-```@example dsl_advanced_1
+```@example dsl_advanced_explicit_definitions
 using Catalyst
 ```
 
 ## [Explicit specification of network species and parameters](@id dsl_advanced_options_declaring_species_and_parameters)
 [Previously](@ref ref), we mentioned that the DSL automatically determines which symbols correspond to species and which to parameters. This is done by designating everything that appears as either a substrate or a product as a species, and all remaining quantities as parameters (i.e. those only appearing within rates or [stoichiometric constants](@ref ref)). Sometimes, one might want to manually override this default behaviour for a given symbol. I.e. consider the following model, where the conversion of a protein `P` from its inactive form (`Pᵢ`) to its active form (`Pₐ`) is catalysed by an enzyme (`E`). Using the most natural description:
-```@example dsl_advanced_1
+```@example dsl_advanced_explicit_definitions
 catalysis_sys = @reaction_network begin
   k*E, Pᵢ --> Pₐ
 end
 ```
 `E` (as well as `k`) will be considered a parameter, something we can confirm directly:
-```@example dsl_advanced_1
+```@example dsl_advanced_explicit_definitions
 parameters(catalysis_sys)
 ```
 If we want `E` to be considered a species, we can designate this using the `@species` option:
-```@example dsl_advanced_1
+```@example dsl_advanced_explicit_definitions
 catalysis_sys = @reaction_network begin
   @species E(t)
   k*E, Pᵢ --> Pₐ
@@ -31,7 +31,7 @@ parameters(catalysis_sys)
     When declaring species using the `@species` option, the species symbol must be followed by `(t)`. The reason is that species are time-dependent variables, and this time-dependency must be explicitly specified ([designation of non-`t` dependant species is also possible](@ref ref)).
 
 Similarly, the `@parameters` option can be used to explicitly designate something as a parameter:
-```@example dsl_advanced_1
+```@example dsl_advanced_explicit_definitions
 catalysis_sys = @reaction_network begin
   @parameters k
   k*E, Pᵢ --> Pₐ
@@ -42,7 +42,7 @@ Here, while `k` is explicitly defined as a parameter, no information is provided
 While designating something which would default to a parameter as a species is straightforward, the reverse (creating a parameter which occurs as a substrate or product) is more involved. This is, however, possible, and described [here](@ref dsl_advanced_options_constant_species).
 
 Rather than listing all species/parameters on a single line after the options, a `begin ... end` block can be used (listing one species/parameter on each line). E.g. in the following example we use this notation to explicitly designate all species and parameters of the system:
-```@example dsl_advanced_1
+```@example dsl_advanced_explicit_definitions
 catalysis_sys = @reaction_network begin
   @species begin 
     E(t)
@@ -57,7 +57,7 @@ end
 ```
 
 A side-effect of using the `@species` and `@parameter` options is that they specify *the order in which the species and parameters are stored*. I.e. lets check the order of the parameters in the parameters in the following dimerisation model:
-```@example dsl_advanced_1
+```@example dsl_advanced_explicit_definitions
 dimerisation = @reaction_network begin
   (p,d), 0 <--> X
   (kB,kD), 2X <--> X2
@@ -65,7 +65,7 @@ end
 parameters(dimerisation)
 ```
 The default order is typically equal to the order with which the parameters (or species) are encountered in the DSL (this is, however, not guaranteed). If we specify the parameters using `@parameters`, the order used within the option is used instead:
-```@example dsl_advanced_1
+```@example dsl_advanced_explicit_definitions
 dimerisation = @reaction_network begin
   @parameters kB kD p d
   (p,d), 0 <--> X
