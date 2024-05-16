@@ -87,15 +87,43 @@ const CatalystEqType = Union{Reaction, Equation}
 # The symbol used for conserved quantities in conservation law eliminations.
 const CONSERVED_CONSTANT_SYMBOL = :Γ
 
+### Package Main ###
 
-
-# base system type and features
-include("reactionsystem.jl")
+# The `Reaction` structure and its functions.
+include("reaction_structure.jl.jl")
 export isspecies
-export Reaction, ReactionSystem, ismassaction, oderatelaw, jumpratelaw, isspatial
+export Reaction
+export get_noise_scaling, has_noise_scaling
+
+# The `ReactionSystem` structure and its functions.
+include("reactionsystem_structure.jl.jl")
+export ReactionSystem, isspatial
+export species, nonspecies, reactionparams, reactions, speciesmap, paramsmap
+export numspecies, numreactions, numreactionparams, setdefaults!
+export make_empty_network, reactionparamsmap
+export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
+export reactionrates
+export isequivalent
+export set_default_noise_scaling
+
+# depreciated functions to remove in future releases
+export params, numparams
+
+# Conversions of the `ReactionSystem` structure.
+include("reactionsystem_conversions.jl.jl")
 export ODEProblem,
        SDEProblem, JumpProblem, NonlinearProblem, DiscreteProblem,
        SteadyStateProblem
+export ismassaction, oderatelaw, jumpratelaw
+export symmap_to_varmap
+
+# Network analysis functionality.
+include("network_analysis.jl.jl")
+export reactioncomplexmap, reactioncomplexes, incidencemat
+export complexstoichmat
+export complexoutgoingmat, incidencematgraph, linkageclasses, deficiency, subnetworks
+export linkagedeficiencies, isreversible, isweaklyreversible
+export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
 
 # reaction_network macro
 const ExprValues = Union{Expr, Symbol, Float64, Int, Bool}
@@ -108,22 +136,6 @@ include("registered_functions.jl")
 export mm, mmr, hill, hillr, hillar
 
 # functions to query network properties
-include("networkapi.jl")
-export species, nonspecies, reactionparams, reactions, speciesmap, paramsmap
-export numspecies, numreactions, numreactionparams, setdefaults!, symmap_to_varmap
-export make_empty_network, reactionparamsmap
-export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
-export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
-export isequivalent
-export set_default_noise_scaling, get_noise_scaling, has_noise_scaling
-
-# depreciated functions to remove in future releases
-export params, numparams
-
-# network analysis functions
-export reactioncomplexmap, reactioncomplexes, incidencemat, reactionrates, complexstoichmat
-export complexoutgoingmat, incidencematgraph, linkageclasses, deficiency, subnetworks
-export linkagedeficiencies, isreversible, isweaklyreversible
 
 # for Latex printing of ReactionSystems
 include("latexify_recipes.jl")
