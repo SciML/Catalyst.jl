@@ -8,7 +8,7 @@ pages = Any[
     "Model Creation and Properties" => Any[
         "model_creation/dsl_description.md",
         # DSL - Advanced
-        "model_creation/programmatic_CRN_construction.md",
+        "model_creation/programmatic_modelling.md",
         "model_creation/constraint_equations.md",
         "model_creation/compositional_modeling.md",
         # Events.
