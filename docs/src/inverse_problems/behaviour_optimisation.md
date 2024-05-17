@@ -4,7 +4,7 @@ In previous tutorials we have described how to use [PEtab.jl](@ref petab_paramet
 ## Maximising the pulse amplitude of an incoherent feed forward loop.
 Incoherent feedforward loops (network motifs where a single component both activates and deactivates a downstream component) are able to generate pulses in response to step inputs[^2]. In this tutorial we will consider such an incoherent feedforward loop, attempting to generate a system with as prominent a response pulse as possible.
 
- Our model consists of 3 species: $X$ (the input node), $Y$ (an intermediary), and $Z$ (the output node). In it, $X$ activates the production of both $Y$ and $Z$, with $Y$ also deactivating $Z$. When $X$ is activated, there will be a brief time window where $Y$ is still inactive, and $Z$ is activated. However, as $Y$ becomes active, it will turn $Z$ off. This creates a pulse of $Z$ activity. To trigger the system, we create [an event](@ref ref), which increases the production rate of $X$ ($pX$) by a factor of $10$ at time $t = 10$.
+Our model consists of 3 species: $X$ (the input node), $Y$ (an intermediary), and $Z$ (the output node). In it, $X$ activates the production of both $Y$ and $Z$, with $Y$ also deactivating $Z$. When $X$ is activated, there will be a brief time window where $Y$ is still inactive, and $Z$ is activated. However, as $Y$ becomes active, it will turn $Z$ off. This creates a pulse of $Z$ activity. To trigger the system, we create [an event](@ref ref), which increases the production rate of $X$ ($pX$) by a factor of $10$ at time $t = 10$.
 ```@example behaviour_optimization
 using Catalyst
 incoherent_feed_forward = @reaction_network begin
@@ -40,7 +40,7 @@ function pulse_amplitude(p, _)
 end
 nothing # here
 ```
-This cost function takes two arguments (a parameter value `p`, and an additional one which we will ignore here but discuss later). It first calculates the new initial steady state concentration (for the given parameter set), and then creates an updated `ODEProblem` using it as initial conditions and the, to the cost function provided, input parameter set. While we could create a new `ODEProblem` within the cost function, cost functions are often called a large number of times during the optimisation process (making performance important). Here, using [`remake` on a previously created `ODEProblem`](@ref ref) is more performant than creating a new one. Just like [when using Optimization.jl to fit parameters to data](@ref optimization_parameter_fitting), we use the `verbose=false` options to prevent unnecessary simulation printouts, and a reduced `maxiters` value to reduce time spent simulating (for the model) unsuitable parameter sets. We also use `SciMLBase.successful_retcode(sol)` to check whether the simulation return code indicates a successful simulation (and if it did not, returns a large cost function value). Finally, Optimization.jl finds the function's *minimum value*, so to find the *maximum* relative pulse amplitude, we make our cost function return the negative pulse amplitude.
+This cost function takes two arguments (a parameter value `p`, and an additional one which we will ignore here but discuss later). It first calculates the new initial steady state concentration for the given parameter set. Next, it creates an updated `ODEProblem` using the steady state as initial conditions and the, to the cost function provided, input parameter set. While we could create a new `ODEProblem` within the cost function, cost functions are often called a large number of times during the optimisation process (making performance important). Here, using [`remake` on a previously created `ODEProblem`](@ref ref) is more performant than creating a new one. Just like [when using Optimization.jl to fit parameters to data](@ref optimization_parameter_fitting), we use the `verbose = false` option to prevent unnecessary simulation printouts, and a reduced `maxiters` value to reduce time spent simulating (for the model) unsuitable parameter sets. We also use `SciMLBase.successful_retcode(sol)` to check whether the simulation return code indicates a successful simulation (and if it did not, returns a large cost function value). Finally, Optimization.jl finds the function's *minimum value*, so to find the *maximum* relative pulse amplitude, we make our cost function return the negative pulse amplitude.
 
 Just like for [parameter fitting](@ref optimization_parameter_fitting), we create a `OptimizationProblem` using our cost function, and some initial guess of the parameter value. We also set upper and lower bounds for each parameter using the `lb` and `ub` optional arguments (in this case limiting each parameter's value to the interval $(0.1,10.0)$).
 ```@example behaviour_optimization
@@ -84,6 +84,22 @@ Finally, we can find the optimum using some differentiation-based optimisation m
 using OptimizationOptimJL
 opt_sol = solve(opt_prob, OptimizationOptimJL.BFGS())
 ``` 
+
+---
+## [Citation](@id structural_identifiability_citation)
+If you use this functionality in your research, please cite the following paper to support the authors of the Optimization.jl package:
+```
+@software{vaibhav_kumar_dixit_2023_7738525,
+	author = {Vaibhav Kumar Dixit and Christopher Rackauckas},
+	month = mar,
+	publisher = {Zenodo},
+	title = {Optimization.jl: A Unified Optimization Package},
+	version = {v3.12.1},
+	doi = {10.5281/zenodo.7738525},
+  	url = {https://doi.org/10.5281/zenodo.7738525},
+	year = 2023
+}
+```
 
 ---
 ## References
