@@ -11,7 +11,7 @@ pages = Any[
         "model_creation/programmatic_CRN_construction.md",
         "model_creation/constraint_equations.md",
         "model_creation/compositional_modeling.md",
-        # Events.
+        "model_creation/events_and_callbacks.md",
         # Distributed parameters, rates, and initial conditions.
         # Loading and writing models to files.
         # Model visualisation.
