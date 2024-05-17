@@ -1,11 +1,11 @@
 # [Parameter Fitting for ODEs using SciML/Optimization.jl and DiffEqParamEstim.jl](@id optimization_parameter_fitting)
 Fitting parameters to data involves solving an optimisation problem (that is, finding the parameter set that optimally fits your model to your data, typically by minimising a cost function). The SciML ecosystem's primary package for solving optimisation problems is [Optimization.jl](https://github.com/SciML/Optimization.jl). It provides access to a variety of solvers via a single common interface by wrapping a large number of optimisation libraries that have been implemented in Julia.
 
-This tutorial demonstrates both how to create parameter fitting cost functions using the [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl) package, and how to use Optimization.jl to minimise these. Optimization.jl can also be used in other contexts, such as finding parameter sets that maximise the magnitude of some system behaviour. More details on how to use these packages can be found in their [respective](https://docs.sciml.ai/Optimization/stable/) [documentations](https://docs.sciml.ai/DiffEqParamEstim/stable/).
+This tutorial demonstrates both how to create parameter fitting cost functions using the [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl) package, and how to use Optimization.jl to minimise these. Optimization.jl can also be used in other contexts, such as [finding parameter sets that maximise the magnitude of some system behaviour](@ref ref). More details on how to use these packages can be found in their [respective](https://docs.sciml.ai/Optimization/stable/) [documentations](https://docs.sciml.ai/DiffEqParamEstim/stable/).
 
 ## [Basic example](@id optimization_parameter_fitting_basics)
 
-Let us consider a simple catalysis network, where an enzyme ($E$) turns a substrate ($S$) into a product ($P$):
+Let us consider a [Michaelis-Menten enzyme kinetics model](@ref ref), where an enzyme ($E$) converts a substrate ($S$) into a product ($P$):
 ```@example diffeq_param_estim_1 
 using Catalyst
 rn = @reaction_network begin
@@ -18,17 +18,17 @@ From some known initial condition, and a true parameter set (which we later want
 ```@example diffeq_param_estim_1 
 # Define initial conditions and parameters.
 u0 = [:S => 1.0, :E => 1.0, :SE => 0.0, :P => 0.0]
-p_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
+ps_true = [:kB => 1.0, :kD => 0.1, :kP => 0.5]
 
 # Generate synthetic data.
 using OrdinaryDiffEq
-oprob_true = ODEProblem(rn, u0, (0.0, 10.0), p_true)
-true_sol = solve(oprob_true, Tsit5())
-data_sol = solve(oprob_true, Tsit5(); saveat=1.0)
+oprob_true = ODEProblem(rn, u0, (0.0, 10.0), ps_true)
+true_sol = solve(oprob_true)
+data_sol = solve(oprob_true; saveat=1.0)
 data_ts = data_sol.t[2:end]
 data_vals = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 
-# Plots the true solutions and the (synthetic data) measurements.
+# Plots the true solutions and the (synthetic) data measurements.
 using Plots
 plot(true_sol; idxs=:P, label="True solution", lw=8)
 plot!(data_ts, data_vals; label="Measurements", seriestype=:scatter, ms=6, color=:blue)
@@ -37,22 +37,22 @@ plot!(data_ts, data_vals; label="Measurements", seriestype=:scatter, ms=6, color
 Next, we will use DiffEqParamEstim to build a loss function to measure how well our model's solutions fit the data.
 ```@example diffeq_param_estim_1 
 using DiffEqParamEstim, Optimization
-p_dummy = [:kB => 0.0, :kD => 0.0, :kP => 0.0]
-oprob = ODEProblem(rn, u0, (0.0, 10.0), p_dummy)
+ps_dummy = [:kB => 0.0, :kD => 0.0, :kP => 0.0]
+oprob = ODEProblem(rn, u0, (0.0, 10.0), ps_dummy)
 loss_function = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, data_vals), Optimization.AutoForwardDiff(); 
-    maxiters=10000, verbose=false, save_idxs=4)
+    maxiters = 10000, verbose = false, save_idxs = 4)
 nothing # hide
 ```
 To `build_loss_objective` we provide the following arguments:
 - `oprob`: The `ODEProblem` with which we simulate our model (using some dummy parameter values, since we do not know these).
-- `Tsit5()`: The numeric integrator we wish to simulate our model with.
+- `Tsit5()`: The [numeric integrator](@ref ref) we wish to simulate our model with.
 - `L2Loss(data_ts, data_vals)`: Defines the loss function. While [other alternatives](https://docs.sciml.ai/DiffEqParamEstim/stable/getting_started/#Alternative-Cost-Functions-for-Increased-Robustness) are available, `L2Loss` is the simplest one (measuring the sum of squared distances between model simulations and data measurements). Its first argument is the time points at which the data is collected, and the second is the data's values.
 - `Optimization.AutoForwardDiff()`: Our choice of [automatic differentiation](https://en.wikipedia.org/wiki/Automatic_differentiation) framework.
 
 Furthermore, we can pass any number of additional optional arguments, these are then passed to the internal `solve()` function (which is used to solve our ODE). Here we provide the following additional arguments:
-- `maxiters=10000`: If the ODE integrator takes a very large number of steps, that can be a sign of a very poor fit (or stiffness in the ODEs, but that is not a concern for our current example). Reducing the `maxiters` threshold reduces the time we waste on evaluating such models. 
-- `verbose=false`: The simulation of models with highly unsuitable parameter sets typically generate various warnings (such as premature simulation termination due to reaching `maxiters` timesteps). To avoid an overflow of such (here unnecessary) warnings, as we evaluate a large number of parameter sets, we turn warnings off.
-- `save_idxs=4`: The measured species ($P$) is the 4th species in our species vector (`species(rn)`). Since we only assume data is available for $P(t)$ there is no reason to save any other species.
+- `maxiters = 10000`: If the ODE integrator takes a very large number of steps, that can be a sign of a very poor fit (or stiffness in the ODEs, but that is not a concern for our current example). Reducing the `maxiters` threshold reduces the time we waste on evaluating such models. 
+- `verbose = false`: The simulation of models with highly unsuitable parameter sets typically generate various warnings (such as premature simulation termination due to reaching `maxiters` time steps). To avoid an overflow of such (here unnecessary) warnings, as we evaluate a large number of parameter sets, we turn warnings off.
+- `save_idxs = 4`: The measured species ($P$) is the 4th species in our species vector (`species(rn)`). Since data is available for $P(t)$, we will only save the value of this species.
 
 Now we can create an `OptimizationProblem` using our `loss_function` and some initial guess of parameter values from which the optimiser will start:
 ```@example diffeq_param_estim_1 
