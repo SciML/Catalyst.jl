@@ -85,12 +85,12 @@ cell_model = @reaction_network begin
 end
 ```
 
-It is possible to check a model's species, variables, and unknowns through the `species`, `variables`, and `unknowns` functions:
+It is possible to check a model's species, variables, and unknowns through the `species`, `nonspecies`, and `unknowns` functions:
 ```@example coupled_eqs_variable_intro
 species(cell_model)
 ```
 ```@example coupled_eqs_variable_intro
-variables(cell_model)
+nonspecies(cell_model)
 ```
 ```@example coupled_eqs_variable_intro
 unknowns(cell_model)
@@ -131,7 +131,7 @@ Previously, we described how coupled CRN/equation models contain [both *species*
 species(growth_model)
 ```
 ```@example coupled_eqs_diff_eq
-variables(growth_model)
+nonspecies(growth_model)
 ```
 
 Currently, our differential equations depend on the species and variables $G$, $N$, and $V$. They may also depend on parameters, however, before we introduce additional quantities to these, we must be careful to ensure that Catalyst can correctly infer their type. Catalyst uses the following rules for automatically inferring what to consider a parameter, a species, and a variable:
