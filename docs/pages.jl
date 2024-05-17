@@ -50,7 +50,7 @@ pages = Any[
         # Non-parameter fitting optimisation.
         "inverse_problems/structural_identifiability.md",
         # Practical identifiability.
-        # GLobal and local sensitivity analysis.
+        "inverse_problems/global_sensitivity_analysis.md",
         "Inverse problem examples" => Any[
             "inverse_problems/examples/ode_fitting_oscillation.md"
         ]
