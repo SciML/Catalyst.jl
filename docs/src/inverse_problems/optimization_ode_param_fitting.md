@@ -63,7 +63,7 @@ nothing # hide
 !!! note
     `OptimizationProblem` cannot currently accept parameter values in the form of a map (e.g. `[:kB => 1.0, :kD => 1.0, :kP => 1.0]`). These must be provided as individual values (using the same order as the parameters occur in in the `parameters(rs)` vector). Similarly, `build_loss_objective`'s `save_idxs` uses the species' indexes, rather than the species directly. These inconsistencies should be remedied in future DiffEqParamEstim releases.
 
-Finally, we can optimise `optprob` to find the parameter set that best fits our data. Optimization.jl only provides a few optimisation methods natively. However, for each supported optimisation package, it provides a corresponding wrapper-package to import that optimisation package for use with Optimization.jl. E.g., if we wish to use [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)'s [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) method, we must install and import the OptimizationOptimJL package. A summary of all, by Optimization.jl, supported optimisation packages can be found [here](https://docs.sciml.ai/Optimization/stable/#Overview-of-the-Optimizers). Here, we import the Optim.jl package and uses it to minimise our cost function (thus finding a parameter set that fits the data):
+Finally, we can optimise `optprob` to find the parameter set that best fits our data. Optimization.jl only provides a few optimisation methods natively. However, for each supported optimisation package, it provides a corresponding wrapper-package to import that optimisation package for use with Optimization.jl. E.g., if we wish to use [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)'s [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) method, we must install and import the OptimizationOptimJL package. A summary of all, by Optimization.jl supported, optimisation packages can be found [here](https://docs.sciml.ai/Optimization/stable/#Overview-of-the-Optimizers). Here, we import the Optim.jl package and uses it to minimise our cost function (thus finding a parameter set that fits the data):
 ```@example diffeq_param_estim_1 
 using OptimizationOptimJL
 optsol = solve(optprob, Optim.NelderMead())
@@ -87,7 +87,7 @@ sol = solve(optprob, NLopt.LD_LBFGS())
 nothing # hide
 ```
 
-## Optimisation problems with data for multiple species
+## [Optimisation problems with data for multiple species](@id optimization_parameter_fitting_multiple_species)
 Imagine that, in our previous example, we had measurements of the concentration of both *S* and *P*:
 ```@example diffeq_param_estim_1 
 data_vals_S = (0.8 .+ 0.4*rand(10)) .* data_sol[:S][2:end]
@@ -98,32 +98,32 @@ plot!(data_ts, data_vals_S; label="Measured S", seriestype=:scatter, ms=6, color
 plot!(data_ts, data_vals_P; label="Measured P", seriestype=:scatter, ms=6, color=:red)
 ```
 
-In this case we would have to use the `L2Loss(data_ts, hcat(data_vals_S, data_vals_P))` and `save_idxs=[1,4]` arguments in `loss_function`:
+In this case we would have to use the `L2Loss(data_ts, hcat(data_vals_S, data_vals_P))` and `save_idxs=[1, 4]` arguments in `loss_function`:
 ```@example diffeq_param_estim_1 
-loss_function_S_P = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, Array(hcat(data_vals_S, data_vals_P)')), Optimization.AutoForwardDiff(); maxiters=10000, verbose=false, save_idxs=[1,4])
+loss_function_S_P = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, Array(hcat(data_vals_S, data_vals_P)')), Optimization.AutoForwardDiff(); maxiters=10000, verbose=false, save_idxs=[1, 4])
 nothing # hide
 ```
 Here, `Array(hcat(data_vals_S, data_vals_P)')` is required to put the data in the right form (in this case, a 2x10 matrix).
 
 We can now fit our model to data and plot the results:
 ```@example diffeq_param_estim_1 
-optprob_S_P = OptimizationProblem(loss_function_S_P, [1.0,1.0, 1.0])
+optprob_S_P = OptimizationProblem(loss_function_S_P, [1.0, 1.0, 1.0])
 optsol_S_P = solve(optprob_S_P, Optim.NelderMead())
-oprob_fitted_S_P = remake(oprob; p=optsol_S_P.u)
-fitted_sol_S_P = solve(oprob_fitted_S_P, Tsit5())
-plot!(fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle=:dash, lw=6, color=[:lightblue :pink])
+oprob_fitted_S_P = remake(oprob; p = optsol_S_P.u)
+fitted_sol_S_P = solve(oprob_fitted_S_P)
+plot!(fitted_sol_S_P; idxs=[:S, :P], label="Fitted solution", linestyle = :dash, lw = 6, color = [:lightblue :pink])
 ```
 
-## Setting parameter constraints and boundaries
-Sometimes, it is desired to set boundaries on parameter values. Indeed, this can speed up the optimisation process (by preventing searching through unfeasible parts of parameter space), and can also be a requirement for some optimisation methods. This can be done by passing the `lb` (lower bounds) and `up` (upper bounds) arguments to `OptimizationProblem`. These are vectors (of the same length as the number of parameters), with each argument corresponding to the boundary value of the parameter with the same index (as used in the `parameters(rn)` vector). If we wish to constrain each parameter to the interval $(0.1, 10.0)$ this can be done through:
+## [Setting parameter constraints and boundaries](@id optimization_parameter_fitting_constraints)
+Sometimes, it is desirable to set boundaries on parameter values. Indeed, this can speed up the optimisation process (by preventing searching through unfeasible parts of parameter space), and can also be a requirement for some optimisation methods. This can be done by passing the `lb` (lower bounds) and `up` (upper bounds) arguments to `OptimizationProblem`. These are vectors (of the same length as the number of parameters), with each argument corresponding to the boundary value of the parameter with the same index (as used in the `parameters(rn)` vector). If we wish to constrain each parameter to the interval $(0.1, 10.0)$ this can be done through:
 ```@example diffeq_param_estim_1 
-optprob = OptimizationProblem(loss_function, [1.0, 1.0, 1.0]; lb = [0.1, 0.1, 0.1], ub = [10.0, 10.0, 10.0])
+optprob = OptimizationProblem(loss_function, [1.0, 1.0, 1.0]; lb = [1e-1, 1e-1, 1e-1], ub = [1e1, 1e1, 1e1])
 nothing # hide
 ```
 
 In addition to boundaries, Optimization.jl also supports setting [linear and non-linear constraints](https://docs.sciml.ai/Optimization/stable/tutorials/constraints/#constraints) on its output solution for some optimizers.
 
-## Parameter fitting with known parameters
+## [Parameter fitting with known parameters](@id optimization_parameter_fitting_known_parameters)
 If we from previous knowledge know that $kD = 0.1$, and only want to fit the values of $kB$ and $kP$, this can be achieved through `build_loss_objective`'s `prob_generator` argument. First, we create a function (`fixed_p_prob_generator`) that modifies our `ODEProblem` to incorporate this knowledge:
 ```@example diffeq_param_estim_1 
 fixed_p_prob_generator(prob, p) = remake(prob; p = vcat(p[1], 0.1, p[2]))
@@ -142,8 +142,8 @@ optsol_fixed_kD = solve(optprob_fixed_kD, Optim.NelderMead())
 nothing # hide
 ```
 
-## [Fitting parameters on the logarithmic scale](@id optimization_parameter_fitting_logarithmic_scale)
-Often it can be advantageous to fit parameters on a [logarithmic, rather than linear, scale](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008646). The best way to proceed is to simply replace each parameter in the model definition by its logarithmic version:
+## [Fitting parameters on the logarithmic scale](@id optimization_parameter_fitting_log_scale)
+Often it can be advantageous to fit parameters on a [logarithmic scale (rather than on a linear scale)](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008646). The best way to do this is to simply replace each parameter in the model definition by its logarithmic version:
 ```@example diffeq_param_estim_2
 using Catalyst
 rn = @reaction_network begin
@@ -152,21 +152,37 @@ rn = @reaction_network begin
     10^kP, SE --> P + E
 end
 ```
-And then proceeding, by keeping in mind that parameter values are logarithmic. Here, setting
+And then going forward, by keeping in mind that parameter values are logarithmic. Here, setting
 ```@example diffeq_param_estim_2
 p_true = [:kB => 0.0, :kD => -1.0, :kP => 10^(0.5)]
 nothing # hide
 ```
 corresponds to the same true parameter values as used previously (`[:kB => 1.0, :kD => 0.1, :kP => 0.5]`).
 
-## Parameter fitting to multiple experiments
+## [Parameter fitting to multiple experiments](@id optimization_parameter_fitting_multiple_experiments)
 Say that we had measured our model for several different initial conditions, and would like to fit our model to all these measurements simultaneously. This can be done by first creating a [corresponding `EnsembleProblem`](@ref advanced_simulations_ensemble_problems). How to then create loss functions for these are described in more detail [here](https://docs.sciml.ai/DiffEqParamEstim/stable/tutorials/ensemble/).
 
-## Optimisation solver options
+## [Optimisation solver options](@id optimization_parameter_fitting_solver_options)
 Optimization.jl supports various [optimisation solver options](https://docs.sciml.ai/Optimization/stable/API/solve/) that can be supplied to the `solve` command. For example, to set a maximum number of seconds (after which the optimisation process is terminated), you can use the `maxtime` argument:
 ```@example diffeq_param_estim_1 
-optsol_fixed_kD = solve(optprob, Optim.NelderMead(); maxtime=100)
+optsol_fixed_kD = solve(optprob, Optim.NelderMead(); maxtime = 100)
 nothing # hide
+```
+
+---
+## [Citation](@id structural_identifiability_citation)
+If you use this functionality in your research, please cite the following paper to support the authors of the Optimization.jl package:
+```
+@software{vaibhav_kumar_dixit_2023_7738525,
+	author = {Vaibhav Kumar Dixit and Christopher Rackauckas},
+	month = mar,
+	publisher = {Zenodo},
+	title = {Optimization.jl: A Unified Optimization Package},
+	version = {v3.12.1},
+	doi = {10.5281/zenodo.7738525},
+  	url = {https://doi.org/10.5281/zenodo.7738525},
+	year = 2023
+}
 ```
 
 ---
