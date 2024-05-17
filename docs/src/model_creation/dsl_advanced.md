@@ -228,6 +228,52 @@ end
 
 A common use-case for constant species is when modelling systems where some species are present in such surplus that their amounts the reactions' effect on it is negligible. A system which is commonly modelled this way is the [Brusselator](https://en.wikipedia.org/wiki/Brusselator).
 
+### [Designating parameter types](@id dsl_advanced_options_parameter_types)
+Sometimes it is desired to designate that a parameter should have a specific [type](@ref ref). When supplying this parameter's value to e.g. an `ODEProblem`, that parameter will then be restricted to that specific type. Designating a type is done by appending the parameter with `::` followed by its type. E.g. in the following example we specify that the parameter `n` (the number of `X` molecules in the `Xn` polymer) must be an integer (`Int64`)
+```@example dsl_advanced_parameter_types
+using Catalyst # hide
+polymerisation_network = @reaction_network begin
+    @parameters n::Int64
+    (kB,kD), n*X <--> Xn
+end
+nothing # hide
+```
+Generally, when simulating models with mixed parameter types, it is recommended to [declare parameter values as tuples, rather than vectors](@ref ref), e.g.:
+```@example dsl_advanced_parameter_types
+ps = (:kB => 0.2, :kD => 1.0, :n => 2)
+nothing # hide
+```
+
+If a parameter has a type, metadata, and a default value, they are designated in the following order:
+```@example dsl_advanced_parameter_types
+polymerisation_network = @reaction_network begin
+    @parameters n::Int64 = 2 [description="Parameter n, which is an integer and defaults to the value 2."]
+    (kB,kD), n*X <--> Xn
+end
+nothing # hide
+```
+
+### [Vector-valued species or parameters](@id dsl_advanced_options_vector_variables)
+Sometimes, one wishes to declare a large number of similar parameters or species. This can be done by *creating them as vectors*. E.g. below we create a [two-state system](@ref ref). However, instead of declaring `X1` and `X2` (and `k1` and `k2`) as separate entities, we declare them as vectors:
+```@example dsl_advanced_vector_variables
+using Catalyst # hide
+two_state_model = @reaction_network begin
+    @parameters k[1:2]
+    @species X(t)[1:2]
+    (k[1],k[2]), X[1] <--> X[2]
+end
+```
+Now, we can also declare our initial conditions and parameter values as vectors as well:
+```@example dsl_advanced_vector_variables
+using OrdinaryDiffEq, Plots # hide
+u0 = [:X => [0.0, 2.0]]
+tspan = (0.0, 1.0)
+ps = [:k => [1.0, 2.0]]
+oprob = ODEProblem(two_state_model, u0, tspan, ps)
+sol = solve(oprob)
+plot(sol)
+```
+
 ## [Naming reaction networks](@id dsl_advanced_options_naming)
 Each reaction network model has a name. It can be accessed using the `nameof` function. By default, some generic name is used:
 ```@example dsl_advanced_names
