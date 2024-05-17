@@ -9,7 +9,7 @@ pages = Any[
         "model_creation/dsl_description.md",
         # DSL - Advanced
         "model_creation/programmatic_CRN_construction.md",
-        "model_creation/constraint_equations.md",
+        "model_creation/coupled_crn_equations.md",
         "model_creation/compositional_modeling.md",
         # Events.
         # Distributed parameters, rates, and initial conditions.
