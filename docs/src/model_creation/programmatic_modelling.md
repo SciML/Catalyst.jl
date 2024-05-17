@@ -82,7 +82,7 @@ Here, `Reaction` takes three arguments:
 2. A vector with the reaction's substrates (in this case, both reactions have a single substrate).
 3. A vector with the reaction's products (in this case, both reactions have a single product). 
 
-Just like [when the DSL is used](@ref ref), more complicated reactions (e.g. featuring e.g. [production or degradation reactions](@ref programmatic_modelling_reactions_options_production_and_degradation), [non-constant rates](@ref programmatic_modelling_reactions_options_rates), [non-unitary stoichiometries](@ref programmatic_modelling_reactions_options_nonunitary_stoichiometries), or [non-standard stoichiometries](@ref programmatic_modelling_reactions_options_nonstandard_stoichiometries)) are possible. How to create such reactions is described [here](@ref ref).
+Just like [when the DSL is used](@ref ref), more complicated reactions (e.g. featuring e.g. [production or degradation reactions](@ref programmatic_modelling_reaction_options_production_and_degradation), [non-constant rates](@ref programmatic_modelling_reaction_options_rates), [non-unitary stoichiometries](@ref programmatic_modelling_reaction_options_nonunitary_stoichiometries), or [non-standard stoichiometries](@ref programmatic_modelling_reaction_options_nonstandard_stoichiometries)) are possible. How to create such reactions is described [here](@ref ref).
 
 !!! note
  While `Reaction`s are not explicitly created when models are created via the DSL, these are still declared and stored internally. When calling the [`reactions`](@ref) function on a DSL-created `REactionSystem`, you will receive `Reaction`s of the same form as we here have created programmatically.
@@ -270,7 +270,7 @@ plot(sol)
 ## [Additional options for declaration of `Reaction`s](@id programmatic_modelling_reactions_options)
 When describing the DSL, we also describe a range of [options for declaring various types of reactions](@ref ref). Each type of reaction that can be created using the DSL can also be created programmatically. Below, we briefly describe each case.
 
-### [Production and degradation reactions](@id programmatic_modelling_reactions_options_production_and_degradation)
+### [Production and degradation reactions](@id programmatic_modelling_reaction_options_production_and_degradation)
 To designate [an absence of substrates and/or products](@ref ref), we simply give an empty vector. E.g. to create a [birth-death model](@ref ref) we use
 ```@example programmatic_reactions
 using Catalyst # hide
@@ -291,7 +291,7 @@ rxs = [
 ]
 ```
 
-### [Reactions with non-constant rates](@id programmatic_modelling_reactions_options_rates)
+### [Reactions with non-constant rates](@id programmatic_modelling_reaction_options_rates)
 Just like when creating models using the DSL, the rate can be any valid algebraic expression (containing any combinations of parameters, species, and numeric values). E.g. to create a reaction that takes $X$ from its inactive form ($Xi$) to its activate form ($Xa$) catalysed by an enzyme ($E$) we would use:
 ```@example programmatic_reactions
 @parameters k
@@ -314,8 +314,8 @@ Finally, Catalyst also pre-defined a few functions commonly used in systems biol
 Reaction(mm(E, v, K), [Xi], [Xa])
 ```
 
-### [Reactions with non-unitary stoichiometries](@id programmatic_modelling_reactions_options_nonunitary_stoichiometries)
-Previously, we assumed that all reactions' substrates and products had stoichiometry 1. Other stoichiometries ([including decimal, parametric, and distributed, ones](@ref programmatic_modelling_reactions_options_nonstandard_stoichiometries)) are possible. To designate this we provide two additional arguments to the `Reaction` constructor, designating the substrates and products stoichiometries respectively.
+### [Reactions with non-unitary stoichiometries](@id programmatic_modelling_reaction_options_nonunitary_stoichiometries)
+Previously, we assumed that all reactions' substrates and products had stoichiometry 1. Other stoichiometries ([including decimal, parametric, and distributed, ones](@ref programmatic_modelling_reaction_options_nonstandard_stoichiometries)) are possible. To designate this we provide two additional arguments to the `Reaction` constructor, designating the substrates and products stoichiometries respectively.
 
 E.g. to model a simple dimerisation system (where two copies of $X$ dimerise to form $X2$, which then may dissociate back into two copies of $X$) we use
 ```@example programmatic_reactions
@@ -337,7 +337,7 @@ If there are multiple substrates and/or products, the order of the stoichiometri
 Reaction(k, [X, Y], [X, Y], [2, 1], [1, 2]),
 ```
 
-### [Reactions with non-standard stoichiometries](@id programmatic_modelling_reactions_options_nonstandard_stoichiometries)
+### [Reactions with non-standard stoichiometries](@id programmatic_modelling_reaction_options_nonstandard_stoichiometries)
 Reactant stoichiometries do not need to be integers, but can also be other numbers, parameters, or expressions. 
 
 Here we create a birth-death model where each production reaction produces 1.5 units of `X`:
@@ -372,7 +372,7 @@ oprob = ODEProblem(polymerisation_model, u0, (0.0, 1.0), ps)
 nothing # hide
 ```
 
-### [Additional `Reaction` constructor arguments](@id programmatic_modelling_reactions_options_)
+### [Additional `Reaction` constructor arguments](@id programmatic_modelling_reaction_options_additional_arguments)
 The `Reaction` constructor accepts several additional optional arguments. E.g. to [disable to use of mass action to compute reaction propensities, and instead use the rate only](@ref ref), you can use the `only_use_rate = true` argument:
 ```@example programmatic_reactions
 Reaction(k*E, [Xi], [Xa]; only_use_rate = true)
@@ -383,6 +383,24 @@ To attach [metadata to a reaction](@ref ref), use the `metadata` argument, follo
 ```@example programmatic_reactions
 Reaction(k*E, [Xi], [Xa]; metadata = [:description => "The activation of species X"])
 nothing # hide
+```
+
+## [Additional options for declaration of `ReactionSystem`s](@id programmatic_modelling_reactionsystem_options)
+
+### [Designating full lists of system species and parameters](@id programmatic_modelling_reactionsystem_options)
+Catalyst is able to automatically infer any systems species and parameters that are supplied within `Reaction`s (and other arguments). However, sometimes it might be desirable to explicitly add species or parameters (that do not occur in any other argument) to a system. We can do this by supplying vectors listing all species and parameters, as the third and fourth argument to the `ReactionSystem` constructor, respectively. When we do so, we *must* supply *both the species and parameter vectors* (even if we only need to explicitly declare either species or parameters). These vectors *must also contain the full lists of species and parameters* (not just those we wish to explicitly declare).
+
+E.g. here we programmatically create a birth-death process, but include a second species ($Y$) that would otherwise not be part of the model:
+```@example programmatic_reactionsystems
+using Catalyst # hide
+t = default_t()
+@species X(t) Y(t)
+@parameters p d
+rxs = [
+    Reaction(p, [], [X]),
+    Reaction(d, [X], [])
+]
+@named bd_model = ReactionSystem(rxs, t, [X, Y], [p, d])
 ```
 
 ## [Creation of `Reaction`s using the `@reaction`](@id programmatic_modelling_reaction_macro)
