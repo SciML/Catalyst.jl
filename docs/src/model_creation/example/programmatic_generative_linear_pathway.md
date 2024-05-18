@@ -1,5 +1,5 @@
 # [Programmatic, generative, modelling of a linear pathway](@id programmatic_generative_linear_pathway)
-This example will show how to use programmatic, generative, modelling to model a system implicitly. I.e. rather than listing all system reactions explicitly, the reactions are implicitly generated from a simple set of rules. This example is specifically designed to show how [programmatic modelling](@ref ref) enables *generative workflows* (demonstrating one of its advantages as compared to [DSL-based modelling](@ref ref)). In our example we will model linear pathways, so we will will first introduce these. Next, we will model them first using the DSL, and then using a generative programmatic workflow.
+This example will show how to use programmatic, generative, modelling to model a system implicitly. I.e. rather than listing all system reactions explicitly, the reactions are implicitly generated from a simple set of rules. This example is specifically designed to show how [programmatic modelling](@ref ref) enables *generative workflows* (demonstrating one of its advantages as compared to [DSL-based modelling](@ref ref)). In our example, we will model linear pathways, so we will first introduce these. Next, we will model them first using the DSL, and then using a generative programmatic workflow.
 
 ## [Linear pathways](@id programmatic_generative_linear_pathway_intro)
 Linear pathways consists of a series of species ($X_0$, $X_1$, $X_2$, ..., $X_n$) where each activates the subsequent one. These are often modelled through the following reaction system:
@@ -21,7 +21,7 @@ for some kernel $g(\tau)$. Here, a common kernel is a [gamma distribution](https
 ```math
 g(\tau; \alpha, \beta) = \frac{\beta^{\alpha}\tau^{\alpha-1}}{\Gamma(\alpha)}e^{-\beta\tau}
 ```
-When this is converted to an ODE, this generates a integro-differential equation. These (as well as the simpler delay differential equations) can be difficult to solve and analyse (especially when SDE or jump simulations are desired). Here, *the linear chain trick* can be used to instead model the delay as a linear pathway of the form described above[^1]. A result Fargue shows that this is equivalent to a gamma-distributed delay where, $\alpha$ is equivalent to $n$ (the number of species in our linear pathway), and $\beta$ to %\tau$ (the delay length term)[^2]. While modelling time delays using the linear chain trick introduces additional system species, it is often advantageous as it enables simulations using standard ODE, SDE, and Jump methods.
+When this is converted to an ODE, this generates an integro-differential equation. These (as well as the simpler delay differential equations) can be difficult to solve and analyse (especially when SDE or jump simulations are desired). Here, *the linear chain trick* can be used to instead model the delay as a linear pathway of the form described above[^1]. A result by Fargue shows that this is equivalent to a gamma-distributed delay, where $\alpha$ is equivalent to $n$ (the number of species in our linear pathway) and $\beta$ to %\tau$ (the delay length term)[^2]. While modelling time delays using the linear chain trick introduces additional system species, it is often advantageous as it enables simulations using standard ODE, SDE, and Jump methods.
 
 ## [Modelling linear pathways using the DSL](@id programmatic_generative_linear_pathway_dsl)
 It is known that two linear pathways have similar delays if the following equality holds:
@@ -54,7 +54,7 @@ lp_n10 = @reaction_network begin
 end
 nothing # hide
 ```
-Next, we prepares an ODE for each model (scaling the initial concentration of $X_0$ and the value of $\tau$ appropriately for each model).
+Next, we prepare an ODE for each model (scaling the initial concentration of $X_0$ and the value of $\tau$ appropriately for each model).
 ```@example programmatic_generative_linear_pathway_dsl
 using OrdinaryDiffEq, Plots
 u0_n3 = [:X0 => 3*1.0, :X1 => 0.0, :X2 => 0.0, :X3 => 0.0]
@@ -66,7 +66,7 @@ ps_n10 = [:τ => 1.0/10.0]
 oprob_n10 = ODEProblem(lp_n10, u0_n10, (0.0, 5.0), ps_n10)
 nothing # hide
 ```
-Finally, we plot the concentration of the final species in each linear pathway, noting that while the two pulses both peaks at $t = 1.0$, their shapes depend on $n$.
+Finally, we plot the concentration of the final species in each linear pathway, noting that while the two pulses both peak at $t = 1.0$, their shapes depend on $n$.
 ```@example programmatic_generative_linear_pathway_dsl
 sol_n3 = solve(oprob_n3)
 sol_n10 = solve(oprob_n10)
@@ -77,7 +77,7 @@ plot!(sol_n10; idxs = :X10, label = "n = 10")
 ## [Modelling linear pathways using programmatic, generative, modelling](@id programmatic_generative_linear_pathway_generative)
 Above, we investigated the impact of linear pathways' lengths on their behaviours. Since the models were implemented using the DSL, we had to implement a new model for each pathway (in each case writing out all reactions). Here, we will instead show how [programmatic modelling](@ref ref) can be used to generate pathways of arbitrary lengths.
 
-First we create a function, `generate_lp`, which creates a linear pathway model of length `n`. It utilises [*vector variables*](@ref ref) to create an arbitrary number of species, and also creates an [observable](@ref ref) for the final species of the chain.
+First, we create a function, `generate_lp`, which creates a linear pathway model of length `n`. It utilises [*vector variables*](@ref ref) to create an arbitrary number of species, and also creates an [observable](@ref ref) for the final species of the chain.
 ```@example programmatic_generative_linear_pathway_generative
 using Catalyst # hide
 function generate_lp(n)
@@ -88,7 +88,7 @@ function generate_lp(n)
     # Generate
     #     (1) A degradation reaction for the input species.
     #     (2) Production reactions for all intermediary species.
-    #     (2) Degradation reactions for al intermediary species.
+    #     (2) Degradation reactions for all intermediary species.
     rxs = [
         Reaction(1/τ, [X[1]], []);
         [Reaction(X[i]/τ, [], [X[i+1]]) for i in 1:n];
@@ -101,7 +101,7 @@ function generate_lp(n)
 end
 nothing # hide
 ```
-Next, we create a function that generates a `ODEProblem` (with appropriate initial conditions and parameter values) for arbitrarily lengthed linear pathway models.
+Next, we create a function that generates an `ODEProblem` (with appropriate initial conditions and parameter values) for arbitrarily lengthed linear pathway models.
 ```@example programmatic_generative_linear_pathway_generative
 function generate_oprob(n)
     lp = generate_lp(n)
