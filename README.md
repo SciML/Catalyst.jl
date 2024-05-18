@@ -1,9 +1,9 @@
 # Catalyst.jl
 
-[![Join the chat at https://julialang.zulipchat.com #sciml-bridged](https://img.shields.io/static/v1?label=Zulip&message=chat&color=9558b2&labelColor=389826)](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged)
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/Catalyst/stable/)
 [![API Stable](https://img.shields.io/badge/API-stable-blue.svg)](https://docs.sciml.ai/Catalyst/stable/api/catalyst_api/)
 [![Join the chat at https://julialang.zulipchat.com #sciml-bridged](https://img.shields.io/static/v1?label=Zulip&message=chat&color=9558b2&labelColor=389826)](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged)
+[![Citation](https://img.shields.io/badge/Publication-389826)](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530)
 
 [![Build Status](https://github.com/SciML/Catalyst.jl/workflows/CI/badge.svg)](https://github.com/SciML/Catalyst.jl/actions?query=workflow%3ACI)
 [![codecov.io](https://codecov.io/gh/SciML/Catalyst.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/SciML/Catalyst.jl)
@@ -46,7 +46,6 @@ An overview of the package and its features (as of version 13) can also be found
 ## Features
 
 #### Features of Catalyst
-
 - [The Catalyst DSL](@ref ref) provides a simple and readable format for manually specifying reaction 
  network models using chemical reaction notation.
 - Catalyst `ReactionSystem`s provides a symbolic representation of reaction networks,
@@ -80,7 +79,6 @@ An overview of the package and its features (as of version 13) can also be found
  expressions and Julia `Expr`s can be obtained for all rate laws and functions determining the 
  deterministic and stochastic terms within resulting ODE, SDE or jump models.
 - [Steady states](@ref ref) (and their [stabilities](@ref ref)) can be computed for model ODE representations.
-
 
 #### Features of Catalyst composing with other packages
 - [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) Can be used to [perform model ODE 
@@ -177,7 +175,6 @@ plot(jump_sol; lw = 2)
 
 
 ## Elaborate example
-
 In the above example, we used basic Catalyst-based workflows to simulate a simple model. Here we instead show how various Catalyst features can compose to create a much more advanced model. Our model describes how the volume of a cell ($V$) is affected by a growth factor ($G$). The growth factor only promotes growth while in its phosphorylated form ($Gᴾ$). The phosphorylation of $G$ ($G \to Gᴾ$) is promoted by sunlight (modelled as the cyclic sinusoid $kₐ*(sin(t)+1)$) phosphorylates the growth factor (producing $Gᴾ$). When the cell reaches a critical volume ($V$) it goes through cell division. First, we declare our model:
 ```julia
 using Catalyst
