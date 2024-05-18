@@ -9,17 +9,16 @@ specified using Catalyst's domain-specific language (DSL). Leveraging
 [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl), Catalyst enables
 large-scale simulations through auto-vectorization and parallelism. Symbolic
 `ReactionSystem`s can be used to generate ModelingToolkit-based models, allowing
-the easy simulation and parameter estimation of mass action ODE models, Chemical
+the easy simulation and parameter estimation of mass action ODE models, chemical
 Langevin SDE models, stochastic chemical kinetics jump process models, and more.
 Generated models can be used with solvers throughout the broader
 [SciML](https://sciml.ai) ecosystem, including higher-level SciML packages (e.g.
 for sensitivity analysis, parameter estimation, machine learning applications,
 etc).
 
-## [Features](@id doc_home_features)
+## Features
 
-#### [Features of Catalyst](@id doc_home_features_catalyst)
-
+#### Features of Catalyst
 - [The Catalyst DSL](@ref ref) provides a simple and readable format for manually specifying reaction 
  network models using chemical reaction notation.
 - Catalyst `ReactionSystem`s provides a symbolic representation of reaction networks,
@@ -28,7 +27,7 @@ etc).
 - The [Catalyst.jl API](http://docs.sciml.ai/Catalyst/stable/api/catalyst_api) provides functionality 
  for extending networks, building networks programmatically, and for composing 
  multiple networks together.
-- Generated systems can be simulated using any
+- Generated models can be simulated using any
  [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/)
  [ODE/SDE/jump solver](@ref ref), and can be used within `EnsembleProblem`s for carrying
  out [parallelized parameter sweeps and statistical sampling](@ref ref). Plot recipes
@@ -54,8 +53,7 @@ etc).
  deterministic and stochastic terms within resulting ODE, SDE or jump models.
 - [Steady states](@ref ref) (and their [stabilities](@ref ref)) can be computed for model ODE representations.
 
-
-#### [Features of Catalyst composing with other packages](@id doc_home_features_composed)
+#### Features of Catalyst composing with other packages
 - [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) Can be used to [perform model ODE 
  simulations](@ref ref).
 - [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) Can be used to [perform model 
@@ -85,7 +83,7 @@ etc).
 - [GlobalSensitivity.jl](https://github.com/SciML/GlobalSensitivity.jl) can be used to perform 
  [global sensitivity analysis](@ref ref) of model behaviours.
  
-#### [Features of packages built upon Catalyst](@id doc_home_features_other_packages)
+#### Features of packages built upon Catalyst
 - Catalyst [`ReactionSystem`](@ref)s can be [imported from SBML files](@ref ref) via
  [SBMLImporter.jl](https://github.com/SciML/SBMLImporter.jl) and [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), 
  and [from BioNetGen .net files](@ref ref) and various stoichiometric matrix network representations
@@ -104,7 +102,6 @@ etc).
 - [PEtab.jl](https://github.com/sebapersson/PEtab.jl) a package that implements the PEtab format for 
  fitting reaction network ODEs to data. Input can be provided either as SBML files or as Catalyst 
  `ReactionSystem`s.
- 
 
 ## [How to read this documentation](@id doc_home_documentation)
 The Catalyst documentation is separated into sections describing Catalyst's various features. Where appropriate, some sections will also give advice on best practices for various modelling workflows, and provide links with further reading. Each section also contains a set of relevant example workflows. Finally, the [API](@ref api) section contains a list of all functions exported by Catalyst (as well as descriptions of them and their inputs and outputs).
@@ -120,7 +117,7 @@ For most code blocks in this documentation, the output of the last line of code 
 and
 ```@example home1
 @reaction_network begin
- (p,d), 0 <--> X
+    (p,d), 0 <--> X
 end
 ```
 However, in some situations (e.g. when output is extensive, or irrelevant to what is currently being described) we have disabled this, e.g. like here:
@@ -131,7 +128,7 @@ nothing # hide
 and
 ```@example home1
 @reaction_network begin
- (p,d), 0 <--> X
+    (p,d), 0 <--> X
 end
 nothing # hide
 ```
@@ -152,21 +149,21 @@ is also needed.
 
 A more throughout guide for setting up Catalyst and installing Julia packages can be found [here](@ref ref).
 
-## [Illustrative example](@id doc_home_illustrative_example)
+## Illustrative example
 
-#### [Deterministic ODE simulation of Michaelis-Menten enzyme kinetics](@id doc_home_illustrative_example_jump)
+#### Deterministic ODE simulation of Michaelis-Menten enzyme kinetics
 Here we show a simple example where a model is created using the Catalyst DSL, and then simulated as 
 an ordinary differential equation.
 
-```@example home2
+```@example home_simple_example
 # Fetch required packages.
-using Catalyst, DifferentialEquations, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 
 # Create model.
 model = @reaction_network begin
- kB, S + E --> SE
- kD, SE --> S + E
- kP, SE --> P + E
+    kB, S + E --> SE
+    kD, SE --> S + E
+    kP, SE --> P + E
 end
 
 # Create an ODE that can be simulated.
@@ -180,53 +177,56 @@ sol = solve(ode)
 plot(sol; lw = 5)
 ```
 
-![](https://user-images.githubusercontent.com/1814174/87864114-3bf9dd00-c932-11ea-83a0-58f38aee8bfb.png)
-
-#### [Stochastic jump simulations](@id doc_home_illustrative_example_jump)
+#### Stochastic jump simulations
 The same model can be used as input to other types of simulations. E.g. here we instead perform a 
 jump simulation
-```@example home2
+```@example home_simple_example
 # Create and simulate a jump process (here using Gillespie's direct algorithm).
+using JumpProcesses
 dprob = DiscreteProblem(model, u0, tspan, ps)
 jprob = JumpProblem(model, dprob, Direct())
 jump_sol = solve(jprob, SSAStepper())
+jump_sol = solve(jprob, SSAStepper(); seed = 1234) # hide
 plot(jump_sol; lw = 2)
 ```
 
-
-## [Elaborate example](@id doc_home_elaborate_example)
-
-In the above example, we used basic Catalyst-based workflows to simulate a simple model. Here we instead show how various Catalyst features can compose to create a much more advanced model. Our model describes how the volume of a cell ($V$) is affected by a growth factor ($G$). Typically the growth factor is inactive ($Gi$), but it is activated ($Ga$) by the presence of sunlight (modeled as the cyclic sinusoid $kA*(sin(t)+1)$). When the cell reaches a critical volume ($V$) it goes through cell division. First, we declare our model:
-```@example home3
-using Catalyst, Plots, StochasticDiffEq # hide
+## Elaborate example
+In the above example, we used basic Catalyst-based workflows to simulate a simple model. Here we instead show how various Catalyst features can compose to create a much more advanced model. Our model describes how the volume of a cell ($V$) is affected by a growth factor ($G$). The growth factor only promotes growth while in its phosphorylated form ($Gᴾ$). The phosphorylation of $G$ ($G \to Gᴾ$) is promoted by sunlight (modelled as the cyclic sinusoid $kₐ*(sin(t)+1)$) phosphorylates the growth factor (producing $Gᴾ$). When the cell reaches a critical volume ($V$) it goes through cell division. First, we declare our model:
+```@example home_elaborate_example
+using Catalyst
 cell_model = @reaction_network begin
- @parameters V_thres g
- @equations begin
- D(V) ~ g*Ga
- end
- @continuous_events begin
- [V ~ V_thres] => [V ~ V/2]
- end
- (kA*(sin(t)+1), kI), Gi <--> Ga
+    @parameters Vₘₐₓ g Ω
+    @default_noise_scaling Ω
+    @equations begin
+        D(V) ~ g*Gᴾ
+    end
+    @continuous_events begin
+        [V ~ Vₘₐₓ] => [V ~ V/2]
+    end
+    kₚ*(sin(t)+1)/V, G --> Gᴾ
+    kᵢ/V, Gᴾ --> G
 end
 ```
 Next, we can use [Latexify.jl](https://korsbo.github.io/Latexify.jl/stable/) to show the ordinary differential equations associated with this model:
-```@example home3
+```@example home_elaborate_example
 using Latexify
 latexify(cell_model; form = :ode)
 ```
-In this case we would like to perform stochastic simulations, so we transform our model to an SDE:
-```@example home3
-u0 = [:V => 0.5, :Gi => 1.0, :Ga => 0.0]
-tspan = (0.0, 10.0)
-ps = [:V_thres => 1.0, :g => 0.5, :kA => 5.0, :kI => 2.0]
+In this case, we would instead like to perform stochastic simulations, so we transform our model to an SDE:
+```@example home_elaborate_example
+u0 = [:V => 0.5, :G => 1.0, :Gᴾ => 0.0]
+tspan = (0.0, 20.0)
+ps = [:Vₘₐₓ => 1.0, :g => 0.2, :kₚ => 5.0, :kᵢ => 2.0, :Ω => 0.1]
 sprob = SDEProblem(cell_model, u0, tspan, ps)
 ```
 Finally, we simulate it and plot the result.
-```@example home3
-sol = solve(oprob, Tsit5())
-plot(sol)
+```@example home_elaborate_example
+using StochasticDiffEq
+sol = solve(sprob, STrapezoid())
+sol = solve(sprob, STrapezoid(); seed = 1234) # hide
+plot(sol; xguide = "Time (au)", lw = 2)
 ```
+![Elaborate SDE simulation](docs/src/assets/readme_elaborate_sde_plot.svg)
 
 ## [Getting Help](@id doc_home_help)
 Catalyst developers are active on the [Julia Discourse](https://discourse.julialang.org/), 
