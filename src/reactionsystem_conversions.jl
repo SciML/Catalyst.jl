@@ -42,19 +42,6 @@ function oderatelaw(rx; combinatoric_ratelaw = true)
     rl
 end
 
-function assemble_drift(rs, ispcs; combinatoric_ratelaws = true, as_odes = true,
-                        include_zero_odes = true, remove_conserved = false)
-    rhsvec = assemble_oderhs(rs, ispcs; combinatoric_ratelaws, remove_conserved)
-    if as_odes
-        D = Differential(get_iv(rs))
-        eqs = [Equation(D(x), rhs)
-               for (x, rhs) in zip(ispcs, rhsvec) if (include_zero_odes || (!_iszero(rhs)))]
-    else
-        eqs = [Equation(0, rhs) for rhs in rhsvec if (include_zero_odes || (!_iszero(rhs)))]
-    end
-    eqs
-end
-
 function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserved = false)
     nps = get_networkproperties(rs)
     species_to_idx = Dict(x => i for (i, x) in enumerate(ispcs))
@@ -96,6 +83,19 @@ function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserv
     end
 
     rhsvec
+end
+
+function assemble_drift(rs, ispcs; combinatoric_ratelaws = true, as_odes = true,
+                        include_zero_odes = true, remove_conserved = false)
+    rhsvec = assemble_oderhs(rs, ispcs; combinatoric_ratelaws, remove_conserved)
+    if as_odes
+        D = Differential(get_iv(rs))
+        eqs = [Equation(D(x), rhs)
+               for (x, rhs) in zip(ispcs, rhsvec) if (include_zero_odes || (!_iszero(rhs)))]
+    else
+        eqs = [Equation(0, rhs) for rhs in rhsvec if (include_zero_odes || (!_iszero(rhs)))]
+    end
+    eqs
 end
 
 # this doesn't work with constraint equations currently
@@ -258,6 +258,57 @@ function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
     return true
 end
 
+@inline function makemajump(rx; combinatoric_ratelaw = true)
+    @unpack rate, substrates, substoich, netstoich = rx
+    zeroorder = (length(substoich) == 0)
+    reactant_stoch = Vector{Pair{Any, eltype(substoich)}}()
+    @inbounds for (i, spec) in enumerate(substrates)
+        # move constant species into the rate
+        if isconstant(spec)
+            rate *= spec
+            isone(substoich[i]) && continue
+            for i in 1:(substoich[i] - 1)
+                rate *= spec - i
+            end
+        else
+            push!(reactant_stoch, substrates[i] => substoich[i])
+        end
+    end
+
+    if (!zeroorder) && combinatoric_ratelaw
+        coef = prod(factorial, substoich)
+        (!isone(coef)) && (rate /= coef)
+    end
+
+    net_stoch = filter(p -> !drop_dynamics(p[1]), netstoich)
+    isempty(net_stoch) &&
+        error("$rx has no net stoichiometry change once accounting for constant and boundary condition species. This is not supported.")
+
+    MassActionJump(Num(rate), reactant_stoch, net_stoch, scale_rates = false,
+                   useiszero = false)
+end
+
+# recursively visit each neighbor's rooted tree and mark everything in it as vrj
+function dfs_mark!(isvrjvec, visited, depgraph, i)
+    visited[i] = true
+    nhbrs = depgraph[i]
+    for nhbr in nhbrs
+        if !visited[nhbr]
+            isvrjvec[nhbr] = true
+            dfs_mark!(isvrjvec, visited, depgraph, nhbr)
+        end
+    end
+    nothing
+end
+
+# get_depgraph(rs)[i] is the list of reactions with rates depending on species changed by
+# i'th reaction.
+function get_depgraph(rs)
+    jdeps = asgraph(rs)
+    vdeps = variable_dependencies(rs)
+    eqeq_dependencies(jdeps, vdeps).fadjlist
+end
+
 function assemble_jumps(rs; combinatoric_ratelaws = true)
     meqs = MassActionJump[]
     ceqs = ConstantRateJump[]
@@ -321,57 +372,6 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
         end
     end
     vcat(meqs, ceqs, veqs)
-end
-
-# get_depgraph(rs)[i] is the list of reactions with rates depending on species changed by
-# i'th reaction.
-function get_depgraph(rs)
-    jdeps = asgraph(rs)
-    vdeps = variable_dependencies(rs)
-    eqeq_dependencies(jdeps, vdeps).fadjlist
-end
-
-# recursively visit each neighbor's rooted tree and mark everything in it as vrj
-function dfs_mark!(isvrjvec, visited, depgraph, i)
-    visited[i] = true
-    nhbrs = depgraph[i]
-    for nhbr in nhbrs
-        if !visited[nhbr]
-            isvrjvec[nhbr] = true
-            dfs_mark!(isvrjvec, visited, depgraph, nhbr)
-        end
-    end
-    nothing
-end
-
-@inline function makemajump(rx; combinatoric_ratelaw = true)
-    @unpack rate, substrates, substoich, netstoich = rx
-    zeroorder = (length(substoich) == 0)
-    reactant_stoch = Vector{Pair{Any, eltype(substoich)}}()
-    @inbounds for (i, spec) in enumerate(substrates)
-        # move constant species into the rate
-        if isconstant(spec)
-            rate *= spec
-            isone(substoich[i]) && continue
-            for i in 1:(substoich[i] - 1)
-                rate *= spec - i
-            end
-        else
-            push!(reactant_stoch, substrates[i] => substoich[i])
-        end
-    end
-
-    if (!zeroorder) && combinatoric_ratelaw
-        coef = prod(factorial, substoich)
-        (!isone(coef)) && (rate /= coef)
-    end
-
-    net_stoch = filter(p -> !drop_dynamics(p[1]), netstoich)
-    isempty(net_stoch) &&
-        error("$rx has no net stoichiometry change once accounting for constant and boundary condition species. This is not supported.")
-
-    MassActionJump(Num(rate), reactant_stoch, net_stoch, scale_rates = false,
-                   useiszero = false)
 end
 
 

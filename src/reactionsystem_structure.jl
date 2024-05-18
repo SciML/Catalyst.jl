@@ -794,6 +794,13 @@ function reactionparamsmap(network)
     Dict(p => i for (i, p) in enumerate(reactionparams(network)))
 end
 
+# used in the next function (`reactions(network)`).
+function namespace_reactions(network::ReactionSystem)
+    rxs = reactions(network)
+    isempty(rxs) && return Reaction[]
+    map(rx -> namespace_equation(rx, network), rxs)
+end
+
 """
     reactions(network)
 
@@ -809,11 +816,6 @@ function reactions(network)
     [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
 end
 
-function namespace_reactions(network::ReactionSystem)
-    rxs = reactions(network)
-    isempty(rxs) && return Reaction[]
-    map(rx -> namespace_equation(rx, network), rxs)
-end
 
 """
     numreactions(network)
@@ -1267,17 +1269,17 @@ function make_empty_network(; iv = DEFAULT_IV, name = gensym(:ReactionSystem))
 end
 
 # A helper function used in `flatten`.
-function getsubsystypes(sys)
-    typeset = Set{Type}()
-    getsubsystypes!(typeset, sys)
-    typeset
-end
-
 function getsubsystypes!(typeset::Set{Type}, sys::T) where {T <: MT.AbstractSystem}
     push!(typeset, T)
     for subsys in get_systems(sys)
         getsubsystypes!(typeset, subsys)
     end
+    typeset
+end
+
+function getsubsystypes(sys)
+    typeset = Set{Type}()
+    getsubsystypes!(typeset, sys)
     typeset
 end
 
@@ -1433,4 +1435,4 @@ function validate(rs::ReactionSystem, info::String = "")
 end
 
 # Checks if a unit consist of exponents with base 1 (and is this unitless).
-unitless_exp(u) = istree(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
+(u) = istree(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
