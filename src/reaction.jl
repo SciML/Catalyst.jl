@@ -470,16 +470,16 @@ end
 """
 has_noise_scaling(reaction::Reaction)
 
-Checks whether a specific reaction has the metadata field `noise_scaing`. If so, returns `true`, else
-returns `false`.
+Returns `true` if the input reaction has the `noise_scaing` metadata field assigned, else `false`.
 
 Arguments:
-- `reaction`: The reaction for which we wish to check.
+- `reaction`: The reaction we wish to check for the `noise_scaing` metadata field.
 
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
 has_noise_scaling(reaction)
+```
 """
 function has_noise_scaling(reaction::Reaction)
     return hasmetadata(reaction, :noise_scaling)
@@ -488,21 +488,104 @@ end
 """
 get_noise_scaling(reaction::Reaction)
 
-Returns the noise_scaling metadata from a specific reaction.
+Returns `noise_scaing` metadata field for the input reaction.
 
 Arguments:
-- `reaction`: The reaction for which we wish to retrive all metadata.
+- `reaction`: The reaction we wish to retrieve the `noise_scaing` metadata field.
 
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
 get_noise_scaling(reaction)
+```
 """
 function get_noise_scaling(reaction::Reaction)
     if has_noise_scaling(reaction)
         return getmetadata(reaction, :noise_scaling)
     else
         error("Attempts to access noise_scaling metadata field for a reaction which does not have a value assigned for this metadata.")
+    end
+end
+
+# Description.
+"""
+has_description(reaction::Reaction)
+
+Returns `true` if the input reaction has the `description` metadata field assigned, else `false`.
+
+Arguments:
+- `reaction`: The reaction we wish to check for the `description` metadata field.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [description="A reaction"]
+has_description(reaction)
+```
+"""
+function has_description(reaction::Reaction)
+    return hasmetadata(reaction, :description)
+end
+
+"""
+get_description(reaction::Reaction)
+
+Returns `description` metadata field for the input reaction.
+
+Arguments:
+- `reaction`: The reaction we wish to retrieve the `description` metadata field.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [description="A reaction"]
+get_description(reaction)
+```
+"""
+function get_description(reaction::Reaction)
+    if has_description(reaction)
+        return getmetadata(reaction, :description)
+    else
+        error("Attempts to access `description` metadata field for a reaction which does not have a value assigned for this metadata.")
+    end
+end
+
+# Misc.
+"""
+has_misc(reaction::Reaction)
+
+Returns `true` if the input reaction has the `misc` metadata field assigned, else `false`.
+
+Arguments:
+- `reaction`: The reaction we wish to check for the `misc` metadata field.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [misc="A reaction"]
+misc(reaction)
+```
+"""
+function has_misc(reaction::Reaction)
+    return hasmetadata(reaction, :misc)
+end
+
+"""
+get_misc(reaction::Reaction)
+
+Returns `misc` metadata field for the input reaction.
+
+Arguments:
+- `reaction`: The reaction we wish to retrieve the `misc` metadata field.
+
+Example:
+```julia
+reaction = @reaction k, 0 --> X, [misc="A reaction"]
+get_misc(reaction)
+```
+"""
+function get_misc(reaction::Reaction)
+    if has_description(reaction)
+        return getmetadata(reaction, :misc)
+    else
+        error("Attempts to access `misc` metadata field for a reaction which does not have a value assigned for this metadata.")
     end
 end
 
