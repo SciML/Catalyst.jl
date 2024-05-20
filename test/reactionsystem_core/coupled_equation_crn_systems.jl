@@ -211,6 +211,24 @@ let
 end
 
 
+### Accessor Tests ###
+
+# Checks that basic accessors gives correct output.
+let
+    # Creates a basic model with combination of equations and reactions.
+    coupled_rs = @reaction_network coupled_rs begin
+        @variables VV(t)
+        @equations begin
+            D(V) ~ X - V
+            VV^2 ~ log(V) + X 
+        end
+        (p,d), 0 <--> X
+    end
+
+
+end
+
+
 ### Species, Variables, and Parameter Handling ###
 
 # Checks that coupled systems contain the correct species, variables, and parameters.

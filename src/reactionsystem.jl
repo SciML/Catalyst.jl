@@ -812,6 +812,18 @@ function numreactions(network)
 end
 
 """
+    nonreactions(network)
+
+Return the non-reaction equations within the network (i.e. algebraic and differnetial equations).
+
+Notes:
+- Allocates a new array to store the non-species variables.
+"""
+function nonreactions(network)
+    equations(network)[(numreactions(network) + 1):end]
+end
+
+"""
     numreactionparams(network)
 
 Return the total number of parameters within the given [`ReactionSystem`](@ref)
