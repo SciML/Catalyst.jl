@@ -139,7 +139,7 @@ Reactions declared as a part of a `ReactionSystem` (e.g. using the DSL) can be r
     Reaction balancing is currently not supported for reactions involving compounds of compounds.
 
 ### Balancing full systems
-It is possible to balance all the reactions of a reaction system simultaneously using the `balance_system` function. Here, the output is a new system, where all reactions are balanced. E.g. We can use it to balance this system of Methane formation/combustion:
+It is possible to balance all the reactions of a reaction system simultaneously using the `balance_system` function. Here, the output is a new system, where all reactions are balanced. E.g. We can use it to balance this system of methane formation/combustion:
 ```@example chem2
 rs = @reaction_network begin
     @species C(t) O(t) H(t)
