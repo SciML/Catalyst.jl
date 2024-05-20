@@ -213,19 +213,50 @@ end
 
 ### Accessor Tests ###
 
-# Checks that basic accessors gives correct output.
+# Checks basic accessor functions for a basic coupled CRN/equation model.
 let
-    # Creates a basic model with combination of equations and reactions.
-    coupled_rs = @reaction_network coupled_rs begin
-        @variables VV(t)
-        @equations begin
-            D(V) ~ X - V
-            VV^2 ~ log(V) + X 
-        end
-        (p,d), 0 <--> X
-    end
+    # Creates a reaction system.
+    t = default_t()
+    D = default_time_deriv()
+    @parameters p d v
+    @species X(t)
+    @variables V(t) W(t)
 
+    eqs = [
+        Reaction(p, [], [X]),
+        Reaction(d, [X], []),
+        Reaction(d, [X], nothing, [2], nothing),
+        D(V) ~ X - v*V,
+        W^2 ~ log(V) + X 
+    ]
+    @named coupled_rs = ReactionSystem(eqs, t)
 
+    # Check unknowns-related accessors.
+    @test Catalyst.has_species(coupled_rs)
+    @test issetequal(Catalyst.get_species(coupled_rs), [X])
+    @test issetequal(species(coupled_rs), [X])
+    @test issetequal(ModelingToolkit.get_unknowns(coupled_rs), [X, V, W])
+    @test issetequal(unknowns(coupled_rs), [X, V, W])
+    @test issetequal(nonspecies(coupled_rs), [V, W])
+    @test numspecies(coupled_rs) == 1
+
+    # Check parameters-related accessors.
+    @test Catalyst.has_rxs(coupled_rs)
+    @test issetequal(Catalyst.get_rxs(coupled_rs), eqs[1:3])
+    @test issetequal(reactions(coupled_rs), eqs[1:3])
+    @test issetequal(equations(coupled_rs), eqs)
+    @test issetequal(nonreactions(coupled_rs), eqs[4:5])
+    @test issetequal(reactionrates(coupled_rs), [p, d, d])
+    @test numreactions(coupled_rs) == 3
+
+    # Check parameters-related accessors.
+    @test issetequal(parameters(coupled_rs), [p, d, v])
+    @test issetequal(reactionparams(coupled_rs), [p, d, v])
+    @test numparams(coupled_rs) == 3
+    @test numreactionparams(coupled_rs) == 3
+
+    # Check other accessors.
+    @test !isspatial(coupled_rs)
 end
 
 
