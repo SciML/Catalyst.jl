@@ -298,7 +298,7 @@ let
 
     u0 = [:X1 => 1000.0, :X2 => 1000.0, :X3 => 1000.0, :X4 => 1000.0, :X5 => 1000.0, :N1 => 3.0, :N3 => 0.33]
     ps = [:p => 1000.0, :d => 1.0, :η1 => 1.0, :η2 => 1.4, :η3 => 0.33, :η4 => 4.0]
-    sprob = SDEProblem(noise_scaling_network, u0, (0.0, 100.0), ps)
+    sprob = SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), ps)
 
     # Test have at some point failed due to StochasticDiffEq failing to initiate. This temporary extra
     # check is in place if it will happen again, to help us investigate.
