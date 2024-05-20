@@ -12,8 +12,8 @@ using SafeTestsets, Test
 
     #if GROUP == "All" || GROUP == "ModelCreation"
         # Tests the `ReactionSystem` structure and its properties.
-        @time @safetestset "Reaction Structure" begin include("reactionsystem_core/reaction_structure.jl") end
-        @time @safetestset "ReactionSystem Structure" begin include("reactionsystem_core/reactionsystem_structure.jl") end
+        @time @safetestset "Reaction Structure" begin include("reactionsystem_core/reaction.jl") end
+        @time @safetestset "ReactionSystem Structure" begin include("reactionsystem_core/reactionsystem.jl") end
         @time @safetestset "Higher Order Reactions" begin include("reactionsystem_core/higher_order_reactions.jl") end
         @time @safetestset "Symbolic Stoichiometry" begin include("reactionsystem_core/symbolic_stoichiometry.jl") end
         @time @safetestset "Parameter Type Designation" begin include("reactionsystem_core/parameter_type_designation.jl") end
