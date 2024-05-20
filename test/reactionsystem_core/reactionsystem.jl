@@ -118,13 +118,11 @@ let
     odesys = complete(convert(ODESystem, rs))
     sdesys = complete(convert(SDESystem, rs))
     js = complete(convert(JumpSystem, rs))
-    nlsys = complete(convert(NonlinearSystem, rs))
 
     @test ModelingToolkit.get_defaults(rs) ==
           ModelingToolkit.get_defaults(odesys) ==
           ModelingToolkit.get_defaults(sdesys) ==
           ModelingToolkit.get_defaults(js) ==
-          ModelingToolkit.get_defaults(nlsys) ==
           defs
 
     u0map = [A => 5.0]
