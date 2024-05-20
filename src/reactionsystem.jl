@@ -523,7 +523,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in; spa
 end
 
 
-### Base Functions ###
+### Base Function Dispatches ###
 
 """
     ==(rn1::ReactionSystem, rn2::ReactionSystem)
@@ -571,38 +571,6 @@ function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = tr
     issetequal(get_systems(rn1), get_systems(rn2)) || return false
 
     true
-end
-
-
-### ModelingToolkit-inherited Functions ###
-
-# Retrives events.
-MT.get_continuous_events(sys::ReactionSystem) = getfield(sys, :continuous_events)
-# `MT.get_discrete_events(sys::ReactionSystem) = getfield(sys, :get_discrete_events)` should be added here.
-
-# need a custom equations since ReactionSystem.eqs are a mix of Reactions and Equations
-function MT.equations(sys::ReactionSystem)
-    ivs = independent_variables(sys)
-    eqs = get_eqs(sys)
-    systems = get_systems(sys)
-    if !isempty(systems)
-        eqs = CatalystEqType[eqs;
-                             reduce(vcat, MT.namespace_equations.(systems, (ivs,));
-                                    init = Any[])]
-        return sort!(eqs; by = eqsortby)
-    end
-    return eqs
-end
-
-function MT.unknowns(sys::ReactionSystem)
-    sts = get_unknowns(sys)
-    systems = get_systems(sys)
-    if !isempty(systems)
-        sts = unique!([sts; reduce(vcat, namespace_variables.(systems))])
-        sort!(sts; by = !isspecies)
-        return sts
-    end
-    return sts
 end
 
 
@@ -663,6 +631,24 @@ function combinatoric_ratelaws(sys::ReactionSystem)
     mapreduce(combinatoric_ratelaws, |, subsys; init = crl)
 end
 
+# Gets sub systems that are also reaction systems.
+# Used by several subsequent API functions.
+function filter_nonrxsys(network)
+    systems = get_systems(network)
+    rxsystems = ReactionSystem[]
+    for sys in systems
+        (sys isa ReactionSystem) && push!(rxsystems, sys)
+    end
+    rxsystems
+end
+
+# Special species but which take a set of states and names spaces them according to another
+# `ReactionSystem`.
+# Used by `species(network)`.
+function species(network::ReactionSystem, sts)
+    [MT.renamespace(network, st) for st in sts]
+end
+
 """
     species(network)
 
@@ -679,12 +665,6 @@ function species(network)
     systems = filter_nonrxsys(network)
     isempty(systems) && return sts
     unique([sts; reduce(vcat, map(sys -> species(sys, species(sys)), systems))])
-end
-
-# Special species but which take a set of states and names spaces them according to another
-# `ReactionSystem`.
-function species(network::ReactionSystem, sts)
-    [MT.renamespace(network, st) for st in sts]
 end
 
 """
@@ -863,14 +843,36 @@ Returns whether `rn` has any spatial independent variables (i.e. is a spatial ne
 """
 isspatial(rn::ReactionSystem) = !isempty(get_sivs(rn))
 
-# Gets sub systems that are also reaction systems.
-function filter_nonrxsys(network)
-    systems = get_systems(network)
-    rxsystems = ReactionSystem[]
-    for sys in systems
-        (sys isa ReactionSystem) && push!(rxsystems, sys)
+
+### ModelingToolkit Function Dispatches ###
+
+# Retrives events.
+MT.get_continuous_events(sys::ReactionSystem) = getfield(sys, :continuous_events)
+# `MT.get_discrete_events(sys::ReactionSystem) = getfield(sys, :get_discrete_events)` should be added here.
+
+# need a custom equations since ReactionSystem.eqs are a mix of Reactions and Equations
+function MT.equations(sys::ReactionSystem)
+    ivs = independent_variables(sys)
+    eqs = get_eqs(sys)
+    systems = get_systems(sys)
+    if !isempty(systems)
+        eqs = CatalystEqType[eqs;
+                             reduce(vcat, MT.namespace_equations.(systems, (ivs,));
+                                    init = Any[])]
+        return sort!(eqs; by = eqsortby)
     end
-    rxsystems
+    return eqs
+end
+
+function MT.unknowns(sys::ReactionSystem)
+    sts = get_unknowns(sys)
+    systems = get_systems(sys)
+    if !isempty(systems)
+        sts = unique!([sts; reduce(vcat, namespace_variables.(systems))])
+        sort!(sts; by = !isspecies)
+        return sts
+    end
+    return sts
 end
 
 
@@ -1435,4 +1437,4 @@ function validate(rs::ReactionSystem, info::String = "")
 end
 
 # Checks if a unit consist of exponents with base 1 (and is this unitless).
-(u) = istree(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
+unitless_exp(u) = istree(u) && (operation(u) == ^) && (arguments(u)[1] == 1)

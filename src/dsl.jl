@@ -869,3 +869,30 @@ function get_reaction(line)
     end
     return reaction[1]
 end
+
+
+### Generic Expression Manipulation ###
+
+# Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.
+function recursive_expand_functions!(expr::ExprValues)
+    (typeof(expr) != Expr) && (return expr)
+    foreach(i -> expr.args[i] = recursive_expand_functions!(expr.args[i]),
+            1:length(expr.args))
+    if expr.head == :call
+        !isdefined(Catalyst, expr.args[1]) && (expr.args[1] = esc(expr.args[1]))
+    end
+    expr
+end
+
+# Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a Symbol/Numerical).
+function tup_leng(ex::ExprValues)
+    (typeof(ex) == Expr && ex.head == :tuple) && (return length(ex.args))
+    return 1
+end
+
+# Gets the ith element in a expression tuple, or returns the input itself if it is not an expression tuple
+# (probably a  Symbol/Numerical).
+function get_tup_arg(ex::ExprValues, i::Int)
+    (tup_leng(ex) == 1) && (return ex)
+    return ex.args[i]
+end

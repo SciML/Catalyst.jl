@@ -42,6 +42,10 @@ function oderatelaw(rx; combinatoric_ratelaw = true)
     rl
 end
 
+# Function returning `true` for species which shouldn't change from the reactions, 
+# including non-species variables.
+drop_dynamics(s) = isconstant(s) || isbc(s) || (!isspecies(s))
+
 function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserved = false)
     nps = get_networkproperties(rs)
     species_to_idx = Dict(x => i for (i, x) in enumerate(ispcs))
@@ -432,10 +436,6 @@ end
 
 ### Utility ###
 
-# Function returning `true` for species which shouldn't change from the reactions, 
-# including non-species variables.
-drop_dynamics(s) = isconstant(s) || isbc(s) || (!isspecies(s))
-
 # Throws an error when attempting to convert a spatial system to an unssuported type.
 function spatial_convert_err(rs::ReactionSystem, systype)
     isspatial(rs) && error("Conversion to $systype is not supported for spatial networks.")
@@ -789,6 +789,24 @@ end
 
 ### Symbolic Variable/Symbol Conversions ###
 
+# convert symbol of the form :sys.a.b.c to a symbolic a.b.c
+function _symbol_to_var(sys, sym)
+    if hasproperty(sys, sym)
+        var = getproperty(sys, sym, namespace = false)
+    else
+        strs = split(String(sym), "₊")   # need to check if this should be split of not!!!
+        if length(strs) > 1
+            var = getproperty(sys, Symbol(strs[1]), namespace = false)
+            for str in view(strs, 2:length(strs))
+                var = getproperty(var, Symbol(str), namespace = true)
+            end
+        else
+            throw(ArgumentError("System $(nameof(sys)): variable $sym does not exist"))
+        end
+    end
+    var
+end
+
 """
     symmap_to_varmap(sys, symmap)
 
@@ -852,24 +870,6 @@ end
 # don't permute any other types and let varmap_to_vars handle erroring
 symmap_to_varmap(sys, symmap) = symmap
 #error("symmap_to_varmap requires a Dict, AbstractArray or Tuple to map Symbols to values.")
-
-# convert symbol of the form :sys.a.b.c to a symbolic a.b.c
-function _symbol_to_var(sys, sym)
-    if hasproperty(sys, sym)
-        var = getproperty(sys, sym, namespace = false)
-    else
-        strs = split(String(sym), "₊")   # need to check if this should be split of not!!!
-        if length(strs) > 1
-            var = getproperty(sys, Symbol(strs[1]), namespace = false)
-            for str in view(strs, 2:length(strs))
-                var = getproperty(var, Symbol(str), namespace = true)
-            end
-        else
-            throw(ArgumentError("System $(nameof(sys)): variable $sym does not exist"))
-        end
-    end
-    var
-end
 
 
 ### Other Conversion-related Functions ###

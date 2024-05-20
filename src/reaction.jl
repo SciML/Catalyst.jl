@@ -242,17 +242,9 @@ end
 # Union type for `Reaction`s and `Equation`s.
 const CatalystEqType = Union{Reaction, Equation}
 
-### Base Functions ###
+### Base Function Dispatches ###
 
-# Show function for `Reaction`s.
-function Base.show(io::IO, rx::Reaction)
-    print(io, rx.rate, ", ")
-    print_rxside(io, rx.substrates, rx.substoich)
-    arrow = rx.only_use_rate ? "⇒" : "-->"
-    print(io, " ", arrow, " ")
-    print_rxside(io, rx.products, rx.prodstoich)
-end
-
+# Used by `Base.show`.
 function print_rxside(io::IO, specs, stoich)
     # reactants/substrates
     if isempty(specs)
@@ -273,6 +265,15 @@ function print_rxside(io::IO, specs, stoich)
         end
     end
     nothing
+end
+
+# Show function for `Reaction`s.
+function Base.show(io::IO, rx::Reaction)
+    print(io, rx.rate, ", ")
+    print_rxside(io, rx.substrates, rx.substoich)
+    arrow = rx.only_use_rate ? "⇒" : "-->"
+    print(io, " ", arrow, " ")
+    print_rxside(io, rx.products, rx.prodstoich)
 end
 
 """
@@ -311,10 +312,18 @@ function hash(rx::Reaction, h::UInt)
 end
 
 
-### ModelingToolkit-inherited Functions ###
+### ModelingToolkit Function Dispatches ###
+
+# Used by ModelingToolkit.namespace_equation.
+function apply_if_nonempty(f, v)
+    isempty(v) && return v
+    s = similar(v)
+    map!(f, s, v)
+    s
+end
 
 # Returns a name-spaced version of a reaction.
-function ModelingToolkit.namespace_equation(rx::Reaction, name; kw...)
+function MT.namespace_equation(rx::Reaction, name; kw...)
     f = Base.Fix2(namespace_expr, name)
     rate = f(rx.rate)
     subs = apply_if_nonempty(f, rx.substrates)
@@ -330,22 +339,15 @@ function ModelingToolkit.namespace_equation(rx::Reaction, name; kw...)
     Reaction(rate, subs, prods, substoich, prodstoich, netstoich, rx.only_use_rate, rx.metadata)
 end
 
-function apply_if_nonempty(f, v)
-    isempty(v) && return v
-    s = similar(v)
-    map!(f, s, v)
-    s
-end
-
 # Overwrites equation-type functions to give the correct input for `Reaction`s.
-ModelingToolkit.is_diff_equation(rx::Reaction) = false
-ModelingToolkit.is_alg_equation(rx::Reaction) = false
+MT.is_diff_equation(rx::Reaction) = false
+MT.is_alg_equation(rx::Reaction) = false
 
 
 ### Dependency-related Functions ###
 
 # determine which unknowns a reaction depends on
-function ModelingToolkit.get_variables!(deps::Set, rx::Reaction, variables)
+function MT.get_variables!(deps::Set, rx::Reaction, variables)
     (rx.rate isa Symbolic) && get_variables!(deps, rx.rate, variables)
     for s in rx.substrates
         # parametric stoichiometry means may have a parameter as a substrate
@@ -355,14 +357,14 @@ function ModelingToolkit.get_variables!(deps::Set, rx::Reaction, variables)
 end
 
 # determine which species a reaction modifies
-function ModelingToolkit.modified_unknowns!(munknowns, rx::Reaction, sts::Set)
+function MT.modified_unknowns!(munknowns, rx::Reaction, sts::Set)
     for (species, stoich) in rx.netstoich
         (species in sts) && push!(munknowns, species)
     end
     munknowns
 end
 
-function ModelingToolkit.modified_unknowns!(munknowns, rx::Reaction, sts::AbstractVector)
+function MT.modified_unknowns!(munknowns, rx::Reaction, sts::AbstractVector)
     for (species, stoich) in rx.netstoich
         any(isequal(species), sts) && push!(munknowns, species)
     end
