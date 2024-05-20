@@ -116,5 +116,5 @@ let
     @test !Catalyst.has_misc(r1)
     @test Catalyst.has_misc(r2)
     @test_throws Exception Catalyst.get_misc(r1)
-    @test isequal(Catalyst.get_misc(r2), ('C', :C))
+    @test isequal(Catalyst.get_misc(r2), ('M', :M))
 end

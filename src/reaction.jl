@@ -580,9 +580,17 @@ Example:
 reaction = @reaction k, 0 --> X, [misc="A reaction"]
 get_misc(reaction)
 ```
+
+Notes:
+- The `misc` field can contain any valid Julia structure. This mean that Catalyst cannot check it
+for symbolci variables that are added here. This means that symbolic variables (e.g. parameters of 
+species) that are stored here are not accessible to Catalyst. This can cause troubles when e.g. 
+creating a `ReactionSystem` programmatically (in which case any symbolic variables stored in the
+`misc` metadata field should also be explicitly provided to the `ReactionSystem` constructor). 
+
 """
 function get_misc(reaction::Reaction)
-    if has_description(reaction)
+    if has_misc(reaction)
         return getmetadata(reaction, :misc)
     else
         error("Attempts to access `misc` metadata field for a reaction which does not have a value assigned for this metadata.")
