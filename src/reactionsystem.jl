@@ -1224,9 +1224,10 @@ function set_default_metadata(rs::ReactionSystem;  default_reaction_metadata = [
     @set! rs.rxs = Reaction[rx for rx in updated_equations if rx isa Reaction]
 
     # Special routine to handle `Reaction` metadata that can contain new symbolic variables.
+    # Currently, `noise_scaling` is the only relevant metadata supported this way.
     drm_dict = Dict(default_reaction_metadata)
     if haskey(drm_dict, :noise_scaling)
-        # Finds parameters, species, and variables in noise scaling.
+        # Finds parameters, species, and variables in the noise scaling term.
         ns_expr = drm_dict[:noise_scaling]
         ns_syms = [Symbolics.unwrap(sym) for sym in get_variables(ns_expr)]
         ns_ps = filter(ModelingToolkit.isparameter, ns_syms)
@@ -1249,7 +1250,6 @@ function set_default_metadata(rs::ReactionSystem;  default_reaction_metadata = [
         end
     end
 
-    
     # Updates reaction metadata for all its subsystems.
     new_sub_systems = similar(get_systems(rs))
     for (i, sub_system) in enumerate(get_systems(rs))
