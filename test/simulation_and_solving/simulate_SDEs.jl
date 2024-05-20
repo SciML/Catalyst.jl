@@ -7,6 +7,9 @@ using Catalyst, Statistics, StochasticDiffEq, Test
 using StableRNGs
 rng = StableRNG(123456)
 
+# Sets the default `t` to use.
+t = default_t()
+
 # Fetch test functions and networks.
 include("../test_functions.jl")
 include("../test_networks.jl")
