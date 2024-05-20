@@ -353,9 +353,38 @@ end
 From a system, creates a new system where each reaction is a balanced version of the corresponding
 reaction of the original system. For more information, consider the `balance_reaction` function
 (which is internally applied to each system reaction).
+
+Arguments 
+- `rs`: The reaction system that should be balanced.
+
+Notes:
+- If any reaction in the system cannot be balanced, throws an error.
+- If any reaction in the system have an infinite number of potential reactions, throws an error. 
+Here, it would be possible to generate a valid reaction, however, no such routine is currently
+implemented in `balance_system`.
+- `balance_system` will not modify reactions of subsystems to the input system. It is recommended
+not to apply `balance_system` to non-flattened systems. 
 """
 function balance_system(rs::ReactionSystem)
-    @set! rs.eqs = [(eq isa Reaction) ? balance_reaction(eq) : eq for eq in get_eqs(rs)]
-    @set! rs.rxs = [balance_reaction(rx) for rx in get_rxs(rs)]
+    @set! rs.eqs = CatalystEqType[get_balanced_reaction(eq) for eq in get_eqs(rs)]
+    @set! rs.rxs = [get_balanced_reaction(rx) for rx in get_rxs(rs)]
     return rs
 end
+
+# Selects a balanced version of an input reaction. Handles potential problems when there are no,
+# or several, balanced alternatives.
+function get_balanced_reaction(rx::Reaction)
+    brxs = balance_reaction(rx)
+
+    # In case there are no, or multiple, solutions to the balancing problem. 
+    if isempty(brxs)
+        error("Could not balance reaction `$rx`, unable to create a balanced `ReactionSystem`.")
+    end
+    if length(brxs) > 1
+        error("Infinite number of balanced reactions possible for reaction ($rx) are possible. No method for automatically generating a valid reaction is currently implemented in `balance_system`.")
+    end
+
+    return only(brxs)
+end
+# For non-`Reaction` equations, returns the original equation.
+get_balanced_reaction(eq::Equation) = eq

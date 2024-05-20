@@ -433,15 +433,15 @@ end
 
 # Simple example with multiple reactions.
 let
-    # Creates a reaction system and tis balanced version.
+    # Creates an unbalanced `ReactionSystem`.
     rs = @reaction_network begin
         @species C(t) O(t) H(t)
         @compounds begin
-            H2(t) = 2H
-            CH4(t) = C + 4H
-            O2(t) = 2O
-            CO2(t) = C + 2O
-            H2O(t) = 2H + O
+            H2(t) ~ 2H
+            CH4(t) ~ C + 4H
+            O2(t) ~ 2O
+            CO2(t) ~ C + 2O
+            H2O(t) ~ 2H + O
         end
         1.0, C + H2 --> CH4
         2.0, CH4 + O2 --> CO2 + H2O
@@ -452,23 +452,23 @@ let
     # substrates/products for granted).
     rx1 = filter(rx -> isequal(rx.rate, 1.0), reactions(rs_balanced))[1]
     rx2 = filter(rx -> isequal(rx.rate, 2.0), reactions(rs_balanced))[1]
-    @test issetequal(rx1.substoich, [1,2])
+    @test issetequal(rx1.substoich, [1, 2])
     @test issetequal(rx1.prodstoich, [1])
-    @test issetequal(rx2.substoich, [1,2])
-    @test issetequal(rx2.prodstoich, [1,2])
+    @test issetequal(rx2.substoich, [1, 2])
+    @test issetequal(rx2.prodstoich, [1, 2])
 end
 
 # Checks for system with non-reaction equations.
 let
-    # Creates a reaction system and tis balanced version.
+    # Creates an unbalanced `ReactionSystem`.
     rs = @reaction_network begin
         @species O(t) H(t)
         @compounds begin
-            H2(t) = 2H
-            O2(t) = 2O
-            H2O(t) = 2H + O
+            H2(t) ~ 2H
+            O2(t) ~ 2O
+            H2O(t) ~ 2H + O
         end
-        @equation begin
+        @equations begin
             D(V) ~ 1 - V
         end
         1.0, H2 + O2 --> H2O
@@ -477,6 +477,37 @@ let
 
     # Checks that the system is correctly balanced (while not taking order of reactions or of
     # substrates/products for granted).
-    @test issetequal(reactions(rs_balanced)[1].substoich, [2,1])
+    @test issetequal(reactions(rs_balanced)[1].substoich, [2, 1])
     @test issetequal(reactions(rs_balanced)[1].prodstoich, [2])
+end
+
+# Checks that systems problematic reactions yield errors.
+let
+    # Check system with reaction with an infinite number of balanced versions.
+    rs1 = @reaction_network begin
+        @species C(t) H(t) O(t)
+        @compounds begin
+            CO ~ C + O
+            CO2 ~ C + 2O
+            H2 ~ 2H
+            CH4 ~ C + 4H
+            H2O ~ 2H + O
+        end
+        k, CO + CO2 + H2 --> CH4 + H20
+    end
+    @test_throws Exception balance_system(rs1)
+    
+    # Check system with reaction without any balanced versions.
+    rs2 = @reaction_network begin
+        @species Fe(t) S(t) O(t) H(t) N(t)
+        @compounds begin
+            FeS2 ~ Fe + 2S
+            HNO3 ~ H + N + 3O
+            Fe2S3O12 ~ 2Fe + 3S + 12O
+            NO ~ N + O
+            H2SO4 ~ 2H + S + 4O
+        end
+        k, FeS2 + HNO3 --> Fe2S3O12 + NO + H2SO4
+    end
+    @test_throws Exception balance_system(rs2)
 end
