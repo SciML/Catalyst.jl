@@ -1,6 +1,9 @@
 # Steady state stability computation
 After system steady states have been found using [HomotopyContinuation.jl](@ref homotopy_continuation), [NonlinearSolve.jl](@ref nonlinear_solve), or other means, their stability can be computed using Catalyst's `steady_state_stability` function. Systems with conservation laws will automatically have these removed, permitting stability computation on systems with singular Jacobian.
 
+!!! warn 
+    Catalyst currently computes steady state stabilities using the naive approach of checking whether a system's largest eigenvalue is negative. While more advanced stability computation methods exist (and would be a welcome addition to Catalyst), there is no direct plans to implement these.
+
 ## Basic examples
 Let us consider the following basic example:
 ```@example stability_1
@@ -50,5 +53,11 @@ stability_1 = steady_state_stability(steady_states_1, sa_loop, ps_1; ss_jac=ss_j
 ps_2 = [:v => 4.0, :K => 1.5, :n => 2, :d => 1.0]
 steady_states_2 = hc_steady_states(sa_loop, ps)
 stability_2 = steady_state_stability(steady_states_2, sa_loop, ps_2; ss_jac=ss_jac)
+nothing # hide
+```
+
+It is possible to designate that a [sparse Jacobian](@ref ref) should be used using the `sparse = true` option (either to `steady_state_jac` or directly to `steady_state_stability`):
+```@example stability_1
+ss_jac = steady_state_jac(sa_loop; sparse = true)
 nothing # hide
 ```

@@ -103,6 +103,7 @@ export species, nonspecies, reactionparams, reactions, nonreactions, speciesmap,
 export numspecies, numreactions, numreactionparams, setdefaults!
 export make_empty_network, reactionparamsmap
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
+export is_autonomous
 export reactionrates
 export isequivalent
 export set_default_noise_scaling
@@ -150,7 +151,7 @@ export @compound, @compounds
 export iscompound, components, coefficients, component_coefficients
 export balance_reaction
 
-# for functions I am unsure where to best place them.
+# Functionality for computing the stability of system steady states.
 include("steady_state_stability.jl")
 export steady_state_stability, steady_state_jac
 

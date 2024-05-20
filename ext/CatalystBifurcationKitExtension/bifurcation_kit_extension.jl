@@ -3,7 +3,9 @@
 # Creates a BifurcationProblem, using a ReactionSystem as an input.
 function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
                                plot_var=nothing, record_from_solution=BK.record_sol_default, jac=true, u0=[], kwargs...)
-    is_autonomous(rs) || error("Attempting to compute steady state for non-autonomous system (e.g. does some rate depend on $(rs.iv)?), this is not possible.")
+    if !is_autonomous(rs) 
+        error("Attempting to create a `BifurcationProblem` for a non-autonomous system (e.g. where some rate depend on $(rs.iv)). This is not possible.")
+    end
 
     # Converts symbols to symbolics.
     (bif_par isa Symbol) && (bif_par = ModelingToolkit.get_var_to_name(rs)[bif_par])

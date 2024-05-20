@@ -462,7 +462,6 @@ let
         (p + X*(p1+p2),d), 0 <--> X
         (kB,kD), 2X <--> X
     end
-
     @test !is_autonomous(rn1)
     @test !is_autonomous(rn2)
     @test is_autonomous(rn3)
@@ -488,9 +487,15 @@ let
         (p + X*(p1+p2),d), 0 <--> X
         (kB,kD), 2X <--> X
     end
-
     @test !is_autonomous(rn4)
     @test !is_autonomous(rn5)
     @test !is_autonomous(rn6)
     @test is_autonomous(rn7)
+
+    # Using a coupled CRN/equation model.
+    rn7 = @reaction_network begin
+        @equations D(V) ~ X/(1+t) - V
+        (p,d), 0 <--> X
+    end
+    @test !is_autonomous(rn7)
 end

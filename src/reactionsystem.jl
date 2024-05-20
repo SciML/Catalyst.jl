@@ -1203,6 +1203,35 @@ function dependants(rx, network)
     dependents(rx, network)
 end
 
+"""
+    is_autonomous(rs::ReactionSystem)
+
+Checks if a system is autonomous (i.e. no rate or equation depend on the independent variable(s)).
+Example:
+```julia
+rs1 = @reaction_system
+    (p,d), 0 <--> X
+end
+is_autonomous(rs1) # Returns `true`.
+
+rs2 = @reaction_system
+    (p/t,d), 0 <--> X
+end
+is_autonomous(rs2) # Returns `false`.
+```
+"""
+function is_autonomous(rs::ReactionSystem)
+    # Get all variables occuring in reactions and then other equations.
+    dep_var_param_rxs = [ModelingToolkit.get_variables(rate) for rate in reactionrates(rs)]
+    dep_var_param_eqs = [ModelingToolkit.get_variables(eq) for eq in filter(eq -> !(eq isa Reaction), equations(rs))]
+    dep_var_param = reduce(vcat,[dep_var_param_rxs; dep_var_param_eqs])
+
+    # Checks for iv and spatial ivs
+    any(isequal(get_iv(rs), var) for var in dep_var_param) && (return false)
+    any(isequal(siv, var) for siv in get_sivs(rs) for var in dep_var_param) && (return false)
+    return true
+end
+
 
 ### `ReactionSystem` Remaking ###
 
