@@ -154,7 +154,7 @@ let
         (k1,k2), X1 <--> X2
         (k1,k2), Y1 <--> Y2
     end
-    osys = convert(ODESystem, rs)
+    osys = convert(ODESystem, rs; remove_conserved = true)
 
     # Checks that the correct parameters have the `conservationquantity` metadata.
     @test Catalyst.isconservationquantity(osys.Γ[1])
