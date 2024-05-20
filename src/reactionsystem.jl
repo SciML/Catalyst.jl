@@ -497,7 +497,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in; spa
         end
 
         # Extract all quantities encountered in relevant `Reaction` metadata.
-        has_noise_scaling(rx) && findvars!(ps, sts, get_noise_scaling(rx), ivs, vars)
+        has_noise_scaling(rx) && findvars!(ps, us, get_noise_scaling(rx), ivs, vars)
     end
 
     # Extracts any species, variables, and parameters that occur in (non-reaction) equations.
@@ -1222,6 +1222,33 @@ function set_default_metadata(rs::ReactionSystem;  default_reaction_metadata = [
     updated_equations = map(eqtransform, get_eqs(rs))
     @set! rs.eqs = updated_equations
     @set! rs.rxs = Reaction[rx for rx in updated_equations if rx isa Reaction]
+
+    # Special routine to handle `Reaction` metadata that can contain new symbolic variables.
+    drm_dict = Dict(default_reaction_metadata)
+    if haskey(drm_dict, :noise_scaling)
+        # Finds parameters, species, and variables in noise scaling.
+        ns_expr = drm_dict[:noise_scaling]
+        ns_syms = [Symbolics.unwrap(sym) for sym in get_variables(ns_expr)]
+        ns_ps = filter(ModelingToolkit.isparameter, ns_syms)
+        ns_sps = filter(Catalyst.isspecies, ns_syms)
+        ns_vs = filter(sym -> !Catalyst.isspecies(sym) && !ModelingToolkit.isparameter(sym), ns_syms)
+
+        # Adds parameters, species, and variables to the `ReactionSystem`.
+        if any(!any(isequal(p1, p2) for p2 in get_ps(rs)) for p1 in ns_ps)
+            @set! rs.ps = unique([get_ps(rs); ns_ps])
+        end
+        if any(!any(isequal(sp1, sp2) for sp2 in get_species(rs)) for sp1 in ns_sps)
+            sps_new = unique([get_species(rs); ns_sps])
+            vs_old = get_unknowns(rs)[length(get_species(rs))+1 : end]
+            @set! rs.species = sps_new
+            @set! rs.unknowns = [sps_new; vs_old]
+        end
+        if any(!any(isequal(v1, v2) for v2 in get_unknowns(rs)) for v1 in ns_vs)
+            us_new = unique([get_unknowns(rs); ns_vs])
+            @set! rs.unknowns = us_new
+        end
+    end
+
     
     # Updates reaction metadata for all its subsystems.
     new_sub_systems = similar(get_systems(rs))

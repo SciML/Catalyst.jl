@@ -338,8 +338,8 @@ let
 end
 
 # Tests the `remake_noise_scaling` function.
-# Checks that the `overwrite` argument works.
-# Checks a parameter part of the initial system is added properly
+# Checks a parameter part of the initial system is added properly.
+# Checks that parameters, variables, and species not part of the original system are added properly.
 let
     # Creates noise scaling networks.
     noise_scaling_network1 = @reaction_network begin
@@ -347,20 +347,18 @@ let
         p, 0 --> X, [noise_scaling=2.0]
         d, X --> 0
     end
-    noise_scaling_network2 = set_default_noise_scaling(noise_scaling_network1, 0.5)
-
-    # Checks that the two networks' reactions have the correct metadata.
-    @test reactions(noise_scaling_network1)[1].metadata == [:noise_scaling => 2.0]
-    @test reactions(noise_scaling_network1)[2].metadata == []
-    @test reactions(noise_scaling_network2)[1].metadata == [:noise_scaling => 2.0]
-    @test reactions(noise_scaling_network2)[2].metadata == [:noise_scaling => 0.5]
-
     @unpack p, d, η1 = noise_scaling_network1
     @parameters η2
-    noise_scaling_network3 = set_default_noise_scaling(noise_scaling_network2, η1 + η2; overwrite = true)
-    @test isequal(reactions(noise_scaling_network3)[1].metadata, [:noise_scaling => η1 + η2])
-    @test isequal(reactions(noise_scaling_network3)[2].metadata, [:noise_scaling => η1 + η2])
-    @test issetequal([p, d, η1, η2], parameters(noise_scaling_network3))
+    @species Y(t)
+    @variables V(t)
+    
+    noise_scaling_network2 = set_default_noise_scaling(noise_scaling_network1, η1 + η2 + Y + V)
+    @test isequal(reactions(noise_scaling_network2)[1].metadata, [:noise_scaling => 2.0])
+    @test isequal(reactions(noise_scaling_network2)[2].metadata, [:noise_scaling => η1 + η2 + Y + V])
+    @test issetequal([p, d, η1, η2], parameters(noise_scaling_network2))
+    @test issetequal([X, Y], species(noise_scaling_network2))
+    @test issetequal([X, Y, V], unknowns(noise_scaling_network2))
+    @test issetequal([V], nonspecies(noise_scaling_network2))
 end
 
 # Tests the `remake_noise_scaling` function on a hierarchical model.
