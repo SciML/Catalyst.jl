@@ -496,7 +496,8 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in; spa
             (sym isa Symbolic) && findvars!(ps, us, sym, ivs, vars)
         end
 
-        # Will appear here: add stuff from nosie scaling.
+        # Extract all quantities encountered in relevant `Reaction` metadata.
+        has_noise_scaling(rx) && findvars!(ps, sts, get_noise_scaling(rx), ivs, vars)
     end
 
     # Extracts any species, variables, and parameters that occur in (non-reaction) equations.
