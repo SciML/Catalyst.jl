@@ -3,6 +3,31 @@
 # Fetch packages.
 using Catalyst, Test
 
+# Sets the default `t` to use.
+t = default_t()
+
+### Test Basic Accessors ###
+
+# Tests the `get_variables` function.
+let
+    # Declare symbolic variables.
+    @parameters k1 k2 n1 n2 η1 η2
+    @species X(t) Y(t) Z(t)
+    @variables A(t)
+    
+    # Create `Reaction`s.
+    rx1 = Reaction(k1, [], [X])
+    rx2 = Reaction(k1 + k2, [X], [Y], [1], [n1]; metadata = [:noise_scaling => η1])
+    rx3 = Reaction(k1 + k2 + A, [X], [X, Y, Z], [1], [n1 + n2, 2, 1])
+    rx4 = Reaction(X + t, [], [Y]; metadata = [:noise_scaling => η1 + η2])
+    
+    # Test `get_variables`.
+    @test issetequal(get_variables(rx1), [k1, X])
+    @test issetequal(get_variables(rx2), [k1, k2, X, Y, n1, η1])
+    @test issetequal(get_variables(rx3), [k1, k2, A, X, Y, Z, n1, n2])
+    @test issetequal(get_variables(rx4), [X, t, Y, η1, η2])
+end
+
 ### Tests Metadata ###
 
 # Tests creation.

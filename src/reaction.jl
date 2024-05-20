@@ -343,6 +343,30 @@ end
 MT.is_diff_equation(rx::Reaction) = false
 MT.is_alg_equation(rx::Reaction) = false
 
+"""
+    get_variables(rx::Reaction)
+
+Returns all symbolic variables that are part of a reaction. This includes all variables 
+encountered in:
+    - Rates.
+    - Among substrates and products.
+    - Among stoichiometries.
+    - Among potential noise scaling metadata.
+"""
+function ModelingToolkit.get_variables(rx::Reaction)
+    sym_vars = get_variables(rx.rate)
+    sym_vars = unique!([sym_vars; rx.substrates; rx.products])
+    for stoich in rx.substoich
+        sym_vars = unique!([sym_vars; get_variables(stoich)])
+    end
+    for stoich in rx.prodstoich
+        sym_vars = unique!([sym_vars; get_variables(stoich)])
+    end
+    if has_noise_scaling(rx)
+        sym_vars = unique!([sym_vars; get_variables(get_noise_scaling(rx))])
+    end
+    return sym_vars
+end
 
 ### Dependency-related Functions ###
 
