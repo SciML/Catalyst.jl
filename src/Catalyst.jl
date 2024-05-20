@@ -90,13 +90,13 @@ end
 ### Package Main ###
 
 # The `Reaction` structure and its functions.
-include("reaction_structure.jl")
+include("reaction.jl")
 export isspecies
 export Reaction
 export get_noise_scaling, has_noise_scaling
 
 # The `ReactionSystem` structure and its functions.
-include("reactionsystem_structure.jl")
+include("reactionsystem.jl")
 export ReactionSystem, isspatial
 export species, nonspecies, reactionparams, reactions, speciesmap, paramsmap
 export numspecies, numreactions, numreactionparams, setdefaults!
