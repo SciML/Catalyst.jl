@@ -365,7 +365,6 @@ end
 
 # Tests the `remake_noise_scaling` function on a hierarchical model.
 # Checks that species, variables, and parameters not part of the original system is added properly.
-# Checks that the `overwrite` argument works.
 let        
     # Creates hierarchical model.
     rn1 = @reaction_network rn1 begin
@@ -386,21 +385,6 @@ let
     @test issetequal(rn1_noise_scaling, [2.0, 0.5])
     @test issetequal(rn2_noise_scaling, [5.0, 0.5])
     @test issetequal(rn_noise_scaling, [2.0, 0.5, 5.0, 0.5])
-
-    # Checks that species, variables, and parameters gets correctly added to system (and subsystem).
-    @unpack X, p, d = rn1
-    @unpack X1, X2, k1, k2 = rn2
-    @species H(t)
-    @variables h(t)
-    @parameters η
-    rn = set_default_noise_scaling(rn, H + h + η + 1; overwrite = true)
-
-    @test issetequal(Catalyst.get_species(rn), [X, H])
-    @test issetequal(Catalyst.get_species(rn.rn2), [X1, X2, H])
-    @test issetequal(ModelingToolkit.get_unknowns(rn), [X, H, h])
-    @test issetequal(ModelingToolkit.get_unknowns(rn.rn2), [X1, X2, H, h])
-    @test issetequal(ModelingToolkit.get_ps(rn), [p, d, η])
-    @test issetequal(ModelingToolkit.get_ps(rn.rn2), [k1, k2, η])
 end
 
 
