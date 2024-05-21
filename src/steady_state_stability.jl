@@ -2,7 +2,7 @@
 
 """
     stability(u::Vector{T}, rs::ReactionSystem, p; tol = 10*sqrt(eps())
-                sparse = false, ss_jac = steady_state_jac(u, rs, p; sparse=sparse))
+                ss_jac = steady_state_jac(u, rs, p))
 
 Compute the stability of a steady state (Returned as a `Bool`, with `true` indicating stability).
 
@@ -16,8 +16,7 @@ stable if the corresponding Jacobian's maximum eigenvalue real part is < 0. Howe
 eigenvalue is in the range `-tol< eig < tol`, and error is throw, as we do not deem that stability
 can be ensured with enough certainty. The choice `tol = 10*sqrt(eps())` has *not* been subject
 to much analysis.
-- `sparse = false`: If we wish to create a sparse Jacobian for the stability computation.
-- `ss_jac = steady_state_jac(u, rs; sparse = sparse)`: It is possible to pre-compute the 
+- `ss_jac = steady_state_jac(u, rs)`: It is possible to pre-compute the 
 Jacobian used for stability computation using `steady_state_jac`. If stability is computed 
 for many states, precomputing the Jacobian may speed up evaluation.
 
@@ -47,7 +46,7 @@ however, have not been subject to further analysis (and can be changed through t
 ```
 """
 function steady_state_stability(u::Vector, rs::ReactionSystem, ps; tol = 10*sqrt(eps(ss_val_type(u))),
-                                sparse = false, ss_jac = steady_state_jac(rs; u0 = u, sparse = sparse))
+                                ss_jac = steady_state_jac(rs; u0 = u))
     # Warning checks.
     if !is_autonomous(rs) 
         error("Attempting to compute stability for a non-autonomous system (e.g. where some rate depend on $(rs.iv)). This is not possible.")
@@ -62,6 +61,11 @@ function steady_state_stability(u::Vector, rs::ReactionSystem, ps; tol = 10*sqrt
 
     # Computes stability (by checking that the real part of all eigenvalues are negative).
     # Here, `ss_jac` is a `ODEProblem` with dummy values for `u0` and `p`.
+
+    if isdefined(Main, :Infiltrator)
+        Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
+      end
+
     J = zeros(length(u), length(u))
     ss_jac = remake(ss_jac; u0 = u, p = ps)
     ss_jac.f.jac(J, ss_jac.u0, ss_jac.p, Inf)
@@ -79,7 +83,7 @@ ss_val_type(u::Vector{Pair{S,T}}) where {S,T} = T
 ss_val_type(u::Dict{S,T}) where {S,T} = T
 
 """
-    steady_state_jac(rs::ReactionSystem; u0 = [], sparse = false)
+    steady_state_jac(rs::ReactionSystem; u0 = [])
 
 Creates the Jacobian function which can be used as input to `steady_state_stability`. Useful when 
 a large number of stability computation has to be carried out in a performant manner.
@@ -87,7 +91,6 @@ a large number of stability computation has to be carried out in a performant ma
 Arguments:
     - `rs`: The reaction system model for which we want to compute stability.
     - `u0 = []`: For systems with conservation laws, a `u` is required to compute the conserved quantities.
-    - `sparse = false`: If we wish to create a sparse Jacobian for the stability computation.
  
 Example:
 ```julia
@@ -110,7 +113,7 @@ Notes:
 ```
 """
 function steady_state_jac(rs::ReactionSystem; u0 = [sp => 0.0 for sp in unknowns(rs)], 
-                          sparse = false, combinatoric_ratelaws = get_combinatoric_ratelaws(rs))
+                          combinatoric_ratelaws = get_combinatoric_ratelaws(rs))
     # If u0 is a vector of values, must be converted to something MTK understands.
 
     # Converts u0 to values MTK understands, and checks that potential conservation laws are accounted for.
@@ -119,7 +122,7 @@ function steady_state_jac(rs::ReactionSystem; u0 = [sp => 0.0 for sp in unknowns
 
     # Creates an `ODEProblem` with a Jacobian. Dummy values for `u0` and `ps` must be provided.
     ps = [p => 0.0 for p in parameters(rs)]
-    return ODEProblem(rs, u0, 0, ps; jac = true, remove_conserved = true, sparse = sparse, 
+    return ODEProblem(rs, u0, 0, ps; jac = true, remove_conserved = true, 
                       combinatoric_ratelaws = combinatoric_ratelaws)
 end
 

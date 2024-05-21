@@ -53,11 +53,5 @@ stability_2 = steady_state_stability(steady_states_2, sa_loop, ps_2; ss_jac=ss_j
 nothing # hide
 ```
 
-It is possible to designate that a [sparse Jacobian](@ref ref) should be used using the `sparse = true` option (either to `steady_state_jac` or directly to `steady_state_stability`):
-```@example stability_1
-ss_jac = steady_state_jac(sa_loop; sparse = true)
-nothing # hide
-```
-
 !!! warn
     For systems with [conservation laws](@ref homotopy_continuation_conservation_laws), `steady_state_jac` must be supplied a `u0` vector (indicating species concentrations for conservation law computation). This is required to eliminate the conserved quantities, preventing a singular Jacobian. These are supplied using the `u0` optional argument.

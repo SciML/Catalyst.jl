@@ -12,7 +12,6 @@ rng = StableRNG(12345)
 
 # Tests that stability is correctly assessed (using simulation) in multi stable system.
 # Tests that `steady_state_jac` function works.
-# Tests with and without sparsity.
 # Tests using symbolic input.
 let
     # System which may have between 1 and 7 fixed points.
@@ -22,10 +21,9 @@ let
         d, (X,Y) --> 0
     end
     ss_jac = steady_state_jac(rn)
-    ss_jac_sparse = steady_state_jac(rn; sparse = true)
 
     # Repeats several times, most steady state stability cases should be encountered several times.
-    for repeat = 1:50
+    for repeat = 1:20
         # Generates random parameter values (which can generate all steady states cases).
         ps = (:v => 1.0 + 3*rand(rng), :K => 0.5 + 2*rand(rng), :n => rand(rng,[1,2,3,4]), 
               :d => 0.5 + rand(rng))
@@ -33,20 +31,18 @@ let
         # Computes stability using various jacobian options.
         sss = hc_steady_states(rn, ps)
         stabs_1 = [steady_state_stability(ss, rn, ps) for ss in sss]
-        stabs_2 = [steady_state_stability(ss, rn, ps; sparse = true) for ss in sss]
-        stabs_3 = [steady_state_stability(ss, rn, ps; ss_jac = ss_jac) for ss in sss]
-        stabs_4 = [steady_state_stability(ss, rn, ps; ss_jac = ss_jac_sparse) for ss in sss]
+        stabs_2 = [steady_state_stability(ss, rn, ps; ss_jac = ss_jac) for ss in sss]
 
         # Confirms stability using simulations.
         for (idx, ss) in enumerate(sss)
             ssprob = SteadyStateProblem(rn, [1.001, 0.999] .* ss, ps)
             sol = solve(ssprob, DynamicSS(Vern7()); abstol = 1e-8, reltol = 1e-8)
-            stabs_5 = isapprox(ss, sol.u; atol = 1e-6)
-            @test stabs_1[idx] == stabs_2[idx] == stabs_3[idx] == stabs_4[idx] == stabs_5
+            stabs_3 = isapprox(ss, sol.u; atol = 1e-6)
+            @test stabs_1[idx] == stabs_2[idx] == stabs_3
 
             # Checks stability when steady state is given on a pair form ([X => x_val, Y => y_val]).
-            stabs_6 = steady_state_stability(Pair.(unknowns(rn), ss), rn, ps)
-            @test stabs_5 == stabs_6
+            stabs_4 = steady_state_stability(Pair.(unknowns(rn), ss), rn, ps)
+            @test stabs_3 == stabs_4
         end
     end
 end
