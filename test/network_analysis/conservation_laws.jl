@@ -144,10 +144,10 @@ let
     @test isapprox(g2[istsidxs, :], g3)
 end
 
-### ConservedQuantity Metadata Tests ###
+### ConservedParameter Metadata Tests ###
 
-# Checks that `conservationquantity` metadata is added correctly to parameters.
-# Checks that the `isconservationquantity` getter function works correctly.
+# Checks that `conserved` metadata is added correctly to parameters.
+# Checks that the `isconserved` getter function works correctly.
 let
     # Creates ODESystem with conserved quantities.
     rs = @reaction_network begin
@@ -156,9 +156,9 @@ let
     end
     osys = convert(ODESystem, rs; remove_conserved = true)
 
-    # Checks that the correct parameters have the `conservationquantity` metadata.
-    @test Catalyst.isconservationquantity(osys.Γ[1])
-    @test Catalyst.isconservationquantity(osys.Γ[2])
-    @test !Catalyst.isconservationquantity(osys.k1)
-    @test !Catalyst.isconservationquantity(osys.k2)
+    # Checks that the correct parameters have the `conserved` metadata.
+    @test Catalyst.isconserved(osys.Γ[1])
+    @test Catalyst.isconserved(osys.Γ[2])
+    @test !Catalyst.isconserved(osys.k1)
+    @test !Catalyst.isconserved(osys.k2)
 end
