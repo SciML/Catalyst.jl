@@ -1224,7 +1224,11 @@ function is_autonomous(rs::ReactionSystem)
     # Get all variables occuring in reactions and then other equations.
     dep_var_param_rxs = [ModelingToolkit.get_variables(rate) for rate in reactionrates(rs)]
     dep_var_param_eqs = [ModelingToolkit.get_variables(eq) for eq in filter(eq -> !(eq isa Reaction), equations(rs))]
-    dep_var_param = reduce(vcat,[dep_var_param_rxs; dep_var_param_eqs])
+    if isempty(dep_var_param_rxs) && isempty(dep_var_param_eqs)
+        dep_var_param = []
+    else
+        dep_var_param = reduce(vcat,[dep_var_param_rxs; dep_var_param_eqs])
+    end
 
     # Checks for iv and spatial ivs
     any(isequal(get_iv(rs), var) for var in dep_var_param) && (return false)
