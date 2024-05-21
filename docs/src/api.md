@@ -157,6 +157,7 @@ species
 nonspecies
 reactionparams
 reactions
+nonreactions
 numspecies
 numparams
 numreactions
