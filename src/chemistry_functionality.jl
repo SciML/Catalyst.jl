@@ -259,7 +259,7 @@ function balance_reaction(reaction::Reaction)
     end
 
     isempty(balancedrxs) && (@warn "Unable to balance reaction.")
-    (length(balancedrxs) > 1) && (@warn "Infinite balanced reactions from ($reaction) are possible, returning a basis for them. Note that we do not check if they preserve the set of substrates and products from the original reaction.")
+    (length(balancedrxs) > 1) && (@warn "The space of possible balanced versions of the reaction ($reaction) is greater than 1. This prevents the selection of a single appropriate balanced reaction. Instead, a basis for balanced reactions is returned. Note that we do not check if they preserve the set of substrates and products from the original reaction.")
     return balancedrxs
 end
 
@@ -381,7 +381,7 @@ function get_balanced_reaction(rx::Reaction)
         error("Could not balance reaction `$rx`, unable to create a balanced `ReactionSystem`.")
     end
     if length(brxs) > 1
-        error("Infinite number of balanced reactions possible for reaction ($rx) are possible. No method for automatically generating a valid reaction is currently implemented in `balance_system`.")
+        error("The space of possible balanced versions of the reaction ($reaction) is greater than 1. This prevents the selection of a single appropriate balanced reaction. No method to, in this case, automatically generate a valid reaction is currently implemented in `balance_system`.")
     end
 
     return only(brxs)
