@@ -2,6 +2,8 @@
 
 # Fetch packages.
 using Catalyst, Test
+using Catalyst: get_symbolics
+using ModelingToolkit: value, get_variables!
 
 # Sets the default `t` to use.
 t = default_t()
@@ -11,7 +13,7 @@ t = default_t()
 # Tests the `get_variables` function.
 let
     # Declare symbolic variables.
-    @parameters k1 k2 n1 n2 η1 η2
+    @parameters k1 k2 n1 n2 η1 η2 p
     @species X(t) Y(t) Z(t)
     @variables A(t)
     
@@ -21,11 +23,17 @@ let
     rx3 = Reaction(k1 + k2 + A, [X], [X, Y, Z], [1], [n1 + n2, 2, 1])
     rx4 = Reaction(X + t, [], [Y]; metadata = [:noise_scaling => η1 + η2])
     
-    # Test `get_variables`.
-    @test issetequal(get_variables(rx1), [k1, X])
-    @test issetequal(get_variables(rx2), [k1, k2, X, Y, n1, η1])
-    @test issetequal(get_variables(rx3), [k1, k2, A, X, Y, Z, n1, n2])
-    @test issetequal(get_variables(rx4), [X, t, Y, η1, η2])
+    # Test `get_variables!`.
+    @test issetequal(get_variables!([value(p)], rx1), [k1, X, p])
+    @test issetequal(get_variables!([value(p)], rx2), [k1, k2, X, Y, n1, η1, p])
+    @test issetequal(get_variables!([value(p)], rx3), [k1, k2, A, X, Y, Z, n1, n2, p])
+    @test issetequal(get_variables!([value(p)], rx4), [X, t, Y, η1, η2, p])
+    
+    # Test `get_symbolics`.
+    @test issetequal(get_symbolics(rx1), [k1, X])
+    @test issetequal(get_symbolics(rx2), [k1, k2, X, Y, n1, η1])
+    @test issetequal(get_symbolics(rx3), [k1, k2, A, X, Y, Z, n1, n2])
+    @test issetequal(get_symbolics(rx4), [X, t, Y, η1, η2])
 end
 
 ### Tests Metadata ###
