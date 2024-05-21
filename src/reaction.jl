@@ -165,7 +165,7 @@ end
 
 # Five-argument constructor accepting rate, substrates, and products, and their stoichiometries.
 function Reaction(rate, subs::Vector, prods::Vector, substoich::Vector{S}, prodstoich::Vector{T};
-                   netstoich = nothing, metadata = Pair{Symbol, Any}[], 
+                   netstoich = [], metadata = Pair{Symbol, Any}[], 
                    only_use_rate = metadata_only_use_rate_check(metadata), kwargs...) where {S,T}
     # Error checks.
     isempty(subs) && isempty(prods) &&
@@ -189,12 +189,12 @@ function Reaction(rate, subs::Vector, prods::Vector, substoich::Vector{S}, prods
 
     # Checks that all reactants are valid.
     if !(all(isvalidreactant, subs) && all(isvalidreactant, prods))
-        badsts = union(filter(isvalidreactant, subs), filter(isvalidreactant, prods))
-        throw(ArgumentError("""To be a valid substrate or product, non-constant species must be declared via @species, while constant species must be parameters with the isconstantspecies metadata. The following reactants do not follow this convention:\n $badsts"""))
+        badsts = union(filter(!isvalidreactant, subs), filter(!isvalidreactant, prods))
+        throw(ArgumentError("To be a valid substrate or product, non-constant species must be declared via @species, while constant species must be parameters with the isconstantspecies metadata. The following reactants do not follow this convention:\n $badsts"))
     end
     
     # Computes the net stoichiometries.
-    netstoich = if netstoich === nothing
+    netstoich = if isnothing(netstoich)
         get_netstoich(subs, prods, substoich, prodstoich)
     else
         if typeof(netstoich) != Vector{Pair{BasicSymbolic{Real}, stoich_type}}
