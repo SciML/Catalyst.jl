@@ -1320,7 +1320,7 @@ Notes:
 - The default value of `combinatoric_ratelaws` will be the logical or of all
   `ReactionSystem`s.
 """
-function MT.flatten(rs::ReactionSystem; name = nameof(rs), complete = false)
+function MT.flatten(rs::ReactionSystem; name = nameof(rs))
     isempty(get_systems(rs)) && return rs
 
     # right now only NonlinearSystems and ODESystems can be handled as subsystems
@@ -1338,8 +1338,7 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs), complete = false)
                    balanced_bc_check = false,
                    spatial_ivs = get_sivs(rs),
                    continuous_events = MT.continuous_events(rs),
-                   discrete_events = MT.discrete_events(rs),
-                   complete = complete)
+                   discrete_events = MT.discrete_events(rs))
 end
 
 """
@@ -1396,8 +1395,7 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
                    balanced_bc_check = false,
                    spatial_ivs = sivs,
                    continuous_events,
-                   discrete_events,
-                   complete = false)
+                   discrete_events)
 end
 
 ### Units Handling ###

@@ -99,7 +99,7 @@ function sym_2_declaration_string(sym; multiline_format = false)
     # Assumes that the type is on the form `SymbolicUtils.BasicSymbolic{X}`. Contain error checks
     # to ensure that this is the case.
     if !(sym isa SymbolicUtils.BasicSymbolic{Real})
-        sym_type = String(Symbol(typeof(Symbolics.unwrap(k2))))
+        sym_type = String(Symbol(typeof(Symbolics.unwrap(sym))))
         if (sym_type[1:28] != "SymbolicUtils.BasicSymbolic{") || (sym_type[end] != '}')
             error("Encountered symbolic of unexpected type: $sym_type.")
         end
