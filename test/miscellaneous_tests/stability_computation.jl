@@ -8,7 +8,7 @@ import HomotopyContinuation
 using StableRNGs
 rng = StableRNG(12345)
 
-### Run Tests ###
+### Basic Tests ###
 
 # Tests that stability is correctly assessed (using simulation) in multi stable system.
 # Tests that `steady_state_jac` function works.
@@ -86,4 +86,17 @@ let
 
     # Confirms error when computing Jacobian with wrong length of u0.
     @test_throws Exception steady_state_jac(rn; u0 = [1.0, 1.0])
+end
+
+### Other Tests ###
+
+# Tests `tol` option. In this case, the maximum eigenvalue real part is -1.0, which generates
+# and error with `tol = 100`.
+let
+    rn = @reaction_network begin
+        (p,d), 0 <--> X
+    end
+    p = [:p => 1.0, :d => 1.0]
+    u = [1.0]
+    @test_throws Exception steady_state_stability(u, rn, p; tol = 1e2)
 end

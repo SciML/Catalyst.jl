@@ -78,7 +78,6 @@ ss_val_type(u::Vector{T}) where {T} = T
 ss_val_type(u::Vector{Pair{S,T}}) where {S,T} = T
 ss_val_type(u::Dict{S,T}) where {S,T} = T
 
-
 """
     steady_state_jac(rs::ReactionSystem; u0 = [], sparse = false)
 
