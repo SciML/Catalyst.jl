@@ -1,19 +1,25 @@
 ### Stability Analysis ###
 
 """
-    stability(u::Vector{T}, rs::ReactionSystem, p; sparse = false, 
-              ss_jac = steady_state_jac(u, rs, p; sparse=sparse))
+    stability(u::Vector{T}, rs::ReactionSystem, p; tol = 10*sqrt(eps())
+                sparse = false, ss_jac = steady_state_jac(u, rs, p; sparse=sparse))
 
 Compute the stability of a steady state (Returned as a `Bool`, with `true` indicating stability).
 
 Arguments:
-    - `u`: The steady state for which we want to compute stability.
-    - `rs`: The `ReactionSystem` model for which we want to compute stability.
-    - `p`: The parameter set for which we want to compute stability.
-    - `sparse = false`: If we wish to create a sparse Jacobian for the stability computation.
-    - `ss_jac = steady_state_jac(u, rs; sparse = sparse)`: It is possible to pre-compute the 
-      Jacobian used for stability computation using `steady_state_jac`. If stability is computed 
-      for many states, precomputing the Jacobian may speed up evaluation.
+- `u`: The steady state for which we want to compute stability.
+- `rs`: The `ReactionSystem` model for which we want to compute stability.
+- `p`: The parameter set for which we want to compute stability.
+- `tol = 10*sqrt(eps())`: The tolerance used for determining whether computed eigenvalues real 
+parts can reliably be considered negative/positive. In practise, a steady state is considered 
+stable if the corresponding Jacobian's maximum eigenvalue real part is < 0. However, if this maximum 
+eigenvalue is in the range `-tol< eig < tol`, and error is throw, as we do not deem that stability
+can be ensured with enough certainty. The choice `tol = 10*sqrt(eps())` has *not* been subject
+to much analysis.
+- `sparse = false`: If we wish to create a sparse Jacobian for the stability computation.
+- `ss_jac = steady_state_jac(u, rs; sparse = sparse)`: It is possible to pre-compute the 
+Jacobian used for stability computation using `steady_state_jac`. If stability is computed 
+for many states, precomputing the Jacobian may speed up evaluation.
 
 Example:
 ```julia
@@ -28,14 +34,20 @@ steady_state = [2.0]
 steady_state_stability(steady_state, rn, p)
 
 Notes:
-    - The input `u` can (currently) be both a vector of values (like `[1.0, 2.0]`) and a vector map 
-    (like `[X => 1.0, Y => 2.0]`). The reason is that most methods for computing stability only
-    produces vectors of values. However, if possible, it is recommended to work with values on the
-    form of maps.
+- The input `u` can (currently) be both a vector of values (like `[1.0, 2.0]`) and a vector map 
+(like `[X => 1.0, Y => 2.0]`). The reason is that most methods for computing stability only
+produces vectors of values. However, if possible, it is recommended to work with values on the
+form of maps.
+- Catalyst currently computes steady state stabilities using the naive approach of checking whether
+a system's largest eigenvalue real part is negative. While more advanced stability computation 
+methods exist (and would be a welcome addition to Catalyst), there is no direct plans to implement 
+these. Furthermore, Catalyst uses a arbitrary tolerance tol ~ 1.5*10^-7 to determine whether a 
+computed eigenvalue is far away enough from 0 to be reliably used. This selected threshold, 
+however, have not been subject to further analysis (and can be changed through the `tol` argument).
 ```
 """
-function steady_state_stability(u::Vector, rs::ReactionSystem, ps; sparse = false, 
-                                ss_jac = steady_state_jac(rs; u0 = u, sparse = sparse))
+function steady_state_stability(u::Vector, rs::ReactionSystem, ps; tol = 10*sqrt(eps(ss_val_type(u))),
+                                sparse = false, ss_jac = steady_state_jac(rs; u0 = u, sparse = sparse))
     # Warning checks.
     if !is_autonomous(rs) 
         error("Attempting to compute stability for a non-autonomous system (e.g. where some rate depend on $(rs.iv)). This is not possible.")
@@ -53,8 +65,19 @@ function steady_state_stability(u::Vector, rs::ReactionSystem, ps; sparse = fals
     J = zeros(length(u), length(u))
     ss_jac = remake(ss_jac; u0 = u, p = ps)
     ss_jac.f.jac(J, ss_jac.u0, ss_jac.p, Inf)
-    return maximum(real(ev) for ev in (eigvals(J))) < 0
+    max_eig = maximum(real(ev) for ev in (eigvals(J)))
+    if abs(max_eig) < tol
+        error("The system Jacobian's maximum eigenvalue at the steady state is within the tolerance range (abs($max_eig) < $tol). Hence, stability could not be reliably determined. If you still wish to compute the stability, reduce the `tol` argument.")
+    end
+    return max_eig < 0
 end
+
+# Used to determine the type of the steady states values, which is then used to set the tolerance's
+# type.
+ss_val_type(u::Vector{T}) where {T} = T
+ss_val_type(u::Vector{Pair{S,T}}) where {S,T} = T
+ss_val_type(u::Dict{S,T}) where {S,T} = T
+
 
 """
     steady_state_jac(rs::ReactionSystem; u0 = [], sparse = false)

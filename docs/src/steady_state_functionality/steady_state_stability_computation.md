@@ -2,7 +2,7 @@
 After system steady states have been found using [HomotopyContinuation.jl](@ref homotopy_continuation), [NonlinearSolve.jl](@ref nonlinear_solve), or other means, their stability can be computed using Catalyst's `steady_state_stability` function. Systems with conservation laws will automatically have these removed, permitting stability computation on systems with singular Jacobian.
 
 !!! warn 
-    Catalyst currently computes steady state stabilities using the naive approach of checking whether a system's largest eigenvalue is negative. While more advanced stability computation methods exist (and would be a welcome addition to Catalyst), there is no direct plans to implement these.
+    Catalyst currently computes steady state stabilities using the naive approach of checking whether a system's largest eigenvalue real part is negative. While more advanced stability computation methods exist (and would be a welcome addition to Catalyst), there is no direct plans to implement these. Furthermore, Catalyst uses a arbitrary tolerance $tol ~ 1.5*10^-7$ to determine whether a computed eigenvalue is far away enough from 0 to be reliably used. This selected threshold, however, have not been subject to further analysis (and can be changed through the `tol` argument).
 
 ## Basic examples
 Let us consider the following basic example:
