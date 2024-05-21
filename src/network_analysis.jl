@@ -542,6 +542,23 @@ end
 
 ### Conservation Laws ###
 
+# Implements the `conserved` parameter metadata.
+struct ConservedParameter end
+Symbolics.option_to_metadata_type(::Val{:conserved}) = ConservedParameter
+
+"""
+isconserved(p)
+
+Checks if the input parameter (`p`) is a conserved quantity (i.e. have the `conserved`)
+metadata.
+"""
+isconserved(x::Num, args...) = isconserved(Symbolics.unwrap(x), args...)
+function isconserved(x, default = false)
+    p = Symbolics.getparent(x, nothing)
+    p === nothing || (x = p)
+    Symbolics.getmetadata(x, ConservedParameter, default)
+end
+
 """
     conservedequations(rn::ReactionSystem)
 
@@ -635,7 +652,8 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     indepspecs = sts[indepidxs]
     depidxs = col_order[(r + 1):end]
     depspecs = sts[depidxs]
-    constants = MT.unwrap.(MT.scalarize((@parameters Γ[1:nullity])[1]))
+    constants = MT.unwrap.(MT.scalarize(only(
+                @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] [conserved=true])))
 
     conservedeqs = Equation[]
     constantdefs = Equation[]

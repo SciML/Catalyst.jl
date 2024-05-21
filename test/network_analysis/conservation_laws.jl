@@ -143,3 +143,22 @@ let
     @test isapprox(g1, g2[istsidxs, :])
     @test isapprox(g2[istsidxs, :], g3)
 end
+
+### ConservedParameter Metadata Tests ###
+
+# Checks that `conserved` metadata is added correctly to parameters.
+# Checks that the `isconserved` getter function works correctly.
+let
+    # Creates ODESystem with conserved quantities.
+    rs = @reaction_network begin
+        (k1,k2), X1 <--> X2
+        (k1,k2), Y1 <--> Y2
+    end
+    osys = convert(ODESystem, rs; remove_conserved = true)
+
+    # Checks that the correct parameters have the `conserved` metadata.
+    @test Catalyst.isconserved(osys.Γ[1])
+    @test Catalyst.isconserved(osys.Γ[2])
+    @test !Catalyst.isconserved(osys.k1)
+    @test !Catalyst.isconserved(osys.k2)
+end
