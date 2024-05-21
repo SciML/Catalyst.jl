@@ -2,7 +2,7 @@
 After system steady states have been found using [HomotopyContinuation.jl](@ref homotopy_continuation), [NonlinearSolve.jl](@ref nonlinear_solve), or other means, their stability can be computed using Catalyst's `steady_state_stability` function. Systems with conservation laws will automatically have these removed, permitting stability computation on systems with singular Jacobian.
 
 !!! warn 
-    Catalyst currently computes steady state stabilities using the naive approach of checking whether a system's largest eigenvalue real part is negative. While more advanced stability computation methods exist (and would be a welcome addition to Catalyst), there is no direct plans to implement these. Furthermore, Catalyst uses a arbitrary tolerance $tol ~ 1.5*10^-7$ to determine whether a computed eigenvalue is far away enough from 0 to be reliably used. This selected threshold, however, have not been subject to further analysis (and can be changed through the `tol` argument).
+    Catalyst currently computes steady state stabilities using the naive approach of checking whether a system's largest eigenvalue real part is negative. While more advanced stability computation methods exist (and would be a welcome addition to Catalyst), there is no direct plans to implement these. Furthermore, Catalyst uses a arbitrary tolerance $tol ≈ 1.5*10^-7$ to determine whether a computed eigenvalue is far away enough from 0 to be reliably used. This selected threshold, however, have not been subject to further analysis (and can be changed through the `tol` argument).
 
 ## Basic examples
 Let us consider the following basic example:
@@ -19,7 +19,7 @@ steady_state = [:X => 4.0]
 steady_state_stability(steady_state, rn, ps)
 ```
 
-Next, let us consider the following self-activation loop:
+Next, let us consider the following [self-activation loop](@ref ref):
 ```@example stability_1
 sa_loop = @reaction_network begin 
     (hill(X,v,K,n),d), 0 <--> X
@@ -31,18 +31,15 @@ import HomotopyContinuation
 ps = [:v => 2.0, :K => 0.5, :n => 3, :d => 1.0]
 steady_states = hc_steady_states(sa_loop, ps)
 ```
-Next, we can apply `steady_state_stability` directly to this steady state vector, receiving the stability for each:
+Next, we can apply `steady_state_stability` to each steady state yielding a vector of their stabilities:
 ```@example stability_1
-steady_state_stability(steady_states, sa_loop, ps)
+[steady_state_stability(sstate, sa_loop, ps) for sstate in steady_states]
 ```
-
-!!! note
-    For systems with [conservation laws](@ref homotopy_continuation_conservation_laws), `steady_state_jac` must be supplied a `u0` vector (indicating species concentrations for conservation law computation). This is required to eliminate the conserved quantities, preventing a singular Jacobian. These are supplied using the `u0` optional argument.
 
 ## Pre-computing the Jacobian to increase performance when computing stability for many steady states
 Catalyst uses the system Jacobian to compute steady state stability, and the Jacobian is computed once for each call to `steady_state_stability`. If you repeatedly compute stability for steady states of the same system, pre-computing the Jacobian and supplying it to the `steady_state_stability` function can improve performance. 
 
-In this example we use the self-activation loop from previously, pre-computes the Jacobian, and uses it to multiple `steady_state_stability` calls:
+In this example we use the self-activation loop from previously, pre-computes its Jacobian, and uses it to multiple `steady_state_stability` calls:
 ```@example stability_1
 ss_jac = steady_state_jac(sa_loop)
 
@@ -61,3 +58,6 @@ It is possible to designate that a [sparse Jacobian](@ref ref) should be used us
 ss_jac = steady_state_jac(sa_loop; sparse = true)
 nothing # hide
 ```
+
+!!! warn
+    For systems with [conservation laws](@ref homotopy_continuation_conservation_laws), `steady_state_jac` must be supplied a `u0` vector (indicating species concentrations for conservation law computation). This is required to eliminate the conserved quantities, preventing a singular Jacobian. These are supplied using the `u0` optional argument.
