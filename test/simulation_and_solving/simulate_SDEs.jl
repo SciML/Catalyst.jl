@@ -350,7 +350,7 @@ let
         p, 0 --> X, [noise_scaling=2.0]
         d, X --> 0
     end
-    @unpack p, d, η1 = noise_scaling_network1
+    @unpack p, d, η1, X = noise_scaling_network1
     @parameters η2
     @species Y(t)
     @variables V(t)
