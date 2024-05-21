@@ -544,7 +544,7 @@ end
 
 # Implements the `conservationquantity` parameter metadata.
 struct ConservedParameter end
-Symbolics.option_to_metadata_type(::Val{:conservationquantity}) = ConservationQuantity
+Symbolics.option_to_metadata_type(::Val{:conserved}) = ConservationQuantity
 
 """
     isconservationquantity(p)
