@@ -375,7 +375,7 @@ let
 
     rx = Reaction(1.0,[CO,CO2,H2],[CH4,H2O])
     brxs = balance_reaction(rx)
-    @test_logs (:warn, r"Infinite balanced reactions*") match_mode=:any balance_reaction(rx)
+    @test_logs (:warn, r"The space of possible balanced *") match_mode=:any balance_reaction(rx)
     @test length(brxs) == 2
 end
 
