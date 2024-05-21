@@ -543,7 +543,7 @@ end
 ### Conservation Laws ###
 
 # Implements the `conservationquantity` parameter metadata.
-struct ConservationQuantity end
+struct ConservedParameter end
 Symbolics.option_to_metadata_type(::Val{:conservationquantity}) = ConservationQuantity
 
 """
