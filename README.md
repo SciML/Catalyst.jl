@@ -41,7 +41,7 @@ documentation](https://docs.sciml.ai/Catalyst/stable/). The [in-development
 documentation](https://docs.sciml.ai/Catalyst/dev/) describes unreleased features in
 the current master branch.
 
-An overview of the package and its features (as of version 13) can also be found in its corresponding research paper, [Catalyst: Fast and flexible modeling of reaction networks](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530).
+An overview of the package, its features, and comparative benchmarking (as of version 13) can also be found in its corresponding research paper, [Catalyst: Fast and flexible modeling of reaction networks](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530).
 
 ## Features
 
