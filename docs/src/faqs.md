@@ -18,6 +18,7 @@ Let's convert it to a system of ODEs, using the conservation laws of the system
 to eliminate two of the species:
 ```@example faq1
 osys = convert(ODESystem, rn; remove_conserved = true)
+osys = complete(osys)
 ```
 Notice the resulting ODE system has just one ODE, while algebraic observables
 have been added for the two removed species (in terms of the conservation law
@@ -221,6 +222,7 @@ rx1 = @reaction k, A --> 0
 rx2 = @reaction $f, 0 --> A
 eq = f ~ (1 + sin(t))
 @named rs = ReactionSystem([rx1, rx2, eq], t)
+rs = complete(rs)
 osys = convert(ODESystem, rs)
 ```
 In the final ODE model, `f` can be eliminated by using
