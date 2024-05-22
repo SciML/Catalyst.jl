@@ -194,14 +194,11 @@ function Reaction(rate, subs::Vector, prods::Vector, substoich::Vector{S}, prods
     end
     
     # Computes the net stoichiometries.
-    netstoich = if isnothing(netstoich)
-        get_netstoich(subs, prods, substoich, prodstoich)
-    else
-        if typeof(netstoich) != Vector{Pair{BasicSymbolic{Real}, stoich_type}}
-            netstoich = Pair{BasicSymbolic{Real}, stoich_type}[
-                            value(ns[1]) => convert(stoich_type, ns[2]) for ns in netstoich]
-        end
-        netstoich
+    if isempty(netstoich)
+        netstoich = get_netstoich(subs, prods, substoich, prodstoich)
+    elseif typeof(netstoich) != Vector{Pair{BasicSymbolic{Real}, stoich_type}}
+        netstoich = Pair{BasicSymbolic{Real}, stoich_type}[
+                        value(ns[1]) => convert(stoich_type, ns[2]) for ns in netstoich]
     end
 
     # Handles metadata (check that all entries are unique, remove potential `only_use_rate`
