@@ -723,7 +723,7 @@ function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
 end
 
 """
-    reactionparams(network)
+reactionsystemparams(network)
 
 Given a [`ReactionSystem`](@ref), return a vector of all parameters defined
 within the system and any subsystems that are of type `ReactionSystem`. To get
@@ -733,11 +733,11 @@ subsystems, use `parameters(network)`.
 Notes:
 - Allocates and has to calculate these dynamically by comparison for each reaction.
 """
-function reactionparams(network)
+function reactionsystemparams(network)
     ps = get_ps(network)
     systems = filter_nonrxsys(network)
     isempty(systems) && return ps
-    unique([ps; reduce(vcat, map(sys -> species(sys, reactionparams(sys)), systems))])
+    unique([ps; reduce(vcat, map(sys -> species(sys, reactionsystemparams(sys)), systems))])
 end
 
 """
@@ -765,13 +765,13 @@ function paramsmap(network)
 end
 
 """
-    reactionparamsmap(network)
+    reactionsystemparamsmap(network)
 
 Given a [`ReactionSystem`](@ref), return a Dictionary mapping from parameters that
-appear within `Reaction`s to their index within [`reactionparams(network)`](@ref).
+appear within `Reaction`s to their index within [`reactionsystemparams(network)`](@ref).
 """
-function reactionparamsmap(network)
-    Dict(p => i for (i, p) in enumerate(reactionparams(network)))
+function reactionsystemparamsmap(network)
+    Dict(p => i for (i, p) in enumerate(reactionsystemparams(network)))
 end
 
 # used in the next function (`reactions(network)`).
@@ -824,18 +824,18 @@ function nonreactions(network)
 end
 
 """
-    numreactionparams(network)
+    numreactionsystemparams(network)
 
 Return the total number of parameters within the given [`ReactionSystem`](@ref)
 and subsystems that are `ReactionSystem`s.
 
 Notes
 - If there are no subsystems this will be fast.
-- As this calls [`reactionparams`](@ref), it can be slow and will allocate if
+- As this calls [`reactionsystemparams`](@ref), it can be slow and will allocate if
   there are any subsystems.
 """
-function numreactionparams(network)
-    length(reactionparams(network))
+function numreactionsystemparams(network)
+    length(reactionsystemparams(network))
 end
 
 """

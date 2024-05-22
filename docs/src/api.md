@@ -128,7 +128,7 @@ can call:
   the system and any sub-systems that are also `ReactionSystems`.
 * `ModelingToolkit.parameters(rn)` returns all parameters across the
   system, *all sub-systems*, and all constraint systems.
-* [`reactionparams(rn)`](@ref) is a vector of all the parameters within the
+* [`reactionsystemparams(rn)`](@ref) is a vector of all the parameters within the
   system and any sub-systems that are also `ReactionSystem`s. These include all
   parameters that appear within some `Reaction`.
 * `ModelingToolkit.equations(rn)` returns all [`Reaction`](@ref)s and all
@@ -155,16 +155,16 @@ accessor functions.
 ```@docs
 species
 nonspecies
-reactionparams
+reactionsystemparams
 reactions
 nonreactions
 numspecies
 numparams
 numreactions
-numreactionparams
+numreactionsystemparams
 speciesmap
 paramsmap
-reactionparamsmap
+reactionsystemparamsmap
 isspecies
 Catalyst.isconstant
 Catalyst.isbc
