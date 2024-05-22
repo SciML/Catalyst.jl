@@ -245,13 +245,13 @@ has to bundle them together in a `CallbackSet`, here follows one example:
 rn = @reaction_network begin
     (k,1), X1 <--> X2
 end
-u0 = [:X1 => 10.0,:X2 => 0.0]
+u0 = [:X1 => 10.0, :X2 => 0.0]
 tspan = (0.0, 20.0)
 p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 
 ps_cb_1 = PresetTimeCallback([3.0, 7.0], integ -> integ[:X1] += 5.0)
-ps_cb_2 = PresetTimeCallback([5.0], integ -> integ[:k] = 5.0)
+ps_cb_2 = PresetTimeCallback([5.0], integ -> integ.ps[:k] = 5.0)
 
 sol = solve(deepcopy(oprob), Tsit5(); callback=CallbackSet(ps_cb_1, ps_cb_2))
 plot(sol)
@@ -350,7 +350,7 @@ It is possible to use a different noise scaling expression for each reaction. He
 ```@example ex3
 rn_4 = @reaction_network begin
     (p, d), 0 <--> X
-    (p, d), 0 <--> Y, ([noise_scaling=0.0, noise_scaling=0.0])
+    (p, d), 0 <--> Y, ([noise_scaling=0.0], [noise_scaling=0.0])
 end
 
 u0_4 = [:X => 10.0, :Y => 10.0]
