@@ -61,11 +61,6 @@ function steady_state_stability(u::Vector, rs::ReactionSystem, ps; tol = 10*sqrt
 
     # Computes stability (by checking that the real part of all eigenvalues are negative).
     # Here, `ss_jac` is a `ODEProblem` with dummy values for `u0` and `p`.
-
-    if isdefined(Main, :Infiltrator)
-        Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
-      end
-
     J = zeros(length(u), length(u))
     ss_jac = remake(ss_jac; u0 = u, p = ps)
     ss_jac.f.jac(J, ss_jac.u0, ss_jac.p, Inf)
