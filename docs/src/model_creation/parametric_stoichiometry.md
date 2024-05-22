@@ -58,6 +58,7 @@ stoichiometries `(F,2*H,2)`.
 Let's now convert `revsys` to ODEs and look at the resulting equations:
 ```@example s1
 osys = convert(ODESystem, revsys)
+osys = complete(osys)
 equations(osys)
 show(stdout, MIME"text/plain"(), equations(osys)) # hide
 ```
@@ -88,6 +89,7 @@ converting to an `ODESystem`). For the previous example this gives the following
 (different) system of ODEs
 ```@example s1
 osys = convert(ODESystem, revsys; combinatoric_ratelaws = false)
+osys = complete(osys)
 equations(osys)
 show(stdout, MIME"text/plain"(), equations(osys)) # hide
 ```
@@ -140,6 +142,7 @@ The parameter `b` does not need to be explicitly declared in the
 We next convert our network to a jump process representation
 ```@example s1
 jsys = convert(JumpSystem, burstyrn; combinatoric_ratelaws = false)
+jsys = complete(jsys)
 equations(jsys)
 show(stdout, MIME"text/plain"(), equations(jsys)) # hide
 ```
