@@ -1,4 +1,4 @@
-### Prepares Tests ###
+#! format: off
 
 ### Prepares Tests ###
 
@@ -16,214 +16,335 @@ t = default_t()
 
 ### Tests `@parameters`, `@species`, and `@variables` Options ###
 
-# Sets the default `t` to use.
-t = default_t()
-
-# Fetch test networks and functions.
-include("../test_networks.jl")
-include("../test_functions.jl")
-
-### Declares Testing Functions ###
-
-function unpacksys(sys)
-    get_eqs(sys), get_iv(sys), get_unknowns(sys), get_ps(sys), nameof(sys), get_systems(sys)
-end
-
-opname(x) = istree(x) ? nameof(operation(x)) : nameof(x)
-alleq(xs, ys) = all(isequal(x, y) for (x, y) in zip(xs, ys))
-
-# Gets all the reactants in a set of equations.
-function all_reactants(eqs)
-    all_reactants = []
-    for eq in eqs
-        append!(all_reactants, opname.(eq.substrates))
-        append!(all_reactants, opname.(eq.products))
-    end
-    return Set{Symbol}(unique(all_reactants))
-end
-
-# Gets all parameters (where every reaction rate is constant)
-function all_parameters(eqs)
-    return Set(unique(map(eq -> opname(eq.rate), eqs)))
-end
-
-# Perform basic tests.
-function basic_test(rn, N, unknowns_syms, p_syms)
-    eqs, iv, unknowns, ps, name, systems = unpacksys(rn)
-    @test length(eqs) == N
-    @test opname(iv) == :t
-    @test length(unknowns) == length(unknowns_syms)
-    @test issetequal(map(opname, unknowns), unknowns_syms)
-    @test all_reactants(eqs) == Set(unknowns_syms)
-    @test length(ps) == length(p_syms)
-    @test issetequal(map(opname, ps), p_syms)
-end
-
-### Basic Tests ###
-
-# Test basic properties of networks.
+# Test creating networks with/without options.
 let
-    basic_test(reaction_networks_standard[1], 10, [:X1, :X2, :X3],
-               [:p1, :p2, :p3, :k1, :k2, :k3, :k4, :d1, :d2, :d3])
-    @test all_parameters(get_eqs(reaction_networks_standard[1])) ==
-          Set([:p1, :p2, :p3, :k1, :k2, :k3, :k4, :d1, :d2, :d3])
-    basic_test(reaction_networks_standard[2], 3, [:X1, :X2], [:v1, :K1, :v2, :K2, :d])
-    basic_test(reaction_networks_standard[3], 10, [:X1, :X2, :X3, :X4],
-               [:v1, :K1, :v2, :K2, :k1, :k2, :k3, :k4, :d])
-    basic_test(reaction_networks_standard[4], 8, [:X1, :X2, :X3, :X4],
-               [:v1, :K1, :v2, :K2, :v3, :K3, :v4, :K4, :d1, :d2, :d3, :d4])
-    basic_test(reaction_networks_standard[5], 8, [:X1, :X2, :X3, :X4],
-               [:p, :k1, :k2, :k3, :k4, :k5, :k6, :d])
-    @test all_parameters(get_eqs(reaction_networks_standard[5])) ==
-          Set([:p, :k1, :k2, :k3, :k4, :k5, :k6, :d])
-    basic_test(reaction_networks_hill[1], 4, [:X1, :X2],
-               [:v1, :v2, :K1, :K2, :n1, :n2, :d1, :d2])
-    basic_test(reaction_networks_constraint[1], 6, [:X1, :X2, :X3],
-               [:k1, :k2, :k3, :k4, :k5, :k6])
-    basic_test(reaction_networks_real[1], 4, [:X, :Y], [:A, :B])
-    basic_test(reaction_networks_weird[1], 2, [:X], [:p, :d])
-    basic_test(reaction_networks_weird[2], 4, [:X, :Y, :Z], [:k1, :k2, :k3, :k4])
-end
-
-# Compares networks to networks created using different arrow types.
-let
-    networks_1 = []
-    networks_2 = []
-
-    different_arrow_1 = @reaction_network begin
-        (p1, p2, p3), ∅ > (X1, X2, X3)
-        (k1, k2), X2 ↔ X1 + 2X3
-        (k3, k4), X1 ⟷ X3
-        (d1, d2, d3), (X1, X2, X3) → ∅
+    @reaction_network begin (k1, k2), A <--> B end
+    @reaction_network begin
+        @parameters k1 k2
+        (k1, k2), A <--> B
     end
-    push!(networks_1, reaction_networks_standard[1])
-    push!(networks_2, different_arrow_1)
-
-    different_arrow_2 = @reaction_network begin
-        mmr(X2, v1, K1), ∅ → X1
-        mm(X1, v2, K2), ∅ ↣ X2
-        d, X1 + X2 ↦ ∅
+    @reaction_network begin
+        @parameters k1 k2
+        @species A(t) B(t)
+        (k1, k2), A <--> B
     end
-    push!(networks_1, reaction_networks_standard[2])
-    push!(networks_2, different_arrow_2)
-
-    different_arrow_3 = @reaction_network begin
-        mm(X2, v1, K1), ∅ ⇾ X1
-        mm(X3, v2, K2), ∅ ⟶ X2
-        (k1, k2), X1 ⇄ X3
-        (k3, k4), X3 + X2 ⇆ X4 + X1
-        d, (X1, X2, X3, X4) ⟼ ∅
+    @reaction_network begin
+        @species A(t) B(t)
+        (k1, k2), A <--> B
     end
-    push!(networks_1, reaction_networks_standard[3])
-    push!(networks_2, different_arrow_3)
 
-    different_arrow_4 = @reaction_network begin
-        mmr(X4, v1, K1), ∅ ⥟ X1
-        mmr(X1, v2, K2), ∅ ⥟ X2
-        mmr(X2, v3, K3), ∅ ⇀ X3
-        mmr(X3, v4, K4), ∅ ⇁ X4
-        (d1, d2, d3, d4), (X1, X2, X3, X4) --> ∅
-    end
-    push!(networks_1, reaction_networks_standard[4])
-    push!(networks_2, different_arrow_4)
-
-    # Yes the name is different, I wanted one with several single direction arrows.
-    different_arrow_8 = @reaction_network begin
-        p, 2X1 < ∅
-        k1, X2 ← X1
-        (k2, k3), X3 ⟻ X2
-        d, ∅ ↼ X3
-    end
-    push!(networks_1, reaction_networks_standard[8])
-    push!(networks_2, different_arrow_8)
-
-    for (rn_1, rn_2) in zip(networks_1, networks_2)
-        for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0 = rnd_u0(rn_1, rng; factor)
-            p = rnd_ps(rn_1, rng; factor)
-            t = rand(rng)
-            
-            @test f_eval(rn_1, u0, p, t) ≈ f_eval(rn_2, u0, p, t)
-            @test jac_eval(rn_1, u0, p, t) ≈ jac_eval(rn_2, u0, p, t)
-            @test g_eval(rn_1, u0, p, t) ≈ g_eval(rn_2, u0, p, t)
+    @reaction_network begin
+        @parameters begin
+            k1
+            k2
         end
+        (k1, k2), A <--> B
     end
+    @reaction_network begin
+        @species begin
+            A(t)
+            B(t)
+        end
+        (k1, k2), A <--> B
+    end
+    @reaction_network begin
+        @parameters begin
+            k1
+            k2
+        end
+        @species begin
+            A(t)
+            B(t)
+        end
+        (k1, k2), A <--> B
+    end
+
+    n1 = @reaction_network rnname begin (k1, k2), A <--> B end
+    n2 = @reaction_network rnname begin
+        @parameters k1 k2
+        (k1, k2), A <--> B
+    end
+    n3 = @reaction_network rnname begin
+        @species A(t) B(t)
+        (k1, k2), A <--> B
+    end
+    n4 = @reaction_network rnname begin
+        @parameters k1 k2
+        @species A(t) B(t)
+        (k1, k2), A <--> B
+    end
+    n5 = @reaction_network rnname begin
+        (k1, k2), A <--> B
+        @parameters k1 k2
+    end
+    n6 = @reaction_network rnname begin
+        (k1, k2), A <--> B
+        @species A(t) B(t)
+    end
+    n7 = @reaction_network rnname begin
+        (k1, k2), A <--> B
+        @parameters k1 k2
+        @species A(t) B(t)
+    end
+    n8 = @reaction_network rnname begin
+        @parameters begin
+            k1
+            k2
+        end
+        (k1, k2), A <--> B
+    end
+    n9 = @reaction_network rnname begin
+        @species begin
+            A(t)
+            B(t)
+        end
+        (k1, k2), A <--> B
+    end
+    n10 = @reaction_network rnname begin
+        @parameters begin
+            k1
+            k2
+        end
+        @species begin
+            A(t)
+            B(t)
+        end
+        (k1, k2), A <--> B
+    end
+    @test all(==(n1), (n2, n3, n4, n5, n6, n7, n8, n9, n10))
+end
+
+# Tests that when either @species or @parameters is given, the other is inferred properly.
+let
+    rn1 = @reaction_network begin
+        k*X, A + B --> 0
+    end
+    @test issetequal(species(rn1), @species A(t) B(t))
+    @test issetequal(parameters(rn1), @parameters k X)
+
+    rn2 = @reaction_network begin
+        @species A(t) B(t) X(t)
+        k*X, A + B --> 0
+    end
+    @test issetequal(species(rn2), @species A(t) B(t) X(t))
+    @test issetequal(parameters(rn2), @parameters k)
+
+    rn3 = @reaction_network begin
+        @parameters k
+        k*X, A + B --> 0
+    end
+    @test issetequal(species(rn3), @species A(t) B(t))
+    @test issetequal(parameters(rn3), @parameters k X)
+
+    rn4 = @reaction_network begin
+        @species A(t) B(t) X(t)
+        @parameters k
+        k*X, A + B --> 0
+    end
+    @test issetequal(species(rn4), @species A(t) B(t) X(t))
+    @test issetequal(parameters(rn4), @parameters k)
+
+    rn5 = @reaction_network begin
+        @parameters k B [isconstantspecies=true]
+        k*X, A + B --> 0
+    end
+    @test issetequal(species(rn5), @species A(t))
+    @test issetequal(parameters(rn5), @parameters k B X)
+end
+
+# Test inferring with stoichiometry symbols and interpolation.
+let
+    @parameters k g h gg X y [isconstantspecies = true]
+    t = Catalyst.DEFAULT_IV
+    @species A(t) B(t) BB(t) C(t)
+
+    rni = @reaction_network inferred begin
+        $k*X, $y + g*A + h*($gg)*B + $BB * C --> k*C
+    end
+    @test issetequal(species(rni), [A, B, BB, C])
+    @test issetequal(parameters(rni), [k, g, h, gg, X, y])
+
+    rnii = @reaction_network inferred begin
+        @species BB(t)
+        @parameters y [isconstantspecies = true]
+        k*X, y + g*A + h*($gg)*B + BB * C --> k*C
+    end
+    @test rnii == rni
+end
+
+# Tests that when some species or parameters are left out, the others are set properly.
+let
+    rn6 = @reaction_network begin
+        @species A(t)
+        k*X, A + B --> 0
+    end
+    @test issetequal(species(rn6), @species A(t) B(t))
+    @test issetequal(parameters(rn6), @parameters k X)
+
+    rn7 = @reaction_network begin
+        @species A(t) X(t)
+        k*X, A + B --> 0
+    end
+    @test issetequal(species(rn7), @species A(t) X(t) B(t))
+    @test issetequal(parameters(rn7), @parameters k)
+
+    rn7 = @reaction_network begin
+        @parameters B [isconstantspecies=true]
+        k*X, A + B --> 0
+    end
+    @test issetequal(species(rn7), @species A(t))
+    @test issetequal(parameters(rn7), @parameters B k X)
+
+    rn8 = @reaction_network begin
+        @parameters B [isconstantspecies=true] k
+        k*X, A + B --> 0
+    end
+    @test issetequal(species(rn8), @species A(t))
+    @test issetequal(parameters(rn8), @parameters B k X)
+
+    rn9 = @reaction_network begin
+        @parameters k1 X1
+        @species A1(t) B1(t)
+        k1*X1, A1 + B1 --> 0
+        k2*X2, A2 + B2 --> 0
+    end
+    @test issetequal(species(rn9), @species A1(t) B1(t) A2(t) B2(t))
+    @test issetequal(parameters(rn9), @parameters k1 X1 k2 X2)
+
+    rn10 = @reaction_network begin
+        @parameters k1 X2 B2 [isconstantspecies=true]
+        @species A1(t) X1(t)
+        k1*X1, A1 + B1 --> 0
+        k2*X2, A2 + B2 --> 0
+    end
+    @test issetequal(species(rn10), @species A1(t) X1(t) B1(t) A2(t))
+    @test issetequal(parameters(rn10), @parameters k1 X2 B2 k2)
+
+    rn11 = @reaction_network begin
+        @parameters k1 k2
+        @species X1(t)
+        k1*X1, A1 + B1 --> 0
+        k2*X2, A2 + B2 --> 0
+    end
+    @test issetequal(species(rn11), @species X1(t) A1(t) A2(t) B1(t) B2(t))
+    @test issetequal(parameters(rn11), @parameters k1 k2 X2)
 end
 
 # Checks that some created networks are identical.
 let
-    # Declares network.
-    differently_written_5 = @reaction_network begin
-        q, ∅ → Y1
-        (l1, l2), Y1 ⟷ Y2
-        (l3, l4), Y2 ⟷ Y3
-        (l5, l6), Y3 ⟷ Y4
-        c, Y4 → ∅
+    rn12 = @reaction_network rnname begin (k1, k2), A <--> B end
+    rn13 = @reaction_network rnname begin
+        @parameters k1 k2
+        (k1, k2), A <--> B
     end
-
-    # Computes initial conditions/parameter values.
-    u0_vals = rand(rng, length(species(differently_written_5)))
-    ps_vals = rand(rng, length(parameters(differently_written_5)))
-    u0_1 = [:X1 => u0_vals[1], :X2 => u0_vals[2], :X3 => u0_vals[3], :X4 => u0_vals[4]]
-    u0_2 = [:Y1 => u0_vals[1], :Y2 => u0_vals[2], :Y3 => u0_vals[3], :Y4 => u0_vals[4]]
-    ps_1 = [:p  => ps_vals[1], :k1  => ps_vals[2], :k2  => ps_vals[3], :k3  => ps_vals[4], 
-            :k4  => ps_vals[5], :k5  => ps_vals[6], :k6  => ps_vals[7], :d => ps_vals[8]]
-    ps_2 = [:q  => ps_vals[1], :l1  => ps_vals[2], :l2  => ps_vals[3], :l3  => ps_vals[4], 
-            :l4  => ps_vals[5], :l5  => ps_vals[6], :l6  => ps_vals[7], :c => ps_vals[8]]
-    t = rand(rng)
-
-    # Checks equivalence.
-    rn_1 = reaction_networks_standard[5]
-    rn_2 = differently_written_5
-    @test f_eval(rn_1, u0_1, ps_1, t) ≈ f_eval(rn_2, u0_2, ps_2, t)
-    @test jac_eval(rn_1, u0_1, ps_1, t) ≈ jac_eval(rn_2, u0_2, ps_2, t)
-    @test g_eval(rn_1, u0_1, ps_1, t) ≈ g_eval(rn_2, u0_2, ps_2, t)
+    rn14 = @reaction_network rnname begin
+        @species A(t) B(t)
+        (k1, k2), A <--> B
+    end
+    rn15 = @reaction_network rnname begin
+        @parameters k1 k2
+        @species A(t) B(t)
+        (k1, k2), A <--> B
+    end
+    @test all(==(rn12), (rn13, rn14, rn15))
 end
 
-# Compares networks to networks written in different ways.
+# Checks that the rights things are put in vectors.
 let
-    networks_1 = []
-    networks_2 = []
-
-    # Unfold reactions.
-    differently_written_6 = @reaction_network begin
-        p1, ∅ → X1
-        p2, ∅ → X2
-        k1, 2X1 → X3
-        k2, X3 → 2X1
-        k3, X2 + X3 → 4X4
-        k4, 4X4 → X2 + X3
-        k5, X4 + X1 → 2X3
-        k6, 2X3 → X4 + X1
-        d, X1 → ∅
-        d, X2 → ∅
-        d, X3 → ∅
-        d, X4 → ∅
+    rn18 = @reaction_network rnname begin
+        @parameters p d1 d2
+        @species A(t) B(t)
+        p, 0 --> A
+        1, A --> B
+        (d1, d2), (A, B) --> 0
     end
-    push!(networks_1, reaction_networks_standard[6])
-    push!(networks_2, differently_written_6)
-
-    # Ignore mass action.
-    differently_written_7 = @reaction_network begin
-        @parameters p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
-        (p1, p2, p3), ∅ ⇒ (X1, X2, X3)
-        (k1 * X1 * X2^2 / 2, k2 * X4), X1 + 2X2 ⟺ X4
-        (mm(X3, v1, K1) * X4, k3 * X5), X4 ⇔ X5
-        (d1 * X1, d2 * X2, d3 * X3, d4 * X4, d5 * X5), ∅ ⟽ (X1, X2, X3, X4, X5)
+    rn19 = @reaction_network rnname begin
+        p, 0 --> A
+        1, A --> B
+        (d1, d2), (A, B) --> 0
     end
-    push!(networks_1, reaction_networks_standard[7])
-    push!(networks_2, differently_written_7)
+    @test rn18 == rn19
 
-    # Ignore mass action new arrows.
-    differently_written_8 = @reaction_network begin
-        @parameters p1 p2 p3 k1 k2 k3 v1 K1 d1 d2 d3 d4 d5
-        (p1, p2, p3), ∅ => (X1, X2, X3)
-        (k1 * X1 * X2^2 / 2, k2 * X4), X1 + 2X2 ⟺ X4
-        (mm(X3, v1, K1) * X4, k3 * X5), X4 ⇔ X5
-        (d1 * X1, d2 * X2, d3 * X3, d4 * X4, d5 * X5), ∅ <= (X1, X2, X3, X4, X5)
+    @parameters p d1 d2
+    @species A(t) B(t)
+    @test isequal(parameters(rn18)[1], p)
+    @test isequal(parameters(rn18)[2], d1)
+    @test isequal(parameters(rn18)[3], d2)
+    @test isequal(species(rn18)[1], A)
+    @test isequal(species(rn18)[2], B)
+
+    rn20 = @reaction_network rnname begin
+        @species X(t)
+        @parameters S
+        mm(X,v,K), 0 --> Y
+        (k1,k2), 2Y <--> Y2
+        d*Y, S*(Y2+Y) --> 0
     end
-    push!(networks_1, reaction_networks_standard[7])
-    push!(networks_2, differently_written_8)
+    rn21 = @reaction_network rnname begin
+        @species X(t) Y(t) Y2(t)
+        @parameters v K k1 k2 d S
+        mm(X,v,K), 0 --> Y
+        (k1,k2), 2Y <--> Y2
+        d*Y, S*(Y2+Y) --> 0
+    end
+    rn22 = @reaction_network rnname begin
+        @species X(t) Y2(t)
+        @parameters d k1
+        mm(X,v,K), 0 --> Y
+        (k1,k2), 2Y <--> Y2
+        d*Y, S*(Y2+Y) --> 0
+    end
+    @test all(==(rn20), (rn21, rn22))
+    @parameters v K k1 k2 d S
+    @species X(t) Y(t) Y2(t)
+    @test issetequal(parameters(rn22),[v K k1 k2 d S])
+    @test issetequal(species(rn22), [X Y Y2])
+end
+
+# Tests that defaults work.
+let
+    rn26 = @reaction_network rnname begin
+        @parameters p=1.0 d1 d2=5
+        @species A(t) B(t)=4
+        p, 0 --> A
+        1, A --> B
+        (d1, d2), (A, B) --> 0
+    end
+
+    rn27 = @reaction_network rnname begin
+    @parameters p1=1.0 p2=2.0 k1=4.0 k2=5.0 v=8.0 K=9.0 n=3 d=10.0
+    @species X(t)=4.0 Y(t)=3.0 X2Y(t)=2.0 Z(t)=1.0
+        (p1,p2), 0 --> (X,Y)
+        (k1,k2), 2X + Y --> X2Y
+        hill(X2Y,v,K,n), 0 --> Z
+        d, (X,Y,X2Y,Z) --> 0
+    end
+    u0_27 = []
+    p_27 = []
+
+    rn28 = @reaction_network rnname begin
+    @parameters p1=1.0 p2 k1=4.0 k2 v=8.0 K n=3 d
+    @species X(t)=4.0 Y(t) X2Y(t) Z(t)=1.0
+        (p1,p2), 0 --> (X,Y)
+        (k1,k2), 2X + Y --> X2Y
+        hill(X2Y,v,K,n), 0 --> Z
+        d, (X,Y,X2Y,Z) --> 0
+    end
+    u0_28 = symmap_to_varmap(rn28, [:p2=>2.0, :k2=>5.0, :K=>9.0, :d=>10.0])
+    p_28 = symmap_to_varmap(rn28, [:Y=>3.0, :X2Y=>2.0])
+    defs28 = Dict(Iterators.flatten((u0_28, p_28)))
+
+    rn29 = @reaction_network rnname begin
+    @parameters p1 p2 k1 k2 v K n d
+    @species X(t) Y(t) X2Y(t) Z(t)
+        (p1,p2), 0 --> (X,Y)
+        (k1,k2), 2X + Y --> X2Y
+        hill(X2Y,v,K,n), 0 --> Z
+        d, (X,Y,X2Y,Z) --> 0
+    end
+    u0_29 = symmap_to_varmap(rn29, [:p1=>1.0, :p2=>2.0, :k1=>4.0, :k2=>5.0, :v=>8.0, :K=>9.0, :n=>3, :d=>10.0])
+    p_29 = symmap_to_varmap(rn29, [:X=>4.0, :Y=>3.0, :X2Y=>2.0, :Z=>1.0])
+    defs29 = Dict(Iterators.flatten((u0_29, p_29)))
 
     @test ModelingToolkit.defaults(rn27) == defs29
     @test merge(ModelingToolkit.defaults(rn28), defs28) == ModelingToolkit.defaults(rn27)
@@ -338,6 +459,9 @@ let
             X ~ Xi + Xa
             Y ~ Y1 + Y2
         end
+        (p,d), 0 <--> Xi
+        (k1,k2), Xi <--> Xa
+        (k3,k4), Y1 <--> Y2
     end
     @unpack X, Xi, Xa, Y, Y1, Y2, p, d, k1, k2, k3, k4 = rn
 
@@ -372,24 +496,18 @@ let
     @test_broken false # plot(sol; idxs=[:X, :Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
 end
 
-# Compares networks to networks written without parameters,
+# Compares programmatic and DSL system with observables.
 let
-    networks_1 = []
-    networks_2 = []
-    parameter_sets = []
-
-    # Different parameter and variable names.
-    no_parameters_9 = @reaction_network begin
-        (1.5, 1, 2), ∅ ⟶ (X1, X2, X3)
-        (0.01, 2.3, 1001), (X1, X2, X3) ⟶ ∅
-        (π, 42), X1 + X2 ⟷ X3
-        (19.9, 999.99), X3 ⟷ X4
-        (sqrt(3.7), exp(1.9)), X4 ⟷ X1 + X2
+    # Model declarations.
+    rn_dsl = @reaction_network begin
+        @observables begin
+            X ~ x + 2x2y
+            Y ~ y + x2y
+        end
+        k, 0 --> (x, y)
+        (kB, kD), 2x + y <--> x2y
+        d, (x,y,x2y) --> 0
     end
-    push!(networks_1, reaction_networks_standard[9])
-    push!(networks_2, no_parameters_9)
-    push!(parameter_sets, [:p1 => 1.5, :p2 => 1, :p3 => 2, :d1 => 0.01, :d2 => 2.3, :d3 => 1001, 
-                           :k1 => π, :k2 => 42, :k3 => 19.9, :k4 => 999.99, :k5 => sqrt(3.7), :k6 => exp(1.9)])
 
     @variables X(t) Y(t)
     @species x(t), y(t), x2y(t)
@@ -405,17 +523,21 @@ let
     @named rn_prog = ReactionSystem([r1, r2, r3, r4, r5, r6, r7], t, [x, y, x2y], [k, kB, kD, d]; observed = obs_eqs)
     rn_prog = complete(rn_prog)
 
+    # Make simulations.
+    u0 = [x => 1.0, y => 0.5, x2y => 0.0]
+    tspan = (0.0, 15.0)
+    ps = [k => 1.0, kD => 0.1, kB => 0.5, d => 5.0]
+    oprob_dsl = ODEProblem(rn_dsl, u0, tspan, ps)
+    oprob_prog = ODEProblem(rn_prog, u0, tspan, ps)
 
-    for (rn_1, rn_2, p_1) in zip(networks_1, networks_2, parameter_sets)
-        for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
-            u0 = rnd_u0(rn_1, rng; factor)
-            t = rand(rng)
-            
-            @test f_eval(rn_1, u0, p_1, t) ≈ f_eval(rn_2, u0, [], t)
-            @test jac_eval(rn_1, u0, p_1, t) ≈ jac_eval(rn_2, u0, [], t)
-            @test g_eval(rn_1, u0, p_1, t) ≈ g_eval(rn_2, u0, [], t)
-        end
-    end
+    sol_dsl = solve(oprob_dsl, Tsit5(); saveat=0.1)
+    sol_prog = solve(oprob_prog, Tsit5(); saveat=0.1)
+
+    # Tests observables equal in both cases.
+    @test oprob_dsl[:X] == oprob_prog[:X]
+    @test oprob_dsl[:Y] == oprob_prog[:Y]
+    @test sol_dsl[:X] == sol_prog[:X]
+    @test sol_dsl[:Y] == sol_prog[:Y]
 end
 
 # Tests for complicated observable formula.
@@ -435,51 +557,32 @@ let
     u0 = Dict([:X1 => 1.0, :X2 => 2.0, :X3 => 3.0, :X4 => 4.0])
     ps = Dict([:p => 1.0, :d => 0.2, :k1 => 1.5, :k2 => 1.5, :k3 => 5.0, :k4 => 5.0, :op_1 => 1.5, :op_2 => 1.5])
 
-    rxs_1 = [Reaction(p, nothing, [X1], nothing, [2]),
-        Reaction(k1, [X1], [X2], [1], [1]),
-        Reaction(k2, [X2], [X3], [1], [1]),
-        Reaction(k3, [X2], [X3], [1], [1]),
-        Reaction(d, [X3], nothing, [1], nothing)]
-    @named rs_1 = ReactionSystem(rxs_1, t, [X1, X2, X3], [p, k1, k2, k3, d])
-    push!(identical_networks_4, reaction_networks_standard[8] => rs_1)
+    oprob = ODEProblem(rn, u0, (0.0, 1000.0), ps)
+    sol = solve(oprob, Tsit5())
 
     @test sol[:X][1] == u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]
 end
 
-    rxs_3 = [Reaction(k1, [X1], [X2], [1], [1]),
-        Reaction(0, [X2], [X3], [1], [1]),
-        Reaction(k2, [X3], [X4], [1], [1]),
-        Reaction(k3, [X4], [X5], [1], [1])]
-    @named rs_3 = ReactionSystem(rxs_3, t, [X1, X2, X3, X4, X5], [k1, k2, k3])
-    push!(identical_networks_4, reaction_networks_weird[7] => rs_3)
-
-    for networks in identical_networks_4
-        @test isequal(get_iv(networks[1]), get_iv(networks[2]))
-        @test alleq(get_unknowns(networks[1]), get_unknowns(networks[2]))
-        @test alleq(get_ps(networks[1]), get_ps(networks[2]))
-        @test ModelingToolkit.get_systems(networks[1]) ==
-              ModelingToolkit.get_systems(networks[2])
-        @test length(get_eqs(networks[1])) == length(get_eqs(networks[2]))
-        for (e1, e2) in zip(get_eqs(networks[1]), get_eqs(networks[2]))
-            @test isequal(e1.rate, e2.rate)
-            @test isequal(e1.substrates, e2.substrates)
-            @test isequal(e1.products, e2.products)
-            @test isequal(e1.substoich, e2.substoich)
-            @test isequal(e1.prodstoich, e2.prodstoich)
-            @test isequal(e1.netstoich, e2.netstoich)
-            @test isequal(e1.only_use_rate, e2.only_use_rate)
+# Checks that ivs are correctly found.
+let
+    rn = @reaction_network begin
+        @ivs t x y
+        @species V1(t) V2(t,x) V3(t, y) W1(t) W2(t, y)
+        @observables begin
+            V ~ V1 + 2V2 + 3V3
+            W ~ W1 + W2
         end
     end
+    V,W = getfield.(observed(rn), :lhs)
+    @test isequal(arguments(ModelingToolkit.unwrap(V)), Any[rn.iv, rn.sivs[1], rn.sivs[2]])
+    @test isequal(arguments(ModelingToolkit.unwrap(W)), Any[rn.iv, rn.sivs[2]])
 end
 
-### Tests Usage of Various Symbols ###
-
-# Tests that time is handled properly.
+# Checks that metadata is written properly.
 let
-    time_network = @reaction_network begin
-        (t, k2), X1 ↔ X2
-        (k3, t), X2 ↔ X3
-        (t, k6), X3 ↔ X1
+    rn = @reaction_network rn_observed begin
+        @observables (X, [description="my_description"]) ~ X1 + X2
+        k, 0 --> X1 + X2
     end
     @test ModelingToolkit.getdescription(observed(rn)[1].lhs) == "my_description"
 end
@@ -502,62 +605,64 @@ let
     @test isequal(observed(rn1)[1].lhs.metadata, observed(rn2)[1].lhs.metadata)
     @test isequal(unknowns(rn1), unknowns(rn2))
 
-        @test f_eval(reaction_networks_constraint[1], u, p_1, τ) ≈ f_eval(time_network, u, p_2, τ)
-        @test jac_eval(reaction_networks_constraint[1], u, p_1, τ) ≈ jac_eval(time_network, u, p_2, τ)
-        @test g_eval(reaction_networks_constraint[1], u, p_1, τ) ≈ g_eval(time_network, u, p_2, τ)
+    # Case with metadata.
+    rn3 = @reaction_network rn_observed begin
+        @observables (X,  [description="description"]) ~ X1 + X2
+        k, 0 --> X1 + X2
     end
+    rn4 = @reaction_network rn_observed begin
+        @variables X(t) [description="description"]
+        @observables X ~ X1 + X2
+        k, 0 --> X1 + X2
+    end
+    @test isequal(observed(rn3)[1].rhs, observed(rn4)[1].rhs)
+    @test isequal(observed(rn3)[1].lhs.metadata, observed(rn4)[1].lhs.metadata)
+    @test isequal(unknowns(rn3), unknowns(rn4))
 end
 
-# Check that various symbols can be used as species/parameter names.
+# Tests for interpolation into the observables option.
 let
-    @reaction_network begin
-        (a, A), n ⟷ N
-        (b, B), o ⟷ O
-        (c, C), p ⟷ P
-        (d, D), q ⟷ Q
-        (e, E), r ⟷ R
-        (f, F), s ⟷ S
-        (g, G), u ⟷ U
-        (h, H), v ⟷ V
-        (j, J), w ⟷ W
-        (k, K), x ⟷ X
-        (l, L), y ⟷ Y
-        (m, M), z ⟷ Z
+    # Interpolation into lhs.
+    @species X [description="An observable"]
+    rn1 = @reaction_network begin
+        @observables $X ~ X1 + X2
+        (k1, k2), X1 <--> X2
     end
     @test isequal(observed(rn1)[1].lhs, X)
     @test ModelingToolkit.getdescription(rn1.X) == "An observable"
     @test isspecies(rn1.X)
     @test length(unknowns(rn1)) == 2
 
-    @reaction_network begin (1.0, 1.0), i ⟷ T end
-
-    @reaction_network begin
-        (å, Å), ü ⟷ Ü
-        (ä, Ä), ñ ⟷ Ñ
-        (ö, Ö), æ ⟷ Æ
+    # Interpolation into rhs.
+    @parameters n [description="A parameter"]
+    @species S(t)
+    rn2 = @reaction_network begin
+        @observables Stot ~ $S + $n*Sn
+        (kB, kD), $n*S <--> Sn
     end
+    @unpack Stot, Sn, kD, kB = rn2
 
-    @reaction_network begin
-        (α, Α), ν ⟷ Ν
-        (β, Β), ξ ⟷ Ξ
-        (γ, γ), ο ⟷ Ο
-        (δ, Δ), Π ⟷ Π
-        (ϵ, Ε), ρ ⟷ Ρ
-        (ζ, Ζ), σ ⟷ Σ
-        (η, Η), τ ⟷ Τ
-        (θ, Θ), υ ⟷ Υ
-        (ι, Ι), ϕ ⟷ Φ
-        (κ, κ), χ ⟷ Χ
-        (λ, Λ), ψ ↔ Ψ
-        (μ, Μ), ω ⟷ Ω
-    end
+    u0 = Dict([S => 5.0, Sn => 1.0])
+    ps = Dict([n => 2, kB => 1.0, kD => 1.0])
+    oprob = ODEProblem(rn2, u0, (0.0, 1.0), ps)
+
+    @test issetequal(Symbolics.get_variables(observed(rn2)[1].rhs), [S, n, Sn])
+    @test oprob[Stot] == u0[S] + ps[n]*u0[Sn]
+    @test length(unknowns(rn2)) == 2
 end
 
 # Tests specific declaration of observables as species/variables.
 let
     rn = @reaction_network begin
-        k1, S + I --> 2I
-        k2, I --> R
+        @species X(t)
+        @variables Y(t)
+        @observables begin
+            X ~ X + 2X2
+            Y ~ Y1 + Y2
+            Z ~ X + Y
+        end
+        (kB,kD), 2X <--> X2
+        (k1,k2), Y1 <--> Y2
     end
 
     @test isspecies(rn.X)
@@ -573,45 +678,68 @@ let
         k, 0 --> X1 + X2
     end
 
-    rn2 = @reaction_network arrowtest begin
-        a1, C --> 0
-        a2, 0 --> C
-        k1, A + B --> C
-        k2, C --> A + B
-        b1, B --> 0
+    # System with observable in observable formula.
+    @test_throws Exception @eval @reaction_network begin
+        @observables begin
+            X ~ X1 + X2
+            X2 ~ 2X
+        end
+        (p,d), 0 <--> X1 + X2
     end
 
-    @test rn1 == rn2
+    # Multiple @observables options
+    @test_throws Exception @eval @reaction_network begin
+        @observables X ~ X1 + X2
+        @observables Y ~ Y1 + Y2
+        k, 0 --> X1 + X2
+        k, 0 --> Y1 + Y2
+    end
+    @test_throws Exception @eval @reaction_network begin
+        @observables begin
+            X ~ X1 + X2
+        end
+        @observables begin
+            X ~ 2(X1 + X2)
+        end
+        (p,d), 0 <--> X1 + X2
+    end
+
+    # Default value for compound.
+    @test_throws Exception @eval @reaction_network begin
+        @observables (X = 1.0) ~ X1 + X2
+        k, 0 --> X1 + X2
+    end
+
+    # Forbidden symbols as observable names.
+    @test_throws Exception @eval @reaction_network begin
+        @observables t ~ t1 + t2
+        k, 0 --> t1 + t2
+    end
+    @test_throws Exception @eval @reaction_network begin
+        @observables im ~ i + m
+        k, 0 --> i + m
+    end
+
+    # Non-trivial observables expression.
+    @test_throws Exception @eval @reaction_network begin
+        @observables X - X1 ~ X2
+        k, 0 --> X1 + X2
+    end
+
+    # Occurrence of undeclared dependants.
+    @test_throws Exception @eval @reaction_network begin
+        @observables X ~ X1 + X2
+        k, 0 --> X1
+    end
+
+    # Interpolation and explicit declaration of an observable.
+    @variables X(t)
+    @test_throws Exception @eval @reaction_network begin
+        @variables X(t)
+        @observables $X ~ X1 + X2
+        (k1,k2), X1 <--> X2
+    end
 end
-
-# Tests arrow variants in "@reaction" macro .
-let
-    @test isequal((@reaction k, 0 --> X), (@reaction k, X <-- 0))
-    @test isequal((@reaction k, 0 --> X), (@reaction k, X ⟻ 0))
-    @test isequal((@reaction k, 0 --> X), (@reaction k, 0 → X))
-    @test isequal((@reaction k, 0 --> X), (@reaction k, 0 ⥟ X))
-end
-
-# Test that symbols with special mean, or that are forbidden, are handled properly.
-let
-    test_network = @reaction_network begin t * k, X --> ∅ end
-    @test length(species(test_network)) == 1
-    @test length(parameters(test_network)) == 1
-
-    test_network = @reaction_network begin π, X --> ∅ end
-    @test length(species(test_network)) == 1
-    @test length(parameters(test_network)) == 0
-    @test reactions(test_network)[1].rate == π
-
-    test_network = @reaction_network begin pi, X --> ∅ end
-    @test length(species(test_network)) == 1
-    @test length(parameters(test_network)) == 0
-    @test reactions(test_network)[1].rate == pi
-
-    test_network = @reaction_network begin ℯ, X --> ∅ end
-    @test length(species(test_network)) == 1
-    @test length(parameters(test_network)) == 0
-    @test reactions(test_network)[1].rate == ℯ
 
 
 ### Test `@equations` Option for Coupled CRN/Equations Models ###
