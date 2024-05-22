@@ -2,6 +2,7 @@
 
 # Fetch packages.
 using Catalyst
+using Catalyst: get_rxs
 using ModelingToolkit: getdefault, getdescription, get_metadata
 
 # Creates missing getters for MTK metadata (can be removed once added to MTK).
@@ -20,10 +21,10 @@ D = default_time_deriv()
 # Checks annotated and non-annotated files against manually written ones.
 let 
     # Creates and serialises the model.
-    rn = @reaction_system begin
+    rn = @reaction_network rn begin
         @observables X2 ~ 2X
         @equations D(V) ~ 1 - V
-        (p,d), 0 <--> X
+        d, X --> 0
     end
     save_reaction_network("test_serialisation_annotated.jl", rn; safety_check = false)
     save_reaction_network("test_serialisation.jl", rn; annotate = false, safety_check = false)
@@ -31,10 +32,52 @@ let
     # Checks equivalence.
     file_string_annotated = read("test_serialisation_annotated.jl", String)
     file_string = read("test_serialisation.jl", String)
-    file_string_annotated_real = ""
-    file_string_real = ""
+    file_string_annotated_real = """let
+
+    # Independent variable:
+    @variables t
+
+    # Parameters:
+    ps = @parameters d
+
+    # Species:
+    sps = @species X(t)
+
+    # Variables:
+    vars = @variables V(t)
+
+    # Reactions:
+    rxs = [Reaction(d, [X], nothing, [1], nothing)]
+
+    # Equations:
+    eqs = [Differential(t)(V) ~ 1 - V]
+
+    # Observables:
+    @variables X2(t)
+    observed = [X2 ~ 2X]
+
+    # Declares ReactionSystem model:
+    rs = ReactionSystem([rxs; eqs], t, [sps; vars], ps; name = :rn, observed)
+    complete(rs)
+
+    end"""
+    file_string_real = """let
+
+    @variables t
+    ps = @parameters d
+    sps = @species X(t)
+    vars = @variables V(t)
+    rxs = [Reaction(d, [X], nothing, [1], nothing)]
+    eqs = [Differential(t)(V) ~ 1 - V]
+    @variables X2(t)
+    observed = [X2 ~ 2X]
+
+    rs = ReactionSystem([rxs; eqs], t, [sps; vars], ps; name = :rn, observed)
+    complete(rs)
+
+    end"""
     @test file_string_annotated == file_string_annotated_real
-    @test file == file_string_real
+    @test file_string == file_string_real
 
     # Deletes the files.
     rm("test_serialisation_annotated.jl")
@@ -95,8 +138,10 @@ let
     end
 
     # Creates the hierarchical model. Adds metadata to both reactions and the systems.
+    # First reaction has `+ s + r` as that is easier than manually listing all symbolics.
+    # (These needs to be part of the system somehow, as they are only added through the `misc` metadata)
     rxs1 = [
-        Reaction(a + A, [X], [], metadata = [:misc => bool_md])
+        Reaction(a + A + s + r, [X], [], metadata = [:misc => bool_md])
         Reaction(b + B, [Y], [], metadata = [:misc => int_md])
         Reaction(c + C, [Z], [], metadata = [:misc => sym_md])
         Reaction(d1 + D1, [V1], [], metadata = [:misc => str_md])
@@ -329,15 +374,15 @@ let
             X3 ~ 3*X
         end
         @continuous_events begin
-            X2 < 5.0 => [X ~ X + 1.0]
-            X3 > 20.0 => [X ~ X - 1.0]
+            [X ~ 5.0] => [X ~ X + 1.0]
+            [X ~ 20.0] => [X ~ X - 1.0]
         end
-        @discrete_events [5.0 => d ~ d/2]
+        @discrete_events 5.0 => [d ~ d/2]
         d, X --> 0
     end
 
     # Checks that serialisation works.
-    save_reaction_network("serialised_rs", rs; safety_check = false)
+    save_reaction_network("serialised_rs.jl", rs; safety_check = false)
     @test isequal(rs, include("serialised_rs.jl"))
     rm("serialised_rs.jl")
 end
@@ -371,7 +416,7 @@ let
     save_reaction_network("serialised_rs_complete.jl", rs_complete)
     rs_complete_loaded = include("serialised_rs_complete.jl")
     @test ModelingToolkit.iscomplete(rs_complete_loaded)
-    rn("serialised_rs_complete.jl")
+    rm("serialised_rs_complete.jl")
 
     # Checks for non-complete system.
     rs_incomplete = @network_component begin
@@ -380,5 +425,5 @@ let
     save_reaction_network("serialised_rs_incomplete.jl", rs_incomplete)
     rs_incomplete_loaded = include("serialised_rs_incomplete.jl")
     @test !ModelingToolkit.iscomplete(rs_incomplete_loaded)
-    rn("serialised_rs_incomplete.jl")
+    rm("serialised_rs_incomplete.jl")
 end

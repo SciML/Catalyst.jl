@@ -21,6 +21,13 @@ macro string_prepend!(input1, input2, string)
     return esc(:($string = $rhs))
 end
 
+# Gets the character at a specific index.
+get_char(str, idx) = collect(str)[idx]
+get_char_end(str, offset) = collect(str)[end - offset]
+# Gets a substring (which is robust to unicode characters like η).
+get_substring(str, idx1, idx2) = String(collect(str)[idx1, idx2])
+get_substring_end(str, idx1, offset) = String(collect(str)[idx1, end - offset])
+
 
 ### Field Serialisation Support Functions ###
 
@@ -72,7 +79,7 @@ end
 # any calls (e.g. X(t) becomes X). E.g. a species vector [X, Y, Z] is converted to "[X, Y, Z]".
 function syms_2_strings(syms)
     strip_called_syms = [strip_call(Symbolics.unwrap(sym)) for sym in syms]
-    return "$(convert(Vector{Any}, strip_called_syms))"[4:end]
+    return get_substring("$(convert(Vector{Any}, strip_called_syms))", 4)
 end    
 
 # Converts a vector of symbolics (e.g. the species or parameter vectors) to a string corresponding to 
@@ -100,10 +107,10 @@ function sym_2_declaration_string(sym; multiline_format = false)
     # to ensure that this is the case.
     if !(sym isa SymbolicUtils.BasicSymbolic{Real})
         sym_type = String(Symbol(typeof(Symbolics.unwrap(sym))))
-        if (sym_type[1:28] != "SymbolicUtils.BasicSymbolic{") || (sym_type[end] != '}')
+        if (get_substring(sym_type, 1, 28) != "SymbolicUtils.BasicSymbolic{") || (get_char_end(sym_type, 0) != '}')
             error("Encountered symbolic of unexpected type: $sym_type.")
         end
-        @string_append! dec_string "::" sym_type[29:end-1]
+        @string_append! dec_string "::" get_substring_end(sym_type, 29, -1)
     end
 
     # If there is a default value, adds this to the declaration.
@@ -120,7 +127,7 @@ function sym_2_declaration_string(sym; multiline_format = false)
         for metadata in metadata_to_declare
             @string_append! metadata_string metadata_2_string(sym, metadata) ", "
         end
-        @string_append! dec_string metadata_string[1:end-2] "]"
+        @string_append! dec_string $(get_substring_end(metadata_string, 1, -2)) "]"
     end
 
     # Returns the declaration entry for the symbol.
@@ -145,21 +152,21 @@ function x_2_string(x::Vector)
     for val in x
         @string_append! output x_2_string(val) ", "
     end
-    return output[1:end-2] * "]"
+    return get_substring_end(output, 1, -2) * "]"
 end 
 function x_2_string(x::Tuple)
     output = "("
     for val in x
         @string_append! output x_2_string(val) ", "
     end
-    return output[1:end-2] * ")"
+    return get_substring_end(output, 1, -2) * ")"
 end 
 function x_2_string(x::Dict)
     output = "Dict(["
     for key in keys(x)
         @string_append! output x_2_string(key) " => " x_2_string(x[key]) ", "
     end
-    return output[1:end-2] * "])"
+    return get_substring_end(output, 1, -2) * "])"
 end
 function x_2_string(x::Union{Matrix, Symbolics.Arr{Any, 2}})
     output = "["
@@ -167,9 +174,9 @@ function x_2_string(x::Union{Matrix, Symbolics.Arr{Any, 2}})
         for i = 1:size(x)[2]
             @string_append! output x_2_string(x[j,i]) " "
         end
-        output = output[1:end-1] * "; "
+        output = get_substring_end(output, 1, -1) * "; "
     end
-    return output[1:end-2] *"]"
+    return get_substring_end(output, 1, -2) *"]"
 end 
 
 

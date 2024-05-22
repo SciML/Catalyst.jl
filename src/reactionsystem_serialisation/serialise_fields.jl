@@ -87,7 +87,7 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool, t
             p_deps && (@string_append! us_n_ps_string "parameters, ")
             sp_deps && (@string_append! us_n_ps_string "species, ")
             var_deps && (@string_append! us_n_ps_string "variables, ")
-            us_n_ps_string = us_n_ps_string[1:end-2]
+            us_n_ps_string = get_substring_end(us_n_ps_string, 1, -2)
             @string_append! us_n_ps_string " depends on the declaration of other parameters, species, and/or variables.\n# These are specially handled here.\n"
         end
 
@@ -117,7 +117,7 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool, t
         p_deps && (@string_append! us_n_ps_string "ps = " syms_2_strings(ps_all) "\n")
         sp_deps && (@string_append! us_n_ps_string "sps = " syms_2_strings(sps_all) "\n")
         var_deps && (@string_append! us_n_ps_string "vars = " syms_2_strings(vars_all) "\n")
-        us_n_ps_string = us_n_ps_string[1:end-1]
+        us_n_ps_string = get_substring_end(us_n_ps_string, 1, -1)
     end
 
     # If this is not a top-level system, `local ` must be added to all declarations.
@@ -217,7 +217,9 @@ function get_reactions_string(rn::ReactionSystem)
     strip_call_dict = make_strip_call_dict(rn)
 
     # Handles the case with one reaction separately. Only effect is nicer formatting.
-    (length(get_rxs(rn)) == 1) && (return "rxs = [$(reaction_string(rx, strip_call_dict))]")
+    if length(get_rxs(rn)) == 1
+        return "rxs = [$(reaction_string(get_rxs(rn)[1], strip_call_dict))]"
+    end
 
     # Creates the string corresponding to the code which generates the system's reactions. 
     rxs_string = "rxs = ["
@@ -226,7 +228,7 @@ function get_reactions_string(rn::ReactionSystem)
     end
 
     # Updates the string (including removing the last `,`) and returns it.
-    return rxs_string[1:end-1] * "\n]"
+    return get_substring_end(rxs_string, 1, -1) * "\n]"
 end
 
 # Creates a string that corresponds to the declaration of a single `Reaction`.
@@ -251,7 +253,7 @@ function reaction_string(rx::Reaction, strip_call_dict)
             metadata_entry = "$(x_2_string(entry)), "
             @string_append! rx_string metadata_entry
         end
-        rx_string = rx_string[1:end-2] * "]"
+        rx_string = get_substring_end(rx_string, 1, -2) * "]"
     end
 
     # Returns the Reaction string.
@@ -291,7 +293,7 @@ function get_equations_string(rn::ReactionSystem)
     end
 
     # Updates the string (including removing the last `,`) and returns it.
-    return eqs_string[1:end-1] * "\n]"
+    return get_substring_end(eqs_string, 1, -1) * "\n]"
 end
 
 # Creates an annotation for the system's equations.
@@ -378,7 +380,7 @@ function get_continuous_events_string(rn::ReactionSystem)
     end
 
     # Updates the string (including removing the last `,`) and returns it.
-    return continuous_events_string[1:end-1] * "\n]"
+    return get_substring_end(continuous_events_string, 1, -1) * "\n]"
 end
 
 # Creates a string that corresponds to the declaration of a single continuous event.
@@ -388,7 +390,7 @@ function continuous_event_string(continuous_event, strip_call_dict)
     for eq in continuous_event.eqs
         @string_append! eqs_string expression_2_string(eq; strip_call_dict) ", "
     end
-    eqs_string = eqs_string[1:end-2] * "]"
+    eqs_string = get_substring_end(eqs_string, 1, -2) * "]"
 
     # Creates the string corresponding to the affects.
     # Continuous events' `affect` field should probably be called `affects`. Likely the `s` was
@@ -397,7 +399,7 @@ function continuous_event_string(continuous_event, strip_call_dict)
     for affect in continuous_event.affect
         @string_append! affects_string expression_2_string(affect; strip_call_dict) ", "
     end
-    affects_string = affects_string[1:end-2] * "]"
+    affects_string = get_substring_end(affects_string, 1, -2) * "]"
 
     return eqs_string * " => " * affects_string
 end
@@ -435,7 +437,7 @@ function get_discrete_events_string(rn::ReactionSystem)
     end
 
     # Updates the string (including removing the last `,`) and returns it.
-    return discrete_events_string[1:end-1] * "\n]"
+    return get_substring_end(discrete_events_string, 1, -1) * "\n]"
 end
 
 # Creates a string that corresponds to the declaration of a single discrete event.
@@ -453,7 +455,7 @@ function discrete_event_string(discrete_event, strip_call_dict)
     for affect in discrete_event.affects
         @string_append! affects_string expression_2_string(affect; strip_call_dict) ", "
     end
-    affects_string = affects_string[1:end-2] * "]"
+    affects_string = get_substring_end(affects_string, 1, -2) * "]"
 
     return condition_string * " => " * affects_string
 end
@@ -504,7 +506,7 @@ function get_systems_string(rn::ReactionSystem, annotate::Bool)
         # Manipulates the subsystem declaration to make it nicer.
         subsystem_string = get_full_system_string(system, annotate, false)
         subsystem_string = replace(subsystem_string, "\n" => "\n\t")
-        subsystem_string = "let\n" * subsystem_string[7:end-6] * "end"
+        subsystem_string = "let\n" * get_substring_end(subsystem_string, 7, -6) * "end"
         @string_append! systems_string "\nsystems[$idx] = " subsystem_string
     end
 
