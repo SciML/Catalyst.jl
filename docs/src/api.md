@@ -43,6 +43,7 @@ t = default_t()
 rxs = [Reaction(β, [S,I], [I], [1,1], [2])
        Reaction(γ, [I], [R])]
 @named rs = ReactionSystem(rxs, t)
+rs = complete(rs)
 
 u₀map    = [S => 999.0, I => 1.0, R => 0.0]
 parammap = [β => 1/10000, γ => 0.01]
@@ -50,18 +51,21 @@ tspan    = (0.0, 250.0)
 
 # solve as ODEs
 odesys = convert(ODESystem, rs)
+odesys = complete(odesys)
 oprob = ODEProblem(odesys, u₀map, tspan, parammap)
 sol = solve(oprob, Tsit5())
 p1 = plot(sol, title = "ODE")
 
 # solve as SDEs
 sdesys = convert(SDESystem, rs)
+sdesys = complete(sdesys)
 sprob = SDEProblem(sdesys, u₀map, tspan, parammap)
 sol = solve(sprob, EM(), dt=.01)
 p2 = plot(sol, title = "SDE")
 
 # solve as jump process
 jumpsys = convert(JumpSystem, rs)
+jumpsys = complete(jumpsys)
 u₀map    = [S => 999, I => 1, R => 0]
 dprob = DiscreteProblem(jumpsys, u₀map, tspan, parammap)
 jprob = JumpProblem(jumpsys, dprob, Direct())
