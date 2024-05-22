@@ -12,7 +12,7 @@ pages = Any[
         "model_creation/constraint_equations.md",
         "model_creation/compositional_modeling.md",
         # Events.
-        # Distributed parameters, rates, and initial conditions.
+        "model_creation/TOBEREMOVED_parametric_stoichiometry.md",# Distributed parameters, rates, and initial conditions.
         # Loading and writing models to files.
         # Model visualisation.
         "model_creation/network_analysis.md",
@@ -48,7 +48,7 @@ pages = Any[
         # ODE parameter fitting using Turing.
         # SDE/Jump fitting.
         # Non-parameter fitting optimisation.
-        "inverse_problems/07_structural_identifiability.md",
+        "inverse_problems/structural_identifiability.md",
         # Practical identifiability.
         # GLobal and local sensitivity analysis.
         "Inverse problem examples" => Any[

@@ -3,6 +3,9 @@ When simulating a model, one begins with creating a [problem](https://docs.sciml
 
 Generally, when we have a structure `simulation_struct` and want to interface with the unknown (or parameter) `G`, we use `simulation_struct[:G]` to access the value, and `simulation_struct[:G] = 5.0` to set it to a new value. However, see the following examples for full details.
 
+!!! note
+    The following tutorial will describe how to interface with problems, integrators, and solutions using `[]` notation. An alternative is to use the `ModelingToolkit.getu`, `ModelingToolkit.getp`, `ModelingToolkit.setu`, and `ModelingToolkit.setp` functions. These requires an additional step to use, however, they can also improve performance when a very large number interfaces are carried out.
+
 ## Interfacing problem objects
 
 We begin by demonstrating how we can interface with problem objects. We will demonstrate using a `ODEProblem`, however, it works similarly for other problem types.
@@ -24,7 +27,7 @@ oprob[:X1]
 ```
 with the notation being identical for parameters:
 ```@example ex1
-oprob[:k1]
+oprob.ps[:k1]
 ```
 
 If we want to change an unknown's initial condition value, we use the following notation
@@ -32,6 +35,9 @@ If we want to change an unknown's initial condition value, we use the following 
 oprob[:X1] = 10.0
 ```
 with parameters using the same notation.
+
+!!! note
+    When interfacing with a parameter, `.ps` must be appended to the structure uses (e.g. `oprob`). This is not done when species are interfaced with.
 
 #### [Remaking problems using the `remake` function](@id simulation_structure_interfacing_remake)
 Typically, when modifying problems, it is recommended to use the `remake` function. Unlike when we do `oprob[:X1] = 10.0` (which modifies the problem in question), `remake` creates a new problem object. The `remake` function takes a problem as input, and any fields you wish to modify (and their new values) as optional inputs. Thus, we can do:
@@ -74,7 +80,7 @@ integrator[:X1]
 ```
 or a parameter:
 ```@example ex1
-integrator[:k1]
+integrator.ps[:k1]
 ```
 Similarly, we can update their values using:
 ```@example ex1
@@ -95,7 +101,7 @@ sol[:X1]
 ```
 while when we access a parameter we only get a single value:
 ```@example ex1
-sol[:k1]
+sol.ps[:k1]
 ```
 Finally, we note that we cannot change the values of solution unknowns or parameters (i.e. both `sol[:X1] = 0.0` and `sol[:k1] = 0.0` generate errors).
 
@@ -124,7 +130,7 @@ u0 = [X1 => 1.0, X2 => 5.0]
 p = [:k1 => 5.0, :k2 => 2.0]
 oprob = ODEProblem(rn, u0, (0.0,10.0), p)
 
-oprob[k1]
+oprob.ps[k1]
 ```
 To interface with integrators and solutions we use a similar syntax.
 
