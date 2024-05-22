@@ -18,7 +18,7 @@ end
 Alternatively one can just build the `ReactionSystem` via the symbolic interface.
 ```@example ex0
 @parameters d
-@variable t
+t = default_t()
 @species X(t)
 rx = Reaction(d, [X], nothing)
 @named degradation_component = ReactionSystem([rs], t)
