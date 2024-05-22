@@ -64,7 +64,15 @@ function steady_state_stability(u::Vector, rs::ReactionSystem, ps; tol = 10*sqrt
     J = zeros(length(u), length(u))
     ss_jac = remake(ss_jac; u0 = u, p = ps)
     ss_jac.f.jac(J, ss_jac.u0, ss_jac.p, Inf)
-    max_eig = maximum(real(ev) for ev in (eigvals(J)))
+    println()
+    println()
+    println("Got here")
+    println(J)
+    println(typeof(J))
+    println(eigvals(J))
+    println(typeof(eigvals(J)))
+    max_eig = maximum(real(ev) for ev in eigvals(J))
+    println("Didn't get here")
     if abs(max_eig) < tol
         error("The system Jacobian's maximum eigenvalue at the steady state is within the tolerance range (abs($max_eig) < $tol). Hence, stability could not be reliably determined. If you still wish to compute the stability, reduce the `tol` argument.")
     end
