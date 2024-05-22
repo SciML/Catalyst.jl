@@ -36,9 +36,11 @@ function save_reaction_network(filename::String, rn::ReactionSystem; annotate = 
     open(filename, "w") do file
         write(file, get_full_system_string(rn, annotate, true))
     end
-    if safety_check && !isequal(rn, include(filename))
-        rm(filename)
-        error("The serialised `ReactionSystem` is not equal to the original one. Please make a report (including the full system) at https://github.com/SciML/Catalyst.jl/issues. To disable this behaviour, please pass the `safety_check = false` argument to `save_reaction_network` (warning, this will permit the serialisation of an erroneous system).")
+    if safety_check 
+        if !isequal(rn, include(joinpath(pwd(), filename)))
+            rm(filename)
+            error("The serialised `ReactionSystem` is not equal to the original one. Please make a report (including the full system) at https://github.com/SciML/Catalyst.jl/issues. To disable this behaviour, please pass the `safety_check = false` argument to `save_reaction_network` (warning, this will permit the serialisation of an erroneous system).")
+        end
     end
     return nothing
 end
