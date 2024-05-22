@@ -58,6 +58,7 @@ We can now merge the two systems into one complete `ReactionSystem` model using
 [`ModelingToolkit.extend`](@ref):
 ```@example ceq1
 @named growing_cell = extend(osys, rn)
+growing_cell = complete(growing_cell)
 ```
 
 We see that the combined model now has both the reactions and ODEs as its
@@ -83,6 +84,7 @@ rx1 = @reaction $V, 0 --> P
 rx2 = @reaction 1.0, P --> 0
 @named growing_cell = ReactionSystem([rx1, rx2, eq], t)
 setdefaults!(growing_cell, [:P => 0.0])
+growing_cell = complete(growing_cell)
 
 oprob = ODEProblem(growing_cell, [], (0.0, 1.0))
 sol = solve(oprob, Tsit5())
@@ -124,6 +126,7 @@ continuous_events = [V ~ 2.0] => [V ~ V/2, P ~ P/2]
 We can now create and simulate our model
 ```@example ceq3
 @named rs = ReactionSystem([rx1, rx2, eq], t; continuous_events)
+rs = complete(rs)
 
 oprob = ODEProblem(rs, [], (0.0, 10.0))
 sol = solve(oprob, Tsit5())
@@ -148,6 +151,7 @@ p = [k_on => 100.0, switch_time => 2.0, k_off => 10.0]
 Simulating our model, 
 ```@example ceq3
 @named osys = ReactionSystem(rxs, t, [A, B], [k_on, k_off, switch_time]; discrete_events)
+osys = complete(osys)
 
 oprob = ODEProblem(osys, u0, tspan, p)
 sol = solve(oprob, Tsit5(); tstops = 2.0)
