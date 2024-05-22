@@ -67,7 +67,7 @@ using Plots
 ```
 Here, if we restart Julia, these commands *do need to be rerun.
 
-A more comprehensive (but still short) introduction to package management in Julia is provided at [the end of this documentation page](catalyst_for_new_julia_users_packages). It contains some useful information and is hence highly recommended reading. For a more detailed introduction to Julia package management, please read [the Pkg documentation](https://docs.julialang.org/en/v1/stdlib/Pkg/).
+A more comprehensive (but still short) introduction to package management in Julia is provided at [the end of this documentation page](@ref catalyst_for_new_julia_users_packages). It contains some useful information and is hence highly recommended reading. For a more detailed introduction to Julia package management, please read [the Pkg documentation](https://docs.julialang.org/en/v1/stdlib/Pkg/).
 
 ## Simulating a basic Catalyst model
 Now that we have some basic familiarity with Julia, and have installed and imported the required packages, we will create and simulate a basic chemical reaction network model using Catalyst.

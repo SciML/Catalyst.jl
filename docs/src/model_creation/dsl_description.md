@@ -671,6 +671,7 @@ sol[:Xtot]
 ```
 similarly, we can plot the values of $Xtot$ and $Ytot$ using
 ```@example obs1
+using plots
 plot(sol; idxs=[:Xtot, :Ytot], label=["Total X" "Total Y"])
 ```
 

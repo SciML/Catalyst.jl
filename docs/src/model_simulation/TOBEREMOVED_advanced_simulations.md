@@ -177,7 +177,7 @@ Here, we access the system's unknown `X` through the `integrator`, and add
 `5.0` to its amount. We can now simulate our system using the
 callback:
 ```@example ex2
-sol = solve(oprob; callback = ps_cb)
+sol = solve(oprob, Tsit5(); callback = ps_cb)
 plot(sol)
 ```
 
@@ -194,16 +194,16 @@ p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 
 condition = [5.0]
-affect!(integrator) = integrator[:k] = 5.0
+affect!(integrator) = integrator.ps[:k] = 5.0
 ps_cb = PresetTimeCallback(condition, affect!)
 
-sol = solve(oprob; callback = ps_cb)
+sol = solve(oprob, Tsit5(); callback = ps_cb)
 plot(sol)
 ```
 The result looks as expected. However, what happens if we attempt to run the
 simulation again?
 ```@example ex2
-sol = solve(oprob; callback = ps_cb)
+sol = solve(oprob, Tsit5(); callback = ps_cb)
 plot(sol)
 ```
 The plot looks different, even though we simulate the same problem. Furthermore,
@@ -229,12 +229,12 @@ condition = [5.0]
 affect!(integrator) = integrator.ps[:k] = 5.0
 ps_cb = PresetTimeCallback(condition, affect!)
 
-sol = solve(deepcopy(oprob); callback = ps_cb)
+sol = solve(deepcopy(oprob), Tsit5(); callback = ps_cb)
 plot(sol)
 ```
 where we parse a copy of our `ODEProblem` to the solver (using `deepcopy`). We can now run
 ```@example ex2
-sol = solve(deepcopy(oprob); callback = ps_cb)
+sol = solve(deepcopy(oprob), Tsit5(); callback = ps_cb)
 plot(sol)
 ```
 and get the expected result.
@@ -253,7 +253,7 @@ oprob = ODEProblem(rn, u0, tspan, p)
 ps_cb_1 = PresetTimeCallback([3.0, 7.0], integ -> integ[:X1] += 5.0)
 ps_cb_2 = PresetTimeCallback([5.0], integ -> integ[:k] = 5.0)
 
-sol = solve(deepcopy(oprob); callback=CallbackSet(ps_cb_1, ps_cb_2))
+sol = solve(deepcopy(oprob), Tsit5(); callback=CallbackSet(ps_cb_1, ps_cb_2))
 plot(sol)
 ```
 
@@ -355,7 +355,7 @@ end
 
 u0_4 = [:X => 10.0, :Y => 10.0]
 tspan = (0.0, 10.0)
-p_4 = [p => 10.0, d => 1.]
+p_4 = [:p => 10.0, :d => 1.]
 
 sprob_4 = SDEProblem(rn_4, u0_4, tspan, p_4)
 sol_4 = solve(sprob_4, ImplicitEM())
