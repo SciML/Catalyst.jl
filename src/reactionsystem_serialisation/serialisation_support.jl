@@ -23,10 +23,10 @@ end
 
 # Gets the character at a specific index.
 get_char(str, idx) = collect(str)[idx]
-get_char_end(str, offset) = collect(str)[end - offset]
+get_char_end(str, offset) = collect(str)[end+offset]
 # Gets a substring (which is robust to unicode characters like η).
-get_substring(str, idx1, idx2) = String(collect(str)[idx1, idx2])
-get_substring_end(str, idx1, offset) = String(collect(str)[idx1, end - offset])
+get_substring(str, idx1, idx2) = String(collect(str)[idx1:idx2])
+get_substring_end(str, idx1, offset) = String(collect(str)[idx1:end+offset])
 
 
 ### Field Serialisation Support Functions ###
@@ -79,7 +79,7 @@ end
 # any calls (e.g. X(t) becomes X). E.g. a species vector [X, Y, Z] is converted to "[X, Y, Z]".
 function syms_2_strings(syms)
     strip_called_syms = [strip_call(Symbolics.unwrap(sym)) for sym in syms]
-    return get_substring("$(convert(Vector{Any}, strip_called_syms))", 4)
+    return get_substring_end("$(convert(Vector{Any}, strip_called_syms))", 4, 0)
 end    
 
 # Converts a vector of symbolics (e.g. the species or parameter vectors) to a string corresponding to 
@@ -127,7 +127,7 @@ function sym_2_declaration_string(sym; multiline_format = false)
         for metadata in metadata_to_declare
             @string_append! metadata_string metadata_2_string(sym, metadata) ", "
         end
-        @string_append! dec_string $(get_substring_end(metadata_string, 1, -2)) "]"
+        @string_append! dec_string get_substring_end(metadata_string, 1, -2) "]"
     end
 
     # Returns the declaration entry for the symbol.

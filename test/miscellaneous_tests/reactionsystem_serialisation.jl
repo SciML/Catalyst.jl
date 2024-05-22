@@ -1,7 +1,7 @@
 ### Prepare Tests ###
 
 # Fetch packages.
-using Catalyst
+using Catalyst, Test
 using Catalyst: get_rxs
 using ModelingToolkit: getdefault, getdescription, get_metadata
 
