@@ -59,20 +59,13 @@ function steady_state_stability(u::Vector, rs::ReactionSystem, ps; tol = 10*sqrt
         u = filter(u_v -> any(isequal(u_v[1]), unknowns(ss_jac.f.sys)), u)
     end
 
-    # Computes stability (by checking that the real part of all eigenvalues are negative).
-    # Here, `ss_jac` is a `ODEProblem` with dummy values for `u0` and `p`.
+    # Generates the Jacobian at the steady state (technically, `ss_jac` is an `ODEProblem` with dummy values for `u0` and `p`).
     J = zeros(length(u), length(u))
     ss_jac = remake(ss_jac; u0 = u, p = ps)
     ss_jac.f.jac(J, ss_jac.u0, ss_jac.p, Inf)
-    println()
-    println()
-    println("Got here")
-    println(J)
-    println(typeof(J))
-    println(eigvals(J))
-    println(typeof(eigvals(J)))
+    
+    # Computes stability (by checking that the real part of all eigenvalues is negative).
     max_eig = maximum(real(ev) for ev in eigvals(J))
-    println("Didn't get here")
     if abs(max_eig) < tol
         error("The system Jacobian's maximum eigenvalue at the steady state is within the tolerance range (abs($max_eig) < $tol). Hence, stability could not be reliably determined. If you still wish to compute the stability, reduce the `tol` argument.")
     end
