@@ -226,7 +226,7 @@ p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 
 condition = [5.0]
-affect!(integrator) = integrator[:k] = 5.0
+affect!(integrator) = integrator.ps[:k] = 5.0
 ps_cb = PresetTimeCallback(condition, affect!)
 
 sol = solve(deepcopy(oprob); callback = ps_cb)
@@ -279,7 +279,7 @@ jprob = JumpProblem(rn, dprob, Direct())
 condition = [5.0]
 function affect!(integrator)
     integrator[:X1] += 5.0
-    integrator[:k] += 2.0
+    integrator.ps[:k] += 2.0
     reset_aggregated_jumps!(integrator)
     nothing
 end
