@@ -80,13 +80,41 @@ let
     @parameters k η  
     @species X(t) X2(t)
 
-    metadata = Pair{Symbol,Any}[]
-    push!(metadata, :noise_scaling => η)
     r1 = Reaction(k, [X], [X2], [2], [1])
-    r2 = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
+    r2 = Reaction(k, [X], [X2], [2], [1]; metadata=[:noise_scaling => η])
 
     @test !Catalyst.has_noise_scaling(r1)
     @test Catalyst.has_noise_scaling(r2)
     @test_throws Exception Catalyst.get_noise_scaling(r1)
     @test isequal(Catalyst.get_noise_scaling(r2), η)
+end
+
+# Tests the description metadata.
+let
+    @variables t
+    @parameters k η  
+    @species X(t) X2(t)
+
+    r1 = Reaction(k, [X], [X2], [2], [1])
+    r2 = Reaction(k, [X], [X2], [2], [1]; metadata=[:description => "A reaction"])
+
+    @test !Catalyst.has_description(r1)
+    @test Catalyst.has_description(r2)
+    @test_throws Exception Catalyst.get_description(r1)
+    @test isequal(Catalyst.get_description(r2), "A reaction")
+end
+
+# Tests the misc metadata.
+let
+    @variables t
+    @parameters k η  
+    @species X(t) X2(t)
+
+    r1 = Reaction(k, [X], [X2], [2], [1])
+    r2 = Reaction(k, [X], [X2], [2], [1]; metadata=[:misc => ('M', :M)])
+
+    @test !Catalyst.has_misc(r1)
+    @test Catalyst.has_misc(r2)
+    @test_throws Exception Catalyst.get_misc(r1)
+    @test isequal(Catalyst.get_misc(r2), ('M', :M))
 end
