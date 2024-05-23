@@ -381,7 +381,7 @@ function get_balanced_reaction(rx::Reaction)
         error("Could not balance reaction `$rx`, unable to create a balanced `ReactionSystem`.")
     end
     if length(brxs) > 1
-        error("The space of possible balanced versions of the reaction ($reaction) is greater than 1. This prevents the selection of a single appropriate balanced reaction. No method to, in this case, automatically generate a valid reaction is currently implemented in `balance_system`.")
+        error("The space of possible balanced versions of the reaction ($reaction) is greater than one-dimension. This prevents the selection of a single appropriate balanced reaction. No method to, in this case, automatically generate a valid reaction is currently implemented in `balance_system`.")
     end
 
     return only(brxs)
