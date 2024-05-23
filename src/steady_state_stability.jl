@@ -67,7 +67,7 @@ function steady_state_stability(u::Vector, rs::ReactionSystem, ps; tol = 10*sqrt
     # Computes stability (by checking that the real part of all eigenvalues is negative).
     max_eig = maximum(real(ev) for ev in eigvals(J))
     if abs(max_eig) < tol
-        error("The system Jacobian's maximum eigenvalue at the steady state is within the tolerance range (abs($max_eig) < $tol). Hence, stability could not be reliably determined. If you still wish to compute the stability, reduce the `tol` argument.")
+        error("The system Jacobian's maximum eigenvalue at the steady state is within the tolerance range (abs($max_eig) < $tol). Hence, stability could not be reliably determined. If you still wish to compute the stability, reduce the `tol` argument, but note that floating point error in the eigenvalue calculation could lead to incorrect results.")
     end
     return max_eig < 0
 end
