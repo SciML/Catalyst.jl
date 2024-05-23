@@ -1657,16 +1657,19 @@ end
 unitless_exp(u) = istree(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
 
 """
-    iscomplexbalanced(rs::ReactionSystem, rates::Vector)
+    iscomplexbalanced(rs::ReactionSystem, parametermap)
 
 Constructively compute whether a network will have complex-balanced equilibrium
-solutions, following the method in [this paper](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). Accepts a map of rates [k1 => 1.0, k2 => 2.0,...]k2
+solutions, following the method in van der Schaft et al., [2015](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). Accepts a dictionary, vector, or tuple ofvariable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
 
-function iscomplexbalanced(rs::ReactionSystem, rates::Dict{Any, Float64}) 
-    if length(rates) != numparams(rs) 
-        error("The number of reaction rates must be equal to the number of parameters")
+function iscomplexbalanced(rs::ReactionSystem, parametermap::Dict) 
+    if length(parametermap) != numparams(rs) 
+        error("Incorrect number of parameters specified.")
     end
+
+    pmap = symmap_to_varmap(rs, parametermap)
+    pmap = Dict(ModelingToolkit.value(k) => v for (k,v) in pmap)
 
     sm = speciesmap(rs)
     cm = reactioncomplexmap(rs)
@@ -1678,6 +1681,8 @@ function iscomplexbalanced(rs::ReactionSystem, rates::Dict{Any, Float64})
         error("The supplied ReactionSystem has reactions that are not ismassaction. Testing for being complex balanced is currently only supported for pure mass action networks.") 
     end
 
+    rates = [substitute(rate, pmap) for rate in reactionrates(rs)]
+
     # Construct kinetic matrix, K
     K = zeros(nr, nc) 
     for c in 1:nc
@@ -1685,7 +1690,7 @@ function iscomplexbalanced(rs::ReactionSystem, rates::Dict{Any, Float64})
         for (r, dir) in cm[complex]
             rxn = rxns[r]
             if dir == -1
-                K[r, c] = rates[rxn.rate]
+                K[r, c] = rates[r]
             end
         end
     end
@@ -1697,22 +1702,36 @@ function iscomplexbalanced(rs::ReactionSystem, rates::Dict{Any, Float64})
     g = incidencematgraph(rs)
     R = ratematrix(rs, rates)
     ρ = matrixtree(g, R)
-    @assert isapprox(L*ρ, zeros(nc), atol=1e-12) 
 
     # Determine if 1) ρ is positive and 2) D^T Ln ρ lies in the image of S^T
     if all(>(0), ρ)
         img = D'*log.(ρ)
-        rank(S') == rank(hcat(S', img)) ? return true : return false 
+        if rank(S') == rank(hcat(S', img)) return true else return false end 
     else
         return false
     end
 end
 
-function ratematrix(rs::ReactionSystem, rates::Dict{Any, Float64}) 
-    if length(rates) != numparams(rs) 
-        error("The number of reaction rates must be equal to the number of parameters")
-    end
+function iscomplexbalanced(rs::ReactionSystem, parametermap::Vector{Pair{Symbol, Float64}}) 
+    pdict = Dict(parametermap)
+    iscomplexbalanced(rs, pdict)
+end
 
+function iscomplexbalanced(rs::ReactionSystem, parametermap::Tuple{Pair{Symbol, Float64}}) 
+    pdict = Dict(parametermap)
+    iscomplexbalanced(rs, pdict)
+end
+
+iscomplexbalanced(rs::ReactionSystem, parametermap) = error("Parameter map must be a dictionary, tuple, or vector of symbol/value pairs.")
+
+
+"""
+    ratematrix(rs::ReactionSystem, parametermap)
+
+    Given a reaction system with n complexes, outputs an n-by-n matrix where R_{ij} is the rate constant of the reaction between complex i and complex j. 
+"""
+
+function ratematrix(rs::ReactionSystem, rates::Vector{Float64}) 
     complexes, D = reactioncomplexes(rs)
     n = length(complexes)
     rxns = reactions(rs)
@@ -1722,13 +1741,34 @@ function ratematrix(rs::ReactionSystem, rates::Dict{Any, Float64})
         rxn = rxns[r]
         s = findfirst(==(-1), @view D[:,r])
         p = findfirst(==(1), @view D[:,r])
-        ratematrix[s, p] = rates[rxn.rate]
+        ratematrix[s, p] = rates[r]
     end
     ratematrix
 end
 
-"""
-"""
+function ratematrix(rs::ReactionSystem, parametermap::Dict{Symbol, Float64}) 
+    if length(parametermap) != numparams(rs) 
+        error("The number of reaction rates must be equal to the number of parameters")
+    end
+    pmap = symmap_to_varmap(rs, parametermap)
+    rates = [substitute(rate, pmap) for rate in reactionrates(rs)]
+    ratematrix(rs, rates)
+end
+
+function ratematrix(rs::ReactionSystem, parametermap::Vector{Pair{Symbol, Float64}}) 
+    pdict = Dict(parametermap)
+    ratematrix(rs, pdict)
+end
+
+function ratematrix(rs::ReactionSystem, parametermap::Tuple{Pair{Symbol, Float64}}) 
+    pdict = Dict(parametermap)
+    ratematrix(rs, pdict)
+end
+
+ratematrix(rs::ReactionSystem, parametermap) = error("Parameter map must be a dictionary, tuple, or vector of symbol/value pairs.")
+
+### BELOW: Helper functions for iscomplexbalanced
+
 function matrixtree(g::SimpleDiGraph, distmx::Matrix)
     n = nv(g)
     if size(distmx) != (n, n)
@@ -1753,7 +1793,6 @@ function matrixtree(g::SimpleDiGraph, distmx::Matrix)
     trees = collect(Combinatorics.combinations(collect(edges(ug)), n-1))
     trees = SimpleGraph.(trees)
     trees = filter!(t->isempty(Graphs.cycle_basis(t)), trees)
-    # trees = spanningtrees(g)
 
     # constructed rooted trees for every vertex, compute sum
     for v in 1:n
@@ -1773,10 +1812,3 @@ function treeweight(t::SimpleDiGraph, g::SimpleDiGraph, distmx::Matrix)
     end
     prod 
 end
-
-# TODO: implement Winter's algorithm for generating spanning trees 
-function spanningtrees(g::SimpleGraph) 
-        
-end
-
-    sm = speciesmap(rs)
