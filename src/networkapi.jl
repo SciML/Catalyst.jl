@@ -1653,6 +1653,9 @@ function validate(rs::ReactionSystem, info::String = "")
     validated
 end
 
+# Checks if a unit consist of exponents with base 1 (and is this unitless).
+unitless_exp(u) = istree(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
+
 """
     iscomplexbalanced(rs::ReactionSystem, rates::Vector)
 
@@ -1696,43 +1699,13 @@ function iscomplexbalanced(rs::ReactionSystem, rates::Dict{Any, Float64})
     @assert isapprox(L*ρ, zeros(nc), atol=1e-12) 
 
     # Determine if 1) ρ is positive and 2) D^T Ln ρ lies in the image of S^T
-    if all(x -> x > 0, ρ)
+    if all(>(0), ρ)
         img = D'*log.(ρ)
-        if rank(S') == rank(hcat(S', img)) return true else return false end 
+        rank(S') == rank(hcat(S', img)) ? return true : return false 
     else
         return false
     end
 end
-
-# """
-#     rateweightedgraph(rs::ReactionSystem, rates::Vector)
-# 
-# Generate an annotated reaction complex graph of a reaction system, where the nodes are annotated with the reaction complex they correspond to and the edges are annotated with the reaction they correspond to and the rate of the reaction. 
-# """
-# 
-# function rateweightedgraph(rs::ReactionSystem, rates::Dict{Any, Float64}) 
-#     if length(rates) != numparams(rs) 
-#         error("The number of reaction rates must be equal to the number of parameters")
-#     end
-# 
-#     complexes, D = reactioncomplexes(rs)
-#     rxns = reactions(rs)
-# 
-#     g = incidencematgraph(rs)
-#     rwg = MetaDiGraph(g)
-# 
-#     for v in vertices(rwg)
-#         set_prop!(rwg, v, :complex, complexes[v])
-#     end
-# 
-#     for (i, e) in collect(enumerate(edges(rwg)))
-#         rxn = rxns[i]
-#         set_prop!(rwg, Graphs.src(e), Graphs.dst(e), :reaction, rxn)
-#         set_prop!(rwg, Graphs.src(e), Graphs.dst(e), :rate, rates[rxn.rate])
-#     end
-# 
-#     rwg
-# end
 
 function ratematrix(rs::ReactionSystem, rates::Dict{Any, Float64}) 
     if length(rates) != numparams(rs) 
@@ -1746,8 +1719,8 @@ function ratematrix(rs::ReactionSystem, rates::Dict{Any, Float64})
 
     for r in 1:length(rxns)
         rxn = rxns[r]
-        s = findfirst(x->x==-1, D[:,r])
-        p = findfirst(x->x==1, D[:,r])
+        s = findfirst(==(-1), @view D[:,r])
+        p = findfirst(==(1), @view D[:,r])
         ratematrix[s, p] = rates[rxn.rate]
     end
     ratematrix
@@ -1781,7 +1754,7 @@ function matrixtree(g::SimpleDiGraph, distmx::Matrix)
     trees = filter!(t->isempty(Graphs.cycle_basis(t)), trees)
     # trees = spanningtrees(g)
 
-    # constructed rooted trees for every edge, compute sum
+    # constructed rooted trees for every vertex, compute sum
     for v in 1:n
         rootedTrees = [reverse(Graphs.bfs_tree(t, v, dir=:in)) for t in trees]
         π[v] = sum([treeweight(t, g, distmx) for t in rootedTrees])
@@ -1805,16 +1778,4 @@ function spanningtrees(g::SimpleGraph)
         
 end
 
-# Checks if a unit consist of exponents with base 1 (and is this unitless).
-unitless_exp(u) = istree(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
-
-    rxn = reactions(rs)[rxn_idx]
     sm = speciesmap(rs)
-    rate = rxn.rate
-    
-    species = rxn.substrates
-    stoich = rxn.substoich
-    species_idx = [sm[s] for s in species]
-
-    dir * rate * prod(conc[species_idx].^stoich)
-end
