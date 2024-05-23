@@ -372,15 +372,15 @@ function ModelingToolkit.get_variables!(set, rx::Reaction)
         Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
       end
     get_variables!(set, rx.rate)
-    append!(set, rx.substrates)
-    append!(set, rx.products)
+    foreach(sub -> push!(set, sub), rx.substrates)
+    foreach(prod -> push!(set, prod), rx.products)
     for stoichs in (rx.substoich, rx.prodstoich), stoich in stoichs
         (stoich isa BasicSymbolic) && get_variables!(set, stoich)
     end
     if has_noise_scaling(rx)
         get_variables!(set, get_noise_scaling(rx))
     end
-    return unique!(set)
+    return (set isa AbstractVector) ? unique!(set) : set
 end
 
 ### Dependency-related Functions ###
