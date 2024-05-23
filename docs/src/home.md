@@ -190,22 +190,22 @@ You can also download the
 <a href="
 ```
 ```@eval
-using TOML
-projtoml = joinpath("..", "..", "Project.toml")
-version = TOML.parse(read(projtoml, String))["version"]
-name = TOML.parse(read(projtoml, String))["name"]
-link = "https://github.com/SciML/" * name * ".jl/tree/gh-pages/v" * version * "/assets/Manifest.toml"
+# using TOML
+# projtoml = joinpath("..", "..", "Project.toml")
+# version = TOML.parse(read(projtoml, String))["version"]
+# name = TOML.parse(read(projtoml, String))["name"]
+# link = "https://github.com/SciML/" * name * ".jl/tree/gh-pages/v" * version * "/assets/Manifest.toml"
 ```
 ```@raw html
 ">manifest</a> file and the
 <a href="
 ```
 ```@eval
-using TOML
-projtoml = joinpath("..", "..", "Project.toml")
-version = TOML.parse(read(projtoml, String))["version"]
-name = TOML.parse(read(projtoml, String))["name"]
-link = "https://github.com/SciML/" * name * ".jl/tree/gh-pages/v" * version * "/assets/Project.toml"
+# using TOML
+# projtoml = joinpath("..", "..", "Project.toml")
+# version = TOML.parse(read(projtoml, String))["version"]
+# name = TOML.parse(read(projtoml, String))["name"]
+# link = "https://github.com/SciML/" * name * ".jl/tree/gh-pages/v" * version * "/assets/Project.toml"
 ```
 ```@raw html
 ">project</a> file.
