@@ -41,8 +41,7 @@ form of maps.
 a system's largest eigenvalue real part is negative. While more advanced stability computation 
 methods exist (and would be a welcome addition to Catalyst), there is no direct plans to implement 
 these. Furthermore, Catalyst uses a arbitrary tolerance tol ~ 1.5*10^-7 to determine whether a 
-computed eigenvalue is far away enough from 0 to be reliably used. This selected threshold, 
-however, have not been subject to further analysis (and can be changed through the `tol` argument).
+computed eigenvalue is far away enough from 0 to be reliably used. This selected threshold can be changed through the `tol` argument.
 ```
 """
 function steady_state_stability(u::Vector, rs::ReactionSystem, ps; tol = 10*sqrt(eps(ss_val_type(u))),
