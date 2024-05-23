@@ -1674,7 +1674,9 @@ function iscomplexbalanced(rs::ReactionSystem, rates::Dict{Any, Float64})
     rxns = reactions(rs)
     nc = length(complexes); nr = numreactions(rs); nm = numspecies(rs)
 
-    if !all(r->ismassaction(r, rs), rxns) error("Not mass action") end
+    if !all(r->ismassaction(r, rs), rxns) 
+        error("The supplied ReactionSystem has reactions that are not ismassaction. Testing for being complex balanced is currently only supported for pure mass action networks.") 
+    end
 
     # Construct kinetic matrix, K
     K = zeros(nr, nc) 
