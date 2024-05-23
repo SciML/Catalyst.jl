@@ -496,7 +496,8 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in; spa
             (sym isa Symbolic) && findvars!(ps, us, sym, ivs, vars)
         end
 
-        # Will appear here: add stuff from nosie scaling.
+        # Extract all quantities encountered in relevant `Reaction` metadata.
+        has_noise_scaling(rx) && findvars!(ps, us, get_noise_scaling(rx), ivs, vars)
     end
 
     # Extracts any species, variables, and parameters that occur in (non-reaction) equations.
@@ -1233,7 +1234,26 @@ function set_default_metadata(rs::ReactionSystem;  default_reaction_metadata = [
     updated_equations = map(eqtransform, get_eqs(rs))
     @set! rs.eqs = updated_equations
     @set! rs.rxs = Reaction[rx for rx in updated_equations if rx isa Reaction]
-    
+
+    # Special routine to handle `Reaction` metadata that can contain new symbolic variables.
+    # Currently, `noise_scaling` is the only relevant metadata supported this way.
+    drm_dict = Dict(default_reaction_metadata)
+    if haskey(drm_dict, :noise_scaling)
+        # Finds parameters, species, and variables in the noise scaling term.       
+        ns_expr = drm_dict[:noise_scaling] 
+        ns_syms = [Symbolics.unwrap(sym) for sym in get_variables(ns_expr)]
+        ns_ps = Iterators.filter(ModelingToolkit.isparameter, ns_syms)
+        ns_sps = Iterators.filter(Catalyst.isspecies, ns_syms)
+        ns_vs = Iterators.filter(sym -> !Catalyst.isspecies(sym) &&
+                                        !ModelingToolkit.isparameter(sym), ns_syms)
+        # Adds parameters, species, and variables to the `ReactionSystem`.
+        @set! rs.ps = union(get_ps(rs), ns_ps)
+        sps_new = union(get_species(rs), ns_sps)
+        @set! rs.species = sps_new
+        vs_old = @view get_unknowns(rs)[length(get_species(rs))+1 : end]            
+        @set! rs.unknowns = union(sps_new, vs_old, ns_vs)
+    end
+
     # Updates reaction metadata for all its subsystems.
     new_sub_systems = similar(get_systems(rs))
     for (i, sub_system) in enumerate(get_systems(rs))
