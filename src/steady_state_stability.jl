@@ -40,7 +40,7 @@ form of maps.
 - Catalyst currently computes steady state stabilities using the naive approach of checking whether
 a system's largest eigenvalue real part is negative. While more advanced stability computation 
 methods exist (and would be a welcome addition to Catalyst), there is no direct plans to implement 
-these. Furthermore, Catalyst uses a arbitrary tolerance tol ~ 1.5*10^-7 to determine whether a 
+these. Furthermore, Catalyst uses a tolerance `tol = 10*sqrt(eps())` to determine whether a 
 computed eigenvalue is far away enough from 0 to be reliably used. This selected threshold can be changed through the `tol` argument.
 ```
 """
