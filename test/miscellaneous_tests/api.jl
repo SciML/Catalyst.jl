@@ -445,3 +445,64 @@ let
     neweqs = getfield.(equations(ns), :rhs)
     @test_throws MethodError Catalyst.to_multivariate_poly(neweqs)
 end
+
+# Tests `isautonomous` function.
+let 
+    # Using default iv.
+    rn1 = @reaction_network begin
+        (p + X*(p1/(t+p3)),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn2 = @reaction_network begin
+        (hill(X, v/t, K, n),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn3 = @reaction_network begin
+        (p + X*(p1+p2),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    @test !isautonomous(rn1)
+    @test !isautonomous(rn2)
+    @test isautonomous(rn3)
+
+    # Using non-default iv.
+    rn4 = @reaction_network begin
+        @ivs i1 i2
+        (p + X*(p1/(1+i1)),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn5 = @reaction_network begin
+        @ivs i1 i2
+        (p + X*(i2+p2),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn6 = @reaction_network begin
+        @ivs i1 i2
+        (hill(X, v/i1, i2, n),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn7 = @reaction_network begin
+        @ivs i1 i2
+        (p + X*(p1+p2),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    @test !isautonomous(rn4)
+    @test !isautonomous(rn5)
+    @test !isautonomous(rn6)
+    @test isautonomous(rn7)
+
+    # Using a coupled CRN/equation model.
+    rn7 = @reaction_network begin
+        @equations D(V) ~ X/(1+t) - V
+        (p,d), 0 <--> X
+    end
+    @test !isautonomous(rn7)
+
+    # Using a registered function.
+    f(d,t) = d/(1 + t)
+    Symbolics.@register_symbolic f(d,t)
+    rn8 = @reaction_network begin
+        f(d,t), X --> 0
+    end
+    @test !isautonomous(rn8)
+end

@@ -36,6 +36,9 @@ Notes:
 ```
   """
 function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative=true, neg_thres=-1e-20, u0=[], kwargs...)
+    if !isautonomous(rs) 
+        error("Attempting to compute steady state for a non-autonomous system (e.g. where some rate depend on $(rs.iv)). This is not possible.")
+    end
     ss_poly = steady_state_polynomial(rs, ps, u0)
     sols = HC.real_solutions(HC.solve(ss_poly; kwargs...))
     reorder_sols!(sols, ss_poly, rs)
@@ -55,14 +58,6 @@ function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     eqs_intexp = make_int_exps.(eqs)
     ss_poly = Catalyst.to_multivariate_poly(remove_denominators.(eqs_intexp))
     return poly_type_convert(ss_poly)
-end
-
-# If u0s are not given while conservation laws are present, throws an error.
-function conservationlaw_errorcheck(rs, pre_varmap)
-    vars_with_vals = Set(p[1] for p in pre_varmap)
-    any(s -> s in vars_with_vals, species(rs)) && return
-    isempty(conservedequations(rs)) || 
-        error("The system has conservation laws but initial conditions were not provided for some species.")
 end
 
 # Parses and expression and return a version where any exponents that are Float64 (but an int, like 2.0) are turned into Int64s.

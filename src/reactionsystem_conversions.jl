@@ -518,8 +518,14 @@ function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = name
                       include_zero_odes = true, remove_conserved = false, checks = false,
                       default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
                       all_differentials_permitted = false, kwargs...)
+    # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
+    if !isautonomous(rs) 
+        error("Attempting to convert a non-autonomous `ReactionSystem` (e.g. where some rate depend on $(rs.iv)) to a `NonlinearSystem`. This is not possible. if you are intending to compute system steady states, consider creating and solving a `SteadyStateProblem.")
+    end
+
+    # Generates system equations.
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)

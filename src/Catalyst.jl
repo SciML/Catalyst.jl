@@ -18,7 +18,7 @@ using DynamicQuantities#, Unitful # Having Unitful here as well currently gives 
 
 @reexport using ModelingToolkit
 using Symbolics
-
+using LinearAlgebra
 using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
@@ -102,6 +102,7 @@ export species, nonspecies, reactions, nonreactions, speciesmap, paramsmap
 export numspecies, numreactions, setdefaults!
 export make_empty_network
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
+export isautonomous
 export reactionrates
 export isequivalent
 export set_default_noise_scaling
@@ -148,6 +149,10 @@ include("chemistry_functionality.jl")
 export @compound, @compounds
 export iscompound, components, coefficients, component_coefficients
 export balance_reaction, balance_system
+
+# Functionality for computing the stability of system steady states.
+include("steady_state_stability.jl")
+export steady_state_stability, steady_state_jac
 
 ### Extensions ###
 

@@ -163,6 +163,7 @@ speciesmap
 paramsmap
 reactionsystemparamsmap
 isspecies
+isautonomous
 Catalyst.isconstant
 Catalyst.isbc
 ```

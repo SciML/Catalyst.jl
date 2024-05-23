@@ -33,9 +33,10 @@ using SafeTestsets, Test
     #if GROUP == "All" || GROUP == "Miscellaneous-NetworkAnalysis"
         # Tests various miscellaneous features.
         @time @safetestset "API" begin include("miscellaneous_tests/api.jl") end
+        @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end
+        @time @safetestset "Steady State Stability Computations" begin include("miscellaneous_tests/stability_computation.jl") end
         @time @safetestset "Compound Species" begin include("miscellaneous_tests/compound_macro.jl") end
         @time @safetestset "Reaction Balancing" begin include("miscellaneous_tests/reaction_balancing.jl") end
-        @time @safetestset "Units" begin include("miscellaneous_tests/units.jl") end
 
         # Tests reaction network analysis features.
         @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end

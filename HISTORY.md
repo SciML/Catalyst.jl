@@ -86,6 +86,20 @@ plot(bif_dia; xguide="k1", yguide="X")
 ```
 - Automatically handles elimination of conservation laws for computing bifurcation diagrams.
 - Updated Bifurcation documentation with respect to this new feature.
+- Added function `isautonomous` to check if a `ReactionSystem` is autonomous.
+- Added function `steady_state_stability` to compute stability for steady states. Example:
+```julia
+# Creates model.
+rn = @reaction_network begin
+    (p,d), 0 <--> X
+end
+p = [:p => 1.0, :d => 0.5]
+
+# Finds (the trivial) steady state, and computes stability.
+steady_state = [2.0]
+steady_state_stability(steady_state, rn, p)
+```
+Here, `steady_state_stability` take an optional argument `tol = 10*sqrt(eps())`, which is used to determine whether a eigenvalue real part is reliably less that 0.
 
 ## Catalyst 13.5
 - Added a CatalystHomotopyContinuationExtension extension, which exports the `hc_steady_state` function if HomotopyContinuation is exported. `hc_steady_state` finds the steady states of a reaction system using the homotopy continuation method. This feature is only available for julia versions 1.9+. Example:

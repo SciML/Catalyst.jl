@@ -118,13 +118,11 @@ let
     odesys = complete(convert(ODESystem, rs))
     sdesys = complete(convert(SDESystem, rs))
     js = complete(convert(JumpSystem, rs))
-    nlsys = complete(convert(NonlinearSystem, rs))
 
     @test ModelingToolkit.get_defaults(rs) ==
           ModelingToolkit.get_defaults(odesys) ==
           ModelingToolkit.get_defaults(sdesys) ==
           ModelingToolkit.get_defaults(js) ==
-          ModelingToolkit.get_defaults(nlsys) ==
           defs
 
     u0map = [A => 5.0]
@@ -157,16 +155,6 @@ let
     @test norm(du - du2) < 100 * eps()
     G2 = sf.g(sprob.u0, sprob.p, 0.0)
     @test norm(G - G2) < 100 * eps()
-
-    # Test conversion to NonlinearSystem.
-    ns = convert(NonlinearSystem, rs)
-    nlprob = NonlinearProblem(rs, u, p)
-    fnl = eval(generate_function(ns)[2])
-    dunl = similar(du)
-    @test_broken let # The next line throws an error.
-        fnl(dunl, nlprob.u0, nlprob.p)
-        @test norm(du - dunl) < 100 * eps()
-    end
 end
 
 # Test with JumpSystem.

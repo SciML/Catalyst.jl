@@ -174,7 +174,7 @@ let
     @test all(1 ./ k1s .* (1 .- xs) .≈ xs)
 
     # Checks that there is an error if information for conserved quantities computation is not provided.
-    @test_throws Exception bprob = BifurcationProblem(rn, u_guess, p_start, k1; plot_var = X1)
+    @test_throws Exception BifurcationProblem(rn, u_guess, p_start, k1; plot_var = X1)
 end
 
 
@@ -214,4 +214,17 @@ let
     
     # Computes bifurcation diagram.
     @test_throws Exception BifurcationProblem(incomplete_network, u0_guess, p_start, :p)
+end
+
+# Tests that computation for non-autonomous systems yields appropriate errors.
+let
+    # Create t-dependant model.
+    rn = @reaction_network begin
+        (p/t,d), 0 <--> X
+    end
+    u0_guess = [:X => 1.0]
+    p_start = [:p => 1.0, :d => 0.2]
+    
+    # Attempts to build a BifurcationProblem.
+    @test_throws Exception BifurcationProblem(rn, u0_guess, p_start, :p)
 end
