@@ -368,11 +368,14 @@ encountered in:
     - Among potential noise scaling metadata.
 """
 function ModelingToolkit.get_variables!(set, rx::Reaction)
+    if isdefined(Main, :Infiltrator)
+        Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
+      end
     get_variables!(set, rx.rate)
     append!(set, rx.substrates)
     append!(set, rx.products)
     for stoichs in (rx.substoich, rx.prodstoich), stoich in stoichs
-        get_variables!(set, stoich)
+        (stoich isa BasicSymbolic) && get_variables!(set, stoich)
     end
     if has_noise_scaling(rx)
         get_variables!(set, get_noise_scaling(rx))
