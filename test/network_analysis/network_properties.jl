@@ -232,7 +232,7 @@ end
 let
     rn = @reaction_network begin
         (k2, k1), A <--> 2B
-        (k4, k3), A + C --> D
+        (k4, k3), A + C <--> D
         k5, D --> B + E
         k6, B + E --> A + C
     end
@@ -240,10 +240,9 @@ let
     weak_rev = true
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 
-    # Breaks when a reaction has multiple rates
     k = rand(rng, numparams(rn))
     rates = Dict(zip(reactionparams(rn), k))
-    # @test Catalyst.iscomplexbalanced(rn, rates) == true 
+    @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
 let
     rn = @reaction_network begin
@@ -311,3 +310,19 @@ let
     rates = Dict(zip(reactionparams(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == false 
 end
+
+let
+    rn = @reaction_network begin
+        k1, 3A + 2B --> 3C 
+        k2, B + 4D --> 2E
+        k3, 2E --> 3C
+        (k4, k5), B + 4D <--> 3A + 2B
+        k6, F --> B + 4D
+        k7, 3C --> F
+    end
+
+    k = rand(rng, numparams(rn))
+    rates = Dict(zip(reactionparams(rn), k))
+    @test Catalyst.iscomplexbalanced(rn, rates) == true 
+end
+
