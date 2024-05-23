@@ -343,6 +343,45 @@ end
 MT.is_diff_equation(rx::Reaction) = false
 MT.is_alg_equation(rx::Reaction) = false
 
+"""
+    get_symbolics(set, rx::Reaction)
+
+Returns all symbolic variables that are part of a reaction. This includes all variables 
+encountered in:
+    - Rates.
+    - Among substrates and products.
+    - Among stoichiometries.
+    - Among potential noise scaling metadata.
+"""
+function get_symbolics(rx::Reaction)
+    return ModelingToolkit.get_variables!([], rx)
+end
+
+"""
+    get_variables!(set, rx::Reaction)
+
+Adds all symbolic variables that are part of a reaction to set. This includes all variables 
+encountered in:
+    - Rates.
+    - Among substrates and products.
+    - Among stoichiometries.
+    - Among potential noise scaling metadata.
+"""
+function ModelingToolkit.get_variables!(set, rx::Reaction)
+    if isdefined(Main, :Infiltrator)
+        Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
+      end
+    get_variables!(set, rx.rate)
+    foreach(sub -> push!(set, sub), rx.substrates)
+    foreach(prod -> push!(set, prod), rx.products)
+    for stoichs in (rx.substoich, rx.prodstoich), stoich in stoichs
+        (stoich isa BasicSymbolic) && get_variables!(set, stoich)
+    end
+    if has_noise_scaling(rx)
+        get_variables!(set, get_noise_scaling(rx))
+    end
+    return (set isa AbstractVector) ? unique!(set) : set
+end
 
 ### Dependency-related Functions ###
 
