@@ -9,10 +9,10 @@ pages = Any[
         "model_creation/dsl_description.md",
         # DSL - Advanced
         "model_creation/programmatic_CRN_construction.md",
-        "model_creation/constraint_equations.md",
         "model_creation/compositional_modeling.md",
+        "model_creation/constraint_equations.md",
         # Events.
-        "model_creation/TOBEREMOVED_parametric_stoichiometry.md",# Distributed parameters, rates, and initial conditions.
+        "model_creation/parametric_stoichiometry.md",# Distributed parameters, rates, and initial conditions.
         # Loading and writing models to files.
         # Model visualisation.
         "model_creation/network_analysis.md",
