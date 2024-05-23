@@ -3,6 +3,7 @@
 ## Catalyst unreleased (master branch)
 
 ## Catalyst 14.0
+- The `reactionparams`, `numreactionparams`, and `reactionparamsmap`  functions have been removed.
 - To be more consistent with ModelingToolkit's immutability requirement for systems, we have removed API functions that mutate `ReactionSystem`s such as `addparam!`, `addreaction!`, `addspecies`, `@add_reactions`, and `merge!`. Please use `ModelingToolkit.extend` and `ModelingToolkit.compose` to generate new merged and/or composed `ReactionSystem`s from multiple component systems.
 - Added CatalystStructuralIdentifiabilityExtension, which permits StructuralIdentifiability.jl function to be applied directly to Catalyst systems. E.g. use
 ```julia

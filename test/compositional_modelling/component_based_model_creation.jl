@@ -297,7 +297,6 @@ let
     # Test API functions for composed model.
     @test issetequal(species(rs), [A, B, C])
     @test issetequal(unknowns(rs), [A, B, C, ns.D])
-    @test issetequal(reactionparams(rs), [r₊, r₋])
     @test issetequal(parameters(rs), [r₊, r₋, ns.β])
     @test issetequal(reactions(rs), union(rxs1, rxs2))
     @test issetequal(filter(eq -> eq isa Reaction, equations(rs)), union(rxs1, rxs2))
@@ -340,7 +339,6 @@ let
     @test issetequal(unknowns(rs1), [A1, rs2.A2a, ns2.A2b, rs2.rs3.A3a, rs2.ns3.A3b])
     @test issetequal(species(rs1), [A1, rs2.A2a, rs2.rs3.A3a])
     @test issetequal(parameters(rs1), [p1, rs2.p2a, rs2.p2b, rs2.rs3.p3a, rs2.ns3.p3b])
-    @test issetequal(reactionparams(rs1), [p1, rs2.p2a, rs2.p2b, rs2.rs3.p3a])
     @test issetequal(rxs, reactions(rs1))
     @test issetequal(eqs, equations(rs1))
     @test Catalyst.combinatoric_ratelaws(rs1)

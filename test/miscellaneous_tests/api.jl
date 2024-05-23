@@ -83,14 +83,13 @@ let
     @test pmat == prodstoichmat(rnmat) == Matrix(prodstoichmat(rnmat, sparse = true))
 end
 
-# Tests `reactionparamsmap`, `reactionrates`, and `symmap_to_varmap` getters.
+# Tests `reactionrates`, and `symmap_to_varmap` getters.
 let
     rn = @reaction_network begin
         (p,d), 0 <--> X
         (kB,kD), 2X <--> X
     end
     @unpack p, d, kB, kD = rn
-    isequal(reactionparamsmap(rn), Dict([p => 1, d => 2, kB => 3, kD => 4]))
     issetequal(reactionrates(rn), [p, d, kB, kD])
     isequal(symmap_to_varmap(rn, [:p => 1.0, :kB => 3.0]), [p => 1.0, kB => 3.0])
 end

@@ -251,9 +251,7 @@ let
 
     # Check parameters-related accessors.
     @test issetequal(parameters(coupled_rs), [p, d, v])
-    @test issetequal(reactionparams(coupled_rs), [p, d, v])
     @test numparams(coupled_rs) == 3
-    @test numreactionparams(coupled_rs) == 3
 
     # Check other accessors.
     @test !isspatial(coupled_rs)
