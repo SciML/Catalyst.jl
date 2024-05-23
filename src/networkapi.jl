@@ -1663,8 +1663,6 @@ Constructively compute whether a network will have complex-balanced equilibrium
 solutions, following the method in [this paper](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). Accepts a map of rates [k1 => 1.0, k2 => 2.0,...]k2
 """
 
-using Combinatorics, LinearAlgebra
-
 function iscomplexbalanced(rs::ReactionSystem, rates::Dict{Any, Float64}) 
     if length(rates) != numparams(rs) 
         error("The number of reaction rates must be equal to the number of parameters")
@@ -1694,7 +1692,8 @@ function iscomplexbalanced(rs::ReactionSystem, rates::Dict{Any, Float64})
     S = netstoichmat(rs)
 
     # Compute ρ using the matrix-tree theorem
-    g = incidencematgraph(rs); R = ratematrix(rs, rates)
+    g = incidencematgraph(rs)
+    R = ratematrix(rs, rates)
     ρ = matrixtree(g, R)
     @assert isapprox(L*ρ, zeros(nc), atol=1e-12) 
 
