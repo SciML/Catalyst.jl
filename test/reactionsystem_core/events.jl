@@ -362,11 +362,10 @@ let
     sol = solve(jprob, SSAStepper(); seed)
     
     # Checks that all `e` parameters have been updated properly.
-    @test sol.ps[:e1] == 1
-    @test sol.ps[:e2] == 1
-    @test sol.ps[:e3] == 1
-
     # Note that periodic discrete events are currently broken for jump processes.
+    @test sol.ps[:e1] == 1
+    @test_broken sol.ps[:e2] == 1
+    @test sol.ps[:e3] == 1
 end
 
 # Compares simulations using MTK type events with those generated through callbacks.
