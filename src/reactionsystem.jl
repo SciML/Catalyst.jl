@@ -723,24 +723,6 @@ function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
 end
 
 """
-reactionsystemparams(network)
-
-Given a [`ReactionSystem`](@ref), return a vector of all parameters defined
-within the system and any subsystems that are of type `ReactionSystem`. To get
-the parameters in the system and all subsystems, including non-`ReactionSystem`
-subsystems, use `parameters(network)`.
-
-Notes:
-- Allocates and has to calculate these dynamically by comparison for each reaction.
-"""
-function reactionsystemparams(network)
-    ps = get_ps(network)
-    systems = filter_nonrxsys(network)
-    isempty(systems) && return ps
-    unique([ps; reduce(vcat, map(sys -> species(sys, reactionsystemparams(sys)), systems))])
-end
-
-"""
     numparams(network)
 
 Return the total number of parameters within the given system and all subsystems.
@@ -762,16 +744,6 @@ parameters that appear within the system to their index within
 """
 function paramsmap(network)
     Dict(p => i for (i, p) in enumerate(parameters(network)))
-end
-
-"""
-    reactionsystemparamsmap(network)
-
-Given a [`ReactionSystem`](@ref), return a Dictionary mapping from parameters that
-appear within `Reaction`s to their index within [`reactionsystemparams(network)`](@ref).
-"""
-function reactionsystemparamsmap(network)
-    Dict(p => i for (i, p) in enumerate(reactionsystemparams(network)))
 end
 
 # used in the next function (`reactions(network)`).
@@ -821,21 +793,6 @@ Notes:
 """
 function nonreactions(network)
     equations(network)[(numreactions(network) + 1):end]
-end
-
-"""
-    numreactionsystemparams(network)
-
-Return the total number of parameters within the given [`ReactionSystem`](@ref)
-and subsystems that are `ReactionSystem`s.
-
-Notes
-- If there are no subsystems this will be fast.
-- As this calls [`reactionsystemparams`](@ref), it can be slow and will allocate if
-  there are any subsystems.
-"""
-function numreactionsystemparams(network)
-    length(reactionsystemparams(network))
 end
 
 """

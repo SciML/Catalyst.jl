@@ -98,9 +98,9 @@ export get_noise_scaling, has_noise_scaling
 # The `ReactionSystem` structure and its functions.
 include("reactionsystem.jl")
 export ReactionSystem, isspatial
-export species, nonspecies, reactionsystemparams, reactions, nonreactions, speciesmap, paramsmap
-export numspecies, numreactions, numreactionsystemparams, setdefaults!
-export make_empty_network, reactionsystemparamsmap
+export species, nonspecies, reactions, nonreactions, speciesmap, paramsmap
+export numspecies, numreactions, setdefaults!
+export make_empty_network, 
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
 export reactionrates
 export isequivalent

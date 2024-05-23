@@ -128,9 +128,6 @@ can call:
   the system and any sub-systems that are also `ReactionSystems`.
 * `ModelingToolkit.parameters(rn)` returns all parameters across the
   system, *all sub-systems*, and all constraint systems.
-* [`reactionsystemparams(rn)`](@ref) is a vector of all the parameters within the
-  system and any sub-systems that are also `ReactionSystem`s. These include all
-  parameters that appear within some `Reaction`.
 * `ModelingToolkit.equations(rn)` returns all [`Reaction`](@ref)s and all
   `Symbolics.Equations` defined across the system, *all sub-systems*, and all
   constraint systems. `Reaction`s are ordered ahead of `Equation`s with the
