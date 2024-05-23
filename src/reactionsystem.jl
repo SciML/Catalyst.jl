@@ -1227,27 +1227,19 @@ function set_default_metadata(rs::ReactionSystem;  default_reaction_metadata = [
     # Currently, `noise_scaling` is the only relevant metadata supported this way.
     drm_dict = Dict(default_reaction_metadata)
     if haskey(drm_dict, :noise_scaling)
-        # Finds parameters, species, and variables in the noise scaling term.
-        ns_expr = drm_dict[:noise_scaling]
+        # Finds parameters, species, and variables in the noise scaling term.       
+        ns_expr = drm_dict[:noise_scaling] 
         ns_syms = [Symbolics.unwrap(sym) for sym in get_variables(ns_expr)]
-        ns_ps = filter(ModelingToolkit.isparameter, ns_syms)
-        ns_sps = filter(Catalyst.isspecies, ns_syms)
-        ns_vs = filter(sym -> !Catalyst.isspecies(sym) && !ModelingToolkit.isparameter(sym), ns_syms)
-
+        ns_ps = Iterators.filter(ModelingToolkit.isparameter, ns_syms)
+        ns_sps = Iterators.filter(Catalyst.isspecies, ns_syms)
+        ns_vs = Iterators.filter(sym -> !Catalyst.isspecies(sym) &&
+                                        !ModelingToolkit.isparameter(sym), ns_syms)
         # Adds parameters, species, and variables to the `ReactionSystem`.
-        if any(!any(isequal(p1, p2) for p2 in get_ps(rs)) for p1 in ns_ps)
-            @set! rs.ps = unique([get_ps(rs); ns_ps])
-        end
-        if any(!any(isequal(sp1, sp2) for sp2 in get_species(rs)) for sp1 in ns_sps)
-            sps_new = unique([get_species(rs); ns_sps])
-            vs_old = get_unknowns(rs)[length(get_species(rs))+1 : end]
-            @set! rs.species = sps_new
-            @set! rs.unknowns = [sps_new; vs_old]
-        end
-        if any(!any(isequal(v1, v2) for v2 in get_unknowns(rs)) for v1 in ns_vs)
-            us_new = unique([get_unknowns(rs); ns_vs])
-            @set! rs.unknowns = us_new
-        end
+        @set! rs.ps = union(get_ps(rs), ns_ps)
+        sps_new = union(get_species(rs), ns_sps)
+        @set! rs.species = sps_new
+        vs_old = @view get_unknowns(rs)[length(get_species(rs))+1 : end]            
+        @set! rs.unknowns = union(sps_new, vs_old, ns_vs)
     end
 
     # Updates reaction metadata for all its subsystems.
