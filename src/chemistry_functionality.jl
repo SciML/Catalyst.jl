@@ -259,7 +259,7 @@ function balance_reaction(reaction::Reaction)
     end
 
     isempty(balancedrxs) && (@warn "Unable to balance reaction.")
-    (length(balancedrxs) > 1) && (@warn "Infinite balanced reactions from ($reaction) are possible, returning a basis for them. Note that we do not check if they preserve the set of substrates and products from the original reaction.")
+    (length(balancedrxs) > 1) && (@warn "The space of possible balanced versions of the reaction ($reaction) is greater than one-dimension. This prevents the selection of a single appropriate balanced reaction. Instead, a basis for balanced reactions is returned. Note that we do not check if they preserve the set of substrates and products from the original reaction.")
     return balancedrxs
 end
 
@@ -346,3 +346,45 @@ function create_matrix(reaction::Catalyst.Reaction)
 
     return A
 end
+
+"""
+    balance_system(rs::ReactionSystem)
+
+From a system, creates a new system where each reaction is a balanced version of the corresponding
+reaction of the original system. For more information, consider the `balance_reaction` function
+(which is internally applied to each system reaction).
+
+Arguments 
+- `rs`: The reaction system that should be balanced.
+
+Notes:
+- If any reaction in the system cannot be balanced, throws an error.
+- If any reaction in the system have an infinite number of potential reactions, throws an error. 
+Here, it would be possible to generate a valid reaction, however, no such routine is currently
+implemented in `balance_system`.
+- `balance_system` will not modify reactions of subsystems to the input system. It is recommended
+not to apply `balance_system` to non-flattened systems. 
+"""
+function balance_system(rs::ReactionSystem)
+    @set! rs.eqs = CatalystEqType[get_balanced_reaction(eq) for eq in get_eqs(rs)]
+    @set! rs.rxs = [get_balanced_reaction(rx) for rx in get_rxs(rs)]
+    return rs
+end
+
+# Selects a balanced version of an input reaction. Handles potential problems when there are no,
+# or several, balanced alternatives.
+function get_balanced_reaction(rx::Reaction)
+    brxs = balance_reaction(rx)
+
+    # In case there are no, or multiple, solutions to the balancing problem. 
+    if isempty(brxs)
+        error("Could not balance reaction `$rx`, unable to create a balanced `ReactionSystem`.")
+    end
+    if length(brxs) > 1
+        error("The space of possible balanced versions of the reaction ($reaction) is greater than one-dimension. This prevents the selection of a single appropriate balanced reaction. No method to, in this case, automatically generate a valid reaction is currently implemented in `balance_system`.")
+    end
+
+    return only(brxs)
+end
+# For non-`Reaction` equations, returns the original equation.
+get_balanced_reaction(eq::Equation) = eq
