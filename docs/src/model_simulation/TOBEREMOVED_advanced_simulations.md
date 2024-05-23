@@ -177,7 +177,7 @@ Here, we access the system's unknown `X` through the `integrator`, and add
 `5.0` to its amount. We can now simulate our system using the
 callback:
 ```@example ex2
-sol = solve(oprob; callback = ps_cb)
+sol = solve(oprob, Tsit5(); callback = ps_cb)
 plot(sol)
 ```
 
@@ -194,16 +194,16 @@ p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 
 condition = [5.0]
-affect!(integrator) = integrator[:k] = 5.0
+affect!(integrator) = integrator.ps[:k] = 5.0
 ps_cb = PresetTimeCallback(condition, affect!)
 
-sol = solve(oprob; callback = ps_cb)
+sol = solve(oprob, Tsit5(); callback = ps_cb)
 plot(sol)
 ```
 The result looks as expected. However, what happens if we attempt to run the
 simulation again?
 ```@example ex2
-sol = solve(oprob; callback = ps_cb)
+sol = solve(oprob, Tsit5(); callback = ps_cb)
 plot(sol)
 ```
 The plot looks different, even though we simulate the same problem. Furthermore,
@@ -226,15 +226,15 @@ p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 
 condition = [5.0]
-affect!(integrator) = integrator[:k] = 5.0
+affect!(integrator) = integrator.ps[:k] = 5.0
 ps_cb = PresetTimeCallback(condition, affect!)
 
-sol = solve(deepcopy(oprob); callback = ps_cb)
+sol = solve(deepcopy(oprob), Tsit5(); callback = ps_cb)
 plot(sol)
 ```
 where we parse a copy of our `ODEProblem` to the solver (using `deepcopy`). We can now run
 ```@example ex2
-sol = solve(deepcopy(oprob); callback = ps_cb)
+sol = solve(deepcopy(oprob), Tsit5(); callback = ps_cb)
 plot(sol)
 ```
 and get the expected result.
@@ -245,15 +245,15 @@ has to bundle them together in a `CallbackSet`, here follows one example:
 rn = @reaction_network begin
     (k,1), X1 <--> X2
 end
-u0 = [:X1 => 10.0,:X2 => 0.0]
+u0 = [:X1 => 10.0, :X2 => 0.0]
 tspan = (0.0, 20.0)
 p = [:k => 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 
 ps_cb_1 = PresetTimeCallback([3.0, 7.0], integ -> integ[:X1] += 5.0)
-ps_cb_2 = PresetTimeCallback([5.0], integ -> integ[:k] = 5.0)
+ps_cb_2 = PresetTimeCallback([5.0], integ -> integ.ps[:k] = 5.0)
 
-sol = solve(deepcopy(oprob); callback=CallbackSet(ps_cb_1, ps_cb_2))
+sol = solve(deepcopy(oprob), Tsit5(); callback=CallbackSet(ps_cb_1, ps_cb_2))
 plot(sol)
 ```
 
@@ -279,7 +279,7 @@ jprob = JumpProblem(rn, dprob, Direct())
 condition = [5.0]
 function affect!(integrator)
     integrator[:X1] += 5.0
-    integrator[:k] += 2.0
+    integrator.ps[:k] += 2.0
     reset_aggregated_jumps!(integrator)
     nothing
 end
@@ -350,12 +350,12 @@ It is possible to use a different noise scaling expression for each reaction. He
 ```@example ex3
 rn_4 = @reaction_network begin
     (p, d), 0 <--> X
-    (p, d), 0 <--> Y, ([noise_scaling=0.0, noise_scaling=0.0])
+    (p, d), 0 <--> Y, ([noise_scaling=0.0], [noise_scaling=0.0])
 end
 
 u0_4 = [:X => 10.0, :Y => 10.0]
 tspan = (0.0, 10.0)
-p_4 = [p => 10.0, d => 1.]
+p_4 = [:p => 10.0, :d => 1.]
 
 sprob_4 = SDEProblem(rn_4, u0_4, tspan, p_4)
 sol_4 = solve(sprob_4, ImplicitEM())
