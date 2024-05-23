@@ -36,7 +36,7 @@ Notes:
 ```
   """
 function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative=true, neg_thres=-1e-20, u0=[], kwargs...)
-    if !is_autonomous(rs) 
+    if !isautonomous(rs) 
         error("Attempting to compute steady state for a non-autonomous system (e.g. where some rate depend on $(rs.iv)). This is not possible.")
     end
     ss_poly = steady_state_polynomial(rs, ps, u0)

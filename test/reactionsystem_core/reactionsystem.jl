@@ -155,18 +155,6 @@ let
     @test norm(du - du2) < 100 * eps()
     G2 = sf.g(sprob.u0, sprob.p, 0.0)
     @test norm(G - G2) < 100 * eps()
-
-    # Test conversion to NonlinearSystem. Permanently broken as we no longer permit non-autonomous
-    # `ReactionSystem`s to be converted to `NonlinearSystem`s.
-    @test_broken false
-    # ns = convert(NonlinearSystem, rs)
-    # nlprob = NonlinearProblem(rs, u, p)
-    # fnl = eval(generate_function(ns)[2])
-    # dunl = similar(du)
-    # @test_broken let # The next line throws an error.
-    #     fnl(dunl, nlprob.u0, nlprob.p)
-    #     @test norm(du - dunl) < 100 * eps()
-    # end
 end
 
 # Test with JumpSystem.

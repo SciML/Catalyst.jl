@@ -1204,7 +1204,7 @@ function dependants(rx, network)
 end
 
 """
-    is_autonomous(rs::ReactionSystem)
+isautonomous(rs::ReactionSystem)
 
 Checks if a system is autonomous (i.e. no rate or equation depend on the independent variable(s)).
 Example:
@@ -1212,27 +1212,24 @@ Example:
 rs1 = @reaction_system
     (p,d), 0 <--> X
 end
-is_autonomous(rs1) # Returns `true`.
+isautonomous(rs1) # Returns `true`.
 
 rs2 = @reaction_system
     (p/t,d), 0 <--> X
 end
-is_autonomous(rs2) # Returns `false`.
+isautonomous(rs2) # Returns `false`.
 ```
 """
-function is_autonomous(rs::ReactionSystem)
-    # Get all variables occuring in reactions and then other equations.
-    dep_var_param_rxs = [ModelingToolkit.get_variables(rate) for rate in reactionrates(rs)]
-    dep_var_param_eqs = [ModelingToolkit.get_variables(eq) for eq in filter(eq -> !(eq isa Reaction), equations(rs))]
-    if isempty(dep_var_param_rxs) && isempty(dep_var_param_eqs)
-        dep_var_param = []
-    else
-        dep_var_param = reduce(vcat,[dep_var_param_rxs; dep_var_param_eqs])
+function isautonomous(rs::ReactionSystem)
+    # Get all variables occurring in reactions and equations.
+    vars = Set()
+    for eq in equations(rs)
+        (eq isa Reaction) ? get_variables!(vars, eq.rate) : get_variables!(vars, eq)
     end
 
     # Checks for iv and spatial ivs
-    any(isequal(get_iv(rs), var) for var in dep_var_param) && (return false)
-    any(isequal(siv, var) for siv in get_sivs(rs) for var in dep_var_param) && (return false)
+    (get_iv(rs) in vars) && return false
+    any(in(vars), get_sivs(rs)) && return false
     return true
 end
 

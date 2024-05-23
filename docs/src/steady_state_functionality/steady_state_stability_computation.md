@@ -36,6 +36,12 @@ Next, we can apply `steady_state_stability` to each steady state yielding a vect
 [steady_state_stability(sstate, sa_loop, ps) for sstate in steady_states]
 ```
 
+Finally, as described above, Catalyst uses an optional argument, `tol`, to determine how strict to make the stability check.  I.e. below we set the tolerance to `1e-6` (a larger value, that is stricter, than the default of `10*sqrt(eps())`)
+```@example stability_1
+[steady_state_stability(sstate, sa_loop, ps; tol = 1e-6) for sstate in steady_states]
+nothing# hide
+```
+
 ## Pre-computing the Jacobian to increase performance when computing stability for many steady states
 Catalyst uses the system Jacobian to compute steady state stability, and the Jacobian is computed once for each call to `steady_state_stability`. If you repeatedly compute stability for steady states of the same system, pre-computing the Jacobian and supplying it to the `steady_state_stability` function can improve performance. 
 

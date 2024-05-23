@@ -47,7 +47,7 @@ computed eigenvalue is far away enough from 0 to be reliably used. This selected
 function steady_state_stability(u::Vector, rs::ReactionSystem, ps; tol = 10*sqrt(eps(ss_val_type(u))),
                                 ss_jac = steady_state_jac(rs; u0 = u))
     # Warning checks.
-    if !is_autonomous(rs) 
+    if !isautonomous(rs) 
         error("Attempting to compute stability for a non-autonomous system (e.g. where some rate depend on $(rs.iv)). This is not possible.")
     end
 

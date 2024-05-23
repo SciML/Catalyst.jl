@@ -18,7 +18,7 @@ using DynamicQuantities#, Unitful # Having Unitful here as well currently gives 
 
 @reexport using ModelingToolkit
 using Symbolics
-
+using LinearAlgebra
 using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
@@ -42,7 +42,6 @@ import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, 
 import MacroTools, Graphs
 import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne
 import DataStructures: OrderedDict, OrderedSet
-import LinearAlgebra.eigvals
 import Parameters: @with_kw_noshow
 import Symbolics: occursin, wrap
 
@@ -103,7 +102,7 @@ export species, nonspecies, reactionparams, reactions, nonreactions, speciesmap,
 export numspecies, numreactions, numreactionparams, setdefaults!
 export make_empty_network, reactionparamsmap
 export dependants, dependents, substoichmat, prodstoichmat, netstoichmat
-export is_autonomous
+export isautonomous
 export reactionrates
 export isequivalent
 export set_default_noise_scaling

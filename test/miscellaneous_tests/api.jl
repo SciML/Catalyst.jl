@@ -447,7 +447,7 @@ let
     @test_throws MethodError Catalyst.to_multivariate_poly(neweqs)
 end
 
-# Tests `is_autonomous` function.
+# Tests `isautonomous` function.
 let 
     # Using default iv.
     rn1 = @reaction_network begin
@@ -462,9 +462,9 @@ let
         (p + X*(p1+p2),d), 0 <--> X
         (kB,kD), 2X <--> X
     end
-    @test !is_autonomous(rn1)
-    @test !is_autonomous(rn2)
-    @test is_autonomous(rn3)
+    @test !isautonomous(rn1)
+    @test !isautonomous(rn2)
+    @test isautonomous(rn3)
 
     # Using non-default iv.
     rn4 = @reaction_network begin
@@ -487,15 +487,23 @@ let
         (p + X*(p1+p2),d), 0 <--> X
         (kB,kD), 2X <--> X
     end
-    @test !is_autonomous(rn4)
-    @test !is_autonomous(rn5)
-    @test !is_autonomous(rn6)
-    @test is_autonomous(rn7)
+    @test !isautonomous(rn4)
+    @test !isautonomous(rn5)
+    @test !isautonomous(rn6)
+    @test isautonomous(rn7)
 
     # Using a coupled CRN/equation model.
     rn7 = @reaction_network begin
         @equations D(V) ~ X/(1+t) - V
         (p,d), 0 <--> X
     end
-    @test !is_autonomous(rn7)
+    @test !isautonomous(rn7)
+
+    # Using a registered function.
+    f(d,t) = d/(1 + t)
+    Symbolics.@register_symbolic f(d,t)
+    rn8 = @reaction_network begin
+        f(d,t), X --> 0
+    end
+    @test !isautonomous(rn8)
 end
