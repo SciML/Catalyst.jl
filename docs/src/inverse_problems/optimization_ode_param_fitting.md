@@ -3,7 +3,7 @@ Fitting parameters to data involves solving an optimisation problem (that is, fi
 
 This tutorial demonstrates both how to create parameter fitting cost functions using the [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl) package, and how to use Optimization.jl to minimise these. Optimization.jl can also be used in other contexts, such as finding parameter sets that maximise the magnitude of some system behaviour. More details on how to use these packages can be found in their [respective](https://docs.sciml.ai/Optimization/stable/) [documentations](https://docs.sciml.ai/DiffEqParamEstim/stable/).
 
-## Basic example
+## [Basic example](@id optimization_parameter_fitting_basics)
 
 Let us consider a simple catalysis network, where an enzyme ($E$) turns a substrate ($S$) into a product ($P$):
 ```@example diffeq_param_estim_1 
@@ -142,7 +142,7 @@ optsol_fixed_kD = solve(optprob_fixed_kD, Optim.NelderMead())
 nothing # hide
 ```
 
-## Fitting parameters on the logarithmic scale
+## [Fitting parameters on the logarithmic scale](@id optimization_parameter_fitting_logarithmic_scale)
 Often it can be advantageous to fit parameters on a [logarithmic, rather than linear, scale](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008646). The best way to proceed is to simply replace each parameter in the model definition by its logarithmic version:
 ```@example diffeq_param_estim_2
 using Catalyst
