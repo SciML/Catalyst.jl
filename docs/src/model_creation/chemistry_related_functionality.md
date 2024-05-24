@@ -144,11 +144,11 @@ It is possible to balance all the reactions of a reaction system simultaneously 
 rs = @reaction_network begin
     @species C(t) O(t) H(t)
     @compounds begin
-        H2(t) = 2H
-        CH4(t) = C + 4H
-        O2(t) = 2O
-        CO2(t) = C + 2O
-        H2O(t) = 2H + O
+        H2(t) ~ 2H
+        CH4(t) ~ C + 4H
+        O2(t) ~ 2O
+        CO2(t) ~ C + 2O
+        H2O(t) ~ 2H + O
     end
     1.0, C + H2 --> CH4
     2.0, CH4 + O2 --> CO2 + H2O
