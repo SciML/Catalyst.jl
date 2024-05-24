@@ -103,7 +103,7 @@ To see all the species, parameters and reactions in the tree we can use
 species(rn)   # or unknowns(rn)
 ```
 ```@example ex1
-parameters(rn)  # or reactionparameters(rn)
+parameters(rn)
 ```
 ```@example ex1
 reactions(rn)   # or equations(rn)
