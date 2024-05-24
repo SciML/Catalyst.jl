@@ -249,10 +249,10 @@ let
     # Test Jump simulations with integer coefficients.
     dprob_int = DiscreteProblem(rs_int, u0_int, tspan_stoch, ps_int)
     dprob_int_ref = DiscreteProblem(rs_ref_int, u0_int, tspan_stoch, ps_int)
-    jprob_int = JumpProblem(rs_int, dprob_int, Direct(); rng)
-    jprob_int_ref = JumpProblem(rs_ref_int, dprob_int_ref, Direct(); rng)
-    jsol_int = solve(jprob_int, SSAStepper(); seed)
-    jsol_int_ref = solve(jprob_int_ref, SSAStepper(); seed)
+    jprob_int = JumpProblem(rs_int, dprob_int, Direct(); rng, save_positions = (false, false))
+    jprob_int_ref = JumpProblem(rs_ref_int, dprob_int_ref, Direct(); rng, save_positions = (false, false))
+    jsol_int = solve(jprob_int, SSAStepper(); seed, saveat = 1.0)
+    jsol_int_ref = solve(jprob_int_ref, SSAStepper(); seed, saveat = 1.0)
     @test mean(jsol_int[:X1]) ≈ mean(jsol_int_ref[:X1]) atol = 1e-2 rtol = 1e-2
 end
 
