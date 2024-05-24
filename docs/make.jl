@@ -39,7 +39,9 @@ makedocs(sitename = "Catalyst.jl",
          modules = [Catalyst, ModelingToolkit],
          doctest = false,
          clean = true,
-         pages = pages)
+         pages = pages,
+         pagesonly = true,
+         warnonly = true)
 
 deploydocs(repo = "github.com/SciML/Catalyst.jl.git";
            push_preview = true)
