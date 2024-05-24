@@ -47,7 +47,7 @@ pages = Any[
         # "inverse_problems/petab_ode_param_fitting.md",
         # ODE parameter fitting using Turing.
         # SDE/Jump fitting.
-        # Non-parameter fitting optimisation.
+        "inverse_problems/behaviour_optimisation.md",
         "inverse_problems/structural_identifiability.md",
         # Practical identifiability.
         # GLobal and local sensitivity analysis.
