@@ -19,6 +19,7 @@ pages = Any[
         "model_creation/chemistry_related_functionality.md",
         "Model creation examples" => Any[
             "model_creation/examples/basic_CRN_examples.md",
+            "model_creation/examples/programmatic_generative_linear_pathway.md",
             "model_creation/examples/hodgkin_huxley_equation.md",
             "model_creation/examples/smoluchowski_coagulation_equation.md"
         ]
