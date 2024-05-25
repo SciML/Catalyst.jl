@@ -265,7 +265,7 @@ tspan = (0.0, 10.0)
 p = []
 oprob = ODEProblem(rn, u0, tspan, p)
 sol = solve(oprob)
-plot(sol)</code></pre><img src="4e6d7ab3.svg" alt="Example block output"/><p>When providing default values, it is possible to do so for only a subset of the species or parameters, in which case the rest can be specified when constructing the problem type to solve:</p><pre><code class="language-julia hljs">rn = @reaction_network begin
+plot(sol)</code></pre><img src="6fe35aa3.svg" alt="Example block output"/><p>When providing default values, it is possible to do so for only a subset of the species or parameters, in which case the rest can be specified when constructing the problem type to solve:</p><pre><code class="language-julia hljs">rn = @reaction_network begin
   @species X(t)
   @parameters p=1.0 d
   p, 0 --&gt; X
@@ -277,12 +277,12 @@ tspan = (0.0, 10.0)
 p = [:d =&gt; .1]
 oprob = ODEProblem(rn, u0, tspan, p)
 sol = solve(oprob)
-plot(sol)</code></pre><img src="59cbdb98.svg" alt="Example block output"/><p>Finally, default values can be overridden by passing mapping vectors to the DifferentialEquations.jl problem being constructed. Only those initial conditions or parameters for which we want to change their value from the default will need to be passed</p><pre><code class="language-julia hljs">u0 = [:X =&gt; 1.0]
+plot(sol)</code></pre><img src="039fff29.svg" alt="Example block output"/><p>Finally, default values can be overridden by passing mapping vectors to the DifferentialEquations.jl problem being constructed. Only those initial conditions or parameters for which we want to change their value from the default will need to be passed</p><pre><code class="language-julia hljs">u0 = [:X =&gt; 1.0]
 tspan = (0.0, 10.0)
 p = [:p =&gt; 2.0, :d =&gt; .1]   # we change p to 2.0
 oprob = ODEProblem(rn, u0, tspan, p)
 sol = solve(oprob)
-plot(sol)</code></pre><img src="36c6d382.svg" alt="Example block output"/><h2 id="Constant/fixed-species"><a class="docs-heading-anchor" href="#Constant/fixed-species">Constant/fixed species</a><a id="Constant/fixed-species-1"></a><a class="docs-heading-anchor-permalink" href="#Constant/fixed-species" title="Permalink"></a></h2><p>It is possible to fix the amount of a species in a reaction. Without fixing a species, a reaction could look like</p><pre><code class="language-julia hljs">rn = @reaction_network begin
+plot(sol)</code></pre><img src="3566705a.svg" alt="Example block output"/><h2 id="Constant/fixed-species"><a class="docs-heading-anchor" href="#Constant/fixed-species">Constant/fixed species</a><a id="Constant/fixed-species-1"></a><a class="docs-heading-anchor-permalink" href="#Constant/fixed-species" title="Permalink"></a></h2><p>It is possible to fix the amount of a species in a reaction. Without fixing a species, a reaction could look like</p><pre><code class="language-julia hljs">rn = @reaction_network begin
     k, X + Y --&gt; 0
 end</code></pre><p class="math-container">\[ \begin{align*}
 \mathrm{X} + \mathrm{Y} &amp;\xrightarrow{k} \varnothing  
@@ -345,7 +345,7 @@ tspan = (0.0, 10.0)
 p = [:p =&gt; 2.0, :d =&gt; .1, :X0 =&gt; 1.0]
 oprob = ODEProblem(rn, u0, tspan, p)
 sol = solve(oprob)
-plot(sol)</code></pre><img src="482ddfc6.svg" alt="Example block output"/><h2 id="Naming-the-generated-ReactionSystem"><a class="docs-heading-anchor" href="#Naming-the-generated-ReactionSystem">Naming the generated <code>ReactionSystem</code></a><a id="Naming-the-generated-ReactionSystem-1"></a><a class="docs-heading-anchor-permalink" href="#Naming-the-generated-ReactionSystem" title="Permalink"></a></h2><p>ModelingToolkit uses system names to allow for compositional and hierarchical models. To specify a name for the generated <code>ReactionSystem</code> via the <a href="../../api/#Catalyst.@reaction_network"><code>@reaction_network</code></a> macro, just place the name before <code>begin</code>:</p><pre><code class="language-julia hljs">rn = @reaction_network production_degradation begin
+plot(sol)</code></pre><img src="775855ad.svg" alt="Example block output"/><h2 id="Naming-the-generated-ReactionSystem"><a class="docs-heading-anchor" href="#Naming-the-generated-ReactionSystem">Naming the generated <code>ReactionSystem</code></a><a id="Naming-the-generated-ReactionSystem-1"></a><a class="docs-heading-anchor-permalink" href="#Naming-the-generated-ReactionSystem" title="Permalink"></a></h2><p>ModelingToolkit uses system names to allow for compositional and hierarchical models. To specify a name for the generated <code>ReactionSystem</code> via the <a href="../../api/#Catalyst.@reaction_network"><code>@reaction_network</code></a> macro, just place the name before <code>begin</code>:</p><pre><code class="language-julia hljs">rn = @reaction_network production_degradation begin
   p, ∅ --&gt; X
   d, X --&gt; ∅
 end
@@ -467,7 +467,7 @@ sol = solve(oprob)</code></pre><p>we can index the solution using our observable
  6.497928569412477
  7.186131866749532
  7.312754780102971</code></pre><p>similarly, we can plot the values of <span>$Xtot$</span> and <span>$Ytot$</span> using</p><pre><code class="language-julia hljs">using Plots
-plot(sol; idxs = [rn.Xtot, rn.Ytot], label = [&quot;Total X&quot; &quot;Total Y&quot;])</code></pre><img src="04abfca3.svg" alt="Example block output"/><p>If we only wish to provide a single observable, the <code>begin ... end</code> block is note required. E.g., to record only the total amount of <span>$X$</span> we can use:</p><pre><code class="language-julia hljs">rn = @reaction_network begin
+plot(sol; idxs = [rn.Xtot, rn.Ytot], label = [&quot;Total X&quot; &quot;Total Y&quot;])</code></pre><img src="578b492d.svg" alt="Example block output"/><p>If we only wish to provide a single observable, the <code>begin ... end</code> block is note required. E.g., to record only the total amount of <span>$X$</span> we can use:</p><pre><code class="language-julia hljs">rn = @reaction_network begin
   @observables Xtot ~ X + XY
   (pX,dX), 0 &lt;--&gt; X
   (pY,dY), 0 &lt;--&gt; Y
@@ -499,7 +499,7 @@ latexify(rn; form=:ode)</code></pre><p class="math-container">\[\begin{align}
 ps = [:p =&gt; 1.0, :d =&gt; 0.5]
 oprob = ODEProblem(rn, u0, (0.0, 1.0), ps)
 sol = solve(oprob)
-plot(sol)</code></pre><img src="39b0a3ce.svg" alt="Example block output"/><p>Here, growth is indefinite. To improve the model, <a href="@ref advanced_simulations_callbacks">a callback</a> can be used to half the volume (cell division) once some threshold is reached.</p><p>When creating differential equations this way, the subject of the differential is automatically inferred to be a variable, however, any component on the right-hand side must be declare somewhere in the macro. E.g. to add a scaling parameter (<span>$k$</span>), we must declare that <span>$k$</span> is a parameter using the <code>@parameters</code> option:</p><pre><code class="language-julia hljs">rn = @reaction_network begin
+plot(sol)</code></pre><img src="0693b0a7.svg" alt="Example block output"/><p>Here, growth is indefinite. To improve the model, <a href="@ref advanced_simulations_callbacks">a callback</a> can be used to half the volume (cell division) once some threshold is reached.</p><p>When creating differential equations this way, the subject of the differential is automatically inferred to be a variable, however, any component on the right-hand side must be declare somewhere in the macro. E.g. to add a scaling parameter (<span>$k$</span>), we must declare that <span>$k$</span> is a parameter using the <code>@parameters</code> option:</p><pre><code class="language-julia hljs">rn = @reaction_network begin
   @parameters k
   @equations begin
     D(V) ~ k*G
@@ -514,4 +514,4 @@ end</code></pre><p>If the differential does not appear isolated on the lhs, its 
 end</code></pre><p>When only a single equation is added, the <code>begin ... end</code> statement can be omitted. E.g., the first model can be declared equivalently using:</p><pre><code class="language-julia hljs">rn = @reaction_network begin
   @equations D(V) ~ G
   (p,d), 0 &lt;--&gt; G
-end</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../introduction_to_catalyst/introduction_to_catalyst/">« Introduction to Catalyst</a><a class="docs-footer-nextpage" href="../programmatic_CRN_construction/">Programmatic Construction of Symbolic Reaction Systems »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Saturday 25 May 2024 09:51">Saturday 25 May 2024</span>. Using Julia version 1.10.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../introduction_to_catalyst/introduction_to_catalyst/">« Introduction to Catalyst</a><a class="docs-footer-nextpage" href="../programmatic_CRN_construction/">Programmatic Construction of Symbolic Reaction Systems »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Saturday 25 May 2024 10:20">Saturday 25 May 2024</span>. Using Julia version 1.10.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

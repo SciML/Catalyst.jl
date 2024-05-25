@@ -2,7 +2,7 @@
 
 julia_version = "1.10.3"
 manifest_format = "2.0"
-project_hash = "c6b7607d6f5054da8159ad41e0178bbb9874db6f"
+project_hash = "d0c9396d00baf36ebdee5e2ebebc65f8486185e1"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "016833eb52ba2d6bea9fcb50ca295980e728ee24"
@@ -1909,9 +1909,9 @@ version = "3.24.3"
 
 [[deps.OptimizationBBO]]
 deps = ["BlackBoxOptim", "Optimization", "Reexport"]
-git-tree-sha1 = "939b19f2c213901aa544d1fd50e5f0065e66127c"
+git-tree-sha1 = "ae0742c7c4e17271fc713ce4c61c10c9ccdb15a4"
 uuid = "3e6eede4-6085-4f62-9a71-46d9bc1eb92b"
-version = "0.1.5"
+version = "0.2.1"
 
 [[deps.OptimizationBase]]
 deps = ["ADTypes", "ArrayInterface", "DocStringExtensions", "LinearAlgebra", "Reexport", "Requires", "SciMLBase", "SparseArrays"]
