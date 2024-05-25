@@ -1,13 +1,15 @@
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Catalyst = "479239e8-5488-4da2-87a7-35f2df7eef83"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DiffEqParamEstim = "1130ab10-4a5a-5621-a13d-e4788d82bd4c"
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-GlobalSensitivity = "af5da776-676b-467e-8baf-acd8249e4f0f"
+DynamicalSystems = "61744808-ddfa-5f27-97ff-6e42cc95d634"
+GlobalSensitivity = "af5da776-676b-467e-8baf-acd8249e4f0f"#
 HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
 IncompleteLU = "40713840-3770-5561-ab4c-a76e7d0d7895"
 JumpProcesses = "ccbc3e58-028d-4f4c-8cd5-9ae44345cda5"

@@ -41,8 +41,8 @@ pages = Any[
         "steady_state_functionality/homotopy_continuation.md",
         "steady_state_functionality/nonlinear_solve.md",
         "steady_state_functionality/steady_state_stability_computation.md",        
-        "steady_state_functionality/bifurcation_diagrams.md"
-        # Dynamical systems analysis.
+        "steady_state_functionality/bifurcation_diagrams.md",
+        "steady_state_functionality/dynamical_systems.md"
     ],
     "Inverse Problems" => Any[
         # Inverse problems introduction.
