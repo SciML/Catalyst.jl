@@ -123,7 +123,7 @@ nothing # hide
 ### [Using a sparse Jacobian](@id ode_simulation_performance_sparse_jacobian)
 For a system with $n$ variables, the Jacobian will be an $n\times n$ matrix. This means that, as $n$ becomes large, the Jacobian can become *very* large, potentially causing a significant strain on memory. In these cases, most Jacobian entries are typically $0$. This means that a [*sparse*](https://en.wikipedia.org/wiki/Sparse_matrix) Jacobian (rather than a *dense* one, which is the default) can be advantageous. To designate sparse Jacobian usage, simply provide the `sparse = true` option when constructing an `ODEProblem`:
 ```@example ode_simulation_performance_3
-oprob = ODEProblem(brusselator, u0, tspan, p; sparse = true)
+oprob = ODEProblem(brusselator, u0, tspan, ps; sparse = true)
 nothing # hide
 ```
 
@@ -186,12 +186,12 @@ mm_model = @reaction_network begin
 end
 ```
 The model can be simulated, showing how $P$ is produced from $S$:
-```@example ode_simulation_performance_3
+```@example ode_simulation_performance_4
 using OrdinaryDiffEq, Plots
 u0 = [:S => 1.0, :E => 1.0, :SE => 0.0, :P => 0.0]
 tspan = (0.0, 50.0)
-p = [:kB => 1.0, :kD => 0.1, :kP => 0.5, :d => 0.1]
-oprob = ODEProblem(mm_model, u0, tspan, p)
+ps = [:kB => 1.0, :kD => 0.1, :kP => 0.5, :d => 0.1]
+oprob = ODEProblem(mm_model, u0, tspan, ps)
 sol = solve(oprob, Tsit5())
 plot(sol)
 ```
@@ -236,6 +236,7 @@ plot(0.01:0.01:1.0, map(sol -> sol[:P][end], esol.u), xguide = "kP", yguide = "P
 
 Above, we have simply used `EnsembleProblem` as a convenient interface to run a large number of similar simulations. However, these problems have the advantage that they allow the passing of an *ensemble algorithm* to the `solve` command, which describes a strategy for parallelising the simulations. By default, `EnsembleThreads` is used. This parallelises the simulations using [multithreading](https://en.wikipedia.org/wiki/Multithreading_(computer_architecture)) (parallelisation within a single process), which is typically advantageous for small problems on shared memory devices. An alternative is `EnsembleDistributed` which instead parallelises the simulations using [multiprocessing](https://en.wikipedia.org/wiki/Multiprocessing) (parallelisation across multiple processes). To do this, we simply supply this additional solver to the solve command:
 ```@example ode_simulation_performance_4
+addprocs(4)
 esol = solve(eprob, Tsit5(), EnsembleDistributed(); trajectories=100)
 nothing # hide
 ```

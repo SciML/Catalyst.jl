@@ -19,6 +19,7 @@ ps = [:v0 => 0.1, :v => 2.5, :K => 40.0, :n => 4.0, :deg => 0.01]
 ```
 We wish to simulate it as an SDE. Rather than performing a single simulation, however, we want to perform multiple ones. Here, we first create a normal `SDEProblem`, and use it as the single input to a `EnsembleProblem` (`EnsembleProblem` are created similarly for ODE and jump simulations, but the `ODEProblem` or `JumpProblem` is used instead).
 ```@example ensemble
+using StochasticDiffEq
 sprob = SDEProblem(sa_model, u0, tspan, ps)
 eprob = EnsembleProblem(sprob)
 nothing # hide
@@ -45,7 +46,8 @@ Previously, we assumed that each simulation used the same initial conditions and
 
 Here, we first create an `ODEProblem` of our previous self-activation loop:
 ```@example ensemble
-oprob = ODEProblem(sa_model, u0, tspan, p)
+using OrdinaryDiffEq
+oprob = ODEProblem(sa_model, u0, tspan, ps)
 nothing # hide
 ```
 Next, we wish to simulate the model for a range of initial conditions of $X$`. To do this we create a problem function, which takes the following arguments:

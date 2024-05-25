@@ -80,6 +80,7 @@ Above, we investigated the impact of linear pathways' lengths on their behaviour
 First, we create a function, `generate_lp`, which creates a linear pathway model of length `n`. It utilises [*vector variables*](@ref ref) to create an arbitrary number of species, and also creates an [observable](@ref ref) for the final species of the chain.
 ```@example programmatic_generative_linear_pathway_generative
 using Catalyst # hide
+t = default_t()
 function generate_lp(n)
     # Creates a vector `X` with n+1 species.
     @species X(t)[1:n+1]

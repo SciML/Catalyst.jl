@@ -21,6 +21,7 @@ Here, `<-->` is used to create a bi-directional reaction (with forward rate `kP`
 ## [Basic syntax](@id dsl_description_basic_syntax)
 The basic syntax of the DSL is
 ```@example dsl_basics
+using Catalyst # hide
 rn = @reaction_network begin
   2.0, X --> Y
   1.0, Y --> X
