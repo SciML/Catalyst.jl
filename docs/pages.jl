@@ -6,8 +6,8 @@ pages = Any[
         # Advanced introduction.
     ],
     "Model Creation and Properties" => Any[
-        "model_creation/dsl_description.md",
-        # DSL - Advanced
+        "model_creation/dsl_basics.md",
+        "model_creation/dsl_advanced.md",
         "model_creation/programmatic_CRN_construction.md",
         "model_creation/compositional_modeling.md",
         "model_creation/constraint_equations.md",
@@ -18,18 +18,20 @@ pages = Any[
         "model_creation/network_analysis.md",
         "model_creation/chemistry_related_functionality.md",
         "Model creation examples" => Any[
-            "model_creation/examples/basic_CRN_examples.md",
+            "model_creation/examples/basic_CRN_library.md",
             "model_creation/examples/programmatic_generative_linear_pathway.md",
             "model_creation/examples/hodgkin_huxley_equation.md",
             "model_creation/examples/smoluchowski_coagulation_equation.md"
         ]
     ],
     "Model simulation" => Any[
+        "model_simulation/simulation_introduction.md",
         # Simulation introduction.
-        # Simulation plotting.
+        "model_simulation/simulation_plotting.md",
         "model_simulation/simulation_structure_interfacing.md",
         "model_simulation/ensemble_simulations.md",
         # Stochastic simulation statistical analysis.
+        "model_simulation/ode_simulation_performance.md",
         # ODE Performance considerations/advice.
         # SDE Performance considerations/advice.
         # Jump Performance considerations/advice.
