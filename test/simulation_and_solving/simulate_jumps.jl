@@ -6,6 +6,7 @@ using Catalyst, JumpProcesses, Statistics, Test
 # Sets stable rng number.
 using StableRNGs
 rng = StableRNG(12345)
+seed = rand(rng, 1:100)
 
 # Fetch test functions and networks.
 include("../test_functions.jl")
