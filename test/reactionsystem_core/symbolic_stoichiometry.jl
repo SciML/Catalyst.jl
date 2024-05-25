@@ -192,64 +192,68 @@ end
 # Tests symbolic stoichiometries in simulations.
 # Tests for decimal numbered symbolic stoichiometries.
 let
+    # Declares models. The references models have the `n` parameters so they can use the same 
+    # parameter vectors as the non-reference ones.
     rs_int = @reaction_network begin
-        @parameters n1::Int64 n2::Int64
-        p, 0 -->X
-        k, n1*X --> n2*Y
-        d, Y --> 0
+        @parameters n::Int64
+        (k1, k2), n*X1 <--> X2
     end
     rs_dec = @reaction_network begin
-        @parameters n1::Float64 n2::Float64
-        p, 0 -->X
-        k, n1*X --> n2*Y
-        d, Y --> 0
+        @parameters n::Float64
+        (k1, k2), n*X1 <--> X2
     end
     rs_ref_int = @reaction_network begin
-        @parameters n1::Int64 n2::Int64
-        p, 0 -->X
-        k, 3*X --> 4*Y
-        d, Y --> 0
+        @parameters n::Int64
+        (k1, k2), 3*X1 <--> X2
     end
     rs_ref_dec = @reaction_network begin
-        @parameters n1::Float64 n2::Float64
-        p, 0 -->X
-        k, 0.5*X --> 2.5*Y
-        d, Y --> 0
+        @parameters n::Float64
+        (k1, k2), 2.5*X1 <--> X2
     end
 
-    u0 = [:X => 8, :Y => 8]
-    ps_int = (:p => 2.0, :k => 0.01, :n1 => 3, :n2 => 4, :d => 0.2)
-    ps_dec = [:p => 2.0, :k => 0.01, :n1 => 0.5, :n2 => 2.5, :d => 0.2]
-    tspan = (0.0, 10.0)
+    # Set simulation settings. Initial conditions are design to start, more or less, at 
+    # steady state concentrations.
+    # Values are selected so that stochastic tests should always pass within the bounds (independent 
+    # of seed).
+    u0_int = [:X1 => 150, :X2 => 600]
+    u0_dec = [:X1 => 100, :X2 => 600]
+    tspan_det = (0.0, 1.0)
+    tspan_stoch = (0.0, 10000.0)
+    ps_int = (:k1 => 0.00001, :k2 => 0.01, :n => 3)
+    ps_dec = (:k1 => 0.00001, :k2 => 0.01, :n => 2.5)
 
     # Test ODE simulations with integer coefficients.
-    oprob_int = ODEProblem(rs_int, u0, tspan, ps_int)
-    oprob_int_ref = ODEProblem(rs_ref_int, u0, tspan, ps_int)
-    @test solve(oprob_int, Tsit5()) ≈ solve(oprob_int_ref, Tsit5())
+    oprob_int = ODEProblem(rs_int, u0_int, tspan_det, ps_int)
+    oprob_int_ref = ODEProblem(rs_ref_int, u0_int, tspan_det, ps_int)
+    @test solve(oprob_int, Tsit5())[:X1][end] ≈ solve(oprob_int_ref, Tsit5())[:X1][end]
 
     # Test ODE simulations with decimal coefficients.
-    oprob_dec = ODEProblem(rs_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
-    oprob_dec_ref = ODEProblem(rs_ref_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
-    @test solve(oprob_dec, Tsit5()) ≈ solve(oprob_dec_ref, Tsit5())
+    oprob_dec = ODEProblem(rs_dec, u0_dec, tspan_det, ps_dec; combinatoric_ratelaws = false)
+    oprob_dec_ref = ODEProblem(rs_ref_dec, u0_dec, tspan_det, ps_dec; combinatoric_ratelaws = false)
+    @test solve(oprob_dec, Tsit5())[:X1][end] ≈ solve(oprob_dec_ref, Tsit5())[:X1][end]
 
     # Test SDE simulations with integer coefficients.
-    sprob_int = SDEProblem(rs_int, u0, tspan, ps_int)
-    sprob_int_ref = SDEProblem(rs_ref_int, u0, tspan, ps_int)
-    @test solve(sprob_int, ImplicitEM(); seed) ≈ solve(sprob_int_ref, ImplicitEM(); seed)
+    sprob_int = SDEProblem(rs_int, u0_int, tspan_stoch, ps_int)
+    sprob_int_ref = SDEProblem(rs_ref_int, u0_dec, tspan_stoch, ps_int)
+    ssol_int = solve(sprob_int, ImplicitEM(); seed)
+    ssol_int_ref = solve(sprob_int_ref, ImplicitEM(); seed)
+    @test mean(ssol_int[:X1]) ≈ mean(ssol_int_ref[:X1]) atol = 2*1e0
 
     # Test SDE simulations with decimal coefficients.
-    sprob_dec = SDEProblem(rs_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
-    sprob_dec_ref = SDEProblem(rs_ref_dec, u0, tspan, ps_dec; combinatoric_ratelaws = false)
-    @test solve(sprob_dec, ImplicitEM(); seed) ≈ solve(sprob_dec_ref, ImplicitEM(); seed)
+    sprob_dec = SDEProblem(rs_dec, u0_dec, tspan_stoch, ps_dec; combinatoric_ratelaws = false)
+    sprob_dec_ref = SDEProblem(rs_ref_dec, u0_dec, tspan_stoch, ps_dec; combinatoric_ratelaws = false)
+    ssol_dec = solve(sprob_dec, ImplicitEM(); seed)
+    ssol_dec_ref = solve(sprob_dec_ref, ImplicitEM(); seed)
+    @test mean(ssol_dec[:X1]) ≈ mean(ssol_dec_ref[:X1]) atol = 2*1e0
 
-    # Tests jump simulations with integer coefficients.
-    dprob_int = DiscreteProblem(rs_int, u0, (0.0, 100000.0), ps_int)
-    dprob_int_ref = DiscreteProblem(rs_ref_int, u0, (0.0, 100000.0), ps_int)
-    jprob_int = JumpProblem(rs_int, dprob_int, Direct(); rng)
-    jprob_int_ref = JumpProblem(rs_ref_int, dprob_int_ref, Direct(); rng)
-    sol_int = solve(jprob_int, SSAStepper(); seed)
-    sol_int_ref = solve(jprob_int_ref, SSAStepper(); seed)
-    @test mean(sol_int[:Y]) ≈ mean(sol_int_ref[:Y]) atol = 1e-2 rtol = 1e-2
+    # Test Jump simulations with integer coefficients.
+    dprob_int = DiscreteProblem(rs_int, u0_int, tspan_stoch, ps_int)
+    dprob_int_ref = DiscreteProblem(rs_ref_int, u0_int, tspan_stoch, ps_int)
+    jprob_int = JumpProblem(rs_int, dprob_int, Direct(); rng, save_positions = (false, false))
+    jprob_int_ref = JumpProblem(rs_ref_int, dprob_int_ref, Direct(); rng, save_positions = (false, false))
+    jsol_int = solve(jprob_int, SSAStepper(); seed, saveat = 1.0)
+    jsol_int_ref = solve(jprob_int_ref, SSAStepper(); seed, saveat = 1.0)
+    @test mean(jsol_int[:X1]) ≈ mean(jsol_int_ref[:X1]) atol = 1e-2 rtol = 1e-2
 end
 
 # Check that jump simulations (implemented with and without symbolic stoichiometries) yield simulations

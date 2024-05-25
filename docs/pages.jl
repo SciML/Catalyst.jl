@@ -6,8 +6,8 @@ pages = Any[
         # Advanced introduction.
     ],
     "Model Creation and Properties" => Any[
-        "model_creation/dsl_description.md",
-        # DSL - Advanced
+        "model_creation/dsl_basics.md",
+        "model_creation/dsl_advanced.md",
         "model_creation/programmatic_CRN_construction.md",
         "model_creation/compositional_modeling.md",
         "model_creation/constraint_equations.md",
@@ -18,16 +18,18 @@ pages = Any[
         "model_creation/network_analysis.md",
         "model_creation/chemistry_related_functionality.md",
         "Model creation examples" => Any[
-            "model_creation/examples/basic_CRN_examples.md",
+            "model_creation/examples/basic_CRN_library.md",
+            "model_creation/examples/programmatic_generative_linear_pathway.md",
             "model_creation/examples/hodgkin_huxley_equation.md",
             "model_creation/examples/smoluchowski_coagulation_equation.md"
         ]
     ],
     "Model simulation" => Any[
+        "model_simulation/simulation_introduction.md",
         # Simulation introduction.
-        # Simulation plotting.
+        "model_simulation/simulation_plotting.md",
         "model_simulation/simulation_structure_interfacing.md",
-        "model_simulation/TOBEREMOVED_advanced_simulations.md",# Monte Carlo/Ensemble simulations.        
+        "model_simulation/ensemble_simulations.md",
         # Stochastic simulation statistical analysis.
         "model_simulation/ode_simulation_performance.md",
         # ODE Performance considerations/advice.
@@ -48,10 +50,10 @@ pages = Any[
         # "inverse_problems/petab_ode_param_fitting.md",
         # ODE parameter fitting using Turing.
         # SDE/Jump fitting.
-        # Non-parameter fitting optimisation.
+        "inverse_problems/behaviour_optimisation.md",
         "inverse_problems/structural_identifiability.md",
         # Practical identifiability.
-        # GLobal and local sensitivity analysis.
+        "inverse_problems/global_sensitivity_analysis.md",
         "Inverse problem examples" => Any[
             "inverse_problems/examples/ode_fitting_oscillation.md"
         ]

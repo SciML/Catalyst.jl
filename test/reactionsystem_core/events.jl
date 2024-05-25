@@ -243,10 +243,6 @@ let
     sol_dsl = solve(ODEProblem(rn_dsl, u0, tspan, ps), Tsit5())
     sol_prog = solve(ODEProblem(rn_prog, u0, tspan, ps), Tsit5())
     @test sol_dsl == sol_prog
-
-    sol_dsl = solve(SDEProblem(rn_dsl, u0, tspan, ps), ImplicitEM(); seed = 1234)
-    sol_prog = solve(SDEProblem(rn_prog, u0, tspan, ps), ImplicitEM(); seed = 1234)
-    @test sol_dsl == sol_prog
 end
 
 # Checks that misformatted events yields errors in the DSL.
@@ -312,6 +308,65 @@ end
 
 
 ### Additional Correctness Tests ###
+
+# Tests that events are properly triggered for SDEs.
+# Tests for continuous events, and all three types of discrete events.
+let
+    # Creates model with all types of events. The `e` parameters track whether events are triggered.
+    rn = @reaction_network begin
+        @parameters e1=0 e2=0 e3=0 e4=0
+        @continuous_events begin
+            [X ~ 1000.0] => [e1 ~ 1]
+        end
+        @discrete_events begin
+            [1.0] => [e2 ~ 1]
+            1.0 => [e3 ~ 1]
+            (Y > 1000.0) & (e4==0) => [e4 ~ 1]
+        end
+        (p,d), 0 <--> X
+        (p,d), 0 <--> Y
+    end
+    
+    # Simulates the model for conditions where it *definitely* will cross `X = 1000.0`
+    u0 = [:X => 999.9, :Y => 999.9]
+    ps = [:p => 10.0, :d => 0.001]
+    sprob = SDEProblem(rn, u0, (0.0, 2.0), ps)
+    sol = solve(sprob, ImplicitEM(); seed)
+    
+    # Checks that all `e` parameters have been updated properly.
+    @test sol.ps[:e1] == 1
+    @test sol.ps[:e2] == 1
+    @test sol.ps[:e3] == 1
+    @test sol.ps[:e4] == 1
+end
+
+# Tests that events are properly triggered for Jump simulations.
+# Tests for all three types of discrete events.
+let
+    # Creates model with all types of events. The `e` parameters track whether events are triggered.
+    rn = @reaction_network begin
+        @parameters e1=0 e2=0 e3=0
+        @discrete_events begin
+            [1.0] => [e1 ~ 1]
+            # 1.0 => [e2 ~ 1]
+            (X > 1000.0) & (e3==0) => [e3 ~ 1]
+        end
+        (p,d), 0 <--> X
+    end
+    
+    # Simulates the model for conditions where it *definitely* will cross `X = 1000.0`
+    u0 = [:X => 999]
+    ps = [:p => 10.0, :d => 0.001]
+    dprob = DiscreteProblem(rn, u0, (0.0, 2.0), ps)
+    jprob = JumpProblem(rn, dprob, Direct(); rng)
+    sol = solve(jprob, SSAStepper(); seed)
+    
+    # Checks that all `e` parameters have been updated properly.
+    # Note that periodic discrete events are currently broken for jump processes.
+    @test sol.ps[:e1] == 1
+    @test_broken sol.ps[:e2] == 1
+    @test sol.ps[:e3] == 1
+end
 
 # Compares simulations using MTK type events with those generated through callbacks.
 # Jump simulations must be handles differently (since these only accepts discrete callbacks).

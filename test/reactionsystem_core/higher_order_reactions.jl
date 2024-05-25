@@ -103,7 +103,7 @@ let
     dprob_alt2 = DiscreteProblem(u0_alt2, (0.0, 100.0), ps_alt2)
     jprob_alt2 = JumpProblem(dprob_alt2, Direct(), higher_order_network_alt2...; rng = StableRNG(1234))
 
-    # Simualtes the models.
+    # Simulates the models.
     sol_base = solve(jprob_base, SSAStepper(); seed, saveat = 1.0)
     sol_alt1 = solve(jprob_alt1, SSAStepper(); seed, saveat = 1.0)
     sol_alt2 = solve(jprob_alt2, SSAStepper(); seed, saveat = 1.0)
