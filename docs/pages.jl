@@ -31,6 +31,7 @@ pages = Any[
         "model_simulation/simulation_structure_interfacing.md",
         "model_simulation/ensemble_simulations.md",
         # Stochastic simulation statistical analysis.
+        "model_simulation/ode_simulation_performance.md",
         # ODE Performance considerations/advice.
         # SDE Performance considerations/advice.
         # Jump Performance considerations/advice.
