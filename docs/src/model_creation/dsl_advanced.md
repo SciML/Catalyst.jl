@@ -182,7 +182,7 @@ end
 It is possible to add both default values and metadata to a parameter/species. In this case, first provide the default value, and next the metadata. I.e. to in the above example set $kA$'s default value to $1.0$ we use
 ```@example dsl_advanced_metadata
 two_state_system = @reaction_network begin
-  @parameters kA=1.0 [description="X's activation rate", bounsd=(0.01,10.0)]
+  @parameters kA=1.0 [description="X's activation rate", bounds=(0.01,10.0)]
   (ka,kD), Xi <--> Xa
 end
 ```
@@ -191,10 +191,10 @@ When designating metadata for species/parameters in `begin ... end` blocks the s
 ```@example dsl_advanced_metadata
 two_state_system = @reaction_network begin
   @parameters begin
-    kA, [description="X's activation rate", bounds=(0.01,10.0)]
-    kD = 1.0, [description="X's deactivation rate"]
+      kA, [description="X's activation rate", bounds=(0.01,10.0)]
+      kD = 1.0, [description="X's deactivation rate"]
   end
-  (ka,kD), Xi <--> Xa
+  (kA,kD), Xi <--> Xa
 end
 ```
 
@@ -350,7 +350,7 @@ sol[:Xtot]
 to get a vector with `Xtot`'s value throughout the simulation. We can also use
 ```@example dsl_advanced_observables
 using Plots
-plot(sol; idxs = [:Xtot, :Ytot])
+plot(sol; idxs = :Xtot)
 ```
 to plot the observables (rather than the species).
 
@@ -378,7 +378,7 @@ Observables are by default considered [variables](@ref ref) (not species). To de
 ```@example dsl_advanced_observables
 rn = @reaction_network begin
   @species Xtot(t)
-  @observables Xtot ~ X + n*XnXY  
+  @observables Xtot ~ X + n*Xn  
   (kB,kD), n*X <--> Xn
 end
 nothing # hide

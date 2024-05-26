@@ -117,6 +117,7 @@ nothing # hide
 ```
 We can now simulate linear pathways of arbitrary lengths using a simple syntax. We use this to recreate our previous result from the DSL:
 ```@example programmatic_generative_linear_pathway_generative
+using OrdinaryDiffEq, Plots # hide
 sol_n3 = solve(generate_oprob(3))
 sol_n10 = solve(generate_oprob(10))
 plot(sol_n3; idxs = :Xend, label = "n = 3")

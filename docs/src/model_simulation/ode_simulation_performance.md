@@ -235,7 +235,7 @@ plot(0.01:0.01:1.0, map(sol -> sol[:P][end], esol.u), xguide = "kP", yguide = "P
 ```
 
 Above, we have simply used `EnsembleProblem` as a convenient interface to run a large number of similar simulations. However, these problems have the advantage that they allow the passing of an *ensemble algorithm* to the `solve` command, which describes a strategy for parallelising the simulations. By default, `EnsembleThreads` is used. This parallelises the simulations using [multithreading](https://en.wikipedia.org/wiki/Multithreading_(computer_architecture)) (parallelisation within a single process), which is typically advantageous for small problems on shared memory devices. An alternative is `EnsembleDistributed` which instead parallelises the simulations using [multiprocessing](https://en.wikipedia.org/wiki/Multiprocessing) (parallelisation across multiple processes). To do this, we simply supply this additional solver to the solve command:
-```@example ode_simulation_performance_4
+```julia
 esol = solve(eprob, Tsit5(), EnsembleDistributed(); trajectories=100)
 nothing # hide
 ```

@@ -8,7 +8,7 @@ Our model consists of 3 species: $X$ (the input node), $Y$ (an intermediary), an
 ```@example behaviour_optimization
 using Catalyst
 incoherent_feed_forward = @reaction_network begin
-    @discrete_events [10.0] ~ [p ~ 10*p]
+    @discrete_events [10.0] => [pX ~ 10*pX]
     pX, 0 --> X
     pY*X, 0 --> Y
     pZ*X/Y, 0 --> Z
