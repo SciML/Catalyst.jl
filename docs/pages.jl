@@ -50,7 +50,7 @@ pages = Any[
         # "inverse_problems/petab_ode_param_fitting.md",
         # ODE parameter fitting using Turing.
         # SDE/Jump fitting.
-        "inverse_problems/behaviour_optimisation.md",
+        # "inverse_problems/behaviour_optimisation.md", # Currently fails due to an Optimization.jl issue.
         "inverse_problems/structural_identifiability.md",
         # Practical identifiability.
         "inverse_problems/global_sensitivity_analysis.md",
