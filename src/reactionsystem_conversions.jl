@@ -121,7 +121,7 @@ function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
 
     for (j, rx) in enumerate(get_rxs(rs))
         rlsqrt = sqrt(abs(oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)))
-        has_noise_scaling(rx) && (rlsqrt *= get_noise_scaling(rx))
+        hasnoisescaling(rx) && (rlsqrt *= getnoisescaling(rx))
         remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
 
         for (spec, stoich) in rx.netstoich

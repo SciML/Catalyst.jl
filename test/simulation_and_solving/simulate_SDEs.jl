@@ -325,8 +325,8 @@ let
     @test issetequal([X, H], species(rs))
     @test issetequal([X, H, h], unknowns(rs))
     @test issetequal([p, d, η], parameters(rs))
-    @test isequal(get_noise_scaling(reactions(rs)[1]), η*H + 1)
-    @test isequal(get_noise_scaling(reactions(rs)[2]), h)
+    @test isequal(getnoisescaling(reactions(rs)[1]), η*H + 1)
+    @test isequal(getnoisescaling(reactions(rs)[2]), h)
 end
 
 # Tests the `remake_noise_scaling` function.
@@ -369,9 +369,9 @@ let
 
     # Checks that systems have the correct noise scaling terms.
     rn = set_default_noise_scaling(rn, 0.5)
-    rn1_noise_scaling = [get_noise_scaling(rx) for rx in Catalyst.get_rxs(rn)]
-    rn2_noise_scaling = [get_noise_scaling(rx) for rx in Catalyst.get_rxs(Catalyst.get_systems(rn)[1])]
-    rn_noise_scaling = [get_noise_scaling(rx) for rx in reactions(rn)]
+    rn1_noise_scaling = [getnoisescaling(rx) for rx in Catalyst.get_rxs(rn)]
+    rn2_noise_scaling = [getnoisescaling(rx) for rx in Catalyst.get_rxs(Catalyst.get_systems(rn)[1])]
+    rn_noise_scaling = [getnoisescaling(rx) for rx in reactions(rn)]
     @test issetequal(rn1_noise_scaling, [2.0, 0.5])
     @test issetequal(rn2_noise_scaling, [5.0, 0.5])
     @test issetequal(rn_noise_scaling, [2.0, 0.5, 5.0, 0.5])

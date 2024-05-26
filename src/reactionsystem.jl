@@ -497,7 +497,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in; spa
         end
 
         # Extract all quantities encountered in relevant `Reaction` metadata.
-        has_noise_scaling(rx) && findvars!(ps, us, get_noise_scaling(rx), ivs, vars)
+        hasnoisescaling(rx) && findvars!(ps, us, getnoisescaling(rx), ivs, vars)
     end
 
     # Extracts any species, variables, and parameters that occur in (non-reaction) equations.

@@ -1,7 +1,7 @@
 # [The Catalyst DSL - Introduction](@id dsl_description)
 In the [introduction to Catalyst](@ref introduction_to_catalyst) we described how the `@reaction_network` [macro](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros) can be used to create chemical reaction network (CRN) models. This macro enables a so-called [domain-specific language](https://en.wikipedia.org/wiki/Domain-specific_language) (DSL) for creating CRN models. This tutorial will give a basic introduction on how to create Catalyst models using this macro (from now onwards called "*the Catalyst DSL*"). A [follow-up tutorial](@ref dsl_advanced_options) will describe some of the DSL's more advanced features.
 
-The Catalyst DSL generates a [`ReactionSystem`](@ref) (the [julia structure](https://docs.julialang.org/en/v1/manual/types/#Composite-Types) Catalyst uses to represent CRN models). These can be created through alternative methods (e.g. [programmatically](@ref programmatic_CRN_construction) or [compositionally](@ref compositional_modeling)). A summary of the various ways to create `ReactionSystems`s can be found [here](@ref ref). [Previous](@ref ref) and [following](@ref ref) tutorials describe how to simulate models once they have been created using the DSL. This tutorial will solely focus on model creation.
+The Catalyst DSL generates a [`ReactionSystem`](@ref) (the [julia structure](https://docs.julialang.org/en/v1/manual/types/#Composite-Types) Catalyst uses to represent CRN models). These can be created through alternative methods (e.g. [programmatically](@ref programmatic_CRN_construction) or [compositionally](@ref compositional_modeling)). A summary of the various ways to create `ReactionSystems`s can be found [here](@ref ref). [Previous](@ref ref) and [following](@ref simulation_intro) tutorials describe how to simulate models once they have been created using the DSL. This tutorial will solely focus on model creation.
 
 Before we begin, we will first load the Catalyst package (which is required to run the code).
 ```@example dsl_basics_intro
@@ -9,14 +9,14 @@ using Catalyst
 ```
 
 ### [Quick-start summary](@id dsl_description_quick_start)
-The DSL is initiated through the `@reaction_network` macro, which is followed by one line for each reaction. Each reaction consists of a *rate*, followed lists first of the substrates and next of the products. E.g. a [Michaelis-Menten enzyme kinetics system](@ref ref) can be written as 
+The DSL is initiated through the `@reaction_network` macro, which is followed by one line for each reaction. Each reaction consists of a *rate*, followed lists first of the substrates and next of the products. E.g. a [Michaelis-Menten enzyme kinetics system](@ref basic_CRN_library_mm) can be written as 
 ```@example dsl_basics_intro
 rn = @reaction_network begin
   (kB,kD), S + E <--> SE
   kP, SE --> P + E
 end
 ```
-Here, `<-->` is used to create a bi-directional reaction (with forward rate `kP` and backward rate `kD`). Next, the model (stored in the variable `rn`) can be used as input to various types of [simulations](@ref ref).
+Here, `<-->` is used to create a bi-directional reaction (with forward rate `kP` and backward rate `kD`). Next, the model (stored in the variable `rn`) can be used as input to various types of [simulations](@ref simulation_intro).
 
 ## [Basic syntax](@id dsl_description_basic_syntax)
 The basic syntax of the DSL is
@@ -37,7 +37,7 @@ Each reaction line declares, in order, the rate, the substrate(s), and the produ
 Finally, `rn = ` is used to store the model in the variable `rn` (a normal Julia variable, which does not need to be called `rn`).
 
 ## [Defining parameters and species in the DSL](@id dsl_description_parameters_basics)
-Typically, the rates are not constants, but rather parameters (which values can be set e.g. at [the beginning of each simulation](@ref ref)). To set parametric rates, simply use whichever symbol you wish to represent your parameter with. E.g. to set the above rates to `a` and `b`, we use:
+Typically, the rates are not constants, but rather parameters (which values can be set e.g. at [the beginning of each simulation](@ref simulation_intro_ODEs)). To set parametric rates, simply use whichever symbol you wish to represent your parameter with. E.g. to set the above rates to `a` and `b`, we use:
 ```@example dsl_basics
 rn1 = @reaction_network begin
   a, X --> Y
@@ -89,7 +89,7 @@ rn5 = @reaction_network begin
   kD, X2 --> 2X
 end
 ```
-Reactants whose stoichiometries are not defined are assumed to have stoichiometry `1`. Any integer number can be used, furthermore, [decimal numbers and parameters can also be used as stoichiometries](@ref ref). A discussion of non-unitary (i.e. not equal to `1`) stoichiometries affecting the created model can be found [here](@ref ref).
+Reactants whose stoichiometries are not defined are assumed to have stoichiometry `1`. Any integer number can be used, furthermore, [decimal numbers and parameters can also be used as stoichiometries](@ref dsl_description_stoichiometries). A discussion of non-unitary (i.e. not equal to `1`) stoichiometries affecting the created model can be found [here](@ref ref).
 
 Stoichiometries can be combined with `()` to define them for multiple reactants. Here, the following (mock) model declares the same reaction twice, both with and without this notation:
 ```@example dsl_basics
@@ -200,7 +200,7 @@ rn_13 = @reaction_network begin
     kP*A, 0 --> P
 end
 ```
-Here, `P`'s production rate will be reduced as `A` decays. We can [print the ODE this model produces with `Latexify`](@ref ref):
+Here, `P`'s production rate will be reduced as `A` decays. We can [print the ODE this model produces with `Latexify`](@ref visualisation_latex):
 ```@example dsl_basics
 using Latexify
 latexify(rn_13; form=:ode)
@@ -222,7 +222,7 @@ Here, while these models will generate identical ODE, SDE, and jump simulations,
     While `rn_13` and `rn_13_alt` will generate equivalent simulations, for jump simulations, the first model will have [reduced performance](@ref ref) (which generally are more performant when rates are constant).
 
 !!! danger
-    Catalyst automatically infers whether quantities appearing in the DSL are species or parameters (as described [here](@ref dsl_advanced_options_declaring_species_and_parameters)). Generally, anything that does not appear as a reactant is inferred to be a parameter. This means that if you want to model a reaction activated by a species (e.g. `kp*A, 0 --> P`), but that species does not occur as a reactant, it will be interpreted as a parameter. This can be handled by [manually declaring the system species](@ref dsl_advanced_options_declaring_species_and_parameters). A full example of how to do this for this example can be found [here](@ref ref).
+    Catalyst automatically infers whether quantities appearing in the DSL are species or parameters (as described [here](@ref dsl_advanced_options_declaring_species_and_parameters)). Generally, anything that does not appear as a reactant is inferred to be a parameter. This means that if you want to model a reaction activated by a species (e.g. `kp*A, 0 --> P`), but that species does not occur as a reactant, it will be interpreted as a parameter. This can be handled by [manually declaring the system species](@ref dsl_advanced_options_declaring_species_and_parameters).
 
 Above we used a simple example where the rate was the product of a species and a parameter. However, any valid Julia expression of parameters, species, and values can be used. E.g the following is a valid model:
 ```@example dsl_basics

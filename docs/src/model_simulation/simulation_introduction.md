@@ -1,7 +1,7 @@
 # [Model Simulation Introduction](@id simulation_intro)
 Catalyst's core functionality is the creation of *chemical reaction network* (CRN) models that can be simulated using ODE, SDE, and jump simulations. How such simulations are carried out has already been described in [Catalyst's introduction](@ref introduction_to_catalyst). This page provides a deeper introduction, giving some additional background and introducing various simulation-related options. 
 
-Here we will focus on the basics, with other sections of the simulation documentation describing various specialised features, or giving advice on performance. Anyone who plans on using Catalyst's simulation functionality extensively is recommended to also read the documentation on [solution plotting](@ref ref), and on how to [interact with simulation problems, integrators, and solutions](@ref ref). Anyone with an application for which performance is critical should consider reading the corresponding page on performance advice for [ODEs](@ref ref), [SDEs](@ref ref), or [jump simulations](@ref ref).
+Here we will focus on the basics, with other sections of the simulation documentation describing various specialised features, or giving advice on performance. Anyone who plans on using Catalyst's simulation functionality extensively is recommended to also read the documentation on [solution plotting](@ref simulation_plotting), and on how to [interact with simulation problems, integrators, and solutions](@ref simulation_structure_interfacing). Anyone with an application for which performance is critical should consider reading the corresponding page on performance advice for [ODEs](@ref ode_simulation_performance), [SDEs](@ref ref), or [jump simulations](@ref ref).
 
 ### [Background to CRN simulations](@id simulation_intro_theory)
 This section provides some brief theory on CRN simulations. For details on how to carry out these simulations in actual code, please skip to the following sections.
@@ -40,9 +40,9 @@ These three different approaches are summed up in the following table:
   </tr>
   <tr>
     <td class="tg-0pky">Example simulation methods</td>
-    <td class="tg-0pky">[Euler](https://en.wikipedia.org/wiki/Euler_method#:~:text=The%20Euler%20method%20is%20a,proportional%20to%20the%20step%20size.), [Runge-Kutta](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods)</td>
-    <td class="tg-0pky">[Euler-Maruyama](https://en.wikipedia.org/wiki/Euler%E2%80%93Maruyama_method), [Milstein](https://en.wikipedia.org/wiki/Milstein_method)</td>
-    <td class="tg-0pky">[Gillespie](https://en.wikipedia.org/wiki/Gillespie_algorithm), [Sorting direct](https://pubmed.ncbi.nlm.nih.gov/16321569/)</td>
+    <td class="tg-0pky"><a href="https://en.wikipedia.org/wiki/Euler_method">Euler</a>, <a href="https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods">Runge-Kutta</a></td>
+    <td class="tg-0pky"><a href="https://en.wikipedia.org/wiki/Euler%E2%80%93Maruyama_method">Euler-Maruyama</a>, <a href="https://en.wikipedia.org/wiki/Milstein_method">Milstein</a></td>
+    <td class="tg-0pky"><a href="https://en.wikipedia.org/wiki/Gillespie_algorithm">Gillespie</a>, <a href="https://pubmed.ncbi.nlm.nih.gov/16321569/">Sorting direct</a></td>
   </tr>
   <tr>
     <td class="tg-0pky">Species units</td>
@@ -70,18 +70,18 @@ These three different approaches are summed up in the following table:
   </tr>
   <tr>
     <td class="tg-0pky">Simulation package</td>
-    <td class="tg-0pky">[OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl)</td>
-    <td class="tg-0pky">[StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl)</td>
-    <td class="tg-0pky">[JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl)</td>
+    <td class="tg-0pky"><a href="https://github.com/SciML/OrdinaryDiffEq.jl">OrdinaryDiffEq.jl</a></td>
+    <td class="tg-0pky"><a href="https://github.com/SciML/StochasticDiffEq.jl">StochasticDiffEq.jl</a></td>
+    <td class="tg-0pky"><a href="https://github.com/SciML/JumpProcesses.jl">JumpProcesses.jl</a></td>
   </tr>
 </tbody>
 </table>
 ```
 
 ## [Performing (ODE) simulations](@id simulation_intro_ODEs)
-The following section gives a (more throughout than [previous]) introduction of how to simulate Catalyst models. This is exemplified using ODE simulations (some ODE-specific options will also be discussed). Later on, we will describe options specific to [SDE](@ref ref) and [jump](@ref ref) simulations. All ODE simulations are performed using the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package, which full documentation can be found [here](https://docs.sciml.ai/OrdinaryDiffEq/stable/). A dedicated section giving advice on how to optimise ODE simulation performance can be found [here](@ref ref)
+The following section gives a (more throughout than [previous]) introduction of how to simulate Catalyst models. This is exemplified using ODE simulations (some ODE-specific options will also be discussed). Later on, we will describe things specific to [SDE](@ref simulation_intro_SDEs) and [jump](@ref simulation_intro_jumps) simulations. All ODE simulations are performed using the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package, which full documentation can be found [here](https://docs.sciml.ai/OrdinaryDiffEq/stable/). A dedicated section giving advice on how to optimise ODE simulation performance can be found [here](@ref ode_simulation_performance)
 
-To perform any simulation, we must first define our model, as well as the simulation's initial conditions, time span, and parameter values. Here we will use a simple [two-state model](@ref ref):
+To perform any simulation, we must first define our model, as well as the simulation's initial conditions, time span, and parameter values. Here we will use a simple [two-state model](@ref basic_CRN_library_two_states):
 ```@example simulation_intro_ode
 using Catalyst
 two_state_model = @reaction_network begin
@@ -108,7 +108,7 @@ Finally, the result can be plotted using the [Plots.jl](https://github.com/Julia
 using Plots
 plot(sol)
 ```
-More information on how to interact with solution structures is provided [here](@ref simulation_structure_interfacing) and on how to plot them [here](@ref ref).
+More information on how to interact with solution structures is provided [here](@ref simulation_structure_interfacing) and on how to plot them [here](@ref simulation_plotting).
 
 Some additional considerations:
 - If a model without parameters has been declared, only the first three arguments must be provided to `ODEProblem`.
@@ -122,7 +122,7 @@ While good defaults are generally selected, OrdinaryDiffEq enables the user to c
 sol = solve(oprob, Rodas5P())
 nothing # hide
 ```
-A full list of available solvers is provided [here](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/), and a discussion on optimal solver choices [here](@ref ref).
+A full list of available solvers is provided [here](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/), and a discussion on optimal solver choices [here](@ref ode_simulation_performance_solvers).
 
 Additional options can be provided as keyword arguments. E.g. the `adaptive` arguments determine whether adaptive time-stepping is used (for algorithms that permit this). This defaults to `true`, but can be disabled using
 ```@example simulation_intro_ode
@@ -160,7 +160,7 @@ nothing # hide
 The forms used for `u0` and `ps` does not need to be the same (but can e.g. be a vector and a tuple). 
 
 !!! note
-    It [is possible](@ref ref) to designate specific types for parameters. When this is done, the tuple form for providing parameter values should be preferred.
+    It is possible to [designate specific types for parameters](@ref dsl_advanced_options_parameter_types). When this is done, the tuple form for providing parameter values should be preferred.
 
 Throughout Catalyst's documentation, we typically provide the time span as a tuple. However, if the first time point is `0.0` (which is typically the case), this can be omitted. Here, we supply only the simulation endpoint to our `ODEProblem`:
 ```@example simulation_intro_ode
@@ -193,7 +193,7 @@ we can see that while this simulation (unlike the ODE ones) exhibits some fluctu
     Unlike for ODE and jump simulations, there are no good heuristics for automatically selecting suitable SDE solvers. Hence, for SDE simulations a solver must be provided. `STrapezoid` will work for a large number of cases. When this is not the case, however, please check the list of [available SDE solvers](https://docs.sciml.ai/DiffEqDocs/stable/solvers/sde_solve/) for a suitable alternative (making sure to select one compatible with non-diagonal noise and the [Ito interpretation]https://en.wikipedia.org/wiki/It%C3%B4_calculus).
 
 ### [Common SDE simulation pitfalls](@id simulation_intro_SDEs_pitfalls)
-Next, let us reduce species amounts (using [`remake`](@ref ref)), thereby also increasing the relative amount of noise, we encounter a problem when the model is simulated:
+Next, let us reduce species amounts (using [`remake`](@ref simulation_structure_interfacing_problems_remake)), thereby also increasing the relative amount of noise, we encounter a problem when the model is simulated:
 ```@example simulation_intro_sde
 sprob = remake(sprob; u0 = [:X1 => 0.33, :X2 => 0.66])
 sol = solve(sprob, STrapezoid())
@@ -209,7 +209,7 @@ sol = solve(sprob, STrapezoid())
 sol = solve(sprob, STrapezoid(); seed = 12345) # hide
 plot(sol)
 ```
-Again, the simulation is aborted. This time, however, species concentrations are relatively large, so the CLE might still hold. What has happened this time is that the accuracy of the simulations has not reached its desired threshold. This can be deal with [by reducing simulation tolerances](@ref ref):
+Again, the simulation is aborted. This time, however, species concentrations are relatively large, so the CLE might still hold. What has happened this time is that the accuracy of the simulations has not reached its desired threshold. This can be deal with [by reducing simulation tolerances](@ref ode_simulation_performance_error):
 ```@example simulation_intro_sde
 sol = solve(sprob, STrapezoid(), abstol = 1e-1, reltol = 1e-1)
 sol = solve(sprob, STrapezoid(); seed = 12345, abstol = 1e-1, reltol = 1e-1) # hide
@@ -255,9 +255,9 @@ plot(sol)
 ```
 
 !!! note
-    Above, Catalyst is unable to infer that $η$ is a parameter from the `@default_noise_scaling η` option only. Hence, `@parameters η` is used to explicitly declare $η$ to be a parameter (as discussed in more detail [here](@ref ref)).
+    Above, Catalyst is unable to infer that $η$ is a parameter from the `@default_noise_scaling η` option only. Hence, `@parameters η` is used to explicitly declare $η$ to be a parameter (as discussed in more detail [here](@ref dsl_advanced_options_declaring_species_and_parameters)).
 
-It is possible to designate specific noise scaling terms for individual reactions through the `noise_scaling` [reaction metadata](@ref ref). Here, CLE noise terms associated with a specific reaction are multiplied by that reaction's noise scaling term. Here we use this to turn off the noise in the $X1 \to X2$ reaction:
+It is possible to designate specific noise scaling terms for individual reactions through the `noise_scaling` [reaction metadata](@ref dsl_advanced_options_reaction_metadata). Here, CLE noise terms associated with a specific reaction are multiplied by that reaction's noise scaling term. Here we use this to turn off the noise in the $X1 \to X2$ reaction:
 ```@example simulation_intro_sde
 two_state_model = @reaction_network begin
   k1, X1 <--> X2, [noise_scaling = 0.0]
