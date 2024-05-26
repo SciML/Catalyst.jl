@@ -39,6 +39,7 @@ Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 [compat]
 BenchmarkTools = "1"
 BifurcationKit = "0.3"
+CairoMakie = "0.12"
 Catalyst = "13"
 DataFrames = "1"
 DiffEqParamEstim = "2.1"
