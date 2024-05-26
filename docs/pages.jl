@@ -1,5 +1,5 @@
 pages = Any[
-    #"Home" => "home.md",
+    "Home" => "home.md",
     "Introduction to Catalyst" => Any[
         "introduction_to_catalyst/catalyst_for_new_julia_users.md",
         # "introduction_to_catalyst/introduction_to_catalyst.md"
@@ -26,13 +26,11 @@ pages = Any[
     ],
     "Model simulation" => Any[
         "model_simulation/simulation_introduction.md",
-        # Simulation introduction.
         "model_simulation/simulation_plotting.md",
         "model_simulation/simulation_structure_interfacing.md",
         "model_simulation/ensemble_simulations.md",
         # Stochastic simulation statistical analysis.
         "model_simulation/ode_simulation_performance.md",
-        # ODE Performance considerations/advice.
         # SDE Performance considerations/advice.
         # Jump Performance considerations/advice.
         # Finite state projection
@@ -50,7 +48,7 @@ pages = Any[
         # "inverse_problems/petab_ode_param_fitting.md",
         # ODE parameter fitting using Turing.
         # SDE/Jump fitting.
-        # "inverse_problems/behaviour_optimisation.md", # Currently fails due to an Optimization.jl issue.
+        "inverse_problems/behaviour_optimisation.md",
         "inverse_problems/structural_identifiability.md",
         # Practical identifiability.
         "inverse_problems/global_sensitivity_analysis.md",

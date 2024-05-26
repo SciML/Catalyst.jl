@@ -34,7 +34,7 @@ function pulse_amplitude(p, _)
     ps = Dict([:pX => p[1], :pY => p[2], :pZ => p[2]])
     u0_new = [:X => ps[:pX], :Y => ps[:pX]*ps[:pY], :Z => ps[:pZ]/ps[:pY]^2]
     oprob_local = remake(oprob; u0=  u0_new, p = ps)
-    sol = solve(oprob_local, verbose = false, maxiters = 10000)
+    sol = solve(oprob_local, Tsit5(); verbose = false, maxiters = 10000)
     SciMLBase.successful_retcode(sol) || return Inf
     return -(maximum(sol[:Z]) - sol[:Z][1])
 end
@@ -61,7 +61,7 @@ Finally, we plot a simulation using the found parameter set (stored in `opt_sol.
 ps_res = Dict([:pX => opt_sol.u[1], :pY => opt_sol.u[2], :pZ => opt_sol.u[2]])
 u0_res = [:X => ps_res[:pX], :Y => ps_res[:pX]*ps_res[:pY], :Z => ps_res[:pZ]/ps_res[:pY]^2]
 oprob_res = remake(oprob; u0 = u0_res, p = ps_res)
-sol_res = solve(oprob_res)
+sol_res = solve(oprob_res, Tsit5())
 plot(sol_res; idxs=:Z)
 ```
 For this model, it turns out that $Z$'s maximum pulse amplitude is equal to twice its steady state concentration. Hence, the maximisation of its pulse amplitude is equivalent to maximising its steady state concentration.
