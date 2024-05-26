@@ -2,17 +2,17 @@ pages = Any[
     "Home" => "home.md",
     "Introduction to Catalyst" => Any[
         "introduction_to_catalyst/catalyst_for_new_julia_users.md",
-        "introduction_to_catalyst/introduction_to_catalyst.md"
+        # "introduction_to_catalyst/introduction_to_catalyst.md"
         # Advanced introduction.
     ],
     "Model Creation and Properties" => Any[
         "model_creation/dsl_basics.md",
         "model_creation/dsl_advanced.md",
-        "model_creation/programmatic_CRN_construction.md",
-        "model_creation/compositional_modeling.md",
-        "model_creation/constraint_equations.md",
+        # "model_creation/programmatic_CRN_construction.md",
+        # "model_creation/compositional_modeling.md",
+        # "model_creation/constraint_equations.md",
         # Events.
-        "model_creation/parametric_stoichiometry.md",# Distributed parameters, rates, and initial conditions.
+        # "model_creation/parametric_stoichiometry.md",# Distributed parameters, rates, and initial conditions.
         # Loading and writing models to files.
         # Model visualisation.
         "model_creation/network_analysis.md",
@@ -20,8 +20,8 @@ pages = Any[
         "Model creation examples" => Any[
             "model_creation/examples/basic_CRN_library.md",
             "model_creation/examples/programmatic_generative_linear_pathway.md",
-            "model_creation/examples/hodgkin_huxley_equation.md",
-            "model_creation/examples/smoluchowski_coagulation_equation.md"
+            # "model_creation/examples/hodgkin_huxley_equation.md",
+            # "model_creation/examples/smoluchowski_coagulation_equation.md"
         ]
     ],
     "Model simulation" => Any[
