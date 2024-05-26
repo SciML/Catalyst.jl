@@ -1,5 +1,5 @@
 pages = Any[
-    "Home" => "home.md",
+    #"Home" => "home.md",
     "Introduction to Catalyst" => Any[
         "introduction_to_catalyst/catalyst_for_new_julia_users.md",
         # "introduction_to_catalyst/introduction_to_catalyst.md"
@@ -67,6 +67,6 @@ pages = Any[
     #     # Contributor's guide.
     #     # Repository structure.
     # ],
-    "FAQs" => "faqs.md",
-    "API" => "api.md"
+    #"FAQs" => "faqs.md",
+    #"API" => "api.md"
 ]

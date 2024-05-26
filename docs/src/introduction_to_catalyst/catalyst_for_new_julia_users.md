@@ -55,15 +55,15 @@ To import a Julia package into a session, you can use the `using PackageName` co
 using Pkg
 Pkg.add("Catalyst")
 ```
-Here, the Julia package manager package (`Pkg`) is by default installed on your computer when Julia is installed, and can be activated directly. Next, we also wish to install the `DifferentialEquations` and `Plots` packages (for numeric simulation of models, and plotting, respectively).
+Here, the Julia package manager package (`Pkg`) is by default installed on your computer when Julia is installed, and can be activated directly. Next, we also wish to install the `OrdinaryDiffEq` and `Plots` packages (for numeric simulation of models, and plotting, respectively).
 ```julia
-Pkg.add("DifferentialEquations")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 ```
 Once a package has been installed through the `Pkg.add` command, this command does not have to be repeated if we restart our Julia session. We can now import all three packages into our current session with:
 ```@example ex2
 using Catalyst
-using DifferentialEquations
+using OrdinaryDiffEq
 using Plots
 ```
 Here, if we restart Julia, these `using` commands *must be rerun*.
@@ -130,7 +130,11 @@ For more information about the numerical simulation package, please see the [Dif
 ## Additional modelling example
 To make this introduction more comprehensive, we here provide another example, using a more complicated model. Instead of simulating our model as concentrations evolve over time, we will now simulate the individual reaction events through the [Gillespie algorithm](https://en.wikipedia.org/wiki/Gillespie_algorithm) (a common approach for adding *noise* to models).
 
-Remember (unless we have restarted Julia) we do not need to activate our packages (through the `using` command) again.
+Remember (unless we have restarted Julia) we do not need to activate our packages (through the `using` command) again. However, we do need to install, and then import, the JumpProcesses package (just to perform Gillespie, and other jump, simulations)
+```julia
+Pkg.add("JumpProcesses")
+using JumpProcesses
+```
 
 This time, we will declare a so-called [SIR model for an infectious disease](https://en.wikipedia.org/wiki/Compartmental_models_in_epidemiology#The_SIR_model). Note that even if this model does not describe a set of chemical reactions, it can be modelled using the same framework. The model consists of 3 species:
 * $S$, the amount of *susceptible* individuals.
@@ -164,12 +168,13 @@ nothing # hide
 
 Previously we have bundled this information into an `ODEProblem` (denoting a deterministic *ordinary differential equation*). Now we wish to simulate our model as a jump process (where each reaction event corresponds to a single jump in the state of the system). We do this by first creating a `DiscreteProblem`, and then using this as an input to a `JumpProblem`.
 ```@example ex2
+using JumpProcesses # hide
 dprob = DiscreteProblem(sir_model, u0, tspan, params)
 jprob = JumpProblem(sir_model, dprob, Direct())
 ```
 Again, the order in which the inputs are given to the `DiscreteProblem` and the `JumpProblem` is important. The last argument to the `JumpProblem` (`Direct()`) denotes which simulation method we wish to use. For now, we recommend that users simply use the `Direct()` option, and then consider alternative ones (see the [JumpProcesses.jl docs](https://docs.sciml.ai/JumpProcesses/stable/)) when they are more familiar with modelling in Catalyst and Julia.
 
-Finally, we can simulate our model using the `solve` function, and plot the solution using the `plot` function. Here, the `solve` function also has a second argument (`SSAStepper()`). This is a time-stepping algorithm that calls the `Direct` solver to advance a simulation. Again, we recommend at this stage you simply use this option, and then explore exactly what this means at a later stage.
+Finally, we can simulate our model using the `solve` function, and plot the solution using the `plot` function. For jump simulations, the `solve` function also requires a second argument (`SSAStepper()`). This is a time-stepping algorithm that calls the `Direct` solver to advance a simulation. Again, we recommend at this stage you simply use this option, and then explore exactly what this means at a later stage.
 ```@example ex2
 sol = solve(jprob, SSAStepper())
 sol = solve(jprob, SSAStepper(); seed=1234) # hide
