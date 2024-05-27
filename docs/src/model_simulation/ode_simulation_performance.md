@@ -235,17 +235,17 @@ plot(0.01:0.01:1.0, map(sol -> sol[:P][end], esol.u), xguide = "kP", yguide = "P
 ```
 
 Above, we have simply used `EnsembleProblem` as a convenient interface to run a large number of similar simulations. However, these problems have the advantage that they allow the passing of an *ensemble algorithm* to the `solve` command, which describes a strategy for parallelising the simulations. By default, `EnsembleThreads` is used. This parallelises the simulations using [multithreading](https://en.wikipedia.org/wiki/Multithreading_(computer_architecture)) (parallelisation within a single process), which is typically advantageous for small problems on shared memory devices. An alternative is `EnsembleDistributed` which instead parallelises the simulations using [multiprocessing](https://en.wikipedia.org/wiki/Multiprocessing) (parallelisation across multiple processes). To do this, we simply supply this additional solver to the solve command:
-```@example ode_simulation_performance_4
+```julia
 esol = solve(eprob, Tsit5(), EnsembleDistributed(); trajectories=100)
 nothing # hide
 ```
 To utilise multiple processes, you must first give Julia access to these. You can check how many processes are available using the `nprocs` (which requires the [Distributed.jl](https://github.com/JuliaLang/Distributed.jl) package):
-```@example ode_simulation_performance_4
+```julia
 using Distributed
 nprocs()
 ```
 Next, more processes can be added using `addprocs`. E.g. here we add an additional 4 processes:
-```@example ode_simulation_performance_4
+```julia
 addprocs(4)
 nothing # hide
 ```
@@ -268,7 +268,7 @@ Furthermore (while not required) to receive good performance, we should also mak
 - We should designate all our vectors (i.e. initial conditions and parameter values) as [static vectors](https://github.com/JuliaArrays/StaticArrays.jl).
 
 We will assume that we are using the CUDA GPU hardware, so we will first load the [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl) backend package, as well as DiffEqGPU:
-```@example ode_simulation_performance_5
+```julia
 using CUDA, DiffEqGPU
 ```
 Which backend package you should use depends on your available hardware, with the alternatives being listed [here](https://docs.sciml.ai/DiffEqGPU/stable/manual/backends/).
@@ -306,7 +306,7 @@ We can now simulate our model using a GPU-based ensemble algorithm. Currently, t
 - While `EnsembleGPUArray` can use standard ODE solvers, `EnsembleGPUKernel` requires specialised versions (such as `GPUTsit5`). A list of available such solvers can be found [here](https://docs.sciml.ai/DiffEqGPU/dev/manual/ensemblegpukernel/#specialsolvers).
 
 Generally, it is recommended to use `EnsembleGPUArray` for large models (that have at least $100$ variables), and `EnsembleGPUKernel` for smaller ones. Here we simulate our model using both approaches (noting that `EnsembleGPUKernel` requires `GPUTsit5`):
-```@example ode_simulation_performance_5
+```julia
 esol1 = solve(eprob, Tsit5(), EnsembleGPUArray(CUDA.CUDABackend()); trajectories = 10000)
 esol2 = solve(eprob, GPUTsit5(), EnsembleGPUKernel(CUDA.CUDABackend()); trajectories = 10000)
 nothing # hide
