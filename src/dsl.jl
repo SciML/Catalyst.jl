@@ -1,64 +1,4 @@
-"""
-Macro that inputs an expression corresponding to a reaction network and outputs
-a `ReactionNetwork` that can be used as input to generation of ODE, SDE, and
-Jump problems.
-
-Most arrows accepted (both right, left, and bi-drectional arrows). Note that
-while --> is a correct arrow, neither <-- nor <--> works. Using non-filled
-arrows (⇐, ⟽, ⇒, ⟾, ⇔, ⟺) will disable mass kinetics and let you cutomize
-reaction rates yourself. Use 0 or ∅ for degradation/creation to/from nothing.
-
-Example systems:
-
-    ### Basic Usage ###
-    rn = @reaction_network begin           # Creates a ReactionSystem.
-        2.0, X + Y --> XY                  # This will have reaction rate corresponding to 2.0*[X][Y]
-        2.0, XY ← X + Y                    # Identical to 2.0, X + Y --> XY
-    end
-
-    ### Manipulating Reaction Rates ###
-    rn = @reaction_network begin
-        2.0, X + Y ⟾ XY                   # Ignores mass kinetics. This will have reaction rate corresponding to 2.0.
-        2.0X, X + Y --> XY                 # Reaction rate needs not be constant. This will have reaction rate corresponding to 2.0*[X]*[X]*[Y].
-        XY+log(X)^2, X + Y --> XY          # Reaction rate accepts quite complicated expressions.
-        hill(XY,2,2,2), X + Y --> XY       # Reaction inis activated by XY according to a hill function. hill(x,v,K,N).
-        mm(XY,2,2), X + Y --> XY           # Reaction inis activated by XY according to a michaelis menten function. mm(x,v,K).
-    end
-
-    ### Multiple Reactions on a Single Line ###
-    rn = @reaction_network begin
-        (2.0,1.0), X + Y ↔ XY              # Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
-        2.0, (X,Y) --> 0                   # This corresponds to both X and Y degrading at rate 2.0.
-        (2.0, 1.0), (X,Y) --> 0            # This corresponds to X and Y degrading at rates 2.0 and 1.0, respectively.
-        2.0, (X1,Y1) --> (X2,Y2)           # X1 and Y1 becomes X2 and Y2, respectively, at rate 2.0.
-    end
-
-    ### Adding Parameters ###
-    kB = 2.0; kD = 1.0
-    p = [kB, kD]
-    p = []
-    rn = @reaction_network begin
-        (kB, kD), X + Y ↔ XY               # Lets you define parameters outside on network. Parameters can be changed without recalling the network.
-    end
-
-    ### Defining New Functions ###
-    my_hill_repression(x, v, k, n) = v*k^n/(k^n+x^n)
-
-    # may be necessary to
-    # @register_symbolic my_hill_repression(x, v, k, n)
-    # see https://docs.sciml.ai/ModelingToolkit/stable/basics/Validation/#User-Defined-Registered-Functions-and-Types
-
-    r = @reaction_network MyReactionType begin
-        my_hill_repression(x, v_x, k_x, n_x), 0 --> x
-    end
-
-    ### Simulating Reaction Networks ###
-    probODE = ODEProblem(rn, args...; kwargs...)        # Using multiple dispatch the reaction network can be used as input to create ODE, SDE and Jump problems.
-    probSDE = SDEProblem(rn, args...; kwargs...)
-    probJump = JumpProblem(prob,aggregator::Direct,rn)
-"""
-
-### Constant Declarations ###
+### Constants Declarations ###
 
 # Declare various arrow types symbols used for the empty set (also 0).
 const empty_set = Set{Symbol}([:∅])
@@ -114,48 +54,83 @@ end
 """
     @reaction_network
 
-Generates a [`ReactionSystem`](@ref dsl_description) that encodes a chemical reaction
-network.
+Macro for generating chemical reaction network models. Outputs a [`ReactionSystem`](@ref) structure,
+which stores all information of the model. Next, it can be used as input to various simulations, or
+other tools for model analysis. The `@reaction_network` macro is sometimes called the "Catalyst 
+DSL" (where DSL = domain-specific language), as it implements a DSL for creating chemical reaction
+network models.
+    
+The `@reaction_network` macro, and the `ReactionSystem`s it generates, are central to Catalyst
+and its functionality. Catalyst is describe in more detail [in its documentation](@ref ref). The
+`reaction_network` DSL, in particular, is described in more detail [here](@ref dsl_description).
 
-See [The Reaction DSL](@ref dsl_description) documentation for details on
-parameters to the macro.
+The `@reaction_network` statement is followed by a `begin ... end` block. Each line within the
+block corresponds to a single reaction. Each reaction consists of:
+- A rate (at which the reaction occur).
+- Any number of substrates (which are consumed by the reaction).
+- Any number of products (which are produced by the reaction).
+
 
 Examples:
+Here we create a basic SIR model. It contains two reactions (infections and recovery):
 ```julia
-# a basic SIR model, with name SIR
-sir_model = @reaction_network SIR begin
-    c1, s + i --> 2i
-    c2, i --> r
-end
-
-# a basic SIR model, with random generated name
 sir_model = @reaction_network begin
-    c1, s + i --> 2i
-    c2, i --> r
+    c1, S + I --> 2I
+    c2, I --> R
 end
-
-# an empty network with name empty
-emptyrn = @reaction_network empty
-
-# an empty network with random generated name
-emptyrn = @reaction_network
 ```
 
-ReactionSystems generated through `@reaction_network` are complete.
+Next we create a self-activation loop. Here, a single component (`X`) activates its own production
+with a Michaelis-Menten function:
+```julia
+sa_loop = @reaction_network begin
+    mm(X,v,K), 0 --> X
+    d, X --> 0
+end
+```
+This model also contain production and degradation reactions, where `0` denotes that there are 
+either no substrates or not products in a reaction.
+
+Options:
+The `@reaction_network` also accepts various options. These are inputs to the model that are not
+reactions. To denote that a line contain an option (and not a reaction), the line starts with `@`
+followed by the options name. E.g. an observable is declared using the `@observables` option.
+Here we create a polymerisation model (where the parameter `n` denotes the number of monomers in
+the polymer). We use the observable `Xtot` to track the total amount of `X` in the system. We also
+bundle the forward and backwards binding reactions into a single line.
+```julia
+polymerisation = @reaction_network begin
+    @observables Xtot ~ X + n*Xn
+    (kB,kD), n*X <--> Xn
+end
+```
+
+Notes:
+- `ReactionSystem`s creates through `@reaction_network` are considered complete (non-complete 
+systems can be created through the alternative `@network_component` macro).
+- `ReactionSystem`s creates through `@reaction_network`, by default, have a random name. Specific
+names can be designated as a first argument (before `begin`, e.g. `rn = @reaction_network name begin ...`).
+- For more information, please again consider Catalyst's documentation.
+
 """
 macro reaction_network(name::Symbol, ex::Expr)
-    :(complete($(make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name)))))))
+    name = QuoteNode(name)
+    rs_expr = make_reaction_system(striplines(ex); name)
+    return :(complete($rs_expr))
 end
 
 # Allows @reaction_network $name begin ... to interpolate variables storing a name.
 macro reaction_network(name::Expr, ex::Expr)
-    :(complete($(make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1])))))))
+    name = esc(name.args[1])
+    rs_expr = make_reaction_system(striplines(ex); name)
+    return :(complete($rs_expr))
 end
 
+# Handles two disjoint cases (empty network with interpolated name, or network with no name).
 macro reaction_network(ex::Expr)
     ex = MacroTools.striplines(ex)
 
-    # no name but equations: @reaction_network begin ... end ...
+    # The case where no name is provided.
     if ex.head == :block
         :(complete($(make_reaction_system(ex))))
     else  # empty but has interpolated name: @reaction_network $name
