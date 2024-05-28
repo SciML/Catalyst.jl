@@ -152,16 +152,13 @@ accessor functions.
 ```@docs
 species
 nonspecies
-reactionsystemparams
 reactions
 nonreactions
 numspecies
 numparams
 numreactions
-numreactionsystemparams
 speciesmap
 paramsmap
-reactionsystemparamsmap
 isspecies
 isautonomous
 Catalyst.isconstant
