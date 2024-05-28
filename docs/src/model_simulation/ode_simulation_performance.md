@@ -13,7 +13,7 @@ Generally, this short checklist provides a quick guide for dealing with ODE perf
 ## [Regarding stiff and non-stiff problems and solvers](@id ode_simulation_performance_stiffness)
 Generally, ODE problems can be categorised into [*stiff ODEs* and *non-stiff ODEs*](https://en.wikipedia.org/wiki/Stiff_equation). This categorisation is important due to stiff ODEs requiring specialised solvers. A common cause of failure to simulate an ODE is the use of a non-stiff solver for a stiff problem. There is no exact way to determine whether a given ODE is stiff or not, however, systems with several different time scales (e.g. a CRN with both slow and fast reactions) typically generate stiff ODEs.
 
-Here we simulate the (stiff) [Brusselator](@ref ref) model using the `Tsit5` solver (which is designed for non-stiff ODEs):
+Here we simulate the (stiff) [Brusselator](@ref basic_CRN_library_brusselator) model using the `Tsit5` solver (which is designed for non-stiff ODEs):
 ```@example ode_simulation_performance_1
 using Catalyst, OrdinaryDiffEq, Plots
 
@@ -52,7 +52,7 @@ Finally, we should note that stiffness is not tied to the model equations only. 
 
 
 ## [ODE solver selection](@id ode_simulation_performance_solvers)
-OrdinaryDiffEq implements an unusually large number of ODE solvers, with the performance of the simulation heavily depending on which one is chosen. These are provided as the second argument to the `solve` command, e.g. here we use the `Tsit5` solver to simulate a simple [birth-death process](@ref ref):
+OrdinaryDiffEq implements an unusually large number of ODE solvers, with the performance of the simulation heavily depending on which one is chosen. These are provided as the second argument to the `solve` command, e.g. here we use the `Tsit5` solver to simulate a simple [birth-death process](@ref basic_CRN_library_bd):
 ```@example ode_simulation_performance_2
 using Catalyst, OrdinaryDiffEq
 
@@ -123,7 +123,7 @@ nothing # hide
 ### [Using a sparse Jacobian](@id ode_simulation_performance_sparse_jacobian)
 For a system with $n$ variables, the Jacobian will be an $n\times n$ matrix. This means that, as $n$ becomes large, the Jacobian can become *very* large, potentially causing a significant strain on memory. In these cases, most Jacobian entries are typically $0$. This means that a [*sparse*](https://en.wikipedia.org/wiki/Sparse_matrix) Jacobian (rather than a *dense* one, which is the default) can be advantageous. To designate sparse Jacobian usage, simply provide the `sparse = true` option when constructing an `ODEProblem`:
 ```@example ode_simulation_performance_3
-oprob = ODEProblem(brusselator, u0, tspan, p; sparse = true)
+oprob = ODEProblem(brusselator, u0, tspan, ps; sparse = true)
 nothing # hide
 ```
 
@@ -172,10 +172,10 @@ Generally, the use of preconditioners is only recommended for advanced users who
 ## [Parallelisation on CPUs and GPUs](@id ode_simulation_performance_parallelisation)
 Whenever an ODE is simulated a large number of times (e.g. when investigating its behaviour for different parameter values), the best way to improve performance is to [parallelise the simulation over multiple processing units](https://en.wikipedia.org/wiki/Parallel_computing). Indeed, an advantage of the Julia programming language is that it was designed after the advent of parallel computing, making it well-suited for this task. Roughly, parallelisation can be divided into parallelisation on [CPUs](https://en.wikipedia.org/wiki/Central_processing_unit) and on [GPUs](https://en.wikipedia.org/wiki/General-purpose_computing_on_graphics_processing_units). CPU parallelisation is most straightforward, while GPU parallelisation requires specialised ODE solvers (which Catalyst have access to). 
 
-Both CPU and GPU parallelisation require first building an `EnsembleProblem` (which defines the simulations you wish to perform) and then supplying this with the correct parallelisation options. These have [previously been introduced in Catalyst's documentation](@ref ref) (but in the context of convenient bundling of similar simulations, rather than to improve performance), with a more throughout description being found in [OrdinaryDiffEq's documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#ensemble). Finally, a general documentation of parallel computing in Julia is available [here](https://docs.julialang.org/en/v1/manual/parallel-computing/).
+Both CPU and GPU parallelisation require first building an `EnsembleProblem` (which defines the simulations you wish to perform) and then supplying this with the correct parallelisation options. `EnsembleProblem`s have [previously been introduced in Catalyst's documentation](@ref ensemble_simulations) (but in the context of convenient bundling of similar simulations, rather than to improve performance), with a more throughout description being found in [OrdinaryDiffEq's documentation](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#ensemble). Finally, a general documentation of parallel computing in Julia is available [here](https://docs.julialang.org/en/v1/manual/parallel-computing/).
 
 ### [CPU parallelisation](@id ode_simulation_performance_parallelisation_CPU)
-For this example (and the one for GPUs), we will consider a modified [Michaelis-Menten enzyme kinetics model](@ref ref), which describes an enzyme ($E$) that converts a substrate ($S$) to a product ($P$):
+For this example (and the one for GPUs), we will consider a modified [Michaelis-Menten enzyme kinetics model](@ref basic_CRN_library_mm), which describes an enzyme ($E$) that converts a substrate ($S$) to a product ($P$):
 ```@example ode_simulation_performance_4
 using Catalyst
 mm_model = @reaction_network begin
@@ -186,12 +186,12 @@ mm_model = @reaction_network begin
 end
 ```
 The model can be simulated, showing how $P$ is produced from $S$:
-```@example ode_simulation_performance_3
+```@example ode_simulation_performance_4
 using OrdinaryDiffEq, Plots
 u0 = [:S => 1.0, :E => 1.0, :SE => 0.0, :P => 0.0]
 tspan = (0.0, 50.0)
-p = [:kB => 1.0, :kD => 0.1, :kP => 0.5, :d => 0.1]
-oprob = ODEProblem(mm_model, u0, tspan, p)
+ps = [:kB => 1.0, :kD => 0.1, :kP => 0.5, :d => 0.1]
+oprob = ODEProblem(mm_model, u0, tspan, ps)
 sol = solve(oprob, Tsit5())
 plot(sol)
 ```
@@ -208,7 +208,7 @@ Here, `prob_func` takes 3 arguments:
 
 and output the `ODEProblem` simulated in the i'th simulation.
 
-Let us assume that we wish to simulate our model 100 times, for $kP = 0.01, 0.02, ..., 0.99, 1.0$. We define our `prob_func` using [`remake`](@ref ref):
+Let us assume that we wish to simulate our model 100 times, for $kP = 0.01, 0.02, ..., 0.99, 1.0$. We define our `prob_func` using [`remake`](@ref simulation_structure_interfacing_problems_remake):
 ```@example ode_simulation_performance_4
 function prob_func(prob, i, repeat) 
     return remake(prob; p = [:kP => 0.01*i])
@@ -240,12 +240,12 @@ esol = solve(eprob, Tsit5(), EnsembleDistributed(); trajectories=100)
 nothing # hide
 ```
 To utilise multiple processes, you must first give Julia access to these. You can check how many processes are available using the `nprocs` (which requires the [Distributed.jl](https://github.com/JuliaLang/Distributed.jl) package):
-```julia
+```@example ode_simulation_performance_4
 using Distributed
 nprocs()
 ```
 Next, more processes can be added using `addprocs`. E.g. here we add an additional 4 processes:
-```julia
+```@example ode_simulation_performance_4
 addprocs(4)
 nothing # hide
 ```
@@ -309,7 +309,6 @@ Generally, it is recommended to use `EnsembleGPUArray` for large models (that ha
 ```julia
 esol1 = solve(eprob, Tsit5(), EnsembleGPUArray(CUDA.CUDABackend()); trajectories = 10000)
 esol2 = solve(eprob, GPUTsit5(), EnsembleGPUKernel(CUDA.CUDABackend()); trajectories = 10000)
-nothing # hide
 ```
 Note that we have to provide the `CUDA.CUDABackend()` argument to our ensemble algorithms (to designate our GPU backend, in this case, CUDA).
 
