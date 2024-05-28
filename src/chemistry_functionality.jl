@@ -85,7 +85,7 @@ function make_compound(expr)
     # Loops through all components, add the component and the coefficients to the corresponding vectors
     # Cannot extract directly using e.g. "getfield.(composition, :reactant)" because then 
     # we get something like :([:C, :O]), rather than :([C, O]).
-    composition = Catalyst.recursive_find_reactants!(expr.args[3], 1, Vector{ReactantStruct}(undef, 0))
+    composition = Catalyst.recursive_find_reactants!(expr.args[3], 1, Vector{ReactantInternal}(undef, 0))
     components = :([])                                      # Becomes something like :([C, O]).                                         
     coefficients = :([])                                    # Becomes something like :([1, 2]). 
     for comp in composition

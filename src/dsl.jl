@@ -300,7 +300,7 @@ function make_reaction_system(ex::Expr, name)
     
     # Reads options (round 1, options which must be read before the reactions, e.g. because 
     # they might declare parameters/species/variables).
-    compound_expr, compound_species = read_compound_options(options)
+    compound_expr_init, compound_species = read_compound_options(options)
     species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
     variables_declared = extract_syms(options, :variables)
@@ -318,10 +318,10 @@ function make_reaction_system(ex::Expr, name)
     parameters = vcat(parameters_declared, parameters_extracted)
 
     # Reads options (round 2, options that either can, or must, be read after the reactions).
-    tiv, sivs, all_ivs, ivexpr = read_ivs_option(options)
+    tiv, sivs, ivs, ivexpr = read_ivs_option(options)
     continuous_events_expr = read_events_option(options, :continuous_events)
     discrete_events_expr = read_events_option(options, :discrete_events)
-    observed_vars, observed_eqs, obs_syms = read_observed_options(options, [species_declared; variables], all_ivs)
+    observed_expr, observed_eqs, obs_syms = read_observed_options(options, [species_declared; variables], ivs)
     diffexpr = create_differential_expr(options, add_default_diff, [species; parameters; variables], tiv)
     default_reaction_metadata = read_default_noise_scaling_option(options)
     combinatoric_ratelaws = read_combinatoric_ratelaws_option(options)
@@ -337,35 +337,33 @@ function make_reaction_system(ex::Expr, name)
     forbidden_variable_check(variables)
     unique_symbol_check(union(species, parameters, variables, ivs))
 
+    if isdefined(Main, :Infiltrator)
+        Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
+      end
+
     # Creates expressions corresponding to actual code from the internal DSL representation.
-    sexprs = get_sexpr(species_extracted, options; iv_symbols = ivs)
-    vexprs = get_sexpr(vars_extracted, options, :variables; iv_symbols = ivs)
-    pexprs = get_pexpr(parameters_extracted, options)
-    ps, pssym = scalarize_macro(!isempty(parameters), pexprs, "ps")
-    vars, varssym = scalarize_macro(!isempty(variables), vexprs, "vars")
-    sps, spssym = scalarize_macro(!isempty(species), sexprs, "specs")
-    comps, compssym = scalarize_macro(!isempty(compound_species), compound_expr, "comps")
-    rxexprs = :(Catalyst.CatalystEqType[])
-    for reaction in reactions
-        push!(rxexprs.args, get_rxexprs(reaction))
-    end
-    for equation in equations
-        push!(rxexprs.args, equation)
-    end
+    psexprs_init = get_pexpr(parameters_extracted, options)
+    spsexprs_init = get_usexpr(species_extracted, options; ivs)
+    vsexprs_init = get_usexpr(vars_extracted, options, :variables; ivs)
+    psexprs, psvar = scalarize_macro(!isempty(parameters), psexprs_init, "ps")
+    spsexprs, spsvar = scalarize_macro(!isempty(species), spsexprs_init, "specs")
+    vsexprs, vsvar = scalarize_macro(!isempty(variables), psexprs, "vars")
+    compound_expr, compsvar = scalarize_macro(!isempty(compound_species), compound_expr_init, "comps")
+    rxsexprs = make_rxsexprs(reactions, equations)
 
     quote
-        $ps
+        $psexprs
         $ivexpr
-        $vars
-        $sps
-        $observed_vars
-        $comps
+        $spsexprs
+        $vsexprs
+        $observed_expr
+        $compound_expr
         $diffexpr
 
         Catalyst.remake_ReactionSystem_internal(
             Catalyst.make_ReactionSystem_internal(
-                $rxexprs, $tiv, setdiff(union($spssym, $varssym, $compssym), $obs_syms),
-                $pssym; name = $name, spatial_ivs = $sivs, observed = $observed_eqs,
+                $rxsexprs, $tiv, setdiff(union($spssym, $ssvar, $compsvar), $obs_syms),
+                $psvar; name = $name, spatial_ivs = $sivs, observed = $observed_eqs,
                 continuous_events = $continuous_events_expr,
                 discrete_events = $discrete_events_expr,
                 combinatoric_ratelaws = $combinatoric_ratelaws);
@@ -509,51 +507,39 @@ end
 
 ### DSL Output Expression Builders ###
 
-# Given the species that were extracted from the reactions, and the options dictionary, creates the @species ... expression for the macro output.
-function get_sexpr(species_extracted, options, key = :species;
-                   iv_symbols = (DEFAULT_IV_SYM,))
+# Given the extracted species (or variables) and the option dictionary, creates the 
+# `@species ...` (or `@variables ..`) expression which would declare these.
+# If `key = :variables`, does this for variables (and not species).
+function get_usexpr(us_extracted, options, key = :species; ivs = (DEFAULT_IV_SYM,))
     if haskey(options, key)
-        sexprs = options[key]
-    elseif isempty(species_extracted)
-        sexprs = :()
+        usexpr = options[key]
+    elseif isempty(us_extracted)
+        usexpr = :()
     else
-        sexprs = Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
+        usexpr = Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
     end
-    foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, iv_symbols...)),
-            species_extracted)
-    sexprs
+    for u in us_extracted
+        u isa Symbol && push!(usexpr.args, Expr(:call, u, ivs...))
+    end
+    return usexpr
 end
 
-# Given the parameters that were extracted from the reactions, and the options dictionary, creates the @parameters ... expression for the macro output.
+# Given the parameters that were extracted from the reactions, and the options dictionary,
+# creates the `@parameters ...` expression for the macro output.
 function get_pexpr(parameters_extracted, options)
-    pexprs = (haskey(options, :parameters) ? options[:parameters] :
-              (isempty(parameters_extracted) ? :() : :(@parameters)))
+    if haskey(options, :parameters)
+        pexprs = options[:parameters]
+    elseif isempty(parameters_extracted)
+        pexprs = :()
+    else
+        pexprs = :(@parameters)
+    end
     foreach(p -> push!(pexprs.args, p), parameters_extracted)
-    pexprs
+    return pexprs
 end
 
-# Creates the reaction vector declaration statement.
-function get_rxexprs(rxstruct)
-    subs_init = isempty(rxstruct.substrates) ? nothing : :([])
-    subs_stoich_init = deepcopy(subs_init)
-    prod_init = isempty(rxstruct.products) ? nothing : :([])
-    prod_stoich_init = deepcopy(prod_init)
-    reaction_func = :(Reaction($(recursive_expand_functions!(rxstruct.rate)), $subs_init,
-                               $prod_init, $subs_stoich_init, $prod_stoich_init,
-                               metadata = $(rxstruct.metadata),))
-    for sub in rxstruct.substrates
-        push!(reaction_func.args[3].args, sub.reactant)
-        push!(reaction_func.args[5].args, sub.stoichiometry)
-    end
-    for prod in rxstruct.products
-        push!(reaction_func.args[4].args, prod.reactant)
-        push!(reaction_func.args[6].args, prod.stoichiometry)
-    end
-    reaction_func
-end
-
-# takes a ModelingToolkit declaration macro like @parameters and returns an expression
-# that calls the macro and then scalarizes all the symbols created into a vector of Nums
+# Takes a ModelingToolkit declaration macro (like @parameters ...) and:
+# Returns an expression that calls the macro and then scalarizes all the symbols created into a vector of Nums
 function scalarize_macro(nonempty, ex, name)
     namesym = gensym(name)
     if nonempty
@@ -566,6 +552,38 @@ function scalarize_macro(nonempty, ex, name)
         ex = :($namesym = Num[])
     end
     ex, namesym
+end
+
+# From the system reactions (as `ReactionInternal`s) and equations (as expressions),
+# creates the expressions that evalutes to the reaction (+ equations) vector.
+function make_rxsexprs(reactions, equations)
+    rxsexprs = :(Catalyst.CatalystEqType[])
+    foreach(rx -> push!(rxsexprs.args, get_rxexpr(rx)), reactions)
+    foreach(eq -> push!(rxsexprs.args, eq), equations)
+    return rxsexprs
+end
+
+# From a `ReactionInternal` struct, creates the expression which evaluates to the creation
+# of the correponding reaction.
+function get_rxexpr(rx::ReactionInternal)
+    # Initiates the `Reaction` expression.
+    rate = recursive_expand_functions!(rx.rate)
+    reaction_func = :(Reaction($rate, [], [], [], []; metadata = $(rx.metadata)))
+    if isdefined(Main, :Infiltrator)
+        Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
+      end
+    # Loops through all products and substrates, and adds them (and their stoichiometries)
+    # to the `Reaction` expression.
+    for sub in rx.substrates
+        push!(reaction_func.args[3].args, sub.reactant)
+        push!(reaction_func.args[5].args, sub.stoichiometry)
+    end
+    for prod in rx.products
+        push!(reaction_func.args[4].args, prod.reactant)
+        push!(reaction_func.args[6].args, prod.stoichiometry)
+    end
+
+    return reaction_func
 end
 
 
@@ -587,8 +605,7 @@ function read_ivs_option(options)
     # Extracts the independet variables symbols, and returns the output.
     tiv = ivs[1]
     sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
-    all_ivs = (isnothing(sivs) ? [tiv] : [tiv; sivs.args])
-    return tiv, sivs, all_ivs, ivexpr
+    return tiv, sivs, ivs, ivexpr
 end
 
 # Returns the `default_reaction_metadata` output. Technically Catalyst's code could have been made
@@ -732,7 +749,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
         # Gets list of observable equations and prepares variable declaration expression.
         # (`options[:observables]` inlucdes `@observables`, `.args[3]` removes this part)
         observed_eqs = make_observed_eqs(options[:observables].args[3])
-        observed_vars = Expr(:block, :(@variables))
+        observed_expr = Expr(:block, :(@variables))
         obs_syms = :([])
 
         for (idx, obs_eq) in enumerate(observed_eqs.args)
@@ -757,15 +774,15 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 # Appends (..) to the observable (which is later replaced with the extracted ivs).
                 # Adds the observable to the first line of the output expression (starting with `@variables`).
                     obs_expr = insert_independent_variable(obs_eq.args[2], :(..))
-                    push!(observed_vars.args[1].args, obs_expr)
+                    push!(observed_expr.args[1].args, obs_expr)
 
-                # Adds a line to the `observed_vars` expression, setting the ivs for this observable.
+                # Adds a line to the `observed_expr` expression, setting the ivs for this observable.
                 # Cannot extract directly using e.g. "getfield.(dependants_structs, :reactant)" because
                 # then we get something like :([:X1, :X2]), rather than :([X1, X2]).
                 dep_var_expr = :(filter(!MT.isparameter, Symbolics.get_variables($(obs_eq.args[3]))))
                 ivs_get_expr = :(unique(reduce(vcat,[arguments(MT.unwrap(dep)) for dep in $dep_var_expr])))
                 ivs_get_expr_sorted = :(sort($(ivs_get_expr); by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $ivs_sorted)))
-                push!(observed_vars.args, :($obs_name = $(obs_name)($(ivs_get_expr_sorted)...)))
+                push!(observed_expr.args, :($obs_name = $(obs_name)($(ivs_get_expr_sorted)...)))
             end
 
             # In case metadata was given, this must be cleared from `observed_eqs`.
@@ -778,15 +795,15 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
             is_escaped_expr(obs_eq.args[2]) || push!(obs_syms.args, obs_name)
         end
 
-        # If nothing was added to `observed_vars`, it has to be modified not to throw an error.
-        (length(observed_vars.args) == 1) && (observed_vars = :())
+        # If nothing was added to `observed_expr`, it has to be modified not to throw an error.
+        (length(observed_expr.args) == 1) && (observed_expr = :())
     else
         # If option is not used, return empty expression and vector.
-        observed_vars = :()
+        observed_expr = :()
         observed_eqs = :([])
         obs_syms = :([])
     end
-    return observed_vars, observed_eqs, obs_syms
+    return observed_expr, observed_eqs, obs_syms
 end
 
 # From the input to the @observables options, creates a vector containing one equation for each observable.
@@ -859,9 +876,9 @@ function make_reaction(ex::Expr)
     forbidden_symbol_check(union(species, parameters))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
-    sexprs = get_sexpr(species, Dict{Symbol, Expr}())
+    sexprs = get_usexpr(species, Dict{Symbol, Expr}())
     pexprs = get_pexpr(parameters, Dict{Symbol, Expr}())
-    rxexpr = get_rxexprs(reaction)
+    rxexpr = get_rxexpr(reaction)
     iv = :(@variables $(DEFAULT_IV_SYM))
 
     # Returns the rephrased expression.
