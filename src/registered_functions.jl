@@ -110,12 +110,13 @@ function Symbolics.derivative(::typeof(hillar), args::NTuple{5, Any}, ::Val{5})
 end
 
 
-### Custom CRN FUnction-related Functions ###
+### Custom CRN Function-related Functions ###
 
 """
 expand_registered_functions(expr)
 
-Takes an expression, and expands registered function expressions. E.g. `mm(X,v,K)` is replaced with v*X/(X+K). Currently supported functions: `mm`, `mmr`, `hill`, `hillr`, and `hill`.
+Takes an expression, and expands registered function expressions. E.g. `mm(X,v,K)` is replaced
+with v*X/(X+K). Currently supported functions: `mm`, `mmr`, `hill`, `hillr`, and `hill`.
 """
 function expand_registered_functions(expr)
     istree(expr) || return expr
@@ -136,16 +137,20 @@ function expand_registered_functions(expr)
     end
     return expr
 end
-# If applied to a Reaction, return a reaction with its rate modified.
+
+# If applied to a `Reaction`, return a reaction with its rate modified.
 function expand_registered_functions(rx::Reaction)
     Reaction(expand_registered_functions(rx.rate), rx.substrates, rx.products, rx.substoich, 
              rx.prodstoich, rx.netstoich, rx.only_use_rate, rx.metadata)
 end
-# If applied to a Equation, returns it with it applied to lhs and rhs
+
+# If applied to an `Equation`, returns it with it applied to lhs and rhs
 function expand_registered_functions(eq::Equation)
     return expand_registered_functions(eq.lhs) ~ expand_registered_functions(eq.rhs)
 end
-# If applied to a ReactionSystem, applied function to all Reactions and other Equations, and return updated system.
+
+# If applied to a `ReactionSystem`, applied function to all `Reaction`s and other `Equation`s,
+# and return updated system.
 function expand_registered_functions(rs::ReactionSystem)
     @set! rs.eqs = [Catalyst.expand_registered_functions(eq) for eq in get_eqs(rs)]
     @set! rs.rxs = [Catalyst.expand_registered_functions(rx) for rx in get_rxs(rs)]
