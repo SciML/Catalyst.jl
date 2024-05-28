@@ -64,7 +64,7 @@ savegraph(repressilator_graph, "repressilator_graph.png")
 rm("repressilator_graph.png") # hide
 ```
 
-Finally, a [network's reaction complexes](@ref ref) (and the reactions in between these) can be displayed using the `complexgraph(brusselator)` function:
+Finally, a [network's reaction complexes](@ref network_analysis_reaction_complexes) (and the reactions in between these) can be displayed using the `complexgraph(brusselator)` function:
 ```@example visualisation_graphs
 complexgraph(brusselator)
 ```

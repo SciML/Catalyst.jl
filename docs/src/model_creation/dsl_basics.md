@@ -267,7 +267,7 @@ Catalyst comes with the following predefined functions:
 - The activating/repressive Hill function: $hillar(X,Y,v,K,n) = v * (X^n)/(X^n + Y^n + K^n)$.
 
 ### [Time-dependant rates](@id dsl_description_nonconstant_rates_time)
-Previously we have assumed that the rates are independent of the [time variable, $t$](@ref ref). However, time-dependent reactions are also possible. Here, simply use `t` to represent the time variable. E.g., to create a production/degradation model where the production rate decays as time progresses, we can use:
+Previously we have assumed that the rates are independent of the time variable, $t$. However, time-dependent reactions are also possible. Here, simply use `t` to represent the time variable. E.g., to create a production/degradation model where the production rate decays as time progresses, we can use:
 ```@example dsl_basics
 rn_14 = @reaction_network begin
     kp/(1 + t), 0 --> P

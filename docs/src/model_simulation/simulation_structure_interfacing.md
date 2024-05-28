@@ -21,7 +21,7 @@ oprob = ODEProblem(cc_system, u0, tspan, ps)
 nothing    # hide
 ```
 
-We can find a specie's (or [variable's](@ref ref)) initial condition value by simply indexing with the species of interest as input. Here we check the initial condition value of $C$:
+We can find a species's (or [variable's](@ref ref)) initial condition value by simply indexing with the species of interest as input. Here we check the initial condition value of $C$:
 ```@example structure_indexing
 oprob[:C]
 ```
@@ -162,7 +162,7 @@ get_S(oprob)
 ```
 
 ## [Interfacing using symbolic representations](@id simulation_structure_interfacing_symbolic_representation)
-As [previously described](@ref ref), when e.g. [programmatic modelling is used](@ref ref), species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like symbol-based representations can. Here we create a simple [two-state model](@ref rbasic_CRN_library_two_statesef) programmatically, and use its symbolic variables to check, and update, an initial condition:
+As [previously described](@ref ref), when e.g. [programmatic modelling is used](@ref programmatic_CRN_construction), species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like symbol-based representations can. Here we create a simple [two-state model](@ref rbasic_CRN_library_two_statesef) programmatically, and use its symbolic variables to check, and update, an initial condition:
 ```@example structure_indexing_symbolic_variables
 using Catalyst
 t = default_t()

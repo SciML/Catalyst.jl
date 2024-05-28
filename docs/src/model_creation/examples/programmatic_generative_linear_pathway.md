@@ -1,5 +1,5 @@
 # [Programmatic, generative, modelling of a linear pathway](@id programmatic_generative_linear_pathway)
-This example will show how to use programmatic, generative, modelling to model a system implicitly. I.e. rather than listing all system reactions explicitly, the reactions are implicitly generated from a simple set of rules. This example is specifically designed to show how [programmatic modelling](@ref ref) enables *generative workflows* (demonstrating one of its advantages as compared to [DSL-based modelling](@ref dsl_description)). In our example, we will model linear pathways, so we will first introduce these. Next, we will model them first using the DSL, and then using a generative programmatic workflow.
+This example will show how to use programmatic, generative, modelling to model a system implicitly. I.e. rather than listing all system reactions explicitly, the reactions are implicitly generated from a simple set of rules. This example is specifically designed to show how [programmatic modelling](@ref programmatic_CRN_construction) enables *generative workflows* (demonstrating one of its advantages as compared to [DSL-based modelling](@ref dsl_description)). In our example, we will model linear pathways, so we will first introduce these. Next, we will model them first using the DSL, and then using a generative programmatic workflow.
 
 ## [Linear pathways](@id programmatic_generative_linear_pathway_intro)
 Linear pathways consists of a series of species ($X_0$, $X_1$, $X_2$, ..., $X_n$) where each activates the subsequent one. These are often modelled through the following reaction system:
@@ -75,7 +75,7 @@ plot!(sol_n10; idxs = :X10, label = "n = 10")
 ```
 
 ## [Modelling linear pathways using programmatic, generative, modelling](@id programmatic_generative_linear_pathway_generative)
-Above, we investigated the impact of linear pathways' lengths on their behaviours. Since the models were implemented using the DSL, we had to implement a new model for each pathway (in each case writing out all reactions). Here, we will instead show how [programmatic modelling](@ref ref) can be used to generate pathways of arbitrary lengths.
+Above, we investigated the impact of linear pathways' lengths on their behaviours. Since the models were implemented using the DSL, we had to implement a new model for each pathway (in each case writing out all reactions). Here, we will instead show how [programmatic modelling](@ref programmatic_CRN_construction) can be used to generate pathways of arbitrary lengths.
 
 First, we create a function, `generate_lp`, which creates a linear pathway model of length `n`. It utilises [*vector variables*](@ref ref) to create an arbitrary number of species, and also creates an [observable](@ref ref) for the final species of the chain.
 ```@example programmatic_generative_linear_pathway_generative

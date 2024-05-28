@@ -28,7 +28,7 @@ end
 parameters(catalysis_sys)
 ```
 !!! note
-    When declaring species using the `@species` option, the species symbol must be followed by `(t)`. The reason is that species are time-dependent variables, and this time-dependency must be explicitly specified ([designation of non-`t` dependant species is also possible](@ref ref)).
+    When declaring species using the `@species` option, the species symbol must be followed by `(t)`. The reason is that species are time-dependent variables, and this time-dependency must be explicitly specified ([designation of non-`t` dependant species is also possible](@ref dsl_advanced_options_ivs)).
 
 Similarly, the `@parameters` option can be used to explicitly designate something as a parameter:
 ```@example dsl_advanced_explicit_definitions
