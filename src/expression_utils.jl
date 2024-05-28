@@ -2,16 +2,19 @@
 
 # Function that handles variable interpolation.
 function esc_dollars!(ex)
-    if ex isa Expr
-        if ex.head == :$
-            return esc(:($(ex.args[1])))
-        else
-            for i in 1:length(ex.args)
-                ex.args[i] = esc_dollars!(ex.args[i])
-            end
+    # If we do not have an expression: recursion has finished and we return the input.
+    (ex isa Expr) || (return ex)
+
+    # If we have encountered an interpolation, perform the appropriate modification, else recur. 
+    if ex.head == :$
+        return esc(:($(ex.args[1])))
+    else
+        for i in eachindex(ex.args)
+            ex.args[i] = esc_dollars!(ex.args[i])
         end
     end
-    ex
+
+    return ex
 end
 
 # Checks if an expression is an escaped expression (e.g. on the form `$(Expr(:escape, :Y))`)
@@ -23,28 +26,26 @@ end
 ### Parameters/Species/Variables Symbols Correctness Checking ###
 
 # Throws an error when a forbidden symbol is used.
-function forbidden_symbol_check(v)
-    !isempty(intersect(forbidden_symbols_error, v)) &&
-        error("The following symbol(s) are used as species or parameters: " *
-              ((map(s -> "'" * string(s) * "', ",
-                    intersect(forbidden_symbols_error, v))...)) *
-              "this is not permited.")
-    nothing
+function forbidden_symbol_check(sym)
+    if !isempty(intersect(forbidden_symbols_error, sym))
+        used_forbidden_syms = intersect(forbidden_symbols_error, sym)
+        error("The following symbol(s) are used as species or parameters: $used_forbidden_syms, this is not permitted.")
+    end
 end
 
 # Throws an error when a forbidden variable is used (a forbidden symbol that is not `:t`).
-function forbidden_variable_check(v)
-    !isempty(intersect(forbidden_variables_error, v)) &&
-        error("The following symbol(s) are used as variables: " *
-              ((map(s -> "'" * string(s) * "', ",
-                    intersect(forbidden_variables_error, v))...)) *
-              "this is not permited.")
+function forbidden_variable_check(sym)
+    if !isempty(intersect(forbidden_variables_error, sym))
+        used_forbidden_syms = intersect(forbidden_variables_error, sym)
+        error("The following symbol(s) are used as variables: $used_forbidden_syms, this is not permitted.")
+    end
 end
 
+# Checks that no symbol was sued for multiple purposes.
 function unique_symbol_check(syms)
-    allunique(syms) ||
+    if !allunique(syms)
         error("Reaction network independent variables, parameters, species, and variables must all have distinct names, but a duplicate has been detected. ")
-    nothing
+    end
 end
 
 
