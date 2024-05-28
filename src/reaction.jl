@@ -628,7 +628,7 @@ creating a `ReactionSystem` programmatically (in which case any symbolic variabl
 `misc` metadata field should also be explicitly provided to the `ReactionSystem` constructor). 
 
 """
-function get_misc(reaction::Reaction)
+function getmisc(reaction::Reaction)
     if hasmisc(reaction)
         return getmetadata(reaction, :misc)
     else
