@@ -113,132 +113,149 @@ names can be designated as a first argument (before `begin`, e.g. `rn = @reactio
 - For more information, please again consider Catalyst's documentation.
 
 """
-macro reaction_network(name::Symbol, ex::Expr)
-    name = QuoteNode(name)
-    rs_expr = make_reaction_system(striplines(ex); name)
-    return :(complete($rs_expr))
+macro reaction_network(name::Symbol, network_expr::Expr)
+    make_rs_expr(QuoteNode(name), network_expr)
 end
 
-# Allows @reaction_network $name begin ... to interpolate variables storing a name.
-macro reaction_network(name::Expr, ex::Expr)
-    name = esc(name.args[1])
-    rs_expr = make_reaction_system(striplines(ex); name)
-    return :(complete($rs_expr))
+# The case where the name contains an interpolation.
+macro reaction_network(name::Expr, network_expr::Expr)
+    make_rs_expr(esc(name.args[1]))
 end
 
-# Handles two disjoint cases (empty network with interpolated name, or network with no name).
-macro reaction_network(ex::Expr)
-    ex = MacroTools.striplines(ex)
-
-    # The case where no name is provided.
-    if ex.head == :block
-        :(complete($(make_reaction_system(ex))))
-    else  # empty but has interpolated name: @reaction_network $name
-        networkname = :($(esc(ex.args[1])))
-        return Expr(:block, :(@parameters t),
-                    :(complete(ReactionSystem(Reaction[], t, [], []; name = $networkname))))
-    end
-end
-
-# Returns a empty network (with, or without, a declared name).
+# The case where nothing, or only a name, is provided.
 macro reaction_network(name::Symbol = gensym(:ReactionSystem))
-    return Expr(:block, :(@parameters t),
-                :(complete(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name))))))
+    make_rs_expr(QuoteNode(name))
+end
+
+# Handles two disjoint cases.
+macro reaction_network(expr::Expr) 
+    # Case 1: The input is a name with interpolation.
+    (expr.head != :block) && return make_rs_expr(esc(expr.args[1]))
+    # Case 2: The input is a reaction network (and no name is provided).
+    return make_rs_expr(:(gensym(:ReactionSystem)), expr)
 end
 
 # Ideally, it would have been possible to combine the @reaction_network and @network_component macros.
 # However, this issue: https://github.com/JuliaLang/julia/issues/37691 causes problem with interpolations
-# if we make the @reaction_network macro call the @network_component macro.
+# if we make the @reaction_network macro call the @network_component macro. Instead, these uses the 
+# same input, but passes `complete = false` to `make_rs_expr`.
 """
     @network_component
 
-As @reaction_network, but the output system is not complete.
+As the @reaction_network macro (see it for more information), but the output system 
+*is not* complete.
 """
-macro network_component(name::Symbol, ex::Expr)
-    make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name))))
+macro network_component(name::Symbol, network_expr::Expr)
+    make_rs_expr(QuoteNode(name), network_expr; complete = false)
 end
 
-# Allows @network_component $name begin ... to interpolate variables storing a name.
-macro network_component(name::Expr, ex::Expr)
-    make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1]))))
+# The case where the name contains an interpolation.
+macro network_component(name::Expr, network_expr::Expr)
+    make_rs_expr(esc(name.args[1]); complete = false)
 end
 
-macro network_component(ex::Expr)
-    ex = MacroTools.striplines(ex)
-
-    # no name but equations: @network_component begin ... end ...
-    if ex.head == :block
-        make_reaction_system(ex)
-    else  # empty but has interpolated name: @network_component $name
-        networkname = :($(esc(ex.args[1])))
-        return Expr(:block, :(@parameters t),
-                    :(ReactionSystem(Reaction[], t, [], []; name = $networkname)))
-    end
-end
-
-# Returns a empty network (with, or without, a declared name).
+# The case where nothing, or only a name, is provided.
 macro network_component(name::Symbol = gensym(:ReactionSystem))
-    return Expr(:block, :(@parameters t),
-                :(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name)))))
+    make_rs_expr(QuoteNode(name); complete = false)
+end
+
+# Handles two disjoint cases.
+macro network_component(expr::Expr) 
+    # Case 1: The input is a name with interpolation.
+    (expr.head != :block) && return make_rs_expr(esc(expr.args[1]); complete = false)
+    # Case 2: The input is a reaction network (and no name is provided).
+    return make_rs_expr(:(gensym(:ReactionSystem)), expr; complete = false)
+end
+
+### DSL Macros Helper Functions ###
+
+# For when no reaction network has been designated. Generates an empty network.
+function make_rs_expr(name; complete = true)
+    rs_expr = :(ReactionSystem(Reaction[], t, [], []; name = $name))
+    complete && (rs_expr = :(complete($rs_expr)))
+    return Expr(:block, :(@parameters t), rs_expr)
+end
+
+# When both a name and a network expression is generated, dispatches thees to the internal
+# `make_reaction_system` function.
+function make_rs_expr(name, network_expr; complete = true)
+    rs_expr = make_reaction_system(striplines(network_expr), name)
+    complete && (rs_expr = :(complete($rs_expr)))
+    return rs_expr
 end
 
 
 ### Internal DSL Structures ###
 
-# Structure containing information about one reactant in one reaction.
-struct ReactantStruct
+# Internal structure containing information about one reactant in one reaction.
+struct ReactantInternal
     reactant::Union{Symbol, Expr}
     stoichiometry::ExprValues
 end
 
-# Structure containing information about one Reaction. Contain all its substrates and products as well as its rate. Contains a specialized constructor.
-struct ReactionStruct
-    substrates::Vector{ReactantStruct}
-    products::Vector{ReactantStruct}
+# Internal structure containing information about one Reaction. Contain all its substrates and
+# products as well as its rate and potential metadata. Uses a specialized constructor.
+struct ReactionInternal
+    substrates::Vector{ReactantInternal}
+    products::Vector{ReactantInternal}
     rate::ExprValues
     metadata::Expr
 
-    function ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues,
+    function ReactionInternal(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues,
                             metadata_line::ExprValues)
-        sub = recursive_find_reactants!(sub_line, 1, Vector{ReactantStruct}(undef, 0))
-        prod = recursive_find_reactants!(prod_line, 1, Vector{ReactantStruct}(undef, 0))
+        subs = recursive_find_reactants!(sub_line, 1, Vector{ReactantInternal}(undef, 0))
+        prods = recursive_find_reactants!(prod_line, 1, Vector{ReactantInternal}(undef, 0))
         metadata = extract_metadata(metadata_line)
-        new(sub, prod, rate, metadata)
+        new(subs, prods, rate, metadata)
     end
 end
 
 # Recursive function that loops through the reaction line and finds the reactants and their
-# stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
+# stoichiometry. Recursion makes it able to handle weird cases like 2(X + Y + 3(Z + XY)). The 
+# reactants are stored in the `reactants` vector. As the expression tree is parsed, the 
+# stoichiometry is updated and new reactants added.
 function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
-                                   reactants::Vector{ReactantStruct})
+                                   reactants::Vector{ReactantInternal})
+    # We have reached the end of the expression tree and can finalise and return the reactants.
     if typeof(ex) != Expr || (ex.head == :escape) || (ex.head == :ref)
+        # The final bit of the expression is not a relevant reactant, no additions are required.
         (ex == 0 || in(ex, empty_set)) && (return reactants)
+
+        # If the expression corresponds to a reactant on our list, increase its multiplicity.
         if any(ex == reactant.reactant for reactant in reactants)
-            idx = findall(x -> x == ex, getfield.(reactants, :reactant))[1]
-            reactants[idx] = ReactantStruct(ex,
-                                            processmult(+, mult,
-                                                        reactants[idx].stoichiometry))
+            idx = findfirst(r.reactant == ex for r in reactants)
+            new_mult = processmult(+, mult, reactants[idx].stoichiometry)
+            reactants[idx] = ReactantInternal(ex, new_mult)
+
+        # If the expression corresponds to a new reactant, add it to the list.
         else
-            push!(reactants, ReactantStruct(ex, mult))
+            push!(reactants, ReactantInternal(ex, mult))
         end
+
+    # If we have encountered a multiplication (i.e. a stoichiometry and a set of reactants).
     elseif ex.args[1] == :*
+        # The normal case (e.g. 3*X or 3*(X+Y)). Update the current multiplicity and continue.
         if length(ex.args) == 3
-            recursive_find_reactants!(ex.args[3], processmult(*, mult, ex.args[2]),
-                                      reactants)
+            new_mult = processmult(*, mult, ex.args[2])
+            recursive_find_reactants!(ex.args[3], new_mult, reactants)
+        # More complicated cases (e.g. 2*3*X). Yes, `ex.args[1:(end - 1)]` should start at 1 (not 2).
         else
-            newmult = processmult(*, mult, Expr(:call, ex.args[1:(end - 1)]...))
-            recursive_find_reactants!(ex.args[end], newmult, reactants)
+            new_mult = processmult(*, mult, Expr(:call, ex.args[1:(end - 1)]...))
+            recursive_find_reactants!(ex.args[end], new_mult, reactants)
         end
+    # If we have encountered a sum of different reactants, apply recursion on each.
     elseif ex.args[1] == :+
         for i in 2:length(ex.args)
             recursive_find_reactants!(ex.args[i], mult, reactants)
         end
     else
-        throw("Malformed reaction, bad operator: $(ex.args[1]) found in stochiometry expression $ex.")
+        throw("Malformed reaction, bad operator: $(ex.args[1]) found in stoichiometry expression $ex.")
     end
-    reactants
+    return reactants
 end
 
+# Helper function for updating the multiplicity throughout recursion (handles e.g. parametric
+# stoichiometries).
 function processmult(op, mult, stoich)
     if (mult isa Number) && (stoich isa Number)
         op(mult, stoich)
@@ -247,12 +264,16 @@ function processmult(op, mult, stoich)
     end
 end
 
-# Finds the metadata from a metadata expresion (`[key=val, ...]`) and returns as a Vector{Pair{Symbol,ExprValues}}.
+# Finds the metadata from a metadata expression (`[key=val, ...]`) and returns as a
+# `Vector{Pair{Symbol,ExprValues}}``.
 function extract_metadata(metadata_line::Expr)
     metadata = :([])
     for arg in metadata_line.args
-        (arg.head != :(=)) && error("Malformatted metadata line: $metadata_line. Each entry in the vector should contain a `=`.")
-        (arg.args[1] isa Symbol) || error("Malformatted metadata entry: $arg. Entries left-hand-side should be a single symbol.")
+        if arg.head != :(=)
+            error("Malformatted metadata line: $metadata_line. Each entry in the vector should contain a `=`.")
+        elseif !(arg.args[1] isa Symbol)
+            error("Malformatted metadata entry: $arg. Entries left-hand-side should be a single symbol.")
+        end
         push!(metadata.args, :($(QuoteNode(arg.args[1])) => $(arg.args[2])))
     end
     return metadata
@@ -262,7 +283,7 @@ end
 ### DSL Internal Master Function ###
 
 # Function for creating a ReactionSystem structure (used by the @reaction_network macro).
-function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
+function make_reaction_system(ex::Expr, name)
 
     # Handle interpolation of variables
     ex = esc_dollars!(ex)
@@ -377,7 +398,7 @@ end
 ### DSL Reaction Reading Functions ###
 
 # Generates a vector containing a number of reaction structures, each containing the information about one reaction.
-function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(undef, 0))
+function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionInternal}(undef, 0))
     for line in exprs
         # Reads core reaction information.
         arrow, rate, reaction, metadata = read_reaction_line(line)
@@ -423,7 +444,7 @@ end
 
 # Takes a reaction line and creates reaction(s) from it and pushes those to the reaction array.
 # Used to create multiple reactions from, for instance, `k, (X,Y) --> 0`.
-function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues, prod_line::ExprValues,
+function push_reactions!(reactions::Vector{ReactionInternal}, sub_line::ExprValues, prod_line::ExprValues,
                          rate::ExprValues, metadata::ExprValues, arrow::Symbol)
     # The rates, substrates, products, and metadata may be in a tupple form (e.g. `k, (X,Y) --> 0`).
     # This finds the length of these tuples (or 1 if not in tuple forms). Errors if lengs inconsistent.
@@ -445,7 +466,7 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
             error("Some reaction metadata fields where repeated: $(metadata_entries)")
         end
 
-        push!(reactions, ReactionStruct(get_tup_arg(sub_line, i), get_tup_arg(prod_line, i),
+        push!(reactions, ReactionInternal(get_tup_arg(sub_line, i), get_tup_arg(prod_line, i),
                                         get_tup_arg(rate, i), metadata_i))
     end
 end
@@ -836,7 +857,7 @@ function make_reaction(ex::Expr)
     end
 end
 
-# Reads a single line and creates the corresponding ReactionStruct.
+# Reads a single line and creates the corresponding ReactionInternal.
 function get_reaction(line)
     reaction = get_reactions([line])
     if (length(reaction) != 1)
