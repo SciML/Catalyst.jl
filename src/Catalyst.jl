@@ -93,7 +93,6 @@ end
 include("reaction.jl")
 export isspecies
 export Reaction
-export get_noise_scaling, has_noise_scaling
 
 # The `ReactionSystem` structure and its functions.
 include("reactionsystem.jl")

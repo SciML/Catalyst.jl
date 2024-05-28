@@ -377,8 +377,8 @@ function ModelingToolkit.get_variables!(set, rx::Reaction)
     for stoichs in (rx.substoich, rx.prodstoich), stoich in stoichs
         (stoich isa BasicSymbolic) && get_variables!(set, stoich)
     end
-    if has_noise_scaling(rx)
-        get_variables!(set, get_noise_scaling(rx))
+    if hasnoisescaling(rx)
+        get_variables!(set, getnoisescaling(rx))
     end
     return (set isa AbstractVector) ? unique!(set) : set
 end
@@ -440,7 +440,7 @@ end
 
 
 ### Reaction Metadata Implementation ###
-# These are currently considered internal, but can be used by public accessor functions like get_noise_scaling.
+# These are currently considered internal, but can be used by public accessor functions like getnoisescaling.
 
 """
 getmetadata_dict(reaction::Reaction)
@@ -507,7 +507,7 @@ end
 
 # Noise scaling.
 """
-has_noise_scaling(reaction::Reaction)
+hasnoisescaling(reaction::Reaction)
 
 Returns `true` if the input reaction has the `noise_scaing` metadata field assigned, else `false`.
 
@@ -517,15 +517,15 @@ Arguments:
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
-has_noise_scaling(reaction)
+hasnoisescaling(reaction)
 ```
 """
-function has_noise_scaling(reaction::Reaction)
+function hasnoisescaling(reaction::Reaction)
     return hasmetadata(reaction, :noise_scaling)
 end
 
 """
-get_noise_scaling(reaction::Reaction)
+getnoisescaling(reaction::Reaction)
 
 Returns `noise_scaing` metadata field for the input reaction.
 
@@ -535,11 +535,11 @@ Arguments:
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [noise_scaling=0.0]
-get_noise_scaling(reaction)
+getnoisescaling(reaction)
 ```
 """
-function get_noise_scaling(reaction::Reaction)
-    if has_noise_scaling(reaction)
+function getnoisescaling(reaction::Reaction)
+    if hasnoisescaling(reaction)
         return getmetadata(reaction, :noise_scaling)
     else
         error("Attempts to access noise_scaling metadata field for a reaction which does not have a value assigned for this metadata.")
@@ -548,7 +548,7 @@ end
 
 # Description.
 """
-has_description(reaction::Reaction)
+hasdescription(reaction::Reaction)
 
 Returns `true` if the input reaction has the `description` metadata field assigned, else `false`.
 
@@ -558,15 +558,15 @@ Arguments:
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [description="A reaction"]
-has_description(reaction)
+hasdescription(reaction)
 ```
 """
-function has_description(reaction::Reaction)
+function hasdescription(reaction::Reaction)
     return hasmetadata(reaction, :description)
 end
 
 """
-get_description(reaction::Reaction)
+getdescription(reaction::Reaction)
 
 Returns `description` metadata field for the input reaction.
 
@@ -576,11 +576,11 @@ Arguments:
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [description="A reaction"]
-get_description(reaction)
+getdescription(reaction)
 ```
 """
-function get_description(reaction::Reaction)
-    if has_description(reaction)
+function getdescription(reaction::Reaction)
+    if hasdescription(reaction)
         return getmetadata(reaction, :description)
     else
         error("Attempts to access `description` metadata field for a reaction which does not have a value assigned for this metadata.")
@@ -589,7 +589,7 @@ end
 
 # Misc.
 """
-has_misc(reaction::Reaction)
+hasmisc(reaction::Reaction)
 
 Returns `true` if the input reaction has the `misc` metadata field assigned, else `false`.
 
@@ -599,15 +599,15 @@ Arguments:
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [misc="A reaction"]
-misc(reaction)
+hasmisc(reaction)
 ```
 """
-function has_misc(reaction::Reaction)
+function hasmisc(reaction::Reaction)
     return hasmetadata(reaction, :misc)
 end
 
 """
-get_misc(reaction::Reaction)
+getmisc(reaction::Reaction)
 
 Returns `misc` metadata field for the input reaction.
 
@@ -617,7 +617,7 @@ Arguments:
 Example:
 ```julia
 reaction = @reaction k, 0 --> X, [misc="A reaction"]
-get_misc(reaction)
+getmisc(reaction)
 ```
 
 Notes:
@@ -629,7 +629,7 @@ creating a `ReactionSystem` programmatically (in which case any symbolic variabl
 
 """
 function get_misc(reaction::Reaction)
-    if has_misc(reaction)
+    if hasmisc(reaction)
         return getmetadata(reaction, :misc)
     else
         error("Attempts to access `misc` metadata field for a reaction which does not have a value assigned for this metadata.")

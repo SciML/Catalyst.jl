@@ -116,10 +116,10 @@ let
     r1 = Reaction(k, [X], [X2], [2], [1])
     r2 = Reaction(k, [X], [X2], [2], [1]; metadata=[:noise_scaling => η])
 
-    @test !Catalyst.has_noise_scaling(r1)
-    @test Catalyst.has_noise_scaling(r2)
-    @test_throws Exception Catalyst.get_noise_scaling(r1)
-    @test isequal(Catalyst.get_noise_scaling(r2), η)
+    @test !Catalyst.hasnoisescaling(r1)
+    @test Catalyst.hasnoisescaling(r2)
+    @test_throws Exception Catalyst.getnoisescaling(r1)
+    @test isequal(Catalyst.getnoisescaling(r2), η)
 end
 
 # Tests the description metadata.
@@ -131,10 +131,10 @@ let
     r1 = Reaction(k, [X], [X2], [2], [1])
     r2 = Reaction(k, [X], [X2], [2], [1]; metadata=[:description => "A reaction"])
 
-    @test !Catalyst.has_description(r1)
-    @test Catalyst.has_description(r2)
-    @test_throws Exception Catalyst.get_description(r1)
-    @test isequal(Catalyst.get_description(r2), "A reaction")
+    @test !Catalyst.hasdescription(r1)
+    @test Catalyst.hasdescription(r2)
+    @test_throws Exception Catalyst.getdescription(r1)
+    @test isequal(Catalyst.getdescription(r2), "A reaction")
 end
 
 # Tests the misc metadata.
@@ -146,8 +146,8 @@ let
     r1 = Reaction(k, [X], [X2], [2], [1])
     r2 = Reaction(k, [X], [X2], [2], [1]; metadata=[:misc => ('M', :M)])
 
-    @test !Catalyst.has_misc(r1)
-    @test Catalyst.has_misc(r2)
-    @test_throws Exception Catalyst.get_misc(r1)
-    @test isequal(Catalyst.get_misc(r2), ('M', :M))
+    @test !Catalyst.hasmisc(r1)
+    @test Catalyst.hasmisc(r2)
+    @test_throws Exception Catalyst.getmisc(r1)
+    @test isequal(Catalyst.getmisc(r2), ('M', :M))
 end
