@@ -255,7 +255,7 @@ function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
 end
 
 # Helper function for updating the multiplicity throughout recursion (handles e.g. parametric
-# stoichiometries).
+# stoichiometries). The `op` argument is an operation (e.g. `*`, but could also e.g. be `+`).
 function processmult(op, mult, stoich)
     if (mult isa Number) && (stoich isa Number)
         op(mult, stoich)
@@ -285,74 +285,54 @@ end
 # Function for creating a ReactionSystem structure (used by the @reaction_network macro).
 function make_reaction_system(ex::Expr, name)
 
-    # Handle interpolation of variables
+    # Handle interpolation of variables in the input.
     ex = esc_dollars!(ex)
 
-    # Read lines with reactions and options.
+    # Extracts the lines with reactions and lines with options.
     reaction_lines = Expr[x for x in ex.args if x.head == :tuple]
     option_lines = Expr[x for x in ex.args if x.head == :macrocall]
 
-    # Get macro options.
-    if length(unique(arg.args[1] for arg in option_lines)) < length(option_lines)
+    # Extracts the options used (throwing errors for repeated options).
+    if !allunique(arg.args[1] for arg in option_lines)
          error("Some options where given multiple times.")
     end
-    options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
-                       option_lines))
-
-    # Reads options.
-    default_reaction_metadata = :([])
-    check_default_noise_scaling!(default_reaction_metadata, options)
+    options = Dict(Symbol(String(arg.args[1])[2:end]) => arg for arg in option_lines)
+    
+    # Reads options (round 1, options which must be read before the reactions, e.g. because 
+    # they might declare parameters/species/variables).
     compound_expr, compound_species = read_compound_options(options)
-    continuous_events_expr = read_events_option(options, :continuous_events)
-    discrete_events_expr = read_events_option(options, :discrete_events)
-
-    # Parses reactions, species, and parameters.
-    reactions = get_reactions(reaction_lines)
     species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
     variables_declared = extract_syms(options, :variables)
-
-    # Reads more options.
     vars_extracted, add_default_diff, equations = read_equations_options(options, variables_declared)
+
+    # Extracts all reactions. Extracts all parameters, species, and variables of the system and
+    # creates lists with them.
+    reactions = get_reactions(reaction_lines)
     variables = vcat(variables_declared, vars_extracted)
-
-    # handle independent variables
-    if haskey(options, :ivs)
-        ivs = Tuple(extract_syms(options, :ivs))
-        ivexpr = copy(options[:ivs])
-        ivexpr.args[1] = Symbol("@", "variables")
-    else
-        ivs = (DEFAULT_IV_SYM,)
-        ivexpr = :(@variables $(DEFAULT_IV_SYM))
-    end
-    tiv = ivs[1]
-    sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
-    all_ivs = (isnothing(sivs) ? [tiv] : [tiv; sivs.args])
-
-    if haskey(options, :combinatoric_ratelaws)
-        combinatoric_ratelaws = options[:combinatoric_ratelaws].args[end]
-    else
-        combinatoric_ratelaws = true
-    end
-
-    # Reads more options.
-    observed_vars, observed_eqs, obs_syms = read_observed_options(options, [species_declared; variables], all_ivs)
-
-    declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
+    syms_declared = Set(Iterators.flatten((parameters_declared, species_declared,
                                            variables)))
-    species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
-                                                                              declared_syms)
+    species_extracted, parameters_extracted = extract_species_and_parameters(reactions,
+                                                                              syms_declared)
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
-    # Create differential expression.
+    # Reads options (round 2, options that either can, or must, be read after the reactions).
+    tiv, sivs, all_ivs, ivexpr = read_ivs_option(options)
+    continuous_events_expr = read_events_option(options, :continuous_events)
+    discrete_events_expr = read_events_option(options, :discrete_events)
+    observed_vars, observed_eqs, obs_syms = read_observed_options(options, [species_declared; variables], all_ivs)
     diffexpr = create_differential_expr(options, add_default_diff, [species; parameters; variables], tiv)
+    default_reaction_metadata = read_default_noise_scaling_option(options)
+    combinatoric_ratelaws = read_combinatoric_ratelaws_option(options)
 
     # Checks for input errors.
-    (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
+    if (sum(length.([reaction_lines, option_lines])) != length(ex.args))
         error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
-    any(!in(opt_in, option_keys) for opt_in in keys(options)) &&
+    end
+    if any(!in(opt_in, option_keys) for opt_in in keys(options))
         error("The following unsupported options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
+    end
     forbidden_symbol_check(union(species, parameters))
     forbidden_variable_check(variables)
     unique_symbol_check(union(species, parameters, variables, ivs))
@@ -397,13 +377,17 @@ end
 
 ### DSL Reaction Reading Functions ###
 
-# Generates a vector containing a number of reaction structures, each containing the information about one reaction.
-function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionInternal}(undef, 0))
+# Generates a vector of reaction structures, each containing the information about one reaction.
+function get_reactions(exprs::Vector{Expr})
+    # Declares an array to which we add all found reactions.
+    reactions = Vector{ReactionInternal}(undef, 0)
+
+    # Loops through each line of reactions. Extracts and adds each lines's reactions to `reactions`.
     for line in exprs
         # Reads core reaction information.
         arrow, rate, reaction, metadata = read_reaction_line(line)
 
-        # Checks the type of arrow used, and creates the corresponding reaction(s). Returns them in an array.
+        # Checks which type of line is used, and calls `push_reactions!` on the processed line.
         if in(arrow, double_arrows)
             if typeof(rate) != Expr || rate.head != :tuple
                 error("Error: Must provide a tuple of reaction rates when declaring a bi-directional reaction.")
@@ -423,8 +407,8 @@ end
 
 # Extracts the rate, reaction, and metadata fields (the last one optional) from a reaction line.
 function read_reaction_line(line::Expr)
-    # Handles rate, reaction, and arrow.
-    # Special routine required for  the`-->` case, which creates different expression from all other cases.
+    # Handles rate, reaction, and arrow. Special routine required for  the`-->` case, which 
+    # creates an expression different what the other arrows creates.
     rate = line.args[1]
     reaction = line.args[2]
     (reaction.head == :-->) && (reaction = Expr(:call, :→, reaction.args[1], reaction.args[2]))
@@ -442,32 +426,30 @@ function read_reaction_line(line::Expr)
     return arrow, rate, reaction, metadata
 end
 
-# Takes a reaction line and creates reaction(s) from it and pushes those to the reaction array.
-# Used to create multiple reactions from, for instance, `k, (X,Y) --> 0`.
-function push_reactions!(reactions::Vector{ReactionInternal}, sub_line::ExprValues, prod_line::ExprValues,
+# Takes a reaction line and creates reaction(s) from it and pushes those to the reaction vector.
+# Used to create multiple reactions from bundled reactions (like `k, (X,Y) --> 0`).
+function push_reactions!(reactions::Vector{ReactionInternal}, subs::ExprValues, prods::ExprValues,
                          rate::ExprValues, metadata::ExprValues, arrow::Symbol)
-    # The rates, substrates, products, and metadata may be in a tupple form (e.g. `k, (X,Y) --> 0`).
-    # This finds the length of these tuples (or 1 if not in tuple forms). Errors if lengs inconsistent.
-    lengs = (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate), tup_leng(metadata))
-    if any(!(leng == 1 || leng == maximum(lengs)) for leng in lengs)
-        throw("Malformed reaction, rate=$rate, subs=$sub_line, prods=$prod_line, metadata=$metadata.")
+    # The rates, substrates, products, and metadata may be in a tuple form (e.g. `k, (X,Y) --> 0`).
+    # This finds these tuples' lengths (or 1 for non-tuple forms). Inconsistent lengths yield error.
+    lengs = (tup_leng(subs), tup_leng(prods), tup_leng(rate), tup_leng(metadata))
+    maxl = maximum(lengs)
+    if any(!(leng == 1 || leng == maxl) for leng in lengs)
+        throw("Malformed reaction, rate=$rate, subs=$subs, prods=$prods, metadata=$metadata.")
     end
 
-    # Loops through each reaction encoded by the reaction composites. Adds the reaction to the reactions vector.
-    for i in 1:maximum(lengs)
-        # If the `only_use_rate` metadata was not provided, this has to be infered from the arrow used.
+    # Loops through each reaction encoded by the reaction's different components. 
+    # Creates a `ReactionInternal` representation and adds it to `reactions`.
+    for i in 1:maxl
+        # If the `only_use_rate` metadata was not provided, this must be inferred from the arrow.
         metadata_i = get_tup_arg(metadata, i)
-        if all(arg -> arg.args[1] != :only_use_rate, metadata_i.args)
+        if all(arg.args[1] != :only_use_rate for arg in metadata_i.args)
             push!(metadata_i.args, :(only_use_rate = $(in(arrow, pure_rate_arrows))))
         end
 
-        # Checks that metadata fields are unqiue.
-        if !allunique(arg.args[1] for arg in metadata_i.args)
-            error("Some reaction metadata fields where repeated: $(metadata_entries)")
-        end
-
-        push!(reactions, ReactionInternal(get_tup_arg(sub_line, i), get_tup_arg(prod_line, i),
-                                        get_tup_arg(rate, i), metadata_i))
+        # Extracts substrates, products, and rates for the i'th reaction.
+        subs_i, prods_i, rate_i = get_tup_arg.([subs, prods, rate], i)
+        push!(reactions, ReactionInternal(subs_i, prods_i, rate_i, metadata_i))
     end
 end
 
@@ -480,16 +462,15 @@ function extract_syms(opts, vartype::Symbol)
     if haskey(opts, vartype)
         ex = opts[vartype]
         vars = Symbolics._parse_vars(vartype, Real, ex.args[3:end])
-        syms = Vector{Union{Symbol, Expr}}(vars.args[end].args)
+        return Vector{Union{Symbol, Expr}}(vars.args[end].args)
     else
-        syms = Union{Symbol, Expr}[]
+        return Union{Symbol, Expr}[]
     end
-    return syms
 end
 
 # Function looping through all reactions, to find undeclared symbols (species or
 # parameters), and assign them to the right category.
-function extract_species_and_parameters!(reactions, excluded_syms)
+function extract_species_and_parameters(reactions, excluded_syms)
     species = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
@@ -509,7 +490,7 @@ function extract_species_and_parameters!(reactions, excluded_syms)
     collect(species), collect(parameters)
 end
 
-# Function called by extract_species_and_parameters!, recursively loops through an
+# Function called by extract_species_and_parameters, recursively loops through an
 # expression and find symbols (adding them to the push_symbols vector).
 function add_syms_from_expr!(push_symbols::AbstractSet, rateex::ExprValues, excluded_syms)
     if rateex isa Symbol
@@ -590,15 +571,40 @@ end
 
 ### DSL Option Handling ###
 
-# Checks if the `@default_noise_scaling` option is used. If so, read its input and adds it as a
-# default metadata value to the `default_reaction_metadata` vector.
-function check_default_noise_scaling!(default_reaction_metadata, options)
-    if haskey(options, :default_noise_scaling)
-        if (length(options[:default_noise_scaling].args) != 3) # Becasue of how expressions are, 3 is used.
-            error("@default_noise_scaling should only have a single input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
-        end
-        push!(default_reaction_metadata.args, :(:noise_scaling => $(options[:default_noise_scaling].args[3])))
+# Finds the time idenepdnet variable, and any potential spatial indepndent variables.
+# Returns these (individually and combined), as well as an expression for declaring them
+function read_ivs_option(options)
+    # Creates the independent variables expressions (depends on whether the `ivs` option was used).
+    if haskey(options, :ivs)
+        ivs = Tuple(extract_syms(options, :ivs))
+        ivexpr = copy(options[:ivs])
+        ivexpr.args[1] = Symbol("@", "variables")
+    else
+        ivs = (DEFAULT_IV_SYM,)
+        ivexpr = :(@variables $(DEFAULT_IV_SYM))
     end
+
+    # Extracts the independet variables symbols, and returns the output.
+    tiv = ivs[1]
+    sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
+    all_ivs = (isnothing(sivs) ? [tiv] : [tiv; sivs.args])
+    return tiv, sivs, all_ivs, ivexpr
+end
+
+# Returns the `default_reaction_metadata` output. Technically Catalyst's code could have been made
+# more generic to account for other default reaction metadata. Practically, this will likely
+# be the only relevant reaction metadata to have a default value via the DSL. If another becomes
+# relevant, the code can be rewritten to take this into account.
+# Checks if the `@default_noise_scaling` option is used. If so, uses it as the default value of 
+# the `default_noise_scaling` reaction metadata, otherwise, returns an empty vector.
+function read_default_noise_scaling_option(options)
+    if haskey(options, :default_noise_scaling)
+        if (length(options[:default_noise_scaling].args) != 3) 
+            error("@default_noise_scaling should only have a single expression as its input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
+        end
+        return :([:noise_scaling => $(options[:default_noise_scaling].args[3])])
+    end
+    return :([])
 end
 
 # When compound species are declared using the "@compound begin ... end" option, get a list of the compound species, and also the expression that crates them.
@@ -708,6 +714,16 @@ function create_differential_expr(options, add_default_diff, used_syms, tiv)
     end
 
     return diffexpr
+end
+
+# Reads the combinatiorial ratelaw options, which determines if a combinatorial rate law should
+# be used or not. If not provides, uses the default (true).
+function read_combinatoric_ratelaws_option(options)
+    if haskey(options, :combinatoric_ratelaws)
+        return options[:combinatoric_ratelaws].args[end]
+    else
+        return true
+    end
 end
 
 # Reads the observables options. Outputs an expression ofr creating the obervable variables, and a vector of observable equations.
@@ -837,7 +853,7 @@ function make_reaction(ex::Expr)
 
     # Parses reactions, species, and parameters.
     reaction = get_reaction(ex)
-    species, parameters = extract_species_and_parameters!([reaction], [])
+    species, parameters = extract_species_and_parameters([reaction], [])
 
     # Checks for input errors.
     forbidden_symbol_check(union(species, parameters))
