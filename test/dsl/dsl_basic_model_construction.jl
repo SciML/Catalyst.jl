@@ -54,6 +54,65 @@ end
 
 ## Run Tests ###
 
+# Tests the various network constructors. Test for `@network_component` and `@network_component`.
+# Tests for combinations of reactions/no reactions, no name/name/interpolated name.
+let
+    # Declare comparison networks programmatically.
+    @parameters d
+    @species X(t)
+    rx = Reaction(d, [X], [])
+
+    rs_empty = ReactionSystem([], t; name = :name)
+    rs = ReactionSystem([rx], t; name = :name)
+    rs_empty_comp = complete(rs_empty)
+    rs_comp = complete(rs)
+
+    # Declare empty networks.
+    name_sym = :name
+    rs_empty_1 = @network_component
+    rs_empty_2 = @network_component name
+    rs_empty_3 = @network_component $name_sym
+    rs_empty_comp_1 = @reaction_network
+    rs_empty_comp_2 = @reaction_network name
+    rs_empty_comp_3 = @reaction_network $name_sym
+
+    # Check that empty networks are correct.
+    isequivalent(rs_empty_1, rs_empty)
+    rs_empty_2 == rs_empty
+    rs_empty_3 == rs_empty
+    isequivalent(rs_empty_comp_1, rs_empty_comp)
+    rs_empty_comp_2 == rs_empty_comp
+    rs_empty_comp_3 == rs_empty_comp
+
+    # Declare non-empty networks.
+    rs_1 = @network_component begin
+        d, X --> 0
+    end
+    rs_2 = @network_component name begin
+        d, X --> 0
+    end
+    rs_3 = @network_component $name_sym begin
+        d, X --> 0
+    end
+    rs_comp_1 = @reaction_network begin
+        d, X --> 0
+    end
+    rs_comp_2 = @reaction_network name begin
+        d, X --> 0
+    end
+    rs_comp_3 = @reaction_network $name_sym begin
+        d, X --> 0
+    end
+
+    # Check that non-empty networks are correct.
+    isequivalent(rs_1, rs)
+    rs_2 == rs
+    rs_3 == rs
+    isequivalent(rs_empty_1, rs_empty)
+    rs_empty_2 == rs_empty
+    rs_empty_3 == rs_empty
+end
+
 # Test basic properties of networks.
 let
     basic_test(reaction_networks_standard[1], 10, [:X1, :X2, :X3],
