@@ -279,7 +279,7 @@ oplt2 = plot(osol2; title = "Oscillation")
 plot(oplt1, oplt2; lw = 3, size = (800,600), layout = (2,1))
 ```
 
-## [The Repressilator](@id basic_CRN_library_)
+## [The Repressilator](@id basic_CRN_library_repressilator)
 The Repressilator was introduced in [*Elowitz & Leibler (2000)*](https://www.nature.com/articles/35002125) as a simple system that can generate oscillations (most notably, they demonstrated this both in a model and in a synthetic in vivo implementation in *Escherichia col*). It consists of three genes, repressing each other in a cycle. Here, we will implement it using three species ($X$, $Y$, and $Z$) whose production rates are (repressing) [Hill functions](https://en.wikipedia.org/wiki/Hill_equation_(biochemistry)).
 ```@example crn_library_brusselator
 using Catalyst

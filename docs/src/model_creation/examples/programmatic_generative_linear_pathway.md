@@ -1,5 +1,5 @@
 # [Programmatic, generative, modelling of a linear pathway](@id programmatic_generative_linear_pathway)
-This example will show how to use programmatic, generative, modelling to model a system implicitly. I.e. rather than listing all system reactions explicitly, the reactions are implicitly generated from a simple set of rules. This example is specifically designed to show how [programmatic modelling](@ref ref) enables *generative workflows* (demonstrating one of its advantages as compared to [DSL-based modelling](@ref ref)). In our example, we will model linear pathways, so we will first introduce these. Next, we will model them first using the DSL, and then using a generative programmatic workflow.
+This example will show how to use programmatic, generative, modelling to model a system implicitly. I.e. rather than listing all system reactions explicitly, the reactions are implicitly generated from a simple set of rules. This example is specifically designed to show how [programmatic modelling](@ref ref) enables *generative workflows* (demonstrating one of its advantages as compared to [DSL-based modelling](@ref dsl_description)). In our example, we will model linear pathways, so we will first introduce these. Next, we will model them first using the DSL, and then using a generative programmatic workflow.
 
 ## [Linear pathways](@id programmatic_generative_linear_pathway_intro)
 Linear pathways consists of a series of species ($X_0$, $X_1$, $X_2$, ..., $X_n$) where each activates the subsequent one. These are often modelled through the following reaction system:
@@ -80,6 +80,8 @@ Above, we investigated the impact of linear pathways' lengths on their behaviour
 First, we create a function, `generate_lp`, which creates a linear pathway model of length `n`. It utilises [*vector variables*](@ref ref) to create an arbitrary number of species, and also creates an [observable](@ref ref) for the final species of the chain.
 ```@example programmatic_generative_linear_pathway_generative
 using Catalyst # hide
+t = default_t()
+@parameters τ
 function generate_lp(n)
     # Creates a vector `X` with n+1 species.
     @species X(t)[1:n+1]
@@ -115,6 +117,7 @@ nothing # hide
 ```
 We can now simulate linear pathways of arbitrary lengths using a simple syntax. We use this to recreate our previous result from the DSL:
 ```@example programmatic_generative_linear_pathway_generative
+using OrdinaryDiffEq, Plots # hide
 sol_n3 = solve(generate_oprob(3))
 sol_n10 = solve(generate_oprob(10))
 plot(sol_n3; idxs = :Xend, label = "n = 3")

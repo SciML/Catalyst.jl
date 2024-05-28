@@ -77,7 +77,7 @@ Catalyst models are created through the `@reaction_network` *macro*. For more in
 
 The `@reaction_network` command is followed by the `begin` keyword, which is followed by one line for each *reaction* of the model. Each reaction consists of a *reaction rate*, followed by the reaction itself. The reaction contains a set of *substrates* and a set of *products* (what is consumed and produced by the reaction, respectively). These are separated by a `-->` arrow. Finally, the model ends with the `end` keyword.
 
-Here, we create a simple *birth-death* model, where a single species ($X$) is created at rate $b$, and degraded at rate $d$. The model is stored in the variable `rn`.
+Here, we create a simple [*birth-death* model](@ref basic_CRN_library_bd), where a single species ($X$) is created at rate $b$, and degraded at rate $d$. The model is stored in the variable `rn`.
 ```@example ex2
 rn = @reaction_network begin
  b, 0 --> X
@@ -136,7 +136,7 @@ Pkg.add("JumpProcesses")
 using JumpProcesses
 ```
 
-This time, we will declare a so-called [SIR model for an infectious disease](https://en.wikipedia.org/wiki/Compartmental_models_in_epidemiology#The_SIR_model). Note that even if this model does not describe a set of chemical reactions, it can be modelled using the same framework. The model consists of 3 species:
+This time, we will declare a so-called [SIR model for an infectious disease](@ref basic_CRN_library_sir). Note that even if this model does not describe a set of chemical reactions, it can be modelled using the same framework. The model consists of 3 species:
 * $S$, the amount of *susceptible* individuals.
 * $I$, the amount of *infected* individuals.
 * $R$, the amount of *recovered* (or *removed*) individuals.

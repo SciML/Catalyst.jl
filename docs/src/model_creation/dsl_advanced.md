@@ -9,7 +9,7 @@ using Catalyst
 ```
 
 ## [Explicit specification of network species and parameters](@id dsl_advanced_options_declaring_species_and_parameters)
-[Previously](@ref ref), we mentioned that the DSL automatically determines which symbols correspond to species and which to parameters. This is done by designating everything that appears as either a substrate or a product as a species, and all remaining quantities as parameters (i.e. those only appearing within rates or [stoichiometric constants](@ref ref)). Sometimes, one might want to manually override this default behaviour for a given symbol. I.e. consider the following model, where the conversion of a protein `P` from its inactive form (`Pᵢ`) to its active form (`Pₐ`) is catalysed by an enzyme (`E`). Using the most natural description:
+Previously, we mentioned that the DSL automatically determines which symbols correspond to species and which to parameters. This is done by designating everything that appears as either a substrate or a product as a species, and all remaining quantities as parameters (i.e. those only appearing within rates or [stoichiometric constants](@ref dsl_description_stoichiometries_parameters)). Sometimes, one might want to manually override this default behaviour for a given symbol. I.e. consider the following model, where the conversion of a protein `P` from its inactive form (`Pᵢ`) to its active form (`Pₐ`) is catalysed by an enzyme (`E`). Using the most natural description:
 ```@example dsl_advanced_explicit_definitions
 catalysis_sys = @reaction_network begin
   k*E, Pᵢ --> Pₐ
@@ -74,7 +74,7 @@ end
 parameters(dimerisation)
 ```
 !!! danger
-    Generally, Catalyst and the SciML ecosystem *do not* guarantee that parameter and species order are preserved throughout various operations on a model. Writing programs that depend on these orders is *strongly discouraged*. There are, however, some legacy packages which still depend on order (one example is provided [here](@ref ref)). In these situations, this might be useful. However, in these cases, it is recommended that the user is extra wary, and also checks the order manually. 
+    Generally, Catalyst and the SciML ecosystem *do not* guarantee that parameter and species order are preserved throughout various operations on a model. Writing programs that depend on these orders is *strongly discouraged*. There are, however, some legacy packages which still depend on order (one example can be found [here](@ref optimization_parameter_fitting_basics)). In these situations, this might be useful. However, in these cases, it is recommended that the user is extra wary, and also checks the order manually. 
 
 !!! note
     The syntax of the `@species` and `@parameters` options is identical to that used by the `@species` and `@parameters` macros [used in programmatic modelling in Catalyst](@ref programmatic_CRN_construction) (for e.g. designating metadata or initial conditions). Hence, if one has learnt how to specify species/parameters using either approach, that knowledge can be transferred to the other one.
@@ -125,7 +125,7 @@ rn = @reaction_network begin
 end
 
 tspan = (0.0, 10.0)
-p = [:p => 1.0, :D => 0.2]
+p = [:p => 1.0, :d => 0.2]
 oprob = ODEProblem(rn, u0, tspan, p)
 sol = solve(oprob)
 plot(sol)
@@ -171,10 +171,10 @@ two_state_system = @reaction_network begin
   (ka,kD), Xi <--> Xa
 end
 ```
-A metadata can be given to only a subset of a system's species/parameters, and a quantity can be given several metadata entries. To give several metadata, separate each by a `,`. Here we only provide a description for `kA`, for which we also provide a [bounds metadata](@ref https://docs.sciml.ai/ModelingToolkit/dev/basics/Variable_metadata/#Bounds),
+A metadata can be given to only a subset of a system's species/parameters, and a quantity can be given several metadata entries. To give several metadata, separate each by a `,`. Here we only provide a description for `kA`, for which we also provide a [`bounds` metadata](@ref https://docs.sciml.ai/ModelingToolkit/dev/basics/Variable_metadata/#Bounds),
 ```@example dsl_advanced_metadata
 two_state_system = @reaction_network begin
-  @parameters kA [description="X's activation rate", bound=(0.01,10.0)]
+  @parameters kA [description="X's activation rate", bounds=(0.01,10.0)]
   (ka,kD), Xi <--> Xa
 end
 ```
@@ -182,7 +182,7 @@ end
 It is possible to add both default values and metadata to a parameter/species. In this case, first provide the default value, and next the metadata. I.e. to in the above example set $kA$'s default value to $1.0$ we use
 ```@example dsl_advanced_metadata
 two_state_system = @reaction_network begin
-  @parameters kA=1.0 [description="X's activation rate", bound=(0.01,10.0)]
+  @parameters kA=1.0 [description="X's activation rate", bounds=(0.01,10.0)]
   (ka,kD), Xi <--> Xa
 end
 ```
@@ -191,10 +191,10 @@ When designating metadata for species/parameters in `begin ... end` blocks the s
 ```@example dsl_advanced_metadata
 two_state_system = @reaction_network begin
   @parameters begin
-    kA, [description="X's activation rate", bound=(0.01,10.0)]
-    kD = 1.0, [description="X's deactivation rate"]
+      kA, [description="X's activation rate", bounds=(0.01,10.0)]
+      kD = 1.0, [description="X's deactivation rate"]
   end
-  (ka,kD), Xi <--> Xa
+  (kA,kD), Xi <--> Xa
 end
 ```
 
@@ -229,7 +229,7 @@ end
 A common use-case for constant species is when modelling systems where some species are present in such surplus that their amounts the reactions' effect on it is negligible. A system which is commonly modelled this way is the [Brusselator](https://en.wikipedia.org/wiki/Brusselator).
 
 ### [Designating parameter types](@id dsl_advanced_options_parameter_types)
-Sometimes it is desired to designate that a parameter should have a specific [type](@ref ref). When supplying this parameter's value to e.g. an `ODEProblem`, that parameter will then be restricted to that specific type. Designating a type is done by appending the parameter with `::` followed by its type. E.g. in the following example we specify that the parameter `n` (the number of `X` molecules in the `Xn` polymer) must be an integer (`Int64`)
+Sometimes it is desired to designate that a parameter should have a specific [type](https://docs.julialang.org/en/v1/manual/types/). When supplying this parameter's value to e.g. an `ODEProblem`, that parameter will then be restricted to that specific type. Designating a type is done by appending the parameter with `::` followed by its type. E.g. in the following example we specify that the parameter `n` (the number of `X` molecules in the `Xn` polymer) must be an integer (`Int64`)
 ```@example dsl_advanced_parameter_types
 using Catalyst # hide
 polymerisation_network = @reaction_network begin
@@ -238,7 +238,7 @@ polymerisation_network = @reaction_network begin
 end
 nothing # hide
 ```
-Generally, when simulating models with mixed parameter types, it is recommended to [declare parameter values as tuples, rather than vectors](@ref ref), e.g.:
+Generally, when simulating models with mixed parameter types, it is recommended to [declare parameter values as tuples, rather than vectors](@ref simulation_intro_ODEs_input_forms), e.g.:
 ```@example dsl_advanced_parameter_types
 ps = (:kB => 0.2, :kD => 1.0, :n => 2)
 nothing # hide
@@ -254,7 +254,7 @@ nothing # hide
 ```
 
 ### [Vector-valued species or parameters](@id dsl_advanced_options_vector_variables)
-Sometimes, one wishes to declare a large number of similar parameters or species. This can be done by *creating them as vectors*. E.g. below we create a [two-state system](@ref ref). However, instead of declaring `X1` and `X2` (and `k1` and `k2`) as separate entities, we declare them as vectors:
+Sometimes, one wishes to declare a large number of similar parameters or species. This can be done by *creating them as vectors*. E.g. below we create a [two-state system](@ref basic_CRN_library_two_states). However, instead of declaring `X1` and `X2` (and `k1` and `k2`) as separate entities, we declare them as vectors:
 ```@example dsl_advanced_vector_variables
 using Catalyst # hide
 two_state_model = @reaction_network begin
@@ -316,7 +316,7 @@ end
 rn1 == rn2
 ```
 
-Setting model names is primarily useful for [hierarchical modelling](@ref ref), where network names are appended to the display names of subnetworks' species and parameters.
+Setting model names is primarily useful for [hierarchical modelling](@ref compositional_modeling), where network names are appended to the display names of subnetworks' species and parameters.
 
 ## [Creating observables](@id dsl_advanced_options_observables)
 Sometimes one might want to use observable variables. These are variables with values that can be computed directly from a system's state (rather than having their values implicitly given by reactions or equations). Observables can be designated using the `@observables` option. Here, the `@observables` option is followed by a `begin ... end` block with one line for each observable. Each line first gives the observable, followed by a `~` (*not* a `=`!), followed by an expression describing how to compute it.
@@ -350,11 +350,11 @@ sol[:Xtot]
 to get a vector with `Xtot`'s value throughout the simulation. We can also use
 ```@example dsl_advanced_observables
 using Plots
-plot(sol; idxs = [:Xtot, :Ytot])
+plot(sol; idxs = :Xtot)
 ```
 to plot the observables (rather than the species).
 
-Observables can be defined using complicated expressions containing species, parameters, and [variables](@ref ref) (but not other observables). In the following example (which uses a [parametric stoichiometry](@ref ref)) `X` polymerises to form a complex `Xn` containing `n` copies of `X`. Here, we create an observable describing the total number of `X` molecules in the system:
+Observables can be defined using complicated expressions containing species, parameters, and [variables](@ref ref) (but not other observables). In the following example (which uses a [parametric stoichiometry](@ref dsl_description_stoichiometries_parameters)) `X` polymerises to form a complex `Xn` containing `n` copies of `X`. Here, we create an observable describing the total number of `X` molecules in the system:
 ```@example dsl_advanced_observables
 rn = @reaction_network begin
   @observables Xtot ~ X + n*Xn
@@ -378,7 +378,7 @@ Observables are by default considered [variables](@ref ref) (not species). To de
 ```@example dsl_advanced_observables
 rn = @reaction_network begin
   @species Xtot(t)
-  @observables Xtot ~ X + n*XnXY  
+  @observables Xtot ~ X + n*Xn  
   (kB,kD), n*X <--> Xn
 end
 nothing # hide
