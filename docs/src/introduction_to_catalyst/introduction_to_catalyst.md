@@ -1,5 +1,5 @@
 # [Introduction to Catalyst](@id introduction_to_catalyst)
-This tutorial provides a basic introduction on how to create chemical reaction network (CRN) models using Catalyst, and how to perform ODE, SDE, and jump simulation using these. [An alternative introduction](@ref catalyst_for_new_julia_users) is available for users with little familiarity with Julia programming. 
+This tutorial provides a basic introduction on how to create chemical reaction network (CRN) models using Catalyst, and how to perform ODE, SDE, and jump simulation using these. [An alternative introduction](@ref catalyst_for_new_julia_users) is available for users who are unfamiliar with Julia programming. 
 
 Before starting this tutorial, we must (unless this has already been done) [install and activate](@ref ref) the Catalyst package:
 ```julia
@@ -9,7 +9,7 @@ using Catalyst
 ```
 
 ## [Creating basic Catalyst models](@id introduction_to_catalyst_model_creation)
-Catalyst exports the [`@reaction_network`](@ref) [macro]([macro](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros)), which provides the main way of creating CRN models (alternative approaches are described [later](@ref ref)). This is followed by a `begin ... end` block which encapsulates the reactions of the system. E.g here we create a simple [birth-death model](@ref ref) (where a single species $X$ is both produced and degraded):
+Catalyst exports the [`@reaction_network`](@ref) [macro]([macro](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros)), which provides the main way of creating CRN models (alternative approaches are described [later](@ref ref)). This is followed by a `begin ... end` block which encapsulates the model's reactions. E.g here we create a simple [birth-death model](@ref ref) (where a single species $X$ is both produced and degraded):
 ```@example intro_1
 using Catalyst # hide
 bd_model = @reaction_network begin
@@ -41,7 +41,7 @@ In all three cases, each reaction consists of:
 For reactions with multiple substrates/products (e.g. `S + E --> SE`), these are separated by `+`. Where substrates/products contain multiple units of the same species (e.g. `S + I --> 2I`), this is indicated by pre-appending that species with the corresponding [stoichiometric coefficient](https://en.wikipedia.org/wiki/Stoichiometry). The absences of substrates/products (that is, in pure production/degradation reactions like `0 --> X` and `X --> 0`) are denoted with `0`. A more throughout description of how to create models using `@reaction_network` (also called *the Catalyst DSL*) is provided [here](@ref ref).
 
 ## [Simulating Catalyst models](@id introduction_to_catalyst_model_simulation)
-There exist three primary modes of simulation CRN models:
+There exist three primary modes for simulating CRN models:
 1. Using ordinary differential equations (ODEs).
 2. Using stochastic differential equations (SDEs).
 3. Using jump process simulations.
@@ -54,7 +54,7 @@ Let us consider the infectious disease model declared in the previous section. T
 * The simulation's timespan. That is, the time frame over which we wish to run the simulation.
 * The simulation's parameter values. That is, the values of the model's parameters for this simulation.
 
-The initial conditions and parameter values are declared as vectors of pairs. Here, each entry pairs the symbol corresponding to a specific quantity's name to its value (e.g. `:S => 99` denotes that the initial concentration of `S` should be `99`). The timespan is simply a tuple with the simulations *starting* and *final* times. Once we have set these values, we collect them in a so-called `ODEProblem`.
+The initial conditions and parameter values are declared as vectors of pairs. Here, each entry pairs the symbol corresponding to a specific quantity's name to its value (e.g. `:S => 99` denotes that the initial value of `S` should be `99`). The timespan is simply a tuple with the simulations *starting* and *final* times. Once we have set these values, we collect them in a so-called `ODEProblem`.
 ```@example intro_1
 u0 = [:S => 99, :I => 1, :R => 0]
 tspan = (0.0, 20.0)
@@ -84,7 +84,8 @@ sol = solve(sprob, STrapezoid())
 sol = solve(sprob, STrapezoid(); seed = 1234) # hide
 nothing # hide
 ```
-Note that we here have to provide a second argument to the `solver` command. This is our choice of [simulation method](@ref ref). While we can provide this for ODE simulations as well, OrdinaryDiffEq.jl is able to [automatically select a suitable solver for any problem](@ref ref). This is currently not possible for SDEs. For now, `STrapezoid` is often a passable default choice, however, for important applications it can be good to [closer study the available SDE solvers](@ref ref).
+!!! note
+    Here, we have to provide a second argument to the `solve` command. This is our choice of [simulation method](@ref ref). While we can provide this for ODE simulations as well, OrdinaryDiffEq.jl is able to [automatically select a suitable solver for any problem](@ref ref). This is currently not possible for SDEs. For now, `STrapezoid` is often a passable default choice, however, for important applications it can be good to [closer study the available SDE solvers](@ref ref).
 
 Next, we can again use `plot` to plot the solution.
 ```@example intro_1
@@ -92,23 +93,23 @@ plot(sol)
 ```
 Since SDEs are *stochastic* (random), if we simulate it again we get another result:
 ```@example intro_1
-sol = solve(sprob, ImplicitEM())
+sol = solve(sprob, STrapezoid())
 sol = solve(sprob, STrapezoid(); seed = 5678) # hide
 plot(sol)
 ```
 
 ### [Jump simulations](@id introduction_to_catalyst_model_simulation_jumps)
-Finally, Catalyst models can be simulated using jump simulations. These simulate the exact (and randomised) occurrence of system reactions, and their effect on the system's state. Jump simulations require the creation of `JumpProblem`. These are a bit different from `ODEProblem`s and `SDEProblem`s in that we first create a `DiscreteProblem` (to which we provide the model, initial condition, time span, and parameter values), and then use this (in addition to again providing our model) as input to `JumpProblem`.
-```@example intro_1
-dprob = DiscreteProblem(sir_model, u0, tspan, ps)
-jprob = JumpProblem(sir_model, dprob)
-nothing # hide
-```
-Finally, this problem can be simulated and plotted just like ODEs and SDEs (however, this time requiring the [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) simulation package):
+Finally, Catalyst models can be simulated using jump simulations. These simulate the exact (and randomised) occurrence of system reactions, and their effect on the system's state. Jump simulations require the creation of `JumpProblem`. These are a bit different from `ODEProblem`s and `SDEProblem`s in that we first create a `DiscreteProblem` (to which we provide the model, initial condition, time span, and parameter values), and then use this (in addition to again providing our model) as input to `JumpProblem`. We most also load the [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) package.
 ```@example intro_1
 using JumpProcesses
-sol = solve(jprob)
-sol = solve(jprob; seed = 12345) # hide
+dprob = DiscreteProblem(sir_model, u0, tspan, ps)
+jprob = JumpProblem(sir_model, dprob, Direct())
+nothing # hide
+```
+Finally, this problem can be simulated and plotted just like ODEs and SDEs:
+```@example intro_1
+sol = solve(jprob, SSAStepper())
+sol = solve(jprob, SSAStepper(); seed = 12345) # hide
 plot(sol)
 ```
 Looking at the plot, we can actually distinguish the individual jumps of the simulation.
@@ -123,7 +124,7 @@ Next, to list the parameters we can use the `parameters` function:
 parameters(sir_model)
 ```
 !!! note
- The `species` and `parameters` functions return a model's species/parameters as so-called *symbolic variables*. This is a special type (which can be used to form *symbolic expressions) that is described in more detail [here](@ref ref).
+ The `species` and `parameters` functions return a model's species/parameters as so-called *symbolic variables*. This is a special type (which can be used to form *symbolic expressions*) that is described in more detail [here](@ref ref).
 
 Finally, to list the reactions we can use
 ```@example intro_1
@@ -131,9 +132,9 @@ reactions(sir_model)
 ```
 A full list of similar and related functions can be found in [the API](@ref ref).
 
-Simulation solutions can also be queried in various ways. To receive the value of species $P$ across the solution `sol` we simply call
+Simulation solutions can also be queried in various ways. To retrieve the value of species $I$ across the solution `sol` we simply call
 ```@example intro_1
-sol[:P]
+sol[:I]
 ```
 A more throughout tutorial on how to query solutions (and other relevant structures) for parameters and species values can be found [here](@ref simulation_structure_interfacing).
 
@@ -156,7 +157,7 @@ When generating mathematical models from Catalyst-generated [`ReactionSystem`](@
 ```math
 n_1 S_1 + n_2 S_2 + \dots n_M S_M \to \dots
 ```
- with stoichiometric substrate coefficients $\{n_i\}_{i=1}^M$ and rate $k$, the corresponding ODE and SDE rate laws are taken to be
+with stoichiometric substrate coefficients $\{n_i\}_{i=1}^M$ and rate $k$, the corresponding ODE and SDE rate laws are taken to be
 ```math
 k \prod_{i=1}^M \frac{(S_i)^{n_i}}{n_i!},
 ```
@@ -191,12 +192,58 @@ and the ODE model
 \end{align*}
 ```
 
+## [Catalyst represents its models symbolically, and these can be generated programmatically](@id introduction_to_catalyst_sym_prog)
+Above we have described he basics of model creation and simulation in Catalyst. Before we close this introduction, however, we would also like to describe that Catalyst represents its model equations symbolically (i.e. storing the actual algebraic expressions). Internally, Catalyst harnesses this in various ways (to e.g. boost simulation speed), however, an experienced user can also take advantage of it.
+
+Throughout most of Catalyst's documentation, models are declared using the `@reaction_network` macro. However, to gain better access to internal representations, it is typically better to create the model *programmatically*. Below we will create a model programmatically. In the context of this short tutorial, we will not go into all the details of what is going on (these can, however, be found [here](@ref ref)).
+
+A [Repressilator](@ref ref) is a system with three species ($X$, $Y$, and $Z$), each repressing the production of the subsequent species in the circuit. We begin with declaring the model species and parameters.
+```@example intro_prog_sym
+using Catalyst # hide
+t = default_t()
+@species X(t) Y(t) Z(t)
+@parameters K n d
+nothing # hide
+```
+Next, we create a production and a degradation reaction for each species. Normally, we'd have to list each reaction, but since we are building our model programmatically, we can utilise a `for`-loop. Finally, the model is created using the the `ReactionSystem` constructor:
+```@example intro_prog_sym
+rxs = []
+for (sp1, sp2) in zip([X, Y, Z], [Z, X, Y])
+    push!(rxs, Reaction(K/(K + sp2^3), [], [sp1]))
+    push!(rxs, Reaction(d, [sp1], []))
+end
+@named repressilator = ReactionSystem(rxs, t)
+repressilator = complete(repressilator)
+```
+We now have a model, `repressilator`, which can be analysed and simulated just like the models we have created previously:
+```@example intro_prog_sym
+using OrdinaryDiffEq, Plots # hide
+u0 = [X => 0.8, Y => 0.5, Z => 0.5]
+tspan = (0.0, 10.)
+ps = [K => 0.1, n => 3, d => 0.5]
+oprob = ODEProblem(repressilator, u0, tspan, ps)
+sol = solve(oprob, Tsit5())
+plot(sol)
+```
+
+If we consider the code above, we use the species and parameters (e.g. `K` and `X`) to designate values and create our reactions. This is possible because the `@species` and `@parameters` macros create these as [*symbolic variables*](@ref ref). This enables us to form algebraic expressions using them. E.g. here we create an expression describing $X$'s production rate:
+```@example intro_prog_sym
+X_prod = K/(K + Z^3)
+```
+Such expressions are useful as they can be used to designate e.g. what values to plot. E.g. here we plot $X$'s concentration and production rate across the simulation:
+```@example intro_prog_sym
+plot(sol; idxs = [X, X_prod])
+```
+
+While the above description was brief, we hope it provide some idea how to harness Catalyst's ability for symbolic and programmatic modelling. With it, we conclude our introduction with some advice of which part of the documentation to read next. 
+
 ## [Next steps](@id introduction_to_catalyst_next_steps)
 The above tutorial gives enough background to use create and simulate basic CRN models using Catalyst. The remaining documentation goes through additional features of the package. In some places, it will also provide introductions to basic theory, and general advice on how to carry out various workflows. While it would be possible to read it from start to finish, you might also select specific sections depending on your intended use of Catalyst:
 - If you have not read it already, this documentation's [home](@ref ref) page provides some useful information.
 - The [basic](@ref ref) and [advanced](@ref ref) modelling tutorials describe a range of options for model creation, and are useful to everyone who plans on using Catalyst extensively.
 - The introduction to [simulations](@ref ref), [spatial modelling](@ref ref), and [inverse problem solving](@ref ref) are useful to anyone who plans on using Catalyst for any of these purposes.
 - The [Advanced introduction to Catalyst](@ref ref) is not required to utilise any Catalyst feature. While it is not intended to be read at an early stage, it is still useful to anyone who has, or plans to, use Catalyst extensively.
+- If you are interested to learn more on how to create your models programmatically, an extensive description can be found [here](@ref ref).
 
 
 ---
