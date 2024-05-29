@@ -13,7 +13,7 @@ cells such as neurons and muscle cells.
 We begin by importing some necessary packages.
 ```@example hh1
 using ModelingToolkit, Catalyst, NonlinearSolve
-using DifferentialEquations, Symbolics
+using OrdinaryDiffEq, Symbolics
 using Plots
 t = default_t()
 D = default_time_deriv()
