@@ -66,6 +66,6 @@ pages = Any[
     #     # Contributor's guide.
     #     # Repository structure.
     # ],
-    #"FAQs" => "faqs.md",
+    "FAQs" => "faqs.md",
     "API" => "api.md"
 ]

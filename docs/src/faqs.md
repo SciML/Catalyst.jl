@@ -5,13 +5,10 @@ One can directly use symbolic variables to index into SciML solution objects.
 Moreover, observables can also be evaluated in this way. For example,
 consider the system
 ```@example faq1
-using Catalyst, DifferentialEquations, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 rn = @reaction_network ABtoC begin
   (k₊,k₋), A + B <--> C
 end
-
-# initial condition and parameter values
-setdefaults!(rn, [:A => 1.0, :B => 2.0, :C => 0.0, :k₊ => 1.0, :k₋ => 1.0])
 nothing    # hide
 ```
 Let's convert it to a system of ODEs, using the conservation laws of the system
@@ -29,33 +26,35 @@ observed(osys)
 Let's solve the system and see how to index the solution using our symbolic
 variables
 ```@example faq1
+u0 = [rn.A => 1.0, rn.B => 2.0, rn.C => 0.0]
+ps = [rn.k₊ => 1.0, rn.k₋ => 1.0]
 oprob = ODEProblem(osys, [], (0.0, 10.0), [])
 sol = solve(oprob, Tsit5())
 ```
 Suppose we want to plot just species `C`, without having to know its integer
 index in the unknown vector. We can do this using the symbolic variable `C`, which
 we can get at in several ways
-```@example faq1
+```julia
 sol[osys.C]
 ```
 or
-```@example faq1
+```julia
 @unpack C = osys
 sol[C]
 ```
 To evaluate `C` at specific times and plot it we can just do
-```@example faq1
+```julia
 t = range(0.0, 10.0, length=101)
 plot(t, sol(t, idxs = C), label = "C(t)", xlabel = "t")
 ```
 If we want to get multiple variables we can just do
-```@example faq1
+```julia
 @unpack A, B = osys
 sol(t, idxs = [A, B])
 ```
 Plotting multiple variables using the SciML plot recipe can be achieved
 like
-```@example faq1
+```julia
 plot(sol; idxs = [A, B])
 ```
 
@@ -66,7 +65,7 @@ constant, giving `k*X^2/2` instead of `k*X^2` for ODEs and `k*X*(X-1)/2` instead
 of `k*X*(X-1)` for jumps. This can be disabled when directly `convert`ing a
 [`ReactionSystem`](@ref). If `rn` is a generated [`ReactionSystem`](@ref), we can
 do
-```julia
+```@example faq1
 osys = convert(ODESystem, rn; combinatoric_ratelaws=false)
 ```
 Disabling these rescalings should work for all conversions of `ReactionSystem`s
@@ -89,6 +88,7 @@ rx2 = Reaction(2*k, [B], [D], [1], [2.5])
 rx3 = Reaction(2*k, [B], [D], [2.5], [2])
 @named mixedsys = ReactionSystem([rx1, rx2, rx3], t, [A, B, C, D], [k, b])
 osys = convert(ODESystem, mixedsys; combinatoric_ratelaws = false)
+osys = complete(osys)
 ```
 Note, when using `convert(ODESystem, mixedsys; combinatoric_ratelaws=false)` the
 `combinatoric_ratelaws=false` parameter must be passed. This is also true when
@@ -128,6 +128,7 @@ t = default_t()
 rx1 = Reaction(β, [S, I], [I], [1,1], [2])
 rx2 = Reaction(ν, [I], [R])
 @named sir = ReactionSystem([rx1, rx2], t)
+sir = complete(sir)
 oprob = ODEProblem(sir, [], (0.0, 250.0))
 sol = solve(oprob, Tsit5())
 plot(sol)
@@ -163,7 +164,7 @@ Julia `Symbol`s corresponding to each variable/parameter to their values, or
 from ModelingToolkit symbolic variables/parameters to their values. Using
 `Symbol`s we have
 ```@example faq4
-using Catalyst, DifferentialEquations
+using Catalyst, OrdinaryDiffEq
 rn = @reaction_network begin
     α, S + I --> 2I
     β, I --> R
@@ -200,6 +201,7 @@ the second example, or one can use the `symmap_to_varmap` function to convert th
 `Symbol` mapping to a symbolic mapping. I.e. this works
 ```@example faq4
 osys = convert(ODESystem, rn)
+osys = complete(osys)
 
 # this works
 u0 = symmap_to_varmap(rn, [:S => 999.0, :I => 1.0, :R => 0.0])
