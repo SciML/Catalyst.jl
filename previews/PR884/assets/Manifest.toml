@@ -486,9 +486,9 @@ version = "1.1.1+0"
 
 [[deps.ComplexityMeasures]]
 deps = ["Combinatorics", "DelayEmbeddings", "Distances", "FFTW", "LinearAlgebra", "Neighborhood", "QuadGK", "Random", "Reexport", "SparseArrays", "SpecialFunctions", "StateSpaceSets", "StaticArrays", "Statistics", "StatsBase", "StatsFuns", "Wavelets"]
-git-tree-sha1 = "445da4de56d9b2a45146b5c915d54c73cdef68ab"
+git-tree-sha1 = "fd7938b8b7e47eb535d5179055f0011a427b5903"
 uuid = "ab4b797d-85ee-42ba-b621-05d793b346a2"
-version = "3.4.3"
+version = "3.4.4"
 
 [[deps.CompositeTypes]]
 git-tree-sha1 = "bce26c3dab336582805503bed209faab1c279768"
