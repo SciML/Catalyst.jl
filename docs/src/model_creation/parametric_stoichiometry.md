@@ -7,7 +7,7 @@ use symbolic stoichiometries, and discuss several caveats to be aware of.
 Let's first consider a simple reversible reaction where the number of reactants
 is a parameter, and the number of products is the product of two parameters.
 ```@example s1
-using Catalyst, Latexify, DifferentialEquations, ModelingToolkit, Plots
+using Catalyst, Latexify, OrdinaryDiffEq, ModelingToolkit, Plots
 revsys = @reaction_network revsys begin
     k₊, m*A --> (m*n)*B
     k₋, B --> A
@@ -141,6 +141,7 @@ The parameter `b` does not need to be explicitly declared in the
 
 We next convert our network to a jump process representation
 ```@example s1
+using JumpProcesses
 jsys = convert(JumpSystem, burstyrn; combinatoric_ratelaws = false)
 jsys = complete(jsys)
 equations(jsys)
