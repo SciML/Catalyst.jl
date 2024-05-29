@@ -63,7 +63,7 @@ end
 # Parses and expression and return a version where any exponents that are Float64 (but an int, like 2.0) are turned into Int64s.
 make_int_exps(expr) = wrap(Rewriters.Postwalk(Rewriters.PassThrough(___make_int_exps))(unwrap(expr))).val
 function ___make_int_exps(expr)
-    !istree(expr) && return expr
+    !iscall(expr) && return expr
     if (operation(expr) == ^) 
         if isinteger(arguments(expr)[2])
             return arguments(expr)[1] ^ Int64(arguments(expr)[2])
@@ -76,7 +76,7 @@ end
 # If the input is a fraction, removes the denominator.
 function remove_denominators(expr)
     s_expr = simplify_fractions(expr)
-    !istree(expr) && return expr
+    !iscall(expr) && return expr
     if operation(s_expr) == /
         return remove_denominators(arguments(s_expr)[1])
     end

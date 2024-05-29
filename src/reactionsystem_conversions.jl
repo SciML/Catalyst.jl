@@ -560,7 +560,7 @@ function nonlinear_convert_differentials_check(rs::ReactionSystem)
         # If the contenct of the differential is not a variable (and nothing more).
         # If either of this is a case, throws the warning.
         if Symbolics._occursin(Symbolics.is_derivative, eq.rhs) ||
-                !Symbolics.istree(eq.lhs) ||
+                !Symbolics.iscall(eq.lhs) ||
                 !isequal(Symbolics.operation(eq.lhs), Differential(get_iv(rs))) || 
                 (length(arguments(eq.lhs)) != 1) ||
                 !any(isequal(arguments(eq.lhs)[1]), nonspecies(rs))
@@ -895,7 +895,7 @@ function to_multivariate_poly(polyeqs::AbstractVector{Symbolics.BasicSymbolic{Re
 
     pvar2sym, sym2term = SymbolicUtils.get_pvar2sym(), SymbolicUtils.get_sym2term()
     ps = map(polyeqs) do x
-        if istree(x) && operation(x) == (/)
+        if iscall(x) && operation(x) == (/)
             error("We should not be able to get here, please contact the package authors.")
         else
             PolyForm(x, pvar2sym, sym2term).p
