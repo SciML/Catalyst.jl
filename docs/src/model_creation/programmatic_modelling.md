@@ -11,7 +11,7 @@ The creation of more complicated models (containing e.g. [events](@ref ref) or [
 Finally, this tutorial will discuss the concepts of model *names* and *completeness*. While also relevant to DSL-created models, only programmatic modelling requires the users to handle these explicitly, and hence they will be given additional attention here.
 
 !!! note
-    Programmatic creation of `ReactionSystem`s is highly related to programmatic creation of ModelingToolkit.jl models (from which this approach is derived). Users familiar with ModelingToolkit will be able to reuse this knowledge when declaring Catalyst models programmatically (but should still read the below tutorial, to take note of a few crucial differences).
+    Programmatic creation of `ReactionSystem`s is highly related to programmatic creation of [ModelingToolkit.jl](https://github.com/SciML/ModelingToolkit.jl) models (from which this approach is derived). Users familiar with ModelingToolkit will be able to reuse this knowledge when declaring Catalyst models programmatically (but should still read the below tutorial, to take note of a few crucial differences).
 
 ### [Basic example](@id programmatic_modelling_basic_example)
 Before describing the three steps one by one, we will give a simple example where we create a [birth-death process model](@ref ref). First we declare the [time independent variable](@ref ref), the species, and the parameters:
@@ -35,9 +35,12 @@ Finally, we use the reactions and the time independent variable as input to the 
 @named bd_model = ReactionSystem(rxs, t)
 bd_model = complete(bd_model)
 ```
-He we also pre-append the model declaration with the `@named` macro (to [give the model a name](@ref programmatic_modelling_reactionsystems)) and use `complete` (to [mark our model as complete](@ref programmatic_modelling_completeness)).
+He we also pre-append the model declaration with the `@named` macro (to [give the model a name](@ref programmatic_modelling_intro_reactionsystems)) and use `complete` (to [mark our model as complete](@ref programmatic_modelling_intro_completeness)).
 
-## [Declaration of symbolic variables](@id programmatic_modelling_symbolic_variables)
+## [Introduction to programmatic modelling](@id programmatic_modelling_intro)
+Below we will go through the basic steps of programmatic modelling, demonstrating how to create a simple model. Later on, we will go through each step of the process in more detail, showing various additional options.
+
+### [Declaration of symbolic variables](@id programmatic_modelling_intro_symbolic_variables)
 Internally, all Catalyst quantities (parameters, species, and [variables](@ref ref)) are represented as *symbolic variables*. This enables them to [form algebraic expressions](@ref ref), something Catalyst uses to e.g. build differential equations.
 
 Symbolic variables are declared using the `@parameters` and `@species` macros. In this tutorial, we will create a simple [two-state model](@ref ref), for which we need to declare two parameters ($k1$ and $k2$). We do this by simply listing these after the `@parameters` macro:
@@ -52,11 +55,11 @@ k1
 !!! warn
     Since `@parameters` creates the variables `k1` and `k2` in the current scope, this will override any previous variables with these names. Furthermore, if you store new values in the variables (e.g. through `k1 = 1.0`), this will override the symbolic variables stored within these, preventing them from being used to e.g. build `ReactionSystem`s.
 
-Next, we declare the species. Species are not constants, but [functions of the time independent variable](@ref ref). Hence, this must be declared first:
+Next, we declare the species. Species are not constants, but [functions of the time independent variable](@ref ref). Hence, it must be declared first:
 ```@example programmatic_full_example
 t = default_t()
 ```
-While [non-time independent variables is possible](@ref), and independent variables can be declared without using the `default_t` function, the approach is the simplest (and by far most common) one. Next, the species can be declared using a similar notation as the parameters (however, by using the `@species` macro, and by appending the time dependency `(t)` to each species):
+While [non-time independent variables are possible](@ref ref), and independent variables can be declared without using the `default_t` function, using it is the simplest (and by far most common) approach. Next, the species can be declared using a similar notation as the parameters (however, by using the `@species` macro, and by appending the time dependency `(t)` to each species):
 ```@example programmatic_full_example
 @species X1(t) X2(t)
 ```
@@ -67,9 +70,9 @@ Here we have described the basics of symbolic variable declarations. A more thro
     For users familiar with [ModelingToolkit](@ref ref), the `@species` macro has a very similar functionality to the `@variables` macro. However, `@species` appends additional metadata that the variables are *species*, which is required for them to be used as reaction reactants.
 
 !!! note
-    While symbolic variables are not explicitly created when models are created via the DSL, these are still declared and stored internally. When calling the [`parameters`](@ref) or [`species](@ref) functions on a DSL-created `ReactionSystem`, you will symbolic variables of the same form as we here have created programmatically.
+    While symbolic variables are not explicitly created when models are created via the DSL, these are still declared and stored internally. When calling the [`parameters`](@ref) or [`species](@ref) functions on a DSL-created `ReactionSystem`, you will access symbolic variables of the same form as we have here created programmatically.
 
-## [Creation of `Reaction`s](@id programmatic_modelling_reactions)
+### [Creation of `Reaction`s](@id programmatic_modelling_intro_reactions)
 In the next step, we can assemble our model's reactions. In DSL-based modelling, these are listed within the `@reaction_network` macro. For programmatic modelling, these are instead declared using the `Reaction` structure's constructor:
 ```@example programmatic_full_example
 rxs = [
@@ -78,24 +81,26 @@ rxs = [
 ]
 ```
 Here, `Reaction` takes three arguments:
-1. The rate (in these cases a single parameter, however, [other types of rates are possible](@ref ref)).
+1. The rate (in these cases a single parameter, however, [other types of rates are possible](@ref programmatic_modelling_reaction_options_rates)).
 2. A vector with the reaction's substrates (in this case, both reactions have a single substrate).
 3. A vector with the reaction's products (in this case, both reactions have a single product). 
 
-Just like [when the DSL is used](@ref ref), more complicated reactions (e.g. featuring e.g. [production or degradation reactions](@ref programmatic_modelling_reaction_options_production_and_degradation), [non-constant rates](@ref programmatic_modelling_reaction_options_rates), [non-unitary stoichiometries](@ref programmatic_modelling_reaction_options_nonunitary_stoichiometries), or [non-standard stoichiometries](@ref programmatic_modelling_reaction_options_nonstandard_stoichiometries)) are possible. How to create such reactions is described [here](@ref ref).
+Just like [when the DSL is used](@ref ref), more complicated reactions (e.g. featuring e.g. [production or degradation reactions](@ref programmatic_modelling_reaction_options_production_and_degradation), [non-constant rates](@ref programmatic_modelling_reaction_options_rates), [non-unitary stoichiometries](@ref programmatic_modelling_reaction_options_nonunitary_stoichiometries), or [non-standard stoichiometries](@ref programmatic_modelling_reaction_options_nonstandard_stoichiometries)) are possible. Additional details on how to create reactions can be found [here](@ref programmatic_modelling_intro_reactions_options).
 
 !!! note
- While `Reaction`s are not explicitly created when models are created via the DSL, these are still declared and stored internally. When calling the [`reactions`](@ref) function on a DSL-created `REactionSystem`, you will receive `Reaction`s of the same form as we here have created programmatically.
+    While `Reaction`s are not explicitly created when models are created via the DSL, these are still declared and stored internally. When calling the [`reactions`](@ref) function on a DSL-created `ReactionSystem`, you will receive `Reaction`s of the same form as we here have created programmatically.
 
-## [Creation of `ReactionSystem`s](@id programmatic_modelling_reactionsystems)
+### [Creation of `ReactionSystem`s](@id programmatic_modelling_intro_reactionsystems)
 Finally, we can use our `Reaction` vector as input to the Catalyst's `ReactionSystem` constructor. In addition to these, we need two additional arguments:
 1. The independent variable (typically time) must be explicitly provided.
-2. A [model name](@ref ref) bust be specified.
+2. A *model name* bust be specified.
 
 ```@example programmatic_full_example
 two_state_model = ReactionSystem(rxs, t; name = :two_state_model)
 ```
-Here, while the [DSL-created models also have names](@ref ref), these must not be explicitly declared on creation. A model declaration can be pre-appending with the `@named` macro: 
+Here, while the [DSL-created models also have names](@ref ref), these must not be explicitly declared on creation. 
+
+A model declaration can be pre-appending with the `@named` macro: 
 ```@example programmatic_full_example
 @named two_state_model = ReactionSystem(rxs, t)
 nothing # hide
@@ -108,7 +113,7 @@ There exist a few additional options that can be supplied to the `ReactionSystem
 
 While we now have programmatically created a `ReactionSystem`, there are two final points (described in the next two sections) we should consider before using it for e.g. simulations.
 
-## [System completeness](@id programmatic_modelling_completeness)
+### [System completeness](@id programmatic_modelling_intro_completeness)
 `ReactionSystem` models created in Catalyst can either be *complete* or *incomplete*. This is primarily important for two reasons:
 - Only complete models can be used as inputs to simulations or certain tools for model analysis.
 - Only incomplete models can be [composed with other models to form hierarchical models](@ref ref).
@@ -117,7 +122,7 @@ A model's completeness depends on how it was created:
 - Models created using the `@reaction_network` DSL are *complete*.
 - To create *incomplete models using the DSL*, use the [`@network_component` macro](@ref ref).
 - Models created programmatically are *incomplete*.
-- Models generated through the `compose` (and `extend`) functions are *incomplete*.
+- Models generated through the `compose` and `extend` functions are *incomplete*.
 
 Here, even if we do not intend to use our two-state model for hierarchical modelling, since it was created programmatically it is incomplete. We can confirm this using the `Catalyst.iscomplete` function:
 ```@example programmatic_full_example
@@ -138,8 +143,8 @@ end
 two_state_model == two_state_model_dsl
 ```
 
-## [Symbolic designation of model quantities and simulation of programmatic models](@id programmatic_modelling_symbolic_representation)
-Previously, we have described how to [simulate Catalyst models declared via the DSL](@ref ref). Here, we used `Symbol`s (e.g. `:k1` and `:X1`) to designate parameters and species' values. However, in programmatic model creation, we have explicitly [declared symbolic variables](@ref programmatic_modelling_symbolic_variables) corresponding to our parameters and species. Here, it is instead possible to use these to designate our simulation conditions. Below we utilise this to declare initial condition and parameter values, and use these as input to an `ODEProblem`. Finally, we simulate the ODE and plot the result:
+### [Symbolic designation of model quantities and simulation of programmatic models](@id programmatic_modelling_intro_symbolic_representation)
+Previously, we have described how to [simulate Catalyst models declared via the DSL](@ref ref). Here, we used `Symbol`s (e.g. `:k1` and `:X1`) to designate parameter and species values. However, in programmatic model creation, we have explicitly [declared symbolic variables](@ref programmatic_modelling_intro_symbolic_variables) corresponding to our parameters and species. Here, it is instead possible to use these to designate our simulation conditions. Below we utilise this to declare initial condition and parameter values, and use these as input to an `ODEProblem`. Finally, we simulate the ODE and plot the result:
 ```@example programmatic_full_example
 using OrdinaryDiffEq, Plots
 u0 = [X1 => 0.0, X2 => 2.0]
@@ -151,16 +156,16 @@ plot(sol)
 ```
 While programmatically created models can also have their parameters and species designated using `Symbol`s, the reverse is not possible for DSL-created models. Here, the symbolic variables are never explicitly declared, and thus not available for designating their values. Symbolic designation can be enabled for DSL-created models [by using `@unpack`](@ref programmatic_modelling_symbolics_and_DSL_unpack).
 
-Elsewhere, we also describe how e.g. `ODEProblem`s and [simulations solutions can be queried for the values of model quantities](@ref simulation_structure_interfacing). There, we use use `Symbol`s to represent model quantities, however, symbolic variables (when available) can again be used. E.g. we can use
+Elsewhere, we also describe how e.g. `ODEProblem`s and simulations solutions can be [queried for the values of model quantities](@ref simulation_structure_interfacing). There, we use use `Symbol`s to represent model quantities, however, symbolic variables (when available) can again be used. E.g. we can use
 ```@example programmatic_full_example
 sol[X1]
 ```
 to retrieve $X$'s value across the simulation.
 
-## [Additional options for declaration of symbolic variables](@id programmatic_modelling_symbolic_variables_options)
+## [Additional options for declaration of symbolic variables](@id programmatic_modelling_intro_symbolic_variables_options)
 The declaration of symbolic variables for programmatic Catalyst modelling uses identical syntax as when [parameters/species are explicitly declared within the DSL](@ref ref), or as used within [ModelingToolkit.jl](https://github.com/SciML/ModelingToolkit.jl). Here we will provide a brief summary repeating this information.
 
-### [Designating default values](@id programmatic_modelling_symbolic_variables_options_defaults)
+### [Designating default values](@id programmatic_modelling_intro_symbolic_variables_options_defaults)
 Species and parameters can be assigned default values. These permit the omission of their values from the initial condition and parameter values vector (in which case the default value is used instead). A default value is specified by simply a quantity's declaration by `=` followed by its default value. E.g. here we give the two-state model's species default initial condition values:
 ```@example programmatic_symbolic_variables
 using Catalyst # hide
@@ -174,7 +179,7 @@ getdefault(X1)
 
 A more throughout description of how to work with default values, including how to e.g. set parametric initial conditions, is provided [when defaults are introduced in the context of DSL-based modelling](@ref ref).
 
-### [Designating metadata](@id programmatic_modelling_symbolic_variables_options_metadata)
+### [Designating metadata](@id programmatic_modelling_intro_symbolic_variables_options_metadata)
 Sometimes one might want to attach additional information to a symbolic variable. This is done through the addition of *metadata*. To attach metadata to a symbolic variable, simply follow its declaration by brackets (`[]`) enclosing a list of metadata and their values (separated by a `=`). E.g. here we attach [`description`]([@ref ref](https://docs.sciml.ai/ModelingToolkit/stable/basics/Variable_metadata/#Variable-descriptions)) metadata to the two-state model's species:
 ```@example programmatic_symbolic_variables
 @species X1(t) [description="Species X1"] X2(t) [description="Species X2"]
@@ -194,7 +199,7 @@ nothing # hide
 
 A list of commonly used metadata, and how to access them, can be found [here](https://docs.sciml.ai/ModelingToolkit/stable/basics/Variable_metadata/).
 
-### [Designating parameter types](@id programmatic_modelling_symbolic_variables_options_types)
+### [Designating parameter types](@id programmatic_modelling_intro_symbolic_variables_options_types)
 Sometimes it is desired to designate that a parameter should have a specific [type](@ref ref). When supplying this parameter's value to e.g. an `ODEProblem`, that parameter will then be restricted to that specific type. Designating a type is done by appending the parameter with `::` followed by its type. E.g. to specify that a parameter `n` should be an `Int64` we do:
 ```@example programmatic_symbolic_variables
 @parameters n(t)::Int64
@@ -207,7 +212,7 @@ If a parameter has a type, metadata, and a default value, they are designated in
 nothing # hide
 ```
 
-### [Multi-line declarations](@id programmatic_modelling_symbolic_variables_options_multiline)
+### [Multi-line declarations](@id programmatic_modelling_intro_symbolic_variables_options_multiline)
 Sometimes, when declaring a large number of quantities (or providing extensive additional information), readability can be improved through a multi-line statement. Here, the `@parameters`/`@species` macros are followed by a `begin ... end` block. Each line within the block contains the declaration of a single parameter/species. E.g. the parameters and species of or two-state model could have been declared using
 ```@example programmatic_symbolic_variables
 @parameters begin
@@ -230,7 +235,7 @@ end
 nothing # hide
 ```
 
-### [Vector-valued symbolic variables](@id programmatic_modelling_symbolic_variables_options_vectors)
+### [Vector-valued symbolic variables](@id programmatic_modelling_intro_symbolic_variables_options_vectors)
 Sometimes, one wishes to declare a large number of similar symbolic variables. E.g. if we have a system with ten species, each being produced at different rates, we could declare ten separate production parameters:
 ```@example programmatic_symbolic_variables
 using Catalyst # hide
@@ -267,7 +272,7 @@ sol = solve(oprob)
 plot(sol)
 ```
 
-## [Additional options for declaration of `Reaction`s](@id programmatic_modelling_reactions_options)
+## [Additional options for declaration of `Reaction`s](@id programmatic_modelling_intro_reactions_options)
 When describing the DSL, we also describe a range of [options for declaring various types of reactions](@ref ref). Each type of reaction that can be created using the DSL can also be created programmatically. Below, we briefly describe each case.
 
 ### [Production and degradation reactions](@id programmatic_modelling_reaction_options_production_and_degradation)
@@ -385,9 +390,9 @@ Reaction(k*E, [Xi], [Xa]; metadata = [:description => "The activation of species
 nothing # hide
 ```
 
-## [Additional options for declaration of `ReactionSystem`s](@id programmatic_modelling_reactionsystem_options)
+## [Additional options for declaration of `ReactionSystem`s](@id programmatic_modelling_intro_reactionsystem_options)
 
-### [Designating full lists of system species and parameters](@id programmatic_modelling_reactionsystem_options)
+### [Designating full lists of system species and parameters](@id programmatic_modelling_intro_reactionsystem_options)
 Catalyst is able to automatically infer any systems species and parameters that are supplied within `Reaction`s (and other arguments). However, sometimes it might be desirable to explicitly add species or parameters (that do not occur in any other argument) to a system. We can do this by supplying vectors listing all species and parameters, as the third and fourth argument to the `ReactionSystem` constructor, respectively. When we do so, we *must* supply *both the species and parameter vectors* (even if we only need to explicitly declare either species or parameters). These vectors *must also contain the full lists of species and parameters* (not just those we wish to explicitly declare).
 
 E.g. here we programmatically create a birth-death process, but include a second species ($Y$) that would otherwise not be part of the model:
@@ -458,7 +463,7 @@ plot(sol)
 ```
 
 !!! warn
-    Just like [when using `@parameters` and `@species`](@ref programmatic_modelling_symbolic_variables), `@unpack` will overwrite any variables in the current scope which share name with the imported quantities.
+    Just like [when using `@parameters` and `@species`](@ref programmatic_modelling_intro_symbolic_variables), `@unpack` will overwrite any variables in the current scope which share name with the imported quantities.
 
 ### [Interpolating variables into the DSL](@id programmatic_modelling_symbolics_and_DSL_interpolation)
 Catalyst's DSL allows Julia variables to be interpolated for the network name, within rate constant expressions, or for species/stoichiometries within reactions. Using the lower-level symbolic interface we can then define symbolic variables and parameters outside of `@reaction_network`, which can then be used within expressions in the DSL. 
