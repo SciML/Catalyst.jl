@@ -51,7 +51,7 @@ pages = Any[
         # ODE parameter fitting using Turing.
         # SDE/Jump fitting.
         "inverse_problems/behaviour_optimisation.md",
-        "inverse_problems/structural_identifiability.md",
+        #"inverse_problems/structural_identifiability.md",
         # Practical identifiability.
         "inverse_problems/global_sensitivity_analysis.md",
         "Inverse problem examples" => Any[
