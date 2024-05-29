@@ -35,7 +35,7 @@ corresponding chemical reaction ODE models, chemical Langevin equation SDE
 models, and stochastic chemical kinetics jump process models.
 
 ```@example ex1
-using Catalyst, DifferentialEquations, Plots
+using Catalyst, OrdinaryDiffEq, StochasticDiffEq, JumpProcesses, Plots
 t = default_t()
 @parameters β γ
 @species S(t) I(t) R(t)
@@ -60,7 +60,7 @@ p1 = plot(sol, title = "ODE")
 sdesys = convert(SDESystem, rs)
 sdesys = complete(sdesys)
 sprob = SDEProblem(sdesys, u₀map, tspan, parammap)
-sol = solve(sprob, EM(), dt=.01)
+sol = solve(sprob, EM(), dt=.01, saveat = 2.0)
 p2 = plot(sol, title = "SDE")
 
 # solve as jump process
@@ -68,8 +68,8 @@ jumpsys = convert(JumpSystem, rs)
 jumpsys = complete(jumpsys)
 u₀map    = [S => 999, I => 1, R => 0]
 dprob = DiscreteProblem(jumpsys, u₀map, tspan, parammap)
-jprob = JumpProblem(jumpsys, dprob, Direct())
-sol = solve(jprob, SSAStepper())
+jprob = JumpProblem(jumpsys, dprob, Direct(); save_positions = (false,false))
+sol = solve(jprob, SSAStepper(), saveat = 2.0)
 p3 = plot(sol, title = "jump")
 
 plot(p1, p2, p3; layout = (3,1))
