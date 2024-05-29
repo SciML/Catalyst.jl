@@ -28,7 +28,7 @@ creating these two systems.
 Here, to create differentials with respect to time (for our differential equations), we must import the time differential operator from Catalyst. We do this through `D = default_time_deriv()`. Here, `D(V)` denotes the differential of the variable `V` with respect to time.
 
 ```@example ceq1
-using Catalyst, DifferentialEquations, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 t = default_t()
 D = default_time_deriv()
 
@@ -73,7 +73,7 @@ plot(sol)
 As an alternative to the previous approach, we could have constructed our
 `ReactionSystem` all at once by directly using the symbolic interface:
 ```@example ceq2
-using Catalyst, DifferentialEquations, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 t = default_t()
 D = default_time_deriv()
 
@@ -107,7 +107,7 @@ advanced_simulations) tutorial.
 
 Let's first create our equations and unknowns/species again
 ```@example ceq3
-using Catalyst, DifferentialEquations, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 t = default_t()
 D = default_time_deriv()
 
