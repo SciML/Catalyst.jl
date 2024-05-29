@@ -16,6 +16,7 @@ end
 u0 = [:X => 10.0]
 tspan = (0.0, 1000.0)
 ps = [:v0 => 0.1, :v => 2.5, :K => 40.0, :n => 4.0, :deg => 0.01]
+nothing # hide
 ```
 We wish to simulate it as an SDE. Rather than performing a single simulation, however, we want to perform multiple ones. Here, we first create a normal `SDEProblem`, and use it as the single input to a `EnsembleProblem` (`EnsembleProblem` are created similarly for ODE and jump simulations, but the `ODEProblem` or `JumpProblem` is used instead).
 ```@example ensemble
@@ -24,17 +25,19 @@ sprob = SDEProblem(sa_model, u0, tspan, ps)
 eprob = EnsembleProblem(sprob)
 nothing # hide
 ```
-Next, the `EnsembleProblem` can be used as input to the `solve` command. Here, we use exactly the same inputs that we use for single simulations, however, we add a `trajectories` argument to denote how many simulations we wish to carry out. Here we perform 100 simulations:
+Next, the `EnsembleProblem` can be used as input to the `solve` command. Here, we use exactly the same inputs that we use for single simulations, however, we add a `trajectories` argument to denote how many simulations we wish to carry out. Here we perform 10 simulations:
 ```@example ensemble
-sols = solve(eprob, STrapezoid(); trajectories = 100)
+sols = solve(eprob, STrapezoid(); trajectories = 10)
 nothing # hide
 ```
 Finally, we can use our ensemble simulation solution as input to `plot` (just like normal simulations):
 ```@example ensemble
 using Plots
-plot(sols; la = 0.5)
+plot(sols)
 ```
-Here, each simulation is displayed as an individual trajectory. We also use the [`la` plotting option](@ref simulation_plotting_options) to reduce the transparency of each individual line, improving the plot visual. 
+Here, each simulation is displayed as an individual trajectory.
+!!! note
+    While not used here, the [`la` plotting option](@ref simulation_plotting_options) (which modifies line transparency) can help improve the plot visual when a large number of (overlapping) lines are plotted.
 
 Various convenience functions are available for analysing and plotting ensemble simulations (a full list can be found [here]). Here, we use these to first create an `EnsembleSummary` (retrieving each simulation's value at time points `0.0, 1.0, 2.0, ... 1000.0`). Next, we use this as an input to the `plot` command, which automatically plots the mean $X$ activity across the ensemble, while also displaying the 5% and 95% quantiles as the shaded area:
 ```@example ensemble

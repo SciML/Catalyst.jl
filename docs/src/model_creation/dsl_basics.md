@@ -51,9 +51,8 @@ rn1 = @reaction_network begin
     kX, X --> Y
     kY, Y --> X
 end
-nothing # hide
 ```
-Generally, anything that is a [permitted Julia variable name](@id https://docs.julialang.org/en/v1/manual/variables/#man-allowed-variable-names) can be used to designate a species or parameter in Catalyst.
+Generally, anything that is a [permitted Julia variable name](https://docs.julialang.org/en/v1/manual/variables/#man-allowed-variable-names) can be used to designate a species or parameter in Catalyst.
 
 ## [Different types of reactions](@id dsl_description_reactions)
 
@@ -97,7 +96,6 @@ rn6 = @reaction_network begin
     k, 2X + 3(Y + 2Z) --> 5(V + W)    
     k, 2X + 3Y + 6Z --> 5V + 5W    
 end
-nothing # hide
 ```
 
 ## [Bundling of similar reactions](@id dsl_description_reaction_bundling)
@@ -354,13 +352,14 @@ An example of how this can be used to create a neat-looking model can be found i
     (kB,kD), A + σᵛ ↔ Aσᵛ
     L, Aσᵛ → σᵛ
 end
-nothing # hide
 ```
 
 This functionality can also be used to create less serious models:
+```@example dsl_basics
 rn_13 = @reaction_network begin
     🍦, 😢 --> 😃
 end
+```
 
 It should be noted that the following symbols are *not permitted* to be used as species or parameter names:
 - `pi` and `π` (used in Julia to denote [`3.1415926535897...`](https://en.wikipedia.org/wiki/Pi)).

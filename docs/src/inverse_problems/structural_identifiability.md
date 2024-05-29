@@ -60,15 +60,15 @@ To, in a similar manner, indicate that certain initial conditions are known is a
 ### Providing non-trivial measured quantities
 Sometimes, ones may not have measurements of species, but rather some combinations of species (or possibly parameters). To account for this, `measured_quantities` accepts any algebraic expression (and not just single species). To form such expressions, species and parameters have to first be `@unpack`'ed from the model. Say that we have a model where an enzyme ($E$) is converted between an active and inactive form, which in turns activates the production of a product, $P$:
 ```@example si1
-enzyme_activation = @reaction_network begin
+rs = @reaction_network begin
     (kA,kD), Eᵢ <--> Eₐ
     (Eₐ, d), 0 <-->P
 end
 ```
 If we can measure the total amount of $E$ ($=Eᵢ+Eₐ$), as well as the amount of $P$, we can use the following to assess identifiability:
-```@example si2
-@unpack Eᵢ, Eₐ = enzyme_activation
-assess_identifiability(enzyme_activation; measured_quantities = [Eᵢ + Eₐ, :P], loglevel = Logging.Error)
+```@example si1
+@unpack Eᵢ, Eₐ = rs
+assess_identifiability(rs; measured_quantities = [Eᵢ + Eₐ, :P], loglevel = Logging.Error)
 nothing # hide
 ```
 

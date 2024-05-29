@@ -198,9 +198,13 @@ Next, let us reduce species amounts (using [`remake`](@ref simulation_structure_
 sprob = remake(sprob; u0 = [:X1 => 0.33, :X2 => 0.66])
 sol = solve(sprob, STrapezoid())
 sol = solve(sprob, STrapezoid(); seed = 1234567) # hide
+nothing # hide
+```
+Here, we receive a warning that the simulation was terminated. next, if we plot the solution:
+```@example simulation_intro_sde
 plot(sol)
 ```
-Here, we receive a warning that the simulation was aborted. In the plot, we also see that it is incomplete. In this case we also note that species concentrations are very low (and sometimes, due to the relatively high amount of noise, even negative). This, combined with the early termination, suggests that we are simulating our model for too low species concentration for the assumptions of the CLE to hold. Instead, [jump simulations](@ref simulation_intro_jumps) should be used.
+we note that the simulation didn't reach the designated final time point ($t = 1.0$). In this case we also note that species concentrations are very low (and sometimes, due to the relatively high amount of noise, even negative). This, combined with the early termination, suggests that we are simulating our model for too low species concentration for the assumptions of the CLE to hold. Instead, [jump simulations](@ref simulation_intro_jumps) should be used.
 
 Next, let us consider a simulation for another parameter set:
 ```@example simulation_intro_sde
@@ -223,6 +227,7 @@ two_state_model = @reaction_network begin
     @default_noise_scaling 0.1
     (k1,k2), X1 <--> X2
 end
+nothing # hide
 ```
 Here, we set the noise scaling term to `0.1`, reducing the noise with a factor $10$ (noise scaling terms $>1.0$ increase the noise, while terms $<1.0$ reduce the noise). If we re-simulate the model using the low-concentration settings used previously, we see that the noise has been reduced (in fact by so much that the model can now be simulated without issues):
 ```@example simulation_intro_sde
@@ -242,6 +247,7 @@ two_state_model = @reaction_network begin
     @default_noise_scaling η
     (k1,k2), X1 <--> X2
 end
+nothing # hide
 ```
 Now we can tune the noise through $η$'s value. E.g. here we remove the noise entirely by setting $η = 0.0$ (thereby recreating an ODE simulation's behaviour):
 ```@example simulation_intro_sde
@@ -318,11 +324,7 @@ nothing # hide
 ```
 Especially for large systems, the choice of aggregator is relevant to simulation performance. A guide for aggregator selection is provided [here](@ref ref).
 
-Next, a simulation method can be provided (like for ODEs and SDEs) as the second argument to `solve`. Primarily two alternatives are available, `SSAStepper` and `FunctionMap` (other alternatives are only relevant when jump simulations are combined with ODEs/SDEs, which is described in more detail in JumpProcesses's documentation). Generally, `FunctionMap` is only used when a [continuous callback](@ref ref) is used (and `SSAStepper` otherwise). E.g. we can designate that the `FunctionMap` method should be used through:
-```@example simulation_intro_jumps
-sol = solve(jprob, FunctionMap())
-nothing # hide
-```
+Next, a simulation method can be provided (like for ODEs and SDEs) as the second argument to `solve`. Currently, the only relevant solver is `SSAStepper()` (which is the one used throughout Catalyst's documentation). Other choices are primarily relevant to combined ODE/SDE + jump simulations, or inexact simulations. These situations are described in more detail [here](https://docs.sciml.ai/JumpProcesses/stable/jump_solve/).
 
 ### [Jump simulations where some rate depends on time](@id simulation_intro_jumps_variableratejumps)
 For some models, the rate of some reactions depend on time. E.g. consider the following [circadian model](https://en.wikipedia.org/wiki/Circadian_rhythm), where the production rate of some protein ($P$) depends on a sinusoid function:

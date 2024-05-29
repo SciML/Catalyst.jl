@@ -12,7 +12,8 @@ We will first show how to create compound species through [programmatic model co
 ```@example chem1
 using Catalyst
 t = default_t()
-@species C(t) O(t) 
+@species C(t) O(t)
+nothing # hide
 ```
 Next, we create the `CO2` compound species:
 ```@example chem1
@@ -84,14 +85,17 @@ as the components `C`, `H`, and `O` are not declared as species anywhere. Please
 Just like for normal species, it is possible to designate metadata and default values for compounds. Metadata is provided after the compound name, but separated from it by a `,`:
 ```@example chem1
 @compound (CO2, [unit="mol"]) ~ C + 2O
+nothing # hide
 ```
 Default values are designated using `=`, and provided directly after the compound name.:
 ```@example chem1
 @compound (CO2 = 2.0) ~ C + 2O
+nothing # hide
 ```
 If both default values and meta data are provided, the metadata is provided after the default value:
 ```@example chem1
 @compound (CO2 = 2.0, [unit="mol"]) ~ C + 2O
+nothing # hide
 ```
 In all of these cases, the left-hand side must be enclosed within `()`.
 

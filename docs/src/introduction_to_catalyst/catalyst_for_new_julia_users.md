@@ -137,9 +137,9 @@ using JumpProcesses
 ```
 
 This time, we will declare a so-called [SIR model for an infectious disease](@ref basic_CRN_library_sir). Note that even if this model does not describe a set of chemical reactions, it can be modelled using the same framework. The model consists of 3 species:
-* $S$, the amount of *susceptible* individuals.
-* $I$, the amount of *infected* individuals.
-* $R$, the amount of *recovered* (or *removed*) individuals.
+* *S*, the amount of *susceptible* individuals.
+* *I*, the amount of *infected* individuals.
+* *R*, the amount of *recovered* (or *removed*) individuals.
 
 It also has 2 reaction events:
 * Infection, where a susceptible individual meets an infected individual and also becomes infected.
@@ -171,6 +171,7 @@ Previously we have bundled this information into an `ODEProblem` (denoting a det
 using JumpProcesses # hide
 dprob = DiscreteProblem(sir_model, u0, tspan, params)
 jprob = JumpProblem(sir_model, dprob, Direct())
+nothing # hide
 ```
 Again, the order in which the inputs are given to the `DiscreteProblem` and the `JumpProblem` is important. The last argument to the `JumpProblem` (`Direct()`) denotes which simulation method we wish to use. For now, we recommend that users simply use the `Direct()` option, and then consider alternative ones (see the [JumpProcesses.jl docs](https://docs.sciml.ai/JumpProcesses/stable/)) when they are more familiar with modelling in Catalyst and Julia.
 
@@ -199,7 +200,7 @@ This will:
 2. Switch your current Julia session to use the current folder's environment.
 
 !!! note
- If you check any folder which has been designated as a Julia environment, it contains a Project.toml and a Manifest.toml file. These store all information regarding the corresponding environment. For non-advanced users, it is recommended to never touch these files directly (and instead do so using various functions from the Pkg package, the important ones which are described in the next two subsections).
+    If you check any folder which has been designated as a Julia environment, it contains a Project.toml and a Manifest.toml file. These store all information regarding the corresponding environment. For non-advanced users, it is recommended to never touch these files directly (and instead do so using various functions from the Pkg package, the important ones which are described in the next two subsections).
 
 ### [Installing and importing packages in Julia](@id catalyst_for_new_julia_users_packages_installing)
 Package installation and import have been described [previously](@ref catalyst_for_new_julia_users_packages_intro). However, for the sake of this extended tutorial, let us repeat the description by demonstrating how to install the [Latexify.jl](https://github.com/korsbo/Latexify.jl) package (which enables e.g. displaying Catalyst models in Latex format). First, we import the Julia Package manager ([Pkg](https://github.com/JuliaLang/Pkg.jl)) (which is required to install Julia packages):
@@ -236,7 +237,7 @@ So, why is this required, and why cannot we simply import any package installed 
 The reason why all this is important is that it is *highly recommended* to, for each project, define a separate environment. To these, only add the required packages. General-purpose environments with a large number of packages often, in the long term, produce package incompatibility issues. While these might not prevent you from installing all desired package, they often mean that you are unable to use the latest version of some packages.
 
 !!! note
- A not-infrequent cause for reported errors with Catalyst (typically the inability to replicate code in tutorials) is package incompatibilities in large environments preventing the latest version of Catalyst from being installed. Hence, whenever an issue is encountered, it is useful to run `Pkg.status()` to check whenever the latest version of Catalyst is being used.
+    A not-infrequent cause for reported errors with Catalyst (typically the inability to replicate code in tutorials) is package incompatibilities in large environments preventing the latest version of Catalyst from being installed. Hence, whenever an issue is encountered, it is useful to run `Pkg.status()` to check whenever the latest version of Catalyst is being used.
 
 Some additional useful Pkg commands are:
 - `Pk.rm("PackageName")` removes a package from the current environment.
@@ -244,7 +245,7 @@ Some additional useful Pkg commands are:
 - `Pkg.update()`: updates all packages.
 
 !!! note
- A useful feature of Julia's environment system is that enables the exact definition of what packages and versions were used to execute a script. This supports e.g. reproducibility in academic research. Here, by providing the corresponding Project.toml and Manifest.toml files, you can enable someone to reproduce the exact program used to perform some set of analyses.
+    A useful feature of Julia's environment system is that enables the exact definition of what packages and versions were used to execute a script. This supports e.g. reproducibility in academic research. Here, by providing the corresponding Project.toml and Manifest.toml files, you can enable someone to reproduce the exact program used to perform some set of analyses.
 
 
 ---

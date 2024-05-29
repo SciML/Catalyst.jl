@@ -85,7 +85,7 @@ Generally, there are four main reasons for specifying species/parameters using t
 3. To designate metadata for species/parameters (described [here](@ref dsl_advanced_options_species_and_parameters_metadata)).
 4. To designate a species or parameters that do not occur in reactions, but are still part of the model (e.g a [parametric initial condition](@ref dsl_advanced_options_parametric_initial_conditions))
 
-!!!! warn
+!!! warn
     Catalyst's DSL automatically infer species and parameters from the input. However, it only does so for *quantities that appear in reactions*. Until now this has not been relevant. However, this tutorial will demonstrate cases where species/parameters that are not part of reactions are used. These *must* be designated using either the `@species` or `@parameters` options (or the `@variables` option, which is described [later](@ref ref)).
 
 ### [Setting default values for species and parameters](@id dsl_advanced_options_default_vals)
@@ -166,24 +166,24 @@ Whenever a species/parameter is declared using the `@species`/`@parameters` opti
 ```@example dsl_advanced_metadata
 using Catalyst # hide
 two_state_system = @reaction_network begin
-    @species Xi(t) [description="The X's inactive form"] Xa(t) [description="The X's active form"]
-    @parameters kA [description="X's activation rate"] kD [description="X's deactivation rate"]
-    (ka,kD), Xi <--> Xa
+    @species Xᵢ(t) [description="X's inactive form"] Xₐ(t) [description=" X's active form"]
+    @parameters kA [description="Activation rate"] kD [description="Deactivation rate"]
+    (ka,kD), Xᵢ <--> Xₐ
 end
 ```
-A metadata can be given to only a subset of a system's species/parameters, and a quantity can be given several metadata entries. To give several metadata, separate each by a `,`. Here we only provide a description for `kA`, for which we also provide a [`bounds` metadata](@ref https://docs.sciml.ai/ModelingToolkit/dev/basics/Variable_metadata/#Bounds),
+A metadata can be given to only a subset of a system's species/parameters, and a quantity can be given several metadata entries. To give several metadata, separate each by a `,`. Here we only provide a description for `kA`, for which we also provide a [`bounds` metadata](https://docs.sciml.ai/ModelingToolkit/dev/basics/Variable_metadata/#Bounds),
 ```@example dsl_advanced_metadata
 two_state_system = @reaction_network begin
-    @parameters kA [description="X's activation rate", bounds=(0.01,10.0)]
-    (ka,kD), Xi <--> Xa
+    @parameters kA [description="Activation rate", bounds=(0.01,10.0)]
+    (ka,kD), Xᵢ <--> Xₐ
 end
 ```
 
 It is possible to add both default values and metadata to a parameter/species. In this case, first provide the default value, and next the metadata. I.e. to in the above example set $kA$'s default value to $1.0$ we use
 ```@example dsl_advanced_metadata
 two_state_system = @reaction_network begin
-    @parameters kA=1.0 [description="X's activation rate", bounds=(0.01,10.0)]
-    (ka,kD), Xi <--> Xa
+    @parameters kA=1.0 [description="Activation rate", bounds=(0.01,10.0)]
+    (ka,kD), Xᵢ <--> Xₐ
 end
 ```
 
@@ -191,10 +191,10 @@ When designating metadata for species/parameters in `begin ... end` blocks the s
 ```@example dsl_advanced_metadata
 two_state_system = @reaction_network begin
     @parameters begin
-        kA, [description="X's activation rate", bounds=(0.01,10.0)]
-        kD = 1.0, [description="X's deactivation rate"]
+        kA, [description="Activation rate", bounds=(0.01,10.0)]
+        kD = 1.0, [description="Deactivation rate"]
     end
-    (kA,kD), Xi <--> Xa
+    (kA,kD), Xᵢ <--> Xₐ
 end
 ```
 
@@ -247,7 +247,7 @@ nothing # hide
 If a parameter has a type, metadata, and a default value, they are designated in the following order:
 ```@example dsl_advanced_parameter_types
 polymerisation_network = @reaction_network begin
-    @parameters n::Int64 = 2 [description="Parameter n, which is an integer and defaults to the value 2."]
+    @parameters n::Int64 = 2 [description="Parameter n, an integer with defaults value 2."]
     (kB,kD), n*X <--> Xn
 end
 nothing # hide
@@ -315,6 +315,7 @@ rn2 = @reaction_network my_network begin
 end
 rn1 == rn2
 ```
+If you wish to check for identity, and wish that models that have different names but are otherwise identical, should be considered equal, you can use the [`isequivalent`](@ref) function.
 
 Setting model names is primarily useful for [hierarchical modelling](@ref compositional_modeling), where network names are appended to the display names of subnetworks' species and parameters.
 
@@ -346,11 +347,13 @@ nothing # hide
 Next, we can use [symbolic indexing](@ref simulation_structure_interfacing) of our solution object, but with the observable as input. E.g. we can use 
 ```@example dsl_advanced_observables
 sol[:Xtot]
+nothing # hide
 ```
 to get a vector with `Xtot`'s value throughout the simulation. We can also use
 ```@example dsl_advanced_observables
 using Plots
 plot(sol; idxs = :Xtot)
+plot!(ylimit = (minimum(sol[:Xtot])*0.95, maximum(sol[:Xtot])*1.05)) # hide
 ```
 to plot the observables (rather than the species).
 
@@ -362,7 +365,7 @@ rn = @reaction_network begin
 end
 nothing # hide
 ```
-!!!
+!!! note
     If only a single observable is declared, the `begin .. end` block is not required and the observable can be declared directly after the `@observables` option.
 
 [Metadata](@ref dsl_advanced_options_species_and_parameters_metadata) can be supplied to an observable directly after its declaration (but before its formula). If so, the metadata must be separated from the observable with a `,`, and the observable plus the metadata encapsulated by `()`. E.g. to add a [description metadata](@ref dsl_advanced_options_species_and_parameters_metadata) to our observable we can use
@@ -397,11 +400,11 @@ As [described elsewhere](@ref ref), Catalyst's `ReactionSystem` models depend on
 using Catalyst # hide
 rn = @reaction_network begin
     @ivs τ
-    (ka,kD), Xi <--> Xa
+    (ka,kD), Xᵢ <--> Xₐ
 end
 nothing # hide
 ```
-We can confirm that `Xi` and `Xa` depend on `τ` (and not `t`):
+We can confirm that `Xᵢ` and `Xₐ` depend on `τ` (and not `t`):
 ```@example dsl_advanced_ivs
 species(rn)
 ```
@@ -420,8 +423,8 @@ It is also possible to have species which depends on several independent variabl
 ```@example dsl_advanced_ivs
 rn = @reaction_network begin
     @ivs t x
-    @species Xi(t,x) Xa(t,x)
-    (ka,kD), Xi <--> Xa
+    @species Xᵢ(t,x) Xₐ(t,x)
+    (ka,kD), Xᵢ <--> Xₐ
 end
 species(rn)
 ```
@@ -435,8 +438,8 @@ It is possible to supply reactions with *metadata*, containing some additional i
 ```@example dsl_advanced_reaction_metadata
 using Catalyst # hide
 bd_model = @reaction_network begin
-    p, 0 --> X, [description="A production reaction"]
-    d, X --> 0, [description="A degradation reaction"]
+    p, 0 --> X, [description="Production reaction"]
+    d, X --> 0, [description="Degradation reaction"]
 end
 nothing # hide
 ```
@@ -444,7 +447,7 @@ nothing # hide
 When [bundling reactions](@ref dsl_description_reaction_bundling), reaction metadata can be bundled using the same rules as rates. Bellow we re-declare our birth-death process, but on a single line:
 ```@example dsl_advanced_reaction_metadata
 bd_model = @reaction_network begin
-    (p,d), 0 --> X, ([description="A production reaction"], [description="A degradation reaction"])
+    (p,d), 0 <--> X, ([description="Production reaction"], [description="Degradation reaction"])
 end
 nothing # hide
 ```
@@ -452,8 +455,8 @@ nothing # hide
 Here we declare a model where we also provide a `misc` metadata (which can hold any quantity we require) to our birth reaction:
 ```@example dsl_advanced_reaction_metadata
 bd_model = @reaction_network begin
-    p, 0 --> X, [description="A production reaction", misc=:value]
-    d, X --> 0, [description="A degradation reaction"]
+    p, 0 --> X, [description="Production reaction", misc=:value]
+    d, X --> 0, [description="Degradation reaction"]
 end
 nothing # hide
 ```

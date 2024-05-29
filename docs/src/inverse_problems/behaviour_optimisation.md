@@ -47,6 +47,7 @@ Just like for [parameter fitting](@ref optimization_parameter_fitting), we creat
 using Optimization
 initial_guess = [1.0, 1.0, 1.0]
 opt_prob = OptimizationProblem(pulse_amplitude, initial_guess; lb = [1e-1, 1e-1, 1e-1], ub = [1e1, 1e1, 1e1])
+nothing # hide
 ```
 !!! note
     As described in a [previous section on Optimization.jl](@ref optimization_parameter_fitting), `OptimizationProblem`s do not support setting parameter values using maps. We must instead set `initial_guess` values using a vector. Next, in the first line of our cost function, we reshape the parameter values to the common form used across Catalyst (e.g. `[:pX => p[1], :pY => p[2], :pZ => p[2]]`, however, here we use a dictionary to easier compute the steady state initial condition). We also note that the order used in this array corresponds to the order we give each parameter's bounds in `lb` and `ub`, and the order in which their values occur in the output solution.
@@ -55,6 +56,7 @@ As [previously described](@ref optimization_parameter_fitting), Optimization.jl 
 ```@example behaviour_optimization
 using OptimizationBBO
 opt_sol = solve(opt_prob, BBO_adaptive_de_rand_1_bin_radiuslimited())
+nothing # hide
 ```
 Finally, we plot a simulation using the found parameter set (stored in `opt_sol.u`):
 ```@example behaviour_optimization
@@ -78,9 +80,10 @@ Through packages such as [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDi
 ```@example behaviour_optimization
 opt_func = OptimizationFunction(pulse_amplitude, AutoForwardDiff())
 opt_prob = OptimizationProblem(opt_func, initial_guess; lb = [1e-1, 1e-1, 1e-1], ub = [1e1, 1e1, 1e1])
+nothing # hide
 ``` 
 Finally, we can find the optimum using some differentiation-based optimisation methods. Here we will use [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)'s `BFGS` method:
-```@example behaviour_optimization
+```julia
 using OptimizationOptimJL
 opt_sol = solve(opt_prob, OptimizationOptimJL.BFGS())
 ``` 

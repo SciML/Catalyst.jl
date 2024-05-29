@@ -110,7 +110,7 @@ using JumpProcesses
 dprob = DiscreteProblem(mm_system, u0, tspan, ps)
 jprob = JumpProblem(mm_system, dprob, Direct())
 jsol = solve(jprob, SSAStepper())
-jsol = solve(jprob, SSAStepper(); seed = 12) # hide
+jsol = solve(jprob, SSAStepper(), seed = 12) # hide
 
 using Plots
 oplt = plot(osol; title = "Reaction rate equation (ODE)")
@@ -118,8 +118,10 @@ splt = plot(ssol; title = "Chemical Langevin equation (SDE)")
 jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)")
 plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1)) 
 plot!(bottom_margin = 3Plots.Measures.mm) # hide
+nothing # hide
 ```
-Note that, due to the large amounts of the species involved, teh stochastic trajectories are very similar to the deterministic one.
+![MM Kinetics](../../assets/long_ploting_times/model_creation/mm_kinetics.svg)
+Note that, due to the large amounts of the species involved, the stochastic trajectories are very similar to the deterministic one.
 
 ## [SIR infection model](@id basic_CRN_library_sir)
 The [SIR model](https://en.wikipedia.org/wiki/Compartmental_models_in_epidemiology#The_SIR_model) is the simplest model of the spread of an infectious disease. While the real system is very different from the chemical and cellular processes typically modelled with CRNs, it (and several other epidemiological systems) can be modelled using the same CRN formalism. The SIR model consists of three species: susceptible ($S$), infected ($I$), and removed ($R$) individuals, and two reaction events: infection and recovery.
@@ -146,20 +148,22 @@ Next, we perform 3 different Jump simulations. Note that for the stochastic mode
 ```@example crn_library_sir
 using JumpProcesses
 dprob = DiscreteProblem(sir_model, u0, tspan, ps)
-jprob = JumpProblem(sir_model, dprob, Direct())
+jprob = JumpProblem(sir_model, dprob, Direct(); save_positions = (false, false))
 
-jsol1 = solve(jprob, SSAStepper())
-jsol2 = solve(jprob, SSAStepper())
-jsol3 = solve(jprob, SSAStepper())
-jsol1 = solve(jprob, SSAStepper(); seed=1) # hide
-jsol2 = solve(jprob, SSAStepper(); seed=2) # hide
-jsol3 = solve(jprob, SSAStepper(); seed=3) # hide
+jsol1 = solve(jprob, SSAStepper(); saveat = 1.0)
+jsol2 = solve(jprob, SSAStepper(); saveat = 1.0)
+jsol3 = solve(jprob, SSAStepper(); saveat = 1.0)
+jsol1 = solve(jprob, SSAStepper(); saveat = 1.0, seed = 1) # hide
+jsol2 = solve(jprob, SSAStepper(); saveat = 1.0, seed = 2) # hide
+jsol3 = solve(jprob, SSAStepper(); saveat = 1.0, seed = 3) # hide
 
 jplt1 = plot(jsol1; title = "Outbreak")
 jplt2 = plot(jsol2; title = "Outbreak")
 jplt3 = plot(jsol3; title = "No outbreak")
 plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1))
+nothing # hide
 ```
+![SIR Outbreak](../../assets/long_ploting_times/model_creation/sir_outbreaks.svg)
 
 ## [Chemical cross-coupling](@id basic_CRN_library_cc)
 In chemistry, [cross-coupling](https://en.wikipedia.org/wiki/Cross-coupling_reaction) is when a catalyst combines two substrates to form a product. In this example, the catalyst ($C$) first binds one substrate ($S₁$) to form an intermediary complex ($S₁C$). Next, the complex binds the second substrate ($S₂$) to form another complex ($CP$). Finally, the catalyst releases the now-formed product ($P$). This system is an extended version of the [Michaelis-Menten system presented earlier](@ref basic_CRN_library_mm).
@@ -241,9 +245,9 @@ oprob = ODEProblem(sa_loop, u0, tspan, ps)
 osol = solve(oprob)
 
 dprob = DiscreteProblem(sa_loop, u0, tspan, ps)
-jprob = JumpProblem(sa_loop, dprob, Direct())
-jsol = solve(jprob, SSAStepper())
-jsol = solve(jprob, SSAStepper(); seed = 12) # hide
+jprob = JumpProblem(sa_loop, dprob, Direct(); save_positions = (false,false))
+jsol = solve(jprob, SSAStepper(); saveat = 10.0)
+jsol = solve(jprob, SSAStepper(); saveat = 10.0, seed = 12) # hide
 
 plot(osol; lw = 3, label = "Reaction rate equation (ODE)")
 plot!(jsol; lw = 3, label = "Stochastic chemical kinetics (Jump)", yguide = "X", size = (800,350))

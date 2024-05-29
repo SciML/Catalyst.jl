@@ -89,7 +89,7 @@ Here, the `autodiff = false` argument is required when Lyapunov spectrums are co
 ```@example dynamical_systems_lyapunov
 lyapunovspectrum(ds, 100)
 ```
-Here, the largest exponent is positive, suggesting that the model is chaotic (or, more accurately, it has at least one chaotic attractor, to which is approached from the initial condition $(1.5,1.5,1.5)).
+Here, the largest exponent is positive, suggesting that the model is chaotic (or, more accurately, it has at least one chaotic attractor, to which is approached from the initial condition $(1.5,1.5,1.5)$).
 
 Next, we consider the [Brusselator] model. First we simulate the model for two similar initial conditions, confirming that they converge to the same limit cycle:
 ```@example dynamical_systems_lyapunov
