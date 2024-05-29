@@ -80,8 +80,8 @@ The `@reaction_network` command is followed by the `begin` keyword, which is fol
 Here, we create a simple [*birth-death* model](@ref basic_CRN_library_bd), where a single species ($X$) is created at rate $b$, and degraded at rate $d$. The model is stored in the variable `rn`.
 ```@example ex2
 rn = @reaction_network begin
- b, 0 --> X
- d, X --> 0
+    b, 0 --> X
+    d, X --> 0
 end
 ```
 For more information on how to use the Catalyst model creator (also known as *the Catalyst DSL*), please read [the corresponding documentation](https://docs.sciml.ai/Catalyst/stable/catalyst_functionality/dsl_description/).
@@ -152,8 +152,8 @@ Each reaction is also associated with a specific rate (corresponding to a parame
 We declare the model using the `@reaction_network` macro, and store it in the `sir_model` variable.
 ```@example ex2
 sir_model = @reaction_network begin
- b, S + I --> 2I
- k, I --> R
+    b, S + I --> 2I
+    k, I --> R
 end
 ```
 Note that the first reaction contains two different substrates (separated by a `+` sign). While there is only a single product (*I*), two copies of *I* are produced. The *2* in front of the product *I* denotes this.

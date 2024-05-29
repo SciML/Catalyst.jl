@@ -109,7 +109,7 @@ Note that, unlike for nonlinear system solving, `u0` is not just an initial gues
 
 The forward ODE solving approach uses the ODE solvers implemented by the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package. If this package is loaded, it is possible to designate a specific solver to use. Any available ODE solver can be used, however, it has to be encapsulated by the `DynamicSS()` function. E.g. here we designate the `Rodas5P` solver:
 ```@example steady_state_solving_simulation
-using OrdinaryDiffEqDiffEq
+using OrdinaryDiffEq
 solve(ssprob, DynamicSS(Rodas5P()))
 nothing # hide
 ```

@@ -86,9 +86,9 @@ Catalyst has special methods for working with conserved quantities, which are de
 ```@example crn_library_michaelis_menten
 using Catalyst
 mm_system = @reaction_network begin
-  kB, S + E --> SE
-  kD, SE --> S + E
-  kP, SE --> P + E
+    kB, S + E --> SE
+    kD, SE --> S + E
+    kP, SE --> P + E
 end
 ```
 Next, we perform ODE, SDE, and jump simulations of the model:

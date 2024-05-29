@@ -1,4 +1,4 @@
-# [Simulation_plotting](@id simulation_plotting)
+# [Simulation plotting](@id simulation_plotting)
 Catalyst uses the [Plots.jl](https://github.com/JuliaPlots/Plots.jl) package for performing all plots. This section provides a brief summary of some useful plotting options, while [Plots.jl's documentation](https://docs.juliaplots.org/stable/) provides a more throughout description of how to tune your plots.
 
 !!! note
