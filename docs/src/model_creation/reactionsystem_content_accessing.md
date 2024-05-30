@@ -145,3 +145,48 @@ ModelingToolkit.get_iv(sir)
 ## [Accessing properties of hierarchical models](@id model_accessing_hierarchical)
 Previously, we have described how [compositional modelling can be used to create hierarchical models](@ref ref). There are some special considerations when accessing content of hierarchical models, which will be described below.
 
+First we will create a simple hierarchical model. It describes a protein ($X$) which is created in its inactive form ($Xᵢ$) in the nucleus, from which it is transported to the cytoplasm, where it is activated.
+```@example model_accessing_hierarchical
+using Catalyst # hide
+# Declare sub models.
+nucleus_model = @network_component nucleus begin
+    (p,d), 0 <--> Xᵢ
+end
+cytoplasm_model = @network_component cytoplasm begin
+    kₐ, Xᵢ --> Xₐ
+    d, (Xᵢ, Xₐ) --> 0
+end
+
+# Assembly hierarchical model.
+transport = @reaction kₜ, $(nucleus_model.Xᵢ) --> $(nucleus_model.Xᵢ)
+@named rs = ReactionSystem([transport], default_t(); systems = [nucleus_model, cytoplasm_model])
+rs = complete(rs)
+```
+This model consists of a top-level model, which contain the transportation reaction only, and two submodels. We can retrieve all the submodels of the top-level model through `Catalyst.get_systems`:
+```@example model_accessing_hierarchical
+Catalyst.get_systems(rs)
+```
+!!! note
+    If either of the submodels had had further submodels, these would *not* be retrieved by `Catalyst.get_systems` (which only returns the direct submodels of the input model).
+
+### [Accessing content of hierarchical models](@id model_accessing_hierarchical_symbolic_variables)
+Our hierarchical model consists a top-level model (`rs`) with two submodels (`nucleus_model` and `cytoplasm_model`). Note that we have given our submodels [name](@ref ref) `nucleus` and `cytoplasm`. Above, we retrieved the submodels by calling `Catalyst.get_systems` on our top-level model. We can also retrieve each submodel directly by calling:
+```@example model_accessing_hierarchical
+rs.nucleus
+```
+```@example model_accessing_hierarchical
+rs.cytoplasm
+```
+!!! note
+    when accessing submodels, we use the submodels' [names](@ref ref), *not* the name of their variables (i.e. we call `rs.nucleus`, not `rs.nucleus_model`).
+
+Next, if we wish to access a species declared as a part of one of the submodels, we do so through it. E.g. here we access `Xₐ` (which is part of the cytoplasm submodel):
+```@example model_accessing_hierarchical
+rs.cytoplasm.Xₐ
+```
+We note here that species contained in submodels have the submodels name prepended to their name.
+
+Note that both submodels contain a species `Xᵢ`. However, while they have the same name, *these are different species when accessed through their respective models*:
+```@example model_accessing_hierarchical
+isequal(rs.nucleus.Xᵢ, rs.cytoplasm.Xᵢ)
+```
