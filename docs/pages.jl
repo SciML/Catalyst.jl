@@ -26,13 +26,11 @@ pages = Any[
     ],
     "Model simulation" => Any[
         "model_simulation/simulation_introduction.md",
-        # Simulation introduction.
         "model_simulation/simulation_plotting.md",
         "model_simulation/simulation_structure_interfacing.md",
         "model_simulation/ensemble_simulations.md",
         # Stochastic simulation statistical analysis.
         "model_simulation/ode_simulation_performance.md",
-        # ODE Performance considerations/advice.
         # SDE Performance considerations/advice.
         # Jump Performance considerations/advice.
         # Finite state projection
@@ -51,7 +49,7 @@ pages = Any[
         # ODE parameter fitting using Turing.
         # SDE/Jump fitting.
         "inverse_problems/behaviour_optimisation.md",
-        #"inverse_problems/structural_identifiability.md",
+        #"inverse_problems/structural_identifiability.md", # Broken on Julia v1.10.3, requires v1.10.2 or 1.10.4.
         # Practical identifiability.
         "inverse_problems/global_sensitivity_analysis.md",
         "Inverse problem examples" => Any[
