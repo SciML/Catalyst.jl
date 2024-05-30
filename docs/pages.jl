@@ -15,6 +15,7 @@ pages = Any[
         "model_creation/parametric_stoichiometry.md",# Distributed parameters, rates, and initial conditions.
         # Loading and writing models to files.
         # Model visualisation.
+        "model_creation/reactionsystem_content_accessing.md",
         "model_creation/network_analysis.md",
         "model_creation/chemistry_related_functionality.md",
         "Model creation examples" => Any[
