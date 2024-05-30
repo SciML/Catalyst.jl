@@ -14,6 +14,7 @@ pages = Any[
         # Events.
         #"model_creation/parametric_stoichiometry.md",# Distributed parameters, rates, and initial conditions.
         # Loading and writing models to files.
+        "reactionsystem_content_accessing.md",
         "model_creation/model_visualisation.md",
         #"model_creation/network_analysis.md",
         "model_creation/chemistry_related_functionality.md",
