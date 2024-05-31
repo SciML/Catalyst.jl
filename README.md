@@ -32,9 +32,11 @@ etc).
 
 ## Breaking changes and new features
 
-**NOTE:** Version 14 is a breaking release, prompted by the release of ModelingToolkit.jl version 9. This caused several breaking changes in how Catalyst models are represented and interfaced with.
+**NOTE:** Version 14 is a breaking release, prompted by the release of ModelingToolkit.jl version 9. 
+This caused several breaking changes in how Catalyst models are represented and interfaced with.
 
-Breaking changes and new functionality are summarized in the [HISTORY.md](HISTORY.md) file. This also includes a special migration guide for version 14.
+Breaking changes and new functionality are summarized in the [HISTORY.md](HISTORY.md) file. 
+This also includes a special migration guide for version 14.
 
 ## Tutorials and documentation
 
@@ -43,7 +45,8 @@ documentation](https://docs.sciml.ai/Catalyst/stable/). The [in-development
 documentation](https://docs.sciml.ai/Catalyst/dev/) describes unreleased features in
 the current master branch.
 
-An overview of the package, its features, and comparative benchmarking (as of version 13) can also be found in its corresponding research paper, [Catalyst: Fast and flexible modeling of reaction networks](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530).
+An overview of the package, its features, and comparative benchmarking (as of version 13) can also 
+be found in its corresponding research paper, [Catalyst: Fast and flexible modeling of reaction networks](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530).
 
 ## Features
 
@@ -60,13 +63,13 @@ An overview of the package, its features, and comparative benchmarking (as of ve
  [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/)
  [ODE/SDE/jump solver](@ref ref), and can be used within `EnsembleProblem`s for carrying
  out [parallelized parameter sweeps and statistical sampling](@ref ref). Plot recipes
- are available for [visualizing of all solutions](@ref ref).
+ are available for [visualization of all solutions](@ref ref).
 - Non-integer (e.g. `Float64`) stoichiometric coefficients [are supported](@ref ref) for generating
  ODE models, and symbolic expressions for stoichiometric coefficients [are supported](@ref ref) for
  all system types.
 - A [network analysis suite](@ref ref) permits the computation of linkage classes, deficiencies, and
  reversibilities.
-- [Conservation laws can be detected and utilised](@ref ref) to reduce system sizes, and to generate
+- [Conservation laws can be detected and utilized](@ref ref) to reduce system sizes, and to generate
  non-singular Jacobians (e.g. during conversion to ODEs, SDEs, and steady state equations).
 - Catalyst reaction network models can be [coupled with differential and algebraic equations](@ref ref)
  (which are then incorporated during conversion to ODEs, SDEs, and steady state equations).
@@ -89,7 +92,7 @@ An overview of the package, its features, and comparative benchmarking (as of ve
  SDE simulations](@ref ref).
 - [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) Can be used to [model jump 
  simulations](@ref ref).
-- Support for [parallelisation of all simulations]((@ref ref)), including parallelisation of 
+- Support for [parallelization of all simulations](@ref ref), including parallelization of 
  [ODE simulations on GPUs](@ref ref) using
  [DiffEqGPU.jl](https://github.com/SciML/DiffEqGPU.jl).
 - [Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to [generate LaTeX 
@@ -97,7 +100,7 @@ An overview of the package, its features, and comparative benchmarking (as of ve
  underlying set of reactions.
 - [Graphviz](https://graphviz.org/) can be used to generate and [visualize reaction network graphs](@ref ref) 
  (reusing the Graphviz interface created in [Catlab.jl](https://algebraicjulia.github.io/Catlab.jl/stable/).)
-- Models steady states can be computed through homotopy continuation using [HomotopyContinuation.jl](https://github.com/JuliaHomotopyContinuation/HomotopyContinuation.jl)
+- Model steady states can be computed through homotopy continuation using [HomotopyContinuation.jl](https://github.com/JuliaHomotopyContinuation/HomotopyContinuation.jl)
  (which can find *all* steady states of systems with multiple ones), by forward ODE simulations using
  [SteadyStateDiffEq.jl)](https://github.com/SciML/SteadyStateDiffEq.jl), or by nonlinear systems 
  solving using [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl).
@@ -110,7 +113,7 @@ An overview of the package, its features, and comparative benchmarking (as of ve
 - [Optimization.jl](https://github.com/SciML/Optimization.jl), [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl), 
  and [PEtab.jl](https://github.com/sebapersson/PEtab.jl) can all be used to [fit model parameters to data](@ref ref).
 - [GlobalSensitivity.jl](https://github.com/SciML/GlobalSensitivity.jl) can be used to perform 
- [global sensitivity analysis](@ref ref) of model behaviours.
+ [global sensitivity analysis](@ref ref) of model behaviors.
  
 #### Features of packages built upon Catalyst
 - Catalyst [`ReactionSystem`](@ref)s can be [imported from SBML files](@ref ref) via
@@ -177,7 +180,13 @@ plot(jump_sol; lw = 2)
 
 
 ## Elaborate example
-In the above example, we used basic Catalyst-based workflows to simulate a simple model. Here we instead show how various Catalyst features can compose to create a much more advanced model. Our model describes how the volume of a cell ($V$) is affected by a growth factor ($G$). The growth factor only promotes growth while in its phosphorylated form ($Gᴾ$). The phosphorylation of $G$ ($G \to Gᴾ$) is promoted by sunlight (modelled as the cyclic sinusoid $kₐ*(sin(t)+1)$) phosphorylates the growth factor (producing $Gᴾ$). When the cell reaches a critical volume ($V$) it goes through cell division. First, we declare our model:
+In the above example, we used basic Catalyst-based workflows to simulate a simple model. Here we 
+instead show how various Catalyst features can compose to create a much more advanced model. Our 
+model describes how the volume of a cell ($V$) is affected by a growth factor ($G$). The growth 
+factor only promotes growth while in its phosphorylated form ($Gᴾ$). The phosphorylation of $G$ 
+($G \to Gᴾ$) is promoted by sunlight (modelld as the cyclic sinusoid $kₐ*(sin(t)+1)$), which
+phosphorylates the growth factor (producing $Gᴾ$). When the cell reaches a critical volume ($V$)
+it undergoes through cell division. First, we declare our model:
 ```julia
 using Catalyst
 cell_model = @reaction_network begin
@@ -193,7 +202,8 @@ cell_model = @reaction_network begin
     kᵢ/V, Gᴾ --> G
 end
 ```
-Next, we can use [Latexify.jl](https://korsbo.github.io/Latexify.jl/stable/) to show the ordinary differential equations associated with this model:
+Next, we can use [Latexify.jl](https://korsbo.github.io/Latexify.jl/stable/) to show the ordinary 
+differential equations associated with this model:
 ```julia
 using Latexify
 latexify(cell_model; form = :ode)
@@ -214,8 +224,8 @@ plot(sol; xguide = "Time (au)", lw = 2)
 ![Elaborate SDE simulation](docs/src/assets/readme_elaborate_sde_plot.svg)
 
 Some features we used here:
-- The SDE was [simulated using StochasticDiffEq.jl], where we [scaled the SDE noise terms](@ref ref).
-- The cell volume was [modelled as a differential equation, which was coupled to the reaction network model](@ref ref).
+- The SDE was [simulated using StochasticDiffEq.jl]. We also [scaled the SDE noise terms](@ref ref).
+- The cell volume was [modeled as a differential equation, which was coupled to the reaction network model](@ref ref).
 - The cell divisions were created by [incorporating events into the model](@ref ref).
 - The model equations were [displayed using Latexify.jl](@ref ref), and the simulation [plotted using Plots.jl](@ref ref).
 
