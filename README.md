@@ -184,7 +184,7 @@ In the above example, we used basic Catalyst-based workflows to simulate a simpl
 instead show how various Catalyst features can compose to create a much more advanced model. Our 
 model describes how the volume of a cell ($V$) is affected by a growth factor ($G$). The growth 
 factor only promotes growth while in its phosphorylated form ($Gᴾ$). The phosphorylation of $G$ 
-($G \to Gᴾ$) is promoted by sunlight (modelld as the cyclic sinusoid $kₐ*(sin(t)+1)$), which
+($G \to Gᴾ$) is promoted by sunlight (modeled as the cyclic sinusoid $kₐ*(sin(t)+1)$), which
 phosphorylates the growth factor (producing $Gᴾ$). When the cell reaches a critical volume ($V$)
 it undergoes through cell division. First, we declare our model:
 ```julia
