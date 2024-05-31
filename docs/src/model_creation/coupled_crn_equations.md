@@ -35,7 +35,7 @@ nothing # hide
 We can check the ODE this model would generate [using Latexify](@ref ref):
 ```@example coupled_eqs_basic_example
 using Latexify
-latexify(coupled_crn; form=:ode)
+latexify(coupled_crn; form = :ode)
 ```
 Finally, the model can be simulated using standard syntax (while providing initial conditions for both $V$ and $G$):
 ```@example coupled_eqs_1
