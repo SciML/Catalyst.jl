@@ -16,9 +16,9 @@ Generated models can be used with solvers throughout the broader
 for sensitivity analysis, parameter estimation, machine learning applications,
 etc).
 
-## Features
+## [Features](@id doc_home_features)
 
-#### Features of Catalyst
+#### [Features of Catalyst](@id doc_home_features_catalyst)
 - [The Catalyst DSL](@ref ref) provides a simple and readable format for manually specifying reaction 
  network models using chemical reaction notation.
 - Catalyst `ReactionSystem`s provides a symbolic representation of reaction networks,
@@ -53,7 +53,7 @@ etc).
  deterministic and stochastic terms within resulting ODE, SDE or jump models.
 - [Steady states](@ref ref) (and their [stabilities](@ref ref)) can be computed for model ODE representations.
 
-#### Features of Catalyst composing with other packages
+#### [Features of Catalyst composing with other packages](@id doc_home_features_composed)
 - [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) Can be used to [perform model ODE 
  simulations](@ref ref).
 - [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) Can be used to [perform model 
@@ -83,7 +83,7 @@ etc).
 - [GlobalSensitivity.jl](https://github.com/SciML/GlobalSensitivity.jl) can be used to perform 
  [global sensitivity analysis](@ref ref) of model behaviors.
  
-#### Features of packages built upon Catalyst
+#### [Features of packages built upon Catalyst](@id doc_home_features_other_packages)
 - Catalyst [`ReactionSystem`](@ref)s can be [imported from SBML files](@ref ref) via
  [SBMLImporter.jl](https://github.com/SciML/SBMLImporter.jl) and [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), 
  and [from BioNetGen .net files](@ref ref) and various stoichiometric matrix network representations
@@ -149,9 +149,9 @@ is also needed.
 
 A more throughout guide for setting up Catalyst and installing Julia packages can be found [here](@ref catalyst_for_new_julia_users_packages).
 
-## Illustrative example
+## [Illustrative example](@id doc_home_example)
 
-#### Deterministic ODE simulation of Michaelis-Menten enzyme kinetics
+#### [Deterministic ODE simulation of Michaelis-Menten enzyme kinetics](@id doc_home_example_ode)
 Here we show a simple example where a model is created using the Catalyst DSL, and then simulated as 
 an ordinary differential equation.
 
@@ -177,7 +177,7 @@ sol = solve(ode)
 plot(sol; lw = 5)
 ```
 
-#### Stochastic jump simulations
+#### [Stochastic jump simulations](@id doc_home_example_jump)
 The same model can be used as input to other types of simulations. E.g. here we instead perform a 
 jump simulation
 ```@example home_simple_example
@@ -190,7 +190,7 @@ jump_sol = solve(jprob, SSAStepper(); seed = 1234) # hide
 plot(jump_sol; lw = 2)
 ```
 
-## Elaborate example
+## [Elaborate example](@id doc_home_elaborate_example)
 In the above example, we used basic Catalyst-based workflows to simulate a simple model. Here we 
 instead show how various Catalyst features can compose to create a much more advanced model. Our 
 model describes how the volume of a cell ($V$) is affected by a growth factor ($G$). The growth 
