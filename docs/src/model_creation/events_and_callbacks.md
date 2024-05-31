@@ -393,9 +393,9 @@ sol = solve(deepcopy(oprob), Tsit5())
 nothing # hide
 ```
 
-### [Events during jump simulations](@id events_additional_considerations_jump_parameters)
+### [Callbacks during jump simulations](@id events_additional_considerations_jump_parameters)
 
-An assumption of (most) jump simulations is that the system's state is unchanged between reaction events. However, events (or callbacks) that change the system's state violate this assumption. To prevent erroneous simulations, users must inform the jump solver when the state has been updated this way. This allows the solver to reinitialize any internal state information that may have changed. This can be done through the `reset_aggregated_jumps!` function.
+An assumption of (most) jump simulations is that the system's state is unchanged between reaction events. However, callbacks that change the system's state violate this assumption. To prevent erroneous simulations, users must inform the jump solver when the state has been updated this way. This allows the solver to reinitialize any internal state information that may have changed. This can be done through the `reset_aggregated_jumps!` function.
 
 Here, we create a birth-death process where we add `2.0` additional units of `X` through a preset-time callback. At the end of the `affect!` function, we also call `reset_aggregated_jumps!` on the integrator:
 ```@example events_considerations
