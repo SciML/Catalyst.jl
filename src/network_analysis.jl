@@ -718,3 +718,54 @@ function conservationlaw_errorcheck(rs, pre_varmap)
     isempty(conservedequations(Catalyst.flatten(rs))) ||
         error("The system has conservation laws but initial conditions were not provided for some species.")
 end
+
+"""
+    iscomplexbalanced(rs::ReactionSystem, parametermap)
+
+Constructively compute whether a network will have complex-balanced equilibrium
+solutions, following the method in van der Schaft et al., [2015](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). Accepts a dictionary, vector, or tuple ofvariable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
+"""
+
+function iscomplexbalanced(rs::ReactionSystem, parametermap::Dict) 
+    if length(parametermap) != numparams(rs) 
+        error("Incorrect number of parameters specified.")
+    end
+
+    pmap = symmap_to_varmap(rs, parametermap)
+    pmap = Dict(ModelingToolkit.value(k) => v for (k,v) in pmap)
+
+    sm = speciesmap(rs)
+    cm = reactioncomplexmap(rs)
+    complexes, D = reactioncomplexes(rs)
+    rxns = reactions(rs)
+    nc = length(complexes); nr = numreactions(rs); nm = numspecies(rs)
+
+    if !all(r->ismassaction(r, rs), rxns) 
+        error("The supplied ReactionSystem has reactions that are not ismassaction. Testing for being complex balanced is currently only supported for pure mass action networks.") 
+    end
+
+    rates = [substitute(rate, pmap) for rate in reactionrates(rs)]
+
+    # Construct kinetic matrix, K
+    K = zeros(nr, nc) 
+    for c in 1:nc
+        complex = complexes[c]
+        for (r, dir) in cm[complex]
+            rxn = rxns[r]
+            if dir == -1
+                K[r, c] = rates[r]
+            end
+        end
+    end
+
+    L = -D*K
+    S = netstoichmat(rs)
+
+    # Compute ρ using the matrix-tree theorem
+    g = incidencematgraph(rs)
+    R = ratematrix(rs, rates)
+    ρ = matrixtree(g, R)
+
+    # Determine if 1) ρ is positive and 2) D^T Ln ρ lies in the image of S^T
+    if all(>(0), ρ)
+        img = D'*log.(ρ)
