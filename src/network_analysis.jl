@@ -769,3 +769,110 @@ function iscomplexbalanced(rs::ReactionSystem, parametermap::Dict)
     # Determine if 1) ρ is positive and 2) D^T Ln ρ lies in the image of S^T
     if all(>(0), ρ)
         img = D'*log.(ρ)
+        if rank(S') == rank(hcat(S', img)) return true else return false end 
+    else
+        return false
+    end
+end
+
+function iscomplexbalanced(rs::ReactionSystem, parametermap::Vector{Pair{Symbol, Float64}}) 
+    pdict = Dict(parametermap)
+    iscomplexbalanced(rs, pdict)
+end
+
+function iscomplexbalanced(rs::ReactionSystem, parametermap::Tuple{Pair{Symbol, Float64}}) 
+    pdict = Dict(parametermap)
+    iscomplexbalanced(rs, pdict)
+end
+
+iscomplexbalanced(rs::ReactionSystem, parametermap) = error("Parameter map must be a dictionary, tuple, or vector of symbol/value pairs.")
+
+
+"""
+    ratematrix(rs::ReactionSystem, parametermap)
+
+    Given a reaction system with n complexes, outputs an n-by-n matrix where R_{ij} is the rate constant of the reaction between complex i and complex j. 
+"""
+
+function ratematrix(rs::ReactionSystem, rates::Vector{Float64}) 
+    complexes, D = reactioncomplexes(rs)
+    n = length(complexes)
+    rxns = reactions(rs)
+    ratematrix = zeros(n, n)
+
+    for r in 1:length(rxns)
+        rxn = rxns[r]
+        s = findfirst(==(-1), @view D[:,r])
+        p = findfirst(==(1), @view D[:,r])
+        ratematrix[s, p] = rates[r]
+    end
+    ratematrix
+end
+
+function ratematrix(rs::ReactionSystem, parametermap::Dict{Symbol, Float64}) 
+    if length(parametermap) != numparams(rs) 
+        error("The number of reaction rates must be equal to the number of parameters")
+    end
+    pmap = symmap_to_varmap(rs, parametermap)
+    rates = [substitute(rate, pmap) for rate in reactionrates(rs)]
+    ratematrix(rs, rates)
+end
+
+function ratematrix(rs::ReactionSystem, parametermap::Vector{Pair{Symbol, Float64}}) 
+    pdict = Dict(parametermap)
+    ratematrix(rs, pdict)
+end
+
+function ratematrix(rs::ReactionSystem, parametermap::Tuple{Pair{Symbol, Float64}}) 
+    pdict = Dict(parametermap)
+    ratematrix(rs, pdict)
+end
+
+ratematrix(rs::ReactionSystem, parametermap) = error("Parameter map must be a dictionary, tuple, or vector of symbol/value pairs.")
+
+### BELOW: Helper functions for iscomplexbalanced
+
+function matrixtree(g::SimpleDiGraph, distmx::Matrix)
+    n = nv(g)
+    if size(distmx) != (n, n)
+        error("Size of distance matrix is incorrect")
+    end
+
+    π = zeros(n) 
+
+    if !Graphs.is_connected(g)
+        ccs = Graphs.connected_components(g)
+        for cc in ccs
+            sg, vmap = Graphs.induced_subgraph(g, cc)
+            distmx_s = distmx[cc, cc]
+            π_j = matrixtree(sg, distmx_s)
+            π[cc] = π_j
+        end
+        return π
+    end
+
+    # generate all spanning trees
+    ug = SimpleGraph(SimpleDiGraph(g))
+    trees = collect(Combinatorics.combinations(collect(edges(ug)), n-1))
+    trees = SimpleGraph.(trees)
+    trees = filter!(t->isempty(Graphs.cycle_basis(t)), trees)
+
+    # constructed rooted trees for every vertex, compute sum
+    for v in 1:n
+        rootedTrees = [reverse(Graphs.bfs_tree(t, v, dir=:in)) for t in trees]
+        π[v] = sum([treeweight(t, g, distmx) for t in rootedTrees])
+    end
+    
+    # sum the contributions
+    return π 
+end
+
+function treeweight(t::SimpleDiGraph, g::SimpleDiGraph, distmx::Matrix) 
+    prod = 1
+    for e in edges(t)
+        s = Graphs.src(e); t = Graphs.dst(e)
+        prod *= distmx[s, t] 
+    end
+    prod 
+end
+
