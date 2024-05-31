@@ -223,14 +223,14 @@ Hierarchical modelling can be used to model system spread across several differe
 Frequently when working with Catalyst, we need to represent a species or parameter (or variables, when [CRNs are coupled with equations](@ref ref)). Primarily this happens when we set the initial conditions and parameter values of a simulation, but it is also relevant when we e.g. [designate which species to plot](@ref simulation_plotting_options) or [updates a parameter during a simulation](@ref simulation_structure_interfacing_integrators). There are three different ways to represent species and parameters, each with their pros and cons. Here we will provide a short overview of each.
 
 ### [Symbol-based designation](@id advanced_intro_to_catalyst_designations_syms)
-Throughout this documentation, we primarily represent parameters and species using symbols. Here, we represent $X$ through its corresponding [symbol](https://docs.julialang.org/en/v1/base/base/#Core.Symbol), `:X` is used (a `Symbol` is created by pre-pending an expression with `:`). E.g. to simulate the following model:
+Throughout this documentation, we primarily represent parameters and species using symbols. Here, we represent $X$ through its corresponding [symbol](https://docs.julialang.org/en/v1/base/base/#Core.Symbol), `:X` is used (a symbol is created by pre-pending an expression with `:`). E.g. to simulate the following model:
 ```@example advanced_intro_to_catalyst_designations
 using Catalyst
 rs_dsl = @reaction_network begin
     (p,d), 0 <--> X
 end
 ```
-we can represent our initial conditions and parameters with their respective `Symbol` forms:
+we can represent our initial conditions and parameters with their respective symbol forms:
 ```@example advanced_intro_to_catalyst_designations
 using  OrdinaryDiffEq
 u0_syms = [:X => 1.0]
@@ -240,12 +240,12 @@ oprob_syms = ODEProblem(rs_dsl, u0_syms, tspan, ps_syms)
 sol_syms = solve(oprob_syms)
 nothing # hide
 ```
-Next, to obtain a vector with the simulation's $X$ value we can again use $X$'s `Symbol` representation:
+Next, to obtain a vector with the simulation's $X$ value we can again use $X$'s symbol representation:
 ```@example advanced_intro_to_catalyst_designations
 sol_syms[:X]
 ```
 
-There are two cases where `Symbol`-based designations cannot be used:
+There are two cases where symbol-based designations cannot be used:
 - When using [hierarchical/compositional modelling](advanced_intro_to_catalyst_modelling_approaches_hierarchical). Here, if several sub-models contain species called `X`, it cannot be inferred which one `:X` refers to.
 - When algebraic expression of species and/or parameters must be formed (as used e.g. [here](@ref ref)). Typically, these situations indicate that an [*observable*](@ref dsl_advanced_options_observables) should be created to designate the quantity of index.
 
