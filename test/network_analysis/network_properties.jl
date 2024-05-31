@@ -44,7 +44,7 @@ let
     @test Catalyst.get_networkproperties(MAPK).rank == 15
 
     k = rand(rng, numparams(MAPK))
-    rates = Dict(zip(reactionparams(MAPK), k))
+    rates = Dict(zip(parameters(MAPK), k))
     @test Catalyst.iscomplexbalanced(MAPK, rates) == false
     # i=0;
     # for lcs in linkageclasses(MAPK)
@@ -85,7 +85,7 @@ let
     @test Catalyst.get_networkproperties(rn2).rank == 6
 
     k = rand(rng, numparams(rn2))
-    rates = Dict(zip(reactionparams(rn2), k))
+    rates = Dict(zip(parameters(rn2), k))
     @test Catalyst.iscomplexbalanced(rn2, rates) == false
     # i=0;
     # for lcs in linkageclasses(rn2)
@@ -129,7 +129,7 @@ let
     @test Catalyst.get_networkproperties(rn3).rank == 10
 
     k = rand(rng, numparams(rn3))
-    rates = Dict(zip(reactionparams(rn3), k))
+    rates = Dict(zip(parameters(rn3), k))
     @test Catalyst.iscomplexbalanced(rn3, rates) == false
     # i=0;
     # for lcs in linkageclasses(rn3)
@@ -154,7 +154,7 @@ let
     end
 
     k = rand(rng, numparams(rn4))
-    rates = Dict(zip(reactionparams(rn4), k))
+    rates = Dict(zip(parameters(rn4), k))
     @test Catalyst.iscomplexbalanced(rn4, rates) == true
 end
     
@@ -182,7 +182,7 @@ let
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 
     k = rand(rng, numparams(rn))
-    rates = Dict(zip(reactionparams(rn), k))
+    rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == false 
 end
 
@@ -200,7 +200,7 @@ let
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 
     k = rand(rng, numparams(rn))
-    rates = Dict(zip(reactionparams(rn), k))
+    rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == false 
 end
 let
@@ -212,7 +212,7 @@ let
     weak_rev = false
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
     k = rand(rng, numparams(rn))
-    rates = Dict(zip(reactionparams(rn), k))
+    rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == false 
 end
 let
@@ -226,7 +226,7 @@ let
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 
     k = rand(rng, numparams(rn))
-    rates = Dict(zip(reactionparams(rn), k))
+    rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == false 
 end
 let
@@ -241,7 +241,7 @@ let
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 
     k = rand(rng, numparams(rn))
-    rates = Dict(zip(reactionparams(rn), k))
+    rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
 let
@@ -254,7 +254,7 @@ let
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 
     k = rand(rng, numparams(rn))
-    rates = Dict(zip(reactionparams(rn), k))
+    rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == false 
 end
 let
@@ -267,7 +267,7 @@ let
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 
     k = rand(rng, numparams(rn))
-    rates = Dict(zip(reactionparams(rn), k))
+    rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true  
 end
 let
@@ -277,7 +277,7 @@ let
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 
     k = rand(rng, numparams(rn))
-    rates = Dict(zip(reactionparams(rn), k))
+    rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
 let
@@ -292,7 +292,7 @@ let
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 
     k = rand(rng, numparams(rn))
-    rates = Dict(zip(reactionparams(rn), k))
+    rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
 let
@@ -307,7 +307,7 @@ let
     testreversibility(rn, reactioncomplexes(rn)[2], rev, weak_rev)
 
     k = rand(rng, numparams(rn))
-    rates = Dict(zip(reactionparams(rn), k))
+    rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == false 
 end
 
@@ -322,7 +322,7 @@ let
     end
 
     k = rand(rng, numparams(rn))
-    rates = Dict(zip(reactionparams(rn), k))
+    rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
 
