@@ -54,18 +54,8 @@ To import a Julia package into a session, you can use the `using PackageName` co
 ```julia
 using Pkg
 Pkg.add("Catalyst")
-using Catalyst
 ```
 Here, the Julia package manager package (`Pkg`) is by default installed on your computer when Julia is installed, and can be activated directly. Next, we also wish to install the `DifferentialEquations` and `Plots` packages (for numeric simulation of models, and plotting, respectively).
-```julia
-using Pkg
-Pkg.activate(".")
-```
-Once a package has been installed through the `Pkg.add` command, this command does not have to be repeated if we restart our Julia session. We can now import all three packages into our current session with:
-```@example ex2
-using Catalyst
-```
-This will only make Catalyst available for the current Julia session. If you exit Julia, you will have to run `using Catalyst` again to use its features (however, `Pkg.add("Catalyst")` does not need to be rerun). Next, we wish to install the `DifferentialEquations` and `Plots` packages (for numeric simulation of models, and plotting, respectively):
 ```julia
 Pkg.add("DifferentialEquations")
 Pkg.add("Plots")

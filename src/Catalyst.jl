@@ -8,8 +8,7 @@ using SparseArrays, DiffEqBase, Reexport, Setfield
 using LaTeXStrings, Latexify, Requires
 using JumpProcesses: JumpProcesses, JumpProblem, 
                      MassActionJump, ConstantRateJump, VariableRateJump,
-                     SpatialMassActionJump,
-                     CartesianGrid, CartesianGridRej
+                     SpatialMassActionJump, CartesianGrid, CartesianGridRej
 
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit
