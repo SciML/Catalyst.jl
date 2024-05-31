@@ -129,9 +129,9 @@ be found in its corresponding research paper, [Catalyst: Fast and flexible model
 - [DelaySSAToolkit.jl](https://github.com/palmtree2013/DelaySSAToolkit.jl) can
  augment Catalyst reaction network models with delays, and can simulate the
  resulting stochastic chemical kinetics with delays models.
-- [BondGraphs.jl](https://github.com/jedforrest/BondGraphs.jl) a package for
+- [BondGraphs.jl](https://github.com/jedforrest/BondGraphs.jl), a package for
  constructing and analyzing bond graphs models, which can take Catalyst models as input.
-- [PEtab.jl](https://github.com/sebapersson/PEtab.jl) a package that implements the PEtab format for 
+- [PEtab.jl](https://github.com/sebapersson/PEtab.jl), a package that implements the PEtab format for 
  fitting reaction network ODEs to data. Input can be provided either as SBML files or as Catalyst 
  `ReactionSystem`s.
 
