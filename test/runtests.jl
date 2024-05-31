@@ -61,6 +61,7 @@ using SafeTestsets, Test
         @time @safetestset "PDE Systems Simulations" begin include("spatial_modelling/simulate_PDEs.jl") end
         @time @safetestset "Lattice Reaction Systems" begin include("spatial_modelling/lattice_reaction_systems.jl") end
         @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_ODEs.jl") end
+        @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_reaction_systems/lattice_reaction_systems_jumps.jl") end
     #end
 
     #if GROUP == "All" || GROUP == "Visualisation-Extensions"
