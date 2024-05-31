@@ -125,7 +125,7 @@ end
 # function make_majumps(non_spat_dprob, rs::ReactionSystem)
 #     # Computes various required inputs for assembling the mass action jumps.
 #     js = convert(JumpSystem, rs)
-#     statetoid = Dict(ModelingToolkit.value(state) => i for (i, state) in enumerate(states(rs)))
+#     statetoid = Dict(ModelingToolkit.value(state) => i for (i, state) in enumerate(unknowns(rs)))
 #     eqs = equations(js)
 #     invttype = non_spat_dprob.tspan[1] === nothing ? Float64 : typeof(1 / non_spat_dprob.tspan[2])
 # 

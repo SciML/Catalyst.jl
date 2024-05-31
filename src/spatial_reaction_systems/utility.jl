@@ -320,7 +320,7 @@ end
 # If at least one component is non-uniform, output is a vector of length equal to the number of vertexes.
 # If all components are uniform, the output is a length one vector.
 function compute_vertex_value(exp, lrs::LatticeReactionSystem; u=nothing, vert_ps=nothing)
-    # Finds the symbols in the expression. Checks that all correspond to states or vertex parameters.
+    # Finds the symbols in the expression. Checks that all correspond to unknowns or vertex parameters.
     relevant_syms = Symbolics.get_variables(exp)
     if any(any(isequal(sym) in edge_parameters(lrs)) for sym in relevant_syms) 
         error("An edge parameter was encountered in expressions: $exp. Here, on vertex-based components are expected.")

@@ -56,7 +56,7 @@ struct LatticeReactionSystem{Q,R,S,T} <: MT.AbstractTimeDependentSystem
         if !isempty(MT.get_systems(rs))
             error("A non-flattened (hierarchical) `ReactionSystem` was used as input. `LatticeReactionSystem`s can only be based on non-hierarchical `ReactionSystem`s.")
         end
-        if length(species(rs)) != length(states(rs))
+        if length(species(rs)) != length(unknowns(rs))
             error("The `ReactionSystem` used as input contain variable unknowns (in addition to species unknowns). This is not permitted (the input `ReactionSystem` must contain species unknowns only).")
         end
         if length(reactions(rs)) != length(equations(rs))
@@ -322,8 +322,7 @@ MT.nameof(lrs::LatticeReactionSystem) = MT.nameof(reactionsystem(lrs))
 MT.get_iv(lrs::LatticeReactionSystem) = MT.get_iv(reactionsystem(lrs))
 MT.equations(lrs::LatticeReactionSystem) = MT.equations(reactionsystem(lrs))
 MT.equations(lrs::LatticeReactionSystem) = MT.equations(reactionsystem(lrs))
-MT.states(lrs::LatticeReactionSystem) = MT.states(reactionsystem(lrs))
-#MT.unknowns(lrs::LatticeReactionSystem) = MT.unknowns(reactionsystem(lrs))
+MT.unknowns(lrs::LatticeReactionSystem) = MT.unknowns(reactionsystem(lrs))
 MT.get_metadata(lrs::LatticeReactionSystem) = MT.get_metadata(reactionsystem(lrs))
 
 # Lattice reaction systems should not be combined with compositional modelling.
@@ -332,9 +331,9 @@ function MT.get_eqs(lrs::LatticeReactionSystem)
     error("The `get_eqs` function is primarily relevant for composed models. LatticeReactionSystems cannot be composed, and hence this function should not be used. Please consider using `equations` instead.")
     # MT.get_eqs(reactionsystem(lrs))
 end
-function MT.get_states(lrs::LatticeReactionSystem) 
-    error("The `get_unknowns` is primarily relevant for composed models. LatticeReactionSystems cannot be composed, and hence this function should not be used. Please consider using `unknowns` instead.")
-    # MT.get_states(reactionsystem(lrs))
+function MT.get_unknowns(lrs::LatticeReactionSystem) 
+    error("The `get_unknowns` function is primarily relevant for composed models. LatticeReactionSystems cannot be composed, and hence this function should not be used. Please consider using `unknowns` instead.")
+    # MT.get_unknowns(reactionsystem(lrs))
 end
 function MT.get_ps(lrs::LatticeReactionSystem) 
     error("The `get_ps` function is primarily relevant for composed models. LatticeReactionSystems cannot be composed, and hence this function should not be used. Please consider using `parameters` instead.")
