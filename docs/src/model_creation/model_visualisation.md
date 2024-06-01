@@ -45,7 +45,10 @@ brusselator = @reaction_network begin
     1, X --> ∅
 end
 Graph(brusselator)
+nothing # hide
 ```
+!["Brusselator Graph"](../assets/network_graphs/brusselator_graph.png)
+
 The network graph represents species as blue nodes and reactions as orange dots. Black arrows from species to reactions indicate substrates, and are labelled with their respective stoichiometries. Similarly, black arrows from reactions to species indicate products (also labelled with their respective stoichiometries). If there are any reactions where a species affect the rate, but does not participate as a reactant, this is displayed with a dashed red arrow. This can be seen in the following [Repressilator model](@ref basic_CRN_library_repressilator):
 ```@example visualisation_graphs
 repressilator = @reaction_network begin
@@ -55,17 +58,20 @@ repressilator = @reaction_network begin
     d, (X, Y, Z) --> ∅
 end
 Graph(repressilator)
+nothing # hide
 ```
+!["Repressilator Graph"](../assets/network_graphs/repressilator_graph.png)
 
 A generated graph can be saved using the `savegraph` function:
-```@example visualisation_graphs
+```julia
 repressilator_graph = Graph(repressilator)
 savegraph(repressilator_graph, "repressilator_graph.png")
-rm("repressilator_graph.png") # hide
 ```
 
 Finally, a [network's reaction complexes](@ref network_analysis_reaction_complexes) (and the reactions in between these) can be displayed using the `complexgraph(brusselator)` function:
 ```@example visualisation_graphs
 complexgraph(brusselator)
+nothing # hide
 ```
+!["Repressilator Complex Graph"](../assets/network_graphs/repressilator_complex_graph.png)
 Here, reaction complexes are displayed as blue nodes, and reactions in between these as black arrows.
