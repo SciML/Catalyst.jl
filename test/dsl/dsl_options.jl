@@ -584,7 +584,7 @@ let
         @observables (X, [description="my_description"]) ~ X1 + X2
         k, 0 --> X1 + X2
     end
-    @test getdescription(observed(rn)[1].lhs) == "my_description"
+    @test ModelingToolkit.getdescription(observed(rn)[1].lhs) == "my_description"
 end
 
 # Declares observables implicitly/explicitly.
@@ -629,7 +629,7 @@ let
         (k1, k2), X1 <--> X2
     end
     @test isequal(observed(rn1)[1].lhs, X)
-    @test getdescription(rn1.X) == "An observable"
+    @test ModelingToolkit.getdescription(rn1.X) == "An observable"
     @test isspecies(rn1.X)
     @test length(unknowns(rn1)) == 2
 

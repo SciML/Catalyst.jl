@@ -1,11 +1,11 @@
-# [Simulation_plotting](@id simulation_plotting)
+# [Simulation plotting](@id simulation_plotting)
 Catalyst uses the [Plots.jl](https://github.com/JuliaPlots/Plots.jl) package for performing all plots. This section provides a brief summary of some useful plotting options, while [Plots.jl's documentation](https://docs.juliaplots.org/stable/) provides a more throughout description of how to tune your plots.
 
 !!! note
     [Makie.jl](https://github.com/MakieOrg/Makie.jl) is a popular alternative to the Plots.jl package. While it is not used within Catalyst's documentation, it is worth considering (especially for users interested in interactivity, or increased control over their plots).
 
 ## [Common plotting options](@id simulation_plotting_options)
-Let us consider the oscillating [Brusselator](@ref ref) model. We have previously shown how model simulation solutions can be plotted using the `plot` function. Here we plot an ODE simulation from the [Brusselator](@ref ref) model:
+Let us consider the oscillating [Brusselator](@ref basic_CRN_library_brusselator) model. We have previously shown how model simulation solutions can be plotted using the `plot` function. Here we plot an ODE simulation from the Brusselator:
 ```@example simulation_plotting
 using Catalyst, OrdinaryDiffEq, Plots
 

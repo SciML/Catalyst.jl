@@ -5,7 +5,7 @@ Generally, when we have a structure `simulation_struct` and want to interface wi
 
 ## [Interfacing problem objects](@id simulation_structure_interfacing_problems)
 
-We begin by demonstrating how we can interface with problem objects. First, we create an `ODEProblem` representation of a [chemical cross-coupling model](@ref ref) (where a catalyst, $C$, couples two substrates, $S₁$ and $S₂$, to form a product, $P$).
+We begin by demonstrating how we can interface with problem objects. First, we create an `ODEProblem` representation of a [chemical cross-coupling model](@ref basic_CRN_library_cc) (where a catalyst, $C$, couples two substrates, $S₁$ and $S₂$, to form a product, $P$).
 ```@example structure_indexing
 using Catalyst
 cc_system = @reaction_network begin
@@ -21,7 +21,7 @@ oprob = ODEProblem(cc_system, u0, tspan, ps)
 nothing    # hide
 ```
 
-We can find a specie's (or [variable's](@ref ref)) initial condition value by simply indexing with the species of interest as input. Here we check the initial condition value of $C$:
+We can find a species's (or [variable's](@ref ref)) initial condition value by simply indexing with the species of interest as input. Here we check the initial condition value of $C$:
 ```@example structure_indexing
 oprob[:C]
 ```
@@ -53,7 +53,7 @@ oprob[[:S₁, :S₂]]
 Generally, when updating problems, it is often better to use the [`remake` function](@ref simulation_structure_interfacing_problems_remake) (especially when several values are updated).
 
 !!! warn
-    Indexing *should not* be used not modify `JumpProblem`s. Here, [remake](@ref ref) should be used exclusively.
+    Indexing *should not* be used not modify `JumpProblem`s. Here, [remake](@ref simulation_structure_interfacing_problems_remake) should be used exclusively.
 
 A problem's time span can be accessed through the `tspan` field:
 ```@example structure_indexing
@@ -162,7 +162,7 @@ get_S(oprob)
 ```
 
 ## [Interfacing using symbolic representations](@id simulation_structure_interfacing_symbolic_representation)
-As [previously described](@ref ref), when e.g. [programmatic modelling is used](@ref ref), species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like symbol-based representations can. Here we create a simple [two-state model](@ref ref) programmatically, and use its symbolic variables to check, and update, an initial condition:
+As [previously described](@ref ref), when e.g. [programmatic modelling is used](@ref programmatic_CRN_construction), species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like symbol-based representations can. Here we create a simple [two-state model](@ref rbasic_CRN_library_two_statesef) programmatically, and use its symbolic variables to check, and update, an initial condition:
 ```@example structure_indexing_symbolic_variables
 using Catalyst
 t = default_t()
@@ -195,7 +195,7 @@ Just like symbolic variables can be used to directly interface with a structure,
 oprob[two_state_model.X1 + two_state_model.X2]
 ```
 This can be used to form symbolic expressions using model quantities when a model has been created using the DSL (as an alternative to [@unpack]
-(@ref ref)). Alternatively, [creating an observable](@ref ref), and then interface using its `Symbol` representation, is also possible.
+(@ref ref)). Alternatively, [creating an observable](@ref dsl_advanced_options_observables), and then interface using its `Symbol` representation, is also possible.
 
 !!! warn
     With interfacing with a simulating structure using symbolic variables stored in a `ReactionSystem` model, ensure that the [model is complete](@ref ref).

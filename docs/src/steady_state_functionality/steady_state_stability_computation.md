@@ -19,7 +19,7 @@ steady_state = [:X => 4.0]
 steady_state_stability(steady_state, rn, ps)
 ```
 
-Next, let us consider the following [self-activation loop](@ref ref):
+Next, let us consider the following [self-activation loop](@ref basic_CRN_library_self_activation):
 ```@example stability_1
 sa_loop = @reaction_network begin 
     (hill(X,v,K,n),d), 0 <--> X
@@ -51,11 +51,11 @@ ss_jac = steady_state_jac(sa_loop)
 
 ps_1 = [:v => 2.0, :K => 0.5, :n => 3, :d => 1.0]
 steady_states_1 = hc_steady_states(sa_loop, ps)
-stability_1 = [steady_state_stability(state, sa_loop, ps_1; ss_jac = ss_jac) for state in steady_states_1]
+stabs_1 = [steady_state_stability(st, sa_loop, ps_1; ss_jac) for st in steady_states_1]
 
 ps_2 = [:v => 4.0, :K => 1.5, :n => 2, :d => 1.0]
 steady_states_2 = hc_steady_states(sa_loop, ps)
-stability_2 = [steady_state_stability(state, sa_loop, ps_2; ss_jac = ss_jac) for state in steady_states_2]
+stabs_2 = [steady_state_stability(st, sa_loop, ps_2; ss_jac) for st in steady_states_2]
 nothing # hide
 ```
 

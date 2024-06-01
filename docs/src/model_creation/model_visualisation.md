@@ -4,7 +4,7 @@ Catalyst-created `ReactionSystem` models can be visualised either as LaTeX code 
 ## [Displaying models using LaTeX](@id visualisation_latex)
 Once a model has been created, the [Latexify.jl](https://github.com/korsbo/Latexify.jl) package can be used to generate LaTeX code of the model. This can either be used for easy model inspection (e.g. to check which equations are being simulated), or to generate code which can be directly pasted into a LaTeX document.
 
-Let us consider a simple [Brusselator model](@ref ref):
+Let us consider a simple [Brusselator model](@ref basic_CRN_library_brusselator):
 ```@example visualisation_latex
 using Catalyst
 brusselator = @reaction_network begin
@@ -32,10 +32,10 @@ latexify(brusselator; form = :ode)
 If you wish to copy the output to your [clipboard](https://en.wikipedia.org/wiki/Clipboard_(computing)) (e.g. so that you can paste it into a LaTeX document), run `copy_to_clipboard(true)` before you run `latexify`. A more throughout description of Latexify's features can be found in [its documentation](https://korsbo.github.io/Latexify.jl/stable/).
 
 !!! note
-    For a model to be nicely displayed you have to use an IDE that actually supports this (such as a [notebook](https://jupyter.org/)). Other environments (such as [the Julia REPL]([@ref ref](https://docs.julialang.org/en/v1/stdlib/REPL/))) will simply return the full LaTeX code which would generate the desired expression. 
+    For a model to be nicely displayed you have to use an IDE that actually supports this (such as a [notebook](https://jupyter.org/)). Other environments (such as [the Julia REPL](https://docs.julialang.org/en/v1/stdlib/REPL/)) will simply return the full LaTeX code which would generate the desired expression. 
 
 ## [Displaying model networks](@id visualisation_graphs)
-A network graph showing a Catalyst model's species and reactions can be displayed using the `Graph` function. This first requires [Graphviz](https://graphviz.org/) to be installed and command line accessible. Here, we first declare a [Brusselator model](@ref ref) and then displays its network topology:
+A network graph showing a Catalyst model's species and reactions can be displayed using the `Graph` function. This first requires [Graphviz](https://graphviz.org/) to be installed and command line accessible. Here, we first declare a [Brusselator model](@ref basic_CRN_library_brusselator) and then displays its network topology:
 ```@example visualisation_graphs
 using Catalyst
 brusselator = @reaction_network begin
@@ -46,7 +46,7 @@ brusselator = @reaction_network begin
 end
 Graph(brusselator)
 ```
-The network graph represents species as blue nodes and reactions as orange dots. Black arrows from species to reactions indicate substrates, and are labelled with their respective stoichiometries. Similarly, black arrows from reactions to species indicate products (also labelled with their respective stoichiometries). If there are any reactions where a species affect the rate, but does not participate as a reactant, this is displayed with a dashed red arrow. This can be seen in the following [repressilator model](@ref ref):
+The network graph represents species as blue nodes and reactions as orange dots. Black arrows from species to reactions indicate substrates, and are labelled with their respective stoichiometries. Similarly, black arrows from reactions to species indicate products (also labelled with their respective stoichiometries). If there are any reactions where a species affect the rate, but does not participate as a reactant, this is displayed with a dashed red arrow. This can be seen in the following [Repressilator model](@ref basic_CRN_library_repressilator):
 ```@example visualisation_graphs
 repressilator = @reaction_network begin
     hillr(Z,v,K,n), ∅ --> X
@@ -64,7 +64,7 @@ savegraph(repressilator_graph, "repressilator_graph.png")
 rm("repressilator_graph.png") # hide
 ```
 
-Finally, a [network's reaction complexes](@ref ref) (and the reactions in between these) can be displayed using the `complexgraph(brusselator)` function:
+Finally, a [network's reaction complexes](@ref network_analysis_reaction_complexes) (and the reactions in between these) can be displayed using the `complexgraph(brusselator)` function:
 ```@example visualisation_graphs
 complexgraph(brusselator)
 ```

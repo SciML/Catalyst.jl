@@ -54,7 +54,7 @@ More information on how to compute basins of attractions for ODEs using Dynamica
 
 While Lyapunov exponents can be used for other purposes, they are primarily used to characterise [*chaotic behaviours*](https://en.wikipedia.org/wiki/Chaos_theory) (where small changes in initial conditions has large effect on the resulting trajectories). Generally, an ODE exhibit chaotic behaviour if its attractor(s) have *at least one* positive Lyapunov exponent. Practically, Lyapunov exponents can be computed using DynamicalSystems.jl's `lyapunovspectrum` function. Here we will use it to investigate two models, one which exhibits chaos and one which do not.
 
-First, let us consider the [Willamowski–Rössler model](@ref ref), which is known to exhibit chaotic behaviour.
+First, let us consider the [Willamowski–Rössler model](@ref basic_CRN_library_wr), which is known to exhibit chaotic behaviour.
 ```@example dynamical_systems_lyapunov
 using Catalyst
 wr_model = @reaction_network begin
@@ -89,7 +89,7 @@ Here, the `autodiff = false` argument is required when Lyapunov spectrums are co
 ```@example dynamical_systems_lyapunov
 lyapunovspectrum(ds, 100)
 ```
-Here, the largest exponent is positive, suggesting that the model is chaotic (or, more accurately, it has at least one chaotic attractor, to which is approached from the initial condition $(1.5,1.5,1.5)).
+Here, the largest exponent is positive, suggesting that the model is chaotic (or, more accurately, it has at least one chaotic attractor, to which is approached from the initial condition $(1.5,1.5,1.5)$).
 
 Next, we consider the [Brusselator] model. First we simulate the model for two similar initial conditions, confirming that they converge to the same limit cycle:
 ```@example dynamical_systems_lyapunov

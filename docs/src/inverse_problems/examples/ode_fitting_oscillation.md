@@ -2,7 +2,7 @@
 In this example we will use [Optimization.jl](https://github.com/SciML/Optimization.jl) to fit the parameters of an oscillatory system (the Brusselator) to data. Here, special consideration is taken to avoid reaching a local minimum. Instead of fitting the entire time series directly, we will start with fitting parameter values for the first period, and then use those as an initial guess for fitting the next (and then these to find the next one, and so on). Using this procedure is advantageous for oscillatory systems, and enables us to reach the global optimum.
 
 First, we fetch the required packages.
-```@example pe1
+```@example pe_osc_example
 using Catalyst
 using OrdinaryDiffEq
 using Optimization
@@ -11,7 +11,7 @@ using SciMLSensitivity # Required for `Optimization.AutoZygote()` automatic diff
 ```
 
 Next, we declare our model, the Brusselator oscillator.
-```@example pe1
+```@example pe_osc_example
 brusselator = @reaction_network begin
     A, ∅ --> X
     1, 2X + Y --> 3X
@@ -24,7 +24,7 @@ nothing # hide
 
 We simulate our model, and from the simulation generate sampled data points
 (to which we add noise). We will use this data to fit the parameters of our model.
-```@example pe1
+```@example pe_osc_example
 u0 = [:X => 1.0, :Y => 1.0]
 tspan = (0.0, 30.0)
 
@@ -37,7 +37,7 @@ nothing   # hide
 ```
 
 We can plot the real solution, as well as the noisy samples.
-```@example pe1
+```@example pe_osc_example
 using Plots
 default(; lw = 3, framestyle = :box, size = (800, 400))
 
@@ -49,7 +49,7 @@ Next, we create a function to fit the parameters using the `ADAM` optimizer. For
 a given initial estimate of the parameter values, `pinit`, this function will
 fit parameter values, `p`, to our data samples. We use `tend` to indicate the
 time interval over which we fit the model.
-```@example pe1
+```@example pe_osc_example
 function optimise_p(pinit, tend)
     function loss(p, _)
         newtimes = filter(<=(tend), sample_times)
@@ -71,12 +71,12 @@ nothing # hide
 ```
 
 Next, we will fit a parameter set to the data on the interval `(0, 10)`.
-```@example pe1
+```@example pe_osc_example
 p_estimate = optimise_p([5.0, 5.0], 10.0)
 ```
 
 We can compare this to the real solution, as well as the sample data
-```@example pe1
+```@example pe_osc_example
 newprob = remake(prob; tspan = (0., 10.), p = p_estimate)
 sol_estimate = solve(newprob, Rosenbrock23())
 plot(sol_real; color = [:blue :red], label = ["X real" "Y real"], linealpha = 0.2)
@@ -88,7 +88,7 @@ plot!(sol_estimate; color = [:darkblue :darkred], linestyle = :dash,
 
 Next, we use this parameter estimate as the input to the next iteration of our
 fitting process, this time on the interval `(0, 20)`.
-```@example pe1
+```@example pe_osc_example
 p_estimate = optimise_p(p_estimate, 20.)
 newprob = remake(prob; tspan = (0., 20.), p = p_estimate)
 sol_estimate = solve(newprob, Rosenbrock23())
@@ -101,20 +101,20 @@ plot!(sol_estimate; color = [:darkblue :darkred], linestyle = :dash,
 
 Finally, we use this estimate as the input to fit a parameter set on the full
 time interval of the sampled data.
-```@example pe1
+```@example pe_osc_example
 p_estimate = optimise_p(p_estimate, 30.0)
 
 newprob = remake(prob; tspan = (0., 30.0), p = p_estimate)
 sol_estimate = solve(newprob, Rosenbrock23())
 plot(sol_real; color = [:blue :red], label = ["X real" "Y real"], linealpha = 0.2)
 scatter!(sample_times, sample_vals'; color = [:blue :red],
-        label = ["Samples of X" "Samples of Y"], alpha = 0.4)
+         label = ["Samples of X" "Samples of Y"], alpha = 0.4)
 plot!(sol_estimate; color = [:darkblue :darkred], linestyle = :dash,
                     label = ["X estimated" "Y estimated"], xlimit = tspan)
 ```
 
 The final parameter estimate is then
-```@example pe1
+```@example pe_osc_example
 p_estimate
 ```
 which is close to the actual parameter set of `[1.0, 2.0]`.
@@ -125,7 +125,7 @@ then extend the interval, is to avoid getting stuck in a local minimum. Here
 specifically, we chose our initial interval to be smaller than a full cycle of
 the oscillation. If we had chosen to fit a parameter set on the full interval
 immediately we would have obtained poor fit and an inaccurate estimate for the parameters.
-```@example pe1
+```@example pe_osc_example
 p_estimate = optimise_p([5.0,5.0], 30.0)
 
 newprob = remake(prob; tspan = (0.0,30.0), p = p_estimate)

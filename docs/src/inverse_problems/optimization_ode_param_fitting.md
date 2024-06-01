@@ -1,11 +1,11 @@
-# [Parameter Fitting for ODEs using SciML/Optimization.jl and DiffEqParamEstim.jl](@id optimization_parameter_fitting)
+# [Parameter Fitting for ODEs using Optimization.jl and DiffEqParamEstim.jl](@id optimization_parameter_fitting)
 Fitting parameters to data involves solving an optimisation problem (that is, finding the parameter set that optimally fits your model to your data, typically by minimising a cost function). The SciML ecosystem's primary package for solving optimisation problems is [Optimization.jl](https://github.com/SciML/Optimization.jl). It provides access to a variety of solvers via a single common interface by wrapping a large number of optimisation libraries that have been implemented in Julia.
 
-This tutorial demonstrates both how to create parameter fitting cost functions using the [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl) package, and how to use Optimization.jl to minimise these. Optimization.jl can also be used in other contexts, such as [finding parameter sets that maximise the magnitude of some system behaviour](@ref ref). More details on how to use these packages can be found in their [respective](https://docs.sciml.ai/Optimization/stable/) [documentations](https://docs.sciml.ai/DiffEqParamEstim/stable/).
+This tutorial demonstrates both how to create parameter fitting cost functions using the [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl) package, and how to use Optimization.jl to minimise these. Optimization.jl can also be used in other contexts, such as [finding parameter sets that maximise the magnitude of some system behaviour](@ref behaviour_optimisation). More details on how to use these packages can be found in their [respective](https://docs.sciml.ai/Optimization/stable/) [documentations](https://docs.sciml.ai/DiffEqParamEstim/stable/).
 
 ## [Basic example](@id optimization_parameter_fitting_basics)
 
-Let us consider a [Michaelis-Menten enzyme kinetics model](@ref ref), where an enzyme ($E$) converts a substrate ($S$) into a product ($P$):
+Let us consider a [Michaelis-Menten enzyme kinetics model](@ref basic_CRN_library_mm), where an enzyme ($E$) converts a substrate ($S$) into a product ($P$):
 ```@example diffeq_param_estim_1 
 using Catalyst
 rn = @reaction_network begin
@@ -30,8 +30,8 @@ data_vals = (0.8 .+ 0.4*rand(10)) .* data_sol[:P][2:end]
 
 # Plots the true solutions and the (synthetic) data measurements.
 using Plots
-plot(true_sol; idxs=:P, label="True solution", lw=8)
-plot!(data_ts, data_vals; label="Measurements", seriestype=:scatter, ms=6, color=:blue)
+plot(true_sol; idxs = :P, label = "True solution", lw = 8)
+plot!(data_ts, data_vals; label = "Measurements", seriestype=:scatter, ms = 6, color = :blue)
 ```
 
 Next, we will use DiffEqParamEstim to build a loss function to measure how well our model's solutions fit the data.
@@ -40,12 +40,12 @@ using DiffEqParamEstim, Optimization
 ps_dummy = [:kB => 0.0, :kD => 0.0, :kP => 0.0]
 oprob = ODEProblem(rn, u0, (0.0, 10.0), ps_dummy)
 loss_function = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, data_vals), Optimization.AutoForwardDiff(); 
-    maxiters = 10000, verbose = false, save_idxs = 4)
+                                     maxiters = 10000, verbose = false, save_idxs = 4)
 nothing # hide
 ```
 To `build_loss_objective` we provide the following arguments:
 - `oprob`: The `ODEProblem` with which we simulate our model (using some dummy parameter values, since we do not know these).
-- `Tsit5()`: The [numeric integrator](@ref ref) we wish to simulate our model with.
+- `Tsit5()`: The [numeric solver](@ref simulation_intro_solver_options) we wish to simulate our model with.
 - `L2Loss(data_ts, data_vals)`: Defines the loss function. While [other alternatives](https://docs.sciml.ai/DiffEqParamEstim/stable/getting_started/#Alternative-Cost-Functions-for-Increased-Robustness) are available, `L2Loss` is the simplest one (measuring the sum of squared distances between model simulations and data measurements). Its first argument is the time points at which the data is collected, and the second is the data's values.
 - `Optimization.AutoForwardDiff()`: Our choice of [automatic differentiation](https://en.wikipedia.org/wiki/Automatic_differentiation) framework.
 
@@ -63,27 +63,27 @@ nothing # hide
 !!! note
     `OptimizationProblem` cannot currently accept parameter values in the form of a map (e.g. `[:kB => 1.0, :kD => 1.0, :kP => 1.0]`). These must be provided as individual values (using the same order as the parameters occur in in the `parameters(rs)` vector). Similarly, `build_loss_objective`'s `save_idxs` uses the species' indexes, rather than the species directly. These inconsistencies should be remedied in future DiffEqParamEstim releases.
 
-Finally, we can optimise `optprob` to find the parameter set that best fits our data. Optimization.jl only provides a few optimisation methods natively. However, for each supported optimisation package, it provides a corresponding wrapper-package to import that optimisation package for use with Optimization.jl. E.g., if we wish to use [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)'s [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) method, we must install and import the OptimizationOptimJL package. A summary of all, by Optimization.jl supported, optimisation packages can be found [here](https://docs.sciml.ai/Optimization/stable/#Overview-of-the-Optimizers). Here, we import the Optim.jl package and uses it to minimise our cost function (thus finding a parameter set that fits the data):
+Finally, we can optimise `optprob` to find the parameter set that best fits our data. Optimization.jl only provides a few optimisation methods natively. However, for each supported optimisation package, it provides a corresponding wrapper-package to import that optimisation package for use with Optimization.jl. E.g., if we wish to use [NLopt.jl](https://github.com/JuliaOpt/NLopt.jl)'s [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) method, we must install and import the OptimizationNLopt package. A summary of all, by Optimization.jl supported, optimisation packages can be found [here](https://docs.sciml.ai/Optimization/stable/#Overview-of-the-Optimizers). Here, we import the NLopt.jl package and uses it to minimise our cost function (thus finding a parameter set that fits the data):
 ```@example diffeq_param_estim_1 
-using OptimizationOptimJL
-optsol = solve(optprob, Optim.NelderMead())
+using OptimizationNLopt
+optsol = solve(optprob, NLopt.LN_NELDERMEAD())
 nothing # hide
 ```
 
 We can now simulate our model for the corresponding parameter set, checking that it fits our data.
 ```@example diffeq_param_estim_1 
-oprob_fitted = remake(oprob; p=optsol.u)
+oprob_fitted = remake(oprob; p = optsol.u)
 fitted_sol = solve(oprob_fitted, Tsit5())
-plot!(fitted_sol; idxs=:P, label="Fitted solution", linestyle=:dash, lw=6, color=:lightblue)
+plot!(fitted_sol; idxs = :P, label = "Fitted solution", linestyle = :dash, lw = 6, color = :lightblue)
 ```
 
 !!! note
     Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. [Identifiability](@ref structural_identifiability) is a concept that studies how to deal with this problem.
 
-Say that we instead would like to use the [Broyden–Fletcher–Goldfarb–Shannon](https://en.wikipedia.org/wiki/Broyden%E2%80%93Fletcher%E2%80%93Goldfarb%E2%80%93Shanno_algorithm) algorithm, as implemented by the [NLopt.jl](https://github.com/JuliaOpt/NLopt.jl) package. In this case we would run:
+Say that we instead would like to use the [Broyden–Fletcher–Goldfarb–Shannon](https://en.wikipedia.org/wiki/Broyden%E2%80%93Fletcher%E2%80%93Goldfarb%E2%80%93Shanno_algorithm) algorithm, as implemented by the [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl) package. In this case we would run:
 ```@example diffeq_param_estim_1 
-using OptimizationNLopt
-sol = solve(optprob, NLopt.LD_LBFGS())
+using OptimizationOptimJL
+sol = solve(optprob, Optim.LBFGS())
 nothing # hide
 ```
 
