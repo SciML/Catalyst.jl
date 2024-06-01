@@ -118,9 +118,9 @@ version = "1.1.1"
 
 [[deps.ArnoldiMethod]]
 deps = ["LinearAlgebra", "Random", "StaticArrays"]
-git-tree-sha1 = "62e51b39331de8911e4a7ff6f5aaf38a5f4cc0ae"
+git-tree-sha1 = "d57bd3762d308bded22c3b82d033bff85f6195c6"
 uuid = "ec485272-7323-5ecc-a04f-4719b315124d"
-version = "0.2.0"
+version = "0.4.0"
 
 [[deps.Arpack]]
 deps = ["Arpack_jll", "Libdl", "LinearAlgebra", "Logging"]
@@ -257,9 +257,9 @@ version = "1.5.0"
 
 [[deps.BifurcationKit]]
 deps = ["ArnoldiMethod", "Arpack", "BlockArrays", "DataStructures", "Dates", "DocStringExtensions", "FastGaussQuadrature", "ForwardDiff", "IterativeSolvers", "KrylovKit", "LinearAlgebra", "LinearMaps", "Parameters", "Printf", "RecipesBase", "RecursiveArrayTools", "Reexport", "Requires", "SciMLBase", "Setfield", "SparseArrays", "StructArrays"]
-git-tree-sha1 = "513c88c2f38634c56c8058a72edc927225a8e32c"
+git-tree-sha1 = "c09d849e5ed3a3187eaf8e5c801701df3e5243f2"
 uuid = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
-version = "0.3.3"
+version = "0.3.4"
 
 [[deps.Bijections]]
 git-tree-sha1 = "c9b163bd832e023571e86d0b90d9de92a9879088"
@@ -1280,9 +1280,9 @@ version = "1.3.14+0"
 
 [[deps.Graphs]]
 deps = ["ArnoldiMethod", "Compat", "DataStructures", "Distributed", "Inflate", "LinearAlgebra", "Random", "SharedArrays", "SimpleTraits", "SparseArrays", "Statistics"]
-git-tree-sha1 = "899050ace26649433ef1af25bc17a815b3db52b7"
+git-tree-sha1 = "4f2b57488ac7ee16124396de4f2bbdd51b2602ad"
 uuid = "86223c79-3864-5bf0-83f7-82e725a168b6"
-version = "1.9.0"
+version = "1.11.0"
 
 [[deps.GridLayoutBase]]
 deps = ["GeometryBasics", "InteractiveUtils", "Observables"]
@@ -1583,10 +1583,10 @@ uuid = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
 version = "0.9.6"
 
 [[deps.KrylovKit]]
-deps = ["ChainRulesCore", "GPUArraysCore", "LinearAlgebra", "Printf"]
-git-tree-sha1 = "5cebb47f472f086f7dd31fb8e738a8db728f1f84"
+deps = ["ChainRulesCore", "GPUArraysCore", "LinearAlgebra", "Printf", "VectorInterface"]
+git-tree-sha1 = "3f3a92bbe8f568b689a7f7bc193f7c717d793751"
 uuid = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
-version = "0.6.1"
+version = "0.7.1"
 
 [[deps.LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -3529,6 +3529,12 @@ version = "0.1.4"
 git-tree-sha1 = "ca0969166a028236229f63514992fc073799bb78"
 uuid = "41fe7b60-77ed-43a1-b4f0-825fd5a5650d"
 version = "0.2.0"
+
+[[deps.VectorInterface]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "833b06acd39f0abc97bc1170bd28e4f713619b37"
+uuid = "409d34a3-91d5-4945-b6ec-7529ddf182d8"
+version = "0.4.5"
 
 [[deps.VectorizationBase]]
 deps = ["ArrayInterface", "CPUSummary", "HostCPUFeatures", "IfElse", "LayoutPointers", "Libdl", "LinearAlgebra", "SIMDTypes", "Static", "StaticArrayInterface"]
