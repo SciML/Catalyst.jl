@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Home · Catalyst.jl</title><meta name="title" content="Home · Catalyst.jl"/><meta property="og:title" content="Home · Catalyst.jl"/><meta property="twitter:title" content="Home · Catalyst.jl"/><meta name="description" content="Documentation for Catalyst.jl."/><meta property="og:description" content="Documentation for Catalyst.jl."/><meta property="twitter:description" content="Documentation for Catalyst.jl."/><meta property="og:url" content="https://docs.sciml.ai/Catalyst/stable/"/><meta property="twitter:url" content="https://docs.sciml.ai/Catalyst/stable/"/><link rel="canonical" href="https://docs.sciml.ai/Catalyst/stable/"/><script async src="https://www.googletagmanager.com/gtag/js?id=UA-90474609-3"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-90474609-3', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="search_index.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script><link href="assets/favicon.ico" rel="icon" type="image/x-icon"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href><img src="assets/logo.png" alt="Catalyst.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href>Catalyst.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>Home</a><ul class="internal"><li><a class="tocitem" href="#Features"><span>Features</span></a></li><li><a class="tocitem" href="#Packages-Supporting-Catalyst"><span>Packages Supporting Catalyst</span></a></li><li><a class="tocitem" href="#Installation"><span>Installation</span></a></li><li><a class="tocitem" href="#Illustrative-Example"><span>Illustrative Example</span></a></li><li><a class="tocitem" href="#Getting-Help"><span>Getting Help</span></a></li><li><a class="tocitem" href="#catalyst_citation"><span>Supporting and Citing Catalyst.jl</span></a></li><li><a class="tocitem" href="#Reproducibility"><span>Reproducibility</span></a></li></ul></li><li><span class="tocitem">Introduction to Catalyst</span><ul><li><a class="tocitem" href="introduction_to_catalyst/catalyst_for_new_julia_users/">Introduction to Catalyst and Julia for New Julia users</a></li></ul></li><li><span class="tocitem">Model Creation and Properties</span><ul><li><a class="tocitem" href="model_creation/dsl_basics/">The Catalyst DSL - Introduction</a></li><li><a class="tocitem" href="model_creation/dsl_advanced/">The Catalyst DSL - Advanced Features and Options</a></li><li><a class="tocitem" href="model_creation/compositional_modeling/">Compositional Modeling of Reaction Systems</a></li><li><a class="tocitem" href="model_creation/chemistry_related_functionality/">Chemistry-related functionality</a></li><li><input class="collapse-toggle" id="menuitem-3-5" type="checkbox"/><label class="tocitem" for="menuitem-3-5"><span class="docs-label">Model creation examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="model_creation/examples/programmatic_generative_linear_pathway/">Programmatic, generative, modelling of a linear pathway</a></li></ul></li></ul></li><li><span class="tocitem">Model simulation</span><ul><li><a class="tocitem" href="model_simulation/simulation_introduction/">Model Simulation Introduction</a></li><li><a class="tocitem" href="model_simulation/simulation_plotting/">Simulation plotting</a></li><li><a class="tocitem" href="model_simulation/simulation_structure_interfacing/">Interfacing problems, integrators, and solutions</a></li><li><a class="tocitem" href="model_simulation/ode_simulation_performance/">Advice for performant ODE simulations</a></li></ul></li><li><span class="tocitem">Steady state analysis</span><ul><li><a class="tocitem" href="steady_state_functionality/homotopy_continuation/">Finding Steady States through Homotopy Continuation</a></li><li><a class="tocitem" href="steady_state_functionality/steady_state_stability_computation/">Steady state stability computation</a></li><li><a class="tocitem" href="steady_state_functionality/bifurcation_diagrams/">Bifurcation Diagrams</a></li><li><a class="tocitem" href="steady_state_functionality/dynamical_systems/">Analysing model steady state properties with DynamicalSystems.jl</a></li></ul></li><li><span class="tocitem">Inverse Problems</span><ul><li><a class="tocitem" href="inverse_problems/optimization_ode_param_fitting/">Parameter Fitting for ODEs using Optimization.jl and DiffEqParamEstim.jl</a></li><li><a class="tocitem" href="inverse_problems/behaviour_optimisation/">Optimization for non-data fitting purposes</a></li><li><a class="tocitem" href="inverse_problems/global_sensitivity_analysis/">Global Sensitivity Analysis</a></li><li><input class="collapse-toggle" id="menuitem-6-4" type="checkbox"/><label class="tocitem" for="menuitem-6-4"><span class="docs-label">Inverse problem examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="inverse_problems/examples/ode_fitting_oscillation/">Fitting Parameters for an Oscillatory System</a></li></ul></li></ul></li><li><span class="tocitem">Spatial modelling</span></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Home</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Home</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/SciML/Catalyst.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/SciML/Catalyst.jl/blob/master/docs/src/index.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Catalyst.jl-for-Reaction-Network-Modeling"><a class="docs-heading-anchor" href="#Catalyst.jl-for-Reaction-Network-Modeling">Catalyst.jl for Reaction Network Modeling</a><a id="Catalyst.jl-for-Reaction-Network-Modeling-1"></a><a class="docs-heading-anchor-permalink" href="#Catalyst.jl-for-Reaction-Network-Modeling" title="Permalink"></a></h1><p>Catalyst.jl is a symbolic modeling package for analysis and high performance simulation of chemical reaction networks. Catalyst defines symbolic <a href="@ref"><code>ReactionSystem</code></a>s, which can be created programmatically or easily specified using Catalyst&#39;s domain specific language (DSL). Leveraging <a href="https://docs.sciml.ai/ModelingToolkit/stable/">ModelingToolkit.jl</a> and <a href="https://docs.sciml.ai/Symbolics/stable/">Symbolics.jl</a>, Catalyst enables large-scale simulations through auto-vectorization and parallelism. Symbolic <code>ReactionSystem</code>s can be used to generate ModelingToolkit-based models, allowing the easy simulation and parameter estimation of mass action ODE models, Chemical Langevin SDE models, stochastic chemical kinetics jump process models, and more. Generated models can be used with solvers throughout the broader <a href="https://sciml.ai">SciML</a> ecosystem, including higher level SciML packages (e.g. for sensitivity analysis, parameter estimation, machine learning applications, etc).</p><h2 id="Features"><a class="docs-heading-anchor" href="#Features">Features</a><a id="Features-1"></a><a class="docs-heading-anchor-permalink" href="#Features" title="Permalink"></a></h2><ul><li>A DSL provides a simple and readable format for manually specifying chemical reactions.</li><li>Catalyst <code>ReactionSystem</code>s provide a symbolic representation of reaction networks, built on <a href="https://docs.sciml.ai/ModelingToolkit/stable/">ModelingToolkit.jl</a> and <a href="https://docs.sciml.ai/Symbolics/stable/">Symbolics.jl</a>.</li><li>Non-integer (e.g. <code>Float64</code>) stoichiometric coefficients are supported for generating ODE models, and symbolic expressions for stoichiometric coefficients are supported for all system types.</li><li>The <a href="@ref">Catalyst.jl API</a> provides functionality for extending networks, building networks programmatically, network analysis, and for composing multiple networks together.</li><li><code>ReactionSystem</code>s generated by the DSL can be converted to a variety of <code>ModelingToolkit.AbstractSystem</code>s, including symbolic ODE, SDE and jump process representations.</li><li>Coupled differential and algebraic constraint equations can be included in Catalyst models, and are incorporated during conversion to ODEs or steady state equations.</li><li>Conservation laws can be detected and applied to reduce system sizes, and generate non-singular Jacobians, during conversion to ODEs, SDEs, and steady state equations.</li><li>By leveraging ModelingToolkit, users have a variety of options for generating optimized system representations to use in solvers. These include construction of dense or sparse Jacobians, multithreading or parallelization of generated derivative functions, automatic classification of reactions into optimized jump types for Gillespie type simulations, automatic construction of dependency graphs for jump systems, and more.</li><li>Generated systems can be solved using any <a href="https://docs.sciml.ai/DiffEqDocs/stable/">DifferentialEquations.jl</a> ODE/SDE/jump solver, and can be used within <code>EnsembleProblem</code>s for carrying out parallelized parameter sweeps and statistical sampling. Plot recipes are available for visualizing the solutions.</li><li><a href="https://github.com/JuliaSymbolics/Symbolics.jl">Symbolics.jl</a> symbolic expressions and Julia <code>Expr</code>s can be obtained for all rate laws and functions determining the deterministic and stochastic terms within resulting ODE, SDE or jump models.</li><li><a href="https://korsbo.github.io/Latexify.jl/stable/">Latexify</a> can be used to generate LaTeX expressions corresponding to generated mathematical models or the underlying set of reactions.</li><li><a href="https://graphviz.org/">Graphviz</a> can be used to generate and visualize reaction network graphs. (Reusing the Graphviz interface created in <a href="https://algebraicjulia.github.io/Catlab.jl/stable/">Catlab.jl</a>.)</li></ul><h2 id="Packages-Supporting-Catalyst"><a class="docs-heading-anchor" href="#Packages-Supporting-Catalyst">Packages Supporting Catalyst</a><a id="Packages-Supporting-Catalyst-1"></a><a class="docs-heading-anchor-permalink" href="#Packages-Supporting-Catalyst" title="Permalink"></a></h2><ul><li>Catalyst <a href="@ref"><code>ReactionSystem</code></a>s can be imported from SBML files via <a href="https://docs.sciml.ai/SBMLToolkit/stable/">SBMLToolkit.jl</a>, and from BioNetGen .net files and various stoichiometric matrix network representations using <a href="https://docs.sciml.ai/ReactionNetworkImporters/stable/">ReactionNetworkImporters.jl</a>.</li><li><a href="https://augustinas1.github.io/MomentClosure.jl/dev">MomentClosure.jl</a> allows generation of symbolic ModelingToolkit <code>ODESystem</code>s, representing moment closure approximations to moments of the Chemical Master Equation, from reaction networks defined in Catalyst.</li><li><a href="https://kaandocal.github.io/FiniteStateProjection.jl/dev/">FiniteStateProjection.jl</a> allows the construction and numerical solution of Chemical Master Equation models from reaction networks defined in Catalyst.</li><li><a href="https://palmtree2013.github.io/DelaySSAToolkit.jl/dev/">DelaySSAToolkit.jl</a> can augment Catalyst reaction network models with delays, and can simulate the resulting stochastic chemical kinetics with delays models.  </li><li><a href="https://github.com/jedforrest/BondGraphs.jl">BondGraphs.jl</a> a package for constructing and analyzing bond graphs models, which can take Catalyst models as input.</li><li><a href="https://github.com/sebapersson/PEtab.jl">PEtab.jl</a> a package that implements the PEtab format for fitting reaction network ODEs to data. Input can be provided either as SBML files or as Catalyst <code>ReactionSystem</code>s.</li></ul><h2 id="Installation"><a class="docs-heading-anchor" href="#Installation">Installation</a><a id="Installation-1"></a><a class="docs-heading-anchor-permalink" href="#Installation" title="Permalink"></a></h2><p>Catalyst can be installed through the Julia package manager:</p><pre><code class="language-julia hljs">using Pkg
+Pkg.add(&quot;Catalyst&quot;)</code></pre><p>To solve Catalyst models and visualize solutions, it is also recommended to install DifferentialEquations.jl and Plots.jl</p><pre><code class="language-julia hljs">Pkg.add(&quot;DifferentialEquations&quot;)
+Pkg.add(&quot;Plots&quot;)</code></pre><h2 id="Illustrative-Example"><a class="docs-heading-anchor" href="#Illustrative-Example">Illustrative Example</a><a id="Illustrative-Example-1"></a><a class="docs-heading-anchor-permalink" href="#Illustrative-Example" title="Permalink"></a></h2><p>Here is a simple example of generating, visualizing and solving an SIR ODE model. We first define the SIR reaction model using Catalyst</p><pre><code class="language-julia hljs">using Catalyst
+rn = @reaction_network begin
+    α, S + I --&gt; 2I
+    β, I --&gt; R
+end</code></pre><p class="math-container">\[ \begin{align*}
+\mathrm{S} + \mathrm{I} &amp;\xrightarrow{\alpha} 2 \mathrm{I} \\
+\mathrm{I} &amp;\xrightarrow{\beta} \mathrm{R}  
+ \end{align*}
+ \]</p><p>Assuming <a href="https://graphviz.org/">Graphviz</a> and is installed and <em>command line accessible</em>, the network can be visualized using the <a href="@ref"><code>Graph</code></a> command</p><pre><code class="language-julia hljs">Graph(rn)</code></pre><p>which in Jupyter notebooks will give the figure</p><p><img src="assets/SIR_rn.svg" alt="SIR Network Graph"/></p><p>To generate and solve a mass action ODE version of the model we use</p><pre><code class="language-julia hljs">using DifferentialEquations
+p     = [:α =&gt; .1/1000, :β =&gt; .01]
+tspan = (0.0,250.0)
+u0    = [:S =&gt; 999.0, :I =&gt; 1.0, :R =&gt; 0.0]
+op    = ODEProblem(rn, u0, tspan, p)
+sol   = solve(op, Tsit5())       # use Tsit5 ODE solver</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">retcode: Success
+Interpolation: specialized 4th order &quot;free&quot; interpolation
+t: 25-element Vector{Float64}:
+   0.0
+   0.07042204340497453
+   0.7746424774547197
+   2.5720784698621917
+   5.370475868328381
+   8.892790675662736
+  13.397314385835262
+  18.77312249641433
+  25.067606451778733
+  32.21876025749868
+   ⋮
+ 109.7545467360122
+ 122.01827800502546
+ 135.51407012931605
+ 149.4289751648907
+ 164.9581387700312
+ 182.1077023701446
+ 201.8902038451328
+ 225.42950830558135
+ 250.0
+u: 25-element Vector{Vector{Float64}}:
+ [999.0, 1.0, 0.0]
+ [998.9929425461802, 1.006350999490624, 0.0007064543291988011]
+ [998.9198582366232, 1.0721192430449888, 0.008022520331768075]
+ [998.710958959454, 1.2601038170445216, 0.028937223501382614]
+ [998.3106311383737, 1.6203391495804873, 0.06902971204575789]
+ [997.6406610464425, 2.223176329297582, 0.13616262425989606]
+ [996.4102628260856, 3.3301676362184693, 0.25956953769586766]
+ [994.1215268974047, 5.388941226022395, 0.48953187657282904]
+ [989.6067337013325, 9.448551166221785, 0.944715132445689]
+ [980.3144906488483, 17.797375650380925, 1.888133700770769]
+ ⋮
+ [64.78984789048336, 661.6683505558883, 273.5418015536282]
+ [29.48108597246802, 618.2436612642133, 352.2752527633185]
+ [13.346763344107233, 555.1339446439661, 431.51929201192655]
+ [6.455508523840256, 489.3914844108397, 504.1530070653199]
+ [3.1844548852973817, 421.99665141068317, 574.8188937040193]
+ [1.6352844539587112, 356.89846909139345, 641.4662464546477]
+ [0.8610792936956257, 293.53283900937345, 705.6060816969308]
+ [0.465011951111304, 232.31441070419152, 767.2205773446971]
+ [0.2802696507133374, 181.86671916839686, 817.8530111808897]</code></pre><p>which we can plot as</p><pre><code class="language-julia hljs">using Plots
+plot(sol, lw=2)</code></pre><img src="index-6785415b.svg" alt="Example block output"/><h2 id="Getting-Help"><a class="docs-heading-anchor" href="#Getting-Help">Getting Help</a><a id="Getting-Help-1"></a><a class="docs-heading-anchor-permalink" href="#Getting-Help" title="Permalink"></a></h2><p>Catalyst developers are active on the <a href="https://discourse.julialang.org/">Julia Discourse</a>, and the <a href="https://julialang.slack.com">Julia Slack&#39;s</a> #sciml-bridged and #sciml-sysbio channels. For bugs or feature requests <a href="https://github.com/SciML/Catalyst.jl/issues">open an issue</a>.</p><h2 id="catalyst_citation"><a class="docs-heading-anchor" href="#catalyst_citation">Supporting and Citing Catalyst.jl</a><a id="catalyst_citation-1"></a><a class="docs-heading-anchor-permalink" href="#catalyst_citation" title="Permalink"></a></h2><p>The software in this ecosystem was developed as part of academic research. If you would like to help support it, please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part of your research, teaching, or other activities, we would be grateful if you could cite our work:</p><pre><code class="nohighlight hljs">@article{CatalystPLOSCompBio2023,
+    doi = {10.1371/journal.pcbi.1011530},
+    author = {Loman, Torkel E. AND Ma, Yingbo AND Ilin, Vasily AND Gowda, Shashi AND Korsbo, Niklas AND Yewale, Nikhil AND Rackauckas, Chris AND Isaacson, Samuel A.},
+    journal = {PLOS Computational Biology},
+    publisher = {Public Library of Science},
+    title = {Catalyst: Fast and flexible modeling of reaction networks},
+    year = {2023},
+    month = {10},
+    volume = {19},
+    url = {https://doi.org/10.1371/journal.pcbi.1011530},
+    pages = {1-19},
+    number = {10},
+}</code></pre><h2 id="Reproducibility"><a class="docs-heading-anchor" href="#Reproducibility">Reproducibility</a><a id="Reproducibility-1"></a><a class="docs-heading-anchor-permalink" href="#Reproducibility" title="Permalink"></a></h2><details><summary>The documentation of this SciML package was built using these direct dependencies,</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Status `~/work/Catalyst.jl/Catalyst.jl/docs/Project.toml`
+  [6e4b80f9] BenchmarkTools v1.5.0
+  [0f109fa4] BifurcationKit v0.3.3
+  [13f3f980] CairoMakie v0.12.2
+  [479239e8] Catalyst v13.5.1 `~/work/Catalyst.jl/Catalyst.jl`
+  [a93c6f00] DataFrames v1.6.1
+  [1130ab10] DiffEqParamEstim v2.2.0
+  [0c46a032] DifferentialEquations v7.13.0
+  [31c24e10] Distributions v0.25.109
+  [e30172f5] Documenter v1.4.1
+  [61744808] DynamicalSystems v3.3.16
+  [af5da776] GlobalSensitivity v2.6.2
+  [f213a82b] HomotopyContinuation v2.9.3
+  [40713840] IncompleteLU v0.2.1
+  [ccbc3e58] JumpProcesses v9.11.1
+  [23fbe1c1] Latexify v0.16.3
+  [7ed4a6bd] LinearSolve v2.30.1
+  [961ee093] ModelingToolkit v9.15.0
+  [8913a72c] NonlinearSolve v3.12.4
+  [429524aa] Optim v1.9.4
+  [7f7a1694] Optimization v3.25.1
+  [3e6eede4] OptimizationBBO v0.2.1
+  [4e6fcdb7] OptimizationNLopt v0.2.2
+  [36348300] OptimizationOptimJL v0.3.1
+  [42dfb2eb] OptimizationOptimisers v0.2.1
+  [1dea7af3] OrdinaryDiffEq v6.80.1
+  [91a5bcdd] Plots v1.40.4
+  [8a4e6c94] QuasiMonteCarlo v0.3.3
+  [0bca4576] SciMLBase v2.39.0
+  [1ed8b502] SciMLSensitivity v7.60.1
+  [276daf66] SpecialFunctions v2.4.0
+  [90137ffa] StaticArrays v1.9.4
+  [9672c7b4] SteadyStateDiffEq v2.2.0
+  [789caeaf] StochasticDiffEq v6.65.1
+  [220ca800] StructuralIdentifiability v0.5.7
+  [0c5d862f] Symbolics v5.28.0
+  [56ddb016] Logging</code></pre></details><details><summary>and using this machine and Julia version.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Julia Version 1.10.2
+Commit bd47eca2c8a (2024-03-01 10:14 UTC)
+Build Info:
+  Official https://julialang.org/ release
+Platform Info:
+  OS: Linux (x86_64-linux-gnu)
+  CPU: 4 × AMD EPYC 7763 64-Core Processor
+  WORD_SIZE: 64
+  LIBM: libopenlibm
+  LLVM: libLLVM-15.0.7 (ORCJIT, znver3)
+Threads: 1 default, 0 interactive, 1 GC (on 4 virtual cores)</code></pre></details></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="introduction_to_catalyst/catalyst_for_new_julia_users/">Introduction to Catalyst and Julia for New Julia users »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Saturday 1 June 2024 10:44">Saturday 1 June 2024</span>. Using Julia version 1.10.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
