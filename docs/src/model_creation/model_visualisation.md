@@ -63,10 +63,9 @@ nothing # hide
 !["Repressilator Graph"](../assets/network_graphs/repressilator_graph.png)
 
 A generated graph can be saved using the `savegraph` function:
-```@example visualisation_graphs
+```julia
 repressilator_graph = Graph(repressilator)
 savegraph(repressilator_graph, "repressilator_graph.png")
-rm("repressilator_graph.png") # hide
 ```
 
 Finally, a [network's reaction complexes](@ref network_analysis_reaction_complexes) (and the reactions in between these) can be displayed using the `complexgraph(brusselator)` function:
