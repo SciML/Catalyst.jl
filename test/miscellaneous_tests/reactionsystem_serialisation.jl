@@ -160,7 +160,7 @@ let
 
     # Loads the model and checks that it is correct. Removes the saved file
     save_reaction_network("serialised_rs.jl", rs; safety_check = false)
-    rs_loaded = include("serialised_rs.jl")
+    rs_loaded = include("../serialised_rs.jl")
     @test rs == rs_loaded
     rm("serialised_rs.jl")
 
@@ -248,7 +248,7 @@ let
     # Creates model and checks it against serialised version.
     @named rs = ReactionSystem([], τ, [X, Y, Z, U, V, W, A, B, C, D, E, F, G], [a, b, c, d, e, f])
     save_reaction_network("serialised_rs.jl", rs; safety_check = false)
-    @test rs == include("serialised_rs.jl")
+    @test rs == include("../serialised_rs.jl")
     rm("serialised_rs.jl")
 end
 
@@ -349,9 +349,9 @@ let
 
     # Checks that the correct system is saved (both complete and incomplete ones).
     save_reaction_network("serialised_rs_incomplete.jl", rs_1; safety_check = false)
-    @test isequal(rs_1, include("serialised_rs_incomplete.jl"))
+    @test isequal(rs_1, include("../serialised_rs_incomplete.jl"))
     save_reaction_network("serialised_rs_complete.jl", rs; safety_check = false)
-    @test isequal(rs, include("serialised_rs_complete.jl"))
+    @test isequal(rs, include("../serialised_rs_complete.jl"))
     rm("serialised_rs_incomplete.jl")
     rm("serialised_rs_complete.jl")
 end
@@ -380,7 +380,7 @@ let
 
     # Checks that serialisation works.
     save_reaction_network("serialised_rs.jl", rs; safety_check = false)
-    @test_broken isequal(rs, include("serialised_rs.jl"))
+    @test_broken isequal(rs, include("../serialised_rs.jl"))
     rm("serialised_rs.jl")
 end
 
@@ -411,7 +411,7 @@ let
         (p,d), 0 <--> X
     end
     save_reaction_network("serialised_rs_complete.jl", rs_complete)
-    rs_complete_loaded = include("serialised_rs_complete.jl")
+    rs_complete_loaded = include("../serialised_rs_complete.jl")
     @test ModelingToolkit.iscomplete(rs_complete_loaded)
     rm("serialised_rs_complete.jl")
 
@@ -420,7 +420,7 @@ let
         (p,d), 0 <--> X
     end
     save_reaction_network("serialised_rs_incomplete.jl", rs_incomplete)
-    rs_incomplete_loaded = include("serialised_rs_incomplete.jl")
+    rs_incomplete_loaded = include("../serialised_rs_incomplete.jl")
     @test !ModelingToolkit.iscomplete(rs_incomplete_loaded)
     rm("serialised_rs_incomplete.jl")
 end
