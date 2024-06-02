@@ -26,8 +26,8 @@ let
         @equations D(V) ~ 1 - V
         d, X --> 0
     end
-    save_reaction_network("test_serialisation_annotated.jl", rn; safety_check = false)
-    save_reaction_network("test_serialisation.jl", rn; annotate = false, safety_check = false)
+    save_reactionsystem("test_serialisation_annotated.jl", rn; safety_check = false)
+    save_reactionsystem("test_serialisation.jl", rn; annotate = false, safety_check = false)
 
     # Checks equivalence.
     file_string_annotated = read("test_serialisation_annotated.jl", String)
@@ -159,7 +159,7 @@ let
     rs = complete(rs1)
 
     # Loads the model and checks that it is correct. Removes the saved file
-    save_reaction_network("serialised_rs.jl", rs; safety_check = false)
+    save_reactionsystem("serialised_rs.jl", rs; safety_check = false)
     rs_loaded = include("../serialised_rs.jl")
     @test rs == rs_loaded
     rm("serialised_rs.jl")
@@ -247,7 +247,7 @@ let
 
     # Creates model and checks it against serialised version.
     @named rs = ReactionSystem([], τ, [X, Y, Z, U, V, W, A, B, C, D, E, F, G], [a, b, c, d, e, f])
-    save_reaction_network("serialised_rs.jl", rs; safety_check = false)
+    save_reactionsystem("serialised_rs.jl", rs; safety_check = false)
     @test rs == include("../serialised_rs.jl")
     rm("serialised_rs.jl")
 end
@@ -348,9 +348,9 @@ let
     rs = complete(rs_1)
 
     # Checks that the correct system is saved (both complete and incomplete ones).
-    save_reaction_network("serialised_rs_incomplete.jl", rs_1; safety_check = false)
+    save_reactionsystem("serialised_rs_incomplete.jl", rs_1; safety_check = false)
     @test isequal(rs_1, include("../serialised_rs_incomplete.jl"))
-    save_reaction_network("serialised_rs_complete.jl", rs; safety_check = false)
+    save_reactionsystem("serialised_rs_complete.jl", rs; safety_check = false)
     @test isequal(rs, include("../serialised_rs_complete.jl"))
     rm("serialised_rs_incomplete.jl")
     rm("serialised_rs_complete.jl")
@@ -379,7 +379,7 @@ let
     end
 
     # Checks that serialisation works.
-    save_reaction_network("serialised_rs.jl", rs; safety_check = false)
+    save_reactionsystem("serialised_rs.jl", rs; safety_check = false)
     @test_broken isequal(rs, include("../serialised_rs.jl"))
     rm("serialised_rs.jl")
 end
@@ -400,7 +400,7 @@ let
 
     @named osys = ODESystem([eq], t)
     @named rs = ReactionSystem(rxs, t; systems = [osys])
-    @test_throws Exception save_reaction_network("failed_serialisation.jl", rs)
+    @test_throws Exception save_reactionsystem("failed_serialisation.jl", rs)
 end
 
 # Checks that completeness is recorded correctly.
@@ -410,7 +410,7 @@ let
     rs_complete = @reaction_network begin
         (p,d), 0 <--> X
     end
-    save_reaction_network("serialised_rs_complete.jl", rs_complete)
+    save_reactionsystem("serialised_rs_complete.jl", rs_complete)
     rs_complete_loaded = include("../serialised_rs_complete.jl")
     @test ModelingToolkit.iscomplete(rs_complete_loaded)
     rm("serialised_rs_complete.jl")
@@ -419,7 +419,7 @@ let
     rs_incomplete = @network_component begin
         (p,d), 0 <--> X
     end
-    save_reaction_network("serialised_rs_incomplete.jl", rs_incomplete)
+    save_reactionsystem("serialised_rs_incomplete.jl", rs_incomplete)
     rs_incomplete_loaded = include("../serialised_rs_incomplete.jl")
     @test !ModelingToolkit.iscomplete(rs_incomplete_loaded)
     rm("serialised_rs_incomplete.jl")

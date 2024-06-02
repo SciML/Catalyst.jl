@@ -209,10 +209,10 @@ end
 
 # Constant storing all reaction system fields (in order). Used to check whether the `ReactionSystem`
 # structure have been updated (in the `reactionsystem_uptodate` function).
-const reactionsystem_fields = [:eqs, :rxs, :iv, :sivs, :unknowns, :species, :ps, :var_to_name, 
+const reactionsystem_fields = (:eqs, :rxs, :iv, :sivs, :unknowns, :species, :ps, :var_to_name, 
                                :observed, :name, :systems, :defaults, :connection_type, 
                                :networkproperties, :combinatoric_ratelaws, :continuous_events, 
-                               :discrete_events, :metadata, :complete]
+                               :discrete_events, :metadata, :complete)
 
 """
 $(TYPEDEF)

@@ -1,5 +1,5 @@
 """
-    save_reaction_network(filename::String, rn::ReactionSystem; annotate = true, safety_check = true)
+    save_reactionsystem(filename::String, rn::ReactionSystem; annotate = true, safety_check = true)
 
 Save a `ReactionSystem` model to a file. The `ReactionSystem` is saved as runnable Julia code. This
 can both be used to save a `ReactionSystem` model, but also to write it to a file for easy inspection.
@@ -18,7 +18,7 @@ Example:
 rn = @reaction_network begin
     (p,d), 0 <--> X
 end
-save_reaction_network("rn.jls", rn)
+save_reactionsystem("rn.jls", rn)
 ```
 The model can now be loaded using
 ```julia
@@ -32,14 +32,14 @@ Notes:
 - Reaction systems with components that have units cannot currently be saved.
 - The `ReactionSystem` is saved using *programmatic* (not DSL) format for model creation.
 """
-function save_reaction_network(filename::String, rn::ReactionSystem; annotate = true, safety_check = true)
+function save_reactionsystem(filename::String, rn::ReactionSystem; annotate = true, safety_check = true)
     open(filename, "w") do file
         write(file, get_full_system_string(rn, annotate, true))
     end
     if safety_check 
         if !isequal(rn, include(joinpath(pwd(), filename)))
             rm(filename)
-            error("The serialised `ReactionSystem` is not equal to the original one. Please make a report (including the full system) at https://github.com/SciML/Catalyst.jl/issues. To disable this behaviour, please pass the `safety_check = false` argument to `save_reaction_network` (warning, this will permit the serialisation of an erroneous system).")
+            error("The serialised `ReactionSystem` is not equal to the original one. Please make a report (including the full system) at https://github.com/SciML/Catalyst.jl/issues. To disable this behaviour, please pass the `safety_check = false` argument to `save_reactionsystem` (warning, this will permit the serialisation of an erroneous system).")
         end
     end
     return nothing

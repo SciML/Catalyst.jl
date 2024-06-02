@@ -188,6 +188,6 @@ include("spatial_reaction_systems/lattice_jump_systems.jl")
 include("reactionsystem_serialisation/serialisation_support.jl")
 include("reactionsystem_serialisation/serialise_fields.jl")
 include("reactionsystem_serialisation/serialise_reactionsystem.jl")
-export save_reaction_network
+export save_reactionsystem
 
 end # module
