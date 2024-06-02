@@ -33,6 +33,7 @@ Notes:
 - The `ReactionSystem` is saved using *programmatic* (not DSL) format for model creation.
 """
 function save_reactionsystem(filename::String, rn::ReactionSystem; annotate = true, safety_check = true)
+    reactionsystem_uptodate_check()
     open(filename, "w") do file
         write(file, get_full_system_string(rn, annotate, true))
     end

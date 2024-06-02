@@ -208,7 +208,7 @@ end
 ### ReactionSystem Structure ###
 
 # Constant storing all reaction system fields (in order). Used to check whether the `ReactionSystem`
-# structure have been updated (in the `reactionsystem_uptodate` function).
+# structure have been updated (in the `reactionsystem_uptodate_check` function).
 const reactionsystem_fields = (:eqs, :rxs, :iv, :sivs, :unknowns, :species, :ps, :var_to_name, 
                                :observed, :name, :systems, :defaults, :connection_type, 
                                :networkproperties, :combinatoric_ratelaws, :continuous_events, 
@@ -1036,8 +1036,10 @@ end
 # `reactionsystem_fields` constant. If this is the case, returns `false`. This is used in 
 # certain functionalities which would break if the `ReactionSystem` structure is updated without
 # also updating tehse functionalities.
-function reactionsystem_uptodate()
-    fieldnames(ReactionSystem) == reactionsystem_fields
+function reactionsystem_uptodate_check()
+    if fieldnames(ReactionSystem) != reactionsystem_fields
+        @warn "The `ReactionSystem` strcuture have been modified without this being taken into account in the functionality you are attempting to use. Please report this at https://github.com/SciML/Catalyst.jl/issues. Proceed with cautioun, as there might be errors in whichever funcionality you are attempting to use". 
+    end
 end
 
 # used in the `__unpacksys` function.
