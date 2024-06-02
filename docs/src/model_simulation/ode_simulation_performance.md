@@ -172,6 +172,26 @@ Finally, we note that when using preconditioners with a matrix-free method (like
 Generally, the use of preconditioners is only recommended for advanced users who are familiar with the concepts. However, for large systems, if performance is essential, they can be worth looking into.
 
 
+## [Elimination of system conservation laws](@id ode_simulation_performance_conservation_laws)
+Previously, we have described how Catalyst, when it generates ODEs, is able to [detect and eliminate conserved quantities](@ref network_analysis_conservation_laws). In certain cases, doing this can improve performance. E.g. in the following example we will eliminate the single conserved quantity in a [two-state model](@ref basic_CRN_library_two_states). This results in a differential algebraic equation with a single differential equation and a single algebraic equation (as opposed to two differential equations). Conservation laws can be eliminated by providing the `remove_conserved = true` option to `ODEProblem`:
+```@example ode_simulation_performance_conservation_laws
+using Catalyst, OrdinaryDiffEq
+
+# Declare model.
+rs = @reaction_network begin
+    (k₁,k₂), X₁ <--> X₂
+end
+
+# Generate and simulate and ODE (while eliminating any conserved quantities).
+u0 = [:X₁ => 2.0, :X₂ => 3.0]
+ps = [:k₁ => 1.0, :k₂ => 2.0]
+oprob = ODEProblem(rs, u0, (0.0, 10.0), ps; remove_conserved = true)
+sol = solve(oprob)
+nothing # hide
+```
+Conservation law elimination should never impact performance negatively. However, its effect on performance can be limited, and is very model-dependent. It is primarily important when performing simulation with [implicit solvers](@ref ode_simulation_performance_stiffness) (as these requires computing system Jacobians, and conservation law eliminations typically transform these from singular Jacobians to non-singular Jacobians).
+
+
 ## [Parallelisation on CPUs and GPUs](@id ode_simulation_performance_parallelisation)
 Whenever an ODE is simulated a large number of times (e.g. when investigating its behaviour for different parameter values), the best way to improve performance is to [parallelise the simulation over multiple processing units](https://en.wikipedia.org/wiki/Parallel_computing). Indeed, an advantage of the Julia programming language is that it was designed after the advent of parallel computing, making it well-suited for this task. Roughly, parallelisation can be divided into parallelisation on [CPUs](https://en.wikipedia.org/wiki/Central_processing_unit) and on [GPUs](https://en.wikipedia.org/wiki/General-purpose_computing_on_graphics_processing_units). CPU parallelisation is most straightforward, while GPU parallelisation requires specialised ODE solvers (which Catalyst have access to). 
 
