@@ -10,7 +10,6 @@ using SafeTestsets, Test
 ### Run Tests ###
 @time begin
 
-    @time @safetestset "ReactionSystem Serialisation Balancing" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
     #if GROUP == "All" || GROUP == "ModelCreation"
         # Tests the `ReactionSystem` structure and its properties.
         @time @safetestset "Reaction Structure" begin include("reactionsystem_core/reaction.jl") end
@@ -38,7 +37,7 @@ using SafeTestsets, Test
         @time @safetestset "Steady State Stability Computations" begin include("miscellaneous_tests/stability_computation.jl") end
         @time @safetestset "Compound Species" begin include("miscellaneous_tests/compound_macro.jl") end
         @time @safetestset "Reaction Balancing" begin include("miscellaneous_tests/reaction_balancing.jl") end
-        @time @safetestset "ReactionSystem Serialisation Balancing" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
+        @time @safetestset "ReactionSystem Serialisation" begin include("miscellaneous_tests/reactionsystem_serialisation.jl") end
 
         # Tests reaction network analysis features.
         @time @safetestset "Conservation Laws" begin include("network_analysis/conservation_laws.jl") end
