@@ -1038,7 +1038,7 @@ end
 # also updating tehse functionalities.
 function reactionsystem_uptodate_check()
     if fieldnames(ReactionSystem) != reactionsystem_fields
-        @warn "The `ReactionSystem` strcuture have been modified without this being taken into account in the functionality you are attempting to use. Please report this at https://github.com/SciML/Catalyst.jl/issues. Proceed with cautioun, as there might be errors in whichever funcionality you are attempting to use". 
+        @warn "The `ReactionSystem` strcuture have been modified without this being taken into account in the functionality you are attempting to use. Please report this at https://github.com/SciML/Catalyst.jl/issues. Proceed with cautioun, as there might be errors in whichever funcionality you are attempting to use." 
     end
 end
 
