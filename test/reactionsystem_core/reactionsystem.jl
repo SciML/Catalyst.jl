@@ -741,3 +741,11 @@ let
     @test length(ModelingToolkit.get_unknowns(empty_network)) == 0
     @test length(ModelingToolkit.get_ps(empty_network)) == 0
 end
+
+# Checks that the `reactionsystem_uptodate` function work. If it does not, the ReactionSystem
+# strcuture's fields have been updated, without updating the `reactionsystem_fields` costant. If so,
+# there are several places in the code where the `reactionsystem_uptodate` function is called, here
+# the code might need adaptation to take the updated reaction system into account.
+let
+    @test Catalyst.reactionsystem_uptodate()
+end

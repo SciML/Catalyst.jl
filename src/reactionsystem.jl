@@ -207,6 +207,13 @@ end
 
 ### ReactionSystem Structure ###
 
+# Constant storing all reaction system fields (in order). Used to check whether the `ReactionSystem`
+# structure have been updated (in the `reactionsystem_uptodate` function).
+const reactionsystem_fields = [:eqs, :rxs, :iv, :sivs, :unknowns, :species, :ps, :var_to_name, 
+                               :observed, :name, :systems, :defaults, :connection_type, 
+                               :networkproperties, :combinatoric_ratelaws, :continuous_events, 
+                               :discrete_events, :metadata, :complete]
+
 """
 $(TYPEDEF)
 
@@ -1024,6 +1031,14 @@ function netstoichmat(rn::ReactionSystem; sparse = false)
 end
 
 ### General `ReactionSystem`-specific Functions ###
+
+# Checks if the `ReactionSystem` structure have been updated without also updating the 
+# `reactionsystem_fields` constant. If this is the case, returns `false`. This is used in 
+# certain functionalities which would break if the `ReactionSystem` structure is updated without
+# also updating tehse functionalities.
+function reactionsystem_uptodate()
+    fieldnames(ReactionSystem) == reactionsystem_fields
+end
 
 # used in the `__unpacksys` function.
 function __unpacksys(rn)
