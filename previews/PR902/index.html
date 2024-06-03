@@ -13,56 +13,13 @@ end</code></pre><p class="math-container">\[ \begin{align*}
 \mathrm{S} + \mathrm{I} &amp;\xrightarrow{\alpha} 2 \mathrm{I} \\
 \mathrm{I} &amp;\xrightarrow{\beta} \mathrm{R}  
  \end{align*}
- \]</p><p>Assuming <a href="https://graphviz.org/">Graphviz</a> and is installed and <em>command line accessible</em>, the network can be visualized using the <a href="@ref"><code>Graph</code></a> command</p><pre><code class="language-julia hljs">Graph(rn)</code></pre><p>which in Jupyter notebooks will give the figure</p><p><img src="assets/SIR_rn.svg" alt="SIR Network Graph"/></p><p>To generate and solve a mass action ODE version of the model we use</p><pre><code class="language-julia hljs">using DifferentialEquations
+ \]</p><p>Assuming <a href="https://graphviz.org/">Graphviz</a> and is installed and <em>command line accessible</em>, the network can be visualized using the <a href="@ref"><code>Graph</code></a> command</p><pre><code class="language-julia hljs">Graph(rn)</code></pre><p>which in Jupyter notebooks will give the figure</p><p><img src="assets/SIR_rn.svg" alt="SIR Network Graph"/></p><p>To generate and solve a mass action ODE version of the model we use</p><pre><code class="language- hljs">using DifferentialEquations
 p     = [:α =&gt; .1/1000, :β =&gt; .01]
 tspan = (0.0,250.0)
 u0    = [:S =&gt; 999.0, :I =&gt; 1.0, :R =&gt; 0.0]
 op    = ODEProblem(rn, u0, tspan, p)
-sol   = solve(op, Tsit5())       # use Tsit5 ODE solver</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">retcode: Success
-Interpolation: specialized 4th order &quot;free&quot; interpolation
-t: 25-element Vector{Float64}:
-   0.0
-   0.07042204340497453
-   0.7746424774547197
-   2.5720784698621917
-   5.370475868328381
-   8.892790675662736
-  13.397314385835262
-  18.77312249641433
-  25.067606451778733
-  32.21876025749868
-   ⋮
- 109.7545467360122
- 122.01827800502546
- 135.51407012931605
- 149.4289751648907
- 164.9581387700312
- 182.1077023701446
- 201.8902038451328
- 225.42950830558135
- 250.0
-u: 25-element Vector{Vector{Float64}}:
- [999.0, 1.0, 0.0]
- [998.9929425461802, 1.006350999490624, 0.0007064543291988011]
- [998.9198582366232, 1.0721192430449888, 0.008022520331768075]
- [998.710958959454, 1.2601038170445216, 0.028937223501382614]
- [998.3106311383737, 1.6203391495804873, 0.06902971204575789]
- [997.6406610464425, 2.223176329297582, 0.13616262425989606]
- [996.4102628260856, 3.3301676362184693, 0.25956953769586766]
- [994.1215268974047, 5.388941226022395, 0.48953187657282904]
- [989.6067337013325, 9.448551166221785, 0.944715132445689]
- [980.3144906488483, 17.797375650380925, 1.888133700770769]
- ⋮
- [64.78984789048336, 661.6683505558883, 273.5418015536282]
- [29.48108597246802, 618.2436612642133, 352.2752527633185]
- [13.346763344107233, 555.1339446439661, 431.51929201192655]
- [6.455508523840256, 489.3914844108397, 504.1530070653199]
- [3.1844548852973817, 421.99665141068317, 574.8188937040193]
- [1.6352844539587112, 356.89846909139345, 641.4662464546477]
- [0.8610792936956257, 293.53283900937345, 705.6060816969308]
- [0.465011951111304, 232.31441070419152, 767.2205773446971]
- [0.2802696507133374, 181.86671916839686, 817.8530111808897]</code></pre><p>which we can plot as</p><pre><code class="language-julia hljs">using Plots
-plot(sol, lw=2)</code></pre><img src="index-d79d3d2c.svg" alt="Example block output"/><h2 id="Getting-Help"><a class="docs-heading-anchor" href="#Getting-Help">Getting Help</a><a id="Getting-Help-1"></a><a class="docs-heading-anchor-permalink" href="#Getting-Help" title="Permalink"></a></h2><p>Catalyst developers are active on the <a href="https://discourse.julialang.org/">Julia Discourse</a>, and the <a href="https://julialang.slack.com">Julia Slack&#39;s</a> #sciml-bridged and #sciml-sysbio channels. For bugs or feature requests <a href="https://github.com/SciML/Catalyst.jl/issues">open an issue</a>.</p><h2 id="catalyst_citation"><a class="docs-heading-anchor" href="#catalyst_citation">Supporting and Citing Catalyst.jl</a><a id="catalyst_citation-1"></a><a class="docs-heading-anchor-permalink" href="#catalyst_citation" title="Permalink"></a></h2><p>The software in this ecosystem was developed as part of academic research. If you would like to help support it, please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part of your research, teaching, or other activities, we would be grateful if you could cite our work:</p><pre><code class="nohighlight hljs">@article{CatalystPLOSCompBio2023,
+sol   = solve(op, Tsit5())       # use Tsit5 ODE solver</code></pre><p>which we can plot as</p><pre><code class="language- hljs">using Plots
+plot(sol, lw=2)</code></pre><h2 id="Getting-Help"><a class="docs-heading-anchor" href="#Getting-Help">Getting Help</a><a id="Getting-Help-1"></a><a class="docs-heading-anchor-permalink" href="#Getting-Help" title="Permalink"></a></h2><p>Catalyst developers are active on the <a href="https://discourse.julialang.org/">Julia Discourse</a>, and the <a href="https://julialang.slack.com">Julia Slack&#39;s</a> #sciml-bridged and #sciml-sysbio channels. For bugs or feature requests <a href="https://github.com/SciML/Catalyst.jl/issues">open an issue</a>.</p><h2 id="catalyst_citation"><a class="docs-heading-anchor" href="#catalyst_citation">Supporting and Citing Catalyst.jl</a><a id="catalyst_citation-1"></a><a class="docs-heading-anchor-permalink" href="#catalyst_citation" title="Permalink"></a></h2><p>The software in this ecosystem was developed as part of academic research. If you would like to help support it, please star the repository as such metrics may help us secure funding in the future. If you use Catalyst as part of your research, teaching, or other activities, we would be grateful if you could cite our work:</p><pre><code class="nohighlight hljs">@article{CatalystPLOSCompBio2023,
     doi = {10.1371/journal.pcbi.1011530},
     author = {Loman, Torkel E. AND Ma, Yingbo AND Ilin, Vasily AND Gowda, Shashi AND Korsbo, Niklas AND Yewale, Nikhil AND Rackauckas, Chris AND Isaacson, Samuel A.},
     journal = {PLOS Computational Biology},
@@ -81,7 +38,6 @@ plot(sol, lw=2)</code></pre><img src="index-d79d3d2c.svg" alt="Example block out
   [479239e8] Catalyst v13.5.1 `~/work/Catalyst.jl/Catalyst.jl`
   [a93c6f00] DataFrames v1.6.1
   [1130ab10] DiffEqParamEstim v2.2.0
-  [0c46a032] DifferentialEquations v7.13.0
   [31c24e10] Distributions v0.25.109
   [e30172f5] Documenter v1.4.1
   [61744808] DynamicalSystems v3.3.16
@@ -109,8 +65,9 @@ plot(sol, lw=2)</code></pre><img src="index-d79d3d2c.svg" alt="Example block out
   [9672c7b4] SteadyStateDiffEq v2.2.0
   [789caeaf] StochasticDiffEq v6.65.1
   [220ca800] StructuralIdentifiability v0.5.7
-  [0c5d862f] Symbolics v5.28.0
-  [56ddb016] Logging</code></pre></details><details><summary>and using this machine and Julia version.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Julia Version 1.10.2
+⌃ [0c5d862f] Symbolics v5.28.0
+  [56ddb016] Logging
+Info Packages marked with ⌃ have new versions available and may be upgradable.</code></pre></details><details><summary>and using this machine and Julia version.</summary><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Julia Version 1.10.2
 Commit bd47eca2c8a (2024-03-01 10:14 UTC)
 Build Info:
   Official https://julialang.org/ release
@@ -120,4 +77,4 @@ Platform Info:
   WORD_SIZE: 64
   LIBM: libopenlibm
   LLVM: libLLVM-15.0.7 (ORCJIT, znver3)
-Threads: 1 default, 0 interactive, 1 GC (on 4 virtual cores)</code></pre></details></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="introduction_to_catalyst/catalyst_for_new_julia_users/">Introduction to Catalyst and Julia for New Julia users »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Monday 3 June 2024 14:29">Monday 3 June 2024</span>. Using Julia version 1.10.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Threads: 1 default, 0 interactive, 1 GC (on 4 virtual cores)</code></pre></details></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="introduction_to_catalyst/catalyst_for_new_julia_users/">Introduction to Catalyst and Julia for New Julia users »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Monday 3 June 2024 16:57">Monday 3 June 2024</span>. Using Julia version 1.10.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
