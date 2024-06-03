@@ -95,12 +95,12 @@ Note that, as all initial conditions and parameters have default values, we can 
 A more detailed description of ReactionNetworkImporter's features can be found in its [documentation](https://docs.sciml.ai/ReactionNetworkImporters/stable/).
 
 ## Loading SBML files using SBMLImporter.jl and SBMLToolkit.jl
-The Systems Biology Markup Language (SBML) is the most widespread format for representing CRN models. Currently, there exist two different Julia packages, [SBMLImporter.jl](https://github.com/sebapersson/SBMLImporter.jl) and [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), that are able to load SBML files to Catalyst `ReactionSystem` structures. SBML is able to represent a *very* wide range of model features. Some of these are not supported by these packages (or Catalyst). Hence, there exist SBML files (typically containing obscure model features such as events with time delays) that currently cannot be loaded into Catalyst models).
+The Systems Biology Markup Language (SBML) is the most widespread format for representing CRN models. Currently, there exist two different Julia packages, [SBMLImporter.jl](https://github.com/sebapersson/SBMLImporter.jl) and [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), that are able to load SBML files to Catalyst `ReactionSystem` structures. SBML is able to represent a *very* wide range of model features, with both packages supporting most features. However, there exist SBML files (typically containing obscure model features such as events with time delays) that currently cannot be loaded into Catalyst models.
 
 SBMLImporter's `load_SBML` function can be used to load SBML files. Here, we load a [Brusselator](@ref basic_CRN_library_brusselator) model stored in the "brusselator.xml" file:
 ```julia
 using SBMLImporter
-prn, cbs = load_SBML("brusselator.xml")
+prn, cbs = load_SBML("brusselator.xml", massaction = true)
 ```
 Here, while [ReactionNetworkImporters generates a `ParsedReactionSystem` only](@ref file_loading_rni_net), SBMLImporter generates a `ParsedReactionSystem` (here stored in `prn`) and a [so-called `CallbackSet`](https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/#CallbackSet) (here stored in `cbs`). While `prn` can be used to create various problems, when we simulate them, we must also supply `cbs`. E.g. to simulate our brusselator we use:
 ```julia
@@ -114,10 +114,13 @@ plot(sol)
 
 Note that, while ReactionNetworkImporters adds initial condition and species values as default to the imported model, SBMLImporter does not do this. These must hence be provided to the `ODEProblem` directly.
 
-A more detailed description of SBMLImporter's features can be found in its [documentation](https://docs.sciml.ai/ReactionNetworkImporters/stable/).
+A more detailed description of SBMLImporter's features can be found in its [documentation](https://sebapersson.github.io/SBMLImporter.jl/stable/).
+
+!!! note
+    The `massaction = true` option informs the importer that the target model follows mass-action principles. When given, this enables SBMLImporter to make appropriate modification to the model (which are important for e.g. jump simulation performance).
 
 ### SBMLImporter and SBMLToolkit
-Above, we described how to use SBMLImporter to import SBML files. Alternatively, SBMLToolkit can be used instead. It has a slightly different syntax, which is described in its [documentation](https://github.com/SciML/SBMLToolkit.jl). A short comparison of the two packages can be found [here](https://github.com/sebapersson/SBMLImporter.jl?tab=readme-ov-file#differences-compared-to-sbmltoolkit). Generally, while they both perform well, we note that for *jump simulations* SBMLImporter is preferable (its way for internally representing reaction event enables more performant jump simulations).
+Above, we described how to use SBMLImporter to import SBML files. Alternatively, SBMLToolkit can be used instead. It has a slightly different syntax, which is described in its [documentation](https://github.com/SciML/SBMLToolkit.jl), and does not support as wide range of SBML features as SBMLImporter. A short comparison of the two packages can be found [here](https://github.com/sebapersson/SBMLImporter.jl?tab=readme-ov-file#differences-compared-to-sbmltoolkit). Generally, while they both perform well, we note that for *jump simulations* SBMLImporter is preferable (its way for internally representing reaction event enables more performant jump simulations).
 
 ## Loading models from matrix representation using ReactionNetworkImporters.jl
 While CRN models can be represented through various file formats, they can also be represented in various matrix forms. E.g. a CRN with $m$ species and $n$ reactions (and with constant rates) can be represented with either
