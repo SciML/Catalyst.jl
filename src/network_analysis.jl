@@ -743,7 +743,7 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
         # Creates, for this conservation law, the sum of all independent species (weighted by
         # the ratio between the coefficient of the species and the species which is elimianted.
         coefs = @view N[i, indepidxs]
-        terms = sum((coef, sp) -> coef / scaleby * sp, zip(coefs, indepspecs))
+        terms = sum(coef / scaleby * sp for (coef, sp) in zip(coefs, indepspecs))
 
         # Computes the two equations corresponding to this conserved quantity.
         eq = depspecs[i] ~ constants[i] - terms
