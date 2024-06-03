@@ -13,13 +13,13 @@ end
 ```
 and next saving it to a file
 ```@example file_handling_1
-save_reactionsystem("cross_coupling.jl", rn)
+save_reactionsystem("cross_coupling.jl", cc_system)
 ```
 Here, `save_reactionsystem`'s first argument is the path to the file where we wish to save it. The second argument is the `ReactionSystem` we wish to save. To load the file, we use Julia's `include` function:
 ```@example file_handling_1
-loaded_rn = include("cross_coupling.jl")
+cc_loaded = include("cross_coupling.jl")
 rm("cross_coupling.jl") # hide
-loaded_rn # hide
+cc_loaded # hide
 ```
 
 !!! note
@@ -66,6 +66,8 @@ serialize("saved_parameters.jls", ps)
 Here, we use the extension ".jls" (standing for **J**u**L**ia **S**erialization), however, any extension code can be used. To load a structure, we can then use
 ```@example file_handling_2
 loaded_sol = deserialize("saved_parameters.jls")
+rm("saved_parameters.jls") # hide
+loaded_sol # hide
 ```
 
 ## [Loading .net files using ReactionNetworkImporters.jl](@id file_loading_rni_net)
