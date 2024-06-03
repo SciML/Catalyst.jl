@@ -722,13 +722,15 @@ end
 """
     cycles(rs::ReactionSystem)
 
-    Returns the matrix of cycles, or right eigenvectors of the stoichiometric matrix. 
+    Returns the matrix of cycles (or flux vectors), or reaction fluxes at steady state. These correspond to right eigenvectors of the stoichiometric matrix. Equivalent to [`fluxmodebasis`](@ref). 
 """
 
 function cycles(rs::ReactionSystem) 
-    # nps = get_networkproperties(rs)
+    nps = get_networkproperties(rs)
     nsm = netstoichmat(rs)
-    cycles(nsm)
+    !isempty(nps.cyclemat) && return nps.cyclemat
+    nps.cyclemat = cycles(nsm; col_order = nps.col_order)
+    nps.cyclemat
 end
 
 function cycles(nsm::T; col_order = nothing) where {T <: AbstractMatrix}
@@ -736,7 +738,7 @@ function cycles(nsm::T; col_order = nothing) where {T <: AbstractMatrix}
     # compute the left nullspace over the integers
     N = MT.nullspace(nsm; col_order)
 
-    # if all coefficients for a conservation law are negative, make positive
+    # if all coefficients for a cycle are negative, make positive
     for Nrow in eachcol(N)
         all(r -> r <= 0, Nrow) && (Nrow .*= -1)
     end
@@ -750,11 +752,12 @@ function cycles(nsm::T; col_order = nothing) where {T <: AbstractMatrix}
 end
 
 """
-    fluxmodes(rs::ReactionSystem)
+    fluxvectors(rs::ReactionSystem)
 
     See documentation for [`cycles`](@ref). 
 """
 
-function fluxmodes(rs::ReactionSystem) 
+function fluxvectors(rs::ReactionSystem) 
     cycles(rs)
 end
+
