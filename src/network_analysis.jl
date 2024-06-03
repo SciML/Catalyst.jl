@@ -760,4 +760,3 @@ end
 function fluxvectors(rs::ReactionSystem) 
     cycles(rs)
 end
-
