@@ -117,7 +117,7 @@ Note that, while ReactionNetworkImporters adds initial condition and species val
 A more detailed description of SBMLImporter's features can be found in its [documentation](https://sebapersson.github.io/SBMLImporter.jl/stable/).
 
 !!! note
-    The `massaction = true` option informs the importer that the target model follows mass-action principles. When given, this enables SBMLImporter to make appropriate modification to the model (which are important for e.g. jump simulation performance).
+    The `massaction = true` option informs the importer that the target model follows mass-action principles. When given, this enables SBMLImporter to make appropriate modifications to the model (which are important for e.g. jump simulation performance).
 
 ### SBMLImporter and SBMLToolkit
 Above, we described how to use SBMLImporter to import SBML files. Alternatively, SBMLToolkit can be used instead. It has a slightly different syntax, which is described in its [documentation](https://github.com/SciML/SBMLToolkit.jl), and does not support as wide a range of SBML features as SBMLImporter. A short comparison of the two packages can be found [here](https://github.com/sebapersson/SBMLImporter.jl?tab=readme-ov-file#differences-compared-to-sbmltoolkit). Generally, while they both perform well, we note that for *jump simulations* SBMLImporter is preferable (its way for internally representing reaction event enables more performant jump simulations).
