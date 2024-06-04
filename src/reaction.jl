@@ -146,9 +146,9 @@ struct Reaction{T}
     """Reaction products."""
     products::Vector{Any}
     """The stoichiometric coefficients of the reactants."""
-    substoich::Vector{T}
+    substoich::Vector
     """The stoichiometric coefficients of the products."""
-    prodstoich::Vector{T}
+    prodstoich::Vector
     """The net stoichiometric coefficients of all species changed by the reaction."""
     netstoich::Vector{Pair{Any, T}}
     """
