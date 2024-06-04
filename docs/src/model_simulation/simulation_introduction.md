@@ -210,6 +210,9 @@ Next, let us consider a simulation for another parameter set:
 ```@example simulation_intro_sde
 sprob = remake(sprob; u0 = [:X1 => 100.0, :X2 => 200.0], p = [:k1 => 200.0, :k2 => 500.0])
 sol = solve(sprob, STrapezoid())
+nothing # hide
+```
+```@example simulation_intro_sde
 sol = solve(sprob, STrapezoid(); seed = 12345) # hide
 plot(sol)
 ```
@@ -317,9 +320,9 @@ plot(sol)
 ### [Designating aggregators and simulation methods for jump simulations](@id simulation_intro_jumps_solver_designation)
 Jump simulations (just like ODEs and SDEs) are performed using solver methods. Unlike ODEs and SDEs, jump simulations are carried out by two different types of methods acting in tandem. First, an *aggregator* method is used to (after each reaction) determine the time to, and type of, the next reaction. Next, a simulation method is used to actually carry out the simulation.
 
-Several different aggregators are available (a full list is provided [here](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-for-Exact-Simulation)). To designate a specific one, provide it as the third argument to the `JumpProblem`. E.g. to designate that Gillespie's direct method (`Direct`) should be used, use:
+Several different aggregators are available (a full list is provided [here](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-for-Exact-Simulation)). To designate a specific one, provide it as the third argument to the `JumpProblem`. E.g. to designate that the sorting direct method (`SortingDirect`) should be used, use:
 ```@example simulation_intro_jumps
-jprob = JumpProblem(two_state_model, dprob, Direct())
+jprob = JumpProblem(two_state_model, dprob, SortingDirect())
 nothing # hide
 ```
 Especially for large systems, the choice of aggregator is relevant to simulation performance. A guide for aggregator selection is provided [here](@ref ref).
