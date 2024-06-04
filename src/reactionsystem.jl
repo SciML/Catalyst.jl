@@ -81,7 +81,17 @@ Base.Sort.defalg(::ReactionComplex) = Base.DEFAULT_UNSTABLE
 Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Real}}
     """Flag which is switched to `true` once any field is updated."""
     isempty::Bool = true
+    """
+    The reaction network's net stoichiometry matrix. It is a MxN matrix where M is its number of 
+    species and N its number of reaction. Element i,j is net stoichiometric change to the i'th
+    species as a result of the j'th reaction.
+    """
     netstoichmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
+    """
+    The reaction network's conservation law matrix. It is a MxN matrix where M is its number of 
+    conservation laws and N its number of species. Element i,j is the coefficient of species 
+    j in the i'th conservation law.
+    """
     conservationmat::Matrix{I} = Matrix{I}(undef, 0, 0)
     col_order::Vector{Int} = Int[]
     """
@@ -89,6 +99,10 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     or its number of independent species).
     """
     rank::Int = 0
+    """
+    The reaction network's *nullity* is its number of species - its rank. This is equal to its
+    number of conservation laws.
+    """
     nullity::Int = 0
     """
     The set of *independent species* of the reaction system (i.e. species that will not be
@@ -112,6 +126,9 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     system (`X1 <--> X2`) there is one conserved quantity with the equation `Γ[1] ~ X1 + X2`.
     """
     constantdefs::Vector{Equation} = Equation[]
+    """
+    A map from each species (as a symbolic variable) to its index in the species vector.
+    """
     speciesmap::Dict{V, Int} = Dict{V, Int}()
     """
     A dictionary from each reaction complex to the reactions they participate it. The value

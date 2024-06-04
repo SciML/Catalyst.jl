@@ -692,6 +692,7 @@ conservation laws, each represented as a row in the output.
 function conservationlaws(nsm::T; col_order = nothing) where {T <: AbstractMatrix}
 
     # compute the left nullspace over the integers
+    # The `nullspace` function updates the `col_order`.
     N = MT.nullspace(nsm'; col_order)
 
     # if all coefficients for a conservation law are negative, make positive
