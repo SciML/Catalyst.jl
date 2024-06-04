@@ -142,15 +142,15 @@ struct Reaction{T}
     """The rate function (excluding mass action terms)."""
     rate::Any
     """Reaction substrates."""
-    substrates::Vector{BasicSymbolic{Real}}
+    substrates::Vector{Any}
     """Reaction products."""
-    products::Vector{BasicSymbolic{Real}}
+    products::Vector{Any}
     """The stoichiometric coefficients of the reactants."""
     substoich::Vector{T}
     """The stoichiometric coefficients of the products."""
     prodstoich::Vector{T}
     """The net stoichiometric coefficients of all species changed by the reaction."""
-    netstoich::Vector{Pair{BasicSymbolic{Real}, T}}
+    netstoich::Vector{Pair{Any, T}}
     """
     `false` (default) if `rate` should be multiplied by mass action terms to give the rate law.
     `true` if `rate` represents the full reaction rate law.
