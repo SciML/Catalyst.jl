@@ -34,27 +34,27 @@ sol = solve(oprob, Tsit5())
 Suppose we want to plot just species `C`, without having to know its integer
 index in the unknown vector. We can do this using the symbolic variable `C`, which
 we can get at in several ways
-```julia
+```@example faq1
 sol[osys.C]
 ```
 or
-```julia
+```@example faq1
 @unpack C = osys
 sol[C]
 ```
 To evaluate `C` at specific times and plot it we can just do
-```julia
+```@example faq1
 t = range(0.0, 10.0, length=101)
 plot(t, sol(t, idxs = C), label = "C(t)", xlabel = "t")
 ```
 If we want to get multiple variables we can just do
-```julia
+```@example faq1
 @unpack A, B = osys
 sol(t, idxs = [A, B])
 ```
 Plotting multiple variables using the SciML plot recipe can be achieved
 like
-```julia
+```@example faq1
 plot(sol; idxs = [A, B])
 ```
 
