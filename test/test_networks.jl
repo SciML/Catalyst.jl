@@ -3,8 +3,8 @@
 # Declares the vectors which contains the various test sets.
 reaction_networks_standard = Vector{ReactionSystem}(undef, 10)
 reaction_networks_hill = Vector{ReactionSystem}(undef, 10)
-reaction_networks_constraint = Vector{ReactionSystem}(undef, 10)
-reaction_network_constraints = Vector{Matrix{Int}}(undef, 10)
+reaction_networks_conserved = Vector{ReactionSystem}(undef, 10)
+reaction_network_conslaws = Vector{Matrix{Int}}(undef, 10)
 reaction_networks_real = Vector{ReactionSystem}(undef, 4)
 reaction_networks_weird = Vector{ReactionSystem}(undef, 10)
 
@@ -160,69 +160,69 @@ end
 
 ### Reaction networks were some linear combination concentrations remain fixed (steady state values depends on initial conditions). ###
 
-reaction_networks_constraint[1] = @reaction_network rnc1 begin
+reaction_networks_conserved[1] = @reaction_network rnc1 begin
     (k1, k2), X1 ↔ X2
     (k3, k4), X2 ↔ X3
     (k5, k6), X3 ↔ X1
 end
-reaction_network_constraints[1] = [1 1 1]
+reaction_network_conslaws[1] = [1 1 1]
 
-reaction_networks_constraint[2] = @reaction_network rnc2 begin
+reaction_networks_conserved[2] = @reaction_network rnc2 begin
     (k1, k2), X1 ↔ 2X1
     (k3, k4), X1 + X2 ↔ X3
     (k5, k6), X3 ↔ X2
 end
-reaction_network_constraints[2] = [0 1 1]
+reaction_network_conslaws[2] = [0 1 1]
 
-reaction_networks_constraint[3] = @reaction_network rnc3 begin
+reaction_networks_conserved[3] = @reaction_network rnc3 begin
     (k1, k2 * X5), X1 ↔ X2
     (k3 * X5, k4), X3 ↔ X4
     (p + k5 * X2 * X3, d), ∅ ↔ X5
 end
-reaction_network_constraints[3] = [0 0 1 1 0; 1 1 0 0 0]
+reaction_network_conslaws[3] = [0 0 1 1 0; 1 1 0 0 0]
 
-reaction_networks_constraint[4] = @reaction_network rnc4 begin
+reaction_networks_conserved[4] = @reaction_network rnc4 begin
     (k1, k2), X1 + X2 ↔ X3
     (mm(X3, v, K), d), ∅ ↔ X4
 end
-reaction_network_constraints[4] = [0 1 1 0; -1 1 0 0]
+reaction_network_conslaws[4] = [0 1 1 0; -1 1 0 0]
 
-reaction_networks_constraint[5] = @reaction_network rnc5 begin
+reaction_networks_conserved[5] = @reaction_network rnc5 begin
     (k1, k2), X1 ↔ 2X2
     (k3, k4), 2X2 ↔ 3X3
     (k5, k6), 3X3 ↔ 4X4
 end
-reaction_network_constraints[5] = [12 6 4 3]
+reaction_network_conslaws[5] = [12 6 4 3]
 
-reaction_networks_constraint[6] = @reaction_network rnc6 begin
+reaction_networks_conserved[6] = @reaction_network rnc6 begin
     mmr(X1, v1, K1), X1 → X2
     mmr(X2, v2, K2), X2 → X3
     mmr(X3, v3, K3), X3 → X1
 end
-reaction_network_constraints[6] = [1 1 1]
+reaction_network_conslaws[6] = [1 1 1]
 
-reaction_networks_constraint[7] = @reaction_network rnc7 begin
+reaction_networks_conserved[7] = @reaction_network rnc7 begin
     (k1, k2), X1 + X2 ↔ X3
     (mm(X3, v, K), d), ∅ ↔ X2
     (k3, k4), X2 ↔ X4
 end
-reaction_network_constraints[7] = [1 0 1 0]
+reaction_network_conslaws[7] = [1 0 1 0]
 
-reaction_networks_constraint[8] = @reaction_network rnc8 begin
+reaction_networks_conserved[8] = @reaction_network rnc8 begin
     (k1, k2), X1 + X2 ↔ X3
     (mm(X3, v1, K1), mm(X4, v2, K2)), X3 ↔ X4
 end
-reaction_network_constraints[8] = [-1 1 0 0; 0 1 1 1]
+reaction_network_conslaws[8] = [-1 1 0 0; 0 1 1 1]
 
-reaction_networks_constraint[9] = @reaction_network rnc9 begin
+reaction_networks_conserved[9] = @reaction_network rnc9 begin
     (k1, k2), X1 + X2 ↔ X3
     (k3, k4), X3 + X4 ↔ X5
     (k5, k6), X5 + X6 ↔ X7
 end
-reaction_network_constraints[9] = [1 0 1 0 1 0 1; -1 1 0 0 0 0 0; 0 0 0 1 1 0 1;
+reaction_network_conslaws[9] = [1 0 1 0 1 0 1; -1 1 0 0 0 0 0; 0 0 0 1 1 0 1;
                                    0 0 0 0 0 1 1]
 
-reaction_networks_constraint[10] = @reaction_network rnc10 begin
+reaction_networks_conserved[10] = @reaction_network rnc10 begin
     kDeg, (w, w2, w2v, v, w2v2, vP, σB, w2σB) ⟶ ∅
     kDeg, vPp ⟶ phos
     (kBw, kDw), 2w ⟷ w2
@@ -238,7 +238,7 @@ reaction_networks_constraint[10] = @reaction_network rnc10 begin
     λW * v0 * ((1 + F * σB) / (K + σB)), ∅ ⟶ w
     λV * v0 * ((1 + F * σB) / (K + σB)), ∅ ⟶ v
 end;
-reaction_network_constraints[10] = [0 0 0 0 0 0 0 0 1 1]
+reaction_network_conslaws[10] = [0 0 0 0 0 0 0 0 1 1]
 
 ### Reaction networks that are actual models that have been used ###
 
@@ -350,6 +350,6 @@ end
 ### Gathers all netowkrs in a simgle array ###
 reaction_networks_all = [reaction_networks_standard...,
     reaction_networks_hill...,
-    reaction_networks_constraint...,
+    reaction_networks_conserved...,
     reaction_networks_real...,
     reaction_networks_weird...]
