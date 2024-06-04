@@ -486,9 +486,9 @@ version = "1.1.0+0"
 
 [[deps.ComplexityMeasures]]
 deps = ["Combinatorics", "DelayEmbeddings", "Distances", "FFTW", "LinearAlgebra", "Neighborhood", "QuadGK", "Random", "Reexport", "SparseArrays", "SpecialFunctions", "StateSpaceSets", "StaticArrays", "Statistics", "StatsBase", "StatsFuns", "Wavelets"]
-git-tree-sha1 = "fd7938b8b7e47eb535d5179055f0011a427b5903"
+git-tree-sha1 = "62304705414d9716153f14abdf81f47c62b4e3bc"
 uuid = "ab4b797d-85ee-42ba-b621-05d793b346a2"
-version = "3.4.4"
+version = "3.5.0"
 
 [[deps.CompositeTypes]]
 git-tree-sha1 = "bce26c3dab336582805503bed209faab1c279768"
@@ -2678,9 +2678,9 @@ version = "2.0.6"
 
 [[deps.RecursiveArrayTools]]
 deps = ["Adapt", "ArrayInterface", "DocStringExtensions", "GPUArraysCore", "IteratorInterfaceExtensions", "LinearAlgebra", "RecipesBase", "SparseArrays", "StaticArraysCore", "Statistics", "SymbolicIndexingInterface", "Tables"]
-git-tree-sha1 = "23a2f876de8c1f1fda6345b289cd7a3641fd0340"
+git-tree-sha1 = "2cea01606a852c2431ded77293eb533b511b19e6"
 uuid = "731186ca-8d62-57ce-b412-fbd966d074cd"
-version = "3.21.0"
+version = "3.22.0"
 
     [deps.RecursiveArrayTools.extensions]
     RecursiveArrayToolsFastBroadcastExt = "FastBroadcast"
@@ -3313,9 +3313,9 @@ version = "0.5.24"
 
 [[deps.TimeseriesSurrogates]]
 deps = ["AbstractFFTs", "DSP", "DelayEmbeddings", "Distances", "Distributions", "Interpolations", "LinearAlgebra", "LombScargle", "Random", "StateSpaceSets", "Statistics", "StatsAPI", "StatsBase", "Wavelets"]
-git-tree-sha1 = "a20272be82e0f712651c5a76f0df985f5fd5d6fe"
+git-tree-sha1 = "296c82f1528beebbb80e01e7174d7b3d59aab906"
 uuid = "c804724b-8c18-5caa-8579-6025a0767c70"
-version = "2.6.4"
+version = "2.7.0"
 weakdeps = ["Makie"]
 
     [deps.TimeseriesSurrogates.extensions]
