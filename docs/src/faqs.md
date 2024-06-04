@@ -26,8 +26,8 @@ observed(osys)
 Let's solve the system and see how to index the solution using our symbolic
 variables
 ```@example faq1
-u0 = [rn.A => 1.0, rn.B => 2.0, rn.C => 0.0]
-ps = [rn.k₊ => 1.0, rn.k₋ => 1.0]
+u0 = [osys.A => 1.0, osys.B => 2.0, osys.C => 0.0]
+ps = [osys.k₊ => 1.0, osys.k₋ => 1.0]
 oprob = ODEProblem(osys, u0, (0.0, 10.0), ps)
 sol = solve(oprob, Tsit5())
 ```
@@ -44,8 +44,8 @@ sol[C]
 ```
 To evaluate `C` at specific times and plot it we can just do
 ```@example faq1
-t = range(0.0, 10.0, length=101)
-plot(t, sol(t, idxs = C), label = "C(t)", xlabel = "t")
+t = range(0.0, 10.0, length = 101)
+plot(sol(t, idxs = C), label = "C(t)", xlabel = "t")
 ```
 If we want to get multiple variables we can just do
 ```@example faq1
@@ -87,6 +87,7 @@ rx1 = Reaction(k,[B,C],[B,D], [2.5,1],[3.5, 2.5])
 rx2 = Reaction(2*k, [B], [D], [1], [2.5])
 rx3 = Reaction(2*k, [B], [D], [2.5], [2])
 @named mixedsys = ReactionSystem([rx1, rx2, rx3], t, [A, B, C, D], [k, b])
+mixedsys = complete(mixedsys)
 osys = convert(ODESystem, mixedsys; combinatoric_ratelaws = false)
 osys = complete(osys)
 ```
