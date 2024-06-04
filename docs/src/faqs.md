@@ -28,7 +28,7 @@ variables
 ```@example faq1
 u0 = [rn.A => 1.0, rn.B => 2.0, rn.C => 0.0]
 ps = [rn.k₊ => 1.0, rn.k₋ => 1.0]
-oprob = ODEProblem(osys, [], (0.0, 10.0), [])
+oprob = ODEProblem(osys, u0, (0.0, 10.0), ps)
 sol = solve(oprob, Tsit5())
 ```
 Suppose we want to plot just species `C`, without having to know its integer
