@@ -76,25 +76,89 @@ Base.Sort.defalg(::ReactionComplex) = Base.DEFAULT_UNSTABLE
 
 #! format: off
 # Internal cache for various ReactionSystem calculated properties
+# All related functionality is in the "network_analysis.jl" file. However, this must be declared
+# here as the structure is part of the `ReactionSystem` structure.
 Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Real}}
+    """Flag which is switched to `true` once any field is updated."""
     isempty::Bool = true
     netstoichmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
     conservationmat::Matrix{I} = Matrix{I}(undef, 0, 0)
     col_order::Vector{Int} = Int[]
+    """
+    The reaction networks *rank* (i.e. the span of the columns of its net stoichiometry matrix,
+    or its number of independent species).
+    """
     rank::Int = 0
     nullity::Int = 0
+    """
+    The set of *independent species* of the reaction system (i.e. species that will not be
+    eliminated when we eliminate the conserved quantities.
+    """
     indepspecs::Set{V} = Set{V}()
+    """
+    The set of *dependent species* of the reaction system. These species are eliminated when
+    we eliminated the conserved quantities. In the resulting `ODESystem` these become
+    observables, not unknowns.
+    """
     depspecs::Set{V} = Set{V}()
+    """
+    The equations for the (dependent) species eliminated by any conservation laws. I.e. for
+    the two simple two state system (`X1 <--> X2`) `X2` becomes a dependant species with the
+    conserved equation `X2 ~ Γ[1] - X1`.
+    """
     conservedeqs::Vector{Equation} = Equation[]
+    """
+    The equations for the conserved quantity parameters. I.e. for the two simple two state
+    system (`X1 <--> X2`) there is one conserved quantity with the equation `Γ[1] ~ X1 + X2`.
+    """
     constantdefs::Vector{Equation} = Equation[]
     speciesmap::Dict{V, Int} = Dict{V, Int}()
+    """
+    A dictionary from each reaction complex to the reactions they participate it. The value
+    mapped from each reaction complex is a pair from the reaction's index to a value which is
+    `-1` if the complex is a substrate and `+1` if the complex is a product.    
+    """
     complextorxsmap::OrderedDict{ReactionComplex{Int}, Vector{Pair{Int, Int}}} = OrderedDict{ReactionComplex{Int},Vector{Pair{Int,Int}}}()
+    """ A vector with all the reaction system's reaction complexes """
     complexes::Vector{ReactionComplex{Int}} = Vector{ReactionComplex{Int}}(undef, 0)
+    """
+    An MxN matrix where M is the number of reaction complexes and N the number of reactions.
+    Element i,j is:
+        -1 if the i'th complex is a substrate of the j'th reaction.
+        +1 if the i'th complex is a product of the j'th reaction.
+        0 if the i'th complex is not part of the j'th reaction.
+    """
     incidencemat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
+    """
+    An MxN matrix where M is the number of species and N the number of reaction complexes.
+    Element i,j is the coefficient of the i'th species in the j'th complex (0 entries denote
+    species that are not part of the corresponding complex). Whether the matrix is sparse
+    is designated when it is created.
+    """
     complexstoichmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
+    """
+    An MxN matrix where M is the number of reaction complexes and N the number of reactions.
+    Element i,j is -1 if i'th complex is a substrate of the j'th reaction (and 0 otherwise).
+    """
     complexoutgoingmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
+    """
+    A (directed) graph, with nodes corresponding to reaction complexes and edges to reactions.
+    There is an edge from complex i to complex j if there is a reaction converting complex
+    i to complex j.
+    """
     incidencegraph::Graphs.SimpleDiGraph{Int} = Graphs.DiGraph()
+    """
+    A vector of the connected components of the incidence graph. Each element of the
+    `linkageclasses` corresponds to a connected component, and is a vector listing all the
+    reaction complexes in that connected component.    
+    """
     linkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
+    """
+    The networks deficiency. It is computed as *n - l - r*, where *n* is the number of reaction
+    complexes, *l* is the number of linkage classes (i.e. the number of connected components
+    in the incidence graph), and *r* is the reaction networks *rank* (i.e. the span of the columns
+    of its net stoichiometry matrix, or its number of independent species).
+    """
     deficiency::Int = 0
 end
 #! format: on

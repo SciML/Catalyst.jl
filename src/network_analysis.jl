@@ -727,7 +727,7 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
                 @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] [conserved=true])))
 
     # Computes the equations for (examples uses simple two-state system, `X1 <--> X2`):
-    # - The species eliminated through conservation laws (`conservedeqs`). E.g. `[X2 ~ X1 - Γ[1]]`.
+    # - The species eliminated through conservation laws (`conservedeqs`). E.g. `[X2 ~ Γ[1] - X1]`.
     # - The conserved quantity parameters (`constantdefs`). E.g. `[Γ[1] ~ X1 + X2]`.
     conservedeqs = Equation[]
     constantdefs = Equation[]
