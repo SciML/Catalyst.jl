@@ -57,7 +57,7 @@ StructuralIdentifiability = "0.5.1"
 SymbolicUtils = "1.0.3"
 Symbolics = "5.27"
 Unitful = "1.12.4"
-julia = "1.9"
+julia = "1.10"
 
 [extras]
 BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
