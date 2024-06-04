@@ -12,7 +12,7 @@ pages = Any[
         "model_creation/compositional_modeling.md",
         #"model_creation/constraint_equations.md",
         # Events.
-        #"model_creation/parametric_stoichiometry.md",# Distributed parameters, rates, and initial conditions.
+        "model_creation/parametric_stoichiometry.md",# Distributed parameters, rates, and initial conditions.
         "model_creation/model_file_loading_and_export.md",# Distributed parameters, rates, and initial conditions.
         # Loading and writing models to files.
         "model_creation/model_visualisation.md",
