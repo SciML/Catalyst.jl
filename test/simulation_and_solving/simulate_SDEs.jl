@@ -107,7 +107,7 @@ let
         du[7, 5] = sqrt(k5 * X5 * X6)
         du[7, 6] = -sqrt(k6 * X7)
     end
-    push!(catalyst_networks, reaction_networks_constraint[9])
+    push!(catalyst_networks, reaction_networks_conserved[9])
     push!(manual_networks, (f = real_f_3, g = real_g_3, nrp = zeros(7, 6)))
     push!(u0_syms, [:X1, :X2, :X3, :X4, :X5, :X6, :X7])
     push!(ps_syms, [:k1, :k2, :k3, :k4, :k5, :k6])
