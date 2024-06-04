@@ -82,13 +82,13 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     """Flag which is switched to `true` once any field is updated."""
     isempty::Bool = true
     """
-    The reaction network's net stoichiometry matrix. It is a MxN matrix where M is its number of 
-    species and N its number of reaction. Element i,j is net stoichiometric change to the i'th
-    species as a result of the j'th reaction.
+    The reaction network's net stoichiometry matrix. It is an MxN matrix where M is its number of 
+    species and N is its number of reactions. Element i,j is the net stoichiometric change to the
+    i'th species as a result of the j'th reaction.
     """
     netstoichmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
     """
-    The reaction network's conservation law matrix. It is a MxN matrix where M is its number of 
+    The reaction network's conservation law matrix. It is an MxN matrix where M is its number of 
     conservation laws and N its number of species. Element i,j is the coefficient of species 
     j in the i'th conservation law.
     """
@@ -111,18 +111,18 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     indepspecs::Set{V} = Set{V}()
     """
     The set of *dependent species* of the reaction system. These species are eliminated when
-    we eliminated the conserved quantities. In the resulting `ODESystem` these become
+    we eliminate the conserved quantities. In the resulting `ODESystem` these become
     observables, not unknowns.
     """
     depspecs::Set{V} = Set{V}()
     """
     The equations for the (dependent) species eliminated by any conservation laws. I.e. for
-    the two simple two state system (`X1 <--> X2`) `X2` becomes a dependant species with the
+    the two simple two-state system (`X1 <--> X2`) `X2` becomes a dependant species with the
     conserved equation `X2 ~ Γ[1] - X1`.
     """
     conservedeqs::Vector{Equation} = Equation[]
     """
-    The equations for the conserved quantity parameters. I.e. for the two simple two state
+    The equations for the conserved quantity parameters. I.e. for the two simple two-state
     system (`X1 <--> X2`) there is one conserved quantity with the equation `Γ[1] ~ X1 + X2`.
     """
     constantdefs::Vector{Equation} = Equation[]
@@ -139,7 +139,7 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     """ A vector with all the reaction system's reaction complexes """
     complexes::Vector{ReactionComplex{Int}} = Vector{ReactionComplex{Int}}(undef, 0)
     """
-    An MxN matrix where M is the number of reaction complexes and N the number of reactions.
+    An MxN matrix where M is the number of reaction complexes and N is the number of reactions.
     Element i,j is:
         -1 if the i'th complex is a substrate of the j'th reaction.
         +1 if the i'th complex is a product of the j'th reaction.
@@ -154,7 +154,7 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     """
     complexstoichmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
     """
-    An MxN matrix where M is the number of reaction complexes and N the number of reactions.
+    An MxN matrix where M is the number of reaction complexes and N is the number of reactions.
     Element i,j is -1 if i'th complex is a substrate of the j'th reaction (and 0 otherwise).
     """
     complexoutgoingmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
@@ -171,7 +171,7 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     """
     linkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
     """
-    The networks deficiency. It is computed as *n - l - r*, where *n* is the number of reaction
+    The network's deficiency. It is computed as *n - l - r*, where *n* is the number of reaction
     complexes, *l* is the number of linkage classes (i.e. the number of connected components
     in the incidence graph), and *r* is the reaction networks *rank* (i.e. the span of the columns
     of its net stoichiometry matrix, or its number of independent species).
