@@ -32,7 +32,7 @@ pages = Any[
         "model_simulation/ensemble_simulations.md",
         # Stochastic simulation statistical analysis.
         "model_simulation/ode_simulation_performance.md",
-        # SDE Performance considerations/advice.
+        "model_simulation/sde_simulation_performance.md",
         # Jump Performance considerations/advice.
         # Finite state projection
     ],
