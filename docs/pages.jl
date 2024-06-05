@@ -9,10 +9,10 @@ pages = Any[
         "model_creation/dsl_basics.md",
         "model_creation/dsl_advanced.md",
         #"model_creation/programmatic_CRN_construction.md",
-        #"model_creation/compositional_modeling.md",
+        "model_creation/compositional_modeling.md",
         #"model_creation/constraint_equations.md",
         # Events.
-        #"model_creation/parametric_stoichiometry.md",# Distributed parameters, rates, and initial conditions.
+        "model_creation/parametric_stoichiometry.md",# Distributed parameters, rates, and initial conditions.
         "model_creation/model_file_loading_and_export.md",# Distributed parameters, rates, and initial conditions.
         # Loading and writing models to files.
         "model_creation/model_visualisation.md",
@@ -21,7 +21,7 @@ pages = Any[
         "Model creation examples" => Any[
             "model_creation/examples/basic_CRN_library.md",
             "model_creation/examples/programmatic_generative_linear_pathway.md",
-            #"model_creation/examples/hodgkin_huxley_equation.md",
+            "model_creation/examples/hodgkin_huxley_equation.md",
             #"model_creation/examples/smoluchowski_coagulation_equation.md"
         ]
     ],
@@ -66,6 +66,6 @@ pages = Any[
     #     # Contributor's guide.
     #     # Repository structure.
     # ],
-    #"FAQs" => "faqs.md",
-    #"API" => "api.md"
+    "FAQs" => "faqs.md",
+    "API" => "api.md"
 ]
