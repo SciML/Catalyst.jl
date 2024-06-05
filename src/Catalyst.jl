@@ -93,7 +93,6 @@ end
 include("reaction.jl")
 export isspecies
 export Reaction
-export get_noise_scaling, has_noise_scaling
 
 # The `ReactionSystem` structure and its functions.
 include("reactionsystem.jl")
@@ -185,5 +184,13 @@ include("spatial_reaction_systems/lattice_jump_systems.jl")
 
 # Various utility functions
 include("spatial_reaction_systems/utility.jl")
+
+
+### ReactionSystem Serialisation ###
+# Has to be at the end (because it uses records of all metadata declared by Catalyst).
+include("reactionsystem_serialisation/serialisation_support.jl")
+include("reactionsystem_serialisation/serialise_fields.jl")
+include("reactionsystem_serialisation/serialise_reactionsystem.jl")
+export save_reactionsystem
 
 end # module

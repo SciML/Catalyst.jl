@@ -121,7 +121,7 @@ function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
 
     for (j, rx) in enumerate(get_rxs(rs))
         rlsqrt = sqrt(abs(oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)))
-        has_noise_scaling(rx) && (rlsqrt *= get_noise_scaling(rx))
+        hasnoisescaling(rx) && (rlsqrt *= getnoisescaling(rx))
         remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
 
         for (spec, stoich) in rx.netstoich
@@ -449,7 +449,7 @@ function remove_diffs(expr)
         return expr
     end
 end
-diff_2_zero(expr) = (Symbolics.is_derivative(expr) ? 0.0 : expr)
+diff_2_zero(expr) = (Symbolics.is_derivative(expr) ? 0 : expr)
 
 COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be converted to other system types. A ReactionSystem can be marked as complete using the `complete` function."
 
@@ -653,7 +653,7 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
     spatial_convert_err(rs::ReactionSystem, JumpSystem)
 
     (remove_conserved !== nothing) &&
-        error("Catalyst does not support removing conserved species when converting to JumpSystems.")
+        throw(ArgumentError("Catalyst does not support removing conserved species when converting to JumpSystems."))
 
     flatrs = Catalyst.flatten(rs)
     error_if_constraints(JumpSystem, flatrs)

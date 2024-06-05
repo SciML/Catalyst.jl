@@ -71,7 +71,7 @@ let
           Set([:p, :k1, :k2, :k3, :k4, :k5, :k6, :d])
     basic_test(reaction_networks_hill[1], 4, [:X1, :X2],
                [:v1, :v2, :K1, :K2, :n1, :n2, :d1, :d2])
-    basic_test(reaction_networks_constraint[1], 6, [:X1, :X2, :X3],
+    basic_test(reaction_networks_conserved[1], 6, [:X1, :X2, :X3],
                [:k1, :k2, :k3, :k4, :k5, :k6])
     basic_test(reaction_networks_real[1], 4, [:X, :Y], [:A, :B])
     basic_test(reaction_networks_weird[1], 2, [:X], [:p, :d])
@@ -281,7 +281,7 @@ let
         Reaction(p + k5 * X2 * X3, nothing, [X5], nothing, [1]),
         Reaction(d, [X5], nothing, [1], nothing)]
     @named rs_2 = ReactionSystem(rxs_2, t, [X1, X2, X3, X4, X5], [k1, k2, k3, k4, p, k5, d])
-    push!(identical_networks_4, reaction_networks_constraint[3] => rs_2)
+    push!(identical_networks_4, reaction_networks_conserved[3] => rs_2)
 
     rxs_3 = [Reaction(k1, [X1], [X2], [1], [1]),
         Reaction(0, [X2], [X3], [1], [1]),
@@ -321,14 +321,14 @@ let
 
     for factor in [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3]
         τ = rand(rng)
-        u = rnd_u0(reaction_networks_constraint[1], rng; factor)
+        u = rnd_u0(reaction_networks_conserved[1], rng; factor)
         p_2 = rnd_ps(time_network, rng; factor)
-        p_1 = [p_2; reaction_networks_constraint[1].k1 => τ; 
-               reaction_networks_constraint[1].k4 => τ; reaction_networks_constraint[1].k5 => τ]
+        p_1 = [p_2; reaction_networks_conserved[1].k1 => τ; 
+               reaction_networks_conserved[1].k4 => τ; reaction_networks_conserved[1].k5 => τ]
 
-        @test f_eval(reaction_networks_constraint[1], u, p_1, τ) ≈ f_eval(time_network, u, p_2, τ)
-        @test jac_eval(reaction_networks_constraint[1], u, p_1, τ) ≈ jac_eval(time_network, u, p_2, τ)
-        @test g_eval(reaction_networks_constraint[1], u, p_1, τ) ≈ g_eval(time_network, u, p_2, τ)
+        @test f_eval(reaction_networks_conserved[1], u, p_1, τ) ≈ f_eval(time_network, u, p_2, τ)
+        @test jac_eval(reaction_networks_conserved[1], u, p_1, τ) ≈ jac_eval(time_network, u, p_2, τ)
+        @test g_eval(reaction_networks_conserved[1], u, p_1, τ) ≈ g_eval(time_network, u, p_2, τ)
     end
 end
 
@@ -437,3 +437,5 @@ let
     @test_throws LoadError @eval @reaction k, 0 --> im
     @test_throws LoadError @eval @reaction k, 0 --> nothing
 end
+
+

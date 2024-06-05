@@ -24,7 +24,7 @@ rn = @reaction_network begin
     @parameters η
     k, 2X --> X2, [noise_scaling=η]
 end
-get_noise_scaling(rn)
+getnoisescaling(rn)
 ```
 - `SDEProblem` no longer takes the `noise_scaling` argument (see above for new approach to handle noise scaling).
 - Changed fields of internal `Reaction` structure. `ReactionSystems`s saved using `serialize` on previous Catalyst versions cannot be loaded using this (or later) versions.
