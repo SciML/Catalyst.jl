@@ -72,13 +72,6 @@ function metadata_only_use_rate_check(metadata)
     return Bool(metadata[only_use_rate_idx][2])
 end
 
-# Used to promote a vector to the appropriate type. Takes the `vec == Any[]` case into account by
-# returning an empty vector of the appropriate type.
-function promote_reaction_vector(vec, type)
-    isempty(vec) && (return type[])
-    type[value(v) for v in vec]
-end
-
 # calculates the net stoichiometry of a reaction as a vector of pairs (sub,substoich)
 function get_netstoich(subs, prods, sstoich, pstoich)
     # stoichiometry as a Dictionary
@@ -91,6 +84,9 @@ function get_netstoich(subs, prods, sstoich, pstoich)
     # stoichiometry as a vector
     [el for el in nsdict if !_iszero(el[2])]
 end
+
+# Get the net stoichiometries' type.
+netstoich_stoichtype(::Vector{Pair{S, T}}) where {S, T} = T
 
 ### Reaction Structure ###
 
@@ -138,19 +134,19 @@ Notes:
 - The three-argument form assumes all reactant and product stoichiometric coefficients
   are one.
 """
-struct Reaction{T}
+struct Reaction{S, T}
     """The rate function (excluding mass action terms)."""
     rate::Any
     """Reaction substrates."""
-    substrates::Vector{Any}
+    substrates::Vector
     """Reaction products."""
-    products::Vector{Any}
+    products::Vector
     """The stoichiometric coefficients of the reactants."""
-    substoich::Vector
+    substoich::Vector{T}
     """The stoichiometric coefficients of the products."""
-    prodstoich::Vector
+    prodstoich::Vector{T}
     """The net stoichiometric coefficients of all species changed by the reaction."""
-    netstoich::Vector{Pair{Any, T}}
+    netstoich::Vector{Pair{S, T}}
     """
     `false` (default) if `rate` should be multiplied by mass action terms to give the rate law.
     `true` if `rate` represents the full reaction rate law.
@@ -164,74 +160,83 @@ struct Reaction{T}
 end
 
 # Five-argument constructor accepting rate, substrates, and products, and their stoichiometries.
-function Reaction(rate, subs::Vector, prods::Vector, substoich::Vector{S}, prodstoich::Vector{T};
-                   netstoich = [], metadata = Pair{Symbol, Any}[], 
-                   only_use_rate = metadata_only_use_rate_check(metadata), kwargs...) where {S,T}
-    # Error checks.
-    isempty(subs) && isempty(prods) &&
-        throw(ArgumentError("A reaction requires either a non-empty substrate or product vector."))
-    length(subs) != length(substoich) &&
-        throw(ArgumentError("The substrate vector ($(subs)) and the substrate stoichiometry vector ($(substoich)) must have equal length."))
-    length(prods) != length(prodstoich) &&
-        throw(ArgumentError("The product vector ($(prods)) and the product stoichiometry vector ($(prodstoich)) must have equal length."))
+function Reaction(rate, subs, prods, substoich, prodstoich;
+                  netstoich = nothing, metadata = Pair{Symbol, Any}[], 
+                  only_use_rate = metadata_only_use_rate_check(metadata), kwargs...)
+    (isnothing(prods) && isnothing(subs)) &&
+        throw(ArgumentError("A reaction requires a non-nothing substrate or product vector."))
+    (isnothing(prodstoich) && isnothing(substoich)) &&
+        throw(ArgumentError("Both substrate and product stochiometry inputs cannot be nothing."))
+
+    if isnothing(subs)
+        prodtype = typeof(value(first(prods)))
+        subs = Vector{prodtype}()
+        !isnothing(substoich) &&
+            throw(ArgumentError("If substrates are nothing, substrate stoichiometries have to be so too."))
+        substoich = typeof(prodstoich)()
+    else
+        subs = value.(subs)
+    end
     allunique(subs) ||
         throw(ArgumentError("Substrates can not be repeated in the list provided to `Reaction`, please modify the stoichiometry for any repeated substrates instead."))
+    S = eltype(substoich)
+
+    if isnothing(prods)
+        prods = Vector{eltype(subs)}()
+        !isnothing(prodstoich) &&
+            throw(ArgumentError("If products are nothing, product stoichiometries have to be so too."))
+        prodstoich = typeof(substoich)()
+    else
+        prods = value.(prods)
+    end
     allunique(prods) ||
         throw(ArgumentError("Products can not be repeated in the list provided to `Reaction`, please modify the stoichiometry for any repeated products instead."))
+    T = eltype(prodstoich)
 
-    # Ensures everything have uniform and correct types.
-    subs = promote_reaction_vector(subs, BasicSymbolic{Real})
-    prods =  promote_reaction_vector(prods, BasicSymbolic{Real})
+    # try to get a common type for stoichiometry, using Any if have Syms
     stoich_type = promote_type(S, T)
-    (stoich_type <: Num) && (stoich_type = Any)
-    substoich = promote_reaction_vector(substoich, stoich_type)
-    prodstoich = promote_reaction_vector(prodstoich, stoich_type)
+    if stoich_type <: Num
+        stoich_type = Any
+        substoich′ = Any[value(s) for s in substoich]
+        prodstoich′ = Any[value(p) for p in prodstoich]
+    else
+        substoich′ = (S == stoich_type) ? substoich : convert.(stoich_type, substoich)
+        prodstoich′ = (T == stoich_type) ? prodstoich : convert.(stoich_type, prodstoich)
+    end
 
-    # Checks that all reactants are valid.
     if !(all(isvalidreactant, subs) && all(isvalidreactant, prods))
         badsts = union(filter(!isvalidreactant, subs), filter(!isvalidreactant, prods))
-        throw(ArgumentError("To be a valid substrate or product, non-constant species must be declared via @species, while constant species must be parameters with the isconstantspecies metadata. The following reactants do not follow this convention:\n $badsts"))
-    end
-    
-    # Computes the net stoichiometries.
-    if isempty(netstoich)
-        netstoich = get_netstoich(subs, prods, substoich, prodstoich)
-    elseif typeof(netstoich) != Vector{Pair{BasicSymbolic{Real}, stoich_type}}
-        netstoich = Pair{BasicSymbolic{Real}, stoich_type}[
-                        value(ns[1]) => convert(stoich_type, ns[2]) for ns in netstoich]
+        throw(ArgumentError("""To be a valid substrate or product, non-constant species must be declared via @species, while constant species must be parameters with the isconstantspecies metadata. The following reactants do not follow this convention:\n $badsts"""))
     end
 
-    # Handles metadata (check that all entries are unique, remove potential `only_use_rate`
-    # entries, and converts to the required type.
+    ns = if netstoich === nothing
+        get_netstoich(subs, prods, substoich′, prodstoich′)
+    else
+        (netstoich_stoichtype(netstoich) != stoich_type) ?
+        convert.(stoich_type, netstoich) : netstoich
+    end
+
+    # Check that all metadata entries are unique. (cannot use `in` since some entries may be symbolics).
     if !allunique(entry[1] for entry in metadata)
         error("Repeated entries for the same metadata encountered in the following metadata set: $([entry[1] for entry in metadata]).")
     end
+
+    # Deletes potential `:only_use_rate => ` entries from the metadata.
     if any(:only_use_rate == entry[1] for entry in metadata) 
         deleteat!(metadata, findfirst(:only_use_rate == entry[1] for entry in metadata))
     end
+
+    # Ensures metadata have the correct type.
     metadata = convert(Vector{Pair{Symbol, Any}}, metadata)
 
-    Reaction{stoich_type}(value(rate), subs, prods, substoich, prodstoich, netstoich, only_use_rate, metadata)
+    Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate, metadata)
 end
 
-# Three-argument constructor. Handles the case where no stoichiometries is given
-# (by assuming that all stoichiometries are `1`).
-function Reaction(rate, subs::Vector, prods::Vector; kwargs...)
-    Reaction(rate, subs, prods, ones(Int, length(subs)), ones(Int, length(prods)); kwargs...)
-end
-
-# Handles cases where `nothing` is given (instead of an empty vector). 
-function Reaction(rate, subs::Vector, prods::Nothing, substoich::Vector, prodstoich::Nothing; kwargs...)
-    Reaction(rate, subs, Int64[], substoich, Int64[]; kwargs...)
-end
-function Reaction(rate, subs::Nothing, prods::Vector, substoich::Nothing, prodstoich::Vector; kwargs...)
-    Reaction(rate, Int64[], prods, Int64[], prodstoich; kwargs...)
-end
-function Reaction(rate, subs::Vector, prods::Nothing; kwargs...)
-    Reaction(rate, subs, Int64[]; kwargs...)
-end
-function Reaction(rate, subs::Nothing, prods::Vector; kwargs...)
-    Reaction(rate, Int64[], prods; kwargs...)
+# Three argument constructor assumes stoichiometric coefs are one and integers.
+function Reaction(rate, subs, prods; kwargs...)
+    sstoich = isnothing(subs) ? nothing : ones(Int, length(subs))
+    pstoich = isnothing(prods) ? nothing : ones(Int, length(prods))
+    Reaction(rate, subs, prods, sstoich, pstoich; kwargs...)
 end
 
 # Union type for `Reaction`s and `Equation`s.
