@@ -179,11 +179,11 @@ export CartesianGrid, CartesianGridReJ # (Implemented in JumpProcesses)
 export has_cartesian_lattice, has_masked_lattice, has_grid_lattice, has_graph_lattice, grid_dims, grid_size
 export make_edge_p_values, make_directed_edge_values
 
-# Various utility functions
-include("spatial_reaction_systems/utility.jl")
-
 # Specific spatial problem types.
 include("spatial_reaction_systems/spatial_ODE_systems.jl")
 include("spatial_reaction_systems/lattice_jump_systems.jl")
+
+# Various utility functions
+include("spatial_reaction_systems/utility.jl")
 
 end # module

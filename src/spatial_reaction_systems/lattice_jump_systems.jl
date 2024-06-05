@@ -15,7 +15,7 @@ function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0_in, tspan, p_
 
     # Converts u0 and p to their internal forms.
     # u0 is [spec 1 at vert 1, spec 2 at vert 1, ..., spec 1 at vert 2, ...].
-    u0 = lattice_process_u0(u0_in, species(lrs), lrs.num_verts)                                   
+    u0 = lattice_process_u0(u0_in, species(lrs), num_verts(lrs))                                   
     # Both vert_ps and edge_ps becomes vectors of vectors. Each have 1 element for each parameter. 
     # These elements are length 1 vectors (if the parameter is uniform), 
     # or length num_verts/nE, with unique values for each vertex/edge (for vert_ps/edge_ps, respectively).
@@ -27,8 +27,8 @@ function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0_in, tspan, p_
 end
 
 # Builds a spatial JumpProblem from a DiscreteProblem containg a Lattice Reaction System.
-function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator, args...; name = nameof(lrs.rs), 
-                                   combinatoric_ratelaws = get_combinatoric_ratelaws(lrs.rs), kwargs...)
+function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator, args...; name = nameof(reactionsystem(lrs)), 
+                                   combinatoric_ratelaws = get_combinatoric_ratelaws(reactionsystem(lrs)), kwargs...)
     # Error checks.
     if !isnothing(dprob.f.sys)
         error("Unexpected `DiscreteProblem` passed into `JumpProblem`. Was a `LatticeReactionSystem` used as input to the initial `DiscreteProblem`?")
@@ -42,10 +42,10 @@ function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator
     # The non-spatial DiscreteProblem have a u0 matrix with entries for all combinations of species and vertexes.
     hopping_constants = make_hopping_constants(dprob, lrs)
     sma_jumps = make_spatial_majumps(dprob, lrs)
-    non_spat_dprob = DiscreteProblem(reshape(dprob.u0, lrs.num_species, lrs.num_verts), dprob.tspan, first.(dprob.p[1]))
+    non_spat_dprob = DiscreteProblem(reshape(dprob.u0, num_species(lrs), num_verts(lrs)), dprob.tspan, first.(dprob.p[1]))
 
     return JumpProblem(non_spat_dprob, aggregator, sma_jumps; 
-                       hopping_constants, spatial_system = lrs.lattice, name, kwargs...)
+                       hopping_constants, spatial_system = lattice(lrs), name, kwargs...)
 end
 
 # Creates the hopping constants from a discrete problem and a lattice reaction system.
@@ -57,14 +57,14 @@ function make_hopping_constants(dprob::DiscreteProblem, lrs::LatticeReactionSyst
 
     # Creates the hopping constant Matrix. It contains one element for each combination of species and vertex.
     # Each element is a Vector, containing the outgoing hopping rates for that species, from that vertex, on that edge.
-    hopping_constants = [Vector{Float64}(undef, length(lrs.lattice.fadjlist[j])) 
-                         for i in 1:(lrs.num_species), j in 1:(lrs.num_verts)]
+    hopping_constants = [Vector{Float64}(undef, length(lattice(lrs).fadjlist[j])) 
+                         for i in 1:(num_species(lrs)), j in 1:(num_verts(lrs))]
 
     # For each edge, finds each position in `hopping_constants`.
-    for (e_idx, e) in enumerate(edges(lrs.lattice))
-        dst_idx = findfirst(isequal(e.dst), lrs.lattice.fadjlist[e.src])      
+    for (e_idx, e) in enumerate(edges(lattice(lrs)))
+        dst_idx = findfirst(isequal(e.dst), lattice(lrs).fadjlist[e.src])      
         # For each species, sets that hopping rate.  
-        for s_idx in 1:(lrs.num_species)
+        for s_idx in 1:(num_species(lrs))
             hopping_constants[s_idx, e.src][dst_idx] = get_component_value(all_diff_rates[s_idx], e_idx)
         end
     end
@@ -77,33 +77,33 @@ end
 # Not sure if there is any form of performance improvement from that though. Possibly is not the case.
 function make_spatial_majumps(dprob, lrs::LatticeReactionSystem)
     # Creates a vector, storing which reactions have spatial components.
-    is_spatials = [Catalyst.has_spatial_vertex_component(rx.rate, lrs; vert_ps = dprob.p[1]) for rx in reactions(lrs.rs)]
+    is_spatials = [Catalyst.has_spatial_vertex_component(rx.rate, lrs; vert_ps = dprob.p[1]) for rx in reactions(reactionsystem(lrs))]
 
     # Creates templates for the rates (uniform and spatial) and the stoichiometries.
     # We cannot fetch reactant_stoich and net_stoich from a (non-spatial) MassActionJump.
     # The reason is that we need to re-order the reactions so that uniform appears first, and spatial next.
-    u_rates = Vector{Float64}(undef, length(reactions(lrs.rs)) - count(is_spatials))
-    s_rates = Matrix{Float64}(undef, count(is_spatials), lrs.num_verts)
-    reactant_stoich = Vector{Vector{Pair{Int64, Int64}}}(undef, length(reactions(lrs.rs)))
-    net_stoich = Vector{Vector{Pair{Int64, Int64}}}(undef, length(reactions(lrs.rs)))
+    u_rates = Vector{Float64}(undef, length(reactions(reactionsystem(lrs))) - count(is_spatials))
+    s_rates = Matrix{Float64}(undef, count(is_spatials), num_verts(lrs))
+    reactant_stoich = Vector{Vector{Pair{Int64, Int64}}}(undef, length(reactions(reactionsystem(lrs))))
+    net_stoich = Vector{Vector{Pair{Int64, Int64}}}(undef, length(reactions(reactionsystem(lrs))))
 
     # Loops through reactions with non-spatial rates, computes their rates and stoichiometries.
     cur_rx = 1;
-    for (is_spat, rx) in zip(is_spatials, reactions(lrs.rs))
+    for (is_spat, rx) in zip(is_spatials, reactions(reactionsystem(lrs)))
         is_spat && continue
         u_rates[cur_rx] = compute_vertex_value(rx.rate, lrs; vert_ps = dprob.p[1])[1]
         substoich_map = Pair.(rx.substrates, rx.substoich)
-        reactant_stoich[cur_rx] = int_map(substoich_map, lrs.rs)
-        net_stoich[cur_rx] = int_map(rx.netstoich, lrs.rs)
+        reactant_stoich[cur_rx] = int_map(substoich_map, reactionsystem(lrs))
+        net_stoich[cur_rx] = int_map(rx.netstoich, reactionsystem(lrs))
         cur_rx += 1
     end
     # Loops through reactions with spatial rates, computes their rates and stoichiometries.
-    for (is_spat, rx) in zip(is_spatials, reactions(lrs.rs))    
+    for (is_spat, rx) in zip(is_spatials, reactions(reactionsystem(lrs)))    
         is_spat || continue
         s_rates[cur_rx-length(u_rates),:] = compute_vertex_value(rx.rate, lrs; vert_ps = dprob.p[1])
         substoich_map = Pair.(rx.substrates, rx.substoich)
-        reactant_stoich[cur_rx] = int_map(substoich_map, lrs.rs)
-        net_stoich[cur_rx] = int_map(rx.netstoich, lrs.rs)
+        reactant_stoich[cur_rx] = int_map(substoich_map, reactionsystem(lrs))
+        net_stoich[cur_rx] = int_map(rx.netstoich, reactionsystem(lrs))
         cur_rx += 1
     end
     # SpatialMassActionJump expects empty rate containers to be nothing.

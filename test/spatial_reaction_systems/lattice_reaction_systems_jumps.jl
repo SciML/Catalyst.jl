@@ -16,23 +16,23 @@ let
         for srs in [Vector{TransportReaction}(), SIR_srs_1, SIR_srs_2]
             lrs = LatticeReactionSystem(SIR_system, srs, grid)
             u0_1 = [:S => 999, :I => 1, :R => 0]
-            u0_2 = [:S => round.(Int64, 500.0 .+ 500.0 * rand_v_vals(lrs.lattice)), :I => 1, :R => 0, ]
-            u0_3 = [:S => 950, :I => round.(Int64, 50 * rand_v_vals(lrs.lattice)), :R => round.(Int64, 50 * rand_v_vals(lrs.lattice))]
-            u0_4 = [:S => round.(500.0 .+ 500.0 * rand_v_vals(lrs.lattice)), :I => round.(50 * rand_v_vals(lrs.lattice)), :R => round.(50 * rand_v_vals(lrs.lattice))]
-            u0_5 = make_u0_matrix(u0_3, vertices(lrs.lattice), map(s -> Symbol(s.f), species(lrs.rs)))
+            u0_2 = [:S => round.(Int64, 500.0 .+ 500.0 * rand_v_vals(lattice(lrs))), :I => 1, :R => 0, ]
+            u0_3 = [:S => 950, :I => round.(Int64, 50 * rand_v_vals(lattice(lrs))), :R => round.(Int64, 50 * rand_v_vals(lattice(lrs)))]
+            u0_4 = [:S => round.(500.0 .+ 500.0 * rand_v_vals(lattice(lrs))), :I => round.(50 * rand_v_vals(lattice(lrs))), :R => round.(50 * rand_v_vals(lattice(lrs)))]
+            u0_5 = make_u0_matrix(u0_3, vertices(lattice(lrs)), map(s -> Symbol(s.f), species(reactionsystem(lrs))))
             for u0 in [u0_1, u0_2, u0_3, u0_4, u0_5]
                 p1 = [:α => 0.1 / 1000, :β => 0.01]
-                p2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lrs.lattice)]
+                p2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lattice(lrs))]
                 p3 = [
-                    :α => 0.1 / 2000 * rand_v_vals(lrs.lattice),
-                    :β => 0.02 * rand_v_vals(lrs.lattice),
+                    :α => 0.1 / 2000 * rand_v_vals(lattice(lrs)),
+                    :β => 0.02 * rand_v_vals(lattice(lrs)),
                 ]
-                p4 = make_u0_matrix(p1, vertices(lrs.lattice), Symbol.(parameters(lrs.rs)))
+                p4 = make_u0_matrix(p1, vertices(lattice(lrs)), Symbol.(parameters(reactionsystem(lrs))))
                 for pV in [p1] #, p2, p3, p4] # Removed until spatial non-diffusion parameters are supported.
                     pE_1 = map(sp -> sp => 0.01, ModelingToolkit.getname.(edge_parameters(lrs)))
                     pE_2 = map(sp -> sp => 0.01, ModelingToolkit.getname.(edge_parameters(lrs)))
-                    pE_3 = map(sp -> sp => rand_e_vals(lrs.lattice, 0.01), ModelingToolkit.getname.(edge_parameters(lrs)))
-                    pE_4 = make_u0_matrix(pE_3, edges(lrs.lattice), ModelingToolkit.getname.(edge_parameters(lrs)))
+                    pE_3 = map(sp -> sp => rand_e_vals(lattice(lrs), 0.01), ModelingToolkit.getname.(edge_parameters(lrs)))
+                    pE_4 = make_u0_matrix(pE_3, edges(lattice(lrs)), ModelingToolkit.getname.(edge_parameters(lrs)))
                     for pE in [pE_1, pE_2, pE_3, pE_4]
                         dprob = DiscreteProblem(lrs, u0, (0.0, 100.0), (pV, pE))
                         jprob = JumpProblem(lrs, dprob, NSM())
@@ -117,9 +117,9 @@ let
     lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, small_3d_grid)
 
     # Create JumpProblem
-    u0 = [:X => 1, :Y => rand(1:10, lrs.num_verts)]
+    u0 = [:X => 1, :Y => rand(1:10, num_verts(lrs))]
     tspan = (0.0, 100.0)
-    ps = [:A => 1.0, :B => 5.0 .+ rand(lrs.num_verts), :dX => rand(lrs.num_edges)]
+    ps = [:A => 1.0, :B => 5.0 .+ rand(num_verts(lrs)), :dX => rand(num_edges(lrs))]
     dprob = DiscreteProblem(lrs, u0, tspan, ps)
     jprob = JumpProblem(lrs, dprob, NSM())
 
@@ -127,8 +127,8 @@ let
     jprob.massaction_jump.uniform_rates == [1.0, 0.5 ,10.] # 0.5 is due to combinatoric /2! in (2X + Y).
     jprob.massaction_jump.spatial_rates[1,:] == ps[2][2]
     # Test when new SII functions are ready, or we implement them in Catalyst.
-    # @test isequal(to_int(getfield.(reactions(lrs.rs), :netstoich)), jprob.massaction_jump.net_stoch)
-    # @test isequal(to_int(Pair.(getfield.(reactions(lrs.rs), :substrates),getfield.(reactions(lrs.rs), :substoich))), jprob.massaction_jump.net_stoch)
+    # @test isequal(to_int(getfield.(reactions(reactionsystem(lrs)), :netstoich)), jprob.massaction_jump.net_stoch)
+    # @test isequal(to_int(Pair.(getfield.(reactions(reactionsystem(lrs)), :substrates),getfield.(reactions(reactionsystem(lrs)), :substoich))), jprob.massaction_jump.net_stoch)
 
     # Checks that problem can be simulated.
     @test SciMLBase.successful_retcode(solve(jprob, SSAStepper()))

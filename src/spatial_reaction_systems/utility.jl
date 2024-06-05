@@ -312,7 +312,7 @@ function compute_edge_value(exp, lrs::LatticeReactionSystem, edge_ps)
         return [exp_func([sym_val_dict[sym][1] for sym in relevant_syms]...)]
     end
     return [exp_func([get_component_value(sym_val_dict[sym], idxE) for sym in relevant_syms]...) 
-                                                                            for idxE in 1:lrs.num_edges]
+                                                                            for idxE in 1:num_edges(lrs)]
 end
 
 # For an expression, computes its values using the provided state and parameter vectors.
@@ -348,7 +348,7 @@ function compute_vertex_value(exp, lrs::LatticeReactionSystem; u=nothing, vert_p
         return [exp_func([sym_val_dict[sym][1] for sym in relevant_syms]...)]
     end
     return [exp_func([get_component_value(sym_val_dict[sym], idxV) for sym in relevant_syms]...) 
-                                                                            for idxV in 1:lrs.num_verts]
+                                                                            for idxV in 1:num_verts(lrs)]
 end
 
 ### System Property Checks ###
@@ -373,14 +373,14 @@ function has_spatial_vertex_component(exp, lrs::LatticeReactionSystem; u=nothing
     # If vertex parameter values where given, checks if any of these have non-uniform values.
     if !isnothing(vert_ps)
         exp_vert_ps = filter(sym -> any(isequal(sym), vertex_parameters(lrs)), exp_syms)
-        p_idxs = [ModelingToolkit.parameter_index(lrs.rs, sym) for sym in exp_vert_ps]
+        p_idxs = [ModelingToolkit.parameter_index(reactionsystem(lrs), sym) for sym in exp_vert_ps]
         any(length(vert_ps[p_idx]) != 1 for p_idx in p_idxs) && return true
     end
 
     # If states values where given, checks if any of these have non-uniform values.
     if !isnothing(u)
         exp_u = filter(sym -> any(isequal(sym), species(lrs)), exp_syms)
-        u_idxs = [ModelingToolkit.variable_index(lrs.rs, sym) for sym in exp_u]
+        u_idxs = [ModelingToolkit.variable_index(reactionsystem(lrs), sym) for sym in exp_u]
         any(length(u[u_idx]) != 1 for u_idx in u_idxs) && return true
     end
 

@@ -328,16 +328,13 @@ MT.get_metadata(lrs::LatticeReactionSystem) = MT.get_metadata(reactionsystem(lrs
 # Lattice reaction systems should not be combined with compositional modelling.
 # Maybe these should be allowed anyway? Still feel a bit weird
 function MT.get_eqs(lrs::LatticeReactionSystem) 
-    error("The `get_eqs` function is primarily relevant for composed models. LatticeReactionSystems cannot be composed, and hence this function should not be used. Please consider using `equations` instead.")
-    # MT.get_eqs(reactionsystem(lrs))
+    MT.get_eqs(reactionsystem(lrs))
 end
 function MT.get_unknowns(lrs::LatticeReactionSystem) 
-    error("The `get_unknowns` function is primarily relevant for composed models. LatticeReactionSystems cannot be composed, and hence this function should not be used. Please consider using `unknowns` instead.")
-    # MT.get_unknowns(reactionsystem(lrs))
+    MT.get_unknowns(reactionsystem(lrs))
 end
 function MT.get_ps(lrs::LatticeReactionSystem) 
-    error("The `get_ps` function is primarily relevant for composed models. LatticeReactionSystems cannot be composed, and hence this function should not be used. Please consider using `parameters` instead.")
-    # MT.get_ps(reactionsystem(lrs))
+    MT.get_ps(reactionsystem(lrs))
 end
 
 # Technically should not be used, but has to be declared for the `show` function to work.
@@ -347,7 +344,7 @@ end
 
 # Other non-relevant getters.
 function MT.independent_variables(lrs::LatticeReactionSystem)
-    error("LatticeReactionSystems are used to model a spatial systems on a discrete lattice. The `independent_variables` function is used to retrieve the independent variables of systems with time and space independent variables. LatticeReactionSystems can only have a single independent variable (the time one). If you want to retrieve this one, please consider using the `get_iv` function.)")
+    MT.independent_variables(reactionsystem(lrs))
 end
 
 ### Edge Parameter Value Generators ###
