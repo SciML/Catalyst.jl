@@ -723,7 +723,7 @@ end
     iscomplexbalanced(rs::ReactionSystem, parametermap)
 
 Constructively compute whether a network will have complex-balanced equilibrium
-solutions, following the method in van der Schaft et al., [2015](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). Accepts a dictionary, vector, or tuple ofvariable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
+solutions, following the method in van der Schaft et al., [2015](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
 
 function iscomplexbalanced(rs::ReactionSystem, parametermap::Dict) 
@@ -791,7 +791,7 @@ iscomplexbalanced(rs::ReactionSystem, parametermap) = error("Parameter map must 
 """
     ratematrix(rs::ReactionSystem, parametermap)
 
-    Given a reaction system with n complexes, outputs an n-by-n matrix where R_{ij} is the rate constant of the reaction between complex i and complex j. 
+    Given a reaction system with n complexes, outputs an n-by-n matrix where R_{ij} is the rate constant of the reaction between complex i and complex j. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
 
 function ratematrix(rs::ReactionSystem, rates::Vector{Float64}) 
@@ -809,11 +809,14 @@ function ratematrix(rs::ReactionSystem, rates::Vector{Float64})
     ratematrix
 end
 
-function ratematrix(rs::ReactionSystem, parametermap::Dict{Symbol, Float64}) 
+function ratematrix(rs::ReactionSystem, parametermap::Dict) 
     if length(parametermap) != numparams(rs) 
-        error("The number of reaction rates must be equal to the number of parameters")
+        error("Incorrect number of parameters specified.")
     end
+
     pmap = symmap_to_varmap(rs, parametermap)
+    pmap = Dict(ModelingToolkit.value(k) => v for (k,v) in pmap)
+
     rates = [substitute(rate, pmap) for rate in reactionrates(rs)]
     ratematrix(rs, rates)
 end
