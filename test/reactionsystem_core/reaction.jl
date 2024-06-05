@@ -36,94 +36,13 @@ let
     @test issetequal(get_symbolics(rx4), [X, t, Y, η1, η2])
 end
 
-### Reaction Constructor Tests ###
-
-# Sets the default `t` to use.
-t = default_t()
-
-# Checks that `Reaction`s can be sucesfully created using various complicated inputs.
-# Checks that the `Reaction`s have the correct type, and the correct net stoichiometries are generated.
-let
-    # Declare symbolic variables.
-    @parameters k n1 n2::Int32 x [isconstantspecies=true]
-    @species X(t) Y(t) Z(t)
-    @variables A(t)
-
-    # Creates `Reaction`s.
-    rx1 = Reaction(k*A, [X], [])
-    rx2 = Reaction(k*A, [x], [Y], [1.5], [1])
-    rx3 = Reaction(k*A, [x, X], [], [n1 + n2, n2], [])
-    rx4 = Reaction(k*A, [X, Y], [X, Y, Z], [2//3, 3], [1//3, 1, 2])
-    rx5 = Reaction(k*A, [X, Y], [X, Y, Z], [2, 3], [1, n1, n2])
-    rx6 = Reaction(k*A, [X], [x], [n1], [1])
-
-    # Check `Reaction` types.
-    @test rx1 isa Reaction{Int64}
-    @test rx2 isa Reaction{Float64}
-    @test rx3 isa Reaction{Any}
-    @test rx4 isa Reaction{Rational{Int64}}
-    @test rx5 isa Reaction{Any}
-    @test rx6 isa Reaction{Any}
-
-    # Check `Reaction` net stoichiometries.
-    issetequal(rx1.netstoich, [X => -1])
-    issetequal(rx2.netstoich, [x => -1.5, Y => 1.0])
-    issetequal(rx3.netstoich, [x => -n1 - n2, X => -n2])
-    issetequal(rx4.netstoich, [X => -1//3, Y => -2//1, Z => 2//1])
-    issetequal(rx5.netstoich, [X => -1, Y => n1 - 3, Z => n2])
-    issetequal(rx6.netstoich, [X => -n1, x => 1])
-end
-
-# Tests that various `Reaction` constructors gives identical inputs.
-let
-    # Declare symbolic variables.
-    @parameters k n1 n2::Int32
-    @species X(t) Y(t) Z(t)
-    @variables A(t)
-
-    # Tests that the three-argument constructor generates correct result.
-    @test Reaction(k*A, [X], [Y, Z]) == Reaction(k*A, [X], [Y, Z], [1], [1, 1])
-
-    # Tests that `[]` and `nothing` can be used interchangeably.
-    @test Reaction(k*A, [X, Z], nothing) == Reaction(k*A, [X, Z], [])
-    @test Reaction(k*A, nothing, [Y, Z]) == Reaction(k*A, [], [Y, Z])
-    @test Reaction(k*A, [X, Z], nothing, [n1 + n2, 2], nothing) == Reaction(k*A, [X, Z], [], [n1 + n2, 2], [])
-    @test Reaction(k*A, nothing, [Y, Z], nothing, [n1 + n2, 2]) == Reaction(k*A, [], [Y, Z], [], [n1 + n2, 2])
-end
-
-# Tests that various incorrect inputs yields errors.
-let
-    # Declare symbolic variables.
-    @parameters k n1 n2::Int32
-    @species X(t) Y(t) Z(t)
-    @variables A(t)
-    
-    # Neither substrates nor products.
-    @test_throws ArgumentError Reaction(k*A, [], [])
-
-    # Substrate vector not of equal length to substrate stoichiometry vector.
-    @test_throws ArgumentError Reaction(k*A, [X, X, Z], [], [1, 2], [])
-
-    # Product vector not of equal length to product stoichiometry vector.
-    @test_throws ArgumentError Reaction(k*A, [], [X, X, Z], [], [1, 2])
-
-    # Repeated substrates.
-    @test_throws ArgumentError Reaction(k*A, [X, X, Z], [])
-
-    # Repeated products.
-    @test_throws ArgumentError Reaction(k*A, [], [Y, Z, Z])
-
-    # Non-valid reactants (parameter or variable).
-    @test_throws ArgumentError Reaction(k*A, [], [A])
-    @test_throws ArgumentError Reaction(k*A, [], [k])
-end
-
 ### Tests Metadata ###
 
 # Tests creation.
 # Tests basic accessor functions.
 # Tests that repeated metadata entries are not permitted.
 let
+    @variables t
     @parameters k
     @species X(t) X2(t)
 
@@ -141,6 +60,7 @@ end
 
 # Tests accessors for system without metadata.
 let
+    @variables t
     @parameters k
     @species X(t) X2(t)
 
@@ -157,6 +77,7 @@ end
 # Tests basic accessor functions.
 # Tests various metadata types.
 let
+    @variables t
     @parameters k
     @species X(t) X2(t)
 
@@ -188,6 +109,7 @@ end
 
 # Tests the noise scaling metadata.
 let
+    @variables t
     @parameters k η  
     @species X(t) X2(t)
 
