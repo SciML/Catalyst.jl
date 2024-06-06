@@ -183,8 +183,8 @@ function Reaction(rate, subs::Vector{Q}, prods::Vector{R}, substoich::Vector{S},
     # Ensures everything have uniform and correct types.
     reactant_type = promote_type(Q, R)
     (reactant_type <: Num) && (reactant_type = Any)
-    subs = promote_reaction_vector(subs, BasicSymbolic{Real})
-    prods =  promote_reaction_vector(prods, BasicSymbolic{Real})
+    (Q <: Num) && (subs = promote_reaction_vector(subs, BasicSymbolic{Real}))
+    (R <: Num) && (prods =  promote_reaction_vector(prods, BasicSymbolic{Real}))
     stoich_type = promote_type(S, T)
     (stoich_type <: Num) && (stoich_type = Any)
     substoich = promote_reaction_vector(substoich, stoich_type)
