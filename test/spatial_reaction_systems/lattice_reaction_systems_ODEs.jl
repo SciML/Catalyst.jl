@@ -89,7 +89,7 @@ end
 # Checks that non-spatial brusselator simulation is identical to all on an unconnected lattice.
 let
     lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, unconnected_graph)
-    u0 = [:X => 2.0 + 2.0 * rand(rng), :Y => 10.0 + 10.0 * rand(rng)]
+    u0 = [:X => 2.0 + 2.0 * rand(rng), :Y => 10.0 * (1.0 * rand(rng))]
     pV = brusselator_p
     pE = [:dX => 0.2]
     oprob_nonspatial = ODEProblem(brusselator_system, u0, (0.0, 100.0), pV)

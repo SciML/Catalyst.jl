@@ -268,21 +268,28 @@ function get_transport_rate(trans_s_idx::Int64, f_func::LatticeTransportODEf, ed
     get_transport_rate(f_func.transport_rates[trans_s_idx][2], edge, f_func.t_rate_idx_types[trans_s_idx])
 end
 
-# Updates the internal work_vert_ps vector for a given vertex.
+# Updates the internal work_ps vector for a given vertex. Updates only the parameters that 
+# actually are vertex parameters.
 # To this vector, we write the system's parameter values at the specific vertex.
-function update_work_vert_ps!(work_vert_ps::Vector{S}, all_ps::Vector{T}, vert::Int64, 
-                              vert_ps_idx_types::Vector{Bool}) where {S,T}
+function update_work_vert_ps!(work_ps::Vector{S}, vert_p_idxs::Vector{Int64}, all_ps::Vector{T}, 
+                              vert::Int64, vert_ps_idx_types::Vector{Bool}) where {S,T}
     # Loops through all parameters.
     for (idx,loc_type) in enumerate(vert_ps_idx_types)
         # If the parameter is uniform across the spatial structure, it will have a length-1 value vector
         # (which value we write to the work vector).
         # Else, we extract it value at the specific location.
-        work_vert_ps[idx] = (loc_type ? all_ps[idx][1] : all_ps[idx][vert])   
+        work_ps[vert_p_idxs[idx]] = (loc_type ? all_ps[vert_p_idxs[idx]][1] : all_ps[vert_p_idxs[idx]][vert])   
     end
 end
 # Input is either a LatticeTransportODEf or LatticeTransportODEjac function (which fields we pass on).
 function update_work_vert_ps!(lt_ode_func, all_ps::Vector{T}, vert::Int64) where {T}
-    return update_work_vert_ps!(lt_ode_func.work_vert_ps, all_ps, vert, lt_ode_func.v_ps_idx_types)
+    return update_work_vert_ps!(lt_ode_func.work_ps, lt_ode_func.vert_p_idxs, all_ps, vert, lt_ode_func.v_ps_idx_types)
+end
+
+# Fetches the parameter values that currently are in the work parameter vector and which
+# corresponds to the parameters of the non-spatial `ReactionSystem` stored in the `ReactionSystem`.
+function nonspatial_ps(lt_ode_func)
+    return @view lt_ode_func.work_ps[lt_ode_func.nonspatial_rs_p_idxs]
 end
 
 # Expands a u0/p information stored in Vector{Vector{}} for to Matrix form

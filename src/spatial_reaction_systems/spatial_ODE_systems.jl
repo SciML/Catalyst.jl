@@ -8,6 +8,17 @@ struct LatticeTransportODEf{S,T}
     num_verts::Int64
     """The number of species."""
     num_species::Int64
+    """The indexes of the vertex parameters in the parameter vector (`parameters(lrs)`)."""
+    vert_p_idxs::Vector{Int64}
+    """The indexes of the edge parameters in the parameter vector (`parameters(lrs)`)."""
+    edge_p_idxs::Vector{Int64}
+    """
+    The non-spatial `ReactionSystem` which was used to create the `LatticeReactionSystem` contain
+    a set of parameters (either identical to, or a sub set of, `parameters(lrs)`). This vector
+    contain the indexes of the non-spatial system's parameters in `parameters(lrs)`. These are
+    required to manage the non-spatial ODEFunction in the spatial call.
+    """
+    nonspatial_rs_p_idxs::Vector{Int64}
     """The values of the parameters that are tied to vertices."""
     vert_ps::Vector{Vector{T}}
     """
@@ -17,10 +28,10 @@ struct LatticeTransportODEf{S,T}
     the parameter values in a new vertex. To avoid relocating these values repeatedly, we write them
     to this vector.
     """
-    work_vert_ps::Vector{T}    
+    work_ps::Vector{T}    
     """
     For each parameter in vert_ps, its value is a vector with a length of either num_verts or 1. 
-    To know whenever a parameter's value needs expanding to the work_vert_ps array, its length needs checking. 
+    To know whenever a parameter's value needs expanding to the work_ps array, its length needs checking. 
     This check is done once, and the value is stored in this array. True means a uniform value.
     """
     v_ps_idx_types::Vector{Bool}
@@ -55,7 +66,13 @@ struct LatticeTransportODEf{S,T}
         # Records which parameters and rates are uniform and which are not.
         v_ps_idx_types = map(vp -> length(vp[2]) == 1, vert_ps)
         t_rate_idx_types = map(tr -> size(tr[2]) == (1,1), transport_rates)
-        
+
+        # Computes the indexes of various parameters in in the `parameters(lrs)` vector.
+        vert_p_idxs = subset_indexes_of(vertex_parameters(lrs), parameters(lrs))
+        edge_p_idxs = subset_indexes_of(edge_parameters(lrs), parameters(lrs))
+        nonspatial_rs_p_idxs = subset_indexes_of(parameters(reactionsystem(lrs)), parameters(lrs))
+
+        # Computes the indexes of the vertex parameters in the vector of parameters.
         # Input `vert_ps` is a vector map taking each parameter symbolic to its value (potentially a 
         # vector). This vector is already sorted according to the order of the parameters. Here, we extract 
         # its values only and put them into `vert_ps`.
@@ -70,11 +87,12 @@ struct LatticeTransportODEf{S,T}
             end
         end
 
-        # Declares `work_vert_ps` (used as storage during computation) and the edge iterator.
-        work_vert_ps = zeros(length(vert_ps))
+        # Declares `work_ps` (used as storage during computation) and the edge iterator.
+        work_ps = zeros(length(parameters(lrs)))
         edge_iterator = Catalyst.edge_iterator(lrs) 
-        new{S,T}(ofunc, num_verts(lrs), num_species(lrs), vert_ps, work_vert_ps, 
-                               v_ps_idx_types, transport_rates, t_rate_idx_types, leaving_rates, edge_iterator)
+        new{S,T}(ofunc, num_verts(lrs), num_species(lrs), vert_p_idxs, edge_p_idxs, 
+                 nonspatial_rs_p_idxs, vert_ps, work_ps, v_ps_idx_types, transport_rates, 
+                 t_rate_idx_types, leaving_rates, edge_iterator)
     end
 end
 
@@ -86,6 +104,17 @@ struct LatticeTransportODEjac{R,S,T}
     num_verts::Int64
     """The number of species."""
     num_species::Int64
+    """The indexes of the vertex parameters in the parameter vector (`parameters(lrs)`)."""
+    vert_p_idxs::Vector{Int64}
+    """The indexes of the edge parameters in the parameter vector (`parameters(lrs)`)."""
+    edge_p_idxs::Vector{Int64}
+    """
+    The non-spatial `ReactionSystem` which was used to create the `LatticeReactionSystem` contain
+    a set of parameters (either identical to, or a sub set of, `parameters(lrs)`). This vector
+    contain the indexes of the non-spatial system's parameters in `parameters(lrs)`. These are
+    required to manage the non-spatial ODEFunction in the spatial call.
+    """
+    nonspatial_rs_p_idxs::Vector{Int64}
     """The values of the parameters that are tied to vertices."""
     vert_ps::Vector{Vector{S}}
     """
@@ -95,10 +124,10 @@ struct LatticeTransportODEjac{R,S,T}
     the parameter values in a new vertex. To avoid relocating these values repeatedly, we write them
     to this vector.
     """
-    work_vert_ps::Vector{S}     
+    work_ps::Vector{S}    
     """
     For each parameter in vert_ps, its value is a vector with a length of either num_verts or 1. 
-    To know whenever a parameter's value needs expanding to the work_vert_ps array, its length needs checking. 
+    To know whenever a parameter's value needs expanding to the work_ps array, its length needs checking. 
     This check is done once, and the value is stored in this array. True means a uniform value.
     """
     v_ps_idx_types::Vector{Bool}
@@ -110,16 +139,28 @@ struct LatticeTransportODEjac{R,S,T}
     function LatticeTransportODEjac(ofunc::R, vert_ps::Vector{Pair{BasicSymbolic{Real},Vector{S}}}, 
                                     jac_transport::Union{Nothing, SparseMatrixCSC{Float64, Int64}}, 
                                     lrs::LatticeReactionSystem, sparse::Bool) where {R,S}
+
+        # Computes the indexes of various parameters in in the `parameters(lrs)` vector.
+        vert_p_idxs = subset_indexes_of(vertex_parameters(lrs), parameters(lrs))
+        edge_p_idxs = subset_indexes_of(edge_parameters(lrs), parameters(lrs))
+        nonspatial_rs_p_idxs = subset_indexes_of(parameters(reactionsystem(lrs)), parameters(lrs))
+
         # Input `vert_ps` is a vector map taking each parameter symbolic to its value (potentially a 
         # vector). This vector is already sorted according to the order of the parameters. Here, we extract 
         # its values only and put them into `vert_ps`.
         vert_ps = [vp[2] for vp in vert_ps]
 
-        work_vert_ps = zeros(num_verts(lrs))
+        work_ps = zeros(length(parameters(lrs)))
         v_ps_idx_types = map(vp -> length(vp) == 1, vert_ps)
-        new{R,S,typeof(jac_transport)}(ofunc, num_verts(lrs), num_species(lrs) , vert_ps, 
-                                        work_vert_ps, v_ps_idx_types, sparse, jac_transport)
+        new{R,S,typeof(jac_transport)}(ofunc, num_verts(lrs), num_species(lrs) , vert_p_idxs, 
+                                       edge_p_idxs, nonspatial_rs_p_idxs, vert_ps, 
+                                       work_ps, v_ps_idx_types, sparse, jac_transport)
     end
+end
+
+# For each symbolic in syms1, returns a vector with their indexes in syms2.
+function subset_indexes_of(syms1, syms2)
+    [findfirst(isequal(sym1, sym2) for sym2 in syms2) for sym1 in syms1]
 end
 
 ### ODEProblem ###
@@ -155,7 +196,8 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
                              combinatoric_ratelaws, remove_conserved, checks)
 
     # Combines `vert_ps` and `edge_ps` to a single vector with values only (not a map). Creates ODEProblem.
-    ps = [p[2] for p in [vert_ps; edge_ps]]
+    pval_dict = Dict([vert_ps; edge_ps])
+    ps = [pval_dict[p] for p in parameters(lrs)]
     return ODEProblem(ofun, u0, tspan, ps, args...; kwargs...) 
 end
 
@@ -288,7 +330,7 @@ function (f_func::LatticeTransportODEf)(du, u, p, t)
         update_work_vert_ps!(f_func, p, vert_i)
         
         # Evaluate reaction contributions to du at vert_i.
-        f_func.ofunc((@view du[idxs]),  (@view u[idxs]), f_func.work_vert_ps, t)
+        f_func.ofunc((@view du[idxs]),  (@view u[idxs]), nonspatial_ps(f_func), t)
     end
 
     # s_idx is the species index among transport species, s is the index among all species.
@@ -316,7 +358,7 @@ function (jac_func::LatticeTransportODEjac)(J, u, p, t)
     for vert_i in 1:(jac_func.num_verts)
         idxs = get_indexes(vert_i, jac_func.num_species)
         update_work_vert_ps!(jac_func, p, vert_i)
-        jac_func.ofunc.jac((@view J[idxs, idxs]), (@view u[idxs]), jac_func.work_vert_ps, t)
+        jac_func.ofunc.jac((@view J[idxs, idxs]), (@view u[idxs]), nonspatial_ps(jac_func), t)
     end
 
     # Updates for the spatial reactions (adds the Jacobian values from the transportation reactions).
