@@ -76,7 +76,8 @@ end
 # returning an empty vector of the appropriate type.
 function promote_reaction_vector(vec, type)
     isempty(vec) && (return type[])
-    type[value(v) for v in vec]
+    type_vector = type[value(v) for v in vec]
+    return convert(Vector{type}, type_vector)
 end
 
 # calculates the net stoichiometry of a reaction as a vector of pairs (sub,substoich)
@@ -138,7 +139,7 @@ Notes:
 - The three-argument form assumes all reactant and product stoichiometric coefficients
   are one.
 """
-struct Reaction{T}
+struct Reaction{S,T}
     """The rate function (excluding mass action terms)."""
     rate::Any
     """Reaction substrates."""
@@ -150,7 +151,7 @@ struct Reaction{T}
     """The stoichiometric coefficients of the products."""
     prodstoich::Vector{T}
     """The net stoichiometric coefficients of all species changed by the reaction."""
-    netstoich::Vector{Pair{Any, T}}
+    netstoich::Vector{Pair{S, T}}
     """
     `false` (default) if `rate` should be multiplied by mass action terms to give the rate law.
     `true` if `rate` represents the full reaction rate law.
@@ -164,9 +165,9 @@ struct Reaction{T}
 end
 
 # Five-argument constructor accepting rate, substrates, and products, and their stoichiometries.
-function Reaction(rate, subs::Vector, prods::Vector, substoich::Vector{S}, prodstoich::Vector{T};
+function Reaction(rate, subs::Vector{Q}, prods::Vector{R}, substoich::Vector{S}, prodstoich::Vector{T};
                    netstoich = [], metadata = Pair{Symbol, Any}[], 
-                   only_use_rate = metadata_only_use_rate_check(metadata), kwargs...) where {S,T}
+                   only_use_rate = metadata_only_use_rate_check(metadata), kwargs...) where {Q,R,S,T}
     # Error checks.
     isempty(subs) && isempty(prods) &&
         throw(ArgumentError("A reaction requires either a non-empty substrate or product vector."))
@@ -180,6 +181,8 @@ function Reaction(rate, subs::Vector, prods::Vector, substoich::Vector{S}, prods
         throw(ArgumentError("Products can not be repeated in the list provided to `Reaction`, please modify the stoichiometry for any repeated products instead."))
 
     # Ensures everything have uniform and correct types.
+    reactant_type = promote_type(Q, R)
+    (reactant_type <: Num) && (reactant_type = Any)
     subs = promote_reaction_vector(subs, BasicSymbolic{Real})
     prods =  promote_reaction_vector(prods, BasicSymbolic{Real})
     stoich_type = promote_type(S, T)
@@ -192,7 +195,7 @@ function Reaction(rate, subs::Vector, prods::Vector, substoich::Vector{S}, prods
         badsts = union(filter(!isvalidreactant, subs), filter(!isvalidreactant, prods))
         throw(ArgumentError("To be a valid substrate or product, non-constant species must be declared via @species, while constant species must be parameters with the isconstantspecies metadata. The following reactants do not follow this convention:\n $badsts"))
     end
-    
+
     # Computes the net stoichiometries.
     if isempty(netstoich)
         netstoich = get_netstoich(subs, prods, substoich, prodstoich)
@@ -211,7 +214,7 @@ function Reaction(rate, subs::Vector, prods::Vector, substoich::Vector{S}, prods
     end
     metadata = convert(Vector{Pair{Symbol, Any}}, metadata)
 
-    Reaction{stoich_type}(value(rate), subs, prods, substoich, prodstoich, netstoich, only_use_rate, metadata)
+    Reaction{reactant_type, stoich_type}(value(rate), subs, prods, substoich, prodstoich, netstoich, only_use_rate, metadata)
 end
 
 # Three-argument constructor. Handles the case where no stoichiometries is given

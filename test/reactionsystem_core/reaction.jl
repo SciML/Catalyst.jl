@@ -8,40 +8,9 @@ using ModelingToolkit: value, get_variables!
 # Sets the default `t` to use.
 t = default_t()
 
-### Test Basic Accessors ###
-
-# Tests the `get_variables` function.
-let
-    # Declare symbolic variables.
-    @parameters k1 k2 n1 n2 η1 η2 p
-    @species X(t) Y(t) Z(t)
-    @variables A(t)
-    
-    # Create `Reaction`s.
-    rx1 = Reaction(k1, [], [X])
-    rx2 = Reaction(k1 + k2, [X], [Y], [1], [n1]; metadata = [:noise_scaling => η1])
-    rx3 = Reaction(k1 + k2 + A, [X], [X, Y, Z], [1], [n1 + n2, 2, 1])
-    rx4 = Reaction(X + t, [], [Y]; metadata = [:noise_scaling => η1 + η2])
-    
-    # Test `get_variables!`.
-    @test issetequal(get_variables!([value(p)], rx1), [k1, X, p])
-    @test issetequal(get_variables!([value(p)], rx2), [k1, k2, X, Y, n1, η1, p])
-    @test issetequal(get_variables!([value(p)], rx3), [k1, k2, A, X, Y, Z, n1, n2, p])
-    @test issetequal(get_variables!([value(p)], rx4), [X, t, Y, η1, η2, p])
-    
-    # Test `get_symbolics`.
-    @test issetequal(get_symbolics(rx1), [k1, X])
-    @test issetequal(get_symbolics(rx2), [k1, k2, X, Y, n1, η1])
-    @test issetequal(get_symbolics(rx3), [k1, k2, A, X, Y, Z, n1, n2])
-    @test issetequal(get_symbolics(rx4), [X, t, Y, η1, η2])
-end
-
 ### Reaction Constructor Tests ###
 
-# Sets the default `t` to use.
-t = default_t()
-
-# Checks that `Reaction`s can be sucesfully created using various complicated inputs.
+# Checks that `Reaction`s can be successfully created using various complicated inputs.
 # Checks that the `Reaction`s have the correct type, and the correct net stoichiometries are generated.
 let
     # Declare symbolic variables.
@@ -49,29 +18,32 @@ let
     @species X(t) Y(t) Z(t)
     @variables A(t)
 
-    # Creates `Reaction`s.
-    rx1 = Reaction(k*A, [X], [])
-    rx2 = Reaction(k*A, [x], [Y], [1.5], [1])
-    rx3 = Reaction(k*A, [x, X], [], [n1 + n2, n2], [])
-    rx4 = Reaction(k*A, [X, Y], [X, Y, Z], [2//3, 3], [1//3, 1, 2])
-    rx5 = Reaction(k*A, [X, Y], [X, Y, Z], [2, 3], [1, n1, n2])
-    rx6 = Reaction(k*A, [X], [x], [n1], [1])
+    # Tries for different types of rates (should not matter).
+    for rate in (k, k*A, 2, 3.0, 4//3)
+        # Creates `Reaction`s.
+        rx1 = Reaction(rate, [X], [])
+        rx2 = Reaction(rate, [x], [Y], [1.5], [1])
+        rx3 = Reaction(rate, [x, X], [], [n1 + n2, n2], [])
+        rx4 = Reaction(rate, [X, Y], [X, Y, Z], [2//3, 3], [1//3, 1, 2])
+        rx5 = Reaction(rate, [X, Y], [X, Y, Z], [2, 3], [1, n1, n2])
+        rx6 = Reaction(rate, [X], [x], [n1], [1])
 
-    # Check `Reaction` types.
-    @test rx1 isa Reaction{Int64}
-    @test rx2 isa Reaction{Float64}
-    @test rx3 isa Reaction{Any}
-    @test rx4 isa Reaction{Rational{Int64}}
-    @test rx5 isa Reaction{Any}
-    @test rx6 isa Reaction{Any}
+        # Check `Reaction` types.
+        @test rx1 isa Reaction{Any,Int64}
+        @test rx2 isa Reaction{Any,Float64}
+        @test rx3 isa Reaction{Any,Any}
+        @test rx4 isa Reaction{Any,Rational{Int64}}
+        @test rx5 isa Reaction{Any,Any}
+        @test rx6 isa Reaction{Any,Any}
 
-    # Check `Reaction` net stoichiometries.
-    issetequal(rx1.netstoich, [X => -1])
-    issetequal(rx2.netstoich, [x => -1.5, Y => 1.0])
-    issetequal(rx3.netstoich, [x => -n1 - n2, X => -n2])
-    issetequal(rx4.netstoich, [X => -1//3, Y => -2//1, Z => 2//1])
-    issetequal(rx5.netstoich, [X => -1, Y => n1 - 3, Z => n2])
-    issetequal(rx6.netstoich, [X => -n1, x => 1])
+        # Check `Reaction` net stoichiometries.
+        issetequal(rx1.netstoich, [X => -1])
+        issetequal(rx2.netstoich, [x => -1.5, Y => 1.0])
+        issetequal(rx3.netstoich, [x => -n1 - n2, X => -n2])
+        issetequal(rx4.netstoich, [X => -1//3, Y => -2//1, Z => 2//1])
+        issetequal(rx5.netstoich, [X => -1, Y => n1 - 3, Z => n2])
+        issetequal(rx6.netstoich, [X => -n1, x => 1])
+    end
 end
 
 # Tests that various `Reaction` constructors gives identical inputs.
@@ -116,6 +88,35 @@ let
     # Non-valid reactants (parameter or variable).
     @test_throws ArgumentError Reaction(k*A, [], [A])
     @test_throws ArgumentError Reaction(k*A, [], [k])
+end
+
+
+### Test Basic Accessors ###
+
+# Tests the `get_variables` function.
+let
+    # Declare symbolic variables.
+    @parameters k1 k2 n1 n2 η1 η2 p
+    @species X(t) Y(t) Z(t)
+    @variables A(t)
+    
+    # Create `Reaction`s.
+    rx1 = Reaction(k1, [], [X])
+    rx2 = Reaction(k1 + k2, [X], [Y], [1], [n1]; metadata = [:noise_scaling => η1])
+    rx3 = Reaction(k1 + k2 + A, [X], [X, Y, Z], [1], [n1 + n2, 2, 1])
+    rx4 = Reaction(X + t, [], [Y]; metadata = [:noise_scaling => η1 + η2])
+    
+    # Test `get_variables!`.
+    @test issetequal(get_variables!([value(p)], rx1), [k1, X, p])
+    @test issetequal(get_variables!([value(p)], rx2), [k1, k2, X, Y, n1, η1, p])
+    @test issetequal(get_variables!([value(p)], rx3), [k1, k2, A, X, Y, Z, n1, n2, p])
+    @test issetequal(get_variables!([value(p)], rx4), [X, t, Y, η1, η2, p])
+    
+    # Test `get_symbolics`.
+    @test issetequal(get_symbolics(rx1), [k1, X])
+    @test issetequal(get_symbolics(rx2), [k1, k2, X, Y, n1, η1])
+    @test issetequal(get_symbolics(rx3), [k1, k2, A, X, Y, Z, n1, n2])
+    @test issetequal(get_symbolics(rx4), [X, t, Y, η1, η2])
 end
 
 ### Tests Metadata ###
