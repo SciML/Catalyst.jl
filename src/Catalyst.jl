@@ -6,9 +6,9 @@ module Catalyst
 using DocStringExtensions
 using SparseArrays, DiffEqBase, Reexport, Setfield
 using LaTeXStrings, Latexify, Requires
-using JumpProcesses: JumpProcesses,
-                     JumpProblem, MassActionJump, ConstantRateJump,
-                     VariableRateJump
+using JumpProcesses: JumpProcesses, JumpProblem, 
+                     MassActionJump, ConstantRateJump, VariableRateJump,
+                     SpatialMassActionJump
 
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit
@@ -94,7 +94,6 @@ end
 include("reaction.jl")
 export isspecies
 export Reaction
-export get_noise_scaling, has_noise_scaling
 
 # The `ReactionSystem` structure and its functions.
 include("reactionsystem.jl")
@@ -167,20 +166,29 @@ export make_si_ode
 
 ### Spatial Reaction Networks ###
 
-# spatial reactions
+# Spatial reactions.
 include("spatial_reaction_systems/spatial_reactions.jl")
 export TransportReaction, TransportReactions, @transport_reaction
 export isedgeparameter
 
-# lattice reaction systems
+# Lattice reaction systems
 include("spatial_reaction_systems/lattice_reaction_systems.jl")
 export LatticeReactionSystem
 export spatial_species, vertex_parameters, edge_parameters
 
-# variosu utility functions
+# Various utility functions
 include("spatial_reaction_systems/utility.jl")
 
-# spatial lattice ode systems.
+# Specific spatial problem types.
 include("spatial_reaction_systems/spatial_ODE_systems.jl")
+include("spatial_reaction_systems/lattice_jump_systems.jl")
+
+
+### ReactionSystem Serialisation ###
+# Has to be at the end (because it uses records of all metadata declared by Catalyst).
+include("reactionsystem_serialisation/serialisation_support.jl")
+include("reactionsystem_serialisation/serialise_fields.jl")
+include("reactionsystem_serialisation/serialise_reactionsystem.jl")
+export save_reactionsystem
 
 end # module

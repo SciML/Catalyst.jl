@@ -97,9 +97,9 @@ let
     @test Symbolics.unwrap(rs_ce_de.α) isa Symbolics.BasicSymbolic{Int64}
     @test Symbolics.unwrap(rs_de.α) isa Symbolics.BasicSymbolic{Int64}
     @test Symbolics.unwrap(rs_ce_de.α) isa Symbolics.BasicSymbolic{Int64}
-    @test getdescription(rs_ce_de.A) == "A species"
-    @test getdescription(rs_de.A) == "A species"
-    @test getdescription(rs_ce_de.A) == "A species"
+    @test ModelingToolkit.getdescription(rs_ce_de.A) == "A species"
+    @test ModelingToolkit.getdescription(rs_de.A) == "A species"
+    @test ModelingToolkit.getdescription(rs_ce_de.A) == "A species"
 
     # Tests that species/variables/parameters can be accessed correctly one a MTK problem have been created.
     u0 = [X => 1]

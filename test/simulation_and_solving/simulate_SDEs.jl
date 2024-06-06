@@ -2,6 +2,7 @@
 
 # Fetch packages.
 using Catalyst, Statistics, StochasticDiffEq, Test
+using Catalyst: getnoisescaling
 
 # Sets stable rng number.
 using StableRNGs
@@ -106,7 +107,7 @@ let
         du[7, 5] = sqrt(k5 * X5 * X6)
         du[7, 6] = -sqrt(k6 * X7)
     end
-    push!(catalyst_networks, reaction_networks_constraint[9])
+    push!(catalyst_networks, reaction_networks_conserved[9])
     push!(manual_networks, (f = real_f_3, g = real_g_3, nrp = zeros(7, 6)))
     push!(u0_syms, [:X1, :X2, :X3, :X4, :X5, :X6, :X7])
     push!(ps_syms, [:k1, :k2, :k3, :k4, :k5, :k6])
@@ -243,8 +244,8 @@ let
     u0 = [:X1 => 500.0, :X2 => 500.0]
     p = [:p => 20.0, :d => 0.1, :η1 => 0.0, :η3 => 0.0, :η4 => 0.0, :k1 => 2.0, :k2 => 2.0, :par1 => 1000.0, :par2 => 1000.0]
     
-    @test getdescription(parameters(noise_scaling_network)[2]) == "Parameter par1"
-    @test getdescription(parameters(noise_scaling_network)[5]) == "Parameter η2"
+    @test ModelingToolkit.getdescription(parameters(noise_scaling_network)[2]) == "Parameter par1"
+    @test ModelingToolkit.getdescription(parameters(noise_scaling_network)[5]) == "Parameter η2"
     
     sprob = SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p)
     @test sprob.ps[:η1] == sprob.ps[:η2] == sprob.ps[:η3] == sprob.ps[:η4] == 0.0
@@ -325,8 +326,8 @@ let
     @test issetequal([X, H], species(rs))
     @test issetequal([X, H, h], unknowns(rs))
     @test issetequal([p, d, η], parameters(rs))
-    @test isequal(get_noise_scaling(reactions(rs)[1]), η*H + 1)
-    @test isequal(get_noise_scaling(reactions(rs)[2]), h)
+    @test isequal(getnoisescaling(reactions(rs)[1]), η*H + 1)
+    @test isequal(getnoisescaling(reactions(rs)[2]), h)
 end
 
 # Tests the `remake_noise_scaling` function.
@@ -369,9 +370,9 @@ let
 
     # Checks that systems have the correct noise scaling terms.
     rn = set_default_noise_scaling(rn, 0.5)
-    rn1_noise_scaling = [get_noise_scaling(rx) for rx in Catalyst.get_rxs(rn)]
-    rn2_noise_scaling = [get_noise_scaling(rx) for rx in Catalyst.get_rxs(Catalyst.get_systems(rn)[1])]
-    rn_noise_scaling = [get_noise_scaling(rx) for rx in reactions(rn)]
+    rn1_noise_scaling = [getnoisescaling(rx) for rx in Catalyst.get_rxs(rn)]
+    rn2_noise_scaling = [getnoisescaling(rx) for rx in Catalyst.get_rxs(Catalyst.get_systems(rn)[1])]
+    rn_noise_scaling = [getnoisescaling(rx) for rx in reactions(rn)]
     @test issetequal(rn1_noise_scaling, [2.0, 0.5])
     @test issetequal(rn2_noise_scaling, [5.0, 0.5])
     @test issetequal(rn_noise_scaling, [2.0, 0.5, 5.0, 0.5])
