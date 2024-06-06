@@ -392,7 +392,7 @@ let
         (kB,kD), X + Y <--> XY
     end
     save_reactionsystem("serialised_rs.jl", rs)
-    @test !ModelingToolkit.isequal(rs, include("../serialised_rs.jl"))
+    @test ModelingToolkit.isequal(rs, include("../serialised_rs.jl"))
     rm("serialised_rs.jl.jl")
 end
 
