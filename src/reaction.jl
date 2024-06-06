@@ -142,7 +142,7 @@ struct Reaction{T}
     """The rate function (excluding mass action terms)."""
     rate::Any
     """Reaction substrates."""
-    substrates::Vector{Any}
+    substrates::Vector
     """Reaction products."""
     products::Vector
     """The stoichiometric coefficients of the reactants."""
