@@ -144,7 +144,7 @@ struct Reaction{T}
     """Reaction substrates."""
     substrates::Vector{Any}
     """Reaction products."""
-    products::Vector{Any}
+    products::Vector
     """The stoichiometric coefficients of the reactants."""
     substoich::Vector
     """The stoichiometric coefficients of the products."""
