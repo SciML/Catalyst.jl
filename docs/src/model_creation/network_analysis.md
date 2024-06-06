@@ -564,6 +564,9 @@ plot(sol)
 !!! note
     Any species eliminated using `remove_conserved = true` will not be plotted by default. However, it can be added to the plot using [the `idxs` plotting option](@ref simulation_plotting_options). E.g. here we would use `plot(sol; idxs = [:X₁, :X₂])` to plot both species.
 
+!!! danger
+    Currently, there is a bug where the values associated with conservation laws are not updated properly in response to [`remake`](@ref ref) (or [other problem-updating functions, such as `getu`](@ref ref)). Hence, problems created using the `remove_conserved = true` *should not* be modified. 
+
 While `X₂` is an observable (and not unknown) of the ODE, we can [access it](@ref ref) just like if `remove_conserved = true` has not been used:
 ```@example network_analysis_conservation_laws
 sol[:X₂]
