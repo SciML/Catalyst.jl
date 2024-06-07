@@ -4,7 +4,7 @@ In previous tutorials we have described how to use [PEtab.jl](@ref petab_paramet
 ## [Maximising the pulse amplitude of an incoherent feed forward loop](@id behaviour_optimisation_IFFL_example)
 Incoherent feedforward loops (network motifs where a single component both activates and deactivates a downstream component) are able to generate pulses in response to step inputs[^2]. In this tutorial we will consider such an incoherent feedforward loop, attempting to generate a system with as prominent a response pulse as possible.
 
-Our model consists of 3 species: $X$ (the input node), $Y$ (an intermediary), and $Z$ (the output node). In it, $X$ activates the production of both $Y$ and $Z$, with $Y$ also deactivating $Z$. When $X$ is activated, there will be a brief time window where $Y$ is still inactive, and $Z$ is activated. However, as $Y$ becomes active, it will turn $Z$ off. This creates a pulse of $Z$ activity. To trigger the system, we create [an event](@ref ref), which increases the production rate of $X$ ($pX$) by a factor of $10$ at time $t = 10$.
+Our model consists of 3 species: $X$ (the input node), $Y$ (an intermediary), and $Z$ (the output node). In it, $X$ activates the production of both $Y$ and $Z$, with $Y$ also deactivating $Z$. When $X$ is activated, there will be a brief time window where $Y$ is still inactive, and $Z$ is activated. However, as $Y$ becomes active, it will turn $Z$ off. This creates a pulse of $Z$ activity. To trigger the system, we create [an event](@ref constraint_equations_events), which increases the production rate of $X$ ($pX$) by a factor of $10$ at time $t = 10$.
 ```@example behaviour_optimization
 using Catalyst
 incoherent_feed_forward = @reaction_network begin

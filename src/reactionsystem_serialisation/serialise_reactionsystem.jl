@@ -53,9 +53,9 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     file_text = ""
     
     # Goes through each type of system component, potentially adding it to the string.
-    # Species, variables, and parameters must be handled differently in case there is default-values
+    # Species, variables, and parameters must be handled differently in case there are default values
     # dependencies between them. 
-    # Systems uses custom `push_field` function as these requires the annotation `Bool`to be passed 
+    # Systems use custom `push_field` function as these require the annotation `Bool`to be passed 
     # to the function that creates the next sub-system declarations.
     file_text, _ = push_field(file_text, rn, annotate, top_level, IV_FS)
     file_text, has_sivs = push_field(file_text, rn, annotate, top_level, SIVS_FS)
@@ -68,8 +68,8 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     file_text, has_systems = push_systems_field(file_text, rn, annotate, top_level)
     file_text, has_connection_type = push_field(file_text, rn, annotate, top_level, CONNECTION_TYPE_FS)
 
-    # Finalises the system. Creates the final `ReactionSystem` call.
-    # Enclose everything ing a `let ... end` block.
+    # Finalise the system. Creates the final `ReactionSystem` call.
+    # Enclose everything in a `let ... end` block.
     rs_creation_code = make_reaction_system_call(rn, annotate, top_level, has_sivs, has_species, 
                                                  has_variables, has_parameters, has_reactions, 
                                                  has_equations, has_observed, has_continuous_events, 
@@ -82,7 +82,7 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
 end
 
 # Creates a ReactionSystem call for creating the model. Adds all the correct inputs to it. The input
-# `has_` `Bool`s described which inputs are used. If model is `complete`, this is handled here.
+# `has_` `Bool`s described which inputs are used. If the model is `complete`, this is handled here.
 function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_sivs, has_species, 
                                    has_variables, has_parameters, has_reactions, has_equations, 
                                    has_observed, has_continuous_events, has_discrete_events,

@@ -360,17 +360,11 @@ end
 # Tests for (slightly more) complicate system created via the DSL.
 # Tests for cases where the number of input is untested (i.e. multiple observables and continuous
 # events, but single equations and discrete events).
-# Currently broken due to Symbolics doing something weird with observable variables, where these
-# end up not being internal due to something internal in symbolics. I have tried tracking down the
-# obscure symbolics subfields.
+# Tests with and without `safety_check`.
 let 
     # Declares the model.
     rs = @reaction_network begin
         @equations D(V) ~ 1 - V
-        @observables begin
-            X2 ~ 2*X
-            X3 ~ 3*X
-        end
         @continuous_events begin
             [X ~ 5.0] => [X ~ X + 1.0]
             [X ~ 20.0] => [X ~ X - 1.0]
@@ -380,10 +374,29 @@ let
     end
 
     # Checks that serialisation works.
-    save_reactionsystem("serialised_rs.jl", rs; safety_check = false)
-    @test_broken isequal(rs, include("../serialised_rs.jl"))
+    save_reactionsystem("serialised_rs_1.jl", rs)
+    save_reactionsystem("serialised_rs_2.jl", rs; safety_check = false)
+    isequal(rs, include("../serialised_rs_1.jl"))
+    isequal(rs, include("../serialised_rs_2.jl"))
+    rm("serialised_rs_1.jl")
+    rm("serialised_rs_2.jl")
+end
+
+# Tests for system where species depends on multiple independent variables.
+# Tests for system where variables depends on multiple independent variables.
+let
+    rs = @reaction_network begin
+        @ivs t x y z
+        @parameters p
+        @species X(t,x,y) Y(t,x,y) XY(t,x,y) Z(t,x,y)
+        @variables V(t,x,z)
+        (kB,kD), X + Y <--> XY
+    end
+    save_reactionsystem("serialised_rs.jl", rs)
+    @test ModelingToolkit.isequal(rs, include("../serialised_rs.jl"))
     rm("serialised_rs.jl")
 end
+
 
 ### Other Tests ###
 

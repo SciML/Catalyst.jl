@@ -1,7 +1,7 @@
 # [The Catalyst DSL - Introduction](@id dsl_description)
 In the [introduction to Catalyst](@ref introduction_to_catalyst) we described how the `@reaction_network` [macro](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros) can be used to create chemical reaction network (CRN) models. This macro enables a so-called [domain-specific language](https://en.wikipedia.org/wiki/Domain-specific_language) (DSL) for creating CRN models. This tutorial will give a basic introduction on how to create Catalyst models using this macro (from now onwards called "*the Catalyst DSL*"). A [follow-up tutorial](@ref dsl_advanced_options) will describe some of the DSL's more advanced features.
 
-The Catalyst DSL generates a [`ReactionSystem`](@ref) (the [julia structure](https://docs.julialang.org/en/v1/manual/types/#Composite-Types) Catalyst uses to represent CRN models). These can be created through alternative methods (e.g. [programmatically](@ref programmatic_CRN_construction) or [compositionally](@ref compositional_modeling)). A summary of the various ways to create `ReactionSystems`s can be found [here](@ref ref). [Previous](@ref ref) and [following](@ref simulation_intro) tutorials describe how to simulate models once they have been created using the DSL. This tutorial will solely focus on model creation.
+The Catalyst DSL generates a [`ReactionSystem`](@ref) (the [julia structure](https://docs.julialang.org/en/v1/manual/types/#Composite-Types) Catalyst uses to represent CRN models). These can be created through alternative methods (e.g. [programmatically](@ref programmatic_CRN_construction) or [compositionally](@ref compositional_modeling)). A summary of the various ways to create `ReactionSystems`s can be found [here](@ref ref). [Previous](@ref introduction_to_catalyst) and [following](@ref simulation_intro) tutorials describe how to simulate models once they have been created using the DSL. This tutorial will solely focus on model creation.
 
 Before we begin, we will first load the Catalyst package (which is required to run the code).
 ```@example dsl_basics_intro
@@ -88,7 +88,7 @@ rn5 = @reaction_network begin
     kD, X2 --> 2X
 end
 ```
-Reactants whose stoichiometries are not defined are assumed to have stoichiometry `1`. Any integer number can be used, furthermore, [decimal numbers and parameters can also be used as stoichiometries](@ref dsl_description_stoichiometries). A discussion of non-unitary (i.e. not equal to `1`) stoichiometries affecting the created model can be found [here](@ref ref).
+Reactants whose stoichiometries are not defined are assumed to have stoichiometry `1`. Any integer number can be used, furthermore, [decimal numbers and parameters can also be used as stoichiometries](@ref dsl_description_stoichiometries). A discussion of non-unitary (i.e. not equal to `1`) stoichiometries affecting the created model can be found [here](@ref introduction_to_catalyst_ratelaws).
 
 Stoichiometries can be combined with `()` to define them for multiple reactants. Here, the following (mock) model declares the same reaction twice, both with and without this notation:
 ```@example dsl_basics

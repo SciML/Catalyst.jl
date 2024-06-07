@@ -265,7 +265,7 @@ brusselator = @reaction_network begin
     1, X --> ∅
 end
 ```
-It is generally known to (for reaction rate equation-based ODE simulations) produce oscillations when $B > 1 + A^2$. However, this result is based on models generated when *combinatorial adjustment of rates is not performed*. Since Catalyst [automatically perform these adjustments](@ref ref), and one reaction contains a stoichiometric constant $>1$, the threshold will be different. Here, we trial two different values of $B$. In both cases, $B < 1 + A^2$, however, in the second case the system can generate oscillations.
+It is generally known to (for reaction rate equation-based ODE simulations) produce oscillations when $B > 1 + A^2$. However, this result is based on models generated when *combinatorial adjustment of rates is not performed*. Since Catalyst [automatically perform these adjustments](@ref introduction_to_catalyst_ratelaws), and one reaction contains a stoichiometric constant $>1$, the threshold will be different. Here, we trial two different values of $B$. In both cases, $B < 1 + A^2$, however, in the second case the system can generate oscillations.
 ```@example crn_library_brusselator
 using OrdinaryDiffEq, Plots
 u0 = [:X => 1.0, :Y => 1.0]

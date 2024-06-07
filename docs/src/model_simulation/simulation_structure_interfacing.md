@@ -21,7 +21,7 @@ oprob = ODEProblem(cc_system, u0, tspan, ps)
 nothing    # hide
 ```
 
-We can find a species's (or [variable's](@ref ref)) initial condition value by simply indexing with the species of interest as input. Here we check the initial condition value of $C$:
+We can find a species's (or [variable's](@ref constraint_equations)) initial condition value by simply indexing with the species of interest as input. Here we check the initial condition value of $C$:
 ```@example structure_indexing
 oprob[:C]
 ```
