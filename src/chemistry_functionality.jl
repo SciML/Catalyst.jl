@@ -105,8 +105,9 @@ function make_compound(expr)
     isempty(ivs) && (species_expr = insert_independent_variable(species_expr, :(..)))
 
     # Expression which when evaluated gives a vector with all the ivs of the components.
-    ivs_get_expr = :(unique(reduce(vcat, [arguments(ModelingToolkit.unwrap(comp))
-        for comp in $components])))
+    ivs_get_expr = :(unique(reduce(
+        vcat, [arguments(ModelingToolkit.unwrap(comp))
+               for comp in $components])))
 
     # Creates the found expressions that will create the compound species.
     # The `Expr(:escape, :(...))` is required so that the expressions are evaluated in 

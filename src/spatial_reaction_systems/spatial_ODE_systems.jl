@@ -171,7 +171,7 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Vector{T}
             set_nonzero = true)
         if sparse
             f = LatticeTransportODEf(ofunc_sparse, vert_ps, transport_rates, edge_ps, lrs)
-            jac_vals = build_jac_prototype( ofunc_sparse.jac_prototype, transport_rates,
+            jac_vals = build_jac_prototype(ofunc_sparse.jac_prototype, transport_rates,
                 lrs; set_nonzero = true)
             J = LatticeTransportODEjac(ofunc_dense, vert_ps, lrs, jac_vals, edge_ps, true)
             jac_prototype = jac_vals
@@ -184,7 +184,7 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Vector{T}
         if sparse
             ofunc_sparse = ODEFunction(osys; jac = false, sparse = true)
             f = LatticeTransportODEf(ofunc_sparse, vert_ps, transport_rates, edge_ps, lrs)
-            jac_prototype = build_jac_prototype(ofunc_sparse.jac_prototype, 
+            jac_prototype = build_jac_prototype(ofunc_sparse.jac_prototype,
                 transport_rates, lrs; set_nonzero = false)
         else
             ofunc_dense = ODEFunction(osys; jac = false, sparse = false)

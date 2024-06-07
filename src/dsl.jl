@@ -476,8 +476,9 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
             error("Some reaction metadata fields where repeated: $(metadata_entries)")
         end
 
-        push!(reactions, ReactionStruct(get_tup_arg(sub_line, i),
-            get_tup_arg(prod_line, i), get_tup_arg(rate, i), metadata_i))
+        push!(reactions,
+            ReactionStruct(get_tup_arg(sub_line, i),
+                get_tup_arg(prod_line, i), get_tup_arg(rate, i), metadata_i))
     end
 end
 
@@ -773,8 +774,9 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 # then we get something like :([:X1, :X2]), rather than :([X1, X2]).
                 dep_var_expr = :(filter(!MT.isparameter,
                     Symbolics.get_variables($(obs_eq.args[3]))))
-                ivs_get_expr = :(unique(reduce(vcat, [arguments(MT.unwrap(dep))
-                    for dep in $dep_var_expr])))
+                ivs_get_expr = :(unique(reduce(
+                    vcat, [arguments(MT.unwrap(dep))
+                           for dep in $dep_var_expr])))
                 ivs_get_expr_sorted = :(sort($(ivs_get_expr);
                     by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $ivs_sorted)))
                 push!(observed_vars.args,
