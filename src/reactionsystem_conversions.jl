@@ -472,8 +472,8 @@ Keyword args and default values:
 function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
-        default_u0 = Dict(), default_p = Dict(), defaults = _merge(
-            Dict(default_u0), Dict(default_p)),
+        default_u0 = Dict(), default_p = Dict(), 
+        defaults = _merge(Dict(default_u0), Dict(default_p)),
         kwargs...)
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, ODESystem)
