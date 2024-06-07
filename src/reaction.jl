@@ -334,8 +334,8 @@ function MT.namespace_equation(rx::Reaction, name; kw...)
         ns = similar(rx.netstoich)
         map!(n -> f(n[1]) => f(n[2]), ns, rx.netstoich)
     end
-    Reaction(
-        rate, subs, prods, substoich, prodstoich, netstoich, rx.only_use_rate, rx.metadata)
+    Reaction(rate, subs, prods, substoich, prodstoich, netstoich, 
+        rx.only_use_rate, rx.metadata)
 end
 
 # Overwrites equation-type functions to give the correct input for `Reaction`s.
