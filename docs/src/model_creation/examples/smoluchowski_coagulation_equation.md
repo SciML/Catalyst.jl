@@ -4,13 +4,13 @@ This tutorial shows how to programmatically construct a [`ReactionSystem`](@ref)
 The Smoluchowski coagulation equation describes a system of reactions in which monomers may collide to form dimers, monomers and dimers may collide to form trimers, and so on. This models a variety of chemical/physical processes, including polymerization and flocculation.
 
 We begin by importing some necessary packages.
-```julia
+```@example smcoag1
 using ModelingToolkit, Catalyst, LinearAlgebra
 using JumpProcesses
 using Plots, SpecialFunctions
 ```
 Suppose the maximum cluster size is `N`. We assume an initial concentration of monomers, `Nₒ`, and let `uₒ` denote the initial number of monomers in the system. We have `nr` total reactions, and label by `V` the bulk volume of the system (which plays an important role in the calculation of rate laws since we have bimolecular reactions). Our basic parameters are then
-```julia
+```@example smcoag1
 # maximum cluster size
 N = 10
 
@@ -29,12 +29,13 @@ n = floor(Int, N / 2)
 
 # No. of forward reactions
 nr = ((N % 2) == 0) ? (n*(n + 1) - n) : (n*(n + 1))
+nothing #hide
 ```
 The [Smoluchowski coagulation equation](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation) Wikipedia page illustrates the set of possible reactions that can occur. We can easily enumerate the `pair`s of multimer reactants that can combine when allowing a maximal cluster size of `N` monomers. We initialize the volumes of the reactant multimers as `volᵢ` and `volⱼ`
 
-```julia
+```@example smcoag1
 # possible pairs of reactant multimers
-pair = Int[]
+pair = []
 for i = 2:N
     halfi = floor(Int, i/2)
     push!(pair, [(1:halfi)  (i .- (1:halfi))])
@@ -45,9 +46,10 @@ vⱼ = @view pair[:, 2]  # Reactant 2 indices
 volᵢ = Vₒ * vᵢ         # cm⁻³
 volⱼ = Vₒ * vⱼ         # cm⁻³
 sum_vᵢvⱼ = @. vᵢ + vⱼ  # Product index
+nothing #hide
 ```
 We next specify the rates (i.e. kernel) at which reactants collide to form products. For simplicity, we allow a user-selected additive kernel or constant kernel. The constants(`B` and `C`) are adopted from Scott's paper [2](https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml)
-```julia
+```@example smcoag1
 # set i to  1 for additive kernel, 2  for constant
 i = 1
 if i == 1
@@ -61,7 +63,7 @@ elseif i==2
 end
 ```
 We'll set the parameters and the initial condition that only monomers are present at ``t=0`` in `u₀map`.
-```julia
+```@example smcoag1
 # k is a vector of the parameters, with values given by the vector kv
 @parameters k[1:nr] = kv
 
@@ -80,9 +82,10 @@ end
 u₀    = zeros(Int64, N)
 u₀[1] = uₒ
 u₀map = Pair.(collect(X), u₀)   # map species to its initial value
+nothing #hide
 ```
 Here we generate the reactions programmatically. We systematically create Catalyst `Reaction`s for each possible reaction shown in the figure on [Wikipedia](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation). When `vᵢ[n] == vⱼ[n]`, we set the stoichiometric coefficient of the reactant multimer to two.
-```julia
+```@example smcoag1
 # vector to store the Reactions in
 rx = []
 for n = 1:nr
@@ -98,15 +101,15 @@ end
 rs = complete(rs)
 ```
 We now convert the [`ReactionSystem`](@ref) into a `ModelingToolkit.JumpSystem`, and solve it using Gillespie's direct method. For details on other possible solvers (SSAs), see the [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/types/jump_types/) documentation
-```julia
+```@example smcoag1
 # solving the system
-jumpsys = convert(JumpSystem, rs)
-dprob   = DiscreteProblem(jumpsys, u₀map, tspan)
+jumpsys = complete(convert(JumpSystem, rs))
+dprob   = DiscreteProblem(rs, u₀map, tspan)
 jprob   = JumpProblem(jumpsys, dprob, Direct(), save_positions = (false, false))
 jsol    = solve(jprob, SSAStepper(), saveat = tspan[2] / 30)
 ```
 Lets check the results for the first three polymers/cluster sizes. We compare to the analytical solution for this system:
-```julia
+```@example smcoag1
 # Results for first three polymers...i.e. monomers, dimers and trimers
 v_res = [1; 2; 3]
 
