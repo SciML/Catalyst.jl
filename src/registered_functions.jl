@@ -138,9 +138,8 @@ function expand_registered_functions(expr)
 end
 # If applied to a Reaction, return a reaction with its rate modified.
 function expand_registered_functions(rx::Reaction)
-    Reaction(
-        expand_registered_functions(rx.rate), rx.substrates, rx.products, rx.substoich,
-        rx.prodstoich, rx.netstoich, rx.only_use_rate, rx.metadata)
+    Reaction(expand_registered_functions(rx.rate), rx.substrates, rx.products, 
+        rx.substoich, rx.prodstoich, rx.netstoich, rx.only_use_rate, rx.metadata)
 end
 # If applied to a Equation, returns it with it applied to lhs and rhs
 function expand_registered_functions(eq::Equation)

@@ -61,9 +61,8 @@ struct LatticeTransportODEf{Q, R, S, T}
         # 1 if ps are constant across the graph, 0 else.
         v_ps_idx_types = map(vp -> length(vp) == 1, vert_ps)
         eds = edges(lrs.lattice)
-        new{Q, R, typeof(eds), T}(
-            ofunc, lrs.num_verts, lrs.num_species, vert_ps, work_vert_ps,
-            v_ps_idx_types, transport_rates, leaving_rates, eds, edge_ps)
+        new{Q, R, typeof(eds), T}( ofunc, lrs.num_verts, lrs.num_species, vert_ps, 
+            work_vert_ps, v_ps_idx_types, transport_rates, leaving_rates, eds, edge_ps)
     end
 end
 
@@ -160,20 +159,20 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Vector{T}
     transport_rates = make_sidxs_to_transrate_map(vert_ps, edge_ps, lrs)
 
     # Prepares the Jacobian and forcing functions (depending on jacobian and sparsity selection).
-    osys = complete(convert(
-        ODESystem, lrs.rs; name, combinatoric_ratelaws, include_zero_odes, checks))
+    osys = complete(convert(ODESystem, lrs.rs; 
+        name, combinatoric_ratelaws, include_zero_odes, checks))
     if jac
         # `build_jac_prototype` currently assumes a sparse (non-spatial) Jacobian. Hence compute this.
         # `LatticeTransportODEjac` currently assumes a dense (non-spatial) Jacobian. Hence compute this.
         # Long term we could write separate version of these functions for generic input.
         ofunc_dense = ODEFunction(osys; jac = true, sparse = false)
         ofunc_sparse = ODEFunction(osys; jac = true, sparse = true)
-        jac_vals = build_jac_prototype(
-            ofunc_sparse.jac_prototype, transport_rates, lrs; set_nonzero = true)
+        jac_vals = build_jac_prototype(ofunc_sparse.jac_prototype, transport_rates, lrs;
+            set_nonzero = true)
         if sparse
             f = LatticeTransportODEf(ofunc_sparse, vert_ps, transport_rates, edge_ps, lrs)
-            jac_vals = build_jac_prototype(
-                ofunc_sparse.jac_prototype, transport_rates, lrs; set_nonzero = true)
+            jac_vals = build_jac_prototype(ofunc_sparse.jac_prototype, transport_rates, lrs;
+                set_nonzero = true)
             J = LatticeTransportODEjac(ofunc_dense, vert_ps, lrs, jac_vals, edge_ps, true)
             jac_prototype = jac_vals
         else
@@ -185,8 +184,8 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Vector{T}
         if sparse
             ofunc_sparse = ODEFunction(osys; jac = false, sparse = true)
             f = LatticeTransportODEf(ofunc_sparse, vert_ps, transport_rates, edge_ps, lrs)
-            jac_prototype = build_jac_prototype(
-                ofunc_sparse.jac_prototype, transport_rates, lrs; set_nonzero = false)
+            jac_prototype = build_jac_prototype(ofunc_sparse.jac_prototype, transport_rates,
+                lrs; set_nonzero = false)
         else
             ofunc_dense = ODEFunction(osys; jac = false, sparse = false)
             f = LatticeTransportODEf(ofunc_dense, vert_ps, transport_rates, edge_ps, lrs)
@@ -306,8 +305,8 @@ function (jac_func::LatticeTransportODEjac)(J, u, p, t)
     # Update the Jacobian from reaction terms
     for vert_i in 1:(jac_func.num_verts)
         idxs = get_indexes(vert_i, jac_func.num_species)
-        vert_ps = view_vert_ps_vector!(
-            jac_func.work_vert_ps, p, vert_i, enumerate(jac_func.v_ps_idx_types))
+        vert_ps = view_vert_ps_vector!(jac_func.work_vert_ps, p, vert_i,
+            enumerate(jac_func.v_ps_idx_types))
         jac_func.ofunc.jac((@view J[idxs, idxs]), (@view u[idxs]), vert_ps, t)
     end
 

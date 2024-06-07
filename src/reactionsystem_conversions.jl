@@ -607,8 +607,8 @@ function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
     ists, ispcs = get_indep_sts(flatrs, remove_conserved)
     eqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws, include_zero_odes,
         remove_conserved)
-    noiseeqs = assemble_diffusion(
-        flatrs, ists, ispcs; combinatoric_ratelaws, remove_conserved)
+    noiseeqs = assemble_diffusion(flatrs, ists, ispcs; 
+        combinatoric_ratelaws, remove_conserved)
     eqs, us, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
 
     if any(isbc, get_unknowns(flatrs))

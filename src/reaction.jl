@@ -367,9 +367,6 @@ encountered in:
     - Among potential noise scaling metadata.
 """
 function ModelingToolkit.get_variables!(set, rx::Reaction)
-    if isdefined(Main, :Infiltrator)
-        Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
-    end
     get_variables!(set, rx.rate)
     foreach(sub -> push!(set, sub), rx.substrates)
     foreach(prod -> push!(set, prod), rx.products)

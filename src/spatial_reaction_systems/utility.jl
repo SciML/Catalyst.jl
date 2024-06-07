@@ -94,8 +94,8 @@ end
 
 # If the input is given in a map form, the vector needs sorting and the first value removed. 
 # The creates a Vector{Vector{Value}} or Vector{value} form, which is then again sent to lattice_process_input for reprocessing.
-function lattice_process_input(
-        input::Vector{<:Pair}, syms::Vector{BasicSymbolic{Real}}, args...)
+function lattice_process_input(input::Vector{<:Pair}, syms::Vector{BasicSymbolic{Real}},
+        args...)
     if !isempty(setdiff(first.(input), syms))
         error("Some input symbols are not recognised: $(setdiff(first.(input), syms)).")
     end
@@ -119,9 +119,9 @@ function lattice_process_input(input::Vector{<:Any}, args...)
         args...)
 end
 # If the input is of the correct form already, return it.
-function lattice_process_input(
-        input::Vector{<:Vector}, syms::Vector{BasicSymbolic{Real}}, n::Int64)
-    input
+function lattice_process_input(input::Vector{<:Vector}, syms::Vector{BasicSymbolic{Real}},
+        n::Int64)
+    return input
 end
 
 # Checks that a value vector have the right length, as well as that of all its sub vectors. 
@@ -142,8 +142,8 @@ end
 # If transport parameters are given with n values, we want to use the same value for both directions.
 # Since the order of edges in the new graph is non-trivial, this function 
 # distributes the n input values to a 2n length vector, putting the correct value in each position.
-function duplicate_trans_params!(
-        edge_ps::Vector{Vector{Float64}}, lrs::LatticeReactionSystem)
+function duplicate_trans_params!(edge_ps::Vector{Vector{Float64}},
+        lrs::LatticeReactionSystem)
     cum_adjacency_counts = [0; cumsum(length.(lrs.lattice.fadjlist[1:(end - 1)]))]
     for idx in 1:length(edge_ps)
         #  If the edge parameter already values for each directed edge, we can continue.
@@ -235,14 +235,11 @@ end
 # If the rate is uniform across all edges, the vector will be length 1 (with this value),
 # else there will be a separate value for each edge.
 # Pair{Int64, Vector{T}}[] is required in case vector is empty (otherwise it becomes Any[], causing type error later).
-function make_sidxs_to_transrate_map(
-        vert_ps::Vector{Vector{Float64}}, edge_ps::Vector{Vector{T}},
-        lrs::LatticeReactionSystem) where {T}
+function make_sidxs_to_transrate_map(vert_ps::Vector{Vector{Float64}},
+        edge_ps::Vector{Vector{T}}, lrs::LatticeReactionSystem) where {T}
     transport_rates_speciesmap = compute_all_transport_rates(vert_ps, edge_ps, lrs)
-    return Pair{Int64, Vector{T}}[
-                                  speciesmap(lrs.rs)[spat_rates[1]] => spat_rates[2]
-                                  for spat_rates in transport_rates_speciesmap
-                                  ]
+    return Pair{Int64, Vector{T}}[speciesmap(lrs.rs)[spat_rates[1]] => spat_rates[2]
+                                  for spat_rates in transport_rates_speciesmap]
 end
 
 ### Accessing Unknown & Parameter Array Values ###
@@ -251,7 +248,7 @@ end
 get_index(vert::Int64, s::Int64, num_species::Int64) = (vert - 1) * num_species + s
 # Gets the indexes in the u array of all species in vertex vert (when their are num_species species).
 function get_indexes(vert::Int64, num_species::Int64)
-    ((vert - 1) * num_species + 1):(vert * num_species)
+    return ((vert - 1) * num_species + 1):(vert * num_species)
 end
 
 # For vectors of length 1 or n, we want to get value idx (or the one value, if length is 1).
@@ -265,31 +262,31 @@ end
 # The first two function takes the full value vector, and call the function of at the components specific index.
 function get_component_value(values::Vector{<:Vector}, component_idx::Int64,
         location_idx::Int64)
-    get_component_value(values[component_idx], location_idx)
+    return get_component_value(values[component_idx], location_idx)
 end
 # Sometimes we have pre-computed, for each component, whether it's vector is length 1 or not.
 # This is stored in location_types.
 function get_component_value(values::Vector{<:Vector}, component_idx::Int64,
         location_idx::Int64, location_types::Vector{Bool})
-    get_component_value(values[component_idx], location_idx, location_types[component_idx])
+    return get_component_value(values[component_idx], location_idx, location_types[component_idx])
 end
 # For a components value (which is a vector of either length 1 or some other length), retrieves its value.
 function get_component_value(values::Vector{<:Number}, location_idx::Int64)
-    get_component_value(values, location_idx, length(values) == 1)
+    return get_component_value(values, location_idx, length(values) == 1)
 end
 # Again, the location type (length of the value vector) may be pre-computed.
 function get_component_value(values::Vector{<:Number}, location_idx::Int64,
         location_type::Bool)
-    location_type ? values[1] : values[location_idx]
+    return location_type ? values[1] : values[location_idx]
 end
 
 # Converts a vector of vectors to a long vector.
 # These are used when the initial condition is converted to a single vector (from vector of vector form).
 function expand_component_values(values::Vector{<:Vector}, n)
-    vcat([get_component_value.(values, comp) for comp in 1:n]...)
+    return vcat([get_component_value.(values, comp) for comp in 1:n]...)
 end
 function expand_component_values(values::Vector{<:Vector}, n, location_types::Vector{Bool})
-    vcat([get_component_value.(values, comp, location_types) for comp in 1:n]...)
+    return vcat([get_component_value.(values, comp, location_types) for comp in 1:n]...)
 end
 
 # Creates a view of the vert_ps vector at a given location.
@@ -308,7 +305,7 @@ end
 # Expands a u0/p information stored in Vector{Vector{}} for to Matrix form
 # (currently only used in Spatial Jump systems).
 function matrix_expand_component_values(values::Vector{<:Vector}, n)
-    reshape(expand_component_values(values, n), length(values), n)
+    return reshape(expand_component_values(values, n), length(values), n)
 end
 
 # For an expression, computes its values using the provided state and parameter vectors.
@@ -388,8 +385,8 @@ end
 
 # For a Symbolic expression, a LatticeReactionSystem, and a parameter list of the internal format (vector of vectors):
 # Checks if any vertex parameter in the expression have a spatial component (that is, is not uniform).
-function has_spatial_vertex_component(
-        exp, lrs::LatticeReactionSystem; u = nothing, vert_ps = nothing)
+function has_spatial_vertex_component(exp, lrs::LatticeReactionSystem;
+        u = nothing, vert_ps = nothing)
     # Finds all the symbols in the expression.
     exp_syms = Symbolics.get_variables(exp)
 

@@ -20,8 +20,8 @@ function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     # Both vert_ps and edge_ps becomes vectors of vectors. Each have 1 element for each parameter. 
     # These elements are length 1 vectors (if the parameter is uniform), 
     # or length num_verts/nE, with unique values for each vertex/edge (for vert_ps/edge_ps, respectively).
-    vert_ps, edge_ps = lattice_process_p(
-        p_in, vertex_parameters(lrs), edge_parameters(lrs), lrs)
+    vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs), 
+        edge_parameters(lrs), lrs)
 
     # Returns a DiscreteProblem.
     # Previously, a Tuple was used for (vert_ps, edge_ps), but this was converted to a Vector internally.
@@ -29,8 +29,8 @@ function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0_in, tspan,
 end
 
 # Builds a spatial JumpProblem from a DiscreteProblem containg a Lattice Reaction System.
-function JumpProcesses.JumpProblem(
-        lrs::LatticeReactionSystem, dprob, aggregator, args...; name = nameof(lrs.rs),
+function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator, 
+        args...; name = nameof(lrs.rs), 
         combinatoric_ratelaws = get_combinatoric_ratelaws(lrs.rs), kwargs...)
     # Error checks.
     if !isnothing(dprob.f.sys)
@@ -83,8 +83,8 @@ end
 # Not sure if there is any form of performance improvement from that though. Possibly is not the case.
 function make_spatial_majumps(dprob, lrs::LatticeReactionSystem)
     # Creates a vector, storing which reactions have spatial components.
-    is_spatials = [Catalyst.has_spatial_vertex_component(
-                       rx.rate, lrs; vert_ps = dprob.p[1]) for rx in reactions(lrs.rs)]
+    is_spatials = [Catalyst.has_spatial_vertex_component(rx.rate, lrs; 
+        vert_ps = dprob.p[1]) for rx in reactions(lrs.rs)]
 
     # Creates templates for the rates (uniform and spatial) and the stoichiometries.
     # We cannot fetch reactant_stoich and net_stoich from a (non-spatial) MassActionJump.
@@ -107,8 +107,8 @@ function make_spatial_majumps(dprob, lrs::LatticeReactionSystem)
     # Loops through reactions with spatial rates, computes their rates and stoichiometries.
     for (is_spat, rx) in zip(is_spatials, reactions(lrs.rs))
         is_spat || continue
-        s_rates[cur_rx - length(u_rates), :] = compute_vertex_value(
-            rx.rate, lrs; vert_ps = dprob.p[1])
+        s_rates[cur_rx - length(u_rates), :] = compute_vertex_value(rx.rate, lrs; 
+            vert_ps = dprob.p[1])
         substoich_map = Pair.(rx.substrates, rx.substoich)
         reactant_stoich[cur_rx] = int_map(substoich_map, lrs.rs)
         net_stoich[cur_rx] = int_map(rx.netstoich, lrs.rs)

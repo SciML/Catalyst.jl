@@ -82,7 +82,7 @@ function find_varinfo_in_declaration(expr)
         # Case: X(t) = 1.0        
         (expr.args[1].head == :call) &&
             (return expr.args[1].args[1], expr.args[1].args[2:end], expr.args[2].args[1],
-            nothing)
+                nothing)
     end
     if expr.head == :tuple
         # Case: X, [metadata=true]
@@ -90,7 +90,7 @@ function find_varinfo_in_declaration(expr)
         # Case: X(t), [metadata=true]
         (expr.args[1].head == :call) &&
             (return expr.args[1].args[1], expr.args[1].args[2:end], nothing, expr.args[2])
-        if (expr.args[1].head == :(=))
+        if expr.args[1].head == :(=)
             # Case: X = 1.0, [metadata=true]
             (expr.args[1].args[1] isa Symbol) &&
                 (return expr.args[1].args[1], [], expr.args[1].args[2], expr.args[2])

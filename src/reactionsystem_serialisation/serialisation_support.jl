@@ -69,8 +69,8 @@ end
 
 # Converts a numeric expression (e.g. p*X + 2Y) to a string (e.g. "p*X + 2Y"). Also ensures that for
 # any variables (e.g. X(t)) the call part is stripped, and only variable name (e.g. X) is written.
-function expression_2_string(
-        expr; strip_call_dict = make_strip_call_dict(Symbolics.get_variables(expr)))
+function expression_2_string(expr; 
+        strip_call_dict = make_strip_call_dict(Symbolics.get_variables(expr)))
     strip_called_expr = substitute(expr, strip_call_dict)
     return repr(strip_called_expr)
 end
@@ -89,8 +89,8 @@ function syms_2_declaration_string(syms; multiline_format = false)
     decs_string = (multiline_format ? " begin" : "")
     for sym in syms
         delimiter = (multiline_format ? "\n\t" : " ")
-        @string_append! decs_string delimiter sym_2_declaration_string(
-            sym; multiline_format)
+        @string_append! decs_string delimiter sym_2_declaration_string(sym; 
+            multiline_format)
     end
     multiline_format && (@string_append! decs_string "\nend")
     return decs_string
@@ -109,7 +109,7 @@ function sym_2_declaration_string(sym; multiline_format = false)
     if !(sym isa SymbolicUtils.BasicSymbolic{Real})
         sym_type = String(Symbol(typeof(Symbolics.unwrap(sym))))
         if (get_substring(sym_type, 1, 28) != "SymbolicUtils.BasicSymbolic{") ||
-           (get_char_end(sym_type, 0) != '}')
+                (get_char_end(sym_type, 0) != '}')
             error("Encountered symbolic of unexpected type: $sym_type.")
         end
         @string_append! dec_string "::" get_substring_end(sym_type, 29, -1)

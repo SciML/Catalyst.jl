@@ -26,6 +26,6 @@ function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
     nsys = complete(nsys)
 
     # Makes BifurcationProblem (this call goes through the ModelingToolkit-based BifurcationKit extension).
-    return BK.BifurcationProblem(
-        nsys, u0_bif, ps, bif_par, args...; plot_var, record_from_solution, jac, kwargs...)
+    return BK.BifurcationProblem(nsys, u0_bif, ps, bif_par, args...; plot_var, 
+        record_from_solution, jac, kwargs...)
 end

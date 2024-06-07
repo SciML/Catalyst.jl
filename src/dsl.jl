@@ -87,9 +87,7 @@ macro species(ex...)
     resize!(vars.args, idx + length(lastarg.args) + 1)
     for sym in lastarg.args
         vars.args[idx] = :($sym = ModelingToolkit.wrap(setmetadata(
-            ModelingToolkit.value($sym),
-            Catalyst.VariableSpecies,
-            true)))
+            ModelingToolkit.value($sym), Catalyst.VariableSpecies, true)))
         idx += 1
     end
 
@@ -419,11 +417,11 @@ function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(u
             push_reactions!(reactions, reaction.args[3], reaction.args[2],
                 rate.args[2], metadata.args[2], arrow)
         elseif in(arrow, fwd_arrows)
-            push_reactions!(
-                reactions, reaction.args[2], reaction.args[3], rate, metadata, arrow)
+            push_reactions!( reactions, reaction.args[2], reaction.args[3], 
+                rate, metadata, arrow)
         elseif in(arrow, bwd_arrows)
-            push_reactions!(
-                reactions, reaction.args[3], reaction.args[2], rate, metadata, arrow)
+            push_reactions!(reactions, reaction.args[3], reaction.args[2],
+                rate, metadata, arrow)
         else
             throw("Malformed reaction, invalid arrow type used in: $(MacroTools.striplines(line))")
         end
@@ -437,8 +435,9 @@ function read_reaction_line(line::Expr)
     # Special routine required for  the`-->` case, which creates different expression from all other cases.
     rate = line.args[1]
     reaction = line.args[2]
-    (reaction.head == :-->) &&
-        (reaction = Expr(:call, :→, reaction.args[1], reaction.args[2]))
+    if reaction.head == :-->
+        reaction = Expr(:call, :→, reaction.args[1], reaction.args[2])
+    end
     arrow = reaction.args[1]
 
     # Handles metadata. If not provided, empty metadata is created.
@@ -455,9 +454,8 @@ end
 
 # Takes a reaction line and creates reaction(s) from it and pushes those to the reaction array.
 # Used to create multiple reactions from, for instance, `k, (X,Y) --> 0`.
-function push_reactions!(
-        reactions::Vector{ReactionStruct}, sub_line::ExprValues, prod_line::ExprValues,
-        rate::ExprValues, metadata::ExprValues, arrow::Symbol)
+function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues,
+        prod_line::ExprValues, rate::ExprValues, metadata::ExprValues, arrow::Symbol)
     # The rates, substrates, products, and metadata may be in a tupple form (e.g. `k, (X,Y) --> 0`).
     # This finds the length of these tuples (or 1 if not in tuple forms). Errors if lengs inconsistent.
     lengs = (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate), tup_leng(metadata))
@@ -478,9 +476,8 @@ function push_reactions!(
             error("Some reaction metadata fields where repeated: $(metadata_entries)")
         end
 
-        push!(reactions,
-            ReactionStruct(get_tup_arg(sub_line, i), get_tup_arg(prod_line, i),
-                get_tup_arg(rate, i), metadata_i))
+        push!(reactions, ReactionStruct(get_tup_arg(sub_line, i), 
+            get_tup_arg(prod_line, i), get_tup_arg(rate, i), metadata_i))
     end
 end
 
@@ -630,8 +627,9 @@ end
 # Read the events (continious or discrete) provided as options to the DSL. Returns an expression which evalutes to these.
 function read_events_option(options, event_type::Symbol)
     # Prepares the events, if required to, converts them to block form.
-    (event_type in [:continuous_events, :discrete_events]) ||
+    if event_type ∉ [:continuous_events, :discrete_events]
         error("Trying to read an unsupported event type.")
+    end
     events_input = haskey(options, event_type) ? options[event_type].args[3] :
                    MacroTools.striplines(:(begin end))
     events_input = option_block_form(events_input)
@@ -642,11 +640,11 @@ function read_events_option(options, event_type::Symbol)
         # Formatting error checks.
         # NOTE: Maybe we should move these deeper into the system (rather than the DSL), throwing errors more generally?
         if (arg isa Expr) && (arg.head != :call) || (arg.args[1] != :(=>)) ||
-           length(arg.args) != 3
+                (length(arg.args) != 3)
             error("Events should be on form `condition => affect`, separated by a `=>`. This appears not to be the case for: $(arg).")
         end
         if (arg isa Expr) && (arg.args[2] isa Expr) && (arg.args[2].head != :vect) &&
-           (event_type == :continuous_events)
+                (event_type == :continuous_events)
             error("The condition part of continious events (the left-hand side) must be a vector. This is not the case for: $(arg).")
         end
         if (arg isa Expr) && (arg.args[3] isa Expr) && (arg.args[3].head != :vect)
@@ -670,8 +668,8 @@ function read_equations_options(options, variables_declared)
     eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
     eqs_input = option_block_form(eqs_input)
     equations = Expr[]
-    ModelingToolkit.parse_equations!(
-        Expr(:block), equations, Dict{Symbol, Any}(), eqs_input)
+    ModelingToolkit.parse_equations!(Expr(:block), equations, 
+        Dict{Symbol, Any}(), eqs_input)
 
     # Loops through all equations, checks for lhs of the form `D(X) ~ ...`.
     # When this is the case, the variable X and differential D are extracted (for automatic declaration).
@@ -689,7 +687,7 @@ function read_equations_options(options, variables_declared)
         lhs = eq.args[2]
         # if lhs: is an expression. Is a function call. The function's name is D. Calls a single symbol.
         if (lhs isa Expr) && (lhs.head == :call) && (lhs.args[1] == :D) &&
-           (lhs.args[2] isa Symbol)
+                (lhs.args[2] isa Symbol)
             diff_var = lhs.args[2]
             if in(diff_var, forbidden_symbols_error)
                 error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
@@ -749,7 +747,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 error("An observable ($obs_name) was given independent variable(s). These should not be given, as they are inferred automatically.")
             isnothing(defaults) ||
                 error("An observable ($obs_name) was given a default value. This is forbidden.")
-            in(obs_name, forbidden_symbols_error) &&
+            (obs_name in forbidden_symbols_error) &&
                 error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
 
             # Error checks.
@@ -757,7 +755,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 error("An interpoalted observable have been used, which has also been explicitly delcared within the system using eitehr @species or @variables. This is not permited.")
             end
             if ((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2])) &&
-               !isnothing(metadata)
+                    !isnothing(metadata)
                 error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the obervable was also declared separately (using either @species or @variables). When this is done, metadata should instead be provided within the original @species or @variable declaration.")
             end
 
@@ -773,10 +771,10 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 # Adds a line to the `observed_vars` expression, setting the ivs for this observable.
                 # Cannot extract directly using e.g. "getfield.(dependants_structs, :reactant)" because
                 # then we get something like :([:X1, :X2]), rather than :([X1, X2]).
-                dep_var_expr = :(filter(
-                    !MT.isparameter, Symbolics.get_variables($(obs_eq.args[3]))))
-                ivs_get_expr = :(unique(reduce(
-                    vcat, [arguments(MT.unwrap(dep)) for dep in $dep_var_expr])))
+                dep_var_expr = :(filter(!MT.isparameter, 
+                    Symbolics.get_variables($(obs_eq.args[3]))))
+                ivs_get_expr = :(unique(reduce(vcat, [arguments(MT.unwrap(dep))
+                    for dep in $dep_var_expr])))
                 ivs_get_expr_sorted = :(sort($(ivs_get_expr);
                     by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $ivs_sorted)))
                 push!(observed_vars.args,

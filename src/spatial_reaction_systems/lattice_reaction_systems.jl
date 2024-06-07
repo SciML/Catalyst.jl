@@ -47,8 +47,8 @@ struct LatticeReactionSystem{S, T} # <: MT.AbstractTimeDependentSystem
         if isempty(spatial_reactions)
             spat_species = Vector{BasicSymbolic{Real}}[]
         else
-            spat_species = unique(reduce(
-                vcat, [spatial_species(sr) for sr in spatial_reactions]))
+            spat_species = unique(reduce(vcat, 
+                [spatial_species(sr) for sr in spatial_reactions]))
         end
         num_species = length(unique([species(rs); spat_species]))
         rs_edge_parameters = filter(isedgeparameter, parameters(rs))
@@ -63,9 +63,9 @@ struct LatticeReactionSystem{S, T} # <: MT.AbstractTimeDependentSystem
         # Ensures the parameter order begins similarly to in the non-spatial ReactionSystem.
         ps = [parameters(rs); setdiff([edge_parameters; vertex_parameters], parameters(rs))]
 
-        foreach(
-            sr -> check_spatial_reaction_validity(rs, sr; edge_parameters = edge_parameters),
-            spatial_reactions)
+        for sr in spatial_reactions
+            check_spatial_reaction_validity(rs, sr; edge_parameters = edge_parameters)
+        end
         return new{S, T}(
             rs, spatial_reactions, lattice, nv(lattice), ne(lattice), num_species,
             init_digraph, spat_species, ps, vertex_parameters, edge_parameters)

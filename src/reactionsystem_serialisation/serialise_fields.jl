@@ -43,8 +43,8 @@ SIVS_FS = (has_sivs, get_sivs_string, get_sivs_annotation)
 
 # Function which handles the addition of species, variable, and parameter declarations to the file
 # text. These must be handled as a unity in case there are default value dependencies between these.
-function handle_us_n_ps(
-        file_text::String, rn::ReactionSystem, annotate::Bool, top_level::Bool)
+function handle_us_n_ps(file_text::String, rn::ReactionSystem, 
+        annotate::Bool, top_level::Bool)
     # Fetches the systems parameters, species, and variables. Computes the `has_` `Bool`s.
     ps_all = get_ps(rn)
     sps_all = get_species(rn)
@@ -102,12 +102,12 @@ function handle_us_n_ps(
         while !(isempty(remaining_ps) && isempty(remaining_sps) && isempty(remaining_vars))
             # Checks which parameters/species/variables can be written. The `dependency_split`
             # function updates the `remaining_` input.
-            writable_ps = dependency_split!(
-                remaining_ps, [remaining_ps; remaining_sps; remaining_vars])
-            writable_sps = dependency_split!(
-                remaining_sps, [remaining_ps; remaining_sps; remaining_vars])
-            writable_vars = dependency_split!(
-                remaining_vars, [remaining_ps; remaining_sps; remaining_vars])
+            writable_ps = dependency_split!(remaining_ps, 
+                [remaining_ps; remaining_sps; remaining_vars])
+            writable_sps = dependency_split!(remaining_sps, 
+                [remaining_ps; remaining_sps; remaining_vars])
+            writable_vars = dependency_split!(remaining_vars, 
+                [remaining_ps; remaining_sps; remaining_vars])
 
             # Writes those that can be written.
             isempty(writable_ps) ||
@@ -409,8 +409,8 @@ function get_continuous_events_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 -related functions in a constant tuple.
-CONTINUOUS_EVENTS_FS = (
-    has_continuous_events, get_continuous_events_string, get_continuous_events_annotation)
+CONTINUOUS_EVENTS_FS = (has_continuous_events, get_continuous_events_string, 
+    get_continuous_events_annotation)
 
 ### Handles Discrete Events ###
 
@@ -466,16 +466,16 @@ function get_discrete_events_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 -related functions in a constant tuple.
-DISCRETE_EVENTS_FS = (
-    has_discrete_events, get_discrete_events_string, get_discrete_events_annotation)
+DISCRETE_EVENTS_FS = (has_discrete_events, get_discrete_events_string, 
+    get_discrete_events_annotation)
 
 ### Handles Systems ###
 
 # Specific `push_field` function, which is used for the system field (where the annotation option
 # must be passed to the `get_component_string` function). Since non-ReactionSystem systems cannot be 
 # written to file, this functions throws an error if any such systems are encountered.
-function push_systems_field(
-        file_text::String, rn::ReactionSystem, annotate::Bool, top_level::Bool)
+function push_systems_field(file_text::String, rn::ReactionSystem, 
+        annotate::Bool, top_level::Bool)
     # Checks whther there are any subsystems, and if these are ReactionSystems.
     has_systems(rn) || (return (file_text, false))
     if any(!(system isa ReactionSystem) for system in MT.get_systems(rn))
@@ -502,8 +502,9 @@ function get_systems_string(rn::ReactionSystem, annotate::Bool)
 
     # Loops through all systems, adding their declaration to the system string.
     for (idx, system) in enumerate(MT.get_systems(rn))
-        annotate &&
-            (@string_append! systems_string "\n\n# Declares subsystem: $(getname(system))")
+        if annotate
+            @string_append! systems_string "\n\n# Declares subsystem: $(getname(system))"
+        end
 
         # Manipulates the subsystem declaration to make it nicer.
         subsystem_string = get_full_system_string(system, annotate, false)
@@ -541,5 +542,5 @@ function get_connection_type_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 connection types-related functions in a constant tuple.
-CONNECTION_TYPE_FS = (
-    has_connection_type, get_connection_type_string, get_connection_type_annotation)
+CONNECTION_TYPE_FS = (has_connection_type, get_connection_type_string, 
+    get_connection_type_annotation)

@@ -462,9 +462,9 @@ end
 # the model creation) and creates the corresponding vectors. 
 # While species are ordered before variables in the unknowns vector, this ordering is not imposed here,
 # but carried out at a later stage.
-function make_ReactionSystem_internal(
-        rxs_and_eqs::Vector, iv, us_in, ps_in; spatial_ivs = nothing,
-        continuous_events = [], discrete_events = [], observed = [], kwargs...)
+function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
+        spatial_ivs = nothing, continuous_events = [], discrete_events = [], 
+        observed = [], kwargs...)
 
     # Filters away any potential obervables from `states` and `spcs`.
     obs_vars = [obs_eq.lhs for obs_eq in observed]
