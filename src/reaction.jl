@@ -162,6 +162,12 @@ end
 function Reaction(rate, subs, prods, substoich, prodstoich;
         netstoich = nothing, metadata = Pair{Symbol, Any}[],
         only_use_rate = metadata_only_use_rate_check(metadata), kwargs...)
+    # Handles empty/nothing vectors.
+    isnothing(subs) || isempty(subs) && (subs = nothing)
+    isnothing(prods) || isempty(prods) && (prods = nothing)
+    isnothing(prodstoich) || isempty(prodstoich) && (prodstoich = nothing)
+    isnothing(substoich) || isempty(substoich) && (substoich = nothing)
+
     (isnothing(prods) && isnothing(subs)) &&
         throw(ArgumentError("A reaction requires a non-nothing substrate or product vector."))
     (isnothing(prodstoich) && isnothing(substoich)) &&
