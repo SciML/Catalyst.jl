@@ -285,7 +285,7 @@ For details on what information can be specified via the DSL see the [The
 Reaction DSL](@ref dsl_description) tutorial.
 
 ---
-## Reaction rate laws used in simulations
+## [Reaction rate laws used in simulations](@id introduction_to_catalyst_ratelaws)
 In generating mathematical models from a [`ReactionSystem`](@ref), reaction
 rates are treated as *microscopic* rates. That is, for a general mass action
 reaction of the form $n_1 S_1 + n_2 S_2 + \dots n_M S_M \to \dots$ with

@@ -52,7 +52,7 @@ complete(rs)
 end
 ```
 !!! note
-    The code that `save_reactionsystem` prints uses [programmatic modelling](@ref ref) to generate the written model. 
+    The code that `save_reactionsystem` prints uses [programmatic modelling](@ref programmatic_CRN_construction) to generate the written model. 
 
 In addition to transferring models between Julia sessions, the `save_reactionsystem` function can also be used or print a model to a text file where you can easily inspect its components.
 
