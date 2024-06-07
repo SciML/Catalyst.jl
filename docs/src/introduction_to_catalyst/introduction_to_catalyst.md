@@ -12,9 +12,9 @@ We first import the basic packages we'll need:
 
 ```@example tut1
 # If not already installed, first hit "]" within a Julia REPL. Then type:
-# add Catalyst DifferentialEquations Plots Latexify
+# add Catalyst OrdinaryDiffEq Plots Latexify
 
-using Catalyst, DifferentialEquations, Plots, Latexify
+using Catalyst, OrdinaryDiffEq, Plots, Latexify
 ```
 
 We now construct the reaction network. The basic types of arrows and predefined
@@ -160,7 +160,7 @@ underlying problem.
 
 At this point we are all set to solve the ODEs. We can now use any ODE solver
 from within the
-[DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/)
+[OrdinaryDiffEq.jl](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/)
 package. We'll use the recommended default explicit solver, `Tsit5()`, and then
 plot the solutions:
 
@@ -169,7 +169,7 @@ sol = solve(oprob, Tsit5(), saveat=10.)
 plot(sol)
 ```
 We see the well-known oscillatory behavior of the repressilator! For more on the
-choices of ODE solvers, see the [DifferentialEquations.jl
+choices of ODE solvers, see the [OrdinaryDiffEq.jl
 documentation](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/).
 
 ---
@@ -182,6 +182,9 @@ Gillespie's `Direct` method, and then solve it to generate one realization of
 the jump process:
 
 ```@example tut1
+# imports the JumpProcesses packages 
+using JumpProcesses
+
 # redefine the initial condition to be integer valued
 u₀map = [:m₁ => 0, :m₂ => 0, :m₃ => 0, :P₁ => 20, :P₂ => 0, :P₃ => 0]
 
@@ -237,6 +240,9 @@ model by creating an `SDEProblem` and solving it similarly to what we did for OD
 above:
 
 ```@example tut1
+# imports the StochasticDiffEq package for SDE simulations
+using StochasticDiffEq
+
 # SDEProblem for CLE
 sprob = SDEProblem(bdp, u₀, tspan, p)
 
