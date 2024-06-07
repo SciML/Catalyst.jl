@@ -75,12 +75,13 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
 
     # Finalise the system. Creates the final `ReactionSystem` call.
     # Enclose everything in a `let ... end` block.
-    rs_creation_code = make_reaction_system_call(rn, annotate, top_level, has_sivs, has_species, 
-                                                 has_variables, has_parameters, has_reactions, 
-                                                 has_equations, has_observed, has_continuous_events, 
-                                                 has_discrete_events, has_systems, has_connection_type)
-    annotate || (@string_prepend! "\n" file_text) 
-    @string_prepend! "let" file_text 
+    rs_creation_code = make_reaction_system_call(
+        rn, annotate, top_level, has_sivs, has_species,
+        has_variables, has_parameters, has_reactions,
+        has_equations, has_observed, has_continuous_events,
+        has_discrete_events, has_systems, has_connection_type)
+    annotate || (@string_prepend! "\n" file_text)
+    @string_prepend! "let" file_text
     @string_append! file_text "\n\n" rs_creation_code "\n\nend"
 
     return file_text
@@ -88,10 +89,11 @@ end
 
 # Creates a ReactionSystem call for creating the model. Adds all the correct inputs to it. The input
 # `has_` `Bool`s described which inputs are used. If the model is `complete`, this is handled here.
-function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_sivs, has_species, 
-                                   has_variables, has_parameters, has_reactions, has_equations, 
-                                   has_observed, has_continuous_events, has_discrete_events,
-                                   has_systems, has_connection_type)
+function make_reaction_system_call(
+        rs::ReactionSystem, annotate, top_level, has_sivs, has_species,
+        has_variables, has_parameters, has_reactions, has_equations,
+        has_observed, has_continuous_events, has_discrete_events,
+        has_systems, has_connection_type)
 
     # Gets the independent variable input.
     iv = x_2_string(get_iv(rs))
