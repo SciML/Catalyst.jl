@@ -443,8 +443,8 @@ end
 
 # Finds and differentials in an expression, and sets these to 0.
 function remove_diffs(expr)
-    if Symbolics.hasnode(Symbolics.is_derivative, expr)
-        return Symbolics.replacenode(expr, diff_2_zero)
+    if hasnode(Symbolics.is_derivative, expr)
+        return replacenode(expr, diff_2_zero)
     else
         return expr
     end
