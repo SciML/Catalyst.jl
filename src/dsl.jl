@@ -476,7 +476,7 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
             error("Some reaction metadata fields where repeated: $(metadata_entries)")
         end
 
-        push!(reactions,ReactionStruct(get_tup_arg(sub_line, i),
+        push!(reactions, ReactionStruct(get_tup_arg(sub_line, i),
             get_tup_arg(prod_line, i), get_tup_arg(rate, i), metadata_i))
     end
 end
