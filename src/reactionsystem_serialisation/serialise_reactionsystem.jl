@@ -32,12 +32,13 @@ Notes:
 - Reaction systems with components that have units cannot currently be saved.
 - The `ReactionSystem` is saved using *programmatic* (not DSL) format for model creation.
 """
-function save_reactionsystem(filename::String, rn::ReactionSystem; annotate = true, safety_check = true)
+function save_reactionsystem(
+        filename::String, rn::ReactionSystem; annotate = true, safety_check = true)
     reactionsystem_uptodate_check()
     open(filename, "w") do file
         write(file, get_full_system_string(rn, annotate, true))
     end
-    if safety_check 
+    if safety_check
         if !isequal(rn, include(joinpath(pwd(), filename)))
             rm(filename)
             error("The serialised `ReactionSystem` is not equal to the original one. Please make a report (including the full system) at https://github.com/SciML/Catalyst.jl/issues. To disable this behaviour, please pass the `safety_check = false` argument to `save_reactionsystem` (warning, this will permit the serialisation of an erroneous system).")
@@ -51,7 +52,7 @@ end
 function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::Bool)
     # Initiates the file string.
     file_text = ""
-    
+
     # Goes through each type of system component, potentially adding it to the string.
     # Species, variables, and parameters must be handled differently in case there is default-values
     # dependencies between them. 
@@ -59,23 +60,28 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     # to the function that creates the next sub-system declarations.
     file_text, _ = push_field(file_text, rn, annotate, top_level, IV_FS)
     file_text, has_sivs = push_field(file_text, rn, annotate, top_level, SIVS_FS)
-    file_text, has_parameters, has_species, has_variables = handle_us_n_ps(file_text, rn, annotate, top_level)
+    file_text, has_parameters, has_species, has_variables = handle_us_n_ps(
+        file_text, rn, annotate, top_level)
     file_text, has_reactions = push_field(file_text, rn, annotate, top_level, REACTIONS_FS)
     file_text, has_equations = push_field(file_text, rn, annotate, top_level, EQUATIONS_FS)
     file_text, has_observed = push_field(file_text, rn, annotate, top_level, OBSERVED_FS)
-    file_text, has_continuous_events = push_field(file_text, rn, annotate, top_level, CONTINUOUS_EVENTS_FS)
-    file_text, has_discrete_events = push_field(file_text, rn, annotate, top_level, DISCRETE_EVENTS_FS)   
+    file_text, has_continuous_events = push_field(
+        file_text, rn, annotate, top_level, CONTINUOUS_EVENTS_FS)
+    file_text, has_discrete_events = push_field(
+        file_text, rn, annotate, top_level, DISCRETE_EVENTS_FS)
     file_text, has_systems = push_systems_field(file_text, rn, annotate, top_level)
-    file_text, has_connection_type = push_field(file_text, rn, annotate, top_level, CONNECTION_TYPE_FS)
+    file_text, has_connection_type = push_field(
+        file_text, rn, annotate, top_level, CONNECTION_TYPE_FS)
 
     # Finalises the system. Creates the final `ReactionSystem` call.
     # Enclose everything ing a `let ... end` block.
-    rs_creation_code = make_reaction_system_call(rn, annotate, top_level, has_sivs, has_species, 
-                                                 has_variables, has_parameters, has_reactions, 
-                                                 has_equations, has_observed, has_continuous_events, 
-                                                 has_discrete_events, has_systems, has_connection_type)
-    annotate || (@string_prepend! "\n" file_text) 
-    @string_prepend! "let" file_text 
+    rs_creation_code = make_reaction_system_call(
+        rn, annotate, top_level, has_sivs, has_species,
+        has_variables, has_parameters, has_reactions,
+        has_equations, has_observed, has_continuous_events,
+        has_discrete_events, has_systems, has_connection_type)
+    annotate || (@string_prepend! "\n" file_text)
+    @string_prepend! "let" file_text
     @string_append! file_text "\n\n" rs_creation_code "\n\nend"
 
     return file_text
@@ -83,10 +89,11 @@ end
 
 # Creates a ReactionSystem call for creating the model. Adds all the correct inputs to it. The input
 # `has_` `Bool`s described which inputs are used. If model is `complete`, this is handled here.
-function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_sivs, has_species, 
-                                   has_variables, has_parameters, has_reactions, has_equations, 
-                                   has_observed, has_continuous_events, has_discrete_events,
-                                   has_systems, has_connection_type)
+function make_reaction_system_call(
+        rs::ReactionSystem, annotate, top_level, has_sivs, has_species,
+        has_variables, has_parameters, has_reactions, has_equations,
+        has_observed, has_continuous_events, has_discrete_events,
+        has_systems, has_connection_type)
 
     # Gets the independent variable input.
     iv = x_2_string(get_iv(rs))
@@ -98,7 +105,7 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
         eqs = "rxs"
     elseif has_equations
         eqs = "eqs"
-    else 
+    else
         eqs = "[]"
     end
 
@@ -109,14 +116,14 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
         unknowns = "sps"
     elseif has_variables
         unknowns = "vars"
-    else 
+    else
         unknowns = "[]"
     end
 
     # Gets the parameters input.
     if has_parameters
         ps = "ps"
-    else 
+    else
         ps = "[]"
     end
 
@@ -140,10 +147,12 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
     has_connection_type && (@string_append! reaction_system_string ", connection_type")
 
     # Potentially appends a combinatoric_ratelaws statement.
-    Symbolics.unwrap(rs.combinatoric_ratelaws) || (@string_append! reaction_system_string ", combinatoric_ratelaws = false")
+    Symbolics.unwrap(rs.combinatoric_ratelaws) ||
+        (@string_append! reaction_system_string ", combinatoric_ratelaws = false")
 
     # Potentially appends `ReactionSystem` metadata value(s). Weird composite types are not supported.
-    isnothing(rs.metadata) || (@string_append! reaction_system_string ", metadata = $(x_2_string(rs.metadata))")
+    isnothing(rs.metadata) ||
+        (@string_append! reaction_system_string ", metadata = $(x_2_string(rs.metadata))")
 
     # Finalises the call. Appends potential annotation. If the system is complete, add a call for this. 
     @string_append! reaction_system_string ")"
@@ -152,7 +161,7 @@ function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_
         top_level || (@string_prepend! "local " reaction_system_string)
         @string_append! reaction_system_string "\ncomplete(rs)"
     end
-    if annotate 
+    if annotate
         @string_prepend! "# Declares ReactionSystem model:\n" reaction_system_string
     end
     return reaction_system_string

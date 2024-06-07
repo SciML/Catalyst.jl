@@ -1,7 +1,7 @@
 ### Lattice Reaction Network Structure ###
 # Describes a spatial reaction network over a graph.
 # Adding the "<: MT.AbstractTimeDependentSystem" part messes up show, disabling me from creating LRSs.
-struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem 
+struct LatticeReactionSystem{S, T} # <: MT.AbstractTimeDependentSystem 
     # Input values.
     """The reaction system within each compartment."""
     rs::ReactionSystem{S}
@@ -38,32 +38,37 @@ struct LatticeReactionSystem{S,T} # <: MT.AbstractTimeDependentSystem
     edge_parameters::Vector{BasicSymbolic{Real}}
 
     function LatticeReactionSystem(rs::ReactionSystem{S}, spatial_reactions::Vector{T},
-                                   lattice::DiGraph; init_digraph = true) where {S, T}
+            lattice::DiGraph; init_digraph = true) where {S, T}
         # There probably some better way to ascertain that T has that type. Not sure how.
-        if !(T <: AbstractSpatialReaction) 
-            error("The second argument must be a vector of AbstractSpatialReaction subtypes.") 
+        if !(T <: AbstractSpatialReaction)
+            error("The second argument must be a vector of AbstractSpatialReaction subtypes.")
         end
 
         if isempty(spatial_reactions)
             spat_species = Vector{BasicSymbolic{Real}}[]
         else
-            spat_species = unique(reduce(vcat, [spatial_species(sr) for sr in spatial_reactions]))
+            spat_species = unique(reduce(
+                vcat, [spatial_species(sr) for sr in spatial_reactions]))
         end
         num_species = length(unique([species(rs); spat_species]))
         rs_edge_parameters = filter(isedgeparameter, parameters(rs))
         if isempty(spatial_reactions)
             srs_edge_parameters = Vector{BasicSymbolic{Real}}[]
         else
-            srs_edge_parameters = setdiff(reduce(vcat, [parameters(sr) for sr in spatial_reactions]), parameters(rs))
+            srs_edge_parameters = setdiff(
+                reduce(vcat, [parameters(sr) for sr in spatial_reactions]), parameters(rs))
         end
         edge_parameters = unique([rs_edge_parameters; srs_edge_parameters])
         vertex_parameters = filter(!isedgeparameter, parameters(rs))
         # Ensures the parameter order begins similarly to in the non-spatial ReactionSystem.
-        ps = [parameters(rs); setdiff([edge_parameters; vertex_parameters], parameters(rs))]    
+        ps = [parameters(rs); setdiff([edge_parameters; vertex_parameters], parameters(rs))]
 
-        foreach(sr -> check_spatial_reaction_validity(rs, sr; edge_parameters=edge_parameters), spatial_reactions)   
-        return new{S,T}(rs, spatial_reactions, lattice, nv(lattice), ne(lattice), num_species, 
-                            init_digraph, spat_species, ps, vertex_parameters, edge_parameters)
+        foreach(
+            sr -> check_spatial_reaction_validity(rs, sr; edge_parameters = edge_parameters),
+            spatial_reactions)
+        return new{S, T}(
+            rs, spatial_reactions, lattice, nv(lattice), ne(lattice), num_species,
+            init_digraph, spat_species, ps, vertex_parameters, edge_parameters)
     end
 end
 function LatticeReactionSystem(rs, srs, lat::SimpleGraph)
@@ -88,4 +93,6 @@ edge_parameters(lrs::LatticeReactionSystem) = lrs.edge_parameters
 ModelingToolkit.nameof(lrs::LatticeReactionSystem) = nameof(lrs.rs)
 
 # Checks if a lattice reaction system is a pure (linear) transport reaction system.
-is_transport_system(lrs::LatticeReactionSystem) = all(sr -> sr isa TransportReaction, lrs.spatial_reactions)
+function is_transport_system(lrs::LatticeReactionSystem)
+    all(sr -> sr isa TransportReaction, lrs.spatial_reactions)
+end

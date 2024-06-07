@@ -64,16 +64,14 @@ Example systems:
 const empty_set = Set{Symbol}([:∅])
 const fwd_arrows = Set{Symbol}([:>, :(=>), :→, :↣, :↦, :⇾, :⟶, :⟼, :⥟, :⥟, :⇀, :⇁, :⇒, :⟾])
 const bwd_arrows = Set{Symbol}([:<, :(<=), :←, :↢, :↤, :⇽, :⟵, :⟻, :⥚, :⥞, :↼, :↽, :⇐, :⟽,
-                                   Symbol("<--")])
+    Symbol("<--")])
 const double_arrows = Set{Symbol}([:↔, :⟷, :⇄, :⇆, :⇌, :⇋, :⇔, :⟺, Symbol("<-->")])
 const pure_rate_arrows = Set{Symbol}([:(=>), :(<=), :⇐, :⟽, :⇒, :⟾, :⇔, :⟺])
 
-
 # Declares the keys used for various options.
 const option_keys = (:species, :parameters, :variables, :ivs, :compounds, :observables,
-                     :default_noise_scaling, :differentials, :equations,
-                     :continuous_events, :discrete_events, :combinatoric_ratelaws)
-
+    :default_noise_scaling, :differentials, :equations,
+    :continuous_events, :discrete_events, :combinatoric_ratelaws)
 
 ### `@species` Macro ###
 
@@ -88,9 +86,10 @@ macro species(ex...)
     idx = length(vars.args)
     resize!(vars.args, idx + length(lastarg.args) + 1)
     for sym in lastarg.args
-        vars.args[idx] = :($sym = ModelingToolkit.wrap(setmetadata(ModelingToolkit.value($sym),
-                                                                   Catalyst.VariableSpecies,
-                                                                   true)))
+        vars.args[idx] = :($sym = ModelingToolkit.wrap(setmetadata(
+            ModelingToolkit.value($sym),
+            Catalyst.VariableSpecies,
+            true)))
         idx += 1
     end
 
@@ -107,7 +106,6 @@ macro species(ex...)
 
     esc(vars)
 end
-
 
 ### `@reaction_network` and `@network_component` Macros ###
 
@@ -144,12 +142,14 @@ emptyrn = @reaction_network
 ReactionSystems generated through `@reaction_network` are complete.
 """
 macro reaction_network(name::Symbol, ex::Expr)
-    :(complete($(make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name)))))))
+    :(complete($(make_reaction_system(
+        MacroTools.striplines(ex); name = :($(QuoteNode(name)))))))
 end
 
 # Allows @reaction_network $name begin ... to interpolate variables storing a name.
 macro reaction_network(name::Expr, ex::Expr)
-    :(complete($(make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1])))))))
+    :(complete($(make_reaction_system(
+        MacroTools.striplines(ex); name = :($(esc(name.args[1])))))))
 end
 
 macro reaction_network(ex::Expr)
@@ -161,14 +161,14 @@ macro reaction_network(ex::Expr)
     else  # empty but has interpolated name: @reaction_network $name
         networkname = :($(esc(ex.args[1])))
         return Expr(:block, :(@parameters t),
-                    :(complete(ReactionSystem(Reaction[], t, [], []; name = $networkname))))
+            :(complete(ReactionSystem(Reaction[], t, [], []; name = $networkname))))
     end
 end
 
 # Returns a empty network (with, or without, a declared name).
 macro reaction_network(name::Symbol = gensym(:ReactionSystem))
     return Expr(:block, :(@parameters t),
-                :(complete(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name))))))
+        :(complete(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name))))))
 end
 
 # Ideally, it would have been possible to combine the @reaction_network and @network_component macros.
@@ -197,16 +197,15 @@ macro network_component(ex::Expr)
     else  # empty but has interpolated name: @network_component $name
         networkname = :($(esc(ex.args[1])))
         return Expr(:block, :(@parameters t),
-                    :(ReactionSystem(Reaction[], t, [], []; name = $networkname)))
+            :(ReactionSystem(Reaction[], t, [], []; name = $networkname)))
     end
 end
 
 # Returns a empty network (with, or without, a declared name).
 macro network_component(name::Symbol = gensym(:ReactionSystem))
     return Expr(:block, :(@parameters t),
-                :(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name)))))
+        :(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name)))))
 end
-
 
 ### Internal DSL Structures ###
 
@@ -224,7 +223,7 @@ struct ReactionStruct
     metadata::Expr
 
     function ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues,
-                            metadata_line::ExprValues)
+            metadata_line::ExprValues)
         sub = recursive_find_reactants!(sub_line, 1, Vector{ReactantStruct}(undef, 0))
         prod = recursive_find_reactants!(prod_line, 1, Vector{ReactantStruct}(undef, 0))
         metadata = extract_metadata(metadata_line)
@@ -235,21 +234,21 @@ end
 # Recursive function that loops through the reaction line and finds the reactants and their
 # stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
 function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
-                                   reactants::Vector{ReactantStruct})
+        reactants::Vector{ReactantStruct})
     if typeof(ex) != Expr || (ex.head == :escape) || (ex.head == :ref)
         (ex == 0 || in(ex, empty_set)) && (return reactants)
         if any(ex == reactant.reactant for reactant in reactants)
             idx = findall(x -> x == ex, getfield.(reactants, :reactant))[1]
             reactants[idx] = ReactantStruct(ex,
-                                            processmult(+, mult,
-                                                        reactants[idx].stoichiometry))
+                processmult(+, mult,
+                    reactants[idx].stoichiometry))
         else
             push!(reactants, ReactantStruct(ex, mult))
         end
     elseif ex.args[1] == :*
         if length(ex.args) == 3
             recursive_find_reactants!(ex.args[3], processmult(*, mult, ex.args[2]),
-                                      reactants)
+                reactants)
         else
             newmult = processmult(*, mult, Expr(:call, ex.args[1:(end - 1)]...))
             recursive_find_reactants!(ex.args[end], newmult, reactants)
@@ -276,13 +275,14 @@ end
 function extract_metadata(metadata_line::Expr)
     metadata = :([])
     for arg in metadata_line.args
-        (arg.head != :(=)) && error("Malformatted metadata line: $metadata_line. Each entry in the vector should contain a `=`.")
-        (arg.args[1] isa Symbol) || error("Malformatted metadata entry: $arg. Entries left-hand-side should be a single symbol.")
+        (arg.head != :(=)) &&
+            error("Malformatted metadata line: $metadata_line. Each entry in the vector should contain a `=`.")
+        (arg.args[1] isa Symbol) ||
+            error("Malformatted metadata entry: $arg. Entries left-hand-side should be a single symbol.")
         push!(metadata.args, :($(QuoteNode(arg.args[1])) => $(arg.args[2])))
     end
     return metadata
 end
-
 
 ### DSL Internal Master Function ###
 
@@ -298,10 +298,10 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Get macro options.
     if length(unique(arg.args[1] for arg in option_lines)) < length(option_lines)
-         error("Some options where given multiple times.")
+        error("Some options where given multiple times.")
     end
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
-                       option_lines))
+        option_lines))
 
     # Reads options.
     default_reaction_metadata = :([])
@@ -317,7 +317,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     variables_declared = extract_syms(options, :variables)
 
     # Reads more options.
-    vars_extracted, add_default_diff, equations = read_equations_options(options, variables_declared)
+    vars_extracted, add_default_diff, equations = read_equations_options(
+        options, variables_declared)
     variables = vcat(variables_declared, vars_extracted)
 
     # handle independent variables
@@ -340,17 +341,19 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     end
 
     # Reads more options.
-    observed_vars, observed_eqs, obs_syms = read_observed_options(options, [species_declared; variables], all_ivs)
+    observed_vars, observed_eqs, obs_syms = read_observed_options(
+        options, [species_declared; variables], all_ivs)
 
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
-                                           variables)))
+        variables)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
-                                                                              declared_syms)
+        declared_syms)
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
     # Create differential expression.
-    diffexpr = create_differential_expr(options, add_default_diff, [species; parameters; variables], tiv)
+    diffexpr = create_differential_expr(
+        options, add_default_diff, [species; parameters; variables], tiv)
 
     # Checks for input errors.
     (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
@@ -398,7 +401,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     end
 end
 
-
 ### DSL Reaction Reading Functions ###
 
 # Generates a vector containing a number of reaction structures, each containing the information about one reaction.
@@ -412,12 +414,16 @@ function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(u
             if typeof(rate) != Expr || rate.head != :tuple
                 error("Error: Must provide a tuple of reaction rates when declaring a bi-directional reaction.")
             end
-            push_reactions!(reactions, reaction.args[2], reaction.args[3], rate.args[1], metadata.args[1], arrow)
-            push_reactions!(reactions, reaction.args[3], reaction.args[2], rate.args[2], metadata.args[2], arrow)
+            push_reactions!(reactions, reaction.args[2], reaction.args[3],
+                rate.args[1], metadata.args[1], arrow)
+            push_reactions!(reactions, reaction.args[3], reaction.args[2],
+                rate.args[2], metadata.args[2], arrow)
         elseif in(arrow, fwd_arrows)
-            push_reactions!(reactions, reaction.args[2], reaction.args[3], rate, metadata, arrow)
+            push_reactions!(
+                reactions, reaction.args[2], reaction.args[3], rate, metadata, arrow)
         elseif in(arrow, bwd_arrows)
-            push_reactions!(reactions, reaction.args[3], reaction.args[2], rate, metadata, arrow)
+            push_reactions!(
+                reactions, reaction.args[3], reaction.args[2], rate, metadata, arrow)
         else
             throw("Malformed reaction, invalid arrow type used in: $(MacroTools.striplines(line))")
         end
@@ -431,7 +437,8 @@ function read_reaction_line(line::Expr)
     # Special routine required for  the`-->` case, which creates different expression from all other cases.
     rate = line.args[1]
     reaction = line.args[2]
-    (reaction.head == :-->) && (reaction = Expr(:call, :→, reaction.args[1], reaction.args[2]))
+    (reaction.head == :-->) &&
+        (reaction = Expr(:call, :→, reaction.args[1], reaction.args[2]))
     arrow = reaction.args[1]
 
     # Handles metadata. If not provided, empty metadata is created.
@@ -448,8 +455,9 @@ end
 
 # Takes a reaction line and creates reaction(s) from it and pushes those to the reaction array.
 # Used to create multiple reactions from, for instance, `k, (X,Y) --> 0`.
-function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues, prod_line::ExprValues,
-                         rate::ExprValues, metadata::ExprValues, arrow::Symbol)
+function push_reactions!(
+        reactions::Vector{ReactionStruct}, sub_line::ExprValues, prod_line::ExprValues,
+        rate::ExprValues, metadata::ExprValues, arrow::Symbol)
     # The rates, substrates, products, and metadata may be in a tupple form (e.g. `k, (X,Y) --> 0`).
     # This finds the length of these tuples (or 1 if not in tuple forms). Errors if lengs inconsistent.
     lengs = (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate), tup_leng(metadata))
@@ -470,11 +478,11 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
             error("Some reaction metadata fields where repeated: $(metadata_entries)")
         end
 
-        push!(reactions, ReactionStruct(get_tup_arg(sub_line, i), get_tup_arg(prod_line, i),
-                                        get_tup_arg(rate, i), metadata_i))
+        push!(reactions,
+            ReactionStruct(get_tup_arg(sub_line, i), get_tup_arg(prod_line, i),
+                get_tup_arg(rate, i), metadata_i))
     end
 end
-
 
 ### DSL Species and Parameters Extraction ###
 
@@ -529,12 +537,11 @@ function add_syms_from_expr!(push_symbols::AbstractSet, rateex::ExprValues, excl
     nothing
 end
 
-
 ### DSL Output Expression Builders ###
 
 # Given the species that were extracted from the reactions, and the options dictionary, creates the @species ... expression for the macro output.
 function get_sexpr(species_extracted, options, key = :species;
-                   iv_symbols = (DEFAULT_IV_SYM,))
+        iv_symbols = (DEFAULT_IV_SYM,))
     if haskey(options, key)
         sexprs = options[key]
     elseif isempty(species_extracted)
@@ -543,7 +550,7 @@ function get_sexpr(species_extracted, options, key = :species;
         sexprs = Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
     end
     foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, iv_symbols...)),
-            species_extracted)
+        species_extracted)
     sexprs
 end
 
@@ -562,8 +569,8 @@ function get_rxexprs(rxstruct)
     prod_init = isempty(rxstruct.products) ? nothing : :([])
     prod_stoich_init = deepcopy(prod_init)
     reaction_func = :(Reaction($(recursive_expand_functions!(rxstruct.rate)), $subs_init,
-                               $prod_init, $subs_stoich_init, $prod_stoich_init,
-                               metadata = $(rxstruct.metadata),))
+        $prod_init, $subs_stoich_init, $prod_stoich_init,
+        metadata = $(rxstruct.metadata)))
     for sub in rxstruct.substrates
         push!(reaction_func.args[3].args, sub.reactant)
         push!(reaction_func.args[5].args, sub.stoichiometry)
@@ -591,7 +598,6 @@ function scalarize_macro(nonempty, ex, name)
     ex, namesym
 end
 
-
 ### DSL Option Handling ###
 
 # Checks if the `@default_noise_scaling` option is used. If so, read its input and adds it as a
@@ -601,7 +607,8 @@ function check_default_noise_scaling!(default_reaction_metadata, options)
         if (length(options[:default_noise_scaling].args) != 3) # Becasue of how expressions are, 3 is used.
             error("@default_noise_scaling should only have a single input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
         end
-        push!(default_reaction_metadata.args, :(:noise_scaling => $(options[:default_noise_scaling].args[3])))
+        push!(default_reaction_metadata.args,
+            :(:noise_scaling => $(options[:default_noise_scaling].args[3])))
     end
 end
 
@@ -611,7 +618,8 @@ function read_compound_options(opts)
     if haskey(opts, :compounds)
         compound_expr = opts[:compounds]
         # Find compound species names, and append the independent variable.
-        compound_species = [find_varinfo_in_declaration(arg.args[2])[1] for arg in compound_expr.args[3].args]
+        compound_species = [find_varinfo_in_declaration(arg.args[2])[1]
+                            for arg in compound_expr.args[3].args]
     else  # If option is not used, return empty vectors and expressions.
         compound_expr = :()
         compound_species = Union{Symbol, Expr}[]
@@ -622,8 +630,10 @@ end
 # Read the events (continious or discrete) provided as options to the DSL. Returns an expression which evalutes to these.
 function read_events_option(options, event_type::Symbol)
     # Prepares the events, if required to, converts them to block form.
-    (event_type in [:continuous_events, :discrete_events]) || error("Trying to read an unsupported event type.")
-    events_input = haskey(options, event_type) ? options[event_type].args[3] : MacroTools.striplines(:(begin end))
+    (event_type in [:continuous_events, :discrete_events]) ||
+        error("Trying to read an unsupported event type.")
+    events_input = haskey(options, event_type) ? options[event_type].args[3] :
+                   MacroTools.striplines(:(begin end))
     events_input = option_block_form(events_input)
 
     # Goes throgh the events, checks for errors, and adds them to the output vector.
@@ -631,14 +641,16 @@ function read_events_option(options, event_type::Symbol)
     for arg in events_input.args
         # Formatting error checks.
         # NOTE: Maybe we should move these deeper into the system (rather than the DSL), throwing errors more generally?
-        if (arg isa Expr) && (arg.head != :call) || (arg.args[1] != :(=>)) || length(arg.args) != 3
+        if (arg isa Expr) && (arg.head != :call) || (arg.args[1] != :(=>)) ||
+           length(arg.args) != 3
             error("Events should be on form `condition => affect`, separated by a `=>`. This appears not to be the case for: $(arg).")
         end
-        if (arg isa Expr) && (arg.args[2] isa Expr) && (arg.args[2].head != :vect) && (event_type == :continuous_events)
+        if (arg isa Expr) && (arg.args[2] isa Expr) && (arg.args[2].head != :vect) &&
+           (event_type == :continuous_events)
             error("The condition part of continious events (the left-hand side) must be a vector. This is not the case for: $(arg).")
         end
         if (arg isa Expr) && (arg.args[3] isa Expr) && (arg.args[3].head != :vect)
-             error("The affect part of all events (the righ-hand side) must be a vector. This is not the case for: $(arg).")
+            error("The affect part of all events (the righ-hand side) must be a vector. This is not the case for: $(arg).")
         end
 
         # Adds the correctly formatted event to the event creation expression.
@@ -658,7 +670,8 @@ function read_equations_options(options, variables_declared)
     eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
     eqs_input = option_block_form(eqs_input)
     equations = Expr[]
-    ModelingToolkit.parse_equations!(Expr(:block), equations, Dict{Symbol, Any}(), eqs_input)
+    ModelingToolkit.parse_equations!(
+        Expr(:block), equations, Dict{Symbol, Any}(), eqs_input)
 
     # Loops through all equations, checks for lhs of the form `D(X) ~ ...`.
     # When this is the case, the variable X and differential D are extracted (for automatic declaration).
@@ -667,7 +680,7 @@ function read_equations_options(options, variables_declared)
     add_default_diff = false
     for eq in equations
         if (eq.head != :call) || (eq.args[1] != :~)
-             error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")
+            error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")
         end
 
         # Checks if the equation have the format D(X) ~ ... (where X is a symbol). This means that the
@@ -675,7 +688,8 @@ function read_equations_options(options, variables_declared)
         # we make a note that a differential D = Differential(iv) should be made as well.
         lhs = eq.args[2]
         # if lhs: is an expression. Is a function call. The function's name is D. Calls a single symbol.
-        if (lhs isa Expr) && (lhs.head == :call) && (lhs.args[1] == :D) && (lhs.args[2] isa Symbol)
+        if (lhs isa Expr) && (lhs.head == :call) && (lhs.args[1] == :D) &&
+           (lhs.args[2] isa Symbol)
             diff_var = lhs.args[2]
             if in(diff_var, forbidden_symbols_error)
                 error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
@@ -694,15 +708,20 @@ function create_differential_expr(options, add_default_diff, used_syms, tiv)
     # Creates the differential expression.
     # If differentials was provided as options, this is used as the initial expression.
     # If the default differential (D(...)) was used in equations, this is added to the expression.
-    diffexpr = (haskey(options, :differentials) ? options[:differentials].args[3] : MacroTools.striplines(:(begin end)))
+    diffexpr = (haskey(options, :differentials) ? options[:differentials].args[3] :
+                MacroTools.striplines(:(begin end)))
     diffexpr = option_block_form(diffexpr)
 
     # Goes through all differentials, checking that they are correctly formatted and their symbol is not used elsewhere.
     for dexpr in diffexpr.args
-        (dexpr.head != :(=)) && error("Differential declaration must have form like D = Differential(t), instead \"$(dexpr)\" was given.")
-        (dexpr.args[1] isa Symbol) || error("Differential left-hand side must be a single symbol, instead \"$(dexpr.args[1])\" was given.")
-        in(dexpr.args[1], used_syms) && error("Differential name ($(dexpr.args[1])) is also a species, variable, or parameter. This is ambigious and not allowed.")
-        in(dexpr.args[1], forbidden_symbols_error) && error("A forbidden symbol ($(dexpr.args[1])) was used as a differential name.")
+        (dexpr.head != :(=)) &&
+            error("Differential declaration must have form like D = Differential(t), instead \"$(dexpr)\" was given.")
+        (dexpr.args[1] isa Symbol) ||
+            error("Differential left-hand side must be a single symbol, instead \"$(dexpr.args[1])\" was given.")
+        in(dexpr.args[1], used_syms) &&
+            error("Differential name ($(dexpr.args[1])) is also a species, variable, or parameter. This is ambigious and not allowed.")
+        in(dexpr.args[1], forbidden_symbols_error) &&
+            error("A forbidden symbol ($(dexpr.args[1])) was used as a differential name.")
     end
 
     # If the default differential D has been used, but not pre-declared using the @differenitals
@@ -726,15 +745,19 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
         for (idx, obs_eq) in enumerate(observed_eqs.args)
             # Extract the observable, checks errors, and continues the loop if the observable has been declared.
             obs_name, ivs, defaults, metadata = find_varinfo_in_declaration(obs_eq.args[2])
-            isempty(ivs) || error("An observable ($obs_name) was given independent variable(s). These should not be given, as they are inferred automatically.")
-            isnothing(defaults) || error("An observable ($obs_name) was given a default value. This is forbidden.")
-            in(obs_name, forbidden_symbols_error) && error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
+            isempty(ivs) ||
+                error("An observable ($obs_name) was given independent variable(s). These should not be given, as they are inferred automatically.")
+            isnothing(defaults) ||
+                error("An observable ($obs_name) was given a default value. This is forbidden.")
+            in(obs_name, forbidden_symbols_error) &&
+                error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
 
             # Error checks.
             if (obs_name in species_n_vars_declared) && is_escaped_expr(obs_eq.args[2])
                 error("An interpoalted observable have been used, which has also been explicitly delcared within the system using eitehr @species or @variables. This is not permited.")
             end
-            if ((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2])) && !isnothing(metadata)
+            if ((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2])) &&
+               !isnothing(metadata)
                 error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the obervable was also declared separately (using either @species or @variables). When this is done, metadata should instead be provided within the original @species or @variable declaration.")
             end
 
@@ -744,16 +767,20 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
             if !((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2]))
                 # Appends (..) to the observable (which is later replaced with the extracted ivs).
                 # Adds the observable to the first line of the output expression (starting with `@variables`).
-                    obs_expr = insert_independent_variable(obs_eq.args[2], :(..))
-                    push!(observed_vars.args[1].args, obs_expr)
+                obs_expr = insert_independent_variable(obs_eq.args[2], :(..))
+                push!(observed_vars.args[1].args, obs_expr)
 
                 # Adds a line to the `observed_vars` expression, setting the ivs for this observable.
                 # Cannot extract directly using e.g. "getfield.(dependants_structs, :reactant)" because
                 # then we get something like :([:X1, :X2]), rather than :([X1, X2]).
-                dep_var_expr = :(filter(!MT.isparameter, Symbolics.get_variables($(obs_eq.args[3]))))
-                ivs_get_expr = :(unique(reduce(vcat,[arguments(MT.unwrap(dep)) for dep in $dep_var_expr])))
-                ivs_get_expr_sorted = :(sort($(ivs_get_expr); by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $ivs_sorted)))
-                push!(observed_vars.args, :($obs_name = $(obs_name)($(ivs_get_expr_sorted)...)))
+                dep_var_expr = :(filter(
+                    !MT.isparameter, Symbolics.get_variables($(obs_eq.args[3]))))
+                ivs_get_expr = :(unique(reduce(
+                    vcat, [arguments(MT.unwrap(dep)) for dep in $dep_var_expr])))
+                ivs_get_expr_sorted = :(sort($(ivs_get_expr);
+                    by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $ivs_sorted)))
+                push!(observed_vars.args,
+                    :($obs_name = $(obs_name)($(ivs_get_expr_sorted)...)))
             end
 
             # In case metadata was given, this must be cleared from `observed_eqs`.
@@ -792,7 +819,6 @@ function make_observed_eqs(observables_expr)
         error("Malformed observables option usage: $(observables_expr).")
     end
 end
-
 
 ### `@reaction` Macro & its Internals ###
 
@@ -870,14 +896,13 @@ function get_reaction(line)
     return reaction[1]
 end
 
-
 ### Generic Expression Manipulation ###
 
 # Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.
 function recursive_expand_functions!(expr::ExprValues)
     (typeof(expr) != Expr) && (return expr)
     foreach(i -> expr.args[i] = recursive_expand_functions!(expr.args[i]),
-            1:length(expr.args))
+        1:length(expr.args))
     if expr.head == :call
         !isdefined(Catalyst, expr.args[1]) && (expr.args[1] = esc(expr.args[1]))
     end
