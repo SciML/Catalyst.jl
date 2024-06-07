@@ -103,9 +103,9 @@ function sym_2_declaration_string(sym; multiline_format = false)
     dec_string = "$(sym)"
 
     # If the symbol have a non-default type, appends the declaration of this.
-    # Assumes that the type is on the form `SymbolicUtils.BasicSymbolic{X}`. Contain error checks
+    # Assumes that the type is on the form `BasicSymbolic{X}`. Contain error checks
     # to ensure that this is the case.
-    if !(sym isa SymbolicUtils.BasicSymbolic{Real})
+    if !(sym isa BasicSymbolic{Real})
         sym_type = String(Symbol(typeof(Symbolics.unwrap(sym))))
         if (get_substring(sym_type, 1, 28) != "SymbolicUtils.BasicSymbolic{") || (get_char_end(sym_type, 0) != '}')
             error("Encountered symbolic of unexpected type: $sym_type.")
@@ -139,7 +139,7 @@ end
 # and metadata values (which hopefully almost exclusively) has simple, supported, types. Ideally,
 # more supported types can be added here.
 x_2_string(x::Num) = expression_2_string(x)
-x_2_string(x::SymbolicUtils.BasicSymbolic{<:Real}) = expression_2_string(x)
+x_2_string(x::BasicSymbolic{<:Real}) = expression_2_string(x)
 x_2_string(x::Bool) = string(x)
 x_2_string(x::String) = "\"$x\""
 x_2_string(x::Char) = "\'$x\'"
@@ -293,6 +293,6 @@ end
 function complicated_declaration(sym)
     isempty(get_metadata_to_declare(sym)) || (return true)
     ModelingToolkit.hasdefault(sym) && (return true)
-    (sym isa SymbolicUtils.BasicSymbolic{Real}) || (return true)
+    (sym isa BasicSymbolic{Real}) || (return true)
     return false
 end

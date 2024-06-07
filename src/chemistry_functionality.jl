@@ -182,7 +182,7 @@ function make_compounds(expr)
     end
     push!(compound_declarations.args, :($(Expr(:escape, :($(compound_syms))))))
 
-    # The output needs to be converted to Vector{Num} (from  Vector{SymbolicUtils.BasicSymbolic{Real}}) to be consistent with e.g. @variables.
+    # The output needs to be converted to Vector{Num} (from  Vector{BasicSymbolic{Real}}) to be consistent with e.g. @variables.
     compound_declarations.args[end] = :([ModelingToolkit.wrap(cmp) for cmp in $(compound_declarations.args[end])])
 
     # Returns output that.

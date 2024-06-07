@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEq, StochasticDiffEq, Test
-using Symbolics: unwrap
+using Symbolics: BasicSymbolic, unwrap
 
 # Sets stable rng number.
 using StableRNGs
@@ -47,16 +47,16 @@ end
 
 # Tests that parameters stored in the system have the correct type.
 let
-    @test Symbolics.unwrap(rs.p1) isa SymbolicUtils.BasicSymbolic{Real}
-    @test Symbolics.unwrap(rs.d1) isa SymbolicUtils.BasicSymbolic{Real}
-    @test Symbolics.unwrap(rs.p2) isa SymbolicUtils.BasicSymbolic{Float64}
-    @test Symbolics.unwrap(rs.d2) isa SymbolicUtils.BasicSymbolic{Float64}
-    @test Symbolics.unwrap(rs.p3) isa SymbolicUtils.BasicSymbolic{Int64}
-    @test Symbolics.unwrap(rs.d3) isa SymbolicUtils.BasicSymbolic{Int64}
-    @test Symbolics.unwrap(rs.p4) isa SymbolicUtils.BasicSymbolic{Float32}
-    @test Symbolics.unwrap(rs.d4) isa SymbolicUtils.BasicSymbolic{Rational{Int64}}
-    @test Symbolics.unwrap(rs.p5) isa SymbolicUtils.BasicSymbolic{Rational{Int64}}
-    @test Symbolics.unwrap(rs.d5) isa SymbolicUtils.BasicSymbolic{Float32}
+    @test Symbolics.unwrap(rs.p1) isa BasicSymbolic{Real}
+    @test Symbolics.unwrap(rs.d1) isa BasicSymbolic{Real}
+    @test Symbolics.unwrap(rs.p2) isa BasicSymbolic{Float64}
+    @test Symbolics.unwrap(rs.d2) isa BasicSymbolic{Float64}
+    @test Symbolics.unwrap(rs.p3) isa BasicSymbolic{Int64}
+    @test Symbolics.unwrap(rs.d3) isa BasicSymbolic{Int64}
+    @test Symbolics.unwrap(rs.p4) isa BasicSymbolic{Float32}
+    @test Symbolics.unwrap(rs.d4) isa BasicSymbolic{Rational{Int64}}
+    @test Symbolics.unwrap(rs.p5) isa BasicSymbolic{Rational{Int64}}
+    @test Symbolics.unwrap(rs.d5) isa BasicSymbolic{Float32}
 end
 
 # Tests that simulations with differentially typed variables yields correct results.

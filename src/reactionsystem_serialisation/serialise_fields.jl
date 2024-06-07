@@ -445,7 +445,7 @@ function discrete_event_string(discrete_event, strip_call_dict)
     # Creates the string corresponding to the conditions. The special check is if the condition is
     # an expression like `X > 5.0`. Here, "(...)" is added for purely aesthetic reasons.
     condition_string = x_2_string(discrete_event.condition)
-    if discrete_event.condition isa SymbolicUtils.BasicSymbolic
+    if discrete_event.condition isa BasicSymbolic
         @string_prepend! "(" condition_string
         @string_append! condition_string ")"
     end

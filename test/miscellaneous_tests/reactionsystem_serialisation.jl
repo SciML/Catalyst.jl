@@ -4,10 +4,11 @@
 using Catalyst, Test
 using Catalyst: get_rxs
 using ModelingToolkit: getdefault, getdescription, get_metadata
+using Symbolics: getmetadata
 
 # Creates missing getters for MTK metadata (can be removed once added to MTK).
-getmisc(x) = SymbolicUtils.getmetadata(Symbolics.unwrap(x), ModelingToolkit.VariableMisc, nothing)
-getinput(x) = SymbolicUtils.getmetadata(Symbolics.unwrap(x), ModelingToolkit.VariableInput, nothing)
+getmisc(x) = getmetadata(Symbolics.unwrap(x), ModelingToolkit.VariableMisc, nothing)
+getinput(x) = getmetadata(Symbolics.unwrap(x), ModelingToolkit.VariableInput, nothing)
 
 # Sets the default `t` and `D` to use.
 t = default_t()
