@@ -86,7 +86,7 @@ Generally, there are four main reasons for specifying species/parameters using t
 4. To designate a species or parameters that do not occur in reactions, but are still part of the model (e.g a [parametric initial condition](@ref dsl_advanced_options_parametric_initial_conditions))
 
 !!! warn
-    Catalyst's DSL automatically infer species and parameters from the input. However, it only does so for *quantities that appear in reactions*. Until now this has not been relevant. However, this tutorial will demonstrate cases where species/parameters that are not part of reactions are used. These *must* be designated using either the `@species` or `@parameters` options (or the `@variables` option, which is described [later](@ref ref)).
+    Catalyst's DSL automatically infer species and parameters from the input. However, it only does so for *quantities that appear in reactions*. Until now this has not been relevant. However, this tutorial will demonstrate cases where species/parameters that are not part of reactions are used. These *must* be designated using either the `@species` or `@parameters` options (or the `@variables` option, which is described [later](@ref constraint_equations)).
 
 ### [Setting default values for species and parameters](@id dsl_advanced_options_default_vals)
 When declaring species/parameters using the `@species` and `@parameters` options, one can also assign them default values (by appending them with `=` followed by the desired default value). E.g here we set `X`'s default initial condition value to $1.0$, and `p` and `d`'s default values to $1.0$ and $0.2$, respectively:
@@ -207,7 +207,7 @@ It is not possible for the user to directly designate their own metadata. These 
 
 ### [Designating constant-valued/fixed species parameters](@id dsl_advanced_options_constant_species)
 
-Catalyst enables the designation of parameters as `constantspecies`. These parameters can be used as species in reactions, however, their values are not changed by the reaction and remain constant throughout the simulation (unless changed by e.g. the [occurrence of an event]@ref ref). Practically, this is done by setting the parameter's `isconstantspecies` metadata to `true`. Here, we create a simple reaction where the species `X` is converted to `Xᴾ` at rate `k`. By designating `X` as a constant species parameter, we ensure that its quantity is unchanged by the occurrence of the reaction.
+Catalyst enables the designation of parameters as `constantspecies`. These parameters can be used as species in reactions, however, their values are not changed by the reaction and remain constant throughout the simulation (unless changed by e.g. the [occurrence of an event]@ref constraint_equations_events). Practically, this is done by setting the parameter's `isconstantspecies` metadata to `true`. Here, we create a simple reaction where the species `X` is converted to `Xᴾ` at rate `k`. By designating `X` as a constant species parameter, we ensure that its quantity is unchanged by the occurrence of the reaction.
 ```@example dsl_advanced_constant_species
 using Catalyst # hide
 rn = @reaction_network begin
@@ -357,7 +357,7 @@ plot!(ylimit = (minimum(sol[:Xtot])*0.95, maximum(sol[:Xtot])*1.05)) # hide
 ```
 to plot the observables (rather than the species).
 
-Observables can be defined using complicated expressions containing species, parameters, and [variables](@ref ref) (but not other observables). In the following example (which uses a [parametric stoichiometry](@ref dsl_description_stoichiometries_parameters)) `X` polymerises to form a complex `Xn` containing `n` copies of `X`. Here, we create an observable describing the total number of `X` molecules in the system:
+Observables can be defined using complicated expressions containing species, parameters, and [variables](@ref constraint_equations) (but not other observables). In the following example (which uses a [parametric stoichiometry](@ref dsl_description_stoichiometries_parameters)) `X` polymerises to form a complex `Xn` containing `n` copies of `X`. Here, we create an observable describing the total number of `X` molecules in the system:
 ```@example dsl_advanced_observables
 rn = @reaction_network begin
     @observables Xtot ~ X + n*Xn
@@ -377,7 +377,7 @@ end
 nothing # hide
 ```
 
-Observables are by default considered [variables](@ref ref) (not species). To designate them as a species, they can be pre-declared using the `@species` option. I.e. Here `Xtot` becomes a species:
+Observables are by default considered [variables](@ref constraint_equations) (not species). To designate them as a species, they can be pre-declared using the `@species` option. I.e. Here `Xtot` becomes a species:
 ```@example dsl_advanced_observables
 rn = @reaction_network begin
     @species Xtot(t)
