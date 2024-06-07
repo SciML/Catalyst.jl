@@ -466,7 +466,7 @@ function get_discrete_events_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 -related functions in a constant tuple.
-DISCRETE_EVENTS_FS = (seri_has_discrete_events, get_discrete_events_string, 
+DISCRETE_EVENTS_FS = (seri_has_discrete_events, get_discrete_events_string,
     get_discrete_events_annotation)
 
 ### Handles Systems ###
@@ -474,7 +474,7 @@ DISCRETE_EVENTS_FS = (seri_has_discrete_events, get_discrete_events_string,
 # Specific `push_field` function, which is used for the system field (where the annotation option
 # must be passed to the `get_component_string` function). Since non-ReactionSystem systems cannot be 
 # written to file, this function throws an error if any such systems are encountered.
-function push_systems_field(file_text::String, rn::ReactionSystem, annotate::Bool, 
+function push_systems_field(file_text::String, rn::ReactionSystem, annotate::Bool,
         top_level::Bool)
     # Checks whether there are any subsystems, and if these are ReactionSystems.
     seri_has_systems(rn) || (return (file_text, false))
