@@ -497,7 +497,7 @@ function getmetadata(reaction::Reaction, md_key::Symbol)
     end
     metadata = getmetadata_dict(reaction)
     return metadata[findfirst(isequal(md_key, entry[1])
-    for entry in getmetadata_dict(reaction))][2]
+        for entry in getmetadata_dict(reaction))][2]
 end
 
 ### Implemented Reaction Metadata ###
