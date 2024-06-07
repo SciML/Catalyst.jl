@@ -64,7 +64,8 @@ We'll store the reaction rates in `pars` as `Pair`s, and set the initial conditi
 ```julia
 # unknown variables are X, pars stores rate parameters for each rx
 t = default_t()
-@species k[1:nr] (X(t))[1:N]
+@parameters k[1:nr]
+@species (X(t))[1:N]
 pars = Pair.(collect(k), kv)
 
 # time-span
