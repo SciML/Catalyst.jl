@@ -1251,9 +1251,8 @@ function set_default_metadata(rs::ReactionSystem; default_reaction_metadata = []
         ns_syms = [Symbolics.unwrap(sym) for sym in get_variables(ns_expr)]
         ns_ps = Iterators.filter(ModelingToolkit.isparameter, ns_syms)
         ns_sps = Iterators.filter(Catalyst.isspecies, ns_syms)
-        ns_vs = Iterators.filter(
-            sym -> !Catalyst.isspecies(sym) &&
-                !ModelingToolkit.isparameter(sym), ns_syms)
+        ns_vs = Iterators.filter(sym -> !Catalyst.isspecies(sym) &&
+            !ModelingToolkit.isparameter(sym), ns_syms)
         # Adds parameters, species, and variables to the `ReactionSystem`.
         @set! rs.ps = union(get_ps(rs), ns_ps)
         sps_new = union(get_species(rs), ns_sps)
