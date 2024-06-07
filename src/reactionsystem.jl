@@ -59,10 +59,9 @@ function Base.getindex(rc::ReactionComplex, i...)
 end
 
 function Base.setindex!(rc::ReactionComplex, t::ReactionComplexElement, i...)
-    (setindex!(rc.speciesids, t.speciesid, i...);
-    setindex!(rc.speciesstoichs,
-        t.speciesstoich, i...);
-    rc)
+    setindex!(rc.speciesids, t.speciesid, i...)
+    setindex!(rc.speciesstoichs, t.speciesstoich, i...)
+    rc
 end
 
 function Base.isless(a::ReactionComplexElement, b::ReactionComplexElement)

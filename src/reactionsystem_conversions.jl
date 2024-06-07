@@ -358,8 +358,7 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
         (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
 
         isvrj = isvrjvec[i]
-        if (!isvrj) && ismassaction(rx, rs; rxvars = rxvars, haveivdep = false,
-            unknownset = unknownset)
+        if (!isvrj) && ismassaction(rx, rs; rxvars, haveivdep = false, unknownset)
             push!(meqs, makemajump(rx; combinatoric_ratelaw = combinatoric_ratelaws))
         else
             rl = jumpratelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)
