@@ -44,6 +44,7 @@ import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertice
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 import Symbolics: occursin, wrap
+import Symbolics.RewriteHelpers: hasnode, replacenode
 
 # globals for the modulate
 function default_time_deriv()
