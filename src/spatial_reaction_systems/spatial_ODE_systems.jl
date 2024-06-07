@@ -61,7 +61,7 @@ struct LatticeTransportODEf{Q, R, S, T}
         # 1 if ps are constant across the graph, 0 else.
         v_ps_idx_types = map(vp -> length(vp) == 1, vert_ps)
         eds = edges(lrs.lattice)
-        new{Q, R, typeof(eds), T}( ofunc, lrs.num_verts, lrs.num_species, vert_ps, 
+        new{Q, R, typeof(eds), T}(ofunc, lrs.num_verts, lrs.num_species, vert_ps,
             work_vert_ps, v_ps_idx_types, transport_rates, leaving_rates, eds, edge_ps)
     end
 end
@@ -159,7 +159,7 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Vector{T}
     transport_rates = make_sidxs_to_transrate_map(vert_ps, edge_ps, lrs)
 
     # Prepares the Jacobian and forcing functions (depending on jacobian and sparsity selection).
-    osys = complete(convert(ODESystem, lrs.rs; 
+    osys = complete(convert(ODESystem, lrs.rs;
         name, combinatoric_ratelaws, include_zero_odes, checks))
     if jac
         # `build_jac_prototype` currently assumes a sparse (non-spatial) Jacobian. Hence compute this.

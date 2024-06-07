@@ -77,7 +77,7 @@ ModelingToolkit.parameters(tr::TransportReaction) = Symbolics.get_variables(tr.r
 spatial_species(tr::TransportReaction) = [tr.species]
 
 # Checks that a transport reaction is valid for a given reaction system.
-function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReaction; 
+function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReaction;
         edge_parameters = [])
     # Checks that the species exist in the reaction system.
     # (ODE simulation code becomes difficult if this is not required,
@@ -96,14 +96,14 @@ function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReacti
     if any(isequal(tr.species, s) && !isequivalent(tr.species, s) for s in species(rs))
         error("A transport reaction used a species, $(tr.species), with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and used in transport reaction creation.")
     end
-    if any(isequal(rs_p, tr_p) && !isequivalent(rs_p, tr_p) for rs_p in parameters(rs),
+    if any(isequal(rs_p, tr_p) && !isequivalent(rs_p, tr_p) for rs_p in parameters(rs), 
             tr_p in Symbolics.get_variables(tr.rate))
         error("A transport reaction used a parameter with metadata not matching its lattice reaction system. Please fetch this parameter from the reaction system and used in transport reaction creation.")
     end
 
     # Checks that no edge parameter occur among rates of non-spatial reactions.
     if any(!isempty(intersect(Symbolics.get_variables(r.rate), edge_parameters))
-            for r in reactions(rs))
+    for r in reactions(rs))
         error("Edge parameter(s) were found as a rate of a non-spatial reaction.")
     end
 end

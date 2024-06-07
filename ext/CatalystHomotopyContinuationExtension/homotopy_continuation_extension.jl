@@ -52,7 +52,7 @@ function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     ns = complete(convert(NonlinearSystem, rs; remove_conserved = true))
     pre_varmap = [symmap_to_varmap(rs, u0)..., symmap_to_varmap(rs, ps)...]
     Catalyst.conservationlaw_errorcheck(rs, pre_varmap)
-    p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns); 
+    p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns);
         defaults = ModelingToolkit.defaults(ns))
     p_dict = Dict(parameters(ns) .=> p_vals)
     eqs_pars_funcs = vcat(equations(ns), conservedequations(rs))

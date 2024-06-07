@@ -417,7 +417,7 @@ function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(u
             push_reactions!(reactions, reaction.args[3], reaction.args[2],
                 rate.args[2], metadata.args[2], arrow)
         elseif in(arrow, fwd_arrows)
-            push_reactions!( reactions, reaction.args[2], reaction.args[3], 
+            push_reactions!(reactions, reaction.args[2], reaction.args[3],
                 rate, metadata, arrow)
         elseif in(arrow, bwd_arrows)
             push_reactions!(reactions, reaction.args[3], reaction.args[2],
@@ -476,7 +476,7 @@ function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues
             error("Some reaction metadata fields where repeated: $(metadata_entries)")
         end
 
-        push!(reactions, ReactionStruct(get_tup_arg(sub_line, i), 
+        push!(reactions,ReactionStruct(get_tup_arg(sub_line, i),
             get_tup_arg(prod_line, i), get_tup_arg(rate, i), metadata_i))
     end
 end
@@ -640,11 +640,11 @@ function read_events_option(options, event_type::Symbol)
         # Formatting error checks.
         # NOTE: Maybe we should move these deeper into the system (rather than the DSL), throwing errors more generally?
         if (arg isa Expr) && (arg.head != :call) || (arg.args[1] != :(=>)) ||
-                (length(arg.args) != 3)
+           (length(arg.args) != 3)
             error("Events should be on form `condition => affect`, separated by a `=>`. This appears not to be the case for: $(arg).")
         end
         if (arg isa Expr) && (arg.args[2] isa Expr) && (arg.args[2].head != :vect) &&
-                (event_type == :continuous_events)
+           (event_type == :continuous_events)
             error("The condition part of continious events (the left-hand side) must be a vector. This is not the case for: $(arg).")
         end
         if (arg isa Expr) && (arg.args[3] isa Expr) && (arg.args[3].head != :vect)
@@ -668,7 +668,7 @@ function read_equations_options(options, variables_declared)
     eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
     eqs_input = option_block_form(eqs_input)
     equations = Expr[]
-    ModelingToolkit.parse_equations!(Expr(:block), equations, 
+    ModelingToolkit.parse_equations!(Expr(:block), equations,
         Dict{Symbol, Any}(), eqs_input)
 
     # Loops through all equations, checks for lhs of the form `D(X) ~ ...`.
@@ -687,7 +687,7 @@ function read_equations_options(options, variables_declared)
         lhs = eq.args[2]
         # if lhs: is an expression. Is a function call. The function's name is D. Calls a single symbol.
         if (lhs isa Expr) && (lhs.head == :call) && (lhs.args[1] == :D) &&
-                (lhs.args[2] isa Symbol)
+           (lhs.args[2] isa Symbol)
             diff_var = lhs.args[2]
             if in(diff_var, forbidden_symbols_error)
                 error("A forbidden symbol ($(diff_var)) was used as an variable in this differential equation: $eq")
@@ -755,7 +755,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 error("An interpoalted observable have been used, which has also been explicitly delcared within the system using eitehr @species or @variables. This is not permited.")
             end
             if ((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2])) &&
-                    !isnothing(metadata)
+               !isnothing(metadata)
                 error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the obervable was also declared separately (using either @species or @variables). When this is done, metadata should instead be provided within the original @species or @variable declaration.")
             end
 
@@ -771,7 +771,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 # Adds a line to the `observed_vars` expression, setting the ivs for this observable.
                 # Cannot extract directly using e.g. "getfield.(dependants_structs, :reactant)" because
                 # then we get something like :([:X1, :X2]), rather than :([X1, X2]).
-                dep_var_expr = :(filter(!MT.isparameter, 
+                dep_var_expr = :(filter(!MT.isparameter,
                     Symbolics.get_variables($(obs_eq.args[3]))))
                 ivs_get_expr = :(unique(reduce(vcat, [arguments(MT.unwrap(dep))
                     for dep in $dep_var_expr])))

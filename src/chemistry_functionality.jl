@@ -85,7 +85,7 @@ function make_compound(expr)
     # Loops through all components, add the component and the coefficients to the corresponding vectors
     # Cannot extract directly using e.g. "getfield.(composition, :reactant)" because then 
     # we get something like :([:C, :O]), rather than :([C, O]).
-    composition = Catalyst.recursive_find_reactants!( xpr.args[3], 1, 
+    composition = Catalyst.recursive_find_reactants!(xpr.args[3], 1,
         Vector{ReactantStruct}(undef, 0))
     components = :([])                                      # Becomes something like :([C, O]).                                         
     coefficients = :([])                                    # Becomes something like :([1, 2]). 
@@ -122,12 +122,12 @@ function make_compound(expr)
     species_declaration_expr = Expr(:escape, :(@species $species_expr))
     multiple_ivs_error_check_expr = Expr(:escape,
         :($(isempty(ivs)) && (length($ivs_get_expr) > 1) &&
-            error($COMPOUND_CREATION_ERROR_DEPENDENT_VAR_REQUIRED)))
+          error($COMPOUND_CREATION_ERROR_DEPENDENT_VAR_REQUIRED)))
     iv_designation_expr = Expr(:escape,
         :($(isempty(ivs)) && ($species_name = $(species_name)($(ivs_get_expr)...))))
     iv_check_expr = Expr(:escape,
         :(issetequal(arguments(ModelingToolkit.unwrap($species_name)), $ivs_get_expr) ||
-            error("The independent variable(S) provided to the compound ($(arguments(ModelingToolkit.unwrap($species_name)))), and those of its components ($($ivs_get_expr)))), are not identical.")))
+          error("The independent variable(S) provided to the compound ($(arguments(ModelingToolkit.unwrap($species_name)))), and those of its components ($($ivs_get_expr)))), are not identical.")))
     compound_designation_expr = Expr(:escape,
         :($species_name = ModelingToolkit.setmetadata(
             $species_name, Catalyst.CompoundSpecies, true)))
@@ -197,7 +197,7 @@ function make_compounds(expr)
 
     # The output needs to be converted to Vector{Num} (from  Vector{SymbolicUtils.BasicSymbolic{Real}}) to be consistent with e.g. @variables.
     compound_declarations.args[end] = :([ModelingToolkit.wrap(cmp)
-        for cmp in $(compound_declarations.args[end])])
+                                         for cmp in $(compound_declarations.args[end])])
 
     # Returns output that.
     return compound_declarations
@@ -264,7 +264,7 @@ function balance_reaction(reaction::Reaction)
         prodstoich = stoich[(length(reaction.substrates) + 1):end]
 
         # Create a new reaction with the balanced stoichiometries
-        balancedrx = Reaction(reaction.rate, reaction.substrates, reaction.products, 
+        balancedrx = Reaction(reaction.rate, reaction.substrates, reaction.products,
             substoich, prodstoich)
 
         # Add the reaction to the vector of all reactions

@@ -47,7 +47,7 @@ struct LatticeReactionSystem{S, T} # <: MT.AbstractTimeDependentSystem
         if isempty(spatial_reactions)
             spat_species = Vector{BasicSymbolic{Real}}[]
         else
-            spat_species = unique(reduce(vcat, 
+            spat_species = unique(reduce(vcat,
                 [spatial_species(sr) for sr in spatial_reactions]))
         end
         num_species = length(unique([species(rs); spat_species]))

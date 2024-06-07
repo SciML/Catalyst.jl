@@ -268,7 +268,8 @@ end
 # This is stored in location_types.
 function get_component_value(values::Vector{<:Vector}, component_idx::Int64,
         location_idx::Int64, location_types::Vector{Bool})
-    return get_component_value(values[component_idx], location_idx, location_types[component_idx])
+    return get_component_value(values[component_idx], location_idx, 
+        location_types[component_idx])
 end
 # For a components value (which is a vector of either length 1 or some other length), retrieves its value.
 function get_component_value(values::Vector{<:Number}, location_idx::Int64)
