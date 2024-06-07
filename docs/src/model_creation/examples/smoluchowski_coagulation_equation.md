@@ -61,6 +61,7 @@ elseif i==2
     C = 1.84e-04    # cm³ s⁻¹
     kv = fill(C / V, nr)
 end
+nothing #hide
 ```
 We'll set the parameters and the initial condition that only monomers are present at ``t=0`` in `u₀map`.
 ```@example smcoag1
@@ -107,6 +108,7 @@ jumpsys = complete(convert(JumpSystem, rs))
 dprob   = DiscreteProblem(rs, u₀map, tspan)
 jprob   = JumpProblem(jumpsys, dprob, Direct(), save_positions = (false, false))
 jsol    = solve(jprob, SSAStepper(), saveat = tspan[2] / 30)
+nothing #hide
 ```
 Lets check the results for the first three polymers/cluster sizes. We compare to the analytical solution for this system:
 ```@example smcoag1
@@ -142,9 +144,6 @@ scatter!(ϕ, jsol(t)[3,:] / uₒ, label = "X3 (trimers)", markercolor = :purple)
 plot!(ϕ, sol[3,:] / Nₒ, line = (:dot, 4, :purple), label = "Analytical sol--X3",
       ylabel = "Normalized Concentration")
 ```
-For the **additive kernel** we find
-
-![additive_kernel](../../assets/additive_kernel.svg)
 
 ---
 ## References
