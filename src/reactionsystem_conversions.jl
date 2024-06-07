@@ -471,7 +471,7 @@ Keyword args and default values:
 function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
-        default_u0 = Dict(), default_p = Dict(), 
+        default_u0 = Dict(), default_p = Dict(),
         defaults = _merge(Dict(default_u0), Dict(default_p)),
         kwargs...)
     iscomplete(rs) || error(COMPLETENESS_ERROR)
@@ -513,7 +513,7 @@ Keyword args and default values:
 function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
-        default_u0 = Dict(), default_p = Dict(), 
+        default_u0 = Dict(), default_p = Dict(),
         defaults = _merge(Dict(default_u0), Dict(default_p)),
         all_differentials_permitted = false, kwargs...)
     # Error checks.
@@ -595,7 +595,7 @@ Notes:
 function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, checks = false, remove_conserved = false,
-        default_u0 = Dict(), default_p = Dict(), 
+        default_u0 = Dict(), default_p = Dict(),
         defaults = _merge(Dict(default_u0), Dict(default_p)),
         kwargs...)
     iscomplete(rs) || error(COMPLETENESS_ERROR)
@@ -646,7 +646,7 @@ Notes:
 function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         remove_conserved = nothing, checks = false,
-        default_u0 = Dict(), default_p = Dict(), 
+        default_u0 = Dict(), default_p = Dict(),
         defaults = _merge(Dict(default_u0), Dict(default_p)),
         kwargs...)
     iscomplete(rs) || error(COMPLETENESS_ERROR)
