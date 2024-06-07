@@ -19,7 +19,7 @@ pages = Any[
             "model_creation/examples/basic_CRN_library.md",
             "model_creation/examples/programmatic_generative_linear_pathway.md",
             "model_creation/examples/hodgkin_huxley_equation.md",
-            #"model_creation/examples/smoluchowski_coagulation_equation.md"
+            "model_creation/examples/smoluchowski_coagulation_equation.md"
         ]
     ],
     "Model simulation" => Any[
@@ -32,7 +32,7 @@ pages = Any[
     "Steady state analysis" => Any[
         "steady_state_functionality/homotopy_continuation.md",
         "steady_state_functionality/nonlinear_solve.md",
-        "steady_state_functionality/steady_state_stability_computation.md",        
+        "steady_state_functionality/steady_state_stability_computation.md",
         "steady_state_functionality/bifurcation_diagrams.md",
         "steady_state_functionality/dynamical_systems.md"
     ],

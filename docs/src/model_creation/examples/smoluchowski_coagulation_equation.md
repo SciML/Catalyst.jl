@@ -6,47 +6,58 @@ The Smoluchowski coagulation equation describes a system of reactions in which m
 We begin by importing some necessary packages.
 ```julia
 using ModelingToolkit, Catalyst, LinearAlgebra
-using DiffEqBase, JumpProcesses
+using JumpProcesses
 using Plots, SpecialFunctions
 ```
 Suppose the maximum cluster size is `N`. We assume an initial concentration of monomers, `Nₒ`, and let `uₒ` denote the initial number of monomers in the system. We have `nr` total reactions, and label by `V` the bulk volume of the system (which plays an important role in the calculation of rate laws since we have bimolecular reactions). Our basic parameters are then
 ```julia
-## Parameter
-N = 10                       # maximum cluster size
-Vₒ = (4π/3)*(10e-06*100)^3   # volume of a monomers in cm³
-Nₒ = 1e-06/Vₒ                # initial conc. = (No. of init. monomers) / bulk volume
-uₒ = 10000                   # No. of monomers initially
-V = uₒ/Nₒ                    # Bulk volume of system in cm³
+# maximum cluster size
+N = 10
 
-integ(x) = Int(floor(x))
-n        = integ(N/2)
-nr       = N%2 == 0 ? (n*(n + 1) - n) : (n*(n + 1)) # No. of forward reactions
+# volume of a monomers in cm³
+Vₒ = (4π / 3) * (10e-06 * 100)^3
+
+# initial conc. = (No. of init. monomers) / bulk volume
+Nₒ = 1e-06 / Vₒ
+
+# No. of monomers initially
+uₒ = 10000
+
+# Bulk volume of system in cm³
+V = uₒ / Nₒ
+n = floor(Int, N / 2)
+
+# No. of forward reactions
+nr = ((N % 2) == 0) ? (n*(n + 1) - n) : (n*(n + 1))
 ```
 The [Smoluchowski coagulation equation](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation) Wikipedia page illustrates the set of possible reactions that can occur. We can easily enumerate the `pair`s of multimer reactants that can combine when allowing a maximal cluster size of `N` monomers. We initialize the volumes of the reactant multimers as `volᵢ` and `volⱼ`
 
 ```julia
 # possible pairs of reactant multimers
-pair = []
+pair = Int[]
 for i = 2:N
-    push!(pair, [1:integ(i/2)  i .- (1:integ(i/2))])
+    halfi = floor(Int, i/2)
+    push!(pair, [(1:halfi)  (i .- (1:halfi))])
 end
 pair = vcat(pair...)
-vᵢ = @view pair[:,1]   # Reactant 1 indices
-vⱼ = @view pair[:,2]   # Reactant 2 indices
-volᵢ = Vₒ*vᵢ           # cm⁻³
-volⱼ = Vₒ*vⱼ           # cm⁻³
+vᵢ = @view pair[:, 1]  # Reactant 1 indices
+vⱼ = @view pair[:, 2]  # Reactant 2 indices
+volᵢ = Vₒ * vᵢ         # cm⁻³
+volⱼ = Vₒ * vⱼ         # cm⁻³
 sum_vᵢvⱼ = @. vᵢ + vⱼ  # Product index
 ```
 We next specify the rates (i.e. kernel) at which reactants collide to form products. For simplicity, we allow a user-selected additive kernel or constant kernel. The constants(`B` and `C`) are adopted from Scott's paper [2](https://journals.ametsoc.org/view/journals/atsc/25/1/1520-0469_1968_025_0054_asocdc_2_0_co_2.xml)
 ```julia
 # set i to  1 for additive kernel, 2  for constant
 i = 1
-if i==1
-    B = 1.53e03                # s⁻¹
-    kv = @. B*(volᵢ + volⱼ)/V  # dividing by volume as its a bi-molecular reaction chain
+if i == 1
+    B = 1.53e03    # s⁻¹
+
+    # dividing by volume as it is a bimolecular reaction chain
+    kv = @. B * (volᵢ + volⱼ) / V
 elseif i==2
-    C = 1.84e-04               # cm³ s⁻¹
-    kv = fill(C/V, nr)
+    C = 1.84e-04    # cm³ s⁻¹
+    kv = fill(C / V, nr)
 end
 ```
 We'll store the reaction rates in `pars` as `Pair`s, and set the initial condition that only monomers are present at ``t=0`` in `u₀map`.
@@ -58,9 +69,9 @@ pars = Pair.(collect(k), kv)
 
 # time-span
 if i == 1
-    tspan = (0. ,2000.)
+    tspan = (0.0, 2000.0)
 elseif i == 2
-    tspan = (0. ,350.)
+    tspan = (0.0, 350.0)
 end
 
  # initial condition of monomers
@@ -82,19 +93,20 @@ for n = 1:nr
     end
 end
 @named rs = ReactionSystem(rx, t, collect(X), collect(k))
+rs = complete(rs)
 ```
 We now convert the [`ReactionSystem`](@ref) into a `ModelingToolkit.JumpSystem`, and solve it using Gillespie's direct method. For details on other possible solvers (SSAs), see the [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/types/jump_types/) documentation
 ```julia
 # solving the system
 jumpsys = convert(JumpSystem, rs)
 dprob   = DiscreteProblem(jumpsys, u₀map, tspan, pars)
-jprob   = JumpProblem(jumpsys, dprob, Direct(), save_positions=(false,false))
-jsol    = solve(jprob, SSAStepper(), saveat = tspan[2]/30)
+jprob   = JumpProblem(jumpsys, dprob, Direct(), save_positions = (false, false))
+jsol    = solve(jprob, SSAStepper(), saveat = tspan[2] / 30)
 ```
 Lets check the results for the first three polymers/cluster sizes. We compare to the analytical solution for this system:
 ```julia
 # Results for first three polymers...i.e. monomers, dimers and trimers
-v_res = [1;2;3]
+v_res = [1; 2; 3]
 
 # comparison with analytical solution
 # we only plot the stochastic solution at a small number of points
@@ -114,15 +126,15 @@ elseif i == 2
 end
 
 # plotting normalised concentration vs analytical solution
-default(lw=2, xlabel="Time (sec)")
-scatter(ϕ, jsol(t)[1,:]/uₒ, label="X1 (monomers)", markercolor=:blue)
+default(lw = 2, xlabel = "Time (sec)")
+scatter(ϕ, jsol(t)[1,:] / uₒ, label = "X1 (monomers)", markercolor = :blue)
 plot!(ϕ, sol[1,:]/Nₒ, line = (:dot,4,:blue), label="Analytical sol--X1")
 
-scatter!(ϕ, jsol(t)[2,:]/uₒ, label="X2 (dimers)", markercolor=:orange)
-plot!(ϕ, sol[2,:]/Nₒ, line = (:dot,4,:orange), label="Analytical sol--X2")
+scatter!(ϕ, jsol(t)[2,:] / uₒ, label = "X2 (dimers)", markercolor = :orange)
+plot!(ϕ, sol[2,:] / Nₒ, line = (:dot, 4, :orange), label = "Analytical sol--X2")
 
-scatter!(ϕ, jsol(t)[3,:]/uₒ, label="X3 (trimers)", markercolor=:purple)
-plot!(ϕ, sol[3,:]/Nₒ, line = (:dot,4,:purple), label="Analytical sol--X3",
+scatter!(ϕ, jsol(t)[3,:] / uₒ, label = "X3 (trimers)", markercolor = :purple)
+plot!(ϕ, sol[3,:] / Nₒ, line = (:dot, 4, :purple), label = "Analytical sol--X3",
       ylabel = "Normalized Concentration")
 ```
 For the **additive kernel** we find
