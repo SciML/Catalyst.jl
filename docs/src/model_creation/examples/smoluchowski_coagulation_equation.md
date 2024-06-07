@@ -60,13 +60,14 @@ elseif i==2
     kv = fill(C / V, nr)
 end
 ```
-We'll store the reaction rates in `pars` as `Pair`s, and set the initial condition that only monomers are present at ``t=0`` in `u₀map`.
+We'll set the parameters and the initial condition that only monomers are present at ``t=0`` in `u₀map`.
 ```julia
-# unknown variables are X, pars stores rate parameters for each rx
+# k is a vector of the parameters, with values given by the vector kv
+@parameters k[1:nr] = kv
+
+# create the vector of species X_1,...,X_N
 t = default_t()
-@parameters k[1:nr]
 @species (X(t))[1:N]
-pars = Pair.(collect(k), kv)
 
 # time-span
 if i == 1
@@ -78,7 +79,7 @@ end
  # initial condition of monomers
 u₀    = zeros(Int64, N)
 u₀[1] = uₒ
-u₀map = Pair.(collect(X), u₀)   # map variable to its initial value
+u₀map = Pair.(collect(X), u₀)   # map species to its initial value
 ```
 Here we generate the reactions programmatically. We systematically create Catalyst `Reaction`s for each possible reaction shown in the figure on [Wikipedia](https://en.wikipedia.org/wiki/Smoluchowski_coagulation_equation). When `vᵢ[n] == vⱼ[n]`, we set the stoichiometric coefficient of the reactant multimer to two.
 ```julia
@@ -100,7 +101,7 @@ We now convert the [`ReactionSystem`](@ref) into a `ModelingToolkit.JumpSystem`,
 ```julia
 # solving the system
 jumpsys = convert(JumpSystem, rs)
-dprob   = DiscreteProblem(jumpsys, u₀map, tspan, pars)
+dprob   = DiscreteProblem(jumpsys, u₀map, tspan)
 jprob   = JumpProblem(jumpsys, dprob, Direct(), save_positions = (false, false))
 jsol    = solve(jprob, SSAStepper(), saveat = tspan[2] / 30)
 ```
