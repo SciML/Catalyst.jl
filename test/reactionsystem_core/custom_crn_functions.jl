@@ -155,3 +155,17 @@ let
     @test isequal(Catalyst.expand_registered_functions(eq4), 0 ~ V * (K^N) / (X^N + K^N))
     @test isequal(Catalyst.expand_registered_functions(eq5), 0 ~ V * (X^N) / (X^N + Y^N + K^N))
 end
+
+# Ensures that original system is not modified.
+let
+    # Create model with a registered function.
+    @species X(t)
+    @parameters v K
+    rxs = [Reaction(mm(X,v,K), [], [X])]
+    @named rs = ReactionSystem(rxs, t)
+
+    # Check that `expand_registered_functions` does not mutate original model.
+    rs_expanded_funcs = Catalyst.expand_registered_functions(rs)
+    @test isequal(only(Catalyst.get_rxs(rs)).rate, Catalyst.mm(X,v,K))
+    @test isequal(only(Catalyst.get_rxs(rs_expanded_funcs)).rate, v*X/(X + K))
+end
