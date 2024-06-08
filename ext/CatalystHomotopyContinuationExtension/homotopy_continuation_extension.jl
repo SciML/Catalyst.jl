@@ -35,8 +35,9 @@ Notes:
 - Homotopy-based steady state finding only works when all rates are rational polynomials (e.g. constant, linear, mm, or hill functions).
 ```
   """
-function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative=true, neg_thres=-1e-20, u0=[], kwargs...)
-    if !isautonomous(rs) 
+function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative = true,
+        neg_thres = -1e-20, u0 = [], kwargs...)
+    if !isautonomous(rs)
         error("Attempting to compute steady state for a non-autonomous system (e.g. where some rate depend on $(rs.iv)). This is not possible.")
     end
     ss_poly = steady_state_polynomial(rs, ps, u0)
@@ -49,10 +50,11 @@ end
 function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     rs = Catalyst.expand_registered_functions(rs)
     ns = complete(convert(NonlinearSystem, rs; remove_conserved = true))
-    pre_varmap = [symmap_to_varmap(rs,u0)..., symmap_to_varmap(rs,ps)...]
+    pre_varmap = [symmap_to_varmap(rs, u0)..., symmap_to_varmap(rs, ps)...]
     Catalyst.conservationlaw_errorcheck(rs, pre_varmap)
-    p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns); defaults = ModelingToolkit.defaults(ns))
-    p_dict  = Dict(parameters(ns) .=> p_vals)
+    p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns);
+        defaults = ModelingToolkit.defaults(ns))
+    p_dict = Dict(parameters(ns) .=> p_vals)
     eqs_pars_funcs = vcat(equations(ns), conservedequations(rs))
     eqs = map(eq -> substitute(eq.rhs - eq.lhs, p_dict), eqs_pars_funcs)
     eqs_intexp = make_int_exps.(eqs)
@@ -61,12 +63,14 @@ function steady_state_polynomial(rs::ReactionSystem, ps, u0)
 end
 
 # Parses and expression and return a version where any exponents that are Float64 (but an int, like 2.0) are turned into Int64s.
-make_int_exps(expr) = wrap(Rewriters.Postwalk(Rewriters.PassThrough(___make_int_exps))(unwrap(expr))).val
+function make_int_exps(expr)
+    wrap(Rewriters.Postwalk(Rewriters.PassThrough(___make_int_exps))(unwrap(expr))).val
+end
 function ___make_int_exps(expr)
-    !iscall(expr) && return expr
-    if (operation(expr) == ^) 
+    !istree(expr) && return expr
+    if (operation(expr) == ^)
         if isinteger(arguments(expr)[2])
-            return arguments(expr)[1] ^ Int64(arguments(expr)[2])
+            return arguments(expr)[1]^Int64(arguments(expr)[2])
         else
             error("An non integer ($(arguments(expr)[2])) was found as a variable exponent. Non-integer exponents are not supported for homotopy continuation based steady state finding.")
         end
@@ -95,7 +99,7 @@ function reorder_sols!(sols, ss_poly, rs::ReactionSystem)
 end
 
 # Filters away solutions with negative species concentrations (and for neg_thres < val < 0.0, sets val=0.0).
-function filter_negative_f(sols; neg_thres=-1e-20)
+function filter_negative_f(sols; neg_thres = -1e-20)
     for sol in sols, idx in 1:length(sol)
         (neg_thres < sol[idx] < 0) && (sol[idx] = 0)
     end
@@ -104,8 +108,12 @@ end
 
 # Sometimes (when polynomials are created from coupled CRN/DAEs), the steady state polynomial have the wrong type.
 # This converts it to the correct type, which homotopy continuation can handle.
-const WRONG_POLY_TYPE = Vector{DynamicPolynomials.Polynomial{DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder}, DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}}}
-const CORRECT_POLY_TYPE = Vector{DynamicPolynomials.Polynomial{DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder}, DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}, Float64}}
+const WRONG_POLY_TYPE = Vector{DynamicPolynomials.Polynomial{
+    DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder},
+    DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}}}
+const CORRECT_POLY_TYPE = Vector{DynamicPolynomials.Polynomial{
+    DynamicPolynomials.Commutative{DynamicPolynomials.CreationOrder},
+    DynamicPolynomials.Graded{DynamicPolynomials.LexOrder}, Float64}}
 function poly_type_convert(ss_poly)
     (typeof(ss_poly) == WRONG_POLY_TYPE) && return convert(CORRECT_POLY_TYPE, ss_poly)
     return ss_poly

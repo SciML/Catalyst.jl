@@ -23,16 +23,16 @@ end
 
 # Gets the character at a specific index.
 get_char(str, idx) = collect(str)[idx]
-get_char_end(str, offset) = collect(str)[end+offset]
+get_char_end(str, offset) = collect(str)[end + offset]
 # Gets a substring (which is robust to unicode characters like η).
 get_substring(str, idx1, idx2) = String(collect(str)[idx1:idx2])
-get_substring_end(str, idx1, offset) = String(collect(str)[idx1:end+offset])
-
+get_substring_end(str, idx1, offset) = String(collect(str)[idx1:(end + offset)])
 
 ### Field Serialisation Support Functions ###
 
 # Function which handles the addition of a single component to the file string.
-function push_field(file_text::String, rn::ReactionSystem, annotate::Bool, top_level::Bool, comp_funcs::Tuple)
+function push_field(file_text::String, rn::ReactionSystem,
+        annotate::Bool, top_level::Bool, comp_funcs::Tuple)
     has_component, get_comp_string, get_comp_annotation = comp_funcs
     has_component(rn) || (return (file_text, false))
 
@@ -65,12 +65,12 @@ function get_unsupported_comp_annotation(component::String)
     return "$(component): (OBS: Currently not supported, and hence empty)"
 end
 
-
 ### String Conversion ###
 
 # Converts a numeric expression (e.g. p*X + 2Y) to a string (e.g. "p*X + 2Y"). Also ensures that for
 # any variables (e.g. X(t)) the call part is stripped, and only variable name (e.g. X) is written.
-function expression_2_string(expr; strip_call_dict = make_strip_call_dict(Symbolics.get_variables(expr)))
+function expression_2_string(expr;
+        strip_call_dict = make_strip_call_dict(Symbolics.get_variables(expr)))
     strip_called_expr = substitute(expr, strip_call_dict)
     return repr(strip_called_expr)
 end
@@ -80,7 +80,7 @@ end
 function syms_2_strings(syms)
     strip_called_syms = [strip_call(Symbolics.unwrap(sym)) for sym in syms]
     return get_substring_end("$(convert(Vector{Any}, strip_called_syms))", 4, 0)
-end    
+end
 
 # Converts a vector of symbolic variables (e.g. the species or parameter vectors) to a string
 # corresponding to the code required to declare them (potential @parameters or @species commands
@@ -90,7 +90,8 @@ function syms_2_declaration_string(syms; multiline_format = false)
     decs_string = (multiline_format ? " begin" : "")
     for sym in syms
         delimiter = (multiline_format ? "\n\t" : " ")
-        @string_append! decs_string delimiter sym_2_declaration_string(sym; multiline_format)
+        @string_append! decs_string delimiter sym_2_declaration_string(sym;
+            multiline_format)
     end
     multiline_format && (@string_append! decs_string "\nend")
     return decs_string
@@ -108,7 +109,8 @@ function sym_2_declaration_string(sym; multiline_format = false)
     # to ensure that this is the case.
     if !(sym isa BasicSymbolic{Real})
         sym_type = String(Symbol(typeof(Symbolics.unwrap(sym))))
-        if (get_substring(sym_type, 1, 28) != "SymbolicUtils.BasicSymbolic{") || (get_char_end(sym_type, 0) != '}')
+        if (get_substring(sym_type, 1, 28) != "SymbolicUtils.BasicSymbolic{") ||
+           (get_char_end(sym_type, 0) != '}')
             error("Encountered symbolic of unexpected type: $sym_type.")
         end
         @string_append! dec_string "::" get_substring_end(sym_type, 29, -1)
@@ -154,14 +156,14 @@ function x_2_string(x::Vector)
         @string_append! output x_2_string(val) ", "
     end
     return get_substring_end(output, 1, -2) * "]"
-end 
+end
 function x_2_string(x::Tuple)
     output = "("
     for val in x
         @string_append! output x_2_string(val) ", "
     end
     return get_substring_end(output, 1, -2) * ")"
-end 
+end
 function x_2_string(x::Dict)
     output = "Dict(["
     for key in keys(x)
@@ -171,18 +173,18 @@ function x_2_string(x::Dict)
 end
 function x_2_string(x::Union{Matrix, Symbolics.Arr{Any, 2}})
     output = "["
-    for j = 1:size(x)[1]
-        for i = 1:size(x)[2]
-            @string_append! output x_2_string(x[j,i]) " "
+    for j in 1:size(x)[1]
+        for i in 1:size(x)[2]
+            @string_append! output x_2_string(x[j, i]) " "
         end
         output = get_substring_end(output, 1, -1) * "; "
     end
-    return get_substring_end(output, 1, -2) *"]"
-end 
+    return get_substring_end(output, 1, -2) * "]"
+end
 
-
-x_2_string(x) = error("Tried to write an unsupported value ($(x)) of an unsupported type ($(typeof(x))) to a string.")
-
+function x_2_string(x)
+    error("Tried to write an unsupported value ($(x)) of an unsupported type ($(typeof(x))) to a string.")
+end
 
 ### Symbolics Metadata Handling ###
 
@@ -210,32 +212,28 @@ end
 
 # List of all recognised metadata (we should add as many as possible), and th keyword used to declare
 # them in code.
-const RECOGNISED_METADATA = Dict([
-    Catalyst.ParameterConstantSpecies => "isconstantspecies"
-    Catalyst.VariableBCSpecies => "isbcspecies"
-    Catalyst.VariableSpecies => "isspecies"
-    Catalyst.EdgeParameter => "edgeparameter"
-    Catalyst.CompoundSpecies => "iscompound"
-    Catalyst.CompoundComponents => "components"
-    Catalyst.CompoundCoefficients => "coefficients"
-
-    ModelingToolkit.VariableDescription => "description"
-    ModelingToolkit.VariableBounds => "bounds"
-    ModelingToolkit.VariableUnit => "unit"
-    ModelingToolkit.VariableConnectType => "connect"
-    ModelingToolkit.VariableNoiseType => "noise"
-    ModelingToolkit.VariableInput => "input"
-    ModelingToolkit.VariableOutput => "output"
-    ModelingToolkit.VariableIrreducible => "irreducible"
-    ModelingToolkit.VariableStatePriority => "state_priority"
-    ModelingToolkit.VariableMisc => "misc"
-    ModelingToolkit.TimeDomain => "timedomain"
-])
+const RECOGNISED_METADATA = Dict([Catalyst.ParameterConstantSpecies => "isconstantspecies"
+                                  Catalyst.VariableBCSpecies => "isbcspecies"
+                                  Catalyst.VariableSpecies => "isspecies"
+                                  Catalyst.EdgeParameter => "edgeparameter"
+                                  Catalyst.CompoundSpecies => "iscompound"
+                                  Catalyst.CompoundComponents => "components"
+                                  Catalyst.CompoundCoefficients => "coefficients"
+                                  ModelingToolkit.VariableDescription => "description"
+                                  ModelingToolkit.VariableBounds => "bounds"
+                                  ModelingToolkit.VariableUnit => "unit"
+                                  ModelingToolkit.VariableConnectType => "connect"
+                                  ModelingToolkit.VariableNoiseType => "noise"
+                                  ModelingToolkit.VariableInput => "input"
+                                  ModelingToolkit.VariableOutput => "output"
+                                  ModelingToolkit.VariableIrreducible => "irreducible"
+                                  ModelingToolkit.VariableStatePriority => "state_priority"
+                                  ModelingToolkit.VariableMisc => "misc"
+                                  ModelingToolkit.TimeDomain => "timedomain"])
 
 # List of metadata that does not need to be explicitly declared to be added (or which is handled separately).
-const SKIPPED_METADATA = [ModelingToolkit.MTKVariableTypeCtx, Symbolics.VariableSource, 
-                          Symbolics.VariableDefaultValue, Catalyst.VariableSpecies]
-
+const SKIPPED_METADATA = [ModelingToolkit.MTKVariableTypeCtx, Symbolics.VariableSource,
+    Symbolics.VariableDefaultValue, Catalyst.VariableSpecies]
 
 ### Generic Expression Handling ###
 
@@ -252,7 +250,6 @@ end
 function make_strip_call_dict(rn::ReactionSystem)
     return make_strip_call_dict(get_unknowns(rn))
 end
-
 
 ### Handle Parameters/Species/Variables Declaration Dependencies ###
 
@@ -285,9 +282,7 @@ function dependency_split!(remaining_syms, all_remaining_syms)
     return writable_syms
 end
 
-
 ### Other Functions ###
-
 
 # Checks if a symbolic's declaration is "complicated". The declaration is considered complicated
 # if it has metadata, default value, or type designation that must be declared.

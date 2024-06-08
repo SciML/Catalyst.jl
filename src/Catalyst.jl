@@ -7,7 +7,7 @@ using DocStringExtensions
 using SparseArrays, DiffEqBase, Reexport, Setfield
 using LaTeXStrings, Latexify, Requires
 using LinearAlgebra, Combinatorics
-using JumpProcesses: JumpProcesses, JumpProblem, 
+using JumpProcesses: JumpProcesses, JumpProblem,
                      MassActionJump, ConstantRateJump, VariableRateJump,
                      SpatialMassActionJump
 
@@ -15,7 +15,6 @@ using JumpProcesses: JumpProcesses, JumpProblem,
 using ModelingToolkit
 const MT = ModelingToolkit
 using DynamicQuantities#, Unitful # Having Unitful here as well currently gives an error.
-
 
 @reexport using ModelingToolkit
 using Symbolics
@@ -82,7 +81,7 @@ const CONSERVED_CONSTANT_SYMBOL = :Γ
 # Declares symbols which may neither be used as parameters nor unknowns.
 const forbidden_symbols_skip = Set([:ℯ, :pi, :π, :t, :∅])
 const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
-                                      forbidden_symbols_skip)
+    forbidden_symbols_skip)
 const forbidden_variables_error = let
     fvars = copy(forbidden_symbols_error)
     delete!(fvars, :t)
@@ -183,7 +182,6 @@ include("spatial_reaction_systems/utility.jl")
 # Specific spatial problem types.
 include("spatial_reaction_systems/spatial_ODE_systems.jl")
 include("spatial_reaction_systems/lattice_jump_systems.jl")
-
 
 ### ReactionSystem Serialisation ###
 # Has to be at the end (because it uses records of all metadata declared by Catalyst).

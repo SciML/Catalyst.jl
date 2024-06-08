@@ -19,7 +19,6 @@ end
 # Combines the 3 independent variable-related functions in a constant tuple.
 IV_FS = (seri_has_iv, get_iv_string, get_iv_annotation)
 
-
 ### Handles Spatial Independent Variables ###
 
 # Checks if the reaction system has any spatial independent variables.
@@ -40,12 +39,12 @@ end
 # Combines the 3 independent variables-related functions in a constant tuple.
 SIVS_FS = (seri_has_sivs, get_sivs_string, get_sivs_annotation)
 
-
 ### Handles Species, Variables, and Parameters ###
 
 # Function which handles the addition of species, variable, and parameter declarations to the file
 # text. These must be handled as a unity in case there are default value dependencies between these.
-function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool, top_level::Bool)
+function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool,
+        top_level::Bool)
     # Fetches the system's parameters, species, and variables. Computes the `has_` `Bool`s.
     ps_all = get_ps(rn)
     sps_all = get_species(rn)
@@ -103,14 +102,20 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool, t
         while !(isempty(remaining_ps) && isempty(remaining_sps) && isempty(remaining_vars))
             # Checks which parameters/species/variables can be written. The `dependency_split`
             # function updates the `remaining_` input.
-            writable_ps = dependency_split!(remaining_ps, [remaining_ps; remaining_sps; remaining_vars])
-            writable_sps = dependency_split!(remaining_sps, [remaining_ps; remaining_sps; remaining_vars])
-            writable_vars = dependency_split!(remaining_vars, [remaining_ps; remaining_sps; remaining_vars])
-            
+            writable_ps = dependency_split!(remaining_ps,
+                [remaining_ps; remaining_sps; remaining_vars])
+            writable_sps = dependency_split!(remaining_sps,
+                [remaining_ps; remaining_sps; remaining_vars])
+            writable_vars = dependency_split!(remaining_vars,
+                [remaining_ps; remaining_sps; remaining_vars])
+
             # Writes those that can be written.
-            isempty(writable_ps) || @string_append! us_n_ps_string get_parameters_string(writable_ps) "\n"
-            isempty(writable_sps) || @string_append! us_n_ps_string get_species_string(writable_sps) "\n"
-            isempty(writable_vars) || @string_append! us_n_ps_string get_variables_string(writable_vars) "\n"
+            isempty(writable_ps) ||
+                @string_append! us_n_ps_string get_parameters_string(writable_ps) "\n"
+            isempty(writable_sps) ||
+                @string_append! us_n_ps_string get_species_string(writable_sps) "\n"
+            isempty(writable_vars) ||
+                @string_append! us_n_ps_string get_variables_string(writable_vars) "\n"
         end
 
         # For parameters, species, and/or variables with dependencies, create final vectors.
@@ -130,7 +135,6 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool, t
     # Merges the file text with `us_n_ps_string` and returns the final outputs.
     return file_text * us_n_ps_string, has_ps, has_sps, has_vars
 end
-
 
 ### Handles Parameters ###
 # Unlike most other fields, these are not called via `push_field`, but rather via `handle_us_n_ps`.
@@ -154,7 +158,6 @@ function get_parameters_annotation(rn::ReactionSystem)
     return "Parameters:"
 end
 
-
 ### Handles Species ###
 # Unlike most other fields, these are not called via `push_field`, but rather via `handle_us_n_ps`.
 # Hence they work slightly differently.
@@ -176,7 +179,6 @@ end
 function get_species_annotation(rn::ReactionSystem)
     return "Species:"
 end
-
 
 ### Handles Variables ###
 # Unlike most other fields, these are not called via `push_field`, but rather via `handle_us_n_ps`.
@@ -203,7 +205,6 @@ end
 # Combines the 3 variables-related functions in a constant tuple.
 VARIABLES_FS = (seri_has_variables, get_variables_string, get_variables_annotation)
 
-
 ### Handles Reactions ###
 
 # Checks if the reaction system has any reactions.
@@ -224,7 +225,7 @@ function get_reactions_string(rn::ReactionSystem)
     # Creates the string corresponding to the code which generates the system's reactions. 
     rxs_string = "rxs = ["
     for rx in get_rxs(rn)
-        @string_append! rxs_string "\n\t" * reaction_string(rx, strip_call_dict) ","
+        @string_append! rxs_string "\n\t"*reaction_string(rx, strip_call_dict) ","
     end
 
     # Updates the string (including removing the last `,`) and returns it.
@@ -235,7 +236,7 @@ end
 function reaction_string(rx::Reaction, strip_call_dict)
     # Prepares the `Reaction` declaration components.
     rate = expression_2_string(rx.rate; strip_call_dict)
-    substrates = isempty(rx.substrates) ? "nothing" : x_2_string(rx.substrates)    
+    substrates = isempty(rx.substrates) ? "nothing" : x_2_string(rx.substrates)
     products = isempty(rx.products) ? "nothing" : x_2_string(rx.products)
     substoich = isempty(rx.substoich) ? "nothing" : x_2_string(rx.substoich)
     prodstoich = isempty(rx.prodstoich) ? "nothing" : x_2_string(rx.prodstoich)
@@ -268,7 +269,6 @@ end
 # Combines the 3 reaction-related functions in a constant tuple.
 REACTIONS_FS = (seri_has_reactions, get_reactions_string, get_reactions_annotation)
 
-
 ### Handles Equations ###
 
 # Checks if the reaction system has any equations.
@@ -288,7 +288,7 @@ function get_equations_string(rn::ReactionSystem)
 
     # Creates the string corresponding to the code which generates the system's reactions. 
     eqs_string = "eqs = ["
-    for eq in get_eqs(rn)[length(get_rxs(rn)) + 1:end]
+    for eq in get_eqs(rn)[(length(get_rxs(rn)) + 1):end]
         @string_append! eqs_string "\n\t" expression_2_string(eq; strip_call_dict) ","
     end
 
@@ -303,7 +303,6 @@ end
 
 # Combines the 3 equations-related functions in a constant tuple.
 EQUATIONS_FS = (seri_has_equations, get_equations_string, get_equations_annotation)
-
 
 ### Handles Observables ###
 
@@ -344,7 +343,7 @@ function get_observed_string(rn::ReactionSystem)
     end
 
     # Updates the string (including removing the last `,`) and returns it.
-    return observed_string[1:end-1] * "\n]"
+    return observed_string[1:(end - 1)] * "\n]"
 end
 
 # Creates an annotation for the system's observables.
@@ -354,7 +353,6 @@ end
 
 # Combines the 3 -related functions in a constant tuple.
 OBSERVED_FS = (seri_has_observed, get_observed_string, get_observed_annotation)
-
 
 ### Handles Continuous Events ###
 
@@ -376,7 +374,8 @@ function get_continuous_events_string(rn::ReactionSystem)
     # Creates the string corresponding to the code which generates the system's reactions. 
     continuous_events_string = "continuous_events = ["
     for continuous_event in MT.get_continuous_events(rn)
-        @string_append! continuous_events_string "\n\t" continuous_event_string(continuous_event, strip_call_dict) ","
+        @string_append! continuous_events_string "\n\t" continuous_event_string(
+            continuous_event, strip_call_dict) ","
     end
 
     # Updates the string (including removing the last `,`) and returns it.
@@ -410,8 +409,8 @@ function get_continuous_events_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 -related functions in a constant tuple.
-CONTINUOUS_EVENTS_FS = (seri_has_continuous_events, get_continuous_events_string, get_continuous_events_annotation)
-
+CONTINUOUS_EVENTS_FS = (seri_has_continuous_events, get_continuous_events_string,
+    get_continuous_events_annotation)
 
 ### Handles Discrete Events ###
 
@@ -433,7 +432,8 @@ function get_discrete_events_string(rn::ReactionSystem)
     # Creates the string corresponding to the code which generates the system's reactions. 
     discrete_events_string = "discrete_events = ["
     for discrete_event in MT.get_discrete_events(rn)
-        @string_append! discrete_events_string "\n\t" discrete_event_string(discrete_event, strip_call_dict) ","
+        @string_append! discrete_events_string "\n\t" discrete_event_string(
+            discrete_event, strip_call_dict) ","
     end
 
     # Updates the string (including removing the last `,`) and returns it.
@@ -466,18 +466,19 @@ function get_discrete_events_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 -related functions in a constant tuple.
-DISCRETE_EVENTS_FS = (seri_has_discrete_events, get_discrete_events_string, get_discrete_events_annotation)
-
+DISCRETE_EVENTS_FS = (seri_has_discrete_events, get_discrete_events_string,
+    get_discrete_events_annotation)
 
 ### Handles Systems ###
 
 # Specific `push_field` function, which is used for the system field (where the annotation option
 # must be passed to the `get_component_string` function). Since non-ReactionSystem systems cannot be 
 # written to file, this function throws an error if any such systems are encountered.
-function push_systems_field(file_text::String, rn::ReactionSystem, annotate::Bool, top_level::Bool)
+function push_systems_field(file_text::String, rn::ReactionSystem, annotate::Bool,
+        top_level::Bool)
     # Checks whether there are any subsystems, and if these are ReactionSystems.
     seri_has_systems(rn) || (return (file_text, false))
-    if any(!(system isa ReactionSystem) for system in MT.get_systems(rn)) 
+    if any(!(system isa ReactionSystem) for system in MT.get_systems(rn))
         error("Tries to write a ReactionSystem to file which have non-ReactionSystem subs-systems. This is currently not possible.")
     end
 
@@ -501,7 +502,9 @@ function get_systems_string(rn::ReactionSystem, annotate::Bool)
 
     # Loops through all systems, adding their declaration to the system string.
     for (idx, system) in enumerate(MT.get_systems(rn))
-        annotate && (@string_append! systems_string "\n\n# Declares subsystem: $(getname(system))")
+        if annotate
+            @string_append! systems_string "\n\n# Declares subsystem: $(getname(system))"
+        end
 
         # Manipulates the subsystem declaration to make it nicer.
         subsystem_string = get_full_system_string(system, annotate, false)
@@ -521,7 +524,6 @@ end
 # Combines the 3 systems-related functions in a constant tuple.
 SYSTEMS_FS = (seri_has_systems, get_systems_string, get_systems_annotation)
 
-
 ### Handles Connection Types ###
 
 # Checks if the reaction system has any connection types.
@@ -540,4 +542,5 @@ function get_connection_type_annotation(rn::ReactionSystem)
 end
 
 # Combines the 3 connection types-related functions in a constant tuple.
-CONNECTION_TYPE_FS = (seri_has_connection_type, get_connection_type_string, get_connection_type_annotation)
+CONNECTION_TYPE_FS = (
+    seri_has_connection_type, get_connection_type_string, get_connection_type_annotation)
