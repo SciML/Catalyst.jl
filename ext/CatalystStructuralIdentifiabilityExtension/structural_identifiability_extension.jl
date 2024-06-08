@@ -73,7 +73,7 @@ function SI.assess_local_identifiability(rs::ReactionSystem, args...;
     funcs_to_check = make_ftc(funcs_to_check, conseqs, vars)
 
     # Computes identifiability and converts it to a easy to read form.
-    out = SI.assess_local_identifiability(sys, args...; measured_quantities,
+    out = SI.assess_local_identifiability(osys, args...; measured_quantities,
         funcs_to_check, kwargs...)
     return make_output(out, funcs_to_check, reverse.(conseqs))
 end

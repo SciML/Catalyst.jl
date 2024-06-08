@@ -2,8 +2,9 @@
 
 # Fetch packages.
 using DiffEqBase, Catalyst, Random, Test
-using ModelingToolkit: operation, istree, get_unknowns, get_ps, get_eqs, get_systems,
+using ModelingToolkit: operation, get_unknowns, get_ps, get_eqs, get_systems,
                        get_iv, nameof
+using Symbolics: iscall
 
 # Sets stable rng number.
 using StableRNGs
@@ -22,7 +23,7 @@ function unpacksys(sys)
     get_eqs(sys), get_iv(sys), get_unknowns(sys), get_ps(sys), nameof(sys), get_systems(sys)
 end
 
-opname(x) = istree(x) ? nameof(operation(x)) : nameof(x)
+opname(x) = iscall(x) ? nameof(operation(x)) : nameof(x)
 alleq(xs, ys) = all(isequal(x, y) for (x, y) in zip(xs, ys))
 
 # Gets all the reactants in a set of equations.
