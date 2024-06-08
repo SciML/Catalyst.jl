@@ -37,9 +37,9 @@ let
 
     # Identifiability analysis for Catalyst converted to StructuralIdentifiability.jl model.
     si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [:M])
-    gi_2 = assess_identifiability(si_catalyst_ode)
-    li_2 = assess_local_identifiability(si_catalyst_ode)
-    ifs_2 = find_identifiable_functions(si_catalyst_ode)
+    gi_2 = assess_identifiability(si_catalyst_ode; loglevel)
+    li_2 = assess_local_identifiability(si_catalyst_ode; loglevel)
+    ifs_2 = find_identifiable_functions(si_catalyst_ode; loglevel)
 
     # Identifiability analysis for StructuralIdentifiability.jl model (declare this overwrites e.g. X2 variable etc.).
     goodwind_oscillator_si = @ODEmodel(
@@ -264,14 +264,14 @@ let
         k1, x1 --> x2
     end
     # Measure the source
-    id_report = assess_identifiability(rs, measured_quantities = [:x1])
+    id_report = assess_identifiability(rs; measured_quantities = [:x1], loglevel)
     @test sym_dict(id_report) == Dict(
         :x1 => :globally,
         :x2 => :nonidentifiable,
         :k1 => :globally
     )
     # Measure the target instead
-    id_report = assess_identifiability(rs, measured_quantities = [:x2])
+    id_report = assess_identifiability(rs; measured_quantities = [:x2], loglevel)
     @test sym_dict(id_report) == Dict(
         :x1 => :globally,
         :x2 => :globally,
@@ -303,13 +303,13 @@ let
         1, x1 --> x2
         1, x2 --> x3
     end
-    id_report = assess_identifiability(rs, measured_quantities = [:x3])
+    id_report = assess_identifiability(rs; measured_quantities = [:x3], loglevel)
     @test sym_dict(id_report) == Dict(
         :x1 => :globally,
         :x2 => :globally,
         :x3 => :globally,
     )
-    @test length(find_identifiable_functions(rs, measured_quantities = [:x3])) == 1
+    @test length(find_identifiable_functions(rs; measured_quantities = [:x3], loglevel)) == 1
 end
 
 
