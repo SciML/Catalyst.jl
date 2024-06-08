@@ -143,7 +143,7 @@ function expand_registered_functions(rx::Reaction)
 end
 # If applied to a Equation, returns it with it applied to lhs and rhs
 function expand_registered_functions(eq::Equation)
-    return expand_registered_functions(eq.lhs) ~ expand_registered_functions(eq.rhs)
+    return expand_registered_functions!(deepcopy(eq.lhs)) ~ expand_registered_functions!(deepcopy(eq.rhs))
 end
 # If applied to a ReactionSystem, applied function to all Reactions and other Equations, and return updated system.
 function expand_registered_functions(rs::ReactionSystem)

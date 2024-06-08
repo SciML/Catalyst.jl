@@ -160,12 +160,18 @@ end
 let
     # Create model with a registered function.
     @species X(t)
+    @variables V(t)
     @parameters v K
-    rxs = [Reaction(mm(X,v,K), [], [X])]
-    @named rs = ReactionSystem(rxs, t)
+    eqs = [
+        Reaction(mm(X,v,K), [], [X]),
+        mm(V,v,K) ~ V + 1    
+    ]
+    @named rs = ReactionSystem(eqs, t)
 
     # Check that `expand_registered_functions` does not mutate original model.
     rs_expanded_funcs = Catalyst.expand_registered_functions(rs)
     @test isequal(only(Catalyst.get_rxs(rs)).rate, Catalyst.mm(X,v,K))
     @test isequal(only(Catalyst.get_rxs(rs_expanded_funcs)).rate, v*X/(X + K))
+    @test isequal(last(Catalyst.get_eqs(rs)).lhs, Catalyst.mm(V,v,K))
+    @test isequal(last(Catalyst.get_eqs(rs_expanded_funcs)).lhs, v*V/(V + K))
 end
