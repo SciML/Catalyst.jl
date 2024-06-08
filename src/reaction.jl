@@ -62,7 +62,6 @@ Test if a species is valid as a reactant (i.e. a species variable or a constant 
 """
 isvalidreactant(s) = MT.isparameter(s) ? isconstant(s) : (isspecies(s) && !isconstant(s))
 
-
 ### Reaction Constructor Functions ###
 
 # Checks if a metadata input has an entry :only_use_rate => true
@@ -161,13 +160,13 @@ end
 
 # Five-argument constructor accepting rate, substrates, and products, and their stoichiometries.
 function Reaction(rate, subs, prods, substoich, prodstoich;
-                  netstoich = nothing, metadata = Pair{Symbol, Any}[], 
-                  only_use_rate = metadata_only_use_rate_check(metadata), kwargs...)
+        netstoich = nothing, metadata = Pair{Symbol, Any}[],
+        only_use_rate = metadata_only_use_rate_check(metadata), kwargs...)
     # Handles empty/nothing vectors.
     isnothing(subs) || isempty(subs) && (subs = nothing)
     isnothing(prods) || isempty(prods) && (prods = nothing)
-    isnothing(substoich) || isempty(substoich) && (substoich = nothing)
     isnothing(prodstoich) || isempty(prodstoich) && (prodstoich = nothing)
+    isnothing(substoich) || isempty(substoich) && (substoich = nothing)
 
     (isnothing(prods) && isnothing(subs)) &&
         throw(ArgumentError("A reaction requires a non-nothing substrate or product vector."))
@@ -228,7 +227,7 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     end
 
     # Deletes potential `:only_use_rate => ` entries from the metadata.
-    if any(:only_use_rate == entry[1] for entry in metadata) 
+    if any(:only_use_rate == entry[1] for entry in metadata)
         deleteat!(metadata, findfirst(:only_use_rate == entry[1] for entry in metadata))
     end
 
@@ -317,7 +316,6 @@ function hash(rx::Reaction, h::UInt)
     Base.hash(rx.only_use_rate, h)
 end
 
-
 ### ModelingToolkit Function Dispatches ###
 
 # Used by ModelingToolkit.namespace_equation.
@@ -342,7 +340,8 @@ function MT.namespace_equation(rx::Reaction, name; kw...)
         ns = similar(rx.netstoich)
         map!(n -> f(n[1]) => f(n[2]), ns, rx.netstoich)
     end
-    Reaction(rate, subs, prods, substoich, prodstoich, netstoich, rx.only_use_rate, rx.metadata)
+    Reaction(rate, subs, prods, substoich, prodstoich, netstoich,
+        rx.only_use_rate, rx.metadata)
 end
 
 # Overwrites equation-type functions to give the correct input for `Reaction`s.
@@ -374,9 +373,6 @@ encountered in:
     - Among potential noise scaling metadata.
 """
 function ModelingToolkit.get_variables!(set, rx::Reaction)
-    if isdefined(Main, :Infiltrator)
-        Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
-      end
     get_variables!(set, rx.rate)
     foreach(sub -> push!(set, sub), rx.substrates)
     foreach(prod -> push!(set, prod), rx.products)
@@ -416,7 +412,6 @@ function MT.modified_unknowns!(munknowns, rx::Reaction, sts::AbstractVector)
     munknowns
 end
 
-
 ### `Reaction`-specific Functions ### 
 
 """
@@ -443,7 +438,6 @@ function isbcbalanced(rx::Reaction)
 
     true
 end
-
 
 ### Reaction Metadata Implementation ###
 # These are currently considered internal, but can be used by public accessor functions like getnoisescaling.
@@ -501,13 +495,13 @@ getmetadata(reaction, :description)
 ```
 """
 function getmetadata(reaction::Reaction, md_key::Symbol)
-    if !hasmetadata(reaction, md_key) 
+    if !hasmetadata(reaction, md_key)
         error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(getmetadata_dict(reaction))).")
     end
     metadata = getmetadata_dict(reaction)
-    return metadata[findfirst(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))][2]
+    return metadata[findfirst(isequal(md_key, entry[1])
+    for entry in getmetadata_dict(reaction))][2]
 end
-
 
 ### Implemented Reaction Metadata ###
 
@@ -642,7 +636,6 @@ function getmisc(reaction::Reaction)
     end
 end
 
-
 ### Units Handling ###
 
 """
@@ -676,7 +669,7 @@ function validate(rx::Reaction; info::String = "")
     if (subunits !== nothing) && (produnits !== nothing) && (subunits != produnits)
         validated = false
         @warn(string("in ", rx,
-                     " the substrate units are not consistent with the product units."))
+            " the substrate units are not consistent with the product units."))
     end
 
     validated

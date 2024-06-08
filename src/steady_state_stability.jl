@@ -44,10 +44,10 @@ these. Furthermore, Catalyst uses a tolerance `tol = 10*sqrt(eps())` to determin
 computed eigenvalue is far away enough from 0 to be reliably used. This selected threshold can be changed through the `tol` argument.
 ```
 """
-function steady_state_stability(u::Vector, rs::ReactionSystem, ps; tol = 10*sqrt(eps(ss_val_type(u))),
-                                ss_jac = steady_state_jac(rs; u0 = u))
+function steady_state_stability(u::Vector, rs::ReactionSystem, ps;
+        tol = 10 * sqrt(eps(ss_val_type(u))), ss_jac = steady_state_jac(rs; u0 = u))
     # Warning checks.
-    if !isautonomous(rs) 
+    if !isautonomous(rs)
         error("Attempting to compute stability for a non-autonomous system (e.g. where some rate depend on $(rs.iv)). This is not possible.")
     end
 
@@ -62,7 +62,7 @@ function steady_state_stability(u::Vector, rs::ReactionSystem, ps; tol = 10*sqrt
     J = zeros(length(u), length(u))
     ss_jac = remake(ss_jac; u0 = u, p = ps)
     ss_jac.f.jac(J, ss_jac.u0, ss_jac.p, Inf)
-    
+
     # Computes stability (by checking that the real part of all eigenvalues is negative).
     max_eig = maximum(real(ev) for ev in eigvals(J))
     if abs(max_eig) < tol
@@ -74,8 +74,8 @@ end
 # Used to determine the type of the steady states values, which is then used to set the tolerance's
 # type.
 ss_val_type(u::Vector{T}) where {T} = T
-ss_val_type(u::Vector{Pair{S,T}}) where {S,T} = T
-ss_val_type(u::Dict{S,T}) where {S,T} = T
+ss_val_type(u::Vector{Pair{S, T}}) where {S, T} = T
+ss_val_type(u::Dict{S, T}) where {S, T} = T
 
 """
     steady_state_jac(rs::ReactionSystem; u0 = [])
@@ -107,8 +107,8 @@ Notes:
     such a way that it can be used by the `steady_state_stability` function.
 ```
 """
-function steady_state_jac(rs::ReactionSystem; u0 = [sp => 0.0 for sp in unknowns(rs)], 
-                          combinatoric_ratelaws = get_combinatoric_ratelaws(rs))
+function steady_state_jac(rs::ReactionSystem; u0 = [sp => 0.0 for sp in unknowns(rs)],
+        combinatoric_ratelaws = get_combinatoric_ratelaws(rs))
     # If u0 is a vector of values, must be converted to something MTK understands.
 
     # Converts u0 to values MTK understands, and checks that potential conservation laws are accounted for.
@@ -117,15 +117,15 @@ function steady_state_jac(rs::ReactionSystem; u0 = [sp => 0.0 for sp in unknowns
 
     # Creates an `ODEProblem` with a Jacobian. Dummy values for `u0` and `ps` must be provided.
     ps = [p => 0.0 for p in parameters(rs)]
-    return ODEProblem(rs, u0, 0, ps; jac = true, remove_conserved = true, 
-                      combinatoric_ratelaws = combinatoric_ratelaws)
+    return ODEProblem(rs, u0, 0, ps; jac = true, remove_conserved = true,
+        combinatoric_ratelaws = combinatoric_ratelaws)
 end
 
 # Converts a `u` vector from a vector of values to a map.
 function steady_state_u_conversion(u, rs::ReactionSystem)
     if (u isa Vector{<:Number})
         if length(u) == length(unknowns(rs))
-            u = [sp => v for (sp,v) in zip(unknowns(rs), u)]
+            u = [sp => v for (sp, v) in zip(unknowns(rs), u)]
         else
             error("You are trying to generate a stability Jacobian, providing u0 to compute conservation laws. Your provided u0 vector has length < the number of system states. If you provide a u0 vector, these have to be identical.")
         end
