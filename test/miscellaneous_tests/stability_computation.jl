@@ -29,7 +29,7 @@ let
               :d => 0.5 + rand(rng))
 
         # Computes stability using various jacobian options.
-        sss = hc_steady_states(rn, ps)
+        sss = hc_steady_states(rn, ps; show_progress=false)
         stabs_1 = [steady_state_stability(ss, rn, ps) for ss in sss]
         stabs_2 = [steady_state_stability(ss, rn, ps; ss_jac = ss_jac) for ss in sss]
 
@@ -71,7 +71,7 @@ let
     ps_3 = [rn.k1 => 8.0, rn.k2 => 2.0, rn.k3 => 1.0, rn.k4 => 1.5, rn.kD1 => 0.5, rn.kD2 => 4.0]
     
     # Computes stability using various input forms, and checks that the output is correct. 
-    sss = hc_steady_states(rn, ps_1; u0 = u0_1)
+    sss = hc_steady_states(rn, ps_1; u0 = u0_1, show_progress=false)
     for u0 in [u0_1, u0_2, u0_3, u0_4], ps in [ps_1, ps_2, ps_3]
         stab_1 =  [steady_state_stability(ss, rn, ps) for ss in sss]
         ss_jac = steady_state_jac(rn; u0 = u0)

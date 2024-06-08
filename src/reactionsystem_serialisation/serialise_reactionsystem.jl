@@ -147,13 +147,13 @@ function make_reaction_system_call(
     has_connection_type && (@string_append! reaction_system_string ", connection_type")
 
     # Potentially appends a combinatoric_ratelaws statement.
-    if !Symbolics.unwrap(rs.combinatoric_ratelaws)
+    if !Symbolics.unwrap(combinatoric_ratelaws(rs))
         @string_append! reaction_system_string ", combinatoric_ratelaws = false"
     end
 
     # Potentially appends `ReactionSystem` metadata value(s). Weird composite types are not supported.
-    if !isnothing(rs.metadata)
-        @string_append! reaction_system_string ", metadata = $(x_2_string(rs.metadata))"
+    if !isnothing(MT.get_metadata(rs))
+        @string_append! reaction_system_string ", metadata = $(x_2_string(MT.get_metadata(rs)))"
     end
 
     # Finalises the call. Appends potential annotation. If the system is complete, add a call for this. 

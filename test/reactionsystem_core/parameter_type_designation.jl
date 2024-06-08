@@ -64,7 +64,7 @@ let
     for p in p_alts
         oprob = ODEProblem(rs, u0, (0.0, 1000.0), p; abstol = 1e-10, reltol = 1e-10)
         sol = solve(oprob, Tsit5())
-        @test all(sol[end] .≈ 1.0)
+        @test all(sol.u[end] .≈ 1.0)
     end
 end
 
