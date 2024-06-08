@@ -47,7 +47,7 @@ let
     # Checks that the correct steady state is found through ODEProblem.
     oprob = ODEProblem(coupled_rs, u0, tspan, ps)
     osol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
-    @test osol[end] ≈ [2.0, 1.0]
+    @test osol.u[end] ≈ [2.0, 1.0]
 
     # Checks that the correct steady state is found through NonlinearProblem.
     nlprob = NonlinearProblem(coupled_rs, u0, ps)
@@ -116,7 +116,7 @@ let
     for coupled_rs in [coupled_rs_prog, coupled_rs_extended, coupled_rs_dsl]
         oprob = ODEProblem(coupled_rs, u0, tspan, ps)
         osol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
-        osol[end] ≈ [10.0, 10.0, 11.0, 11.0]
+        osol.u[end] ≈ [10.0, 10.0, 11.0, 11.0]
     end
 end
 
@@ -160,7 +160,7 @@ let
     # Checks that the correct steady state is found through ODEProblem.
     oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true)
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
-    @test osol[end] ≈ [2.0, 3.0]
+    @test osol.u[end] ≈ [2.0, 3.0]
 
     # Checks that the correct steady state is found through NonlinearProblem.
     nlprob = NonlinearProblem(coupled_rs, u0, ps)
@@ -207,7 +207,7 @@ let
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
     nlsol = solve(nlprob; abstol = 1e-8, reltol = 1e-8)
-    @test osol[end] ≈ sssol ≈ nlsol
+    @test osol.u[end] ≈ sssol ≈ nlsol
 end
 
 

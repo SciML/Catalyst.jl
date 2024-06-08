@@ -67,7 +67,7 @@ function make_int_exps(expr)
     wrap(Rewriters.Postwalk(Rewriters.PassThrough(___make_int_exps))(unwrap(expr))).val
 end
 function ___make_int_exps(expr)
-    !istree(expr) && return expr
+    !iscall(expr) && return expr
     if (operation(expr) == ^)
         if isinteger(arguments(expr)[2])
             return arguments(expr)[1]^Int64(arguments(expr)[2])

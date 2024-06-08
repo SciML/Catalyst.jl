@@ -356,7 +356,7 @@ let
     oprob1 = ODEProblem(osys, u0map, tspan, pmap)
     sts = [B, D, E, C]
     syms = [:B, :D, :E, :C]
-    ofun = ODEFunction(f!; syms)
+    ofun = ODEFunction(f!; sys = ModelingToolkit.SymbolCache(syms))
     oprob2 = ODEProblem(ofun, u0, tspan, p)
     saveat = tspan[2] / 50
     abstol = 1e-10
