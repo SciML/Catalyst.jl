@@ -6,8 +6,8 @@ method guaranteed to find all steady states for a system that has multiple ones.
 However, many chemical reaction networks generate polynomial systems (for
 example those which are purely mass action or have only have [Hill functions](https://en.wikipedia.org/wiki/Hill_equation_(biochemistry)) with
 integer Hill exponents). The roots of these can reliably be found through a
-*homotopy continuation* algorithm [^1]. This is implemented in Julia through the
-[HomotopyContinuation.jl](https://www.juliahomotopycontinuation.org/) package.
+*homotopy continuation* algorithm[^1][^2]. This is implemented in Julia through the
+[HomotopyContinuation.jl](https://www.juliahomotopycontinuation.org/) package[^3].
 
 Catalyst contains a special homotopy continuation extension that is loaded whenever HomotopyContinuation.jl is. This exports a single function, `hc_steady_states`, that can be used to find the steady states of any `ReactionSystem` structure.
 
@@ -79,5 +79,5 @@ If you use this functionality in your research, please cite the following paper 
 ---
 ## References
 [^1]: [Andrew J Sommese, Charles W Wampler *The Numerical Solution of Systems of Polynomials Arising in Engineering and Science*, World Scientific (2005).](https://www.worldscientific.com/worldscibooks/10.1142/5763#t=aboutBook)
-[^2]: [Paul Breiding, Sascha Timme, *HomotopyContinuation.jl: A Package for Homotopy Continuation in Julia*, International Congress on Mathematical Software (2018).](https://link.springer.com/chapter/10.1007/978-3-319-96418-8_54)
-[^43]: [Daniel J. Bates, Paul Breiding, Tianran Chen, Jonathan D. Hauenstein, Anton Leykin, Frank Sottile, *Numerical Nonlinear Algebra*, arXiv (2023).](https://arxiv.org/abs/2302.08585)
+[^2]: [Daniel J. Bates, Paul Breiding, Tianran Chen, Jonathan D. Hauenstein, Anton Leykin, Frank Sottile, *Numerical Nonlinear Algebra*, arXiv (2023).](https://arxiv.org/abs/2302.08585)
+[^3]: [Paul Breiding, Sascha Timme, *HomotopyContinuation.jl: A Package for Homotopy Continuation in Julia*, International Congress on Mathematical Software (2018).](https://link.springer.com/chapter/10.1007/978-3-319-96418-8_54)
