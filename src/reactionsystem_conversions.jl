@@ -557,10 +557,10 @@ function nonlinear_convert_differentials_check(rs::ReactionSystem)
         # If the contenct of the differential is not a variable (and nothing more).
         # If either of this is a case, throws the warning.
         if hasnode(Symbolics.is_derivative, eq.rhs) ||
-                !Symbolics.is_derivative(eq.lhs) ||
-                !isequal(Symbolics.operation(eq.lhs), Differential(get_iv(rs))) || 
-                (length(arguments(eq.lhs)) != 1) ||
-                !any(isequal(arguments(eq.lhs)[1]), nonspecies(rs))
+           !Symbolics.is_derivative(eq.lhs) ||
+           !isequal(Symbolics.operation(eq.lhs), Differential(get_iv(rs))) ||
+           (length(arguments(eq.lhs)) != 1) ||
+           !any(isequal(arguments(eq.lhs)[1]), nonspecies(rs))
             error("You are attempting to convert a `ReactionSystem` coupled with differential equations to a `NonlinearSystem`. However, some of these differentials are not of the form `D(x) ~ ...` where: 
                     (1) The left-hand side is a differential of a single variable with respect to the time independent variable, and
                     (2) The right-hand side does not contain any differentials.
