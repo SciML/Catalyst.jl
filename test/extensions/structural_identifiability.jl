@@ -178,13 +178,13 @@ let
     end
     @unpack M, E, P, pₑ, pₚ, pₘ = goodwind_oscillator_catalyst
     si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [:M])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; known_p = [:pₑ])
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; known_p = [:pₑ], ignore_no_measured_warn = true)
     si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [:M], known_p = [:pₑ])
     si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [:M, :E], known_p = [:pₑ])
     si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [:M], known_p = [:pₑ, :pₚ])
     si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [:M, :E], known_p = [:pₑ, :pₚ])
     si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [M])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; known_p = [pₑ])
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; known_p = [pₑ], ignore_no_measured_warn = true)
     si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [M], known_p = [pₑ])
     si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [M, E], known_p = [pₑ])
     si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [M], known_p = [pₑ, pₚ])
@@ -196,7 +196,7 @@ let
     # Tests using model.component style (have to make system complete first).
     gw_osc_complt = complete(goodwind_oscillator_catalyst)
     @test make_si_ode(gw_osc_complt; measured_quantities = [gw_osc_complt.M]) isa ODE
-    @test make_si_ode(gw_osc_complt; known_p = [gw_osc_complt.pₑ]) isa ODE
+    @test make_si_ode(gw_osc_complt; known_p = [gw_osc_complt.pₑ], ignore_no_measured_warn = true) isa ODE
     @test make_si_ode(gw_osc_complt; measured_quantities = [gw_osc_complt.M], known_p = [gw_osc_complt.pₑ]) isa ODE
     @test make_si_ode(gw_osc_complt; measured_quantities = [gw_osc_complt.M, gw_osc_complt.E], known_p = [gw_osc_complt.pₑ]) isa ODE
     @test make_si_ode(gw_osc_complt; measured_quantities = [gw_osc_complt.M], known_p = [gw_osc_complt.pₑ, gw_osc_complt.pₚ]) isa ODE
@@ -288,7 +288,7 @@ let
         b, A0 --> 2A2
         c, A0 --> A1 + A2
     end
-    id_report = assess_identifiability(rs, measured_quantities = [:A0, :A1, :A2])
+    id_report = assess_identifiability(rs; measured_quantities = [:A0, :A1, :A2], loglevel)
     @test sym_dict(id_report) == Dict(
         :A0 => :globally,
         :A1 => :globally,
@@ -358,6 +358,6 @@ let
     
     # Computes bifurcation diagram.
     @test_throws Exception assess_identifiability(incomplete_network; measured_quantities, loglevel)
-    @test_throws Exception assess_local_identifiability(incomplete_network; measured_quantities, loglevels)
+    @test_throws Exception assess_local_identifiability(incomplete_network; measured_quantities, loglevel)
     @test_throws Exception find_identifiable_functions(incomplete_network; measured_quantities, loglevel)
 end
