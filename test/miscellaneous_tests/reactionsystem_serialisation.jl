@@ -192,16 +192,16 @@ let
     @test isequal(getdefault(rs_loaded.rs2.W2), float_md)
 
     # Checks that `Reaction` metadata fields are correct.
-    @test isequal(getmetadata(get_rxs(rs_loaded)[1], :misc), bool_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded)[2], :misc), int_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded)[3], :misc), sym_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded)[4], :misc), str_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded)[5], :misc), nothing_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded.rs2)[1], :misc), expr_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded.rs2)[2], :misc), tup_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded.rs2)[3], :misc), vec_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded.rs2)[4], :misc), dict_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded.rs2)[5], :misc), mat_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded)[1]), bool_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded)[2]), int_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded)[3]), sym_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded)[4]), str_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded)[5]), nothing_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded.rs2)[1]), expr_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded.rs2)[2]), tup_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded.rs2)[3]), vec_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded.rs2)[4]), dict_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded.rs2)[5]), mat_md)
 
     # Checks that `ReactionSystem` metadata fields are correct.
     @test isequal(get_metadata(rs_loaded), mat_md)
