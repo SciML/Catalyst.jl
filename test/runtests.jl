@@ -18,7 +18,7 @@ using SafeTestsets, Test
         @time @safetestset "Symbolic Stoichiometry" begin include("reactionsystem_core/symbolic_stoichiometry.jl") end
         @time @safetestset "Parameter Type Designation" begin include("reactionsystem_core/parameter_type_designation.jl") end
         @time @safetestset "Custom CRN Functions" begin include("reactionsystem_core/custom_crn_functions.jl") end
-        # @time @safetestset "Coupled CRN/Equation Systems" begin include("reactionsystem_core/coupled_equation_crn_systems.jl") end
+        @time @safetestset "Coupled CRN/Equation Systems" begin include("reactionsystem_core/coupled_equation_crn_systems.jl") end
         @time @safetestset "Events" begin include("reactionsystem_core/events.jl") end
     
         # Tests model creation via the @reaction_network DSL.
@@ -74,9 +74,9 @@ using SafeTestsets, Test
         end
 
         # Tests extensions.
-        # @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
-        # @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
-        # @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
+        @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
+        @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
+        @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
     #end
 
 end # @time
