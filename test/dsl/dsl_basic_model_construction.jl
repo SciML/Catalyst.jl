@@ -4,7 +4,7 @@
 using DiffEqBase, Catalyst, Random, Test
 using ModelingToolkit: operation, get_unknowns, get_ps, get_eqs, get_systems,
                        get_iv, nameof
-using TermInterface: iscall
+using Symbolics: iscall
 
 # Sets stable rng number.
 using StableRNGs
