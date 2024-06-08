@@ -1,7 +1,7 @@
 # [The Catalyst DSL - Introduction](@id dsl_description)
 In the [introduction to Catalyst](@ref introduction_to_catalyst) we described how the `@reaction_network` [macro](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros) can be used to create chemical reaction network (CRN) models. This macro enables a so-called [domain-specific language](https://en.wikipedia.org/wiki/Domain-specific_language) (DSL) for creating CRN models. This tutorial will give a basic introduction on how to create Catalyst models using this macro (from now onwards called "*the Catalyst DSL*"). A [follow-up tutorial](@ref dsl_advanced_options) will describe some of the DSL's more advanced features.
 
-The Catalyst DSL generates a [`ReactionSystem`](@ref) (the [julia structure](https://docs.julialang.org/en/v1/manual/types/#Composite-Types) Catalyst uses to represent CRN models). These can be created through alternative methods (e.g. [programmatically](@ref programmatic_CRN_construction) or [compositionally](@ref compositional_modeling)). A summary of the various ways to create `ReactionSystems`s can be found [here](@ref ref). [Previous](@ref introduction_to_catalyst) and [following](@ref simulation_intro) tutorials describe how to simulate models once they have been created using the DSL. This tutorial will solely focus on model creation.
+The Catalyst DSL generates a [`ReactionSystem`](@ref) (the [julia structure](https://docs.julialang.org/en/v1/manual/types/#Composite-Types) Catalyst uses to represent CRN models). These can be created through alternative methods (e.g. [programmatically](@ref programmatic_CRN_construction) or [compositionally](@ref compositional_modeling)). [Previous](@ref introduction_to_catalyst) and [following](@ref simulation_intro) tutorials describe how to simulate models once they have been created using the DSL. This tutorial will solely focus on model creation.
 
 Before we begin, we will first load the Catalyst package (which is required to run the code).
 ```@example dsl_basics_intro
@@ -217,7 +217,7 @@ latexify(rn_13_alt; form=:ode)
 ```
 Here, while these models will generate identical ODE, SDE, and jump simulations, the chemical reaction network models themselves are not equivalent. Generally, as pointed out in the two notes below, using the second form is preferable.
 !!! warn
-    While `rn_13` and `rn_13_alt` will generate equivalent simulations, for jump simulations, the first model will have [reduced performance](@ref ref) (which generally are more performant when rates are constant).
+    While `rn_13` and `rn_13_alt` will generate equivalent simulations, for jump simulations, the first model will have reduced performance (which generally are more performant when rates are constant).
 
 !!! danger
     Catalyst automatically infers whether quantities appearing in the DSL are species or parameters (as described [here](@ref dsl_advanced_options_declaring_species_and_parameters)). Generally, anything that does not appear as a reactant is inferred to be a parameter. This means that if you want to model a reaction activated by a species (e.g. `kp*A, 0 --> P`), but that species does not occur as a reactant, it will be interpreted as a parameter. This can be handled by [manually declaring the system species](@ref dsl_advanced_options_declaring_species_and_parameters).
@@ -282,7 +282,7 @@ end
 ```
 
 !!! warn
-    Jump simulations cannot be performed for models with time-dependent rates without additional considerations, which are discussed [here](@ref ref).
+    Jump simulations cannot be performed for models with time-dependent rates without additional considerations.
 
 ## [Non-standard stoichiometries](@id dsl_description_stoichiometries)
 
@@ -294,7 +294,7 @@ rn_16 = @reaction_network begin
     d, X --> 0
 end
 ```
-It is also possible to have non-integer stoichiometric coefficients for substrates. However, in this case the [`combinatoric_ratelaw = false`](@ref ref) option must be used. We note that non-integer stoichiometric coefficients do not make sense in most fields, however, this feature is available for use for models where it does make sense.
+It is also possible to have non-integer stoichiometric coefficients for substrates. However, in this case the `combinatoric_ratelaw = false` option must be used. We note that non-integer stoichiometric coefficients do not make sense in most fields, however, this feature is available for use for models where it does make sense.
 
 ### [Parametric stoichiometries](@id dsl_description_stoichiometries_parameters)
 It is possible for stoichiometric coefficients to be parameters. E.g. here we create a generic polymerisation system where `n` copies of `X` bind to form `Xn`:
@@ -368,4 +368,4 @@ It should be noted that the following symbols are *not permitted* to be used as 
 - `∅` ([used for production/degradation reactions](@ref dsl_description_symbols_empty_set)).
 - `im` (used in Julia to represent [complex numbers](https://docs.julialang.org/en/v1/manual/complex-and-rational-numbers/#Complex-Numbers)).
 - `nothing` (used in Julia to denote [nothing](https://docs.julialang.org/en/v1/base/constants/#Core.nothing)).
-- `Γ` (used by Catalyst to represent [conserved quantities](@ref ref)).
+- `Γ` (used by Catalyst to represent conserved quantities).

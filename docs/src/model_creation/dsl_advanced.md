@@ -1,7 +1,7 @@
 # [The Catalyst DSL - Advanced Features and Options](@id dsl_advanced_options)
 Within the Catalyst DSL, each line can represent either *a reaction* or *an option*. The [previous DSL tutorial](@ref dsl_description) described how to create reactions. This one will focus on options. These are typically used to supply a model with additional information. Examples include the declaration of initial condition/parameter default values, or the creation of observables. 
 
-All option designations begin with a declaration starting with `@`, followed by its input. E.g. the `@observables` option allows for the generation of observables. Each option can only be used once within each use of `@reaction_network`. A full list of options can be found [here](@ref ref), with most (but not all) being described in more detail below. This tutorial will also describe some additional advanced DSL features that do not involve using an option. 
+All option designations begin with a declaration starting with `@`, followed by its input. E.g. the `@observables` option allows for the generation of observables. Each option can only be used once within each use of `@reaction_network`. This tutorial will also describe some additional advanced DSL features that do not involve using an option. 
 
 As a first step, we import Catalyst (which is required to run the tutorial):
 ```@example dsl_advanced_explicit_definitions
@@ -130,7 +130,6 @@ oprob = ODEProblem(rn, u0, tspan, p)
 sol = solve(oprob)
 plot(sol)
 ```
-API for checking the default values of species and parameters can be found [here](@ref ref).
 
 ### [Setting parametric initial conditions](@id dsl_advanced_options_parametric_initial_conditions)
 In the previous section, we designated default values for initial conditions and parameters. However, the right-hand side of the designation accepts any valid expression (not only numeric values). While this can be used to set up some advanced default values, the most common use case is to designate a species's initial condition as a parameter. E.g. in the following example we represent the initial condition of `X` using the parameter `X₀`. 
@@ -198,12 +197,10 @@ two_state_system = @reaction_network begin
 end
 ```
 
-Each metadata has its own getter functions. E.g. we can get the description of the parameter `kA` using `ModelingToolkit.getdescription` (here we use [system indexing](@ref ref) to access the parameter):
+Each metadata has its own getter functions. E.g. we can get the description of the parameter `kA` using `ModelingToolkit.getdescription`:
 ```@example dsl_advanced_metadata
 ModelingToolkit.getdescription(two_state_system.kA)
 ```
-
-It is not possible for the user to directly designate their own metadata. These have to first be added to Catalyst. Doing so is somewhat involved, and described in detail [here](@ref ref). A full list of metadata that can be used for species and/or parameters can be found [here](@ref ref).
 
 ### [Designating constant-valued/fixed species parameters](@id dsl_advanced_options_constant_species)
 
@@ -391,11 +388,11 @@ Some final notes regarding observables:
 - The left-hand side of the observable declaration must contain a single symbol only (with the exception of metadata, which can also be supplied).
 - All quantities appearing on the right-hand side must be declared elsewhere within the `@reaction_network` call (either by being part of a reaction, or through the `@species`, `@parameters`, or `@variables` options).
 - Observables may not depend on other observables.
-- Observables have their [dependent variable(s)](@ref ref) automatically assigned as the union of the dependent variables of the species and variables on which it depends.
+- Observables have their dependent variable(s) automatically assigned as the union of the dependent variables of the species and variables on which it depends.
 
 ## [Specifying non-time independent variables](@id dsl_advanced_options_ivs)
 
-As [described elsewhere](@ref ref), Catalyst's `ReactionSystem` models depend on a *time independent variable*, and potentially one or more *spatial independent variables*. By default, the independent variable `t` is used. We can declare another independent variable (which is automatically used as the default one) using the `@ivs` option. E.g. to use `τ` instead of `t` we can use
+Catalyst's `ReactionSystem` models depend on a *time independent variable*, and potentially one or more *spatial independent variables*. By default, the independent variable `t` is used. We can declare another independent variable (which is automatically used as the default one) using the `@ivs` option. E.g. to use `τ` instead of `t` we can use
 ```@example dsl_advanced_ivs
 using Catalyst # hide
 rn = @reaction_network begin
@@ -466,5 +463,3 @@ A reaction's metadata can be accessed using specific functions, e.g. `Catalyst.h
 rx = @reaction p, 0 --> X, [description="A production reaction"]
 Catalyst.getdescription(rx)
 ```
-
-A list of all available reaction metadata can be found [here](@ref ref).
