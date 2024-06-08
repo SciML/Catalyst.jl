@@ -23,8 +23,8 @@ using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
 import Symbolics: BasicSymbolic
-import SymbolicUtils
-using ModelingToolkit: Symbolic, value, istree, get_unknowns, get_ps, get_iv, get_systems,
+using Symbolics: iscall
+using ModelingToolkit: Symbolic, value, get_unknowns, get_ps, get_iv, get_systems,
                        get_eqs, get_defaults, toparam, get_var_to_name, get_observed,
                        getvar
 
@@ -44,6 +44,7 @@ import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertice
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 import Symbolics: occursin, wrap
+import Symbolics.RewriteHelpers: hasnode, replacenode
 
 # globals for the modulate
 function default_time_deriv()

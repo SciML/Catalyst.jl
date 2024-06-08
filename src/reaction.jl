@@ -260,7 +260,7 @@ function print_rxside(io::IO, specs, stoich)
                      spec : MT.operation(spec)
             if isequal(stoich[i], one(stoich[i]))
                 print(io, prspec)
-            elseif istree(stoich[i])
+            elseif iscall(stoich[i])
                 print(io, "(", stoich[i], ")*", prspec)
             else
                 print(io, stoich[i], "*", prspec)

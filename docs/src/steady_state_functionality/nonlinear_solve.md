@@ -1,7 +1,7 @@
 # [Finding Steady States using NonlinearSolve.jl and SteadyStateDiffEq.jl](@id steady_state_solving)
 
 Catalyst `ReactionSystem` models can be converted to ODEs (through [the reaction rate equation](@ref introduction_to_catalyst_ratelaws)). We have previously described how these ODEs' steady states can be found through [homotopy continuation](@ref homotopy_continuation). Generally, homotopy continuation (due to its ability to find *all* of a system's steady states) is the preferred approach. However, Catalyst supports two additional approaches for finding steady states:
-- Through solving the nonlinear system produced by setting all ODE differentials to 0.
+- Through solving the nonlinear system produced by setting all ODE differentials to 0[^1].
 - Through forward ODE simulation from an initial condition until a steady state has been reached.
 
 While these approaches only find a single steady state, they offer two advantages as compared to homotopy continuation:
