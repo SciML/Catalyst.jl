@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using Catalyst, Graphs, Test
-using Symbolics: unwrap
+using Symbolics: BasicSymbolic, unwrap
 t = default_t()
 
 # Pre declares a grid.
@@ -311,19 +311,19 @@ end
     
     # Loops through all parameters, ensuring that they have the correct type
     p_types = Dict([ModelingToolkit.nameof(p) => typeof(unwrap(p)) for p in parameters(lrs)])
-    @test p_types[:k1] == SymbolicUtils.BasicSymbolic{Real}
-    @test p_types[:l1] == SymbolicUtils.BasicSymbolic{Real}
-    @test p_types[:k2] == SymbolicUtils.BasicSymbolic{Float64}
-    @test p_types[:l2] == SymbolicUtils.BasicSymbolic{Float64}
-    @test p_types[:k3] == SymbolicUtils.BasicSymbolic{Int64}
-    @test p_types[:l3] == SymbolicUtils.BasicSymbolic{Int64}
-    @test p_types[:k4] == SymbolicUtils.BasicSymbolic{Float32}
-    @test p_types[:l4] == SymbolicUtils.BasicSymbolic{Float32}
-    @test p_types[:k5] == SymbolicUtils.BasicSymbolic{Rational{Int64}}
-    @test p_types[:l5] == SymbolicUtils.BasicSymbolic{Rational{Int64}}
-    @test p_types[:D1] == SymbolicUtils.BasicSymbolic{Float32}
-    @test p_types[:D2] == SymbolicUtils.BasicSymbolic{Real}
-    @test p_types[:D3] == SymbolicUtils.BasicSymbolic{Rational{Int64}}
+    @test p_types[:k1] == BasicSymbolic{Real}
+    @test p_types[:l1] == BasicSymbolic{Real}
+    @test p_types[:k2] == BasicSymbolic{Float64}
+    @test p_types[:l2] == BasicSymbolic{Float64}
+    @test p_types[:k3] == BasicSymbolic{Int64}
+    @test p_types[:l3] == BasicSymbolic{Int64}
+    @test p_types[:k4] == BasicSymbolic{Float32}
+    @test p_types[:l4] == BasicSymbolic{Float32}
+    @test p_types[:k5] == BasicSymbolic{Rational{Int64}}
+    @test p_types[:l5] == BasicSymbolic{Rational{Int64}}
+    @test p_types[:D1] == BasicSymbolic{Float32}
+    @test p_types[:D2] == BasicSymbolic{Real}
+    @test p_types[:D3] == BasicSymbolic{Rational{Int64}}
 end
 
 # Checks that programmatically declared parameters (with types) can be used in `TransportReaction`s.
@@ -338,9 +338,9 @@ end
     lrs = LatticeReactionSystem(rs, [tr], grid)
     
     p_types = Dict([ModelingToolkit.nameof(p) => typeof(unwrap(p)) for p in parameters(lrs)])
-    @test p_types[:p] == SymbolicUtils.BasicSymbolic{Float32}
-    @test p_types[:d] == SymbolicUtils.BasicSymbolic{Real}
-    @test p_types[:D] == SymbolicUtils.BasicSymbolic{Rational{Int64}}
+    @test p_types[:p] == BasicSymbolic{Float32}
+    @test p_types[:d] == BasicSymbolic{Real}
+    @test p_types[:D] == BasicSymbolic{Rational{Int64}}
 
     u0 = [:X => [0.25, 0.5, 2.0, 4.0]]
     ps = [rs.p => 2.0, rs.d => 1.0, D => 1//2]

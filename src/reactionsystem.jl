@@ -1464,7 +1464,7 @@ function validate(rs::ReactionSystem, info::String = "")
         # Needs additional checks because for cases: (1.0^n) and (1.0^n1)*(1.0^n2).
         # These are not considered (be default) considered equal to `1.0` for unitless reactions.
         isequal(rxunits, rateunits) && continue
-        if istree(rxunits)
+        if iscall(rxunits)
             unitless_exp(rxunits) && continue
             (operation(rxunits) == *) &&
                 all(unitless_exp(arg) for arg in arguments(rxunits)) && continue

@@ -440,8 +440,8 @@ end
 
 # Finds and differentials in an expression, and sets these to 0.
 function remove_diffs(expr)
-    if Symbolics._occursin(Symbolics.is_derivative, expr)
-        return Symbolics.replace(expr, diff_2_zero)
+    if hasnode(Symbolics.is_derivative, expr)
+        return replacenode(expr, diff_2_zero)
     else
         return expr
     end
@@ -556,8 +556,8 @@ function nonlinear_convert_differentials_check(rs::ReactionSystem)
         # If the lhs upper level function is not a differential w.r.t. time.
         # If the contenct of the differential is not a variable (and nothing more).
         # If either of this is a case, throws the warning.
-        if Symbolics._occursin(Symbolics.is_derivative, eq.rhs) ||
-           !Symbolics.istree(eq.lhs) ||
+        if hasnode(Symbolics.is_derivative, eq.rhs) ||
+           !Symbolics.is_derivative(eq.lhs) ||
            !isequal(Symbolics.operation(eq.lhs), Differential(get_iv(rs))) ||
            (length(arguments(eq.lhs)) != 1) ||
            !any(isequal(arguments(eq.lhs)[1]), nonspecies(rs))
@@ -892,7 +892,7 @@ function to_multivariate_poly(polyeqs::AbstractVector{Symbolics.BasicSymbolic{Re
 
     pvar2sym, sym2term = SymbolicUtils.get_pvar2sym(), SymbolicUtils.get_sym2term()
     ps = map(polyeqs) do x
-        if istree(x) && operation(x) == (/)
+        if iscall(x) && operation(x) == (/)
             error("We should not be able to get here, please contact the package authors.")
         else
             PolyForm(x, pvar2sym, sym2term).p

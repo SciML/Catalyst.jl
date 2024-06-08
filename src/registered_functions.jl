@@ -117,7 +117,7 @@ expand_registered_functions(expr)
 Takes an expression, and expands registered function expressions. E.g. `mm(X,v,K)` is replaced with v*X/(X+K). Currently supported functions: `mm`, `mmr`, `hill`, `hillr`, and `hill`.
 """
 function expand_registered_functions(expr)
-    istree(expr) || return expr
+    iscall(expr) || return expr
     args = arguments(expr)
     if operation(expr) == Catalyst.mm
         return args[2] * args[1] / (args[1] + args[3])

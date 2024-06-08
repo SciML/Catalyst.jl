@@ -80,7 +80,7 @@ end
 # If the input is a fraction, removes the denominator.
 function remove_denominators(expr)
     s_expr = simplify_fractions(expr)
-    !istree(expr) && return expr
+    !iscall(expr) && return expr
     if operation(s_expr) == /
         return remove_denominators(arguments(s_expr)[1])
     end
