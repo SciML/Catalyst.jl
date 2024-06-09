@@ -383,5 +383,3 @@ let
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 6.0
 end
 
-@test_broken osol(0.0; idxs=[model.Y,model.XY]) == osol(0.0; idxs=[model.Y,model.XY]) == osol(0.0; idxs=[model.XY,model.X]) == [9, 5]
-@test_broken osol(0.0; idxs=(:Y,:XY)) == osol(0.0; idxs=(:Y,:XY)) == osol(0.0; idxs=(:XY,:Y)) == (9, 5)
