@@ -49,7 +49,7 @@ steady_state = [2.0]
 steady_state_stability(steady_state, rn, p)
 ```
 Here, `steady_state_stability` takes an optional argument `tol = 10*sqrt(eps())`, which is used to determine whether a eigenvalue real part is reliably less than 0.
-- Added a DSL option, `@combinatoric_ratelaws`, which can be used to toggle whether to use combinatorial rate laws within the DSL. Example:
+- Added a DSL option, `@combinatoric_ratelaws`, which can be used to toggle whether to use combinatorial rate laws within the DSL (this feature was already supported for programmatic modelling). Example:
 ```julia
 # Creates model.
 rn = @reaction_network begin
