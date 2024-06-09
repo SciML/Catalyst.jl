@@ -400,6 +400,30 @@ end
 
 ### Other Tests ###
 
+# Checks that systems with cached network properties yields a warning.
+# Checks that default values as saved properly (even if they have different types).
+let
+    # Prepares model inputs.
+    @species X1(t) X2(t)
+    @parameters k1 k2::Int64
+    rxs = [
+        Reaction(k1, [X1], [X2]),
+        Reaction(k2, [X2], [X1])
+    ]
+    defaults = Dict((X1 => 1.0, k2 => 2))
+
+    # Creates model and computes conservation laws.
+    @named rs = ReactionSystem(rxs, t; defaults)
+    conservationlaws(rs)
+
+    # Serialises model and then loads and checks it.
+    @test_logs (:warn, ) match_mode=:any save_reactionsystem("serialised_rs.jl", rs)
+    rs_loaded = include("../serialised_rs.jl")
+    @test rs == rs_loaded
+    @test ModelingToolkit.get_defaults(rs) == ModelingToolkit.get_defaults(rs_loaded)
+    rm("serialised_rs.jl")
+end
+
 # Tests that an error is generated when non-`ReactionSystem` subs-systems are used.
 let
     @variables V(t)
@@ -415,6 +439,7 @@ let
     @named osys = ODESystem([eq], t)
     @named rs = ReactionSystem(rxs, t; systems = [osys])
     @test_throws Exception save_reactionsystem("failed_serialisation.jl", rs)
+    rm("failed_serialisation.jl")
 end
 
 # Checks that completeness is recorded correctly.

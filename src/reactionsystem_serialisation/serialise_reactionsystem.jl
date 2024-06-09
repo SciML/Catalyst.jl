@@ -34,7 +34,13 @@ Notes:
 """
 function save_reactionsystem(filename::String, rn::ReactionSystem;
         annotate = true, safety_check = true)
+    # Error and warning checks.
     reactionsystem_uptodate_check()
+    if !isempty(get_networkproperties(rn))
+        @warn "The serialised network has cached network properties (e.g. computed conservation laws). This will not be saved as part of the network, and must be recomputed when it is loaded."
+    end
+    
+    # Write model to file and performs a safety check.
     open(filename, "w") do file
         write(file, get_full_system_string(rn, annotate, true))
     end
@@ -65,6 +71,7 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     file_text, has_reactions = push_field(file_text, rn, annotate, top_level, REACTIONS_FS)
     file_text, has_equations = push_field(file_text, rn, annotate, top_level, EQUATIONS_FS)
     file_text, has_observed = push_field(file_text, rn, annotate, top_level, OBSERVED_FS)
+    file_text, has_defaults = push_field(file_text, rn, annotate, top_level, DEFAULTS_FS)
     file_text, has_continuous_events = push_field(file_text, rn, annotate,
         top_level, CONTINUOUS_EVENTS_FS)
     file_text, has_discrete_events = push_field(file_text, rn, annotate,
@@ -78,7 +85,7 @@ function get_full_system_string(rn::ReactionSystem, annotate::Bool, top_level::B
     rs_creation_code = make_reaction_system_call(
         rn, annotate, top_level, has_sivs, has_species,
         has_variables, has_parameters, has_reactions,
-        has_equations, has_observed, has_continuous_events,
+        has_equations, has_observed, has_defaults, has_continuous_events,
         has_discrete_events, has_systems, has_connection_type)
     annotate || (@string_prepend! "\n" file_text)
     @string_prepend! "let" file_text
@@ -92,7 +99,7 @@ end
 function make_reaction_system_call(
         rs::ReactionSystem, annotate, top_level, has_sivs, has_species,
         has_variables, has_parameters, has_reactions, has_equations,
-        has_observed, has_continuous_events, has_discrete_events,
+        has_observed, has_defaults, has_continuous_events, has_discrete_events,
         has_systems, has_connection_type)
 
     # Gets the independent variable input.
@@ -141,6 +148,7 @@ function make_reaction_system_call(
     # Goes through various fields that might exists, and if so, adds them to the string.
     has_sivs && (@string_append! reaction_system_string ", spatial_ivs")
     has_observed && (@string_append! reaction_system_string ", observed")
+    has_defaults && (@string_append! reaction_system_string ", defaults")
     has_continuous_events && (@string_append! reaction_system_string ", continuous_events")
     has_discrete_events && (@string_append! reaction_system_string ", discrete_events")
     has_systems && (@string_append! reaction_system_string ", systems")
