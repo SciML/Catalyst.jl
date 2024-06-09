@@ -39,7 +39,7 @@ function save_reactionsystem(filename::String, rn::ReactionSystem;
     if !isempty(get_networkproperties(rn))
         @warn "The serialised network has cached network properties (e.g. computed conservation laws). This will not be saved as part of the network, and must be recomputed when it is loaded."
     end
-    
+
     # Write model to file and performs a safety check.
     open(filename, "w") do file
         write(file, get_full_system_string(rn, annotate, true))
@@ -96,11 +96,10 @@ end
 
 # Creates a ReactionSystem call for creating the model. Adds all the correct inputs to it. The input
 # `has_` `Bool`s described which inputs are used. If the model is `complete`, this is handled here.
-function make_reaction_system_call(
-        rs::ReactionSystem, annotate, top_level, has_sivs, has_species,
-        has_variables, has_parameters, has_reactions, has_equations,
-        has_observed, has_defaults, has_continuous_events, has_discrete_events,
-        has_systems, has_connection_type)
+function make_reaction_system_call(rs::ReactionSystem, annotate, top_level, has_sivs,
+        has_species, has_variables, has_parameters, has_reactions, has_equations,
+        has_observed, has_defaults, has_continuous_events, has_discrete_events, has_systems,
+        has_connection_type)
 
     # Gets the independent variable input.
     iv = x_2_string(get_iv(rs))
