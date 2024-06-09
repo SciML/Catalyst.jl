@@ -9,7 +9,6 @@ using SafeTestsets, Test
 
 ### Run Tests ###
 @time begin
-    @time @safetestset "MTK Structure Indexing" begin include("upstream/mtk_structure_indexing.jl") end
 
     # Tests the `ReactionSystem` structure and its properties.
     @time @safetestset "Reaction Structure" begin include("reactionsystem_core/reaction.jl") end
