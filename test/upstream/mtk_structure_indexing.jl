@@ -383,30 +383,5 @@ let
     @test jint.cb.condition.ma_jumps.scaled_rates[1] == 6.0
 end
 
-
-
-
-using ModelingToolkit, OrdinaryDiffEq
-using ModelingToolkit: t_nounits as t, D_nounits as D
-
-@parameters p d 
-@variables X(t)
-@variables Y(t)
-eqs = [
-    D(X) ~ p - d*X,
-    D(Y) ~ p - d*Y
-]
-@mtkbuild sys = ODESystem(eqs, t)
-
-u0 = [X => 1.0, Y => 1.0]
-tspan = (0.0, 100.0)
-ps = [p => 1.0, d => 0.1]
-
-prob = ODEProblem(sys, u0, tspan, ps)
-sol = solve(prob)
-
-sol(0.0; idxs=[sys.Y,sys.XY])
-sol(0.0; idxs=[sys.Y,sys.XY])
-
 @test_broken osol(0.0; idxs=[model.Y,model.XY]) == osol(0.0; idxs=[model.Y,model.XY]) == osol(0.0; idxs=[model.XY,model.X]) == [9, 5]
 @test_broken osol(0.0; idxs=(:Y,:XY)) == osol(0.0; idxs=(:Y,:XY)) == osol(0.0; idxs=(:XY,:Y)) == (9, 5)
