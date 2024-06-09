@@ -230,7 +230,6 @@ let
             if (ps == ps_valid) && (u0 == u0_valid)
                 XProblem(xsys, u0, (0.0, 1.0), ps); @test true;
             else
-                # Several of these cases do not throw errors (https://github.com/SciML/ModelingToolkit.jl/issues/2624).
                 @test_broken false
                 continue
                 @test_throws Exception XProblem(xsys, u0, (0.0, 1.0), ps)

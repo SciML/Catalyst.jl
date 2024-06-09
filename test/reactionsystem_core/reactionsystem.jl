@@ -235,7 +235,7 @@ let
     maj = MassActionJump(symmaj.param_mapper(pars), symmaj.reactant_stoch, symmaj.net_stoch,
                          symmaj.param_mapper, scale_rates = false)
     for i in midxs
-        @test_broken abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100 * eps()
+        @test_broken abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100 * eps() # This (and next two) tests are broken due to the order in `maj` not being preserved.
         @test jumps[i].reactant_stoch == maj.reactant_stoch[i]
         @test jumps[i].net_stoch == maj.net_stoch[i]
     end
@@ -747,5 +747,5 @@ end
 # there are several places in the code where the `reactionsystem_uptodate` function is called, here
 # the code might need adaptation to take the updated reaction system into account.
 let
-    @test_nowarn  Catalyst.reactionsystem_uptodate_check()
+    @test_nowarn Catalyst.reactionsystem_uptodate_check()
 end
