@@ -172,6 +172,11 @@ let
     @species X3(t)
     @parameters k3
 
+    # Creates systems (so these are not recreated in each problem call).
+    osys = convert(ODESystem, rn)
+    ssys = convert(SDESystem, rn)
+    nsys = convert(NonlinearSystem, rn)
+
     # Declares valid initial conditions and parameter values
     u0_valid = [X1 => 1, X2 => 2]
     ps_valid = [k1 => 0.5, k2 => 0.1]
@@ -218,25 +223,26 @@ let
     ]
 
     # Loops through all potential parameter sets, checking their inputs yield errors.
+    # Broken tests are due to this issue: https://github.com/SciML/ModelingToolkit.jl/issues/2779
     for ps in [ps_valid; ps_invalid], u0 in [u0_valid; u0s_invalid]
         # Handles problems with/without tspan separately. Special check ensuring that valid inputs passes.
-        for XProblem in [ODEProblem, SDEProblem, DiscreteProblem]
+        for (xsys, XProblem) in zip([osys, ssys, rn], [ODEProblem, SDEProblem, DiscreteProblem])
             if (ps == ps_valid) && (u0 == u0_valid)
-                XProblem(rn, u0, (0.0, 1.0), ps); @test true;
+                XProblem(xsys, u0, (0.0, 1.0), ps); @test true;
             else
                 # Several of these cases do not throw errors (https://github.com/SciML/ModelingToolkit.jl/issues/2624).
                 @test_broken false
                 continue
-                @test_throws Exception XProblem(rn, u0, (0.0, 1.0), ps)
+                @test_throws Exception XProblem(xsys, u0, (0.0, 1.0), ps)
             end
         end
-        for XProblem in [NonlinearProblem, SteadyStateProblem]
+        for (xsys, XProblem) in zip([nsys, osys], [NonlinearProblem, SteadyStateProblem])
             if (ps == ps_valid) && (u0 == u0_valid)
-                XProblem(rn, u0, ps); @test true;
+                XProblem(xsys, u0, ps); @test true;
             else
                 @test_broken false
                 continue
-                @test_throws Exception XProblem(rn, u0, ps)
+                @test_throws Exception XProblem(xsys, u0, ps)
             end
         end
     end

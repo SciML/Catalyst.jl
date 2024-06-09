@@ -362,9 +362,9 @@ let
     sol = solve(jprob, SSAStepper(); seed)
     
     # Checks that all `e` parameters have been updated properly.
-    # Note that periodic discrete events are currently broken for jump processes.
+    # Note that periodic discrete events are currently broken for jump processes (and unlikely to be fixed soon due to have events are implemented).
     @test sol.ps[:e1] == 1
-    @test_broken sol.ps[:e2] == 1
+    @test_broken sol.ps[:e2] == 1 # (https://github.com/SciML/JumpProcesses.jl/issues/417)
     @test sol.ps[:e3] == 1
 end
 
@@ -424,21 +424,22 @@ let
     osol_events = solve(oprob_events, Tsit5())
     @test osol == osol_events
 
-    # Checks for SDE simulations.
+    # Checks for SDE simulations (note, non-seed dependant test should be created instead).
     sprob = SDEProblem(rn, u0, tspan, ps)
     sprob_events = SDEProblem(rn_events, u0, tspan, ps)
     ssol = solve(sprob, ImplicitEM(); seed, callback)
     ssol_events = solve(sprob_events, ImplicitEM(); seed)
     @test ssol == ssol_events
 
-    # Checks for Jump simulations.
+    # Checks for Jump simulations. (note, non-seed dependant test should be created instead)
+    # Note that periodic discrete events are currently broken for jump processes (and unlikely to be fixed soon due to have events are implemented).
     callback = CallbackSet(cb_disc_1, cb_disc_2, cb_disc_3)
     dprob = DiscreteProblem(rn, u0, tspan, ps)
     dprob_events = DiscreteProblem(rn_dics_events, u0, tspan, ps)
     jprob = JumpProblem(rn, dprob, Direct(); rng)
     jprob_events = JumpProblem(rn_dics_events, dprob_events, Direct(); rng)
     sol = solve(jprob, SSAStepper(); seed, callback)
-    @test_broken let # Broken due to. Even if fixed, seeding might not work due to events.
+    @test_broken let # (https://github.com/SciML/JumpProcesses.jl/issues/417)
         sol_events = solve(jprob_events, SSAStepper(); seed)
         @test sol == sol_events
     end
