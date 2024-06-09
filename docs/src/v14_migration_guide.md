@@ -3,7 +3,7 @@
 Catalyst is built on the [ModelingToolkit.jl](https://github.com/SciML/ModelingToolkit.jl) modelling language. A recent update of ModelingToolkit from version 8 to version 9 has required a corresponding update to Catalyst (from version 13 to 14). This update has introduced a couple of breaking changes, all of which will be detailed below.
 
 !!! note
- Catalyst version 14 also introduces several new features. These will not be discussed here, however, they are described in Catalyst's [history file](https://github.com/SciML/Catalyst.jl/blob/master/HISTORY.md).
+    Catalyst version 14 also introduces several new features. These will not be discussed here, however, they are described in Catalyst's [history file](https://github.com/SciML/Catalyst.jl/blob/master/HISTORY.md).
 
 ## System completeness
 In ModelingToolkit v9 (and thus also Catalyst v14) all systems (e.g. `ReactionSystem`s and `ODESystem`s) are either *complete* or *incomplete* (completeness was already a thing, however, recent updates mean that the user now has to be aware of this). Complete and incomplete systems differ in that
@@ -43,7 +43,7 @@ We can now go on and use our model for e.g. simulations:
 using OrdinaryDiffEq, Plots
 u0 = [X => 0.1]
 tspan = (0.0, 10.0)
-ps = [d => 1.0, d => 0.2]
+ps = [p => 1.0, d => 0.2]
 oprob = ODEProblem(rs, u0, tspan, ps)
 sol = solve(oprob)
 plot(sol)
