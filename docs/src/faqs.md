@@ -59,7 +59,7 @@ plot(sol; idxs = [A, B])
 ```
 
 ## How to disable rescaling of reaction rates in rate laws?
-As explained in the [Reaction rate laws used in simulations](@ref) section, for
+As explained in the [Reaction rate laws used in simulations](@ref introduction_to_catalyst_ratelaws) section, for
 a reaction such as `k, 2X --> 0`, the generated rate law will rescale the rate
 constant, giving `k*X^2/2` instead of `k*X^2` for ODEs and `k*X*(X-1)/2` instead
 of `k*X*(X-1)` for jumps. This can be disabled when directly `convert`ing a
@@ -105,7 +105,7 @@ parametric_stoichiometry) section.
 
 ## How to set default values for initial conditions and parameters?
 How to set defaults when using the `@reaction_network` macro is described in
-more detail [here](@ref dsl_description_defaults). There are several ways to do
+more detail [here](@ref dsl_advanced_options_default_vals). There are several ways to do
 this. Using the DSL, one can use the `@species` and `@parameters` options:
 ```@example faq3
 using Catalyst
