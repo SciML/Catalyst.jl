@@ -363,7 +363,7 @@ end
 nothing # hide
 ```
 !!! note
-    If only a single observable is declared, the `begin .. end` block is not required and the observable can be declared directly after the `@observables` option.
+    If only a single observable is declared, the `begin ... end` block is not required and the observable can be declared directly after the `@observables` option.
 
 [Metadata](@ref dsl_advanced_options_species_and_parameters_metadata) can be supplied to an observable directly after its declaration (but before its formula). If so, the metadata must be separated from the observable with a `,`, and the observable plus the metadata encapsulated by `()`. E.g. to add a [description metadata](@ref dsl_advanced_options_species_and_parameters_metadata) to our observable we can use
 ```@example dsl_advanced_observables

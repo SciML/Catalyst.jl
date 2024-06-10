@@ -101,7 +101,7 @@ integrator.ps[:k₂]
 ```
 Note that here, species-interfacing yields (or changes) a simulation's current value for a species, not its initial condition.
 
-If you are interfacing with jump simulation integrators, please read this, highly relevant, section
+If you are interfacing with jump simulation integrators, you must always call `reset_aggregated_jumps!(integrator)` afterwards.
 
 ## [Interfacing solution objects](@id simulation_structure_interfacing_solutions)
 

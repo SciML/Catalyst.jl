@@ -38,7 +38,7 @@ function pulse_amplitude(p, _)
     SciMLBase.successful_retcode(sol) || return Inf
     return -(maximum(sol[:Z]) - sol[:Z][1])
 end
-nothing # here
+nothing # hide
 ```
 This cost function takes two arguments (a parameter value `p`, and an additional one which we will ignore here but discuss later). It first calculates the new initial steady state concentration for the given parameter set. Next, it creates an updated `ODEProblem` using the steady state as initial conditions and the, to the cost function provided, input parameter set. While we could create a new `ODEProblem` within the cost function, cost functions are often called a large number of times during the optimisation process (making performance important). Here, using [`remake` on a previously created `ODEProblem`](@ref simulation_structure_interfacing_problems_remake) is more performant than creating a new one. Just like [when using Optimization.jl to fit parameters to data](@ref optimization_parameter_fitting), we use the `verbose = false` option to prevent unnecessary simulation printouts, and a reduced `maxiters` value to reduce time spent simulating (for the model) unsuitable parameter sets. We also use `SciMLBase.successful_retcode(sol)` to check whether the simulation return code indicates a successful simulation (and if it did not, returns a large cost function value). Finally, Optimization.jl finds the function's *minimum value*, so to find the *maximum* relative pulse amplitude, we make our cost function return the negative pulse amplitude.
 
