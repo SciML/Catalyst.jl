@@ -275,7 +275,7 @@ nothing # hide
 ```
 If the `@default_noise_scaling` option is used, that term is only applied to reactions *without* `noise_scaling` metadata.
 
-While the `@default_noise_scaling` option is unavailable for [programmatically created models](@ref programmatic_CRN_construction), the [`remake_reactionsystem`](@ref simulation_structure_interfacing_problems_remake) function can be used to achieve a similar effect.
+While the `@default_noise_scaling` option is unavailable for [programmatically created models](@ref programmatic_CRN_construction), the `set_default_noise_scaling` function can be used to achieve a similar effect.
 
 ## [Performing jump simulations using stochastic chemical kinetics](@id simulation_intro_jumps)
 
