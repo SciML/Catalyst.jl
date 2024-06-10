@@ -93,7 +93,7 @@ to assess (global) structural identifiability for all parameters and variables o
 - Automatically handles conservation laws for structural identifiability problems (eliminates these internally to speed up computations).
 - A more detailed of how this extension works can be found [here](https://docs.sciml.ai/Catalyst/stable/inverse_problems/structural_identifiability/).
 
-#### Bifurcation identifiability extension 
+#### Bifurcation analysis extension 
 - Add a CatalystBifurcationKitExtension, permitting BifurcationKit's `BifurcationProblem`s to be created from Catalyst reaction networks. Example usage:
 ```julia
 using Catalyst
@@ -110,15 +110,15 @@ bif_par = :k1
 u_guess = [:X => 5.0, :Y => 2.0]
 p_start = [:k1 => 4.0, :k2 => 1.0, :k3 => 1.0, :k4 => 1.5, :k5 => 1.25]
 plot_var = :X
-bprob = BifurcationProblem(wilhelm_2009_model, u_guess, p_start, bif_par; plot_var=plot_var)
+bprob = BifurcationProblem(wilhelm_2009_model, u_guess, p_start, bif_par; plot_var = plot_var)
 
 p_span = (2.0, 20.0)
-opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2], max_steps=1000)
+opts_br = ContinuationPar(p_min = p_span[1], p_max = p_span[2], max_steps = 1000)
 
-bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside=true)
+bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside = true)
 
 using Plots
-plot(bif_dia; xguide="k1", yguide="X")
+plot(bif_dia; xguide = "k1", guide = "X")
 ```
 - Automatically handles elimination of conservation laws for computing bifurcation diagrams.
 - Updated Bifurcation documentation with respect to this new feature.
