@@ -144,7 +144,7 @@ If you use this functionality in your research, [in addition to Catalyst](@ref c
 ---
 ## Learning more
 
-If you want to learn more about analysing dynamical systems, including chaotic behaviour, you can have a look at the textbook [Nonlinear Dynamics](https://link.springer.com/book/10.1007/978-3-030-91032-7). It utilizes DynamicalSystems.jl and provides a concise, hands-on approach to learning nonlinear dynamics and analysing dynamical systems [^3].
+If you want to learn more about analysing dynamical systems, including chaotic behaviour, see the textbook [Nonlinear Dynamics](https://link.springer.com/book/10.1007/978-3-030-91032-7). It utilizes DynamicalSystems.jl and provides a concise, hands-on approach to learning nonlinear dynamics and analysing dynamical systems [^3].
 
 
 ---
