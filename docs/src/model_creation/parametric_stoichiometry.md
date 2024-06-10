@@ -15,7 +15,7 @@ revsys = @reaction_network revsys begin
 end
 reactions(revsys)
 ```
-Notice, as described in the [Reaction rate laws used in simulations](@ref)
+Notice, as described in the [Reaction rate laws used in simulations](@ref introduction_to_catalyst_ratelaws)
 section, the default rate laws involve factorials in the stoichiometric
 coefficients. For this reason we explicitly specify `m` and `n` as integers (as
 otherwise ModelingToolkit will implicitly assume they are floating point).
@@ -68,28 +68,30 @@ osys = complete(osys)
 equations(osys)
 show(stdout, MIME"text/plain"(), equations(osys)) # hide
 ```
+Specifying the parameter and initial condition values,
 ```@example s1
 p  = (k₊ => 1.0, k₋ => 1.0, m => 2, n => 2)
 u₀ = [A => 1.0, B => 1.0]
 oprob = ODEProblem(osys, u₀, (0.0, 1.0), p)
 nothing # hide
 ```
-We can now solve and plot the system
-```@julia
+we can now solve and plot the system
+```@example s1
 sol = solve(oprob, Tsit5())
 plot(sol)
 ```
 
 An alternative approach to avoid the issues of using mixed floating point and
 integer variables is to disable the rescaling of rate laws as described in
-[Reaction rate laws used in simulations](@ref) section. This requires passing
-the `combinatoric_ratelaws=false` keyword to `convert` or to `ODEProblem` (if
-directly building the problem from a `ReactionSystem` instead of first
-converting to an `ODESystem`). For the previous example this gives the following
-(different) system of ODEs
+[Reaction rate laws used in simulations](@ref introduction_to_catalyst_ratelaws)
+section. This requires passing the `combinatoric_ratelaws=false` keyword to
+`convert` or to `ODEProblem` (if directly building the problem from a
+`ReactionSystem` instead of first converting to an `ODESystem`). For the
+previous example this gives the following (different) system of ODEs where we
+now let `m` and `n` be floating point valued parameters (the default):
 ```@example s1
 revsys = @reaction_network revsys begin
-    @parameters m::Int64 n::Int64
+    @parameters m n
     k₊, m*A --> (m*n)*B
     k₋, B --> A
 end
@@ -99,7 +101,7 @@ equations(osys)
 show(stdout, MIME"text/plain"(), equations(osys)) # hide
 ```
 Since we no longer have factorial functions appearing, our example will now run
-even with floating point values for `m` and `n`:
+with `m` and `n` treated as floating point parameters:
 ```@example s1
 p  = (k₊ => 1.0, k₋ => 1.0, m => 2.0, n => 2.0)
 oprob = ODEProblem(osys, u₀, (0.0, 1.0), p)
