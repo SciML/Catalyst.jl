@@ -159,7 +159,6 @@ end
 
 # Test with JumpSystem.
 let
-    p = rand(rng, length(k))
     @species A(t) B(t) C(t) D(t) E(t) F(t)
     rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
         Reaction(k[2], [B], nothing),            # B -> 0
@@ -193,27 +192,29 @@ let
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.ConstantRateJump, cidxs))
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.VariableRateJump, vidxs))
 
-    pars = rand(rng, length(k))
+    p = rand(rng, length(k))
+    pmap = parameters(js) .=> p
     u0 = rand(rng, 2:10, 6)
+    u0map = unknowns(js) .=> u0
     ttt = rand(rng)
     jumps = Vector{Union{ConstantRateJump, MassActionJump, VariableRateJump}}(undef,
                                                                               length(rxs))
 
-    jumps[1] = MassActionJump(pars[1], Vector{Pair{Int, Int}}(), [1 => 1])
-    jumps[2] = MassActionJump(pars[2], [2 => 1], [2 => -1])
-    jumps[3] = MassActionJump(pars[3], [1 => 1], [1 => -1, 3 => 1])
-    jumps[4] = MassActionJump(pars[4], [3 => 1], [1 => 1, 2 => 1, 3 => -1])
-    jumps[5] = MassActionJump(pars[5], [3 => 1], [1 => 2, 3 => -1])
-    jumps[6] = MassActionJump(pars[6], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1])
-    jumps[7] = MassActionJump(pars[7], [2 => 2], [1 => 1, 2 => -2])
-    jumps[8] = MassActionJump(pars[8], [1 => 1, 2 => 1], [2 => -1, 3 => 1])
-    jumps[9] = MassActionJump(pars[9], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1, 4 => 1])
-    jumps[10] = MassActionJump(pars[10], [1 => 2], [1 => -2, 3 => 1, 4 => 1])
-    jumps[11] = MassActionJump(pars[11], [1 => 2], [1 => -1, 2 => 1])
-    jumps[12] = MassActionJump(pars[12], [1 => 1, 2 => 3, 3 => 4],
+    jumps[1] = MassActionJump(p[1], Vector{Pair{Int, Int}}(), [1 => 1])
+    jumps[2] = MassActionJump(p[2], [2 => 1], [2 => -1])
+    jumps[3] = MassActionJump(p[3], [1 => 1], [1 => -1, 3 => 1])
+    jumps[4] = MassActionJump(p[4], [3 => 1], [1 => 1, 2 => 1, 3 => -1])
+    jumps[5] = MassActionJump(p[5], [3 => 1], [1 => 2, 3 => -1])
+    jumps[6] = MassActionJump(p[6], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1])
+    jumps[7] = MassActionJump(p[7], [2 => 2], [1 => 1, 2 => -2])
+    jumps[8] = MassActionJump(p[8], [1 => 1, 2 => 1], [2 => -1, 3 => 1])
+    jumps[9] = MassActionJump(p[9], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1, 4 => 1])
+    jumps[10] = MassActionJump(p[10], [1 => 2], [1 => -2, 3 => 1, 4 => 1])
+    jumps[11] = MassActionJump(p[11], [1 => 2], [1 => -1, 2 => 1])
+    jumps[12] = MassActionJump(p[12], [1 => 1, 2 => 3, 3 => 4],
                                [1 => -1, 2 => -3, 3 => -2, 4 => 3])
-    jumps[13] = MassActionJump(pars[13], [1 => 3, 2 => 1], [1 => -3, 2 => -1])
-    jumps[14] = MassActionJump(pars[14], Vector{Pair{Int, Int}}(), [1 => 2])
+    jumps[13] = MassActionJump(p[13], [1 => 3, 2 => 1], [1 => -3, 2 => -1])
+    jumps[14] = MassActionJump(p[14], Vector{Pair{Int, Int}}(), [1 => 2])
 
     jumps[15] = ConstantRateJump((u, p, t) -> p[15] * u[1] / (2 + u[1]),
                                  integrator -> (integrator.u[1] -= 1))
@@ -230,32 +231,34 @@ let
                                  integrator -> (integrator.u[4] -= 2; integrator.u[5] -= 1; integrator.u[6] += 2))
 
     unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(js)))
-    jspmapper = ModelingToolkit.JumpSysMajParamMapper(js, pars)
+    dprob = DiscreteProblem(js, u0map, (0.0, 10.0), pmap)
+    mtkpars = dprob.p
+    jspmapper = ModelingToolkit.JumpSysMajParamMapper(js, mtkpars)
     symmaj = ModelingToolkit.assemble_maj(equations(js).x[1], unknownoid, jspmapper)
-    maj = MassActionJump(symmaj.param_mapper(pars), symmaj.reactant_stoch, symmaj.net_stoch,
+    maj = MassActionJump(symmaj.param_mapper(mtkpars), symmaj.reactant_stoch, symmaj.net_stoch,
                          symmaj.param_mapper, scale_rates = false)
     for i in midxs
-        @test_broken abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100 * eps()
+        @test abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100 * eps()
         @test jumps[i].reactant_stoch == maj.reactant_stoch[i]
         @test jumps[i].net_stoch == maj.net_stoch[i]
     end
     for i in cidxs
         crj = ModelingToolkit.assemble_crj(js, equations(js)[i], unknownoid)
-        @test_broken isapprox(crj.rate(u0, p, ttt), jumps[i].rate(u0, p, ttt))
-        fake_integrator1 = (u = zeros(6), p = p, t = 0.0)
-        fake_integrator2 = deepcopy(fake_integrator1)
+        @test isapprox(crj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
+        fake_integrator1 = (u = zeros(6), p = mtkpars, t = 0.0)
+        fake_integrator2 = (u = zeros(6), p, t = 0.0)
         crj.affect!(fake_integrator1)
         jumps[i].affect!(fake_integrator2)
-        @test fake_integrator1 == fake_integrator2
+        @test fake_integrator1.u == fake_integrator2.u
     end
     for i in vidxs
         crj = ModelingToolkit.assemble_vrj(js, equations(js)[i], unknownoid)
-        @test_broken isapprox(crj.rate(u0, p, ttt), jumps[i].rate(u0, p, ttt))
-        fake_integrator1 = (u = zeros(6), p = p, t = 0.0)
-        fake_integrator2 = deepcopy(fake_integrator1)
+        @test isapprox(crj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
+        fake_integrator1 = (u = zeros(6), p = mtkpars, t = 0.0)
+        fake_integrator2 = (u = zeros(6), p, t = 0.0)
         crj.affect!(fake_integrator1)
         jumps[i].affect!(fake_integrator2)
-        @test fake_integrator1 == fake_integrator2
+        @test fake_integrator1.u == fake_integrator2.u
     end
 end
 
@@ -439,7 +442,7 @@ let
         umean += sol(10.0, idxs = [B1, B2, B3, C])
     end
     umean /= Nsims
-    @test isapprox(umean[1], umean[2]; rtol = 1e-2) 
+    @test isapprox(umean[1], umean[2]; rtol = 1e-2)
     @test isapprox(umean[1], umean[3]; rtol = 1e-2)
     @test umean[4] == 10
 end
