@@ -77,7 +77,7 @@ plot!(sol_n10; idxs = :X10, label = "n = 10")
 ## [Modelling linear pathways using programmatic, generative, modelling](@id programmatic_generative_linear_pathway_generative)
 Above, we investigated the impact of linear pathways' lengths on their behaviours. Since the models were implemented using the DSL, we had to implement a new model for each pathway (in each case writing out all reactions). Here, we will instead show how [programmatic modelling](@ref programmatic_CRN_construction) can be used to generate pathways of arbitrary lengths.
 
-First, we create a function, `generate_lp`, which creates a linear pathway model of length `n`. It utilises [*vector variables*](@ref ref) to create an arbitrary number of species, and also creates an [observable](@ref ref) for the final species of the chain.
+First, we create a function, `generate_lp`, which creates a linear pathway model of length `n`. It utilises *vector variables* to create an arbitrary number of species, and also creates an observable for the final species of the chain.
 ```@example programmatic_generative_linear_pathway_generative
 using Catalyst # hide
 t = default_t()
