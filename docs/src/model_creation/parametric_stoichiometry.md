@@ -70,8 +70,8 @@ show(stdout, MIME"text/plain"(), equations(osys)) # hide
 ```
 Specifying the parameter and initial condition values,
 ```@example s1
-p  = (k₊ => 1.0, k₋ => 1.0, m => 2, n => 2)
-u₀ = [A => 1.0, B => 1.0]
+p  = (revsys.k₊ => 1.0, revsys.k₋ => 1.0, revsys.m => 2, revsys.n => 2)
+u₀ = [revsys.A => 1.0, revsys.B => 1.0]
 oprob = ODEProblem(osys, u₀, (0.0, 1.0), p)
 nothing # hide
 ```
@@ -102,7 +102,7 @@ show(stdout, MIME"text/plain"(), equations(osys)) # hide
 Since we no longer have factorial functions appearing, our example will now run
 with `m` and `n` treated as floating point parameters:
 ```@example s1
-p  = (k₊ => 1.0, k₋ => 1.0, m => 2.0, n => 2.0)
+p  = (revsys.k₊ => 1.0, revsys.k₋ => 1.0, revsys.m => 2.0, revsys.n => 2.0)
 oprob = ODEProblem(osys, u₀, (0.0, 1.0), p)
 sol = solve(oprob, Tsit5())
 plot(sol)
