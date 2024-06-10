@@ -208,7 +208,7 @@ end
 WARNING!!!
 
 The following variable is used to check that code that should be updated when the `ReactionSystem` 
-fields are updated have in fact been updated. Do not just blindly update this without first checking 
+fields are updated has in fact been updated. Do not just blindly update this without first checking 
 all such code and updating it appropriately (e.g. serialization). Please use a search for
 `reactionsystem_fields` throughout the package to ensure all places which should be updated, are updated.
 """
