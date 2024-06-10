@@ -463,3 +463,77 @@ A reaction's metadata can be accessed using specific functions, e.g. `Catalyst.h
 rx = @reaction p, 0 --> X, [description="A production reaction"]
 Catalyst.getdescription(rx)
 ```
+
+## [Working with symbolic variables and the DSL](@id dsl_advanced_options_symbolics_and_DSL)
+We have previously described how Catalyst represents its models symbolically (enabling e.g. symbolic differentiation of expressions stored in models). While Catalyst utilises this for many internal operation, these symbolic representations can also be accessed and harnessed by the user. Primarily, doing so is much easier during programmatic (as opposed to DSL-based) modelling. Indeed, the section on [programmatic modelling](@ref programmatic_CRN_construction) goes into more details about symbolic representation in models, and how these can be used. It is, however, also ways to utilise these methods during DSL-based modelling. Below we briefly describe two methods for doing so.
+
+### [Using `@unpack` to extract symbolic variables from `ReactionSystem`s](@id dsl_advanced_options_symbolics_and_DSL_unpack)
+Let us consider a simple [birth-death process](@ref basic_CRN_library_bd) created using the DSL:
+```@example dsl_advanced_programmatic_unpack
+using Catalyst # hide
+bd_model = @reaction_network begin
+    (p,d), 0 <--> X
+end
+nothing # hide
+```
+Since we have not explicitly declared `p`, `d`, and `X` using `@parameters` and `@species`, we cannot represent these symbolically (only using `Symbol`s). If we wish to do so, however, we can fetch these into our current scope using the `@unpack` macro:
+```@example dsl_advanced_programmatic_unpack
+@unpack p, d, X = bd_model
+nothing # hide
+```
+This lists first the quantities we wish to fetch (does not need to be the model's full set of parameters and species), then `=`, followed by the model variable. `p`, `d` and `X` are now symbolic variables in the current scope, just as if they had been declared using `@parameters` or `@species`. We can confirm this:
+```@example dsl_advanced_programmatic_unpack
+X
+```
+Next, we can now use these to e.g. designate initial conditions and parameter values for model simulations:
+```@example dsl_advanced_programmatic_unpack
+using OrdinaryDiffEq, Plots # hide
+u0 = [X => 0.1]
+tspan = (0.0, 10.0)
+ps = [p => 1.0, d => 0.2]
+oprob = ODEProblem(bd_model, u0, tspan, ps)
+sol = solve(oprob)
+plot(sol)
+```
+
+!!! warn
+    Just like when using `@parameters` and `@species`, `@unpack` will overwrite any variables in the current scope which share name with the imported quantities.
+
+### [Interpolating variables into the DSL](@id dsl_advanced_options_symbolics_and_DSL_interpolation)
+Catalyst's DSL allows Julia variables to be interpolated for the network name, within rate constant expressions, or for species/stoichiometries within reactions. Using the lower-level symbolic interface we can then define symbolic variables and parameters outside of `@reaction_network`, which can then be used within expressions in the DSL. 
+
+Interpolation is carried out by pre-appending the interpolating variable with a `$`. For example, here we declare the parameters and species of a birth-death model, and interpolate these into the model:
+```@example dsl_advanced_programmatic_interpolation
+using Catalyst # hide
+t = default_t()
+@species X(t)
+@parameters p d
+bd_model = @reaction_network begin
+    ($p, $d), 0 <--> $X
+end
+```
+Additional information (such as default values or metadata) supplied to `p`, `d`, and `X` is carried through to the DSL. However, interpolation for this purpose is of limited value, as such information [can be declared within the DSL](@ref dsl_advanced_options_declaring_species_and_parameters). However, it is possible to interpolate larger algebraic expressions into the DSL, e.g. here
+```@example dsl_advanced_programmatic_interpolation
+@species X1(t) X2(t) X3(t) E(t)
+@parameters d
+d_rate = d/(1 + E)
+degradation_model = @reaction_network begin
+    $d_rate, X1 --> 0
+    $d_rate, X2 --> 0
+    $d_rate, X3 --> 0
+end
+```
+we declare an expression `d_rate`, which then can be inserted into the DSL via interpolation.
+
+It is also possible to use interpolation in combination with the `@reaction` macro. E.g. the reactions of the above network can be declared individually using
+```@example dsl_advanced_programmatic_interpolation
+rxs = [
+    @reaction $d_rate, $X1 --> 0
+    @reaction $d_rate, $X2 --> 0
+    @reaction $d_rate, $X3 --> 0
+]
+nothing # hide 
+```
+
+!!! note
+    When using interpolation, expressions like `2$spec` won't work; the multiplication symbol must be explicitly included like `2*$spec`.
