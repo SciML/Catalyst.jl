@@ -362,7 +362,7 @@ let
     sol = solve(jprob, SSAStepper(); seed)
     
     # Checks that all `e` parameters have been updated properly.
-    # Note that periodic discrete events are currently broken for jump processes (and unlikely to be fixed soon due to have events are implemented).
+    # Note that periodic discrete events are currently broken for jump processes (and unlikely to be fixed soon due to periodic callbacks using the internals of ODE integrator and Datastructures heap implementations).
     @test sol.ps[:e1] == 1
     @test_broken sol.ps[:e2] == 1 # (https://github.com/SciML/JumpProcesses.jl/issues/417)
     @test sol.ps[:e3] == 1
