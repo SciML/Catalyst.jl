@@ -91,7 +91,6 @@ previous example this gives the following (different) system of ODEs where we
 now let `m` and `n` be floating point valued parameters (the default):
 ```@example s1
 revsys = @reaction_network revsys begin
-    @parameters m n
     k₊, m*A --> (m*n)*B
     k₋, B --> A
 end
