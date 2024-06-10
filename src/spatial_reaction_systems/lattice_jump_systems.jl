@@ -17,8 +17,8 @@ function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     # Converts u0 and p to their internal forms.
     # u0 is [spec 1 at vert 1, spec 2 at vert 1, ..., spec 1 at vert 2, ...].
     u0 = lattice_process_u0(u0_in, species(lrs), lrs.num_verts)
-    # Both vert_ps and edge_ps becomes vectors of vectors. Each have 1 element for each parameter. 
-    # These elements are length 1 vectors (if the parameter is uniform), 
+    # Both vert_ps and edge_ps becomes vectors of vectors. Each have 1 element for each parameter.
+    # These elements are length 1 vectors (if the parameter is uniform),
     # or length num_verts/nE, with unique values for each vertex/edge (for vert_ps/edge_ps, respectively).
     vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs),
         edge_parameters(lrs), lrs)
@@ -40,7 +40,7 @@ function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator
     # Computes hopping constants and mass action jumps (requires some internal juggling).
     # Currently, JumpProcesses requires uniform vertex parameters (hence `p=first.(dprob.p[1])`).
     # Currently, the resulting JumpProblem does not depend on parameters (no way to incorporate these).
-    # Hence the parameters of this one does nto actually matter. If at some point JumpProcess can 
+    # Hence the parameters of this one does nto actually matter. If at some point JumpProcess can
     # handle parameters this can be updated and improved.
     # The non-spatial DiscreteProblem have a u0 matrix with entries for all combinations of species and vertexes.
     hopping_constants = make_hopping_constants(dprob, lrs)
@@ -68,7 +68,7 @@ function make_hopping_constants(dprob::DiscreteProblem, lrs::LatticeReactionSyst
     # For each edge, finds each position in `hopping_constants`.
     for (e_idx, e) in enumerate(edges(lrs.lattice))
         dst_idx = findfirst(isequal(e.dst), lrs.lattice.fadjlist[e.src])
-        # For each species, sets that hopping rate.  
+        # For each species, sets that hopping rate.
         for s_idx in 1:(lrs.num_species)
             hopping_constants[s_idx, e.src][dst_idx] = get_component_value(
                 all_diff_rates[s_idx], e_idx)
@@ -124,7 +124,7 @@ end
 ### Extra ###
 
 # Temporary. Awaiting implementation in SII, or proper implementation withinCatalyst (with more general functionality).
-function int_map(map_in, sys) where {T, S}
+function int_map(map_in, sys)
     return [ModelingToolkit.variable_index(sys, pair[1]) => pair[2] for pair in map_in]
 end
 
@@ -136,9 +136,9 @@ end
 #     statetoid = Dict(ModelingToolkit.value(state) => i for (i, state) in enumerate(states(rs)))
 #     eqs = equations(js)
 #     invttype = non_spat_dprob.tspan[1] === nothing ? Float64 : typeof(1 / non_spat_dprob.tspan[2])
-# 
+#
 #     # Assembles the non-spatial mass action jumps.
-#     p = (non_spat_dprob.p isa DiffEqBase.NullParameters || non_spat_dprob.p === nothing) ? Num[] : non_spat_dprob.p    
+#     p = (non_spat_dprob.p isa DiffEqBase.NullParameters || non_spat_dprob.p === nothing) ? Num[] : non_spat_dprob.p
 #     majpmapper = ModelingToolkit.JumpSysMajParamMapper(js, p; jseqs = eqs, rateconsttype = invttype)
 #     return ModelingToolkit.assemble_maj(eqs.x[1], statetoid, majpmapper)
 # end
