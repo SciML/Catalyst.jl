@@ -557,7 +557,6 @@ let
     @test osol[B][end] ≈ 1.0
 
     # Checks that SteadyState simulation of the system achieves the correct steady state.
-    # Currently broken due to MTK.
     ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
     sssol = solve(ssprob, DynamicSS(Vern7()); abstol = 1e-8, reltol = 1e-8)
     @test sssol[X][end] ≈ 2.0
