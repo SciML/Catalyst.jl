@@ -1,5 +1,6 @@
 # [Advice for performant ODE simulations](@id ode_simulation_performance)
-We have previously described how to perform ODE simulations of *chemical reaction network* (CRN) models. These simulations are typically fast and require little additional consideration. However, when a model is simulated many times (e.g. as a part of solving an [inverse problem](@ref ref)), or is very large, simulation run times may become noticeable. Here we will give some advice on how to improve performance for these cases [^1].
+We have previously described how to perform ODE simulations of *chemical reaction network* (CRN) models. These simulations are typically fast and require little additional consideration. However, when a model is simulated many times (e.g. as a part of solving an inverse problem), or is very large, simulation run
+times may become noticeable. Here we will give some advice on how to improve performance for these cases [^1].
 
 Generally, there are few good ways to, before a simulation, determine the best options. Hence, while we below provide several options, if you face an application for which reducing run time is critical (e.g. if you need to simulate the same ODE many times), it might be required to manually trial these various options to see which yields the best performance ([BenchmarkTools.jl's](https://github.com/JuliaCI/BenchmarkTools.jl) `@btime` macro is useful for this purpose). It should be noted that the default options typically perform well, and it is primarily for large models where investigating alternative options is worthwhile. All ODE simulations of Catalyst models are performed using the OrdinaryDiffEq.jl package, [which documentation](https://docs.sciml.ai/DiffEqDocs/stable/) provides additional advice on performance.
 
@@ -303,7 +304,7 @@ nothing # hide
 ```
 Here have we increased the number of simulations to 10,000, since this is a more appropriate number for GPU parallelisation (as compared to the 100 simulations we performed in our CPU example).
 !!! note
-    Currently, declaration of static vectors requires [symbolic, rather than symbol, form](@ref ref) for species and parameters. Hence, we here first [`@unpack` these](@ref ref) before constructing `u0` and `ps` using `@SVector`.
+    Currently, declaration of static vectors requires symbolic, rather than symbol, form for species and parameters. Hence, we here first `@unpack` these before constructing `u0` and `ps` using `@SVector`.
 
 We can now simulate our model using a GPU-based ensemble algorithm. Currently, two such algorithms are available, `EnsembleGPUArray` and `EnsembleGPUKernel`. Their differences are that
 - Only `EnsembleGPUKernel` requires arrays to be static arrays (although it is still advantageous for `EnsembleGPUArray`).

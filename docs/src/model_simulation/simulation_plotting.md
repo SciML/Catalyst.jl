@@ -53,7 +53,7 @@ A useful option unique to Catalyst (and other DifferentialEquations.jl-based) pl
 ```@example simulation_plotting
 plot(sol; idxs = [:X])
 ```
-can be used to plot `X` only. When only a single argument is given, the vector form is unnecessary (e.g. `idxs = :X` could have been used instead). If [symbolic species representation is used](@ref ref), this can be used to designate any algebraic expression(s) that should be plotted. E.g. here we plot the total concentration of $X + Y$ throughout the simulation:
+can be used to plot `X` only. When only a single argument is given, the vector form is unnecessary (e.g. `idxs = :X` could have been used instead). If symbolic species representation is used, this can be used to designate any algebraic expression(s) that should be plotted. E.g. here we plot the total concentration of $X + Y$ throughout the simulation:
 ```@example simulation_plotting
 plot(sol; idxs = brusselator.X + brusselator.Y)
 ```
