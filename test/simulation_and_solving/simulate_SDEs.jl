@@ -224,13 +224,14 @@ let
     @species X1(t) X2(t)
     p_syms = @parameters $(η_stored) k1 k2
 
-    r1 = Reaction(k1,[X1],[X2],[1],[1]; metadata = [:noise_scaling => η_stored])
-    r2 = Reaction(k2,[X2],[X1],[1],[1]; metadata = [:noise_scaling => η_stored])
+    r1 = Reaction(k1, [X1], [X2], [1], [1]; metadata = [:noise_scaling => p_syms[1]])
+    r2 = Reaction(k2, [X2], [X1], [1], [1]; metadata = [:noise_scaling => p_syms[1]])
     @named noise_scaling_network = ReactionSystem([r1, r2], t, [X1, X2], [k1, k2, p_syms[1]])
+    noise_scaling_network = complete(noise_scaling_network)
 
     u0 = [:X1 => 1100.0, :X2 => 3900.0]
     p = [:k1 => 2.0, :k2 => 0.5, :η => 0.0]
-    @test_broken SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p).ps[:η] == 0.0 # Broken due to SII/MTK stuff.
+    @test SDEProblem(noise_scaling_network, u0, (0.0, 1000.0), p).ps[:η] == 0.0
 end
 
 # Complicated test with many combinations of options.

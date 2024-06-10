@@ -488,12 +488,12 @@ let
     @test sol[:Y][end] ≈ 3.0
 
     # Tests that observables can be used for plot indexing.
-    @test_broken false # plot(sol; idxs=X).series_list[1].plotattributes[:y][end] ≈ 10.0
+    plot(sol; idxs=X).series_list[1].plotattributes[:y][end] ≈ 10.0
     @test plot(sol; idxs=rn.X).series_list[1].plotattributes[:y][end] ≈ 10.0
     @test plot(sol; idxs=:X).series_list[1].plotattributes[:y][end] ≈ 10.0
     @test plot(sol; idxs=[X, Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
     @test plot(sol; idxs=[rn.X, rn.Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
-    @test_broken false # plot(sol; idxs=[:X, :Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
+    @test_broken plot(sol; idxs=[:X, :Y]).series_list[2].plotattributes[:y][end] ≈ 3.0 # (https://github.com/SciML/ModelingToolkit.jl/issues/2778)
 end
 
 # Compares programmatic and DSL system with observables.

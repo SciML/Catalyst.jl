@@ -750,5 +750,5 @@ end
 # there are several places in the code where the `reactionsystem_uptodate` function is called, here
 # the code might need adaptation to take the updated reaction system into account.
 let
-    @test_nowarn  Catalyst.reactionsystem_uptodate_check()
+    @test_nowarn Catalyst.reactionsystem_uptodate_check()
 end
