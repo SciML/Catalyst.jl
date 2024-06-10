@@ -9,6 +9,7 @@ is a parameter, and the number of products is the product of two parameters.
 ```@example s1
 using Catalyst, Latexify, OrdinaryDiffEq, ModelingToolkit, Plots
 revsys = @reaction_network revsys begin
+    @parameters m::Int64 n::Int64
     k₊, m*A --> (m*n)*B
     k₋, B --> A
 end
@@ -36,7 +37,7 @@ We could have equivalently specified our systems directly via the Catalyst
 API. For example, for `revsys` we would could use
 ```@example s1
 t = default_t()
-@parameters k₊, k₋, m, n
+@parameters k₊ k₋ m::Int n
 @species A(t), B(t)
 rxs = [Reaction(k₊, [A], [B], [m], [m*n]),
        Reaction(k₋, [B], [A])]
