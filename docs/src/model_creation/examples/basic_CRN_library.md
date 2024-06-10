@@ -79,7 +79,6 @@ oplt = plot(osol; idxs = X₁ + X₂, title = "Reaction rate equation (ODE)")
 splt = plot(ssol; idxs = X₁ + X₂, title = "Chemical Langevin equation (SDE)")
 plot(oplt, splt; lw = 3, ylimit = (99,101), size = (800,450), layout = (2,1))
 ```
-Catalyst has special methods for working with conserved quantities, which are described [here](@ref ref).
 
 ## [Michaelis-Menten enzyme kinetics](@id basic_CRN_library_mm)
 [Michaelis-Menten enzyme kinetics](https://en.wikipedia.org/wiki/Michaelis%E2%80%93Menten_kinetics) is a simple description of an enzyme ($E$) transforming a substrate ($S$) into a product ($P$). Under certain assumptions, it can be simplified to a single function (a Michaelis-Menten function) and used as a reaction rate. Here we instead present the full system model:

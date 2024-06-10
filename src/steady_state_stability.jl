@@ -48,7 +48,7 @@ function steady_state_stability(u::Vector, rs::ReactionSystem, ps;
         tol = 10 * sqrt(eps(ss_val_type(u))), ss_jac = steady_state_jac(rs; u0 = u))
     # Warning checks.
     if !isautonomous(rs)
-        error("Attempting to compute stability for a non-autonomous system (e.g. where some rate depend on $(rs.iv)). This is not possible.")
+        error("Attempting to compute stability for a non-autonomous system (e.g. where some rate depend on $(get_iv(rs))). This is not possible.")
     end
 
     # If `u` is a vector of values, we convert it to a map. Also, if there are conservation laws,

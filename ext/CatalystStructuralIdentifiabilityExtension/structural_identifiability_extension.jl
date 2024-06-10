@@ -189,8 +189,8 @@ function make_measured_quantities(
         rs::ReactionSystem, measured_quantities::Vector{T}, known_p::Vector{S},
         conseqs; ignore_no_measured_warn = false) where {T, S}
     # Warning if the user didn't give any measured quantities.
-    if ignore_no_measured_warn || isempty(measured_quantities)
-        @warn "No measured quantity provided to the `measured_quantities` argument, any further identifiability analysis will likely fail. You can disable this warning by setting `ignore_no_measured_warn=true`."
+    if !ignore_no_measured_warn && isempty(measured_quantities)
+        @warn "No measured quantity provided to the `measured_quantities` argument, any further identifiability analysis will likely fail. You can disable this warning by setting `ignore_no_measured_warn = true`."
     end
 
     # Appends the known parameters to the measured_quantities vector. Converts any Symbols to symbolics.
@@ -220,9 +220,9 @@ end
 # Sorts the output according to their input order (defaults to the `[unknowns; parameters]` order).
 function make_output(out, funcs_to_check, conseqs)
     funcs_to_check = vector_subs(funcs_to_check, conseqs)
-    out = Dict(zip(vector_subs(keys(out), conseqs), values(out)))
+    out = OrderedDict(zip(vector_subs(keys(out), conseqs), values(out)))
     sortdict = Dict(ftc => i for (i, ftc) in enumerate(funcs_to_check))
-    return sort(out; by = x -> sortdict[x])
+    return sort!(out; by = x -> sortdict[x])
 end
 
 # For a vector of expressions and a conservation law, substitutes the law into every equation.
