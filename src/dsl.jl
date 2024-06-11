@@ -124,7 +124,7 @@ macro reaction_network(name::Symbol = gensym(:ReactionSystem))
 end
 
 # Handles two disjoint cases.
-macro reaction_network(expr::Expr) 
+macro reaction_network(expr::Expr)
     # Case 1: The input is a name with interpolation.
     (expr.head != :block) && return make_rs_expr(esc(expr.args[1]))
     # Case 2: The input is a reaction network (and no name is provided).
@@ -156,7 +156,7 @@ macro network_component(name::Symbol = gensym(:ReactionSystem))
 end
 
 # Handles two disjoint cases.
-macro network_component(expr::Expr) 
+macro network_component(expr::Expr)
     # Case 1: The input is a name with interpolation.
     (expr.head != :block) && return make_rs_expr(esc(expr.args[1]); complete = false)
     # Case 2: The input is a reaction network (and no name is provided).
@@ -180,7 +180,6 @@ function make_rs_expr(name, network_expr; complete = true)
     return rs_expr
 end
 
-
 ### Internal DSL Structures ###
 
 # Internal structure containing information about one reactant in one reaction.
@@ -197,8 +196,8 @@ struct ReactionInternal
     rate::ExprValues
     metadata::Expr
 
-    function ReactionInternal(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues,
-                            metadata_line::ExprValues)
+    function ReactionInternal(sub_line::ExprValues, prod_line::ExprValues,
+            rate::ExprValues, metadata_line::ExprValues)
         subs = recursive_find_reactants!(sub_line, 1, Vector{ReactantInternal}(undef, 0))
         prods = recursive_find_reactants!(prod_line, 1, Vector{ReactantInternal}(undef, 0))
         metadata = extract_metadata(metadata_line)
@@ -211,7 +210,7 @@ end
 # reactants are stored in the `reactants` vector. As the expression tree is parsed, the 
 # stoichiometry is updated and new reactants added.
 function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
-                                   reactants::Vector{ReactantInternal})
+        reactants::Vector{ReactantInternal})
     # We have reached the end of the expression tree and can finalise and return the reactants.
     if typeof(ex) != Expr || (ex.head == :escape) || (ex.head == :ref)
         # The final bit of the expression is not a relevant reactant, no additions are required.
@@ -223,23 +222,23 @@ function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
             new_mult = processmult(+, mult, reactants[idx].stoichiometry)
             reactants[idx] = ReactantInternal(ex, new_mult)
 
-        # If the expression corresponds to a new reactant, add it to the list.
+            # If the expression corresponds to a new reactant, add it to the list.
         else
             push!(reactants, ReactantInternal(ex, mult))
         end
 
-    # If we have encountered a multiplication (i.e. a stoichiometry and a set of reactants).
+        # If we have encountered a multiplication (i.e. a stoichiometry and a set of reactants).
     elseif ex.args[1] == :*
         # The normal case (e.g. 3*X or 3*(X+Y)). Update the current multiplicity and continue.
         if length(ex.args) == 3
             new_mult = processmult(*, mult, ex.args[2])
             recursive_find_reactants!(ex.args[3], new_mult, reactants)
-        # More complicated cases (e.g. 2*3*X). Yes, `ex.args[1:(end - 1)]` should start at 1 (not 2).
+            # More complicated cases (e.g. 2*3*X). Yes, `ex.args[1:(end - 1)]` should start at 1 (not 2).
         else
             new_mult = processmult(*, mult, Expr(:call, ex.args[1:(end - 1)]...))
             recursive_find_reactants!(ex.args[end], new_mult, reactants)
         end
-    # If we have encountered a sum of different reactants, apply recursion on each.
+        # If we have encountered a sum of different reactants, apply recursion on each.
     elseif ex.args[1] == :+
         for i in 2:length(ex.args)
             recursive_find_reactants!(ex.args[i], mult, reactants)
@@ -289,26 +288,27 @@ function make_reaction_system(ex::Expr, name)
 
     # Extracts the options used (throwing errors for repeated options).
     if !allunique(arg.args[1] for arg in option_lines)
-         error("Some options where given multiple times.")
+        error("Some options where given multiple times.")
     end
     options = Dict(Symbol(String(arg.args[1])[2:end]) => arg for arg in option_lines)
-    
+
     # Reads options (round 1, options which must be read before the reactions, e.g. because 
     # they might declare parameters/species/variables).
     compound_expr_init, compound_species = read_compound_options(options)
     species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
     variables_declared = extract_syms(options, :variables)
-    vars_extracted, add_default_diff, equations = read_equations_options(options, variables_declared)
+    vars_extracted, add_default_diff, equations = read_equations_options(options, 
+        variables_declared)
 
     # Extracts all reactions. Extracts all parameters, species, and variables of the system and
     # creates lists with them.
     reactions = get_reactions(reaction_lines)
     variables = vcat(variables_declared, vars_extracted)
     syms_declared = Set(Iterators.flatten((parameters_declared, species_declared,
-                                           variables)))
+        variables)))
     species_extracted, parameters_extracted = extract_species_and_parameters(reactions,
-                                                                              syms_declared)
+        syms_declared)
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
@@ -316,8 +316,10 @@ function make_reaction_system(ex::Expr, name)
     tiv, sivs, ivs, ivexpr = read_ivs_option(options)
     continuous_events_expr = read_events_option(options, :continuous_events)
     discrete_events_expr = read_events_option(options, :discrete_events)
-    observed_expr, observed_eqs, obs_syms = read_observed_options(options, [species_declared; variables], ivs)
-    diffexpr = create_differential_expr(options, add_default_diff, [species; parameters; variables], tiv)
+    observed_expr, observed_eqs, obs_syms = read_observed_options(options, 
+        [species_declared; variables], ivs)
+    diffexpr = create_differential_expr(options, add_default_diff, 
+        [species; parameters; variables], tiv)
     default_reaction_metadata = read_default_noise_scaling_option(options)
     combinatoric_ratelaws = read_combinatoric_ratelaws_option(options)
 
@@ -424,8 +426,8 @@ end
 
 # Takes a reaction line and creates reaction(s) from it and pushes those to the reaction vector.
 # Used to create multiple reactions from bundled reactions (like `k, (X,Y) --> 0`).
-function push_reactions!(reactions::Vector{ReactionInternal}, subs::ExprValues, prods::ExprValues,
-                         rate::ExprValues, metadata::ExprValues, arrow::Symbol)
+function push_reactions!(reactions::Vector{ReactionInternal}, subs::ExprValues, 
+        prods::ExprValues, rate::ExprValues, metadata::ExprValues, arrow::Symbol)
     # The rates, substrates, products, and metadata may be in a tuple form (e.g. `k, (X,Y) --> 0`).
     # This finds these tuples' lengths (or 1 for non-tuple forms). Inconsistent lengths yield error.
     lengs = (tup_leng(subs), tup_leng(prods), tup_leng(rate), tup_leng(metadata))
@@ -591,7 +593,6 @@ function get_rxexpr(rx::ReactionInternal)
     return rx_constructor
 end
 
-
 ### DSL Option Handling ###
 
 # Finds the time idenepdnet variable, and any potential spatial indepndent variables.
@@ -621,7 +622,7 @@ end
 # the `default_noise_scaling` reaction metadata, otherwise, returns an empty vector.
 function read_default_noise_scaling_option(options)
     if haskey(options, :default_noise_scaling)
-        if (length(options[:default_noise_scaling].args) != 3) 
+        if (length(options[:default_noise_scaling].args) != 3)
             error("@default_noise_scaling should only have a single expression as its input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
         end
         return :([:noise_scaling => $(options[:default_noise_scaling].args[3])])
@@ -774,13 +775,13 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
         for (idx, obs_eq) in enumerate(observed_eqs.args)
             # Extract the observable, checks for errors.
             obs_name, ivs, defaults, metadata = find_varinfo_in_declaration(obs_eq.args[2])
-            if !isempty(ivs) 
+            if !isempty(ivs)
                 error("An observable ($obs_name) was given independent variable(s). These should not be given, as they are inferred automatically.")
             end
-            if !isnothing(defaults) 
+            if !isnothing(defaults)
                 error("An observable ($obs_name) was given a default value. This is forbidden.")
             end
-            if in(obs_name, forbidden_symbols_error) 
+            if in(obs_name, forbidden_symbols_error)
                 error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
             end
             if (obs_name in species_n_vars_declared) && is_escaped_expr(obs_eq.args[2])
@@ -803,11 +804,14 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 # Adds a line to the `observed_expr` expression, setting the ivs for this observable.
                 # Cannot extract directly using e.g. "getfield.(dependants_structs, :reactant)" because
                 # then we get something like :([:X1, :X2]), rather than :([X1, X2]).
-                dep_var_expr = :(filter(!MT.isparameter, Symbolics.get_variables($(obs_eq.args[3]))))
-                ivs_get_expr = :(unique(reduce(vcat,[arguments(MT.unwrap(dep)) for dep in $dep_var_expr])))
+                dep_var_expr = :(filter(!MT.isparameter, 
+                    Symbolics.get_variables($(obs_eq.args[3]))))
+                ivs_get_expr = :(unique(reduce(vcat, 
+                    [arguments(MT.unwrap(dep)) for dep in $dep_var_expr])))
                 sort_func(iv) = findfirst(MT.getname(iv) == ivs for ivs in ivs_sorted)
                 ivs_get_expr_sorted = :(sort($(ivs_get_expr); by = sort_func))
-                push!(observed_expr.args, :($obs_name = $(obs_name)($(ivs_get_expr_sorted)...)))
+                push!(observed_expr.args,
+                    :($obs_name = $(obs_name)($(ivs_get_expr_sorted)...)))
             end
 
             # In case metadata was given, this must be cleared from `observed_eqs`.
