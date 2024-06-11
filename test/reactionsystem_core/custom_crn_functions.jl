@@ -213,5 +213,5 @@ let
     discrete_events = ModelingToolkit.SymbolicDiscreteCallback.(discrete_events)    
     @test isequal(only(Catalyst.get_rxs(rs_expanded)).rate, v0 + v * (X^n) / (X^n + Y^n + K^n))
     @test isequal(get_continuous_events(rs_expanded), continuous_events)
-    @test isequal(get_continuous_events(rs_expanded), discrete_events)
+    @test isequal(get_discrete_events(rs_expanded), discrete_events)
 end
