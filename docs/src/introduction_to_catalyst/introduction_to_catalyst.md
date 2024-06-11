@@ -196,7 +196,9 @@ jprob = JumpProblem(repressilator, dprob, Direct(), save_positions=(false,false)
 # now, let's solve and plot the jump process:
 sol = solve(jprob, SSAStepper(), saveat=10.)
 plot(sol)
+nothing # hide
 ```
+![Repressilator SSA Simulation](../assets/long_ploting_times/introduction_repressilator_ssa.svg)
 
 We see that oscillations remain, but become much noisier. Note, in constructing
 the `JumpProblem` we could have used any of the SSAs that are part of JumpProcesses
