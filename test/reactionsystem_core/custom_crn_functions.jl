@@ -210,6 +210,6 @@ let
         (v * (X^n) / (X^n + K^n) > 1000.0) => [X ~ v * (K^n) / (X^n + K^n) + 2]
     ]
     @test isequal(only(Catalyst.get_rxs(rs_expanded)).rate, v0 + v * (X^n) / (X^n + Y^n + K^n))
-    @test isequal(get_continuous_events(rs_expanded).eqs, [v*X/(K + X) ~ 1.0])
-    @test isequal(get_continuous_events(rs_expanded).eqs, [v*X/(K + X) ~ 1.0])
+    @test isequal(get_continuous_events(rs_expanded), continuous_events)
+    @test isequal(get_continuous_events(rs_expanded), discrete_events)
 end
