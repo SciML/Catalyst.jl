@@ -96,7 +96,7 @@ Note, when using `convert(ODESystem, mixedsys; combinatoric_ratelaws=false)` the
 calling `ODEProblem(mixedsys,...; combinatoric_ratelaws=false)`. As described
 above, this disables Catalyst's standard rescaling of reaction rates when
 generating reaction rate laws, see also the [Reaction rate laws used in
-simulations](@ref) section. Leaving this keyword out for systems with floating
+simulations](@ref introduction_to_catalyst_ratelaws) section. Leaving this keyword out for systems with floating
 point stoichiometry will give an error message.
 
 For a more extensive documentation of using non-integer stoichiometric
