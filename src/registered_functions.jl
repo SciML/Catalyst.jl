@@ -116,7 +116,7 @@ expand_registered_functions(expr)
 
 Takes an expression, and expands registered function expressions. E.g. `mm(X,v,K)` is replaced with v*X/(X+K). Currently supported functions: `mm`, `mmr`, `hill`, `hillr`, and `hill`.
 """
-function expand_registered_functions(expr)      
+function expand_registered_functions(expr)
     if hasnode(is_catalyst_function, expr)
         expr = replacenode(expr, expand_catalyst_function)
     end
@@ -126,7 +126,8 @@ end
 # Checks whether an expression corresponds to a catalyst function call (e.g. `mm(X,v,K)`).
 function is_catalyst_function(expr)
     iscall(expr) || (return false)
-    return operation(expr) in [Catalyst.mm, Catalyst.mmr, Catalyst.hill, Catalyst.hillr, Catalyst.hillar]
+    return operation(expr) in [
+        Catalyst.mm, Catalyst.mmr, Catalyst.hill, Catalyst.hillr, Catalyst.hillar]
 end
 
 # If the input expression corresponds to a catalyst function call (e.g. `mm(X,v,K)`), returns
@@ -184,17 +185,15 @@ end
 function expand_registered_functions(rs::ReactionSystem)
     if isdefined(Main, :Infiltrator)
         Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
-      end
+    end
 
     @set! rs.eqs = Catalyst.expand_registered_functions(get_eqs(rs))
     @set! rs.rxs = Catalyst.expand_registered_functions(get_rxs(rs))
     if !isempty(ModelingToolkit.get_continuous_events(rs))
-        @set! rs.continuous_events = 
-            Catalyst.expand_registered_functions(ModelingToolkit.get_continuous_events(rs))
+        @set! rs.continuous_events = Catalyst.expand_registered_functions(ModelingToolkit.get_continuous_events(rs))
     end
     if !isempty(ModelingToolkit.get_discrete_events(rs))
-        @set! rs.discrete_events = 
-            Catalyst.expand_registered_functions(ModelingToolkit.get_discrete_events(rs))
+        @set! rs.discrete_events = Catalyst.expand_registered_functions(ModelingToolkit.get_discrete_events(rs))
     end
     return rs
 end
