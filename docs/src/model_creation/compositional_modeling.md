@@ -18,10 +18,10 @@ end
 Alternatively one can just build the `ReactionSystem` via the symbolic interface.
 ```@example ex0
 @parameters d
-@variable t
+t = default_t()
 @species X(t)
 rx = Reaction(d, [X], nothing)
-@named degradation_component = ReactionSystem([rs], t)
+@named degradation_component = ReactionSystem([rx], t)
 ```
 We can test whether a system is complete using the `ModelingToolkit.iscomplete` function:
 ```@example ex0
@@ -139,7 +139,7 @@ nothing # hide
 Here we assume the user will pass in the repressor species as a ModelingToolkit
 variable, and specify a name for the network. We use Catalyst's interpolation
 ability to substitute the value of these variables into the DSL (see
-[Interpolation of Julia Variables](@ref dsl_description_interpolation_of_variables)). To make the repressilator we now make
+[Interpolation of Julia Variables](@ref dsl_advanced_options_symbolics_and_DSL_interpolation)). To make the repressilator we now make
 three genes, and then compose them together
 ```@example ex1
 t = default_t()

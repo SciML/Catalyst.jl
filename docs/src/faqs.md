@@ -5,19 +5,17 @@ One can directly use symbolic variables to index into SciML solution objects.
 Moreover, observables can also be evaluated in this way. For example,
 consider the system
 ```@example faq1
-using Catalyst, DifferentialEquations, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 rn = @reaction_network ABtoC begin
   (k₊,k₋), A + B <--> C
 end
-
-# initial condition and parameter values
-setdefaults!(rn, [:A => 1.0, :B => 2.0, :C => 0.0, :k₊ => 1.0, :k₋ => 1.0])
 nothing    # hide
 ```
 Let's convert it to a system of ODEs, using the conservation laws of the system
 to eliminate two of the species:
 ```@example faq1
 osys = convert(ODESystem, rn; remove_conserved = true)
+osys = complete(osys)
 ```
 Notice the resulting ODE system has just one ODE, while algebraic observables
 have been added for the two removed species (in terms of the conservation law
@@ -28,7 +26,9 @@ observed(osys)
 Let's solve the system and see how to index the solution using our symbolic
 variables
 ```@example faq1
-oprob = ODEProblem(osys, [], (0.0, 10.0), [])
+u0 = [osys.A => 1.0, osys.B => 2.0, osys.C => 0.0]
+ps = [osys.k₊ => 1.0, osys.k₋ => 1.0]
+oprob = ODEProblem(osys, u0, (0.0, 10.0), ps)
 sol = solve(oprob, Tsit5())
 ```
 Suppose we want to plot just species `C`, without having to know its integer
@@ -44,8 +44,8 @@ sol[C]
 ```
 To evaluate `C` at specific times and plot it we can just do
 ```@example faq1
-t = range(0.0, 10.0, length=101)
-plot(t, sol(t, idxs = C), label = "C(t)", xlabel = "t")
+t = range(0.0, 10.0, length = 101)
+plot(sol(t, idxs = C), label = "C(t)", xlabel = "t")
 ```
 If we want to get multiple variables we can just do
 ```@example faq1
@@ -59,13 +59,13 @@ plot(sol; idxs = [A, B])
 ```
 
 ## How to disable rescaling of reaction rates in rate laws?
-As explained in the [Reaction rate laws used in simulations](@ref) section, for
+As explained in the [Reaction rate laws used in simulations](@ref introduction_to_catalyst_ratelaws) section, for
 a reaction such as `k, 2X --> 0`, the generated rate law will rescale the rate
 constant, giving `k*X^2/2` instead of `k*X^2` for ODEs and `k*X*(X-1)/2` instead
 of `k*X*(X-1)` for jumps. This can be disabled when directly `convert`ing a
 [`ReactionSystem`](@ref). If `rn` is a generated [`ReactionSystem`](@ref), we can
 do
-```julia
+```@example faq1
 osys = convert(ODESystem, rn; combinatoric_ratelaws=false)
 ```
 Disabling these rescalings should work for all conversions of `ReactionSystem`s
@@ -87,14 +87,16 @@ rx1 = Reaction(k,[B,C],[B,D], [2.5,1],[3.5, 2.5])
 rx2 = Reaction(2*k, [B], [D], [1], [2.5])
 rx3 = Reaction(2*k, [B], [D], [2.5], [2])
 @named mixedsys = ReactionSystem([rx1, rx2, rx3], t, [A, B, C, D], [k, b])
+mixedsys = complete(mixedsys)
 osys = convert(ODESystem, mixedsys; combinatoric_ratelaws = false)
+osys = complete(osys)
 ```
 Note, when using `convert(ODESystem, mixedsys; combinatoric_ratelaws=false)` the
 `combinatoric_ratelaws=false` parameter must be passed. This is also true when
 calling `ODEProblem(mixedsys,...; combinatoric_ratelaws=false)`. As described
 above, this disables Catalyst's standard rescaling of reaction rates when
 generating reaction rate laws, see also the [Reaction rate laws used in
-simulations](@ref) section. Leaving this keyword out for systems with floating
+simulations](@ref introduction_to_catalyst_ratelaws) section. Leaving this keyword out for systems with floating
 point stoichiometry will give an error message.
 
 For a more extensive documentation of using non-integer stoichiometric
@@ -103,7 +105,7 @@ parametric_stoichiometry) section.
 
 ## How to set default values for initial conditions and parameters?
 How to set defaults when using the `@reaction_network` macro is described in
-more detail [here](@ref dsl_description_defaults). There are several ways to do
+more detail [here](@ref dsl_advanced_options_default_vals). There are several ways to do
 this. Using the DSL, one can use the `@species` and `@parameters` options:
 ```@example faq3
 using Catalyst
@@ -127,6 +129,7 @@ t = default_t()
 rx1 = Reaction(β, [S, I], [I], [1,1], [2])
 rx2 = Reaction(ν, [I], [R])
 @named sir = ReactionSystem([rx1, rx2], t)
+sir = complete(sir)
 oprob = ODEProblem(sir, [], (0.0, 250.0))
 sol = solve(oprob, Tsit5())
 plot(sol)
@@ -162,7 +165,7 @@ Julia `Symbol`s corresponding to each variable/parameter to their values, or
 from ModelingToolkit symbolic variables/parameters to their values. Using
 `Symbol`s we have
 ```@example faq4
-using Catalyst, DifferentialEquations
+using Catalyst, OrdinaryDiffEq
 rn = @reaction_network begin
     α, S + I --> 2I
     β, I --> R
@@ -199,6 +202,7 @@ the second example, or one can use the `symmap_to_varmap` function to convert th
 `Symbol` mapping to a symbolic mapping. I.e. this works
 ```@example faq4
 osys = convert(ODESystem, rn)
+osys = complete(osys)
 
 # this works
 u0 = symmap_to_varmap(rn, [:S => 999.0, :I => 1.0, :R => 0.0])
@@ -221,6 +225,7 @@ rx1 = @reaction k, A --> 0
 rx2 = @reaction $f, 0 --> A
 eq = f ~ (1 + sin(t))
 @named rs = ReactionSystem([rx1, rx2, eq], t)
+rs = complete(rs)
 osys = convert(ODESystem, rs)
 ```
 In the final ODE model, `f` can be eliminated by using

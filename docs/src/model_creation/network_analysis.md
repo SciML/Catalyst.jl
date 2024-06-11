@@ -101,7 +101,7 @@ Let's check these are equal symbolically
 isequal(odes, odes2)
 ```
 
-## Reaction complex representation
+## [Reaction complex representation](@id network_analysis_reaction_complexes)
 We now introduce a further decomposition of the RRE ODEs, which has been used to
 facilitate analysis of a variety of reaction network properties. Consider a simple
 reaction system like

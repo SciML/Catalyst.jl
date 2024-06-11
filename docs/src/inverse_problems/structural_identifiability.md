@@ -31,27 +31,27 @@ Global identifiability can be assessed using the `assess_identifiability` functi
 - Unidentifiable.
   
 To it, we provide our `ReactionSystem` model and a list of quantities that we are able to measure. Here, we consider a Goodwind oscillator (a simple 3-component model, where the three species $M$, $E$, and $P$ are produced and degraded, which may exhibit oscillations)[^2]. Let us say that we are able to measure the concentration of $M$, we then designate this using the `measured_quantities` argument. We can now assess identifiability in the following way:
-```example si1
+```@example si1
 using Catalyst, Logging, StructuralIdentifiability
-goodwind_oscillator = @reaction_network begin
+gwo = @reaction_network begin
     (pₘ/(1+P), dₘ), 0 <--> M
     (pₑ*M,dₑ), 0 <--> E
     (pₚ*E,dₚ), 0 <--> P
 end
-assess_identifiability(goodwind_oscillator; measured_quantities=[:M], loglevel=Logging.Error)
+assess_identifiability(gwo; measured_quantities = [:M], loglevel = Logging.Error)
 ```
-From the output, we find that `E(t)`, `pₑ`, and `pₚ` (the trajectory of $E$, and the production rates of $E$ and $P$, respectively) are non-identifiable. Next, `dₑ` and `dₚ` (the degradation rates of $E$ and $P$, respectively) are locally identifiable. Finally, `P(t)`, `M(t)`, `pₘ`, and `dₘ` (the trajectories of `P` and `M`, and the production and degradation rate of `M`, respectively) are all globally identifiable. We note that we also imported the Logging.jl package, and provided the `loglevel=Logging.Error` input argument. StructuralIdentifiability functions generally provide a large number of output messages. Hence, we will use this argument (which requires the Logging package) throughout this tutorial to decrease the amount of printed text.
+From the output, we find that `E(t)`, `pₑ`, and `pₚ` (the trajectory of $E$, and the production rates of $E$ and $P$, respectively) are non-identifiable. Next, `dₑ` and `dₚ` (the degradation rates of $E$ and $P$, respectively) are locally identifiable. Finally, `P(t)`, `M(t)`, `pₘ`, and `dₘ` (the trajectories of `P` and `M`, and the production and degradation rate of `M`, respectively) are all globally identifiable. We note that we also imported the Logging.jl package, and provided the `loglevel = Logging.Error` input argument. StructuralIdentifiability functions generally provide a large number of output messages. Hence, we will use this argument (which requires the Logging package) throughout this tutorial to decrease the amount of printed text.
 
 Next, we also assess identifiability in the case where we can measure all three species concentrations:
-```example si1
-assess_identifiability(goodwind_oscillator; measured_quantities=[:M, :P, :E], loglevel=Logging.Error)
+```@example si1
+assess_identifiability(gwo; measured_quantities = [:M, :P, :E], loglevel = Logging.Error)
 ```
 in which case all species trajectories and parameters become identifiable.
 
 ### Indicating known parameters
 In the previous case we assumed that all parameters are unknown, however, this is not necessarily true. If there are parameters with known values, we can supply these using the `known_p` argument. Providing this additional information might also make other, previously unidentifiable, parameters identifiable. Let us consider the previous example, where we measure the concentration of $M$ only, but now assume we also know the production rate of $E$ ($pₑ$):
-```example si1
-assess_identifiability(gwo; measured_quantities=[:M], known_p=[:pₑ], loglevel=Logging.Error)
+```@example si1
+assess_identifiability(gwo; measured_quantities = [:M], known_p = [:pₑ], loglevel = Logging.Error)
 ```
 Not only does this turn the previously non-identifiable `pₑ` (globally) identifiable (which is obvious, given that its value is now known), but this additional information improve identifiability for several other network components.
 
@@ -59,47 +59,46 @@ To, in a similar manner, indicate that certain initial conditions are known is a
 
 ### Providing non-trivial measured quantities
 Sometimes, ones may not have measurements of species, but rather some combinations of species (or possibly parameters). To account for this, `measured_quantities` accepts any algebraic expression (and not just single species). To form such expressions, species and parameters have to first be `@unpack`'ed from the model. Say that we have a model where an enzyme ($E$) is converted between an active and inactive form, which in turns activates the production of a product, $P$:
-```example si2
-using Catalyst, StructuralIdentifiability # hide
-enzyme_activation = @reaction_network begin
+```@example si1
+rs = @reaction_network begin
     (kA,kD), Eᵢ <--> Eₐ
     (Eₐ, d), 0 <-->P
 end
 ```
 If we can measure the total amount of $E$ ($=Eᵢ+Eₐ$), as well as the amount of $P$, we can use the following to assess identifiability:
-```example si2
-@unpack Eᵢ, Eₐ = enzyme_activation
-assess_identifiability(enzyme_activation; measured_quantities=[Eᵢ+Eₐ, :P], loglevel=Logging.Error)
+```@example si1
+@unpack Eᵢ, Eₐ = rs
+assess_identifiability(rs; measured_quantities = [Eᵢ + Eₐ, :P], loglevel = Logging.Error)
 nothing # hide
 ```
 
 ### Assessing identifiability for specified quantities only
 By default, StructuralIdentifiability assesses identifiability for all parameters and variables. It is, however, possible to designate precisely which quantities you want to check using the `funcs_to_check` option. This both includes selecting a smaller subset of parameters and variables to check, or defining customised expressions. Let us consider the Goodwind from previously, and say that we would like to check whether the production parameters ($pₘ$, $pₑ$, and $pₚ$) and the total amount of the three species ($P + M + E$) are identifiable quantities. Here, we would first unpack these (allowing us to form algebraic expressions) and then use the following code:
-```example si1
-@unpack pₘ, pₑ, pₚ, M, E, P = goodwind_oscillator
-assess_identifiability(goodwind_oscillator; measured_quantities=[:M], funcs_to_check=[pₘ, pₑ, pₚ, M + E + P], loglevel=Logging.Error)
+```@example si1
+@unpack pₘ, pₑ, pₚ, M, E, P = gwo
+assess_identifiability(gwo; measured_quantities = [:M], funcs_to_check = [pₘ, pₑ, pₚ, M + E + P], loglevel = Logging.Error)
 nothing # hide
 ```
 
 ### Probability of correctness
 The identifiability methods used can, in theory, produce erroneous results. However, it is possible to adjust the lower bound for the probability of correctness using the argument `prob_threshold` (by default set to `0.99`, that is, at least a $99\%$ chance of correctness). We can e.g. increase the bound through:
-```example si2
-assess_identifiability(goodwind_oscillator; measured_quantities=[:M], prob_threshold=0.999, loglevel=Logging.Error)
+```@example si1
+assess_identifiability(gwo; measured_quantities=[:M], prob_threshold = 0.999, loglevel = Logging.Error)
 nothing # hide
 ```
 giving a minimum bound of $99.9\%$ chance of correctness. In practise, the bounds used by StructuralIdentifiability are very conservative, which means that while the minimum guaranteed probability of correctness in the default case is $99\%$, in practise it is much higher. While increasing the value of `prob_threshold` increases the certainty of correctness, it will also increase the time required to assess identifiability.
 
 ## Local identifiability analysis
 Local identifiability can be assessed through the `assess_local_identifiability` function. While this is already determined by `assess_identifiability`, assessing local identifiability only has the advantage that it is easier to compute. Hence, there might be models where global identifiability analysis fails (or takes a prohibitively long time), where instead `assess_local_identifiability` can be used. This function takes the same inputs as `assess_identifiability` and returns, for each quantity, `true` if it is locally identifiable (or `false` if it is not). Here, for the Goodwind oscillator, we assesses it for local identifiability only:
-```example si1
-assess_local_identifiability(goodwind_oscillator; measured_quantities=[:M], loglevel=Logging.Error)
+```@example si1
+assess_local_identifiability(gwo; measured_quantities = [:M], loglevel = Logging.Error)
 ```
 We note that the results are consistent with those produced by `assess_identifiability` (with globally or locally identifiable quantities here all being assessed as at least locally identifiable).
 
 ## Finding identifiable functions
 Finally, StructuralIdentifiability provides the `find_identifiable_functions` function. Rather than determining the identifiability of each parameter and unknown of the model, it finds a set of identifiable functions, such as any other identifiable expression of the model can be generated by these. Let us again consider the Goodwind oscillator, using the `find_identifiable_functions` function we find that identifiability can be reduced to five globally identifiable expressions:
-```example si1
-find_identifiable_functions(goodwind_oscillator; measured_quantities=[:M], loglevel=Logging.Error)
+```@example si1
+find_identifiable_functions(gwo; measured_quantities = [:M], loglevel = Logging.Error)
 ```
 Again, these results are consistent with those produced by `assess_identifiability`. There, `pₑ` and `pₚ` where found to be globally identifiable. Here, they correspond directly to identifiable expressions. The remaining four parameters (`pₘ`, `dₘ`, `dₑ`, and `dₚ`) occur as part of more complicated composite expressions.
 
@@ -107,34 +106,34 @@ Again, these results are consistent with those produced by `assess_identifiabili
 
 ## Creating StructuralIdentifiability compatible ODE models from Catalyst `ReactionSystem`s
 While the functionality described above covers the vast majority of analysis that user might want to perform, the StructuralIdentifiability package supports several additional features. While these does not have inherent Catalyst support, we do provide the `make_si_ode` function to simplify their use. Similar to the previous functions, it takes a `ReactionSystem`, lists of measured quantities, and known parameter values. The output is a [ODE of the standard form supported by StructuralIdentifiability](https://docs.sciml.ai/StructuralIdentifiability/stable/tutorials/creating_ode/#Defining-the-model-using-@ODEmodel-macro). It can be created using the following syntax:
-```example si1
-si_ode = make_si_ode(goodwind_oscillator; measured_quantities=[:M])
+```@example si1
+si_ode = make_si_ode(gwo; measured_quantities = [:M])
 nothing # hide
 ```
 and then used as input to various StructuralIdentifiability functions. In the following example we use StructuralIdentifiability's `print_for_DAISY` function, printing the model as an expression that can be used by the [DAISY](https://daisy.dei.unipd.it/) software for identifiability analysis[^3].
-```example si1
+```@example si1
 print_for_DAISY(si_ode)
 nothing # hide
 ```
 
 ## Notes on systems with conservation laws
 Several reaction network models, such as
-```example si2
+```@example si3
 using Catalyst, Logging, StructuralIdentifiability # hide
 rs = @reaction_network begin
-  (k1,k2), X1 <--> X2
+    (k1,k2), X1 <--> X2
 end
 ```
 contain conservation laws (in this case $Γ = X1 + X2$, where $Γ = X1(0) + X2(0)$ is a constant). Because the presence of such conservation laws makes structural identifiability analysis prohibitively computationally expensive (for all but the simplest of cases), these are automatically eliminated by Catalyst (removing one ODE from the resulting ODE system for each conservation law). For the `assess_identifiability` and `assess_local_identifiability` functions, this will be unnoticed by the user. However, for the `find_identifiable_functions` and `make_si_ode` functions, this may result in one, or several, parameters of the form `Γ[i]` (where `i` is an integer) appearing in the produced expressions. These correspond to the conservation law constants and can be found through
-```example si2
+```@example si3
 conservedequations(rs)
 ```
 E.g. if you run:
-```example si2
+```@example si3
 find_identifiable_functions(rs; measured_quantities = [:X1, :X2])
 ```
 we see that `Γ[1]` (`= X1(0) + X2(0)`) is detected as an identifiable expression. If we want to disable this feature for any function, we can use the `remove_conserved = false` option:
-```example si2
+```@example si3
 find_identifiable_functions(rs; measured_quantities = [:X1, :X2], remove_conserved = false)
 ```
 
@@ -144,7 +143,7 @@ Structural identifiability cannot currently be applied to systems with parameter
 rn = @reaction_network begin
     (hill(X,v,K,n),d), 0 <--> X
 end
-assess_identifiability(rn; measured_quantities=[:X])
+assess_identifiability(rn; measured_quantities = [:X])
 ```
 is currently not possible. Hopefully this will be a supported feature in the future. For now, such expressions will have to be rewritten to not include such exponents. For some cases, e.g. `10^k` this is trivial. However, it is also possible generally (but more involved and often includes introducing additional variables). 
 

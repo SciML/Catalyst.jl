@@ -35,7 +35,7 @@ corresponding chemical reaction ODE models, chemical Langevin equation SDE
 models, and stochastic chemical kinetics jump process models.
 
 ```@example ex1
-using Catalyst, DifferentialEquations, Plots
+using Catalyst, OrdinaryDiffEq, StochasticDiffEq, JumpProcesses, Plots
 t = default_t()
 @parameters β γ
 @species S(t) I(t) R(t)
@@ -43,6 +43,7 @@ t = default_t()
 rxs = [Reaction(β, [S,I], [I], [1,1], [2])
        Reaction(γ, [I], [R])]
 @named rs = ReactionSystem(rxs, t)
+rs = complete(rs)
 
 u₀map    = [S => 999.0, I => 1.0, R => 0.0]
 parammap = [β => 1/10000, γ => 0.01]
@@ -50,22 +51,25 @@ tspan    = (0.0, 250.0)
 
 # solve as ODEs
 odesys = convert(ODESystem, rs)
+odesys = complete(odesys)
 oprob = ODEProblem(odesys, u₀map, tspan, parammap)
 sol = solve(oprob, Tsit5())
 p1 = plot(sol, title = "ODE")
 
 # solve as SDEs
 sdesys = convert(SDESystem, rs)
+sdesys = complete(sdesys)
 sprob = SDEProblem(sdesys, u₀map, tspan, parammap)
-sol = solve(sprob, EM(), dt=.01)
+sol = solve(sprob, EM(), dt=.01, saveat = 2.0)
 p2 = plot(sol, title = "SDE")
 
 # solve as jump process
 jumpsys = convert(JumpSystem, rs)
+jumpsys = complete(jumpsys)
 u₀map    = [S => 999, I => 1, R => 0]
 dprob = DiscreteProblem(jumpsys, u₀map, tspan, parammap)
-jprob = JumpProblem(jumpsys, dprob, Direct())
-sol = solve(jprob, SSAStepper())
+jprob = JumpProblem(jumpsys, dprob, Direct(); save_positions = (false,false))
+sol = solve(jprob, SSAStepper(), saveat = 2.0)
 p3 = plot(sol, title = "jump")
 
 plot(p1, p2, p3; layout = (3,1))
@@ -152,16 +156,13 @@ accessor functions.
 ```@docs
 species
 nonspecies
-reactionsystemparams
 reactions
 nonreactions
 numspecies
 numparams
 numreactions
-numreactionsystemparams
 speciesmap
 paramsmap
-reactionsystemparamsmap
 isspecies
 isautonomous
 Catalyst.isconstant
@@ -271,6 +272,7 @@ hillar
 ```@docs
 Base.convert
 ModelingToolkit.structural_simplify
+set_default_noise_scaling
 ```
 
 ## Chemistry-related functionalities

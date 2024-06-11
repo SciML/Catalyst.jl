@@ -1,5 +1,5 @@
 # Steady state stability computation
-After system steady states have been found using [HomotopyContinuation.jl](@ref homotopy_continuation), [NonlinearSolve.jl](@ref nonlinear_solve), or other means, their stability can be computed using Catalyst's `steady_state_stability` function. Systems with conservation laws will automatically have these removed, permitting stability computation on systems with singular Jacobian.
+After system steady states have been found using [HomotopyContinuation.jl](@ref homotopy_continuation), [NonlinearSolve.jl](@ref steady_state_solving), or other means, their stability can be computed using Catalyst's `steady_state_stability` function. Systems with conservation laws will automatically have these removed, permitting stability computation on systems with singular Jacobian.
 
 !!! warn 
     Catalyst currently computes steady state stabilities using the naive approach of checking whether a system's largest eigenvalue real part is negative. While more advanced stability computation methods exist (and would be a welcome addition to Catalyst), there is no direct plans to implement these. Furthermore, Catalyst uses a tolerance `tol = 10*sqrt(eps())` to determine whether a computed eigenvalue is far away enough from 0 to be reliably used. This threshold can be changed through the `tol` keyword argument.
@@ -19,7 +19,7 @@ steady_state = [:X => 4.0]
 steady_state_stability(steady_state, rn, ps)
 ```
 
-Next, let us consider the following [self-activation loop](@ref ref):
+Next, let us consider the following [self-activation loop](@ref basic_CRN_library_self_activation):
 ```@example stability_1
 sa_loop = @reaction_network begin 
     (hill(X,v,K,n),d), 0 <--> X
@@ -51,11 +51,11 @@ ss_jac = steady_state_jac(sa_loop)
 
 ps_1 = [:v => 2.0, :K => 0.5, :n => 3, :d => 1.0]
 steady_states_1 = hc_steady_states(sa_loop, ps)
-stability_1 = [steady_state_stability(state, sa_loop, ps_1; ss_jac = ss_jac) for state in steady_states_1]
+stabs_1 = [steady_state_stability(st, sa_loop, ps_1; ss_jac) for st in steady_states_1]
 
 ps_2 = [:v => 4.0, :K => 1.5, :n => 2, :d => 1.0]
 steady_states_2 = hc_steady_states(sa_loop, ps)
-stability_2 = [steady_state_stability(state, sa_loop, ps_2; ss_jac = ss_jac) for state in steady_states_2]
+stabs_2 = [steady_state_stability(st, sa_loop, ps_2; ss_jac) for st in steady_states_2]
 nothing # hide
 ```
 

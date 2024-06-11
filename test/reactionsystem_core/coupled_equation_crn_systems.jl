@@ -47,7 +47,7 @@ let
     # Checks that the correct steady state is found through ODEProblem.
     oprob = ODEProblem(coupled_rs, u0, tspan, ps)
     osol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
-    @test osol[end] ≈ [2.0, 1.0]
+    @test osol.u[end] ≈ [2.0, 1.0]
 
     # Checks that the correct steady state is found through NonlinearProblem.
     nlprob = NonlinearProblem(coupled_rs, u0, ps)
@@ -116,7 +116,7 @@ let
     for coupled_rs in [coupled_rs_prog, coupled_rs_extended, coupled_rs_dsl]
         oprob = ODEProblem(coupled_rs, u0, tspan, ps)
         osol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
-        osol[end] ≈ [10.0, 10.0, 11.0, 11.0]
+        osol.u[end] ≈ [10.0, 10.0, 11.0, 11.0]
     end
 end
 
@@ -160,7 +160,7 @@ let
     # Checks that the correct steady state is found through ODEProblem.
     oprob = ODEProblem(coupled_rs, u0, tspan, ps; structural_simplify = true)
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
-    @test osol[end] ≈ [2.0, 3.0]
+    @test osol.u[end] ≈ [2.0, 3.0]
 
     # Checks that the correct steady state is found through NonlinearProblem.
     nlprob = NonlinearProblem(coupled_rs, u0, ps)
@@ -207,7 +207,7 @@ let
     osol = solve(oprob, Rosenbrock23(); abstol = 1e-8, reltol = 1e-8)
     sssol = solve(ssprob, DynamicSS(Rosenbrock23()); abstol = 1e-8, reltol = 1e-8)
     nlsol = solve(nlprob; abstol = 1e-8, reltol = 1e-8)
-    @test osol[end] ≈ sssol ≈ nlsol
+    @test osol.u[end] ≈ sssol ≈ nlsol
 end
 
 
@@ -293,7 +293,7 @@ end
 # Checks for both differential and algebraic equations.
 # Checks for problems, integrators, and solutions yielded by coupled systems.
 # Checks that metadata, types, and default values are carried through correctly.
-@test_broken let # SDEs are currently broken with structural simplify.
+@test_broken let # SDEs are currently broken with structural simplify (https://github.com/SciML/ModelingToolkit.jl/issues/2614).
     # Creates the model
     @parameters a1 [description="Parameter a1"] a2::Rational{Int64} a3=0.3 a4::Rational{Int64}=4//10 [description="Parameter a4"]
     @parameters b1 [description="Parameter b1"] b2::Int64 b3 = 3 b4::Int64=4 [description="Parameter b4"]
@@ -557,15 +557,12 @@ let
     @test osol[B][end] ≈ 1.0
 
     # Checks that SteadyState simulation of the system achieves the correct steady state.
-    # Currently broken due to MTK.
-    @test_broken begin
-        ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
-        sssol = solve(oprob, DynamicSS(Vern7()); abstol = 1e-8, reltol = 1e-8)
-        @test osol[X][end] ≈ 2.0
-        @test osol[A][end] ≈ 0.0 atol = 1e-8
-        @test osol[D(A)][end] ≈ 0.0 atol = 1e-8
-        @test osol[B][end] ≈ 1.0
-    end
+    ssprob = SteadyStateProblem(coupled_rs, u0, ps; structural_simplify = true)
+    sssol = solve(ssprob, DynamicSS(Vern7()); abstol = 1e-8, reltol = 1e-8)
+    @test sssol[X][end] ≈ 2.0
+    @test sssol[A][end] ≈ 0.0 atol = 1e-8
+    @test sssol[D(A)][end] ≈ 0.0 atol = 1e-8
+    @test sssol[B][end] ≈ 1.0
 
     # Checks that the steady state can be found by solving a nonlinear problem.
     # Here `B => 0.1` has to be provided as well (and it shouldn't for the 2nd order ODE), hence the
