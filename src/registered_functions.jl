@@ -195,5 +195,6 @@ function expand_registered_functions(rs::ReactionSystem)
     if !isempty(ModelingToolkit.get_discrete_events(rs))
         @set! rs.discrete_events = Catalyst.expand_registered_functions(ModelingToolkit.get_discrete_events(rs))
     end
+    reset_networkproperties!(rs)
     return rs
 end
