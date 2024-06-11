@@ -109,12 +109,19 @@ function Symbolics.derivative(::typeof(hillar), args::NTuple{5, Any}, ::Val{5})
     (args[1]^args[5] + args[2]^args[5] + args[4]^args[5])^2
 end
 
+# Tuple storing all registered function (for use in various functionalities).
+const registered_funcs = (mm, mmr, hill, hillr, hillar)
+
 ### Custom CRN FUnction-related Functions ###
 
 """
-expand_registered_functions(expr)
+expand_registered_functions(in)
 
-Takes an expression, and expands registered function expressions. E.g. `mm(X,v,K)` is replaced with v*X/(X+K). Currently supported functions: `mm`, `mmr`, `hill`, `hillr`, and `hill`.
+Takes an expression, and expands registered function expressions. E.g. `mm(X,v,K)` is replaced
+with v*X/(X+K). Currently supported functions: `mm`, `mmr`, `hill`, `hillr`, and `hill`. Can
+be applied to a reaction system, a reaction, an equation, or a symbolic expression. The input
+is not modified, while an output with any functions expanded is returned. If applied to a 
+reaction system model, any cached network properties are reset.
 """
 function expand_registered_functions(expr)
     if hasnode(is_catalyst_function, expr)
@@ -126,8 +133,7 @@ end
 # Checks whether an expression corresponds to a catalyst function call (e.g. `mm(X,v,K)`).
 function is_catalyst_function(expr)
     iscall(expr) || (return false)
-    return operation(expr) in [
-        Catalyst.mm, Catalyst.mmr, Catalyst.hill, Catalyst.hillr, Catalyst.hillar]
+    return operation(expr) in registered_funcs
 end
 
 # If the input expression corresponds to a catalyst function call (e.g. `mm(X,v,K)`), returns
@@ -155,7 +161,7 @@ function expand_registered_functions(rx::Reaction)
         rx.substoich, rx.prodstoich, rx.netstoich, rx.only_use_rate, rx.metadata)
 end
 
-# If applied to a Equation, returns it with it applied to lhs and rhs
+# If applied to a Equation, returns it with it applied to lhs and rhs.
 function expand_registered_functions(eq::Equation)
     return expand_registered_functions(eq.lhs) ~ expand_registered_functions(eq.rhs)
 end
@@ -174,7 +180,7 @@ function expand_registered_functions(de::ModelingToolkit.SymbolicDiscreteCallbac
     return ModelingToolkit.SymbolicDiscreteCallback(condition, affects)
 end
 
-# If applied to a vector, applies it to every element in the vector
+# If applied to a vector, applies it to every element in the vector.
 function expand_registered_functions(vec::Vector)
     return [Catalyst.expand_registered_functions(element) for element in vec]
 end
@@ -183,10 +189,6 @@ end
 # Currently, `ModelingToolkit.has_X_events` returns `true` even if event vector is empty (hence
 # this function cannot be used).
 function expand_registered_functions(rs::ReactionSystem)
-    if isdefined(Main, :Infiltrator)
-        Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
-    end
-
     @set! rs.eqs = Catalyst.expand_registered_functions(get_eqs(rs))
     @set! rs.rxs = Catalyst.expand_registered_functions(get_rxs(rs))
     if !isempty(ModelingToolkit.get_continuous_events(rs))
