@@ -116,8 +116,23 @@ expand_registered_functions(expr)
 
 Takes an expression, and expands registered function expressions. E.g. `mm(X,v,K)` is replaced with v*X/(X+K). Currently supported functions: `mm`, `mmr`, `hill`, `hillr`, and `hill`.
 """
-function expand_registered_functions!(expr)
-    iscall(expr) || return expr
+function expand_registered_functions(expr)      
+    if hasnode(is_catalyst_function, expr)
+        expr = replacenode(expr, expand_catalyst_function)
+    end
+    return expr
+end
+
+# Checks whether an expression corresponds to a catalyst function call (e.g. `mm(X,v,K)`).
+function is_catalyst_function(expr)
+    iscall(expr) || (return false)
+    return operation(expr) in [Catalyst.mm, Catalyst.mmr, Catalyst.hill, Catalyst.hillr, Catalyst.hillar]
+end
+
+# If the input expression corresponds to a catalyst function call (e.g. `mm(X,v,K)`), returns
+# it in its expanded form. If not, returns the input expression.
+function expand_catalyst_function(expr)
+    is_catalyst_function(expr) || (return expr)
     args = arguments(expr)
     if operation(expr) == Catalyst.mm
         return args[2] * args[1] / (args[1] + args[3])
@@ -131,23 +146,55 @@ function expand_registered_functions!(expr)
         return args[3] * (args[1]^args[5]) /
                ((args[1])^args[5] + (args[2])^args[5] + (args[4])^args[5])
     end
-    for i in 1:length(args)
-        args[i] = expand_registered_functions!(args[i])
-    end
-    return expr
 end
+
 # If applied to a Reaction, return a reaction with its rate modified.
 function expand_registered_functions(rx::Reaction)
-    Reaction(expand_registered_functions!(deepcopy(rx.rate)), rx.substrates, rx.products,
+    Reaction(expand_registered_functions(rx.rate), rx.substrates, rx.products,
         rx.substoich, rx.prodstoich, rx.netstoich, rx.only_use_rate, rx.metadata)
 end
+
 # If applied to a Equation, returns it with it applied to lhs and rhs
 function expand_registered_functions(eq::Equation)
-    return expand_registered_functions!(deepcopy(eq.lhs)) ~ expand_registered_functions!(deepcopy(eq.rhs))
+    return expand_registered_functions(eq.lhs) ~ expand_registered_functions(eq.rhs)
 end
+
+# If applied to a continuous event, returns it applied to eqs and affect.
+function expand_registered_functions(ce::ModelingToolkit.SymbolicContinuousCallback)
+    eqs = expand_registered_functions(ce.eqs)
+    affect = expand_registered_functions(ce.affect)
+    return ModelingToolkit.SymbolicContinuousCallback(eqs, affect)
+end
+
+# If applied to a discrete event, returns it applied to condition and affects.
+function expand_registered_functions(de::ModelingToolkit.SymbolicDiscreteCallback)
+    condition = expand_registered_functions(de.condition)
+    affects = expand_registered_functions(de.affects)
+    return ModelingToolkit.SymbolicDiscreteCallback(condition, affects)
+end
+
+# If applied to a vector, applies it to every element in the vector
+function expand_registered_functions(vec::Vector)
+    return [Catalyst.expand_registered_functions(element) for element in vec]
+end
+
 # If applied to a ReactionSystem, applied function to all Reactions and other Equations, and return updated system.
+# Currently, `ModelingToolkit.has_X_events` returns `true` even if event vector is empty (hence
+# this function cannot be used).
 function expand_registered_functions(rs::ReactionSystem)
-    @set! rs.eqs = [Catalyst.expand_registered_functions(eq) for eq in get_eqs(rs)]
-    @set! rs.rxs = [Catalyst.expand_registered_functions(rx) for rx in get_rxs(rs)]
+    if isdefined(Main, :Infiltrator)
+        Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
+      end
+
+    @set! rs.eqs = Catalyst.expand_registered_functions(get_eqs(rs))
+    @set! rs.rxs = Catalyst.expand_registered_functions(get_rxs(rs))
+    if !isempty(ModelingToolkit.get_continuous_events(rs))
+        @set! rs.continuous_events = 
+            Catalyst.expand_registered_functions(ModelingToolkit.get_continuous_events(rs))
+    end
+    if !isempty(ModelingToolkit.get_discrete_events(rs))
+        @set! rs.discrete_events = 
+            Catalyst.expand_registered_functions(ModelingToolkit.get_discrete_events(rs))
+    end
     return rs
 end

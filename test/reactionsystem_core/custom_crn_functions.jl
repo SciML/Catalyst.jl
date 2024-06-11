@@ -2,6 +2,7 @@
 
 # Fetch packages.
 using Catalyst, Test
+using ModelingToolkit: get_continuous_events, get_discrete_events
 using Symbolics: derivative
 
 # Sets stable rng number.
@@ -174,4 +175,41 @@ let
     @test isequal(only(Catalyst.get_rxs(rs_expanded_funcs)).rate, v*X/(X + K))
     @test isequal(last(Catalyst.get_eqs(rs)).lhs, Catalyst.mm(V,v,K))
     @test isequal(last(Catalyst.get_eqs(rs_expanded_funcs)).lhs, v*V/(V + K))
+end
+
+# Tests on model with events.
+let
+    # Creates a model, saves it, and creates an expanded version.
+    rs = @reaction_network begin
+        @continuous_events begin
+            [mm(X,v,K) ~ 1.0] => [X ~ X]
+        end
+        @discrete_events begin
+            [1.0] => [X ~ mmr(X,v,K) + Y*(v + K)]
+            1.0 => [X ~ X]
+            (hill(X,v,K,n) > 1000.0) => [X ~ hillr(X,v,K,n) + 2]
+        end
+        v0 + hillar(X,Y,v,K,n), X --> Y
+    end
+    rs_saved = deepcopy(rs)
+    rs_expanded = Catalyst.expand_registered_functions(rs)
+
+    # Checks that the original model is unchanged (equality currently does not consider events).
+    @test rs == rs_saved
+    @test get_continuous_events(rs) == get_continuous_events(rs_saved)
+    @test get_discrete_events(rs) == get_discrete_events(rs_saved)
+
+    # Checks that the new system is expanded.
+    @unpack v0, X, Y, v, K, n = rs
+    continuous_events = [
+        [v*X/(X + K) ~ 1.0] => [X ~ X]
+    ]
+    discrete_events = [
+        [1.0] => [X ~ v*K/(X + K) + Y*(v + K)]
+        1.0 => [X ~ X]
+        (v * (X^n) / (X^n + K^n) > 1000.0) => [X ~ v * (K^n) / (X^n + K^n) + 2]
+    ]
+    @test isequal(only(Catalyst.get_rxs(rs_expanded)).rate, v0 + v * (X^n) / (X^n + Y^n + K^n))
+    @test isequal(get_continuous_events(rs_expanded).eqs, [v*X/(K + X) ~ 1.0])
+    @test isequal(get_continuous_events(rs_expanded).eqs, [v*X/(K + X) ~ 1.0])
 end
