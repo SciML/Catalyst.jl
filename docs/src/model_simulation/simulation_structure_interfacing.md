@@ -101,7 +101,7 @@ integrator.ps[:k₂]
 ```
 Note that here, species-interfacing yields (or changes) a simulation's current value for a species, not its initial condition.
 
-If you are interfacing with jump simulation integrators, please read this, highly relevant, section
+If you are interfacing with jump simulation integrators, you must always call `reset_aggregated_jumps!(integrator)` afterwards.
 
 ## [Interfacing solution objects](@id simulation_structure_interfacing_solutions)
 
@@ -162,7 +162,7 @@ get_S(oprob)
 ```
 
 ## [Interfacing using symbolic representations](@id simulation_structure_interfacing_symbolic_representation)
-When e.g. [programmatic modelling is used](@ref programmatic_CRN_construction), species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like symbol-based representations can. Here we create a simple [two-state model](@ref rbasic_CRN_library_two_statesef) programmatically, and use its symbolic variables to check, and update, an initial condition:
+When e.g. [programmatic modelling is used](@ref programmatic_CRN_construction), species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like symbol-based representations can. Here we create a simple [two-state model](@ref basic_CRN_library_two_states) programmatically, and use its symbolic variables to check, and update, an initial condition:
 ```@example structure_indexing_symbolic_variables
 using Catalyst
 t = default_t()
