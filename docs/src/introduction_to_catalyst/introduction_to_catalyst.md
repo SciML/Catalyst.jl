@@ -196,6 +196,7 @@ jprob = JumpProblem(repressilator, dprob, Direct(), save_positions=(false,false)
 # now, let's solve and plot the jump process:
 sol = solve(jprob, SSAStepper(), saveat=10.)
 plot(sol)
+plot(sol, plotdensity = 1000, fmt =:png) # hide
 ```
 
 We see that oscillations remain, but become much noisier. Note, in constructing

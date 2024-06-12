@@ -116,11 +116,11 @@ oplt = plot(osol; title = "Reaction rate equation (ODE)")
 splt = plot(ssol; title = "Chemical Langevin equation (SDE)")
 jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)")
 plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1)) 
-plot!(bottom_margin = 3Plots.Measures.mm) # hide
-nothing # hide
+plot(plot(osol; title = "Reaction rate equation (ODE)", plotdensity = 1000, fmt =:png),
+     plot(ssol; title = "Chemical Langevin equation (SDE)", plotdensity = 1000, fmt =:png),
+     plot(jsol; title = "Stochastic chemical kinetics (Jump)", plotdensity = 1000, fmt =:png);
+     lw = 2, size=(800,800), layout = (3,1), bottom_margin = 3Plots.Measures.mm) # hide
 ```
-![MM Kinetics](../../assets/long_ploting_times/model_creation/mm_kinetics.svg)
-Note that, due to the large amounts of the species involved, the stochastic trajectories are very similar to the deterministic one.
 
 ## [SIR infection model](@id basic_CRN_library_sir)
 The [SIR model](https://en.wikipedia.org/wiki/Compartmental_models_in_epidemiology#The_SIR_model) is the simplest model of the spread of an infectious disease. While the real system is very different from the chemical and cellular processes typically modelled with CRNs, it (and several other epidemiological systems) can be modelled using the same CRN formalism. The SIR model consists of three species: susceptible ($S$), infected ($I$), and removed ($R$) individuals, and two reaction events: infection and recovery.
@@ -160,9 +160,11 @@ jplt1 = plot(jsol1; title = "Outbreak")
 jplt2 = plot(jsol2; title = "Outbreak")
 jplt3 = plot(jsol3; title = "No outbreak")
 plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1))
-nothing # hide
+plot(plot(jsol1; title = "Outbreak", plotdensity = 1000, fmt =:png),
+     plot(jsol2; title = "Outbreak", plotdensity = 1000, fmt =:png),
+     plot(jsol3; title = "No outbreak", plotdensity = 1000, fmt =:png);
+     lw = 3, size=(800,700), layout = (3,1)) # hide
 ```
-![SIR Outbreak](../../assets/long_ploting_times/model_creation/sir_outbreaks.svg)
 
 ## [Chemical cross-coupling](@id basic_CRN_library_cc)
 In chemistry, [cross-coupling](https://en.wikipedia.org/wiki/Cross-coupling_reaction) is when a catalyst combines two substrates to form a product. In this example, the catalyst ($C$) first binds one substrate ($S₁$) to form an intermediary complex ($S₁C$). Next, the complex binds the second substrate ($S₂$) to form another complex ($CP$). Finally, the catalyst releases the now-formed product ($P$). This system is an extended version of the [Michaelis-Menten system presented earlier](@ref basic_CRN_library_mm).
