@@ -115,11 +115,11 @@ using Plots
 oplt = plot(osol; title = "Reaction rate equation (ODE)")
 splt = plot(ssol; title = "Chemical Langevin equation (SDE)")
 jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)")
-plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1)) 
-plot(plot(osol; title = "Reaction rate equation (ODE)", plotdensity = 1000, fmt =:png),
-     plot(ssol; title = "Chemical Langevin equation (SDE)", plotdensity = 1000, fmt =:png),
-     plot(jsol; title = "Stochastic chemical kinetics (Jump)", plotdensity = 1000, fmt =:png);
-     lw = 2, size=(800,800), layout = (3,1), bottom_margin = 3Plots.Measures.mm) # hide
+plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1)) # hide
+oplt = plot(osol; title = "Reaction rate equation (ODE)", plotdensity = 1000, fmt = :png) # hide
+splt = plot(ssol; title = "Chemical Langevin equation (SDE)", plotdensity = 1000, fmt = :png) # hide
+jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)", plotdensity = 1000, fmt = :png) # hide
+plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1))
 ```
 
 ## [SIR infection model](@id basic_CRN_library_sir)
@@ -160,10 +160,10 @@ jplt1 = plot(jsol1; title = "Outbreak")
 jplt2 = plot(jsol2; title = "Outbreak")
 jplt3 = plot(jsol3; title = "No outbreak")
 plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1))
-plot(plot(jsol1; title = "Outbreak", plotdensity = 1000, fmt =:png),
-     plot(jsol2; title = "Outbreak", plotdensity = 1000, fmt =:png),
-     plot(jsol3; title = "No outbreak", plotdensity = 1000, fmt =:png);
-     lw = 3, size=(800,700), layout = (3,1)) # hide
+jplt1 = plot(jsol1; title = "Outbreak", plotdensity = 1000, fmt = :png) # hide
+jplt2 = plot(jsol2; title = "Outbreak", plotdensity = 1000, fmt = :png) # hide
+jplt3 = plot(jsol3; title = "No outbreak", plotdensity = 1000, fmt = :png) # hide
+plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1), plotdensity = 1000, fmt = :png) # hide
 ```
 
 ## [Chemical cross-coupling](@id basic_CRN_library_cc)

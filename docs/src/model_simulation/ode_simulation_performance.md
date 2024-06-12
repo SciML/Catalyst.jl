@@ -31,7 +31,7 @@ oprob = ODEProblem(brusselator, u0, tspan, ps)
 
 sol1 = solve(oprob, Tsit5())
 plot(sol1)
-plot(sol1, plotdensity = 1000, fmt =:png) # hide
+plot(sol1, plotdensity = 1000, fmt = :png) # hide
 ```
 
 We get a warning, indicating that the simulation was terminated. Furthermore, the resulting plot ends at $t ≈ 12$, meaning that the simulation was not completed (as the simulation's endpoint is $t = 20$). Indeed, we can confirm this by checking the *return code* of the solution object:
