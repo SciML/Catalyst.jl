@@ -109,6 +109,25 @@ end
 
 ### Other Tests ###
 
+# Tests that homotopy continuation can be applied to coupled DAE/CRN systems.
+let
+    # Prepares the model (production/degradation of X, with equations for volume and X concentration).
+    rs = @reaction_network begin
+        @parameters k
+        @variables C(t)
+        @equations begin
+            D(V) ~ k*X - V
+            C ~ X/V
+        end
+        (p/V,d/V), 0 <--> X
+    end
+
+    # Checks that homotopy continuation correctly find the system's single steady state.
+    ps = [:p => 2.0, :d => 1.0, :k => 5.0]
+    hc_ss = hc_steady_states(rs, ps)
+    @test hc_ss ≈ [[2.0, 0.2, 10.0]]
+end
+
 # Checks that `hc_steady_states` cannot be applied to non-complete `ReactionSystems`s.
 let 
     # Create model.
@@ -119,4 +138,13 @@ let
     
     # Computes bifurcation diagram.
     @test_throws Exception hc_steady_states(incomplete_network, p_start)
+end
+
+# Tests that non-autonomous system throws an error
+let 
+    rs = @reaction_network begin
+        (k,t), 0 <--> X
+    end
+    ps = [:k => 1.0]
+    @test_throws Exception hc_steady_states(rs, ps)
 end

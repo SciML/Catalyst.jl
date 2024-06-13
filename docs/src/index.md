@@ -89,7 +89,7 @@ Pkg.add("Catalyst")
 To solve Catalyst models and visualize solutions, it is also recommended to
 install DifferentialEquations.jl and Plots.jl
 ```julia
-Pkg.add("DifferentialEquations")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 ```
 
@@ -114,7 +114,7 @@ which in Jupyter notebooks will give the figure
 
 To generate and solve a mass action ODE version of the model we use
 ```@example ind1
-using DifferentialEquations
+using OrdinaryDiffEq
 p     = [:α => .1/1000, :β => .01]
 tspan = (0.0,250.0)
 u0    = [:S => 999.0, :I => 1.0, :R => 0.0]
@@ -174,39 +174,4 @@ versioninfo() # hide
 ```
 ```@raw html
 </details>
-```
-```@raw html
-<details><summary>A more complete overview of all dependencies and their versions is also provided.</summary>
-```
-```@example
-using Pkg # hide
-Pkg.status(; mode = PKGMODE_MANIFEST) # hide
-```
-```@raw html
-</details>
-```
-```@raw html
-You can also download the
-<a href="
-```
-```@eval
-using TOML
-projtoml = joinpath("..", "..", "Project.toml")
-version = TOML.parse(read(projtoml, String))["version"]
-name = TOML.parse(read(projtoml, String))["name"]
-link = "https://github.com/SciML/" * name * ".jl/tree/gh-pages/v" * version * "/assets/Manifest.toml"
-```
-```@raw html
-">manifest</a> file and the
-<a href="
-```
-```@eval
-using TOML
-projtoml = joinpath("..", "..", "Project.toml")
-version = TOML.parse(read(projtoml, String))["version"]
-name = TOML.parse(read(projtoml, String))["name"]
-link = "https://github.com/SciML/" * name * ".jl/tree/gh-pages/v" * version * "/assets/Project.toml"
-```
-```@raw html
-">project</a> file.
 ```

@@ -3,6 +3,8 @@
 ## Catalyst unreleased (master branch)
 
 ## Catalyst 14.0
+- The `reactionparams`, `numreactionparams`, and `reactionparamsmap`  functions have been removed.
+- To be more consistent with ModelingToolkit's immutability requirement for systems, we have removed API functions that mutate `ReactionSystem`s such as `addparam!`, `addreaction!`, `addspecies`, `@add_reactions`, and `merge!`. Please use `ModelingToolkit.extend` and `ModelingToolkit.compose` to generate new merged and/or composed `ReactionSystem`s from multiple component systems.
 - Added CatalystStructuralIdentifiabilityExtension, which permits StructuralIdentifiability.jl function to be applied directly to Catalyst systems. E.g. use
 ```julia
 using Catalyst, StructuralIdentifiability
@@ -22,7 +24,7 @@ rn = @reaction_network begin
     @parameters η
     k, 2X --> X2, [noise_scaling=η]
 end
-get_noise_scaling(rn)
+getnoisescaling(rn)
 ```
 - `SDEProblem` no longer takes the `noise_scaling` argument (see above for new approach to handle noise scaling).
 - Changed fields of internal `Reaction` structure. `ReactionSystems`s saved using `serialize` on previous Catalyst versions cannot be loaded using this (or later) versions.
@@ -84,6 +86,20 @@ plot(bif_dia; xguide="k1", yguide="X")
 ```
 - Automatically handles elimination of conservation laws for computing bifurcation diagrams.
 - Updated Bifurcation documentation with respect to this new feature.
+- Added function `isautonomous` to check if a `ReactionSystem` is autonomous.
+- Added function `steady_state_stability` to compute stability for steady states. Example:
+```julia
+# Creates model.
+rn = @reaction_network begin
+    (p,d), 0 <--> X
+end
+p = [:p => 1.0, :d => 0.5]
+
+# Finds (the trivial) steady state, and computes stability.
+steady_state = [2.0]
+steady_state_stability(steady_state, rn, p)
+```
+Here, `steady_state_stability` take an optional argument `tol = 10*sqrt(eps())`, which is used to determine whether a eigenvalue real part is reliably less that 0.
 
 ## Catalyst 13.5
 - Added a CatalystHomotopyContinuationExtension extension, which exports the `hc_steady_state` function if HomotopyContinuation is exported. `hc_steady_state` finds the steady states of a reaction system using the homotopy continuation method. This feature is only available for julia versions 1.9+. Example:

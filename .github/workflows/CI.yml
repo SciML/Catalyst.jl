@@ -3,11 +3,9 @@ on:
   pull_request:
     branches:
       - master
-      - Catalyst_version_14
   push:
     branches:
       - master
-      - Catalyst_version_14
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -19,7 +17,7 @@ jobs:
           - '1'
     steps:
       - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@v1
+      - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
       - uses: actions/cache@v4
@@ -35,9 +33,11 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         with:
           file: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
       - uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

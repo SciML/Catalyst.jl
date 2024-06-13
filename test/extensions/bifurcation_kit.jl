@@ -174,11 +174,34 @@ let
     @test all(1 ./ k1s .* (1 .- xs) .≈ xs)
 
     # Checks that there is an error if information for conserved quantities computation is not provided.
-    @test_throws Exception bprob = BifurcationProblem(rn, u_guess, p_start, k1; plot_var = X1)
+    @test_throws Exception BifurcationProblem(rn, u_guess, p_start, k1; plot_var = X1)
 end
 
 
 ### Other Tests ###
+
+# Checks that bifurcation diagrams can be computed for coupled CRN/DAE systems.
+let
+    # Prepares the model (production/degradation of X, with equations for volume and X concentration).
+    rs = @reaction_network begin
+        @parameters k
+        @variables C(t)
+        @equations begin
+            D(V) ~ k*X - V
+            C ~ X/V
+        end
+        (p/V,d/V), 0 <--> X
+    end
+    u0_guess = [:X => 1.0, :V => 1.0, :C => 1.0]
+    p_start = [:p => 2.0, :d => 1.0, :k => 5.0]
+
+    # Computes bifurcation diagram.
+    bprob = BifurcationProblem(rs, u0_guess, p_start, :p; plot_var = :C)
+    p_span = (0.1, 6.0)
+    opts_br = ContinuationPar(dsmin = 0.0001, dsmax = 0.001, ds = 0.0001, max_steps = 10000, p_min = p_span[1], p_max = p_span[2], n_inversion = 4)
+    bif_dia = bifurcationdiagram(bprob, PALC(), 2, (args...) -> opts_br; bothside = true)
+    @test all(getfield.(bif_dia.γ.branch, :x) .≈ 0.2)
+end
 
 # Checks that `BifurcationProblem`s cannot be generated from non-complete `ReactionSystems`s.
 let 
@@ -191,4 +214,17 @@ let
     
     # Computes bifurcation diagram.
     @test_throws Exception BifurcationProblem(incomplete_network, u0_guess, p_start, :p)
+end
+
+# Tests that computation for non-autonomous systems yields appropriate errors.
+let
+    # Create t-dependant model.
+    rn = @reaction_network begin
+        (p/t,d), 0 <--> X
+    end
+    u0_guess = [:X => 1.0]
+    p_start = [:p => 1.0, :d => 0.2]
+    
+    # Attempts to build a BifurcationProblem.
+    @test_throws Exception BifurcationProblem(rn, u0_guess, p_start, :p)
 end

@@ -3,13 +3,18 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, ModelingToolkit, OrdinaryDiffEq, Plots, Test
+using Catalyst, ModelingToolkit, OrdinaryDiffEq, StochasticDiffEq, Plots, Test
 using Symbolics: unwrap
+
+# Sets stable rng number.
+using StableRNGs
+rng = StableRNG(12345)
+seed = rand(rng, 1:100)
 
 # Sets the default `t` to use.
 t = default_t()
 
-### Tests `@parameters` and `@species` Options ###
+### Tests `@parameters`, `@species`, and `@variables` Options ###
 
 # Test creating networks with/without options.
 let
@@ -389,11 +394,66 @@ let
     @test !ModelingToolkit.hasdescription(unwrap(rn.k5))
 end
 
+# Test @variables in DSL.
+let
+    rn = @reaction_network tester begin
+        @parameters k1
+        @variables V1(t) V2(t) V3(t)
+        @species B1(t) B2(t)
+        (k1*k2 + V3), V1*A + 2*B1 --> V2*C + B2
+    end
+
+    @parameters k1 k2
+    @variables V1(t) V2(t) V3(t)
+    @species A(t) B1(t) B2(t) C(t)
+    rx = Reaction(k1*k2 + V3, [A, B1], [C, B2], [V1, 2], [V2, 1])
+    @named tester = ReactionSystem([rx], t)
+    @test tester == rn
+
+    sts = (A, B1, B2, C, V1, V2, V3)
+    spcs = (A, B1, B2, C)
+    @test issetequal(unknowns(rn), sts)
+    @test issetequal(species(rn), spcs)
+
+    @test_throws ArgumentError begin
+        rn = @reaction_network begin
+            @variables K
+            k, K*A --> B
+        end
+    end
+end
+
+### Test Independent Variable Designations ###
+
+# Test ivs in DSL.
+let
+    rn = @reaction_network ivstest begin
+        @ivs s x
+        @parameters k2
+        @variables D(x) E(s) F(s,x)
+        @species A(s,x) B(s) C(x)
+        k*k2*D, E*A +B --> F*C + C2
+    end
+
+    @parameters k k2
+    @variables s x D(x) E(s) F(s,x)
+    @species A(s,x) B(s) C(x) C2(s,x)
+    rx = Reaction(k*k2*D, [A, B], [C, C2], [E, 1], [F, 1])
+    @named ivstest = ReactionSystem([rx], s; spatial_ivs = [x])
+
+    @test ivstest == rn
+    @test issetequal(unknowns(rn), [D, E, F, A, B, C, C2])
+    @test issetequal(species(rn), [A, B, C, C2])
+    @test isequal(ModelingToolkit.get_iv(rn), s)
+    @test issetequal(Catalyst.get_sivs(rn), [x])
+end
+
+
 ### Observables ###
 
 # Test basic functionality.
 # Tests various types of indexing.
-let 
+let
     rn = @reaction_network begin
         @observables begin
             X ~ Xi + Xa
@@ -428,12 +488,12 @@ let
     @test sol[:Y][end] ≈ 3.0
 
     # Tests that observables can be used for plot indexing.
-    @test plot(sol; idxs=X).series_list[1].plotattributes[:y][end] ≈ 10.0
+    plot(sol; idxs=X).series_list[1].plotattributes[:y][end] ≈ 10.0
     @test plot(sol; idxs=rn.X).series_list[1].plotattributes[:y][end] ≈ 10.0
     @test plot(sol; idxs=:X).series_list[1].plotattributes[:y][end] ≈ 10.0
     @test plot(sol; idxs=[X, Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
     @test plot(sol; idxs=[rn.X, rn.Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
-    @test plot(sol; idxs=[:X, :Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
+    @test plot(sol; idxs=[:X, :Y]).series_list[2].plotattributes[:y][end] ≈ 3.0 # (https://github.com/SciML/ModelingToolkit.jl/issues/2778)
 end
 
 # Compares programmatic and DSL system with observables.
@@ -484,23 +544,23 @@ end
 # Tests using a single observable (without begin/end statement).
 # Tests using observable component not part of reaction.
 # Tests using parameters in observables formula.
-let 
+let
     rn = @reaction_network begin
         @parameters op_1 op_2
         @species X4(t)
-        @observables X ~ X1^2 + op_1*(X2 + 2X3) + X1*X4/op_2 + p        
+        @observables X ~ X1^2 + op_1*(X2 + 2X3) + X1*X4/op_2 + p
         (p,d), 0 <--> X1
         (k1,k2), X1 <--> X2
         (k3,k4), X2 <--> X3
     end
-    
+
     u0 = Dict([:X1 => 1.0, :X2 => 2.0, :X3 => 3.0, :X4 => 4.0])
     ps = Dict([:p => 1.0, :d => 0.2, :k1 => 1.5, :k2 => 1.5, :k3 => 5.0, :k4 => 5.0, :op_1 => 1.5, :op_2 => 1.5])
 
     oprob = ODEProblem(rn, u0, (0.0, 1000.0), ps)
     sol = solve(oprob, Tsit5())
 
-    @test sol[:X][1] == u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]  
+    @test sol[:X][1] == u0[:X1]^2 + ps[:op_1]*(u0[:X2] + 2*u0[:X3]) + u0[:X1]*u0[:X4]/ps[:op_2] + ps[:p]
 end
 
 # Checks that ivs are correctly found.
@@ -514,8 +574,8 @@ let
         end
     end
     V,W = getfield.(observed(rn), :lhs)
-    @test isequal(arguments(ModelingToolkit.unwrap(V)), Any[rn.iv, rn.sivs[1], rn.sivs[2]])
-    @test isequal(arguments(ModelingToolkit.unwrap(W)), Any[rn.iv, rn.sivs[2]])
+    @test isequal(arguments(ModelingToolkit.unwrap(V)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[1], Catalyst.get_sivs(rn)[2]])
+    @test isequal(arguments(ModelingToolkit.unwrap(W)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[2]])
 end
 
 # Checks that metadata is written properly.
@@ -524,13 +584,13 @@ let
         @observables (X, [description="my_description"]) ~ X1 + X2
         k, 0 --> X1 + X2
     end
-    @test getdescription(observed(rn)[1].lhs) == "my_description"
+    @test ModelingToolkit.getdescription(observed(rn)[1].lhs) == "my_description"
 end
 
 # Declares observables implicitly/explicitly.
 # Cannot test `isequal(rn1, rn2)` because the two sets of observables have some obscure Symbolics
 # substructure that is different.
-let 
+let
     # Basic case.
     rn1 = @reaction_network rn_observed begin
         @observables X ~ X1 + X2
@@ -569,7 +629,7 @@ let
         (k1, k2), X1 <--> X2
     end
     @test isequal(observed(rn1)[1].lhs, X)
-    @test getdescription(rn1.X) == "An observable"
+    @test ModelingToolkit.getdescription(rn1.X) == "An observable"
     @test isspecies(rn1.X)
     @test length(unknowns(rn1)) == 2
 
@@ -591,7 +651,7 @@ let
     @test length(unknowns(rn2)) == 2
 end
 
-# Tests specific declaration of Observables as species/variables
+# Tests specific declaration of observables as species/variables.
 let
     rn = @reaction_network begin
         @species X(t)
@@ -604,14 +664,14 @@ let
         (kB,kD), 2X <--> X2
         (k1,k2), Y1 <--> Y2
     end
-    
+
     @test isspecies(rn.X)
     @test !isspecies(rn.Y)
     @test !isspecies(rn.Z)
 end
 
 # Tests various erroneous declarations throw errors.
-let 
+let
     # Independent variable in @observables.
     @test_throws Exception @eval @reaction_network begin
         @observables X(t) ~ X1 + X2
@@ -679,4 +739,215 @@ let
         @observables $X ~ X1 + X2
         (k1,k2), X1 <--> X2
     end
+end
+
+
+### Test `@equations` Option for Coupled CRN/Equations Models ###
+
+# Checks creation of basic network.
+# Check indexing of output solution.
+# Check that DAE is solved correctly.
+let
+    rn = @reaction_network rn begin
+        @parameters k
+        @variables X(t) Y(t)
+        @equations begin
+            X + 5 ~ k*S
+            3Y + X  ~ S + X*d
+        end
+        (p,d), 0 <--> S
+    end
+
+    @unpack X, Y, S, k, p, d = rn
+
+    # Checks that the internal structures have the correct lengths.
+    @test length(species(rn)) == 1
+    @test length(unknowns(rn)) == 3
+    @test length(reactions(rn)) == 2
+    @test length(equations(rn)) == 4
+    @test !has_diff_equations(rn)
+    @test isequal(diff_equations(rn), [])
+    @test has_alg_equations(rn)
+    @test isequal(alg_equations(rn), [X + 5 ~ k*S, 3Y + X  ~ S + X*d])
+
+    # Checks that the internal structures contain the correct stuff, and are correctly sorted.
+    @test isspecies(unknowns(rn)[1])
+    @test !isspecies(unknowns(rn)[2])
+    @test !isspecies(unknowns(rn)[3])
+    @test equations(rn)[1] isa Reaction
+    @test equations(rn)[2] isa Reaction
+    @test equations(rn)[3] isa Equation
+    @test equations(rn)[3] isa Equation
+    @test isequal(equations(rn)[3], X + 5 ~ k*S)
+    @test isequal(equations(rn)[4], 3Y + X  ~ S + X*d)
+
+    # Checks that simulations has the correct output
+    u0 = Dict([S => 1 + rand(rng), X => 1 + rand(rng), Y => 1 + rand(rng)])
+    ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
+    oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify=true)
+    sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
+    @test sol[S][end] ≈ sol.ps[p]/sol.ps[d]
+    @test sol[X] .+ 5 ≈ sol.ps[k] .*sol[S]
+    @test 3*sol[Y] .+ sol[X] ≈ sol[S] .+ sol[X].*sol.ps[d]
+end
+
+# Checks that block form is not required when only a single equation is used.
+let
+    rn1 = @reaction_network rn begin
+        @parameters k
+        @variables X(t)
+        @equations X + 2 ~ k*S
+        (p,d), 0 <--> S
+    end
+    rn2 = @reaction_network rn begin
+        @parameters k
+        @variables X(t)
+        @equations begin
+            X + 2 ~ k*S
+        end
+        (p,d), 0 <--> S
+    end
+    @test rn1 == rn2
+end
+
+# Tries for reaction system without any reactions (just an equation).
+# Tries with interpolating a value into an equation.
+# Tries using rn.X notation for designating variables.
+# Tries for empty parameter vector.
+let
+    c = 6.0
+    rn = complete(@reaction_network begin
+        @variables X(t)
+        @equations 2X ~ $c - X
+    end)
+
+    u0 = [rn.X => 0.0]
+    ps = []
+    oprob = ODEProblem(rn, u0, (0.0, 100.0), ps; structural_simplify=true)
+    sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
+    @test sol[rn.X][end] ≈ 2.0
+end
+
+# Checks hierarchical model.
+let
+    base_rn = @network_component begin
+        @variables V1(t)
+        @equations begin
+            X*3V1 ~ X - 2
+        end
+        (p,d), 0 <--> X
+    end
+    @unpack X, V1, p, d = base_rn
+
+    internal_rn = @network_component begin
+        @variables V2(t)
+        @equations begin
+            X*4V2 ~ X - 3
+        end
+        (p,d), 0 <--> X
+    end
+
+    rn = complete(compose(base_rn, [internal_rn]))
+
+    u0 = [V1 => 1.0, X => 3.0, internal_rn.V2 => 2.0, internal_rn.X => 4.0]
+    ps = [p => 1.0, d => 0.2, internal_rn.p => 2.0, internal_rn.d => 0.5]
+    oprob = ODEProblem(rn, u0, (0.0, 1000.0), ps; structural_simplify=true)
+    sol = solve(oprob, Rosenbrock23(); abstol=1e-9, reltol=1e-9)
+
+    @test sol[X][end] ≈ 5.0
+    @test sol[X][end]*3*sol[V1][end] ≈ sol[X][end] - 2
+    @test sol[internal_rn.X][end] ≈ 4.0
+end
+
+# Check for combined differential and algebraic equation.
+# Check indexing of output solution using Symbols.
+let
+    rn = @reaction_network rn begin
+        @parameters k
+        @variables X(t) Y(t)
+        @equations begin
+            X + 5 ~ k*S
+            D(Y) ~ X + S - 5*Y
+        end
+        (p,d), 0 <--> S
+    end
+    @unpack X, Y, S, p, d, k = rn
+
+    # Checks that the internal structures have the correct lengths.
+    @test length(species(rn)) == 1
+    @test length(unknowns(rn)) == 3
+    @test length(reactions(rn)) == 2
+    @test length(equations(rn)) == 4
+    @test has_diff_equations(rn)
+    @test length(diff_equations(rn)) == 1
+    @test has_alg_equations(rn)
+    @test length(alg_equations(rn)) == 1
+
+    # Checks that the internal structures contain the correct stuff, and are correctly sorted.
+    @test isspecies(unknowns(rn)[1])
+    @test !isspecies(unknowns(rn)[2])
+    @test !isspecies(unknowns(rn)[3])
+    @test equations(rn)[1] isa Reaction
+    @test equations(rn)[2] isa Reaction
+    @test equations(rn)[3] isa Equation
+    @test equations(rn)[3] isa Equation
+
+    # Checks that simulations has the correct output
+    u0 = Dict([S => 1 + rand(rng), X => 1 + rand(rng), Y => 1 + rand(rng)])
+    ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
+    oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify=true)
+    sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
+    @test sol[:S][end] ≈ sol.ps[:p]/sol.ps[:d]
+    @test sol[:X] .+ 5 ≈ sol.ps[:k] .*sol[:S]
+    @test 5*sol[:Y][end] ≈ sol[:S][end] + sol[:X][end]
+end
+
+# Tests that various erroneous declarations throw errors.
+let
+    # Using = instead of ~ (for equation).
+    @test_throws Exception @eval @reaction_network begin
+        @variables X(t)
+        @equations X = 1 - S
+        (p,d), 0 <--> S
+    end
+
+    # Equation with component undeclared elsewhere.
+    @test_throws Exception @eval @reaction_network begin
+        @equations X ~ p - S
+        (P,D), 0 <--> S
+    end
+end
+
+# test combinatoric_ratelaws DSL option
+let
+    rn = @reaction_network begin
+        @combinatoric_ratelaws false
+        (k1,k2), 2A <--> B
+        end
+    combinatoric_ratelaw = Catalyst.get_combinatoric_ratelaws(rn)
+    @test combinatoric_ratelaw == false
+    rl = oderatelaw(reactions(rn)[1]; combinatoric_ratelaw)
+    @unpack k1, A = rn
+    @test isequal(rl, k1*A^2)
+
+    rn2 = @reaction_network begin
+        @combinatoric_ratelaws true
+        (k1,k2), 2A <--> B
+        end
+    combinatoric_ratelaw = Catalyst.get_combinatoric_ratelaws(rn2)
+    @test combinatoric_ratelaw == true
+    rl = oderatelaw(reactions(rn2)[1]; combinatoric_ratelaw)
+    @unpack k1, A = rn2
+    @test isequal(rl, k1*A^2/2)
+
+    crl = false
+    rn3 = @reaction_network begin
+        @combinatoric_ratelaws $crl
+        (k1,k2), 2A <--> B
+        end
+    combinatoric_ratelaw = Catalyst.get_combinatoric_ratelaws(rn3)
+    @test combinatoric_ratelaw == crl
+    rl = oderatelaw(reactions(rn3)[1]; combinatoric_ratelaw)
+    @unpack k1, A = rn3
+    @test isequal(rl, k1*A^2)
 end
