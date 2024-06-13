@@ -309,6 +309,79 @@ end
 
 # TODO
 
+### Updating Problems with Defaults ###
+
+# Checks that initial conditions/parameters depending on other initial conditions/parameters
+# as defaults are updated correctly.
+# Checks using normal indexing and `remake`.
+# Checks effect on updated problem and integrators initiated from it.
+# An issue discussing what should, and should not, work is here: https://github.com/SciML/ModelingToolkit.jl/issues/2733
+let
+    # Creates the `ReactionSystem` (with defaults and an observable).
+    t = default_t()
+    @parameters l1
+    @species X1(t)
+    @parameters l2 = X1
+    @species X2(t) = l1
+    @variables O(t)
+    rxs = [
+        Reaction(l1, [X1], [X2]),
+        Reaction(l2, [X2], [X1])
+    ]
+    observed = [O ~ X1 + X2 + l1 + l2]
+    @named rs = ReactionSystem(rxs, t; observed)
+    rs = complete(rs)
+
+    # Creates the various problem types.
+    u0 = [X1 => 1]
+    ps = [l1 => 10]
+    oprob = ODEProblem(rs, u0, (0.0, 1.0), ps)
+    sprob = SDEProblem(rs, u0, (0.0, 1.0), ps)
+    dprob = DiscreteProblem(rs, u0, (0.0, 1.0), ps)
+    jprob = JumpProblem(rs, dprob, Direct())
+    nprob = NonlinearProblem(rs, u0, ps)
+    ssprob = SteadyStateProblem(rs, u0, ps)
+    @test_broken false # Cannot generate integrators from `SteadyStateProblem`s (https://github.com/SciML/SteadyStateDiffEq.jl/issues/79).
+    probs = [oprob, sprob, jprob, nprob, ssprob][1:end-1]
+    solvers = [Tsit5(), ImplicitEM(), SSAStepper(), NewtonRaphson(), DynamicSS(Tsit5())][1:end-1]
+
+    # Checks that values depending on defaults are updated correctly. Checks values both in original
+    # problem and in the initialised integrator. Only uses single symbolic when indexing (other
+    # alternatives should have been checked elsewhere).
+    for (prob, solver) in zip(deepcopy(probs), solvers)
+        # Checks when updating using `remake` indexing. I *think* this *should* update values (in the
+        # updated problem) that depend on default (the integrator should have the correct values).
+        prob_new = remake(prob; u0 = [X1 => 2], p = [l1 => 20])
+        @test prob_new[X1] == 2
+        @test prob_new[X2] == 20
+        @test prob_new.ps[l1] == 20
+        @test prob_new.ps[l2]  == 2
+        @test prob_new[O] == 44
+        integrator = init(prob_new, solver)
+        @test integrator[X1] == 2
+        @test integrator[X2] == 20
+        @test integrator.ps[l1] == 20
+        @test integrator.ps[l2] == 2
+        @test integrator[O] == 44
+
+        # Checks when updating using normal indexing. I *think* this *should not* update values (in
+        # the updated problem) that depend on default (the integrator should have the correct values).
+        prob[X1] = 3
+        prob.ps[l1] = 30
+        @test prob[X1] == 3
+        @test prob[X2] == 10
+        @test prob.ps[l1] == 30
+        @test prob.ps[l2] == 1
+        @test prob[O] == 44
+        integrator = init(prob, solver)
+        @test integrator[X1] == 3
+        @test_broken integrator[X2] == 30
+        @test integrator.ps[l1] == 30
+        @test_broken integrator.ps[l2] == 3
+        @test_broken integrator[O] == 66
+    end
+end
+
 ### Mass Action Jump Rate Updating Correctness ###
 
 # Checks that the rates of mass action jumps are correctly updated after parameter values are changed.

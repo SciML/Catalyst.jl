@@ -227,6 +227,60 @@ let
     @test all(sol2[osys.X1 + osys.X2] .== 4.0)
 end
 
+# Tests system problem updating when conservation laws are eliminated.
+# Checks that the correct values are used after the conservation law species are updated.
+# Here is an issue related to the broken tests: https://github.com/SciML/Catalyst.jl/issues/952
+let
+    # Create model and fetch the conservation parameter (Γ).
+    t = default_t()
+    @parameters k1 k2
+    @species X1(t) X2(t)
+    rxs = [
+        Reaction(k1, [X1], [X2]),
+        Reaction(k2, [X2], [X1])
+    ]
+    @named rs = ReactionSystem(rxs, t)
+    osys = convert(ODESystem, complete(rs); remove_conserved = true)
+    osys = complete(osys)
+    @unpack Γ = osys
+
+    # Creates an `ODEProblem`.
+    u0 = [X1 => 1.0, X2 => 2.0]
+    ps = [k1 => 0.1, k2 => 0.2]
+    oprob = ODEProblem(osys, u0, (0.0, 1.0), ps)
+
+    # Check `ODEProblem` content.
+    oprob[X1] == 1.0
+    oprob[X2] == 2.0
+    oprob.ps[k1] == 0.1
+    oprob.ps[k2] == 0.2
+    oprob.ps[Γ[1]] == 3.0
+
+    # Attempts to update problem  by giving new values for `X2` (broken)
+    @test_broken oprob[X2] = 20.0
+    @test_broken oprob_new = remake(oprob; u0 = [X1 => 10.0, X2 => 20.0])
+
+    # Updates problem using `remake` and check that the new values are correct.
+    oprob_new = remake(oprob; u0 = [X1 => 10.0])
+    @test oprob_new[X1] == 10.0
+    @test_broken oprob_new[X2] == 2.0 # Currently -7.
+    @test_broken oprob_new.ps[Γ[1]] == 12.0 # Currently 3.0.
+    integrator = init(oprob_new, Tsit5())
+    @test integrator[X1] == 10.0
+    @test_broken integrator[X2] == 2.0 # Currently -7.
+    @test_broken integrator.ps[Γ[1]] == 12.0 # Currently 3.0
+
+    # Updates problem using normal indexing (uncertain exactly what intended behaviour here should be).
+    oprob[X1] = 10.0
+    @test oprob[X1] == 10.0
+    @test_broken oprob[X2] == 2.0 # Currently -7.
+    @test_broken oprob.ps[Γ[1]] == 12.0 # Currently 3.0.
+    integrator = init(oprob, Tsit5())
+    @test integrator[X1] == 10.0
+    @test_broken integrator[X2] == 2.0 # Currently -7.
+    @test_broken integrator.ps[Γ[1]] == 12.0 # Currently 3.0.
+end
+
 ### Other Tests ###
 
 # Checks that `JumpSystem`s with conservation laws cannot be generated.
