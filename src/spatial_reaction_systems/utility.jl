@@ -3,11 +3,11 @@
 # Defines _symbol_to_var, but where the system is a LRS. Required to make symmapt_to_varmap to work.
 function _symbol_to_var(lrs::LatticeReactionSystem, sym)
     # Checks if sym is a parameter.
-    p_idx = findfirst(sym==p_sym for p_sym in ModelingToolkit.getname.(parameters(lrs)))    
+    p_idx = findfirst(sym == p_sym for p_sym in ModelingToolkit.getname.(parameters(lrs)))
     isnothing(p_idx) || return parameters(lrs)[p_idx]
 
     # Checks if sym is a species.
-    s_idx = findfirst(sym==s_sym for s_sym in ModelingToolkit.getname.(species(lrs)))       
+    s_idx = findfirst(sym == s_sym for s_sym in ModelingToolkit.getname.(species(lrs)))
     isnothing(s_idx) || return species(lrs)[s_idx]
 
     error("Could not find property parameter/species $sym in lattice reaction system.")
@@ -207,7 +207,8 @@ function compute_transport_rates(s::BasicSymbolic{Real}, p_val_dict, lrs::Lattic
     # Find parameters involved in the rate and create a function evaluating the rate law.
     rate_law = get_transport_rate_law(s, lrs)
     relevant_ps = Symbolics.get_variables(rate_law)
-    rate_law_func = drop_expr(@RuntimeGeneratedFunction(build_function(rate_law, relevant_ps...)))
+    rate_law_func = drop_expr(@RuntimeGeneratedFunction(build_function(
+        rate_law, relevant_ps...)))
 
     # If all these parameters are spatially uniform, the rates become a size (1,1) sparse matrix.
     # Else, the rates become a size (num_verts,num_verts) sparse matrix.
@@ -305,7 +306,7 @@ end
 function compute_edge_value(exp, lrs::LatticeReactionSystem, edge_ps)
     # Finds the symbols in the expression. Checks that all correspond to edge parameters.
     relevant_syms = Symbolics.get_variables(exp)
-    if !all(any(isequal(sym, p) for p in edge_parameters(lrs)) for sym in relevant_syms) 
+    if !all(any(isequal(sym, p) for p in edge_parameters(lrs)) for sym in relevant_syms)
         error("An non-edge parameter was encountered in expressions: $exp. Here, only edge parameters are expected.")
     end
 
@@ -329,7 +330,7 @@ end
 function compute_vertex_value(exp, lrs::LatticeReactionSystem; u=nothing, vert_ps=nothing)
     # Finds the symbols in the expression. Checks that all correspond to unknowns or vertex parameters.
     relevant_syms = Symbolics.get_variables(exp)
-    if any(any(isequal(sym) in edge_parameters(lrs)) for sym in relevant_syms) 
+    if any(any(isequal(sym) in edge_parameters(lrs)) for sym in relevant_syms)
         error("An edge parameter was encountered in expressions: $exp. Here, on vertex-based components are expected.")
     end
     # Creates a Function tha computes the expressions value for a parameter set.
@@ -349,7 +350,7 @@ function compute_vertex_value(exp, lrs::LatticeReactionSystem; u=nothing, vert_p
         error("Either u or vertex_ps have to be provided to has_spatial_vertex_component.")
     end
     sym_val_dict = vals_to_dict(all_syms, all_vals)
-    
+
     # If all values are uniform, compute value once. Else, do it at all edges.
     if !has_spatial_vertex_component(exp, lrs; u, vert_ps)
         return [exp_func([sym_val_dict[sym][1] for sym in relevant_syms]...)]
@@ -366,14 +367,16 @@ function has_spatial_edge_component(exp, lrs::LatticeReactionSystem, edge_ps)
     # Finds the edge parameters in the expression. Computes their indexes.
     exp_syms = Symbolics.get_variables(exp)
     exp_edge_ps = filter(sym -> any(isequal(sym), edge_parameters(lrs)), exp_syms)
-    p_idxs = [findfirst(isequal(sym, edge_p) for edge_p in edge_parameters(lrs)) for sym in exp_syms]
+    p_idxs = [findfirst(isequal(sym, edge_p) for edge_p in edge_parameters(lrs))
+              for sym in exp_syms]
     # Checks if any of the corresponding value vectors have length != 1 (that is, is not uniform).
     return any(length(edge_ps[p_idx]) != 1 for p_idx in p_idxs)
 end
 
 # For a Symbolic expression, a LatticeReactionSystem, and a parameter list of the internal format (vector of vectors):
 # Checks if any vertex parameter in the expression have a spatial component (that is, is not uniform).
-function has_spatial_vertex_component(exp, lrs::LatticeReactionSystem; u=nothing, vert_ps=nothing)
+function has_spatial_vertex_component(exp, lrs::LatticeReactionSystem;
+        u = nothing, vert_ps = nothing)
     # Finds all the symbols in the expression.
     exp_syms = Symbolics.get_variables(exp)
 

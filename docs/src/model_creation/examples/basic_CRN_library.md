@@ -79,7 +79,6 @@ oplt = plot(osol; idxs = X₁ + X₂, title = "Reaction rate equation (ODE)")
 splt = plot(ssol; idxs = X₁ + X₂, title = "Chemical Langevin equation (SDE)")
 plot(oplt, splt; lw = 3, ylimit = (99,101), size = (800,450), layout = (2,1))
 ```
-Catalyst has special methods for working with conserved quantities, which are described [here](@ref ref).
 
 ## [Michaelis-Menten enzyme kinetics](@id basic_CRN_library_mm)
 [Michaelis-Menten enzyme kinetics](https://en.wikipedia.org/wiki/Michaelis%E2%80%93Menten_kinetics) is a simple description of an enzyme ($E$) transforming a substrate ($S$) into a product ($P$). Under certain assumptions, it can be simplified to a single function (a Michaelis-Menten function) and used as a reaction rate. Here we instead present the full system model:
@@ -265,7 +264,7 @@ brusselator = @reaction_network begin
     1, X --> ∅
 end
 ```
-It is generally known to (for reaction rate equation-based ODE simulations) produce oscillations when $B > 1 + A^2$. However, this result is based on models generated when *combinatorial adjustment of rates is not performed*. Since Catalyst [automatically perform these adjustments](@ref ref), and one reaction contains a stoichiometric constant $>1$, the threshold will be different. Here, we trial two different values of $B$. In both cases, $B < 1 + A^2$, however, in the second case the system can generate oscillations.
+It is generally known to (for reaction rate equation-based ODE simulations) produce oscillations when $B > 1 + A^2$. However, this result is based on models generated when *combinatorial adjustment of rates is not performed*. Since Catalyst [automatically perform these adjustments](@ref introduction_to_catalyst_ratelaws), and one reaction contains a stoichiometric constant $>1$, the threshold will be different. Here, we trial two different values of $B$. In both cases, $B < 1 + A^2$, however, in the second case the system can generate oscillations.
 ```@example crn_library_brusselator
 using OrdinaryDiffEq, Plots
 u0 = [:X => 1.0, :Y => 1.0]

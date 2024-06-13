@@ -21,7 +21,7 @@ oprob = ODEProblem(cc_system, u0, tspan, ps)
 nothing    # hide
 ```
 
-We can find a species's (or [variable's](@ref ref)) initial condition value by simply indexing with the species of interest as input. Here we check the initial condition value of $C$:
+We can find a species's (or [variable's](@ref constraint_equations)) initial condition value by simply indexing with the species of interest as input. Here we check the initial condition value of $C$:
 ```@example structure_indexing
 oprob[:C]
 ```
@@ -84,7 +84,7 @@ nothing # hide
 
 ## [Interfacing integrator objects](@id simulation_structure_interfacing_integrators)
 
-During a simulation, the solution is stored in an integrator object. Here, we will describe how to interface with these. The almost exclusive circumstance when integrator-interfacing is relevant is when simulation events are [implemented through callbacks](@ref ref). However, to demonstrate integrator indexing in this tutorial, we will create one through the `init` function (while circumstances where one might [want to use `init` function exist](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/#Initialization-and-Stepping), since integrators are automatically created during simulations, these are rare).
+During a simulation, the solution is stored in an integrator object. Here, we will describe how to interface with these. The almost exclusive circumstance when integrator-interfacing is relevant is when simulation events are implemented through callbacks. However, to demonstrate integrator indexing in this tutorial, we will create one through the `init` function (while circumstances where one might [want to use `init` function exist](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/#Initialization-and-Stepping), since integrators are automatically created during simulations, these are rare).
 ```@example structure_indexing
 integrator = init(oprob)
 nothing # hide
@@ -101,7 +101,7 @@ integrator.ps[:k₂]
 ```
 Note that here, species-interfacing yields (or changes) a simulation's current value for a species, not its initial condition.
 
-If you are interfacing with jump simulation integrators, please read [this, highly relevant, section](@ref ref).
+If you are interfacing with jump simulation integrators, you must always call `reset_aggregated_jumps!(integrator)` afterwards.
 
 ## [Interfacing solution objects](@id simulation_structure_interfacing_solutions)
 
@@ -162,7 +162,7 @@ get_S(oprob)
 ```
 
 ## [Interfacing using symbolic representations](@id simulation_structure_interfacing_symbolic_representation)
-As [previously described](@ref ref), when e.g. [programmatic modelling is used](@ref programmatic_CRN_construction), species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like symbol-based representations can. Here we create a simple [two-state model](@ref rbasic_CRN_library_two_statesef) programmatically, and use its symbolic variables to check, and update, an initial condition:
+When e.g. [programmatic modelling is used](@ref programmatic_CRN_construction), species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like symbol-based representations can. Here we create a simple [two-state model](@ref basic_CRN_library_two_states) programmatically, and use its symbolic variables to check, and update, an initial condition:
 ```@example structure_indexing_symbolic_variables
 using Catalyst
 t = default_t()
@@ -185,7 +185,7 @@ oprob[X1]
 ```
 Symbolic variables can be used to access or update species or parameters for all the cases when `Symbol`s can (including when using `remake` or e.g. `getu`).
 
-An advantage when quantities are represented as symbolic variables is that [symbolic expressions](@ref ref) can be formed and used to index a structure. E.g. here we check the combined initial concentration of $X$ ($X1 + X2$) in our two-state problem:
+An advantage when quantities are represented as symbolic variables is that symbolic expressions can be formed and used to index a structure. E.g. here we check the combined initial concentration of $X$ ($X1 + X2$) in our two-state problem:
 ```@example structure_indexing_symbolic_variables
 oprob[X1 + X2]
 ```
@@ -194,8 +194,7 @@ Just like symbolic variables can be used to directly interface with a structure,
 ```@example structure_indexing_symbolic_variables
 oprob[two_state_model.X1 + two_state_model.X2]
 ```
-This can be used to form symbolic expressions using model quantities when a model has been created using the DSL (as an alternative to [@unpack]
-(@ref ref)). Alternatively, [creating an observable](@ref dsl_advanced_options_observables), and then interface using its `Symbol` representation, is also possible.
+This can be used to form symbolic expressions using model quantities when a model has been created using the DSL (as an alternative to @unpack). Alternatively, [creating an observable](@ref dsl_advanced_options_observables), and then interface using its `Symbol` representation, is also possible.
 
 !!! warn
-    With interfacing with a simulating structure using symbolic variables stored in a `ReactionSystem` model, ensure that the [model is complete](@ref ref).
+    With interfacing with a simulating structure using symbolic variables stored in a `ReactionSystem` model, ensure that the model is complete.

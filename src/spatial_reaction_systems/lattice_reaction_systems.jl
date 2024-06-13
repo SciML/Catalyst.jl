@@ -74,7 +74,8 @@ struct LatticeReactionSystem{Q,R,S,T} <: MT.AbstractTimeDependentSystem
         if isempty(spatial_reactions)
             spat_species = Vector{BasicSymbolic{Real}}[]
         else
-            spat_species = unique(reduce(vcat, [spatial_species(sr) for sr in spatial_reactions]))
+            spat_species = unique(reduce(vcat,
+                [spatial_species(sr) for sr in spatial_reactions]))
         end
         num_species = length(unique([species(rs); spat_species]))
 
@@ -83,13 +84,14 @@ struct LatticeReactionSystem{Q,R,S,T} <: MT.AbstractTimeDependentSystem
         if isempty(spatial_reactions)
             srs_edge_parameters = Vector{BasicSymbolic{Real}}[]
         else
-            srs_edge_parameters = setdiff(reduce(vcat, [parameters(sr) for sr in spatial_reactions]), parameters(rs))
+            srs_edge_parameters = setdiff(
+                reduce(vcat, [parameters(sr) for sr in spatial_reactions]), parameters(rs))
         end
         edge_parameters = unique([rs_edge_parameters; srs_edge_parameters])
         vertex_parameters = filter(!isedgeparameter, parameters(rs))
 
         # Ensures the parameter order begins similarly to in the non-spatial ReactionSystem.
-        ps = [parameters(rs); setdiff([edge_parameters; vertex_parameters], parameters(rs))]    
+        ps = [parameters(rs); setdiff([edge_parameters; vertex_parameters], parameters(rs))]
 
         # Checks that all spatial reactions are valid for this reaction system.
         foreach(sr -> check_spatial_reaction_validity(rs, sr; edge_parameters=edge_parameters), spatial_reactions)   

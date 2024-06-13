@@ -246,7 +246,7 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{Basi
         J = nothing
     end
 
-    return ODEFunction(f; jac = J, jac_prototype = jac_prototype)           
+    return ODEFunction(f; jac = J, jac_prototype = jac_prototype)
 end
 
 # Builds a jacobian prototype.
@@ -310,7 +310,7 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64},
 
             # Term due to species leaving source vertex.
             jac_prototype[idx_src, idx_src] -= val
-            
+
             # Term due to species arriving to destination vertex.   
             jac_prototype[idx_src, idx_dst] += val
         end
@@ -352,7 +352,7 @@ end
 
 # Defines the Jacobian functor's effect on the (spatial) ODE system.
 function (jac_func::LatticeTransportODEjac)(J, u, p, t)
-    J .= 0.0 
+    J .= 0.0
 
     # Update the Jacobian from non-spatial reaction terms.
     for vert_i in 1:(jac_func.num_verts)

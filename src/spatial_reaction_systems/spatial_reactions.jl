@@ -30,8 +30,8 @@ struct TransportReaction <: AbstractSpatialReaction
 
     # Creates a diffusion reaction.
     function TransportReaction(rate, species)
-        if any(!ModelingToolkit.isparameter(var) for var in ModelingToolkit.get_variables(rate)) 
-            error("TransportReaction rate contains variables: $(filter(var -> !ModelingToolkit.isparameter(var), ModelingToolkit.get_variables(rate))). The rate must consist of parameters only.")
+        if any(!MT.isparameter(var) for var in MT.get_variables(rate))
+            error("TransportReaction rate contains variables: $(filter(var -> !MT.isparameter(var), MT.get_variables(rate))). The rate must consist of parameters only.")
         end
         new(rate, species.val)
     end
@@ -88,22 +88,25 @@ function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReacti
 
     # Checks that the rate does not depend on species.    
     rate_vars = ModelingToolkit.getname.(Symbolics.get_variables(tr.rate))
-    if !isempty(intersect(ModelingToolkit.getname.(species(rs)), rate_vars)) 
+    if !isempty(intersect(ModelingToolkit.getname.(species(rs)), rate_vars))
         error("The following species were used in rates of a transport reactions: $(setdiff(ModelingToolkit.getname.(species(rs)), rate_vars)).")
     end
 
     # Checks that the species does not exist in the system with different metadata.
-    if any(isequal(tr.species, s) && !isequivalent(tr.species, s) for s in species(rs)) 
+    if any(isequal(tr.species, s) && !isequivalent(tr.species, s) for s in species(rs))
         error("A transport reaction used a species, $(tr.species), with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and used in transport reaction creation.")
     end
-    if any(isequal(rs_p, tr_p) && !isequivalent(rs_p, tr_p) 
-            for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate)) 
+    # No `for` loop, just weird formatting by the formatter.
+    if any(isequal(rs_p, tr_p) && !isequivalent(rs_p, tr_p)
+    for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate))
         error("A transport reaction used a parameter with metadata not matching its lattice reaction system. Please fetch this parameter from the reaction system and used in transport reaction creation.")
     end
 
     # Checks that no edge parameter occur among rates of non-spatial reactions.
-    if any(!isempty(intersect(Symbolics.get_variables(r.rate), edge_parameters)) for r in reactions(rs))
-        error("Edge paramter(s) were found as a rate of a non-spatial reaction.")
+    # No `for` loop, just weird formatting by the formatter.
+    if any(!isempty(intersect(Symbolics.get_variables(r.rate), edge_parameters))
+    for r in reactions(rs))
+        error("Edge parameter(s) were found as a rate of a non-spatial reaction.")
     end
 end
 
@@ -112,9 +115,13 @@ end
 const ep_metadata = Catalyst.EdgeParameter => true
 function isequivalent(sym1, sym2)
     isequal(sym1, sym2) || (return false)
-    any((md1 != ep_metadata) && !(md1 in sym2.metadata) for md1 in sym1.metadata) && (return false)
-    any((md2 != ep_metadata) && !(md2 in sym1.metadata) for md2 in sym2.metadata) && (return false)
-    (typeof(sym1) != typeof(sym2)) && (return false)
+    if any((md1 != ep_metadata) && !(md1 in sym2.metadata) for md1 in sym1.metadata)
+        return false
+    elseif any((md2 != ep_metadata) && !(md2 in sym1.metadata) for md2 in sym2.metadata)
+        return false
+    elseif typeof(sym1) != typeof(sym2)
+        return false
+    end
     return true
 end
 

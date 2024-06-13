@@ -18,13 +18,14 @@ To display its reaction (using LaTeX formatting) we run `latexify` with our mode
 ```@example visualisation_latex
 using Latexify
 latexify(brusselator)
+brusselator # hide
 ```
 Here, we note that the output of `latexify(brusselator)` is identical to how a model is displayed by default. Indeed, the reason is that Catalyst internally uses Latexify's `latexify` function to display its models. It is also possible to display the ODE equations a model would generate by adding the `form = :ode` argument:
 ```@example visualisation_latex
 latexify(brusselator; form = :ode)
 ```
 !!! note
-    Internally, `latexify(brusselator; form = :ode)` calls `latexify(convert(ODESystem, brusselator))`. Hence, if you have already [generated the `ODESystem` corresponding to your model](@ref ref), it can be used directly as input to `latexify`.
+    Internally, `latexify(brusselator; form = :ode)` calls `latexify(convert(ODESystem, brusselator))`. Hence, if you have already generated the `ODESystem` corresponding to your model, it can be used directly as input to `latexify`.
 
 !!! note 
     It should be possible to also generate SDEs through the `form = :sde` input. This feature is, however, currently broken.

@@ -272,6 +272,7 @@ hillar
 ```@docs
 Base.convert
 ModelingToolkit.structural_simplify
+set_default_noise_scaling
 ```
 
 ## Chemistry-related functionalities
