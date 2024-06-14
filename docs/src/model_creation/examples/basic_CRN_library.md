@@ -115,11 +115,11 @@ using Plots
 oplt = plot(osol; title = "Reaction rate equation (ODE)")
 splt = plot(ssol; title = "Chemical Langevin equation (SDE)")
 jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)")
-plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1)) # hide
+plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1))
 oplt = plot(osol; title = "Reaction rate equation (ODE)", plotdensity = 1000, fmt = :png) # hide
 splt = plot(ssol; title = "Chemical Langevin equation (SDE)", plotdensity = 1000, fmt = :png) # hide
 jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)", plotdensity = 1000, fmt = :png) # hide
-plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1))
+plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1), plotdensity = 1000, fmt = :png) # hide
 ```
 
 ## [SIR infection model](@id basic_CRN_library_sir)
