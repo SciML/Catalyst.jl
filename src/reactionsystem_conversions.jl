@@ -456,7 +456,7 @@ function check_cons_warning(remove_conserved, remove_conserved_warn)
     @warn "You are creating a system while eliminating conserved quantities. While this is possible, 
         if you use the created system to create a problem (e.g. an `ODEProblem`), you *should not*
         modify that problem's initial conditions for species (e.g. using `remake`). Changing initial conditions must be done by creating a new Problem from your reaction system or the ModelingToolkit system you converted it into with the new initial condition map. Modification of parameter values 
-        is still possible. You might get this warning when creating a problem directly.
+        is still possible, and directly setting numerical values for any conservation law constants will work. You might get this warning when creating a problem directly.
 
         You can remove this warning by setting `remove_conserved_warn = false`."
 end
