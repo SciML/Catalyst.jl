@@ -31,6 +31,15 @@ function rand_e_vals(lrs::LatticeReactionSystem)
     return e_vals
 end
 
+# Generates edge values, where each edge have the same value.
+function uniform_e_vals(lrs::LatticeReactionSystem, val)
+    e_vals = spzeros(num_verts(lrs), num_verts(lrs))
+    for e in edge_iterator(lrs)
+        e_vals[e[1], e[2]] = val
+    end
+    return e_vals
+end
+
 # Gets a symbol list of spatial parameters.
 function spatial_param_syms(lrs::LatticeReactionSystem)
     ModelingToolkit.getname.(edge_parameters(lrs))

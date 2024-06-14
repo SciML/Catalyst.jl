@@ -186,7 +186,7 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     u0 = lattice_process_u0(u0_in, species(lrs), lrs)                                       
     # vert_ps and `edge_ps` are vector maps, taking each parameter's Symbolics representation to its value(s).
     # vert_ps values are vectors. Here, index (i) is a parameter's value in vertex i.
-    # edge_ps becomes a sparse matrix. Here, index (i,j) is a parameter's value in the edge from vertex i to vertex j.
+    # edge_ps values are sparse matrices. Here, index (i,j) is a parameter's value in the edge from vertex i to vertex j.
     # Uniform vertex/edge parameters store only a single value (a length 1 vector, or size 1x1 sparse matrix).
     # In the `ODEProblem` vert_ps and edge_ps are merged (but for building the ODEFunction, they are separate).
     vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs), lrs)  
@@ -321,6 +321,9 @@ end
 
 # Defines the forcing functor's effect on the (spatial) ODE system.
 function (f_func::LatticeTransportODEf)(du, u, p, t)
+    println(du)
+    println(u)
+    println(p)
     # Updates for non-spatial reactions.
     for vert_i in 1:(f_func.num_verts)
         # Gets the indices of all the species at vertex i.

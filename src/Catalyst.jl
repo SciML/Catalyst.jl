@@ -183,6 +183,9 @@ export make_edge_p_values, make_directed_edge_values
 include("spatial_reaction_systems/spatial_ODE_systems.jl")
 include("spatial_reaction_systems/lattice_jump_systems.jl")
 
+# General spatial modelling utility functions.
+include("spatial_reaction_systems/utility.jl")
+
 ### ReactionSystem Serialisation ###
 # Has to be at the end (because it uses records of all metadata declared by Catalyst).
 include("reactionsystem_serialisation/serialisation_support.jl")

@@ -30,17 +30,16 @@ for grid in [small_2d_graph_grid, short_path, small_directed_cycle,
             :R => 50 * rand_v_vals(lattice(lrs)),
         ]
         for u0 in [u0_1, u0_2, u0_3]
-            p1 = [:α => 0.1 / 1000, :β => 0.01]
-            p2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lattice(lrs))]
-            p3 = [
+            pV_1 = [:α => 0.1 / 1000, :β => 0.01]
+            pV_2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lattice(lrs))]
+            pV_3 = [
                 :α => 0.1 / 2000 * rand_v_vals(lattice(lrs)),
                 :β => 0.02 * rand_v_vals(lattice(lrs)),
             ]
-            for pV in [p1, p2, p3]
+            for pV in [pV_1, pV_2, pV_3]
                 pE_1 = map(sp -> sp => 0.01, spatial_param_syms(lrs))
                 pE_2 = map(sp -> sp => 0.01, spatial_param_syms(lrs))
-                pE_3 = map(sp -> sp => rand_e_vals(lrs, 0.01),
-                           spatial_param_syms(lrs))
+                pE_3 = map(sp -> sp => rand_e_vals(lrs, 0.01), spatial_param_syms(lrs))
                 for pE in [pE_1, pE_2, pE_3]
                     isempty(spatial_param_syms(lrs)) && (pE = Vector{Pair{Symbol, Float64}}())
                     oprob = ODEProblem(lrs, u0, (0.0, 500.0), [pV; pE])

@@ -9,6 +9,7 @@ using SafeTestsets, Test
 
 ### Run Tests ###
 @time begin
+    @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_jumps.jl") end
 
     # Tests the `ReactionSystem` structure and its properties.
     @time @safetestset "Reaction Structure" begin include("reactionsystem_core/reaction.jl") end
@@ -53,8 +54,9 @@ using SafeTestsets, Test
     # Tests spatial modelling and simulations.
     @time @safetestset "PDE Systems Simulations" begin include("spatial_modelling/simulate_PDEs.jl") end
     @time @safetestset "Lattice Reaction Systems" begin include("spatial_modelling/lattice_reaction_systems.jl") end
+    @time @safetestset "Spatial Lattice Variants" begin include("spatial_modelling/lattice_reaction_systems_lattice_types.jl") end
     @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_ODEs.jl") end
-    @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_reaction_systems/lattice_reaction_systems_jumps.jl") end
+    @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_jumps.jl") end
 
     # Tests network visualisation.
     @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end

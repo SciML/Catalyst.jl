@@ -307,6 +307,16 @@ grid_dims(lrs::LatticeReactionSystem) = grid_dims(lattice(lrs))
 grid_dims(lattice::GridLattice{N,T}) where {N,T} = return N
 grid_dims(lattice::Graph) = error("Grid dimensions is only defined for LatticeReactionSystems with grid-based lattices (not graph-based).")
 
+"""
+    get_lattice_graph(lrs::LatticeReactionSystem)
+
+Returns lrs's lattice, but in as a graph. Currently does not work for Cartesian lattices.
+"""
+function get_lattice_graph(lrs::LatticeReactionSystem)
+    has_graph_lattice(lrs) && return lattice(lrs)
+    return Graphs.SimpleGraphFromIterator(Graphs.SimpleEdge(e[1], e[2]) 
+        for e in edge_iterator(lrs))
+end
 
 ### Catalyst-based Getters ###
 
@@ -393,7 +403,7 @@ end
 D_vals = make_edge_p_values(lrs, make_edge_p_value)
 ```
 """
-function make_edge_p_values(lrs::LatticeReactionSystem, make_edge_p_value::Function, )
+function make_edge_p_values(lrs::LatticeReactionSystem, make_edge_p_value::Function)
     if has_graph_lattice(lrs)
         error("The `make_edge_p_values` function is only meant for lattices with (Cartesian or masked) grid structures. It cannot be applied to graph lattices.")
     end
