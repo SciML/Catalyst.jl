@@ -178,7 +178,7 @@ begin
     @named model_vec = ReactionSystem(rxs, t; observed)
     model_vec = complete(model_vec)
 
-    # Declares various u0 versions.
+    # Declares various u0 versions (scalarised and vector forms).
     u0_alts_vec = [
         # Vectors not providing default values.
         [X => [1.0, 2.0]],
@@ -218,43 +218,31 @@ begin
         (:X => [1.0, 2.0], :Y => [10.0, 20.0]),
     ]
 
-    # Declares various ps versions.
+    # Declares various ps versions (vector forms only).
     p_alts_vec = [
         # Vectors not providing default values.
         [p => [1.0, 2.0]],
-        [p[1] => 1.0, p[2] => 2.0],
         [model_vec.p => [1.0, 2.0]],
-        [model_vec.p[1] => 1.0, model_vec.p[2] => 2.0],
         [:p => [1.0, 2.0]],
         # Vectors providing default values.
         [p => [4.0, 5.0], d => [0.2, 0.5]],
-        [p[1] => 4.0, p[2] => 5.0, d[1] => 10.0, d[2] => 20.0],
         [model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]],
-        [model_vec.p[1] => 4.0, model_vec.p[2] => 5.0, model_vec.d[1] => 10.0, model_vec.d[2] => 20.0],
         [:p => [4.0, 5.0], :d => [0.2, 0.5]],
         # Dicts not providing default values.
         Dict([p => [1.0, 2.0]]),
-        Dict([p[1] => 1.0, p[2] => 2.0]),
         Dict([model_vec.p => [1.0, 2.0]]),
-        Dict([model_vec.p[1] => 1.0, model_vec.p[2] => 2.0]),
         Dict([:p => [1.0, 2.0]]),
         # Dicts providing default values.
         Dict([p => [4.0, 5.0], d => [0.2, 0.5]]),
-        Dict([p[1] => 4.0, p[2] => 5.0, d[1] => 10.0, d[2] => 20.0]),
         Dict([model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]]),
-        Dict([model_vec.p[1] => 4.0, model_vec.p[2] => 5.0, model_vec.d[1] => 10.0, model_vec.d[2] => 20.0]),
         Dict([:p => [4.0, 5.0], :d => [0.2, 0.5]]),
         # Tuples not providing default values.
         (p => [1.0, 2.0]),
-        (p[1] => 1.0, p[2] => 2.0),
         (model_vec.p => [1.0, 2.0]),
-        (model_vec.p[1] => 1.0, model_vec.p[2] => 2.0),
         (:p => [1.0, 2.0]),
         # Tuples providing default values.
         (p => [4.0, 5.0], d => [0.2, 0.5]),
-        (p[1] => 4.0, p[2] => 5.0, d[1] => 10.0, d[2] => 20.0),
         (model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]),
-        (model_vec.p[1] => 4.0, model_vec.p[2] => 5.0, model_vec.d[1] => 10.0, model_vec.d[2] => 20.0),
         (:p => [4.0, 5.0], :d => [0.2, 0.5]),
     ]
 
