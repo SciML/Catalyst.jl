@@ -120,6 +120,7 @@ oplt = plot(osol; title = "Reaction rate equation (ODE)", plotdensity = 1000, fm
 splt = plot(ssol; title = "Chemical Langevin equation (SDE)", plotdensity = 1000, fmt = :png) # hide
 jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)", plotdensity = 1000, fmt = :png) # hide
 plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1), plotdensity = 1000, fmt = :png) # hide
+plot!(bottom_margin = 3Plots.Measures.mm) # hide
 ```
 
 ## [SIR infection model](@id basic_CRN_library_sir)
