@@ -191,11 +191,12 @@ u₀map = [:m₁ => 0, :m₂ => 0, :m₃ => 0, :P₁ => 20, :P₂ => 0, :P₃ =>
 dprob = DiscreteProblem(repressilator, u₀map, tspan, pmap)
 
 # now, we create a JumpProblem, and specify Gillespie's Direct Method as the solver:
-jprob = JumpProblem(repressilator, dprob, Direct(), save_positions=(false,false))
+jprob = JumpProblem(repressilator, dprob, Direct())
 
 # now, let's solve and plot the jump process:
-sol = solve(jprob, SSAStepper(), saveat=10.)
+sol = solve(jprob, SSAStepper())
 plot(sol)
+plot(sol, plotdensity = 1000, fmt = :png) # hide
 ```
 
 We see that oscillations remain, but become much noisier. Note, in constructing
