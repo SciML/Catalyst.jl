@@ -270,7 +270,7 @@ let
     # Check warnings in system conversion.
     for XSystem in [ODESystem, SDESystem, NonlinearSystem]
         @test_nowarn convert(XSystem, rn)
-        @test_logs (:warn, r"You are creating a system while eliminating conserved quantities. While *") convert(XSystem, rn; remove_conserved = true)
+        @test_logs (:warn, r"You are creating a system or problem while eliminating conserved quantities. Please *") convert(XSystem, rn; remove_conserved = true)
         @test_nowarn convert(XSystem, rn; remove_conserved_warn = false)
         @test_nowarn convert(XSystem, rn; remove_conserved = true, remove_conserved_warn = false)
     end
@@ -278,13 +278,13 @@ let
     # Checks during problem creation (separate depending on whether they have a time span or not).
     for XProblem in [ODEProblem, SDEProblem]
         @test_nowarn XProblem(rn, u0, tspan, ps)
-        @test_logs (:warn, r"You are creating a system while eliminating conserved quantities. While *") XProblem(rn, u0, tspan, ps; remove_conserved = true)
+        @test_logs (:warn, r"You are creating a system or problem while eliminating conserved quantities. Please *") XProblem(rn, u0, tspan, ps; remove_conserved = true)
         @test_nowarn XProblem(rn, u0, tspan, ps; remove_conserved_warn = false)
         @test_nowarn XProblem(rn, u0, tspan, ps; remove_conserved = true, remove_conserved_warn = false)
     end
     for XProblem in [NonlinearProblem, SteadyStateProblem]
         @test_nowarn XProblem(rn, u0, ps)
-        @test_logs (:warn, r"You are creating a system while eliminating conserved quantities. While *") XProblem(rn, u0, ps; remove_conserved = true)
+        @test_logs (:warn, r"You are creating a system or problem while eliminating conserved quantities. Please *") XProblem(rn, u0, ps; remove_conserved = true)
         @test_nowarn XProblem(rn, u0, ps; remove_conserved_warn = false)
         @test_nowarn XProblem(rn, u0, ps; remove_conserved = true, remove_conserved_warn = false)
     end
