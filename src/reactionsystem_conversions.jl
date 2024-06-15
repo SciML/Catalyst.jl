@@ -453,10 +453,15 @@ COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be convert
 # Used to, when required, display a warning about conservation law removeal and remake.
 function check_cons_warning(remove_conserved, remove_conserved_warn)
     (remove_conserved && remove_conserved_warn) || return
-    @warn "You are creating a system or problem while eliminating conserved quantities. Please note, due to limitations / design choices in ModelingToolkit
-        if you use the created system to create a problem (e.g. an `ODEProblem`), or are directly creating a problem, you *should not*
-        modify that problem's initial conditions for species (e.g. using `remake`). Changing initial conditions must be done by creating a new Problem from your reaction system or the ModelingToolkit system you converted it into with the new initial condition map. Modification of parameter values 
-        is still possible, and directly setting numerical values for any conservation law constants will work. You might get this warning when creating a problem directly.
+    @warn "You are creating a system or problem while eliminating conserved quantities. Please note,
+        due to limitations / design choices in ModelingToolkit if you use the created system to 
+        create a problem (e.g. an `ODEProblem`), or are directly creating a problem, you *should not*
+        modify that problem's initial conditions for species (e.g. using `remake`). Changing initial 
+        conditions must be done by creating a new Problem from your reaction system or the 
+        ModelingToolkit system you converted it into with the new initial condition map. 
+        Modification of parameter values is still possible, *except* for the modification of any
+        conservation law constants ($CONSERVED_CONSTANT_SYMBOL), which is not possible. You might 
+        get this warning when creating a problem directly.
 
         You can remove this warning by setting `remove_conserved_warn = false`."
 end
