@@ -270,8 +270,8 @@ let
     @test integrator.ps[k2] == 0.4
 
     # Update problem parameters using direct indexing.
-    oprob[k1] = 0.5
-    oprob[k2] = 0.6
+    oprob.ps[k1] = 0.5
+    oprob.ps[k2] = 0.6
     @test oprob_new.ps[k1] == 0.5
     @test oprob_new.ps[k2] == 0.6
     integrator = init(oprob_new, Tsit5())
