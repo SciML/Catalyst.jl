@@ -272,9 +272,9 @@ let
     # Update problem parameters using direct indexing.
     oprob.ps[k1] = 0.5
     oprob.ps[k2] = 0.6
-    @test oprob_new.ps[k1] == 0.5
-    @test oprob_new.ps[k2] == 0.6
-    integrator = init(oprob_new, Tsit5())
+    @test oprob.ps[k1] == 0.5
+    @test oprob.ps[k2] == 0.6
+    integrator = init(oprob, Tsit5())
     @test integrator.ps[k1] == 0.5
     @test integrator.ps[k2] == 0.6
 end
