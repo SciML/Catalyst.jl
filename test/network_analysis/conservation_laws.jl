@@ -263,20 +263,20 @@ let
 
     # Update problem parameters using `remake`.
     oprob_new = remake(oprob; p = [k1 => 0.3, k2 => 0.4])
-    @test oprob_new[k1] == 0.3
-    @test oprob_new[k2] == 0.4
+    @test oprob_new.ps[k1] == 0.3
+    @test oprob_new.ps[k2] == 0.4
     integrator = init(oprob_new, Tsit5())
-    @test integrator[k1] == 0.3
-    @test integrator[k2] == 0.4
+    @test integrator.ps[k1] == 0.3
+    @test integrator.ps[k2] == 0.4
 
     # Update problem parameters using direct indexing.
     oprob[k1] = 0.5
     oprob[k2] = 0.6
-    @test oprob_new[k1] == 0.5
-    @test oprob_new[k2] == 0.6
+    @test oprob_new.ps[k1] == 0.5
+    @test oprob_new.ps[k2] == 0.6
     integrator = init(oprob_new, Tsit5())
-    @test integrator[k1] == 0.5
-    @test integrator[k2] == 0.6
+    @test integrator.ps[k1] == 0.5
+    @test integrator.ps[k2] == 0.6
 end
 
 ### Other Tests ###
