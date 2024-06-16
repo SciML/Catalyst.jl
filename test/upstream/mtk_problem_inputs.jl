@@ -158,7 +158,6 @@ let
     end
 end
 
-
 ### Checks Errors On Faulty Inputs ###
 
 # Checks various erroneous problem inputs, ensuring that these throw errors.

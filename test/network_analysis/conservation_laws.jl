@@ -230,6 +230,55 @@ let
     @test all(sol2[osys.X1 + osys.X2] .== 4.0)
 end
 
+# Tests system problem updating when conservation laws are eliminated.
+# Checks that the correct values are used after the conservation law species are updated.
+# Here is an issue related to the broken tests: https://github.com/SciML/Catalyst.jl/issues/952
+let
+    # Create model and fetch the conservation parameter (Γ).
+    t = default_t()
+    @parameters k1 k2
+    @species X1(t) X2(t)
+    rxs = [
+        Reaction(k1, [X1], [X2]),
+        Reaction(k2, [X2], [X1])
+    ]
+    @named rs = ReactionSystem(rxs, t)
+    osys = convert(ODESystem, complete(rs); remove_conserved = true, remove_conserved_warn = false)
+    osys = complete(osys)
+    @unpack Γ = osys
+
+    # Creates an `ODEProblem`.
+    u0 = [X1 => 1.0, X2 => 2.0]
+    ps = [k1 => 0.1, k2 => 0.2]
+    oprob = ODEProblem(osys, u0, (0.0, 1.0), ps)
+
+    # Check `ODEProblem` content.
+    @test oprob[X1] == 1.0
+    @test oprob[X2] == 2.0
+    @test oprob.ps[k1] == 0.1
+    @test oprob.ps[k2] == 0.2
+    @test oprob.ps[Γ[1]] == 3.0
+
+    # Currently, any kind of updating of species or the conservation parameter(s) is not possible.
+
+    # Update problem parameters using `remake`.
+    oprob_new = remake(oprob; p = [k1 => 0.3, k2 => 0.4])
+    @test oprob_new.ps[k1] == 0.3
+    @test oprob_new.ps[k2] == 0.4
+    integrator = init(oprob_new, Tsit5())
+    @test integrator.ps[k1] == 0.3
+    @test integrator.ps[k2] == 0.4
+
+    # Update problem parameters using direct indexing.
+    oprob.ps[k1] = 0.5
+    oprob.ps[k2] = 0.6
+    @test oprob.ps[k1] == 0.5
+    @test oprob.ps[k2] == 0.6
+    integrator = init(oprob, Tsit5())
+    @test integrator.ps[k1] == 0.5
+    @test integrator.ps[k2] == 0.6
+end
+
 ### Other Tests ###
 
 # Checks that `JumpSystem`s with conservation laws cannot be generated.
@@ -288,4 +337,27 @@ let
         @test_nowarn XProblem(rn, u0, ps; remove_conserved_warn = false)
         @test_nowarn XProblem(rn, u0, ps; remove_conserved = true, remove_conserved_warn = false)
     end
+end
+
+# Conservation law simulations for vectorised species.
+let 
+    # Prepares the model.
+    t = default_t()
+    @species X(t)[1:2]
+    @parameters k[1:2]
+    rxs = [
+        Reaction(k[1], [X[1]], [X[2]]),
+        Reaction(k[2], [X[2]], [X[1]])
+    ]
+    @named rs = ReactionSystem(rxs, t)
+    rs = complete(rs)
+
+    # Checks that simulation reaches known equilibrium.
+    @test_broken false # Currently broken on MTK .
+    # u0 = [:X => [3.0, 9.0]]
+    # ps = [:k => [1.0, 2.0]]
+    # oprob = ODEProblem(rs, u0, (0.0, 1000.0), ps; remove_conserved = true)
+    # sol = solve(oprob, Vern7())
+    # @test sol[X[1]][end] ≈ 8.0
+    # @test sol[X[2]][end] ≈ 4.0
 end
