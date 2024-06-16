@@ -162,6 +162,7 @@ end
 
 begin 
     # Declares the model (with vector species/parameters, with/without default values, and observables).
+    t = default_t()
     @species X(t)[1:2] Y(t)[1:2] = [10.0, 20.0] XY(t)[1:2]
     @parameters p[1:2] d[1:2] = [0.2, 0.5]
     rxs = [
