@@ -158,6 +158,183 @@ let
     end
 end
 
+### Vector Species/Parameters Tests ###
+
+begin 
+    # Declares the model (with vector species/parameters, with/without default values, and observables).
+    t = default_t()
+    @species X(t)[1:2] Y(t)[1:2] = [10.0, 20.0] XY(t)[1:2]
+    @parameters p[1:2] d[1:2] = [0.2, 0.5]
+    rxs = [
+        Reaction(p[1], [], [X[1]]),
+        Reaction(p[2], [], [X[2]]),
+        Reaction(d[1], [X[1]], []),
+        Reaction(d[2], [X[2]], []),
+        Reaction(p[1], [], [Y[1]]),
+        Reaction(p[2], [], [Y[2]]),
+        Reaction(d[1], [Y[1]], []),
+        Reaction(d[2], [Y[2]], [])
+    ]
+    observed = [XY[1] ~ X[1] + Y[1], XY[2] ~ X[2] + Y[2]]
+    @named model_vec = ReactionSystem(rxs, t; observed)
+    model_vec = complete(model_vec)
+
+    # Declares various u0 versions (scalarised and vector forms).
+    u0_alts_vec = [
+        # Vectors not providing default values.
+        [X => [1.0, 2.0]],
+        [X[1] => 1.0, X[2] => 2.0],
+        [model_vec.X => [1.0, 2.0]],
+        [model_vec.X[1] => 1.0, model_vec.X[2] => 2.0],
+        [:X => [1.0, 2.0]],
+        # Vectors providing default values.
+        [X => [1.0, 2.0], Y => [10.0, 20.0]],
+        [X[1] => 1.0, X[2] => 2.0, Y[1] => 10.0, Y[2] => 20.0],
+        [model_vec.X => [1.0, 2.0], model_vec.Y => [10.0, 20.0]],
+        [model_vec.X[1] => 1.0, model_vec.X[2] => 2.0, model_vec.Y[1] => 10.0, model_vec.Y[2] => 20.0],
+        [:X => [1.0, 2.0], :Y => [10.0, 20.0]],
+        # Dicts not providing default values.
+        Dict([X => [1.0, 2.0]]),
+        Dict([X[1] => 1.0, X[2] => 2.0]),
+        Dict([model_vec.X => [1.0, 2.0]]),
+        Dict([model_vec.X[1] => 1.0, model_vec.X[2] => 2.0]),
+        Dict([:X => [1.0, 2.0]]),
+        # Dicts providing default values.
+        Dict([X => [1.0, 2.0], Y => [10.0, 20.0]]),
+        Dict([X[1] => 1.0, X[2] => 2.0, Y[1] => 10.0, Y[2] => 20.0]),
+        Dict([model_vec.X => [1.0, 2.0], model_vec.Y => [10.0, 20.0]]),
+        Dict([model_vec.X[1] => 1.0, model_vec.X[2] => 2.0, model_vec.Y[1] => 10.0, model_vec.Y[2] => 20.0]),
+        Dict([:X => [1.0, 2.0], :Y => [10.0, 20.0]]),
+        # Tuples not providing default values.
+        (X => [1.0, 2.0]),
+        (X[1] => 1.0, X[2] => 2.0),
+        (model_vec.X => [1.0, 2.0]),
+        (model_vec.X[1] => 1.0, model_vec.X[2] => 2.0),
+        (:X => [1.0, 2.0]),
+        # Tuples providing default values.
+        (X => [1.0, 2.0], Y => [10.0, 20.0]),
+        (X[1] => 1.0, X[2] => 2.0, Y[1] => 10.0, Y[2] => 20.0),
+        (model_vec.X => [1.0, 2.0], model_vec.Y => [10.0, 20.0]),
+        (model_vec.X[1] => 1.0, model_vec.X[2] => 2.0, model_vec.Y[1] => 10.0, model_vec.Y[2] => 20.0),
+        (:X => [1.0, 2.0], :Y => [10.0, 20.0]),
+    ]
+
+    # Declares various ps versions (vector forms only).
+    p_alts_vec = [
+        # Vectors not providing default values.
+        [p => [1.0, 2.0]],
+        [model_vec.p => [1.0, 2.0]],
+        [:p => [1.0, 2.0]],
+        # Vectors providing default values.
+        [p => [4.0, 5.0], d => [0.2, 0.5]],
+        [model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]],
+        [:p => [4.0, 5.0], :d => [0.2, 0.5]],
+        # Dicts not providing default values.
+        Dict([p => [1.0, 2.0]]),
+        Dict([model_vec.p => [1.0, 2.0]]),
+        Dict([:p => [1.0, 2.0]]),
+        # Dicts providing default values.
+        Dict([p => [4.0, 5.0], d => [0.2, 0.5]]),
+        Dict([model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]]),
+        Dict([:p => [4.0, 5.0], :d => [0.2, 0.5]]),
+        # Tuples not providing default values.
+        (p => [1.0, 2.0]),
+        (model_vec.p => [1.0, 2.0]),
+        (:p => [1.0, 2.0]),
+        # Tuples providing default values.
+        (p => [4.0, 5.0], d => [0.2, 0.5]),
+        (model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]),
+        (:p => [4.0, 5.0], :d => [0.2, 0.5]),
+    ]
+
+    # Declares a timespan.
+    tspan = (0.0, 10.0)
+end
+
+# Perform ODE simulations (singular and ensemble).
+let 
+    # Creates normal and ensemble problems.
+    base_oprob = ODEProblem(model_vec, u0_alts_vec[1], tspan, p_alts_vec[1])
+    base_sol = solve(base_oprob, Tsit5(); saveat = 1.0)
+    base_eprob = EnsembleProblem(base_oprob)
+    base_esol = solve(base_eprob, Tsit5(); trajectories = 2, saveat = 1.0)
+
+    # Simulates problems for all input types, checking that identical solutions are found.
+    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
+    # for u0 in u0_alts_vec, p in p_alts_vec
+    #     oprob = remake(base_oprob; u0, p)
+    #     @test base_sol == solve(oprob, Tsit5(); saveat = 1.0)
+    #     eprob = remake(base_eprob; u0, p)
+    #     @test base_esol == solve(eprob, Tsit5(); trajectories = 2, saveat = 1.0)
+    # end
+end
+
+# Perform SDE simulations (singular and ensemble).
+let 
+    # Creates normal and ensemble problems.
+    base_sprob = SDEProblem(model_vec, u0_alts_vec[1], tspan, p_alts_vec[1])
+    base_sol = solve(base_sprob, ImplicitEM(); seed, saveat = 1.0)
+    base_eprob = EnsembleProblem(base_sprob)
+    base_esol = solve(base_eprob, ImplicitEM(); seed, trajectories = 2, saveat = 1.0)
+
+    # Simulates problems for all input types, checking that identical solutions are found.
+    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
+    # for u0 in u0_alts_vec, p in p_alts_vec
+    #     sprob = remake(base_sprob; u0, p)
+    #     @test base_sol == solve(sprob, ImplicitEM(); seed, saveat = 1.0)
+    #     eprob = remake(base_eprob; u0, p)
+    #     @test base_esol == solve(eprob, ImplicitEM(); seed, trajectories = 2, saveat = 1.0)
+    # end
+end
+
+# Perform jump simulations (singular and ensemble).
+let 
+    # Creates normal and ensemble problems.
+    base_dprob = DiscreteProblem(model_vec, u0_alts_vec[1], tspan, p_alts_vec[1])
+    base_jprob = JumpProblem(model_vec, base_dprob, Direct(); rng)
+    base_sol = solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
+    base_eprob = EnsembleProblem(base_jprob)
+    base_esol = solve(base_eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
+
+    # Simulates problems for all input types, checking that identical solutions are found.
+    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
+    # for u0 in u0_alts_vec, p in p_alts_vec
+    #     jprob = remake(base_jprob; u0, p)
+    #     @test base_sol == solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
+    #     eprob = remake(base_eprob; u0, p)
+    #     @test base_esol == solve(eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
+    # end
+end
+
+# Solves a nonlinear problem (EnsembleProblems are not possible for these).
+let
+    base_nlprob = NonlinearProblem(model_vec, u0_alts_vec[1], p_alts_vec[1])
+    base_sol = solve(base_nlprob, NewtonRaphson())
+    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
+    # for u0 in u0_alts_vec, p in p_alts_vec
+    #     nlprob = remake(base_nlprob; u0, p)
+    #     @test base_sol == solve(nlprob, NewtonRaphson())
+    # end
+end
+
+# Perform steady state simulations (singular and ensemble).
+let 
+    # Creates normal and ensemble problems.
+    base_ssprob = SteadyStateProblem(model_vec, u0_alts_vec[1], p_alts_vec[1])
+    base_sol = solve(base_ssprob, DynamicSS(Tsit5()))
+    base_eprob = EnsembleProblem(base_ssprob)
+    base_esol = solve(base_eprob, DynamicSS(Tsit5()); trajectories = 2)
+
+    # Simulates problems for all input types, checking that identical solutions are found.
+    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
+    # for u0 in u0_alts_vec, p in p_alts_vec
+    #     ssprob = remake(base_ssprob; u0, p)
+    #     @test base_sol == solve(ssprob, DynamicSS(Tsit5()))
+    #     eprob = remake(base_eprob; u0, p)
+    #     @test base_esol == solve(eprob, DynamicSS(Tsit5()); trajectories = 2)
+    # end
+end
+
 ### Checks Errors On Faulty Inputs ###
 
 # Checks various erroneous problem inputs, ensuring that these throw errors.
