@@ -886,3 +886,22 @@ function treeweight(t::SimpleDiGraph, g::SimpleDiGraph, distmx::Matrix)
     end
     prod
 end
+
+### DEFICIENCY ONE
+
+"""
+    satisfiesdeficiencyone(rn::ReactionSystem)
+
+    Check if a reaction network obeys the conditions of the deficiency one theorem, which ensures that there is only one equilibrium for every positive stoichiometric compatibility class.
+"""
+
+function satisfiesdeficiencyone(rn::ReactionSystem) 
+    δ = deficiency(rn)
+    δ_l = linkagedeficiencies(rn)
+
+    complexes, D = reactioncomplexes(rn)
+    lcs = linkageclasses(rn); tslcs = terminallinkageclasses(rn)
+
+    δ_l .<= 1 && sum(δ_l) = δ && length(lcs) == length(tslcs)
+end
+
