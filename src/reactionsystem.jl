@@ -94,6 +94,8 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     complexoutgoingmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
     incidencegraph::Graphs.SimpleDiGraph{Int} = Graphs.DiGraph()
     linkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
+    stronglinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
+    terminallinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
     deficiency::Int = 0
 end
 #! format: on

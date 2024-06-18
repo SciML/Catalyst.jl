@@ -373,7 +373,7 @@ function stronglinkageclasses(rn::ReactionSystem)
     nps.stronglinkageclasses
 end
 
-stronglinkageclasses(incidencegraph) = Graphs.strongly_connected_components(g)
+stronglinkageclasses(incidencegraph) = Graphs.strongly_connected_components(incidencegraph)
 
 """
     terminallinkageclasses(rn::ReactionSystem)
@@ -382,19 +382,22 @@ stronglinkageclasses(incidencegraph) = Graphs.strongly_connected_components(g)
 """
 
 function terminallinkageclasses(rn::ReactionSystem) 
-    slcs = stronglinkageclasses(rn)
-
-    tslcs = filter!(slcs, lc->isterminal(lc))
-    tslcs
+    nps = get_networkproperties(rn)
+    if isempty(nps.terminallinkageclasses)
+        slcs = stronglinkageclasses(rn)
+        tslcs = filter(lc->isterminal(lc, rn), slcs)
+        nps.terminallinkageclasses = tslcs
+    end
+    nps.terminallinkageclasses
 end
 
 function isterminal(lc::Vector, rn::ReactionSystem) 
     imat = incidencemat(rn)
 
-    for col in columns(imat)
-        s = findfirst(==(-1), @view D[:, r])
+    for r in 1:size(imat, 2)
+        s = findfirst(==(-1), @view imat[:, r])
         if s in Set(lc)
-            p = findfirst(==(1), @view D[:, r])
+            p = findfirst(==(1), @view imat[:, r])
             p in Set(lc) ? continue : return false
         end
     end
