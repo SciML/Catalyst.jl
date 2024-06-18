@@ -359,6 +359,48 @@ end
 
 linkageclasses(incidencegraph) = Graphs.connected_components(incidencegraph)
 
+"""
+    stronglinkageclasses(rn::ReactionSystem)
+
+    Return the strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes such that every complex is reachable from every other one in the sub-group).
+"""
+
+function stronglinkageclasses(rn::ReactionSystem) 
+    nps = get_networkproperties(rn)
+    if isempty(nps.stronglinkageclasses)
+        nps.stronglinkageclasses = stronglinkageclasses(incidencematgraph(rn))
+    end
+    nps.stronglinkageclasses
+end
+
+stronglinkageclasses(incidencegraph) = Graphs.strongly_connected_components(g)
+
+"""
+    terminallinkageclasses(rn::ReactionSystem)
+
+    Return the terminal strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes that are 1) strongly connected and 2) every reaction in the component produces a complex in the component).
+"""
+
+function terminallinkageclasses(rn::ReactionSystem) 
+    slcs = stronglinkageclasses(rn)
+
+    tslcs = filter!(slcs, lc->isterminal(lc))
+    tslcs
+end
+
+function isterminal(lc::Vector, rn::ReactionSystem) 
+    imat = incidencemat(rn)
+
+    for col in columns(imat)
+        s = findfirst(==(-1), @view D[:, r])
+        if s in Set(lc)
+            p = findfirst(==(1), @view D[:, r])
+            p in Set(lc) ? continue : return false
+        end
+    end
+    true
+end
+
 @doc raw"""
     deficiency(rn::ReactionSystem)
 
@@ -925,6 +967,7 @@ end
     See documentation for [`cycles`](@ref). 
 """
 
-function fluxvectors(rs::ReactionSystem) 
+function fluxmodebasis(rs::ReactionSystem) 
     cycles(rs)
 end
+
