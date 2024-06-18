@@ -117,7 +117,7 @@ let
     jump_3_5 = ConstantRateJump(rate_3_5, affect_3_5!)
     jump_3_6 = ConstantRateJump(rate_3_6, affect_3_6!)
     jumps_3 = (jump_3_1, jump_3_2, jump_3_3, jump_3_4, jump_3_5, jump_3_6)
-    push!(catalyst_networks, reaction_networks_constraint[5])
+    push!(catalyst_networks, reaction_networks_conserved[5])
     push!(manual_networks, jumps_3)
     push!(u0_syms, [:X1, :X2, :X3, :X4])
     push!(ps_syms, [:k1, :k2, :k3, :k4, :k5, :k6])
