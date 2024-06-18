@@ -404,3 +404,29 @@ let
     @test issubset([[1,2], [3,4], [5,6,7]], slcs)
     @test issubset([[3,4], [5,6,7]], tslcs) 
 end
+
+### CONCENTRATION ROBUSTNESS TESTS
+
+let
+    IDHKP_IDH = @reaction_network begin
+        (k1, k2), EIp + I <--> EIpI
+        k3, EIpI --> EIp + Ip
+        (k4, k5), E + Ip <--> EIp
+        k6, EIp --> E + I
+    end
+
+    @test Catalyst.robustspecies(IDHKP_IDH) == [2]
+end
+
+let
+    EnvZ_OmpR = @reaction_network begin
+        (k1, k2), X <--> XT
+        k3, XT --> Xp
+        (k4, k5), Xp + Y <--> XpY
+        k6, XpY --> X + Yp
+        (k7, k8), XT + Yp <--> XTYp
+        k9, XTYp --> XT + Y
+    end
+
+    @test Catalyst.robustspecies(EnvZ_OmpR) == [6]
+end

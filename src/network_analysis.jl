@@ -931,3 +931,49 @@ function treeweight(t::SimpleDiGraph, g::SimpleDiGraph, distmx::Matrix)
     end
     prod
 end
+
+### Deficiency one
+
+"""
+    satisfiesdeficiencyone(rn::ReactionSystem)
+
+    Check if a reaction network obeys the conditions of the deficiency one theorem, which ensures that there is only one equilibrium for every positive stoichiometric compatibility class.
+"""
+
+function satisfiesdeficiencyone(rn::ReactionSystem) 
+    complexes, D = reactioncomplexes(rn)
+    δ = deficiency(rn)
+    δ_l = linkagedeficiencies(rn)
+
+    lcs = linkageclasses(rn); tslcs = terminallinkageclasses(rn)
+
+    all(<=(1), δ_l) && sum(δ_l) == δ && length(lcs) == length(tslcs)
+end
+
+#function deficiencyonealgorithm() 
+    
+#end
+
+function robustspecies(rn::ReactionSystem) 
+    complexes, D = reactioncomplexes(rn)
+    
+    if deficiency(rn) != 1
+        error("This algorithm only checks for robust species in networks with deficiency one.")
+    end
+    
+    tslcs = terminallinkageclasses(rn)
+    Z = complexstoichmat(rn)
+    nonterminal_complexes = deleteat!([1:length(complexes);], vcat(tslcs...))
+    robust_species = Int64[]
+
+    for (c_s, c_p) in collect(Combinatorics.combinations(nonterminal_complexes, 2))
+        supp = findall(!=(0), Z[:,c_s] - Z[:,c_p])
+        length(supp) == 1 && supp[1] ∉ robust_species && push!(robust_species, supp...)
+    end
+    robust_species
+end
+
+function isconcentrationrobust(rn::ReactionSystem, species::Int) 
+    robust_species = robustspecies(rn)
+    return species in robust_species
+end
