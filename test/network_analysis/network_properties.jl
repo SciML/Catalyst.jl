@@ -326,3 +326,81 @@ let
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
 
+### STRONG LINKAGE CLASS TESTS
+
+let
+    rn = @reaction_network begin
+        (k1, k2), A <--> B + C
+        k3, B + C --> D
+        k4, D --> E
+        (k5, k6), E <--> 2F
+        k7, 2F --> D
+        (k8, k9), D + E <--> G
+    end
+
+    rcs, D = reactioncomplexes(rn)
+    slcs = stronglinkageclasses(rn)
+    tslcs = terminallinkageclasses(rn)
+    @test length(slcs) == 3
+    @test length(tslcs) == 2
+    @test issubset([[1,2], [3,4,5], [6,7]], slcs)
+    @test issubset([[3,4,5], [6,7]], tslcs) 
+end
+
+let
+    rn = @reaction_network begin
+        (k1, k2), A <--> B + C
+        k3, B + C --> D
+        k4, D --> E
+        (k5, k6), E <--> 2F
+        k7, 2F --> D
+        (k8, k9), D + E --> G
+    end
+
+    rcs, D = reactioncomplexes(rn)
+    slcs = stronglinkageclasses(rn)
+    tslcs = terminallinkageclasses(rn)
+    @test length(slcs) == 4
+    @test length(tslcs) == 2
+    @test issubset([[1,2], [3,4,5], [6], [7]], slcs)
+    @test issubset([[3,4,5], [7]], tslcs) 
+end
+
+let
+    rn = @reaction_network begin
+        (k1, k2), A <--> B + C
+        (k3, k4), B + C <--> D
+        k5, D --> E
+        (k6, k7), E <--> 2F
+        k8, 2F --> D
+        (k9, k10), D + E <--> G
+    end
+
+    rcs, D = reactioncomplexes(rn)
+    slcs = stronglinkageclasses(rn)
+    tslcs = terminallinkageclasses(rn)
+    @test length(slcs) == 2
+    @test length(tslcs) == 2
+    @test issubset([[1,2,3,4,5], [6,7]], slcs)
+    @test issubset([[1,2,3,4,5], [6,7]], tslcs) 
+end
+
+let
+    rn = @reaction_network begin
+        (k1, k2), A <--> 2B 
+        k3, A --> C + D
+        (k4, k5), C + D <--> E
+        k6, 2B --> F
+        (k7, k8), F <--> 2G
+        (k9, k10), 2G <--> H
+        k11, H --> F
+    end
+
+    rcs, D = reactioncomplexes(rn)
+    slcs = stronglinkageclasses(rn)
+    tslcs = terminallinkageclasses(rn)
+    @test length(slcs) == 3
+    @test length(tslcs) == 2
+    @test issubset([[1,2], [3,4], [5,6,7]], slcs)
+    @test issubset([[3,4], [5,6,7]], tslcs) 
+end
