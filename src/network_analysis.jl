@@ -950,21 +950,20 @@ function satisfiesdeficiencyone(rn::ReactionSystem)
     all(<=(1), δ_l) && sum(δ_l) == δ && length(lcs) == length(tslcs)
 end
 
-#function deficiencyonealgorithm() 
-    
+#function deficiencyonealgorithm(rn::ReactionSystem) 
 #end
 
 function robustspecies(rn::ReactionSystem) 
     complexes, D = reactioncomplexes(rn)
+    robust_species = Int64[]
     
     if deficiency(rn) != 1
-        error("This algorithm only checks for robust species in networks with deficiency one.")
+        error("This method currently only checks for robust species in networks with deficiency one.")
     end
     
     tslcs = terminallinkageclasses(rn)
     Z = complexstoichmat(rn)
     nonterminal_complexes = deleteat!([1:length(complexes);], vcat(tslcs...))
-    robust_species = Int64[]
 
     for (c_s, c_p) in collect(Combinatorics.combinations(nonterminal_complexes, 2))
         supp = findall(!=(0), Z[:,c_s] - Z[:,c_p])
@@ -976,4 +975,19 @@ end
 function isconcentrationrobust(rn::ReactionSystem, species::Int) 
     robust_species = robustspecies(rn)
     return species in robust_species
+end
+
+function hasuniqueequilibria(rn::ReactionSystem) 
+    nps = get_networkproperties(rn)
+    complexes, D = reactioncomplexes(rn)
+    δ = deficiency(rn)
+    concordant = isconcordant(rn)
+
+    δ == 0 && return true 
+    satisfiesdeficiencyone(rn) && return true 
+    concordant && return true
+    !concordant && CNA.ispositivelydependent(rn) && return false
+    δ == 1 && return deficiencyonealgorithm(rn)
+    
+    error("The network is discordant and high deficiency, but it is inconclusive whether the network will have multiple equilibria.")
 end
