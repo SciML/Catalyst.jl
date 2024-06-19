@@ -365,7 +365,7 @@ linkageclasses(incidencegraph) = Graphs.connected_components(incidencegraph)
     Return the strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes such that every complex is reachable from every other one in the sub-group).
 """
 
-function stronglinkageclasses(rn::ReactionSystem) 
+function stronglinkageclasses(rn::ReactionSystem)
     nps = get_networkproperties(rn)
     if isempty(nps.stronglinkageclasses)
         nps.stronglinkageclasses = stronglinkageclasses(incidencematgraph(rn))
@@ -381,17 +381,17 @@ stronglinkageclasses(incidencegraph) = Graphs.strongly_connected_components(inci
     Return the terminal strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes that are 1) strongly connected and 2) every reaction in the component produces a complex in the component).
 """
 
-function terminallinkageclasses(rn::ReactionSystem) 
+function terminallinkageclasses(rn::ReactionSystem)
     nps = get_networkproperties(rn)
     if isempty(nps.terminallinkageclasses)
         slcs = stronglinkageclasses(rn)
-        tslcs = filter(lc->isterminal(lc, rn), slcs)
+        tslcs = filter(lc -> isterminal(lc, rn), slcs)
         nps.terminallinkageclasses = tslcs
     end
     nps.terminallinkageclasses
 end
 
-function isterminal(lc::Vector, rn::ReactionSystem) 
+function isterminal(lc::Vector, rn::ReactionSystem)
     imat = incidencemat(rn)
 
     for r in 1:size(imat, 2)
@@ -940,40 +940,41 @@ end
     Check if a reaction network obeys the conditions of the deficiency one theorem, which ensures that there is only one equilibrium for every positive stoichiometric compatibility class.
 """
 
-function satisfiesdeficiencyone(rn::ReactionSystem) 
+function satisfiesdeficiencyone(rn::ReactionSystem)
     complexes, D = reactioncomplexes(rn)
     δ = deficiency(rn)
     δ_l = linkagedeficiencies(rn)
 
-    lcs = linkageclasses(rn); tslcs = terminallinkageclasses(rn)
+    lcs = linkageclasses(rn)
+    tslcs = terminallinkageclasses(rn)
 
     all(<=(1), δ_l) && sum(δ_l) == δ && length(lcs) == length(tslcs)
 end
 
 #function deficiencyonealgorithm() 
-    
+
 #end
 
-function robustspecies(rn::ReactionSystem) 
+function robustspecies(rn::ReactionSystem)
     complexes, D = reactioncomplexes(rn)
-    
+
     if deficiency(rn) != 1
         error("This algorithm only checks for robust species in networks with deficiency one.")
     end
-    
+
     tslcs = terminallinkageclasses(rn)
     Z = complexstoichmat(rn)
     nonterminal_complexes = deleteat!([1:length(complexes);], vcat(tslcs...))
     robust_species = Int64[]
 
     for (c_s, c_p) in collect(Combinatorics.combinations(nonterminal_complexes, 2))
-        supp = findall(!=(0), Z[:,c_s] - Z[:,c_p])
+        supp = findall(!=(0), Z[:, c_s] - Z[:, c_p])
         length(supp) == 1 && supp[1] ∉ robust_species && push!(robust_species, supp...)
     end
     robust_species
 end
 
-function isconcentrationrobust(rn::ReactionSystem, species::Int) 
+function isconcentrationrobust(rn::ReactionSystem, species::Int)
     robust_species = robustspecies(rn)
     return species in robust_species
 end
