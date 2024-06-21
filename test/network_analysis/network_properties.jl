@@ -430,3 +430,59 @@ let
 
     @test Catalyst.robustspecies(EnvZ_OmpR) == [6]
 end
+
+### DEFICIENCY ONE TESTS
+
+
+let # fails because there are two terminal linkage classes in the linkage class
+    rn = @reaction_network begin
+        k1, A + B --> 2B
+        k2, A + B --> 2A
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == false
+end
+
+
+let # fails because linkage deficiencies do not sum to total deficiency
+    rn = @reaction_network begin
+        (k1, k2), A <--> 2A
+        (k3, k4), A + B <--> C
+        (k5, k6), C <--> B 
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == false
+end
+
+let # fails because a linkage class has deficiency two
+    rn = @reaction_network begin
+        k1, 3A --> A + 2B
+        k2, A + 2B --> 3B
+        k3, 3B --> 2A + B
+        k4, 2A + B --> 3A
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == false
+end
+
+let
+    rn = @reaction_network begin
+        (k1, k2), 2A <--> D
+        (k3, k4), D <--> A + B
+        (k5, k6), A + B <--> C
+        (k7, k8), C <--> 2B
+        (k9, k10), C + D <--> E + F
+        (k11, k12), E + F <--> H
+        (k13, k14), H <--> C + E
+        (k15, k16), C + E <--> D + F
+        (k17, k18), A + D <--> G
+        (k19, k20), G <--> B + H
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == true
+end
+
+
+
+
+

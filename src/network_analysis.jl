@@ -951,15 +951,11 @@ function satisfiesdeficiencyone(rn::ReactionSystem)
     all(<=(1), δ_l) && sum(δ_l) == δ && length(lcs) == length(tslcs)
 end
 
-#function deficiencyonealgorithm() 
-
-#end
-
 function robustspecies(rn::ReactionSystem)
     complexes, D = reactioncomplexes(rn)
 
     if deficiency(rn) != 1
-        error("This algorithm only checks for robust species in networks with deficiency one.")
+        error("This algorithm currently only checks for robust species in networks with deficiency one.")
     end
 
     tslcs = terminallinkageclasses(rn)
