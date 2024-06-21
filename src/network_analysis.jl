@@ -1042,3 +1042,31 @@ function hasuniqueequilibria(rn::ReactionSystem)
     
     error("The network is discordant and high deficiency, but it is inconclusive whether the network will have multiple equilibria.")
 end
+
+
+### CONCORDANCE 
+
+function isconcordant(rn::ReactionSystem) 
+    
+end
+
+function isstronglyconcordant(rn::ReactionSystem) 
+    
+end
+
+function isdegenerate(rn::ReactionSystem) 
+    
+end
+
+function fullyopenextension(rn::ReactionSystem) 
+    
+end
+
+function speciesreactiongraph(rn::ReactionSystem) 
+    s = numspecies(rn); sm = speciesmap(rn)
+    r = numreactions(rn); 
+
+    G = Digraph(s+r)
+    adj = zeros(s+r, s+r)
+   
+end
