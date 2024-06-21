@@ -954,12 +954,12 @@ end
 function robustspecies(rn::ReactionSystem)
     complexes, D = reactioncomplexes(rn)
     nps = get_networkproperties(rn)
-    
+
     if deficiency(rn) != 1
         error("This algorithm currently only checks for robust species in networks with deficiency one.")
     end
 
-    if isempty(nps.robustspecies) 
+    if isempty(nps.robustspecies)
         tslcs = terminallinkageclasses(rn)
         Z = complexstoichmat(rn)
         nonterminal_complexes = deleteat!([1:length(complexes);], vcat(tslcs...))
