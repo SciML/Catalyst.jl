@@ -953,21 +953,26 @@ end
 
 function robustspecies(rn::ReactionSystem)
     complexes, D = reactioncomplexes(rn)
-
+    nps = get_networkproperties(rn)
+    
     if deficiency(rn) != 1
         error("This algorithm currently only checks for robust species in networks with deficiency one.")
     end
 
-    tslcs = terminallinkageclasses(rn)
-    Z = complexstoichmat(rn)
-    nonterminal_complexes = deleteat!([1:length(complexes);], vcat(tslcs...))
-    robust_species = Int64[]
+    if isempty(nps.robustspecies) 
+        tslcs = terminallinkageclasses(rn)
+        Z = complexstoichmat(rn)
+        nonterminal_complexes = deleteat!([1:length(complexes);], vcat(tslcs...))
+        robust_species = Int64[]
 
-    for (c_s, c_p) in collect(Combinatorics.combinations(nonterminal_complexes, 2))
-        supp = findall(!=(0), Z[:, c_s] - Z[:, c_p])
-        length(supp) == 1 && supp[1] ∉ robust_species && push!(robust_species, supp...)
+        for (c_s, c_p) in collect(Combinatorics.combinations(nonterminal_complexes, 2))
+            supp = findall(!=(0), Z[:, c_s] - Z[:, c_p])
+            length(supp) == 1 && supp[1] ∉ robust_species && push!(robust_species, supp...)
+        end
+        nps.robustspecies = robust_species
     end
-    robust_species
+
+    nps.robustspecies
 end
 
 function isconcentrationrobust(rn::ReactionSystem, species::Int)
