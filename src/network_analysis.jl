@@ -1028,6 +1028,8 @@ function robustspecies(rn::ReactionSystem)
     nps.robustspecies
 end
 
+"""
+"""
 function hasuniqueequilibria(rn::ReactionSystem) 
     nps = get_networkproperties(rn)
     complexes, D = reactioncomplexes(rn)
@@ -1040,7 +1042,7 @@ function hasuniqueequilibria(rn::ReactionSystem)
     !concordant && CNA.ispositivelydependent(rn) && return false
     δ == 1 && return deficiencyonealgorithm(rn)
     
-    error("The network is discordant and high deficiency, but it is inconclusive whether the network will have multiple equilibria.")
+    error("The network is discordant and high deficiency, but this function currently cannot conclude whether the network has the potential to have multiple equilibria.")
 end
 
 
