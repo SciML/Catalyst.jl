@@ -391,7 +391,6 @@ function terminallinkageclasses(rn::ReactionSystem)
     nps.terminallinkageclasses
 end
 
-
 # Check whether a given linkage class in a reaction network is terminal, i.e. all outgoing reactions from complexes in the linkage class produce a complex also in hte linkage class
 function isterminal(lc::Vector, rn::ReactionSystem)
     imat = incidencemat(rn)
@@ -961,7 +960,6 @@ function satisfiesdeficiencyone(rn::ReactionSystem)
     all(<=(1), δ_l) && sum(δ_l) == δ && length(lcs) == length(tslcs)
 end
 
-
 """
     robustspecies(rn::ReactionSystem)
 
@@ -977,7 +975,7 @@ function robustspecies(rn::ReactionSystem)
     end
 
     # A species is concnetration robust in a deficiency one network if there are two non-terminal complexes (i.e. complexes belonging to a linkage class that is not terminal) that differ only in species s (i.e. their difference is some multiple of s. (A + B, A) differ only in B. (A + 2B, B) differ in both A and B, since A + 2B - B = A + B). 
-    if !nps.checkedrobust 
+    if !nps.checkedrobust
         tslcs = terminallinkageclasses(rn)
         Z = complexstoichmat(rn)
         # Find the complexes that do not belong to a terminal linkage class 
@@ -1001,7 +999,7 @@ end
     isconcentrationrobust(rn::ReactionSystem, species::Int)
 
     Given a reaction network and an index of a species, check if that species is concentration robust. 
-"""    
+"""
 
 function isconcentrationrobust(rn::ReactionSystem, species::Int)
     robust_species = robustspecies(rn)
