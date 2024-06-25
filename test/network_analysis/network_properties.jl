@@ -412,6 +412,8 @@ end
 
 ### CONCENTRATION ROBUSTNESS TESTS
 
+# Check whether concentration-robust species are correctly identified for two well-known reaction networks: the glyoxylate IDHKP-IDH system, and the EnvZ_OmpR signaling pathway. 
+
 let
     IDHKP_IDH = @reaction_network begin
         (k1, k2), EIp + I <--> EIpI
@@ -440,8 +442,8 @@ end
 
 ### DEFICIENCY ONE TESTS
 
-
-let # fails because there are two terminal linkage classes in the linkage class
+# Fails because there are two terminal linkage classes in the linkage class
+let 
     rn = @reaction_network begin
         k1, A + B --> 2B
         k2, A + B --> 2A
@@ -450,8 +452,8 @@ let # fails because there are two terminal linkage classes in the linkage class
     @test Catalyst.satisfiesdeficiencyone(rn) == false
 end
 
-
-let # fails because linkage deficiencies do not sum to total deficiency
+# Fails because linkage deficiencies do not sum to total deficiency
+let 
     rn = @reaction_network begin
         (k1, k2), A <--> 2A
         (k3, k4), A + B <--> C
@@ -461,7 +463,8 @@ let # fails because linkage deficiencies do not sum to total deficiency
     @test Catalyst.satisfiesdeficiencyone(rn) == false
 end
 
-let # fails because a linkage class has deficiency two
+# Fails because a linkage class has deficiency two
+let 
     rn = @reaction_network begin
         k1, 3A --> A + 2B
         k2, A + 2B --> 3B

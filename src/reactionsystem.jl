@@ -96,8 +96,10 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     linkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
     stronglinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
     terminallinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
+
+    checkedrobust::Bool = false 
     robustspecies::Vector{Int} = Vector{Int}(undef, 0)
-    deficiency::Int = 0
+    deficiency::Int = -1 
 end
 #! format: on
 
