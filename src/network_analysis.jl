@@ -378,7 +378,7 @@ stronglinkageclasses(incidencegraph) = Graphs.strongly_connected_components(inci
 """
     terminallinkageclasses(rn::ReactionSystem)
 
-    Return the terminal strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes that are 1) strongly connected and 2) every reaction in the component produces a complex in the component).
+    Return the terminal strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes that are 1) strongly connected and 2) every outgoing reaction from a complex in the component produces a complex also in the component).
 """
 
 function terminallinkageclasses(rn::ReactionSystem)
@@ -391,11 +391,16 @@ function terminallinkageclasses(rn::ReactionSystem)
     nps.terminallinkageclasses
 end
 
+
+# Check whether a given linkage class in a reaction network is terminal, i.e. all outgoing reactions from complexes in the linkage class produce a complex also in hte linkage class
 function isterminal(lc::Vector, rn::ReactionSystem)
     imat = incidencemat(rn)
 
     for r in 1:size(imat, 2)
+        # Find the index of the reactant complex for a given reaction
         s = findfirst(==(-1), @view imat[:, r])
+
+        # If the reactant complex is in the linkage class, check whether the product complex is also in the linkage class. If any of them are not, return false. 
         if s in Set(lc)
             p = findfirst(==(1), @view imat[:, r])
             p in Set(lc) ? continue : return false
