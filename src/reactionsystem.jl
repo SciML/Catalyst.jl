@@ -78,6 +78,7 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     isempty::Bool = true
     netstoichmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
     conservationmat::Matrix{I} = Matrix{I}(undef, 0, 0)
+    cyclemat::Matrix{I} = Matrix{I}(undef, 0, 0)
     col_order::Vector{Int} = Int[]
     rank::Int = 0
     nullity::Int = 0
@@ -93,6 +94,8 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     complexoutgoingmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
     incidencegraph::Graphs.SimpleDiGraph{Int} = Graphs.DiGraph()
     linkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
+    stronglinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
+    terminallinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
     deficiency::Int = 0
 end
 #! format: on
