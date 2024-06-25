@@ -328,6 +328,8 @@ end
 
 ### STRONG LINKAGE CLASS TESTS
 
+
+# a) Checks that strong/terminal linkage classes are correctly found. Should identify the (A, B+C) linkage class as non-terminal, since B + C produces D
 let
     rn = @reaction_network begin
         (k1, k2), A <--> B + C
@@ -347,6 +349,7 @@ let
     @test issubset([[3,4,5], [6,7]], tslcs) 
 end
 
+# b) Makes the D + E --> G reaction irreversible. Thus, (D+E) becomes a non-terminal linkage class. Checks whether correctly identifies both (A, B+C) and (D+E) as non-terminal 
 let
     rn = @reaction_network begin
         (k1, k2), A <--> B + C
@@ -366,6 +369,7 @@ let
     @test issubset([[3,4,5], [7]], tslcs) 
 end
 
+# From a), makes the B + C <--> D reaction reversible. Thus, the non-terminal (A, B+C) linkage class gets absorbed into the terminal (A, B+C, D, E, 2F) linkage class, and the terminal linkage classes and strong linkage classes coincide. 
 let
     rn = @reaction_network begin
         (k1, k2), A <--> B + C
@@ -385,6 +389,7 @@ let
     @test issubset([[1,2,3,4,5], [6,7]], tslcs) 
 end
 
+# Simple test for strong and terminal linkage classes
 let
     rn = @reaction_network begin
         (k1, k2), A <--> 2B 
