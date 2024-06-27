@@ -54,12 +54,12 @@ The two-state model describes a component (here called $X$) which can exist in t
 ```@example crn_library_two_states
 using Catalyst, OrdinaryDiffEq, StochasticDiffEq, Plots
 two_state_model = @reaction_network begin
-    (k1,k2), X₁ <--> X₂
+    (k₁,k₂), X₁ <--> X₂
 end
 
 u0 = [:X₁ => 50.0, :X₂ => 50.0]
 tspan = (0.0, 1.0)
-ps = [:k1 => 2.0, :k2 => 3.0]
+ps = [:k₁ => 2.0, :k₂ => 3.0]
 
 oprob = ODEProblem(two_state_model, u0, tspan, ps)
 osol = solve(oprob)
