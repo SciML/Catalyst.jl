@@ -185,7 +185,7 @@ it undergoes cell division. First, we declare our model:
 ```julia
 using Catalyst
 cell_model = @reaction_network begin
-    @parameters Vₘₐₓ g Ω
+    @parameters Vₘ g Ω
     @default_noise_scaling Ω
     @equations begin
         D(V) ~ g*Gᴾ
