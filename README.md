@@ -68,7 +68,6 @@ be found in its corresponding research paper, [Catalyst: Fast and flexible model
  ODE models, and symbolic expressions for stoichiometric coefficients [are supported](@ref ref) for
  all system types.
 - A [network analysis suite](@ref ref) permits the computation of linkage classes, deficiencies, reversibility, and other network properties.
- reversibilities.
 - [Conservation laws can be detected and utilized](@ref ref) to reduce system sizes, and to generate
  non-singular Jacobians (e.g. during conversion to ODEs, SDEs, and steady state equations).
 - Catalyst reaction network models can be [coupled with differential and algebraic equations](@ref ref)
