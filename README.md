@@ -181,7 +181,7 @@ model describes how the volume of a cell ($V$) is affected by a growth factor ($
 factor only promotes growth while in its phosphorylated form ($Gᴾ$). The phosphorylation of $G$ 
 ($G \to Gᴾ$) is promoted by sunlight (modeled as the cyclic sinusoid $kₐ*(sin(t)+1)$), which
 phosphorylates the growth factor (producing $Gᴾ$). When the cell reaches a critical volume ($V$)
-it undergoes through cell division. First, we declare our model:
+it undergoes cell division. First, we declare our model:
 ```julia
 using Catalyst
 cell_model = @reaction_network begin
