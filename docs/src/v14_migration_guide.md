@@ -114,7 +114,7 @@ using Catalyst
 @variables t
 nothing # hide
 ```
-A new, preferred, interface has now been introduced:
+MTKv9 has introduced a standard global time variable, and as such a new, preferred, interface has been developed:
 ```@example v14_migration_3
 t = default_t()
 nothing # hide
