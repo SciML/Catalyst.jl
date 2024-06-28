@@ -87,8 +87,7 @@ be found in its corresponding research paper, [Catalyst: Fast and flexible model
 #### Features of Catalyst composing with other packages
 - [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) Can be used to numerically solver generated reaction rate equation ODE models.
 - [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) can be used to numerically solve generated Chemical Langevin Equation SDE models.
-- [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) Can be used to [model jump 
- simulations](@ref ref).
+- [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) can be used to numerically sample generated Stochastic Chemical Kinetics Jump Process models.
 - Support for [parallelization of all simulations](@ref ref), including parallelization of 
  [ODE simulations on GPUs](@ref ref) using
  [DiffEqGPU.jl](https://github.com/SciML/DiffEqGPU.jl).
