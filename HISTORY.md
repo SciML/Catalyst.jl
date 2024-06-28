@@ -15,7 +15,15 @@ Catalyst v14 was prompted by the (breaking) release of ModelingToolkit v9, which
 - To be more consistent with ModelingToolkit's immutability requirement for systems, we have removed API functions that mutate `ReactionSystem`s such as `addparam!`, `addreaction!`, `addspecies`, `@add_reactions`, and `merge!`. Please use `ModelingToolkit.extend` and `ModelingToolkit.compose` to generate new merged and/or composed `ReactionSystem`s from multiple component systems.
 
 #### General changes
-- The `default_t()` and `default_time_deriv()` functions are now the preferred approaches for creating the default time independent variable and its differential.
+- The `default_t()` and `default_time_deriv()` functions are now the preferred approaches for creating the default time independent variable and its differential. i.e. 
+  ```julia
+  # do
+  t = default_t()
+  @species A(t)
+
+  # avoid
+  @variables t
+  @species A(t)
 - It is now possible to add metadata to individual reactions, e.g. using:
 ```julia
 rn = @reaction_network begin
