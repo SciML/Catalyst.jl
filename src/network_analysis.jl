@@ -765,7 +765,48 @@ end
 """
     iscomplexbalanced(rs::ReactionSystem, parametermap)
 
-Constructively compute whether a network will have complex-balanced equilibrium
+Constructively compute whether a kinetic system (a reaction network with a set of rate constants) will admit detailed-balanced equilibrium
+solutions, using the Wegscheider conditions, [. A detailed-balanced solution is one for which the rate of every forward reaction exactly equals its reverse reaction. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
+"""
+
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict) 
+    if length(parametermap) != numparams(rs)
+        error("Incorrect number of parameters specified.")
+    elseif !isreversible(rs)
+        return false
+    elseif !all(r -> ismassaction(r, rs), reactions(rs))
+        error("The supplied ReactionSystem has reactions that are not ismassaction. Testing for being complex balanced is currently only supported for pure mass action networks.")
+    end
+
+    pmap = symmap_to_varmap(rs, parametermap)
+    pmap = Dict(ModelingToolkit.value(k) => v for (k, v) in pmap)
+    
+    sm = speciesmap(rs)
+    cm = reactioncomplexmap(rs)
+    complexes, D = reactioncomplexes(rs)
+    rxns = reactions(rs)
+    nc = length(complexes); nr = numreactions(rs); nm = numspecies(rs)
+end
+
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Vector{Pair{Symbol, Float64}})
+    pdict = Dict(parametermap)
+    isdetailedbalanced(rs, pdict)
+end
+
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Tuple{Pair{Symbol, Float64}})
+    pdict = Dict(parametermap)
+    isdetailedbalanced(rs, pdict)
+end
+
+function isdetailedbalanced(rs::ReactionSystem, parametermap)
+    error("Parameter map must be a dictionary, tuple, or vector of symbol/value pairs.")
+end
+
+
+"""
+    iscomplexbalanced(rs::ReactionSystem, parametermap)
+
+Constructively compute whether a kinetic system (a reaction network with a set of rate constants) will admit complex-balanced equilibrium
 solutions, following the method in van der Schaft et al., [2015](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
 
@@ -977,47 +1018,3 @@ function isconcentrationrobust(rn::ReactionSystem, species::Int)
     return species in robust_species
 end
 
-"""
-"""
-function hasuniqueequilibria(rn::ReactionSystem) 
-    nps = get_networkproperties(rn)
-    complexes, D = reactioncomplexes(rn)
-    δ = deficiency(rn)
-    concordant = isconcordant(rn)
-
-    δ == 0 && return true 
-    satisfiesdeficiencyone(rn) && return true 
-    concordant && return true
-    !concordant && CNA.ispositivelydependent(rn) && return false
-    δ == 1 && return deficiencyonealgorithm(rn)
-    
-    error("The network is discordant and high deficiency, but this function currently cannot conclude whether the network has the potential to have multiple equilibria.")
-end
-
-
-### CONCORDANCE 
-
-function isconcordant(rn::ReactionSystem) 
-    
-end
-
-function isstronglyconcordant(rn::ReactionSystem) 
-    
-end
-
-function isdegenerate(rn::ReactionSystem) 
-    
-end
-
-function fullyopenextension(rn::ReactionSystem) 
-    
-end
-
-function speciesreactiongraph(rn::ReactionSystem) 
-    s = numspecies(rn); sm = speciesmap(rn)
-    r = numreactions(rn); 
-
-    G = Digraph(s+r)
-    adj = zeros(s+r, s+r)
-   
-end
