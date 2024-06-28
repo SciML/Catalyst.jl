@@ -8,7 +8,7 @@
 Catalyst v14 was prompted by the (breaking) release of ModelingToolkit v9, which introduced several breaking changes to Catalyst. A summary of these (and how to handle them) can be found [here](https://docs.sciml.ai/Catalyst/stable/v14_migration_guide/). These are briefly summarised in the following bullet points:
 - `ReactionSystem`s must now be marked *complete* before they are exposed to most forms of simulation and analysis. With the exception of `ReactionSystem`s created through the `@reaction_network` macro, all `ReactionSystem`s are *not* marked complete upon construction. The `complete` function can be used to mark  `ReactionSystem`s as complete. To construct a `ReactionSystem` that is not marked complete via the DSL the new `@network_component` macro can be used.
 - The `states` function has been replaced with `unknowns`. The `get_states` function has been replaced with `get_unknowns`.
-- Support for most units (with the exception of `s`, `m`, `kg`, `A`, `K`, `mol`, and `cd`) has been dropped until further notice.
+- Support for most units (with the exception of `s`, `m`, `kg`, `A`, `K`, `mol`, and `cd`) has currently been dropped by ModelingToolkit, and hence they are unavailable via Catalyst too. Its is expected that eventually support for relevant chemical units such as molar will return to ModelingToolkit (and should then immediately work in Catalyst too).
 - Problem parameter values are now accessed through `prob.ps[p]` (rather than `prob[p]`).
 - A significant bug prevents the safe application of the `remake` function on problems for which `remove_conserved = true` was used.
 - The `reactionparams`, `numreactionparams`, and `reactionparamsmap` functions have been removed.
