@@ -65,7 +65,7 @@ plot(sol)
 ```
 
 ## Unknowns instead of states
-Previously, "states" was used as a term for system variables (both species and non-species variables). Now, the term "unknowns" will be used instead. This means that there have been a number of changes to function names (e.g. `states` => `unknowns` and `get_states` => `get_unknowns`). 
+Previously, "states" was used as a term for system variables (both species and non-species variables). MTKv9 has switched to using the term "unknowns" instead. This means that there have been a number of changes to function names (e.g. `states` => `unknowns` and `get_states` => `get_unknowns`). 
 
 E.g. here we declare a `ReactionSystem` model containing both species and non-species unknowns:
 ```@example v14_migration_2
