@@ -174,7 +174,7 @@ oprob = ODEProblem(rn, u0, (0.0, 10.0), ps; remove_conserved = true)
 sol(oprob)
 # hide
 ```
-is perfectly fine, attempting to then modify `oprob` (in any manner!) is not possible:
+is perfectly fine, attempting to then modify any initial conditions or the value of the conservation constant in `oprob` will silently fail:
 ```@example v14_migration_5
 oprob_remade = remake(oprob; u0 = [:X1 => 5.0]) # NEVER do this.
 sol(oprob)
