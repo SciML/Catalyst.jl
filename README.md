@@ -230,11 +230,6 @@ the [Julia Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sc
 [Julia Zulip sciml-bridged channel](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged). 
 For bugs or feature requests, [open an issue](https://github.com/SciML/Catalyst.jl/issues).
 
-If you are interested in participating in the development of Catalyst, or integrating your package(s) 
-with it, developer documentation can be found [here](@ref ref). Are you a student (or similar) who 
-wishes to do a Google Summer of Code (or similar) project tied to Catalyst? Information on how to get 
-involved, including good first issues to get familiar with working on the package, can be found [here](@ref ref).
-
 ## Supporting and citing Catalyst.jl
 The software in this ecosystem was developed as part of academic research. If you would like to help 
 support it, please star the repository as such metrics may help us secure funding in the future. If 
@@ -255,7 +250,3 @@ could cite our work:
  number = {10},
 }
 ```
-
-We also maintain a user survey, asking basic questions about how users utilise the package. The survey 
-is available [here](ref), and only takes about 5 minutes to fill out. We are grateful to those who 
-fill out the survey, as this helps us further develop the package.
