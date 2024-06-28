@@ -34,7 +34,7 @@ Here we have created a model that is not marked as complete. If our model is rea
 ```@example v14_migration_1
 rs = complete(rs)
 ```
-Here, `complete` does not change the input model, but simply creates a new (complete) model. We hence overwrite our model variable (`rs`) with `complete`'s output. We can confirm that our model is complete using the `Catalyst.iscomplete` function:
+Here, `complete` does not change the input model, but simply creates a new model that is tagged as complete. We hence overwrite our model variable (`rs`) with `complete`'s output. We can confirm that our model is complete using the `Catalyst.iscomplete` function:
 ```@example v14_migration_1
 Catalyst.iscomplete(rs)
 ```
