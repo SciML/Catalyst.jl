@@ -182,7 +182,7 @@ sol(oprob)
 ```
 This might generate a silent error, where the remade problem is different from the intended one. 
 
-This bug was likely present on earlier versions as well, but was only recently discovered. While we hope it will be fixed soon, the bug is in ModelingToolkit, and will not be fixed until its maintainers find the time to do so.
+This bug was likely present on earlier versions as well, but was only recently discovered. While we hope it will be fixed soon, the issue is in ModelingToolkit, and will not be fixed until its maintainers find the time to do so.
 
 #### Depending on parameter order is even more dangerous than before
 In early versions of Catalyst, parameters and species were provided as vectors (e.g. `[1.0, 2.0]`) rather than maps (e.g. `[p => 1.0, d => 2.0]`). While we have already *strongly* recommended users to use the map form (or they might produce unintended results), the vector form is still (technically). Due to recent internal ModelingToolkit updates, the risk of unexpected behaviour when providing parameter values as vectors is even larger than before.
