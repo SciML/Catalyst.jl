@@ -30,7 +30,7 @@ rxs = [
 ]
 @named rs = ReactionSystem(rxs, t)
 ```
-Here we have created an incomplete model. If our model is ready (i.e. we do not wish to compose it with additional models) we mark it as complete:
+Here we have created a model that is not marked as complete. If our model is ready (i.e. we do not wish to compose it with additional models) we mark it as complete:
 ```@example v14_migration_1
 rs = complete(rs)
 ```
