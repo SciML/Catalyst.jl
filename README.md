@@ -85,8 +85,7 @@ be found in its corresponding research paper, [Catalyst: Fast and flexible model
 - [Steady states](@ref ref) (and their [stabilities](@ref ref)) can be computed for model ODE representations.
 
 #### Features of Catalyst composing with other packages
-- [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) Can be used to [perform model ODE 
- simulations](@ref ref).
+- [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) Can be used to numerically solver generated reaction rate equation ODE models.
 - [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) Can be used to [perform model 
  SDE simulations](@ref ref).
 - [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) Can be used to [model jump 
