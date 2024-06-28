@@ -101,8 +101,7 @@ be found in its corresponding research paper, [Catalyst: Fast and flexible model
  (reusing the Graphviz interface created in [Catlab.jl](https://algebraicjulia.github.io/Catlab.jl/stable/).)
 - Model steady states can be computed through homotopy continuation using [HomotopyContinuation.jl](https://github.com/JuliaHomotopyContinuation/HomotopyContinuation.jl)
  (which can find *all* steady states of systems with multiple ones), by forward ODE simulations using
- [SteadyStateDiffEq.jl)](https://github.com/SciML/SteadyStateDiffEq.jl), or by nonlinear systems 
- solving using [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl).
+ [SteadyStateDiffEq.jl)](https://github.com/SciML/SteadyStateDiffEq.jl), or by numerically solving steady-state nonlinear equations using [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl).
 - [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl) can be used to [compute 
  bifurcation diagrams](@ref ref) of models' steady states (including finding periodic orbits).
 - [DynamicalSystems.jl](https://github.com/JuliaDynamics/DynamicalSystems.jl) can be used to compute 
