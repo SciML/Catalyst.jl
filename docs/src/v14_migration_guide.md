@@ -49,7 +49,7 @@ sol = solve(oprob)
 plot(sol)
 ```
 
-If we wish to first convert out `ReactionSystem` to an `ODESystem`, the `ODESystem` will be incomplete:
+If we wish to first manually convert our `ReactionSystem` to an `ODESystem`, the generated `ODESystem` will *not* be marked as complete
 ```@example v14_migration_1
 osys = convert(ODESystem, rs)
 Catalyst.iscomplete(osys)
