@@ -5,7 +5,7 @@
 ## Catalyst 14.0
 
 #### Breaking changes 
-Catalyst v14 was prompted by the release of ModelingToolkit v9. This introduced several breaking changes to the package. A summary of these (and how to handle them) can be found [here](https://docs.sciml.ai/Catalyst/stable/v14_migration_guide/). These are briefly summarised in the following bullet points:
+Catalyst v14 was prompted by the (breaking) release of ModelingToolkit v9, which introduced several breaking changes to Catalyst. A summary of these (and how to handle them) can be found [here](https://docs.sciml.ai/Catalyst/stable/v14_migration_guide/). These are briefly summarised in the following bullet points:
 - `ReactionSystem`s must now be *complete* before they are exposed to most forms of simulation and analysis. With the exception of `ReactionSystem`s created through the `@reaction_network` macro, all `ReactionSystem`s are created incomplete. The `complete` function can be used to generate complete `ReactionSystem`s from incomplete ones.
 - The `states` function has been replaced with `unknowns`. The `get_states` function has been replaced with `get_unknowns`.
 - Support for most units (with the exception of `s`, `m`, `kg`, `A`, `K`, `mol`, and `cd`) has been dropped until further notice.
