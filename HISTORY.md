@@ -10,7 +10,7 @@ Catalyst v14 was prompted by the (breaking) release of ModelingToolkit v9, which
 - The `states` function has been replaced with `unknowns`. The `get_states` function has been replaced with `get_unknowns`.
 - Support for most units (with the exception of `s`, `m`, `kg`, `A`, `K`, `mol`, and `cd`) has currently been dropped by ModelingToolkit, and hence they are unavailable via Catalyst too. Its is expected that eventually support for relevant chemical units such as molar will return to ModelingToolkit (and should then immediately work in Catalyst too).
 - Problem parameter values are now accessed through `prob.ps[p]` (rather than `prob[p]`).
-- A significant bug prevents the safe application of the `remake` function on problems for which `remove_conserved = true` was used.
+- A significant bug prevents the safe application of the `remake` function on problems for which `remove_conserved = true` was used when updating the values of initial conditions. Instead, the values of each conserved constant must be directly specified.
 - The `reactionparams`, `numreactionparams`, and `reactionparamsmap` functions have been removed.
 - To be more consistent with ModelingToolkit's immutability requirement for systems, we have removed API functions that mutate `ReactionSystem`s such as `addparam!`, `addreaction!`, `addspecies`, `@add_reactions`, and `merge!`. Please use `ModelingToolkit.extend` and `ModelingToolkit.compose` to generate new merged and/or composed `ReactionSystem`s from multiple component systems.
 
