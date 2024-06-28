@@ -6,7 +6,7 @@ Catalyst is built on the [ModelingToolkit.jl](https://github.com/SciML/ModelingT
     Catalyst version 14 also introduces several new features. These will not be discussed here, however, they are described in Catalyst's [history file](https://github.com/SciML/Catalyst.jl/blob/master/HISTORY.md).
 
 ## System completeness
-In ModelingToolkit v9 (and thus also Catalyst v14) all systems (e.g. `ReactionSystem`s and `ODESystem`s) are either *complete* or *incomplete* (completeness was already a thing, however, recent updates mean that the user now has to be aware of this). Complete and incomplete systems differ in that
+In ModelingToolkit v9 (and thus also Catalyst v14) all systems (e.g. `ReactionSystem`s and `ODESystem`s) are either *complete* or *incomplete*. Complete and incomplete systems differ in that
 - Only complete systems can be used as inputs to simulations or most tools for model analysis.
 - Only incomplete systems can be [composed with other systems to form hierarchical models](@ref compositional_modeling).
 
