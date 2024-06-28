@@ -180,7 +180,7 @@ oprob_remade = remake(oprob; u0 = [:X1 => 5.0]) # NEVER do this.
 sol(oprob)
 # hide
 ```
-This might generate a silent error, where the remade problem is different from the intended one. 
+This might generate a silent error, where the remade problem is different from the intended one (the value of the conserved constant will not be updated correctly).
 
 This bug was likely present on earlier versions as well, but was only recently discovered. While we hope it will be fixed soon, the issue is in ModelingToolkit, and will not be fixed until its maintainers find the time to do so.
 
