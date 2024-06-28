@@ -103,7 +103,7 @@ While this should lead to long-term improvements, unfortunately, as part of the 
 The maintainers of ModelingTOolkit have been notified of this issue. We are unsure when this will be fixed, however, we do not think it will be a permanent change.
 
 ## Removed support for system-mutating functions
-According to ModelingToolkit policy, created systems should not be modified. In accordance with this, the following functions have been deprecated: `addparam!`, `addreaction!`, `addspecies!`, `@add_reactions`, and `merge!`. Please use `ModelingToolkit.extend` and `ModelingToolkit.compose` to generate new merged and/or composed `ReactionSystems` from multiple component systems.
+According to the ModelingToolkit system API, systems should not be mutable. In accordance with this, the following functions have been deprecated: `addparam!`, `addreaction!`, `addspecies!`, `@add_reactions`, and `merge!`. Please use `ModelingToolkit.extend` and `ModelingToolkit.compose` to generate new merged and/or composed `ReactionSystems` from multiple component systems.
 
 It is still possible to add default values to a created `ReactionSystem`, i.e. the `setdefaults!` function is still supported.
 
