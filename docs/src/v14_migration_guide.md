@@ -16,7 +16,7 @@ A model's completeness depends on how it was created:
 - To *use the DSL to create models that are not marked as complete*, use the `@network_component` macro (which in all other aspects is identical to `@reaction_network`).
 - Models generated through the `compose` and `extend` functions are *not marked as complete*.
 
-Furthermore, any systems generated through e.g. `convert(ODESystem, rs)` are also complete. 
+Furthermore, any systems generated through e.g. `convert(ODESystem, rs)`  are *not marked as complete*. 
 
 Complete models can be generated from incomplete models through the `complete` function. Here is a workflow where we take completeness into account in the simulation of a simple birth-death process.
 ```@example v14_migration_1
