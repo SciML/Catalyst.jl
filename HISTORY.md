@@ -56,7 +56,7 @@ p = [:p => 1.0, :d => 0.5]
 steady_state = [2.0]
 steady_state_stability(steady_state, rn, p)
 ```
-Here, `steady_state_stability` takes an optional argument `tol = 10*sqrt(eps())`, which is used to determine whether a eigenvalue real part is reliably less than 0.
+Here, `steady_state_stability` takes an optional argument `tol = 10*sqrt(eps())`, which is used to check that the real part of all eigenvalues are at least `tol` away from zero. Eigenvalues within `tol` of zero indicate that stability may not be reliably calculated.
 - Added a DSL option, `@combinatoric_ratelaws`, which can be used to toggle whether to use combinatorial rate laws within the DSL (this feature was already supported for programmatic modelling). Example:
 ```julia
 # Creates model.
