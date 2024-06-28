@@ -59,7 +59,7 @@ be found in its corresponding research paper, [Catalyst: Fast and flexible model
 - The [Catalyst.jl API](http://docs.sciml.ai/Catalyst/stable/api/catalyst_api) provides functionality 
  for extending networks, building networks programmatically, and for composing 
  multiple networks together.
-- Generated models can be simulated using any
+- Leveraging ModelingToolkit, generated models can be converted to symbolic reaction rate equation ODE models, symbolic Chemical Langevin Equation models, and symbolic stochastic chemical kinetics (jump process) models. These can be simulated using any
  [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/)
  [ODE/SDE/jump solver](@ref ref), and can be used within `EnsembleProblem`s for carrying
  out [parallelized parameter sweeps and statistical sampling](@ref ref). Plot recipes
