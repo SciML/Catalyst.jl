@@ -295,6 +295,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
+
 let
     rn = @reaction_network begin
         (k2, k1), A + E <--> AE
@@ -324,6 +325,7 @@ let
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
+    @test Catalyst.isdetailedbalanced(rn, rates) == false
 end
 
 ### STRONG LINKAGE CLASS TESTS
@@ -429,4 +431,96 @@ let
     end
 
     @test Catalyst.robustspecies(EnvZ_OmpR) == [6]
+end
+
+
+### Complex and detailed balance tests
+
+# The following network is conditionally complex balanced - it only 
+
+
+# Reversible, forest-like deficiency zero network - should be detailed balance for any choice of rate constants. 
+let
+    rn = @reaction_network begin
+        (k1, k2), A <--> B + C
+        (k3, k4), A <--> D
+        (k5, k6), A + D <--> E
+        (k7, k8), A + D <--> G
+        (k9, k10), G <--> 2F
+        (k11, k12), A + E <--> H
+    end
+
+    k1 = rand(rng, numparams(rn))
+    rates1 = Dict(zip(parameters(rn), k1))
+    k2 = rand(StableRNG(232), numparams(rn))
+    rates2 = Dict(zip(parameters(rn), k2))
+
+    @test isdetailedbalanced(rn, rates1) == true
+    @test isdetailedbalanced(rn, rates2) == true
+end
+
+
+# Simple connected reversible network
+let
+    rn = @reaction_network begin
+        (k1, k2), A <--> B
+        (k3, k4), B <--> C
+        (k5, k6), C <--> A
+    end
+
+    rates1 = [k1=>1.0, k2=>1.0, k3=>1.0, k4=>1.0, k5=>1.0, k6=>1.0]
+    @test isdetailedbalanced(rn, rates1) == true
+    rates2 = [k1=>2.0, k2=>1.0, k3=>1.0, k4=>1.0, k5=>1.0, k6=>1.0]
+    @test isdetailedbalanced(rn, rates2) == false 
+end
+
+# Independent cycle tests: the following reaction entwork has 3 out-of-forest reactions. 
+let
+    rn = @reaction_network begin
+        (k1, k2), A <--> B + C
+        (k3, k4), A <--> D
+        (k5, k6), B + C <--> D
+        (k7, k8), A + D <--> E
+        (k9, k10), G <--> 2F
+        (k11, k12), A + D <--> G
+        (k13, k14), G <--> E
+        (k15, k16), 2F <--> E
+        (k17, k18), A + E <--> H
+    end
+
+    k = rand(rng, numparams(rn))
+    rates = Dict(zip(parameters(rn), k))
+    @test isdetailedbalanced(rn, rates) == false
+
+    rates[k6] = rates[k1]*rates[k4]*rates[k5] / (rates[k2]*rates[k3]) 
+    rates[k14] = rates[k13]*rates[k11]*rates[k8] / (rates[k12]*rates[k7])
+    rates[k12] = rates[k8]*rates[k15]*rates[k9]*rates[k11] / (rates[k7]*rates[k16]*rates[k10])
+    @test isdetailedbalanced(rn, rates) == true
+end
+
+# Deficiency two network: the following reaction network must satisfy both the independent cycle conditions and the spanning forest conditions 
+let
+    rn = @reaction_network begin
+        (k1, k2), 3A <--> A + 2B
+        (k3, k4), A + 2B <--> 3B
+        (k5, k6), 3B <--> 2A + B
+        (k7, k8), 2A + B <--> 3A
+        (k9, k10), 3A <--> 3B
+    end
+
+    k = rand(rng, numparams(rn))
+    rates = Dict(zip(parameters(rn), k))
+    @test isdetailedbalanced(rn, rates) == false
+
+    rates[k8] = rates[k7]*rates[k5]*rates[k9] / (rates[k6]*rates[k10])
+    rates[k3] = rates[k2]*rates[k4]*rates[k9] / (rates[k1]*rates[k10])
+    @test isdetailedbalanced(rn, rates) == false
+
+    cons = rates[k6] / rates[k5]
+    rates[k1] = rates[k2] * cons
+    rates[k9] = rates[k10] * cons^(3/2)
+    rates[k8] = rates[k7]*rates[k5]*rates[k9] / (rates[k6]*rates[k10])
+    rates[k3] = rates[k2]*rates[k4]*rates[k9] / (rates[k1]*rates[k10])
+    @test isdeatiledbalanced(rn, rates) == true
+    @test isdetailedbalanced(rn, rates) == false
 end
