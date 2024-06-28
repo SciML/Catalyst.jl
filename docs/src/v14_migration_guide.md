@@ -120,7 +120,7 @@ t = default_t()
 nothing # hide
 ```
 
-Similarly, the time differential (primarily relevant when creating combined reaction-equation models) used to be declared through
+Similarly, the time differential (primarily relevant when creating combined reaction-ODE models) used to be declared through
 ```@example v14_migration_3
 D = Differential(t)
 nothing # hide
