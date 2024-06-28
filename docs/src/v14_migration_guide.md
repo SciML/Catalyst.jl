@@ -14,7 +14,7 @@ A model's completeness depends on how it was created:
 - Models created programmatically (using the `ReactionSystem` constructor) are *not marked as complete* by default.
 - Models created using the `@reaction_network` DSL are *automatically marked as complete*.
 - To *use the DSL to create models that are not marked as complete*, use the `@network_component` macro (which in all other aspects is identical to `@reaction_network`).
-- Models generated through the `compose` and `extend` functions are *incomplete*.
+- Models generated through the `compose` and `extend` functions are *not marked as complete*.
 
 Furthermore, any systems generated through e.g. `convert(ODESystem, rs)` are also complete. 
 
