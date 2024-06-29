@@ -80,9 +80,9 @@ etc).
 - [SciMLSensitivity.jl](https://github.com/SciML/SciMLSensitivity.jl) can be used to compute local sensitivities of functions containing forward model simulations.
  
 #### [Features of packages built upon Catalyst](@id doc_home_features_other_packages)
-- Catalyst [`ReactionSystem`](@ref)s can be [imported from SBML files](https://docs.sciml.ai/Catalyst/stable/model_creation/model_file_loading_and_export/#Loading-SBML-files-using-SBMLImporter.jl-and-SBMLToolkit.jl) via
+- Catalyst [`ReactionSystem`](@ref)s can be [imported from SBML files](@id model_file_import_export_sbml) via
  [SBMLImporter.jl](https://github.com/SciML/SBMLImporter.jl) and [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), 
- and [from BioNetGen .net files](https://docs.sciml.ai/Catalyst/stable/model_creation/model_file_loading_and_export/#file_loading_rni_net) and various stoichiometric matrix network representations
+ and [from BioNetGen .net files](@ref model_file_import_export_sbml_rni_net) and various stoichiometric matrix network representations
  using [ReactionNetworkImporters.jl](https://github.com/SciML/ReactionNetworkImporters.jl).
 - [MomentClosure.jl](https://github.com/augustinas1/MomentClosure.jl) allows generation of symbolic 
  ModelingToolkit `ODESystem`s that represent moment closure approximations to moments of the 
