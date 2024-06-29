@@ -1,4 +1,4 @@
-# Steady state stability computation
+# [Steady state stability computation](@id steady_state_stability)
 After system steady states have been found using [HomotopyContinuation.jl](@ref homotopy_continuation), [NonlinearSolve.jl](@ref nonlinear_solve), or other means, their stability can be computed using Catalyst's `steady_state_stability` function. Systems with conservation laws will automatically have these removed, permitting stability computation on systems with singular Jacobian.
 
 !!! warn 
