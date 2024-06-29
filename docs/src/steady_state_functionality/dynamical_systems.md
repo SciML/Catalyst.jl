@@ -1,10 +1,10 @@
 # [Analysing model steady state properties with DynamicalSystems.jl](@id dynamical_systems)
-The [DynamicalSystems.jl package](https://github.com/JuliaDynamics/DynamicalSystems.jl) implements a wide range of methods for analysing dynamical systems. This includes both continuous-time systems (i.e. ODEs) and discrete-times ones (difference equations, however, these are not relevant to chemical reaction network modelling). Here we give two examples of how DynamicalSystems.jl can be used, with the package's [documentation describing many more features](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/dev/tutorial/). Finally, it should also be noted that DynamicalSystems.jl contain several tools for [analysing data measured from dynamical systems](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/dev/contents/#Exported-submodules).
+The [DynamicalSystems.jl package](https://github.com/JuliaDynamics/DynamicalSystems.jl) implements a wide range of methods for analysing dynamical systems[^1][^2]. This includes both continuous-time systems (i.e. ODEs) and discrete-times ones (difference equations, however, these are not relevant to chemical reaction network modelling). Here we give two examples of how DynamicalSystems.jl can be used, with the package's [documentation describing many more features](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/dev/tutorial/). Finally, it should also be noted that DynamicalSystems.jl contain several tools for [analysing data measured from dynamical systems](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/dev/contents/#Exported-submodules).
 
 ## [Finding basins of attraction](@id dynamical_systems_basins_of_attraction)
 Given enough time, an ODE will eventually reach a so-called [*attractor*](https://en.wikipedia.org/wiki/Attractor). For chemical reaction networks (CRNs), this will typically be either a *steady state* or a *limit cycle*. Since ODEs are deterministic, which attractor a simulation will reach is uniquely determined by the initial condition (assuming parameter values are fixed). Conversely, each attractor is associated with a set of initial conditions such that model simulations originating in these will tend to that attractor. These sets are called *basins of attraction*. Here, phase space (the space of all possible states of the system) can be divided into a number of basins of attraction equal to the number of attractors. 
 
-DynamicalSystems.jl provides a simple interface for finding an ODE's basins of attraction across any given subspace of phase space. In this example we will use the bistable [Wilhelm model](https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-3-90) (which steady states we have previous [computed using homotopy continuation](@ref homotopy_continuation_basic_example)). As a first step, we create an `ODEProblem` corresponding to the model which basins of attraction we wish to compute. For this application, `u0` and `tspan` is unused, and their values are of little importance (the only exception is than `tspan`, for implementation reason, must provide a not too small interval, we recommend minimum `(0.0, 1.0)`). 
+DynamicalSystems.jl provides a simple interface for finding an ODE's basins of attraction across any given subspace of phase space. In this example we will use the bistable [Wilhelm model](https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-3-90) (which steady states we have previous [computed using homotopy continuation](@ref homotopy_continuation)). As a first step, we create an `ODEProblem` corresponding to the model which basins of attraction we wish to compute. For this application, `u0` and `tspan` is unused, and their values are of little importance (the only exception is than `tspan`, for implementation reason, must provide a not too small interval, we recommend minimum `(0.0, 1.0)`). 
 ```@example dynamical_systems_basins
 using Catalyst
 wilhelm_model = @reaction_network begin
@@ -54,7 +54,7 @@ More information on how to compute basins of attractions for ODEs using Dynamica
 
 While Lyapunov exponents can be used for other purposes, they are primarily used to characterise [*chaotic behaviours*](https://en.wikipedia.org/wiki/Chaos_theory) (where small changes in initial conditions has large effect on the resulting trajectories). Generally, an ODE exhibit chaotic behaviour if its attractor(s) have *at least one* positive Lyapunov exponent. Practically, Lyapunov exponents can be computed using DynamicalSystems.jl's `lyapunovspectrum` function. Here we will use it to investigate two models, one which exhibits chaos and one which do not.
 
-First, let us consider the [Willamowski–Rössler model](@ref ref), which is known to exhibit chaotic behaviour.
+First, let us consider the [Willamowski–Rössler model](@ref basic_CRN_library_wr), which is known to exhibit chaotic behaviour.
 ```@example dynamical_systems_lyapunov
 using Catalyst
 wr_model = @reaction_network begin
@@ -89,7 +89,7 @@ Here, the `autodiff = false` argument is required when Lyapunov spectrums are co
 ```@example dynamical_systems_lyapunov
 lyapunovspectrum(ds, 100)
 ```
-Here, the largest exponent is positive, suggesting that the model is chaotic (or, more accurately, it has at least one chaotic attractor, to which is approached from the initial condition $(1.5,1.5,1.5)).
+Here, the largest exponent is positive, suggesting that the model is chaotic (or, more accurately, it has at least one chaotic attractor, to which is approached from the initial condition $(1.5,1.5,1.5)$).
 
 Next, we consider the [Brusselator] model. First we simulate the model for two similar initial conditions, confirming that they converge to the same limit cycle:
 ```@example dynamical_systems_lyapunov
@@ -144,11 +144,11 @@ If you use this functionality in your research, [in addition to Catalyst](@ref c
 ---
 ## Learning more
 
-If you want to learn more about analysing dynamical systems, including chaotic behaviour, you can have a look at the textbook [Nonlinear Dynamics](https://link.springer.com/book/10.1007/978-3-030-91032-7). It utilizes DynamicalSystems.jl and provides a concise, hands-on approach to learning nonlinear dynamics and analysing dynamical systems [^1].
+If you want to learn more about analysing dynamical systems, including chaotic behaviour, see the textbook [Nonlinear Dynamics](https://link.springer.com/book/10.1007/978-3-030-91032-7). It utilizes DynamicalSystems.jl and provides a concise, hands-on approach to learning nonlinear dynamics and analysing dynamical systems [^3].
 
 
 ---
 ## References
-[^1]: [G. Datseris, U. Parlitz, *Nonlinear dynamics: A concise introduction interlaced with code*, Springer (2022).](https://link.springer.com/book/10.1007/978-3-030-91032-7)
-[^2]: [S. H. Strogatz, *Nonlinear Dynamics and Chaos*, Westview Press (1994).](http://users.uoa.gr/~pjioannou/nonlin/Strogatz,%20S.%20H.%20-%20Nonlinear%20Dynamics%20And%20Chaos.pdf)
-[^3]: [A. M. Lyapunov, *The general problem of the stability of motion*, International Journal of Control (1992).](https://www.tandfonline.com/doi/abs/10.1080/00207179208934253)
+[^1]: [S. H. Strogatz, *Nonlinear Dynamics and Chaos*, Westview Press (1994).](http://users.uoa.gr/~pjioannou/nonlin/Strogatz,%20S.%20H.%20-%20Nonlinear%20Dynamics%20And%20Chaos.pdf)
+[^2]: [A. M. Lyapunov, *The general problem of the stability of motion*, International Journal of Control (1992).](https://www.tandfonline.com/doi/abs/10.1080/00207179208934253)
+[^3]: [G. Datseris, U. Parlitz, *Nonlinear dynamics: A concise introduction interlaced with code*, Springer (2022).](https://link.springer.com/book/10.1007/978-3-030-91032-7)

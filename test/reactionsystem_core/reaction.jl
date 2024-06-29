@@ -8,6 +8,89 @@ using ModelingToolkit: value, get_variables!
 # Sets the default `t` to use.
 t = default_t()
 
+### Reaction Constructor Tests ###
+
+# Checks that `Reaction`s can be successfully created using various complicated inputs.
+# Checks that the `Reaction`s have the correct type, and the correct net stoichiometries are generated.
+let
+    # Declare symbolic variables.
+    @parameters k n1 n2::Int32 x [isconstantspecies=true]
+    @species X(t) Y(t) Z(t)
+    @variables A(t)
+
+    # Tries for different types of rates (should not matter).
+    for rate in (k, k*A, 2, 3.0, 4//3)
+        # Creates `Reaction`s.
+        rx1 = Reaction(rate, [X], [])
+        rx2 = Reaction(rate, [x], [Y], [1.5], [1])
+        rx3 = Reaction(rate, [x, X], [], [n1 + n2, n2], [])
+        rx4 = Reaction(rate, [X, Y], [X, Y, Z], [2//3, 3], [1//3, 1, 2])
+        rx5 = Reaction(rate, [X, Y], [X, Y, Z], [2, 3], [1, n1, n2])
+        rx6 = Reaction(rate, [X], [x], [n1], [1])
+
+        # Check `Reaction` types.
+        @test rx1 isa Reaction{Any,Int64}
+        @test rx2 isa Reaction{Any,Float64}
+        @test rx3 isa Reaction{Any,Any}
+        @test rx4 isa Reaction{Any,Rational{Int64}}
+        @test rx5 isa Reaction{Any,Any}
+        @test rx6 isa Reaction{Any,Any}
+
+        # Check `Reaction` net stoichiometries.
+        issetequal(rx1.netstoich, [X => -1])
+        issetequal(rx2.netstoich, [x => -1.5, Y => 1.0])
+        issetequal(rx3.netstoich, [x => -n1 - n2, X => -n2])
+        issetequal(rx4.netstoich, [X => -1//3, Y => -2//1, Z => 2//1])
+        issetequal(rx5.netstoich, [X => -1, Y => n1 - 3, Z => n2])
+        issetequal(rx6.netstoich, [X => -n1, x => 1])
+    end
+end
+
+# Tests that various `Reaction` constructors gives identical inputs.
+let
+    # Declare symbolic variables.
+    @parameters k n1 n2::Int32
+    @species X(t) Y(t) Z(t)
+    @variables A(t)
+
+    # Tests that the three-argument constructor generates correct result.
+    @test Reaction(k*A, [X], [Y, Z]) == Reaction(k*A, [X], [Y, Z], [1], [1, 1])
+
+    # Tests that `[]` and `nothing` can be used interchangeably.
+    @test Reaction(k*A, [X, Z], nothing) == Reaction(k*A, [X, Z], [])
+    @test Reaction(k*A, nothing, [Y, Z]) == Reaction(k*A, [], [Y, Z])
+    @test Reaction(k*A, [X, Z], nothing, [n1 + n2, 2], nothing) == Reaction(k*A, [X, Z], [], [n1 + n2, 2], [])
+    @test Reaction(k*A, nothing, [Y, Z], nothing, [n1 + n2, 2]) == Reaction(k*A, [], [Y, Z], [], [n1 + n2, 2])
+end
+
+# Tests that various incorrect inputs yields errors.
+let
+    # Declare symbolic variables.
+    @parameters k n1 n2::Int32
+    @species X(t) Y(t) Z(t)
+    @variables A(t)
+    
+    # Neither substrates nor products.
+    @test_throws ArgumentError Reaction(k*A, [], [])
+
+    # Substrate vector not of equal length to substrate stoichiometry vector.
+    @test_throws ArgumentError Reaction(k*A, [X, X, Z], [], [1, 2], [])
+
+    # Product vector not of equal length to product stoichiometry vector.
+    @test_throws ArgumentError Reaction(k*A, [], [X, X, Z], [], [1, 2])
+
+    # Repeated substrates.
+    @test_throws ArgumentError Reaction(k*A, [X, X, Z], [])
+
+    # Repeated products.
+    @test_throws ArgumentError Reaction(k*A, [], [Y, Z, Z])
+
+    # Non-valid reactants (parameter or variable).
+    @test_throws ArgumentError Reaction(k*A, [], [A])
+    @test_throws ArgumentError Reaction(k*A, [], [k])
+end
+
+
 ### Test Basic Accessors ###
 
 # Tests the `get_variables` function.
@@ -42,7 +125,6 @@ end
 # Tests basic accessor functions.
 # Tests that repeated metadata entries are not permitted.
 let
-    @variables t
     @parameters k
     @species X(t) X2(t)
 
@@ -60,7 +142,6 @@ end
 
 # Tests accessors for system without metadata.
 let
-    @variables t
     @parameters k
     @species X(t) X2(t)
 
@@ -77,7 +158,6 @@ end
 # Tests basic accessor functions.
 # Tests various metadata types.
 let
-    @variables t
     @parameters k
     @species X(t) X2(t)
 
@@ -109,17 +189,16 @@ end
 
 # Tests the noise scaling metadata.
 let
-    @variables t
     @parameters k η  
     @species X(t) X2(t)
 
     r1 = Reaction(k, [X], [X2], [2], [1])
     r2 = Reaction(k, [X], [X2], [2], [1]; metadata=[:noise_scaling => η])
 
-    @test !Catalyst.has_noise_scaling(r1)
-    @test Catalyst.has_noise_scaling(r2)
-    @test_throws Exception Catalyst.get_noise_scaling(r1)
-    @test isequal(Catalyst.get_noise_scaling(r2), η)
+    @test !Catalyst.hasnoisescaling(r1)
+    @test Catalyst.hasnoisescaling(r2)
+    @test_throws Exception Catalyst.getnoisescaling(r1)
+    @test isequal(Catalyst.getnoisescaling(r2), η)
 end
 
 # Tests the description metadata.
@@ -131,10 +210,10 @@ let
     r1 = Reaction(k, [X], [X2], [2], [1])
     r2 = Reaction(k, [X], [X2], [2], [1]; metadata=[:description => "A reaction"])
 
-    @test !Catalyst.has_description(r1)
-    @test Catalyst.has_description(r2)
-    @test_throws Exception Catalyst.get_description(r1)
-    @test isequal(Catalyst.get_description(r2), "A reaction")
+    @test !Catalyst.hasdescription(r1)
+    @test Catalyst.hasdescription(r2)
+    @test_throws Exception Catalyst.getdescription(r1)
+    @test isequal(Catalyst.getdescription(r2), "A reaction")
 end
 
 # Tests the misc metadata.
@@ -146,8 +225,8 @@ let
     r1 = Reaction(k, [X], [X2], [2], [1])
     r2 = Reaction(k, [X], [X2], [2], [1]; metadata=[:misc => ('M', :M)])
 
-    @test !Catalyst.has_misc(r1)
-    @test Catalyst.has_misc(r2)
-    @test_throws Exception Catalyst.get_misc(r1)
-    @test isequal(Catalyst.get_misc(r2), ('M', :M))
+    @test !Catalyst.hasmisc(r1)
+    @test Catalyst.hasmisc(r2)
+    @test_throws Exception Catalyst.getmisc(r1)
+    @test isequal(Catalyst.getmisc(r2), ('M', :M))
 end

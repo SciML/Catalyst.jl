@@ -1,16 +1,16 @@
 # [Finding Steady States using NonlinearSolve.jl and SteadyStateDiffEq.jl](@id steady_state_solving)
 
-Catalyst `ReactionSystem` models can be converted to ODEs (through [the reaction rate equation](@ref ref)). We have previously described how these ODEs' steady states can be found through [homotopy continuation](@ref homotopy_continuation). Generally, homotopy continuation (due to its ability to find *all* of a system's steady states) is the preferred approach. However, Catalyst supports two additional approaches for finding steady states:
-- Through solving the nonlinear system produced by setting all ODE differentials to 0.
+Catalyst `ReactionSystem` models can be converted to ODEs (through [the reaction rate equation](@ref introduction_to_catalyst_ratelaws)). We have previously described how these ODEs' steady states can be found through [homotopy continuation](@ref homotopy_continuation). Generally, homotopy continuation (due to its ability to find *all* of a system's steady states) is the preferred approach. However, Catalyst supports two additional approaches for finding steady states:
+- Through solving the nonlinear system produced by setting all ODE differentials to 0[^1].
 - Through forward ODE simulation from an initial condition until a steady state has been reached.
 
 While these approaches only find a single steady state, they offer two advantages as compared to homotopy continuation:
 - They are typically much faster.
 - They can find steady states for models that do not produce multivariate, rational, polynomial systems (which is a requirement for homotopy continuation to work). Examples include models with non-integer hill coefficients.
 
-In practice, model steady states are found through [nonlinear system solving](@ref steady_state_solving_nonlinear) by creating a `NonlinearProblem`, and through [forward ODE simulation](@ref ref) by creating a `SteadyStateProblem`. These are then solved through solvers implemented in the [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl), package (with the latter approach also requiring the [SteadyStateDiffEq.jl](https://github.com/SciML/SteadyStateDiffEq.jl) package). This tutorial describes how to find steady states through these two approaches. More extensive descriptions of available solvers and options can be found in [NonlinearSolve's documentation](https://docs.sciml.ai/NonlinearSolve/stable/).
+In practice, model steady states are found through [nonlinear system solving](@ref steady_state_solving_nonlinear) by creating a `NonlinearProblem`, and through forward ODE simulation by creating a `SteadyStateProblem`. These are then solved through solvers implemented in the [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl), package (with the latter approach also requiring the [SteadyStateDiffEq.jl](https://github.com/SciML/SteadyStateDiffEq.jl) package). This tutorial describes how to find steady states through these two approaches. More extensive descriptions of available solvers and options can be found in [NonlinearSolve's documentation](https://docs.sciml.ai/NonlinearSolve/stable/).
 
-## [Steady state finding through nonlinear solving](@ref steady_state_solving_nonlinear)
+## [Steady state finding through nonlinear solving](@id steady_state_solving_nonlinear)
 Let us consider a simple dimerisation system, where a protein ($P$) can exist in a monomer and a dimer form. The protein is produced at a constant rate from its mRNA, which is also produced at a constant rate.
 ```@example steady_state_solving_nonlinear
 using Catalyst
@@ -43,6 +43,7 @@ To solve this problem, we must first designate our parameter values, and also ma
 p = [:pₘ => 0.5, :pₚ => 2.0, :k₁ => 5.0, :k₂ => 1.0, :d => 1.0]
 u_guess = [:mRNA => 1.0, :P => 1.0, :P₂ => 1.0]
 nlprob = NonlinearProblem(dimer_production, u_guess, p)
+nothing # hide
 ```
 Finally, we can solve it using the `solve` command, returning the steady state solution:
 ```@example steady_state_solving_nonlinear
@@ -57,14 +58,14 @@ sol ≈ sol_ntr
 ```
  
 ### [Systems with conservation laws](@id steady_state_solving_nonlinear_conservation_laws)
-As described in the section on homotopy continuation, when finding the steady states of systems with conservation laws, [additional considerations have to be taken](homotopy_continuation_conservation_laws). E.g. consider the following [two-state system](@ref ref):
+As described in the section on homotopy continuation, when finding the steady states of systems with conservation laws, [additional considerations have to be taken](@ref homotopy_continuation_conservation_laws). E.g. consider the following [two-state system](@ref basic_CRN_library_two_states):
 ```@example steady_state_solving_claws
 using Catalyst, NonlinearSolve # hide
 two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 ```
-It has an infinite number of steady states. To make steady state finding possible, information of the system's conserved quantities (here $C = X1 + X2$) must be provided. Since these can be computed from system initial conditions (`u0`, i.e. those provided when performing ODE simulations), designating an `u0` is often the best way. There are two ways to do this. First, one can perform [forward ODE simulation-based steady state finding](@ref steady_state_solving_simulation), using the initial condition as the initial `u` guess. Alternatively, any conserved quantities can be eliminated when the `NonlinearProblem` is created. This feature is supported by Catalyst's [conservation law finding and elimination feature](@ref ref).
+It has an infinite number of steady states. To make steady state finding possible, information of the system's conserved quantities (here $C = X1 + X2$) must be provided. Since these can be computed from system initial conditions (`u0`, i.e. those provided when performing ODE simulations), designating an `u0` is often the best way. There are two ways to do this. First, one can perform [forward ODE simulation-based steady state finding](@ref steady_state_solving_simulation), using the initial condition as the initial `u` guess. Alternatively, any conserved quantities can be eliminated when the `NonlinearProblem` is created. This feature is supported by Catalyst's conservation law finding and elimination feature.
 
 To eliminate conservation laws we simply provide the `remove_conserved = true` argument to `NonlinearProblem`:
 ```@example steady_state_solving_claws
@@ -85,6 +86,7 @@ sol[[:X1, :X2]]
 ## [Finding steady states through ODE simulations](@id steady_state_solving_simulation)
 The `NonlinearProblem`s generated by Catalyst corresponds to ODEs. A common method of solving these is to simulate the ODE from an initial condition until a steady state is reached. Here we do so for the dimerisation system considered in the previous section. First, we declare our model, initial condition, and parameter values.
 ```@example steady_state_solving_simulation
+using Catalyst # hide
 dimer_production = @reaction_network begin
     pₘ, 0 --> mRNA
     pₚ, mRNA --> mRNA + P
@@ -98,21 +100,18 @@ nothing # hide
 Next, we provide these as an input to a `SteadyStateProblem`
 ```@example steady_state_solving_simulation
 ssprob = SteadyStateProblem(dimer_production, u0, p)
+nothing # hide
 ```
-Finally, we can find the steady states using the `solver` command (which requires loading the SteadyStateDiffEq package).
+Finally, we can find the steady states using the `solver` command. Since `SteadyStateProblem`s are solved through forward ODE simulation, we must load the [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) package, and [select an ODE solver](@ref simulation_intro_solver_options). Any available ODE solver can be used, however, it has to be encapsulated by the `DynamicSS()` function. E.g. here we designate the `Rodas5P` solver:
+
+(which requires loading the SteadyStateDiffEq package).
 ```@example steady_state_solving_simulation
-using SteadyStateDiffEq
-solve(ssprob)
+using SteadyStateDiffEq, OrdinaryDiffEq
+solve(ssprob, DynamicSS(Rodas5P()))
 ```
 Note that, unlike for nonlinear system solving, `u0` is not just an initial guess of the solution, but the initial conditions from which the steady state simulation is carried out. This means that, for a system with multiple steady states, we can determine the steady states associated with specific initial conditions (which is not possible when the nonlinear solving approach is used). This also permits us to easily [handle the presence of conservation laws](@ref steady_state_solving_nonlinear_conservation_laws). The forward ODE simulation approach (unlike homotopy continuation and nonlinear solving) cannot find unstable steady states.
 
-The forward ODE solving approach uses the ODE solvers implemented by the [OrdinaryDiffEq.jl](@ref ref) package. If this package is loaded, it is possible to designate a specific solver to use. Any available ODE solver can be used, however, it has to be encapsulated by the `DynamicSS()` function. E.g. here we designate the `Rodas5P` solver:
-```@example steady_state_solving_simulation
-using OrdinaryDiffEqDiffEq
-solve(ssprob, DynamicSS(Rodas5P()))
-nothing # hide
-```
-Generally, `SteadyStateProblem`s can be solved using the [same options that are available for ODE simulations](@ref ref). E.g. here we designate a specific `dt` step size:
+Generally, `SteadyStateProblem`s can be solved using the [same options that are available for ODE simulations](@ref simulation_intro_solver_options). E.g. here we designate a specific `dt` step size:
 ```@example steady_state_solving_simulation
 solve(ssprob, DynamicSS(Rodas5P()); dt = 0.01)
 nothing # hide
@@ -143,6 +142,7 @@ If you use this functionality in your research, [in addition to Catalyst](@ref c
   year={2024}
 }
 ```
+
 
 ---
 ## References

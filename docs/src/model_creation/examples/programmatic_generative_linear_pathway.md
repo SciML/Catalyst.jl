@@ -1,8 +1,8 @@
 # [Programmatic, generative, modelling of a linear pathway](@id programmatic_generative_linear_pathway)
-This example will show how to use programmatic, generative, modelling to model a system implicitly. I.e. rather than listing all system reactions explicitly, the reactions are implicitly generated from a simple set of rules. This example is specifically designed to show how [programmatic modelling](@ref ref) enables *generative workflows* (demonstrating one of its advantages as compared to [DSL-based modelling](@ref ref)). In our example, we will model linear pathways, so we will first introduce these. Next, we will model them first using the DSL, and then using a generative programmatic workflow.
+This example will show how to use programmatic, generative, modelling to model a system implicitly. I.e. rather than listing all system reactions explicitly, the reactions are implicitly generated from a simple set of rules. This example is specifically designed to show how [programmatic modelling](@ref programmatic_CRN_construction) enables *generative workflows* (demonstrating one of its advantages as compared to [DSL-based modelling](@ref dsl_description)). In our example, we will model linear pathways, so we will first introduce these. Next, we will model them first using the DSL, and then using a generative programmatic workflow.
 
 ## [Linear pathways](@id programmatic_generative_linear_pathway_intro)
-Linear pathways consists of a series of species ($X_0$, $X_1$, $X_2$, ..., $X_n$) where each activates the subsequent one. These are often modelled through the following reaction system:
+Linear pathways consists of a series of species ($X_0$, $X_1$, $X_2$, ..., $X_n$) where each activates the subsequent one[^1]. These are often modelled through the following reaction system:
 ```math
 X_{i-1}/\tau,\hspace{0.33cm} ∅ \to X_{i}\\
 1/\tau,\hspace{0.33cm} X_{i} \to ∅
@@ -21,7 +21,7 @@ for some kernel $g(\tau)$. Here, a common kernel is a [gamma distribution](https
 ```math
 g(\tau; \alpha, \beta) = \frac{\beta^{\alpha}\tau^{\alpha-1}}{\Gamma(\alpha)}e^{-\beta\tau}
 ```
-When this is converted to an ODE, this generates an integro-differential equation. These (as well as the simpler delay differential equations) can be difficult to solve and analyse (especially when SDE or jump simulations are desired). Here, *the linear chain trick* can be used to instead model the delay as a linear pathway of the form described above[^1]. A result by Fargue shows that this is equivalent to a gamma-distributed delay, where $\alpha$ is equivalent to $n$ (the number of species in our linear pathway) and $\beta$ to %\tau$ (the delay length term)[^2]. While modelling time delays using the linear chain trick introduces additional system species, it is often advantageous as it enables simulations using standard ODE, SDE, and Jump methods.
+When this is converted to an ODE, this generates an integro-differential equation. These (as well as the simpler delay differential equations) can be difficult to solve and analyse (especially when SDE or jump simulations are desired). Here, *the linear chain trick* can be used to instead model the delay as a linear pathway of the form described above[^2]. A result by Fargue shows that this is equivalent to a gamma-distributed delay, where $\alpha$ is equivalent to $n$ (the number of species in our linear pathway) and $\beta$ to %\tau$ (the delay length term)[^3]. While modelling time delays using the linear chain trick introduces additional system species, it is often advantageous as it enables simulations using standard ODE, SDE, and Jump methods.
 
 ## [Modelling linear pathways using the DSL](@id programmatic_generative_linear_pathway_dsl)
 It is known that two linear pathways have similar delays if the following equality holds:
@@ -75,11 +75,13 @@ plot!(sol_n10; idxs = :X10, label = "n = 10")
 ```
 
 ## [Modelling linear pathways using programmatic, generative, modelling](@id programmatic_generative_linear_pathway_generative)
-Above, we investigated the impact of linear pathways' lengths on their behaviours. Since the models were implemented using the DSL, we had to implement a new model for each pathway (in each case writing out all reactions). Here, we will instead show how [programmatic modelling](@ref ref) can be used to generate pathways of arbitrary lengths.
+Above, we investigated the impact of linear pathways' lengths on their behaviours. Since the models were implemented using the DSL, we had to implement a new model for each pathway (in each case writing out all reactions). Here, we will instead show how [programmatic modelling](@ref programmatic_CRN_construction) can be used to generate pathways of arbitrary lengths.
 
-First, we create a function, `generate_lp`, which creates a linear pathway model of length `n`. It utilises [*vector variables*](@ref ref) to create an arbitrary number of species, and also creates an [observable](@ref ref) for the final species of the chain.
+First, we create a function, `generate_lp`, which creates a linear pathway model of length `n`. It utilises *vector variables* to create an arbitrary number of species, and also creates an observable for the final species of the chain.
 ```@example programmatic_generative_linear_pathway_generative
 using Catalyst # hide
+t = default_t()
+@parameters τ
 function generate_lp(n)
     # Creates a vector `X` with n+1 species.
     @species X(t)[1:n+1]
@@ -115,6 +117,7 @@ nothing # hide
 ```
 We can now simulate linear pathways of arbitrary lengths using a simple syntax. We use this to recreate our previous result from the DSL:
 ```@example programmatic_generative_linear_pathway_generative
+using OrdinaryDiffEq, Plots # hide
 sol_n3 = solve(generate_oprob(3))
 sol_n10 = solve(generate_oprob(10))
 plot(sol_n3; idxs = :Xend, label = "n = 3")
@@ -129,6 +132,6 @@ plot!(sol_n20; idxs = :Xend, label = "n = 20")
 
 ---
 ## References
-[^1]: [J. Metz, O. Diekmann *The Abstract Foundations of Linear Chain Trickery* (1991).](https://ir.cwi.nl/pub/1559/1559D.pdf)
-[^2]: D. Fargue *Reductibilite des systemes hereditaires a des systemes dynamiques (regis par des equations differentielles aux derivees partielles)*, Comptes rendus de l'Académie des Sciences (1973).
-[^3]: [N. Korsbo, H. Jönsson *It’s about time: Analysing simplifying assumptions for modelling multi-step pathways in systems biology*, PLoS Computational Biology (2020).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007982)
+[^1]: [N. Korsbo, H. Jönsson *It’s about time: Analysing simplifying assumptions for modelling multi-step pathways in systems biology*, PLoS Computational Biology (2020).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007982)
+[^2]: [J. Metz, O. Diekmann *The Abstract Foundations of Linear Chain Trickery* (1991).](https://ir.cwi.nl/pub/1559/1559D.pdf)
+[^3]: D. Fargue *Reductibilite des systemes hereditaires a des systemes dynamiques (regis par des equations differentielles aux derivees partielles)*, Comptes rendus de l'Académie des Sciences (1973).

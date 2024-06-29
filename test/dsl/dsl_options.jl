@@ -488,12 +488,12 @@ let
     @test sol[:Y][end] ≈ 3.0
 
     # Tests that observables can be used for plot indexing.
-    @test_broken false # plot(sol; idxs=X).series_list[1].plotattributes[:y][end] ≈ 10.0
+    plot(sol; idxs=X).series_list[1].plotattributes[:y][end] ≈ 10.0
     @test plot(sol; idxs=rn.X).series_list[1].plotattributes[:y][end] ≈ 10.0
     @test plot(sol; idxs=:X).series_list[1].plotattributes[:y][end] ≈ 10.0
     @test plot(sol; idxs=[X, Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
     @test plot(sol; idxs=[rn.X, rn.Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
-    @test_broken false # plot(sol; idxs=[:X, :Y]).series_list[2].plotattributes[:y][end] ≈ 3.0
+    @test plot(sol; idxs=[:X, :Y]).series_list[2].plotattributes[:y][end] ≈ 3.0 # (https://github.com/SciML/ModelingToolkit.jl/issues/2778)
 end
 
 # Compares programmatic and DSL system with observables.
@@ -574,8 +574,8 @@ let
         end
     end
     V,W = getfield.(observed(rn), :lhs)
-    @test isequal(arguments(ModelingToolkit.unwrap(V)), Any[rn.iv, rn.sivs[1], rn.sivs[2]])
-    @test isequal(arguments(ModelingToolkit.unwrap(W)), Any[rn.iv, rn.sivs[2]])
+    @test isequal(arguments(ModelingToolkit.unwrap(V)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[1], Catalyst.get_sivs(rn)[2]])
+    @test isequal(arguments(ModelingToolkit.unwrap(W)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[2]])
 end
 
 # Checks that metadata is written properly.
@@ -584,7 +584,7 @@ let
         @observables (X, [description="my_description"]) ~ X1 + X2
         k, 0 --> X1 + X2
     end
-    @test getdescription(observed(rn)[1].lhs) == "my_description"
+    @test ModelingToolkit.getdescription(observed(rn)[1].lhs) == "my_description"
 end
 
 # Declares observables implicitly/explicitly.
@@ -629,7 +629,7 @@ let
         (k1, k2), X1 <--> X2
     end
     @test isequal(observed(rn1)[1].lhs, X)
-    @test getdescription(rn1.X) == "An observable"
+    @test ModelingToolkit.getdescription(rn1.X) == "An observable"
     @test isspecies(rn1.X)
     @test length(unknowns(rn1)) == 2
 
