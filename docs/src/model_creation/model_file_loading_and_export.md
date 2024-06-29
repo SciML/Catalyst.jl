@@ -136,7 +136,7 @@ The advantage of these forms is that they offer a compact and very general way t
 
 ---
 ## [Citations](@id petab_citations)
-If you use any of this functionality in your research, [in addition to Catalyst](@ref catalyst_citation), please cite the paper(s) corresponding to whichever package(s) you used:
+If you use any of this functionality in your research, [in addition to Catalyst](@ref doc_index_citation), please cite the paper(s) corresponding to whichever package(s) you used:
 ```
 @software{2022ReactionNetworkImporters,
   author       = {Isaacson, Samuel},

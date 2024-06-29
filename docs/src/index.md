@@ -1,4 +1,4 @@
-# [Catalyst.jl for Reaction Network Modeling](@id doc_home)
+# [Catalyst.jl for Reaction Network Modeling](@id doc_index)
 
 Catalyst.jl is a symbolic modeling package for analysis and high-performance
 simulation of chemical reaction networks. Catalyst defines symbolic
@@ -16,9 +16,9 @@ Generated models can be used with solvers throughout the broader
 for sensitivity analysis, parameter estimation, machine learning applications,
 etc).
 
-## [Features](@id doc_home_features)
+## [Features](@id doc_index_features)
 
-#### [Features of Catalyst](@id doc_home_features_catalyst)
+#### [Features of Catalyst](@id doc_index_features_catalyst)
 - [The Catalyst DSL](@ref dsl_description) provides a simple and readable format for manually specifying reaction 
  network models using chemical reaction notation.
 - Catalyst `ReactionSystem`s provides a symbolic representation of reaction networks,
@@ -52,7 +52,7 @@ etc).
  deterministic and stochastic terms within resulting ODE, SDE or jump models.
 - [Steady states](@ref homotopy_continuation) (and their [stabilities](@ref steady_state_stability)) can be computed for model ODE representations.
 
-#### [Features of Catalyst composing with other packages](@id doc_home_features_composed)
+#### [Features of Catalyst composing with other packages](@id doc_index_features_composed)
 - [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) Can be used to numerically solver generated reaction rate equation ODE models.
 - [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) can be used to numerically solve generated Chemical Langevin Equation SDE models.
 - [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) can be used to numerically sample generated Stochastic Chemical Kinetics Jump Process models.
@@ -79,7 +79,7 @@ etc).
  [global sensitivity analysis](@ref global_sensitivity_analysis) of model behaviors.
 - [SciMLSensitivity.jl](https://github.com/SciML/SciMLSensitivity.jl) can be used to compute local sensitivities of functions containing forward model simulations.
  
-#### [Features of packages built upon Catalyst](@id doc_home_features_other_packages)
+#### [Features of packages built upon Catalyst](@id doc_index_features_other_packages)
 - Catalyst [`ReactionSystem`](@ref)s can be [imported from SBML files](@id model_file_import_export_sbml) via
  [SBMLImporter.jl](https://github.com/SciML/SBMLImporter.jl) and [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), 
  and [from BioNetGen .net files](@ref model_file_import_export_sbml_rni_net) and various stoichiometric matrix network representations
@@ -96,7 +96,7 @@ etc).
 - [BondGraphs.jl](https://github.com/jedforrest/BondGraphs.jl), a package for
  constructing and analyzing bond graphs models, which can take Catalyst models as input.
 
-## [How to read this documentation](@id doc_home_documentation)
+## [How to read this documentation](@id doc_index_documentation)
 The Catalyst documentation is separated into sections describing Catalyst's various features. Where appropriate, some sections will also give advice on best practices for various modeling workflows, and provide links with further reading. Each section also contains a set of relevant example workflows. Finally, the [API](@ref api) section contains a list of all functions exported by Catalyst (as well as descriptions of them and their inputs and outputs).
 
 New users are recommended to start with either the [Introduction to Catalyst and Julia for New Julia users](@ref catalyst_for_new_julia_users) or [Introduction to Catalyst](@ref introduction_to_catalyst) sections (depending on whether they are familiar with Julia programming or not). This should be enough to carry out many basic Catalyst workflows.
@@ -126,7 +126,7 @@ end
 nothing # hide
 ```
 
-## [Installation](@id doc_home_installation)
+## [Installation](@id doc_index_installation)
 Catalyst is an officially registered Julia package, which can be installed through the Julia package manager:
 ```julia
 using Pkg
@@ -142,9 +142,9 @@ is also needed.
 
 A more throughout guide for setting up Catalyst and installing Julia packages can be found [here](@ref catalyst_for_new_julia_users_packages).
 
-## [Illustrative example](@id doc_home_example)
+## [Illustrative example](@id doc_index_example)
 
-#### [Deterministic ODE simulation of Michaelis-Menten enzyme kinetics](@id doc_home_example_ode)
+#### [Deterministic ODE simulation of Michaelis-Menten enzyme kinetics](@id doc_index_example_ode)
 Here we show a simple example where a model is created using the Catalyst DSL, and then simulated as 
 an ordinary differential equation.
 
@@ -170,7 +170,7 @@ sol = solve(ode)
 plot(sol; lw = 5)
 ```
 
-#### [Stochastic jump simulations](@id doc_home_example_jump)
+#### [Stochastic jump simulations](@id doc_index_example_jump)
 The same model can be used as input to other types of simulations. E.g. here we instead perform a 
 jump simulation
 ```@example home_simple_example
@@ -185,7 +185,7 @@ jump_sol = solve(jprob, SSAStepper(); seed = 1234) # hide
 plot(jump_sol; lw = 2)
 ```
 
-## [Elaborate example](@id doc_home_elaborate_example)
+## [Elaborate example](@id doc_index_elaborate_example)
 In the above example, we used basic Catalyst-based workflows to simulate a simple model. Here we 
 instead show how various Catalyst features can compose to create a much more advanced model. Our 
 model describes how the volume of a cell ($V$) is affected by a growth factor ($G$). The growth 
@@ -230,13 +230,13 @@ sol = solve(sprob, EM(); dt = 0.05, seed = 1234) # hide
 plot(sol; xguide = "Time (au)", lw = 2)
 ```
 
-## [Getting Help](@id doc_home_help)
+## [Getting Help](@id doc_index_help)
 Catalyst developers are active on the [Julia Discourse](https://discourse.julialang.org/), 
 the [Julia Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sciml-sysbio, and the 
 [Julia Zulip sciml-bridged channel](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged). 
 For bugs or feature requests, [open an issue](https://github.com/SciML/Catalyst.jl/issues).
 
-## [Supporting and Citing Catalyst.jl](@id doc_home_citation)
+## [Supporting and Citing Catalyst.jl](@id doc_index_citation)
 The software in this ecosystem was developed as part of academic research. If you would like to help 
 support it, please star the repository as such metrics may help us secure funding in the future. If 
 you use Catalyst as part of your research, teaching, or other activities, we would be grateful if you 
@@ -257,7 +257,7 @@ could cite our work:
 }
 ```
 
-## [Reproducibility](@id doc_home_reproducibility)
+## [Reproducibility](@id doc_index_reproducibility)
 ```@raw html
 <details><summary>The documentation of this SciML package was built using these direct dependencies,</summary>
 ```
