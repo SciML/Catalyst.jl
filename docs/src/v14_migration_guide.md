@@ -139,7 +139,7 @@ Previously, it was possible to directly index problems to query them for their p
 ```@example v14_migration_4
 using Catalyst
 rn = @reaction_network begin
- (p,d), 0 <--> X
+    (p,d), 0 <--> X
 end
 u0 = [:X => 1.0]
 ps = [:p => 1.0, :d => 0.2]
@@ -166,18 +166,18 @@ While it is possible to update e.g. `ODEProblem`s using the [`remake`](@ref simu
 ```@example v14_migration_5
 using Catalyst, OrdinaryDiffEq
 rn = @reaction_network begin
- (k1,k2), X1 <--> X2
+    (k1,k2), X1 <--> X2
 end
 u0 = [:X1 => 1.0, :X2 => 2.0]
 ps = [:k1 => 0.5, :k2 => 3.0]
 oprob = ODEProblem(rn, u0, (0.0, 10.0), ps; remove_conserved = true)
-sol(oprob)
+solve(oprob)
 # hide
 ```
 is perfectly fine, attempting to then modify any initial conditions or the value of the conservation constant in `oprob` will silently fail:
 ```@example v14_migration_5
 oprob_remade = remake(oprob; u0 = [:X1 => 5.0]) # NEVER do this.
-sol(oprob)
+solve(oprob_remade)
 # hide
 ```
 This might generate a silent error, where the remade problem is different from the intended one (the value of the conserved constant will not be updated correctly).
