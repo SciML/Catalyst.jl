@@ -218,10 +218,10 @@ let
     ]
 
     # Loops through all potential parameter sets, checking their inputs yield errors.
-    for ps in [ps_valid; ps_invalid], u0 in [u0_valid; u0s_invalid]
+    for ps in [[ps_valid]; ps_invalid], u0 in [[u0_valid]; u0s_invalid]
         # Handles problems with/without tspan separately. Special check ensuring that valid inputs passes.
         for XProblem in [ODEProblem, SDEProblem, DiscreteProblem]
-            if (ps == ps_valid) && (u0 == u0_valid)
+            if isequal(ps, ps_valid) && isequal(u0, u0_valid)
                 XProblem(rn, u0, (0.0, 1.0), ps); @test true;
             else
                 # Several of these cases do not throw errors (https://github.com/SciML/ModelingToolkit.jl/issues/2624).
@@ -231,7 +231,7 @@ let
             end
         end
         for XProblem in [NonlinearProblem, SteadyStateProblem]
-            if (ps == ps_valid) && (u0 == u0_valid)
+            if isequal(ps, ps_valid) && isequal(u0, u0_valid)
                 XProblem(rn, u0, ps); @test true;
             else
                 @test_broken false
