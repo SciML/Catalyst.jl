@@ -160,11 +160,10 @@ plot(sol; lw = 5)
 ![ODE simulation](docs/src/assets/readme_ode_plot.svg)
 
 #### Stochastic jump simulations
-The same model can be used as input to other types of simulations. E.g. here we instead perform a 
-jump simulation
+The same model can be used as input to other types of simulations. E.g. here we instead generate and simulate a stochastic chemical kinetics jump process model.
 ```julia
 # Create and simulate a jump process (here using Gillespie's direct algorithm).
-# Note that integer (not decimal) initial conditions are used.
+# The initial conditions are now integers as we track exact populations for each species.
 using JumpProcesses
 u0_integers = [:S => 50, :E => 10, :SE => 0, :P => 0]
 dprob = DiscreteProblem(model, u0_integers, tspan, ps)
@@ -197,7 +196,7 @@ cell_model = @reaction_network begin
     kᵢ/V, Gᴾ --> G
 end
 ```
-In this case, we would instead like to perform stochastic simulations, so we transform our model to an SDE:
+We now study the system as a Chemical Langevin Dynamics SDE model, which can be generated as follows 
 ```julia
 u0 = [:V => 25.0, :G => 50.0, :Gᴾ => 0.0]
 tspan = (0.0, 20.0)
@@ -212,7 +211,7 @@ dGᴾ(t) &= \left( \frac{kₚ*(sin(t)+1)}{V(t)} G(t) - \frac{kᵢ}{V(t)} Gᴾ(t)
 dV(t) &= \left(g \cdot Gᴾ(t)\right) dt
 \end{align*}
 ```
-where the $dW_1(t)$ and $dW_2(t)$ terms described the noise added through the Chemical Langevin Equations. Finally, we can simulate and plot the results.
+where the $dW_1(t)$ and $dW_2(t)$ terms represent independent Brownian Motions,  encoding the noise added by the Chemical Langevin Equation. Finally, we can simulate and plot the results.
 ```julia
 using StochasticDiffEq
 sol = solve(sprob, EM(); dt = 0.05)
