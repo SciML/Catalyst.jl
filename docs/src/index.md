@@ -171,8 +171,7 @@ plot(sol; lw = 5)
 ```
 
 #### [Stochastic jump simulations](@id doc_index_example_jump)
-The same model can be used as input to other types of simulations. E.g. here we instead perform a 
-jump simulation
+The same model can be used as input to other types of simulations. E.g. here we instead generate and simulate a stochastic chemical kinetics jump process model.
 ```@example home_simple_example
 # Create and simulate a jump process (here using Gillespie's direct algorithm).
 # Note that integer (not decimal) initial conditions are used.
