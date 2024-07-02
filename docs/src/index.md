@@ -221,7 +221,7 @@ dGᴾ(t) &= \left( \frac{kₚ*(sin(t)+1)}{V(t)} G(t) - \frac{kᵢ}{V(t)} Gᴾ(t)
 dV(t) &= \left(g \cdot Gᴾ(t)\right) dt
 \end{align*}
 ```
-where the $dW_1(t)$ and $dW_2(t)$ terms described the noise added through the Chemical Langevin Equations. Finally, we can simulate and plot the results.
+where the $dW_1(t)$ and $dW_2(t)$ terms represent independent Brownian Motions,  encoding the noise added by the Chemical Langevin Equation. Finally, we can simulate and plot the results.
 ```@example home_elaborate_example
 using StochasticDiffEq
 sol = solve(sprob, EM(); dt = 0.05)
