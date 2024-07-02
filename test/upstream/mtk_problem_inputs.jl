@@ -1,9 +1,8 @@
-#! format: off
-
 ### Prepares Tests ###
 
 # Fetch packages
-using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEq, SteadyStateDiffEq, StochasticDiffEq, Test
+using Catalyst, JumpProcesses, NonlinearSolve, OrdinaryDiffEq, Plots, SteadyStateDiffEq, StochasticDiffEq, Test
+import ModelingToolkit: getp, getu, setp, setu
 
 # Sets rnd number.
 using StableRNGs
@@ -13,411 +12,379 @@ seed = rand(rng, 1:100)
 
 ### Basic Tests ###
 
-# Prepares a models and initial conditions/parameters (of different forms) to be used as problem inputs.
-begin 
+# Prepares a model and its problems, integrators, and solutions.
+begin
+    # Creates the model and unpacks its context.
     model = @reaction_network begin
-        @species Z(t) = Z0
-        @parameters k2=0.5 Z0
+        @observables XY ~ X + Y
         (kp,kd), 0 <--> X
         (k1,k2), X <--> Y
-        (k1,k2), Y <--> Z
     end
-    @unpack X, Y, Z, kp, kd, k1, k2, Z0 = model
+    @unpack XY, X, Y, kp, kd, k1, k2 = model
 
-    u0_alts = [
-        # Vectors not providing default values.
-        [X => 4, Y => 5],
-        [model.X => 4, model.Y => 5],
-        [:X => 4, :Y => 5],
-        # Vectors providing default values.
-        [X => 4, Y => 5, Z => 10],
-        [model.X => 4, model.Y => 5, model.Z => 10],
-        [:X => 4, :Y => 5, :Z => 10],
-        # Dicts not providing default values.
-        Dict([X => 4, Y => 5]),
-        Dict([model.X => 4, model.Y => 5]),
-        Dict([:X => 4, :Y => 5]),
-        # Dicts providing default values.
-        Dict([X => 4, Y => 5, Z => 10]),
-        Dict([model.X => 4, model.Y => 5, model.Z => 10]),
-        Dict([:X => 4, :Y => 5, :Z => 10]),
-        # Tuples not providing default values.
-        (X => 4, Y => 5),
-        (model.X => 4, model.Y => 5),
-        (:X => 4, :Y => 5),
-        # Tuples providing default values.
-        (X => 4, Y => 5, Z => 10),
-        (model.X => 4, model.Y => 5, model.Z => 10),
-        (:X => 4, :Y => 5, :Z => 10)
-    ]
+    # Sets problem inputs (to be used for all problem creations).
+    u0_vals = [X => 4, Y => 5]
     tspan = (0.0, 10.0)
-    p_alts = [
-        # Vectors not providing default values.
-        [kp => 1.0, kd => 0.1, k1 => 0.25, Z0 => 10],
-        [model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.Z0 => 10],
-        [:kp => 1.0, :kd => 0.1, :k1 => 0.25, :Z0 => 10],
-        # Vectors providing default values.
-        [kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5, Z0 => 10],
-        [model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.k2 => 0.5, model.Z0 => 10],
-        [:kp => 1.0, :kd => 0.1, :k1 => 0.25, :k2 => 0.5, :Z0 => 10],
-        # Dicts not providing default values.
-        Dict([kp => 1.0, kd => 0.1, k1 => 0.25, Z0 => 10]),
-        Dict([model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.Z0 => 10]),
-        Dict([:kp => 1.0, :kd => 0.1, :k1 => 0.25, :Z0 => 10]),
-        # Dicts providing default values.
-        Dict([kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5, Z0 => 10]),
-        Dict([model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.k2 => 0.5, model.Z0 => 10]),
-        Dict([:kp => 1.0, :kd => 0.1, :k1 => 0.25, :k2 => 0.5, :Z0 => 10]),
-        # Tuples not providing default values.
-        (kp => 1.0, kd => 0.1, k1 => 0.25, Z0 => 10),
-        (model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.Z0 => 10),
-        (:kp => 1.0, :kd => 0.1, :k1 => 0.25, :Z0 => 10),
-        # Tuples providing default values.
-        (kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5, Z0 => 10),
-        (model.kp => 1.0, model.kd => 0.1, model.k1 => 0.25, model.k2 => 0.5, model.Z0 => 10),
-        (:kp => 1.0, :kd => 0.1, :k1 => 0.25, :k2 => 0.5, :Z0 => 10),
-    ]
+    p_vals = [kp => 1.0, kd => 0.1, k1 => 0.25, k2 => 0.5]
+
+    # Creates problems.
+    oprob = ODEProblem(model, u0_vals, tspan, p_vals)
+    sprob = SDEProblem(model,u0_vals, tspan, p_vals)
+    dprob = DiscreteProblem(model, u0_vals, tspan, p_vals)
+    jprob = JumpProblem(model, deepcopy(dprob), Direct(); rng)
+    nprob = NonlinearProblem(model, u0_vals, p_vals)
+    ssprob = SteadyStateProblem(model, u0_vals, p_vals)
+    problems = [oprob, sprob, dprob, jprob, nprob, ssprob]
+
+    # Creates an `EnsembleProblem` for each problem.
+    eoprob = EnsembleProblem(oprob)
+    esprob = EnsembleProblem(sprob)
+    edprob = EnsembleProblem(dprob)
+    ejprob = EnsembleProblem(jprob)
+    enprob = EnsembleProblem(nprob)
+    essprob = EnsembleProblem(ssprob)
+    eproblems = [eoprob, esprob, edprob, ejprob, enprob, essprob]
+
+    # Creates integrators.
+    oint = init(oprob, Tsit5(); save_everystep = false)
+    sint = init(sprob, ImplicitEM(); save_everystep = false)
+    jint = init(jprob, SSAStepper())
+    nint = init(nprob, NewtonRaphson(); save_everystep = false)
+    @test_broken ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep = false) # https://github.com/SciML/SciMLBase.jl/issues/660
+    integrators = [oint, sint, jint, nint]
+    
+    # Creates solutions.
+    osol = solve(oprob, Tsit5())
+    ssol = solve(sprob, ImplicitEM(); seed)
+    jsol = solve(jprob, SSAStepper(); seed)
+    nsol = solve(nprob, NewtonRaphson())
+    sssol = solve(nprob, DynamicSS(Tsit5()))
+    sols = [osol, ssol, jsol, nsol, sssol]
 end
 
-# Perform ODE simulations (singular and ensemble).
+# Tests problem indexing and updating.
 let 
-    # Creates normal and ensemble problems.
-    base_oprob = ODEProblem(model, u0_alts[1], tspan, p_alts[1])
-    base_sol = solve(base_oprob, Tsit5(); saveat = 1.0)
-    base_eprob = EnsembleProblem(base_oprob)
-    base_esol = solve(base_eprob, Tsit5(); trajectories = 2, saveat = 1.0)
+    @test_broken false # A few cases fails for JumpProblem: https://github.com/SciML/ModelingToolkit.jl/issues/2838
+    @test_broken false # A few cases fails for SteadyStateProblem: https://github.com/SciML/SciMLBase.jl/issues/660
+    @test_broken false # Most cases broken for Ensemble problems: https://github.com/SciML/SciMLBase.jl/issues/661
+    for prob in deepcopy([oprob, sprob, dprob, nprob])
+        # Get u values (including observables).
+        @test prob[X] == prob[model.X] == prob[:X] == 4
+        @test prob[XY] == prob[model.XY] == prob[:XY] == 9
+        @test prob[[XY,Y]] == prob[[model.XY,model.Y]] == prob[[:XY,:Y]] == [9, 5]
+        @test prob[(XY,Y)] == prob[(model.XY,model.Y)] == prob[(:XY,:Y)] == (9, 5)
+        @test getu(prob, X)(prob) == getu(prob, model.X)(prob) == getu(prob, :X)(prob) == 4
+        @test getu(prob, XY)(prob) == getu(prob, model.XY)(prob) == getu(prob, :XY)(prob) == 9 
+        @test getu(prob, [XY,Y])(prob) == getu(prob, [model.XY,model.Y])(prob) == getu(prob, [:XY,:Y])(prob) == [9, 5]  
+        @test getu(prob, (XY,Y))(prob) == getu(prob, (model.XY,model.Y))(prob) == getu(prob, (:XY,:Y))(prob) == (9, 5)
 
-    # Simulates problems for all input types, checking that identical solutions are found.
-    for u0 in u0_alts, p in p_alts
-        oprob = remake(base_oprob; u0, p)
-        @test base_sol == solve(oprob, Tsit5(); saveat = 1.0)
-        eprob = remake(base_eprob; u0, p)
-        @test base_esol == solve(eprob, Tsit5(); trajectories = 2, saveat = 1.0)
+        # Set u values.
+        prob[X] = 20
+        @test prob[X] == 20
+        prob[model.X] = 30
+        @test prob[X] == 30
+        prob[:X] = 40
+        @test prob[X] == 40
+        setu(prob, X)(prob, 50)
+        @test prob[X] == 50
+        setu(prob, model.X)(prob, 60)
+        @test prob[X] == 60
+        setu(prob, :X)(prob, 70)
+        @test prob[X] == 70
+
+        # Get p values.
+        @test prob.ps[kp] == prob.ps[model.kp] == prob.ps[:kp] == 1.0    
+        @test prob.ps[[k1,k2]] == prob.ps[[model.k1,model.k2]] == prob.ps[[:k1,:k2]] == [0.25, 0.5]
+        @test prob.ps[(k1,k2)] == prob.ps[(model.k1,model.k2)] == prob.ps[(:k1,:k2)] == (0.25, 0.5)
+        @test getp(prob, kp)(prob) == getp(prob, model.kp)(prob) == getp(prob, :kp)(prob) == 1.0
+        @test getp(prob, [k1,k2])(prob) == getp(prob, [model.k1,model.k2])(prob) == getp(prob, [:k1,:k2])(prob) == [0.25, 0.5]
+        @test getp(prob, (k1,k2))(prob) == getp(prob, (model.k1,model.k2))(prob) == getp(prob, (:k1,:k2))(prob) == (0.25, 0.5)
+        
+        # Set p values.
+        prob.ps[kp] = 2.0
+        @test prob.ps[kp] == 2.0
+        prob.ps[model.kp] = 3.0
+        @test prob.ps[kp] == 3.0
+        prob.ps[:kp] = 4.0
+        @test prob.ps[kp] == 4.0
+        setp(prob, kp)(prob, 5.0)
+        @test prob.ps[kp] == 5.0
+        setp(prob, model.kp)(prob, 6.0)
+        @test prob.ps[kp] == 6.0
+        setp(prob, :kp)(prob, 7.0)
+        @test prob.ps[kp] == 7.0
     end
 end
 
-# Perform SDE simulations (singular and ensemble).
+# Test remake function.
 let 
-    # Creates normal and ensemble problems.
-    base_sprob = SDEProblem(model, u0_alts[1], tspan, p_alts[1])
-    base_sol = solve(base_sprob, ImplicitEM(); seed, saveat = 1.0)
-    base_eprob = EnsembleProblem(base_sprob)
-    base_esol = solve(base_eprob, ImplicitEM(); seed, trajectories = 2, saveat = 1.0)
+    @test_broken false # Cannot check result for JumpProblem: https://github.com/SciML/ModelingToolkit.jl/issues/2838
+    @test_broken false # Cannot deepcopy SteadyStateProblem :https://github.com/SciML/ModelingToolkit.jl/issues/2837
+    @test_broken false # Currently cannot be run for Ensemble problems: https://github.com/SciML/SciMLBase.jl/issues/661 (as indexing cannot be used to check values).
+    for prob in deepcopy([oprob, sprob, dprob, nprob])
+        # Remake for all u0s.
+        rp = remake(prob; u0 = [X => 1, Y => 2])
+        @test rp[[X, Y]] == [1, 2]
+        rp = remake(prob; u0 = [model.X => 3, model.Y => 4])
+        @test rp[[X, Y]] == [3, 4]
+        rp = remake(prob; u0 = [:X => 5, :Y => 6])
+        @test rp[[X, Y]] == [5, 6]
 
-    # Simulates problems for all input types, checking that identical solutions are found.
-    for u0 in u0_alts, p in p_alts
-        sprob = remake(base_sprob; u0, p)
-        @test base_sol == solve(sprob, ImplicitEM(); seed, saveat = 1.0)
-        eprob = remake(base_eprob; u0, p)
-        @test base_esol == solve(eprob, ImplicitEM(); seed, trajectories = 2, saveat = 1.0)
+        # Remake for a single u0.
+        rp = remake(prob; u0 = [Y => 7])
+        @test rp[[X, Y]] == [4, 7]
+        rp = remake(prob; u0 = [model.Y => 8])
+        @test rp[[X, Y]] == [4, 8]
+        rp = remake(prob; u0 = [:Y => 9])
+        @test rp[[X, Y]] == [4, 9]
+
+        # Remake for all ps.
+        rp = remake(prob; p = [kp => 1.0, kd => 2.0, k1 => 3.0, k2 => 4.0])
+        @test rp.ps[[kp, kd, k1, k2]] == [1.0, 2.0, 3.0, 4.0]
+        rp = remake(prob; p = [model.kp => 5.0, model.kd => 6.0, model.k1 => 7.0, model.k2 => 8.0])
+        @test rp.ps[[kp, kd, k1, k2]] == [5.0, 6.0, 7.0, 8.0]
+        rp = remake(prob; p = [:kp => 9.0, :kd => 10.0, :k1 => 11.0, :k2 => 12.0])
+        @test rp.ps[[kp, kd, k1, k2]] == [9.0, 10.0, 11.0, 12.0]
+
+        # Remake for a single p.
+        rp = remake(prob; p = [k2 => 13.0])
+        @test rp.ps[[kp, kd, k1, k2]] == [1.0, 0.1, 0.25, 13.0]
+        rp = remake(prob; p = [model.k2 => 14.0])
+        @test rp.ps[[kp, kd, k1, k2]] == [1.0, 0.1, 0.25, 14.0]
+        rp = remake(prob; p = [:k2 => 15.0])
+        @test rp.ps[[kp, kd, k1, k2]] == [1.0, 0.1, 0.25, 15.0]
     end
 end
 
-# Perform jump simulations (singular and ensemble).
+# Test integrator indexing.
 let 
-    # Creates normal and ensemble problems.
-    base_dprob = DiscreteProblem(model, u0_alts[1], tspan, p_alts[1])
-    base_jprob = JumpProblem(model, base_dprob, Direct(); rng)
-    base_sol = solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
-    base_eprob = EnsembleProblem(base_jprob)
-    base_esol = solve(base_eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
+    @test_broken false # NOTE: Cannot even create a `ssint` (https://github.com/SciML/SciMLBase.jl/issues/660).
+    for int in deepcopy([oint, sint, jint, nint])
+        # Get u values.
+        @test int[X] == int[model.X] == int[:X] == 4
+        @test int[XY] == int[model.XY] == int[:XY] == 9
+        @test int[[XY,Y]] == int[[model.XY,model.Y]] == int[[:XY,:Y]] == [9, 5]
+        @test int[(XY,Y)] == int[(model.XY,model.Y)] == int[(:XY,:Y)] == (9, 5)
+        @test getu(int, X)(int) == getu(int, model.X)(int) == getu(int, :X)(int) == 4
+        @test getu(int, XY)(int) == getu(int, model.XY)(int) == getu(int, :XY)(int) == 9 
+        @test getu(int, [XY,Y])(int) == getu(int, [model.XY,model.Y])(int) == getu(int, [:XY,:Y])(int) == [9, 5]  
+        @test getu(int, (XY,Y))(int) == getu(int, (model.XY,model.Y))(int) == getu(int, (:XY,:Y))(int) == (9, 5)
 
-    # Simulates problems for all input types, checking that identical solutions are found.
-    for u0 in u0_alts, p in p_alts
-        jprob = remake(base_jprob; u0, p)
-        @test base_sol == solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
-        eprob = remake(base_eprob; u0, p)
-        @test base_esol == solve(eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
+        # Set u values.
+        int[X] = 20
+        @test int[X] == 20
+        int[model.X] = 30
+        @test int[X] == 30
+        int[:X] = 40
+        @test int[X] == 40
+        setu(int, X)(int, 50)
+        @test int[X] == 50
+        setu(int, model.X)(int, 60)
+        @test int[X] == 60
+        setu(int, :X)(int, 70)
+        @test int[X] == 70
+
+        # Get p values.
+        @test int.ps[kp] == int.ps[model.kp] == int.ps[:kp] == 1.0    
+        @test int.ps[[k1,k2]] == int.ps[[model.k1,model.k2]] == int.ps[[:k1,:k2]] == [0.25, 0.5]
+        @test int.ps[(k1,k2)] == int.ps[(model.k1,model.k2)] == int.ps[(:k1,:k2)] == (0.25, 0.5)
+        @test getp(int, kp)(int) == getp(int, model.kp)(int) == getp(int, :kp)(int) == 1.0
+        @test getp(int, [k1,k2])(int) == getp(int, [model.k1,model.k2])(int) == getp(int, [:k1,:k2])(int) == [0.25, 0.5]
+        @test getp(int, (k1,k2))(int) == getp(int, (model.k1,model.k2))(int) == getp(int, (:k1,:k2))(int) == (0.25, 0.5)
+        
+        # Set p values.
+        int.ps[kp] = 2.0
+        @test int.ps[kp] == 2.0
+        int.ps[model.kp] = 3.0
+        @test int.ps[kp] == 3.0
+        int.ps[:kp] = 4.0
+        @test int.ps[kp] == 4.0
+        setp(int, kp)(int, 5.0)
+        @test int.ps[kp] == 5.0
+        setp(int, model.kp)(int, 6.0)
+        @test int.ps[kp] == 6.0
+        setp(int, :kp)(int, 7.0)
+        @test int.ps[kp] == 7.0
     end
 end
 
-# Solves a nonlinear problem (EnsembleProblems are not possible for these).
+# Test solve's save_idxs argument.
+# Currently, `save_idxs` is broken with symbolic stuff (https://github.com/SciML/ModelingToolkit.jl/issues/1761).
+let 
+    for (prob, solver) in zip(deepcopy([oprob, sprob, jprob]), [Tsit5(), ImplicitEM(), SSAStepper()])
+        # Save single variable
+        @test_broken solve(prob, solver; seed, save_idxs=X)[X][1] == 4
+        @test_broken solve(prob, solver; seed, save_idxs=model.X)[X][1] == 4
+        @test_broken solve(prob, solver; seed, save_idxs=:X)[X][1] == 4
+
+        # Save observable.
+        @test_broken solve(prob, solver; seed, save_idxs=XY)[XY][1] == 9
+        @test_broken solve(prob, solver; seed, save_idxs=model.XY)[XY][1] == 9
+        @test_broken solve(prob, solver; seed, save_idxs=:XY)[XY][1] == 9
+
+        # Save vector of stuff.
+        @test_broken solve(prob, solver; seed, save_idxs=[XY,Y])[[XY,Y]][1] == [9, 5]
+        @test_broken solve(prob, solver; seed, save_idxs=[model.XY,model.Y])[[model.XY,model.Y]][1] == [9, 5]
+        @test_broken solve(prob, solver; seed, save_idxs=[:XY,:Y])[[:XY,:Y]][1] == [9, 5]
+    end
+end
+
+# Tests solution indexing.
+let 
+    for sol in deepcopy([osol, ssol, jsol])
+        # Get u values.
+        @test sol[X][1] == sol[model.X][1] == sol[:X][1] == 4
+        @test sol[XY][1] == sol[model.XY][1] == sol[:XY][1] == 9
+        @test sol[[XY,Y]][1] == sol[[model.XY,model.Y]][1] == sol[[:XY,:Y]][1] == [9, 5]
+        @test sol[(XY,Y)][1] == sol[(model.XY,model.Y)][1] == sol[(:XY,:Y)][1] == (9, 5)
+        @test getu(sol, X)(sol)[1] == getu(sol, model.X)(sol)[1] == getu(sol, :X)(sol)[1] == 4
+        @test getu(sol, XY)(sol)[1] == getu(sol, model.XY)(sol)[1] == getu(sol, :XY)(sol)[1] == 9 
+        @test getu(sol, [XY,Y])(sol)[1] == getu(sol, [model.XY,model.Y])(sol)[1] == getu(sol, [:XY,:Y])(sol)[1] == [9, 5]  
+        @test getu(sol, (XY,Y))(sol)[1] == getu(sol, (model.XY,model.Y))(sol)[1] == getu(sol, (:XY,:Y))(sol)[1] == (9, 5)       
+
+        # Get u values via idxs and functional call.
+        @test osol(0.0; idxs=X) == osol(0.0; idxs=model.X) == osol(0.0; idxs=:X) == 4
+        @test osol(0.0; idxs=XY) == osol(0.0; idxs=model.XY) == osol(0.0; idxs=:XY) == 9
+        @test osol(0.0; idxs = [XY,Y]) == osol(0.0; idxs = [model.XY,model.Y]) == osol(0.0; idxs = [:XY,:Y]) == [9, 5]
+        @test_broken osol(0.0; idxs = (XY,Y)) == osol(0.0; idxs = (model.XY,model.Y)) == osol(0.0; idxs = (:XY,:Y)) == (9, 5) # https://github.com/SciML/SciMLBase.jl/issues/711
+
+        # Get p values.
+        @test sol.ps[kp] == sol.ps[model.kp] == sol.ps[:kp] == 1.0    
+        @test sol.ps[[k1,k2]] == sol.ps[[model.k1,model.k2]] == sol.ps[[:k1,:k2]] == [0.25, 0.5]
+        @test sol.ps[(k1,k2)] == sol.ps[(model.k1,model.k2)] == sol.ps[(:k1,:k2)] == (0.25, 0.5)
+        @test getp(sol, kp)(sol) == getp(sol, model.kp)(sol) == getp(sol, :kp)(sol) == 1.0
+        @test getp(sol, [k1,k2])(sol) == getp(sol, [model.k1,model.k2])(sol) == getp(sol, [:k1,:k2])(sol) == [0.25, 0.5]
+        @test getp(sol, (k1,k2))(sol) == getp(sol, (model.k1,model.k2))(sol) == getp(sol, (:k1,:k2))(sol) == (0.25, 0.5)
+    end
+
+    # Handles nonlinear and steady state solutions differently.
+    let
+        for sol in deepcopy([nsol, sssol])
+            # Get u values.
+            @test sol[X] == sol[model.X] == sol[:X]
+            @test sol[XY] == sol[model.XY][1] == sol[:XY]
+            @test sol[[XY,Y]] == sol[[model.XY,model.Y]] == sol[[:XY,:Y]]
+            @test sol[(XY,Y)] == sol[(model.XY,model.Y)] == sol[(:XY,:Y)]
+            @test getu(sol, X)(sol) == getu(sol, model.X)(sol)[1] == getu(sol, :X)(sol)
+            @test getu(sol, XY)(sol) == getu(sol, model.XY)(sol)[1] == getu(sol, :XY)(sol)
+            @test getu(sol, [XY,Y])(sol) == getu(sol, [model.XY,model.Y])(sol) == getu(sol, [:XY,:Y])(sol)
+            @test_broken getu(sol, (XY,Y))(sol) == getu(sol, (model.XY,model.Y))(sol) == getu(sol, (:XY,:Y))(sol)[1] # https://github.com/SciML/SciMLBase.jl/issues/710
+
+            # Get p values.
+            @test sol.ps[kp] == sol.ps[model.kp] == sol.ps[:kp]
+            @test sol.ps[[k1,k2]] == sol.ps[[model.k1,model.k2]] == sol.ps[[:k1,:k2]]
+            @test sol.ps[(k1,k2)] == sol.ps[(model.k1,model.k2)] == sol.ps[(:k1,:k2)]
+            @test getp(sol, kp)(sol) == getp(sol, model.kp)(sol) == getp(sol, :kp)(sol)
+            @test getp(sol, [k1,k2])(sol) == getp(sol, [model.k1,model.k2])(sol) == getp(sol, [:k1,:k2])(sol)
+            @test getp(sol, (k1,k2))(sol) == getp(sol, (model.k1,model.k2))(sol) == getp(sol, (:k1,:k2))(sol)
+        end
+    end
+end
+
+# Tests plotting.
+let 
+    for sol in deepcopy([osol, jsol, ssol])
+        # Single variable.
+        @test length(plot(sol; idxs = X).series_list) == 1
+        @test length(plot(sol; idxs = XY).series_list) == 1
+        @test length(plot(sol; idxs = model.X).series_list) == 1
+        @test length(plot(sol; idxs = model.XY).series_list) == 1
+        @test length(plot(sol; idxs = :X).series_list) == 1
+        @test length(plot(sol; idxs = :XY).series_list) == 1
+
+        # As vector.
+        @test length(plot(sol; idxs = [X,Y]).series_list) == 2
+        @test length(plot(sol; idxs = [XY,Y]).series_list) == 2
+        @test length(plot(sol; idxs = [model.X,model.Y]).series_list) == 2
+        @test length(plot(sol; idxs = [model.XY,model.Y]).series_list) == 2
+        @test length(plot(sol; idxs = [:X,:Y]).series_list) == 2
+        @test length(plot(sol; idxs = [:XY,:Y]).series_list) == 2
+
+        # As tuple.
+        @test length(plot(sol; idxs = (X, Y)).series_list) == 1
+        @test length(plot(sol; idxs = (XY, Y)).series_list) == 1
+        @test length(plot(sol; idxs = (model.X, model.Y)).series_list) == 1
+        @test length(plot(sol; idxs = (model.XY, model.Y)).series_list) == 1
+        @test length(plot(sol; idxs = (:X, :Y)).series_list) == 1
+        @test length(plot(sol; idxs = (:XY, :Y)).series_list) == 1
+    end     
+end
+
+
+### Tests For Hierarchical System ###
+
+# TODO
+
+### Mass Action Jump Rate Updating Correctness ###
+
+# Checks that the rates of mass action jumps are correctly updated after parameter values are changed.
 let
-    base_nlprob = NonlinearProblem(model, u0_alts[1], p_alts[1])
-    base_sol = solve(base_nlprob, NewtonRaphson())
-    for u0 in u0_alts, p in p_alts
-        nlprob = remake(base_nlprob; u0, p)
-        @test base_sol == solve(nlprob, NewtonRaphson())
-    end
-end
-
-# Perform steady state simulations (singular and ensemble).
-let 
-    # Creates normal and ensemble problems.
-    base_ssprob = SteadyStateProblem(model, u0_alts[1], p_alts[1])
-    base_sol = solve(base_ssprob, DynamicSS(Tsit5()))
-    base_eprob = EnsembleProblem(base_ssprob)
-    base_esol = solve(base_eprob, DynamicSS(Tsit5()); trajectories = 2)
-
-    # Simulates problems for all input types, checking that identical solutions are found.
-    for u0 in u0_alts, p in p_alts
-        ssprob = remake(base_ssprob; u0, p)
-        @test base_sol == solve(ssprob, DynamicSS(Tsit5()))
-        eprob = remake(base_eprob; u0, p)
-        @test base_esol == solve(eprob, DynamicSS(Tsit5()); trajectories = 2)
-    end
-end
-
-### Vector Species/Parameters Tests ###
-
-begin 
-    # Declares the model (with vector species/parameters, with/without default values, and observables).
-    t = default_t()
-    @species X(t)[1:2] Y(t)[1:2] = [10.0, 20.0] XY(t)[1:2]
-    @parameters p[1:2] d[1:2] = [0.2, 0.5]
-    rxs = [
-        Reaction(p[1], [], [X[1]]),
-        Reaction(p[2], [], [X[2]]),
-        Reaction(d[1], [X[1]], []),
-        Reaction(d[2], [X[2]], []),
-        Reaction(p[1], [], [Y[1]]),
-        Reaction(p[2], [], [Y[2]]),
-        Reaction(d[1], [Y[1]], []),
-        Reaction(d[2], [Y[2]], [])
-    ]
-    observed = [XY[1] ~ X[1] + Y[1], XY[2] ~ X[2] + Y[2]]
-    @named model_vec = ReactionSystem(rxs, t; observed)
-    model_vec = complete(model_vec)
-
-    # Declares various u0 versions (scalarised and vector forms).
-    u0_alts_vec = [
-        # Vectors not providing default values.
-        [X => [1.0, 2.0]],
-        [X[1] => 1.0, X[2] => 2.0],
-        [model_vec.X => [1.0, 2.0]],
-        [model_vec.X[1] => 1.0, model_vec.X[2] => 2.0],
-        [:X => [1.0, 2.0]],
-        # Vectors providing default values.
-        [X => [1.0, 2.0], Y => [10.0, 20.0]],
-        [X[1] => 1.0, X[2] => 2.0, Y[1] => 10.0, Y[2] => 20.0],
-        [model_vec.X => [1.0, 2.0], model_vec.Y => [10.0, 20.0]],
-        [model_vec.X[1] => 1.0, model_vec.X[2] => 2.0, model_vec.Y[1] => 10.0, model_vec.Y[2] => 20.0],
-        [:X => [1.0, 2.0], :Y => [10.0, 20.0]],
-        # Dicts not providing default values.
-        Dict([X => [1.0, 2.0]]),
-        Dict([X[1] => 1.0, X[2] => 2.0]),
-        Dict([model_vec.X => [1.0, 2.0]]),
-        Dict([model_vec.X[1] => 1.0, model_vec.X[2] => 2.0]),
-        Dict([:X => [1.0, 2.0]]),
-        # Dicts providing default values.
-        Dict([X => [1.0, 2.0], Y => [10.0, 20.0]]),
-        Dict([X[1] => 1.0, X[2] => 2.0, Y[1] => 10.0, Y[2] => 20.0]),
-        Dict([model_vec.X => [1.0, 2.0], model_vec.Y => [10.0, 20.0]]),
-        Dict([model_vec.X[1] => 1.0, model_vec.X[2] => 2.0, model_vec.Y[1] => 10.0, model_vec.Y[2] => 20.0]),
-        Dict([:X => [1.0, 2.0], :Y => [10.0, 20.0]]),
-        # Tuples not providing default values.
-        (X => [1.0, 2.0]),
-        (X[1] => 1.0, X[2] => 2.0),
-        (model_vec.X => [1.0, 2.0]),
-        (model_vec.X[1] => 1.0, model_vec.X[2] => 2.0),
-        (:X => [1.0, 2.0]),
-        # Tuples providing default values.
-        (X => [1.0, 2.0], Y => [10.0, 20.0]),
-        (X[1] => 1.0, X[2] => 2.0, Y[1] => 10.0, Y[2] => 20.0),
-        (model_vec.X => [1.0, 2.0], model_vec.Y => [10.0, 20.0]),
-        (model_vec.X[1] => 1.0, model_vec.X[2] => 2.0, model_vec.Y[1] => 10.0, model_vec.Y[2] => 20.0),
-        (:X => [1.0, 2.0], :Y => [10.0, 20.0]),
-    ]
-
-    # Declares various ps versions (vector forms only).
-    p_alts_vec = [
-        # Vectors not providing default values.
-        [p => [1.0, 2.0]],
-        [model_vec.p => [1.0, 2.0]],
-        [:p => [1.0, 2.0]],
-        # Vectors providing default values.
-        [p => [4.0, 5.0], d => [0.2, 0.5]],
-        [model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]],
-        [:p => [4.0, 5.0], :d => [0.2, 0.5]],
-        # Dicts not providing default values.
-        Dict([p => [1.0, 2.0]]),
-        Dict([model_vec.p => [1.0, 2.0]]),
-        Dict([:p => [1.0, 2.0]]),
-        # Dicts providing default values.
-        Dict([p => [4.0, 5.0], d => [0.2, 0.5]]),
-        Dict([model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]]),
-        Dict([:p => [4.0, 5.0], :d => [0.2, 0.5]]),
-        # Tuples not providing default values.
-        (p => [1.0, 2.0]),
-        (model_vec.p => [1.0, 2.0]),
-        (:p => [1.0, 2.0]),
-        # Tuples providing default values.
-        (p => [4.0, 5.0], d => [0.2, 0.5]),
-        (model_vec.p => [4.0, 5.0], model_vec.d => [0.2, 0.5]),
-        (:p => [4.0, 5.0], :d => [0.2, 0.5]),
-    ]
-
-    # Declares a timespan.
-    tspan = (0.0, 10.0)
-end
-
-# Perform ODE simulations (singular and ensemble).
-let 
-    # Creates normal and ensemble problems.
-    base_oprob = ODEProblem(model_vec, u0_alts_vec[1], tspan, p_alts_vec[1])
-    base_sol = solve(base_oprob, Tsit5(); saveat = 1.0)
-    base_eprob = EnsembleProblem(base_oprob)
-    base_esol = solve(base_eprob, Tsit5(); trajectories = 2, saveat = 1.0)
-
-    # Simulates problems for all input types, checking that identical solutions are found.
-    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
-    # for u0 in u0_alts_vec, p in p_alts_vec
-    #     oprob = remake(base_oprob; u0, p)
-    #     @test base_sol == solve(oprob, Tsit5(); saveat = 1.0)
-    #     eprob = remake(base_eprob; u0, p)
-    #     @test base_esol == solve(eprob, Tsit5(); trajectories = 2, saveat = 1.0)
-    # end
-end
-
-# Perform SDE simulations (singular and ensemble).
-let 
-    # Creates normal and ensemble problems.
-    base_sprob = SDEProblem(model_vec, u0_alts_vec[1], tspan, p_alts_vec[1])
-    base_sol = solve(base_sprob, ImplicitEM(); seed, saveat = 1.0)
-    base_eprob = EnsembleProblem(base_sprob)
-    base_esol = solve(base_eprob, ImplicitEM(); seed, trajectories = 2, saveat = 1.0)
-
-    # Simulates problems for all input types, checking that identical solutions are found.
-    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
-    # for u0 in u0_alts_vec, p in p_alts_vec
-    #     sprob = remake(base_sprob; u0, p)
-    #     @test base_sol == solve(sprob, ImplicitEM(); seed, saveat = 1.0)
-    #     eprob = remake(base_eprob; u0, p)
-    #     @test base_esol == solve(eprob, ImplicitEM(); seed, trajectories = 2, saveat = 1.0)
-    # end
-end
-
-# Perform jump simulations (singular and ensemble).
-let 
-    # Creates normal and ensemble problems.
-    base_dprob = DiscreteProblem(model_vec, u0_alts_vec[1], tspan, p_alts_vec[1])
-    base_jprob = JumpProblem(model_vec, base_dprob, Direct(); rng)
-    base_sol = solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
-    base_eprob = EnsembleProblem(base_jprob)
-    base_esol = solve(base_eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
-
-    # Simulates problems for all input types, checking that identical solutions are found.
-    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
-    # for u0 in u0_alts_vec, p in p_alts_vec
-    #     jprob = remake(base_jprob; u0, p)
-    #     @test base_sol == solve(base_jprob, SSAStepper(); seed, saveat = 1.0)
-    #     eprob = remake(base_eprob; u0, p)
-    #     @test base_esol == solve(eprob, SSAStepper(); seed, trajectories = 2, saveat = 1.0)
-    # end
-end
-
-# Solves a nonlinear problem (EnsembleProblems are not possible for these).
-let
-    base_nlprob = NonlinearProblem(model_vec, u0_alts_vec[1], p_alts_vec[1])
-    base_sol = solve(base_nlprob, NewtonRaphson())
-    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
-    # for u0 in u0_alts_vec, p in p_alts_vec
-    #     nlprob = remake(base_nlprob; u0, p)
-    #     @test base_sol == solve(nlprob, NewtonRaphson())
-    # end
-end
-
-# Perform steady state simulations (singular and ensemble).
-let 
-    # Creates normal and ensemble problems.
-    base_ssprob = SteadyStateProblem(model_vec, u0_alts_vec[1], p_alts_vec[1])
-    base_sol = solve(base_ssprob, DynamicSS(Tsit5()))
-    base_eprob = EnsembleProblem(base_ssprob)
-    base_esol = solve(base_eprob, DynamicSS(Tsit5()); trajectories = 2)
-
-    # Simulates problems for all input types, checking that identical solutions are found.
-    @test_broken false # Cannot remake problem (https://github.com/SciML/ModelingToolkit.jl/issues/2804).
-    # for u0 in u0_alts_vec, p in p_alts_vec
-    #     ssprob = remake(base_ssprob; u0, p)
-    #     @test base_sol == solve(ssprob, DynamicSS(Tsit5()))
-    #     eprob = remake(base_eprob; u0, p)
-    #     @test base_esol == solve(eprob, DynamicSS(Tsit5()); trajectories = 2)
-    # end
-end
-
-### Checks Errors On Faulty Inputs ###
-
-# Checks various erroneous problem inputs, ensuring that these throw errors.
-let
-    # Declares the model.
+    # Creates the model.
     rn = @reaction_network begin
-        (k1,k2), X1 <--> X2
+        p1*p2, A + B --> C
     end
-    @unpack k1, k2, X1, X2 = rn
-    t = default_t()
-    @species X3(t)
-    @parameters k3
+    @unpack p1, p2 = rn
 
-    # Creates systems (so these are not recreated in each problem call).
-    osys = convert(ODESystem, rn)
-    ssys = convert(SDESystem, rn)
-    nsys = convert(NonlinearSystem, rn)
+    # Creates a JumpProblem and integrator. Checks that the initial mass action rate is correct.
+    u0 = [:A => 1, :B => 2, :C => 3]
+    ps = [:p1 => 3.0, :p2 => 2.0]
+    dprob = DiscreteProblem(rn, u0, (0.0, 1.0), ps)
+    jprob = JumpProblem(rn, dprob, Direct())
+    jint = init(jprob, SSAStepper())
+    @test jprob.massaction_jump.scaled_rates[1] == 6.0
 
-    # Declares valid initial conditions and parameter values
-    u0_valid = [X1 => 1, X2 => 2]
-    ps_valid = [k1 => 0.5, k2 => 0.1]
+    # Checks that the mass action rate is correctly updated after normal indexing.
+    jprob.ps[p1] = 4.0
+    @test jprob.massaction_jump.scaled_rates[1] == 8.0
+    jprob.ps[rn.p1] = 5.0
+    @test jprob.massaction_jump.scaled_rates[1] == 10.0
+    jprob.ps[:p1] = 6.0
+    @test jprob.massaction_jump.scaled_rates[1] == 12.0
+    setp(jprob, p1)(jprob, 7.0)
+    @test jprob.massaction_jump.scaled_rates[1] == 14.0
+    setp(jprob, rn.p1)(jprob, 8.0)
+    @test jprob.massaction_jump.scaled_rates[1] == 16.0
+    setp(jprob, :p1)(jprob, 3.0)
+    @test jprob.massaction_jump.scaled_rates[1] == 6.0
 
-    # Declares invalid initial conditions and parameters. This includes both cases where values are
-    # missing, or additional ones are given. Includes vector/Tuple/Dict forms.
-    u0s_invalid = [
-        # Missing a value.
-        [X1 => 1],
-        [rn.X1 => 1],
-        [:X1 => 1],
-        Dict([X1 => 1]),
-        Dict([rn.X1 => 1]),
-        Dict([:X1 => 1]),
-        (X1 => 1),
-        (rn.X1 => 1),
-        (:X1 => 1),
-        # Contain an additional value.
-        [X1 => 1, X2 => 2, X3 => 3],
-        [:X1 => 1, :X2 => 2, :X3 => 3],
-        Dict([X1 => 1, X2 => 2, X3 => 3]),
-        Dict([:X1 => 1, :X2 => 2, :X3 => 3]),
-        (X1 => 1, X2 => 2, X3 => 3),
-        (:X1 => 1, :X2 => 2, :X3 => 3)
-    ]
-    ps_invalid = [
-        # Missing a value.
-        [k1 => 1.0],
-        [rn.k1 => 1.0],
-        [:k1 => 1.0],
-        Dict([k1 => 1.0]),
-        Dict([rn.k1 => 1.0]),
-        Dict([:k1 => 1.0]),
-        (k1 => 1.0),
-        (rn.k1 => 1.0),
-        (:k1 => 1.0),
-        # Contain an additional value.
-        [k1 => 1.0, k2 => 2.0, k3 => 3.0],
-        [:k1 => 1.0, :k2 => 2.0, :k3 => 3.0],
-        Dict([k1 => 1.0, k2 => 2.0, k3 => 3.0]),
-        Dict([:k1 => 1.0, :k2 => 2.0, :k3 => 3.0]),
-        (k1 => 1.0, k2 => 2.0, k3 => 3.0),
-        (:k1 => 1.0, :k2 => 2.0, :k3 => 3.0)
-    ]
+    # Check that the mass action rate is correctly updated when `remake` is used.
+    # Checks both when partial and full parameter vectors are provided to `remake`.
+    @test remake(jprob; p = [p1 => 4.0]).massaction_jump.scaled_rates[1] == 8.0
+    @test remake(jprob; p = [rn.p1 => 5.0]).massaction_jump.scaled_rates[1] == 10.0
+    @test remake(jprob; p = [:p1 => 6.0]).massaction_jump.scaled_rates[1] == 12.0
+    @test remake(jprob; p = [p1 => 4.0, p2 => 3.0]).massaction_jump.scaled_rates[1] == 12.0
+    @test remake(jprob; p = [rn.p1 => 5.0, rn.p2 => 4.0]).massaction_jump.scaled_rates[1] == 20.0
+    @test remake(jprob; p = [:p1 => 6.0, :p2 => 5.0]).massaction_jump.scaled_rates[1] == 30.0
 
-    # Loops through all potential parameter sets, checking their inputs yield errors.
-    for ps in [[ps_valid]; ps_invalid], u0 in [[u0_valid]; u0s_invalid]
-        # Handles problems with/without tspan separately. Special check ensuring that valid inputs passes.
-        for XProblem in [ODEProblem, SDEProblem, DiscreteProblem]
-            if isequal(ps, ps_valid) && isequal(u0, u0_valid)
-                XProblem(rn, u0, (0.0, 1.0), ps); @test true;
-            else
-                @test_broken false
-                continue
-                @test_throws Exception XProblem(xsys, u0, (0.0, 1.0), ps)
-            end
-        end
-        for XProblem in [NonlinearProblem, SteadyStateProblem]
-            if isequal(ps, ps_valid) && isequal(u0, u0_valid)
-                XProblem(rn, u0, ps); @test true;
-            else
-                @test_broken false
-                continue
-                @test_throws Exception XProblem(xsys, u0, ps)
-            end
-        end
-    end
+    # Checks that updating an integrators parameter values does not affect mass action rate until after
+    # `reset_aggregated_jumps!` have been applied as well (wt which point the correct rate is achieved).
+    jint.ps[p1] = 4.0
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 30.0
+    reset_aggregated_jumps!(jint)
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 8.0
+    
+    jint.ps[rn.p1] = 5.0
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 8.0
+    reset_aggregated_jumps!(jint)
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 10.0
+    
+    jint.ps[:p1] = 6.0
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 10.0
+    reset_aggregated_jumps!(jint)
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 12.0
+    
+    setp(jint, p1)(jint, 7.0)
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 12.0
+    reset_aggregated_jumps!(jint)
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 14.0
+    
+    setp(jint, rn.p1)(jint, 8.0)
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 14.0
+    reset_aggregated_jumps!(jint)
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 16.0
+    
+    setp(jint, :p1)(jint, 3.0)
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 16.0
+    reset_aggregated_jumps!(jint)
+    @test jint.cb.condition.ma_jumps.scaled_rates[1] == 6.0
 end
