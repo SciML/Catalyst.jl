@@ -80,7 +80,7 @@ etc).
 - [SciMLSensitivity.jl](https://github.com/SciML/SciMLSensitivity.jl) can be used to compute local sensitivities of functions containing forward model simulations.
  
 #### [Features of packages built upon Catalyst](@id doc_index_features_other_packages)
-- Catalyst [`ReactionSystem`](@ref)s can be [imported from SBML files](@id model_file_import_export_sbml) via
+- Catalyst [`ReactionSystem`](@ref)s can be [imported from SBML files](@ref model_file_import_export_sbml) via
  [SBMLImporter.jl](https://github.com/SciML/SBMLImporter.jl) and [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), 
  and [from BioNetGen .net files](@ref model_file_import_export_sbml_rni_net) and various stoichiometric matrix network representations
  using [ReactionNetworkImporters.jl](https://github.com/SciML/ReactionNetworkImporters.jl).
@@ -101,7 +101,7 @@ The Catalyst documentation is separated into sections describing Catalyst's vari
 
 New users are recommended to start with either the [Introduction to Catalyst and Julia for New Julia users](@ref catalyst_for_new_julia_users) or [Introduction to Catalyst](@ref introduction_to_catalyst) sections (depending on whether they are familiar with Julia programming or not). This should be enough to carry out many basic Catalyst workflows.
 
-This documentation contains code which is dynamically run whenever it is built. If you copy the code and run it in your Julia environment it should work. The exact Julia environment that is used in this documentation can be found [here](@ref doc_home_reproducibility).
+This documentation contains code which is dynamically run whenever it is built. If you copy the code and run it in your Julia environment it should work. The exact Julia environment that is used in this documentation can be found [here](@ref doc_index_reproducibility).
 
 For most code blocks in this documentation, the output of the last line of code is printed at the of the block, e.g.
 ```@example home_display
@@ -224,7 +224,7 @@ dV(t) &= \left(g \cdot Gᴾ(t)\right) dt
 ```
 where the $dW_1(t)$ and $dW_2(t)$ terms represent independent Brownian Motions, encoding the noise added by the Chemical Langevin Equation. Finally, we can simulate and plot the results.
 ```@example home_elaborate_example
-using StochasticDiffEq
+using StochasticDiffEq, Plots
 sol = solve(sprob, EM(); dt = 0.05)
 sol = solve(sprob, EM(); dt = 0.05, seed = 1234) # hide
 plot(sol; xguide = "Time (au)", lw = 2)
