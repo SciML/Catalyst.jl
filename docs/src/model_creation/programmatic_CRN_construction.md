@@ -180,7 +180,7 @@ This ensured they were properly treated as species and not parameters. See the
 
 ## Basic querying of `ReactionSystems`
 
-The [Catalyst.jl API](@ref) provides a large variety of functionality for
+The [Catalyst.jl API](@ref api) provides a large variety of functionality for
 querying properties of a reaction network. Here we go over a few of the most
 useful basic functions. Given the `repressillator` defined above we have that
 ```@example ex
@@ -247,5 +247,5 @@ rx1.prodstoich
 rx1.netstoich
 ```
 
-See the [Catalyst.jl API](@ref) for much more detail on the various querying and
+See the [Catalyst.jl API](@ref api) for much more detail on the various querying and
 analysis functions provided by Catalyst.

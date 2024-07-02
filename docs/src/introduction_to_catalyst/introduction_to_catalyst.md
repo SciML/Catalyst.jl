@@ -44,7 +44,7 @@ listed chemical species and unknowns. [`@reaction_network`](@ref) returns a
 [`ReactionSystem`](@ref), which we saved in the `repressilator` variable. It can
 be converted to a variety of other mathematical models represented as
 `ModelingToolkit.AbstractSystem`s, or analyzed in various ways using the
-[Catalyst.jl API](@ref). For example, to see the chemical species, parameters,
+[Catalyst.jl API](@ref api). For example, to see the chemical species, parameters,
 and reactions we can use
 ```@example tut1
 species(repressilator)
