@@ -104,22 +104,23 @@ New users are recommended to start with either the [Introduction to Catalyst and
 This documentation contains code which is dynamically run whenever it is built. If you copy the code and run it in your Julia environment it should work. The exact Julia environment that is used in this documentation can be found [here](@ref doc_home_reproducibility).
 
 For most code blocks in this documentation, the output of the last line of code is printed at the of the block, e.g.
-```@example home1
+```@example home_display
 1 + 2
 ```
 and
-```@example home1
+```@example home_display
+using Catalyst # hide
 @reaction_network begin
     (p,d), 0 <--> X
 end
 ```
 However, in some situations (e.g. when output is extensive, or irrelevant to what is currently being described) we have disabled this, e.g. like here:
-```@example home1
+```@example home_display
 1 + 2
 nothing # hide
 ```
 and here:
-```@example home1
+```@example home_display
 @reaction_network begin
     (p,d), 0 <--> X
 end
