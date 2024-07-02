@@ -3,10 +3,10 @@ In many contexts, a single model is re-simulated under similar conditions. Examp
 - Performing Monte Carlo simulations of a stochastic model to gain insight in its behaviour.
 - Scanning a model's behaviour for different parameter values and/or initial conditions.
 
-While this can be handled using `for` loops, it is typically better to first create an `EnsembleProblem`, and then perform an ensemble simulation. Advantages include a more concise interface and the option for [automatic simulation parallelisation](@ref ref). Here we provide a short tutorial on how to perform parallel ensemble simulations, with a more extensive documentation being available [here](@ref https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/).
+While this can be handled using `for` loops, it is typically better to first create an `EnsembleProblem`, and then perform an ensemble simulation. Advantages include a more concise interface and the option for [automatic simulation parallelisation](@ref ode_simulation_performance_parallelisation). Here we provide a short tutorial on how to perform parallel ensemble simulations, with a more extensive documentation being available [here](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/).
 
 ## [Monte Carlo simulations using unmodified conditions](@id ensemble_simulations_monte_carlo)
-We will first consider Monte Carlo simulations where the simulation conditions are identical in-between simulations. First, we declare a [simple self-activation loop](@ref ref) model
+We will first consider Monte Carlo simulations where the simulation conditions are identical in-between simulations. First, we declare a [simple self-activation loop](@ref basic_CRN_library_self_activation) model
 ```@example ensemble
 using Catalyst
 sa_model = @reaction_network begin
@@ -16,23 +16,28 @@ end
 u0 = [:X => 10.0]
 tspan = (0.0, 1000.0)
 ps = [:v0 => 0.1, :v => 2.5, :K => 40.0, :n => 4.0, :deg => 0.01]
+nothing # hide
 ```
 We wish to simulate it as an SDE. Rather than performing a single simulation, however, we want to perform multiple ones. Here, we first create a normal `SDEProblem`, and use it as the single input to a `EnsembleProblem` (`EnsembleProblem` are created similarly for ODE and jump simulations, but the `ODEProblem` or `JumpProblem` is used instead).
 ```@example ensemble
+using StochasticDiffEq
 sprob = SDEProblem(sa_model, u0, tspan, ps)
 eprob = EnsembleProblem(sprob)
 nothing # hide
 ```
-Next, the `EnsembleProblem` can be used as input to the `solve` command. Here, we use exactly the same inputs that we use for single simulations, however, we add a `trajectories` argument to denote how many simulations we wish to carry out. Here we perform 100 simulations:
+Next, the `EnsembleProblem` can be used as input to the `solve` command. Here, we use exactly the same inputs that we use for single simulations, however, we add a `trajectories` argument to denote how many simulations we wish to carry out. Here we perform 10 simulations:
 ```@example ensemble
-sols = solve(eprob, STrapezoid(); trajectories = 100)
+sols = solve(eprob, STrapezoid(); trajectories = 10)
 nothing # hide
 ```
 Finally, we can use our ensemble simulation solution as input to `plot` (just like normal simulations):
 ```@example ensemble
-plot(sols; la = 0.5)
+using Plots
+plot(sols)
 ```
-Here, each simulation is displayed as an individual trajectory. We also use the [`la` plotting option](@ref ref) to reduce the transparency of each individual line, improving the plot visual. 
+Here, each simulation is displayed as an individual trajectory.
+!!! note
+    While not used here, the [`la` plotting option](@ref simulation_plotting_options) (which modifies line transparency) can help improve the plot visual when a large number of (overlapping) lines are plotted.
 
 Various convenience functions are available for analysing and plotting ensemble simulations (a full list can be found [here]). Here, we use these to first create an `EnsembleSummary` (retrieving each simulation's value at time points `0.0, 1.0, 2.0, ... 1000.0`). Next, we use this as an input to the `plot` command, which automatically plots the mean $X$ activity across the ensemble, while also displaying the 5% and 95% quantiles as the shaded area:
 ```@example ensemble
@@ -45,7 +50,8 @@ Previously, we assumed that each simulation used the same initial conditions and
 
 Here, we first create an `ODEProblem` of our previous self-activation loop:
 ```@example ensemble
-oprob = ODEProblem(sa_model, u0, tspan, p)
+using OrdinaryDiffEq
+oprob = ODEProblem(sa_model, u0, tspan, ps)
 nothing # hide
 ```
 Next, we wish to simulate the model for a range of initial conditions of $X$`. To do this we create a problem function, which takes the following arguments:
@@ -53,7 +59,7 @@ Next, we wish to simulate the model for a range of initial conditions of $X$`. T
 - `i`: The number of this specific Monte Carlo iteration in the interval `1:trajectories`.
 - `repeat`: The iteration of the repeat of the simulation. Typically `1`, but potentially higher if [the simulation re-running option](https://docs.sciml.ai/DiffEqDocs/stable/features/ensemble/#Building-a-Problem) is used.
 
-Here we will use the following problem function (utilising [remake](@ref ref)), which will provide a uniform range of initial concentrations of $X$:
+Here we will use the following problem function (utilising [remake](@ref simulation_structure_interfacing_problems_remake)), which will provide a uniform range of initial concentrations of $X$:
 ```@example ensemble
 function prob_func(prob, i, repeat)
     remake(prob; u0 = [:X => i * 5.0])

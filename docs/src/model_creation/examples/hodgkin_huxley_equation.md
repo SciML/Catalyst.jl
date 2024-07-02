@@ -13,7 +13,7 @@ cells such as neurons and muscle cells.
 We begin by importing some necessary packages.
 ```@example hh1
 using ModelingToolkit, Catalyst, NonlinearSolve
-using DifferentialEquations, Symbolics
+using OrdinaryDiffEq, Symbolics
 using Plots
 t = default_t()
 D = default_time_deriv()
@@ -77,6 +77,7 @@ I = I₀ * sin(2*pi*t/30)^2
 # get the gating variables to use in the equation for dV/dt
 @unpack m,n,h = hhrn
 
+Dₜ = default_time_deriv()
 eqs = [Dₜ(V) ~ -1/C * (ḡK*n^4*(V-EK) + ḡNa*m^3*h*(V-ENa) + ḡL*(V-EL)) + I/C]
 @named voltageode = ODESystem(eqs, t)
 nothing # hide
@@ -88,6 +89,7 @@ Finally, we add this ODE into the reaction model as
 
 ```@example hh1
 @named hhmodel = extend(voltageode, hhrn)
+hhmodel = complete(hhmodel)
 nothing # hide
 ```
 

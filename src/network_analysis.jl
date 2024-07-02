@@ -106,7 +106,7 @@ function reactioncomplexes(rn::ReactionSystem; sparse = false)
 end
 
 function reactioncomplexes(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem,
-                           complextorxsmap)
+        complextorxsmap)
     complexes = collect(keys(complextorxsmap))
     Is = Int[]
     Js = Int[]
@@ -320,7 +320,6 @@ function incidencematgraph(incidencemat::SparseMatrixCSC{Int, Int})
     return graph
 end
 
-
 ### Linkage, Deficiency, Reversibility ###
 
 """
@@ -399,7 +398,7 @@ end
 # Used in the subsequent function.
 function subnetworkmapping(linkageclass, allrxs, complextorxsmap, p)
     rxinds = sort!(collect(Set(rxidx for rcidx in linkageclass
-                               for rxidx in complextorxsmap[rcidx])))
+    for rxidx in complextorxsmap[rcidx])))
     rxs = allrxs[rxinds]
     specset = Set(s for rx in rxs for s in rx.substrates if !isconstant(s))
     for rx in rxs
@@ -447,7 +446,7 @@ function subnetworks(rs::ReactionSystem)
         reacs, specs, newps = subnetworkmapping(lcs[i], rxs, complextorxsmap, p)
         newname = Symbol(nameof(rs), "_", i)
         push!(subnetworks,
-              ReactionSystem(reacs, t, specs, newps; name = newname, spatial_ivs))
+            ReactionSystem(reacs, t, specs, newps; name = newname, spatial_ivs))
     end
     subnetworks
 end
@@ -538,7 +537,6 @@ function isweaklyreversible(rn::ReactionSystem, subnets)
     end
     all(Graphs.is_strongly_connected ∘ incidencematgraph, subnets)
 end
-
 
 ### Conservation Laws ###
 
@@ -653,7 +651,7 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     depidxs = col_order[(r + 1):end]
     depspecs = sts[depidxs]
     constants = MT.unwrap.(MT.scalarize(only(
-                @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] [conserved=true])))
+        @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] [conserved = true])))
 
     conservedeqs = Equation[]
     constantdefs = Equation[]
@@ -717,4 +715,174 @@ function conservationlaw_errorcheck(rs, pre_varmap)
     any(s -> s in vars_with_vals, species(rs)) && return
     isempty(conservedequations(Catalyst.flatten(rs))) ||
         error("The system has conservation laws but initial conditions were not provided for some species.")
+end
+
+"""
+    iscomplexbalanced(rs::ReactionSystem, parametermap)
+
+Constructively compute whether a network will have complex-balanced equilibrium
+solutions, following the method in van der Schaft et al., [2015](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
+"""
+
+function iscomplexbalanced(rs::ReactionSystem, parametermap::Dict)
+    if length(parametermap) != numparams(rs)
+        error("Incorrect number of parameters specified.")
+    end
+
+    pmap = symmap_to_varmap(rs, parametermap)
+    pmap = Dict(ModelingToolkit.value(k) => v for (k, v) in pmap)
+
+    sm = speciesmap(rs)
+    cm = reactioncomplexmap(rs)
+    complexes, D = reactioncomplexes(rs)
+    rxns = reactions(rs)
+    nc = length(complexes)
+    nr = numreactions(rs)
+    nm = numspecies(rs)
+
+    if !all(r -> ismassaction(r, rs), rxns)
+        error("The supplied ReactionSystem has reactions that are not ismassaction. Testing for being complex balanced is currently only supported for pure mass action networks.")
+    end
+
+    rates = [substitute(rate, pmap) for rate in reactionrates(rs)]
+
+    # Construct kinetic matrix, K
+    K = zeros(nr, nc)
+    for c in 1:nc
+        complex = complexes[c]
+        for (r, dir) in cm[complex]
+            rxn = rxns[r]
+            if dir == -1
+                K[r, c] = rates[r]
+            end
+        end
+    end
+
+    L = -D * K
+    S = netstoichmat(rs)
+
+    # Compute ρ using the matrix-tree theorem
+    g = incidencematgraph(rs)
+    R = ratematrix(rs, rates)
+    ρ = matrixtree(g, R)
+
+    # Determine if 1) ρ is positive and 2) D^T Ln ρ lies in the image of S^T
+    if all(>(0), ρ)
+        img = D' * log.(ρ)
+        if rank(S') == rank(hcat(S', img))
+            return true
+        else
+            return false
+        end
+    else
+        return false
+    end
+end
+
+function iscomplexbalanced(rs::ReactionSystem, parametermap::Vector{Pair{Symbol, Float64}})
+    pdict = Dict(parametermap)
+    iscomplexbalanced(rs, pdict)
+end
+
+function iscomplexbalanced(rs::ReactionSystem, parametermap::Tuple{Pair{Symbol, Float64}})
+    pdict = Dict(parametermap)
+    iscomplexbalanced(rs, pdict)
+end
+
+function iscomplexbalanced(rs::ReactionSystem, parametermap)
+    error("Parameter map must be a dictionary, tuple, or vector of symbol/value pairs.")
+end
+
+"""
+    ratematrix(rs::ReactionSystem, parametermap)
+
+    Given a reaction system with n complexes, outputs an n-by-n matrix where R_{ij} is the rate constant of the reaction between complex i and complex j. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
+"""
+
+function ratematrix(rs::ReactionSystem, rates::Vector{Float64})
+    complexes, D = reactioncomplexes(rs)
+    n = length(complexes)
+    rxns = reactions(rs)
+    ratematrix = zeros(n, n)
+
+    for r in 1:length(rxns)
+        rxn = rxns[r]
+        s = findfirst(==(-1), @view D[:, r])
+        p = findfirst(==(1), @view D[:, r])
+        ratematrix[s, p] = rates[r]
+    end
+    ratematrix
+end
+
+function ratematrix(rs::ReactionSystem, parametermap::Dict)
+    if length(parametermap) != numparams(rs)
+        error("Incorrect number of parameters specified.")
+    end
+
+    pmap = symmap_to_varmap(rs, parametermap)
+    pmap = Dict(ModelingToolkit.value(k) => v for (k, v) in pmap)
+
+    rates = [substitute(rate, pmap) for rate in reactionrates(rs)]
+    ratematrix(rs, rates)
+end
+
+function ratematrix(rs::ReactionSystem, parametermap::Vector{Pair{Symbol, Float64}})
+    pdict = Dict(parametermap)
+    ratematrix(rs, pdict)
+end
+
+function ratematrix(rs::ReactionSystem, parametermap::Tuple{Pair{Symbol, Float64}})
+    pdict = Dict(parametermap)
+    ratematrix(rs, pdict)
+end
+
+function ratematrix(rs::ReactionSystem, parametermap)
+    error("Parameter map must be a dictionary, tuple, or vector of symbol/value pairs.")
+end
+
+### BELOW: Helper functions for iscomplexbalanced
+
+function matrixtree(g::SimpleDiGraph, distmx::Matrix)
+    n = nv(g)
+    if size(distmx) != (n, n)
+        error("Size of distance matrix is incorrect")
+    end
+
+    π = zeros(n)
+
+    if !Graphs.is_connected(g)
+        ccs = Graphs.connected_components(g)
+        for cc in ccs
+            sg, vmap = Graphs.induced_subgraph(g, cc)
+            distmx_s = distmx[cc, cc]
+            π_j = matrixtree(sg, distmx_s)
+            π[cc] = π_j
+        end
+        return π
+    end
+
+    # generate all spanning trees
+    ug = SimpleGraph(SimpleDiGraph(g))
+    trees = collect(Combinatorics.combinations(collect(edges(ug)), n - 1))
+    trees = SimpleGraph.(trees)
+    trees = filter!(t -> isempty(Graphs.cycle_basis(t)), trees)
+
+    # constructed rooted trees for every vertex, compute sum
+    for v in 1:n
+        rootedTrees = [reverse(Graphs.bfs_tree(t, v, dir = :in)) for t in trees]
+        π[v] = sum([treeweight(t, g, distmx) for t in rootedTrees])
+    end
+
+    # sum the contributions
+    return π
+end
+
+function treeweight(t::SimpleDiGraph, g::SimpleDiGraph, distmx::Matrix)
+    prod = 1
+    for e in edges(t)
+        s = Graphs.src(e)
+        t = Graphs.dst(e)
+        prod *= distmx[s, t]
+    end
+    prod
 end

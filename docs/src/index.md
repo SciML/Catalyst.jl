@@ -89,7 +89,7 @@ Pkg.add("Catalyst")
 To solve Catalyst models and visualize solutions, it is also recommended to
 install DifferentialEquations.jl and Plots.jl
 ```julia
-Pkg.add("DifferentialEquations")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 ```
 
@@ -114,7 +114,7 @@ which in Jupyter notebooks will give the figure
 
 To generate and solve a mass action ODE version of the model we use
 ```@example ind1
-using DifferentialEquations
+using OrdinaryDiffEq
 p     = [:α => .1/1000, :β => .01]
 tspan = (0.0,250.0)
 u0    = [:S => 999.0, :I => 1.0, :R => 0.0]

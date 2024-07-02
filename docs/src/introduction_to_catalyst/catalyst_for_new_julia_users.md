@@ -1,5 +1,5 @@
 # [Introduction to Catalyst and Julia for New Julia users](@id catalyst_for_new_julia_users)
-The Catalyst tool for the modelling of chemical reaction networks is based in the Julia programming language. While experience in Julia programming is advantageous for using Catalyst, it is not necessary for accessing most of its basic features. This tutorial serves as an introduction to Catalyst for those unfamiliar with Julia, while also introducing some basic Julia concepts. Anyone who plans on using Catalyst extensively is recommended to familiarise oneself more thoroughly with the Julia programming language. A collection of resources for learning Julia can be found [here](https://julialang.org/learning/), and a full documentation is available [here](https://docs.julialang.org/en/v1/). A more practical (but also extensive) guide to Julia programming can be found [here](https://modernjuliaworkflows.github.io/writing/).
+The Catalyst tool for the modelling of chemical reaction networks is based in the Julia programming language[^1][^2]. While experience in Julia programming is advantageous for using Catalyst, it is not necessary for accessing most of its basic features. This tutorial serves as an introduction to Catalyst for those unfamiliar with Julia, while also introducing some basic Julia concepts. Anyone who plans on using Catalyst extensively is recommended to familiarise oneself more thoroughly with the Julia programming language. A collection of resources for learning Julia can be found [here](https://julialang.org/learning/), and a full documentation is available [here](https://docs.julialang.org/en/v1/). A more practical (but also extensive) guide to Julia programming can be found [here](https://modernjuliaworkflows.github.io/writing/).
 
 Julia can be downloaded [here](https://julialang.org/downloads/). Generally, it is recommended to use the [*juliaup*](https://github.com/JuliaLang/juliaup) tool to install and update Julia. Furthermore, *Visual Studio Code* is a good IDE with [extensive Julia support](https://code.visualstudio.com/docs/languages/julia), and a good default choice.
 
@@ -55,15 +55,15 @@ To import a Julia package into a session, you can use the `using PackageName` co
 using Pkg
 Pkg.add("Catalyst")
 ```
-Here, the Julia package manager package (`Pkg`) is by default installed on your computer when Julia is installed, and can be activated directly. Next, we also wish to install the `DifferentialEquations` and `Plots` packages (for numeric simulation of models, and plotting, respectively).
+Here, the Julia package manager package (`Pkg`) is by default installed on your computer when Julia is installed, and can be activated directly. Next, we also wish to install the `OrdinaryDiffEq` and `Plots` packages (for numeric simulation of models, and plotting, respectively).
 ```julia
-Pkg.add("DifferentialEquations")
+Pkg.add("OrdinaryDiffEq")
 Pkg.add("Plots")
 ```
 Once a package has been installed through the `Pkg.add` command, this command does not have to be repeated if we restart our Julia session. We can now import all three packages into our current session with:
 ```@example ex2
 using Catalyst
-using DifferentialEquations
+using OrdinaryDiffEq
 using Plots
 ```
 Here, if we restart Julia, these `using` commands *must be rerun*.
@@ -77,11 +77,11 @@ Catalyst models are created through the `@reaction_network` *macro*. For more in
 
 The `@reaction_network` command is followed by the `begin` keyword, which is followed by one line for each *reaction* of the model. Each reaction consists of a *reaction rate*, followed by the reaction itself. The reaction contains a set of *substrates* and a set of *products* (what is consumed and produced by the reaction, respectively). These are separated by a `-->` arrow. Finally, the model ends with the `end` keyword.
 
-Here, we create a simple *birth-death* model, where a single species ($X$) is created at rate $b$, and degraded at rate $d$. The model is stored in the variable `rn`.
+Here, we create a simple [*birth-death* model](@ref basic_CRN_library_bd), where a single species ($X$) is created at rate $b$, and degraded at rate $d$. The model is stored in the variable `rn`.
 ```@example ex2
 rn = @reaction_network begin
- b, 0 --> X
- d, X --> 0
+    b, 0 --> X
+    d, X --> 0
 end
 ```
 For more information on how to use the Catalyst model creator (also known as *the Catalyst DSL*), please read [the corresponding documentation](https://docs.sciml.ai/Catalyst/stable/catalyst_functionality/dsl_description/).
@@ -130,12 +130,16 @@ For more information about the numerical simulation package, please see the [Dif
 ## Additional modelling example
 To make this introduction more comprehensive, we here provide another example, using a more complicated model. Instead of simulating our model as concentrations evolve over time, we will now simulate the individual reaction events through the [Gillespie algorithm](https://en.wikipedia.org/wiki/Gillespie_algorithm) (a common approach for adding *noise* to models).
 
-Remember (unless we have restarted Julia) we do not need to activate our packages (through the `using` command) again.
+Remember (unless we have restarted Julia) we do not need to activate our packages (through the `using` command) again. However, we do need to install, and then import, the JumpProcesses package (just to perform Gillespie, and other jump, simulations)
+```julia
+Pkg.add("JumpProcesses")
+using JumpProcesses
+```
 
-This time, we will declare a so-called [SIR model for an infectious disease](https://en.wikipedia.org/wiki/Compartmental_models_in_epidemiology#The_SIR_model). Note that even if this model does not describe a set of chemical reactions, it can be modelled using the same framework. The model consists of 3 species:
-* $S$, the amount of *susceptible* individuals.
-* $I$, the amount of *infected* individuals.
-* $R$, the amount of *recovered* (or *removed*) individuals.
+This time, we will declare a so-called [SIR model for an infectious disease](@ref basic_CRN_library_sir). Note that even if this model does not describe a set of chemical reactions, it can be modelled using the same framework. The model consists of 3 species:
+* *S*, the amount of *susceptible* individuals.
+* *I*, the amount of *infected* individuals.
+* *R*, the amount of *recovered* (or *removed*) individuals.
 
 It also has 2 reaction events:
 * Infection, where a susceptible individual meets an infected individual and also becomes infected.
@@ -148,8 +152,8 @@ Each reaction is also associated with a specific rate (corresponding to a parame
 We declare the model using the `@reaction_network` macro, and store it in the `sir_model` variable.
 ```@example ex2
 sir_model = @reaction_network begin
- b, S + I --> 2I
- k, I --> R
+    b, S + I --> 2I
+    k, I --> R
 end
 ```
 Note that the first reaction contains two different substrates (separated by a `+` sign). While there is only a single product (*I*), two copies of *I* are produced. The *2* in front of the product *I* denotes this.
@@ -164,12 +168,14 @@ nothing # hide
 
 Previously we have bundled this information into an `ODEProblem` (denoting a deterministic *ordinary differential equation*). Now we wish to simulate our model as a jump process (where each reaction event corresponds to a single jump in the state of the system). We do this by first creating a `DiscreteProblem`, and then using this as an input to a `JumpProblem`.
 ```@example ex2
+using JumpProcesses # hide
 dprob = DiscreteProblem(sir_model, u0, tspan, params)
 jprob = JumpProblem(sir_model, dprob, Direct())
+nothing # hide
 ```
 Again, the order in which the inputs are given to the `DiscreteProblem` and the `JumpProblem` is important. The last argument to the `JumpProblem` (`Direct()`) denotes which simulation method we wish to use. For now, we recommend that users simply use the `Direct()` option, and then consider alternative ones (see the [JumpProcesses.jl docs](https://docs.sciml.ai/JumpProcesses/stable/)) when they are more familiar with modelling in Catalyst and Julia.
 
-Finally, we can simulate our model using the `solve` function, and plot the solution using the `plot` function. Here, the `solve` function also has a second argument (`SSAStepper()`). This is a time-stepping algorithm that calls the `Direct` solver to advance a simulation. Again, we recommend at this stage you simply use this option, and then explore exactly what this means at a later stage.
+Finally, we can simulate our model using the `solve` function, and plot the solution using the `plot` function. For jump simulations, the `solve` function also requires a second argument (`SSAStepper()`). This is a time-stepping algorithm that calls the `Direct` solver to advance a simulation. Again, we recommend at this stage you simply use this option, and then explore exactly what this means at a later stage.
 ```@example ex2
 sol = solve(jprob, SSAStepper())
 sol = solve(jprob, SSAStepper(); seed=1234) # hide
@@ -194,7 +200,7 @@ This will:
 2. Switch your current Julia session to use the current folder's environment.
 
 !!! note
- If you check any folder which has been designated as a Julia environment, it contains a Project.toml and a Manifest.toml file. These store all information regarding the corresponding environment. For non-advanced users, it is recommended to never touch these files directly (and instead do so using various functions from the Pkg package, the important ones which are described in the next two subsections).
+    If you check any folder which has been designated as a Julia environment, it contains a Project.toml and a Manifest.toml file. These store all information regarding the corresponding environment. For non-advanced users, it is recommended to never touch these files directly (and instead do so using various functions from the Pkg package, the important ones which are described in the next two subsections).
 
 ### [Installing and importing packages in Julia](@id catalyst_for_new_julia_users_packages_installing)
 Package installation and import have been described [previously](@ref catalyst_for_new_julia_users_packages_intro). However, for the sake of this extended tutorial, let us repeat the description by demonstrating how to install the [Latexify.jl](https://github.com/korsbo/Latexify.jl) package (which enables e.g. displaying Catalyst models in Latex format). First, we import the Julia Package manager ([Pkg](https://github.com/JuliaLang/Pkg.jl)) (which is required to install Julia packages):
@@ -231,7 +237,7 @@ So, why is this required, and why cannot we simply import any package installed 
 The reason why all this is important is that it is *highly recommended* to, for each project, define a separate environment. To these, only add the required packages. General-purpose environments with a large number of packages often, in the long term, produce package incompatibility issues. While these might not prevent you from installing all desired package, they often mean that you are unable to use the latest version of some packages.
 
 !!! note
- A not-infrequent cause for reported errors with Catalyst (typically the inability to replicate code in tutorials) is package incompatibilities in large environments preventing the latest version of Catalyst from being installed. Hence, whenever an issue is encountered, it is useful to run `Pkg.status()` to check whenever the latest version of Catalyst is being used.
+    A not-infrequent cause for reported errors with Catalyst (typically the inability to replicate code in tutorials) is package incompatibilities in large environments preventing the latest version of Catalyst from being installed. Hence, whenever an issue is encountered, it is useful to run `Pkg.status()` to check whenever the latest version of Catalyst is being used.
 
 Some additional useful Pkg commands are:
 - `Pk.rm("PackageName")` removes a package from the current environment.
@@ -239,7 +245,7 @@ Some additional useful Pkg commands are:
 - `Pkg.update()`: updates all packages.
 
 !!! note
- A useful feature of Julia's environment system is that enables the exact definition of what packages and versions were used to execute a script. This supports e.g. reproducibility in academic research. Here, by providing the corresponding Project.toml and Manifest.toml files, you can enable someone to reproduce the exact program used to perform some set of analyses.
+    A useful feature of Julia's environment system is that enables the exact definition of what packages and versions were used to execute a script. This supports e.g. reproducibility in academic research. Here, by providing the corresponding Project.toml and Manifest.toml files, you can enable someone to reproduce the exact program used to perform some set of analyses.
 
 
 ---
@@ -248,5 +254,5 @@ If you are a new Julia user who has used this tutorial, and there was something 
 
 ---
 ## References
-[^1]: [Jeff Bezanson, Alan Edelman, Stefan Karpinski, Viral B. Shah, *Julia: A Fresh Approach to Numerical Computing*, SIAM Review (2017).](https://epubs.siam.org/doi/abs/10.1137/141000671)
-[^2]: [Torkel E. Loman, Yingbo Ma, Vasily Ilin, Shashi Gowda, Niklas Korsbo, Nikhil Yewale, Chris Rackauckas, Samuel A. Isaacson, *Catalyst: Fast and flexible modeling of reaction networks*, PLOS Computational Biology (2023).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530)
+[^1]: [Torkel E. Loman, Yingbo Ma, Vasily Ilin, Shashi Gowda, Niklas Korsbo, Nikhil Yewale, Chris Rackauckas, Samuel A. Isaacson, *Catalyst: Fast and flexible modeling of reaction networks*, PLOS Computational Biology (2023).](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530)
+[^2]: [Jeff Bezanson, Alan Edelman, Stefan Karpinski, Viral B. Shah, *Julia: A Fresh Approach to Numerical Computing*, SIAM Review (2017).](https://epubs.siam.org/doi/abs/10.1137/141000671)

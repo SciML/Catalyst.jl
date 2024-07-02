@@ -26,12 +26,13 @@ Notes:
 - This function is part of the StructuralIdentifiability.jl extension. StructuralIdentifiability.jl must be imported to access it.
 - `measured_quantities` and `known_p` input may also be symbolic (e.g. measured_quantities = [rs.X])
 """
-function Catalyst.make_si_ode(rs::ReactionSystem; measured_quantities = [], known_p = [], 
-                              ignore_no_measured_warn = false, remove_conserved = true)
+function Catalyst.make_si_ode(rs::ReactionSystem; measured_quantities = [], known_p = [],
+        ignore_no_measured_warn = false, remove_conserved = true)
     # Creates a MTK ODESystem, and a list of measured quantities (there are equations).
     # Gives these to SI to create an SI ode model of its preferred form.
     osys, conseqs, _ = make_osys(rs; remove_conserved)
-    measured_quantities = make_measured_quantities(rs, measured_quantities, known_p, conseqs; ignore_no_measured_warn)
+    measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
+        conseqs; ignore_no_measured_warn)
     return SI.mtk_to_si(osys, measured_quantities)[1]
 end
 
@@ -62,16 +63,18 @@ Notes:
 - This function is part of the StructuralIdentifiability.jl extension. StructuralIdentifiability.jl must be imported to access it.
 - `measured_quantities` and `known_p` input may also be symbolic (e.g. measured_quantities = [rs.X])
 """
-function SI.assess_local_identifiability(rs::ReactionSystem, args...; measured_quantities = [], 
-                                         known_p = [], funcs_to_check = Vector(), remove_conserved = true, 
-                                         ignore_no_measured_warn=false, kwargs...)
+function SI.assess_local_identifiability(rs::ReactionSystem, args...;
+        measured_quantities = [], known_p = [], funcs_to_check = Vector(),
+        remove_conserved = true, ignore_no_measured_warn = false, kwargs...)
     # Creates a ODESystem, list of measured quantities, and functions to check, of SI's preferred form.
     osys, conseqs, vars = make_osys(rs; remove_conserved)
-    measured_quantities = make_measured_quantities(rs, measured_quantities, known_p, conseqs; ignore_no_measured_warn)
+    measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
+        conseqs; ignore_no_measured_warn)
     funcs_to_check = make_ftc(funcs_to_check, conseqs, vars)
 
     # Computes identifiability and converts it to a easy to read form.
-    out = SI.assess_local_identifiability(osys, args...; measured_quantities, funcs_to_check, kwargs...)
+    out = SI.assess_local_identifiability(osys, args...; measured_quantities,
+        funcs_to_check, kwargs...)
     return make_output(out, funcs_to_check, reverse.(conseqs))
 end
 
@@ -100,16 +103,18 @@ Notes:
 - This function is part of the StructuralIdentifiability.jl extension. StructuralIdentifiability.jl must be imported to access it.
 - `measured_quantities` and `known_p` input may also be symbolic (e.g. measured_quantities = [rs.X])
 """
-function SI.assess_identifiability(rs::ReactionSystem, args...; measured_quantities = [], known_p = [], 
-                                   funcs_to_check = Vector(), remove_conserved = true, 
-                                   ignore_no_measured_warn=false, kwargs...)
+function SI.assess_identifiability(rs::ReactionSystem, args...;
+        measured_quantities = [], known_p = [], funcs_to_check = Vector(),
+        remove_conserved = true, ignore_no_measured_warn = false, kwargs...)
     # Creates a ODESystem, list of measured quantities, and functions to check, of SI's preferred form.
     osys, conseqs, vars = make_osys(rs; remove_conserved)
-    measured_quantities = make_measured_quantities(rs, measured_quantities, known_p, conseqs; ignore_no_measured_warn)
+    measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
+        conseqs; ignore_no_measured_warn)
     funcs_to_check = make_ftc(funcs_to_check, conseqs, vars)
 
     # Computes identifiability and converts it to a easy to read form.
-    out = SI.assess_identifiability(osys, args...; measured_quantities, funcs_to_check, kwargs...)
+    out = SI.assess_identifiability(osys, args...; measured_quantities,
+        funcs_to_check, kwargs...)
     return make_output(out, funcs_to_check, reverse.(conseqs))
 end
 
@@ -138,12 +143,13 @@ Notes:
 - This function is part of the StructuralIdentifiability.jl extension. StructuralIdentifiability.jl must be imported to access it.
 - `measured_quantities` and `known_p` input may also be symbolic (e.g. measured_quantities = [rs.X])
 """
-function SI.find_identifiable_functions(rs::ReactionSystem, args...; measured_quantities = [], 
-                                        known_p = [], remove_conserved = true, ignore_no_measured_warn=false, 
-                                        kwargs...)
+function SI.find_identifiable_functions(rs::ReactionSystem, args...;
+        measured_quantities = [], known_p = [], remove_conserved = true,
+        ignore_no_measured_warn = false, kwargs...)
     # Creates a ODESystem, and list of measured quantities, of SI's preferred form.
     osys, conseqs = make_osys(rs; remove_conserved)
-    measured_quantities = make_measured_quantities(rs, measured_quantities, known_p, conseqs; ignore_no_measured_warn)
+    measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
+        conseqs; ignore_no_measured_warn)
 
     # Computes identifiable functions and converts it to a easy to read form.
     out = SI.find_identifiable_functions(osys, args...; measured_quantities, kwargs...)
@@ -154,12 +160,14 @@ end
 
 # From a reaction system, creates the corresponding MTK-style ODESystem for SI application 
 # Also compute the, later needed, conservation law equations and list of system symbols (unknowns and parameters).
-function make_osys(rs::ReactionSystem; remove_conserved=true)
+function make_osys(rs::ReactionSystem; remove_conserved = true)
     # Creates the ODESystem corresponding to the ReactionSystem (expanding functions and flattening it).
     # Creates a list of the systems all symbols (unknowns and parameters).
-    ModelingToolkit.iscomplete(rs) || error("Identifiability should only be computed for complete systems. A ReactionSystem can be marked as complete using the `complete` function.")
+    if !ModelingToolkit.iscomplete(rs)
+        error("Identifiability should only be computed for complete systems. A ReactionSystem can be marked as complete using the `complete` function.")
+    end
     rs = complete(Catalyst.expand_registered_functions(flatten(rs)))
-    osys = complete(convert(ODESystem, rs; remove_conserved))
+    osys = complete(convert(ODESystem, rs; remove_conserved, remove_conserved_warn = false))
     vars = [unknowns(rs); parameters(rs)]
 
     # Computes equations for system conservation laws.
@@ -177,11 +185,12 @@ end
 # Creates a list of measured quantities of a form that SI can read.
 # Each measured quantity must have a form like:
 # `obs_var ~ X` # (Here, `obs_var` is a variable, and X is whatever we can measure).
-function make_measured_quantities(rs::ReactionSystem, measured_quantities::Vector{T}, known_p::Vector{S},
-                                  conseqs; ignore_no_measured_warn=false) where {T,S}
+function make_measured_quantities(
+        rs::ReactionSystem, measured_quantities::Vector{T}, known_p::Vector{S},
+        conseqs; ignore_no_measured_warn = false) where {T, S}
     # Warning if the user didn't give any measured quantities.
-    if ignore_no_measured_warn || isempty(measured_quantities) 
-        @warn "No measured quantity provided to the `measured_quantities` argument, any further identifiability analysis will likely fail. You can disable this warning by setting `ignore_no_measured_warn=true`."
+    if !ignore_no_measured_warn && isempty(measured_quantities)
+        @warn "No measured quantity provided to the `measured_quantities` argument, any further identifiability analysis will likely fail. You can disable this warning by setting `ignore_no_measured_warn = true`."
     end
 
     # Appends the known parameters to the measured_quantities vector. Converts any Symbols to symbolics.
@@ -192,7 +201,8 @@ function make_measured_quantities(rs::ReactionSystem, measured_quantities::Vecto
     # Creates one internal observation variable for each measured quantity (`___internal_observables`).
     # Creates a vector of equations, setting each measured quantity equal to one observation variable.
     @variables t (___internal_observables(Catalyst.get_iv(rs)))[1:length(mqs)]
-    return Equation[(q isa Equation) ? q : (___internal_observables[i] ~ q) for (i,q) in enumerate(mqs)] 
+    return Equation[(q isa Equation) ? q : (___internal_observables[i] ~ q)
+                    for (i, q) in enumerate(mqs)]
 end
 
 # Creates the functions that we wish to check for identifiability.
@@ -210,9 +220,9 @@ end
 # Sorts the output according to their input order (defaults to the `[unknowns; parameters]` order).
 function make_output(out, funcs_to_check, conseqs)
     funcs_to_check = vector_subs(funcs_to_check, conseqs)
-    out = Dict(zip(vector_subs(keys(out), conseqs), values(out)))
-    sortdict = Dict(ftc => i for (i,ftc) in enumerate(funcs_to_check))
-    return sort(out; by = x -> sortdict[x])    
+    out = OrderedDict(zip(vector_subs(keys(out), conseqs), values(out)))
+    sortdict = Dict(ftc => i for (i, ftc) in enumerate(funcs_to_check))
+    return sort!(out; by = x -> sortdict[x])
 end
 
 # For a vector of expressions and a conservation law, substitutes the law into every equation.
