@@ -59,6 +59,16 @@ let
     #     end
     #     println("-----------")
     # end
+
+    # Testing if cycles identifies reversible reactions as cycles (one forward, one reverse) 
+    cyclemat = Catalyst.cycles(MAPK)
+    S = netstoichmat(MAPK)
+    for i in 1:size(S, 2)-1
+        if S[:,i] == -S[:,i+1]
+           cycle = [(j == i) || (j == i+1) ? 1 : 0 for j in 1:size(S,2)]
+           @test rank(cyclemat) == rank(hcat(cyclemat, cycle))
+        end
+    end
 end
 
 # Tests network analysis functions on a second network (by comparing to manually computed outputs).
@@ -326,3 +336,18 @@ let
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
 
+# Cycle Tests
+let
+    rn = @reaction_network begin
+        k1, 0 --> X1
+        k2, X1 --> 0
+        k3, X1 --> X2
+        (k4, k5), X2 <--> X3
+        (k6, k7), X3 <--> 0
+    end
+
+    # 0 --> X1 --> X2 --> X3 --> 0
+    cycle = [1, 0, 1, 1, 0, 1, 0]
+    cyclemat = Catalyst.cycles(rn)
+    @test rank(cyclemat) == rank(hcat(cyclemat, cycle))
+end
