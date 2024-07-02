@@ -523,7 +523,7 @@ There exist several types of plots for both types of calibration results. More d
 
 ---
 ## [Citations](@id petab_citations)
-If you use this functionality in your research, [in addition to Catalyst](@ref catalyst_citation), please cite the following papers to support the authors of the PEtab.jl package (currently there is no article associated with this package) and the PEtab standard:
+If you use this functionality in your research, [in addition to Catalyst](@ref doc_index_citation), please cite the following papers to support the authors of the PEtab.jl package (currently there is no article associated with this package) and the PEtab standard:
 ```
 @misc{2023Petabljl,
   author       = {Ognissanti, Damiano AND Arutjunjan, Rafael AND Persson, Sebastian AND Hasselgren, Viktor},

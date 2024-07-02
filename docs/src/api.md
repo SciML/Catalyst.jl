@@ -1,4 +1,4 @@
-# Catalyst.jl API
+# [Catalyst.jl API](@id api)
 ```@meta
 CurrentModule = Catalyst
 ```
