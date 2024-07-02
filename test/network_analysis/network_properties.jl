@@ -336,7 +336,7 @@ let
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
 
-# Cycle Tests
+# Cycle Test: Open Reaction Network
 let
     rn = @reaction_network begin
         k1, 0 --> X1
