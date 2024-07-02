@@ -32,18 +32,15 @@ etc).
 
 ## Breaking changes and new features
 
-**NOTE:** Version 14 is a breaking release, prompted by the release of ModelingToolkit.jl version 9. 
-This caused several breaking changes in how Catalyst models are represented and interfaced with.
+**NOTE:** Version 14 is a breaking release, prompted by the release of ModelingToolkit.jl version 9. This caused several breaking changes in how Catalyst models are represented and interfaced with.
 
-Breaking changes and new functionality are summarized in the
-[HISTORY.md](HISTORY.md) file. Furthermore, a migration guide on how to adapt your workflows to the 
-the new v14 update can be found [here](https://docs.sciml.ai/Catalyst/stable/v14_migration_guide/).
+Breaking changes and new functionality are summarized in the [HISTORY.md](HISTORY.md) file. Furthermore, a migration guide on how to adapt your workflows to the new v14 update can be found [here](https://docs.sciml.ai/Catalyst/stable/v14_migration_guide/).
 
 ## Tutorials and documentation
 
 The latest tutorials and information on using Catalyst are available in the [stable
 documentation](https://docs.sciml.ai/Catalyst/stable/). The [in-development
-documentation](https://docs.sciml.ai/Catalyst/stable/) describes unreleased features in
+documentation](https://docs.sciml.ai/Catalyst/dev/) describes unreleased features in
 the current master branch.
 
 An overview of the package, its features, and comparative benchmarking (as of version 13) can also 
