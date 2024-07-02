@@ -213,7 +213,7 @@ dV(t) &= \left(g \cdot Gᴾ(t)\right) dt
 ```
 where the $dW_1(t)$ and $dW_2(t)$ terms represent independent Brownian Motions,  encoding the noise added by the Chemical Langevin Equation. Finally, we can simulate and plot the results.
 ```julia
-using StochasticDiffEq
+using StochasticDiffEq, Plots
 sol = solve(sprob, EM(); dt = 0.05)
 plot(sol; xguide = "Time (au)", lw = 2)
 ```
