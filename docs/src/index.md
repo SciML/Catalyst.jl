@@ -174,7 +174,7 @@ plot(sol; lw = 5)
 The same model can be used as input to other types of simulations. E.g. here we instead generate and simulate a stochastic chemical kinetics jump process model.
 ```@example home_simple_example
 # Create and simulate a jump process (here using Gillespie's direct algorithm).
-# Note that integer (not decimal) initial conditions are used.
+# The initial conditions are now integers as we track exact populations for each species.
 using JumpProcesses
 u0_integers = [:S => 50, :E => 10, :SE => 0, :P => 0]
 dprob = DiscreteProblem(model, u0_integers, tspan, ps)
