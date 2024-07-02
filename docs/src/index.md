@@ -210,7 +210,7 @@ We now study the system as a Chemical Langevin Dynamics SDE model, which can be 
 ```@example home_elaborate_example
 u0 = [:V => 25.0, :G => 50.0, :Gᴾ => 0.0]
 tspan = (0.0, 20.0)
-ps = [:Vₘ => 50.0, :g => 0.2, :kₚ => 100.0, :kᵢ => 60.0]
+ps = [:Vₘ => 50.0, :g => 0.3, :kₚ => 100.0, :kᵢ => 60.0]
 sprob = SDEProblem(cell_model, u0, tspan, ps)
 ```
 This produces the following equations:
@@ -221,7 +221,7 @@ dGᴾ(t) &= \left( \frac{kₚ*(sin(t)+1)}{V(t)} G(t) - \frac{kᵢ}{V(t)} Gᴾ(t)
 dV(t) &= \left(g \cdot Gᴾ(t)\right) dt
 \end{align*}
 ```
-where the $dW_1(t)$ and $dW_2(t)$ terms represent independent Brownian Motions,  encoding the noise added by the Chemical Langevin Equation. Finally, we can simulate and plot the results.
+where the $dW_1(t)$ and $dW_2(t)$ terms represent independent Brownian Motions, encoding the noise added by the Chemical Langevin Equation. Finally, we can simulate and plot the results.
 ```@example home_elaborate_example
 using StochasticDiffEq
 sol = solve(sprob, EM(); dt = 0.05)
