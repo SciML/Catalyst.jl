@@ -204,6 +204,14 @@ end
 
 ### ReactionSystem Structure ###
 
+""" 
+WARNING!!!
+
+The following variable is used to check that code that should be updated when the `ReactionSystem` 
+fields are updated has in fact been updated. Do not just blindly update this without first checking 
+all such code and updating it appropriately (e.g. serialization). Please use a search for
+`reactionsystem_fields` throughout the package to ensure all places which should be updated, are updated.
+"""
 # Constant storing all reaction system fields (in order). Used to check whether the `ReactionSystem`
 # structure have been updated (in the `reactionsystem_uptodate_check` function).
 const reactionsystem_fields = (
@@ -1479,4 +1487,4 @@ function validate(rs::ReactionSystem, info::String = "")
 end
 
 # Checks if a unit consist of exponents with base 1 (and is this unitless).
-unitless_exp(u) = istree(u) && (operation(u) == ^) && (arguments(u)[1] == 1)
+unitless_exp(u) = iscall(u) && (operation(u) == ^) && (arguments(u)[1] == 1)

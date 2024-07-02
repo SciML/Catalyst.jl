@@ -240,13 +240,15 @@ const SKIPPED_METADATA = [ModelingToolkit.MTKVariableTypeCtx, Symbolics.Variable
 # Potentially strips the call for a symbolics. E.g. X(t) becomes X (but p remains p). This is used 
 # when variables are written to files, as in code they are used without the call part.
 function strip_call(sym)
-    return istree(sym) ? Sym{Real}(Symbolics.getname(sym)) : sym
+    return iscall(sym) ? Sym{Real}(Symbolics.getname(sym)) : sym
 end
 
 # For an vector of symbolics, creates a dictionary taking each symbolics to each call-stripped form.
 function make_strip_call_dict(syms)
     return Dict([sym => strip_call(Symbolics.unwrap(sym)) for sym in syms])
 end
+
+# If the input is a `ReactionSystem`, extracts the unknowns (i.e. syms depending on another variable).
 function make_strip_call_dict(rn::ReactionSystem)
     return make_strip_call_dict(get_unknowns(rn))
 end

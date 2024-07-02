@@ -280,6 +280,7 @@ end
 # Currently not supported. Won't be until the LatticeReactionSystem internal update is merged.
 
 # Checks that parameter types designated in the non-spatial `ReactionSystem` is handled correctly.
+# Broken lattice tests have local branches that fixes them.
 @test_broken let
     # Declares LatticeReactionSystem with designated parameter types.
     rs = @reaction_network begin

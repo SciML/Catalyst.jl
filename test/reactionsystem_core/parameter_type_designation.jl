@@ -64,7 +64,7 @@ let
     for p in p_alts
         oprob = ODEProblem(rs, u0, (0.0, 1000.0), p; abstol = 1e-10, reltol = 1e-10)
         sol = solve(oprob, Tsit5())
-        @test all(sol[end] .≈ 1.0)
+        @test all(sol.u[end] .≈ 1.0)
     end
 end
 
@@ -88,7 +88,7 @@ let
     nsol = solve(nprob, NewtonRaphson())
 
     # Checks all stored parameters.
-    for mtk_struct in [oprob, sprob, dprob, jprob, nprob, oinit, sinit, jinit, osol, ssol, jsol, nsol]
+    for mtk_struct in [oprob, sprob, dprob, jprob, nprob, oinit, sinit, jinit, ninit, osol, ssol, jsol, nsol]
         # Checks that all parameters have the correct type.
         @test unwrap(mtk_struct.ps[p1]) isa Float64
         @test unwrap(mtk_struct.ps[d1]) isa Float64
@@ -114,8 +114,8 @@ let
         @test unwrap(mtk_struct.ps[d5]) == Float32(1.5)
     end
     
-    # Checks all stored variables.
-    for mtk_struct in [oprob, sprob, dprob, jprob, nprob, oinit, sinit, jinit]
+    # Checks all stored variables (these should always be `Float64`).
+    for mtk_struct in [oprob, sprob, dprob, jprob, nprob, oinit, sinit, jinit, ninit]
         # Checks that all variables have the correct type.
         @test unwrap(mtk_struct[X1]) isa Float64
         @test unwrap(mtk_struct[X2]) isa Float64
@@ -130,10 +130,4 @@ let
         @test unwrap(mtk_struct[X4]) == 0.4
         @test unwrap(mtk_struct[X5]) == 0.5
     end
-
-    # This test started working now, probably due to a MTK fix. Need to look at where to put it
-    # back into the test properly though.
-    @test_broken false 
-    # Indexing currently broken for NonlinearSystem integrators (MTK intend to support this though).
-    @test unwrap(ninit.ps[p1]) isa Float64
 end

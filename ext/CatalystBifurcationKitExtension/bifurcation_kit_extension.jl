@@ -4,7 +4,7 @@
 function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
         plot_var = nothing, record_from_solution = BK.record_sol_default, jac = true, u0 = [], kwargs...)
     if !isautonomous(rs)
-        error("Attempting to create a `BifurcationProblem` for a non-autonomous system (e.g. where some rate depend on $(rs.iv)). This is not possible.")
+        error("Attempting to create a `BifurcationProblem` for a non-autonomous system (e.g. where some rate depend on $(get_iv(rs))). This is not possible.")
     end
 
     # Converts symbols to symbolics.
@@ -22,7 +22,8 @@ function BK.BifurcationProblem(rs::ReactionSystem, u0_bif, ps, bif_par, args...;
 
     # Creates NonlinearSystem.
     Catalyst.conservationlaw_errorcheck(rs, vcat(ps, u0))
-    nsys = convert(NonlinearSystem, rs; remove_conserved = true, defaults = Dict(u0))
+    nsys = convert(NonlinearSystem, rs; defaults = Dict(u0),
+        remove_conserved = true, remove_conserved_warn = false)
     nsys = complete(nsys)
 
     # Makes BifurcationProblem (this call goes through the ModelingToolkit-based BifurcationKit extension).

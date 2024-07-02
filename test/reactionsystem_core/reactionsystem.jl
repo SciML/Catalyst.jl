@@ -159,7 +159,6 @@ end
 
 # Test with JumpSystem.
 let
-    p = rand(rng, length(k))
     @species A(t) B(t) C(t) D(t) E(t) F(t)
     rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
         Reaction(k[2], [B], nothing),            # B -> 0
@@ -193,27 +192,29 @@ let
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.ConstantRateJump, cidxs))
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.VariableRateJump, vidxs))
 
-    pars = rand(rng, length(k))
+    p = rand(rng, length(k))
+    pmap = parameters(js) .=> p
     u0 = rand(rng, 2:10, 6)
+    u0map = unknowns(js) .=> u0
     ttt = rand(rng)
     jumps = Vector{Union{ConstantRateJump, MassActionJump, VariableRateJump}}(undef,
                                                                               length(rxs))
 
-    jumps[1] = MassActionJump(pars[1], Vector{Pair{Int, Int}}(), [1 => 1])
-    jumps[2] = MassActionJump(pars[2], [2 => 1], [2 => -1])
-    jumps[3] = MassActionJump(pars[3], [1 => 1], [1 => -1, 3 => 1])
-    jumps[4] = MassActionJump(pars[4], [3 => 1], [1 => 1, 2 => 1, 3 => -1])
-    jumps[5] = MassActionJump(pars[5], [3 => 1], [1 => 2, 3 => -1])
-    jumps[6] = MassActionJump(pars[6], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1])
-    jumps[7] = MassActionJump(pars[7], [2 => 2], [1 => 1, 2 => -2])
-    jumps[8] = MassActionJump(pars[8], [1 => 1, 2 => 1], [2 => -1, 3 => 1])
-    jumps[9] = MassActionJump(pars[9], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1, 4 => 1])
-    jumps[10] = MassActionJump(pars[10], [1 => 2], [1 => -2, 3 => 1, 4 => 1])
-    jumps[11] = MassActionJump(pars[11], [1 => 2], [1 => -1, 2 => 1])
-    jumps[12] = MassActionJump(pars[12], [1 => 1, 2 => 3, 3 => 4],
+    jumps[1] = MassActionJump(p[1], Vector{Pair{Int, Int}}(), [1 => 1])
+    jumps[2] = MassActionJump(p[2], [2 => 1], [2 => -1])
+    jumps[3] = MassActionJump(p[3], [1 => 1], [1 => -1, 3 => 1])
+    jumps[4] = MassActionJump(p[4], [3 => 1], [1 => 1, 2 => 1, 3 => -1])
+    jumps[5] = MassActionJump(p[5], [3 => 1], [1 => 2, 3 => -1])
+    jumps[6] = MassActionJump(p[6], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1])
+    jumps[7] = MassActionJump(p[7], [2 => 2], [1 => 1, 2 => -2])
+    jumps[8] = MassActionJump(p[8], [1 => 1, 2 => 1], [2 => -1, 3 => 1])
+    jumps[9] = MassActionJump(p[9], [1 => 1, 2 => 1], [1 => -1, 2 => -1, 3 => 1, 4 => 1])
+    jumps[10] = MassActionJump(p[10], [1 => 2], [1 => -2, 3 => 1, 4 => 1])
+    jumps[11] = MassActionJump(p[11], [1 => 2], [1 => -1, 2 => 1])
+    jumps[12] = MassActionJump(p[12], [1 => 1, 2 => 3, 3 => 4],
                                [1 => -1, 2 => -3, 3 => -2, 4 => 3])
-    jumps[13] = MassActionJump(pars[13], [1 => 3, 2 => 1], [1 => -3, 2 => -1])
-    jumps[14] = MassActionJump(pars[14], Vector{Pair{Int, Int}}(), [1 => 2])
+    jumps[13] = MassActionJump(p[13], [1 => 3, 2 => 1], [1 => -3, 2 => -1])
+    jumps[14] = MassActionJump(p[14], Vector{Pair{Int, Int}}(), [1 => 2])
 
     jumps[15] = ConstantRateJump((u, p, t) -> p[15] * u[1] / (2 + u[1]),
                                  integrator -> (integrator.u[1] -= 1))
@@ -230,35 +231,101 @@ let
                                  integrator -> (integrator.u[4] -= 2; integrator.u[5] -= 1; integrator.u[6] += 2))
 
     unknownoid = Dict(unknown => i for (i, unknown) in enumerate(unknowns(js)))
-    jspmapper = ModelingToolkit.JumpSysMajParamMapper(js, pars)
+    dprob = DiscreteProblem(js, u0map, (0.0, 10.0), pmap)
+    mtkpars = dprob.p
+    jspmapper = ModelingToolkit.JumpSysMajParamMapper(js, mtkpars)
     symmaj = ModelingToolkit.assemble_maj(equations(js).x[1], unknownoid, jspmapper)
-    maj = MassActionJump(symmaj.param_mapper(pars), symmaj.reactant_stoch, symmaj.net_stoch,
+    maj = MassActionJump(symmaj.param_mapper(mtkpars), symmaj.reactant_stoch, symmaj.net_stoch,
                          symmaj.param_mapper, scale_rates = false)
     for i in midxs
-        @test_broken abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100 * eps()
+        @test abs(jumps[i].scaled_rates - maj.scaled_rates[i]) < 100 * eps()
         @test jumps[i].reactant_stoch == maj.reactant_stoch[i]
         @test jumps[i].net_stoch == maj.net_stoch[i]
     end
     for i in cidxs
         crj = ModelingToolkit.assemble_crj(js, equations(js)[i], unknownoid)
-        @test_broken isapprox(crj.rate(u0, p, ttt), jumps[i].rate(u0, p, ttt))
-        fake_integrator1 = (u = zeros(6), p = p, t = 0.0)
-        fake_integrator2 = deepcopy(fake_integrator1)
+        @test isapprox(crj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
+        fake_integrator1 = (u = zeros(6), p = mtkpars, t = 0.0)
+        fake_integrator2 = (u = zeros(6), p, t = 0.0)
         crj.affect!(fake_integrator1)
         jumps[i].affect!(fake_integrator2)
-        @test fake_integrator1 == fake_integrator2
+        @test fake_integrator1.u == fake_integrator2.u
     end
     for i in vidxs
         crj = ModelingToolkit.assemble_vrj(js, equations(js)[i], unknownoid)
-        @test_broken isapprox(crj.rate(u0, p, ttt), jumps[i].rate(u0, p, ttt))
-        fake_integrator1 = (u = zeros(6), p = p, t = 0.0)
-        fake_integrator2 = deepcopy(fake_integrator1)
+        @test isapprox(crj.rate(u0, mtkpars, ttt), jumps[i].rate(u0, p, ttt))
+        fake_integrator1 = (u = zeros(6), p = mtkpars, t = 0.0)
+        fake_integrator2 = (u = zeros(6), p, t = 0.0)
         crj.affect!(fake_integrator1)
         jumps[i].affect!(fake_integrator2)
-        @test fake_integrator1 == fake_integrator2
+        @test fake_integrator1.u == fake_integrator2.u
     end
 end
 
+### Nich Model Declarations ###
+
+# Checks model with vector species and parameters.
+# Checks that it works for programmatic/dsl-based modelling.
+# Checks that all forms of model input (parameter/initial condition and vector/non-vector) are
+# handled properly.
+let 
+    # Declares programmatic model.
+    @parameters p[1:2] k d1 d2
+    @species (X(t))[1:2] Y1(t) Y2(t)
+    rxs = [
+        Reaction(p[1], [], [X[1]]),
+        Reaction(p[2], [], [X[2]]),
+        Reaction(k, [X[1]], [Y1]),
+        Reaction(k, [X[2]], [Y2]),
+        Reaction(d1, [Y1], []),
+        Reaction(d2, [Y2], []),
+    ]
+    rs_prog = complete(ReactionSystem(rxs, t; name = :rs))
+
+    # Declares DSL-based model.
+    rs_dsl = @reaction_network rs begin
+        @parameters p[1:2] k d1 d2 
+        @species (X(t))[1:2] Y1(t) Y2(t)
+        (p[1],p[2]), 0 --> (X[1],X[2])
+        k, (X[1],X[2]) --> (Y1,Y2)
+        (d1,d2), (Y1,Y2) --> 0
+    end
+
+    # Checks equivalence.
+    rs_dsl == rs_prog
+
+    # Creates all possible initial conditions and parameter values.
+    u0_alts = [
+        [X => [2.0, 5.0], Y1 => 0.2, Y2 => 0.5],
+        [X[1] => 2.0, X[2] => 5.0, Y1 => 0.2, Y2 => 0.5],
+        [rs_dsl.X => [2.0, 5.0], rs_dsl.Y1 => 0.2, rs_dsl.Y2 => 0.5],
+        [rs_dsl.X[1] => 2.0, X[2] => 5.0, rs_dsl.Y1 => 0.2, rs_dsl.Y2 => 0.5],
+        [:X => [2.0, 5.0], :Y1 => 0.2, :Y2 => 0.5]
+    ]
+    ps_alts = [
+        [p => [1.0, 10.0], d1 => 5.0, d2 => 4.0, k => 2.0],
+        [p[1] => 1.0, p[2] => 10.0, d1 => 5.0, d2 => 4.0, k => 2.0],
+        [rs_dsl.p => [1.0, 10.0], rs_dsl.d1 => 5.0, rs_dsl.d2 => 4.0, rs_dsl.k => 2.0],
+        [rs_dsl.p[1] => 1.0, p[2] => 10.0, rs_dsl.d1 => 5.0, rs_dsl.d2 => 4.0, rs_dsl.k => 2.0],
+        [:p => [1.0, 10.0], :d1 => 5.0, :d2 => 4.0, :k => 2.0]
+    ]
+
+    # Loops through all inputs and check that the correct steady state is reached
+    # Target steady state: (X1, X2, Y1, Y2) = (p1/k, p2/k, p1/d1, p2/d2).
+    # Technically only one model needs to be check. However, "equivalent" models in MTK can still
+    # have slight differences, so checking for both here to be certain.
+    for rs in [rs_prog, rs_dsl]
+        oprob = ODEProblem(rs, u0_alts[1], (0.0, 10000.), ps_alts[1])
+        @test_broken false # Cannot currently `remake` this problem/
+        # for rs in [rs_prog, rs_dsl], u0 in u0_alts, p in ps_alts
+        #     oprob_remade = remake(oprob; u0, p)
+        #     sol = solve(oprob_remade, Vern7(); abstol = 1e-8, reltol = 1e-8)
+        #     @test sol[end] ≈ [0.5, 5.0, 0.2, 2.5]
+        # end
+    end
+end
+
+### Other Tests ###
 
 ### Test Show ###
 
@@ -356,7 +423,7 @@ let
     oprob1 = ODEProblem(osys, u0map, tspan, pmap)
     sts = [B, D, E, C]
     syms = [:B, :D, :E, :C]
-    ofun = ODEFunction(f!; syms)
+    ofun = ODEFunction(f!; sys = ModelingToolkit.SymbolCache(syms))
     oprob2 = ODEProblem(ofun, u0, tspan, p)
     saveat = tspan[2] / 50
     abstol = 1e-10
@@ -439,7 +506,7 @@ let
         umean += sol(10.0, idxs = [B1, B2, B3, C])
     end
     umean /= Nsims
-    @test isapprox(umean[1], umean[2]; rtol = 1e-2) 
+    @test isapprox(umean[1], umean[2]; rtol = 1e-2)
     @test isapprox(umean[1], umean[3]; rtol = 1e-2)
     @test umean[4] == 10
 end
@@ -747,5 +814,5 @@ end
 # there are several places in the code where the `reactionsystem_uptodate` function is called, here
 # the code might need adaptation to take the updated reaction system into account.
 let
-    @test_nowarn  Catalyst.reactionsystem_uptodate_check()
+    @test_nowarn Catalyst.reactionsystem_uptodate_check()
 end

@@ -38,7 +38,7 @@ Notes:
 function Catalyst.hc_steady_states(rs::ReactionSystem, ps; filter_negative = true,
         neg_thres = -1e-20, u0 = [], kwargs...)
     if !isautonomous(rs)
-        error("Attempting to compute steady state for a non-autonomous system (e.g. where some rate depend on $(rs.iv)). This is not possible.")
+        error("Attempting to compute steady state for a non-autonomous system (e.g. where some rate depend on $(get_iv(rs))). This is not possible.")
     end
     ss_poly = steady_state_polynomial(rs, ps, u0)
     sols = HC.real_solutions(HC.solve(ss_poly; kwargs...))
@@ -49,7 +49,8 @@ end
 # For a given reaction system, parameter values, and initial conditions, find the polynomial that HC solves to find steady states.
 function steady_state_polynomial(rs::ReactionSystem, ps, u0)
     rs = Catalyst.expand_registered_functions(rs)
-    ns = complete(convert(NonlinearSystem, rs; remove_conserved = true))
+    ns = complete(convert(NonlinearSystem, rs;
+        remove_conserved = true, remove_conserved_warn = false))
     pre_varmap = [symmap_to_varmap(rs, u0)..., symmap_to_varmap(rs, ps)...]
     Catalyst.conservationlaw_errorcheck(rs, pre_varmap)
     p_vals = ModelingToolkit.varmap_to_vars(pre_varmap, parameters(ns);
@@ -67,7 +68,7 @@ function make_int_exps(expr)
     wrap(Rewriters.Postwalk(Rewriters.PassThrough(___make_int_exps))(unwrap(expr))).val
 end
 function ___make_int_exps(expr)
-    !istree(expr) && return expr
+    !iscall(expr) && return expr
     if (operation(expr) == ^)
         if isinteger(arguments(expr)[2])
             return arguments(expr)[1]^Int64(arguments(expr)[2])

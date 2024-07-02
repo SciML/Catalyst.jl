@@ -48,7 +48,7 @@ function steady_state_stability(u::Vector, rs::ReactionSystem, ps;
         tol = 10 * sqrt(eps(ss_val_type(u))), ss_jac = steady_state_jac(rs; u0 = u))
     # Warning checks.
     if !isautonomous(rs)
-        error("Attempting to compute stability for a non-autonomous system (e.g. where some rate depend on $(rs.iv)). This is not possible.")
+        error("Attempting to compute stability for a non-autonomous system (e.g. where some rate depend on $(get_iv(rs))). This is not possible.")
     end
 
     # If `u` is a vector of values, we convert it to a map. Also, if there are conservation laws,
@@ -117,8 +117,8 @@ function steady_state_jac(rs::ReactionSystem; u0 = [sp => 0.0 for sp in unknowns
 
     # Creates an `ODEProblem` with a Jacobian. Dummy values for `u0` and `ps` must be provided.
     ps = [p => 0.0 for p in parameters(rs)]
-    return ODEProblem(rs, u0, 0, ps; jac = true, remove_conserved = true,
-        combinatoric_ratelaws = combinatoric_ratelaws)
+    return ODEProblem(rs, u0, 0, ps; jac = true, combinatoric_ratelaws,
+        remove_conserved = true, remove_conserved_warn = false)
 end
 
 # Converts a `u` vector from a vector of values to a map.

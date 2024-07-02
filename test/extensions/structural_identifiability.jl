@@ -1,7 +1,10 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, StructuralIdentifiability, Test
+using Catalyst, Logging, StructuralIdentifiability, Test
+
+# Sets the `loglevel`.
+loglevel = Logging.Error
 
 # Helper function for checking that results are correct identifiability calls from different packages.
 # Converts the output dicts from StructuralIdentifiability functions from "weird symbol => stuff" to "symbol => stuff" (the output have some strange meta data which prevents equality checks, this enables this).
@@ -28,15 +31,15 @@ let
         (pₑ*M,dₑ), 0 <--> E
         (pₚ*E,dₚ), 0 <--> P
     end
-    gi_1 = assess_identifiability(goodwind_oscillator_catalyst; measured_quantities=[:M])
-    li_1 = assess_local_identifiability(goodwind_oscillator_catalyst; measured_quantities=[:M])
-    ifs_1 = find_identifiable_functions(goodwind_oscillator_catalyst; measured_quantities=[:M])
+    gi_1 = assess_identifiability(goodwind_oscillator_catalyst; measured_quantities = [:M], loglevel)
+    li_1 = assess_local_identifiability(goodwind_oscillator_catalyst; measured_quantities = [:M], loglevel)
+    ifs_1 = find_identifiable_functions(goodwind_oscillator_catalyst; measured_quantities = [:M], loglevel)
 
     # Identifiability analysis for Catalyst converted to StructuralIdentifiability.jl model.
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[:M])
-    gi_2 = assess_identifiability(si_catalyst_ode)
-    li_2 = assess_local_identifiability(si_catalyst_ode)
-    ifs_2 = find_identifiable_functions(si_catalyst_ode)
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [:M])
+    gi_2 = assess_identifiability(si_catalyst_ode; loglevel)
+    li_2 = assess_local_identifiability(si_catalyst_ode; loglevel)
+    ifs_2 = find_identifiable_functions(si_catalyst_ode; loglevel)
 
     # Identifiability analysis for StructuralIdentifiability.jl model (declare this overwrites e.g. X2 variable etc.).
     goodwind_oscillator_si = @ODEmodel(
@@ -45,9 +48,9 @@ let
         P'(t) = -dₚ*P(t) + pₚ*E(t),
         y1(t) = M(t)
     )
-    gi_3 = assess_identifiability(goodwind_oscillator_si)
-    li_3 = assess_local_identifiability(goodwind_oscillator_si)
-    ifs_3 = find_identifiable_functions(goodwind_oscillator_si)
+    gi_3 = assess_identifiability(goodwind_oscillator_si; loglevel)
+    li_3 = assess_local_identifiability(goodwind_oscillator_si; loglevel)
+    ifs_3 = find_identifiable_functions(goodwind_oscillator_si; loglevel)
 
     # Check outputs.
     @test sym_dict(gi_1) == sym_dict(gi_2) == sym_dict(gi_3)
@@ -74,15 +77,15 @@ let
         d, X4 --> 0
     end
     @unpack X2, X3 = rs_catalyst    
-    gi_1 = assess_identifiability(rs_catalyst; measured_quantities=[X2, X3], known_p=[:k2f])
-    li_1 = assess_local_identifiability(rs_catalyst; measured_quantities=[X2, X3], known_p=[:k2f])
-    ifs_1 = find_identifiable_functions(rs_catalyst; measured_quantities=[X2, X3], known_p=[:k2f])
+    gi_1 = assess_identifiability(rs_catalyst; measured_quantities = [X2, X3], known_p = [:k2f], loglevel)
+    li_1 = assess_local_identifiability(rs_catalyst; measured_quantities = [X2, X3], known_p = [:k2f], loglevel)
+    ifs_1 = find_identifiable_functions(rs_catalyst; measured_quantities = [X2, X3], known_p = [:k2f], loglevel)
     
     # Identifiability analysis for Catalyst converted to StructuralIdentifiability.jl model.
-    rs_ode = make_si_ode(rs_catalyst; measured_quantities=[X2, X3], known_p=[:k2f])
-    gi_2 = assess_identifiability(rs_ode)
-    li_2 = assess_local_identifiability(rs_ode)
-    ifs_2 = find_identifiable_functions(rs_ode)
+    rs_ode = make_si_ode(rs_catalyst; measured_quantities = [X2, X3], known_p = [:k2f])
+    gi_2 = assess_identifiability(rs_ode; loglevel)
+    li_2 = assess_local_identifiability(rs_ode; loglevel)
+    ifs_2 = find_identifiable_functions(rs_ode; loglevel)
 
     # Identifiability analysis for StructuralIdentifiability.jl model (declare this overwrites e.g. X2 variable etc.).
     rs_si = @ODEmodel(
@@ -94,9 +97,9 @@ let
         y2(t) = X3,
         y3(t) = k2f
     )
-    gi_3 = assess_identifiability(rs_si)
-    li_3 = assess_local_identifiability(rs_si)
-    ifs_3 = find_identifiable_functions(rs_si)
+    gi_3 = assess_identifiability(rs_si; loglevel)
+    li_3 = assess_local_identifiability(rs_si; loglevel)
+    ifs_3 = find_identifiable_functions(rs_si; loglevel)
 
     # Check outputs.
     @test sym_dict(gi_1) == sym_dict(gi_2) == sym_dict(gi_3)
@@ -126,15 +129,15 @@ let
         (kA*X3, kD), Yi <--> Ya
     end
     @unpack X1, X2, X3, X4, k1, k2, Yi, Ya, k1, kD = rs_catalyst
-    gi_1 = assess_identifiability(rs_catalyst; measured_quantities=[X1 + Yi, Ya], known_p=[k1, kD])
-    li_1 = assess_local_identifiability(rs_catalyst; measured_quantities=[X1 + Yi, Ya], known_p=[k1, kD])
-    ifs_1 = find_identifiable_functions(rs_catalyst; measured_quantities=[X1 + Yi, Ya], known_p=[k1, kD])
+    gi_1 = assess_identifiability(rs_catalyst; measured_quantities = [X1 + Yi, Ya], known_p = [k1, kD], loglevel)
+    li_1 = assess_local_identifiability(rs_catalyst; measured_quantities = [X1 + Yi, Ya], known_p = [k1, kD], loglevel)
+    ifs_1 = find_identifiable_functions(rs_catalyst; measured_quantities = [X1 + Yi, Ya], known_p = [k1, kD], loglevel)
 
     # Identifiability analysis for Catalyst converted to StructuralIdentifiability.jl model.
     rs_ode = make_si_ode(rs_catalyst; measured_quantities=[X1 + Yi, Ya], known_p=[k1, kD], remove_conserved=false)
-    gi_2 = assess_identifiability(rs_ode)
-    li_2 = assess_local_identifiability(rs_ode)
-    ifs_2 = find_identifiable_functions(rs_ode)
+    gi_2 = assess_identifiability(rs_ode; loglevel)
+    li_2 = assess_local_identifiability(rs_ode; loglevel)
+    ifs_2 = find_identifiable_functions(rs_ode; loglevel)
 
     # Identifiability analysis for StructuralIdentifiability.jl model (declare this overwrites e.g. X2 variable etc.).
     rs_si = @ODEmodel(
@@ -150,9 +153,9 @@ let
         y3(t) = k1,
         y4(t) = kD
     )
-    gi_3 = assess_identifiability(rs_si)
-    li_3 = assess_local_identifiability(rs_si)
-    ifs_3 = find_identifiable_functions(rs_si)
+    gi_3 = assess_identifiability(rs_si; loglevel)
+    li_3 = assess_local_identifiability(rs_si; loglevel)
+    ifs_3 = find_identifiable_functions(rs_si; loglevel)
     
     # Check outputs.
     @test sym_dict(gi_1) == sym_dict(gi_2) == sym_dict(gi_3)
@@ -174,31 +177,31 @@ let
         (pₚ*E,dₚ), 0 <--> P
     end
     @unpack M, E, P, pₑ, pₚ, pₘ = goodwind_oscillator_catalyst
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[:M])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; known_p=[:pₑ])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[:M], known_p=[:pₑ])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[:M, :E], known_p=[:pₑ])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[:M], known_p=[:pₑ, :pₚ])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[:M, :E], known_p=[:pₑ, :pₚ])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[M])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; known_p=[pₑ])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[M], known_p=[pₑ])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[M, E], known_p=[pₑ])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[M], known_p=[pₑ, pₚ])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[M, E], known_p=[pₑ, pₚ])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[M + pₑ])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[M + E, pₑ*M], known_p=[:pₑ])
-    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities=[pₑ, pₚ], known_p=[pₑ])    
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [:M])
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; known_p = [:pₑ], ignore_no_measured_warn = true)
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [:M], known_p = [:pₑ])
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [:M, :E], known_p = [:pₑ])
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [:M], known_p = [:pₑ, :pₚ])
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [:M, :E], known_p = [:pₑ, :pₚ])
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [M])
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; known_p = [pₑ], ignore_no_measured_warn = true)
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [M], known_p = [pₑ])
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [M, E], known_p = [pₑ])
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [M], known_p = [pₑ, pₚ])
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [M, E], known_p = [pₑ, pₚ])
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [M + pₑ])
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [M + E, pₑ*M], known_p = [:pₑ])
+    si_catalyst_ode = make_si_ode(goodwind_oscillator_catalyst; measured_quantities = [pₑ, pₚ], known_p = [pₑ])    
 
     # Tests using model.component style (have to make system complete first).
     gw_osc_complt = complete(goodwind_oscillator_catalyst)
-    @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M]) isa ODE
-    @test make_si_ode(gw_osc_complt; known_p=[gw_osc_complt.pₑ]) isa ODE
-    @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M], known_p=[gw_osc_complt.pₑ]) isa ODE
-    @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M, gw_osc_complt.E], known_p=[gw_osc_complt.pₑ]) isa ODE
-    @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M], known_p=[gw_osc_complt.pₑ, gw_osc_complt.pₚ]) isa ODE
-    @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M], known_p = [:pₚ]) isa ODE
-    @test make_si_ode(gw_osc_complt; measured_quantities=[gw_osc_complt.M*gw_osc_complt.E]) isa ODE
+    @test make_si_ode(gw_osc_complt; measured_quantities = [gw_osc_complt.M]) isa ODE
+    @test make_si_ode(gw_osc_complt; known_p = [gw_osc_complt.pₑ], ignore_no_measured_warn = true) isa ODE
+    @test make_si_ode(gw_osc_complt; measured_quantities = [gw_osc_complt.M], known_p = [gw_osc_complt.pₑ]) isa ODE
+    @test make_si_ode(gw_osc_complt; measured_quantities = [gw_osc_complt.M, gw_osc_complt.E], known_p = [gw_osc_complt.pₑ]) isa ODE
+    @test make_si_ode(gw_osc_complt; measured_quantities = [gw_osc_complt.M], known_p = [gw_osc_complt.pₑ, gw_osc_complt.pₚ]) isa ODE
+    @test make_si_ode(gw_osc_complt; measured_quantities = [gw_osc_complt.M], known_p = [:pₚ]) isa ODE
+    @test make_si_ode(gw_osc_complt; measured_quantities = [gw_osc_complt.M*gw_osc_complt.E]) isa ODE
 end
 
 # Tests for hierarchical model with conservation laws at both top and internal levels.
@@ -213,15 +216,15 @@ let
     @named rs_catalyst = compose(rs1, [rs2])
     rs_catalyst = complete(rs_catalyst)
     @unpack X1, X2, k1, k2 = rs1
-    gi_1 = assess_identifiability(rs_catalyst; measured_quantities=[X1, X2, rs2.X3], known_p=[k1])
-    li_1 = assess_local_identifiability(rs_catalyst; measured_quantities=[X1, X2, rs2.X3], known_p=[k1])
-    ifs_1 = find_identifiable_functions(rs_catalyst; measured_quantities=[X1, X2, rs2.X3], known_p=[k1])
+    gi_1 = assess_identifiability(rs_catalyst; measured_quantities = [X1, X2, rs2.X3], known_p = [k1], loglevel)
+    li_1 = assess_local_identifiability(rs_catalyst; measured_quantities = [X1, X2, rs2.X3], known_p = [k1], loglevel)
+    ifs_1 = find_identifiable_functions(rs_catalyst; measured_quantities = [X1, X2, rs2.X3], known_p = [k1], loglevel)
 
     # Identifiability analysis for Catalyst converted to StructuralIdentifiability.jl model.
-    rs_ode = make_si_ode(rs_catalyst; measured_quantities=[X1, X2, rs2.X3], known_p=[k1])
-    gi_2 = assess_identifiability(rs_ode)
-    li_2 = assess_local_identifiability(rs_ode)
-    ifs_2 = find_identifiable_functions(rs_ode)
+    rs_ode = make_si_ode(rs_catalyst; measured_quantities = [X1, X2, rs2.X3], known_p = [k1])
+    gi_2 = assess_identifiability(rs_ode; loglevel)
+    li_2 = assess_local_identifiability(rs_ode; loglevel)
+    ifs_2 = find_identifiable_functions(rs_ode; loglevel)
 
     # Identifiability analysis for StructuralIdentifiability.jl model (declare this overwrites e.g. X2 variable etc.).
     rs_si = @ODEmodel(
@@ -234,9 +237,9 @@ let
         y3(t) = rs2₊X3,
         y4(t) = k1
     )
-    gi_3 = assess_identifiability(rs_si)
-    li_3 = assess_local_identifiability(rs_si)
-    ifs_3 = find_identifiable_functions(rs_si)
+    gi_3 = assess_identifiability(rs_si; loglevel)
+    li_3 = assess_local_identifiability(rs_si; loglevel)
+    ifs_3 = find_identifiable_functions(rs_si; loglevel)
         
     # Check outputs.
     @test sym_dict(gi_1) == sym_dict(gi_3)
@@ -261,14 +264,14 @@ let
         k1, x1 --> x2
     end
     # Measure the source
-    id_report = assess_identifiability(rs, measured_quantities = [:x1])
+    id_report = assess_identifiability(rs; measured_quantities = [:x1], loglevel)
     @test sym_dict(id_report) == Dict(
         :x1 => :globally,
         :x2 => :nonidentifiable,
         :k1 => :globally
     )
     # Measure the target instead
-    id_report = assess_identifiability(rs, measured_quantities = [:x2])
+    id_report = assess_identifiability(rs; measured_quantities = [:x2], loglevel)
     @test sym_dict(id_report) == Dict(
         :x1 => :globally,
         :x2 => :globally,
@@ -285,7 +288,7 @@ let
         b, A0 --> 2A2
         c, A0 --> A1 + A2
     end
-    id_report = assess_identifiability(rs, measured_quantities = [:A0, :A1, :A2])
+    id_report = assess_identifiability(rs; measured_quantities = [:A0, :A1, :A2], loglevel)
     @test sym_dict(id_report) == Dict(
         :A0 => :globally,
         :A1 => :globally,
@@ -300,13 +303,13 @@ let
         1, x1 --> x2
         1, x2 --> x3
     end
-    id_report = assess_identifiability(rs, measured_quantities = [:x3])
+    id_report = assess_identifiability(rs; measured_quantities = [:x3], loglevel)
     @test sym_dict(id_report) == Dict(
         :x1 => :globally,
         :x2 => :globally,
         :x3 => :globally,
     )
-    @test length(find_identifiable_functions(rs, measured_quantities = [:x3])) == 1
+    @test length(find_identifiable_functions(rs; measured_quantities = [:x3], loglevel)) == 1
 end
 
 
@@ -326,9 +329,9 @@ let
     @unpack p, d, k, c1, c2 = rs
     
     # Tests identifiability assessment when all unknowns are measured.
-    gi_1 = assess_identifiability(rs; measured_quantities=[:X, :V, :C])
-    li_1 = assess_local_identifiability(rs; measured_quantities=[:X, :V, :C])
-    ifs_1 = find_identifiable_functions(rs; measured_quantities=[:X, :V, :C])
+    gi_1 = assess_identifiability(rs; measured_quantities = [:X, :V, :C], loglevel)
+    li_1 = assess_local_identifiability(rs; measured_quantities = [:X, :V, :C], loglevel)
+    ifs_1 = find_identifiable_functions(rs; measured_quantities = [:X, :V, :C], loglevel)
     @test sym_dict(gi_1) == Dict([:X => :globally, :C => :globally, :V => :globally, :k => :globally, 
                       :c1 => :nonidentifiable, :c2 => :nonidentifiable, :p => :globally, :d => :globally])
     @test sym_dict(li_1) == Dict([:X => 1, :C => 1, :V => 1, :k => 1, :c1 => 0, :c2 => 0, :p => 1, :d => 1])
@@ -336,9 +339,9 @@ let
     
     # Tests identifiability assessment when only variables are measured. 
     # Checks that a parameter in an equation can be set as known.
-    gi_2 = assess_identifiability(rs; measured_quantities=[:V, :C], known_p = [:c1])
-    li_2 = assess_local_identifiability(rs; measured_quantities=[:V, :C], known_p = [:c1])
-    ifs_2 = find_identifiable_functions(rs; measured_quantities=[:V, :C], known_p = [:c1])
+    gi_2 = assess_identifiability(rs; measured_quantities = [:V, :C], known_p = [:c1], loglevel)
+    li_2 = assess_local_identifiability(rs; measured_quantities = [:V, :C], known_p = [:c1], loglevel)
+    ifs_2 = find_identifiable_functions(rs; measured_quantities = [:V, :C], known_p = [:c1], loglevel)
     @test sym_dict(gi_2) == Dict([:X => :nonidentifiable, :C => :globally, :V => :globally, :k => :nonidentifiable, 
                       :c1 => :globally, :c2 => :nonidentifiable, :p => :nonidentifiable, :d => :globally])
     @test sym_dict(li_2) == Dict([:X => 0, :C => 1, :V => 1, :k => 0, :c1 => 1, :c2 => 0, :p => 0, :d => 1])
@@ -354,7 +357,7 @@ let
     measured_quantities = [:X]
     
     # Computes bifurcation diagram.
-    @test_throws Exception assess_identifiability(incomplete_network; measured_quantities)
-    @test_throws Exception assess_local_identifiability(incomplete_network; measured_quantities)
-    @test_throws Exception find_identifiable_functions(incomplete_network; measured_quantities)
+    @test_throws Exception assess_identifiability(incomplete_network; measured_quantities, loglevel)
+    @test_throws Exception assess_local_identifiability(incomplete_network; measured_quantities, loglevel)
+    @test_throws Exception find_identifiable_functions(incomplete_network; measured_quantities, loglevel)
 end

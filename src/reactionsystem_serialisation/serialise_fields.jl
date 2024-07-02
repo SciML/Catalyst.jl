@@ -308,7 +308,7 @@ EQUATIONS_FS = (seri_has_equations, get_equations_string, get_equations_annotati
 
 # Checks if the reaction system has any observables.
 function seri_has_observed(rn::ReactionSystem)
-    return !isempty(observed(rn))
+    return !isempty(get_observed(rn))
 end
 
 # Extract a string which declares the system's observables.
@@ -353,6 +353,27 @@ end
 
 # Combines the 3 -related functions in a constant tuple.
 OBSERVED_FS = (seri_has_observed, get_observed_string, get_observed_annotation)
+
+### Handles Observables ###
+
+# Checks if the reaction system has any defaults.
+function seri_has_defaults(rn::ReactionSystem)
+    return !isempty(get_defaults(rn))
+end
+
+# Extract a string which declares the system's defaults.
+function get_defaults_string(rn::ReactionSystem)
+    defaults_string = "defaults = " * x_2_string(get_defaults(rn))
+    return defaults_string
+end
+
+# Creates an annotation for the system's defaults.
+function get_defaults_annotation(rn::ReactionSystem)
+    return "Defaults:"
+end
+
+# Combines the 3 defaults-related functions in a constant tuple.
+DEFAULTS_FS = (seri_has_defaults, get_defaults_string, get_defaults_annotation)
 
 ### Handles Continuous Events ###
 
