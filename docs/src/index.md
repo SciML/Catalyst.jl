@@ -206,7 +206,7 @@ cell_model = @reaction_network begin
     kᵢ/V, Gᴾ --> G
 end
 ```
-In this case, we would instead like to perform stochastic simulations, so we transform our model to an SDE:
+We now study the system as a Chemical Langevin Dynamics SDE model, which can be generated as follows 
 ```@example home_elaborate_example
 u0 = [:V => 25.0, :G => 50.0, :Gᴾ => 0.0]
 tspan = (0.0, 20.0)
