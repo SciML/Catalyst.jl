@@ -893,7 +893,7 @@ end
     Returns the matrix of cycles (or flux vectors), or reaction fluxes at steady state. These correspond to right eigenvectors of the stoichiometric matrix. Equivalent to [`fluxmodebasis`](@ref). 
 """
 
-function cycles(rs::ReactionSystem) 
+function cycles(rs::ReactionSystem)
     nps = get_networkproperties(rs)
     nsm = netstoichmat(rs)
     !isempty(nps.cyclemat) && return nps.cyclemat
@@ -925,6 +925,6 @@ end
     See documentation for [`cycles`](@ref). 
 """
 
-function fluxvectors(rs::ReactionSystem) 
+function fluxvectors(rs::ReactionSystem)
     cycles(rs)
 end
