@@ -415,7 +415,7 @@ function isforestlike(rn::ReactionSystem)
         nps = get_networkproperties(subnet)
         isempty(nps.incidencemat) && reactioncomplexes(subnet; sparse = sparseig)
     end
-    all(Graphs.is_tree ∘ Graph ∘ incidencematgraph, subnets)
+    all(Graphs.is_tree ∘ SimpleGraph ∘ incidencematgraph, subnets)
 end
 
 @doc raw"""
@@ -797,41 +797,48 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict)
     pmap = symmap_to_varmap(rs, parametermap)
     pmap = Dict(ModelingToolkit.value(k) => v for (k, v) in pmap)
     
+    # Construct reaction-complex graph 
     complexes, D = reactioncomplexes(rs)
-    img = incidencematgraph(rn)
-    undir_img = Graph(incidencematgraph(rn))
-    K = ratematrix(rn, pmap)
+    img = incidencematgraph(rs)
+    undir_img = SimpleGraph(incidencematgraph(rs))
+    K = ratematrix(rs, pmap)
 
-    spanning_forest = kruskal_mst(uimg)
-    undir_spanning_forest = edges(Graph(spanning_forest))
-    outofforest_rxns = findall(∉(undir_spanning_forest), edges(undir_img))
+    spanning_forest = Graphs.kruskal_mst(undir_img)
+    outofforest_edges = setdiff(collect(edges(undir_img)), spanning_forest)
 
     # Independent Cycle Conditions: for any cycle we create by adding in an out-of-forest reaction, the product of forward reaction rates over the cycle must equal the product of reverse reaction rates over the cycle.  
-    for rxn in outofforest_rxns 
-        g = Graph([undir_spanning_forest..., collect(edges(g))[rxn]])     
-        ic = cycle_basis(g)
+    for edge in outofforest_edges
+        g = SimpleGraph([spanning_forest..., edge])
+        ic = Graphs.cycle_basis(g)[1]
         fwd = prod([K[ic[r], ic[r+1]] for r in 1:length(ic)-1]) * K[ic[end], ic[1]]
         rev = prod([K[ic[r+1], ic[r]] for r in 1:length(ic)-1]) * K[ic[1], ic[end]]
-        fwd == rev ? continue : return false
+        fwd ≈ rev ? continue : return false
     end
     
-    # Spanning Forest Conditions: for non-deficiency 0 networks, we get an additional δ equations. Choose an orientation for each reaction pair in the spanning forest (by default, we will go from smaller to larger indices).  
+    # Spanning Forest Conditions: for non-deficiency 0 networks, we get an additional δ equations. Choose an orientation for each reaction pair in the spanning forest (we will take the one given by default from kruskal_mst).  
     
-    if deficiency(rn) > 0
-        rxn_idxs = findall(∈(spanning_forest), edges(img))
-        S_F = netstoichmat(rn)[:, fwdrxn_idxs]
+    if deficiency(rs) > 0
+        rxn_idxs = [edgeindex(D, Graphs.src(e), Graphs.dst(e)) for e in spanning_forest]
+        S_F = netstoichmat(rs)[:, rxn_idxs]
         sols = nullspace(S_F) 
-        @assert size(sols, 2) == deficiency(rn)
+        @assert size(sols, 2) == deficiency(rs)
 
         for i in 1:size(sols, 2)
             α = sols[:, i]
-            fwd = prod([K[src(e), dst(e)]^α[i] for (e,i) in zip(spanning_forest,1:length(α))])
-            rev = prod([K[dst(e), src(e)]^α[i] for (e,i) in zip(spanning_forest, 1:length(α))])
-            fwd == rev ? continue : return false
+            fwd = prod([K[Graphs.src(e), Graphs.dst(e)]^α[i] for (e,i) in zip(spanning_forest,1:length(α))])
+            rev = prod([K[Graphs.dst(e), Graphs.src(e)]^α[i] for (e,i) in zip(spanning_forest, 1:length(α))])
+            fwd ≈ rev ? continue : return false
         end
     end
 
     true
+end
+
+function edgeindex(imat::Matrix{Int64}, src::Int64, dst::Int64) 
+    for i in 1:size(imat, 2)
+        (imat[src, i] == -1) && (imat[dst, i] == 1) && return i
+    end
+    error("This edge does not exist in this reaction graph.")
 end
 
 function isdetailedbalanced(rs::ReactionSystem, parametermap::Vector{Pair{Symbol, Float64}})

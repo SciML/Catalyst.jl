@@ -325,7 +325,7 @@ let
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
-    @test Catalyst.isdetailedbalanced(rn, rates) == false
+    @test Catalyst.Catalyst.isdetailedbalanced(rn, rates) == false
 end
 
 ### STRONG LINKAGE CLASS TESTS
@@ -438,7 +438,6 @@ end
 
 # The following network is conditionally complex balanced - it only 
 
-
 # Reversible, forest-like deficiency zero network - should be detailed balance for any choice of rate constants. 
 let
     rn = @reaction_network begin
@@ -455,10 +454,11 @@ let
     k2 = rand(StableRNG(232), numparams(rn))
     rates2 = Dict(zip(parameters(rn), k2))
 
-    @test isdetailedbalanced(rn, rates1) == true
-    @test isdetailedbalanced(rn, rates2) == true
+    rcs, D = reactioncomplexes(rn)
+    @test Catalyst.isforestlike(rn) == true
+    @test Catalyst.isdetailedbalanced(rn, rates1) == true
+    @test Catalyst.isdetailedbalanced(rn, rates2) == true
 end
-
 
 # Simple connected reversible network
 let
@@ -468,10 +468,11 @@ let
         (k5, k6), C <--> A
     end
 
-    rates1 = [k1=>1.0, k2=>1.0, k3=>1.0, k4=>1.0, k5=>1.0, k6=>1.0]
-    @test isdetailedbalanced(rn, rates1) == true
-    rates2 = [k1=>2.0, k2=>1.0, k3=>1.0, k4=>1.0, k5=>1.0, k6=>1.0]
-    @test isdetailedbalanced(rn, rates2) == false 
+    rcs, D = reactioncomplexes(rn)
+    rates1 = [:k1=>1.0, :k2=>1.0, :k3=>1.0, :k4=>1.0, :k5=>1.0, :k6=>1.0]
+    @test Catalyst.isdetailedbalanced(rn, rates1) == true
+    rates2 = [:k1=>2.0, :k2=>1.0, :k3=>1.0, :k4=>1.0, :k5=>1.0, :k6=>1.0]
+    @test Catalyst.isdetailedbalanced(rn, rates2) == false 
 end
 
 # Independent cycle tests: the following reaction entwork has 3 out-of-forest reactions. 
@@ -488,14 +489,17 @@ let
         (k17, k18), A + E <--> H
     end
 
+    rcs, D = reactioncomplexes(rn)
     k = rand(rng, numparams(rn))
+    p = parameters(rn)
     rates = Dict(zip(parameters(rn), k))
-    @test isdetailedbalanced(rn, rates) == false
+    @test Catalyst.isdetailedbalanced(rn, rates) == false
 
-    rates[k6] = rates[k1]*rates[k4]*rates[k5] / (rates[k2]*rates[k3]) 
-    rates[k14] = rates[k13]*rates[k11]*rates[k8] / (rates[k12]*rates[k7])
-    rates[k12] = rates[k8]*rates[k15]*rates[k9]*rates[k11] / (rates[k7]*rates[k16]*rates[k10])
-    @test isdetailedbalanced(rn, rates) == true
+    # Adjust rate constants to obey the independent cycle conditions. 
+    rates[p[6]] = rates[p[1]]*rates[p[4]]*rates[p[5]] / (rates[p[2]]*rates[p[3]]) 
+    rates[p[14]] = rates[p[13]]*rates[p[11]]*rates[p[8]] / (rates[p[12]]*rates[p[7]])
+    rates[p[16]] = rates[p[8]]*rates[p[15]]*rates[p[9]]*rates[p[11]] / (rates[p[7]]*rates[p[12]]*rates[p[10]])
+    @test Catalyst.isdetailedbalanced(rn, rates) == true
 end
 
 # Deficiency two network: the following reaction network must satisfy both the independent cycle conditions and the spanning forest conditions 
@@ -508,19 +512,25 @@ let
         (k9, k10), 3A <--> 3B
     end
 
+    rcs, D = reactioncomplexes(rn)
+    @test Catalyst.edgeindex(D, 1, 2) == 1
+    @test Catalyst.edgeindex(D, 4, 3) == 6
     k = rand(rng, numparams(rn))
+    p = parameters(rn)
     rates = Dict(zip(parameters(rn), k))
-    @test isdetailedbalanced(rn, rates) == false
+    @test Catalyst.isdetailedbalanced(rn, rates) == false
 
-    rates[k8] = rates[k7]*rates[k5]*rates[k9] / (rates[k6]*rates[k10])
-    rates[k3] = rates[k2]*rates[k4]*rates[k9] / (rates[k1]*rates[k10])
-    @test isdetailedbalanced(rn, rates) == false
+    # Adjust rate constants to fulfill independent cycle conditions. 
+    rates[p[8]] = rates[p[7]]*rates[p[5]]*rates[p[9]] / (rates[p[6]]*rates[p[10]])
+    rates[p[3]] = rates[p[2]]*rates[p[4]]*rates[p[9]] / (rates[p[1]]*rates[p[10]])
+    @test Catalyst.isdetailedbalanced(rn, rates) == false
+    # Should still fail - doesn't satisfy spanning forest conditions. 
 
-    cons = rates[k6] / rates[k5]
-    rates[k1] = rates[k2] * cons
-    rates[k9] = rates[k10] * cons^(3/2)
-    rates[k8] = rates[k7]*rates[k5]*rates[k9] / (rates[k6]*rates[k10])
-    rates[k3] = rates[k2]*rates[k4]*rates[k9] / (rates[k1]*rates[k10])
-    @test isdeatiledbalanced(rn, rates) == true
-    @test isdetailedbalanced(rn, rates) == false
+    # Adjust rate constants to fulfill spanning forest conditions. 
+    cons = rates[p[6]] / rates[p[5]]
+    rates[p[1]] = rates[p[2]] * cons
+    rates[p[9]] = rates[p[10]] * cons^(3/2)
+    rates[p[8]] = rates[p[7]]*rates[p[5]]*rates[p[9]] / (rates[p[6]]*rates[p[10]])
+    rates[p[3]] = rates[p[2]]*rates[p[4]]*rates[p[9]] / (rates[p[1]]*rates[p[10]])
+    @test Catalyst.isdetailedbalanced(rn, rates) == true
 end
