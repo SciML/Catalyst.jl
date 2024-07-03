@@ -398,7 +398,7 @@ function isterminal(lc::Vector, rn::ReactionSystem)
     true
 end
 
-function isforestlike(rn::ReactionSystem) 
+function isforestlike(rn::ReactionSystem)
     subnets = subnetworks(rn)
 
     im = get_networkproperties(rn).incidencemat
@@ -745,7 +745,7 @@ Constructively compute whether a kinetic system (a reaction network with a set o
 solutions, using the Wegscheider conditions, [Feinberg, 1989](https://www.sciencedirect.com/science/article/pii/0009250989851243). A detailed-balanced solution is one for which the rate of every forward reaction exactly equals its reverse reaction. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
 
-function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict) 
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict)
     if length(parametermap) != numparams(rs)
         error("Incorrect number of parameters specified.")
     elseif !isreversible(rs)
@@ -758,7 +758,7 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict)
 
     pmap = symmap_to_varmap(rs, parametermap)
     pmap = Dict(ModelingToolkit.value(k) => v for (k, v) in pmap)
-    
+
     # Construct reaction-complex graph 
     complexes, D = reactioncomplexes(rs)
     img = incidencematgraph(rs)
@@ -772,23 +772,25 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict)
     for edge in outofforest_edges
         g = SimpleGraph([spanning_forest..., edge])
         ic = Graphs.cycle_basis(g)[1]
-        fwd = prod([K[ic[r], ic[r+1]] for r in 1:length(ic)-1]) * K[ic[end], ic[1]]
-        rev = prod([K[ic[r+1], ic[r]] for r in 1:length(ic)-1]) * K[ic[1], ic[end]]
+        fwd = prod([K[ic[r], ic[r + 1]] for r in 1:(length(ic) - 1)]) * K[ic[end], ic[1]]
+        rev = prod([K[ic[r + 1], ic[r]] for r in 1:(length(ic) - 1)]) * K[ic[1], ic[end]]
         fwd ≈ rev ? continue : return false
     end
-    
+
     # Spanning Forest Conditions: for non-deficiency 0 networks, we get an additional δ equations. Choose an orientation for each reaction pair in the spanning forest (we will take the one given by default from kruskal_mst).  
-    
+
     if deficiency(rs) > 0
         rxn_idxs = [edgeindex(D, Graphs.src(e), Graphs.dst(e)) for e in spanning_forest]
         S_F = netstoichmat(rs)[:, rxn_idxs]
-        sols = nullspace(S_F) 
+        sols = nullspace(S_F)
         @assert size(sols, 2) == deficiency(rs)
 
         for i in 1:size(sols, 2)
             α = sols[:, i]
-            fwd = prod([K[Graphs.src(e), Graphs.dst(e)]^α[i] for (e,i) in zip(spanning_forest,1:length(α))])
-            rev = prod([K[Graphs.dst(e), Graphs.src(e)]^α[i] for (e,i) in zip(spanning_forest, 1:length(α))])
+            fwd = prod([K[Graphs.src(e), Graphs.dst(e)]^α[i]
+                        for (e, i) in zip(spanning_forest, 1:length(α))])
+            rev = prod([K[Graphs.dst(e), Graphs.src(e)]^α[i]
+                        for (e, i) in zip(spanning_forest, 1:length(α))])
             fwd ≈ rev ? continue : return false
         end
     end
@@ -796,7 +798,7 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict)
     true
 end
 
-function edgeindex(imat::Matrix{Int64}, src::Int64, dst::Int64) 
+function edgeindex(imat::Matrix{Int64}, src::Int64, dst::Int64)
     for i in 1:size(imat, 2)
         (imat[src, i] == -1) && (imat[dst, i] == 1) && return i
     end
@@ -816,7 +818,6 @@ end
 function isdetailedbalanced(rs::ReactionSystem, parametermap)
     error("Parameter map must be a dictionary, tuple, or vector of symbol/value pairs.")
 end
-
 
 """
     iscomplexbalanced(rs::ReactionSystem, parametermap)
@@ -1120,4 +1121,3 @@ function robustspecies(rn::ReactionSystem)
 
     nps.robustspecies
 end
-
