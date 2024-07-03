@@ -365,7 +365,7 @@ linkageclasses(incidencegraph) = Graphs.connected_components(incidencegraph)
     Return the strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes such that every complex is reachable from every other one in the sub-group).
 """
 
-function stronglinkageclasses(rn::ReactionSystem) 
+function stronglinkageclasses(rn::ReactionSystem)
     nps = get_networkproperties(rn)
     if isempty(nps.stronglinkageclasses)
         nps.stronglinkageclasses = stronglinkageclasses(incidencematgraph(rn))
@@ -381,17 +381,17 @@ stronglinkageclasses(incidencegraph) = Graphs.strongly_connected_components(inci
     Return the terminal strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes that are 1) strongly connected and 2) every reaction in the component produces a complex in the component).
 """
 
-function terminallinkageclasses(rn::ReactionSystem) 
+function terminallinkageclasses(rn::ReactionSystem)
     nps = get_networkproperties(rn)
     if isempty(nps.terminallinkageclasses)
         slcs = stronglinkageclasses(rn)
-        tslcs = filter(lc->isterminal(lc, rn), slcs)
+        tslcs = filter(lc -> isterminal(lc, rn), slcs)
         nps.terminallinkageclasses = tslcs
     end
     nps.terminallinkageclasses
 end
 
-function isterminal(lc::Vector, rn::ReactionSystem) 
+function isterminal(lc::Vector, rn::ReactionSystem)
     imat = incidencemat(rn)
 
     for r in 1:size(imat, 2)
@@ -404,7 +404,7 @@ function isterminal(lc::Vector, rn::ReactionSystem)
     true
 end
 
-function isforestlike(rn::ReactionSystem) 
+function isforestlike(rn::ReactionSystem)
     subnets = subnetworks(rn)
 
     im = get_networkproperties(rn).incidencemat
@@ -783,7 +783,7 @@ Constructively compute whether a kinetic system (a reaction network with a set o
 solutions, using the Wegscheider conditions, [Feinberg, 1989](https://www.sciencedirect.com/science/article/pii/0009250989851243). A detailed-balanced solution is one for which the rate of every forward reaction exactly equals its reverse reaction. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
 
-function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict) 
+function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict)
     if length(parametermap) != numparams(rs)
         error("Incorrect number of parameters specified.")
     elseif !isreversible(rs)
@@ -796,7 +796,7 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict)
 
     pmap = symmap_to_varmap(rs, parametermap)
     pmap = Dict(ModelingToolkit.value(k) => v for (k, v) in pmap)
-    
+
     # Construct reaction-complex graph 
     complexes, D = reactioncomplexes(rs)
     img = incidencematgraph(rs)
@@ -810,23 +810,25 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict)
     for edge in outofforest_edges
         g = SimpleGraph([spanning_forest..., edge])
         ic = Graphs.cycle_basis(g)[1]
-        fwd = prod([K[ic[r], ic[r+1]] for r in 1:length(ic)-1]) * K[ic[end], ic[1]]
-        rev = prod([K[ic[r+1], ic[r]] for r in 1:length(ic)-1]) * K[ic[1], ic[end]]
+        fwd = prod([K[ic[r], ic[r + 1]] for r in 1:(length(ic) - 1)]) * K[ic[end], ic[1]]
+        rev = prod([K[ic[r + 1], ic[r]] for r in 1:(length(ic) - 1)]) * K[ic[1], ic[end]]
         fwd ≈ rev ? continue : return false
     end
-    
+
     # Spanning Forest Conditions: for non-deficiency 0 networks, we get an additional δ equations. Choose an orientation for each reaction pair in the spanning forest (we will take the one given by default from kruskal_mst).  
-    
+
     if deficiency(rs) > 0
         rxn_idxs = [edgeindex(D, Graphs.src(e), Graphs.dst(e)) for e in spanning_forest]
         S_F = netstoichmat(rs)[:, rxn_idxs]
-        sols = nullspace(S_F) 
+        sols = nullspace(S_F)
         @assert size(sols, 2) == deficiency(rs)
 
         for i in 1:size(sols, 2)
             α = sols[:, i]
-            fwd = prod([K[Graphs.src(e), Graphs.dst(e)]^α[i] for (e,i) in zip(spanning_forest,1:length(α))])
-            rev = prod([K[Graphs.dst(e), Graphs.src(e)]^α[i] for (e,i) in zip(spanning_forest, 1:length(α))])
+            fwd = prod([K[Graphs.src(e), Graphs.dst(e)]^α[i]
+                        for (e, i) in zip(spanning_forest, 1:length(α))])
+            rev = prod([K[Graphs.dst(e), Graphs.src(e)]^α[i]
+                        for (e, i) in zip(spanning_forest, 1:length(α))])
             fwd ≈ rev ? continue : return false
         end
     end
@@ -834,7 +836,7 @@ function isdetailedbalanced(rs::ReactionSystem, parametermap::Dict)
     true
 end
 
-function edgeindex(imat::Matrix{Int64}, src::Int64, dst::Int64) 
+function edgeindex(imat::Matrix{Int64}, src::Int64, dst::Int64)
     for i in 1:size(imat, 2)
         (imat[src, i] == -1) && (imat[dst, i] == 1) && return i
     end
@@ -854,7 +856,6 @@ end
 function isdetailedbalanced(rs::ReactionSystem, parametermap)
     error("Parameter map must be a dictionary, tuple, or vector of symbol/value pairs.")
 end
-
 
 """
     iscomplexbalanced(rs::ReactionSystem, parametermap)
@@ -1034,12 +1035,13 @@ end
     Check if a reaction network obeys the conditions of the deficiency one theorem, which ensures that there is only one equilibrium for every positive stoichiometric compatibility class.
 """
 
-function satisfiesdeficiencyone(rn::ReactionSystem) 
+function satisfiesdeficiencyone(rn::ReactionSystem)
     complexes, D = reactioncomplexes(rn)
     δ = deficiency(rn)
     δ_l = linkagedeficiencies(rn)
 
-    lcs = linkageclasses(rn); tslcs = terminallinkageclasses(rn)
+    lcs = linkageclasses(rn)
+    tslcs = terminallinkageclasses(rn)
 
     all(<=(1), δ_l) && sum(δ_l) == δ && length(lcs) == length(tslcs)
 end
@@ -1047,27 +1049,26 @@ end
 #function deficiencyonealgorithm(rn::ReactionSystem) 
 #end
 
-function robustspecies(rn::ReactionSystem) 
+function robustspecies(rn::ReactionSystem)
     complexes, D = reactioncomplexes(rn)
     robust_species = Int64[]
-    
+
     if deficiency(rn) != 1
         error("This method currently only checks for robust species in networks with deficiency one.")
     end
-    
+
     tslcs = terminallinkageclasses(rn)
     Z = complexstoichmat(rn)
     nonterminal_complexes = deleteat!([1:length(complexes);], vcat(tslcs...))
 
     for (c_s, c_p) in collect(Combinatorics.combinations(nonterminal_complexes, 2))
-        supp = findall(!=(0), Z[:,c_s] - Z[:,c_p])
+        supp = findall(!=(0), Z[:, c_s] - Z[:, c_p])
         length(supp) == 1 && supp[1] ∉ robust_species && push!(robust_species, supp...)
     end
     robust_species
 end
 
-function isconcentrationrobust(rn::ReactionSystem, species::Int) 
+function isconcentrationrobust(rn::ReactionSystem, species::Int)
     robust_species = robustspecies(rn)
     return species in robust_species
 end
-
