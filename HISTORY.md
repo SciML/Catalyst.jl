@@ -688,7 +688,7 @@ hc_steady_states(wilhelm_2009_model, ps)
   field has been changed (only when created through the `@reaction_network`
   macro). Previously they were ordered according to the order with which they
   appeared in the macro. Now they are ordered according the to order with which
-  they appeard after the `end` part. E.g. in
+  they appeared after the `end` part. E.g. in
   ```julia
   rn = @reaction_network begin
     (p,d), 0 <--> X
@@ -793,7 +793,7 @@ which gives
 ![rn_complexes](https://user-images.githubusercontent.com/9385167/130252763-4418ba5a-164f-47f7-b512-a768e4f73834.png)
 
 *2.* Support for units via ModelingToolkit and
-[Uniftul.jl](https://github.com/PainterQubits/Unitful.jl) in directly constructed
+[Unitful.jl](https://github.com/PainterQubits/Unitful.jl) in directly constructed
 `ReactionSystem`s:
 ```julia
 # ]add Unitful

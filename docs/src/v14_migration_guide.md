@@ -96,7 +96,7 @@ nonspecies(rs)
 ```
 
 ## Lost support for most units
-As part of its v9 update, ModelingToolkit changed how units were handled. This includes using the package [DynamicQuantities.jl](https://github.com/SymbolicML/DynamicQuantities.jl) to manage units (instead of [Uniful.jl](https://github.com/PainterQubits/Unitful.jl), like previously).
+As part of its v9 update, ModelingToolkit changed how units were handled. This includes using the package [DynamicQuantities.jl](https://github.com/SymbolicML/DynamicQuantities.jl) to manage units (instead of [Unitful.jl](https://github.com/PainterQubits/Unitful.jl), like previously).
 
 While this should lead to long-term improvements, unfortunately, as part of the process support for most units was removed. Currently, only the main SI units are supported (`s`, `m`, `kg`, `A`, `K`, `mol`, and `cd`). Composite units (e.g. `N = kg/(m^2)`) are no longer supported. Furthermore, prefix units (e.g. `mm = m/1000`) are not supported either. This means that most units relevant to Catalyst (such as `µM`) cannot be used directly. While composite units can still be written out in full and used (e.g. `kg/(m^2)`) this is hardly user-friendly.
 
