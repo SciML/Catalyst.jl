@@ -347,7 +347,7 @@ reaction_networks_weird[10] = @reaction_network rnw10 begin
     d, 5X1 → 4X1
 end
 
-### Gathers all netowkrs in a simgle array ###
+### Gathers all networks in a single array ###
 reaction_networks_all = [reaction_networks_standard...,
     reaction_networks_hill...,
     reaction_networks_conserved...,

@@ -50,7 +50,7 @@ end
 
 # Tests conservation law computation on large number of networks where we know which have conservation laws.
 let
-    # networks for whch we know there is no conservation laws.
+    # networks for which we know there is no conservation laws.
     Cs_standard = map(conservationlaws, reaction_networks_standard)
     Cs_hill = map(conservationlaws, reaction_networks_hill)
     @test all(size(C, 1) == 0 for C in Cs_standard)
