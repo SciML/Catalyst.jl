@@ -433,7 +433,7 @@ end
 
 ### Utility ###
 
-# Throws an error when attempting to convert a spatial system to an unssuported type.
+# Throws an error when attempting to convert a spatial system to an unsupported type.
 function spatial_convert_err(rs::ReactionSystem, systype)
     isspatial(rs) && error("Conversion to $systype is not supported for spatial networks.")
 end
@@ -450,7 +450,7 @@ diff_2_zero(expr) = (Symbolics.is_derivative(expr) ? 0 : expr)
 
 COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be converted to other system types. A ReactionSystem can be marked as complete using the `complete` function."
 
-# Used to, when required, display a warning about conservation law removeal and remake.
+# Used to, when required, display a warning about conservation law removal and remake.
 function check_cons_warning(remove_conserved, remove_conserved_warn)
     (remove_conserved && remove_conserved_warn) || return
     @warn "You are creating a system or problem while eliminating conserved quantities. Please note,
@@ -570,7 +570,7 @@ end
 
 # Ideally, when `ReactionSystem`s are converted to `NonlinearSystem`s, any coupled ODEs should be 
 # on the form D(X) ~ ..., where lhs is the time derivative w.r.t. a single variable, and the rhs
-# does not contain any differentials. If this is not teh case, we throw a warning to let the user
+# does not contain any differentials. If this is not the case, we throw a warning to let the user
 # know that they should be careful.
 function nonlinear_convert_differentials_check(rs::ReactionSystem)
     for eq in filter(is_diff_equation, equations(rs))
@@ -578,7 +578,7 @@ function nonlinear_convert_differentials_check(rs::ReactionSystem)
         # If there is a differential on the right hand side.
         # If the lhs is not on the form D(...).
         # If the lhs upper level function is not a differential w.r.t. time.
-        # If the contenct of the differential is not a variable (and nothing more).
+        # If the content of the differential is not a variable (and nothing more).
         # If either of this is a case, throws the warning.
         if hasnode(Symbolics.is_derivative, eq.rhs) ||
            !Symbolics.is_derivative(eq.lhs) ||
@@ -591,7 +591,7 @@ function nonlinear_convert_differentials_check(rs::ReactionSystem)
                 This is generally not permitted.
 
                 If you still would like to perform this conversions, please use the `all_differentials_permitted = true` option. In this case, all differential will be set to `0`. 
-                However, it is recommended to proceed with caution to ensure that the produced nonlinear equation makes sense for you intended application."
+                However, it is recommended to proceed with caution to ensure that the produced nonlinear equation makes sense for your intended application."
             )
         end
     end

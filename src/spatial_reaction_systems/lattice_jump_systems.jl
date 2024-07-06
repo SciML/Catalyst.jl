@@ -28,7 +28,7 @@ function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     return DiscreteProblem(u0, tspan, [vert_ps, edge_ps], args...; kwargs...)
 end
 
-# Builds a spatial JumpProblem from a DiscreteProblem containg a Lattice Reaction System.
+# Builds a spatial JumpProblem from a DiscreteProblem containing a Lattice Reaction System.
 function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator,
         args...; name = nameof(lrs.rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(lrs.rs), kwargs...)

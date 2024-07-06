@@ -810,7 +810,7 @@ let
 end
 
 # Checks that the `reactionsystem_uptodate` function work. If it does not, the ReactionSystem
-# strcuture's fields have been updated, without updating the `reactionsystem_fields` costant. If so,
+# structure's fields have been updated, without updating the `reactionsystem_fields` constant. If so,
 # there are several places in the code where the `reactionsystem_uptodate` function is called, here
 # the code might need adaptation to take the updated reaction system into account.
 let
