@@ -337,3 +337,52 @@ circadian_model = @reaction_network begin
 end
 ```
 This type of model will generate so called *variable rate jumps*. Simulation of such model is non-trivial (and Catalyst currently lacks a good interface for this). A detailed description of how to carry out jump simulations for models with time-dependant rates can be found [here](https://docs.sciml.ai/JumpProcesses/stable/tutorials/simple_poisson_process/#VariableRateJumps-for-processes-that-are-not-constant-between-jumps).
+
+---
+## [Citation](@id simulation_intro_citation)
+When you simulate Catalyst models in your research, please cite the corresponding paper(s) to support the package authors. For ODE simulations:
+```
+@article{DifferentialEquations.jl-2017,
+ author = {Rackauckas, Christopher and Nie, Qing},
+ doi = {10.5334/jors.151},
+ journal = {The Journal of Open Research Software},
+ keywords = {Applied Mathematics},
+ note = {Exported from https://app.dimensions.ai on 2019/05/05},
+ number = {1},
+ pages = {},
+ title = {DifferentialEquations.jl – A Performant and Feature-Rich Ecosystem for Solving Differential Equations in Julia},
+ url = {https://app.dimensions.ai/details/publication/pub.1085583166 and http://openresearchsoftware.metajnl.com/articles/10.5334/jors.151/galley/245/download/},
+ volume = {5},
+ year = {2017}
+}
+```
+For SDE simulations:
+```
+@article{rackauckas2017adaptive,
+  title={Adaptive methods for stochastic differential equations via natural embeddings and rejection sampling with memory},
+  author={Rackauckas, Christopher and Nie, Qing},
+  journal={Discrete and continuous dynamical systems. Series B},
+  volume={22},
+  number={7},
+  pages={2731},
+  year={2017},
+  publisher={NIH Public Access}
+}
+```
+For jump simulations:
+```
+@misc{2022JumpProcesses,
+  author       = {Isaacson, S. A. and Ilin, V. and Rackauckas, C. V.},
+  title        = {{JumpProcesses.jl}},
+  howpublished = {\url{https://github.com/SciML/JumpProcesses.jl/}},
+  year         = {2022}
+}
+@misc{zagatti_extending_2023,
+	title = {Extending {JumpProcess}.jl for fast point process simulation with time-varying intensities},
+	url = {http://arxiv.org/abs/2306.06992},
+	doi = {10.48550/arXiv.2306.06992},
+	publisher = {arXiv},
+	author = {Zagatti, Guilherme Augusto and Isaacson, Samuel A. and Rackauckas, Christopher and Ilin, Vasily and Ng, See-Kiong and Bressan, Stéphane},
+	year = {2023},
+}
+```
