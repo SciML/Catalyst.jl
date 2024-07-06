@@ -2,8 +2,8 @@
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/Catalyst/stable/)
 [![API Stable](https://img.shields.io/badge/API-stable-blue.svg)](https://docs.sciml.ai/Catalyst/stable/api/catalyst_api/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/Catalyst/stable/)
-[![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://docs.sciml.ai/Catalyst/stable/api/catalyst_api/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/Catalyst/dev/)
+[![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://docs.sciml.ai/Catalyst/dev/api/catalyst_api/)
 [![Join the chat at https://julialang.zulipchat.com #sciml-bridged](https://img.shields.io/static/v1?label=Zulip&message=chat&color=9558b2&labelColor=389826)](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged)
 
 [![Build Status](https://github.com/SciML/Catalyst.jl/workflows/CI/badge.svg)](https://github.com/SciML/Catalyst.jl/actions?query=workflow%3ACI)
@@ -49,82 +49,40 @@ be found in its corresponding research paper, [Catalyst: Fast and flexible model
 ## Features
 
 #### Features of Catalyst
-- [The Catalyst DSL](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_basics/) provides a simple and readable format for manually specifying reaction 
- network models using chemical reaction notation.
-- Catalyst `ReactionSystem`s provides a symbolic representation of reaction networks,
- built on [ModelingToolkit.jl](https://docs.sciml.ai/ModelingToolkit/stable/) and
- [Symbolics.jl](https://docs.sciml.ai/Symbolics/stable/).
-- The [Catalyst.jl API](http://docs.sciml.ai/Catalyst/stable/api/catalyst_api) provides functionality 
- for extending networks, building networks programmatically, and for composing 
- multiple networks together.
-- Leveraging ModelingToolkit, generated models can be converted to symbolic reaction rate equation ODE models, symbolic Chemical Langevin Equation models, and symbolic stochastic chemical kinetics (jump process) models. These can be simulated using any
- [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/)
- [ODE/SDE/jump solver](https://docs.sciml.ai/Catalyst/stable/model_simulation/simulation_introduction/), and can be used within `EnsembleProblem`s for carrying
- out [parallelized parameter sweeps and statistical sampling](https://docs.sciml.ai/Catalyst/stable/model_simulation/ensemble_simulations/). Plot recipes
- are available for [visualization of all solutions](https://docs.sciml.ai/Catalyst/stable/model_simulation/simulation_plotting/).
-- Non-integer (e.g. `Float64`) stoichiometric coefficients [are supported](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_basics/#dsl_description_stoichiometries_decimal) for generating
- ODE models, and symbolic expressions for stoichiometric coefficients [are supported](https://docs.sciml.ai/Catalyst/stable/model_creation/parametric_stoichiometry/) for
- all system types.
+- [The Catalyst DSL](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_basics/) provides a simple and readable format for manually specifying reaction network models using chemical reaction notation.
+- Catalyst `ReactionSystem`s provides a symbolic representation of reaction networks, built on [ModelingToolkit.jl](https://docs.sciml.ai/ModelingToolkit/stable/) and [Symbolics.jl](https://docs.sciml.ai/Symbolics/stable/).
+- The [Catalyst.jl API](http://docs.sciml.ai/Catalyst/stable/api/catalyst_api) provides functionality for building networks programmatically and for composing multiple networks together.
+- Leveraging ModelingToolkit, generated models can be converted to symbolic reaction rate equation ODE models, symbolic Chemical Langevin Equation models, and symbolic stochastic chemical kinetics (jump process) models. These can be simulated using any [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/) [ODE/SDE/jump solver](https://docs.sciml.ai/Catalyst/stable/model_simulation/simulation_introduction/), and can be used within `EnsembleProblem`s for carrying out [parallelized parameter sweeps and statistical sampling](https://docs.sciml.ai/Catalyst/stable/model_simulation/ensemble_simulations/). Plot recipes are available for [visualization of all solutions](https://docs.sciml.ai/Catalyst/stable/model_simulation/simulation_plotting/).
+- Non-integer (e.g. `Float64`) stoichiometric coefficients [are supported](https://docs.sciml.ai/Catalyst/stable/model_creation/dsl_basics/#dsl_description_stoichiometries_decimal) for generating ODE models, and symbolic expressions for stoichiometric coefficients [are supported](https://docs.sciml.ai/Catalyst/stable/model_creation/parametric_stoichiometry/) for all system types.
 - A [network analysis suite](https://docs.sciml.ai/Catalyst/stable/model_creation/network_analysis/) permits the computation of linkage classes, deficiencies, reversibility, and other network properties.
-- [Conservation laws can be detected and utilized](https://docs.sciml.ai/Catalyst/stable/model_creation/network_analysis/#network_analysis_deficiency) to reduce system sizes, and to generate
- non-singular Jacobians (e.g. during conversion to ODEs, SDEs, and steady state equations).
-- Catalyst reaction network models can be [coupled with differential and algebraic equations](https://docs.sciml.ai/Catalyst/stable/model_creation/constraint_equations/)
- (which are then incorporated during conversion to ODEs, SDEs, and steady state equations).
+- [Conservation laws can be detected and utilized](https://docs.sciml.ai/Catalyst/stable/model_creation/network_analysis/#network_analysis_deficiency) to reduce system sizes, and to generate non-singular Jacobians (e.g. during conversion to ODEs, SDEs, and steady state equations).
+- Catalyst reaction network models can be [coupled with differential and algebraic equations](https://docs.sciml.ai/Catalyst/stable/model_creation/constraint_equations/) (which are then incorporated during conversion to ODEs, SDEs, and steady state equations).
 - Models can be [coupled with events](https://docs.sciml.ai/Catalyst/stable/model_creation/constraint_equations/#constraint_equations_events) that affect the system and its state during simulations.
-- By leveraging ModelingToolkit, users have a variety of options for generating
- optimized system representations to use in solvers. These include construction
- of [dense or sparse Jacobians](https://docs.sciml.ai/Catalyst/stable/model_simulation/ode_simulation_performance/#ode_simulation_performance_sparse_jacobian), [multithreading or parallelization of generated
- derivative functions](https://docs.sciml.ai/Catalyst/stable/model_simulation/ode_simulation_performance/#ode_simulation_performance_parallelisation), [automatic classification of reactions into optimized
- jump types for Gillespie type simulations](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#jump_types), [automatic construction of
- dependency graphs for jump systems](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-Requiring-Dependency-Graphs), and more.
-- [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl) symbolic
- expressions and Julia `Expr`s can be obtained for all rate laws and functions determining the 
- deterministic and stochastic terms within resulting ODE, SDE or jump models.
+- By leveraging ModelingToolkit, users have a variety of options for generating optimized system representations to use in solvers. These include construction of [dense or sparse Jacobians](https://docs.sciml.ai/Catalyst/stable/model_simulation/ode_simulation_performance/#ode_simulation_performance_sparse_jacobian), [multithreading or parallelization of generated derivative functions](https://docs.sciml.ai/Catalyst/stable/model_simulation/ode_simulation_performance/#ode_simulation_performance_parallelisation), [automatic classification of reactions into optimized jump types for Gillespie type simulations](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#jump_types), [automatic construction of dependency graphs for jump systems](https://docs.sciml.ai/JumpProcesses/stable/jump_types/#Jump-Aggregators-Requiring-Dependency-Graphs), and more.
+- [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl) symbolic expressions and Julia `Expr`s can be obtained for all rate laws and functions determining the deterministic and stochastic terms within resulting ODE, SDE, or jump models.
 - [Steady states](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/homotopy_continuation/) (and their [stabilities](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/steady_state_stability_computation/)) can be computed for model ODE representations.
 
 #### Features of Catalyst composing with other packages
 - [OrdinaryDiffEq.jl](https://github.com/SciML/OrdinaryDiffEq.jl) Can be used to numerically solver generated reaction rate equation ODE models.
 - [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) can be used to numerically solve generated Chemical Langevin Equation SDE models.
 - [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) can be used to numerically sample generated Stochastic Chemical Kinetics Jump Process models.
-- Support for [parallelization of all simulations](https://docs.sciml.ai/Catalyst/stable/model_simulation/ode_simulation_performance/#ode_simulation_performance_parallelisation), including parallelization of 
- [ODE simulations on GPUs](https://docs.sciml.ai/Catalyst/stable/model_simulation/ode_simulation_performance/#ode_simulation_performance_parallelisation_GPU) using
- [DiffEqGPU.jl](https://github.com/SciML/DiffEqGPU.jl).
-- [Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to [generate LaTeX 
- expressions](https://docs.sciml.ai/Catalyst/stable/model_creation/model_visualisation/#visualisation_latex) corresponding to generated mathematical models or the
- underlying set of reactions.
-- [Graphviz](https://graphviz.org/) can be used to generate and [visualize reaction network graphs](https://docs.sciml.ai/Catalyst/stable/model_creation/model_visualisation/#visualisation_graphs) 
- (reusing the Graphviz interface created in [Catlab.jl](https://algebraicjulia.github.io/Catlab.jl/stable/)).
-- Model steady states can be computed through homotopy continuation using [HomotopyContinuation.jl](https://github.com/JuliaHomotopyContinuation/HomotopyContinuation.jl)
- (which can find *all* steady states of systems with multiple ones), by forward ODE simulations using
- [SteadyStateDiffEq.jl)](https://github.com/SciML/SteadyStateDiffEq.jl), or by numerically solving steady-state nonlinear equations using [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl).
-- [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl) can be used to [compute 
- bifurcation diagrams](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/bifurcation_diagrams/) of models' steady states (including finding periodic orbits).
-- [DynamicalSystems.jl](https://github.com/JuliaDynamics/DynamicalSystems.jl) can be used to compute 
- model [basins of attraction](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/dynamical_systems/#dynamical_systems_basins_of_attraction) and [Lyapunov spectrums](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/dynamical_systems/#dynamical_systems_lyapunov_exponents).
-- [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) can be used 
- to [perform structural identifiability analysis](https://docs.sciml.ai/Catalyst/stable/inverse_problems/structural_identifiability/).
-- [Optimization.jl](https://github.com/SciML/Optimization.jl), [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl), 
- and [PEtab.jl](https://github.com/sebapersson/PEtab.jl) can all be used to [fit model parameters to data](https://sebapersson.github.io/PEtab.jl/stable/Define_in_julia/).
-- [GlobalSensitivity.jl](https://github.com/SciML/GlobalSensitivity.jl) can be used to perform 
- [global sensitivity analysis](https://docs.sciml.ai/Catalyst/stable/inverse_problems/global_sensitivity_analysis/) of model behaviors.
+- Support for [parallelization of all simulations](https://docs.sciml.ai/Catalyst/stable/model_simulation/ode_simulation_performance/#ode_simulation_performance_parallelisation), including parallelization of [ODE simulations on GPUs](https://docs.sciml.ai/Catalyst/stable/model_simulation/ode_simulation_performance/#ode_simulation_performance_parallelisation_GPU) using [DiffEqGPU.jl](https://github.com/SciML/DiffEqGPU.jl).
+- [Latexify](https://korsbo.github.io/Latexify.jl/stable/) can be used to [generate LaTeX expressions](https://docs.sciml.ai/Catalyst/stable/model_creation/model_visualisation/#visualisation_latex) corresponding to generated mathematical models or the underlying set of reactions.
+- [Graphviz](https://graphviz.org/) can be used to generate and [visualize reaction network graphs](https://docs.sciml.ai/Catalyst/stable/model_creation/model_visualisation/#visualisation_graphs) (reusing the Graphviz interface created in [Catlab.jl](https://algebraicjulia.github.io/Catlab.jl/stable/)).
+- Model steady states can be computed through homotopy continuation using [HomotopyContinuation.jl](https://github.com/JuliaHomotopyContinuation/HomotopyContinuation.jl) (which can find *all* steady states of systems with multiple ones), by forward ODE simulations using [SteadyStateDiffEq.jl](https://github.com/SciML/SteadyStateDiffEq.jl), or by numerically solving steady-state nonlinear equations using [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl).
+- [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl) can be used to [compute bifurcation diagrams](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/bifurcation_diagrams/) of model steady states (including finding periodic orbits).
+- [DynamicalSystems.jl](https://github.com/JuliaDynamics/DynamicalSystems.jl) can be used to compute model [basins of attraction](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/dynamical_systems/#dynamical_systems_basins_of_attraction) and [Lyapunov spectrums](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/dynamical_systems/#dynamical_systems_lyapunov_exponents).
+- [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) can be used to [perform structural identifiability analysis](https://docs.sciml.ai/Catalyst/stable/inverse_problems/structural_identifiability/).
+- [Optimization.jl](https://github.com/SciML/Optimization.jl), [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl), and [PEtab.jl](https://github.com/sebapersson/PEtab.jl) can all be used to [fit model parameters to data](https://sebapersson.github.io/PEtab.jl/stable/Define_in_julia/).
+- [GlobalSensitivity.jl](https://github.com/SciML/GlobalSensitivity.jl) can be used to perform [global sensitivity analysis](https://docs.sciml.ai/Catalyst/stable/inverse_problems/global_sensitivity_analysis/) of model behaviors.
 - [SciMLSensitivity.jl](https://github.com/SciML/SciMLSensitivity.jl) can be used to compute local sensitivities of functions containing forward model simulations.
 
 #### Features of packages built upon Catalyst
-- Catalyst [`ReactionSystem`](@ref)s can be [imported from SBML files](https://docs.sciml.ai/Catalyst/stable/model_creation/model_file_loading_and_export/#Loading-SBML-files-using-SBMLImporter.jl-and-SBMLToolkit.jl) via
- [SBMLImporter.jl](https://github.com/SciML/SBMLImporter.jl) and [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), 
- and [from BioNetGen .net files](https://docs.sciml.ai/Catalyst/stable/model_creation/model_file_loading_and_export/#file_loading_rni_net) and various stoichiometric matrix network representations
- using [ReactionNetworkImporters.jl](https://github.com/SciML/ReactionNetworkImporters.jl).
-- [MomentClosure.jl](https://github.com/augustinas1/MomentClosure.jl) allows generation of symbolic 
- ModelingToolkit `ODESystem`s that represent moment closure approximations to moments of the 
- Chemical Master Equation, from reaction networks defined in Catalyst.
-- [FiniteStateProjection.jl](https://github.com/kaandocal/FiniteStateProjection.jl)
- allows the construction and numerical solution of Chemical Master Equation
- models from reaction networks defined in Catalyst.
-- [DelaySSAToolkit.jl](https://github.com/palmtree2013/DelaySSAToolkit.jl) can
- augment Catalyst reaction network models with delays, and can simulate the
- resulting stochastic chemical kinetics with delays models.
-- [BondGraphs.jl](https://github.com/jedforrest/BondGraphs.jl), a package for
- constructing and analyzing bond graphs models, which can take Catalyst models as input.
+- Catalyst [`ReactionSystem`](@ref)s can be [imported from SBML files](https://docs.sciml.ai/Catalyst/stable/model_creation/model_file_loading_and_export/#Loading-SBML-files-using-SBMLImporter.jl-and-SBMLToolkit.jl) via [SBMLImporter.jl](https://github.com/SciML/SBMLImporter.jl) and [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl), and [from BioNetGen .net files](https://docs.sciml.ai/Catalyst/stable/model_creation/model_file_loading_and_export/#file_loading_rni_net) and various stoichiometric matrix network representations using [ReactionNetworkImporters.jl](https://github.com/SciML/ReactionNetworkImporters.jl).
+- [MomentClosure.jl](https://github.com/augustinas1/MomentClosure.jl) allows generation of symbolic ModelingToolkit `ODESystem`s that represent moment closure approximations to moments of the Chemical Master Equation, from reaction networks defined in Catalyst.
+- [FiniteStateProjection.jl](https://github.com/kaandocal/FiniteStateProjection.jl) allows the construction and numerical solution of Chemical Master Equation models from reaction networks defined in Catalyst.
+- [DelaySSAToolkit.jl](https://github.com/palmtree2013/DelaySSAToolkit.jl) can augment Catalyst reaction network models with delays, and can simulate the resulting stochastic chemical kinetics with delays models.
+- [BondGraphs.jl](https://github.com/jedforrest/BondGraphs.jl), a package for constructing and analyzing bond graphs models, which can take Catalyst models as input.
 
 
 ## Illustrative example
@@ -147,7 +105,7 @@ end
 # Create an ODE that can be simulated.
 u0 = [:S => 50.0, :E => 10.0, :SE => 0.0, :P => 0.0]
 tspan = (0., 200.)
-ps = (:kB => 0.01, :kD => 0.1, :kP => 0.1)
+ps = [:kB => 0.01, :kD => 0.1, :kP => 0.1]
 ode = ODEProblem(model, u0, tspan, ps)
 
 # Simulate ODE and plot results.
@@ -176,7 +134,7 @@ In the above example, we used basic Catalyst-based workflows to simulate a simpl
 instead show how various Catalyst features can compose to create a much more advanced model. Our 
 model describes how the volume of a cell ($V$) is affected by a growth factor ($G$). The growth 
 factor only promotes growth while in its phosphorylated form ($Gᴾ$). The phosphorylation of $G$ 
-($G \to Gᴾ$) is promoted by sunlight (modeled as the cyclic sinusoid $kₐ*(sin(t)+1)$), which
+($G \to Gᴾ$) is promoted by sunlight (modeled as the cyclic sinusoid $kₐ (sin(t) + 1)$), which
 phosphorylates the growth factor (producing $Gᴾ$). When the cell reaches a critical volume ($Vₘ$)
 it undergoes cell division. First, we declare our model:
 ```julia
@@ -203,8 +161,8 @@ sprob = SDEProblem(cell_model, u0, tspan, ps)
 This produces the following equations:
 ```math
 \begin{align*}
-dG(t) &=  - \left( \frac{kₚ*(sin(t)+1)}{V(t)} G(t) + \frac{kᵢ}{V(t)} Gᴾ(t) \right) dt - \sqrt{\frac{kₚ*(sin(t)+1)}{V(t)} G(t)} dW_1(t) + \sqrt{\frac{kᵢ}{V(t)} Gᴾ(t)} dW_2(t) &
-dGᴾ(t) &= \left( \frac{kₚ*(sin(t)+1)}{V(t)} G(t) - \frac{kᵢ}{V(t)} Gᴾ(t) \right) dt + \sqrt{\frac{kₚ*(sin(t)+1)}{V(t)} G(t)} dW_1(t) - \sqrt{\frac{kᵢ}{V(t)} Gᴾ(t)} dW_2(t) &
+dG(t) &=  - \left( \frac{kₚ*(sin(t)+1)}{V(t)} G(t) + \frac{kᵢ}{V(t)} Gᴾ(t) \right) dt - \sqrt{\frac{kₚ*(sin(t)+1)}{V(t)} G(t)} dW_1(t) + \sqrt{\frac{kᵢ}{V(t)} Gᴾ(t)} dW_2(t) \\
+dGᴾ(t) &= \left( \frac{kₚ*(sin(t)+1)}{V(t)} G(t) - \frac{kᵢ}{V(t)} Gᴾ(t) \right) dt + \sqrt{\frac{kₚ*(sin(t)+1)}{V(t)} G(t)} dW_1(t) - \sqrt{\frac{kᵢ}{V(t)} Gᴾ(t)} dW_2(t) \\
 dV(t) &= \left(g \cdot Gᴾ(t)\right) dt
 \end{align*}
 ```

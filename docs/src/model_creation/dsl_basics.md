@@ -352,6 +352,7 @@ An example of how this can be used to create a neat-looking model can be found i
     (kB,kD), A + σᵛ ↔ Aσᵛ
     L, Aσᵛ → σᵛ
 end
+nothing # hide
 ```
 
 This functionality can also be used to create less serious models:
