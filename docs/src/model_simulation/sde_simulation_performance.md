@@ -1,5 +1,5 @@
 # [Advice for performant SDE simulations](@id sde_simulation_performance)
-While there exist relatively straightforward approaches to manage performance for [ODE](@ref ode_simulation_performance) and [Jump](@ref ref) simulations, this is generally not the case for SDE simulations. Below, we briefly describe some options. However, as one starts to investigate these, one quickly reaches what is (or could be) active areas of research.
+While there exist relatively straightforward approaches to manage performance for [ODE](@ref ode_simulation_performance) and jump simulations, this is generally not the case for SDE simulations. Below, we briefly describe some options. However, as one starts to investigate these, one quickly reaches what is (or could be) active areas of research.
 
 ## [SDE solver selection](@id sde_simulation_performance_solvers)
 We have previously described how [ODE solver selection](@ref ode_simulation_performance_solvers) can impact simulation performance. Again, it can be worthwhile to investigate solver selection's impact on performance for SDE simulations. Throughout this documentation, we generally use the `STrapezoid` solver as the default choice. However, if the `DifferentialEquations` package is loaded
@@ -25,7 +25,7 @@ Which backend package you should use depends on your available hardware, with th
 
 Next, we create the `SDEProblem` which we wish to simulate. Like for ODEs, we ensure that all vectors are [static vectors](https://github.com/JuliaArrays/StaticArrays.jl) and that all values are `Float32`s. Here we prepare the parallel simulations of a simple [birth-death process](@ref basic_CRN_library_bd).
 ```@example sde_simulation_performance_gpu
-using Catalyst
+using Catalyst, StochasticDiffEq, StaticArrays
 bd_model = @reaction_network begin
     (p,d), 0 <--> X
 end
