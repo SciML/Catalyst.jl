@@ -109,7 +109,7 @@ function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
     num_bcsts = count(isbc, get_unknowns(rs))
 
     # we make a matrix sized by the number of reactions
-    eqs = Matrix{Any}(undef, length(sts) + num_bcsts, length(get_rxs(rs)))
+    eqs = Matrix{Num}(undef, length(sts) + num_bcsts, length(get_rxs(rs)))
     eqs .= 0
     species_to_idx = Dict((x => i for (i, x) in enumerate(ispcs)))
     nps = get_networkproperties(rs)
