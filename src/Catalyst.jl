@@ -6,7 +6,8 @@ module Catalyst
 using DocStringExtensions
 using SparseArrays, DiffEqBase, Reexport, Setfield
 using LaTeXStrings, Latexify, Requires
-using JumpProcesses: JumpProcesses, JumpProblem, 
+using LinearAlgebra, Combinatorics
+using JumpProcesses: JumpProcesses, JumpProblem,
                      MassActionJump, ConstantRateJump, VariableRateJump,
                      SpatialMassActionJump
 
@@ -15,7 +16,6 @@ using ModelingToolkit
 const MT = ModelingToolkit
 using DynamicQuantities#, Unitful # Having Unitful here as well currently gives an error.
 
-
 @reexport using ModelingToolkit
 using Symbolics
 using LinearAlgebra
@@ -23,8 +23,8 @@ using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
 import Symbolics: BasicSymbolic
-import SymbolicUtils
-using ModelingToolkit: Symbolic, value, istree, get_unknowns, get_ps, get_iv, get_systems,
+using Symbolics: iscall
+using ModelingToolkit: Symbolic, value, get_unknowns, get_ps, get_iv, get_systems,
                        get_eqs, get_defaults, toparam, get_var_to_name, get_observed,
                        getvar
 
@@ -44,6 +44,7 @@ import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertice
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 import Symbolics: occursin, wrap
+import Symbolics.RewriteHelpers: hasnode, replacenode
 
 # globals for the modulate
 function default_time_deriv()
@@ -80,7 +81,7 @@ const CONSERVED_CONSTANT_SYMBOL = :Γ
 # Declares symbols which may neither be used as parameters nor unknowns.
 const forbidden_symbols_skip = Set([:ℯ, :pi, :π, :t, :∅])
 const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
-                                      forbidden_symbols_skip)
+    forbidden_symbols_skip)
 const forbidden_variables_error = let
     fvars = copy(forbidden_symbols_error)
     delete!(fvars, :t)
@@ -181,7 +182,6 @@ include("spatial_reaction_systems/utility.jl")
 # Specific spatial problem types.
 include("spatial_reaction_systems/spatial_ODE_systems.jl")
 include("spatial_reaction_systems/lattice_jump_systems.jl")
-
 
 ### ReactionSystem Serialisation ###
 # Has to be at the end (because it uses records of all metadata declared by Catalyst).

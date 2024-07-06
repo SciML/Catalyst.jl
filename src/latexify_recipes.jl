@@ -11,7 +11,7 @@ const LATEX_DEFS = CatalystLatexParams()
 
 ### Latexify Receipt ###
 
-@latexrecipe function f(rs::ReactionSystem; form = :reactions, expand_functions=true)
+@latexrecipe function f(rs::ReactionSystem; form = :reactions, expand_functions = true)
     expand_functions && (rs = expand_registered_functions(rs))
     if form == :reactions    # Returns chemical reaction network code.
         cdot --> false
@@ -37,9 +37,9 @@ function Latexify.infer_output(env, rs::ReactionSystem, args...)
 end
 
 function chemical_arrows(rn::ReactionSystem; expand = true,
-                         double_linebreak = LATEX_DEFS.double_linebreak,
-                         starred = LATEX_DEFS.starred, mathrm = true,
-                         mathjax = LATEX_DEFS.mathjax, kwargs...)
+        double_linebreak = LATEX_DEFS.double_linebreak,
+        starred = LATEX_DEFS.starred, mathrm = true,
+        mathjax = LATEX_DEFS.mathjax, kwargs...)
     any_nonrx_subsys(rn) &&
         (@warn "Latexify currently ignores non-ReactionSystem subsystems. Please call `flatsys = flatten(sys)` to obtain a flattened version of your system before trying to Latexify it.")
 
@@ -81,7 +81,7 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
 
         ### Generate formatted string of substrates
         substrates = [make_stoich_str(substrate[1], substrate[2], subber; mathrm,
-                                      kwargs...)
+                          kwargs...)
                       for substrate in zip(r.substrates, r.substoich)]
         isempty(substrates) && (substrates = ["\\varnothing"])
 
@@ -106,7 +106,7 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
 
         ### Generate formatted string of products
         products = [make_stoich_str(product[1], product[2], subber; mathrm = true,
-                                    kwargs...)
+                        kwargs...)
                     for product in zip(r.products, r.prodstoich)]
         isempty(products) && (products = ["\\varnothing"])
         str *= join(products, " + ")
@@ -133,7 +133,6 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
     Latexify.COPY_TO_CLIPBOARD && clipboard(latexstr)
     return latexstr
 end
-
 
 ### Utility ###
 
@@ -194,7 +193,7 @@ function make_stoich_str(spec, stoich, subber; mathrm = true, kwargs...)
     if isequal(stoich, one(stoich))
         prestr * latexraw(subber(spec); kwargs...) * poststr
     else
-        if (stoich isa Symbolic) && istree(stoich)
+        if (stoich isa Symbolic) && iscall(stoich)
             LaTeXString("(") *
             latexraw(subber(stoich); kwargs...) *
             LaTeXString(")") *

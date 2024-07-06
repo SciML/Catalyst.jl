@@ -62,7 +62,6 @@ Test if a species is valid as a reactant (i.e. a species variable or a constant 
 """
 isvalidreactant(s) = MT.isparameter(s) ? isconstant(s) : (isspecies(s) && !isconstant(s))
 
-
 ### Reaction Constructor Functions ###
 
 # Checks if a metadata input has an entry :only_use_rate => true
@@ -161,8 +160,14 @@ end
 
 # Five-argument constructor accepting rate, substrates, and products, and their stoichiometries.
 function Reaction(rate, subs, prods, substoich, prodstoich;
-                  netstoich = nothing, metadata = Pair{Symbol, Any}[], 
-                  only_use_rate = metadata_only_use_rate_check(metadata), kwargs...)
+        netstoich = nothing, metadata = Pair{Symbol, Any}[],
+        only_use_rate = metadata_only_use_rate_check(metadata), kwargs...)
+    # Handles empty/nothing vectors.
+    isnothing(subs) || isempty(subs) && (subs = nothing)
+    isnothing(prods) || isempty(prods) && (prods = nothing)
+    isnothing(prodstoich) || isempty(prodstoich) && (prodstoich = nothing)
+    isnothing(substoich) || isempty(substoich) && (substoich = nothing)
+
     (isnothing(prods) && isnothing(subs)) &&
         throw(ArgumentError("A reaction requires a non-nothing substrate or product vector."))
     (isnothing(prodstoich) && isnothing(substoich)) &&
@@ -222,7 +227,7 @@ function Reaction(rate, subs, prods, substoich, prodstoich;
     end
 
     # Deletes potential `:only_use_rate => ` entries from the metadata.
-    if any(:only_use_rate == entry[1] for entry in metadata) 
+    if any(:only_use_rate == entry[1] for entry in metadata)
         deleteat!(metadata, findfirst(:only_use_rate == entry[1] for entry in metadata))
     end
 
@@ -255,7 +260,7 @@ function print_rxside(io::IO, specs, stoich)
                      spec : MT.operation(spec)
             if isequal(stoich[i], one(stoich[i]))
                 print(io, prspec)
-            elseif istree(stoich[i])
+            elseif iscall(stoich[i])
                 print(io, "(", stoich[i], ")*", prspec)
             else
                 print(io, stoich[i], "*", prspec)
@@ -311,7 +316,6 @@ function hash(rx::Reaction, h::UInt)
     Base.hash(rx.only_use_rate, h)
 end
 
-
 ### ModelingToolkit Function Dispatches ###
 
 # Used by ModelingToolkit.namespace_equation.
@@ -336,7 +340,8 @@ function MT.namespace_equation(rx::Reaction, name; kw...)
         ns = similar(rx.netstoich)
         map!(n -> f(n[1]) => f(n[2]), ns, rx.netstoich)
     end
-    Reaction(rate, subs, prods, substoich, prodstoich, netstoich, rx.only_use_rate, rx.metadata)
+    Reaction(rate, subs, prods, substoich, prodstoich, netstoich,
+        rx.only_use_rate, rx.metadata)
 end
 
 # Overwrites equation-type functions to give the correct input for `Reaction`s.
@@ -368,9 +373,6 @@ encountered in:
     - Among potential noise scaling metadata.
 """
 function ModelingToolkit.get_variables!(set, rx::Reaction)
-    if isdefined(Main, :Infiltrator)
-        Main.infiltrate(@__MODULE__, Base.@locals, @__FILE__, @__LINE__)
-      end
     get_variables!(set, rx.rate)
     foreach(sub -> push!(set, sub), rx.substrates)
     foreach(prod -> push!(set, prod), rx.products)
@@ -410,7 +412,6 @@ function MT.modified_unknowns!(munknowns, rx::Reaction, sts::AbstractVector)
     munknowns
 end
 
-
 ### `Reaction`-specific Functions ### 
 
 """
@@ -438,17 +439,16 @@ function isbcbalanced(rx::Reaction)
     true
 end
 
-
 ### Reaction Metadata Implementation ###
 # These are currently considered internal, but can be used by public accessor functions like getnoisescaling.
 
 """
 getmetadata_dict(reaction::Reaction)
 
-Retrives the `ImmutableDict` containing all of the metadata associated with a specific reaction.
+Retrieves the `ImmutableDict` containing all of the metadata associated with a specific reaction.
 
 Arguments:
-- `reaction`: The reaction for which we wish to retrive all metadata.
+- `reaction`: The reaction for which we wish to retrieve all metadata.
 
 Example:
 ```julia
@@ -482,11 +482,11 @@ end
 """
 getmetadata(reaction::Reaction, md_key::Symbol)
 
-Retrives a certain metadata value from a `Reaction`. If the metadata does not exists, throws an error.
+Retrieves a certain metadata value from a `Reaction`. If the metadata does not exist, throws an error.
 
 Arguments:
-- `reaction`: The reaction for which we wish to retrive a specific metadata value.
-- `md_key`: The metadata for which we wish to retrive.
+- `reaction`: The reaction for which we wish to retrieve a specific metadata value.
+- `md_key`: The metadata for which we wish to retrieve.
 
 Example:
 ```julia
@@ -495,13 +495,13 @@ getmetadata(reaction, :description)
 ```
 """
 function getmetadata(reaction::Reaction, md_key::Symbol)
-    if !hasmetadata(reaction, md_key) 
+    if !hasmetadata(reaction, md_key)
         error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(getmetadata_dict(reaction))).")
     end
     metadata = getmetadata_dict(reaction)
-    return metadata[findfirst(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))][2]
+    return metadata[findfirst(isequal(md_key, entry[1])
+    for entry in getmetadata_dict(reaction))][2]
 end
-
 
 ### Implemented Reaction Metadata ###
 
@@ -622,7 +622,7 @@ getmisc(reaction)
 
 Notes:
 - The `misc` field can contain any valid Julia structure. This mean that Catalyst cannot check it
-for symbolci variables that are added here. This means that symbolic variables (e.g. parameters of 
+for symbolic variables that are added here. This means that symbolic variables (e.g. parameters of 
 species) that are stored here are not accessible to Catalyst. This can cause troubles when e.g. 
 creating a `ReactionSystem` programmatically (in which case any symbolic variables stored in the
 `misc` metadata field should also be explicitly provided to the `ReactionSystem` constructor). 
@@ -635,7 +635,6 @@ function getmisc(reaction::Reaction)
         error("Attempts to access `misc` metadata field for a reaction which does not have a value assigned for this metadata.")
     end
 end
-
 
 ### Units Handling ###
 
@@ -670,7 +669,7 @@ function validate(rx::Reaction; info::String = "")
     if (subunits !== nothing) && (produnits !== nothing) && (subunits != produnits)
         validated = false
         @warn(string("in ", rx,
-                     " the substrate units are not consistent with the product units."))
+            " the substrate units are not consistent with the product units."))
     end
 
     validated

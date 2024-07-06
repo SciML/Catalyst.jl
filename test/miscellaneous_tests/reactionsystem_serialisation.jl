@@ -4,10 +4,11 @@
 using Catalyst, Test
 using Catalyst: get_rxs
 using ModelingToolkit: getdefault, getdescription, get_metadata
+using Symbolics: getmetadata
 
 # Creates missing getters for MTK metadata (can be removed once added to MTK).
-getmisc(x) = SymbolicUtils.getmetadata(Symbolics.unwrap(x), ModelingToolkit.VariableMisc, nothing)
-getinput(x) = SymbolicUtils.getmetadata(Symbolics.unwrap(x), ModelingToolkit.VariableInput, nothing)
+getmisc(x) = getmetadata(Symbolics.unwrap(x), ModelingToolkit.VariableMisc, nothing)
+getinput(x) = getmetadata(Symbolics.unwrap(x), ModelingToolkit.VariableInput, nothing)
 
 # Sets the default `t` and `D` to use.
 t = default_t()
@@ -191,16 +192,16 @@ let
     @test isequal(getdefault(rs_loaded.rs2.W2), float_md)
 
     # Checks that `Reaction` metadata fields are correct.
-    @test isequal(getmetadata(get_rxs(rs_loaded)[1], :misc), bool_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded)[2], :misc), int_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded)[3], :misc), sym_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded)[4], :misc), str_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded)[5], :misc), nothing_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded.rs2)[1], :misc), expr_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded.rs2)[2], :misc), tup_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded.rs2)[3], :misc), vec_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded.rs2)[4], :misc), dict_md)
-    @test isequal(getmetadata(get_rxs(rs_loaded.rs2)[5], :misc), mat_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded)[1]), bool_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded)[2]), int_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded)[3]), sym_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded)[4]), str_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded)[5]), nothing_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded.rs2)[1]), expr_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded.rs2)[2]), tup_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded.rs2)[3]), vec_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded.rs2)[4]), dict_md)
+    @test isequal(Catalyst.getmisc(get_rxs(rs_loaded.rs2)[5]), mat_md)
 
     # Checks that `ReactionSystem` metadata fields are correct.
     @test isequal(get_metadata(rs_loaded), mat_md)
@@ -359,17 +360,11 @@ end
 # Tests for (slightly more) complicate system created via the DSL.
 # Tests for cases where the number of input is untested (i.e. multiple observables and continuous
 # events, but single equations and discrete events).
-# Currently broken due to Symbolics doing something weird with observable variables, where these
-# end up not being internal due to something internal in symbolics. I have tried tracking down the
-# obscure symbolics subfields.
+# Tests with and without `safety_check`.
 let 
     # Declares the model.
     rs = @reaction_network begin
         @equations D(V) ~ 1 - V
-        @observables begin
-            X2 ~ 2*X
-            X3 ~ 3*X
-        end
         @continuous_events begin
             [X ~ 5.0] => [X ~ X + 1.0]
             [X ~ 20.0] => [X ~ X - 1.0]
@@ -379,12 +374,55 @@ let
     end
 
     # Checks that serialisation works.
-    save_reactionsystem("serialised_rs.jl", rs; safety_check = false)
-    @test_broken isequal(rs, include("../serialised_rs.jl"))
+    save_reactionsystem("serialised_rs_1.jl", rs)
+    save_reactionsystem("serialised_rs_2.jl", rs; safety_check = false)
+    isequal(rs, include("../serialised_rs_1.jl"))
+    isequal(rs, include("../serialised_rs_2.jl"))
+    rm("serialised_rs_1.jl")
+    rm("serialised_rs_2.jl")
+end
+
+# Tests for system where species depends on multiple independent variables.
+# Tests for system where variables depends on multiple independent variables.
+let
+    rs = @reaction_network begin
+        @ivs t x y z
+        @parameters p
+        @species X(t,x,y) Y(t,x,y) XY(t,x,y) Z(t,x,y)
+        @variables V(t,x,z)
+        (kB,kD), X + Y <--> XY
+    end
+    save_reactionsystem("serialised_rs.jl", rs)
+    @test ModelingToolkit.isequal(rs, include("../serialised_rs.jl"))
     rm("serialised_rs.jl")
 end
 
+
 ### Other Tests ###
+
+# Checks that systems with cached network properties yields a warning.
+# Checks that default values as saved properly (even if they have different types).
+let
+    # Prepares model inputs.
+    @species X1(t) X2(t)
+    @parameters k1 k2::Int64
+    rxs = [
+        Reaction(k1, [X1], [X2]),
+        Reaction(k2, [X2], [X1])
+    ]
+    defaults = Dict((X1 => 1.0, k2 => 2))
+
+    # Creates model and computes conservation laws.
+    @named rs = ReactionSystem(rxs, t; defaults)
+    conservationlaws(rs)
+
+    # Serialises model and then loads and checks it.
+    @test_logs (:warn, ) match_mode=:any save_reactionsystem("serialised_rs.jl", rs)
+    rs_loaded = include("../serialised_rs.jl")
+    @test rs == rs_loaded
+    @test ModelingToolkit.get_defaults(rs) == ModelingToolkit.get_defaults(rs_loaded)
+    rm("serialised_rs.jl")
+end
 
 # Tests that an error is generated when non-`ReactionSystem` subs-systems are used.
 let
@@ -401,6 +439,7 @@ let
     @named osys = ODESystem([eq], t)
     @named rs = ReactionSystem(rxs, t; systems = [osys])
     @test_throws Exception save_reactionsystem("failed_serialisation.jl", rs)
+    rm("failed_serialisation.jl")
 end
 
 # Checks that completeness is recorded correctly.
