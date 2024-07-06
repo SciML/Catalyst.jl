@@ -65,9 +65,7 @@ end
 # Tests problem indexing and updating.
 let 
     @test_broken false # A few cases fails for JumpProblem: https://github.com/SciML/ModelingToolkit.jl/issues/2838
-    @test_broken false # A few cases fails for SteadyStateProblem: https://github.com/SciML/SciMLBase.jl/issues/660
-    @test_broken false # Most cases broken for Ensemble problems: https://github.com/SciML/SciMLBase.jl/issues/661
-    for prob in deepcopy([oprob, sprob, dprob, nprob])
+    for prob in deepcopy([oprob, sprob, dprob, nprob, ssprob, eoprob, esprob, edprob, enprob, essprob])
         # Get u values (including observables).
         @test prob[X] == prob[model.X] == prob[:X] == 4
         @test prob[XY] == prob[model.XY] == prob[:XY] == 9
@@ -119,9 +117,7 @@ end
 # Test remake function.
 let 
     @test_broken false # Cannot check result for JumpProblem: https://github.com/SciML/ModelingToolkit.jl/issues/2838
-    @test_broken false # Cannot deepcopy SteadyStateProblem :https://github.com/SciML/ModelingToolkit.jl/issues/2837
-    @test_broken false # Currently cannot be run for Ensemble problems: https://github.com/SciML/SciMLBase.jl/issues/661 (as indexing cannot be used to check values).
-    for prob in deepcopy([oprob, sprob, dprob, nprob])
+    for prob in deepcopy([oprob, sprob, dprob, nprob, ssprob, eoprob, esprob, edprob, enprob, essprob])
         # Remake for all u0s.
         rp = remake(prob; u0 = [X => 1, Y => 2])
         @test rp[[X, Y]] == [1, 2]
@@ -243,10 +239,10 @@ let
         @test getu(sol, (XY,Y))(sol)[1] == getu(sol, (model.XY,model.Y))(sol)[1] == getu(sol, (:XY,:Y))(sol)[1] == (9, 5)       
 
         # Get u values via idxs and functional call.
-        @test osol(0.0; idxs=X) == osol(0.0; idxs=model.X) == osol(0.0; idxs=:X) == 4
-        @test osol(0.0; idxs=XY) == osol(0.0; idxs=model.XY) == osol(0.0; idxs=:XY) == 9
-        @test osol(0.0; idxs = [XY,Y]) == osol(0.0; idxs = [model.XY,model.Y]) == osol(0.0; idxs = [:XY,:Y]) == [9, 5]
-        @test_broken osol(0.0; idxs = (XY,Y)) == osol(0.0; idxs = (model.XY,model.Y)) == osol(0.0; idxs = (:XY,:Y)) == (9, 5) # https://github.com/SciML/SciMLBase.jl/issues/711
+        @test sol(0.0; idxs=X) == sol(0.0; idxs=model.X) == sol(0.0; idxs=:X) == 4
+        @test sol(0.0; idxs=XY) == sol(0.0; idxs=model.XY) == sol(0.0; idxs=:XY) == 9
+        @test sol(0.0; idxs = [XY,Y]) == sol(0.0; idxs = [model.XY,model.Y]) == sol(0.0; idxs = [:XY,:Y]) == [9, 5]
+        @test_broken sol(0.0; idxs = (XY,Y)) == sol(0.0; idxs = (model.XY,model.Y)) == sol(0.0; idxs = (:XY,:Y)) == (9, 5) # https://github.com/SciML/SciMLBase.jl/issues/711
 
         # Get p values.
         @test sol.ps[kp] == sol.ps[model.kp] == sol.ps[:kp] == 1.0    
