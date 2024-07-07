@@ -2,18 +2,18 @@
 
 # Checks if the reaction system has any independent variable. True for all valid reaction systems.
 function seri_has_iv(rn::ReactionSystem)
-    true
+    return true
 end
 
 # Extract a string which declares the system's independent variable.
 function get_iv_string(rn::ReactionSystem)
     iv_dec = MT.get_iv(rn)
-    "@variables $(iv_dec)"
+    return "@variables $(iv_dec)"
 end
 
 # Creates an annotation for the system's independent variable.
 function get_iv_annotation(rn::ReactionSystem)
-    "Independent variable:"
+    return "Independent variable:"
 end
 
 # Combines the 3 independent variable-related functions in a constant tuple.
@@ -23,17 +23,17 @@ IV_FS = (seri_has_iv, get_iv_string, get_iv_annotation)
 
 # Checks if the reaction system has any spatial independent variables.
 function seri_has_sivs(rn::ReactionSystem)
-    !isempty(get_sivs(rn))
+    return !isempty(get_sivs(rn))
 end
 
 # Extract a string which declares the system's spatial independent variables.
 function get_sivs_string(rn::ReactionSystem)
-    "spatial_ivs = @variables$(syms_2_declaration_string(get_sivs(rn)))"
+    return "spatial_ivs = @variables$(syms_2_declaration_string(get_sivs(rn)))"
 end
 
 # Creates an annotation for the system's spatial independent variables.
 function get_sivs_annotation(rn::ReactionSystem)
-    "Spatial independent variables:"
+    return "Spatial independent variables:"
 end
 
 # Combines the 3 independent variables-related functions in a constant tuple.
@@ -133,7 +133,7 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool,
     end
 
     # Merges the file text with `us_n_ps_string` and returns the final outputs.
-    file_text * us_n_ps_string, has_ps, has_sps, has_vars
+    return file_text * us_n_ps_string, has_ps, has_sps, has_vars
 end
 
 ### Handles Parameters ###
@@ -142,7 +142,7 @@ end
 
 # Checks if the reaction system has any parameters.
 function seri_has_parameters(rn::ReactionSystem)
-    !isempty(get_ps(rn))
+    return !isempty(get_ps(rn))
 end
 
 # Extract a string which declares the system's parameters. Uses multiline declaration (a 
@@ -150,12 +150,12 @@ end
 # have metadata, default value, or type designation).
 function get_parameters_string(ps)
     multiline_format = count(complicated_declaration(p) for p in ps) > 3
-    "@parameters$(syms_2_declaration_string(ps; multiline_format))"
+    return "@parameters$(syms_2_declaration_string(ps; multiline_format))"
 end
 
 # Creates an annotation for the system's parameters.
 function get_parameters_annotation(rn::ReactionSystem)
-    "Parameters:"
+    return "Parameters:"
 end
 
 ### Handles Species ###
@@ -164,7 +164,7 @@ end
 
 # Checks if the reaction system has any species.
 function seri_has_species(rn::ReactionSystem)
-    !isempty(get_species(rn))
+    return !isempty(get_species(rn))
 end
 
 # Extract a string which declares the system's species. Uses multiline declaration (a 
@@ -172,12 +172,12 @@ end
 # have metadata, default value, or type designation).
 function get_species_string(sps)
     multiline_format = count(complicated_declaration(sp) for sp in sps) > 3
-    "@species$(syms_2_declaration_string(sps; multiline_format))"
+    return "@species$(syms_2_declaration_string(sps; multiline_format))"
 end
 
 # Creates an annotation for the system's species.
 function get_species_annotation(rn::ReactionSystem)
-    "Species:"
+    return "Species:"
 end
 
 ### Handles Variables ###
