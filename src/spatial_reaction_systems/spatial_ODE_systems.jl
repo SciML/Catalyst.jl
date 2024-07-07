@@ -13,6 +13,10 @@ struct LatticeTransportODEf{S,T}
     """The indexes of the edge parameters in the parameter vector (`parameters(lrs)`)."""
     edge_p_idxs::Vector{Int64}
     """
+    Work in progress.
+    """
+    mtk_ps
+    """
     The non-spatial `ReactionSystem` which was used to create the `LatticeReactionSystem` contain
     a set of parameters (either identical to, or a sub set of, `parameters(lrs)`). This vector
     contain the indexes of the non-spatial system's parameters in `parameters(lrs)`. These are
@@ -72,6 +76,9 @@ struct LatticeTransportODEf{S,T}
         edge_p_idxs = subset_indexes_of(edge_parameters(lrs), parameters(lrs))
         nonspatial_rs_p_idxs = subset_indexes_of(parameters(reactionsystem(lrs)), parameters(lrs))
 
+        # WIP.
+        mtk_ps = ModelingToolkit.MTKParameters(complete(convert(ODESystem, reactionsystem(lrs))), [e[1] => e[2][1] for e in vert_ps])
+
         # Computes the indexes of the vertex parameters in the vector of parameters.
         # Input `vert_ps` is a vector map taking each parameter symbolic to its value (potentially a 
         # vector). This vector is already sorted according to the order of the parameters. Here, we extract 
@@ -90,7 +97,7 @@ struct LatticeTransportODEf{S,T}
         # Declares `work_ps` (used as storage during computation) and the edge iterator.
         work_ps = zeros(length(parameters(lrs)))
         edge_iterator = Catalyst.edge_iterator(lrs) 
-        new{S,T}(ofunc, num_verts(lrs), num_species(lrs), vert_p_idxs, edge_p_idxs, 
+        new{S,T}(ofunc, num_verts(lrs), num_species(lrs), vert_p_idxs, edge_p_idxs, mtk_ps,
                  nonspatial_rs_p_idxs, vert_ps, work_ps, v_ps_idx_types, transport_rates, 
                  t_rate_idx_types, leaving_rates, edge_iterator)
     end
@@ -108,6 +115,10 @@ struct LatticeTransportODEjac{R,S,T}
     vert_p_idxs::Vector{Int64}
     """The indexes of the edge parameters in the parameter vector (`parameters(lrs)`)."""
     edge_p_idxs::Vector{Int64}
+    """
+    Work in progress.
+    """
+    mtk_ps
     """
     The non-spatial `ReactionSystem` which was used to create the `LatticeReactionSystem` contain
     a set of parameters (either identical to, or a sub set of, `parameters(lrs)`). This vector
@@ -145,6 +156,9 @@ struct LatticeTransportODEjac{R,S,T}
         edge_p_idxs = subset_indexes_of(edge_parameters(lrs), parameters(lrs))
         nonspatial_rs_p_idxs = subset_indexes_of(parameters(reactionsystem(lrs)), parameters(lrs))
 
+        # WIP.
+        mtk_ps = ModelingToolkit.MTKParameters(complete(convert(ODESystem, reactionsystem(lrs))), [e[1] => e[2][1] for e in vert_ps])
+
         # Input `vert_ps` is a vector map taking each parameter symbolic to its value (potentially a 
         # vector). This vector is already sorted according to the order of the parameters. Here, we extract 
         # its values only and put them into `vert_ps`.
@@ -153,7 +167,7 @@ struct LatticeTransportODEjac{R,S,T}
         work_ps = zeros(length(parameters(lrs)))
         v_ps_idx_types = map(vp -> length(vp) == 1, vert_ps)
         new{R,S,typeof(jac_transport)}(ofunc, num_verts(lrs), num_species(lrs) , vert_p_idxs, 
-                                       edge_p_idxs, nonspatial_rs_p_idxs, vert_ps, 
+                                       edge_p_idxs, mtk_ps, nonspatial_rs_p_idxs, vert_ps, 
                                        work_ps, v_ps_idx_types, sparse, jac_transport)
     end
 end
@@ -321,9 +335,6 @@ end
 
 # Defines the forcing functor's effect on the (spatial) ODE system.
 function (f_func::LatticeTransportODEf)(du, u, p, t)
-    println(du)
-    println(u)
-    println(p)
     # Updates for non-spatial reactions.
     for vert_i in 1:(f_func.num_verts)
         # Gets the indices of all the species at vertex i.
