@@ -68,7 +68,7 @@ struct LatticeTransportODEf{S,T}
     """An iterator over all the edges of the lattice."""
     edge_iterator::Vector{Pair{Int64, Int64}}
     
-    function LatticeTransportODEf(ofunc::S, vert_ps, 
+    function LatticeTransportODEf(ofunc::S, vert_ps::Vector{Pair{BasicSymbolic{Real},Vector{T}}}, edge_ps, 
                                   transport_rates::Vector{Pair{Int64, SparseMatrixCSC{T, Int64}}}, 
                                   lrs::LatticeReactionSystem) where {S,T}        
         # Records which parameters and rates are uniform and which are not.
@@ -82,7 +82,7 @@ struct LatticeTransportODEf{S,T}
 
         # WIP.
         nonspatial_osys = complete(convert(ODESystem, reactionsystem(lrs)))
-        p_init = [p => Dict(vert_ps)[p][1] for p in parameters(nonspatial_osys)]
+        p_init = [p => Dict([vert_ps; edge_ps])[p][1] for p in parameters(nonspatial_osys)]
         mtk_ps = MT.MTKParameters(nonspatial_osys, p_init)
         p_setters = [MT.setp(nonspatial_osys, p) for p in parameters(nonspatial_osys)]
 
@@ -158,7 +158,7 @@ struct LatticeTransportODEjac{R,S,T}
     """The transport rates. This is a dense or sparse matrix (depending on what type of Jacobian is used)."""
     jac_transport::T
 
-    function LatticeTransportODEjac(ofunc::R, vert_ps, 
+    function LatticeTransportODEjac(ofunc::R, vert_ps::Vector{Pair{BasicSymbolic{Real},Vector{S}}}, edge_ps, 
                                     jac_transport::Union{Nothing, SparseMatrixCSC{Float64, Int64}}, 
                                     lrs::LatticeReactionSystem, sparse::Bool) where {R,S}
 
@@ -169,7 +169,8 @@ struct LatticeTransportODEjac{R,S,T}
 
         # WIP.
         nonspatial_osys = complete(convert(ODESystem, reactionsystem(lrs)))
-        mtk_ps = MT.MTKParameters(nonspatial_osys, [e[1] => e[2][1] for e in vert_ps])
+        p_init = [p => Dict([vert_ps; edge_ps])[p][1] for p in parameters(nonspatial_osys)]
+        mtk_ps = MT.MTKParameters(nonspatial_osys, p_init)
         p_setters = [MT.setp(nonspatial_osys, p) for p in parameters(nonspatial_osys)]
 
         # Input `vert_ps` is a vector map taking each parameter symbolic to its value (potentially a 
@@ -251,23 +252,23 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{Basi
         ofunc_sparse = ODEFunction(osys; jac = true, sparse = true)
         jac_transport = build_jac_prototype(ofunc_sparse.jac_prototype, transport_rates, lrs; set_nonzero = true)
         if sparse
-            f = LatticeTransportODEf(ofunc_sparse, [vert_ps; edge_ps], transport_rates, lrs)
+            f = LatticeTransportODEf(ofunc_sparse, vert_ps, edge_ps, transport_rates, lrs)
             jac_transport = build_jac_prototype(ofunc_sparse.jac_prototype, transport_rates, lrs; set_nonzero = true)
-            J = LatticeTransportODEjac(ofunc_dense, [vert_ps; edge_ps], jac_transport, lrs, true)
+            J = LatticeTransportODEjac(ofunc_dense, vert_ps, edge_ps, jac_transport, lrs, true)
             jac_prototype = jac_transport
         else
-            f = LatticeTransportODEf(ofunc_dense, [vert_ps; edge_ps], transport_rates, lrs)
-            J = LatticeTransportODEjac(ofunc_dense, [vert_ps; edge_ps], jac_transport, lrs, false)
+            f = LatticeTransportODEf(ofunc_dense, vert_ps, edge_ps, transport_rates, lrs)
+            J = LatticeTransportODEjac(ofunc_dense, vert_ps, edge_ps, jac_transport, lrs, false)
             jac_prototype = nothing
         end
     else
         if sparse
             ofunc_sparse = ODEFunction(osys; jac = false, sparse = true)
-            f = LatticeTransportODEf(ofunc_sparse, [vert_ps; edge_ps], transport_rates, lrs)
+            f = LatticeTransportODEf(ofunc_sparse, vert_ps, edge_ps, transport_rates, lrs)
             jac_prototype = build_jac_prototype(ofunc_sparse.jac_prototype, transport_rates, lrs; set_nonzero = false)
         else
             ofunc_dense = ODEFunction(osys; jac = false, sparse = false)
-            f = LatticeTransportODEf(ofunc_dense, [vert_ps; edge_ps], transport_rates, lrs)
+            f = LatticeTransportODEf(ofunc_dense, vert_ps, edge_ps, transport_rates, lrs)
             jac_prototype = nothing
         end
         J = nothing
@@ -347,7 +348,7 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64},
 end
 
 # Defines the forcing functor's effect on the (spatial) ODE system.
-function (f_func::LatticeTransportODEf)(du, u, p, t)
+function (f_func::LatticeTransportODEf)(du::AbstractVector, u, p, t)
     # Updates for non-spatial reactions.
     for vert_i in 1:(f_func.num_verts)
         # Gets the indices of all the species at vertex i.
@@ -378,7 +379,7 @@ function (f_func::LatticeTransportODEf)(du, u, p, t)
 end
 
 # Defines the Jacobian functor's effect on the (spatial) ODE system.
-function (jac_func::LatticeTransportODEjac)(J, u, p, t)
+function (jac_func::LatticeTransportODEjac)(J::AbstractMatrix, u, p, t)
     J .= 0.0
 
     # Update the Jacobian from non-spatial reaction terms.
