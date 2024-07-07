@@ -1,6 +1,131 @@
 ### Spatial ODE Functor Structures ###
 
 # Functor with information for the forcing function of a spatial ODE with spatial movement on a lattice.
+struct LatticeTransportODEFunction{R,S,T}
+    """The ODEFunction of the (non-spatial) ReactionSystem that generated this LatticeTransportODEf instance."""
+    ofunc::S
+    """The number of vertices."""
+    num_verts::Int64
+    """The number of species."""
+    num_species::Int64
+    """The indexes of the vertex parameters in the parameter vector (`parameters(lrs)`)."""
+    vert_p_idxs::Vector{Int64}
+    """The indexes of the edge parameters in the parameter vector (`parameters(lrs)`)."""
+    edge_p_idxs::Vector{Int64}
+    """
+    Work in progress.
+    """
+    mtk_ps
+    """
+    Work in progress.
+    """
+    p_setters
+    """
+    The non-spatial `ReactionSystem` which was used to create the `LatticeReactionSystem` contain
+    a set of parameters (either identical to, or a sub set of, `parameters(lrs)`). This vector
+    contain the indexes of the non-spatial system's parameters in `parameters(lrs)`. These are
+    required to manage the non-spatial ODEFunction in the spatial call.
+    """
+    nonspatial_rs_p_idxs::Vector{Int64}
+    """The values of the parameters that are tied to vertices."""
+    vert_ps::Vector{Vector{T}}
+    """
+    Vector for storing temporary values. Repeatedly during simulations, we need to retrieve the 
+    parameter values in a certain vertex. However, since most parameters (likely) are uniform
+    (and hence only have 1 value stored), we need to create a new vector each time we need to retrieve
+    the parameter values in a new vertex. To avoid relocating these values repeatedly, we write them
+    to this vector.
+    """
+    work_ps::Vector{T}    
+    """
+    For each parameter in vert_ps, its value is a vector with a length of either num_verts or 1. 
+    To know whenever a parameter's value needs expanding to the work_ps array, its length needs checking. 
+    This check is done once, and the value is stored in this array. True means a uniform value.
+    """
+    v_ps_idx_types::Vector{Bool}
+    """
+    A vector that stores, for each species with transportation, its transportation rate(s). 
+    Each entry is a pair from (the index of) the transported species (in the `species(lrs)` vector)
+    to its transportation rate (each species only has a single transportation rate, the sum of all
+    its transportation reactions' rates). If the transportation rate is uniform across all edges, 
+    stores a single value (in a size (1,1) sparse matrix). Otherwise, stores these in a sparse matrix 
+    where value (i,j) is the species transportation rate from vertex i to vertex j.
+    """
+    transport_rates::Vector{Pair{Int64,SparseMatrixCSC{T, Int64}}}
+    """
+    For each transport rate in transport_rates, its value is a (sparse) matrix with a size of either 
+    (num_verts,num_verts) or (1,1). In the second case, the transportation rate is uniform across 
+    all edges. To avoid having to check which case holds for each transportation rate, we store the
+    corresponding case in this value. `true` means that a species has a uniform transportation rate.
+    """
+    t_rate_idx_types::Vector{Bool}
+    """
+    A matrix, NxM, where N is the number of species with transportation and M is the number of vertices. 
+    Each value is the total rate at which that species leaves that vertex 
+    (e.g. for a species with constant diffusion rate D, in a vertex with n neighbours, this value is n*D).
+    """
+    leaving_rates::Matrix{T}
+    """An iterator over all the edges of the lattice."""
+    edge_iterator::Vector{Pair{Int64, Int64}}
+    """Whether the Jacobian is sparse or not."""
+    sparse::Bool
+    """The transport rates. This is a dense or sparse matrix (depending on what type of Jacobian is used)."""
+    jac_transport::R
+    
+    function LatticeTransportODEFunction(ofunc::S, vert_ps::Vector{Pair{BasicSymbolic{Real},Vector{T}}}, edge_ps, 
+                                  transport_rates::Vector{Pair{Int64, SparseMatrixCSC{T, Int64}}}, 
+                                  lrs::LatticeReactionSystem) where {S,T}        
+        # Records which parameters and rates are uniform and which are not.
+        v_ps_idx_types = map(vp -> length(vp[2]) == 1, vert_ps)
+        t_rate_idx_types = map(tr -> size(tr[2]) == (1,1), transport_rates)
+
+        # Computes the indexes of various parameters in in the `parameters(lrs)` vector.
+        vert_p_idxs = subset_indexes_of(vertex_parameters(lrs), parameters(lrs))
+        edge_p_idxs = subset_indexes_of(edge_parameters(lrs), parameters(lrs))
+        nonspatial_rs_p_idxs = subset_indexes_of(parameters(reactionsystem(lrs)), parameters(lrs))
+
+        # WIP.
+        nonspatial_osys = complete(convert(ODESystem, reactionsystem(lrs)))
+        p_init = [p => Dict([vert_ps; edge_ps])[p][1] for p in parameters(nonspatial_osys)]
+        mtk_ps = MT.MTKParameters(nonspatial_osys, p_init)
+        p_setters = [MT.setp(nonspatial_osys, p) for p in parameters(nonspatial_osys)]
+
+        # Computes the indexes of the vertex parameters in the vector of parameters.
+        # Input `vert_ps` is a vector map taking each parameter symbolic to its value (potentially a 
+        # vector). This vector is already sorted according to the order of the parameters. Here, we extract 
+        # its values only and put them into `vert_ps`.
+        vert_ps = [vp[2] for vp in vert_ps]
+
+        # Computes the leaving rate matrix.
+        leaving_rates = zeros(length(transport_rates), num_verts(lrs))
+        for (s_idx, tr_pair) in enumerate(transport_rates)
+            for e in Catalyst.edge_iterator(lrs)
+                # Updates the exit rate for species s_idx from vertex e.src.
+                leaving_rates[s_idx, e[1]] += get_transport_rate(tr_pair[2], e, t_rate_idx_types[s_idx]) 
+            end
+        end
+
+        # Declares `work_ps` (used as storage during computation) and the edge iterator.
+        work_ps = zeros(length(parameters(lrs)))
+        edge_iterator = Catalyst.edge_iterator(lrs) 
+        new{S,T}(ofunc, num_verts(lrs), num_species(lrs), vert_p_idxs, edge_p_idxs, mtk_ps, p_setters,
+                 nonspatial_rs_p_idxs, vert_ps, work_ps, v_ps_idx_types, transport_rates, 
+                 t_rate_idx_types, leaving_rates, edge_iterator)
+    end
+end
+
+
+
+
+
+
+
+
+
+
+
+
+# Functor with information for the forcing function of a spatial ODE with spatial movement on a lattice.
 struct LatticeTransportODEf{S,T}
     """The ODEFunction of the (non-spatial) ReactionSystem that generated this LatticeTransportODEf instance."""
     ofunc::S
