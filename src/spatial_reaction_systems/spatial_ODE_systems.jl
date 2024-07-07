@@ -74,7 +74,8 @@ struct LatticeTransportODEFunction{R,S,T}
     
     function LatticeTransportODEFunction(ofunc::S, vert_ps::Vector{Pair{BasicSymbolic{Real},Vector{T}}}, edge_ps, 
                                   transport_rates::Vector{Pair{Int64, SparseMatrixCSC{T, Int64}}}, 
-                                  lrs::LatticeReactionSystem) where {S,T}        
+                                  lrs::LatticeReactionSystem, jac_transport::Union{Nothing, SparseMatrixCSC{Float64, Int64}}, 
+                                  sparse::Bool) where {S,T}        
         # Records which parameters and rates are uniform and which are not.
         v_ps_idx_types = map(vp -> length(vp[2]) == 1, vert_ps)
         t_rate_idx_types = map(tr -> size(tr[2]) == (1,1), transport_rates)
@@ -108,12 +109,58 @@ struct LatticeTransportODEFunction{R,S,T}
         # Declares `work_ps` (used as storage during computation) and the edge iterator.
         work_ps = zeros(length(parameters(lrs)))
         edge_iterator = Catalyst.edge_iterator(lrs) 
-        new{S,T}(ofunc, num_verts(lrs), num_species(lrs), vert_p_idxs, edge_p_idxs, mtk_ps, p_setters,
+        new{typeof(jac_transport),S,T}(ofunc, num_verts(lrs), num_species(lrs), vert_p_idxs, edge_p_idxs, mtk_ps, p_setters,
                  nonspatial_rs_p_idxs, vert_ps, work_ps, v_ps_idx_types, transport_rates, 
-                 t_rate_idx_types, leaving_rates, edge_iterator)
+                 t_rate_idx_types, leaving_rates, edge_iterator, jac_transport)
     end
 end
 
+
+# Defines the forcing functor's effect on the (spatial) ODE system.
+function (f_func::LatticeTransportODEFunction)(du::AbstractVector, u, p, t)
+    # Updates for non-spatial reactions.
+    for vert_i in 1:(f_func.num_verts)
+        # Gets the indices of all the species at vertex i.
+        idxs = get_indexes(vert_i, f_func.num_species)
+        
+        # Updates the work vector to contain the vertex parameter values for vertex vert_i.
+        update_work_vert_ps!(f_func, p, vert_i)
+        
+        # Evaluate reaction contributions to du at vert_i.
+        f_func.ofunc((@view du[idxs]),  (@view u[idxs]), f_func.mtk_ps, t)
+    end
+
+    # s_idx is the species index among transport species, s is the index among all species.
+    # rates are the species' transport rates.
+    for (s_idx, (s, rates)) in enumerate(f_func.transport_rates)  
+        # Rate for leaving source vertex vert_i. 
+        for vert_i in 1:(f_func.num_verts)  
+            idx_src = get_index(vert_i, s, f_func.num_species)                       
+            du[idx_src] -= f_func.leaving_rates[s_idx, vert_i] * u[idx_src]
+        end
+        # Add rates for entering a destination vertex via an incoming edge.
+        for e in f_func.edge_iterator   
+            idx_src = get_index(e[1], s, f_func.num_species)
+            idx_dst = get_index(e[2], s, f_func.num_species)     
+            du[idx_dst] += get_transport_rate(s_idx, f_func, e) * u[idx_src]
+        end
+    end
+end
+
+# Defines the Jacobian functor's effect on the (spatial) ODE system.
+function (jac_func::LatticeTransportODEFunction)(J::AbstractMatrix, u, p, t)
+    J .= 0.0
+
+    # Update the Jacobian from non-spatial reaction terms.
+    for vert_i in 1:(jac_func.num_verts)
+        idxs = get_indexes(vert_i, jac_func.num_species)
+        update_work_vert_ps!(jac_func, p, vert_i)
+        jac_func.ofunc.jac((@view J[idxs, idxs]), (@view u[idxs]), jac_func.mtk_ps, t)
+    end
+
+    # Updates for the spatial reactions (adds the Jacobian values from the transportation reactions).
+    J .+= jac_func.jac_transport
+end
 
 
 
@@ -396,6 +443,16 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{Basi
             f = LatticeTransportODEf(ofunc_dense, vert_ps, edge_ps, transport_rates, lrs)
             jac_prototype = nothing
         end
+        J = nothing
+    end
+
+    ofunc_dense = ODEFunction(osys; jac = true, sparse = false)
+    ofunc_sparse = ODEFunction(osys; jac = true, sparse = true)
+    jac_transport = build_jac_prototype(ofunc_sparse.jac_prototype, transport_rates, lrs; set_nonzero = true)
+    f = LatticeTransportODEFunction(ofunc_sparse, vert_ps, edge_ps, transport_rates, lrs, jac_transport, sparse)
+    if jac
+        J = f
+    else
         J = nothing
     end
 
