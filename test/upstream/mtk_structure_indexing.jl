@@ -37,12 +37,12 @@ begin
     problems = [oprob, sprob, dprob, jprob, nprob, ssprob]
 
     # Creates an `EnsembleProblem` for each problem.
-    eoprob = EnsembleProblem(oprob)
-    esprob = EnsembleProblem(sprob)
-    edprob = EnsembleProblem(dprob)
-    ejprob = EnsembleProblem(jprob)
-    enprob = EnsembleProblem(nprob)
-    essprob = EnsembleProblem(ssprob)
+    eoprob = EnsembleProblem(deepcopy(oprob))
+    esprob = EnsembleProblem(deepcopy(sprob))
+    edprob = EnsembleProblem(deepcopy(dprob))
+    ejprob = EnsembleProblem(deepcopy(jprob))
+    enprob = EnsembleProblem(deepcopy(nprob))
+    essprob = EnsembleProblem(deepcopy(ssprob))
     eproblems = [eoprob, esprob, edprob, ejprob, enprob, essprob]
 
     # Creates integrators.
