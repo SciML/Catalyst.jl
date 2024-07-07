@@ -124,6 +124,7 @@ end
 # Tests creation.
 # Tests basic accessor functions.
 # Tests that repeated metadata entries are not permitted.
+# Tests that attempting to access non-existent metadata throws an error.
 let
     @parameters k
     @species X(t) X2(t)
@@ -135,6 +136,7 @@ let
     @test Catalyst.hasmetadata(r, :noise_scaling)
     @test !Catalyst.hasmetadata(r, :nonexisting_metadata)
     @test Catalyst.getmetadata(r, :noise_scaling) == 0.0
+    @test_throws Exception Catalyst.getmetadata(r, :misc)
 
     metadata_repeated = [:noise_scaling => 0.0, :noise_scaling => 1.0, :metadata_entry => "unused"]
     @test_throws Exception Reaction(k, [X], [X2], [2], [1]; metadata=metadata_repeated)
