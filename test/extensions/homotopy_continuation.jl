@@ -25,7 +25,7 @@ let
     u0 = [:X1 => 2.0, :X2 => 2.0, :X3 => 2.0, :X2_2X3 => 2.0]
 
     # Computes the single steady state, checks that when given to the ODE rhs, all are evaluated to 0.
-    hc_ss = hc_steady_states(rs, ps; u0 = u0, show_progress = false, seed = 0x000004d2)
+    hc_ss = hc_steady_states(rs, ps; u0 = u0, show_progress = false, seed = 0x000004d1)
     hc_ss = Pair.(unknowns(rs), hc_ss[1])
     @test maximum(abs.(f_eval(rs, hc_ss, ps, 0.0))) ≈ 0.0 atol = 1e-12
 
@@ -35,7 +35,8 @@ end
 
 # Tests for network with multiple steady state.
 # Tests for Symbol parameter input.
-# Tests that passing kwargs to HC.solve does not error.
+# Tests that passing kwargs to HC.solve does not error and have an effect (i.e. modifying the seed
+# slightly modified the output in some way).
 let 
     wilhelm_2009_model = @reaction_network begin
         k1, Y --> 2X
@@ -43,9 +44,9 @@ let
         k3, X + Y --> Y
         k4, X --> 0
     end
-    ps = [:k3 => 1.0, :k2 => 2.0, :k4 => 1.5, :k1=>8.0]
+    ps = [:k3 => 1.0, :k2 => 2.0, :k4 => 1.5, :k1 => 8.0]
 
-    hc_ss_1 = hc_steady_states(wilhelm_2009_model, ps; seed = 0x000004d2, show_progress = false)
+    hc_ss_1 = hc_steady_states(wilhelm_2009_model, ps; seed = 0x000004d1, show_progress = false)
     @test sort(hc_ss_1, by = sol->sol[1]) ≈ [[0.0, 0.0], [0.5, 2.0], [4.5, 6.0]]
 
     hc_ss_2 = hc_steady_states(wilhelm_2009_model, ps; seed = 0x000004d2, show_progress = false)
@@ -69,7 +70,7 @@ let
     ps = (:kY1 => 1.0, :kY2 => 3, :kZ1 => 1.0, :kZ2 => 4.0)
     u0_1 = (:Y1 => 1.0, :Y2 => 3, :Z1 => 10, :Z2 =>40.0)
     
-    ss_1 = sort(hc_steady_states(rs_1, ps; u0 = u0_1, show_progress = false, seed = 0x000004d2), by = sol->sol[1])
+    ss_1 = sort(hc_steady_states(rs_1, ps; u0 = u0_1, show_progress = false, seed = 0x000004d1), by = sol->sol[1])
     @test ss_1 ≈ [[0.2, 0.1, 3.0, 1.0, 40.0, 10.0]]
     
     rs_2 = @reaction_network begin
@@ -81,7 +82,7 @@ let
     end
     u0_2 = [:B2 => 1.0, :B1 => 3.0, :A2 => 10.0, :A1 =>40.0]
     
-    ss_2 = sort(hc_steady_states(rs_2, ps; u0 = u0_2, show_progress = false, seed = 0x000004d2), by = sol->sol[1])
+    ss_2 = sort(hc_steady_states(rs_2, ps; u0 = u0_2, show_progress = false, seed = 0x000004d1), by = sol->sol[1])
     @test ss_1 ≈ ss_2
 end
 
@@ -96,7 +97,7 @@ let
         d, X --> 0
     end
     ps = [:v => 5.0, :K => 2.5, :n => 3, :d => 1.0]
-    sss = hc_steady_states(rs, ps; filter_negative = false, show_progress = false, seed = 0x000004d2)
+    sss = hc_steady_states(rs, ps; filter_negative = false, show_progress = false, seed = 0x000004d1)
     
     @test length(sss) == 4
     for ss in sss
@@ -104,7 +105,7 @@ let
     end
 
     ps = [:v => 5.0, :K => 2.5, :n => 2.7, :d => 1.0]
-    @test_throws Exception hc_steady_states(rs, ps; show_progress = false, seed = 0x000004d2)
+    @test_throws Exception hc_steady_states(rs, ps; show_progress = false, seed = 0x000004d1)
 end
 
 
@@ -125,7 +126,7 @@ let
 
     # Checks that homotopy continuation correctly find the system's single steady state.
     ps = [:p => 2.0, :d => 1.0, :k => 5.0]
-    hc_ss = hc_steady_states(rs, ps; show_progress = false, seed = 0x000004d2)
+    hc_ss = hc_steady_states(rs, ps; show_progress = false, seed = 0x000004d1)
     @test hc_ss ≈ [[2.0, 0.2, 10.0]]
 end
 
@@ -138,7 +139,7 @@ let
     p_start = [:p => 1.0, :d => 0.2]
     
     # Computes bifurcation diagram.
-    @test_throws Exception hc_steady_states(incomplete_network, p_start; show_progress = false, seed = 0x000004d2)
+    @test_throws Exception hc_steady_states(incomplete_network, p_start; show_progress = false, seed = 0x000004d1)
 end
 
 # Tests that non-autonomous system throws an error
@@ -147,5 +148,5 @@ let
         (k,t), 0 <--> X
     end
     ps = [:k => 1.0]
-    @test_throws Exception hc_steady_states(rs, ps; show_progress = false, seed = 0x000004d2)
+    @test_throws Exception hc_steady_states(rs, ps; show_progress = false, seed = 0x000004d1)
 end
