@@ -17,6 +17,10 @@ struct LatticeTransportODEf{S,T}
     """
     mtk_ps
     """
+    Work in progress.
+    """
+    p_setters
+    """
     The non-spatial `ReactionSystem` which was used to create the `LatticeReactionSystem` contain
     a set of parameters (either identical to, or a sub set of, `parameters(lrs)`). This vector
     contain the indexes of the non-spatial system's parameters in `parameters(lrs)`. These are
@@ -77,7 +81,9 @@ struct LatticeTransportODEf{S,T}
         nonspatial_rs_p_idxs = subset_indexes_of(parameters(reactionsystem(lrs)), parameters(lrs))
 
         # WIP.
-        mtk_ps = ModelingToolkit.MTKParameters(complete(convert(ODESystem, reactionsystem(lrs))), [e[1] => e[2][1] for e in vert_ps])
+        nonspatial_osys = complete(convert(ODESystem, reactionsystem(lrs)))
+        mtk_ps = MT.MTKParameters(nonspatial_osys, [e[1] => e[2][1] for e in vert_ps])
+        p_setters = [MT.setp(nonspatial_osys, p) for p in parameters(nonspatial_osys)]
 
         # Computes the indexes of the vertex parameters in the vector of parameters.
         # Input `vert_ps` is a vector map taking each parameter symbolic to its value (potentially a 
@@ -97,7 +103,7 @@ struct LatticeTransportODEf{S,T}
         # Declares `work_ps` (used as storage during computation) and the edge iterator.
         work_ps = zeros(length(parameters(lrs)))
         edge_iterator = Catalyst.edge_iterator(lrs) 
-        new{S,T}(ofunc, num_verts(lrs), num_species(lrs), vert_p_idxs, edge_p_idxs, mtk_ps,
+        new{S,T}(ofunc, num_verts(lrs), num_species(lrs), vert_p_idxs, edge_p_idxs, mtk_ps, p_setters,
                  nonspatial_rs_p_idxs, vert_ps, work_ps, v_ps_idx_types, transport_rates, 
                  t_rate_idx_types, leaving_rates, edge_iterator)
     end
@@ -119,6 +125,10 @@ struct LatticeTransportODEjac{R,S,T}
     Work in progress.
     """
     mtk_ps
+    """
+    Work in progress.
+    """
+    p_setters
     """
     The non-spatial `ReactionSystem` which was used to create the `LatticeReactionSystem` contain
     a set of parameters (either identical to, or a sub set of, `parameters(lrs)`). This vector
@@ -157,7 +167,9 @@ struct LatticeTransportODEjac{R,S,T}
         nonspatial_rs_p_idxs = subset_indexes_of(parameters(reactionsystem(lrs)), parameters(lrs))
 
         # WIP.
-        mtk_ps = ModelingToolkit.MTKParameters(complete(convert(ODESystem, reactionsystem(lrs))), [e[1] => e[2][1] for e in vert_ps])
+        nonspatial_osys = complete(convert(ODESystem, reactionsystem(lrs)))
+        mtk_ps = MT.MTKParameters(nonspatial_osys, [e[1] => e[2][1] for e in vert_ps])
+        p_setters = [MT.setp(nonspatial_osys, p) for p in parameters(nonspatial_osys)]
 
         # Input `vert_ps` is a vector map taking each parameter symbolic to its value (potentially a 
         # vector). This vector is already sorted according to the order of the parameters. Here, we extract 
@@ -167,7 +179,7 @@ struct LatticeTransportODEjac{R,S,T}
         work_ps = zeros(length(parameters(lrs)))
         v_ps_idx_types = map(vp -> length(vp) == 1, vert_ps)
         new{R,S,typeof(jac_transport)}(ofunc, num_verts(lrs), num_species(lrs) , vert_p_idxs, 
-                                       edge_p_idxs, mtk_ps, nonspatial_rs_p_idxs, vert_ps, 
+                                       edge_p_idxs, mtk_ps, p_setters, nonspatial_rs_p_idxs, vert_ps, 
                                        work_ps, v_ps_idx_types, sparse, jac_transport)
     end
 end
@@ -344,7 +356,7 @@ function (f_func::LatticeTransportODEf)(du, u, p, t)
         update_work_vert_ps!(f_func, p, vert_i)
         
         # Evaluate reaction contributions to du at vert_i.
-        f_func.ofunc((@view du[idxs]),  (@view u[idxs]), nonspatial_ps(f_func), t)
+        f_func.ofunc((@view du[idxs]),  (@view u[idxs]), f_func.mtk_ps, t)
     end
 
     # s_idx is the species index among transport species, s is the index among all species.
@@ -372,7 +384,7 @@ function (jac_func::LatticeTransportODEjac)(J, u, p, t)
     for vert_i in 1:(jac_func.num_verts)
         idxs = get_indexes(vert_i, jac_func.num_species)
         update_work_vert_ps!(jac_func, p, vert_i)
-        jac_func.ofunc.jac((@view J[idxs, idxs]), (@view u[idxs]), nonspatial_ps(jac_func), t)
+        jac_func.ofunc.jac((@view J[idxs, idxs]), (@view u[idxs]), jac_func.mtk_ps, t)
     end
 
     # Updates for the spatial reactions (adds the Jacobian values from the transportation reactions).

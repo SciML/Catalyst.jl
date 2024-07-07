@@ -287,6 +287,14 @@ function update_work_vert_ps!(lt_ode_func, all_ps::Vector{T}, vert::Int64) where
     return update_work_vert_ps!(lt_ode_func.work_ps, lt_ode_func.vert_p_idxs, all_ps, vert, lt_ode_func.v_ps_idx_types)
 end
 
+# Input is either a LatticeTransportODEf or LatticeTransportODEjac function (which fields we pass on).
+function update_work_vert_ps!(lt_ode_func, all_ps::Vector{T}, vert::Int64) where {T}
+    for (setp, (idx, loc_type)) in zip(lt_ode_func.p_setters, enumerate(lt_ode_func.v_ps_idx_types))
+        p_val = (loc_type ? all_ps[lt_ode_func.vert_p_idxs[idx]][1] : all_ps[lt_ode_func.vert_p_idxs[idx]][vert])
+        setp(lt_ode_func.mtk_ps, p_val)
+    end
+end
+
 # Fetches the parameter values that currently are in the work parameter vector and which
 # corresponds to the parameters of the non-spatial `ReactionSystem` stored in the `ReactionSystem`.
 function nonspatial_ps(lt_ode_func)
