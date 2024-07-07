@@ -14,11 +14,11 @@ end
 # E.g `@string_prepend! str1 str_base` becomes `str_base = str1 * str_base`.
 macro string_prepend!(input, string)
     rhs = :($input * $string)
-    return esc(:($string = $rhs))
+    esc(:($string = $rhs))
 end
 macro string_prepend!(input1, input2, string)
     rhs = :($input1 * $input2 * $string)
-    return esc(:($string = $rhs))
+    esc(:($string = $rhs))
 end
 
 # Gets the character at a specific index.
@@ -51,18 +51,18 @@ function push_field(file_text::String, rn::ReactionSystem,
 
     # Adds (potential) annotation. Returns the expanded file text, and a Bool that this field was added.
     annotate && (@string_prepend! "\n\n# " get_comp_annotation(rn) write_string)
-    return (file_text * write_string, true)
+    (file_text * write_string, true)
 end
 
 # Generic function for creating an string for a unsupported argument.
 function get_unsupported_comp_string(component::String)
     @warn "Writing ReactionSystem models with $(component) is currently not supported. This field is not written to the file."
-    return ""
+    ""
 end
 
 # Generic function for creating the annotation string for an unsupported argument.
 function get_unsupported_comp_annotation(component::String)
-    return "$(component): (OBS: Currently not supported, and hence empty)"
+    "$(component): (OBS: Currently not supported, and hence empty)"
 end
 
 ### String Conversion ###
@@ -72,14 +72,14 @@ end
 function expression_2_string(expr;
         strip_call_dict = make_strip_call_dict(Symbolics.get_variables(expr)))
     strip_called_expr = substitute(expr, strip_call_dict)
-    return repr(strip_called_expr)
+    repr(strip_called_expr)
 end
 
 # Converts a vector of symbolics (e.g. the species or parameter vectors) to a string vector. Strips 
 # any calls (e.g. X(t) becomes X). E.g. a species vector [X, Y, Z] is converted to "[X, Y, Z]".
 function syms_2_strings(syms)
     strip_called_syms = [strip_call(Symbolics.unwrap(sym)) for sym in syms]
-    return get_substring_end("$(convert(Vector{Any}, strip_called_syms))", 4, 0)
+    get_substring_end("$(convert(Vector{Any}, strip_called_syms))", 4, 0)
 end
 
 # Converts a vector of symbolic variables (e.g. the species or parameter vectors) to a string
