@@ -265,33 +265,15 @@ function get_transport_rate(transport_rate::SparseMatrixCSC{T, Int64}, edge::Pai
     return t_rate_idx_types ? transport_rate[1,1] : transport_rate[edge[1],edge[2]]
 end
 # Finds the transportation rate for a specific species, LatticeTransportODEf struct, and edge.
-function get_transport_rate(trans_s_idx::Int64, f_func::LatticeTransportODEf, edge::Pair{Int64,Int64})
+function get_transport_rate(trans_s_idx::Int64, f_func, edge::Pair{Int64,Int64})
     get_transport_rate(f_func.transport_rates[trans_s_idx][2], edge, f_func.t_rate_idx_types[trans_s_idx])
 end
 
-# Updates the internal work_ps vector for a given vertex. Updates only the parameters that 
-# actually are vertex parameters.
-# To this vector, we write the system's parameter values at the specific vertex.
-function update_work_vert_ps!(work_ps::Vector{S}, vert_p_idxs::Vector{Int64}, all_ps::Vector{T}, 
-                              vert::Int64, vert_ps_idx_types::Vector{Bool}) where {S,T}
-    # Loops through all parameters.
-    for (idx,loc_type) in enumerate(vert_ps_idx_types)
-        # If the parameter is uniform across the spatial structure, it will have a length-1 value vector
-        # (which value we write to the work vector).
-        # Else, we extract it value at the specific location.
-        work_ps[vert_p_idxs[idx]] = (loc_type ? all_ps[vert_p_idxs[idx]][1] : all_ps[vert_p_idxs[idx]][vert])   
-    end
-end
-# Input is either a LatticeTransportODEf or LatticeTransportODEjac function (which fields we pass on).
-function update_work_vert_ps!(lt_ode_func, all_ps::Vector{T}, vert::Int64) where {T}
-    return update_work_vert_ps!(lt_ode_func.work_ps, lt_ode_func.vert_p_idxs, all_ps, vert, lt_ode_func.v_ps_idx_types)
-end
-
-# Input is either a LatticeTransportODEf or LatticeTransportODEjac function (which fields we pass on).
-function update_work_vert_ps!(lt_ode_func, all_ps::Vector{T}, vert::Int64) where {T}
-    for (setp, (idx, loc_type)) in zip(lt_ode_func.p_setters, enumerate(lt_ode_func.v_ps_idx_types))
-        p_val = (loc_type ? all_ps[lt_ode_func.vert_p_idxs[idx]][1] : all_ps[lt_ode_func.vert_p_idxs[idx]][vert])
-        setp(lt_ode_func.mtk_ps, p_val)
+# For a `LatticeTransportODEFunction`, updates its stored parameters (in `mtk_ps`) so that they
+# the heterogeneous parameters' values correspond to the values in the specified vertex.
+function update_mtk_ps!(lt_ofun::LatticeTransportODEFunction, all_ps::Vector{T}, vert::Int64) where {T}
+    for (setp, idx) in zip(lt_ofun.p_setters, lt_ofun.heterogeneous_vert_p_idxs)
+        setp(lt_ofun.mtk_ps, all_ps[idx][vert])
     end
 end
 
