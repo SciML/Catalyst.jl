@@ -223,10 +223,11 @@ let
     tr_3 = TransportReaction(dZ, Z)
     tr_macro_1 = @transport_reaction $dX X
     tr_macro_2 = @transport_reaction $(rate2) Y
+    @test_broken false
     # tr_macro_3 = @transport_reaction dZ $species3 # Currently does not work, something with meta programming.
     
     @test isequal(tr_1, tr_macro_1)
-    @test isequal(tr_2, tr_macro_2) # Unsure why these fails, since for components equality hold: `isequal(tr_1.species, tr_macro_1.species)` and `isequal(tr_1.rate, tr_macro_1.rate)` are both true.
+    @test isequal(tr_2, tr_macro_2) 
     # @test isequal(tr_3, tr_macro_3)
 end
 

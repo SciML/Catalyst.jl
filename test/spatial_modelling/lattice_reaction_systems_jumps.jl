@@ -64,7 +64,9 @@ let
 
     # Prepare various (diffusion) parameter input types.
     pE_1 = [:dI => 0.02, :dS => 0.01, :dR => 0.03]
-    pE_2 = [:dI => 0.02, :dS => uniform_e_vals(lrs, 0.01), :dR => 0.03]
+    dS_vals = spzeros(num_verts(lrs), num_verts(lrs))
+    foreach(e -> (dS_vals[e[1], e[2]] = 0.01), edge_iterator(lrs))
+    pE_2 = [:dI => 0.02, :dS => dS_vals, :dR => 0.03]
 
     # Checks hopping rates and u0 are correct.
     true_u0 = [fill(1.0, 1, 25); fill(2.0, 1, 25); fill(3.0, 1, 25)]

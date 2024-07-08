@@ -62,7 +62,7 @@ struct LatticeTransportODEFunction{P,Q,R,S,T}
     
     function LatticeTransportODEFunction(ofunc::P, ps::Vector{<:Pair}, 
             lrs::LatticeReactionSystem, transport_rates::Vector{Pair{Int64, SparseMatrixCSC{S, Int64}}},
-            jac_transport::Union{Nothing, Matrix{S}, SparseMatrixCSC{S, Int64}}, sparse::Bool) where {P,S}        
+            jac_transport::Union{Nothing, Matrix{S}, SparseMatrixCSC{S, Int64}}) where {P,S}        
         
         # Creates a vector with the heterogeneous vertex parameters' indexes in the full parameter vector.
         p_dict = Dict(ps)
@@ -118,7 +118,7 @@ function (lt_ofun::LatticeTransportODEFunction)(du::AbstractVector, u, p, t)
         for e in lt_ofun.edge_iterator   
             idx_src = get_index(e[1], s, lt_ofun.num_species)
             idx_dst = get_index(e[2], s, lt_ofun.num_species)     
-            du[idx_dst] += get_transport_rate(s_idx, lt_ofun, e) * u[idx_src]
+            du[idx_dst] += get_transport_rate(rates, e, lt_ofun.t_rate_idx_types[s_idx]) * u[idx_src]
         end
     end
 end
@@ -182,10 +182,10 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
 end
 
 # Builds an ODEFunction for a spatial ODEProblem.
-function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{BasicSymbolic{Real},Vector{T}}},
-                           edge_ps::Vector{Pair{BasicSymbolic{Real},SparseMatrixCSC{T, Int64}}}, 
+function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{R,Vector{T}}},
+                           edge_ps::Vector{Pair{S,SparseMatrixCSC{T, Int64}}}, 
                            jac::Bool, sparse::Bool, name, include_zero_odes, combinatoric_ratelaws, 
-                           remove_conserved, checks) where {T}
+                           remove_conserved, checks) where {R,S,T}
     # Error check.
     if remove_conserved 
         error("Removal of conserved quantities is currently not supported for `LatticeReactionSystem`s")
@@ -209,7 +209,7 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{Basi
     end
 
     # Creates the `LatticeTransportODEFunction` functor (if `jac`, sets it as the Jacobian as well).
-    f = LatticeTransportODEFunction(ofunc_dense, [vert_ps; edge_ps], lrs, transport_rates, jac_transport, sparse)
+    f = LatticeTransportODEFunction(ofunc_dense, [vert_ps; edge_ps], lrs, transport_rates, jac_transport)
     J = (jac ? f : nothing)
 
     # Extracts the `Symbol` form for species and parameters. Creates and returns the `ODEFunction`.
@@ -268,7 +268,7 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64},
     end
 
     # Create a sparse Jacobian prototype with 0-valued entries.
-    jac_prototype = sparse(i_idxs, j_idxs, zeros(num_entries))
+    jac_prototype = sparse(i_idxs, j_idxs, zeros(T, num_entries))
 
     # Set element values.
     if set_nonzero

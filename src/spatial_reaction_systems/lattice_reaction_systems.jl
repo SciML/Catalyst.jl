@@ -29,17 +29,17 @@ struct LatticeReactionSystem{Q,R,S,T} <: MT.AbstractTimeDependentSystem
     All parameters related to the lattice reaction system
     (both those whose values are tied to vertices and edges).
     """
-    parameters::Vector{BasicSymbolic{Real}}
+    parameters::Vector{Any}
     """
     Parameters which values are tied to vertices, 
     e.g. that possibly could have unique values at each vertex of the system.
     """
-    vertex_parameters::Vector{BasicSymbolic{Real}}
+    vertex_parameters::Vector{Any}
     """
     Parameters whose values are tied to edges (adjacencies), 
     e.g. that possibly could have unique values at each edge of the system.
     """
-    edge_parameters::Vector{BasicSymbolic{Real}}
+    edge_parameters::Vector{Any}
     """
     An iterator over all the lattice's edges. Currently, the format is always a Vector{Pair{Int64,Int64}}.
     However, in the future, different types could potentially be used for different types of lattice

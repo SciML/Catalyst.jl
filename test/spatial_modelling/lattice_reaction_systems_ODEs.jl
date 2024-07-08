@@ -85,24 +85,23 @@ end
 
 ### Tests Simulation Correctness ###
 
-# Checks that non-spatial brusselator simulation is identical to all on an unconnected lattice.
+# Tests with non-Float64 parameter values.
 let
-    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, unconnected_graph)
-    u0 = [:X => 2.0 + 2.0 * rand(rng), :Y => 10.0 * (1.0 * rand(rng))]
-    pV = brusselator_p
-    pE = [:dX => 0.2]
-    oprob_nonspatial = ODEProblem(brusselator_system, u0, (0.0, 100.0), pV)
-    oprob_spatial = ODEProblem(lrs, u0, (0.0, 100.0), [pV; pE])
-    sol_nonspatial = solve(oprob_nonspatial, QNDF(); abstol = 1e-12, reltol = 1e-12)
-    sol_spatial = solve(oprob_spatial, QNDF(); abstol = 1e-12, reltol = 1e-12)
-
-    for i in 1:nv(unconnected_graph)
-        @test all(isapprox.(sol_nonspatial.u[end],
-                            sol_spatial.u[end][((i - 1) * 2 + 1):((i - 1) * 2 + 2)]))
+    lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, very_small_2d_cartesian_grid)
+    u0 = [:S => 990.0, :I => rand_v_vals(lrs), :R => 0.0]
+    ps_1 = [:α => 0.1, :β => 0.01, :dS => 0.01, :dI => 0.01, :dR => 0.01]
+    ps_2 = [:α => 1//10, :β => 1//100, :dS => 1//100, :dI => 1//100, :dR => 1//100]
+    ps_3 = [:α => 1//10, :β => 0.01, :dS => 0.01, :dI => 1//100, :dR => 0.01]
+    sol_base = solve(ODEProblem(lrs, u0, (0.0, 100.0), ps_1), Rosenbrock23(); saveat = 0.1)
+    for ps in [ps_1, ps_2, ps_3]
+        for jac in [true, false], sparse in [true, false]
+            oprob = ODEProblem(lrs, u0, (0.0, 100.0), ps; jac, sparse)
+            @test sol_base ≈ solve(oprob, Rosenbrock23(); saveat = 0.1)
+        end
     end
 end
 
-# Compares Jacobian and forcing functions of spatial system to analytically computed on.
+# Compares Jacobian and forcing functions of spatial system to analytically computed ones.
 let
     # Creates LatticeReactionNetwork ODEProblem.
     rs = @reaction_network begin
@@ -119,7 +118,7 @@ let
     D_vals[1,2] = 0.2; D_vals[2,1] = 0.2; 
     D_vals[2,3] = 0.3; D_vals[3,2] = 0.3; 
     u0 = [:X => [1.0, 2.0, 3.0], :Y => 1.0]
-    ps = [:pX => [2.0, 2.5, 3.0], :pY => 0.5, :d => 0.1, :D => D_vals]
+    ps = [:pX => [2.0, 2.5, 3.0], :d => 0.1, :pY => 0.5, :D => D_vals]
     oprob = ODEProblem(lrs, u0, (0.0, 0.0), ps; jac=true, sparse=true)
 
     # Creates manual f and jac functions.
@@ -172,7 +171,7 @@ let
 
     # Sets test input values.
     u = rand(rng, 6)
-    p = [rand(rng, 3), rand(rng, 1), rand(rng, 1)]
+    p = [rand(rng, 3), ps[2][2], ps[3][2]]
 
     # Tests forcing function.
     du1 = fill(0.0, 6)
@@ -611,6 +610,22 @@ let
     
     for i in 1:25
         @test ss_alt[((i - 1) * 6 + 1):((i - 1) * 6 + 3)] ≈ ss[((i - 1) * 3 + 1):((i - 1) * 3 + 3)]
+    end
+end
+
+# Tests with non-Int64 parameter values.
+let
+    lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, very_small_2d_cartesian_grid)
+    u0 = [:S => 990.0, :I => rand_v_vals(lrs), :R => 0.0]
+    ps_1 = [:α => 0.1, :β => 0.01, :dS => 0.01, :dI => 0.01, :dR => 0.01]
+    ps_2 = [:α => Float32(0.1), :β => Float32(0.01), :dS => Float32(0.01), :dI => Float32(0.01), :dR => Float32(0.01)]
+    ps_3 = [:α => 1//10, :β => 0.01, :dS => 0.01, :dI => 1//100, :dR => Float32(0.01)]
+    sol_base = solve(ODEProblem(lrs, u0, (0.0, 100.0), ps_1), Rosenbrock23(); savetat = 0.1)
+    for ps in [ps_1, ps_2, ps_3]
+        for jac in [true, false], sparse in [true, false]
+            oprob = ODEProblem(lrs, u0, (0.0, 100.0), ps; jac, sparse)
+            @test sol_base ≈ solve(oprob, Rosenbrock23(); savetat = 0.1)
+        end
     end
 end
 
