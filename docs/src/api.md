@@ -1,4 +1,4 @@
-# Catalyst.jl API
+# [Catalyst.jl API](@id api)
 ```@meta
 CurrentModule = Catalyst
 ```
@@ -127,7 +127,7 @@ can call:
 * `ModelingToolkit.unknowns(rn)` returns all species *and variables* across the
   system, *all sub-systems*, and all constraint systems. Species are ordered
   before non-species variables in `unknowns(rn)`, with the first `numspecies(rn)`
-  entires in `unknowns(rn)` being the same as `species(rn)`.
+  entries in `unknowns(rn)` being the same as `species(rn)`.
 * [`species(rn)`](@ref) is a vector collecting all the chemical species within
   the system and any sub-systems that are also `ReactionSystems`.
 * `ModelingToolkit.parameters(rn)` returns all parameters across the
