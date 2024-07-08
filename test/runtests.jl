@@ -62,7 +62,7 @@ using SafeTestsets, Test
     @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
     @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
 
-    # Transportest stability computation (uses HomotopyContinuation extension).
+    # Tests stability computation (uses HomotopyContinuation extension).
     @time @safetestset "Steady State Stability Computations" begin include("miscellaneous_tests/stability_computation.jl") end
 
     # Tests spatial modelling and simulations.
