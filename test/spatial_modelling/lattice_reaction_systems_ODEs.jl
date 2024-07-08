@@ -613,18 +613,20 @@ let
     end
 end
 
-# Tests with non-Int64 parameter values.
+# Tests with non-Float64 parameter values.
+# Tests for all Jacobian/sparsity combinations.
+# Tests for parameters with/without uniform values.
 let
     lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, very_small_2d_cartesian_grid)
     u0 = [:S => 990.0, :I => rand_v_vals(lrs), :R => 0.0]
     ps_1 = [:α => 0.1, :β => 0.01, :dS => 0.01, :dI => 0.01, :dR => 0.01]
-    ps_2 = [:α => Float32(0.1), :β => Float32(0.01), :dS => Float32(0.01), :dI => Float32(0.01), :dR => Float32(0.01)]
-    ps_3 = [:α => 1//10, :β => 0.01, :dS => 0.01, :dI => 1//100, :dR => Float32(0.01)]
-    sol_base = solve(ODEProblem(lrs, u0, (0.0, 100.0), ps_1), Rosenbrock23(); savetat = 0.1)
+    ps_2 = [:α => 1//10, :β => 1//100, :dS => 1//100, :dI => 1//100, :dR => 1//100]
+    ps_3 = [:α => 1//10, :β => 0.01, :dS => 0.01, :dI => 1//100, :dR => 0.01]
+    sol_base = solve(ODEProblem(lrs, u0, (0.0, 100.0), ps_1), Rosenbrock23(); saveat = 0.1)
     for ps in [ps_1, ps_2, ps_3]
         for jac in [true, false], sparse in [true, false]
             oprob = ODEProblem(lrs, u0, (0.0, 100.0), ps; jac, sparse)
-            @test sol_base ≈ solve(oprob, Rosenbrock23(); savetat = 0.1)
+            @test sol_base ≈ solve(oprob, Rosenbrock23(); saveat = 0.1)
         end
     end
 end
