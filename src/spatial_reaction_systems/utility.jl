@@ -263,10 +263,6 @@ function get_transport_rate(transport_rate::SparseMatrixCSC{T, Int64}, edge::Pai
                             t_rate_idx_types::Bool) where {T}
     return t_rate_idx_types ? transport_rate[1,1] : transport_rate[edge[1],edge[2]]
 end
-# Finds the transportation rate for a specific species, LatticeTransportODEf struct, and edge.
-function get_transport_rate(trans_s_idx::Int64, f_func, edge::Pair{Int64,Int64})
-    get_transport_rate(f_func.transport_rates[trans_s_idx][2], edge, f_func.t_rate_idx_types[trans_s_idx])
-end
 
 # For a `LatticeTransportODEFunction`, updates its stored parameters (in `mtk_ps`) so that they
 # the heterogeneous parameters' values correspond to the values in the specified vertex.
@@ -274,42 +270,6 @@ function update_mtk_ps!(lt_ofun::LatticeTransportODEFunction, all_ps::Vector{T},
     for (setp, idx) in zip(lt_ofun.p_setters, lt_ofun.heterogeneous_vert_p_idxs)
         setp(lt_ofun.mtk_ps, all_ps[idx][vert])
     end
-end
-
-# Fetches the parameter values that currently are in the work parameter vector and which
-# corresponds to the parameters of the non-spatial `ReactionSystem` stored in the `ReactionSystem`.
-function nonspatial_ps(lt_ode_func)
-    return @view lt_ode_func.work_ps[lt_ode_func.nonspatial_rs_p_idxs]
-end
-
-# Expands a u0/p information stored in Vector{Vector{}} for to Matrix form
-# (currently only used in Spatial Jump systems).
-function matrix_expand_component_values(values::Vector{<:Vector}, n::Int64)
-    reshape(expand_component_values(values, n), length(values), n)
-end
-
-# For an expression, computes its values using the provided state and parameter vectors.
-# The expression is assumed to be valid in edges (and can have edges parameter components).
-# If some component is non-uniform, output is a vector of length equal to the number of vertexes.
-# If all components are uniform, the output is a length one vector.
-function compute_edge_value(exp, lrs::LatticeReactionSystem, edge_ps)
-    # Finds the symbols in the expression. Checks that all correspond to edge parameters.
-    relevant_syms = Symbolics.get_variables(exp)
-    if !all(any(isequal(sym, p) for p in edge_parameters(lrs)) for sym in relevant_syms)
-        throw(ArgumentError("An non-edge parameter was encountered in expressions: $exp. Here, only edge parameters are expected."))
-    end
-
-    # Creates a Function tha computes the expressions value for a parameter set.
-    exp_func = drop_expr(@RuntimeGeneratedFunction(build_function(exp, relevant_syms...)))
-    # Creates a dictionary with the value(s) for all edge parameters.
-    sym_val_dict = vals_to_dict(edge_parameters(lrs), edge_ps)
-
-    # If all values are uniform, compute value once. Else, do it at all edges.
-    if !has_spatial_edge_component(exp, lrs, edge_ps)
-        return [exp_func([sym_val_dict[sym][1] for sym in relevant_syms]...)]
-    end
-    return [exp_func([get_component_value(sym_val_dict[sym], idxE) for sym in relevant_syms]...) 
-                                                                            for idxE in 1:num_edges(lrs)]
 end
 
 # For an expression, computes its values using the provided state and parameter vectors.
@@ -338,18 +298,6 @@ function compute_vertex_value(exp, lrs::LatticeReactionSystem; u = [], ps = [])
 end
 
 ### System Property Checks ###
-
-# For a Symbolic expression, a LatticeReactionSystem, and a parameter list of the internal format:
-# Checks if any edge parameter in the expression have a spatial component (that is, is not uniform).
-function has_spatial_edge_component(exp, lrs::LatticeReactionSystem, edge_ps)
-    # Finds the edge parameters in the expression. Computes their indexes.
-    exp_syms = Symbolics.get_variables(exp)
-    exp_edge_ps = filter(sym -> any(isequal(sym), edge_parameters(lrs)), exp_syms)
-    p_idxs = [findfirst(isequal(sym, edge_p) for edge_p in edge_parameters(lrs))
-              for sym in exp_syms]
-    # Checks if any of the corresponding value vectors have length != 1 (that is, is not uniform).
-    return any(length(edge_ps[p_idx]) != 1 for p_idx in p_idxs)
-end
 
 # For a Symbolic expression, and a parameter set, checks if any relevant parameters have a 
 # spatial component. Filters out any parameters that are edge parameters.
