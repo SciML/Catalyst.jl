@@ -6,29 +6,9 @@ using Catalyst, Graphs, OrdinaryDiffEq, Test
 # Fetch test networks.
 include("../spatial_test_networks.jl")
 
-# Pre declares a grid.
+# Pre-declares a set of grids.
 grids = [very_small_2d_cartesian_grid, very_small_2d_masked_grid, very_small_2d_graph_grid]
 
-### Test Spatial Reactions ###
-
-# Test creation of TransportReaction with non-parameters in rate.
-# Tests that it works even when rate is highly nested.
-let 
-    @variables t
-    @species X(t) Y(t)
-    @parameters D1 D2 D3
-    @test_throws ErrorException TransportReaction(D1 + D2*(D3 + Y), X)
-    @test_throws ErrorException TransportReaction(Y, X)
-end
-
-# Checks that the `hash` functions works for `TransportReaction`s.
-let
-    tr1 = @transport_reaction D1 X
-    tr2 = @transport_reaction D1 X
-    tr3 = @transport_reaction D2 X
-    hash(tr1, 0x0000000000000001) == hash(tr2, 0x0000000000000001)
-    hash(tr2, 0x0000000000000001) != hash(tr3, 0x0000000000000001)
-end
 
 ### Tests LatticeReactionSystem Getters Correctness ###
 
@@ -179,110 +159,6 @@ let
     @test isequal(independent_variables(lrs), [t])
 end
 
-### Tests Spatial Reactions Getters Correctness ###
-
-# Test case 1.
-let 
-    tr_1 = @transport_reaction dX X    
-    tr_2 = @transport_reaction dY1*dY2 Y   
-
-    # @test ModelingToolkit.getname.(species(tr_1)) == ModelingToolkit.getname.(spatial_species(tr_1)) == [:X] # species(::TransportReaction) currently not supported.
-    # @test ModelingToolkit.getname.(species(tr_2)) == ModelingToolkit.getname.(spatial_species(tr_2)) == [:Y]
-    @test ModelingToolkit.getname.(spatial_species(tr_1)) == [:X]
-    @test ModelingToolkit.getname.(spatial_species(tr_2)) == [:Y]
-    @test ModelingToolkit.getname.(parameters(tr_1)) == [:dX]
-    @test ModelingToolkit.getname.(parameters(tr_2)) == [:dY1, :dY2]
-
-    # @test issetequal(species(tr_1), [tr_1.species])
-    # @test issetequal(species(tr_2), [tr_2.species])
-    @test issetequal(spatial_species(tr_1), [tr_1.species])
-    @test issetequal(spatial_species(tr_2), [tr_2.species])
-end
-
-# Test case 2.
-let
-    rs = @reaction_network begin
-        @species X(t) Y(t)
-        @parameters dX dY1 dY2
-    end
-    @unpack X, Y, dX, dY1, dY2 = rs
-    tr_1 = TransportReaction(dX, X)
-    tr_2 = TransportReaction(dY1*dY2, Y)
-    # @test isequal(species(tr_1), [X])
-    # @test isequal(species(tr_1), [X])
-    @test issetequal(spatial_species(tr_2), [Y])
-    @test issetequal(spatial_species(tr_2), [Y])
-    @test issetequal(parameters(tr_1), [dX])
-    @test issetequal(parameters(tr_2), [dY1, dY2])
-end
-
-### Tests Spatial Reactions Generation ###
-
-# Tests TransportReaction with non-trivial rate.
-let 
-    rs = @reaction_network begin
-        @parameters dV dE [edgeparameter=true] 
-        (p,1), 0 <--> X
-    end
-    @unpack dV, dE, X = rs
-    
-    tr = TransportReaction(dV*dE, X)
-    @test isequal(tr.rate, dV*dE)
-end
-
-# Tests transport_reactions function for creating TransportReactions.
-let 
-    rs = @reaction_network begin
-        @parameters d
-        (p,1), 0 <--> X
-    end
-    @unpack d, X = rs
-    trs = TransportReactions([(d, X), (d, X)])
-    @test isequal(trs[1], trs[2])
-end
-
-# Test reactions with constants in rate.
-let 
-    @variables t
-    @species X(t) Y(t)
-    
-    tr_1 = TransportReaction(1.5, X)
-    tr_1_macro = @transport_reaction 1.5 X
-    @test isequal(tr_1.rate, tr_1_macro.rate)
-    @test isequal(tr_1.species, tr_1_macro.species)
-    
-    tr_2 = TransportReaction(π, Y)
-    tr_2_macro = @transport_reaction π Y
-    @test isequal(tr_2.rate, tr_2_macro.rate)
-    @test isequal(tr_2.species, tr_2_macro.species)
-end
-
-### Test Interpolation ###
-
-# Does not currently work. The 3 tr_macro_ lines generate errors.
-# Test case 1.
-let
-    rs = @reaction_network begin
-        @species X(t) Y(t) Z(t)
-        @parameters dX dY1 dY2 dZ
-    end
-    @unpack X, Y, Z, dX, dY1, dY2, dZ = rs
-    rate1 = dX
-    rate2 = dY1*dY2 
-    species3 = Z
-    tr_1 = TransportReaction(dX, X)
-    tr_2 = TransportReaction(dY1*dY2, Y)
-    tr_3 = TransportReaction(dZ, Z)
-    tr_macro_1 = @transport_reaction $dX X
-    tr_macro_2 = @transport_reaction $(rate2) Y
-    @test_broken false
-    # tr_macro_3 = @transport_reaction dZ $species3 # Currently does not work, something with meta programming.
-    
-    @test isequal(tr_1, tr_macro_1)
-    @test isequal(tr_2, tr_macro_2) 
-    # @test isequal(tr_3, tr_macro_3)
-end
-
 ### Tests Error generation ###
 
 # Network where diffusion species is not declared in non-spatial network.
@@ -375,13 +251,13 @@ end
 # Tests for hierarchical input system.
 let
     t = default_t()
-    @parameters d
+    @parameters d D
     @species X(t)
     rxs = [Reaction(d, [X], [])]
     @named rs1 = ReactionSystem(rxs, t)
     @named rs2 = ReactionSystem(rxs, t; systems = [rs1])
     rs2 = complete(rs2)
-    @test_throws ArgumentError LatticeReactionSystem(rs2, [tr], short_path)
+    @test_throws ArgumentError LatticeReactionSystem(rs2, [TransportReaction(D, X)], CartesianGrid((2,2)))
 end
 
 # Tests for non-complete input `ReactionSystem`.
@@ -390,7 +266,7 @@ let
     rs = @network_component begin
         (p,d), 0 <--> X
     end
-    @test_throws ArgumentError LatticeReactionSystem(rs1, [tr], short_path)
+    @test_throws ArgumentError LatticeReactionSystem(rs, [tr], CartesianGrid((2,2)))
 end
 
 ### Tests Grid Vertex and Edge Number Computation ###
@@ -409,14 +285,14 @@ let
                 random_1d_masked_grid, random_2d_masked_grid, random_3d_masked_grid]
         lrs1 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice)
         lrs2 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice; diagonal_connections=true)
-        @test lrs1.num_edges == iterator_count(edge_iterator(lrs1))    
-        @test lrs2.num_edges == iterator_count(edge_iterator(lrs2))    
+        @test num_edges(lrs1) == iterator_count(edge_iterator(lrs1))    
+        @test num_edges(lrs2) == iterator_count(edge_iterator(lrs2))    
     end
 
     # Graph grids (cannot test diagonal connections).
     for lattice in [small_2d_graph_grid, small_3d_graph_grid, undirected_cycle, small_directed_cycle, unconnected_graph]
         lrs1 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice)
-        @test lrs1.num_edges == iterator_count(edge_iterator(lrs1))    
+        @test num_edges(lrs1) == iterator_count(edge_iterator(lrs1))    
     end
 end
 
@@ -462,33 +338,33 @@ let
     lrs = LatticeReactionSystem(rn, [tr], CartesianGrid(n))
     ps = [:D => make_directed_edge_values(lrs, (10.0, 0.0))]
     oprob = ODEProblem(lrs, u0, tspan, ps)
-    @test isapprox(solve(oprob, Tsit5())[end][5], n, rtol=1e-6)
+    @test isapprox(solve(oprob, Tsit5()).u[end][5], n, rtol=1e-6)
 
     # Checks the 2d case (both with 1d and 2d flow).
     lrs = LatticeReactionSystem(rn, [tr], CartesianGrid((n,n)))
 
     ps = [:D => make_directed_edge_values(lrs, (1.0, 0.0), (0.0, 0.0))]
     oprob = ODEProblem(lrs, u0, tspan, ps)
-    @test all(isapprox.(solve(oprob, Tsit5())[end][5:5:25], n, rtol=1e-6))
+    @test all(isapprox.(solve(oprob, Tsit5()).u[end][5:5:25], n, rtol=1e-6))
 
     ps = [:D => make_directed_edge_values(lrs, (1.0, 0.0), (1.0, 0.0))]
     oprob = ODEProblem(lrs, u0, tspan, ps)
-    @test isapprox(solve(oprob, Tsit5())[end][25], n^2, rtol=1e-6)
+    @test isapprox(solve(oprob, Tsit5()).u[end][25], n^2, rtol=1e-6)
 
     # Checks the 3d case (both with 1d and 2d flow).
     lrs = LatticeReactionSystem(rn, [tr], CartesianGrid((n,n,n)))
 
     ps = [:D => make_directed_edge_values(lrs, (1.0, 0.0), (0.0, 0.0), (0.0, 0.0))]
     oprob = ODEProblem(lrs, u0, tspan, ps)
-    @test all(isapprox.(solve(oprob, Tsit5())[end][5:5:125], n, rtol=1e-6))
+    @test all(isapprox.(solve(oprob, Tsit5()).u[end][5:5:125], n, rtol=1e-6))
 
     ps = [:D => make_directed_edge_values(lrs, (1.0, 0.0), (1.0, 0.0), (0.0, 0.0))]
     oprob = ODEProblem(lrs, u0, tspan, ps)
-    @test all(isapprox.(solve(oprob, Tsit5())[end][25:25:125], n^2, rtol=1e-6))
+    @test all(isapprox.(solve(oprob, Tsit5()).u[end][25:25:125], n^2, rtol=1e-6))
 
     ps = [:D => make_directed_edge_values(lrs, (1.0, 0.0), (1.0, 0.0), (1.0, 0.0))]
     oprob = ODEProblem(lrs, u0, tspan, ps)
-    @test isapprox(solve(oprob, Tsit5())[end][125], n^3, rtol=1e-6)
+    @test isapprox(solve(oprob, Tsit5()).u[end][125], n^3, rtol=1e-6)
 end
 
 # Checks that erroneous input yields errors.
