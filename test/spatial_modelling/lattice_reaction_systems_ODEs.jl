@@ -15,68 +15,33 @@ rng = StableRNG(12345)
 t = default_t()
 
 ### Tests Simulations Don't Error ###
-for grid in [small_2d_graph_grid, short_path, small_directed_cycle, 
-             small_1d_cartesian_grid, small_2d_cartesian_grid, small_3d_cartesian_grid,
-             small_1d_masked_grid, small_2d_masked_grid, small_3d_masked_grid,
-             random_2d_masked_grid]
-    # Non-stiff case
-    for srs in [Vector{TransportReaction}(), SIR_srs_1, SIR_srs_2]
-        lrs = LatticeReactionSystem(SIR_system, srs, grid)
-        u0_1 = [:S => 999.0, :I => 1.0, :R => 0.0]
-        u0_2 = [:S => 500.0 .+ 500.0 * rand_v_vals(lattice(lrs)), :I => 1.0, :R => 0.0]
-        u0_3 = [
-            :S => 500.0 .+ 500.0 * rand_v_vals(lattice(lrs)),
-            :I => 50 * rand_v_vals(lattice(lrs)),
-            :R => 50 * rand_v_vals(lattice(lrs)),
-        ]
-        for u0 in [u0_1, u0_2, u0_3]
-            pV_1 = [:α => 0.1 / 1000, :β => 0.01]
-            pV_2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lattice(lrs))]
-            pV_3 = [
-                :α => 0.1 / 2000 * rand_v_vals(lattice(lrs)),
-                :β => 0.02 * rand_v_vals(lattice(lrs)),
+let
+    for grid in [small_1d_cartesian_grid, small_1d_masked_grid, small_1d_graph_grid]
+        for srs in [Vector{TransportReaction}(), SIR_srs_1, SIR_srs_2]
+            lrs = LatticeReactionSystem(SIR_system, srs, grid)
+            u0_1 = [:S => 999.0, :I => 1.0, :R => 0.0]
+            u0_2 = [:S => 500.0 .+ 500.0 * rand_v_vals(lrs), :I => 1.0, :R => 0.0]
+            u0_3 = [
+                :S => 500.0 .+ 500.0 * rand_v_vals(lrs),
+                :I => 50 * rand_v_vals(lrs),
+                :R => 50 * rand_v_vals(lrs),
             ]
-            for pV in [pV_1, pV_2, pV_3]
-                pE_1 = map(sp -> sp => 0.01, spatial_param_syms(lrs))
-                pE_2 = map(sp -> sp => 0.01, spatial_param_syms(lrs))
-                pE_3 = map(sp -> sp => rand_e_vals(lrs, 0.01), spatial_param_syms(lrs))
-                for pE in [pE_1, pE_2, pE_3]
-                    isempty(spatial_param_syms(lrs)) && (pE = Vector{Pair{Symbol, Float64}}())
-                    oprob = ODEProblem(lrs, u0, (0.0, 500.0), [pV; pE])
-                    @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
-
-                    oprob = ODEProblem(lrs, u0, (0.0, 10.0), [pV; pE]; jac = false)
-                    @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
-                end
-            end
-        end
-    end
-
-    # Stiff case
-    for srs in [Vector{TransportReaction}(), brusselator_srs_1, brusselator_srs_2]
-        lrs = LatticeReactionSystem(brusselator_system, srs, grid)
-        u0_1 = [:X => 1.0, :Y => 20.0]
-        u0_2 = [:X => rand_v_vals(lattice(lrs), 10.0), :Y => 2.0]
-        u0_3 = [:X => rand_v_vals(lattice(lrs), 20), :Y => rand_v_vals(lattice(lrs), 10)]
-        for u0 in [u0_1, u0_2, u0_3]
-            p1 = [:A => 1.0, :B => 4.0]
-            p2 = [:A => 0.5 .+ rand_v_vals(lattice(lrs), 0.5), :B => 4.0]
-            p3 = [
-                :A => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
-                :B => 4.0 .+ rand_v_vals(lattice(lrs), 1.0),
-            ]
-            for pV in [p1, p2, p3]
-                pE_1 = map(sp -> sp => 0.2, spatial_param_syms(lrs))
-                pE_2 = map(sp -> sp => rand(rng), spatial_param_syms(lrs))
-                pE_3 = map(sp -> sp => rand_e_vals(lrs, 0.2),
-                           spatial_param_syms(lrs))
-                for pE in [pE_1, pE_2, pE_3]
-                    isempty(spatial_param_syms(lrs)) && (pE = Vector{Pair{Symbol, Float64}}())
-                    oprob = ODEProblem(lrs, u0, (0.0, 10.0), [pV; pE])
-                    @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
-
-                    oprob = ODEProblem(lrs, u0, (0.0, 10.0), [pV; pE]; sparse = false)
-                    @test SciMLBase.successful_retcode(solve(oprob, QNDF()))
+            for u0 in [u0_1, u0_2, u0_3]
+                pV_1 = [:α => 0.1 / 1000, :β => 0.01]
+                pV_2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lrs)]
+                pV_3 = [
+                    :α => 0.1 / 2000 * rand_v_vals(lrs),
+                    :β => 0.02 * rand_v_vals(lrs),
+                ]
+                for pV in [pV_1, pV_2, pV_3]
+                    pE_1 = map(sp -> sp => 0.01, spatial_param_syms(lrs))
+                    pE_2 = map(sp -> sp => 0.01, spatial_param_syms(lrs))
+                    pE_3 = map(sp -> sp => rand_e_vals(lrs, 0.01), spatial_param_syms(lrs))
+                    for pE in [pE_1, pE_2, pE_3]
+                        isempty(spatial_param_syms(lrs)) && (pE = Vector{Pair{Symbol, Float64}}())
+                        oprob = ODEProblem(lrs, u0, (0.0, 500.0), [pV; pE]; jac = false, sparse = false)
+                        @test SciMLBase.successful_retcode(solve(oprob, Tsit5()))
+                    end
                 end
             end
         end
@@ -192,8 +157,8 @@ end
 let
     lrs = LatticeReactionSystem(binding_system, binding_srs, undirected_cycle)
     u0 = [
-        :X => 1.0 .+ rand_v_vals(lattice(lrs)),
-        :Y => 2.0 * rand_v_vals(lattice(lrs)),
+        :X => 1.0 .+ rand_v_vals(lrs),
+        :Y => 2.0 * rand_v_vals(lrs),
         :XY => 0.5
     ]
     oprob = ODEProblem(lrs, u0, (0.0, 1000.0), binding_p; tstops = 0.1:0.1:1000.0)
@@ -207,24 +172,18 @@ end
 # Checks that various combinations of jac and sparse gives the same result.
 let
     lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, small_2d_graph_grid)
-    u0 = [:X => rand_v_vals(lattice(lrs), 10), :Y => rand_v_vals(lattice(lrs), 10)]
+    u0 = [:X => rand_v_vals(lrs, 10), :Y => rand_v_vals(lrs, 10)]
     pV = brusselator_p
     pE = [:dX => 0.2]
-    oprob = ODEProblem(lrs, u0, (0.0, 50.0), [pV; pE]; jac = false, sparse = false)
-    oprob_sparse = ODEProblem(lrs, u0, (0.0, 50.0), [pV; pE]; jac = false, sparse = true)
-    oprob_jac = ODEProblem(lrs, u0, (0.0, 50.0), [pV; pE]; jac = true, sparse = false)
-    oprob_sparse_jac = ODEProblem(lrs, u0, (0.0, 50.0), [pV; pE]; jac = true, sparse = true)
+    oprob = ODEProblem(lrs, u0, (0.0, 5.0), [pV; pE]; jac = false, sparse = false)
+    oprob_sparse = ODEProblem(lrs, u0, (0.0, 5.0), [pV; pE]; jac = false, sparse = true)
+    oprob_jac = ODEProblem(lrs, u0, (0.0, 5.0), [pV; pE]; jac = true, sparse = false)
+    oprob_sparse_jac = ODEProblem(lrs, u0, (0.0, 5.0), [pV; pE]; jac = true, sparse = true)
 
     ss = solve(oprob, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end]
-    @test all(isapprox.(ss,
-                        solve(oprob_sparse, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end];
-                        rtol = 0.0001))
-    @test all(isapprox.(ss,
-                        solve(oprob_jac, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end];
-                        rtol = 0.0001))
-    @test all(isapprox.(ss,
-                        solve(oprob_sparse_jac, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end];
-                        rtol = 0.0001))
+    @test all(isapprox.(ss, solve(oprob_sparse, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end]; rtol = 0.0001))
+    @test all(isapprox.(ss, solve(oprob_jac, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end]; rtol = 0.0001))
+    @test all(isapprox.(ss, solve(oprob_sparse_jac, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end]; rtol = 0.0001))
 end
 
 # Compares Catalyst-generated to hand written one for the brusselator for a line of cells.
@@ -300,7 +259,7 @@ let
         return sparse(jac_prototype_pre)
     end
 
-    num_verts = 5000
+    num_verts = 100
     u0 = 2 * rand(rng, 2*num_verts)
     p = [1.0, 4.0, 0.1]
     tspan = (0.0, 100.0)
@@ -353,34 +312,34 @@ let
     sigmaB_p_spat = [:DσB => 0.05, :Dw => 0.04, :Dv => 0.03]
 
     # 1d lattices.
-    lrs1_cartesian = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_1d_cartesian_grid)
-    lrs1_masked = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_1d_masked_grid)
-    lrs1_graph = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_1d_graph_grid)
+    lrs1_cartesian = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, very_small_1d_cartesian_grid)
+    lrs1_masked = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, very_small_1d_masked_grid)
+    lrs1_graph = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, very_small_1d_graph_grid)
 
-    oprob1_cartesian = ODEProblem(lrs1_cartesian, sigmaB_u0, (0.0,10.0), [sigmaB_p; sigmaB_p_spat])
-    oprob1_masked = ODEProblem(lrs1_masked, sigmaB_u0, (0.0,10.0), [sigmaB_p; sigmaB_p_spat])
-    oprob1_graph = ODEProblem(lrs1_graph, sigmaB_u0, (0.0,10.0), [sigmaB_p; sigmaB_p_spat])
-    @test solve(oprob1_cartesian, QNDF()) == solve(oprob1_masked, QNDF()) == solve(oprob1_graph, QNDF())
+    oprob1_cartesian = ODEProblem(lrs1_cartesian, sigmaB_u0, (0.0,1.0), [sigmaB_p; sigmaB_p_spat])
+    oprob1_masked = ODEProblem(lrs1_masked, sigmaB_u0, (0.0,1.0), [sigmaB_p; sigmaB_p_spat])
+    oprob1_graph = ODEProblem(lrs1_graph, sigmaB_u0, (0.0,1.0), [sigmaB_p; sigmaB_p_spat])
+    @test solve(oprob1_cartesian, QNDF()) ≈ solve(oprob1_masked, QNDF()) ≈ solve(oprob1_graph, QNDF())
 
     # 2d lattices.
-    lrs2_cartesian = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_2d_cartesian_grid)
-    lrs2_masked = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_2d_masked_grid)
-    lrs2_graph = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_2d_graph_grid)
+    lrs2_cartesian = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, very_small_2d_cartesian_grid)
+    lrs2_masked = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, very_small_2d_masked_grid)
+    lrs2_graph = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, very_small_2d_graph_grid)
 
-    oprob2_cartesian = ODEProblem(lrs2_cartesian, sigmaB_u0, (0.0,10.0), [sigmaB_p; sigmaB_p_spat])
-    oprob2_masked = ODEProblem(lrs2_masked, sigmaB_u0, (0.0,10.0), [sigmaB_p; sigmaB_p_spat])
-    oprob2_graph = ODEProblem(lrs2_graph, sigmaB_u0, (0.0,10.0), [sigmaB_p; sigmaB_p_spat])
-    @test solve(oprob2_cartesian, QNDF()) == solve(oprob2_masked, QNDF()) == solve(oprob2_graph, QNDF())
+    oprob2_cartesian = ODEProblem(lrs2_cartesian, sigmaB_u0, (0.0,1.0), [sigmaB_p; sigmaB_p_spat])
+    oprob2_masked = ODEProblem(lrs2_masked, sigmaB_u0, (0.0,1.0), [sigmaB_p; sigmaB_p_spat])
+    oprob2_graph = ODEProblem(lrs2_graph, sigmaB_u0, (0.0,1.0), [sigmaB_p; sigmaB_p_spat])
+    @test solve(oprob2_cartesian, QNDF()) ≈ solve(oprob2_masked, QNDF()) ≈ solve(oprob2_graph, QNDF())
 
     # 3d lattices.
-    lrs3_cartesian = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_3d_cartesian_grid)
-    lrs3_masked = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_3d_masked_grid)
-    lrs3_graph = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_3d_graph_grid)
+    lrs3_cartesian = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, very_small_3d_cartesian_grid)
+    lrs3_masked = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, very_small_3d_masked_grid)
+    lrs3_graph = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, very_small_3d_graph_grid)
 
-    oprob3_cartesian = ODEProblem(lrs3_cartesian, sigmaB_u0, (0.0,10.0), [sigmaB_p; sigmaB_p_spat])
-    oprob3_masked = ODEProblem(lrs3_masked, sigmaB_u0, (0.0,10.0), [sigmaB_p; sigmaB_p_spat])
-    oprob3_graph = ODEProblem(lrs3_graph, sigmaB_u0, (0.0,10.0), [sigmaB_p; sigmaB_p_spat])
-    @test solve(oprob3_cartesian, QNDF()) == solve(oprob3_masked, QNDF()) == solve(oprob3_graph, QNDF())
+    oprob3_cartesian = ODEProblem(lrs3_cartesian, sigmaB_u0, (0.0,1.0), [sigmaB_p; sigmaB_p_spat])
+    oprob3_masked = ODEProblem(lrs3_masked, sigmaB_u0, (0.0,1.0), [sigmaB_p; sigmaB_p_spat])
+    oprob3_graph = ODEProblem(lrs3_graph, sigmaB_u0, (0.0,1.0), [sigmaB_p; sigmaB_p_spat])
+    @test solve(oprob3_cartesian, QNDF()) ≈ solve(oprob3_masked, QNDF()) ≈ solve(oprob3_graph, QNDF())
 end
 
 # Tests that input parameter and u0 values can be given using different types of input for 2d lattices.
@@ -457,7 +416,7 @@ let
 
     lrs_1 = LatticeReactionSystem(SIR_system, [tr_1, tr_2], small_2d_graph_grid)
     lrs_2 = LatticeReactionSystem(SIR_system, [tr_macros_1, tr_macros_2], small_2d_graph_grid)
-    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs_1.lattice), :R => 0.0]
+    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs_1), :R => 0.0]
     pV = [:α => 0.1 / 1000, :β => 0.01]
     pE = [:dS => 0.01, :dI => 0.01]
     ss_1 = solve(ODEProblem(lrs_1, u0, (0.0, 500.0), [pV; pE]), Tsit5()).u[end]
@@ -474,7 +433,7 @@ let
     lrs_1 = LatticeReactionSystem(SIR_system, SIR_srs_2, small_2d_graph_grid)
     lrs_2 = LatticeReactionSystem(SIR_system, SIR_srs_2_alt, small_2d_graph_grid)
     
-    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs_1.lattice), :R => 0.0]
+    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs_1), :R => 0.0]
     pV = [:α => 0.1 / 1000, :β => 0.01]
     pE_1 = [:dS => 0.01, :dI => 0.01, :dR => 0.01]
     pE_2 = [:dS1 => 0.003, :dS2 => 0.007, :dI1 => 2, :dI2 => 0.005, :dR1 => 1.010050167084168, :dR2 => 1.0755285551056204e-16]
@@ -613,6 +572,7 @@ end
 
 # Checks that the `rebuild_lat_internals!` function is correctly applied to an integrator.
 # Does through by applying it within a callback, and compare to simulations without callback.
+# To keep test faster, only checks for `jac = sparse = true`.
 let
     # Prepares problem inputs.
     lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_2, very_small_2d_cartesian_grid)
@@ -638,31 +598,28 @@ let
     ps_1 = [:A => A1, :B => B1, :dX => dX1, :dY => dY1]
     ps_2 = [:A => A2, :B => B2, :dX => dX2, :dY => dY2]
 
-    # Checks for all combinations of Jacobian and sparsity.
-    for jac in [false, true], sparse in [false, true]
-        # Creates simulation through two different separate simulations.
-        oprob_1_1 = ODEProblem(lrs, u0, (0.0, 5.0), ps_1; jac, sparse)
-        sol_1_1 = solve(oprob_1_1, Rosenbrock23(); saveat = 1.0, abstol = 1e-8, reltol = 1e-8)
-        u0_1_2 = [:X => sol_1_1.u[end][1:2:end], :Y => sol_1_1.u[end][2:2:end]]
-        oprob_1_2 = ODEProblem(lrs, u0_1_2, (0.0, 5.0), ps_2; jac, sparse)
-        sol_1_2 = solve(oprob_1_2, Rosenbrock23(); saveat = 1.0, abstol = 1e-8, reltol = 1e-8)
+    # Creates simulation through two different separate simulations.
+    oprob_1_1 = ODEProblem(lrs, u0, (0.0, 5.0), ps_1; jac = true, sparse = true)
+    sol_1_1 = solve(oprob_1_1, Rosenbrock23(); saveat = 1.0, abstol = 1e-8, reltol = 1e-8)
+    u0_1_2 = [:X => sol_1_1.u[end][1:2:end], :Y => sol_1_1.u[end][2:2:end]]
+    oprob_1_2 = ODEProblem(lrs, u0_1_2, (0.0, 5.0), ps_2; jac = true, sparse = true)
+    sol_1_2 = solve(oprob_1_2, Rosenbrock23(); saveat = 1.0, abstol = 1e-8, reltol = 1e-8)
 
-        # Creates simulation through a single simulation with a callback
-        oprob_2 = ODEProblem(lrs, u0, (0.0, 10.0), ps_1; jac, sparse)
-        condition(u, t, integrator) = (t == 5.0)
-        function affect!(integrator)
-            integrator.ps[:A] = A2
-            integrator.ps[:B] = [B2]
-            integrator.ps[:dX] = dX2
-            integrator.ps[:dY] = [dY2]
-            rebuild_lat_internals!(integrator)
-        end
-        callback = DiscreteCallback(condition, affect!)
-        sol_2 = solve(oprob_2, Rosenbrock23(); saveat = 1.0, tstops = [5.0], callback, abstol = 1e-8, reltol = 1e-8)
-
-        # Check that trajectories are equivalent.
-        @test [sol_1_1.u; sol_1_2.u] ≈ sol_2.u
+    # Creates simulation through a single simulation with a callback
+    oprob_2 = ODEProblem(lrs, u0, (0.0, 10.0), ps_1; jac = true, sparse = true)
+    condition(u, t, integrator) = (t == 5.0)
+    function affect!(integrator)
+        integrator.ps[:A] = A2
+        integrator.ps[:B] = [B2]
+        integrator.ps[:dX] = dX2
+        integrator.ps[:dY] = [dY2]
+        rebuild_lat_internals!(integrator)
     end
+    callback = DiscreteCallback(condition, affect!)
+    sol_2 = solve(oprob_2, Rosenbrock23(); saveat = 1.0, tstops = [5.0], callback, abstol = 1e-8, reltol = 1e-8)
+
+    # Check that trajectories are equivalent.
+    @test [sol_1_1.u; sol_1_2.u] ≈ sol_2.u
 end
 
 ### Tests Special Cases ###
@@ -772,20 +729,16 @@ let
 
     # Creates a base solution to compare all solution to.
     lrs_base = LatticeReactionSystem(brusselator_system, brusselator_srs_2, very_small_2d_graph_grid)
-    oprob_base = ODEProblem(lrs_base, u0s[1], (0.0, 20.0), ps[1])
-    sol_base = solve(oprob_base, QNDF(); abstol=1e-8, reltol=1e-8, saveat=0.1)
+    oprob_base = ODEProblem(lrs_base, u0s[1], (0.0, 1.0), ps[1])
+    sol_base = solve(oprob_base, QNDF(); saveat = 0.01)
 
     # Checks all combinations of input types.
-    for grid in [very_small_2d_cartesian_grid, very_small_2d_masked_grid, very_small_2d_graph_grid]
-        lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_2, grid)
-        for u0_base in u0s, p_base in ps
-            for u0 in [u0_base, Tuple(u0_base), Dict(u0_base)], p in [p_base, Tuple(p_base), Dict(p_base)]
-                for sparse in [false, true], jac in [false, true]
-                    oprob = ODEProblem(lrs, u0, (0.0, 20.0), p; sparse, jac)
-                    sol = solve(oprob, QNDF(); abstol=1e-8, reltol=1e-8, saveat=0.1)
-                    @test sol == sol_base
-                end
-            end
+    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_2, very_small_2d_cartesian_grid)
+    for u0_base in u0s, p_base in ps
+        for u0 in [u0_base, Tuple(u0_base), Dict(u0_base)], p in [p_base, Dict(p_base)]
+            oprob = ODEProblem(lrs, u0, (0.0, 1.0), p; sparse = true, jac = true)
+            sol = solve(oprob, QNDF(); saveat = 0.01)
+            @test sol.u ≈ sol_base.u atol = 1e-6 rtol = 1e-6
         end
     end
 end

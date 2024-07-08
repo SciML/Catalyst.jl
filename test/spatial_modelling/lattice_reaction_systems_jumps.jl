@@ -16,18 +16,18 @@ let
         for srs in [Vector{TransportReaction}(), SIR_srs_1, SIR_srs_2]
             lrs = LatticeReactionSystem(SIR_system, srs, grid)
             u0_1 = [:S => 999, :I => 1, :R => 0]
-            u0_2 = [:S => round.(Int64, 500 .+ 500 * rand_v_vals(lattice(lrs))), :I => 1, :R => 0]
+            u0_2 = [:S => round.(Int64, 500 .+ 500 * rand_v_vals(lrs)), :I => 1, :R => 0]
             u0_3 = [
-                :S => round.(Int64, 500 .+ 500 * rand_v_vals(lattice(lrs))),
-                :I => round.(Int64, 50 * rand_v_vals(lattice(lrs))),
-                :R => round.(Int64, 50 * rand_v_vals(lattice(lrs))),
+                :S => round.(Int64, 500 .+ 500 * rand_v_vals(lrs)),
+                :I => round.(Int64, 50 * rand_v_vals(lrs)),
+                :R => round.(Int64, 50 * rand_v_vals(lrs)),
             ]
             for u0 in [u0_1, u0_2, u0_3]
                 pV_1 = [:α => 0.1 / 1000, :β => 0.01]
-                pV_2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lattice(lrs))]
+                pV_2 = [:α => 0.1 / 1000, :β => 0.02 * rand_v_vals(lrs)]
                 pV_3 = [
-                    :α => 0.1 / 2000 * rand_v_vals(lattice(lrs)),
-                    :β => 0.02 * rand_v_vals(lattice(lrs)),
+                    :α => 0.1 / 2000 * rand_v_vals(lrs),
+                    :β => 0.02 * rand_v_vals(lrs),
                 ]
                 for pV in [pV_1, pV_2, pV_3]
                     pE_1 = [sp => 0.01 for sp in spatial_param_syms(lrs)]
@@ -103,7 +103,7 @@ let
     # Create JumpProblem
     u0 = [:X => 1, :Y => rand(1:10, num_verts(lrs))]
     tspan = (0.0, 100.0)
-    ps = [:A => 1.0, :B => 5.0 .+ rand_v_vals(lattice(lrs)), :dX => rand_e_vals(lrs)]
+    ps = [:A => 1.0, :B => 5.0 .+ rand_v_vals(lrs), :dX => rand_e_vals(lrs)]
     dprob = DiscreteProblem(lrs, u0, tspan, ps)
     jprob = JumpProblem(lrs, dprob, NSM())
 

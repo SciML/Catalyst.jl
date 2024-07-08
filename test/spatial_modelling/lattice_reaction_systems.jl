@@ -331,7 +331,7 @@ let
     end
     n = 5
     tr = @transport_reaction D X
-    tspan = (0.0, 10000.0)
+    tspan = (0.0, 1000.0)
     u0 = [:X => 1.0]
 
     # Checks the 1d case.

@@ -20,7 +20,7 @@ include("../spatial_test_networks.jl")
 # Small grid, small, non-stiff, system.
 let
     lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, small_2d_graph_grid)
-    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lattice(lrs)), :R => 0.0]
+    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs), :R => 0.0]
     pV = SIR_p
     pE = [:dS => 0.01, :dI => 0.01, :dR => 0.01]
     oprob = ODEProblem(lrs, u0, (0.0, 500.0), [pV; pE]; jac = false)
@@ -35,7 +35,7 @@ end
 # Large grid, small, non-stiff, system.
 let
     lrs = LatticeReactionSystem(SIR_system, SIR_srs_2, large_2d_grid)
-    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lattice(lrs)), :R => 0.0]
+    u0 = [:S => 990.0, :I => 20.0 * rand_v_vals(lrs), :R => 0.0]
     pV = SIR_p
     pE = [:dS => 0.01, :dI => 0.01, :dR => 0.01]
     oprob = ODEProblem(lrs, u0, (0.0, 500.0), [pV; pE]; jac = false)
@@ -50,7 +50,7 @@ end
 # Small grid, small, stiff, system.
 let
     lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, small_2d_graph_grid)
-    u0 = [:X => rand_v_vals(lattice(lrs), 10), :Y => rand_v_vals(lattice(lrs), 10)]
+    u0 = [:X => rand_v_vals(lrs, 10), :Y => rand_v_vals(lrs, 10)]
     pV = brusselator_p
     pE = [:dX => 0.2]
     oprob = ODEProblem(lrs, u0, (0.0, 100.0), [pV; pE])
@@ -65,7 +65,7 @@ end
 # Large grid, small, stiff, system.
 let
     lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, large_2d_grid)
-    u0 = [:X => rand_v_vals(lattice(lrs), 10), :Y => rand_v_vals(lattice(lrs), 10)]
+    u0 = [:X => rand_v_vals(lrs, 10), :Y => rand_v_vals(lrs, 10)]
     pV = brusselator_p
     pE = [:dX => 0.2]
     oprob = ODEProblem(lrs, u0, (0.0, 100.0), [pV; pE])
@@ -82,10 +82,10 @@ let
     lrs = LatticeReactionSystem(CuH_Amination_system, CuH_Amination_srs_2,
                                 small_2d_graph_grid)
     u0 = [
-        :CuoAc => 0.005 .+ rand_v_vals(lattice(lrs), 0.005),
-        :Ligand => 0.005 .+ rand_v_vals(lattice(lrs), 0.005),
+        :CuoAc => 0.005 .+ rand_v_vals(lrs, 0.005),
+        :Ligand => 0.005 .+ rand_v_vals(lrs, 0.005),
         :CuoAcLigand => 0.0,
-        :Silane => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
+        :Silane => 0.5 .+ rand_v_vals(lrs, 0.5),
         :CuHLigand => 0.0,
         :SilaneOAc => 0.0,
         :Styrene => 0.16,
@@ -113,10 +113,10 @@ let
     lrs = LatticeReactionSystem(CuH_Amination_system, CuH_Amination_srs_2,
                                 large_2d_grid)
     u0 = [
-        :CuoAc => 0.005 .+ rand_v_vals(lattice(lrs), 0.005),
-        :Ligand => 0.005 .+ rand_v_vals(lattice(lrs), 0.005),
+        :CuoAc => 0.005 .+ rand_v_vals(lrs, 0.005),
+        :Ligand => 0.005 .+ rand_v_vals(lrs, 0.005),
         :CuoAcLigand => 0.0,
-        :Silane => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
+        :Silane => 0.5 .+ rand_v_vals(lrs, 0.5),
         :CuHLigand => 0.0,
         :SilaneOAc => 0.0,
         :Styrene => 0.16,
@@ -143,14 +143,14 @@ end
 let
     lrs = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, small_2d_graph_grid)
     u0 = [
-        :w => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
-        :w2 => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
-        :w2v => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
-        :v => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
-        :w2v2 => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
-        :vP => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
-        :σB => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
-        :w2σB => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
+        :w => 0.5 .+ rand_v_vals(lrs, 0.5),
+        :w2 => 0.5 .+ rand_v_vals(lrs, 0.5),
+        :w2v => 0.5 .+ rand_v_vals(lrs, 0.5),
+        :v => 0.5 .+ rand_v_vals(lrs, 0.5),
+        :w2v2 => 0.5 .+ rand_v_vals(lrs, 0.5),
+        :vP => 0.5 .+ rand_v_vals(lrs, 0.5),
+        :σB => 0.5 .+ rand_v_vals(lrs, 0.5),
+        :w2σB => 0.5 .+ rand_v_vals(lrs, 0.5),
         :vPp => 0.0,
         :phos => 0.4,
     ]
@@ -169,14 +169,14 @@ end
 let
     lrs = LatticeReactionSystem(sigmaB_system, sigmaB_srs_2, large_2d_grid)
     u0 = [
-        :w => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
-        :w2 => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
-        :w2v => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
-        :v => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
-        :w2v2 => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
-        :vP => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
-        :σB => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
-        :w2σB => 0.5 .+ rand_v_vals(lattice(lrs), 0.5),
+        :w => 0.5 .+ rand_v_vals(lrs, 0.5),
+        :w2 => 0.5 .+ rand_v_vals(lrs, 0.5),
+        :w2v => 0.5 .+ rand_v_vals(lrs, 0.5),
+        :v => 0.5 .+ rand_v_vals(lrs, 0.5),
+        :w2v2 => 0.5 .+ rand_v_vals(lrs, 0.5),
+        :vP => 0.5 .+ rand_v_vals(lrs, 0.5),
+        :σB => 0.5 .+ rand_v_vals(lrs, 0.5),
+        :w2σB => 0.5 .+ rand_v_vals(lrs, 0.5),
         :vPp => 0.0,
         :phos => 0.4,
     ]

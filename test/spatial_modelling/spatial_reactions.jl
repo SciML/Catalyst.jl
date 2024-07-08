@@ -1,13 +1,7 @@
 ### Preparations ###
 
 # Fetch packages.
-using Catalyst, Graphs, OrdinaryDiffEq, Test
-
-# Fetch test networks.
-include("../spatial_test_networks.jl")
-
-# Pre-declares a set of grids.
-grids = [very_small_2d_cartesian_grid, very_small_2d_masked_grid, very_small_2d_graph_grid]
+using Catalyst, Test
 
 
 ### TransportReaction Creation Tests ###

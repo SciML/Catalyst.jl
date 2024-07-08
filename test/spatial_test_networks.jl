@@ -191,7 +191,9 @@ sigmaB_srs_2 = [sigmaB_tr_σB, sigmaB_tr_w, sigmaB_tr_v]
 ### Declares Lattices ###
 
 # Cartesian grids.
+very_small_1d_cartesian_grid = CartesianGrid(2)
 very_small_2d_cartesian_grid = CartesianGrid((2,2))
+very_small_3d_cartesian_grid = CartesianGrid((2,2,2))
 
 small_1d_cartesian_grid = CartesianGrid(5)
 small_2d_cartesian_grid = CartesianGrid((5,5))
@@ -202,7 +204,9 @@ large_2d_cartesian_grid = CartesianGrid((100,100))
 large_3d_cartesian_grid = CartesianGrid((100,100,100))
 
 # Masked grids.
+very_small_1d_masked_grid = fill(true, 2)
 very_small_2d_masked_grid = fill(true, 2, 2)
+very_small_3d_masked_grid = fill(true, 2, 2, 2)
 
 small_1d_masked_grid = fill(true, 5)
 small_2d_masked_grid = fill(true, 5, 5)
@@ -217,7 +221,9 @@ random_2d_masked_grid = rand(rng, [true, true, true, false], 10, 10)
 random_3d_masked_grid = rand(rng, [true, true, true, false], 10, 10, 10)
 
 # Graph - grids.
+very_small_1d_graph_grid = Graphs.grid([2])
 very_small_2d_graph_grid = Graphs.grid([2, 2])
+very_small_3d_graph_grid = Graphs.grid([2, 2, 2])
 
 small_1d_graph_grid = path_graph(5)
 small_2d_graph_grid = Graphs.grid([5,5])
