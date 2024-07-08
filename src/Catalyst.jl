@@ -181,6 +181,7 @@ export make_edge_p_values, make_directed_edge_values
 
 # Specific spatial problem types.
 include("spatial_reaction_systems/spatial_ODE_systems.jl")
+export rebuild_lat_internals!
 include("spatial_reaction_systems/lattice_jump_systems.jl")
 
 # General spatial modelling utility functions.

@@ -63,6 +63,11 @@ function make_transport_reaction(rateex, species)
     iv = :(@variables $(DEFAULT_IV_SYM))
     trxexpr = :(TransportReaction($rateex, $species))
 
+    # Appends `edgeparameter` metadata to all declared parameters.
+    for idx = 4:2:(2 + 2*length(parameters))
+        insert!(pexprs.args, idx, :([edgeparameter=true]))
+    end
+
     quote
         $pexprs
         $iv

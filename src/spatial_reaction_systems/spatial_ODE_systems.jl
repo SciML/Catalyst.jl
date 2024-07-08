@@ -1,6 +1,6 @@
 ### Spatial ODE Functor Structure ###
 
-# Functor with information about a spatial Lattice Reaction ODE;s forcing and Jacobian functions.
+# Functor with information about a spatial Lattice Reaction ODEs forcing and Jacobian functions.
 # Also used as ODE Function input to corresponding `ODEProblem`.
 struct LatticeTransportODEFunction{P,Q,R,S,T}
     """
@@ -59,39 +59,59 @@ struct LatticeTransportODEFunction{P,Q,R,S,T}
     used).
     """
     jac_transport::T
+    """ Whether sparse jacobian representation is used. """
+    sparse::Bool
+    """Remove when we add this as problem metadata"""
+    lrs::LatticeReactionSystem
     
     function LatticeTransportODEFunction(ofunc::P, ps::Vector{<:Pair}, 
             lrs::LatticeReactionSystem, transport_rates::Vector{Pair{Int64, SparseMatrixCSC{S, Int64}}},
-            jac_transport::Union{Nothing, Matrix{S}, SparseMatrixCSC{S, Int64}}) where {P,S}        
-        
-        # Creates a vector with the heterogeneous vertex parameters' indexes in the full parameter vector.
-        p_dict = Dict(ps)
-        heterogeneous_vert_p_idxs = findall((p_dict[p] isa Vector) && (length(p_dict[p]) > 1) 
-            for p in parameters(lrs))
-
-        # Creates the MTKParameters structure and `p_setters` vector (which are used to manage
-        # the vertex parameter values during the simulations).
-        nonspatial_osys = complete(convert(ODESystem, reactionsystem(lrs)))
-        p_init = [p => p_dict[p][1] for p in parameters(nonspatial_osys)]
-        mtk_ps = MT.MTKParameters(nonspatial_osys, p_init)
-        p_setters = [MT.setp(nonspatial_osys, p) for p in parameters(lrs)[heterogeneous_vert_p_idxs]]
-
-        # Computes the transport rate type vector and leaving rate matrix.
-        t_rate_idx_types = [size(tr[2]) == (1,1) for tr in transport_rates]
-        leaving_rates = zeros(length(transport_rates), num_verts(lrs))
-        for (s_idx, tr_pair) in enumerate(transport_rates)
-            for e in Catalyst.edge_iterator(lrs)
-                # Updates the exit rate for species s_idx from vertex e.src.
-                leaving_rates[s_idx, e[1]] += get_transport_rate(tr_pair[2], e, t_rate_idx_types[s_idx]) 
-            end
-        end
+            jac_transport::Union{Nothing, Matrix{S}, SparseMatrixCSC{S, Int64}}, sparse) where {P,S}        
+        # Computes `LatticeTransportODEFunction` functor fields.
+        heterogeneous_vert_p_idxs = make_heterogeneous_vert_p_idxs(ps, lrs)
+        mtk_ps, p_setters = make_mtk_ps_structs(ps, lrs, heterogeneous_vert_p_idxs)
+        t_rate_idx_types, leaving_rates = make_t_types_and_leaving_rates(transport_rates, lrs)
 
         # Creates and returns the `LatticeTransportODEFunction` functor. 
         new{P,typeof(mtk_ps),typeof(p_setters),S,typeof(jac_transport)}(ofunc, num_verts(lrs), 
             num_species(lrs), heterogeneous_vert_p_idxs, mtk_ps, p_setters, transport_rates,
-            t_rate_idx_types, leaving_rates, Catalyst.edge_iterator(lrs), jac_transport)
+            t_rate_idx_types, leaving_rates, Catalyst.edge_iterator(lrs), jac_transport, sparse, lrs)
     end
 end
+
+# `LatticeTransportODEFunction` helper functions (re used by rebuild function later on).
+
+# Creates a vector with the heterogeneous vertex parameters' indexes in the full parameter vector.
+function make_heterogeneous_vert_p_idxs(ps, lrs)
+    p_dict = Dict(ps)
+    return findall((p_dict[p] isa Vector) && (length(p_dict[p]) > 1) for p in parameters(lrs))
+end
+
+# Creates the MTKParameters structure and `p_setters` vector (which are used to manage
+# the vertex parameter values during the simulations).
+function make_mtk_ps_structs(ps, lrs, heterogeneous_vert_p_idxs)
+    p_dict = Dict(ps)
+    nonspatial_osys = complete(convert(ODESystem, reactionsystem(lrs)))
+    p_init = [p => p_dict[p][1] for p in parameters(nonspatial_osys)]
+    mtk_ps = MT.MTKParameters(nonspatial_osys, p_init)
+    p_setters = [MT.setp(nonspatial_osys, p) for p in parameters(lrs)[heterogeneous_vert_p_idxs]]
+    return mtk_ps, p_setters
+end
+
+# Computes the transport rate type vector and leaving rate matrix.
+function make_t_types_and_leaving_rates(transport_rates, lrs)
+    t_rate_idx_types = [size(tr[2]) == (1,1) for tr in transport_rates]
+    leaving_rates = zeros(length(transport_rates), num_verts(lrs))
+    for (s_idx, tr_pair) in enumerate(transport_rates)
+        for e in Catalyst.edge_iterator(lrs)
+            # Updates the exit rate for species s_idx from vertex e.src.
+            leaving_rates[s_idx, e[1]] += get_transport_rate(tr_pair[2], e, t_rate_idx_types[s_idx]) 
+        end
+    end
+    return t_rate_idx_types, leaving_rates
+end
+
+### Spatial ODE Functor Functions ###
 
 # Defines the functor's effect when applied as a forcing function.
 function (lt_ofun::LatticeTransportODEFunction)(du::AbstractVector, u, p, t)
@@ -198,7 +218,7 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{R,Ve
     transport_rates = make_sidxs_to_transrate_map(vert_ps, edge_ps, lrs)
 
     # Depending on Jacobian and sparsity options, computes the Jacobian transport matrix and prototype.
-    if sparse && !jac
+    if !sparse && !jac
         jac_transport = nothing
         jac_prototype = nothing
     else
@@ -209,7 +229,7 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{R,Ve
     end
 
     # Creates the `LatticeTransportODEFunction` functor (if `jac`, sets it as the Jacobian as well).
-    f = LatticeTransportODEFunction(ofunc_dense, [vert_ps; edge_ps], lrs, transport_rates, jac_transport)
+    f = LatticeTransportODEFunction(ofunc_dense, [vert_ps; edge_ps], lrs, transport_rates, jac_transport, sparse)
     J = (jac ? f : nothing)
 
     # Extracts the `Symbol` form for species and parameters. Creates and returns the `ODEFunction`.
@@ -267,23 +287,95 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64},
         end
     end
 
-    # Create a sparse Jacobian prototype with 0-valued entries.
+    # Create a sparse Jacobian prototype with 0-valued entries. If requested,
+    # updates values with non-zero entries.
     jac_prototype = sparse(i_idxs, j_idxs, zeros(T, num_entries))
-
-    # Set element values.
-    if set_nonzero
-        for (s, rates) in transport_rates, e in edge_iterator(lrs)
-            idx_src = get_index(e[1], s, num_species(lrs))
-            idx_dst = get_index(e[2], s, num_species(lrs))
-            val = get_transport_rate(rates, e, size(rates)==(1,1))
-
-            # Term due to species leaving source vertex.
-            jac_prototype[idx_src, idx_src] -= val
-
-            # Term due to species arriving to destination vertex.   
-            jac_prototype[idx_src, idx_dst] += val
-        end
-    end
+    set_nonzero && set_jac_transport_values!(jac_prototype, transport_rates, lrs)
 
     return jac_prototype
+end
+
+# For a Jacobian prototype with zero-valued entries. Set entry values according to a set of
+# transport reaction values.
+function set_jac_transport_values!(jac_prototype, transport_rates, lrs)
+    for (s, rates) in transport_rates, e in edge_iterator(lrs)
+        idx_src = get_index(e[1], s, num_species(lrs))
+        idx_dst = get_index(e[2], s, num_species(lrs))
+        val = get_transport_rate(rates, e, size(rates)==(1,1))
+
+        # Term due to species leaving source vertex.
+        jac_prototype[idx_src, idx_src] -= val
+
+        # Term due to species arriving to destination vertex.   
+        jac_prototype[idx_src, idx_dst] += val
+    end
+end
+
+### Functor Updating Functionality ###
+
+# Function for rebuilding a `LatticeReactionSystem` `ODEProblem` after it has been updated.
+function rebuild_lat_internals!(oprob::ODEProblem)
+    rebuild_lat_internals!(oprob.f.f, oprob.p, oprob.f.f.lrs)
+end
+
+# Function for rebuilding a `LatticeReactionSystem` integrator after it has been updated.
+# We could specify `integrator`'s type, but that required adding OrdinaryDiffEq as a direct
+# dependency of Catalyst.
+function rebuild_lat_internals!(integrator)
+    rebuild_lat_internals!(integrator.f.f, integrator.p, integrator.f.f.lrs)
+end
+
+# Function which rebuilds a `LatticeTransportODEFunction` functor for a new parameter set.
+function rebuild_lat_internals!(lt_ofun::LatticeTransportODEFunction, ps_new, lrs::LatticeReactionSystem)
+    # Computes Jacobian properties.
+    jac = !isnothing(lt_ofun.jac_transport)
+    sparse = lt_ofun.sparse
+
+    # Recreates the new parameters on the requisite form.
+    ps_new = [(length(p) == 1) ? p[1] : p for p in deepcopy(ps_new)]
+    ps_new = [p => p_val for (p, p_val) in zip(parameters(lrs), deepcopy(ps_new))]
+    vert_ps, edge_ps = lattice_process_p(ps_new, vertex_parameters(lrs), edge_parameters(lrs), lrs)
+    ps_new = [vert_ps; edge_ps]
+    
+    # Creates the new transport rates and transport Jacobian part.
+    transport_rates = make_sidxs_to_transrate_map(vert_ps, edge_ps, lrs)
+    if !isnothing(lt_ofun.jac_transport)
+        lt_ofun.jac_transport .= 0.0
+        set_jac_transport_values!(lt_ofun.jac_transport, transport_rates, lrs)
+    end
+
+    # Computes new field values.
+    heterogeneous_vert_p_idxs = make_heterogeneous_vert_p_idxs(ps_new, lrs)
+    mtk_ps, p_setters = make_mtk_ps_structs(ps_new, lrs, heterogeneous_vert_p_idxs)
+    t_rate_idx_types, leaving_rates = make_t_types_and_leaving_rates(transport_rates, lrs)
+
+    # Updates functor fields.
+    replace_vec!(lt_ofun.heterogeneous_vert_p_idxs, heterogeneous_vert_p_idxs)
+    replace_vec!(lt_ofun.p_setters, p_setters)
+    replace_vec!(lt_ofun.transport_rates, transport_rates)
+    replace_vec!(lt_ofun.t_rate_idx_types, t_rate_idx_types)
+    lt_ofun.leaving_rates .= leaving_rates
+
+    # Updating the `MTKParameters` structure is a bit more complicated.
+    p_dict = Dict(ps_new)
+    osys = complete(convert(ODESystem, reactionsystem(lrs)))
+    for p in parameters(osys)
+        MT.setp(osys, p)(lt_ofun.mtk_ps, (p_dict[p] isa Number) ? p_dict[p] : p_dict[p][1])
+    end
+
+    return nothing
+end
+
+# Specialised function which replaced one vector in another in a mutating way.
+# Required to update the vectors in the `LatticeTransportODEFunction` functor.
+function replace_vec!(vec1, vec2)
+    l1 = length(vec1)
+    l2 = length(vec2)
+
+    # Updates the fields, then deletes superfluous fields, or additional ones.
+    for (i, v) in enumerate(vec2[1:min(l1, l2)])
+        vec1[i] = v
+    end
+    foreach(idx -> deleteat!(vec1, idx), l1:-1:(l2 + 1))
+    foreach(val -> push!(vec1, val), vec2[l1+1:l2])
 end
