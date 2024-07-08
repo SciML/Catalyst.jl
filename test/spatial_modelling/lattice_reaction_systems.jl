@@ -9,6 +9,27 @@ include("../spatial_test_networks.jl")
 # Pre declares a grid.
 grids = [very_small_2d_cartesian_grid, very_small_2d_masked_grid, very_small_2d_graph_grid]
 
+### Test Spatial Reactions ###
+
+# Test creation of TransportReaction with non-parameters in rate.
+# Tests that it works even when rate is highly nested.
+let 
+    @variables t
+    @species X(t) Y(t)
+    @parameters D1 D2 D3
+    @test_throws ErrorException TransportReaction(D1 + D2*(D3 + Y), X)
+    @test_throws ErrorException TransportReaction(Y, X)
+end
+
+# Checks that the `hash` functions works for `TransportReaction`s.
+let
+    tr1 = @transport_reaction D1 X
+    tr2 = @transport_reaction D1 X
+    tr3 = @transport_reaction D2 X
+    hash(tr1, 0x0000000000000001) == hash(tr2, 0x0000000000000001)
+    hash(tr2, 0x0000000000000001) != hash(tr3, 0x0000000000000001)
+end
+
 ### Tests LatticeReactionSystem Getters Correctness ###
 
 # Test case 1.
@@ -127,6 +148,37 @@ let
     end
 end
 
+# Tests using various more obscure types of getters.
+let
+    # Create LatticeReactionsSystems.
+    t = default_t()
+    @parameters p d kB kD
+    @species X(t) X2(t)
+    rxs = [
+        Reaction(p, [], [X])
+        Reaction(d, [X], [])
+        Reaction(kB, [X], [X2], [2], [1])
+        Reaction(kD, [X2], [X], [1], [2])
+    ]
+    @named rs = ReactionSystem(rxs, t; metadata = "Metadata string")
+    rs = complete(rs)
+    tr = @transport_reaction D X2
+    lrs = LatticeReactionSystem(rs, [tr], small_2d_cartesian_grid)
+
+    # Generic ones (simply forwards call to the non-spatial system).
+    @test isequal(reactions(lrs), rxs)
+    @test isequal(nameof(lrs), :rs)
+    @test isequal(ModelingToolkit.get_iv(lrs), t)
+    @test isequal(equations(lrs), rxs)
+    @test isequal(unknowns(lrs), [X, X2])
+    @test isequal(ModelingToolkit.get_metadata(lrs), "Metadata string")
+    @test isequal(ModelingToolkit.get_eqs(lrs), rxs)
+    @test isequal(ModelingToolkit.get_unknowns(lrs), [X, X2])
+    @test isequal(ModelingToolkit.get_ps(lrs), [p, d, kB, kD])
+    @test isequal(ModelingToolkit.get_systems(lrs), [])
+    @test isequal(independent_variables(lrs), [t])
+end
+
 ### Tests Spatial Reactions Getters Correctness ###
 
 # Test case 1.
@@ -233,16 +285,6 @@ end
 
 ### Tests Error generation ###
 
-# Test creation of TransportReaction with non-parameters in rate.
-# Tests that it works even when rate is highly nested.
-let 
-    @variables t
-    @species X(t) Y(t)
-    @parameters D1 D2 D3
-    @test_throws ErrorException TransportReaction(D1 + D2*(D3 + Y), X)
-    @test_throws ErrorException TransportReaction(Y, X)
-end
-
 # Network where diffusion species is not declared in non-spatial network.
 let 
     rs = @reaction_network begin
@@ -297,6 +339,59 @@ let
     end
 end
 
+# Tests various networks with non-permitted content.
+    let
+    tr = @transport_reaction D X
+
+    # Variable unknowns.
+    rs1 = @reaction_network begin
+        @variables V(t)
+        (p,d), 0 <--> X
+    end
+    @test_throws ArgumentError LatticeReactionSystem(rs1, [tr], short_path)
+
+    # Non-reaction equations.
+    rs2 = @reaction_network begin
+        @equations D(V) ~ X - V
+        (p,d), 0 <--> X
+    end
+    @test_throws ArgumentError LatticeReactionSystem(rs2, [tr], short_path)
+
+    # Events.
+    rs3 = @reaction_network begin
+        @discrete_events [1.0] => [p ~ p + 1]
+        (p,d), 0 <--> X
+    end
+    @test_throws ArgumentError LatticeReactionSystem(rs3, [tr], short_path)
+
+    # Observables (only generates a warning).
+    rs4 = @reaction_network begin
+        @observables X2 ~ 2X
+        (p,d), 0 <--> X
+    end
+    @test_logs (:warn, r"The `ReactionSystem` used as input to `LatticeReactionSystem contain observables. It *") match_mode=:any LatticeReactionSystem(rs4, [tr], short_path)
+end
+
+# Tests for hierarchical input system.
+let
+    t = default_t()
+    @parameters d
+    @species X(t)
+    rxs = [Reaction(d, [X], [])]
+    @named rs1 = ReactionSystem(rxs, t)
+    @named rs2 = ReactionSystem(rxs, t; systems = [rs1])
+    rs2 = complete(rs2)
+    @test_throws ArgumentError LatticeReactionSystem(rs2, [tr], short_path)
+end
+
+# Tests for non-complete input `ReactionSystem`.
+let
+    tr = @transport_reaction D X
+    rs = @network_component begin
+        (p,d), 0 <--> X
+    end
+    @test_throws ArgumentError LatticeReactionSystem(rs1, [tr], short_path)
+end
 
 ### Tests Grid Vertex and Edge Number Computation ###
 

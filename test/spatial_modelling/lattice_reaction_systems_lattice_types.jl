@@ -50,7 +50,7 @@ let
     @test grid_dims(masked_1d_lrs) == 1
     @test grid_dims(masked_2d_lrs) == 2
     @test grid_dims(masked_3d_lrs) == 3
-    @test_throws Exception grid_dims(graph_lrs)
+    @test_throws ArgumentError grid_dims(graph_lrs)
 
     # Checks grid sizes.
     @test grid_size(cartesian_1d_lrs) == (5,)
@@ -59,7 +59,7 @@ let
     @test grid_size(masked_1d_lrs) == (5,)
     @test grid_size(masked_2d_lrs) == (5,5)
     @test grid_size(masked_3d_lrs) == (5,5,5)
-    @test_throws Exception grid_size(graph_lrs)
+    @test_throws ArgumentError grid_size(graph_lrs)
 end
 
 # Checks grid dimensions for 2d and 3d grids where some dimension is equal to 1.

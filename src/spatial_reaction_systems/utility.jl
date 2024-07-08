@@ -55,10 +55,10 @@ end
 function lattice_process_input(input::Dict{<:Any, T}, syms::Vector) where {T}
     # Error checks
     if !isempty(setdiff(keys(input), syms))
-        error("You have provided values for the following unrecognised parameters/initial conditions: $(setdiff(keys(input), syms)).")
+        throw(ArgumentError("You have provided values for the following unrecognised parameters/initial conditions: $(setdiff(keys(input), syms))."))
     end
     if !isempty(setdiff(syms, keys(input)))
-        error("You have not provided values for the following parameters/initial conditions: $(setdiff(syms, keys(input))).")
+        throw(ArgumentError("You have not provided values for the following parameters/initial conditions: $(setdiff(syms, keys(input)))."))
     end
 
     return [sym => input[sym] for sym in syms]
@@ -67,7 +67,7 @@ function lattice_process_input(input, syms::Vector)
     if ((input isa Vector) || (input isa Tuple)) && all(entry isa Pair for entry in input)
         return lattice_process_input(Dict(input), syms)
     end
-    error("Input parameters/initial conditions have the wrong format ($(typeof(input))). These should either be a Dictionary, or a Tuple or a Vector (where each entry is a Pair taking a parameter/species to its value).")
+    throw(ArgumentError("Input parameters/initial conditions have the wrong format ($(typeof(input))). These should either be a Dictionary, or a Tuple or a Vector (where each entry is a Pair taking a parameter/species to its value)."))
 end
 
 # Splits parameters into vertex and edge parameters.
@@ -100,7 +100,7 @@ function vertex_value_form(values, lrs::LatticeReactionSystem, sym::BasicSymboli
         # For the case where the i'th value of the vector corresponds to the value in the i'th vertex.
         # This is the only (non-uniform) case possible for graph grids.
         if (length(values) != num_verts(lrs)) 
-            error("You have provided ($(length(values))) values for $sym. This is not equal to the number of vertices ($(num_verts(lrs))).")
+            throw(ArgumentError("You have provided ($(length(values))) values for $sym. This is not equal to the number of vertices ($(num_verts(lrs)))."))
         end
         return values
     end
@@ -113,10 +113,10 @@ end
 function vertex_value_form(values::AbstractArray, num_verts::Int64, lattice::CartesianGridRej{N,T}, 
                            sym::BasicSymbolic) where {N,T}
     if size(values) != lattice.dims
-        error("The values for $sym did not have the same format as the lattice. Expected a $(lattice.dims) array, got one of size $(size(values))")
+        throw(ArgumentError("The values for $sym did not have the same format as the lattice. Expected a $(lattice.dims) array, got one of size $(size(values))"))
     end
     if (length(values) != num_verts) 
-        error("You have provided ($(length(values))) values for $sym. This is not equal to the number of vertices ($(num_verts)).")
+        throw(ArgumentError("You have provided ($(length(values))) values for $sym. This is not equal to the number of vertices ($(num_verts))."))
     end
     return [values[flat_idx] for flat_idx in 1:num_verts]
 end
@@ -125,7 +125,7 @@ end
 function vertex_value_form(values::AbstractArray, num_verts::Int64, lattice::Array{Bool,T}, 
                            sym::BasicSymbolic) where {T}
     if size(values) != size(lattice)
-        error("The values for $sym did not have the same format as the lattice. Expected a $(size(lattice)) array, got one of size $(size(values))")
+        throw(ArgumentError("The values for $sym did not have the same format as the lattice. Expected a $(size(lattice)) array, got one of size $(size(values))"))
     end
 
     # Pre-declares a vector with the values in each vertex (return_values).
@@ -139,7 +139,7 @@ function vertex_value_form(values::AbstractArray, num_verts::Int64, lattice::Arr
 
     # Checks that the correct number of values was provided, and returns the values.
     if (length(return_values) != num_verts) 
-        error("You have provided ($(length(return_values))) values for $sym. This is not equal to the number of vertices ($(num_verts)).")
+        throw(ArgumentError("You have provided ($(length(return_values))) values for $sym. This is not equal to the number of vertices ($(num_verts))."))
     end
     return return_values
 end
@@ -158,10 +158,10 @@ function edge_value_form(values, lrs::LatticeReactionSystem, sym)
     
     # Error checks.
     if nnz(values) != num_edges(lrs)
-        error("You have provided ($(nnz(values))) values for $sym. This is not equal to the number of edges ($(num_edges(lrs))).")
+        throw(ArgumentError("You have provided ($(nnz(values))) values for $sym. This is not equal to the number of edges ($(num_edges(lrs)))."))
     end
     if !all(Base.isstored(values, e[1], e[2]) for e in edge_iterator(lrs))
-        error("Values was not provided for some edges for edge parameter $sym.")
+        throw(ArgumentError("Values was not provided for some edges for edge parameter $sym."))
     end
 
     # Unlike initial conditions/vertex parameters, (unless uniform) edge parameters' values  are 
@@ -296,7 +296,7 @@ function compute_edge_value(exp, lrs::LatticeReactionSystem, edge_ps)
     # Finds the symbols in the expression. Checks that all correspond to edge parameters.
     relevant_syms = Symbolics.get_variables(exp)
     if !all(any(isequal(sym, p) for p in edge_parameters(lrs)) for sym in relevant_syms)
-        error("An non-edge parameter was encountered in expressions: $exp. Here, only edge parameters are expected.")
+        throw(ArgumentError("An non-edge parameter was encountered in expressions: $exp. Here, only edge parameters are expected."))
     end
 
     # Creates a Function tha computes the expressions value for a parameter set.
@@ -320,7 +320,7 @@ function compute_vertex_value(exp, lrs::LatticeReactionSystem; u = [], ps = [])
     # Finds the symbols in the expression. Checks that all correspond to unknowns or vertex parameters.
     relevant_syms = Symbolics.get_variables(exp)
     if any(any(isequal(sym) in edge_parameters(lrs)) for sym in relevant_syms)
-        error("An edge parameter was encountered in expressions: $exp. Here, only vertex-based components are expected.")
+        throw(ArgumentError("An edge parameter was encountered in expressions: $exp. Here, only vertex-based components are expected."))
     end
 
     # Creates a Function that computes the expressions value for a parameter set.

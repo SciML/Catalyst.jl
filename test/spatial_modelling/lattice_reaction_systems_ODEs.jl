@@ -547,7 +547,7 @@ let
     @test all(isequal.(ss_1, ss_2))
 end
 
-### ODEProblem & Integrator Interfacing ### 
+### ODEProblem & Integrator Interfacing ###
 
 # Checks that basic interfacing with ODEProblem parameters (getting and setting) works.
 let
@@ -788,4 +788,41 @@ let
             end
         end
     end
+end
+
+
+### Error Tests ###
+
+# Checks that attempting to remove conserved quantities yields an error.
+let
+    lrs = LatticeReactionSystem(binding_system, binding_srs, very_small_2d_masked_grid)
+    @test_throws ArgumentError ODEProblem(lrs, binding_u0, (0.0, 10.0), binding_p; remove_conserved = true)
+end
+
+# Checks that various erroneous inputs to `ODEProblem` yields errors.
+let
+    # Create `LatticeReactionSystem`.
+    @parameters d1 d2 D [edgeparameter=true]
+    @species X1(t) X2(t)
+    rxs = [Reaction(d1, [X1], [])]
+    @named rs = ReactionSystem(rxs, t)
+    rs = complete(rs)
+    lrs = LatticeReactionSystem(rs, [TransportReaction(D, X1)], CartesianGrid((4,)))
+
+    # Attempts to create `ODEProblem` using various faulty inputs.
+    u0 = [X1 => 1.0]
+    tspan = (0.0, 1.0)
+    ps = [d1 => 1.0, D => 0.1]
+    @test_throws ArgumentError ODEProblem(lrs, [1.0], tspan, ps)
+    @test_throws ArgumentError ODEProblem(lrs, u0, tspan, [1.0, 0.1])
+    @test_throws ArgumentError ODEProblem(lrs, [X1 => 1.0, X2 => 2.0], tspan, ps)
+    @test_throws ArgumentError ODEProblem(lrs, u0, tspan, [d1 => 1.0, d2 => 0.2, D => 0.1])
+    @test_throws ArgumentError ODEProblem(lrs, [X1 => [1.0, 2.0, 3.0]], tspan, ps)
+    @test_throws ArgumentError ODEProblem(lrs, u0, tspan, [d1 => [1.0, 2.0, 3.0], D => 0.1])
+    @test_throws ArgumentError ODEProblem(lrs, [X1 => [1.0 2.0; 3.0 4.0]], tspan, ps)
+    @test_throws ArgumentError ODEProblem(lrs, u0, tspan, [d1 => [1.0 2.0; 3.0 4.0], D => 0.1])
+    bad_D_vals_1 = sparse([0.0 1.0 0.0 1.0; 1.0 0.0 1.0 0.0; 0.0 1.0 0.0 1.0; 1.0 0.0 1.0 0.0])
+    @test_throws ArgumentError ODEProblem(lrs, u0, tspan, [d1 => 1.0, D => bad_D_vals_1])
+    bad_D_vals_2 = sparse([0.0 0.0 0.0 1.0; 1.0 0.0 1.0 0.0; 0.0 1.0 0.0 1.0; 1.0 0.0 0.0 0.0])
+    @test_throws ArgumentError ODEProblem(lrs, u0, tspan, [d1 => 1.0, D => bad_D_vals_2])
 end

@@ -165,5 +165,5 @@ function find_parameters_in_rate!(parameters, rateex::ExprValues)
             find_parameters_in_rate!(parameters, rateex.args[i])
         end
     end
-    nothing
+    return nothing
 end

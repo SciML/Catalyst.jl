@@ -51,19 +51,22 @@ struct LatticeReactionSystem{Q,R,S,T} <: MT.AbstractTimeDependentSystem
                                    num_verts::Int64, num_edges::Int64, edge_iterator::T) where {Q,R,S,T}
         # Error checks.
         if !(R <: AbstractSpatialReaction)
-            error("The second argument must be a vector of AbstractSpatialReaction subtypes.") 
+            throw(ArgumentError("The second argument must be a vector of AbstractSpatialReaction subtypes."))
+        end
+        if !iscomplete(rs)
+            throw(ArgumentError("A non-complete `ReactionSystem` was used as input, this is not permitted."))
         end
         if !isempty(MT.get_systems(rs))
-            error("A non-flattened (hierarchical) `ReactionSystem` was used as input. `LatticeReactionSystem`s can only be based on non-hierarchical `ReactionSystem`s.")
+            throw(ArgumentError("A non-flattened (hierarchical) `ReactionSystem` was used as input. `LatticeReactionSystem`s can only be based on non-hierarchical `ReactionSystem`s."))
         end
         if length(species(rs)) != length(unknowns(rs))
-            error("The `ReactionSystem` used as input contain variable unknowns (in addition to species unknowns). This is not permitted (the input `ReactionSystem` must contain species unknowns only).")
+            throw(ArgumentError("The `ReactionSystem` used as input contain variable unknowns (in addition to species unknowns). This is not permitted (the input `ReactionSystem` must contain species unknowns only)."))
         end
         if length(reactions(rs)) != length(equations(rs))
-            error("The `ReactionSystem` used as input contain equations (in addition to reactions). This is not permitted.")
+            throw(ArgumentError("The `ReactionSystem` used as input contain equations (in addition to reactions). This is not permitted."))
         end
         if !isempty(MT.continuous_events(rs)) || !isempty(MT.discrete_events(rs))
-            @warn "The `ReactionSystem` used as input to `LatticeReactionSystem contain events. These will be ignored in any simulations based on the created `LatticeReactionSystem`."
+            throw(ArgumentError("The `ReactionSystem` used as input to `LatticeReactionSystem contain events. These will be ignored in any simulations based on the created `LatticeReactionSystem`."))
         end
         if !isempty(observed(rs))
             @warn "The `ReactionSystem` used as input to `LatticeReactionSystem contain observables. It will not be possible to access these from the created `LatticeReactionSystem`."
@@ -295,7 +298,7 @@ E.g. for a lattice `CartesianGrid(4,6)`, `(4,6)` is returned.
 grid_size(lrs::LatticeReactionSystem) = grid_size(lattice(lrs))
 grid_size(lattice::CartesianGridRej{N,T}) where {N,T} = lattice.dims
 grid_size(lattice::Array{Bool, N}) where {N} = size(lattice)
-grid_size(lattice::Graph) = error("Grid size is only defined for LatticeReactionSystems with grid-based lattices (not graph-based).")
+grid_size(lattice::Graphs.AbstractGraph) = throw(ArgumentError("Grid size is only defined for LatticeReactionSystems with grid-based lattices (not graph-based)."))
 
 """
     grid_dims(lrs::LatticeReactionSystem)
@@ -305,7 +308,7 @@ The output is either `1`, `2`, or `3`.
 """
 grid_dims(lrs::LatticeReactionSystem) = grid_dims(lattice(lrs))
 grid_dims(lattice::GridLattice{N,T}) where {N,T} = return N
-grid_dims(lattice::Graph) = error("Grid dimensions is only defined for LatticeReactionSystems with grid-based lattices (not graph-based).")
+grid_dims(lattice::Graphs.AbstractGraph) = throw(ArgumentError("Grid dimensions is only defined for LatticeReactionSystems with grid-based lattices (not graph-based)."))
 
 """
     get_lattice_graph(lrs::LatticeReactionSystem)
@@ -332,7 +335,6 @@ reactions(lrs::LatticeReactionSystem) = reactions(reactionsystem(lrs))
 # The `parameters` MTK getter have a specialised accessor for LatticeReactionSystems.
 MT.nameof(lrs::LatticeReactionSystem) = MT.nameof(reactionsystem(lrs))
 MT.get_iv(lrs::LatticeReactionSystem) = MT.get_iv(reactionsystem(lrs))
-MT.equations(lrs::LatticeReactionSystem) = MT.equations(reactionsystem(lrs))
 MT.equations(lrs::LatticeReactionSystem) = MT.equations(reactionsystem(lrs))
 MT.unknowns(lrs::LatticeReactionSystem) = MT.unknowns(reactionsystem(lrs))
 MT.get_metadata(lrs::LatticeReactionSystem) = MT.get_metadata(reactionsystem(lrs))

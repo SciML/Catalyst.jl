@@ -30,7 +30,7 @@ function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator
                                    combinatoric_ratelaws = get_combinatoric_ratelaws(reactionsystem(lrs)), kwargs...)
     # Error checks.
     if !isnothing(dprob.f.sys)
-        error("Unexpected `DiscreteProblem` passed into `JumpProblem`. Was a `LatticeReactionSystem` used as input to the initial `DiscreteProblem`?")
+        throw(ArgumentError("Unexpected `DiscreteProblem` passed into `JumpProblem`. Was a `LatticeReactionSystem` used as input to the initial `DiscreteProblem`?"))
     end
 
     # Computes hopping constants and mass action jumps (requires some internal juggling).

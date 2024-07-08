@@ -208,7 +208,7 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{R,Ve
                            remove_conserved, checks) where {R,S,T}
     # Error check.
     if remove_conserved 
-        error("Removal of conserved quantities is currently not supported for `LatticeReactionSystem`s")
+        throw(ArgumentError("Removal of conserved quantities is currently not supported for `LatticeReactionSystem`s"))
     end
 
     # Prepares the inputs to the `LatticeTransportODEFunction` functor. 
