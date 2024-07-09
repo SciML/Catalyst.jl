@@ -330,6 +330,8 @@ end
 
 ### STRONG LINKAGE CLASS TESTS
 
+
+# a) Checks that strong/terminal linkage classes are correctly found. Should identify the (A, B+C) linkage class as non-terminal, since B + C produces D
 let
     rn = @reaction_network begin
         (k1, k2), A <--> B + C
@@ -349,6 +351,7 @@ let
     @test issubset([[3,4,5], [6,7]], tslcs) 
 end
 
+# b) Makes the D + E --> G reaction irreversible. Thus, (D+E) becomes a non-terminal linkage class. Checks whether correctly identifies both (A, B+C) and (D+E) as non-terminal 
 let
     rn = @reaction_network begin
         (k1, k2), A <--> B + C
@@ -368,6 +371,7 @@ let
     @test issubset([[3,4,5], [7]], tslcs) 
 end
 
+# From a), makes the B + C <--> D reaction reversible. Thus, the non-terminal (A, B+C) linkage class gets absorbed into the terminal (A, B+C, D, E, 2F) linkage class, and the terminal linkage classes and strong linkage classes coincide. 
 let
     rn = @reaction_network begin
         (k1, k2), A <--> B + C
@@ -387,6 +391,7 @@ let
     @test issubset([[1,2,3,4,5], [6,7]], tslcs) 
 end
 
+# Simple test for strong and terminal linkage classes
 let
     rn = @reaction_network begin
         (k1, k2), A <--> 2B 
@@ -409,6 +414,8 @@ end
 
 ### CONCENTRATION ROBUSTNESS TESTS
 
+# Check whether concentration-robust species are correctly identified for two well-known reaction networks: the glyoxylate IDHKP-IDH system, and the EnvZ_OmpR signaling pathway. 
+
 let
     IDHKP_IDH = @reaction_network begin
         (k1, k2), EIp + I <--> EIpI
@@ -418,6 +425,7 @@ let
     end
 
     @test Catalyst.robustspecies(IDHKP_IDH) == [2]
+    @test Catalyst.isconcentrationrobust(IDHKP_IDH, 2) == true
 end
 
 let
@@ -431,7 +439,65 @@ let
     end
 
     @test Catalyst.robustspecies(EnvZ_OmpR) == [6]
+    @test Catalyst.isconcentrationrobust(EnvZ_OmpR, 6) == true
 end
+
+### DEFICIENCY ONE TESTS
+
+# Fails because there are two terminal linkage classes in the linkage class
+let 
+    rn = @reaction_network begin
+        k1, A + B --> 2B
+        k2, A + B --> 2A
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == false
+end
+
+# Fails because linkage deficiencies do not sum to total deficiency
+let 
+    rn = @reaction_network begin
+        (k1, k2), A <--> 2A
+        (k3, k4), A + B <--> C
+        (k5, k6), C <--> B 
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == false
+end
+
+# Fails because a linkage class has deficiency two
+let 
+    rn = @reaction_network begin
+        k1, 3A --> A + 2B
+        k2, A + 2B --> 3B
+        k3, 3B --> 2A + B
+        k4, 2A + B --> 3A
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == false
+end
+
+let
+    rn = @reaction_network begin
+        (k1, k2), 2A <--> D
+        (k3, k4), D <--> A + B
+        (k5, k6), A + B <--> C
+        (k7, k8), C <--> 2B
+        (k9, k10), C + D <--> E + F
+        (k11, k12), E + F <--> H
+        (k13, k14), H <--> C + E
+        (k15, k16), C + E <--> D + F
+        (k17, k18), A + D <--> G
+        (k19, k20), G <--> B + H
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == true
+end
+
+
+
+
+
 
 
 ### Complex and detailed balance tests
