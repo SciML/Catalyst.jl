@@ -1,8 +1,7 @@
 ### Preparations ###
 
 # Fetch packages.
-using JumpProcesses
-using Random, Statistics, SparseArrays, Test
+using JumpProcesses, Statistics, SparseArrays, Test
 
 # Fetch test networks.
 include("../spatial_test_networks.jl")
@@ -204,6 +203,27 @@ end
 
 ### JumpProblem & Integrator Interfacing ### 
 
+# Currently not supported, check that corresponding functions yields errors.
+let
+    # Prepare `LatticeReactionSystem`.
+    rs = @reaction_network begin
+        (k1,k2), X1 <--> X2
+    end
+    tr = @transport_reaction D X1 
+    grid = CartesianGrid((2,2))
+    lrs = LatticeReactionSystem(rs, [tr], grid)
+
+    # Create problems.
+    u0 = [:X1 => 2, :X2 => [5 6; 7 8]]
+    tspan = (0.0, 10.0)
+    ps = [:k1 => 1.5, :k2 => [1.0 1.5; 2.0 3.5], :D => 0.1]
+    dprob = DiscreteProblem(lrs, u0, tspan, ps)
+    jprob = JumpProblem(lrs, dprob, NSM())
+
+    # Checks that rebuilding errors.
+    @test_throws Exception rebuild_lat_internals!(dprob)
+    @test_throws Exception rebuild_lat_internals!(jprob)
+end
 
 ### Other Tests ###
 

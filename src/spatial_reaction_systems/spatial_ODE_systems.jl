@@ -243,10 +243,10 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{R, V
         jac_transport, transport_rates)
     J = (jac ? f : nothing)
 
-    # Extracts the `Symbol` form for species and parameters. Creates and returns the `ODEFunction`.
-    syms = MT.getname.(species(lrs))
-    paramsyms = MT.getname.(parameters(lrs))
-    return ODEFunction(f; jac = J, jac_prototype, syms, paramsyms)
+    # Extracts the `Symbol` form for parameters (but not species). Creates and returns the `ODEFunction`.
+    paramsyms = [MT.getname(p) for p in parameters(lrs)]
+    sys = SciMLBase.SymbolCache([], paramsyms, [])
+    return ODEFunction(f; jac = J, jac_prototype, sys)
 end
 
 # Builds a jacobian prototype.
@@ -325,7 +325,48 @@ end
 
 ### Functor Updating Functionality ###
 
-# Function for rebuilding a `LatticeReactionSystem` `ODEProblem` after it has been updated.
+"""
+    rebuild_lat_internals!(sciml_struct)
+
+Rebuilds the internal functions for simulating a LatticeReactionSystem. WHenever a problem or 
+integrator have had its parameter values updated, thus function should be called for the update to 
+be taken into account. For ODE simulations, `rebuild_lat_internals!` needs only to be called when
+- An edge parameter have been updated.
+- When a parameter with spatially homogeneous values have been given spatially heterogeneous values 
+(or vice versa).
+
+Arguments:
+- `sciml_struct`: The problem (e.g. an `ODEProblem`) or an integrator which we wish to rebuild.
+
+Notes:
+- Currently does not work for `DiscreteProblem`s, `JumpProblem`s, or their integrators.
+- The function is not build with performance in mind, so avoid calling it multiple times in 
+performance-critical applications.
+
+Example:
+```julia
+# Creates an initial `ODEProblem`
+rs = @reaction_network begin
+    (k1,k2), X1 <--> X2
+end
+tr = @transport_reaction D X1 
+grid = CartesianGrid((2,2))
+lrs = LatticeReactionSystem(rs, [tr], grid)
+
+u0 = [:X1 => 2, :X2 => [5 6; 7 8]]
+tspan = (0.0, 10.0)
+ps = [:k1 => 1.5, :k2 => [1.0 1.5; 2.0 3.5], :D => 0.1]
+
+oprob = ODEProblem(lrs, u0, tspan, ps)
+
+# Updates parameter values.
+oprob.ps[:ks] = [2.0 2.5; 3.0 4.5]
+oprob.ps[:D] = 0.05
+
+# Rebuilds `ODEProblem` to make changes have an effect.
+rebuild_lat_internals!(oprob)
+```
+"""
 function rebuild_lat_internals!(oprob::ODEProblem)
     rebuild_lat_internals!(oprob.f.f, oprob.p, oprob.f.f.lrs)
 end
