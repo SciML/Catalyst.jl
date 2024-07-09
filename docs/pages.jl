@@ -47,6 +47,9 @@ pages = Any[
             "inverse_problems/examples/ode_fitting_oscillation.md"
         ]
     ],
+    "Spatial Modelling" => Any[
+        "spatial_modelling/lattice_reaction_systems.md"
+    ],
     "FAQs" => "faqs.md",
     "API" => "api.md"
 ]
