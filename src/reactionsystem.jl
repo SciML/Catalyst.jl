@@ -1,290 +1,4 @@
-# Catalyst specific symbolics to support SBML
-struct ParameterConstantSpecies end
-struct VariableBCSpecies end
-struct VariableSpecies end
-Symbolics.option_to_metadata_type(::Val{:isconstantspecies}) = ParameterConstantSpecies
-Symbolics.option_to_metadata_type(::Val{:isbcspecies}) = VariableBCSpecies
-Symbolics.option_to_metadata_type(::Val{:isspecies}) = VariableSpecies
-
-"""
-    Catalyst.isconstant(s)
-
-Tests if the given symbolic variable corresponds to a constant species.
-"""
-isconstant(s::Num) = isconstant(MT.value(s))
-function isconstant(s)
-    MT.getmetadata(s, ParameterConstantSpecies, false)
-end
-
-"""
-    Catalyst.isbc(s)
-
-Tests if the given symbolic variable corresponds to a boundary condition species.
-"""
-isbc(s::Num) = isbc(MT.value(s))
-function isbc(s)
-    MT.getmetadata(s, VariableBCSpecies, false)
-end
-
-"""
-    isspecies(s)
-
-Tests if the given symbolic variable corresponds to a chemical species.
-"""
-isspecies(s::Num) = isspecies(MT.value(s))
-function isspecies(s)
-    MT.getmetadata(s, VariableSpecies, false)
-end
-
-"""
-    tospecies(s)
-
-Convert the given symbolic variable to be a species by adding the isspecies metadata.
-
-Notes:
-- Will error if passed a parameter.
-"""
-function tospecies(s)
-    MT.isparameter(s) &&
-        error("Parameters can not be converted to species. Please pass a variable.")
-    MT.setmetadata(s, VariableSpecies, true)
-end
-
-# true for species which shouldn't change from the reactions, including non-species
-# variables
-drop_dynamics(s) = isconstant(s) || isbc(s) || (!isspecies(s))
-
-"""
-$(TYPEDEF)
-
-One chemical reaction.
-
-# Fields
-$(FIELDS)
-
-# Examples
-
-```julia
-using Catalyst
-@parameters k[1:20]
-@variables t
-@species A(t) B(t) C(t) D(t)
-rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
-       Reaction(k[2], [B], nothing),            # B -> 0
-       Reaction(k[3],[A],[C]),                  # A -> C
-       Reaction(k[4], [C], [A,B]),              # C -> A + B
-       Reaction(k[5], [C], [A], [1], [2]),      # C -> A + A
-       Reaction(k[6], [A,B], [C]),              # A + B -> C
-       Reaction(k[7], [B], [A], [2], [1]),      # 2B -> A
-       Reaction(k[8], [A,B], [A,C]),            # A + B -> A + C
-       Reaction(k[9], [A,B], [C,D]),            # A + B -> C + D
-       Reaction(k[10], [A], [C,D], [2], [1,1]), # 2A -> C + D
-       Reaction(k[11], [A], [A,B], [2], [1,1]), # 2A -> A + B
-       Reaction(k[12], [A,B,C], [C,D], [1,3,4], [2, 3]),          # A+3B+4C -> 2C + 3D
-       Reaction(k[13], [A,B], nothing, [3,1], nothing),           # 3A+B -> 0
-       Reaction(k[14], nothing, [A], nothing, [2]),               # 0 -> 2A
-       Reaction(k[15]*A/(2+A), [A], nothing; only_use_rate=true), # A -> 0 with custom rate
-       Reaction(k[16], [A], [B]; only_use_rate=true),             # A -> B with custom rate.
-       Reaction(k[17]*A*exp(B), [C], [D], [2], [1]),              # 2C -> D with non constant rate.
-       Reaction(k[18]*B, nothing, [B], nothing, [2]),             # 0 -> 2B with non constant rate.
-       Reaction(k[19]*t, [A], [B]),                                # A -> B with non constant rate.
-       Reaction(k[20]*t*A, [B,C], [D],[2,1],[2])                  # 2A +B -> 2C with non constant rate.
-  ]
-```
-
-Notes:
-- `nothing` can be used to indicate a reaction that has no reactants or no products.
-  In this case the corresponding stoichiometry vector should also be set to `nothing`.
-- The three-argument form assumes all reactant and product stoichiometric coefficients
-  are one.
-"""
-struct Reaction{S, T}
-    """The rate function (excluding mass action terms)."""
-    rate::Any
-    """Reaction substrates."""
-    substrates::Vector
-    """Reaction products."""
-    products::Vector
-    """The stoichiometric coefficients of the reactants."""
-    substoich::Vector{T}
-    """The stoichiometric coefficients of the products."""
-    prodstoich::Vector{T}
-    """The net stoichiometric coefficients of all species changed by the reaction."""
-    netstoich::Vector{Pair{S, T}}
-    """
-    `false` (default) if `rate` should be multiplied by mass action terms to give the rate law.
-    `true` if `rate` represents the full reaction rate law.
-    """
-    only_use_rate::Bool
-end
-
-"""
-    isvalidreactant(s)
-
-Test if a species is valid as a reactant (i.e. a species variable or a constant parameter).
-"""
-isvalidreactant(s) = MT.isparameter(s) ? isconstant(s) : (isspecies(s) && !isconstant(s))
-
-function Reaction(rate, subs, prods, substoich, prodstoich;
-                  netstoich = nothing, only_use_rate = false,
-                  kwargs...)
-    (isnothing(prods) && isnothing(subs)) &&
-        throw(ArgumentError("A reaction requires a non-nothing substrate or product vector."))
-    (isnothing(prodstoich) && isnothing(substoich)) &&
-        throw(ArgumentError("Both substrate and product stochiometry inputs cannot be nothing."))
-
-    if isnothing(subs)
-        prodtype = typeof(value(first(prods)))
-        subs = Vector{prodtype}()
-        !isnothing(substoich) &&
-            throw(ArgumentError("If substrates are nothing, substrate stoichiometries have to be so too."))
-        substoich = typeof(prodstoich)()
-    else
-        subs = value.(subs)
-    end
-    allunique(subs) ||
-        throw(ArgumentError("Substrates can not be repeated in the list provided to `Reaction`, please modify the stoichiometry for any repeated substrates instead."))
-    S = eltype(substoich)
-
-    if isnothing(prods)
-        prods = Vector{eltype(subs)}()
-        !isnothing(prodstoich) &&
-            throw(ArgumentError("If products are nothing, product stoichiometries have to be so too."))
-        prodstoich = typeof(substoich)()
-    else
-        prods = value.(prods)
-    end
-    allunique(prods) ||
-        throw(ArgumentError("Products can not be repeated in the list provided to `Reaction`, please modify the stoichiometry for any repeated products instead."))
-    T = eltype(prodstoich)
-
-    # try to get a common type for stoichiometry, using Any if have Syms
-    stoich_type = promote_type(S, T)
-    if stoich_type <: Num
-        stoich_type = Any
-        substoich′ = Any[value(s) for s in substoich]
-        prodstoich′ = Any[value(p) for p in prodstoich]
-    else
-        substoich′ = (S == stoich_type) ? substoich : convert.(stoich_type, substoich)
-        prodstoich′ = (T == stoich_type) ? prodstoich : convert.(stoich_type, prodstoich)
-    end
-
-    if !(all(isvalidreactant, subs) && all(isvalidreactant, prods))
-        badsts = union(filter(!isvalidreactant, subs), filter(!isvalidreactant, prods))
-        throw(ArgumentError("""To be a valid substrate or product, non-constant species must be declared via @species, while constant species must be parameters with the isconstantspecies metadata. The following reactants do not follow this convention:\n $badsts"""))
-    end
-
-    ns = if netstoich === nothing
-        get_netstoich(subs, prods, substoich′, prodstoich′)
-    else
-        (netstoich_stoichtype(netstoich) != stoich_type) ?
-        convert.(stoich_type, netstoich) : netstoich
-    end
-
-    Reaction(value(rate), subs, prods, substoich′, prodstoich′, ns, only_use_rate)
-end
-
-# three argument constructor assumes stoichiometric coefs are one and integers
-function Reaction(rate, subs, prods; kwargs...)
-    sstoich = isnothing(subs) ? nothing : ones(Int, length(subs))
-    pstoich = isnothing(prods) ? nothing : ones(Int, length(prods))
-    Reaction(rate, subs, prods, sstoich, pstoich; kwargs...)
-end
-
-function print_rxside(io::IO, specs, stoich)
-    # reactants/substrates
-    if isempty(specs)
-        print(io, "∅")
-    else
-        for (i, spec) in enumerate(specs)
-            prspec = (MT.isparameter(spec) || (MT.operation(spec) == getindex)) ?
-                     spec : MT.operation(spec)
-            if isequal(stoich[i], one(stoich[i]))
-                print(io, prspec)
-            elseif istree(stoich[i])
-                print(io, "(", stoich[i], ")*", prspec)
-            else
-                print(io, stoich[i], "*", prspec)
-            end
-
-            (i < length(specs)) && print(io, " + ")
-        end
-    end
-    nothing
-end
-
-function Base.show(io::IO, rx::Reaction)
-    print(io, rx.rate, ", ")
-    print_rxside(io, rx.substrates, rx.substoich)
-    arrow = rx.only_use_rate ? "⇒" : "-->"
-    print(io, " ", arrow, " ")
-    print_rxside(io, rx.products, rx.prodstoich)
-end
-
-function apply_if_nonempty(f, v)
-    isempty(v) && return v
-    s = similar(v)
-    map!(f, s, v)
-    s
-end
-
-function ModelingToolkit.namespace_equation(rx::Reaction, name; kw...)
-    f = Base.Fix2(namespace_expr, name)
-    rate = f(rx.rate)
-    subs = apply_if_nonempty(f, rx.substrates)
-    prods = apply_if_nonempty(f, rx.products)
-    substoich = apply_if_nonempty(f, rx.substoich)
-    prodstoich = apply_if_nonempty(f, rx.prodstoich)
-    netstoich = if isempty(rx.netstoich)
-        rx.netstoich
-    else
-        ns = similar(rx.netstoich)
-        map!(n -> f(n[1]) => f(n[2]), ns, rx.netstoich)
-    end
-    Reaction(rate, subs, prods, substoich, prodstoich, netstoich, rx.only_use_rate)
-end
-
-netstoich_stoichtype(::Vector{Pair{S, T}}) where {S, T} = T
-
-# calculates the net stoichiometry of a reaction as a vector of pairs (sub,substoich)
-function get_netstoich(subs, prods, sstoich, pstoich)
-    # stoichiometry as a Dictionary
-    nsdict = Dict{Any, eltype(sstoich)}(sub => -sstoich[i] for (i, sub) in enumerate(subs))
-    for (i, p) in enumerate(prods)
-        coef = pstoich[i]
-        @inbounds nsdict[p] = haskey(nsdict, p) ? nsdict[p] + coef : coef
-    end
-
-    # stoichiometry as a vector
-    [el for el in nsdict if !_iszero(el[2])]
-end
-
-"""
-    isbcbalanced(rx::Reaction)
-
-True if any BC species in `rx` appears as a substrate and product with the same
-stoichiometry.
-"""
-function isbcbalanced(rx::Reaction)
-    # any substrate BC must be a product with the same stoichiometry
-    for (sidx, sub) in enumerate(rx.substrates)
-        if isbc(sub)
-            pidx = findfirst(Base.Fix1(isequal, sub), rx.products)
-            (pidx === nothing) && return false
-            isequal(rx.prodstoich[pidx], rx.substoich[sidx]) || return false
-        end
-    end
-
-    for prod in rx.products
-        if isbc(prod)
-            any(Base.Fix1(isequal, prod), rx.substrates) || return false
-        end
-    end
-
-    true
-end
-
-################################## Reaction Complexes ####################################
+### ReactionComplex Structures ###
 
 """
 $(TYPEDEF)
@@ -314,42 +28,49 @@ struct ReactionComplex{V <: Integer} <: AbstractVector{ReactionComplexElement{V}
     speciesstoichs::Vector{V}
 
     function ReactionComplex{V}(speciesids::Vector{Int},
-                                speciesstoichs::Vector{V}) where {V <: Integer}
+            speciesstoichs::Vector{V}) where {V <: Integer}
         new{V}(speciesids, speciesstoichs)
     end
 end
 
+# Special constructor.
 function ReactionComplex(speciesids::Vector{Int},
-                         speciesstoichs::Vector{V}) where {V <: Integer}
+        speciesstoichs::Vector{V}) where {V <: Integer}
     (length(speciesids) == length(speciesstoichs)) ||
         error("Creating a complex with different number of species ids and associated stoichiometries.")
     ReactionComplex{V}(speciesids, speciesstoichs)
 end
 
+# Defines base function overloads for `ReactionComplex`.
 function (==)(a::ReactionComplex{V}, b::ReactionComplex{V}) where {V <: Integer}
     (a.speciesids == b.speciesids) &&
         (a.speciesstoichs == b.speciesstoichs)
 end
+
 function hash(rc::ReactionComplex, h::UInt)
     Base.hash(rc.speciesids, Base.hash(rc.speciesstoichs, h))
 end
+
 Base.size(rc::ReactionComplex) = size(rc.speciesids)
 Base.length(rc::ReactionComplex) = length(rc.speciesids)
+
 function Base.getindex(rc::ReactionComplex, i...)
     ReactionComplexElement(getindex(rc.speciesids, i...), getindex(rc.speciesstoichs, i...))
 end
+
 function Base.setindex!(rc::ReactionComplex, t::ReactionComplexElement, i...)
-    (setindex!(rc.speciesids, t.speciesid, i...);
-     setindex!(rc.speciesstoichs,
-               t.speciesstoich, i...);
-     rc)
+    setindex!(rc.speciesids, t.speciesid, i...)
+    setindex!(rc.speciesstoichs, t.speciesstoich, i...)
+    rc
 end
+
 function Base.isless(a::ReactionComplexElement, b::ReactionComplexElement)
     isless(a.speciesid, b.speciesid)
 end
+
 Base.Sort.defalg(::ReactionComplex) = Base.DEFAULT_UNSTABLE
 
-############################### Network Properties ####################################
+### NetworkProperties Structure ###
 
 #! format: off
 # Internal cache for various ReactionSystem calculated properties
@@ -376,6 +97,7 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
 end
 #! format: on
 
+# Defines base function overloads for `NetworkProperties`.
 function Base.show(io::IO, nps::NetworkProperties)
     if (nps.conservationmat !== nothing)
         println(io, "Conserved Equations: ")
@@ -383,14 +105,13 @@ function Base.show(io::IO, nps::NetworkProperties)
         println()
     end
 end
-
 Base.isempty(nps::NetworkProperties) = getfield(nps, :isempty)
-
 function Base.setproperty!(nps::NetworkProperties, sym::Symbol, x)
     (sym !== :isempty) && setfield!(nps, :isempty, false)
     setfield!(nps, sym, x)
 end
 
+# Resets computed properties.
 function reset!(nps::NetworkProperties{I, V}) where {I, V}
     nps.isempty && return
     nps.netstoichmat = Matrix{Int}(undef, 0, 0)
@@ -417,9 +138,87 @@ function reset!(nps::NetworkProperties{I, V}) where {I, V}
     nothing
 end
 
-############################### Reaction Systems ####################################
+### ReactionSystem Constructor Functions ###
 
-const CatalystEqType = Union{Reaction, Equation}
+# Used to sort the reaction/equation vector as reactions first, equations second.
+eqsortby(eq::CatalystEqType) = eq isa Reaction ? 1 : 2
+
+# Figures out a type.
+function get_speciestype(iv, unknowns, systems)
+    T = Nothing
+    !isempty(unknowns) && (T = typeof(first(unknowns)))
+
+    if !isempty(systems)
+        for sys in Iterators.filter(s -> s isa ReactionSystem, systems)
+            sts = MT.unknowns(sys)
+            if !isempty(sts)
+                T = typeof(first(sts))
+                break
+            end
+        end
+    end
+
+    if T <: Nothing
+        @variables A($iv)
+        T = typeof(MT.unwrap(A))
+    end
+
+    T
+end
+
+# search the symbolic expression for parameters or unknowns
+# and save in ps and us respectively. vars is used to cache results
+function findvars!(ps, us, exprtosearch, ivs, vars)
+    MT.get_variables!(vars, exprtosearch)
+    for var in vars
+        (var ∈ ivs) && continue
+        if MT.isparameter(var)
+            push!(ps, var)
+        else
+            push!(us, var)
+        end
+    end
+    empty!(vars)
+end
+# Special dispatch for equations, applied `findvars!` to left-hand and right-hand sides.
+function findvars!(ps, us, eq_to_search::Equation, ivs, vars)
+    findvars!(ps, us, eq_to_search.lhs, ivs, vars)
+    findvars!(ps, us, eq_to_search.rhs, ivs, vars)
+end
+# Special dispatch for Vectors (applies it to each vector element).
+function findvars!(ps, us, exprs_to_search::Vector, ivs, vars)
+    foreach(exprtosearch -> findvars!(ps, us, exprtosearch, ivs, vars), exprs_to_search)
+end
+
+# Loops through all events in an supplied event vector, adding all unknowns and parameters found in
+# its condition and affect functions to their respective vectors (`ps` and `us`).
+function find_event_vars!(ps, us, events::Vector, ivs, vars)
+    foreach(event -> find_event_vars!(ps, us, event, ivs, vars), events)
+end
+# For a single event, adds quantities from its condition and affect expression(s) to `ps` and `us`.
+# Applies `findvars!` to the event's condition (`event[1])` and affec (`event[2]`).
+function find_event_vars!(ps, us, event, ivs, vars)
+    findvars!(ps, us, event[1], ivs, vars)
+    findvars!(ps, us, event[2], ivs, vars)
+end
+
+### ReactionSystem Structure ###
+
+""" 
+WARNING!!!
+
+The following variable is used to check that code that should be updated when the `ReactionSystem` 
+fields are updated has in fact been updated. Do not just blindly update this without first checking 
+all such code and updating it appropriately (e.g. serialization). Please use a search for
+`reactionsystem_fields` throughout the package to ensure all places which should be updated, are updated.
+"""
+# Constant storing all reaction system fields (in order). Used to check whether the `ReactionSystem`
+# structure have been updated (in the `reactionsystem_uptodate_check` function).
+const reactionsystem_fields = (
+    :eqs, :rxs, :iv, :sivs, :unknowns, :species, :ps, :var_to_name,
+    :observed, :name, :systems, :defaults, :connection_type,
+    :networkproperties, :combinatoric_ratelaws, :continuous_events,
+    :discrete_events, :metadata, :complete)
 
 """
 $(TYPEDEF)
@@ -469,13 +268,13 @@ struct ReactionSystem{V <: NetworkProperties} <:
     iv::BasicSymbolic{Real}
     """Spatial independent variables"""
     sivs::Vector{BasicSymbolic{Real}}
-    """All dependent (state) variables, species and non-species. Must not contain the
+    """All dependent (unknown) variables, species and non-species. Must not contain the
     independent variable."""
-    states::Vector{BasicSymbolic{Real}}
-    """Dependent state variables representing species"""
+    unknowns::Vector{BasicSymbolic{Real}}
+    """Dependent unknown variables representing species"""
     species::Vector{BasicSymbolic{Real}}
     """Parameter variables. Must not contain the independent variable."""
-    ps::Vector{BasicSymbolic{Real}}
+    ps::Vector{Any}
     """Maps Symbol to corresponding variable."""
     var_to_name::Dict{Symbol, Any}
     """Equations for observed variables."""
@@ -508,172 +307,179 @@ struct ReactionSystem{V <: NetworkProperties} <:
     """
     discrete_events::Vector{MT.SymbolicDiscreteCallback}
     """
+    Metadata for the system, to be used by downstream packages. 
+    """
+    metadata::Any
+    """
     complete: if a model `sys` is complete, then `sys.x` no longer performs namespacing.
     """
     complete::Bool
 
     # inner constructor is considered private and may change between non-breaking releases.
-    function ReactionSystem(eqs, rxs, iv, sivs, states, spcs, ps, var_to_name, observed,
-                            name, systems, defaults, connection_type, nps, cls, cevs, devs,
-                            complete::Bool = false; checks::Bool = true)
+    function ReactionSystem(eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
+            name, systems, defaults, connection_type, nps, cls, cevs, devs,
+            metadata = nothing, complete = false; checks::Bool = true)
+
+        # Checks that all parameters have the appropriate Symbolics type.
+        for p in ps
+            (p isa Symbolics.BasicSymbolic) ||
+                error("Parameter $p is not a `BasicSymbolic`. This is required.")
+        end
 
         # unit checks are for ODEs and Reactions only currently
         nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
         if checks && isempty(sivs)
-            check_variables(states, iv)
+            check_variables(unknowns, iv)
             check_parameters(ps, iv)
             nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
             !isempty(nonrx_eqs) && check_equations(nonrx_eqs, iv)
-            check_equations(equations(cevs), iv)
+            !isempty(cevs) && check_equations(equations(cevs), iv)
         end
 
         if isempty(sivs) && (checks == true || (checks & MT.CheckUnits) > 0)
-            nonrx_eqs = Equation[eq for eq in eqs if eq isa Equation]
-            MT.all_dimensionless([states; ps; iv]) || check_units(nonrx_eqs)
+            if !all(u == 1.0 for u in ModelingToolkit.get_unit([unknowns; ps; iv]))
+                for eq in eqs
+                    (eq isa Equation) && check_units(eq)
+                end
+            end
         end
 
-        rs = new{typeof(nps)}(eqs, rxs, iv, sivs, states, spcs, ps, var_to_name, observed,
-                              name, systems, defaults, connection_type, nps, cls, cevs,
-                              devs, complete)
+        rs = new{typeof(nps)}(
+            eqs, rxs, iv, sivs, unknowns, spcs, ps, var_to_name, observed,
+            name, systems, defaults, connection_type, nps, cls, cevs,
+            devs, metadata, complete)
         checks && validate(rs)
         rs
     end
 end
 
-function get_speciestype(iv, states, systems)
-    T = Nothing
-    !isempty(states) && (T = typeof(first(states)))
+# Four-argument constructor. Permits additional inputs as optional arguments.
+# Calls the full constructor.
+function ReactionSystem(eqs, iv, unknowns, ps;
+        observed = Equation[],
+        systems = [],
+        name = nothing,
+        default_u0 = Dict(),
+        default_p = Dict(),
+        defaults = _merge(Dict(default_u0), Dict(default_p)),
+        connection_type = nothing,
+        checks = true,
+        networkproperties = nothing,
+        combinatoric_ratelaws = true,
+        balanced_bc_check = true,
+        spatial_ivs = nothing,
+        continuous_events = nothing,
+        discrete_events = nothing,
+        metadata = nothing)
 
-    if !isempty(systems)
-        for sys in Iterators.filter(s -> s isa ReactionSystem, systems)
-            sts = MT.states(sys)
-            if !isempty(sts)
-                T = typeof(first(sts))
-                break
-            end
-        end
-    end
-
-    if T <: Nothing
-        @variables A($iv)
-        T = typeof(MT.unwrap(A))
-    end
-
-    T
-end
-
-eqsortby(eq::CatalystEqType) = eq isa Reaction ? 1 : 2
-
-function ReactionSystem(eqs, iv, states, ps;
-                        observed = Equation[],
-                        systems = [],
-                        name = nothing,
-                        default_u0 = Dict(),
-                        default_p = Dict(),
-                        defaults = _merge(Dict(default_u0), Dict(default_p)),
-                        connection_type = nothing,
-                        checks = true,
-                        networkproperties = nothing,
-                        combinatoric_ratelaws = true,
-                        balanced_bc_check = true,
-                        spatial_ivs = nothing,
-                        continuous_events = nothing,
-                        discrete_events = nothing)
+    # Error checks
     name === nothing &&
         throw(ArgumentError("The `name` keyword must be provided. Please consider using the `@named` macro"))
     sysnames = nameof.(systems)
     (length(unique(sysnames)) == length(sysnames)) ||
         throw(ArgumentError("System names must be unique."))
 
+    # Handle defaults values provided via optional arguments.
     if !(isempty(default_u0) && isempty(default_p))
-        Base.depwarn("`default_u0` and `default_p` are deprecated. Use `defaults` instead.",
-                     :ReactionSystem, force = true)
+        Base.depwarn(
+            "`default_u0` and `default_p` are deprecated. Use `defaults` instead.",
+            :ReactionSystem, force = true)
     end
     defaults = MT.todict(defaults)
     defaults = Dict{Any, Any}(value(k) => value(v) for (k, v) in pairs(defaults))
 
+    # Extracts independent variables (iv and sivs), dependent variables (species and variables)
+    # and parameters. Sorts so that species comes before variables in unknowns vector.
     iv′ = value(iv)
     sivs′ = if spatial_ivs === nothing
         Vector{typeof(iv′)}()
     else
         value.(MT.scalarize(spatial_ivs))
     end
-    states′ = sort!(value.(MT.scalarize(states)), by = !isspecies) # species come first
-    spcs = filter(isspecies, states′)
+    unknowns′ = sort!(value.(MT.scalarize(unknowns)), by = !isspecies)
+    spcs = filter(isspecies, unknowns′)
     ps′ = value.(MT.scalarize(ps))
 
-    allsyms = Iterators.flatten((ps′, states′))
-    all(sym -> getname(sym) ∉ forbidden_symbols_error, allsyms) ||
-        error("Catalyst reserves the symbols $forbidden_symbols_error for internal use. Please do not use these symbols as parameters or states/species.")
+    # Checks that no (by Catalyst) forbidden symbols are used.
+    allsyms = Iterators.flatten((ps′, unknowns′))
+    if !all(sym -> getname(sym) ∉ forbidden_symbols_error, allsyms)
+        error("Catalyst reserves the symbols $forbidden_symbols_error for internal use. Please do not use these symbols as parameters or unknowns/species.")
+    end
 
-    # sort Reactions before Equations
+    # Handles reactions and equations. Sorts so that reactions are before equations in the equations vector.
     eqs′ = CatalystEqType[eq for eq in eqs]
     sort!(eqs′; by = eqsortby)
     rxs = Reaction[rx for rx in eqs if rx isa Reaction]
 
-    if any(MT.isparameter, states′)
-        psts = filter(MT.isparameter, states′)
-        throw(ArgumentError("Found one or more parameters among the states; this is not allowed. Move: $psts to be parameters."))
+    # Additional error checks.
+    if any(MT.isparameter, unknowns′)
+        psts = filter(MT.isparameter, unknowns′)
+        throw(ArgumentError("Found one or more parameters among the unknowns; this is not allowed. Move: $psts to be parameters."))
     end
-
-    if any(isconstant, states′)
-        csts = filter(isconstant, states′)
-        throw(ArgumentError("Found one or more constant species among the states; this is not allowed. Move: $csts to be parameters."))
+    if any(isconstant, unknowns′)
+        csts = filter(isconstant, unknowns′)
+        throw(ArgumentError("Found one or more constant species among the unknowns; this is not allowed. Move: $csts to be parameters."))
     end
-
-    # if there are BC species, check they are balanced in their reactions
-    if balanced_bc_check && any(isbc, states′)
+    # If there are BC species, check they are balanced in their reactions.
+    if balanced_bc_check && any(isbc, unknowns′)
         for rx in eqs
-            if rx isa Reaction
-                isbcbalanced(rx) ||
-                    throw(ErrorException("BC species must be balanced, appearing as a substrate and product with the same stoichiometry. Please fix reaction: $rx"))
+            if (rx isa Reaction) && !isbcbalanced(rx)
+                throw(ErrorException("BC species must be balanced, appearing as a substrate and product with the same stoichiometry. Please fix reaction: $rx"))
             end
         end
     end
 
+    # Adds all unknowns/parameters to the `var_to_name` vector.
+    # Adds their (potential) default values to the defaults vector.
     var_to_name = Dict()
-    MT.process_variables!(var_to_name, defaults, states′)
+    MT.process_variables!(var_to_name, defaults, unknowns′)
     MT.process_variables!(var_to_name, defaults, ps′)
     MT.collect_var_to_name!(var_to_name, eq.lhs for eq in observed)
-
+    #
+    # Computes network properties.
     nps = if networkproperties === nothing
-        NetworkProperties{Int, get_speciestype(iv′, states′, systems)}()
+        NetworkProperties{Int, get_speciestype(iv′, unknowns′, systems)}()
     else
         networkproperties
     end
 
+    # Creates the continuous and discrete callbacks.
     ccallbacks = MT.SymbolicContinuousCallbacks(continuous_events)
     dcallbacks = MT.SymbolicDiscreteCallbacks(discrete_events)
 
-    ReactionSystem(eqs′, rxs, iv′, sivs′, states′, spcs, ps′, var_to_name, observed, name,
-                   systems, defaults, connection_type, nps, combinatoric_ratelaws,
-                   ccallbacks, dcallbacks; checks = checks)
+    ReactionSystem(
+        eqs′, rxs, iv′, sivs′, unknowns′, spcs, ps′, var_to_name, observed, name,
+        systems, defaults, connection_type, nps, combinatoric_ratelaws,
+        ccallbacks, dcallbacks, metadata; checks = checks)
 end
 
+# Two-argument constructor (reactions/equations and time variable).
+# Calls the `make_ReactionSystem_internal`, which in turn calls the four-argument constructor.
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
     make_ReactionSystem_internal(rxs, iv, Vector{Num}(), Vector{Num}(); kwargs...)
 end
 
-# search the symbolic expression for parameters or states
-# and save in ps and sts respectively. vars is used to cache results
-function findvars!(ps, sts, exprtosearch, ivs, vars)
-    MT.get_variables!(vars, exprtosearch)
-    for var in vars
-        (var ∈ ivs) && continue
-        if MT.isparameter(var)
-            push!(ps, var)
-        else
-            push!(sts, var)
-        end
-    end
-    empty!(vars)
+# One-argument constructor. Creates an emtoy `ReactionSystem` from a time independent variable only.
+function ReactionSystem(iv; kwargs...)
+    ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
 
-# Only used internally by the @reaction_network macro. Permits giving an initial order to
-# the parameters, and then adds additional ones found in the reaction. Name could be
-# changed.
-function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, sts_in, ps_in;
-                                      spatial_ivs = nothing, kwargs...)
+# Called internally (whether DSL-based or programmatic model creation is used). 
+# Creates a sorted reactions + equations vector, also ensuring reaction is first in this vector.
+# Extracts potential species, variables, and parameters from the input (if not provided as part of 
+# the model creation) and creates the corresponding vectors. 
+# While species are ordered before variables in the unknowns vector, this ordering is not imposed here,
+# but carried out at a later stage.
+function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
+        spatial_ivs = nothing, continuous_events = [], discrete_events = [],
+        observed = [], kwargs...)
+
+    # Filters away any potential observables from `states` and `spcs`.
+    obs_vars = [obs_eq.lhs for obs_eq in observed]
+    us_in = filter(u -> !any(isequal(u, obs_var) for obs_var in obs_vars), us_in)
+
+    # Creates a combined iv vector (iv and sivs). This is used later in the function (so that 
+    # independent variables can be excluded when encountered quantities are added to `us` and `ps`).
     t = value(iv)
     ivs = Set([t])
     if (spatial_ivs !== nothing)
@@ -681,58 +487,114 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, sts_in, ps_in;
             push!(ivs, value(siv))
         end
     end
-    sts = OrderedSet{eltype(sts_in)}(sts_in)
+
+    # Initialises the new unknowns and parameter vectors.
+    # Preallocates the `vars` set, which is used by `findvars!`
+    us = OrderedSet{eltype(us_in)}(us_in)
     ps = OrderedSet{eltype(ps_in)}(ps_in)
     vars = OrderedSet()
 
+    # Extracts the reactions and equations from the combined reactions + equations input vector.
     all(eq -> eq isa Union{Reaction, Equation}, rxs_and_eqs)
     rxs = Reaction[eq for eq in rxs_and_eqs if eq isa Reaction]
     eqs = Equation[eq for eq in rxs_and_eqs if eq isa Equation]
 
-    # add species / parameters that are substrates / products first
-    for rx in rxs, reactants in (rx.substrates, rx.products)
-        for spec in reactants
-            MT.isparameter(spec) ? push!(ps, spec) : push!(sts, spec)
-        end
-    end
-
+    # Loops through all reactions, adding encountered quantities to the unknown and parameter vectors.
+    # Starts by looping through substrates + products only (so these are added to the vector first).
+    # Next, the other components of reactions (e.g. rates and stoichiometries) are added.
     for rx in rxs
-        findvars!(ps, sts, rx.rate, ivs, vars)
-        for s in rx.substoich
-            (s isa Symbolic) && findvars!(ps, sts, s, ivs, vars)
-        end
-        for p in rx.prodstoich
-            (p isa Symbolic) && findvars!(ps, sts, p, ivs, vars)
+        for reactants in (rx.substrates, rx.products), spec in reactants
+            MT.isparameter(spec) ? push!(ps, spec) : push!(us, spec)
         end
     end
+    for rx in rxs
+        # Adds all quantities encountered in the reaction's rate.
+        findvars!(ps, us, rx.rate, ivs, vars)
 
-    stsv = collect(sts)
-    psv = collect(ps)
+        # Extracts all quantities encountered within stoichiometries.
+        for stoichiometry in (rx.substoich, rx.prodstoich), sym in stoichiometry
+            (sym isa Symbolic) && findvars!(ps, us, sym, ivs, vars)
+        end
 
+        # Extract all quantities encountered in relevant `Reaction` metadata.
+        hasnoisescaling(rx) && findvars!(ps, us, getnoisescaling(rx), ivs, vars)
+    end
+
+    # Extracts any species, variables, and parameters that occur in (non-reaction) equations.
+    # Creates the new reactions + equations vector, `fulleqs` (sorted reactions first, equations next).
     if !isempty(eqs)
         osys = ODESystem(eqs, iv; name = gensym())
         fulleqs = CatalystEqType[rxs; equations(osys)]
-        union!(stsv, states(osys))
-        union!(psv, parameters(osys))
+        union!(us, unknowns(osys))
+        union!(ps, parameters(osys))
     else
         fulleqs = rxs
     end
 
-    ReactionSystem(fulleqs, t, stsv, psv; spatial_ivs, kwargs...)
+    # Loops through all events, adding encountered quantities to the unknown and parameter vectors.
+    find_event_vars!(ps, us, continuous_events, ivs, vars)
+    find_event_vars!(ps, us, discrete_events, ivs, vars)
+
+    # Converts the found unknowns and parameters to vectors.
+    usv = collect(us)
+    psv = collect(ps)
+
+    # Passes the processed input into the next `ReactionSystem` call.    
+    ReactionSystem(fulleqs, t, usv, psv; spatial_ivs, continuous_events,
+        discrete_events, observed, kwargs...)
 end
 
-function ReactionSystem(iv; kwargs...)
-    ReactionSystem(Reaction[], iv, [], []; kwargs...)
+### Base Function Dispatches ###
+
+"""
+    ==(rn1::ReactionSystem, rn2::ReactionSystem)
+
+Tests whether the underlying species, parameters and reactions are the same in
+the two [`ReactionSystem`](@ref)s. Requires the systems to have the same names
+too.
+
+Notes:
+- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
+    considered different than `(A+1)^2`.
+- Does not include `defaults` in determining equality.
+"""
+function (==)(rn1::ReactionSystem, rn2::ReactionSystem)
+    isequivalent(rn1, rn2; ignorenames = false)
 end
 
 """
-    isspatial(rn::ReactionSystem)
+    isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true)
 
-Returns whether `rn` has any spatial independent variables (i.e. is a spatial network).
+Tests whether the underlying species, parameters and reactions are the same in
+the two [`ReactionSystem`](@ref)s. Ignores the names of the systems in testing
+equality.
+
+Notes:
+- *Does not* currently simplify rates, so a rate of `A^2+2*A+1` would be
+    considered different than `(A+1)^2`.
+- Does not include `defaults` in determining equality.
 """
-isspatial(rn::ReactionSystem) = !isempty(get_sivs(rn))
+function isequivalent(rn1::ReactionSystem, rn2::ReactionSystem; ignorenames = true)
+    if !ignorenames
+        (nameof(rn1) == nameof(rn2)) || return false
+    end
 
-####################### ModelingToolkit inherited accessors #############################
+    (get_combinatoric_ratelaws(rn1) == get_combinatoric_ratelaws(rn2)) || return false
+    isequal(get_iv(rn1), get_iv(rn2)) || return false
+    issetequal(get_sivs(rn1), get_sivs(rn2)) || return false
+    issetequal(get_unknowns(rn1), get_unknowns(rn2)) || return false
+    issetequal(get_ps(rn1), get_ps(rn2)) || return false
+    issetequal(MT.get_observed(rn1), MT.get_observed(rn2)) || return false
+    issetequal(get_eqs(rn1), get_eqs(rn2)) || return false
+
+    # subsystems
+    (length(get_systems(rn1)) == length(get_systems(rn2))) || return false
+    issetequal(get_systems(rn1), get_systems(rn2)) || return false
+
+    true
+end
+
+### Basic `ReactionSystem`-specific Accessors ###
 
 """
     get_species(sys::ReactionSystem)
@@ -771,12 +633,209 @@ get_networkproperties(sys::ReactionSystem) = getfield(sys, :networkproperties)
 
 Returns true if the default for the system is to rescale ratelaws, see
 https://docs.sciml.ai/Catalyst/stable/introduction_to_catalyst/introduction_to_catalyst/#Reaction-rate-laws-used-in-simulations
-for details. Can be overriden via passing `combinatoric_ratelaws` to `convert` or the
+for details. Can be overridden via passing `combinatoric_ratelaws` to `convert` or the
 `*Problem` functions.
 """
 get_combinatoric_ratelaws(sys::ReactionSystem) = getfield(sys, :combinatoric_ratelaws)
 
+"""
+    combinatoric_ratelaws(sys::ReactionSystem)
+
+Returns the effective (default) `combinatoric_ratelaw` value for a compositional system,
+calculated by taking the logical or of each component `ReactionSystem`. Can be overridden
+during calls to `convert` of problem constructors.
+"""
+function combinatoric_ratelaws(sys::ReactionSystem)
+    crl = get_combinatoric_ratelaws(sys)
+    subsys = Iterators.filter(s -> s isa ReactionSystem, get_systems(sys))
+    mapreduce(combinatoric_ratelaws, |, subsys; init = crl)
+end
+
+# Gets sub systems that are also reaction systems.
+# Used by several subsequent API functions.
+function filter_nonrxsys(network)
+    systems = get_systems(network)
+    rxsystems = ReactionSystem[]
+    for sys in systems
+        (sys isa ReactionSystem) && push!(rxsystems, sys)
+    end
+    rxsystems
+end
+
+# Special species but which take a set of states and names spaces them according to another
+# `ReactionSystem`.
+# Used by `species(network)`.
+function species(network::ReactionSystem, sts)
+    [MT.renamespace(network, st) for st in sts]
+end
+
+"""
+    species(network)
+
+Given a [`ReactionSystem`](@ref), return a vector of all species defined in the system and
+any subsystems that are of type `ReactionSystem`. To get the species and non-species
+variables in the system and all subsystems, including non-`ReactionSystem` subsystems, uses
+`unknowns(network)`.
+
+Notes:
+- If `ModelingToolkit.get_systems(network)` is non-empty will allocate.
+"""
+function species(network)
+    sts = get_species(network)
+    systems = filter_nonrxsys(network)
+    isempty(systems) && return sts
+    unique([sts; reduce(vcat, map(sys -> species(sys, species(sys)), systems))])
+end
+
+"""
+    numspecies(network)
+
+Return the total number of species within the given [`ReactionSystem`](@ref) and
+subsystems that are `ReactionSystem`s.
+"""
+function numspecies(network)
+    numspcs = length(get_species(network))
+    for sys in get_systems(network)
+        (sys isa ReactionSystem) && (numspcs += numspecies(sys))
+    end
+    numspcs
+end
+
+"""
+    nonspecies(network)
+
+Return the non-species variables within the network, i.e. those unknowns for which `isspecies
+== false`.
+
+Notes:
+- Allocates a new array to store the non-species variables.
+"""
+function nonspecies(network)
+    unknowns(network)[(numspecies(network) + 1):end]
+end
+
+"""
+    speciesmap(network)
+
+Given a [`ReactionSystem`](@ref), return a Dictionary mapping species that
+participate in `Reaction`s to their index within [`species(network)`](@ref).
+"""
+function speciesmap(network)
+    nps = get_networkproperties(network)
+    if isempty(nps.speciesmap)
+        nps.speciesmap = Dict(S => i for (i, S) in enumerate(species(network)))
+    end
+    nps.speciesmap
+end
+
+# get the non-bc, independent unknown variables and independent species, preserving their
+# relative order in get_unknowns(rs). ASSUMES system has been validated to have no constant
+# species as unknowns and is flattened.
+function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
+    sts = get_unknowns(rs)
+    nps = get_networkproperties(rs)
+    indepsts = if remove_conserved
+        filter(s -> ((s ∈ nps.indepspecs) || (!isspecies(s))) && (!isbc(s)), sts)
+    else
+        filter(s -> !isbc(s), sts)
+    end
+    indepsts, filter(isspecies, indepsts)
+end
+
+"""
+    numparams(network)
+
+Return the total number of parameters within the given system and all subsystems.
+"""
+function numparams(network)
+    nps = length(get_ps(network))
+    for sys in get_systems(network)
+        nps += numparams(sys)
+    end
+    nps
+end
+
+"""
+    paramsmap(network)
+
+Given a [`ReactionSystem`](@ref), return a Dictionary mapping from all
+parameters that appear within the system to their index within
+`parameters(network)`.
+"""
+function paramsmap(network)
+    Dict(p => i for (i, p) in enumerate(parameters(network)))
+end
+
+# used in the next function (`reactions(network)`).
+function namespace_reactions(network::ReactionSystem)
+    rxs = reactions(network)
+    isempty(rxs) && return Reaction[]
+    map(rx -> namespace_equation(rx, network), rxs)
+end
+
+"""
+    reactions(network)
+
+Given a [`ReactionSystem`](@ref), return a vector of all `Reactions` in the system.
+
+Notes:
+- If `ModelingToolkit.get_systems(network)` is not empty, will allocate.
+"""
+function reactions(network)
+    rxs = get_rxs(network)
+    systems = filter_nonrxsys(network)
+    isempty(systems) && (return rxs)
+    [rxs; reduce(vcat, namespace_reactions.(systems); init = Reaction[])]
+end
+
+"""
+    numreactions(network)
+
+Return the total number of reactions within the given [`ReactionSystem`](@ref)
+and subsystems that are `ReactionSystem`s.
+"""
+function numreactions(network)
+    nr = length(get_rxs(network))
+    for sys in get_systems(network)
+        (sys isa ReactionSystem) && (nr += numreactions(sys))
+    end
+    nr
+end
+
+"""
+    nonreactions(network)
+
+Return the non-reaction equations within the network (i.e. algebraic and differential equations).
+
+Notes:
+- Allocates a new array to store the non-species variables.
+"""
+function nonreactions(network)
+    equations(network)[(numreactions(network) + 1):end]
+end
+
+"""
+    reactionrates(network)
+
+Given a [`ReactionSystem`](@ref), returns a vector of the symbolic reaction
+rates for each reaction.
+"""
+function reactionrates(rn)
+    [r.rate for r in reactions(rn)]
+end
+
+"""
+    isspatial(rn::ReactionSystem)
+
+Returns whether `rn` has any spatial independent variables (i.e. is a spatial network).
+"""
+isspatial(rn::ReactionSystem) = !isempty(get_sivs(rn))
+
+### ModelingToolkit Function Dispatches ###
+
+# Retrieves events.
 MT.get_continuous_events(sys::ReactionSystem) = getfield(sys, :continuous_events)
+# `MT.get_discrete_events(sys::ReactionSystem) = getfield(sys, :get_discrete_events)` should be added here.
 
 # need a custom equations since ReactionSystem.eqs are a mix of Reactions and Equations
 function MT.equations(sys::ReactionSystem)
@@ -786,14 +845,14 @@ function MT.equations(sys::ReactionSystem)
     if !isempty(systems)
         eqs = CatalystEqType[eqs;
                              reduce(vcat, MT.namespace_equations.(systems, (ivs,));
-                                    init = Any[])]
+                                 init = Any[])]
         return sort!(eqs; by = eqsortby)
     end
     return eqs
 end
 
-function MT.states(sys::ReactionSystem)
-    sts = get_states(sys)
+function MT.unknowns(sys::ReactionSystem)
+    sts = get_unknowns(sys)
     systems = get_systems(sys)
     if !isempty(systems)
         sts = unique!([sts; reduce(vcat, namespace_variables.(systems))])
@@ -803,781 +862,463 @@ function MT.states(sys::ReactionSystem)
     return sts
 end
 
-"""
-    combinatoric_ratelaws(sys::ReactionSystem)
+### Network Matrix Representations ###
 
-Returns the effective (default) `combinatoric_ratelaw` value for a compositional system,
-calculated by taking the logical or of each component `ReactionSystem`. Can be overriden
-during calls to `convert` of problem constructors.
 """
-function combinatoric_ratelaws(sys::ReactionSystem)
-    crl = get_combinatoric_ratelaws(sys)
-    subsys = Iterators.filter(s -> s isa ReactionSystem, get_systems(sys))
-    mapreduce(combinatoric_ratelaws, |, subsys; init = crl)
-end
+    substoichmat(rn; sparse=false)
 
-# get the non-bc, independent state variables and independent species, preserving their
-# relative order in get_states(rs). ASSUMES system has been validated to have no constant
-# species as states and is flattened.
-function get_indep_sts(rs::ReactionSystem, remove_conserved = false)
-    sts = get_states(rs)
-    nps = get_networkproperties(rs)
-    indepsts = if remove_conserved
-        filter(s -> (s ∈ nps.indepspecs) && (!isbc(s)), sts)
-    else
-        filter(s -> !isbc(s), sts)
+Returns the substrate stoichiometry matrix, ``S``, with ``S_{i j}`` the stoichiometric
+coefficient of the ith substrate within the jth reaction.
+
+Note:
+- Set sparse=true for a sparse matrix representation
+- Note that constant species are not considered substrates, but just components that modify
+  the associated rate law.
+"""
+function substoichmat(::Type{SparseMatrixCSC{T, Int}},
+        rn::ReactionSystem) where {T <: Number}
+    Is = Int[]
+    Js = Int[]
+    Vs = T[]
+    smap = speciesmap(rn)
+    for (k, rx) in enumerate(reactions(rn))
+        stoich = rx.substoich
+        for (i, sub) in enumerate(rx.substrates)
+            isconstant(sub) && continue
+            push!(Js, k)
+            push!(Is, smap[sub])
+            push!(Vs, stoich[i])
+        end
     end
-    indepsts, filter(isspecies, indepsts)
+    sparse(Is, Js, Vs, numspecies(rn), numreactions(rn))
 end
 
-######################## Conversion to ODEs/SDEs/jump, etc ##############################
+function substoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
+    smap = speciesmap(rn)
+    smat = zeros(T, numspecies(rn), numreactions(rn))
+    for (k, rx) in enumerate(reactions(rn))
+        stoich = rx.substoich
+        for (i, sub) in enumerate(rx.substrates)
+            isconstant(sub) && continue
+            smat[smap[sub], k] = stoich[i]
+        end
+    end
+    smat
+end
+
+function substoichmat(rn::ReactionSystem; sparse::Bool = false)
+    isempty(get_systems(rn)) || error("substoichmat does not currently support subsystems.")
+    T = reduce(promote_type, eltype(rx.substoich) for rx in reactions(rn))
+    (T == Any) &&
+        error("Stoichiometry matrices with symbolic stoichiometry are not supported")
+    sparse ? substoichmat(SparseMatrixCSC{T, Int}, rn) : substoichmat(Matrix{T}, rn)
+end
 
 """
-    oderatelaw(rx; combinatoric_ratelaw=true)
+    prodstoichmat(rn; sparse=false)
 
-Given a [`Reaction`](@ref), return the symbolic reaction rate law used in
-generated ODEs for the reaction. Note, for a reaction defined by
+Returns the product stoichiometry matrix, ``P``, with ``P_{i j}`` the stoichiometric
+coefficient of the ith product within the jth reaction.
 
-`k*X*Y, X+Z --> 2X + Y`
+Note:
+- Set sparse=true for a sparse matrix representation
+- Note that constant species are not treated as products, but just components that modify
+  the associated rate law.
+"""
+function prodstoichmat(::Type{SparseMatrixCSC{T, Int}},
+        rn::ReactionSystem) where {T <: Number}
+    Is = Int[]
+    Js = Int[]
+    Vs = T[]
+    smap = speciesmap(rn)
+    for (k, rx) in enumerate(reactions(rn))
+        stoich = rx.prodstoich
+        for (i, prod) in enumerate(rx.products)
+            isconstant(prod) && continue
+            push!(Js, k)
+            push!(Is, smap[prod])
+            push!(Vs, stoich[i])
+        end
+    end
+    sparse(Is, Js, Vs, numspecies(rn), numreactions(rn))
+end
 
-the expression that is returned will be `k*X(t)^2*Y(t)*Z(t)`. For a reaction of
-the form
+function prodstoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
+    smap = speciesmap(rn)
+    pmat = zeros(T, numspecies(rn), numreactions(rn))
+    for (k, rx) in enumerate(reactions(rn))
+        stoich = rx.prodstoich
+        for (i, prod) in enumerate(rx.products)
+            isconstant(prod) && continue
+            pmat[smap[prod], k] = stoich[i]
+        end
+    end
+    pmat
+end
 
-`k, 2X+3Y --> Z`
+function prodstoichmat(rn::ReactionSystem; sparse = false)
+    isempty(get_systems(rn)) ||
+        error("prodstoichmat does not currently support subsystems.")
 
-the expression that is returned will be `k * (X(t)^2/2) * (Y(t)^3/6)`.
+    T = reduce(promote_type, eltype(rx.prodstoich) for rx in reactions(rn))
+    (T == Any) &&
+        error("Stoichiometry matrices with symbolic stoichiometry are not supported")
+    sparse ? prodstoichmat(SparseMatrixCSC{T, Int}, rn) : prodstoichmat(Matrix{T}, rn)
+end
+
+# Used in `netstoichmat` function.
+netstoichtype(::Vector{Pair{S, T}}) where {S, T} = T
+
+"""
+    netstoichmat(rn, sparse=false)
+
+Returns the net stoichiometry matrix, ``N``, with ``N_{i j}`` the net stoichiometric
+coefficient of the ith species within the jth reaction.
 
 Notes:
-- Allocates
-- `combinatoric_ratelaw=true` uses factorial scaling factors in calculating the
-    rate law, i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. If
-    `combinatoric_ratelaw=false` then the ratelaw is `k*S^2`, i.e. the scaling
-    factor is ignored.
+- Set sparse=true for a sparse matrix representation
+- Caches the matrix internally within `rn` so subsequent calls are fast.
+- Note that constant species are not treated as reactants, but just components that modify
+  the associated rate law. As such they do not contribute to the net stoichiometry matrix.
 """
-function oderatelaw(rx; combinatoric_ratelaw = true)
-    @unpack rate, substrates, substoich, only_use_rate = rx
-    rl = rate
-
-    # if the stoichiometric coefficients are not integers error if asking to scale rates
-    !all(s -> s isa Union{Integer, Symbolic}, substoich) &&
-        (combinatoric_ratelaw == true) &&
-        error("Non-integer stoichiometric coefficients require the combinatoric_ratelaw=false keyword to oderatelaw, or passing combinatoric_ratelaws=false to convert or ODEProblem.")
-
-    if !only_use_rate
-        coef = eltype(substoich) <: Number ? one(eltype(substoich)) : 1
-        for (i, stoich) in enumerate(substoich)
-            combinatoric_ratelaw && (coef *= factorial(stoich))
-            rl *= isequal(stoich, one(stoich)) ? substrates[i] : substrates[i]^stoich
+function netstoichmat(::Type{SparseMatrixCSC{T, Int}},
+        rn::ReactionSystem) where {T <: Number}
+    Is = Int[]
+    Js = Int[]
+    Vs = Vector{T}()
+    smap = speciesmap(rn)
+    for (k, rx) in pairs(reactions(rn))
+        for (spec, coef) in rx.netstoich
+            isconstant(spec) && continue
+            push!(Js, k)
+            push!(Is, smap[spec])
+            push!(Vs, coef)
         end
-        combinatoric_ratelaw && (!isequal(coef, one(coef))) && (rl /= coef)
     end
-    rl
+    sparse(Is, Js, Vs, numspecies(rn), numreactions(rn))
 end
 
-function assemble_oderhs(rs, ispcs; combinatoric_ratelaws = true, remove_conserved = false)
-    nps = get_networkproperties(rs)
-    species_to_idx = Dict(x => i for (i, x) in enumerate(ispcs))
-    rhsvec = Any[0 for _ in ispcs]
-    depspec_submap = if remove_conserved
-        Dict(eq.lhs => eq.rhs for eq in nps.conservedeqs)
+function netstoichmat(::Type{Matrix{T}}, rn::ReactionSystem) where {T <: Number}
+    smap = speciesmap(rn)
+    nmat = zeros(T, numspecies(rn), numreactions(rn))
+    for (k, rx) in pairs(reactions(rn))
+        for (spec, coef) in rx.netstoich
+            isconstant(spec) && continue
+            nmat[smap[spec], k] = coef
+        end
+    end
+    nmat
+end
+
+function netstoichmat(rn::ReactionSystem; sparse = false)
+    isempty(get_systems(rn)) ||
+        error("netstoichmat does not currently support subsystems, please create a flattened system before calling.")
+
+    nps = get_networkproperties(rn)
+
+    # if it is already calculated and has the right type
+    !isempty(nps.netstoichmat) && (sparse == issparse(nps.netstoichmat)) &&
+        (return nps.netstoichmat)
+
+    # identify a common stoichiometry type
+    T = reduce(promote_type, netstoichtype(rx.netstoich) for rx in reactions(rn))
+    (T == Any) &&
+        error("Stoichiometry matrices are not supported with symbolic stoichiometry.")
+
+    if sparse
+        nsmat = netstoichmat(SparseMatrixCSC{T, Int}, rn)
     else
-        Dict()
+        nsmat = netstoichmat(Matrix{T}, rn)
     end
 
-    for rx in get_rxs(rs)
-        rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)
-        remove_conserved && (rl = substitute(rl, depspec_submap))
-        for (spec, stoich) in rx.netstoich
-            # dependent species don't get an ODE, so are skipped
-            remove_conserved && (spec in nps.depspecs) && continue
-
-            # constant or BC species also do not get equations
-            drop_dynamics(spec) && continue
-
-            i = species_to_idx[spec]
-            if _iszero(rhsvec[i])
-                if stoich isa Symbolic
-                    rhsvec[i] = stoich * rl
-                else
-                    signedrl = (stoich > zero(stoich)) ? rl : -rl
-                    rhsvec[i] = isone(abs(stoich)) ? signedrl : stoich * rl
-                end
-            else
-                if stoich isa Symbolic
-                    rhsvec[i] += stoich * rl
-                else
-                    Δspec = isone(abs(stoich)) ? rl : abs(stoich) * rl
-                    rhsvec[i] = (stoich > zero(stoich)) ? (rhsvec[i] + Δspec) :
-                                (rhsvec[i] - Δspec)
-                end
-            end
-        end
+    # only cache if it is integer
+    if T == Int
+        nps.netstoichmat = nsmat
     end
 
-    rhsvec
+    nsmat
 end
 
-function assemble_drift(rs, ispcs; combinatoric_ratelaws = true, as_odes = true,
-                        include_zero_odes = true, remove_conserved = false)
-    rhsvec = assemble_oderhs(rs, ispcs; combinatoric_ratelaws, remove_conserved)
-    if as_odes
-        D = Differential(get_iv(rs))
-        eqs = [Equation(D(x), rhs)
-               for (x, rhs) in zip(ispcs, rhsvec) if (include_zero_odes || (!_iszero(rhs)))]
-    else
-        eqs = [Equation(0, rhs) for rhs in rhsvec if (include_zero_odes || (!_iszero(rhs)))]
+### General `ReactionSystem`-specific Functions ###
+
+# Checks if the `ReactionSystem` structure have been updated without also updating the 
+# `reactionsystem_fields` constant. If this is the case, returns `false`. This is used in 
+# certain functionalities which would break if the `ReactionSystem` structure is updated without
+# also updating these functionalities.
+function reactionsystem_uptodate_check()
+    if fieldnames(ReactionSystem) != reactionsystem_fields
+        @warn "The `ReactionSystem` structure have been modified without this being taken into account in the functionality you are attempting to use. Please report this at https://github.com/SciML/Catalyst.jl/issues. Proceed with caution, as there might be errors in whichever functionality you are attempting to use."
     end
-    eqs
 end
 
-# this doesn't work with constraint equations currently
-function assemble_diffusion(rs, sts, ispcs, noise_scaling; combinatoric_ratelaws = true,
-                            remove_conserved = false)
-    # as BC species should ultimately get an equation, we include them in the noise matrix
-    num_bcsts = count(isbc, get_states(rs))
-
-    # we make a matrix sized by the number of reactions
-    eqs = Matrix{Any}(undef, length(sts) + num_bcsts, length(get_rxs(rs)))
-    eqs .= 0
-    species_to_idx = Dict((x => i for (i, x) in enumerate(ispcs)))
-    nps = get_networkproperties(rs)
-    depspec_submap = if remove_conserved
-        Dict(eq.lhs => eq.rhs for eq in nps.conservedeqs)
-    else
-        Dict()
+# used in the `__unpacksys` function.
+function __unpacksys(rn)
+    ex = :(begin end)
+    for key in keys(get_var_to_name(rn))
+        var = MT.getproperty(rn, key, namespace = false)
+        push!(ex.args, :($key = $var))
     end
-
-    for (j, rx) in enumerate(get_rxs(rs))
-        rlsqrt = sqrt(abs(oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)))
-        (noise_scaling !== nothing) && (rlsqrt *= noise_scaling[j])
-        remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
-
-        for (spec, stoich) in rx.netstoich
-            # dependent species don't get an equation
-            remove_conserved && (spec in nps.depspecs) && continue
-
-            # constant or BC species also do not get equations
-            drop_dynamics(spec) && continue
-
-            i = species_to_idx[spec]
-            if stoich isa Symbolic
-                eqs[i, j] = stoich * rlsqrt
-            else
-                signedrlsqrt = (stoich > zero(stoich)) ? rlsqrt : -rlsqrt
-                eqs[i, j] = isone(abs(stoich)) ? signedrlsqrt : stoich * rlsqrt
-            end
-        end
-    end
-    eqs
+    ex
 end
 
 """
-    jumpratelaw(rx; combinatoric_ratelaw=true)
+    @unpacksys sys::ModelingToolkit.AbstractSystem
 
-Given a [`Reaction`](@ref), return the symbolic reaction rate law used in
-generated stochastic chemical kinetics model SSAs for the reaction. Note,
-for a reaction defined by
+Loads all species, variables, parameters, and observables defined in `sys` as
+variables within the calling module.
 
-`k*X*Y, X+Z --> 2X + Y`
-
-the expression that is returned will be `k*X^2*Y*Z`. For a reaction of
-the form
-
-`k, 2X+3Y --> Z`
-
-the expression that is returned will be `k * binomial(X,2) *
-binomial(Y,3)`.
-
-Notes:
-- Allocates
-- `combinatoric_ratelaw=true` uses binomials in calculating the rate law, i.e. for `2S ->
-  0` at rate `k` the ratelaw would be `k*S*(S-1)/2`. If `combinatoric_ratelaw=false` then
-  the ratelaw is `k*S*(S-1)`, i.e. the rate law is not normalized by the scaling
-  factor.
-"""
-function jumpratelaw(rx; combinatoric_ratelaw = true)
-    @unpack rate, substrates, substoich, only_use_rate = rx
-    rl = rate
-    if !only_use_rate
-        coef = eltype(substoich) <: Number ? one(eltype(substoich)) : 1
-        for (i, stoich) in enumerate(substoich)
-            s = substrates[i]
-            if stoich isa Symbolic
-                rl *= combinatoric_ratelaw ? binomial(s, stoich) :
-                      factorial(s) / factorial(s - stoich)
-            else
-                rl *= s
-                isone(stoich) && continue
-                for i in one(stoich):(stoich - one(stoich))
-                    rl *= (s - i)
-                end
-                combinatoric_ratelaw && (coef *= factorial(stoich))
-            end
-        end
-        combinatoric_ratelaw && !isequal(coef, one(coef)) && (rl /= coef)
-    end
-    rl
-end
-
-# if haveivdep=false then time dependent rates will still be classified as mass action
-"""
+For example,
 ```julia
-ismassaction(rx, rs; rxvars = get_variables(rx.rate),
-                              haveivdep = nothing,
-                              stateset = Set(states(rs)),
-                              ivset = nothing)
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end
+@unpacksys sir
 ```
-
-True if a given reaction is of mass action form, i.e. `rx.rate` does not depend
-on any chemical species that correspond to states of the system, and does not
-depend explicitly on the independent variable (usually time).
-
-# Arguments
-- `rx`, the [`Reaction`](@ref).
-- `rs`, a [`ReactionSystem`](@ref) containing the reaction.
-- Optional: `rxvars`, `Variable`s which are not in `rxvars` are ignored as
-  possible dependencies.
-- Optional: `haveivdep`, `true` if the [`Reaction`](@ref) `rate` field
-  explicitly depends on any independent variable (i.e. t or for spatial systems x,y,etc).
-  If not set, will be automatically calculated.
-- Optional: `stateset`, set of states which if the rxvars are within mean rx is
-  non-mass action.
-- Optional: `ivset`, a `Set` of the independent variables of the system. If not provided and
-  the system is spatial, i.e. `isspatial(rs) == true`, it will be created with all the
-  spatial variables and the time variable. If the rate expression contains any element of
-  `ivset`, then `ismassaction(rx,rs) == false`. Pass a custom set to control this behavior.
+will load the symbolic variables, `S`, `I`, `R`, `ν` and `β`.
 
 Notes:
-- Non-integer stoichiometry is treated as non-mass action. This includes
-  symbolic variables/terms or floating point numbers for stoichiometric
-  coefficients.
+- Can not be used to load species, variables, or parameters of subsystems or
+  constraints. Either call `@unpacksys` on those systems directly, or
+  [`flatten`](@ref) to collate them into one system before calling.
+- Note that this places symbolic variables within the calling module's scope, so
+  calling from a function defined in a script or the REPL will still result in
+  the symbolic variables being defined in the `Main` module.
 """
-function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
-                      haveivdep::Union{Nothing, Bool} = nothing,
-                      stateset = Set(get_states(rs)), ivset = nothing)
+macro unpacksys(rn)
+    quote
+        ex = Catalyst.__unpacksys($(esc(rn)))
+        Base.eval($(__module__), ex)
+    end
+end
 
-    # we define non-integer (i.e. float or symbolic) stoich to be non-mass action
-    ((eltype(rx.substoich) <: Integer) && (eltype(rx.prodstoich) <: Integer)) ||
-        return false
+"""
+    setdefaults!(rn, newdefs)
 
-    # if no dependencies must be zero order
-    (length(rxvars) == 0) && return true
+Sets the default (initial) values of parameters and species in the
+`ReactionSystem`, `rn`.
 
-    if (haveivdep === nothing)
-        if isspatial(rs)
-            if (ivset === nothing)
-                ivs = Set(get_sivs(rs))
-                push!(ivs, get_iv(rs))
-                ivdep = any(var -> var ∈ ivs, rxvars)
-            else
-                ivdep = any(var -> var ∈ ivset, rxvars)
-            end
-        else
-            ivdep = any(var -> isequal(get_iv(rs), var), rxvars)
-        end
-        ivdep && return false
+For example,
+```julia
+sir = @reaction_network SIR begin
+    β, S + I --> 2I
+    ν, I --> R
+end
+setdefaults!(sir, [:S => 999.0, :I => 1.0, :R => 1.0, :β => 1e-4, :ν => .01])
+
+# or
+t = default_t()
+@parameter β ν
+@species S(t) I(t) R(t)
+setdefaults!(sir, [S => 999.0, I => 1.0, R => 0.0, β => 1e-4, ν => .01])
+```
+gives initial/default values to each of `S`, `I` and `β`
+
+Notes:
+- Can not be used to set default values for species, variables or parameters of
+  subsystems or constraint systems. Either set defaults for those systems
+  directly, or [`flatten`](@ref) to collate them into one system before setting
+  defaults.
+- Defaults can be specified in any iterable container of symbols to value pairs
+  or symbolics to value pairs.
+"""
+function setdefaults!(rn, newdefs)
+    defs = eltype(newdefs) <: Pair{Symbol} ? symmap_to_varmap(rn, newdefs) : newdefs
+    rndefs = MT.get_defaults(rn)
+    for (var, val) in defs
+        rndefs[value(var)] = value(val)
+    end
+    nothing
+end
+
+"""
+    reset_networkproperties!(rn::ReactionSystem)
+
+Clears the cache of various properties (like the netstoichiometry matrix). Use if such
+properties need to be recalculated for some reason.
+"""
+function reset_networkproperties!(rn::ReactionSystem)
+    reset!(get_networkproperties(rn))
+    nothing
+end
+
+"""
+    dependents(rx, network)
+
+Given a [`Reaction`](@ref) and a [`ReactionSystem`](@ref), return a vector of the
+*non-constant* species and variables the reaction rate law depends on. e.g., for
+
+`k*W, 2X + 3Y --> 5Z + W`
+
+the returned vector would be `[W(t),X(t),Y(t)]`.
+
+Notes:
+- Allocates
+- Does not check for dependents within any subsystems.
+- Constant species are not considered dependents since they are internally treated as
+  parameters.
+- If the rate expression depends on a non-species unknown variable that will be included in
+  the dependents, i.e. in
+  ```julia
+  t = default_t()
+  @parameters k
+  @variables V(t)
+  @species A(t) B(t) C(t)
+  rx = Reaction(k*V, [A, B], [C])
+  @named rs = ReactionSystem([rx], t)
+  issetequal(dependents(rx, rs), [A,B,V]) == true
+  ```
+"""
+function dependents(rx, network)
+    if rx.rate isa Number
+        return rx.substrates
     else
-        haveivdep && return false
+        rvars = get_variables(rx.rate, unknowns(network))
+        return union!(rvars, rx.substrates)
     end
-    rx.only_use_rate && return false
-    @inbounds for var in rxvars
-        # not mass action if have a non-constant, variable species in the rate expression
-        (var in stateset) && return false
+end
+
+"""
+    dependents(rx, network)
+
+See documentation for [`dependents`](@ref).
+"""
+function dependants(rx, network)
+    dependents(rx, network)
+end
+
+"""
+isautonomous(rs::ReactionSystem)
+
+Checks if a system is autonomous (i.e. no rate or equation depend on the independent variable(s)).
+Example:
+```julia
+rs1 = @reaction_system
+    (p,d), 0 <--> X
+end
+isautonomous(rs1) # Returns `true`.
+
+rs2 = @reaction_system
+    (p/t,d), 0 <--> X
+end
+isautonomous(rs2) # Returns `false`.
+```
+"""
+function isautonomous(rs::ReactionSystem)
+    # Get all variables occurring in reactions and equations.
+    vars = Set()
+    for eq in equations(rs)
+        (eq isa Reaction) ? get_variables!(vars, eq.rate) : get_variables!(vars, eq)
     end
 
+    # Checks for iv and spatial ivs
+    (get_iv(rs) in vars) && return false
+    any(in(vars), get_sivs(rs)) && return false
     return true
 end
 
-@inline function makemajump(rx; combinatoric_ratelaw = true)
-    @unpack rate, substrates, substoich, netstoich = rx
-    zeroorder = (length(substoich) == 0)
-    reactant_stoch = Vector{Pair{Any, eltype(substoich)}}()
-    @inbounds for (i, spec) in enumerate(substrates)
-        # move constant species into the rate
-        if isconstant(spec)
-            rate *= spec
-            isone(substoich[i]) && continue
-            for i in 1:(substoich[i] - 1)
-                rate *= spec - i
-            end
-        else
-            push!(reactant_stoch, substrates[i] => substoich[i])
-        end
-    end
-
-    if (!zeroorder) && combinatoric_ratelaw
-        coef = prod(factorial, substoich)
-        (!isone(coef)) && (rate /= coef)
-    end
-
-    net_stoch = filter(p -> !drop_dynamics(p[1]), netstoich)
-    isempty(net_stoch) &&
-        error("$rx has no net stoichiometry change once accounting for constant and boundary condition species. This is not supported.")
-
-    MassActionJump(Num(rate), reactant_stoch, net_stoch, scale_rates = false,
-                   useiszero = false)
-end
-
-# get_depgraph(rs)[i] is the list of reactions with rates depending on species changed by
-# i'th reaction.
-function get_depgraph(rs)
-    jdeps = asgraph(rs)
-    vdeps = variable_dependencies(rs)
-    eqeq_dependencies(jdeps, vdeps).fadjlist
-end
-
-# recursively visit each neighbor's rooted tree and mark everything in it as vrj
-function dfs_mark!(isvrjvec, visited, depgraph, i)
-    visited[i] = true
-    nhbrs = depgraph[i]
-    for nhbr in nhbrs
-        if !visited[nhbr]
-            isvrjvec[nhbr] = true
-            dfs_mark!(isvrjvec, visited, depgraph, nhbr)
-        end
-    end
-    nothing
-end
-
-function assemble_jumps(rs; combinatoric_ratelaws = true)
-    meqs = MassActionJump[]
-    ceqs = ConstantRateJump[]
-    veqs = VariableRateJump[]
-    stateset = Set(get_states(rs))
-    all(isspecies, stateset) ||
-        error("Conversion to JumpSystem currently requires all states to be species.")
-    rxvars = []
-
-    isempty(get_rxs(rs)) &&
-        error("Must give at least one reaction before constructing a JumpSystem.")
-
-    # first we determine vrjs with an explicit time-dependent rate
-    rxs = get_rxs(rs)
-    isvrjvec = falses(length(rxs))
-    havevrjs = false
-    for (i, rx) in enumerate(rxs)
-        empty!(rxvars)
-        (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
-        @inbounds for rxvar in rxvars
-            if isequal(rxvar, get_iv(rs))
-                isvrjvec[i] = true
-                havevrjs = true
-                break
-            end
-        end
-    end
-
-    # now we determine vrj's that depend on species modified by a previous vrj
-    if havevrjs
-        depgraph = get_depgraph(rs)
-        visited = falses(length(isvrjvec))
-        for (i, isvrj) in enumerate(isvrjvec)
-            if isvrj && !visited[i]
-                # dfs from the vrj node to propagate vrj classification
-                dfs_mark!(isvrjvec, visited, depgraph, i)
-            end
-        end
-    end
-
-    for (i, rx) in enumerate(rxs)
-        empty!(rxvars)
-        (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
-
-        isvrj = isvrjvec[i]
-        if (!isvrj) && ismassaction(rx, rs; rxvars = rxvars, haveivdep = false,
-                        stateset = stateset)
-            push!(meqs, makemajump(rx; combinatoric_ratelaw = combinatoric_ratelaws))
-        else
-            rl = jumpratelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)
-            affect = Vector{Equation}()
-            for (spec, stoich) in rx.netstoich
-                # don't change species that are constant or BCs
-                (!drop_dynamics(spec)) && push!(affect, spec ~ spec + stoich)
-            end
-            if isvrj
-                push!(veqs, VariableRateJump(rl, affect))
-            else
-                push!(ceqs, ConstantRateJump(rl, affect))
-            end
-        end
-    end
-    vcat(meqs, ceqs, veqs)
-end
-
-# merge constraint components with the ReactionSystem components
-# also handles removing BC and constant species
-function addconstraints!(eqs, rs::ReactionSystem, ists, ispcs; remove_conserved = false)
-    # if there are BC species, put them after the independent species
-    rssts = get_states(rs)
-    sts = any(isbc, rssts) ? vcat(ists, filter(isbc, rssts)) : ists
-    ps = get_ps(rs)
-
-    # make dependent species observables and add conservation constants as parameters
-    if remove_conserved
-        nps = get_networkproperties(rs)
-
-        # add the conservation constants as parameters and set their values
-        ps = vcat(ps, collect(eq.lhs for eq in nps.constantdefs))
-        defs = copy(MT.defaults(rs))
-        for eq in nps.constantdefs
-            defs[eq.lhs] = eq.rhs
-        end
-
-        # add the dependent species as observed
-        obs = copy(MT.observed(rs))
-        append!(obs, nps.conservedeqs)
-    else
-        defs = MT.defaults(rs)
-        obs = MT.observed(rs)
-    end
-
-    ceqs = Equation[eq for eq in get_eqs(rs) if eq isa Equation]
-    if !isempty(ceqs)
-        if remove_conserved
-            @info """
-                  Be careful mixing constraints and elimination of conservation laws.
-                  Catalyst does not check that the conserved equations still hold for the
-                  final coupled system of equations. Consider using `remove_conserved =
-                  false` and instead calling ModelingToolkit.structural_simplify to simplify
-                  any generated ODESystem or NonlinearSystem.
-                  """
-        end
-        append!(eqs, ceqs)
-    end
-
-    eqs, sts, ps, obs, defs
-end
-
-# used by flattened systems that don't support constraint equations currently
-function error_if_constraints(::Type{T}, sys::ReactionSystem) where {T <: MT.AbstractSystem}
-    any(eq -> eq isa Equation, get_eqs(sys)) &&
-        error("Can not convert to a system of type ", T,
-              " when there are constraint equations.")
-    nothing
-end
-
-# used by flattened systems that don't support differential equation constraint eqs
-function error_if_constraint_odes(::Type{T},
-                                  rs::ReactionSystem) where {T <: MT.AbstractSystem}
-    any(eq -> (eq isa Equation) && MT.isdiffeq(eq), get_eqs(rs)) &&
-        error("Cannot convert to system type $T when there are ODE constraint equations.")
-    nothing
-end
-
-function spatial_convert_err(rs::ReactionSystem, systype)
-    isspatial(rs) && error("Conversion to $systype is not supported for spatial networks.")
-end
+### `ReactionSystem` Remaking ###
 
 """
-```julia
-Base.convert(::Type{<:ODESystem},rs::ReactionSystem)
-```
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.ODESystem`.
+    remake_ReactionSystem_internal(rs::ReactionSystem; 
+        default_reaction_metadata::Vector{Pair{Symbol, T}} = Vector{Pair{Symbol, Any}}()) where {T}
 
-Keyword args and default values:
-- `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,
-  i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. Set
-  `combinatoric_ratelaws=false` for a ratelaw of `k*S^2`, i.e. the scaling factor is
-  ignored. Defaults to the value given when the `ReactionSystem` was constructed (which
-  itself defaults to true).
-- `remove_conserved=false`, if set to `true` will calculate conservation laws of the
-  underlying set of reactions (ignoring constraint equations), and then apply them to reduce
-  the number of equations.
+Takes a `ReactionSystem` and remakes it, returning a modified `ReactionSystem`. Modifications depend
+on which additional arguments are provided. The input `ReactionSystem` is not mutated. Updating
+default reaction metadata is currently the only supported feature.
+
+Arguments:
+- `rs::ReactionSystem`: The `ReactionSystem` which you wish to remake.
+- `default_reaction_metadata::Vector{Pair{Symbol, T}}`: A vector with default `Reaction` metadata values.
+    Each metadata in each `Reaction` of the updated `ReactionSystem` will have the value designated in
+    `default_reaction_metadata` (however, `Reaction`s that already have that metadata designated will not
+    have their value updated).
 """
-function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs),
-                      combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                      include_zero_odes = true, remove_conserved = false, checks = false,
-                      default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
-                      kwargs...)
-    spatial_convert_err(rs::ReactionSystem, ODESystem)
-    fullrs = Catalyst.flatten(rs)
-    remove_conserved && conservationlaws(fullrs)
-    ists, ispcs = get_indep_sts(fullrs, remove_conserved)
-    eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
-                         include_zero_odes)
-    eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
-
-    ODESystem(eqs, get_iv(fullrs), sts, ps;
-              observed = obs,
-              name,
-              defaults = _merge(defaults,defs),
-              checks,
-              continuous_events = MT.get_continuous_events(fullrs),
-              discrete_events = MT.get_discrete_events(fullrs),
-              kwargs...)
+function remake_ReactionSystem_internal(rs::ReactionSystem; default_reaction_metadata = [])
+    rs = set_default_metadata(rs; default_reaction_metadata)
+    return rs
 end
 
-"""
-```julia
-Base.convert(::Type{<:NonlinearSystem},rs::ReactionSystem)
-```
+# For a `ReactionSystem`, updates all `Reaction`'s default metadata.
+function set_default_metadata(rs::ReactionSystem; default_reaction_metadata = [])
+    # Updates reaction metadata for for reactions in this specific system.
+    function eqtransform(eq)
+        eq isa Reaction ? set_default_metadata(eq, default_reaction_metadata) : eq
+    end
+    updated_equations = map(eqtransform, get_eqs(rs))
+    @set! rs.eqs = updated_equations
+    @set! rs.rxs = Reaction[rx for rx in updated_equations if rx isa Reaction]
 
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.NonlinearSystem`.
-
-Keyword args and default values:
-- `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,
-  i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. Set
-  `combinatoric_ratelaws=false` for a ratelaw of `k*S^2`, i.e. the scaling factor is
-  ignored. Defaults to the value given when the `ReactionSystem` was constructed (which
-  itself defaults to true).
-- `remove_conserved=false`, if set to `true` will calculate conservation laws of the
-  underlying set of reactions (ignoring constraint equations), and then apply them to reduce
-  the number of equations.
-"""
-function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = nameof(rs),
-                      combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                      include_zero_odes = true, remove_conserved = false, checks = false,
-                      default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
-                      kwargs...)
-    spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
-    fullrs = Catalyst.flatten(rs)
-    remove_conserved && conservationlaws(fullrs)
-    ists, ispcs = get_indep_sts(fullrs, remove_conserved)
-    eqs = assemble_drift(fullrs, ispcs; combinatoric_ratelaws, remove_conserved,
-                         as_odes = false, include_zero_odes)
-    error_if_constraint_odes(NonlinearSystem, fullrs)
-    eqs, sts, ps, obs, defs = addconstraints!(eqs, fullrs, ists, ispcs; remove_conserved)
-
-    NonlinearSystem(eqs, sts, ps;
-                    name,
-                    observed = obs,
-                    defaults = _merge(defaults,defs),
-                    checks,
-                    kwargs...)
-end
-
-"""
-```julia
-Base.convert(::Type{<:SDESystem},rs::ReactionSystem)
-```
-
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.SDESystem`.
-
-Notes:
-- `combinatoric_ratelaws=true` uses factorial scaling factors in calculating the rate law,
-  i.e. for `2S -> 0` at rate `k` the ratelaw would be `k*S^2/2!`. Set
-  `combinatoric_ratelaws=false` for a ratelaw of `k*S^2`, i.e. the scaling factor is
-  ignored. Defaults to the value given when the `ReactionSystem` was constructed (which
-  itself defaults to true).
-- `noise_scaling=nothing::Union{Vector{Num},Num,Nothing}` allows for linear scaling of the
-  noise in the chemical Langevin equations. If `nothing` is given, the default value as in
-  Gillespie 2000 is used. Alternatively, a `Num` can be given, this is added as a parameter
-  to the system (at the end of the parameter array). All noise terms are linearly scaled
-  with this value. The parameter may be one already declared in the `ReactionSystem`.
-  Finally, a `Vector{Num}` can be provided (the length must be equal to the number of
-  reactions). Here the noise for each reaction is scaled by the corresponding parameter in
-  the input vector. This input may contain repeat parameters.
-- `remove_conserved=false`, if set to `true` will calculate conservation laws of the
-  underlying set of reactions (ignoring constraint equations), and then apply them to reduce
-  the number of equations.
-- Does not currently support `ReactionSystem`s that include coupled algebraic or
-  differential equations.
-"""
-function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
-                      noise_scaling = nothing, name = nameof(rs),
-                      combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                      include_zero_odes = true, checks = false, remove_conserved = false,
-                      default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
-                      kwargs...)
-    spatial_convert_err(rs::ReactionSystem, SDESystem)
-
-    flatrs = Catalyst.flatten(rs)
-    error_if_constraints(SDESystem, flatrs)
-
-    if noise_scaling isa AbstractArray
-        (length(noise_scaling) != numreactions(flatrs)) &&
-            error("The number of elements in 'noise_scaling' must be equal " *
-                  "to the number of reactions in the flattened reaction system.")
-        if !(noise_scaling isa Symbolics.Arr)
-            noise_scaling = value.(noise_scaling)
-        end
-    elseif !isnothing(noise_scaling)
-        noise_scaling = fill(value(noise_scaling), numreactions(flatrs))
+    # Special routine to handle `Reaction` metadata that can contain new symbolic variables.
+    # Currently, `noise_scaling` is the only relevant metadata supported this way.
+    drm_dict = Dict(default_reaction_metadata)
+    if haskey(drm_dict, :noise_scaling)
+        # Finds parameters, species, and variables in the noise scaling term.       
+        ns_expr = drm_dict[:noise_scaling]
+        ns_syms = [Symbolics.unwrap(sym) for sym in get_variables(ns_expr)]
+        ns_ps = Iterators.filter(ModelingToolkit.isparameter, ns_syms)
+        ns_sps = Iterators.filter(Catalyst.isspecies, ns_syms)
+        ns_vs = Iterators.filter(
+            sym -> !Catalyst.isspecies(sym) &&
+                !ModelingToolkit.isparameter(sym), ns_syms)
+        # Adds parameters, species, and variables to the `ReactionSystem`.
+        @set! rs.ps = union(get_ps(rs), ns_ps)
+        sps_new = union(get_species(rs), ns_sps)
+        @set! rs.species = sps_new
+        vs_old = @view get_unknowns(rs)[(length(get_species(rs)) + 1):end]
+        @set! rs.unknowns = union(sps_new, vs_old, ns_vs)
     end
 
-    remove_conserved && conservationlaws(flatrs)
-    ists, ispcs = get_indep_sts(flatrs, remove_conserved)
-    eqs = assemble_drift(flatrs, ispcs; combinatoric_ratelaws, include_zero_odes,
-                         remove_conserved)
-    noiseeqs = assemble_diffusion(flatrs, ists, ispcs, noise_scaling; combinatoric_ratelaws,
-                                  remove_conserved)
-    eqs, sts, ps, obs, defs = addconstraints!(eqs, flatrs, ists, ispcs; remove_conserved)
-    ps = (noise_scaling === nothing) ? ps : vcat(ps, toparam(noise_scaling))
-
-    if any(isbc, get_states(flatrs))
-        @info "Boundary condition species detected. As constraint equations are not currently supported when converting to SDESystems, the resulting system will be undetermined. Consider using constant species instead."
+    # Updates reaction metadata for all its subsystems.
+    new_sub_systems = similar(get_systems(rs))
+    for (i, sub_system) in enumerate(get_systems(rs))
+        new_sub_systems[i] = set_default_metadata(sub_system; default_reaction_metadata)
     end
+    @set! rs.systems = new_sub_systems
 
-    SDESystem(eqs, noiseeqs, get_iv(flatrs), sts, ps;
-              observed = obs,
-              name,
-              defaults = defs,
-              checks,
-              continuous_events = MT.get_continuous_events(flatrs),
-              discrete_events = MT.get_discrete_events(flatrs),
-              kwargs...)
+    # Returns the updated system.
+    return rs
 end
+
+# For a `Reaction`, adds missing default metadata values. Equations are passed back unmodified.
+function set_default_metadata(rx::Reaction, default_metadata)
+    missing_metadata = filter(
+        md -> !in(md[1], entry[1] for entry in rx.metadata), default_metadata)
+    updated_metadata = vcat(rx.metadata, missing_metadata)
+    updated_metadata = convert(Vector{Pair{Symbol, Any}}, updated_metadata)
+    return @set rx.metadata = updated_metadata
+end
+set_default_metadata(eq::Equation, default_metadata) = eq
 
 """
-```julia
-Base.convert(::Type{<:JumpSystem},rs::ReactionSystem; combinatoric_ratelaws=true)
-```
+set_default_noise_scaling(rs::ReactionSystem, noise_scaling)
 
-Convert a [`ReactionSystem`](@ref) to an `ModelingToolkit.JumpSystem`.
+Creates an updated `ReactionSystem`. This is the old `ReactionSystem`, but each `Reaction` that does
+not have a `noise_scaling` metadata have its noise_scaling metadata updated. The input `ReactionSystem`
+is not mutated. Any subsystems of `rs` have their `noise_scaling` metadata updated as well.
 
-Notes:
-- `combinatoric_ratelaws=true` uses binomials in calculating the rate law, i.e. for `2S ->
-  0` at rate `k` the ratelaw would be `k*S*(S-1)/2`. If `combinatoric_ratelaws=false` then
-  the ratelaw is `k*S*(S-1)`, i.e. the rate law is not normalized by the scaling factor.
-  Defaults to the value given when the `ReactionSystem` was constructed (which itself
-  defaults to true).
-- Does not currently support `ReactionSystem`s that include coupled algebraic or
-  differential equations.
-- Does not currently support continuous events as these are not supported by
-  `ModelingToolkit.JumpSystems`.
+Arguments:
+- `rs::ReactionSystem`: The `ReactionSystem` which you wish to remake.
+- `noise_scaling`: The updated noise scaling terms
 """
-function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs),
-                      combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                      remove_conserved = nothing, checks = false,
-                      default_u0 = Dict(), default_p = Dict(), defaults = _merge(Dict(default_u0), Dict(default_p)),
-                      kwargs...)
-    spatial_convert_err(rs::ReactionSystem, JumpSystem)
-
-    (remove_conserved !== nothing) &&
-        error("Catalyst does not support removing conserved species when converting to JumpSystems.")
-
-    flatrs = Catalyst.flatten(rs)
-    error_if_constraints(JumpSystem, flatrs)
-
-    (length(MT.continuous_events(flatrs)) > 0) &&
-        (@warn "continuous_events will be dropped as they are not currently supported by JumpSystems.")
-
-    eqs = assemble_jumps(flatrs; combinatoric_ratelaws)
-
-    # handle BC species
-    sts, ispcs = get_indep_sts(flatrs)
-    any(isbc, get_states(flatrs)) && (sts = vcat(sts, filter(isbc, get_states(flatrs))))
-    ps = get_ps(flatrs)
-
-    JumpSystem(eqs, get_iv(flatrs), sts, ps;
-               observed = MT.observed(flatrs),
-               name,
-               defaults = _merge(defaults,MT.defaults(flatrs)),
-               checks,
-               discrete_events = MT.discrete_events(flatrs),
-               kwargs...)
+function set_default_noise_scaling(rs::ReactionSystem, noise_scaling)
+    return remake_ReactionSystem_internal(
+        rs, default_reaction_metadata = [:noise_scaling => noise_scaling])
 end
 
-### Converts a reaction system to ODE or SDE problems ###
+### ReactionSystem Composing & Hierarchical Modelling ###
 
-# ODEProblem from AbstractReactionNetwork
-function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
-                               p = DiffEqBase.NullParameters(), args...;
-                               check_length = false, name = nameof(rs),
-                               combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                               include_zero_odes = true, remove_conserved = false,
-                               checks = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
-    osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
-                   remove_conserved)
-    return ODEProblem(osys, u0map, tspan, pmap, args...; check_length, kwargs...)
+"""
+    make_empty_network(; iv=DEFAULT_IV, name=gensym(:ReactionSystem))
+
+Construct an empty [`ReactionSystem`](@ref). `iv` is the independent variable,
+usually time, and `name` is the name to give the `ReactionSystem`.
+"""
+function make_empty_network(; iv = DEFAULT_IV, name = gensym(:ReactionSystem))
+    ReactionSystem(Reaction[], iv, [], []; name = name)
 end
 
-# NonlinearProblem from AbstractReactionNetwork
-function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
-                                     p = DiffEqBase.NullParameters(), args...;
-                                     name = nameof(rs), include_zero_odes = true,
-                                     combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                                     remove_conserved = false, checks = false,
-                                     check_length = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
-    nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, include_zero_odes,
-                    checks, remove_conserved)
-    return NonlinearProblem(nlsys, u0map, pmap, args...; check_length, kwargs...)
-end
-
-# SDEProblem from AbstractReactionNetwork
-function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
-                               p = DiffEqBase.NullParameters(), args...;
-                               noise_scaling = nothing, name = nameof(rs),
-                               combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                               include_zero_odes = true, checks = false,
-                               check_length = false,
-                               remove_conserved = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
-    sde_sys = convert(SDESystem, rs; noise_scaling, name, combinatoric_ratelaws,
-                      include_zero_odes, checks, remove_conserved)
-    p_matrix = zeros(length(get_states(sde_sys)), numreactions(rs))
-    return SDEProblem(sde_sys, u0map, tspan, pmap, args...; check_length,
-                      noise_rate_prototype = p_matrix, kwargs...)
-end
-
-# DiscreteProblem from AbstractReactionNetwork
-function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
-                                    p = DiffEqBase.NullParameters(), args...;
-                                    name = nameof(rs),
-                                    combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                                    checks = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
-    jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks)
-    return DiscreteProblem(jsys, u0map, tspan, pmap, args...; kwargs...)
-end
-
-# JumpProblem from AbstractReactionNetwork
-function JumpProcesses.JumpProblem(rs::ReactionSystem, prob, aggregator, args...;
-                                   name = nameof(rs),
-                                   combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                                   checks = false, kwargs...)
-    jsys = convert(JumpSystem, rs; name, combinatoric_ratelaws, checks)
-    return JumpProblem(jsys, prob, aggregator, args...; kwargs...)
-end
-
-# SteadyStateProblem from AbstractReactionNetwork
-function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
-                                       p = DiffEqBase.NullParameters(), args...;
-                                       check_length = false, name = nameof(rs),
-                                       combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-                                       remove_conserved = false, include_zero_odes = true,
-                                       checks = false, kwargs...)
-    u0map = symmap_to_varmap(rs, u0)
-    pmap = symmap_to_varmap(rs, p)
-    osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
-                   remove_conserved)
-    return SteadyStateProblem(osys, u0map, pmap, args...; check_length, kwargs...)
-end
-
-####################### dependency graph utilities ########################
-
-# determine which states a reaction depends on
-function ModelingToolkit.get_variables!(deps::Set, rx::Reaction, variables)
-    (rx.rate isa Symbolic) && get_variables!(deps, rx.rate, variables)
-    for s in rx.substrates
-        # parametric stoichiometry means may have a parameter as a substrate
-        any(isequal(s), variables) && push!(deps, s)
-    end
-    deps
-end
-
-# determine which species a reaction modifies
-function ModelingToolkit.modified_states!(mstates, rx::Reaction, sts::Set)
-    for (species, stoich) in rx.netstoich
-        (species in sts) && push!(mstates, species)
-    end
-    mstates
-end
-
-function ModelingToolkit.modified_states!(mstates, rx::Reaction, sts::AbstractVector)
-    for (species, stoich) in rx.netstoich
-        any(isequal(species), sts) && push!(mstates, species)
-    end
-    mstates
-end
-
-########################## Compositional Tooling ###########################
+# A helper function used in `flatten`.
 function getsubsystypes!(typeset::Set{Type}, sys::T) where {T <: MT.AbstractSystem}
     push!(typeset, T)
     for subsys in get_systems(sys)
@@ -1585,6 +1326,7 @@ function getsubsystypes!(typeset::Set{Type}, sys::T) where {T <: MT.AbstractSyst
     end
     typeset
 end
+
 function getsubsystypes(sys)
     typeset = Set{Type}()
     getsubsystypes!(typeset, sys)
@@ -1616,16 +1358,16 @@ function MT.flatten(rs::ReactionSystem; name = nameof(rs))
     all(T -> any(T .<: allowed_types), subsys_types) ||
         error("flattening is currently only supported for subsystems mixing ReactionSystems, NonlinearSystems and ODESystems.")
 
-    ReactionSystem(equations(rs), get_iv(rs), states(rs), parameters(rs);
-                   observed = MT.observed(rs),
-                   name,
-                   defaults = MT.defaults(rs),
-                   checks = false,
-                   combinatoric_ratelaws = combinatoric_ratelaws(rs),
-                   balanced_bc_check = false,
-                   spatial_ivs = get_sivs(rs),
-                   continuous_events = MT.continuous_events(rs),
-                   discrete_events = MT.discrete_events(rs))
+    ReactionSystem(equations(rs), get_iv(rs), unknowns(rs), parameters(rs);
+        observed = MT.observed(rs),
+        name,
+        defaults = MT.defaults(rs),
+        checks = false,
+        combinatoric_ratelaws = combinatoric_ratelaws(rs),
+        balanced_bc_check = false,
+        spatial_ivs = get_sivs(rs),
+        continuous_events = MT.continuous_events(rs),
+        discrete_events = MT.discrete_events(rs))
 end
 
 """
@@ -1640,7 +1382,7 @@ Notes:
 - By default, the new `ReactionSystem` will have the same name as `sys`.
 """
 function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
-                                name::Symbol = nameof(sys))
+        name::Symbol = nameof(sys))
     any(T -> sys isa T, (ReactionSystem, ODESystem, NonlinearSystem)) ||
         error("ReactionSystems can only be extended with ReactionSystems, ODESystems and NonlinearSystems currently. Received a $(typeof(sys)) system.")
 
@@ -1652,7 +1394,7 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
 
     # generic system properties
     eqs = union(get_eqs(rs), get_eqs(sys))
-    sts = union(get_states(rs), get_states(sys))
+    sts = union(get_unknowns(rs), get_unknowns(sys))
     ps = union(get_ps(rs), get_ps(sys))
     obs = union(get_observed(rs), get_observed(sys))
     syss = union(get_systems(rs), get_systems(sys))
@@ -1673,14 +1415,76 @@ function ModelingToolkit.extend(sys::MT.AbstractSystem, rs::ReactionSystem;
     end
 
     ReactionSystem(eqs, t, sts, ps;
-                   observed = obs,
-                   systems = syss,
-                   name,
-                   defaults = defs,
-                   checks = false,
-                   combinatoric_ratelaws,
-                   balanced_bc_check = false,
-                   spatial_ivs = sivs,
-                   continuous_events,
-                   discrete_events)
+        observed = obs,
+        systems = syss,
+        name,
+        defaults = defs,
+        checks = false,
+        combinatoric_ratelaws,
+        balanced_bc_check = false,
+        spatial_ivs = sivs,
+        continuous_events,
+        discrete_events)
 end
+
+### Units Handling ###
+
+"""
+    validate(rs::ReactionSystem, info::String="")
+
+Check that all species in the [`ReactionSystem`](@ref) have the same units, and
+that the rate laws of all reactions reduce to units of (species units) / (time
+units).
+
+Notes:
+- Does not check subsystems, constraint equations, or non-species variables.
+"""
+function validate(rs::ReactionSystem, info::String = "")
+    specs = get_species(rs)
+
+    # if there are no species we don't check units on the system
+    isempty(specs) && return true
+
+    specunits = get_unit(specs[1])
+    validated = true
+    for spec in specs
+        if get_unit(spec) != specunits
+            validated = false
+            @warn(string("Species are expected to have units of ", specunits,
+                " however, species ", spec, " has units ", get_unit(spec), "."))
+        end
+    end
+    timeunits = get_unit(get_iv(rs))
+
+    # no units for species, time or parameters then assume validated
+    if (specunits in (MT.unitless, nothing)) && (timeunits in (MT.unitless, nothing))
+        all(u == 1.0 for u in ModelingToolkit.get_unit(get_ps(rs))) && return true
+    end
+
+    rateunits = specunits / timeunits
+    for rx in get_rxs(rs)
+        rxunits = get_unit(rx.rate)
+        for (i, sub) in enumerate(rx.substrates)
+            rxunits *= get_unit(sub)^rx.substoich[i]
+        end
+
+        # Checks that the reaction's combined units is correct, if not, throws a warning.
+        # Needs additional checks because for cases: (1.0^n) and (1.0^n1)*(1.0^n2).
+        # These are not considered (be default) considered equal to `1.0` for unitless reactions.
+        isequal(rxunits, rateunits) && continue
+        if iscall(rxunits)
+            unitless_exp(rxunits) && continue
+            (operation(rxunits) == *) &&
+                all(unitless_exp(arg) for arg in arguments(rxunits)) && continue
+        end
+        validated = false
+        @warn(string(
+            "Reaction rate laws are expected to have units of ", rateunits, " however, ",
+            rx, " has units of ", rxunits, "."))
+    end
+
+    validated
+end
+
+# Checks if a unit consist of exponents with base 1 (and is this unitless).
+unitless_exp(u) = iscall(u) && (operation(u) == ^) && (arguments(u)[1] == 1)

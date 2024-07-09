@@ -1,10 +1,76 @@
+### Prepares Tests ###
+
+# Fetch packages.
 using Catalyst, Test
 
-# Test base funcationality in two cases.
+# Sets the default `t` to use.
+t = default_t()
+
+### Test Macro Basic Functionality  ### 
+
+# Miscellaneous basic usage.
 let
-    @variables t
+    @species C(t) H(t) O(t) 
+    @parameters p1 p2
+
+    # Basic cases that should pass:
+    @compound H2O_1 ~ 2H + O
+    @compound (H2O_2, [output=true]) ~ 2H + O
+    @compound (H2O_3 = 1.5) ~ 2H + O
+    @compound (H2O_4 = 4, [output=true]) ~ 2H + O
+    @compound (H2O_5 = p1, [output=true]) ~ 2H + p2*O
+    @test iscompound(H2O_1)
+    @test iscompound(H2O_2)
+    @test iscompound(H2O_3)
+    @test iscompound(H2O_4)
+    @test iscompound(H2O_5)
+
+    # Other errors.
+    @test_throws Exception @eval @compound H2O = 2H + O
+    @test_throws Exception @eval @compound (H2O, [output=true]) = 2H + O
+    @test_throws Exception @eval @compound (H2O = 1.5) ~ 2H + O
+    @test_throws Exception @eval @compound (H2O = 4, [output=true]) ~ 2H + O
+    @test_throws Exception @eval @compound (H2O = p1, [output=true]) ~ 2H + p2*O
+
+    # Compounds created in block notation.
+    @compounds begin
+        CO2_1 ~ 2H + O
+    end
+    @compounds begin
+        (CO2_2, [output=true]) ~ 2H + O
+        (CO2_3 = 1.5) ~ 2H + O
+        (CO2_4 = 4, [output=true]) ~ 2H + O
+        (CO2_5 = p1, [output=true]) ~ 2H + p2*O
+    end
+    @test iscompound(CO2_1)
+    @test iscompound(CO2_2)
+    @test iscompound(CO2_3)
+    @test iscompound(CO2_4)
+    @test iscompound(CO2_5)
+
+    # Declares stuff in the DSL.
+    rn = @reaction_network begin
+        @species N(t) H(t) 
+        @parameters p1 p2
+        @compounds begin
+            NH3_1 ~ N + 3H
+            (NH3_2, [output=true]) ~ N + 3H
+            (NH3_3 = 1.5) ~ N + 3H
+            (NH3_4 = 4, [output=true]) ~ N + 3H
+            (NH3_5 = p1, [output=true]) ~ N + p2*H
+        end
+    end
+    @test iscompound(rn.NH3_1)
+    @test iscompound(rn.NH3_2)
+    @test iscompound(rn.NH3_3)
+    @test iscompound(rn.NH3_4)
+    @test iscompound(rn.NH3_5)
+end
+
+# Simple test case 1.
+let
     @species C(t) H(t) O(t)
-    @compound C6H12O2(t) 6C 12H 2O
+    @compound C6H12O2 ~ 6C + 12H + 2O
 
     @test iscompound(C6H12O2)
     @test isspecies(C6H12O2)
@@ -18,10 +84,10 @@ let
     @test all(!iscompound(i) for i in components(C6H12O2))
 end
 
+# Simple test case 2.
 let
-    @variables t
     @species O(t)
-    @compound O2(t) 2O
+    @compound O2 ~ 2O
 
     @test iscompound(O2)
     @test isspecies(O2)
@@ -33,23 +99,178 @@ let
     @test all(!iscompound(i) for i in components(O2))
 end
 
+### Independent Variables ###
+
+# Test using different independent variable combinations.
+let
+    @variables x y z
+    @species C(t) H(x) N(x) O(t) P(t,x) S(x,y)
+
+    # Checks that wrong (or absent) independent variable produces errors.
+    @test_throws Exception @eval @compound CO2(t,x) ~ C + 2O
+    @test_throws Exception @eval @compound (NH4(s), [output=true]) ~ N + 4H
+    @test_throws Exception @eval @compound (H2O = 2.0) ~ 2H + O
+    @test_throws Exception @eval @compound PH4(x) ~ P + 4H
+    @test_throws Exception @eval @compound SO2(t,y) ~ S + 2O
+    
+    # Creates compounds.
+    @compound CO2 ~ C + 2O
+    @compound (NH4, [output=true]) ~ N + 4H
+    @compound (H2O(t,x) = 2.0) ~ 2H + O
+    @compound PH4(t,x) ~ P + 4H
+    @compound SO2(t,x,y) ~ S + 2O
+    
+    # Checks they have the correct independent variables.
+    @test issetequal(arguments(ModelingToolkit.unwrap(CO2)), [t])
+    @test issetequal(arguments(ModelingToolkit.unwrap(NH4)), [x])
+    @test issetequal(arguments(ModelingToolkit.unwrap(H2O)), [t, x])
+    @test issetequal(arguments(ModelingToolkit.unwrap(PH4)), [t, x])
+    @test issetequal(arguments(ModelingToolkit.unwrap(SO2)), [t, x, y])
+end
+
+### Interpolation Tests ###
+
+# Case 1.
+let
+    @species C(t) H(t) O(t)
+    s = C
+    @compound C6H12O2_1 ~ 6s + 12H + 2O
+    @compound C6H12O2_2 ~ 6C + 12H + 2O
+
+    @test iscompound(C6H12O2_1)
+    @test iscompound(C6H12O2_2)
+
+    @test isequal(components(C6H12O2_1), components(C6H12O2_2))
+    @test isequal(coefficients(C6H12O2_1), coefficients(C6H12O2_2))
+    @test isequal(component_coefficients(C6H12O2_1), component_coefficients(C6H12O2_2))
+end
+
+# Case 2.
+let
+    @species C(t) H(t)
+    @compound Cyclopentadiene ~ 5C + 6H
+    C5H6 = Cyclopentadiene
+    @compound C10H12 ~ 2C5H6
+
+    @test iscompound(C10H12)
+    @test iscompound(components(C10H12)[1])
+
+    @test isequal(components(C10H12)[1], C5H6)
+    @test isequal(components(C10H12)[1], Cyclopentadiene)
+    @test isequal(coefficients(C10H12)[1], 2)
+end
+
+# Case 3.
+let
+    @species H(t)
+
+    alpha = 2
+    h = H
+    @compound H2_1 ~ 2*H
+    @compound H2_2 ~ alpha*H
+    @compound H2_3 ~ 2*h
+    @compound H2_4 ~ alpha*H
+
+    @test iscompound(H2_1)
+    @test iscompound(H2_2)
+    @test iscompound(H2_2)
+    @test iscompound(H2_4)
+
+    @test isequal(components(H2_1),components(H2_2))
+    @test isequal(components(H2_2),components(H2_3))
+    @test isequal(components(H2_3),components(H2_4))
+    @test isequal(coefficients(H2_1),coefficients(H2_2))
+    @test isequal(coefficients(H2_2),coefficients(H2_3))
+    @test isequal(coefficients(H2_3),coefficients(H2_4))
+end
+
+# Case 4.
+let
+    @parameters alpha = 2
+    @species H(t)
+
+    @compound H2_1 ~ alpha*H
+    @compound H2_2 ~ 2H
+
+    @test iscompound(H2_1)
+    @test iscompound(H2_2)
+
+    @test isequal(components(H2_1),components(H2_2))
+    @test isequal(coefficients(H2_1), @parameters alpha = 2)
+end
+
+# Case 5.
+let 
+    @species A(t)
+    B = A
+    @compound A2 ~ 2A
+    @compound B2 ~ 2B
+
+    @test iscompound(A2)
+    @test iscompound(B2)
+
+    @test isequal(components(A2),components(B2))
+    @test isequal(coefficients(A2), coefficients(B2))
+    @test isequal(component_coefficients(A2), component_coefficients(B2))
+end
+
+### Test @compounds Macro ###
+
+# Basic @compounds syntax.
+let 
+    @species C(t) H(t) O(t)
+    @compound OH ~ 1O + 1H
+    @compound C3H5OH3 ~ 3C + 5H + 3OH
+
+    @compounds begin
+        OH_alt ~ 1O + 1H
+        C3H5OH3_alt ~ 3C + 5H + 3OH
+    end
+
+    @test iscompound(OH_alt)
+    @test iscompound(C3H5OH3_alt)
+
+    @test isequal(components(OH),components(OH_alt))
+    @test isequal(coefficients(OH), coefficients(OH_alt))
+    @test isequal(component_coefficients(OH), component_coefficients(OH_alt))
+    @test isequal(components(C3H5OH3),components(C3H5OH3_alt))
+    @test isequal(coefficients(C3H5OH3), coefficients(C3H5OH3_alt))
+    @test isequal(component_coefficients(C3H5OH3), component_coefficients(C3H5OH3_alt))
+end
+
+# Interpolation in @compounds.
+let 
+    @species s1(t) s2(t) s3(t)
+    s2_alt = s2
+    s3_alt = s3
+
+    @compounds begin
+        comp ~ s1 + s2 + 4s3
+        comp_alt ~ s1 + s2_alt + 4s3_alt
+    end
+
+    @test iscompound(comp)
+    @test iscompound(comp_alt)
+
+    @test isequal(components(comp),components(comp_alt))
+    @test isequal(coefficients(comp), coefficients(comp_alt))
+    @test isequal(component_coefficients(comp), component_coefficients(comp_alt))
+end
+
+### Other Tests ###
+
 # Checks that compounds cannot be created from non-existing species.
 let
-    @variables t
     @species C(t) H(t)
-    @test_throws Exception @compound C6H12O2(t) 6C 12H 2O    
-end
-let
-    @variables t
-    @test_throws Exception @compound O2(t) 2O    
+    @test_throws Exception @compound C6H12O2 ~ 6C + 12H + 2O    
+    @test_throws Exception @compound O2 ~ 2O    
 end
 
 # Checks that nested components works as expected.
 let
-    @variables t
     @species C(t) H(t) O(t)
-    @compound OH(t) 1O 1H
-    @compound C3H5OH3(t) 3C 5H 3OH
+    @compound OH ~ 1O + 1H
+    @compound C3H5OH3 ~ 3C + 5H + 3OH
 
     @test !iscompound(O)
     @test !iscompound(H)
@@ -66,77 +287,77 @@ let
     @test isequal([3, 5, 3], coefficients(C3H5OH3))
 end
 
-# Checks that interpolation works.
-let
-    @variables t
-    @species C(t) H(t) O(t)
-    s = C
-    @compound C6H12O2_1(t) 6s 12H 2O
-    @compound C6H12O2_2(t) 6C 12H 2O
+### Compounds in DSL ###
 
-    @test iscompound(C6H12O2_1)
-    @test iscompound(C6H12O2_2)
-
-    @test isequal(components(C6H12O2_1), components(C6H12O2_2))
-    @test isequal(coefficients(C6H12O2_1), coefficients(C6H12O2_2))
-end
-
-let
-    @variables t
-    @species C(t) H(t)
-    @compound Cyclopentadiene(t) 5C 6H
-    C5H6 = Cyclopentadiene
-    @compound C10H12(t) 2C5H6
-
-    @test iscompound(C10H12)
-    @test iscompound(components(C10H12)[1])
-
-    @test isequal(components(C10H12)[1], C5H6)
-    @test isequal(components(C10H12)[1], Cyclopentadiene)
-    @test isequal(coefficients(C10H12)[1], 2)
-end
-
-let
-    @variables t
-    @species H(t)
-
-    alpha = 2
-    @compound H2_1(t) alpha*H
-    @compound H2_2(t) 2H
-
-    @test iscompound(H2_1)
-    @test iscompound(H2_2)
-
-    @test isequal(components(H2_1),components(H2_2))
-    @test isequal(coefficients(H2_1),coefficients(H2_2))
-end
-
-let
-    @variables t
-    @parameters alpha = 2
-    @species H(t)
-
-    @compound H2_1(t) alpha*H
-    @compound H2_2(t) 2H
-
-    @test iscompound(H2_1)
-    @test iscompound(H2_2)
-
-    @test isequal(components(H2_1),components(H2_2))
-    @test isequal(coefficients(H2_1), @parameters alpha = 2)
-end
-
+# Checks with a single compound.
+# Checks using @unpack.
+# Check where compounds and components does not occur in reactions.
 let 
-    @variables t
-    @species A(t)
-    B = A
-    @compound A2(t) 2A
-    @compound B2(t) 2B
-
-    @test iscompound(A2)
-    @test iscompound(B2)
-
-    @test isequal(components(A2),components(B2))
-    @test isequal(coefficients(A2), coefficients(B2))
+    rn = @reaction_network begin
+        @species C(t) O(t)
+        @compounds begin
+            CO2 ~ C + 2O
+        end
+    end
+    @unpack C, O, CO2 = rn
+    
+    @test length(species(rn)) == 3
+    @test iscompound(CO2)
+    @test isequal([C, O], components(CO2))
+    @test isequal([1, 2], coefficients(CO2))
+    @test isequal([C => 1, O => 2], component_coefficients(CO2)) 
 end
 
+# Test using multiple compounds.
+# Test using rn. notation to fetch species.
+let 
+    rn = @reaction_network begin
+        @species C(t) O(t) H(t)
+        @compounds begin
+            CH4 ~ C + 4H
+            O2 ~ 2O
+            CO2 ~ C + 2O
+            H2O ~ 2H + O
+        end
+        k, CH4 + O2 --> CO2 + H2O
+    end
+    species(rn)
+    
+    @test length(species(rn)) == 7
+    @test isequal([rn.C, rn.H], components(rn.CH4))
+    @test isequal([1, 4], coefficients(rn.CH4))
+    @test isequal([rn.C => 1, rn.H => 4], component_coefficients(rn.CH4)) 
+    @test isequal([rn.O], components(rn.O2))
+    @test isequal([2], coefficients(rn.O2))
+    @test isequal([rn.O => 2], component_coefficients(rn.O2)) 
+    @test isequal([rn.C, rn.O], components(rn.CO2))
+    @test isequal([1, 2], coefficients(rn.CO2))
+    @test isequal([rn.C => 1, rn.O => 2], component_coefficients(rn.CO2)) 
+    @test isequal([rn.H, rn.O], components(rn.H2O))
+    @test isequal([2, 1], coefficients(rn.H2O))
+    @test isequal([rn.H => 2, rn.O => 1], component_coefficients(rn.H2O)) 
+end
+
+# Tests using compounds of compounds.
+# Tests where species are part of reactions and not declared using "@species".
+let
+    rn = @reaction_network begin
+        @compounds begin
+            SO2 ~ S + 2O
+            S2O4 ~ 2SO2
+        end
+        dS, S --> 0
+        dO, O --> 0
+    end
+    species(rn)
+    @unpack S, O, SO2, S2O4 = rn
+    
+    @test length(species(rn)) == 4
+    
+    @test isequal([S, O], components(SO2))
+    @test isequal([1, 2], coefficients(SO2))
+    @test isequal([S => 1, O => 2], component_coefficients(SO2)) 
+    @test isequal([SO2], components(S2O4))
+    @test isequal([2], coefficients(S2O4))
+    @test isequal([SO2 => 2], component_coefficients(S2O4)) 
+end
