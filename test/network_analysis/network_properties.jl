@@ -352,9 +352,30 @@ let
     @test rank(cyclemat) == rank(hcat(cyclemat, cycle))
 end
 
-# Reaction network cycles
+# From stoichiometric matrix. Reference: Trinh, 2008, https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2909134/
 let
-    
+   S = [1 -1 0 0 -1 0 0 0 0;
+        0 0 0 0 1 -1 -1 -1 0;
+        0 1 -1 0 0 1 0 0 0;
+        0 0 1 0 0 0 0 0 -1;
+        0 0 1 -1 0 0 2 0 0]
+
+   EFMs = [1 0 1 1 0 1 1 1;
+           1 0 0 1 0 0 1 0;
+           0 1 0 1 0 0 0 1;
+           0 1 0 1 2 2 2 1;
+           0 0 1 0 0 1 0 1;
+           -1 1 0 0 0 0 -1 1;
+           0 0 0 0 1 1 1 0;
+           1 -1 1 0 -1 0 0 0;
+           0 1 0 1 0 0 0 1]
+
+   cyclemat = Catalyst.cycles(S)
+   for i in 1:size(EFMs, 2)
+       EFM = EFMs[:, i]
+       @test rank(cyclemat) == rank(hcat(cyclemat, EFM))
+   end
 end
+
 
 
