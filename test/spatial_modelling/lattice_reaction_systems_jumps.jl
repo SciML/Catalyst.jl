@@ -139,7 +139,6 @@ let
     # Check that higher p gives higher mean.
     for i = 1:5 
         sol = solve(jprob, SSAStepper(); saveat = 1.)
-        println()
         @test mean(getindex.(sol.u, 1)) < mean(getindex.(sol.u, 2)) < mean(getindex.(sol.u, 3)) < mean(getindex.(sol.u, 4))
     end
 end

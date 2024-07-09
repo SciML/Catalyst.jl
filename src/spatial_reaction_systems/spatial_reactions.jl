@@ -17,7 +17,6 @@ function isedgeparameter(x, default = false)
     Symbolics.getmetadata(x, EdgeParameter, default)
 end
 
-
 ### Transport Reaction Structures ###
 
 # A transport reaction. These are simple to handle, and should cover most types of spatial reactions.
@@ -64,8 +63,8 @@ function make_transport_reaction(rateex, species)
     trxexpr = :(TransportReaction($rateex, $species))
 
     # Appends `edgeparameter` metadata to all declared parameters.
-    for idx = 4:2:(2 + 2*length(parameters))
-        insert!(pexprs.args, idx, :([edgeparameter=true]))
+    for idx in 4:2:(2 + 2 * length(parameters))
+        insert!(pexprs.args, idx, :([edgeparameter = true]))
     end
 
     quote
@@ -83,11 +82,12 @@ ModelingToolkit.parameters(tr::TransportReaction) = Symbolics.get_variables(tr.r
 spatial_species(tr::TransportReaction) = [tr.species]
 
 # Checks that a TransportReactions is valid for a given reaction system.
-function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReaction; edge_parameters=[])
+function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReaction;
+        edge_parameters = [])
     # Checks that the species exist in the reaction system.
     # (ODE simulation code becomes difficult if this is not required,
     # as non-spatial jacobian and f function generated from rs are of the wrong size).  
-    if !any(isequal(tr.species), species(rs)) 
+    if !any(isequal(tr.species), species(rs))
         error("Currently, species used in TransportReactions must have previously been declared within the non-spatial ReactionSystem. This is not the case for $(tr.species).")
     end
 
@@ -147,7 +147,6 @@ function hash(tr::TransportReaction, h::UInt)
     h = Base.hash(tr.rate, h)
     Base.hash(tr.species, h)
 end
-
 
 ### Utility ###
 

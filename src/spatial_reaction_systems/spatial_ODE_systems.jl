@@ -2,7 +2,7 @@
 
 # Functor with information about a spatial Lattice Reaction ODEs forcing and Jacobian functions.
 # Also used as ODE Function input to corresponding `ODEProblem`.
-struct LatticeTransportODEFunction{P,Q,R,S,T}
+struct LatticeTransportODEFunction{P, Q, R, S, T}
     """
     The ODEFunction of the (non-spatial) ReactionSystem that generated this
     LatticeTransportODEFunction instance.
@@ -38,7 +38,7 @@ struct LatticeTransportODEFunction{P,Q,R,S,T}
     stores a single value (in a size (1,1) sparse matrix). Otherwise, stores these in a sparse
     matrix  where value (i,j) is the species transportation rate from vertex i to vertex j.
     """
-    transport_rates::Vector{Pair{Int64,SparseMatrixCSC{S, Int64}}}
+    transport_rates::Vector{Pair{Int64, SparseMatrixCSC{S, Int64}}}
     """
     For each transport rate in transport_rates, its value is a (sparse) matrix with a size of either 
     (num_verts,num_verts) or (1,1). In the second case, the transportation rate is uniform across 
@@ -63,19 +63,22 @@ struct LatticeTransportODEFunction{P,Q,R,S,T}
     sparse::Bool
     """Remove when we add this as problem metadata"""
     lrs::LatticeReactionSystem
-    
-    function LatticeTransportODEFunction(ofunc::P, ps::Vector{<:Pair}, 
-            lrs::LatticeReactionSystem, transport_rates::Vector{Pair{Int64, SparseMatrixCSC{S, Int64}}},
-            jac_transport::Union{Nothing, Matrix{S}, SparseMatrixCSC{S, Int64}}, sparse) where {P,S}        
+
+    function LatticeTransportODEFunction(ofunc::P, ps::Vector{<:Pair},
+            lrs::LatticeReactionSystem, sparse::Bool,
+            jac_transport::Union{Nothing, Matrix{S}, SparseMatrixCSC{S, Int64}}, 
+            transport_rates::Vector{Pair{Int64, SparseMatrixCSC{S, Int64}}}) where {P, S}
         # Computes `LatticeTransportODEFunction` functor fields.
         heterogeneous_vert_p_idxs = make_heterogeneous_vert_p_idxs(ps, lrs)
         mtk_ps, p_setters = make_mtk_ps_structs(ps, lrs, heterogeneous_vert_p_idxs)
-        t_rate_idx_types, leaving_rates = make_t_types_and_leaving_rates(transport_rates, lrs)
+        t_rate_idx_types, leaving_rates = make_t_types_and_leaving_rates(transport_rates,
+            lrs)
 
         # Creates and returns the `LatticeTransportODEFunction` functor. 
-        new{P,typeof(mtk_ps),typeof(p_setters),S,typeof(jac_transport)}(ofunc, num_verts(lrs), 
-            num_species(lrs), heterogeneous_vert_p_idxs, mtk_ps, p_setters, transport_rates,
-            t_rate_idx_types, leaving_rates, Catalyst.edge_iterator(lrs), jac_transport, sparse, lrs)
+        new{P, typeof(mtk_ps), typeof(p_setters), S, typeof(jac_transport)}(ofunc, 
+            num_verts(lrs), num_species(lrs), heterogeneous_vert_p_idxs, mtk_ps, p_setters,
+            transport_rates, t_rate_idx_types, leaving_rates, Catalyst.edge_iterator(lrs), 
+            jac_transport, sparse, lrs)
     end
 end
 
@@ -84,7 +87,8 @@ end
 # Creates a vector with the heterogeneous vertex parameters' indexes in the full parameter vector.
 function make_heterogeneous_vert_p_idxs(ps, lrs)
     p_dict = Dict(ps)
-    return findall((p_dict[p] isa Vector) && (length(p_dict[p]) > 1) for p in parameters(lrs))
+    return findall((p_dict[p] isa Vector) && (length(p_dict[p]) > 1)
+        for p in parameters(lrs))
 end
 
 # Creates the MTKParameters structure and `p_setters` vector (which are used to manage
@@ -94,18 +98,20 @@ function make_mtk_ps_structs(ps, lrs, heterogeneous_vert_p_idxs)
     nonspatial_osys = complete(convert(ODESystem, reactionsystem(lrs)))
     p_init = [p => p_dict[p][1] for p in parameters(nonspatial_osys)]
     mtk_ps = MT.MTKParameters(nonspatial_osys, p_init)
-    p_setters = [MT.setp(nonspatial_osys, p) for p in parameters(lrs)[heterogeneous_vert_p_idxs]]
+    p_setters = [MT.setp(nonspatial_osys, p)
+                 for p in parameters(lrs)[heterogeneous_vert_p_idxs]]
     return mtk_ps, p_setters
 end
 
 # Computes the transport rate type vector and leaving rate matrix.
 function make_t_types_and_leaving_rates(transport_rates, lrs)
-    t_rate_idx_types = [size(tr[2]) == (1,1) for tr in transport_rates]
+    t_rate_idx_types = [size(tr[2]) == (1, 1) for tr in transport_rates]
     leaving_rates = zeros(length(transport_rates), num_verts(lrs))
     for (s_idx, tr_pair) in enumerate(transport_rates)
         for e in Catalyst.edge_iterator(lrs)
             # Updates the exit rate for species s_idx from vertex e.src.
-            leaving_rates[s_idx, e[1]] += get_transport_rate(tr_pair[2], e, t_rate_idx_types[s_idx]) 
+            leaving_rates[s_idx, e[1]] += get_transport_rate(tr_pair[2], e, 
+                t_rate_idx_types[s_idx])
         end
     end
     return t_rate_idx_types, leaving_rates
@@ -119,26 +125,27 @@ function (lt_ofun::LatticeTransportODEFunction)(du::AbstractVector, u, p, t)
     for vert_i in 1:(lt_ofun.num_verts)
         # Gets the indices of all the species at vertex i.
         idxs = get_indexes(vert_i, lt_ofun.num_species)
-        
+
         # Updates the functors vertex parameter tracker (`mtk_ps`) to contain the vertex parameter 
         # values for vertex vert_i. Then evaluates the reaction contributions to du at vert_i.
         update_mtk_ps!(lt_ofun, p, vert_i)
-        lt_ofun.ofunc((@view du[idxs]),  (@view u[idxs]), lt_ofun.mtk_ps, t)
+        lt_ofun.ofunc((@view du[idxs]), (@view u[idxs]), lt_ofun.mtk_ps, t)
     end
 
     # s_idx is the species index among transport species, s is the index among all species.
     # rates are the species' transport rates.
-    for (s_idx, (s, rates)) in enumerate(lt_ofun.transport_rates)  
+    for (s_idx, (s, rates)) in enumerate(lt_ofun.transport_rates)
         # Rate for leaving source vertex vert_i. 
-        for vert_i in 1:(lt_ofun.num_verts)  
-            idx_src = get_index(vert_i, s, lt_ofun.num_species)                       
+        for vert_i in 1:(lt_ofun.num_verts)
+            idx_src = get_index(vert_i, s, lt_ofun.num_species)
             du[idx_src] -= lt_ofun.leaving_rates[s_idx, vert_i] * u[idx_src]
         end
         # Add rates for entering a destination vertex via an incoming edge.
-        for e in lt_ofun.edge_iterator   
+        for e in lt_ofun.edge_iterator
             idx_src = get_index(e[1], s, lt_ofun.num_species)
-            idx_dst = get_index(e[2], s, lt_ofun.num_species)     
-            du[idx_dst] += get_transport_rate(rates, e, lt_ofun.t_rate_idx_types[s_idx]) * u[idx_src]
+            idx_dst = get_index(e[2], s, lt_ofun.num_species)
+            du[idx_dst] += get_transport_rate(rates, e, lt_ofun.t_rate_idx_types[s_idx]) *
+                           u[idx_src]
         end
     end
 end
@@ -152,7 +159,7 @@ function (lt_ofun::LatticeTransportODEFunction)(J::AbstractMatrix, u, p, t)
     for vert_i in 1:(lt_ofun.num_verts)
         # Gets the indices of all the species at vertex i.
         idxs = get_indexes(vert_i, lt_ofun.num_species)
-        
+
         # Updates the functors vertex parameter tracker (`mtk_ps`) to contain the vertex parameter 
         # values for vertex vert_i. Then evaluates the reaction contributions to J at vert_i.
         update_mtk_ps!(lt_ofun, p, vert_i)
@@ -167,52 +174,54 @@ end
 
 # Creates an ODEProblem from a LatticeReactionSystem.
 function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
-                               p_in = DiffEqBase.NullParameters(), args...;
-                               jac = false, sparse = false, 
-                               name = nameof(lrs), include_zero_odes = true,
-                               combinatoric_ratelaws = get_combinatoric_ratelaws(reactionsystem(lrs)),
-                               remove_conserved = false, checks = false, kwargs...)
+        p_in = DiffEqBase.NullParameters(), args...;
+        jac = false, sparse = false,
+        name = nameof(lrs), include_zero_odes = true,
+        combinatoric_ratelaws = get_combinatoric_ratelaws(reactionsystem(lrs)),
+        remove_conserved = false, checks = false, kwargs...)
     if !is_transport_system(lrs)
         error("Currently lattice ODE simulations are only supported when all spatial reactions are TransportReactions.")
     end
-    
+
     # Converts potential symmaps to varmaps.
     u0_in = symmap_to_varmap(lrs, u0_in)
-    p_in = symmap_to_varmap(lrs, p_in)    
+    p_in = symmap_to_varmap(lrs, p_in)
 
     # Converts u0 and p to their internal forms.
     # u0 is simply a vector with all the species' initial condition values across all vertices.
     # u0 is [spec 1 at vert 1, spec 2 at vert 1, ..., spec 1 at vert 2, ...].
-    u0 = lattice_process_u0(u0_in, species(lrs), lrs)                                       
+    u0 = lattice_process_u0(u0_in, species(lrs), lrs)
     # vert_ps and `edge_ps` are vector maps, taking each parameter's Symbolics representation to its value(s).
     # vert_ps values are vectors. Here, index (i) is a parameter's value in vertex i.
     # edge_ps values are sparse matrices. Here, index (i,j) is a parameter's value in the edge from vertex i to vertex j.
     # Uniform vertex/edge parameters store only a single value (a length 1 vector, or size 1x1 sparse matrix).
     # In the `ODEProblem` vert_ps and edge_ps are merged (but for building the ODEFunction, they are separate).
-    vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs), lrs)  
+    vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs),
+        lrs)
 
     # Creates the ODEFunction.
-    ofun = build_odefunction(lrs, vert_ps, edge_ps, jac, sparse, name, include_zero_odes, 
-                             combinatoric_ratelaws, remove_conserved, checks)
+    ofun = build_odefunction(lrs, vert_ps, edge_ps, jac, sparse, name, include_zero_odes,
+        combinatoric_ratelaws, remove_conserved, checks)
 
     # Combines `vert_ps` and `edge_ps` to a single vector with values only (not a map). Creates ODEProblem.
     pval_dict = Dict([vert_ps; edge_ps])
     ps = [pval_dict[p] for p in parameters(lrs)]
-    return ODEProblem(ofun, u0, tspan, ps, args...; kwargs...) 
+    return ODEProblem(ofun, u0, tspan, ps, args...; kwargs...)
 end
 
 # Builds an ODEFunction for a spatial ODEProblem.
-function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{R,Vector{T}}},
-                           edge_ps::Vector{Pair{S,SparseMatrixCSC{T, Int64}}}, 
-                           jac::Bool, sparse::Bool, name, include_zero_odes, combinatoric_ratelaws, 
-                           remove_conserved, checks) where {R,S,T}
+function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{R, Vector{T}}},
+        edge_ps::Vector{Pair{S, SparseMatrixCSC{T, Int64}}},
+        jac::Bool, sparse::Bool, name, include_zero_odes, combinatoric_ratelaws,
+        remove_conserved, checks) where {R, S, T}
     # Error check.
-    if remove_conserved 
+    if remove_conserved
         throw(ArgumentError("Removal of conserved quantities is currently not supported for `LatticeReactionSystem`s"))
     end
 
     # Prepares the inputs to the `LatticeTransportODEFunction` functor. 
-    osys = complete(convert(ODESystem, reactionsystem(lrs); name, combinatoric_ratelaws, include_zero_odes, checks))
+    osys = complete(convert(ODESystem, reactionsystem(lrs);
+        name, combinatoric_ratelaws, include_zero_odes, checks))
     ofunc_dense = ODEFunction(osys; jac = true, sparse = false)
     ofunc_sparse = ODEFunction(osys; jac = true, sparse = true)
     transport_rates = make_sidxs_to_transrate_map(vert_ps, edge_ps, lrs)
@@ -222,14 +231,16 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{R,Ve
         jac_transport = nothing
         jac_prototype = nothing
     else
-        jac_sparse = build_jac_prototype(ofunc_sparse.jac_prototype, transport_rates, lrs; set_nonzero = jac)
+        jac_sparse = build_jac_prototype(ofunc_sparse.jac_prototype, transport_rates, lrs;
+            set_nonzero = jac)
         jac_dense = Matrix(jac_sparse)
         jac_transport = (jac ? (sparse ? jac_sparse : jac_dense) : nothing)
         jac_prototype = (sparse ? jac_sparse : nothing)
     end
 
     # Creates the `LatticeTransportODEFunction` functor (if `jac`, sets it as the Jacobian as well).
-    f = LatticeTransportODEFunction(ofunc_dense, [vert_ps; edge_ps], lrs, transport_rates, jac_transport, sparse)
+    f = LatticeTransportODEFunction(ofunc_dense, [vert_ps; edge_ps], lrs, sparse,
+        jac_transport, transport_rates)
     J = (jac ? f : nothing)
 
     # Extracts the `Symbol` form for species and parameters. Creates and returns the `ODEFunction`.
@@ -240,13 +251,14 @@ end
 
 # Builds a jacobian prototype.
 # If requested, populate it with the constant values of the Jacobian's transportation part.
-function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64}, 
-                             transport_rates::Vector{Pair{Int64,SparseMatrixCSC{T, Int64}}}, 
-                             lrs::LatticeReactionSystem; set_nonzero = false) where {T}
+function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64},
+        transport_rates::Vector{Pair{Int64, SparseMatrixCSC{T, Int64}}},
+        lrs::LatticeReactionSystem; set_nonzero = false) where {T}
     # Finds the indices of  both the transport species,
     # and the species with transport only (that is, with no non-spatial dynamics but with spatial dynamics).
     trans_species = [tr[1] for tr in transport_rates]
-    trans_only_species = filter(s_idx -> !Base.isstored(ns_jac_prototype, s_idx, s_idx), trans_species)
+    trans_only_species = filter(s_idx -> !Base.isstored(ns_jac_prototype, s_idx, s_idx),
+        trans_species)
 
     # Finds the indices of all terms in the non-spatial jacobian.
     ns_jac_prototype_idxs = findnz(ns_jac_prototype)
@@ -255,7 +267,7 @@ function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64},
 
     # Prepares vectors to store i and j indices of Jacobian entries.
     idx = 1
-    num_entries = num_verts(lrs) * length(ns_i_idxs) + 
+    num_entries = num_verts(lrs) * length(ns_i_idxs) +
                   num_edges(lrs) * (length(trans_only_species) + length(trans_species))
     i_idxs = Vector{Int}(undef, num_entries)
     j_idxs = Vector{Int}(undef, num_entries)
@@ -301,7 +313,7 @@ function set_jac_transport_values!(jac_prototype, transport_rates, lrs)
     for (s, rates) in transport_rates, e in edge_iterator(lrs)
         idx_src = get_index(e[1], s, num_species(lrs))
         idx_dst = get_index(e[2], s, num_species(lrs))
-        val = get_transport_rate(rates, e, size(rates)==(1,1))
+        val = get_transport_rate(rates, e, size(rates) == (1, 1))
 
         # Term due to species leaving source vertex.
         jac_prototype[idx_src, idx_src] -= val
@@ -326,7 +338,8 @@ function rebuild_lat_internals!(integrator)
 end
 
 # Function which rebuilds a `LatticeTransportODEFunction` functor for a new parameter set.
-function rebuild_lat_internals!(lt_ofun::LatticeTransportODEFunction, ps_new, lrs::LatticeReactionSystem)
+function rebuild_lat_internals!(lt_ofun::LatticeTransportODEFunction, ps_new,
+        lrs::LatticeReactionSystem)
     # Computes Jacobian properties.
     jac = !isnothing(lt_ofun.jac_transport)
     sparse = lt_ofun.sparse
@@ -334,9 +347,10 @@ function rebuild_lat_internals!(lt_ofun::LatticeTransportODEFunction, ps_new, lr
     # Recreates the new parameters on the requisite form.
     ps_new = [(length(p) == 1) ? p[1] : p for p in deepcopy(ps_new)]
     ps_new = [p => p_val for (p, p_val) in zip(parameters(lrs), deepcopy(ps_new))]
-    vert_ps, edge_ps = lattice_process_p(ps_new, vertex_parameters(lrs), edge_parameters(lrs), lrs)
+    vert_ps, edge_ps = lattice_process_p(ps_new, vertex_parameters(lrs), 
+        edge_parameters(lrs), lrs)
     ps_new = [vert_ps; edge_ps]
-    
+
     # Creates the new transport rates and transport Jacobian part.
     transport_rates = make_sidxs_to_transrate_map(vert_ps, edge_ps, lrs)
     if !isnothing(lt_ofun.jac_transport)
@@ -377,5 +391,5 @@ function replace_vec!(vec1, vec2)
         vec1[i] = v
     end
     foreach(idx -> deleteat!(vec1, idx), l1:-1:(l2 + 1))
-    foreach(val -> push!(vec1, val), vec2[l1+1:l2])
+    foreach(val -> push!(vec1, val), vec2[(l1 + 1):l2])
 end
