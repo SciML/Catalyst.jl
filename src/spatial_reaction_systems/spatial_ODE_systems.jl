@@ -66,7 +66,7 @@ struct LatticeTransportODEFunction{P, Q, R, S, T}
 
     function LatticeTransportODEFunction(ofunc::P, ps::Vector{<:Pair},
             lrs::LatticeReactionSystem, sparse::Bool,
-            jac_transport::Union{Nothing, Matrix{S}, SparseMatrixCSC{S, Int64}}, 
+            jac_transport::Union{Nothing, Matrix{S}, SparseMatrixCSC{S, Int64}},
             transport_rates::Vector{Pair{Int64, SparseMatrixCSC{S, Int64}}}) where {P, S}
         # Computes `LatticeTransportODEFunction` functor fields.
         heterogeneous_vert_p_idxs = make_heterogeneous_vert_p_idxs(ps, lrs)
@@ -75,9 +75,9 @@ struct LatticeTransportODEFunction{P, Q, R, S, T}
             lrs)
 
         # Creates and returns the `LatticeTransportODEFunction` functor. 
-        new{P, typeof(mtk_ps), typeof(p_setters), S, typeof(jac_transport)}(ofunc, 
+        new{P, typeof(mtk_ps), typeof(p_setters), S, typeof(jac_transport)}(ofunc,
             num_verts(lrs), num_species(lrs), heterogeneous_vert_p_idxs, mtk_ps, p_setters,
-            transport_rates, t_rate_idx_types, leaving_rates, Catalyst.edge_iterator(lrs), 
+            transport_rates, t_rate_idx_types, leaving_rates, Catalyst.edge_iterator(lrs),
             jac_transport, sparse, lrs)
     end
 end
@@ -88,7 +88,7 @@ end
 function make_heterogeneous_vert_p_idxs(ps, lrs)
     p_dict = Dict(ps)
     return findall((p_dict[p] isa Vector) && (length(p_dict[p]) > 1)
-        for p in parameters(lrs))
+    for p in parameters(lrs))
 end
 
 # Creates the MTKParameters structure and `p_setters` vector (which are used to manage
@@ -110,7 +110,7 @@ function make_t_types_and_leaving_rates(transport_rates, lrs)
     for (s_idx, tr_pair) in enumerate(transport_rates)
         for e in Catalyst.edge_iterator(lrs)
             # Updates the exit rate for species s_idx from vertex e.src.
-            leaving_rates[s_idx, e[1]] += get_transport_rate(tr_pair[2], e, 
+            leaving_rates[s_idx, e[1]] += get_transport_rate(tr_pair[2], e,
                 t_rate_idx_types[s_idx])
         end
     end
@@ -196,8 +196,8 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     # edge_ps values are sparse matrices. Here, index (i,j) is a parameter's value in the edge from vertex i to vertex j.
     # Uniform vertex/edge parameters store only a single value (a length 1 vector, or size 1x1 sparse matrix).
     # In the `ODEProblem` vert_ps and edge_ps are merged (but for building the ODEFunction, they are separate).
-    vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs),
-        lrs)
+    vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs),
+        edge_parameters(lrs), lrs)
 
     # Creates the ODEFunction.
     ofun = build_odefunction(lrs, vert_ps, edge_ps, jac, sparse, name, include_zero_odes,
@@ -347,7 +347,7 @@ function rebuild_lat_internals!(lt_ofun::LatticeTransportODEFunction, ps_new,
     # Recreates the new parameters on the requisite form.
     ps_new = [(length(p) == 1) ? p[1] : p for p in deepcopy(ps_new)]
     ps_new = [p => p_val for (p, p_val) in zip(parameters(lrs), deepcopy(ps_new))]
-    vert_ps, edge_ps = lattice_process_p(ps_new, vertex_parameters(lrs), 
+    vert_ps, edge_ps = lattice_process_p(ps_new, vertex_parameters(lrs),
         edge_parameters(lrs), lrs)
     ps_new = [vert_ps; edge_ps]
 

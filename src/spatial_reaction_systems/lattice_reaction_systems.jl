@@ -48,7 +48,8 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
     edge_iterator::T
 
     function LatticeReactionSystem(rs::ReactionSystem{Q}, spatial_reactions::Vector{R},
-            lattice::S, num_verts::Int64, num_edges::Int64, edge_iterator::T) where {Q, R, S, T}
+            lattice::S, num_verts::Int64, num_edges::Int64,
+            edge_iterator::T) where {Q, R, S, T}
         # Error checks.
         if !(R <: AbstractSpatialReaction)
             throw(ArgumentError("The second argument must be a vector of AbstractSpatialReaction subtypes."))
@@ -121,7 +122,7 @@ end
 
 # Creates a LatticeReactionSystem from a CartesianGrid lattice (cartesian grid) or a Boolean Array 
 # lattice (masked grid). These two are quite similar, so much code can be reused in a single interface.
-function LatticeReactionSystem(rs, srs, lattice::GridLattice{N, T}; 
+function LatticeReactionSystem(rs, srs, lattice::GridLattice{N, T};
         diagonal_connections = false) where {N, T}
     # Error checks.
     (N > 3) && error("Grids of higher dimension than 3 is currently not supported.")
@@ -144,7 +145,7 @@ function LatticeReactionSystem(rs, srs, lattice::GridLattice{N, T};
     edge_iterator = Vector{Pair{Int64, Int64}}(undef, num_edges)
     for (flat_idx, grid_idx) in enumerate(flat_to_grid_idx)
         for neighbour_grid_idx in get_neighbours(lattice, grid_idx, g_size;
-                diagonal_connections)
+            diagonal_connections)
             cur_vert += 1
             edge_iterator[cur_vert] = flat_idx => grid_to_flat_idx[neighbour_grid_idx...]
         end
@@ -270,7 +271,7 @@ edge_iterator(lrs::LatticeReactionSystem) = getfield(lrs, :edge_iterator)
 
 Returns `true` if all spatial reactions in `lrs` are `TransportReaction`s.
 """
-function is_transport_system(lrs::LatticeReactionSystem) 
+function is_transport_system(lrs::LatticeReactionSystem)
     return all(sr -> sr isa TransportReaction, spatial_reactions(lrs))
 end
 
@@ -296,7 +297,7 @@ has_masked_lattice(lrs::LatticeReactionSystem) = lattice(lrs) isa Array{Bool, N}
 
 Returns `true` if `lrs` was created using a cartesian or masked grid lattice. Otherwise, returns `false`.
 """
-function has_grid_lattice(lrs::LatticeReactionSystem) 
+function has_grid_lattice(lrs::LatticeReactionSystem)
     return has_cartesian_lattice(lrs) || has_masked_lattice(lrs)
 end
 
@@ -445,7 +446,7 @@ function make_edge_p_values(lrs::LatticeReactionSystem, make_edge_p_value::Funct
         # If not, then the sparse matrix simply becomes empty in that position.
         values[e[1], e[2]] = eps()
 
-        values[e[1], e[2]] = make_edge_p_value(flat_to_grid_idx[e[1]], 
+        values[e[1], e[2]] = make_edge_p_value(flat_to_grid_idx[e[1]],
             flat_to_grid_idx[e[2]])
     end
 

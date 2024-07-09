@@ -19,16 +19,16 @@ function DiffEqBase.DiscreteProblem(lrs::LatticeReactionSystem, u0_in, tspan,
     # vert_ps values are vectors. Here, index (i) is a parameter's value in vertex i.
     # edge_ps values are sparse matrices. Here, index (i,j) is a parameter's value in the edge from vertex i to vertex j.
     # Uniform vertex/edge parameters store only a single value (a length 1 vector, or size 1x1 sparse matrix).
-    vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs), edge_parameters(lrs),
-        lrs)
+    vert_ps, edge_ps = lattice_process_p(p_in, vertex_parameters(lrs),
+        edge_parameters(lrs), lrs)
 
     # Returns a DiscreteProblem (which basically just stores the processed input).
     return DiscreteProblem(u0, tspan, [vert_ps; edge_ps], args...; kwargs...)
 end
 
 # Builds a spatial JumpProblem from a DiscreteProblem containing a `LatticeReactionSystem`.
-function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator,args...;
-        combinatoric_ratelaws = get_combinatoric_ratelaws(reactionsystem(lrs)), 
+function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator, args...;
+        combinatoric_ratelaws = get_combinatoric_ratelaws(reactionsystem(lrs)),
         name = nameof(reactionsystem(lrs)), kwargs...)
     # Error checks.
     if !isnothing(dprob.f.sys)
