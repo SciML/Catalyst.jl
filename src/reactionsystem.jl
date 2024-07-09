@@ -198,7 +198,7 @@ end
 function find_event_vars!(ps, us, events::Vector, ivs, vars)
     foreach(event -> find_event_vars!(ps, us, event, ivs, vars), events)
 end
-# For a single event, adds quantitites from its condition and affect expression(s) to `ps` and `us`.
+# For a single event, adds quantities from its condition and affect expression(s) to `ps` and `us`.
 # Applies `findvars!` to the event's condition (`event[1])` and affec (`event[2]`).
 function find_event_vars!(ps, us, event, ivs, vars)
     findvars!(ps, us, event[1], ivs, vars)
@@ -409,7 +409,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
         error("Catalyst reserves the symbols $forbidden_symbols_error for internal use. Please do not use these symbols as parameters or unknowns/species.")
     end
 
-    # Handles reactions and equations. Sorts so that reactions are before equaions in the equations vector.
+    # Handles reactions and equations. Sorts so that reactions are before equations in the equations vector.
     eqs′ = CatalystEqType[eq for eq in eqs]
     sort!(eqs′; by = eqsortby)
     rxs = Reaction[rx for rx in eqs if rx isa Reaction]
@@ -446,7 +446,7 @@ function ReactionSystem(eqs, iv, unknowns, ps;
         networkproperties
     end
 
-    # Creates the continious and discrete callbacks.
+    # Creates the continuous and discrete callbacks.
     ccallbacks = MT.SymbolicContinuousCallbacks(continuous_events)
     dcallbacks = MT.SymbolicDiscreteCallbacks(discrete_events)
 
@@ -467,7 +467,7 @@ function ReactionSystem(iv; kwargs...)
     ReactionSystem(Reaction[], iv, [], []; kwargs...)
 end
 
-# Called internally (whether DSL-based or programmtic model creation is used). 
+# Called internally (whether DSL-based or programmatic model creation is used). 
 # Creates a sorted reactions + equations vector, also ensuring reaction is first in this vector.
 # Extracts potential species, variables, and parameters from the input (if not provided as part of 
 # the model creation) and creates the corresponding vectors. 
@@ -477,12 +477,12 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
         spatial_ivs = nothing, continuous_events = [], discrete_events = [],
         observed = [], kwargs...)
 
-    # Filters away any potential obervables from `states` and `spcs`.
+    # Filters away any potential observables from `states` and `spcs`.
     obs_vars = [obs_eq.lhs for obs_eq in observed]
     us_in = filter(u -> !any(isequal(u, obs_var) for obs_var in obs_vars), us_in)
 
     # Creates a combined iv vector (iv and sivs). This is used later in the function (so that 
-    # independent variables can be exluded when encountered quantities are added to `us` and `ps`).
+    # independent variables can be excluded when encountered quantities are added to `us` and `ps`).
     t = value(iv)
     ivs = Set([t])
     if (spatial_ivs !== nothing)
@@ -504,17 +504,17 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
 
     # Loops through all reactions, adding encountered quantities to the unknown and parameter vectors.
     # Starts by looping through substrates + products only (so these are added to the vector first).
-    # Next, the otehr components of reactions (e.g. rates and stoichiometries) are added.
+    # Next, the other components of reactions (e.g. rates and stoichiometries) are added.
     for rx in rxs
         for reactants in (rx.substrates, rx.products), spec in reactants
             MT.isparameter(spec) ? push!(ps, spec) : push!(us, spec)
         end
     end
     for rx in rxs
-        # Adds all quantitites encountered in the reaction's rate.
+        # Adds all quantities encountered in the reaction's rate.
         findvars!(ps, us, rx.rate, ivs, vars)
 
-        # Extracts all quantitites encountered within stoichiometries.
+        # Extracts all quantities encountered within stoichiometries.
         for stoichiometry in (rx.substoich, rx.prodstoich), sym in stoichiometry
             (sym isa Symbolic) && findvars!(ps, us, sym, ivs, vars)
         end
@@ -534,7 +534,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
         fulleqs = rxs
     end
 
-    # Loops through all events, adding encountered quantities to the unknwon and parameter vectors.
+    # Loops through all events, adding encountered quantities to the unknown and parameter vectors.
     find_event_vars!(ps, us, continuous_events, ivs, vars)
     find_event_vars!(ps, us, discrete_events, ivs, vars)
 
@@ -636,7 +636,7 @@ get_networkproperties(sys::ReactionSystem) = getfield(sys, :networkproperties)
 
 Returns true if the default for the system is to rescale ratelaws, see
 https://docs.sciml.ai/Catalyst/stable/introduction_to_catalyst/introduction_to_catalyst/#Reaction-rate-laws-used-in-simulations
-for details. Can be overriden via passing `combinatoric_ratelaws` to `convert` or the
+for details. Can be overridden via passing `combinatoric_ratelaws` to `convert` or the
 `*Problem` functions.
 """
 get_combinatoric_ratelaws(sys::ReactionSystem) = getfield(sys, :combinatoric_ratelaws)
@@ -645,7 +645,7 @@ get_combinatoric_ratelaws(sys::ReactionSystem) = getfield(sys, :combinatoric_rat
     combinatoric_ratelaws(sys::ReactionSystem)
 
 Returns the effective (default) `combinatoric_ratelaw` value for a compositional system,
-calculated by taking the logical or of each component `ReactionSystem`. Can be overriden
+calculated by taking the logical or of each component `ReactionSystem`. Can be overridden
 during calls to `convert` of problem constructors.
 """
 function combinatoric_ratelaws(sys::ReactionSystem)
@@ -808,7 +808,7 @@ end
 """
     nonreactions(network)
 
-Return the non-reaction equations within the network (i.e. algebraic and differnetial equations).
+Return the non-reaction equations within the network (i.e. algebraic and differential equations).
 
 Notes:
 - Allocates a new array to store the non-species variables.
@@ -836,7 +836,7 @@ isspatial(rn::ReactionSystem) = !isempty(get_sivs(rn))
 
 ### ModelingToolkit Function Dispatches ###
 
-# Retrives events.
+# Retrieves events.
 MT.get_continuous_events(sys::ReactionSystem) = getfield(sys, :continuous_events)
 # `MT.get_discrete_events(sys::ReactionSystem) = getfield(sys, :get_discrete_events)` should be added here.
 
@@ -1047,10 +1047,10 @@ end
 # Checks if the `ReactionSystem` structure have been updated without also updating the 
 # `reactionsystem_fields` constant. If this is the case, returns `false`. This is used in 
 # certain functionalities which would break if the `ReactionSystem` structure is updated without
-# also updating tehse functionalities.
+# also updating these functionalities.
 function reactionsystem_uptodate_check()
     if fieldnames(ReactionSystem) != reactionsystem_fields
-        @warn "The `ReactionSystem` strcuture have been modified without this being taken into account in the functionality you are attempting to use. Please report this at https://github.com/SciML/Catalyst.jl/issues. Proceed with cautioun, as there might be errors in whichever funcionality you are attempting to use."
+        @warn "The `ReactionSystem` structure have been modified without this being taken into account in the functionality you are attempting to use. Please report this at https://github.com/SciML/Catalyst.jl/issues. Proceed with caution, as there might be errors in whichever functionality you are attempting to use."
     end
 end
 
@@ -1233,7 +1233,7 @@ default reaction metadata is currently the only supported feature.
 Arguments:
 - `rs::ReactionSystem`: The `ReactionSystem` which you wish to remake.
 - `default_reaction_metadata::Vector{Pair{Symbol, T}}`: A vector with default `Reaction` metadata values.
-    Each metadata in each `Reaction` of the updated `ReactionSystem` will have the value desiganted in
+    Each metadata in each `Reaction` of the updated `ReactionSystem` will have the value designated in
     `default_reaction_metadata` (however, `Reaction`s that already have that metadata designated will not
     have their value updated).
 """
