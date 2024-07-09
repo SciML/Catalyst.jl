@@ -269,7 +269,7 @@ function get_transport_rate(transport_rate::SparseMatrixCSC{T, Int64},
     return t_rate_idx_types ? transport_rate[1, 1] : transport_rate[edge[1], edge[2]]
 end
 
-# For a `LatticeTransportODEFunction`, updates its stored parameters (in `mtk_ps`) so that they
+# For a `LatticeTransportODEFunction`, update its stored parameters (in `mtk_ps`) so that they
 # the heterogeneous parameters' values correspond to the values in the specified vertex.
 function update_mtk_ps!(lt_ofun::LatticeTransportODEFunction, all_ps::Vector{T},
         vert::Int64) where {T}
@@ -278,7 +278,7 @@ function update_mtk_ps!(lt_ofun::LatticeTransportODEFunction, all_ps::Vector{T},
     end
 end
 
-# For an expression, computes its values using the provided state and parameter vectors.
+# For an expression, compute its values using the provided state and parameter vectors.
 # The expression is assumed to be valid in vertexes (and can have vertex parameter and state components).
 # If at least one component is non-uniform, output is a vector of length equal to the number of vertexes.
 # If all components are uniform, the output is a length one vector.
@@ -289,7 +289,7 @@ function compute_vertex_value(exp, lrs::LatticeReactionSystem; u = [], ps = [])
         throw(ArgumentError("An edge parameter was encountered in expressions: $exp. Here, only vertex-based components are expected."))
     end
 
-    # Creates a Function that computes the expressions value for a parameter set.
+    # Creates a Function that computes the expression value for a parameter set.
     exp_func = drop_expr(@RuntimeGeneratedFunction(build_function(exp, relevant_syms...)))
 
     # Creates a dictionary with the value(s) for all edge parameters.
@@ -305,7 +305,7 @@ end
 
 ### System Property Checks ###
 
-# For a Symbolic expression, and a parameter set, checks if any relevant parameters have a 
+# For a Symbolic expression, and a parameter set, check if any relevant parameters have a 
 # spatial component. Filters out any parameters that are edge parameters.
 function has_spatial_vertex_component(exp, ps)
     relevant_syms = Symbolics.get_variables(exp)

@@ -37,7 +37,7 @@ function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator
 
     # Computes hopping constants and mass action jumps (requires some internal juggling).
     # Currently, the resulting JumpProblem does not depend on parameters (no way to incorporate these).
-    # Hence the parameters of this one does not actually matter. If at some point JumpProcess can
+    # Hence the parameters of this one do not actually matter. If at some point JumpProcess can
     # handle parameters this can be updated and improved.
     # The non-spatial DiscreteProblem have a u0 matrix with entries for all combinations of species and vertexes.
     hopping_constants = make_hopping_constants(dprob, lrs)
@@ -54,7 +54,7 @@ end
 # Creates the hopping constants from a discrete problem and a lattice reaction system.
 function make_hopping_constants(dprob::DiscreteProblem, lrs::LatticeReactionSystem)
     # Creates the all_diff_rates vector, containing for each species, its transport rate across all edges.
-    # If transport rate is uniform for one species, the vector have a single element, else one for each edge.
+    # If the transport rate is uniform for one species, the vector has a single element, else one for each edge.
     spatial_rates_dict = Dict(compute_all_transport_rates(Dict(dprob.p), lrs))
     all_diff_rates = [haskey(spatial_rates_dict, s) ? spatial_rates_dict[s] : [0.0]
                       for s in species(lrs)]
@@ -77,7 +77,7 @@ function make_hopping_constants(dprob::DiscreteProblem, lrs::LatticeReactionSyst
 end
 
 # Creates a SpatialMassActionJump struct from a (spatial) DiscreteProblem and a LatticeReactionSystem.
-# Could implementation a version which, if all reaction's rates are uniform, returns a MassActionJump.
+# Could implement a version which, if all reactions' rates are uniform, returns a MassActionJump.
 # Not sure if there is any form of performance improvement from that though. Likely not the case.
 function make_spatial_majumps(dprob, lrs::LatticeReactionSystem)
     # Creates a vector, storing which reactions have spatial components.
@@ -142,7 +142,6 @@ end
 #     majpmapper = ModelingToolkit.JumpSysMajParamMapper(js, p; jseqs = eqs, rateconsttype = invttype)
 #     return ModelingToolkit.assemble_maj(eqs.x[1], statetoid, majpmapper)
 # end
-
 
 ### Problem & Integrator Rebuilding ###
 

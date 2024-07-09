@@ -88,7 +88,7 @@ end
 
 ### SpatialMassActionJump Testing ###
 
-# Checks that the correct structure;s is produced.
+# Checks that the correct structures are produced.
 let 
     # Network for reference:
     # A, ∅ → X
@@ -113,7 +113,7 @@ let
     # @test isequal(to_int(getfield.(reactions(reactionsystem(lrs)), :netstoich)), jprob.massaction_jump.net_stoch)
     # @test isequal(to_int(Pair.(getfield.(reactions(reactionsystem(lrs)), :substrates),getfield.(reactions(reactionsystem(lrs)), :substoich))), jprob.massaction_jump.net_stoch)
 
-    # Checks that problem can be simulated.
+    # Checks that problems can be simulated.
     @test SciMLBase.successful_retcode(solve(jprob, SSAStepper()))
 end
 
@@ -203,7 +203,7 @@ end
 
 ### JumpProblem & Integrator Interfacing ### 
 
-# Currently not supported, check that corresponding functions yields errors.
+# Currently not supported, check that corresponding functions yield errors.
 let
     # Prepare `LatticeReactionSystem`.
     rs = @reaction_network begin

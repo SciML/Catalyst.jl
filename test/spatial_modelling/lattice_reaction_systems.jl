@@ -298,7 +298,7 @@ end
 
 ### Tests Edge Value Computation Helper Functions ###
 
-# Checks that  computes the correct values across various types of grids.
+# Checks that we compute the correct values across various types of grids.
 let
     # Prepares the model and the function that determines the edge values.
     rn = @reaction_network begin
@@ -323,7 +323,7 @@ let
     end
 end
 
-# Checks that all species ends up in the correct place in in a pure flow system (checking various dimensions).
+# Checks that all species end up in the correct place in a pure flow system (checking various dimensions).
 let
     # Prepares a system with a single species which is transported only.
     rn = @reaction_network begin

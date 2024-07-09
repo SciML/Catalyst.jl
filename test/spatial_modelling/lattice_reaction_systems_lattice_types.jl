@@ -9,7 +9,7 @@ include("../spatial_test_networks.jl")
 
 ### Run Tests ###
 
-# Test errors when attempting to create networks with dimension > 3.
+# Test errors when attempting to create networks with dimensions > 3.
 let 
     @test_throws Exception LatticeReactionSystem(brusselator_system, brusselator_srs_1, CartesianGrid((5, 5, 5, 5)))
     @test_throws Exception LatticeReactionSystem(brusselator_system, brusselator_srs_1, fill(true, 5, 5, 5, 5))

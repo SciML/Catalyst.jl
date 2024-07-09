@@ -120,7 +120,7 @@ let
     # @test isequal(tr_3, tr_macro_3)
 end
 
-# Checks that the `hash` functions works for `TransportReaction`s.
+# Checks that the `hash` functions work for `TransportReaction`s.
 let
     tr1 = @transport_reaction D1 X
     tr2 = @transport_reaction D1 X

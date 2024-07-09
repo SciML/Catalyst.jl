@@ -14,7 +14,7 @@ rng = StableRNG(12345)
 # Sets defaults
 t = default_t()
 
-### Tests Simulations Don't Error ###
+### Tests Simulations Do Not Error ###
 let
     for grid in [small_1d_cartesian_grid, small_1d_masked_grid, small_1d_graph_grid]
         for srs in [Vector{TransportReaction}(), SIR_srs_1, SIR_srs_2]
@@ -186,7 +186,7 @@ let
     @test all(isapprox.(ss, solve(oprob_sparse_jac, Rosenbrock23(); abstol = 1e-10, reltol = 1e-10).u[end]; rtol = 0.0001))
 end
 
-# Compares Catalyst-generated to hand written one for the brusselator for a line of cells.
+# Compares Catalyst-generated to hand-written one for the Brusselator for a line of cells.
 let
     function spatial_brusselator_f(du, u, p, t)
         # Non-spatial
@@ -534,7 +534,7 @@ end
 
 # Checks that the `rebuild_lat_internals!` function is correctly applied to an ODEProblem.
 let
-    # Creates a brusselator `LatticeReactionSystem`.
+    # Creates a Brusselator `LatticeReactionSystem`.
     lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_2, very_small_2d_cartesian_grid)
 
     # Checks for all combinations of Jacobian and sparsity.
@@ -572,7 +572,7 @@ end
 
 # Checks that the `rebuild_lat_internals!` function is correctly applied to an integrator.
 # Does through by applying it within a callback, and compare to simulations without callback.
-# To keep test faster, only checks for `jac = sparse = true`.
+# To keep test faster, only check for `jac = sparse = true` only.
 let
     # Prepares problem inputs.
     lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_2, very_small_2d_cartesian_grid)
@@ -624,7 +624,7 @@ end
 
 ### Tests Special Cases ###
 
-# Create network using either graphs or di-graphs.
+# Create networks using either graphs or di-graphs.
 let
     lrs_digraph = LatticeReactionSystem(SIR_system, SIR_srs_2, complete_digraph(3))
     lrs_graph = LatticeReactionSystem(SIR_system, SIR_srs_2, complete_graph(3))

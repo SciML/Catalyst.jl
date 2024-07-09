@@ -26,7 +26,7 @@ struct LatticeTransportODEFunction{P, Q, R, S, T}
     mtk_ps::Q
     """
     Stores a SymbolicIndexingInterface `setp` function for each heterogeneous vertex parameter (i.e. 
-    vertex parameter which value is not identical across the lattice). The `setp` function at index
+    vertex parameter whose value is not identical across the lattice). The `setp` function at index
     i of `p_setters` corresponds to the parameter in index i of `heterogeneous_vert_p_idxs`.
     """
     p_setters::R
@@ -82,7 +82,7 @@ struct LatticeTransportODEFunction{P, Q, R, S, T}
     end
 end
 
-# `LatticeTransportODEFunction` helper functions (re used by rebuild function later on).
+# `LatticeTransportODEFunction` helper functions (re-used by rebuild function later on).
 
 # Creates a vector with the heterogeneous vertex parameters' indexes in the full parameter vector.
 function make_heterogeneous_vert_p_idxs(ps, lrs)
@@ -226,7 +226,7 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{R, V
     ofunc_sparse = ODEFunction(osys; jac = true, sparse = true)
     transport_rates = make_sidxs_to_transrate_map(vert_ps, edge_ps, lrs)
 
-    # Depending on Jacobian and sparsity options, computes the Jacobian transport matrix and prototype.
+    # Depending on Jacobian and sparsity options, compute the Jacobian transport matrix and prototype.
     if !sparse && !jac
         jac_transport = nothing
         jac_prototype = nothing
@@ -249,7 +249,7 @@ function build_odefunction(lrs::LatticeReactionSystem, vert_ps::Vector{Pair{R, V
     return ODEFunction(f; jac = J, jac_prototype, sys)
 end
 
-# Builds a jacobian prototype.
+# Builds a Jacobian prototype.
 # If requested, populate it with the constant values of the Jacobian's transportation part.
 function build_jac_prototype(ns_jac_prototype::SparseMatrixCSC{Float64, Int64},
         transport_rates::Vector{Pair{Int64, SparseMatrixCSC{T, Int64}}},
@@ -328,11 +328,11 @@ end
 """
     rebuild_lat_internals!(sciml_struct)
 
-Rebuilds the internal functions for simulating a LatticeReactionSystem. WHenever a problem or 
-integrator have had its parameter values updated, thus function should be called for the update to 
+Rebuilds the internal functions for simulating a LatticeReactionSystem. Wenever a problem or 
+integrator has had its parameter values updated, this function should be called for the update to 
 be taken into account. For ODE simulations, `rebuild_lat_internals!` needs only to be called when
-- An edge parameter have been updated.
-- When a parameter with spatially homogeneous values have been given spatially heterogeneous values 
+- An edge parameter has been updated.
+- When a parameter with spatially homogeneous values has been given spatially heterogeneous values 
 (or vice versa).
 
 Arguments:
@@ -340,7 +340,7 @@ Arguments:
 
 Notes:
 - Currently does not work for `DiscreteProblem`s, `JumpProblem`s, or their integrators.
-- The function is not build with performance in mind, so avoid calling it multiple times in 
+- The function is not built with performance in mind, so avoid calling it multiple times in 
 performance-critical applications.
 
 Example:

@@ -99,15 +99,15 @@ function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReacti
 
     # Checks that the species does not exist in the system with different metadata.
     if any(isequal(tr.species, s) && !isequivalent(tr.species, s) for s in species(rs))
-        error("A transport reaction used a species, $(tr.species), with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and used in transport reaction creation.")
+        error("A transport reaction used a species, $(tr.species), with metadata not matching its lattice reaction system. Please fetch this species from the reaction system and use it during transport reaction creation.")
     end
     # No `for` loop, just weird formatting by the formatter.
     if any(isequal(rs_p, tr_p) && !isequivalent(rs_p, tr_p)
     for rs_p in parameters(rs), tr_p in Symbolics.get_variables(tr.rate))
-        error("A transport reaction used a parameter with metadata not matching its lattice reaction system. Please fetch this parameter from the reaction system and used in transport reaction creation.")
+        error("A transport reaction used a parameter with metadata not matching its lattice reaction system. Please fetch this parameter from the reaction system and use it during transport reaction creation.")
     end
 
-    # Checks that no edge parameter occur among rates of non-spatial reactions.
+    # Checks that no edge parameter occurs among rates of non-spatial reactions.
     # No `for` loop, just weird formatting by the formatter.
     if any(!isempty(intersect(Symbolics.get_variables(r.rate), edge_parameters))
     for r in reactions(rs))

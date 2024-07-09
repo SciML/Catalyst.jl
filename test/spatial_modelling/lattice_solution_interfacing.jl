@@ -5,8 +5,8 @@ using Catalyst, Graphs, JumpProcesses, OrdinaryDiffEq, SparseArrays, Test
 
 ### `get_lrs_vals` Tests ###
 
-# Basic test. For simulations without effect of system, check that solution correspond to known
-# initial condition throughout solution. 
+# Basic test. For simulations without change in system, check that the solution corresponds to known
+# initial condition throughout the solution. 
 # Checks using both `t` sampling` and normal time step sampling.
 # Checks for both ODE and jump simulations.
 # Checks for all lattice types.
@@ -33,7 +33,7 @@ let
     tspan = (0.0, 1.0)
     ps = [:k1 => 0.0, :k2 => 0.0, :D => 0.0]
 
-    # Loops through a lattice cases and check that they are correct.
+    # Loops through all lattice cases and check that they are correct.
     for (u0,lrs) in zip([u0_1, u0_2, u0_3, u0_4, u0_5, u0_6], [lrs1, lrs2, lrs3, lrs4, lrs5, lrs6])
         # Simulates ODE version and checks `get_lrs_vals` on its solution.
         oprob = ODEProblem(lrs, u0, tspan, ps)
@@ -53,7 +53,7 @@ let
 end
 
 # Checks on simulations where the system changes in time.
-# Checks that solution have correct initial condition and end point (steady state).
+# Checks that a solution has correct initial condition and end point (steady state).
 # Checks that solution is monotonously increasing/decreasing (it should be for this problem).
 let
     # Prepare `LatticeReactionSystem`s.
@@ -84,7 +84,7 @@ let
     end
 end
 
-# Checks interpolation when sampling at time point. Check that value at `t` is inbetween the 
+# Checks interpolation when sampling at time point. Check that values at `t` is in between the 
 # sample points. Does so by checking that in simulation which is monotonously decreasing/increasing.
 let
     # Prepare `LatticeReactionSystem`s.
