@@ -351,3 +351,10 @@ let
     cyclemat = Catalyst.cycles(rn)
     @test rank(cyclemat) == rank(hcat(cyclemat, cycle))
 end
+
+# Reaction network cycles
+let
+    
+end
+
+
