@@ -1715,9 +1715,9 @@ version = "1.2.2"
 
 [[deps.LazyArrays]]
 deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra", "MacroTools", "SparseArrays"]
-git-tree-sha1 = "dc1e013bd685c1e7975bf3cf835c5f5aa96a7c19"
+git-tree-sha1 = "f0c4de8f39888b91ba7e1ed348cd283a57f4cddd"
 uuid = "5078a376-72f3-5289-bfd5-ec5146d43c02"
-version = "2.1.5"
+version = "2.1.6"
 
     [deps.LazyArrays.extensions]
     LazyArraysBandedMatricesExt = "BandedMatrices"
