@@ -5,19 +5,19 @@ Catalyst supports the expansion of non-spatial `ReactionSystem` (created with e.
 - Constant-rate transportation reactions (a species moving at a constant rate across the domain). 
 
 Features which support is planned in future updates include:
-- Models on continuous domains (that are automatically discretised).
+- Models on continuous domains (that are automatically discretised, these models can be simulated if the user provides a discretisation).
 - SDE simulations.
 - Transportation reactions with non-constant rates and general spatial reactions.
 
-This tutorial introduces spatial modelling on discrete domains. It describes the basics of creating such models, simulating them, and interacting with the result. To do so, it uses ODE simulations as examples. Additional tutorials provide [in-depth description of spatial ODE simulations](@ref spatial_lattice_ode_simulations), and [introduces spatial jump simulations](@ref spatial_lattice_jump_simulations).
+This tutorial introduces spatial modelling on discrete domains, here called lattices. It describes the basics of creating and simulating such models. To do so, it uses ODE simulations as examples. Additional tutorials provide additional details how to [interact with and plot spatial simulations](@ref lattice_simulation_interaction_and_plotting), [perform spatial ODE simulations](@ref spatial_lattice_ode_simulations), and [perform spatial ODE simulations](@ref spatial_lattice_jump_simulations).
 
 ## [Basic example of spatial simulations on a discrete domain](@id spatial_lattice_modelling_intro_example)
 To perform discrete-space spatial simulations, the user must first define a `LatticeReactionSystem`. These combine:
-- A (non-spatial) `ReactionSystem` model (created using standard Catalyst Syntax).
+- A (non-spatial) `ReactionSystem` model (created using standard Catalyst syntax).
 - A vector of spatial reactions, describing how species can move spatially across the domain.
 - A lattice defining the spatial domain's compartments and how they are connected.
 
-Here, as an example, we will simulate a spatial [Brusselator](https://en.wikipedia.org/wiki/Brusselator). To do so, we first define our (non-spatial) model, the spatial reactions, and the lattice. These are then bundled into a `LatticeReactionSystem`.
+Here, as an example, we will simulate a spatial [Brusselator](@ref ref). To do so, we first define our (non-spatial) model, the spatial reactions, and the lattice. These are then bundled into a `LatticeReactionSystem`.
 ```@example spatial_intro_1
 using Catalyst
 brusselator = @reaction_network begin
@@ -35,39 +35,39 @@ Here we define
 - A single spatial reaction, a transport reaction where $X$ moves at constant rate $D$ between adjacent compartments.
 - A 2d Cartesian grid of $20x20$ compartments to simulate our model on.
 
-More details on spatial reactions are available [here](@ref spatial_lattice_modelling_intro_spatial_reactions). In addition to Cartesian grid lattices (in 1, 2, or 3 dimensions), masked and unstructured (graph) grids are also supported. These are described in more detail [here](@ref spatial_lattice_modelling_intro_lattices).
+More details on spatial reactions are available [here](@ref spatial_lattice_modelling_intro_spatial_reactions). In addition to Cartesian grid lattices (in 1, 2, or 3 dimensions), masked and unstructured (graph) lattices are also supported. These are described in more detail [here](@ref spatial_lattice_modelling_intro_lattices).
 
-Once created, `LatticeReactionSystem`s can be used as input to various problem types, which then can be simulated in the same manner as non-spatial models. Here, we prepare an ODE simulation by creating an `ODEProblem`:
+Once created, `LatticeReactionSystem`s can be used as input to various problem types, which then can be simulated using the same syntax as non-spatial models. Here, we prepare an ODE simulation by creating an `ODEProblem`:
 ```@example spatial_intro_1
-u0 = [:X => rand(20,20), :Y => 10.0]
+u0 = [:X => rand(20, 20), :Y => 10.0]
 tspan = (0.0, 200.0)
 ps = [:A => 1.0, :B => 4.0, :D => 0.2]
 oprob = ODEProblem(lrs, u0, tspan, ps)
 nothing # hide
 ```
-Here we used non-uniform values for $X$'s initial condition, but uniform values for the remaining initial condition and parameter values. More details of uniform and non-uniform initial conditions and parameter values are provided [here](@ref spatial_lattice_modelling_intro_simulation_inputs). Furthermore, the diffusion reaction introduces a parameter $D$ (determining $X$'s diffusion rate) for which we must provide a value. 
+In this example we used non-uniform values for $X$'s initial condition, but uniform values for the remaining initial condition and parameter values. More details of uniform and non-uniform initial conditions and parameter values are provided [here](@ref spatial_lattice_modelling_intro_simulation_inputs). We also note that the diffusion reaction introduces a parameter $D$ (determining $X$'s diffusion rate) which value must designate in the parameter vector. 
 
-We can now simulate our model (using the same syntax as for non-spatial ones):
+We can now simulate our model:
 ```@example spatial_intro_1
 sol = solve(oprob, QNDF())
 nothing # hide
 ```
 We note that simulations of spatial models are often computationally expensive. Here we use the `QNDF` solver, which typically performs well for large systems. More advice on the performance of spatial simulations is provided [here](@ref ref). 
 
-Finally, we can access the value of $X$ in comaprtment $(3,4)$ using
+Finally, we can access "$X$'s value across the simulation using
 ```@example spatial_intro_1
-sol[:X][3,4]
+get_lrs_vals(sol, :X, lrs)
 ```
 Alternatively, we can create an animation of our simulation using:
 ```@example spatial_intro_1
 using Makie
 lattice_animation(sol, lrs)
 ```
-More information on how to retrieve values from spatial simulations can be found [here](@ref spatial_lattice_modelling_intro_solutions), and for plotting them, [here](@ref spatial_lattice_modelling_intro_plotting). Finally, a list of functions for querying `LatticeReactionSystems` for various properties can be found [here](@ref ref).
+More information on how to retrieve values from spatial simulations can be found [here](@ref ref), and for plotting them, [here](@ref ref). Finally, a list of functions for querying `LatticeReactionSystems` for various properties can be found [here](@ref ref).
 
 ## [Spatial reactions](@id spatial_lattice_modelling_intro_spatial_reactions)
 Spatial reactions describe reaction events which involve species across two connected compartments. Currently, only so-called *transportation reactions* are supported. These consist of:
-- A rate at which it occurs. As for non-spatial reactions, this can be any expression. However, currently, it may only consist of parameters. 
+- A rate at which it occurs. As for non-spatial reactions, this can be any expression. However, currently, it may only consist of parameters and other constants. 
 - A single species which is transported from one compartment to an adjacent one.
 
 At the occurrence of a transport reaction, the specific species moves to the adjacent compartment. Most common spatial models can be represented using transport reactions only. These can model phenomena such as diffusion or constant flux. A transportation reaction can be created using the `@transportation_reaction` macro. E.g. above we used
@@ -84,7 +84,7 @@ nothing # hide
 ```
 
 ### Creating transport reactions programmatically
-If models are created [programmatically](@ref ref) it is also possible to create transportation reactions programmatically. To do so, use the `TransportatioNReaction` constructor, providing first the rate, and then the transported species:
+If models are created [programmatically](@ref ref) it is also possible to create transportation reactions programmatically. To do so, use the `TransportationReaction` constructor, providing first the rate, and then the transported species:
 ```@example spatial_intro_3
 @variables t
 @species X(t) Y(t)
@@ -95,15 +95,15 @@ nothing # hide
 
 ## [Defining discrete spatial domains (lattices)](@id spatial_lattice_modelling_intro_lattices)
 Discrete spatial domains can represent:
-1. Systems which are composed of a (finite number of) compartments, where each compartment can be considered well-mixed (e.g. can be modelled non-spatially) and (potentially) species can move between different compartments. Tissues, where each compartment corresponds oa biological cell, can be examples of such systems.
-2. Systems that are continuous in nature, but have been approximated as a discrete domain. Future updates will include the ability for definition, and automatic discretization, of continuous domains. Currently, however, the user has to perform this discretisation themselves.
+1. Systems which are composed of a (finite number of) compartments, where each compartment can be considered well-mixed (e.g. can be modelled non-spatially) and (potentially) species can move between different compartments. Tissues, where each compartment corresponds oa biological cell, are examples of such systems.
+2. Systems that are continuous in nature, but have been approximated as a discrete domain. Future updates will include the ability for definition, and automatic discretisation, of continuous domains. Currently, however, the user has to perform this discretisation themselves.
 
 Catalyst supports three distinct types of lattices:
-- Cartesian grids. These are grids, where each grid point corresponds to a compartment. Spatial transportation is permitted between adjacent compartments.
-- Masked grids. These are defined grids, however, only a subset of the grid point actually corresponds to compartments. Spatial transportation is permitted between adjacent compartments.
+- Cartesian grids. These are grids where each grid point corresponds to a compartment. Spatial transportation is permitted between adjacent compartments.
+- Masked grids. In these grids, only a subset of the grid point actually corresponds to compartments. Spatial transportation is permitted between adjacent compartments.
 - Unstructured (or graph) grids. These are defined by graphs, where vertices correspond to compartments and edges connect adjacent compartments.
 
-Here, Cartesian grids are a subset of the masked grids, which are a subset of the unstructured grids. If possible, it is advantageous to use as narrow a lattice definition as possible (this may both improve simulation performance, but also simplifies syntax). Cartesian and masked grids can be defined both in one, two, and three dimensions. By default, these grids assume that diagonally neighbouring compartments are non-adjacent (do not permit direct movement of species in between themselves). To change this, provide the `diagonally_adjacent=true` argument to your `LatticeReactionSystem` when it is created.
+Here, Cartesian grids are a subset of the masked grids, which are a subset of the unstructured grids. If possible, it is advantageous to use as narrow a lattice definition as possible (this may both improve simulation performance, but also simplifies syntax). Cartesian and masked grids can be defined as one, two, and three dimensional. By default, these grids assume that diagonally neighbouring compartments are non-adjacent (do not permit direct movement of species in between themselves). To change this, provide the `diagonally_adjacent = true` argument to your `LatticeReactionSystem` when it is created.
 
 ### Defining Cartesian grids.
 A Cartesian grid is defined using the `CartesianGrid` function, which takes a single argument. For a 1d grid, simply provide the length of the grid as a single argument:
@@ -114,8 +114,8 @@ nothing # hide
 ```
 For 2d and 3d grids, instead provide a Tuple with the length of the grid in each dimension:
 ```@example spatial_intro_3
-cgrid_2d = CartesianGrid((3,9))
-cgrid_3d = CartesianGrid((2,4,8))
+cgrid_2d = CartesianGrid((3, 9))
+cgrid_3d = CartesianGrid((2, 4, 8))
 nothing # hide
 ```
 
@@ -136,12 +136,12 @@ nothing # hide
 ```
 Finally, a 4x5x6 3d grid of randomly distributed compartments can be created using:
 ```@example spatial_intro_3
-rgrid_3d = rand(4,5,6, [true, false])
+rgrid_3d = rand([true, false], 4, 5, 6)
 nothing # hide
 ```
 
 ### Defining unstructured grids.
-To define unstructured grids, we must first import the [Graphs.jl](https://github.com/JuliaGraphs/Graphs.jl) package. Next, we can either use some [pre-defined formula for building graphs](https://juliagraphs.org/Graphs.jl/dev/core_functions/simplegraphs_generators/#Generators-for-common-graphs), or [build a graph from scratch](https://juliagraphs.org/Graphs.jl/dev/first_steps/construction/). Here we create a cyclic graph (where each compartment is connected to exactly two others):
+To define unstructured grids, we must first import the [Graphs.jl](https://github.com/JuliaGraphs/Graphs.jl) package. Next, we can either use some [pre-defined formula for building graphs](https://juliagraphs.org/Graphs.jl/dev/core_functions/simplegraphs_generators/#Generators-for-common-graphs), or [build a graph from scratch](https://juliagraphs.org/Graphs.jl/dev/first_steps/construction/). Here we create a cyclic graph (where each compartment is connected to exactly two other compartments):
 ```@example spatial_intro_3
 cycle_graph(7)
 nothing # hide
@@ -167,12 +167,12 @@ Below we describe how to set non-uniform values in the various cases.
 ### Non-uniform compartment values for Cartesian grids
 To provide non-uniform values across a Cartesian grid, simply provide the values in an array of the same dimension and size as the Cartesian grid. E.g. for a $5x10$ Cartesian grid:
 ```@example spatial_intro_4
-cgrid = CartesianGrid((5,10))
+cgrid = CartesianGrid((5, 10))
 nothing # hide
 ```
 random values (uniformly distributed between $0$ and $1$) can be provided using
 ```@example spatial_intro_4
-[:X => rand(5,10), :Y => 10.0]
+[:X => rand(5, 10), :Y => 10.0]
 nothing # hide
 ```
 Non-uniform values for parameters (which values are tied to compartments) are provided similarly.
@@ -180,7 +180,7 @@ Non-uniform values for parameters (which values are tied to compartments) are pr
 ### Non-uniform compartment values for masked grids
 Non-uniform values for masked grids are provided in the same manner as for Cartesian grids (however, values at coordinates that do not hold compartments are ignored). E.g. To provide random values for a masked grid contained within a $5x10$ Cartesian grid we can again set:
 ```@example spatial_intro_4
-[:X => rand(5,10), :Y => 10.0]
+[:X => rand(5, 10), :Y => 10.0]
 nothing # hide
 ```
 If we want, it is also possible to provide the values as a [*sparse array*](https://github.com/JuliaSparse/SparseArrays.jl) with values only in the coordinates corresponding to compartments.
@@ -206,10 +206,10 @@ ps = [:A => 1.0, :B => 4.0,
 ]
 nothing # hide
 ```
-Here, `0.0` is used for indexes that do not correspond to an edge.
+Here, the value at index $i,j$ correspond to $D$'s value in the edge from compartment $i$ to compartment $j$. `0.0` is used for elements that do not correspond to an edge. The [`make_edge_p_values`](@ref) and [`make_directed_edge_values`](@ref) provides convenient interfaces for generating non-uniform edge parameter values.
 
 ## [Edge parameters and compartment parameters](@id spatial_lattice_modelling_intro_simulation_edge_parameters)
-Parameters can be divided into *edge parameters* and *compartment parameters* (initial condition values are always tied to compartments). Here, edge parameters have their values tied to edges, while compartment parameters have their values tied to compartments. All parameters that are part of the rates (or stoichiometries) of non-spatial reactions must be compartment parameters. Parameters that are part of spatial reactions can be either compartment parameters or edge parameters. When a spatial reaction's rate is computed, edge parameters fetch their values for from the edge of the transition, and compartment parameters from the compartment in which *the edge originates*.
+Parameters can be divided into *edge parameters* and *compartment parameters* (initial condition values are always tied to compartments). Here, edge parameters have their values tied to edges, while compartment parameters have their values tied to compartments. All parameters that are part of the rates (or stoichiometries) of non-spatial reactions must be compartment parameters. Parameters that are part of spatial reactions can be either compartment parameters or edge parameters. When a spatial reaction's rate is computed, edge parameters fetch their values for from the edge of the transition, and compartment parameters from the compartment from which *the edge originates*.
 
 When a `LatticeReactionSystem` is created, its parameter is the union of all parameters occurring in the (non-spatial) `ReactionSystem` and in all spatial reactions. By default, parameters occurring only in spatial reactions are considered edge parameters (and if they occur in the non-spatial `ReactionSystem` they are considered compartment parameters). It is however possible to designate a parameter specifically as an edge parameter or not, by using the `edgeparameter` [metadata](@ref ref). E.g. to designate that `D` (when declared in a non-spatial `ReactionSystem` using the DSL) is an edge parameter, not a compartment parameter, we use:
 ```@example spatial_intro_4
@@ -223,7 +223,7 @@ brusselator = @reaction_network begin
 end
 ```
 
-To learn the compartment and edge parameters of a `LatticeReaction`, the `compartment_parameters` and `edge_parameters` functions can be used:
+To learn the compartment and edge parameters of a `LatticeReaction`, the `vertex_parameters` and `edge_parameters` functions can be used:
 ```@example spatial_intro_4
 brusselator = @reaction_network begin
     A, ∅ --> X
@@ -236,6 +236,58 @@ lattice = CartesianGrid((20,20))
 lrs = LatticeReactionSystem(brusselator, [diffusion_reaction], lattice)
 edge_parameters(lrs)
 ```
+
+## Interacting with spatial problems and integrators
+We have previously described how to [check, and update, values stored in problems, integrators, and solution objects](@ref ref). Due to internal representations, these operations are more difficult for spatial model. Generally, the following limitations apply to spatial systems:
+- Parameter values stored in problems, integrators, and solutions can be accessed as normal.
+- While parameter values stored in problems and integrators can be updated, this must typically be followed by calling the `` function for the update to take effect. 
+- Species initial conditions stored in problems cannot be accessed nor updated.
+- Species values stored in integrators cannot be updated, and can only be access through the specialised `` function (described in more detail [here](@ref ref)).
+- Species values stored in solution objects can only be accessed through the specialised `` function.
+
+Below we describe these cases
+
+## Accessing and updating parameter values stored in problems and integrators
+Let us consider a simple spatial [birth-death] process where $p$'ve value is non-uniform (while $d$'s value is uniform).
+```@example spatial_intro_5
+using Catalyst
+bd_model = @reaction_network begin
+    (p,d), 0 <--> X
+end
+tr = @transport_reaction D X
+lattice = CartesianGrid((2,2))
+lrs = LatticeReactionSystem(rs, [tr], lattice)
+
+u0 = [:X => 0.1]
+tspan = (0.0, 200.0)
+ps = [:p => [1.1 1.2; 1.3 1.4], :d => 0.5, :D => 0.2]
+oprob = ODEProblem(lrs, u0, tspan, ps)
+nothing # hide
+```
+Here, we can check the parameter values by indexing with the corresponding symbol:
+```@example spatial_intro_5
+oprob.ps[:p]
+```
+!!! note
+    For non-spatial models, a parameter's [symbolic representation](@ref ref) can be used for indexing. However, for spatial ones, the symbol form must be used. You can convert from the former to the latter through `ModelingToolkit.getname(p)`.
+
+We can update a parameter value using similar syntax:
+```@example spatial_intro_5
+oprob.ps[:p] = [2.1 2.2; 2.3 2.4]
+nothing # hide
+```
+When assigning a uniform value to a parameter, *that value must be enclosed in a vector*. I.e. to update the value of `d` to `1.0` we must use
+```@example spatial_intro_5
+oprob.ps[:d] = [1.0]
+nothing # hide
+```
+
+When updating parameter values in either of these two manners:
+- Setting non-uniform values for a previously uniform parameter.
+- Setting uniform values for a previously non-uniform parameter.
+- Setting values for an [edge parameter](@ref spatial_lattice_modelling_intro_simulation_edge_parameters).
+
+You must rebuild the problem for the changes to have any effect. This is done through the `` function
 
 ## [Interacting with spatial simulation solutions and integrators](@id spatial_lattice_modelling_intro_solutions)
 
@@ -291,25 +343,3 @@ nothing # hide
 The value of `sol[:X]` returns a `Vector{Vector{Float64}}`. Here, the top-layer vector corresponds to the time points, and the bottom-layer to the value of $X$ in each compartment. Previously, [we described how to give initial conditions for unstructured grids by providing a vector where each element corresponds to a vertex in the grid](@ref spatial_lattice_modelling_intro_simulation_inputs_unstructured). Similarly, here, the i'th element in the bottom-layer vector is the value of $X$ in the i'th vertex of the graph that was provided as the lattice.
 
 ### Retrieving and setting values for problems and integrators
-
-## [Plotting Spatial simulations](@id spatial_lattice_modelling_intro_plotting)
-
-To aid the visualisation of spatial simulations, we provide 6 different plot recipes, covering the following situations:
-- For a 1d structured (Cartesian or masked) grid, plot its value at a single time point.
-- For a 1d structured grid, plot a kymograph of a single species's value over time.
-- For a 2d structured grid, plot a single species's value at a single time point.
-- For a 2d structured grid, create an animation of a single species's value over time.
-- For an unstructured grid, where the user provides the coordinates of each vertex, plot a species's value at a single time point. 
-- For an unstructured grid, where the user provides the coordinates of each vertex,  create an animation of a single species's value over time.
-
-### Plotting 1d structured lattice simulation at single time points
-
-### Plotting 1d structured lattice simulation over time
-
-### Plotting 2d structured lattice simulation at single time points
-
-### Animating 2d structured lattice simulation over time
-
-### Plotting unstructured lattice simulation at single time points
-
-### Animating unstructured lattice simulation over time
