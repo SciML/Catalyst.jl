@@ -43,7 +43,7 @@ documentation](https://docs.sciml.ai/Catalyst/stable/). The [in-development
 documentation](https://docs.sciml.ai/Catalyst/dev/) describes unreleased features in
 the current master branch.
 
-An overview of the package, its features, and comparative benchmarking (as of version 13) can also 
+An overview of the package, its features, and comparative benchmarking (as of version 13) can also
 be found in its corresponding research paper, [Catalyst: Fast and flexible modeling of reaction networks](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530).
 
 ## Features
@@ -71,7 +71,7 @@ be found in its corresponding research paper, [Catalyst: Fast and flexible model
 - [Graphviz](https://graphviz.org/) can be used to generate and [visualize reaction network graphs](https://docs.sciml.ai/Catalyst/stable/model_creation/model_visualisation/#visualisation_graphs) (reusing the Graphviz interface created in [Catlab.jl](https://algebraicjulia.github.io/Catlab.jl/stable/)).
 - Model steady states can be computed through homotopy continuation using [HomotopyContinuation.jl](https://github.com/JuliaHomotopyContinuation/HomotopyContinuation.jl) (which can find *all* steady states of systems with multiple ones), by forward ODE simulations using [SteadyStateDiffEq.jl](https://github.com/SciML/SteadyStateDiffEq.jl), or by numerically solving steady-state nonlinear equations using [NonlinearSolve.jl](https://github.com/SciML/NonlinearSolve.jl).
 - [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl) can be used to [compute bifurcation diagrams](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/bifurcation_diagrams/) of model steady states (including finding periodic orbits).
-- [DynamicalSystems.jl](https://github.com/JuliaDynamics/DynamicalSystems.jl) can be used to compute model [basins of attraction](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/dynamical_systems/#dynamical_systems_basins_of_attraction) and [Lyapunov spectrums](https://docs.sciml.ai/Catalyst/stable/steady_state_functionality/dynamical_systems/#dynamical_systems_lyapunov_exponents).
+- [DynamicalSystems.jl](https://github.com/JuliaDynamics/DynamicalSystems.jl) can be used to compute model [basins of attraction](@ref dynamical_systems_basins_of_attraction), [Lyapunov spectrums](@ref dynamical_systems_lyapunov_exponents), and other dynamical system properties.
 - [StructuralIdentifiability.jl](https://github.com/SciML/StructuralIdentifiability.jl) can be used to [perform structural identifiability analysis](https://docs.sciml.ai/Catalyst/stable/inverse_problems/structural_identifiability/).
 - [Optimization.jl](https://github.com/SciML/Optimization.jl), [DiffEqParamEstim.jl](https://github.com/SciML/DiffEqParamEstim.jl), and [PEtab.jl](https://github.com/sebapersson/PEtab.jl) can all be used to [fit model parameters to data](https://sebapersson.github.io/PEtab.jl/stable/Define_in_julia/).
 - [GlobalSensitivity.jl](https://github.com/SciML/GlobalSensitivity.jl) can be used to perform [global sensitivity analysis](https://docs.sciml.ai/Catalyst/stable/inverse_problems/global_sensitivity_analysis/) of model behaviors.
@@ -88,7 +88,7 @@ be found in its corresponding research paper, [Catalyst: Fast and flexible model
 ## Illustrative example
 
 #### Deterministic ODE simulation of Michaelis-Menten enzyme kinetics
-Here we show a simple example where a model is created using the Catalyst DSL, and then simulated as 
+Here we show a simple example where a model is created using the Catalyst DSL, and then simulated as
 an ordinary differential equation.
 
 ```julia
@@ -129,14 +129,15 @@ plot(jump_sol; lw = 2)
 ![Jump simulation](docs/src/assets/readme_jump_plot.svg)
 
 
-## Elaborate example
-In the above example, we used basic Catalyst-based workflows to simulate a simple model. Here we 
-instead show how various Catalyst features can compose to create a much more advanced model. Our 
-model describes how the volume of a cell ($V$) is affected by a growth factor ($G$). The growth 
-factor only promotes growth while in its phosphorylated form ($Gᴾ$). The phosphorylation of $G$ 
-($G \to Gᴾ$) is promoted by sunlight (modeled as the cyclic sinusoid $kₐ (sin(t) + 1)$), which
-phosphorylates the growth factor (producing $Gᴾ$). When the cell reaches a critical volume ($Vₘ$)
-it undergoes cell division. First, we declare our model:
+## More elaborate example
+In the above example, we used basic Catalyst workflows to simulate a simple
+model. Here we instead show how various Catalyst features can compose to create
+a much more advanced model. Our model describes how the volume of a cell ($V$)
+is affected by a growth factor ($G$). The growth factor only promotes growth
+while in its phosphorylated form ($G^P$). The phosphorylation of $G$ ($G \to G^P$)
+is promoted by sunlight (modeled as the cyclic sinusoid $k_a (\sin(t) + 1)$),
+which phosphorylates the growth factor (producing $G^P$). When the cell reaches a
+critical volume ($V_m$) it undergoes cell division. First, we declare our model:
 ```julia
 using Catalyst
 cell_model = @reaction_network begin
@@ -151,22 +152,22 @@ cell_model = @reaction_network begin
     kᵢ/V, Gᴾ --> G
 end
 ```
-We now study the system as a Chemical Langevin Dynamics SDE model, which can be generated as follows 
+We now study the system as a Chemical Langevin Dynamics SDE model, which can be generated as follows
 ```julia
 u0 = [:V => 25.0, :G => 50.0, :Gᴾ => 0.0]
 tspan = (0.0, 20.0)
 ps = [:Vₘ => 50.0, :g => 0.3, :kₚ => 100.0, :kᵢ => 60.0]
 sprob = SDEProblem(cell_model, u0, tspan, ps)
 ```
-This produces the following equations:
+This problem encodes the following stochastic differential equation model:
 ```math
 \begin{align*}
-dG(t) &=  - \left( \frac{kₚ*(sin(t)+1)}{V(t)} G(t) + \frac{kᵢ}{V(t)} Gᴾ(t) \right) dt - \sqrt{\frac{kₚ*(sin(t)+1)}{V(t)} G(t)} dW_1(t) + \sqrt{\frac{kᵢ}{V(t)} Gᴾ(t)} dW_2(t) \\
-dGᴾ(t) &= \left( \frac{kₚ*(sin(t)+1)}{V(t)} G(t) - \frac{kᵢ}{V(t)} Gᴾ(t) \right) dt + \sqrt{\frac{kₚ*(sin(t)+1)}{V(t)} G(t)} dW_1(t) - \sqrt{\frac{kᵢ}{V(t)} Gᴾ(t)} dW_2(t) \\
-dV(t) &= \left(g \cdot Gᴾ(t)\right) dt
+dG(t) &=  - \left( \frac{k_p(\sin(t)+1)}{V(t)} G(t) + \frac{k_i}{V(t)} G^P(t) \right) dt - \sqrt{\frac{k_p (\sin(t)+1)}{V(t)} G(t)} \, dW_1(t) + \sqrt{\frac{k_i}{V(t)} G^P(t)} \, dW_2(t) \\
+dG^P(t) &= \left( \frac{k_p(\sin(t)+1)}{V(t)} G(t) - \frac{k_i}{V(t)} G^P(t) \right) dt + \sqrt{\frac{k_p (\sin(t)+1)}{V(t)} G(t)} \, dW_1(t) - \sqrt{\frac{k_i}{V(t)} G^P(t)} \, dW_2(t) \\
+dV(t) &= \left(g \, G^P(t)\right) dt
 \end{align*}
 ```
-where the $dW_1(t)$ and $dW_2(t)$ terms represent independent Brownian Motions,  encoding the noise added by the Chemical Langevin Equation. Finally, we can simulate and plot the results.
+where the $dW_1(t)$ and $dW_2(t)$ terms represent independent Brownian Motions, encoding the noise added by the Chemical Langevin Equation. Finally, we can simulate and plot the results.
 ```julia
 using StochasticDiffEq, Plots
 sol = solve(sprob, EM(); dt = 0.05)
@@ -181,15 +182,14 @@ Some features we used here:
 - The model simulation was [plotted using Plots.jl](https://docs.sciml.ai/Catalyst/stable/model_simulation/simulation_plotting/).
 
 ## Getting help or getting involved
-Catalyst developers are active on the [Julia Discourse](https://discourse.julialang.org/), 
-the [Julia Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sciml-sysbio, and the 
-[Julia Zulip sciml-bridged channel](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged). 
+Catalyst developers are active on the [Julia Discourse](https://discourse.julialang.org/) and
+the [Julia Slack](https://julialang.slack.com) channels \#sciml-bridged and \#sciml-sysbio.
 For bugs or feature requests, [open an issue](https://github.com/SciML/Catalyst.jl/issues).
 
 ## Supporting and citing Catalyst.jl
-The software in this ecosystem was developed as part of academic research. If you would like to help 
-support it, please star the repository as such metrics may help us secure funding in the future. If 
-you use Catalyst as part of your research, teaching, or other activities, we would be grateful if you 
+The software in this ecosystem was developed as part of academic research. If you would like to help
+support it, please star the repository as such metrics may help us secure funding in the future. If
+you use Catalyst as part of your research, teaching, or other activities, we would be grateful if you
 could cite our work:
 ```
 @article{CatalystPLOSCompBio2023,
