@@ -41,25 +41,43 @@ function lat_setu!(sim_struct, sp, lrs::LatticeReactionSystem, u)
     # Checks that if u is non-uniform, it has the correct format for the system's lattice.
     (u isa Number) || check_lattice_format(extract_lattice(lrs), u)
 
-    # Find the correct species index and the total number of species.
+    # Converts symbol species to symbolic and find correct species index and numbers.
+    (sp isa Symbol) && (sp = _symbol_to_var(lrs, sp))
+    (sp isa Num) && (sp = Symbolics.unwrap(sp))
     sp_idx, sp_tot = get_sp_idxs(sp, lrs)
 
     # Reshapes the values to a vector of the correct form, and calls lat_setu! on the input structure.
-    u_reshaped = vertex_value_form(u, lrs, _symbol_to_var(lrs, sp))
-    lat_setu!(sim_struct, sp_idx, sp_tot, u_reshaped)
+    u_reshaped = vertex_value_form(u, lrs, sp)
+    lat_setu!(sim_struct, sp_idx, sp_tot, u_reshaped, num_verts(lrs))
 end
 
-function lat_setu!(oprob::ODEProblem, sp_idx::Int64, sp_tot::Int64, u)
-    foreach(idx -> (oprob.u0[sp_idx + (idx-1)*sp_tot] = u[idx]), eachindex(u))
+function lat_setu!(oprob::ODEProblem, sp_idx::Int64, sp_tot::Int64, u, num_verts)
+    if length(u) == 1
+        foreach(idx -> (oprob.u0[sp_idx + (idx-1)*sp_tot] = u[1]), 1:num_verts)
+    else
+        foreach(idx -> (oprob.u0[sp_idx + (idx-1)*sp_tot] = u[idx]), 1:num_verts)
+    end
 end
-function lat_setu!(jprob::JumpProblem, sp_idx::Int64, sp_tot::Int64, u)
-    foreach(idx -> (jprob.prob.u0[sp_idx,idx] = u[idx]), eachindex(u))
+function lat_setu!(jprob::JumpProblem, sp_idx::Int64, sp_tot::Int64, u, num_verts)
+    if length(u) == 1
+        foreach(idx -> (jprob.prob.u0[sp_idx,idx] = u[1]), 1:num_verts)
+    else
+        foreach(idx -> (jprob.prob.u0[sp_idx,idx] = u[idx]), 1:num_verts)
+    end
 end
-function lat_setu!(oint::SciMLBase.AbstractODEIntegrator, sp_idx::Int64, sp_tot::Int64, u)
-    foreach(idx -> (oint.u[sp_idx + (idx-1)*sp_tot] = u[idx]), eachindex(u))
+function lat_setu!(oint::SciMLBase.AbstractODEIntegrator, sp_idx::Int64, sp_tot::Int64, u, num_verts)
+    if length(u) == 1
+        foreach(idx -> (oint.u[sp_idx + (idx-1)*sp_tot] = u[1]), 1:num_verts)
+    else
+        foreach(idx -> (oint.u[sp_idx + (idx-1)*sp_tot] = u[idx]), 1:num_verts)
+    end
 end
-function lat_setu!(jint::JumpProcesses.SSAIntegrator, sp_idx::Int64, sp_tot::Int64, u)
-    foreach(idx -> (jint.u[sp_idx,idx] = u[idx]), eachindex(u))
+function lat_setu!(jint::JumpProcesses.SSAIntegrator, sp_idx::Int64, sp_tot::Int64, u, num_verts)
+    if length(u) == 1
+        foreach(idx -> (jint.u[sp_idx,idx] = u[1]), 1:num_verts)
+    else
+        foreach(idx -> (jint.u[sp_idx,idx] = u[idx]), 1:num_verts)
+    end
 end
 
 function check_lattice_format(lattice::CartesianGridRej, u)

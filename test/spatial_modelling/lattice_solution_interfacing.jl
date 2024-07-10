@@ -77,19 +77,19 @@ let
     lattice_cartesian = CartesianGrid((2,2,2))
     lattice_masked = [true true; false true]
     lattice_graph = cycle_graph(5)
-    X0_cartesian = fill(1.0, 2, 2, 2)
-    X0_masked = sparse([1.0 2.0; 0.0 3.0])
-    X0_graph = [1.0, 2.0, 3.0, 4.0, 5.0]
+    val0_cartesian = fill(1.0, 2, 2, 2)
+    val0_masked = sparse([1.0 2.0; 0.0 3.0])
+    val0_graph = [1.0, 2.0, 3.0, 4.0, 5.0]
 
     # Unpacks the `X`  and `Y` symbolic variable (so that indexing using it can be tested).
     @unpack X, Y = brusselator_system
 
     # Loops through all alternative lattices and `X0`. Checks that `lat_getu` works in all cases.
-    for (lattice, X0) in zip([lattice_cartesian, lattice_masked, lattice_graph],[X0_cartesian, X0_masked, X0_graph])
+    for (lattice, val0) in zip([lattice_cartesian, lattice_masked, lattice_graph],[val0_cartesian, val0_masked, val0_graph])
         # Prepares various problems and integrators. Uses `deepcopy` to ensure there is no cross-talk
         # between the different u vectors as they get updated.
         lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, lattice_masked)
-        u0 = [:X => X0, :Y => 0.5]
+        u0 = [:X => val0, :Y => 0.5]
         ps = [:A => 1.0, :B => 2.0, :dX => 0.1]
         oprob = ODEProblem(lrs, deepcopy(u0), (0.0, 1.0), ps)
         dprob = DiscreteProblem(lrs, deepcopy(u0), (0.0, 1.0), ps)
@@ -98,20 +98,30 @@ let
         jint = init(deepcopy(jprob), SSAStepper())
         
         # Check that `lat_getu` retrieves the correct values.
-        @test lat_getu(oprob, :X, lrs) == lat_getu(oprob, X, lrs) == lat_getu(oprob, brusselator_system.X, lrs) == X0
-        @test lat_getu(oint, :X, lrs) == lat_getu(oint, X, lrs) == lat_getu(oint, brusselator_system.X, lrs) == X0
-        @test lat_getu(jprob, :X, lrs) == lat_getu(jprob, X, lrs) == lat_getu(jprob, brusselator_system.X, lrs) == X0
-        @test lat_getu(jint, :X, lrs) == lat_getu(jint, X, lrs) == lat_getu(jint, brusselator_system.X, lrs) == X0
+        @test lat_getu(oprob, :X, lrs) == lat_getu(oprob, X, lrs) == lat_getu(oprob, brusselator_system.X, lrs) == val0
+        @test lat_getu(oint, :X, lrs) == lat_getu(oint, X, lrs) == lat_getu(oint, brusselator_system.X, lrs) == val0
+        @test lat_getu(jprob, :X, lrs) == lat_getu(jprob, X, lrs) == lat_getu(jprob, brusselator_system.X, lrs) == val0
+        @test lat_getu(jint, :X, lrs) == lat_getu(jint, X, lrs) == lat_getu(jint, brusselator_system.X, lrs) == val0
         
         # Updates Y and checks its content.
-        lat_setu!(oprob, :Y, lrs, X0)
-        @test lat_getu(oprob, :Y, lrs) == lat_getu(oprob, Y, lrs) == lat_getu(oprob, brusselator_system.Y, lrs) == X0
-        lat_setu!(oint, :Y, lrs, X0)
-        @test lat_getu(oint, :X, lrs) == lat_getu(oint, X, lrs) == lat_getu(oint, brusselator_system.X, lrs) == X0
-        lat_setu!(jprob, :Y, lrs, X0)
-        @test lat_getu(jprob, :X, lrs) == lat_getu(jprob, X, lrs) == lat_getu(jprob, brusselator_system.X, lrs) == X0
-        lat_setu!(jint, :Y, lrs, X0)
-        @test lat_getu(jint, :X, lrs) == lat_getu(jint, X, lrs) == lat_getu(jint, brusselator_system.X, lrs) == X0
+        lat_setu!(oprob, :Y, lrs, val0)
+        @test lat_getu(oprob, :Y, lrs) == lat_getu(oprob, Y, lrs) == lat_getu(oprob, brusselator_system.Y, lrs) == val0
+        lat_setu!(oint, :Y, lrs, val0)
+        @test lat_getu(oint, :X, lrs) == lat_getu(oint, X, lrs) == lat_getu(oint, brusselator_system.X, lrs) == val0
+        lat_setu!(jprob, :Y, lrs, val0)
+        @test lat_getu(jprob, :X, lrs) == lat_getu(jprob, X, lrs) == lat_getu(jprob, brusselator_system.X, lrs) == val0
+        lat_setu!(jint, :Y, lrs, val0)
+        @test lat_getu(jint, :X, lrs) == lat_getu(jint, X, lrs) == lat_getu(jint, brusselator_system.X, lrs) == val0
+
+        # Tries where we change a spatially non-uniform variable to spatially uniform.
+        lat_setu!(oprob, X, lrs, 0.0)
+        @test all(isequal(0.0), lat_getu(oprob, X, lrs))
+        lat_setu!(oint, X, lrs, 0.0)
+        @test all(isequal(0.0), lat_getu(oint, X, lrs))
+        lat_setu!(jprob, X, lrs, 0.0)
+        @test all(isequal(0.0), lat_getu(jprob, X, lrs))
+        lat_setu!(jint, X, lrs, 0.0)
+        @test all(isequal(0.0), lat_getu(jint, X, lrs))
     end
 end
 
