@@ -179,16 +179,17 @@ export CartesianGrid, CartesianGridReJ # (Implemented in JumpProcesses)
 export has_cartesian_lattice, has_masked_lattice, has_grid_lattice, has_graph_lattice,
        grid_dims, grid_size
 export make_edge_p_values, make_directed_edge_values
-include("spatial_reaction_systems/lattice_solution_interfacing.jl")
-export get_lrs_vals
 
 # Specific spatial problem types.
 include("spatial_reaction_systems/spatial_ODE_systems.jl")
-export rebuild_lat_internals!
 include("spatial_reaction_systems/lattice_jump_systems.jl")
 
 # General spatial modelling utility functions.
 include("spatial_reaction_systems/utility.jl")
+
+# Methods for interfacing with from LatticeReactionSystem derived problems, integrators, and solutions.
+include("spatial_reaction_systems/lattice_sim_struct_interfacing.jl")
+export lat_getu, lat_setu!, rebuild_lat_internals!
 
 ### ReactionSystem Serialisation ###
 # Has to be at the end (because it uses records of all metadata declared by Catalyst).

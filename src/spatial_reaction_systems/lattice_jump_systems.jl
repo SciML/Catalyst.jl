@@ -47,6 +47,8 @@ function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator
 
     # Creates and returns a spatial JumpProblem (masked lattices are not supported by these).
     spatial_system = has_masked_lattice(lrs) ? get_lattice_graph(lrs) : lattice(lrs)
+    println(JumpProblem(non_spat_dprob, aggregator, sma_jumps;
+    hopping_constants, spatial_system, name, kwargs...).prob.u0)
     return JumpProblem(non_spat_dprob, aggregator, sma_jumps;
         hopping_constants, spatial_system, name, kwargs...)
 end
@@ -142,13 +144,3 @@ end
 #     majpmapper = ModelingToolkit.JumpSysMajParamMapper(js, p; jseqs = eqs, rateconsttype = invttype)
 #     return ModelingToolkit.assemble_maj(eqs.x[1], statetoid, majpmapper)
 # end
-
-### Problem & Integrator Rebuilding ###
-
-# Currently not implemented.
-function rebuild_lat_internals!(dprob::DiscreteProblem)
-    error("Modification and/or rebuilding of `DiscreteProblem`s is currently not supported. Please create a new problem instead.")
-end
-function rebuild_lat_internals!(jprob::JumpProblem)
-    error("Modification and/or rebuilding of `JumpProblem`s is currently not supported. Please create a new problem instead.")
-end

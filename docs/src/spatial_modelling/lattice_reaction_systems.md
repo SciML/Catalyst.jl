@@ -56,7 +56,7 @@ We note that simulations of spatial models are often computationally expensive. 
 
 Finally, we can access "$X$'s value across the simulation using
 ```@example spatial_intro_1
-get_lrs_vals(sol, :X, lrs)
+lat_getu(sol, :X, lrs)
 ```
 Alternatively, we can create an animation of our simulation using:
 ```@example spatial_intro_1
@@ -239,11 +239,12 @@ edge_parameters(lrs)
 
 ## Interacting with spatial problems and integrators
 We have previously described how to [check, and update, values stored in problems, integrators, and solution objects](@ref ref). Due to internal representations, these operations are more difficult for spatial model. Generally, the following limitations apply to spatial systems:
-- Parameter values stored in problems, integrators, and solutions can be accessed as normal.
-- While parameter values stored in problems and integrators can be updated, this must typically be followed by calling the `` function for the update to take effect. 
+- Parameter values stored in `ODEProblem`s and corresponding integrators can be accessed as normal.
+- While parameter values stored in `ODEProblem`s and corresponding integrators  can be updated, this must typically be followed by calling the `rebuild_lat_internals!` function for the update to take effect.
+- Parameter values stored in `DiscreteProblem`s, `JumpProblem`s, and corresponding integrators cannot be accessed nor updated.
 - Species initial conditions stored in problems cannot be accessed nor updated.
-- Species values stored in integrators cannot be updated, and can only be access through the specialised `` function (described in more detail [here](@ref ref)).
-- Species values stored in solution objects can only be accessed through the specialised `` function.
+- Species values stored in integrators cannot be updated, and can only be access through the specialised `lat_getu` function (described in more detail [here](@ref ref)).
+- Species values stored in solution objects can only be accessed through the specialised `lat_getu` function.
 
 Below we describe these cases
 
@@ -281,21 +282,34 @@ When assigning a uniform value to a parameter, *that value must be enclosed in a
 oprob.ps[:d] = [1.0]
 nothing # hide
 ```
+I.e. this
+```@example spatial_intro_5
+oprob.ps[:d] = 1.0
+nothing # hide
+```
+does not work.
 
 When updating parameter values in either of these two manners:
 - Setting non-uniform values for a previously uniform parameter.
 - Setting uniform values for a previously non-uniform parameter.
 - Setting values for an [edge parameter](@ref spatial_lattice_modelling_intro_simulation_edge_parameters).
 
-You must rebuild the problem for the changes to have any effect. This is done through the `` function
+You must rebuild the problem for the changes to have any effect. This is done through the `rebuild_lat_internals!` function. I.e. here we gives $d$ non-uniform values, and then rebuilds the `oprob`:
+```@example spatial_intro_5
+oprob.ps[:d] = [0.4 0.5; 0.6 0.7]
+rebuild_lat_internals!(oprob)
+nothing # hide
+```
+
+Parameter values stored in [integrators](@ref ref) can be accessed and updated in the same manner as those stored in problems. This can primarily be used to update parameter values during a simulation as result of the [triggering of a callback](@ref ref).
 
 ## [Interacting with spatial simulation solutions and integrators](@id spatial_lattice_modelling_intro_solutions)
 
-We [have previously described](@ref simulation_structure_interfacing) how to interface with problems, integrators, and solutions produced by non-spatial models. Here, for a simulation solution `sol`, to retrieve a vector with all values of $X$ we simply use:
-```julia
-sol[:X]
-```
-A similar syntax can be used for spatial models. However, the output will be value of $X$ across the entire spatial grid. How to retrieve (and for integrators and problems, set) values at specific compartments, a specific notation will have to be used. This also depends on the type of lattice used.
+
+
+
+
+
 
 ### Retrieving solution values from Cartesian grids
 Let us consider the solution to a `LatticeReactionSystem` where a Cartesian grid was used:

@@ -3,7 +3,119 @@
 # Fetch packages.
 using Catalyst, Graphs, JumpProcesses, OrdinaryDiffEq, SparseArrays, Test
 
-### `get_lrs_vals` Tests ###
+# Fetch test networks.
+include("../spatial_test_networks.jl")
+
+### Basic Interfacing ###
+
+# Checks that basic interfacing with ODEProblem parameters (getting and setting) works.
+# Checks that basic interfacing with ODE integrators parameters (getting and setting) works.
+let
+    # Creates an initial `ODEProblem` and integrator.
+    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, small_1d_cartesian_grid)
+    u0 = [:X => 1.0, :Y => 2.0]
+    ps = [:A => 1.0, :B => [1.0, 2.0, 3.0, 4.0, 5.0], :dX => 0.1]
+    oprob = ODEProblem(lrs, u0, (0.0, 10.0), ps)
+    oint = init(oprob, Tsit5())
+
+    # Checks that retrieved parameters are correct.
+    @test oprob.ps[:A] == [1.0]
+    @test oprob.ps[:B] == [1.0, 2.0, 3.0, 4.0, 5.0]
+    @test oprob.ps[:dX] == sparse([1], [1], [0.1])
+
+    # Updates content.
+    oprob.ps[:A] = [10.0, 20.0, 30.0, 40.0, 50.0]
+    oprob.ps[:B] = [10.0]
+    oprob.ps[:dX] = [0.01]
+
+    # Checks that content is correct.
+    @test oprob.ps[:A] == [10.0, 20.0, 30.0, 40.0, 50.0]
+    @test oprob.ps[:B] == [10.0]
+    @test oprob.ps[:dX] == [0.01]
+
+    # Checks that the integrator have the updated `ODEProblem` parameter (not sure if this is really desired though).
+    @test oint.ps[:A] == [10.0, 20.0, 30.0, 40.0, 50.0]
+    @test oint.ps[:B] == [10.0]
+    @test oint.ps[:dX] == [0.01]
+
+    # Updates content.
+    oint.ps[:A] = [5.0]
+    oint.ps[:B] = [0.5]
+    oint.ps[:dX] = fill(0.2, 5, 5)
+
+    # Checks that content is correct.
+    @test oint.ps[:A] == [5.0]
+    @test oint.ps[:B] == [0.5]
+    @test oint.ps[:dX] == fill(0.2, 5, 5)
+end
+
+# Checks normal interfacing for jump simulation structures. Currently does not work, and implementing
+# this might be a major endeavour. This test primarily keeps track of it not working.
+let
+    # Creates an initial `ODEProblem` and integrator.
+    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, small_1d_cartesian_grid)
+    u0 = [:X => 1, :Y => 2]
+    ps = [:A => 1.0, :B => [1.0, 2.0, 3.0, 4.0, 5.0], :dX => 0.1]
+    dprob = DiscreteProblem(lrs, u0, (0.0, 10.0), ps)
+    jprob = JumpProblem(lrs, dprob, NSM())
+    jint = init(jprob, SSAStepper())
+
+    # Make basic checks (this features does not currently work).
+    @test_broken jprob.ps[:A]
+    @test_broken jprob.ps[:A] = [1.0]
+    @test_broken jint.ps[:A]
+    @test_broken jint.ps[:A] = [1.0]
+end
+
+### Problem & Integrator `lat_getu` & `lat_setu!` Tests ###
+
+# Checks `getu` for ODE and Jump problem and integrators.
+# Checks for all types of lattices.
+# Checks for symbol and symbolic variables input.
+let
+    # Declares various types of lattices and corresponding initial values of `X`.
+    lattice_cartesian = CartesianGrid((2,2,2))
+    lattice_masked = [true true; false true]
+    lattice_graph = cycle_graph(5)
+    X0_cartesian = fill(1.0, 2, 2, 2)
+    X0_masked = sparse([1.0 2.0; 0.0 3.0])
+    X0_graph = [1.0, 2.0, 3.0, 4.0, 5.0]
+
+    # Unpacks the `X`  and `Y` symbolic variable (so that indexing using it can be tested).
+    @unpack X, Y = brusselator_system
+
+    # Loops through all alternative lattices and `X0`. Checks that `lat_getu` works in all cases.
+    for (lattice, X0) in zip([lattice_cartesian, lattice_masked, lattice_graph],[X0_cartesian, X0_masked, X0_graph])
+        # Prepares various problems and integrators. Uses `deepcopy` to ensure there is no cross-talk
+        # between the different u vectors as they get updated.
+        lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, lattice_masked)
+        u0 = [:X => X0, :Y => 0.5]
+        ps = [:A => 1.0, :B => 2.0, :dX => 0.1]
+        oprob = ODEProblem(lrs, deepcopy(u0), (0.0, 1.0), ps)
+        dprob = DiscreteProblem(lrs, deepcopy(u0), (0.0, 1.0), ps)
+        jprob = JumpProblem(lrs, dprob, NSM())
+        oint = init(deepcopy(oprob), Tsit5())
+        jint = init(deepcopy(jprob), SSAStepper())
+        
+        # Check that `lat_getu` retrieves the correct values.
+        @test lat_getu(oprob, :X, lrs) == lat_getu(oprob, X, lrs) == lat_getu(oprob, brusselator_system.X, lrs) == X0
+        @test lat_getu(oint, :X, lrs) == lat_getu(oint, X, lrs) == lat_getu(oint, brusselator_system.X, lrs) == X0
+        @test lat_getu(jprob, :X, lrs) == lat_getu(jprob, X, lrs) == lat_getu(jprob, brusselator_system.X, lrs) == X0
+        @test lat_getu(jint, :X, lrs) == lat_getu(jint, X, lrs) == lat_getu(jint, brusselator_system.X, lrs) == X0
+        
+        # Updates Y and checks its content.
+        lat_setu!(oprob, :Y, lrs, X0)
+        @test lat_getu(oprob, :Y, lrs) == lat_getu(oprob, Y, lrs) == lat_getu(oprob, brusselator_system.Y, lrs) == X0
+        lat_setu!(oint, :Y, lrs, X0)
+        @test lat_getu(oint, :X, lrs) == lat_getu(oint, X, lrs) == lat_getu(oint, brusselator_system.X, lrs) == X0
+        lat_setu!(jprob, :Y, lrs, X0)
+        @test lat_getu(jprob, :X, lrs) == lat_getu(jprob, X, lrs) == lat_getu(jprob, brusselator_system.X, lrs) == X0
+        lat_setu!(jint, :Y, lrs, X0)
+        @test lat_getu(jint, :X, lrs) == lat_getu(jint, X, lrs) == lat_getu(jint, brusselator_system.X, lrs) == X0
+    end
+end
+
+### Simulation `lat_getu` Tests ###
 
 # Basic test. For simulations without change in system, check that the solution corresponds to known
 # initial condition throughout the solution. 
@@ -35,20 +147,20 @@ let
 
     # Loops through all lattice cases and check that they are correct.
     for (u0,lrs) in zip([u0_1, u0_2, u0_3, u0_4, u0_5, u0_6], [lrs1, lrs2, lrs3, lrs4, lrs5, lrs6])
-        # Simulates ODE version and checks `get_lrs_vals` on its solution.
+        # Simulates ODE version and checks `lat_getu` on its solution.
         oprob = ODEProblem(lrs, u0, tspan, ps)
         osol = solve(oprob, Tsit5(), saveat = 0.5)
-        @test get_lrs_vals(osol, :X1, lrs) == get_lrs_vals(osol, :X1, lrs; t = 0.0:0.5:1.0)
-        @test all(all(val == Float64(u0[:X1]) for val in vals) for vals in get_lrs_vals(osol, :X1, lrs))
-        @test get_lrs_vals(osol, :X2, lrs) == get_lrs_vals(osol, :X2, lrs; t = 0.0:0.5:1.0) == fill(u0[:X2], 3)
+        @test lat_getu(osol, :X1, lrs) == lat_getu(osol, :X1, lrs; t = 0.0:0.5:1.0)
+        @test all(all(val == Float64(u0[:X1]) for val in vals) for vals in lat_getu(osol, :X1, lrs))
+        @test lat_getu(osol, :X2, lrs) == lat_getu(osol, :X2, lrs; t = 0.0:0.5:1.0) == fill(u0[:X2], 3)
 
-        # Simulates jump version and checks `get_lrs_vals` on its solution.
+        # Simulates jump version and checks `lat_getu` on its solution.
         dprob = DiscreteProblem(lrs, u0, tspan, ps)
         jprob = JumpProblem(lrs, dprob, NSM())
         jsol = solve(jprob, SSAStepper(), saveat = 0.5)
-        @test get_lrs_vals(jsol, :X1, lrs) == get_lrs_vals(jsol, :X1, lrs; t = 0.0:0.5:1.0)
-        @test all(all(val == Float64(u0[:X1]) for val in vals) for vals in get_lrs_vals(jsol, :X1, lrs))
-        @test get_lrs_vals(jsol, :X2, lrs) == get_lrs_vals(jsol, :X2, lrs; t = 0.0:0.5:1.0) == fill(u0[:X2], 3)
+        @test lat_getu(jsol, :X1, lrs) == lat_getu(jsol, :X1, lrs; t = 0.0:0.5:1.0)
+        @test all(all(val == Float64(u0[:X1]) for val in vals) for vals in lat_getu(jsol, :X1, lrs))
+        @test lat_getu(jsol, :X2, lrs) == lat_getu(jsol, :X2, lrs; t = 0.0:0.5:1.0) == fill(u0[:X2], 3)
     end
 end
 
@@ -75,7 +187,7 @@ let
     # not produced due to numeric errors.
     saveat = [0.0, 1.0, 5.0, 10.0, 50.0]
     sol = solve(oprob, Vern7(); abstol = 1e-8, reltol = 1e-8)
-    vals = get_lrs_vals(sol, :X, lrs)
+    vals = lat_getu(sol, :X, lrs)
     @test vals[1] == [1.0, 3.0]
     @test vals[end] ≈ [2.0, 2.0]
     for i = 1:(length(saveat) - 1)
@@ -102,13 +214,11 @@ let
 
     # Solves and check the interpolation of t.
     sol = solve(oprob, Tsit5(); saveat = 1.0)
-    t5_vals = get_lrs_vals(sol, :X, lrs; t = [0.5])[1]
+    t5_vals = lat_getu(sol, :X, lrs; t = [0.5])[1]
     @test sol.u[1][1] < t5_vals[1] < sol.u[2][1]
     @test sol.u[1][2] > t5_vals[2] > sol.u[2][2]
 end
 
-### Error Tests ###
-
 # Checks that attempting to sample `t` outside tspan range yields an error.
 let
     # Prepare `LatticeReactionSystem`s.
@@ -126,8 +236,8 @@ let
 
     # Solves and check the interpolation of t.
     sol = solve(oprob, Tsit5(); saveat = 1.0)
-    @test_throws Exception get_lrs_vals(sol, :X, lrs; t = [0.0])
-    @test_throws Exception get_lrs_vals(sol, :X, lrs; t = [3.0])
+    @test_throws Exception lat_getu(sol, :X, lrs; t = [0.0])
+    @test_throws Exception lat_getu(sol, :X, lrs; t = [3.0])
 end
 
 # Checks that attempting to sample `t` outside tspan range yields an error.
@@ -147,11 +257,11 @@ let
 
     # Solves and check the interpolation of t.
     sol = solve(oprob, Tsit5(); saveat = 1.0)
-    @test_throws Exception get_lrs_vals(sol, :X, lrs; t = [0.0])
-    @test_throws Exception get_lrs_vals(sol, :X, lrs; t = [3.0])
+    @test_throws Exception lat_getu(sol, :X, lrs; t = [0.0])
+    @test_throws Exception lat_getu(sol, :X, lrs; t = [3.0])
 end
 
-# Checks that applying `get_lrs_vals` to a 3d masked lattice yields an error.
+# Checks that applying `lat_getu` to a 3d masked lattice yields an error.
 let
     # Prepare `LatticeReactionSystem`s.
     rs = @reaction_network begin
@@ -168,12 +278,10 @@ let
 
     # Solves and check the interpolation of t.
     sol = solve(oprob, Tsit5(); saveat = 1.0)
-    @test_throws Exception get_lrs_vals(sol, :X, lrs)
+    @test_throws Exception lat_getu(sol, :X, lrs)
 end
 
-### Other Tests ###
-
-# Checks that `get_lrs_vals` works for all types of symbols.
+# Checks that `lat_getu` works for all types of symbols.
 let
     t = default_t()
     @species X(t)
@@ -191,6 +299,120 @@ let
 
     # Solves and check the interpolation of t.
     sol = solve(oprob, Tsit5(); saveat = 1.0)
-    @test get_lrs_vals(sol, X, lrs) == get_lrs_vals(sol, rs.X, lrs) == get_lrs_vals(sol, :X, lrs)
-    @test get_lrs_vals(sol, X, lrs; t = 0.0:0.5:1.0) == get_lrs_vals(sol, rs.X, lrs; t = 0.0:0.5:1.0) == get_lrs_vals(sol, :X, lrs; t = 0.0:0.5:1.0)
+    @test lat_getu(sol, X, lrs) == lat_getu(sol, rs.X, lrs) == lat_getu(sol, :X, lrs)
+    @test lat_getu(sol, X, lrs; t = 0.0:0.5:1.0) == lat_getu(sol, rs.X, lrs; t = 0.0:0.5:1.0) == lat_getu(sol, :X, lrs; t = 0.0:0.5:1.0)
+end
+
+### ODEProblem & Integrator Rebuilding ###
+
+# Checks that the `rebuild_lat_internals!` function is correctly applied to an ODEProblem.
+let
+    # Creates a Brusselator `LatticeReactionSystem`.
+    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_2, very_small_2d_cartesian_grid)
+
+    # Checks for all combinations of Jacobian and sparsity.
+    for jac in [false, true], sparse in [false, true]
+        # Creates an initial ODEProblem.
+        u0 = [:X => 1.0, :Y => [1.0 2.0; 3.0 4.0]]
+        dY_vals = spzeros(4,4)
+        dY_vals[1,2] = 0.1; dY_vals[2,1] = 0.1; 
+        dY_vals[1,3] = 0.2; dY_vals[3,1] = 0.2; 
+        dY_vals[2,4] = 0.3; dY_vals[4,2] = 0.3; 
+        dY_vals[3,4] = 0.4; dY_vals[4,3] = 0.4; 
+        ps = [:A => 1.0, :B => [4.0 5.0; 6.0 7.0], :dX => 0.1, :dY => dY_vals]
+        oprob_1 = ODEProblem(lrs, u0, (0.0, 10.0), ps; jac, sparse)
+
+        # Creates an alternative version of the ODEProblem.
+        dX_vals = spzeros(4,4)
+        dX_vals[1,2] = 0.01; dX_vals[2,1] = 0.01; 
+        dX_vals[1,3] = 0.02; dX_vals[3,1] = 0.02; 
+        dX_vals[2,4] = 0.03; dX_vals[4,2] = 0.03; 
+        dX_vals[3,4] = 0.04; dX_vals[4,3] = 0.04; 
+        ps = [:A => [1.1 1.2; 1.3 1.4], :B => 5.0, :dX => dX_vals, :dY => 0.01]
+        oprob_2 = ODEProblem(lrs, u0, (0.0, 10.0), ps; jac, sparse)
+
+        # Modifies the initial ODEProblem to be identical to the new one.
+        oprob_1.ps[:A] = [1.1 1.2; 1.3 1.4]
+        oprob_1.ps[:B] = [5.0]
+        oprob_1.ps[:dX] = dX_vals
+        oprob_1.ps[:dY] = [0.01]
+        rebuild_lat_internals!(oprob_1)
+
+        # Checks that simulations of the two `ODEProblem`s are identical.
+        @test solve(oprob_1, Rodas5P()) ≈ solve(oprob_2, Rodas5P())
+    end
+end
+
+# Checks that the `rebuild_lat_internals!` function is correctly applied to an integrator.
+# Does through by applying it within a callback, and compare to simulations without callback.
+# To keep test faster, only check for `jac = sparse = true` only.
+let
+    # Prepares problem inputs.
+    lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_2, very_small_2d_cartesian_grid)
+    u0 = [:X => 1.0, :Y => [1.0 2.0; 3.0 4.0]]
+    A1 = 1.0
+    B1 = [4.0 5.0; 6.0 7.0]
+    A2 = [1.1 1.2; 1.3 1.4]
+    B2 = 5.0
+    dY_vals = spzeros(4,4)
+    dY_vals[1,2] = 0.1; dY_vals[2,1] = 0.1; 
+    dY_vals[1,3] = 0.2; dY_vals[3,1] = 0.2; 
+    dY_vals[2,4] = 0.3; dY_vals[4,2] = 0.3; 
+    dY_vals[3,4] = 0.4; dY_vals[4,3] = 0.4; 
+    dX_vals = spzeros(4,4)
+    dX_vals[1,2] = 0.01; dX_vals[2,1] = 0.01; 
+    dX_vals[1,3] = 0.02; dX_vals[3,1] = 0.02; 
+    dX_vals[2,4] = 0.03; dX_vals[4,2] = 0.03; 
+    dX_vals[3,4] = 0.04; dX_vals[4,3] = 0.04; 
+    dX1 = 0.1
+    dY1 = dY_vals
+    dX2 = dX_vals
+    dY2 = 0.01
+    ps_1 = [:A => A1, :B => B1, :dX => dX1, :dY => dY1]
+    ps_2 = [:A => A2, :B => B2, :dX => dX2, :dY => dY2]
+
+    # Creates simulation through two different separate simulations.
+    oprob_1_1 = ODEProblem(lrs, u0, (0.0, 5.0), ps_1; jac = true, sparse = true)
+    sol_1_1 = solve(oprob_1_1, Rosenbrock23(); saveat = 1.0, abstol = 1e-8, reltol = 1e-8)
+    u0_1_2 = [:X => sol_1_1.u[end][1:2:end], :Y => sol_1_1.u[end][2:2:end]]
+    oprob_1_2 = ODEProblem(lrs, u0_1_2, (0.0, 5.0), ps_2; jac = true, sparse = true)
+    sol_1_2 = solve(oprob_1_2, Rosenbrock23(); saveat = 1.0, abstol = 1e-8, reltol = 1e-8)
+
+    # Creates simulation through a single simulation with a callback
+    oprob_2 = ODEProblem(lrs, u0, (0.0, 10.0), ps_1; jac = true, sparse = true)
+    condition(u, t, integrator) = (t == 5.0)
+    function affect!(integrator)
+        integrator.ps[:A] = A2
+        integrator.ps[:B] = [B2]
+        integrator.ps[:dX] = dX2
+        integrator.ps[:dY] = [dY2]
+        rebuild_lat_internals!(integrator)
+    end
+    callback = DiscreteCallback(condition, affect!)
+    sol_2 = solve(oprob_2, Rosenbrock23(); saveat = 1.0, tstops = [5.0], callback, abstol = 1e-8, reltol = 1e-8)
+
+    # Check that trajectories are equivalent.
+    @test [sol_1_1.u; sol_1_2.u] ≈ sol_2.u
+end
+
+# Currently not supported for jump stuff, check that corresponding functions yield errors.
+let
+    # Prepare `LatticeReactionSystem`.
+    rs = @reaction_network begin
+        (k1,k2), X1 <--> X2
+    end
+    tr = @transport_reaction D X1 
+    grid = CartesianGrid((2,2))
+    lrs = LatticeReactionSystem(rs, [tr], grid)
+
+    # Create problems.
+    u0 = [:X1 => 2, :X2 => [5 6; 7 8]]
+    tspan = (0.0, 10.0)
+    ps = [:k1 => 1.5, :k2 => [1.0 1.5; 2.0 3.5], :D => 0.1]
+    dprob = DiscreteProblem(lrs, u0, tspan, ps)
+    jprob = JumpProblem(lrs, dprob, NSM())
+
+    # Checks that rebuilding errors.
+    @test_throws Exception rebuild_lat_internals!(dprob)
+    @test_throws Exception rebuild_lat_internals!(jprob)
 end
