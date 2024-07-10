@@ -53,46 +53,53 @@ end
 
 function lat_setu!(oprob::ODEProblem, sp_idx::Int64, sp_tot::Int64, u, num_verts)
     if length(u) == 1
-        foreach(idx -> (oprob.u0[sp_idx + (idx-1)*sp_tot] = u[1]), 1:num_verts)
+        foreach(idx -> (oprob.u0[sp_idx + (idx - 1) * sp_tot] = u[1]), 1:num_verts)
     else
-        foreach(idx -> (oprob.u0[sp_idx + (idx-1)*sp_tot] = u[idx]), 1:num_verts)
+        foreach(idx -> (oprob.u0[sp_idx + (idx - 1) * sp_tot] = u[idx]), 1:num_verts)
     end
 end
 function lat_setu!(jprob::JumpProblem, sp_idx::Int64, sp_tot::Int64, u, num_verts)
     if length(u) == 1
-        foreach(idx -> (jprob.prob.u0[sp_idx,idx] = u[1]), 1:num_verts)
+        foreach(idx -> (jprob.prob.u0[sp_idx, idx] = u[1]), 1:num_verts)
     else
-        foreach(idx -> (jprob.prob.u0[sp_idx,idx] = u[idx]), 1:num_verts)
+        foreach(idx -> (jprob.prob.u0[sp_idx, idx] = u[idx]), 1:num_verts)
     end
 end
-function lat_setu!(oint::SciMLBase.AbstractODEIntegrator, sp_idx::Int64, sp_tot::Int64, u, num_verts)
+function lat_setu!(oint::SciMLBase.AbstractODEIntegrator, sp_idx::Int64, sp_tot::Int64,
+        u, num_verts)
     if length(u) == 1
-        foreach(idx -> (oint.u[sp_idx + (idx-1)*sp_tot] = u[1]), 1:num_verts)
+        foreach(idx -> (oint.u[sp_idx + (idx - 1) * sp_tot] = u[1]), 1:num_verts)
     else
-        foreach(idx -> (oint.u[sp_idx + (idx-1)*sp_tot] = u[idx]), 1:num_verts)
+        foreach(idx -> (oint.u[sp_idx + (idx - 1) * sp_tot] = u[idx]), 1:num_verts)
     end
 end
-function lat_setu!(jint::JumpProcesses.SSAIntegrator, sp_idx::Int64, sp_tot::Int64, u, num_verts)
+function lat_setu!(
+        jint::JumpProcesses.SSAIntegrator, sp_idx::Int64, sp_tot::Int64, u, num_verts)
     if length(u) == 1
-        foreach(idx -> (jint.u[sp_idx,idx] = u[1]), 1:num_verts)
+        foreach(idx -> (jint.u[sp_idx, idx] = u[1]), 1:num_verts)
     else
-        foreach(idx -> (jint.u[sp_idx,idx] = u[idx]), 1:num_verts)
+        foreach(idx -> (jint.u[sp_idx, idx] = u[idx]), 1:num_verts)
     end
 end
 
 function check_lattice_format(lattice::CartesianGridRej, u)
-    (u isa AbstractArray) || error("The input u should be an AbstractArray. It is a $(typeof(u)).")
-    (size(u) == lattice.dims) || error("The input u should have size $(lattice.dims), but has size $(size(u)).")
+    (u isa AbstractArray) ||
+        error("The input u should be an AbstractArray. It is a $(typeof(u)).")
+    (size(u) == lattice.dims) ||
+        error("The input u should have size $(lattice.dims), but has size $(size(u)).")
 end
 function check_lattice_format(lattice::AbstractSparseArray, u)
-    (u isa AbstractArray) || error("The input u should be an AbstractArray. It is a $(typeof(u)).")
-    (size(u) == size(lattice)) || error("The input u should have size $(size(lattice)), but has size $(size(u)).")
+    (u isa AbstractArray) ||
+        error("The input u should be an AbstractArray. It is a $(typeof(u)).")
+    (size(u) == size(lattice)) ||
+        error("The input u should have size $(size(lattice)), but has size $(size(u)).")
 end
 function check_lattice_format(lattice::DiGraph, u)
-    (u isa AbstractArray) || error("The input u should be an AbstractVector. It is a $(typeof(u)).")
-    (size(u) == size(lattice)) || error("The input u should have length $(nv(lattice)), but has length $(length(u)).")
+    (u isa AbstractArray) ||
+        error("The input u should be an AbstractVector. It is a $(typeof(u)).")
+    (length(u) == nv(lattice)) ||
+        error("The input u should have length $(nv(lattice)), but has length $(length(u)).")
 end
-
 
 """
     lat_getu(sim_struct, sp, lrs::LatticeReactionSystem)
@@ -235,7 +242,7 @@ end
 
 # Function which handles the input in the case where `t` is a range of values (i.e. return `sp`s 
 # value at all designated time points.
-function lat_getu(sol::ODESolution, lattice, t::AbstractVector{T}, sp_idx::Int64, 
+function lat_getu(sol::ODESolution, lattice, t::AbstractVector{T}, sp_idx::Int64,
         sp_tot::Int64) where {T <: Number}
     # Checks that an appropriate `t` is provided (however, DiffEq does permit out of range `t`s).
     if (minimum(t) < sol.t[1]) || (maximum(t) > sol.t[end])

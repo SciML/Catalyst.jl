@@ -69,7 +69,8 @@ end
 
 ### Problem & Integrator `lat_getu` & `lat_setu!` Tests ###
 
-# Checks `getu` for ODE and Jump problem and integrators.
+# Checks `lat_getu` for ODE and Jump problem and integrators.
+# Checks `lat_setu!` for ODE and Jump problem and integrators.
 # Checks for all types of lattices.
 # Checks for symbol and symbolic variables input.
 let
@@ -88,7 +89,7 @@ let
     for (lattice, val0) in zip([lattice_cartesian, lattice_masked, lattice_graph],[val0_cartesian, val0_masked, val0_graph])
         # Prepares various problems and integrators. Uses `deepcopy` to ensure there is no cross-talk
         # between the different u vectors as they get updated.
-        lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, lattice_masked)
+        lrs = LatticeReactionSystem(brusselator_system, brusselator_srs_1, lattice)
         u0 = [:X => val0, :Y => 0.5]
         ps = [:A => 1.0, :B => 2.0, :dX => 0.1]
         oprob = ODEProblem(lrs, deepcopy(u0), (0.0, 1.0), ps)
