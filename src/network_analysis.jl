@@ -260,17 +260,12 @@ end
 Construct a directed simple graph where nodes correspond to reaction complexes and directed
 edges to reactions converting between two complexes.
 
-Notes:
-- Requires the `incidencemat` to already be cached in `rn` by a previous call to
-  `reactioncomplexes`.
-
 For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-complexes,incidencemat = reactioncomplexes(sir)
 incidencematgraph(sir)
 ```
 """
@@ -498,8 +493,7 @@ isweaklyreversible(rn, subnets)
 function isweaklyreversible(rn::ReactionSystem, subnets)
     nps = get_networkproperties(rn)
     isempty(nps.incidencemat) && reactioncomplexes(rn)
-    imat = nps.incidencemat
-    sparseig = issparse(imat)
+    sparseig = issparse(nps.incidencemat)
 
     for subnet in subnets
         subnps = get_networkproperties(subnet)
