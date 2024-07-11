@@ -437,7 +437,7 @@ rcs,incidencemat = reactioncomplexes(sir)
 function deficiency(rn::ReactionSystem)
     nps = get_networkproperties(rn)
 
-    # Check if deficiency has been computeud already (initialized to -1)
+    # Check if deficiency has been computed already (initialized to -1)
     if nps.deficiency == -1
         conservationlaws(rn)
         r = nps.rank
@@ -956,8 +956,11 @@ function satisfiesdeficiencyone(rn::ReactionSystem)
     lcs = linkageclasses(rn)
     tslcs = terminallinkageclasses(rn)
 
-    # Check the conditions for the deficiency one theorem: 1) the deficiency of each individual linkage class is at most 1; 2) the sum of the linkage deficiencies is the total deficiency, and 3) there is only one terminal linkage class per linkage class. 
-    all(<=(1), δ_l) && sum(δ_l) == δ && length(lcs) == length(tslcs)
+    # Check the conditions for the deficiency one theorem: 
+    #   1) the deficiency of each individual linkage class is at most 1; 
+    #   2) the sum of the linkage deficiencies is the total deficiency, and 
+    #   3) there is only one terminal linkage class per linkage class. 
+    all(<=(1), δ_l) && (sum(δ_l) == δ) && (length(lcs) == length(tslcs))
 end
 
 """
@@ -974,10 +977,14 @@ function robustspecies(rn::ReactionSystem)
         error("This algorithm currently only checks for robust species in networks with deficiency one.")
     end
 
-    # A species is concnetration robust in a deficiency one network if there are two non-terminal complexes (i.e. complexes belonging to a linkage class that is not terminal) that differ only in species s (i.e. their difference is some multiple of s. (A + B, A) differ only in B. (A + 2B, B) differ in both A and B, since A + 2B - B = A + B). 
+    # A species is concnetration robust in a deficiency one network if there are two non-terminal complexes (i.e. complexes 
+    # belonging to a linkage class that is not terminal) that differ only in species s (i.e. their difference is some 
+    # multiple of s. (A + B, A) differ only in B. (A + 2B, B) differ in both A and B, since A + 2B - B = A + B). 
+    
     if !nps.checkedrobust
         tslcs = terminallinkageclasses(rn)
         Z = complexstoichmat(rn)
+
         # Find the complexes that do not belong to a terminal linkage class 
         nonterminal_complexes = deleteat!([1:length(complexes);], vcat(tslcs...))
         robust_species = Int64[]
@@ -985,6 +992,7 @@ function robustspecies(rn::ReactionSystem)
         for (c_s, c_p) in collect(Combinatorics.combinations(nonterminal_complexes, 2))
             # Check the difference of all the combinations of complexes. The support is the set of indices that are non-zero 
             supp = findall(!=(0), Z[:, c_s] - Z[:, c_p])
+
             # If the support has length one, then they differ in only one species, and that species is concentration robust. 
             length(supp) == 1 && supp[1] ∉ robust_species && push!(robust_species, supp...)
         end
