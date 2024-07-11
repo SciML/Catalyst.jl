@@ -189,7 +189,7 @@ include("spatial_reaction_systems/utility.jl")
 
 # Methods for interfacing with from LatticeReactionSystem derived problems, integrators, and solutions.
 include("spatial_reaction_systems/lattice_sim_struct_interfacing.jl")
-export lat_getu, lat_setu!, rebuild_lat_internals!
+export lat_getp, lat_setp!, lat_getu, lat_setu!, rebuild_lat_internals!
 
 ### ReactionSystem Serialisation ###
 # Has to be at the end (because it uses records of all metadata declared by Catalyst).

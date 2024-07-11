@@ -39,39 +39,46 @@ lat_setp!(oprob, :k2, lrs, [1.0 0.0 0.0; 0.0 0.0 0.0]) # Sets `k2` to `1.0` in o
 ```
 """
 function lat_setp!(sim_struct, p, lrs::LatticeReactionSystem, p_vals)
-    # Checks that if u is non-uniform, it has the correct format for the system's lattice.
-    (u isa Number) || check_lattice_format(extract_lattice(lrs), p_vals)
+    # Error checks.
+    (p_vals isa Number) || check_lattice_format(extract_lattice(lrs), p_vals)
+    edge_param_check(p, lrs)
 
     # Converts symbol parameter to symbolic and find correct species index and numbers.
     (p isa Symbol) && (p = _symbol_to_var(lrs, p))
     (p isa Num) && (p = Symbolics.unwrap(p))
-    p_idx, p_tot = get_p_idxs(sp, lrs)
+    p_idx, p_tot = get_p_idxs(p, lrs)
 
-    # Reshapes the values to a vector of the correct form, and calls lat_setu! on the input structure.
+    # Reshapes the values to a vector of the correct form, and calls lat_setp! on the input structure.
     p_vals_reshaped = vertex_value_form(p_vals, lrs, p)
-    lat_setp!(sim_struct, p_idx, p_tot, p_vals_reshaped, num_verts(lrs))
+    lat_setp!(sim_struct, p_idx, p_vals_reshaped, num_verts(lrs))
 end
 
-function lat_setp!(oprob::ODEProblem, p_idx::Int64, p_tot::Int64, p_vals, num_verts)
+# Note: currently, `lat_setp!(oprob::ODEProblem, ...`) and `lat_setp!(SciMLBase.AbstractODEIntegrator, ...`)
+# are identical and could be merged to a singe function.
+function lat_setp!(oprob::ODEProblem, p_idx::Int64, p_vals, num_verts)
     if length(p_vals) == 1
-        foreach(idx -> (oprob.ps[p_idx + (idx - 1) * p_tot] = p_vals[1]), 1:num_verts)
-    else
-        foreach(idx -> (oprob.ps[p_idx + (idx - 1) * p_tot] = p_vals[idx]), 1:num_verts)
+        foreach(idx -> (oprob.p[p_idx][idx] = p_vals[1]), 1:num_verts)
+    elseif length(p_vals) == length(oprob.p[p_idx])
+        foreach(idx -> (oprob.p[p_idx][idx] = p_vals[idx]), 1:num_verts)
+    elseif length(oprob.p[p_idx]) == 1
+        oprob.p[p_idx][1] = p_vals[1]
+        foreach(idx -> (push!(oprob.p[p_idx], p_vals[idx])), 2:num_verts)
     end
 end
-function lat_setp!(jprob::JumpProblem, p_idx::Int64, p_tot::Int64, p_vals, num_verts)
+function lat_setp!(jprob::JumpProblem, p_idx::Int64, p_vals, num_verts)
     error("The `lat_setp!` function is currently not supported for `JumpProblem`s.")
 end
-function lat_setp!(oint::SciMLBase.AbstractODEIntegrator, p_idx::Int64, p_tot::Int64,
-        p_vals, num_verts)
+function lat_setp!(oint::SciMLBase.AbstractODEIntegrator, p_idx::Int64, p_vals, num_verts)
     if length(p_vals) == 1
-        foreach(idx -> (oint.ps[p_idx + (idx - 1) * p_tot] = p_vals[1]), 1:num_verts)
-    else
-        foreach(idx -> (oint.ps[p_idx + (idx - 1) * p_tot] = p_vals[idx]), 1:num_verts)
+        foreach(idx -> (oint.p[p_idx][idx] = p_vals[1]), 1:num_verts)
+    elseif length(p_vals) == length(oint.p[p_idx])
+        foreach(idx -> (oint.p[p_idx][idx] = p_vals[idx]), 1:num_verts)
+    elseif length(oint.p[p_idx]) == 1
+        oint.p[p_idx][1] = p_vals[1]
+        foreach(idx -> (push!(oint.p[p_idx], p_vals[idx])), 2:num_verts)
     end
 end
-function lat_setp!(jint::JumpProcesses.SSAIntegrator, p_idx::Int64, p_tot::Int64, 
-        p_vals, num_verts)
+function lat_setp!(jint::JumpProcesses.SSAIntegrator, p_idx::Int64, p_vals, num_verts)
     error("The `lat_setp!` function is currently not supported for jump simulation integrators.")
 end
 
@@ -117,22 +124,27 @@ lat_getp(oprob, :k1, lrs) # Retrieves the value of `k1`.
 ```
 """
 function lat_getp(sim_struct, p, lrs::LatticeReactionSystem)
-    p_idx, p_tot = get_p_idxs(p, lrs)
-    lat_getp(sim_struct, p_idx, p_tot, extract_lattice(lrs))
+    edge_param_check(p, lrs)
+    p_idx, _ = get_p_idxs(p, lrs)
+    lat_getp(sim_struct, p_idx, extract_lattice(lrs), num_verts(lrs))
 end
 
 # Retrieves the lattice values for problem or integrator structures.
-function lat_getp(oprob::ODEProblem, p_idx, p_tot, lattice)
-    return reshape_vals(oprob.u0[p_idx:p_tot:end], lattice)
+function lat_getp(oprob::ODEProblem, p_idx::Int64, lattice, num_verts)
+    vals = oprob.p[p_idx]
+    (length(vals) == 1) && (vals = fill(vals[1], num_verts))
+    return reshape_vals(vals, lattice)
 end
-function lat_getp(jprob::JumpProblem, p_idx, p_tot, lattice)
-    return reshape_vals(jprob.prob.u0[p_idx, :], lattice)
+function lat_getp(jprob::JumpProblem, p_idx::Int64, lattice, num_verts)
+    error("The `lat_getp` function is currently not supported for `JumpProblem`s.")
 end
-function lat_getp(oint::SciMLBase.AbstractODEIntegrator, p_idx, p_tot, lattice)
-    return reshape_vals(oint.u[p_idx:p_tot:end], lattice)
+function lat_getp(oint::SciMLBase.AbstractODEIntegrator, p_idx::Int64, lattice, num_verts)
+    vals = oint.p[p_idx]
+    (length(vals) == 1) && (vals = fill(vals[1], num_verts))
+    return reshape_vals(vals, lattice)
 end
-function lat_getp(jint::JumpProcesses.SSAIntegrator, p_idx, p_tot, lattice)
-    return reshape_vals(jint.u[p_idx, :], lattice)
+function lat_getp(jint::JumpProcesses.SSAIntegrator, p_idx::Int64, lattice, num_verts)
+    error("The `lat_getp` function is currently not supported for jump simulation integrators.")
 end
 
 """
@@ -533,8 +545,8 @@ end
 # Get a parameter index and the total number of parameters. Also handles different symbolic forms.
 function get_p_idxs(p, lrs::LatticeReactionSystem)
     (p isa Symbol) && (p = _symbol_to_var(lrs, p))
-    p_idx = findfirst(isequal(sp), parameters(lrs))
-    p_tot = length(speciparameterses(lrs))
+    p_idx = findfirst(isequal(p), parameters(lrs))
+    p_tot = length(parameters(lrs))
     return p_idx, p_tot
 end
 
@@ -556,4 +568,12 @@ function check_lattice_format(lattice::DiGraph, u)
         error("The input u should be an AbstractVector. It is a $(typeof(u)).")
     (length(u) == nv(lattice)) ||
         error("The input u should have length $(nv(lattice)), but has length $(length(u)).")
+end
+
+# Throws an error when interfacing with an edge parameter.
+function edge_param_check(p, lrs)
+    (p isa Symbol) && (p = _symbol_to_var(lrs, p))
+    if isedgeparameter(p) 
+        throw(ArgumentError("The `lat_getp` and `lat_setp!` functions currently does not support edge parameter updating. If you require this functionality, please raise an issue on the Catalyst GitHub page and we can add this feature."))
+    end
 end
