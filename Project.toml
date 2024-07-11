@@ -28,10 +28,12 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 [weakdeps]
 BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
 HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 StructuralIdentifiability = "220ca800-aa68-49bb-acd8-6037fa93a544"
 
 [extensions]
 CatalystBifurcationKitExtension = "BifurcationKit"
+CatalystGLMakieExtension = "GLMakie"
 CatalystHomotopyContinuationExtension = "HomotopyContinuation"
 CatalystStructuralIdentifiabilityExtension = "StructuralIdentifiability"
 
@@ -68,6 +70,7 @@ Graphviz_jll = "3c863552-8265-54e4-a6dc-903eb78fde85"
 HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
@@ -85,4 +88,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [targets]
-test = ["BifurcationKit", "DiffEqCallbacks", "DomainSets", "Graphviz_jll", "HomotopyContinuation", "Logging", "NonlinearSolve", "OrdinaryDiffEq", "Plots", "Random", "SafeTestsets", "SciMLBase", "SciMLNLSolve", "StableRNGs", "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "StructuralIdentifiability", "Test", "Unitful"]
+test = ["BifurcationKit", "DiffEqCallbacks", "DomainSets", "Graphviz_jll", "HomotopyContinuation", "Logging", "GLMakie", "NonlinearSolve", "OrdinaryDiffEq", "Plots", "Random", "SafeTestsets", "SciMLBase", "SciMLNLSolve", "StableRNGs", "StaticArrays", "Statistics", "SteadyStateDiffEq", "StochasticDiffEq", "StructuralIdentifiability", "Test", "Unitful"]
