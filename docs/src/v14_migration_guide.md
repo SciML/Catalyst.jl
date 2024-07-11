@@ -64,7 +64,7 @@ sol = solve(oprob)
 plot(sol)
 ```
 
-Note, that if we had instead used the [`@reaction_network`](@ref) DSL macro to build
+Note, if we had instead used the [`@reaction_network`](@ref) DSL macro to build
 our model, i.e.
 ```@example v14_migration_1
 rs2 = @reaction_network rs begin
