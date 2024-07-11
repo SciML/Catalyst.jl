@@ -72,6 +72,6 @@ using SafeTestsets, Test
     @time @safetestset "Spatial Lattice Variants" begin include("spatial_modelling/lattice_reaction_systems_lattice_types.jl") end
     @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_ODEs.jl") end
     @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_jumps.jl") end
-    @time @safetestset "Jump Solution Interfacing" begin include("spatial_modelling/lattice_solution_interfacing.jl") end
+    @time @safetestset "Lattice Simulation Structure Interfacing" begin include("spatial_modelling/lattice_simulation_struct_interfacing.jl") end
 
 end # @time

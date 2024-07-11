@@ -1,5 +1,140 @@
 ### Lattice Simulation Structure Species Getters/Setters ###
 
+
+"""
+    lat_setp!(sim_struct, p, lrs::LatticeReactionSystem, p_val)
+
+For a problem or integrators, updates its `p` vector with the input `p_val`. For non-lattice models,
+this is can be done through direct interfacing (e.g. `prob[p] = 1.0`). However, for 
+`LatticeReactionSystem`-based problems and integrators, this function must be used instead.
+
+Arguments:
+- `sim_struct`: The simulation structure which `u` value we wish to update. Can be either a `ODEProblem`,
+`JumpProblem`, or an integrator derived from either of these.
+- `p`: The species which value we wish to update. Can be provided either in its symbolic form, or 
+as a symbol.
+- `lrs`: The `LatticeReactionSystem` which was used to generate the structure we wish to modify.
+- `p_val`: The parameter's new values. Must be given in a form which is also a valid initial input to the 
+`ODEProblem`/`JumpProblem`.
+
+Example:
+```julia
+# Prepare `LatticeReactionSystem`s.
+using Catalyst
+rs = @reaction_network begin
+    (k1,k2), X1 <--> X2
+end
+tr = @transport_reaction D X1
+lrs = LatticeReactionSystem(rs, [tr], CartesianGrid((2,3)))
+
+# Prepares a corresponding ODEProblem.
+u0 = [:X1 => 1.0, :X2 => 2.0]
+tspan = (0.0, 50.0)
+ps = [:k1 => [1.0 2.0 3.0; 4.0 5.0 6.0], :k2 => 1.0, :D => 0.01]
+oprob = ODEProblem(lrs, u0, tspan, ps)
+
+# Updates the `ODEProblem`.
+lat_setp!(oprob, :k1, lrs, 0.0) # Sets `k1` to uniformly 0 across the lattice.
+lat_setp!(oprob, :k2, lrs, [1.0 0.0 0.0; 0.0 0.0 0.0]) # Sets `k2` to `1.0` in one vertex, and 0 elsewhere.
+```
+"""
+function lat_setp!(sim_struct, p, lrs::LatticeReactionSystem, p_vals)
+    # Checks that if u is non-uniform, it has the correct format for the system's lattice.
+    (u isa Number) || check_lattice_format(extract_lattice(lrs), p_vals)
+
+    # Converts symbol parameter to symbolic and find correct species index and numbers.
+    (p isa Symbol) && (p = _symbol_to_var(lrs, p))
+    (p isa Num) && (p = Symbolics.unwrap(p))
+    p_idx, p_tot = get_p_idxs(sp, lrs)
+
+    # Reshapes the values to a vector of the correct form, and calls lat_setu! on the input structure.
+    p_vals_reshaped = vertex_value_form(p_vals, lrs, p)
+    lat_setp!(sim_struct, p_idx, p_tot, p_vals_reshaped, num_verts(lrs))
+end
+
+function lat_setp!(oprob::ODEProblem, p_idx::Int64, p_tot::Int64, p_vals, num_verts)
+    if length(p_vals) == 1
+        foreach(idx -> (oprob.ps[p_idx + (idx - 1) * p_tot] = p_vals[1]), 1:num_verts)
+    else
+        foreach(idx -> (oprob.ps[p_idx + (idx - 1) * p_tot] = p_vals[idx]), 1:num_verts)
+    end
+end
+function lat_setp!(jprob::JumpProblem, p_idx::Int64, p_tot::Int64, p_vals, num_verts)
+    error("The `lat_setp!` function is currently not supported for `JumpProblem`s.")
+end
+function lat_setp!(oint::SciMLBase.AbstractODEIntegrator, p_idx::Int64, p_tot::Int64,
+        p_vals, num_verts)
+    if length(p_vals) == 1
+        foreach(idx -> (oint.ps[p_idx + (idx - 1) * p_tot] = p_vals[1]), 1:num_verts)
+    else
+        foreach(idx -> (oint.ps[p_idx + (idx - 1) * p_tot] = p_vals[idx]), 1:num_verts)
+    end
+end
+function lat_setp!(jint::JumpProcesses.SSAIntegrator, p_idx::Int64, p_tot::Int64, 
+        p_vals, num_verts)
+    error("The `lat_setp!` function is currently not supported for jump simulation integrators.")
+end
+
+"""
+    lat_getp(sim_struct, p, lrs::LatticeReactionSystem)
+
+For a problem or integrators, retrieves its `p` values. For non-lattice models,
+this is can be done through direct interfacing (e.g. `prob[p]`). However, for 
+`LatticeReactionSystem`-based problems and integrators, this function must be used instead. The
+output format depends on the lattice (a dense array for cartesian grid lattices, a sparse array for
+masked grid lattices, and a vector for graph lattices). This format is similar to which is used to
+designate parameter initial values.
+
+Arguments:
+- `sim_struct`: The simulation structure which `p` value we wish to retrieve. Can be either a `ODEProblem`,
+`JumpProblem`, or an integrator derived from either of these.
+- `p`: The parameter which value we wish to update. Can be provided either in its symbolic form, or 
+as a symbol.
+- `lrs`: The `LatticeReactionSystem` which was used to generate the structure we wish to modify.
+
+Notes:
+- Even if the parameter is spatially uniform, a full array with its values across all vertices will be
+retrieved. 
+
+Example:
+```julia
+# Prepare `LatticeReactionSystem`s.
+using Catalyst
+rs = @reaction_network begin
+    (k1,k2), X1 <--> X2
+end
+tr = @transport_reaction D X1
+lrs = LatticeReactionSystem(rs, [tr], CartesianGrid((2,3)))
+
+# Prepares a corresponding ODEProblem.
+u0 = [:X1 => 1.0, :X2 => 2.0]
+tspan = (0.0, 50.0)
+ps = [:k1 => [1.0 2.0 3.0; 4.0 5.0 6.0], :k2 => 1.0, :D => 0.01]
+oprob = ODEProblem(lrs, u0, tspan, ps)
+
+# Updates the `ODEProblem`.
+lat_getp(oprob, :k1, lrs) # Retrieves the value of `k1`.
+```
+"""
+function lat_getp(sim_struct, p, lrs::LatticeReactionSystem)
+    p_idx, p_tot = get_p_idxs(p, lrs)
+    lat_getp(sim_struct, p_idx, p_tot, extract_lattice(lrs))
+end
+
+# Retrieves the lattice values for problem or integrator structures.
+function lat_getp(oprob::ODEProblem, p_idx, p_tot, lattice)
+    return reshape_vals(oprob.u0[p_idx:p_tot:end], lattice)
+end
+function lat_getp(jprob::JumpProblem, p_idx, p_tot, lattice)
+    return reshape_vals(jprob.prob.u0[p_idx, :], lattice)
+end
+function lat_getp(oint::SciMLBase.AbstractODEIntegrator, p_idx, p_tot, lattice)
+    return reshape_vals(oint.u[p_idx:p_tot:end], lattice)
+end
+function lat_getp(jint::JumpProcesses.SSAIntegrator, p_idx, p_tot, lattice)
+    return reshape_vals(jint.u[p_idx, :], lattice)
+end
+
 """
     lat_setu!(sim_struct, sp, lrs::LatticeReactionSystem, u)
 
@@ -9,7 +144,7 @@ this is can be done through direct interfacing (e.g. `prob[X] = 1.0`). However, 
 
 Arguments:
 - `sim_struct`: The simulation structure which `u` value we wish to update. Can be either a `ODEProblem`,
-`JumpProblem`, and an integrator derived from either of these.
+`JumpProblem`, or an integrator derived from either of these.
 - `sp`: The species which value we wish to update. Can be provided either in its symbolic form, or 
 as a symbol.
 - `lrs`: The `LatticeReactionSystem` which was used to generate the structure we wish to modify.
@@ -73,32 +208,13 @@ function lat_setu!(oint::SciMLBase.AbstractODEIntegrator, sp_idx::Int64, sp_tot:
         foreach(idx -> (oint.u[sp_idx + (idx - 1) * sp_tot] = u[idx]), 1:num_verts)
     end
 end
-function lat_setu!(
-        jint::JumpProcesses.SSAIntegrator, sp_idx::Int64, sp_tot::Int64, u, num_verts)
+function lat_setu!(jint::JumpProcesses.SSAIntegrator, sp_idx::Int64, sp_tot::Int64,
+        u, num_verts)
     if length(u) == 1
         foreach(idx -> (jint.u[sp_idx, idx] = u[1]), 1:num_verts)
     else
         foreach(idx -> (jint.u[sp_idx, idx] = u[idx]), 1:num_verts)
     end
-end
-
-function check_lattice_format(lattice::CartesianGridRej, u)
-    (u isa AbstractArray) ||
-        error("The input u should be an AbstractArray. It is a $(typeof(u)).")
-    (size(u) == lattice.dims) ||
-        error("The input u should have size $(lattice.dims), but has size $(size(u)).")
-end
-function check_lattice_format(lattice::AbstractSparseArray, u)
-    (u isa AbstractArray) ||
-        error("The input u should be an AbstractArray. It is a $(typeof(u)).")
-    (size(u) == size(lattice)) ||
-        error("The input u should have size $(size(lattice)), but has size $(size(u)).")
-end
-function check_lattice_format(lattice::DiGraph, u)
-    (u isa AbstractArray) ||
-        error("The input u should be an AbstractVector. It is a $(typeof(u)).")
-    (length(u) == nv(lattice)) ||
-        error("The input u should have length $(nv(lattice)), but has length $(length(u)).")
 end
 
 """
@@ -113,13 +229,13 @@ designate species initial conditions.
 
 Arguments:
 - `sim_struct`: The simulation structure which `u` value we wish to retrieve. Can be either a `ODEProblem`,
-`JumpProblem`, and an integrator derived from either of these.
+`JumpProblem`, or an integrator derived from either of these.
 - `sp`: The species which value we wish to update. Can be provided either in its symbolic form, or 
 as a symbol.
 - `lrs`: The `LatticeReactionSystem` which was used to generate the structure we wish to modify.
 
 Notes:
-- Even if species is spatially uniform, a full array with its values across all vertices will be
+- Even if the species is spatially uniform, a full array with its values across all vertices will be
 retrieved. 
 
 Example:
@@ -147,24 +263,18 @@ function lat_getu(sim_struct, sp, lrs::LatticeReactionSystem)
     lat_getu(sim_struct, sp_idx, sp_tot, extract_lattice(lrs))
 end
 
-# Retries the lattice values for problem or integrator structures.
+# Retrieves the lattice values for problem or integrator structures.
 function lat_getu(oprob::ODEProblem, sp_idx, sp_tot, lattice)
-    return reshape_u(oprob.u0[sp_idx:sp_tot:end], lattice)
+    return reshape_vals(oprob.u0[sp_idx:sp_tot:end], lattice)
 end
 function lat_getu(jprob::JumpProblem, sp_idx, sp_tot, lattice)
-    return reshape_u(jprob.prob.u0[sp_idx, :], lattice)
+    return reshape_vals(jprob.prob.u0[sp_idx, :], lattice)
 end
 function lat_getu(oint::SciMLBase.AbstractODEIntegrator, sp_idx, sp_tot, lattice)
-    return reshape_u(oint.u[sp_idx:sp_tot:end], lattice)
+    return reshape_vals(oint.u[sp_idx:sp_tot:end], lattice)
 end
 function lat_getu(jint::JumpProcesses.SSAIntegrator, sp_idx, sp_tot, lattice)
-    return reshape_u(jint.u[sp_idx, :], lattice)
-end
-
-# Retries the lattice values for simulation solutions (yes, both ODE and jump solutions are
-# `SciMLBase.AbstractODESolution`s).
-function lat_getu(sol::SciMLBase.AbstractODESolution, sp_idx, sp_tot, lattice; t = nothing)
-    return reshape_u(jprob.u[sp_idx, :], lattice)
+    return reshape_vals(jint.u[sp_idx, :], lattice)
 end
 
 # A single function, `lat_getu`, which contains all interfacing functionality. However, 
@@ -232,9 +342,9 @@ function lat_getu(sol::ODESolution, lattice, t::Nothing, sp_idx::Int64, sp_tot::
     # instead in a matrix (NxM, where N is the number of species and M the number of vertices). We
     # must consider each case separately.
     if sol.prob isa ODEProblem
-        return [reshape_u(vals[sp_idx:sp_tot:end], lattice) for vals in sol.u]
+        return [reshape_vals(vals[sp_idx:sp_tot:end], lattice) for vals in sol.u]
     elseif sol.prob isa DiscreteProblem
-        return [reshape_u(vals[sp_idx, :], lattice) for vals in sol.u]
+        return [reshape_vals(vals[sp_idx, :], lattice) for vals in sol.u]
     else
         error("Unknown type of solution provided to `lat_getu`. Only ODE or Jump solutions are supported.")
     end
@@ -253,9 +363,9 @@ function lat_getu(sol::ODESolution, lattice, t::AbstractVector{T}, sp_idx::Int64
     # instead in a matrix (NxM, where N is the number of species and M the number of vertices). We
     # must consider each case separately.
     if sol.prob isa ODEProblem
-        return [reshape_u(sol(ti)[sp_idx:sp_tot:end], lattice) for ti in t]
+        return [reshape_vals(sol(ti)[sp_idx:sp_tot:end], lattice) for ti in t]
     elseif sol.prob isa DiscreteProblem
-        return [reshape_u(sol(ti)[sp_idx, :], lattice) for ti in t]
+        return [reshape_vals(sol(ti)[sp_idx, :], lattice) for ti in t]
     else
         error("Unknown type of solution provided to `lat_getu`. Only ODE or Jump solutions are supported.")
     end
@@ -399,16 +509,16 @@ end
 
 # Functions which in each sample point reshape the vector of values to the correct form (depending
 # on the type of lattice used).
-function reshape_u(vals, lattice::CartesianGridRej{N, T}) where {N, T}
+function reshape_vals(vals, lattice::CartesianGridRej{N, T}) where {N, T}
     return reshape(vals, lattice.dims...)
 end
-function reshape_u(vals, lattice::AbstractSparseArray{Bool, Int64, 1})
+function reshape_vals(vals, lattice::AbstractSparseArray{Bool, Int64, 1})
     return SparseVector(lattice.n, lattice.nzind, vals)
 end
-function reshape_u(vals, lattice::AbstractSparseArray{Bool, Int64, 2})
+function reshape_vals(vals, lattice::AbstractSparseArray{Bool, Int64, 2})
     return SparseMatrixCSC(lattice.m, lattice.n, lattice.colptr, lattice.rowval, vals)
 end
-function reshape_u(vals, lattice::DiGraph)
+function reshape_vals(vals, lattice::DiGraph)
     return vals
 end
 
@@ -418,4 +528,32 @@ function get_sp_idxs(sp, lrs::LatticeReactionSystem)
     sp_idx = findfirst(isequal(sp), species(lrs))
     sp_tot = length(species(lrs))
     return sp_idx, sp_tot
+end
+
+# Get a parameter index and the total number of parameters. Also handles different symbolic forms.
+function get_p_idxs(p, lrs::LatticeReactionSystem)
+    (p isa Symbol) && (p = _symbol_to_var(lrs, p))
+    p_idx = findfirst(isequal(sp), parameters(lrs))
+    p_tot = length(speciparameterses(lrs))
+    return p_idx, p_tot
+end
+
+# Checks that a provided input correspond to the correct lattice format.
+function check_lattice_format(lattice::CartesianGridRej, u)
+    (u isa AbstractArray) ||
+        error("The input u should be an AbstractArray. It is a $(typeof(u)).")
+    (size(u) == lattice.dims) ||
+        error("The input u should have size $(lattice.dims), but has size $(size(u)).")
+end
+function check_lattice_format(lattice::AbstractSparseArray, u)
+    (u isa AbstractArray) ||
+        error("The input u should be an AbstractArray. It is a $(typeof(u)).")
+    (size(u) == size(lattice)) ||
+        error("The input u should have size $(size(lattice)), but has size $(size(u)).")
+end
+function check_lattice_format(lattice::DiGraph, u)
+    (u isa AbstractArray) ||
+        error("The input u should be an AbstractVector. It is a $(typeof(u)).")
+    (length(u) == nv(lattice)) ||
+        error("The input u should have length $(nv(lattice)), but has length $(length(u)).")
 end

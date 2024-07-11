@@ -253,16 +253,79 @@ get_grid_indices(grid::Array{Bool, N}) where {N} = CartesianIndices(grid)
 
 # Basic getters (because `LatticeReactionSystem`s are `AbstractSystem`s), normal `lrs.field` does not
 # work and these getters must be used throughout all code.
+"""
+    reactionsystem(lrs::LatticeReactionSystem)
+
+Returns the non-spatial `ReactionSystem` stored in a `LatticeReactionSystem`.
+"""
 reactionsystem(lrs::LatticeReactionSystem) = getfield(lrs, :reactionsystem)
+
+"""
+    spatial_reactions(lrs::LatticeReactionSystem)
+
+Returns a vector with all the spatial reactions stored in a `LatticeReactionSystem`.
+"""
 spatial_reactions(lrs::LatticeReactionSystem) = getfield(lrs, :spatial_reactions)
+
+"""
+    lattice(lrs::LatticeReactionSystem)
+
+Returns the lattice stored in a `LatticeReactionSystem`.
+"""
 lattice(lrs::LatticeReactionSystem) = getfield(lrs, :lattice)
+
+"""
+    num_verts(lrs::LatticeReactionSystem)
+
+Returns the number of vertices (i.e. compartments) in the lattice stored in a `LatticeReactionSystem`.
+"""
 num_verts(lrs::LatticeReactionSystem) = getfield(lrs, :num_verts)
+
+"""
+    num_edges(lrs::LatticeReactionSystem)
+
+Returns the number of edges (i.e. connections between vertices) in the lattice stored in a 
+`LatticeReactionSystem`.
+"""
 num_edges(lrs::LatticeReactionSystem) = getfield(lrs, :num_edges)
+
+"""
+    num_species(lrs::LatticeReactionSystem)
+
+Returns the number of species that a `LatticeReactionSystem` contains.
+"""
 num_species(lrs::LatticeReactionSystem) = getfield(lrs, :num_species)
+
+"""
+    spatial_species(lrs::LatticeReactionSystem)
+
+Returns the number of species that can move spatially that a `LatticeReactionSystem` contains.
+"""
 spatial_species(lrs::LatticeReactionSystem) = getfield(lrs, :spatial_species)
+
+# Returns the parameters in a `LatticeReactionSystem`
 MT.parameters(lrs::LatticeReactionSystem) = getfield(lrs, :parameters)
+
+"""
+    vertex_parameters(lrs::LatticeReactionSystem)
+
+Returns all the parameters of a `LatticeReactionSystem` whose values are tied to vertices.
+"""
 vertex_parameters(lrs::LatticeReactionSystem) = getfield(lrs, :vertex_parameters)
+
+"""
+    edge_parameters(lrs::LatticeReactionSystem)
+
+Returns all the parameters of a `LatticeReactionSystem` whose values are tied to edges.
+"""
 edge_parameters(lrs::LatticeReactionSystem) = getfield(lrs, :edge_parameters)
+
+"""
+    edge_iterator(lrs::LatticeReactionSystem)
+
+Returns an iterator over all of the edges in the lattice stored in a `LatticeReactionSystem`. Each
+edge is a `Pair{Int64, Int64}`, taking the source vertex to the destination vertex.
+"""
 edge_iterator(lrs::LatticeReactionSystem) = getfield(lrs, :edge_iterator)
 
 # Non-trivial getters.
