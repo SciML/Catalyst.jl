@@ -1,10 +1,10 @@
 # Catalyst.jl
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://docs.sciml.ai/Catalyst/stable/)
-[![API Stable](https://img.shields.io/badge/API-stable-blue.svg)](https://docs.sciml.ai/Catalyst/stable/api/catalyst_api/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://docs.sciml.ai/Catalyst/dev/)
-[![API Dev](https://img.shields.io/badge/API-dev-blue.svg)](https://docs.sciml.ai/Catalyst/dev/api/catalyst_api/)
-[![Join the chat at https://julialang.zulipchat.com #sciml-bridged](https://img.shields.io/static/v1?label=Zulip&message=chat&color=9558b2&labelColor=389826)](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged)
+[![Latest Release (for users)](https://img.shields.io/badge/docs-latest_release_(for_users)-blue.svg)](https://docs.sciml.ai/Catalyst/stable/)
+[![API Latest Release (for users)](https://img.shields.io/badge/API-latest_release_(for_users)-blue.svg)](https://docs.sciml.ai/Catalyst/stable/api/catalyst_api/)
+[![Master (for developers)](https://img.shields.io/badge/docs-master_branch_(for_devs)-blue.svg)](https://docs.sciml.ai/Catalyst/dev/)
+[![API Master (for developers](https://img.shields.io/badge/API-master_branch_(for_devs)-blue.svg)](https://docs.sciml.ai/Catalyst/dev/api/catalyst_api/)
+<!--[![Join the chat at https://julialang.zulipchat.com #sciml-bridged](https://img.shields.io/static/v1?label=Zulip&message=chat&color=9558b2&labelColor=389826)](https://julialang.zulipchat.com/#narrow/stream/279055-sciml-bridged)-->
 
 [![Build Status](https://github.com/SciML/Catalyst.jl/workflows/CI/badge.svg)](https://github.com/SciML/Catalyst.jl/actions?query=workflow%3ACI)
 [![codecov.io](https://codecov.io/gh/SciML/Catalyst.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/SciML/Catalyst.jl)
