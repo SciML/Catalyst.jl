@@ -117,6 +117,7 @@ function reset!(nps::NetworkProperties{I, V}) where {I, V}
     nps.isempty && return
     nps.netstoichmat = Matrix{Int}(undef, 0, 0)
     nps.conservationmat = Matrix{I}(undef, 0, 0)
+    nps.cyclemat = Matrix{Int}(undef, 0, 0)
     empty!(nps.col_order)
     nps.rank = 0
     nps.nullity = 0
