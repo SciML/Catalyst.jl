@@ -1,18 +1,17 @@
 ### Lattice Simulation Structure Species Getters/Setters ###
 
-
 """
     lat_setp!(sim_struct, p, lrs::LatticeReactionSystem, p_val)
 
-For a problem or integrators, updates its `p` vector with the input `p_val`. For non-lattice models,
+For a problem or integrators, update its `p` vector with the input `p_val`. For non-lattice models,
 this is can be done through direct interfacing (e.g. `prob[p] = 1.0`). However, for 
 `LatticeReactionSystem`-based problems and integrators, this function must be used instead.
 
 Arguments:
 - `sim_struct`: The simulation structure which `u` value we wish to update. Can be either a `ODEProblem`,
 `JumpProblem`, or an integrator derived from either of these.
-- `p`: The species which value we wish to update. Can be provided either in its symbolic form, or 
-as a symbol.
+- `p`: The species which value we wish to update. Can be provided either in its symbolic form or 
+a symbol.
 - `lrs`: The `LatticeReactionSystem` which was used to generate the structure we wish to modify.
 - `p_val`: The parameter's new values. Must be given in a form which is also a valid initial input to the 
 `ODEProblem`/`JumpProblem`.
@@ -43,7 +42,7 @@ function lat_setp!(sim_struct, p, lrs::LatticeReactionSystem, p_vals)
     (p_vals isa Number) || check_lattice_format(extract_lattice(lrs), p_vals)
     edge_param_check(p, lrs)
 
-    # Converts symbol parameter to symbolic and find correct species index and numbers.
+    # Converts symbol parameter to symbolic and find the correct species index and numbers.
     (p isa Symbol) && (p = _symbol_to_var(lrs, p))
     (p isa Num) && (p = Symbolics.unwrap(p))
     p_idx, p_tot = get_p_idxs(p, lrs)
@@ -54,7 +53,7 @@ function lat_setp!(sim_struct, p, lrs::LatticeReactionSystem, p_vals)
 end
 
 # Note: currently, `lat_setp!(oprob::ODEProblem, ...`) and `lat_setp!(SciMLBase.AbstractODEIntegrator, ...`)
-# are identical and could be merged to a singe function.
+# are identical and could be merged to a single function.
 function lat_setp!(oprob::ODEProblem, p_idx::Int64, p_vals, num_verts)
     if length(p_vals) == 1
         foreach(idx -> (oprob.p[p_idx][idx] = p_vals[1]), 1:num_verts)
@@ -89,14 +88,14 @@ For a problem or integrators, retrieves its `p` values. For non-lattice models,
 this is can be done through direct interfacing (e.g. `prob[p]`). However, for 
 `LatticeReactionSystem`-based problems and integrators, this function must be used instead. The
 output format depends on the lattice (a dense array for cartesian grid lattices, a sparse array for
-masked grid lattices, and a vector for graph lattices). This format is similar to which is used to
+masked grid lattices, and a vector for graph lattices). This format is similar to what is used to
 designate parameter initial values.
 
 Arguments:
 - `sim_struct`: The simulation structure which `p` value we wish to retrieve. Can be either a `ODEProblem`,
 `JumpProblem`, or an integrator derived from either of these.
-- `p`: The parameter which value we wish to update. Can be provided either in its symbolic form, or 
-as a symbol.
+- `p`: The parameter which value we wish to update. Can be provided either in its symbolic form or 
+a symbol.
 - `lrs`: The `LatticeReactionSystem` which was used to generate the structure we wish to modify.
 
 Notes:
@@ -150,15 +149,15 @@ end
 """
     lat_setu!(sim_struct, sp, lrs::LatticeReactionSystem, u)
 
-For a problem or integrators, updates its `u` vector with the input `u`. For non-lattice models,
+For a problem or integrators, update its `u` vector with the input `u`. For non-lattice models,
 this is can be done through direct interfacing (e.g. `prob[X] = 1.0`). However, for 
 `LatticeReactionSystem`-based problems and integrators, this function must be used instead.
 
 Arguments:
 - `sim_struct`: The simulation structure which `u` value we wish to update. Can be either a `ODEProblem`,
 `JumpProblem`, or an integrator derived from either of these.
-- `sp`: The species which value we wish to update. Can be provided either in its symbolic form, or 
-as a symbol.
+- `sp`: The species which value we wish to update. Can be provided either in its symbolic form or 
+a symbol.
 - `lrs`: The `LatticeReactionSystem` which was used to generate the structure we wish to modify.
 - `u`: The species's new values. Must be given in a form which is also a valid initial input to the 
 `ODEProblem`/`JumpProblem`.
@@ -188,7 +187,7 @@ function lat_setu!(sim_struct, sp, lrs::LatticeReactionSystem, u)
     # Checks that if u is non-uniform, it has the correct format for the system's lattice.
     (u isa Number) || check_lattice_format(extract_lattice(lrs), u)
 
-    # Converts symbol species to symbolic and find correct species index and numbers.
+    # Converts symbol species to symbolic and finds correct species index and numbers.
     (sp isa Symbol) && (sp = _symbol_to_var(lrs, sp))
     (sp isa Num) && (sp = Symbolics.unwrap(sp))
     sp_idx, sp_tot = get_sp_idxs(sp, lrs)
@@ -242,8 +241,8 @@ designate species initial conditions.
 Arguments:
 - `sim_struct`: The simulation structure which `u` value we wish to retrieve. Can be either a `ODEProblem`,
 `JumpProblem`, or an integrator derived from either of these.
-- `sp`: The species which value we wish to update. Can be provided either in its symbolic form, or 
-as a symbol.
+- `sp`: The species which value we wish to update. Can be provided either in its symbolic form or 
+a symbol.
 - `lrs`: The `LatticeReactionSystem` which was used to generate the structure we wish to modify.
 
 Notes:
@@ -312,8 +311,8 @@ Arguments:
 - `sp`: The species which values we wish to retrieve. Can be either a symbol (e.g. `:X`) or a symbolic
 variable (e.g. `X`).
 - `lrs`: The `LatticeReactionSystem` which was simulated to generate the solution.
-- `t = nothing`: If `nothing`, we simply return the solution across all saved time steps. If `t`
-instead is a vector (or range of values), returns the solutions interpolated at these time points.
+- `t = nothing`: If `nothing`, we simply return the solution across all saved time steps (default). 
+If `t` instead is a vector (or range of values), returns the solution interpolated at these time points.
 
 Notes:
 - The `lat_getu` is not optimised for performance. However, it should still be quite performant,
@@ -351,7 +350,7 @@ end
 # across all sample points).
 function lat_getu(sol::ODESolution, lattice, t::Nothing, sp_idx::Int64, sp_tot::Int64)
     # ODE simulations contain, in each data point, all values in a single vector. Jump simulations
-    # instead in a matrix (NxM, where N is the number of species and M the number of vertices). We
+    # instead in a matrix (NxM, where N is the number of species and M is the number of vertices). We
     # must consider each case separately.
     if sol.prob isa ODEProblem
         return [reshape_vals(vals[sp_idx:sp_tot:end], lattice) for vals in sol.u]
@@ -366,13 +365,13 @@ end
 # value at all designated time points.
 function lat_getu(sol::ODESolution, lattice, t::AbstractVector{T}, sp_idx::Int64,
         sp_tot::Int64) where {T <: Number}
-    # Checks that an appropriate `t` is provided (however, DiffEq does permit out of range `t`s).
+    # Checks that an appropriate `t` is provided (however, DiffEq does permit out-of-range `t`s).
     if (minimum(t) < sol.t[1]) || (maximum(t) > sol.t[end])
         error("The range of the t values provided for sampling, ($(minimum(t)),$(maximum(t))) is not fully within the range of the simulation time span ($(sol.t[1]),$(sol.t[end])).")
     end
 
     # ODE simulations contain, in each data point, all values in a single vector. Jump simulations
-    # instead in a matrix (NxM, where N is the number of species and M the number of vertices). We
+    # instead in a matrix (NxM, where N is the number of species and M is the number of vertices). We
     # must consider each case separately.
     if sol.prob isa ODEProblem
         return [reshape_vals(sol(ti)[sp_idx:sp_tot:end], lattice) for ti in t]
@@ -388,7 +387,7 @@ end
 """
     rebuild_lat_internals!(sciml_struct)
 
-Rebuilds the internal functions for simulating a LatticeReactionSystem. Wenever a problem or 
+Rebuilds the internal functions for simulating a LatticeReactionSystem. Whenever a problem or 
 integrator has had its parameter values updated, this function should be called for the update to 
 be taken into account. For ODE simulations, `rebuild_lat_internals!` needs only to be called when
 - An edge parameter has been updated.
@@ -573,7 +572,7 @@ end
 # Throws an error when interfacing with an edge parameter.
 function edge_param_check(p, lrs)
     (p isa Symbol) && (p = _symbol_to_var(lrs, p))
-    if isedgeparameter(p) 
+    if isedgeparameter(p)
         throw(ArgumentError("The `lat_getp` and `lat_setp!` functions currently does not support edge parameter updating. If you require this functionality, please raise an issue on the Catalyst GitHub page and we can add this feature."))
     end
 end
