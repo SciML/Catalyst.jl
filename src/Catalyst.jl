@@ -168,7 +168,7 @@ export make_si_ode
 
 # Spatial reactions.
 include("spatial_reaction_systems/spatial_reactions.jl")
-export TransportReaction, TransportReactions, @transport_reaction
+export TransportReaction, @transport_reaction
 export isedgeparameter
 
 # Lattice reaction systems.

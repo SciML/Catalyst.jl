@@ -7,7 +7,7 @@ Catalyst supports the expansion of non-spatial `ReactionSystem` (created using e
 Features for which support is planned in future updates include:
 - Models on continuous domains with automatic discretisation (these models can already be simulated if the user provides a discretisation).
 - SDE simulations.
-- Transportation reactions with non-constant rates and general spatial reactions.
+- Transport reactions with non-constant rates and general spatial reactions.
 
 This tutorial introduces spatial modelling on discrete domains, here called lattices. It describes the basics of creating and simulating such models. To do so, it uses ODE simulations as examples. Additional tutorials provide further details on how to interact with [spatial simulation structures](@ref lattice_simulation_plotting) and [plot spatial simulations](@ref lattice_simulation_plotting), and also provide further details on [ODE](@ref spatial_lattice_ode_simulations) and [jump](@ref spatial_lattice_jump_simulations) simulations, respectively.
 
@@ -81,12 +81,12 @@ nothing # hide
 ```
 
 ### [Creating transport reactions programmatically](@id spatial_lattice_modelling_intro_spatial_reactions_programmatic)
-If models are created [programmatically](@ref programmatic_CRN_construction) it is also possible to create transportation reactions programmatically. To do so, use the `TransportationReaction` constructor, providing first the rate, and then the transported species:
+If models are created [programmatically](@ref programmatic_CRN_construction) it is also possible to create transportation reactions programmatically. To do so, use the `TransportReaction` constructor, providing first the rate, and then the transported species:
 ```@example spatial_intro_3
 @variables t
 @species X(t) Y(t)
 @parameters A B D [edgeparameter=true]
-tr_X = TransportationReaction(D, X)
+tr_X = TransportReaction(D, X)
 nothing # hide
 ```
 Note that in this example, we specifically designate $D$ an an [edge parameter](@ref spatial_lattice_modelling_intro_simulation_edge_parameters).
@@ -141,6 +141,7 @@ nothing # hide
 ### [Defining unstructured lattices](@id spatial_lattice_modelling_intro_lattices_graph)
 To define unstructured lattices, we must first import the [Graphs.jl](https://github.com/JuliaGraphs/Graphs.jl) package. Next, we can either use some [pre-defined formula for building graphs](https://juliagraphs.org/Graphs.jl/stable/core_functions/simplegraphs_generators/#Generators-for-common-graphs), or [build a graph from scratch](https://juliagraphs.org/Graphs.jl/stable/first_steps/construction/). Here we create a cyclic graph (where each compartment is connected to exactly two other compartments):
 ```@example spatial_intro_3
+using Graphs
 cycle_graph(7)
 nothing # hide
 ```
@@ -165,6 +166,7 @@ Below we describe how to set non-uniform values in the various cases.
 ### [Non-uniform compartment values for Cartesian lattices](@id spatial_lattice_modelling_intro_simulation_inputs_cartesian)
 To provide non-uniform values across a Cartesian lattice, simply provide the values in an array of the same dimension and size as the Cartesian lattice. E.g. for a $5x10$ Cartesian lattice:
 ```@example spatial_intro_4
+using Catalyst # hide
 ccart_lattices = CartesianGrid((5, 10))
 nothing # hide
 ```

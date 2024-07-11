@@ -47,9 +47,14 @@ pages = Any[
             "inverse_problems/examples/ode_fitting_oscillation.md"
         ]
     ],
-    "Spatial Modelling" => Any[
-        "spatial_modelling/lattice_reaction_systems.md"
-    ],
+    # Uncomment (and move the docs from unpublished to src) once v14 have been released.
+    # "Spatial Modelling" => Any[
+    #     "spatial_modelling/lattice_reaction_systems.md"
+    #     "spatial_modelling/lattice_simulation_structure_ interaction.md"
+    #     "spatial_modelling/lattice_simulation_plotting.md"
+    #     "spatial_modelling/spatial_ode_simulations.md"
+    #     "spatial_modelling/spatial_jump_simulations.md"
+    # ],
     "FAQs" => "faqs.md",
     "API" => "api.md"
 ]
