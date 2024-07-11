@@ -119,6 +119,7 @@ function reset!(nps::NetworkProperties{I, V}) where {I, V}
     nps.isempty && return
     nps.netstoichmat = Matrix{Int}(undef, 0, 0)
     nps.conservationmat = Matrix{I}(undef, 0, 0)
+    nps.cyclemat = Matrix{Int}(undef, 0, 0)
     empty!(nps.col_order)
     nps.rank = 0
     nps.nullity = 0
@@ -134,6 +135,8 @@ function reset!(nps::NetworkProperties{I, V}) where {I, V}
     nps.complexoutgoingmat = Matrix{Int}(undef, 0, 0)
     nps.incidencegraph = Graphs.DiGraph()
     empty!(nps.linkageclasses)
+    empty!(nps.stronglinkageclasses)
+    empty!(nps.terminallinkageclasses)
     nps.deficiency = 0
 
     # this needs to be last due to setproperty! setting it to false
