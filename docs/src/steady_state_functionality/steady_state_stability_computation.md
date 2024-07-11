@@ -1,7 +1,7 @@
 # [Steady state stability computation](@id steady_state_stability)
 After system steady states have been found using [HomotopyContinuation.jl](@ref homotopy_continuation), [NonlinearSolve.jl](@ref steady_state_solving), or other means, their stability can be computed using Catalyst's `steady_state_stability` function. Systems with conservation laws will automatically have these removed, permitting stability computation on systems with singular Jacobian.
 
-!!! warn 
+!!! warning 
     Catalyst currently computes steady state stabilities using the naive approach of checking whether a system's largest eigenvalue real part is negative. While more advanced stability computation methods exist (and would be a welcome addition to Catalyst), there is no direct plans to implement these. Furthermore, Catalyst uses a tolerance `tol = 10*sqrt(eps())` to determine whether a computed eigenvalue is far away enough from 0 to be reliably used. This threshold can be changed through the `tol` keyword argument.
 
 ## [Basic examples](@id steady_state_stability_basics)
@@ -59,5 +59,5 @@ stabs_2 = [steady_state_stability(st, sa_loop, ps_2; ss_jac) for st in steady_st
 nothing # hide
 ```
 
-!!! warn
+!!! warning
     For systems with [conservation laws](@ref homotopy_continuation_conservation_laws), `steady_state_jac` must be supplied a `u0` vector (indicating species concentrations for conservation law computation). This is required to eliminate the conserved quantities, preventing a singular Jacobian. These are supplied using the `u0` optional argument.

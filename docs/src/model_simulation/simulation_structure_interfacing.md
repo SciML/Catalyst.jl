@@ -52,7 +52,7 @@ oprob[[:S₁, :S₂]]
 ```
 Generally, when updating problems, it is often better to use the [`remake` function](@ref simulation_structure_interfacing_problems_remake) (especially when several values are updated).
 
-!!! warn
+!!! warning
     Indexing *should not* be used not modify `JumpProblem`s. Here, [remake](@ref simulation_structure_interfacing_problems_remake) should be used exclusively.
 
 A problem's time span can be accessed through the `tspan` field:
@@ -196,5 +196,5 @@ oprob[two_state_model.X1 + two_state_model.X2]
 ```
 This can be used to form symbolic expressions using model quantities when a model has been created using the DSL (as an alternative to @unpack). Alternatively, [creating an observable](@ref dsl_advanced_options_observables), and then interface using its `Symbol` representation, is also possible.
 
-!!! warn
+!!! warning
     With interfacing with a simulating structure using symbolic variables stored in a `ReactionSystem` model, ensure that the model is complete.
