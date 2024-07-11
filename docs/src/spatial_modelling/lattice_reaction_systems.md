@@ -60,11 +60,6 @@ Finally, we can access "$X$'s value across the simulation using
 ```@example spatial_intro_1
 lat_getu(sol, :X, lrs)
 ```
-Alternatively, we can create an animation of our simulation using:
-```@example spatial_intro_1
-using Makie
-lattice_animation(sol, lrs)
-```
 More information on how to retrieve values from spatial simulations can be found [here](@ref lattice_simulation_structure_interaction_simulation_species), and for plotting them, [here](@ref lattice_simulation_plotting). Finally, a list of functions for querying `LatticeReactionSystems` for various properties can be found [here](@ref api_lattice_simulations).
 
 ## [Spatial reactions](@id spatial_lattice_modelling_intro_spatial_reactions)
