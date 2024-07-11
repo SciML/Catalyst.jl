@@ -54,7 +54,7 @@ using OrdinaryDiffEq
 sol = solve(oprob, FBDF())
 nothing # hide
 ```
-We note that simulations of spatial models are often computationally expensive. Here we use the `FBDF` solver, which typically performs well for large systems. More advice on the performance of spatial ODE simulations is provided [here](@ref ref). 
+We note that simulations of spatial models are often computationally expensive. Here we use the `FBDF` solver, which typically performs well for large systems. More advice on the performance of spatial ODE simulations is provided [here](@ref spatial_lattice_ode_simulations_solvers). 
 
 Finally, we can access "$X$'s value across the simulation using
 ```@example spatial_intro_1
