@@ -47,8 +47,6 @@ function JumpProcesses.JumpProblem(lrs::LatticeReactionSystem, dprob, aggregator
 
     # Creates and returns a spatial JumpProblem (masked lattices are not supported by these).
     spatial_system = has_masked_lattice(lrs) ? get_lattice_graph(lrs) : lattice(lrs)
-    println(JumpProblem(non_spat_dprob, aggregator, sma_jumps;
-        hopping_constants, spatial_system, name, kwargs...).prob.u0)
     return JumpProblem(non_spat_dprob, aggregator, sma_jumps;
         hopping_constants, spatial_system, name, kwargs...)
 end

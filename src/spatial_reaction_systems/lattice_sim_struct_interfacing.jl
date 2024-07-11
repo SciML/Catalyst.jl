@@ -222,7 +222,7 @@ lat_getu(osol, :X1, lrs; t = 0.0:10.0) # Returns the value of X1 at times 0.0, 1
 """
 function lat_getu(sol::ODESolution, sp, lrs::LatticeReactionSystem; t = nothing)
     sp_idx, sp_tot = get_sp_idxs(sp, lrs)
-    lat_getu(sol, extract_lattice(lattice), t, sp_idx, sp_tot)
+    lat_getu(sol, extract_lattice(lrs), t, sp_idx, sp_tot)
 end
 
 # Function which handles the input in the case where `t` is `nothing` (i.e. return `sp`s value
