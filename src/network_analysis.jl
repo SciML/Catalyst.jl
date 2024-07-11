@@ -392,7 +392,8 @@ function terminallinkageclasses(rn::ReactionSystem)
 end
 
 
-# Check whether a given linkage class in a reaction network is terminal, i.e. all outgoing reactions from complexes in the linkage class produce a complex also in hte linkage class
+# Helper function for terminallinkageclasses. Given a linkage class and a reaction network, say whether the linkage class is terminal, 
+# i.e. all outgoing reactions from complexes in the linkage class produce a complex also in the linkage class
 function isterminal(lc::Vector, rn::ReactionSystem)
     imat = incidencemat(rn)
 
