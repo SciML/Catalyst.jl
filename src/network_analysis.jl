@@ -980,7 +980,7 @@ function robustspecies(rn::ReactionSystem)
     # A species is concnetration robust in a deficiency one network if there are two non-terminal complexes (i.e. complexes 
     # belonging to a linkage class that is not terminal) that differ only in species s (i.e. their difference is some 
     # multiple of s. (A + B, A) differ only in B. (A + 2B, B) differ in both A and B, since A + 2B - B = A + B). 
-    
+
     if !nps.checkedrobust
         tslcs = terminallinkageclasses(rn)
         Z = complexstoichmat(rn)
