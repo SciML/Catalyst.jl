@@ -181,7 +181,7 @@ function make_osys(rs::ReactionSystem; remove_conserved = true)
         conseqs = Vector{Pair{Any, Any}}[]
         consconsts = Vector{Pair{Any, Any}}[]
     end
-    
+
     return osys, conseqs, consconsts, vars
 end
 
