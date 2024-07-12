@@ -810,9 +810,48 @@ let
 end
 
 # Checks that the `reactionsystem_uptodate` function work. If it does not, the ReactionSystem
-# strcuture's fields have been updated, without updating the `reactionsystem_fields` costant. If so,
+# structure's fields have been updated, without updating the `reactionsystem_fields` constant. If so,
 # there are several places in the code where the `reactionsystem_uptodate` function is called, here
 # the code might need adaptation to take the updated reaction system into account.
 let
     @test_nowarn Catalyst.reactionsystem_uptodate_check()
+end
+
+# Test that functions using the incidence matrix properly cache it
+let
+    rn = @reaction_network begin
+        k1, A --> B
+        k2, B --> C
+        k3, C --> A
+    end
+
+    nps = Catalyst.get_networkproperties(rn)
+    @test isempty(nps.incidencemat) == true
+
+    img = incidencematgraph(rn)
+    @test size(nps.incidencemat) == (3,3)
+
+    Catalyst.reset!(nps)
+    lcs = linkageclasses(rn)
+    @test size(nps.incidencemat) == (3,3)
+
+    Catalyst.reset!(nps)
+    sns = subnetworks(rn)
+    @test size(nps.incidencemat) == (3,3)
+
+    Catalyst.reset!(nps)
+    δ = deficiency(rn)
+    @test size(nps.incidencemat) == (3,3)
+    
+    Catalyst.reset!(nps)
+    δ_l = linkagedeficiencies(rn)
+    @test size(nps.incidencemat) == (3,3)
+
+    Catalyst.reset!(nps)
+    rev = isreversible(rn)
+    @test size(nps.incidencemat) == (3,3)
+
+    Catalyst.reset!(nps)
+    weakrev = isweaklyreversible(rn, sns)
+    @test size(nps.incidencemat) == (3,3)
 end

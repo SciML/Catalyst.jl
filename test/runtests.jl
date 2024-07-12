@@ -50,12 +50,6 @@ using SafeTestsets, Test
     @time @safetestset "MTK Structure Indexing" begin include("upstream/mtk_structure_indexing.jl") end
     @time @safetestset "MTK Problem Inputs" begin include("upstream/mtk_problem_inputs.jl") end
 
-    # Tests spatial modelling and simulations.
-    @time @safetestset "PDE Systems Simulations" begin include("spatial_modelling/simulate_PDEs.jl") end
-    @time @safetestset "Lattice Reaction Systems" begin include("spatial_modelling/lattice_reaction_systems.jl") end
-    @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_ODEs.jl") end
-    @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_reaction_systems/lattice_reaction_systems_jumps.jl") end
-
     # Tests network visualisation.
     @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
     # Disable on Macs as can't install GraphViz via jll
@@ -68,7 +62,16 @@ using SafeTestsets, Test
     @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
     @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
 
-    # test stability (uses HomotopyContinuation extension)
+    # Tests stability computation (uses HomotopyContinuation extension).
     @time @safetestset "Steady State Stability Computations" begin include("miscellaneous_tests/stability_computation.jl") end
+
+    # Tests spatial modelling and simulations.
+    @time @safetestset "PDE Systems Simulations" begin include("spatial_modelling/simulate_PDEs.jl") end
+    @time @safetestset "Spatial Reactions" begin include("spatial_modelling/spatial_reactions.jl") end
+    @time @safetestset "Lattice Reaction Systems" begin include("spatial_modelling/lattice_reaction_systems.jl") end
+    @time @safetestset "Spatial Lattice Variants" begin include("spatial_modelling/lattice_reaction_systems_lattice_types.jl") end
+    @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_ODEs.jl") end
+    @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_jumps.jl") end
+    @time @safetestset "Jump Solution Interfacing" begin include("spatial_modelling/lattice_solution_interfacing.jl") end
 
 end # @time

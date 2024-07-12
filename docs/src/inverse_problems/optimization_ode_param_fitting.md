@@ -170,7 +170,7 @@ nothing # hide
 ```
 
 ---
-## [Citation](@id structural_identifiability_citation)
+## [Citation](@id optimization_parameter_fitting_citation)
 If you use this functionality in your research, please cite the following paper to support the authors of the Optimization.jl package:
 ```
 @software{vaibhav_kumar_dixit_2023_7738525,

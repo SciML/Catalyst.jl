@@ -316,6 +316,7 @@ end
 ### Other Tests ###
 
 # Checks that identifiability can be assessed for coupled CRN/DAE systems.
+# `remove_conserved = false` is used to remove info print statement from log.
 let
     rs = @reaction_network begin
         @parameters k c1 c2
@@ -329,9 +330,10 @@ let
     @unpack p, d, k, c1, c2 = rs
     
     # Tests identifiability assessment when all unknowns are measured.
-    gi_1 = assess_identifiability(rs; measured_quantities = [:X, :V, :C], loglevel)
-    li_1 = assess_local_identifiability(rs; measured_quantities = [:X, :V, :C], loglevel)
-    ifs_1 = find_identifiable_functions(rs; measured_quantities = [:X, :V, :C], loglevel)
+    remove_conserved = false
+    gi_1 = assess_identifiability(rs; measured_quantities = [:X, :V, :C], loglevel, remove_conserved)
+    li_1 = assess_local_identifiability(rs; measured_quantities = [:X, :V, :C], loglevel, remove_conserved)
+    ifs_1 = find_identifiable_functions(rs; measured_quantities = [:X, :V, :C], loglevel, remove_conserved)
     @test sym_dict(gi_1) == Dict([:X => :globally, :C => :globally, :V => :globally, :k => :globally, 
                       :c1 => :nonidentifiable, :c2 => :nonidentifiable, :p => :globally, :d => :globally])
     @test sym_dict(li_1) == Dict([:X => 1, :C => 1, :V => 1, :k => 1, :c1 => 0, :c2 => 0, :p => 1, :d => 1])
@@ -339,9 +341,9 @@ let
     
     # Tests identifiability assessment when only variables are measured. 
     # Checks that a parameter in an equation can be set as known.
-    gi_2 = assess_identifiability(rs; measured_quantities = [:V, :C], known_p = [:c1], loglevel)
-    li_2 = assess_local_identifiability(rs; measured_quantities = [:V, :C], known_p = [:c1], loglevel)
-    ifs_2 = find_identifiable_functions(rs; measured_quantities = [:V, :C], known_p = [:c1], loglevel)
+    gi_2 = assess_identifiability(rs; measured_quantities = [:V, :C], known_p = [:c1], loglevel, remove_conserved)
+    li_2 = assess_local_identifiability(rs; measured_quantities = [:V, :C], known_p = [:c1], loglevel, remove_conserved)
+    ifs_2 = find_identifiable_functions(rs; measured_quantities = [:V, :C], known_p = [:c1], loglevel, remove_conserved)
     @test sym_dict(gi_2) == Dict([:X => :nonidentifiable, :C => :globally, :V => :globally, :k => :nonidentifiable, 
                       :c1 => :globally, :c2 => :nonidentifiable, :p => :nonidentifiable, :d => :globally])
     @test sym_dict(li_2) == Dict([:X => 0, :C => 1, :V => 1, :k => 0, :c1 => 1, :c2 => 0, :p => 0, :d => 1])

@@ -260,25 +260,19 @@ end
 Construct a directed simple graph where nodes correspond to reaction complexes and directed
 edges to reactions converting between two complexes.
 
-Notes:
-- Requires the `incidencemat` to already be cached in `rn` by a previous call to
-  `reactioncomplexes`.
-
 For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-complexes,incidencemat = reactioncomplexes(sir)
 incidencematgraph(sir)
 ```
 """
 function incidencematgraph(rn::ReactionSystem)
     nps = get_networkproperties(rn)
     if Graphs.nv(nps.incidencegraph) == 0
-        isempty(nps.incidencemat) &&
-            error("Please call reactioncomplexes(rn) first to construct the incidence matrix.")
+        isempty(nps.incidencemat) && reactioncomplexes(rn)
         nps.incidencegraph = incidencematgraph(nps.incidencemat)
     end
     nps.incidencegraph
@@ -329,17 +323,12 @@ Given the incidence graph of a reaction network, return a vector of the
 connected components of the graph (i.e. sub-groups of reaction complexes that
 are connected in the incidence graph).
 
-Notes:
-- Requires the `incidencemat` to already be cached in `rn` by a previous call to
-  `reactioncomplexes`.
-
 For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-complexes,incidencemat = reactioncomplexes(sir)
 linkageclasses(sir)
 ```
 gives
@@ -421,17 +410,12 @@ Here the deficiency, ``\delta``, of a network with ``n`` reaction complexes,
 \delta = n - \ell - s
 ```
 
-Notes:
-- Requires the `incidencemat` to already be cached in `rn` by a previous call to
-  `reactioncomplexes`.
-
 For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-rcs,incidencemat = reactioncomplexes(sir)
 δ = deficiency(sir)
 ```
 """
@@ -469,17 +453,12 @@ end
 
 Find subnetworks corresponding to each linkage class of the reaction network.
 
-Notes:
-- Requires the `incidencemat` to already be cached in `rn` by a previous call to
-  `reactioncomplexes`.
-
 For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-complexes,incidencemat = reactioncomplexes(sir)
 subnetworks(sir)
 ```
 """
@@ -506,17 +485,12 @@ end
 
 Calculates the deficiency of each sub-reaction network within `network`.
 
-Notes:
-- Requires the `incidencemat` to already be cached in `rn` by a previous call to
-  `reactioncomplexes`.
-
 For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-rcs,incidencemat = reactioncomplexes(sir)
 linkage_deficiencies = linkagedeficiencies(sir)
 ```
 """
@@ -537,17 +511,12 @@ end
 
 Given a reaction network, returns if the network is reversible or not.
 
-Notes:
-- Requires the `incidencemat` to already be cached in `rn` by a previous call to
-  `reactioncomplexes`.
-
 For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-rcs,incidencemat = reactioncomplexes(sir)
 isreversible(sir)
 ```
 """
@@ -561,30 +530,27 @@ end
 
 Determine if the reaction network with the given subnetworks is weakly reversible or not.
 
-Notes:
-- Requires the `incidencemat` to already be cached in `rn` by a previous call to
-  `reactioncomplexes`.
-
 For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-rcs,incidencemat = reactioncomplexes(sir)
 subnets = subnetworks(rn)
 isweaklyreversible(rn, subnets)
 ```
 """
 function isweaklyreversible(rn::ReactionSystem, subnets)
-    im = get_networkproperties(rn).incidencemat
-    isempty(im) &&
-        error("Error, please call reactioncomplexes(rn::ReactionSystem) to ensure the incidence matrix has been cached.")
-    sparseig = issparse(im)
+    nps = get_networkproperties(rn)
+    isempty(nps.incidencemat) && reactioncomplexes(rn)
+    sparseig = issparse(nps.incidencemat)
+
     for subnet in subnets
-        nps = get_networkproperties(subnet)
-        isempty(nps.incidencemat) && reactioncomplexes(subnet; sparse = sparseig)
+        subnps = get_networkproperties(subnet)
+        isempty(subnps.incidencemat) && reactioncomplexes(subnet; sparse = sparseig)
     end
+
+    # A network is weakly reversible if all of its subnetworks are strongly connected
     all(Graphs.is_strongly_connected ∘ incidencematgraph, subnets)
 end
 
@@ -759,7 +725,7 @@ conservedquantities(state, cons_laws) = cons_laws * state
 # If u0s are not given while conservation laws are present, throws an error.
 # Used in HomotopyContinuation and BifurcationKit extensions.
 # Currently only checks if any u0s are given
-# (not whether these are enough for computing conserved quantitites, this will yield a less informative error).
+# (not whether these are enough for computing conserved quantities, this will yield a less informative error).
 function conservationlaw_errorcheck(rs, pre_varmap)
     vars_with_vals = Set(p[1] for p in pre_varmap)
     any(s -> s in vars_with_vals, species(rs)) && return
