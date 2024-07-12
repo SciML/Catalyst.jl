@@ -175,10 +175,13 @@ function make_osys(rs::ReactionSystem; remove_conserved = true)
     if remove_conserved
         conseqs = [ceq.lhs => ceq.rhs for ceq in conservedequations(rs)]
         consconsts = [cconst.lhs => cconst.rhs for cconst in conservationlaw_constants(rs)]
+        isempty(conseqs) && (conseqs = Vector{Pair{Any, Any}}[])
+        isempty(consconsts) && (consconsts = Vector{Pair{Any, Any}}[])
+    else
+        conseqs = Vector{Pair{Any, Any}}[]
+        consconsts = Vector{Pair{Any, Any}}[]
     end
-    remove_conserved || isnothing(conseqs) && (conseqs = Vector{Pair{Any, Any}}[])
-    remove_conserved || isnothing(consconsts) && (consconsts = Vector{Pair{Any, Any}}[])
-
+    
     return osys, conseqs, consconsts, vars
 end
 
