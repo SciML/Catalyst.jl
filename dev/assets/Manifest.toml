@@ -2225,9 +2225,9 @@ version = "4.5.1"
 
 [[deps.NNlib]]
 deps = ["Adapt", "Atomix", "ChainRulesCore", "GPUArraysCore", "KernelAbstractions", "LinearAlgebra", "Pkg", "Random", "Requires", "Statistics"]
-git-tree-sha1 = "1288e6db94d98f7d194454452176b82edb25b32c"
+git-tree-sha1 = "333cd68c28bb57ac23c50acd1036ecd7dd78bf57"
 uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
-version = "0.9.19"
+version = "0.9.20"
 
     [deps.NNlib.extensions]
     NNlibAMDGPUExt = "AMDGPU"
