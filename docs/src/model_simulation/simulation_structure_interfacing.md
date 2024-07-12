@@ -182,5 +182,5 @@ oprob[two_state_model.X1 + two_state_model.X2]
 ```
 This can be used to form symbolic expressions using model quantities when a model has been created using the DSL (as an alternative to @unpack). Alternatively, [creating an observable](@ref dsl_advanced_options_observables), and then interface using its `Symbol` representation, is also possible.
 
-!!! warn
+!!! warning
     When accessing a simulation structure using symbolic variables from a `ReactionSystem` model, such as `rn.A` for `rn` a `ReactionSystem` and `A` a species within it, ensure that the model is complete.
