@@ -325,4 +325,3 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
-
