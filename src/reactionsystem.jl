@@ -78,6 +78,7 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     isempty::Bool = true
     netstoichmat::Union{Matrix{Int}, SparseMatrixCSC{Int, Int}} = Matrix{Int}(undef, 0, 0)
     conservationmat::Matrix{I} = Matrix{I}(undef, 0, 0)
+    cyclemat::Matrix{I} = Matrix{I}(undef, 0, 0)
     col_order::Vector{Int} = Int[]
     rank::Int = 0
     nullity::Int = 0
