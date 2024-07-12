@@ -16,7 +16,7 @@ A model's completeness depends on how it was created:
 - To *use the DSL to create models that are not marked as complete*, use the `@network_component` macro (which in all other aspects is identical to `@reaction_network`).
 - Models generated through the `compose` and `extend` functions are *not marked as complete*.
 
-Furthermore, any systems generated through e.g. `convert(ODESystem, rs)`  are *not marked as complete*. 
+Furthermore, any systems generated through e.g. `convert(ODESystem, rs)`  are *not marked as complete*.
 
 Complete models can be generated from incomplete models through the `complete` function. Here is a workflow where we take completeness into account in the simulation of a simple birth-death process.
 ```@example v14_migration_1
@@ -64,8 +64,30 @@ sol = solve(oprob)
 plot(sol)
 ```
 
+Note, if we had instead used the [`@reaction_network`](@ref) DSL macro to build
+our model, i.e.
+```@example v14_migration_1
+rs2 = @reaction_network rs begin
+    p, ∅ --> X
+    d, X --> ∅
+end
+```
+then the model is automatically marked as complete
+```@example v14_migration_1
+Catalyst.iscomplete(rs2)
+```
+In contrast, if we used the [`@network_component`](@ref) DSL macro to build our
+model it is not marked as complete, and is equivalent to our original definition of `rs`
+```@example v14_migration_1
+rs3 = @network_component rs begin
+    p, ∅ --> X
+    d, X --> ∅
+end
+Catalyst.iscomplete(rs3)
+```
+
 ## Unknowns instead of states
-Previously, "states" was used as a term for system variables (both species and non-species variables). MTKv9 has switched to using the term "unknowns" instead. This means that there have been a number of changes to function names (e.g. `states` => `unknowns` and `get_states` => `get_unknowns`). 
+Previously, "states" was used as a term for system variables (both species and non-species variables). MTKv9 has switched to using the term "unknowns" instead. This means that there have been a number of changes to function names (e.g. `states` => `unknowns` and `get_states` => `get_unknowns`).
 
 E.g. here we declare a `ReactionSystem` model containing both species and non-species unknowns:
 ```@example v14_migration_2
@@ -100,10 +122,10 @@ As part of its v9 update, ModelingToolkit changed how units were handled. This i
 
 While this should lead to long-term improvements, unfortunately, as part of the process support for most units was removed. Currently, only the main SI units are supported (`s`, `m`, `kg`, `A`, `K`, `mol`, and `cd`). Composite units (e.g. `N = kg/(m^2)`) are no longer supported. Furthermore, prefix units (e.g. `mm = m/1000`) are not supported either. This means that most units relevant to Catalyst (such as `µM`) cannot be used directly. While composite units can still be written out in full and used (e.g. `kg/(m^2)`) this is hardly user-friendly.
 
-The maintainers of ModelingTOolkit have been notified of this issue. We are unsure when this will be fixed, however, we do not think it will be a permanent change.
+The maintainers of ModelingToolkit have been notified of this issue. We are unsure when this will be fixed, however, we do not think it will be a permanent change.
 
 ## Removed support for system-mutating functions
-According to the ModelingToolkit system API, systems should not be mutable. In accordance with this, the following functions have been deprecated: `addparam!`, `addreaction!`, `addspecies!`, `@add_reactions`, and `merge!`. Please use `ModelingToolkit.extend` and `ModelingToolkit.compose` to generate new merged and/or composed `ReactionSystems` from multiple component systems.
+According to the ModelingToolkit system API, systems should not be mutable. In accordance with this, the following functions have been deprecated and removed: `addparam!`, `addreaction!`, `addspecies!`, `@add_reactions`, and `merge!`. Please use `ModelingToolkit.extend` and `ModelingToolkit.compose` to generate new merged and/or composed `ReactionSystems` from multiple component systems.
 
 It is still possible to add default values to a created `ReactionSystem`, i.e. the `setdefaults!` function is still supported.
 
@@ -132,9 +154,9 @@ nothing # hide
 ```
 
 !!! note
-    If you look at ModelingToolkit documentation, these defaults are instead retrieved using `using ModelingToolkit: t_nounits as t, D_nounits as D`. This will also work, however, in Catalyst we have opted to instead use `default_t` and `default_time_deriv` as our main approach.
+    If you look at ModelingToolkit documentation, these defaults are instead retrieved using `using ModelingToolkit: t_nounits as t, D_nounits as D`. This will also work, however, in Catalyst we have opted to instead use the functions `default_t()` and `default_time_deriv()` as our main approach.
 
-## New interface for accessing problem/integrator/solution parameter (and species) value
+## New interface for accessing problem/integrator/solution parameter (and species) values
 Previously, it was possible to directly index problems to query them for their parameter values. e.g.
 ```@example v14_migration_4
 using Catalyst
@@ -154,12 +176,11 @@ This is *no longer supported*. When you wish to query a problem (or integrator o
 oprob.ps[:p]
 ```
 
-Furthermore, a few new functions (`getp`, `getu`, `setp`, `setu`) have been introduced. These can improve performance when querying a structure for a value multiple times (especially for very large models). These are described in more detail [here](@ref simulation_structure_interfacing_functions).
+Furthermore, a few new functions (`getp`, `getu`, `setp`, `setu`) have been introduced from [SymbolicIndexingInterface](https://github.com/SciML/SymbolicIndexingInterface.jl) to support efficient and systematic querying and/or updating of symbolic unknown/parameter values. Using these can *significantly* improve performance when querying or updating a value multiple times, for example within a callback. These are described in more detail [here](@ref simulation_structure_interfacing_functions).
 
 For more details on how to query various structures for parameter and species values, please read [this documentation page](@ref simulation_structure_interfacing).
 
-## Other notes
-Finally, here are some additional, minor, notes regarding the new update.
+## Other changes
 
 #### Modification of problems with conservation laws broken
 While it is possible to update e.g. `ODEProblem`s using the [`remake`](@ref simulation_structure_interfacing_problems_remake) function, this is currently not possible if the `remove_conserved = true` option was used. E.g. while
@@ -174,7 +195,7 @@ oprob = ODEProblem(rn, u0, (0.0, 10.0), ps; remove_conserved = true)
 solve(oprob)
 # hide
 ```
-is perfectly fine, attempting to then modify any initial conditions or the value of the conservation constant in `oprob` will silently fail:
+is perfectly fine, attempting to then modify any initial conditions or the value of the conservation constant in `oprob` will likely silently fail:
 ```@example v14_migration_5
 oprob_remade = remake(oprob; u0 = [:X1 => 5.0]) # NEVER do this.
 solve(oprob_remade)

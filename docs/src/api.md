@@ -77,6 +77,7 @@ plot(p1, p2, p3; layout = (3,1))
 
 ```@docs
 @reaction_network
+@network_component
 make_empty_network
 @reaction
 Reaction
