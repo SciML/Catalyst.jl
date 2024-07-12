@@ -29,8 +29,8 @@ let
     sol = solve(oprob, Tsit5())
     
     # Attempts to animate the simulation (using various arguments). Deletes the saved file.
-    lattice_animation(sol, :X, "tmp.mp4", lrs; nframes = 10, framerate = 10, colormap = :BuGn_6)
-    @test isfile("tmp.mp4")
-    println(readdir())
-    rm("../tmp.jl")
+    lattice_animation(sol, :X, "animation_tmp.mp4", lrs; nframes = 10, framerate = 10, colormap = :BuGn_6)
+    @test isfile("animation_tmp.mp4")
+    rm("animation_tmp.mp4")
 end
+

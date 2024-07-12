@@ -336,8 +336,3 @@ lat_getp
 lat_setp!
 rebuild_lat_internals!
 ```
-
-The following functions can be used to create plots or animations of spatial simulations.
-```@docs
-lattice_animation
-```
