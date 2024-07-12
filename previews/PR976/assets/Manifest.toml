@@ -2,7 +2,7 @@
 
 julia_version = "1.10.4"
 manifest_format = "2.0"
-project_hash = "f75576d7782c15738dc6a453aacb04e2734a3c38"
+project_hash = "c63f87121c843532790659db240238c2c83354dc"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "7a6b285f217ba92b5b474b783b4c2e8cf8218aaa"
@@ -370,18 +370,13 @@ deps = ["Combinatorics", "DataStructures", "DiffEqBase", "DocStringExtensions", 
 path = "/home/runner/work/Catalyst.jl/Catalyst.jl"
 uuid = "479239e8-5488-4da2-87a7-35f2df7eef83"
 version = "14.0.0"
+weakdeps = ["BifurcationKit", "CairoMakie", "HomotopyContinuation", "StructuralIdentifiability"]
 
     [deps.Catalyst.extensions]
     CatalystBifurcationKitExtension = "BifurcationKit"
-    CatalystGLMakieExtension = "GLMakie"
+    CatalystCairoMakieExtension = "CairoMakie"
     CatalystHomotopyContinuationExtension = "HomotopyContinuation"
     CatalystStructuralIdentifiabilityExtension = "StructuralIdentifiability"
-
-    [deps.Catalyst.weakdeps]
-    BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
-    GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
-    HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
-    StructuralIdentifiability = "220ca800-aa68-49bb-acd8-6037fa93a544"
 
 [[deps.ChainRules]]
 deps = ["Adapt", "ChainRulesCore", "Compat", "Distributed", "GPUArraysCore", "IrrationalConstants", "LinearAlgebra", "Random", "RealDot", "SparseArrays", "SparseInverseSubset", "Statistics", "StructArrays", "SuiteSparse"]
@@ -2231,9 +2226,9 @@ version = "4.5.1"
 
 [[deps.NNlib]]
 deps = ["Adapt", "Atomix", "ChainRulesCore", "GPUArraysCore", "KernelAbstractions", "LinearAlgebra", "Pkg", "Random", "Requires", "Statistics"]
-git-tree-sha1 = "1288e6db94d98f7d194454452176b82edb25b32c"
+git-tree-sha1 = "333cd68c28bb57ac23c50acd1036ecd7dd78bf57"
 uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
-version = "0.9.19"
+version = "0.9.20"
 
     [deps.NNlib.extensions]
     NNlibAMDGPUExt = "AMDGPU"
