@@ -348,6 +348,56 @@ end
 
 linkageclasses(incidencegraph) = Graphs.connected_components(incidencegraph)
 
+"""
+    stronglinkageclasses(rn::ReactionSystem)
+
+    Return the strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes such that every complex is reachable from every other one in the sub-group).
+"""
+
+function stronglinkageclasses(rn::ReactionSystem)
+    nps = get_networkproperties(rn)
+    if isempty(nps.stronglinkageclasses)
+        nps.stronglinkageclasses = stronglinkageclasses(incidencematgraph(rn))
+    end
+    nps.stronglinkageclasses
+end
+
+stronglinkageclasses(incidencegraph) = Graphs.strongly_connected_components(incidencegraph)
+
+"""
+    terminallinkageclasses(rn::ReactionSystem)
+
+    Return the terminal strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes that are 1) strongly connected and 2) every outgoing reaction from a complex in the component produces a complex also in the component).
+"""
+
+function terminallinkageclasses(rn::ReactionSystem)
+    nps = get_networkproperties(rn)
+    if isempty(nps.terminallinkageclasses)
+        slcs = stronglinkageclasses(rn)
+        tslcs = filter(lc -> isterminal(lc, rn), slcs)
+        nps.terminallinkageclasses = tslcs
+    end
+    nps.terminallinkageclasses
+end
+
+# Helper function for terminallinkageclasses. Given a linkage class and a reaction network, say whether the linkage class is terminal, 
+# i.e. all outgoing reactions from complexes in the linkage class produce a complex also in the linkage class
+function isterminal(lc::Vector, rn::ReactionSystem)
+    imat = incidencemat(rn)
+
+    for r in 1:size(imat, 2)
+        # Find the index of the reactant complex for a given reaction
+        s = findfirst(==(-1), @view imat[:, r])
+
+        # If the reactant complex is in the linkage class, check whether the product complex is also in the linkage class. If any of them are not, return false. 
+        if s in Set(lc)
+            p = findfirst(==(1), @view imat[:, r])
+            p in Set(lc) ? continue : return false
+        end
+    end
+    true
+end
+
 @doc raw"""
     deficiency(rn::ReactionSystem)
 
