@@ -377,5 +377,19 @@ let
    end
 end
 
+# No cycles should exist in the following network (the graph is treelike and irreversible)
 
+let
+    rn = @reaction_network begin
+        k1, A + B --> C + D
+        k2, C + D --> E + F
+        k3, C + D --> 2G + H
+        k4, 2G + H --> 3I
+        k5, E + F --> J 
+        k6, 3I --> K
+    end
 
+    S = netstoichmat(rn)
+    cyclemat = Catalyst.cycles(S)
+    @test isempty(cyclemat)
+end
