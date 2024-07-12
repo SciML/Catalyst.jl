@@ -6,7 +6,7 @@ The expansion of `ReactionSystem` models to spatial lattices have been enabled. 
 simple example where a Brusselator model is expanded to a 20x20 grid of compartments, with diffusion
 for species X, and then simulated using ODEs. Finally, an animation of the simulation is created.
 ```julia
-using Catalyst, GLMakie, OrdinaryDiffEq
+using Catalyst, CairoMakie, OrdinaryDiffEq
 
 # Create `LatticeReactionSystem` model.
 brusselator = @reaction_network begin

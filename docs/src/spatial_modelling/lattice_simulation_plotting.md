@@ -32,9 +32,9 @@ oprob = ODEProblem(lrs, u0, tspan, ps)
 sol = solve(oprob, FBDF())
 nothing # hide
 ```
-Next, we can animate it using the `lattice_animation` function, which requires the [GLMakie.jl](https://github.com/JuliaPlots/GLMakie.jl) package:
+Next, we can animate it using the `lattice_animation` function, which requires the [CairoMakie.jl](https://github.com/JuliaPlots/CairoMakie.jl) package:
 ```@example lattice_plotting
-using GLMakie
+using CairoMakie
 lattice_animation(sol, :X, "brusselator.mp4", lrs)
 nothing # hide
 ```
