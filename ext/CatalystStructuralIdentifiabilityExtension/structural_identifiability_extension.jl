@@ -30,7 +30,7 @@ function Catalyst.make_si_ode(rs::ReactionSystem; measured_quantities = [], know
         ignore_no_measured_warn = false, remove_conserved = true)
     # Creates a MTK ODESystem, and a list of measured quantities (there are equations).
     # Gives these to SI to create an SI ode model of its preferred form.
-    osys, conseqs, _ = make_osys(rs; remove_conserved)
+    osys, conseqs, _, _ = make_osys(rs; remove_conserved)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
         conseqs; ignore_no_measured_warn)
     return SI.mtk_to_si(osys, measured_quantities)[1]
@@ -67,7 +67,7 @@ function SI.assess_local_identifiability(rs::ReactionSystem, args...;
         measured_quantities = [], known_p = [], funcs_to_check = Vector(),
         remove_conserved = true, ignore_no_measured_warn = false, kwargs...)
     # Creates a ODESystem, list of measured quantities, and functions to check, of SI's preferred form.
-    osys, conseqs, vars = make_osys(rs; remove_conserved)
+    osys, conseqs, consconsts, vars = make_osys(rs; remove_conserved)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
         conseqs; ignore_no_measured_warn)
     funcs_to_check = make_ftc(funcs_to_check, conseqs, vars)
@@ -75,7 +75,7 @@ function SI.assess_local_identifiability(rs::ReactionSystem, args...;
     # Computes identifiability and converts it to a easy to read form.
     out = SI.assess_local_identifiability(osys, args...; measured_quantities,
         funcs_to_check, kwargs...)
-    return make_output(out, funcs_to_check, reverse.(conseqs))
+    return make_output(out, funcs_to_check, consconsts)
 end
 
 """
@@ -107,7 +107,7 @@ function SI.assess_identifiability(rs::ReactionSystem, args...;
         measured_quantities = [], known_p = [], funcs_to_check = Vector(),
         remove_conserved = true, ignore_no_measured_warn = false, kwargs...)
     # Creates a ODESystem, list of measured quantities, and functions to check, of SI's preferred form.
-    osys, conseqs, vars = make_osys(rs; remove_conserved)
+    osys, conseqs, consconsts, vars = make_osys(rs; remove_conserved)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
         conseqs; ignore_no_measured_warn)
     funcs_to_check = make_ftc(funcs_to_check, conseqs, vars)
@@ -115,7 +115,7 @@ function SI.assess_identifiability(rs::ReactionSystem, args...;
     # Computes identifiability and converts it to a easy to read form.
     out = SI.assess_identifiability(osys, args...; measured_quantities,
         funcs_to_check, kwargs...)
-    return make_output(out, funcs_to_check, reverse.(conseqs))
+    return make_output(out, funcs_to_check, consconsts)
 end
 
 """
@@ -147,13 +147,13 @@ function SI.find_identifiable_functions(rs::ReactionSystem, args...;
         measured_quantities = [], known_p = [], remove_conserved = true,
         ignore_no_measured_warn = false, kwargs...)
     # Creates a ODESystem, and list of measured quantities, of SI's preferred form.
-    osys, conseqs = make_osys(rs; remove_conserved)
+    osys, conseqs, consconsts, _ = make_osys(rs; remove_conserved)
     measured_quantities = make_measured_quantities(rs, measured_quantities, known_p,
         conseqs; ignore_no_measured_warn)
 
     # Computes identifiable functions and converts it to a easy to read form.
     out = SI.find_identifiable_functions(osys, args...; measured_quantities, kwargs...)
-    return vector_subs(out, reverse.(conseqs))
+    return vector_subs(out, consconsts)
 end
 
 ### Helper Functions ###
@@ -172,22 +172,21 @@ function make_osys(rs::ReactionSystem; remove_conserved = true)
 
     # Computes equations for system conservation laws.
     # If there are no conserved equations, the `conseqs` variable must still have the `Vector{Pair{Any, Any}}` type.
-    if !remove_conserved
-        conseqs = Vector{Pair{Any, Any}}[]
-    else
+    if remove_conserved
         conseqs = [ceq.lhs => ceq.rhs for ceq in conservedequations(rs)]
-        isempty(conseqs) && (conseqs = Vector{Pair{Any, Any}}[])
+        consconsts = [cconst.lhs => cconst.rhs for cconst in conservationlaw_constants(rs)]
     end
+    remove_conserved || isnothing(conseqs) && (conseqs = Vector{Pair{Any, Any}}[])
+    remove_conserved || isnothing(consconsts) && (consconsts = Vector{Pair{Any, Any}}[])
 
-    return osys, conseqs, vars
+    return osys, conseqs, consconsts, vars
 end
 
 # Creates a list of measured quantities of a form that SI can read.
 # Each measured quantity must have a form like:
 # `obs_var ~ X` # (Here, `obs_var` is a variable, and X is whatever we can measure).
-function make_measured_quantities(
-        rs::ReactionSystem, measured_quantities::Vector{T}, known_p::Vector{S},
-        conseqs; ignore_no_measured_warn = false) where {T, S}
+function make_measured_quantities(rs::ReactionSystem, measured_quantities::Vector{T}, 
+        known_p::Vector{S}, conseqs; ignore_no_measured_warn = false) where {T, S}
     # Warning if the user didn't give any measured quantities.
     if !ignore_no_measured_warn && isempty(measured_quantities)
         @warn "No measured quantity provided to the `measured_quantities` argument, any further identifiability analysis will likely fail. You can disable this warning by setting `ignore_no_measured_warn = true`."
@@ -218,9 +217,9 @@ end
 # Processes the outputs to a better form.
 # Replaces conservation law equations back in the output (so that e.g. Γ are not displayed).
 # Sorts the output according to their input order (defaults to the `[unknowns; parameters]` order).
-function make_output(out, funcs_to_check, conseqs)
-    funcs_to_check = vector_subs(funcs_to_check, conseqs)
-    out = OrderedDict(zip(vector_subs(keys(out), conseqs), values(out)))
+function make_output(out, funcs_to_check, consconsts)
+    funcs_to_check = vector_subs(funcs_to_check, consconsts)
+    out = OrderedDict(zip(vector_subs(keys(out), consconsts), values(out)))
     sortdict = Dict(ftc => i for (i, ftc) in enumerate(funcs_to_check))
     return sort!(out; by = x -> sortdict[x])
 end
