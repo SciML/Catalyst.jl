@@ -521,8 +521,6 @@ end
 # Functions which in each sample point reshape the vector of values to the correct form (depending
 # on the type of lattice used).
 function reshape_vals(vals, lattice::CartesianGridRej{N, T}) where {N, T}
-    println(vals)
-    lattice.dims
     return reshape(vals, lattice.dims...)
 end
 function reshape_vals(vals, lattice::AbstractSparseArray{Bool, Int64, 1})
