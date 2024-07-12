@@ -185,7 +185,7 @@ end
 # Creates a list of measured quantities of a form that SI can read.
 # Each measured quantity must have a form like:
 # `obs_var ~ X` # (Here, `obs_var` is a variable, and X is whatever we can measure).
-function make_measured_quantities(rs::ReactionSystem, measured_quantities::Vector{T}, 
+function make_measured_quantities(rs::ReactionSystem, measured_quantities::Vector{T},
         known_p::Vector{S}, conseqs; ignore_no_measured_warn = false) where {T, S}
     # Warning if the user didn't give any measured quantities.
     if !ignore_no_measured_warn && isempty(measured_quantities)
