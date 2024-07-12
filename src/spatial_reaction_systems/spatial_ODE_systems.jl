@@ -180,7 +180,7 @@ function DiffEqBase.ODEProblem(lrs::LatticeReactionSystem, u0_in, tspan,
         combinatoric_ratelaws = get_combinatoric_ratelaws(reactionsystem(lrs)),
         remove_conserved = false, checks = false, kwargs...)
     if !is_transport_system(lrs)
-        error("Currently lattice ODE simulations are only supported when all spatial reactions are TransportReactions.")
+        error("Currently lattice ODE simulations are only supported when all spatial reactions are `TransportReaction`s.")
     end
 
     # Converts potential symmaps to varmaps.

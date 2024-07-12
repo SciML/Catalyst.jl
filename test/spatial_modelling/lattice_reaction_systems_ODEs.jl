@@ -443,7 +443,7 @@ let
     @test ss_1 == ss_2
 end
 
-# Tries various ways of creating TransportReactions.
+# Tries various ways of creating `TransportReaction`s.
 let
     CuH_Amination_system_alt_1 = @reaction_network begin
         @species Newspecies1(t) Newspecies2(t)

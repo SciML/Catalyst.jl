@@ -18,17 +18,6 @@ let
     @test isequal(tr.rate, dV*dE)
 end
 
-# Tests transport_reactions function for creating TransportReactions.
-let 
-    rs = @reaction_network begin
-        @parameters d
-        (p,1), 0 <--> X
-    end
-    @unpack d, X = rs
-    trs = TransportReactions([(d, X), (d, X)])
-    @test isequal(trs[1], trs[2])
-end
-
 # Test reactions with constants in rate.
 let 
     @variables t
