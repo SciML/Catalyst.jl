@@ -48,10 +48,10 @@ pages = Any[
         ]
     ],
     "Spatial Modelling" => Any[
-        "spatial_modelling/lattice_reaction_systems.md"
-        "spatial_modelling/lattice_simulation_structure_ interaction.md"
-        "spatial_modelling/lattice_simulation_plotting.md"
-        "spatial_modelling/spatial_ode_simulations.md"
+        "spatial_modelling/lattice_reaction_systems.md",
+        "spatial_modelling/lattice_simulation_structure_ interaction.md",
+        "spatial_modelling/lattice_simulation_plotting.md",
+        "spatial_modelling/spatial_ode_simulations.md",
         "spatial_modelling/spatial_jump_simulations.md"
     ],
     "FAQs" => "faqs.md",
