@@ -124,7 +124,7 @@ rs = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 ```
-contain conservation laws (in this case $Γ = X1 + X2$, where $Γ = X1(0) + X2(0)$ is a constant). Because the presence of such conservation laws makes structural identifiability analysis prohibitively computationally expensive (for all but the simplest of cases), these are automatically eliminated by Catalyst (removing one ODE from the resulting ODE system for each conservation law). For the `assess_identifiability` and `assess_local_identifiability` functions, this will be unnoticed by the user. However, for the `find_identifiable_functions` and `make_si_ode` functions, this may result in one, or several, parameters of the form `Γ[i]` (where `i` is an integer) appearing in the produced expressions. These correspond to the conservation law constants and can be found through
+contain [conservation laws](@ref network_analysis_conservation_laws) (in this case $Γ = X1 + X2$, where $Γ = X1(0) + X2(0)$ is a constant). Because the presence of such conservation laws makes structural identifiability analysis prohibitively computationally expensive (for all but the simplest of cases), these are automatically eliminated by Catalyst (removing one ODE from the resulting ODE system for each conservation law). For the `assess_identifiability` and `assess_local_identifiability` functions, this will be unnoticed by the user. However, for the `find_identifiable_functions` and `make_si_ode` functions, this may result in one, or several, parameters of the form `Γ[i]` (where `i` is an integer) appearing in the produced expressions. These correspond to the conservation law constants and can be found through
 ```@example si3
 conservedequations(rs)
 ```
