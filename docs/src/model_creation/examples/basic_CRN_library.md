@@ -79,16 +79,15 @@ oplt = plot(osol; idxs = X₁ + X₂, title = "Reaction rate equation (ODE)")
 splt = plot(ssol; idxs = X₁ + X₂, title = "Chemical Langevin equation (SDE)")
 plot(oplt, splt; lw = 3, ylimit = (99,101), size = (800,450), layout = (2,1))
 ```
-Catalyst has special methods for working with conserved quantities, which are described [here](@ref ref).
 
 ## [Michaelis-Menten enzyme kinetics](@id basic_CRN_library_mm)
 [Michaelis-Menten enzyme kinetics](https://en.wikipedia.org/wiki/Michaelis%E2%80%93Menten_kinetics) is a simple description of an enzyme ($E$) transforming a substrate ($S$) into a product ($P$). Under certain assumptions, it can be simplified to a single function (a Michaelis-Menten function) and used as a reaction rate. Here we instead present the full system model:
 ```@example crn_library_michaelis_menten
 using Catalyst
 mm_system = @reaction_network begin
-  kB, S + E --> SE
-  kD, SE --> S + E
-  kP, SE --> P + E
+    kB, S + E --> SE
+    kD, SE --> S + E
+    kP, SE --> P + E
 end
 ```
 Next, we perform ODE, SDE, and jump simulations of the model:
@@ -110,16 +109,19 @@ using JumpProcesses
 dprob = DiscreteProblem(mm_system, u0, tspan, ps)
 jprob = JumpProblem(mm_system, dprob, Direct())
 jsol = solve(jprob, SSAStepper())
-jsol = solve(jprob, SSAStepper(); seed = 12) # hide
+jsol = solve(jprob, SSAStepper(), seed = 12) # hide
 
 using Plots
 oplt = plot(osol; title = "Reaction rate equation (ODE)")
 splt = plot(ssol; title = "Chemical Langevin equation (SDE)")
 jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)")
-plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1)) 
+plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1))
+oplt = plot(osol; title = "Reaction rate equation (ODE)", plotdensity = 1000, fmt = :png) # hide
+splt = plot(ssol; title = "Chemical Langevin equation (SDE)", plotdensity = 1000, fmt = :png) # hide
+jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)", plotdensity = 1000, fmt = :png) # hide
+plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1), plotdensity = 1000, fmt = :png) # hide
 plot!(bottom_margin = 3Plots.Measures.mm) # hide
 ```
-Note that, due to the large amounts of the species involved, teh stochastic trajectories are very similar to the deterministic one.
 
 ## [SIR infection model](@id basic_CRN_library_sir)
 The [SIR model](https://en.wikipedia.org/wiki/Compartmental_models_in_epidemiology#The_SIR_model) is the simplest model of the spread of an infectious disease. While the real system is very different from the chemical and cellular processes typically modelled with CRNs, it (and several other epidemiological systems) can be modelled using the same CRN formalism. The SIR model consists of three species: susceptible ($S$), infected ($I$), and removed ($R$) individuals, and two reaction events: infection and recovery.
@@ -146,19 +148,23 @@ Next, we perform 3 different Jump simulations. Note that for the stochastic mode
 ```@example crn_library_sir
 using JumpProcesses
 dprob = DiscreteProblem(sir_model, u0, tspan, ps)
-jprob = JumpProblem(sir_model, dprob, Direct())
+jprob = JumpProblem(sir_model, dprob, Direct(); save_positions = (false, false))
 
-jsol1 = solve(jprob, SSAStepper())
-jsol2 = solve(jprob, SSAStepper())
-jsol3 = solve(jprob, SSAStepper())
-jsol1 = solve(jprob, SSAStepper(); seed=1) # hide
-jsol2 = solve(jprob, SSAStepper(); seed=2) # hide
-jsol3 = solve(jprob, SSAStepper(); seed=3) # hide
+jsol1 = solve(jprob, SSAStepper(); saveat = 1.0)
+jsol2 = solve(jprob, SSAStepper(); saveat = 1.0)
+jsol3 = solve(jprob, SSAStepper(); saveat = 1.0)
+jsol1 = solve(jprob, SSAStepper(); saveat = 1.0, seed = 1) # hide
+jsol2 = solve(jprob, SSAStepper(); saveat = 1.0, seed = 2) # hide
+jsol3 = solve(jprob, SSAStepper(); saveat = 1.0, seed = 3) # hide
 
 jplt1 = plot(jsol1; title = "Outbreak")
 jplt2 = plot(jsol2; title = "Outbreak")
 jplt3 = plot(jsol3; title = "No outbreak")
 plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1))
+jplt1 = plot(jsol1; title = "Outbreak", plotdensity = 1000, fmt = :png) # hide
+jplt2 = plot(jsol2; title = "Outbreak", plotdensity = 1000, fmt = :png) # hide
+jplt3 = plot(jsol3; title = "No outbreak", plotdensity = 1000, fmt = :png) # hide
+plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1), plotdensity = 1000, fmt = :png) # hide
 ```
 
 ## [Chemical cross-coupling](@id basic_CRN_library_cc)
@@ -241,9 +247,9 @@ oprob = ODEProblem(sa_loop, u0, tspan, ps)
 osol = solve(oprob)
 
 dprob = DiscreteProblem(sa_loop, u0, tspan, ps)
-jprob = JumpProblem(sa_loop, dprob, Direct())
-jsol = solve(jprob, SSAStepper())
-jsol = solve(jprob, SSAStepper(); seed = 12) # hide
+jprob = JumpProblem(sa_loop, dprob, Direct(); save_positions = (false,false))
+jsol = solve(jprob, SSAStepper(); saveat = 10.0)
+jsol = solve(jprob, SSAStepper(); saveat = 10.0, seed = 12) # hide
 
 plot(osol; lw = 3, label = "Reaction rate equation (ODE)")
 plot!(jsol; lw = 3, label = "Stochastic chemical kinetics (Jump)", yguide = "X", size = (800,350))
@@ -261,7 +267,7 @@ brusselator = @reaction_network begin
     1, X --> ∅
 end
 ```
-It is generally known to (for reaction rate equation-based ODE simulations) produce oscillations when $B > 1 + A^2$. However, this result is based on models generated when *combinatorial adjustment of rates is not performed*. Since Catalyst [automatically perform these adjustments](@ref ref), and one reaction contains a stoichiometric constant $>1$, the threshold will be different. Here, we trial two different values of $B$. In both cases, $B < 1 + A^2$, however, in the second case the system can generate oscillations.
+It is generally known to (for reaction rate equation-based ODE simulations) produce oscillations when $B > 1 + A^2$. However, this result is based on models generated when *combinatorial adjustment of rates is not performed*. Since Catalyst [automatically perform these adjustments](@ref introduction_to_catalyst_ratelaws), and one reaction contains a stoichiometric constant $>1$, the threshold will be different. Here, we trial two different values of $B$. In both cases, $B < 1 + A^2$, however, in the second case the system can generate oscillations.
 ```@example crn_library_brusselator
 using OrdinaryDiffEq, Plots
 u0 = [:X => 1.0, :Y => 1.0]
@@ -279,7 +285,7 @@ oplt2 = plot(osol2; title = "Oscillation")
 plot(oplt1, oplt2; lw = 3, size = (800,600), layout = (2,1))
 ```
 
-## [The Repressilator](@id basic_CRN_library_)
+## [The Repressilator](@id basic_CRN_library_repressilator)
 The Repressilator was introduced in [*Elowitz & Leibler (2000)*](https://www.nature.com/articles/35002125) as a simple system that can generate oscillations (most notably, they demonstrated this both in a model and in a synthetic in vivo implementation in *Escherichia col*). It consists of three genes, repressing each other in a cycle. Here, we will implement it using three species ($X$, $Y$, and $Z$) whose production rates are (repressing) [Hill functions](https://en.wikipedia.org/wiki/Hill_equation_(biochemistry)).
 ```@example crn_library_brusselator
 using Catalyst

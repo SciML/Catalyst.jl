@@ -34,7 +34,6 @@ References:
 - DOT language guide: http://www.graphviz.org/pdf/dotguide.pdf
 """
 
-
 ### AST ###
 
 abstract type Expression end
@@ -123,7 +122,6 @@ Edge(path::Vector{String}, attrs::AbstractDict) = Edge(map(NodeID, path), attrs)
 Edge(path::Vector{String}; attrs...) = Edge(map(NodeID, path), attrs)
 Edge(path::Vararg{String}; attrs...) = Edge(map(NodeID, collect(path)), attrs)
 
-
 ### Bindings ###
 
 """ Run a Graphviz program.
@@ -137,7 +135,7 @@ For bindings to the Graphviz C API, see the the package
 GraphViz.jl is unmaintained.
 """
 function run_graphviz(io::IO, graph::Graph; prog::Union{String, Nothing} = nothing,
-                      format::String = "json0")
+        format::String = "json0")
     if isnothing(prog)
         prog = graph.prog
     end
@@ -240,7 +238,7 @@ function pprint(io::IO, edge::Edge, n::Int; directed::Bool = false)
 end
 
 function pprint_attrs(io::IO, attrs::Attributes, n::Int = 0;
-                      pre::String = "", post::String = "")
+        pre::String = "", post::String = "")
     if !isempty(attrs)
         indent(io, n)
         print(io, pre)
@@ -319,7 +317,6 @@ function modifystrcomp(strcomp::Vector{String})
     strcomp = "<" .* strcomp .* ">"
 end
 
-
 ### Public-facing API ###
 
 """
@@ -366,7 +363,7 @@ function complexgraph(rn::ReactionSystem; complexdata = reactioncomplexes(rn))
     append!(stmts2, compnodes)
     append!(stmts2, collect(Iterators.flatten(edges)))
     g = Digraph("G", stmts2; graph_attrs = graph_attrs, node_attrs = node_attrs,
-                edge_attrs = edge_attrs)
+        edge_attrs = edge_attrs)
     return g
 end
 
@@ -392,15 +389,15 @@ function Graph(rn::ReactionSystem)
     rxs = reactions(rn)
     specs = species(rn)
     statenodes = [Node(string(getname(s)),
-                       Attributes(:shape => "circle", :color => "#6C9AC3")) for s in specs]
+                      Attributes(:shape => "circle", :color => "#6C9AC3")) for s in specs]
     transnodes = [Node(string("rx_$i"),
-                       Attributes(:shape => "point", :color => "#E28F41", :width => ".1"))
+                      Attributes(:shape => "point", :color => "#E28F41", :width => ".1"))
                   for (i, r) in enumerate(rxs)]
 
     stmts = vcat(statenodes, transnodes)
     edges = map(enumerate(rxs)) do (i, r)
         vcat(edgify(zip(r.substrates, r.substoich), i, false),
-             edgify(zip(r.products, r.prodstoich), i, true))
+            edgify(zip(r.products, r.prodstoich), i, true))
     end
     es = edgifyrates(rxs, specs)
     (!isempty(es)) && push!(edges, es)
@@ -409,7 +406,7 @@ function Graph(rn::ReactionSystem)
     append!(stmts2, stmts)
     append!(stmts2, collect(Iterators.flatten(edges)))
     g = Digraph("G", stmts2; graph_attrs = graph_attrs, node_attrs = node_attrs,
-                edge_attrs = edge_attrs)
+        edge_attrs = edge_attrs)
     return g
 end
 

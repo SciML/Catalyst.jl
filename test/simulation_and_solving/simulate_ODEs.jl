@@ -104,7 +104,7 @@ let
         du[2] = -k3 * X2 + k4 * X3 + k1 * X1 - k2 * X2
         du[3] = -k5 * X3 + k6 * X1 + k3 * X2 - k4 * X3
     end
-    push!(catalyst_networks, reaction_networks_constraint[1])
+    push!(catalyst_networks, reaction_networks_conserved[1])
     push!(manual_networks, real_functions_4)
     push!(u0_syms, [:X1, :X2, :X3])
     push!(ps_syms, [:k1, :k2, :k3, :k4, :k5, :k6])

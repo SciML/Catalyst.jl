@@ -106,7 +106,7 @@ function reactioncomplexes(rn::ReactionSystem; sparse = false)
 end
 
 function reactioncomplexes(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem,
-                           complextorxsmap)
+        complextorxsmap)
     complexes = collect(keys(complextorxsmap))
     Is = Int[]
     Js = Int[]
@@ -260,25 +260,19 @@ end
 Construct a directed simple graph where nodes correspond to reaction complexes and directed
 edges to reactions converting between two complexes.
 
-Notes:
-- Requires the `incidencemat` to already be cached in `rn` by a previous call to
-  `reactioncomplexes`.
-
 For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-complexes,incidencemat = reactioncomplexes(sir)
 incidencematgraph(sir)
 ```
 """
 function incidencematgraph(rn::ReactionSystem)
     nps = get_networkproperties(rn)
     if Graphs.nv(nps.incidencegraph) == 0
-        isempty(nps.incidencemat) &&
-            error("Please call reactioncomplexes(rn) first to construct the incidence matrix.")
+        isempty(nps.incidencemat) && reactioncomplexes(rn)
         nps.incidencegraph = incidencematgraph(nps.incidencemat)
     end
     nps.incidencegraph
@@ -320,7 +314,6 @@ function incidencematgraph(incidencemat::SparseMatrixCSC{Int, Int})
     return graph
 end
 
-
 ### Linkage, Deficiency, Reversibility ###
 
 """
@@ -330,17 +323,12 @@ Given the incidence graph of a reaction network, return a vector of the
 connected components of the graph (i.e. sub-groups of reaction complexes that
 are connected in the incidence graph).
 
-Notes:
-- Requires the `incidencemat` to already be cached in `rn` by a previous call to
-  `reactioncomplexes`.
-
 For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-complexes,incidencemat = reactioncomplexes(sir)
 linkageclasses(sir)
 ```
 gives
@@ -360,6 +348,56 @@ end
 
 linkageclasses(incidencegraph) = Graphs.connected_components(incidencegraph)
 
+"""
+    stronglinkageclasses(rn::ReactionSystem)
+
+    Return the strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes such that every complex is reachable from every other one in the sub-group).
+"""
+
+function stronglinkageclasses(rn::ReactionSystem)
+    nps = get_networkproperties(rn)
+    if isempty(nps.stronglinkageclasses)
+        nps.stronglinkageclasses = stronglinkageclasses(incidencematgraph(rn))
+    end
+    nps.stronglinkageclasses
+end
+
+stronglinkageclasses(incidencegraph) = Graphs.strongly_connected_components(incidencegraph)
+
+"""
+    terminallinkageclasses(rn::ReactionSystem)
+
+    Return the terminal strongly connected components of a reaction network's incidence graph (i.e. sub-groups of reaction complexes that are 1) strongly connected and 2) every outgoing reaction from a complex in the component produces a complex also in the component).
+"""
+
+function terminallinkageclasses(rn::ReactionSystem)
+    nps = get_networkproperties(rn)
+    if isempty(nps.terminallinkageclasses)
+        slcs = stronglinkageclasses(rn)
+        tslcs = filter(lc -> isterminal(lc, rn), slcs)
+        nps.terminallinkageclasses = tslcs
+    end
+    nps.terminallinkageclasses
+end
+
+# Helper function for terminallinkageclasses. Given a linkage class and a reaction network, say whether the linkage class is terminal, 
+# i.e. all outgoing reactions from complexes in the linkage class produce a complex also in the linkage class
+function isterminal(lc::Vector, rn::ReactionSystem)
+    imat = incidencemat(rn)
+
+    for r in 1:size(imat, 2)
+        # Find the index of the reactant complex for a given reaction
+        s = findfirst(==(-1), @view imat[:, r])
+
+        # If the reactant complex is in the linkage class, check whether the product complex is also in the linkage class. If any of them are not, return false. 
+        if s in Set(lc)
+            p = findfirst(==(1), @view imat[:, r])
+            p in Set(lc) ? continue : return false
+        end
+    end
+    true
+end
+
 @doc raw"""
     deficiency(rn::ReactionSystem)
 
@@ -372,17 +410,12 @@ Here the deficiency, ``\delta``, of a network with ``n`` reaction complexes,
 \delta = n - \ell - s
 ```
 
-Notes:
-- Requires the `incidencemat` to already be cached in `rn` by a previous call to
-  `reactioncomplexes`.
-
 For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-rcs,incidencemat = reactioncomplexes(sir)
 δ = deficiency(sir)
 ```
 """
@@ -399,7 +432,7 @@ end
 # Used in the subsequent function.
 function subnetworkmapping(linkageclass, allrxs, complextorxsmap, p)
     rxinds = sort!(collect(Set(rxidx for rcidx in linkageclass
-                               for rxidx in complextorxsmap[rcidx])))
+    for rxidx in complextorxsmap[rcidx])))
     rxs = allrxs[rxinds]
     specset = Set(s for rx in rxs for s in rx.substrates if !isconstant(s))
     for rx in rxs
@@ -420,17 +453,12 @@ end
 
 Find subnetworks corresponding to each linkage class of the reaction network.
 
-Notes:
-- Requires the `incidencemat` to already be cached in `rn` by a previous call to
-  `reactioncomplexes`.
-
 For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-complexes,incidencemat = reactioncomplexes(sir)
 subnetworks(sir)
 ```
 """
@@ -447,7 +475,7 @@ function subnetworks(rs::ReactionSystem)
         reacs, specs, newps = subnetworkmapping(lcs[i], rxs, complextorxsmap, p)
         newname = Symbol(nameof(rs), "_", i)
         push!(subnetworks,
-              ReactionSystem(reacs, t, specs, newps; name = newname, spatial_ivs))
+            ReactionSystem(reacs, t, specs, newps; name = newname, spatial_ivs))
     end
     subnetworks
 end
@@ -457,17 +485,12 @@ end
 
 Calculates the deficiency of each sub-reaction network within `network`.
 
-Notes:
-- Requires the `incidencemat` to already be cached in `rn` by a previous call to
-  `reactioncomplexes`.
-
 For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-rcs,incidencemat = reactioncomplexes(sir)
 linkage_deficiencies = linkagedeficiencies(sir)
 ```
 """
@@ -488,17 +511,12 @@ end
 
 Given a reaction network, returns if the network is reversible or not.
 
-Notes:
-- Requires the `incidencemat` to already be cached in `rn` by a previous call to
-  `reactioncomplexes`.
-
 For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-rcs,incidencemat = reactioncomplexes(sir)
 isreversible(sir)
 ```
 """
@@ -512,33 +530,29 @@ end
 
 Determine if the reaction network with the given subnetworks is weakly reversible or not.
 
-Notes:
-- Requires the `incidencemat` to already be cached in `rn` by a previous call to
-  `reactioncomplexes`.
-
 For example,
 ```julia
 sir = @reaction_network SIR begin
     β, S + I --> 2I
     ν, I --> R
 end
-rcs,incidencemat = reactioncomplexes(sir)
 subnets = subnetworks(rn)
 isweaklyreversible(rn, subnets)
 ```
 """
 function isweaklyreversible(rn::ReactionSystem, subnets)
-    im = get_networkproperties(rn).incidencemat
-    isempty(im) &&
-        error("Error, please call reactioncomplexes(rn::ReactionSystem) to ensure the incidence matrix has been cached.")
-    sparseig = issparse(im)
+    nps = get_networkproperties(rn)
+    isempty(nps.incidencemat) && reactioncomplexes(rn)
+    sparseig = issparse(nps.incidencemat)
+
     for subnet in subnets
-        nps = get_networkproperties(subnet)
-        isempty(nps.incidencemat) && reactioncomplexes(subnet; sparse = sparseig)
+        subnps = get_networkproperties(subnet)
+        isempty(subnps.incidencemat) && reactioncomplexes(subnet; sparse = sparseig)
     end
+
+    # A network is weakly reversible if all of its subnetworks are strongly connected
     all(Graphs.is_strongly_connected ∘ incidencematgraph, subnets)
 end
-
 
 ### Conservation Laws ###
 
@@ -653,7 +667,7 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     depidxs = col_order[(r + 1):end]
     depspecs = sts[depidxs]
     constants = MT.unwrap.(MT.scalarize(only(
-                @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] [conserved=true])))
+        @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] [conserved = true])))
 
     conservedeqs = Equation[]
     constantdefs = Equation[]
@@ -711,10 +725,180 @@ conservedquantities(state, cons_laws) = cons_laws * state
 # If u0s are not given while conservation laws are present, throws an error.
 # Used in HomotopyContinuation and BifurcationKit extensions.
 # Currently only checks if any u0s are given
-# (not whether these are enough for computing conserved quantitites, this will yield a less informative error).
+# (not whether these are enough for computing conserved quantities, this will yield a less informative error).
 function conservationlaw_errorcheck(rs, pre_varmap)
     vars_with_vals = Set(p[1] for p in pre_varmap)
     any(s -> s in vars_with_vals, species(rs)) && return
     isempty(conservedequations(Catalyst.flatten(rs))) ||
         error("The system has conservation laws but initial conditions were not provided for some species.")
+end
+
+"""
+    iscomplexbalanced(rs::ReactionSystem, parametermap)
+
+Constructively compute whether a network will have complex-balanced equilibrium
+solutions, following the method in van der Schaft et al., [2015](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
+"""
+
+function iscomplexbalanced(rs::ReactionSystem, parametermap::Dict)
+    if length(parametermap) != numparams(rs)
+        error("Incorrect number of parameters specified.")
+    end
+
+    pmap = symmap_to_varmap(rs, parametermap)
+    pmap = Dict(ModelingToolkit.value(k) => v for (k, v) in pmap)
+
+    sm = speciesmap(rs)
+    cm = reactioncomplexmap(rs)
+    complexes, D = reactioncomplexes(rs)
+    rxns = reactions(rs)
+    nc = length(complexes)
+    nr = numreactions(rs)
+    nm = numspecies(rs)
+
+    if !all(r -> ismassaction(r, rs), rxns)
+        error("The supplied ReactionSystem has reactions that are not ismassaction. Testing for being complex balanced is currently only supported for pure mass action networks.")
+    end
+
+    rates = [substitute(rate, pmap) for rate in reactionrates(rs)]
+
+    # Construct kinetic matrix, K
+    K = zeros(nr, nc)
+    for c in 1:nc
+        complex = complexes[c]
+        for (r, dir) in cm[complex]
+            rxn = rxns[r]
+            if dir == -1
+                K[r, c] = rates[r]
+            end
+        end
+    end
+
+    L = -D * K
+    S = netstoichmat(rs)
+
+    # Compute ρ using the matrix-tree theorem
+    g = incidencematgraph(rs)
+    R = ratematrix(rs, rates)
+    ρ = matrixtree(g, R)
+
+    # Determine if 1) ρ is positive and 2) D^T Ln ρ lies in the image of S^T
+    if all(>(0), ρ)
+        img = D' * log.(ρ)
+        if rank(S') == rank(hcat(S', img))
+            return true
+        else
+            return false
+        end
+    else
+        return false
+    end
+end
+
+function iscomplexbalanced(rs::ReactionSystem, parametermap::Vector{Pair{Symbol, Float64}})
+    pdict = Dict(parametermap)
+    iscomplexbalanced(rs, pdict)
+end
+
+function iscomplexbalanced(rs::ReactionSystem, parametermap::Tuple{Pair{Symbol, Float64}})
+    pdict = Dict(parametermap)
+    iscomplexbalanced(rs, pdict)
+end
+
+function iscomplexbalanced(rs::ReactionSystem, parametermap)
+    error("Parameter map must be a dictionary, tuple, or vector of symbol/value pairs.")
+end
+
+"""
+    ratematrix(rs::ReactionSystem, parametermap)
+
+    Given a reaction system with n complexes, outputs an n-by-n matrix where R_{ij} is the rate constant of the reaction between complex i and complex j. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
+"""
+
+function ratematrix(rs::ReactionSystem, rates::Vector{Float64})
+    complexes, D = reactioncomplexes(rs)
+    n = length(complexes)
+    rxns = reactions(rs)
+    ratematrix = zeros(n, n)
+
+    for r in 1:length(rxns)
+        rxn = rxns[r]
+        s = findfirst(==(-1), @view D[:, r])
+        p = findfirst(==(1), @view D[:, r])
+        ratematrix[s, p] = rates[r]
+    end
+    ratematrix
+end
+
+function ratematrix(rs::ReactionSystem, parametermap::Dict)
+    if length(parametermap) != numparams(rs)
+        error("Incorrect number of parameters specified.")
+    end
+
+    pmap = symmap_to_varmap(rs, parametermap)
+    pmap = Dict(ModelingToolkit.value(k) => v for (k, v) in pmap)
+
+    rates = [substitute(rate, pmap) for rate in reactionrates(rs)]
+    ratematrix(rs, rates)
+end
+
+function ratematrix(rs::ReactionSystem, parametermap::Vector{Pair{Symbol, Float64}})
+    pdict = Dict(parametermap)
+    ratematrix(rs, pdict)
+end
+
+function ratematrix(rs::ReactionSystem, parametermap::Tuple{Pair{Symbol, Float64}})
+    pdict = Dict(parametermap)
+    ratematrix(rs, pdict)
+end
+
+function ratematrix(rs::ReactionSystem, parametermap)
+    error("Parameter map must be a dictionary, tuple, or vector of symbol/value pairs.")
+end
+
+### BELOW: Helper functions for iscomplexbalanced
+
+function matrixtree(g::SimpleDiGraph, distmx::Matrix)
+    n = nv(g)
+    if size(distmx) != (n, n)
+        error("Size of distance matrix is incorrect")
+    end
+
+    π = zeros(n)
+
+    if !Graphs.is_connected(g)
+        ccs = Graphs.connected_components(g)
+        for cc in ccs
+            sg, vmap = Graphs.induced_subgraph(g, cc)
+            distmx_s = distmx[cc, cc]
+            π_j = matrixtree(sg, distmx_s)
+            π[cc] = π_j
+        end
+        return π
+    end
+
+    # generate all spanning trees
+    ug = SimpleGraph(SimpleDiGraph(g))
+    trees = collect(Combinatorics.combinations(collect(edges(ug)), n - 1))
+    trees = SimpleGraph.(trees)
+    trees = filter!(t -> isempty(Graphs.cycle_basis(t)), trees)
+
+    # constructed rooted trees for every vertex, compute sum
+    for v in 1:n
+        rootedTrees = [reverse(Graphs.bfs_tree(t, v, dir = :in)) for t in trees]
+        π[v] = sum([treeweight(t, g, distmx) for t in rootedTrees])
+    end
+
+    # sum the contributions
+    return π
+end
+
+function treeweight(t::SimpleDiGraph, g::SimpleDiGraph, distmx::Matrix)
+    prod = 1
+    for e in edges(t)
+        s = Graphs.src(e)
+        t = Graphs.dst(e)
+        prod *= distmx[s, t]
+    end
+    prod
 end
