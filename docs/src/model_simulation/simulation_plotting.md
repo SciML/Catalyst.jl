@@ -58,7 +58,7 @@ can be used to plot `X` only. When only a single argument is given, the vector f
 plot(sol; idxs = brusselator.X + brusselator.Y)
 ```
 
-## [Multi-plot plots](@id simulation_plotting_options)
+## [Multi-plot plots](@id simulation_plotting_options_subplots)
 It is possible to save plots in variables. These can then be used as input to the `plot` command. Here, the plot command can be used to create plots containing multiple plots (by providing multiple inputs). E.g. here we plot the concentration of `X` and `Y` in separate subplots:
 ```@example simulation_plotting
 plt_X = plot(sol; idxs = [:X])
@@ -71,7 +71,7 @@ When working with subplots, the [`layout`](https://docs.juliaplots.org/latest/la
 plot(plt_X, plt_Y; layout = (2,1), size = (700,500))
 ```
 
-## [Saving plots](@id simulation_plotting_options)
+## [Saving plots](@id simulation_plotting_options_saving)
 Once a plot has been saved to a variable, the `savefig` function can be used to save it to a file. Here we save our Brusselator plot simulation (the first argument) to a file called "saved_plot.png" (the second argument):
 ```@example simulation_plotting
 plt = plot(sol)
@@ -80,7 +80,7 @@ rm("saved_plot.png") # hide
 ```
 The plot file type is automatically determined from the extension (if none is given, a .png file is created).
 
-## [Phase-space plots](@id simulation_plotting_options)
+## [Phase-space plots](@id simulation_plotting_options_phasespace)
 By default, simulations are plotted as species concentrations over time. However, [phase space](https://en.wikipedia.org/wiki/Phase_space#:~:text=In%20dynamical%20systems%20theory%20and,point%20in%20the%20phase%20space.) plots are also possible. This is done by designating the axis arguments using the `idxs` option, but providing them as a tuple. E.g. here we plot our simulation in $X-Y$ space:
 ```@example simulation_plotting
 plot(sol; idxs = (:X, :Y))

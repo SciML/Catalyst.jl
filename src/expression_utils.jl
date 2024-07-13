@@ -27,7 +27,7 @@ function forbidden_symbol_check(v)
         error("The following symbol(s) are used as species or parameters: " *
               ((map(s -> "'" * string(s) * "', ",
                   intersect(forbidden_symbols_error, v))...)) *
-              "this is not permited.")
+              "this is not permitted.")
     nothing
 end
 
@@ -37,7 +37,7 @@ function forbidden_variable_check(v)
         error("The following symbol(s) are used as variables: " *
               ((map(s -> "'" * string(s) * "', ",
                   intersect(forbidden_variables_error, v))...)) *
-              "this is not permited.")
+              "this is not permitted.")
 end
 
 function unique_symbol_check(syms)

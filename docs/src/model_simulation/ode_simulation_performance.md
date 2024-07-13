@@ -8,7 +8,7 @@ Generally, this short checklist provides a quick guide for dealing with ODE perf
 1. If performance is not critical, use [the default solver choice](@ref ode_simulation_performance_solvers) and do not worry further about the issue.
 2. If improved performance would be useful, read about solver selection (both in [this tutorial](@ref ode_simulation_performance_solvers) and [OrdinaryDiffEq's documentation](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/)) and then try a few different solvers to find one with good performance.
 3. If you have a large ODE (approximately 100 variables or more), try the [various options for efficient Jacobian computation](@ref ode_simulation_performance_jacobian) (noting that some are non-trivial to use, and should only be investigated if truly required).
-4. If you plan to simulate your ODE many times, try [parallelise it on CPUs or GPUs](@ref investigating) (with preference for the former, which is easier to use).
+4. If you plan to simulate your ODE many times, try [parallelise it on CPUs or GPUs](@ref ode_simulation_performance_parallelisation) (with preference for the former, which is easier to use).
 
 ## [Regarding stiff and non-stiff problems and solvers](@id ode_simulation_performance_stiffness)
 Generally, ODE problems can be categorised into [*stiff ODEs* and *non-stiff ODEs*](https://en.wikipedia.org/wiki/Stiff_equation). This categorisation is important due to stiff ODEs requiring specialised solvers. A common cause of failure to simulate an ODE is the use of a non-stiff solver for a stiff problem. There is no exact way to determine whether a given ODE is stiff or not, however, systems with several different time scales (e.g. a CRN with both slow and fast reactions) typically generate stiff ODEs.
@@ -31,9 +31,8 @@ oprob = ODEProblem(brusselator, u0, tspan, ps)
 
 sol1 = solve(oprob, Tsit5())
 plot(sol1)
-nothing # hide
+plot(sol1, plotdensity = 1000, fmt = :png) # hide
 ```
-![Incomplete Brusselator Simulation](../assets/long_ploting_times/model_simulation/incomplete_brusselator_simulation.svg)
 
 We get a warning, indicating that the simulation was terminated. Furthermore, the resulting plot ends at $t ≈ 12$, meaning that the simulation was not completed (as the simulation's endpoint is $t = 20$). Indeed, we can confirm this by checking the *return code* of the solution object:
 ```@example ode_simulation_performance_1

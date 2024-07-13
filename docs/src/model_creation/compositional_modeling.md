@@ -27,7 +27,8 @@ We can test whether a system is complete using the `ModelingToolkit.iscomplete` 
 ```@example ex0
 ModelingToolkit.iscomplete(degradation_component)
 ```
-To mark a system as complete, after which is should be considered as representing a finalized model, use the `complete` function
+To mark a system as complete, after which it should be considered as
+representing a finalized model, use the `complete` function
 ```@example ex0
 degradation_component_complete = complete(degradation_component)
 ModelingToolkit.iscomplete(degradation_component_complete)
@@ -35,8 +36,9 @@ ModelingToolkit.iscomplete(degradation_component_complete)
 
 ## Compositional modeling tooling
 Catalyst supports two ModelingToolkit interfaces for composing multiple
-[`ReactionSystem`](@ref)s together into a full model. The first mechanism for
-extending a system is the `extend` command
+[`ReactionSystem`](@ref)s together into a full model. The first mechanism allows
+for extending an existing system by merging in a second system via the `extend`
+command
 ```@example ex1
 using Catalyst
 basern = @network_component rn1 begin
@@ -139,7 +141,7 @@ nothing # hide
 Here we assume the user will pass in the repressor species as a ModelingToolkit
 variable, and specify a name for the network. We use Catalyst's interpolation
 ability to substitute the value of these variables into the DSL (see
-[Interpolation of Julia Variables](@ref dsl_description_interpolation_of_variables)). To make the repressilator we now make
+[Interpolation of Julia Variables](@ref dsl_advanced_options_symbolics_and_DSL_interpolation)). To make the repressilator we now make
 three genes, and then compose them together
 ```@example ex1
 t = default_t()

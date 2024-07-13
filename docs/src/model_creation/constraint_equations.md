@@ -52,7 +52,7 @@ end
 Notice, here we interpolated the variable `V` with `$V` to ensure we use the
 same symbolic unknown variable in the `rn` as we used in building `osys`. See the
 doc section on [interpolation of variables](@ref
-dsl_description_interpolation_of_variables) for more information.
+dsl_advanced_options_symbolics_and_DSL_interpolation) for more information.
 
 We can now merge the two systems into one complete `ReactionSystem` model using
 [`ModelingToolkit.extend`](@ref):

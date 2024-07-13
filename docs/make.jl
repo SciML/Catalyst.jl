@@ -40,8 +40,8 @@ makedocs(sitename = "Catalyst.jl",
     doctest = false,
     clean = true,
     pages = pages,
-    pagesonly = true,
-    warnonly = true)
+    pagesonly = false,
+    warnonly = [:missing_docs])
 
 deploydocs(repo = "github.com/SciML/Catalyst.jl.git";
     push_preview = true)

@@ -129,13 +129,13 @@ If we from previous knowledge know that $kD = 0.1$, and only want to fit the val
 fixed_p_prob_generator(prob, p) = remake(prob; p = vcat(p[1], 0.1, p[2]))
 nothing # hide
 ```
-Here, it takes the `ODEProblem` (`prob`) we simulate, and the parameter set used, during the optimisation process (`p`), and creates a modified `ODEProblem` (by setting a customised parameter vector [using `remake`](@ref simulation_structure_interfacing_remake)). Now we create our modified loss function:
+Here, it takes the `ODEProblem` (`prob`) we simulate, and the parameter set used, during the optimisation process (`p`), and creates a modified `ODEProblem` (by setting a customised parameter vector [using `remake`](@ref simulation_structure_interfacing_problems_remake)). Now we create our modified loss function:
 ```@example diffeq_param_estim_1 
 loss_function_fixed_kD = build_loss_objective(oprob, Tsit5(), L2Loss(data_ts, data_vals), Optimization.AutoForwardDiff(); prob_generator = fixed_p_prob_generator, maxiters=10000, verbose=false, save_idxs=4)
 nothing # hide
 ```
 
-We can create an `OptimizationProblem` from this one like previously, but keep in mind that it (and its output results) only contains two parameter values ($k$* and $kP$):
+We can create an `OptimizationProblem` from this one like previously, but keep in mind that it (and its output results) only contains two parameter values ($k$ and $kP$):
 ```@example diffeq_param_estim_1 
 optprob_fixed_kD = OptimizationProblem(loss_function_fixed_kD, [1.0, 1.0])
 optsol_fixed_kD = solve(optprob_fixed_kD, Optim.NelderMead())
@@ -160,7 +160,7 @@ nothing # hide
 corresponds to the same true parameter values as used previously (`[:kB => 1.0, :kD => 0.1, :kP => 0.5]`).
 
 ## [Parameter fitting to multiple experiments](@id optimization_parameter_fitting_multiple_experiments)
-Say that we had measured our model for several different initial conditions, and would like to fit our model to all these measurements simultaneously. This can be done by first creating a [corresponding `EnsembleProblem`](@ref advanced_simulations_ensemble_problems). How to then create loss functions for these are described in more detail [here](https://docs.sciml.ai/DiffEqParamEstim/stable/tutorials/ensemble/).
+Say that we had measured our model for several different initial conditions, and would like to fit our model to all these measurements simultaneously. This can be done by first creating a [corresponding `EnsembleProblem`](@ref ensemble_simulations). How to then create loss functions for these are described in more detail [here](https://docs.sciml.ai/DiffEqParamEstim/stable/tutorials/ensemble/).
 
 ## [Optimisation solver options](@id optimization_parameter_fitting_solver_options)
 Optimization.jl supports various [optimisation solver options](https://docs.sciml.ai/Optimization/stable/API/solve/) that can be supplied to the `solve` command. For example, to set a maximum number of seconds (after which the optimisation process is terminated), you can use the `maxtime` argument:
@@ -170,7 +170,7 @@ nothing # hide
 ```
 
 ---
-## [Citation](@id structural_identifiability_citation)
+## [Citation](@id optimization_parameter_fitting_citation)
 If you use this functionality in your research, please cite the following paper to support the authors of the Optimization.jl package:
 ```
 @software{vaibhav_kumar_dixit_2023_7738525,

@@ -4,7 +4,7 @@ The [DynamicalSystems.jl package](https://github.com/JuliaDynamics/DynamicalSyst
 ## [Finding basins of attraction](@id dynamical_systems_basins_of_attraction)
 Given enough time, an ODE will eventually reach a so-called [*attractor*](https://en.wikipedia.org/wiki/Attractor). For chemical reaction networks (CRNs), this will typically be either a *steady state* or a *limit cycle*. Since ODEs are deterministic, which attractor a simulation will reach is uniquely determined by the initial condition (assuming parameter values are fixed). Conversely, each attractor is associated with a set of initial conditions such that model simulations originating in these will tend to that attractor. These sets are called *basins of attraction*. Here, phase space (the space of all possible states of the system) can be divided into a number of basins of attraction equal to the number of attractors. 
 
-DynamicalSystems.jl provides a simple interface for finding an ODE's basins of attraction across any given subspace of phase space. In this example we will use the bistable [Wilhelm model](https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-3-90) (which steady states we have previous [computed using homotopy continuation](@ref homotopy_continuation_basic_example)). As a first step, we create an `ODEProblem` corresponding to the model which basins of attraction we wish to compute. For this application, `u0` and `tspan` is unused, and their values are of little importance (the only exception is than `tspan`, for implementation reason, must provide a not too small interval, we recommend minimum `(0.0, 1.0)`). 
+DynamicalSystems.jl provides a simple interface for finding an ODE's basins of attraction across any given subspace of phase space. In this example we will use the bistable [Wilhelm model](https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-3-90) (which steady states we have previous [computed using homotopy continuation](@ref homotopy_continuation)). As a first step, we create an `ODEProblem` corresponding to the model which basins of attraction we wish to compute. For this application, `u0` and `tspan` is unused, and their values are of little importance (the only exception is than `tspan`, for implementation reason, must provide a not too small interval, we recommend minimum `(0.0, 1.0)`). 
 ```@example dynamical_systems_basins
 using Catalyst
 wilhelm_model = @reaction_network begin
@@ -124,7 +124,7 @@ More details on how to compute Lyapunov exponents using DynamicalSystems.jl can 
 
 ---
 ## [Citations](@id dynamical_systems_citations)
-If you use this functionality in your research, [in addition to Catalyst](@ref catalyst_citation), please cite the following paper to support the author of the DynamicalSystems.jl package:
+If you use this functionality in your research, [in addition to Catalyst](@ref doc_index_citation), please cite the following paper to support the author of the DynamicalSystems.jl package:
 ```
 @article{DynamicalSystems.jl-2018,
   doi = {10.21105/joss.00598},

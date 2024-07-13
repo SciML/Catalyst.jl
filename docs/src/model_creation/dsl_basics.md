@@ -9,7 +9,7 @@ using Catalyst
 ```
 
 ### [Quick-start summary](@id dsl_description_quick_start)
-The DSL is initiated through the `@reaction_network` macro, which is followed by one line for each reaction. Each reaction consists of a *rate*, followed lists first of the substrates and next of the products. E.g. a [Michaelis-Menten enzyme kinetics system](@ref basic_CRN_library_mm) can be written as 
+The DSL is initiated through the `@reaction_network` macro, which is followed by one line for each reaction. Each reaction consists of a *rate*, followed lists first of the substrates and next of the products. E.g. a [Michaelis-Menten enzyme kinetics system](@ref basic_CRN_library_mm) can be written as
 ```@example dsl_basics_intro
 rn = @reaction_network begin
     (kB,kD), S + E <--> SE
@@ -93,8 +93,8 @@ Reactants whose stoichiometries are not defined are assumed to have stoichiometr
 Stoichiometries can be combined with `()` to define them for multiple reactants. Here, the following (mock) model declares the same reaction twice, both with and without this notation:
 ```@example dsl_basics
 rn6 = @reaction_network begin
-    k, 2X + 3(Y + 2Z) --> 5(V + W)    
-    k, 2X + 3Y + 6Z --> 5V + 5W    
+    k, 2X + 3(Y + 2Z) --> 5(V + W)
+    k, 2X + 3Y + 6Z --> 5V + 5W
 end
 ```
 
@@ -186,7 +186,7 @@ rn12 = @reaction_network begin
     ((pX, pY, pZ),d), (0, Y0, Z0) <--> (X, Y, Z1+Z2)
 end
 ```
-However, like for the above model, bundling reactions too zealously can reduce (rather than improve) a model's readability.   
+However, like for the above model, bundling reactions too zealously can reduce (rather than improve) a model's readability.
 
 ## [Non-constant reaction rates](@id dsl_description_nonconstant_rates)
 So far we have assumed that all reaction rates are constant (being either a number of a parameter). Non-constant rates that depend on one (or several) species are also possible. More generally, the rate can be any valid expression of parameters and species.
@@ -201,7 +201,7 @@ end
 Here, `P`'s production rate will be reduced as `A` decays. We can [print the ODE this model produces with `Latexify`](@ref visualisation_latex):
 ```@example dsl_basics
 using Latexify
-latexify(rn_13; form=:ode)
+latexify(rn_13; form = :ode)
 ```
 
 In this case, we can generate an equivalent model by instead adding `A` as both a substrate and a product to `P`'s production reaction:
@@ -213,11 +213,11 @@ end
 ```
 We can confirm that this generates the same ODE:
 ```@example dsl_basics
-latexify(rn_13_alt; form=:ode)
+latexify(rn_13_alt; form = :ode)
 ```
 Here, while these models will generate identical ODE, SDE, and jump simulations, the chemical reaction network models themselves are not equivalent. Generally, as pointed out in the two notes below, using the second form is preferable.
-!!! warn
-    While `rn_13` and `rn_13_alt` will generate equivalent simulations, for jump simulations, the first model will have reduced performance (which generally are more performant when rates are constant).
+!!! warning
+    While `rn_13` and `rn_13_alt` will generate equivalent simulations, for jump simulations, the first model will have reduced performance as it generates a less performant representation of the system in JumpProcesses. It is generally recommended to write pure mass action reactions such that there is just a single constant within the rate constant expression for optimal performance of jump process simulations.
 
 !!! danger
     Catalyst automatically infers whether quantities appearing in the DSL are species or parameters (as described [here](@ref dsl_advanced_options_declaring_species_and_parameters)). Generally, anything that does not appear as a reactant is inferred to be a parameter. This means that if you want to model a reaction activated by a species (e.g. `kp*A, 0 --> P`), but that species does not occur as a reactant, it will be interpreted as a parameter. This can be handled by [manually declaring the system species](@ref dsl_advanced_options_declaring_species_and_parameters).
@@ -232,7 +232,7 @@ end
 ```
 
 ### [Using functions in rates](@id dsl_description_nonconstant_rates_functions)
-It is possible for the rate to contain Julia functions. These can either be functions from Julia's standard library:  
+It is possible for the rate to contain Julia functions. These can either be functions from Julia's standard library:
 ```@example dsl_basics
 rn_16 = @reaction_network begin
     d, A --> 0
@@ -281,8 +281,12 @@ rn_15 = @reaction_network begin
 end
 ```
 
-!!! warn
-    Jump simulations cannot be performed for models with time-dependent rates without additional considerations.
+!!! warning
+    Models with explicit time-dependent rates require additional steps to correctly
+    convert to stochastic chemical kinetics jump process representations. See
+    [here](https://github.com/SciML/Catalyst.jl/issues/636#issuecomment-1500311639)
+    for guidance on manually creating such representations. Enabling
+    Catalyst to handle this seamlessly is work in progress.
 
 ## [Non-standard stoichiometries](@id dsl_description_stoichiometries)
 
@@ -327,7 +331,7 @@ end
 Catalyst uses `-->`, `<-->`, and `<--` to denote forward, bi-directional, and backwards reactions, respectively. Several unicode representations of these arrows are available. Here,
 - `>`, `→`, `↣`, `↦`, `⇾`, `⟶`, `⟼`, `⥟`, `⥟`, `⇀`, and `⇁` can be used to represent forward reactions.
 - `↔`, `⟷`, `⇄`, `⇆`, `⇌`, `⇋`, , and `⇔` can be used to represent bi-directional reactions.
-- `<`, `←`, `↢`, `↤`, `⇽`, `⟵`, `⟻`, `⥚`, `⥞`, `↼`, , and `↽` can be used to represent backwards reactions. 
+- `<`, `←`, `↢`, `↤`, `⇽`, `⟵`, `⟻`, `⥚`, `⥞`, `↼`, , and `↽` can be used to represent backwards reactions.
 
 E.g. the production/degradation system can alternatively be written as:
 ```@example dsl_basics
@@ -352,6 +356,7 @@ An example of how this can be used to create a neat-looking model can be found i
     (kB,kD), A + σᵛ ↔ Aσᵛ
     L, Aσᵛ → σᵛ
 end
+nothing # hide
 ```
 
 This functionality can also be used to create less serious models:

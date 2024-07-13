@@ -1,7 +1,7 @@
 # [Interfacing problems, integrators, and solutions](@id simulation_structure_interfacing)
 When simulating a model, one begins with creating a [problem](https://docs.sciml.ai/DiffEqDocs/stable/basics/problem/). Next, a simulation is performed on the problem, during which the simulation's state is recorded through an [integrator](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/). Finally, the simulation output is returned as a [solution](https://docs.sciml.ai/DiffEqDocs/stable/basics/solution/). This tutorial describes how to access (or modify) the state (or parameter) values of problem, integrator, and solution structures.
 
-Generally, when we have a structure `simulation_struct` and want to interface with the unknown (or parameter) `x`, we use `simulation_struct[:x]` to access the value, and `simulation_struct[:x] = 5.0` to set it to a new value. For situations where a value is accessed (or changed) a large number of times, it can *improve performance* to first create a [specialised getter/setter function](@ref simulation_structure_interfacing_functions).
+Generally, when we have a structure `simulation_struct` and want to interface with the unknown (or parameter) `x`, we use `simulation_struct[:x]` to access the value. For situations where a value is accessed (or changed) a large number of times, it can *improve performance* to first create a [specialised getter/setter function](@ref simulation_structure_interfacing_functions).
 
 ## [Interfacing problem objects](@id simulation_structure_interfacing_problems)
 
@@ -35,26 +35,6 @@ To retrieve several species initial condition (or parameter) values, simply give
 oprob[[:S₁, :S₂]]
 ```
 
-We can change a species's initial condition value using a similar notation. Here we increase the initial concentration of $C$ (and also confirm that the new value is stored in an updated `oprob`):
-```@example structure_indexing
-oprob[:C] = 0.1
-oprob[:C]
-```
-Again, parameter values can be changed using a similar notation, however, again requiring `oprob.ps` notation:
-```@example structure_indexing
-oprob.ps[:k₁] = 10.0
-oprob.ps[:k₁]
-```
-Finally, vectors can be used to update multiple quantities simultaneously
-```@example structure_indexing
-oprob[[:S₁, :S₂]] = [0.5, 0.3]
-oprob[[:S₁, :S₂]]
-```
-Generally, when updating problems, it is often better to use the [`remake` function](@ref simulation_structure_interfacing_problems_remake) (especially when several values are updated).
-
-!!! warn
-    Indexing *should not* be used not modify `JumpProblem`s. Here, [remake](@ref simulation_structure_interfacing_problems_remake) should be used exclusively.
-
 A problem's time span can be accessed through the `tspan` field:
 ```@example structure_indexing
 oprob.tspan
@@ -64,8 +44,8 @@ oprob.tspan
     Here we have used an `ODEProblem`to demonstrate all interfacing functionality. However, identical workflows work for the other problem types.
 
 ### [Remaking problems using the `remake` function](@id simulation_structure_interfacing_problems_remake)
-The `remake` function offers an (to indexing) alternative approach for updating problems. Unlike indexing, `remake` creates a new problem (rather than updating the old one). Furthermore, it permits the updating of several values simultaneously. The `remake` function takes the following inputs:
-- The problem that is remakes.
+To modify a problem, the `remake` function should be used. It takes an already created problem, and returns a new, updated, one (the input problem is unchanged). The `remake` function takes the following inputs:
+- The problem that it remakes.
 - (optionally) `u0`: A vector with initial conditions that should be updated. The vector takes the same form as normal initial condition vectors, but does not need to be complete (in which case only a subset of the initial conditions are updated).
 - (optionally) `tspan`: An updated time span (using the same format as time spans normally are given in).
 - (optionally) `p`: A vector with parameters that should be updated. The vector takes the same form as normal parameter vectors, but does not need to be complete (in which case only a subset of the parameters are updated).
@@ -74,22 +54,28 @@ Here we modify our problem to increase the initial condition concentrations of t
 ```@example structure_indexing
 using OrdinaryDiffEq
 oprob_new = remake(oprob; u0 = [:S₁ => 5.0, :S₂ => 2.5])
-oprob_new == oprob
+oprob_new != oprob
 ```
-Here, we instead use `remake` to simultaneously update a all three fields:
+Here, we instead use `remake` to simultaneously update all three fields:
 ```@example structure_indexing
 oprob_new_2 = remake(oprob; u0 = [:C => 0.2], tspan = (0.0, 20.0), p = [:k₁ => 2.0, :k₂ => 2.0])
 nothing # hide
 ```
 
+Typically, when using `remake` to update a problem, the common workflow is to overwrite the old one with the output. E.g. to set the value of `k₁` to `5.0` in `oprob`, you would do:
+```@example structure_indexing
+oprob = remake(oprob; p = [:k₁ => 5.0])
+nothing # hide
+```
+
 ## [Interfacing integrator objects](@id simulation_structure_interfacing_integrators)
 
-During a simulation, the solution is stored in an integrator object. Here, we will describe how to interface with these. The almost exclusive circumstance when integrator-interfacing is relevant is when simulation events are implemented through callbacks. However, to demonstrate integrator indexing in this tutorial, we will create one through the `init` function (while circumstances where one might [want to use `init` function exist](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/#Initialization-and-Stepping), since integrators are automatically created during simulations, these are rare).
+During a simulation, the solution is stored in an integrator object. Here, we will describe how to interface with these. The almost exclusive circumstance when integrator-interfacing is relevant is when simulation events are implemented through [callbacks](https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/). However, to demonstrate integrator indexing in this tutorial, we will create one through the `init` function (while circumstances where one might [want to use `init` function exist](https://docs.sciml.ai/DiffEqDocs/stable/basics/integrator/#Initialization-and-Stepping), since integrators are automatically created during simulations, these are rare).
 ```@example structure_indexing
 integrator = init(oprob)
 nothing # hide
 ```
-We can interface with our integrator using an identical syntax as [was used for problems](@ref simulation_structure_interfacing_problems) (with the exception that `remake` is not available). Here we update, and then check the values of, first the species $C$ and then the parameter $k₁$:
+We can interface with our integrator using an identical syntax as [was used for problems](@ref simulation_structure_interfacing_problems). The primary exception is that there is no `remake` function for integrators. Instead, we can update species and parameter values using normal indexing. Here we update, and then check the values of, first the species $C$ and then the parameter $k₁$:
 ```@example structure_indexing
 integrator[:C] = 0.0
 integrator[:C]
@@ -101,7 +87,7 @@ integrator.ps[:k₂]
 ```
 Note that here, species-interfacing yields (or changes) a simulation's current value for a species, not its initial condition.
 
-If you are interfacing with jump simulation integrators, please read this, highly relevant, section
+If you are interfacing with jump simulation integrators, you must always call `reset_aggregated_jumps!(integrator)` afterwards.
 
 ## [Interfacing solution objects](@id simulation_structure_interfacing_solutions)
 
@@ -162,9 +148,9 @@ get_S(oprob)
 ```
 
 ## [Interfacing using symbolic representations](@id simulation_structure_interfacing_symbolic_representation)
-When e.g. [programmatic modelling is used](@ref programmatic_CRN_construction), species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like symbol-based representations can. Here we create a simple [two-state model](@ref rbasic_CRN_library_two_statesef) programmatically, and use its symbolic variables to check, and update, an initial condition:
+When e.g. [programmatic modelling is used](@ref programmatic_CRN_construction), species and parameters can be represented as *symbolic variables*. These can be used to index a problem, just like symbol-based representations can. Here we create a simple [two-state model](@ref basic_CRN_library_two_states) programmatically, and use its symbolic variables to check, and update, an initial condition:
 ```@example structure_indexing_symbolic_variables
-using Catalyst
+using Catalyst, OrdinaryDiffEq
 t = default_t()
 @species X1(t) X2(t)
 @parameters k1 k2
@@ -180,7 +166,7 @@ tspan = (0.0, 1.0)
 ps = [k1 => 1.0, k2 => 2.0]
 oprob = ODEProblem(two_state_model, u0, tspan, ps)
 
-oprob[X1] = 5.0
+oprob = remake(oprob; u0 = [X1 => 5.0])
 oprob[X1]
 ```
 Symbolic variables can be used to access or update species or parameters for all the cases when `Symbol`s can (including when using `remake` or e.g. `getu`).
@@ -196,5 +182,5 @@ oprob[two_state_model.X1 + two_state_model.X2]
 ```
 This can be used to form symbolic expressions using model quantities when a model has been created using the DSL (as an alternative to @unpack). Alternatively, [creating an observable](@ref dsl_advanced_options_observables), and then interface using its `Symbol` representation, is also possible.
 
-!!! warn
-    With interfacing with a simulating structure using symbolic variables stored in a `ReactionSystem` model, ensure that the model is complete.
+!!! warning
+    When accessing a simulation structure using symbolic variables from a `ReactionSystem` model, such as `rn.A` for `rn` a `ReactionSystem` and `A` a species within it, ensure that the model is complete.

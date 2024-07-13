@@ -167,7 +167,7 @@ function make_osys(rs::ReactionSystem; remove_conserved = true)
         error("Identifiability should only be computed for complete systems. A ReactionSystem can be marked as complete using the `complete` function.")
     end
     rs = complete(Catalyst.expand_registered_functions(flatten(rs)))
-    osys = complete(convert(ODESystem, rs; remove_conserved))
+    osys = complete(convert(ODESystem, rs; remove_conserved, remove_conserved_warn = false))
     vars = [unknowns(rs); parameters(rs)]
 
     # Computes equations for system conservation laws.
