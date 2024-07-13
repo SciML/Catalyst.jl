@@ -83,14 +83,13 @@ let
     @test pmat == prodstoichmat(rnmat) == Matrix(prodstoichmat(rnmat, sparse = true))
 end
 
-# Tests `reactionparamsmap`, `reactionrates`, and `symmap_to_varmap` getters.
+# Tests `reactionrates`, and `symmap_to_varmap` getters.
 let
     rn = @reaction_network begin
         (p,d), 0 <--> X
         (kB,kD), 2X <--> X
     end
     @unpack p, d, kB, kD = rn
-    isequal(reactionparamsmap(rn), Dict([p => 1, d => 2, kB => 3, kD => 4]))
     issetequal(reactionrates(rn), [p, d, kB, kD])
     isequal(symmap_to_varmap(rn, [:p => 1.0, :kB => 3.0]), [p => 1.0, kB => 3.0])
 end
@@ -315,7 +314,7 @@ end
 
 # Test defaults.
 # Uses mutating stuff (`setdefaults!`) and order dependent input (`species(rn) .=> u0`).
-# If you want to test this here @Sam I can write a new one that simualtes using defaults.
+# If you want to test this here @Sam I can write a new one that simulates using defaults.
 # If so, tell me if you have anything specific you want to check though, or I will just implement
 # it as I would.
 let
@@ -445,4 +444,65 @@ let
     ns = convert(NonlinearSystem, rn)
     neweqs = getfield.(equations(ns), :rhs)
     @test_throws MethodError Catalyst.to_multivariate_poly(neweqs)
+end
+
+# Tests `isautonomous` function.
+let 
+    # Using default iv.
+    rn1 = @reaction_network begin
+        (p + X*(p1/(t+p3)),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn2 = @reaction_network begin
+        (hill(X, v/t, K, n),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn3 = @reaction_network begin
+        (p + X*(p1+p2),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    @test !isautonomous(rn1)
+    @test !isautonomous(rn2)
+    @test isautonomous(rn3)
+
+    # Using non-default iv.
+    rn4 = @reaction_network begin
+        @ivs i1 i2
+        (p + X*(p1/(1+i1)),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn5 = @reaction_network begin
+        @ivs i1 i2
+        (p + X*(i2+p2),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn6 = @reaction_network begin
+        @ivs i1 i2
+        (hill(X, v/i1, i2, n),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    rn7 = @reaction_network begin
+        @ivs i1 i2
+        (p + X*(p1+p2),d), 0 <--> X
+        (kB,kD), 2X <--> X
+    end
+    @test !isautonomous(rn4)
+    @test !isautonomous(rn5)
+    @test !isautonomous(rn6)
+    @test isautonomous(rn7)
+
+    # Using a coupled CRN/equation model.
+    rn7 = @reaction_network begin
+        @equations D(V) ~ X/(1+t) - V
+        (p,d), 0 <--> X
+    end
+    @test !isautonomous(rn7)
+
+    # Using a registered function.
+    f(d,t) = d/(1 + t)
+    Symbolics.@register_symbolic f(d,t)
+    rn8 = @reaction_network begin
+        f(d,t), X --> 0
+    end
+    @test !isautonomous(rn8)
 end

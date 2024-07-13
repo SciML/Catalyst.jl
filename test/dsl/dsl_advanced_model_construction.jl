@@ -35,7 +35,6 @@ let
         @test ModelingToolkit.nameof(rn) == name
         @test numreactions(rn) == 0
         @test numspecies(rn) == 0
-        @test numreactionparams(rn) == 0
     end
 
     rn = @reaction_network name begin

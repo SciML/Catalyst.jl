@@ -101,7 +101,7 @@ Let's check these are equal symbolically
 isequal(odes, odes2)
 ```
 
-## Reaction complex representation
+## [Reaction complex representation](@id network_analysis_reaction_complexes)
 We now introduce a further decomposition of the RRE ODEs, which has been used to
 facilitate analysis of a variety of reaction network properties. Consider a simple
 reaction system like
@@ -364,7 +364,7 @@ complexgraph(rn)
 It is evident from the preceding graph that the network is not reversible.
 However, it satisfies a weaker property in that there is a path from each
 reaction complex back to itself within its associated subgraph. This is known as
-*weak reversiblity*. One can test a network for weak reversibility by using
+*weak reversibility*. One can test a network for weak reversibility by using
 the [`isweaklyreversible`](@ref) function:
 ```@example s1
 # need subnetworks from the reaction network first

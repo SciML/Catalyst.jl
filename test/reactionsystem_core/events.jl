@@ -97,9 +97,9 @@ let
     @test Symbolics.unwrap(rs_ce_de.α) isa Symbolics.BasicSymbolic{Int64}
     @test Symbolics.unwrap(rs_de.α) isa Symbolics.BasicSymbolic{Int64}
     @test Symbolics.unwrap(rs_ce_de.α) isa Symbolics.BasicSymbolic{Int64}
-    @test getdescription(rs_ce_de.A) == "A species"
-    @test getdescription(rs_de.A) == "A species"
-    @test getdescription(rs_ce_de.A) == "A species"
+    @test ModelingToolkit.getdescription(rs_ce_de.A) == "A species"
+    @test ModelingToolkit.getdescription(rs_de.A) == "A species"
+    @test ModelingToolkit.getdescription(rs_ce_de.A) == "A species"
 
     # Tests that species/variables/parameters can be accessed correctly one a MTK problem have been created.
     u0 = [X => 1]
@@ -158,7 +158,7 @@ let
     ]
 
     # Declares various misformatted events .
-    # Relevant MTK issue regarding misformatted events not throwing an early error https://github.com/SciML/ModelingToolkit.jl/issues/2612.
+    @test_broken false # Some misformatted tests should throw error at this stage, but does not (https://github.com/SciML/ModelingToolkit.jl/issues/2612).
     continuous_events_bad = [
         X ~ 1.0 => [X ~ 0.5],       # Scalar condition.
         [X ~ 1.0] => X ~ 0.5,       # Scalar affect.
@@ -243,10 +243,6 @@ let
     sol_dsl = solve(ODEProblem(rn_dsl, u0, tspan, ps), Tsit5())
     sol_prog = solve(ODEProblem(rn_prog, u0, tspan, ps), Tsit5())
     @test sol_dsl == sol_prog
-
-    sol_dsl = solve(SDEProblem(rn_dsl, u0, tspan, ps), ImplicitEM(); seed = 1234)
-    sol_prog = solve(SDEProblem(rn_prog, u0, tspan, ps), ImplicitEM(); seed = 1234)
-    @test sol_dsl == sol_prog
 end
 
 # Checks that misformatted events yields errors in the DSL.
@@ -313,6 +309,65 @@ end
 
 ### Additional Correctness Tests ###
 
+# Tests that events are properly triggered for SDEs.
+# Tests for continuous events, and all three types of discrete events.
+let
+    # Creates model with all types of events. The `e` parameters track whether events are triggered.
+    rn = @reaction_network begin
+        @parameters e1=0 e2=0 e3=0 e4=0
+        @continuous_events begin
+            [X ~ 1000.0] => [e1 ~ 1]
+        end
+        @discrete_events begin
+            [1.0] => [e2 ~ 1]
+            1.0 => [e3 ~ 1]
+            (Y > 1000.0) & (e4==0) => [e4 ~ 1]
+        end
+        (p,d), 0 <--> X
+        (p,d), 0 <--> Y
+    end
+    
+    # Simulates the model for conditions where it *definitely* will cross `X = 1000.0`
+    u0 = [:X => 999.9, :Y => 999.9]
+    ps = [:p => 10.0, :d => 0.001]
+    sprob = SDEProblem(rn, u0, (0.0, 2.0), ps)
+    sol = solve(sprob, ImplicitEM(); seed)
+    
+    # Checks that all `e` parameters have been updated properly.
+    @test sol.ps[:e1] == 1
+    @test sol.ps[:e2] == 1
+    @test sol.ps[:e3] == 1
+    @test sol.ps[:e4] == 1
+end
+
+# Tests that events are properly triggered for Jump simulations.
+# Tests for all three types of discrete events.
+let
+    # Creates model with all types of events. The `e` parameters track whether events are triggered.
+    rn = @reaction_network begin
+        @parameters e1=0 e2=0 e3=0
+        @discrete_events begin
+            [1.0] => [e1 ~ 1]
+            # 1.0 => [e2 ~ 1]
+            (X > 1000.0) & (e3==0) => [e3 ~ 1]
+        end
+        (p,d), 0 <--> X
+    end
+    
+    # Simulates the model for conditions where it *definitely* will cross `X = 1000.0`
+    u0 = [:X => 999]
+    ps = [:p => 10.0, :d => 0.001]
+    dprob = DiscreteProblem(rn, u0, (0.0, 2.0), ps)
+    jprob = JumpProblem(rn, dprob, Direct(); rng)
+    sol = solve(jprob, SSAStepper(); seed)
+    
+    # Checks that all `e` parameters have been updated properly.
+    # Note that periodic discrete events are currently broken for jump processes (and unlikely to be fixed soon due to periodic callbacks using the internals of ODE integrator and Datastructures heap implementations).
+    @test sol.ps[:e1] == 1
+    @test_broken sol.ps[:e2] == 1 # (https://github.com/SciML/JumpProcesses.jl/issues/417)
+    @test sol.ps[:e3] == 1
+end
+
 # Compares simulations using MTK type events with those generated through callbacks.
 # Jump simulations must be handles differently (since these only accepts discrete callbacks).
 # Checks for all types of discrete callbacks, and for continuous callbacks.
@@ -369,21 +424,22 @@ let
     osol_events = solve(oprob_events, Tsit5())
     @test osol == osol_events
 
-    # Checks for SDE simulations.
+    # Checks for SDE simulations (note, non-seed dependant test should be created instead).
     sprob = SDEProblem(rn, u0, tspan, ps)
     sprob_events = SDEProblem(rn_events, u0, tspan, ps)
     ssol = solve(sprob, ImplicitEM(); seed, callback)
     ssol_events = solve(sprob_events, ImplicitEM(); seed)
     @test ssol == ssol_events
 
-    # Checks for Jump simulations.
+    # Checks for Jump simulations. (note, non-seed dependant test should be created instead)
+    # Note that periodic discrete events are currently broken for jump processes (and unlikely to be fixed soon due to have events are implemented).
     callback = CallbackSet(cb_disc_1, cb_disc_2, cb_disc_3)
     dprob = DiscreteProblem(rn, u0, tspan, ps)
     dprob_events = DiscreteProblem(rn_dics_events, u0, tspan, ps)
     jprob = JumpProblem(rn, dprob, Direct(); rng)
     jprob_events = JumpProblem(rn_dics_events, dprob_events, Direct(); rng)
     sol = solve(jprob, SSAStepper(); seed, callback)
-    @test_broken let # Broken due to. Even if fixed, seeding might not work due to events.
+    @test_broken let # (https://github.com/SciML/JumpProcesses.jl/issues/417)
         sol_events = solve(jprob_events, SSAStepper(); seed)
         @test sol == sol_events
     end

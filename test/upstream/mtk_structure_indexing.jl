@@ -37,20 +37,20 @@ begin
     problems = [oprob, sprob, dprob, jprob, nprob, ssprob]
 
     # Creates an `EnsembleProblem` for each problem.
-    eoprob = EnsembleProblem(oprob)
-    esprob = EnsembleProblem(sprob)
-    edprob = EnsembleProblem(dprob)
-    ejprob = EnsembleProblem(jprob)
-    enprob = EnsembleProblem(nprob)
-    essprob = EnsembleProblem(ssprob)
+    eoprob = EnsembleProblem(deepcopy(oprob))
+    esprob = EnsembleProblem(deepcopy(sprob))
+    edprob = EnsembleProblem(deepcopy(dprob))
+    ejprob = EnsembleProblem(deepcopy(jprob))
+    enprob = EnsembleProblem(deepcopy(nprob))
+    essprob = EnsembleProblem(deepcopy(ssprob))
     eproblems = [eoprob, esprob, edprob, ejprob, enprob, essprob]
 
     # Creates integrators.
-    oint = init(oprob, Tsit5(); save_everystep=false)
-    sint = init(sprob, ImplicitEM(); save_everystep=false)
+    oint = init(oprob, Tsit5(); save_everystep = false)
+    sint = init(sprob, ImplicitEM(); save_everystep = false)
     jint = init(jprob, SSAStepper())
-    nint = init(nprob, NewtonRaphson(); save_everystep=false)
-    @test_broken ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep=false) # https://github.com/SciML/SciMLBase.jl/issues/660
+    nint = init(nprob, NewtonRaphson(); save_everystep = false)
+    @test_broken ssint = init(ssprob, DynamicSS(Tsit5()); save_everystep = false) # https://github.com/SciML/SciMLBase.jl/issues/660
     integrators = [oint, sint, jint, nint]
     
     # Creates solutions.
@@ -64,14 +64,13 @@ end
 
 # Tests problem indexing and updating.
 let 
-    @test_broken false # A few cases fails for SteadyStateProblem: https://github.com/SciML/SciMLBase.jl/issues/660
-    @test_broken false # Most cases broken for Ensemble problems: https://github.com/SciML/SciMLBase.jl/issues/661
-    for prob in deepcopy(problems[1:end-1])
+    @test_broken false # A few cases fails for JumpProblem: https://github.com/SciML/ModelingToolkit.jl/issues/2838
+    for prob in deepcopy([oprob, sprob, dprob, nprob, ssprob, eoprob, esprob, edprob, enprob, essprob])
         # Get u values (including observables).
         @test prob[X] == prob[model.X] == prob[:X] == 4
         @test prob[XY] == prob[model.XY] == prob[:XY] == 9
         @test prob[[XY,Y]] == prob[[model.XY,model.Y]] == prob[[:XY,:Y]] == [9, 5]
-        @test_broken prob[(XY,Y)] == prob[(model.XY,model.Y)] == prob[(:XY,:Y)] == (9, 5)
+        @test prob[(XY,Y)] == prob[(model.XY,model.Y)] == prob[(:XY,:Y)] == (9, 5)
         @test getu(prob, X)(prob) == getu(prob, model.X)(prob) == getu(prob, :X)(prob) == 4
         @test getu(prob, XY)(prob) == getu(prob, model.XY)(prob) == getu(prob, :XY)(prob) == 9 
         @test getu(prob, [XY,Y])(prob) == getu(prob, [model.XY,model.Y])(prob) == getu(prob, [:XY,:Y])(prob) == [9, 5]  
@@ -117,8 +116,8 @@ end
 
 # Test remake function.
 let 
-    @test_broken false # Currently cannot be run for Ensemble problems: https://github.com/SciML/SciMLBase.jl/issues/661 (as indexing cannot be used to check values).
-    for prob in deepcopy(problems)
+    @test_broken false # Cannot check result for JumpProblem: https://github.com/SciML/ModelingToolkit.jl/issues/2838
+    for prob in deepcopy([oprob, sprob, dprob, nprob, ssprob, eoprob, esprob, edprob, enprob, essprob])
         # Remake for all u0s.
         rp = remake(prob; u0 = [X => 1, Y => 2])
         @test rp[[X, Y]] == [1, 2]
@@ -155,10 +154,8 @@ end
 
 # Test integrator indexing.
 let 
-    @test_broken false # NOTE: Multiple problems for `nint` (https://github.com/SciML/SciMLBase.jl/issues/662).
-    @test_broken false # NOTE: Multiple problems for `jint` (https://github.com/SciML/SciMLBase.jl/issues/654).
     @test_broken false # NOTE: Cannot even create a `ssint` (https://github.com/SciML/SciMLBase.jl/issues/660).
-    for int in deepcopy([oint, sint])
+    for int in deepcopy([oint, sint, jint, nint])
         # Get u values.
         @test int[X] == int[model.X] == int[:X] == 4
         @test int[XY] == int[model.XY] == int[:XY] == 9
@@ -208,6 +205,7 @@ let
 end
 
 # Test solve's save_idxs argument.
+# Currently, `save_idxs` is broken with symbolic stuff (https://github.com/SciML/ModelingToolkit.jl/issues/1761).
 let 
     for (prob, solver) in zip(deepcopy([oprob, sprob, jprob]), [Tsit5(), ImplicitEM(), SSAStepper()])
         # Save single variable
@@ -241,10 +239,10 @@ let
         @test getu(sol, (XY,Y))(sol)[1] == getu(sol, (model.XY,model.Y))(sol)[1] == getu(sol, (:XY,:Y))(sol)[1] == (9, 5)       
 
         # Get u values via idxs and functional call.
-        @test osol(0.0; idxs=X) == osol(0.0; idxs=X) == osol(0.0; idxs=X) == 4
-        @test osol(0.0; idxs=XY) == osol(0.0; idxs=XY) == osol(0.0; idxs=XY) == 9
-        @test_broken osol(0.0; idxs=[model.Y,model.XY]) == osol(0.0; idxs=[model.Y,model.XY]) == osol(0.0; idxs=[model.XY,model.X]) == [9, 5]
-        @test_broken osol(0.0; idxs=(:Y,:XY)) == osol(0.0; idxs=(:Y,:XY)) == osol(0.0; idxs=(:XY,:Y)) == (9, 5)
+        @test sol(0.0; idxs=X) == sol(0.0; idxs=model.X) == sol(0.0; idxs=:X) == 4
+        @test sol(0.0; idxs=XY) == sol(0.0; idxs=model.XY) == sol(0.0; idxs=:XY) == 9
+        @test sol(0.0; idxs = [XY,Y]) == sol(0.0; idxs = [model.XY,model.Y]) == sol(0.0; idxs = [:XY,:Y]) == [9, 5]
+        @test_broken sol(0.0; idxs = (XY,Y)) == sol(0.0; idxs = (model.XY,model.Y)) == sol(0.0; idxs = (:XY,:Y)) == (9, 5) # https://github.com/SciML/SciMLBase.jl/issues/711
 
         # Get p values.
         @test sol.ps[kp] == sol.ps[model.kp] == sol.ps[:kp] == 1.0    
@@ -262,11 +260,11 @@ let
             @test sol[X] == sol[model.X] == sol[:X]
             @test sol[XY] == sol[model.XY][1] == sol[:XY]
             @test sol[[XY,Y]] == sol[[model.XY,model.Y]] == sol[[:XY,:Y]]
-            @test_broken sol[(XY,Y)] == sol[(model.XY,model.Y)] == sol[(:XY,:Y)]
+            @test sol[(XY,Y)] == sol[(model.XY,model.Y)] == sol[(:XY,:Y)]
             @test getu(sol, X)(sol) == getu(sol, model.X)(sol)[1] == getu(sol, :X)(sol)
             @test getu(sol, XY)(sol) == getu(sol, model.XY)(sol)[1] == getu(sol, :XY)(sol)
             @test getu(sol, [XY,Y])(sol) == getu(sol, [model.XY,model.Y])(sol) == getu(sol, [:XY,:Y])(sol)
-            @test_broken getu(sol, (XY,Y))(sol) == getu(sol, (model.XY,model.Y))(sol) == getu(sol, (:XY,:Y))(sol)[1]   
+            @test_broken getu(sol, (XY,Y))(sol) == getu(sol, (model.XY,model.Y))(sol) == getu(sol, (:XY,:Y))(sol)[1] # https://github.com/SciML/SciMLBase.jl/issues/710
 
             # Get p values.
             @test sol.ps[kp] == sol.ps[model.kp] == sol.ps[:kp]
@@ -281,8 +279,7 @@ end
 
 # Tests plotting.
 let 
-    @test_broken false # Currently broken for `ssol` (https://github.com/SciML/SciMLBase.jl/issues/580) 
-    for sol in deepcopy([osol, jsol])
+    for sol in deepcopy([osol, jsol, ssol])
         # Single variable.
         @test length(plot(sol; idxs = X).series_list) == 1
         @test length(plot(sol; idxs = XY).series_list) == 1
