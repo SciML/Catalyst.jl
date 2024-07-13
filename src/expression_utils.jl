@@ -14,7 +14,7 @@ function esc_dollars!(ex)
         end
     end
 
-    return ex
+    ex
 end
 
 # Checks if an expression is an escaped expression (e.g. on the form `$(Expr(:escape, :Y))`)
@@ -26,25 +26,22 @@ end
 
 # Throws an error when a forbidden symbol is used.
 function forbidden_symbol_check(sym)
-    if !isempty(intersect(forbidden_symbols_error, sym))
-        used_forbidden_syms = intersect(forbidden_symbols_error, sym)
-        error("The following symbol(s) are used as species or parameters: $used_forbidden_syms, this is not permitted.")
-    end
+    isempty(intersect(forbidden_symbols_error, sym)) && return
+    used_forbidden_syms = intersect(forbidden_symbols_error, sym)
+    error("The following symbol(s) are used as species or parameters: $used_forbidden_syms, this is not permitted.")
 end
 
 # Throws an error when a forbidden variable is used (a forbidden symbol that is not `:t`).
 function forbidden_variable_check(sym)
-    if !isempty(intersect(forbidden_variables_error, sym))
-        used_forbidden_syms = intersect(forbidden_variables_error, sym)
-        error("The following symbol(s) are used as variables: $used_forbidden_syms, this is not permitted.")
-    end
+    isempty(intersect(forbidden_variables_error, sym)) && return
+    used_forbidden_syms = intersect(forbidden_variables_error, sym)
+    error("The following symbol(s) are used as variables: $used_forbidden_syms, this is not permitted.")
 end
 
 # Checks that no symbol was sued for multiple purposes.
 function unique_symbol_check(syms)
-    if !allunique(syms)
-        error("Reaction network independent variables, parameters, species, and variables must all have distinct names, but a duplicate has been detected. ")
-    end
+    allunique(syms) && return
+    error("Reaction network independent variables, parameters, species, and variables must all have distinct names, but a duplicate has been detected. ")
 end
 
 ### Catalyst-specific Expressions Manipulation ###
