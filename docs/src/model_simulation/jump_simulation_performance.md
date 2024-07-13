@@ -141,7 +141,7 @@ promoter = @reaction_network begin
 end
 ```
 Let us simulate this model and consider the copy numbers of each individual component:
-```@example jump_simulation_performance_2
+```@example jump_simulation_performance_3
 using JumpProcesses, Plots # hide
 u0 = [:Pᵢ => 1, :Pₐ => 0, :M => 10000]
 tspan = (0.0, 5000.0)

@@ -1,7 +1,7 @@
 # [Model Simulation Introduction](@id simulation_intro)
 Catalyst's core functionality is the creation of *chemical reaction network* (CRN) models that can be simulated using ODE, SDE, and jump simulations. How such simulations are carried out has already been described in [Catalyst's introduction](@ref introduction_to_catalyst). This page provides a deeper introduction, giving some additional background and introducing various simulation-related options. 
 
-Here we will focus on the basics, with other sections of the simulation documentation describing various specialised features, or giving advice on performance. Anyone who plans on using Catalyst's simulation functionality extensively is recommended to also read the documentation on [solution plotting](@ref simulation_plotting), and on how to [interact with simulation problems, integrators, and solutions](@ref simulation_structure_interfacing). Anyone with an application for which performance is critical should consider reading the corresponding page on performance advice for [ODEs](@ref ode_simulation_performance) or [SDEs](@ref sde_simulation_performance).
+Here we will focus on the basics, with other sections of the simulation documentation describing various specialised features, or giving advice on performance. Anyone who plans on using Catalyst's simulation functionality extensively is recommended to also read the documentation on [solution plotting](@ref simulation_plotting), and on how to [interact with simulation problems, integrators, and solutions](@ref simulation_structure_interfacing). Anyone with an application for which performance is critical should consider reading the corresponding page on performance advice for [ODE](@ref ode_simulation_performance), [SDE](@ref sde_simulation_performance), or [jump](@ref jump_simulation_performance) simulations.
 
 ### [Background to CRN simulations](@id simulation_intro_theory)
 This section provides some brief theory on CRN simulations. For details on how to carry out these simulations in actual code, please skip to the following sections.
@@ -290,7 +290,7 @@ While the `@default_noise_scaling` option is unavailable for [programmatically c
 
 ## [Performing jump simulations using stochastic chemical kinetics](@id simulation_intro_jumps)
 
-Catalyst uses the [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) package to perform jump simulations. This section provides a brief introduction, with [JumpProcesses's documentation](https://docs.sciml.ai/JumpProcesses/stable/) providing a more extensive description.
+Catalyst uses the [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) package to perform jump simulations. This section provides a brief introduction, with [JumpProcesses's documentation](https://docs.sciml.ai/JumpProcesses/stable/) providing a more extensive description. A dedicated section giving advice on how to optimise jump simulation performance can be found [here](@ref jump_simulation_performance).
 
 Jump simulations are performed using so-called `JumpProblem`s. Unlike ODEs and SDEs (for which the corresponding problem types can be created directly), jump simulations require first creating an intermediary `DiscreteProblem`. In this example, we first declare our two-state model and its initial conditions, time span, and parameter values.
 ```@example simulation_intro_jumps
