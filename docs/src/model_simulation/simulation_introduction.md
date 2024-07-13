@@ -1,7 +1,7 @@
 # [Model Simulation Introduction](@id simulation_intro)
 Catalyst's core functionality is the creation of *chemical reaction network* (CRN) models that can be simulated using ODE, SDE, and jump simulations. How such simulations are carried out has already been described in [Catalyst's introduction](@ref introduction_to_catalyst). This page provides a deeper introduction, giving some additional background and introducing various simulation-related options. 
 
-Here we will focus on the basics, with other sections of the simulation documentation describing various specialised features, or giving advice on performance. Anyone who plans on using Catalyst's simulation functionality extensively is recommended to also read the documentation on [solution plotting](@ref simulation_plotting), and on how to [interact with simulation problems, integrators, and solutions](@ref simulation_structure_interfacing). Anyone with an application for which performance is critical should consider reading the corresponding page on performance advice for [ODEs](@ref ode_simulation_performance), [SDEs](@ref ref), or [jump simulations](@ref ref).
+Here we will focus on the basics, with other sections of the simulation documentation describing various specialised features, or giving advice on performance. Anyone who plans on using Catalyst's simulation functionality extensively is recommended to also read the documentation on [solution plotting](@ref simulation_plotting), and on how to [interact with simulation problems, integrators, and solutions](@ref simulation_structure_interfacing). Anyone with an application for which performance is critical should consider reading the corresponding page on performance advice for [ODEs](@ref ode_simulation_performance) or [SDEs](@ref sde_simulation_performance).
 
 ### [Background to CRN simulations](@id simulation_intro_theory)
 This section provides some brief theory on CRN simulations. For details on how to carry out these simulations in actual code, please skip to the following sections.
@@ -113,7 +113,6 @@ More information on how to interact with solution structures is provided [here](
 Some additional considerations:
 - If a model without parameters has been declared, only the first three arguments must be provided to `ODEProblem`.
 - While the first value of `tspan` will almost always be `0.0`, other starting times (both negative and positive) are possible.
-- A discussion of various ways to represent species and parameters when designating their values in the `u0` and `ps` vectors can be found [here](@ref ref). 
 
 
 ### [Designating solvers and solver options](@id simulation_intro_solver_options)
@@ -170,7 +169,7 @@ nothing # hide
 ```
 
 ## [Performing SDE simulations](@id simulation_intro_SDEs)
-Catalyst uses the [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) package to perform SDE simulations. This section provides a brief introduction, with [StochasticDiffEq's documentation](https://docs.sciml.ai/StochasticDiffEq/stable/) providing a more extensive description. A dedicated section giving advice on how to optimise SDE simulation performance can be found [here](@ref ref). By default, Catalyst generates SDEs from CRN models using the chemical Langevin equation.
+Catalyst uses the [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) package to perform SDE simulations. This section provides a brief introduction, with [StochasticDiffEq's documentation](https://docs.sciml.ai/StochasticDiffEq/stable/) providing a more extensive description. By default, Catalyst generates SDEs from CRN models using the chemical Langevin equation. A dedicated section giving advice on how to optimise SDE simulation performance can be found [here](@ref sde_simulation_performance).
 
 SDE simulations are performed in a similar manner to ODE simulations. The only exception is that an `SDEProblem` is created (rather than an `ODEProblem`). Furthermore, the [StochasticDiffEq.jl](https://github.com/SciML/StochasticDiffEq.jl) package (rather than the OrdinaryDiffEq package) is required for performing simulations. Here we simulate the two-state model for the same parameter set as previously used:
 ```@example simulation_intro_sde
@@ -222,6 +221,17 @@ sol = solve(sprob, STrapezoid(), abstol = 1e-1, reltol = 1e-1)
 sol = solve(sprob, STrapezoid(); seed = 12345, abstol = 1e-1, reltol = 1e-1) # hide
 plot(sol)
 ```
+
+### [SDE simulations with fixed time stepping](@id simulation_intro_SDEs_fixed_dt)
+StochasticDiffEq implements SDE solvers with adaptive time stepping. However, when using a non-adaptive solver (or using the `adaptive = false` argument to turn adaptive time stepping off for an adaptive solver) a fixed time step `dt` must be designated. Here we simulate the same `SDEProblem` which we struggled with previously, but using the non-adaptive [`EM`](https://en.wikipedia.org/wiki/Euler%E2%80%93Maruyama_method) solver and a fixed `dt`:
+```@example simulation_intro_sde
+sol = solve(sprob, EM(); dt = 0.001)
+sol = solve(sprob, EM(); dt = 0.001, seed = 1234567) # hide
+plot(sol)
+```
+We note that this approach also enables us to successfully simulate the SDE we previously struggled with.
+
+Generally, using a smaller fixed `dt` provides a more exact simulation, but also increases simulation runtime.
 
 ### [Scaling the noise in the chemical Langevin equation](@id simulation_intro_SDEs_noise_saling)
 When using the CLE to generate SDEs from a CRN, it can sometimes be desirable to scale the magnitude of the noise. This can be done by introducing a *noise scaling term*, with each noise term generated by the CLE being multiplied with this term. A noise scaling term can be set using the `@default_noise_scaling` option:
@@ -276,11 +286,11 @@ nothing # hide
 ```
 If the `@default_noise_scaling` option is used, that term is only applied to reactions *without* `noise_scaling` metadata.
 
-While the `@default_noise_scaling` option is unavailable for [programmatically created models](@ref programmatic_CRN_construction), the [`remake_reactionsystem`](@ref) function can be used to achieve a similar effect.
+While the `@default_noise_scaling` option is unavailable for [programmatically created models](@ref programmatic_CRN_construction), the `set_default_noise_scaling` function can be used to achieve a similar effect.
 
 ## [Performing jump simulations using stochastic chemical kinetics](@id simulation_intro_jumps)
 
-Catalyst uses the [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) package to perform jump simulations. This section provides a brief introduction, with [JumpProcesses's documentation](https://docs.sciml.ai/JumpProcesses/stable/) providing a more extensive description. A dedicated section giving advice on how to optimise jump simulation performance can be found [here](@ref ref).
+Catalyst uses the [JumpProcesses.jl](https://github.com/SciML/JumpProcesses.jl) package to perform jump simulations. This section provides a brief introduction, with [JumpProcesses's documentation](https://docs.sciml.ai/JumpProcesses/stable/) providing a more extensive description.
 
 Jump simulations are performed using so-called `JumpProblem`s. Unlike ODEs and SDEs (for which the corresponding problem types can be created directly), jump simulations require first creating an intermediary `DiscreteProblem`. In this example, we first declare our two-state model and its initial conditions, time span, and parameter values.
 ```@example simulation_intro_jumps
@@ -325,7 +335,7 @@ Several different aggregators are available (a full list is provided [here](http
 jprob = JumpProblem(two_state_model, dprob, SortingDirect())
 nothing # hide
 ```
-Especially for large systems, the choice of aggregator is relevant to simulation performance. A guide for aggregator selection is provided [here](@ref ref).
+Especially for large systems, the choice of aggregator is relevant to simulation performance.
 
 Next, a simulation method can be provided (like for ODEs and SDEs) as the second argument to `solve`. Currently, the only relevant solver is `SSAStepper()` (which is the one used throughout Catalyst's documentation). Other choices are primarily relevant to combined ODE/SDE + jump simulations, or inexact simulations. These situations are described in more detail [here](https://docs.sciml.ai/JumpProcesses/stable/jump_solve/).
 
@@ -337,4 +347,54 @@ circadian_model = @reaction_network begin
     d, P --> 0
 end
 ```
-This type of model will generate so called [*variable rate jumps*](@ref ref). Simulation of such model is non-trivial (and Catalyst currently lacks a good interface for this). A detailed description of how to carry out jump simulations for models with time-dependant rates can be found [here](https://docs.sciml.ai/JumpProcesses/stable/tutorials/simple_poisson_process/#VariableRateJumps-for-processes-that-are-not-constant-between-jumps).
+This type of model will generate so called *variable rate jumps*. Simulation of such model is non-trivial (and Catalyst currently lacks a good interface for this). A detailed description of how to carry out jump simulations for models with time-dependant rates can be found [here](https://docs.sciml.ai/JumpProcesses/stable/tutorials/simple_poisson_process/#VariableRateJumps-for-processes-that-are-not-constant-between-jumps).
+
+
+---
+## [Citation](@id simulation_intro_citation)
+When you simulate Catalyst models in your research, please cite the corresponding paper(s) to support the simulation package authors. For ODE simulations:
+```
+@article{DifferentialEquations.jl-2017,
+ author = {Rackauckas, Christopher and Nie, Qing},
+ doi = {10.5334/jors.151},
+ journal = {The Journal of Open Research Software},
+ keywords = {Applied Mathematics},
+ note = {Exported from https://app.dimensions.ai on 2019/05/05},
+ number = {1},
+ pages = {},
+ title = {DifferentialEquations.jl – A Performant and Feature-Rich Ecosystem for Solving Differential Equations in Julia},
+ url = {https://app.dimensions.ai/details/publication/pub.1085583166 and http://openresearchsoftware.metajnl.com/articles/10.5334/jors.151/galley/245/download/},
+ volume = {5},
+ year = {2017}
+}
+```
+For SDE simulations:
+```
+@article{rackauckas2017adaptive,
+  title={Adaptive methods for stochastic differential equations via natural embeddings and rejection sampling with memory},
+  author={Rackauckas, Christopher and Nie, Qing},
+  journal={Discrete and continuous dynamical systems. Series B},
+  volume={22},
+  number={7},
+  pages={2731},
+  year={2017},
+  publisher={NIH Public Access}
+}
+```
+For jump simulations:
+```
+@misc{2022JumpProcesses,
+  author       = {Isaacson, S. A. and Ilin, V. and Rackauckas, C. V.},
+  title        = {{JumpProcesses.jl}},
+  howpublished = {\url{https://github.com/SciML/JumpProcesses.jl/}},
+  year         = {2022}
+}
+@misc{zagatti_extending_2023,
+	title = {Extending {JumpProcess}.jl for fast point process simulation with time-varying intensities},
+	url = {http://arxiv.org/abs/2306.06992},
+	doi = {10.48550/arXiv.2306.06992},
+	publisher = {arXiv},
+	author = {Zagatti, Guilherme Augusto and Isaacson, Samuel A. and Rackauckas, Christopher and Ilin, Vasily and Ng, See-Kiong and Bressan, Stéphane},
+	year = {2023},
+}
+```

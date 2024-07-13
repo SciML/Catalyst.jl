@@ -364,7 +364,7 @@ complexgraph(rn)
 It is evident from the preceding graph that the network is not reversible.
 However, it satisfies a weaker property in that there is a path from each
 reaction complex back to itself within its associated subgraph. This is known as
-*weak reversiblity*. One can test a network for weak reversibility by using
+*weak reversibility*. One can test a network for weak reversibility by using
 the [`isweaklyreversible`](@ref) function:
 ```@example s1
 # need subnetworks from the reaction network first

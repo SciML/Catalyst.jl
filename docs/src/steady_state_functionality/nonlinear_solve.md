@@ -1,7 +1,7 @@
 # [Finding Steady States using NonlinearSolve.jl and SteadyStateDiffEq.jl](@id steady_state_solving)
 
-Catalyst `ReactionSystem` models can be converted to ODEs (through [the reaction rate equation](@ref ref)). We have previously described how these ODEs' steady states can be found through [homotopy continuation](@ref homotopy_continuation). Generally, homotopy continuation (due to its ability to find *all* of a system's steady states) is the preferred approach. However, Catalyst supports two additional approaches for finding steady states:
-- Through solving the nonlinear system produced by setting all ODE differentials to 0.
+Catalyst `ReactionSystem` models can be converted to ODEs (through [the reaction rate equation](@ref introduction_to_catalyst_ratelaws)). We have previously described how these ODEs' steady states can be found through [homotopy continuation](@ref homotopy_continuation). Generally, homotopy continuation (due to its ability to find *all* of a system's steady states) is the preferred approach. However, Catalyst supports two additional approaches for finding steady states:
+- Through solving the nonlinear system produced by setting all ODE differentials to 0[^1].
 - Through forward ODE simulation from an initial condition until a steady state has been reached.
 
 While these approaches only find a single steady state, they offer two advantages as compared to homotopy continuation:
@@ -65,7 +65,7 @@ two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 ```
-It has an infinite number of steady states. To make steady state finding possible, information of the system's conserved quantities (here $C = X1 + X2$) must be provided. Since these can be computed from system initial conditions (`u0`, i.e. those provided when performing ODE simulations), designating an `u0` is often the best way. There are two ways to do this. First, one can perform [forward ODE simulation-based steady state finding](@ref steady_state_solving_simulation), using the initial condition as the initial `u` guess. Alternatively, any conserved quantities can be eliminated when the `NonlinearProblem` is created. This feature is supported by Catalyst's [conservation law finding and elimination feature](@ref ref).
+It has an infinite number of steady states. To make steady state finding possible, information of the system's conserved quantities (here $C = X1 + X2$) must be provided. Since these can be computed from system initial conditions (`u0`, i.e. those provided when performing ODE simulations), designating an `u0` is often the best way. There are two ways to do this. First, one can perform [forward ODE simulation-based steady state finding](@ref steady_state_solving_simulation), using the initial condition as the initial `u` guess. Alternatively, any conserved quantities can be eliminated when the `NonlinearProblem` is created. This feature is supported by Catalyst's conservation law finding and elimination feature.
 
 To eliminate conservation laws we simply provide the `remove_conserved = true` argument to `NonlinearProblem`:
 ```@example steady_state_solving_claws
@@ -133,7 +133,7 @@ However, especially when the forward ODE simulation approach is used, it is reco
 
 ---
 ## [Citations](@id nonlinear_solve_citation)
-If you use this functionality in your research, [in addition to Catalyst](@ref catalyst_citation), please cite the following paper to support the authors of the NonlinearSolve.jl package:
+If you use this functionality in your research, [in addition to Catalyst](@ref doc_index_citation), please cite the following paper to support the authors of the NonlinearSolve.jl package:
 ```
 @article{pal2024nonlinearsolve,
   title={NonlinearSolve. jl: High-Performance and Robust Solvers for Systems of Nonlinear Equations in Julia},

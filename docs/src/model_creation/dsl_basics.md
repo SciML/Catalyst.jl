@@ -1,7 +1,7 @@
 # [The Catalyst DSL - Introduction](@id dsl_description)
 In the [introduction to Catalyst](@ref introduction_to_catalyst) we described how the `@reaction_network` [macro](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros) can be used to create chemical reaction network (CRN) models. This macro enables a so-called [domain-specific language](https://en.wikipedia.org/wiki/Domain-specific_language) (DSL) for creating CRN models. This tutorial will give a basic introduction on how to create Catalyst models using this macro (from now onwards called "*the Catalyst DSL*"). A [follow-up tutorial](@ref dsl_advanced_options) will describe some of the DSL's more advanced features.
 
-The Catalyst DSL generates a [`ReactionSystem`](@ref) (the [julia structure](https://docs.julialang.org/en/v1/manual/types/#Composite-Types) Catalyst uses to represent CRN models). These can be created through alternative methods (e.g. [programmatically](@ref programmatic_CRN_construction) or [compositionally](@ref compositional_modeling)). A summary of the various ways to create `ReactionSystems`s can be found [here](@ref ref). [Previous](@ref ref) and [following](@ref simulation_intro) tutorials describe how to simulate models once they have been created using the DSL. This tutorial will solely focus on model creation.
+The Catalyst DSL generates a [`ReactionSystem`](@ref) (the [julia structure](https://docs.julialang.org/en/v1/manual/types/#Composite-Types) Catalyst uses to represent CRN models). These can be created through alternative methods (e.g. [programmatically](@ref programmatic_CRN_construction) or [compositionally](@ref compositional_modeling)). [Previous](@ref introduction_to_catalyst) and [following](@ref simulation_intro) tutorials describe how to simulate models once they have been created using the DSL. This tutorial will solely focus on model creation.
 
 Before we begin, we will first load the Catalyst package (which is required to run the code).
 ```@example dsl_basics_intro
@@ -9,7 +9,7 @@ using Catalyst
 ```
 
 ### [Quick-start summary](@id dsl_description_quick_start)
-The DSL is initiated through the `@reaction_network` macro, which is followed by one line for each reaction. Each reaction consists of a *rate*, followed lists first of the substrates and next of the products. E.g. a [Michaelis-Menten enzyme kinetics system](@ref basic_CRN_library_mm) can be written as 
+The DSL is initiated through the `@reaction_network` macro, which is followed by one line for each reaction. Each reaction consists of a *rate*, followed lists first of the substrates and next of the products. E.g. a [Michaelis-Menten enzyme kinetics system](@ref basic_CRN_library_mm) can be written as
 ```@example dsl_basics_intro
 rn = @reaction_network begin
     (kB,kD), S + E <--> SE
@@ -88,13 +88,13 @@ rn5 = @reaction_network begin
     kD, X2 --> 2X
 end
 ```
-Reactants whose stoichiometries are not defined are assumed to have stoichiometry `1`. Any integer number can be used, furthermore, [decimal numbers and parameters can also be used as stoichiometries](@ref dsl_description_stoichiometries). A discussion of non-unitary (i.e. not equal to `1`) stoichiometries affecting the created model can be found [here](@ref ref).
+Reactants whose stoichiometries are not defined are assumed to have stoichiometry `1`. Any integer number can be used, furthermore, [decimal numbers and parameters can also be used as stoichiometries](@ref dsl_description_stoichiometries). A discussion of non-unitary (i.e. not equal to `1`) stoichiometries affecting the created model can be found [here](@ref introduction_to_catalyst_ratelaws).
 
 Stoichiometries can be combined with `()` to define them for multiple reactants. Here, the following (mock) model declares the same reaction twice, both with and without this notation:
 ```@example dsl_basics
 rn6 = @reaction_network begin
-    k, 2X + 3(Y + 2Z) --> 5(V + W)    
-    k, 2X + 3Y + 6Z --> 5V + 5W    
+    k, 2X + 3(Y + 2Z) --> 5(V + W)
+    k, 2X + 3Y + 6Z --> 5V + 5W
 end
 ```
 
@@ -186,7 +186,7 @@ rn12 = @reaction_network begin
     ((pX, pY, pZ),d), (0, Y0, Z0) <--> (X, Y, Z1+Z2)
 end
 ```
-However, like for the above model, bundling reactions too zealously can reduce (rather than improve) a model's readability.   
+However, like for the above model, bundling reactions too zealously can reduce (rather than improve) a model's readability.
 
 ## [Non-constant reaction rates](@id dsl_description_nonconstant_rates)
 So far we have assumed that all reaction rates are constant (being either a number of a parameter). Non-constant rates that depend on one (or several) species are also possible. More generally, the rate can be any valid expression of parameters and species.
@@ -201,7 +201,7 @@ end
 Here, `P`'s production rate will be reduced as `A` decays. We can [print the ODE this model produces with `Latexify`](@ref visualisation_latex):
 ```@example dsl_basics
 using Latexify
-latexify(rn_13; form=:ode)
+latexify(rn_13; form = :ode)
 ```
 
 In this case, we can generate an equivalent model by instead adding `A` as both a substrate and a product to `P`'s production reaction:
@@ -213,11 +213,11 @@ end
 ```
 We can confirm that this generates the same ODE:
 ```@example dsl_basics
-latexify(rn_13_alt; form=:ode)
+latexify(rn_13_alt; form = :ode)
 ```
 Here, while these models will generate identical ODE, SDE, and jump simulations, the chemical reaction network models themselves are not equivalent. Generally, as pointed out in the two notes below, using the second form is preferable.
-!!! warn
-    While `rn_13` and `rn_13_alt` will generate equivalent simulations, for jump simulations, the first model will have [reduced performance](@ref ref) (which generally are more performant when rates are constant).
+!!! warning
+    While `rn_13` and `rn_13_alt` will generate equivalent simulations, for jump simulations, the first model will have reduced performance as it generates a less performant representation of the system in JumpProcesses. It is generally recommended to write pure mass action reactions such that there is just a single constant within the rate constant expression for optimal performance of jump process simulations.
 
 !!! danger
     Catalyst automatically infers whether quantities appearing in the DSL are species or parameters (as described [here](@ref dsl_advanced_options_declaring_species_and_parameters)). Generally, anything that does not appear as a reactant is inferred to be a parameter. This means that if you want to model a reaction activated by a species (e.g. `kp*A, 0 --> P`), but that species does not occur as a reactant, it will be interpreted as a parameter. This can be handled by [manually declaring the system species](@ref dsl_advanced_options_declaring_species_and_parameters).
@@ -232,7 +232,7 @@ end
 ```
 
 ### [Using functions in rates](@id dsl_description_nonconstant_rates_functions)
-It is possible for the rate to contain Julia functions. These can either be functions from Julia's standard library:  
+It is possible for the rate to contain Julia functions. These can either be functions from Julia's standard library:
 ```@example dsl_basics
 rn_16 = @reaction_network begin
     d, A --> 0
@@ -281,8 +281,12 @@ rn_15 = @reaction_network begin
 end
 ```
 
-!!! warn
-    Jump simulations cannot be performed for models with time-dependent rates without additional considerations, which are discussed [here](@ref ref).
+!!! warning
+    Models with explicit time-dependent rates require additional steps to correctly
+    convert to stochastic chemical kinetics jump process representations. See
+    [here](https://github.com/SciML/Catalyst.jl/issues/636#issuecomment-1500311639)
+    for guidance on manually creating such representations. Enabling
+    Catalyst to handle this seamlessly is work in progress.
 
 ## [Non-standard stoichiometries](@id dsl_description_stoichiometries)
 
@@ -294,7 +298,7 @@ rn_16 = @reaction_network begin
     d, X --> 0
 end
 ```
-It is also possible to have non-integer stoichiometric coefficients for substrates. However, in this case the [`combinatoric_ratelaw = false`](@ref ref) option must be used. We note that non-integer stoichiometric coefficients do not make sense in most fields, however, this feature is available for use for models where it does make sense.
+It is also possible to have non-integer stoichiometric coefficients for substrates. However, in this case the `combinatoric_ratelaw = false` option must be used. We note that non-integer stoichiometric coefficients do not make sense in most fields, however, this feature is available for use for models where it does make sense.
 
 ### [Parametric stoichiometries](@id dsl_description_stoichiometries_parameters)
 It is possible for stoichiometric coefficients to be parameters. E.g. here we create a generic polymerisation system where `n` copies of `X` bind to form `Xn`:
@@ -327,7 +331,7 @@ end
 Catalyst uses `-->`, `<-->`, and `<--` to denote forward, bi-directional, and backwards reactions, respectively. Several unicode representations of these arrows are available. Here,
 - `>`, `→`, `↣`, `↦`, `⇾`, `⟶`, `⟼`, `⥟`, `⥟`, `⇀`, and `⇁` can be used to represent forward reactions.
 - `↔`, `⟷`, `⇄`, `⇆`, `⇌`, `⇋`, , and `⇔` can be used to represent bi-directional reactions.
-- `<`, `←`, `↢`, `↤`, `⇽`, `⟵`, `⟻`, `⥚`, `⥞`, `↼`, , and `↽` can be used to represent backwards reactions. 
+- `<`, `←`, `↢`, `↤`, `⇽`, `⟵`, `⟻`, `⥚`, `⥞`, `↼`, , and `↽` can be used to represent backwards reactions.
 
 E.g. the production/degradation system can alternatively be written as:
 ```@example dsl_basics
@@ -352,6 +356,7 @@ An example of how this can be used to create a neat-looking model can be found i
     (kB,kD), A + σᵛ ↔ Aσᵛ
     L, Aσᵛ → σᵛ
 end
+nothing # hide
 ```
 
 This functionality can also be used to create less serious models:
@@ -368,4 +373,4 @@ It should be noted that the following symbols are *not permitted* to be used as 
 - `∅` ([used for production/degradation reactions](@ref dsl_description_symbols_empty_set)).
 - `im` (used in Julia to represent [complex numbers](https://docs.julialang.org/en/v1/manual/complex-and-rational-numbers/#Complex-Numbers)).
 - `nothing` (used in Julia to denote [nothing](https://docs.julialang.org/en/v1/base/constants/#Core.nothing)).
-- `Γ` (used by Catalyst to represent [conserved quantities](@ref ref)).
+- `Γ` (used by Catalyst to represent conserved quantities).

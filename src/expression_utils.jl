@@ -19,7 +19,6 @@ function is_escaped_expr(expr)
     return (expr isa Expr) && (expr.head == :escape) && (length(expr.args) == 1)
 end
 
-
 ### Parameters/Species/Variables Symbols Correctness Checking ###
 
 # Throws an error when a forbidden symbol is used.
@@ -27,8 +26,8 @@ function forbidden_symbol_check(v)
     !isempty(intersect(forbidden_symbols_error, v)) &&
         error("The following symbol(s) are used as species or parameters: " *
               ((map(s -> "'" * string(s) * "', ",
-                    intersect(forbidden_symbols_error, v))...)) *
-              "this is not permited.")
+                  intersect(forbidden_symbols_error, v))...)) *
+              "this is not permitted.")
     nothing
 end
 
@@ -37,8 +36,8 @@ function forbidden_variable_check(v)
     !isempty(intersect(forbidden_variables_error, v)) &&
         error("The following symbol(s) are used as variables: " *
               ((map(s -> "'" * string(s) * "', ",
-                    intersect(forbidden_variables_error, v))...)) *
-              "this is not permited.")
+                  intersect(forbidden_variables_error, v))...)) *
+              "this is not permitted.")
 end
 
 function unique_symbol_check(syms)
@@ -46,7 +45,6 @@ function unique_symbol_check(syms)
         error("Reaction network independent variables, parameters, species, and variables must all have distinct names, but a duplicate has been detected. ")
     nothing
 end
-
 
 ### Catalyst-specific Expressions Manipulation ###
 
@@ -75,25 +73,31 @@ function find_varinfo_in_declaration(expr)
     is_escaped_expr(expr) && (return find_varinfo_in_declaration(expr.args[1]))
 
     # Case: X
-    (expr isa Symbol) && (return expr, [], nothing, nothing)                          
+    (expr isa Symbol) && (return expr, [], nothing, nothing)
     # Case: X(t)         
-    (expr.head == :call) && (return expr.args[1], expr.args[2:end], nothing, nothing)                   
+    (expr.head == :call) && (return expr.args[1], expr.args[2:end], nothing, nothing)
     if expr.head == :(=)
         # Case: X = 1.0
-        (expr.args[1] isa Symbol) && (return expr.args[1], [], expr.args[2], nothing)  
+        (expr.args[1] isa Symbol) && (return expr.args[1], [], expr.args[2], nothing)
         # Case: X(t) = 1.0        
-        (expr.args[1].head == :call) && (return expr.args[1].args[1], expr.args[1].args[2:end], expr.args[2].args[1], nothing) 
+        (expr.args[1].head == :call) &&
+            (return expr.args[1].args[1], expr.args[1].args[2:end], expr.args[2].args[1],
+            nothing)
     end
     if expr.head == :tuple
         # Case: X, [metadata=true]
-        (expr.args[1] isa Symbol) && (return expr.args[1], [], nothing, expr.args[2])          
+        (expr.args[1] isa Symbol) && (return expr.args[1], [], nothing, expr.args[2])
         # Case: X(t), [metadata=true]
-        (expr.args[1].head == :call) && (return expr.args[1].args[1], expr.args[1].args[2:end], nothing, expr.args[2]) 
-        if (expr.args[1].head == :(=)) 
+        (expr.args[1].head == :call) &&
+            (return expr.args[1].args[1], expr.args[1].args[2:end], nothing, expr.args[2])
+        if expr.args[1].head == :(=)
             # Case: X = 1.0, [metadata=true]
-            (expr.args[1].args[1] isa Symbol) && (return expr.args[1].args[1], [], expr.args[1].args[2], expr.args[2]) 
+            (expr.args[1].args[1] isa Symbol) &&
+                (return expr.args[1].args[1], [], expr.args[1].args[2], expr.args[2])
             # Case: X(t) = 1.0, [metadata=true]
-            (expr.args[1].args[1].head == :call) && (return expr.args[1].args[1].args[1], expr.args[1].args[1].args[2:end], expr.args[1].args[2].args[1], expr.args[2]) 
+            (expr.args[1].args[1].head == :call) &&
+                (return expr.args[1].args[1].args[1], expr.args[1].args[1].args[2:end],
+                expr.args[1].args[2].args[1], expr.args[2])
         end
     end
     error("Unable to detect the variable declared in expression: $expr.")
@@ -119,11 +123,11 @@ function insert_independent_variable(expr_in, iv_expr)
     expr = deepcopy(expr_in)
 
     # Loops through possible cases.
-    if expr.head == :(=) 
+    if expr.head == :(=)
         # Case: :(X = 1.0)
         expr.args[1] = Expr(:call, expr.args[1], iv_expr)
     elseif expr.head == :tuple
-        if expr.args[1] isa Symbol 
+        if expr.args[1] isa Symbol
             # Case: :(X, [metadata=true])
             expr.args[1] = Expr(:call, expr.args[1], iv_expr)
         elseif (expr.args[1].head == :(=)) && (expr.args[1].args[1] isa Symbol)

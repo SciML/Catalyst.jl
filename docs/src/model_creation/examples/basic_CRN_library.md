@@ -79,7 +79,6 @@ oplt = plot(osol; idxs = X₁ + X₂, title = "Reaction rate equation (ODE)")
 splt = plot(ssol; idxs = X₁ + X₂, title = "Chemical Langevin equation (SDE)")
 plot(oplt, splt; lw = 3, ylimit = (99,101), size = (800,450), layout = (2,1))
 ```
-Catalyst has special methods for working with conserved quantities, which are described [here](@ref ref).
 
 ## [Michaelis-Menten enzyme kinetics](@id basic_CRN_library_mm)
 [Michaelis-Menten enzyme kinetics](https://en.wikipedia.org/wiki/Michaelis%E2%80%93Menten_kinetics) is a simple description of an enzyme ($E$) transforming a substrate ($S$) into a product ($P$). Under certain assumptions, it can be simplified to a single function (a Michaelis-Menten function) and used as a reaction rate. Here we instead present the full system model:
@@ -116,12 +115,13 @@ using Plots
 oplt = plot(osol; title = "Reaction rate equation (ODE)")
 splt = plot(ssol; title = "Chemical Langevin equation (SDE)")
 jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)")
-plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1)) 
+plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1))
+oplt = plot(osol; title = "Reaction rate equation (ODE)", plotdensity = 1000, fmt = :png) # hide
+splt = plot(ssol; title = "Chemical Langevin equation (SDE)", plotdensity = 1000, fmt = :png) # hide
+jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)", plotdensity = 1000, fmt = :png) # hide
+plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1), plotdensity = 1000, fmt = :png) # hide
 plot!(bottom_margin = 3Plots.Measures.mm) # hide
-nothing # hide
 ```
-![MM Kinetics](../../assets/long_ploting_times/model_creation/mm_kinetics.svg)
-Note that, due to the large amounts of the species involved, the stochastic trajectories are very similar to the deterministic one.
 
 ## [SIR infection model](@id basic_CRN_library_sir)
 The [SIR model](https://en.wikipedia.org/wiki/Compartmental_models_in_epidemiology#The_SIR_model) is the simplest model of the spread of an infectious disease. While the real system is very different from the chemical and cellular processes typically modelled with CRNs, it (and several other epidemiological systems) can be modelled using the same CRN formalism. The SIR model consists of three species: susceptible ($S$), infected ($I$), and removed ($R$) individuals, and two reaction events: infection and recovery.
@@ -161,9 +161,11 @@ jplt1 = plot(jsol1; title = "Outbreak")
 jplt2 = plot(jsol2; title = "Outbreak")
 jplt3 = plot(jsol3; title = "No outbreak")
 plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1))
-nothing # hide
+jplt1 = plot(jsol1; title = "Outbreak", plotdensity = 1000, fmt = :png) # hide
+jplt2 = plot(jsol2; title = "Outbreak", plotdensity = 1000, fmt = :png) # hide
+jplt3 = plot(jsol3; title = "No outbreak", plotdensity = 1000, fmt = :png) # hide
+plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1), plotdensity = 1000, fmt = :png) # hide
 ```
-![SIR Outbreak](../../assets/long_ploting_times/model_creation/sir_outbreaks.svg)
 
 ## [Chemical cross-coupling](@id basic_CRN_library_cc)
 In chemistry, [cross-coupling](https://en.wikipedia.org/wiki/Cross-coupling_reaction) is when a catalyst combines two substrates to form a product. In this example, the catalyst ($C$) first binds one substrate ($S₁$) to form an intermediary complex ($S₁C$). Next, the complex binds the second substrate ($S₂$) to form another complex ($CP$). Finally, the catalyst releases the now-formed product ($P$). This system is an extended version of the [Michaelis-Menten system presented earlier](@ref basic_CRN_library_mm).
@@ -265,7 +267,7 @@ brusselator = @reaction_network begin
     1, X --> ∅
 end
 ```
-It is generally known to (for reaction rate equation-based ODE simulations) produce oscillations when $B > 1 + A^2$. However, this result is based on models generated when *combinatorial adjustment of rates is not performed*. Since Catalyst [automatically perform these adjustments](@ref ref), and one reaction contains a stoichiometric constant $>1$, the threshold will be different. Here, we trial two different values of $B$. In both cases, $B < 1 + A^2$, however, in the second case the system can generate oscillations.
+It is generally known to (for reaction rate equation-based ODE simulations) produce oscillations when $B > 1 + A^2$. However, this result is based on models generated when *combinatorial adjustment of rates is not performed*. Since Catalyst [automatically perform these adjustments](@ref introduction_to_catalyst_ratelaws), and one reaction contains a stoichiometric constant $>1$, the threshold will be different. Here, we trial two different values of $B$. In both cases, $B < 1 + A^2$, however, in the second case the system can generate oscillations.
 ```@example crn_library_brusselator
 using OrdinaryDiffEq, Plots
 u0 = [:X => 1.0, :Y => 1.0]
