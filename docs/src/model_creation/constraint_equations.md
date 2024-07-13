@@ -28,7 +28,7 @@ creating these two systems.
 Here, to create differentials with respect to time (for our differential equations), we must import the time differential operator from Catalyst. We do this through `D = default_time_deriv()`. Here, `D(V)` denotes the differential of the variable `V` with respect to time.
 
 ```@example ceq1
-using Catalyst, DifferentialEquations, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 t = default_t()
 D = default_time_deriv()
 
@@ -52,12 +52,13 @@ end
 Notice, here we interpolated the variable `V` with `$V` to ensure we use the
 same symbolic unknown variable in the `rn` as we used in building `osys`. See the
 doc section on [interpolation of variables](@ref
-dsl_description_interpolation_of_variables) for more information.
+dsl_advanced_options_symbolics_and_DSL_interpolation) for more information.
 
 We can now merge the two systems into one complete `ReactionSystem` model using
 [`ModelingToolkit.extend`](@ref):
 ```@example ceq1
 @named growing_cell = extend(osys, rn)
+growing_cell = complete(growing_cell)
 ```
 
 We see that the combined model now has both the reactions and ODEs as its
@@ -72,7 +73,7 @@ plot(sol)
 As an alternative to the previous approach, we could have constructed our
 `ReactionSystem` all at once by directly using the symbolic interface:
 ```@example ceq2
-using Catalyst, DifferentialEquations, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 t = default_t()
 D = default_time_deriv()
 
@@ -83,6 +84,7 @@ rx1 = @reaction $V, 0 --> P
 rx2 = @reaction 1.0, P --> 0
 @named growing_cell = ReactionSystem([rx1, rx2, eq], t)
 setdefaults!(growing_cell, [:P => 0.0])
+growing_cell = complete(growing_cell)
 
 oprob = ODEProblem(growing_cell, [], (0.0, 1.0))
 sol = solve(oprob, Tsit5())
@@ -100,12 +102,11 @@ the associated [ModelingToolkit
 tutorial](https://docs.sciml.ai/ModelingToolkit/stable/basics/Events/) for more
 details on the types of events that can be represented symbolically. A
 lower-level approach for creating events via the DifferentialEquations.jl
-callback interface is illustrated in the [Advanced Simulation Options](@ref
-advanced_simulations) tutorial.
+callback interface is illustrated [here](https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/) tutorial.
 
 Let's first create our equations and unknowns/species again
 ```@example ceq3
-using Catalyst, DifferentialEquations, Plots
+using Catalyst, OrdinaryDiffEq, Plots
 t = default_t()
 D = default_time_deriv()
 
@@ -124,6 +125,7 @@ continuous_events = [V ~ 2.0] => [V ~ V/2, P ~ P/2]
 We can now create and simulate our model
 ```@example ceq3
 @named rs = ReactionSystem([rx1, rx2, eq], t; continuous_events)
+rs = complete(rs)
 
 oprob = ODEProblem(rs, [], (0.0, 10.0))
 sol = solve(oprob, Tsit5())
@@ -148,6 +150,7 @@ p = [k_on => 100.0, switch_time => 2.0, k_off => 10.0]
 Simulating our model, 
 ```@example ceq3
 @named osys = ReactionSystem(rxs, t, [A, B], [k_on, k_off, switch_time]; discrete_events)
+osys = complete(osys)
 
 oprob = ODEProblem(osys, u0, tspan, p)
 sol = solve(oprob, Tsit5(); tstops = 2.0)

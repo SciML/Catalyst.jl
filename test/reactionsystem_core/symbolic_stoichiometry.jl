@@ -2,7 +2,7 @@
 
 # Fetch packages.
 using Catalyst, JumpProcesses, OrdinaryDiffEq, StochasticDiffEq, Statistics, Test
-using Symbolics: unwrap
+using Symbolics: BasicSymbolic, unwrap
 
 # Sets stable rng number.
 using StableRNGs
@@ -46,8 +46,8 @@ let
     @test rs1 == rs2 == rs3
     @test issetequal(unknowns(rs1), [X, Y])
     @test issetequal(parameters(rs1), [p, k, d, n1, n2, n3])
-    @test unwrap(d) isa SymbolicUtils.BasicSymbolic{Float64}
-    @test unwrap(n1) isa SymbolicUtils.BasicSymbolic{Int64}
+    @test unwrap(d) isa BasicSymbolic{Float64}
+    @test unwrap(n1) isa BasicSymbolic{Int64}
 end
 
 # Declares a network, parameter values, and initial conditions, to be used for the next couple of tests.

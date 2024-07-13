@@ -6,15 +6,15 @@ module Catalyst
 using DocStringExtensions
 using SparseArrays, DiffEqBase, Reexport, Setfield
 using LaTeXStrings, Latexify, Requires
-using JumpProcesses: JumpProcesses, JumpProblem, 
+using LinearAlgebra, Combinatorics
+using JumpProcesses: JumpProcesses, JumpProblem,
                      MassActionJump, ConstantRateJump, VariableRateJump,
-                     SpatialMassActionJump
+                     SpatialMassActionJump, CartesianGrid, CartesianGridRej
 
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit
 const MT = ModelingToolkit
 using DynamicQuantities#, Unitful # Having Unitful here as well currently gives an error.
-
 
 @reexport using ModelingToolkit
 using Symbolics
@@ -23,8 +23,8 @@ using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
 import Symbolics: BasicSymbolic
-import SymbolicUtils
-using ModelingToolkit: Symbolic, value, istree, get_unknowns, get_ps, get_iv, get_systems,
+using Symbolics: iscall
+using ModelingToolkit: Symbolic, value, get_unknowns, get_ps, get_iv, get_systems,
                        get_eqs, get_defaults, toparam, get_var_to_name, get_observed,
                        getvar
 
@@ -44,6 +44,7 @@ import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertice
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 import Symbolics: occursin, wrap
+import Symbolics.RewriteHelpers: hasnode, replacenode
 
 # globals for the modulate
 function default_time_deriv()
@@ -80,7 +81,7 @@ const CONSERVED_CONSTANT_SYMBOL = :Γ
 # Declares symbols which may neither be used as parameters nor unknowns.
 const forbidden_symbols_skip = Set([:ℯ, :pi, :π, :t, :∅])
 const forbidden_symbols_error = union(Set([:im, :nothing, CONSERVED_CONSTANT_SYMBOL]),
-                                      forbidden_symbols_skip)
+    forbidden_symbols_skip)
 const forbidden_variables_error = let
     fvars = copy(forbidden_symbols_error)
     delete!(fvars, :t)
@@ -126,7 +127,8 @@ export @reaction_network, @network_component, @reaction, @species
 include("network_analysis.jl")
 export reactioncomplexmap, reactioncomplexes, incidencemat
 export complexstoichmat
-export complexoutgoingmat, incidencematgraph, linkageclasses, deficiency, subnetworks
+export complexoutgoingmat, incidencematgraph, linkageclasses, stronglinkageclasses,
+       terminallinkageclasses, deficiency, subnetworks
 export linkagedeficiencies, isreversible, isweaklyreversible
 export conservationlaws, conservedquantities, conservedequations, conservationlaw_constants
 
@@ -170,18 +172,24 @@ include("spatial_reaction_systems/spatial_reactions.jl")
 export TransportReaction, TransportReactions, @transport_reaction
 export isedgeparameter
 
-# Lattice reaction systems
+# Lattice reaction systems.
 include("spatial_reaction_systems/lattice_reaction_systems.jl")
 export LatticeReactionSystem
 export spatial_species, vertex_parameters, edge_parameters
-
-# Various utility functions
-include("spatial_reaction_systems/utility.jl")
+export CartesianGrid, CartesianGridReJ # (Implemented in JumpProcesses)
+export has_cartesian_lattice, has_masked_lattice, has_grid_lattice, has_graph_lattice,
+       grid_dims, grid_size
+export make_edge_p_values, make_directed_edge_values
+include("spatial_reaction_systems/lattice_solution_interfacing.jl")
+export get_lrs_vals
 
 # Specific spatial problem types.
 include("spatial_reaction_systems/spatial_ODE_systems.jl")
+export rebuild_lat_internals!
 include("spatial_reaction_systems/lattice_jump_systems.jl")
 
+# General spatial modelling utility functions.
+include("spatial_reaction_systems/utility.jl")
 
 ### ReactionSystem Serialisation ###
 # Has to be at the end (because it uses records of all metadata declared by Catalyst).

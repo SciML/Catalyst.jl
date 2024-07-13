@@ -1,6 +1,6 @@
 # [Advice for performant ODE simulations](@id ode_simulation_performance)
-We have previously described how to perform ODE simulations of *chemical reaction network* (CRN) models. These simulations are typically fast and require little additional consideration. However, when a model is simulated many times (e.g. as a part of solving an [inverse problem](@ref ref)), or is very large, simulation run
-times may become noticeable. Here we will give some advice on how to improve performance for these cases.
+We have previously described how to perform ODE simulations of *chemical reaction network* (CRN) models. These simulations are typically fast and require little additional consideration. However, when a model is simulated many times (e.g. as a part of solving an inverse problem), or is very large, simulation run
+times may become noticeable. Here we will give some advice on how to improve performance for these cases [^1].
 
 Generally, there are few good ways to, before a simulation, determine the best options. Hence, while we below provide several options, if you face an application for which reducing run time is critical (e.g. if you need to simulate the same ODE many times), it might be required to manually trial these various options to see which yields the best performance ([BenchmarkTools.jl's](https://github.com/JuliaCI/BenchmarkTools.jl) `@btime` macro is useful for this purpose). It should be noted that the default options typically perform well, and it is primarily for large models where investigating alternative options is worthwhile. All ODE simulations of Catalyst models are performed using the OrdinaryDiffEq.jl package, [which documentation](https://docs.sciml.ai/DiffEqDocs/stable/) provides additional advice on performance.
 
@@ -8,7 +8,7 @@ Generally, this short checklist provides a quick guide for dealing with ODE perf
 1. If performance is not critical, use [the default solver choice](@ref ode_simulation_performance_solvers) and do not worry further about the issue.
 2. If improved performance would be useful, read about solver selection (both in [this tutorial](@ref ode_simulation_performance_solvers) and [OrdinaryDiffEq's documentation](https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/)) and then try a few different solvers to find one with good performance.
 3. If you have a large ODE (approximately 100 variables or more), try the [various options for efficient Jacobian computation](@ref ode_simulation_performance_jacobian) (noting that some are non-trivial to use, and should only be investigated if truly required).
-4. If you plan to simulate your ODE many times, try [parallelise it on CPUs or GPUs](@ref investigating) (with preference for the former, which is easier to use).
+4. If you plan to simulate your ODE many times, try [parallelise it on CPUs or GPUs](@ref ode_simulation_performance_parallelisation) (with preference for the former, which is easier to use).
 
 ## [Regarding stiff and non-stiff problems and solvers](@id ode_simulation_performance_stiffness)
 Generally, ODE problems can be categorised into [*stiff ODEs* and *non-stiff ODEs*](https://en.wikipedia.org/wiki/Stiff_equation). This categorisation is important due to stiff ODEs requiring specialised solvers. A common cause of failure to simulate an ODE is the use of a non-stiff solver for a stiff problem. There is no exact way to determine whether a given ODE is stiff or not, however, systems with several different time scales (e.g. a CRN with both slow and fast reactions) typically generate stiff ODEs.
@@ -31,9 +31,8 @@ oprob = ODEProblem(brusselator, u0, tspan, ps)
 
 sol1 = solve(oprob, Tsit5())
 plot(sol1)
-nothing # hide
+plot(sol1, plotdensity = 1000, fmt = :png) # hide
 ```
-![Incomplete Brusselator Simulation](../assets/long_ploting_times/model_simulation/incomplete_brusselator_simulation.svg)
 
 We get a warning, indicating that the simulation was terminated. Furthermore, the resulting plot ends at $t ≈ 12$, meaning that the simulation was not completed (as the simulation's endpoint is $t = 20$). Indeed, we can confirm this by checking the *return code* of the solution object:
 ```@example ode_simulation_performance_1
@@ -304,7 +303,7 @@ nothing # hide
 ```
 Here have we increased the number of simulations to 10,000, since this is a more appropriate number for GPU parallelisation (as compared to the 100 simulations we performed in our CPU example).
 !!! note
-    Currently, declaration of static vectors requires [symbolic, rather than symbol, form](@ref ref) for species and parameters. Hence, we here first [`@unpack` these](@ref ref) before constructing `u0` and `ps` using `@SVector`.
+    Currently, declaration of static vectors requires symbolic, rather than symbol, form for species and parameters. Hence, we here first `@unpack` these before constructing `u0` and `ps` using `@SVector`.
 
 We can now simulate our model using a GPU-based ensemble algorithm. Currently, two such algorithms are available, `EnsembleGPUArray` and `EnsembleGPUKernel`. Their differences are that
 - Only `EnsembleGPUKernel` requires arrays to be static arrays (although it is still advantageous for `EnsembleGPUArray`).

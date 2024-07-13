@@ -1,7 +1,7 @@
 # [The Catalyst DSL - Advanced Features and Options](@id dsl_advanced_options)
 Within the Catalyst DSL, each line can represent either *a reaction* or *an option*. The [previous DSL tutorial](@ref dsl_description) described how to create reactions. This one will focus on options. These are typically used to supply a model with additional information. Examples include the declaration of initial condition/parameter default values, or the creation of observables. 
 
-All option designations begin with a declaration starting with `@`, followed by its input. E.g. the `@observables` option allows for the generation of observables. Each option can only be used once within each use of `@reaction_network`. A full list of options can be found [here](@ref ref), with most (but not all) being described in more detail below. This tutorial will also describe some additional advanced DSL features that do not involve using an option. 
+All option designations begin with a declaration starting with `@`, followed by its input. E.g. the `@observables` option allows for the generation of observables. Each option can only be used once within each use of `@reaction_network`. This tutorial will also describe some additional advanced DSL features that do not involve using an option. 
 
 As a first step, we import Catalyst (which is required to run the tutorial):
 ```@example dsl_advanced_explicit_definitions
@@ -85,8 +85,8 @@ Generally, there are four main reasons for specifying species/parameters using t
 3. To designate metadata for species/parameters (described [here](@ref dsl_advanced_options_species_and_parameters_metadata)).
 4. To designate a species or parameters that do not occur in reactions, but are still part of the model (e.g a [parametric initial condition](@ref dsl_advanced_options_parametric_initial_conditions))
 
-!!! warn
-    Catalyst's DSL automatically infer species and parameters from the input. However, it only does so for *quantities that appear in reactions*. Until now this has not been relevant. However, this tutorial will demonstrate cases where species/parameters that are not part of reactions are used. These *must* be designated using either the `@species` or `@parameters` options (or the `@variables` option, which is described [later](@ref ref)).
+!!! warning
+    Catalyst's DSL automatically infer species and parameters from the input. However, it only does so for *quantities that appear in reactions*. Until now this has not been relevant. However, this tutorial will demonstrate cases where species/parameters that are not part of reactions are used. These *must* be designated using either the `@species` or `@parameters` options (or the `@variables` option, which is described [later](@ref constraint_equations)).
 
 ### [Setting default values for species and parameters](@id dsl_advanced_options_default_vals)
 When declaring species/parameters using the `@species` and `@parameters` options, one can also assign them default values (by appending them with `=` followed by the desired default value). E.g here we set `X`'s default initial condition value to $1.0$, and `p` and `d`'s default values to $1.0$ and $0.2$, respectively:
@@ -130,7 +130,6 @@ oprob = ODEProblem(rn, u0, tspan, p)
 sol = solve(oprob)
 plot(sol)
 ```
-API for checking the default values of species and parameters can be found [here](@ref ref).
 
 ### [Setting parametric initial conditions](@id dsl_advanced_options_parametric_initial_conditions)
 In the previous section, we designated default values for initial conditions and parameters. However, the right-hand side of the designation accepts any valid expression (not only numeric values). While this can be used to set up some advanced default values, the most common use case is to designate a species's initial condition as a parameter. E.g. in the following example we represent the initial condition of `X` using the parameter `X₀`. 
@@ -198,16 +197,14 @@ two_state_system = @reaction_network begin
 end
 ```
 
-Each metadata has its own getter functions. E.g. we can get the description of the parameter `kA` using `ModelingToolkit.getdescription` (here we use [system indexing](@ref ref) to access the parameter):
+Each metadata has its own getter functions. E.g. we can get the description of the parameter `kA` using `ModelingToolkit.getdescription`:
 ```@example dsl_advanced_metadata
 ModelingToolkit.getdescription(two_state_system.kA)
 ```
 
-It is not possible for the user to directly designate their own metadata. These have to first be added to Catalyst. Doing so is somewhat involved, and described in detail [here](@ref ref). A full list of metadata that can be used for species and/or parameters can be found [here](@ref ref).
-
 ### [Designating constant-valued/fixed species parameters](@id dsl_advanced_options_constant_species)
 
-Catalyst enables the designation of parameters as `constantspecies`. These parameters can be used as species in reactions, however, their values are not changed by the reaction and remain constant throughout the simulation (unless changed by e.g. the [occurrence of an event]@ref ref). Practically, this is done by setting the parameter's `isconstantspecies` metadata to `true`. Here, we create a simple reaction where the species `X` is converted to `Xᴾ` at rate `k`. By designating `X` as a constant species parameter, we ensure that its quantity is unchanged by the occurrence of the reaction.
+Catalyst enables the designation of parameters as `constantspecies`. These parameters can be used as species in reactions, however, their values are not changed by the reaction and remain constant throughout the simulation (unless changed by e.g. the [occurrence of an event]@ref constraint_equations_events). Practically, this is done by setting the parameter's `isconstantspecies` metadata to `true`. Here, we create a simple reaction where the species `X` is converted to `Xᴾ` at rate `k`. By designating `X` as a constant species parameter, we ensure that its quantity is unchanged by the occurrence of the reaction.
 ```@example dsl_advanced_constant_species
 using Catalyst # hide
 rn = @reaction_network begin
@@ -357,7 +354,7 @@ plot!(ylimit = (minimum(sol[:Xtot])*0.95, maximum(sol[:Xtot])*1.05)) # hide
 ```
 to plot the observables (rather than the species).
 
-Observables can be defined using complicated expressions containing species, parameters, and [variables](@ref ref) (but not other observables). In the following example (which uses a [parametric stoichiometry](@ref dsl_description_stoichiometries_parameters)) `X` polymerises to form a complex `Xn` containing `n` copies of `X`. Here, we create an observable describing the total number of `X` molecules in the system:
+Observables can be defined using complicated expressions containing species, parameters, and [variables](@ref constraint_equations) (but not other observables). In the following example (which uses a [parametric stoichiometry](@ref dsl_description_stoichiometries_parameters)) `X` polymerises to form a complex `Xn` containing `n` copies of `X`. Here, we create an observable describing the total number of `X` molecules in the system:
 ```@example dsl_advanced_observables
 rn = @reaction_network begin
     @observables Xtot ~ X + n*Xn
@@ -366,7 +363,7 @@ end
 nothing # hide
 ```
 !!! note
-    If only a single observable is declared, the `begin .. end` block is not required and the observable can be declared directly after the `@observables` option.
+    If only a single observable is declared, the `begin ... end` block is not required and the observable can be declared directly after the `@observables` option.
 
 [Metadata](@ref dsl_advanced_options_species_and_parameters_metadata) can be supplied to an observable directly after its declaration (but before its formula). If so, the metadata must be separated from the observable with a `,`, and the observable plus the metadata encapsulated by `()`. E.g. to add a [description metadata](@ref dsl_advanced_options_species_and_parameters_metadata) to our observable we can use
 ```@example dsl_advanced_observables
@@ -377,7 +374,7 @@ end
 nothing # hide
 ```
 
-Observables are by default considered [variables](@ref ref) (not species). To designate them as a species, they can be pre-declared using the `@species` option. I.e. Here `Xtot` becomes a species:
+Observables are by default considered [variables](@ref constraint_equations) (not species). To designate them as a species, they can be pre-declared using the `@species` option. I.e. Here `Xtot` becomes a species:
 ```@example dsl_advanced_observables
 rn = @reaction_network begin
     @species Xtot(t)
@@ -391,11 +388,11 @@ Some final notes regarding observables:
 - The left-hand side of the observable declaration must contain a single symbol only (with the exception of metadata, which can also be supplied).
 - All quantities appearing on the right-hand side must be declared elsewhere within the `@reaction_network` call (either by being part of a reaction, or through the `@species`, `@parameters`, or `@variables` options).
 - Observables may not depend on other observables.
-- Observables have their [dependent variable(s)](@ref ref) automatically assigned as the union of the dependent variables of the species and variables on which it depends.
+- Observables have their dependent variable(s) automatically assigned as the union of the dependent variables of the species and variables on which it depends.
 
 ## [Specifying non-time independent variables](@id dsl_advanced_options_ivs)
 
-As [described elsewhere](@ref ref), Catalyst's `ReactionSystem` models depend on a *time independent variable*, and potentially one or more *spatial independent variables*. By default, the independent variable `t` is used. We can declare another independent variable (which is automatically used as the default one) using the `@ivs` option. E.g. to use `τ` instead of `t` we can use
+Catalyst's `ReactionSystem` models depend on a *time independent variable*, and potentially one or more *spatial independent variables*. By default, the independent variable `t` is used. We can declare another independent variable (which is automatically used as the default one) using the `@ivs` option. E.g. to use `τ` instead of `t` we can use
 ```@example dsl_advanced_ivs
 using Catalyst # hide
 rn = @reaction_network begin
@@ -467,4 +464,76 @@ rx = @reaction p, 0 --> X, [description="A production reaction"]
 Catalyst.getdescription(rx)
 ```
 
-A list of all available reaction metadata can be found [here](@ref ref).
+## [Working with symbolic variables and the DSL](@id dsl_advanced_options_symbolics_and_DSL)
+We have previously described how Catalyst represents its models symbolically (enabling e.g. symbolic differentiation of expressions stored in models). While Catalyst utilises this for many internal operation, these symbolic representations can also be accessed and harnessed by the user. Primarily, doing so is much easier during programmatic (as opposed to DSL-based) modelling. Indeed, the section on [programmatic modelling](@ref programmatic_CRN_construction) goes into more details about symbolic representation in models, and how these can be used. It is, however, also ways to utilise these methods during DSL-based modelling. Below we briefly describe two methods for doing so.
+
+### [Using `@unpack` to extract symbolic variables from `ReactionSystem`s](@id dsl_advanced_options_symbolics_and_DSL_unpack)
+Let us consider a simple [birth-death process](@ref basic_CRN_library_bd) created using the DSL:
+```@example dsl_advanced_programmatic_unpack
+using Catalyst # hide
+bd_model = @reaction_network begin
+    (p,d), 0 <--> X
+end
+nothing # hide
+```
+Since we have not explicitly declared `p`, `d`, and `X` using `@parameters` and `@species`, we cannot represent these symbolically (only using `Symbol`s). If we wish to do so, however, we can fetch these into our current scope using the `@unpack` macro:
+```@example dsl_advanced_programmatic_unpack
+@unpack p, d, X = bd_model
+nothing # hide
+```
+This lists first the quantities we wish to fetch (does not need to be the model's full set of parameters and species), then `=`, followed by the model variable. `p`, `d` and `X` are now symbolic variables in the current scope, just as if they had been declared using `@parameters` or `@species`. We can confirm this:
+```@example dsl_advanced_programmatic_unpack
+X
+```
+Next, we can now use these to e.g. designate initial conditions and parameter values for model simulations:
+```@example dsl_advanced_programmatic_unpack
+using OrdinaryDiffEq, Plots # hide
+u0 = [X => 0.1]
+tspan = (0.0, 10.0)
+ps = [p => 1.0, d => 0.2]
+oprob = ODEProblem(bd_model, u0, tspan, ps)
+sol = solve(oprob)
+plot(sol)
+```
+
+!!! warning
+    Just like when using `@parameters` and `@species`, `@unpack` will overwrite any variables in the current scope which share name with the imported quantities.
+
+### [Interpolating variables into the DSL](@id dsl_advanced_options_symbolics_and_DSL_interpolation)
+Catalyst's DSL allows Julia variables to be interpolated for the network name, within rate constant expressions, or for species/stoichiometries within reactions. Using the lower-level symbolic interface we can then define symbolic variables and parameters outside of `@reaction_network`, which can then be used within expressions in the DSL. 
+
+Interpolation is carried out by pre-appending the interpolating variable with a `$`. For example, here we declare the parameters and species of a birth-death model, and interpolate these into the model:
+```@example dsl_advanced_programmatic_interpolation
+using Catalyst # hide
+t = default_t()
+@species X(t)
+@parameters p d
+bd_model = @reaction_network begin
+    ($p, $d), 0 <--> $X
+end
+```
+Additional information (such as default values or metadata) supplied to `p`, `d`, and `X` is carried through to the DSL. However, interpolation for this purpose is of limited value, as such information [can be declared within the DSL](@ref dsl_advanced_options_declaring_species_and_parameters). However, it is possible to interpolate larger algebraic expressions into the DSL, e.g. here
+```@example dsl_advanced_programmatic_interpolation
+@species X1(t) X2(t) X3(t) E(t)
+@parameters d
+d_rate = d/(1 + E)
+degradation_model = @reaction_network begin
+    $d_rate, X1 --> 0
+    $d_rate, X2 --> 0
+    $d_rate, X3 --> 0
+end
+```
+we declare an expression `d_rate`, which then can be inserted into the DSL via interpolation.
+
+It is also possible to use interpolation in combination with the `@reaction` macro. E.g. the reactions of the above network can be declared individually using
+```@example dsl_advanced_programmatic_interpolation
+rxs = [
+    @reaction $d_rate, $X1 --> 0
+    @reaction $d_rate, $X2 --> 0
+    @reaction $d_rate, $X3 --> 0
+]
+nothing # hide 
+```
+
+!!! note
+    When using interpolation, expressions like `2$spec` won't work; the multiplication symbol must be explicitly included like `2*$spec`.
