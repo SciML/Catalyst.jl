@@ -175,7 +175,8 @@ end
 """
     @network_component
 
-As @reaction_network, but the output system is not complete.
+Equivalent to `@reaction_network` except the generated `ReactionSystem` is not marked as
+complete.
 """
 macro network_component(name::Symbol, ex::Expr)
     make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name))))
