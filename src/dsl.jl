@@ -57,18 +57,17 @@ DSL" (where DSL = domain-specific language), as it implements a DSL for creating
 network models.
     
 The `@reaction_network` macro, and the `ReactionSystem`s it generates, are central to Catalyst
-and its functionality. Catalyst is describe in more detail [in its documentation](@ref ref). The
-`reaction_network` DSL, in particular, is described in more detail [here](@ref dsl_description).
+and its functionality. Catalyst is described in more detail in its documentation. The
+`reaction_network` DSL in particular is described in more detail [here](@ref dsl_description).
 
 The `@reaction_network` statement is followed by a `begin ... end` block. Each line within the
 block corresponds to a single reaction. Each reaction consists of:
-- A rate (at which the reaction occur).
+- A rate (at which the reaction occurs).
 - Any number of substrates (which are consumed by the reaction).
 - Any number of products (which are produced by the reaction).
 
-
 Examples:
-Here we create a basic SIR model. It contains two reactions (infections and recovery):
+Here we create a basic SIR model. It contains two reactions (infection and recovery):
 ```julia
 sir_model = @reaction_network begin
     c1, S + I --> 2I
@@ -76,7 +75,7 @@ sir_model = @reaction_network begin
 end
 ```
 
-Next we create a self-activation loop. Here, a single component (`X`) activates its own production
+Next, we create a self-activation loop. Here, a single component (`X`) activates its own production
 with a Michaelis-Menten function:
 ```julia
 sa_loop = @reaction_network begin
@@ -84,12 +83,12 @@ sa_loop = @reaction_network begin
     d, X --> 0
 end
 ```
-This model also contain production and degradation reactions, where `0` denotes that there are 
-either no substrates or not products in a reaction.
+This model also contains production and degradation reactions, where `0` denotes that there are 
+either no substrates or no products in a reaction.
 
 Options:
-The `@reaction_network` also accepts various options. These are inputs to the model that are not
-reactions. To denote that a line contain an option (and not a reaction), the line starts with `@`
+The `@reaction_network` also accepts various options. These are inputs to the model creation that are
+not reactions. To denote that a line contains an option (and not a reaction), the line starts with `@`
 followed by the options name. E.g. an observable is declared using the `@observables` option.
 Here we create a polymerisation model (where the parameter `n` denotes the number of monomers in
 the polymer). We use the observable `Xtot` to track the total amount of `X` in the system. We also
@@ -102,12 +101,11 @@ end
 ```
 
 Notes:
-- `ReactionSystem`s creates through `@reaction_network` are considered complete (non-complete 
+- `ReactionSystem`s created through `@reaction_network` are considered complete (non-complete 
 systems can be created through the alternative `@network_component` macro).
-- `ReactionSystem`s creates through `@reaction_network`, by default, have a random name. Specific
+- `ReactionSystem`s created through `@reaction_network`, by default, have a random name. Specific
 names can be designated as a first argument (before `begin`, e.g. `rn = @reaction_network name begin ...`).
 - For more information, please again consider Catalyst's documentation.
-
 """
 macro reaction_network(name::Symbol, network_expr::Expr)
     make_rs_expr(QuoteNode(name), network_expr)
@@ -115,7 +113,7 @@ end
 
 # The case where the name contains an interpolation.
 macro reaction_network(name::Expr, network_expr::Expr)
-    make_rs_expr(esc(name.args[1]))
+    make_rs_expr(esc(name.args[1]), network_expr)
 end
 
 # The case where nothing, or only a name, is provided.
