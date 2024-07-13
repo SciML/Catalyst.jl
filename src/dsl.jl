@@ -138,8 +138,8 @@ end
 """
     @network_component
 
-As the @reaction_network macro (see it for more information), but the output system 
-*is not* complete.
+Equivalent to `@reaction_network` except the generated `ReactionSystem` is not marked as
+complete.
 """
 macro network_component(name::Symbol, network_expr::Expr)
     make_rs_expr(QuoteNode(name), network_expr; complete = false)
@@ -632,7 +632,7 @@ end
 
 # When compound species are declared using the "@compound begin ... end" option, get a list of the compound species, and also the expression that crates them.
 function read_compound_options(opts)
-    # If the compound option is used retrive a list of compound species (need to be added to the reaction system's species), and the option that creates them (used to declare them as compounds at the end).
+    # If the compound option is used retrieve a list of compound species (need to be added to the reaction system's species), and the option that creates them (used to declare them as compounds at the end).
     if haskey(opts, :compounds)
         compound_expr = opts[:compounds]
         # Find compound species names, and append the independent variable.
@@ -645,7 +645,7 @@ function read_compound_options(opts)
     return compound_expr, compound_species
 end
 
-# Read the events (continious or discrete) provided as options to the DSL. Returns an expression which evalutes to these.
+# Read the events (continuous or discrete) provided as options to the DSL. Returns an expression which evaluates to these.
 function read_events_option(options, event_type::Symbol)
     # Prepares the events, if required to, converts them to block form.
     if event_type ∉ [:continuous_events, :discrete_events]
@@ -655,7 +655,7 @@ function read_events_option(options, event_type::Symbol)
                    MacroTools.striplines(:(begin end))
     events_input = option_block_form(events_input)
 
-    # Goes throgh the events, checks for errors, and adds them to the output vector.
+    # Goes through the events, checks for errors, and adds them to the output vector.
     events_expr = :([])
     for arg in events_input.args
         # Formatting error checks.
@@ -666,7 +666,7 @@ function read_events_option(options, event_type::Symbol)
         end
         if (arg isa Expr) && (arg.args[2] isa Expr) && (arg.args[2].head != :vect) &&
            (event_type == :continuous_events)
-            error("The condition part of continious events (the left-hand side) must be a vector. This is not the case for: $(arg).")
+            error("The condition part of continuous events (the left-hand side) must be a vector. This is not the case for: $(arg).")
         end
         if (arg isa Expr) && (arg.args[3] isa Expr) && (arg.args[3].head != :vect)
             error("The affect part of all events (the righ-hand side) must be a vector. This is not the case for: $(arg).")
@@ -681,10 +681,10 @@ end
 
 # Reads the variables options. Outputs:
 # `vars_extracted`: A vector with extracted variables (lhs in pure differential equations only).
-# `dtexpr`: If a differentialequation is defined, the default derrivative (D ~ Differential(t)) must be defined.
+# `dtexpr`: If a differential equation is defined, the default derivative (D ~ Differential(t)) must be defined.
 # `equations`: a vector with the equations provided.
 function read_equations_options(options, variables_declared)
-    # Prepares the equations. First, extracts equations from provided option (converting to block form if requried).
+    # Prepares the equations. First, extracts equations from provided option (converting to block form if required).
     # Next, uses MTK's `parse_equations!` function to split input into a vector with the equations.
     eqs_input = haskey(options, :equations) ? options[:equations].args[3] : :(begin end)
     eqs_input = option_block_form(eqs_input)
@@ -738,12 +738,12 @@ function create_differential_expr(options, add_default_diff, used_syms, tiv)
         (dexpr.args[1] isa Symbol) ||
             error("Differential left-hand side must be a single symbol, instead \"$(dexpr.args[1])\" was given.")
         in(dexpr.args[1], used_syms) &&
-            error("Differential name ($(dexpr.args[1])) is also a species, variable, or parameter. This is ambigious and not allowed.")
+            error("Differential name ($(dexpr.args[1])) is also a species, variable, or parameter. This is ambiguous and not allowed.")
         in(dexpr.args[1], forbidden_symbols_error) &&
             error("A forbidden symbol ($(dexpr.args[1])) was used as a differential name.")
     end
 
-    # If the default differential D has been used, but not pre-declared using the @differenitals
+    # If the default differential D has been used, but not pre-declared using the @differentials
     # options, add this declaration to the list of declared differentials.
     if add_default_diff && !any(diff_dec.args[1] == :D for diff_dec in diffexpr.args)
         push!(diffexpr.args, :(D = Differential($(tiv))))
@@ -767,7 +767,7 @@ end
 function read_observed_options(options, species_n_vars_declared, ivs_sorted)
     if haskey(options, :observables)
         # Gets list of observable equations and prepares variable declaration expression.
-        # (`options[:observables]` inlucdes `@observables`, `.args[3]` removes this part)
+        # (`options[:observables]` includes `@observables`, `.args[3]` removes this part)
         observed_eqs = make_observed_eqs(options[:observables].args[3])
         observed_expr = Expr(:block, :(@variables))
         obs_syms = :([])
@@ -785,11 +785,11 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
             end
             if (obs_name in species_n_vars_declared) && is_escaped_expr(obs_eq.args[2])
-                error("An interpoalted observable have been used, which has also been explicitly delcared within the system using eitehr @species or @variables. This is not permited.")
+                error("An interpolated observable have been used, which has also been explicitly declared within the system using either @species or @variables. This is not permitted.")
             end
             if ((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2])) &&
                !isnothing(metadata)
-                error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the obervable was also declared separately (using either @species or @variables). When this is done, metadata should instead be provided within the original @species or @variable declaration.")
+                error("Metadata was provided to observable $obs_name in the `@observables` macro. However, the observable was also declared separately (using either @species or @variables). When this is done, metadata should instead be provided within the original @species or @variable declaration.")
             end
 
             # This bits adds the observables to the @variables vector which is given as output.
@@ -820,7 +820,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
 
             # Adds the observable to the list of observable names.
             # This is required for filtering away so these are not added to the ReactionSystem's species list.
-            # Again, avoid this check if we have interpoalted the variable.
+            # Again, avoid this check if we have interpolated the variable.
             is_escaped_expr(obs_eq.args[2]) || push!(obs_syms.args, obs_name)
         end
 

@@ -109,7 +109,7 @@ function assemble_diffusion(rs, sts, ispcs; combinatoric_ratelaws = true,
     num_bcsts = count(isbc, get_unknowns(rs))
 
     # we make a matrix sized by the number of reactions
-    eqs = Matrix{Any}(undef, length(sts) + num_bcsts, length(get_rxs(rs)))
+    eqs = Matrix{Num}(undef, length(sts) + num_bcsts, length(get_rxs(rs)))
     eqs .= 0
     species_to_idx = Dict((x => i for (i, x) in enumerate(ispcs)))
     nps = get_networkproperties(rs)
@@ -433,7 +433,7 @@ end
 
 ### Utility ###
 
-# Throws an error when attempting to convert a spatial system to an unssuported type.
+# Throws an error when attempting to convert a spatial system to an unsupported type.
 function spatial_convert_err(rs::ReactionSystem, systype)
     isspatial(rs) && error("Conversion to $systype is not supported for spatial networks.")
 end
@@ -449,6 +449,22 @@ end
 diff_2_zero(expr) = (Symbolics.is_derivative(expr) ? 0 : expr)
 
 COMPLETENESS_ERROR = "A ReactionSystem must be complete before it can be converted to other system types. A ReactionSystem can be marked as complete using the `complete` function."
+
+# Used to, when required, display a warning about conservation law removal and remake.
+function check_cons_warning(remove_conserved, remove_conserved_warn)
+    (remove_conserved && remove_conserved_warn) || return
+    @warn "You are creating a system or problem while eliminating conserved quantities. Please note,
+        due to limitations / design choices in ModelingToolkit if you use the created system to 
+        create a problem (e.g. an `ODEProblem`), or are directly creating a problem, you *should not*
+        modify that problem's initial conditions for species (e.g. using `remake`). Changing initial 
+        conditions must be done by creating a new Problem from your reaction system or the 
+        ModelingToolkit system you converted it into with the new initial condition map. 
+        Modification of parameter values is still possible, *except* for the modification of any
+        conservation law constants ($CONSERVED_CONSTANT_SYMBOL), which is not possible. You might 
+        get this warning when creating a problem directly.
+
+        You can remove this warning by setting `remove_conserved_warn = false`."
+end
 
 ### System Conversions ###
 
@@ -467,15 +483,20 @@ Keyword args and default values:
 - `remove_conserved=false`, if set to `true` will calculate conservation laws of the
   underlying set of reactions (ignoring constraint equations), and then apply them to reduce
   the number of equations.
+- `remove_conserved_warn = true`: If `true`, if also `remove_conserved = true`, there will be
+  a warning regarding limitations of modifying problems generated from the created system.
 """
 function Base.convert(::Type{<:ODESystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        include_zero_odes = true, remove_conserved = false, checks = false,
-        default_u0 = Dict(), default_p = Dict(),
+        include_zero_odes = true, remove_conserved = false, remove_conserved_warn = true,
+        checks = false, default_u0 = Dict(), default_p = Dict(),
         defaults = _merge(Dict(default_u0), Dict(default_p)),
         kwargs...)
+    # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, ODESystem)
+    check_cons_warning(remove_conserved, remove_conserved_warn)
+
     fullrs = Catalyst.flatten(rs)
     remove_conserved && conservationlaws(fullrs)
     ists, ispcs = get_indep_sts(fullrs, remove_conserved)
@@ -509,16 +530,19 @@ Keyword args and default values:
 - `remove_conserved=false`, if set to `true` will calculate conservation laws of the
   underlying set of reactions (ignoring constraint equations), and then apply them to reduce
   the number of equations.
+- `remove_conserved_warn = true`: If `true`, if also `remove_conserved = true`, there will be
+  a warning regarding limitations of modifying problems generated from the created system.
 """
 function Base.convert(::Type{<:NonlinearSystem}, rs::ReactionSystem; name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, remove_conserved = false, checks = false,
-        default_u0 = Dict(), default_p = Dict(),
+        remove_conserved_warn = true, default_u0 = Dict(), default_p = Dict(),
         defaults = _merge(Dict(default_u0), Dict(default_p)),
         all_differentials_permitted = false, kwargs...)
     # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, NonlinearSystem)
+    check_cons_warning(remove_conserved, remove_conserved_warn)
     if !isautonomous(rs)
         error("Attempting to convert a non-autonomous `ReactionSystem` (e.g. where some rate depend on $(get_iv(rs))) to a `NonlinearSystem`. This is not possible. if you are intending to compute system steady states, consider creating and solving a `SteadyStateProblem.")
     end
@@ -546,7 +570,7 @@ end
 
 # Ideally, when `ReactionSystem`s are converted to `NonlinearSystem`s, any coupled ODEs should be 
 # on the form D(X) ~ ..., where lhs is the time derivative w.r.t. a single variable, and the rhs
-# does not contain any differentials. If this is not teh case, we throw a warning to let the user
+# does not contain any differentials. If this is not the case, we throw a warning to let the user
 # know that they should be careful.
 function nonlinear_convert_differentials_check(rs::ReactionSystem)
     for eq in filter(is_diff_equation, equations(rs))
@@ -554,7 +578,7 @@ function nonlinear_convert_differentials_check(rs::ReactionSystem)
         # If there is a differential on the right hand side.
         # If the lhs is not on the form D(...).
         # If the lhs upper level function is not a differential w.r.t. time.
-        # If the contenct of the differential is not a variable (and nothing more).
+        # If the content of the differential is not a variable (and nothing more).
         # If either of this is a case, throws the warning.
         if hasnode(Symbolics.is_derivative, eq.rhs) ||
            !Symbolics.is_derivative(eq.lhs) ||
@@ -566,8 +590,8 @@ function nonlinear_convert_differentials_check(rs::ReactionSystem)
                     (2) The right-hand side does not contain any differentials.
                 This is generally not permitted.
 
-                If you still would like to perform this conversions, please use the `all_differentials_permitted = true` option. In this case, all differential will be set to `0`. 
-                However, it is recommended to proceed with caution to ensure that the produced nonlinear equation makes sense for you intended application."
+                If you still would like to perform this conversion, please use the `all_differentials_permitted = true` option. In this case, all differentials will be set to `0`. 
+                However, it is recommended to proceed with caution to ensure that the produced nonlinear equation makes sense for your intended application."
             )
         end
     end
@@ -589,17 +613,19 @@ Notes:
 - `remove_conserved=false`, if set to `true` will calculate conservation laws of the
   underlying set of reactions (ignoring constraint equations), and then apply them to reduce
   the number of equations.
-- Does not currently support `ReactionSystem`s that include coupled algebraic or
-  differential equations.
+- `remove_conserved_warn = true`: If `true`, if also `remove_conserved = true`, there will be
+  a warning regarding limitations of modifying problems generated from the created system.
 """
 function Base.convert(::Type{<:SDESystem}, rs::ReactionSystem;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         include_zero_odes = true, checks = false, remove_conserved = false,
-        default_u0 = Dict(), default_p = Dict(),
+        remove_conserved_warn = true, default_u0 = Dict(), default_p = Dict(),
         defaults = _merge(Dict(default_u0), Dict(default_p)),
         kwargs...)
+    # Error checks.
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, SDESystem)
+    check_cons_warning(remove_conserved, remove_conserved_warn)
 
     flatrs = Catalyst.flatten(rs)
 
@@ -651,7 +677,6 @@ function Base.convert(::Type{<:JumpSystem}, rs::ReactionSystem; name = nameof(rs
         kwargs...)
     iscomplete(rs) || error(COMPLETENESS_ERROR)
     spatial_convert_err(rs::ReactionSystem, JumpSystem)
-
     (remove_conserved !== nothing) &&
         throw(ArgumentError("Catalyst does not support removing conserved species when converting to JumpSystems."))
 
@@ -684,12 +709,12 @@ function DiffEqBase.ODEProblem(rs::ReactionSystem, u0, tspan,
         p = DiffEqBase.NullParameters(), args...;
         check_length = false, name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        include_zero_odes = true, remove_conserved = false,
+        include_zero_odes = true, remove_conserved = false, remove_conserved_warn = true,
         checks = false, structural_simplify = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
-        remove_conserved)
+        remove_conserved, remove_conserved_warn)
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify
@@ -708,12 +733,12 @@ function DiffEqBase.NonlinearProblem(rs::ReactionSystem, u0,
         p = DiffEqBase.NullParameters(), args...;
         name = nameof(rs), include_zero_odes = true,
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        remove_conserved = false, checks = false,
+        remove_conserved = false, remove_conserved_warn = true, checks = false,
         check_length = false, all_differentials_permitted = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     nlsys = convert(NonlinearSystem, rs; name, combinatoric_ratelaws, include_zero_odes,
-        checks, all_differentials_permitted, remove_conserved)
+        checks, all_differentials_permitted, remove_conserved, remove_conserved_warn)
     nlsys = complete(nlsys)
     return NonlinearProblem(nlsys, u0map, pmap, args...; check_length,
         kwargs...)
@@ -723,12 +748,12 @@ end
 function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         p = DiffEqBase.NullParameters(), args...;
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        include_zero_odes = true, checks = false, check_length = false,
-        remove_conserved = false, structural_simplify = false, kwargs...)
+        include_zero_odes = true, checks = false, check_length = false, remove_conserved = false,
+        remove_conserved_warn = true, structural_simplify = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     sde_sys = convert(SDESystem, rs; name, combinatoric_ratelaws,
-        include_zero_odes, checks, remove_conserved)
+        include_zero_odes, checks, remove_conserved, remove_conserved_warn)
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify
@@ -772,12 +797,12 @@ function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,
         p = DiffEqBase.NullParameters(), args...;
         check_length = false, name = nameof(rs),
         combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
-        remove_conserved = false, include_zero_odes = true,
+        remove_conserved = false, remove_conserved_warn = true, include_zero_odes = true,
         checks = false, structural_simplify = false, kwargs...)
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     osys = convert(ODESystem, rs; name, combinatoric_ratelaws, include_zero_odes, checks,
-        remove_conserved)
+        remove_conserved, remove_conserved_warn)
 
     # Handles potential differential algebraic equations (which requires `structural_simplify`).
     if structural_simplify
@@ -798,7 +823,7 @@ function _symbol_to_var(sys, sym)
     if hasproperty(sys, sym)
         var = getproperty(sys, sym, namespace = false)
     else
-        strs = split(String(sym), "₊")   # need to check if this should be split of not!!!
+        strs = split(String(sym), ModelingToolkit.NAMESPACE_SEPARATOR)   # need to check if this should be split of not!!!
         if length(strs) > 1
             var = getproperty(sys, Symbol(strs[1]), namespace = false)
             for str in view(strs, 2:length(strs))

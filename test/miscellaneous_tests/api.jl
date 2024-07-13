@@ -314,7 +314,7 @@ end
 
 # Test defaults.
 # Uses mutating stuff (`setdefaults!`) and order dependent input (`species(rn) .=> u0`).
-# If you want to test this here @Sam I can write a new one that simualtes using defaults.
+# If you want to test this here @Sam I can write a new one that simulates using defaults.
 # If so, tell me if you have anything specific you want to check though, or I will just implement
 # it as I would.
 let

@@ -463,3 +463,66 @@ let
     @test !ModelingToolkit.iscomplete(rs_incomplete_loaded)
     rm("serialised_rs_incomplete.jl")
 end
+
+# Tests network without species, reactions, and parameters.
+let
+    # Creates model.
+    rs = @reaction_network begin
+        @equations D(V) ~ -V
+    end
+    
+    # Checks its serialisation.
+    save_reactionsystem("test_serialisation.jl", rs; safety_check = false)
+    isequal(rs, include("../test_serialisation.jl"))
+    rm("test_serialisation.jl")
+end
+
+# Tests various corner cases (multiple observables, species observables, non-default combinatoric
+# rate law, and rate law disabling)
+let
+    # Creates model.
+    rs = @reaction_network begin
+        @combinatoric_ratelaws false
+        @species Xcount(t)
+        @observables begin
+            Xtot ~ X + 2X2
+            Xcount ~ X + X2
+        end
+        p, 0 --> X
+        d*X2, X => 0
+        (k1,k2), 2X <--> X2
+    end
+    
+    # Checks its serialisation.
+    save_reactionsystem("test_serialisation.jl", rs; safety_check = false)
+    isequal(rs, include("../test_serialisation.jl"))
+    rm("test_serialisation.jl")
+end
+
+# Tests saving of empty network.
+let
+    rs = @reaction_network
+    save_reactionsystem("test_serialisation.jl", rs; safety_check = false)
+    isequal(rs, include("../test_serialisation.jl"))
+    rm("test_serialisation.jl")
+end
+
+# Test that serialisation of unknown type (here a function) yields an error.
+let
+    rs = @reaction_network begin
+        d, X --> 0, [misc = x -> 2x]
+    end
+    @test_throws Exception save_reactionsystem("test_serialisation.jl", rs)
+end
+
+# Test connection field.
+# Not really used for `ReactionSystem`s right now, so tests the direct function and its warning.
+let
+    rs = @reaction_network begin
+        d, X --> 0
+    end
+    @test (@test_logs (:warn, ) match_mode=:any Catalyst.get_connection_type_string(rs)) == ""
+    @test Catalyst.get_connection_type_annotation(rs) == "Connection types:: (OBS: Currently not supported, and hence empty)"
+end
+
+

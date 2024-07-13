@@ -262,6 +262,70 @@ let
     end
 end
 
+### Nich Model Declarations ###
+
+# Checks model with vector species and parameters.
+# Checks that it works for programmatic/dsl-based modelling.
+# Checks that all forms of model input (parameter/initial condition and vector/non-vector) are
+# handled properly.
+let 
+    # Declares programmatic model.
+    @parameters p[1:2] k d1 d2
+    @species (X(t))[1:2] Y1(t) Y2(t)
+    rxs = [
+        Reaction(p[1], [], [X[1]]),
+        Reaction(p[2], [], [X[2]]),
+        Reaction(k, [X[1]], [Y1]),
+        Reaction(k, [X[2]], [Y2]),
+        Reaction(d1, [Y1], []),
+        Reaction(d2, [Y2], []),
+    ]
+    rs_prog = complete(ReactionSystem(rxs, t; name = :rs))
+
+    # Declares DSL-based model.
+    rs_dsl = @reaction_network rs begin
+        @parameters p[1:2] k d1 d2 
+        @species (X(t))[1:2] Y1(t) Y2(t)
+        (p[1],p[2]), 0 --> (X[1],X[2])
+        k, (X[1],X[2]) --> (Y1,Y2)
+        (d1,d2), (Y1,Y2) --> 0
+    end
+
+    # Checks equivalence.
+    rs_dsl == rs_prog
+
+    # Creates all possible initial conditions and parameter values.
+    u0_alts = [
+        [X => [2.0, 5.0], Y1 => 0.2, Y2 => 0.5],
+        [X[1] => 2.0, X[2] => 5.0, Y1 => 0.2, Y2 => 0.5],
+        [rs_dsl.X => [2.0, 5.0], rs_dsl.Y1 => 0.2, rs_dsl.Y2 => 0.5],
+        [rs_dsl.X[1] => 2.0, X[2] => 5.0, rs_dsl.Y1 => 0.2, rs_dsl.Y2 => 0.5],
+        [:X => [2.0, 5.0], :Y1 => 0.2, :Y2 => 0.5]
+    ]
+    ps_alts = [
+        [p => [1.0, 10.0], d1 => 5.0, d2 => 4.0, k => 2.0],
+        [p[1] => 1.0, p[2] => 10.0, d1 => 5.0, d2 => 4.0, k => 2.0],
+        [rs_dsl.p => [1.0, 10.0], rs_dsl.d1 => 5.0, rs_dsl.d2 => 4.0, rs_dsl.k => 2.0],
+        [rs_dsl.p[1] => 1.0, p[2] => 10.0, rs_dsl.d1 => 5.0, rs_dsl.d2 => 4.0, rs_dsl.k => 2.0],
+        [:p => [1.0, 10.0], :d1 => 5.0, :d2 => 4.0, :k => 2.0]
+    ]
+
+    # Loops through all inputs and check that the correct steady state is reached
+    # Target steady state: (X1, X2, Y1, Y2) = (p1/k, p2/k, p1/d1, p2/d2).
+    # Technically only one model needs to be check. However, "equivalent" models in MTK can still
+    # have slight differences, so checking for both here to be certain.
+    for rs in [rs_prog, rs_dsl]
+        oprob = ODEProblem(rs, u0_alts[1], (0.0, 10000.), ps_alts[1])
+        @test_broken false # Cannot currently `remake` this problem/
+        # for rs in [rs_prog, rs_dsl], u0 in u0_alts, p in ps_alts
+        #     oprob_remade = remake(oprob; u0, p)
+        #     sol = solve(oprob_remade, Vern7(); abstol = 1e-8, reltol = 1e-8)
+        #     @test sol[end] ≈ [0.5, 5.0, 0.2, 2.5]
+        # end
+    end
+end
+
+### Other Tests ###
 
 ### Test Show ###
 
@@ -746,9 +810,48 @@ let
 end
 
 # Checks that the `reactionsystem_uptodate` function work. If it does not, the ReactionSystem
-# strcuture's fields have been updated, without updating the `reactionsystem_fields` costant. If so,
+# structure's fields have been updated, without updating the `reactionsystem_fields` constant. If so,
 # there are several places in the code where the `reactionsystem_uptodate` function is called, here
 # the code might need adaptation to take the updated reaction system into account.
 let
     @test_nowarn Catalyst.reactionsystem_uptodate_check()
+end
+
+# Test that functions using the incidence matrix properly cache it
+let
+    rn = @reaction_network begin
+        k1, A --> B
+        k2, B --> C
+        k3, C --> A
+    end
+
+    nps = Catalyst.get_networkproperties(rn)
+    @test isempty(nps.incidencemat) == true
+
+    img = incidencematgraph(rn)
+    @test size(nps.incidencemat) == (3,3)
+
+    Catalyst.reset!(nps)
+    lcs = linkageclasses(rn)
+    @test size(nps.incidencemat) == (3,3)
+
+    Catalyst.reset!(nps)
+    sns = subnetworks(rn)
+    @test size(nps.incidencemat) == (3,3)
+
+    Catalyst.reset!(nps)
+    δ = deficiency(rn)
+    @test size(nps.incidencemat) == (3,3)
+    
+    Catalyst.reset!(nps)
+    δ_l = linkagedeficiencies(rn)
+    @test size(nps.incidencemat) == (3,3)
+
+    Catalyst.reset!(nps)
+    rev = isreversible(rn)
+    @test size(nps.incidencemat) == (3,3)
+
+    Catalyst.reset!(nps)
+    weakrev = isweaklyreversible(rn, sns)
+    @test size(nps.incidencemat) == (3,3)
 end
