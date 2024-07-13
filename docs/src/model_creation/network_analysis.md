@@ -530,7 +530,7 @@ we note that it essentially generates the same equation twice (i.e. $\frac{dX₁
 \frac{dX₁(t)}{dt} = - k₁X₁(t) + k₂(-X₁(t) + Γ) \\
 X₂(t) = -X₁(t) + Γ
 ```
-Using Catalyst, it is possible to detect any such conserved quantities and eliminate them from the system. Here, when we convert our [`ReactionSystem` to an `ODESystem`](@ref ref), we provide the `remove_conserved = true` argument to instruct Catalyst to perform this elimination:
+Using Catalyst, it is possible to detect any such conserved quantities and eliminate them from the system. Here, when we convert our `ReactionSystem` to an `ODESystem`, we provide the `remove_conserved = true` argument to instruct Catalyst to perform this elimination:
 ```@example network_analysis_conservation_laws
 osys = convert(ODESystem, rs; remove_conserved = true)
 ```
@@ -538,7 +538,7 @@ We note that the output system only contains a single (differential) equation. T
 ```@example network_analysis_conservation_laws
 observed(osys)
 ```
-Using the [`unknowns` function](@ref ref) we can confirm that the ODE only have a single unknown variable:
+Using the `unknowns` function we can confirm that the ODE only have a single unknown variable:
 ```@example network_analysis_conservation_laws
 unknowns(osys)
 ```
@@ -565,9 +565,9 @@ plot(sol)
     Any species eliminated using `remove_conserved = true` will not be plotted by default. However, it can be added to the plot using [the `idxs` plotting option](@ref simulation_plotting_options). E.g. here we would use `plot(sol; idxs = [:X₁, :X₂])` to plot both species.
 
 !!! danger
-    Currently, there is a bug where the values associated with conservation laws are not updated properly in response to [`remake`](@ref ref) (or [other problem-updating functions, such as `getu`](@ref ref)). Hence, problems created using the `remove_conserved = true` *should not* be modified. 
+    Currently, there is a bug where the values associated with conservation laws are not updated properly in response to [`remake`](@ref simulation_structure_interfacing_problems_remake) (or [other problem-updating functions, such as `getu`](@ref simulation_structure_interfacing_functions)). Hence, problems created using the `remove_conserved = true` *should not* be modified. 
 
-While `X₂` is an observable (and not unknown) of the ODE, we can [access it](@ref ref) just like if `remove_conserved = true` has not been used:
+While `X₂` is an observable (and not unknown) of the ODE, we can [access it](@ref simulation_structure_interfacing_problems) just like if `remove_conserved = true` has not been used:
 ```@example network_analysis_conservation_laws
 sol[:X₂]
 ```
