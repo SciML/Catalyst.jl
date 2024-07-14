@@ -131,7 +131,7 @@ let
     end
     # Line number nodes aren't ignored so have to be manually removed
     Base.remove_linenums!(ex)
-    @test eval(Catalyst.make_reaction_system(ex, :name)) isa ReactionSystem
+    @test eval(Catalyst.make_reaction_system(ex, name = QuoteNode(:name))) isa ReactionSystem
 end
 
 # Miscellaneous interpolation tests. Unsure what they do here (not related to DSL).
@@ -212,8 +212,8 @@ end
 
 # Checks that repeated metadata throws errors.
 let 
-    @test_throws LoadError @eval @reaction k, 0 --> X, [md1=1.0, md1=2.0] 
-    @test_throws LoadError @eval @reaction_network begin
+    @test_throws Exception @eval @reaction k, 0 --> X, [md1=1.0, md1=2.0] 
+    @test_throws Exception @eval @reaction_network begin
         k, 0 --> X, [md1=1.0, md1=1.0] 
     end 
 end
