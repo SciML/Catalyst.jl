@@ -1,4 +1,4 @@
-# [Interacting with and Plotting Spatial Lattice Simulations](@id lattice_simulation_structure_interaction)
+# [Interfacing lattice problems, integrators, and solutions](@id lattice_simulation_structure_interaction)
 We have [previously described](@ref simulation_structure_interfacing) how to retrieve species and parameter values stored in non-spatial problems, integrators, and solutions. This section describes similar workflows for simulations based on `LatticeReactionSystem`s.
 
 Generally, while for non-spatial systems these operations can typically be done by indexing a structure directly, e.g. through
