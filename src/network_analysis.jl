@@ -4,8 +4,8 @@
 function filter_constspecs(specs, stoich::AbstractVector{V}, smap) where {V <: Integer}
     isempty(specs) && (return Vector{Int}(), Vector{V}())
 
-    # If any species are constant, go through these manually and add their indices and 
-    # stoichiometries to `ids` and `filtered_stoich`.
+    # if any species are constant, go through these manually and add their indices and 
+    # stoichiometries to `ids` and `filtered_stoich`
     if any(isconstant, specs)
         ids = Vector{Int}()
         filtered_stoich = Vector{V}()
@@ -46,7 +46,7 @@ function reactioncomplexmap(rn::ReactionSystem)
     !isempty(nps.complextorxsmap) && return nps.complextorxsmap
     complextorxsmap = nps.complextorxsmap
 
-    # Retrieves system reactions and a map from species to their index in the species vector.
+    # retrieves system reactions and a map from species to their index in the species vector
     rxs = reactions(rn)
     smap = speciesmap(rn)
     numreactions(rn) > 0 ||
@@ -54,7 +54,7 @@ function reactioncomplexmap(rn::ReactionSystem)
 
     for (i, rx) in enumerate(rxs)
         # Create the `ReactionComplex` corresponding to the reaction's substrates. Adds it 
-        # to the reaction complex dictionary (recording it as the substrates of the i'th reaction). 
+        # to the reaction complex dictionary (recording it as the substrates of the i'th reaction).
         subids, substoich = filter_constspecs(rx.substrates, rx.substoich, smap)
         subrc = sort!(ReactionComplex(subids, substoich))
         if haskey(complextorxsmap, subrc)
@@ -64,7 +64,7 @@ function reactioncomplexmap(rn::ReactionSystem)
         end
 
         # Create the `ReactionComplex` corresponding to the reaction's products. Adds it 
-        # to the reaction complex dictionary (recording it as the products of the i'th reaction). 
+        # to the reaction complex dictionary (recording it as the products of the i'th reaction).
         prodids, prodstoich = filter_constspecs(rx.products, rx.prodstoich, smap)
         prodrc = sort!(ReactionComplex(prodids, prodstoich))
         if haskey(complextorxsmap, prodrc)
@@ -103,7 +103,7 @@ function reactioncomplexes(rn::ReactionSystem; sparse = false)
         error("reactioncomplexes does not currently support subsystems.")
     nps = get_networkproperties(rn)
 
-    # If the complexes have not been cached, or the cached complexes uses a different sparsity.
+    # if the complexes have not been cached, or the cached complexes uses a different sparsity
     if isempty(nps.complexes) || (sparse != issparse(nps.complexes))
         # Computes the reaction complex dictionary. Use it to create a sparse/dense matrix.
         complextorxsmap = reactioncomplexmap(rn)
@@ -116,11 +116,11 @@ function reactioncomplexes(rn::ReactionSystem; sparse = false)
     nps.complexes, nps.incidencemat
 end
 
-# Creates a *sparse* reaction complex matrix.
+# creates a *sparse* reaction complex matrix
 function reactioncomplexes(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem,
                            complextorxsmap)
-    # Computes the I, J, and V vectors used for the sparse matrix (read about sparse matrix 
-    # representation for more information).
+    # computes the I, J, and V vectors used for the sparse matrix (read about sparse matrix 
+    # representation for more information)
     complexes = collect(keys(complextorxsmap))
     Is = Int[]
     Js = Int[]
@@ -136,7 +136,7 @@ function reactioncomplexes(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem
     complexes, B
 end
 
-# Creates a *dense* reaction complex matrix.
+# creates a *dense* reaction complex matrix
 function reactioncomplexes(::Type{Matrix{Int}}, rn::ReactionSystem, complextorxsmap)
     complexes = collect(keys(complextorxsmap))
     B = zeros(Int, length(complexes), numreactions(rn))
@@ -174,8 +174,8 @@ function complexstoichmat(rn::ReactionSystem; sparse = false)
         error("complexstoichmat does not currently support subsystems.")
     nps = get_networkproperties(rn)
 
-    # If the complexes stoichiometry matrix has not been cached, or the cached one uses a
-    # different sparsity, computes (and caches) it.
+    # if the complexes stoichiometry matrix has not been cached, or the cached one uses a
+    # different sparsity, computes (and caches) it
     if isempty(nps.complexstoichmat) || (sparse != issparse(nps.complexstoichmat))
         nps.complexstoichmat = if sparse
             complexstoichmat(SparseMatrixCSC{Int, Int}, rn, keys(reactioncomplexmap(rn)))
@@ -186,10 +186,10 @@ function complexstoichmat(rn::ReactionSystem; sparse = false)
     nps.complexstoichmat
 end
 
-# Creates a *sparse* reaction complex stoichiometry matrix.
+# creates a *sparse* reaction complex stoichiometry matrix
 function complexstoichmat(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem, rcs)
-    # Computes the I, J, and V vectors used for the sparse matrix (read about sparse matrix 
-    # representation for more information).
+    # computes the I, J, and V vectors used for the sparse matrix (read about sparse matrix 
+    # representation for more information)
     Is = Int[]
     Js = Int[]
     Vs = Int[]
@@ -203,7 +203,7 @@ function complexstoichmat(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem,
     Z = sparse(Is, Js, Vs, numspecies(rn), length(rcs))
 end
 
-# Creates a *dense* reaction complex stoichiometry matrix.
+# creates a *dense* reaction complex stoichiometry matrix
 function complexstoichmat(::Type{Matrix{Int}}, rn::ReactionSystem, rcs)
     Z = zeros(Int, numspecies(rn), length(rcs))
     for (i, rc) in enumerate(rcs)
@@ -236,8 +236,8 @@ function complexoutgoingmat(rn::ReactionSystem; sparse = false)
         error("complexoutgoingmat does not currently support subsystems.")
     nps = get_networkproperties(rn)
 
-    # If the outgoing complexes matrix has not been cached, or the cached one uses a
-    # different sparsity, computes (and caches) it.
+    # if the outgoing complexes matrix has not been cached, or the cached one uses a
+    # different sparsity, computes (and caches) it
     if isempty(nps.complexoutgoingmat) || (sparse != issparse(nps.complexoutgoingmat))
         B = reactioncomplexes(rn, sparse = sparse)[2]
         nps.complexoutgoingmat = if sparse
@@ -249,10 +249,10 @@ function complexoutgoingmat(rn::ReactionSystem; sparse = false)
     nps.complexoutgoingmat
 end
 
-# Creates a *sparse* outgoing reaction complex stoichiometry matrix.
+# creates a *sparse* outgoing reaction complex stoichiometry matrix
 function complexoutgoingmat(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem, B)
-    # Computes the I, J, and V vectors used for the sparse matrix (read about sparse matrix 
-    # representation for more information).
+    # computes the I, J, and V vectors used for the sparse matrix (read about sparse matrix 
+    # representation for more information)
     n = size(B, 2)
     rows = rowvals(B)
     vals = nonzeros(B)
@@ -260,7 +260,7 @@ function complexoutgoingmat(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSyste
     Js = Int[]
     Vs = Int[]
 
-    # Allocates space to the vectors (so that it is not done incrementally in the loop). 
+    # allocates space to the vectors (so that it is not done incrementally in the loop)
     sizehint!(Is, div(length(vals), 2))
     sizehint!(Js, div(length(vals), 2))
     sizehint!(Vs, div(length(vals), 2))
@@ -277,7 +277,7 @@ function complexoutgoingmat(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSyste
     sparse(Is, Js, Vs, size(B, 1), size(B, 2))
 end
 
-# Creates a *dense* outgoing reaction complex stoichiometry matrix.
+# creates a *dense* outgoing reaction complex stoichiometry matrix
 function complexoutgoingmat(::Type{Matrix{Int}}, rn::ReactionSystem, B)
     Δ = copy(B)
     for (I, b) in pairs(Δ)
@@ -310,7 +310,7 @@ function incidencematgraph(rn::ReactionSystem)
     nps.incidencegraph
 end
 
-# Computes the incidence graph from an *dense* incidence matrix.
+# computes the incidence graph from an *dense* incidence matrix
 function incidencematgraph(incidencemat::Matrix{Int})
     @assert all(∈([-1, 0, 1]), incidencemat)
     n = size(incidencemat, 1)  # no. of nodes/complexes
@@ -331,7 +331,7 @@ function incidencematgraph(incidencemat::Matrix{Int})
     return graph
 end
 
-# Computes the incidence graph from an *sparse* incidence matrix.
+# computes the incidence graph from an *sparse* incidence matrix
 function incidencematgraph(incidencemat::SparseMatrixCSC{Int, Int})
     @assert all(∈([-1, 0, 1]), incidencemat)
     m, n = size(incidencemat)
@@ -420,8 +420,9 @@ function terminallinkageclasses(rn::ReactionSystem)
     nps.terminallinkageclasses
 end
 
-# Helper function for terminallinkageclasses. Given a linkage class and a reaction network, say whether the linkage class is terminal, 
-# i.e. all outgoing reactions from complexes in the linkage class produce a complex also in the linkage class
+# Helper function for terminallinkageclasses. Given a linkage class and a reaction network, say 
+# whether the linkage class is terminal, i.e. all outgoing reactions from complexes in the linkage 
+# class produce a complex also in the linkage class
 function isterminal(lc::Vector, rn::ReactionSystem)
     imat = incidencemat(rn)
 
@@ -429,7 +430,8 @@ function isterminal(lc::Vector, rn::ReactionSystem)
         # Find the index of the reactant complex for a given reaction
         s = findfirst(==(-1), @view imat[:, r])
 
-        # If the reactant complex is in the linkage class, check whether the product complex is also in the linkage class. If any of them are not, return false. 
+        # If the reactant complex is in the linkage class, check whether the product complex is
+        # also in the linkage class. If any of them are not, return false. 
         if s in Set(lc)
             p = findfirst(==(1), @view imat[:, r])
             p in Set(lc) ? continue : return false
@@ -697,7 +699,7 @@ conservation laws, each represented as a row in the output.
 function conservationlaws(nsm::T; col_order = nothing) where {T <: AbstractMatrix}
 
     # compute the left nullspace over the integers
-    # The `nullspace` function updates the `col_order`.
+    # the `nullspace` function updates the `col_order`
     N = MT.nullspace(nsm'; col_order)
 
     # if all coefficients for a conservation law are negative, make positive
@@ -713,7 +715,7 @@ function conservationlaws(nsm::T; col_order = nothing) where {T <: AbstractMatri
     T(N')
 end
 
-# Used in the subsequent function.
+# used in the subsequent function
 function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_order)
     # Retrieves nullity (the number of conservation laws). `r` is the rank of the netstoichmat.
     nullity = size(N, 1)
@@ -728,7 +730,7 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     depidxs = col_order[(r + 1):end]
     depspecs = sps[depidxs]
 
-    # Declares the conservation law parameters.
+    # declares the conservation law parameters
     constants = MT.unwrap.(MT.scalarize(only(
         @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] [conserved = true])))
 
@@ -738,20 +740,20 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     conservedeqs = Equation[]
     constantdefs = Equation[]
 
-    # For each conserved quantity.
+    # for each conserved quantity
     for (i, depidx) in enumerate(depidxs)
-        # Finds the coefficient (in the conservation law) of the species that is eliminated
-        # by this conservation law.
+        # finds the coefficient (in the conservation law) of the species that is eliminated
+        # by this conservation law
         scaleby = (N[i, depidx] != 1) ? N[i, depidx] : one(eltype(N))
         (scaleby != 0) || error("Error, found a zero in the conservation law matrix where "
             * "one was not expected.")
 
-        # Creates, for this conservation law, the sum of all independent species (weighted by
-        # the ratio between the coefficient of the species and the species which is elimianted.
+        # creates, for this conservation law, the sum of all independent species (weighted by
+        # the ratio between the coefficient of the species and the species which is elimianted
         coefs = @view N[i, indepidxs]
         terms = sum(coef / scaleby * sp for (coef, sp) in zip(coefs, indepspecs))
 
-        # Computes the two equations corresponding to this conserved quantity.
+        # computes the two equations corresponding to this conserved quantity
         eq = depspecs[i] ~ constants[i] - terms
         push!(conservedeqs, eq)
         eq = constants[i] ~ depspecs[i] + terms
@@ -784,7 +786,7 @@ function conservationlaws(rs::ReactionSystem)
     nps = get_networkproperties(rs)
     !isempty(nps.conservationmat) && (return nps.conservationmat)
 
-    # If the conservation law matrix is not computed, do so and caches the result.
+    # if the conservation law matrix is not computed, do so and caches the result
     nsm = netstoichmat(rs)
     nps.conservationmat = conservationlaws(nsm; col_order = nps.col_order)
     cache_conservationlaw_eqs!(rs, nps.conservationmat, nps.col_order)
