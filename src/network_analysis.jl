@@ -716,7 +716,7 @@ function conservationlaws(nsm::T; col_order = nothing) where {T <: AbstractMatri
     T(N')
 end
 
-# used in the subsequent function
+# Used in the subsequent function.
 function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_order)
     # Retrieves nullity (the number of conservation laws). `r` is the rank of the netstoichmat.
     nullity = size(N, 1)
