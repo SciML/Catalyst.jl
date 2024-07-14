@@ -479,11 +479,11 @@ end
 # that constitute the corresponding sub-reaction network.
 function subnetworkmapping(linkageclass, allrxs, complextorxsmap, p)
     # Finds the reactions that are part of teh sub-reaction network.
-    rxinds = sort!(collect(Set(rxidx for rcidx in linkageclass
-    for rxidx in complextorxsmap[rcidx])))
-    rxs = allrxs[rxinds]
-    specset = Set(s for rx in rxs for s in rx.substrates if !isconstant(s))
-    for rx in rxs
+    rxinds = sort!(collect(Set(
+        rxidx for rcidx in linkageclass for rxidx in complextorxsmap[rcidx])))
+    newrxs = allrxs[rxinds]
+    specset = Set(s for rx in newrxs for s in rx.substrates if !isconstant(s))
+    for rx in newrxs
         for product in rx.products
             !isconstant(product) && push!(specset, product)
         end
@@ -531,7 +531,7 @@ function subnetworks(rs::ReactionSystem)
         newrxs, newspecs, newps = subnetworkmapping(lcs[i], rxs, complextorxsmap, p)
         newname = Symbol(nameof(rs), "_", i)
         push!(subnetworks,
-            ReactionSystem(reacs, t, specs, newps; name = newname, spatial_ivs))
+            ReactionSystem(newrxs, t, newspecs, newps; name = newname, spatial_ivs))
     end
     subnetworks
 end
@@ -600,14 +600,16 @@ isweaklyreversible(rn, subnets)
 ```
 """
 function isweaklyreversible(rn::ReactionSystem, subnets)
-    im = get_networkproperties(rn).incidencemat
-    isempty(im) &&
-        error("Error, please call reactioncomplexes(rn::ReactionSystem) to ensure the incidence matrix has been cached.")
-    sparseig = issparse(im)
+    nps = get_networkproperties(rn)
+    isempty(nps.incidencemat) && reactioncomplexes(rn)
+    sparseig = issparse(nps.incidencemat)
+
     for subnet in subnets
         subnps = get_networkproperties(subnet)
         isempty(subnps.incidencemat) && reactioncomplexes(subnet; sparse = sparseig)
     end
+
+    # A network is weakly reversible if all of its subnetworks are strongly connected
     all(Graphs.is_strongly_connected ∘ incidencematgraph, subnets)
 end
 
@@ -697,7 +699,6 @@ Given the net stoichiometry matrix of a reaction system, computes a matrix of
 conservation laws, each represented as a row in the output.
 """
 function conservationlaws(nsm::T; col_order = nothing) where {T <: AbstractMatrix}
-
     # compute the left nullspace over the integers
     # the `nullspace` function updates the `col_order`
     N = MT.nullspace(nsm'; col_order)
