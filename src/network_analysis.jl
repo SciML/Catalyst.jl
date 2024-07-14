@@ -118,7 +118,7 @@ end
 
 # creates a *sparse* reaction complex matrix
 function reactioncomplexes(::Type{SparseMatrixCSC{Int, Int}}, rn::ReactionSystem,
-                           complextorxsmap)
+        complextorxsmap)
     # computes the I, J, and V vectors used for the sparse matrix (read about sparse matrix 
     # representation for more information)
     complexes = collect(keys(complextorxsmap))
@@ -480,7 +480,7 @@ end
 function subnetworkmapping(linkageclass, allrxs, complextorxsmap, p)
     # Finds the reactions that are part of teh sub-reaction network.
     rxinds = sort!(collect(Set(rxidx for rcidx in linkageclass
-                               for rxidx in complextorxsmap[rcidx])))
+    for rxidx in complextorxsmap[rcidx])))
     rxs = allrxs[rxinds]
     specset = Set(s for rx in rxs for s in rx.substrates if !isconstant(s))
     for rx in rxs
@@ -531,7 +531,7 @@ function subnetworks(rs::ReactionSystem)
         newrxs, newspecs, newps = subnetworkmapping(lcs[i], rxs, complextorxsmap, p)
         newname = Symbol(nameof(rs), "_", i)
         push!(subnetworks,
-              ReactionSystem(reacs, t, specs, newps; name = newname, spatial_ivs))
+            ReactionSystem(reacs, t, specs, newps; name = newname, spatial_ivs))
     end
     subnetworks
 end
@@ -745,8 +745,8 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
         # finds the coefficient (in the conservation law) of the species that is eliminated
         # by this conservation law
         scaleby = (N[i, depidx] != 1) ? N[i, depidx] : one(eltype(N))
-        (scaleby != 0) || error("Error, found a zero in the conservation law matrix where "
-            * "one was not expected.")
+        (scaleby != 0) ||
+            error("Error, found a zero in the conservation law matrix where one was not expected.")
 
         # creates, for this conservation law, the sum of all independent species (weighted by
         # the ratio between the coefficient of the species and the species which is elimianted
