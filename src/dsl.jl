@@ -807,7 +807,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 ivs_get_expr = :(unique(reduce(vcat,
                     [arguments(MT.unwrap(dep)) for dep in $dep_var_expr])))
                 sort_func(iv) = findfirst(MT.getname(iv) == ivs for ivs in ivs_sorted)
-                ivs_get_expr_sorted = :(sort($(ivs_get_expr); by = sort_func))
+                ivs_get_expr_sorted = :(sort($(ivs_get_expr); by = $sort_func))
                 push!(observed_expr.args,
                     :($obs_name = $(obs_name)($(ivs_get_expr_sorted)...)))
             end
