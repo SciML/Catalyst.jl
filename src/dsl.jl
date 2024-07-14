@@ -145,7 +145,7 @@ end
 
 # The case where the name contains an interpolation.
 macro network_component(name::Expr, network_expr::Expr)
-    make_rs_expr(esc(name.args[1]); complete = false)
+    make_rs_expr(esc(name.args[1]), network_expr; complete = false)
 end
 
 # The case where nothing, or only a name, is provided.
