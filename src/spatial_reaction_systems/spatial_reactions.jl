@@ -57,7 +57,7 @@ function make_transport_reaction(rateex, species)
     forbidden_symbol_check(union([species], parameters))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
-    sexprs = get_sexpr([species], Dict{Symbol, Expr}())
+    sexprs = get_usexpr([species], Dict{Symbol, Expr}())
     pexprs = get_pexpr(parameters, Dict{Symbol, Expr}())
     iv = :(@variables $(DEFAULT_IV_SYM))
     trxexpr = :(TransportReaction($rateex, $species))
