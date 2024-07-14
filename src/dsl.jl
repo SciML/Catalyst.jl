@@ -296,7 +296,7 @@ function make_reaction_system(ex::Expr, name)
     species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
     variables_declared = extract_syms(options, :variables)
-    vars_extracted, add_default_diff, equations = read_equations_options(options, 
+    vars_extracted, add_default_diff, equations = read_equations_options(options,
         variables_declared)
 
     # Extracts all reactions. Extracts all parameters, species, and variables of the system and
@@ -314,9 +314,9 @@ function make_reaction_system(ex::Expr, name)
     tiv, sivs, ivs, ivexpr = read_ivs_option(options)
     continuous_events_expr = read_events_option(options, :continuous_events)
     discrete_events_expr = read_events_option(options, :discrete_events)
-    observed_expr, observed_eqs, obs_syms = read_observed_options(options, 
+    observed_expr, observed_eqs, obs_syms = read_observed_options(options,
         [species_declared; variables], ivs)
-    diffexpr = create_differential_expr(options, add_default_diff, 
+    diffexpr = create_differential_expr(options, add_default_diff,
         [species; parameters; variables], tiv)
     default_reaction_metadata = read_default_noise_scaling_option(options)
     combinatoric_ratelaws = read_combinatoric_ratelaws_option(options)
@@ -424,7 +424,7 @@ end
 
 # Takes a reaction line and creates reaction(s) from it and pushes those to the reaction vector.
 # Used to create multiple reactions from bundled reactions (like `k, (X,Y) --> 0`).
-function push_reactions!(reactions::Vector{ReactionInternal}, subs::ExprValues, 
+function push_reactions!(reactions::Vector{ReactionInternal}, subs::ExprValues,
         prods::ExprValues, rate::ExprValues, metadata::ExprValues, arrow::Symbol)
     # The rates, substrates, products, and metadata may be in a tuple form (e.g. `k, (X,Y) --> 0`).
     # This finds these tuples' lengths (or 1 for non-tuple forms). Inconsistent lengths yield error.
@@ -802,9 +802,9 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 # Adds a line to the `observed_expr` expression, setting the ivs for this observable.
                 # Cannot extract directly using e.g. "getfield.(dependants_structs, :reactant)" because
                 # then we get something like :([:X1, :X2]), rather than :([X1, X2]).
-                dep_var_expr = :(filter(!MT.isparameter, 
+                dep_var_expr = :(filter(!MT.isparameter,
                     Symbolics.get_variables($(obs_eq.args[3]))))
-                ivs_get_expr = :(unique(reduce(vcat, 
+                ivs_get_expr = :(unique(reduce(vcat,
                     [arguments(MT.unwrap(dep)) for dep in $dep_var_expr])))
                 sort_func(iv) = findfirst(MT.getname(iv) == ivs for ivs in ivs_sorted)
                 ivs_get_expr_sorted = :(sort($(ivs_get_expr); by = sort_func))
