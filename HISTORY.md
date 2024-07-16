@@ -27,7 +27,7 @@ oprob = ODEProblem(lrs, u0, tspan, ps)
 
 # Simulate the ODE and plot the results.
 sol = solve(oprob, FBDF())
-lattice_animation(sol, :X, "brusselator.mp4", lrs)
+lattice_animation(sol, :X, lrs, "brusselator.mp4")
 ```
 The addition of spatial modelling in Catalyst contain a large number of new features, all which are
 described in the [corresponding documentation](https://docs.sciml.ai/Catalyst/stable/spatial_modelling/lattice_reaction_systems/).

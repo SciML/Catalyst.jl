@@ -1,7 +1,7 @@
 ### Lattice Simulation Animations ###
 
 """
-    lattice_animation(sol::ODESolution, sp, filename::String, lrs::LatticeReactionSystem;
+    lattice_animation(sol::ODESolution, sp, lrs::LatticeReactionSystem, filename::String;
         colormap = :BuGn_7, nframes = 200, framerate = 20, plot_max = nothing, kwargs...)
 
 Creates an animation of a `LatticeReactionSystem` simulation based on a 2d Cartesian lattice. The
@@ -23,12 +23,10 @@ value that appears in the simulation (for our species of interest).
 rescaled according to ` max(0.0, min(plot_max - plot_min, val - plot_min))/(plot_max-plot_min)`, 
 where `plot_max` is the maximum value of the scale. If `plot_max = nothing`, it is set to the maximum 
 value that appears in the simulation (for our species of interest).
-- `empty_color = :white`: For masked lattices, this sets the color for grid locations that does not
-correspond to a compartment of the spatial model.
 """
-function Catalyst.lattice_animation(sol, sp, filename::String,
-        lrs::LatticeReactionSystem; colormap = :BuGn_7, nframes = 200, framerate = 20,
-        plot_min = nothing, plot_max = nothing, empty_color = :whie, kwargs...)
+function Catalyst.lattice_animation(sol, sp, lrs::LatticeReactionSystem, filename::String;
+        colormap = :BuGn_7, nframes = 200, framerate = 20, plot_min = nothing, 
+        plot_max = nothing, kwargs...)
     # Error checks.
     if has_graph_lattice(lrs)
         error("The `lattice_animation` function does not currently support animations of simulations based on unstructured (graph) lattices.")
@@ -44,17 +42,31 @@ function Catalyst.lattice_animation(sol, sp, filename::String,
     y_vals = LinRange(1, grid_size(lrs)[2], grid_size(lrs)[2])
 
     # Rescales all values by the `plot_max` value.
-    isnothing(plot_min) && (plot_min = maximum(maximum(val) for val in vals))
+    isnothing(plot_min) && (plot_min = minimum(minimum(val) for val in vals))
     isnothing(plot_max) && (plot_max = maximum(maximum(val) for val in vals))
+    has_masked_lattice(lrs) && (vals = [densify_vals(smat, plot_min) for smat in vals])
     vals = [[scale_val(v, plot_min, plot_max) for v in val] for val in vals]
 
     # Creates the base figure.
     fig, ax, hm = heatmap(x_vals, y_vals, vals[1]; colormap, kwargs...)
-
+    
     # Creates the animation.
     record(fig, filename, 1:1:nframes; framerate) do i
         hm[3] = vals[i]
     end
+end
+
+# If we have a masked lattice, sets empty lattice points to the minimum value of the heatmap.
+# TODO: Change so that we instead can support an entirely different value outside of the heatmap
+# colour range.
+function densify_vals(smat, plot_min)
+    mat = Matrix(smat)
+    
+    # Utilises the fact that if any matrix values are zero not due to sparsity, then the minimum
+    # value of `plot_min` is 0 anyway, so cannot introduce an error by changing these (if `plot_min`)
+    # is larger, zero values will be set to `plot_min` later anyway.
+    foreach(i -> (mat[i] == 0) && (mat[i] = plot_min), eachindex(mat))
+    return mat
 end
 
 # Rescales a value between a given maximum and minimum value.

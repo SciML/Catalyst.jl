@@ -35,7 +35,7 @@ nothing # hide
 Next, we can animate it using the `lattice_animation` function, which requires the [CairoMakie.jl](https://github.com/JuliaPlots/CairoMakie.jl) package:
 ```@example lattice_plotting
 using CairoMakie
-lattice_animation(sol, :X, "brusselator.mp4", lrs)
+lattice_animation(sol, :X, lrs, "brusselator.mp4")
 nothing # hide
 ```
 ```@raw html
