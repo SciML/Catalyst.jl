@@ -124,7 +124,7 @@ rs = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 ```
-contain [conservation laws](@ref network_analysis_deficiency) (in this case $Γ = X1 + X2$, where $Γ = X1(0) + X2(0)$ is a constant). Because the presence of such conservation laws makes structural identifiability analysis prohibitively computationally expensive (for all but the simplest of cases), these are automatically eliminated by Catalyst. This is handled internally, and should not be noticeable to the user. The exception is the `make_si_ode` function. For each conservation law, its output will have one ODE removed, and instead have a conservation parameter (on the form `Γ[i]`) added to its equations. This feature can be disabled through the `remove_conserved = false` option.
+contain [conservation laws](@ref network_analysis_deficiency) (in this case $Γ = X1 + X2$, where $Γ = X1(0) + X2(0)$ is a constant). Because the presence of such conservation laws makes structural identifiability analysis prohibitively computationally expensive (for all but the simplest of cases), these are automatically eliminated by Catalyst. This is handled internally, and should not be noticeable to the user. The exception is the `make_si_ode` function. For each conservation law, its output will have one ODE removed, and instead have a conservation parameter (of the form `Γ[i]`) added to its equations. This feature can be disabled through the `remove_conserved = false` option.
 
 ## [Systems with exponent parameters](@id structural_identifiability_exp_params)
 Structural identifiability cannot currently be applied to systems with parameters (or species) in exponents. E.g. this
