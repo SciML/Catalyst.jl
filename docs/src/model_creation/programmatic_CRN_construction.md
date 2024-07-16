@@ -61,7 +61,7 @@ system to be the same as the name of the variable storing the system.
 Alternatively, one can use the `name = :repressilator` keyword argument to the
 `ReactionSystem` constructor.
 
-!!! warn
+!!! warning
        All `ReactionSystem`s created via the symbolic interface (i.e. by calling `ReactionSystem` with some input, rather than using `@reaction_network`) are not marked as complete. To simulate them, they must first be marked as *complete*, indicating to Catalyst and ModelingToolkit that they represent finalized models. This can be done using the `complete` function, i.e. by calling `repressilator = complete(repressilator)`. An expanded description on *completeness* can be found [here](@ref completeness_note).
 
 We can check that this is the same model as the one we defined via the DSL as
@@ -180,7 +180,7 @@ This ensured they were properly treated as species and not parameters. See the
 
 ## Basic querying of `ReactionSystems`
 
-The [Catalyst.jl API](@ref) provides a large variety of functionality for
+The [Catalyst.jl API](@ref api) provides a large variety of functionality for
 querying properties of a reaction network. Here we go over a few of the most
 useful basic functions. Given the `repressillator` defined above we have that
 ```@example ex
@@ -247,5 +247,5 @@ rx1.prodstoich
 rx1.netstoich
 ```
 
-See the [Catalyst.jl API](@ref) for much more detail on the various querying and
+See the [Catalyst.jl API](@ref api) for much more detail on the various querying and
 analysis functions provided by Catalyst.

@@ -1,5 +1,7 @@
 ### Fetch packages ###
 using Catalyst, Graphs
+using Catalyst: reactionsystem, spatial_reactions, lattice, num_verts, num_edges, num_species, 
+                spatial_species, vertex_parameters, edge_parameters, edge_iterator
 
 # Sets rnd number.
 using StableRNGs
@@ -8,14 +10,34 @@ rng = StableRNG(12345)
 ### Helper Functions ###
 
 # Generates randomised initial condition or parameter values.
-rand_v_vals(grid) = rand(rng, nv(grid))
 rand_v_vals(grid, x::Number) = rand_v_vals(grid) * x
-rand_e_vals(grid) = rand(rng, ne(grid))
+rand_v_vals(lrs::LatticeReactionSystem) = rand_v_vals(lattice(lrs))
+function rand_v_vals(grid::DiGraph) 
+    return rand(rng, nv(grid))
+end
+function rand_v_vals(grid::Catalyst.CartesianGridRej{N,T}) where {N,T}
+    return rand(rng, grid.dims)
+end
+function rand_v_vals(grid::Array{Bool, N}) where {N}
+    return rand(rng, size(grid))
+end
+
 rand_e_vals(grid, x::Number) = rand_e_vals(grid) * x
-function make_u0_matrix(value_map, vals, symbols)
-    (length(symbols) == 0) && (return zeros(0, length(vals)))
-    d = Dict(value_map)
-    return [(d[s] isa Vector) ? d[s][v] : d[s] for s in symbols, v in 1:length(vals)]
+function rand_e_vals(lrs::LatticeReactionSystem)
+    e_vals = spzeros(num_verts(lrs), num_verts(lrs))
+    for e in edge_iterator(lrs)
+        e_vals[e[1], e[2]] = rand(rng)
+    end
+    return e_vals
+end
+
+# Generates edge values, where each edge have the same value.
+function uniform_e_vals(lrs::LatticeReactionSystem, val)
+    e_vals = spzeros(num_verts(lrs), num_verts(lrs))
+    for e in edge_iterator(lrs)
+        e_vals[e[1], e[2]] = val
+    end
+    return e_vals
 end
 
 # Gets a symbol list of spatial parameters.
@@ -168,26 +190,63 @@ sigmaB_srs_2 = [sigmaB_tr_σB, sigmaB_tr_w, sigmaB_tr_v]
 
 ### Declares Lattices ###
 
-# Grids.
-very_small_2d_grid = Graphs.grid([2, 2])
-small_2d_grid = Graphs.grid([5, 5])
-medium_2d_grid = Graphs.grid([20, 20])
-large_2d_grid = Graphs.grid([100, 100])
+# Cartesian grids.
+very_small_1d_cartesian_grid = CartesianGrid(2)
+very_small_2d_cartesian_grid = CartesianGrid((2,2))
+very_small_3d_cartesian_grid = CartesianGrid((2,2,2))
 
-small_3d_grid = Graphs.grid([5, 5, 5])
-medium_3d_grid = Graphs.grid([20, 20, 20])
-large_3d_grid = Graphs.grid([100, 100, 100])
+small_1d_cartesian_grid = CartesianGrid(5)
+small_2d_cartesian_grid = CartesianGrid((5,5))
+small_3d_cartesian_grid = CartesianGrid((5,5,5))
 
-# Paths.
+large_1d_cartesian_grid = CartesianGrid(100)
+large_2d_cartesian_grid = CartesianGrid((100,100))
+large_3d_cartesian_grid = CartesianGrid((100,100,100))
+
+# Masked grids.
+very_small_1d_masked_grid = fill(true, 2)
+very_small_2d_masked_grid = fill(true, 2, 2)
+very_small_3d_masked_grid = fill(true, 2, 2, 2)
+
+small_1d_masked_grid = fill(true, 5)
+small_2d_masked_grid = fill(true, 5, 5)
+small_3d_masked_grid = fill(true, 5, 5, 5)
+
+large_1d_masked_grid = fill(true, 5)
+large_2d_masked_grid = fill(true, 5, 5)
+large_3d_masked_grid = fill(true, 5, 5, 5)
+
+random_1d_masked_grid = rand(rng, [true, true, true, false], 10)
+random_2d_masked_grid = rand(rng, [true, true, true, false], 10, 10)
+random_3d_masked_grid = rand(rng, [true, true, true, false], 10, 10, 10)
+
+# Graph - grids.
+very_small_1d_graph_grid = Graphs.grid([2])
+very_small_2d_graph_grid = Graphs.grid([2, 2])
+very_small_3d_graph_grid = Graphs.grid([2, 2, 2])
+
+small_1d_graph_grid = path_graph(5)
+small_2d_graph_grid = Graphs.grid([5,5])
+small_3d_graph_grid = Graphs.grid([5,5,5])
+
+medium_1d_graph_grid = path_graph(20)
+medium_2d_graph_grid = Graphs.grid([20,20])
+medium_3d_graph_grid = Graphs.grid([20,20,20])
+
+large_1d_graph_grid = path_graph(100)
+large_2d_graph_grid = Graphs.grid([100,100])
+large_3d_graph_grid = Graphs.grid([100,100,100])
+
+# Graph - paths.
 short_path = path_graph(100)
 long_path = path_graph(1000)
 
-# Unconnected graphs.
+# Graph - unconnected graphs.
 unconnected_graph = SimpleGraph(10)
 
-# Undirected cycle.
+# Graph - undirected cycle.
 undirected_cycle = cycle_graph(49)
 
-# Directed cycle.
+# Graph - directed cycle.
 small_directed_cycle = cycle_graph(100)
 large_directed_cycle = cycle_graph(1000)
