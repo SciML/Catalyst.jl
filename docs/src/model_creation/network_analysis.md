@@ -582,7 +582,7 @@ Next, the `conservedequations` function can be used to compute the algebraic equ
 ```@example network_analysis_conservation_laws
 conservedequations(rs)
 ```
-Finally, the `conservationlaws` functions yield a $m \times n$ matrix, where $n$ is a system's number of species, $m$ its number of conservation laws, and element $(i,j)$ correspond to the copy number of the $j$th species that occur in the $i$th conserved quantity:
+Finally, the `conservationlaws` function yields a $m \times n$ matrix, where $n$ is a system's number of species, $m$ its number of conservation laws, and element $(i,j)$ corresponds to the copy number of the $j$th species that occurs in the $i$th conserved quantity:
 ```@example network_analysis_conservation_laws
 conservationlaws(rs)
 ```
