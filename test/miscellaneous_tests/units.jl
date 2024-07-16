@@ -12,7 +12,7 @@ using ModelingToolkit: get_iv, get_unit, validate, ValidationError
 # Checks that units work with programmatic model creation.
 let
     # Creates a `ReactionSystem` programmatically, while designating units.
-    @variables t [unit=u"s"]
+    @parameters t [unit=u"s"]
     @species A(t) [unit=u"mol/m^3"] B(t) [unit=u"mol/m^3"] C(t) [unit=u"mol/m^3"]
     @parameters k1 [unit=u"mol/(m^3*s)"] k2 [unit=u"s^(-1)"] k3 [unit=u"(m^3)/(s*mol)"]
     rxs = [Reaction(k1, nothing, [A]),
@@ -101,7 +101,7 @@ begin
     @test_logs (:warn, ) match_mode=:any @reaction_network begin
         @ivs t [unit=u"1/s"] # Here, t's unit is wrong.
         @species begin
-            A(t), [unit=u"mol/m^3"] 
+            A(t), [unit=u"mol/m^3"]
             B(t), [unit=u"mol/m^3"]
             C(t), [unit=u"mol/m^3"]
         end
@@ -117,7 +117,7 @@ begin
     @test_logs (:warn, ) match_mode=:any @reaction_network begin
         @ivs t [unit=u"s"]
         @species begin
-            A(t), [unit=u"mol/m^3"] 
+            A(t), [unit=u"mol/m^3"]
             B(t), [unit=u"mol/m^3"]
             C(t), [unit=u"mol/m^3"]
         end

@@ -13,26 +13,26 @@ grids = [very_small_2d_cartesian_grid, very_small_2d_masked_grid, very_small_2d_
 ### Tests LatticeReactionSystem Getters Correctness ###
 
 # Test case 1.
-let 
+let
     rs = @reaction_network begin
         (p, 1), 0 <--> X
     end
-    tr = @transport_reaction d X   
-    for grid in grids 
+    tr = @transport_reaction d X
+    for grid in grids
         lrs = LatticeReactionSystem(rs, [tr], grid)
 
         @unpack X, p = rs
         d = edge_parameters(lrs)[1]
-        @test issetequal(species(lrs), [X])  
-        @test issetequal(spatial_species(lrs), [X])   
-        @test issetequal(parameters(lrs), [p, d])   
-        @test issetequal(vertex_parameters(lrs), [p])  
-        @test issetequal(edge_parameters(lrs), [d])      
+        @test issetequal(species(lrs), [X])
+        @test issetequal(spatial_species(lrs), [X])
+        @test issetequal(parameters(lrs), [p, d])
+        @test issetequal(vertex_parameters(lrs), [p])
+        @test issetequal(edge_parameters(lrs), [d])
     end
 end
 
 # Test case 2.
-let 
+let
     rs = @reaction_network begin
         @parameters p1 p2 [edgeparameter=true]
     end
@@ -43,14 +43,14 @@ let
 end
 
 # Test case 3.
-let 
+let
     rs = @reaction_network begin
         @parameters pX pY dX [edgeparameter=true] dY
         (pX, 1), 0 <--> X
         (pY, 1), 0 <--> Y
     end
-    tr_1 = @transport_reaction dX X  
-    tr_2 = @transport_reaction dY Y    
+    tr_1 = @transport_reaction dX X
+    tr_2 = @transport_reaction dY Y
     for grid in grids
         lrs = LatticeReactionSystem(rs, [tr_1, tr_2], grid)
 
@@ -64,13 +64,13 @@ let
 end
 
 # Test case 4.
-let 
+let
     rs = @reaction_network begin
         @parameters dX p
         (pX, 1), 0 <--> X
         (pY, 1), 0 <--> Y
     end
-    tr_1 = @transport_reaction dX X   
+    tr_1 = @transport_reaction dX X
     for grid in grids
         lrs = LatticeReactionSystem(rs, [tr_1], grid)
 
@@ -84,7 +84,7 @@ let
 end
 
 # Test case 5.
-let 
+let
     rs = @reaction_network begin
         @species W(t)
         @parameters pX pY dX [edgeparameter=true] dY
@@ -95,14 +95,14 @@ let
     end
     @unpack dX, X, V = rs
     @parameters dV dW
-    @variables t
+    t = default_t()
     @species W(t)
-    tr_1 = TransportReaction(dX, X)  
-    tr_2 = @transport_reaction dY Y    
-    tr_3 = @transport_reaction dZ Z 
-    tr_4 = TransportReaction(dV, V)  
-    tr_5 = TransportReaction(dW, W)   
-    for grid in grids  
+    tr_1 = TransportReaction(dX, X)
+    tr_2 = @transport_reaction dY Y
+    tr_3 = @transport_reaction dZ Z
+    tr_4 = TransportReaction(dV, V)
+    tr_5 = TransportReaction(dW, W)
+    for grid in grids
         lrs = LatticeReactionSystem(rs, [tr_1, tr_2, tr_3, tr_4, tr_5], grid)
 
         @unpack pX, pY, pZ, pV, dX, dY, X, Y, Z, V = rs
@@ -116,11 +116,11 @@ let
 end
 
 # Test case 6.
-let 
+let
     rs = @reaction_network customname begin
         (p, 1), 0 <--> X
     end
-    tr = @transport_reaction d X    
+    tr = @transport_reaction d X
     for grid in grids
         lrs = LatticeReactionSystem(rs, [tr], grid)
 
@@ -162,18 +162,18 @@ end
 ### Tests Error generation ###
 
 # Network where diffusion species is not declared in non-spatial network.
-let 
+let
     rs = @reaction_network begin
         (p, d), 0 <--> X
     end
-    tr = @transport_reaction D Y    
+    tr = @transport_reaction D Y
     for grid in grids
         @test_throws ErrorException LatticeReactionSystem(rs, [tr], grid)
     end
 end
 
 # Network where the rate depend on a species
-let 
+let
     rs = @reaction_network begin
         @species Y(t)
         (p, d), 0 <--> X
@@ -185,7 +185,7 @@ let
 end
 
 # Network with edge parameter in non-spatial reaction rate.
-let 
+let
     rs = @reaction_network begin
         @parameters p [edgeparameter=true]
         (p, d), 0 <--> X
@@ -197,7 +197,7 @@ let
 end
 
 # Network where metadata has been added in rs (which is not seen in transport reaction).
-let 
+let
     rs = @reaction_network begin
         @species X(t) [description="Species with added metadata"]
         (p, d), 0 <--> X
@@ -272,7 +272,7 @@ end
 ### Tests Grid Vertex and Edge Number Computation ###
 
 # Tests that the correct numbers are computed for num_edges.
-let 
+let
     # Function counting the values in an iterator by stepping through it.
     function iterator_count(iterator)
         count = 0
@@ -281,18 +281,18 @@ let
     end
 
     # Cartesian and masked grid (test diagonal edges as well).
-    for lattice in [small_1d_cartesian_grid, small_2d_cartesian_grid, small_3d_cartesian_grid, 
+    for lattice in [small_1d_cartesian_grid, small_2d_cartesian_grid, small_3d_cartesian_grid,
                 random_1d_masked_grid, random_2d_masked_grid, random_3d_masked_grid]
         lrs1 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice)
         lrs2 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice; diagonal_connections=true)
-        @test num_edges(lrs1) == iterator_count(edge_iterator(lrs1))    
-        @test num_edges(lrs2) == iterator_count(edge_iterator(lrs2))    
+        @test num_edges(lrs1) == iterator_count(edge_iterator(lrs1))
+        @test num_edges(lrs2) == iterator_count(edge_iterator(lrs2))
     end
 
     # Graph grids (cannot test diagonal connections).
     for lattice in [small_2d_graph_grid, small_3d_graph_grid, undirected_cycle, small_directed_cycle, unconnected_graph]
         lrs1 = LatticeReactionSystem(SIR_system, SIR_srs_1, lattice)
-        @test num_edges(lrs1) == iterator_count(edge_iterator(lrs1))    
+        @test num_edges(lrs1) == iterator_count(edge_iterator(lrs1))
     end
 end
 
@@ -308,15 +308,15 @@ let
     function make_edge_p_value(src_vert, dst_vert)
         return prod(src_vert) + prod(dst_vert)
     end
-    
+
     # Loops through a variety of grids, checks that `make_edge_p_values` yields the correct values.
     for grid in [small_1d_cartesian_grid, small_2d_cartesian_grid, small_3d_cartesian_grid,
-                 small_1d_masked_grid, small_2d_masked_grid, small_3d_masked_grid, 
+                 small_1d_masked_grid, small_2d_masked_grid, small_3d_masked_grid,
                  random_1d_masked_grid, random_2d_masked_grid, random_3d_masked_grid]
         lrs = LatticeReactionSystem(rn, [tr], grid)
         flat_to_grid_idx = Catalyst.get_index_converters(lattice(lrs), num_verts(lrs))[1]
         edge_values = make_edge_p_values(lrs, make_edge_p_value)
-    
+
         for e in edge_iterator(lrs)
             @test edge_values[e[1], e[2]] == make_edge_p_value(flat_to_grid_idx[e[1]], flat_to_grid_idx[e[2]])
         end
@@ -375,17 +375,17 @@ let
     tr = @transport_reaction D X
     tspan = (0.0, 10000.0)
     make_edge_p_value(src_vert, dst_vert) = rand()
-    
+
     # Graph grids.
     lrs = LatticeReactionSystem(rn, [tr], path_graph(5))
     @test_throws Exception make_edge_p_values(lrs, make_edge_p_value,)
     @test_throws Exception make_directed_edge_values(lrs, (1.0, 0.0))
-    
+
     # Wrong dimensions to `make_directed_edge_values`.
     lrs_1d = LatticeReactionSystem(rn, [tr], CartesianGrid(5))
     lrs_2d = LatticeReactionSystem(rn, [tr], fill(true,5,5))
     lrs_3d = LatticeReactionSystem(rn, [tr], CartesianGrid((5,5,5)))
-    
+
     @test_throws Exception make_directed_edge_values(lrs_1d, (1.0, 0.0), (1.0, 0.0))
     @test_throws Exception make_directed_edge_values(lrs_1d, (1.0, 0.0), (1.0, 0.0), (1.0, 0.0))
     @test_throws Exception make_directed_edge_values(lrs_2d, (1.0, 0.0))

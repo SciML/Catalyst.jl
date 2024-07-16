@@ -154,7 +154,7 @@ end
 # Tests reaction metadata accessor functions.
 let
     # Creates reactions directly.
-    @variables t
+    t = default_t()
     @parameters k η
     @species X(t) X2(t)
 
@@ -195,7 +195,7 @@ let
     @test Catalyst.hasmetadata(rxs[2], :md_1)
     @test !Catalyst.hasmetadata(rxs[3], :noise_scaling)
     @test !Catalyst.hasmetadata(rxs[3], :md_1)
-    
+
     @test isequal(Catalyst.getmetadata(rxs[1], :noise_scaling), η)
     @test isequal(Catalyst.getmetadata(rxs[2], :md_1), 1.0)
 
@@ -211,11 +211,11 @@ let
 end
 
 # Checks that repeated metadata throws errors.
-let 
-    @test_throws LoadError @eval @reaction k, 0 --> X, [md1=1.0, md1=2.0] 
+let
+    @test_throws LoadError @eval @reaction k, 0 --> X, [md1=1.0, md1=2.0]
     @test_throws LoadError @eval @reaction_network begin
-        k, 0 --> X, [md1=1.0, md1=1.0] 
-    end 
+        k, 0 --> X, [md1=1.0, md1=1.0]
+    end
 end
 
 # Tests for nested metadata.
@@ -233,14 +233,14 @@ let
         k8, Y7 --> X7, [md7="Hello"]
         k8, Y8 --> X7, [md7="Hi",md8="Yo"]
     end
-    
+
     rn2 = @reaction_network reactions begin
         (k1,k2,k3), (X1,X2,X3) --> (Y1,Y2,Y3), ([md1=1.0,md2=2.0],[md1=0.0],[md3="Hello world"])
         k, (X4,X5) --> (Y4,Y5), [md4=:sym]
         (k6, k6), X6 <--> Y6, ([md6=0.0],[md6=2.0])
         (k7,k8), X7 <--> (Y7,Y8), ([md7="Hi"],([md7="Hello"],[md7="Hi",md8="Yo"]))
     end
-    
+
     @test isequal(rn1, rn2)
 end
 
@@ -254,7 +254,7 @@ let
         k5, 3X5 --> Z5, [unnecessary_metadata=[1,2,3]]
         k6, X6 => Z6, [unnecessary_metadata=true]
     end
-    
+
     rn2 = @reaction_network reactions begin
         k1*X1, X1 + 2Y1 --> Z1, [only_use_rate=false]
         k2, 4X2 --> Z2 + W3, [only_use_rate=true]
@@ -263,7 +263,7 @@ let
         k5, 3X5 --> Z5, [only_use_rate=false, unnecessary_metadata=[1,2,3]]
         k6, X6 --> Z6, [only_use_rate=true, unnecessary_metadata=true]
     end
-    
+
     @test isequal(rn1,rn2)
 end
 
