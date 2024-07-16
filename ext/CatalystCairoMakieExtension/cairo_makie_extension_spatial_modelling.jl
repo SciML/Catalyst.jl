@@ -1,6 +1,66 @@
-### Lattice Simulation Plotting ###
+### Lattice Master Functions ###
 
-### Lattice Simulation Animations ###
+# Plotting of spatial lattice simulations. Checks whether lattice is 1d, 2d, or graph, and uses
+# the appropriate dispatch.
+function lattice_plot(sol::ODESolution, sp, lrs::LatticeReactionSystem, args...;
+        kwargs...)
+    if has_graph_lattice(lrs)
+        return lattice_plot_graph(sol, sp, lrs; kwargs...)
+    elseif grid_dims(lrs) == 1
+        return lattice_plot_1d(sol, sp, lrs; kwargs...)
+    elseif grid_dims(lrs) == 2
+        return lattice_plot_2d(sol, sp, lrs; kwargs...)
+    else
+        throw(ArgumentError("The lattice the input lattice simulation is based on is currently not supported by `lattice_plot`. 1d, 2d (masked and Cartesian) and graph lattices are currently the only supported lattice types."))
+    end
+end
+
+# Animation of spatial lattice simulations. Checks whether lattice is 1d, 2d, or graph, and uses
+# the appropriate dispatch.
+function lattice_animation(sol::ODESolution, sp, lrs::LatticeReactionSystem, filename::String,
+        args...; kwargs...)
+    if has_graph_lattice(lrs)
+        return lattice_animation_graph(sol, sp, lrs, filename, args...; kwargs...)
+    elseif grid_dims(lrs) == 1
+        return lattice_animation_1d(sol, sp, lrs, filename, args...; kwargs...)
+    elseif grid_dims(lrs) == 2
+        return lattice_animation_2d(sol, sp, lrs, filename, args...; kwargs...)
+    else
+        throw(ArgumentError("The lattice the input lattice simulation is based on is currently not supported by `lattice_plot`. 1d, 2d (masked and Cartesian) and graph lattices are currently the only supported lattice types."))
+    end
+end
+
+### 1d Lattice Simulation Plots/Animations ###
+
+# Internal function which handles the plotting of a lattice simulation on a 1d lattice (Cartesian
+# or graph). Here, unlike for 2d and graph lattices, `sp` can be a vector of species (in which case
+# each on is displayed).
+function lattice_plot_1d()
+
+end
+
+# Internal function which handles the animation of a lattice simulation on a 1d lattice (Cartesian
+# or graph). Here, unlike for 2d and graph lattices, `sp` can be a vector of species (in which case
+# each on is displayed).
+function lattice_animation_1d()
+
+end
+
+### 2d Lattice Simulation Plots/Animations ###
+
+# Internal function which handles the plotting of a lattice simulation on a 2d lattice (Cartesian
+# or graph).
+function lattice_plot_2d()
+
+end
+
+# Internal function which handles the animation of a lattice simulation on a 2d lattice (Cartesian
+# or graph).
+function lattice_animation_2d()
+
+end
+
+
 
 """
     lattice_animation(sol::ODESolution, sp, lrs::LatticeReactionSystem, filename::String;
@@ -59,11 +119,21 @@ function Catalyst.lattice_animation(sol, sp, lrs::LatticeReactionSystem, filenam
 end
 
 
-### Lattice Simulation Kymographs ###
+### Graph Lattice Simulation Plots/Animations ###
 
+# Internal function which handles the plotting of a lattice simulation on a graph lattice.
+# Takes the additional, required, kwarg: `vert_positions`, which determine the positions of the
+# vertices in the graph plot.
+function lattice_plot_graph()
 
+end
 
-### Graph Lattice Simulation Plotting & Animation ###
+# Internal function which handles the animation of a lattice simulation on a graph lattice.
+# Takes the additional, required, kwarg: `vert_positions`, which determine the positions of the
+# vertices in the graph plot.
+function lattice_animation_graph()
+
+end
 
 ### Utility Functions ###
 
@@ -83,4 +153,18 @@ end
 # Rescales a value between a given maximum and minimum value.
 function scale_val(val, min_val, max_val)
     return max(0.0, min(max_val - min_val, val - min_val))/(max_val - min_val)
+end
+
+# Throws an error when vector species ar used for non-1d plots.
+function check_sp_nonvector(sp)
+    if sp isa Vector
+        throw(ArgumentError("the designated species to plot ($sp) is a Vector. Plotting vectors of species is only supported when plotting or animating lattice simulations based on 1d (Cartesian or masked) lattices."))
+    end
+end
+
+# Throws an error if arguments related to plotting lattice simulations based on graphs are provided.
+function check_nograph_inputs()
+    if false
+        throw(ArgumentError("Some inputs ($()) provided are only supported when plotting lattice simulations based on graph lattices."))
+    end
 end
