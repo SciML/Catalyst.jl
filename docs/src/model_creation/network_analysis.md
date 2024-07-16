@@ -520,7 +520,7 @@ oprob = ODEProblem(rs, u0, (0.0, 1.0), ps)
 sol = solve(oprob)
 plot(sol; idxs = [rs.X₁, rs.X₂, rs.X₁ + rs.X₂], label = ["X₁" "X₂" "X₁ + X₂ (a conserved quantity)"])
 ```
-This makes sense, as while $X$ is converted between two different forms ( $X₁$ and $X₂$), it is neither produced nor degraded. That is, it is a *conserved quantity*. Next, if we consider the ODE that our model generates:
+This makes sense, as while $X$ is converted between two different forms ($X₁$ and $X₂$), it is neither produced nor degraded. That is, it is a *conserved quantity*. Next, if we consider the ODE that our model generates:
 ```@example network_analysis_conservation_laws
 using Latexify
 latexify(rs; form = :ode)
