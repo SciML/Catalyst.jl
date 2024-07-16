@@ -9,7 +9,7 @@ using LaTeXStrings, Latexify, Requires
 using LinearAlgebra, Combinatorics
 using JumpProcesses: JumpProcesses, JumpProblem,
                      MassActionJump, ConstantRateJump, VariableRateJump,
-                     SpatialMassActionJump
+                     SpatialMassActionJump, CartesianGrid, CartesianGridRej
 
 # ModelingToolkit imports and convenience functions we use
 using ModelingToolkit
@@ -172,17 +172,24 @@ include("spatial_reaction_systems/spatial_reactions.jl")
 export TransportReaction, TransportReactions, @transport_reaction
 export isedgeparameter
 
-# Lattice reaction systems
+# Lattice reaction systems.
 include("spatial_reaction_systems/lattice_reaction_systems.jl")
 export LatticeReactionSystem
 export spatial_species, vertex_parameters, edge_parameters
-
-# Various utility functions
-include("spatial_reaction_systems/utility.jl")
+export CartesianGrid, CartesianGridReJ # (Implemented in JumpProcesses)
+export has_cartesian_lattice, has_masked_lattice, has_grid_lattice, has_graph_lattice,
+       grid_dims, grid_size
+export make_edge_p_values, make_directed_edge_values
+include("spatial_reaction_systems/lattice_solution_interfacing.jl")
+export get_lrs_vals
 
 # Specific spatial problem types.
 include("spatial_reaction_systems/spatial_ODE_systems.jl")
+export rebuild_lat_internals!
 include("spatial_reaction_systems/lattice_jump_systems.jl")
+
+# General spatial modelling utility functions.
+include("spatial_reaction_systems/utility.jl")
 
 ### ReactionSystem Serialisation ###
 # Has to be at the end (because it uses records of all metadata declared by Catalyst).

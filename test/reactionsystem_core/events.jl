@@ -13,7 +13,7 @@ t = default_t()
 D = default_time_deriv()
 
 
-### Basic Tests ### 
+### Basic Tests ###
 
 # Test discrete event is propagated to ODE solver correctly.
 let
@@ -44,7 +44,7 @@ let
     @parameters α=5.0 β=1.0
     @species V(t)=0.0
     rxs = [
-        Reaction(α, nothing, [V]), 
+        Reaction(α, nothing, [V]),
         Reaction(β, [V], nothing)
     ]
     continuous_events = [V ~ 2.5] => [α ~ 0, β ~ 0]
@@ -212,7 +212,8 @@ let
     end
 
     # Creates model programmatically.
-    @variables t Z(t)
+    t = default_t()
+    @variables Z(t)
     @species X(t) Y(t)
     @parameters p dX dY thres=7.0 dY_up
     rxs = [
@@ -326,13 +327,13 @@ let
         (p,d), 0 <--> X
         (p,d), 0 <--> Y
     end
-    
+
     # Simulates the model for conditions where it *definitely* will cross `X = 1000.0`
     u0 = [:X => 999.9, :Y => 999.9]
     ps = [:p => 10.0, :d => 0.001]
     sprob = SDEProblem(rn, u0, (0.0, 2.0), ps)
     sol = solve(sprob, ImplicitEM(); seed)
-    
+
     # Checks that all `e` parameters have been updated properly.
     @test sol.ps[:e1] == 1
     @test sol.ps[:e2] == 1
@@ -353,14 +354,14 @@ let
         end
         (p,d), 0 <--> X
     end
-    
+
     # Simulates the model for conditions where it *definitely* will cross `X = 1000.0`
     u0 = [:X => 999]
     ps = [:p => 10.0, :d => 0.001]
     dprob = DiscreteProblem(rn, u0, (0.0, 2.0), ps)
     jprob = JumpProblem(rn, dprob, Direct(); rng)
     sol = solve(jprob, SSAStepper(); seed)
-    
+
     # Checks that all `e` parameters have been updated properly.
     # Note that periodic discrete events are currently broken for jump processes (and unlikely to be fixed soon due to periodic callbacks using the internals of ODE integrator and Datastructures heap implementations).
     @test sol.ps[:e1] == 1
