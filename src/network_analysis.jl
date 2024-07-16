@@ -910,7 +910,7 @@ function cycles(nsm::Matrix; col_order = nothing)
 end
 
 function positive_nullspace(M::T; col_order = nothing) where {T <: AbstractMatrix}
-     # compute the left nullspace over the integers
+    # compute the left nullspace over the integers
     N = MT.nullspace(M; col_order)
 
     # if all coefficients for a cycle are negative, make positive
