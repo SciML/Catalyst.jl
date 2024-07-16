@@ -188,7 +188,7 @@ oprob = ODEProblem(rs, u0, (0.0, 10.0), ps; remove_conserved = true)
 sol = solve(oprob)
 nothing # hide
 ```
-Conservation law elimination should never impact performance negatively. However, its effect on performance can be limited, and is very model-dependent. It is primarily important when performing simulation with [implicit solvers](@ref ode_simulation_performance_stiffness) (as these requires computing system Jacobians, and conservation law eliminations typically transform these from singular Jacobians to non-singular Jacobians).
+Conservation law elimination is not expected to ever impact performance negatively; it simply results in a (possibly) lower-dimensional system of ODEs to solve. However, eliminating conserved species may have minimal performance benefits; it is model-dependent whether elimination results in faster ODE solving times and/or increased solution accuracy. 
 
 
 ## [Parallelisation on CPUs and GPUs](@id ode_simulation_performance_parallelisation)
