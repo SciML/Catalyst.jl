@@ -2,6 +2,11 @@
 
 ## Catalyst unreleased (master branch)
 
+## Catalyst 14.0.1
+Bug fix to address that independent variables, like time, should now be `@parameters` 
+according to MTKv9. Converted internal time variables to consistently use `default_t()` 
+to hopefully avoid such issues going forward.
+
 ## Catalyst 14.0
 
 #### Breaking changes
