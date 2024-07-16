@@ -338,15 +338,6 @@ end
 
 ### STRONG LINKAGE CLASS TESTS
 # Cycle Test: Open Reaction Network
-let
-    rn = @reaction_network begin
-        k1, 0 --> X1
-        k2, X1 --> 0
-        k3, X1 --> X2
-        (k4, k5), X2 <--> X3
-        (k6, k7), X3 <--> 0
-    end
-
 
 # a) Checks that strong/terminal linkage classes are correctly found. Should identify the (A, B+C) linkage class as non-terminal, since B + C produces D
 let
@@ -428,6 +419,15 @@ let
     @test issubset([[1,2], [3,4], [5,6,7]], slcs)
     @test issubset([[3,4], [5,6,7]], tslcs) 
 end
+
+let
+    rn = @reaction_network begin
+        k1, 0 --> X1
+        k2, X1 --> 0
+        k3, X1 --> X2
+        (k4, k5), X2 <--> X3
+        (k6, k7), X3 <--> 0
+    end
 
     # 0 --> X1 --> X2 --> X3 --> 0
     cycle = [1, 0, 1, 1, 0, 1, 0]
