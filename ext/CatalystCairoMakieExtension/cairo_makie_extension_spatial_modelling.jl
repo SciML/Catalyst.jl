@@ -1,3 +1,5 @@
+### Lattice Simulation Plotting ###
+
 ### Lattice Simulation Animations ###
 
 """
@@ -55,6 +57,15 @@ function Catalyst.lattice_animation(sol, sp, lrs::LatticeReactionSystem, filenam
         hm[3] = vals[i]
     end
 end
+
+
+### Lattice Simulation Kymographs ###
+
+
+
+### Graph Lattice Simulation Plotting & Animation ###
+
+### Utility Functions ###
 
 # If we have a masked lattice, sets empty lattice points to the minimum value of the heatmap.
 # TODO: Change so that we instead can support an entirely different value outside of the heatmap

@@ -193,7 +193,7 @@ export lat_getp, lat_setp!, lat_getu, lat_setu!, rebuild_lat_internals!
 
 # Functions exported by the spatial plotting extensions.
 function lattice_animation end
-export lattice_animation
+export lattice_plot, lattice_animation, lattice_kymograph
 
 ### ReactionSystem Serialisation ###
 # Has to be at the end (because it uses records of all metadata declared by Catalyst).
