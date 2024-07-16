@@ -133,7 +133,7 @@ However, especially when the forward ODE simulation approach is used, it is reco
 
 ---
 ## [Citations](@id nonlinear_solve_citation)
-If you use this functionality in your research, [in addition to Catalyst](@ref catalyst_citation), please cite the following paper to support the authors of the NonlinearSolve.jl package:
+If you use this functionality in your research, [in addition to Catalyst](@ref doc_index_citation), please cite the following paper to support the authors of the NonlinearSolve.jl package:
 ```
 @article{pal2024nonlinearsolve,
   title={NonlinearSolve. jl: High-Performance and Robust Solvers for Systems of Nonlinear Equations in Julia},

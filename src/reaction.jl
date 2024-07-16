@@ -445,10 +445,10 @@ end
 """
 getmetadata_dict(reaction::Reaction)
 
-Retrives the `ImmutableDict` containing all of the metadata associated with a specific reaction.
+Retrieves the `ImmutableDict` containing all of the metadata associated with a specific reaction.
 
 Arguments:
-- `reaction`: The reaction for which we wish to retrive all metadata.
+- `reaction`: The reaction for which we wish to retrieve all metadata.
 
 Example:
 ```julia
@@ -482,11 +482,11 @@ end
 """
 getmetadata(reaction::Reaction, md_key::Symbol)
 
-Retrives a certain metadata value from a `Reaction`. If the metadata does not exists, throws an error.
+Retrieves a certain metadata value from a `Reaction`. If the metadata does not exist, throws an error.
 
 Arguments:
-- `reaction`: The reaction for which we wish to retrive a specific metadata value.
-- `md_key`: The metadata for which we wish to retrive.
+- `reaction`: The reaction for which we wish to retrieve a specific metadata value.
+- `md_key`: The metadata for which we wish to retrieve.
 
 Example:
 ```julia
@@ -622,7 +622,7 @@ getmisc(reaction)
 
 Notes:
 - The `misc` field can contain any valid Julia structure. This mean that Catalyst cannot check it
-for symbolci variables that are added here. This means that symbolic variables (e.g. parameters of 
+for symbolic variables that are added here. This means that symbolic variables (e.g. parameters of 
 species) that are stored here are not accessible to Catalyst. This can cause troubles when e.g. 
 creating a `ReactionSystem` programmatically (in which case any symbolic variables stored in the
 `misc` metadata field should also be explicitly provided to the `ReactionSystem` constructor). 
