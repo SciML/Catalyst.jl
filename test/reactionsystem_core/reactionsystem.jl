@@ -330,7 +330,7 @@ end
 # Tests spatial independent variables `get_sivs` and `has_sivs`.
 let
     # Creates a `ReactionSystem`.
-    @variables x
+    @parameters x
     @parameters p d
     @species S(t,x)
     rxs = [
