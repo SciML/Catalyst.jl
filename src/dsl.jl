@@ -600,10 +600,10 @@ function read_ivs_option(options)
     if haskey(options, :ivs)
         ivs = Tuple(extract_syms(options, :ivs))
         ivexpr = copy(options[:ivs])
-        ivexpr.args[1] = Symbol("@", "variables")
+        ivexpr.args[1] = Symbol("@", "parameters")
     else
         ivs = (DEFAULT_IV_SYM,)
-        ivexpr = :(@variables $(DEFAULT_IV_SYM))
+        ivexpr = :($(DEFAULT_IV_SYM) = default_t())
     end
 
     # Extracts the independet variables symbols, and returns the output.
@@ -919,7 +919,7 @@ function make_reaction(ex::Expr)
     sexprs = get_usexpr(species, Dict{Symbol, Expr}())
     pexprs = get_pexpr(parameters, Dict{Symbol, Expr}())
     rxexpr = get_rxexpr(reaction)
-    iv = :(@variables $(DEFAULT_IV_SYM))
+    iv = :($(DEFAULT_IV_SYM) = default_t())
 
     # Returns a repharsed expression which generates the `Reaction`.
     quote
