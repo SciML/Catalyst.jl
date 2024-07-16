@@ -534,7 +534,7 @@ Using Catalyst, it is possible to detect any such conserved quantities and elimi
 ```@example network_analysis_conservation_laws
 osys = convert(ODESystem, rs; remove_conserved = true)
 ```
-We note that the output system only contains a single (differential) equation. The second (algebraic) equation is stored as an [*observable*](@ref dsl_advanced_options_observables), and can be retrieved using the `observed` function:
+We note that the output system only contains a single (differential) equation and can hence be solved with an ODE solver. The second (algebraic) equation is stored as an [*observable*](@ref dsl_advanced_options_observables), and can be retrieved using the `observed` function:
 ```@example network_analysis_conservation_laws
 observed(osys)
 ```
