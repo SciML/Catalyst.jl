@@ -1,17 +1,17 @@
 ### Structural Identifiability ODE Creation ###
 
-# For a reaction system, list of measured quantities and known parameters, generate a StructuralIdentifiability compatible ODE. 
+# For a reaction system, list of measured quantities and known parameters, generate a StructuralIdentifiability compatible ODE.
 """
 make_si_ode(rs::ReactionSystem; measured_quantities=observed(rs), known_p = [], ignore_no_measured_warn=false)
 
-Creates a reaction rate equation ODE system of the form used within the StructuralIdentifiability.jl package. The output system is compatible with all StructuralIdentifiability functions. 
+Creates a reaction rate equation ODE system of the form used within the StructuralIdentifiability.jl package. The output system is compatible with all StructuralIdentifiability functions.
 
 Arguments:
 - `rs::ReactionSystem`; The reaction system we wish to convert to an ODE.
-- `measured_quantities=[]`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.x`, or the symbol `:x`). 
+- `measured_quantities=[]`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.x`, or the symbol `:x`).
 - `known_p = []`: List of parameters for which their values are assumed to be known.
-- `ignore_no_measured_warn = false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty. 
-- `remove_conserved = true`: Whether to eliminate conservation laws when computing the ode (this can reduce runtime of identifiability analysis significantly). 
+- `ignore_no_measured_warn = false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty.
+- `remove_conserved = true`: Whether to eliminate conservation laws when computing the ode (this can reduce runtime of identifiability analysis significantly).
 
 Example:
 ```julia
@@ -45,10 +45,10 @@ Applies StructuralIdentifiability.jl's `assess_local_identifiability` function t
 
 Arguments:
 - `rs::ReactionSystem`; The reaction system for which we wish to compute structural identifiability of the associated reaction rate equation ODE model.
-- `measured_quantities=[]`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.s`, or the symbol `:x`). 
-- `known_p = []`: List of parameters which values are known. 
-- `ignore_no_measured_warn = false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty. 
-- `remove_conserved = true`: Whether to eliminate conservation laws when computing the ode (this can reduce runtime of identifiability analysis significantly). 
+- `measured_quantities=[]`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.s`, or the symbol `:x`).
+- `known_p = []`: List of parameters which values are known.
+- `ignore_no_measured_warn = false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty.
+- `remove_conserved = true`: Whether to eliminate conservation laws when computing the ode (this can reduce runtime of identifiability analysis significantly).
 
 Example:
 ```julia
@@ -85,10 +85,10 @@ Applies StructuralIdentifiability.jl's `assess_identifiability` function to a Ca
 
 Arguments:
 - `rs::ReactionSystem`; The reaction system we wish to compute structural identifiability for.
-- `measured_quantities=[]`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.s`, or the symbol `:x`). 
-- `known_p = []`: List of parameters which values are known. 
-- `ignore_no_measured_warn = false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty. 
-- `remove_conserved = true`: Whether to eliminate conservation laws when computing the ode (this can reduce runtime of identifiability analysis significantly). 
+- `measured_quantities=[]`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.s`, or the symbol `:x`).
+- `known_p = []`: List of parameters which values are known.
+- `ignore_no_measured_warn = false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty.
+- `remove_conserved = true`: Whether to eliminate conservation laws when computing the ode (this can reduce runtime of identifiability analysis significantly).
 
 Example:
 ```julia
@@ -125,10 +125,10 @@ Applies StructuralIdentifiability.jl's `find_identifiable_functions` function to
 
 Arguments:
 - `rs::ReactionSystem`; The reaction system we wish to compute structural identifiability for.
-- `measured_quantities=[]`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.s`, or the symbol `:x`). 
-- `known_p = []`: List of parameters which values are known. 
-- `ignore_no_measured_warn = false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty. 
-- `remove_conserved = true`: Whether to eliminate conservation laws when computing the ode (this can reduce runtime of identifiability analysis significantly). 
+- `measured_quantities=[]`: The quantities of the system we can measure. May either be equations (e.g. `x1 + x2`), or single species (e.g. the symbolic `x`, `rs.s`, or the symbol `:x`).
+- `known_p = []`: List of parameters which values are known.
+- `ignore_no_measured_warn = false`: If set to `true`, no warning is provided when the `measured_quantities` vector is empty.
+- `remove_conserved = true`: Whether to eliminate conservation laws when computing the ode (this can reduce runtime of identifiability analysis significantly).
 
 Example:
 ```julia
@@ -158,7 +158,7 @@ end
 
 ### Helper Functions ###
 
-# From a reaction system, creates the corresponding MTK-style ODESystem for SI application 
+# From a reaction system, creates the corresponding MTK-style ODESystem for SI application
 # Also compute the, later needed, conservation law equations and list of system symbols (unknowns and parameters).
 function make_osys(rs::ReactionSystem; remove_conserved = true)
     # Creates the ODESystem corresponding to the ReactionSystem (expanding functions and flattening it).
@@ -200,7 +200,7 @@ function make_measured_quantities(
 
     # Creates one internal observation variable for each measured quantity (`___internal_observables`).
     # Creates a vector of equations, setting each measured quantity equal to one observation variable.
-    @variables t (___internal_observables(Catalyst.get_iv(rs)))[1:length(mqs)]
+    @variables (___internal_observables(Catalyst.get_iv(rs)))[1:length(mqs)]
     return Equation[(q isa Equation) ? q : (___internal_observables[i] ~ q)
                     for (i, q) in enumerate(mqs)]
 end
