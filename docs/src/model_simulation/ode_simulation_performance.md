@@ -172,7 +172,7 @@ Generally, the use of preconditioners is only recommended for advanced users who
 
 
 ## [Elimination of system conservation laws](@id ode_simulation_performance_conservation_laws)
-Previously, we have described how Catalyst, when it generates ODEs, is able to [detect and eliminate conserved quantities](@ref network_analysis_conservation_laws). In certain cases, doing this can improve performance. E.g. in the following example we will eliminate the single conserved quantity in a [two-state model](@ref basic_CRN_library_two_states). This results in a differential algebraic equation with a single differential equation and a single algebraic equation (as opposed to two differential equations). Conservation laws can be eliminated by providing the `remove_conserved = true` option to `ODEProblem`:
+Previously, we have described how Catalyst, when it generates ODEs, is able to [detect and eliminate conserved quantities](@ref network_analysis_conservation_laws). In certain cases, doing this can improve performance. E.g. in the following example we will eliminate the single conserved quantity in a [two-state model](@ref basic_CRN_library_two_states). This results in a differential algebraic equation with a single differential equation and a single algebraic equation (as opposed to two differential equations). However, as the algebraic equation is fully determined by the ODE solution, Catalyst moves it to be an observable and our new system therefore only contains one ODE that must be solved numerically. Conservation laws can be eliminated by providing the `remove_conserved = true` option to `ODEProblem`:
 ```@example ode_simulation_performance_conservation_laws
 using Catalyst, OrdinaryDiffEq
 
