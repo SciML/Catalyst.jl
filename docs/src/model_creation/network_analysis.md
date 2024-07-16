@@ -567,7 +567,7 @@ plot(sol)
 !!! danger
     Currently, there is a bug in MTK where the values associated with conservation laws are not updated properly in response to [`remake`](@ref simulation_structure_interfacing_problems_remake) (or [other problem-updating functions, such as `getu`](@ref simulation_structure_interfacing_functions)). Hence, problems created using `remove_conserved = true` *should not* be modified, i.e. by changing initial conditions or the values of the `Γ`'s directly. Instead, to change these values new problems must be generated with the new initial condition map.
 
-While `X₂` is an observable (and not unknown) of the ODE, we can [access it](@ref simulation_structure_interfacing_problems) just like if `remove_conserved = true` has not been used:
+While `X₂` is an observable (and not unknown) of the ODE, we can [access it](@ref simulation_structure_interfacing_problems) just like if `remove_conserved = true` had not been used:
 ```@example network_analysis_conservation_laws
 sol[:X₂]
 ```
