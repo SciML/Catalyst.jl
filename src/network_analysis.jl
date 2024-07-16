@@ -410,11 +410,10 @@ end
 
 function isforestlike(rn::ReactionSystem)
     subnets = subnetworks(rn)
+    nps = get_networkproperties(rn)
 
-    im = get_networkproperties(rn).incidencemat
-    isempty(im) &&
-        error("Error, please call reactioncomplexes(rn::ReactionSystem) to ensure the incidence matrix has been cached.")
-    sparseig = issparse(im)
+    isempty(nps.incidencemat) && reactioncomplexes(rn)
+    sparseig = issparse(incidencemat)
     for subnet in subnets
         nps = get_networkproperties(subnet)
         isempty(nps.incidencemat) && reactioncomplexes(subnet; sparse = sparseig)
