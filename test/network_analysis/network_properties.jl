@@ -337,7 +337,6 @@ let
 end
 
 ### STRONG LINKAGE CLASS TESTS
-# Cycle Test: Open Reaction Network
 
 # a) Checks that strong/terminal linkage classes are correctly found. Should identify the (A, B+C) linkage class as non-terminal, since B + C produces D
 let
@@ -420,6 +419,7 @@ let
     @test issubset([[3,4], [5,6,7]], tslcs) 
 end
 
+# Cycle Test: Open Reaction Network
 let
     rn = @reaction_network begin
         k1, 0 --> X1
