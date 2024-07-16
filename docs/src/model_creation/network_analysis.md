@@ -538,7 +538,7 @@ We note that the output system only contains a single (differential) equation an
 ```@example network_analysis_conservation_laws
 observed(osys)
 ```
-Using the `unknowns` function we can confirm that the ODE only have a single unknown variable:
+Using the `unknowns` function we can confirm that the ODE only has a single unknown variable:
 ```@example network_analysis_conservation_laws
 unknowns(osys)
 ```
