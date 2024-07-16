@@ -1,11 +1,24 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, LinearAlgebra, Test, StableRNGs
+using Catalyst, LinearAlgebra, Test, SparseArrays
 
+# Sets stable rng number.
+using StableRNGs
 rng = StableRNG(514)
 
 ### Basic Tests ###
+
+# Tests basic `ReactionComplex` properties.
+let
+    rcs1 = Catalyst.ReactionComplex([1, 2], [1, 3])
+    rcs2 = Catalyst.ReactionComplex([1, 2], [1, 3])
+    rcs3 = Catalyst.ReactionComplex([3], [2])
+    @test rcs1 == rcs2
+    @test rcs2 != rcs3
+    @test length(rcs1) == 2
+    @test length(rcs3) == 1
+end
 
 # Tests network analysis functions on MAPK network (by comparing to manually computed outputs).
 let
@@ -203,6 +216,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == false 
 end
+
 let
     rn = @reaction_network begin
         k1, A --> B
@@ -215,6 +229,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == false 
 end
+
 let
     rn = @reaction_network begin
         k1, A --> B
@@ -229,6 +244,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == false 
 end
+
 let
     rn = @reaction_network begin
         (k2, k1), A <--> 2B
@@ -244,6 +260,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
+
 let
     rn = @reaction_network begin
         (k2, k1), A + E <--> AE
@@ -257,6 +274,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == false 
 end
+
 let
     rn = @reaction_network begin
         (k2, k1), A + E <--> AE
@@ -270,6 +288,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true  
 end
+
 let
     rn = @reaction_network begin (k2, k1), A + B <--> 2A end
     rev = true
@@ -280,6 +299,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
+
 let
     rn = @reaction_network begin
         k1, A + B --> 3A
@@ -295,6 +315,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
+
 let
     rn = @reaction_network begin
         (k2, k1), A + E <--> AE
@@ -408,4 +429,115 @@ let
     @test length(tslcs) == 2
     @test issubset([[1,2], [3,4], [5,6,7]], slcs)
     @test issubset([[3,4], [5,6,7]], tslcs) 
+end
+
+### Other Network Properties Tests ###
+
+# Tests outgoing complexes matrices (1). 
+# Checks using dense and sparse representation.
+let
+    # Declares network.
+    rs = @reaction_network begin
+        k1, X1 + X2 --> X3 + X4
+        (k2,k2), X3 + X4 <--> X1
+        k3, X1 --> X2
+        k4, X1 + X2 --> X2
+    end
+    
+    # Compares to manually computed matrix.
+    cmplx_out_mat = [
+        -1 0 0 0 -1;
+        0 -1 0 0 0;
+        0 0 -1 -1 0;
+        0 0 0 0 0;
+    ]
+    complexoutgoingmat(rs) == cmplx_out_mat
+    complexoutgoingmat(rs; sparse = true) == sparse(cmplx_out_mat)
+end
+
+# Tests outgoing complexes matrices (2).
+# Checks using dense and sparse representation.
+let
+    # Declares network.
+    rs = @reaction_network begin
+        k1, X1 --> X2
+        k2, X2 --> X3
+        k3, X3 --> X4
+        k4, X3 --> X5
+        k5, X2 --> X1
+        k6, X1 --> X2
+    end
+
+    # Compares to manually computed matrix.
+    cmplx_out_mat = [
+        -1 0 0 0 0 -1;
+        0 -1 0 0 -1 0;
+        0 0 -1 -1 0 0;
+        0 0 0 0 0 0;
+        0 0 0 0 0 0;
+    ]
+    complexoutgoingmat(rs)
+    complexoutgoingmat(rs; sparse = true) == sparse(cmplx_out_mat)
+end
+
+# Tests that `iscomplexbalanced` works for different rate inputs.
+# Tests that non-valid rate input yields and error
+let
+    # Declares network.
+    rn = @reaction_network begin
+        k1, 3A + 2B --> 3C 
+        k2, B + 4D --> 2E
+        k3, 2E --> 3C
+        (k4, k5), B + 4D <--> 3A + 2B
+        k6, F --> B + 4D
+        k7, 3C --> F
+    end
+
+    # Declares rate alternatives.
+    k = rand(rng, numparams(rn))
+    rates_vec = Pair.(parameters(rn), k)
+    rates_tup = Tuple(rates_vec)
+    rates_dict = Dict(rates_vec)
+    rates_invalid = k
+
+    # Tests that inputs are handled correctly.
+    @test Catalyst.iscomplexbalanced(rn, rates_vec) == Catalyst.iscomplexbalanced(rn, rates_tup)
+    @test Catalyst.iscomplexbalanced(rn, rates_tup) == Catalyst.iscomplexbalanced(rn, rates_dict)
+    @test_throws Exception Catalyst.iscomplexbalanced(rn, k)
+end
+
+# Tests rate matrix computation for various input types.
+let
+    # Declares network and its known rate matrix.
+    rn = @reaction_network begin
+        (k2, k1), A1 <--> A2 + A3
+        k3, A2 + A3 --> A4
+        k4, A4 --> A5
+        (k6, k5), A5 <--> 2A6
+        k7, 2A6 --> A4
+        k8, A4 + A5 --> A7
+    end
+    rate_mat = [
+        0.0  1.0  0.0  0.0  0.0  0.0  0.0;
+        2.0  0.0  3.0  0.0  0.0  0.0  0.0;
+        0.0  0.0  0.0  4.0  0.0  0.0  0.0;
+        0.0  0.0  0.0  0.0  5.0  0.0  0.0;
+        0.0  0.0  7.0  6.0  0.0  0.0  0.0;
+        0.0  0.0  0.0  0.0  0.0  0.0  8.0;
+        0.0  0.0  0.0  0.0  0.0  0.0  0.0;
+    ]
+
+    # Declares rate alternatives.
+    rate_vals = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+    rates_vec = Pair.(parameters(rn), rate_vals)
+    rates_tup = Tuple(rates_vec)
+    rates_dict = Dict(rates_vec)
+    rates_invalid = reshape(rate_vals, 1, 8)
+
+    # Tests that all input types generates the correct rate matrix.
+    Catalyst.ratematrix(rn, rate_vals) == rate_mat
+    Catalyst.ratematrix(rn, rates_vec) == rate_mat
+    Catalyst.ratematrix(rn, rates_tup) == rate_mat
+    Catalyst.ratematrix(rn, rates_dict) == rate_mat
+    @test_throws Exception Catalyst.iscomplexbalanced(rn, rates_invalid)
 end
