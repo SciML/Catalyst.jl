@@ -574,7 +574,7 @@ sol[:X₂]
 !!! note
     Generally, `remove_conserved = true` should not change any model workflows. I.e. anything that works without this option should also work when an `ODEProblem` is created using `remove_conserved = true`.
 
-For any given `ReactionSystem` model, we can use the `conservationlaw_constants` to compute all a system's conserved quantities:
+For any given `ReactionSystem` model, we can use `conservationlaw_constants` to compute all of a system's conserved quantities:
 ```@example network_analysis_conservation_laws
 conservationlaw_constants(rs)
 ```
