@@ -737,7 +737,8 @@ end
     iscomplexbalanced(rs::ReactionSystem, parametermap)
 
 Constructively compute whether a network will have complex-balanced equilibrium
-solutions, following the method in van der Schaft et al., [2015](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
+solutions, following the method in van der Schaft et al., [2015](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). 
+Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
 
 function iscomplexbalanced(rs::ReactionSystem, parametermap::Dict)
@@ -795,12 +796,12 @@ function iscomplexbalanced(rs::ReactionSystem, parametermap::Dict)
     end
 end
 
-function iscomplexbalanced(rs::ReactionSystem, parametermap::Vector{Pair{Symbol, Float64}})
+function iscomplexbalanced(rs::ReactionSystem, parametermap::Vector{<:Pair})
     pdict = Dict(parametermap)
     iscomplexbalanced(rs, pdict)
 end
 
-function iscomplexbalanced(rs::ReactionSystem, parametermap::Tuple{Pair{Symbol, Float64}})
+function iscomplexbalanced(rs::ReactionSystem, parametermap::Tuple)
     pdict = Dict(parametermap)
     iscomplexbalanced(rs, pdict)
 end
@@ -812,7 +813,9 @@ end
 """
     ratematrix(rs::ReactionSystem, parametermap)
 
-    Given a reaction system with n complexes, outputs an n-by-n matrix where R_{ij} is the rate constant of the reaction between complex i and complex j. Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
+    Given a reaction system with n complexes, outputs an n-by-n matrix where R_{ij} is the rate 
+    constant of the reaction between complex i and complex j. Accepts a dictionary, vector, or tuple 
+    of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
 """
 
 function ratematrix(rs::ReactionSystem, rates::Vector{Float64})
@@ -842,12 +845,12 @@ function ratematrix(rs::ReactionSystem, parametermap::Dict)
     ratematrix(rs, rates)
 end
 
-function ratematrix(rs::ReactionSystem, parametermap::Vector{Pair{Symbol, Float64}})
+function ratematrix(rs::ReactionSystem, parametermap::Vector{<:Pair})
     pdict = Dict(parametermap)
     ratematrix(rs, pdict)
 end
 
-function ratematrix(rs::ReactionSystem, parametermap::Tuple{Pair{Symbol, Float64}})
+function ratematrix(rs::ReactionSystem, parametermap::Tuple)
     pdict = Dict(parametermap)
     ratematrix(rs, pdict)
 end

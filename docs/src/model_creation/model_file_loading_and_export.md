@@ -30,7 +30,7 @@ Here, `include` is used to execute the Julia code from any file. This means that
 let
 
 # Independent variable:
-@variables t
+@parameters t
 
 # Parameters:
 ps = @parameters kB kD kP
@@ -52,7 +52,7 @@ complete(rs)
 end
 ```
 !!! note
-    The code that `save_reactionsystem` prints uses [programmatic modelling](@ref programmatic_CRN_construction) to generate the written model. 
+    The code that `save_reactionsystem` prints uses [programmatic modelling](@ref programmatic_CRN_construction) to generate the written model.
 
 In addition to transferring models between Julia sessions, the `save_reactionsystem` function can also be used or print a model to a text file where you can easily inspect its components.
 
@@ -76,7 +76,7 @@ A general-purpose format for storing CRN models is so-called .net files. These c
 using ReactionNetworkImporters
 prn = loadrxnetwork(BNGNetwork(), "repressilator.net")
 ```
-Here, .net files not only contain information regarding the reaction network itself, but also the numeric values (initial conditions and parameter values) required for simulating it. Hence, `loadrxnetwork` generates a `ParsedReactionNetwork` structure, containing all this information. You can access the model as `prn.rn`, the initial conditions as `prn.u0`, and the parameter values as `prn.p`. Furthermore, these initial conditions and parameter values are also made [*default* values](@ref dsl_advanced_options_default_vals) of the model. 
+Here, .net files not only contain information regarding the reaction network itself, but also the numeric values (initial conditions and parameter values) required for simulating it. Hence, `loadrxnetwork` generates a `ParsedReactionNetwork` structure, containing all this information. You can access the model as `prn.rn`, the initial conditions as `prn.u0`, and the parameter values as `prn.p`. Furthermore, these initial conditions and parameter values are also made [*default* values](@ref dsl_advanced_options_default_vals) of the model.
 
 A parsed reaction network's content can then be provided to various problem types for simulation. E.g. here we perform an ODE simulation of our repressilator model:
 ```julia
@@ -128,7 +128,7 @@ Above, we described how to use SBMLImporter to import SBML files. Alternatively,
 While CRN models can be represented through various file formats, they can also be represented in various matrix forms. E.g. a CRN with $m$ species and $n$ reactions (and with constant rates) can be represented with either
 - An $mxn$ substrate matrix (with each species's substrate stoichiometry in each reaction) and an $nxm$ product matrix (with each species's product stoichiometry in each reaction).
 
-Or 
+Or
 - An $mxn$ complex stoichiometric matrix (...) and a $2mxn$ incidence matrix (...).
 
 The advantage of these forms is that they offer a compact and very general way to represent a large class of CRNs. ReactionNetworkImporters have the functionality for converting matrices of these forms directly into Catalyst `ReactionSystem` models. Instructions on how to do this are available in [ReactionNetworkImporter's documentation](https://docs.sciml.ai/ReactionNetworkImporters/stable/#Loading-a-matrix-representation).
