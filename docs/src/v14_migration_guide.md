@@ -136,18 +136,19 @@ using Catalyst
 @variables t
 nothing # hide
 ```
-MTKv9 has introduced a standard global time variable, and as such a new, preferred, interface has been developed:
+MTKv9 has introduced a standard global time variable, and as such a new interface has been developed:
 ```@example v14_migration_3
 t = default_t()
 nothing # hide
 ```
+Note that internally MTK9 actually represents `t` as a parameter, so the old approach should never be used. As the type of `t` is now considered internal to MTK, it should always be declared using the `default_t()` function.
 
 Similarly, the time differential (primarily relevant when creating combined reaction-ODE models) used to be declared through
 ```@example v14_migration_3
 D = Differential(t)
 nothing # hide
 ```
-where the preferred method is now
+where now one must use
 ```@example v14_migration_3
 D = default_time_deriv()
 nothing # hide

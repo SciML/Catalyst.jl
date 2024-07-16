@@ -39,9 +39,8 @@ briefly summarised in the following bullet points:
   new merged and/or composed `ReactionSystem`s from multiple component systems.
 
 #### General changes
-- The `default_t()` and `default_time_deriv()` functions are now the preferred
-  approaches for creating the default time independent variable and its
-  differential. i.e.
+- `default_t()` and `default_time_deriv()` functions should be used for creating
+  the default time independent variable and its differential. i.e.
   ```julia
   # do
   t = default_t()
