@@ -8,7 +8,7 @@ end
 # Extract a string which declares the system's independent variable.
 function get_iv_string(rn::ReactionSystem)
     iv_dec = MT.get_iv(rn)
-    return "@variables $(iv_dec)"
+    return "@parameters $(iv_dec)"
 end
 
 # Creates an annotation for the system's independent variable.
@@ -92,12 +92,12 @@ function handle_us_n_ps(file_text::String, rn::ReactionSystem, annotate::Bool,
 
         # Pre-declares the sets with written/remaining parameters/species/variables.
         # Whenever all/none are written depends on whether there were any initial dependencies.
-        # `deepcopy` is required as these get mutated by `dependency_split!`. 
+        # `deepcopy` is required as these get mutated by `dependency_split!`.
         remaining_ps = (p_deps ? deepcopy(ps_all) : [])
         remaining_sps = (sp_deps ? deepcopy(sps_all) : [])
         remaining_vars = (var_deps ? deepcopy(vars_all) : [])
 
-        # Iteratively loops through all parameters, species, and/or variables. In each iteration, 
+        # Iteratively loops through all parameters, species, and/or variables. In each iteration,
         # adds the declaration of those that can still be declared.
         while !(isempty(remaining_ps) && isempty(remaining_sps) && isempty(remaining_vars))
             # Checks which parameters/species/variables can be written. The `dependency_split`
@@ -145,7 +145,7 @@ function seri_has_parameters(rn::ReactionSystem)
     return !isempty(get_ps(rn))
 end
 
-# Extract a string which declares the system's parameters. Uses multiline declaration (a 
+# Extract a string which declares the system's parameters. Uses multiline declaration (a
 # `begin ... end` block) if more than 3 parameters have a "complicated" declaration (if they
 # have metadata, default value, or type designation).
 function get_parameters_string(ps)
@@ -167,7 +167,7 @@ function seri_has_species(rn::ReactionSystem)
     return !isempty(get_species(rn))
 end
 
-# Extract a string which declares the system's species. Uses multiline declaration (a 
+# Extract a string which declares the system's species. Uses multiline declaration (a
 # `begin ... end` block) if more than 3 species have a "complicated" declaration (if they
 # have metadata, default value, or type designation).
 function get_species_string(sps)
@@ -189,7 +189,7 @@ function seri_has_variables(rn::ReactionSystem)
     return length(get_unknowns(rn)) > length(get_species(rn))
 end
 
-# Extract a string which declares the system's variables. Uses multiline declaration (a 
+# Extract a string which declares the system's variables. Uses multiline declaration (a
 # `begin ... end` block) if more than 3 variables have a "complicated" declaration (if they
 # have metadata, default value, or type designation).
 function get_variables_string(vars)
@@ -222,7 +222,7 @@ function get_reactions_string(rn::ReactionSystem)
         return "rxs = [$(reaction_string(get_rxs(rn)[1], strip_call_dict))]"
     end
 
-    # Creates the string corresponding to the code which generates the system's reactions. 
+    # Creates the string corresponding to the code which generates the system's reactions.
     rxs_string = "rxs = ["
     for rx in get_rxs(rn)
         @string_append! rxs_string "\n\t"*reaction_string(rx, strip_call_dict) ","
@@ -286,7 +286,7 @@ function get_equations_string(rn::ReactionSystem)
         return "eqs = [$(expression_2_string(get_eqs(rn)[end]; strip_call_dict))]"
     end
 
-    # Creates the string corresponding to the code which generates the system's reactions. 
+    # Creates the string corresponding to the code which generates the system's reactions.
     eqs_string = "eqs = ["
     for eq in get_eqs(rn)[(length(get_rxs(rn)) + 1):end]
         @string_append! eqs_string "\n\t" expression_2_string(eq; strip_call_dict) ","
@@ -392,7 +392,7 @@ function get_continuous_events_string(rn::ReactionSystem)
         return "continuous_events = [$(continuous_event_string(MT.get_continuous_events(rn)[1], strip_call_dict))]"
     end
 
-    # Creates the string corresponding to the code which generates the system's reactions. 
+    # Creates the string corresponding to the code which generates the system's reactions.
     continuous_events_string = "continuous_events = ["
     for continuous_event in MT.get_continuous_events(rn)
         @string_append! continuous_events_string "\n\t" continuous_event_string(
@@ -450,7 +450,7 @@ function get_discrete_events_string(rn::ReactionSystem)
         return "discrete_events = [$(discrete_event_string(MT.get_discrete_events(rn)[1], strip_call_dict))]"
     end
 
-    # Creates the string corresponding to the code which generates the system's reactions. 
+    # Creates the string corresponding to the code which generates the system's reactions.
     discrete_events_string = "discrete_events = ["
     for discrete_event in MT.get_discrete_events(rn)
         @string_append! discrete_events_string "\n\t" discrete_event_string(
@@ -493,7 +493,7 @@ DISCRETE_EVENTS_FS = (seri_has_discrete_events, get_discrete_events_string,
 ### Handles Systems ###
 
 # Specific `push_field` function, which is used for the system field (where the annotation option
-# must be passed to the `get_component_string` function). Since non-ReactionSystem systems cannot be 
+# must be passed to the `get_component_string` function). Since non-ReactionSystem systems cannot be
 # written to file, this function throws an error if any such systems are encountered.
 function push_systems_field(file_text::String, rn::ReactionSystem, annotate::Bool,
         top_level::Bool)

@@ -941,3 +941,42 @@ end
 let
     @test_nowarn Catalyst.reactionsystem_uptodate_check()
 end
+
+# Test that functions using the incidence matrix properly cache it
+let
+    rn = @reaction_network begin
+        k1, A --> B
+        k2, B --> C
+        k3, C --> A
+    end
+
+    nps = Catalyst.get_networkproperties(rn)
+    @test isempty(nps.incidencemat) == true
+
+    img = incidencematgraph(rn)
+    @test size(nps.incidencemat) == (3,3)
+
+    Catalyst.reset!(nps)
+    lcs = linkageclasses(rn)
+    @test size(nps.incidencemat) == (3,3)
+
+    Catalyst.reset!(nps)
+    sns = subnetworks(rn)
+    @test size(nps.incidencemat) == (3,3)
+
+    Catalyst.reset!(nps)
+    δ = deficiency(rn)
+    @test size(nps.incidencemat) == (3,3)
+    
+    Catalyst.reset!(nps)
+    δ_l = linkagedeficiencies(rn)
+    @test size(nps.incidencemat) == (3,3)
+
+    Catalyst.reset!(nps)
+    rev = isreversible(rn)
+    @test size(nps.incidencemat) == (3,3)
+
+    Catalyst.reset!(nps)
+    weakrev = isweaklyreversible(rn, sns)
+    @test size(nps.incidencemat) == (3,3)
+end

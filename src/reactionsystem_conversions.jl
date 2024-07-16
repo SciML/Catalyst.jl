@@ -590,7 +590,7 @@ function nonlinear_convert_differentials_check(rs::ReactionSystem)
                     (2) The right-hand side does not contain any differentials.
                 This is generally not permitted.
 
-                If you still would like to perform this conversions, please use the `all_differentials_permitted = true` option. In this case, all differential will be set to `0`. 
+                If you still would like to perform this conversion, please use the `all_differentials_permitted = true` option. In this case, all differentials will be set to `0`. 
                 However, it is recommended to proceed with caution to ensure that the produced nonlinear equation makes sense for your intended application."
             )
         end

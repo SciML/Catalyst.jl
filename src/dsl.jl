@@ -175,7 +175,8 @@ end
 """
     @network_component
 
-As @reaction_network, but the output system is not complete.
+Equivalent to `@reaction_network` except the generated `ReactionSystem` is not marked as
+complete.
 """
 macro network_component(name::Symbol, ex::Expr)
     make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name))))
@@ -323,10 +324,10 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     if haskey(options, :ivs)
         ivs = Tuple(extract_syms(options, :ivs))
         ivexpr = copy(options[:ivs])
-        ivexpr.args[1] = Symbol("@", "variables")
+        ivexpr.args[1] = Symbol("@", "parameters")
     else
         ivs = (DEFAULT_IV_SYM,)
-        ivexpr = :(@variables $(DEFAULT_IV_SYM))
+        ivexpr = :($(DEFAULT_IV_SYM) = default_t())
     end
     tiv = ivs[1]
     sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
@@ -876,7 +877,7 @@ function make_reaction(ex::Expr)
     sexprs = get_sexpr(species, Dict{Symbol, Expr}())
     pexprs = get_pexpr(parameters, Dict{Symbol, Expr}())
     rxexpr = get_rxexprs(reaction)
-    iv = :(@variables $(DEFAULT_IV_SYM))
+    iv = :($(DEFAULT_IV_SYM) = default_t())
 
     # Returns the rephrased expression.
     quote

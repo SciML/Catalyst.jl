@@ -69,7 +69,7 @@ let
     @parameters k n1 n2::Int32
     @species X(t) Y(t) Z(t)
     @variables A(t)
-    
+
     # Neither substrates nor products.
     @test_throws ArgumentError Reaction(k*A, [], [])
 
@@ -99,19 +99,19 @@ let
     @parameters k1 k2 n1 n2 η1 η2 p
     @species X(t) Y(t) Z(t)
     @variables A(t)
-    
+
     # Create `Reaction`s.
     rx1 = Reaction(k1, [], [X])
     rx2 = Reaction(k1 + k2, [X], [Y], [1], [n1]; metadata = [:noise_scaling => η1])
     rx3 = Reaction(k1 + k2 + A, [X], [X, Y, Z], [1], [n1 + n2, 2, 1])
     rx4 = Reaction(X + t, [], [Y]; metadata = [:noise_scaling => η1 + η2])
-    
+
     # Test `get_variables!`.
     @test issetequal(get_variables!([value(p)], rx1), [k1, X, p])
     @test issetequal(get_variables!([value(p)], rx2), [k1, k2, X, Y, n1, η1, p])
     @test issetequal(get_variables!([value(p)], rx3), [k1, k2, A, X, Y, Z, n1, n2, p])
     @test issetequal(get_variables!([value(p)], rx4), [X, t, Y, η1, η2, p])
-    
+
     # Test `get_symbolics`.
     @test issetequal(get_symbolics(rx1), [k1, X])
     @test issetequal(get_symbolics(rx2), [k1, k2, X, Y, n1, η1])
@@ -180,7 +180,7 @@ let
     @test Catalyst.hasmetadata(r, :md_5)
     @test Catalyst.hasmetadata(r, :md_6)
     @test !Catalyst.hasmetadata(r, :md_8)
-    
+
     @test isequal(Catalyst.getmetadata(r, :md_1), 1.0)
     @test isequal(Catalyst.getmetadata(r, :md_2), false)
     @test isequal(Catalyst.getmetadata(r, :md_3), "Hello world")
@@ -191,7 +191,7 @@ end
 
 # Tests the noise scaling metadata.
 let
-    @parameters k η  
+    @parameters k η
     @species X(t) X2(t)
 
     r1 = Reaction(k, [X], [X2], [2], [1])
@@ -205,8 +205,8 @@ end
 
 # Tests the description metadata.
 let
-    @variables t
-    @parameters k η  
+    t = default_t()
+    @parameters k η
     @species X(t) X2(t)
 
     r1 = Reaction(k, [X], [X2], [2], [1])
@@ -220,8 +220,8 @@ end
 
 # Tests the misc metadata.
 let
-    @variables t
-    @parameters k η  
+    t = default_t()
+    @parameters k η
     @species X(t) X2(t)
 
     r1 = Reaction(k, [X], [X2], [2], [1])
