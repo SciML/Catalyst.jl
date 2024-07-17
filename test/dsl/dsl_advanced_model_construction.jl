@@ -267,6 +267,24 @@ let
     @test isequal(rn1,rn2)
 end
 
+# Tests that erroneous metadata declarations yields errors.
+let
+    # Malformed metadata/value separator.
+    @test_throws Exception @eval @reaction_network begin
+        d, X --> 0, [misc=>"Metadata should use `=`, not `=>`."]
+    end
+
+    # Malformed lhs
+    @test_throws Exception @eval @reaction_network begin
+        d, X --> 0, [misc,description=>"Metadata lhs should be a single symbol."]
+    end
+
+    # Malformed metadata separator.
+    @test_throws Exception @eval @reaction_network begin
+        d, X --> 0, [misc=>:misc; description="description"]
+    end
+end
+
 ### Other Tests ###
 
 # Test floating point stoichiometry work.

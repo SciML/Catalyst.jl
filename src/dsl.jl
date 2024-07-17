@@ -330,7 +330,7 @@ function make_reaction_system(ex::Expr, name)
     end
     forbidden_symbol_check(union(species, parameters))
     forbidden_variable_check(variables)
-    unique_symbol_check(union(species, parameters, variables, ivs))
+    unique_symbol_check(vcat(species, parameters, variables, ivs))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
     psexpr_init = get_pexpr(parameters_extracted, options)
@@ -783,6 +783,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
             end
             if (obs_name in species_n_vars_declared) && is_escaped_expr(obs_eq.args[2])
+                println("HERE")
                 error("An interpolated observable have been used, which has also been explicitly declared within the system using either @species or @variables. This is not permitted.")
             end
             if ((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2])) &&

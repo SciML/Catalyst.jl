@@ -414,14 +414,43 @@ let
     spcs = (A, B1, B2, C)
     @test issetequal(unknowns(rn), sts)
     @test issetequal(species(rn), spcs)
+end
 
-    @test_throws ArgumentError begin
-        rn = @reaction_network begin
-            @variables K
-            k, K*A --> B
-        end
+# Tests errors in `@variables` declarations.
+let 
+    # Variable used as species in reaction.
+    @test_throws Exception @eval rn = @reaction_network begin
+        @variables K
+        k, K*A --> B
+    end
+
+    # Tests error when disallowed name is used for variable.
+    @test_throws Exception @eval @reaction_network begin
+        @variables π(t)
     end
 end
+
+
+# Tests that duplicate iv/parameter/species/variable names cannot be provided.
+let
+    @test_throws Exception @eval @reaction_network begin
+        @spatial_ivs X
+        @species X(t)
+    end
+    @test_throws Exception @eval @reaction_network begin
+        @parameters X
+        @species X(t)
+    end
+    @test_throws Exception @eval @reaction_network begin
+        @species X(t)
+        @variables X(t)
+    end
+    @test_throws Exception @eval @reaction_network begin
+        @parameters X
+        @variables X(t)
+    end
+end
+
 
 ### Test Independent Variable Designations ###
 
@@ -739,6 +768,14 @@ let
         @observables $X ~ X1 + X2
         (k1,k2), X1 <--> X2
     end
+
+    # Observable metadata provided twice.
+    @test_throws Exception @eval @reaction_network begin
+        @species X2 [description="Twice the amount of X"]
+        @observables (X2, [description="X times two."]) ~ 2X 
+        d, X --> 0
+    end
+
 end
 
 
@@ -916,7 +953,14 @@ let
         @equations X ~ p - S
         (P,D), 0 <--> S
     end
+
+    # Differential equation using a forbidden variable (in the DSL).
+    @test_throws Exception @eval @reaction_network begin
+        @equations D(π) ~ -1
+    end
 end
+
+### Other DSL Option Tests ###
 
 # test combinatoric_ratelaws DSL option
 let
@@ -950,4 +994,12 @@ let
     rl = oderatelaw(reactions(rn3)[1]; combinatoric_ratelaw)
     @unpack k1, A = rn3
     @test isequal(rl, k1*A^2)
+end
+
+# Erroneous `@default_noise_scaling` declaration (other noise scaling tests are mostly in the SDE file).
+let
+    # Default noise scaling with multiple entries.
+    @test_throws Exception @eval @reaction_network begin
+        @default_noise_scaling η1 η2
+    end 
 end
