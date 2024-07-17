@@ -181,7 +181,8 @@ end
 # Checks that Tuple u0/ps input, and non-default independent variables works.
 # The system is mostly made up to be non-trivial, but reliably solvable.
 let
-    @parameters p d a b c τ
+    @parameters p d a b c
+    @parameters τ
     @variables A(τ) B(τ) C(τ)
     @species X(τ)
     Δ = Differential(τ)
