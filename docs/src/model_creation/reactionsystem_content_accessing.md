@@ -5,21 +5,7 @@ Catalyst is based around the creation, analysis, and simulation of chemical reac
     Generally, a field of a Julia structure can be accessed through `struct.fieldname`. E.g. a simulation's time vector can be retrieved using `simulation.t`. While Catalyst `ReactionSystem`s are structures, one should *never* access their fields using this approach, but rather using the accessor functions described below and in the [API](@ref api_accessor_functions) (direct accessing of fields can yield unexpected behaviours). E.g. to retrieve the species of a `ReactionsSystem` `rs`, use `Catalyst.get_species(rs)`, *not* `rs.species`. The reason is that, as shown [below](@ref model_accessing_symbolic_variables), Catalyst (and more generally any [ModelingToolkit]https://github.com/SciML/ModelingToolkit.jl system types) reserves this type of accessing for accessing symbolic variables stored in the system. I.e. `rs.X` refers to the `X` symbolic variable, not a field in `rs` named "X".
 
 ## [Direct accessing of symbolic model parameter and species](@id model_accessing_symbolic_variables)
-Previously we have described how the parameters and species that Catalyst models contain are represented using so-called [*symbolic variables*](@ref introduction_to_catalyst) (and how these enable the forming of [*symbolic expressions*](@ref introduction_to_catalyst)). We have described how, during [programmatic modelling](@ref programmatic_CRN_construction), the user has [direct access to these](@ref programmatic_CRN_construction) and how this can be [taken advantage of](@ref programmatic_CRN_construction). I.e. here we declare the symbolic variables associated with a two-state model, and also creates the model programmatically.
-```@example model_accessing_symbolic_variables_intro
-using Catalyst
-t = default_t()
-@parameters k1 k2
-@species X1(t) X2(t)
-
-rxs = [
-    Reaction(k1, [X1], [X2]),
-    Reaction(k2, [X2], [X1])
-]
-@named rs = ReactionSystem(rxs, t)
-nothing # hide
-```
-We have also described how, during [DSL-based modelling](@ref dsl_description), the need for symbolic representation can be circumvented by [using `@unpack`](@ref dsl_advanced_options_symbolics_and_DSL_unpack) or by [creating an observable](@ref dsl_advanced_options_observables). However, sometimes, it is easier to *directly access a symbolic variable through the model itself*.
+Previously we have described how the parameters and species that Catalyst models contain are represented using so-called [*symbolic variables*](@ref introduction_to_catalyst) (and how these enable the forming of [*symbolic expressions*](@ref introduction_to_catalyst)). We have described how, during [programmatic modelling](@ref programmatic_CRN_construction), the user has [direct access to these](@ref programmatic_CRN_construction) and how this can be [taken advantage of](@ref programmatic_CRN_construction). We have also described how, during [DSL-based modelling](@ref dsl_description), the need for symbolic representation can be circumvented by [using `@unpack`](@ref dsl_advanced_options_symbolics_and_DSL_unpack) or by [creating an observable](@ref dsl_advanced_options_observables). However, sometimes, it is easier to *directly access a symbolic variable through the model itself*, something which we will describe here.
 
 Let us consider the following [two-state model](@ref basic_CRN_library_two_states)
 ```@example model_accessing_symbolic_variables
@@ -180,6 +166,7 @@ rs = complete(rs)
 This model consists of a top-level system, which contains the transportation reaction only, and two subsystems. We can retrieve all the subsystems of the top-level system through `Catalyst.get_systems`:
 ```@example model_accessing_hierarchical
 Catalyst.get_systems(rs)
+nothing # hide
 ```
 !!! note
     If either of the subsystems had had further subsystems, these would *not* be retrieved by `Catalyst.get_systems` (which only returns the direct subsystems of the input system).
