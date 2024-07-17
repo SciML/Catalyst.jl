@@ -2,10 +2,24 @@
 Catalyst is based around the creation, analysis, and simulation of chemical reaction network models. Catalyst stores these models in [`ReactionSystem](@ref) structures. This page describes some basic functions for accessing the content of these structures. This includes retrieving lists of species, parameters, or reactions that a model consists of. An extensive list of relevant functions for working with `ReactionSystem` models can be found in Catalyst's [API](@ref api).
 
 !!! warning
-    Generally, a field of a Julia structure can be accessed through `struct.fieldname`. E.g. a simulation's time vector can be retrieved using `simulation.t`. While Catalyst `ReactionSystem`s are structures, one should *never* access their fields using this approach, but rather using the accessor functions described below and in the [API](@ref api_accessor_functions) (direct accessing of fields can yield unexpected behaviours). E.g. to retrieve the species of a `ReactionsSystem` `rs`, use `Catalyst.get_species(rs)`, *not* `rs.species`.
+    Generally, a field of a Julia structure can be accessed through `struct.fieldname`. E.g. a simulation's time vector can be retrieved using `simulation.t`. While Catalyst `ReactionSystem`s are structures, one should *never* access their fields using this approach, but rather using the accessor functions described below and in the [API](@ref api_accessor_functions) (direct accessing of fields can yield unexpected behaviours). E.g. to retrieve the species of a `ReactionsSystem` `rs`, use `Catalyst.get_species(rs)`, *not* `rs.species`. The reason is that, as shown [below](@ref model_accessing_symbolic_variables), Catalyst (and more generally any [ModelingToolkit]https://github.com/SciML/ModelingToolkit.jl system types) reserves this type of accessing for accessing symbolic variables stored in the system. I.e. `rs.X` refers to the `X` symbolic variable, not a field in `rs` named "X".
 
 ## [Direct accessing of symbolic model parameter and species](@id model_accessing_symbolic_variables)
-Previously we have described how the parameters and species (and [variables](@ref constraint_equations_coupling_constraints)) that Catalyst models contain are represented using so-called [*symbolic variables*](@ref introduction_to_catalyst) (and how these enable the forming of [*symbolic expressions*](@ref introduction_to_catalyst)). We have described how, during [programmatic modelling](@ref programmatic_CRN_construction), the user has [direct access to these](@ref programmatic_CRN_construction) and how this can be [taken advantage of](@ref programmatic_CRN_construction). We have also described how, during [DSL-based modelling](@ref dsl_description), the need for symbolic representation can be circumvented by [using `@unpack`](@ref dsl_advanced_options_symbolics_and_DSL_unpack) or by [creating an observable](@ref dsl_advanced_options_observables). However, sometimes, it is easier to *directly access a symbolic variable through the model itself*.
+Previously we have described how the parameters and species that Catalyst models contain are represented using so-called [*symbolic variables*](@ref introduction_to_catalyst) (and how these enable the forming of [*symbolic expressions*](@ref introduction_to_catalyst)). We have described how, during [programmatic modelling](@ref programmatic_CRN_construction), the user has [direct access to these](@ref programmatic_CRN_construction) and how this can be [taken advantage of](@ref programmatic_CRN_construction). I.e. here we declare the symbolic variables associated with a two-state model, and also creates the model programmatically.
+```@example model_accessing_symbolic_variables_intro
+using Catalyst
+t = default_t()
+@parameters k1 k2
+@species X1(t) X2(t)
+
+rxs = [
+    Reaction(k1, [X1], [X2]),
+    Reaction(k2, [X2], [X1])
+]
+@named rs = ReactionSystem(rxs, t)
+nothing # hide
+```
+We have also described how, during [DSL-based modelling](@ref dsl_description), the need for symbolic representation can be circumvented by [using `@unpack`](@ref dsl_advanced_options_symbolics_and_DSL_unpack) or by [creating an observable](@ref dsl_advanced_options_observables). However, sometimes, it is easier to *directly access a symbolic variable through the model itself*.
 
 Let us consider the following [two-state model](@ref basic_CRN_library_two_states)
 ```@example model_accessing_symbolic_variables
@@ -55,13 +69,13 @@ Here, we can confirm that the symbolic variables we access through the model are
 isequal(rs.k1, k1)
 ```
 
-!!! warn
+!!! warning
     When accessing model symbolic variables through the model (using e.g. `rs.X1`), it is important to first ensure that the [*model has been marked complete*](@ref programmatic_CRN_construction).
 
 ## [Accessing basic model properties](@id model_accessing_basics)
 
 ### [Accessing model parameter and species](@id model_accessing_basics_parameters_n_species)
-Previously we showed how to access individual parameters or species of a `ReactionSystem` model. Next, the [`parameters`](@ref) and [`species`](@ref) functions allow us to retrieve *all* parameters and species as vectors:
+Previously we showed how to access individual parameters or species of a `ReactionSystem` model. Next, the `parameters` and [`species`](@ref) functions allow us to retrieve *all* parameters and species as vectors:
 ```@example model_accessing_basics
 using Catalyst # hide
 sir = @reaction_network begin
@@ -78,7 +92,7 @@ These vectors contain the exact same symbolic variables that we would access thr
 issetequal([sir.S, sir.I, sir.R], species(sir))
 ```
 
-If we wish to count the number of parameters or species in a system, we can do this directly through the `numparams` and `numspecies` functions:
+If we wish to count the number of parameters or species in a system, we can do this directly through the [`numparams`](@ref) and [`numspecies`](@ref) functions:
 ```@example model_accessing_basics
 numparams(sir)
 ```
@@ -87,15 +101,15 @@ numspecies(sir)
 ```
 
 ### [Accessing model reactions](@id model_accessing_basics_reactions)
-A vector containing all a model's [reactions](@ref programmatic_CRN_construction) can be retrieved using the `reactions` function:
+A vector containing all a model's [reactions](@ref programmatic_CRN_construction) can be retrieved using the [`reactions`](@ref) function:
 ```@example model_accessing_basics
 reactions(sir)
 ```
-We can count the number of reactions in a model using the `numreactions` function:
+We can count the number of reactions in a model using the [`numreactions`](@ref) function:
 ```@example model_accessing_basics
 numreactions(sir)
 ```
-Finally, a vector with all the reactions' rates can be retrieved using `reactionrates`:
+Finally, a vector with all the reactions' rates can be retrieved using [`reactionrates`](@ref):
 ```@example model_accessing_basics
 reactionrates(sir)
 ```
@@ -113,7 +127,7 @@ Here, the `unknowns` function returns all unknowns (i.e. species and variables):
 ```@example model_accessing_basics
 unknowns(coupled_crn)
 ```
-Meanwhile, `species` returns the species only, while `nonspecies` returns the variables only:
+Meanwhile, `species` returns the species only, while [`nonspecies`](@ref) returns the variables only:
 ```@example model_accessing_basics
 species(coupled_crn)
 ```
@@ -125,7 +139,7 @@ Similarly, the `equations` function returns a vector with all reactions and equa
 ```@example model_accessing_basics
 equations(coupled_crn)
 ```
-Meanwhile, `reactions` returns the reactions only, while `nonreactions` returns any algebraic or differential equations:
+Meanwhile, [`reactions`](@ref) returns the reactions only, while [`nonreactions`](@ref) returns any algebraic or differential equations:
 ```@example model_accessing_basics
 reactions(coupled_crn)
 ```
@@ -212,10 +226,10 @@ plot(sol)
 ```
 
 !!! note
-    When we access a symbolic variable through a subsystem (e.g. `rs.nucleus.Xᵢ`) that subsystem's name is prepended to the symbolic variable's name (we call this *namespacing*). This is also the case if we access it through the original model, i.e. `nucleus_sys.Xᵢ`. Namespacing is only performed when we access variables of [*incomplete systems*](@ref programmatic_CRN_construction). I.e. `isequal(nucleus_sys.d, nucleus_sys.d)` returns false (as the systems are incomplete and namespacing is performed). However, `isequal(complete(nucleus_sys).d, complete(nucleus_sys).d)` returns true  (as the systems are complete and namespacing is not performed). This is the reason that the system top-level system's name is never prepended when we do e.g. `rs.kₜ` (because here, `rs` is complete).
+    When we access a symbolic variable through a subsystem (e.g. `rs.nucleus.Xᵢ`) that subsystem's name is prepended to the symbolic variable's name (we call this *namespacing*). This is also the case if we access it through the original model, i.e. `nucleus_sys.Xᵢ`. Namespacing is only performed when we access variables of [*incomplete systems*](@ref programmatic_CRN_construction). I.e. `isequal(nucleus_sys.d, cytoplasm_sys.d)` returns false (as the systems are incomplete and namespacing is performed). However, `isequal(complete(nucleus_sys).d, complete(cytoplasm_sys).d)` returns true  (as the systems are complete and namespacing is not performed). This is the reason that the system top-level system's name is never prepended when we do e.g. `rs.kₜ` (because here, `rs` is complete).
 
 ### [Accessing the content of hierarchical models](@id model_accessing_hierarchical_symbolic_variables)
-In the last section, we noted that our hierarchical model contained several instances of the `Xᵢ` species. The `species` function, which retrieves all of a model's species shows that our model has three species (two types of `Xᵢ`, and one type of `Xₐ`)
+In the last section, we noted that our hierarchical model contained several instances of the `Xᵢ` species. The [`species`](@ref) function, which retrieves all of a model's species shows that our model has three species (two types of `Xᵢ`, and one type of `Xₐ`)
 ```@example model_accessing_hierarchical
 species(rs)
 ```
@@ -236,7 +250,7 @@ Here, our top-level model contains a single parameter (`kₜ`), and two the two 
 Catalyst.get_ps(rs.nucleus)
 ```
 
-Generally, functions starting with `get_` retrieve only the components stored in the input system (and do not consider its subsystems), while the corresponding function without `get_` also retrieves the components stored in subsystems. I.e. compare the `Catalyst.get_rxs` and `reactions` functions:
+Generally, functions starting with `get_` retrieve only the components stored in the input system (and do not consider its subsystems), while the corresponding function without `get_` also retrieves the components stored in subsystems. I.e. compare the `Catalyst.get_rxs` and [`reactions`](@ref) functions:
 ```@example model_accessing_hierarchical
 reactions(rs)
 ```
@@ -246,4 +260,4 @@ Catalyst.get_rxs(rs)
 Other examples of similar pairs of functions are `get_unknowns` and `unknowns`, and `get_observed` and `observed`.
 
 !!! note
-    Due to the large number of available accessor functions, most `get_` functions are not directly exported by Catalyst. Hence, these must be used as `Catalyst.get_reactions`, rather than `get_reactions` directly. Again, a full list of accessor functions and instructions on how to use them can be found in [Catalyst's API](@ref api).
+    Due to the large number of available accessor functions, most `get_` functions are not directly exported by Catalyst. Hence, these must be used as `Catalyst.get_rxs`, rather than `get_rxs` directly. Again, a full list of accessor functions and instructions on how to use them can be found in [Catalyst's API](@ref api).
