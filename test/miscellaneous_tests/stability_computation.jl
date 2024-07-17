@@ -96,3 +96,13 @@ let
     u = [1.0]
     @test_throws Exception steady_state_stability(u, rn, p; tol = 1e2)
 end
+
+# Test that stability computation for non-autonomous (t-dependent) systems throws error.
+let
+    rn = @reaction_network begin
+        (p + 1/(1+t),d), 0 <--> X
+    end
+    p = [:p => 1.0, :d => 1.0]
+    u = [1.0]
+    @test_throws Exception steady_state_stability(u, rn, p)
+end
