@@ -355,7 +355,7 @@ let
     k = rand(rng, numparams(rn))
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
-    @test Catalyst.Catalyst.isdetailedbalanced(rn, rates) == false
+    @test Catalyst.isdetailedbalanced(rn, rates) == false
 end
 
 ### STRONG LINKAGE CLASS TESTS
