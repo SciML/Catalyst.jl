@@ -56,7 +56,7 @@ isequal(rs.k1, k1)
 ```
 
 !!! warn
-    When accessing model symbolic variables through the model (using e.g. `rs.X1`), it is important to first ensure that the [*model is complete*](@ref programmatic_CRN_construction).
+    When accessing model symbolic variables through the model (using e.g. `rs.X1`), it is important to first ensure that the [*model has been marked complete*](@ref programmatic_CRN_construction).
 
 ## [Accessing basic model properties](@id model_accessing_basics)
 
