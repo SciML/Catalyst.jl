@@ -181,8 +181,8 @@ end
 # Checks that Tuple u0/ps input, and non-default independent variables works.
 # The system is mostly made up to be non-trivial, but reliably solvable.
 let
-    @parameters p d a b c
-    @variables τ A(τ) B(τ) C(τ)
+    @parameters p d a b c τ
+    @variables A(τ) B(τ) C(τ)
     @species X(τ)
     Δ = Differential(τ)
     eqs = [
@@ -265,7 +265,8 @@ end
 # Checks that non-default iv is inferred correctly from reactions/equations.
 let
     # Create coupled model.
-    @variables τ A(τ) B(τ)
+    @parameters τ
+    @variables A(τ) B(τ)
     @species X(τ) X2(τ)
     @parameters k1 k2 k b1 b2
     D = Differential(τ)
@@ -607,7 +608,8 @@ let
 
     # Declares the model in a messy fashion, and simulates it.
     osol_messy = let
-        @variables τ M(τ) H(τ)=h_max
+        @parameters τ
+        @variables M(τ) H(τ)=h_max
         @species S(τ) I(τ) R(τ)
         Δ = Differential(τ)
         eqs_messy = [
@@ -972,7 +974,8 @@ end
 # Checks that various erroneous coupled system declarations yield errors.
 let
     @parameters p1 p2
-    @variables τ  U1(τ) V1(t)
+    @parameters τ
+    @variables U1(τ) V1(t)
     @species R1(τ) R2(τ) S1(t) S2(t)
     E = Differential(τ)
 
