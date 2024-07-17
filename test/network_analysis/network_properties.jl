@@ -432,7 +432,6 @@ let
     @test issubset([[3,4], [5,6,7]], tslcs) 
 end
 
-<<<<<<< HEAD
 ### CONCENTRATION ROBUSTNESS TESTS
 
 # Check whether concentration-robust species are correctly identified for two well-known reaction networks: the glyoxylate IDHKP-IDH system, and the EnvZ_OmpR signaling pathway. 
@@ -514,12 +513,6 @@ let
 
     @test Catalyst.satisfiesdeficiencyone(rn) == true
 end
-
-
-
-
-
-
 
 ### Complex and detailed balance tests
 
@@ -620,7 +613,8 @@ let
     rates[p[8]] = rates[p[7]]*rates[p[5]]*rates[p[9]] / (rates[p[6]]*rates[p[10]])
     rates[p[3]] = rates[p[2]]*rates[p[4]]*rates[p[9]] / (rates[p[1]]*rates[p[10]])
     @test Catalyst.isdetailedbalanced(rn, rates) == true
-=======
+end
+
 ### Other Network Properties Tests ###
 
 # Tests outgoing complexes matrices (1). 
@@ -730,5 +724,4 @@ let
     Catalyst.ratematrix(rn, rates_tup) == rate_mat
     Catalyst.ratematrix(rn, rates_dict) == rate_mat
     @test_throws Exception Catalyst.iscomplexbalanced(rn, rates_invalid)
->>>>>>> origin/master
 end
