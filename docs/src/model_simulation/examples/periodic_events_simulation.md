@@ -36,7 +36,7 @@ dprob = DiscreteProblem(circadian_model, u0, (0.0, 100.0), ps)
 jprob = JumpProblem(circadian_model, dprob, Direct())
 nothing # hide
 ```
-Next, we implement our event through a `DiscreteCallback`. It triggers every 12 time units, and when it does, it flips the value of `l`. Since we will interface with $l$'s value multiple times, we [create specific `getl` and `setl` functions](@ref simulation_structure_interfacing_functions) to do this (in practice, due to this model's small size, the performance impact is negliable).
+Next, we implement our event through a `DiscreteCallback`. It triggers every 12 time units, and when it does, it flips the value of `l`. Since we will interface with $l$'s value multiple times, we [create specific `getl` and `setl` functions](@ref simulation_structure_interfacing_functions) to do this (in practice, due to this model's small size, the performance increase is minimal).
 ```@example periodic_event_example
 getl = ModelingToolkit.getp(jprob, :l)
 setl = ModelingToolkit.setp(jprob, :l)
