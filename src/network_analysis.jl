@@ -836,13 +836,9 @@ end
 """
     iscomplexbalanced(rs::ReactionSystem, parametermap)
 
-Constructively compute whether a kinetic system (a reaction network with a set of rate constants) will admit complex-balanced equilibrium
-solutions, following the method in van der Schaft et al., [2015](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
-=======
 Constructively compute whether a network will have complex-balanced equilibrium
 solutions, following the method in van der Schaft et al., [2015](https://link.springer.com/article/10.1007/s10910-015-0498-2#Sec3). 
 Accepts a dictionary, vector, or tuple of variable-to-value mappings, e.g. [k1 => 1.0, k2 => 2.0,...]. 
->>>>>>> origin/master
 """
 
 function iscomplexbalanced(rs::ReactionSystem, parametermap::Dict)
