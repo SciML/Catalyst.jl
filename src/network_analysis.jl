@@ -639,22 +639,9 @@ end
 Given the net stoichiometry matrix of a reaction system, computes a matrix of
 conservation laws, each represented as a row in the output.
 """
-function conservationlaws(nsm::T; col_order = nothing) where {T <: AbstractMatrix}
-
-    # compute the left nullspace over the integers
-    N = MT.nullspace(nsm'; col_order)
-
-    # if all coefficients for a conservation law are negative, make positive
-    for Nrow in eachcol(N)
-        all(r -> r <= 0, Nrow) && (Nrow .*= -1)
-    end
-
-    # check we haven't overflowed
-    iszero(N' * nsm) || error("Calculation of the conservation law matrix was inaccurate, "
-          * "likely due to numerical overflow. Please use a larger integer "
-          * "type like Int128 or BigInt for the net stoichiometry matrix.")
-
-    T(N')
+function conservationlaws(nsm::Matrix; col_order = nothing)
+    conslaws = positive_nullspace(nsm'; col_order = col_order)
+    Matrix(conslaws)
 end
 
 # Used in the subsequent function.
@@ -904,4 +891,50 @@ function treeweight(t::SimpleDiGraph, g::SimpleDiGraph, distmx::Matrix)
         prod *= distmx[s, t]
     end
     prod
+end
+
+"""
+    cycles(rs::ReactionSystem)
+
+    Returns the matrix of a basis of cycles (or flux vectors), or a basis for reaction fluxes for which the system is at steady state. 
+    These correspond to right eigenvectors of the stoichiometric matrix. Equivalent to [`fluxmodebasis`](@ref). 
+"""
+
+function cycles(rs::ReactionSystem)
+    nps = get_networkproperties(rs)
+    nsm = netstoichmat(rs)
+    !isempty(nps.cyclemat) && return nps.cyclemat
+    nps.cyclemat = cycles(nsm; col_order = nps.col_order)
+    nps.cyclemat
+end
+
+function cycles(nsm::Matrix; col_order = nothing)
+    positive_nullspace(nsm; col_order)
+end
+
+function positive_nullspace(M::T; col_order = nothing) where {T <: AbstractMatrix}
+    # compute the left nullspace over the integers
+    N = MT.nullspace(M; col_order)
+
+    # if all coefficients for a cycle are negative, make positive
+    for Ncol in eachcol(N)
+        all(r -> r <= 0, Ncol) && (Ncol .*= -1)
+    end
+
+    # check we haven't overflowed
+    iszero(M * N) || error("Calculation of the cycle matrix was inaccurate, "
+          * "likely due to numerical overflow. Please use a larger integer "
+          * "type like Int128 or BigInt for the net stoichiometry matrix.")
+
+    T(N)
+end
+
+"""
+    fluxvectors(rs::ReactionSystem)
+
+    See documentation for [`cycles`](@ref). 
+"""
+
+function fluxvectors(rs::ReactionSystem)
+    cycles(rs)
 end

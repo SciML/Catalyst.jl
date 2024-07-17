@@ -72,6 +72,16 @@ let
     #     end
     #     println("-----------")
     # end
+
+    # Testing if cycles identifies reversible reactions as cycles (one forward, one reverse) 
+    cyclemat = Catalyst.cycles(MAPK)
+    S = netstoichmat(MAPK)
+    for i in 1:size(S, 2)-1
+        if S[:,i] == -S[:,i+1]
+           cycle = [(j == i) || (j == i+1) ? 1 : 0 for j in 1:size(S,2)]
+           @test rank(cyclemat) == rank(hcat(cyclemat, cycle))
+        end
+    end
 end
 
 # Tests network analysis functions on a second network (by comparing to manually computed outputs).
@@ -349,7 +359,6 @@ end
 
 ### STRONG LINKAGE CLASS TESTS
 
-
 # a) Checks that strong/terminal linkage classes are correctly found. Should identify the (A, B+C) linkage class as non-terminal, since B + C produces D
 let
     rn = @reaction_network begin
@@ -429,6 +438,64 @@ let
     @test length(tslcs) == 2
     @test issubset([[1,2], [3,4], [5,6,7]], slcs)
     @test issubset([[3,4], [5,6,7]], tslcs) 
+end
+
+# Cycle Test: Open Reaction Network
+let
+    rn = @reaction_network begin
+        k1, 0 --> X1
+        k2, X1 --> 0
+        k3, X1 --> X2
+        (k4, k5), X2 <--> X3
+        (k6, k7), X3 <--> 0
+    end
+
+    # 0 --> X1 --> X2 --> X3 --> 0
+    cycle = [1, 0, 1, 1, 0, 1, 0]
+    cyclemat = Catalyst.cycles(rn)
+    @test rank(cyclemat) == rank(hcat(cyclemat, cycle))
+end
+
+# From stoichiometric matrix. Reference: Trinh, 2008, https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2909134/
+let
+   S = [1 -1 0 0 -1 0 0 0 0;
+        0 0 0 0 1 -1 -1 -1 0;
+        0 1 -1 0 0 1 0 0 0;
+        0 0 1 0 0 0 0 0 -1;
+        0 0 1 -1 0 0 2 0 0]
+
+   EFMs = [1 0 1 1 0 1 1 1;
+           1 0 0 1 0 0 1 0;
+           0 1 0 1 0 0 0 1;
+           0 1 0 1 2 2 2 1;
+           0 0 1 0 0 1 0 1;
+           -1 1 0 0 0 0 -1 1;
+           0 0 0 0 1 1 1 0;
+           1 -1 1 0 -1 0 0 0;
+           0 1 0 1 0 0 0 1]
+
+   cyclemat = Catalyst.cycles(S)
+   for i in 1:size(EFMs, 2)
+       EFM = EFMs[:, i]
+       @test rank(cyclemat) == rank(hcat(cyclemat, EFM))
+   end
+end
+
+# No cycles should exist in the following network (the graph is treelike and irreversible)
+
+let
+    rn = @reaction_network begin
+        k1, A + B --> C + D
+        k2, C + D --> E + F
+        k3, C + D --> 2G + H
+        k4, 2G + H --> 3I
+        k5, E + F --> J 
+        k6, 3I --> K
+    end
+
+    S = netstoichmat(rn)
+    cyclemat = Catalyst.cycles(S)
+    @test isempty(cyclemat)
 end
 
 ### Other Network Properties Tests ###
