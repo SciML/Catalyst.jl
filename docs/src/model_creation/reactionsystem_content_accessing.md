@@ -61,7 +61,7 @@ isequal(rs.k1, k1)
 ## [Accessing basic model properties](@id model_accessing_basics)
 
 ### [Accessing model parameter and species](@id model_accessing_basics_parameters_n_species)
-Previously we showed how to access individual parameters or species of a `ReactionSystem` model. Next, the `parameters` and `species` functions allow us to retrieve *all* parameters and species as vectors:
+Previously we showed how to access individual parameters or species of a `ReactionSystem` model. Next, the [`parameters`](@ref) and [`species`](@ref) functions allow us to retrieve *all* parameters and species as vectors:
 ```@example model_accessing_basics
 using Catalyst # hide
 sir = @reaction_network begin
