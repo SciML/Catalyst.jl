@@ -420,8 +420,8 @@ end
 let 
     # Variable used as species in reaction.
     @test_throws Exception @eval rn = @reaction_network begin
-        @variables K
-        k, K*A --> B
+        @variables K(t)
+        k, K + A --> B
     end
 
     # Tests error when disallowed name is used for variable.
