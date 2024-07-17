@@ -51,7 +51,7 @@ callback = DiscreteCallback(condition, affect!)
 nothing # hide
 ```
 !!! danger
-    Whenever the integrator of a jump simulator is modified, the `reset_aggregated_jumps!` function must be called (with the integrator as its input) afterwards. Omitting to do so will result in erroneous simulations.
+    Whenever the integrator of a jump simulator is modified, the `reset_aggregated_jumps!` function must be called (with the integrator as its input) afterwards. Omitting to do so will result in simulations (incorrectly) using the old values of parameters/states internally instead of the updated values.
 
 Next, if we simulate our model, we note that the events do not seem to be triggered
 ```@example periodic_event_example
