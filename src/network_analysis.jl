@@ -403,7 +403,7 @@ function isforestlike(rn::ReactionSystem)
     nps = get_networkproperties(rn)
 
     isempty(nps.incidencemat) && reactioncomplexes(rn)
-    sparseig = issparse(incidencemat)
+    sparseig = issparse(nps.incidencemat)
     for subnet in subnets
         nps = get_networkproperties(subnet)
         isempty(nps.incidencemat) && reactioncomplexes(subnet; sparse = sparseig)
