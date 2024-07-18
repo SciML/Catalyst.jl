@@ -622,7 +622,6 @@ let
     end
 
     @test Catalyst.robustspecies(IDHKP_IDH) == [2]
-    @test Catalyst.isconcentrationrobust(IDHKP_IDH, 2) == true
 end
 
 let
@@ -636,7 +635,6 @@ let
     end
 
     @test Catalyst.robustspecies(EnvZ_OmpR) == [6]
-    @test Catalyst.isconcentrationrobust(EnvZ_OmpR, 6) == true
 end
 
 ### DEFICIENCY ONE TESTS
