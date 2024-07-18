@@ -934,9 +934,22 @@ function satisfiesdeficiencyone(rn::ReactionSystem)
 end
 
 """
+    satisfiesdeficiencyzero(rn::ReactionSystem)
+
+    Check if a reaction network obeys the conditions of the deficiency zero theorem, which ensures that there is only one equilibrium for every positive stoichiometric compatibility class, this equilibrium is asymptotically stable, and this equilibrium is complex balanced.
+"""
+
+function satisfiesdeficiencyzero(rn::ReactionSystem) 
+    δ = deficiency(rn)
+    δ == 0 && isweaklyreversible(rn)
+end
+
+"""
     robustspecies(rn::ReactionSystem)
 
     Return a vector of indices corresponding to species that are concentration robust, i.e. for every positive equilbrium, the concentration of species s will be the same. 
+
+    Note: This function currently only works for networks of deficiency one, and is not currently guaranteed to return *all* the concentration-robust species in the network. Any species returned by the function will be robust, but this may not include all of them. Use with caution. Support for higher deficiency networks and necessary conditions for robustness will be coming in the future.  
 """
 
 function robustspecies(rn::ReactionSystem)
@@ -971,15 +984,4 @@ function robustspecies(rn::ReactionSystem)
     end
 
     nps.robustspecies
-end
-
-"""
-    isconcentrationrobust(rn::ReactionSystem, species::Int)
-
-    Given a reaction network and an index of a species, check if that species is concentration robust. 
-"""
-
-function isconcentrationrobust(rn::ReactionSystem, species::Int)
-    robust_species = robustspecies(rn)
-    return species in robust_species
 end

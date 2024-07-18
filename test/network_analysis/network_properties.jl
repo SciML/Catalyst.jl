@@ -624,7 +624,34 @@ let
     @test Catalyst.satisfiesdeficiencyone(rn) == true
 end
 
+### Some tests for deficiency zero networks. 
 
+let
+    rn = @reaction_network begin
+        (k1, k2), A <--> 2B
+        (k3, k4), A + C <--> D
+        k5, D --> B + E
+        k6, B + E --> A + C
+    end
 
+    # No longer weakly reversible
+    rn2 = @reaction_network begin
+        (k1, k2), A <--> 2B
+        (k3, k4), A + C <--> D
+        k5, B + E --> D
+        k6, B + E --> A + C
+    end
 
+    # No longer weakly reversible
+    rn3 = @reaction_network begin
+        k1, A --> 2B
+        (k3, k4), A + C <--> D
+        k5, B + E --> D
+        k6, B + E --> A + C
+    end
+
+    @test satisfiesdeficiencyzero(rn) == true
+    @test satisfiesdeficiencyzero(rn2) == false 
+    @test satisfiesdeficiencyzero(rn3) == false 
+end
 
