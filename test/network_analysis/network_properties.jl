@@ -713,12 +713,20 @@ let
     rn3 = @reaction_network begin
         k1, A --> 2B
         (k3, k4), A + C <--> D
-        k5, B + E --> D
+        k5, D --> B + E 
         k6, B + E --> A + C
+    end
+
+    # Weakly reversible but deficiency one
+    rn4 = @reaction_network begin
+        (k1, k2), A <--> 2A
+        (k3, k4), A + B <--> C
+        (k5, k6), C <--> B
     end
 
     @test satisfiesdeficiencyzero(rn) == true
     @test satisfiesdeficiencyzero(rn2) == false 
     @test satisfiesdeficiencyzero(rn3) == false 
+    @test satisfiesdeficiencyzero(rn4) == false
 end
 
