@@ -974,7 +974,7 @@ end
 
 function satisfiesdeficiencyzero(rn::ReactionSystem)
     δ = deficiency(rn)
-    δ == 0 && isweaklyreversible(rn)
+    δ == 0 && isweaklyreversible(rn, subnetworks(rn))
 end
 
 """
