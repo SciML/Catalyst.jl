@@ -82,7 +82,6 @@ be found in its corresponding research paper, [Catalyst: Fast and flexible model
 - [MomentClosure.jl](https://github.com/augustinas1/MomentClosure.jl) allows generation of symbolic ModelingToolkit `ODESystem`s that represent moment closure approximations to moments of the Chemical Master Equation, from reaction networks defined in Catalyst.
 - [FiniteStateProjection.jl](https://github.com/kaandocal/FiniteStateProjection.jl) allows the construction and numerical solution of Chemical Master Equation models from reaction networks defined in Catalyst.
 - [DelaySSAToolkit.jl](https://github.com/palmtree2013/DelaySSAToolkit.jl) can augment Catalyst reaction network models with delays, and can simulate the resulting stochastic chemical kinetics with delays models.
-- [BondGraphs.jl](https://github.com/jedforrest/BondGraphs.jl), a package for constructing and analyzing bond graphs models, which can take Catalyst models as input.
 
 
 ## Illustrative example
