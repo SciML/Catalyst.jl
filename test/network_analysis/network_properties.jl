@@ -722,9 +722,9 @@ let
         (k5, k6), C <--> B
     end
 
-    @test satisfiesdeficiencyzero(rn) == true
-    @test satisfiesdeficiencyzero(rn2) == false 
-    @test satisfiesdeficiencyzero(rn3) == false 
-    @test satisfiesdeficiencyzero(rn4) == false
+    @test Catalyst.satisfiesdeficiencyzero(rn) == true
+    @test Catalyst.satisfiesdeficiencyzero(rn2) == false 
+    @test Catalyst.satisfiesdeficiencyzero(rn3) == false 
+    @test Catalyst.satisfiesdeficiencyzero(rn4) == false
 end
 
