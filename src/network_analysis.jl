@@ -952,7 +952,8 @@ end
 """
 
 function satisfiesdeficiencyone(rn::ReactionSystem)
-    all(r -> ismassaction(r, rn), reactions(rn)) || error("The deficiency one theorem is only valid for reaction networks that are mass action.")
+    all(r -> ismassaction(r, rn), reactions(rn)) ||
+        error("The deficiency one theorem is only valid for reaction networks that are mass action.")
     complexes, D = reactioncomplexes(rn)
     δ = deficiency(rn)
     δ_l = linkagedeficiencies(rn)
@@ -964,7 +965,7 @@ function satisfiesdeficiencyone(rn::ReactionSystem)
     #   1) the deficiency of each individual linkage class is at most 1; 
     #   2) the sum of the linkage deficiencies is the total deficiency, and 
     #   3) there is only one terminal linkage class per linkage class. 
-    all(<=(1), δ_l) && (sum(δ_l) == δ) && (length(lcs) == length(tslcs)) 
+    all(<=(1), δ_l) && (sum(δ_l) == δ) && (length(lcs) == length(tslcs))
 end
 
 """
@@ -974,9 +975,10 @@ end
 """
 
 function satisfiesdeficiencyzero(rn::ReactionSystem)
-    all(r -> ismassaction(r, rn), reactions(rn)) || error("The deficiency zero theorem is only valid for reaction networks that are mass action.")
+    all(r -> ismassaction(r, rn), reactions(rn)) ||
+        error("The deficiency zero theorem is only valid for reaction networks that are mass action.")
     δ = deficiency(rn)
-    δ == 0 && isweaklyreversible(rn, subnetworks(rn)) 
+    δ == 0 && isweaklyreversible(rn, subnetworks(rn))
 end
 
 """
