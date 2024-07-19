@@ -32,6 +32,11 @@ lattice_animation(sol, :X, lrs, "brusselator.mp4")
 The addition of spatial modelling in Catalyst contain a large number of new features, all which are
 described in the [corresponding documentation](https://docs.sciml.ai/Catalyst/stable/spatial_modelling/lattice_reaction_systems/).
 
+## Catalyst 14.0.1
+Bug fix to address that independent variables, like time, should now be `@parameters` 
+according to MTKv9. Converted internal time variables to consistently use `default_t()` 
+to hopefully avoid such issues going forward.
+
 ## Catalyst 14.0
 
 #### Breaking changes
@@ -69,9 +74,8 @@ briefly summarised in the following bullet points:
   new merged and/or composed `ReactionSystem`s from multiple component systems.
 
 #### General changes
-- The `default_t()` and `default_time_deriv()` functions are now the preferred
-  approaches for creating the default time independent variable and its
-  differential. i.e.
+- `default_t()` and `default_time_deriv()` functions should be used for creating
+  the default time independent variable and its differential. i.e.
   ```julia
   # do
   t = default_t()

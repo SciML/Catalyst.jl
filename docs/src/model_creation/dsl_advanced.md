@@ -85,7 +85,7 @@ Generally, there are four main reasons for specifying species/parameters using t
 3. To designate metadata for species/parameters (described [here](@ref dsl_advanced_options_species_and_parameters_metadata)).
 4. To designate a species or parameters that do not occur in reactions, but are still part of the model (e.g a [parametric initial condition](@ref dsl_advanced_options_parametric_initial_conditions))
 
-!!! warn
+!!! warning
     Catalyst's DSL automatically infer species and parameters from the input. However, it only does so for *quantities that appear in reactions*. Until now this has not been relevant. However, this tutorial will demonstrate cases where species/parameters that are not part of reactions are used. These *must* be designated using either the `@species` or `@parameters` options (or the `@variables` option, which is described [later](@ref constraint_equations)).
 
 ### [Setting default values for species and parameters](@id dsl_advanced_options_default_vals)
@@ -496,7 +496,7 @@ sol = solve(oprob)
 plot(sol)
 ```
 
-!!! warn
+!!! warning
     Just like when using `@parameters` and `@species`, `@unpack` will overwrite any variables in the current scope which share name with the imported quantities.
 
 ### [Interpolating variables into the DSL](@id dsl_advanced_options_symbolics_and_DSL_interpolation)

@@ -55,7 +55,7 @@ function make_transport_reaction(rateex, species)
     # Creates expressions corresponding to actual code from the internal DSL representation.
     sexprs = get_sexpr([species], Dict{Symbol, Expr}())
     pexprs = get_pexpr(parameters, Dict{Symbol, Expr}())
-    iv = :(@variables $(DEFAULT_IV_SYM))
+    iv = :($(DEFAULT_IV_SYM) = default_t())
     trxexpr = :(TransportReaction($rateex, $species))
 
     # Appends `edgeparameter` metadata to all declared parameters.
@@ -82,12 +82,12 @@ function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReacti
         edge_parameters = [])
     # Checks that the species exist in the reaction system.
     # (ODE simulation code becomes difficult if this is not required,
-    # as non-spatial jacobian and f function generated from rs are of the wrong size).  
+    # as non-spatial jacobian and f function generated from rs are of the wrong size).
     if !any(isequal(tr.species), species(rs))
         error("Currently, species used in `TransportReaction`s must have previously been declared within the non-spatial ReactionSystem. This is not the case for $(tr.species).")
     end
 
-    # Checks that the rate does not depend on species.    
+    # Checks that the rate does not depend on species.
     rate_vars = ModelingToolkit.getname.(Symbolics.get_variables(tr.rate))
     if !isempty(intersect(ModelingToolkit.getname.(species(rs)), rate_vars))
         error("The following species were used in rates of a transport reactions: $(setdiff(ModelingToolkit.getname.(species(rs)), rate_vars)).")
