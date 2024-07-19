@@ -336,3 +336,10 @@ lat_getp
 lat_setp!
 rebuild_lat_internals!
 ```
+
+Finally, we provide the following helper functions to plot and animate spatial lattice simulations.
+```@docs
+lattice_plot
+lattice_animation
+lattice_kymograph
+```

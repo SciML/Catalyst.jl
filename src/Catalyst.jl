@@ -192,7 +192,9 @@ include("spatial_reaction_systems/lattice_sim_struct_interfacing.jl")
 export lat_getp, lat_setp!, lat_getu, lat_setu!, rebuild_lat_internals!
 
 # Functions exported by the spatial plotting extensions.
+function lattice_plot end
 function lattice_animation end
+function lattice_kymograph end
 export lattice_plot, lattice_animation, lattice_kymograph
 
 ### ReactionSystem Serialisation ###

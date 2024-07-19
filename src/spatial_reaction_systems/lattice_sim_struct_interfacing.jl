@@ -8,13 +8,10 @@ this is can be done through direct interfacing (e.g. `prob[p] = 1.0`). However, 
 `LatticeReactionSystem`-based problems and integrators, this function must be used instead.
 
 Arguments:
-- `sim_struct`: The simulation structure which `u` value we wish to update. Can be either a `ODEProblem`,
-`JumpProblem`, or an integrator derived from either of these.
-- `p`: The species which value we wish to update. Can be provided either in its symbolic form or 
-a symbol.
+- `sim_struct`: The simulation structure which `u` value we wish to update. Can be either a `ODEProblem`, `JumpProblem`, or an integrator derived from either of these.
+- `p`: The species which value we wish to update. Can be provided either in its symbolic form (e.g. `k`) or as a symbol (e.g. `:k`).
 - `lrs`: The `LatticeReactionSystem` which was used to generate the structure we wish to modify.
-- `p_val`: The parameter's new values. Must be given in a form which is also a valid initial input to the 
-`ODEProblem`/`JumpProblem`.
+- `p_val`: The parameter's new values. Must be given in a form which is also a valid initial input to the `ODEProblem`/`JumpProblem`.
 
 Example:
 ```julia
@@ -94,13 +91,11 @@ designate parameter initial values.
 Arguments:
 - `sim_struct`: The simulation structure which `p` value we wish to retrieve. Can be either a `ODEProblem`,
 `JumpProblem`, or an integrator derived from either of these.
-- `p`: The parameter which value we wish to update. Can be provided either in its symbolic form or 
-a symbol.
+- `p`: The species which value we wish to update. Can be provided either in its symbolic form (e.g. `k`) or as a symbol (e.g. `:k`).
 - `lrs`: The `LatticeReactionSystem` which was used to generate the structure we wish to modify.
 
 Notes:
-- Even if the parameter is spatially uniform, a full array with its values across all vertices will be
-retrieved. 
+- Even if the parameter is spatially uniform, a full array with its values across all vertices will be retrieved. 
 
 Example:
 ```julia
@@ -154,13 +149,10 @@ this is can be done through direct interfacing (e.g. `prob[X] = 1.0`). However, 
 `LatticeReactionSystem`-based problems and integrators, this function must be used instead.
 
 Arguments:
-- `sim_struct`: The simulation structure which `u` value we wish to update. Can be either a `ODEProblem`,
-`JumpProblem`, or an integrator derived from either of these.
-- `sp`: The species which value we wish to update. Can be provided either in its symbolic form or 
-a symbol.
+- `sim_struct`: The simulation structure which `u` value we wish to update. Can be either a `ODEProblem`, `JumpProblem`, or an integrator derived from either of these.
+- `sp`: The species which value we wish to update. Can be provided either in its symbolic form (e.g. `X`) or as a symbol (e.g. `:X`).
 - `lrs`: The `LatticeReactionSystem` which was used to generate the structure we wish to modify.
-- `u`: The species's new values. Must be given in a form which is also a valid initial input to the 
-`ODEProblem`/`JumpProblem`.
+- `u`: The species's new values. Must be given in a form which is also a valid initial input to the `ODEProblem`/`JumpProblem`.
 
 Example:
 ```julia
@@ -239,15 +231,12 @@ masked grid lattices, and a vector for graph lattices). This format is similar t
 designate species initial conditions.
 
 Arguments:
-- `sim_struct`: The simulation structure which `u` value we wish to retrieve. Can be either a `ODEProblem`,
-`JumpProblem`, or an integrator derived from either of these.
-- `sp`: The species which value we wish to update. Can be provided either in its symbolic form or 
-a symbol.
+- `sim_struct`: The simulation structure which `u` value we wish to retrieve. Can be either a `ODEProblem`, `JumpProblem`, or an integrator derived from either of these.
+- `sp`: The species which value we wish to update. Can be provided either in its symbolic form (e.g. `X`) or as a symbol (e.g. `:X`).
 - `lrs`: The `LatticeReactionSystem` which was used to generate the structure we wish to modify.
 
 Notes:
-- Even if the species is spatially uniform, a full array with its values across all vertices will be
-retrieved. 
+- Even if the species is spatially uniform, a full array with its values across all vertices will be retrieved. 
 
 Example:
 ```julia
@@ -308,15 +297,12 @@ the n'th position corresponds to sp's value in the n'th vertex).
 
 Arguments:
 - `sol`: The solution from which we wish to retrieve some values.
-- `sp`: The species which values we wish to retrieve. Can be either a symbol (e.g. `:X`) or a symbolic
-variable (e.g. `X`).
+- `sp`: The species which value we wish to update. Can be provided either in its symbolic form (e.g. `X`) or as a symbol (e.g. `:X`).
 - `lrs`: The `LatticeReactionSystem` which was simulated to generate the solution.
-- `t = nothing`: If `nothing`, we simply return the solution across all saved time steps (default). 
-If `t` instead is a vector (or range of values), returns the solution interpolated at these time points.
+- `t = nothing`: If `nothing`, we simply return the solution across all saved time steps (default). If `t` instead is a vector (or range of values), returns the solution interpolated at these time points.
 
 Notes:
-- The `lat_getu` is not optimised for performance. However, it should still be quite performant,
-but there might be some limitations if called a very large number of times.
+- The `lat_getu` is not optimised for performance. However, it should still be quite performant, but there might be some limitations if called a very large number of times.
 - Long-term it is likely that this function gets replaced with a sleeker interface.
 
 Example:
@@ -391,16 +377,14 @@ Rebuilds the internal functions for simulating a LatticeReactionSystem. Whenever
 integrator has had its parameter values updated, this function should be called for the update to 
 be taken into account. For ODE simulations, `rebuild_lat_internals!` needs only to be called when
 - An edge parameter has been updated.
-- When a parameter with spatially homogeneous values has been given spatially heterogeneous values 
-(or vice versa).
+- When a parameter with spatially homogeneous values has been given spatially heterogeneous values (or vice versa).
 
 Arguments:
 - `sciml_struct`: The problem (e.g. an `ODEProblem`) or an integrator which we wish to rebuild.
 
 Notes:
 - Currently does not work for `DiscreteProblem`s, `JumpProblem`s, or their integrators.
-- The function is not built with performance in mind, so avoid calling it multiple times in 
-performance-critical applications.
+- The function is not built with performance in mind, so avoid calling it multiple times in performance-critical applications.
 
 Example:
 ```julia

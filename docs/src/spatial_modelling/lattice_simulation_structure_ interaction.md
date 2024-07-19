@@ -1,4 +1,4 @@
-# [Interfacing lattice problems, integrators, and solutions](@id lattice_simulation_structure_interaction)
+# [Interfacing with Lattice Problems, Integrators, and Solutions](@id lattice_simulation_structure_interaction)
 We have [previously described](@ref simulation_structure_interfacing) how to retrieve species and parameter values stored in non-spatial problems, integrators, and solutions. This section describes similar workflows for simulations based on `LatticeReactionSystem`s.
 
 Generally, while for non-spatial systems these operations can typically be done by indexing a structure directly, e.g. through
@@ -15,7 +15,7 @@ Furthermore, there are some cases of interfacing which are currently not support
     Below we will describe various features using ODE simulations as examples. However, all interfaces (unless where else is stated) work identically for jump simulations.
 
 ## [Retrieving values from lattice simulations](@id lattice_simulation_structure_interaction_simulation_species)
-Let us consider a simulation of a `LatticeReactionSystem`
+Let us consider a simulation of a `LatticeReactionSystem`:
 ```@example lattice_struct_interaction_sims
 using Catalyst, OrdinaryDiffEq
 two_state_model = @reaction_network begin
@@ -29,7 +29,7 @@ u0 = [:X1 => [0.0 0.0 0.0; 2.0 2.0 2.0], :X2 => 0.0]
 tspan = (0.0, 1.0)
 ps = [:k1 => 2.0, :k2 => 1.0, :D => 0.1]
 oprob = ODEProblem(lrs, u0, tspan, ps)
-sol = solve(oprob, Tsit5())
+sol = solve(oprob)
 nothing # hide
 ```
 To retrieve the values of $X1$ across the simulation we use the `lat_getu` function. It takes three arguments:
@@ -40,15 +40,15 @@ To retrieve the values of $X1$ across the simulation we use the `lat_getu` funct
 ```@example lattice_struct_interaction_sims
 lat_getu(sol, :X1, lrs)
 ```
-Here, the output is a vector with $X$'s value at each simulation time step. How the specie's value is represented in each time step depends on the lattice which was originally used to create the `LatticeReactionSystem`:
+Here, the output is a vector with $X1$'s value at each simulation time step. How the species's value is represented at each time step depends on the lattice which was originally used to create the `LatticeReactionSystem`:
 - For Cartesian lattices, an array of the same size as the Cartesian lattice is used. Each array element corresponds to the species's value in the corresponding compartment.
-- For masked lattices, a [sparse array]https://docs.julialang.org/en/v1/stdlib/SparseArrays/ of the same size as the masked lattice is used. Each filled array element corresponds to the species's value in the corresponding compartment. Unfilled array elements correspond to positions without compartments.
+- For masked lattices, a [sparse array](https://docs.julialang.org/en/v1/stdlib/SparseArrays/) of the same size as the masked lattice is used. Each filled array element corresponds to the species's value in the corresponding compartment. Unfilled array elements correspond to positions without compartments.
 - For unstructured (graph) lattices, vectors are used. The i'th element in the vectors corresponds to the species's value in the i'th compartment.
 
 Unlike for non-spatial simulations, `lat_getu` does not take vector (e.g. `lat_getu(sol, [:X1, :X2], lrs)`) or symbolic expression (e.g. `lat_getu(sol, [X1 + X2], lrs)`) inputs. However, it is possible to use symbolic variables as input (e.g. `lat_getu(sol, two_state_model.X1, lrs)`).
 
 ### [Retrieving lattice simulations values at specific time points](@id lattice_simulation_structure_interaction_simulation_species_ts)
-Just like for non-spatial solutions, it is possible to access the simulation's values at designated time points. This is possible even if the simulation did not stop at those specific values (in which case an interpolated value is returned). To do this, the desired time points to sample are provided as a vector to `lat_getu` using the optional argument `t`. E.g. here we retrieve the simulation's (interpolated) values at time points `0.5` and `0.75`:
+Just like for non-spatial solutions, it is possible to access the simulation's values at designated time points. This is possible even if the simulation did not stop at those specific time points (in which case an interpolated value is returned). To do this, the desired time points to sample are provided as a vector to `lat_getu` using the optional argument `t`. E.g. here we retrieve the simulation's (interpolated) values at time points `0.5` and `0.75`:
 
 ```@example lattice_struct_interaction_sims
 lat_getu(sol, :X1, lrs; t = [0.5, 0.75])
@@ -71,11 +71,11 @@ ps = [:k1 => 2.0, :k2 => 1.0, :D => 0.1]
 oprob = ODEProblem(lrs, u0, tspan, ps)
 nothing # hide
 ```
-We can retrieve the species values stored in `oprob` using the `lat_getu` function. It uses [identical syntax as for simulations](@ref lattice_simulation_structure_interaction_simulation_species) (except that you cannot specify a time point). However, it returns a single set of species values (while for simulations it returns a vector across all time steps):
+We can retrieve the species values stored in `oprob` using the `lat_getu` function. It uses [identical syntax as for simulations](@ref lattice_simulation_structure_interaction_simulation_species) (except that you cannot specify a time point). However, it returns a single set of species values (while for simulations it returns a vector across different time steps):
 ```@example lattice_struct_interaction_prob_ints
 lat_getu(oprob, :X1, lrs)
 ```
-again, the format used corresponds to the lattice used to create the original `LatticeReactionSystem`. Here, even if a species has homogeneous values, the full format is used.
+Again, the format used corresponds to the lattice used to create the original `LatticeReactionSystem`. Here, even if a species has homogeneous values, the full format is used.
 ```@example lattice_struct_interaction_prob_ints
 lat_getu(oprob, :X2, lrs)
 ```
@@ -98,7 +98,7 @@ Species values in [integrators](@ref simulation_structure_interfacing_integrator
 Retrieval and updating of parameter values for problems and integrators works similarly as for species, but with the following differences:
 - The `lat_getp` and `lat_setp!` functions are used.
 - It is currently not possible to interface with parameter values of `JumpProblem`s and their integrators.
-- After parameter values are modified, the `rebuild_lat_internals!` function must be applied before the problem/integrators can be used for further analysis.
+- After parameter values are modified, the `rebuild_lat_internals!` function must be applied before the problem/integrator can be used for further analysis.
 - Updating of [edge parameters](@ref spatial_lattice_modelling_intro_simulation_edge_parameters) is limited and uses a different interface. 
 
 Let us consider the spatial `ODEProblem` we previously declared. We can check the value of $k1$ by using `lat_getp`
@@ -121,6 +121,8 @@ There are two different circumstances when `rebuild_lat_internals!` must be call
 
 Parameter values of integrators can be interfaced with just like for problems (this is primarily relevant when using [*callbacks*](https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/)). Again, after doing so, the `rebuild_lat_internals!` function might need to be applied to the integrator.
 
+
+### [Retrieving and updatingedge  parameter values in problems and integrators](@id lattice_simulation_structure_interaction_prob_int_parameters_edge_ps)
 The `lat_getp` and `lat_setp!` functions cannot currently be applied to [edge parameters](@ref spatial_lattice_modelling_intro_simulation_edge_parameters). Instead, to access the value of an edge parameter, use 
 ```@example lattice_struct_interaction_prob_ints
 oprob.ps[:D]

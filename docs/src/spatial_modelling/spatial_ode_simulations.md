@@ -1,5 +1,5 @@
 # [Spatial ODE simulations](@id spatial_lattice_ode_simulations)
-Our [introduction to spatial lattice simulations](@ref spatial_lattice_modelling_intro) has already provided an extensive description of how to simulate `LatticeReactionSystem`s using ODEs. Further tutorials have also shown how to [retrieve values from simulations](@ref lattice_simulation_structure_interaction_simulation_species), or how to [plot them](@ref lattice_simulation_plotting). Here we will build on this, primarily discussing strategies for increasing ODE simulation performance. This is especially important for spatial simulations, as these typically are more computationally demanding as compared to non-spatial ones. While focusing on non-spatial simulations, this [ODE performance tutorial](@ref ode_simulation_performance) can also be useful to read.
+Our [introduction to spatial lattice simulations](@ref spatial_lattice_modelling_intro) has already provided an extensive description of how to simulate `LatticeReactionSystem`s using ODEs. Further tutorials have also shown how to [retrieve values from simulations](@ref lattice_simulation_structure_interaction_simulation_species) and or how to [plot them](@ref lattice_simulation_plotting). Here we will build on this, primarily discussing strategies for increasing ODE simulation performance. This is especially important for spatial simulations, as these typically are more computationally demanding as compared to non-spatial ones. While focusing on non-spatial simulations, this [ODE performance tutorial](@ref ode_simulation_performance) is also be useful to read.
 
 ## [Solver selection for spatial ODE simulations](@id spatial_lattice_ode_simulations_solvers)
 Previously we have described [how to select ODE solvers, and how this can impact simulation performance](@ref ode_simulation_performance_solvers). This is especially relevant for spatial simulations. For stiff problems, `FBDF` is a good first solver to try. For non-stiff problems, `ROCK2` is instead a good first alternative. However, it is still worthwhile to explore a range of alternative solvers.
@@ -19,7 +19,7 @@ lattice = CartesianGrid((20,20))
 lrs = LatticeReactionSystem(brusselator, [diffusion_rx], lattice)
 
 u0 = [:X => rand(20, 20), :Y => 10.0]
-tspan = (0.0, 200.0)
+tspan = (0.0, 1.0)
 ps = [:A => 1.0, :B => 4.0, :D => 0.2]
 oprob = ODEProblem(lrs, u0, tspan, ps; jac = true)
 sol = solve(oprob, FBDF())
