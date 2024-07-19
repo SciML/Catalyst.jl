@@ -226,13 +226,13 @@ To learn the compartment and edge parameters of a `LatticeReaction`, the [`verte
 two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
-diffusion_rx = @transport_reaction D X
+diffusion_rx = @transport_reaction D X1
 lattice = CartesianGrid((20,20))
 lrs = LatticeReactionSystem(two_state_model, [diffusion_rx], lattice)
 edge_parameters(lrs)
 ```
 
 ## [Spatial modelling limitations](@id spatial_lattice_modelling_intro_limitations)
-Many features which are supported for non-spatial `ReactionSystem`s are currently unsupported for `LatticeReactionSystem`s. This includes [observables](@ref dsl_advanced_options_observables), [algebraic and differential equations](@ref constraint_equations), [hierarchical models](@ref compositional_modeling), and [events](@ref constraint_equations_events). It is possible that these features will be supported in the future. Furthermore, [removal of conserved quantities](@ref network_analysis_deficiency) is not supported when creating spatial `ODEProblem`s.
+Many features which are supported for non-spatial `ReactionSystem`s are currently unsupported for `LatticeReactionSystem`s. This includes [observables](@ref dsl_advanced_options_observables), [algebraic and differential equations](@ref constraint_equations), [hierarchical models](@ref compositional_modeling), and [events](@ref constraint_equations_events). It is possible that these features will be supported in the future. Furthermore, [removal of conserved quantities](@ref network_analysis_conservation_laws) is not supported when creating spatial `ODEProblem`s.
 
 If you are using Catalyst's features for spatial modelling, please give us feedback on how we can improve these features. Additionally, just letting us know that you use these features is useful, as it helps inform us whether continued development of spatial modelling features is worthwhile. 
