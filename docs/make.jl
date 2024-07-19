@@ -1,9 +1,6 @@
 using Documenter
 using Catalyst, ModelingToolkit
 
-# Required to load extensions in the `modules` argument to `makedocs`.
-import BifurcationKit, CairoMakie, HomotopyContinuation, StructuralIdentifiability
-
 docpath = Base.source_dir()
 assetpath = joinpath(docpath, "src", "assets")
 cp(joinpath(docpath, "Manifest.toml"), joinpath(assetpath, "Manifest.toml"), force = true)
@@ -39,14 +36,7 @@ makedocs(sitename = "Catalyst.jl",
         prettyurls = (get(ENV, "CI", nothing) == "true"),
         assets = ["assets/favicon.ico"],
         canonical = "https://docs.sciml.ai/Catalyst/stable/"),
-    modules = [
-        Catalyst,
-        ModelingToolkit,
-        Base.get_extension(Catalyst, :CatalystBifurcationKitExtension),
-        Base.get_extension(Catalyst, :CatalystCairoMakieExtension),
-        Base.get_extension(Catalyst, :CatalystHomotopyContinuationExtension),
-        Base.get_extension(Catalyst, :CatalystStructuralIdentifiabilityExtension)
-    ],
+    modules = [Catalyst, ModelingToolkit],
     doctest = false,
     clean = true,
     pages = pages,
