@@ -88,12 +88,13 @@ lattice_plot(sol, :X, lrs; t = 18.0)
 An animation of the solution can be created in a similar manner as for [the one-dimensional case](@ref lattice_simulation_plotting_1d_grids):
 ```@example lattice_plotting_2d
 lattice_animation(sol, :X, lrs, "lattice_simulation.mp4")
+nothing # hide
 ```
-```@example lattice_plotting_2d
-rm("lattice_simulation.mp4") # hide
+```@raw html
+<video autoplay loop muted playsinline controls src="./lattice_simulation.mp4" />
 ```
 
-Again, please check the API pages for the [`lattice_plot`](@ref) [`lattice_animation`](@ref) functions to see more details of their various options.
+Again, please check the API pages for the [`lattice_plot`](@ref) and [`lattice_animation`](@ref) functions to see more details of their various options.
 
 ## Final notes
 If you are using these interfaces, but there is some feature that is missing, you might wish to consider modifying the original code. This can be found [here](https://github.com/SciML/Catalyst.jl/blob/master/ext/CatalystCairoMakieExtension/cairo_makie_extension_spatial_modelling.jl), from which you can copy any code you need to make your own plotting interfaces. If you do so, please provide any feedback by raising [an issue](https://github.com/SciML/Catalyst.jl/issues) on the Catalyst GitHub page. As mentioned, these plotting interfaces are a work in progress, and input from users is valuable to improve them further. It should also be noted that these interfaces has note been optimised for performance, and the generation of an animation can often surpass 1 second for larger models. Again, this can likely be improved, and if performance is an problem do raise an issue, in which case an additional effort can be made to improve performance.
