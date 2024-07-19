@@ -5,12 +5,13 @@ function lattice_plot(sol, sp, lrs::LatticeReactionSystem{Q, R, <: AbstractGraph
         t = sol.t[end], plot_min = nothing, plot_max = nothing, colormap=:BuGn_7, node_size = 50, kwargs...) where {Q, R, T}
     # Prepares the inputs to the figure.
     plot_graph = SimpleGraph(Catalyst.lattice(lrs))
-    vals, plot_min, plot_max = Catalyst.extract_vals(sol, sp, lrs, plot_min, plot_max, [t])
-    vals = vals[1]
-
+    _, plot_min, plot_max = Catalyst.extract_vals(sol, sp, lrs, plot_min, plot_max, nothing)
+    vals = lat_getu(sol, sp, lrs; t = [t])
+    vals = Catalyst.demask_vals(vals, lrs)[1]
+    println(kwargs)
     # Creates the figure.
     return graphplot(plot_graph; node_color = vals,
-        node_attr = (colorrange = (plot_min, plot_max), colormap), node_size
+        node_attr = (colorrange = (plot_min, plot_max), colormap), node_size, kwargs...
     )
 end
 
@@ -24,7 +25,7 @@ function lattice_animation(sol, sp, lrs::LatticeReactionSystem{Q, R, <: Abstract
 
     # Creates the base figure (which is modified in the animation).
     fig, ax, plt = graphplot(plot_graph; node_color = vals[1],
-        node_attr = (colorrange = (plot_min, plot_max), colormap), node_size
+        node_attr = (colorrange = (plot_min, plot_max), colormap), node_size, kwargs...
     )
     ttitle && (ax.title = "Time: $(round(t[1]; sigdigits = 3))")
 
