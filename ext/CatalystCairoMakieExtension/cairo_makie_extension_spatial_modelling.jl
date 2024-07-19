@@ -92,7 +92,8 @@ end
 # Internal function which handles the plotting of a lattice simulation on a 1d lattice (Cartesian
 # or graph). Here, unlike for 2d and graph lattices, `sp` can be a vector of species (in which case
 # each on is displayed).
-function lattice_plot_1d(sol, sp, lrs::LatticeReactionSystem; t = nothing, markersize = 20, kwargs...)
+function lattice_plot_1d(sol, sp, lrs::LatticeReactionSystem;
+        t = nothing, markersize = 20, kwargs...)
     vals = lat_getu(sol, sp, lrs; t = [t])
     vals = demask_vals(vals, lrs)[1]
     scatterlines(vals; axis = (xlabel = "Compartment", ylabel = "$(sp)"),
@@ -111,9 +112,9 @@ function lattice_animation_1d(sol, sp, lrs::LatticeReactionSystem, filename::Str
     vals, plot_min, plot_max = extract_vals(sol, sp, lrs, plot_min, plot_max, t)
 
     # Creates the base figure (which is modified in the animation).
-    fig, ax, plt = scatterlines(vals[1]; 
-        axis = (xlabel = "Compartment", ylabel = "$(sp)", 
-        limits = (nothing, nothing, plot_min, plot_max)),
+    fig, ax, plt = scatterlines(vals[1];
+        axis = (xlabel = "Compartment", ylabel = "$(sp)",
+            limits = (nothing, nothing, plot_min, plot_max)),
         markersize = markersize, kwargs...)
     ttitle && (ax.title = "Time: $(round(t[1]; sigdigits = 3))")
 
@@ -158,14 +159,14 @@ function lattice_kymograph(sol, sp, lrs::LatticeReactionSystem; colormap = :BuGn
     y_vals = LinRange(1, grid_size(lrs)[1], grid_size(lrs)[1])
     fig, ax, hm = heatmap(t, y_vals, vals;
         axis = (xlabel = "Time", ylabel = "Compartment", xgridvisible = false,
-        ygridvisible = false), colormap, colorrange = (plot_min, plot_max))
+            ygridvisible = false), colormap, colorrange = (plot_min, plot_max))
 end
 
 ### 2d Lattice Simulation Plots/Animations ###
 
 # Internal function which handles the plotting of a lattice simulation on a 2d lattice (Cartesian
 # or graph).
-function lattice_plot_2d(sol, sp, lrs::LatticeReactionSystem; t = nothing, 
+function lattice_plot_2d(sol, sp, lrs::LatticeReactionSystem; t = nothing,
         colormap = :BuGn_7, plot_min = nothing, plot_max = nothing, kwargs...)
     # Prepares the inputs to the figure (the `extract_vals` call only finds limits).
     _, plot_min, plot_max = extract_vals(sol, sp, lrs, plot_min, plot_max, nothing)
@@ -174,15 +175,15 @@ function lattice_plot_2d(sol, sp, lrs::LatticeReactionSystem; t = nothing,
     x_vals, y_vals = extract_grid_axes(lrs)
 
     # Creates the figure.
-    fig, ax, hm = heatmap(x_vals, y_vals, vals; 
+    fig, ax, hm = heatmap(x_vals, y_vals, vals;
         axis = (xlabel = "Time", ylabel = "Compartment", xgridvisible = false,
-        ygridvisible = false), colormap, colorrange = (plot_min, plot_max), kwargs...)
+            ygridvisible = false), colormap, colorrange = (plot_min, plot_max), kwargs...)
 end
 
 # Internal function which handles the animation of a lattice simulation on a 2d lattice (Cartesian
 # or graph).
-function lattice_animation_2d(sol, sp, lrs::LatticeReactionSystem, filename::String; 
-        colormap = :BuGn_7,  nframes = 200, framerate = 20, plot_min = nothing, 
+function lattice_animation_2d(sol, sp, lrs::LatticeReactionSystem, filename::String;
+        colormap = :BuGn_7, nframes = 200, framerate = 20, plot_min = nothing,
         plot_max = nothing, ttitle = true, kwargs...)
 
     # Prepares the inputs to the figure.
@@ -191,8 +192,8 @@ function lattice_animation_2d(sol, sp, lrs::LatticeReactionSystem, filename::Str
     x_vals, y_vals = extract_grid_axes(lrs)
 
     # Creates the base figure (which is modified in the animation).
-    fig, ax, hm = heatmap(x_vals, y_vals, vals[1]; 
-        axis = (xgridvisible = false, ygridvisible = false) ,
+    fig, ax, hm = heatmap(x_vals, y_vals, vals[1];
+        axis = (xgridvisible = false, ygridvisible = false),
         colormap, colorrange = (plot_min, plot_max),
         kwargs...)
     ttitle && (ax.title = "Time: $(round(t[1]; sigdigits = 3))")
@@ -232,17 +233,17 @@ end
 function demask_vals(vals, lrs::LatticeReactionSystem)
     has_masked_lattice(lrs) || return vals
     idxs = findall(!b for b in Catalyst.lattice(lrs))
-    return [demask_vals(vs, idxs) for vs in vals]    
+    return [demask_vals(vs, idxs) for vs in vals]
 end
 function demask_vals(v::AbstractSparseArray{T, Int64, 1}, idxs) where {T}
     v = deepcopy(v)
-    (eltype(v) <: Int) && (v = Float64.(v))  
+    (eltype(v) <: Int) && (v = Float64.(v))
     foreach(idx -> v[idx] = NaN, idxs)
     return Vector{Float64}(v)
 end
 function demask_vals(v::AbstractSparseArray{T, Int64, 2}, idxs) where {T}
     v = deepcopy(v)
-    (eltype(v) <: Int) && (v = Float64.(v))  
+    (eltype(v) <: Int) && (v = Float64.(v))
     foreach(idx -> v[idx] = NaN, idxs)
     return Matrix(v)
 end

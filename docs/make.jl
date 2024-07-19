@@ -36,7 +36,7 @@ makedocs(sitename = "Catalyst.jl",
         prettyurls = (get(ENV, "CI", nothing) == "true"),
         assets = ["assets/favicon.ico"],
         canonical = "https://docs.sciml.ai/Catalyst/stable/"),
-    modules=[
+    modules = [
         Catalyst,
         ModelingToolkit,
         Base.get_extension(Catalyst, :CatalystBifurcationKitExtension),
