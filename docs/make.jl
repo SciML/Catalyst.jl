@@ -1,6 +1,9 @@
 using Documenter
 using Catalyst, ModelingToolkit
 
+# Required to load extensions in the `modules` argument to `makedocs`.
+import BifurcationKit, CairoMakie, HomotopyContinuation, StructuralIdentifiability
+
 docpath = Base.source_dir()
 assetpath = joinpath(docpath, "src", "assets")
 cp(joinpath(docpath, "Manifest.toml"), joinpath(assetpath, "Manifest.toml"), force = true)

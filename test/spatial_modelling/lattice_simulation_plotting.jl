@@ -1,7 +1,7 @@
 ### Preparations ###
 
 # Fetch packages.
-using Catalyst, CairoMakie, OrdinaryDiffEq, Test
+using Catalyst, CairoMakie, JumpProcesses, OrdinaryDiffEq, Test
 
 # Sets stable rng number.
 using StableRNGs
