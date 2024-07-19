@@ -44,10 +44,10 @@ lattice_plot(sol, :X1, lrs; t = 2.0)
 
 If we instead wish to create an animation of our solution across the entire simulation, we can use the [`lattice_animation`](@ref) function. This takes a fourth required argument, a file to which the animation is saved.
 ```@example lattice_plotting_1d
-lattice_animation(sol, :X1, lrs, "lattice_simulation.mp4")
+lattice_animation(sol, :X1, lrs, "lattice_simulation_1d.mp4")
 ```
-```@example lattice_plotting_1d
-rm("lattice_simulation.mp4") # hide
+```@raw html
+<video autoplay loop muted playsinline controls src="./lattice_simulation_1d.mp4" />
 ```
 Since we animate the solution across the entire simulation, we do not need to provide a `t` value. However, there are some additional (optional) arguments we might wish to provide:
 - `nframes = 200`: The number of frames in the animation (these are evenly samples across the simulation).
@@ -79,7 +79,7 @@ u0 = [:X => rand(20, 20), :Y => 10.0]
 tspan = (0.0, 20.0)
 ps = [:A => 1.0, :B => 4.0, :D => 0.2]
 oprob = ODEProblem(lrs, u0, tspan, ps; jac = true, sparse = true)
-@time sol = solve(oprob, FBDF())
+sol = solve(oprob, FBDF())
 
 import CairoMakie
 lattice_plot(sol, :X, lrs; t = 18.0)
@@ -87,11 +87,10 @@ lattice_plot(sol, :X, lrs; t = 18.0)
 
 An animation of the solution can be created in a similar manner as for [the one-dimensional case](@ref lattice_simulation_plotting_1d_grids):
 ```@example lattice_plotting_2d
-lattice_animation(sol, :X, lrs, "lattice_simulation.mp4")
-nothing # hide
+lattice_animation(sol, :X, lrs, "lattice_simulation_2d.mp4")
 ```
 ```@raw html
-<video autoplay loop muted playsinline controls src="./lattice_simulation.mp4" />
+<video autoplay loop muted playsinline controls src="./lattice_simulation_2d.mp4" />
 ```
 
 Again, please check the API pages for the [`lattice_plot`](@ref) and [`lattice_animation`](@ref) functions to see more details of their various options.
