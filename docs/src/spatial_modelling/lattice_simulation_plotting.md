@@ -99,7 +99,7 @@ Again, please check the API pages for the [`lattice_plot`](@ref) and [`lattice_a
 ## [Animation and plotting of graph lattice simulations](@id lattice_simulation_plotting_graphs)
 Finally, we consider lattice simulations on graph lattices. We first simulate a simple [birth-death process](@ref basic_CRN_library_bd) on a (6-node cyclic) graph lattice.
 ```@example lattice_plotting_graphs
-using Catalyst, OrdinaryDiffEq
+using Catalyst, Graphs, OrdinaryDiffEq
 rs = @reaction_network begin
     (p,d), 0 <--> X
 end

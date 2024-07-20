@@ -299,6 +299,11 @@ symmap_to_varmap
 ```
 
 ## [Spatial modelling](@id api_lattice_simulations)
+The first step of spatial modelling is to create a so-called `LatticeReactionSystem`:
+```@docs
+LatticeReactionSystem
+```
+
 The following functions can be used to querying the properties of `LatticeReactionSystem`s:
 ```@docs
 reactionsystem
