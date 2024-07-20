@@ -1,5 +1,5 @@
 # [Interfacing with Lattice Problems, Integrators, and Solutions](@id lattice_simulation_structure_interaction)
-We have [previously described](@ref simulation_structure_interfacing) how to retrieve species and parameter values stored in non-spatial problems, integrators, and solutions. This section describes similar workflows for simulations based on `LatticeReactionSystem`s.
+We have [previously described](@ref simulation_structure_interfacing) how to retrieve species and parameter values stored in non-spatial problems, integrators, and solutions. This section describes similar workflows for simulations based on [`LatticeReactionSystem`](@ref)s.
 
 Generally, while for non-spatial systems these operations can typically be done by indexing a structure directly, e.g. through
 ```julia
@@ -15,7 +15,7 @@ Furthermore, there are some cases of interfacing which are currently not support
     Below we will describe various features using ODE simulations as examples. However, all interfaces (unless where else is stated) work identically for jump simulations.
 
 ## [Retrieving values from lattice simulations](@id lattice_simulation_structure_interaction_simulation_species)
-Let us consider a simulation of a `LatticeReactionSystem`:
+Let us consider a simulation of a [`LatticeReactionSystem`](@ref):
 ```@example lattice_struct_interaction_sims
 using Catalyst, OrdinaryDiffEq
 two_state_model = @reaction_network begin
@@ -35,12 +35,12 @@ nothing # hide
 To retrieve the values of $X1$ across the simulation we use the `lat_getu` function. It takes three arguments:
 - The solution objects from which we wish to retrieve values.
 - The species which values we wish to retrieve.
-- The `LatticeReactionSystem` which was simulated.
+- The [`LatticeReactionSystem`](@ref) which was simulated.
 
 ```@example lattice_struct_interaction_sims
 lat_getu(sol, :X1, lrs)
 ```
-Here, the output is a vector with $X1$'s value at each simulation time step. How the species's value is represented at each time step depends on the lattice which was originally used to create the `LatticeReactionSystem`:
+Here, the output is a vector with $X1$'s value at each simulation time step. How the species's value is represented at each time step depends on the lattice which was originally used to create the [`LatticeReactionSystem`](@ref):
 - For Cartesian lattices, an array of the same size as the Cartesian lattice is used. Each array element corresponds to the species's value in the corresponding compartment.
 - For masked lattices, a [sparse array](https://docs.julialang.org/en/v1/stdlib/SparseArrays/) of the same size as the masked lattice is used. Each filled array element corresponds to the species's value in the corresponding compartment. Unfilled array elements correspond to positions without compartments.
 - For unstructured (graph) lattices, vectors are used. The i'th element in the vectors corresponds to the species's value in the i'th compartment.
@@ -75,7 +75,7 @@ We can retrieve the species values stored in `oprob` using the `lat_getu` functi
 ```@example lattice_struct_interaction_prob_ints
 lat_getu(oprob, :X1, lrs)
 ```
-Again, the format used corresponds to the lattice used to create the original `LatticeReactionSystem`. Here, even if a species has homogeneous values, the full format is used.
+Again, the format used corresponds to the lattice used to create the original [`LatticeReactionSystem`](@ref). Here, even if a species has homogeneous values, the full format is used.
 ```@example lattice_struct_interaction_prob_ints
 lat_getu(oprob, :X2, lrs)
 ```

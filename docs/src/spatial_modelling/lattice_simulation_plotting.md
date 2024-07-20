@@ -5,7 +5,7 @@ To aid the investigation of spatial simulations we have implemented several help
 - [`lattice_animation`](@ref): Which creates an animation of a lattice simulation across the entire time series.
 - [`lattice_kymograph`](@ref): Which, for a 1d Cartesian or masked lattice based simulation, creates a kymograph of the simulation across time and space.
 
-The first two functions can be applied to graph and 1d and 2d Cartesian and masked lattice based simulations, while `lattice_kymograph` can only be applied to 1d Cartesian and masked lattice based simulations. Currently, there is no functionality for plotting simulations based on 3d Cartesian and masked lattice. Here we will demonstrate all plotting functions using ODE simulations, but they work equally well for jump simulations.
+The first two functions can be applied to [graph](@ref spatial_lattice_modelling_intro_lattices_graph) and 1d and 2d [Cartesian](@ref spatial_lattice_modelling_intro_lattices_cartesian) and [masked](@ref spatial_lattice_modelling_intro_lattices_masked) lattice based simulations, while `lattice_kymograph` can only be applied to 1d Cartesian and masked lattice based simulations. Currently, there is no functionality for plotting simulations based on 3d Cartesian and masked lattice. Here we will demonstrate all plotting functions using ODE simulations, but they work equally well for jump simulations.
 
 !!! note
     The plotting interfaces used for non-spatial Catalyst simulations have seen lots of work to ensure high quality plots. However, the corresponding functions for spatial simulations are primarily intended to aid the user to investigate their simulation results. Thus, they might not be fully suitable for e.g. creating publication-quality graphics. If you are using these functions, please let us now. This helps inform us whether continued development of spatial modelling features is worthwhile. 
@@ -36,7 +36,7 @@ oprob = ODEProblem(lrs, u0, tspan, ps)
 sol = solve(oprob)
 nothing # hide
 ```
-To plot the simulation at a specific time point we use the `lattice_plot` function. In addition to the simulation we wish to plot, it takes the species we wish to plot and the `LatticeReactionSystem` which generated the simulation as arguments. It also takes the time point at which we wish to plot the simulation as an additional argument (if not provided, the simulation will be plotted at the final time point). To use the [`lattice_plot`](@ref) function (or any other of Catalyst's spatial plotting functions) we also need to load the [CairoMakie](https://github.com/MakieOrg/Makie.jl) package (here, `import CairoMakie` is enough, and `using CairoMakie` is not required).
+To plot the simulation at a specific time point we use the `lattice_plot` function. In addition to the simulation we wish to plot, it takes the species we wish to plot and the [`LatticeReactionSystem`](@ref) which generated the simulation as arguments. It also takes the time point at which we wish to plot the simulation as an additional argument (if not provided, the simulation will be plotted at the final time point). To use the [`lattice_plot`](@ref) function (or any other of Catalyst's spatial plotting functions) we also need to load the [CairoMakie](https://github.com/MakieOrg/Makie.jl) package (here, `import CairoMakie` is enough, and `using CairoMakie` is not required).
 ```@example lattice_plotting_1d
 import CairoMakie
 lattice_plot(sol, :X1, lrs; t = 2.0)
@@ -99,7 +99,7 @@ Again, please check the API pages for the [`lattice_plot`](@ref) and [`lattice_a
 ## [Animation and plotting of graph lattice simulations](@id lattice_simulation_plotting_graphs)
 Finally, we consider lattice simulations on graph lattices. We first simulate a simple [birth-death process](@ref basic_CRN_library_bd) on a (6-node cyclic) graph lattice.
 ```@example lattice_plotting_graphs
-# Creates the `LatticeReactionSystem` model.
+using Catalyst, OrdinaryDiffEq
 rs = @reaction_network begin
     (p,d), 0 <--> X
 end

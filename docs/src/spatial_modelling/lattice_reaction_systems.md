@@ -13,12 +13,12 @@ This tutorial introduces spatial modelling on discrete domains, here called latt
 
 
 ## [Basic example of a spatial simulation on a discrete domain](@id spatial_lattice_modelling_intro_example)
-To perform discrete-space spatial simulations, the user must first define a `LatticeReactionSystem`. These combine:
+To perform discrete-space spatial simulations, the user must first define a [`LatticeReactionSystem`](@ref). These combine:
 - A (non-spatial) `ReactionSystem`(@ref) model (created using standard Catalyst syntax).
 - A vector of spatial reactions, describing how species can move spatially across the domain.
 - A lattice defining the spatial domain's compartments and how they are connected.
 
-Here, as an example, we will simulate a spatial [two-state model](@ref basic_CRN_library_two_states). To do so, we first define our (non-spatial) model, the spatial reactions, and the lattice. These are then bundled into a `LatticeReactionSystem`.
+Here, as an example, we will simulate a spatial [two-state model](@ref basic_CRN_library_two_states). To do so, we first define our (non-spatial) model, the spatial reactions, and the lattice. These are then bundled into a [`LatticeReactionSystem`](@ref).
 ```@example spatial_intro_basics
 using Catalyst
 two_state_model = @reaction_network begin
@@ -35,7 +35,7 @@ This model contains:
 
 More details on spatial reactions are available [here](@ref spatial_lattice_modelling_intro_spatial_reactions). In addition to Cartesian grid lattices (in 1, 2, and 3 dimensions), masked and unstructured (graph) lattices are also supported. The different lattice types described in more detail [here](@ref spatial_lattice_modelling_intro_lattices).
 
-Once created, `LatticeReactionSystem`s can be used as input to various problem types, which then can be simulated using the same syntax as non-spatial models. Here, we prepare an ODE simulation by creating an `ODEProblem`:
+Once created, [`LatticeReactionSystem`](@ref)s can be used as input to various problem types, which then can be simulated using the same syntax as non-spatial models. Here, we prepare an ODE simulation by creating an `ODEProblem`:
 ```@example spatial_intro_basics
 u0 = [:X1 => rand(5, 5), :X2 => 2.0]
 tspan = (0.0, 10.0)
@@ -78,7 +78,7 @@ nothing # hide
 ```
 
 !!! note
-    Any species which occurs is occurs in a transport reaction that is used to construct a `LatticeReactionSystem` must also occur in the corresponding non-spatial [`ReactionSystem`](@ref).
+    Any species which occurs is occurs in a transport reaction that is used to construct a [`LatticeReactionSystem`](@ref) must also occur in the corresponding non-spatial [`ReactionSystem`](@ref).
 
 ### [Creating transport reactions programmatically](@id spatial_lattice_modelling_intro_spatial_reactions_programmatic)
 If models are created [programmatically](@ref programmatic_CRN_construction) it is also possible to create transportation reactions programmatically. To do so, use the `TransportReaction` constructor, providing first the rate and then the transported species:
@@ -101,7 +101,7 @@ Catalyst supports three distinct types of lattices:
 - [Masked lattices](@ref spatial_lattice_modelling_intro_lattices_masked). In these grids, only a subset of the grid point actually corresponds to compartments. Spatial transportation is permitted between adjacent compartments.
 - [Unstructured (or graph) lattices](@ref spatial_lattice_modelling_intro_lattices_graph). These are defined by graphs, where vertices correspond to compartments and edges connect adjacent compartments.
 
-Here, Cartesian lattices are a subset of the masked lattices, which are a subset of the unstructured lattices. If possible, it is advantageous to use as narrow a lattice definition as possible (this may both improve simulation performance and simplify syntax). Cartesian and masked lattices can be defined as one, two, and three-dimensional. By default, these lattices assume that diagonally neighbouring compartments are non-adjacent (do not permit direct movement of species in between themselves). To change this, provide the `diagonally_adjacent = true` argument to your `LatticeReactionSystem` when it is created.
+Here, Cartesian lattices are a subset of the masked lattices, which are a subset of the unstructured lattices. If possible, it is advantageous to use as narrow a lattice definition as possible (this may both improve simulation performance and simplify syntax). Cartesian and masked lattices can be defined as one, two, and three-dimensional. By default, these lattices assume that diagonally neighbouring compartments are non-adjacent (do not permit direct movement of species in between themselves). To change this, provide the `diagonally_adjacent = true` argument to your [`LatticeReactionSystem`](@ref) when it is created.
 
 ### [Defining Cartesian lattices](@id spatial_lattice_modelling_intro_lattices_cartesian)
 A Cartesian lattice is defined using the `CartesianGrid` function, which takes a single argument. For a 1d grid, simply provide the length of the grid as a single argument:
@@ -211,7 +211,7 @@ Here, the value at index $i,j$ corresponds to $D$'s value in the edge from compa
 ## [Edge parameters and compartment parameters](@id spatial_lattice_modelling_intro_simulation_edge_parameters)
 Parameters can be divided into *edge parameters* and *compartment parameters* (initial condition values are always tied to compartments). Here, edge parameters have their values tied to edges, while compartment parameters have their values tied to compartments. All parameters that are part of the rates (or stoichiometries) of non-spatial reactions must be compartment parameters. Parameters that are part of spatial reactions can be either compartment parameters or edge parameters. When a spatial reaction's rate is computed, edge parameters fetch their values for from the edge of the transition, and compartment parameters from the compartment *from which the edge originates*.
 
-When a `LatticeReactionSystem` is created, its parameters is the union of all parameters occurring in the (non-spatial) [`ReactionSystem`](@ref) and in all spatial reactions. By default, parameters occurring only in spatial reactions are considered edge parameters (and if they occur in the non-spatial [`ReactionSystem`](@ref) they are considered compartment parameters). It is, however, possible to designate a parameter specifically as an edge parameter (or not), by using the `edgeparameter` [metadata](@ref dsl_advanced_options_species_and_parameters_metadata). E.g. to designate that `D` (when declared in a non-spatial [`ReactionSystem`](@ref) using the DSL) is an edge parameter, not a compartment parameter, we use:
+When a [`LatticeReactionSystem`](@ref) is created, its parameters is the union of all parameters occurring in the (non-spatial) [`ReactionSystem`](@ref) and in all spatial reactions. By default, parameters occurring only in spatial reactions are considered edge parameters (and if they occur in the non-spatial [`ReactionSystem`](@ref) they are considered compartment parameters). It is, however, possible to designate a parameter specifically as an edge parameter (or not), by using the `edgeparameter` [metadata](@ref dsl_advanced_options_species_and_parameters_metadata). E.g. to designate that `D` (when declared in a non-spatial [`ReactionSystem`](@ref) using the DSL) is an edge parameter, not a compartment parameter, we use:
 ```@example spatial_intro_edge_ps
 using Catalyst # hide
 two_state_model = @reaction_network begin
@@ -233,6 +233,6 @@ edge_parameters(lrs)
 ```
 
 ## [Spatial modelling limitations](@id spatial_lattice_modelling_intro_limitations)
-Many features which are supported for non-spatial `ReactionSystem`s are currently unsupported for `LatticeReactionSystem`s. This includes [observables](@ref dsl_advanced_options_observables), [algebraic and differential equations](@ref constraint_equations), [hierarchical models](@ref compositional_modeling), and [events](@ref constraint_equations_events). It is possible that these features will be supported in the future. Furthermore, [removal of conserved quantities](@ref network_analysis_conservation_laws) is not supported when creating spatial `ODEProblem`s.
+Many features which are supported for non-spatial `ReactionSystem`s are currently unsupported for [`LatticeReactionSystem`](@ref)s. This includes [observables](@ref dsl_advanced_options_observables), [algebraic and differential equations](@ref constraint_equations), [hierarchical models](@ref compositional_modeling), and [events](@ref constraint_equations_events). It is possible that these features will be supported in the future. Furthermore, [removal of conserved quantities](@ref network_analysis_conservation_laws) is not supported when creating spatial `ODEProblem`s.
 
 If you are using Catalyst's features for spatial modelling, please give us feedback on how we can improve these features. Additionally, just letting us know that you use these features is useful, as it helps inform us whether continued development of spatial modelling features is worthwhile. 
