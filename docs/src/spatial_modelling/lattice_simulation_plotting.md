@@ -47,7 +47,7 @@ If we instead wish to create an animation of our solution across the entire simu
 lattice_animation(sol, :X1, lrs, "lattice_simulation_1d.mp4")
 ```
 ```@raw html
-<video autoplay loop muted playsinline controls src="./lattice_simulation_1d.mp4" />
+<video autoplay loop muted playsinline controls src="../lattice_simulation_1d.mp4" />
 ```
 Since we animate the solution across the entire simulation, we do not need to provide a `t` value. However, there are some additional (optional) arguments we might wish to provide:
 - `nframes = 200`: The number of frames in the animation (these are evenly samples across the simulation).
@@ -91,7 +91,7 @@ An animation of the solution can be created in a similar manner as for [the one-
 lattice_animation(sol, :X, lrs, "lattice_simulation_2d.mp4")
 ```
 ```@raw html
-<video autoplay loop muted playsinline controls src="./lattice_simulation_2d.mp4" />
+<video autoplay loop muted playsinline controls src="../lattice_simulation_2d.mp4" />
 ```
 
 Again, please check the API pages for the [`lattice_plot`](@ref) and [`lattice_animation`](@ref) functions to see more details of their various options.
