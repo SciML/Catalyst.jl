@@ -37,7 +37,7 @@ function lattice_animation(
         end
         ttitle && (ax.title = "Time: $(round(t[i]; sigdigits = 3))")
     end
-    nothing
+    return nothing
 end
 
 # Internal dispatch for the kymographs of a lattice simulation on a 1d lattice (Cartesian or masked). 
@@ -111,7 +111,7 @@ function lattice_animation(
         ttitle && (ax.title = "Time: $(round(t[i]; sigdigits = 3))")
         hm[3] = vals[i]
     end
-    nothing
+    return nothing
 end
 
 ### 3d Lattice Simulation Plots/Animations (Errors Only) ###

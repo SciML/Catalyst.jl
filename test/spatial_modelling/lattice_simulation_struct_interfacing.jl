@@ -119,8 +119,8 @@ let
     jint = init(jprob, SSAStepper())
 
     @test_throws Exception lat_getp(jprob, :A, lrs)
-    @test_throws Exception lat_getp(jprob, :A, lrs, 0.0)
-    @test_throws Exception lat_setp!(jint, :A, lrs)
+    @test_throws Exception lat_getp(jprob, :A, lrs)
+    @test_throws Exception lat_setp!(jint, :A, lrs, 0.0)
     @test_throws Exception lat_setp!(jint, :A, lrs, 0.0)
 end
 
@@ -432,8 +432,10 @@ let
     ps = [:k1 => 1.5, :k2 => [1.0 1.5; 2.0 3.5], :D => 0.1]
     dprob = DiscreteProblem(lrs, u0, tspan, ps)
     jprob = JumpProblem(lrs, dprob, NSM())
+    jinit = init(jprob, SSAStepper())
 
     # Checks that rebuilding errors.
     @test_throws Exception rebuild_lat_internals!(dprob)
     @test_throws Exception rebuild_lat_internals!(jprob)
+    @test_throws Exception rebuild_lat_internals!(jinit)
 end

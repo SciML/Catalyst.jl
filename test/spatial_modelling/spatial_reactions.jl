@@ -74,12 +74,14 @@ end
 
 # Tests that creation of TransportReaction with non-parameters in rate yield errors.
 # Tests that errors are throw even when the rate is highly nested.
+# Tests that error is thrown when non-permitted rate symbol is used.
 let
     t = default_t()
     @species X(t) Y(t)
     @parameters D1 D2 D3
     @test_throws ErrorException TransportReaction(D1 + D2*(D3 + Y), X)
     @test_throws ErrorException TransportReaction(Y, X)
+    @test_throws Exception @eval @transport_reaction ∅ X
 end
 
 ### Other Tests ###

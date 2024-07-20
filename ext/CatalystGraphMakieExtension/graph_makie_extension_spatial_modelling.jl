@@ -37,5 +37,5 @@ function lattice_animation(
         plt.node_color = vals[i]
         ttitle && (ax.title = "Time: $(round(t[i]; sigdigits = 3))")
     end
-    nothing
+    return nothing
 end

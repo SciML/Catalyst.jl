@@ -662,4 +662,7 @@ let
     @test_throws ArgumentError ODEProblem(lrs, u0, tspan, [d1 => 1.0, D => bad_D_vals_1])
     bad_D_vals_2 = sparse([0.0 0.0 0.0 1.0; 1.0 0.0 1.0 0.0; 0.0 1.0 0.0 1.0; 1.0 0.0 0.0 0.0])
     @test_throws ArgumentError ODEProblem(lrs, u0, tspan, [d1 => 1.0, D => bad_D_vals_2])
+    @test_throws ArgumentError ODEProblem(lrs, u0, tspan, [d1 => 1.0])
+    @test_throws ArgumentError ODEProblem(lrs, [X1 => [1.0, 2.0, 3.0]], tspan, ps)
+    @test_throws ArgumentError ODEProblem(lrs, [X1 => ones(3,1)], tspan, ps)
 end

@@ -111,11 +111,11 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
         if !isempty(MT.get_systems(rs))
             throw(ArgumentError("A non-flattened (hierarchical) `ReactionSystem` was used as input. `LatticeReactionSystem`s can only be based on non-hierarchical `ReactionSystem`s."))
         end
-        if length(species(rs)) != length(unknowns(rs))
-            throw(ArgumentError("The `ReactionSystem` used as input contain variable unknowns (in addition to species unknowns). This is not permitted (the input `ReactionSystem` must contain species unknowns only)."))
-        end
         if length(reactions(rs)) != length(equations(rs))
             throw(ArgumentError("The `ReactionSystem` used as input contain equations (in addition to reactions). This is not permitted."))
+        end
+        if length(species(rs)) != length(unknowns(rs))
+            throw(ArgumentError("The `ReactionSystem` used as input contain variable unknowns (in addition to species unknowns). This is not permitted (the input `ReactionSystem` must contain species unknowns only)."))
         end
         if !isempty(MT.continuous_events(rs)) || !isempty(MT.discrete_events(rs))
             throw(ArgumentError("The `ReactionSystem` used as input to `LatticeReactionSystem contain events. These will be ignored in any simulations based on the created `LatticeReactionSystem`."))
