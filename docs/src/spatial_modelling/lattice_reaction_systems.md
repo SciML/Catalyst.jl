@@ -57,6 +57,14 @@ Finally, we can access "$X1$'s value across the simulation using
 ```@example spatial_intro_basics
 lat_getu(sol, :X1, lrs)
 ```
+and plot the simulation using
+```@example spatial_intro_basics
+import CairoMakie
+lattice_animation(sol, :X1, lrs, "lattice_simulation_2d.mp4")
+```
+```@raw html
+<video autoplay loop muted playsinline controls src="../lattice_simulation_2d.mp4" />
+```
 More information on how to retrieve values from spatial simulations can be found [here](@ref lattice_simulation_structure_interaction_simulation_species), and for plotting them, [here](@ref lattice_simulation_plotting). Finally, a list of functions for querying `LatticeReactionSystems` for various properties can be found [here](@ref api_lattice_simulations).
 
 ## [Spatial reactions](@id spatial_lattice_modelling_intro_spatial_reactions)
