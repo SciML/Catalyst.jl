@@ -174,10 +174,6 @@ accessor functions.
 species
 Catalyst.get_species
 nonspecies
-ModelingToolkit.parameters
-ModelingToolkit.get_ps
-ModelingToolkit.unknowns
-ModelingToolkit.get_unknowns
 reactions
 nonreactions
 Catalyst.get_rxs
@@ -187,9 +183,6 @@ numreactions
 speciesmap
 paramsmap
 isautonomous
-ModelingToolkit.observed
-ModelingToolkit.get_observed
-ModelingToolkit.get_systems
 ```
 
 ## Coupled reaction/equation system properties
