@@ -2235,9 +2235,9 @@ version = "4.5.1"
 
 [[deps.NNlib]]
 deps = ["Adapt", "Atomix", "ChainRulesCore", "GPUArraysCore", "KernelAbstractions", "LinearAlgebra", "Pkg", "Random", "Requires", "Statistics"]
-git-tree-sha1 = "333cd68c28bb57ac23c50acd1036ecd7dd78bf57"
+git-tree-sha1 = "190dcada8cf9520198058c4544862b1f88c6c577"
 uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
-version = "0.9.20"
+version = "0.9.21"
 
     [deps.NNlib.extensions]
     NNlibAMDGPUExt = "AMDGPU"
@@ -3015,9 +3015,9 @@ version = "0.3.8"
 
 [[deps.SciMLSensitivity]]
 deps = ["ADTypes", "Adapt", "ArrayInterface", "ChainRulesCore", "DiffEqBase", "DiffEqCallbacks", "DiffEqNoiseProcess", "Distributions", "EllipsisNotation", "Enzyme", "FiniteDiff", "ForwardDiff", "FunctionProperties", "FunctionWrappersWrappers", "Functors", "GPUArraysCore", "LinearAlgebra", "LinearSolve", "Markdown", "OrdinaryDiffEq", "Parameters", "PreallocationTools", "QuadGK", "Random", "RandomNumbers", "RecursiveArrayTools", "Reexport", "ReverseDiff", "SciMLBase", "SciMLOperators", "SciMLStructures", "SparseDiffTools", "StaticArrays", "StaticArraysCore", "Statistics", "StochasticDiffEq", "SymbolicIndexingInterface", "Tracker", "TruncatedStacktraces", "Zygote"]
-git-tree-sha1 = "bc87c2625861fc4a3e2e5920e89bc7c0bf4ba91f"
+git-tree-sha1 = "0b677567d07f4447f79f6e12a01db5c4dc02e54f"
 uuid = "1ed8b502-d754-442c-8d5d-10ac956f44a1"
-version = "7.63.1"
+version = "7.64.0"
 
 [[deps.SciMLStructures]]
 deps = ["ArrayInterface"]
