@@ -993,7 +993,7 @@ let
     # Equation with variable using non-declared independent variable.
     @test_throws Exception ReactionSystem([
         Reaction(p1, [S1], [S2]),
-        U1 ~ S1 + p2
+        E(U1) ~ S1 + p2
     ], t; name = :rs)
 
     # Differential with respect to non-declared independent variable.
