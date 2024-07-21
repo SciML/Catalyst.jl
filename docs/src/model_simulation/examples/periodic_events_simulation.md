@@ -23,10 +23,13 @@ plot(sol)
 ```
 
 ## [Modelling a circadian periodic event in a jump simulation](@id periodic_event_simulation_example_ode)
-While defining periodic events is easy for ODE and SDE simulations, due to how events are internally implemented, these cannot currently be used for jump simulations. Instead, we create a new model (and its corresponding `JumpProblem`), without the event:
+While defining periodic events is easy for ODE and SDE simulations, due to how events are internally implemented, these cannot currently be used for jump simulations. Instead, there is a workaround which includes firs creating a [conditional discrete event](@ref constraint_equations_events) which is designed to trigger every 13 time units:
 ```@example periodic_event_example
 circadian_model = @reaction_network begin
- (kₚ*l,kᵢ), X <--> Xᴾ
+    @discrete_events begin
+        (t % 12 == 0) => [l ~ (l + 1)%2]
+    end
+    (kₚ*l,kᵢ), X <--> Xᴾ
 end
 
 using JumpProcesses
@@ -36,37 +39,22 @@ dprob = DiscreteProblem(circadian_model, u0, (0.0, 100.0), ps)
 jprob = JumpProblem(circadian_model, dprob, Direct())
 nothing # hide
 ```
-Next, we implement our event through a `DiscreteCallback`. It triggers every 12 time units, and when it does, it flips the value of `l`. Since we will interface with $l$'s value multiple times, we [create specific `getl` and `setl` functions](@ref simulation_structure_interfacing_functions) to do this (in practice, due to this model's small size, the performance increase is minimal).
-```@example periodic_event_example
-getl = ModelingToolkit.getp(jprob, :l)
-setl = ModelingToolkit.setp(jprob, :l)
-function condition(u, t, integrator)
- (t % 12) == 0.0
-end
-function affect!(integrator)
-    setl(integrator, (getl(integrator) + 1) % 2)
-    reset_aggregated_jumps!(integrator)
-end
-callback = DiscreteCallback(condition, affect!)
-nothing # hide
-```
-!!! danger
-    Whenever the integrator of a jump simulator is modified, the `reset_aggregated_jumps!` function must be called (with the integrator as its input) afterwards. Omitting to do so will result in simulations (incorrectly) using the old values of parameters/states internally instead of the updated values.
-
 Next, if we simulate our model, we note that the events do not seem to be triggered
 ```@example periodic_event_example
-sol = solve(jprob, SSAStepper(); callback)
+sol = solve(jprob, SSAStepper())
 plot(sol)
+plot(sol, density = 10000, fmt = :png) # hide
 ```
 The reason is that discrete callbacks' conditions are only checked at the end of each simulation time step, and the probability that these will coincide with the callback's trigger times ($t = 12, 24, 36, ...$) is infinitely small. Hence, we must directly instruct our simulation to stop at these time points. We can do this using the `tstops` argument:
 ```@example periodic_event_example
 tstops = 12.0:12.0:dprob.tspan[2]
-sol = solve(jprob, SSAStepper(); callback, tstops)
+sol = solve(jprob, SSAStepper(); tstops)
 plot(sol)
+plot(sol, density = 10000, fmt = :png) # hide
 ```
 
 ## [Plotting the light level](@id periodic_event_simulation_plotting_light)
-Sometimes when simulating models with periodic parameters, one would like to plot the parameter's value across the simulation. To do this, we must turn our parameter $l$ to a *variable* (so that its value is recorded throughout the simulation):
+Sometimes when simulating models with periodic parameters, one would like to plot the parameter's value across the simulation. For this, there are two potential strategies. One includes creating a [*saving callback*](https://docs.sciml.ai/DiffEqCallbacks/stable/output_saving/#DiffEqCallbacks.SavingCallback). The other one, which we will demonstrate here, includes turning the parameter $l$ to a *variable* (so that its value is recorded throughout the simulation):
 ```@example periodic_event_example
 circadian_model = @reaction_network begin
     @variables l(t)
