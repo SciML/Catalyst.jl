@@ -58,7 +58,7 @@ like
 plot(sol; idxs = [A, B])
 ```
 
-## How to disable rescaling of reaction rates in rate laws?
+## [How to disable rescaling of reaction rates in rate laws?](@ref faq_combinatoric_ratelaws)
 As explained in the [Reaction rate laws used in simulations](@ref introduction_to_catalyst_ratelaws) section, for
 a reaction such as `k, 2X --> 0`, the generated rate law will rescale the rate
 constant, giving `k*X^2/2` instead of `k*X^2` for ODEs and `k*X*(X-1)/2` instead
@@ -70,6 +70,16 @@ osys = convert(ODESystem, rn; combinatoric_ratelaws=false)
 ```
 Disabling these rescalings should work for all conversions of `ReactionSystem`s
 to other `ModelingToolkit.AbstractSystem`s.
+
+When creating a [`ReactionSystem`](@ref) using the DSL, combinatoric rate laws can be disabled (for 
+the created system, and all systems derived from it) using the `@combinatoric_ratelaws` option (providing `false` as its only input):
+```@example faq1
+rn = @reaction_network begin
+    @combinatoric_ratelaws false
+    k, 2X --> 0
+end
+nothing # hide
+```
 
 ## How to use non-integer stoichiometric coefficients?
 ```@example faq2

@@ -10,6 +10,11 @@ struct EdgeParameter end
 Symbolics.option_to_metadata_type(::Val{:edgeparameter}) = EdgeParameter
 
 # Implements the isedgeparameter check function.
+"""
+    isedgeparameter(p)
+
+Returns `true` if the parameter `p` is an edge parameter (else `false`).
+"""
 isedgeparameter(x::Num, args...) = isedgeparameter(Symbolics.unwrap(x), args...)
 function isedgeparameter(x, default = false)
     p = Symbolics.getparent(x, nothing)
