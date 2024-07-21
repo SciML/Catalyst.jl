@@ -43,7 +43,7 @@ end
 We now define the reaction model
 ```julia
 t = default_t()
-@variables x y
+@parameters x y
 @species U(x,y,t) V(x,y,t) W(x,y,t)
 rxs = [Reaction(k[1], [U, W], [V, W]),
        Reaction(k[2], [V], [W], [2], [1]),

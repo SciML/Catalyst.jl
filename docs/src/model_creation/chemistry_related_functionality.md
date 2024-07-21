@@ -103,7 +103,7 @@ In all of these cases, the left-hand side must be enclosed within `()`.
 While we generally do not need to specify independent variables for compound, if the components (together) have more than one independent variable, this *must be done*:
 ```@example chem1
 t = default_t()
-@variables s
+@parameters s
 @species N(s) O(t) 
 @compound NO2(t,s) ~ N + 2O
 ```

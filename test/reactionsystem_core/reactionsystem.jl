@@ -628,6 +628,30 @@ let
     @test_throws Exception convert(NonlinearSystem, nc)
 end
 
+# Checks that the same name cannot be used for two different of parameters/species/variables.
+let
+    # Stores a parameter, a species, and a variable (with identical names) in different variables.
+    x_p = let
+        only(@parameters x) 
+    end
+    x_sp = let
+        only(@species x(t)) 
+    end
+    x_v = let
+        only(@variables x(t)) 
+    end
+    
+    # Checks that creating systems with different in combination produces errors.
+    # Currently broken on MTK, potentially fix in Catalyst once sorted out there (https://github.com/SciML/ModelingToolkit.jl/issues/2883).
+    @parameters d
+    @species X(t)
+    rx = Reaction(d, [X], [])
+    @test_broken false # (not sure how to mark a `@test_throws` as broken)
+    # @test_throws rs1 = ReactionSystem([rx], t, [X, x_sp,], [d, x_p]; name = :rs)
+    # @test_throws rs2 = ReactionSystem([rx], t, [X, X, x_v], [d, x_p]; name = :rs)
+    # @test_throws rs2 = ReactionSystem([rx], t, [X, x_sp, x_v], [d]; name = :rs)
+end
+
 ### Other Tests ###
 
 # Test for https://github.com/SciML/ModelingToolkit.jl/issues/436.
