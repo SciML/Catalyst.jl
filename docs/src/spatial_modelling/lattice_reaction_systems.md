@@ -58,7 +58,8 @@ Finally, we can access "$X1$'s value across the simulation using
 lat_getu(sol, :X1, lrs)
 ```
 and plot the simulation using
-```@example lattice_plotting_2d
+```@example spatial_intro_basics
+import CairoMakie
 lattice_animation(sol, :X1, lrs, "lattice_simulation_2d.mp4")
 ```
 ```@raw html
