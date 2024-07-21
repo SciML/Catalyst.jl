@@ -175,8 +175,8 @@ species
 Catalyst.get_species
 nonspecies
 reactions
-nonreactions
 Catalyst.get_rxs
+nonreactions
 numspecies
 numparams
 numreactions
