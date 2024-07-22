@@ -65,7 +65,7 @@ two_state_model = @reaction_network begin
     (k1,k2), X1 <--> X2
 end
 ```
-It has an infinite number of steady states. To make steady state finding possible, information of the system's conserved quantities (here $C = X1 + X2$) must be provided. Since these can be computed from system initial conditions (`u0`, i.e. those provided when performing ODE simulations), designating an `u0` is often the best way. There are two ways to do this. First, one can perform [forward ODE simulation-based steady state finding](@ref steady_state_solving_simulation), using the initial condition as the initial `u` guess. Alternatively, any conserved quantities can be eliminated when the `NonlinearProblem` is created. This feature is supported by [Catalyst's conservation law finding and elimination feature](@ref network_analysis_conservation_laws).
+It has an infinite number of steady states. To make steady state finding possible, information of the system's conserved quantities (here $C = X1 + X2$) must be provided. Since these can be computed from system initial conditions (`u0`, i.e. those provided when performing ODE simulations), designating an `u0` is often the best way. There are two ways to do this. First, one can perform [forward ODE simulation-based steady state finding](@ref steady_state_solving_simulation), using the initial condition as the initial `u` guess. Alternatively, any conserved quantities can be eliminated when the `NonlinearProblem` is created. This feature is supported by [Catalyst's conservation law finding and elimination feature](@ref conservation_laws).
 
 To eliminate conservation laws we simply provide the `remove_conserved = true` argument to `NonlinearProblem`:
 ```@example steady_state_solving_claws
