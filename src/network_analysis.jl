@@ -1011,10 +1011,15 @@ function robustspecies(rn::ReactionSystem)
 
         for (c_s, c_p) in Combinatorics.combinations(nonterminal_complexes, 2)
             # Check the difference of all the combinations of complexes. The support is the set of indices that are non-zero 
-            supp = findall(!=(0), @views Z[:, c_s] - Z[:, c_p])
+            suppcnt = 0
+            supp = 0
+            for i in 1:size(Z, 1)
+                (Z[i, c_s] != Z[i, c_p]) && (suppcnt += 1; supp = i)
+                (suppcnt > 1) && break
+            end
 
             # If the support has length one, then they differ in only one species, and that species is concentration robust. 
-            length(supp) == 1 && supp[1] ∉ robust_species && push!(robust_species, supp...)
+            (suppcnt == 1) && (supp ∉ robust_species) && push!(robust_species, supp)
         end
         nps.checkedrobust = true
         nps.robustspecies = robust_species
