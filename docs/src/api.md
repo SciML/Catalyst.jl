@@ -215,7 +215,7 @@ Catalyst.isbc
 Catalyst.isvalidreactant
 ```
 
-## [Reaction metadata](@ref api_rx_metadata)
+## [Reaction metadata](@id api_rx_metadata)
 The following functions permits the retrieval of [reaction metadata](@ref dsl_advanced_options_reaction_metadata).
 ```@docs
 Catalyst.hasnoisescaling

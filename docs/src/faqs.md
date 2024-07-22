@@ -58,7 +58,7 @@ like
 plot(sol; idxs = [A, B])
 ```
 
-## [How to disable rescaling of reaction rates in rate laws?](@ref faq_combinatoric_ratelaws)
+## [How to disable rescaling of reaction rates in rate laws?](@id faq_combinatoric_ratelaws)
 As explained in the [Reaction rate laws used in simulations](@ref introduction_to_catalyst_ratelaws) section, for
 a reaction such as `k, 2X --> 0`, the generated rate law will rescale the rate
 constant, giving `k*X^2/2` instead of `k*X^2` for ODEs and `k*X*(X-1)/2` instead
