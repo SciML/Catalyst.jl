@@ -78,6 +78,3 @@ If we directly plot $l$'s value, it will be too small (compared to $X$ and $Xᴾ
 @unpack X, Xᴾ, l = circadian_model
 plot(sol; idxs = [X, Xᴾ, 150*l], labels = ["X" "Xᴾ" "Light amplitude"])
 ```
-
-!!! note
-    If you wish to reproduce this in a jump simulation, remember to make appropriate modifications (like using `setu` instead of `setp`).
