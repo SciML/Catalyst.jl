@@ -84,6 +84,22 @@ Reaction
 ReactionSystem
 ```
 
+## [Options for the `@reaction_network` DSL](@id api_dsl_options)
+We have [previously described](@ref dsl_advanced_options) how options permits the user to supply non-reaction information to [`ReactionSystem`](@ref) created through the DSL. Here follows a list 
+of all options currently available.
+- [`parameters`]:(@ref dsl_advanced_options_declaring_species_and_parameters) Allows the designation of a set of symbols as system parameter. 
+- [`species`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system species.
+- [`variables`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system non-species variables. 
+- [`ivs`](@ref dsl_advanced_options_ivs): Allows the designation of a set of symbols as system independent variables.
+- [`compounds`](@ref chemistry_functionality_compounds): Allows the designation of compound species.
+- [`observables`](@ref dsl_advanced_options_observables): Allows the designation of compound observables. 
+- [`default_noise_scaling`](@ref simulation_intro_SDEs_noise_saling): Enables the setting of a default noise scaling expression.
+- [`differentials`](@ref constraint_equations_coupling_constraints): Allows the designation of differentials. 
+- [`equations`](@ref constraint_equations_coupling_constraints): Allows the creation of algebraic and/or differential equations. 
+- [`continuous_events`](@ref constraint_equations_events): Allows the creation of continuous events. 
+- [`discrete_events`](@ref constraint_equations_events): Allows the creation of discrete events.  
+- [`combinatoric_ratelaws`](@ref faq_combinatoric_ratelaws): Takes a single option (`true` or `false`), which sets whether to use combinatorial rate laws.
+
 ## [ModelingToolkit and Catalyst accessor functions](@id api_accessor_functions)
 A [`ReactionSystem`](@ref) is an instance of a
 `ModelingToolkit.AbstractTimeDependentSystem`, and has a number of fields that
@@ -156,18 +172,36 @@ accessor functions.
 
 ```@docs
 species
+Catalyst.get_species
 nonspecies
 reactions
+Catalyst.get_rxs
 nonreactions
 numspecies
 numparams
 numreactions
 speciesmap
 paramsmap
-isspecies
 isautonomous
+```
+
+## Coupled reaction/equation system properties
+The following system property accessor functions are primarily relevant to reaction system [coupled 
+to differential and/or algebraic equations](@ref constraint_equations).
+```@docs
+ModelingToolkit.has_alg_equations
+ModelingToolkit.alg_equations
+ModelingToolkit.has_diff_equations
+ModelingToolkit.diff_equations
+```
+
+## Basic species properties
+The following functions permits the querying of species properties.
+```@docs
+isspecies
 Catalyst.isconstant
 Catalyst.isbc
+Catalyst.isvalidreactant
 ```
 
 ## Basic reaction properties
@@ -179,6 +213,17 @@ substoichmat
 prodstoichmat
 netstoichmat
 reactionrates
+```
+
+## [Reaction metadata](@id api_rx_metadata)
+The following functions permits the retrieval of [reaction metadata](@ref dsl_advanced_options_reaction_metadata).
+```@docs
+Catalyst.hasnoisescaling
+Catalyst.getnoisescaling
+Catalyst.hasdescription
+Catalyst.getdescription
+Catalyst.hasmisc
+Catalyst.getmisc
 ```
 
 ## [Functions to extend or modify a network](@id api_network_extension_and_modification)
@@ -307,23 +352,22 @@ LatticeReactionSystem
 The following functions can be used to querying the properties of `LatticeReactionSystem`s:
 ```@docs
 reactionsystem
-spatial_reactions
-lattice
-num_verts
-num_edges
-num_species
-spatial_species
-vertex_parameters
-edge_parameters
-edge_iterator
-is_transport_system
+Catalyst.spatial_reactions
+Catalyst.lattice
+Catalyst.num_verts
+Catalyst.num_edges
+Catalyst.num_species
+Catalyst.spatial_species
+Catalyst.vertex_parameters
+Catalyst.edge_parameters
+Catalyst.edge_iterator
+Catalyst.is_transport_system
 has_cartesian_lattice
 has_masked_lattice
 has_grid_lattice
 has_graph_lattice
 grid_size
 grid_dims
-get_lattice_graph
 ```
 In addition, most accessor functions for normal `ReactionSystem`s (such as `species` and `parameters`) works when applied to `LatticeReactionSystem`s as well.
 
