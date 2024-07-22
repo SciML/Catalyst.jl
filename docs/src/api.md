@@ -195,6 +195,15 @@ ModelingToolkit.has_diff_equations
 ModelingToolkit.diff_equations
 ```
 
+## Basic species properties
+The following functions permits the querying of species properties.
+```@docs
+isspecies
+Catalyst.isconstant
+Catalyst.isbc
+Catalyst.isvalidreactant
+```
+
 ## Basic reaction properties
 ```@docs
 ismassaction
@@ -204,15 +213,6 @@ substoichmat
 prodstoichmat
 netstoichmat
 reactionrates
-```
-
-## Basic species properties
-The following functions permits the querying of species properties.
-```@docs
-isspecies
-Catalyst.isconstant
-Catalyst.isbc
-Catalyst.isvalidreactant
 ```
 
 ## [Reaction metadata](@id api_rx_metadata)
