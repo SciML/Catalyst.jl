@@ -2,7 +2,9 @@
 
 ## Catalyst unreleased (master branch)
 
-The expansion of `ReactionSystem` models to spatial lattices have been enabled. Here follows a 
+
+## Catalyst 14.1.1
+The expansion of `ReactionSystem` models to spatial lattices has been enabled. Here follows a 
 simple example where a Brusselator model is expanded to a 20x20 grid of compartments, with diffusion
 for species X, and then simulated using ODEs. Finally, an animation of the simulation is created.
 ```julia
@@ -29,7 +31,7 @@ oprob = ODEProblem(lrs, u0, tspan, ps)
 sol = solve(oprob, FBDF())
 lattice_animation(sol, :X, lrs, "brusselator.mp4")
 ```
-The addition of spatial modelling in Catalyst contain a large number of new features, all which are
+The addition of spatial modelling in Catalyst contains a large number of new features, all of which are
 described in the [corresponding documentation](https://docs.sciml.ai/Catalyst/stable/spatial_modelling/lattice_reaction_systems/).
 
 ## Catalyst 14.0.1
