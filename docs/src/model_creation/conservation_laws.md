@@ -1,5 +1,5 @@
 # [Working with conservation laws](@id conservation_laws)
-Catalyst contain specialised functionality to work with *conserved quantities*, i.e. species quantities which are conserved throughout e.g. a simulation. This functionality is both automatically utilised by Catalyst (e.g. to [remove singular Jacobians during steady state computations](@ref homotopy_continuation_conservation_laws)), but also something that is available for the user to utilise directly (e.g. to [improve simulation performance](@ref ode_simulation_performance_conservation_laws)).
+Catalyst can detect, and eliminate for differential-equation based models, *conserved quantities*, i.e. linear combinations of species which are conserved via the chemistry. This functionality is both automatically utilised by Catalyst (e.g. to [remove singular Jacobians during steady state computations](@ref homotopy_continuation_conservation_laws)), but is also available for users to utilise directly (e.g. to potentially [improve simulation performance](@ref ode_simulation_performance_conservation_laws)).
 
 To illustrate conserved quantities, let us consider the following [two-state](@ref basic_CRN_library_two_states) model:
 ```@example conservation_laws
