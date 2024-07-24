@@ -48,7 +48,7 @@ function processsym(s)
     var
 end
 
-function chemical_arrows(rn::ReactionSystem; expand = true,
+function chemical_arrows(rn::ReactionSystem;
         double_linebreak = LATEX_DEFS.double_linebreak,
         starred = LATEX_DEFS.starred, mathrm = true,
         mathjax = LATEX_DEFS.mathjax, kwargs...)
@@ -87,8 +87,6 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
 
         ### Expand functions to maths expressions
         rate = r.rate isa Symbolic ? subber(r.rate) : r.rate
-        rate = ModelingToolkit.prettify_expr(Symbolics._toexpr(rate))
-        expand && (rate = recursive_clean!(rate))
 
         ### Generate formatted string of substrates
         substrates = [make_stoich_str(substrate[1], substrate[2], subber; mathrm,
@@ -102,10 +100,7 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
         if i + 1 <= length(rxs) && issetequal(r.products, rxs[i + 1].substrates) &&
            issetequal(r.substrates, rxs[i + 1].products)
             ### Bi-directional arrows
-            rate_backwards = MT.prettify_expr(Symbolics._toexpr(rxs[i + 1].rate))
-            #rate_backwards = rxs[i+1].rate isa Symbolic ? Expr(subber(rxs[i+1].rate)) : rxs[i+1].rate
-            expand && (rate_backwards = recursive_clean!(rate_backwards))
-            expand && (rate_backwards = recursive_clean!(rate_backwards))
+            rate_backwards = rxs[i + 1].rate isa Symbolic ? subber(rxs[i + 1].rate) : rxs[i + 1].rate
             str *= " &" * rev_arrow
             str *= "[" * latexraw(rate_backwards; kwargs...) * "]"
             str *= "{" * latexraw(rate; kwargs...) * "} "
@@ -121,8 +116,8 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
                     for product in zip(r.products, r.prodstoich)]
         isempty(products) && (products = ["\\varnothing"])
         str *= join(products, " + ")
-        if (i == lastidx) ||
-           (((i + 1) == lastidx) && (backwards_reaction == true)) &&
+        if ((i == lastidx) ||
+           (((i + 1) == lastidx) && (backwards_reaction == true))) &&
            isempty(nonrxs)
             str *= "  \n "
         else
@@ -153,43 +148,6 @@ function any_nonrx_subsys(rn::MT.AbstractSystem)
         any_nonrx_subsys(subsys) && (return true)
     end
     false
-end
-
-# Recursively traverses an expression and removes things like X^1, 1*X. Will not actually have any effect on the expression when used as a function, but will make it much easier to look at it for debugging, as well as if it is transformed to LaTeX code.
-function recursive_clean!(expr)
-    (expr isa Symbol) && (expr == :no___noise___scaling) && (return 1)
-    (typeof(expr) != Expr) && (return expr)
-    for i in 1:length(expr.args)
-        expr.args[i] = recursive_clean!(expr.args[i])
-    end
-    (expr.args[1] == :^) && (expr.args[3] == 1) && (return expr.args[2])
-    if expr.args[1] == :*
-        in(0, expr.args) && (return 0)
-        i = 1
-        while (i = i + 1) <= length(expr.args)
-            if (typeof(expr.args[i]) == Expr) && (expr.args[i].head == :call) &&
-               (expr.args[i].args[1] == :*)
-                for arg in expr.args[i].args
-                    (arg != :*) && push!(expr.args, arg)
-                end
-            end
-        end
-        for i in length(expr.args):-1:2
-            (typeof(expr.args[i]) == Expr) && (expr.args[i].head == :call) &&
-                (expr.args[i].args[1] == :*) && deleteat!(expr.args, i)
-            (expr.args[i] == 1) && deleteat!(expr.args, i)
-        end
-        (length(expr.args) == 2) && (return expr.args[2])                   # We have a multiplication of only one thing, return only that thing.
-        (length(expr.args) == 1) && (return 1)                              # We have only * and no real arguments.
-        (length(expr.args) == 3) && (expr.args[2] == -1) && return :(-$(expr.args[3]))
-        (length(expr.args) == 3) && (expr.args[3] == -1) && return :(-$(expr.args[2]))
-    end
-    if expr.head == :call
-        (expr.args[1] == :/) && (expr.args[3] == 1) && (return expr.args[2])
-        (expr.args[1] == :binomial) && (expr.args[3] == 1) && return expr.args[2]
-        #@isdefined($(expr.args[1])) || error("Function $(expr.args[1]) not defined.")
-    end
-    return expr
 end
 
 function make_stoich_str(spec, stoich, subber; mathrm = true, kwargs...)
