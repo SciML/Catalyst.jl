@@ -36,6 +36,18 @@ function Latexify.infer_output(env, rs::ReactionSystem, args...)
     return latex_function
 end
 
+function processsym(s)
+    args = Symbolics.sorted_arguments(s)
+    name = MT.getname(s)
+    if length(args) <= 1
+        var = value(Symbolics.variable(name))
+    else
+        idxs = args[2:end]
+        var = value(Symbolics.variable(MT.getname(s), idxs...))
+    end
+    var
+end
+
 function chemical_arrows(rn::ReactionSystem; expand = true,
         double_linebreak = LATEX_DEFS.double_linebreak,
         starred = LATEX_DEFS.starred, mathrm = true,
@@ -64,8 +76,7 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
         str *= "\\require{mhchem} \n"
     end
 
-    subber = ModelingToolkit.substituter([s => value(Symbolics.variable(MT.getname(s)))
-                                          for s in species(rn)])
+    subber = ModelingToolkit.substituter([s => processsym(s) for s in species(rn)])
 
     lastidx = length(rxs)
     for (i, r) in enumerate(rxs)
@@ -76,7 +87,7 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
 
         ### Expand functions to maths expressions
         rate = r.rate isa Symbolic ? subber(r.rate) : r.rate
-        rate = ModelingToolkit.prettify_expr(toexpr(rate))
+        rate = ModelingToolkit.prettify_expr(Symbolics._toexpr(rate))
         expand && (rate = recursive_clean!(rate))
 
         ### Generate formatted string of substrates
@@ -91,7 +102,7 @@ function chemical_arrows(rn::ReactionSystem; expand = true,
         if i + 1 <= length(rxs) && issetequal(r.products, rxs[i + 1].substrates) &&
            issetequal(r.substrates, rxs[i + 1].products)
             ### Bi-directional arrows
-            rate_backwards = ModelingToolkit.prettify_expr(toexpr(rxs[i + 1].rate))
+            rate_backwards = MT.prettify_expr(Symbolics._toexpr(rxs[i + 1].rate))
             #rate_backwards = rxs[i+1].rate isa Symbolic ? Expr(subber(rxs[i+1].rate)) : rxs[i+1].rate
             expand && (rate_backwards = recursive_clean!(rate_backwards))
             expand && (rate_backwards = recursive_clean!(rate_backwards))
