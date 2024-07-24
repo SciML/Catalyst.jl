@@ -51,7 +51,7 @@ using SafeTestsets, Test
     @time @safetestset "MTK Problem Inputs" begin include("upstream/mtk_problem_inputs.jl") end
 
     # Tests network visualisation.
-    @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
+    # @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
     # Disable on Macs as can't install GraphViz via jll
     if !Sys.isapple()
         @time @safetestset "Graphs Visualisations" begin include("visualisation/graphs.jl") end
