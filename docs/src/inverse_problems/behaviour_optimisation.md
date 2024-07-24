@@ -1,5 +1,5 @@
 # [Optimization for non-data fitting purposes](@id behaviour_optimisation)
-In previous tutorials we have described how to use PEtab.jl and [Optimization.jl](@ref optimization_parameter_fitting) for parameter fitting. This involves solving an optimisation problem (to find the parameter set yielding the best model-to-data fit). There are, however, other situations that require solving optimisation problems. Typically, these involve the creation of a custom cost function, which optimum can then be found using Optimization.jl. In this tutorial we will describe this process, demonstrating how parameter space can be searched to find values that achieve a desired system behaviour. A more throughout description on how to solve these problems is provided by [Optimization.jl's documentation](https://docs.sciml.ai/Optimization/stable/) and the literature[^1]. 
+In previous tutorials we have described how to use PEtab.jl and [Optimization.jl](@ref optimization_parameter_fitting) for parameter fitting. This involves solving an optimisation problem (to find the parameter set yielding the best model-to-data fit). There are, however, other situations that require solving optimisation problems. Typically, these involve the creation of a custom cost function, which optimum can then be found using Optimization.jl. In this tutorial we will describe this process, demonstrating how parameter space can be searched to find values that achieve a desired system behaviour. A more throughout description on how to solve these problems is provided by [Optimization.jl's documentation](https://docs.sciml.ai/Optimization/stable/) and the literature[^1].
 
 ## [Maximising the pulse amplitude of an incoherent feed forward loop](@id behaviour_optimisation_IFFL_example)
 Incoherent feedforward loops (network motifs where a single component both activates and deactivates a downstream component) are able to generate pulses in response to step inputs[^2]. In this tutorial we will consider such an incoherent feedforward loop, attempting to generate a system with as prominent a response pulse as possible.
@@ -64,13 +64,13 @@ ps_res = Dict([:pX => opt_sol.u[1], :pY => opt_sol.u[2], :pZ => opt_sol.u[2]])
 u0_res = [:X => ps_res[:pX], :Y => ps_res[:pX]*ps_res[:pY], :Z => ps_res[:pZ]/ps_res[:pY]^2]
 oprob_res = remake(oprob; u0 = u0_res, p = ps_res)
 sol_res = solve(oprob_res, Tsit5())
-plot(sol_res; idxs=:Z)
+plot(sol_res; idxs = :Z)
 ```
 For this model, it turns out that $Z$'s maximum pulse amplitude is equal to twice its steady state concentration. Hence, the maximisation of its pulse amplitude is equivalent to maximising its steady state concentration.
 
 !!! note
-    Especially if you check Optimization.jl's documentation, you will note that cost functions have the `f(u,p)` form. This is because `OptimizationProblem`s (like e.g. `ODEProblem`s) can take both variables (which can be varied in the optimisation problem), but also parameters that are fixed. In our case, the *optimisation variables* correspond to our *model parameters*. Hence, our model parameter values are the `u` input. This is also why we find the optimisation solution (our optimised parameter set) in `opt_sol`'s `u` field. Our optimisation problem does not actually have any parameters, hence, the second argument of `pulse_amplitude` is unused (that is why we call it `_`, a name commonly indicating unused function arguments). 
-    
+    Especially if you check Optimization.jl's documentation, you will note that cost functions have the `f(u,p)` form. This is because `OptimizationProblem`s (like e.g. `ODEProblem`s) can take both variables (which can be varied in the optimisation problem), but also parameters that are fixed. In our case, the *optimisation variables* correspond to our *model parameters*. Hence, our model parameter values are the `u` input. This is also why we find the optimisation solution (our optimised parameter set) in `opt_sol`'s `u` field. Our optimisation problem does not actually have any parameters, hence, the second argument of `pulse_amplitude` is unused (that is why we call it `_`, a name commonly indicating unused function arguments).
+
     There are several modifications to our problem where it would actually have parameters. E.g. our model might have had additional parameters (e.g. a degradation rate) which we would like to keep fixed throughout the optimisation process. If we then would like to run the optimisation process for several different values of these fixed parameters, we could have made them parameters to our `OptimizationProblem` (and their values provided as a third argument, after `initial_guess`).
 
 ## [Utilising automatic differentiation](@id behaviour_optimisation_AD)
@@ -81,12 +81,12 @@ Through packages such as [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDi
 opt_func = OptimizationFunction(pulse_amplitude, AutoForwardDiff())
 opt_prob = OptimizationProblem(opt_func, initial_guess; lb = [1e-1, 1e-1, 1e-1], ub = [1e1, 1e1, 1e1])
 nothing # hide
-``` 
+```
 Finally, we can find the optimum using some differentiation-based optimisation methods. Here we will use [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl)'s `BFGS` method:
 ```julia
 using OptimizationOptimJL
 opt_sol = solve(opt_prob, OptimizationOptimJL.BFGS())
-``` 
+```
 
 ---
 ## [Citation](@id structural_identifiability_citation)
