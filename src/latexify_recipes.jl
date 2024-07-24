@@ -100,7 +100,8 @@ function chemical_arrows(rn::ReactionSystem;
         if i + 1 <= length(rxs) && issetequal(r.products, rxs[i + 1].substrates) &&
            issetequal(r.substrates, rxs[i + 1].products)
             ### Bi-directional arrows
-            rate_backwards = rxs[i + 1].rate isa Symbolic ? subber(rxs[i + 1].rate) : rxs[i + 1].rate
+            rate_backwards = rxs[i + 1].rate isa Symbolic ? subber(rxs[i + 1].rate) :
+                             rxs[i + 1].rate
             str *= " &" * rev_arrow
             str *= "[" * latexraw(rate_backwards; kwargs...) * "]"
             str *= "{" * latexraw(rate; kwargs...) * "} "
@@ -117,7 +118,7 @@ function chemical_arrows(rn::ReactionSystem;
         isempty(products) && (products = ["\\varnothing"])
         str *= join(products, " + ")
         if ((i == lastidx) ||
-           (((i + 1) == lastidx) && (backwards_reaction == true))) &&
+            (((i + 1) == lastidx) && (backwards_reaction == true))) &&
            isempty(nonrxs)
             str *= "  \n "
         else
