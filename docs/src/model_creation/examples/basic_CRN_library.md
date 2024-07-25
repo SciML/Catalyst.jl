@@ -146,14 +146,14 @@ Next, we perform 3 different Jump simulations. Note that for the stochastic mode
 ```@example crn_library_sir
 using JumpProcesses
 dprob = DiscreteProblem(sir_model, u0, tspan, ps)
-jprob = JumpProblem(sir_model, dprob, Direct(); save_positions = (false, false))
+jprob = JumpProblem(sir_model, dprob, Direct())
 
-jsol1 = solve(jprob, SSAStepper(); saveat = 1.0)
-jsol2 = solve(jprob, SSAStepper(); saveat = 1.0)
-jsol3 = solve(jprob, SSAStepper(); saveat = 1.0)
-jsol1 = solve(jprob, SSAStepper(); saveat = 1.0, seed = 1) # hide
-jsol2 = solve(jprob, SSAStepper(); saveat = 1.0, seed = 2) # hide
-jsol3 = solve(jprob, SSAStepper(); saveat = 1.0, seed = 3) # hide
+jsol1 = solve(jprob, SSAStepper())
+jsol2 = solve(jprob, SSAStepper())
+jsol3 = solve(jprob, SSAStepper())
+jsol1 = solve(jprob, SSAStepper(), seed = 1) # hide
+jsol2 = solve(jprob, SSAStepper(), seed = 2) # hide
+jsol3 = solve(jprob, SSAStepper(), seed = 3) # hide
 
 jplt1 = plot(jsol1; title = "Outbreak")
 jplt2 = plot(jsol2; title = "Outbreak")
@@ -243,13 +243,15 @@ oprob = ODEProblem(sa_loop, u0, tspan, ps)
 osol = solve(oprob)
 
 dprob = DiscreteProblem(sa_loop, u0, tspan, ps)
-jprob = JumpProblem(sa_loop, dprob, Direct(); save_positions = (false,false))
-jsol = solve(jprob, SSAStepper(); saveat = 10.0)
-jsol = solve(jprob, SSAStepper(); saveat = 10.0, seed = 12) # hide
+jprob = JumpProblem(sa_loop, dprob, Direct())
+jsol = solve(jprob, SSAStepper())
+jsol = solve(jprob, SSAStepper(), seed = 12) # hide
 
-plot(osol; lw = 3, label = "Reaction rate equation (ODE)")
-plot!(jsol; lw = 3, label = "Stochastic chemical kinetics (Jump)", yguide = "X", size = (800,350))
-plot!(bottom_margin = 3Plots.Measures.mm, left_margin=3Plots.Measures.mm) # hide
+fplt = plot(osol; lw = 3, label = "Reaction rate equation (ODE)")
+plot!(fplt, jsol; lw = 3, label = "Stochastic chemical kinetics (Jump)", yguide = "X", size = (800,350))
+plot!(fplt, bottom_margin = 3Plots.Measures.mm, left_margin=3Plots.Measures.mm) # hide
+plot!(fplt; fmt = :png, dpi = 200) # hide
+Catalyst.PNG(fplt) # hide
 ```
 
 ## [The Brusselator](@id basic_CRN_library_brusselator)
