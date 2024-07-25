@@ -211,7 +211,7 @@ jprob = JumpProblem(rn, dprob, Direct())
 # now, let's solve and plot the jump process:
 sol = solve(jprob, SSAStepper())
 plot(sol)
-plot(sol, density = 10000, fmt = :png) # hide
+Catalyst.PNG(plot(sol; fmt = :png, dpi = 200)) # hide
 ```
 
 We see that oscillations remain, but become much noisier. Note, in constructing

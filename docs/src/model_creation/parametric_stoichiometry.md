@@ -165,7 +165,7 @@ show(stdout, MIME"text/plain"(), equations(jsys)[4].rate) # hide
 equations(jsys)[4].affect!
 show(stdout, MIME"text/plain"(), equations(jsys)[4].affect!) # hide
 ```
-Finally, we can now simulate our jumpsystem
+Finally, we can now simulate our `JumpSystem`
 ```@example s1
 pmean = 200
 bval = 70
