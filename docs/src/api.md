@@ -71,8 +71,8 @@ dprob = DiscreteProblem(jumpsys, u₀map, tspan, parammap)
 jprob = JumpProblem(jumpsys, dprob, Direct(); save_positions = (false,false))
 sol = solve(jprob, SSAStepper(), saveat = 2.0)
 p3 = plot(sol, title = "jump")
-
 plot(p1, p2, p3; layout = (3,1))
+Catalyst.PNG(plot(p1, p2, p3; layout = (3,1), fmt = :png, dpi = 200)) # hide
 ```
 
 ```@docs
@@ -85,19 +85,19 @@ ReactionSystem
 ```
 
 ## [Options for the `@reaction_network` DSL](@id api_dsl_options)
-We have [previously described](@ref dsl_advanced_options) how options permits the user to supply non-reaction information to [`ReactionSystem`](@ref) created through the DSL. Here follows a list 
+We have [previously described](@ref dsl_advanced_options) how options permits the user to supply non-reaction information to [`ReactionSystem`](@ref) created through the DSL. Here follows a list
 of all options currently available.
-- [`parameters`]:(@ref dsl_advanced_options_declaring_species_and_parameters) Allows the designation of a set of symbols as system parameter. 
+- [`parameters`]:(@ref dsl_advanced_options_declaring_species_and_parameters) Allows the designation of a set of symbols as system parameter.
 - [`species`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system species.
-- [`variables`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system non-species variables. 
+- [`variables`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system non-species variables.
 - [`ivs`](@ref dsl_advanced_options_ivs): Allows the designation of a set of symbols as system independent variables.
 - [`compounds`](@ref chemistry_functionality_compounds): Allows the designation of compound species.
-- [`observables`](@ref dsl_advanced_options_observables): Allows the designation of compound observables. 
+- [`observables`](@ref dsl_advanced_options_observables): Allows the designation of compound observables.
 - [`default_noise_scaling`](@ref simulation_intro_SDEs_noise_saling): Enables the setting of a default noise scaling expression.
-- [`differentials`](@ref constraint_equations_coupling_constraints): Allows the designation of differentials. 
-- [`equations`](@ref constraint_equations_coupling_constraints): Allows the creation of algebraic and/or differential equations. 
-- [`continuous_events`](@ref constraint_equations_events): Allows the creation of continuous events. 
-- [`discrete_events`](@ref constraint_equations_events): Allows the creation of discrete events.  
+- [`differentials`](@ref constraint_equations_coupling_constraints): Allows the designation of differentials.
+- [`equations`](@ref constraint_equations_coupling_constraints): Allows the creation of algebraic and/or differential equations.
+- [`continuous_events`](@ref constraint_equations_events): Allows the creation of continuous events.
+- [`discrete_events`](@ref constraint_equations_events): Allows the creation of discrete events.
 - [`combinatoric_ratelaws`](@ref faq_combinatoric_ratelaws): Takes a single option (`true` or `false`), which sets whether to use combinatorial rate laws.
 
 ## [ModelingToolkit and Catalyst accessor functions](@id api_accessor_functions)
@@ -186,7 +186,7 @@ isautonomous
 ```
 
 ## Coupled reaction/equation system properties
-The following system property accessor functions are primarily relevant to reaction system [coupled 
+The following system property accessor functions are primarily relevant to reaction system [coupled
 to differential and/or algebraic equations](@ref constraint_equations).
 ```@docs
 ModelingToolkit.has_alg_equations

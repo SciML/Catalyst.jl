@@ -141,7 +141,8 @@ export mm, mmr, hill, hillr, hillar
 # for Latex printing of ReactionSystems
 include("latexify_recipes.jl")
 
-# for making and saving graphs
+# for making and saving graphs/plots
+include("plotting.jl")
 include("graphs.jl")
 export Graph, savegraph, complexgraph
 
