@@ -47,20 +47,19 @@ used for any other purpose or exported.
 _showables = [(:PNG, "image/png")]
 
 struct Showable{mime <: MIME}
-    content
+    content::Any
     options::NamedTuple
 end
 
-function Showable{T}(content; options...) where {T<:MIME}
+function Showable{T}(content; options...) where {T <: MIME}
     @nospecialize
     return Showable{T}(content, (; options...))
 end
 
-
 for (_, mime) in _showables
     MIMEType = typeof(MIME(mime))
-    @eval Base.show(io::IO, ::$MIMEType, s::Showable{>:$MIMEType}; options...) =
-        show(io, $MIMEType(), s.content; s.options..., options...)
+    @eval Base.show(io::IO, ::$MIMEType, s::Showable{>:$MIMEType}; options...) = show(
+        io, $MIMEType(), s.content; s.options..., options...)
 end
 
 macro mime_str(s)

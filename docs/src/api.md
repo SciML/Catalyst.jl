@@ -68,8 +68,9 @@ jumpsys = convert(JumpSystem, rs)
 jumpsys = complete(jumpsys)
 u₀map    = [S => 999, I => 1, R => 0]
 dprob = DiscreteProblem(jumpsys, u₀map, tspan, parammap)
-jprob = JumpProblem(jumpsys, dprob, Direct(); save_positions = (false,false))
-sol = solve(jprob, SSAStepper(), saveat = 2.0)
+jprob = JumpProblem(jumpsys, dprob, Direct())
+sol = solve(jprob, SSAStepper())
+sol = solve(jprob, SSAStepper(), seed = 1234) # hide
 p3 = plot(sol, title = "jump")
 plot(p1, p2, p3; layout = (3,1))
 Catalyst.PNG(plot(p1, p2, p3; layout = (3,1), fmt = :png, dpi = 200)) # hide
