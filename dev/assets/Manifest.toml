@@ -856,9 +856,9 @@ weakdeps = ["Makie"]
 
 [[deps.DynamicalSystemsBase]]
 deps = ["ForwardDiff", "LinearAlgebra", "OrdinaryDiffEq", "Reexport", "Roots", "SciMLBase", "SparseArrays", "StateSpaceSets", "Statistics", "SymbolicIndexingInterface"]
-git-tree-sha1 = "b5bcb017b4cfed3115955f20e566e22f9f726216"
+git-tree-sha1 = "1805e06e5e0b1ab18f8b1f3262cf83aa60a1e5e4"
 uuid = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"
-version = "3.9.0"
+version = "3.9.1"
 
 [[deps.EarCut_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
