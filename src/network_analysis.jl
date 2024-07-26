@@ -421,11 +421,15 @@ end
 """
 function deficiency(rn::ReactionSystem)
     nps = get_networkproperties(rn)
-    conservationlaws(rn)
-    r = nps.rank
-    ig = incidencematgraph(rn)
-    lc = linkageclasses(rn)
-    nps.deficiency = Graphs.nv(ig) - length(lc) - r
+
+    # Check if deficiency has been computed already (initialized to -1)
+    if nps.deficiency == -1
+        conservationlaws(rn)
+        r = nps.rank
+        ig = incidencematgraph(rn)
+        lc = linkageclasses(rn)
+        nps.deficiency = Graphs.nv(ig) - length(lc) - r
+    end
     nps.deficiency
 end
 
@@ -937,4 +941,89 @@ end
 
 function fluxvectors(rs::ReactionSystem)
     cycles(rs)
+end
+
+### Deficiency one
+
+"""
+    satisfiesdeficiencyone(rn::ReactionSystem)
+
+    Check if a reaction network obeys the conditions of the deficiency one theorem, which ensures that there is only one equilibrium for every positive stoichiometric compatibility class.
+"""
+
+function satisfiesdeficiencyone(rn::ReactionSystem)
+    all(r -> ismassaction(r, rn), reactions(rn)) ||
+        error("The deficiency one theorem is only valid for reaction networks that are mass action.")
+    complexes, D = reactioncomplexes(rn)
+    δ = deficiency(rn)
+    δ_l = linkagedeficiencies(rn)
+
+    lcs = linkageclasses(rn)
+    tslcs = terminallinkageclasses(rn)
+
+    # Check the conditions for the deficiency one theorem: 
+    #   1) the deficiency of each individual linkage class is at most 1; 
+    #   2) the sum of the linkage deficiencies is the total deficiency, and 
+    #   3) there is only one terminal linkage class per linkage class. 
+    all(<=(1), δ_l) && (sum(δ_l) == δ) && (length(lcs) == length(tslcs))
+end
+
+"""
+    satisfiesdeficiencyzero(rn::ReactionSystem)
+
+    Check if a reaction network obeys the conditions of the deficiency zero theorem, which ensures that there is only one equilibrium for every positive stoichiometric compatibility class, this equilibrium is asymptotically stable, and this equilibrium is complex balanced.
+"""
+
+function satisfiesdeficiencyzero(rn::ReactionSystem)
+    all(r -> ismassaction(r, rn), reactions(rn)) ||
+        error("The deficiency zero theorem is only valid for reaction networks that are mass action.")
+    δ = deficiency(rn)
+    δ == 0 && isweaklyreversible(rn, subnetworks(rn))
+end
+
+"""
+    robustspecies(rn::ReactionSystem)
+
+    Return a vector of indices corresponding to species that are concentration robust, i.e. for every positive equilbrium, the concentration of species s will be the same. 
+
+    Note: This function currently only works for networks of deficiency one, and is not currently guaranteed to return *all* the concentration-robust species in the network. Any species returned by the function will be robust, but this may not include all of them. Use with caution. Support for higher deficiency networks and necessary conditions for robustness will be coming in the future.  
+"""
+
+function robustspecies(rn::ReactionSystem)
+    complexes, D = reactioncomplexes(rn)
+    nps = get_networkproperties(rn)
+
+    if deficiency(rn) != 1
+        error("This algorithm currently only checks for robust species in networks with deficiency one.")
+    end
+
+    # A species is concentration robust in a deficiency one network if there are two non-terminal complexes (i.e. complexes 
+    # belonging to a linkage class that is not terminal) that differ only in species s (i.e. their difference is some 
+    # multiple of s. (A + B, A) differ only in B. (A + 2B, B) differ in both A and B, since A + 2B - B = A + B). 
+
+    if !nps.checkedrobust
+        tslcs = terminallinkageclasses(rn)
+        Z = complexstoichmat(rn)
+
+        # Find the complexes that do not belong to a terminal linkage class 
+        nonterminal_complexes = deleteat!([1:length(complexes);], vcat(tslcs...))
+        robust_species = Int64[]
+
+        for (c_s, c_p) in Combinatorics.combinations(nonterminal_complexes, 2)
+            # Check the difference of all the combinations of complexes. The support is the set of indices that are non-zero 
+            suppcnt = 0
+            supp = 0
+            for i in 1:size(Z, 1)
+                (Z[i, c_s] != Z[i, c_p]) && (suppcnt += 1; supp = i)
+                (suppcnt > 1) && break
+            end
+
+            # If the support has length one, then they differ in only one species, and that species is concentration robust. 
+            (suppcnt == 1) && (supp ∉ robust_species) && push!(robust_species, supp)
+        end
+        nps.checkedrobust = true
+        nps.robustspecies = robust_species
+    end
+
+    nps.robustspecies
 end

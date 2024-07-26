@@ -96,7 +96,10 @@ Base.@kwdef mutable struct NetworkProperties{I <: Integer, V <: BasicSymbolic{Re
     linkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
     stronglinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
     terminallinkageclasses::Vector{Vector{Int}} = Vector{Vector{Int}}(undef, 0)
-    deficiency::Int = 0
+
+    checkedrobust::Bool = false 
+    robustspecies::Vector{Int} = Vector{Int}(undef, 0)
+    deficiency::Int = -1 
 end
 #! format: on
 
@@ -137,7 +140,9 @@ function reset!(nps::NetworkProperties{I, V}) where {I, V}
     empty!(nps.linkageclasses)
     empty!(nps.stronglinkageclasses)
     empty!(nps.terminallinkageclasses)
-    nps.deficiency = 0
+    nps.deficiency = -1
+    empty!(nps.robustspecies)
+    nps.checkedrobust = false
 
     # this needs to be last due to setproperty! setting it to false
     nps.isempty = true
