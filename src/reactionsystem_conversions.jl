@@ -1,7 +1,7 @@
 ### ODE & SDE Assembly ###
 
 """
- oderatelaw(rx; combinatoric_ratelaw = true)
+    oderatelaw(rx; combinatoric_ratelaw = true)
 
 Given a [`Reaction`](@ref), return the symbolic reaction rate law used in
 generated ODEs for the reaction. Note, for a reaction defined by
@@ -26,17 +26,17 @@ function oderatelaw(rx; combinatoric_ratelaw = true)
     @unpack rate, substrates, substoich, only_use_rate = rx
     rl = rate
 
-    # if the stoichiometric coefficients are not integers, error if asking to scale rates
+    # if the stoichiometric coefficients are not integers error if asking to scale rates
     !all(s -> s isa Union{Integer, Symbolic}, substoich) &&
         (combinatoric_ratelaw == true) &&
         error("Non-integer stoichiometric coefficients require the combinatoric_ratelaw = false keyword to oderatelaw, or passing combinatoric_ratelaws = false to convert or ODEProblem.")
 
-    # If we use mass action, update the rate law according to the reaction substrates.
+    # if we use mass action, update the rate law according to the reaction substrates
     if !only_use_rate
-        # `coef` stores the number bit (i.e. division by factorial of stoichiometries).
-        # Symbolic bit (i.e. multiplication by substrate concentrations) are appended directly 
-        # to the rate law (`rl`). Cases with stoichiometries 1 are handled more efficiently
-        # using separate routines. 
+        # `coef` stores the numeric part (i.e. division by factorial of stoichiometries)
+        # the symbolic part (i.e. multiplication by substrate concentrations) is appended directly 
+        # to the rate law (`rl`)
+        # cases with stoichiometries 1 are handled more efficiently using separate routines
         coef = eltype(substoich) <: Number ? one(eltype(substoich)) : 1
         for (i, stoich) in enumerate(substoich)
             combinatoric_ratelaw && (coef *= factorial(stoich))
@@ -47,19 +47,19 @@ function oderatelaw(rx; combinatoric_ratelaw = true)
     rl
 end
 
-# Function returning `true` for species which shouldn't change from the reactions, 
-# including non-species variables.
+# function returning `true` for species which shouldn't change from the reactions, 
+# including non-species variables
 drop_dynamics(sp) = isconstant(sp) || isbc(sp) || (!isspecies(sp))
 
-# For a `ReactionSystem`, create a vector with all the right-hand side expressions in the
-# corresponding ODE system.
+# for a `ReactionSystem`, create a vector with all the right-hand side expressions in the
+# corresponding ODE system (used by the `assemble_drift` function)
 function assemble_oderhs(rs, isps; combinatoric_ratelaws = true, remove_conserved = false)
-    # Initiates the right-hand side equations as expressions with `0` only.
+    # initiates the right-hand side equations as expressions with `0` only.
     species_to_idx = Dict(x => i for (i, x) in enumerate(isps))
     rhsvec = Any[0 for _ in isps]
 
-    # If we have eliminated conservation laws, create a dictionary taking each species eliminated
-    # in this process to the expression it is replaced by (if not, creates an empty dict).
+    # if we have eliminated conservation laws, create a dictionary taking each species eliminated
+    # in this process to the expression it is replaced by (if not, creates an empty dict)
     nps = get_networkproperties(rs)
     depspec_submap = if remove_conserved
         Dict(eq.lhs => eq.rhs for eq in nps.conservedeqs)
@@ -67,14 +67,14 @@ function assemble_oderhs(rs, isps; combinatoric_ratelaws = true, remove_conserve
         Dict()
     end
 
-    # Loops through all reactions, for each, updates relevant right-hand side equations.
+    # loops through all reactions, for each, updates all relevant right-hand side equations
     for rx in get_rxs(rs)
-        # Computes the reaction's rate late. If conserved quantities have been removed, replaces
-        # these in the rate law.
+        # computes the reaction's rate late
+        # if conserved quantities have been removed, replaces these in the rate law
         rl = oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)
         remove_conserved && (rl = substitute(rl, depspec_submap))
 
-        # For each species which participates in the reaction, update its equation.
+        # for each species which participates in the reaction, update its equation
         for (spec, stoich) in rx.netstoich
             # dependent species don't get an ODE, so are skipped
             remove_conserved && (spec in nps.depspecs) && continue
@@ -83,8 +83,8 @@ function assemble_oderhs(rs, isps; combinatoric_ratelaws = true, remove_conserve
             drop_dynamics(spec) && continue
 
             i = species_to_idx[spec]
-            # If the relevant RHS equation is 0 (probably because it has not been
-            # modified yet), we use a different routine (compared to if it is non-zero).
+            # if the relevant RHS equation is 0 (probably because it has not been
+            # modified yet), we use a different routine (compared to if it is non-zero)
             if _iszero(rhsvec[i])
                 if stoich isa Symbolic
                     rhsvec[i] = stoich * rl
@@ -112,7 +112,7 @@ function assemble_oderhs(rs, isps; combinatoric_ratelaws = true, remove_conserve
 end
 
 # For a `ReactionSystem`, creates a vector with all the differential equations corresponding to
-# the ODEs generated by the reaction rate equation. The `as_odes` determine whether the LHS should
+# the ODEs generated by the reaction rate equation. The `as_odes` argument determine whether the LHS should
 # be differential (when generating e.g. a `ODESystem`) or `0` (when generating e.g. a NonlinearSystem).
 function assemble_drift(rs, ind_sps; combinatoric_ratelaws = true, as_odes = true,
                         include_zero_odes = true, remove_conserved = false)
@@ -128,7 +128,7 @@ function assemble_drift(rs, ind_sps; combinatoric_ratelaws = true, as_odes = tru
 end
 
 # this doesn't work with coupled equations currently
-# Assemblies the diffusion equations terms used in the chemical Langevin equation SDE.
+# assemblies the diffusion equations terms used in the chemical Langevin equation SDE
 function assemble_diffusion(rs, us, ind_sps; combinatoric_ratelaws = true,
                             remove_conserved = false)
     # as BC species should ultimately get an equation, we include them in the noise matrix
@@ -139,8 +139,8 @@ function assemble_diffusion(rs, us, ind_sps; combinatoric_ratelaws = true,
     eqs .= 0
     species_to_idx = Dict((x => i for (i, x) in enumerate(ispcs)))
 
-    # If we have eliminated conservation laws, create a dictionary taking each species eliminated
-    # in this process to the expression it is replaced by (if not, creates an empty dict).
+    # if we have eliminated conservation laws, create a dictionary taking each species eliminated
+    # in this process to the expression it is replaced by (if not, creates an empty dict)
     nps = get_networkproperties(rs)
     depspec_submap = if remove_conserved
         Dict(eq.lhs => eq.rhs for eq in nps.conservedeqs)
@@ -148,15 +148,15 @@ function assemble_diffusion(rs, us, ind_sps; combinatoric_ratelaws = true,
         Dict()
     end
 
-    # Loops through all reactions, for each, updates relevant noise terms in the noise matrix.
+    # loops through all reactions, for each, updates relevant noise terms in the noise matrix
     for (j, rx) in enumerate(get_rxs(rs))
-        # Computes the reactions (noise) rate late. This is the sqrt of the rate late, multiplied
+        # Computes the reaction's (noise) rate law. This is the sqrt of the rate law, multiplied
         # by any noise scaling term. If conserved quantities have been removed, these are substituted in.
         rlsqrt = sqrt(abs(oderatelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)))
         hasnoisescaling(rx) && (rlsqrt *= getnoisescaling(rx))
         remove_conserved && (rlsqrt = substitute(rlsqrt, depspec_submap))
 
-        # For each species which participate in the reaction, updates its corresponding noise terms.
+        # for each species which participate in the reaction, updates its corresponding noise terms
         for (spec, stoich) in rx.netstoich
             # dependent species don't get an equation
             remove_conserved && (spec in nps.depspecs) && continue
@@ -165,8 +165,8 @@ function assemble_diffusion(rs, us, ind_sps; combinatoric_ratelaws = true,
             drop_dynamics(spec) && continue
 
             i = species_to_idx[spec]
-            # Differentiates if the stoichiometry is a symbolic (e.g. a parameter). If not it might
-            # be +/- 1, in which case we initiate the term differently.
+            # Different routine if the stoichiometry is a symbolic (e.g. a parameter)
+            # if not it might e +/- 1, in which case we initiate the term differently
             if stoich isa Symbolic
                 eqs[i, j] = stoich * rlsqrt
             else
@@ -208,18 +208,18 @@ function jumpratelaw(rx; combinatoric_ratelaw = true)
     @unpack rate, substrates, substoich, only_use_rate = rx
     rl = rate
 
-    # If the `only_use_rate` is unused, update the rate according to the stoichiometries.
+    # if the `only_use_rate` argument is unused, update the rate according to the stoichiometries
     if !only_use_rate
         # Initiates the coefficient as "1", using the same type as in `substoich`.
         coef = eltype(substoich) <: Number ? one(eltype(substoich)) : 1
 
-        # For each substrate, update the rate law (and coefficient) terms according to the
-        # substrate's stoichiometry.
+        # for each substrate, update the rate law (and coefficient) terms according to the
+        # substrate's stoichiometry
         for (i, stoich) in enumerate(substoich)
             spec = substrates[i]
 
             # For symbolic substrates (e.g. parameters), simply update the rate law with the
-            # appropriate expression. If not, we  can simplify the expression (and also treat
+            # appropriate expression. If not, we can simplify the expression (and also treat
             # the case with stoichiometry = 1 separately).
             if stoich isa Symbolic
                 rl *= combinatoric_ratelaw ? binomial(spec, stoich) :
@@ -237,8 +237,8 @@ function jumpratelaw(rx; combinatoric_ratelaw = true)
             end
         end
 
-        # If we use a combinatoric rate law, we have generated a numeric coefficient which we
-        # will (if it is not 1) divde our rate law with (to generate the full rate law).
+        # if we use a combinatoric rate law, we have generated a numeric coefficient which we
+        # will (if it is not 1) divide our rate law with (to generate the full rate law)
         combinatoric_ratelaw && !isequal(coef, one(coef)) && (rl /= coef)
     end
     rl
@@ -307,7 +307,8 @@ function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
         haveivdep && return false
     end
 
-    # The `only_use_rate` option disables mass action for the reaction (=> not mass action reaction).
+    # the `only_use_rate` option disables mass action for the reaction (e.g. if the  => arrow was
+    # used in the DSL)
     rx.only_use_rate && return false
 
     # not mass action if have a non-constant, variable species in the rate expression
@@ -318,16 +319,16 @@ function ismassaction(rx, rs; rxvars = get_variables(rx.rate),
     return true
 end
 
-# From a reaction, create a `MassActionJump` structure (used by JumpPrcoesses) from it.
+# from a reaction, create a `MassActionJump` structure (as used by JumpPrcoesses)
 @inline function makemajump(rx; combinatoric_ratelaw = true)
     @unpack rate, substrates, substoich, netstoich = rx
 
-    # If nothing changes in the reaction, throws an error. 
+    # if nothing changes in the reaction (e.g. `X --> X`), throws an error
     net_stoch = filter(p -> !drop_dynamics(p[1]), netstoich)
     isempty(net_stoch) &&
         error("$rx has no net stoichiometry change once accounting for constant and boundary condition species. This is not supported.")
 
-    # Creates the reactant stoichiometry vector (which mapping each substrate to its stoichiometry).
+    # creates the reactant stoichiometry vector (which maps each substrate to its stoichiometry)
     reactant_stoch = Vector{Pair{Any, eltype(substoich)}}()
     @inbounds for (i, spec) in enumerate(substrates)
         # move constant species into the rate
@@ -342,8 +343,8 @@ end
         end
     end
 
-    # For non-zeroth order reaction (e.g. `0 --> X`), and if we use a combinatorial rate law,
-    # modifies the rate with its mass action coefficient (no need if coefficient is 1).
+    # for non-zeroth order reaction (e.g. `X1 --> X2`), and if we use a combinatorial rate law,
+    # modifies the rate with its mass action coefficient (no need if coefficient is 1)
     zeroorder = (length(substoich) == 0)
     if (!zeroorder) && combinatoric_ratelaw
         coef = prod(factorial, substoich)
@@ -360,7 +361,7 @@ function dfs_mark!(isvrjvec, visited, depgraph, i)
     visited[i] = true
     nhbrs = depgraph[i]
 
-    # For each neighbour to the input node, if we have not visited it, mark it as visited and 
+    # for each neighbour to the input node, if we have not visited it, mark it as visited and 
     # recursively calls `dfs_mark!` on the neighbour.
     for nhbr in nhbrs
         if !visited[nhbr]
@@ -372,39 +373,34 @@ function dfs_mark!(isvrjvec, visited, depgraph, i)
 end
 
 # get_depgraph(rs)[i] is the list of reactions with rates depending on species changed by
-# i'th reaction.
+# i'th reaction
 function get_depgraph(rs)
     jdeps = asgraph(rs)
     vdeps = variable_dependencies(rs)
     eqeq_dependencies(jdeps, vdeps).fadjlist
 end
 
-# Creates the full vector of jumps (which is then used to generate a JumpProcesses JumpSystem).
+# creates the full vector of jumps (which is then used to generate a JumpProcesses JumpSystem)
 function assemble_jumps(rs; combinatoric_ratelaws = true)
-    # Initiates mass action, constant rate, and variable rate jump vectors. These are then filled
-    # and finally (concatenated and) return as the output.
     meqs = MassActionJump[]
     ceqs = ConstantRateJump[]
     veqs = VariableRateJump[]
-    
     rxvars = []
     unknownset = Set(get_unknowns(rs))
 
-    # Error checks (all unknowns are species and the system has at least one reaction).
     all(isspecies, unknownset) ||
         error("Conversion to JumpSystem currently requires all unknowns to be species.")
     isempty(get_rxs(rs)) &&
         error("Must give at least one reaction before constructing a JumpSystem.")
 
     # first we determine vrjs with an explicit time-dependent rate
-    # Next `isvrjvec` lists variable rate jumps, and `havevrjs` is 
     rxs = get_rxs(rs)
     isvrjvec = falses(length(rxs))
     havevrjs = false
     
-    # For each reaction, check if any of its rate's variables is the time iv.
-    # This, and the next block, computes `isvrjvec` (which jumps are variable rate jumps) and 
-    # `havevrjs` (whether the system has any variable rate jumps).
+    # for each reaction, check if any of its rate's variables is the time iv
+    # this, and the next block, computes `isvrjvec` (which jumps are variable rate jumps) and 
+    # `havevrjs` (whether the system has any variable rate jumps)
     for (i, rx) in enumerate(rxs)
         empty!(rxvars)
         (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
@@ -429,21 +425,21 @@ function assemble_jumps(rs; combinatoric_ratelaws = true)
         end
     end
 
-    # Loops through all reactions. Determines its type, creates the corresponding jump, and adds 
-    # it to the correct vector.
+    # loops through all reactions.
+    # determines its type, creates the corresponding jump, and adds it to the correct vector.
     for (i, rx) in enumerate(rxs)
-        # Empties the `rxvars` cache and fills it with the variables in the reaction's rate.
-        # Does it in thsi way to avoid allocation.
+        # empties the `rxvars` cache and fills it with the variables in the reaction's rate
+        # does it in this way to avoid allocation (to make things run faster)
         empty!(rxvars)
         (rx.rate isa Symbolic) && get_variables!(rxvars, rx.rate)
 
         isvrj = isvrjvec[i]
-        # If we are a mass action jump, create a mass action jump using `makemajump`.
+        # if we are a mass action jump, create a mass action jump using `makemajump`
         if (!isvrj) && ismassaction(rx, rs; rxvars = rxvars, haveivdep = false,
                         unknownset = unknownset)
             push!(meqs, makemajump(rx; combinatoric_ratelaw = combinatoric_ratelaws))
         else
-            # Computes the jump rate and jump affect functions (these are identical for vrjs and crjs).
+            # computes the jump rate and jump affect functions (these are identical for vrjs and crjs)
             rl = jumpratelaw(rx; combinatoric_ratelaw = combinatoric_ratelaws)
             affect = Vector{Equation}()
             for (spec, stoich) in rx.netstoich
@@ -463,38 +459,35 @@ end
 
 ### Equation Coupling ###
 
-# Adds any normal (differential or algebraic) equations to the equations (`eqs`) generated
-# Also adds any boundary value species to the unknowns vector.
-
-# Also removes any equations produced by constant rate species.
-# Also handles the addition of equations from boundary condition species.
-
+# adds any normal (differential or algebraic) equations to the equations (`eqs`) generated
+# also adds any boundary value species to the unknowns vector
+# also removes any equations produced by constant rate species
+# also handles the addition of equations from boundary condition species
 # also handles removing BC and constant species
-# Also handles the elimination of conserved quantities (if this was requested).
+# also handles the elimination of conserved quantities (if this was requested)
 function add_coupled_eqs!(eqs, rs::ReactionSystem, ind_us, ind_sps; remove_conserved = false)
     # if there are BC species, put them after the independent species
     rs_us = get_unknowns(rs)
     us = any(isbc, rs_us) ? vcat(ind_us, filter(isbc, rs_us)) : ind_us
     ps = get_ps(rs)
 
-    # If conservation law removal is designated, adds conservation law constants as parameters
+    # if conservation law removal is designated, adds conservation law constants as parameters
     # and creates observables of the elimianted species.
     if remove_conserved
         nps = get_networkproperties(rs)
-
-        # Adds the conservation constant as system parameters. For each, sets a default value
-        # according to its conservation equation.
+        
+        # make dependent species observables and add conservation constants as parameters
         ps = vcat(ps, collect(eq.lhs for eq in nps.constantdefs))
         defs = copy(MT.defaults(rs))
         for eq in nps.constantdefs
             defs[eq.lhs] = eq.rhs
         end
 
-        # Adds the (by conservation laws) eliminated species as observables.
+        # adds the (by conservation laws) eliminated species as observables
         obs = copy(MT.observed(rs))
         append!(obs, nps.conservedeqs)
     else
-        # If we have not eliminated any conservation laws, the defaults and observables are unchanged.
+        # if we have not eliminated any conservation laws, the defaults and observables are unchanged
         defs = MT.defaults(rs)
         obs = MT.observed(rs)
     end
