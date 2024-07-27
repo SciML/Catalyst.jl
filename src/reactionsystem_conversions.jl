@@ -53,10 +53,10 @@ drop_dynamics(spec) = isconstant(spec) || isbc(spec) || (!isspecies(spec))
 
 # for a `ReactionSystem`, create a vector with all the right-hand side expressions in the
 # corresponding ODE system (used by the `assemble_drift` function)
-function assemble_oderhs(rs, isps; combinatoric_ratelaws = true, remove_conserved = false)
+function assemble_oderhs(rs, ind_sps; combinatoric_ratelaws = true, remove_conserved = false)
     # initiates the right-hand side equations as expressions with `0` only.
-    species_to_idx = Dict(x => i for (i, x) in enumerate(isps))
-    rhsvec = Any[0 for _ in isps]
+    species_to_idx = Dict(x => i for (i, x) in enumerate(ind_sps))
+    rhsvec = Any[0 for _ in ind_sps]
 
     # if we have eliminated conservation laws, create a dictionary taking each species eliminated
     # in this process to the expression it is replaced by (if not, creates an empty dict)
