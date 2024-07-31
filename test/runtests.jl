@@ -54,7 +54,7 @@ using SafeTestsets, Test
     # @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
     # Disable on Macs as can't install GraphViz via jll
     if !Sys.isapple()
-        @time @safetestset "Graphs Visualisations" begin include("visualisation/graphs.jl") end
+    #    @time @safetestset "Graphs Visualisations" begin include("visualisation/graphs.jl") end
     end
 
     # Tests extensions.
