@@ -138,6 +138,8 @@ let
         jprob_1b = JumpProblem(rn_catalyst, dprob_1; rng)
         sol1b = solve(jprob_1; seed, saveat = 1.0)
 
+        @test mean(sol1[sp]) ≈ mean(sol1b[sp]) rtol = 1e-1
+
         # Simulates the manually written model
         u0_2 = map_to_vec(u0_1, u0_sym)
         ps_2 = map_to_vec(ps_1, ps_sym)
@@ -148,7 +150,6 @@ let
         # Checks that the means are similar (the test have been check that it holds across a large
         # number of simulates, even without seed).
         @test mean(sol1[sp]) ≈ mean(sol2[findfirst(u0_sym .== sp),:]) rtol = 1e-1
-        @test mean(sol1[sp]) ≈ mean(sol1b[sp]) rtol = 1e-1
     end
 end
 
