@@ -137,7 +137,6 @@ let
         # simulate using auto-alg
         jprob_1b = JumpProblem(rn_catalyst, dprob_1; rng)
         sol1b = solve(jprob_1; seed, saveat = 1.0)
-
         @test mean(sol1[sp]) ≈ mean(sol1b[sp]) rtol = 1e-1
 
         # Simulates the manually written model
