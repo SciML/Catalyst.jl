@@ -213,7 +213,7 @@ end
 # Checks for system with non-default independent variable.
 let
     # Prepares parameters/variables/species with complicated dependencies.
-    @variables τ
+    @parameters τ
     @parameters begin
         b = 3.0
         c

@@ -5,7 +5,58 @@ const GridLattice{N, T} = Union{Array{Bool, N}, CartesianGridRej{N, T}}
 
 ### Lattice Reaction Network Structure ###
 
-# Describes a spatial reaction network over a lattice.
+"""
+$(TYPEDEF)
+
+A representation of a spatial system of chemical reactions on a discrete (lattice) space. 
+
+# Fields
+$(FIELDS)
+
+Arguments:
+- `rs`: The non-spatial [`ReactionSystem`](@ref) model that is expanded to a spatial model.
+- `srs`: A vector of spatial reactions. These provide the rules for how species may move spatially.
+- `lattice`: Either a Cartesian grid, a masked grid, or a graph. This describes the discrete space
+to which the non-spatial model is expanded.
+
+Keyword Arguments:
+- `diagonal_connections = false`: Only relevant for Cartesian and masked lattices. If `true`, 
+diagonally adjacent compartments are considered adjacent, and spatial reactions in between these
+are possible.
+
+Example:
+```julia
+# Fetch packages.
+using Catalyst, OrdinaryDiffEq
+import CairoMakie
+
+# Creates the `LatticeReactionSystem` model.
+rs = @reaction_network begin
+    (p,d), 0 <--> X
+end
+diffusion_rx = @transport_reaction D X
+lattice = CartesianGrid((5,5))
+lrs = LatticeReactionSystem(rs, [diffusion_rx], lattice)
+
+# Simulates the model (using ODE and jumps).
+u0 = [:X => rand(5,5)]
+tspan = (0.0, 1.0)
+ps = [:p => 1.0, :d => 0.5, :D => 0.1]
+oprob = ODEProblem(lrs, u0, tspan, ps)
+osol = solve(oprob)
+
+# Saves an animation of the solution to the file "lattice_animation.mp4".
+lattice_animation(osol, :X, lrs, "lattice_animation.mp4")
+```
+
+Notes:
+- Spatial modelling in Catalyst is still a work in progress, any feedback (or contributions) to this
+is highly welcome.
+- `LatticeReactionSystem`s are primarily intended to model systems in discrete space. Modelling
+continuous space systems with them is possible, but requires the user to determine the discretisation
+(the lattice). Better support for continuous space models is a work in progress.
+- Catalyst contains extensive documentation on spatial modelling, which can be found [here](https://docs.sciml.ai/Catalyst/stable/spatial_modelling/lattice_reaction_systems/).
+"""
 struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
     # Input values.
     """The (non-spatial) reaction system within each vertex."""
@@ -60,11 +111,11 @@ struct LatticeReactionSystem{Q, R, S, T} <: MT.AbstractTimeDependentSystem
         if !isempty(MT.get_systems(rs))
             throw(ArgumentError("A non-flattened (hierarchical) `ReactionSystem` was used as input. `LatticeReactionSystem`s can only be based on non-hierarchical `ReactionSystem`s."))
         end
-        if length(species(rs)) != length(unknowns(rs))
-            throw(ArgumentError("The `ReactionSystem` used as input contain variable unknowns (in addition to species unknowns). This is not permitted (the input `ReactionSystem` must contain species unknowns only)."))
-        end
         if length(reactions(rs)) != length(equations(rs))
             throw(ArgumentError("The `ReactionSystem` used as input contain equations (in addition to reactions). This is not permitted."))
+        end
+        if length(species(rs)) != length(unknowns(rs))
+            throw(ArgumentError("The `ReactionSystem` used as input contain variable unknowns (in addition to species unknowns). This is not permitted (the input `ReactionSystem` must contain species unknowns only)."))
         end
         if !isempty(MT.continuous_events(rs)) || !isempty(MT.discrete_events(rs))
             throw(ArgumentError("The `ReactionSystem` used as input to `LatticeReactionSystem contain events. These will be ignored in any simulations based on the created `LatticeReactionSystem`."))
@@ -253,16 +304,79 @@ get_grid_indices(grid::Array{Bool, N}) where {N} = CartesianIndices(grid)
 
 # Basic getters (because `LatticeReactionSystem`s are `AbstractSystem`s), normal `lrs.field` does not
 # work and these getters must be used throughout all code.
+"""
+    reactionsystem(lrs::LatticeReactionSystem)
+
+Returns the non-spatial `ReactionSystem` stored in a `LatticeReactionSystem`.
+"""
 reactionsystem(lrs::LatticeReactionSystem) = getfield(lrs, :reactionsystem)
+
+"""
+    spatial_reactions(lrs::LatticeReactionSystem)
+
+Returns a vector with all the spatial reactions stored in a `LatticeReactionSystem`.
+"""
 spatial_reactions(lrs::LatticeReactionSystem) = getfield(lrs, :spatial_reactions)
+
+"""
+    lattice(lrs::LatticeReactionSystem)
+
+Returns the lattice stored in a `LatticeReactionSystem`.
+"""
 lattice(lrs::LatticeReactionSystem) = getfield(lrs, :lattice)
+
+"""
+    num_verts(lrs::LatticeReactionSystem)
+
+Returns the number of vertices (i.e. compartments) in the lattice stored in a `LatticeReactionSystem`.
+"""
 num_verts(lrs::LatticeReactionSystem) = getfield(lrs, :num_verts)
+
+"""
+    num_edges(lrs::LatticeReactionSystem)
+
+Returns the number of edges (i.e. connections between vertices) in the lattice stored in a 
+`LatticeReactionSystem`.
+"""
 num_edges(lrs::LatticeReactionSystem) = getfield(lrs, :num_edges)
+
+"""
+    num_species(lrs::LatticeReactionSystem)
+
+Returns the number of species that a `LatticeReactionSystem` contains.
+"""
 num_species(lrs::LatticeReactionSystem) = getfield(lrs, :num_species)
+
+"""
+    spatial_species(lrs::LatticeReactionSystem)
+
+Returns the number of species that can move spatially that a `LatticeReactionSystem` contains.
+"""
 spatial_species(lrs::LatticeReactionSystem) = getfield(lrs, :spatial_species)
+
+# Returns the parameters in a `LatticeReactionSystem`
 MT.parameters(lrs::LatticeReactionSystem) = getfield(lrs, :parameters)
+
+"""
+    vertex_parameters(lrs::LatticeReactionSystem)
+
+Returns all the parameters of a `LatticeReactionSystem` whose values are tied to vertices.
+"""
 vertex_parameters(lrs::LatticeReactionSystem) = getfield(lrs, :vertex_parameters)
+
+"""
+    edge_parameters(lrs::LatticeReactionSystem)
+
+Returns all the parameters of a `LatticeReactionSystem` whose values are tied to edges.
+"""
 edge_parameters(lrs::LatticeReactionSystem) = getfield(lrs, :edge_parameters)
+
+"""
+    edge_iterator(lrs::LatticeReactionSystem)
+
+Returns an iterator over all of the edges in the lattice stored in a `LatticeReactionSystem`. Each
+edge is a `Pair{Int64, Int64}`, taking the source vertex to the destination vertex.
+"""
 edge_iterator(lrs::LatticeReactionSystem) = getfield(lrs, :edge_iterator)
 
 # Non-trivial getters.

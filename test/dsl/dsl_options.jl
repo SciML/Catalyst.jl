@@ -436,7 +436,8 @@ let
     end
 
     @parameters k k2
-    @variables s x D(x) E(s) F(s,x)
+    @parameters s x
+    @variables D(x) E(s) F(s,x)
     @species A(s,x) B(s) C(x) C2(s,x)
     rx = Reaction(k*k2*D, [A, B], [C, C2], [E, 1], [F, 1])
     @named ivstest = ReactionSystem([rx], s; spatial_ivs = [x])

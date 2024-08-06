@@ -103,7 +103,7 @@ end
 
 # Test using different independent variable combinations.
 let
-    @variables x y z
+    @parameters x y z
     @species C(t) H(x) N(x) O(t) P(t,x) S(x,y)
 
     # Checks that wrong (or absent) independent variable produces errors.

@@ -464,6 +464,8 @@ rx = @reaction p, 0 --> X, [description="A production reaction"]
 Catalyst.getdescription(rx)
 ```
 
+A list of all available reaction metadata can be found [in the api](@ref api_rx_metadata).
+
 ## [Working with symbolic variables and the DSL](@id dsl_advanced_options_symbolics_and_DSL)
 We have previously described how Catalyst represents its models symbolically (enabling e.g. symbolic differentiation of expressions stored in models). While Catalyst utilises this for many internal operation, these symbolic representations can also be accessed and harnessed by the user. Primarily, doing so is much easier during programmatic (as opposed to DSL-based) modelling. Indeed, the section on [programmatic modelling](@ref programmatic_CRN_construction) goes into more details about symbolic representation in models, and how these can be used. It is, however, also ways to utilise these methods during DSL-based modelling. Below we briefly describe two methods for doing so.
 

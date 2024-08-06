@@ -141,6 +141,8 @@ function reset!(nps::NetworkProperties{I, V}) where {I, V}
     empty!(nps.stronglinkageclasses)
     empty!(nps.terminallinkageclasses)
     nps.deficiency = -1
+    empty!(nps.robustspecies)
+    nps.checkedrobust = false
 
     # this needs to be last due to setproperty! setting it to false
     nps.isempty = true

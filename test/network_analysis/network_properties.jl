@@ -72,6 +72,16 @@ let
     #     end
     #     println("-----------")
     # end
+
+    # Testing if cycles identifies reversible reactions as cycles (one forward, one reverse) 
+    cyclemat = Catalyst.cycles(MAPK)
+    S = netstoichmat(MAPK)
+    for i in 1:size(S, 2)-1
+        if S[:,i] == -S[:,i+1]
+           cycle = [(j == i) || (j == i+1) ? 1 : 0 for j in 1:size(S,2)]
+           @test rank(cyclemat) == rank(hcat(cyclemat, cycle))
+        end
+    end
 end
 
 # Tests network analysis functions on a second network (by comparing to manually computed outputs).
@@ -350,7 +360,6 @@ end
 
 ### STRONG LINKAGE CLASS TESTS
 
-
 # a) Checks that strong/terminal linkage classes are correctly found. Should identify the (A, B+C) linkage class as non-terminal, since B + C produces D
 let
     rn = @reaction_network begin
@@ -432,86 +441,62 @@ let
     @test issubset([[3,4], [5,6,7]], tslcs) 
 end
 
-### CONCENTRATION ROBUSTNESS TESTS
-
-# Check whether concentration-robust species are correctly identified for two well-known reaction networks: the glyoxylate IDHKP-IDH system, and the EnvZ_OmpR signaling pathway. 
-
+# Cycle Test: Open Reaction Network
 let
-    IDHKP_IDH = @reaction_network begin
-        (k1, k2), EIp + I <--> EIpI
-        k3, EIpI --> EIp + Ip
-        (k4, k5), E + Ip <--> EIp
-        k6, EIp --> E + I
+    rn = @reaction_network begin
+        k1, 0 --> X1
+        k2, X1 --> 0
+        k3, X1 --> X2
+        (k4, k5), X2 <--> X3
+        (k6, k7), X3 <--> 0
     end
 
-    @test Catalyst.robustspecies(IDHKP_IDH) == [2]
-    @test Catalyst.isconcentrationrobust(IDHKP_IDH, 2) == true
+    # 0 --> X1 --> X2 --> X3 --> 0
+    cycle = [1, 0, 1, 1, 0, 1, 0]
+    cyclemat = Catalyst.cycles(rn)
+    @test rank(cyclemat) == rank(hcat(cyclemat, cycle))
 end
 
+# From stoichiometric matrix. Reference: Trinh, 2008, https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2909134/
 let
-    EnvZ_OmpR = @reaction_network begin
-        (k1, k2), X <--> XT
-        k3, XT --> Xp
-        (k4, k5), Xp + Y <--> XpY
-        k6, XpY --> X + Yp
-        (k7, k8), XT + Yp <--> XTYp
-        k9, XTYp --> XT + Y
-    end
+   S = [1 -1 0 0 -1 0 0 0 0;
+        0 0 0 0 1 -1 -1 -1 0;
+        0 1 -1 0 0 1 0 0 0;
+        0 0 1 0 0 0 0 0 -1;
+        0 0 1 -1 0 0 2 0 0]
 
-    @test Catalyst.robustspecies(EnvZ_OmpR) == [6]
-    @test Catalyst.isconcentrationrobust(EnvZ_OmpR, 6) == true
+   EFMs = [1 0 1 1 0 1 1 1;
+           1 0 0 1 0 0 1 0;
+           0 1 0 1 0 0 0 1;
+           0 1 0 1 2 2 2 1;
+           0 0 1 0 0 1 0 1;
+           -1 1 0 0 0 0 -1 1;
+           0 0 0 0 1 1 1 0;
+           1 -1 1 0 -1 0 0 0;
+           0 1 0 1 0 0 0 1]
+
+   cyclemat = Catalyst.cycles(S)
+   for i in 1:size(EFMs, 2)
+       EFM = EFMs[:, i]
+       @test rank(cyclemat) == rank(hcat(cyclemat, EFM))
+   end
 end
 
-### DEFICIENCY ONE TESTS
-
-# Fails because there are two terminal linkage classes in the linkage class
-let 
-    rn = @reaction_network begin
-        k1, A + B --> 2B
-        k2, A + B --> 2A
-    end
-
-    @test Catalyst.satisfiesdeficiencyone(rn) == false
-end
-
-# Fails because linkage deficiencies do not sum to total deficiency
-let 
-    rn = @reaction_network begin
-        (k1, k2), A <--> 2A
-        (k3, k4), A + B <--> C
-        (k5, k6), C <--> B 
-    end
-
-    @test Catalyst.satisfiesdeficiencyone(rn) == false
-end
-
-# Fails because a linkage class has deficiency two
-let 
-    rn = @reaction_network begin
-        k1, 3A --> A + 2B
-        k2, A + 2B --> 3B
-        k3, 3B --> 2A + B
-        k4, 2A + B --> 3A
-    end
-
-    @test Catalyst.satisfiesdeficiencyone(rn) == false
-end
+# No cycles should exist in the following network (the graph is treelike and irreversible)
 
 let
     rn = @reaction_network begin
-        (k1, k2), 2A <--> D
-        (k3, k4), D <--> A + B
-        (k5, k6), A + B <--> C
-        (k7, k8), C <--> 2B
-        (k9, k10), C + D <--> E + F
-        (k11, k12), E + F <--> H
-        (k13, k14), H <--> C + E
-        (k15, k16), C + E <--> D + F
-        (k17, k18), A + D <--> G
-        (k19, k20), G <--> B + H
+        k1, A + B --> C + D
+        k2, C + D --> E + F
+        k3, C + D --> 2G + H
+        k4, 2G + H --> 3I
+        k5, E + F --> J 
+        k6, 3I --> K
     end
 
-    @test Catalyst.satisfiesdeficiencyone(rn) == true
+    S = netstoichmat(rn)
+    cyclemat = Catalyst.cycles(S)
+    @test isempty(cyclemat)
 end
 
 ### Complex and detailed balance tests
@@ -725,3 +710,123 @@ let
     Catalyst.ratematrix(rn, rates_dict) == rate_mat
     @test_throws Exception Catalyst.iscomplexbalanced(rn, rates_invalid)
 end
+
+### CONCENTRATION ROBUSTNESS TESTS
+
+# Check whether concentration-robust species are correctly identified for two well-known reaction networks: the glyoxylate IDHKP-IDH system, and the EnvZ_OmpR signaling pathway. 
+
+let
+    IDHKP_IDH = @reaction_network begin
+        (k1, k2), EIp + I <--> EIpI
+        k3, EIpI --> EIp + Ip
+        (k4, k5), E + Ip <--> EIp
+        k6, EIp --> E + I
+    end
+
+    @test Catalyst.robustspecies(IDHKP_IDH) == [2]
+end
+
+let
+    EnvZ_OmpR = @reaction_network begin
+        (k1, k2), X <--> XT
+        k3, XT --> Xp
+        (k4, k5), Xp + Y <--> XpY
+        k6, XpY --> X + Yp
+        (k7, k8), XT + Yp <--> XTYp
+        k9, XTYp --> XT + Y
+    end
+
+    @test Catalyst.robustspecies(EnvZ_OmpR) == [6]
+end
+
+### DEFICIENCY ONE TESTS
+
+# Fails because there are two terminal linkage classes in the linkage class
+let 
+    rn = @reaction_network begin
+        k1, A + B --> 2B
+        k2, A + B --> 2A
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == false
+end
+
+# Fails because linkage deficiencies do not sum to total deficiency
+let 
+    rn = @reaction_network begin
+        (k1, k2), A <--> 2A
+        (k3, k4), A + B <--> C
+        (k5, k6), C <--> B 
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == false
+end
+
+# Fails because a linkage class has deficiency two
+let 
+    rn = @reaction_network begin
+        k1, 3A --> A + 2B
+        k2, A + 2B --> 3B
+        k3, 3B --> 2A + B
+        k4, 2A + B --> 3A
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == false
+end
+
+let
+    rn = @reaction_network begin
+        (k1, k2), 2A <--> D
+        (k3, k4), D <--> A + B
+        (k5, k6), A + B <--> C
+        (k7, k8), C <--> 2B
+        (k9, k10), C + D <--> E + F
+        (k11, k12), E + F <--> H
+        (k13, k14), H <--> C + E
+        (k15, k16), C + E <--> D + F
+        (k17, k18), A + D <--> G
+        (k19, k20), G <--> B + H
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == true
+end
+
+### Some tests for deficiency zero networks. 
+
+let
+    rn = @reaction_network begin
+        (k1, k2), A <--> 2B
+        (k3, k4), A + C <--> D
+        k5, D --> B + E
+        k6, B + E --> A + C
+    end
+
+    # No longer weakly reversible
+    rn2 = @reaction_network begin
+        (k1, k2), A <--> 2B
+        (k3, k4), A + C <--> D
+        k5, B + E --> D
+        k6, B + E --> A + C
+    end
+
+    # No longer weakly reversible
+    rn3 = @reaction_network begin
+        k1, A --> 2B
+        (k3, k4), A + C <--> D
+        k5, D --> B + E 
+        k6, B + E --> A + C
+    end
+
+    # Weakly reversible but deficiency one
+    rn4 = @reaction_network begin
+        (k1, k2), A <--> 2A
+        (k3, k4), A + B <--> C
+        (k5, k6), C <--> B
+    end
+
+    @test Catalyst.satisfiesdeficiencyzero(rn) == true
+    @test Catalyst.satisfiesdeficiencyzero(rn2) == false 
+    @test Catalyst.satisfiesdeficiencyzero(rn3) == false 
+    @test Catalyst.satisfiesdeficiencyzero(rn4) == false
+end
+

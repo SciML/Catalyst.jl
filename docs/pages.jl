@@ -11,9 +11,11 @@ pages = Any[
         "model_creation/programmatic_CRN_construction.md",
         "model_creation/compositional_modeling.md",
         "model_creation/constraint_equations.md",
+        "model_creation/conservation_laws.md",
         "model_creation/parametric_stoichiometry.md",
         "model_creation/model_file_loading_and_export.md",
         "model_creation/model_visualisation.md",
+        "model_creation/reactionsystem_content_accessing.md",
         "model_creation/network_analysis.md",
         "model_creation/chemistry_related_functionality.md",
         "Model creation examples" => Any[
@@ -29,7 +31,10 @@ pages = Any[
         "model_simulation/simulation_structure_interfacing.md",
         "model_simulation/ensemble_simulations.md",
         "model_simulation/ode_simulation_performance.md",
-        "model_simulation/sde_simulation_performance.md"
+        "model_simulation/sde_simulation_performance.md",
+        "Model simulation examples" => Any[
+            "model_simulation/examples/periodic_events_simulation.md"
+        ]
     ],
     "Steady state analysis" => Any[
         "steady_state_functionality/homotopy_continuation.md",
@@ -47,6 +52,13 @@ pages = Any[
         "Inverse problem examples" => Any[
             "inverse_problems/examples/ode_fitting_oscillation.md"
         ]
+    ],
+    "Spatial Modelling" => Any[
+        "spatial_modelling/lattice_reaction_systems.md",
+        "spatial_modelling/lattice_simulation_structure_ interaction.md",
+        "spatial_modelling/lattice_simulation_plotting.md",
+        "spatial_modelling/spatial_ode_simulations.md",
+        "spatial_modelling/spatial_jump_simulations.md"
     ],
     "FAQs" => "faqs.md",
     "API" => "api.md"

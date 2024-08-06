@@ -68,11 +68,12 @@ jumpsys = convert(JumpSystem, rs)
 jumpsys = complete(jumpsys)
 u₀map    = [S => 999, I => 1, R => 0]
 dprob = DiscreteProblem(jumpsys, u₀map, tspan, parammap)
-jprob = JumpProblem(jumpsys, dprob, Direct(); save_positions = (false,false))
-sol = solve(jprob, SSAStepper(), saveat = 2.0)
+jprob = JumpProblem(jumpsys, dprob, Direct())
+sol = solve(jprob, SSAStepper())
+sol = solve(jprob, SSAStepper(), seed = 1234) # hide
 p3 = plot(sol, title = "jump")
-
 plot(p1, p2, p3; layout = (3,1))
+Catalyst.PNG(plot(p1, p2, p3; layout = (3,1), fmt = :png, dpi = 200)) # hide
 ```
 
 ```@docs
@@ -83,6 +84,22 @@ make_empty_network
 Reaction
 ReactionSystem
 ```
+
+## [Options for the `@reaction_network` DSL](@id api_dsl_options)
+We have [previously described](@ref dsl_advanced_options) how options permits the user to supply non-reaction information to [`ReactionSystem`](@ref) created through the DSL. Here follows a list
+of all options currently available.
+- [`parameters`]:(@ref dsl_advanced_options_declaring_species_and_parameters) Allows the designation of a set of symbols as system parameter.
+- [`species`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system species.
+- [`variables`](@ref dsl_advanced_options_declaring_species_and_parameters): Allows the designation of a set of symbols as system non-species variables.
+- [`ivs`](@ref dsl_advanced_options_ivs): Allows the designation of a set of symbols as system independent variables.
+- [`compounds`](@ref chemistry_functionality_compounds): Allows the designation of compound species.
+- [`observables`](@ref dsl_advanced_options_observables): Allows the designation of compound observables.
+- [`default_noise_scaling`](@ref simulation_intro_SDEs_noise_saling): Enables the setting of a default noise scaling expression.
+- [`differentials`](@ref constraint_equations_coupling_constraints): Allows the designation of differentials.
+- [`equations`](@ref constraint_equations_coupling_constraints): Allows the creation of algebraic and/or differential equations.
+- [`continuous_events`](@ref constraint_equations_events): Allows the creation of continuous events.
+- [`discrete_events`](@ref constraint_equations_events): Allows the creation of discrete events.
+- [`combinatoric_ratelaws`](@ref faq_combinatoric_ratelaws): Takes a single option (`true` or `false`), which sets whether to use combinatorial rate laws.
 
 ## [ModelingToolkit and Catalyst accessor functions](@id api_accessor_functions)
 A [`ReactionSystem`](@ref) is an instance of a
@@ -156,18 +173,36 @@ accessor functions.
 
 ```@docs
 species
+Catalyst.get_species
 nonspecies
 reactions
+Catalyst.get_rxs
 nonreactions
 numspecies
 numparams
 numreactions
 speciesmap
 paramsmap
-isspecies
 isautonomous
+```
+
+## Coupled reaction/equation system properties
+The following system property accessor functions are primarily relevant to reaction system [coupled
+to differential and/or algebraic equations](@ref constraint_equations).
+```@docs
+ModelingToolkit.has_alg_equations
+ModelingToolkit.alg_equations
+ModelingToolkit.has_diff_equations
+ModelingToolkit.diff_equations
+```
+
+## Basic species properties
+The following functions permits the querying of species properties.
+```@docs
+isspecies
 Catalyst.isconstant
 Catalyst.isbc
+Catalyst.isvalidreactant
 ```
 
 ## Basic reaction properties
@@ -179,6 +214,17 @@ substoichmat
 prodstoichmat
 netstoichmat
 reactionrates
+```
+
+## [Reaction metadata](@id api_rx_metadata)
+The following functions permits the retrieval of [reaction metadata](@ref dsl_advanced_options_reaction_metadata).
+```@docs
+Catalyst.hasnoisescaling
+Catalyst.getnoisescaling
+Catalyst.hasdescription
+Catalyst.getdescription
+Catalyst.hasmisc
+Catalyst.getmisc
 ```
 
 ## [Functions to extend or modify a network](@id api_network_extension_and_modification)
@@ -296,4 +342,54 @@ validate(rs::ReactionSystem, info::String="")
 ## Utility functions
 ```@docs
 symmap_to_varmap
+```
+
+## [Spatial modelling](@id api_lattice_simulations)
+The first step of spatial modelling is to create a so-called `LatticeReactionSystem`:
+```@docs
+LatticeReactionSystem
+```
+
+The following functions can be used to querying the properties of `LatticeReactionSystem`s:
+```@docs
+reactionsystem
+Catalyst.spatial_reactions
+Catalyst.lattice
+Catalyst.num_verts
+Catalyst.num_edges
+Catalyst.num_species
+Catalyst.spatial_species
+Catalyst.vertex_parameters
+Catalyst.edge_parameters
+Catalyst.edge_iterator
+Catalyst.is_transport_system
+has_cartesian_lattice
+has_masked_lattice
+has_grid_lattice
+has_graph_lattice
+grid_size
+grid_dims
+```
+In addition, most accessor functions for normal `ReactionSystem`s (such as `species` and `parameters`) works when applied to `LatticeReactionSystem`s as well.
+
+The following two helper functions can be used to create non-uniform parameter values.
+```@docs
+make_edge_p_values
+make_directed_edge_values
+```
+
+The following functions can be used to access, or change, species or parameter values stored in problems, integrators, and solutions that are based on `LatticeReactionSystem`s.
+```@docs
+lat_getu
+lat_setu!
+lat_getp
+lat_setp!
+rebuild_lat_internals!
+```
+
+Finally, we provide the following helper functions to plot and animate spatial lattice simulations.
+```@docs
+lattice_plot
+lattice_animation
+lattice_kymograph
 ```
