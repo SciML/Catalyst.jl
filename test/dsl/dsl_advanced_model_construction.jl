@@ -131,7 +131,7 @@ let
     end
     # Line number nodes aren't ignored so have to be manually removed
     Base.remove_linenums!(ex)
-    @test eval(Catalyst.make_reaction_system(ex)) isa ReactionSystem
+    @test eval(Catalyst.make_reaction_system(ex, QuoteNode(:name))) isa ReactionSystem
 end
 
 # Miscellaneous interpolation tests. Unsure what they do here (not related to DSL).
@@ -211,11 +211,11 @@ let
 end
 
 # Checks that repeated metadata throws errors.
-let
-    @test_throws LoadError @eval @reaction k, 0 --> X, [md1=1.0, md1=2.0]
-    @test_throws LoadError @eval @reaction_network begin
-        k, 0 --> X, [md1=1.0, md1=1.0]
-    end
+let 
+    @test_throws Exception @eval @reaction k, 0 --> X, [md1=1.0, md1=2.0] 
+    @test_throws Exception @eval @reaction_network begin
+        k, 0 --> X, [md1=1.0, md1=1.0] 
+    end 
 end
 
 # Tests for nested metadata.
@@ -265,6 +265,24 @@ let
     end
 
     @test isequal(rn1,rn2)
+end
+
+# Tests that erroneous metadata declarations yields errors.
+let
+    # Malformed metadata/value separator.
+    @test_throws Exception @eval @reaction_network begin
+        d, X --> 0, [misc=>"Metadata should use `=`, not `=>`."]
+    end
+
+    # Malformed lhs
+    @test_throws Exception @eval @reaction_network begin
+        d, X --> 0, [misc,description=>"Metadata lhs should be a single symbol."]
+    end
+
+    # Malformed metadata separator.
+    @test_throws Exception @eval @reaction_network begin
+        d, X --> 0, [misc=>:misc; description="description"]
+    end
 end
 
 ### Other Tests ###

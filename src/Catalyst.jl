@@ -40,6 +40,7 @@ import ModelingToolkit: check_variables,
 
 import Base: (==), hash, size, getindex, setindex, isless, Sort.defalg, length, show
 import MacroTools, Graphs
+using MacroTools: striplines
 import Graphs: DiGraph, SimpleGraph, SimpleDiGraph, vertices, edges, add_vertices!, nv, ne
 import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
