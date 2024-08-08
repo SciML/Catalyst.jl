@@ -54,12 +54,12 @@ The two-state model describes a component (here called $X$) which can exist in t
 ```@example crn_library_two_states
 using Catalyst, OrdinaryDiffEq, StochasticDiffEq, Plots
 two_state_model = @reaction_network begin
-    (k1,k2), X₁ <--> X₂
+    (k₁,k₂), X₁ <--> X₂
 end
 
 u0 = [:X₁ => 50.0, :X₂ => 50.0]
 tspan = (0.0, 1.0)
-ps = [:k1 => 2.0, :k2 => 3.0]
+ps = [:k₁ => 2.0, :k₂ => 3.0]
 
 oprob = ODEProblem(two_state_model, u0, tspan, ps)
 osol = solve(oprob)
@@ -116,11 +116,9 @@ oplt = plot(osol; title = "Reaction rate equation (ODE)")
 splt = plot(ssol; title = "Chemical Langevin equation (SDE)")
 jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)")
 plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1))
-oplt = plot(osol; title = "Reaction rate equation (ODE)", plotdensity = 1000, fmt = :png) # hide
-splt = plot(ssol; title = "Chemical Langevin equation (SDE)", plotdensity = 1000, fmt = :png) # hide
-jplt = plot(jsol; title = "Stochastic chemical kinetics (Jump)", plotdensity = 1000, fmt = :png) # hide
-plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1), plotdensity = 1000, fmt = :png) # hide
-plot!(bottom_margin = 3Plots.Measures.mm) # hide
+fullplt = plot(oplt, splt, jplt; lw = 2, size=(800,800), layout = (3,1), fmt = :png,
+    dpi = 200, bottom_margin = 3Plots.Measures.mm) # hide
+Catalyst.PNG(fullplt) # hide
 ```
 
 ## [SIR infection model](@id basic_CRN_library_sir)
@@ -148,23 +146,21 @@ Next, we perform 3 different Jump simulations. Note that for the stochastic mode
 ```@example crn_library_sir
 using JumpProcesses
 dprob = DiscreteProblem(sir_model, u0, tspan, ps)
-jprob = JumpProblem(sir_model, dprob, Direct(); save_positions = (false, false))
+jprob = JumpProblem(sir_model, dprob, Direct())
 
-jsol1 = solve(jprob, SSAStepper(); saveat = 1.0)
-jsol2 = solve(jprob, SSAStepper(); saveat = 1.0)
-jsol3 = solve(jprob, SSAStepper(); saveat = 1.0)
-jsol1 = solve(jprob, SSAStepper(); saveat = 1.0, seed = 1) # hide
-jsol2 = solve(jprob, SSAStepper(); saveat = 1.0, seed = 2) # hide
-jsol3 = solve(jprob, SSAStepper(); saveat = 1.0, seed = 3) # hide
+jsol1 = solve(jprob, SSAStepper())
+jsol2 = solve(jprob, SSAStepper())
+jsol3 = solve(jprob, SSAStepper())
+jsol1 = solve(jprob, SSAStepper(), seed = 1) # hide
+jsol2 = solve(jprob, SSAStepper(), seed = 2) # hide
+jsol3 = solve(jprob, SSAStepper(), seed = 3) # hide
 
 jplt1 = plot(jsol1; title = "Outbreak")
 jplt2 = plot(jsol2; title = "Outbreak")
 jplt3 = plot(jsol3; title = "No outbreak")
 plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1))
-jplt1 = plot(jsol1; title = "Outbreak", plotdensity = 1000, fmt = :png) # hide
-jplt2 = plot(jsol2; title = "Outbreak", plotdensity = 1000, fmt = :png) # hide
-jplt3 = plot(jsol3; title = "No outbreak", plotdensity = 1000, fmt = :png) # hide
-plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1), plotdensity = 1000, fmt = :png) # hide
+fullplt = plot(jplt1, jplt2, jplt3; lw = 3, size=(800,700), layout = (3,1), fmt = :png, dpi = 200) # hide
+Catalyst.PNG(fullplt) # hide
 ```
 
 ## [Chemical cross-coupling](@id basic_CRN_library_cc)
@@ -186,7 +182,7 @@ In two separate plots.
 using OrdinaryDiffEq, Plots
 u0 = [:S₁ => 1.0, :C => 0.05, :S₂ => 1.2, :S₁C => 0.0, :CP => 0.0, :P => 0.0]
 tspan = (0., 15.)
-ps = [:k₁ => 5.0, :k₂ => 5.0, :k₃ => 100.0] 
+ps = [:k₁ => 5.0, :k₂ => 5.0, :k₃ => 100.0]
 
 # solve ODEs
 oprob = ODEProblem(cc_system, u0, tspan, ps)
@@ -208,7 +204,7 @@ wilhelm_model = @reaction_network begin
     k4, X --> 0
 end
 ```
-We can simulate the model for two different initial conditions, demonstrating the existence of two different stable steady states. 
+We can simulate the model for two different initial conditions, demonstrating the existence of two different stable steady states.
 ```@example crn_library_wilhelm
 using OrdinaryDiffEq, Plots
 u0_1 = [:X => 1.5, :Y => 0.5]
@@ -234,7 +230,7 @@ sa_loop = @reaction_network begin
     d, X --> ∅
 end
 ```
-A simple example of such a loop is a transcription factor which activates its own gene. Here, $v₀$ represents a basic transcription rate (leakage) in the absence of the transcription factor. 
+A simple example of such a loop is a transcription factor which activates its own gene. Here, $v₀$ represents a basic transcription rate (leakage) in the absence of the transcription factor.
 
 We simulate the self-activation loop from a single initial condition using both deterministic (ODE) and stochastic (jump) simulations. We note that while the deterministic simulation reaches a single steady state, the stochastic one switches between two different states.
 ```@example crn_library_self_activation
@@ -247,13 +243,15 @@ oprob = ODEProblem(sa_loop, u0, tspan, ps)
 osol = solve(oprob)
 
 dprob = DiscreteProblem(sa_loop, u0, tspan, ps)
-jprob = JumpProblem(sa_loop, dprob, Direct(); save_positions = (false,false))
-jsol = solve(jprob, SSAStepper(); saveat = 10.0)
-jsol = solve(jprob, SSAStepper(); saveat = 10.0, seed = 12) # hide
+jprob = JumpProblem(sa_loop, dprob, Direct())
+jsol = solve(jprob, SSAStepper())
+jsol = solve(jprob, SSAStepper(), seed = 12) # hide
 
-plot(osol; lw = 3, label = "Reaction rate equation (ODE)")
-plot!(jsol; lw = 3, label = "Stochastic chemical kinetics (Jump)", yguide = "X", size = (800,350))
-plot!(bottom_margin = 3Plots.Measures.mm, left_margin=3Plots.Measures.mm) # hide
+fplt = plot(osol; lw = 3, label = "Reaction rate equation (ODE)")
+plot!(fplt, jsol; lw = 3, label = "Stochastic chemical kinetics (Jump)", yguide = "X", size = (800,350))
+plot!(fplt, bottom_margin = 3Plots.Measures.mm, left_margin=3Plots.Measures.mm) # hide
+plot!(fplt; fmt = :png, dpi = 200) # hide
+Catalyst.PNG(fplt) # hide
 ```
 
 ## [The Brusselator](@id basic_CRN_library_brusselator)

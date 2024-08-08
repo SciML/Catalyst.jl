@@ -5,7 +5,7 @@ While Catalyst has primarily been designed around the modelling of biological sy
 - The `balance_reaction` function, which enables the user to balance a reaction so the same number of components occur on both sides.
 
 
-## Modelling with compound species
+## [Modelling with compound species](@id chemistry_functionality_compounds)
 
 ### Creating compound species programmatically
 We will first show how to create compound species through [programmatic model construction](@ref programmatic_CRN_construction), and then demonstrate using the DSL. To create a compound species, use the `@compound` macro, first designating the compound, followed by its components (and their stoichiometries). In this example, we will create a CO₂ molecule, consisting of one C atom and two O atoms. First, we create species corresponding to the components:
@@ -103,7 +103,7 @@ In all of these cases, the left-hand side must be enclosed within `()`.
 While we generally do not need to specify independent variables for compound, if the components (together) have more than one independent variable, this *must be done*:
 ```@example chem1
 t = default_t()
-@variables s
+@parameters s
 @species N(s) O(t) 
 @compound NO2(t,s) ~ N + 2O
 ```

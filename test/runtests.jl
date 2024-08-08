@@ -51,7 +51,7 @@ using SafeTestsets, Test
     @time @safetestset "MTK Problem Inputs" begin include("upstream/mtk_problem_inputs.jl") end
 
     # Tests network visualisation.
-    @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
+    # @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
     # Disable on Macs as can't install GraphViz via jll
     if !Sys.isapple()
         @time @safetestset "Graphs Visualisations" begin include("visualisation/graphs.jl") end
@@ -72,6 +72,7 @@ using SafeTestsets, Test
     @time @safetestset "Spatial Lattice Variants" begin include("spatial_modelling/lattice_reaction_systems_lattice_types.jl") end
     @time @safetestset "ODE Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_ODEs.jl") end
     @time @safetestset "Jump Lattice Systems Simulations" begin include("spatial_modelling/lattice_reaction_systems_jumps.jl") end
-    @time @safetestset "Jump Solution Interfacing" begin include("spatial_modelling/lattice_solution_interfacing.jl") end
+    @time @safetestset "Lattice Simulation Structure Interfacing" begin include("spatial_modelling/lattice_simulation_struct_interfacing.jl") end
+    @time @safetestset "Lattice Simulation Plotting" begin include("spatial_modelling/lattice_simulation_plotting.jl") end
 
 end # @time

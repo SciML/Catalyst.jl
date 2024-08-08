@@ -2,6 +2,43 @@
 
 ## Catalyst unreleased (master branch)
 
+
+## Catalyst 14.1.1
+The expansion of `ReactionSystem` models to spatial lattices has been enabled. Here follows a 
+simple example where a Brusselator model is expanded to a 20x20 grid of compartments, with diffusion
+for species X, and then simulated using ODEs. Finally, an animation of the simulation is created.
+```julia
+using Catalyst, CairoMakie, OrdinaryDiffEq
+
+# Create `LatticeReactionSystem` model.
+brusselator = @reaction_network begin
+    A, ∅ --> X
+    1, 2X + Y --> 3X
+    B, X --> Y
+    1, X --> ∅
+end
+diffusion_rx = @transport_reaction D X
+lattice = CartesianGrid((20,20))
+lrs = LatticeReactionSystem(brusselator, [diffusion_rx], lattice)
+
+# Create a spatial `ODEProblem`.
+u0 = [:X => rand(20, 20), :Y => 10.0]
+tspan = (0.0, 40.0)
+ps = [:A => 1.0, :B => 4.0, :D => 0.2]
+oprob = ODEProblem(lrs, u0, tspan, ps)
+
+# Simulate the ODE and plot the results.
+sol = solve(oprob, FBDF())
+lattice_animation(sol, :X, lrs, "brusselator.mp4")
+```
+The addition of spatial modelling in Catalyst contains a large number of new features, all of which are
+described in the [corresponding documentation](https://docs.sciml.ai/Catalyst/stable/spatial_modelling/lattice_reaction_systems/).
+
+## Catalyst 14.0.1
+Bug fix to address that independent variables, like time, should now be `@parameters` 
+according to MTKv9. Converted internal time variables to consistently use `default_t()` 
+to hopefully avoid such issues going forward.
+
 ## Catalyst 14.0
 
 #### Breaking changes
@@ -39,9 +76,8 @@ briefly summarised in the following bullet points:
   new merged and/or composed `ReactionSystem`s from multiple component systems.
 
 #### General changes
-- The `default_t()` and `default_time_deriv()` functions are now the preferred
-  approaches for creating the default time independent variable and its
-  differential. i.e.
+- `default_t()` and `default_time_deriv()` functions should be used for creating
+  the default time independent variable and its differential. i.e.
   ```julia
   # do
   t = default_t()

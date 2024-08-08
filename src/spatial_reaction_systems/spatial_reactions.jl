@@ -10,6 +10,11 @@ struct EdgeParameter end
 Symbolics.option_to_metadata_type(::Val{:edgeparameter}) = EdgeParameter
 
 # Implements the isedgeparameter check function.
+"""
+    isedgeparameter(p)
+
+Returns `true` if the parameter `p` is an edge parameter (else `false`).
+"""
 isedgeparameter(x::Num, args...) = isedgeparameter(Symbolics.unwrap(x), args...)
 function isedgeparameter(x, default = false)
     p = Symbolics.getparent(x, nothing)
@@ -35,12 +40,8 @@ struct TransportReaction <: AbstractSpatialReaction
         new(rate, species.val)
     end
 end
-# Creates a vector of TransportReactions.
-function TransportReactions(transport_reactions)
-    [TransportReaction(tr[1], tr[2]) for tr in transport_reactions]
-end
 
-# Macro for creating a TransportReactions.
+# Macro for creating a `TransportReaction`.
 macro transport_reaction(rateex::ExprValues, species::ExprValues)
     make_transport_reaction(MacroTools.striplines(rateex), species)
 end
@@ -59,7 +60,7 @@ function make_transport_reaction(rateex, species)
     # Creates expressions corresponding to actual code from the internal DSL representation.
     sexprs = get_sexpr([species], Dict{Symbol, Expr}())
     pexprs = get_pexpr(parameters, Dict{Symbol, Expr}())
-    iv = :(@variables $(DEFAULT_IV_SYM))
+    iv = :($(DEFAULT_IV_SYM) = default_t())
     trxexpr = :(TransportReaction($rateex, $species))
 
     # Appends `edgeparameter` metadata to all declared parameters.
@@ -75,23 +76,23 @@ function make_transport_reaction(rateex, species)
     end
 end
 
-# Gets the parameters in a TransportReactions.
+# Gets the parameters in a `TransportReaction`.
 ModelingToolkit.parameters(tr::TransportReaction) = Symbolics.get_variables(tr.rate)
 
-# Gets the species in a TransportReactions.
+# Gets the species in a `TransportReaction`.
 spatial_species(tr::TransportReaction) = [tr.species]
 
-# Checks that a TransportReactions is valid for a given reaction system.
+# Checks that a `TransportReaction` is valid for a given reaction system.
 function check_spatial_reaction_validity(rs::ReactionSystem, tr::TransportReaction;
         edge_parameters = [])
     # Checks that the species exist in the reaction system.
     # (ODE simulation code becomes difficult if this is not required,
-    # as non-spatial jacobian and f function generated from rs are of the wrong size).  
+    # as non-spatial jacobian and f function generated from rs are of the wrong size).
     if !any(isequal(tr.species), species(rs))
-        error("Currently, species used in TransportReactions must have previously been declared within the non-spatial ReactionSystem. This is not the case for $(tr.species).")
+        error("Currently, species used in `TransportReaction`s must have previously been declared within the non-spatial ReactionSystem. This is not the case for $(tr.species).")
     end
 
-    # Checks that the rate does not depend on species.    
+    # Checks that the rate does not depend on species.
     rate_vars = ModelingToolkit.getname.(Symbolics.get_variables(tr.rate))
     if !isempty(intersect(ModelingToolkit.getname.(species(rs)), rate_vars))
         error("The following species were used in rates of a transport reactions: $(setdiff(ModelingToolkit.getname.(species(rs)), rate_vars)).")

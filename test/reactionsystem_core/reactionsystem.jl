@@ -262,7 +262,7 @@ let
     end
 end
 
-### Nich Model Declarations ###
+### Niche Model Declarations ###
 
 # Checks model with vector species and parameters.
 # Checks that it works for programmatic/dsl-based modelling.
@@ -325,7 +325,58 @@ let
     end
 end
 
-### Other Tests ###
+### Miscellaneous Getters ###
+
+# Tests spatial independent variables `get_sivs` and `has_sivs`.
+let
+    # Creates a `ReactionSystem`.
+    @parameters x
+    @parameters p d
+    @species S(t,x)
+    rxs = [
+        Reaction(p, [], [S]),
+        Reaction(d, [S], []),
+    ]
+    @named rs = ReactionSystem(rxs, t; spatial_ivs = [x])
+
+    # Test system independent variables (spatial and non-spatial).
+    @test Catalyst.has_sivs(rs)
+    @test isequal(Catalyst.get_sivs(rs), [x])
+    @test isequal(Catalyst.independent_variables(rs), [t])
+end
+
+# Tests `numparams` and `numreactions` for reaction system with subsystem.
+# Tests where a subssystem is a non-`ReactionSystem`.
+let
+    # Prepares content
+    @parameters k1 k2 k3 p1 p2
+    @species X1(t) X2(t) X3(t)
+    @variables V1(t) V2(t)
+    D = default_time_deriv()
+
+    # Creates a reaction system with a subsystem.
+    sub_rxs = [
+        Reaction(k1, [X1], []),
+        Reaction(k2, [X2], [])
+    ]
+    @named sub_rs = ReactionSystem(sub_rxs, t)
+    sub_eqs = [
+        D(V1) ~ p1 - V1,
+        D(V2) ~ p2 - V2,
+    ]
+    @named sub_osys = ODESystem(sub_eqs, t)
+    rxs = [
+        Reaction(k2, [X2], []),
+        Reaction(k3, [X3], [])
+    ]
+    @named rs = ReactionSystem(rxs, t; systems = [sub_rs, sub_osys])
+
+    # Tests content.
+    @test numparams(rs) == 6
+    @test numreactions(rs) == 4
+end
+
+# Tests `has_sivs` getter.
 
 ### Test Show ###
 
@@ -509,6 +560,96 @@ let
     @test isapprox(umean[1], umean[2]; rtol = 1e-2)
     @test isapprox(umean[1], umean[3]; rtol = 1e-2)
     @test umean[4] == 10
+end
+
+### Species Tests ###
+
+# Test various species related checker functions.
+let
+    # Creates species and parameters.
+    @species X(t) Y(t) [isbcspecies=true]
+    @parameters x(t) y(t) [isconstantspecies=true]
+
+    # Tests properties.
+    @test !isspecies(x)
+    @test !isspecies(y)
+    @test isspecies(X)
+    @test isspecies(Y)
+    @test !Catalyst.isbc(x)
+    @test !Catalyst.isbc(y)
+    @test !Catalyst.isbc(X)
+    @test Catalyst.isbc(Y)
+    @test !Catalyst.isconstant(x)
+    @test Catalyst.isconstant(y)
+    @test !Catalyst.isconstant(X)
+    @test !Catalyst.isconstant(Y)
+end
+
+### Error Tests ###
+
+# Tests various erroneous `ReactionSystem` creations.
+let
+    # Prepare model inputs.
+    @parameters k1 k2 x [isconstantspecies=true] Γ
+    @species X1(t) X2(t)
+    @variables V(t)
+
+    # System using a forbidden symbol.
+    @test_throws Exception rs = ReactionSystem([Reaction(Γ, [X1], [])], t; named = :rs)
+
+    # Species among parameters.
+    @test_throws Exception rs = ReactionSystem([Reaction(k1, [X1], [])], t, [X1], [k1, X2])
+
+    # Variable among parameters.
+    @test_throws Exception rs = ReactionSystem([Reaction(k1, [X1], [])], t, [X1], [k1, V])
+
+    # Parameter among unknowns.
+    @test_throws Exception rs = ReactionSystem([Reaction(k1, [X1], [])], t, [X1, k2], [k1])
+
+    # Constant species-parameter among unknowns.
+    @test_throws Exception rs = ReactionSystem([Reaction(k1, [X1], [])], t, [X1, x], [k1])
+end
+
+# Tests various erroneous `convert` calls.
+let
+    # Conversion of non-autonomous `ReactionSystem` to `NonlinearSystem`.
+    rs = @reaction_network begin
+        (p/(1+t),d), 0 <--> X
+    end
+    @test_throws Exception convert(NonlinearSystem, rs)
+
+    # Conversion of non-complete system to various system types.
+    nc = @network_component begin
+        (p,d), 0 <--> X
+    end
+    @test_throws Exception convert(ODESystem, nc)
+    @test_throws Exception convert(SDESystem, nc)
+    @test_throws Exception convert(JumpSystem, nc)
+    @test_throws Exception convert(NonlinearSystem, nc)
+end
+
+# Checks that the same name cannot be used for two different of parameters/species/variables.
+let
+    # Stores a parameter, a species, and a variable (with identical names) in different variables.
+    x_p = let
+        only(@parameters x) 
+    end
+    x_sp = let
+        only(@species x(t)) 
+    end
+    x_v = let
+        only(@variables x(t)) 
+    end
+    
+    # Checks that creating systems with different in combination produces errors.
+    # Currently broken on MTK, potentially fix in Catalyst once sorted out there (https://github.com/SciML/ModelingToolkit.jl/issues/2883).
+    @parameters d
+    @species X(t)
+    rx = Reaction(d, [X], [])
+    @test_broken false # (not sure how to mark a `@test_throws` as broken)
+    # @test_throws rs1 = ReactionSystem([rx], t, [X, x_sp,], [d, x_p]; name = :rs)
+    # @test_throws rs2 = ReactionSystem([rx], t, [X, X, x_v], [d, x_p]; name = :rs)
+    # @test_throws rs2 = ReactionSystem([rx], t, [X, x_sp, x_v], [d]; name = :rs)
 end
 
 ### Other Tests ###
@@ -802,7 +943,15 @@ end
 
 # Tests construction of empty reaction networks.
 let
+    # Using DSL.
     empty_network = @reaction_network
+    @test length(ModelingToolkit.get_eqs(empty_network)) == 0
+    @test nameof(ModelingToolkit.get_iv(empty_network)) == :t
+    @test length(ModelingToolkit.get_unknowns(empty_network)) == 0
+    @test length(ModelingToolkit.get_ps(empty_network)) == 0
+
+    # Using `make_empty_network`.
+    empty_network = make_empty_network()
     @test length(ModelingToolkit.get_eqs(empty_network)) == 0
     @test nameof(ModelingToolkit.get_iv(empty_network)) == :t
     @test length(ModelingToolkit.get_unknowns(empty_network)) == 0

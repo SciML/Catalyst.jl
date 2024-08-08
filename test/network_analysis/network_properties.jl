@@ -1,11 +1,24 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, LinearAlgebra, Test, StableRNGs
+using Catalyst, LinearAlgebra, Test, SparseArrays
 
+# Sets stable rng number.
+using StableRNGs
 rng = StableRNG(514)
 
 ### Basic Tests ###
+
+# Tests basic `ReactionComplex` properties.
+let
+    rcs1 = Catalyst.ReactionComplex([1, 2], [1, 3])
+    rcs2 = Catalyst.ReactionComplex([1, 2], [1, 3])
+    rcs3 = Catalyst.ReactionComplex([3], [2])
+    @test rcs1 == rcs2
+    @test rcs2 != rcs3
+    @test length(rcs1) == 2
+    @test length(rcs3) == 1
+end
 
 # Tests network analysis functions on MAPK network (by comparing to manually computed outputs).
 let
@@ -59,6 +72,16 @@ let
     #     end
     #     println("-----------")
     # end
+
+    # Testing if cycles identifies reversible reactions as cycles (one forward, one reverse) 
+    cyclemat = Catalyst.cycles(MAPK)
+    S = netstoichmat(MAPK)
+    for i in 1:size(S, 2)-1
+        if S[:,i] == -S[:,i+1]
+           cycle = [(j == i) || (j == i+1) ? 1 : 0 for j in 1:size(S,2)]
+           @test rank(cyclemat) == rank(hcat(cyclemat, cycle))
+        end
+    end
 end
 
 # Tests network analysis functions on a second network (by comparing to manually computed outputs).
@@ -203,6 +226,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == false 
 end
+
 let
     rn = @reaction_network begin
         k1, A --> B
@@ -215,6 +239,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == false 
 end
+
 let
     rn = @reaction_network begin
         k1, A --> B
@@ -229,6 +254,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == false 
 end
+
 let
     rn = @reaction_network begin
         (k2, k1), A <--> 2B
@@ -244,6 +270,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
+
 let
     rn = @reaction_network begin
         (k2, k1), A + E <--> AE
@@ -257,6 +284,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == false 
 end
+
 let
     rn = @reaction_network begin
         (k2, k1), A + E <--> AE
@@ -270,6 +298,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true  
 end
+
 let
     rn = @reaction_network begin (k2, k1), A + B <--> 2A end
     rev = true
@@ -280,6 +309,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
+
 let
     rn = @reaction_network begin
         k1, A + B --> 3A
@@ -295,6 +325,7 @@ let
     rates = Dict(zip(parameters(rn), k))
     @test Catalyst.iscomplexbalanced(rn, rates) == true 
 end
+
 let
     rn = @reaction_network begin
         (k2, k1), A + E <--> AE
@@ -327,7 +358,6 @@ let
 end
 
 ### STRONG LINKAGE CLASS TESTS
-
 
 # a) Checks that strong/terminal linkage classes are correctly found. Should identify the (A, B+C) linkage class as non-terminal, since B + C produces D
 let
@@ -409,3 +439,292 @@ let
     @test issubset([[1,2], [3,4], [5,6,7]], slcs)
     @test issubset([[3,4], [5,6,7]], tslcs) 
 end
+
+# Cycle Test: Open Reaction Network
+let
+    rn = @reaction_network begin
+        k1, 0 --> X1
+        k2, X1 --> 0
+        k3, X1 --> X2
+        (k4, k5), X2 <--> X3
+        (k6, k7), X3 <--> 0
+    end
+
+    # 0 --> X1 --> X2 --> X3 --> 0
+    cycle = [1, 0, 1, 1, 0, 1, 0]
+    cyclemat = Catalyst.cycles(rn)
+    @test rank(cyclemat) == rank(hcat(cyclemat, cycle))
+end
+
+# From stoichiometric matrix. Reference: Trinh, 2008, https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2909134/
+let
+   S = [1 -1 0 0 -1 0 0 0 0;
+        0 0 0 0 1 -1 -1 -1 0;
+        0 1 -1 0 0 1 0 0 0;
+        0 0 1 0 0 0 0 0 -1;
+        0 0 1 -1 0 0 2 0 0]
+
+   EFMs = [1 0 1 1 0 1 1 1;
+           1 0 0 1 0 0 1 0;
+           0 1 0 1 0 0 0 1;
+           0 1 0 1 2 2 2 1;
+           0 0 1 0 0 1 0 1;
+           -1 1 0 0 0 0 -1 1;
+           0 0 0 0 1 1 1 0;
+           1 -1 1 0 -1 0 0 0;
+           0 1 0 1 0 0 0 1]
+
+   cyclemat = Catalyst.cycles(S)
+   for i in 1:size(EFMs, 2)
+       EFM = EFMs[:, i]
+       @test rank(cyclemat) == rank(hcat(cyclemat, EFM))
+   end
+end
+
+# No cycles should exist in the following network (the graph is treelike and irreversible)
+
+let
+    rn = @reaction_network begin
+        k1, A + B --> C + D
+        k2, C + D --> E + F
+        k3, C + D --> 2G + H
+        k4, 2G + H --> 3I
+        k5, E + F --> J 
+        k6, 3I --> K
+    end
+
+    S = netstoichmat(rn)
+    cyclemat = Catalyst.cycles(S)
+    @test isempty(cyclemat)
+end
+
+### Other Network Properties Tests ###
+
+# Tests outgoing complexes matrices (1). 
+# Checks using dense and sparse representation.
+let
+    # Declares network.
+    rs = @reaction_network begin
+        k1, X1 + X2 --> X3 + X4
+        (k2,k2), X3 + X4 <--> X1
+        k3, X1 --> X2
+        k4, X1 + X2 --> X2
+    end
+    
+    # Compares to manually computed matrix.
+    cmplx_out_mat = [
+        -1 0 0 0 -1;
+        0 -1 0 0 0;
+        0 0 -1 -1 0;
+        0 0 0 0 0;
+    ]
+    complexoutgoingmat(rs) == cmplx_out_mat
+    complexoutgoingmat(rs; sparse = true) == sparse(cmplx_out_mat)
+end
+
+# Tests outgoing complexes matrices (2).
+# Checks using dense and sparse representation.
+let
+    # Declares network.
+    rs = @reaction_network begin
+        k1, X1 --> X2
+        k2, X2 --> X3
+        k3, X3 --> X4
+        k4, X3 --> X5
+        k5, X2 --> X1
+        k6, X1 --> X2
+    end
+
+    # Compares to manually computed matrix.
+    cmplx_out_mat = [
+        -1 0 0 0 0 -1;
+        0 -1 0 0 -1 0;
+        0 0 -1 -1 0 0;
+        0 0 0 0 0 0;
+        0 0 0 0 0 0;
+    ]
+    complexoutgoingmat(rs)
+    complexoutgoingmat(rs; sparse = true) == sparse(cmplx_out_mat)
+end
+
+# Tests that `iscomplexbalanced` works for different rate inputs.
+# Tests that non-valid rate input yields and error
+let
+    # Declares network.
+    rn = @reaction_network begin
+        k1, 3A + 2B --> 3C 
+        k2, B + 4D --> 2E
+        k3, 2E --> 3C
+        (k4, k5), B + 4D <--> 3A + 2B
+        k6, F --> B + 4D
+        k7, 3C --> F
+    end
+
+    # Declares rate alternatives.
+    k = rand(rng, numparams(rn))
+    rates_vec = Pair.(parameters(rn), k)
+    rates_tup = Tuple(rates_vec)
+    rates_dict = Dict(rates_vec)
+    rates_invalid = k
+
+    # Tests that inputs are handled correctly.
+    @test Catalyst.iscomplexbalanced(rn, rates_vec) == Catalyst.iscomplexbalanced(rn, rates_tup)
+    @test Catalyst.iscomplexbalanced(rn, rates_tup) == Catalyst.iscomplexbalanced(rn, rates_dict)
+    @test_throws Exception Catalyst.iscomplexbalanced(rn, k)
+end
+
+# Tests rate matrix computation for various input types.
+let
+    # Declares network and its known rate matrix.
+    rn = @reaction_network begin
+        (k2, k1), A1 <--> A2 + A3
+        k3, A2 + A3 --> A4
+        k4, A4 --> A5
+        (k6, k5), A5 <--> 2A6
+        k7, 2A6 --> A4
+        k8, A4 + A5 --> A7
+    end
+    rate_mat = [
+        0.0  1.0  0.0  0.0  0.0  0.0  0.0;
+        2.0  0.0  3.0  0.0  0.0  0.0  0.0;
+        0.0  0.0  0.0  4.0  0.0  0.0  0.0;
+        0.0  0.0  0.0  0.0  5.0  0.0  0.0;
+        0.0  0.0  7.0  6.0  0.0  0.0  0.0;
+        0.0  0.0  0.0  0.0  0.0  0.0  8.0;
+        0.0  0.0  0.0  0.0  0.0  0.0  0.0;
+    ]
+
+    # Declares rate alternatives.
+    rate_vals = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+    rates_vec = Pair.(parameters(rn), rate_vals)
+    rates_tup = Tuple(rates_vec)
+    rates_dict = Dict(rates_vec)
+    rates_invalid = reshape(rate_vals, 1, 8)
+
+    # Tests that all input types generates the correct rate matrix.
+    Catalyst.ratematrix(rn, rate_vals) == rate_mat
+    Catalyst.ratematrix(rn, rates_vec) == rate_mat
+    Catalyst.ratematrix(rn, rates_tup) == rate_mat
+    Catalyst.ratematrix(rn, rates_dict) == rate_mat
+    @test_throws Exception Catalyst.iscomplexbalanced(rn, rates_invalid)
+end
+
+### CONCENTRATION ROBUSTNESS TESTS
+
+# Check whether concentration-robust species are correctly identified for two well-known reaction networks: the glyoxylate IDHKP-IDH system, and the EnvZ_OmpR signaling pathway. 
+
+let
+    IDHKP_IDH = @reaction_network begin
+        (k1, k2), EIp + I <--> EIpI
+        k3, EIpI --> EIp + Ip
+        (k4, k5), E + Ip <--> EIp
+        k6, EIp --> E + I
+    end
+
+    @test Catalyst.robustspecies(IDHKP_IDH) == [2]
+end
+
+let
+    EnvZ_OmpR = @reaction_network begin
+        (k1, k2), X <--> XT
+        k3, XT --> Xp
+        (k4, k5), Xp + Y <--> XpY
+        k6, XpY --> X + Yp
+        (k7, k8), XT + Yp <--> XTYp
+        k9, XTYp --> XT + Y
+    end
+
+    @test Catalyst.robustspecies(EnvZ_OmpR) == [6]
+end
+
+### DEFICIENCY ONE TESTS
+
+# Fails because there are two terminal linkage classes in the linkage class
+let 
+    rn = @reaction_network begin
+        k1, A + B --> 2B
+        k2, A + B --> 2A
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == false
+end
+
+# Fails because linkage deficiencies do not sum to total deficiency
+let 
+    rn = @reaction_network begin
+        (k1, k2), A <--> 2A
+        (k3, k4), A + B <--> C
+        (k5, k6), C <--> B 
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == false
+end
+
+# Fails because a linkage class has deficiency two
+let 
+    rn = @reaction_network begin
+        k1, 3A --> A + 2B
+        k2, A + 2B --> 3B
+        k3, 3B --> 2A + B
+        k4, 2A + B --> 3A
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == false
+end
+
+let
+    rn = @reaction_network begin
+        (k1, k2), 2A <--> D
+        (k3, k4), D <--> A + B
+        (k5, k6), A + B <--> C
+        (k7, k8), C <--> 2B
+        (k9, k10), C + D <--> E + F
+        (k11, k12), E + F <--> H
+        (k13, k14), H <--> C + E
+        (k15, k16), C + E <--> D + F
+        (k17, k18), A + D <--> G
+        (k19, k20), G <--> B + H
+    end
+
+    @test Catalyst.satisfiesdeficiencyone(rn) == true
+end
+
+### Some tests for deficiency zero networks. 
+
+let
+    rn = @reaction_network begin
+        (k1, k2), A <--> 2B
+        (k3, k4), A + C <--> D
+        k5, D --> B + E
+        k6, B + E --> A + C
+    end
+
+    # No longer weakly reversible
+    rn2 = @reaction_network begin
+        (k1, k2), A <--> 2B
+        (k3, k4), A + C <--> D
+        k5, B + E --> D
+        k6, B + E --> A + C
+    end
+
+    # No longer weakly reversible
+    rn3 = @reaction_network begin
+        k1, A --> 2B
+        (k3, k4), A + C <--> D
+        k5, D --> B + E 
+        k6, B + E --> A + C
+    end
+
+    # Weakly reversible but deficiency one
+    rn4 = @reaction_network begin
+        (k1, k2), A <--> 2A
+        (k3, k4), A + B <--> C
+        (k5, k6), C <--> B
+    end
+
+    @test Catalyst.satisfiesdeficiencyzero(rn) == true
+    @test Catalyst.satisfiesdeficiencyzero(rn2) == false 
+    @test Catalyst.satisfiesdeficiencyzero(rn3) == false 
+    @test Catalyst.satisfiesdeficiencyzero(rn4) == false
+end
+

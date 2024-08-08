@@ -20,7 +20,7 @@ D = default_time_deriv()
 # Checks for a simple reaction network (containing variables, equations, and observables).
 # Checks that declaration via DSL works.
 # Checks annotated and non-annotated files against manually written ones.
-let 
+let
     # Creates and serialises the model.
     rn = @reaction_network rn begin
         @observables X2 ~ 2X
@@ -36,7 +36,7 @@ let
     file_string_annotated_real = """let
 
     # Independent variable:
-    @variables t
+    @parameters t
 
     # Parameters:
     ps = @parameters d
@@ -64,7 +64,7 @@ let
     end"""
     file_string_real = """let
 
-    @variables t
+    @parameters t
     ps = @parameters d
     sps = @species X(t)
     vars = @variables V(t)
@@ -90,7 +90,7 @@ end
 # and metadata recorded correctly (these are not considered for system equality is tested).
 # Checks that various types (processed by the `x_2_string` function) are serialised properly.
 # Checks that `ReactionSystem` and `Reaction` metadata fields are recorded properly.
-let 
+let
     # Prepares various stuff to add as metadata.
     bool_md = false
     int_md = 3
@@ -103,7 +103,7 @@ let
     @parameters s r
     symb_md = s
     expr_md = 2s + r^3
-    pair_md = rat_md => symb_md 
+    pair_md = rat_md => symb_md
     tup_md = (float_md, str_md, expr_md)
     vec_md = [float_md, sym_md, tup_md]
     dict_md = Dict([c_md => str_md, symb_md => vec_md])
@@ -211,9 +211,9 @@ end
 # Checks systems where parameters/species/variables have complicated interdependency are correctly
 # serialised.
 # Checks for system with non-default independent variable.
-let 
+let
     # Prepares parameters/variables/species with complicated dependencies.
-    @variables τ
+    @parameters τ
     @parameters begin
         b = 3.0
         c
@@ -255,7 +255,7 @@ end
 
 
 # Tests for multi-layered hierarchical system. Tests with spatial independent variables,
-# variables, (differential and algebraic) equations, observables (continuous and discrete) events, 
+# variables, (differential and algebraic) equations, observables (continuous and discrete) events,
 # and with various species/variables/parameter/reaction/system metadata.
 # Tests for complete and incomplete system.
 let
@@ -269,7 +269,7 @@ let
         t_2::Float64
         t_3, [description="A parameter."]
         t_4::Float32 = p, [description="A parameter."]
-    end 
+    end
     @species X(t) X2_1(t) X2_2(t) X2_3(t) X2_4(t)=p [description="A species."]
     @variables A(t)=p [description="A variable."] B_1(t) B_2(t) B_3(t) B_4(t)
 
@@ -335,16 +335,16 @@ let
 
     # Creates the systems.
     @named rs_4 = ReactionSystem(eqs_4, t; continuous_events = continuous_events_4,
-                                discrete_events = discrete_events_4, spatial_ivs = sivs, 
+                                discrete_events = discrete_events_4, spatial_ivs = sivs,
                                 metadata = "System 4", systems = [])
     @named rs_2 = ReactionSystem(eqs_2, t; continuous_events = continuous_events_2,
-                                discrete_events = discrete_events_2, spatial_ivs = sivs, 
+                                discrete_events = discrete_events_2, spatial_ivs = sivs,
                                 metadata = "System 2", systems = [])
     @named rs_3 = ReactionSystem(eqs_3, t; continuous_events = continuous_events_3,
-                                discrete_events = discrete_events_3, spatial_ivs = sivs, 
+                                discrete_events = discrete_events_3, spatial_ivs = sivs,
                                 metadata = "System 3", systems = [rs_4])
     @named rs_1 = ReactionSystem(eqs_1, t; continuous_events = continuous_events_1,
-                                discrete_events = discrete_events_1, spatial_ivs = sivs, 
+                                discrete_events = discrete_events_1, spatial_ivs = sivs,
                                 metadata = "System 1", systems = [rs_2, rs_3])
     rs = complete(rs_1)
 
@@ -361,7 +361,7 @@ end
 # Tests for cases where the number of input is untested (i.e. multiple observables and continuous
 # events, but single equations and discrete events).
 # Tests with and without `safety_check`.
-let 
+let
     # Declares the model.
     rs = @reaction_network begin
         @equations D(V) ~ 1 - V
@@ -444,7 +444,7 @@ end
 
 # Checks that completeness is recorded correctly.
 # Checks without turning off the `safety_check` option.
-let 
+let
     # Checks for complete system.
     rs_complete = @reaction_network begin
         (p,d), 0 <--> X
@@ -470,7 +470,7 @@ let
     rs = @reaction_network begin
         @equations D(V) ~ -V
     end
-    
+
     # Checks its serialisation.
     save_reactionsystem("test_serialisation.jl", rs; safety_check = false)
     isequal(rs, include("../test_serialisation.jl"))
@@ -492,7 +492,7 @@ let
         d*X2, X => 0
         (k1,k2), 2X <--> X2
     end
-    
+
     # Checks its serialisation.
     save_reactionsystem("test_serialisation.jl", rs; safety_check = false)
     isequal(rs, include("../test_serialisation.jl"))
@@ -524,5 +524,3 @@ let
     @test (@test_logs (:warn, ) match_mode=:any Catalyst.get_connection_type_string(rs)) == ""
     @test Catalyst.get_connection_type_annotation(rs) == "Connection types:: (OBS: Currently not supported, and hence empty)"
 end
-
-

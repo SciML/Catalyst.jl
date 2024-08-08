@@ -246,6 +246,23 @@ raw"\begin{align*}
 ", "\r\n"=>"\n")
 end
 
+# Test with reaction system containing a differential equation.
+let
+    # Declare model.
+    rn = @reaction_network begin
+        @equations D(V) ~ X - V
+        (p/V,d/V), 0 <--> X
+    end
+
+# Latexify.@generate_test latexify(rn)
+    @test latexify(rn) == replace(
+raw"\begin{align*}
+\varnothing &\xrightleftharpoons[\frac{d}{V\left( t \right)}]{\frac{p}{V\left( t \right)}} \mathrm{X} \\
+\frac{\mathrm{d} V\left( t \right)}{\mathrm{d}t} &= X\left( t \right) - V\left( t \right)  
+ \end{align*}
+", "\r\n"=>"\n")
+end
+
 # Checks when combined with equations (nonlinear system).
 # Technically tests would work, however, the display is non-ideal (https://github.com/SciML/Catalyst.jl/issues/927).
 let
