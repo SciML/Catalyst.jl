@@ -126,22 +126,27 @@ let
     push!(sps, :X4)
 
     # Loops through all cases, checks that identical simulations are generated with/without Catalyst.
-    for (rn_catalyst, rn_manual, u0_sym, ps_sym, u0_1, ps_1, sp) in 
+    for (rn_catalyst, rn_manual, u0_sym, ps_sym, u0_1, ps_1, sp) in
             zip(catalyst_networks, manual_networks, u0_syms, ps_syms, u0s, ps, sps)
 
         # Simulates the Catalyst-created model.
         dprob_1 = DiscreteProblem(rn_catalyst, u0_1, (0.0, 10000.0), ps_1)
         jprob_1 = JumpProblem(rn_catalyst, dprob_1, Direct(); rng)
         sol1 = solve(jprob_1, SSAStepper(); seed, saveat = 1.0)
-        
+
+        # simulate using auto-alg
+        jprob_1b = JumpProblem(rn_catalyst, dprob_1; rng)
+        sol1b = solve(jprob_1; seed, saveat = 1.0)
+        @test mean(sol1[sp]) ≈ mean(sol1b[sp]) rtol = 1e-1
+
         # Simulates the manually written model
         u0_2 = map_to_vec(u0_1, u0_sym)
         ps_2 = map_to_vec(ps_1, ps_sym)
         dprob_2 = DiscreteProblem(u0_2, (0.0, 10000.0), ps_2)
         jprob_2 = JumpProblem(dprob_2, Direct(), rn_manual...; rng)
         sol2 = solve(jprob_2, SSAStepper(); seed, saveat = 1.0)
-        
-        # Checks that the means are similar (the test have been check that it holds across a large 
+
+        # Checks that the means are similar (the test have been check that it holds across a large
         # number of simulates, even without seed).
         @test mean(sol1[sp]) ≈ mean(sol2[findfirst(u0_sym .== sp),:]) rtol = 1e-1
     end
@@ -162,8 +167,8 @@ end
 
 # Tests simulating a network without parameters.
 let
-    no_param_network = @reaction_network begin 
-        (1.2, 5), X1 ↔ X2 
+    no_param_network = @reaction_network begin
+        (1.2, 5), X1 ↔ X2
     end
     u0 = rnd_u0_Int64(no_param_network, rng)
     dprob = DiscreteProblem(no_param_network, u0, (0.0, 1000.0))
