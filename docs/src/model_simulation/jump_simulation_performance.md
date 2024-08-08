@@ -1,17 +1,64 @@
 # [Advice for performant jump simulations](@id jump_simulation_performance)
-We have previously introduced how to use *stochastic chemical kinetics* to perform jump simulations of *chemical reaction network* (CRN) models (using e.g. Gillespie's algorithm). These simulations can, however, be very computationally intensive. Fortunately, there are several ways to increase their performance (thus reducing run time). This tutorial describes various considerations for performant stochastic chemical kinetics simulations (which we will here refer to as jump simulations). All jump simulations arising from stochastic chemical kinetics representations of Catalyst models are performed using stochastic simulation algorithms (SSAs) from JumpProcesses.jl. Please see the [JumpProcesses documentation](https://github.com/SciML/JumpProcesses.jl) for a more extensive introduction to the package and its available solvers.
+We have previously introduced how Catalyst *chemical reaction network* (CRN)
+models can be converted to *stochastic chemical kinetics* jump process models,
+which can then be (exactly) simulated (i.e. sampled) using Stochastic Simulation
+Algorithms (SSAs) such as Gillespie's Direct method. These simulations can,
+however, be very computationally intensive. Fortunately, there are several ways
+to increase their performance (thus reducing run time). This tutorial describes
+various considerations for performant stochastic chemical kinetics simulations
+(which we will here refer to as jump simulations). All jump simulations arising
+from stochastic chemical kinetics representations of Catalyst models are
+performed using SSAs from JumpProcesses.jl. Please see the [JumpProcesses
+documentation](https://github.com/SciML/JumpProcesses.jl) for a more extensive
+introduction to the package and its available solvers.
 
 ### [Brief (and optional) introduction to jump simulations](@id jump_simulation_performance_intro)
-Jump processes are continuous-time, discrete-space, stochastic processes. Exact realizations of these processes can be generated using SSAs (of which Gillespie's Direct method is the most well-known choice). In the chemical reaction modelling contexts, the discrete-state variables typically correspond to the integer-valued number of each chemical species at each time. A system's state changes at discrete time points (the jump times) when the amount of one (or more) species are changed by integer amount(s) (for example, the creation of a new protein due to translation, or the removal of one protein due to degradation). For CRNs, these jumps correspond to the occurrence of individual reactions. Typically, the frequency of each reaction depends on its *propensity* (which in turn depends on its *rate* and *substrates*). The propensity of a reaction (which is computed through as its *rate law*) represents the probability per time unit that it occurs (also known as the associated jump process' intensity function). For example, the reaction `k, A + B --> C + D` has a rate $k$ and a propensity $k*A*B$. See [Reaction rate laws used in simulations](@ref introduction_to_catalyst_ratelaws) for more details of what propensity function Catalyst generates for a given stochastic chemical kinetics reaction.
+Jump processes are continuous-time, discrete-space, stochastic processes. Exact
+realizations of these processes can be generated using SSAs (of which
+Gillespie's Direct method is the most well-known choice). In the chemical
+reaction modelling context, the discrete-state variables typically correspond to
+the integer-valued number of each chemical species at each time. A system's
+state changes at discrete time points (the jump times) when the amount of one
+(or more) species are changed by integer amount(s) (for example, the creation of
+a new protein due to translation, or the removal of one protein due to
+degradation).
 
-During a simulation, after the occurrence of a reaction, the simulation algorithm computes both the time to the next reaction and which reaction will occur at this time point. Both these (reaction time and type) are computed by making random draws from probability distributions that depends on the system's reactions' propensities. As the latter depend on the state of the system, they must be recomputed whenever the system's state changes (typically due to the occurrence of a reaction). Hence, jump simulations' run times are heavily dependent on how frequently these propensities must be recomputed, and how many must be recomputed when a reaction occurs.
+For CRNs, these jumps correspond to the occurrence of individual reactions.
+Typically, the frequency of each reaction depends on its *propensity* function
+(which in turn depends on its *rate constant* and *substrate* amounts). The
+propensity of a reaction is analogous to the reaction's *rate law* in the ODE
+context, and represents the probability per unit time the reaction can occur
+given the current state of the system. In probability and statistics
+propensities are also often called intensity functions or transition rate
+functions. For example, the reaction $A + B \overset{k}{\to} C + D$ has a rate
+$k$ and a propensity $k A B$. See [Reaction rate laws used in simulations](@ref
+introduction_to_catalyst_ratelaws) for more details of what propensity function
+Catalyst generates for a given stochastic chemical kinetics reaction, and
+[Mathematical Models Catalyst can Generate](@ref math_models_in_catalyst) for
+details on the mathematical jump process models Catalyst can generate from a
+CRN.
 
-Typically, propensities are recomputed only at jump events. This means that jump simulations' run times generally scale with the number of jumps that occur. Run times typically become prohibitively expensive for:
+During a typical simulation of a jump process model, after the occurrence of a
+reaction, the simulation algorithm computes both the time to the next reaction
+and which reaction will occur at this time point. Both these (reaction time and
+type) are computed by making random draws from probability distributions that
+depend on the system's reactions' propensities. As the latter depend on the
+state of the system, they must be recomputed whenever the system's state changes
+(typically due to the occurrence of a reaction). Hence, jump simulations' run
+times are heavily dependent on how frequently these propensities must be
+recomputed, and how many must be recomputed when a reaction occurs.
+
+A variety of factors can impact the run time of different SSAs. Such simulations
+can become increasingly expensive for:
 - Simulations of large models (i.e. with many different species, where some species occur in large copy numbers, or where many reactions are present in a system).
-- Simulations over long time spans.
-- Simulations that are performed a large number of times.
+- Simulations over long time spans or with large numbers of reactions occurring
+  over the desired time span.
+- Simulations that are performed a large number of times for statistical sampling.
+- Simulations that are saving large amounts of data (such as saving the values
+  of all species each time a reaction occurs).
 
-A more thorough overview of simulation methods for Stochastic Chemical Kinetics jump process models and their computational efficiency is given in [^1].
+A more thorough overview of simulation methods for Stochastic Chemical Kinetics
+jump process models and their computational efficiency is given in [^1].
 
 ## [Managing of solution saving](@id jump_simulation_performance_solution_saving)
 By default, `solve` saves the value of the solution at the time of every jump. For simulations with a large number of jump events, this can cause memory to quickly fill up. Typically, for simulations with a large number of jumps, we want to [disable this feature](https://docs.sciml.ai/JumpProcesses/dev/tutorials/discrete_stochastic_example/#save_positions_docs) and instead set the save frequency manually. Let us consider a simple [birth-death model](@ref basic_CRN_library_bd):
@@ -38,7 +85,7 @@ sol = solve(jprob, SSAStepper(); seed = 1234) # hide
 ```
 This simulation generates a very large number of jumps, with the solution saved and plotted at each time such a jump occurs. If the number of jumps is high enough, the memory limits may be exceeded (causing Julia to crash). Here, we do not reach this limit, however, the run time of the `plot(sol)` is affected by the number of points it must render (rendering too much in a single plot is another potential cause of crashed due to memory strain).
 
-Next, we provide the `save_positions = (false, false)` option to `JumpProblem`. This turns off the saving of the solution both before and after each jump. 
+Next, we provide the `save_positions = (false, false)` option to `JumpProblem`. This turns off the saving of the solution both before and after each jump.
 ```@example jump_simulation_performance_1
 jprob = JumpProblem(bd_model, dprob, Direct(); save_positions = (false, false))
 nothing # hide
@@ -60,8 +107,8 @@ Here, we note that the time to plot the simulation was reduced (for this example
 
 ## [Types of jumps](@id jump_simulation_performance_jump_types)
 Each reaction in a chemical reaction network model corresponds to a possible jump of the jump simulation. These jumps can be divided into 3 categories:
-- `MassActionJump`s: These correspond to reactions which rates remain constant throughout the simulation.They are typically generated by reactions' which rates contain time-independent parameters only. 
-- `ConstantRateJump`s: These correspond to reactions which rates remain constant between individual jumps, but may change in response to a jump occurring. They are typically generated by reactions' which rates contain species and time-independent parameters only. 
+- `MassActionJump`s: These correspond to reactions which rates remain constant throughout the simulation.They are typically generated by reactions' which rates contain time-independent parameters only.
+- `ConstantRateJump`s: These correspond to reactions which rates remain constant between individual jumps, but may change in response to a jump occurring. They are typically generated by reactions' which rates contain species and time-independent parameters only.
 - `VariableRateJump`s: These correspond to reactions which rates may change at any time during the simulation. They are typically generated by reactions' which rates contain the time variable ($t$).
 
 Here are some example reactions for the different types of jumps:
@@ -85,7 +132,7 @@ Updating `MassActionJump`s' propensities is more computationally efficient (due 
 ### [Unnecessarily putting species in rates rather than in reactions](@id jump_simulation_performance_jump_types_unnecessary_constantratejumps)
 Sometimes, a rate has been made dependent on a species, where that species instead could have been made part of the actual reaction. Consider a reaction where an enzyme ($E$) catalyses the phosphorylation of a protein ($X$) to phosphorylated form ($Xᵖ$). It can be written in two different forms:
 ```@example jump_simulation_performance_1
-r1 = @reaction k*E, X --> Xᵖ 
+r1 = @reaction k*E, X --> Xᵖ
 r2 = @reaction k, X + E --> Xᵖ + E
 nothing # hide
 ```
@@ -116,7 +163,7 @@ dprob = DiscreteProblem(bd_model, u0, tspan, ps)
 jprob = JumpProblem(bd_model, dprob, Direct())
 nothing # hide
 ```
-Here (as throughout most of Catalyst's documentation) we have used the `Direct()` SSA solver (which corresponds to Gillespie's original direct method [^2][^3]). This method was originally published in 1976, and since then, many additional methods for simulating stochastic chemical kinetics models have been developed. 
+Here (as throughout most of Catalyst's documentation) we have used the `Direct()` SSA solver (which corresponds to Gillespie's original direct method [^2][^3]). This method was originally published in 1976, and since then, many additional methods for simulating stochastic chemical kinetics models have been developed.
 
 Gillespie's direct method will, after a jump has been performed, recompute the propensities of *all* possible jumps in the system (i.e. of all reactions). This is typically not required. E.g. consider the following system:
 ```@example jump_simulation_performance_2
