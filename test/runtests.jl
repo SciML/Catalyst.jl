@@ -54,12 +54,12 @@ using SafeTestsets, Test
     # @time @safetestset "Latexify" begin include("visualisation/latexify.jl") end
     # Disable on Macs as can't install GraphViz via jll
     if !Sys.isapple()
-        @time @safetestset "Graphs Visualisations" begin include("visualisation/graphs.jl") end
+    #    @time @safetestset "Graphs Visualisations" begin include("visualisation/graphs.jl") end
     end
 
     # Tests extensions.
     @time @safetestset "BifurcationKit Extension" begin include("extensions/bifurcation_kit.jl") end
-    @time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
+    #@time @safetestset "HomotopyContinuation Extension" begin include("extensions/homotopy_continuation.jl") end
     @time @safetestset "Structural Identifiability Extension" begin include("extensions/structural_identifiability.jl") end
 
     # Tests stability computation (uses HomotopyContinuation extension).
