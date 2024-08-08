@@ -2,9 +2,35 @@
 
 ## Catalyst unreleased (master branch)
 
+## Catalyst 14.2
+- Support for auto-algorithm selection in `JumpProblem`s. For systems with only
+  propensities that do not have an explicit time-dependence (i.e. that are not
+  `VariableRateJump`s in JumpProcesses), one can now run model simulations via
+  ```julia
+  using Catalyst, JumpProcesses
+  model = @reaction_network begin
+    kB, S + E --> SE
+    kD, SE --> S + E
+    kP, SE --> P + E
+  end
+  u0 = [:S => 50, :E => 10, :SE => 0, :P => 0]
+  tspan = (0., 200.)
+  ps = [:kB => 0.01, :kD => 0.1, :kP => 0.1]
+  dprob = DiscreteProblem(model, u0, tspan, ps)
+  jprob = JumpProblem(model, dprob)
+  sol = solve(jprob)
+  ```
+  For small systems this will just use Gillespie's `Direct` method, transitioning to using `RSSA` and `RSSACR` as system size increase. Once can still manually select a given SSA, but no longer needs to specify `SSAStepper` when calling `solve`, i.e.
+  ```julia
+  # use the SortingDirect method instead
+  jprob = JumpProblem(model, dprob, SortingDirect())
+  sol = solve(jprob)
+  ```
+- Latexify recipe improvements including display fixes for array symbolics.
+- Deficiency one and concentration robustness checks.
 
 ## Catalyst 14.1.1
-The expansion of `ReactionSystem` models to spatial lattices has been enabled. Here follows a 
+The expansion of `ReactionSystem` models to spatial lattices has been enabled. Here follows a
 simple example where a Brusselator model is expanded to a 20x20 grid of compartments, with diffusion
 for species X, and then simulated using ODEs. Finally, an animation of the simulation is created.
 ```julia
@@ -35,8 +61,8 @@ The addition of spatial modelling in Catalyst contains a large number of new fea
 described in the [corresponding documentation](https://docs.sciml.ai/Catalyst/stable/spatial_modelling/lattice_reaction_systems/).
 
 ## Catalyst 14.0.1
-Bug fix to address that independent variables, like time, should now be `@parameters` 
-according to MTKv9. Converted internal time variables to consistently use `default_t()` 
+Bug fix to address that independent variables, like time, should now be `@parameters`
+according to MTKv9. Converted internal time variables to consistently use `default_t()`
 to hopefully avoid such issues going forward.
 
 ## Catalyst 14.0

@@ -209,7 +209,7 @@ dprob = DiscreteProblem(rn, u₀map, tspan, pmap)
 jprob = JumpProblem(rn, dprob, Direct())
 
 # now, let's solve and plot the jump process:
-sol = solve(jprob, SSAStepper())
+sol = solve(jprob)
 plot(sol)
 Catalyst.PNG(plot(sol; fmt = :png, dpi = 200)) # hide
 ```
