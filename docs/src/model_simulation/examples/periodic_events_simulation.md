@@ -23,7 +23,7 @@ plot(sol)
 ```
 
 ## [Modelling a circadian periodic event in a jump simulation](@id periodic_event_simulation_example_ode)
-While defining periodic events is easy for ODE and SDE simulations, due to how events are internally implemented, these cannot currently be used for jump simulations. Instead, there is a workaround which includes firs creating a [conditional discrete event](@ref constraint_equations_events) which is designed to trigger every 13 time units:
+While defining periodic events is easy for ODE and SDE simulations, due to how events are internally implemented, these cannot currently be used for jump simulations. Instead, there is a workaround which includes first creating a [conditional discrete event](@ref constraint_equations_events) which is designed to trigger every 13 time units:
 ```@example periodic_event_example
 circadian_model = @reaction_network begin
     @discrete_events begin
@@ -35,20 +35,20 @@ end
 using JumpProcesses
 u0 = [:X => 150, :Xᴾ => 50]
 ps = [:kₚ => 0.1, :kᵢ => 0.1, :l => 1.0]
-dprob = DiscreteProblem(circadian_model, u0, (0.0, 100.0), ps)
-jprob = JumpProblem(circadian_model, dprob, Direct())
+jinput = JumpInputs(circadian_model, u0, (0.0, 100.0), ps)
+jprob = JumpProblem(jinput)
 nothing # hide
 ```
 Next, if we simulate our model, we note that the events do not seem to be triggered
 ```@example periodic_event_example
-sol = solve(jprob, SSAStepper())
+sol = solve(jprob)
 plot(sol)
 plot(sol, density = 10000, fmt = :png) # hide
 ```
 The reason is that discrete callbacks' conditions are only checked at the end of each simulation time step, and the probability that these will coincide with the callback's trigger times ($t = 12, 24, 36, ...$) is infinitely small. Hence, we must directly instruct our simulation to stop at these time points. We can do this using the `tstops` argument:
 ```@example periodic_event_example
 tstops = 12.0:12.0:dprob.tspan[2]
-sol = solve(jprob, SSAStepper(); tstops)
+sol = solve(jprob; tstops)
 plot(sol)
 plot(sol, density = 10000, fmt = :png) # hide
 ```

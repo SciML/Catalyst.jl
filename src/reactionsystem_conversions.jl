@@ -769,6 +769,81 @@ function DiffEqBase.SDEProblem(rs::ReactionSystem, u0, tspan,
         noise_rate_prototype = p_matrix, kwargs...)
 end
 
+"""
+$(TYPEDEF)
+
+Inputs for a JumpProblem from a given `ReactionSystem`.
+
+# Fields
+$(FIELDS)
+"""
+struct JumpInputs{S <: MT.JumpSystem, T <: SciMLBase.AbstractODEProblem}
+    """The `JumpSystem` to define the problem over"""
+    sys::S
+    """The problem the JumpProblem should be defined over, for example DiscreteProblem"""
+    prob::T
+end
+
+
+"""
+    jumpinput = JumpInputs(rs::ReactionSystem, u0map, tspan,
+                    pmap = DiffEqBase.NullParameters;
+                    name = nameof(rs),
+                    combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+                    checks = false, kwargs...)
+
+    Constructs the input to build a JumpProblem for the given reaction system.
+
+Example:
+```julia
+using Catalyst, OrdinaryDiffEq, JumpProcesses, Plots
+rn = @reaction_network begin
+    k*(1 + sin(t)), 0 --> A
+end
+jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+@assert jinput.prob isa ODEProblem
+jprob = JumpProblem(jinput)
+sol = solve(jprob, Tsit5())
+plot(sol, idxs = :A)
+
+rn = @reaction_network begin
+    k, 0 --> A
+end
+jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+@assert jinput.prob isa DiscreteProblem
+jprob = JumpProblem(jinput)
+sol = solve(jprob)
+plot(sol, idxs = :A)
+```
+"""
+function JumpInputs(rs::ReactionSystem, u0, tspan, p = DiffEqBase.NullParameters();
+        name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
+        checks = false, kwargs...)
+
+    u0map = symmap_to_varmap(rs, u0)
+    pmap = symmap_to_varmap(rs, p)
+    jsys = complete(convert(JumpSystem, rs; name, combinatoric_ratelaws, checks))
+    if MT.has_variableratejumps(jsys)
+        prob = ODEProblem(jsys, u0map, tspan, pmap; kwargs...)
+    else
+        prob = DiscreteProblem(jsys, u0map, tspan, pmap; kwargs...)
+    end
+    JumpInputs(jsys, prob)
+end
+
+function Base.summary(io::IO, jinputs::JumpInputs)
+    type_color, no_color = SciMLBase.get_colorizers(io)
+    print(io,
+        type_color, nameof(typeof(jinputs)),
+        no_color, " storing" , "\n",
+        no_color, "  JumpSystem: ", type_color, nameof(jinputs.sys), "\n",
+        no_color, "  Problem type: ", type_color, nameof(typeof(jinputs.prob)))
+end
+
+function Base.show(io::IO, mime::MIME"text/plain", jinputs::JumpInputs)
+    summary(io, jinputs)
+end
+
 # DiscreteProblem from AbstractReactionNetwork
 function DiffEqBase.DiscreteProblem(rs::ReactionSystem, u0, tspan::Tuple,
         p = DiffEqBase.NullParameters(), args...;
@@ -791,6 +866,14 @@ function JumpProcesses.JumpProblem(rs::ReactionSystem, prob,
     jsys = complete(jsys)
     return JumpProblem(jsys, prob, aggregator; kwargs...)
 end
+
+# JumpProblem for JumpInputs
+function JumpProcesses.JumpProblem(jinputs::JumpInputs,
+        agg::JumpProcesses.AbstractAggregatorAlgorithm = JumpProcesses.NullAggregator();
+        kwargs...)
+    JumpProblem(jinputs.sys, jinputs.prob, agg; kwargs...)
+end
+
 
 # SteadyStateProblem from AbstractReactionNetwork
 function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,

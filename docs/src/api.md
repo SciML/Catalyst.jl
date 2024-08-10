@@ -69,8 +69,8 @@ jumpsys = complete(jumpsys)
 u₀map    = [S => 999, I => 1, R => 0]
 dprob = DiscreteProblem(jumpsys, u₀map, tspan, parammap)
 jprob = JumpProblem(jumpsys, dprob, Direct())
-sol = solve(jprob, SSAStepper())
-sol = solve(jprob, SSAStepper(), seed = 1234) # hide
+sol = solve(jprob)
+sol = solve(jprob; seed = 1234) # hide
 p3 = plot(sol, title = "jump")
 plot(p1, p2, p3; layout = (3,1))
 Catalyst.PNG(plot(p1, p2, p3; layout = (3,1), fmt = :png, dpi = 200)) # hide
@@ -318,6 +318,7 @@ hillar
 ## Transformations
 ```@docs
 Base.convert
+JumpInputs
 ModelingToolkit.structural_simplify
 set_default_noise_scaling
 ```

@@ -268,7 +268,7 @@ end
 # Checks that it works for programmatic/dsl-based modelling.
 # Checks that all forms of model input (parameter/initial condition and vector/non-vector) are
 # handled properly.
-let 
+let
     # Declares programmatic model.
     @parameters p[1:2] k d1 d2
     @species (X(t))[1:2] Y1(t) Y2(t)
@@ -284,7 +284,7 @@ let
 
     # Declares DSL-based model.
     rs_dsl = @reaction_network rs begin
-        @parameters p[1:2] k d1 d2 
+        @parameters p[1:2] k d1 d2
         @species (X(t))[1:2] Y1(t) Y2(t)
         (p[1],p[2]), 0 --> (X[1],X[2])
         k, (X[1],X[2]) --> (Y1,Y2)
@@ -632,15 +632,15 @@ end
 let
     # Stores a parameter, a species, and a variable (with identical names) in different variables.
     x_p = let
-        only(@parameters x) 
+        only(@parameters x)
     end
     x_sp = let
-        only(@species x(t)) 
+        only(@species x(t))
     end
     x_v = let
-        only(@variables x(t)) 
+        only(@variables x(t))
     end
-    
+
     # Checks that creating systems with different in combination produces errors.
     # Currently broken on MTK, potentially fix in Catalyst once sorted out there (https://github.com/SciML/ModelingToolkit.jl/issues/2883).
     @parameters d
@@ -991,7 +991,7 @@ let
     Catalyst.reset!(nps)
     δ = deficiency(rn)
     @test size(nps.incidencemat) == (3,3)
-    
+
     Catalyst.reset!(nps)
     δ_l = linkagedeficiencies(rn)
     @test size(nps.incidencemat) == (3,3)
@@ -1003,4 +1003,25 @@ let
     Catalyst.reset!(nps)
     weakrev = isweaklyreversible(rn, sns)
     @test size(nps.incidencemat) == (3,3)
+end
+
+# test JumpInputs function auto problem selection
+let
+    rn = @reaction_network begin
+        k*(1 + sin(t)), 0 --> A
+    end
+    jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+    @test jinput.prob isa ODEProblem
+    jprob = JumpProblem(jinput; rng)
+    sol = solve(jprob, Tsit5())
+    @test sol(10.0; idxs = :A) > 0
+
+    rn = @reaction_network begin
+        k, 0 --> A
+    end
+    jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+    @test jinput.prob isa DiscreteProblem
+    jprob = JumpProblem(jinput; rng)
+    sol = solve(jprob)
+    @test sol(10.0; idxs = :A) > 0
 end
