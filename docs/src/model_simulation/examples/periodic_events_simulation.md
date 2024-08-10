@@ -35,7 +35,8 @@ end
 using JumpProcesses
 u0 = [:X => 150, :Xᴾ => 50]
 ps = [:kₚ => 0.1, :kᵢ => 0.1, :l => 1.0]
-jinput = JumpInputs(circadian_model, u0, (0.0, 100.0), ps)
+tspan = (0.0, 100.0)
+jinput = JumpInputs(circadian_model, u0, tspan, ps)
 jprob = JumpProblem(jinput)
 nothing # hide
 ```
@@ -43,14 +44,14 @@ Next, if we simulate our model, we note that the events do not seem to be trigge
 ```@example periodic_event_example
 sol = solve(jprob)
 plot(sol)
-plot(sol, density = 10000, fmt = :png) # hide
+Catalyst.PNG(plot(sol; fmt = :png, dpi = 200)) # hide
 ```
 The reason is that discrete callbacks' conditions are only checked at the end of each simulation time step, and the probability that these will coincide with the callback's trigger times ($t = 12, 24, 36, ...$) is infinitely small. Hence, we must directly instruct our simulation to stop at these time points. We can do this using the `tstops` argument:
 ```@example periodic_event_example
-tstops = 12.0:12.0:dprob.tspan[2]
+tstops = 12.0:12.0:tspan[2]
 sol = solve(jprob; tstops)
 plot(sol)
-plot(sol, density = 10000, fmt = :png) # hide
+Catalyst.PNG(plot(sol; fmt = :png, dpi = 200)) # hide
 ```
 
 ## [Plotting the light level](@id periodic_event_simulation_plotting_light)

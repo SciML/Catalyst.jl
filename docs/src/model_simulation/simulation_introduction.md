@@ -348,6 +348,7 @@ end
 ```
 This type of model will generate so called *variable rate jumps* (`VariableRateJump`s in JumpProcesses.jl). Such models can be simulated in Catalyst too, but note that now a method for time-stepping the solver must be provided to `solve`. Here ODE solvers should be given as they are used to handle integrating the explicitly time-dependent propensities for problems with variable rates, i.e. the proceeding example can be solved like
 ```@example simulation_intro_jumps
+using OrdinaryDiffEq
 u0map = [:P => 0]
 pmap = [:f => 1.0, :A => 2.0, :ϕ => 0.0, :d => 1.0]
 tspan = (0.0, 24.0)
