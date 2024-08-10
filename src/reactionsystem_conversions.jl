@@ -784,7 +784,6 @@ struct JumpInputs{S <: MT.JumpSystem, T <: SciMLBase.AbstractODEProblem}
     prob::T
 end
 
-
 """
     jumpinput = JumpInputs(rs::ReactionSystem, u0map, tspan,
                     pmap = DiffEqBase.NullParameters;
@@ -819,7 +818,6 @@ plot(sol, idxs = :A)
 function JumpInputs(rs::ReactionSystem, u0, tspan, p = DiffEqBase.NullParameters();
         name = nameof(rs), combinatoric_ratelaws = get_combinatoric_ratelaws(rs),
         checks = false, kwargs...)
-
     u0map = symmap_to_varmap(rs, u0)
     pmap = symmap_to_varmap(rs, p)
     jsys = complete(convert(JumpSystem, rs; name, combinatoric_ratelaws, checks))
@@ -835,7 +833,7 @@ function Base.summary(io::IO, jinputs::JumpInputs)
     type_color, no_color = SciMLBase.get_colorizers(io)
     print(io,
         type_color, nameof(typeof(jinputs)),
-        no_color, " storing" , "\n",
+        no_color, " storing", "\n",
         no_color, "  JumpSystem: ", type_color, nameof(jinputs.sys), "\n",
         no_color, "  Problem type: ", type_color, nameof(typeof(jinputs.prob)))
 end
@@ -873,7 +871,6 @@ function JumpProcesses.JumpProblem(jinputs::JumpInputs,
         kwargs...)
     JumpProblem(jinputs.sys, jinputs.prob, agg; kwargs...)
 end
-
 
 # SteadyStateProblem from AbstractReactionNetwork
 function DiffEqBase.SteadyStateProblem(rs::ReactionSystem, u0,

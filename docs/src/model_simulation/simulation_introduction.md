@@ -311,7 +311,7 @@ Next, we process these into a `JumpInputs`:
 jinput = JumpInputs(two_state_model, u0, tspan, ps)
 nothing # hide
 ```
-This is then used as input to a `JumpProblem`. The `JumpProblem` also requires the CRN model and [an aggregator](@ref simulation_intro_jumps_solver_designation) as input.
+This is then used as input to a `JumpProblem`:
 ```@example simulation_intro_jumps
 jprob = JumpProblem(jinput)
 nothing # hide
