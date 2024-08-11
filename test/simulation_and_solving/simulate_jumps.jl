@@ -1,7 +1,7 @@
 ### Prepares Tests ###
 
 # Fetch packages.
-using Catalyst, JumpProcesses, Statistics, Test
+using Catalyst, JumpProcesses, OrdinaryDiffEq, Statistics, Test
 
 # Sets stable rng number.
 using StableRNGs
