@@ -163,8 +163,6 @@ let
     end
 end
 
-### Other Tests ###
-
 # Tests simulating a network without parameters.
 let
     no_param_network = @reaction_network begin
@@ -175,4 +173,50 @@ let
     jprob = JumpProblem(no_param_network, dprob, Direct(); rng)
     sol = solve(jprob, SSAStepper())
     @test mean(sol[:X1]) > mean(sol[:X2])
+end
+
+# test accuracy of a mixed system that includes variable rate jumps
+# this should also help with indirectly testing dep graphs are setup ok
+let
+    rn = @reaction_network gene_model begin
+        α*(1 + sin(t)), D --> D + P
+        μ*(1 + cos(t)), P --> ∅
+        k₊, D + P --> D⁻
+        k₋, D⁻ --> D + P
+        α, D2 --> D2 + P2
+        μ, P2 --> P3
+    end
+    u0map = [rn.D => 1.0, rn.P => 0.0, rn.D⁻ => 0.0, rn.D2 => 1.0, rn.P2 => 0.0,
+             rn.P3 => 0.0]
+    pmap = [rn.α => 10.0, rn.μ => 1.0, rn.k₊ => 1.0, rn.k₋ => 2.0]
+    tspan = (0.0, 25.0)
+    jinput = JumpInputs(rn, u0map, tspan, pmap)
+
+    # the direct method needs no dep graphs so is good as a baseline for comparison
+    jprobdm = JumpProblem(jinput, Direct(); save_positions = (false, false), rng)
+    jprobsd = JumpProblem(jinput, SortingDirect(); save_positions = (false, false), rng)
+    @test issetequal(jprobsd.discrete_jump_aggregation.dep_gr, [[1,2],[2]])
+    jprobrssa = JumpProblem(jinput, RSSA(); save_positions = (false, false), rng)
+    @test issetequal(jprobrssa.discrete_jump_aggregation.vartojumps_map, [[],[],[],[1],[2],[]])
+    @test issetequal(jprobrssa.discrete_jump_aggregation.jumptovars_map, [[5],[5,6]])
+    N = 1000  # number of simulations to run
+    function getmean(N, prob)
+        m1 = 0.0
+        m2 = 0.0
+        for _ in 1:N
+            jsol = solve(prob, Tsit5(); saveat = tspan[2])
+            m1 += jsol(prob.prob.tspan[2]; idxs = :P)
+            m2 += jsol(prob.prob.tspan[2]; idxs = :P3)
+        end
+        m1 /= N
+        m2 /= N
+        return m1, m2
+    end
+    means1 = zeros(2)
+    means2 = zeros(2)
+    for (i,prob) in enumerate((jprobdm, jprobsd))  # skip rssa due JumpProcesses #439 bug
+        means1[i],means2[i] = getmean(N, prob)
+    end
+    @test (means1[1] - means1[2]) < .1 * means1[1]
+    @test (means2[1] - means2[2]) < .1 * means2[1]
 end
