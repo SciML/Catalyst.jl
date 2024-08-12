@@ -179,7 +179,7 @@ u₀ = symmap_to_varmap(jsys, [:G₊ => 1, :G₋ => 0, :P => 1])
 tspan = (0., 6.0)   # time interval to solve over
 dprob = DiscreteProblem(jsys, u₀, tspan, p)
 jprob = JumpProblem(jsys, dprob, Direct())
-sol = solve(jprob, SSAStepper())
+sol = solve(jprob)
 plot(sol.t, sol[jsys.P], legend = false, xlabel = "time", ylabel = "P(t)")
 ```
 To double check our results are consistent with MomentClosure.jl, let's
@@ -192,7 +192,7 @@ function getmean(jprob, Nsims, tv)
     Pmean = zeros(length(tv))
     @variables P(t)
     for n in 1:Nsims
-        sol = solve(jprob, SSAStepper())
+        sol = solve(jprob)
         Pmean .+= sol(tv, idxs=P)
     end
     Pmean ./= Nsims

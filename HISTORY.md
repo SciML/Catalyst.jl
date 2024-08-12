@@ -2,6 +2,42 @@
 
 ## Catalyst unreleased (master branch)
 
+## Catalyst 14.3
+- Support for simulating stochastic chemical kinetics models with explicitly
+  time-dependent propensities (i.e. where the resulting `JumpSystem` contains
+  `VariableRateJump`s). As such `JumpProblem`s need to be defined over
+  `ODEProblem`s or `SDEProblem`s instead of `DiscreteProblem`s we have
+  introduced a new input struct, `JumpInputs`, that handles selecting via
+  analysis of the generated `JumpSystem`, i.e. one can now say
+  ```julia
+  using Catalyst, OrdinaryDiffEq, JumpProcesses, Plots
+  rn = @reaction_network begin
+      k*(1 + sin(t)), 0 --> A
+  end
+  jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+  # note that jinput.prob isa ODEProblem
+  jprob = JumpProblem(jinput)
+  sol = solve(jprob, Tsit5())
+  plot(sol, idxs = :A)
+
+  rn = @reaction_network begin
+      k, 0 --> A
+  end
+  jinput = JumpInputs(rn, [:A => 0], (0.0, 10.0), [:k => .5])
+  # note that jinput.prob isa DiscreteProblem
+  jprob = JumpProblem(jinput)
+  sol = solve(jprob)
+  plot(sol, idxs = :A)
+  ```
+  When calling solve for problems with explicit time-dependent propensities,
+  i.e. where `jinput.prob isa ODEProblem`, note that one must currently
+  explicitly select an ODE solver to handle time-stepping and integrating the
+  time-dependent propensities.
+- Note that solutions to jump problems with explicit time-dependent
+  propensities, i.e. a `JumpProblem` over an `ODEProblem`, require manual
+  selection of the variables to plot. That is, currently `plot(sol)` will error
+  in this case due to limitations in the SciMLBase plot recipe.
+
 ## Catalyst 14.2
 - Support for auto-algorithm selection in `JumpProblem`s. For systems with only
   propensities that do not have an explicit time-dependence (i.e. that are not

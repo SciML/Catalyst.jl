@@ -34,10 +34,10 @@ nothing # hide
 Next, a stochastic chemical kinetics-based jump simulation:
 ```@example crn_library_birth_death
 using JumpProcesses
-dprob = DiscreteProblem(bd_process, u0, tspan, ps)
-jprob = JumpProblem(bd_process, dprob, Direct())
-jsol = solve(jprob, SSAStepper())
-jsol = solve(jprob, SSAStepper(); seed = 12) # hide
+jinput = JumpInputs(bd_process, u0, tspan, ps)
+jprob = JumpProblem(jinput)
+jsol = solve(jprob)
+jsol = solve(jprob; seed = 12) # hide
 nothing # hide
 ```
 Finally, we plot the results:
@@ -106,10 +106,10 @@ ssol = solve(sprob, STrapezoid())
 ssol = solve(sprob, STrapezoid(); seed = 12) # hide
 
 using JumpProcesses
-dprob = DiscreteProblem(mm_system, u0, tspan, ps)
-jprob = JumpProblem(mm_system, dprob, Direct())
-jsol = solve(jprob, SSAStepper())
-jsol = solve(jprob, SSAStepper(), seed = 12) # hide
+jinput = JumpInputs(mm_system, u0, tspan, ps)
+jprob = JumpProblem(jinput)
+jsol = solve(jprob)
+jsol = solve(jprob; seed = 12) # hide
 
 using Plots
 oplt = plot(osol; title = "Reaction rate equation (ODE)")
@@ -145,15 +145,15 @@ plot(osol; title = "Reaction rate equation (ODE)", size=(800,350))
 Next, we perform 3 different Jump simulations. Note that for the stochastic model, the occurrence of an outbreak is not certain. Rather, there is a possibility that it fizzles out without a noteworthy peak.
 ```@example crn_library_sir
 using JumpProcesses
-dprob = DiscreteProblem(sir_model, u0, tspan, ps)
-jprob = JumpProblem(sir_model, dprob, Direct())
+jinput = JumpInputs(sir_model, u0, tspan, ps)
+jprob = JumpProblem(jinput)
 
-jsol1 = solve(jprob, SSAStepper())
-jsol2 = solve(jprob, SSAStepper())
-jsol3 = solve(jprob, SSAStepper())
-jsol1 = solve(jprob, SSAStepper(), seed = 1) # hide
-jsol2 = solve(jprob, SSAStepper(), seed = 2) # hide
-jsol3 = solve(jprob, SSAStepper(), seed = 3) # hide
+jsol1 = solve(jprob)
+jsol2 = solve(jprob)
+jsol3 = solve(jprob)
+jsol1 = solve(jprob, seed = 1) # hide
+jsol2 = solve(jprob, seed = 2) # hide
+jsol3 = solve(jprob, seed = 3) # hide
 
 jplt1 = plot(jsol1; title = "Outbreak")
 jplt2 = plot(jsol2; title = "Outbreak")
@@ -242,10 +242,10 @@ ps = [:v₀ => 0.1, :v => 2.0, :K => 10.0, :n => 2, :d => 0.1]
 oprob = ODEProblem(sa_loop, u0, tspan, ps)
 osol = solve(oprob)
 
-dprob = DiscreteProblem(sa_loop, u0, tspan, ps)
-jprob = JumpProblem(sa_loop, dprob, Direct())
-jsol = solve(jprob, SSAStepper())
-jsol = solve(jprob, SSAStepper(), seed = 12) # hide
+jinput = JumpInputs(sa_loop, u0, tspan, ps)
+jprob = JumpProblem(jinput)
+jsol = solve(jprob)
+jsol = solve(jprob, seed = 12) # hide
 
 fplt = plot(osol; lw = 3, label = "Reaction rate equation (ODE)")
 plot!(fplt, jsol; lw = 3, label = "Stochastic chemical kinetics (Jump)", yguide = "X", size = (800,350))

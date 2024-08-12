@@ -166,16 +166,14 @@ params = [:b => 0.2, :k => 1.0]
 nothing # hide
 ```
 
-Previously we have bundled this information into an `ODEProblem` (denoting a deterministic *ordinary differential equation*). Now we wish to simulate our model as a jump process (where each reaction event corresponds to a discrete change in the state of the system). We do this by first creating a `DiscreteProblem`, and then using this as an input to a `JumpProblem`.
+Previously we have bundled this information into an `ODEProblem` (denoting a deterministic *ordinary differential equation*). Now we wish to simulate our model as a jump process (where each reaction event corresponds to a discrete change in the state of the system). We do this by first processing the inputs to work in a jump model -- an extra step needed for jump models that can be avoided for ODE/SDE models -- and then creating a `JumpProblem` from the inputs:
 ```@example ex2
 using JumpProcesses # hide
-dprob = DiscreteProblem(sir_model, u0, tspan, params)
-jprob = JumpProblem(sir_model, dprob)
+jinput = JumpInputs(sir_model, u0, tspan, params)
+jprob = JumpProblem(jinput)
 nothing # hide
 ```
-Again, the order in which the inputs are given to the `DiscreteProblem` and the `JumpProblem` is important.
-
-Finally, we can simulate our model using the `solve` function, and plot the solution using the `plot` function.
+Finally, we can now simulate our model using the `solve` function, and plot the solution using the `plot` function.
 ```@example ex2
 sol = solve(jprob)
 sol = solve(jprob; seed=1234) # hide
