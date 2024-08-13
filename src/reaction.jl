@@ -351,7 +351,7 @@ MT.is_alg_equation(rx::Reaction) = false
 """
     get_symbolics(set, rx::Reaction)
 
-Returns all symbolic variables that are part of a reaction. This includes all variables 
+Returns all symbolic variables that are part of a reaction. This includes all variables
 encountered in:
     - Rates.
     - Among substrates and products.
@@ -365,7 +365,7 @@ end
 """
     get_variables!(set, rx::Reaction)
 
-Adds all symbolic variables that are part of a reaction to set. This includes all variables 
+Adds all symbolic variables that are part of a reaction to set. This includes all variables
 encountered in:
     - Rates.
     - Among substrates and products.
@@ -412,7 +412,7 @@ function MT.modified_unknowns!(munknowns, rx::Reaction, sts::AbstractVector)
     munknowns
 end
 
-### `Reaction`-specific Functions ### 
+### `Reaction`-specific Functions ###
 
 """
     isbcbalanced(rx::Reaction)
@@ -495,12 +495,11 @@ getmetadata(reaction, :description)
 ```
 """
 function getmetadata(reaction::Reaction, md_key::Symbol)
-    if !hasmetadata(reaction, md_key)
-        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(keys(getmetadata_dict(reaction))).")
-    end
     metadata = getmetadata_dict(reaction)
-    return metadata[findfirst(isequal(md_key, entry[1])
-    for entry in getmetadata_dict(reaction))][2]
+    idx = findfirst(isequal(md_key, entry[1]) for entry in metadata)
+    (idx === nothing) &&
+        error("The reaction does not have a metadata field $md_key. It does have the following metadata fields: $(first.(values(metadata))).")
+    return metadata[idx][2]
 end
 
 ### Implemented Reaction Metadata ###
@@ -622,10 +621,10 @@ getmisc(reaction)
 
 Notes:
 - The `misc` field can contain any valid Julia structure. This mean that Catalyst cannot check it
-for symbolic variables that are added here. This means that symbolic variables (e.g. parameters of 
-species) that are stored here are not accessible to Catalyst. This can cause troubles when e.g. 
+for symbolic variables that are added here. This means that symbolic variables (e.g. parameters of
+species) that are stored here are not accessible to Catalyst. This can cause troubles when e.g.
 creating a `ReactionSystem` programmatically (in which case any symbolic variables stored in the
-`misc` metadata field should also be explicitly provided to the `ReactionSystem` constructor). 
+`misc` metadata field should also be explicitly provided to the `ReactionSystem` constructor).
 
 """
 function getmisc(reaction::Reaction)
