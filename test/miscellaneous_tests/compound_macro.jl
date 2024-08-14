@@ -121,11 +121,11 @@ let
     @compound SO2(t,x,y) ~ S + 2O
     
     # Checks they have the correct independent variables.
-    @test issetequal(arguments(ModelingToolkit.unwrap(CO2)), [t])
-    @test issetequal(arguments(ModelingToolkit.unwrap(NH4)), [x])
-    @test issetequal(arguments(ModelingToolkit.unwrap(H2O)), [t, x])
-    @test issetequal(arguments(ModelingToolkit.unwrap(PH4)), [t, x])
-    @test issetequal(arguments(ModelingToolkit.unwrap(SO2)), [t, x, y])
+    @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(CO2)), [t])
+    @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(NH4)), [x])
+    @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(H2O)), [t, x])
+    @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(PH4)), [t, x])
+    @test issetequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(SO2)), [t, x, y])
 end
 
 ### Interpolation Tests ###

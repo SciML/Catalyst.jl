@@ -37,7 +37,7 @@ function Latexify.infer_output(env, rs::ReactionSystem, args...)
 end
 
 function processsym(s)
-    args = Symbolics.sorted_arguments(s)
+    args = sorted_arguments(s)
     name = MT.getname(s)
     if length(args) <= 1
         var = value(Symbolics.variable(name))
