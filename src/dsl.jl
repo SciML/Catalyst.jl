@@ -776,7 +776,7 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 dep_var_expr = :(filter(!MT.isparameter,
                     Symbolics.get_variables($(obs_eq.args[3]))))
                 ivs_get_expr = :(unique(reduce(
-                    vcat, [arguments(MT.unwrap(dep))
+                    vcat, [sorted_arguments(MT.unwrap(dep))
                            for dep in $dep_var_expr])))
                 ivs_get_expr_sorted = :(sort($(ivs_get_expr);
                     by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $ivs_sorted)))

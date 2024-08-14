@@ -106,7 +106,7 @@ function make_compound(expr)
 
     # Expression which when evaluated gives a vector with all the ivs of the components.
     ivs_get_expr = :(unique(reduce(
-        vcat, [arguments(ModelingToolkit.unwrap(comp))
+        vcat, [sorted_arguments(ModelingToolkit.unwrap(comp))
                for comp in $components])))
 
     # Creates the found expressions that will create the compound species.

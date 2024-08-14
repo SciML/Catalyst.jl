@@ -23,7 +23,7 @@ using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
 import Symbolics: BasicSymbolic
-using Symbolics: iscall
+using Symbolics: iscall, sorted_arguments
 using ModelingToolkit: Symbolic, value, get_unknowns, get_ps, get_iv, get_systems,
                        get_eqs, get_defaults, toparam, get_var_to_name, get_observed,
                        getvar
