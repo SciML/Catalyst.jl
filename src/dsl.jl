@@ -87,13 +87,13 @@ macro species(ex...)
     resize!(vars.args, idx + length(lastarg.args) + 1)
     for sym in lastarg.args
         vars.args[idx] = :($sym = ModelingToolkit.wrap(setmetadata(
-            ModelingToolkit.value($sym), VariableSpecies, true)))
+            ModelingToolkit.value($sym), Catalyst.VariableSpecies, true)))
         idx += 1
     end
 
     # check nothing was declared isconstantspecies
     ex = quote
-        all(!isconstant ∘ ModelingToolkit.value, $lastarg) ||
+        all(!Catalyst.isconstant ∘ ModelingToolkit.value, $lastarg) ||
             throw(ArgumentError("isconstantspecies metadata can only be used with parameters."))
     end
     vars.args[idx] = ex
@@ -150,7 +150,7 @@ macro reaction_network(name::Expr, ex::Expr)
         MacroTools.striplines(ex); name = :($(esc(name.args[1])))))))
 end
 
-macro reaction_network(ex::Expr)
+macro reaction_network(ex::Expr)    
     ex = MacroTools.striplines(ex)
 
     # no name but equations: @reaction_network begin ... end ...
