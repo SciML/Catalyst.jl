@@ -132,7 +132,8 @@ let
     # Line number nodes aren't ignored so have to be manually removed
     Base.remove_linenums!(ex)
     exsys = Catalyst.make_reaction_system(ex)
-    @test (@eval Catalyst $exsys) isa ReactionSystem
+    sys = @eval Catalyst $exsys
+    @test sys isa ReactionSystem
 end
 
 # Miscellaneous interpolation tests. Unsure what they do here (not related to DSL).
