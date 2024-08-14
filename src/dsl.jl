@@ -1,64 +1,4 @@
-"""
-Macro that inputs an expression corresponding to a reaction network and outputs
-a `ReactionNetwork` that can be used as input to generation of ODE, SDE, and
-Jump problems.
-
-Most arrows accepted (both right, left, and bi-drectional arrows). Note that
-while --> is a correct arrow, neither <-- nor <--> works. Using non-filled
-arrows (⇐, ⟽, ⇒, ⟾, ⇔, ⟺) will disable mass kinetics and let you cutomize
-reaction rates yourself. Use 0 or ∅ for degradation/creation to/from nothing.
-
-Example systems:
-
-    ### Basic Usage ###
-    rn = @reaction_network begin           # Creates a ReactionSystem.
-        2.0, X + Y --> XY                  # This will have reaction rate corresponding to 2.0*[X][Y]
-        2.0, XY ← X + Y                    # Identical to 2.0, X + Y --> XY
-    end
-
-    ### Manipulating Reaction Rates ###
-    rn = @reaction_network begin
-        2.0, X + Y ⟾ XY                   # Ignores mass kinetics. This will have reaction rate corresponding to 2.0.
-        2.0X, X + Y --> XY                 # Reaction rate needs not be constant. This will have reaction rate corresponding to 2.0*[X]*[X]*[Y].
-        XY+log(X)^2, X + Y --> XY          # Reaction rate accepts quite complicated expressions.
-        hill(XY,2,2,2), X + Y --> XY       # Reaction inis activated by XY according to a hill function. hill(x,v,K,N).
-        mm(XY,2,2), X + Y --> XY           # Reaction inis activated by XY according to a michaelis menten function. mm(x,v,K).
-    end
-
-    ### Multiple Reactions on a Single Line ###
-    rn = @reaction_network begin
-        (2.0,1.0), X + Y ↔ XY              # Identical to reactions (2.0, X + Y --> XY) and (1.0, XY --> X + Y).
-        2.0, (X,Y) --> 0                   # This corresponds to both X and Y degrading at rate 2.0.
-        (2.0, 1.0), (X,Y) --> 0            # This corresponds to X and Y degrading at rates 2.0 and 1.0, respectively.
-        2.0, (X1,Y1) --> (X2,Y2)           # X1 and Y1 becomes X2 and Y2, respectively, at rate 2.0.
-    end
-
-    ### Adding Parameters ###
-    kB = 2.0; kD = 1.0
-    p = [kB, kD]
-    p = []
-    rn = @reaction_network begin
-        (kB, kD), X + Y ↔ XY               # Lets you define parameters outside on network. Parameters can be changed without recalling the network.
-    end
-
-    ### Defining New Functions ###
-    my_hill_repression(x, v, k, n) = v*k^n/(k^n+x^n)
-
-    # may be necessary to
-    # @register_symbolic my_hill_repression(x, v, k, n)
-    # see https://docs.sciml.ai/ModelingToolkit/stable/basics/Validation/#User-Defined-Registered-Functions-and-Types
-
-    r = @reaction_network MyReactionType begin
-        my_hill_repression(x, v_x, k_x, n_x), 0 --> x
-    end
-
-    ### Simulating Reaction Networks ###
-    probODE = ODEProblem(rn, args...; kwargs...)        # Using multiple dispatch the reaction network can be used as input to create ODE, SDE and Jump problems.
-    probSDE = SDEProblem(rn, args...; kwargs...)
-    probJump = JumpProblem(prob,aggregator::Direct,rn)
-"""
-
-### Constant Declarations ###
+### Constants Declarations ###
 
 # Declare various arrow types symbols used for the empty set (also 0).
 const empty_set = Set{Symbol}([:∅])
@@ -110,158 +50,205 @@ end
 """
     @reaction_network
 
-Generates a [`ReactionSystem`](@ref dsl_description) that encodes a chemical reaction
-network.
+Macro for generating chemical reaction network models. Outputs a [`ReactionSystem`](@ref) structure,
+which stores all information of the model. Next, it can be used as input to various simulations, or
+other tools for model analysis. The `@reaction_network` macro is sometimes called the "Catalyst 
+DSL" (where DSL = domain-specific language), as it implements a DSL for creating chemical reaction
+network models.
+    
+The `@reaction_network` macro, and the `ReactionSystem`s it generates, are central to Catalyst
+and its functionality. Catalyst is described in more detail in its documentation. The
+`reaction_network` DSL in particular is described in more detail [here](@ref dsl_description).
 
-See [The Reaction DSL](@ref dsl_description) documentation for details on
-parameters to the macro.
+The `@reaction_network` statement is followed by a `begin ... end` block. Each line within the
+block corresponds to a single reaction. Each reaction consists of:
+- A rate (at which the reaction occurs).
+- Any number of substrates (which are consumed by the reaction).
+- Any number of products (which are produced by the reaction).
 
 Examples:
+Here we create a basic SIR model. It contains two reactions (infection and recovery):
 ```julia
-# a basic SIR model, with name SIR
-sir_model = @reaction_network SIR begin
-    c1, s + i --> 2i
-    c2, i --> r
-end
-
-# a basic SIR model, with random generated name
 sir_model = @reaction_network begin
-    c1, s + i --> 2i
-    c2, i --> r
+    c1, S + I --> 2I
+    c2, I --> R
 end
-
-# an empty network with name empty
-emptyrn = @reaction_network empty
-
-# an empty network with random generated name
-emptyrn = @reaction_network
 ```
 
-ReactionSystems generated through `@reaction_network` are complete.
+Next, we create a self-activation loop. Here, a single component (`X`) activates its own production
+with a Michaelis-Menten function:
+```julia
+sa_loop = @reaction_network begin
+    mm(X,v,K), 0 --> X
+    d, X --> 0
+end
+```
+This model also contains production and degradation reactions, where `0` denotes that there are 
+either no substrates or no products in a reaction.
+
+Options:
+The `@reaction_network` also accepts various options. These are inputs to the model creation that are
+not reactions. To denote that a line contains an option (and not a reaction), the line starts with `@`
+followed by the options name. E.g. an observable is declared using the `@observables` option.
+Here we create a polymerisation model (where the parameter `n` denotes the number of monomers in
+the polymer). We use the observable `Xtot` to track the total amount of `X` in the system. We also
+bundle the forward and backwards binding reactions into a single line.
+```julia
+polymerisation = @reaction_network begin
+    @observables Xtot ~ X + n*Xn
+    (kB,kD), n*X <--> Xn
+end
+```
+
+Notes:
+- `ReactionSystem`s created through `@reaction_network` are considered complete (non-complete 
+systems can be created through the alternative `@network_component` macro).
+- `ReactionSystem`s created through `@reaction_network`, by default, have a random name. Specific
+names can be designated as a first argument (before `begin`, e.g. `rn = @reaction_network name begin ...`).
+- For more information, please again consider Catalyst's documentation.
 """
-macro reaction_network(name::Symbol, ex::Expr)
-    :(complete($(make_reaction_system(
-        MacroTools.striplines(ex); name = :($(QuoteNode(name)))))))
+macro reaction_network(name::Symbol, network_expr::Expr)
+    make_rs_expr(QuoteNode(name), network_expr)
 end
 
-# Allows @reaction_network $name begin ... to interpolate variables storing a name.
-macro reaction_network(name::Expr, ex::Expr)
-    :(complete($(make_reaction_system(
-        MacroTools.striplines(ex); name = :($(esc(name.args[1])))))))
+# The case where the name contains an interpolation.
+macro reaction_network(name::Expr, network_expr::Expr)
+    make_rs_expr(esc(name.args[1]), network_expr)
 end
 
-macro reaction_network(ex::Expr)
-    ex = MacroTools.striplines(ex)
-
-    # no name but equations: @reaction_network begin ... end ...
-    if ex.head == :block
-        :(complete($(make_reaction_system(ex))))
-    else  # empty but has interpolated name: @reaction_network $name
-        networkname = :($(esc(ex.args[1])))
-        return Expr(:block, :(@parameters t),
-            :(complete(ReactionSystem(Reaction[], t, [], []; name = $networkname))))
-    end
-end
-
-# Returns a empty network (with, or without, a declared name).
+# The case where nothing, or only a name, is provided.
 macro reaction_network(name::Symbol = gensym(:ReactionSystem))
-    return Expr(:block, :(@parameters t),
-        :(complete(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name))))))
+    make_rs_expr(QuoteNode(name))
+end
+
+# Handles two disjoint cases.
+macro reaction_network(expr::Expr)
+    # Case 1: The input is a name with interpolation.
+    (expr.head != :block) && return make_rs_expr(esc(expr.args[1]))
+    # Case 2: The input is a reaction network (and no name is provided).
+    return make_rs_expr(:(gensym(:ReactionSystem)), expr)
 end
 
 # Ideally, it would have been possible to combine the @reaction_network and @network_component macros.
 # However, this issue: https://github.com/JuliaLang/julia/issues/37691 causes problem with interpolations
-# if we make the @reaction_network macro call the @network_component macro.
+# if we make the @reaction_network macro call the @network_component macro. Instead, these uses the 
+# same input, but passes `complete = false` to `make_rs_expr`.
 """
     @network_component
 
 Equivalent to `@reaction_network` except the generated `ReactionSystem` is not marked as
 complete.
 """
-macro network_component(name::Symbol, ex::Expr)
-    make_reaction_system(MacroTools.striplines(ex); name = :($(QuoteNode(name))))
+macro network_component(name::Symbol, network_expr::Expr)
+    make_rs_expr(QuoteNode(name), network_expr; complete = false)
 end
 
-# Allows @network_component $name begin ... to interpolate variables storing a name.
-macro network_component(name::Expr, ex::Expr)
-    make_reaction_system(MacroTools.striplines(ex); name = :($(esc(name.args[1]))))
+# The case where the name contains an interpolation.
+macro network_component(name::Expr, network_expr::Expr)
+    make_rs_expr(esc(name.args[1]), network_expr; complete = false)
 end
 
-macro network_component(ex::Expr)
-    ex = MacroTools.striplines(ex)
-
-    # no name but equations: @network_component begin ... end ...
-    if ex.head == :block
-        make_reaction_system(ex)
-    else  # empty but has interpolated name: @network_component $name
-        networkname = :($(esc(ex.args[1])))
-        return Expr(:block, :(@parameters t),
-            :(ReactionSystem(Reaction[], t, [], []; name = $networkname)))
-    end
-end
-
-# Returns a empty network (with, or without, a declared name).
+# The case where nothing, or only a name, is provided.
 macro network_component(name::Symbol = gensym(:ReactionSystem))
-    return Expr(:block, :(@parameters t),
-        :(ReactionSystem(Reaction[], t, [], []; name = $(QuoteNode(name)))))
+    make_rs_expr(QuoteNode(name); complete = false)
+end
+
+# Handles two disjoint cases.
+macro network_component(expr::Expr)
+    # Case 1: The input is a name with interpolation.
+    (expr.head != :block) && return make_rs_expr(esc(expr.args[1]); complete = false)
+    # Case 2: The input is a reaction network (and no name is provided).
+    return make_rs_expr(:(gensym(:ReactionSystem)), expr; complete = false)
+end
+
+### DSL Macros Helper Functions ###
+
+# For when no reaction network has been designated. Generates an empty network.
+function make_rs_expr(name; complete = true)
+    rs_expr = :(ReactionSystem(Reaction[], t, [], []; name = $name))
+    complete && (rs_expr = :(complete($rs_expr)))
+    return Expr(:block, :(@parameters t), rs_expr)
+end
+
+# When both a name and a network expression is generated, dispatches thees to the internal
+# `make_reaction_system` function.
+function make_rs_expr(name, network_expr; complete = true)
+    rs_expr = make_reaction_system(striplines(network_expr), name)
+    complete && (rs_expr = :(complete($rs_expr)))
+    return rs_expr
 end
 
 ### Internal DSL Structures ###
 
-# Structure containing information about one reactant in one reaction.
-struct ReactantStruct
+# Internal structure containing information about one reactant in one reaction.
+struct ReactantInternal
     reactant::Union{Symbol, Expr}
     stoichiometry::ExprValues
 end
 
-# Structure containing information about one Reaction. Contain all its substrates and products as well as its rate. Contains a specialized constructor.
-struct ReactionStruct
-    substrates::Vector{ReactantStruct}
-    products::Vector{ReactantStruct}
+# Internal structure containing information about one Reaction. Contain all its substrates and
+# products as well as its rate and potential metadata. Uses a specialized constructor.
+struct ReactionInternal
+    substrates::Vector{ReactantInternal}
+    products::Vector{ReactantInternal}
     rate::ExprValues
     metadata::Expr
 
-    function ReactionStruct(sub_line::ExprValues, prod_line::ExprValues, rate::ExprValues,
-            metadata_line::ExprValues)
-        sub = recursive_find_reactants!(sub_line, 1, Vector{ReactantStruct}(undef, 0))
-        prod = recursive_find_reactants!(prod_line, 1, Vector{ReactantStruct}(undef, 0))
+    function ReactionInternal(sub_line::ExprValues, prod_line::ExprValues,
+            rate::ExprValues, metadata_line::ExprValues)
+        subs = recursive_find_reactants!(sub_line, 1, Vector{ReactantInternal}(undef, 0))
+        prods = recursive_find_reactants!(prod_line, 1, Vector{ReactantInternal}(undef, 0))
         metadata = extract_metadata(metadata_line)
-        new(sub, prod, rate, metadata)
+        new(subs, prods, rate, metadata)
     end
 end
 
 # Recursive function that loops through the reaction line and finds the reactants and their
-# stoichiometry. Recursion makes it able to handle weird cases like 2(X+Y+3(Z+XY)).
+# stoichiometry. Recursion makes it able to handle weird cases like 2(X + Y + 3(Z + XY)). The 
+# reactants are stored in the `reactants` vector. As the expression tree is parsed, the 
+# stoichiometry is updated and new reactants added.
 function recursive_find_reactants!(ex::ExprValues, mult::ExprValues,
-        reactants::Vector{ReactantStruct})
+        reactants::Vector{ReactantInternal})
+    # We have reached the end of the expression tree and can finalise and return the reactants.
     if typeof(ex) != Expr || (ex.head == :escape) || (ex.head == :ref)
+        # The final bit of the expression is not a relevant reactant, no additions are required.
         (ex == 0 || in(ex, empty_set)) && (return reactants)
+
+        # If the expression corresponds to a reactant on our list, increase its multiplicity.
         if any(ex == reactant.reactant for reactant in reactants)
-            idx = findall(x -> x == ex, getfield.(reactants, :reactant))[1]
-            reactants[idx] = ReactantStruct(ex,
-                processmult(+, mult,
-                    reactants[idx].stoichiometry))
+            idx = findfirst(r.reactant == ex for r in reactants)
+            new_mult = processmult(+, mult, reactants[idx].stoichiometry)
+            reactants[idx] = ReactantInternal(ex, new_mult)
+
+            # If the expression corresponds to a new reactant, add it to the list.
         else
-            push!(reactants, ReactantStruct(ex, mult))
+            push!(reactants, ReactantInternal(ex, mult))
         end
+
+        # If we have encountered a multiplication (i.e. a stoichiometry and a set of reactants).
     elseif ex.args[1] == :*
+        # The normal case (e.g. 3*X or 3*(X+Y)). Update the current multiplicity and continue.
         if length(ex.args) == 3
-            recursive_find_reactants!(ex.args[3], processmult(*, mult, ex.args[2]),
-                reactants)
+            new_mult = processmult(*, mult, ex.args[2])
+            recursive_find_reactants!(ex.args[3], new_mult, reactants)
+            # More complicated cases (e.g. 2*3*X). Yes, `ex.args[1:(end - 1)]` should start at 1 (not 2).
         else
-            newmult = processmult(*, mult, Expr(:call, ex.args[1:(end - 1)]...))
-            recursive_find_reactants!(ex.args[end], newmult, reactants)
+            new_mult = processmult(*, mult, Expr(:call, ex.args[1:(end - 1)]...))
+            recursive_find_reactants!(ex.args[end], new_mult, reactants)
         end
+        # If we have encountered a sum of different reactants, apply recursion on each.
     elseif ex.args[1] == :+
         for i in 2:length(ex.args)
             recursive_find_reactants!(ex.args[i], mult, reactants)
         end
     else
-        throw("Malformed reaction, bad operator: $(ex.args[1]) found in stochiometry expression $ex.")
+        throw("Malformed reaction, bad operator: $(ex.args[1]) found in stoichiometry expression $ex.")
     end
-    reactants
+    return reactants
 end
 
+# Helper function for updating the multiplicity throughout recursion (handles e.g. parametric
+# stoichiometries). The `op` argument is an operation (e.g. `*`, but could also e.g. be `+`).
 function processmult(op, mult, stoich)
     if (mult isa Number) && (stoich isa Number)
         op(mult, stoich)
@@ -270,14 +257,16 @@ function processmult(op, mult, stoich)
     end
 end
 
-# Finds the metadata from a metadata expression (`[key=val, ...]`) and returns as a Vector{Pair{Symbol,ExprValues}}.
+# Finds the metadata from a metadata expression (`[key=val, ...]`) and returns as a
+# `Vector{Pair{Symbol,ExprValues}}``.
 function extract_metadata(metadata_line::Expr)
     metadata = :([])
     for arg in metadata_line.args
-        (arg.head != :(=)) &&
+        if arg.head != :(=)
             error("Malformatted metadata line: $metadata_line. Each entry in the vector should contain a `=`.")
-        (arg.args[1] isa Symbol) ||
+        elseif !(arg.args[1] isa Symbol)
             error("Malformatted metadata entry: $arg. Entries left-hand-side should be a single symbol.")
+        end
         push!(metadata.args, :($(QuoteNode(arg.args[1])) => $(arg.args[2])))
     end
     return metadata
@@ -286,112 +275,88 @@ end
 ### DSL Internal Master Function ###
 
 # Function for creating a ReactionSystem structure (used by the @reaction_network macro).
-function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
+function make_reaction_system(ex::Expr, name)
 
-    # Handle interpolation of variables
+    # Handle interpolation of variables in the input.
     ex = esc_dollars!(ex)
 
-    # Read lines with reactions and options.
+    # Extracts the lines with reactions and lines with options.
     reaction_lines = Expr[x for x in ex.args if x.head == :tuple]
     option_lines = Expr[x for x in ex.args if x.head == :macrocall]
 
-    # Get macro options.
-    if length(unique(arg.args[1] for arg in option_lines)) < length(option_lines)
+    # Extracts the options used (throwing errors for repeated options).
+    if !allunique(arg.args[1] for arg in option_lines)
         error("Some options where given multiple times.")
     end
-    options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
-        option_lines))
+    options = Dict(Symbol(String(arg.args[1])[2:end]) => arg for arg in option_lines)
 
-    # Reads options.
-    default_reaction_metadata = :([])
-    check_default_noise_scaling!(default_reaction_metadata, options)
-    compound_expr, compound_species = read_compound_options(options)
-    continuous_events_expr = read_events_option(options, :continuous_events)
-    discrete_events_expr = read_events_option(options, :discrete_events)
-
-    # Parses reactions, species, and parameters.
-    reactions = get_reactions(reaction_lines)
+    # Reads options (round 1, options which must be read before the reactions, e.g. because 
+    # they might declare parameters/species/variables).
+    compound_expr_init, compound_species = read_compound_options(options)
     species_declared = [extract_syms(options, :species); compound_species]
     parameters_declared = extract_syms(options, :parameters)
     variables_declared = extract_syms(options, :variables)
+    vars_extracted, add_default_diff, equations = read_equations_options(options,
+        variables_declared)
 
-    # Reads more options.
-    vars_extracted, add_default_diff, equations = read_equations_options(
-        options, variables_declared)
+    # Extracts all reactions. Extracts all parameters, species, and variables of the system and
+    # creates lists with them.
+    reactions = get_reactions(reaction_lines)
     variables = vcat(variables_declared, vars_extracted)
-
-    # handle independent variables
-    if haskey(options, :ivs)
-        ivs = Tuple(extract_syms(options, :ivs))
-        ivexpr = copy(options[:ivs])
-        ivexpr.args[1] = Symbol("@", "parameters")
-    else
-        ivs = (DEFAULT_IV_SYM,)
-        ivexpr = :($(DEFAULT_IV_SYM) = default_t())
-    end
-    tiv = ivs[1]
-    sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
-    all_ivs = (isnothing(sivs) ? [tiv] : [tiv; sivs.args])
-
-    if haskey(options, :combinatoric_ratelaws)
-        combinatoric_ratelaws = options[:combinatoric_ratelaws].args[end]
-    else
-        combinatoric_ratelaws = true
-    end
-
-    # Reads more options.
-    observed_vars, observed_eqs, obs_syms = read_observed_options(
-        options, [species_declared; variables], all_ivs)
-
-    declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
+    syms_declared = Set(Iterators.flatten((parameters_declared, species_declared,
         variables)))
-    species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
-        declared_syms)
+    species_extracted, parameters_extracted = extract_species_and_parameters(reactions,
+        syms_declared)
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
-    # Create differential expression.
-    diffexpr = create_differential_expr(
-        options, add_default_diff, [species; parameters; variables], tiv)
+    # Reads options (round 2, options that either can, or must, be read after the reactions).
+    tiv, sivs, ivs, ivexpr = read_ivs_option(options)
+    continuous_events_expr = read_events_option(options, :continuous_events)
+    discrete_events_expr = read_events_option(options, :discrete_events)
+    observed_expr, observed_eqs, obs_syms = read_observed_options(options,
+        [species_declared; variables], ivs)
+    diffexpr = create_differential_expr(options, add_default_diff,
+        [species; parameters; variables], tiv)
+    default_reaction_metadata = read_default_noise_scaling_option(options)
+    combinatoric_ratelaws = read_combinatoric_ratelaws_option(options)
 
     # Checks for input errors.
-    (sum(length.([reaction_lines, option_lines])) != length(ex.args)) &&
+    if (sum(length.([reaction_lines, option_lines])) != length(ex.args))
         error("@reaction_network input contain $(length(ex.args) - sum(length.([reaction_lines,option_lines]))) malformed lines.")
-    any(!in(opt_in, option_keys) for opt_in in keys(options)) &&
+    end
+    if any(!in(opt_in, option_keys) for opt_in in keys(options))
         error("The following unsupported options were used: $(filter(opt_in->!in(opt_in,option_keys), keys(options)))")
+    end
     forbidden_symbol_check(union(species, parameters))
     forbidden_variable_check(variables)
-    unique_symbol_check(union(species, parameters, variables, ivs))
+    unique_symbol_check(vcat(species, parameters, variables, ivs))
 
     # Creates expressions corresponding to actual code from the internal DSL representation.
-    sexprs = get_sexpr(species_extracted, options; iv_symbols = ivs)
-    vexprs = get_sexpr(vars_extracted, options, :variables; iv_symbols = ivs)
-    pexprs = get_pexpr(parameters_extracted, options)
-    ps, pssym = scalarize_macro(!isempty(parameters), pexprs, "ps")
-    vars, varssym = scalarize_macro(!isempty(variables), vexprs, "vars")
-    sps, spssym = scalarize_macro(!isempty(species), sexprs, "specs")
-    comps, compssym = scalarize_macro(!isempty(compound_species), compound_expr, "comps")
-    rxexprs = :(Catalyst.CatalystEqType[])
-    for reaction in reactions
-        push!(rxexprs.args, get_rxexprs(reaction))
-    end
-    for equation in equations
-        push!(rxexprs.args, equation)
-    end
+    psexpr_init = get_pexpr(parameters_extracted, options)
+    spsexpr_init = get_usexpr(species_extracted, options; ivs)
+    vsexpr_init = get_usexpr(vars_extracted, options, :variables; ivs)
+    psexpr, psvar = scalarize_macro(psexpr_init, "ps")
+    spsexpr, spsvar = scalarize_macro(spsexpr_init, "specs")
+    vsexpr, vsvar = scalarize_macro(vsexpr_init, "vars")
+    compound_expr, compsvar = scalarize_macro(compound_expr_init, "comps")
+    rxsexprs = make_rxsexprs(reactions, equations)
 
+    # Assemblies the full expression that declares all required symbolic variables, and
+    # then the output `ReactionSystem`.
     quote
-        $ps
+        $psexpr
         $ivexpr
-        $vars
-        $sps
-        $observed_vars
-        $comps
+        $spsexpr
+        $vsexpr
+        $observed_expr
+        $compound_expr
         $diffexpr
 
         Catalyst.remake_ReactionSystem_internal(
             Catalyst.make_ReactionSystem_internal(
-                $rxexprs, $tiv, setdiff(union($spssym, $varssym, $compssym), $obs_syms),
-                $pssym; name = $name, spatial_ivs = $sivs, observed = $observed_eqs,
+                $rxsexprs, $tiv, setdiff(union($spsvar, $vsvar, $compsvar), $obs_syms),
+                $psvar; name = $name, spatial_ivs = $sivs, observed = $observed_eqs,
                 continuous_events = $continuous_events_expr,
                 discrete_events = $discrete_events_expr,
                 combinatoric_ratelaws = $combinatoric_ratelaws);
@@ -402,13 +367,17 @@ end
 
 ### DSL Reaction Reading Functions ###
 
-# Generates a vector containing a number of reaction structures, each containing the information about one reaction.
-function get_reactions(exprs::Vector{Expr}, reactions = Vector{ReactionStruct}(undef, 0))
+# Generates a vector of reaction structures, each containing the information about one reaction.
+function get_reactions(exprs::Vector{Expr})
+    # Declares an array to which we add all found reactions.
+    reactions = Vector{ReactionInternal}(undef, 0)
+
+    # Loops through each line of reactions. Extracts and adds each lines's reactions to `reactions`.
     for line in exprs
         # Reads core reaction information.
         arrow, rate, reaction, metadata = read_reaction_line(line)
 
-        # Checks the type of arrow used, and creates the corresponding reaction(s). Returns them in an array.
+        # Checks which type of line is used, and calls `push_reactions!` on the processed line.
         if in(arrow, double_arrows)
             if typeof(rate) != Expr || rate.head != :tuple
                 error("Error: Must provide a tuple of reaction rates when declaring a bi-directional reaction.")
@@ -432,8 +401,8 @@ end
 
 # Extracts the rate, reaction, and metadata fields (the last one optional) from a reaction line.
 function read_reaction_line(line::Expr)
-    # Handles rate, reaction, and arrow.
-    # Special routine required for  the`-->` case, which creates different expression from all other cases.
+    # Handles rate, reaction, and arrow. Special routine required for  the`-->` case, which 
+    # creates an expression different what the other arrows creates.
     rate = line.args[1]
     reaction = line.args[2]
     if reaction.head == :-->
@@ -453,33 +422,30 @@ function read_reaction_line(line::Expr)
     return arrow, rate, reaction, metadata
 end
 
-# Takes a reaction line and creates reaction(s) from it and pushes those to the reaction array.
-# Used to create multiple reactions from, for instance, `k, (X,Y) --> 0`.
-function push_reactions!(reactions::Vector{ReactionStruct}, sub_line::ExprValues,
-        prod_line::ExprValues, rate::ExprValues, metadata::ExprValues, arrow::Symbol)
-    # The rates, substrates, products, and metadata may be in a tupple form (e.g. `k, (X,Y) --> 0`).
-    # This finds the length of these tuples (or 1 if not in tuple forms). Errors if lengs inconsistent.
-    lengs = (tup_leng(sub_line), tup_leng(prod_line), tup_leng(rate), tup_leng(metadata))
-    if any(!(leng == 1 || leng == maximum(lengs)) for leng in lengs)
-        throw("Malformed reaction, rate=$rate, subs=$sub_line, prods=$prod_line, metadata=$metadata.")
+# Takes a reaction line and creates reaction(s) from it and pushes those to the reaction vector.
+# Used to create multiple reactions from bundled reactions (like `k, (X,Y) --> 0`).
+function push_reactions!(reactions::Vector{ReactionInternal}, subs::ExprValues,
+        prods::ExprValues, rate::ExprValues, metadata::ExprValues, arrow::Symbol)
+    # The rates, substrates, products, and metadata may be in a tuple form (e.g. `k, (X,Y) --> 0`).
+    # This finds these tuples' lengths (or 1 for non-tuple forms). Inconsistent lengths yield error.
+    lengs = (tup_leng(subs), tup_leng(prods), tup_leng(rate), tup_leng(metadata))
+    maxl = maximum(lengs)
+    if any(!(leng == 1 || leng == maxl) for leng in lengs)
+        throw("Malformed reaction, rate=$rate, subs=$subs, prods=$prods, metadata=$metadata.")
     end
 
-    # Loops through each reaction encoded by the reaction composites. Adds the reaction to the reactions vector.
-    for i in 1:maximum(lengs)
-        # If the `only_use_rate` metadata was not provided, this has to be infered from the arrow used.
+    # Loops through each reaction encoded by the reaction's different components. 
+    # Creates a `ReactionInternal` representation and adds it to `reactions`.
+    for i in 1:maxl
+        # If the `only_use_rate` metadata was not provided, this must be inferred from the arrow.
         metadata_i = get_tup_arg(metadata, i)
-        if all(arg -> arg.args[1] != :only_use_rate, metadata_i.args)
+        if all(arg.args[1] != :only_use_rate for arg in metadata_i.args)
             push!(metadata_i.args, :(only_use_rate = $(in(arrow, pure_rate_arrows))))
         end
 
-        # Checks that metadata fields are unique.
-        if !allunique(arg.args[1] for arg in metadata_i.args)
-            error("Some reaction metadata fields where repeated: $(metadata_entries)")
-        end
-
-        push!(reactions,
-            ReactionStruct(get_tup_arg(sub_line, i),
-                get_tup_arg(prod_line, i), get_tup_arg(rate, i), metadata_i))
+        # Extracts substrates, products, and rates for the i'th reaction.
+        subs_i, prods_i, rate_i = get_tup_arg.([subs, prods, rate], i)
+        push!(reactions, ReactionInternal(subs_i, prods_i, rate_i, metadata_i))
     end
 end
 
@@ -488,27 +454,30 @@ end
 # When the user have used the @species (or @parameters) options, extract species (or
 # parameters) from its input.
 function extract_syms(opts, vartype::Symbol)
+    # If the corresponding option have been used, uses `Symbolics._parse_vars` to find all
+    # variable within it (returning them in a vector).
     if haskey(opts, vartype)
         ex = opts[vartype]
         vars = Symbolics._parse_vars(vartype, Real, ex.args[3:end])
-        syms = Vector{Union{Symbol, Expr}}(vars.args[end].args)
+        return Vector{Union{Symbol, Expr}}(vars.args[end].args)
     else
-        syms = Union{Symbol, Expr}[]
+        return Union{Symbol, Expr}[]
     end
-    return syms
 end
 
 # Function looping through all reactions, to find undeclared symbols (species or
 # parameters), and assign them to the right category.
-function extract_species_and_parameters!(reactions, excluded_syms)
+function extract_species_and_parameters(reactions, excluded_syms)
+    # Loops through all reactant, extract undeclared ones as species.
     species = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
         for reactant in Iterators.flatten((reaction.substrates, reaction.products))
             add_syms_from_expr!(species, reactant.reactant, excluded_syms)
         end
     end
-
     foreach(s -> push!(excluded_syms, s), species)
+
+    # Loops through all rates and stoichiometries, extracting used symbols as parameters.
     parameters = OrderedSet{Union{Symbol, Expr}}()
     for reaction in reactions
         add_syms_from_expr!(parameters, reaction.rate, excluded_syms)
@@ -517,98 +486,146 @@ function extract_species_and_parameters!(reactions, excluded_syms)
         end
     end
 
-    collect(species), collect(parameters)
+    return collect(species), collect(parameters)
 end
 
-# Function called by extract_species_and_parameters!, recursively loops through an
+# Function called by extract_species_and_parameters, recursively loops through an
 # expression and find symbols (adding them to the push_symbols vector).
-function add_syms_from_expr!(push_symbols::AbstractSet, rateex::ExprValues, excluded_syms)
-    if rateex isa Symbol
-        if !(rateex in forbidden_symbols_skip) && !(rateex in excluded_syms)
-            push!(push_symbols, rateex)
+function add_syms_from_expr!(push_symbols::AbstractSet, expr::ExprValues, excluded_syms)
+    # If we have encountered a Symbol in the recursion, we can try extracting it. 
+    if expr isa Symbol
+        if !(expr in forbidden_symbols_skip) && !(expr in excluded_syms)
+            push!(push_symbols, expr)
         end
-    elseif rateex isa Expr
+    elseif expr isa Expr
         # note, this (correctly) skips $(...) expressions
-        for i in 2:length(rateex.args)
-            add_syms_from_expr!(push_symbols, rateex.args[i], excluded_syms)
+        for i in 2:length(expr.args)
+            add_syms_from_expr!(push_symbols, expr.args[i], excluded_syms)
         end
     end
-    nothing
 end
 
 ### DSL Output Expression Builders ###
 
-# Given the species that were extracted from the reactions, and the options dictionary, creates the @species ... expression for the macro output.
-function get_sexpr(species_extracted, options, key = :species;
-        iv_symbols = (DEFAULT_IV_SYM,))
+# Given the extracted species (or variables) and the option dictionary, creates the 
+# `@species ...` (or `@variables ..`) expression which would declare these.
+# If `key = :variables`, does this for variables (and not species).
+function get_usexpr(us_extracted, options, key = :species; ivs = (DEFAULT_IV_SYM,))
     if haskey(options, key)
-        sexprs = options[key]
-    elseif isempty(species_extracted)
-        sexprs = :()
+        usexpr = options[key]
+    elseif isempty(us_extracted)
+        usexpr = :()
     else
-        sexprs = Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
+        usexpr = Expr(:macrocall, Symbol("@", key), LineNumberNode(0))
     end
-    foreach(s -> (s isa Symbol) && push!(sexprs.args, Expr(:call, s, iv_symbols...)),
-        species_extracted)
-    sexprs
+    for u in us_extracted
+        u isa Symbol && push!(usexpr.args, Expr(:call, u, ivs...))
+    end
+    return usexpr
 end
 
-# Given the parameters that were extracted from the reactions, and the options dictionary, creates the @parameters ... expression for the macro output.
+# Given the parameters that were extracted from the reactions, and the options dictionary,
+# creates the `@parameters ...` expression for the macro output.
 function get_pexpr(parameters_extracted, options)
-    pexprs = (haskey(options, :parameters) ? options[:parameters] :
-              (isempty(parameters_extracted) ? :() : :(@parameters)))
+    if haskey(options, :parameters)
+        pexprs = options[:parameters]
+    elseif isempty(parameters_extracted)
+        pexprs = :()
+    else
+        pexprs = :(@parameters)
+    end
     foreach(p -> push!(pexprs.args, p), parameters_extracted)
-    pexprs
+    return pexprs
 end
 
-# Creates the reaction vector declaration statement.
-function get_rxexprs(rxstruct)
-    subs_init = isempty(rxstruct.substrates) ? nothing : :([])
-    subs_stoich_init = deepcopy(subs_init)
-    prod_init = isempty(rxstruct.products) ? nothing : :([])
-    prod_stoich_init = deepcopy(prod_init)
-    reaction_func = :(Reaction($(recursive_expand_functions!(rxstruct.rate)), $subs_init,
-        $prod_init, $subs_stoich_init, $prod_stoich_init,
-        metadata = $(rxstruct.metadata)))
-    for sub in rxstruct.substrates
-        push!(reaction_func.args[3].args, sub.reactant)
-        push!(reaction_func.args[5].args, sub.stoichiometry)
-    end
-    for prod in rxstruct.products
-        push!(reaction_func.args[4].args, prod.reactant)
-        push!(reaction_func.args[6].args, prod.stoichiometry)
-    end
-    reaction_func
-end
-
-# takes a ModelingToolkit declaration macro like @parameters and returns an expression
-# that calls the macro and then scalarizes all the symbols created into a vector of Nums
-function scalarize_macro(nonempty, ex, name)
+# Takes a ModelingToolkit declaration macro (like @parameters ...) and return and expression:
+# That calls the macro and then scalarizes all the symbols created into a vector of Nums.
+# stores the created symbolic variables in a variable (which name is generated from `name`).
+# It will also return the name used for the variable that stores the symbolci variables.
+function scalarize_macro(expr_init, name)
+    # Generates a random variable name which (in generated code) will store the produced
+    # symbolic variables (e.g. `var"##ps#384"`).
     namesym = gensym(name)
-    if nonempty
+
+    # If the input expression is non-emtpy, wraps it with addiional information.
+    if expr_init != :(())
         symvec = gensym()
-        ex = quote
-            $symvec = $ex
+        expr = quote
+            $symvec = $expr_init
             $namesym = reduce(vcat, Symbolics.scalarize($symvec))
         end
     else
-        ex = :($namesym = Num[])
+        expr = :($namesym = Num[])
     end
-    ex, namesym
+
+    return expr, namesym
+end
+
+# From the system reactions (as `ReactionInternal`s) and equations (as expressions),
+# creates the expressions that evalutes to the reaction (+ equations) vector.
+function make_rxsexprs(reactions, equations)
+    rxsexprs = :(Catalyst.CatalystEqType[])
+    foreach(rx -> push!(rxsexprs.args, get_rxexpr(rx)), reactions)
+    foreach(eq -> push!(rxsexprs.args, eq), equations)
+    return rxsexprs
+end
+
+# From a `ReactionInternal` struct, creates the expression which evaluates to the creation
+# of the correponding reaction.
+function get_rxexpr(rx::ReactionInternal)
+    # Initiates the `Reaction` expression.
+    rate = recursive_expand_functions!(rx.rate)
+    rx_constructor = :(Reaction($rate, [], [], [], []; metadata = $(rx.metadata)))
+
+    # Loops through all products and substrates, and adds them (and their stoichiometries)
+    # to the `Reaction` expression.
+    for sub in rx.substrates
+        push!(rx_constructor.args[4].args, sub.reactant)
+        push!(rx_constructor.args[6].args, sub.stoichiometry)
+    end
+    for prod in rx.products
+        push!(rx_constructor.args[5].args, prod.reactant)
+        push!(rx_constructor.args[7].args, prod.stoichiometry)
+    end
+
+    return rx_constructor
 end
 
 ### DSL Option Handling ###
 
-# Checks if the `@default_noise_scaling` option is used. If so, read its input and adds it as a
-# default metadata value to the `default_reaction_metadata` vector.
-function check_default_noise_scaling!(default_reaction_metadata, options)
-    if haskey(options, :default_noise_scaling)
-        if (length(options[:default_noise_scaling].args) != 3) # Because of how expressions are, 3 is used.
-            error("@default_noise_scaling should only have a single input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
-        end
-        push!(default_reaction_metadata.args,
-            :(:noise_scaling => $(options[:default_noise_scaling].args[3])))
+# Finds the time idenepdnet variable, and any potential spatial indepndent variables.
+# Returns these (individually and combined), as well as an expression for declaring them
+function read_ivs_option(options)
+    # Creates the independent variables expressions (depends on whether the `ivs` option was used).
+    if haskey(options, :ivs)
+        ivs = Tuple(extract_syms(options, :ivs))
+        ivexpr = copy(options[:ivs])
+        ivexpr.args[1] = Symbol("@", "parameters")
+    else
+        ivs = (DEFAULT_IV_SYM,)
+        ivexpr = :($(DEFAULT_IV_SYM) = default_t())
     end
+
+    # Extracts the independet variables symbols, and returns the output.
+    tiv = ivs[1]
+    sivs = (length(ivs) > 1) ? Expr(:vect, ivs[2:end]...) : nothing
+    return tiv, sivs, ivs, ivexpr
+end
+
+# Returns the `default_reaction_metadata` output. Technically Catalyst's code could have been made
+# more generic to account for other default reaction metadata. Practically, this will likely
+# be the only relevant reaction metadata to have a default value via the DSL. If another becomes
+# relevant, the code can be rewritten to take this into account.
+# Checks if the `@default_noise_scaling` option is used. If so, uses it as the default value of 
+# the `default_noise_scaling` reaction metadata, otherwise, returns an empty vector.
+function read_default_noise_scaling_option(options)
+    if haskey(options, :default_noise_scaling)
+        if (length(options[:default_noise_scaling].args) != 3)
+            error("@default_noise_scaling should only have a single expression as its input, this appears not to be the case: \"$(options[:default_noise_scaling])\"")
+        end
+        return :([:noise_scaling => $(options[:default_noise_scaling].args[3])])
+    end
+    return :([])
 end
 
 # When compound species are declared using the "@compound begin ... end" option, get a list of the compound species, and also the expression that crates them.
@@ -733,27 +750,40 @@ function create_differential_expr(options, add_default_diff, used_syms, tiv)
     return diffexpr
 end
 
-# Reads the observables options. Outputs an expression ofr creating the observable variables, and a vector of observable equations.
+# Reads the combinatiorial ratelaw options, which determines if a combinatorial rate law should
+# be used or not. If not provides, uses the default (true).
+function read_combinatoric_ratelaws_option(options)
+    if haskey(options, :combinatoric_ratelaws)
+        return options[:combinatoric_ratelaws].args[end]
+    else
+        return true
+    end
+end
+
+# Reads the observables options. Outputs an expression for creating the obervable variables,
+# a vector with the observable equations, and a vector with the observables' symbols.
 function read_observed_options(options, species_n_vars_declared, ivs_sorted)
     if haskey(options, :observables)
         # Gets list of observable equations and prepares variable declaration expression.
         # (`options[:observables]` includes `@observables`, `.args[3]` removes this part)
         observed_eqs = make_observed_eqs(options[:observables].args[3])
-        observed_vars = Expr(:block, :(@variables))
+        observed_expr = Expr(:block, :(@variables))
         obs_syms = :([])
 
         for (idx, obs_eq) in enumerate(observed_eqs.args)
-            # Extract the observable, checks errors, and continues the loop if the observable has been declared.
+            # Extract the observable, checks for errors.
             obs_name, ivs, defaults, metadata = find_varinfo_in_declaration(obs_eq.args[2])
-            isempty(ivs) ||
+            if !isempty(ivs)
                 error("An observable ($obs_name) was given independent variable(s). These should not be given, as they are inferred automatically.")
-            isnothing(defaults) ||
+            end
+            if !isnothing(defaults)
                 error("An observable ($obs_name) was given a default value. This is forbidden.")
-            (obs_name in forbidden_symbols_error) &&
+            end
+            if in(obs_name, forbidden_symbols_error)
                 error("A forbidden symbol ($(obs_eq.args[2])) was used as an observable name.")
-
-            # Error checks.
+            end
             if (obs_name in species_n_vars_declared) && is_escaped_expr(obs_eq.args[2])
+                println("HERE")
                 error("An interpolated observable have been used, which has also been explicitly declared within the system using either @species or @variables. This is not permitted.")
             end
             if ((obs_name in species_n_vars_declared) || is_escaped_expr(obs_eq.args[2])) &&
@@ -768,19 +798,18 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
                 # Appends (..) to the observable (which is later replaced with the extracted ivs).
                 # Adds the observable to the first line of the output expression (starting with `@variables`).
                 obs_expr = insert_independent_variable(obs_eq.args[2], :(..))
-                push!(observed_vars.args[1].args, obs_expr)
+                push!(observed_expr.args[1].args, obs_expr)
 
-                # Adds a line to the `observed_vars` expression, setting the ivs for this observable.
+                # Adds a line to the `observed_expr` expression, setting the ivs for this observable.
                 # Cannot extract directly using e.g. "getfield.(dependants_structs, :reactant)" because
                 # then we get something like :([:X1, :X2]), rather than :([X1, X2]).
                 dep_var_expr = :(filter(!MT.isparameter,
                     Symbolics.get_variables($(obs_eq.args[3]))))
-                ivs_get_expr = :(unique(reduce(
-                    vcat, [arguments(MT.unwrap(dep))
-                           for dep in $dep_var_expr])))
-                ivs_get_expr_sorted = :(sort($(ivs_get_expr);
-                    by = iv -> findfirst(MT.getname(iv) == ivs for ivs in $ivs_sorted)))
-                push!(observed_vars.args,
+                ivs_get_expr = :(unique(reduce(vcat,
+                    [arguments(MT.unwrap(dep)) for dep in $dep_var_expr])))
+                sort_func(iv) = findfirst(MT.getname(iv) == ivs for ivs in ivs_sorted)
+                ivs_get_expr_sorted = :(sort($(ivs_get_expr); by = $sort_func))
+                push!(observed_expr.args,
                     :($obs_name = $(obs_name)($(ivs_get_expr_sorted)...)))
             end
 
@@ -794,31 +823,26 @@ function read_observed_options(options, species_n_vars_declared, ivs_sorted)
             is_escaped_expr(obs_eq.args[2]) || push!(obs_syms.args, obs_name)
         end
 
-        # If nothing was added to `observed_vars`, it has to be modified not to throw an error.
-        (length(observed_vars.args) == 1) && (observed_vars = :())
+        # If nothing was added to `observed_expr`, it has to be modified not to throw an error.
+        (length(observed_expr.args) == 1) && (observed_expr = :())
     else
         # If option is not used, return empty expression and vector.
-        observed_vars = :()
+        observed_expr = :()
         observed_eqs = :([])
         obs_syms = :([])
     end
-    return observed_vars, observed_eqs, obs_syms
+
+    return observed_expr, observed_eqs, obs_syms
 end
 
-# From the input to the @observables options, creates a vector containing one equation for each observable.
-# Checks separate cases for "@observables O ~ ..." and "@observables begin ... end". Other cases errors.
+# From the input to the @observables options, creates a vector containing one equation for
+# each observable. `option_block_form` handles if single line declaration of `@observables`,
+# i.e. without a `begin ... end` block, was used.
 function make_observed_eqs(observables_expr)
-    if observables_expr.head == :call
-        return :([$(observables_expr)])
-    elseif observables_expr.head == :block
-        observed_eqs = :([])
-        for arg in observables_expr.args
-            push!(observed_eqs.args, arg)
-        end
-        return observed_eqs
-    else
-        error("Malformed observables option usage: $(observables_expr).")
-    end
+    observables_expr = option_block_form(observables_expr)
+    observed_eqs = :([])
+    foreach(arg -> push!(observed_eqs.args, arg), observables_expr.args)
+    return observed_eqs
 end
 
 ### `@reaction` Macro & its Internals ###
@@ -826,20 +850,41 @@ end
 @doc raw"""
 @reaction
 
-Generates a single [`Reaction`](@ref) object.
+Generates a single [`Reaction`](@ref) object using a similar syntax as the `@reaction_network`
+macro (but permiting only a single reaction). A more detailed introduction to the syntax can
+be found in the description of `@reaction_network`.
+
+The `@reaction` macro is folled by a single line consisting of three parts:
+- A rate (at which the reaction occur).
+- Any number of substrates (which are consumed by the reaction).
+- Any number of products (which are produced by the reaction).
+
+The output is a reaction (just liek created using teh `Reaction` constructor).
 
 Examples:
+Here we create a simple binding reaction and stroes it in the variable rx:
 ```julia
+rx = @reaction k, X + Y --> XY
+```
+The macro will automatically deduce `X`, `Y`, and `XY` to be species (as these occur as reactants)
+and `k` as a parameters (as it does not occur as a reactant).
+
+The `@reaction` macro provides a more concise notation to the `Reaction` constructor. I.e. here
+we create the same reaction using both approaches, and also confirms that they are identical.
+```julia
+# Creates a reaction using the `@reaction` macro.
 rx = @reaction k*v, A + B --> C + D
 
-# is equivalent to
+# Creates a reaction using the `Reaction` constructor.
 t = default_t()
 @parameters k v
 @species A(t) B(t) C(t) D(t)
-rx == Reaction(k*v, [A,B], [C,D])
+rx2 = Reaction(k*v, [A, B], [C, D])
+
+# Confirms that the two approaches yield identical results:
+rx1 == rx2
 ```
-Here `k` and `v` will be parameters and `A`, `B`, `C` and `D` will be variables.
-Interpolation of existing parameters/variables also works
+Interpolation of already declared symbolic variables into `@reaction` is possible:
 ```julia
 t = default_t()
 @parameters k b
@@ -849,10 +894,8 @@ rx = @reaction b*$ex*$A, $A --> C
 ```
 
 Notes:
-- Any symbols arising in the rate expression that aren't interpolated are treated as
-parameters. In the reaction part (`α*A + B --> C + D`), coefficients are treated as
-parameters, e.g. `α`, and rightmost symbols as species, e.g. `A,B,C,D`.
-- Works with any *single* arrow types supported by [`@reaction_network`](@ref).
+- `@reaction` does not support bi-directional type reactions (using `<-->`) or reaction bundling
+(e.g. `d, (X,Y) --> 0`).
 - Interpolation of Julia variables into the macro works similar to the `@reaction_network`
 macro. See [The Reaction DSL](@ref dsl_description) tutorial for more details.
 """
@@ -863,23 +906,23 @@ end
 # Function for creating a Reaction structure (used by the @reaction macro).
 function make_reaction(ex::Expr)
 
-    # Handle interpolation of variables
+    # Handle interpolation of variables in the input.
     ex = esc_dollars!(ex)
 
-    # Parses reactions, species, and parameters.
+    # Parses reactions. Extracts species and paraemters within it.
     reaction = get_reaction(ex)
-    species, parameters = extract_species_and_parameters!([reaction], [])
+    species, parameters = extract_species_and_parameters([reaction], [])
 
     # Checks for input errors.
     forbidden_symbol_check(union(species, parameters))
 
-    # Creates expressions corresponding to actual code from the internal DSL representation.
-    sexprs = get_sexpr(species, Dict{Symbol, Expr}())
+    # Creates expressions corresponding to code for declaring the parameters, species, and reaction.
+    sexprs = get_usexpr(species, Dict{Symbol, Expr}())
     pexprs = get_pexpr(parameters, Dict{Symbol, Expr}())
-    rxexpr = get_rxexprs(reaction)
+    rxexpr = get_rxexpr(reaction)
     iv = :($(DEFAULT_IV_SYM) = default_t())
 
-    # Returns the rephrased expression.
+    # Returns a repharsed expression which generates the `Reaction`.
     quote
         $pexprs
         $iv
@@ -888,36 +931,39 @@ function make_reaction(ex::Expr)
     end
 end
 
-# Reads a single line and creates the corresponding ReactionStruct.
+# Reads a single line and creates the corresponding ReactionInternal.
 function get_reaction(line)
     reaction = get_reactions([line])
     if (length(reaction) != 1)
         error("Malformed reaction. @reaction macro only creates a single reaction. E.g. double arrows, such as `<-->` are not supported.")
     end
-    return reaction[1]
+    return only(reaction)
 end
 
 ### Generic Expression Manipulation ###
 
-# Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.
+# Recursively traverses an expression and replaces special function call like "hill(...)" with
+# the actual corresponding expression.
 function recursive_expand_functions!(expr::ExprValues)
     (typeof(expr) != Expr) && (return expr)
-    foreach(i -> expr.args[i] = recursive_expand_functions!(expr.args[i]),
-        1:length(expr.args))
-    if expr.head == :call
-        !isdefined(Catalyst, expr.args[1]) && (expr.args[1] = esc(expr.args[1]))
+    for i in eachindex(expr.args)
+        expr.args[i] = recursive_expand_functions!(expr.args[i])
     end
-    expr
+    if (expr.head == :call) && !isdefined(Catalyst, expr.args[1])
+        expr.args[1] = esc(expr.args[1])
+    end
+    return expr
 end
 
-# Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a Symbol/Numerical).
+# Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably
+# a Symbol/Numerical). This is used to handle bundled reaction (like `d, (X,Y) --> 0`).
 function tup_leng(ex::ExprValues)
     (typeof(ex) == Expr && ex.head == :tuple) && (return length(ex.args))
     return 1
 end
 
 # Gets the ith element in a expression tuple, or returns the input itself if it is not an expression tuple
-# (probably a  Symbol/Numerical).
+# (probably a  Symbol/Numerical). This is used to handle bundled reaction (like `d, (X,Y) --> 0`).
 function get_tup_arg(ex::ExprValues, i::Int)
     (tup_leng(ex) == 1) && (return ex)
     return ex.args[i]
