@@ -395,8 +395,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         cevents = $continuous_events_expr
         devents = $discrete_events_expr
 
-        Catalyst.remake_ReactionSystem_internal(
-            Catalyst.make_ReactionSystem_internal(
+        remake_ReactionSystem_internal(
+            make_ReactionSystem_internal(
                 rx_eq_vec, $tiv, vars, $pssym; 
                 name = $name, spatial_ivs = sivs_vec, observed = obseqs,
                 continuous_events = cevents, discrete_events = devents,
