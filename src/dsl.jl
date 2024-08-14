@@ -87,13 +87,13 @@ macro species(ex...)
     resize!(vars.args, idx + length(lastarg.args) + 1)
     for sym in lastarg.args
         vars.args[idx] = :($sym = ModelingToolkit.wrap(setmetadata(
-            ModelingToolkit.value($sym), Catalyst.VariableSpecies, true)))
+            ModelingToolkit.value($sym), VariableSpecies, true)))
         idx += 1
     end
 
     # check nothing was declared isconstantspecies
     ex = quote
-        all(!Catalyst.isconstant ∘ ModelingToolkit.value, $lastarg) ||
+        all(!isconstant ∘ ModelingToolkit.value, $lastarg) ||
             throw(ArgumentError("isconstantspecies metadata can only be used with parameters."))
     end
     vars.args[idx] = ex
@@ -371,7 +371,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     vars, varssym = scalarize_macro(!isempty(variables), vexprs, "vars")
     sps, spssym = scalarize_macro(!isempty(species), sexprs, "specs")
     comps, compssym = scalarize_macro(!isempty(compound_species), compound_expr, "comps")
-    rxexprs = :(Catalyst.CatalystEqType[])
+    rxexprs = :(CatalystEqType[])
     for reaction in reactions
         push!(rxexprs.args, get_rxexprs(reaction))
     end
