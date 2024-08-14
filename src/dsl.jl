@@ -397,7 +397,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
         remake_ReactionSystem_internal(
             make_ReactionSystem_internal(
-                rx_eq_vec, $tiv, vars, $pssym; 
+                rx_eq_vec, $tiv, vars, $pssym;
                 name = $name, spatial_ivs = sivs_vec, observed = obseqs,
                 continuous_events = cevents, discrete_events = devents,
                 combinatoric_ratelaws = $combinatoric_ratelaws);
