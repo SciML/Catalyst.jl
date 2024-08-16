@@ -461,9 +461,10 @@ function getmetadata_dict(reaction::Reaction)
 end
 
 """
-hasmetadata(reaction::Reaction, md_key::Symbol)
+    SymbolicUtils.hasmetadata(reaction::Reaction, md_key::Symbol)
 
-Checks if a `Reaction` have a certain metadata field. If it does, returns `true` (else returns `false`).
+Checks if a `Reaction` have a certain metadata field. If it does, returns `true` (else
+returns `false`).
 
 Arguments:
 - `reaction`: The reaction for which we wish to check if a specific metadata field exist.
@@ -475,14 +476,15 @@ reaction = @reaction k, 0 --> X, [description="Production reaction"]
 hasmetadata(reaction, :description)
 ```
 """
-function hasmetadata(reaction::Reaction, md_key::Symbol)
+function SymbolicUtils.hasmetadata(reaction::Reaction, md_key::Symbol)
     return any(isequal(md_key, entry[1]) for entry in getmetadata_dict(reaction))
 end
 
 """
-getmetadata(reaction::Reaction, md_key::Symbol)
+    SymbolicUtils.getmetadata(reaction::Reaction, md_key::Symbol)
 
-Retrieves a certain metadata value from a `Reaction`. If the metadata does not exist, throws an error.
+Retrieves a certain metadata value from a `Reaction`. If the metadata does not exist, throws
+an error.
 
 Arguments:
 - `reaction`: The reaction for which we wish to retrieve a specific metadata value.
@@ -494,7 +496,7 @@ reaction = @reaction k, 0 --> X, [description="Production reaction"]
 getmetadata(reaction, :description)
 ```
 """
-function getmetadata(reaction::Reaction, md_key::Symbol)
+function SymbolicUtils.getmetadata(reaction::Reaction, md_key::Symbol)
     metadata = getmetadata_dict(reaction)
     idx = findfirst(isequal(md_key, entry[1]) for entry in metadata)
     (idx === nothing) &&
@@ -502,7 +504,27 @@ function getmetadata(reaction::Reaction, md_key::Symbol)
     return metadata[idx][2]
 end
 
-### Implemented Reaction Metadata ###
+"""
+    SymbolicUtils.setmetadata(rx::Reaction, key::Symbol, val)
+
+Sets the metadata with key `key` to the value `val`, overwriting if already present or
+adding if not present.
+
+Arguments:
+- `rx`: The reaction to add the metadata too.
+- `key`: `Symbol` representing the metadata's key (i.e. name).
+- `val`: value for the metadata.
+"""
+function SymbolicUtils.setmetadata(rx::Reaction, key::Symbol, val)
+    mdvec = getmetadata_dict(rx)
+    idx = findfirst(isequal(key, first(md)) for md in mdvec)
+    if idx === nothing
+        push!(mdvec, key => val)
+    else
+        mdvec[idx] = key => val
+    end
+    nothing
+end
 
 # Noise scaling.
 """

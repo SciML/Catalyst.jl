@@ -45,6 +45,7 @@ import DataStructures: OrderedDict, OrderedSet
 import Parameters: @with_kw_noshow
 import Symbolics: occursin, wrap
 import Symbolics.RewriteHelpers: hasnode, replacenode
+import SymbolicUtils: getmetadata, hasmetadata, setmetadata
 
 # globals for the modulate
 function default_time_deriv()
