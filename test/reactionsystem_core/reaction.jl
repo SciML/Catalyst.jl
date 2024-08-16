@@ -133,8 +133,8 @@ let
     r = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
 
     @test Catalyst.getmetadata_dict(r) == [:noise_scaling => 0.0]
-    @test getmetadata(r, :noise_scaling)
-    @test !getmetadata(r, :nonexisting_metadata)
+    @test hasmetadata(r, :noise_scaling)
+    @test !hasmetadata(r, :nonexisting_metadata)
     @test getmetadata(r, :noise_scaling) == 0.0
     @test_throws Exception getmetadata(r, :misc)
     setmetadata(r, :test_metadata, 1234)
@@ -157,7 +157,7 @@ let
 
     @test isequal(r1, r2)
     @test Catalyst.getmetadata_dict(r1) == Pair{Symbol,Any}[]
-    @test !getmetadata(r1, :md)
+    @test !hasmetadata(r1, :md)
 end
 
 # Tests creation.
@@ -177,13 +177,13 @@ let
     r = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
 
     @test Catalyst.getmetadata_dict(r) isa Vector{Pair{Symbol,Any}}
-    @test getmetadata(r, :md_1)
-    @test getmetadata(r, :md_2)
-    @test getmetadata(r, :md_3)
-    @test getmetadata(r, :md_4)
-    @test getmetadata(r, :md_5)
-    @test getmetadata(r, :md_6)
-    @test !getmetadata(r, :md_8)
+    @test hasmetadata(r, :md_1)
+    @test hasmetadata(r, :md_2)
+    @test hasmetadata(r, :md_3)
+    @test hasmetadata(r, :md_4)
+    @test hasmetadata(r, :md_5)
+    @test hasmetadata(r, :md_6)
+    @test !hasmetadata(r, :md_8)
 
     @test isequal(getmetadata(r, :md_1), 1.0)
     @test isequal(getmetadata(r, :md_2), false)

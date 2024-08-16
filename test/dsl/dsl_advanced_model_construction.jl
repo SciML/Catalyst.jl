@@ -189,12 +189,12 @@ let
     @test isequal(Catalyst.getmetadata_dict(r3), Catalyst.getmetadata_dict(rxs[3]))
 
     # Checks that accessor functions works on the DSL.
-    @test getmetadata(rxs[1], :noise_scaling)
-    @test !getmetadata(rxs[1], :md_1)
-    @test !getmetadata(rxs[2], :noise_scaling)
-    @test getmetadata(rxs[2], :md_1)
-    @test !getmetadata(rxs[3], :noise_scaling)
-    @test !getmetadata(rxs[3], :md_1)
+    @test hasmetadata(rxs[1], :noise_scaling)
+    @test !hasmetadata(rxs[1], :md_1)
+    @test !hasmetadata(rxs[2], :noise_scaling)
+    @test hasmetadata(rxs[2], :md_1)
+    @test !hasmetadata(rxs[3], :noise_scaling)
+    @test !hasmetadata(rxs[3], :md_1)
 
     @test isequal(getmetadata(rxs[1], :noise_scaling), η)
     @test isequal(getmetadata(rxs[2], :md_1), 1.0)
