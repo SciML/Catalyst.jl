@@ -526,6 +526,8 @@ function SymbolicUtils.setmetadata(rx::Reaction, key::Symbol, val)
     nothing
 end
 
+### Catalyst Defined Reaction Metadata ###
+
 # Noise scaling.
 """
 hasnoisescaling(reaction::Reaction)
