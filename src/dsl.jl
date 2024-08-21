@@ -150,7 +150,7 @@ macro reaction_network(name::Expr, ex::Expr)
         MacroTools.striplines(ex); name = :($(esc(name.args[1])))))))
 end
 
-macro reaction_network(ex::Expr)
+macro reaction_network(ex::Expr)    
     ex = MacroTools.striplines(ex)
 
     # no name but equations: @reaction_network begin ... end ...
@@ -371,7 +371,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     vars, varssym = scalarize_macro(!isempty(variables), vexprs, "vars")
     sps, spssym = scalarize_macro(!isempty(species), sexprs, "specs")
     comps, compssym = scalarize_macro(!isempty(compound_species), compound_expr, "comps")
-    rxexprs = :(Catalyst.CatalystEqType[])
+    rxexprs = :(CatalystEqType[])
     for reaction in reactions
         push!(rxexprs.args, get_rxexprs(reaction))
     end
@@ -380,23 +380,28 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     end
 
     quote
-        $ps
         $ivexpr
+        $ps
         $vars
         $sps
         $observed_vars
         $comps
         $diffexpr
 
-        Catalyst.remake_ReactionSystem_internal(
-            Catalyst.make_ReactionSystem_internal(
-                $rxexprs, $tiv, setdiff(union($spssym, $varssym, $compssym), $obs_syms),
-                $pssym; name = $name, spatial_ivs = $sivs, observed = $observed_eqs,
-                continuous_events = $continuous_events_expr,
-                discrete_events = $discrete_events_expr,
+        sivs_vec = $sivs
+        rx_eq_vec = $rxexprs
+        vars = setdiff(union($spssym, $varssym, $compssym), $obs_syms)
+        obseqs = $observed_eqs
+        cevents = $continuous_events_expr
+        devents = $discrete_events_expr
+
+        remake_ReactionSystem_internal(
+            make_ReactionSystem_internal(
+                rx_eq_vec, $tiv, vars, $pssym;
+                name = $name, spatial_ivs = sivs_vec, observed = obseqs,
+                continuous_events = cevents, discrete_events = devents,
                 combinatoric_ratelaws = $combinatoric_ratelaws);
-            default_reaction_metadata = $default_reaction_metadata
-        )
+            default_reaction_metadata = $default_reaction_metadata)
     end
 end
 
