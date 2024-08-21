@@ -575,8 +575,8 @@ let
         end
     end
     V,W = getfield.(observed(rn), :lhs)
-    @test isequal(arguments(ModelingToolkit.unwrap(V)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[1], Catalyst.get_sivs(rn)[2]])
-    @test isequal(arguments(ModelingToolkit.unwrap(W)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[2]])
+    @test isequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(V)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[1], Catalyst.get_sivs(rn)[2]])
+    @test isequal(Symbolics.sorted_arguments(ModelingToolkit.unwrap(W)), Any[Catalyst.get_iv(rn), Catalyst.get_sivs(rn)[2]])
 end
 
 # Checks that metadata is written properly.

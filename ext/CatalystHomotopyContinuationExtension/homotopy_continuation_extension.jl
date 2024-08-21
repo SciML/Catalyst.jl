@@ -70,10 +70,10 @@ end
 function ___make_int_exps(expr)
     !iscall(expr) && return expr
     if (operation(expr) == ^)
-        if isinteger(arguments(expr)[2])
-            return arguments(expr)[1]^Int64(arguments(expr)[2])
+        if isinteger(sorted_arguments(expr)[2])
+            return sorted_arguments(expr)[1]^Int64(sorted_arguments(expr)[2])
         else
-            error("An non integer ($(arguments(expr)[2])) was found as a variable exponent. Non-integer exponents are not supported for homotopy continuation based steady state finding.")
+            error("An non integer ($(sorted_arguments(expr)[2])) was found as a variable exponent. Non-integer exponents are not supported for homotopy continuation based steady state finding.")
         end
     end
 end
@@ -83,7 +83,7 @@ function remove_denominators(expr)
     s_expr = simplify_fractions(expr)
     !iscall(expr) && return expr
     if operation(s_expr) == /
-        return remove_denominators(arguments(s_expr)[1])
+        return remove_denominators(sorted_arguments(s_expr)[1])
     end
     if operation(s_expr) == +
         return sum(remove_denominators(arg) for arg in arguments(s_expr))

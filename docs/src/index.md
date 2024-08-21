@@ -134,10 +134,10 @@ The same model can be used as input to other types of simulations. E.g. here we 
 # The initial conditions are now integers as we track exact populations for each species.
 using JumpProcesses
 u0_integers = [:S => 50, :E => 10, :SE => 0, :P => 0]
-dprob = DiscreteProblem(model, u0_integers, tspan, ps)
-jprob = JumpProblem(model, dprob, Direct())
-jump_sol = solve(jprob, SSAStepper())
-jump_sol = solve(jprob, SSAStepper(); seed = 1234) # hide
+jinput = JumpInputs(model, u0_integers, tspan, ps)
+jprob = JumpProblem(jinput)
+jump_sol = solve(jprob)
+jump_sol = solve(jprob; seed = 1234) # hide
 plot(jump_sol; lw = 2)
 ```
 

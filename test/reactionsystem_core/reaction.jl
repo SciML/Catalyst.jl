@@ -133,10 +133,14 @@ let
     r = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
 
     @test Catalyst.getmetadata_dict(r) == [:noise_scaling => 0.0]
-    @test Catalyst.hasmetadata(r, :noise_scaling)
-    @test !Catalyst.hasmetadata(r, :nonexisting_metadata)
-    @test Catalyst.getmetadata(r, :noise_scaling) == 0.0
-    @test_throws Exception Catalyst.getmetadata(r, :misc)
+    @test hasmetadata(r, :noise_scaling)
+    @test !hasmetadata(r, :nonexisting_metadata)
+    @test getmetadata(r, :noise_scaling) == 0.0
+    @test_throws Exception getmetadata(r, :misc)
+    setmetadata(r, :test_metadata, 1234)
+    @test getmetadata(r, :test_metadata) == 1234
+    setmetadata(r, :test_metadata, 1111)
+    @test getmetadata(r, :test_metadata) == 1111
 
     metadata_repeated = [:noise_scaling => 0.0, :noise_scaling => 1.0, :metadata_entry => "unused"]
     @test_throws Exception Reaction(k, [X], [X2], [2], [1]; metadata=metadata_repeated)
@@ -153,7 +157,7 @@ let
 
     @test isequal(r1, r2)
     @test Catalyst.getmetadata_dict(r1) == Pair{Symbol,Any}[]
-    @test !Catalyst.hasmetadata(r1, :md)
+    @test !hasmetadata(r1, :md)
 end
 
 # Tests creation.
@@ -173,20 +177,20 @@ let
     r = Reaction(k, [X], [X2], [2], [1]; metadata=metadata)
 
     @test Catalyst.getmetadata_dict(r) isa Vector{Pair{Symbol,Any}}
-    @test Catalyst.hasmetadata(r, :md_1)
-    @test Catalyst.hasmetadata(r, :md_2)
-    @test Catalyst.hasmetadata(r, :md_3)
-    @test Catalyst.hasmetadata(r, :md_4)
-    @test Catalyst.hasmetadata(r, :md_5)
-    @test Catalyst.hasmetadata(r, :md_6)
-    @test !Catalyst.hasmetadata(r, :md_8)
+    @test hasmetadata(r, :md_1)
+    @test hasmetadata(r, :md_2)
+    @test hasmetadata(r, :md_3)
+    @test hasmetadata(r, :md_4)
+    @test hasmetadata(r, :md_5)
+    @test hasmetadata(r, :md_6)
+    @test !hasmetadata(r, :md_8)
 
-    @test isequal(Catalyst.getmetadata(r, :md_1), 1.0)
-    @test isequal(Catalyst.getmetadata(r, :md_2), false)
-    @test isequal(Catalyst.getmetadata(r, :md_3), "Hello world")
-    @test isequal(Catalyst.getmetadata(r, :md_4), :sym)
-    @test isequal(Catalyst.getmetadata(r, :md_5), X + X2^k -1)
-    @test isequal(Catalyst.getmetadata(r, :md_6), (0.1, 2.0))
+    @test isequal(getmetadata(r, :md_1), 1.0)
+    @test isequal(getmetadata(r, :md_2), false)
+    @test isequal(getmetadata(r, :md_3), "Hello world")
+    @test isequal(getmetadata(r, :md_4), :sym)
+    @test isequal(getmetadata(r, :md_5), X + X2^k -1)
+    @test isequal(getmetadata(r, :md_6), (0.1, 2.0))
 end
 
 # Tests the noise scaling metadata.
