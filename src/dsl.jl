@@ -150,7 +150,7 @@ macro reaction_network(name::Expr, ex::Expr)
         MacroTools.striplines(ex); name = :($(esc(name.args[1])))))))
 end
 
-macro reaction_network(ex::Expr)    
+macro reaction_network(ex::Expr)
     ex = MacroTools.striplines(ex)
 
     # no name but equations: @reaction_network begin ... end ...
