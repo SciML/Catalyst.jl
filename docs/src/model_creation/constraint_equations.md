@@ -150,11 +150,26 @@ p = [k_on => 100.0, switch_time => 2.0, k_off => 10.0]
 ```
 Simulating our model,
 ```@example ceq3
-@named osys = ReactionSystem(rxs, t, [A, B], [k_on, k_off, switch_time]; discrete_events)
-osys = complete(osys)
+@named rs2 = ReactionSystem(rxs, t, [A, B], [k_on, k_off, switch_time]; discrete_events)
+rs2 = complete(rs2)
 
-oprob = ODEProblem(osys, u0, tspan, p)
+oprob = ODEProblem(rs2, u0, tspan, p)
 sol = solve(oprob, Tsit5(); tstops = 2.0)
 plot(sol)
 ```
-Note that for discrete events we need to set a stop time, `tstops`, so that the ODE solver can step exactly to the specific time of our event. For a detailed discussion on how to directly use the lower-level but more flexible DifferentialEquations.jl event/callback interface, see the [tutorial](https://docs.sciml.ai/Catalyst/stable/catalyst_applications/advanced_simulations/#Event-handling-using-callbacks) on event handling using callbacks.
+Note that for discrete events we need to set a stop time via `tstops` so that
+the ODE solver can step exactly to the specific time of our event. In the
+previous example we just manually set the numeric value of the parameter in the
+`tstops` kwarg to `solve`, however, it can often be convenient to instead get
+the value of the parameter from `oprob` and pass this numeric value. This helps
+ensure consistency between the value passed via `p` and/or symbolic defaults and
+what we pass as a `tstop` to `solve`. We can do this as
+```julia
+switch_time_val = oprob.ps[:switch_time]
+sol = solve(oprob, Tsit5(); tstops = switch_time_val)
+plot(sol)
+```
+For a detailed discussion on how to directly use the lower-level but more
+flexible DifferentialEquations.jl event/callback interface, see the
+[tutorial](https://docs.sciml.ai/Catalyst/stable/catalyst_applications/advanced_simulations/#Event-handling-using-callbacks)
+on event handling using callbacks.
