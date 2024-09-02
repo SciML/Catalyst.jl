@@ -2,6 +2,9 @@
 
 ## Catalyst unreleased (master branch)
 
+## Catalyst 14.4
+- Symbolics 6 support.
+
 ## Catalyst 14.3
 - Support for simulating stochastic chemical kinetics models with explicitly
   time-dependent propensities (i.e. where the resulting `JumpSystem` contains
