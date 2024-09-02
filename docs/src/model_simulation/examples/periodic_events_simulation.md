@@ -34,7 +34,7 @@ jinput = JumpInputs(circadian_model, u0, tspan, ps)
 jprob = JumpProblem(jinput)
 jsol = solve(jprob)
 plot(jsol)
-Catalyst.PNG(plot(sol; fmt = :png, dpi = 200)) # hide
+Catalyst.PNG(plot(jsol; fmt = :png, dpi = 200)) # hide
 ```
 
 Sometimes we might want to setup a more complicated condition than simply that
