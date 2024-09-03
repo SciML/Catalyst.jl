@@ -917,7 +917,7 @@ function recursive_expand_functions!(expr::ExprValues)
 end
 
 # Recursively expand the right-hand-side of an equation written using user-defined functions and special function calls like "hill(...)" with the actual corresponding expression. 
-function expand_equation_RHS!(eq::Expr) 
+function expand_equation_RHS!(eq::Expr)
     rhs = recursive_expand_functions!(eq.args[3])
     eq.args[3] = rhs
     eq
