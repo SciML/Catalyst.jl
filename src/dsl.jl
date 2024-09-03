@@ -297,7 +297,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Get macro options.
     if length(unique(arg.args[1] for arg in option_lines)) < length(option_lines)
-        error("Some options where given multiple times.")
+        error("Some options were given multiple times.")
     end
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
         option_lines))
@@ -376,7 +376,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args, get_rxexprs(reaction))
     end
     for equation in equations
-        push!(rxexprs.args, equation)
+        equation = expand_equation_RHS!(equation)
+        push!(rxexprs.args, (equation))
     end
 
     quote
@@ -913,6 +914,13 @@ function recursive_expand_functions!(expr::ExprValues)
         !isdefined(Catalyst, expr.args[1]) && (expr.args[1] = esc(expr.args[1]))
     end
     expr
+end
+
+# Recursively expand the right-hand-side of an equation written using user-defined functions and special function calls like "hill(...)" with the actual corresponding expression. 
+function expand_equation_RHS!(eq::Expr) 
+    rhs = recursive_expand_functions!(eq.args[3])
+    eq.args[3] = rhs
+    eq
 end
 
 # Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a Symbol/Numerical).
