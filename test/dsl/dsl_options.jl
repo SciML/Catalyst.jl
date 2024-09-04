@@ -167,15 +167,26 @@ let
     @test isequal(equations(rn)[1], D(A) ~ 2*A*t)
 
 
-    # Test Catalyst function
+    hill_unregistered(A, v, K, n) = v*(A^n) / (A^n + K^n)
     rn2 = @reaction_network begin
         @parameters v K n
-        @equations D(A) ~ hill(A, v, K, n)
+        @equations D(A) ~ hill_unregistered(A, v, K, n)
     end
     @test length(equations(rn2)) == 1
     @test equations(rn2)[1] isa Equation
     @parameters v K n
-    @test isequal(Catalyst.expand_registered_functions(equations(rn2)[1]), D(A) ~ v*(A^n) / (A^n + K^n))
+    @test isequal(equations(rn2)[1], D(A) ~ v*(A^n) / (A^n + K^n))
+
+    @register_symbolic hill2(A, v, K, n)
+    # Test Catalyst function
+    rn2r = @reaction_network begin
+        @parameters v K n
+        @equations D(A) ~ hill2(A, v, K, n)
+    end
+    @test length(equations(rn2r)) == 1
+    @test equations(rn2r)[1] isa Equation
+    @parameters v K n
+    @test isequal(equations(rn2r)[1], D(A) ~ hill2(A, v, K, n))
 
 
     rn3 = @reaction_network begin

@@ -378,7 +378,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args, get_rxexprs(reaction))
     end
     for equation in equations
-        equation = expand_equation_RHS!(equation)
+        equation = escape_equation_RHS!(equation)
         push!(rxexprs.args, equation)
     end
 
@@ -576,7 +576,7 @@ function get_rxexprs(rxstruct)
     subs_stoich_init = deepcopy(subs_init)
     prod_init = isempty(rxstruct.products) ? nothing : :([])
     prod_stoich_init = deepcopy(prod_init)
-    reaction_func = :(Reaction($(recursive_expand_functions!(rxstruct.rate)), $subs_init,
+    reaction_func = :(Reaction($(recursive_escape_functions!(rxstruct.rate)), $subs_init,
         $prod_init, $subs_stoich_init, $prod_stoich_init,
         metadata = $(rxstruct.metadata)))
     for sub in rxstruct.substrates
@@ -908,10 +908,10 @@ end
 
 ### Generic Expression Manipulation ###
 
-# Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.
-function recursive_expand_functions!(expr::ExprValues)
+# Recursively traverses an expression and escapes all the user-defined functions. Special function calls like "hill(...)" are not expanded. 
+function recursive_escape_functions!(expr::ExprValues)
     (typeof(expr) != Expr) && (return expr)
-    foreach(i -> expr.args[i] = recursive_expand_functions!(expr.args[i]),
+    foreach(i -> expr.args[i] = recursive_escape_functions!(expr.args[i]),
         1:length(expr.args))
     if expr.head == :call
         !isdefined(Catalyst, expr.args[1]) && (expr.args[1] = esc(expr.args[1]))
@@ -919,11 +919,15 @@ function recursive_expand_functions!(expr::ExprValues)
     expr
 end
 
-# Recursively expand the right-hand-side of an equation written using user-defined functions and special function calls like "hill(...)" with the actual corresponding expression. 
-function expand_equation_RHS!(eq::Expr)
-    rhs = recursive_expand_functions!(eq.args[3])
-    eq.args[3] = rhs
-    eq
+# Recursively escape functions in the right-hand-side of an equation written using user-defined functions. Special function calls like "hill(...)" are not expanded.
+function escape_equation_RHS!(eqexpr::Expr)
+    lhs = recursive_escape_functions!(eqexpr.args[2])
+    eqexpr.args[2] = lhs
+
+    rhs = recursive_escape_functions!(eqexpr.args[3])
+    eqexpr.args[3] = rhs
+
+    eqexpr
 end
 
 # Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a Symbol/Numerical).
