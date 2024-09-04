@@ -166,10 +166,6 @@ let
     @species A(t)
     @test isequal(equations(rn)[1], D(A) ~ 2*A*t)
 
-    # Tests that error is declared. 
-    @test_throws LoadError @eval @reaction_network begin
-        @equations D(A) ~ hill(A, v, K, n)
-    end
 
     # Test Catalyst function
     rn2 = @reaction_network begin

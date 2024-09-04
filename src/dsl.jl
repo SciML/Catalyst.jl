@@ -348,12 +348,6 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         variables)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(reactions, declared_syms)
 
-    # Checks that all the symbols in the equation are declared. 
-    eq_syms = extract_syms_eq(equations, union(declared_syms, species_extracted, parameters_extracted))
-    if !isempty(eq_syms)
-        error("Symbols in equations must be explicitly defined using @variable, @species, or @parameter within the @reaction_network input.")
-    end
-
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
@@ -532,16 +526,6 @@ function extract_species_and_parameters!(reactions, excluded_syms)
     end
 
     collect(species), collect(parameters)
-end
-
-# Find undeclared symbols in the RHS of the equations. 
-function extract_syms_eq(equations, excluded_syms)
-    syms = OrderedSet{Union{Symbol, Expr}}()
-    for eq in equations
-        add_syms_from_expr!(syms, eq.args[3], excluded_syms)
-    end
-
-    collect(syms)
 end
 
 # Function called by extract_species_and_parameters!, recursively loops through an
