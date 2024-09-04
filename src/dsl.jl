@@ -347,6 +347,9 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         variables)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
         declared_syms)
+    parameters_extracted_eq = extract_parameters_eq(equations, declared_syms)
+    parameters_extracted = vcat(parameters_extracted, parameters_extracted_eq)
+
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
@@ -377,7 +380,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     end
     for equation in equations
         equation = expand_equation_RHS!(equation)
-        push!(rxexprs.args, (equation))
+        push!(rxexprs.args, equation)
     end
 
     quote
@@ -524,6 +527,16 @@ function extract_species_and_parameters!(reactions, excluded_syms)
     end
 
     collect(species), collect(parameters)
+end
+
+# Find undeclared parameters in the RHS of the equations. 
+function extract_parameters_eq(equations, excluded_syms)
+    parameters = OrderedSet{Union{Symbol, Expr}}()
+    for eq in equations
+        add_syms_from_expr!(parameters, eq.args[3], excluded_syms)
+    end
+
+    collect(parameters)
 end
 
 # Function called by extract_species_and_parameters!, recursively loops through an

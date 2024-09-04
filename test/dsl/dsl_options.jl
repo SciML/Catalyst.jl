@@ -13,6 +13,7 @@ seed = rand(rng, 1:100)
 
 # Sets the default `t` to use.
 t = default_t()
+D = default_time_deriv()
 
 ### Tests `@parameters`, `@species`, and `@variables` Options ###
 
@@ -150,6 +151,56 @@ let
     end
     @test issetequal(species(rn5), @species A(t))
     @test issetequal(parameters(rn5), @parameters k B X)
+end
+
+# Test whether user-defined functions are properly expanded in equations. 
+# TODO
+let
+    f(A, t) = 2*A*t
+
+    # Test user-defined function
+    rn = @reaction_network begin
+        @equations D(A) ~ f(A, t)
+    end
+    @test length(equations(rn)) == 1
+    @test equations(rn)[1] isa Equation
+    @species A(t)
+    @test isequal(equations(rn)[1], D(A) ~ 2*A*t)
+
+
+    # Test Catalyst function
+    rn2 = @reaction_network begin
+        @equations D(A) ~ hill(A, v, K, n)
+    end
+    @test length(equations(rn2)) == 1
+    @test equations(rn2)[1] isa Equation
+    @parameters K v n
+    @test isequal(Catalyst.expand_registered_functions(equations(rn2)[1]), D(A) ~ v*(A^n) / (A^n + K^n))
+
+
+    rn3 = @reaction_network begin
+        @species Iapp(t)
+        @equations begin
+            D(A) ~ Iapp
+            Iapp ~ f(A,t)
+        end
+    end
+    @test length(equations(rn3)) == 2
+    @test equations(rn3)[1] isa Equation
+    @test equations(rn3)[2] isa Equation
+    @variables Iapp(t)
+    @test isequal(equations(rn3)[1], D(A) ~ Iapp)
+    @test isequal(equations(rn3)[2], Iapp ~ 2*A*t)
+
+
+    g(A, K, n) = A^n + K^n
+    rn4 = @reaction_network begin
+        @equations D(A) ~ hill(A, v, K, n)*g(A, K, n)
+    end
+    @test length(equations(rn4)) == 1
+    @test equations(rn4)[1] isa Equation
+    @parameters v n
+    @test isequal(Catalyst.expand_registered_functions(equations(rn4)[1]), D(A) ~ v*(A^n))
 end
 
 # Test inferring with stoichiometry symbols and interpolation.
