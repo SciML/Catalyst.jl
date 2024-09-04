@@ -686,7 +686,7 @@ function read_equations_options(options, variables_declared)
     # When this is the case, the variable X and differential D are extracted (for automatic declaration).
     # Also performs simple error checks.
     vars_extracted = Vector{Symbol}()
-    add_default_diff = false
+    add_default_diff = true
     for eq in equations
         if (eq.head != :call) || (eq.args[1] != :~)
             error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")
@@ -921,8 +921,8 @@ end
 
 # Recursively escape functions in the right-hand-side of an equation written using user-defined functions. Special function calls like "hill(...)" are not expanded.
 function escape_equation_RHS!(eqexpr::Expr)
-    lhs = recursive_escape_functions!(eqexpr.args[2])
-    eqexpr.args[2] = lhs
+    # lhs = recursive_escape_functions!(eqexpr.args[2])
+    # eqexpr.args[2] = lhs
 
     rhs = recursive_escape_functions!(eqexpr.args[3])
     eqexpr.args[3] = rhs
