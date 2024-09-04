@@ -346,8 +346,14 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     # Collect species and parameters, including ones inferred from the reactions. 
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
         variables)))
-    species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
-        declared_syms)
+    species_extracted, parameters_extracted = extract_species_and_parameters!(reactions, declared_syms)
+
+    # Checks that all the symbols in the equation are declared. 
+    eq_syms = extract_syms_eq(equations, union(declared_syms, species_extracted, parameters_extracted))
+    if !isempty(eq_syms)
+        error("Symbols in equations must be explicitly defined using @variable, @species, or @parameter within the @reaction_network input.")
+    end
+
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
@@ -528,14 +534,14 @@ function extract_species_and_parameters!(reactions, excluded_syms)
     collect(species), collect(parameters)
 end
 
-# Find undeclared parameters in the RHS of the equations. 
-function extract_parameters_eq(equations, excluded_syms)
-    parameters = OrderedSet{Union{Symbol, Expr}}()
+# Find undeclared symbols in the RHS of the equations. 
+function extract_syms_eq(equations, excluded_syms)
+    syms = OrderedSet{Union{Symbol, Expr}}()
     for eq in equations
-        add_syms_from_expr!(parameters, eq.args[3], excluded_syms)
+        add_syms_from_expr!(syms, eq.args[3], excluded_syms)
     end
 
-    collect(parameters)
+    collect(syms)
 end
 
 # Function called by extract_species_and_parameters!, recursively loops through an

@@ -154,7 +154,6 @@ let
 end
 
 # Test whether user-defined functions are properly expanded in equations. 
-# TODO
 let
     f(A, t) = 2*A*t
 
@@ -167,14 +166,19 @@ let
     @species A(t)
     @test isequal(equations(rn)[1], D(A) ~ 2*A*t)
 
+    # Tests that error is declared. 
+    @test_throws LoadError @eval @reaction_network begin
+        @equations D(A) ~ hill(A, v, K, n)
+    end
 
     # Test Catalyst function
     rn2 = @reaction_network begin
+        @parameters v K n
         @equations D(A) ~ hill(A, v, K, n)
     end
     @test length(equations(rn2)) == 1
     @test equations(rn2)[1] isa Equation
-    @parameters K v n
+    @parameters v K n
     @test isequal(Catalyst.expand_registered_functions(equations(rn2)[1]), D(A) ~ v*(A^n) / (A^n + K^n))
 
 
@@ -195,6 +199,7 @@ let
 
     g(A, K, n) = A^n + K^n
     rn4 = @reaction_network begin
+        @parameters v K n
         @equations D(A) ~ hill(A, v, K, n)*g(A, K, n)
     end
     @test length(equations(rn4)) == 1
