@@ -315,12 +315,12 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     parameters_declared = extract_syms(options, :parameters)
     variables_declared = extract_syms(options, :variables)
 
-    # Reads more options.
+    # Reads equations. 
     vars_extracted, add_default_diff, equations = read_equations_options(
         options, variables_declared)
     variables = vcat(variables_declared, vars_extracted)
 
-    # handle independent variables
+    # Handle independent variables
     if haskey(options, :ivs)
         ivs = Tuple(extract_syms(options, :ivs))
         ivexpr = copy(options[:ivs])
@@ -339,17 +339,15 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         combinatoric_ratelaws = true
     end
 
-    # Reads more options.
+    # Reads observables.
     observed_vars, observed_eqs, obs_syms = read_observed_options(
         options, [species_declared; variables], all_ivs)
 
+    # Collect species and parameters, including ones inferred from the reactions. 
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
         variables)))
     species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
         declared_syms)
-    parameters_extracted_eq = extract_parameters_eq(equations, declared_syms)
-    parameters_extracted = vcat(parameters_extracted, parameters_extracted_eq)
-
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
@@ -383,6 +381,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args, equation)
     end
 
+    # Output code corresponding to the reaction system. 
     quote
         $ivexpr
         $ps
