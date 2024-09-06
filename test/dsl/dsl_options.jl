@@ -204,6 +204,14 @@ let
     @test isequal(equations(rn3)[1], D(A) ~ Iapp)
     @test isequal(equations(rn3)[2], Iapp ~ 2*A*t)
 
+    @species Iapp(t) A(t)
+    eq = [D(A) ~ Iapp, Iapp ~ f(A, t)]
+    @named rn3_sym = ReactionSystem(eq, t)
+    rn3_sym = complete(rn3_sym)
+    @test isequivalent(rn3, rn3_sym)
+    
+    
+
 
     g(A, K, n) = A^n + K^n
     rn4 = @reaction_network begin
