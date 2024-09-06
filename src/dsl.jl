@@ -686,7 +686,7 @@ function read_equations_options(options, variables_declared)
     # When this is the case, the variable X and differential D are extracted (for automatic declaration).
     # Also performs simple error checks.
     vars_extracted = Vector{Symbol}()
-    add_default_diff = false 
+    add_default_diff = false
     for eq in equations
         if (eq.head != :call) || (eq.args[1] != :~)
             error("Malformed equation: \"$eq\". Equation's left hand and right hand sides should be separated by a \"~\".")
