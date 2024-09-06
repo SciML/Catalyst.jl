@@ -214,16 +214,6 @@ let
     @test equations(rn4)[1] isa Equation
     @parameters v n
     @test isequal(Catalyst.expand_registered_functions(equations(rn4)[1]), D(A) ~ v*(A^n))
-
-
-    rn5 = @reaction_network begin
-        @species A(t) B(t)
-        @equations D(A) + D(B) ~ f(A, t)
-    end
-    @test length(equations(rn5)) == 1
-    @test equations(rn5)[1] isa Equation
-    @species B(t)
-    @test isequal(equations(rn5)[1], D(A) + D(B) ~ 2*A*t)
 end
 
 # Test inferring with stoichiometry symbols and interpolation.

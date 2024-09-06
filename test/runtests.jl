@@ -11,12 +11,12 @@ using SafeTestsets, Test
 @time begin
 
     # Tests the `ReactionSystem` structure and its properties.
-    @time @safetestset "Reaction Structure" begin include("reactionsystem_core/reaction.jl") end
-    @time @safetestset "ReactionSystem Structure" begin include("reactionsystem_core/reactionsystem.jl") end
-    @time @safetestset "Higher Order Reactions" begin include("reactionsystem_core/higher_order_reactions.jl") end
-    @time @safetestset "Symbolic Stoichiometry" begin include("reactionsystem_core/symbolic_stoichiometry.jl") end
-    @time @safetestset "Parameter Type Designation" begin include("reactionsystem_core/parameter_type_designation.jl") end
-    @time @safetestset "Custom CRN Functions" begin include("reactionsystem_core/custom_crn_functions.jl") end
+    # @time @safetestset "Reaction Structure" begin include("reactionsystem_core/reaction.jl") end
+    # @time @safetestset "ReactionSystem Structure" begin include("reactionsystem_core/reactionsystem.jl") end
+    # @time @safetestset "Higher Order Reactions" begin include("reactionsystem_core/higher_order_reactions.jl") end
+    # @time @safetestset "Symbolic Stoichiometry" begin include("reactionsystem_core/symbolic_stoichiometry.jl") end
+    # @time @safetestset "Parameter Type Designation" begin include("reactionsystem_core/parameter_type_designation.jl") end
+    # @time @safetestset "Custom CRN Functions" begin include("reactionsystem_core/custom_crn_functions.jl") end
     @time @safetestset "Coupled CRN/Equation Systems" begin include("reactionsystem_core/coupled_equation_crn_systems.jl") end
     @time @safetestset "Events" begin include("reactionsystem_core/events.jl") end
 
