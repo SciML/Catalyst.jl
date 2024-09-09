@@ -2,8 +2,23 @@
 
 ## Catalyst unreleased (master branch)
 
+
+## Catalyst 14.4.1
+- Support for user-defined functions on the RHS when providing coupled equations 
+  for CRNs using the @equations macro. For example, the following now works: 
+  ```julia
+  using Catalyst
+  f(A, t) = 2*A*t
+  rn = @reaction_network begin
+    @equations D(A) ~ f(A,t)
+  end
+  ```
+  Note that user-defined functions will not work on the LHS of equations. 
+
 ## Catalyst 14.4
 - Symbolics 6 support.
+
+
 
 ## Catalyst 14.3
 - Support for simulating stochastic chemical kinetics models with explicitly
