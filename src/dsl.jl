@@ -921,12 +921,8 @@ end
 
 # Recursively escape functions in the right-hand-side of an equation written using user-defined functions. Special function calls like "hill(...)" are not expanded.
 function escape_equation_RHS!(eqexpr::Expr)
-    # lhs = recursive_escape_functions!(eqexpr.args[2])
-    # eqexpr.args[2] = lhs
-
     rhs = recursive_escape_functions!(eqexpr.args[3])
     eqexpr.args[3] = rhs
-
     eqexpr
 end
 
