@@ -13,6 +13,7 @@ seed = rand(rng, 1:100)
 
 # Sets the default `t` to use.
 t = default_t()
+D = default_time_deriv()
 
 ### Tests `@parameters`, `@species`, and `@variables` Options ###
 
@@ -952,3 +953,76 @@ let
     @unpack k1, A = rn3
     @test isequal(rl, k1*A^2)
 end
+
+# Test whether user-defined functions are properly expanded in equations. 
+let
+    f(A, t) = 2*A*t
+
+    # Test user-defined function
+    rn = @reaction_network begin
+        @equations D(A) ~ f(A, t)
+    end
+    @test length(equations(rn)) == 1
+    @test equations(rn)[1] isa Equation
+    @species A(t)
+    @test isequal(equations(rn)[1], D(A) ~ 2*A*t)
+
+
+    # Test whether expansion happens properly for unregistered/registered functions. 
+    hill_unregistered(A, v, K, n) = v*(A^n) / (A^n + K^n)
+    rn2 = @reaction_network begin
+        @parameters v K n
+        @equations D(A) ~ hill_unregistered(A, v, K, n)
+    end
+    @test length(equations(rn2)) == 1
+    @test equations(rn2)[1] isa Equation
+    @parameters v K n
+    @test isequal(equations(rn2)[1], D(A) ~ v*(A^n) / (A^n + K^n))
+
+    hill2(A, v, K, n) = v*(A^n) / (A^n + K^n)
+    @register_symbolic hill2(A, v, K, n)
+    # Registered symbolic function should not expand. 
+    rn2r = @reaction_network begin
+        @parameters v K n
+        @equations D(A) ~ hill2(A, v, K, n)
+    end
+    @test length(equations(rn2r)) == 1
+    @test equations(rn2r)[1] isa Equation
+    @parameters v K n
+    @test isequal(equations(rn2r)[1], D(A) ~ hill2(A, v, K, n))
+
+
+    rn3 = @reaction_network begin
+        @species Iapp(t)
+        @equations begin
+            D(A) ~ Iapp
+            Iapp ~ f(A,t)
+        end
+    end
+    @test length(equations(rn3)) == 2
+    @test equations(rn3)[1] isa Equation
+    @test equations(rn3)[2] isa Equation
+    @variables Iapp(t)
+    @test isequal(equations(rn3)[1], D(A) ~ Iapp)
+    @test isequal(equations(rn3)[2], Iapp ~ 2*A*t)
+
+    # Test whether the DSL and symbolic ways of creating the network generate the same system
+    @species Iapp(t) A(t)
+    eq = [D(A) ~ Iapp, Iapp ~ f(A, t)]
+    @named rn3_sym = ReactionSystem(eq, t)
+    rn3_sym = complete(rn3_sym)
+    @test isequivalent(rn3, rn3_sym)
+    
+    
+    # Test more complicated expression involving both registered function and a user-defined function. 
+    g(A, K, n) = A^n + K^n
+    rn4 = @reaction_network begin
+        @parameters v K n
+        @equations D(A) ~ hill(A, v, K, n)*g(A, K, n)
+    end
+    @test length(equations(rn4)) == 1
+    @test equations(rn4)[1] isa Equation
+    @parameters v n
+    @test isequal(Catalyst.expand_registered_functions(equations(rn4)[1]), D(A) ~ v*(A^n))
+end
+

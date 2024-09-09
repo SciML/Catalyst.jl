@@ -297,7 +297,7 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
 
     # Get macro options.
     if length(unique(arg.args[1] for arg in option_lines)) < length(option_lines)
-        error("Some options where given multiple times.")
+        error("Some options were given multiple times.")
     end
     options = Dict(map(arg -> Symbol(String(arg.args[1])[2:end]) => arg,
         option_lines))
@@ -315,12 +315,12 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     parameters_declared = extract_syms(options, :parameters)
     variables_declared = extract_syms(options, :variables)
 
-    # Reads more options.
+    # Reads equations. 
     vars_extracted, add_default_diff, equations = read_equations_options(
         options, variables_declared)
     variables = vcat(variables_declared, vars_extracted)
 
-    # handle independent variables
+    # Handle independent variables
     if haskey(options, :ivs)
         ivs = Tuple(extract_syms(options, :ivs))
         ivexpr = copy(options[:ivs])
@@ -339,14 +339,16 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         combinatoric_ratelaws = true
     end
 
-    # Reads more options.
+    # Reads observables.
     observed_vars, observed_eqs, obs_syms = read_observed_options(
         options, [species_declared; variables], all_ivs)
 
+    # Collect species and parameters, including ones inferred from the reactions. 
     declared_syms = Set(Iterators.flatten((parameters_declared, species_declared,
         variables)))
-    species_extracted, parameters_extracted = extract_species_and_parameters!(reactions,
-        declared_syms)
+    species_extracted, parameters_extracted = extract_species_and_parameters!(
+        reactions, declared_syms)
+
     species = vcat(species_declared, species_extracted)
     parameters = vcat(parameters_declared, parameters_extracted)
 
@@ -376,9 +378,11 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args, get_rxexprs(reaction))
     end
     for equation in equations
+        equation = escape_equation_RHS!(equation)
         push!(rxexprs.args, equation)
     end
 
+    # Output code corresponding to the reaction system. 
     quote
         $ivexpr
         $ps
@@ -572,7 +576,7 @@ function get_rxexprs(rxstruct)
     subs_stoich_init = deepcopy(subs_init)
     prod_init = isempty(rxstruct.products) ? nothing : :([])
     prod_stoich_init = deepcopy(prod_init)
-    reaction_func = :(Reaction($(recursive_expand_functions!(rxstruct.rate)), $subs_init,
+    reaction_func = :(Reaction($(recursive_escape_functions!(rxstruct.rate)), $subs_init,
         $prod_init, $subs_stoich_init, $prod_stoich_init,
         metadata = $(rxstruct.metadata)))
     for sub in rxstruct.substrates
@@ -904,15 +908,22 @@ end
 
 ### Generic Expression Manipulation ###
 
-# Recursively traverses an expression and replaces special function call like "hill(...)" with the actual corresponding expression.
-function recursive_expand_functions!(expr::ExprValues)
+# Recursively traverses an expression and escapes all the user-defined functions. Special function calls like "hill(...)" are not expanded. 
+function recursive_escape_functions!(expr::ExprValues)
     (typeof(expr) != Expr) && (return expr)
-    foreach(i -> expr.args[i] = recursive_expand_functions!(expr.args[i]),
+    foreach(i -> expr.args[i] = recursive_escape_functions!(expr.args[i]),
         1:length(expr.args))
     if expr.head == :call
         !isdefined(Catalyst, expr.args[1]) && (expr.args[1] = esc(expr.args[1]))
     end
     expr
+end
+
+# Recursively escape functions in the right-hand-side of an equation written using user-defined functions. Special function calls like "hill(...)" are not expanded.
+function escape_equation_RHS!(eqexpr::Expr)
+    rhs = recursive_escape_functions!(eqexpr.args[3])
+    eqexpr.args[3] = rhs
+    eqexpr
 end
 
 # Returns the length of a expression tuple, or 1 if it is not an expression tuple (probably a Symbol/Numerical).
