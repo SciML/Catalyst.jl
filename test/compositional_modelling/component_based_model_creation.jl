@@ -280,7 +280,7 @@ let
     @named ns = ODESystem(nseqs, t, [A2, B2, D], [β])
     rs = compose(rs, [ns])
     rs = complete(rs)
-    osys = complete(convert(ODESystem, rs; include_zero_odes = false))
+    osys = convert(ODESystem, rs; include_zero_odes = false)
     p = [r₊ => 1.0, r₋ => 2.0, ns.β => 3.0]
     u₀ = [A => 1.0, B => 2.0, C => 0.0]
     oprob = ODEProblem(structural_simplify(osys), u₀, (0.0, 10.0), p)
