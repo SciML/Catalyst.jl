@@ -784,7 +784,7 @@ let
     @test isequal(equations(rn)[4], 3Y + X  ~ S + X*d)
 
     # Checks that simulations has the correct output
-    u0 = Dict([S => 1 + rand(rng), X => 1 + rand(rng), Y => 1 + rand(rng)])
+    u0 = Dict([S => 1 + rand(rng)])
     ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
     oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify=true)
     sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
@@ -823,7 +823,7 @@ let
         @equations 2X ~ $c - X
     end)
 
-    u0 = [rn.X => 0.0]
+    u0 = []
     ps = []
     oprob = ODEProblem(rn, u0, (0.0, 100.0), ps; structural_simplify=true)
     sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
@@ -851,7 +851,7 @@ let
 
     rn = complete(compose(base_rn, [internal_rn]))
 
-    u0 = [V1 => 1.0, X => 3.0, internal_rn.V2 => 2.0, internal_rn.X => 4.0]
+    u0 = [X => 3.0, internal_rn.X => 4.0]
     ps = [p => 1.0, d => 0.2, internal_rn.p => 2.0, internal_rn.d => 0.5]
     oprob = ODEProblem(rn, u0, (0.0, 1000.0), ps; structural_simplify=true)
     sol = solve(oprob, Rosenbrock23(); abstol=1e-9, reltol=1e-9)
@@ -895,7 +895,7 @@ let
     @test equations(rn)[3] isa Equation
 
     # Checks that simulations has the correct output
-    u0 = Dict([S => 1 + rand(rng), X => 1 + rand(rng), Y => 1 + rand(rng)])
+    u0 = Dict([S => 1 + rand(rng), Y => 1 + rand(rng)])
     ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
     oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify=true)
     sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)

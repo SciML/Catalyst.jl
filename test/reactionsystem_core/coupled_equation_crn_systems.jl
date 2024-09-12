@@ -149,7 +149,7 @@ let
     @test issetequal(equations(coupled_rs)[3:3], eqs[3:3])
 
     # Set simulation inputs.
-    u0 = [X => 0.1, A => 10.0]
+    u0 = [X => 0.1]
     tspan = (0.0, 1000.0)
     ps = [p => 1.0, d => 0.5, a => 2.0, b => 16.0]
 
@@ -197,7 +197,7 @@ let
     coupled_rs = complete(coupled_rs)
 
     # Set simulation inputs.
-    u0 = (X => 1.0, A => 2.0, B => 3.0, C => 4.0)
+    u0 = (X => 1.0, A => 2.0, B => 3.0)
     ps = (p => 1.0, d => 2.0, a => 3.0, b => 4.0, c => 5.0)
 
     # Creates and solves a ODE, SteadyState, and Nonlinear problems.
@@ -689,7 +689,7 @@ let
 
     # Checks that the models can be simulated and yield identical results.
     # Test most likely redundant, but seem useful to have one test like this to be sure.
-    u0 = [X1 => 0.1, X2 => 0.2, X3 => 0.2, X_tot => 0.6, N => 10.0, X_conc => 10.0]
+    u0 = [X1 => 0.1, X2 => 0.2, X3 => 0.2, N => 10.0]
     ps = [p => 1.0, k1 => 1.2, k2 => 1.5, d => 2.0, v => 0.2, n => 0.5, x_scale => 2.0]
     oprob_prog = ODEProblem(rs_prog, u0, (0.0, 10.0), ps; structural_simplify = true)
     oprob_dsl = ODEProblem(rs_dsl, u0, (0.0, 10.0), ps; structural_simplify = true)
