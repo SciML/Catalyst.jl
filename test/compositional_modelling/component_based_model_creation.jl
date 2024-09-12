@@ -46,8 +46,8 @@ let
         sys₂.μ => (log(2) / 600), sys₃.α₀ => 5e-4, sys₃.α => 0.5, sys₃.K => 40.0,
         sys₃.n => 2, sys₃.δ => (log(2) / 120), sys₃.β => (20 * log(2) / 120),
         sys₃.μ => (log(2) / 600)]
-    u₀ = [sys₁.m => 0.0, sys₁.P => 20.0, sys₁.R => 0.0, sys₂.m => 0.0, sys₂.P => 0.0,
-        sys₂.R => 0.0, sys₃.m => 0.0, sys₃.P => 0.0, sys₃.R => 0.0]
+    u₀ = [sys₁.m => 0.0, sys₁.P => 20.0, sys₂.m => 0.0, sys₂.P => 0.0,
+        sys₃.m => 0.0, sys₃.P => 0.0]
     tspan = (0.0, 100000.0)
     oprob = ODEProblem(oderepressilator, u₀, tspan, pvals)
     sol = solve(oprob, Tsit5())
