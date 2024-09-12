@@ -513,6 +513,7 @@ let
         d, X --> 0, [misc = x -> 2x]
     end
     @test_throws Exception save_reactionsystem("test_serialisation.jl", rs)
+    rm("test_serialisation.jl")
 end
 
 # Test connection field.
