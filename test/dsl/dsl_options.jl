@@ -784,7 +784,7 @@ let
     @test isequal(equations(rn)[4], 3Y + X  ~ S + X*d)
 
     # Checks that simulations has the correct output
-    u0 = Dict([S => 1 + rand(rng), X => 1 + rand(rng), Y => 1 + rand(rng)])
+    u0 = Dict([S => 1 + rand(rng)])
     ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
     oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify=true)
     sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
@@ -895,7 +895,7 @@ let
     @test equations(rn)[3] isa Equation
 
     # Checks that simulations has the correct output
-    u0 = Dict([S => 1 + rand(rng), X => 1 + rand(rng), Y => 1 + rand(rng)])
+    u0 = Dict([S => 1 + rand(rng), Y => 1 + rand(rng)])
     ps = Dict([p => 1 + rand(rng), d => 1 + rand(rng), k => 1 + rand(rng)])
     oprob = ODEProblem(rn, u0, (0.0, 10000.0), ps; structural_simplify=true)
     sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
@@ -1025,4 +1025,3 @@ let
     @parameters v n
     @test isequal(Catalyst.expand_registered_functions(equations(rn4)[1]), D(A) ~ v*(A^n))
 end
-
