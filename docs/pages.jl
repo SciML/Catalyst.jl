@@ -28,13 +28,13 @@ pages = Any[
     "Model simulation" => Any[
         "model_simulation/simulation_introduction.md",
         "model_simulation/simulation_plotting.md",
-        "model_simulation/interactive_brusselator_simulation.md",
         "model_simulation/simulation_structure_interfacing.md",
         "model_simulation/ensemble_simulations.md",
         "model_simulation/ode_simulation_performance.md",
         "model_simulation/sde_simulation_performance.md",
         "Model simulation examples" => Any[
-            "model_simulation/examples/periodic_events_simulation.md"
+            "model_simulation/examples/periodic_events_simulation.md",
+            "model_simulation/examples/interactive_brusselator_simulation.md"
         ]
     ],
     "Steady state analysis" => Any[
