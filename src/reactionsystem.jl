@@ -405,11 +405,11 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     sivs′ = if spatial_ivs === nothing
         Vector{typeof(iv′)}()
     else
-        value.(MT.scalarize(spatial_ivs))
+        value.(spatial_ivs)
     end
-    unknowns′ = sort!(value.(MT.scalarize(unknowns)), by = !isspecies)
+    unknowns′ = sort!(value.(unknowns), by = !isspecies)
     spcs = filter(isspecies, unknowns′)
-    ps′ = value.(MT.scalarize(ps))
+    ps′ = value.(ps)
 
     # Checks that no (by Catalyst) forbidden symbols are used.
     allsyms = Iterators.flatten((ps′, unknowns′))
@@ -494,7 +494,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     t = value(iv)
     ivs = Set([t])
     if (spatial_ivs !== nothing)
-        for siv in (MT.scalarize(spatial_ivs))
+        for siv in (spatial_ivs)
             push!(ivs, value(siv))
         end
     end

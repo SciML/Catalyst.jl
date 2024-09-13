@@ -868,11 +868,9 @@ end
 let
     @species (A(t))[1:20]
     using ModelingToolkit: value
-    @test isspecies(value(A))
-    @test isspecies(value(A[2]))
-    Av = value.(ModelingToolkit.scalarize(A))
-    @test isspecies(Av[2])
-    @test isequal(value(Av[2]), value(A[2]))
+    Av = value(A)
+    @test isspecies(Av)
+    @test all(i -> isspecies(Av[i]), 1:length(Av))
 end
 
 # Test mixed models are formulated correctly.

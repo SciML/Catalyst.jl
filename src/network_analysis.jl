@@ -657,16 +657,15 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     indepspecs = sts[indepidxs]
     depidxs = col_order[(r + 1):end]
     depspecs = sts[depidxs]
-    constants = MT.unwrap.(MT.scalarize(only(
-        @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] [conserved = true])))
+    constants = MT.unwrap(only(
+        @parameters $(CONSERVED_CONSTANT_SYMBOL)[1:nullity] [conserved = true]))
 
     conservedeqs = Equation[]
     constantdefs = Equation[]
     for (i, depidx) in enumerate(depidxs)
         scaleby = (N[i, depidx] != 1) ? N[i, depidx] : one(eltype(N))
         (scaleby != 0) || error("Error, found a zero in the conservation law matrix where "
-              *
-              "one was not expected.")
+              * "one was not expected.")
         coefs = @view N[i, indepidxs]
         terms = sum(p -> p[1] / scaleby * p[2], zip(coefs, indepspecs))
         eq = depspecs[i] ~ constants[i] - terms
