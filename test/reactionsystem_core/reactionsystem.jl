@@ -141,7 +141,6 @@ end
 let
     u = rnd_u0(rs, rng)
     p = rnd_ps(rs, rng)
-    @show u,p
     du = oderhs(last.(u), last.(p), 0.0)
     G = sdenoise(last.(u), last.(p), 0.0)
     sdesys = complete(convert(SDESystem, rs))
