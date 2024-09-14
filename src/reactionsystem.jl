@@ -556,7 +556,6 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
             par = arguments(p)[begin]
             if Symbolics.shape(Symbolics.unwrap(par)) !== Symbolics.Unknown() &&
                all(par[i] in ps for i in eachindex(par))
-               @show "here"
                 push!(new_ps, par)
             else
                 push!(new_ps, p)
