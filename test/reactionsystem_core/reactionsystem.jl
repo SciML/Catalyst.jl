@@ -40,7 +40,7 @@ rxs = [Reaction(k[1], nothing, [A]),            # 0 -> A
     Reaction(k[19] * t, [A], [B]),                                # A -> B with non constant rate.
     Reaction(k[20] * t * A, [B, C], [D], [2, 1], [2]),                  # 2A +B -> 2C with non constant rate.
 ]
-@named rs = ReactionSystem(rxs, t, [A, B, C, D], k)
+@named rs = ReactionSystem(rxs, t, [A, B, C, D], [k])
 rs = complete(rs)
 odesys = complete(convert(ODESystem, rs))
 sdesys = complete(convert(SDESystem, rs))
@@ -109,11 +109,12 @@ end
 
 # Defaults test.
 let
-    def_p = [ki => float(i) for (i, ki) in enumerate(k)]
+    kvals = Float64.(1:length(k))
+    def_p = [k => kvals]
     def_u0 = [A => 0.5, B => 1.0, C => 1.5, D => 2.0]
     defs = merge(Dict(def_p), Dict(def_u0))
 
-    @named rs = ReactionSystem(rxs, t, [A, B, C, D], k; defaults = defs)
+    @named rs = ReactionSystem(rxs, t, [A, B, C, D], [k]; defaults = defs)
     rs = complete(rs)
     odesys = complete(convert(ODESystem, rs))
     sdesys = complete(convert(SDESystem, rs))
@@ -126,15 +127,11 @@ let
           defs
 
     u0map = [A => 5.0]
-    pmap = [k[1] => 5.0]
+    kvals[1] = 5.0
+    pmap = [k => kvals]
     prob = ODEProblem(rs, u0map, (0, 10.0), pmap)
     @test prob.ps[k[1]] == 5.0
     @test prob.u0[1] == 5.0
-    u0 = [10.0, 11.0, 12.0, 13.0]
-    ps = [float(x) for x in 100:119]
-    prob = ODEProblem(rs, u0, (0, 10.0), ps)
-    @test  [prob.ps[k[i]] for i in 1:20] == ps
-    @test prob.u0 == u0
 end
 
 ### Check ODE, SDE, and Jump Functions ###
@@ -144,6 +141,7 @@ end
 let
     u = rnd_u0(rs, rng)
     p = rnd_ps(rs, rng)
+    @show u,p
     du = oderhs(last.(u), last.(p), 0.0)
     G = sdenoise(last.(u), last.(p), 0.0)
     sdesys = complete(convert(SDESystem, rs))

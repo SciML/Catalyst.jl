@@ -503,7 +503,6 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     # Preallocates the `vars` set, which is used by `findvars!`
     us = OrderedSet{eltype(us_in)}(us_in)
     ps = OrderedSet{eltype(ps_in)}(ps_in)
-    @show eltype(ps_in)
     vars = OrderedSet()
 
     # Extracts the reactions and equations from the combined reactions + equations input vector.
