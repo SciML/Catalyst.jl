@@ -467,7 +467,7 @@ end
 # Two-argument constructor (reactions/equations and time variable).
 # Calls the `make_ReactionSystem_internal`, which in turn calls the four-argument constructor.
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
-    make_ReactionSystem_internal(rxs, iv, Vector{Num}(), Vector{Num}(); kwargs...)
+    make_ReactionSystem_internal(rxs, iv, [], []; kwargs...)
 end
 
 # One-argument constructor. Creates an emtoy `ReactionSystem` from a time independent variable only.
@@ -503,6 +503,7 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
     # Preallocates the `vars` set, which is used by `findvars!`
     us = OrderedSet{eltype(us_in)}(us_in)
     ps = OrderedSet{eltype(ps_in)}(ps_in)
+    @show eltype(ps_in)
     vars = OrderedSet()
 
     # Extracts the reactions and equations from the combined reactions + equations input vector.
@@ -548,7 +549,24 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
 
     # Converts the found unknowns and parameters to vectors.
     usv = collect(us)
-    psv = collect(ps)
+
+    new_ps = OrderedSet()
+    for p in ps
+        if iscall(p) && operation(p) === getindex
+            par = arguments(p)[begin]
+            if Symbolics.shape(Symbolics.unwrap(par)) !== Symbolics.Unknown() &&
+               all(par[i] in ps for i in eachindex(par))
+               @show "here"
+                push!(new_ps, par)
+            else
+                push!(new_ps, p)
+            end
+        else
+            push!(new_ps, p)
+        end
+    end
+    @show new_ps
+    psv = collect(new_ps)
 
     # Passes the processed input into the next `ReactionSystem` call.    
     ReactionSystem(fulleqs, t, usv, psv; spatial_ivs, continuous_events,
