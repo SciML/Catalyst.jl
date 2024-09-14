@@ -564,7 +564,6 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
             push!(new_ps, p)
         end
     end
-    @show new_ps
     psv = collect(new_ps)
 
     # Passes the processed input into the next `ReactionSystem` call.    
