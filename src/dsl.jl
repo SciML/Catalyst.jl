@@ -370,10 +370,10 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     vexprs = get_sexpr(vars_extracted, options, :variables; iv_symbols = ivs)
     pexprs = get_pexpr(parameters_extracted, options)
     ps, pssym = assign_expr_to_var(!isempty(parameters), pexprs, "ps")
-    vars, varssym = assign_expr_to_var(!isempty(variables), vexprs, "vars"; 
+    vars, varssym = assign_expr_to_var(!isempty(variables), vexprs, "vars";
         scalarize = true)
-    sps, spssym = assign_expr_to_var(!isempty(species), sexprs, "specs"; scalarize =  true)
-    comps, compssym = assign_expr_to_var(!isempty(compound_species), compound_expr, 
+    sps, spssym = assign_expr_to_var(!isempty(species), sexprs, "specs"; scalarize = true)
+    comps, compssym = assign_expr_to_var(!isempty(compound_species), compound_expr,
         "comps"; scalarize = true)
     rxexprs = :(CatalystEqType[])
     for reaction in reactions

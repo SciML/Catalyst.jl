@@ -665,7 +665,8 @@ function cache_conservationlaw_eqs!(rn::ReactionSystem, N::AbstractMatrix, col_o
     for (i, depidx) in enumerate(depidxs)
         scaleby = (N[i, depidx] != 1) ? N[i, depidx] : one(eltype(N))
         (scaleby != 0) || error("Error, found a zero in the conservation law matrix where "
-              * "one was not expected.")
+              *
+              "one was not expected.")
         coefs = @view N[i, indepidxs]
         terms = sum(p -> p[1] / scaleby * p[2], zip(coefs, indepspecs))
         eq = depspecs[i] ~ constants[i] - terms
