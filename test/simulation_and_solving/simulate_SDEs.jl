@@ -204,9 +204,9 @@ let
         (k1, k2), X1 ↔ X2, ([noise_scaling=η[1]],[noise_scaling=η[2]])
     end
     @unpack k1, k2, η = noise_scaling_network_2
-    sprob_2_1 = SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 2.0, η[2] => 2.0])
-    sprob_2_2 = SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 2.0, η[2] => 0.2])
-    sprob_2_3 = SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η[1] => 0.2, η[2] => 0.2])
+    sprob_2_1 = SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η => [2.0, 2.0]])
+    sprob_2_2 = SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η => [2.0, 0.2]])
+    sprob_2_3 = SDEProblem(noise_scaling_network_2, u0, (0.0, 1000.0), [k1 => 2.0, k2 => 0.66, η => [0.2, 0.2]])
     for repeat in 1:5
         sol_2_1 = solve(sprob_2_1, ImplicitEM(); saveat = 1.0, seed = rand(rng, 1:100))
         sol_2_2 = solve(sprob_2_2, ImplicitEM(); saveat = 1.0, seed = rand(rng, 1:100))
