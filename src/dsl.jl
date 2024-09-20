@@ -382,6 +382,8 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
         push!(rxexprs.args, equation)
     end
 
+    #println(observed_vars)
+
     # Output code corresponding to the reaction system. 
     quote
         $ivexpr
