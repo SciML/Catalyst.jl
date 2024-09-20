@@ -46,11 +46,12 @@ odesys = complete(convert(ODESystem, rs))
 sdesys = complete(convert(SDESystem, rs))
 
 # Hard coded ODE rhs.
-function oderhs(u, k, t)
+function oderhs(u, kv, t)
     A = u[1]
     B = u[2]
     C = u[3]
     D = u[4]
+    k = kv[1]
     du = zeros(eltype(u), 4)
     du[1] = k[1] - k[3] * A + k[4] * C + 2 * k[5] * C - k[6] * A * B + k[7] * B^2 / 2 -
             k[9] * A * B - k[10] * A^2 - k[11] * A^2 / 2 - k[12] * A * B^3 * C^4 / 144 -
@@ -68,11 +69,12 @@ function oderhs(u, k, t)
 end
 
 # SDE noise coefs.
-function sdenoise(u, k, t)
+function sdenoise(u, kv, t)
     A = u[1]
     B = u[2]
     C = u[3]
     D = u[4]
+    k = kv[1]
     G = zeros(eltype(u), length(k), length(u))
     z = zero(eltype(u))
 
@@ -178,7 +180,7 @@ let
         Reaction(k[19] * t, [D], [E]),                                # D -> E with non constant rate.
         Reaction(k[20] * t * A, [D, E], [F], [2, 1], [2]),                  # 2D + E -> 2F with non constant rate.
     ]
-    @named rs = ReactionSystem(rxs, t, [A, B, C, D, E, F], k)
+    @named rs = ReactionSystem(rxs, t, [A, B, C, D, E, F], [k])
     rs = complete(rs)
     js = complete(convert(JumpSystem, rs))
 
@@ -190,7 +192,7 @@ let
     @test all(map(i -> typeof(equations(js)[i]) <: JumpProcesses.VariableRateJump, vidxs))
 
     p = rand(rng, length(k))
-    pmap = parameters(js) .=> p
+    pmap = [k => p]
     u0 = rand(rng, 2:10, 6)
     u0map = unknowns(js) .=> u0
     ttt = rand(rng)
