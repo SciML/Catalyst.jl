@@ -485,11 +485,10 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
         spatial_ivs = nothing, continuous_events = [], discrete_events = [],
         observed = [], kwargs...)
 
-    # Filters away any potential observables from `states` and `spcs`.
+    # Error if any observables have been declared a species or variable
     obs_vars = Set(obs_eq.lhs for obs_eq in observed)
     any(in(obs_vars), us_in) &&
         error("Found an observable in the list of unknowns. This is not allowed.")
-    # us_in = filter(u -> !any(isequal(u, obs_var) for obs_var in obs_vars), us_in)
 
     # Creates a combined iv vector (iv and sivs). This is used later in the function (so that 
     # independent variables can be excluded when encountered quantities are added to `us` and `ps`).
