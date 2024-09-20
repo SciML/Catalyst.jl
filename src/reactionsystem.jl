@@ -502,8 +502,8 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
 
     # Initialises the new unknowns and parameter vectors.
     # Preallocates the `vars` set, which is used by `findvars!`
-    us = OrderedSet{eltype(us_in)}(us_in)
-    ps = OrderedSet{eltype(ps_in)}(ps_in)
+    us = OrderedSet{Any}(us_in)
+    ps = OrderedSet{Any}(ps_in)
     vars = OrderedSet()
 
     # Extracts the reactions and equations from the combined reactions + equations input vector.

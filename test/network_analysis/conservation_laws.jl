@@ -343,7 +343,7 @@ end
 let 
     # Prepares the model.
     t = default_t()
-    @species X(t)[1:2]
+    @species (X(t))[1:2]
     @parameters k[1:2]
     rxs = [
         Reaction(k[1], [X[1]], [X[2]]),

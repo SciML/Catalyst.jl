@@ -391,7 +391,7 @@ end
 # Needs fix for https://github.com/JuliaSymbolics/Symbolics.jl/issues/842.
 let
     @parameters a
-    @species A(t) B(t) C(t)[1:2]
+    @species A(t) B(t) (C(t))[1:2]
     rx1 = Reaction(a, [A, C[1]], [C[2], B], [1, 2], [2, 3])
     io = IOBuffer()
     show(io, rx1)
