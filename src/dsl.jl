@@ -370,9 +370,11 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     vexprs = get_sexpr(vars_extracted, options, :variables; iv_symbols = ivs)
     pexprs = get_pexpr(parameters_extracted, options)
     ps, pssym = assign_expr_to_var(!isempty(parameters), pexprs, "ps")
-    vars, varssym = assign_expr_to_var(!isempty(variables), vexprs, "vars", true)
-    sps, spssym = assign_expr_to_var(!isempty(species), sexprs, "specs", true)
-    comps, compssym = assign_expr_to_var(!isempty(compound_species), compound_expr, "comps", true)
+    vars, varssym = assign_expr_to_var(!isempty(variables), vexprs, "vars"; 
+        scalarize = true)
+    sps, spssym = assign_expr_to_var(!isempty(species), sexprs, "specs"; scalarize =  true)
+    comps, compssym = assign_expr_to_var(!isempty(compound_species), compound_expr, 
+        "comps"; scalarize = true)
     rxexprs = :(CatalystEqType[])
     for reaction in reactions
         push!(rxexprs.args, get_rxexprs(reaction))
@@ -591,9 +593,9 @@ function get_rxexprs(rxstruct)
 end
 
 # takes a ModelingToolkit declaration macro like @parameters and returns an expression
-# that calls the macro and saves it in a variable named namesym. 
-# also scalarizes if desired
-function assign_expr_to_var(nonempty, ex, name, scalarize = false)
+# that calls the macro and saves it in a variable given by namesym based on name.
+# scalarizes if desired
+function assign_expr_to_var(nonempty, ex, name; scalarize = false)
     namesym = gensym(name)
     if nonempty
         if scalarize
