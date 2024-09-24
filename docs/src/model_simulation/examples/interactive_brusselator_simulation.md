@@ -97,7 +97,7 @@ An Observable is a container for a value that can change over time. When the val
 
 Let's add [sliders](https://docs.makie.org/stable/reference/blocks/slider) that will control our Observables:
 
-```julia
+```@example interactive_brusselator; continued = true
 # Create the main figure
 fig = Figure(size = (800, 600), fontsize = 18);
 
