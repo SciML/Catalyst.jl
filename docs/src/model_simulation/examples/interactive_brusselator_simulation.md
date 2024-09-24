@@ -7,7 +7,7 @@ Catalyst can utilize the [GLMakie.jl](https://github.com/JuliaPlots/GLMakie.jl) 
 
 Let's again use the oscillating Brusselator model, extending the basic simulation [plotting](@ref simulation_plotting) workflow we saw earlier.
 
-```@example interactive_brusselator
+```@example interactive_brusselator; continued = true
 using Catalyst
 using OrdinaryDiffEq
 using GLMakie
@@ -79,7 +79,7 @@ Now, let's add interactivity to our plot using Observables and sliders. We'll bu
 
 Observables are a key concept in reactive programming and are central to how Makie.jl creates interactive visualizations. You can read more about them [here](https://docs.makie.org/stable/explanations/observables).
 
-```@example interactive_brusselator
+```@example interactive_brusselator; continued = true
 # Create observables for parameters and initial conditions
 A = Observable(1.0)
 B = Observable(4.0)
