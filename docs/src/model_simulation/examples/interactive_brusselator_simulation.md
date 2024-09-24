@@ -10,7 +10,7 @@ Let's again use the oscillating Brusselator model, extending the basic simulatio
 ```@example interactive_brusselator
 using Catalyst
 using OrdinaryDiffEq
-using GLMakie; GLMakie.activate!(inline = true) # Activate the GLMakie backend. Here we set `inline = true` so that the plot is displayed inline for this documentation, but you can leave it out in your own work if you prefer plots displayed in a separate window.
+using GLMakie; GLMakie.activate!(inline = true, visible = false) # Activate the GLMakie backend. Here we set `inline = true` and `visible = false` so that the plot is displayed inline for this documentation, but you can leave it out in your own work if you prefer plots displayed in a separate window.
 
 # Define the Brusselator model
 brusselator = @reaction_network begin
