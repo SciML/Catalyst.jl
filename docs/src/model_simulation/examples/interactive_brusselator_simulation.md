@@ -69,10 +69,6 @@ axislegend(ax, position = :rt)
 fig
 ```
 
-<!-- This will produce a basic time series plot of the Brusselator model:
-
-![Basic Brusselator Plot](../../assets/brusselator_basic_plot.svg) -->
-
 The plot shows the concentrations of species X and Y over time. Notice the oscillatory behavior characteristic of the Brusselator model.
 
 ## [Adding interactivity](@id adding_interactivity)
@@ -152,10 +148,6 @@ axislegend(ax, position = :rt)
 # Display the figure
 fig
 ```
-<!-- 
-The resulting figure should look like this:
-
-![Interactive Brusselator Plot](../../assets/brusselator_interactive_plot.svg) -->
 
 This plot will now update in real-time as you move the sliders, allowing for interactive exploration of the Brusselator's behavior under different conditions.
 
@@ -239,7 +231,7 @@ colgap!(param_grid, 10)
 colgap!(ic_grid, 10)
 
 # Display the figure
-fig
+#fig
 ```
 
 This will create a visualization with both time series and phase plots:
