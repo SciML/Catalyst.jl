@@ -65,7 +65,7 @@ lines!(ax, sol.t, sol[:Y], label = "Y", color = :red, linewidth = 3)
 axislegend(ax, position = :rt)
 
 # Display the figure
-display(fig)
+fig
 ```
 
 <!-- This will produce a basic time series plot of the Brusselator model:
@@ -149,7 +149,7 @@ lines!(ax, lift(sol -> sol.t, solution), lift(sol -> sol[:Y], solution), label =
 axislegend(ax, position = :rt)
 
 # Display the figure
-display(fig)
+fig
 ```
 <!-- 
 The resulting figure should look like this:
@@ -238,7 +238,7 @@ colgap!(param_grid, 10)
 colgap!(ic_grid, 10)
 
 # Display the figure
-display(fig)
+fig
 ```
 
 This will create a visualization with both time series and phase plots:
