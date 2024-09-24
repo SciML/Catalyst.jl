@@ -35,8 +35,7 @@ function solve_brusselator(A, B, X0, Y0, prob = oprob)
     solve(newprob, Tsit5(), saveat = 0.1) # saveat = 0.1 saves the solution every 0.1 time units. It's important to set this so that the solution is saved at regular intervals.
 end
 ```
-
-This code sets up our Brusselator model using Catalyst.jl's `@reaction_network` macro. We also define initial parameters, initial conditions, create an `ODEProblem`, and define a function to solve the ODE with given parameters. 
+This code sets up our Brusselator model using Catalyst.jl's `@reaction_network` macro. We also define initial parameters, initial conditions, create an `ODEProblem`, and define a function to solve the ODE with given parameters.  Setting `saveat = 0.1` in the call to `solve` ensures the solution is saved with the desired temporal frequency we want for our later plots.
 
 !!! note
     Be sure to set `saveat` to a value that is appropriate for your system; otherwise, the size of the solution can change during interactivity, which will cause dimension mismatch errors once we add our interactive elements.
