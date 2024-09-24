@@ -2,8 +2,6 @@
 
 Catalyst can utilize the [GLMakie.jl](https://github.com/JuliaPlots/GLMakie.jl) package for creating interactive visualizations of your reaction network dynamics. This tutorial provides a step-by-step guide to creating an interactive visualization of the Brusselator model, building upon the basic [Brusselator](@ref basic_CRN_library_brusselator) example.
 
-!!! note
-    This tutorial assumes you have GLMakie.jl installed. If not, you can install it by running `using Pkg; Pkg.add("GLMakie")` in your Julia REPL.
 
 ## [Setting up the Brusselator model](@id setup_brusselator)
 
@@ -34,13 +32,13 @@ function solve_brusselator(A, B, X0, Y0, prob = oprob)
     p = [:A => A, :B => B]
     u0 = [:X => X0, :Y => Y0]
     newprob = remake(prob, p=p, u0=u0)
-    solve(newprob, Tsit5(), saveat = 0.1) # saveat = 0.1 saves the solution every 0.1 time units. It's important to set this so that the size of the solution doesn't change during interactivity.
+    solve(newprob, Tsit5(), saveat = 0.1) # saveat = 0.1 saves the solution every 0.1 time units. It's important to set this so that the solution is saved at regular intervals.
 end
 ```
 
 This code sets up our Brusselator model using Catalyst.jl's `@reaction_network` macro. We also define initial parameters, initial conditions, create an `ODEProblem`, and define a function to solve the ODE with given parameters. 
 
-!!! tip
+!!! note
     Be sure to set `saveat` to a value that is appropriate for your system; otherwise, the size of the solution can change during interactivity, which will cause dimension mismatch errors once we add our interactive elements.
 
 ## [Basic static plotting](@id basic_static_plotting)
@@ -97,7 +95,7 @@ An Observable is a container for a value that can change over time. When the val
 
 ### [Adding sliders and connecting to Observables](@id adding_sliders)
 
-Let's add sliders that will control our Observables:
+Let's add [sliders](https://docs.makie.org/stable/reference/blocks/slider) that will control our Observables:
 
 ```julia
 # Create the main figure
@@ -266,7 +264,7 @@ lines!(ax_time, lift(sol -> sol.t, solution), lift(sol -> sol[:X], solution),
 ## [Extending the interactive visualization](@id extending_interactive_visualization)
 
 You can further extend this visualization by:
-- Adding other interactive elements, such as buttons or dropdowns to control different aspects of the simulation or visualization.
+- Adding other interactive elements, such as [buttons](https://docs.makie.org/stable/reference/blocks/button) or [dropdown menus](https://docs.makie.org/stable/reference/blocks/menu) to control different aspects of the simulation or visualization.
 - Adding additonal axes to the plot, such as plotting the derivatives of the species.
 - Color coding the slider and slider labels to match the plot colors.
 
