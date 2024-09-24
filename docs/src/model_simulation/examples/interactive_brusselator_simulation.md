@@ -32,7 +32,7 @@ function solve_brusselator(A, B, X0, Y0, prob = oprob)
     p = [:A => A, :B => B]
     u0 = [:X => X0, :Y => Y0]
     newprob = remake(prob, p=p, u0=u0)
-    solve(newprob, Tsit5(), saveat = 0.1) # saveat = 0.1 saves the solution every 0.1 time units. It's important to set this so that the solution is saved at regular intervals.
+    solve(newprob, Tsit5(), saveat = 0.1) 
 end
 ```
 
