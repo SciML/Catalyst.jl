@@ -7,10 +7,10 @@ Catalyst can utilize the [GLMakie.jl](https://github.com/JuliaPlots/GLMakie.jl) 
 
 Let's again use the oscillating Brusselator model, extending the basic simulation [plotting](@ref simulation_plotting) workflow we saw earlier.
 
-```julia
+```@example interactive_brusselator
 using Catalyst
 using OrdinaryDiffEq
-using GLMakie
+using GLMakie; GLMakie.activate!(inline = true) # Activate the GLMakie backend. Here we set `inline = true` so that the plot is displayed inline for this documentation, but you can leave it out in your own work if you prefer plots displayed in a separate window.
 
 # Define the Brusselator model
 brusselator = @reaction_network begin
@@ -44,7 +44,7 @@ This code sets up our Brusselator model using Catalyst.jl's `@reaction_network` 
 
 Let's start by creating a basic plot of our Brusselator model:
 
-```julia
+```@example interactive_brusselator
 # Create the main figure
 fig = Figure(size = (800, 600), fontsize = 18);
 
@@ -68,9 +68,9 @@ axislegend(ax, position = :rt)
 display(fig)
 ```
 
-This will produce a basic time series plot of the Brusselator model:
+<!-- This will produce a basic time series plot of the Brusselator model:
 
-![Basic Brusselator Plot](../../assets/brusselator_basic_plot.svg)
+![Basic Brusselator Plot](../../assets/brusselator_basic_plot.svg) -->
 
 The plot shows the concentrations of species X and Y over time. Notice the oscillatory behavior characteristic of the Brusselator model.
 
@@ -82,7 +82,7 @@ Now, let's add interactivity to our plot using Observables and sliders. We'll bu
 
 Observables are a key concept in reactive programming and are central to how Makie.jl creates interactive visualizations. You can read more about them [here](https://docs.makie.org/stable/explanations/observables).
 
-```julia
+```@example interactive_brusselator
 # Create observables for parameters and initial conditions
 A = Observable(1.0)
 B = Observable(4.0)
@@ -129,7 +129,7 @@ These sliders allow us to interactively change the parameters A and B, as well a
 
 Now, let's create a plot that reacts to changes in our sliders:
 
-```julia
+```@example interactive_brusselator
 # Create an axis for the plot
 ax = Axis(plot_layout[1, 1], 
     title = "Brusselator Model", 
@@ -151,10 +151,10 @@ axislegend(ax, position = :rt)
 # Display the figure
 display(fig)
 ```
-
+<!-- 
 The resulting figure should look like this:
 
-![Interactive Brusselator Plot](../../assets/brusselator_interactive_plot.svg)
+![Interactive Brusselator Plot](../../assets/brusselator_interactive_plot.svg) -->
 
 This plot will now update in real-time as you move the sliders, allowing for interactive exploration of the Brusselator's behavior under different conditions.
 
@@ -162,7 +162,7 @@ This plot will now update in real-time as you move the sliders, allowing for int
 
 To gain more insight into the system's behavior, let's enhance our visualization by adding a phase plot, along with some other improvements:
 
-```julia
+```@example interactive_brusselator
 # Create the main figure
 fig = Figure(size = (1200, 800), fontsize = 18);
 
