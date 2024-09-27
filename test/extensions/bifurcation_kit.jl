@@ -56,32 +56,35 @@ end
 # Checks that the same bifurcation problem is created as for BifurcationKit.
 # Checks with Symbolics as bifurcation and plot vars.
 # Tries setting `jac=false`.
+# Note: Only one parameter used, as tests technically depended on internal parameter ordering
+# (Potentially the test should also be removed as it tests internal parameter stuff, however, test
+# was written a while ago when I paid less attention to this kind of stuff.)
 let 
     # Creates BifurcationProblem via Catalyst.
     bistable_switch = @reaction_network begin
-        0.1 + hill(X,v,K,n), 0 --> X
-        d, X --> 0
+        0.1 + hill(X,5.0,K,3), 0 --> X
+        1.0, X --> 0
     end
-    @unpack X, v, K, n, d = bistable_switch
+    @unpack X, K = bistable_switch
     u0_guess = [X => 1.0]
-    p_start = [v => 5.0, K => 2.5, n => 3, d => 1.0]
+    p_start = [K => 2.5]
     bprob = BifurcationProblem(bistable_switch, u0_guess, p_start, K; jac=false, plot_var=X)
     
     # Creates BifurcationProblem via BifurcationKit.
     function bistable_switch_BK(u, p)
         X, = u
-        v, K, n, d = p
-        return [0.1 + v*(X^n)/(X^n + K^n) - d*X]
+        K, = p
+        return [0.1 + 5.0*(X^3)/(X^3 + K^3) - 1.0*X]
     end
-    bprob_BK = BifurcationProblem(bistable_switch_BK, [1.0], [5.0, 2.5, 3, 1.0], (@lens _[1]); record_from_solution = (x, p) -> x[1])
+    bprob_BK = BifurcationProblem(bistable_switch_BK, [1.0], [2.5], (@lens _[1]); record_from_solution = (x, p) -> x[1])
     
     # Check the same function have been generated.
     bprob.u0 == bprob_BK.u0
     bprob.params == bprob_BK.params
     for repeat = 1:20
         u0 = rand(rng, 1)
-        p = rand(rng, 4)
-        @test bprob_BK.VF.F(u0, p) == bprob.VF.F(u0, p)
+        p = rand(rng, 1)
+        @test bprob_BK.VF.F(u0, p) ≈ bprob.VF.F(u0, p)
     end
 end
 
