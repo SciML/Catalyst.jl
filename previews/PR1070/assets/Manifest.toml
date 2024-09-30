@@ -863,9 +863,13 @@ weakdeps = ["Makie"]
 
 [[deps.DynamicalSystemsBase]]
 deps = ["ForwardDiff", "LinearAlgebra", "OrdinaryDiffEqTsit5", "Reexport", "Roots", "SciMLBase", "SparseArrays", "StateSpaceSets", "Statistics", "SymbolicIndexingInterface"]
-git-tree-sha1 = "602da34a5ce43631ef03fcb974c7a8c73e13e058"
+git-tree-sha1 = "0c48019cbf2a89ec6d7077f375cb7a8c334fbd97"
 uuid = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"
-version = "3.10.1"
+version = "3.11.0"
+weakdeps = ["StochasticDiffEq"]
+
+    [deps.DynamicalSystemsBase.extensions]
+    StochasticSystemsBase = "StochasticDiffEq"
 
 [[deps.EarCut_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
