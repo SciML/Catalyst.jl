@@ -84,7 +84,7 @@ t = default_t()
 @parameters τ
 function generate_lp(n)
     # Creates a vector `X` with n+1 species.
-    @species X(t)[1:n+1]
+    @species (X(t))[1:n+1]
     @species Xend(t)
 
     # Generate

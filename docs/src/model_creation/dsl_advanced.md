@@ -256,7 +256,7 @@ Sometimes, one wishes to declare a large number of similar parameters or species
 using Catalyst # hide
 two_state_model = @reaction_network begin
     @parameters k[1:2]
-    @species X(t)[1:2]
+    @species (X(t))[1:2]
     (k[1],k[2]), X[1] <--> X[2]
 end
 ```

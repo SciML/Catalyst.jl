@@ -7,22 +7,22 @@ using Random, Test
 
 # Generates a random initial condition (in the form of a map). Each value is a Float64.
 function rnd_u0(sys, rng; factor = 1.0, min = 0.0)
-    return [u => min + factor * rand(rng) for u in unknowns(sys)]
+    return [u => (min .+ factor .* rand(rng, size(u)...)) for u in unknowns(sys)]
 end
 
 # Generates a random initial condition (in the form of a map). Each value is a Int64.
 function rnd_u0_Int64(sys, rng; n = 5, min = 0)
-    return [u => min + rand(rng, 1:n) for u in unknowns(sys)]
+    return [u => (min .+ rand(rng, 1:n, size(u)...)) for u in unknowns(sys)]
 end
 
 # Generates a random parameter set (in the form of a map). Each value is a Float64.
 function rnd_ps(sys, rng; factor = 1.0, min = 0.0)
-    return [p => min + factor * rand(rng) for p in parameters(sys)]
+    return [p => ( min .+ factor .* rand(rng, size(p)...)) for p in parameters(sys)]
 end
 
 # Generates a random parameter set (in the form of a map). Each value is a Float64.
 function rnd_ps_Int64(sys, rng; n = 5, min = 0)
-    return [p => min + rand(rng, 1:n) for p in parameters(sys)]
+    return [p => (min .+ rand(rng, 1:n, size(p)...)) for p in parameters(sys)]
 end
 
 # Used to convert a generated initial condition/parameter set to a vector that can be used for normal

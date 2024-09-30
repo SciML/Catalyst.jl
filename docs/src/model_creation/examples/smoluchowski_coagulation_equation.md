@@ -98,7 +98,7 @@ for n = 1:nr
                            [1, 1], [1]))
     end
 end
-@named rs = ReactionSystem(rx, t, collect(X), collect(k))
+@named rs = ReactionSystem(rx, t, collect(X), [k])
 rs = complete(rs)
 ```
 We now convert the [`ReactionSystem`](@ref) into a `ModelingToolkit.JumpSystem`, and solve it using Gillespie's direct method. For details on other possible solvers (SSAs), see the [DifferentialEquations.jl](https://docs.sciml.ai/DiffEqDocs/stable/types/jump_types/) documentation

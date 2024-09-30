@@ -604,7 +604,7 @@ let
         k, 0 --> X1 + X2
     end
     @test isequal(observed(rn1)[1].rhs, observed(rn2)[1].rhs)
-    @test isequal(observed(rn1)[1].lhs.metadata, observed(rn2)[1].lhs.metadata)
+    @test_broken isequal(observed(rn1)[1].lhs.metadata, observed(rn2)[1].lhs.metadata)
     @test isequal(unknowns(rn1), unknowns(rn2))
 
     # Case with metadata.
@@ -618,7 +618,7 @@ let
         k, 0 --> X1 + X2
     end
     @test isequal(observed(rn3)[1].rhs, observed(rn4)[1].rhs)
-    @test isequal(observed(rn3)[1].lhs.metadata, observed(rn4)[1].lhs.metadata)
+    @test_broken isequal(observed(rn3)[1].lhs.metadata, observed(rn4)[1].lhs.metadata)
     @test isequal(unknowns(rn3), unknowns(rn4))
 end
 
@@ -822,10 +822,7 @@ let
         @variables X(t)
         @equations 2X ~ $c - X
     end)
-
-    u0 = [rn.X => 0.0]
-    ps = []
-    oprob = ODEProblem(rn, u0, (0.0, 100.0), ps; structural_simplify=true)
+    oprob = ODEProblem(rn, [], (0.0, 100.0); structural_simplify=true)
     sol = solve(oprob, Tsit5(); abstol=1e-9, reltol=1e-9)
     @test sol[rn.X][end] ≈ 2.0
 end

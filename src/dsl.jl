@@ -369,10 +369,12 @@ function make_reaction_system(ex::Expr; name = :(gensym(:ReactionSystem)))
     sexprs = get_sexpr(species_extracted, options; iv_symbols = ivs)
     vexprs = get_sexpr(vars_extracted, options, :variables; iv_symbols = ivs)
     pexprs = get_pexpr(parameters_extracted, options)
-    ps, pssym = scalarize_macro(!isempty(parameters), pexprs, "ps")
-    vars, varssym = scalarize_macro(!isempty(variables), vexprs, "vars")
-    sps, spssym = scalarize_macro(!isempty(species), sexprs, "specs")
-    comps, compssym = scalarize_macro(!isempty(compound_species), compound_expr, "comps")
+    ps, pssym = assign_expr_to_var(!isempty(parameters), pexprs, "ps")
+    vars, varssym = assign_expr_to_var(!isempty(variables), vexprs, "vars";
+        scalarize = true)
+    sps, spssym = assign_expr_to_var(!isempty(species), sexprs, "specs"; scalarize = true)
+    comps, compssym = assign_expr_to_var(!isempty(compound_species), compound_expr,
+        "comps"; scalarize = true)
     rxexprs = :(CatalystEqType[])
     for reaction in reactions
         push!(rxexprs.args, get_rxexprs(reaction))
@@ -591,14 +593,21 @@ function get_rxexprs(rxstruct)
 end
 
 # takes a ModelingToolkit declaration macro like @parameters and returns an expression
-# that calls the macro and then scalarizes all the symbols created into a vector of Nums
-function scalarize_macro(nonempty, ex, name)
+# that calls the macro and saves it in a variable given by namesym based on name.
+# scalarizes if desired
+function assign_expr_to_var(nonempty, ex, name; scalarize = false)
     namesym = gensym(name)
     if nonempty
-        symvec = gensym()
-        ex = quote
-            $symvec = $ex
-            $namesym = reduce(vcat, Symbolics.scalarize($symvec))
+        if scalarize
+            symvec = gensym()
+            ex = quote
+                $symvec = $ex
+                $namesym = reduce(vcat, Symbolics.scalarize($symvec))
+            end
+        else
+            ex = quote
+                $namesym = $ex
+            end
         end
     else
         ex = :($namesym = Num[])

@@ -405,11 +405,11 @@ function ReactionSystem(eqs, iv, unknowns, ps;
     sivs′ = if spatial_ivs === nothing
         Vector{typeof(iv′)}()
     else
-        value.(MT.scalarize(spatial_ivs))
+        value.(spatial_ivs)
     end
-    unknowns′ = sort!(value.(MT.scalarize(unknowns)), by = !isspecies)
+    unknowns′ = sort!(value.(unknowns), by = !isspecies)
     spcs = filter(isspecies, unknowns′)
-    ps′ = value.(MT.scalarize(ps))
+    ps′ = value.(ps)
 
     # Checks that no (by Catalyst) forbidden symbols are used.
     allsyms = Iterators.flatten((ps′, unknowns′))
@@ -467,7 +467,7 @@ end
 # Two-argument constructor (reactions/equations and time variable).
 # Calls the `make_ReactionSystem_internal`, which in turn calls the four-argument constructor.
 function ReactionSystem(rxs::Vector, iv = Catalyst.DEFAULT_IV; kwargs...)
-    make_ReactionSystem_internal(rxs, iv, Vector{Num}(), Vector{Num}(); kwargs...)
+    make_ReactionSystem_internal(rxs, iv, [], []; kwargs...)
 end
 
 # One-argument constructor. Creates an emtoy `ReactionSystem` from a time independent variable only.
@@ -485,24 +485,25 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
         spatial_ivs = nothing, continuous_events = [], discrete_events = [],
         observed = [], kwargs...)
 
-    # Filters away any potential observables from `states` and `spcs`.
-    obs_vars = [obs_eq.lhs for obs_eq in observed]
-    us_in = filter(u -> !any(isequal(u, obs_var) for obs_var in obs_vars), us_in)
+    # Error if any observables have been declared a species or variable
+    obs_vars = Set(obs_eq.lhs for obs_eq in observed)
+    any(in(obs_vars), us_in) &&
+        error("Found an observable in the list of unknowns. This is not allowed.")
 
     # Creates a combined iv vector (iv and sivs). This is used later in the function (so that 
     # independent variables can be excluded when encountered quantities are added to `us` and `ps`).
     t = value(iv)
     ivs = Set([t])
     if (spatial_ivs !== nothing)
-        for siv in (MT.scalarize(spatial_ivs))
+        for siv in (spatial_ivs)
             push!(ivs, value(siv))
         end
     end
 
     # Initialises the new unknowns and parameter vectors.
     # Preallocates the `vars` set, which is used by `findvars!`
-    us = OrderedSet{eltype(us_in)}(us_in)
-    ps = OrderedSet{eltype(ps_in)}(ps_in)
+    us = OrderedSet{Any}(us_in)
+    ps = OrderedSet{Any}(ps_in)
     vars = OrderedSet()
 
     # Extracts the reactions and equations from the combined reactions + equations input vector.
@@ -548,7 +549,22 @@ function make_ReactionSystem_internal(rxs_and_eqs::Vector, iv, us_in, ps_in;
 
     # Converts the found unknowns and parameters to vectors.
     usv = collect(us)
-    psv = collect(ps)
+
+    new_ps = OrderedSet()
+    for p in ps
+        if iscall(p) && operation(p) === getindex
+            par = arguments(p)[begin]
+            if Symbolics.shape(Symbolics.unwrap(par)) !== Symbolics.Unknown() &&
+               all(par[i] in ps for i in eachindex(par))
+                push!(new_ps, par)
+            else
+                push!(new_ps, p)
+            end
+        else
+            push!(new_ps, p)
+        end
+    end
+    psv = collect(new_ps)
 
     # Passes the processed input into the next `ReactionSystem` call.    
     ReactionSystem(fulleqs, t, usv, psv; spatial_ivs, continuous_events,
