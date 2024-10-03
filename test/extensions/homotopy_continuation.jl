@@ -96,12 +96,12 @@ let
         v*(0.1/v + hill(X,1,K,n)), 0 --> X
         d, X --> 0
     end
-    ps = [:v => 5.0, :K => 2.5, :n => 3, :d => 1.0]
+    ps = Dict([:v => 5.0, :K => 2.5, :n => 3, :d => 1.0])
     sss = hc_steady_states(rs, ps; filter_negative = false, show_progress = false, seed = 0x000004d1)
     
     @test length(sss) == 4
     for ss in sss
-        @test f_eval(rs,sss[1], last.(ps), 0.0)[1] ≈ 0.0 atol = 1e-12
+        @test ps[:v]*(0.1/ps[:v] + ss[1]^ps[:n]/(ss[1]^ps[:n] + ps[:K]^ps[:n])) - ps[:d]*ss[1]≈ 0.0 atol = 1e-12
     end
 
     ps = [:v => 5.0, :K => 2.5, :n => 2.7, :d => 1.0]
