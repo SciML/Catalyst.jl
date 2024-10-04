@@ -182,9 +182,9 @@ version = "0.1.0"
 
 [[deps.Attractors]]
 deps = ["BlackBoxOptim", "Clustering", "ComplexityMeasures", "Distances", "Distributions", "DynamicalSystemsBase", "LinearAlgebra", "Mmap", "Neighborhood", "Optim", "ProgressMeter", "Random", "Reexport", "StateSpaceSets"]
-git-tree-sha1 = "bda3f06250ab93c0ca431e6d899c1f2b33b3f497"
+git-tree-sha1 = "126bf1ff5a3a53187e74fe142e55739d4e7520a6"
 uuid = "f3fd9213-ca85-4dba-9dfd-7fc91308fec7"
-version = "1.19.9"
+version = "1.19.12"
 weakdeps = ["Makie"]
 
     [deps.Attractors.extensions]
@@ -453,9 +453,9 @@ version = "1.0.2"
 
 [[deps.CommonMark]]
 deps = ["Crayons", "JSON", "PrecompileTools", "URIs"]
-git-tree-sha1 = "294d62bdb4e1809302f8927abdd0b19464147fb1"
+git-tree-sha1 = "5f4be62ad3811a4073798c41d94ad7560615d715"
 uuid = "a80b9123-70ca-4bc0-993e-6e3bcb318db6"
-version = "0.8.13"
+version = "0.8.14"
 
 [[deps.CommonSolve]]
 git-tree-sha1 = "0eee5eb66b1cf62cd6ad1b460238e60e4b09400c"
@@ -1608,9 +1608,9 @@ version = "0.6.0"
 
 [[deps.KernelAbstractions]]
 deps = ["Adapt", "Atomix", "InteractiveUtils", "MacroTools", "PrecompileTools", "Requires", "StaticArrays", "UUIDs", "UnsafeAtomics", "UnsafeAtomicsLLVM"]
-git-tree-sha1 = "045d41a364a81e357757c566b5a69fd4a2a2c445"
+git-tree-sha1 = "04e52f596d0871fa3890170fa79cb15e481e4cd8"
 uuid = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
-version = "0.9.26"
+version = "0.9.28"
 weakdeps = ["EnzymeCore", "LinearAlgebra", "SparseArrays"]
 
     [deps.KernelAbstractions.extensions]
@@ -2064,9 +2064,9 @@ version = "0.9.20"
 
 [[deps.ManifoldsBase]]
 deps = ["LinearAlgebra", "Markdown", "Printf", "Random", "Requires"]
-git-tree-sha1 = "3edd590e67c7bcf6e17104b7c5356d7bad2ca120"
+git-tree-sha1 = "4259c5f29dbe9d7441ec0f5ce31c2a6895285495"
 uuid = "3362f125-f0bb-47a3-aa74-596ffd7ef2fb"
-version = "0.15.16"
+version = "0.15.17"
 weakdeps = ["Plots", "Quaternions", "RecursiveArrayTools", "Statistics"]
 
     [deps.ManifoldsBase.extensions]
@@ -3447,9 +3447,9 @@ version = "0.1.2"
 
 [[deps.SparseMatrixColorings]]
 deps = ["ADTypes", "Compat", "DataStructures", "DocStringExtensions", "LinearAlgebra", "Random", "SparseArrays"]
-git-tree-sha1 = "b1ded7a50f20b36859bd9bf1871ec39760029cff"
+git-tree-sha1 = "ad17e2069015839e58a1f9275608b405fae1f28e"
 uuid = "0a514795-09f3-496d-8182-132a7b665d35"
-version = "0.4.5"
+version = "0.4.6"
 
 [[deps.Sparspak]]
 deps = ["Libdl", "LinearAlgebra", "Logging", "OffsetArrays", "Printf", "SparseArrays", "Test"]
