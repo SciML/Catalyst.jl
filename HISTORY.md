@@ -1,7 +1,7 @@
 # Breaking updates and feature summaries across releases
 
 ## Catalyst unreleased (master branch)
-
+- Due to changes in upstream packages, the structural identifiability extension is currently broken.
 
 ## Catalyst 14.4.1
 - Support for user-defined functions on the RHS when providing coupled equations 
