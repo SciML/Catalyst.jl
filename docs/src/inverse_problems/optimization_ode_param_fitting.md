@@ -78,7 +78,7 @@ plot!(fitted_sol; idxs = :P, label = "Fitted solution", linestyle = :dash, lw = 
 ```
 
 !!! note
-    Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. [Identifiability](@ref structural_identifiability) is a concept that studies how to deal with this problem.
+    Here, a good exercise is to check the resulting parameter set and note that, while it creates a good fit to the data, it does not actually correspond to the original parameter set. Identifiability is a concept that studies how to deal with this problem.<!--NTS: re-add ref when identifiablity works again-->
 
 Say that we instead would like to use the [Broyden–Fletcher–Goldfarb–Shannon](https://en.wikipedia.org/wiki/Broyden%E2%80%93Fletcher%E2%80%93Goldfarb%E2%80%93Shanno_algorithm) algorithm, as implemented by the [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl) package. In this case we would run:
 ```@example diffeq_param_estim_1 
