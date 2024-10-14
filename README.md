@@ -13,7 +13,7 @@
 [![ColPrac: Contributor's Guide on Collaborative Practices for Community Packages](https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet)](https://github.com/SciML/ColPrac)
 [![SciML Code Style](https://img.shields.io/static/v1?label=code%20style&message=SciML&color=9558b2&labelColor=389826)](https://github.com/SciML/SciMLStyle)
 [![Citation](https://img.shields.io/badge/Publication-389826)](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011530)
-
+ 
 Catalyst.jl is a symbolic modeling package for analysis and high-performance
 simulation of chemical reaction networks. Catalyst defines symbolic
 [`ReactionSystem`](https://docs.sciml.ai/Catalyst/stable/catalyst_functionality/programmatic_CRN_construction/)s,
