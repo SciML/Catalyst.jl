@@ -15,6 +15,8 @@ jobs:
       - uses: julia-actions/setup-julia@latest
         with:
           version: '1'
+      - name: Install xvfb and OpenGL libraries
+        run: sudo apt-get update && sudo apt-get install -y xorg-dev mesa-utils xvfb libgl1 freeglut3-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
       - name: Install dependencies
         run: julia --project=docs/ -e 'ENV["JULIA_PKG_SERVER"] = ""; using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
       - name: Build and deploy
@@ -22,7 +24,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # For authentication with GitHub Actions token
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # For authentication with SSH deploy key
           GKSwstype: "100" # https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988
-        run: julia --project=docs/ --code-coverage=user docs/make.jl
+        run: |
+          DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --project=docs/ --code-coverage=user docs/make.jl
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v4
         with:
