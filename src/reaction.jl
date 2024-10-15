@@ -350,7 +350,7 @@ MT.is_alg_equation(rx::Reaction) = false
 
 # MTK functions for extracting variables within equation type object
 MT.eqtype_supports_collect_vars(rx::Reaction) = true
-function MT.collect_vars!(unknowns, parameters, rx::Reaction, iv; depth = 0, 
+function MT.collect_vars!(unknowns, parameters, rx::Reaction, iv; depth = 0,
         op = MT.Differential)
     MT.collect_vars!(unknowns, parameters, rx.rate, iv; depth, op)
     for sub in rx.substrates
@@ -367,7 +367,6 @@ function MT.collect_vars!(unknowns, parameters, rx::Reaction, iv; depth = 0,
     end
     return nothing
 end
-
 
 """
     get_symbolics(set, rx::Reaction)
