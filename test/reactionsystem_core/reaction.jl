@@ -3,7 +3,7 @@
 # Fetch packages.
 using Catalyst, Test
 using Catalyst: get_symbolics
-using ModelingToolkit: value, get_variables!
+using ModelingToolkit: value, get_variables!, collect_vars!, eqtype_supports_collect_vars
 
 # Sets the default `t` to use.
 t = default_t()
@@ -235,4 +235,20 @@ let
     @test Catalyst.hasmisc(r2)
     @test_throws Exception Catalyst.getmisc(r1)
     @test isequal(Catalyst.getmisc(r2), ('M', :M))
+end
+
+# tests for collect_vars!
+let
+    t = default_t()
+    @variables E(t) F(t)
+    @species A(t) B(t) C(t) D(t) 
+    @parameters k1, k2
+
+    rx = Reaction(k1*E, [A, B], [C], [k2*D, 3], [F])
+    us = Set()
+    ps = Set()
+    @test eqtype_supports_collect_vars(rx) == true
+    collect_vars!(us, ps, rx, t)
+    @test us == Set((A, B, C, D, E, F))
+    @test ps == Set((k1, k2))
 end
