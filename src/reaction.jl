@@ -365,6 +365,10 @@ function MT.collect_vars!(unknowns, parameters, rx::Reaction, iv; depth = 0,
     for prodstoich in rx.prodstoich
         MT.collect_vars!(unknowns, parameters, prodstoich, iv; depth, op)
     end
+    if hasnoisescaling(rx)
+        ns = getnoisescaling(rx)
+        MT.collect_vars!(unknowns, parameters, ns, iv; depth, op)
+    end
     return nothing
 end
 
