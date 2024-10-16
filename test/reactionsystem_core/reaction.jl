@@ -242,13 +242,13 @@ let
     t = default_t()
     @variables E(t) F(t)
     @species A(t) B(t) C(t) D(t) 
-    @parameters k1, k2
+    @parameters k1, k2, η
 
-    rx = Reaction(k1*E, [A, B], [C], [k2*D, 3], [F])
+    rx = Reaction(k1*E, [A, B], [C], [k2*D, 3], [F], metadata = [:noise_scaling => η])
     us = Set()
     ps = Set()
     @test eqtype_supports_collect_vars(rx) == true
     collect_vars!(us, ps, rx, t)
     @test us == Set((A, B, C, D, E, F))
-    @test ps == Set((k1, k2))
+    @test ps == Set((k1, k2, η))
 end
