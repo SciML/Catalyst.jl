@@ -149,7 +149,7 @@ axislegend(ax, position = :rt)
 fig
 ```
 
-This plot will now update in real-time as you move the sliders, allowing for interactive exploration of the Brusselator's behavior under different conditions.
+This plot will now update in real-time as you move the sliders, allowing for interactive exploration of the Brusselator's behavior under different conditions. (Note the figure above is not interactive, but for illustrative purposes to show what you should see locally.)
 
 ## [Adding a phase plot](@id adding_phase_plot)
 
