@@ -87,7 +87,6 @@ hhrn = @reaction_network hhmodel begin
         Iapp ~ I₀ * sin(2*pi*t/30)^2
     end
 end
-nothing # hide
 ```
 
 Next we create a `ModelingToolkit.ODESystem` to store the equation for `dV/dt`
